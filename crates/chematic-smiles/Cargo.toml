@@ -1,0 +1,10 @@
+[package]
+name = "chematic-smiles"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "OpenSMILES parser and writer for chematic — pure Rust, WASM-compatible"
+
+[dependencies]
+chematic-core = { path = "../chematic-core" }

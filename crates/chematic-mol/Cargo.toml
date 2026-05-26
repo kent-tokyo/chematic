@@ -1,0 +1,10 @@
+[package]
+name = "chematic-mol"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "SDF/MOL V2000 file format reader and writer for chematic — pure Rust"
+
+[dependencies]
+chematic-core = { path = "../chematic-core" }

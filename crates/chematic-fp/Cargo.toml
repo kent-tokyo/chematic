@@ -1,0 +1,15 @@
+[package]
+name = "chematic-fp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Molecular fingerprints (ECFP/Morgan) for chematic — pure Rust"
+
+[dependencies]
+chematic-core = { path = "../chematic-core" }
+chematic-perception = { path = "../chematic-perception" }
+chematic-smarts = { path = "../chematic-smarts" }
+
+[dev-dependencies]
+chematic-smiles = { path = "../chematic-smiles" }
