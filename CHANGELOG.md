@@ -11,6 +11,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### chematic-chem — CIP stereochemistry (Phase 3 completion)
+- `assign_cip(mol: &Molecule) -> CipAssignment` — assigns R/S (tetrahedral) and E/Z (double bond) CIP codes:
+  - BFS sphere expansion with phantom atoms for double bonds and ring revisits.
+  - Tetrahedral R/S via OpenSMILES @/@@ parity with correct bracket-H insertion rule.
+  - E/Z from Up/Down stereo bonds on double-bond endpoints.
+- `CipAssignment::get(idx: AtomIdx) -> Option<CipCode>` accessor.
+- `CipCode` enum (R, S, E, Z) added to `chematic-core`; re-exported from both crates.
+- 19 new tests; chematic-chem total: 67.
+
+#### chematic-smarts — MCS (Phase 4)
+- `find_mcs(mols: &[&Molecule]) -> QueryMolecule` — McGregor connected-growth MCS.
+- `find_mcs_with_config(mols, config) -> QueryMolecule` with `McsConfig { match_bonds, min_atoms, timeout_ms }`.
+- Branch-and-bound pruning via element-count upper bound; `std::time::Instant` timeout.
+- `QueryMolecule::atom_count()` accessor added.
+- 12 new tests; chematic-smarts total: 46.
+
+#### chematic-chem — tautomer normalization (Phase 4)
+- `canonical_tautomer(mol: &Molecule) -> Molecule` — fixed-point rule-based canonical form.
+- `enumerate_tautomers(mol: &Molecule) -> Vec<Molecule>` — BFS enumeration, max 32.
+- 5 rules: keto-enol, amide-iminol, imine-enamine, 1,3-H-shift N→O, 1,3-H-shift N→N.
+- 10 new tests.
+
+#### chematic-mol — MOL V2000 stereo bond parsing
+- Bond block stereo field (columns 9-11) now parsed: stereo=1/4 → `BondOrder::Up`, stereo=6 → `BondOrder::Down`.
+- Backward compatible: lines shorter than 12 chars default to stereo=0.
+- 2 new tests; chematic-mol total: 36.
+
 #### chematic-fp — MACCS and topological path fingerprints (Phase 4)
 - `maccs(mol) -> BitVec2048` — MACCS 166-bit structural keys fingerprint (`maccs.rs`):
   - All 166 SMARTS patterns evaluated via the existing `chematic-smarts` VF2 engine.
@@ -104,9 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `write_xyz(mol, coords, comment) -> String` — XYZ format writer.
 
 ### Planned
-- Phase 3 remaining: CIP stereochemistry (R/S, E/Z assignment) — chematic-chem
-- Phase 4 remaining: Maximum Common Substructure (MCS), tautomer normalization
-- Phase 6: WASM package, reaction SMILES/SMIRKS, umbrella crate
+- Phase 5 remaining: UFF force field minimization
+- Phase 6 remaining: WASM package (npm: chematic), ChEMBL-scale validation
 
 ---
 

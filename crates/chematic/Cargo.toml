@@ -1,0 +1,35 @@
+[package]
+name = "chematic"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Pure-Rust cheminformatics library — RDKit alternative with zero C/C++ FFI (umbrella crate)"
+keywords = ["cheminformatics", "chemistry", "rdkit", "smiles", "wasm"]
+categories = ["science"]
+
+[features]
+default = []
+smiles      = ["dep:chematic-core", "dep:chematic-smiles"]
+perception  = ["smiles", "dep:chematic-perception"]
+mol         = ["dep:chematic-core", "dep:chematic-mol"]
+depict      = ["perception", "dep:chematic-depict"]
+fp          = ["perception", "dep:chematic-smarts", "dep:chematic-fp"]
+chem        = ["perception", "dep:chematic-chem"]
+smarts      = ["perception", "dep:chematic-smarts"]
+rxn         = ["smiles", "dep:chematic-rxn"]
+threed      = ["perception", "dep:chematic-3d"]
+full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed"]
+
+[dependencies]
+chematic-core       = { path = "../chematic-core",       version = "0.1.0", optional = true }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.0", optional = true }
+chematic-perception = { path = "../chematic-perception", version = "0.1.0", optional = true }
+chematic-mol        = { path = "../chematic-mol",        version = "0.1.0", optional = true }
+chematic-depict     = { path = "../chematic-depict",     version = "0.1.0", optional = true }
+chematic-chem       = { path = "../chematic-chem",       version = "0.1.0", optional = true }
+chematic-fp         = { path = "../chematic-fp",         version = "0.1.0", optional = true }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.0", optional = true }
+chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.0", optional = true }
+chematic-3d         = { path = "../chematic-3d",         version = "0.1.0", optional = true }

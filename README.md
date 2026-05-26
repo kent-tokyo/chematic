@@ -29,28 +29,47 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 ## Current Status
 
 Phases 1–3 and Phase 5 (coordinate generation + file I/O) are complete.
-Phase 4 fingerprints (MACCS, topological path) are also done.
-263 tests, all passing.
+Phase 4 (MACCS, topological path, MCS, tautomer normalization) is also done.
+306 tests, all passing.
 
 | Crate                 | Description                                                             | Tests |
 |-----------------------|-------------------------------------------------------------------------|-------|
 | `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps)                   | 30    |
 | `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES                             | 50    |
 | `chematic-perception` | SSSR (Balducci-Pearlman), Huckel aromaticity                            | 14    |
-| `chematic-mol`        | MOL/SDF V2000+V3000 parser and writer                                   | 34    |
+| `chematic-mol`        | MOL/SDF V2000+V3000 parser and writer                                   | 36    |
 | `chematic-depict`     | 2D SVG depiction (ring+chain templates)                                 | 14    |
-| `chematic-chem`       | Descriptors, standardization (salt strip, charge), Murcko scaffold      | 38    |
+| `chematic-chem`       | Descriptors, standardization (salt strip, charge), Murcko scaffold, CIP | 67    |
 | `chematic-fp`         | ECFP4/ECFP6, MACCS 166-bit keys, topological path FP, Tanimoto/Dice    | 31    |
-| `chematic-smarts`     | SMARTS parser, VF2 subgraph isomorphism                                 | 34    |
+| `chematic-smarts`     | SMARTS parser, VF2 subgraph isomorphism, MCS                            | 46    |
 | `chematic-3d`         | 3D coordinate generation, PDB/XYZ file formats                          | 15    |
+| `chematic-rxn`        | Reaction SMILES parser and writer                                        | 15    |
+| `chematic`            | Umbrella crate with feature flags (all sub-crates)                       | 1     |
 
 ```
-cargo test --workspace   # 263 tests, all passing
+cargo test --workspace   # 306 tests, all passing
 ```
 
 ---
 
 ## Quick Start
+
+### Using the umbrella crate
+
+```toml
+# Cargo.toml
+[dependencies]
+chematic = { git = "https://github.com/kent-tokyo/chematic", features = ["smiles", "fp"] }
+```
+
+```rust
+// Using the umbrella crate
+use chematic::smiles::{parse, canonical_smiles};
+use chematic::fp::ecfp4;
+// chematic = { version = "0.1.0", features = ["smiles", "fp"] }
+```
+
+### Using individual crates
 
 ```toml
 # Cargo.toml
@@ -148,7 +167,7 @@ std::fs::write("caffeine.svg", svg).unwrap();
 | Molecular descriptors         | Yes (MW/LogP/TPSA/...) | Yes               | Yes            | No                |
 | 3D coordinate generation      | Yes (rule-based)      | Yes (ETKDG)        | Yes            | No                |
 | PDB/XYZ file formats          | Yes                   | Yes                | Yes            | No                |
-| CIP stereochemistry (R/S)     | Planned               | Yes                | Yes            | No                |
+| CIP stereochemistry (R/S)     | Yes (R/S, E/Z)        | Yes                | Yes            | No                |
 | MACCS fingerprints            | Yes (166-bit keys)    | Yes                | Yes            | No                |
 | Force field minimization      | Planned               | Yes (UFF/MMFF)     | Yes            | No                |
 | Reaction SMILES/SMIRKS        | Planned               | Yes                | Yes            | No                |
@@ -172,20 +191,19 @@ SSSR, Huckel aromaticity, SDF/MOL V2000+V3000, 2D SVG depiction. 63 tests.
 
 ### Phase 3 — Chemical Intelligence (complete)
 Descriptors (MW, LogP, TPSA, Lipinski), ECFP4/6 fingerprints, SMARTS+VF2,
-molecular standardization (salt stripping, charge neutralization), Murcko scaffold.
-Remaining: CIP R/S stereochemistry assignment.
+molecular standardization (salt stripping, charge neutralization), Murcko scaffold,
+CIP R/S and E/Z stereochemistry assignment.
 
-### Phase 4 — Similarity and Search (partially complete)
-MACCS 166-bit structural keys ✓, topological path fingerprints ✓.
-Remaining: Maximum Common Substructure (MCS), tautomer normalization.
+### Phase 4 — Similarity and Search (complete)
+MACCS 166-bit structural keys ✓, topological path fingerprints ✓, MCS ✓, tautomer normalization ✓.
 
 ### Phase 5 — 3D Chemistry (partially complete)
 Rule-based 3D coordinate generation, PDB/XYZ formats.
 Remaining: UFF force field minimization.
 
-### Phase 6 — RDKit Parity
-WASM package (npm: chematic), reaction SMILES/SMIRKS, umbrella crate with
-feature flags, ChEMBL-scale validation.
+### Phase 6 — RDKit Parity (partially complete)
+Reaction SMILES/SMIRKS (chematic-rxn) ✓, umbrella crate with feature flags (chematic) ✓.
+Remaining: WASM package (npm: chematic), ChEMBL-scale validation.
 
 See `tasks/todo.md` for the detailed per-task breakdown.
 
@@ -205,8 +223,10 @@ chematic/
 │   ├── chematic-depict/     2D SVG depiction engine
 │   ├── chematic-chem/       Molecular descriptors, standardization, scaffold
 │   ├── chematic-fp/         ECFP4/6 fingerprints, Tanimoto/Dice similarity
-│   ├── chematic-smarts/     SMARTS parser + VF2 subgraph isomorphism
-│   └── chematic-3d/         3D coordinate generation, PDB/XYZ formats
+│   ├── chematic-smarts/     SMARTS parser + VF2 subgraph isomorphism, MCS
+│   ├── chematic-3d/         3D coordinate generation, PDB/XYZ formats
+│   ├── chematic-rxn/        Reaction SMILES parser and writer
+│   └── chematic/            Umbrella crate with feature flags
 └── tasks/
     ├── todo.md              full roadmap checklist (Japanese)
     └── lessons.md           development lessons learned
@@ -218,7 +238,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # build all crates
-cargo test --workspace       # run all tests (260+)
+cargo test --workspace       # run all tests (306+)
 cargo check --workspace      # type-check without building
 cargo clippy --workspace     # lints
 ```

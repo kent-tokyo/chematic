@@ -9,11 +9,13 @@
 
 pub mod coords;
 pub mod dg;
+pub mod minimize;
 pub mod pdb;
 pub mod xyz;
 
 pub use coords::{Coords3D, Point3};
 pub use dg::generate_coords;
+pub use minimize::{MinimizeConfig, minimize, minimize_with_config};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
 pub use xyz::{XyzError, parse_xyz, write_xyz};
 
