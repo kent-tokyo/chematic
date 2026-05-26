@@ -1,0 +1,14 @@
+[package]
+name = "chematic-rxn"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Reaction SMILES parser and writer for chematic — pure Rust"
+keywords = ["cheminformatics", "reaction", "smiles", "chemistry", "smirks"]
+categories = ["science", "parser-implementations"]
+
+[dependencies]
+chematic-core  = { path = "../chematic-core",  version = "0.1.0" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.0" }

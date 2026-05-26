@@ -9,6 +9,8 @@ members = [
     "crates/chematic-fp",
     "crates/chematic-smarts",
     "crates/chematic-3d",
+    "crates/chematic-rxn",
+    "crates/chematic",
 ]
 resolver = "2"
 

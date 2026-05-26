@@ -24,28 +24,47 @@ rdkit-sys も openbabel バインディングも使用しない。すべての�
 
 ## 現在のステータス
 
-Phase 1〜3 および Phase 4（MACCS・パスフィンガープリント）、Phase 5（座標生成 + ファイル形式）が完了。
-263 テスト、全パス。
+Phase 1〜3、Phase 4（MACCS・パスフィンガープリント・MCS・互変異性体正規化）、Phase 5（座標生成 + ファイル形式）が完了。
+306 テスト、全パス。
 
 | クレート               | 説明                                                                    | テスト数 |
 |------------------------|-------------------------------------------------------------------------|---------|
 | `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）                     | 30      |
 | `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES                              | 50      |
 | `chematic-perception`  | SSSR (Balducci-Pearlman)、Huckel 芳香族性認識                           | 14      |
-| `chematic-mol`         | MOL/SDF V2000+V3000 パーサーとライター                                  | 34      |
+| `chematic-mol`         | MOL/SDF V2000+V3000 パーサーとライター                                  | 36      |
 | `chematic-depict`      | 2D SVG 描画（環・鎖テンプレート）                                       | 14      |
-| `chematic-chem`        | 記述子、標準化（塩除去・電荷中和）、Murcko スキャフォルド               | 38      |
+| `chematic-chem`        | 記述子、標準化（塩除去・電荷中和）、Murcko スキャフォルド、CIP 立体化学 | 67      |
 | `chematic-fp`          | ECFP4/6、MACCS 166-bit 構造キー、位相的パス FP、Tanimoto/Dice 類似度   | 31      |
-| `chematic-smarts`      | SMARTS パーサー、VF2 部分構造一致                                       | 34      |
+| `chematic-smarts`      | SMARTS パーサー、VF2 部分構造一致、MCS                                  | 46      |
 | `chematic-3d`          | 3D 座標生成、PDB/XYZ ファイル形式                                       | 15      |
+| `chematic-rxn`         | 反応 SMILES パーサーとライター                                           | 15      |
+| `chematic`             | フィーチャーフラグ付きアンブレラクレート（全サブクレート）              | 1       |
 
 ```
-cargo test --workspace   # 263 テスト、全パス
+cargo test --workspace   # 306 テスト、全パス
 ```
 
 ---
 
 ## クイックスタート
+
+### アンブレラクレートを使う場合
+
+```toml
+# Cargo.toml
+[dependencies]
+chematic = { git = "https://github.com/kent-tokyo/chematic", features = ["smiles", "fp"] }
+```
+
+```rust
+// アンブレラクレートの使用例
+use chematic::smiles::{parse, canonical_smiles};
+use chematic::fp::ecfp4;
+// chematic = { version = "0.1.0", features = ["smiles", "fp"] }
+```
+
+### 個別クレートを使う場合
 
 ```toml
 # Cargo.toml
@@ -143,7 +162,7 @@ std::fs::write("caffeine.svg", svg).unwrap();
 | 分子記述子計算                 | 対応 (MW/LogP/TPSA/…)  | 対応               | 対応           | 非対応            |
 | 3D 座標生成                    | 対応（ルールベース）   | 対応 (ETKDG)       | 対応           | 非対応            |
 | PDB/XYZ ファイル形式           | 対応                   | 対応               | 対応           | 非対応            |
-| CIP 立体化学 (R/S)             | 予定                   | 対応               | 対応           | 非対応            |
+| CIP 立体化学 (R/S)             | 対応（R/S、E/Z）       | 対応               | 対応           | 非対応            |
 | MACCS フィンガープリント       | 対応 (166-bit 構造キー) | 対応               | 対応           | 非対応            |
 | 力場エネルギー最小化           | 予定                   | 対応 (UFF/MMFF)    | 対応           | 非対応            |
 | 反応 SMILES/SMIRKS             | 予定                   | 対応               | 対応           | 非対応            |
@@ -167,18 +186,18 @@ SSSR (Balducci-Pearlman + GF(2))、Huckel 芳香族性認識、SDF/MOL V2000+V30
 
 ### Phase 3 — 化学インテリジェンス（完成）
 分子記述子（MW、LogP、TPSA、Lipinski）、ECFP4/6 フィンガープリント、SMARTS + VF2 部分構造検索、
-分子標準化（塩除去・電荷中和）、Murcko スキャフォルド。残り: CIP R/S 立体化学割り当て。
+分子標準化（塩除去・電荷中和）、Murcko スキャフォルド、CIP R/S および E/Z 立体化学割り当て。
 
-### Phase 4 — 類似性と検索（一部完成）
-MACCS 166 ビット構造キー ✓、位相的パスフィンガープリント ✓。
-残り: 最大共通部分構造 (MCS)、互変異性体正規化。
+### Phase 4 — 類似性と検索（完成）
+MACCS 166 ビット構造キー ✓、位相的パスフィンガープリント ✓、MCS ✓、互変異性体正規化 ✓。
 
 ### Phase 5 — 3D 化学（一部完成）
 ルールベース 3D 座標生成、PDB/XYZ ファイル形式。
 残り: UFF 力場エネルギー最小化。
 
-### Phase 6 — RDKit パリティ
-WASM パッケージ (npm: chematic)、反応 SMILES/SMIRKS、フィーチャーフラグ付きアンブレラクレート、ChEMBL スケール検証。
+### Phase 6 — RDKit パリティ（一部完成）
+反応 SMILES/SMIRKS（chematic-rxn）✓、フィーチャーフラグ付きアンブレラクレート（chematic）✓。
+残り: WASM パッケージ (npm: chematic)、ChEMBL スケール検証。
 
 ---
 
@@ -196,8 +215,10 @@ chematic/
 │   ├── chematic-depict/     2D SVG 描画エンジン
 │   ├── chematic-chem/       分子記述子、標準化、スキャフォルド
 │   ├── chematic-fp/         ECFP4/6、MACCS、位相的パス FP、類似度計算
-│   ├── chematic-smarts/     SMARTS パーサー + VF2 部分構造一致
-│   └── chematic-3d/         3D 座標生成、PDB/XYZ ファイル形式
+│   ├── chematic-smarts/     SMARTS パーサー + VF2 部分構造一致、MCS
+│   ├── chematic-3d/         3D 座標生成、PDB/XYZ ファイル形式
+│   ├── chematic-rxn/        反応 SMILES パーサーとライター
+│   └── chematic/            フィーチャーフラグ付きアンブレラクレート
 └── tasks/
     ├── todo.md              全フェーズロードマップチェックリスト（日本語）
     └── lessons.md           開発の教訓
@@ -209,7 +230,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # 全クレートのビルド
-cargo test --workspace       # 全テストの実行（260+ 件）
+cargo test --workspace       # 全テストの実行（306+ 件）
 cargo check --workspace      # ビルドなしの型チェック
 cargo clippy --workspace     # リント
 ```
