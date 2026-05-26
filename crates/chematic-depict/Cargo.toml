@@ -4,11 +4,14 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "2D SVG depiction engine for chematic — pure Rust"
+keywords = ["cheminformatics", "chemistry", "svg", "depiction", "2d"]
+categories = ["science", "visualization"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core" }
-chematic-perception = { path = "../chematic-perception" }
+chematic-core = { path = "../chematic-core", version = "0.1.0" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.0" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }
