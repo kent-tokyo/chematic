@@ -185,8 +185,19 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
         let a1 = AtomIdx((a1_raw - 1) as u32);
         let a2 = AtomIdx((a2_raw - 1) as u32);
 
+        // Stereo field (columns 9-11, 0-indexed): only meaningful for single bonds.
+        let stereo_raw: usize = if bond_line.len() >= 12 {
+            parse_field3(bond_line, 9, raw_lineno, make_bond_err).unwrap_or(0)
+        } else {
+            0
+        };
+
         let order = match btype_raw {
-            1 => BondOrder::Single,
+            1 => match stereo_raw {
+                1 | 4 => BondOrder::Up,
+                6 => BondOrder::Down,
+                _ => BondOrder::Single,
+            },
             2 => BondOrder::Double,
             3 => BondOrder::Triple,
             4 => BondOrder::Aromatic,
@@ -455,5 +466,22 @@ M  END
         let (mol, meta) = parse_mol(ETHANOL_MOL).expect("parse");
         let written = write_mol(&mol, &meta);
         assert!(written.contains("V2000"));
+    }
+
+    #[test]
+    fn test_parse_stereo_up_bond() {
+        // MOL V2000 with a stereo=1 (Up) bond
+        let mol_str = "\n\n\n  2  1  0  0  0  0            999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  1  0  0  0\nM  END\n";
+        let (mol, _) = crate::parse_mol(mol_str).unwrap();
+        let bond = mol.bond(chematic_core::BondIdx(0));
+        assert_eq!(bond.order, chematic_core::BondOrder::Up);
+    }
+
+    #[test]
+    fn test_parse_stereo_down_bond() {
+        let mol_str = "\n\n\n  2  1  0  0  0  0            999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  6  0  0  0\nM  END\n";
+        let (mol, _) = crate::parse_mol(mol_str).unwrap();
+        let bond = mol.bond(chematic_core::BondIdx(0));
+        assert_eq!(bond.order, chematic_core::BondOrder::Down);
     }
 }

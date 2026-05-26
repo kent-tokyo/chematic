@@ -9,6 +9,7 @@ pub mod cip;
 pub mod descriptors;
 pub mod scaffold;
 pub mod standardize;
+pub mod tautomer;
 
 pub use cip::{assign_cip, CipAssignment};
 pub use descriptors::{
@@ -18,3 +19,4 @@ pub use descriptors::{
 
 pub use scaffold::{generic_murcko_scaffold, murcko_scaffold};
 pub use standardize::{largest_fragment, neutralize_charges};
+pub use tautomer::{canonical_tautomer, enumerate_tautomers};

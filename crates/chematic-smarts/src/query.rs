@@ -116,4 +116,9 @@ impl QueryMolecule {
         self.adj[a].push((bidx, b));
         self.adj[b].push((bidx, a));
     }
+
+    /// Number of atoms in this query molecule.
+    pub fn atom_count(&self) -> usize {
+        self.atoms.len()
+    }
 }
