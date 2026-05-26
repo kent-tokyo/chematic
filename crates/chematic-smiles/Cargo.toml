@@ -4,7 +4,10 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "OpenSMILES parser and writer for chematic — pure Rust, WASM-compatible"
+keywords = ["smiles", "cheminformatics", "chemistry", "parser", "wasm"]
+categories = ["science", "parser-implementations"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core" }
+chematic-core = { path = "../chematic-core", version = "0.1.0" }

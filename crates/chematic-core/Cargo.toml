@@ -4,7 +4,10 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Core cheminformatics types for chematic (Atom, Bond, Molecule) — pure Rust, WASM-compatible"
+keywords = ["cheminformatics", "chemistry", "smiles", "molecule", "wasm"]
+categories = ["science", "data-structures"]
 
 # 外部依存ゼロ: pure Rust, no FFI
 [dependencies]

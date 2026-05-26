@@ -4,12 +4,15 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Molecular fingerprints (ECFP/Morgan) for chematic — pure Rust"
+keywords = ["fingerprints", "cheminformatics", "ecfp", "morgan", "tanimoto"]
+categories = ["science"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core" }
-chematic-perception = { path = "../chematic-perception" }
-chematic-smarts = { path = "../chematic-smarts" }
+chematic-core = { path = "../chematic-core", version = "0.1.0" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.0" }
+chematic-smarts = { path = "../chematic-smarts", version = "0.1.0" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }

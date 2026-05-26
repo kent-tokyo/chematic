@@ -4,7 +4,10 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Molecular perception: SSSR ring detection and aromaticity for chematic — pure Rust"
+keywords = ["cheminformatics", "chemistry", "aromaticity", "sssr", "rings"]
+categories = ["science"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core" }
+chematic-core = { path = "../chematic-core", version = "0.1.0" }
