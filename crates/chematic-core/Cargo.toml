@@ -1,0 +1,10 @@
+[package]
+name = "chematic-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Core cheminformatics types for chematic (Atom, Bond, Molecule) — pure Rust, WASM-compatible"
+
+# 外部依存ゼロ: pure Rust, no FFI
+[dependencies]

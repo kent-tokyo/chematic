@@ -1,0 +1,10 @@
+[package]
+name = "chematic-perception"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Molecular perception: SSSR ring detection and aromaticity for chematic — pure Rust"
+
+[dependencies]
+chematic-core = { path = "../chematic-core" }

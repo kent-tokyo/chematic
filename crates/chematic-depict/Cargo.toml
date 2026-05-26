@@ -1,0 +1,14 @@
+[package]
+name = "chematic-depict"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "2D SVG depiction engine for chematic — pure Rust"
+
+[dependencies]
+chematic-core = { path = "../chematic-core" }
+chematic-perception = { path = "../chematic-perception" }
+
+[dev-dependencies]
+chematic-smiles = { path = "../chematic-smiles" }

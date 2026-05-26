@@ -1,0 +1,14 @@
+[package]
+name = "chematic-chem"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Molecular descriptors and chemical properties for chematic — pure Rust"
+
+[dependencies]
+chematic-core = { path = "../chematic-core" }
+chematic-perception = { path = "../chematic-perception" }
+
+[dev-dependencies]
+chematic-smiles = { path = "../chematic-smiles" }
