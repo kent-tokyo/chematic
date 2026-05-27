@@ -8,7 +8,7 @@ repository.workspace = true
 description = "Reaction SMILES/SMIRKS parser and writer for chematic — pure-Rust RDKit alternative"
 keywords = ["reaction", "smiles", "smirks", "cheminformatics", "chemistry"]
 categories = ["science", "parser-implementations"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-rxn"
 

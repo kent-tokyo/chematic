@@ -8,7 +8,7 @@ repository.workspace = true
 description = "Core types (Atom, Bond, Molecule) for chematic — pure-Rust RDKit alternative, WASM-compatible"
 keywords = ["cheminformatics", "chemistry", "molecule", "smiles", "wasm"]
 categories = ["science"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-core"
 

@@ -8,7 +8,7 @@ repository.workspace = true
 description = "MOL/SDF V2000 and V3000 parser and writer for chematic — pure-Rust RDKit alternative"
 keywords = ["sdf", "mol", "ctfile", "cheminformatics", "chemistry"]
 categories = ["science", "parser-implementations"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-mol"
 

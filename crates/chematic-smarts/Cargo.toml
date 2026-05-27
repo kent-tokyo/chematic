@@ -8,7 +8,7 @@ repository.workspace = true
 description = "SMARTS parser, VF2 subgraph isomorphism and MCS for chematic — pure-Rust RDKit alternative"
 keywords = ["smarts", "substructure", "vf2", "mcs", "cheminformatics"]
 categories = ["science", "parser-implementations"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-smarts"
 

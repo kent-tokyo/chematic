@@ -8,7 +8,7 @@ repository.workspace = true
 description = "ECFP4/6, MACCS 166-bit and topological path fingerprints with Tanimoto/Dice similarity for chematic"
 keywords = ["fingerprints", "ecfp", "morgan", "tanimoto", "cheminformatics"]
 categories = ["science"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-fp"
 

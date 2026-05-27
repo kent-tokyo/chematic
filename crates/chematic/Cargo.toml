@@ -8,7 +8,7 @@ repository.workspace = true
 description = "Pure-Rust cheminformatics library — RDKit alternative with zero C/C++ FFI (umbrella crate)"
 keywords = ["cheminformatics", "rdkit", "chemistry", "smiles", "wasm"]
 categories = ["science"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic"
 
