@@ -44,17 +44,56 @@ pub fn implicit_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
         return 0;
     }
 
-    // Sum of integer bond orders over all heavy-atom bonds.
-    let bond_sum: i32 = mol
-        .neighbors(idx)
-        .map(|(_, bidx)| mol.bond(bidx).order.order_int() as i32)
-        .sum();
-
     let charge = atom.charge as i32;
 
-    // Iterate through normal valences (ascending) and pick the smallest that,
-    // after charge adjustment, is >= bond_sum.
-    for &v in normal_valences {
+    // Separate aromatic bonds from non-aromatic bonds.
+    let mut aromatic_count: usize = 0;
+    let mut non_aromatic_sum: i32 = 0;
+    for (_, bidx) in mol.neighbors(idx) {
+        let order = mol.bond(bidx).order;
+        if order == BondOrder::Aromatic {
+            aromatic_count += 1;
+        } else {
+            non_aromatic_sum += order.order_int() as i32;
+        }
+    }
+
+    if aromatic_count > 0 {
+        // Aromatic molecule (pre-Kekulization): each aromatic bond contributes 1.5
+        // to the effective bond order (OpenSMILES convention).
+        //
+        // floor(1.5 × n) gives the contribution from n aromatic bonds:
+        //   n=2 → 3  benzene CH:   4−3=1H ✓   pyridine N: 3−3=0H ✓
+        //   n=3 → 4  junction C:   4−4=0H ✓
+        //
+        // Combined with non-aromatic substituents (e.g. N−CH₃) this correctly yields
+        // 0 H for all substituted aromatic atoms without needing Kekulization.
+        // Always use the lowest normal valence; aromatic atoms cannot be hypervalent.
+        let effective_sum =
+            (aromatic_count as f64 * 1.5).floor() as i32 + non_aromatic_sum;
+        let v = normal_valences[0] as i32 + charge;
+        if v <= 0 || effective_sum >= v {
+            return 0;
+        }
+        return (v - effective_sum) as u8;
+    }
+
+    // Non-aromatic path (or post-Kekulization molecule where all bonds are explicit).
+    let bond_sum = non_aromatic_sum;
+
+    // For atoms that carry the aromatic flag but reside in a kekulized molecule
+    // (bonds are Single/Double, not Aromatic), use only the lowest normal valence.
+    // Rationale: after Kekulization, a substituted aromatic N (e.g. N−CH₃ in caffeine
+    // with one ring double bond) has bond_sum=4, which would select valence 5 and
+    // give 1 implicit H.  Capping at the primary valence (3) returns 0 H instead.
+    let valences_to_check: &[u8] = if atom.aromatic {
+        &normal_valences[..1]
+    } else {
+        normal_valences
+    };
+
+    // Iterate through valences (ascending) and pick the smallest ≥ bond_sum.
+    for &v in valences_to_check {
         let target = v as i32 + charge;
         if target < 0 {
             continue;
@@ -64,7 +103,7 @@ pub fn implicit_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
         }
     }
 
-    // bond_sum exceeds all normal valences (hypervalent or charged atom) → 0 implicit H.
+    // bond_sum exceeds all consulted valences → 0 implicit H.
     0
 }
 

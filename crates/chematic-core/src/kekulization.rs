@@ -60,15 +60,6 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
         return Ok(HashMap::new());
     }
 
-    // Build adjacency list restricted to aromatic bonds.
-    // adj[atom] = list of (neighbor_atom, bond_idx)
-    let mut adj: HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>> = HashMap::new();
-    for &bidx in &aromatic_bonds {
-        let bond = mol.bond(bidx);
-        adj.entry(bond.atom1).or_default().push((bond.atom2, bidx));
-        adj.entry(bond.atom2).or_default().push((bond.atom1, bidx));
-    }
-
     // Determine which aromatic atoms *must* be in a double bond.
     // An aromatic atom must be double-bonded if it has no lone pair to donate.
     // Heuristic: if the atom has no explicit/implicit H and is carbon or nitrogen-imine,
@@ -86,11 +77,32 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
         .filter(|&idx| atom_must_be_matched(mol, idx))
         .collect();
 
+    // Build adjacency list restricted to aromatic bonds BETWEEN must-match atoms.
+    //
+    // Lone-pair donors (O, S, [nH]) contribute their pi electrons via the lone pair,
+    // NOT via a double bond.  Including them in the matching adjacency causes the
+    // augmenting-path algorithm to assign double bonds to e.g. [nH]=C in pyrrole or
+    // indole, which is chemically wrong and produces incorrect implicit-H counts.
+    //
+    // Only bonds where BOTH endpoints are in must_match are valid double-bond
+    // candidates.  Lone-pair donors remain in aromatic_atoms (so their aromatic bonds
+    // become Single in the result) but are excluded from the matching graph.
+    let mut adj: HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>> = HashMap::new();
+    for &bidx in &aromatic_bonds {
+        let bond = mol.bond(bidx);
+        if must_match.contains(&bond.atom1) && must_match.contains(&bond.atom2) {
+            adj.entry(bond.atom1).or_default().push((bond.atom2, bidx));
+            adj.entry(bond.atom2).or_default().push((bond.atom1, bidx));
+        }
+    }
+
     // Run maximum matching via augmenting paths.
     let mut matching: HashMap<AtomIdx, AtomIdx> = HashMap::new(); // atom -> matched_partner
 
-    // Process atoms in a deterministic order (by index) for reproducibility.
-    let mut sorted_atoms: Vec<AtomIdx> = aromatic_atoms.iter().copied().collect();
+    // Process must-match atoms in a deterministic order (by index) for reproducibility.
+    // Non-must-match atoms (lone-pair donors) are skipped — they never initiate
+    // augmenting paths and are never placed in the matching.
+    let mut sorted_atoms: Vec<AtomIdx> = must_match.iter().copied().collect();
     sorted_atoms.sort();
 
     for &start in &sorted_atoms {
@@ -213,6 +225,10 @@ fn augment(
 ///   - S (thiophene-type sulfur)
 ///   - N with an H (pyrrole-type nitrogen: [nH])
 ///   - Se, As aromatic analogs
+///   - Any aromatic atom that already has an exocyclic double bond (e.g. the
+///     carbonyl carbon in coumarin/warfarin `c=O` fused into an aromatic ring).
+///     Such an atom's pi contribution comes from conjugation with the exocyclic
+///     bond; no additional ring double bond is needed or possible.
 ///
 /// Everything else (C, N without H like pyridine) must be matched.
 fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
