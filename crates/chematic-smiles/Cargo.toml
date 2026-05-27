@@ -13,7 +13,7 @@ homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-smiles"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.1" }
+chematic-core = { path = "../chematic-core", version = "0.1.2" }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
