@@ -8,7 +8,7 @@ repository.workspace = true
 description = "SSSR ring perception and Hückel aromaticity for chematic — pure-Rust RDKit alternative"
 keywords = ["aromaticity", "rings", "sssr", "cheminformatics", "chemistry"]
 categories = ["science"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-perception"
 

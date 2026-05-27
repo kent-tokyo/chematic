@@ -8,7 +8,7 @@ repository.workspace = true
 description = "2D SVG molecular depiction for chematic — pure-Rust RDKit alternative"
 keywords = ["svg", "depiction", "2d", "cheminformatics", "chemistry"]
 categories = ["science", "visualization"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-depict"
 

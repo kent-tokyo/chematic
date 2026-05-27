@@ -8,7 +8,7 @@ repository.workspace = true
 description = "Molecular descriptors (MW, LogP, TPSA, CIP), standardization and Murcko scaffold for chematic"
 keywords = ["descriptors", "lipinski", "tpsa", "logp", "cheminformatics"]
 categories = ["science"]
-readme = "README.md"
+readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-chem"
 
