@@ -418,3 +418,54 @@ fn logp_dichloromethane() {
     // RDKit: 1.4215 — confirms Cl_al=+0.6895
     assert_approx("LogP DCM", logp_crippen(&mol("ClCCl")), 1.4215, 0.02);
 }
+
+// ── v0.1.3 LogP regression tests (5 new atom-type fixes) ─────────────────────
+
+#[test]
+fn logp_phenol() {
+    // Fix1: phenolic H = +0.1319 (was −0.2677 aliphatic alcohol)
+    // RDKit: 1.3922 — exact match
+    assert_approx("LogP phenol", logp_crippen(&mol("c1ccccc1O")), 1.3922, 0.005);
+}
+
+#[test]
+fn logp_catechol() {
+    // Fix1 × 2: two phenolic OH groups
+    // RDKit: 1.0978 — exact match
+    assert_approx("LogP catechol", logp_crippen(&mol("Oc1ccccc1O")), 1.0978, 0.005);
+}
+
+#[test]
+fn logp_salicylic_acid() {
+    // Fix1 (phenolic OH) + Fix2 (ArC=O); combined 0.6570 exact
+    // RDKit: 1.0904 — exact match
+    assert_approx("LogP salicylic acid", logp_crippen(&mol("OC(=O)c1ccccc1O")), 1.0904, 0.01);
+}
+
+#[test]
+fn logp_toluene() {
+    // Fix3: benzyl CH3-Ar = 0.0764 (was 0.1441 pure alkyl)
+    // RDKit: 1.9950 — exact match
+    assert_approx("LogP toluene", logp_crippen(&mol("Cc1ccccc1")), 1.9950, 0.01);
+}
+
+#[test]
+fn logp_ethylbenzene() {
+    // Fix3: benzyl CH2-Ar = −0.0597 (was 0.1441)
+    // RDKit: 2.2490 — exact match
+    assert_approx("LogP ethylbenzene", logp_crippen(&mol("CCc1ccccc1")), 2.2490, 0.01);
+}
+
+#[test]
+fn logp_aniline() {
+    // Fix4: primary aniline N (h=2, adj to Ar) = −0.7092 (was −1.0190 aliphatic)
+    // RDKit: 1.2688 — exact match
+    assert_approx("LogP aniline", logp_crippen(&mol("Nc1ccccc1")), 1.2688, 0.01);
+}
+
+#[test]
+fn logp_thiophenol() {
+    // Fix5: thiol S (h>0, no =O) = 0.3132 (was 0.6482 thioether)
+    // RDKit: 1.9753 — exact match
+    assert_approx("LogP thiophenol", logp_crippen(&mol("Sc1ccccc1")), 1.9753, 0.02);
+}
