@@ -9,7 +9,7 @@
 //!   HBD:  ±0         (exact integer)
 
 use chematic_chem::descriptors::{
-    molecular_weight, tpsa, heavy_atom_count, hbd_count, lipinski_passes,
+    molecular_weight, tpsa, heavy_atom_count, hbd_count, hba_count, logp_crippen, lipinski_passes,
 };
 use chematic_smiles::parse;
 
@@ -117,11 +117,9 @@ fn tpsa_aspirin() {
 #[test]
 fn tpsa_caffeine() {
     // RDKit: 61.82 Å²
-    // Note: chematic gives ~85.7 Å² due to amide N classification (known limitation).
-    // The Ertl 2000 table assigns amide N the same contribution as secondary aliphatic N
-    // (12.03 Å²); RDKit uses SMARTS-based context that reduces amide N to 3.24 Å².
-    // Tolerance widened to document this known discrepancy.
-    assert_approx("TPSA caffeine", tpsa(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 61.82, 30.0);
+    // Fix: aromatic N with deg≥3 (N-substituted) gets 4.93 (RDKit value), not 12.89.
+    // 3 N-methyl/N-aryl @ 4.93 + 1 pyridine-type @ 12.89 + 2 C=O @ 17.07 = 61.82.
+    assert_approx("TPSA caffeine", tpsa(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 61.82, 1.0);
 }
 
 #[test]
@@ -199,8 +197,8 @@ fn tpsa_furan() {
 
 #[test]
 fn tpsa_indole() {
-    // RDKit: 13.97 Å² (aromatic NH)
-    assert_approx("TPSA indole", tpsa(&mol("c1ccc2[nH]ccc2c1")), 13.97, 0.1);
+    // RDKit: 15.79 Å² (aromatic NH — RDKit uses 15.79, not Ertl 2000's 13.97)
+    assert_approx("TPSA indole", tpsa(&mol("c1ccc2[nH]ccc2c1")), 15.79, 0.1);
 }
 
 #[test]
@@ -289,4 +287,134 @@ fn lipinski_cyclosporine_fails() {
     assert!(!lipinski_passes(&mol(
         "CCC1NC(=O)C(C(=O)N(C)C(CC(C)C)C(=O)NC(CC(C)C)C(=O)N(C)C(CC(C)C)C(=O)NC(C(C)C)C(=O)N(C)C1CC(C)C)"
     )));
+}
+
+// ── HBA ───────────────────────────────────────────────────────────────────────
+
+#[test]
+fn hba_aspirin() {
+    // 4 O total, but carboxyl OH excluded → 3
+    assert_eq!(hba_count(&mol("CC(=O)Oc1ccccc1C(=O)O")), 3);
+}
+
+#[test]
+fn hba_paracetamol() {
+    // amide N excluded, amide C=O + phenol OH = 2
+    assert_eq!(hba_count(&mol("CC(=O)Nc1ccc(O)cc1")), 2);
+}
+
+#[test]
+fn hba_caffeine() {
+    // 4 aromatic N (H0, all count) + 2 C=O = 6
+    assert_eq!(hba_count(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 6);
+}
+
+#[test]
+fn hba_indole() {
+    // [nH] is NOT HBA (lone pair in aromaticity)
+    assert_eq!(hba_count(&mol("c1ccc2[nH]ccc2c1")), 0);
+}
+
+#[test]
+fn hba_pyridine() {
+    // pyridine N (no H) IS HBA
+    assert_eq!(hba_count(&mol("c1ccncc1")), 1);
+}
+
+#[test]
+fn hba_urea() {
+    // both amide N excluded, only C=O counts
+    assert_eq!(hba_count(&mol("NC(N)=O")), 1);
+}
+
+#[test]
+fn hba_acetic_acid() {
+    // carboxyl OH excluded, C=O counts → 1
+    assert_eq!(hba_count(&mol("CC(=O)O")), 1);
+}
+
+// ── LogP (Crippen) ────────────────────────────────────────────────────────────
+
+#[test]
+fn logp_benzene() {
+    // RDKit: 1.6866 — confirms [cH]=0.1581, H_C=0.1230
+    assert_approx("LogP benzene", logp_crippen(&mol("c1ccccc1")), 1.6866, 0.02);
+}
+
+#[test]
+fn logp_pyridine() {
+    // RDKit: 1.0816 — confirms [n]=−0.3239
+    assert_approx("LogP pyridine", logp_crippen(&mol("c1ccncc1")), 1.0816, 0.02);
+}
+
+#[test]
+fn logp_thiophene() {
+    // RDKit: 1.7481 — confirms [s]=+0.6237
+    assert_approx("LogP thiophene", logp_crippen(&mol("c1ccsc1")), 1.7481, 0.02);
+}
+
+#[test]
+fn logp_methanol() {
+    // RDKit: -0.3915 — confirms O_alc=−0.2893, H_Oalc=−0.2677
+    assert_approx("LogP methanol", logp_crippen(&mol("CO")), -0.3915, 0.02);
+}
+
+#[test]
+fn logp_ethanol() {
+    // RDKit: -0.0014
+    assert_approx("LogP ethanol", logp_crippen(&mol("CCO")), -0.0014, 0.02);
+}
+
+#[test]
+fn logp_acetone() {
+    // RDKit: 0.5953 — confirms C10=−0.3800, O8=−0.0509
+    assert_approx("LogP acetone", logp_crippen(&mol("CC(C)=O")), 0.5953, 0.02);
+}
+
+#[test]
+fn logp_acetic_acid() {
+    // RDKit: 0.0909 — confirms carboxylic acid H=+0.2980
+    assert_approx("LogP acetic acid", logp_crippen(&mol("CC(=O)O")), 0.0909, 0.05);
+}
+
+#[test]
+fn logp_aspirin() {
+    // RDKit: 1.3101; ester-type C=O gets slightly different weight in full Crippen (tol=0.35)
+    assert_approx("LogP aspirin", logp_crippen(&mol("CC(=O)Oc1ccccc1C(=O)O")), 1.3101, 0.35);
+}
+
+#[test]
+fn logp_caffeine() {
+    // RDKit: -1.0293
+    assert_approx("LogP caffeine", logp_crippen(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), -1.0293, 0.20);
+}
+
+#[test]
+fn logp_pyrimidine() {
+    // RDKit: 0.4766 — confirms two [n] = 2×(−0.3239)
+    assert_approx("LogP pyrimidine", logp_crippen(&mol("c1ccncn1")), 0.4766, 0.02);
+}
+
+#[test]
+fn logp_tetrahydrofuran() {
+    // RDKit: 0.7968 — confirms ether O=−0.0684
+    assert_approx("LogP THF", logp_crippen(&mol("C1CCOC1")), 0.7968, 0.02);
+}
+
+#[test]
+fn logp_dimethyl_sulfide() {
+    // RDKit: 0.9792 — confirms thioether S=+0.6482
+    assert_approx("LogP dimethyl sulfide", logp_crippen(&mol("CSC")), 0.9792, 0.02);
+}
+
+#[test]
+fn logp_chlorobenzene() {
+    // RDKit: 2.3400 — confirms Cl_ar=+0.7904
+    assert_approx("LogP chlorobenzene", logp_crippen(&mol("Clc1ccccc1")), 2.3400, 0.02);
+}
+
+#[test]
+fn logp_dichloromethane() {
+    // RDKit: 1.4215 — confirms Cl_al=+0.6895
+    assert_approx("LogP DCM", logp_crippen(&mol("ClCCl")), 1.4215, 0.02);
 }
