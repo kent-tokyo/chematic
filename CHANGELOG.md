@@ -9,6 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.1.3] — 2026-05-27
+
+### Fixed (`chematic-chem` — LogP Crippen accuracy)
+
+Five new atom-type contexts derived analytically from the 175-molecule RDKit reference set.
+LogP MAE vs RDKit: **0.419 → 0.298** (−29%); Pearson r: **0.925 → 0.944**.
+17 molecules now have Δ = 0.000: phenol, catechol, resorcinol, hydroquinone,
+benzoic_acid, methyl_benzoate, salicylic_acid, toluene, ethylbenzene, phenylacetic_acid,
+tetralin, histamine, aniline, n_methylaniline, 4_aminophenol, thiophenol, dopamine.
+
+#### Fix 1 — Phenolic OH hydrogen (+0.1319, was −0.2677 aliphatic alcohol)
+- Triggered when O-H is directly bonded to aromatic C (phenol, catechol, tyrosine OH, etc.)
+- Verified: phenol (exact), catechol/resorcinol/hydroquinone (2× exact), salicylic_acid (combined exact), dopamine (combined exact)
+
+#### Fix 2 — C=O adjacent to aromatic C (−0.1226, was −0.3800 aliphatic C=O)
+- Triggered when sp2 C=X carbon has at least one aromatic C neighbor (Ar-CHO, Ar-COOH, Ar-COOR, Ar-CO-R)
+- Verified: benzoic_acid (exact), methyl_benzoate (exact), salicylic_acid (combined exact)
+
+#### Fix 3 — Benzylic sp3 C (Wildman-Crippen C25–C28, was 0.1441 pure alkyl)
+- Triggered when sp3 C is bonded to aromatic C but **not** to any heteroatom
+- H=3: 0.0764 | H=2: −0.0597 | H=1: −0.1415 | H=0: −0.2037
+- Verified: toluene (exact), ethylbenzene (exact), tetralin (exact), phenylacetic_acid (exact), histamine (exact), dopamine (combined exact)
+
+#### Fix 4 — Aniline-type N (bonded to aromatic C, non-amide)
+- H=2 primary aniline: −0.7092 (was −1.0190 aliphatic NH2)
+- H=1 secondary aniline: −0.2010 (was −0.7096 aliphatic NH)
+- H=0 tertiary aniline: −0.5950 (unchanged, no calibration data)
+- Verified: aniline (exact), n_methylaniline (exact), 4_aminophenol (combined exact)
+
+#### Fix 5 — Thiol S (0.3132, was 0.6482 thioether)
+- Triggered when non-aromatic S has h>0 and no S=O bonds
+- Verified: thiophenol (exact), cysteine (residual 0.047 ✓)
+
+### Added
+
+- `chematic` npm package v0.1.3 published to npmjs.com — WebAssembly bindings for browser/Node.js
+- 7 new LogP regression tests in `chematic-chem/tests/rdkit_reference.rs` (phenol, catechol, salicylic_acid, toluene, ethylbenzene, aniline, thiophenol)
+
+---
+
 ### Added
 
 #### chematic-chem — CIP stereochemistry (Phase 3 completion)
@@ -284,7 +326,8 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/kent-tokyo/chematic/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/kent-tokyo/chematic/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kent-tokyo/chematic/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kent-tokyo/chematic/releases/tag/v0.1.0

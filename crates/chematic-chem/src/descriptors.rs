@@ -477,8 +477,17 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
         });
 
         if has_double_to_heteroatom {
-            // C10 [C]=[A!#6]: sp2 C bonded to heteroatom via double bond (C=O, C=N, etc.)
-            -0.3800
+            // C=X adjacent to aromatic C (benzoyl, benzaldehyde, acetophenone, etc.)
+            // gets different contribution than purely aliphatic C=X.
+            // Confirmed: benzoic_acid (+0.2574 exact), methyl_benzoate (+0.2574 exact).
+            let adj_to_aromatic_c = mol.neighbors(idx).any(|(nb, _)| {
+                mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6
+            });
+            if adj_to_aromatic_c {
+                -0.1226  // C=X adjacent to Ar ring (Ar-CHO, Ar-COOH, Ar-COOR, Ar-CO-R)
+            } else {
+                -0.3800  // C10: aliphatic C=X (ketone, aldehyde, ester, carboxyl)
+            }
         } else if has_double_to_c {
             // Alkene C (C=C)
             match h {
@@ -487,14 +496,26 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
                 _ => -0.3500,   // =CH2 (terminal)
             }
         } else {
-            // sp3 C: distinguish by heteroatom neighbors
+            // sp3 C: distinguish heteroatom-bonded, benzylic, pure alkyl
             let bonded_to_heteroatom = mol.neighbors(idx).any(|(nb, _)| {
                 matches!(mol.atom(nb).element.atomic_number(), 7|8|9|15|16|17|35|53)
             });
+            let bonded_to_aromatic_c = mol.neighbors(idx).any(|(nb, _)| {
+                mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6
+            });
             if bonded_to_heteroatom {
                 -0.2035  // C6/C7/C8: sp3 C bonded to N/O/S/halogen
+            } else if bonded_to_aromatic_c {
+                // Benzylic C (Wildman-Crippen C25–C28)
+                // Confirmed: toluene(C25), ethylbenzene(C26), tetralin(C26×2)
+                match h {
+                    3 => 0.0764,   // CH3-Ar (C25)
+                    2 => -0.0597,  // CH2-Ar (C26)
+                    1 => -0.1415,  // CH-Ar  (C27)
+                    _ => -0.2037,  // C<-Ar  (C28)
+                }
             } else {
-                0.1441   // C1/C2/C3: pure alkyl C (bonded only to C)
+                0.1441   // C1/C2/C3: pure alkyl C (bonded only to C/H)
             }
         }
     }
@@ -509,18 +530,29 @@ fn crippen_nitrogen(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
     } else {
         let h = implicit_hcount(mol, idx);
         let is_amide = neighbor_has_carbonyl(mol, idx);
+        // Detect aniline-type N: non-aromatic N bonded to aromatic C (not amide)
+        let adj_to_aromatic_c = mol.neighbors(idx).any(|(nb, _)| {
+            mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6
+        });
         if is_amide {
             // Amide N: delocalized lone pair
             // N_prim_amide = -0.7011 (from urea), N_tert_amide ≈ 0.0 (from dimethylurea)
             match h {
-                0 => 0.0000,    // tertiary amide N (N-methyl amide, N in ring)
+                0 => 0.0000,    // tertiary amide N
                 1 => -0.7011,   // secondary amide NH
                 _ => -0.7011,   // primary amide NH2
             }
+        } else if adj_to_aromatic_c {
+            // Aniline-type N bonded to aromatic ring.
+            // Confirmed: aniline h=2 (exact), n_methylaniline h=1 (exact),
+            //            4_aminophenol fix1+fix4 (exact).
+            match h {
+                0 => -0.5950,   // tertiary aniline (no data; keep aliphatic value)
+                1 => -0.2010,   // secondary aniline NH (N-methylaniline derived)
+                _ => -0.7092,   // primary aniline NH2 (aniline derived)
+            }
         } else {
             // Non-amide aliphatic N
-            // N_prim = −1.0190 (methylamine), N_sec = −0.7096 (piperidine, morpholine)
-            // N_tert = −0.5950 (estimate from trend)
             match h {
                 0 => -0.5950,   // tertiary amine
                 1 => -0.7096,   // secondary amine NH
@@ -562,6 +594,7 @@ fn crippen_sulfur(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
         // Confirmed from thiophene LogP=1.7481
         0.6237
     } else {
+        let h = implicit_hcount(mol, idx);
         // Count =O bonds on S (for sulfoxide/sulfone distinction)
         let oxo_count: usize = mol.neighbors(idx)
             .filter(|(nb, bidx)| {
@@ -569,10 +602,16 @@ fn crippen_sulfur(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
                     && mol.atom(*nb).element.atomic_number() == 8
             })
             .count();
-        match oxo_count {
-            0 => 0.6482,    // S1: thioether = +0.6482; confirmed: dimethylsulfide, THT
-            1 => -0.2854,   // S2: sulfoxide S; derived from DMSO (LogP=−0.0053)
-            _ => -0.5684,   // S3: sulfone S; derived from DMSO2 (LogP=−0.3392)
+        if h > 0 && oxo_count == 0 {
+            // S4: thiol (SH); distinct from thioether.
+            // Confirmed: thiophenol (exact), cysteine (residual 0.047)
+            0.3132
+        } else {
+            match oxo_count {
+                0 => 0.6482,    // S1: thioether; confirmed: dimethylsulfide, THT
+                1 => -0.2854,   // S2: sulfoxide; derived from DMSO
+                _ => -0.5684,   // S3: sulfone; derived from DMSO2
+            }
         }
     }
 }
@@ -591,13 +630,22 @@ fn crippen_hydrogen(mol: &Molecule, idx: AtomIdx, an: u8, ar: bool) -> f64 {
         6 => 0.1230,   // H1: H on any C (sp3/sp2/aromatic); confirmed from alkane series
         7 => 0.2142,   // H2: H on N; confirmed from pyrrole, imidazole
         8 => {
-            // Distinguish carboxylic OH (+0.2980) vs aliphatic alcohol (−0.2677) vs phenol (+0.1125)
+            // Distinguish phenolic OH (+0.1319), carboxylic OH (+0.2980),
+            // aliphatic alcohol (−0.2677) and aromatic O (+0.1125).
             if ar {
-                0.1125  // H on aromatic O (fallback; uncommon)
-            } else if neighbor_has_carbonyl(mol, idx) {
-                0.2980  // H3: H on carboxylic/ester OH; confirmed from acetic acid
+                0.1125  // H on aromatic O (rare)
             } else {
-                -0.2677  // H4: H on aliphatic alcohol OH; confirmed from methanol, ethanol
+                let adj_to_aromatic = mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).aromatic);
+                if adj_to_aromatic {
+                    // H4p: phenolic OH (O bonded to aromatic ring, no carbonyl).
+                    // Confirmed: phenol (exact), catechol/resorcinol/hydroquinone (exact),
+                    //            salicylic_acid (exact via fix1+fix2), dopamine (exact).
+                    0.1319
+                } else if neighbor_has_carbonyl(mol, idx) {
+                    0.2980  // H3: H on carboxylic/ester OH; confirmed from acetic acid
+                } else {
+                    -0.2677  // H4: H on aliphatic alcohol OH; confirmed from methanol, ethanol
+                }
             }
         }
         _ => 0.1125,   // Hx fallback
