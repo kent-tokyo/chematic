@@ -6,43 +6,8 @@
 
 use std::collections::HashSet;
 
-use chematic_core::{AtomIdx, BondOrder, BondIdx, Element, Molecule, apply_kekule, implicit_hcount, kekulize};
+use chematic_core::{AtomIdx, BondOrder, BondIdx, Element, Molecule, implicit_hcount};
 use chematic_perception::find_sssr;
-
-// ---------------------------------------------------------------------------
-// Private helpers
-// ---------------------------------------------------------------------------
-
-/// Return a kekulized copy of `mol` if it contains aromatic bonds.
-/// For non-aromatic molecules the clone is skipped and we return None,
-/// signalling that the original can be used directly.
-///
-/// Aromatic bonds carry `order_int() == 1`, which causes `implicit_hcount`
-/// to undercount heavy-atom bond order and over-estimate H.  Kekulization
-/// converts aromatic bonds to alternating Single/Double so valence math is exact.
-fn kekulized(mol: &Molecule) -> Option<Molecule> {
-    // Check whether any aromatic bond exists.
-    let has_aromatic = mol
-        .bonds()
-        .any(|(_, b)| b.order == BondOrder::Aromatic);
-
-    if !has_aromatic {
-        return None;
-    }
-
-    match kekulize(mol) {
-        Ok(kresult) => Some(apply_kekule(mol, &kresult)),
-        // If kekulization fails (unusual input), fall back to the original.
-        Err(_) => None,
-    }
-}
-
-/// Borrow the kekulized molecule when available, otherwise borrow the original.
-/// Use the `&Molecule` returned here for all H-count-sensitive computations.
-#[inline]
-fn mol_for_hcount<'a>(mol: &'a Molecule, kek: &'a Option<Molecule>) -> &'a Molecule {
-    kek.as_ref().unwrap_or(mol)
-}
 
 /// Average atomic mass table.
 /// Falls back to `atomic_number as f64` for unlisted elements.
@@ -105,13 +70,10 @@ fn mono_mass(element: Element) -> f64 {
 /// Sums the average atomic mass of all heavy atoms plus each atom's implicit
 /// hydrogen contribution (1.008 Da per H).
 pub fn molecular_weight(mol: &Molecule) -> f64 {
-    let kek = kekulized(mol);
-    let kmol = mol_for_hcount(mol, &kek);
-
     let mut mw = 0.0f64;
     for (idx, atom) in mol.atoms() {
         mw += avg_mass(atom.element);
-        let h = implicit_hcount(kmol, idx);
+        let h = implicit_hcount(mol, idx);
         mw += h as f64 * 1.008;
     }
     mw
@@ -127,9 +89,6 @@ pub fn molecular_weight(mol: &Molecule) -> f64 {
 /// isotope label (as an integer approximation) when set.
 /// Implicit hydrogens use the ¹H monoisotopic mass (1.00783).
 pub fn exact_mass(mol: &Molecule) -> f64 {
-    let kek = kekulized(mol);
-    let kmol = mol_for_hcount(mol, &kek);
-
     let mut mass = 0.0f64;
     for (idx, atom) in mol.atoms() {
         let m = match atom.isotope {
@@ -137,7 +96,7 @@ pub fn exact_mass(mol: &Molecule) -> f64 {
             None => mono_mass(atom.element),
         };
         mass += m;
-        let h = implicit_hcount(kmol, idx);
+        let h = implicit_hcount(mol, idx);
         mass += h as f64 * 1.00783;
     }
     mass
@@ -167,13 +126,10 @@ pub fn heavy_atom_count(mol: &Molecule) -> usize {
 /// Each heavy atom with element N or O that has at least one attached H
 /// counts as one donor (not per H — donors are counted per heavy atom).
 pub fn hbd_count(mol: &Molecule) -> usize {
-    let kek = kekulized(mol);
-    let kmol = mol_for_hcount(mol, &kek);
-
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
-            (an == 7 || an == 8) && implicit_hcount(kmol, *idx) > 0
+            (an == 7 || an == 8) && implicit_hcount(mol, *idx) > 0
         })
         .count()
 }
@@ -289,15 +245,12 @@ fn is_amide_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
 ///
 /// Reference: P. Ertl, B. Rohde, P. Selzer, J. Med. Chem. 2000, 43, 3714-3717.
 pub fn tpsa(mol: &Molecule) -> f64 {
-    let kek = kekulized(mol);
-    let kmol = mol_for_hcount(mol, &kek);
-
     let mut psa = 0.0f64;
 
     for (idx, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
         let is_aromatic = atom.aromatic;
-        let h = implicit_hcount(kmol, idx);
+        let h = implicit_hcount(mol, idx);
 
         let contribution = match an {
             // Nitrogen
@@ -326,7 +279,12 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                 } else if h > 0 {
                     20.23 // OH
                 } else {
-                    17.07 // ether or carbonyl O
+                    // Distinguish carbonyl O (C=O, 17.07 Å²) from ether O (C-O-C, 9.23 Å²).
+                    // A carbonyl O has a double bond to its neighbor; an ether O has only single bonds.
+                    let is_carbonyl = mol.neighbors(idx).any(|(_, bidx)| {
+                        mol.bond(bidx).order == BondOrder::Double
+                    });
+                    if is_carbonyl { 17.07 } else { 9.23 }
                 }
             }
             // Sulfur
@@ -365,15 +323,12 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// Uses a simplified atom-type table.  Each atom is classified by element,
 /// aromaticity, and implicit hydrogen count; unlisted types contribute 0.0.
 pub fn logp_crippen(mol: &Molecule) -> f64 {
-    let kek = kekulized(mol);
-    let kmol = mol_for_hcount(mol, &kek);
-
     let mut logp = 0.0f64;
 
     for (idx, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
         let is_aromatic = atom.aromatic;
-        let h = implicit_hcount(kmol, idx);
+        let h = implicit_hcount(mol, idx);
 
         // Determine whether this C is sp2 (has any double or triple bond, or aromatic).
         let is_sp2_c = an == 6
