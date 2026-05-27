@@ -279,22 +279,44 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                 } else if h > 0 {
                     20.23 // OH
                 } else {
-                    // Distinguish carbonyl O (C=O, 17.07 Å²) from ether O (C-O-C, 9.23 Å²).
-                    // A carbonyl O has a double bond to its neighbor; an ether O has only single bonds.
-                    let is_carbonyl = mol.neighbors(idx).any(|(_, bidx)| {
-                        mol.bond(bidx).order == BondOrder::Double
-                    });
-                    if is_carbonyl { 17.07 } else { 9.23 }
+                    // Distinguish C=O (17.07), O bonded to S via double bond (0.0 — S
+                    // carries the sulfinyl/sulfonyl contribution), and ether O (9.23).
+                    // In the Ertl 2000 table the sulfinyl/sulfonyl group contributions
+                    // (36.28 / 42.52) are assigned entirely to the S atom, so the
+                    // doubly-bonded O on S does not receive a separate contribution.
+                    let dbl_neighbor_an = mol
+                        .neighbors(idx)
+                        .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
+                        .map(|(nei, _)| mol.atom(nei).element.atomic_number());
+                    match dbl_neighbor_an {
+                        Some(6) => 17.07, // carbonyl C=O
+                        Some(_) => 0.0,   // S=O, P=O, N=O — handled by the other atom
+                        None    => 9.23,  // ether O
+                    }
                 }
             }
-            // Sulfur
+            // Sulfur — Ertl 2000 atom-type contributions:
+            //   aromatic S (thiophene)   = 28.24 Å²
+            //   SH (thiol)               = 38.80 Å²
+            //   thioether (S, 0 oxo)     = 25.30 Å²
+            //   sulfoxide  (S, 1 oxo)    = 36.28 Å²  (S=O O counted as 0)
+            //   sulfone/sulfonyl (2+ oxo)= 42.52 Å²  (each S=O O counted as 0)
             16 => {
                 if is_aromatic {
-                    0.0
+                    28.24 // aromatic S (thiophene, thiazole, …)
                 } else if h > 0 {
-                    38.80 // SH
+                    38.80 // S-H (thiol)
                 } else {
-                    25.30 // S
+                    // Count S=O bonds to determine oxidation state.
+                    let oxo_count = mol.neighbors(idx).filter(|&(nei, bidx)| {
+                        mol.bond(bidx).order == BondOrder::Double
+                            && mol.atom(nei).element.atomic_number() == 8
+                    }).count();
+                    match oxo_count {
+                        0 => 25.30, // thioether / ring S
+                        1 => 36.28, // sulfoxide
+                        _ => 42.52, // sulfone, sulfonyl
+                    }
                 }
             }
             // Phosphorus
