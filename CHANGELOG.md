@@ -144,11 +144,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `chematic-wasm`: New crate providing WebAssembly (wasm-bindgen) bindings for JavaScript/TypeScript consumers. Exposes SMILES parsing, canonical SMILES, molecular descriptors, ECFP fingerprints and Tanimoto similarity via `wasm-bindgen`.
 - ChEMBL roundtrip validation tests: parse → write → parse identity verified against 1000+ ChEMBL molecules (MOL/SDF V2000 format).
 - criterion benchmarks added to `chematic-smiles` (`parse_bench`) and `chematic-fp` (`ecfp_bench`) for continuous performance tracking.
+- 21 new regression tests in `chematic-chem`: 7 HBA tests (RDKit-aligned definition) + 14 LogP calibration tests (per-atom-type anchors).
 
 ### Changed
 
 - SEO/metadata improvements to all `Cargo.toml` files: added `readme`, `homepage`, and `documentation` fields; improved `keywords` (max 5) and `categories`; sharpened `description` to clearly identify each crate as part of the pure-Rust RDKit-alternative ecosystem.
 - All internal path dependency version constraints updated from `"0.1.0"` to `"0.1.1"`.
+
+### Fixed (`chematic-chem`)
+
+#### TPSA — aromatic N values corrected to match RDKit
+- `[nH]` (pyrrole-type aromatic N-H): 13.97 → **15.79 Å²** (RDKit measured value)
+- `[n;degree≥3]` (N-substituted: N-methyl, N-aryl): 12.89 → **4.93 Å²**
+- Effect: caffeine TPSA now 61.82 Å² (was 85.70), exact match with RDKit.
+
+#### HBA — aligned with `rdMolDescriptors.CalcNumHBA`
+- `[nH]` (aromatic N-H) is **no longer counted** as HBA (lone pair participates in aromaticity).
+- Non-aromatic amide N (bonded to C=O) is **excluded** (lone pair delocalized into carbonyl).
+- Carboxylic OH (O-H adjacent to C=O) is **excluded**.
+- MAE vs RDKit: 0.606 → **0.137** (-77%); Pearson r: 0.932 → **0.975**.
+
+#### LogP — Crippen-Wildman with calibrated H contributions
+- Added per-H contributions (H on C: +0.1230, H on N: +0.2142, H on alc-O: −0.2677, H on COOH: +0.2980), derived analytically from the 175-molecule RDKit reference set.
+- Fixed aromatic C: `[cH]` = +0.1581 (was 0.1441); confirmed from benzene.
+- Fixed aromatic N: `[n]`/`[nH]` = −0.3239 (was +0.2626); confirmed from pyridine, pyrrole, imidazole.
+- Fixed S: thioether = +0.6482 (was 0.2432); aromatic S = +0.6237 (was 0.0); confirmed from dimethyl sulfide, thiophene.
+- Fixed O: alcohol OH = −0.2893, ether O = −0.0684, carbonyl O = −0.0509 (was all 0.1552).
+- Fixed Cl: aromatic = +0.7904, aliphatic = +0.6895 (were both 0.6895).
+- Added exocyclic C=O handling for aromatic C (caffeine C2/C6 now correctly classified as C10 = −0.3800).
+- MAE vs RDKit: 1.346 → **0.419** (-69%); Pearson r: 0.456 → **0.925** (+103%).
 
 ---
 

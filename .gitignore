@@ -6,6 +6,7 @@ AGENTS.md
 .env.local
 *.txt
 .claude/
+docs/
 
 # Rust / Cargo
 /target
