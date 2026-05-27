@@ -30,7 +30,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 Phases 1–3 and Phase 5 (coordinate generation + file I/O) are complete.
 Phase 4 (MACCS, topological path, MCS, tautomer normalization) is also done.
-306 tests, all passing.
+332 tests, all passing.
 
 | Crate                 | Description                                                             | Tests |
 |-----------------------|-------------------------------------------------------------------------|-------|
@@ -47,7 +47,7 @@ Phase 4 (MACCS, topological path, MCS, tautomer normalization) is also done.
 | `chematic`            | Umbrella crate with feature flags (all sub-crates)                       | 1     |
 
 ```
-cargo test --workspace   # 306 tests, all passing
+cargo test --workspace   # 332 tests, all passing
 ```
 
 ---
@@ -169,8 +169,8 @@ std::fs::write("caffeine.svg", svg).unwrap();
 | PDB/XYZ file formats          | Yes                   | Yes                | Yes            | No                |
 | CIP stereochemistry (R/S)     | Yes (R/S, E/Z)        | Yes                | Yes            | No                |
 | MACCS fingerprints            | Yes (166-bit keys)    | Yes                | Yes            | No                |
-| Force field minimization      | Planned               | Yes (UFF/MMFF)     | Yes            | No                |
-| Reaction SMILES/SMIRKS        | Planned               | Yes                | Yes            | No                |
+| Force field minimization      | Yes (rule-based)      | Yes (UFF/MMFF)     | Yes            | No                |
+| Reaction SMILES/SMIRKS        | Yes                   | Yes                | Yes            | No                |
 | Unsafe Rust                   | None                  | Extensive          | Extensive      | None              |
 | Maintenance (2026)            | Active                | Active             | Minimal        | Archived          |
 
@@ -238,7 +238,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # build all crates
-cargo test --workspace       # run all tests (306+)
+cargo test --workspace       # run all tests (332+)
 cargo check --workspace      # type-check without building
 cargo clippy --workspace     # lints
 ```

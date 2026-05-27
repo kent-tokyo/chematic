@@ -5,9 +5,12 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Core cheminformatics types for chematic (Atom, Bond, Molecule) — pure Rust, WASM-compatible"
-keywords = ["cheminformatics", "chemistry", "smiles", "molecule", "wasm"]
-categories = ["science", "data-structures"]
+description = "Core types (Atom, Bond, Molecule) for chematic — pure-Rust RDKit alternative, WASM-compatible"
+keywords = ["cheminformatics", "chemistry", "molecule", "smiles", "wasm"]
+categories = ["science"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-core"
 
 # 外部依存ゼロ: pure Rust, no FFI
 [dependencies]

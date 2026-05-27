@@ -5,13 +5,16 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "2D SVG depiction engine for chematic — pure Rust"
-keywords = ["cheminformatics", "chemistry", "svg", "depiction", "2d"]
+description = "2D SVG molecular depiction for chematic — pure-Rust RDKit alternative"
+keywords = ["svg", "depiction", "2d", "cheminformatics", "chemistry"]
 categories = ["science", "visualization"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-depict"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.0" }
+chematic-core = { path = "../chematic-core", version = "0.1.1" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.1" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }

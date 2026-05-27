@@ -5,13 +5,16 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Molecular descriptors and chemical properties for chematic — pure Rust"
-keywords = ["cheminformatics", "chemistry", "descriptors", "rdkit", "lipinski"]
+description = "Molecular descriptors (MW, LogP, TPSA, CIP), standardization and Murcko scaffold for chematic"
+keywords = ["descriptors", "lipinski", "tpsa", "logp", "cheminformatics"]
 categories = ["science"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-chem"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.0" }
+chematic-core = { path = "../chematic-core", version = "0.1.1" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.1" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }

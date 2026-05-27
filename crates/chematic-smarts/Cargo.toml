@@ -5,13 +5,16 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "SMARTS query language and VF2 subgraph isomorphism for chematic — pure Rust"
-keywords = ["smarts", "cheminformatics", "substructure", "vf2", "chemistry"]
+description = "SMARTS parser, VF2 subgraph isomorphism and MCS for chematic — pure-Rust RDKit alternative"
+keywords = ["smarts", "substructure", "vf2", "mcs", "cheminformatics"]
 categories = ["science", "parser-implementations"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-smarts"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.0" }
+chematic-core = { path = "../chematic-core", version = "0.1.1" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.1" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }

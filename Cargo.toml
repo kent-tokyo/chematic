@@ -10,13 +10,15 @@ members = [
     "crates/chematic-smarts",
     "crates/chematic-3d",
     "crates/chematic-rxn",
+    "crates/chematic-wasm",
     "crates/chematic",
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-authors = ["chematic contributors"]
+rust-version = "1.70"
+authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/kent-tokyo/chematic"

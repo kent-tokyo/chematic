@@ -5,10 +5,13 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Reaction SMILES parser and writer for chematic — pure Rust"
-keywords = ["cheminformatics", "reaction", "smiles", "chemistry", "smirks"]
+description = "Reaction SMILES/SMIRKS parser and writer for chematic — pure-Rust RDKit alternative"
+keywords = ["reaction", "smiles", "smirks", "cheminformatics", "chemistry"]
 categories = ["science", "parser-implementations"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-rxn"
 
 [dependencies]
-chematic-core  = { path = "../chematic-core",  version = "0.1.0" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.1.0" }
+chematic-core  = { path = "../chematic-core",  version = "0.1.1" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.1" }
