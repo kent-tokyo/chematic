@@ -5,9 +5,12 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "SDF/MOL V2000 file format reader and writer for chematic — pure Rust"
-keywords = ["cheminformatics", "sdf", "mol", "chemistry", "ctfile"]
+description = "MOL/SDF V2000 and V3000 parser and writer for chematic — pure-Rust RDKit alternative"
+keywords = ["sdf", "mol", "ctfile", "cheminformatics", "chemistry"]
 categories = ["science", "parser-implementations"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-mol"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.0" }
+chematic-core = { path = "../chematic-core", version = "0.1.1" }

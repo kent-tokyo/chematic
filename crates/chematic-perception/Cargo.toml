@@ -5,9 +5,12 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Molecular perception: SSSR ring detection and aromaticity for chematic — pure Rust"
-keywords = ["cheminformatics", "chemistry", "aromaticity", "sssr", "rings"]
+description = "SSSR ring perception and Hückel aromaticity for chematic — pure-Rust RDKit alternative"
+keywords = ["aromaticity", "rings", "sssr", "cheminformatics", "chemistry"]
 categories = ["science"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-perception"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.0" }
+chematic-core = { path = "../chematic-core", version = "0.1.1" }

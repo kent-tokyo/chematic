@@ -25,7 +25,7 @@ rdkit-sys も openbabel バインディングも使用しない。すべての�
 ## 現在のステータス
 
 Phase 1〜3、Phase 4（MACCS・パスフィンガープリント・MCS・互変異性体正規化）、Phase 5（座標生成 + ファイル形式）が完了。
-306 テスト、全パス。
+332 テスト、全パス。
 
 | クレート               | 説明                                                                    | テスト数 |
 |------------------------|-------------------------------------------------------------------------|---------|
@@ -42,7 +42,7 @@ Phase 1〜3、Phase 4（MACCS・パスフィンガープリント・MCS・互変
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（全サブクレート）              | 1       |
 
 ```
-cargo test --workspace   # 306 テスト、全パス
+cargo test --workspace   # 332 テスト、全パス
 ```
 
 ---
@@ -164,8 +164,8 @@ std::fs::write("caffeine.svg", svg).unwrap();
 | PDB/XYZ ファイル形式           | 対応                   | 対応               | 対応           | 非対応            |
 | CIP 立体化学 (R/S)             | 対応（R/S、E/Z）       | 対応               | 対応           | 非対応            |
 | MACCS フィンガープリント       | 対応 (166-bit 構造キー) | 対応               | 対応           | 非対応            |
-| 力場エネルギー最小化           | 予定                   | 対応 (UFF/MMFF)    | 対応           | 非対応            |
-| 反応 SMILES/SMIRKS             | 予定                   | 対応               | 対応           | 非対応            |
+| 力場エネルギー最小化           | 対応（ルールベース）   | 対応 (UFF/MMFF)    | 対応           | 非対応            |
+| 反応 SMILES/SMIRKS             | 対応                   | 対応               | 対応           | 非対応            |
 | unsafe Rust                    | なし                   | 多数               | 多数           | なし              |
 | メンテナンス状況 (2026)        | 活発                   | 活発               | 最小限         | アーカイブ済み    |
 
@@ -230,7 +230,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # 全クレートのビルド
-cargo test --workspace       # 全テストの実行（306+ 件）
+cargo test --workspace       # 全テストの実行（332+ 件）
 cargo check --workspace      # ビルドなしの型チェック
 cargo clippy --workspace     # リント
 ```

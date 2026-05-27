@@ -5,14 +5,22 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Molecular fingerprints (ECFP/Morgan) for chematic — pure Rust"
-keywords = ["fingerprints", "cheminformatics", "ecfp", "morgan", "tanimoto"]
+description = "ECFP4/6, MACCS 166-bit and topological path fingerprints with Tanimoto/Dice similarity for chematic"
+keywords = ["fingerprints", "ecfp", "morgan", "tanimoto", "cheminformatics"]
 categories = ["science"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-fp"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.0" }
-chematic-smarts = { path = "../chematic-smarts", version = "0.1.0" }
+chematic-core = { path = "../chematic-core", version = "0.1.1" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.1" }
+chematic-smarts = { path = "../chematic-smarts", version = "0.1.1" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "ecfp_bench"
+harness = false

@@ -5,13 +5,16 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "3D coordinate generation and force-field minimization for chematic — pure Rust"
-keywords = ["cheminformatics", "3d", "coordinates", "pdb", "chemistry"]
+description = "3D coordinate generation, force-field minimization, PDB/XYZ I/O for chematic — pure Rust"
+keywords = ["3d", "coordinates", "pdb", "xyz", "cheminformatics"]
 categories = ["science"]
+readme = "README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-3d"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.0" }
+chematic-core = { path = "../chematic-core", version = "0.1.1" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.1" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }

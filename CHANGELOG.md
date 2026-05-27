@@ -136,6 +136,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.1] — 2026-05-27
+
+### Added
+
+- All crates bumped to version 0.1.1.
+- `chematic-wasm`: New crate providing WebAssembly (wasm-bindgen) bindings for JavaScript/TypeScript consumers. Exposes SMILES parsing, canonical SMILES, molecular descriptors, ECFP fingerprints and Tanimoto similarity via `wasm-bindgen`.
+- ChEMBL roundtrip validation tests: parse → write → parse identity verified against 1000+ ChEMBL molecules (MOL/SDF V2000 format).
+- criterion benchmarks added to `chematic-smiles` (`parse_bench`) and `chematic-fp` (`ecfp_bench`) for continuous performance tracking.
+
+### Changed
+
+- SEO/metadata improvements to all `Cargo.toml` files: added `readme`, `homepage`, and `documentation` fields; improved `keywords` (max 5) and `categories`; sharpened `description` to clearly identify each crate as part of the pure-Rust RDKit-alternative ecosystem.
+- All internal path dependency version constraints updated from `"0.1.0"` to `"0.1.1"`.
+
+---
+
 ## [0.1.0] — 2026-05-26
 
 Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception + file I/O).
@@ -233,5 +249,6 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/chematic-rs/chematic/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/chematic-rs/chematic/releases/tag/v0.1.0
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/kent-tokyo/chematic/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/kent-tokyo/chematic/releases/tag/v0.1.0
