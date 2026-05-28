@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`[XN]` total connectivity**: matches atoms where heavy-atom degree + implicit-H count equals N (distinct from `[DN]` which counts only heavy-atom neighbours).
 - **`[RN]` ring count**: matches atoms that belong to exactly N SSSR rings.
+- **Compound bond expressions**: OR (`,`) and AND (`&`) now supported in bond queries. Examples: `=,:` (double or aromatic), `=!@` (double non-ring), `-!@` (single non-ring). Required for full PAINS SMARTS compatibility.
+- **HCount fix**: the `[HN]` atom primitive now counts both explicit H neighbors and implicit H (matches SMARTS spec); previously only implicit H was counted.
 
 ### Added (`chematic-chem`)
 
@@ -24,10 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **REOS filter** (`reos_passes`): MW, LogP, HBD, HBA, charge, and heavy-atom criteria.
 - **Ghose filter** (`ghose_passes`): MW 160–480, LogP −0.4–5.6, heavy atoms 20–70, MR 40–130.
 - **Expanded tautomer rules**: 5 → 15 rules covering thioamide, thio-iminol, thio-keto-enol, and six cross-heteroatom 1,3-proton-shift patterns.
+- **Count descriptors**: `num_heteroatoms`, `ring_count`, `num_aliphatic_rings`, `num_saturated_rings`, `num_stereocenters`, `num_unspecified_stereocenters`.
+- **PAINS structural alerts** (`pains_matches`, `pains_passes`): all 480 patterns from Baell & Holloway 2010 / RDKit FilterCatalog. Molecules are expanded to explicit-H form before matching for full coverage.
+
+### Added (`chematic-fp`)
+
+- **FCFP fingerprints** (`fcfp4`, `fcfp6`, `tanimoto_fcfp4`): pharmacophore-based circular fingerprints using feature classes (Donor, Acceptor, Aromatic, Hydrophobic, PosIonizable, NegIonizable) as atom invariants — bioisostere-aware similarity.
 
 ### Added (`chematic-wasm`)
 
 - New bindings: `molar_refractivity`, `formal_charge_sum`, `veber_passes`, `egan_passes`, `reos_passes`, `ghose_passes`.
+- Sprint B bindings: `num_heteroatoms`, `ring_count`, `num_stereocenters`, `pains_passes`, `tanimoto_fcfp4`.
 
 ---
 
