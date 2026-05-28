@@ -4,7 +4,7 @@
 //! into a self-contained SVG string suitable for embedding in HTML or saving
 //! as a `.svg` file.
 
-use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 use chematic_perception::find_sssr;
 
 use crate::layout::{Layout, Point, BOND_LEN};
@@ -90,8 +90,97 @@ pub fn render_svg(mol: &Molecule, layout: &Layout) -> String {
             "  <text x=\"{:.2}\" y=\"{:.2}\" \
              font-family=\"sans-serif\" font-size=\"{}\" \
              text-anchor=\"middle\" dominant-baseline=\"central\" \
-             fill=\"black\">{}</text>\n",
-            p.x, p.y, FONT_SIZE as u32, escape_xml(&label)
+             fill=\"{}\">{}</text>\n",
+            p.x, p.y, FONT_SIZE as u32,
+            atom_color(mol.atom(idx).element.atomic_number()),
+            escape_xml(&label)
+        ));
+    }
+
+    svg.push_str("</svg>");
+    svg
+}
+
+/// Render `mol` with highlighted atoms and bonds.
+///
+/// - `highlight_atoms`: atoms drawn with a yellow circle background.
+/// - `highlight_bonds`: bonds drawn in orange with increased stroke width.
+///
+/// An empty `highlight_atoms`/`highlight_bonds` produces the same output
+/// as [`render_svg`].
+pub fn render_svg_highlighted(
+    mol: &Molecule,
+    layout: &Layout,
+    highlight_atoms: &std::collections::HashSet<AtomIdx>,
+    highlight_bonds: &std::collections::HashSet<BondIdx>,
+) -> String {
+    // Compute bounding box with padding.
+    let (min_x, min_y, max_x, max_y) = layout.bounding_box();
+    let raw_w = (max_x - min_x).max(BOND_LEN);
+    let raw_h = (max_y - min_y).max(BOND_LEN);
+    let view_x = min_x - PADDING;
+    let view_y = min_y - PADDING;
+    let view_w = raw_w + 2.0 * PADDING;
+    let view_h = raw_h + 2.0 * PADDING;
+    let width = view_w.round() as u32;
+    let height = view_h.round() as u32;
+
+    let mut svg = String::new();
+
+    // SVG header.
+    svg.push_str(&format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" \
+         width=\"{}\" height=\"{}\" \
+         viewBox=\"{:.2} {:.2} {:.2} {:.2}\">\n",
+        width, height, view_x, view_y, view_w, view_h
+    ));
+
+    // 0. Highlight atom backgrounds (drawn first, beneath bonds).
+    for idx in highlight_atoms {
+        let p = layout.get(*idx);
+        svg.push_str(&format!(
+            "  <circle cx=\"{:.2}\" cy=\"{:.2}\" r=\"16\" fill=\"#FFFF00\" opacity=\"0.5\"/>\n",
+            p.x, p.y
+        ));
+    }
+
+    // 1. Draw all bonds (highlighted ones in orange).
+    for (bond_idx, bond) in mol.bonds() {
+        let p1 = layout.get(bond.atom1);
+        let p2 = layout.get(bond.atom2);
+        if highlight_bonds.contains(&bond_idx) {
+            svg.push_str(&format!(
+                "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
+                 stroke=\"#FF8C00\" stroke-width=\"4.0\" fill=\"none\"/>\n",
+                p1.x, p1.y, p2.x, p2.y
+            ));
+        } else {
+            svg.push_str(&render_bond(bond.order, p1, p2));
+        }
+    }
+
+    // 2. Draw label backgrounds, then labels.
+    for (idx, _atom) in mol.atoms() {
+        let label = atom_label(mol, idx);
+        if label.is_empty() {
+            continue;
+        }
+        let p = layout.get(idx);
+        svg.push_str(&format!(
+            "  <rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"white\"/>\n",
+            p.x - LABEL_HALF_W,
+            p.y - LABEL_HALF_H,
+            LABEL_HALF_W * 2.0,
+            LABEL_HALF_H * 2.0,
+        ));
+        svg.push_str(&format!(
+            "  <text x=\"{:.2}\" y=\"{:.2}\" \
+             font-family=\"sans-serif\" font-size=\"{}\" \
+             text-anchor=\"middle\" dominant-baseline=\"central\" \
+             fill=\"{}\">{}</text>\n",
+            p.x, p.y, FONT_SIZE as u32,
+            atom_color(mol.atom(idx).element.atomic_number()),
+            escape_xml(&label)
         ));
     }
 
@@ -251,6 +340,26 @@ fn render_dash_bond(p1: Point, p2: Point) -> String {
         ));
     }
     s
+}
+
+// ---------------------------------------------------------------------------
+// Atom coloring (CPK palette)
+// ---------------------------------------------------------------------------
+
+/// CPK color for an element (by atomic number).
+/// Returns a CSS hex color string.
+fn atom_color(atomic_number: u8) -> &'static str {
+    match atomic_number {
+        7  => "#3050F8", // N  blue
+        8  => "#FF0D0D", // O  red
+        16 => "#FFFF30", // S  yellow
+        17 => "#1FF01F", // Cl green
+        9  => "#90E050", // F  light-green
+        35 => "#A62929", // Br dark-red/brown
+        53 => "#940094", // I  purple
+        15 => "#FF8000", // P  orange
+        _  => "#000000", // default black
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -174,7 +174,118 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             ring.len() == *n as usize && ring.contains(&idx)
         }),
         AtomPrimitive::Wildcard => true,
+        AtomPrimitive::Recursive(sub_query) => {
+            // The target atom `idx` must be the root of at least one embedding
+            // of `sub_query` in the same target molecule.
+            has_match_anchored(sub_query, idx, ctx)
+        }
+        AtomPrimitive::Valence(v) => {
+            // Total valence = sum of explicit bond orders + implicit H count.
+            let bond_sum: u8 = ctx.mol.neighbors(idx).map(|(_, bid)| {
+                match ctx.mol.bond(bid).order {
+                    BondOrder::Single | BondOrder::Up | BondOrder::Down => 1u8,
+                    BondOrder::Double => 2,
+                    BondOrder::Triple => 3,
+                    BondOrder::Quadruple => 4,
+                    BondOrder::Aromatic => 1, // aromatic bond counted as 1
+                }
+            }).sum();
+            bond_sum + implicit_hcount(ctx.mol, idx) == *v
+        }
+        AtomPrimitive::RingBondCount(x) => {
+            // Count bonds where both endpoints share at least one SSSR ring.
+            let count = ctx.mol.neighbors(idx).filter(|(nb, _)| {
+                ctx.rings.rings().iter().any(|ring| ring.contains(&idx) && ring.contains(nb))
+            }).count() as u8;
+            count == *x
+        }
+        AtomPrimitive::Hybridization(h) => {
+            // Inferred hybridization:
+            //   aromatic atom → sp2 (2)
+            //   atom with any triple bond → sp (1)
+            //   atom with any double bond → sp2 (2)
+            //   otherwise → sp3 (3)
+            let atom = ctx.mol.atom(idx);
+            let hyb = if atom.aromatic {
+                2u8
+            } else if ctx.mol.neighbors(idx).any(|(_, bid)| {
+                matches!(ctx.mol.bond(bid).order, BondOrder::Triple)
+            }) {
+                1
+            } else if ctx.mol.neighbors(idx).any(|(_, bid)| {
+                matches!(ctx.mol.bond(bid).order, BondOrder::Double)
+            }) {
+                2
+            } else {
+                3
+            };
+            hyb == *h
+        }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Anchored match helpers (for recursive SMARTS)
+// ---------------------------------------------------------------------------
+
+/// Returns `true` if there exists at least one embedding of `query` in `ctx.mol`
+/// with query atom 0 forced to map to `anchor`.
+fn has_match_anchored(query: &QueryMolecule, anchor: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
+    if query.atoms.is_empty() {
+        return false;
+    }
+    // Quick check: anchor must satisfy the first query atom.
+    if !eval_atom_query(&query.atoms[0].query, anchor, ctx) {
+        return false;
+    }
+    // Seed the mapping with query atom 0 → anchor.
+    let mut mapping = HashMap::new();
+    mapping.insert(0usize, anchor);
+    // Single-atom query — the anchor already satisfies it.
+    if query.atoms.len() == 1 {
+        return true;
+    }
+    has_match_recursive(query, ctx, &mut mapping)
+}
+
+/// Depth-first search for a complete embedding, starting from a partial
+/// `mapping`.  Returns as soon as the first complete match is found.
+fn has_match_recursive(
+    query: &QueryMolecule,
+    ctx: &EvalCtx<'_>,
+    mapping: &mut HashMap<usize, AtomIdx>,
+) -> bool {
+    // Base case: all query atoms mapped.
+    if mapping.len() == query.atoms.len() {
+        return true;
+    }
+
+    // Pick the next unmapped query atom.
+    let q_next = (0..query.atoms.len())
+        .find(|i| !mapping.contains_key(i))
+        .unwrap();
+
+    let used_targets: std::collections::HashSet<AtomIdx> = mapping.values().copied().collect();
+
+    for t in 0..ctx.mol.atom_count() {
+        let t_idx = AtomIdx(t as u32);
+        if used_targets.contains(&t_idx) {
+            continue;
+        }
+        if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
+            continue;
+        }
+        if !bonds_compatible(q_next, t_idx, mapping, query, ctx) {
+            continue;
+        }
+        mapping.insert(q_next, t_idx);
+        if has_match_recursive(query, ctx, mapping) {
+            mapping.remove(&q_next);
+            return true;
+        }
+        mapping.remove(&q_next);
+    }
+    false
 }
 
 // ---------------------------------------------------------------------------

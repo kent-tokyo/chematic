@@ -11,6 +11,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.4] — 2026-05-28
+
+### Added (`chematic-chem`)
+
+- **BRICS fragmentation** (`brics_bonds`, `brics_fragments`): breaks molecules at retrosynthetically interesting bonds per Dien et al. 2008.
+- **QED score** (`qed`): Quantitative Estimate of Drug-likeness (Bickerton et al. 2012); geometric mean of 8 desirability functions. Returns value in [0, 1].
+- **Fsp3** (`fsp3`): fraction of sp3 carbons.
+- **Aromatic ring count** (`aromatic_ring_count`): number of fully aromatic rings from SSSR.
+
+### Added (`chematic-fp`)
+
+- **AtomPair fingerprint** (`atom_pair_fp`): 2048-bit; encodes atom-pair codes with topological BFS distances (Carhart et al. 1985).
+- **Topological Torsion fingerprint** (`torsion_fp`): 2048-bit; encodes four-atom paths with degree ≥ 2 at inner positions (Nilakantan et al. 1987).
+
+### Added (`chematic-smarts`)
+
+- **Recursive SMARTS** `$(...)`: atom must be root of an embedding of the inner SMARTS. Supports arbitrary nesting.
+- **Valence** `[vN]`: matches atoms with total valence N (explicit bond orders + implicit H).
+- **Ring-bond count** `[xN]`: matches atoms with exactly N bonds where both endpoints share a SSSR ring.
+- **Hybridization** `[^N]`: 1 = sp, 2 = sp2 (including aromatic), 3 = sp3.
+- **Explicit zero charge** `[+0]` / `[-0]`: matches neutral atoms (charge == 0). Previously `+0` defaulted to `+1`.
+- `PartialEq` derived for `QueryAtom`, `QueryBond`, `QueryMolecule`.
+
+### Added (`chematic-depict`)
+
+- **CPK atom coloring**: heteroatoms (N, O, S, Cl, F, Br, I, P) are now colored using the CPK palette in SVG output.
+- **`render_svg_highlighted`** / **`depict_svg_highlighted`**: render with yellow circle backgrounds on highlighted atoms and orange strokes on highlighted bonds.
+
+### Added (`chematic-wasm`)
+
+- New descriptor bindings: `logp_crippen`, `fsp3`, `aromatic_ring_count`, `qed`, `exact_mass`, `rotatable_bond_count`.
+- New fingerprint similarity functions: `tanimoto_atom_pair`, `tanimoto_torsion`.
+- `brics_fragment_count`: number of BRICS fragments.
+
+---
+
 ## [0.1.3] — 2026-05-27
 
 ### Fixed (`chematic-chem` — LogP Crippen accuracy)
@@ -46,8 +82,14 @@ tetralin, histamine, aniline, n_methylaniline, 4_aminophenol, thiophenol, dopami
 
 ### Added
 
-- `chematic` npm package v0.1.3 published to npmjs.com — WebAssembly bindings for browser/Node.js
+- `@kent-tokyo/chematic` npm package v0.1.3 published to npmjs.com — WebAssembly bindings for browser/Node.js
+  - Install: `npm install @kent-tokyo/chematic`
+  - Note: unscoped `chematic` blocked by npm similarity check against `chromatic`
 - 7 new LogP regression tests in `chematic-chem/tests/rdkit_reference.rs` (phenol, catechol, salicylic_acid, toluene, ethylbenzene, aniline, thiophenol)
+- Large-scale ChEMBL validation: **2,897,819 molecules (ChEMBL 37 full set), 100.000% parse+roundtrip success**
+  - `chematic-smiles/examples/validate_smiles.rs` — standalone validator (stdin or file, progress every 10k)
+  - `scripts/download_chembl_smiles.py` — ChEMBL REST API downloader (deduplication, fragment filter)
+  - Streaming pipeline: `curl chembl_37_chemreps.txt.gz | gzip -d | awk | validate_smiles`
 
 ---
 

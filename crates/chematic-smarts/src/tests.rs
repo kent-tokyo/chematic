@@ -268,4 +268,197 @@ mod integration_tests {
             "* should match all 2 atoms in ethane"
         );
     }
+
+    // -----------------------------------------------------------------------
+    // Recursive SMARTS `$(...)` tests (tests 23–30)
+    // -----------------------------------------------------------------------
+
+    /// Test 23: `[$(C(=O)O)]` — carboxyl C. Parses to 1 atom with Recursive inner.
+    #[test]
+    fn test_parser_recursive_smarts_structure() {
+        let q = parse_smarts("[$(C(=O)O)]").unwrap();
+        assert_eq!(q.atoms.len(), 1, "outer query has 1 atom");
+        match &q.atoms[0].query {
+            AtomQuery::Primitive(AtomPrimitive::Recursive(inner)) => {
+                assert_eq!(inner.atoms.len(), 3, "inner C(=O)O has 3 atoms");
+                assert_eq!(inner.bonds.len(), 2, "inner C(=O)O has 2 bonds");
+            }
+            other => panic!("expected Recursive, got {:?}", other),
+        }
+    }
+
+    /// Test 24: `[$(C(=O)O)]` matches the carboxyl C in acetic acid but not in acetone.
+    #[test]
+    fn test_recursive_carboxylic_acid_carbon() {
+        // Acetic acid: CH3-C(=O)-OH; the carbonyl C is bonded to both =O and -OH
+        assert_eq!(
+            match_count("[$(C(=O)O)]", "CC(=O)O"),
+            1,
+            "acetic acid should have 1 carboxylic C"
+        );
+        // Acetone: CH3-C(=O)-CH3; no adjacent OH oxygen
+        assert_eq!(
+            match_count("[$(C(=O)O)]", "CC(=O)C"),
+            0,
+            "acetone should have 0 carboxylic C"
+        );
+    }
+
+    /// Test 25: single-atom recursive `[$([OH])]` matches the O in methanol.
+    #[test]
+    fn test_recursive_single_atom_oh() {
+        // Methanol CO: O has 1 implicit H
+        assert_eq!(
+            match_count("[$([OH])]", "CO"),
+            1,
+            "methanol O should match [$([OH])]"
+        );
+        // Dimethyl ether COC: O has 0 implicit H
+        assert_eq!(
+            match_count("[$([OH])]", "COC"),
+            0,
+            "dimethyl ether O should not match [$([OH])]"
+        );
+    }
+
+    /// Test 26: `[N;!$(NC=O)]` — non-amide nitrogen.
+    #[test]
+    fn test_recursive_non_amide_nitrogen() {
+        // Methylamine CN: N is not in an amide → should match
+        assert_eq!(
+            match_count("[N;!$(NC=O)]", "CN"),
+            1,
+            "methylamine N should match [N;!$(NC=O)]"
+        );
+        // Acetamide CC(=O)N: N is bonded to C=O → should NOT match
+        assert_eq!(
+            match_count("[N;!$(NC=O)]", "CC(=O)N"),
+            0,
+            "acetamide N should not match [N;!$(NC=O)]"
+        );
+    }
+
+    /// Test 27: `[$(CC)]` matches aliphatic C bonded to another C in propane.
+    #[test]
+    fn test_recursive_cc_in_propane() {
+        // Propane CCC: middle C and both terminal C are bonded to C
+        let n = match_count("[$(CC)]", "CCC");
+        assert_eq!(n, 3, "all 3 carbons in propane match [$(CC)] — each is bonded to a C");
+    }
+
+    /// Test 28: nested recursive `[$([C;$(C(=O))])]` matches carbonyl C.
+    #[test]
+    fn test_recursive_nested_parse() {
+        // Should parse without error
+        let q = parse_smarts("[$([C;$(C(=O))])]").unwrap();
+        assert_eq!(q.atoms.len(), 1, "outer has 1 atom");
+        // Verify matching: carbonyl C in acetone CC(=O)C should match
+        let mol = parse_mol("CC(=O)C").unwrap();
+        let matches = find_matches(&q, &mol);
+        assert_eq!(matches.len(), 1, "acetone has 1 carbonyl C");
+    }
+
+    /// Test 29: `[$(c1ccccc1)]` matches all 6 atoms in benzene.
+    #[test]
+    fn test_recursive_benzene_pattern() {
+        // Every atom in benzene is part of a benzene ring
+        let n = match_count("[$(c1ccccc1)]", "c1ccccc1");
+        assert_eq!(n, 6, "all 6 benzene atoms match [$(c1ccccc1)]");
+    }
+
+    // -----------------------------------------------------------------------
+    // New SMARTS primitives: [v], [x], [^], [+0] (tests 31–42)
+    // -----------------------------------------------------------------------
+
+    /// Test 31: `[v4]` matches atoms with total valence 4.
+    #[test]
+    fn test_valence_methane_carbon() {
+        // Methane C: 4 implicit H → valence 4
+        assert_eq!(match_count("[v4]", "C"), 1, "[v4] should match CH4 carbon");
+    }
+
+    /// Test 32: `[v2]` matches oxygen in water (2 H → valence 2).
+    #[test]
+    fn test_valence_water_oxygen() {
+        assert_eq!(match_count("[v2]", "O"), 1, "[v2] should match water O");
+    }
+
+    /// Test 33: `[v3]` matches nitrogen in methylamine (1 C + 2 H → valence 3).
+    #[test]
+    fn test_valence_methylamine_nitrogen() {
+        assert_eq!(match_count("[v3]", "CN"), 1, "[v3] should match methylamine N");
+    }
+
+    /// Test 34: `[x0]` matches atoms with 0 ring bonds (acyclic).
+    #[test]
+    fn test_ring_bond_count_zero_in_ethanol() {
+        // Ethanol CCO: all atoms are acyclic → x0 for all 3
+        assert_eq!(match_count("[x0]", "CCO"), 3, "[x0] should match all 3 atoms in ethanol");
+    }
+
+    /// Test 35: `[x2]` matches atoms that have exactly 2 ring bonds in benzene.
+    #[test]
+    fn test_ring_bond_count_two_benzene() {
+        // Each C in benzene has 2 ring bonds
+        assert_eq!(match_count("[x2]", "c1ccccc1"), 6, "[x2] should match all 6 benzene atoms");
+    }
+
+    /// Test 36: `[x0]` matches 0 atoms in benzene (all have 2 ring bonds).
+    #[test]
+    fn test_ring_bond_count_zero_not_in_benzene() {
+        assert_eq!(match_count("[x0]", "c1ccccc1"), 0, "[x0] should match 0 atoms in benzene");
+    }
+
+    /// Test 37: `[^3]` matches sp3 atoms (aliphatic C with no double/triple bonds).
+    #[test]
+    fn test_hybridization_sp3_ethane() {
+        assert_eq!(match_count("[^3]", "CC"), 2, "[^3] should match both sp3 C atoms in ethane");
+    }
+
+    /// Test 38: `[^2]` matches sp2 atoms — both C and O in ethylene/carbonyl are sp2.
+    #[test]
+    fn test_hybridization_sp2_ethylene() {
+        // Ethylene C=C: both carbons are sp2 (double bond)
+        assert_eq!(match_count("[^2]", "C=C"), 2, "[^2] should match both sp2 C atoms in ethylene");
+    }
+
+    /// Test 39: `[^2]` matches all 6 aromatic C atoms in benzene.
+    #[test]
+    fn test_hybridization_sp2_benzene() {
+        assert_eq!(match_count("[^2]", "c1ccccc1"), 6, "[^2] should match all 6 aromatic C in benzene");
+    }
+
+    /// Test 40: `[^1]` matches sp atoms in acetylene (HC≡CH).
+    #[test]
+    fn test_hybridization_sp_acetylene() {
+        assert_eq!(match_count("[^1]", "C#C"), 2, "[^1] should match both sp C atoms in acetylene");
+    }
+
+    /// Test 41: `[+0]` matches neutral atoms (explicit zero charge).
+    #[test]
+    fn test_charge_explicit_zero() {
+        // Trimethylammonium: CC[N+](C)C — the N has +1 charge
+        // [+0] should match the 4 carbons (neutral) but NOT the N+ (charge +1)
+        assert_eq!(match_count("[+0]", "CC[N+](C)C"), 4, "[+0] should match 4 neutral C atoms");
+    }
+
+    /// Test 42: `[-0]` is also a valid explicit-zero-charge query (same as [+0]).
+    #[test]
+    fn test_charge_negative_zero() {
+        // [-0] means charge == -(0) == 0, so same as [+0]
+        assert_eq!(match_count("[-0]", "CCO"), 3, "[-0] should match all 3 neutral atoms in ethanol");
+    }
+
+    /// Test 30: `[$(C(=O)O)]` finds both ester and carboxyl C in aspirin.
+    #[test]
+    fn test_recursive_carbonyl_with_oxygen_in_aspirin() {
+        // Aspirin CC(=O)Oc1ccccc1C(=O)O has two C(=O)-O groups:
+        // the acetyl ester C and the carboxylic acid C → both match [$(C(=O)O)].
+        // To match ONLY the carboxylic acid, use [$(C(=O)[OH])].
+        let n_cooh = match_count("[$(C(=O)O)]", "CC(=O)Oc1ccccc1C(=O)O");
+        assert_eq!(n_cooh, 2, "aspirin has 2 C atoms with C(=O)O (ester + carboxylic), got {n_cooh}");
+        // [$(C(=O)[OH])] is more specific: only the COOH group matches.
+        let n_acid = match_count("[$(C(=O)[OH])]", "CC(=O)Oc1ccccc1C(=O)O");
+        assert_eq!(n_acid, 1, "aspirin has 1 carboxylic acid C [$(C(=O)[OH])], got {n_acid}");
+    }
 }

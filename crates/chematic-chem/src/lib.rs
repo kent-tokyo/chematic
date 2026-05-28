@@ -5,18 +5,22 @@
 
 #![forbid(unsafe_code)]
 
+pub mod brics;
 pub mod cip;
 pub mod descriptors;
+pub mod qed;
 pub mod scaffold;
 pub mod standardize;
 pub mod tautomer;
 
 pub use cip::{assign_cip, CipAssignment};
 pub use descriptors::{
-    exact_mass, heavy_atom_count, hba_count, hbd_count, lipinski_passes,
-    logp_crippen, molecular_weight, rotatable_bond_count, tpsa,
+    aromatic_ring_count, exact_mass, fsp3, heavy_atom_count, hba_count, hbd_count,
+    lipinski_passes, logp_crippen, molecular_weight, rotatable_bond_count, tpsa,
 };
 
+pub use brics::{brics_bonds, brics_fragments};
 pub use scaffold::{generic_murcko_scaffold, murcko_scaffold};
 pub use standardize::{largest_fragment, neutralize_charges};
 pub use tautomer::{canonical_tautomer, enumerate_tautomers};
+pub use qed::qed;

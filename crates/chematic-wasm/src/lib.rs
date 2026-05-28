@@ -67,6 +67,36 @@ impl MolHandle {
     pub fn hba_count(&self) -> usize {
         chematic_chem::hba_count(&self.inner)
     }
+
+    /// Crippen–Wildman octanol/water partition coefficient (LogP).
+    pub fn logp_crippen(&self) -> f64 {
+        chematic_chem::logp_crippen(&self.inner)
+    }
+
+    /// Fraction of sp3 carbons (Fsp3).
+    pub fn fsp3(&self) -> f64 {
+        chematic_chem::fsp3(&self.inner)
+    }
+
+    /// Number of aromatic rings (all ring atoms aromatic).
+    pub fn aromatic_ring_count(&self) -> usize {
+        chematic_chem::aromatic_ring_count(&self.inner)
+    }
+
+    /// Quantitative Estimate of Drug-likeness (QED); range [0, 1].
+    pub fn qed(&self) -> f64 {
+        chematic_chem::qed(&self.inner)
+    }
+
+    /// Monoisotopic (exact) mass.
+    pub fn exact_mass(&self) -> f64 {
+        chematic_chem::exact_mass(&self.inner)
+    }
+
+    /// Number of rotatable bonds.
+    pub fn rotatable_bond_count(&self) -> usize {
+        chematic_chem::rotatable_bond_count(&self.inner)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +117,30 @@ pub fn parse_smiles(s: &str) -> Result<MolHandle, JsValue> {
 #[wasm_bindgen]
 pub fn tanimoto_ecfp4(a: &MolHandle, b: &MolHandle) -> f64 {
     chematic_fp::tanimoto_ecfp4(&a.inner, &b.inner)
+}
+
+/// Tanimoto similarity between two molecules using AtomPair fingerprints.
+#[wasm_bindgen]
+pub fn tanimoto_atom_pair(a: &MolHandle, b: &MolHandle) -> f64 {
+    let fa = chematic_fp::atom_pair_fp(&a.inner);
+    let fb = chematic_fp::atom_pair_fp(&b.inner);
+    fa.tanimoto(&fb)
+}
+
+/// Tanimoto similarity between two molecules using Topological Torsion fingerprints.
+#[wasm_bindgen]
+pub fn tanimoto_torsion(a: &MolHandle, b: &MolHandle) -> f64 {
+    let fa = chematic_fp::torsion_fp(&a.inner);
+    let fb = chematic_fp::torsion_fp(&b.inner);
+    fa.tanimoto(&fb)
+}
+
+/// Number of BRICS fragments produced by fragmenting the molecule.
+///
+/// Returns 1 if no BRICS-breakable bonds exist (whole molecule is one fragment).
+#[wasm_bindgen]
+pub fn brics_fragment_count(mol: &MolHandle) -> usize {
+    chematic_chem::brics_fragments(&mol.inner).len()
 }
 
 /// Compute the ECFP4 fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
@@ -225,5 +279,70 @@ mod tests {
     #[test]
     fn heavy_atom_count_ethanol() {
         assert_eq!(parse("CCO").heavy_atom_count(), 3);
+    }
+
+    #[test]
+    fn logp_crippen_aspirin_range() {
+        let lp = parse("CC(=O)Oc1ccccc1C(=O)O").logp_crippen();
+        assert!(lp > 0.5 && lp < 3.5, "aspirin LogP = {lp:.3}");
+    }
+
+    #[test]
+    fn fsp3_benzene_zero() {
+        assert_eq!(parse("c1ccccc1").fsp3(), 0.0, "benzene Fsp3 = 0");
+    }
+
+    #[test]
+    fn fsp3_cyclohexane_one() {
+        assert_eq!(parse("C1CCCCC1").fsp3(), 1.0, "cyclohexane Fsp3 = 1");
+    }
+
+    #[test]
+    fn aromatic_ring_count_benzene() {
+        assert_eq!(parse("c1ccccc1").aromatic_ring_count(), 1);
+    }
+
+    #[test]
+    fn qed_aspirin_range() {
+        let q = parse("CC(=O)Oc1ccccc1C(=O)O").qed();
+        assert!(q > 0.0 && q <= 1.0, "aspirin QED = {q:.3}");
+    }
+
+    #[test]
+    fn exact_mass_aspirin() {
+        // Aspirin monoisotopic mass: 180.0423
+        let em = parse("CC(=O)Oc1ccccc1C(=O)O").exact_mass();
+        assert!((em - 180.042).abs() < 0.01, "aspirin exact mass = {em:.4}");
+    }
+
+    #[test]
+    fn rotatable_bond_count_aspirin() {
+        // Aspirin has 3 rotatable bonds (OC, C=O ester, and COOH)
+        let rb = parse("CC(=O)Oc1ccccc1C(=O)O").rotatable_bond_count();
+        assert!(rb >= 2 && rb <= 5, "aspirin rotbonds = {rb}");
+    }
+
+    #[test]
+    fn tanimoto_atom_pair_same_mol() {
+        let a = parse("c1ccccc1");
+        let b = parse("c1ccccc1");
+        assert!((tanimoto_atom_pair(&a, &b) - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn tanimoto_torsion_same_mol() {
+        let a = parse("CCCC");
+        let b = parse("CCCC");
+        assert!((tanimoto_torsion(&a, &b) - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn brics_fragment_count_benzene() {
+        assert_eq!(brics_fragment_count(&parse("c1ccccc1")), 1);
+    }
+
+    #[test]
+    fn brics_fragment_count_aspirin() {
+        assert!(brics_fragment_count(&parse("CC(=O)Oc1ccccc1C(=O)O")) >= 2);
     }
 }

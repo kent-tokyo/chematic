@@ -7,15 +7,25 @@
 pub mod layout;
 pub mod svg;
 
-use chematic_core::Molecule;
+use chematic_core::{AtomIdx, BondIdx, Molecule};
 
 pub use layout::{Layout, Point, compute_layout};
-pub use svg::render_svg;
+pub use svg::{render_svg, render_svg_highlighted};
 
 /// Compute a 2D layout and render it as an SVG string.
 pub fn depict_svg(mol: &Molecule) -> String {
     let layout = compute_layout(mol);
     render_svg(mol, &layout)
+}
+
+/// Compute a 2D layout and render it as an SVG with highlighted atoms/bonds.
+pub fn depict_svg_highlighted(
+    mol: &Molecule,
+    highlight_atoms: &std::collections::HashSet<AtomIdx>,
+    highlight_bonds: &std::collections::HashSet<BondIdx>,
+) -> String {
+    let layout = compute_layout(mol);
+    render_svg_highlighted(mol, &layout, highlight_atoms, highlight_bonds)
 }
 
 // ---------------------------------------------------------------------------
@@ -174,6 +184,8 @@ mod tests {
         let svg = render_svg(&m, &layout);
         assert!(svg.contains("<text"), "Pyridine SVG must have a text label");
         assert!(svg.contains('N'), "Pyridine SVG must contain 'N' label");
+        // N should be colored blue (#3050F8).
+        assert!(svg.contains("#3050F8"), "Pyridine N label should be blue (#3050F8)");
     }
 
     // -------------------------------------------------------------------
@@ -233,5 +245,24 @@ mod tests {
         assert!(svg.ends_with("</svg>"), "Single C SVG must end with </svg>");
         // Plain carbon has no text label.
         assert!(!svg.contains("<text"), "Single C SVG should have no text label");
+    }
+
+    // -------------------------------------------------------------------
+    // render_svg_highlighted — pyridine with N highlighted.
+    // -------------------------------------------------------------------
+    #[test]
+    fn test_svg_highlighted_pyridine() {
+        use std::collections::HashSet;
+        let m = mol("c1ccncc1");
+        // Find the N atom index.
+        let n_idx = m.atoms()
+            .find(|(_, a)| a.element.atomic_number() == 7)
+            .map(|(idx, _)| idx)
+            .expect("pyridine has no N");
+        let mut hl_atoms = HashSet::new();
+        hl_atoms.insert(n_idx);
+        let svg = depict_svg_highlighted(&m, &hl_atoms, &HashSet::new());
+        assert!(svg.contains("circle"), "highlighted SVG must contain a circle");
+        assert!(svg.contains("FFFF00"), "highlight circle should be yellow");
     }
 }
