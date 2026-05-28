@@ -15,7 +15,7 @@ const FNV_OFFSET: u64 = 14695981039346656037;
 const FNV_PRIME: u64 = 1099511628211;
 
 /// Compute the FNV-1a 64-bit hash of `bytes`.
-fn fnv1a(bytes: &[u8]) -> u64 {
+pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     let mut h = FNV_OFFSET;
     for &b in bytes {
         h ^= b as u64;
@@ -55,7 +55,7 @@ impl Default for EcfpConfig {
 /// - Aromatic          → 4
 /// - Quadruple         → 5  (not in standard ECFP; assigned a distinct value)
 #[inline]
-fn bond_type_int(order: BondOrder) -> u8 {
+pub(crate) fn bond_type_int(order: BondOrder) -> u8 {
     match order {
         BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
         BondOrder::Double => 2,

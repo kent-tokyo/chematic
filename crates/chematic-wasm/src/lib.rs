@@ -130,6 +130,26 @@ impl MolHandle {
     pub fn ghose_passes(&self) -> bool {
         chematic_chem::ghose_passes(&self.inner)
     }
+
+    /// Number of heteroatoms (non-C, non-H heavy atoms).
+    pub fn num_heteroatoms(&self) -> usize {
+        chematic_chem::num_heteroatoms(&self.inner)
+    }
+
+    /// Total number of rings (SSSR count).
+    pub fn ring_count(&self) -> usize {
+        chematic_chem::ring_count(&self.inner)
+    }
+
+    /// Number of assigned stereocenters (R/S).
+    pub fn num_stereocenters(&self) -> usize {
+        chematic_chem::num_stereocenters(&self.inner)
+    }
+
+    /// Returns `true` if the molecule has no PAINS structural alerts.
+    pub fn pains_passes(&self) -> bool {
+        chematic_chem::pains_passes(&self.inner)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -150,6 +170,12 @@ pub fn parse_smiles(s: &str) -> Result<MolHandle, JsValue> {
 #[wasm_bindgen]
 pub fn tanimoto_ecfp4(a: &MolHandle, b: &MolHandle) -> f64 {
     chematic_fp::tanimoto_ecfp4(&a.inner, &b.inner)
+}
+
+/// Tanimoto similarity between two molecules using FCFP4 fingerprints (pharmacophore-based).
+#[wasm_bindgen]
+pub fn tanimoto_fcfp4(a: &MolHandle, b: &MolHandle) -> f64 {
+    chematic_fp::tanimoto_fcfp4(&a.inner, &b.inner)
 }
 
 /// Tanimoto similarity between two molecules using AtomPair fingerprints.
