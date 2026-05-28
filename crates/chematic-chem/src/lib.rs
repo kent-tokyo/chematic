@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod alerts;
 pub mod brics;
 pub mod cip;
 pub mod descriptors;
@@ -17,10 +18,13 @@ pub use cip::{assign_cip, CipAssignment};
 pub use descriptors::{
     aromatic_ring_count, egan_passes, exact_mass, formal_charge_sum, fsp3,
     ghose_passes, heavy_atom_count, hba_count, hbd_count, lipinski_passes,
-    logp_crippen, molar_refractivity, molecular_weight, reos_passes,
+    logp_crippen, molar_refractivity, molecular_weight, num_aliphatic_rings,
+    num_heteroatoms, num_saturated_rings, num_stereocenters,
+    num_unspecified_stereocenters, reos_passes, ring_count,
     rotatable_bond_count, tpsa, veber_passes,
 };
 
+pub use alerts::{pains_matches, pains_passes};
 pub use brics::{brics_bonds, brics_fragments};
 pub use scaffold::{generic_murcko_scaffold, murcko_scaffold};
 pub use standardize::{largest_fragment, neutralize_charges};
