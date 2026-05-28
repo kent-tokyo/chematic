@@ -25,6 +25,14 @@ pub enum AtomPrimitive {
     RingSize(u8),
     /// `*` — wildcard; matches any atom.
     Wildcard,
+    /// `$(smarts)` — recursive SMARTS: the atom must be the root of a match for `smarts`.
+    Recursive(Box<QueryMolecule>),
+    /// `[vN]` — total valence: sum of explicit bond orders plus implicit H count.
+    Valence(u8),
+    /// `[xN]` — ring-bond count: number of bonds where both endpoints share a SSSR ring.
+    RingBondCount(u8),
+    /// `[^N]` — hybridization: 1 = sp, 2 = sp2, 3 = sp3.
+    Hybridization(u8),
 }
 
 /// Logical combination of atom primitives.
@@ -68,13 +76,13 @@ pub enum BondQuery {
 }
 
 /// A node in a `QueryMolecule` graph.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct QueryAtom {
     pub query: AtomQuery,
 }
 
 /// An edge in a `QueryMolecule` graph.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct QueryBond {
     /// Index into `QueryMolecule::atoms` for one endpoint.
     pub atom1: usize,
@@ -87,7 +95,7 @@ pub struct QueryBond {
 ///
 /// Stores atoms, bonds, and a per-atom adjacency list for fast neighbour lookup
 /// during VF2 matching.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct QueryMolecule {
     pub atoms: Vec<QueryAtom>,
     pub bonds: Vec<QueryBond>,

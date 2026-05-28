@@ -466,6 +466,10 @@ impl<'a> Parser<'a> {
             Some(b'r') => true,
             Some(b'R') => true,
             Some(b'*') => true,
+            // Recursive SMARTS `$(...)`.
+            Some(b'$') => true,
+            // Valence `[vN]`, ring-bond count `[xN]`, hybridization `[^N]`.
+            Some(b'v') | Some(b'x') | Some(b'^') => true,
             // Uppercase element symbol — check it's not a stop character.
             Some(c) if c.is_ascii_uppercase() => true,
             // Lowercase element symbol (but not 'a' already handled).
@@ -494,6 +498,40 @@ impl<'a> Parser<'a> {
                 Ok(AtomQuery::Primitive(AtomPrimitive::Wildcard))
             }
 
+            // Recursive SMARTS: `$(inner_smarts)`.
+            Some(b'$') => {
+                self.advance(); // consume '$'
+                if self.peek() != Some(b'(') {
+                    return Err(SmartsError::UnexpectedChar('$', pos));
+                }
+                self.advance(); // consume '('
+                // Scan forward to find the matching ')', counting nesting depth.
+                let start = self.pos;
+                let mut depth = 1usize;
+                let mut end = start;
+                while end < self.src.len() {
+                    match self.src[end] {
+                        b'(' => depth += 1,
+                        b')' => {
+                            depth -= 1;
+                            if depth == 0 {
+                                break;
+                            }
+                        }
+                        _ => {}
+                    }
+                    end += 1;
+                }
+                if depth != 0 {
+                    return Err(SmartsError::UnexpectedEnd);
+                }
+                let inner_str = std::str::from_utf8(&self.src[start..end])
+                    .map_err(|_| SmartsError::UnexpectedEnd)?;
+                let inner_mol = parse_smarts(inner_str)?;
+                self.pos = end + 1; // advance past the closing ')'
+                Ok(AtomQuery::Primitive(AtomPrimitive::Recursive(Box::new(inner_mol))))
+            }
+
             // Aromatic (`a`) — must be checked BEFORE element symbol parsing.
             Some(b'a') => {
                 self.advance();
@@ -515,17 +553,26 @@ impl<'a> Parser<'a> {
                 Ok(AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)))
             }
 
-            // Charge `+N` or `+`  (charge = +N or +1)
+            // Charge `+N` or `+`  (charge = +N or +1; `+0` = explicit neutral)
             Some(b'+') => {
                 self.advance(); // consume '+'
-                let n = self.parse_single_digit().unwrap_or(1);
+                // Parse digit including '0'; only default to 1 if no digit follows at all.
+                let n = if self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                    self.parse_single_digit().unwrap_or(1)
+                } else {
+                    1
+                };
                 Ok(AtomQuery::Primitive(AtomPrimitive::Charge(n as i8)))
             }
 
-            // Charge `-N` or `-`  (charge = -N or -1)
+            // Charge `-N` or `-`  (charge = -N or -1; `-0` = explicit neutral)
             Some(b'-') => {
                 self.advance(); // consume '-'
-                let n = self.parse_single_digit().unwrap_or(1);
+                let n = if self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                    self.parse_single_digit().unwrap_or(1)
+                } else {
+                    1
+                };
                 Ok(AtomQuery::Primitive(AtomPrimitive::Charge(-(n as i8))))
             }
 
@@ -554,6 +601,27 @@ impl<'a> Parser<'a> {
             Some(b'R') => {
                 self.advance(); // consume 'R'
                 Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true)))
+            }
+
+            // Valence `[vN]` — total valence (bond orders + implicit H).
+            Some(b'v') => {
+                self.advance(); // consume 'v'
+                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                Ok(AtomQuery::Primitive(AtomPrimitive::Valence(n)))
+            }
+
+            // Ring-bond count `[xN]` — bonds where both endpoints share a ring.
+            Some(b'x') => {
+                self.advance(); // consume 'x'
+                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                Ok(AtomQuery::Primitive(AtomPrimitive::RingBondCount(n)))
+            }
+
+            // Hybridization `[^N]` — 1=sp, 2=sp2, 3=sp3.
+            Some(b'^') => {
+                self.advance(); // consume '^'
+                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                Ok(AtomQuery::Primitive(AtomPrimitive::Hybridization(n)))
             }
 
             // Element symbol (uppercase or lowercase start).

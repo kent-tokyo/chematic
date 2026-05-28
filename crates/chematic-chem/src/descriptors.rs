@@ -671,6 +671,52 @@ pub fn lipinski_passes(mol: &Molecule) -> bool {
 }
 
 // ---------------------------------------------------------------------------
+// Fsp3 — fraction of sp3 carbons
+// ---------------------------------------------------------------------------
+
+/// Fraction of sp3 carbons: sp3_C / total_C.
+///
+/// sp3 carbon is defined as a non-aromatic carbon that has no double or triple
+/// bond to any neighbour (i.e. hybridisation is effectively sp3).
+/// Returns 0.0 if the molecule contains no carbon atoms.
+pub fn fsp3(mol: &Molecule) -> f64 {
+    let c_total = mol
+        .atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 6)
+        .count();
+    if c_total == 0 {
+        return 0.0;
+    }
+    let sp3 = mol
+        .atoms()
+        .filter(|(idx, a)| {
+            a.element.atomic_number() == 6
+                && !a.aromatic
+                && mol.neighbors(*idx).all(|(_, bidx)| {
+                    !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
+                })
+        })
+        .count();
+    sp3 as f64 / c_total as f64
+}
+
+// ---------------------------------------------------------------------------
+// Aromatic ring count
+// ---------------------------------------------------------------------------
+
+/// Number of aromatic rings in the molecule (from SSSR).
+///
+/// A ring is considered aromatic when every atom in it carries the
+/// `aromatic` flag.
+pub fn aromatic_ring_count(mol: &Molecule) -> usize {
+    find_sssr(mol)
+        .rings()
+        .iter()
+        .filter(|ring| ring.iter().all(|&idx| mol.atom(idx).aromatic))
+        .count()
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -906,5 +952,62 @@ mod tests {
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
         let t = tpsa(&m);
         assert!(t > 0.0, "aspirin TPSA = {t}");
+    }
+
+    // -- Fsp3 tests --------------------------------------------------------
+
+    #[test]
+    fn test_fsp3_benzene() {
+        let m = mol("c1ccccc1");
+        // all aromatic C, no sp3
+        assert!((fsp3(&m) - 0.0).abs() < 1e-9, "benzene Fsp3 should be 0");
+    }
+
+    #[test]
+    fn test_fsp3_cyclohexane() {
+        let m = mol("C1CCCCC1");
+        // all sp3 C
+        assert!((fsp3(&m) - 1.0).abs() < 1e-9, "cyclohexane Fsp3 should be 1");
+    }
+
+    #[test]
+    fn test_fsp3_aspirin() {
+        let m = mol("CC(=O)Oc1ccccc1C(=O)O");
+        // 9 C total: 1 sp3 (methyl), 2 sp2 C=O, 6 aromatic
+        // sp3 = 1, total C = 9 → Fsp3 = 1/9 ≈ 0.111
+        let f = fsp3(&m);
+        assert!(f > 0.05 && f < 0.25, "aspirin Fsp3={f} expected ~0.111");
+    }
+
+    #[test]
+    fn test_fsp3_no_carbon() {
+        let m = mol("[NH4+]");
+        assert!((fsp3(&m) - 0.0).abs() < 1e-9, "no-carbon mol Fsp3 should be 0");
+    }
+
+    // -- aromatic_ring_count tests -----------------------------------------
+
+    #[test]
+    fn test_aromatic_ring_count_benzene() {
+        let m = mol("c1ccccc1");
+        assert_eq!(aromatic_ring_count(&m), 1);
+    }
+
+    #[test]
+    fn test_aromatic_ring_count_naphthalene() {
+        let m = mol("c1ccc2ccccc2c1");
+        assert_eq!(aromatic_ring_count(&m), 2);
+    }
+
+    #[test]
+    fn test_aromatic_ring_count_cyclohexane() {
+        let m = mol("C1CCCCC1");
+        assert_eq!(aromatic_ring_count(&m), 0);
+    }
+
+    #[test]
+    fn test_aromatic_ring_count_aspirin() {
+        let m = mol("CC(=O)Oc1ccccc1C(=O)O");
+        assert_eq!(aromatic_ring_count(&m), 1);
     }
 }
