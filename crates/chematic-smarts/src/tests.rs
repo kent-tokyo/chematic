@@ -486,4 +486,50 @@ mod integration_tests {
         assert_eq!(match_count("[X2]", "CCO"), 1, "[X2] should match O in ethanol");
         assert_eq!(match_count("[X4]", "CCO"), 2, "[X4] should match 2 C atoms in ethanol");
     }
+
+    // -----------------------------------------------------------------------
+    // Compound bond expressions: OR (`=,:`), AND+NOT (`=!@`) (tests 46–50)
+    // -----------------------------------------------------------------------
+
+    /// Test 46: `[#6]=,:[#6]` matches both double bonds and aromatic bonds to carbon.
+    #[test]
+    fn test_bond_or_double_or_aromatic_in_benzene() {
+        // Benzene: 6 aromatic C-C bonds; VF2 finds both A→B and B→A → 12 mappings
+        assert_eq!(match_count("[#6]=,:[#6]", "c1ccccc1"), 12,
+            "=,: should match all aromatic bonds in benzene (both directions)");
+        // Pure single-bond query should NOT match aromatic bonds
+        assert_eq!(match_count("[#6]-[#6]", "c1ccccc1"), 0,
+            "explicit - should not match aromatic bonds");
+    }
+
+    /// Test 47: `[#6]=,:[#6]` also matches a double bond in ethylene.
+    #[test]
+    fn test_bond_or_double_or_aromatic_in_ethylene() {
+        // Ethylene C=C: 1 match (directional: each bond counted once from each atom → 2 mappings)
+        let c = match_count("[#6]=,:[#6]", "C=C");
+        assert!(c >= 1, "=,: should match double bond in ethylene");
+    }
+
+    /// Test 48: `C=!@C` matches a non-ring double bond (e.g. ethylene) but NOT cyclohexene ring double bond.
+    #[test]
+    fn test_bond_non_ring_double_ethylene() {
+        assert_eq!(match_count("C=!@C", "C=C"), 2,
+            "=!@ should match both orientations of ethylene double bond");
+    }
+
+    /// Test 49: `C=!@C` does NOT match the double bond inside a ring (cyclohexene).
+    #[test]
+    fn test_bond_non_ring_double_cyclohexene() {
+        // Cyclohexene: the C=C is in-ring → =!@ should NOT match
+        assert_eq!(match_count("C=!@C", "C1=CCCCC1"), 0,
+            "=!@ should not match in-ring double bond");
+    }
+
+    /// Test 50: `[#6]-,:c` (single OR aromatic bond to aromatic C) matches anisole Ar-O bond.
+    #[test]
+    fn test_bond_single_or_aromatic_anisole() {
+        // Anisole: the O-c bond is a single bond in the parsed graph → -,: matches
+        let c = match_count("[#8]-,:[c]", "COc1ccccc1");
+        assert!(c >= 1, "-,: should match O-c bond in anisole");
+    }
 }

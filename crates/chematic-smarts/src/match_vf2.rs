@@ -167,7 +167,13 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         AtomPrimitive::Symbol(s) => atom.element.symbol() == s.as_str(),
         AtomPrimitive::Aromatic(a) => atom.aromatic == *a,
         AtomPrimitive::Charge(c) => atom.charge == *c,
-        AtomPrimitive::HCount(h) => implicit_hcount(ctx.mol, idx) == *h,
+        AtomPrimitive::HCount(h) => {
+            // Total H = explicit H neighbors + implicit H (SMARTS spec includes both).
+            let explicit_h = ctx.mol.neighbors(idx)
+                .filter(|(nb, _)| ctx.mol.atom(*nb).element.atomic_number() == 1)
+                .count() as u8;
+            explicit_h + implicit_hcount(ctx.mol, idx) == *h
+        }
         AtomPrimitive::Degree(d) => ctx.mol.neighbors(idx).count() as u8 == *d,
         AtomPrimitive::RingMembership(r) => ctx.rings.contains_atom(idx) == *r,
         AtomPrimitive::RingSize(n) => ctx.rings.rings().iter().any(|ring| {

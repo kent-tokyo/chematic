@@ -299,24 +299,106 @@ impl<'a> Parser<'a> {
 
     // -- bond ----------------------------------------------------------------
 
-    /// Try to parse one bond character and return the corresponding `BondQuery`.
-    /// Returns `None` if the next character is not a bond character.
+    /// Try to parse a bond expression and return the corresponding `BondQuery`.
+    ///
+    /// Handles compound expressions used in PAINS and similar SMARTS catalogs:
+    /// - `=,:` → OR(Double, Aromatic)
+    /// - `-,:` → OR(Single, Aromatic)
+    /// - `=!@` → AND(Double, NOT(Ring))
+    /// - `-!@` → AND(Single, NOT(Ring))
+    ///
+    /// Grammar (simplified):
+    /// ```text
+    /// bond_expr  := bond_or
+    /// bond_or    := bond_and (',' bond_and)*
+    /// bond_and   := bond_unary ('&'? bond_unary)*
+    /// bond_unary := '!' bond_token | bond_token
+    /// bond_token := '-' | '=' | '#' | ':' | '~' | '@'
+    /// ```
     fn try_parse_bond(&mut self) -> Option<BondQuery> {
+        let first = self.try_parse_bond_factor()?;
+        Some(self.parse_bond_or_tail(first))
+    }
+
+    /// Parse one bond factor: `!token` or `token`.
+    fn try_parse_bond_factor(&mut self) -> Option<BondQuery> {
+        match self.peek()? {
+            b'!' => {
+                // Only treat `!` as bond negation when the next char is a bond token.
+                if self.src.get(self.pos + 1).copied().map(Self::is_bond_token).unwrap_or(false) {
+                    self.advance(); // consume '!'
+                    let prim = self.consume_bond_prim().unwrap();
+                    Some(BondQuery::Not(Box::new(BondQuery::Primitive(prim))))
+                } else {
+                    None
+                }
+            }
+            c if Self::is_bond_token(c) => {
+                let prim = self.consume_bond_prim().unwrap();
+                Some(BondQuery::Primitive(prim))
+            }
+            _ => None,
+        }
+    }
+
+    /// Consume a single bond primitive character (caller must verify `peek` is a bond token).
+    fn consume_bond_prim(&mut self) -> Option<BondPrimitive> {
         let prim = match self.peek()? {
             b'-' => BondPrimitive::Single,
             b'=' => BondPrimitive::Double,
-            b'#' => {
-                // '#' could be part of a bracket `[#6]` — but at the chain level
-                // (outside brackets) '#' is unambiguously a bond character.
-                BondPrimitive::Triple
-            }
+            b'#' => BondPrimitive::Triple,
             b':' => BondPrimitive::Aromatic,
             b'~' => BondPrimitive::Any,
             b'@' => BondPrimitive::Ring,
             _ => return None,
         };
         self.advance();
-        Some(BondQuery::Primitive(prim))
+        Some(prim)
+    }
+
+    #[inline]
+    fn is_bond_token(c: u8) -> bool {
+        matches!(c, b'-' | b'=' | b'#' | b':' | b'~' | b'@')
+    }
+
+    /// Continue parsing bond OR after the first factor.
+    fn parse_bond_or_tail(&mut self, left: BondQuery) -> BondQuery {
+        // ',' → OR (only when followed by a bond token or '!')
+        if self.peek() == Some(b',') {
+            let next = self.src.get(self.pos + 1).copied();
+            if next.map(Self::is_bond_token).unwrap_or(false) || next == Some(b'!') {
+                self.advance(); // consume ','
+                if let Some(right) = self.try_parse_bond_factor() {
+                    let right = self.parse_bond_and_tail(right);
+                    let or_expr = BondQuery::Or(Box::new(left), Box::new(right));
+                    return self.parse_bond_or_tail(or_expr);
+                }
+            }
+        }
+        self.parse_bond_and_tail(left)
+    }
+
+    /// Continue parsing implicit AND after the first factor.
+    fn parse_bond_and_tail(&mut self, left: BondQuery) -> BondQuery {
+        // Explicit '&' or juxtaposed '!' followed by a bond token → AND
+        let explicit_and = self.peek() == Some(b'&');
+        if explicit_and {
+            self.advance(); // consume '&'
+        }
+
+        if self.peek() == Some(b'!') {
+            let next = self.src.get(self.pos + 1).copied();
+            if next.map(Self::is_bond_token).unwrap_or(false) {
+                if let Some(right) = self.try_parse_bond_factor() {
+                    let and_expr = BondQuery::And(Box::new(left), Box::new(right));
+                    return self.parse_bond_and_tail(and_expr);
+                }
+            }
+        } else if explicit_and {
+            // '&' with no following operand — consume was already done; return left.
+        }
+
+        left
     }
 
     // -- atoms ---------------------------------------------------------------
