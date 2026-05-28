@@ -827,7 +827,93 @@ pub fn molar_refractivity(mol: &Molecule) -> f64 {
 }
 
 // ---------------------------------------------------------------------------
-// 13. Drug-likeness filters
+// 13. Basic count descriptors
+// ---------------------------------------------------------------------------
+
+/// Number of heteroatoms (non-C, non-H heavy atoms).
+pub fn num_heteroatoms(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| {
+            let an = a.element.atomic_number();
+            an != 1 && an != 6
+        })
+        .count()
+}
+
+/// Total number of rings (SSSR count).
+pub fn ring_count(mol: &Molecule) -> usize {
+    find_sssr(mol).rings().len()
+}
+
+/// Number of non-aromatic (aliphatic) rings.
+pub fn num_aliphatic_rings(mol: &Molecule) -> usize {
+    find_sssr(mol)
+        .rings()
+        .iter()
+        .filter(|ring| ring.iter().any(|&idx| !mol.atom(idx).aromatic))
+        .count()
+}
+
+/// Number of saturated (all sp3) rings.
+///
+/// A ring is saturated when every atom has no double or triple bonds to
+/// neighbors (regardless of aromaticity flag).
+pub fn num_saturated_rings(mol: &Molecule) -> usize {
+    find_sssr(mol)
+        .rings()
+        .iter()
+        .filter(|ring| {
+            ring.iter().all(|&idx| {
+                mol.neighbors(idx).all(|(_, bidx)| {
+                    !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic)
+                })
+            })
+        })
+        .count()
+}
+
+/// Number of assigned stereocenters (tetrahedral R/S from CIP assignment).
+///
+/// Runs `assign_cip` internally. Returns 0 for molecules with no stereo.
+pub fn num_stereocenters(mol: &Molecule) -> usize {
+    use chematic_core::CipCode;
+    crate::cip::assign_cip(mol)
+        .assignments
+        .iter()
+        .filter(|(_, c)| matches!(c, CipCode::R | CipCode::S))
+        .count()
+}
+
+/// Number of unspecified (undefined) stereocenters.
+///
+/// Counts atoms that could be a stereocenter but whose chirality is not
+/// specified in the SMILES (i.e. not @/@@ in the input).
+pub fn num_unspecified_stereocenters(mol: &Molecule) -> usize {
+    use chematic_core::Chirality;
+    mol.atoms()
+        .filter(|(idx, atom)| {
+            let an = atom.element.atomic_number();
+            if an == 6 {
+                // Potential sp3 stereocenter: exactly 4 distinct heavy-atom neighbors
+                // with no @ specification in the parsed molecule
+                let degree = mol.neighbors(*idx).count();
+                let h = implicit_hcount(mol, *idx);
+                let total_neighbors = degree + h as usize;
+                total_neighbors == 4
+                    && !atom.aromatic
+                    && mol.neighbors(*idx).all(|(_, bidx)| {
+                        !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
+                    })
+                    && atom.chirality == Chirality::None
+            } else {
+                false
+            }
+        })
+        .count()
+}
+
+// ---------------------------------------------------------------------------
+// 14. Drug-likeness filters
 // ---------------------------------------------------------------------------
 
 /// Veber (2002) oral bioavailability filter.
@@ -1297,5 +1383,64 @@ mod tests {
         // Ibuprofen: MW=206, logP~3.5, HAC=13 (borderline)
         let m = mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O");
         let _ = ghose_passes(&m);
+    }
+
+    // -- Basic count descriptor tests ----------------------------------------
+
+    #[test]
+    fn test_num_heteroatoms_aspirin() {
+        // Aspirin: 4 O atoms (ester C=O, ester O, carboxylic C=O, carboxylic OH)
+        assert_eq!(num_heteroatoms(&mol("CC(=O)Oc1ccccc1C(=O)O")), 4);
+    }
+
+    #[test]
+    fn test_num_heteroatoms_benzene_zero() {
+        assert_eq!(num_heteroatoms(&mol("c1ccccc1")), 0);
+    }
+
+    #[test]
+    fn test_ring_count_benzene() {
+        assert_eq!(ring_count(&mol("c1ccccc1")), 1);
+    }
+
+    #[test]
+    fn test_ring_count_naphthalene() {
+        assert_eq!(ring_count(&mol("c1ccc2ccccc2c1")), 2);
+    }
+
+    #[test]
+    fn test_ring_count_acyclic_zero() {
+        assert_eq!(ring_count(&mol("CCO")), 0);
+    }
+
+    #[test]
+    fn test_num_saturated_rings_cyclohexane() {
+        assert_eq!(num_saturated_rings(&mol("C1CCCCC1")), 1);
+    }
+
+    #[test]
+    fn test_num_saturated_rings_benzene_zero() {
+        assert_eq!(num_saturated_rings(&mol("c1ccccc1")), 0);
+    }
+
+    #[test]
+    fn test_num_aliphatic_rings_cyclohexane() {
+        assert_eq!(num_aliphatic_rings(&mol("C1CCCCC1")), 1);
+    }
+
+    #[test]
+    fn test_num_aliphatic_rings_benzene_zero() {
+        assert_eq!(num_aliphatic_rings(&mol("c1ccccc1")), 0);
+    }
+
+    #[test]
+    fn test_num_stereocenters_alanine() {
+        // L-alanine: 1 R/S center
+        assert_eq!(num_stereocenters(&mol("[C@@H](N)(C)C(=O)O")), 1);
+    }
+
+    #[test]
+    fn test_num_stereocenters_achiral_zero() {
+        assert_eq!(num_stereocenters(&mol("CC(=O)O")), 0);
     }
 }
