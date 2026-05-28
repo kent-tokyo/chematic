@@ -68,7 +68,19 @@
       [chematic-chem/src/descriptors.rs]
 - [x] QED スコア（chematic-chem/src/qed.rs）:
       - Bickerton et al. 2012 (Nature Chemistry) の 8 指標幾何平均
+      - 7-parameter ADS（Asymmetric Double Sigmoidal）関数 — RDKit と同一パラメータ
+      - 113 Brenk 2008 構造アラート SMARTS（第 8 指標）
       - qed(mol) -> f64 in [0, 1]
+- [x] Molar Refractivity（chematic-chem/src/descriptors.rs）:
+      - Wildman-Crippen 加成モデル（LogP と同一原子タイプフレームワーク）
+      - molar_refractivity(mol) -> f64
+- [x] 薬物様性フィルター（chematic-chem/src/descriptors.rs）:
+      - Veber: TPSA ≤ 140 Å²、回転可能結合数 ≤ 10
+      - Egan: TPSA ≤ 131.6 Å²、LogP ≤ 5.88
+      - REOS: MW / LogP / HBD / HBA / 電荷 / 重原子数の 6 基準
+      - Ghose: MW 160–480, LogP −0.4–5.6, 重原子 20–70, MR 40–130
+- [x] 互変異性体ルール拡張（chematic-chem/src/tautomer.rs）:
+      - 5 ルール → 15 ルール（チオアミド、チオ-イミノール、チオ-ケト-エノール、6 種クロスヘテロ原子 1,3 プロトン移動）
 - [x] BRICS フラグメント化（chematic-chem/src/brics.rs）:
       - Dien et al. 2008 の 16 環境ルールに基づく結合切断
       - brics_bonds(mol) -> Vec<(AtomIdx, AtomIdx)>
@@ -86,6 +98,7 @@
       - 論理演算子: & , ; !（優先順位: NOT > 高優先 AND > OR > 低優先 AND）
       - 再帰 SMARTS `$(...)`: ネスト対応、VF2 アンカー付きマッチング
       - 拡張プリミティブ: [vN] 原子価、[xN] 環結合数、[^N] ハイブリッド化
+      - [XN] 全結合数（重原子次数 + 暗黙的 H 数）、[RN] 環帰属数
       - 明示的中性電荷 [+0]/[-0] 対応
       - QueryMolecule 型
       - find_matches(query, mol) -> Vec<HashMap<usize, AtomIdx>>
@@ -155,6 +168,8 @@
         - v0.1.3: tpsa/mw/hba/hbd/lipinski/ecfp4
         - v0.1.4: logp/fsp3/qed/exact_mass/rotbonds/aromatic_ring_count/
                   tanimoto_atom_pair/tanimoto_torsion/brics_fragment_count
+        - (unreleased): molar_refractivity/formal_charge_sum/veber_passes/
+                        egan_passes/reos_passes/ghose_passes
         （"chematic" はnpmが chromatic と類似として拒否 → スコープ付きで公開）
 - [x] 2D 描画強化（chematic-depict）:
       - CPK カラーリング（N=青, O=赤, S=黄, Cl=緑, F=黄緑, Br=茶, I=紫, P=橙）
@@ -184,19 +199,19 @@
 | クレート               | テスト数 | 状態     |
 |------------------------|---------|---------|
 | chematic-core          | 30      | 完了     |
-| chematic-smiles        | 52      | 完了     |
+| chematic-smiles        | 51      | 完了     |
 | chematic-perception    | 14      | 完了     |
-| chematic-mol           | 37      | 完了     |
+| chematic-mol           | 36      | 完了     |
 | chematic-depict        | 15      | 完了     |
-| chematic-chem          | 165     | 完了     |
+| chematic-chem          | 182     | 完了     |
 | chematic-fp            | 40      | 完了     |
-| chematic-smarts        | 67      | 完了     |
+| chematic-smarts        | 69      | 完了     |
 | chematic-3d            | 25      | 完了     |
 | chematic-rxn           | 15      | 完了     |
 | chematic-wasm          | 18      | 完了     |
 | chematic               | 1       | 完了     |
-| doc-tests              | 3       | 完了     |
-| **合計**               | **482** | —        |
+| doc-tests              | 6       | 完了     |
+| **合計**               | **502** | —        |
 
 ---
 

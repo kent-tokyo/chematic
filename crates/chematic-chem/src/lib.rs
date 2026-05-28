@@ -15,8 +15,10 @@ pub mod tautomer;
 
 pub use cip::{assign_cip, CipAssignment};
 pub use descriptors::{
-    aromatic_ring_count, exact_mass, fsp3, heavy_atom_count, hba_count, hbd_count,
-    lipinski_passes, logp_crippen, molecular_weight, rotatable_bond_count, tpsa,
+    aromatic_ring_count, egan_passes, exact_mass, formal_charge_sum, fsp3,
+    ghose_passes, heavy_atom_count, hba_count, hbd_count, lipinski_passes,
+    logp_crippen, molar_refractivity, molecular_weight, reos_passes,
+    rotatable_bond_count, tpsa, veber_passes,
 };
 
 pub use brics::{brics_bonds, brics_fragments};

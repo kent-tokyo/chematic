@@ -461,4 +461,29 @@ mod integration_tests {
         let n_acid = match_count("[$(C(=O)[OH])]", "CC(=O)Oc1ccccc1C(=O)O");
         assert_eq!(n_acid, 1, "aspirin has 1 carboxylic acid C [$(C(=O)[OH])], got {n_acid}");
     }
+
+    // -----------------------------------------------------------------------
+    // [XN] total connectivity tests (tests 43–45)
+    // -----------------------------------------------------------------------
+
+    /// Test 43: `[X4]` matches methane carbon (D=0, implH=4 → X=4).
+    #[test]
+    fn test_total_connectivity_methane() {
+        assert_eq!(match_count("[X4]", "C"), 1, "[X4] should match methane C");
+        // [D4] would NOT match because methane C has degree 0
+        assert_eq!(match_count("[D4]", "C"), 0, "[D4] should NOT match methane C");
+    }
+
+    /// Test 44: `[X4]` matches both carbons in ethane (D=1, implH=3 → X=4).
+    #[test]
+    fn test_total_connectivity_ethane() {
+        assert_eq!(match_count("[X4]", "CC"), 2, "[X4] should match both C in ethane");
+    }
+
+    /// Test 45: `[X2]` matches oxygen in ethanol (D=1, implH=1 → X=2), not the carbons (X=4).
+    #[test]
+    fn test_total_connectivity_ethanol_oxygen() {
+        assert_eq!(match_count("[X2]", "CCO"), 1, "[X2] should match O in ethanol");
+        assert_eq!(match_count("[X4]", "CCO"), 2, "[X4] should match 2 C atoms in ethanol");
+    }
 }

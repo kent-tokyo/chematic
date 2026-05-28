@@ -56,59 +56,124 @@ struct TautomerRule {
     prefer_forward: bool,
 }
 
-/// The 5 tautomer rules.
+/// The 15 tautomer rules.
 static RULES: &[TautomerRule] = &[
-    // keto-enol: O-H single C-double C → O=C-C (prefer keto form, C=O)
-    // Pattern in enol form: donor=O(has H), O-C single, C=C double
+    // 1. keto-enol: O-H adjacent to C=C → O=C-C (prefer keto)
     TautomerRule {
         name: "keto-enol",
-        donor_elem: 8,      // O
-        bridge_elem: Some(6), // C
-        acceptor_elem: 6,   // C
+        donor_elem: 8, bridge_elem: Some(6), acceptor_elem: 6,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
     },
-    // amide-iminol: N(has H)-C=O → iminol form would be N=C-O
-    // We prefer the amide (N-C=O), so prefer_forward=false prevents conversion away from amide.
-    // The pattern here matches iminol form: N(has H) with single bond to C, C=O.
-    // Wait - this pattern actually matches N-C=O (amide). We set prefer_forward=false
-    // so canonical_tautomer won't apply it to convert amide → iminol.
+    // 2. amide-iminol: N-H adjacent to C=O → N=C-O (prefer amide — forward=false)
     TautomerRule {
         name: "amide-iminol",
-        donor_elem: 7,      // N
-        bridge_elem: Some(6), // C
-        acceptor_elem: 8,   // O
+        donor_elem: 7, bridge_elem: Some(6), acceptor_elem: 8,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
     },
-    // imine-enamine: N(has H)-C=C → N=C-C (prefer imine)
+    // 3. iminol→amide: O-H adjacent to C=N → O=C-N (prefer amide — forward=true)
     TautomerRule {
-        name: "imine-enamine",
-        donor_elem: 7,      // N
-        bridge_elem: Some(6), // C
-        acceptor_elem: 6,   // C
+        name: "iminol-amide",
+        donor_elem: 8, bridge_elem: Some(6), acceptor_elem: 7,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
     },
-    // 1,3-H-shift N→O: bidirectional
+    // 4. imine-enamine: N-H adjacent to C=C → N=C-C (prefer imine)
     TautomerRule {
-        name: "1,3-H-shift-N-O",
-        donor_elem: 7,      // N
-        bridge_elem: None,  // any
-        acceptor_elem: 8,   // O
+        name: "imine-enamine",
+        donor_elem: 7, bridge_elem: Some(6), acceptor_elem: 6,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: true,
+    },
+    // 5. 1,3-H-shift N→O (any bridge): e.g. nitroso/oxime, hydroxamic acid
+    TautomerRule {
+        name: "1,3-N-to-O",
+        donor_elem: 7, bridge_elem: None, acceptor_elem: 8,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
     },
-    // 1,3-H-shift N→N: bidirectional
+    // 6. 1,3-H-shift N→N (any bridge): imidazole, pyrazole, guanidine
     TautomerRule {
-        name: "1,3-H-shift-N-N",
-        donor_elem: 7,      // N
-        bridge_elem: None,  // any
-        acceptor_elem: 7,   // N
+        name: "1,3-N-to-N",
+        donor_elem: 7, bridge_elem: None, acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 7. thioamide: N-H adjacent to C=S → N=C-S (prefer thioamide — forward=false)
+    TautomerRule {
+        name: "thioamide",
+        donor_elem: 7, bridge_elem: Some(6), acceptor_elem: 16,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 8. thio-iminol→thioamide: S-H adjacent to C=N → S=C-N
+    TautomerRule {
+        name: "thio-iminol-amide",
+        donor_elem: 16, bridge_elem: Some(6), acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: true,
+    },
+    // 9. thio keto-enol: S-H adjacent to C=C → S=C-C (prefer thioketone)
+    TautomerRule {
+        name: "thio-keto-enol",
+        donor_elem: 16, bridge_elem: Some(6), acceptor_elem: 6,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: true,
+    },
+    // 10. thio-enol→thioketone: O-H adjacent to C=S → O=C-S
+    TautomerRule {
+        name: "thio-enol-ketone",
+        donor_elem: 8, bridge_elem: Some(6), acceptor_elem: 16,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 11. 1,3-N→S (any bridge): sulfonamide/thioamide-type
+    TautomerRule {
+        name: "1,3-N-to-S",
+        donor_elem: 7, bridge_elem: None, acceptor_elem: 16,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 12. 1,3-S→O (any bridge)
+    TautomerRule {
+        name: "1,3-S-to-O",
+        donor_elem: 16, bridge_elem: None, acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 13. 1,3-S→N (any bridge)
+    TautomerRule {
+        name: "1,3-S-to-N",
+        donor_elem: 16, bridge_elem: None, acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 14. 1,3-O→S (any bridge)
+    TautomerRule {
+        name: "1,3-O-to-S",
+        donor_elem: 8, bridge_elem: None, acceptor_elem: 16,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 15. 1,3-S→S (any bridge): dithioamide, xanthate-type
+    TautomerRule {
+        name: "1,3-S-to-S",
+        donor_elem: 16, bridge_elem: None, acceptor_elem: 16,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,

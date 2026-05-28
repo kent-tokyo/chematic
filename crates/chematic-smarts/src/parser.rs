@@ -597,10 +597,17 @@ impl<'a> Parser<'a> {
                 Ok(AtomQuery::Primitive(AtomPrimitive::RingSize(n)))
             }
 
-            // Ring membership `R`
+            // Ring membership `R` or ring count `RN` (N = 0, 1, 2, …).
+            // `[R]`  = in any ring (RingMembership(true))
+            // `[R0]` = not in any ring (RingCount(0))
+            // `[R1]` = in exactly 1 ring, etc.
             Some(b'R') => {
                 self.advance(); // consume 'R'
-                Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true)))
+                if let Some(n) = self.parse_single_digit() {
+                    Ok(AtomQuery::Primitive(AtomPrimitive::RingCount(n)))
+                } else {
+                    Ok(AtomQuery::Primitive(AtomPrimitive::RingMembership(true)))
+                }
             }
 
             // Valence `[vN]` — total valence (bond orders + implicit H).
@@ -622,6 +629,13 @@ impl<'a> Parser<'a> {
                 self.advance(); // consume '^'
                 let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::Hybridization(n)))
+            }
+
+            // Total connectivity `[XN]` — heavy-atom degree + implicit H count.
+            Some(b'X') => {
+                self.advance(); // consume 'X'
+                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                Ok(AtomQuery::Primitive(AtomPrimitive::TotalConnectivity(n)))
             }
 
             // Element symbol (uppercase or lowercase start).

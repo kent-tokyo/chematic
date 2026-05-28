@@ -33,6 +33,11 @@ pub enum AtomPrimitive {
     RingBondCount(u8),
     /// `[^N]` — hybridization: 1 = sp, 2 = sp2, 3 = sp3.
     Hybridization(u8),
+    /// `[XN]` — total connectivity: heavy-atom degree + implicit H count.
+    TotalConnectivity(u8),
+    /// `[RN]` — ring membership count: the number of SSSR rings containing this atom.
+    /// `[R0]` = not in any ring; `[R1]` = in exactly 1 ring; etc.
+    RingCount(u8),
 }
 
 /// Logical combination of atom primitives.

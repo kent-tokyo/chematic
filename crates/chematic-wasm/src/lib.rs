@@ -97,6 +97,39 @@ impl MolHandle {
     pub fn rotatable_bond_count(&self) -> usize {
         chematic_chem::rotatable_bond_count(&self.inner)
     }
+
+    /// Wildman–Crippen molar refractivity (MR).
+    pub fn molar_refractivity(&self) -> f64 {
+        chematic_chem::molar_refractivity(&self.inner)
+    }
+
+    /// Sum of formal charges.
+    pub fn formal_charge_sum(&self) -> i32 {
+        chematic_chem::formal_charge_sum(&self.inner)
+    }
+
+    /// Returns `true` if the molecule passes Veber's oral bioavailability criteria
+    /// (TPSA ≤ 140 Å² and rotatable bonds ≤ 10).
+    pub fn veber_passes(&self) -> bool {
+        chematic_chem::veber_passes(&self.inner)
+    }
+
+    /// Returns `true` if the molecule passes Egan's absorption criteria
+    /// (TPSA ≤ 131.6 Å² and LogP ≤ 5.88).
+    pub fn egan_passes(&self) -> bool {
+        chematic_chem::egan_passes(&self.inner)
+    }
+
+    /// Returns `true` if the molecule passes the REOS (Rapid Elimination Of Swill) filter.
+    pub fn reos_passes(&self) -> bool {
+        chematic_chem::reos_passes(&self.inner)
+    }
+
+    /// Returns `true` if the molecule passes Ghose's drug-likeness filter
+    /// (MW 160–480, LogP −0.4–5.6, HeavyAtoms 20–70, MR 40–130).
+    pub fn ghose_passes(&self) -> bool {
+        chematic_chem::ghose_passes(&self.inner)
+    }
 }
 
 // ---------------------------------------------------------------------------

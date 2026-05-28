@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (`chematic-smarts`)
+
+- **`[XN]` total connectivity**: matches atoms where heavy-atom degree + implicit-H count equals N (distinct from `[DN]` which counts only heavy-atom neighbours).
+- **`[RN]` ring count**: matches atoms that belong to exactly N SSSR rings.
+
+### Added (`chematic-chem`)
+
+- **Improved QED** (`qed`): rewritten using the exact 7-parameter ADS (Asymmetric Double Sigmoidal) function from Bickerton 2012 / RDKit. Now includes 113 Brenk 2008 structural alerts as the eighth desirability component.
+- **Molar Refractivity** (`molar_refractivity`): Wildman–Crippen additive MR model (same atom-type framework as LogP).
+- **Formal charge sum** (`formal_charge_sum`): sum of atom formal charges over the whole molecule.
+- **Veber filter** (`veber_passes`): TPSA ≤ 140 Å² and rotatable bonds ≤ 10.
+- **Egan filter** (`egan_passes`): TPSA ≤ 131.6 Å² and LogP ≤ 5.88.
+- **REOS filter** (`reos_passes`): MW, LogP, HBD, HBA, charge, and heavy-atom criteria.
+- **Ghose filter** (`ghose_passes`): MW 160–480, LogP −0.4–5.6, heavy atoms 20–70, MR 40–130.
+- **Expanded tautomer rules**: 5 → 15 rules covering thioamide, thio-iminol, thio-keto-enol, and six cross-heteroatom 1,3-proton-shift patterns.
+
+### Added (`chematic-wasm`)
+
+- New bindings: `molar_refractivity`, `formal_charge_sum`, `veber_passes`, `egan_passes`, `reos_passes`, `ghose_passes`.
+
 ---
 
 ## [0.1.4] — 2026-05-28

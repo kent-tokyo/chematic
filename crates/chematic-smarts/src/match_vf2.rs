@@ -199,6 +199,16 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             }).count() as u8;
             count == *x
         }
+        AtomPrimitive::TotalConnectivity(x) => {
+            // Total connectivity = heavy-atom degree + implicit H count.
+            let deg = ctx.mol.neighbors(idx).count() as u8;
+            deg + implicit_hcount(ctx.mol, idx) == *x
+        }
+        AtomPrimitive::RingCount(n) => {
+            // Count how many SSSR rings contain this atom.
+            let count = ctx.rings.rings().iter().filter(|ring| ring.contains(&idx)).count() as u8;
+            count == *n
+        }
         AtomPrimitive::Hybridization(h) => {
             // Inferred hybridization:
             //   aromatic atom → sp2 (2)
