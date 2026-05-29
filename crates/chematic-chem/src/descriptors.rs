@@ -319,14 +319,18 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                     if atom.charge == 1 {
                         // Nitro group [N+](=O)[O-]: Ertl 2000 value = 41.44 Å²
                         // (the =O and O- oxygens contribute 0 for this group)
-                        let is_nitro = mol.neighbors(idx).any(|(nb, bidx)| {
-                            mol.bond(bidx).order == BondOrder::Double
-                                && mol.atom(nb).element.atomic_number() == 8
-                        }) && mol.neighbors(idx).any(|(nb, _)| {
-                            mol.atom(nb).element.atomic_number() == 8
-                                && mol.atom(nb).charge == -1
-                        });
-                        if is_nitro { 41.44 } else { 3.24 }
+                        let (has_oxo, has_o_minus) = mol.neighbors(idx).fold(
+                            (false, false),
+                            |(oxo, om), (nb, bidx)| {
+                                let nb_atom = mol.atom(nb);
+                                let is_o = nb_atom.element.atomic_number() == 8;
+                                (
+                                    oxo || (is_o && mol.bond(bidx).order == BondOrder::Double),
+                                    om || (is_o && nb_atom.charge == -1),
+                                )
+                            },
+                        );
+                        if has_oxo && has_o_minus { 41.44 } else { 3.24 }
                     } else if h >= 2 {
                         26.02 // NH2
                     } else if h == 1 {
