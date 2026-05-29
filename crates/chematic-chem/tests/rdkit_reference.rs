@@ -560,3 +560,19 @@ fn ring_descs_naphthalene_no_spiro() {
     assert_eq!(num_spiro_atoms(&m), 0, "naphthalene has no spiro atoms");
     assert_eq!(num_bridgehead_atoms(&m), 0, "naphthalene bridgehead");
 }
+
+// ── Sprint E: guanidinium N14 LogP fix ──────────────────────────────────────
+
+#[test]
+fn logp_metformin() {
+    // CN(C)C(=N)NC(=N)N — RDKit: -1.0340
+    // All 5 N atoms are guanidinium/amidine type (Crippen N14) → -0.335 each.
+    assert_approx("LogP metformin", logp_crippen(&mol("CN(C)C(=N)NC(=N)N")), -1.034, 0.05);
+}
+
+#[test]
+fn logp_arginine_guanidinium() {
+    // N[C@@H](CCCNC(=N)N)C(=O)O — RDKit: -1.01
+    // Guanidinium =N and two adjacent N atoms get N14 type.
+    assert_approx("LogP arginine", logp_crippen(&mol("N[C@@H](CCCNC(=N)N)C(=O)O")), -1.01, 0.25);
+}

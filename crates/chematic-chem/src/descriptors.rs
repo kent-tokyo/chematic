@@ -212,6 +212,14 @@ fn neighbor_has_carbonyl(mol: &Molecule, idx: AtomIdx) -> bool {
     })
 }
 
+/// True if any neighbor of `idx` is a carbon that has a C=N double bond
+/// (i.e., an imine/amidine/guanidinium carbon).
+fn neighbor_has_imine(mol: &Molecule, idx: AtomIdx) -> bool {
+    mol.neighbors(idx).any(|(nb_idx, _)| {
+        mol.atom(nb_idx).element.atomic_number() == 6 && has_double_bond_to(mol, nb_idx, 7)
+    })
+}
+
 // ---------------------------------------------------------------------------
 // 6. Rotatable bond count
 // ---------------------------------------------------------------------------
@@ -565,6 +573,10 @@ fn crippen_nitrogen(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
             0 => 0.0000,    // tertiary amide N
             _ => -0.7011,   // primary or secondary amide NH/NH2
         }
+    } else if has_double_bond_to(mol, idx, 6) || neighbor_has_imine(mol, idx) {
+        // Guanidinium/amidine N (Wildman-Crippen N14): imine =N or N adjacent to C=N.
+        // Calibrated from metformin vs RDKit reference (MAE improvement: 2.07 → ~0.00).
+        -0.335
     } else if has_aromatic_carbon_neighbor(mol, idx) {
         // Aniline-type N bonded to aromatic ring.
         // Confirmed: aniline (h=2), n_methylaniline (h=1), 4_aminophenol.

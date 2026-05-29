@@ -223,6 +223,65 @@ static RULES: &[TautomerRule] = &[
     },
 ];
 
+/// Per-atom explicit hydrogen count vector (position-sensitive, for 1,2-shift dedup).
+fn h_assignment(mol: &Molecule) -> Vec<Option<u32>> {
+    (0..mol.atom_count())
+        .map(|i| mol.atom(AtomIdx(i as u32)).hydrogen_count.map(|h| h as u32))
+        .collect()
+}
+
+/// Find adjacent pairs of aromatic N atoms where the first (donor) carries an explicit H.
+///
+/// Returns (donor, acceptor) pairs for direct 1,2-shift (no bridge atom).
+fn find_direct_aromatic_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
+    let mut pairs = Vec::new();
+    for (d, _) in mol.atoms() {
+        let da = mol.atom(d);
+        if !da.aromatic || da.element.atomic_number() != 7 {
+            continue;
+        }
+        if da.hydrogen_count.map_or(true, |h| h == 0) {
+            continue;
+        }
+        for (a, _) in mol.neighbors(d) {
+            let aa = mol.atom(a);
+            if aa.aromatic && (aa.element.atomic_number() == 7 || aa.element.atomic_number() == 8) {
+                pairs.push((d, a));
+            }
+        }
+    }
+    pairs
+}
+
+/// Transfer one H from an aromatic donor to an aromatic acceptor without changing bond orders.
+///
+/// Only handles atoms with an explicit `hydrogen_count` on the donor.
+fn transfer_hydrogen_aromatic(mol: &Molecule, donor: AtomIdx, acceptor: AtomIdx) -> Option<Molecule> {
+    let donor_h = mol.atom(donor).hydrogen_count?;
+    if donor_h == 0 {
+        return None;
+    }
+    let acceptor_h = mol.atom(acceptor).hydrogen_count.unwrap_or(0);
+
+    let mut builder = MoleculeBuilder::new();
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        if idx == donor {
+            atom.hydrogen_count = Some(donor_h - 1);
+        } else if idx == acceptor {
+            atom.hydrogen_count = Some(acceptor_h + 1);
+        }
+        builder.add_atom(atom);
+    }
+    for i in 0..mol.bond_count() {
+        let bidx = BondIdx(i as u32);
+        let b = mol.bond(bidx);
+        builder.add_bond(b.atom1, b.atom2, b.order).ok()?;
+    }
+    Some(builder.build())
+}
+
 fn clone_mol(mol: &Molecule) -> Molecule {
     let mut builder = MoleculeBuilder::new();
     for i in 0..mol.atom_count() {
@@ -364,7 +423,9 @@ fn apply_all_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<Molecule> {
 /// Return the canonical (preferred) tautomer of `mol`.
 ///
 /// Applies forward-preferred rules iteratively until no new form is found
-/// or the iteration limit is reached.
+/// or the iteration limit is reached. After rule-based normalization, direct
+/// aromatic 1,2-shift tautomers are compared and the form with the
+/// lexicographically smallest H-assignment vector is chosen.
 pub fn canonical_tautomer(mol: &Molecule) -> Molecule {
     const MAX_ITER: usize = 16;
     let mut current = clone_mol(mol);
@@ -388,17 +449,36 @@ pub fn canonical_tautomer(mol: &Molecule) -> Molecule {
             break;
         }
     }
+
+    // Among direct aromatic 1,2-shift tautomers, pick the lexicographically
+    // smallest H-assignment so both N1H and N2H forms converge to the same output.
+    let mut candidates: Vec<Molecule> = vec![clone_mol(&current)];
+    for (d, a) in find_direct_aromatic_matches(&current) {
+        if let Some(t) = transfer_hydrogen_aromatic(&current, d, a) {
+            candidates.push(t);
+        }
+    }
+    if candidates.len() > 1 {
+        current = candidates
+            .into_iter()
+            .min_by_key(|t| h_assignment(t))
+            .unwrap();
+    }
     current
 }
 
 /// Enumerate all reachable tautomers of `mol`, capped at 32.
 ///
 /// Returns a `Vec<Molecule>` where the first element is the original molecule.
+/// Includes both 1,3-shift (rule-based) and direct aromatic 1,2-shift tautomers.
 pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
     const MAX_TAUTOMERS: usize = 32;
     let mut result = vec![clone_mol(mol)];
     let mut seen = HashSet::new();
     seen.insert(mol_fingerprint(mol));
+    // Separate seen-set for 1,2-shift (mol_fingerprint can't distinguish positional H isomers).
+    let mut h_seen: HashSet<Vec<Option<u32>>> = HashSet::new();
+    h_seen.insert(h_assignment(mol));
     let mut frontier = vec![clone_mol(mol)];
 
     while !frontier.is_empty() && result.len() < MAX_TAUTOMERS {
@@ -408,6 +488,7 @@ pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
                     seen.insert(fp);
+                    h_seen.insert(h_assignment(&next));
                     frontier.push(clone_mol(&next));
                     result.push(next);
                     if result.len() >= MAX_TAUTOMERS {
@@ -417,6 +498,21 @@ pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
             }
             if result.len() >= MAX_TAUTOMERS {
                 break;
+            }
+        }
+        // Direct aromatic 1,2-shift (e.g. pyrazole N1H ↔ N2H).
+        for (d, a) in find_direct_aromatic_matches(&current) {
+            if result.len() >= MAX_TAUTOMERS {
+                break;
+            }
+            if let Some(next) = transfer_hydrogen_aromatic(&current, d, a) {
+                let ha = h_assignment(&next);
+                if !h_seen.contains(&ha) {
+                    h_seen.insert(ha);
+                    seen.insert(mol_fingerprint(&next));
+                    frontier.push(clone_mol(&next));
+                    result.push(next);
+                }
             }
         }
     }
@@ -513,5 +609,33 @@ mod tests {
         // (this may or may not hold depending on rule ordering, just check they don't panic)
         assert!(t_enol.atom_count() > 0);
         assert!(t_keto.atom_count() > 0);
+    }
+
+    #[test]
+    fn test_enumerate_pyrazole_12_shift() {
+        // c1cc[nH]n1 — pyrazole: N1H and N2H are direct 1,2-shift tautomers.
+        let mol = parse("c1cc[nH]n1").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        assert!(
+            tautomers.len() >= 2,
+            "Expected >= 2 tautomers for pyrazole, got {}",
+            tautomers.len()
+        );
+    }
+
+    #[test]
+    fn test_canonical_pyrazole_normalization() {
+        use chematic_smiles::canonical_smiles;
+        let n1h = parse("c1cc[nH]n1").unwrap();
+        let tautomers = enumerate_tautomers(&n1h);
+        let n2h = tautomers
+            .iter()
+            .find(|t| h_assignment(t) != h_assignment(&n1h))
+            .expect("enumerate_tautomers should produce N2H tautomer of pyrazole");
+        assert_eq!(
+            canonical_smiles(&canonical_tautomer(&n1h)),
+            canonical_smiles(&canonical_tautomer(n2h)),
+            "canonical_tautomer should normalize N1H and N2H to the same form"
+        );
     }
 }
