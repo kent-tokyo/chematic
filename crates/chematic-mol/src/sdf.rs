@@ -35,9 +35,12 @@ impl<'a> Iterator for SdfReader<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         // Skip leading blank lines between records (defensive; well-formed SDF
         // should not have them, but some writers emit a trailing blank).
-        while self.remaining.starts_with('\n') || self.remaining.starts_with("\r\n") {
-            let skip = if self.remaining.starts_with("\r\n") { 2 } else { 1 };
-            self.remaining = &self.remaining[skip..];
+        while let Some(rest) = self
+            .remaining
+            .strip_prefix("\r\n")
+            .or_else(|| self.remaining.strip_prefix('\n'))
+        {
+            self.remaining = rest;
         }
 
         if self.remaining.is_empty() {
@@ -46,58 +49,31 @@ impl<'a> Iterator for SdfReader<'a> {
 
         self.current_mol_num += 1;
 
-        // Locate the `$$$$` delimiter line. We search line by line so that a
-        // `$$$$` substring inside a data value does not trigger a false match.
-        let mut end_byte = self.remaining.len(); // default: consume everything
-        let mut after_delim = "";
-        let mut scan = self.remaining;
+        // Scan line by line so that a `$$$$` substring inside a data value
+        // does not trigger a false match.  When the delimiter is found, the
+        // mol block runs up to (but excluding) it, and the rest continues
+        // after the delimiter line.  When EOF is reached without a delimiter,
+        // the entire remainder is treated as a single mol block.
         let mut byte_offset = 0usize;
-
-        loop {
-            // Find the next newline.
-            let nl_pos = scan.find('\n');
-            let (line, rest_after_nl) = match nl_pos {
-                Some(pos) => {
-                    let line = &scan[..pos];
-                    // Strip a possible leading \r from the line.
-                    let line = line.trim_end_matches('\r');
-                    (line, &scan[pos + 1..])
+        let (end_byte, after_delim) = loop {
+            let rest = &self.remaining[byte_offset..];
+            match rest.find('\n') {
+                Some(nl) => {
+                    let line = rest[..nl].trim_end_matches('\r');
+                    if line == "$$$$" {
+                        break (byte_offset, &self.remaining[byte_offset + nl + 1..]);
+                    }
+                    byte_offset += nl + 1;
                 }
                 None => {
-                    // Last line with no trailing newline.
-                    let line = scan.trim_end_matches('\r');
-                    (line, "")
+                    // Last line, no trailing newline.
+                    if rest.trim_end_matches('\r') == "$$$$" {
+                        break (byte_offset, "");
+                    }
+                    break (self.remaining.len(), "");
                 }
-            };
-
-            if line == "$$$$" {
-                end_byte = byte_offset;
-                // `after_delim` starts right after the newline that follows `$$$$`.
-                let delim_line_len = if nl_pos.is_some() {
-                    line.len() + 1 + 1 // line content + possible \r + \n
-                } else {
-                    line.len()
-                };
-                // More precise: skip from byte_offset to past the delimiter line.
-                let delim_start = byte_offset;
-                let delim_end = match self.remaining[delim_start..].find('\n') {
-                    Some(pos) => delim_start + pos + 1,
-                    None => self.remaining.len(),
-                };
-                let _ = delim_line_len; // suppress warning
-                after_delim = &self.remaining[delim_end..];
-                break;
             }
-
-            if nl_pos.is_none() {
-                // Reached the last line without finding `$$$$`.
-                break;
-            }
-
-            let advance = nl_pos.unwrap() + 1;
-            byte_offset += advance;
-            scan = rest_after_nl;
-        }
+        };
 
         let mol_block = &self.remaining[..end_byte];
         self.remaining = after_delim;

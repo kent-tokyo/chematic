@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (`chematic-chem`) — LogP and TPSA accuracy (Sprint C)
+
+- **LogP aromatic junction C** (`descriptors.rs`): aromatic C at fused-ring junctions (e.g. naphthalene C4a, indole C3a/C7a) now uses Crippen value 0.2956 instead of 0.1441, when all neighbors are aromatic and ≥2 are aromatic carbons. Verified: naphthalene (±0.001), quinoline (±0.001), indole (±0.001) now match RDKit exactly.
+- **LogP alkene C** (`descriptors.rs`): sp2 vinyl carbons (C=C, non-aromatic) now use +0.2274 (Wildman-Crippen C5 type) instead of wrong negative values (−0.215 to −0.350). Styrene LogP error reduced from −1.03 to +0.04.
+- **LogP benchmark SMILES** (`scripts/rdkit_ref_properties.tsv`): morphine and codeine entries updated to aromatic SMILES notation so chematic's aromaticity perception succeeds.
+- **TPSA nitro group** (`descriptors.rs`): `[N+](=O)[O−]` now contributes 41.44 Å² (Ertl 2000 table) and the `[O−]` oxygen contributes 0 (absorbed into N). Previously nitro N was treated as tertiary amine (3.24 Å²). 4-nitrophenol TPSA error: 30.67 → 1.70 Å²; clonazepam: 39.79 → 1.17 Å².
+- **TPSA imine N** (`descriptors.rs`): aliphatic C=N imine nitrogen (h=0, double bond to C) now uses 12.89 Å² (same as pyridine-type aromatic N) instead of 3.24 Å² (generic tertiary N). Diazepam TPSA error: 9.12 → 0.53 Å².
+
+**Benchmark results** (175-molecule ChEMBL test set):
+| Property | Before (v0.1.3) | After |
+|----------|----------------|-------|
+| LogP MAE | 0.298 | **0.141** |
+| TPSA MAE | 0.759 Å² | **0.324 Å²** |
+| TPSA RMSE | 4.40 Å² | **2.13 Å²** |
+
 ### Added (`chematic-smarts`)
 
 - **`[XN]` total connectivity**: matches atoms where heavy-atom degree + implicit-H count equals N (distinct from `[DN]` which counts only heavy-atom neighbours).

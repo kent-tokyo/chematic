@@ -19,55 +19,49 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Molecule, MoleculeBuilder};
 use chematic_perception::find_sssr;
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 /// Returns a list of `(a, b)` atom index pairs for all BRICS-breakable bonds in `mol`.
 ///
 /// Only non-ring single bonds whose chemical environments satisfy at least one
 /// BRICS rule from Dien et al. 2008 are returned.
 pub fn brics_bonds(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
-    let rings = find_sssr(mol);
-
-    // Build a set of all "ring bonds": bonds where both endpoints share a ring.
-    let mut ring_bond_set: HashSet<(u32, u32)> = HashSet::new();
-    for ring in rings.rings() {
-        for i in 0..ring.len() {
-            let a = ring[i].0;
-            let b = ring[(i + 1) % ring.len()].0;
-            let (lo, hi) = (a.min(b), a.max(b));
-            ring_bond_set.insert((lo, hi));
-        }
-    }
-
-    let ring_atoms: HashSet<AtomIdx> = rings.rings().iter().flat_map(|r| r.iter().copied()).collect();
-
+    let ring_bond_set = ring_bond_keys(mol);
     let mut result = Vec::new();
 
     for bidx in 0..mol.bond_count() {
         let bond = mol.bond(BondIdx(bidx as u32));
-        let a = bond.atom1;
-        let b = bond.atom2;
+        let (a, b) = (bond.atom1, bond.atom2);
 
-        // Only single bonds (BRICS does not break double/triple/aromatic bonds).
-        match bond.order {
-            BondOrder::Single | BondOrder::Up | BondOrder::Down => {}
-            _ => continue,
-        }
-
-        // Skip ring bonds.
-        let (lo, hi) = (a.0.min(b.0), a.0.max(b.0));
-        if ring_bond_set.contains(&(lo, hi)) {
+        // BRICS only cuts single bonds; Up/Down are SMILES stereo flags for single.
+        if !matches!(bond.order, BondOrder::Single | BondOrder::Up | BondOrder::Down) {
             continue;
         }
-
-        if is_brics_breakable(mol, a, b, &ring_atoms) {
+        if ring_bond_set.contains(&bond_key(a, b)) {
+            continue;
+        }
+        if is_brics_breakable(mol, a, b) {
             result.push((a, b));
         }
     }
 
     result
+}
+
+/// Ordered (lo, hi) key for a bond between two atom indices.
+fn bond_key(a: AtomIdx, b: AtomIdx) -> (u32, u32) {
+    (a.0.min(b.0), a.0.max(b.0))
+}
+
+/// Set of `(lo, hi)` keys for every bond participating in any SSSR ring.
+fn ring_bond_keys(mol: &Molecule) -> HashSet<(u32, u32)> {
+    let mut set = HashSet::new();
+    for ring in find_sssr(mol).rings() {
+        for i in 0..ring.len() {
+            let a = ring[i];
+            let b = ring[(i + 1) % ring.len()];
+            set.insert(bond_key(a, b));
+        }
+    }
+    set
 }
 
 /// Fragment `mol` at all BRICS-breakable bonds.
@@ -79,64 +73,56 @@ pub fn brics_fragments(mol: &Molecule) -> Vec<Molecule> {
     let bonds: Vec<(AtomIdx, AtomIdx)> = brics_bonds(mol);
 
     if bonds.is_empty() {
-        // No BRICS cuts: copy and return the whole molecule as one fragment.
         return vec![copy_molecule(mol)];
     }
 
-    // Normalise bond set for O(1) lookup.
-    let break_set: HashSet<(u32, u32)> = bonds
-        .iter()
-        .map(|(a, b)| (a.0.min(b.0), a.0.max(b.0)))
-        .collect();
+    let break_set: HashSet<(u32, u32)> = bonds.iter().map(|&(a, b)| bond_key(a, b)).collect();
 
-    // Build a new molecule:
-    //   - all original atoms
-    //   - all original bonds EXCEPT the broken ones
-    //   - for each broken bond, two wildcard atoms + one bond each to the endpoints
+    // Build a new molecule: keep every original atom and every bond except the
+    // broken ones; for each broken bond, attach a wildcard stub to each endpoint.
     let mut builder = MoleculeBuilder::new();
     let mut old_to_new: HashMap<AtomIdx, AtomIdx> = HashMap::new();
 
-    // Add original atoms.
     for (old_idx, atom) in mol.atoms() {
         let new_idx = builder.add_atom(atom.clone());
         old_to_new.insert(old_idx, new_idx);
     }
 
-    // Add bonds; insert wildcard atoms at break points.
     for bidx in 0..mol.bond_count() {
         let bond = mol.bond(BondIdx(bidx as u32));
-        let a = bond.atom1;
-        let b = bond.atom2;
+        let (a, b) = (bond.atom1, bond.atom2);
+        let new_a = old_to_new[&a];
+        let new_b = old_to_new[&b];
 
-        let key = (a.0.min(b.0), a.0.max(b.0));
-        if break_set.contains(&key) {
-            // Replace this bond with two wildcard stubs.
+        if break_set.contains(&bond_key(a, b)) {
             let wa = builder.add_atom(Atom::wildcard());
             let wb = builder.add_atom(Atom::wildcard());
-            let new_a = old_to_new[&a];
-            let new_b = old_to_new[&b];
             let _ = builder.add_bond(new_a, wa, BondOrder::Single);
             let _ = builder.add_bond(new_b, wb, BondOrder::Single);
         } else {
-            let new_a = old_to_new[&a];
-            let new_b = old_to_new[&b];
             let _ = builder.add_bond(new_a, new_b, bond.order);
         }
     }
 
-    let combined = builder.build();
-    split_into_components(&combined)
+    split_into_components(&builder.build())
 }
 
-// ---------------------------------------------------------------------------
-// BRICS rule matching
-// ---------------------------------------------------------------------------
+/// True if `idx` is a non-aromatic C double-bonded to any O (carbonyl C).
+fn is_carbonyl_c(mol: &Molecule, idx: AtomIdx) -> bool {
+    let at = mol.atom(idx);
+    at.element.atomic_number() == 6
+        && !at.aromatic
+        && mol.neighbors(idx).any(|(nb, bid)| {
+            mol.atom(nb).element.atomic_number() == 8
+                && mol.bond(bid).order == BondOrder::Double
+        })
+}
 
 /// Returns `true` if the bond `(a, b)` satisfies at least one BRICS rule.
 ///
-/// Implements a direct translation of the 16 BRICS environments (Dien 2008,
-/// Table 2) using atom-property checks without SMARTS.
-fn is_brics_breakable(mol: &Molecule, a: AtomIdx, b: AtomIdx, _ring_atoms: &HashSet<AtomIdx>) -> bool {
+/// Direct translation of the 16 BRICS environments (Dien 2008, Table 2) using
+/// atom-property checks rather than SMARTS.
+fn is_brics_breakable(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
     let atom_a = mol.atom(a);
     let atom_b = mol.atom(b);
     let an_a = atom_a.element.atomic_number();
@@ -145,110 +131,110 @@ fn is_brics_breakable(mol: &Molecule, a: AtomIdx, b: AtomIdx, _ring_atoms: &Hash
     let deg_b = mol.degree(b);
     let arom_a = atom_a.aromatic;
     let arom_b = atom_b.aromatic;
+    let carb_a = is_carbonyl_c(mol, a);
+    let carb_b = is_carbonyl_c(mol, b);
 
-    // Helper: is this atom a carbonyl C (C bonded to =O)?
-    let carbonyl_c = |idx: AtomIdx| -> bool {
-        let at = mol.atom(idx);
-        at.element.atomic_number() == 6 && !at.aromatic &&
-        mol.neighbors(idx).any(|(nb, bid)| {
-            mol.atom(nb).element.atomic_number() == 8 &&
-            matches!(mol.bond(bid).order, BondOrder::Double)
-        })
+    // Roles used by several rules.
+    let is_amide_ester_c =
+        |an: u8, arom: bool, deg: usize, carb: bool| an == 6 && !arom && deg == 3 && carb;
+    let is_ali_c_internal =
+        |an: u8, arom: bool, deg: usize, carb: bool| an == 6 && !arom && deg > 1 && !carb;
+    let is_ali_n = |an: u8, arom: bool, deg: usize| an == 7 && !arom && deg > 1;
+    let is_thioether_s = |an: u8, arom: bool, deg: usize| an == 16 && !arom && deg == 2;
+    let is_aromatic_c = |an: u8, arom: bool| an == 6 && arom;
+    let is_aromatic_n = |an: u8, arom: bool| an == 7 && arom;
+
+    // L1 — amide/ester C — paired with aliphatic C, N, or thioether S.
+    let l1_partner = |an: u8, arom: bool, deg: usize| {
+        (an == 6 && !arom && deg > 1)        // L1-L3
+            || (an == 7 && !arom && deg > 1) // L1-L5
+            || is_thioether_s(an, arom, deg) // L1-L10
     };
-
-    let carb_a = carbonyl_c(a);
-    let carb_b = carbonyl_c(b);
-
-    // L1-L3: amide/ester C (D3, =O) — aliphatic non-terminal C
-    // L1-L5: amide/ester C (D3, =O) — aliphatic N
-    // L1-L10: amide/ester C (D3, =O) — thioether S (D2)
-    if carb_a && deg_a == 3 {
-        if an_b == 6 && !arom_b && deg_b > 1 { return true; } // L1-L3
-        if an_b == 7 && !arom_b && deg_b > 1 { return true; } // L1-L5
-        if an_b == 16 && !arom_b && deg_b == 2 { return true; } // L1-L10
+    if is_amide_ester_c(an_a, arom_a, deg_a, carb_a) && l1_partner(an_b, arom_b, deg_b) {
+        return true;
     }
-    if carb_b && deg_b == 3 {
-        if an_a == 6 && !arom_a && deg_a > 1 { return true; }
-        if an_a == 7 && !arom_a && deg_a > 1 { return true; }
-        if an_a == 16 && !arom_a && deg_a == 2 { return true; }
-    }
-
-    // L2-L14 / L7-L4: ether/ester O (D2) — aromatic C
-    if (an_a == 8 && !arom_a && deg_a == 2 && an_b == 6 && arom_b) ||
-       (an_b == 8 && !arom_b && deg_b == 2 && an_a == 6 && arom_a) {
+    if is_amide_ester_c(an_b, arom_b, deg_b, carb_b) && l1_partner(an_a, arom_a, deg_a) {
         return true;
     }
 
-    // L3-L4 / L3-L13: aliphatic non-terminal C — aromatic C (alkyl-aryl)
-    if (an_a == 6 && !arom_a && deg_a > 1 && !carb_a && an_b == 6 && arom_b) ||
-       (an_b == 6 && !arom_b && deg_b > 1 && !carb_b && an_a == 6 && arom_a) {
+    // L2-L14 / L7-L4: ether/ester O (D2) — aromatic C.
+    let is_ether_o = |an: u8, arom: bool, deg: usize| an == 8 && !arom && deg == 2;
+    if (is_ether_o(an_a, arom_a, deg_a) && is_aromatic_c(an_b, arom_b))
+        || (is_ether_o(an_b, arom_b, deg_b) && is_aromatic_c(an_a, arom_a))
+    {
         return true;
     }
 
-    // L3-L5: aliphatic C — aliphatic N
-    if (an_a == 6 && !arom_a && deg_a > 1 && !carb_a && an_b == 7 && !arom_b && deg_b > 1) ||
-       (an_b == 6 && !arom_b && deg_b > 1 && !carb_b && an_a == 7 && !arom_a && deg_a > 1) {
+    // L3-L4 / L3-L13: aliphatic non-terminal C — aromatic C.
+    if (is_ali_c_internal(an_a, arom_a, deg_a, carb_a) && is_aromatic_c(an_b, arom_b))
+        || (is_ali_c_internal(an_b, arom_b, deg_b, carb_b) && is_aromatic_c(an_a, arom_a))
+    {
         return true;
     }
 
-    // L3-L15 / L3-L16: aliphatic C — aromatic n
-    if (an_a == 6 && !arom_a && deg_a > 1 && !carb_a && an_b == 7 && arom_b) ||
-       (an_b == 6 && !arom_b && deg_b > 1 && !carb_b && an_a == 7 && arom_a) {
+    // L3-L5: aliphatic C — aliphatic N.
+    if (is_ali_c_internal(an_a, arom_a, deg_a, carb_a) && is_ali_n(an_b, arom_b, deg_b))
+        || (is_ali_c_internal(an_b, arom_b, deg_b, carb_b) && is_ali_n(an_a, arom_a, deg_a))
+    {
         return true;
     }
 
-    // L4-L5 / L13-L5: aromatic C — aliphatic N (Ar-N amine/aniline)
-    if (an_a == 6 && arom_a && an_b == 7 && !arom_b && deg_b > 1) ||
-       (an_b == 6 && arom_b && an_a == 7 && !arom_a && deg_a > 1) {
+    // L3-L15 / L3-L16: aliphatic C — aromatic n.
+    if (is_ali_c_internal(an_a, arom_a, deg_a, carb_a) && is_aromatic_n(an_b, arom_b))
+        || (is_ali_c_internal(an_b, arom_b, deg_b, carb_b) && is_aromatic_n(an_a, arom_a))
+    {
         return true;
     }
 
-    // L8-L8: aliphatic C — aliphatic C (central chain C-C bonds)
-    // Only break if BOTH atoms are non-terminal AND neither is a carbonyl C.
-    if an_a == 6 && !arom_a && deg_a > 1 && !carb_a &&
-       an_b == 6 && !arom_b && deg_b > 1 && !carb_b {
+    // L4-L5 / L13-L5: aromatic C — aliphatic N (Ar-N).
+    if (is_aromatic_c(an_a, arom_a) && is_ali_n(an_b, arom_b, deg_b))
+        || (is_aromatic_c(an_b, arom_b) && is_ali_n(an_a, arom_a, deg_a))
+    {
         return true;
     }
 
-    // L10-L13 / L11-L13: thioether S (D2) — aromatic C
-    if (an_a == 16 && !arom_a && deg_a == 2 && an_b == 6 && arom_b) ||
-       (an_b == 16 && !arom_b && deg_b == 2 && an_a == 6 && arom_a) {
+    // L8-L8: aliphatic C — aliphatic C central chain.
+    if is_ali_c_internal(an_a, arom_a, deg_a, carb_a)
+        && is_ali_c_internal(an_b, arom_b, deg_b, carb_b)
+    {
         return true;
     }
 
-    // L12-L10 / L12-L11: C — thioether S (aliphatic C-S)
-    if (an_a == 6 && !arom_a && deg_a > 1 && an_b == 16 && !arom_b && deg_b == 2) ||
-       (an_b == 6 && !arom_b && deg_b > 1 && an_a == 16 && !arom_a && deg_a == 2) {
+    // L10-L13 / L11-L13: thioether S — aromatic C.
+    if (is_thioether_s(an_a, arom_a, deg_a) && is_aromatic_c(an_b, arom_b))
+        || (is_thioether_s(an_b, arom_b, deg_b) && is_aromatic_c(an_a, arom_a))
+    {
         return true;
     }
 
-    // L13-L13: biaryl Ar-Ar bond (aromatic C — aromatic C)
-    // Only for bonds between different rings (both in ring_atoms by definition of aromatic bond).
-    if an_a == 6 && arom_a && an_b == 6 && arom_b {
-        // Check it's a cross-ring bond (the two atoms are NOT in any common ring).
-        let common_ring = find_sssr_for_bond_check(mol, a, b);
-        if !common_ring {
-            return true;
-        }
+    // L12-L10 / L12-L11: aliphatic C — thioether S.
+    let is_ali_c_d_gt1 = |an: u8, arom: bool, deg: usize| an == 6 && !arom && deg > 1;
+    if (is_ali_c_d_gt1(an_a, arom_a, deg_a) && is_thioether_s(an_b, arom_b, deg_b))
+        || (is_ali_c_d_gt1(an_b, arom_b, deg_b) && is_thioether_s(an_a, arom_a, deg_a))
+    {
+        return true;
     }
 
-    // L9-L16 / L15-L15 / L16-L16: aromatic n bonds
-    if an_a == 7 && arom_a && an_b == 7 && arom_b {
+    // L13-L13: biaryl Ar-Ar bond only when atoms do NOT share a ring.
+    if is_aromatic_c(an_a, arom_a) && is_aromatic_c(an_b, arom_b) && !atoms_share_ring(mol, a, b) {
+        return true;
+    }
+
+    // L9-L16 / L15-L15 / L16-L16: aromatic n — aromatic n.
+    if is_aromatic_n(an_a, arom_a) && is_aromatic_n(an_b, arom_b) {
         return true;
     }
 
     false
 }
 
-/// Returns `true` if atoms `a` and `b` share at least one SSSR ring.
-fn find_sssr_for_bond_check(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
-    let rings = find_sssr(mol);
-    rings.rings().iter().any(|ring| ring.contains(&a) && ring.contains(&b))
+/// True if atoms `a` and `b` share at least one SSSR ring.
+fn atoms_share_ring(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
+    find_sssr(mol)
+        .rings()
+        .iter()
+        .any(|ring| ring.contains(&a) && ring.contains(&b))
 }
-
-// ---------------------------------------------------------------------------
-// Fragment splitting helpers
-// ---------------------------------------------------------------------------
 
 /// Split `mol` into its connected components; return each as a separate `Molecule`.
 fn split_into_components(mol: &Molecule) -> Vec<Molecule> {
@@ -313,10 +299,6 @@ fn build_subgraph(mol: &Molecule, atom_set: &HashSet<AtomIdx>) -> Molecule {
 fn copy_molecule(mol: &Molecule) -> Molecule {
     build_subgraph(mol, &(0..mol.atom_count()).map(|i| AtomIdx(i as u32)).collect())
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

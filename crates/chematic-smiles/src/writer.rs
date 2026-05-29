@@ -18,10 +18,6 @@ pub fn write(mol: &Molecule) -> String {
     SmilesWriter::new(mol).write_all()
 }
 
-// ---------------------------------------------------------------------------
-// Writer state
-// ---------------------------------------------------------------------------
-
 struct SmilesWriter<'a> {
     mol: &'a Molecule,
     /// Bonds that are back-edges in the DFS tree (ring closures).
@@ -48,8 +44,6 @@ impl<'a> SmilesWriter<'a> {
         }
     }
 
-    // -- entry point --------------------------------------------------------
-
     fn write_all(mut self) -> String {
         // Phase 1: find all back-edges and assign ring-closure numbers.
         self.find_ring_closures();
@@ -66,8 +60,6 @@ impl<'a> SmilesWriter<'a> {
 
         self.out
     }
-
-    // -- phase 1: ring-closure discovery ------------------------------------
 
     fn find_ring_closures(&mut self) {
         let n = self.mol.atom_count();
@@ -118,8 +110,6 @@ impl<'a> SmilesWriter<'a> {
         in_stack[atom.0 as usize] = false;
     }
 
-    // -- phase 2: serialization -------------------------------------------
-
     /// Write `atom` and then recurse into its unvisited tree-edge neighbors.
     /// `incoming_bond`: the bond type on the edge leading to this atom (None for the root).
     fn write_chain(
@@ -148,7 +138,7 @@ impl<'a> SmilesWriter<'a> {
                 if !(bond_order == BondOrder::Aromatic && atom_aromatic) && bond_order != BondOrder::Single {
                     self.out.push(bond_order.smiles_char());
                 }
-                // Write ring number.
+                // Ring number: single digit for 1-9, `%NN` form for 10+.
                 if rn >= 10 {
                     self.out.push('%');
                     self.out.push(char::from_digit((rn / 10) as u32, 10).unwrap());
@@ -195,8 +185,6 @@ impl<'a> SmilesWriter<'a> {
         }
     }
 
-    // -- atom serialization -------------------------------------------------
-
     fn emit_atom(&mut self, idx: AtomIdx) {
         let atom = self.mol.atom(idx);
 
@@ -235,11 +223,11 @@ impl<'a> SmilesWriter<'a> {
             }
 
             match atom.charge {
-                0  => {}
-                1  => self.out.push('+'),
+                0 => {}
+                1 => self.out.push('+'),
                 -1 => self.out.push('-'),
-                c if c > 0 => { self.out.push('+'); self.out.push_str(&c.to_string()); }
-                c          => self.out.push_str(&c.to_string()),
+                c if c > 0 => self.out.push_str(&format!("+{c}")),
+                c => self.out.push_str(&c.to_string()),
             }
 
             if let Some(m) = atom.atom_map {
@@ -255,10 +243,6 @@ impl<'a> SmilesWriter<'a> {
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

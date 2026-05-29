@@ -65,9 +65,8 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
     }
 
     // Count connected components and build the BFS spanning forest.
-    let (components, parent, bfs_depth) = bfs_spanning_forest(mol);
-    let c = components;
-    let r = (e as isize) - (v as isize) + (c as isize);
+    let (components, parent) = bfs_spanning_forest(mol);
+    let r = (e as isize) - (v as isize) + (components as isize);
 
     if r <= 0 {
         return RingSet(Vec::new());
@@ -90,7 +89,7 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
 
         if !is_tree_edge {
             // This is a back edge — reconstruct the fundamental cycle.
-            if let Some((bond_set, atom_seq)) = fundamental_cycle(mol, u, v_atom, bidx, &parent, &bfs_depth) {
+            if let Some((bond_set, atom_seq)) = fundamental_cycle(mol, u, v_atom, bidx, &parent) {
                 candidate_cycles.push((bond_set, atom_seq));
             }
         }
@@ -135,12 +134,10 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
 /// - `components`: number of connected components.
 /// - `parent`: for each atom, the atom from which it was first discovered
 ///   (None for BFS roots).
-/// - `depth`: BFS depth of each atom from the root of its component.
-fn bfs_spanning_forest(mol: &Molecule) -> (usize, Vec<Option<AtomIdx>>, Vec<u32>) {
+fn bfs_spanning_forest(mol: &Molecule) -> (usize, Vec<Option<AtomIdx>>) {
     let n = mol.atom_count();
     let mut visited = vec![false; n];
     let mut parent: Vec<Option<AtomIdx>> = vec![None; n];
-    let mut depth = vec![0u32; n];
     let mut components = 0;
     let mut queue: VecDeque<AtomIdx> = VecDeque::new();
 
@@ -159,14 +156,13 @@ fn bfs_spanning_forest(mol: &Molecule) -> (usize, Vec<Option<AtomIdx>>, Vec<u32>
                 if !visited[ni] {
                     visited[ni] = true;
                     parent[ni] = Some(current);
-                    depth[ni] = depth[current.0 as usize] + 1;
                     queue.push_back(neighbor);
                 }
             }
         }
     }
 
-    (components, parent, depth)
+    (components, parent)
 }
 
 // ---------------------------------------------------------------------------
@@ -184,12 +180,11 @@ fn fundamental_cycle(
     v: AtomIdx,
     bidx: BondIdx,
     parent: &[Option<AtomIdx>],
-    depth: &[u32],
 ) -> Option<(Vec<BondIdx>, Vec<AtomIdx>)> {
     // Walk both endpoints up to the LCA (lowest common ancestor) in the spanning tree.
     // path_u: atoms from u up to (and including) LCA
     // path_v: atoms from v up to (and including) LCA
-    let (path_u, path_v) = paths_to_lca(u, v, parent, depth);
+    let (path_u, path_v) = paths_to_lca(u, v, parent);
 
     if path_u.is_empty() || path_v.is_empty() {
         return None;
@@ -241,7 +236,6 @@ fn paths_to_lca(
     u: AtomIdx,
     v: AtomIdx,
     parent: &[Option<AtomIdx>],
-    depth: &[u32],
 ) -> (Vec<AtomIdx>, Vec<AtomIdx>) {
     // Collect ancestors of u and v by walking up the parent pointers.
     let ancestors_u = ancestors(u, parent);
@@ -254,33 +248,19 @@ fn paths_to_lca(
         .collect();
 
     // Find LCA: first ancestor of v (in order from v to root) that is also in set_u.
-    let mut lca = None;
-    let mut idx_in_v = 0;
-    for (i, &a) in ancestors_v.iter().enumerate() {
-        if set_u.contains_key(&a) {
-            lca = Some(a);
-            idx_in_v = i;
-            break;
-        }
-    }
-
-    let lca = match lca {
-        Some(a) => a,
-        None => {
-            // u and v are in different components — not a valid back edge
-            // (should not happen if called correctly).
-            return (Vec::new(), Vec::new());
-        }
+    let Some((idx_in_v, lca)) = ancestors_v
+        .iter()
+        .enumerate()
+        .find_map(|(i, a)| set_u.contains_key(a).then_some((i, *a)))
+    else {
+        // u and v are in different components — not a valid back edge
+        // (should not happen if called correctly).
+        return (Vec::new(), Vec::new());
     };
 
-    let idx_in_u = *set_u.get(&lca).unwrap();
-
+    let idx_in_u = set_u[&lca];
     let path_u = ancestors_u[..=idx_in_u].to_vec();
     let path_v = ancestors_v[..=idx_in_v].to_vec();
-
-    // Suppress the depth parameter warning — we keep it for potential future use.
-    let _ = depth;
-
     (path_u, path_v)
 }
 
@@ -311,20 +291,14 @@ fn ancestors(start: AtomIdx, parent: &[Option<AtomIdx>]) -> Vec<AtomIdx> {
 /// Returns the reduced cycle (empty if dependent on existing basis).
 fn gf2_reduce(cycle: &[BondIdx], basis: &HashMap<BondIdx, Vec<BondIdx>>) -> Vec<BondIdx> {
     let mut current: Vec<BondIdx> = cycle.to_vec();
-
-    loop {
-        if current.is_empty() {
-            return current;
-        }
-        let pivot = *current.iter().min().unwrap();
+    while let Some(&pivot) = current.iter().min() {
         match basis.get(&pivot) {
             None => return current, // independent
-            Some(basis_row) => {
-                // XOR: symmetric difference of the two sorted sets.
-                current = sym_diff(&current, basis_row);
-            }
+            // XOR: symmetric difference of the two sorted sets.
+            Some(basis_row) => current = sym_diff(&current, basis_row),
         }
     }
+    current
 }
 
 /// Symmetric difference of two sorted slices (GF(2) addition / XOR for sets).

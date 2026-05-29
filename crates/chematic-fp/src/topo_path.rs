@@ -4,31 +4,10 @@
 //! them with FNV-1a. Paths are canonicalised (forward vs. reverse) so that
 //! each unique path is hashed only once.
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, Molecule};
 
 use crate::bitvec::BitVec2048;
-
-const FNV_OFFSET: u64 = 14695981039346656037;
-const FNV_PRIME: u64 = 1099511628211;
-
-fn fnv1a(bytes: &[u8]) -> u64 {
-    let mut h = FNV_OFFSET;
-    for &b in bytes {
-        h ^= b as u64;
-        h = h.wrapping_mul(FNV_PRIME);
-    }
-    h
-}
-
-fn bond_byte(order: BondOrder) -> u8 {
-    match order {
-        BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
-        BondOrder::Double => 2,
-        BondOrder::Triple => 3,
-        BondOrder::Aromatic => 4,
-        BondOrder::Quadruple => 5,
-    }
-}
+use crate::ecfp::{bond_type_int as bond_byte, fnv1a};
 
 /// Configuration for topological path fingerprints.
 #[derive(Debug, Clone)]

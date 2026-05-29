@@ -207,17 +207,17 @@ pub fn brics_fragment_count(mol: &MolHandle) -> usize {
 pub fn ecfp4_bitvec(mol: &MolHandle) -> Vec<u8> {
     let fp = chematic_fp::ecfp4(&mol.inner);
     // BitVec2048 is 2048 bits; extract them byte-by-byte via the public `get` method.
-    let mut bytes = vec![0u8; 256];
-    for byte_idx in 0..256usize {
-        let mut byte = 0u8;
-        for bit in 0..8usize {
-            if fp.get(byte_idx * 8 + bit) {
-                byte |= 1 << bit;
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
             }
-        }
-        bytes[byte_idx] = byte;
-    }
-    bytes
+            byte
+        })
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -253,33 +253,26 @@ fn molecular_formula(mol: &chematic_core::Molecule) -> String {
 
     // Collect into Hill order: C (6), H (1), then remaining by atomic number.
     let mut result = String::new();
+    let append = |symbol: &str, count: u32, out: &mut String| {
+        out.push_str(symbol);
+        if count > 1 {
+            out.push_str(&count.to_string());
+        }
+    };
 
-    // Carbon first.
     if let Some(&c_count) = counts.get(&6) {
-        result.push_str("C");
-        if c_count > 1 {
-            result.push_str(&c_count.to_string());
-        }
+        append("C", c_count, &mut result);
     }
-
-    // Hydrogen second.
     if let Some(&h_count) = counts.get(&1) {
-        result.push_str("H");
-        if h_count > 1 {
-            result.push_str(&h_count.to_string());
-        }
+        append("H", h_count, &mut result);
     }
-
     // Remaining elements in atomic-number order (BTreeMap is sorted by key).
     for (&an, &count) in &counts {
         if an == 1 || an == 6 {
-            continue; // already handled
+            continue;
         }
         let elem = Element::from_atomic_number(an).unwrap();
-        result.push_str(elem.symbol());
-        if count > 1 {
-            result.push_str(&count.to_string());
-        }
+        append(elem.symbol(), count, &mut result);
     }
 
     result

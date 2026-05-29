@@ -86,45 +86,29 @@ pub fn parse_pdb_atoms(input: &str) -> Vec<PdbAtom> {
     let mut atoms = Vec::new();
 
     for line in input.lines() {
-        let record = &line.get(0..6).unwrap_or("").trim_end();
-        if *record != "ATOM" && *record != "HETATM" {
+        let record = line.get(0..6).unwrap_or("").trim_end();
+        if record != "ATOM" && record != "HETATM" {
             continue;
         }
 
-        // Helper: extract a fixed-width substring, padding short lines with spaces.
+        // Extract a fixed-width substring, tolerating short lines.
         let field = |start: usize, end: usize| -> &str {
             let end = end.min(line.len());
-            if start >= end {
-                ""
-            } else {
-                &line[start..end]
-            }
+            line.get(start..end).unwrap_or("")
         };
 
-        let serial = field(6, 11).trim().parse::<u32>().unwrap_or(0);
-        let name = field(12, 16).to_string();
-        let res_name = field(17, 20).trim().to_string();
-        let chain_id = field(21, 22).chars().next().unwrap_or(' ');
-        let res_seq = field(22, 26).trim().parse::<i32>().unwrap_or(0);
-        let x = field(30, 38).trim().parse::<f64>().unwrap_or(0.0);
-        let y = field(38, 46).trim().parse::<f64>().unwrap_or(0.0);
-        let z = field(46, 54).trim().parse::<f64>().unwrap_or(0.0);
-        let occupancy = field(54, 60).trim().parse::<f64>().unwrap_or(1.0);
-        let temp_factor = field(60, 66).trim().parse::<f64>().unwrap_or(0.0);
-        let element = field(76, 78).trim().to_string();
-
         atoms.push(PdbAtom {
-            serial,
-            name,
-            res_name,
-            chain_id,
-            res_seq,
-            x,
-            y,
-            z,
-            occupancy,
-            temp_factor,
-            element,
+            serial: field(6, 11).trim().parse::<u32>().unwrap_or(0),
+            name: field(12, 16).to_string(),
+            res_name: field(17, 20).trim().to_string(),
+            chain_id: field(21, 22).chars().next().unwrap_or(' '),
+            res_seq: field(22, 26).trim().parse::<i32>().unwrap_or(0),
+            x: field(30, 38).trim().parse::<f64>().unwrap_or(0.0),
+            y: field(38, 46).trim().parse::<f64>().unwrap_or(0.0),
+            z: field(46, 54).trim().parse::<f64>().unwrap_or(0.0),
+            occupancy: field(54, 60).trim().parse::<f64>().unwrap_or(1.0),
+            temp_factor: field(60, 66).trim().parse::<f64>().unwrap_or(0.0),
+            element: field(76, 78).trim().to_string(),
         });
     }
 
@@ -146,37 +130,32 @@ pub fn pdb_to_molecule(atoms: &[PdbAtom]) -> (Molecule, Coords3D) {
     let mut elements: Vec<Element> = Vec::with_capacity(atoms.len());
 
     for pdb_atom in atoms {
-        // Try element field first, then fall back to first character of atom name.
+        // Use the element field when populated, else fall back to the first
+        // character of the atom name.
         let sym = if !pdb_atom.element.is_empty() {
             pdb_atom.element.clone()
         } else {
             pdb_atom.name.trim().chars().next().unwrap_or('C').to_string()
         };
-
         let element = Element::from_symbol(&sym).unwrap_or(Element::C);
         elements.push(element);
         builder.add_atom(Atom::new(element));
         points.push(Point3::new(pdb_atom.x, pdb_atom.y, pdb_atom.z));
     }
 
-    // Distance-based bond inference.
+    // Distance-based bond inference: bonded when d < 1.3 × (r_a + r_b).
     let n = points.len();
     for i in 0..n {
         for j in (i + 1)..n {
-            let r_i = covalent_radius(&elements[i]);
-            let r_j = covalent_radius(&elements[j]);
-            let threshold = 1.3 * (r_i + r_j);
-            let dist = points[i].distance(&points[j]);
-            if dist < threshold {
-                // Attempt to add bond; ignore duplicate-bond errors (shouldn't occur).
+            let threshold = 1.3 * (covalent_radius(&elements[i]) + covalent_radius(&elements[j]));
+            if points[i].distance(&points[j]) < threshold {
+                // Ignore duplicate-bond errors (shouldn't occur for distinct pairs).
                 let _ = builder.add_bond(AtomIdx(i as u32), AtomIdx(j as u32), BondOrder::Single);
             }
         }
     }
 
-    let mol = builder.build();
-    let coords = Coords3D { points };
-    (mol, coords)
+    (builder.build(), Coords3D { points })
 }
 
 // ---------------------------------------------------------------------------

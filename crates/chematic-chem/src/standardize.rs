@@ -8,16 +8,9 @@
 
 use std::collections::{HashMap, VecDeque};
 
-use chematic_core::{AtomIdx, Element, Molecule, MoleculeBuilder};
+use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder};
 
-// ---------------------------------------------------------------------------
-// Connected-component detection
-// ---------------------------------------------------------------------------
-
-/// Find all connected components of `mol` via BFS.
-///
-/// Returns a `Vec<Vec<AtomIdx>>` sorted in descending order by component size
-/// (largest component first).
+/// Find all connected components of `mol` via BFS, sorted descending by size.
 fn connected_components(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
     let n = mol.atom_count();
     let mut visited = vec![false; n];
@@ -27,16 +20,14 @@ fn connected_components(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
         if visited[start] {
             continue;
         }
-
-        let mut component: Vec<AtomIdx> = Vec::new();
-        let start_idx = AtomIdx(start as u32);
         visited[start] = true;
+        let mut component = Vec::new();
         let mut queue: VecDeque<AtomIdx> = VecDeque::new();
-        queue.push_back(start_idx);
+        queue.push_back(AtomIdx(start as u32));
 
         while let Some(current) = queue.pop_front() {
             component.push(current);
-            for (neighbor, _bond_idx) in mol.neighbors(current) {
+            for (neighbor, _) in mol.neighbors(current) {
                 let ni = neighbor.0 as usize;
                 if !visited[ni] {
                     visited[ni] = true;
@@ -44,135 +35,90 @@ fn connected_components(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
                 }
             }
         }
-
         components.push(component);
     }
 
-    // Sort descending by component size so the largest fragment is first.
     components.sort_by(|a, b| b.len().cmp(&a.len()));
     components
 }
 
-// ---------------------------------------------------------------------------
-// Largest fragment
-// ---------------------------------------------------------------------------
+/// Copy bonds from `mol` into `builder` when both endpoints are remapped.
+fn copy_bonds(mol: &Molecule, builder: &mut MoleculeBuilder, remap: &HashMap<AtomIdx, AtomIdx>) {
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
+            let _ = builder.add_bond(new_a, new_b, bond.order);
+        }
+    }
+}
 
 /// Return a new `Molecule` containing only the largest connected fragment.
 ///
-/// If the molecule has only one fragment (or is empty), a clone is returned.
+/// If the molecule is empty, an empty `Molecule` is returned.
 pub fn largest_fragment(mol: &Molecule) -> Molecule {
     if mol.atom_count() == 0 {
         return MoleculeBuilder::new().build();
     }
 
     let components = connected_components(mol);
-
-    // The first component is the largest after sorting.
     let largest = &components[0];
 
-    // Build a remapping from old AtomIdx to new AtomIdx.
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
     let mut builder = MoleculeBuilder::new();
-
     for &old_idx in largest {
-        let atom = mol.atom(old_idx).clone();
-        let new_idx = builder.add_atom(atom);
+        let new_idx = builder.add_atom(mol.atom(old_idx).clone());
         remap.insert(old_idx, new_idx);
     }
-
-    // Add bonds whose both endpoints are in the selected component.
-    for i in 0..mol.bond_count() {
-        let bond = mol.bond(chematic_core::BondIdx(i as u32));
-        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(new_a, new_b, bond.order);
-        }
-    }
-
+    copy_bonds(mol, &mut builder, &remap);
     builder.build()
 }
-
-// ---------------------------------------------------------------------------
-// Charge neutralization
-// ---------------------------------------------------------------------------
 
 /// Neutralize simple formal charges in a molecule.
 ///
 /// Rules applied:
-/// - `[O-]` on a carbon neighbor: set charge to 0 and increment hydrogen_count by 1
-///   (converts carboxylate to carboxylic acid).
-/// - `[N+]` with at least one explicit H: remove one H and set charge to 0
-///   (converts ammonium to amine).
-/// - `[O+]` with at least one explicit H: remove one H and set charge to 0
-///   (converts protonated ether to neutral ether).
-///
-/// Returns a new `Molecule` with modifications applied.
+/// - `[O-]` with a carbon neighbor → charge 0, +1 H (carboxylate → carboxylic acid).
+/// - `[N+]` with at least one explicit H → charge 0, −1 H (ammonium → amine).
+/// - `[O+]` with at least one explicit H → charge 0, −1 H (protonated ether → ether).
 pub fn neutralize_charges(mol: &Molecule) -> Molecule {
-    // Collect any modifications: (AtomIdx, new_charge, new_hydrogen_count)
     let mut modifications: HashMap<AtomIdx, (i8, Option<u8>)> = HashMap::new();
 
     for i in 0..mol.atom_count() {
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
+        let h = atom.hydrogen_count.unwrap_or(0);
 
         match (atom.element, atom.charge) {
-            // [O-]: neutralize if it has a carbon neighbor.
             (Element::O, -1) => {
-                let has_carbon_neighbor = mol
-                    .neighbors(idx)
-                    .any(|(nb, _)| mol.atom(nb).element == Element::C);
-                if has_carbon_neighbor {
-                    let current_h = atom.hydrogen_count.unwrap_or(0);
-                    modifications.insert(idx, (0, Some(current_h + 1)));
+                let has_c_neighbor =
+                    mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).element == Element::C);
+                if has_c_neighbor {
+                    modifications.insert(idx, (0, Some(h + 1)));
                 }
             }
-            // [N+]: neutralize if it carries at least one explicit H.
-            (Element::N, 1) => {
-                let current_h = atom.hydrogen_count.unwrap_or(0);
-                if current_h > 0 {
-                    modifications.insert(idx, (0, Some(current_h - 1)));
-                }
-            }
-            // [O+]: neutralize if it carries at least one explicit H.
-            (Element::O, 1) => {
-                let current_h = atom.hydrogen_count.unwrap_or(0);
-                if current_h > 0 {
-                    modifications.insert(idx, (0, Some(current_h - 1)));
+            (Element::N, 1) | (Element::O, 1) => {
+                if h > 0 {
+                    modifications.insert(idx, (0, Some(h - 1)));
                 }
             }
             _ => {}
         }
     }
 
-    // Rebuild molecule, applying modifications where applicable.
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-
     for i in 0..mol.atom_count() {
         let old_idx = AtomIdx(i as u32);
         let mut atom = mol.atom(old_idx).clone();
-
         if let Some(&(new_charge, new_h)) = modifications.get(&old_idx) {
             atom.charge = new_charge;
             atom.hydrogen_count = new_h;
         }
-
         let new_idx = builder.add_atom(atom);
         remap.insert(old_idx, new_idx);
     }
-
-    for i in 0..mol.bond_count() {
-        let bond = mol.bond(chematic_core::BondIdx(i as u32));
-        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(new_a, new_b, bond.order);
-        }
-    }
-
+    copy_bonds(mol, &mut builder, &remap);
     builder.build()
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

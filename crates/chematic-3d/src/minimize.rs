@@ -48,43 +48,38 @@ pub fn minimize_with_config(mol: &Molecule, coords: Coords3D, config: &MinimizeC
     let mut c = coords;
     let delta = 1e-4;
 
+    // Central-difference partial derivative of total_energy w.r.t. one
+    // component of atom `idx`. `axis` selects x/y/z by mutating the chosen
+    // component before each energy evaluation.
+    fn partial(
+        mol: &Molecule,
+        c: &mut Coords3D,
+        idx: AtomIdx,
+        delta: f64,
+        axis: impl Fn(&mut Point3, f64),
+    ) -> f64 {
+        let orig = c.get(idx);
+        let mut p = orig;
+        axis(&mut p, delta);
+        c.set(idx, p);
+        let ep = total_energy(mol, c);
+        let mut p = orig;
+        axis(&mut p, -delta);
+        c.set(idx, p);
+        let em = total_energy(mol, c);
+        c.set(idx, orig);
+        (ep - em) / (2.0 * delta)
+    }
+
     for _ in 0..config.max_steps {
         let mut grad = vec![Point3::zero(); mol.atom_count()];
         let mut max_grad = 0.0f64;
 
         for i in 0..mol.atom_count() {
             let idx = AtomIdx(i as u32);
-            let orig = c.get(idx);
-
-            // x gradient
-            {
-                c.set(idx, Point3::new(orig.x + delta, orig.y, orig.z));
-                let ep = total_energy(mol, &c);
-                c.set(idx, Point3::new(orig.x - delta, orig.y, orig.z));
-                let em = total_energy(mol, &c);
-                c.set(idx, orig);
-                grad[i].x = (ep - em) / (2.0 * delta);
-            }
-
-            // y gradient
-            {
-                c.set(idx, Point3::new(orig.x, orig.y + delta, orig.z));
-                let ep = total_energy(mol, &c);
-                c.set(idx, Point3::new(orig.x, orig.y - delta, orig.z));
-                let em = total_energy(mol, &c);
-                c.set(idx, orig);
-                grad[i].y = (ep - em) / (2.0 * delta);
-            }
-
-            // z gradient
-            {
-                c.set(idx, Point3::new(orig.x, orig.y, orig.z + delta));
-                let ep = total_energy(mol, &c);
-                c.set(idx, Point3::new(orig.x, orig.y, orig.z - delta));
-                let em = total_energy(mol, &c);
-                c.set(idx, orig);
-                grad[i].z = (ep - em) / (2.0 * delta);
-            }
+            grad[i].x = partial(mol, &mut c, idx, delta, |p, d| p.x += d);
+            grad[i].y = partial(mol, &mut c, idx, delta, |p, d| p.y += d);
+            grad[i].z = partial(mol, &mut c, idx, delta, |p, d| p.z += d);
 
             let gmax = grad[i].x.abs().max(grad[i].y.abs()).max(grad[i].z.abs());
             if gmax > max_grad {
@@ -96,7 +91,7 @@ pub fn minimize_with_config(mol: &Molecule, coords: Coords3D, config: &MinimizeC
             break;
         }
 
-        // Update coordinates: scale step so the largest gradient component moves step_size
+        // Scale step so the largest gradient component moves `step_size`.
         let scale = config.step_size / max_grad.max(1e-8);
         for i in 0..mol.atom_count() {
             let idx = AtomIdx(i as u32);
@@ -222,8 +217,7 @@ fn vdw_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
     for (_, bond) in mol.bonds() {
         let i = bond.atom1.0 as usize;
         let j = bond.atom2.0 as usize;
-        let (lo, hi) = if i < j { (i, j) } else { (j, i) };
-        excluded.insert((lo, hi));
+        excluded.insert((i.min(j), i.max(j)));
     }
 
     // 1-3 exclusions (atoms sharing a common bonded neighbor)
@@ -234,8 +228,7 @@ fn vdw_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
             for jj in (ii + 1)..neighbors.len() {
                 let i = neighbors[ii];
                 let j = neighbors[jj];
-                let (lo, hi) = if i < j { (i, j) } else { (j, i) };
-                excluded.insert((lo, hi));
+                excluded.insert((i.min(j), i.max(j)));
             }
         }
     }

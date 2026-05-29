@@ -92,43 +92,38 @@ impl Molecule {
 
     /// Return the bond between `a` and `b`, or `None` if not connected.
     pub fn bond_between(&self, a: AtomIdx, b: AtomIdx) -> Option<(BondIdx, &BondEntry)> {
-        for &(nb, bidx) in &self.adjacency[a.0 as usize] {
-            if nb == b {
-                return Some((bidx, &self.bonds[bidx.0 as usize]));
-            }
-        }
-        None
+        self.adjacency[a.0 as usize]
+            .iter()
+            .find(|&&(nb, _)| nb == b)
+            .map(|&(_, bidx)| (bidx, &self.bonds[bidx.0 as usize]))
     }
 
     /// Molecular formula as a Hill-order string (C first, H second, then alphabetical).
     pub fn formula(&self) -> String {
         use std::collections::BTreeMap;
         let mut counts: BTreeMap<&str, u32> = BTreeMap::new();
-
         for (_, atom) in self.atoms() {
             *counts.entry(atom.element.symbol()).or_insert(0) += 1;
         }
 
         let mut result = String::new();
+        let push_count = |sym: &str, n: u32, out: &mut String| {
+            out.push_str(sym);
+            if n > 1 {
+                out.push_str(&n.to_string());
+            }
+        };
 
-        // Hill order: C first
-        if let Some(&c) = counts.get("C") {
-            result.push('C');
-            if c > 1 { result.push_str(&c.to_string()); }
-            counts.remove("C");
+        // Hill order: C, then H, then the remaining symbols alphabetically.
+        if let Some(c) = counts.remove("C") {
+            push_count("C", c, &mut result);
         }
-        // H second
-        if let Some(&h) = counts.get("H") {
-            result.push('H');
-            if h > 1 { result.push_str(&h.to_string()); }
-            counts.remove("H");
+        if let Some(h) = counts.remove("H") {
+            push_count("H", h, &mut result);
         }
-        // rest alphabetically
         for (sym, count) in &counts {
-            result.push_str(sym);
-            if *count > 1 { result.push_str(&count.to_string()); }
+            push_count(sym, *count, &mut result);
         }
-
         result
     }
 }

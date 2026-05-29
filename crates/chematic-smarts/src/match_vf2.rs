@@ -187,15 +187,9 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         }
         AtomPrimitive::Valence(v) => {
             // Total valence = sum of explicit bond orders + implicit H count.
-            let bond_sum: u8 = ctx.mol.neighbors(idx).map(|(_, bid)| {
-                match ctx.mol.bond(bid).order {
-                    BondOrder::Single | BondOrder::Up | BondOrder::Down => 1u8,
-                    BondOrder::Double => 2,
-                    BondOrder::Triple => 3,
-                    BondOrder::Quadruple => 4,
-                    BondOrder::Aromatic => 1, // aromatic bond counted as 1
-                }
-            }).sum();
+            let bond_sum: u8 = ctx.mol.neighbors(idx)
+                .map(|(_, bid)| bond_order_int(ctx.mol.bond(bid).order))
+                .sum();
             bond_sum + implicit_hcount(ctx.mol, idx) == *v
         }
         AtomPrimitive::RingBondCount(x) => {
@@ -224,16 +218,17 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             let atom = ctx.mol.atom(idx);
             let hyb = if atom.aromatic {
                 2u8
-            } else if ctx.mol.neighbors(idx).any(|(_, bid)| {
-                matches!(ctx.mol.bond(bid).order, BondOrder::Triple)
-            }) {
-                1
-            } else if ctx.mol.neighbors(idx).any(|(_, bid)| {
-                matches!(ctx.mol.bond(bid).order, BondOrder::Double)
-            }) {
-                2
             } else {
-                3
+                let mut has_triple = false;
+                let mut has_double = false;
+                for (_, bid) in ctx.mol.neighbors(idx) {
+                    match ctx.mol.bond(bid).order {
+                        BondOrder::Triple => { has_triple = true; break; }
+                        BondOrder::Double => has_double = true,
+                        _ => {}
+                    }
+                }
+                if has_triple { 1 } else if has_double { 2 } else { 3 }
             };
             hyb == *h
         }
@@ -326,6 +321,19 @@ fn eval_bond_query(
         BondQuery::Not(x) => !eval_bond_query(x, order, a, b, ctx),
         // Implicit "any bond" — matches any bond order.
         BondQuery::Any => true,
+    }
+}
+
+/// Convert a `BondOrder` to its integer contribution for valence-style sums.
+///
+/// Stereo bonds (Up/Down) are treated as single. Aromatic bonds are counted
+/// as 1 (SMARTS valence convention).
+fn bond_order_int(order: BondOrder) -> u8 {
+    match order {
+        BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic => 1,
+        BondOrder::Double => 2,
+        BondOrder::Triple => 3,
+        BondOrder::Quadruple => 4,
     }
 }
 

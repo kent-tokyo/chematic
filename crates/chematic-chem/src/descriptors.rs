@@ -9,6 +9,35 @@ use std::collections::HashSet;
 use chematic_core::{AtomIdx, BondOrder, BondIdx, Element, Molecule, implicit_hcount};
 use chematic_perception::find_sssr;
 
+/// True if `idx` has a double bond to any neighbor whose atomic number equals `target_an`.
+fn has_double_bond_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> bool {
+    mol.neighbors(idx).any(|(nb, bidx)| {
+        mol.bond(bidx).order == BondOrder::Double
+            && mol.atom(nb).element.atomic_number() == target_an
+    })
+}
+
+/// Count double bonds from `idx` to neighbors whose atomic number equals `target_an`.
+fn count_double_bonds_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> usize {
+    mol.neighbors(idx)
+        .filter(|&(nb, bidx)| {
+            mol.bond(bidx).order == BondOrder::Double
+                && mol.atom(nb).element.atomic_number() == target_an
+        })
+        .count()
+}
+
+/// True if any neighbor of `idx` is aromatic.
+fn has_aromatic_neighbor(mol: &Molecule, idx: AtomIdx) -> bool {
+    mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).aromatic)
+}
+
+/// True if any neighbor of `idx` is an aromatic carbon.
+fn has_aromatic_carbon_neighbor(mol: &Molecule, idx: AtomIdx) -> bool {
+    mol.neighbors(idx)
+        .any(|(nb, _)| mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6)
+}
+
 /// Average atomic mass table.
 /// Falls back to `atomic_number as f64` for unlisted elements.
 fn avg_mass(element: Element) -> f64 {
@@ -175,27 +204,12 @@ pub fn hba_count(mol: &Molecule) -> usize {
         .count()
 }
 
-/// Returns true if any neighbor of `idx` is a carbon atom that itself has a
-/// double bond to an oxygen (i.e., a carbonyl carbon).
+/// True if any neighbor of `idx` is a carbon that itself has a double bond to oxygen
+/// (i.e., a carbonyl carbon).
 fn neighbor_has_carbonyl(mol: &Molecule, idx: AtomIdx) -> bool {
-    for (nb_idx, _) in mol.neighbors(idx) {
-        let nb_atom = mol.atom(nb_idx);
-        if nb_atom.element.atomic_number() != 6 {
-            continue;
-        }
-        // Check if this carbon neighbor has any double bond to O
-        for (nb2_idx, nb2_bidx) in mol.neighbors(nb_idx) {
-            if nb2_idx == idx { continue; }
-            let bond = mol.bond(nb2_bidx);
-            if bond.order == BondOrder::Double {
-                let nb2_atom = mol.atom(nb2_idx);
-                if nb2_atom.element.atomic_number() == 8 {
-                    return true;
-                }
-            }
-        }
-    }
-    false
+    mol.neighbors(idx).any(|(nb_idx, _)| {
+        mol.atom(nb_idx).element.atomic_number() == 6 && has_double_bond_to(mol, nb_idx, 8)
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -211,78 +225,50 @@ fn neighbor_has_carbonyl(mol: &Molecule, idx: AtomIdx) -> bool {
 /// - It is not an amide bond: if one atom is N and the other is C,
 ///   and that C has any double bond to an O, the bond is excluded.
 pub fn rotatable_bond_count(mol: &Molecule) -> usize {
-    let rings = find_sssr(mol);
+    let ring_bond_set = ring_bond_indices(mol);
 
-    // Build the set of bond indices that belong to at least one ring.
-    let mut ring_bond_set: HashSet<BondIdx> = HashSet::new();
-    for ring in rings.rings() {
+    mol.bonds()
+        .filter(|(bidx, bond)| {
+            // Stereo bonds Up/Down are also single.
+            let is_single = matches!(
+                bond.order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down
+            );
+            is_single
+                && !ring_bond_set.contains(bidx)
+                && mol.degree(bond.atom1) > 1
+                && mol.degree(bond.atom2) > 1
+                && !is_amide_bond(mol, bond.atom1, bond.atom2)
+        })
+        .count()
+}
+
+/// Indices of all bonds participating in at least one SSSR ring.
+fn ring_bond_indices(mol: &Molecule) -> HashSet<BondIdx> {
+    let mut set = HashSet::new();
+    for ring in find_sssr(mol).rings() {
         for i in 0..ring.len() {
             let a = ring[i];
             let b = ring[(i + 1) % ring.len()];
             if let Some((bidx, _)) = mol.bond_between(a, b) {
-                ring_bond_set.insert(bidx);
+                set.insert(bidx);
             }
         }
     }
-
-    let mut count = 0usize;
-    for (bidx, bond) in mol.bonds() {
-        // Must be a single bond (stereo bonds Up/Down are also single).
-        let is_single = matches!(bond.order, BondOrder::Single | BondOrder::Up | BondOrder::Down);
-        if !is_single {
-            continue;
-        }
-
-        // Not in a ring.
-        if ring_bond_set.contains(&bidx) {
-            continue;
-        }
-
-        let a1 = bond.atom1;
-        let a2 = bond.atom2;
-
-        // Both endpoints must be non-terminal.
-        if mol.degree(a1) <= 1 || mol.degree(a2) <= 1 {
-            continue;
-        }
-
-        // Exclude amide bonds: C-N bond where the C has a double bond to O.
-        if is_amide_bond(mol, a1, a2) {
-            continue;
-        }
-
-        count += 1;
-    }
-
-    count
+    set
 }
 
-/// Return true if the bond between `a` and `b` is an amide-like C-N bond.
-///
-/// Condition: one atom is N, the other is C, and that C has at least one
-/// double bond to an oxygen neighbor.
+/// True if the bond between `a` and `b` is an amide-like C-N bond
+/// (one atom is N, the other is C with a double bond to O).
 fn is_amide_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
-    let atom_a = mol.atom(a);
-    let atom_b = mol.atom(b);
-
-    let c_idx = if atom_a.element.atomic_number() == 6
-        && atom_b.element.atomic_number() == 7
-    {
-        a
-    } else if atom_b.element.atomic_number() == 6
-        && atom_a.element.atomic_number() == 7
-    {
-        b
-    } else {
-        return false;
+    let an_a = mol.atom(a).element.atomic_number();
+    let an_b = mol.atom(b).element.atomic_number();
+    let c_idx = match (an_a, an_b) {
+        (6, 7) => a,
+        (7, 6) => b,
+        _ => return false,
     };
-
-    // Check whether the C has any double bond to an O neighbor.
-    mol.neighbors(c_idx).any(|(nb, nbidx)| {
-        let bond = mol.bond(nbidx);
-        mol.atom(nb).element.atomic_number() == 8
-            && bond.order == BondOrder::Double
-    })
+    has_double_bond_to(mol, c_idx, 8)
 }
 
 // ---------------------------------------------------------------------------
@@ -322,12 +308,29 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                     }
                 } else {
                     // aliphatic N
-                    if h >= 2 {
+                    if atom.charge == 1 {
+                        // Nitro group [N+](=O)[O-]: Ertl 2000 value = 41.44 Å²
+                        // (the =O and O- oxygens contribute 0 for this group)
+                        let is_nitro = mol.neighbors(idx).any(|(nb, bidx)| {
+                            mol.bond(bidx).order == BondOrder::Double
+                                && mol.atom(nb).element.atomic_number() == 8
+                        }) && mol.neighbors(idx).any(|(nb, _)| {
+                            mol.atom(nb).element.atomic_number() == 8
+                                && mol.atom(nb).charge == -1
+                        });
+                        if is_nitro { 41.44 } else { 3.24 }
+                    } else if h >= 2 {
                         26.02 // NH2
                     } else if h == 1 {
                         12.03 // NH (secondary)
                     } else {
-                        3.24  // tertiary N
+                        // h=0: check for imine (C=N, non-aromatic)
+                        // Imine N has TPSA ~ same as pyridine N (12.89 Å²)
+                        let is_imine = mol.neighbors(idx).any(|(nb, bidx)| {
+                            mol.bond(bidx).order == BondOrder::Double
+                                && mol.atom(nb).element.atomic_number() == 6
+                        });
+                        if is_imine { 12.89 } else { 3.24 }
                     }
                 }
             }
@@ -338,19 +341,26 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                 } else if h > 0 {
                     20.23 // OH
                 } else {
-                    // Distinguish C=O (17.07), O bonded to S via double bond (0.0 — S
-                    // carries the sulfinyl/sulfonyl contribution), and ether O (9.23).
-                    // In the Ertl 2000 table the sulfinyl/sulfonyl group contributions
-                    // (36.28 / 42.52) are assigned entirely to the S atom, so the
-                    // doubly-bonded O on S does not receive a separate contribution.
-                    let dbl_neighbor_an = mol
-                        .neighbors(idx)
-                        .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
-                        .map(|(nei, _)| mol.atom(nei).element.atomic_number());
-                    match dbl_neighbor_an {
-                        Some(6) => 17.07, // carbonyl C=O
-                        Some(_) => 0.0,   // S=O, P=O, N=O — handled by the other atom
-                        None    => 9.23,  // ether O
+                    // [O-] in nitro group ([N+](=O)[O-]): contribution absorbed into N+.
+                    let is_nitro_o_minus = atom.charge == -1
+                        && mol.neighbors(idx).any(|(nb, _)| {
+                            mol.atom(nb).element.atomic_number() == 7
+                                && mol.atom(nb).charge == 1
+                        });
+                    if is_nitro_o_minus {
+                        0.0
+                    } else {
+                        // S=O / P=O / N=O contributions are assigned to the heteroatom in
+                        // Ertl 2000, so the doubly-bonded O is 0 for those.
+                        let dbl_neighbor_an = mol
+                            .neighbors(idx)
+                            .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
+                            .map(|(nei, _)| mol.atom(nei).element.atomic_number());
+                        match dbl_neighbor_an {
+                            Some(6) => 17.07, // carbonyl C=O
+                            Some(_) => 0.0,   // S=O, P=O, N=O — handled by the other atom
+                            None    => 9.23,  // ether O
+                        }
                     }
                 }
             }
@@ -362,16 +372,11 @@ pub fn tpsa(mol: &Molecule) -> f64 {
             //   sulfone/sulfonyl (2+ oxo)= 42.52 Å²  (each S=O O counted as 0)
             16 => {
                 if is_aromatic {
-                    28.24 // aromatic S (thiophene, thiazole, …)
+                    28.24
                 } else if h > 0 {
                     38.80 // S-H (thiol)
                 } else {
-                    // Count S=O bonds to determine oxidation state.
-                    let oxo_count = mol.neighbors(idx).filter(|&(nei, bidx)| {
-                        mol.bond(bidx).order == BondOrder::Double
-                            && mol.atom(nei).element.atomic_number() == 8
-                    }).count();
-                    match oxo_count {
+                    match count_double_bonds_to(mol, idx, 8) {
                         0 => 25.30, // thioether / ring S
                         1 => 36.28, // sulfoxide
                         _ => 42.52, // sulfone, sulfonyl
@@ -447,24 +452,35 @@ pub fn logp_crippen(mol: &Molecule) -> f64 {
 /// Crippen contribution for Carbon atoms.
 fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
     if ar {
-        // Check for exocyclic double bond to heteroatom (e.g., C=O in caffeine, uracil, xanthine).
-        // These get C10 = −0.3800, not aromatic C.
+        // Aromatic C with exocyclic C=heteroatom (e.g., caffeine C2/C6, uracil C2/C4)
+        // gets C10 = −0.3800, not the standard aromatic C value.
         let has_exocyclic_heteroatom_double = mol.neighbors(idx).any(|(nb, bidx)| {
-            let bo = mol.bond(bidx).order;
-            bo == BondOrder::Double
+            mol.bond(bidx).order == BondOrder::Double
                 && !mol.atom(nb).aromatic
                 && mol.atom(nb).element.atomic_number() != 6
         });
         if has_exocyclic_heteroatom_double {
-            // C10: aromatic C with exocyclic C=O (caffeine C2/C6, uracil C2/C4, etc.)
             -0.3800
         } else if h > 0 {
             0.1581  // C11 [cH]
         } else {
-            0.1441  // C12 [c]
+            // Ring-junction C (all neighbors aromatic, ≥2 of them aromatic C)
+            // covers C4a/C8a in naphthalene, C3a/C7a in indole, etc.
+            // Excludes caffeine C2 (only 1 aromatic C neighbor; 2 are aromatic N).
+            let all_aromatic_nbrs = mol.neighbors(idx)
+                .filter(|(nb, _)| mol.atom(*nb).aromatic)
+                .count();
+            let aromatic_c_nbrs = mol.neighbors(idx)
+                .filter(|(nb, _)| mol.atom(*nb).aromatic
+                    && mol.atom(*nb).element.atomic_number() == 6)
+                .count();
+            if all_aromatic_nbrs >= 3 && aromatic_c_nbrs >= 2 {
+                0.2956  // junction [c]
+            } else {
+                0.1441  // C12 [c] (substituted or N-rich junction)
+            }
         }
     } else {
-        // sp2 if any double/triple bond exists
         let has_double_to_heteroatom = mol.neighbors(idx).any(|(nb, bidx)| {
             let bo = mol.bond(bidx).order;
             (bo == BondOrder::Double || bo == BondOrder::Triple)
@@ -477,36 +493,26 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
         });
 
         if has_double_to_heteroatom {
-            // C=X adjacent to aromatic C (benzoyl, benzaldehyde, acetophenone, etc.)
-            // gets different contribution than purely aliphatic C=X.
-            // Confirmed: benzoic_acid (+0.2574 exact), methyl_benzoate (+0.2574 exact).
-            let adj_to_aromatic_c = mol.neighbors(idx).any(|(nb, _)| {
-                mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6
-            });
-            if adj_to_aromatic_c {
-                -0.1226  // C=X adjacent to Ar ring (Ar-CHO, Ar-COOH, Ar-COOR, Ar-CO-R)
+            // C=X adjacent to aromatic C (Ar-CHO, Ar-COOH, Ar-COOR, Ar-CO-R) takes
+            // a different value than purely aliphatic C=X. Confirmed against
+            // benzoic_acid and methyl_benzoate (+0.2574 exact).
+            if has_aromatic_carbon_neighbor(mol, idx) {
+                -0.1226
             } else {
                 -0.3800  // C10: aliphatic C=X (ketone, aldehyde, ester, carboxyl)
             }
         } else if has_double_to_c {
-            // Alkene C (C=C)
-            match h {
-                0 => -0.2150,   // =C< (tetrasubstituted)
-                1 => -0.2670,   // =CH- (internal)
-                _ => -0.3500,   // =CH2 (terminal)
-            }
+            // Alkene C (C=C) — Wildman-Crippen C5 type: ~+0.2274
+            0.2274
         } else {
             // sp3 C: distinguish heteroatom-bonded, benzylic, pure alkyl
             let bonded_to_heteroatom = mol.neighbors(idx).any(|(nb, _)| {
                 matches!(mol.atom(nb).element.atomic_number(), 7|8|9|15|16|17|35|53)
             });
-            let bonded_to_aromatic_c = mol.neighbors(idx).any(|(nb, _)| {
-                mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6
-            });
             if bonded_to_heteroatom {
                 -0.2035  // C6/C7/C8: sp3 C bonded to N/O/S/halogen
-            } else if bonded_to_aromatic_c {
-                // Benzylic C (Wildman-Crippen C25–C28)
+            } else if has_aromatic_carbon_neighbor(mol, idx) {
+                // Benzylic C (Wildman-Crippen C25–C28).
                 // Confirmed: toluene(C25), ethylbenzene(C26), tetralin(C26×2)
                 match h {
                     3 => 0.0764,   // CH3-Ar (C25)
@@ -524,40 +530,32 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
 /// Crippen contribution for Nitrogen atoms.
 fn crippen_nitrogen(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
     if ar {
-        // N11: all aromatic N ([nH] and [n]) use −0.3239
-        // Confirmed from: pyridine (1.0816), pyrrole (1.0147), imidazole (0.4097), pyrimidine (0.4766)
-        -0.3239
+        // N11: all aromatic N ([nH] and [n]) use −0.3239.
+        // Confirmed from pyridine, pyrrole, imidazole, pyrimidine.
+        return -0.3239;
+    }
+    let h = implicit_hcount(mol, idx);
+    if neighbor_has_carbonyl(mol, idx) {
+        // Amide N: delocalized lone pair.
+        // N_prim_amide = -0.7011 (urea), N_tert_amide ≈ 0.0 (dimethylurea).
+        match h {
+            0 => 0.0000,    // tertiary amide N
+            _ => -0.7011,   // primary or secondary amide NH/NH2
+        }
+    } else if has_aromatic_carbon_neighbor(mol, idx) {
+        // Aniline-type N bonded to aromatic ring.
+        // Confirmed: aniline (h=2), n_methylaniline (h=1), 4_aminophenol.
+        match h {
+            0 => -0.5950,   // tertiary aniline (no data; keep aliphatic value)
+            1 => -0.2010,   // secondary aniline NH (from N-methylaniline)
+            _ => -0.7092,   // primary aniline NH2 (from aniline)
+        }
     } else {
-        let h = implicit_hcount(mol, idx);
-        let is_amide = neighbor_has_carbonyl(mol, idx);
-        // Detect aniline-type N: non-aromatic N bonded to aromatic C (not amide)
-        let adj_to_aromatic_c = mol.neighbors(idx).any(|(nb, _)| {
-            mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6
-        });
-        if is_amide {
-            // Amide N: delocalized lone pair
-            // N_prim_amide = -0.7011 (from urea), N_tert_amide ≈ 0.0 (from dimethylurea)
-            match h {
-                0 => 0.0000,    // tertiary amide N
-                1 => -0.7011,   // secondary amide NH
-                _ => -0.7011,   // primary amide NH2
-            }
-        } else if adj_to_aromatic_c {
-            // Aniline-type N bonded to aromatic ring.
-            // Confirmed: aniline h=2 (exact), n_methylaniline h=1 (exact),
-            //            4_aminophenol fix1+fix4 (exact).
-            match h {
-                0 => -0.5950,   // tertiary aniline (no data; keep aliphatic value)
-                1 => -0.2010,   // secondary aniline NH (N-methylaniline derived)
-                _ => -0.7092,   // primary aniline NH2 (aniline derived)
-            }
-        } else {
-            // Non-amide aliphatic N
-            match h {
-                0 => -0.5950,   // tertiary amine
-                1 => -0.7096,   // secondary amine NH
-                _ => -1.0190,   // primary amine NH2
-            }
+        // Non-amide aliphatic N
+        match h {
+            0 => -0.5950,   // tertiary amine
+            1 => -0.7096,   // secondary amine NH
+            _ => -1.0190,   // primary amine NH2
         }
     }
 }
@@ -565,24 +563,18 @@ fn crippen_nitrogen(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
 /// Crippen contribution for Oxygen atoms.
 fn crippen_oxygen(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
     if ar {
-        // O9: aromatic O (furan) = +0.1552; confirmed from furan LogP=1.2796
-        0.1552
+        0.1552           // O9: aromatic O (furan); confirmed from furan LogP=1.2796
     } else if h > 0 {
-        // OH group: whether alcohol, phenol, or carboxylic acid — O contributes −0.2893
-        // (H contribution is handled separately in crippen_hydrogen)
-        // Confirmed: methanol, ethanol (O portion = −0.2893)
+        // OH (alcohol, phenol, carboxylic acid) — H contribution handled separately.
         -0.2893
     } else {
-        // No H on O: carbonyl (=O) or ether (−O−)
-        let is_double_bonded = mol.neighbors(idx).any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Double);
+        let is_double_bonded = mol
+            .neighbors(idx)
+            .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Double);
         if is_double_bonded {
-            // O8: carbonyl O (=O) in ketone, aldehyde, ester, carboxyl
-            // Confirmed: C10+O8=−0.4309 from acetone, O8=−0.4309−(−0.3800)=−0.0509
-            -0.0509
+            -0.0509      // O8: carbonyl =O; confirmed from acetone
         } else {
-            // O4/O5: ether O (single bonds only) = −0.0684
-            // Confirmed from THF LogP=0.7968 and THP LogP=1.1869
-            -0.0684
+            -0.0684      // O4/O5: ether O; confirmed from THF, THP
         }
     }
 }
@@ -590,65 +582,45 @@ fn crippen_oxygen(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
 /// Crippen contribution for Sulfur atoms.
 fn crippen_sulfur(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
     if ar {
-        // S3: aromatic S (thiophene) = +0.6237
-        // Confirmed from thiophene LogP=1.7481
-        0.6237
+        return 0.6237;   // S3: aromatic S (thiophene); from thiophene LogP=1.7481
+    }
+    let h = implicit_hcount(mol, idx);
+    let oxo_count = count_double_bonds_to(mol, idx, 8);
+    if h > 0 && oxo_count == 0 {
+        0.3132           // S4: thiol; confirmed from thiophenol, cysteine
     } else {
-        let h = implicit_hcount(mol, idx);
-        // Count =O bonds on S (for sulfoxide/sulfone distinction)
-        let oxo_count: usize = mol.neighbors(idx)
-            .filter(|(nb, bidx)| {
-                mol.bond(*bidx).order == BondOrder::Double
-                    && mol.atom(*nb).element.atomic_number() == 8
-            })
-            .count();
-        if h > 0 && oxo_count == 0 {
-            // S4: thiol (SH); distinct from thioether.
-            // Confirmed: thiophenol (exact), cysteine (residual 0.047)
-            0.3132
-        } else {
-            match oxo_count {
-                0 => 0.6482,    // S1: thioether; confirmed: dimethylsulfide, THT
-                1 => -0.2854,   // S2: sulfoxide; derived from DMSO
-                _ => -0.5684,   // S3: sulfone; derived from DMSO2
-            }
+        match oxo_count {
+            0 => 0.6482, // S1: thioether; confirmed from dimethylsulfide, THT
+            1 => -0.2854,// S2: sulfoxide; derived from DMSO
+            _ => -0.5684,// S3: sulfone; derived from DMSO2
         }
     }
 }
 
 /// Crippen contribution for halogens; `ar_val` when on aromatic ring, `al_val` on aliphatic.
 fn crippen_halogen(mol: &Molecule, idx: AtomIdx, ar: bool, ar_val: f64, al_val: f64) -> f64 {
-    if ar { return ar_val; }
-    // Check if bonded to an aromatic atom
-    let on_aromatic = mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).aromatic);
-    if on_aromatic { ar_val } else { al_val }
+    if ar || has_aromatic_neighbor(mol, idx) { ar_val } else { al_val }
 }
 
 /// Crippen H-atom contribution per hydrogen on atom `idx`.
 fn crippen_hydrogen(mol: &Molecule, idx: AtomIdx, an: u8, ar: bool) -> f64 {
     match an {
-        6 => 0.1230,   // H1: H on any C (sp3/sp2/aromatic); confirmed from alkane series
-        7 => 0.2142,   // H2: H on N; confirmed from pyrrole, imidazole
+        6 => 0.1230,   // H1: H on C (any hybridization); from alkane series
+        7 => 0.2142,   // H2: H on N; from pyrrole, imidazole
         8 => {
-            // Distinguish phenolic OH (+0.1319), carboxylic OH (+0.2980),
-            // aliphatic alcohol (−0.2677) and aromatic O (+0.1125).
             if ar {
-                0.1125  // H on aromatic O (rare)
+                0.1125
+            } else if has_aromatic_neighbor(mol, idx) {
+                // Phenolic OH (no carbonyl) — confirmed: phenol, catechol,
+                // resorcinol, hydroquinone, salicylic_acid (via fix1+fix2), dopamine.
+                0.1319
+            } else if neighbor_has_carbonyl(mol, idx) {
+                0.2980 // H3: carboxylic/ester OH; from acetic acid
             } else {
-                let adj_to_aromatic = mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).aromatic);
-                if adj_to_aromatic {
-                    // H4p: phenolic OH (O bonded to aromatic ring, no carbonyl).
-                    // Confirmed: phenol (exact), catechol/resorcinol/hydroquinone (exact),
-                    //            salicylic_acid (exact via fix1+fix2), dopamine (exact).
-                    0.1319
-                } else if neighbor_has_carbonyl(mol, idx) {
-                    0.2980  // H3: H on carboxylic/ester OH; confirmed from acetic acid
-                } else {
-                    -0.2677  // H4: H on aliphatic alcohol OH; confirmed from methanol, ethanol
-                }
+                -0.2677 // H4: aliphatic alcohol OH; from methanol, ethanol
             }
         }
-        _ => 0.1125,   // Hx fallback
+        _ => 0.1125,
     }
 }
 
@@ -769,11 +741,12 @@ fn mr_nitrogen(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
 }
 
 fn mr_oxygen(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
-    if ar { return 1.08; }    // O1: aromatic o (furan)
+    if ar { return 1.08; }       // O1: aromatic o (furan)
     if h > 0 { return 0.8238; }  // O2: OH
-    let is_double = mol.neighbors(idx)
+    let is_double = mol
+        .neighbors(idx)
         .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Double);
-    if is_double { 0.0 } else { 1.085 }   // O9 carbonyl O / O3 ether O
+    if is_double { 0.0 } else { 1.085 }  // O9 carbonyl O / O3 ether O
 }
 
 fn mr_sulfur(_mol: &Molecule, _idx: AtomIdx, ar: bool) -> f64 {
@@ -886,28 +859,24 @@ pub fn num_stereocenters(mol: &Molecule) -> usize {
 
 /// Number of unspecified (undefined) stereocenters.
 ///
-/// Counts atoms that could be a stereocenter but whose chirality is not
-/// specified in the SMILES (i.e. not @/@@ in the input).
+/// Counts sp3 carbons with exactly 4 substituents whose chirality is not
+/// specified (no @/@@ in the input SMILES).
 pub fn num_unspecified_stereocenters(mol: &Molecule) -> usize {
     use chematic_core::Chirality;
     mol.atoms()
         .filter(|(idx, atom)| {
-            let an = atom.element.atomic_number();
-            if an == 6 {
-                // Potential sp3 stereocenter: exactly 4 distinct heavy-atom neighbors
-                // with no @ specification in the parsed molecule
-                let degree = mol.neighbors(*idx).count();
-                let h = implicit_hcount(mol, *idx);
-                let total_neighbors = degree + h as usize;
-                total_neighbors == 4
-                    && !atom.aromatic
-                    && mol.neighbors(*idx).all(|(_, bidx)| {
-                        !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
-                    })
-                    && atom.chirality == Chirality::None
-            } else {
-                false
+            if atom.element.atomic_number() != 6 || atom.aromatic {
+                return false;
             }
+            if atom.chirality != Chirality::None {
+                return false;
+            }
+            let degree = mol.neighbors(*idx).count();
+            let total = degree + implicit_hcount(mol, *idx) as usize;
+            total == 4
+                && mol.neighbors(*idx).all(|(_, bidx)| {
+                    !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
+                })
         })
         .count()
 }
@@ -1443,4 +1412,5 @@ mod tests {
     fn test_num_stereocenters_achiral_zero() {
         assert_eq!(num_stereocenters(&mol("CC(=O)O")), 0);
     }
+
 }

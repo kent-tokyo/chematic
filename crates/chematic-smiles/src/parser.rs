@@ -28,10 +28,6 @@ pub fn parse(input: &str) -> Result<Molecule, SmilesError> {
     p.parse_smiles()
 }
 
-// ---------------------------------------------------------------------------
-// Internal parser
-// ---------------------------------------------------------------------------
-
 struct Parser<'a> {
     src: &'a [u8],
     pos: usize,
@@ -41,8 +37,6 @@ impl<'a> Parser<'a> {
     fn new(src: &'a [u8]) -> Self {
         Self { src, pos: 0 }
     }
-
-    // -- character helpers --------------------------------------------------
 
     #[inline]
     fn peek(&self) -> Option<u8> {
@@ -60,8 +54,6 @@ impl<'a> Parser<'a> {
         if b.is_some() { self.pos += 1; }
         b
     }
-
-    // -- top-level ----------------------------------------------------------
 
     fn parse_smiles(&mut self) -> Result<Molecule, SmilesError> {
         let mut mol = MoleculeBuilder::new();
@@ -116,77 +108,56 @@ impl<'a> Parser<'a> {
         // Process the rest of the chain
         loop {
             match self.peek() {
-                // Branch
-                Some(b'(') => {
-                    self.advance(); // consume '('
-                    let branch_bond = self.try_parse_bond();
-                    self.parse_chain(mol, Some(current), branch_bond, open_rings)?;
-                    match self.peek() {
-                        Some(b')') => { self.advance(); } // consume ')'
-                        _ => return Err(SmilesError::MismatchedParentheses { pos: self.pos }),
-                    }
-                }
+                Some(b'(') => self.parse_branch(mol, current, None, open_rings)?,
 
-                // Ring closure (digit or %nn) — no preceding bond char
+                // Ring closure (digit or %nn) — no preceding bond char.
                 Some(b'0'..=b'9') | Some(b'%') => {
                     let (ring_num, ring_bond) = self.parse_ring_num(None)?;
                     self.close_or_open_ring(mol, current, ring_num, ring_bond, open_rings)?;
                 }
 
-                // End of this chain: ')' closes a branch, '.' starts new fragment, or EOF
+                // End of this chain: ')' closes a branch, '.' starts new fragment, or EOF.
                 None | Some(b')') | Some(b'.') => break,
 
-                // Explicit bond or next atom
+                // Explicit bond or next atom.
                 _ => {
                     let pending_bond = self.try_parse_bond();
-
                     match self.peek() {
-                        // Ring closure after explicit bond
                         Some(b'0'..=b'9') | Some(b'%') => {
                             let (ring_num, ring_bond) = self.parse_ring_num(pending_bond)?;
                             self.close_or_open_ring(mol, current, ring_num, ring_bond, open_rings)?;
                         }
-
-                        // Branch after explicit bond (unusual but valid: e.g. C=(C)C)
+                        // Branch after explicit bond (unusual but valid: e.g. C=(C)C).
                         Some(b'(') => {
-                            self.advance(); // consume '('
-                            self.parse_chain(mol, Some(current), pending_bond, open_rings)?;
-                            match self.peek() {
-                                Some(b')') => { self.advance(); }
-                                _ => return Err(SmilesError::MismatchedParentheses { pos: self.pos }),
-                            }
+                            self.parse_branch(mol, current, pending_bond, open_rings)?;
                         }
-
-                        // Disconnected or end — explicit bond with nothing after is an error
+                        // Disconnected or end — explicit bond with nothing after is an error.
                         None | Some(b')') | Some(b'.') => {
                             if pending_bond.is_some() {
                                 return Err(SmilesError::UnexpectedEnd { pos: self.pos });
                             }
                             break;
                         }
-
-                        // Next atom in chain
-                        _ => {
-                            match self.try_parse_atom()? {
-                                Some(next_atom) => {
-                                    let next_idx = mol.add_atom(next_atom);
-                                    let bond = pending_bond
-                                        .unwrap_or_else(|| implicit_bond(mol, current, next_idx));
-                                    mol.add_bond(current, next_idx, bond)
-                                        .map_err(|_| SmilesError::InvalidBracketAtom {
-                                            detail: "duplicate bond".to_string(),
-                                            pos: self.pos,
-                                        })?;
-                                    current = next_idx;
-                                }
-                                None => {
-                                    if pending_bond.is_some() {
-                                        return Err(SmilesError::UnexpectedEnd { pos: self.pos });
+                        _ => match self.try_parse_atom()? {
+                            Some(next_atom) => {
+                                let next_idx = mol.add_atom(next_atom);
+                                let bond = pending_bond
+                                    .unwrap_or_else(|| implicit_bond(mol, current, next_idx));
+                                mol.add_bond(current, next_idx, bond).map_err(|_| {
+                                    SmilesError::InvalidBracketAtom {
+                                        detail: "duplicate bond".to_string(),
+                                        pos: self.pos,
                                     }
-                                    break;
-                                }
+                                })?;
+                                current = next_idx;
                             }
-                        }
+                            None => {
+                                if pending_bond.is_some() {
+                                    return Err(SmilesError::UnexpectedEnd { pos: self.pos });
+                                }
+                                break;
+                            }
+                        },
                     }
                 }
             }
@@ -195,7 +166,23 @@ impl<'a> Parser<'a> {
         Ok(Some(current))
     }
 
-    // -- ring closures -------------------------------------------------------
+    /// Parse a `(...)` branch: consume `(`, parse the inner chain, then `)`.
+    fn parse_branch(
+        &mut self,
+        mol: &mut MoleculeBuilder,
+        attach_to: AtomIdx,
+        explicit_bond: Option<BondOrder>,
+        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>)>,
+    ) -> Result<(), SmilesError> {
+        self.advance(); // consume '('
+        let bond = explicit_bond.or_else(|| self.try_parse_bond());
+        self.parse_chain(mol, Some(attach_to), bond, open_rings)?;
+        if self.peek() != Some(b')') {
+            return Err(SmilesError::MismatchedParentheses { pos: self.pos });
+        }
+        self.advance(); // consume ')'
+        Ok(())
+    }
 
     /// Handle ring closure: close an existing open ring, or register a new one.
     fn close_or_open_ring(
@@ -250,8 +237,6 @@ impl<'a> Parser<'a> {
         Ok((ring_num, prefix_bond))
     }
 
-    // -- bond ----------------------------------------------------------------
-
     /// Consume a bond character and return the corresponding order, or `None`.
     fn try_parse_bond(&mut self) -> Option<BondOrder> {
         let order = match self.peek()? {
@@ -268,19 +253,13 @@ impl<'a> Parser<'a> {
         Some(order)
     }
 
-    // -- atoms ---------------------------------------------------------------
-
     fn try_parse_atom(&mut self) -> Result<Option<Atom>, SmilesError> {
         match self.peek() {
             Some(b'[') => Ok(Some(self.parse_bracket_atom()?)),
-            // Organic subset (uppercase)
-            Some(b'B') | Some(b'C') | Some(b'N') | Some(b'O')
-            | Some(b'P') | Some(b'S') | Some(b'F') | Some(b'I') => {
+            Some(b'B' | b'C' | b'N' | b'O' | b'P' | b'S' | b'F' | b'I') => {
                 Ok(Some(self.parse_organic_atom()?))
             }
-            // Aromatic organic subset (lowercase)
-            Some(b'b') | Some(b'c') | Some(b'n') | Some(b'o')
-            | Some(b'p') | Some(b's') => {
+            Some(b'b' | b'c' | b'n' | b'o' | b'p' | b's') => {
                 Ok(Some(self.parse_aromatic_organic()?))
             }
             _ => Ok(None),
@@ -430,8 +409,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // -- sub-parsers --------------------------------------------------------
-
     fn parse_chirality(&mut self) -> Chirality {
         if self.peek() == Some(b'@') {
             self.advance();
@@ -489,7 +466,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_leading_digits_u16(&mut self) -> Option<u16> {
-        if !self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+        if !self.peek().is_some_and(|c| c.is_ascii_digit()) {
             return None;
         }
         let mut val: u16 = 0;
@@ -501,10 +478,6 @@ impl<'a> Parser<'a> {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 /// Determine the implicit bond between two adjacent atoms already in the builder.
 ///
 /// Rule: if both atoms are aromatic → Aromatic bond; otherwise → Single bond.
@@ -515,10 +488,6 @@ fn implicit_bond(mol: &MoleculeBuilder, a: AtomIdx, b: AtomIdx) -> BondOrder {
         BondOrder::Single
     }
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

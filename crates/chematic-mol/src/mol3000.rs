@@ -22,6 +22,11 @@ fn v3k_err(line: usize, msg: impl Into<String>) -> MolParseError {
     MolParseError::V3000ParseError { line, msg: msg.into() }
 }
 
+/// True when the first two tokens match the given block marker (e.g. `END CTAB`).
+fn is_marker(tokens: &[&str], kw1: &str, kw2: &str) -> bool {
+    tokens.len() >= 2 && tokens[0] == kw1 && tokens[1] == kw2
+}
+
 // ---------------------------------------------------------------------------
 // Line-continuation pre-pass
 // ---------------------------------------------------------------------------
@@ -177,7 +182,6 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
 
     let mut state = State::BeforeCtab;
     let mut expected_atoms: usize = 0;
-    let mut _expected_bonds: usize = 0;
 
     for LogicalLine { line_num, payload } in &v30_lines {
         let lnum = *line_num;
@@ -188,15 +192,12 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
 
         match state {
             State::BeforeCtab => {
-                // Expect: BEGIN CTAB
-                if tokens.len() >= 2 && tokens[0] == "BEGIN" && tokens[1] == "CTAB" {
+                if is_marker(&tokens, "BEGIN", "CTAB") {
                     state = State::InCtab;
                 }
-                // Ignore any lines before BEGIN CTAB.
             }
 
             State::InCtab => {
-                // Expect: COUNTS <na> <nb> ... or BEGIN ATOM
                 if tokens[0] == "COUNTS" {
                     if tokens.len() < 3 {
                         return Err(v3k_err(lnum, "COUNTS line has fewer than 2 values"));
@@ -204,20 +205,21 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
                     expected_atoms = tokens[1].parse::<usize>().map_err(|_| {
                         v3k_err(lnum, format!("cannot parse atom count from '{}'", tokens[1]))
                     })?;
-                    _expected_bonds = tokens[2].parse::<usize>().map_err(|_| {
+                    // Parse bond count to surface malformed COUNTS lines, even
+                    // though the value is not used downstream.
+                    tokens[2].parse::<usize>().map_err(|_| {
                         v3k_err(lnum, format!("cannot parse bond count from '{}'", tokens[2]))
                     })?;
-                } else if tokens.len() >= 2 && tokens[0] == "BEGIN" && tokens[1] == "ATOM" {
+                } else if is_marker(&tokens, "BEGIN", "ATOM") {
                     state = State::InAtomBlock;
-                } else if tokens.len() >= 2 && tokens[0] == "END" && tokens[1] == "CTAB" {
+                } else if is_marker(&tokens, "END", "CTAB") {
                     state = State::Done;
                 }
             }
 
             State::InAtomBlock => {
-                if tokens.len() >= 2 && tokens[0] == "END" && tokens[1] == "ATOM" {
+                if is_marker(&tokens, "END", "ATOM") {
                     state = State::AfterAtomBlock;
-                    // Validate atom count.
                     if builder.atom_count() != expected_atoms {
                         return Err(v3k_err(
                             lnum,
@@ -247,8 +249,7 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
                 })?;
 
                 // Strip bracket notation e.g. "[OH]" → "OH", "[R]" → "R".
-                let raw_sym = tokens[1];
-                let sym = raw_sym.trim_start_matches('[').trim_end_matches(']');
+                let sym = tokens[1].trim_start_matches('[').trim_end_matches(']');
 
                 let element = Element::from_symbol(sym).ok_or_else(|| MolParseError::UnknownElement {
                     symbol: sym.to_string(),
@@ -259,8 +260,7 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
                 let aamap_raw = tokens[5].parse::<u16>().unwrap_or(0);
                 let atom_map = if aamap_raw == 0 { None } else { Some(aamap_raw) };
 
-                // Parse optional key=value pairs from tokens[6..].
-                let kv_tokens = if tokens.len() > 6 { &tokens[6..] } else { &[] as &[&str] };
+                let kv_tokens = tokens.get(6..).unwrap_or(&[]);
 
                 let charge: i8 = parse_kv(kv_tokens, "CHG")
                     .and_then(|v| v.parse::<i8>().ok())
@@ -287,15 +287,15 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
             }
 
             State::AfterAtomBlock => {
-                if tokens.len() >= 2 && tokens[0] == "BEGIN" && tokens[1] == "BOND" {
+                if is_marker(&tokens, "BEGIN", "BOND") {
                     state = State::InBondBlock;
-                } else if tokens.len() >= 2 && tokens[0] == "END" && tokens[1] == "CTAB" {
+                } else if is_marker(&tokens, "END", "CTAB") {
                     state = State::Done;
                 }
             }
 
             State::InBondBlock => {
-                if tokens.len() >= 2 && tokens[0] == "END" && tokens[1] == "BOND" {
+                if is_marker(&tokens, "END", "BOND") {
                     state = State::AfterBondBlock;
                     continue;
                 }
@@ -329,47 +329,44 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
                     }
                 })?;
 
-                // Resolve V3000 1-based atom indices → builder AtomIdx.
                 let a1 = resolve_atom_idx(a1_v3k, &atom_idx_map).ok_or_else(|| {
                     MolParseError::InvalidBondLine {
                         line: lnum,
-                        detail: format!("atom index {} not found in atom block", a1_v3k),
+                        detail: format!("atom index {a1_v3k} not found in atom block"),
                     }
                 })?;
 
                 let a2 = resolve_atom_idx(a2_v3k, &atom_idx_map).ok_or_else(|| {
                     MolParseError::InvalidBondLine {
                         line: lnum,
-                        detail: format!("atom index {} not found in atom block", a2_v3k),
+                        detail: format!("atom index {a2_v3k} not found in atom block"),
                     }
                 })?;
 
+                // Unknown/query bond types fall back to Single.
                 let order = match btype_raw {
                     1 => BondOrder::Single,
                     2 => BondOrder::Double,
                     3 => BondOrder::Triple,
                     4 => BondOrder::Aromatic,
-                    // Unknown/query bond types fall back to Single.
                     _ => BondOrder::Single,
                 };
 
                 builder.add_bond(a1, a2, order).map_err(|e| {
                     MolParseError::InvalidBondLine {
                         line: lnum,
-                        detail: format!("{e}"),
+                        detail: e.to_string(),
                     }
                 })?;
             }
 
             State::AfterBondBlock => {
-                if tokens.len() >= 2 && tokens[0] == "END" && tokens[1] == "CTAB" {
+                if is_marker(&tokens, "END", "CTAB") {
                     state = State::Done;
                 }
             }
 
-            State::Done => {
-                // Ignore everything after END CTAB.
-            }
+            State::Done => {}
         }
     }
 

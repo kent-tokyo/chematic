@@ -87,14 +87,11 @@ fn ideal_bond_len(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> f64 {
 /// Rough estimate of the ideal bond angle at atom `center`, based on its
 /// degree and bond orders.  Returns the angle in radians.
 fn ideal_angle(mol: &Molecule, center: AtomIdx) -> f64 {
-    // Check whether any neighbour bond is triple or double/aromatic.
     let mut has_triple = false;
     let mut has_double_or_arom = false;
 
-    for (nb, bidx) in mol.neighbors(center) {
-        let _ = nb;
-        let order = mol.bond(bidx).order;
-        match order {
+    for (_, bidx) in mol.neighbors(center) {
+        match mol.bond(bidx).order {
             BondOrder::Triple => has_triple = true,
             BondOrder::Double | BondOrder::Aromatic => has_double_or_arom = true,
             _ => {}
@@ -106,7 +103,7 @@ fn ideal_angle(mol: &Molecule, center: AtomIdx) -> f64 {
     } else if has_double_or_arom {
         PI * 2.0 / 3.0 // 120°
     } else {
-        PI * 109.5_f64.to_radians() / PI // convert 109.5° to radians
+        109.5_f64.to_radians()
     }
 }
 
@@ -178,10 +175,9 @@ pub fn generate_coords(mol: &Molecule) -> Coords3D {
     let mut x_offset = 0.0_f64;
 
     for component in &components {
-        // BFS to determine component extent for the next offset.
-        let placed = place_component(mol, component, &ring_set, x_offset, &mut coords);
+        place_component(mol, component, &ring_set, x_offset, &mut coords);
         // Advance offset by max X extent of placed atoms + 5 Å gap.
-        let max_x = placed
+        let max_x = component
             .iter()
             .map(|&idx| coords.get(idx).x)
             .fold(f64::NEG_INFINITY, f64::max);
@@ -196,22 +192,18 @@ pub fn generate_coords(mol: &Molecule) -> Coords3D {
 // ---------------------------------------------------------------------------
 
 /// Place all atoms in `component` starting at X = `x_offset`.
-///
-/// Returns the slice of atom indices that were placed (same as `component`).
-fn place_component<'a>(
+fn place_component(
     mol: &Molecule,
-    component: &'a [AtomIdx],
+    component: &[AtomIdx],
     ring_set: &chematic_perception::RingSet,
     x_offset: f64,
     coords: &mut Coords3D,
-) -> &'a [AtomIdx] {
+) {
     if component.is_empty() {
-        return component;
+        return;
     }
 
-    // Track which atoms have been placed.
-    let total = mol.atom_count();
-    let mut placed = vec![false; total];
+    let mut placed = vec![false; mol.atom_count()];
 
     // First, lay out ring atoms onto polygon templates.
     place_rings(mol, component, ring_set, x_offset, coords, &mut placed);
@@ -224,10 +216,7 @@ fn place_component<'a>(
         placed[root.0 as usize] = true;
     }
 
-    // DFS to place remaining atoms.
     dfs_place(mol, root, &mut placed, coords);
-
-    component
 }
 
 // ---------------------------------------------------------------------------
@@ -246,7 +235,7 @@ fn place_rings(
     ring_set: &chematic_perception::RingSet,
     x_offset: f64,
     coords: &mut Coords3D,
-    placed: &mut Vec<bool>,
+    placed: &mut [bool],
 ) {
     let component_set: std::collections::HashSet<AtomIdx> =
         component.iter().copied().collect();
@@ -327,55 +316,46 @@ fn place_rings(
 /// choose a direction (bond angle from the incoming bond direction, with
 /// dihedral rotated by 120° per successive neighbour to minimise clashes),
 /// and recurse.
-fn dfs_place(mol: &Molecule, current: AtomIdx, placed: &mut Vec<bool>, coords: &mut Coords3D) {
+fn dfs_place(mol: &Molecule, current: AtomIdx, placed: &mut [bool], coords: &mut Coords3D) {
     let pos_current = coords.get(current);
 
-    // Collect placed (parent-like) and unplaced neighbours.
-    let mut placed_neighbors: Vec<AtomIdx> = Vec::new();
-    let mut unplaced_neighbors: Vec<AtomIdx> = Vec::new();
-
-    for (nb, _) in mol.neighbors(current) {
-        if placed[nb.0 as usize] {
-            placed_neighbors.push(nb);
-        } else {
-            unplaced_neighbors.push(nb);
-        }
-    }
+    let parent = mol
+        .neighbors(current)
+        .map(|(nb, _)| nb)
+        .find(|nb| placed[nb.0 as usize]);
+    let unplaced_neighbors: Vec<AtomIdx> = mol
+        .neighbors(current)
+        .map(|(nb, _)| nb)
+        .filter(|nb| !placed[nb.0 as usize])
+        .collect();
 
     if unplaced_neighbors.is_empty() {
         return;
     }
 
-    // Determine the "incoming" bond direction (from parent toward current).
-    let incoming_dir: Point3 = if let Some(&parent) = placed_neighbors.first() {
-        let p = coords.get(parent);
-        pos_current.sub(&p).normalize()
-    } else {
-        // Root atom: pick +X direction.
-        Point3::new(1.0, 0.0, 0.0)
+    // Direction from parent toward current; for the root atom pick +X.
+    let incoming_dir: Point3 = match parent {
+        Some(p) => pos_current.sub(&coords.get(p)).normalize(),
+        None => Point3::new(1.0, 0.0, 0.0),
     };
 
-    // Choose a perpendicular reference vector for dihedral rotations.
     let perp = perpendicular_to(incoming_dir);
-
     let angle = ideal_angle(mol, current);
+    let bend_angle = PI - angle; // complement of bond angle
+    let dir_bent = rotate_around_axis(incoming_dir, perp, bend_angle);
 
     for (i, &nb) in unplaced_neighbors.iter().enumerate() {
         let bond_len = ideal_bond_len(mol, current, nb);
 
-        // Rotate incoming_dir by (PI - angle) around `perp`, then apply a
-        // dihedral rotation of 120° * i around the incoming_dir axis.
-        let bend_angle = PI - angle; // complement of bond angle
-        let dir_bent = rotate_around_axis(incoming_dir, perp, bend_angle);
-
-        let dihedral = (i as f64) * (2.0 * PI / 3.0); // 0°, 120°, 240°
+        // Dihedral 0°, 120°, 240° around the incoming axis spaces successive
+        // neighbours apart to minimise clashes.
+        let dihedral = (i as f64) * (2.0 * PI / 3.0);
         let dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
 
         let new_pos = pos_current.add(&dir_final.scale(bond_len));
         coords.set(nb, new_pos);
         placed[nb.0 as usize] = true;
 
-        // Recurse.
         dfs_place(mol, nb, placed, coords);
     }
 }

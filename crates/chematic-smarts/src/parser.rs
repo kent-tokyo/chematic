@@ -95,12 +95,6 @@ impl<'a> Parser<'a> {
     }
 
     #[inline]
-    #[allow(dead_code)]
-    fn peek_at(&self, offset: usize) -> Option<u8> {
-        self.src.get(self.pos + offset).copied()
-    }
-
-    #[inline]
     fn advance(&mut self) -> Option<u8> {
         let b = self.src.get(self.pos).copied();
         if b.is_some() {
@@ -379,10 +373,12 @@ impl<'a> Parser<'a> {
     }
 
     /// Continue parsing implicit AND after the first factor.
+    ///
+    /// Recognises `&!<bond>` or a bare `!<bond>` juxtaposed with the previous
+    /// factor as a high-precedence AND. A trailing `&` with no operand is
+    /// silently consumed (caller treats the result the same as `left`).
     fn parse_bond_and_tail(&mut self, left: BondQuery) -> BondQuery {
-        // Explicit '&' or juxtaposed '!' followed by a bond token → AND
-        let explicit_and = self.peek() == Some(b'&');
-        if explicit_and {
+        if self.peek() == Some(b'&') {
             self.advance(); // consume '&'
         }
 
@@ -394,8 +390,6 @@ impl<'a> Parser<'a> {
                     return self.parse_bond_and_tail(and_expr);
                 }
             }
-        } else if explicit_and {
-            // '&' with no following operand — consume was already done; return left.
         }
 
         left
@@ -416,12 +410,10 @@ impl<'a> Parser<'a> {
             | Some(b'P') | Some(b'S') | Some(b'F') | Some(b'I') => {
                 Ok(Some(self.parse_organic_atom(false)?))
             }
-            // Aromatic organic-subset atoms (lowercase).
-            Some(b'c') | Some(b'n') | Some(b'o') | Some(b'p') | Some(b's') => {
+            // Aromatic organic-subset atoms (lowercase, includes boron `b`).
+            Some(b'b') | Some(b'c') | Some(b'n') | Some(b'o') | Some(b'p') | Some(b's') => {
                 Ok(Some(self.parse_organic_atom(true)?))
             }
-            // 'b' could be boron lowercase — handle similarly.
-            Some(b'b') => Ok(Some(self.parse_organic_atom(true)?)),
             _ => Ok(None),
         }
     }

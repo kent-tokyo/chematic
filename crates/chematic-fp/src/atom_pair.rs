@@ -14,26 +14,7 @@ use chematic_core::{AtomIdx, Molecule};
 use chematic_perception::find_sssr;
 
 use crate::bitvec::BitVec2048;
-
-// ---------------------------------------------------------------------------
-// FNV-1a (local copy for module independence)
-// ---------------------------------------------------------------------------
-
-const FNV_OFFSET: u64 = 14695981039346656037;
-const FNV_PRIME: u64 = 1099511628211;
-
-fn fnv1a(bytes: &[u8]) -> u64 {
-    let mut h = FNV_OFFSET;
-    for &b in bytes {
-        h ^= b as u64;
-        h = h.wrapping_mul(FNV_PRIME);
-    }
-    h
-}
-
-// ---------------------------------------------------------------------------
-// Atom-type encoding
-// ---------------------------------------------------------------------------
+use crate::ecfp::fnv1a;
 
 /// Compact atom-type code used for pair/torsion encoding.
 ///
@@ -56,10 +37,6 @@ fn ring_atom_set(mol: &Molecule) -> HashSet<u32> {
     }
     set
 }
-
-// ---------------------------------------------------------------------------
-// BFS shortest-path distances
-// ---------------------------------------------------------------------------
 
 /// Maximum topological distance tracked for AtomPair.
 const MAX_DIST: u8 = 7;
@@ -91,10 +68,6 @@ fn all_pairs_dist(mol: &Molecule) -> Vec<Vec<u8>> {
     }
     dist
 }
-
-// ---------------------------------------------------------------------------
-// AtomPair fingerprint
-// ---------------------------------------------------------------------------
 
 /// Compute the AtomPair fingerprint (2048-bit).
 ///
@@ -132,10 +105,6 @@ pub fn atom_pair_fp(mol: &Molecule) -> BitVec2048 {
     }
     fp
 }
-
-// ---------------------------------------------------------------------------
-// Topological Torsion fingerprint
-// ---------------------------------------------------------------------------
 
 /// Compute the Topological Torsion fingerprint (2048-bit).
 ///
@@ -198,10 +167,6 @@ pub fn torsion_fp(mol: &Molecule) -> BitVec2048 {
     }
     fp
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {
