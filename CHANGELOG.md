@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Security, bug, and code quality (audit)
+
+**Security** (`chematic-smarts`):
+- **Recursive SMARTS depth limit**: `$(…)` patterns nested beyond 8 levels now return `SmartsError::RecursionDepthExceeded` instead of panicking with a stack overflow. Protects against malformed SMARTS strings used as a DoS vector.
+- **Ring closure digit `unwrap()`** (`chematic-smarts`, `chematic-smiles`): replaced with `expect()` plus an invariant comment documenting that the caller always `peek()`s a digit before entering the branch, making the assumption visible in the source.
+
+**Bug** (`chematic-chem`):
+- **`clone_mol` silent bond loss**: `add_bond(…).ok()` discarded errors silently if a bond could not be re-added during molecule cloning, producing a structurally corrupt molecule without warning. Changed to `expect()` so any failure is immediately visible. Same fix applied to `transfer_hydrogen_aromatic`.
+
+**Refactor** (`chematic-chem`):
+- **FNV-1a named constants**: `mol_fingerprint` now uses `FNV1A_OFFSET` / `FNV1A_PRIME` constants instead of inline magic numbers.
+- **TPSA nitro detection single-pass**: the nitro group check (`[N+](=O)[O−]`) previously iterated `mol.neighbors` twice; consolidated into a single `fold` pass.
+
+Tests: 542 → 544 (two new SMARTS recursion-depth tests).
+
+---
+
 ### Fixed (`chematic-chem`) — LogP guanidinium N accuracy (Sprint E)
 
 - **LogP guanidinium/amidine N** (`descriptors.rs`): non-aromatic nitrogen atoms in imine or guanidinium context now use Wildman–Crippen N14 type (−0.335) instead of the generic aliphatic amine values (−0.595 to −1.019). Detection: N with a direct double bond to C (`=N`, Type A) or N bonded to a C that itself has a C=N double bond (adjacent N, Type B). Fixes metformin (error 2.07 → ~0.00), improves arginine, diazepam, clonazepam.

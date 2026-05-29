@@ -28,7 +28,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete. 542 tests, all passing.
+All phases complete. 544 tests, all passing.
 
 | Crate                 | Description                                                                        | Tests |
 |-----------------------|------------------------------------------------------------------------------------|-------|
@@ -39,14 +39,14 @@ All phases complete. 542 tests, all passing.
 | `chematic-depict`     | 2D SVG depiction with CPK coloring and atom/bond highlighting                      | 15    |
 | `chematic-chem`       | Descriptors, BRICS fragmentation, QED, standardization, Murcko scaffold, CIP      | 216   |
 | `chematic-fp`         | ECFP4/6, MACCS 166-bit, topological path, AtomPair, Torsion FP, Tanimoto/Dice     | 44    |
-| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS  | 75    |
+| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS  | 76    |
 | `chematic-3d`         | 3D coordinate generation, PDB/XYZ file formats                                    | 25    |
 | `chematic-rxn`        | Reaction SMILES parser and writer                                                  | 15    |
 | `chematic-wasm`       | WebAssembly bindings — npm: `@kent-tokyo/chematic`                                 | 18    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates)                                  | 1     |
 
 ```
-cargo test --workspace   # 542 tests, all passing
+cargo test --workspace   # 544 tests, all passing
 ```
 
 ---
@@ -303,7 +303,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # build all crates
-cargo test --workspace       # run all tests (538)
+cargo test --workspace       # run all tests (544)
 cargo check --workspace      # type-check without building
 cargo clippy --workspace     # lints
 ```
