@@ -1,8 +1,14 @@
 # chematic
 
-[English](README.md)
+[English](README.md) | [中文](README_zh.md)
 
 Pure Rust 製のケモインフォマティクスライブラリ。RDKit の代替を目指す、C/C++ FFI ゼロの Rust 実装。
+
+---
+
+## ライブデモ
+
+**[https://kent-tokyo.github.io/chematic/](https://kent-tokyo.github.io/chematic/)** — 記述子計算、薬らしさルール、類似度比較をブラウザ上の WebAssembly で実行できるインタラクティブデモ。
 
 ---
 
