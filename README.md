@@ -1,8 +1,14 @@
 # chematic
 
-[日本語](README_ja.md)
+[日本語](README_ja.md) | [中文](README_zh.md)
 
 A pure-Rust cheminformatics library targeting RDKit feature parity, with no C/C++ FFI.
+
+---
+
+## Live Demo
+
+**[https://kent-tokyo.github.io/chematic/](https://kent-tokyo.github.io/chematic/)** — Interactive descriptor calculator, drug-likeness rules, and similarity comparison running entirely in your browser via WebAssembly.
 
 ---
 

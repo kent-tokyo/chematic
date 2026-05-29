@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>chematic — Interactive Demo</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f1117;
+  --surface:   #1a1d27;
+  --border:    #2e3246;
+  --accent:    #4f8ef7;
+  --pass:      #34d399;
+  --fail:      #f87171;
+  --warn:      #fbbf24;
+  --text:      #e2e8f0;
+  --muted:     #8b92a9;
+  --font-ui:   'Segoe UI', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --radius:    10px;
+  --shadow:    0 4px 24px rgba(0,0,0,.35);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Loading overlay ─────────────────────────────────────────────────── */
+#loading-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1rem;
+  font-size: 1.1rem; color: var(--muted);
+  transition: opacity .4s;
+}
+#loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.spinner {
+  width: 44px; height: 44px;
+  border: 4px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; gap: 1rem;
+  flex-wrap: wrap;
+}
+.logo {
+  font-size: 1.4rem; font-weight: 700;
+  color: var(--accent); letter-spacing: -.5px;
+}
+.version {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-size: .75rem; font-family: var(--font-mono);
+}
+.tagline { color: var(--muted); font-size: .9rem; flex: 1; min-width: 180px; }
+.lang-switcher {
+  display: flex; gap: .4rem; margin-left: auto;
+}
+.lang-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .8rem; font-weight: 600;
+  padding: 3px 10px;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lang-btn.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+/* ── Main layout ─────────────────────────────────────────────────────── */
+main {
+  max-width: 1100px; margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex; flex-direction: column; gap: 2.5rem;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+section h2 {
+  font-size: 1.1rem; font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+  display: flex; align-items: center; gap: .5rem;
+}
+section h2::before {
+  content: '';
+  display: inline-block;
+  width: 3px; height: 1.1em;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* ── Input row ───────────────────────────────────────────────────────── */
+.input-row {
+  display: flex; gap: .5rem; margin-bottom: .75rem;
+  flex-wrap: wrap;
+}
+.smiles-input {
+  flex: 1; min-width: 180px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .9rem;
+  padding: .55rem 1rem;
+  transition: border-color .15s, box-shadow .15s;
+  outline: none;
+}
+.smiles-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: .9rem; font-weight: 600;
+  padding: .55rem 1.2rem;
+  transition: filter .15s;
+  white-space: nowrap;
+}
+.btn:hover { filter: brightness(1.12); }
+.btn:active { filter: brightness(.92); }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .78rem; font-weight: 500;
+  padding: .3rem .75rem;
+  transition: border-color .15s, color .15s;
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+.preset-row {
+  display: flex; gap: .4rem; flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.preset-label { color: var(--muted); font-size: .82rem; align-self: center; }
+
+/* ── Error banner ────────────────────────────────────────────────────── */
+.error-banner {
+  background: color-mix(in srgb, var(--fail) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fail) 40%, transparent);
+  border-radius: 8px;
+  color: var(--fail);
+  font-size: .88rem;
+  margin-bottom: 1rem;
+  padding: .6rem 1rem;
+}
+.error-banner.hidden { display: none; }
+
+/* ── SVG depiction ───────────────────────────────────────────────────── */
+.svg-area {
+  background: #fff;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.25rem;
+  min-height: 200px;
+  overflow: hidden;
+}
+.svg-area svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+.svg-placeholder {
+  color: #aaa;
+  font-size: .9rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* ── Descriptor table ────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: .88rem;
+}
+thead th {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .78rem; font-weight: 600;
+  letter-spacing: .04em;
+  padding: .55rem 1rem;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+tbody tr:nth-child(odd) { background: color-mix(in srgb, var(--bg) 50%, transparent); }
+tbody tr:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+tbody td {
+  border-bottom: 1px solid var(--border);
+  padding: .45rem 1rem;
+  vertical-align: middle;
+}
+.td-name { color: var(--muted); font-size: .83rem; }
+.td-value {
+  font-family: var(--font-mono);
+  font-size: .88rem;
+  font-weight: 500;
+}
+.td-smiles {
+  max-width: 260px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: .88rem;
+  font-weight: 500;
+}
+
+/* ── Drug-likeness rules ─────────────────────────────────────────────── */
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.rule-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+.rule-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: .4rem;
+}
+.rule-name { font-weight: 700; font-size: .95rem; }
+.badge {
+  border-radius: 999px;
+  font-size: .72rem; font-weight: 700;
+  letter-spacing: .05em;
+  padding: 2px 10px;
+  text-transform: uppercase;
+}
+.badge-pass {
+  background: color-mix(in srgb, var(--pass) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pass) 35%, transparent);
+  color: var(--pass);
+}
+.badge-fail {
+  background: color-mix(in srgb, var(--fail) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fail) 35%, transparent);
+  color: var(--fail);
+}
+.badge-pending {
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.rule-criteria { color: var(--muted); font-size: .8rem; }
+
+/* ── Similarity ──────────────────────────────────────────────────────── */
+.sim-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+  align-items: start;
+}
+.sim-label {
+  font-size: .82rem; font-weight: 600;
+  color: var(--muted);
+  margin-bottom: .35rem;
+}
+.sim-bar-wrap {
+  background: var(--border);
+  border-radius: 999px;
+  height: 6px;
+  overflow: hidden;
+}
+.sim-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .35s ease;
+}
+.sim-val { font-family: var(--font-mono); font-weight: 600; font-size: .9rem; }
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  color: var(--muted);
+  font-size: .82rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  main { padding: 1rem .75rem 3rem; gap: 1.5rem; }
+  header { padding: .75rem 1rem; }
+  .header-inner { gap: .5rem; }
+  .tagline { display: none; }
+  section { padding: 1rem; }
+  .sim-inputs { grid-template-columns: 1fr; }
+  .rules-grid { grid-template-columns: 1fr 1fr; }
+  tbody td { padding: .4rem .6rem; }
+}
+@media (max-width: 380px) {
+  .rules-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <span id="loading-text">Loading WASM…</span>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="header-inner">
+    <span class="logo">chematic</span>
+    <span class="version">v0.1.4</span>
+    <span class="tagline" id="tagline"></span>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="ja">日</button>
+      <button class="lang-btn" data-lang="zh">中</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Section 1: Descriptor Calculator -->
+  <section id="section-descriptor">
+    <h2 id="h-desc-title"></h2>
+    <div class="input-row">
+      <input id="smiles-input" class="smiles-input" type="text"
+             spellcheck="false" autocomplete="off">
+      <button id="btn-calc" class="btn"></button>
+    </div>
+    <div class="preset-row">
+      <span class="preset-label" id="presets-label"></span>
+      <button class="btn-outline preset-btn" data-smiles="CC(=O)Oc1ccccc1C(=O)O"       id="p-aspirin"></button>
+      <button class="btn-outline preset-btn" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C"  id="p-caffeine"></button>
+      <button class="btn-outline preset-btn" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O"  id="p-ibuprofen"></button>
+      <button class="btn-outline preset-btn" data-smiles="CC1=C2C(C(=O)C3(C(CC4C(C3C(C(=C2OC1=O)C)(C)C)OC(=O)C5=CC=CC=C5)OC(=O)C)O)(C)C" id="p-taxol"></button>
+      <button class="btn-outline preset-btn" data-smiles="OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O" id="p-glucose"></button>
+    </div>
+    <div id="error-desc" class="error-banner hidden"></div>
+    <div class="svg-area" id="svg-area">
+      <span class="svg-placeholder" id="svg-placeholder"></span>
+    </div>
+    <div class="table-wrap">
+      <table id="desc-table">
+        <thead>
+          <tr>
+            <th id="th-prop"></th>
+            <th id="th-val"></th>
+          </tr>
+        </thead>
+        <tbody id="desc-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Section 2: Drug-likeness Rules -->
+  <section id="section-rules">
+    <h2 id="h-rules-title"></h2>
+    <div class="rules-grid" id="rules-grid"></div>
+  </section>
+
+  <!-- Section 3: Similarity Comparison -->
+  <section id="section-similarity">
+    <h2 id="h-sim-title"></h2>
+    <div class="sim-inputs">
+      <div>
+        <div class="sim-label" id="sim-label-a"></div>
+        <div class="input-row" style="margin-bottom:.5rem">
+          <input id="sim-a" class="smiles-input" type="text"
+                 spellcheck="false" autocomplete="off">
+        </div>
+        <div class="preset-row">
+          <button class="btn-outline preset-sim" data-target="a" data-smiles="CC(=O)Oc1ccccc1C(=O)O"      id="sa-aspirin"></button>
+          <button class="btn-outline preset-sim" data-target="a" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C" id="sa-caffeine"></button>
+          <button class="btn-outline preset-sim" data-target="a" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O" id="sa-ibuprofen"></button>
+        </div>
+      </div>
+      <div>
+        <div class="sim-label" id="sim-label-b"></div>
+        <div class="input-row" style="margin-bottom:.5rem">
+          <input id="sim-b" class="smiles-input" type="text"
+                 spellcheck="false" autocomplete="off">
+        </div>
+        <div class="preset-row">
+          <button class="btn-outline preset-sim" data-target="b" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C"              id="sb-caffeine"></button>
+          <button class="btn-outline preset-sim" data-target="b" data-smiles="OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O" id="sb-glucose"></button>
+          <button class="btn-outline preset-sim" data-target="b" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O"              id="sb-ibuprofen"></button>
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:1rem">
+      <button id="btn-sim" class="btn"></button>
+    </div>
+    <div id="error-sim" class="error-banner hidden"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th id="th-sim-method"></th>
+            <th id="th-sim-desc"></th>
+            <th id="th-sim-tanimoto"></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sim-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <a href="https://github.com/kent-tokyo/chematic" target="_blank" rel="noopener">
+    GitHub: kent-tokyo/chematic
+  </a>
+  &nbsp;·&nbsp;
+  Apache 2.0 / MIT
+</footer>
+
+<script type="module">
+// ============================================================
+// i18n
+// ============================================================
+const T = {
+  en: {
+    'app.tagline':      'Pure-Rust Cheminformatics in Your Browser',
+    'app.loading':      'Loading WASM…',
+    'desc.title':       'Descriptor Calculator',
+    'desc.placeholder': 'Enter SMILES…',
+    'desc.calculate':   'Calculate',
+    'desc.presets':     'Presets:',
+    'desc.svg_ph':      'Structure will appear here',
+    'desc.th_prop':     'Property',
+    'desc.th_val':      'Value',
+    'desc.formula':     'Molecular Formula',
+    'desc.mw':          'Molecular Weight (Da)',
+    'desc.exact_mass':  'Exact Mass (Da)',
+    'desc.tpsa':        'TPSA (Å²)',
+    'desc.logp':        'LogP (Crippen)',
+    'desc.fsp3':        'Fsp3',
+    'desc.qed':         'QED',
+    'desc.mr':          'Molar Refractivity',
+    'desc.heavy_atoms': 'Heavy Atoms',
+    'desc.atoms':       'Atom Count',
+    'desc.bonds':       'Bond Count',
+    'desc.hbd':         'HBD',
+    'desc.hba':         'HBA',
+    'desc.rotbonds':    'Rotatable Bonds',
+    'desc.rings':       'Ring Count (SSSR)',
+    'desc.arom_rings':  'Aromatic Rings',
+    'desc.heteroatoms': 'Heteroatoms',
+    'desc.stereo':      'Stereocenters',
+    'desc.charge':      'Formal Charge Sum',
+    'desc.brics':       'BRICS Fragments',
+    'desc.canonical':   'Canonical SMILES',
+    'desc.arom_het':    'Arom. Heterocycles',
+    'desc.aliph_het':   'Aliph. Heterocycles',
+    'desc.spiro':       'Spiro Atoms',
+    'desc.bridge':      'Bridgehead Atoms',
+    'rules.title':      'Drug-likeness Rules',
+    'rules.pass':       'PASS',
+    'rules.fail':       'FAIL',
+    'rules.lipinski':   'Lipinski (Ro5)',
+    'rules.lipinski_c': 'MW ≤ 500, LogP ≤ 5, HBD ≤ 5, HBA ≤ 10',
+    'rules.veber':      'Veber',
+    'rules.veber_c':    'TPSA ≤ 140 Å², RotBonds ≤ 10',
+    'rules.egan':       'Egan',
+    'rules.egan_c':     'TPSA ≤ 131.6 Å², LogP ≤ 5.88',
+    'rules.ghose':      'Ghose',
+    'rules.ghose_c':    'MW 160–480, LogP −0.4–5.6, HvyAtoms 20–70, MR 40–130',
+    'rules.reos':       'REOS',
+    'rules.reos_c':     'MW 200–500, LogP −5–5, HBD 0–5, HBA 0–10, charge −2–+2',
+    'rules.pains':      'PAINS',
+    'rules.pains_c':    'No pan-assay interference structural alerts (480 patterns)',
+    'sim.title':        'Similarity Comparison',
+    'sim.mol_a':        'Molecule A',
+    'sim.mol_b':        'Molecule B',
+    'sim.compare':      'Compare',
+    'sim.th_method':    'Method',
+    'sim.th_desc':      'Description',
+    'sim.th_tanimoto':  'Tanimoto',
+    'sim.ecfp4':        'ECFP4',
+    'sim.ecfp4_d':      'Circular FP, radius 2',
+    'sim.fcfp4':        'FCFP4',
+    'sim.fcfp4_d':      'Pharmacophore circular FP',
+    'sim.atompair':     'AtomPair',
+    'sim.atompair_d':   'Atom environment pairs',
+    'sim.torsion':      'Torsion',
+    'sim.torsion_d':    '4-atom torsion paths',
+    'preset.aspirin':   'Aspirin',
+    'preset.caffeine':  'Caffeine',
+    'preset.ibuprofen': 'Ibuprofen',
+    'preset.taxol':     'Taxol',
+    'preset.glucose':   'Glucose',
+    'error.empty':      'Please enter a SMILES string.',
+    'error.parse':      'Failed to parse SMILES: ',
+    'error.wasm':       'WASM not loaded yet — please wait.',
+  },
+  ja: {
+    'app.tagline':      'ブラウザで動く純Rust化学情報処理ライブラリ',
+    'app.loading':      'WASM を読み込み中…',
+    'desc.title':       '記述子計算機',
+    'desc.placeholder': 'SMILES を入力…',
+    'desc.calculate':   '計算',
+    'desc.presets':     'プリセット:',
+    'desc.svg_ph':      '構造式がここに表示されます',
+    'desc.th_prop':     '物性値',
+    'desc.th_val':      '値',
+    'desc.formula':     '分子式',
+    'desc.mw':          '分子量 (Da)',
+    'desc.exact_mass':  '精密質量 (Da)',
+    'desc.tpsa':        '極性表面積 TPSA (Å²)',
+    'desc.logp':        'LogP（Crippen法）',
+    'desc.fsp3':        'Fsp3（sp³炭素比率）',
+    'desc.qed':         'QED（薬らしさスコア）',
+    'desc.mr':          'モル屈折率',
+    'desc.heavy_atoms': '重原子数',
+    'desc.atoms':       '原子数',
+    'desc.bonds':       '結合数',
+    'desc.hbd':         '水素結合供与体数 (HBD)',
+    'desc.hba':         '水素結合受容体数 (HBA)',
+    'desc.rotbonds':    '回転可能結合数',
+    'desc.rings':       '環の数 (SSSR)',
+    'desc.arom_rings':  '芳香族環数',
+    'desc.heteroatoms': 'ヘテロ原子数',
+    'desc.stereo':      '不斉中心数',
+    'desc.charge':      '形式電荷の総和',
+    'desc.brics':       'BRICS 断片数',
+    'desc.canonical':   '標準 SMILES',
+    'desc.arom_het':    '芳香族複素環数',
+    'desc.aliph_het':   '脂肪族複素環数',
+    'desc.spiro':       'スピロ原子数',
+    'desc.bridge':      '橋頭原子数',
+    'rules.title':      '薬らしさルール',
+    'rules.pass':       '合格',
+    'rules.fail':       '不合格',
+    'rules.lipinski':   'リピンスキー (Ro5)',
+    'rules.lipinski_c': 'MW ≤ 500, LogP ≤ 5, HBD ≤ 5, HBA ≤ 10',
+    'rules.veber':      'Veber',
+    'rules.veber_c':    'TPSA ≤ 140 Å²、回転結合数 ≤ 10',
+    'rules.egan':       'Egan',
+    'rules.egan_c':     'TPSA ≤ 131.6 Å²、LogP ≤ 5.88',
+    'rules.ghose':      'Ghose',
+    'rules.ghose_c':    'MW 160–480, LogP −0.4–5.6, 重原子 20–70, MR 40–130',
+    'rules.reos':       'REOS',
+    'rules.reos_c':     'MW 200–500, LogP −5–5, HBD 0–5, HBA 0–10, 電荷 −2–+2',
+    'rules.pains':      'PAINS',
+    'rules.pains_c':    'PAINS アラートなし（480 パターン）',
+    'sim.title':        '類似度比較',
+    'sim.mol_a':        '分子 A',
+    'sim.mol_b':        '分子 B',
+    'sim.compare':      '比較',
+    'sim.th_method':    '指紋法',
+    'sim.th_desc':      '説明',
+    'sim.th_tanimoto':  'タニモト係数',
+    'sim.ecfp4':        'ECFP4',
+    'sim.ecfp4_d':      '円形指紋（半径 2）',
+    'sim.fcfp4':        'FCFP4',
+    'sim.fcfp4_d':      '薬効団ベース円形指紋',
+    'sim.atompair':     'AtomPair',
+    'sim.atompair_d':   '原子環境ペア指紋',
+    'sim.torsion':      'Torsion',
+    'sim.torsion_d':    '4原子ねじれ経路指紋',
+    'preset.aspirin':   'アスピリン',
+    'preset.caffeine':  'カフェイン',
+    'preset.ibuprofen': 'イブプロフェン',
+    'preset.taxol':     'タキソール',
+    'preset.glucose':   'グルコース',
+    'error.empty':      'SMILES を入力してください。',
+    'error.parse':      'SMILES の解析に失敗しました: ',
+    'error.wasm':       'WASM がまだ読み込まれていません。',
+  },
+  zh: {
+    'app.tagline':      '纯Rust化学信息学库，运行于浏览器',
+    'app.loading':      '正在加载 WASM…',
+    'desc.title':       '描述符计算器',
+    'desc.placeholder': '输入 SMILES…',
+    'desc.calculate':   '计算',
+    'desc.presets':     '预设:',
+    'desc.svg_ph':      '结构图将显示于此',
+    'desc.th_prop':     '属性',
+    'desc.th_val':      '值',
+    'desc.formula':     '分子式',
+    'desc.mw':          '分子量 (Da)',
+    'desc.exact_mass':  '精确质量 (Da)',
+    'desc.tpsa':        '拓扑极性表面积 TPSA (Å²)',
+    'desc.logp':        'LogP（Crippen法）',
+    'desc.fsp3':        'Fsp3',
+    'desc.qed':         'QED（类药性评分）',
+    'desc.mr':          '摩尔折射率',
+    'desc.heavy_atoms': '重原子数',
+    'desc.atoms':       '原子数',
+    'desc.bonds':       '键数',
+    'desc.hbd':         '氢键供体数 (HBD)',
+    'desc.hba':         '氢键受体数 (HBA)',
+    'desc.rotbonds':    '可旋转键数',
+    'desc.rings':       '环数 (SSSR)',
+    'desc.arom_rings':  '芳香环数',
+    'desc.heteroatoms': '杂原子数',
+    'desc.stereo':      '立体中心数',
+    'desc.charge':      '形式电荷之和',
+    'desc.brics':       'BRICS 片段数',
+    'desc.canonical':   '规范 SMILES',
+    'desc.arom_het':    '芳香杂环数',
+    'desc.aliph_het':   '脂肪族杂环数',
+    'desc.spiro':       '螺环原子数',
+    'desc.bridge':      '桥头原子数',
+    'rules.title':      '类药性规则',
+    'rules.pass':       '通过',
+    'rules.fail':       '未通过',
+    'rules.lipinski':   'Lipinski（Ro5）',
+    'rules.lipinski_c': 'MW ≤ 500，LogP ≤ 5，HBD ≤ 5，HBA ≤ 10',
+    'rules.veber':      'Veber',
+    'rules.veber_c':    'TPSA ≤ 140 Å²，可旋转键 ≤ 10',
+    'rules.egan':       'Egan',
+    'rules.egan_c':     'TPSA ≤ 131.6 Å²，LogP ≤ 5.88',
+    'rules.ghose':      'Ghose',
+    'rules.ghose_c':    'MW 160–480，LogP −0.4–5.6，重原子 20–70，MR 40–130',
+    'rules.reos':       'REOS',
+    'rules.reos_c':     'MW 200–500，LogP −5–5，HBD 0–5，HBA 0–10，电荷 −2–+2',
+    'rules.pains':      'PAINS',
+    'rules.pains_c':    '无泛测定干扰结构警报（480 种模式）',
+    'sim.title':        '相似度比较',
+    'sim.mol_a':        '分子 A',
+    'sim.mol_b':        '分子 B',
+    'sim.compare':      '比较',
+    'sim.th_method':    '指纹方法',
+    'sim.th_desc':      '描述',
+    'sim.th_tanimoto':  'Tanimoto 相似度',
+    'sim.ecfp4':        'ECFP4',
+    'sim.ecfp4_d':      '圆形指纹（半径 2）',
+    'sim.fcfp4':        'FCFP4',
+    'sim.fcfp4_d':      '药效团圆形指纹',
+    'sim.atompair':     'AtomPair',
+    'sim.atompair_d':   '原子环境对指纹',
+    'sim.torsion':      'Torsion',
+    'sim.torsion_d':    '四原子扭转路径指纹',
+    'preset.aspirin':   '阿司匹林',
+    'preset.caffeine':  '咖啡因',
+    'preset.ibuprofen': '布洛芬',
+    'preset.taxol':     '紫杉醇 (Taxol)',
+    'preset.glucose':   '葡萄糖',
+    'error.empty':      '请输入 SMILES 字符串。',
+    'error.parse':      'SMILES 解析失败: ',
+    'error.wasm':       'WASM 尚未加载，请稍候。',
+  },
+};
+
+let lang = 'en';
+function t(key) { return (T[lang] && T[lang][key]) || T.en[key] || key; }
+
+// Map of element id → i18n key for static text nodes
+const STATIC_IDS = {
+  'tagline':         'app.tagline',
+  'h-desc-title':    'desc.title',
+  'btn-calc':        'desc.calculate',
+  'presets-label':   'desc.presets',
+  'svg-placeholder': 'desc.svg_ph',
+  'th-prop':         'desc.th_prop',
+  'th-val':          'desc.th_val',
+  'h-rules-title':   'rules.title',
+  'h-sim-title':     'sim.title',
+  'sim-label-a':     'sim.mol_a',
+  'sim-label-b':     'sim.mol_b',
+  'btn-sim':         'sim.compare',
+  'th-sim-method':   'sim.th_method',
+  'th-sim-desc':     'sim.th_desc',
+  'th-sim-tanimoto': 'sim.th_tanimoto',
+  'p-aspirin':       'preset.aspirin',
+  'p-caffeine':      'preset.caffeine',
+  'p-ibuprofen':     'preset.ibuprofen',
+  'p-taxol':         'preset.taxol',
+  'p-glucose':       'preset.glucose',
+  'sa-aspirin':      'preset.aspirin',
+  'sa-caffeine':     'preset.caffeine',
+  'sa-ibuprofen':    'preset.ibuprofen',
+  'sb-caffeine':     'preset.caffeine',
+  'sb-glucose':      'preset.glucose',
+  'sb-ibuprofen':    'preset.ibuprofen',
+};
+
+function applyLang(newLang) {
+  lang = newLang;
+  document.documentElement.lang = lang === 'ja' ? 'ja' : lang === 'zh' ? 'zh-Hans' : 'en';
+  localStorage.setItem('chematic-lang', lang);
+
+  document.querySelectorAll('[data-lang]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+
+  for (const [id, key] of Object.entries(STATIC_IDS)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(key);
+  }
+  document.getElementById('loading-text').textContent = t('app.loading');
+  document.getElementById('smiles-input').placeholder = t('desc.placeholder');
+  document.getElementById('sim-a').placeholder = t('desc.placeholder');
+  document.getElementById('sim-b').placeholder = t('desc.placeholder');
+
+  renderRuleCards(lastMol);
+  renderSimTable(lastSimResults);
+}
+
+// ============================================================
+// State
+// ============================================================
+let wasmReady = false;
+let parseSmilesWasm, tanimotoEcfp4, tanimotoFcfp4, tanimotoAtomPair, tanimotoTorsion, bricsFrag;
+let lastMol = null;
+let lastSimResults = null;
+
+// ============================================================
+// WASM init
+// ============================================================
+async function initWasm() {
+  try {
+    const mod = await import('./pkg/chematic_wasm.js');
+    await mod.default('./pkg/chematic_wasm_bg.wasm');
+    parseSmilesWasm  = mod.parse_smiles;
+    tanimotoEcfp4    = mod.tanimoto_ecfp4;
+    tanimotoFcfp4    = mod.tanimoto_fcfp4;
+    tanimotoAtomPair = mod.tanimoto_atom_pair;
+    tanimotoTorsion  = mod.tanimoto_torsion;
+    bricsFrag        = mod.brics_fragment_count;
+    wasmReady = true;
+  } catch (e) {
+    document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
+    throw e;
+  }
+}
+
+// ============================================================
+// Descriptor definitions
+// ============================================================
+const DESC_DEFS = [
+  { key: 'desc.formula',     fn: m => m.formula(),                    isSmiles: false },
+  { key: 'desc.mw',          fn: m => m.molecular_weight().toFixed(2)              },
+  { key: 'desc.exact_mass',  fn: m => m.exact_mass().toFixed(4)                    },
+  { key: 'desc.tpsa',        fn: m => m.tpsa().toFixed(2)                          },
+  { key: 'desc.logp',        fn: m => m.logp_crippen().toFixed(3)                  },
+  { key: 'desc.fsp3',        fn: m => m.fsp3().toFixed(3)                          },
+  { key: 'desc.qed',         fn: m => m.qed().toFixed(3)                           },
+  { key: 'desc.mr',          fn: m => m.molar_refractivity().toFixed(2)            },
+  { key: 'desc.heavy_atoms', fn: m => String(m.heavy_atom_count())                 },
+  { key: 'desc.atoms',       fn: m => String(m.atom_count())                       },
+  { key: 'desc.bonds',       fn: m => String(m.bond_count())                       },
+  { key: 'desc.hbd',         fn: m => String(m.hbd_count())                        },
+  { key: 'desc.hba',         fn: m => String(m.hba_count())                        },
+  { key: 'desc.rotbonds',    fn: m => String(m.rotatable_bond_count())             },
+  { key: 'desc.rings',       fn: m => String(m.ring_count())                       },
+  { key: 'desc.arom_rings',  fn: m => String(m.aromatic_ring_count())              },
+  { key: 'desc.heteroatoms', fn: m => String(m.num_heteroatoms())                  },
+  { key: 'desc.stereo',      fn: m => String(m.num_stereocenters())                },
+  { key: 'desc.charge',      fn: m => String(m.formal_charge_sum())                },
+  { key: 'desc.brics',       fn: m => String(bricsFrag(m))                         },
+  { key: 'desc.canonical',   fn: m => m.canonical_smiles(), isSmiles: true         },
+  { key: 'desc.arom_het',    fn: m => String(m.num_aromatic_heterocycles())        },
+  { key: 'desc.aliph_het',   fn: m => String(m.num_aliphatic_heterocycles())       },
+  { key: 'desc.spiro',       fn: m => String(m.num_spiro_atoms())                  },
+  { key: 'desc.bridge',      fn: m => String(m.num_bridgehead_atoms())             },
+];
+
+// ============================================================
+// Rule definitions
+// ============================================================
+const RULE_DEFS = [
+  { nameKey: 'rules.lipinski', criteriaKey: 'rules.lipinski_c', fn: m => m.lipinski_passes() },
+  { nameKey: 'rules.veber',    criteriaKey: 'rules.veber_c',    fn: m => m.veber_passes()    },
+  { nameKey: 'rules.egan',     criteriaKey: 'rules.egan_c',     fn: m => m.egan_passes()     },
+  { nameKey: 'rules.ghose',    criteriaKey: 'rules.ghose_c',    fn: m => m.ghose_passes()    },
+  { nameKey: 'rules.reos',     criteriaKey: 'rules.reos_c',     fn: m => m.reos_passes()     },
+  { nameKey: 'rules.pains',    criteriaKey: 'rules.pains_c',    fn: m => m.pains_passes()    },
+];
+
+// ============================================================
+// Similarity definitions
+// ============================================================
+const SIM_DEFS = [
+  { nameKey: 'sim.ecfp4',    descKey: 'sim.ecfp4_d',    fn: (a,b) => tanimotoEcfp4(a,b)    },
+  { nameKey: 'sim.fcfp4',    descKey: 'sim.fcfp4_d',    fn: (a,b) => tanimotoFcfp4(a,b)    },
+  { nameKey: 'sim.atompair', descKey: 'sim.atompair_d', fn: (a,b) => tanimotoAtomPair(a,b) },
+  { nameKey: 'sim.torsion',  descKey: 'sim.torsion_d',  fn: (a,b) => tanimotoTorsion(a,b)  },
+];
+
+// ============================================================
+// Render: descriptors (all text via textContent — no XSS risk)
+// ============================================================
+function renderDescriptors(mol) {
+  const tbody = document.getElementById('desc-tbody');
+  tbody.textContent = '';
+  for (const d of DESC_DEFS) {
+    const val = d.fn(mol);
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td');
+    tdName.className = 'td-name';
+    tdName.textContent = t(d.key);
+    const tdVal = document.createElement('td');
+    tdVal.className = d.isSmiles ? 'td-smiles' : 'td-value';
+    tdVal.textContent = val;
+    tr.appendChild(tdName);
+    tr.appendChild(tdVal);
+    tbody.appendChild(tr);
+  }
+}
+
+// ============================================================
+// Render: rule cards (all text via textContent)
+// ============================================================
+function renderRuleCards(mol) {
+  const grid = document.getElementById('rules-grid');
+  grid.textContent = '';
+  for (const r of RULE_DEFS) {
+    const passes = mol ? r.fn(mol) : null;
+
+    const card = document.createElement('div');
+    card.className = 'rule-card';
+
+    const header = document.createElement('div');
+    header.className = 'rule-header';
+
+    const name = document.createElement('span');
+    name.className = 'rule-name';
+    name.textContent = t(r.nameKey);
+
+    const badge = document.createElement('span');
+    if (mol === null) {
+      badge.className = 'badge badge-pending';
+      badge.textContent = '—';
+    } else {
+      badge.className = 'badge ' + (passes ? 'badge-pass' : 'badge-fail');
+      badge.textContent = passes ? t('rules.pass') : t('rules.fail');
+    }
+
+    header.appendChild(name);
+    header.appendChild(badge);
+
+    const criteria = document.createElement('div');
+    criteria.className = 'rule-criteria';
+    criteria.textContent = t(r.criteriaKey);
+
+    card.appendChild(header);
+    card.appendChild(criteria);
+    grid.appendChild(card);
+  }
+}
+
+// ============================================================
+// Render: similarity table (textContent for all text)
+// ============================================================
+function simColor(v) {
+  if (v >= 0.7) return 'var(--pass)';
+  if (v >= 0.3) return 'var(--warn)';
+  return 'var(--fail)';
+}
+
+function renderSimTable(results) {
+  lastSimResults = results;
+  const tbody = document.getElementById('sim-tbody');
+  tbody.textContent = '';
+  for (let i = 0; i < SIM_DEFS.length; i++) {
+    const d = SIM_DEFS[i];
+    const v = results ? results[i] : null;
+
+    const tr = document.createElement('tr');
+
+    const tdMethod = document.createElement('td');
+    tdMethod.className = 'td-name';
+    tdMethod.style.fontWeight = '600';
+    tdMethod.textContent = t(d.nameKey);
+
+    const tdDesc = document.createElement('td');
+    tdDesc.className = 'td-name';
+    tdDesc.textContent = t(d.descKey);
+
+    const tdVal = document.createElement('td');
+    tdVal.className = 'sim-val';
+    tdVal.style.color = v !== null ? simColor(v) : 'var(--muted)';
+    tdVal.textContent = v !== null ? v.toFixed(3) : '—';
+
+    const tdBar = document.createElement('td');
+    tdBar.style.cssText = 'width:140px;vertical-align:middle;padding-right:1rem';
+    const wrap = document.createElement('div');
+    wrap.className = 'sim-bar-wrap';
+    const bar = document.createElement('div');
+    bar.className = 'sim-bar';
+    bar.style.width = v !== null ? (v * 100).toFixed(1) + '%' : '0%';
+    bar.style.background = v !== null ? simColor(v) : 'transparent';
+    wrap.appendChild(bar);
+    tdBar.appendChild(wrap);
+
+    tr.appendChild(tdMethod);
+    tr.appendChild(tdDesc);
+    tr.appendChild(tdVal);
+    tr.appendChild(tdBar);
+    tbody.appendChild(tr);
+  }
+}
+
+// ============================================================
+// SVG depiction (output from our own WASM library — trusted source)
+// ============================================================
+function renderSvg(mol) {
+  const area = document.getElementById('svg-area');
+  try {
+    const svgStr = mol.depict_svg();
+    // svgStr is generated by our Rust SVG renderer, not user input.
+    // We use DOMParser to validate it as XML before inserting.
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+    const err = doc.querySelector('parsererror');
+    if (err) throw new Error('invalid SVG');
+    area.textContent = '';
+    area.appendChild(doc.documentElement);
+  } catch (_) {
+    area.textContent = '';
+    const ph = document.createElement('span');
+    ph.className = 'svg-placeholder';
+    ph.style.color = 'var(--muted)';
+    ph.textContent = t('desc.svg_ph');
+    area.appendChild(ph);
+  }
+}
+
+// ============================================================
+// Error helpers
+// ============================================================
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function clearError(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+// ============================================================
+// Calculate descriptors
+// ============================================================
+function calculate() {
+  clearError('error-desc');
+  const smiles = document.getElementById('smiles-input').value.trim();
+  if (!smiles) { showError('error-desc', t('error.empty')); return; }
+  if (!wasmReady) { showError('error-desc', t('error.wasm')); return; }
+
+  let mol;
+  try { mol = parseSmilesWasm(smiles); }
+  catch (e) { showError('error-desc', t('error.parse') + String(e)); return; }
+
+  if (lastMol) { try { lastMol.free(); } catch (_) {} }
+  lastMol = mol;
+
+  renderSvg(mol);
+  renderDescriptors(mol);
+  renderRuleCards(mol);
+}
+
+// ============================================================
+// Compare similarity
+// ============================================================
+function compare() {
+  clearError('error-sim');
+  const sA = document.getElementById('sim-a').value.trim();
+  const sB = document.getElementById('sim-b').value.trim();
+  if (!sA || !sB) { showError('error-sim', t('error.empty')); return; }
+  if (!wasmReady) { showError('error-sim', t('error.wasm')); return; }
+
+  let mA, mB;
+  try { mA = parseSmilesWasm(sA); } catch(e) { showError('error-sim', 'A: ' + t('error.parse') + String(e)); return; }
+  try { mB = parseSmilesWasm(sB); } catch(e) { mA.free(); showError('error-sim', 'B: ' + t('error.parse') + String(e)); return; }
+
+  const results = SIM_DEFS.map(d => d.fn(mA, mB));
+  mA.free(); mB.free();
+  renderSimTable(results);
+}
+
+// ============================================================
+// Boot
+// ============================================================
+(async () => {
+  // Language detection: localStorage > browser > 'en'
+  const saved = localStorage.getItem('chematic-lang');
+  const browser = navigator.language.toLowerCase();
+  const detected = saved ?? (browser.startsWith('zh') ? 'zh' : browser.startsWith('ja') ? 'ja' : 'en');
+  applyLang(detected);
+
+  renderRuleCards(null);
+  renderSimTable(null);
+
+  await initWasm();
+  document.getElementById('loading-overlay').classList.add('hidden');
+
+  // Auto-load aspirin on startup
+  document.getElementById('smiles-input').value = 'CC(=O)Oc1ccccc1C(=O)O';
+  calculate();
+
+  // Language switcher
+  document.querySelectorAll('[data-lang]').forEach(btn => {
+    btn.addEventListener('click', () => applyLang(btn.dataset.lang));
+  });
+
+  // Calculate
+  document.getElementById('btn-calc').addEventListener('click', calculate);
+  document.getElementById('smiles-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') calculate();
+  });
+
+  // Descriptor presets
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('smiles-input').value = btn.dataset.smiles;
+      calculate();
+    });
+  });
+
+  // Similarity presets
+  document.querySelectorAll('.preset-sim').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById(btn.dataset.target === 'a' ? 'sim-a' : 'sim-b').value = btn.dataset.smiles;
+    });
+  });
+
+  // Compare
+  document.getElementById('btn-sim').addEventListener('click', compare);
+  ['sim-a', 'sim-b'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') compare();
+    });
+  });
+})();
+</script>
+</body>
+</html>

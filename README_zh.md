@@ -6,6 +6,12 @@
 
 ---
 
+## 在线演示
+
+**[https://kent-tokyo.github.io/chematic/](https://kent-tokyo.github.io/chematic/)** — 可在浏览器中通过 WebAssembly 运行的交互式演示：描述符计算、类药性规则检查、分子相似度比较。
+
+---
+
 ## 设计目标
 
 **纯 Rust，零 C/C++ FFI**

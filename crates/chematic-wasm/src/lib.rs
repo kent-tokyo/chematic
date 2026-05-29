@@ -175,6 +175,11 @@ impl MolHandle {
     pub fn num_bridgehead_atoms(&self) -> usize {
         chematic_chem::num_bridgehead_atoms(&self.inner)
     }
+
+    /// 2D SVG depiction of the molecule (CPK coloring).
+    pub fn depict_svg(&self) -> String {
+        chematic_depict::depict_svg(&self.inner)
+    }
 }
 
 // ---------------------------------------------------------------------------
