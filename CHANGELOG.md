@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (`chematic-chem`) — TPSA and LogP accuracy (Sprint D)
+
+- **TPSA imine N-H** (`descriptors.rs`): sp2 imine nitrogen with one H (C=N-H, as in amidine and guanidinium groups) now uses 23.79 Å² instead of 12.03 Å² (generic secondary amine). Detection: N with `h=1` and a double bond from N to a carbon neighbor. Reduces metformin TPSA error from 23.64 → 0.12 Å², arginine from 11.82 → 0.06 Å².
+- **TPSA phosphate P** (`descriptors.rs`): non-aromatic phosphorus with a P=O bond now uses 26.88 Å² (Ertl 2000 phosphate type) instead of 34.14 Å² (phosphine type). Trimethyl phosphate TPSA error: 7.26 → 0.00 Å².
+- **LogP phosphate P** (`descriptors.rs`): non-aromatic P with a P=O bond now uses Wildman–Crippen contribution +0.7933 instead of −0.3451 (phosphine). Trimethyl phosphate LogP error: 1.14 → 0.00.
+
+**Benchmark results** (175-molecule ChEMBL test set):
+| Property | Before (Sprint C) | After (Sprint D) |
+|----------|------------------|-----------------|
+| TPSA MAE | 0.324 Å² | **0.081 Å²** |
+| LogP MAE | 0.141 | **0.134** |
+
+### Added (`chematic-chem`) — Ring descriptors (Sprint D)
+
+- **`num_aromatic_heterocycles`**: count of SSSR rings where all atoms are aromatic and at least one is a heteroatom (pyridine, furan, imidazole, etc.).
+- **`num_aliphatic_heterocycles`**: count of SSSR rings with at least one non-aromatic atom and at least one heteroatom (piperidine, morpholine, THF, etc.).
+- **`num_saturated_heterocycles`**: count of SSSR rings where all atoms are sp3 (no double/triple/aromatic bonds) and the ring contains at least one heteroatom.
+- **`num_spiro_atoms`**: number of atoms shared by exactly two rings that share no other atoms (spiro centers).
+- **`num_bridgehead_atoms`**: number of atoms shared between two bridged rings, identified by non-adjacent shared-atom pairs in the ring intersection.
+
+### Added (`chematic-chem`) — Tautomer rules (Sprint D)
+
+- **Rules 16–20**: five additional 1,3-proton-shift patterns covering O→N, O→O, N→C, C→O, and C→N heteroatom combinations with any bridge element. Expands tautomer coverage to hydroxamic acids, cross-conjugated enol/iminol systems.
+
+### Added (`chematic-wasm`) — Ring descriptor bindings (Sprint D)
+
+- New `MolHandle` methods: `num_aromatic_heterocycles`, `num_aliphatic_heterocycles`, `num_saturated_heterocycles`, `num_spiro_atoms`, `num_bridgehead_atoms`.
+
+---
+
 ### Fixed (`chematic-chem`) — LogP and TPSA accuracy (Sprint C)
 
 - **LogP aromatic junction C** (`descriptors.rs`): aromatic C at fused-ring junctions (e.g. naphthalene C4a, indole C3a/C7a) now uses Crippen value 0.2956 instead of 0.1441, when all neighbors are aromatic and ≥2 are aromatic carbons. Verified: naphthalene (±0.001), quinoline (±0.001), indole (±0.001) now match RDKit exactly.

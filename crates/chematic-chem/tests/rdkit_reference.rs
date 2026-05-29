@@ -10,6 +10,8 @@
 
 use chematic_chem::descriptors::{
     molecular_weight, tpsa, heavy_atom_count, hbd_count, hba_count, logp_crippen, lipinski_passes,
+    num_aromatic_heterocycles, num_aliphatic_heterocycles, num_saturated_heterocycles,
+    num_spiro_atoms, num_bridgehead_atoms,
 };
 use chematic_smiles::parse;
 
@@ -468,4 +470,93 @@ fn logp_thiophenol() {
     // Fix5: thiol S (h>0, no =O) = 0.3132 (was 0.6482 thioether)
     // RDKit: 1.9753 — exact match
     assert_approx("LogP thiophenol", logp_crippen(&mol("Sc1ccccc1")), 1.9753, 0.02);
+}
+
+// ── Sprint D: TPSA imine NH, phosphate P ────────────────────────────────────
+
+#[test]
+fn tpsa_metformin() {
+    // CN(C)C(=N)NC(=N)N — RDKit: 88.99 Å²
+    // Tests terminal imine C=N-H (h=1, sp2) → 23.79 Å² (not 12.03 like sp3 NH)
+    assert_approx("TPSA metformin", tpsa(&mol("CN(C)C(=N)NC(=N)N")), 88.99, 0.5);
+}
+
+#[test]
+fn tpsa_arginine() {
+    // N[C@@H](CCCNC(=N)N)C(=O)O — RDKit: 125.22 Å²
+    // Tests guanidinium =N-H in amino acid side chain
+    assert_approx("TPSA arginine", tpsa(&mol("N[C@@H](CCCNC(=N)N)C(=O)O")), 125.22, 0.5);
+}
+
+#[test]
+fn tpsa_trimethyl_phosphate() {
+    // COP(=O)(OC)OC — RDKit: 54.57 Å²
+    // Tests phosphate P=O → 26.88 Å² (not 34.14 for phosphine)
+    assert_approx("TPSA trimethyl phosphate", tpsa(&mol("COP(=O)(OC)OC")), 54.57, 0.5);
+}
+
+#[test]
+fn logp_trimethyl_phosphate() {
+    // COP(=O)(OC)OC — RDKit: 1.0337
+    // Tests phosphate ester P(=O) LogP contribution (+0.7933)
+    assert_approx("LogP trimethyl phosphate", logp_crippen(&mol("COP(=O)(OC)OC")), 1.0337, 0.15);
+}
+
+// ── Sprint D: new ring descriptors ──────────────────────────────────────────
+
+#[test]
+fn ring_descs_pyridine() {
+    let m = mol("c1ccncc1");
+    assert_eq!(num_aromatic_heterocycles(&m), 1, "pyridine aromatic hetero rings");
+    assert_eq!(num_aliphatic_heterocycles(&m), 0, "pyridine aliphatic hetero rings");
+    assert_eq!(num_saturated_heterocycles(&m), 0, "pyridine saturated hetero rings");
+    assert_eq!(num_spiro_atoms(&m), 0, "pyridine spiro");
+    assert_eq!(num_bridgehead_atoms(&m), 0, "pyridine bridgehead");
+}
+
+#[test]
+fn ring_descs_benzene() {
+    let m = mol("c1ccccc1");
+    assert_eq!(num_aromatic_heterocycles(&m), 0, "benzene has no hetero ring");
+    assert_eq!(num_spiro_atoms(&m), 0);
+    assert_eq!(num_bridgehead_atoms(&m), 0);
+}
+
+#[test]
+fn ring_descs_piperidine() {
+    let m = mol("C1CCNCC1");
+    assert_eq!(num_aliphatic_heterocycles(&m), 1, "piperidine aliphatic");
+    assert_eq!(num_saturated_heterocycles(&m), 1, "piperidine saturated");
+    assert_eq!(num_aromatic_heterocycles(&m), 0, "piperidine not aromatic");
+}
+
+#[test]
+fn ring_descs_morpholine() {
+    let m = mol("C1COCCN1");
+    assert_eq!(num_aliphatic_heterocycles(&m), 1, "morpholine aliphatic");
+    assert_eq!(num_saturated_heterocycles(&m), 1, "morpholine saturated");
+}
+
+#[test]
+fn ring_descs_spiro_decane() {
+    // spiro[4.5]decane
+    let m = mol("C1CCCCC11CCCC1");
+    assert_eq!(num_spiro_atoms(&m), 1, "spiro[4.5]decane has 1 spiro atom");
+    assert_eq!(num_bridgehead_atoms(&m), 0, "spiro is not bridgehead");
+}
+
+#[test]
+fn ring_descs_norbornane() {
+    // bicyclo[2.2.1]heptane
+    let m = mol("C1CC2CCC1C2");
+    assert_eq!(num_bridgehead_atoms(&m), 2, "norbornane has 2 bridgeheads");
+    assert_eq!(num_spiro_atoms(&m), 0, "norbornane has no spiro atoms");
+}
+
+#[test]
+fn ring_descs_naphthalene_no_spiro() {
+    // Fused ring: two rings share 2 atoms (C4a, C8a) — not spiro, not bridgehead
+    let m = mol("c1ccc2ccccc2c1");
+    assert_eq!(num_spiro_atoms(&m), 0, "naphthalene has no spiro atoms");
+    assert_eq!(num_bridgehead_atoms(&m), 0, "naphthalene bridgehead");
 }

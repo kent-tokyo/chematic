@@ -150,6 +150,31 @@ impl MolHandle {
     pub fn pains_passes(&self) -> bool {
         chematic_chem::pains_passes(&self.inner)
     }
+
+    /// Number of aromatic rings containing at least one heteroatom (N, O, S, …).
+    pub fn num_aromatic_heterocycles(&self) -> usize {
+        chematic_chem::num_aromatic_heterocycles(&self.inner)
+    }
+
+    /// Number of non-aromatic rings containing at least one heteroatom.
+    pub fn num_aliphatic_heterocycles(&self) -> usize {
+        chematic_chem::num_aliphatic_heterocycles(&self.inner)
+    }
+
+    /// Number of fully saturated rings containing at least one heteroatom.
+    pub fn num_saturated_heterocycles(&self) -> usize {
+        chematic_chem::num_saturated_heterocycles(&self.inner)
+    }
+
+    /// Number of spiro atoms (sole shared atom between exactly 2 rings).
+    pub fn num_spiro_atoms(&self) -> usize {
+        chematic_chem::num_spiro_atoms(&self.inner)
+    }
+
+    /// Number of bridgehead atoms (shared by ≥2 rings with ≥3 ring bonds).
+    pub fn num_bridgehead_atoms(&self) -> usize {
+        chematic_chem::num_bridgehead_atoms(&self.inner)
+    }
 }
 
 // ---------------------------------------------------------------------------
