@@ -232,7 +232,8 @@ impl<'a> Parser<'a> {
                 - b'0';
             tens * 10 + units
         } else {
-            self.advance().unwrap() - b'0'
+            // Caller peeked b'0'..=b'9', so advance() is guaranteed to return Some(digit).
+            self.advance().expect("ring closure digit guaranteed by caller peek") - b'0'
         };
         Ok((ring_num, prefix_bond))
     }

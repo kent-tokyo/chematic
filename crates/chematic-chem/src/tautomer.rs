@@ -277,7 +277,8 @@ fn transfer_hydrogen_aromatic(mol: &Molecule, donor: AtomIdx, acceptor: AtomIdx)
     for i in 0..mol.bond_count() {
         let bidx = BondIdx(i as u32);
         let b = mol.bond(bidx);
-        builder.add_bond(b.atom1, b.atom2, b.order).ok()?;
+        builder.add_bond(b.atom1, b.atom2, b.order)
+            .expect("transfer_hydrogen_aromatic: bond from a valid molecule must be re-addable");
     }
     Some(builder.build())
 }
@@ -289,10 +290,14 @@ fn clone_mol(mol: &Molecule) -> Molecule {
     }
     for i in 0..mol.bond_count() {
         let b = mol.bond(BondIdx(i as u32));
-        builder.add_bond(b.atom1, b.atom2, b.order).ok();
+        builder.add_bond(b.atom1, b.atom2, b.order)
+            .expect("clone_mol: bond from a valid molecule must be re-addable");
     }
     builder.build()
 }
+
+const FNV1A_OFFSET: u64 = 0xcbf29ce484222325;
+const FNV1A_PRIME: u64 = 0x100000001b3;
 
 /// Order-independent structural hash for convergence detection.
 fn mol_fingerprint(mol: &Molecule) -> u64 {
@@ -307,14 +312,14 @@ fn mol_fingerprint(mol: &Molecule) -> u64 {
         })
         .collect();
     atoms.sort();
-    let mut hash = 0xcbf29ce484222325u64;
+    let mut hash = FNV1A_OFFSET;
     for (an, ch, bos) in atoms {
         hash ^= an as u64;
-        hash = hash.wrapping_mul(0x100000001b3);
+        hash = hash.wrapping_mul(FNV1A_PRIME);
         hash ^= (ch as u8 as u64).wrapping_add(128);
-        hash = hash.wrapping_mul(0x100000001b3);
+        hash = hash.wrapping_mul(FNV1A_PRIME);
         hash ^= bos as u64;
-        hash = hash.wrapping_mul(0x100000001b3);
+        hash = hash.wrapping_mul(FNV1A_PRIME);
     }
     hash
 }

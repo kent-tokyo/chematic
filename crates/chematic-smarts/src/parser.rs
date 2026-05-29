@@ -59,17 +59,22 @@ pub enum SmartsError {
     UnclosedBranch(usize),
     /// A ring closure number was used inconsistently.
     InvalidRingClosure(u8),
+    /// Recursive SMARTS `$(…)` nesting exceeds the safety limit.
+    RecursionDepthExceeded,
 }
 
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
 
+/// Maximum nesting depth for recursive SMARTS `$(…)` patterns.
+const MAX_RECURSIVE_SMARTS_DEPTH: usize = 8;
+
 /// Parse a SMARTS pattern string into a `QueryMolecule`.
 ///
 /// Returns `Err(SmartsError)` if the input is not a valid SMARTS pattern.
 pub fn parse_smarts(smarts: &str) -> Result<QueryMolecule, SmartsError> {
-    let mut parser = Parser::new(smarts.as_bytes());
+    let mut parser = Parser { src: smarts.as_bytes(), pos: 0, recursion_depth: 0 };
     parser.parse()
 }
 
@@ -80,11 +85,13 @@ pub fn parse_smarts(smarts: &str) -> Result<QueryMolecule, SmartsError> {
 struct Parser<'a> {
     src: &'a [u8],
     pos: usize,
+    /// Current recursive SMARTS `$(…)` nesting depth.
+    recursion_depth: usize,
 }
 
 impl<'a> Parser<'a> {
     fn new(src: &'a [u8]) -> Self {
-        Self { src, pos: 0 }
+        Self { src, pos: 0, recursion_depth: 0 }
     }
 
     // -- character helpers ---------------------------------------------------
@@ -286,7 +293,8 @@ impl<'a> Parser<'a> {
                 - b'0';
             tens * 10 + units
         } else {
-            self.advance().unwrap() - b'0'
+            // Caller peeked b'0'..=b'9', so advance() is guaranteed to return Some(digit).
+            self.advance().expect("ring closure digit guaranteed by caller peek") - b'0'
         };
         Ok((ring_num, prefix_bond))
     }
@@ -601,7 +609,15 @@ impl<'a> Parser<'a> {
                 }
                 let inner_str = std::str::from_utf8(&self.src[start..end])
                     .map_err(|_| SmartsError::UnexpectedEnd)?;
-                let inner_mol = parse_smarts(inner_str)?;
+                if self.recursion_depth >= MAX_RECURSIVE_SMARTS_DEPTH {
+                    return Err(SmartsError::RecursionDepthExceeded);
+                }
+                let mut inner_parser = Parser {
+                    src: inner_str.as_bytes(),
+                    pos: 0,
+                    recursion_depth: self.recursion_depth + 1,
+                };
+                let inner_mol = inner_parser.parse()?;
                 self.pos = end + 1; // advance past the closing ')'
                 Ok(AtomQuery::Primitive(AtomPrimitive::Recursive(Box::new(inner_mol))))
             }

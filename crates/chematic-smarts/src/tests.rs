@@ -532,4 +532,27 @@ mod integration_tests {
         let c = match_count("[#8]-,:[c]", "COc1ccccc1");
         assert!(c >= 1, "-,: should match O-c bond in anisole");
     }
+
+    /// Recursive SMARTS `$(…)` beyond depth 8 is rejected with RecursionDepthExceeded.
+    #[test]
+    fn test_recursive_smarts_depth_limit() {
+        use crate::parser::SmartsError;
+        // Build 9-level nested: start with "C", wrap 9 times as [$(<inner>)]
+        // Each wrapping adds one recursion level when parsed.
+        let mut p = "C".to_string();
+        for _ in 0..9 {
+            p = format!("[$({})]", p);
+        }
+        let err = parse_smarts(&p).unwrap_err();
+        assert_eq!(err, SmartsError::RecursionDepthExceeded,
+            "depth > 8 should return RecursionDepthExceeded, got {err:?}");
+    }
+
+    /// Recursive SMARTS at depth ≤ 8 is accepted.
+    #[test]
+    fn test_recursive_smarts_shallow_ok() {
+        // 1-level recursive: [$([C])] — should parse successfully.
+        let mol = parse_smarts("[$([C])]");
+        assert!(mol.is_ok(), "1-level recursive SMARTS should parse ok");
+    }
 }
