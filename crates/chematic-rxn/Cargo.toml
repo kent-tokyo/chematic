@@ -13,5 +13,5 @@ homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-rxn"
 
 [dependencies]
-chematic-core  = { path = "../chematic-core",  version = "0.1.3" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.1.3" }
+chematic-core  = { path = "../chematic-core",  version = "0.1.5" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.5" }
