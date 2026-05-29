@@ -5,7 +5,6 @@
 //! as a `.svg` file.
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
-use chematic_perception::find_sssr;
 
 use crate::layout::{Layout, Point, BOND_LEN};
 
@@ -32,70 +31,16 @@ const LABEL_HALF_H: f64 = 7.0;
 /// 2. White background rectangles for atom labels (drawn over bond lines).
 /// 3. Atom label text (drawn on top).
 pub fn render_svg(mol: &Molecule, layout: &Layout) -> String {
-    // Compute bounding box with padding.
-    let (min_x, min_y, max_x, max_y) = layout.bounding_box();
-
-    // For a single atom the bounding box collapses; ensure a minimum viewport.
-    let raw_w = (max_x - min_x).max(BOND_LEN);
-    let raw_h = (max_y - min_y).max(BOND_LEN);
-
-    let view_x = min_x - PADDING;
-    let view_y = min_y - PADDING;
-    let view_w = raw_w + 2.0 * PADDING;
-    let view_h = raw_h + 2.0 * PADDING;
-
-    let width = view_w.round() as u32;
-    let height = view_h.round() as u32;
-
-    // Detect aromatic bonds using SSSR + the Aromatic bond order flag.
-    // Bonds with BondOrder::Aromatic are treated as aromatic regardless of perception.
-    let ring_set = find_sssr(mol);
-    let _ = ring_set; // Available if needed for ring membership tests.
-
     let mut svg = String::new();
+    write_svg_header(layout, &mut svg);
 
-    // SVG header.
-    svg.push_str(&format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" \
-         width=\"{}\" height=\"{}\" \
-         viewBox=\"{:.2} {:.2} {:.2} {:.2}\">\n",
-        width, height, view_x, view_y, view_w, view_h
-    ));
-
-    // 1. Draw all bonds.
     for (_, bond) in mol.bonds() {
         let p1 = layout.get(bond.atom1);
         let p2 = layout.get(bond.atom2);
-        let bond_svg = render_bond(bond.order, p1, p2);
-        svg.push_str(&bond_svg);
+        svg.push_str(&render_bond(bond.order, p1, p2));
     }
 
-    // 2. Draw label backgrounds, then labels.
-    for (idx, _atom) in mol.atoms() {
-        let label = atom_label(mol, idx);
-        if label.is_empty() {
-            continue;
-        }
-        let p = layout.get(idx);
-        // White background rect.
-        svg.push_str(&format!(
-            "  <rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"white\"/>\n",
-            p.x - LABEL_HALF_W,
-            p.y - LABEL_HALF_H,
-            LABEL_HALF_W * 2.0,
-            LABEL_HALF_H * 2.0,
-        ));
-        // Label text.
-        svg.push_str(&format!(
-            "  <text x=\"{:.2}\" y=\"{:.2}\" \
-             font-family=\"sans-serif\" font-size=\"{}\" \
-             text-anchor=\"middle\" dominant-baseline=\"central\" \
-             fill=\"{}\">{}</text>\n",
-            p.x, p.y, FONT_SIZE as u32,
-            atom_color(mol.atom(idx).element.atomic_number()),
-            escape_xml(&label)
-        ));
-    }
+    write_atom_labels(mol, layout, &mut svg);
 
     svg.push_str("</svg>");
     svg
@@ -114,26 +59,8 @@ pub fn render_svg_highlighted(
     highlight_atoms: &std::collections::HashSet<AtomIdx>,
     highlight_bonds: &std::collections::HashSet<BondIdx>,
 ) -> String {
-    // Compute bounding box with padding.
-    let (min_x, min_y, max_x, max_y) = layout.bounding_box();
-    let raw_w = (max_x - min_x).max(BOND_LEN);
-    let raw_h = (max_y - min_y).max(BOND_LEN);
-    let view_x = min_x - PADDING;
-    let view_y = min_y - PADDING;
-    let view_w = raw_w + 2.0 * PADDING;
-    let view_h = raw_h + 2.0 * PADDING;
-    let width = view_w.round() as u32;
-    let height = view_h.round() as u32;
-
     let mut svg = String::new();
-
-    // SVG header.
-    svg.push_str(&format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" \
-         width=\"{}\" height=\"{}\" \
-         viewBox=\"{:.2} {:.2} {:.2} {:.2}\">\n",
-        width, height, view_x, view_y, view_w, view_h
-    ));
+    write_svg_header(layout, &mut svg);
 
     // 0. Highlight atom backgrounds (drawn first, beneath bonds).
     for idx in highlight_atoms {
@@ -159,7 +86,42 @@ pub fn render_svg_highlighted(
         }
     }
 
-    // 2. Draw label backgrounds, then labels.
+    write_atom_labels(mol, layout, &mut svg);
+
+    svg.push_str("</svg>");
+    svg
+}
+
+// ---------------------------------------------------------------------------
+// Shared rendering helpers
+// ---------------------------------------------------------------------------
+
+/// Compute the viewport from `layout` and append the SVG opening tag to `svg`.
+fn write_svg_header(layout: &Layout, svg: &mut String) {
+    let (min_x, min_y, max_x, max_y) = layout.bounding_box();
+
+    // For a single atom the bounding box collapses; ensure a minimum viewport.
+    let raw_w = (max_x - min_x).max(BOND_LEN);
+    let raw_h = (max_y - min_y).max(BOND_LEN);
+
+    let view_x = min_x - PADDING;
+    let view_y = min_y - PADDING;
+    let view_w = raw_w + 2.0 * PADDING;
+    let view_h = raw_h + 2.0 * PADDING;
+
+    let width = view_w.round() as u32;
+    let height = view_h.round() as u32;
+
+    svg.push_str(&format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" \
+         width=\"{}\" height=\"{}\" \
+         viewBox=\"{:.2} {:.2} {:.2} {:.2}\">\n",
+        width, height, view_x, view_y, view_w, view_h
+    ));
+}
+
+/// Append a white background rect + label text for every non-empty atom label.
+fn write_atom_labels(mol: &Molecule, layout: &Layout, svg: &mut String) {
     for (idx, _atom) in mol.atoms() {
         let label = atom_label(mol, idx);
         if label.is_empty() {
@@ -183,9 +145,6 @@ pub fn render_svg_highlighted(
             escape_xml(&label)
         ));
     }
-
-    svg.push_str("</svg>");
-    svg
 }
 
 // ---------------------------------------------------------------------------
@@ -195,15 +154,9 @@ pub fn render_svg_highlighted(
 /// Render a single bond as SVG elements, returned as a string fragment.
 fn render_bond(order: BondOrder, p1: Point, p2: Point) -> String {
     match order {
-        BondOrder::Single | BondOrder::Up | BondOrder::Down => {
-            // For Up/Down we use simple lines here.
-            // Full wedge/dash stereo rendering.
-            match order {
-                BondOrder::Up => render_wedge_up(p1, p2),
-                BondOrder::Down => render_dash_bond(p1, p2),
-                _ => render_single_line(p1, p2, "1.5"),
-            }
-        }
+        BondOrder::Single => render_single_line(p1, p2, "1.5"),
+        BondOrder::Up => render_wedge_up(p1, p2),
+        BondOrder::Down => render_dash_bond(p1, p2),
         BondOrder::Double => render_double_bond(p1, p2),
         BondOrder::Triple => render_triple_bond(p1, p2),
         BondOrder::Aromatic => render_aromatic_bond(p1, p2),

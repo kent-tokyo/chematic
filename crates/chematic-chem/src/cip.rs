@@ -7,10 +7,6 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Chirality, Molecule};
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 /// The result of a CIP stereochemistry assignment run.
 #[derive(Debug)]
 pub struct CipAssignment {
@@ -50,10 +46,6 @@ pub fn assign_cip(mol: &Molecule) -> CipAssignment {
 
     CipAssignment { assignments }
 }
-
-// ---------------------------------------------------------------------------
-// CIP priority helpers
-// ---------------------------------------------------------------------------
 
 /// A single "sphere layer" in a CIP branch expansion: a sorted list of
 /// `(atomic_num, isotope)` pairs (sorted descending for lexicographic comparison).
@@ -142,11 +134,10 @@ fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<Sp
             }
         }
 
-        for (nb, bidx) in mol.neighbors(state.node) {
+        for (nb, _) in mol.neighbors(state.node) {
             if nb == state.parent || nb == center {
                 continue;
             }
-            let _ = bidx;
             let child_key = atom_key(mol, nb);
             let layer = layers.entry(child_depth).or_default();
 
@@ -255,10 +246,6 @@ fn rank_substituents(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx]) -> Optio
     Some(ranks)
 }
 
-// ---------------------------------------------------------------------------
-// Tetrahedral R/S
-// ---------------------------------------------------------------------------
-
 fn assign_tetrahedral(mol: &Molecule, idx: AtomIdx) -> Option<CipCode> {
     let atom = mol.atom(idx);
     if atom.chirality == Chirality::None {
@@ -356,10 +343,6 @@ fn assign_tetrahedral(mol: &Molecule, idx: AtomIdx) -> Option<CipCode> {
     Some(if is_r { CipCode::R } else { CipCode::S })
 }
 
-// ---------------------------------------------------------------------------
-// E/Z double bond
-// ---------------------------------------------------------------------------
-
 /// Determine if a substituent is "up" relative to the alkene end it connects to.
 ///
 /// Returns `Some(true)` = up, `Some(false)` = down, `None` = no stereo bond.
@@ -430,10 +413,6 @@ fn highest_stereo_sub(mol: &Molecule, alkene_end: AtomIdx, subs: &[AtomIdx]) -> 
         .into_iter()
         .find(|&sub| substituent_is_up(mol, alkene_end, sub).is_some())
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

@@ -24,10 +24,7 @@ use crate::descriptors::{
     rotatable_bond_count, tpsa,
 };
 
-// ---------------------------------------------------------------------------
-// ADS function (Bickerton 2012 Supplementary)
-// ---------------------------------------------------------------------------
-
+/// ADS (Asymmetric Double Sigmoidal) desirability function from Bickerton 2012.
 #[inline]
 fn ads(x: f64, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64, dmax: f64) -> f64 {
     let exp1 = 1.0 + (-(x - c + d / 2.0) / e).exp();
@@ -36,11 +33,9 @@ fn ads(x: f64, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64, dmax: f64) -> f64
     dx / dmax
 }
 
-// ---------------------------------------------------------------------------
-// ADS parameters — Bickerton 2012 Table S3 (via RDKit QED.py)
-// Order: MW, ALOGP, HBA, HBD, PSA, ROTB, AROM, ALERTS
-// Each entry: (A, B, C, D, E, F, DMAX)
-// ---------------------------------------------------------------------------
+// ADS parameters — Bickerton 2012 Table S3 (via RDKit QED.py).
+// Order: MW, ALOGP, HBA, HBD, PSA, ROTB, AROM, ALERTS.
+// Each entry: (A, B, C, D, E, F, DMAX).
 
 const ADS_PARAMS: [(f64, f64, f64, f64, f64, f64, f64); 8] = [
     (2.817_065_973,  392.575_495_3,  290.748_976_4,   2.419_764_353,  49.223_256_77,  65.370_517_07, 104.980_556_1), // MW
@@ -57,11 +52,9 @@ const ADS_PARAMS: [(f64, f64, f64, f64, f64, f64, f64); 8] = [
 // Order: MW, ALOGP, HBA, HBD, PSA, ROTB, AROM, ALERTS.
 const WEIGHTS_MEAN: [f64; 8] = [0.66, 0.46, 0.05, 0.61, 0.06, 0.65, 0.48, 0.95];
 
-// ---------------------------------------------------------------------------
-// Structural alerts — Brenk 2008 / Bickerton 2012 (via RDKit QED.py)
+// Structural alerts — Brenk 2008 / Bickerton 2012 (via RDKit QED.py).
 // Patterns that fail to parse (isotopes, disconnected, unsupported syntax)
 // are silently skipped at init time via filter_map.
-// ---------------------------------------------------------------------------
 
 static STRUCTURAL_ALERT_SMARTS: &[&str] = &[
     "*1[O,S,N]*1",
@@ -190,18 +183,12 @@ fn alert_queries() -> &'static [QueryMolecule] {
     })
 }
 
-// ---------------------------------------------------------------------------
-// Structural alert count
-// ---------------------------------------------------------------------------
-
 fn structural_alert_count(mol: &Molecule) -> usize {
-    let queries = alert_queries();
-    queries.iter().filter(|q| !find_matches(q, mol).is_empty()).count()
+    alert_queries()
+        .iter()
+        .filter(|q| !find_matches(q, mol).is_empty())
+        .count()
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 /// Compute the QED (Quantitative Estimate of Druglikeness) score.
 ///
@@ -238,10 +225,6 @@ pub fn qed(mol: &Molecule) -> f64 {
     let w_sum: f64 = WEIGHTS_MEAN.iter().sum();
     (t / w_sum).exp()
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

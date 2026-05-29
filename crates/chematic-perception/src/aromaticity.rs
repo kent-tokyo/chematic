@@ -133,40 +133,26 @@ fn ring_pi_electrons(mol: &Molecule, ring: &[AtomIdx]) -> Option<u32> {
             7 => {
                 // Determine H count: use explicit hydrogen_count if set (bracket atom),
                 // otherwise derive from valence.
-                let h_count = hydrogen_count(mol, atom_idx);
-
-                if h_count > 0 {
+                if hydrogen_count(mol, atom_idx) > 0 {
                     // Pyrrole-type N with H: contributes a lone pair → 2 pi electrons.
                     2
-                } else if has_double_in_ring {
-                    // Pyridine-type N: contributes 1 from the double bond.
-                    1
-                } else if has_double_any {
-                    // N with an exocyclic double bond but no ring double bond — still 1.
+                } else if has_double_in_ring || has_double_any {
+                    // Pyridine-type N (or N with exocyclic C=N): contributes 1.
                     1
                 } else {
                     // N in ring with no double bond and no H — cannot determine pi system.
                     return None;
                 }
             }
-            // Oxygen (8): lone-pair donor, contributes 2.
-            8 => {
-                if ring_degree != 2 {
-                    return None; // unexpected connectivity
-                }
-                2
-            }
-            // Sulfur (16): lone-pair donor, contributes 2.
-            16 => {
+            // Oxygen / sulfur: lone-pair donor, contributes 2 (must be 2-connected in ring).
+            8 | 16 => {
                 if ring_degree != 2 {
                     return None;
                 }
                 2
             }
-            _ => {
-                // Unsupported element for Hückel aromaticity.
-                return None;
-            }
+            // Unsupported element for Hückel aromaticity.
+            _ => return None,
         };
 
         total_pi += pi;
@@ -207,8 +193,7 @@ fn hydrogen_count(mol: &Molecule, atom_idx: AtomIdx) -> u8 {
     for &v in normal_valences {
         let target = v as i32 + charge;
         if target >= bond_sum {
-            let implicit = (target - bond_sum) as u8;
-            return implicit;
+            return (target - bond_sum) as u8;
         }
     }
 

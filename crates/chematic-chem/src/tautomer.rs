@@ -12,10 +12,6 @@ use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, MoleculeBuilder, implicit_hcount};
 
-// ---------------------------------------------------------------------------
-// Rule infrastructure
-// ---------------------------------------------------------------------------
-
 /// Bond order match type for tautomer rule patterns.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum BondOrderMatch {
@@ -28,7 +24,9 @@ enum BondOrderMatch {
 impl BondOrderMatch {
     fn matches(self, order: BondOrder) -> bool {
         match self {
-            BondOrderMatch::Single => matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down),
+            BondOrderMatch::Single => {
+                matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down)
+            }
             BondOrderMatch::Double => matches!(order, BondOrder::Double),
             BondOrderMatch::Any => true,
         }
@@ -180,10 +178,6 @@ static RULES: &[TautomerRule] = &[
     },
 ];
 
-// ---------------------------------------------------------------------------
-// Molecule cloning helper
-// ---------------------------------------------------------------------------
-
 fn clone_mol(mol: &Molecule) -> Molecule {
     let mut builder = MoleculeBuilder::new();
     for i in 0..mol.atom_count() {
@@ -196,10 +190,7 @@ fn clone_mol(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
-// ---------------------------------------------------------------------------
-// Fingerprint for convergence detection
-// ---------------------------------------------------------------------------
-
+/// Order-independent structural hash for convergence detection.
 fn mol_fingerprint(mol: &Molecule) -> u64 {
     let mut atoms: Vec<(u8, i8, u32)> = (0..mol.atom_count())
         .map(|i| {
@@ -224,15 +215,6 @@ fn mol_fingerprint(mol: &Molecule) -> u64 {
     hash
 }
 
-// ---------------------------------------------------------------------------
-// Pattern matching
-// ---------------------------------------------------------------------------
-
-/// Check if donor has at least 1 hydrogen (implicit or explicit).
-fn has_hydrogen(mol: &Molecule, idx: AtomIdx) -> bool {
-    implicit_hcount(mol, idx) > 0
-}
-
 /// Find all (donor, bridge, acceptor) triples matching the rule in `mol`.
 fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, AtomIdx)> {
     let mut matches = Vec::new();
@@ -240,46 +222,33 @@ fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, A
     for i in 0..mol.atom_count() {
         let d = AtomIdx(i as u32);
         let donor_atom = mol.atom(d);
-
-        // Check donor element
         if donor_atom.element.atomic_number() != rule.donor_elem {
             continue;
         }
-        // Check donor has at least 1 H
-        if !has_hydrogen(mol, d) {
+        if implicit_hcount(mol, d) == 0 {
             continue;
         }
 
-        // Iterate over neighbors of donor (potential bridge atoms)
         for (b, db_bidx) in mol.neighbors(d) {
-            let db_bond = mol.bond(db_bidx);
-            if !rule.donor_bridge_order.matches(db_bond.order) {
+            if !rule.donor_bridge_order.matches(mol.bond(db_bidx).order) {
                 continue;
             }
-
-            let bridge_atom = mol.atom(b);
-            // Check bridge element if specified
             if let Some(br_elem) = rule.bridge_elem {
-                if bridge_atom.element.atomic_number() != br_elem {
+                if mol.atom(b).element.atomic_number() != br_elem {
                     continue;
                 }
             }
 
-            // Iterate over neighbors of bridge (potential acceptor atoms), excluding donor
             for (a, ba_bidx) in mol.neighbors(b) {
                 if a == d {
-                    continue; // skip back to donor
-                }
-                let ba_bond = mol.bond(ba_bidx);
-                if !rule.bridge_acceptor_order.matches(ba_bond.order) {
                     continue;
                 }
-
-                let acceptor_atom = mol.atom(a);
-                if acceptor_atom.element.atomic_number() != rule.acceptor_elem {
+                if !rule.bridge_acceptor_order.matches(mol.bond(ba_bidx).order) {
                     continue;
                 }
-
+                if mol.atom(a).element.atomic_number() != rule.acceptor_elem {
+                    continue;
+                }
                 matches.push((d, b, a));
             }
         }
@@ -288,105 +257,64 @@ fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, A
     matches
 }
 
-// ---------------------------------------------------------------------------
-// H transfer (bond order swap)
-// ---------------------------------------------------------------------------
-
-/// Apply a single tautomer transformation: swap bond orders so that:
-/// - donor-bridge bond: Single → Double
-/// - bridge-acceptor bond: Double → Single
+/// Apply a single tautomer transformation: donor-bridge bond Single → Double
+/// and bridge-acceptor bond Double → Single. Returns `None` if the transform
+/// would be invalid (e.g. donor has no explicit H to give up on a bracket atom).
 ///
-/// For organic-subset atoms, the implicit H count adjusts automatically via
-/// the valence model. For bracket atoms with explicit hydrogen_count, we also
-/// adjust the counts manually.
-///
-/// Returns None if the transformation would result in an invalid molecule
-/// (e.g., duplicate bonds or other errors).
+/// For organic-subset atoms, implicit H counts adjust automatically through the
+/// valence model; for bracket atoms with an explicit `hydrogen_count`, we
+/// decrement the donor and increment the acceptor manually.
 fn transfer_hydrogen(
     mol: &Molecule,
     donor: AtomIdx,
     bridge: AtomIdx,
     acceptor: AtomIdx,
 ) -> Option<Molecule> {
-    // Find the bond indices
     let (db_bidx, _) = mol.bond_between(donor, bridge)?;
     let (ba_bidx, _) = mol.bond_between(bridge, acceptor)?;
 
     let mut builder = MoleculeBuilder::new();
-
-    // Clone atoms, adjusting explicit H counts for bracket atoms
     for i in 0..mol.atom_count() {
         let idx = AtomIdx(i as u32);
         let mut atom = mol.atom(idx).clone();
-
-        // For bracket atoms with explicit hydrogen_count, adjust H counts
         if let Some(h) = atom.hydrogen_count {
             if idx == donor {
-                // Donor loses 1 H; ensure we don't go negative
-                if h == 0 {
-                    return None;
-                }
+                if h == 0 { return None; }
                 atom.hydrogen_count = Some(h - 1);
             } else if idx == acceptor {
-                // Acceptor gains 1 H
                 atom.hydrogen_count = Some(h.saturating_add(1));
             }
         }
-
         builder.add_atom(atom);
     }
 
-    // Clone bonds with modified orders for donor-bridge and bridge-acceptor
     for i in 0..mol.bond_count() {
         let bidx = BondIdx(i as u32);
         let b = mol.bond(bidx);
-
-        let order = if bidx == db_bidx {
-            // donor-bridge: Single → Double
-            BondOrder::Double
-        } else if bidx == ba_bidx {
-            // bridge-acceptor: Double → Single
-            BondOrder::Single
-        } else {
-            b.order
+        let order = match bidx {
+            x if x == db_bidx => BondOrder::Double,
+            x if x == ba_bidx => BondOrder::Single,
+            _ => b.order,
         };
-
         builder.add_bond(b.atom1, b.atom2, order).ok()?;
     }
-
     Some(builder.build())
 }
 
-// ---------------------------------------------------------------------------
-// Apply rule to molecule
-// ---------------------------------------------------------------------------
-
-/// Apply the first matching transformation for a rule, return the new molecule.
+/// Apply the first matching transformation for `rule`; return the new molecule.
 fn apply_first_match(mol: &Molecule, rule: &TautomerRule) -> Option<Molecule> {
-    let matches = find_matches(mol, rule);
-    for (donor, bridge, acceptor) in matches {
-        if let Some(next) = transfer_hydrogen(mol, donor, bridge, acceptor) {
-            return Some(next);
-        }
-    }
-    None
+    find_matches(mol, rule)
+        .into_iter()
+        .find_map(|(d, b, a)| transfer_hydrogen(mol, d, b, a))
 }
 
-/// Apply all matching transformations for a rule, return all new molecules.
+/// Apply every matching transformation for `rule`; return all resulting molecules.
 fn apply_all_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<Molecule> {
-    let mut results = Vec::new();
-    let matches = find_matches(mol, rule);
-    for (donor, bridge, acceptor) in matches {
-        if let Some(next) = transfer_hydrogen(mol, donor, bridge, acceptor) {
-            results.push(next);
-        }
-    }
-    results
+    find_matches(mol, rule)
+        .into_iter()
+        .filter_map(|(d, b, a)| transfer_hydrogen(mol, d, b, a))
+        .collect()
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 /// Return the canonical (preferred) tautomer of `mol`.
 ///
@@ -449,10 +377,6 @@ pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
     }
     result
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

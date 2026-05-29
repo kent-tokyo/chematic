@@ -81,37 +81,26 @@ fn parse_field3(
 /// Coordinates are parsed but not stored (the core `Molecule` type has no
 /// coordinate fields yet).
 pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> {
-    let mut lines = input.lines().enumerate().peekable();
+    // Yields (1-based line number, line text); short-circuits on EOF.
+    let mut lines = input
+        .lines()
+        .enumerate()
+        .map(|(i, l)| (i + 1, l));
+    let mut next_line = || lines.next().ok_or(MolParseError::UnexpectedEnd);
 
     // -- Header block: lines 1–3 -------------------------------------------
 
-    let name = match lines.next() {
-        Some((_, l)) => l.to_string(),
-        None => return Err(MolParseError::UnexpectedEnd),
-    };
-
-    // Line 2: program/date — ignored but must be present
-    match lines.next() {
-        Some(_) => {}
-        None => return Err(MolParseError::UnexpectedEnd),
-    }
-
-    let comment = match lines.next() {
-        Some((_, l)) => l.to_string(),
-        None => return Err(MolParseError::UnexpectedEnd),
-    };
+    let name = next_line()?.1.to_string();
+    next_line()?; // line 2: program/date — discarded
+    let comment = next_line()?.1.to_string();
 
     let metadata = MolMetadata { name, comment };
 
     // -- Counts line (line 4) -----------------------------------------------
 
-    let (counts_lineno, counts_line) = match lines.next() {
-        Some((i, l)) => (i + 1, l), // 1-based for error messages
-        None => return Err(MolParseError::UnexpectedEnd),
-    };
+    let (counts_lineno, counts_line) = next_line()?;
 
-    // Verify V2000 version tag (bytes 33–38 in the spec; be lenient with
-    // shorter lines — just check that "V2000" appears somewhere in the line).
+    // Be lenient with shorter lines — just check the V2000 tag exists.
     if !counts_line.contains("V2000") {
         return Err(MolParseError::InvalidCountLine {
             line: counts_lineno,
@@ -127,21 +116,16 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
     // -- Atom block ---------------------------------------------------------
 
     let mut builder = MoleculeBuilder::new();
+    let make_atom_err = |ln: usize, d: String| MolParseError::InvalidAtomLine { line: ln, detail: d };
 
     for atom_i in 0..natoms {
-        let (raw_lineno, atom_line) = match lines.next() {
-            Some((i, l)) => (i + 1, l),
-            None => return Err(MolParseError::UnexpectedEnd),
-        };
-
-        let make_atom_err = |ln: usize, d: String| MolParseError::InvalidAtomLine { line: ln, detail: d };
+        let (raw_lineno, atom_line) = next_line()?;
 
         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
         // the spec, but writers vary; trim both ends).
         let sym = atom_line.get(31..34).ok_or_else(|| {
             make_atom_err(raw_lineno, format!("atom line {atom_i} too short for element field"))
-        })?;
-        let sym = sym.trim();
+        })?.trim();
 
         let element = Element::from_symbol(sym).ok_or_else(|| MolParseError::UnknownElement {
             symbol: sym.to_string(),
@@ -149,12 +133,10 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
         })?;
 
         // Charge code: bytes 36–38 (3 chars).
-        let charge = if let Some(ccc) = atom_line.get(36..39) {
-            let code: i8 = ccc.trim().parse().unwrap_or(0);
-            decode_charge(code)
-        } else {
-            0
-        };
+        let charge = atom_line
+            .get(36..39)
+            .map(|ccc| decode_charge(ccc.trim().parse().unwrap_or(0)))
+            .unwrap_or(0);
 
         let mut atom = Atom::new(element);
         atom.charge = charge;
@@ -163,13 +145,10 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
 
     // -- Bond block ---------------------------------------------------------
 
-    for bond_i in 0..nbonds {
-        let (raw_lineno, bond_line) = match lines.next() {
-            Some((i, l)) => (i + 1, l),
-            None => return Err(MolParseError::UnexpectedEnd),
-        };
+    let make_bond_err = |ln: usize, d: String| MolParseError::InvalidBondLine { line: ln, detail: d };
 
-        let make_bond_err = |ln: usize, d: String| MolParseError::InvalidBondLine { line: ln, detail: d };
+    for bond_i in 0..nbonds {
+        let (raw_lineno, bond_line) = next_line()?;
 
         let a1_raw = parse_field3(bond_line, 0, raw_lineno, make_bond_err)?;
         let a2_raw = parse_field3(bond_line, 3, raw_lineno, make_bond_err)?;
@@ -192,6 +171,8 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
             0
         };
 
+        // Bond types 5/6/7/8 (query bonds) fall back to Single since they
+        // are not representable in BondOrder.
         let order = match btype_raw {
             1 => match stereo_raw {
                 1 | 4 => BondOrder::Up,
@@ -201,8 +182,6 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
             2 => BondOrder::Double,
             3 => BondOrder::Triple,
             4 => BondOrder::Aromatic,
-            // 5 = single-or-double, 6 = single-or-aromatic, 7 = double-or-aromatic, 8 = any
-            // Fall back to Single for query bond types not representable in BondOrder.
             _ => BondOrder::Single,
         };
 
@@ -212,9 +191,8 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
         })?;
     }
 
-    // Consume lines until "M  END" (or end of iterator — the block may have
-    // property lines before M  END which we skip).
-    for (_i, l) in lines.by_ref() {
+    // Skip property lines until "M  END" (or EOF if absent).
+    for (_, l) in lines.by_ref() {
         if l.trim_start().starts_with("M  END") {
             break;
         }

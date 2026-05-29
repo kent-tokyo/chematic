@@ -7,10 +7,6 @@ use chematic_perception::find_sssr;
 
 use crate::bitvec::BitVec2048;
 
-// ---------------------------------------------------------------------------
-// FNV-1a constants
-// ---------------------------------------------------------------------------
-
 const FNV_OFFSET: u64 = 14695981039346656037;
 const FNV_PRIME: u64 = 1099511628211;
 
@@ -23,10 +19,6 @@ pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     }
     h
 }
-
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
 
 /// Configuration for ECFP computation.
 #[derive(Debug, Clone)]
@@ -42,10 +34,6 @@ impl Default for EcfpConfig {
         Self { radius: 2, nbits: 2048 }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Bond type encoding
-// ---------------------------------------------------------------------------
 
 /// Map a `BondOrder` to the integer code used in the ECFP hash.
 ///
@@ -65,10 +53,6 @@ pub(crate) fn bond_type_int(order: BondOrder) -> u8 {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Main entry point
-// ---------------------------------------------------------------------------
-
 /// Compute an ECFP fingerprint for `mol` using the given configuration.
 ///
 /// # Algorithm overview
@@ -86,62 +70,45 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
         return fp;
     }
 
-    // Pre-compute ring membership for all atoms once.
     let ring_set = find_sssr(mol);
 
-    // --- Step 1: initial atom identifiers (iteration 0) ---
+    // Step 1: initial atom identifiers (iteration 0).
     let mut ids: Vec<u64> = Vec::with_capacity(n);
-
     for i in 0..n {
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
 
-        let atomic_number = atom.element.atomic_number();
-        let degree = mol.neighbors(idx).count() as u8;
-        let h_count = implicit_hcount(mol, idx);
         // Shift formal charge by 8 so that charges in [-8, +7] map to bytes [0, 15].
-        // Using i16 arithmetic avoids any overflow on extreme charges.
+        // i16 arithmetic avoids overflow on extreme charges.
         let charge_adjusted = (atom.charge as i16 + 8) as u8;
-        let is_in_ring: u8 = if ring_set.contains_atom(idx) { 1 } else { 0 };
-        let is_aromatic: u8 = if atom.aromatic { 1 } else { 0 };
-
         let id = fnv1a(&[
-            atomic_number,
-            degree,
-            h_count,
+            atom.element.atomic_number(),
+            mol.neighbors(idx).count() as u8,
+            implicit_hcount(mol, idx),
             charge_adjusted,
-            is_in_ring,
-            is_aromatic,
+            ring_set.contains_atom(idx) as u8,
+            atom.aromatic as u8,
         ]);
 
-        // Set bit for this atom's identifier.
         fp.set((id % nbits as u64) as usize);
         ids.push(id);
     }
 
-    // --- Step 2: iterative expansion ---
+    // Step 2: iterative expansion.
     let mut new_ids: Vec<u64> = vec![0u64; n];
-
     for r in 1..=config.radius {
         for i in 0..n {
             let idx = AtomIdx(i as u32);
-
-            // Collect (bond_type_int, neighbor_id) pairs.
             let mut neighbor_info: Vec<(u8, u64)> = mol
                 .neighbors(idx)
                 .map(|(nb_idx, bond_idx)| {
-                    let bond = mol.bond(bond_idx);
-                    let btype = bond_type_int(bond.order);
-                    let nb_id = ids[nb_idx.0 as usize];
-                    (btype, nb_id)
+                    let btype = bond_type_int(mol.bond(bond_idx).order);
+                    (btype, ids[nb_idx.0 as usize])
                 })
                 .collect();
-
-            // Sort for canonical ordering.
             neighbor_info.sort_unstable();
 
-            // Build the byte array:
-            //   [r as u8, id_bytes(8), (btype(1) ++ nbr_id_bytes(8)) * neighbors]
+            // Byte layout: [round_u8, self_id(8), (btype(1) ++ nb_id(8))*]
             let mut bytes: Vec<u8> = Vec::with_capacity(1 + 8 + neighbor_info.len() * 9);
             bytes.push(r as u8);
             bytes.extend_from_slice(&ids[i].to_le_bytes());
@@ -152,21 +119,13 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
 
             let new_id = fnv1a(&bytes);
             new_ids[i] = new_id;
-
-            // Set bit for the new identifier.
             fp.set((new_id % nbits as u64) as usize);
         }
-
-        // Swap buffers; new_ids becomes ids for the next iteration.
         core::mem::swap(&mut ids, &mut new_ids);
     }
 
     fp
 }
-
-// ---------------------------------------------------------------------------
-// Convenience wrappers
-// ---------------------------------------------------------------------------
 
 /// ECFP4 fingerprint (radius = 2, 2048 bits).
 pub fn ecfp4(mol: &Molecule) -> BitVec2048 {
@@ -182,10 +141,6 @@ pub fn ecfp6(mol: &Molecule) -> BitVec2048 {
 pub fn tanimoto_ecfp4(a: &Molecule, b: &Molecule) -> f64 {
     ecfp4(a).tanimoto(&ecfp4(b))
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

@@ -132,15 +132,14 @@ impl core::fmt::Display for Atom {
         if self.wildcard {
             return write!(f, "*");
         }
-        if self.isotope.is_some() {
-            write!(f, "[{}{}]",
-                self.isotope.unwrap(),
-                if self.aromatic { self.element.symbol().to_lowercase() }
-                else { self.element.symbol().to_string() })
-        } else if self.aromatic {
-            write!(f, "{}", self.element.symbol().to_lowercase())
+        let symbol = if self.aromatic {
+            self.element.symbol().to_lowercase()
         } else {
-            write!(f, "{}", self.element.symbol())
+            self.element.symbol().to_string()
+        };
+        match self.isotope {
+            Some(iso) => write!(f, "[{iso}{symbol}]"),
+            None => write!(f, "{symbol}"),
         }
     }
 }

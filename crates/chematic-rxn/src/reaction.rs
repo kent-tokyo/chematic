@@ -20,8 +20,8 @@ pub enum RxnError {
 impl core::fmt::Display for RxnError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            RxnError::MissingArrow => write!(f, "reaction SMILES must contain '>>'"),
-            RxnError::SmilesParse { part, source } => {
+            Self::MissingArrow => write!(f, "reaction SMILES must contain '>>'"),
+            Self::SmilesParse { part, source } => {
                 write!(f, "failed to parse SMILES '{part}': {source}")
             }
         }
@@ -35,16 +35,12 @@ impl core::fmt::Display for RxnError {
 /// - `"R>>P"` is the standard form with empty agents section.
 /// - Returns `Err(RxnError::MissingArrow)` if fewer than two `>` delimiters are found.
 pub fn parse_reaction(s: &str) -> Result<Reaction, RxnError> {
-    // Split on ">" into at most 3 parts: reactants, agents, products
+    // splitn(3, '>') yields 3 parts when at least two `>` are present;
+    // fewer parts means the reaction arrow is missing.
     let parts: Vec<&str> = s.splitn(3, '>').collect();
     if parts.len() < 3 {
         return Err(RxnError::MissingArrow);
     }
-    // parts[0] = reactants, parts[1] = agents, parts[2] = products
-    // "CC>>CC"   → ["CC",  "",  "CC"]  ✓
-    // "CC>O>CC=O"→ ["CC", "O", "CC=O"] ✓
-    // "CC>CC"    → ["CC", "CC"]         → MissingArrow ✓
-    // ">>"       → ["",   "",  ""]      ✓
 
     let parse_part = |s: &str| -> Result<Vec<Molecule>, RxnError> {
         if s.is_empty() {
@@ -71,9 +67,10 @@ pub fn parse_reaction(s: &str) -> Result<Reaction, RxnError> {
 /// Serialize a `Reaction` back to a reaction SMILES string.
 pub fn write_reaction(rxn: &Reaction) -> String {
     let join = |mols: &[Molecule]| -> String {
-        mols.iter().map(|m| write_smiles(m)).collect::<Vec<_>>().join(".")
+        mols.iter().map(write_smiles).collect::<Vec<_>>().join(".")
     };
-    format!("{}>{}>{}",
+    format!(
+        "{}>{}>{}",
         join(&rxn.reactants),
         join(&rxn.agents),
         join(&rxn.products),

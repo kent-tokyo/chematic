@@ -18,7 +18,6 @@
 //! | 5   | NegIonizable| O with charge ≤ 0 |
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
-use chematic_perception::find_sssr;
 
 use crate::bitvec::BitVec2048;
 use crate::ecfp::{bond_type_int, fnv1a, EcfpConfig};
@@ -111,9 +110,6 @@ pub fn fcfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     if n == 0 {
         return fp;
     }
-
-    // Pre-compute ring membership (needed for degree calculation).
-    let _ring_set = find_sssr(mol);
 
     // --- Step 1: initial atom identifiers from feature classes ---
     let mut ids: Vec<u64> = Vec::with_capacity(n);

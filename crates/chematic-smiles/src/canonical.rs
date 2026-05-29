@@ -33,10 +33,6 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
     CanonicalWriter::new(mol, &ranks).write_all()
 }
 
-// ---------------------------------------------------------------------------
-// Morgan rank computation
-// ---------------------------------------------------------------------------
-
 /// Compute Morgan (extended connectivity) ranks for all atoms.
 ///
 /// Returns a vector of normalised ordinal ranks (0-based, gap-free)
@@ -140,10 +136,6 @@ fn normalize_ranks(ranks: &[u64]) -> Vec<u64> {
     result
 }
 
-// ---------------------------------------------------------------------------
-// Canonical DFS writer
-// ---------------------------------------------------------------------------
-
 struct CanonicalWriter<'a> {
     mol: &'a Molecule,
     ranks: &'a [u64],
@@ -187,8 +179,6 @@ impl<'a> CanonicalWriter<'a> {
         self.out
     }
 
-    // -- canonical atom ordering -------------------------------------------
-
     /// Return all atoms sorted in canonical order: highest rank first, ties
     /// broken by chemical properties invariant across re-parses.
     fn canonical_atom_list(&self) -> Vec<AtomIdx> {
@@ -217,8 +207,6 @@ impl<'a> CanonicalWriter<'a> {
             .then_with(|| (atom_a.aromatic as u8).cmp(&(atom_b.aromatic as u8)))
             .then_with(|| self.mol.degree(a).cmp(&self.mol.degree(b)))
     }
-
-    // -- phase 1: ring-closure discovery ------------------------------------
 
     /// Discover back-edges by running the same canonical DFS as the writer.
     /// Using identical traversal order ensures ring-closure numbers are stable.
@@ -267,8 +255,6 @@ impl<'a> CanonicalWriter<'a> {
 
         in_stack[atom.0 as usize] = false;
     }
-
-    // -- phase 2: serialization -------------------------------------------
 
     fn write_chain(
         &mut self,
@@ -344,15 +330,11 @@ impl<'a> CanonicalWriter<'a> {
         neighbors.sort_by(|&(a, _), &(b, _)| self.canonical_cmp(b, a)); // descending
     }
 
-    // -- atom serialization -------------------------------------------------
-
     fn emit_atom(&mut self, idx: AtomIdx) {
         let atom = self.mol.atom(idx);
 
         if atom.wildcard {
-            self.out.push('[');
-            self.out.push('*');
-            self.out.push(']');
+            self.out.push_str("[*]");
             return;
         }
 
@@ -388,11 +370,11 @@ impl<'a> CanonicalWriter<'a> {
             }
 
             match atom.charge {
-                0  => {}
-                1  => self.out.push('+'),
+                0 => {}
+                1 => self.out.push('+'),
                 -1 => self.out.push('-'),
-                c if c > 0 => { self.out.push('+'); self.out.push_str(&c.to_string()); }
-                c          => self.out.push_str(&c.to_string()),
+                c if c > 0 => self.out.push_str(&format!("+{c}")),
+                c => self.out.push_str(&c.to_string()),
             }
 
             if let Some(m) = atom.atom_map {
@@ -408,10 +390,6 @@ impl<'a> CanonicalWriter<'a> {
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

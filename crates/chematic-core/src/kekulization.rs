@@ -128,30 +128,29 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     }
 
     // Build the result map: matched aromatic bonds → Double, rest → Single.
-    let mut result: KekuleResult = HashMap::new();
-
-    // Determine which bonds are in the matching.
     let mut double_bonds: HashSet<BondIdx> = HashSet::new();
     for (&atom, &partner) in &matching {
-        // Avoid counting each pair twice.
-        if atom < partner {
-            // Find the bond between them.
-            if let Some((bidx, _)) = mol.bond_between(atom, partner) {
-                if mol.bond(bidx).order == BondOrder::Aromatic {
-                    double_bonds.insert(bidx);
-                }
+        if atom >= partner {
+            continue; // each pair shows up twice in `matching`; visit one orientation
+        }
+        if let Some((bidx, _)) = mol.bond_between(atom, partner) {
+            if mol.bond(bidx).order == BondOrder::Aromatic {
+                double_bonds.insert(bidx);
             }
         }
     }
 
-    for &bidx in &aromatic_bonds {
-        if double_bonds.contains(&bidx) {
-            result.insert(bidx, BondOrder::Double);
-        } else {
-            result.insert(bidx, BondOrder::Single);
-        }
-    }
-
+    let result: KekuleResult = aromatic_bonds
+        .iter()
+        .map(|&bidx| {
+            let order = if double_bonds.contains(&bidx) {
+                BondOrder::Double
+            } else {
+                BondOrder::Single
+            };
+            (bidx, order)
+        })
+        .collect();
     Ok(result)
 }
 
@@ -179,10 +178,6 @@ pub fn apply_kekule(mol: &Molecule, kekule: &KekuleResult) -> Molecule {
     builder.build()
 }
 
-// ---------------------------------------------------------------------------
-// Augmenting path (DFS)
-// ---------------------------------------------------------------------------
-
 /// Attempt to find an augmenting path starting from `v` and update `matching`.
 /// Returns true if an augmenting path was found.
 fn augment(
@@ -191,31 +186,24 @@ fn augment(
     matching: &mut HashMap<AtomIdx, AtomIdx>,
     visited: &mut HashSet<AtomIdx>,
 ) -> bool {
-    if let Some(neighbors) = adj.get(&v) {
-        for &(u, _bidx) in neighbors {
-            if visited.contains(&u) {
-                continue;
-            }
-            visited.insert(u);
-
-            // u is unmatched, OR we can re-route from u's current partner.
-            let partner = matching.get(&u).copied();
-            let can_augment = partner.is_none()
-                || augment(partner.unwrap(), adj, matching, visited);
-
-            if can_augment {
-                matching.insert(v, u);
-                matching.insert(u, v);
-                return true;
-            }
+    let Some(neighbors) = adj.get(&v) else { return false };
+    for &(u, _) in neighbors {
+        if !visited.insert(u) {
+            continue;
+        }
+        // u is unmatched, or we can re-route from u's current partner.
+        let can_augment = match matching.get(&u).copied() {
+            None => true,
+            Some(partner) => augment(partner, adj, matching, visited),
+        };
+        if can_augment {
+            matching.insert(v, u);
+            matching.insert(u, v);
+            return true;
         }
     }
     false
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 /// Determine whether an aromatic atom *must* appear in the matching
 /// (i.e. requires a double bond for a valid Kekulé form).
@@ -233,38 +221,17 @@ fn augment(
 /// Everything else (C, N without H like pyridine) must be matched.
 fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
     let atom = mol.atom(idx);
-    let an = atom.element.atomic_number();
-
-    // Oxygen and sulfur always donate a lone pair → don't need a double bond.
-    if an == 8 || an == 16 || an == 34 {
-        // O, S, Se
-        return false;
+    match atom.element.atomic_number() {
+        // O, S, Se always donate a lone pair → don't need a double bond.
+        8 | 16 | 34 => false,
+        // Boron aromatic (rare) — can donate lone pair.
+        5 => false,
+        // N with explicit H ([nH]) is a lone-pair donor; bare aromatic N (pyridine) must match.
+        7 => !matches!(atom.hydrogen_count, Some(h) if h > 0),
+        // Carbon and everything else: must be in the matching.
+        _ => true,
     }
-
-    // Nitrogen: if it has an explicit H (like pyrrole [nH]) → lone-pair donor → not required.
-    if an == 7 {
-        // hydrogen_count set means bracket atom (e.g. [nH]).
-        if let Some(h) = atom.hydrogen_count {
-            if h > 0 {
-                return false;
-            }
-        }
-        // Organic aromatic N without H (pyridine N): must be matched.
-        return true;
-    }
-
-    // Boron aromatic (rare) — can donate lone pair.
-    if an == 5 {
-        return false;
-    }
-
-    // Carbon and all other atoms: must be in the double-bond matching.
-    true
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

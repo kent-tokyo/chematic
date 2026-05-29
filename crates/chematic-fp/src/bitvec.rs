@@ -47,8 +47,12 @@ impl BitVec2048 {
     /// Bitwise AND of two bitvectors.
     pub fn and(&self, other: &Self) -> Self {
         let mut result = Self::new();
-        for i in 0..32 {
-            result.words[i] = self.words[i] & other.words[i];
+        for (out, (a, b)) in result
+            .words
+            .iter_mut()
+            .zip(self.words.iter().zip(other.words.iter()))
+        {
+            *out = a & b;
         }
         result
     }
@@ -56,8 +60,12 @@ impl BitVec2048 {
     /// Bitwise OR of two bitvectors.
     pub fn or(&self, other: &Self) -> Self {
         let mut result = Self::new();
-        for i in 0..32 {
-            result.words[i] = self.words[i] | other.words[i];
+        for (out, (a, b)) in result
+            .words
+            .iter_mut()
+            .zip(self.words.iter().zip(other.words.iter()))
+        {
+            *out = a | b;
         }
         result
     }

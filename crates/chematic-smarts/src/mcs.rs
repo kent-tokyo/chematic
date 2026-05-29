@@ -194,14 +194,12 @@ impl PartialMapping {
 
     /// Retract the last-added atom tuple (must be the one with the highest query index).
     fn retract(&mut self, atoms: &[AtomIdx], extra_bonds: usize) {
-        let q = self.query_to_mol.len() - 1;
         for (mi, &ai) in atoms.iter().enumerate() {
             self.mol_map[mi][ai.0 as usize] = None;
         }
         self.query_to_mol.pop();
         self.size -= 1;
         self.bond_count -= extra_bonds;
-        let _ = q;
     }
 }
 
@@ -484,24 +482,33 @@ fn build_query(mol0: &Molecule, mapping: &PartialMapping, config: &McsConfig) ->
             }
             let a2 = row2[0];
             if let Some((_bidx, bond_entry)) = mol0.bond_between(a1, a2) {
-                let bq = if config.match_bonds {
-                    match normalize_bond(bond_entry.order) {
-                        BondOrder::Single => BondQuery::Primitive(BondPrimitive::Single),
-                        BondOrder::Double => BondQuery::Primitive(BondPrimitive::Double),
-                        BondOrder::Triple => BondQuery::Primitive(BondPrimitive::Triple),
-                        BondOrder::Aromatic => BondQuery::Primitive(BondPrimitive::Aromatic),
-                        BondOrder::Quadruple => BondQuery::Primitive(BondPrimitive::Any),
-                        BondOrder::Up | BondOrder::Down => BondQuery::Primitive(BondPrimitive::Single),
-                    }
-                } else {
-                    BondQuery::Primitive(BondPrimitive::Any)
-                };
+                let bq = bond_order_to_query(bond_entry.order, config.match_bonds);
                 qmol.add_bond(q1, q2, bq);
             }
         }
     }
 
     qmol
+}
+
+/// Convert a target-molecule `BondOrder` into the corresponding `BondQuery`
+/// used in a `QueryMolecule`.
+///
+/// When `match_bonds` is false, every bond becomes `Any` (atom-only MCS).
+/// Up/Down stereo bonds collapse to Single; Quadruple has no SMARTS primitive
+/// so it also becomes `Any`.
+fn bond_order_to_query(order: BondOrder, match_bonds: bool) -> BondQuery {
+    if !match_bonds {
+        return BondQuery::Primitive(BondPrimitive::Any);
+    }
+    match normalize_bond(order) {
+        BondOrder::Single => BondQuery::Primitive(BondPrimitive::Single),
+        BondOrder::Double => BondQuery::Primitive(BondPrimitive::Double),
+        BondOrder::Triple => BondQuery::Primitive(BondPrimitive::Triple),
+        BondOrder::Aromatic => BondQuery::Primitive(BondPrimitive::Aromatic),
+        BondOrder::Quadruple => BondQuery::Primitive(BondPrimitive::Any),
+        BondOrder::Up | BondOrder::Down => BondQuery::Primitive(BondPrimitive::Single),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -522,14 +529,7 @@ fn molecule_to_query(mol: &Molecule) -> QueryMolecule {
     }
 
     for (_, bond) in mol.bonds() {
-        let bq = match normalize_bond(bond.order) {
-            BondOrder::Single => BondQuery::Primitive(BondPrimitive::Single),
-            BondOrder::Double => BondQuery::Primitive(BondPrimitive::Double),
-            BondOrder::Triple => BondQuery::Primitive(BondPrimitive::Triple),
-            BondOrder::Aromatic => BondQuery::Primitive(BondPrimitive::Aromatic),
-            BondOrder::Quadruple => BondQuery::Primitive(BondPrimitive::Any),
-            BondOrder::Up | BondOrder::Down => BondQuery::Primitive(BondPrimitive::Single),
-        };
+        let bq = bond_order_to_query(bond.order, true);
         qmol.add_bond(bond.atom1.0 as usize, bond.atom2.0 as usize, bq);
     }
 

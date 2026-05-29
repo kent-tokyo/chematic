@@ -55,17 +55,12 @@ impl Layout {
         if self.coords.is_empty() {
             return (0.0, 0.0, 0.0, 0.0);
         }
-        let mut min_x = f64::MAX;
-        let mut min_y = f64::MAX;
-        let mut max_x = f64::MIN;
-        let mut max_y = f64::MIN;
-        for p in &self.coords {
-            if p.x < min_x { min_x = p.x; }
-            if p.y < min_y { min_y = p.y; }
-            if p.x > max_x { max_x = p.x; }
-            if p.y > max_y { max_y = p.y; }
-        }
-        (min_x, min_y, max_x, max_y)
+        self.coords.iter().fold(
+            (f64::MAX, f64::MAX, f64::MIN, f64::MIN),
+            |(min_x, min_y, max_x, max_y), p| {
+                (min_x.min(p.x), min_y.min(p.y), max_x.max(p.x), max_y.max(p.y))
+            },
+        )
     }
 }
 
@@ -285,21 +280,15 @@ fn place_ring_system(_mol: &Molecule, system: &[Vec<AtomIdx>], placed: &mut Vec<
             // Find the shared edge: two consecutive atoms in the ring that are both placed.
             let shared_edge = find_shared_edge(ring, placed);
 
-            let (anchor1, anchor2) = if let Some(edge) = shared_edge {
-                edge
-            } else {
-                // Fall back: use the first two placed atoms.
-                (already_placed[0], already_placed[1])
-            };
+            // Fall back: use the first two placed atoms.
+            let (anchor1, anchor2) = shared_edge
+                .unwrap_or((already_placed[0], already_placed[1]));
 
             // Both anchors are confirmed placed (either from find_shared_edge or already_placed).
-            let p1 = match placed[anchor1.0 as usize] {
-                Some(p) => p,
-                None => return true, // Not ready.
-            };
-            let p2 = match placed[anchor2.0 as usize] {
-                Some(p) => p,
-                None => return true, // Not ready.
+            let (Some(p1), Some(p2)) =
+                (placed[anchor1.0 as usize], placed[anchor2.0 as usize])
+            else {
+                return true; // Not ready.
             };
 
             // Place unplaced atoms of this ring using the regular polygon geometry,
@@ -568,9 +557,8 @@ fn best_outgoing_direction(
     mol: &Molecule,
     component: &HashSet<AtomIdx>,
 ) -> f64 {
-    let origin = match placed[atom.0 as usize] {
-        Some(p) => p,
-        None => return 0.0,
+    let Some(origin) = placed[atom.0 as usize] else {
+        return 0.0;
     };
 
     // Collect angles to already-placed neighbors.
@@ -607,12 +595,11 @@ fn min_angle_separation(angle: f64, used: &[f64]) -> f64 {
     used.iter()
         .map(|&u| {
             let diff = (angle - u).abs();
-            let diff = if diff > std::f64::consts::PI {
+            if diff > std::f64::consts::PI {
                 2.0 * std::f64::consts::PI - diff
             } else {
                 diff
-            };
-            diff
+            }
         })
         .fold(f64::MAX, f64::min)
 }
@@ -631,9 +618,8 @@ fn dfs_zigzag(
         return;
     }
 
-    let parent_pos = match placed[parent.0 as usize] {
-        Some(p) => p,
-        None => return,
+    let Some(parent_pos) = placed[parent.0 as usize] else {
+        return;
     };
 
     let x = parent_pos.x + BOND_LEN * dir.cos();
