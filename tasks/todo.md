@@ -200,6 +200,14 @@
             - 5 種リング記述子追加: num_aromatic_heterocycles, num_aliphatic_heterocycles,
               num_saturated_heterocycles, num_spiro_atoms, num_bridgehead_atoms
             - 互変異性体ルール 15 → 20（ルール 16〜20: O→N, O→O, N→C, C→O, C→N）
+      - [x] Sprint E — グアニジニウム N LogP 修正 + タウトマー 1,2-shift（LogP MAE 0.134→0.117）:
+            - グアニジニウム/アミジン N の LogP 修正（Wildman-Crippen N14 型: -0.335）:
+              イミン =N（直接 C=N 二重結合）と隣接グアニジニウム N（C=N 隣の N）を検出
+              metformin 誤差 2.07 → ~0.00、arginine 改善
+            - 互変異性体 1,2-shift 追加（pyrazole N1H↔N2H 等）:
+              find_direct_aromatic_matches + transfer_hydrogen_aromatic（結合次数変更なし）
+              enumerate_tautomers: H-assignment フィンガープリントで位置異性体を識別
+              canonical_tautomer: 最小 H-assignment で N1H/N2H を同一正規形に収束
       - [x] criterion による全ホットパスのベンチマーク
       - [x] ChEMBL 37 全量バリデーション: **2,897,819 分子 / 100.000% 成功**（parse + roundtrip）
               curl chembl_37_chemreps.txt.gz | gzip -d | awk | validate_smiles でストリーム検証
@@ -215,14 +223,14 @@
 | chematic-perception    | 14      | 完了     |
 | chematic-mol           | 37      | 完了     |
 | chematic-depict        | 15      | 完了     |
-| chematic-chem          | 212     | 完了     |
+| chematic-chem          | 216     | 完了     |
 | chematic-fp            | 44      | 完了     |
 | chematic-smarts        | 75      | 完了     |
 | chematic-3d            | 25      | 完了     |
 | chematic-rxn           | 15      | 完了     |
 | chematic-wasm          | 18      | 完了     |
 | chematic               | 1       | 完了     |
-| **合計**               | **538** | —        |
+| **合計**               | **542** | —        |
 
 ---
 

@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (`chematic-chem`) — LogP guanidinium N accuracy (Sprint E)
+
+- **LogP guanidinium/amidine N** (`descriptors.rs`): non-aromatic nitrogen atoms in imine or guanidinium context now use Wildman–Crippen N14 type (−0.335) instead of the generic aliphatic amine values (−0.595 to −1.019). Detection: N with a direct double bond to C (`=N`, Type A) or N bonded to a C that itself has a C=N double bond (adjacent N, Type B). Fixes metformin (error 2.07 → ~0.00), improves arginine, diazepam, clonazepam.
+
+**Benchmark results** (175-molecule ChEMBL test set):
+| Property | Before (Sprint D) | After (Sprint E) |
+|----------|-------------------|-----------------|
+| LogP MAE | 0.134 | **0.117** |
+| TPSA MAE | 0.081 Å² | 0.081 Å² (unchanged) |
+
+### Added (`chematic-chem`) — Tautomer 1,2-shift (Sprint E)
+
+- **`enumerate_tautomers`**: now generates direct aromatic 1,2-shift tautomers (e.g. pyrazole N1H ↔ N2H) in addition to 1,3-shift rule-based tautomers. Uses a separate H-assignment fingerprint to distinguish positional isomers that share the same structural fingerprint.
+- **`canonical_tautomer`**: after rule-based normalization, direct aromatic 1,2-shift candidates are compared by lexicographic H-assignment and the minimal form is returned, ensuring both N1H and N2H of pyrazole converge to the same canonical molecule.
+
+---
+
 ### Fixed (`chematic-chem`) — TPSA and LogP accuracy (Sprint D)
 
 - **TPSA imine N-H** (`descriptors.rs`): sp2 imine nitrogen with one H (C=N-H, as in amidine and guanidinium groups) now uses 23.79 Å² instead of 12.03 Å² (generic secondary amine). Detection: N with `h=1` and a double bond from N to a carbon neighbor. Reduces metformin TPSA error from 23.64 → 0.12 Å², arginine from 11.82 → 0.06 Å².

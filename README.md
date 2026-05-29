@@ -28,7 +28,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete. 538 tests, all passing.
+All phases complete. 542 tests, all passing.
 
 | Crate                 | Description                                                                        | Tests |
 |-----------------------|------------------------------------------------------------------------------------|-------|
@@ -37,7 +37,7 @@ All phases complete. 538 tests, all passing.
 | `chematic-perception` | SSSR (Balducci-Pearlman), Huckel aromaticity                                       | 14    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 parser and writer                                              | 37    |
 | `chematic-depict`     | 2D SVG depiction with CPK coloring and atom/bond highlighting                      | 15    |
-| `chematic-chem`       | Descriptors, BRICS fragmentation, QED, standardization, Murcko scaffold, CIP      | 212   |
+| `chematic-chem`       | Descriptors, BRICS fragmentation, QED, standardization, Murcko scaffold, CIP      | 216   |
 | `chematic-fp`         | ECFP4/6, MACCS 166-bit, topological path, AtomPair, Torsion FP, Tanimoto/Dice     | 44    |
 | `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS  | 75    |
 | `chematic-3d`         | 3D coordinate generation, PDB/XYZ file formats                                    | 25    |
@@ -46,7 +46,7 @@ All phases complete. 538 tests, all passing.
 | `chematic`            | Umbrella crate with feature flags (all sub-crates)                                  | 1     |
 
 ```
-cargo test --workspace   # 538 tests, all passing
+cargo test --workspace   # 542 tests, all passing
 ```
 
 ---
