@@ -185,9 +185,21 @@
 - [x] 検証とベンチマーク:
       - [x] 175 分子データセットで物性値精度を RDKit と定量比較 (docs/rdkit_comparison.md)
             MW: MAE=0.0002 Da, r=1.0000 | HAC: r=1.0000 | HBD: r=0.9974
-            TPSA: MAE=0.76 Å², r=0.9941 | HBA: MAE=0.137, r=0.9750
-            LogP: MAE=0.298, r=0.9441 (改善: v0.1.0 MAE=1.346, r=0.456)
+            TPSA: MAE=0.081 Å², r=0.9999 | HBA: MAE=0.137, r=0.9750
+            LogP: MAE=0.134, r=0.9847 (改善: v0.1.0 MAE=1.346 → v0.1.3 MAE=0.298 → Sprint C MAE=0.141 → Sprint D MAE=0.134)
             ECFP4 Tanimoto: Spearman r=0.917 (50×50 ペア)
+      - [x] Sprint C — RDKit 品質改善（LogP MAE 0.298→0.141, TPSA MAE 0.759→0.324 Å²）:
+            - junction C アトム型修正（縮合芳香族環：naphthalene/indole 等）
+            - vinyl C アトム型符号修正（C=C の Crippen 寄与 +0.2274）
+            - 硝酸基 N の TPSA 修正（[N+](=O)[O-]: N=41.44 Å², O-=0 Å²）
+            - イミン N の TPSA 修正（C=N の非環式 N: 12.89 Å²）
+      - [x] Sprint D — RDKit 品質改善 + 不足機能追加（LogP MAE 0.141→0.134, TPSA MAE 0.324→0.081 Å²）:
+            - イミン N-H の TPSA 修正（C=N-H: 23.79 Å²、metformin/arginine 誤差解消）
+            - リン酸 P の TPSA 修正（P=O あり: 26.88 Å² vs P=O なし: 34.14 Å²）
+            - リン酸 P の LogP 修正（P=O あり: +0.7933 vs P=O なし: -0.3451）
+            - 5 種リング記述子追加: num_aromatic_heterocycles, num_aliphatic_heterocycles,
+              num_saturated_heterocycles, num_spiro_atoms, num_bridgehead_atoms
+            - 互変異性体ルール 15 → 20（ルール 16〜20: O→N, O→O, N→C, C→O, C→N）
       - [x] criterion による全ホットパスのベンチマーク
       - [x] ChEMBL 37 全量バリデーション: **2,897,819 分子 / 100.000% 成功**（parse + roundtrip）
               curl chembl_37_chemreps.txt.gz | gzip -d | awk | validate_smiles でストリーム検証
@@ -199,19 +211,18 @@
 | クレート               | テスト数 | 状態     |
 |------------------------|---------|---------|
 | chematic-core          | 30      | 完了     |
-| chematic-smiles        | 51      | 完了     |
+| chematic-smiles        | 52      | 完了     |
 | chematic-perception    | 14      | 完了     |
-| chematic-mol           | 36      | 完了     |
+| chematic-mol           | 37      | 完了     |
 | chematic-depict        | 15      | 完了     |
-| chematic-chem          | 182     | 完了     |
-| chematic-fp            | 40      | 完了     |
-| chematic-smarts        | 69      | 完了     |
+| chematic-chem          | 212     | 完了     |
+| chematic-fp            | 44      | 完了     |
+| chematic-smarts        | 75      | 完了     |
 | chematic-3d            | 25      | 完了     |
 | chematic-rxn           | 15      | 完了     |
 | chematic-wasm          | 18      | 完了     |
 | chematic               | 1       | 完了     |
-| doc-tests              | 6       | 完了     |
-| **合計**               | **502** | —        |
+| **合計**               | **538** | —        |
 
 ---
 

@@ -24,7 +24,7 @@ rdkit-sys も openbabel バインディングも使用しない。すべての�
 
 ## 現在のステータス
 
-全フェーズ完了。482 テスト、全パス。
+全フェーズ完了。538 テスト、全パス。
 
 | クレート               | 説明                                                                                         | テスト数 |
 |------------------------|----------------------------------------------------------------------------------------------|---------|
@@ -33,16 +33,16 @@ rdkit-sys も openbabel バインディングも使用しない。すべての�
 | `chematic-perception`  | SSSR (Balducci-Pearlman)、Huckel 芳香族性認識                                               | 14      |
 | `chematic-mol`         | MOL/SDF V2000+V3000 パーサーとライター                                                      | 37      |
 | `chematic-depict`      | 2D SVG 描画（CPK カラー・アトム/ボンドハイライト）                                          | 15      |
-| `chematic-chem`        | 記述子、BRICS フラグメント化、QED、標準化、Murcko スキャフォルド、CIP 立体化学             | 165     |
-| `chematic-fp`          | ECFP4/6、MACCS 166-bit、位相的パス、AtomPair、Torsion FP、Tanimoto/Dice                    | 40      |
-| `chematic-smarts`      | SMARTS（再帰・原子価・ハイブリッド化対応）、VF2 部分構造一致、MCS                          | 67      |
+| `chematic-chem`        | 記述子、BRICS フラグメント化、QED、標準化、Murcko スキャフォルド、CIP 立体化学             | 212     |
+| `chematic-fp`          | ECFP4/6、MACCS 166-bit、位相的パス、AtomPair、Torsion FP、Tanimoto/Dice                    | 44      |
+| `chematic-smarts`      | SMARTS（再帰・原子価・ハイブリッド化対応）、VF2 部分構造一致、MCS                          | 75      |
 | `chematic-3d`          | 3D 座標生成、PDB/XYZ ファイル形式                                                           | 25      |
 | `chematic-rxn`         | 反応 SMILES パーサーとライター                                                               | 15      |
 | `chematic-wasm`        | WebAssembly バインディング — npm: `@kent-tokyo/chematic`                                    | 18      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（全サブクレート）                                  | 1       |
 
 ```
-cargo test --workspace   # 482 テスト、全パス
+cargo test --workspace   # 538 テスト、全パス
 ```
 
 ---
@@ -297,7 +297,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # 全クレートのビルド
-cargo test --workspace       # 全テストの実行（482 件）
+cargo test --workspace       # 全テストの実行（538 件）
 cargo check --workspace      # ビルドなしの型チェック
 cargo clippy --workspace     # リント
 ```

@@ -176,6 +176,51 @@ static RULES: &[TautomerRule] = &[
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
     },
+    // 16. 1,3-O→N any bridge: extends iminol-amide (rule 3) to non-C bridges
+    //     e.g. O-H + S=N, N=N → O=X + N-H (hydroxamic acid, thiohydroximate)
+    TautomerRule {
+        name: "1,3-O-to-N-any-bridge",
+        donor_elem: 8, bridge_elem: None, acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: true,
+    },
+    // 17. 1,3-O→O any bridge: O-H via N or S bridge to =O
+    //     e.g. hydroxylamine HO-N=O ↔ O=N-OH (N-oxide tautomer)
+    TautomerRule {
+        name: "1,3-O-to-O-any-bridge",
+        donor_elem: 8, bridge_elem: None, acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 18. 1,3-N→C any bridge: extends imine-enamine (rule 4) to non-C bridges
+    //     e.g. N-H + S=C, N=C via N bridge → N= + X-C-H
+    TautomerRule {
+        name: "1,3-N-to-C-any-bridge",
+        donor_elem: 7, bridge_elem: None, acceptor_elem: 6,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: true,
+    },
+    // 19. 1,3-C→O any bridge: active methylene (or terminal alkyne) to O-H
+    //     Forward: C-H + X=O → C=X + O-H. prefer_forward:false → prefer keto/C-H form.
+    TautomerRule {
+        name: "1,3-C-to-O-any-bridge",
+        donor_elem: 6, bridge_elem: None, acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
+    // 20. 1,3-C→N any bridge: active methylene adjacent to =N (via S, O, or N bridge)
+    //     Forward: C-H + X=N → C=X + N-H. prefer_forward:false → prefer N-H form.
+    TautomerRule {
+        name: "1,3-C-to-N-any-bridge",
+        donor_elem: 6, bridge_elem: None, acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+    },
 ];
 
 fn clone_mol(mol: &Molecule) -> Molecule {

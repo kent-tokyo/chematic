@@ -322,10 +322,19 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                     } else if h >= 2 {
                         26.02 // NH2
                     } else if h == 1 {
-                        12.03 // NH (secondary)
+                        // Ertl 2000: sp2 imine N-H (C=N-H in amidine/guanidinium) has
+                        // the same TPSA as terminal =NH without H: 23.79 Å².
+                        // Regular secondary amine N-H (sp3, no double bond from N): 12.03 Å².
+                        let is_imine_nh = mol.neighbors(idx).any(|(nb, bidx)| {
+                            mol.bond(bidx).order == BondOrder::Double
+                                && mol.atom(nb).element.atomic_number() == 6
+                        });
+                        if is_imine_nh { 23.79 } else { 12.03 }
                     } else {
-                        // h=0: check for imine (C=N, non-aromatic)
-                        // Imine N has TPSA ~ same as pyridine N (12.89 Å²)
+                        // h=0: tertiary N or bridged/ring imine
+                        // Ertl 2000 distinguishes:
+                        //   ring/bridged C=N-C (degree≥2, diazepam ring, imidazoline): 12.89 Å²
+                        //   tertiary amine (no double bond): 3.24 Å²
                         let is_imine = mol.neighbors(idx).any(|(nb, bidx)| {
                             mol.bond(bidx).order == BondOrder::Double
                                 && mol.atom(nb).element.atomic_number() == 6
@@ -383,10 +392,16 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                     }
                 }
             }
-            // Phosphorus
+            // Phosphorus — Ertl 2000:
+            //   P=O present (phosphate, phosphonate): 26.88 Å²
+            //   P=O absent (phosphine, phosphite):    34.14 Å²
             15 => {
                 if !is_aromatic {
-                    34.14
+                    let has_oxo = mol.neighbors(idx).any(|(nb, bidx)| {
+                        mol.bond(bidx).order == BondOrder::Double
+                            && mol.atom(nb).element.atomic_number() == 8
+                    });
+                    if has_oxo { 26.88 } else { 34.14 }
                 } else {
                     0.0
                 }
@@ -434,7 +449,15 @@ pub fn logp_crippen(mol: &Molecule) -> f64 {
             17 => crippen_halogen(mol, idx, ar, 0.7904, 0.6895),  // Cl
             35 => crippen_halogen(mol, idx, ar, 0.8995, 0.8456),  // Br
             53 => crippen_halogen(mol, idx, ar, 0.7416, 0.8857),  // I
-            15 => -0.3451,  // P: Crippen P type (approximate)
+            // P: Wildman-Crippen 1999. Phosphate ester P(=O) calibrated against
+            // trimethyl_phosphate (RDKit LogP=1.0337); phosphine uses original value.
+            15 => {
+                let has_oxo = mol.neighbors(idx).any(|(nb, bidx)| {
+                    mol.bond(bidx).order == BondOrder::Double
+                        && mol.atom(nb).element.atomic_number() == 8
+                });
+                if has_oxo { 0.7933 } else { -0.3451 }
+            }
             _  => 0.0,
         };
 
@@ -843,6 +866,112 @@ pub fn num_saturated_rings(mol: &Molecule) -> usize {
             })
         })
         .count()
+}
+
+/// Number of aromatic rings containing at least one heteroatom (N, O, S, P, …).
+///
+/// Examples: pyridine (1), furan (1), imidazole (1), benzene (0).
+pub fn num_aromatic_heterocycles(mol: &Molecule) -> usize {
+    find_sssr(mol).rings().iter().filter(|ring| {
+        ring.iter().all(|&idx| mol.atom(idx).aromatic)
+            && ring.iter().any(|&idx| {
+                let an = mol.atom(idx).element.atomic_number();
+                an != 6 && an != 1
+            })
+    }).count()
+}
+
+/// Number of non-aromatic rings containing at least one heteroatom.
+///
+/// A ring is aliphatic when at least one of its atoms is not aromatic.
+/// Examples: piperidine (1), morpholine (1), tetrahydrofuran (1).
+pub fn num_aliphatic_heterocycles(mol: &Molecule) -> usize {
+    find_sssr(mol).rings().iter().filter(|ring| {
+        ring.iter().any(|&idx| !mol.atom(idx).aromatic)
+            && ring.iter().any(|&idx| {
+                let an = mol.atom(idx).element.atomic_number();
+                an != 6 && an != 1
+            })
+    }).count()
+}
+
+/// Number of fully saturated rings (no unsaturated bonds) containing at least one heteroatom.
+///
+/// Examples: piperidine (1), oxetane (1), azetidine (1).
+/// A ring with any double, triple, or aromatic bond is not saturated.
+pub fn num_saturated_heterocycles(mol: &Molecule) -> usize {
+    find_sssr(mol).rings().iter().filter(|ring| {
+        ring.iter().all(|&idx| {
+            mol.neighbors(idx).all(|(_, bidx)| {
+                !matches!(mol.bond(bidx).order,
+                    BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic)
+            })
+        }) && ring.iter().any(|&idx| {
+            let an = mol.atom(idx).element.atomic_number();
+            an != 6 && an != 1
+        })
+    }).count()
+}
+
+/// Number of spiro atoms.
+///
+/// A spiro atom belongs to exactly 2 rings and is the sole shared atom between them.
+/// Example: spiro[4.5]decane (`C1CCCCC11CCCC1`) has 1 spiro atom.
+pub fn num_spiro_atoms(mol: &Molecule) -> usize {
+    let sssr = find_sssr(mol);
+    let rings = sssr.rings();
+    mol.atoms().filter(|(idx, _)| {
+        let member: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
+        if member.len() != 2 { return false; }
+        // Spiro: the two rings share exactly this one atom (no shared bond = not fused).
+        member[0].iter().filter(|a| member[1].contains(a)).count() == 1
+    }).count()
+}
+
+/// Number of bridgehead atoms.
+///
+/// A bridgehead atom belongs to 2 or more rings and has 3 or more bonds to other
+/// ring atoms, where the rings it belongs to share at least one pair of atoms that
+/// are NOT directly bonded (distinguishing bridged from fused or spiro systems).
+///
+/// Example: norbornane (`C1CC2CCC1C2`) has 2 bridgehead atoms.
+/// Naphthalene has 0 (the junction atoms are fused — directly bonded to each other).
+/// Spiro[4.5]decane has 0 (the spiro center is not bridged).
+pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
+    let sssr = find_sssr(mol);
+    let rings = sssr.rings();
+    mol.atoms().filter(|(idx, _)| {
+        if sssr.atoms_in_ring_count(*idx) < 2 { return false; }
+        let ring_bonds = mol.neighbors(*idx)
+            .filter(|(nb, _)| sssr.contains_atom(*nb))
+            .count();
+        if ring_bonds < 3 { return false; }
+        let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
+        for i in 0..member_rings.len() {
+            for j in (i + 1)..member_rings.len() {
+                let shared: Vec<AtomIdx> = member_rings[i].iter()
+                    .filter(|a| member_rings[j].contains(a))
+                    .copied()
+                    .collect();
+                if shared.len() < 2 { continue; }
+                // Skip when one ring is entirely contained in the other — this is an artifact
+                // of the SSSR returning a symmetric-difference ring instead of the minimal ring.
+                // Real ring pairs always have |shared| < min(|R_i|, |R_j|).
+                if shared.len() == member_rings[i].len() || shared.len() == member_rings[j].len() {
+                    continue;
+                }
+                // If any pair of shared atoms is not directly bonded, this is a bridge junction.
+                for a in 0..shared.len() {
+                    for b in (a + 1)..shared.len() {
+                        if mol.bond_between(shared[a], shared[b]).is_none() {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }).count()
 }
 
 /// Number of assigned stereocenters (tetrahedral R/S from CIP assignment).
@@ -1412,5 +1541,6 @@ mod tests {
     fn test_num_stereocenters_achiral_zero() {
         assert_eq!(num_stereocenters(&mol("CC(=O)O")), 0);
     }
+
 
 }
