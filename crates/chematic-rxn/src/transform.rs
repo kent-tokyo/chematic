@@ -1,0 +1,430 @@
+use std::collections::{HashMap, HashSet, VecDeque};
+
+use chematic_core::{AtomIdx, BondOrder, Molecule, MoleculeBuilder};
+use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches};
+
+use crate::reaction::{RxnError, parse_reaction};
+
+/// Error type for SMIRKS transformation.
+#[derive(Debug)]
+pub enum TransformError {
+    SmirksParse(RxnError),
+    ReactantCountMismatch { expected: usize, got: usize },
+}
+
+impl core::fmt::Display for TransformError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::SmirksParse(e) => write!(f, "SMIRKS parse error: {e}"),
+            Self::ReactantCountMismatch { expected, got } => {
+                write!(f, "reactant count mismatch: expected {expected}, got {got}")
+            }
+        }
+    }
+}
+
+impl From<RxnError> for TransformError {
+    fn from(e: RxnError) -> Self {
+        Self::SmirksParse(e)
+    }
+}
+
+/// Apply a SMIRKS template to input reactant molecules.
+///
+/// Returns all combinations of product sets — one per unique match across all
+/// reactant templates.  Each inner `Vec<Molecule>` contains one product per
+/// product component in the SMIRKS right-hand side.
+///
+/// Returns `Ok(vec![])` when no match is found.
+pub fn run_reactants(
+    smirks: &str,
+    reactants: &[&Molecule],
+) -> Result<Vec<Vec<Molecule>>, TransformError> {
+    let rxn = parse_reaction(smirks)?;
+
+    let n_templates = rxn.reactants.len();
+    if reactants.len() != n_templates {
+        return Err(TransformError::ReactantCountMismatch {
+            expected: n_templates,
+            got: reactants.len(),
+        });
+    }
+
+    // Build a QueryMolecule from each reactant template, and record the
+    // atom-map number for each query atom index.
+    let queries: Vec<QueryMolecule> = rxn.reactants.iter().map(mol_to_query).collect();
+    let template_atom_maps: Vec<Vec<Option<u16>>> = rxn
+        .reactants
+        .iter()
+        .map(|tmpl| {
+            (0..tmpl.atom_count())
+                .map(|i| tmpl.atom(AtomIdx(i as u32)).atom_map)
+                .collect()
+        })
+        .collect();
+
+    // VF2 match: for each (template_query, input_mol) pair.
+    let all_match_sets: Vec<Vec<HashMap<usize, AtomIdx>>> = queries
+        .iter()
+        .zip(reactants.iter())
+        .map(|(q, mol)| find_matches(q, mol))
+        .collect();
+
+    // No products when any template has no match.
+    if all_match_sets.iter().any(|ms| ms.is_empty()) {
+        return Ok(vec![]);
+    }
+
+    let mut results: Vec<Vec<Molecule>> = Vec::new();
+
+    for combo in cartesian_product(&all_match_sets) {
+        // global_map: atom_map_number → (reactant_mol_idx, matched_AtomIdx)
+        let mut global_map: HashMap<u16, (usize, AtomIdx)> = HashMap::new();
+        for (ri, match_map) in combo.iter().enumerate() {
+            for (&qi, &t_idx) in match_map {
+                if let Some(am) = template_atom_maps[ri][qi] {
+                    global_map.insert(am, (ri, t_idx));
+                }
+            }
+        }
+
+        // all_template_atoms: every (mol_idx, AtomIdx) matched by any reactant template atom.
+        // Used as BFS walls to prevent substituent collection from crossing into the
+        // template region, and to identify bonds that the product template replaces.
+        let mut all_template_atoms: HashSet<(usize, AtomIdx)> = HashSet::new();
+        for (ri, match_map) in combo.iter().enumerate() {
+            for &t_idx in match_map.values() {
+                all_template_atoms.insert((ri, t_idx));
+            }
+        }
+
+        let products: Vec<Molecule> = rxn
+            .products
+            .iter()
+            .map(|pt| build_product(pt, &global_map, reactants, &all_template_atoms))
+            .collect();
+
+        results.push(products);
+    }
+
+    Ok(results)
+}
+
+/// Convert a SMIRKS reactant-template `Molecule` to a `QueryMolecule` for VF2.
+///
+/// Constraints included:
+/// - `AtomicNum` and `Aromatic` (always)
+/// - `Charge` when non-zero
+/// - `HCount` when a bracket atom specifies H > 0 (e.g. `[NH2:1]`)
+///   Zero-H bracket atoms (`[N:1]`) are treated as "any H count" because
+///   the parser returns 0 for both unspecified and explicit-zero H.
+fn mol_to_query(mol: &Molecule) -> QueryMolecule {
+    let mut qmol = QueryMolecule::new();
+
+    for i in 0..mol.atom_count() {
+        let atom = mol.atom(AtomIdx(i as u32));
+
+        let mut q = AtomQuery::And(
+            Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(
+                atom.element.atomic_number(),
+            ))),
+            Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(atom.aromatic))),
+        );
+
+        if atom.charge != 0 {
+            q = AtomQuery::And(
+                Box::new(q),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(atom.charge))),
+            );
+        }
+
+        if let Some(h) = atom.hydrogen_count {
+            if h > 0 {
+                q = AtomQuery::And(
+                    Box::new(q),
+                    Box::new(AtomQuery::Primitive(AtomPrimitive::HCount(h))),
+                );
+            }
+        }
+
+        qmol.add_atom(q);
+    }
+
+    for (_bidx, bond) in mol.bonds() {
+        let bq = match bond.order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => {
+                BondQuery::Primitive(BondPrimitive::Single)
+            }
+            BondOrder::Double => BondQuery::Primitive(BondPrimitive::Double),
+            BondOrder::Triple => BondQuery::Primitive(BondPrimitive::Triple),
+            BondOrder::Aromatic => BondQuery::Primitive(BondPrimitive::Aromatic),
+            BondOrder::Quadruple => BondQuery::Primitive(BondPrimitive::Single),
+        };
+        qmol.add_bond(bond.atom1.0 as usize, bond.atom2.0 as usize, bq);
+    }
+
+    qmol
+}
+
+/// Build one product molecule applying full SMIRKS semantics.
+///
+/// 1. Atom-mapped product atoms: copy source atom + override aromatic/charge/H from template.
+/// 2. New product atoms (no map): clone from template.
+/// 3. BFS from core (mapped) atoms through input molecules, collecting substituents
+///    (non-template atoms reachable without crossing template-atom walls).
+/// 4. Add product-template bonds (new/changed bonds).
+/// 5. Carry through bonds from source molecules where at least one endpoint is a substituent.
+fn build_product(
+    product_template: &Molecule,
+    global_map: &HashMap<u16, (usize, AtomIdx)>,
+    input_mols: &[&Molecule],
+    all_template_atoms: &HashSet<(usize, AtomIdx)>,
+) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+
+    // template_idx_to_new[i]: new AtomIdx for product template atom i.
+    let mut template_idx_to_new: Vec<Option<AtomIdx>> =
+        vec![None; product_template.atom_count()];
+    // src_to_new: (mol_idx, src_AtomIdx) → new AtomIdx in the product.
+    let mut src_to_new: HashMap<(usize, AtomIdx), AtomIdx> = HashMap::new();
+
+    // --- Step 1: add product template atoms ---
+    let core_keys: HashSet<(usize, AtomIdx)> = global_map.values().cloned().collect();
+
+    for i in 0..product_template.atom_count() {
+        let tmpl_atom = product_template.atom(AtomIdx(i as u32));
+        let new_idx = if let Some(am) = tmpl_atom.atom_map {
+            if let Some(&(mol_idx, src_idx)) = global_map.get(&am) {
+                // Core atom: copy source, then override electronic state from template.
+                let src_atom = input_mols[mol_idx].atom(src_idx);
+                let mut new_atom = src_atom.clone();
+                new_atom.aromatic = tmpl_atom.aromatic;
+                new_atom.charge = tmpl_atom.charge;
+                if tmpl_atom.hydrogen_count.is_some() {
+                    new_atom.hydrogen_count = tmpl_atom.hydrogen_count;
+                }
+                new_atom.atom_map = None;
+                let idx = builder.add_atom(new_atom);
+                src_to_new.insert((mol_idx, src_idx), idx);
+                idx
+            } else {
+                // Map number not in reactants — new atom from template.
+                let mut new_atom = tmpl_atom.clone();
+                new_atom.atom_map = None;
+                builder.add_atom(new_atom)
+            }
+        } else {
+            // No atom_map — entirely new atom from template.
+            let mut new_atom = tmpl_atom.clone();
+            new_atom.atom_map = None;
+            builder.add_atom(new_atom)
+        };
+        template_idx_to_new[i] = Some(new_idx);
+    }
+
+    // --- Step 2: BFS from core atoms to collect substituents ---
+    // Seed visited with all template atoms so BFS cannot cross into the template region.
+    let mut visited: HashSet<(usize, AtomIdx)> = all_template_atoms.clone();
+    let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.iter().cloned().collect();
+
+    while let Some((mol_idx, cur_idx)) = queue.pop_front() {
+        for (nb_idx, _bond_idx) in input_mols[mol_idx].neighbors(cur_idx) {
+            let key = (mol_idx, nb_idx);
+            if visited.contains(&key) {
+                continue;
+            }
+            visited.insert(key);
+            let src_atom = input_mols[mol_idx].atom(nb_idx);
+            let mut new_atom = src_atom.clone();
+            new_atom.atom_map = None;
+            let new_idx = builder.add_atom(new_atom);
+            src_to_new.insert(key, new_idx);
+            queue.push_back(key);
+        }
+    }
+
+    // --- Step 3: add product template bonds ---
+    let mut added_bond_pairs: HashSet<(AtomIdx, AtomIdx)> = HashSet::new();
+
+    for (_bidx, bond) in product_template.bonds() {
+        let a_new = template_idx_to_new[bond.atom1.0 as usize].unwrap();
+        let b_new = template_idx_to_new[bond.atom2.0 as usize].unwrap();
+        let _ = builder.add_bond(a_new, b_new, bond.order);
+        added_bond_pairs.insert((a_new.min(b_new), a_new.max(b_new)));
+    }
+
+    // --- Step 4: carry-through bonds from source molecules ---
+    // Bonds where both endpoints are template atoms are replaced or broken by the template;
+    // bonds where at least one endpoint is a substituent are carried through.
+    for (&(mol_idx, src_idx), &a_new) in &src_to_new {
+        for (nb_idx, bond_idx) in input_mols[mol_idx].neighbors(src_idx) {
+            let nb_key = (mol_idx, nb_idx);
+            let Some(&b_new) = src_to_new.get(&nb_key) else {
+                continue;
+            };
+            if all_template_atoms.contains(&(mol_idx, src_idx))
+                && all_template_atoms.contains(&nb_key)
+            {
+                continue;
+            }
+            let pair = (a_new.min(b_new), a_new.max(b_new));
+            if added_bond_pairs.contains(&pair) {
+                continue;
+            }
+            added_bond_pairs.insert(pair);
+            let bond_order = input_mols[mol_idx].bond(bond_idx).order;
+            let _ = builder.add_bond(a_new, b_new, bond_order);
+        }
+    }
+
+    builder.build()
+}
+
+/// Standard Cartesian product: given `sets[0], sets[1], …`, return all
+/// ordered selections of one element from each set.
+fn cartesian_product<T: Clone>(sets: &[Vec<T>]) -> Vec<Vec<T>> {
+    let mut result: Vec<Vec<T>> = vec![vec![]];
+    for set in sets {
+        result = result
+            .into_iter()
+            .flat_map(|combo| {
+                set.iter().map(move |item| {
+                    let mut new_combo = combo.clone();
+                    new_combo.push(item.clone());
+                    new_combo
+                })
+            })
+            .collect();
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chematic_smiles::parse;
+
+    #[test]
+    fn identity_single_atom() {
+        let mol = parse("C").unwrap();
+        let results = run_reactants("[C:1]>>[C:1]", &[&mol]).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].len(), 1);
+        assert_eq!(results[0][0].atom_count(), 1);
+    }
+
+    #[test]
+    fn no_match_returns_empty() {
+        let mol = parse("C").unwrap();
+        let results = run_reactants("[N:1]>>[N:1]", &[&mol]).unwrap();
+        assert!(results.is_empty(), "nitrogen template must not match methane");
+    }
+
+    #[test]
+    fn multiple_matches_in_single_mol() {
+        let mol = parse("NCCN").unwrap();
+        let results = run_reactants("[N:1]>>[N:1]", &[&mol]).unwrap();
+        assert_eq!(results.len(), 2, "two N atoms in NCCN → two product sets");
+    }
+
+    #[test]
+    fn bond_formation_two_mols() {
+        let n_mol = parse("N").unwrap();
+        let c_mol = parse("C").unwrap();
+        let results = run_reactants("[N:1].[C:2]>>[N:1][C:2]", &[&n_mol, &c_mol]).unwrap();
+        assert!(!results.is_empty());
+        let prod = &results[0][0];
+        assert_eq!(prod.atom_count(), 2, "product must have 2 atoms");
+        assert_eq!(prod.bonds().count(), 1, "product must have 1 bond");
+    }
+
+    #[test]
+    fn bond_cleavage_two_products() {
+        let mol = parse("CC").unwrap();
+        let results = run_reactants("[C:1][C:2]>>[C:1].[C:2]", &[&mol]).unwrap();
+        assert!(!results.is_empty());
+        let products = &results[0];
+        assert_eq!(products.len(), 2, "two product templates → two products");
+        assert_eq!(products[0].atom_count(), 1);
+        assert_eq!(products[1].atom_count(), 1);
+    }
+
+    #[test]
+    fn reactant_count_mismatch_error() {
+        let mol = parse("C").unwrap();
+        let err = run_reactants("[N:1].[C:2]>>[N:1][C:2]", &[&mol]);
+        assert!(
+            matches!(
+                err,
+                Err(TransformError::ReactantCountMismatch { expected: 2, got: 1 })
+            ),
+            "two-template SMIRKS with one reactant must error"
+        );
+    }
+
+    #[test]
+    fn invalid_smirks_error() {
+        let mol = parse("C").unwrap();
+        let err = run_reactants("[X]>>[X]", &[&mol]);
+        assert!(
+            matches!(err, Err(TransformError::SmirksParse(_))),
+            "unknown element must yield SmirksParse error"
+        );
+    }
+
+    #[test]
+    fn new_atom_in_product() {
+        let mol = parse("C").unwrap();
+        let results = run_reactants("[C:1]>>[C:1]=O", &[&mol]).unwrap();
+        assert!(!results.is_empty());
+        let prod = &results[0][0];
+        assert_eq!(prod.atom_count(), 2, "C + new O = 2 atoms");
+    }
+
+    #[test]
+    fn amide_bond_formation() {
+        // NH3 + H-C(=O)-Cl → H-C(=O)-NH2 (formamide)
+        let nh3   = parse("N").unwrap();
+        let hcocl = parse("C(=O)Cl").unwrap();
+        let results =
+            run_reactants("[N:1].[C:2](=O)Cl>>[C:2](=O)[N:1]", &[&nh3, &hcocl]).unwrap();
+        assert!(!results.is_empty());
+        let prod = &results[0][0];
+        assert_eq!(prod.atom_count(), 3, "C + O(new) + N = 3 atoms");
+    }
+
+    #[test]
+    fn double_bond_product() {
+        let mol = parse("CC").unwrap();
+        let results = run_reactants("[C:1][C:2]>>[C:1]=[C:2]", &[&mol]).unwrap();
+        assert!(!results.is_empty());
+        let prod = &results[0][0];
+        assert_eq!(prod.atom_count(), 2);
+        let bond_orders: Vec<BondOrder> = prod.bonds().map(|(_, b)| b.order).collect();
+        assert!(
+            bond_orders.contains(&BondOrder::Double),
+            "product must contain a double bond"
+        );
+    }
+
+    #[test]
+    fn substituent_carry_through() {
+        // Methylamine + acetyl chloride → N-methylacetamide (5 heavy atoms)
+        // CH3-NH2 + CH3-C(=O)-Cl → CH3-C(=O)-NH-CH3
+        let methylamine = parse("NC").unwrap();
+        let acetyl_cl   = parse("CC(=O)Cl").unwrap();
+        let results = run_reactants(
+            "[N:1].[C:2](=O)Cl>>[C:2](=O)[N:1]",
+            &[&methylamine, &acetyl_cl],
+        )
+        .unwrap();
+        assert!(!results.is_empty(), "must produce at least one product set");
+        let prod = &results[0][0];
+        assert_eq!(
+            prod.atom_count(),
+            5,
+            "N-methylacetamide has 5 heavy atoms, got {}",
+            prod.atom_count()
+        );
+    }
+}

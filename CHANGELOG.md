@@ -9,6 +9,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.1.5] — 2026-05-30
+
+### Improved (`chematic-3d`) — UFF-derived minimizer parameters (Sprint K)
+
+**`chematic-3d/src/minimize.rs`**:
+- **Bond lengths**: replaced single-constant-per-bond-order with a 30+-entry element-pair table (`ideal_bond_len`). Covers C–C/C–N/C–O/C–S/C–F/C–Cl/C–Br/C–H/N–N/N–O/O–H/S–S/H–X etc.
+- **Bond angles**: replaced neighbor-count heuristic with hybridization-aware ideal angles (`atom_hybridization` + `ideal_angle_rad`). Detects SP (triple bond → 180°), SP2 (double/aromatic → 120°), SP3 (element-specific: O 104.5°, N 107°, S 99°, P 93°, others 109.47°).
+- **VDW repulsion**: replaced fixed r₀ = 2.0 Å with element-specific UFF/Bondi radii (`uff_vdw_radius`); cutoff extended from 5.0 → 8.0 Å.
+
+Tests: 637 → 646 (+9 new tests covering bond length precision, hybridization detection, and table symmetry).
+
+---
+
+### Added (`chematic-rxn`) — SMIRKS reaction transform (Sprint J)
+
+**`chematic-rxn/src/transform.rs`** (new):
+- `run_reactants(smirks: &str, reactants: &[&Molecule]) -> Result<Vec<Vec<Molecule>>, TransformError>` — applies a SMIRKS reaction template to a list of reactant molecules and returns all product sets.
+  - Parses SMIRKS into reactant/product SMARTS patterns via `chematic-smarts`.
+  - Matches each reactant pattern via VF2 subgraph isomorphism.
+  - Builds product molecules by copying non-reaction-centre atoms, applying bond changes from the template, and transferring unmapped substituents via BFS traversal.
+  - Returns the Cartesian product of all match sets across reactant molecules.
+- `TransformError` — parse and arity error variants.
+
+Tests: 623 → 634 (+11 new tests covering esterification, amide coupling, cyclisation, and error cases).
+
+---
+
+### Added (`chematic-3d`) — Conformer ensemble + Kabsch RMSD (Sprint I)
+
+**`chematic-3d/src/conformer.rs`** (new):
+- `ConformerEnsemble` — external container holding a `Molecule` and an ordered `Vec<Coords3D>`. No changes to `chematic-core`.
+- `add_conformer`, `get_conformer`, `get_conformer_mut`, `remove_conformer` — CRUD with atom-count validation; returns `ConformerError::AtomCountMismatch` on mismatch.
+- `conformer_rmsd_no_align(a, b) -> Option<f64>` — raw per-atom RMSD without superposition.
+- `conformer_rmsd(a, b) -> Option<f64>` — Kabsch-aligned RMSD minimised over all rigid rotations+translations; uses `jacobi3` (3×3 Jacobi eigensolver from `shape_descriptors`) to compute the SVD of the 3×3 covariance matrix; reflection correction via determinant check.
+- `ConformerError` — atom-count mismatch error type.
+
+Tests: 609 → 623 (+14 new tests).
+
+---
+
+### Added (`chematic-chem`, `chematic-depict`) — Topo descriptors + H management + SVG grid (Sprint G)
+
+**Topological connectivity indices** (`chematic-chem/src/topo_descriptors.rs`, new):
+- `wiener_index(mol) -> f64` — sum of all pairwise shortest-path distances (Wiener 1947).
+- `kappa1`, `kappa2`, `kappa3` — Hall–Kier κ shape indices.
+- `chi0`, `chi1`, `chi2`, `chi3`, `chi4` — Kier–Hall molecular connectivity χ0–χ4 (unweighted).
+- `chi0v`, `chi1v`, `chi2v`, `chi3v`, `chi4v` — valence-weighted connectivity χ0v–χ4v.
+- `bertz_ct(mol) -> f64` — Bertz complexity index (BertzCT 1981).
+- `labute_asa(mol) -> f64` — Labute (2000) approximate surface area (Å²).
+
+**Explicit hydrogen management** (`chematic-chem/src/hydrogen.rs`, new):
+- `add_hydrogens(mol) -> Molecule` — converts all implicit H counts to explicit H atoms.
+- `remove_hydrogens(mol) -> Molecule` — removes explicit H atoms and updates implicit H count on heavy atoms.
+
+**SVG grid layout** (`chematic-depict/src/grid.rs`, new):
+- `depict_svg_grid(mols: &[&Molecule], cols: usize) -> String` — renders multiple molecules in a grid SVG (200×200 px per cell). Equivalent to RDKit's `Draw.MolsToGridImage`.
+
+Tests: 544 → 582 (+38 new tests across topo_descriptors, hydrogen, and grid modules).
+
+---
+
+### Added (`chematic-chem`, `chematic-fp`) — LabuteASA + Morgan count FP
+
+**LabuteASA** (`chematic-chem/src/topo_descriptors.rs`):
+- `labute_asa(mol) -> f64` — Labute (2000) approximate surface area (Å²) computed from covalent radii and bond-type-specific interatomic distances; implicit H atoms included.
+
+**Morgan count fingerprint** (`chematic-fp/src/ecfp.rs`):
+- `morgan_fp_counts(mol, radius) -> HashMap<u64, u32>` — count-based Morgan fingerprint returning raw `hash → count` map. All (atom, radius) pairs contribute without deduplication (equivalent to `includeRedundantEnvironments=True`). Hash scheme is identical to `ecfp`, so bit-folded and count forms are consistent.
+
+Tests: 635 → 645 (+10 new tests).
+
+---
+
+### Added (`chematic-3d`) — Shape descriptors + stereo from 3D (Sprint H)
+
+**Shape descriptors** (`chematic-3d/src/shape_descriptors.rs`, new):
+- `pmi(mol, coords) -> (f64, f64, f64)` — principal moments of inertia PMI1 ≤ PMI2 ≤ PMI3 (Da·Å²) from mass-weighted inertia tensor eigenvalues.
+- `pmi1`, `pmi2`, `pmi3` — individual PMI accessors.
+- `npr1`, `npr2` — normalized PMI ratios (PMI1/PMI3, PMI2/PMI3; range 0–1).
+- `radius_of_gyration` — mass-weighted Rg (Å).
+- `asphericity` — PMI3 − (PMI1+PMI2)/2; zero for perfect sphere.
+- `eccentricity` — sqrt(1 − PMI1/PMI3); zero for sphere, 1 for rod.
+- `plane_of_best_fit` — RMS deviation from the least-squares plane (Å); ≈ 0 for flat molecules like benzene.
+- Internals: 3×3 symmetric Jacobi eigensolver (no nalgebra dependency; pure Rust; converges in ≤ 100 sweeps).
+
+**Stereo from 3D** (`chematic-3d/src/stereo3d.rs`, new):
+- `assign_stereo_from_3d(mol, coords) -> StereoAssignment3D` — assigns R/S (tetrahedral) and E/Z (alkene) from 3D coordinates using signed-volume (scalar triple product) and dihedral-angle conventions respectively.
+- Uses 1-sphere CIP priority (atomic number + sorted neighbor atomic numbers). Stereocenters that cannot be resolved at this level are omitted.
+- `StereoAssignment3D::get(idx) -> Option<CipCode>` for lookup.
+
+Tests: 620 → 635 (+15 new tests in shape_descriptors and stereo3d modules).
+
+---
+
 ### Fixed — Security, bug, and code quality (audit)
 
 **Security** (`chematic-smarts`):
@@ -476,7 +572,8 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/kent-tokyo/chematic/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/kent-tokyo/chematic/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/kent-tokyo/chematic/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kent-tokyo/chematic/compare/v0.1.0...v0.1.1

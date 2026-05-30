@@ -208,6 +208,12 @@
               find_direct_aromatic_matches + transfer_hydrogen_aromatic（結合次数変更なし）
               enumerate_tautomers: H-assignment フィンガープリントで位置異性体を識別
               canonical_tautomer: 最小 H-assignment で N1H/N2H を同一正規形に収束
+      - [x] マルチエージェントセキュリティ/バグ/リファクタリング審査:
+            - [Security] 再帰 SMARTS $(...) に深さ上限 8 を追加（SmartsError::RecursionDepthExceeded）
+            - [Security] リングクロージャー unwrap() → expect()（不変条件を明文化）
+            - [Bug] clone_mol / transfer_hydrogen_aromatic の .ok() → .expect()（サイレントボンド欠落防止）
+            - [Refactor] mol_fingerprint の FNV-1a マジック数 → 名前付き定数
+            - [Refactor] TPSA 硝酸基検出: 2 回の neighbors スキャン → 1 回の fold
       - [x] criterion による全ホットパスのベンチマーク
       - [x] ChEMBL 37 全量バリデーション: **2,897,819 分子 / 100.000% 成功**（parse + roundtrip）
               curl chembl_37_chemreps.txt.gz | gzip -d | awk | validate_smiles でストリーム検証
@@ -225,12 +231,12 @@
 | chematic-depict        | 15      | 完了     |
 | chematic-chem          | 216     | 完了     |
 | chematic-fp            | 44      | 完了     |
-| chematic-smarts        | 75      | 完了     |
+| chematic-smarts        | 76      | 完了     |
 | chematic-3d            | 25      | 完了     |
 | chematic-rxn           | 15      | 完了     |
 | chematic-wasm          | 18      | 完了     |
 | chematic               | 1       | 完了     |
-| **合計**               | **542** | —        |
+| **合計**               | **544** | —        |
 
 ---
 
@@ -261,3 +267,126 @@
             -> Phase 3 SMARTS -> Phase 4（MACCS、MCS、標準化）
               -> Phase 5（3D、力場）
                 -> Phase 6（WASM、反応、検証）
+
+---
+
+## Phase 7 — RDKit 完全対等（未着手）
+
+RDKit と比較して未実装の主要機能を優先度順に列挙する。
+制約: FFI ゼロ・WASM 互換は変更しない。
+
+### Tier 1 — 高優先度（製薬/化学情報処理ユーザーが最も必要とする機能）
+
+#### 7-1. 反応 SMIRKS 適用（RunReactants）✅ Sprint J 完了
+  - [x] RDKit: `rxn.RunReactants(reactants)` → 生成物 SMILES の列挙
+  - 実装場所: chematic-rxn/src/transform.rs（実装済み）
+  - `run_reactants(smirks, reactants) -> Result<Vec<Vec<Molecule>>, TransformError>`
+  - VF2 サブグラフ同形 + BFS 置換基引き継ぎ + カルテシアン積列挙
+
+#### 7-2. トポロジカル記述子 ✅ Sprint G 完了
+  - [x] Wiener index（全原子ペア距離の総和）
+  - [x] Hall–Kier Kappa 指標 κ1 / κ2 / κ3
+  - [x] 分子接続性指標 Chi χ0v / χ1v / χ2v / χ3v / χ4v（Kier–Hall）
+  - [x] Bertz 複雑度（BertzCT）
+  - [x] Labute 近似表面積（LabuteASA）
+  - 実装場所: chematic-chem/src/topo_descriptors.rs（実装済み）
+  - 難易度: 中（距離行列が基盤 → 一度実装すれば残りは派生）
+
+#### 7-3. 明示的 H 管理 ✅ Sprint G 完了
+  - [x] `add_hydrogens(mol) -> Molecule` — 全暗黙的 H を明示的原子に変換
+  - [x] `remove_hydrogens(mol) -> Molecule` — 明示的 H 原子を暗黙的に戻す
+  - 現状: implicit_hcount() による暗黙的 H 計算のみ
+  - 実装場所: chematic-chem/src/hydrogen.rs（実装済み）
+  - 難易度: 低〜中
+
+#### 7-4. SVG グリッド描画 ✅ Sprint G 完了
+  - [x] `depict_svg_grid(mols, cols) -> String` — 複数分子を格子状に並べた SVG
+  - RDKit: `Draw.MolsToGridImage`
+  - 実装場所: chematic-depict/src/grid.rs（実装済み）
+  - 難易度: 低（既存 depict_svg を組み合わせるだけ）
+
+---
+
+### Tier 2 — 中優先度（QSAR・3D ワークフロー）
+
+#### 7-5. 形状記述子（3D 座標が必要） ✅ Sprint H 完了
+  - [x] 慣性主軸モーメント PMI1 / PMI2 / PMI3
+  - [x] 正規化主軸比 NPR1 / NPR2
+  - [x] 回転半径（Radius of Gyration）
+  - [x] 球面性（Asphericity）・偏心率（Eccentricity）
+  - [x] 最良平面比（PBF: Plane of Best Fit）
+  - RDKit: `rdMolDescriptors.CalcPMI`, `CalcNPR1/2`, `CalcRadiusOfGyration` 等
+  - 実装場所: chematic-3d/src/shape_descriptors.rs（実装済み、3×3 Jacobi eigensolver 手実装）
+  - 難易度: 中（固有値分解が必要、nalgebra または手実装）
+
+#### 7-6. コンフォーマー管理 ✅ Sprint I 完了
+  - [x] Molecule に複数コンフォーマー（座標セット）を保持する構造
+  - [x] `add_conformer()` / `get_conformer()` / `get_conformer_mut()` / `remove_conformer()`
+  - [x] コンフォーマー間 RMSD 計算（`conformer_rmsd_no_align` / `conformer_rmsd`）
+  - 設計: chematic-core 変更なし。外部コンテナ `ConformerEnsemble` として chematic-3d に実装
+  - 実装場所: chematic-3d/src/conformer.rs（実装済み）
+  - Kabsch アライメント付き RMSD は既存 jacobi3 を再利用
+
+#### 7-7. UFF パラメータ改善 ✅ Sprint K 完了
+  - [x] 元素ペア別理想結合長テーブル（C-C/C-N/C-O/C-S/C-F/C-Cl/C-Br/C-H 等 30+ ペア）
+  - [x] 混成軌道判定（SP/SP2/SP3）に基づく理想結合角（O:104.5°, N:107°, S:99° 等）
+  - [x] 元素別 UFF/Bondi VDW 半径による VDW 反発エネルギー
+  - 実装場所: chematic-3d/src/minimize.rs（改善済み）
+  - テスト: 68（旧 58）、+10 新テスト（結合長精度・混成軌道・対称性）
+  - MMFF94 フル実装（パラメータテーブル 8 種、原子タイプ 95 種）は工数過大で保留
+
+#### 7-8. 3D からの立体化学割り当て ✅ Sprint H 完了
+  - [x] 3D 座標から R/S・E/Z を自動計算（AssignStereochemistryFrom3D）
+  - 現状: SMILES の wedge/dash から CIP 割り当てのみ → 3D 符号付き体積＋二面角で独立計算可能
+  - 実装場所: chematic-3d/src/stereo3d.rs（新規、1-sphere CIP 優先度で中核を担当）
+  - 難易度: 中
+
+---
+
+### Tier 3 — 低優先度（ニッチ・高難度）
+
+#### 7-9. 確率的 3D 埋め込み（ETKDG 相当）
+  - [ ] 距離ジオメトリ法（Distance Geometry）による初期座標生成
+  - [ ] 実験的ねじれ角分布による改良（ET-DG の "ET" 部分）
+  - RDKit: `AllChem.EmbedMolecule` / `EmbedMultipleConfs`
+  - 難易度: 非常に高（距離行列の固有値分解 + 実験的ライブラリ必要）
+
+#### 7-10. ハッシュベース FP の密なカウント形式
+  - [x] Morgan FP のカウントベクター形式（ビットでなく整数カウント）
+  - [x] `GetMorganFingerprint(mol, radius)` → `{hash: count}` 形式
+  - 実装場所: chematic-fp/src/ecfp.rs の拡張
+  - 難易度: 低（既存 ECFP の出力形式を変えるだけ）
+
+#### 7-11. InChI / InChIKey
+  - [ ] 標準 InChI 文字列の生成
+  - [ ] InChIKey（27文字ハッシュ）の生成
+  - **制約**: IUPAC 公式実装は C ライブラリのみ。Pure Rust では未完成実装のみ存在。
+  - FFI ゼロ方針と相反するため、pure Rust 実装が成熟するまで保留
+  - 難易度: 非常に高 or FFI 許容が必要
+
+---
+
+### スコープ外（FFI ゼロ方針と相反、または工数が過大）
+
+- ETKDG の完全再現（確率的サンプリング + DG）
+- InChI（C ライブラリが唯一の正式実装）
+- ML ベース予測モデル（LogP, solubility 等）
+- HELM / FASTA 記法（ペプチド/タンパク質）
+- 遷移金属・錯体化合物への対応（配位化学）
+
+---
+
+## 実装推奨順序（Sprint G〜）
+
+```
+Sprint G: ✅ 7-2（トポロジカル記述子）+ 7-3（明示的 H 管理）+ 7-4（SVG グリッド）
+          → コード追加のみ、破壊的変更なし、テスト +38（582→620）
+Sprint H: ✅ 7-5（形状記述子）+ 7-8（3D から立体化学）
+          → chematic-3d/src/shape_descriptors.rs + stereo3d.rs、テスト +15（620→635）
+Sprint I: ✅ 7-6（コンフォーマー管理）
+          → chematic-3d/src/conformer.rs、Kabsch RMSD、テスト +14（623→637）
+Sprint J: ✅ 7-1（RunReactants）
+          → chematic-rxn/src/transform.rs、VF2 + BFS 置換基引き継ぎ、テスト +11（612→623）
+Sprint K: ✅ 7-7（UFF パラメータ改善）
+          → 元素別結合長・混成軌道角・VDW 半径、テスト +10（637→646）
+```

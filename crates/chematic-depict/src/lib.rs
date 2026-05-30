@@ -4,11 +4,13 @@
 
 #![forbid(unsafe_code)]
 
+pub mod grid;
 pub mod layout;
 pub mod svg;
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 
+pub use grid::depict_svg_grid;
 pub use layout::{Layout, Point, compute_layout};
 pub use svg::{render_svg, render_svg_highlighted};
 

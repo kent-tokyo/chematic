@@ -24,6 +24,20 @@ const LABEL_HALF_H: f64 = 7.0;
 // Entry point
 // ---------------------------------------------------------------------------
 
+/// Render just the bonds and atom labels for `mol` without an SVG wrapper.
+///
+/// Used by the grid renderer to compose multiple molecules into one SVG.
+pub(crate) fn render_mol_body(mol: &Molecule, layout: &Layout) -> String {
+    let mut body = String::new();
+    for (_, bond) in mol.bonds() {
+        let p1 = layout.get(bond.atom1);
+        let p2 = layout.get(bond.atom2);
+        body.push_str(&render_bond(bond.order, p1, p2));
+    }
+    write_atom_labels(mol, layout, &mut body);
+    body
+}
+
 /// Render `mol` with the given `layout` as a self-contained SVG string.
 ///
 /// Rendering order:
@@ -33,15 +47,7 @@ const LABEL_HALF_H: f64 = 7.0;
 pub fn render_svg(mol: &Molecule, layout: &Layout) -> String {
     let mut svg = String::new();
     write_svg_header(layout, &mut svg);
-
-    for (_, bond) in mol.bonds() {
-        let p1 = layout.get(bond.atom1);
-        let p2 = layout.get(bond.atom2);
-        svg.push_str(&render_bond(bond.order, p1, p2));
-    }
-
-    write_atom_labels(mol, layout, &mut svg);
-
+    svg.push_str(&render_mol_body(mol, layout));
     svg.push_str("</svg>");
     svg
 }

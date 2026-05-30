@@ -1,0 +1,652 @@
+//! Topological molecular descriptors.
+//!
+//! Implements the Wiener topological index, Hall-Kier Kappa shape indices
+//! (κ1/κ2/κ3), Kier-Hall Chi connectivity indices (χ0–χ4 and χ0v–χ4v),
+//! Bertz complexity, and Labute approximate surface area (LabuteASA).
+//!
+//! All descriptors except LabuteASA operate on the heavy-atom subgraph
+//! (hydrogen atoms excluded from path/distance calculations).
+
+use std::collections::{HashSet, VecDeque};
+use std::f64::consts::PI;
+
+use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/// Indices of all heavy (non-hydrogen) atoms.
+fn heavy_indices(mol: &Molecule) -> Vec<usize> {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() != 1)
+        .map(|(idx, _)| idx.0 as usize)
+        .collect()
+}
+
+/// BFS shortest-path distances from `start` in the heavy-atom subgraph.
+/// Returns `usize::MAX` for disconnected pairs or hydrogen atoms.
+fn bfs_from(mol: &Molecule, start: usize, heavy_set: &HashSet<usize>) -> Vec<usize> {
+    let n = mol.atom_count();
+    let mut dist = vec![usize::MAX; n];
+    dist[start] = 0;
+    let mut queue = VecDeque::new();
+    queue.push_back(start);
+    while let Some(cur) = queue.pop_front() {
+        let d = dist[cur];
+        for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
+            let ni = nb.0 as usize;
+            if heavy_set.contains(&ni) && dist[ni] == usize::MAX {
+                dist[ni] = d + 1;
+                queue.push_back(ni);
+            }
+        }
+    }
+    dist
+}
+
+/// Connectivity delta (degree in heavy-atom graph) for atom `idx`.
+fn delta(mol: &Molecule, idx: AtomIdx, heavy_set: &HashSet<usize>) -> f64 {
+    mol.neighbors(idx)
+        .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+        .count() as f64
+}
+
+/// Valence-corrected delta: δᵥ = (Zᵥ − H) / (Z − Zᵥ − 1).
+fn delta_v(mol: &Molecule, idx: AtomIdx) -> f64 {
+    let atom = mol.atom(idx);
+    let z = atom.element.atomic_number() as i32;
+    let zv = valence_electrons(atom.element.atomic_number()) as i32;
+    let h = implicit_hcount(mol, idx) as i32
+        + atom.hydrogen_count.unwrap_or(0) as i32;
+    let denom = z - zv - 1;
+    if denom <= 0 {
+        return (zv - h).max(1) as f64;
+    }
+    ((zv - h).max(0)) as f64 / denom as f64
+}
+
+fn valence_electrons(z: u8) -> u8 {
+    match z {
+        1  => 1,
+        2  => 2,
+        3  => 1, 4 => 2, 5 => 3, 6 => 4, 7 => 5, 8 => 6, 9 => 7, 10 => 8,
+        11 => 1, 12 => 2, 13 => 3, 14 => 4, 15 => 5, 16 => 6, 17 => 7, 18 => 8,
+        35 => 7, 53 => 7,
+        _ => z.min(8),
+    }
+}
+
+/// DFS: accumulate chi contributions for paths of exactly `target_len` bonds
+/// starting from `cur`.  `running_product` is the product of delta values of
+/// atoms visited so far (including `cur`).
+fn chi_dfs(
+    mol: &Molecule,
+    cur: usize,
+    target_len: usize,
+    cur_len: usize,
+    running_product: f64,
+    visited: &mut Vec<bool>,
+    heavy_set: &HashSet<usize>,
+    use_valence: bool,
+) -> f64 {
+    if cur_len == target_len {
+        return running_product.powf(-0.5);
+    }
+    let mut sum = 0.0f64;
+    for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
+        let ni = nb.0 as usize;
+        if heavy_set.contains(&ni) && !visited[ni] {
+            let d_nb = if use_valence {
+                delta_v(mol, AtomIdx(ni as u32))
+            } else {
+                delta(mol, AtomIdx(ni as u32), heavy_set)
+            };
+            if d_nb > 0.0 {
+                visited[ni] = true;
+                sum += chi_dfs(
+                    mol, ni, target_len, cur_len + 1,
+                    running_product * d_nb, visited, heavy_set, use_valence,
+                );
+                visited[ni] = false;
+            }
+        }
+    }
+    sum
+}
+
+/// Count simple paths of exactly `length` bonds in the heavy-atom subgraph.
+/// Returns undirected path count (each path counted once).
+fn count_paths(mol: &Molecule, heavy: &[usize], length: usize) -> usize {
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let mut total = 0usize;
+    for &start in heavy {
+        let mut visited = vec![false; mol.atom_count()];
+        visited[start] = true;
+        total += count_paths_dfs(mol, start, length, 0, &mut visited, &heavy_set);
+    }
+    total / 2
+}
+
+fn count_paths_dfs(
+    mol: &Molecule,
+    cur: usize,
+    target_len: usize,
+    cur_len: usize,
+    visited: &mut Vec<bool>,
+    heavy_set: &HashSet<usize>,
+) -> usize {
+    if cur_len == target_len {
+        return 1;
+    }
+    let mut count = 0;
+    for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
+        let ni = nb.0 as usize;
+        if heavy_set.contains(&ni) && !visited[ni] {
+            visited[ni] = true;
+            count += count_paths_dfs(mol, ni, target_len, cur_len + 1, visited, heavy_set);
+            visited[ni] = false;
+        }
+    }
+    count
+}
+
+/// Compute chi sum for paths of exactly `n` bonds (n ≥ 1).
+/// Each undirected path is counted once (sum divided by 2).
+fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let mut total = 0.0f64;
+    for &start in &heavy {
+        let d_start = if use_valence {
+            delta_v(mol, AtomIdx(start as u32))
+        } else {
+            delta(mol, AtomIdx(start as u32), &heavy_set)
+        };
+        if d_start <= 0.0 {
+            continue;
+        }
+        let mut visited = vec![false; mol.atom_count()];
+        visited[start] = true;
+        total += chi_dfs(mol, start, n, 0, d_start, &mut visited, &heavy_set, use_valence);
+    }
+    total / 2.0
+}
+
+// ─── Wiener Index ────────────────────────────────────────────────────────────
+
+/// Wiener topological index.
+///
+/// Sum of all pairwise shortest-path distances between heavy atoms.
+/// Computed on the hydrogen-depleted graph.
+pub fn wiener_index(mol: &Molecule) -> f64 {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let mut sum = 0u64;
+    for i in 0..heavy.len() {
+        let row = bfs_from(mol, heavy[i], &heavy_set);
+        for j in (i + 1)..heavy.len() {
+            let d = row[heavy[j]];
+            if d != usize::MAX {
+                sum += d as u64;
+            }
+        }
+    }
+    sum as f64
+}
+
+// ─── Kappa Shape Indices ─────────────────────────────────────────────────────
+
+/// Hall-Kier κ1 shape index.
+///
+/// κ1 = n·(n−1)² / p1²  where n = heavy atom count, p1 = bond count.
+/// A larger value indicates a more linear graph.
+pub fn kappa1(mol: &Molecule) -> f64 {
+    let heavy = heavy_indices(mol);
+    let n = heavy.len();
+    if n < 2 {
+        return 0.0;
+    }
+    let p1 = count_paths(mol, &heavy, 1);
+    if p1 == 0 {
+        return 0.0;
+    }
+    let n = n as f64;
+    let p1 = p1 as f64;
+    n * (n - 1.0).powi(2) / p1.powi(2)
+}
+
+/// Hall-Kier κ2 shape index.
+///
+/// κ2 = (n−1)·(n−2)² / p2²  where p2 = count of 2-bond paths.
+pub fn kappa2(mol: &Molecule) -> f64 {
+    let heavy = heavy_indices(mol);
+    let n = heavy.len();
+    if n < 3 {
+        return 0.0;
+    }
+    let p2 = count_paths(mol, &heavy, 2);
+    if p2 == 0 {
+        return 0.0;
+    }
+    let n = n as f64;
+    let p2 = p2 as f64;
+    (n - 1.0) * (n - 2.0).powi(2) / p2.powi(2)
+}
+
+/// Hall-Kier κ3 shape index.
+///
+/// Formula depends on parity of heavy-atom count:
+/// - odd n:  κ3 = (n−1)·(n−3)² / p3²
+/// - even n: κ3 = (n−2)·(n−3)² / p3²
+/// Returns 0.0 when fewer than 4 heavy atoms or no 3-bond paths exist.
+pub fn kappa3(mol: &Molecule) -> f64 {
+    let heavy = heavy_indices(mol);
+    let n = heavy.len();
+    if n < 4 {
+        return 0.0;
+    }
+    let p3 = count_paths(mol, &heavy, 3);
+    if p3 == 0 {
+        return 0.0;
+    }
+    let n_f = n as f64;
+    let p3 = p3 as f64;
+    let factor = if n % 2 == 1 { n_f - 1.0 } else { n_f - 2.0 };
+    factor * (n_f - 3.0).powi(2) / p3.powi(2)
+}
+
+// ─── Chi Connectivity Indices ────────────────────────────────────────────────
+
+/// Kier-Hall χ0 connectivity index.
+///
+/// χ0 = Σᵢ δᵢ^(−0.5) over all heavy atoms, where δᵢ = heavy-atom degree.
+/// Atoms with δ = 0 contribute 0.
+pub fn chi0(mol: &Molecule) -> f64 {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    heavy.iter().map(|&i| {
+        let d = delta(mol, AtomIdx(i as u32), &heavy_set);
+        if d > 0.0 { d.powf(-0.5) } else { 0.0 }
+    }).sum()
+}
+
+/// Kier-Hall χ1 connectivity index (bond-path sum).
+pub fn chi1(mol: &Molecule) -> f64 { chi_n(mol, 1, false) }
+
+/// Kier-Hall χ2 connectivity index (2-bond path sum).
+pub fn chi2(mol: &Molecule) -> f64 { chi_n(mol, 2, false) }
+
+/// Kier-Hall χ3 connectivity index (3-bond path sum).
+pub fn chi3(mol: &Molecule) -> f64 { chi_n(mol, 3, false) }
+
+/// Kier-Hall χ4 connectivity index (4-bond path sum).
+pub fn chi4(mol: &Molecule) -> f64 { chi_n(mol, 4, false) }
+
+/// Valence-corrected χ0v connectivity index.
+///
+/// Uses δᵥ = (Zᵥ − H) / (Z − Zᵥ − 1) instead of the simple degree.
+pub fn chi0v(mol: &Molecule) -> f64 {
+    let heavy = heavy_indices(mol);
+    heavy.iter().map(|&i| {
+        let d = delta_v(mol, AtomIdx(i as u32));
+        if d > 0.0 { d.powf(-0.5) } else { 0.0 }
+    }).sum()
+}
+
+/// Valence-corrected χ1v connectivity index.
+pub fn chi1v(mol: &Molecule) -> f64 { chi_n(mol, 1, true) }
+
+/// Valence-corrected χ2v connectivity index.
+pub fn chi2v(mol: &Molecule) -> f64 { chi_n(mol, 2, true) }
+
+/// Valence-corrected χ3v connectivity index.
+pub fn chi3v(mol: &Molecule) -> f64 { chi_n(mol, 3, true) }
+
+/// Valence-corrected χ4v connectivity index.
+pub fn chi4v(mol: &Molecule) -> f64 { chi_n(mol, 4, true) }
+
+// ─── Bertz Complexity ────────────────────────────────────────────────────────
+
+/// Simplified Bertz CT molecular complexity index.
+///
+/// CT = m_total + Σᵢ C(deg_total_i, 2)
+///
+/// where m_total = total bond count including implicit C-H bonds,
+/// deg_total_i = heavy-atom degree + implicit H count for atom i, and
+/// C(n, 2) = n·(n−1)/2.  This is the additive topology formula from
+/// Bertz (1981) JACS 103, 3599 without logarithmic weighting.
+pub fn bertz_ct(mol: &Molecule) -> f64 {
+    let mut total_h_bonds = 0u64;
+    let mut complexity = 0.0f64;
+    for (idx, _) in mol.atoms() {
+        let heavy_deg = mol.degree(idx);
+        let h = implicit_hcount(mol, idx) as usize;
+        total_h_bonds += h as u64;
+        let total_deg = heavy_deg + h;
+        complexity += (total_deg * total_deg.saturating_sub(1) / 2) as f64;
+    }
+    let heavy_bonds = mol.bond_count() as u64;
+    let m_total = heavy_bonds + total_h_bonds;
+    complexity + m_total as f64
+}
+
+// ─── Labute ASA ─────────────────────────────────────────────────────────────
+
+/// Covalent (Rb0) radius of an element (Å), from RDKit's ptable.GetRb0.
+/// Returns 0.0 for unrecognized elements (they contribute no surface area).
+fn rb0(atomic_number: u8) -> f64 {
+    match atomic_number {
+        1  => 0.33,   // H
+        6  => 0.77,   // C
+        7  => 0.70,   // N
+        8  => 0.66,   // O
+        9  => 0.611,  // F
+        14 => 1.04,   // Si
+        15 => 0.89,   // P
+        16 => 1.04,   // S
+        17 => 0.997,  // Cl
+        33 => 1.21,   // As
+        34 => 1.20,   // Se
+        35 => 1.167,  // Br
+        53 => 1.387,  // I
+        _  => 0.0,
+    }
+}
+
+/// Bond-type scale factor used in the Labute formula (Å subtracted from Ri+Rj).
+///
+/// Shorter bonds (double, triple, aromatic) bring atoms closer, increasing
+/// surface overlap.  Single bonds have scale 0 (spheres just touching, no overlap).
+fn bond_scale(order: BondOrder) -> f64 {
+    match order {
+        BondOrder::Aromatic => 0.1,
+        BondOrder::Single | BondOrder::Up | BondOrder::Down => 0.0,
+        BondOrder::Double => 0.2,
+        BondOrder::Triple | BondOrder::Quadruple => 0.3,
+    }
+}
+
+/// Labute approximate surface area (Å²).
+///
+/// Implements: P. Labute, 2000, *J. Mol. Graph. Mod.* **18**, 464–477.
+///
+/// Formula per atom i:
+/// ```text
+/// V_i  = Σ_j max(0, (Rj² − (Ri − dij)²) / dij)
+/// A_i  = max(0, 4π Ri² − π Ri V_i)
+/// ASA  = Σ A_i
+/// ```
+///
+/// Bond distance: `dij = clamp(|Ri−Rj|, Ri+Rj−scale, Ri+Rj)`.
+/// Implicit H atoms (radius 0.33 Å, single-bond scale 0) are included.
+pub fn labute_asa(mol: &Molecule) -> f64 {
+    let n = mol.atom_count();
+    if n == 0 {
+        return 0.0;
+    }
+
+    // V[i] accumulates the surface-cap contributions from all bonds of atom i.
+    let mut v: Vec<f64> = vec![0.0; n];
+    // Radii for all heavy atoms.
+    let radii: Vec<f64> = (0..n)
+        .map(|i| rb0(mol.atom(AtomIdx(i as u32)).element.atomic_number()))
+        .collect();
+
+    // Process each heavy–heavy bond.
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        let ri = radii[i];
+        let rj = radii[j];
+        if ri < 1e-10 || rj < 1e-10 {
+            continue;
+        }
+        let scale = bond_scale(bond.order);
+        let bij = ri + rj - scale;
+        let dij = (ri - rj).abs().max(bij).min(ri + rj);
+
+        let vi = (rj * rj - (ri - dij) * (ri - dij)) / dij;
+        let vj = (ri * ri - (rj - dij) * (rj - dij)) / dij;
+        if vi > 0.0 { v[i] += vi; }
+        if vj > 0.0 { v[j] += vj; }
+    }
+
+    // Process implicit H atoms (H–heavy single bonds, scale = 0).
+    const R_H: f64 = 0.33;
+    for i in 0..n {
+        let ri = radii[i];
+        if ri < 1e-10 {
+            continue;
+        }
+        let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
+        for _ in 0..h_count {
+            // d = ri + rH (single bond, scale=0)
+            let dij = ri + R_H;
+            let vi = (R_H * R_H - (ri - dij) * (ri - dij)) / dij;
+            if vi > 0.0 { v[i] += vi; }
+            // H sphere contribution (unaffected by single bond to heavy atom):
+            // V_H from heavy atom = (ri² - (rH - dij)²)/dij
+            // = (ri² - (rH - ri - rH)²)/dij = (ri² - ri²)/dij = 0  → skip
+        }
+    }
+
+    // Sum heavy-atom exposed areas.
+    let mut asa = 0.0_f64;
+    for i in 0..n {
+        let ri = radii[i];
+        let ai = (4.0 * PI * ri * ri - PI * ri * v[i]).max(0.0);
+        asa += ai;
+    }
+
+    // Add H sphere areas (implicit H; single bonds contribute V_H = 0).
+    for i in 0..n {
+        let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
+        asa += h_count as f64 * 4.0 * PI * R_H * R_H;
+    }
+
+    asa
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chematic_smiles::parse;
+
+    fn mol(s: &str) -> Molecule {
+        parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"))
+    }
+
+    fn close(a: f64, b: f64, tol: f64) -> bool {
+        (a - b).abs() <= tol
+    }
+
+    // ── Wiener Index ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn wiener_ethane() {
+        // CC: only 1 pair at distance 1 → W = 1
+        assert_eq!(wiener_index(&mol("CC")) as u32, 1);
+    }
+
+    #[test]
+    fn wiener_propane() {
+        // CCC: pairs (C1,C2)=1, (C1,C3)=2, (C2,C3)=1 → W = 4
+        assert_eq!(wiener_index(&mol("CCC")) as u32, 4);
+    }
+
+    #[test]
+    fn wiener_benzene() {
+        // c1ccccc1: 6 atoms in ring, W = 1+2+3+2+1 + 1+2+3+2 + 1+2+3 + 1+2 + 1 = 27
+        assert_eq!(wiener_index(&mol("c1ccccc1")) as u32, 27);
+    }
+
+    #[test]
+    fn wiener_increases_with_chain_length() {
+        let w2 = wiener_index(&mol("CC"));       // ethane
+        let w3 = wiener_index(&mol("CCC"));      // propane
+        let w4 = wiener_index(&mol("CCCC"));     // butane
+        assert!(w2 < w3 && w3 < w4);
+    }
+
+    #[test]
+    fn wiener_single_atom_zero() {
+        assert_eq!(wiener_index(&mol("C")) as u32, 0);
+    }
+
+    // ── Kappa Indices ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn kappa1_propane() {
+        // n=3, p1=2 (C-C, C-C): κ1 = 3·4/4 = 3.0
+        assert!(close(kappa1(&mol("CCC")), 3.0, 0.01));
+    }
+
+    #[test]
+    fn kappa1_benzene() {
+        // n=6, p1=6: κ1 = 6·25/36 ≈ 4.167
+        assert!(close(kappa1(&mol("c1ccccc1")), 4.167, 0.01));
+    }
+
+    #[test]
+    fn kappa2_propane() {
+        // n=3, p2=1: κ2 = 2·1/1 = 2.0
+        assert!(close(kappa2(&mol("CCC")), 2.0, 0.01));
+    }
+
+    #[test]
+    fn kappa2_benzene() {
+        // n=6, p2=6: κ2 = 5·16/36 ≈ 2.222
+        assert!(close(kappa2(&mol("c1ccccc1")), 2.222, 0.01));
+    }
+
+    #[test]
+    fn kappa3_propane_zero() {
+        // n=3, no 3-bond paths: κ3 = 0
+        assert_eq!(kappa3(&mol("CCC")), 0.0);
+    }
+
+    #[test]
+    fn kappa3_benzene() {
+        // n=6 (even), p3=6: κ3 = 4·9/36 = 1.0
+        assert!(close(kappa3(&mol("c1ccccc1")), 1.0, 0.01));
+    }
+
+    #[test]
+    fn kappa1_single_atom_zero() {
+        assert_eq!(kappa1(&mol("C")), 0.0);
+    }
+
+    // ── Chi Connectivity ─────────────────────────────────────────────────────
+
+    #[test]
+    fn chi0_benzene() {
+        // 6 aromatic C each with δ=2: χ0 = 6 · 2^(-0.5) ≈ 4.243
+        let c = chi0(&mol("c1ccccc1"));
+        assert!(close(c, 4.243, 0.01), "chi0(benzene) = {c}");
+    }
+
+    #[test]
+    fn chi1_benzene() {
+        // 6 bonds, each (2·2)^(-0.5) = 0.5: χ1 = 3.0
+        let c = chi1(&mol("c1ccccc1"));
+        assert!(close(c, 3.0, 0.01), "chi1(benzene) = {c}");
+    }
+
+    #[test]
+    fn chi0_propane() {
+        // δ(C1)=1, δ(C2)=2, δ(C3)=1: χ0 = 1 + 1/√2 + 1 ≈ 2.707
+        let c = chi0(&mol("CCC"));
+        assert!(close(c, 2.707, 0.01), "chi0(propane) = {c}");
+    }
+
+    #[test]
+    fn chi1_propane() {
+        // bonds (1·2) and (2·1): χ1 = 2·(2)^(-0.5) ≈ 1.414
+        let c = chi1(&mol("CCC"));
+        assert!(close(c, 1.414, 0.01), "chi1(propane) = {c}");
+    }
+
+    #[test]
+    fn chi_increases_with_chain() {
+        // Longer chain → larger χ0
+        assert!(chi0(&mol("CCC")) < chi0(&mol("CCCC")));
+    }
+
+    #[test]
+    fn chi0v_benzene() {
+        // Each aromatic C: Zv=4, H=1, denom=1 → δv=3: χ0v = 6/√3 ≈ 3.464
+        let c = chi0v(&mol("c1ccccc1"));
+        assert!(close(c, 3.464, 0.01), "chi0v(benzene) = {c}");
+    }
+
+    #[test]
+    fn chi1v_benzene() {
+        // bonds (3·3): χ1v = 6·(9)^(-0.5) = 6/3 = 2.0
+        let c = chi1v(&mol("c1ccccc1"));
+        assert!(close(c, 2.0, 0.01), "chi1v(benzene) = {c}");
+    }
+
+    // ── Bertz CT ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn bertz_ct_increases_with_complexity() {
+        let bz = bertz_ct(&mol("c1ccccc1"));
+        let asp = bertz_ct(&mol("CC(=O)Oc1ccccc1C(=O)O"));
+        assert!(bz < asp, "benzene BertzCT {bz} should be < aspirin {asp}");
+    }
+
+    #[test]
+    fn bertz_ct_ethane_less_than_propane() {
+        assert!(bertz_ct(&mol("CC")) < bertz_ct(&mol("CCC")));
+    }
+
+    #[test]
+    fn bertz_ct_methane() {
+        // C: deg=0, h=4, total=4, C(4,2)=6; m=4 H bonds → CT = 6+4 = 10
+        assert!(close(bertz_ct(&mol("C")), 10.0, 0.01));
+    }
+
+    #[test]
+    fn bertz_ct_benzene() {
+        // 6 C with total_deg=3: 6·C(3,2)=18; bonds=6+6=12 → CT = 18+12 = 30
+        assert!(close(bertz_ct(&mol("c1ccccc1")), 30.0, 0.01));
+    }
+
+    // ── LabuteASA ─────────────────────────────────────────────────────────────
+
+    #[test]
+    fn labute_asa_positive() {
+        assert!(labute_asa(&mol("c1ccccc1")) > 0.0, "benzene ASA > 0");
+    }
+
+    #[test]
+    fn labute_asa_single_oxygen() {
+        // [OH2]: O (atomic radius 0.66) + 2 implicit H (single-bond, Vi=0).
+        // A_O = 4π*0.66² = 5.47 Å²; 2H = 2*4π*0.33² = 2.74 Å²; total ≈ 8.21 Å²
+        let asa = labute_asa(&mol("O"));
+        let expected = 4.0 * PI * 0.66_f64.powi(2) + 2.0 * 4.0 * PI * 0.33_f64.powi(2);
+        assert!(
+            (asa - expected).abs() < 0.01,
+            "water ASA {asa:.4} ≠ expected {expected:.4}"
+        );
+    }
+
+    #[test]
+    fn labute_asa_monotone_with_size() {
+        // Larger molecule → larger ASA.
+        let bz = labute_asa(&mol("c1ccccc1"));
+        let asp = labute_asa(&mol("CC(=O)Oc1ccccc1C(=O)O"));
+        assert!(bz < asp, "benzene ASA {bz:.2} should be < aspirin ASA {asp:.2}");
+    }
+
+    #[test]
+    fn labute_asa_aromatic_reduces_vs_saturated() {
+        // Aromatic C-C bonds (scale=0.1) create more surface overlap than
+        // single C-C bonds (scale=0), so benzene ASA < cyclohexane ASA
+        // (same atom count, but less overlap in cyclohexane).
+        let bz = labute_asa(&mol("c1ccccc1"));  // aromatic
+        let ch = labute_asa(&mol("C1CCCCC1"));  // saturated
+        assert!(bz < ch, "benzene ASA {bz:.2} < cyclohexane ASA {ch:.2}");
+    }
+}
