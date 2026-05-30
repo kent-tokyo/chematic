@@ -11,6 +11,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.9] — 2026-05-31
+
+### Fixed (`chematic-depict`) — 単原子 SMILES の描画
+
+単原子分子（`"O"`, `"C"`, `"N"` 等）が空白または誤表記の SVG を返していた問題を修正。
+
+- **`"C"` (メタン)**: 骨格式ルール（炭素はラベル不要）が孤立炭素にも適用され SVG が空になっていた → `CH4` を表示するよう修正。
+- **`"O"` (水)**: ラベルが `OH2` と表示されていた → 分子式スタイル `H2O` に修正。
+- 一般に atom_count == 1 の分子は Hill 記法の分子式（`H2O`、`CH4`、`NH3` 等）でラベルを表示。
+
+### Added (`chematic-depict`) — `RenderOptions` + `render_svg_opts`
+
+```rust
+let opts = RenderOptions {
+    width: Some(240), height: Some(240),
+    background: "transparent".into(),
+    dark: true,
+    ..Default::default()
+};
+depict_svg_opts(&mol, &opts)
+```
+
+- `width` / `height`: SVG の `width=` / `height=` 属性を上書き（`None` = 自動）。
+- `padding`: 分子外周の余白（デフォルト 20.0）。
+- `background`: 背景色。`"transparent"` で背景 rect + ラベル背景を省略。
+- `dark`: `true` のとき結合線を白、炭素ラベルを白に変更（ダークモード対応）。
+- `highlight_atoms` / `highlight_bonds` / `highlight_color`: ハイライト機能を既存の `render_svg_highlighted` と統一。
+
+### Added (`chematic-wasm`) — `is_valid_smiles` + `DepictOptions` + `depict_svg_opts`
+
+**`is_valid_smiles(smiles: string): boolean`**
+```js
+is_valid_smiles("CCO")      // true
+is_valid_smiles("")         // false
+is_valid_smiles("[INVALID]") // false
+```
+
+**`DepictOptions` クラス**
+```js
+const opts = new DepictOptions();
+opts.set_background("transparent");
+opts.set_dark(true);
+opts.set_width(240);
+opts.set_height(240);
+opts.set_highlight_atoms([0, 1]);
+opts.set_highlight_color("#FF6B6B");
+mol.depict_svg_opts(opts);
+```
+
+---
+
 ## [0.1.8] — 2026-05-31
 
 ### Improved (`chematic-chem`) — Wildman-Crippen LogP accuracy (MAE 0.1174 → 0.0627)
