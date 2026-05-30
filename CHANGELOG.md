@@ -11,6 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.7] — 2026-05-30
+
+### Fixed (`chematic-chem`) — HBA accuracy: Ertl S inclusion + charged N exclusion
+
+**`hba_count` now uses the full Ertl (2000) definition** (`rdMolDescriptors.CalcNumHBA`):
+
+1. **Sulfur counted as HBA** (new): divalent uncharged S (thiothers, thiols, aromatic S like thiophene) is now included. Matches Ertl SMARTS `$([S;!+;X2;!$([S]=[#8])])` and `$([s;+0])`.
+
+2. **Sulfonic/sulfonamide OH excluded** (new): O–H bonded to oxidized S (S=O present) is excluded from HBA, matching RDKit's exclusion of sulfonate–OH.
+
+3. **Charged N excluded** (new): N with non-zero formal charge (`[N+]`, `[n+]`) is never an HBA. This correctly excludes nitro-group N+ (4-nitrophenol, clonazepam) and thiazolium n+ (thiamine).
+
+**Benchmark results** (175-molecule ChEMBL test set):
+
+| Property | Before | After (v0.1.7) |
+|---|---|---|
+| HBA MAE | 0.1371 | **0.0400** (−71%) |
+| LogP MAE | 0.1174 | 0.1174 (unchanged) |
+| TPSA MAE | 0.0808 | 0.0808 (unchanged) |
+
+---
+
 ## [0.1.6] — 2026-05-30
 
 ### Added (`chematic-wasm`) — WASM bindings for Sprint G–K features

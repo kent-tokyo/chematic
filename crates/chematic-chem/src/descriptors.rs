@@ -164,23 +164,27 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Hydrogen bond acceptor count (Lipinski style)
+// 5. Hydrogen bond acceptor count (Ertl / RDKit-aligned definition)
 // ---------------------------------------------------------------------------
 
-/// Count hydrogen bond acceptors (RDKit-aligned definition).
+/// Count hydrogen bond acceptors using the Ertl (2000) definition as implemented
+/// by RDKit's `rdMolDescriptors.CalcNumHBA`.
 ///
-/// Counts all N and O atoms, with the following exclusions:
-/// - Aromatic N with H (pyrrole-type `[nH]`): lone pair participates in aromaticity
-/// - Non-aromatic N bonded to C=O (amide N): lone pair delocalized into carbonyl
-/// - O with H bonded to C=O carbon (carboxylic/ester OH with adjacent C=O on same C)
-///
-/// These exclusions match `rdMolDescriptors.CalcNumHBA` in RDKit 2024.x.
+/// Counts N, O, and divalent S atoms, with the following exclusions:
+/// - Aromatic N with H (pyrrole-type `[nH]`): lone pair participates in aromaticity.
+/// - Non-aromatic N bonded to C=O (amide N): lone pair delocalized into carbonyl.
+/// - O with H bonded to a C=O carbon (carboxylic/ester OH).
+/// - O with H bonded to oxidized S with S=O (sulfonic/sulfonamide acid OH).
+/// - Oxidized S (degree > 2 or has S=O bonds): lone pair engaged in S=O resonance.
 pub fn hba_count(mol: &Molecule) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
             if an == 7 {
-                // Nitrogen
+                // Nitrogen: charged N (N+ in nitro, quaternary, n+ in thiazolium) is never HBA.
+                if atom.charge != 0 {
+                    return false;
+                }
                 let h = implicit_hcount(mol, *idx);
                 if atom.aromatic {
                     // [nH] (pyrrole-type aromatic N) is NOT an HBA
@@ -190,12 +194,26 @@ pub fn hba_count(mol: &Molecule) -> usize {
                     !neighbor_has_carbonyl(mol, *idx)
                 }
             } else if an == 8 {
-                // Oxygen: exclude carboxylic/acid OH (O-H bonded to a C that also has =O)
+                // Oxygen: exclude acid OH bonded to C=O or to oxidized S with S=O
                 let h = implicit_hcount(mol, *idx);
                 if h > 0 {
                     !neighbor_has_carbonyl(mol, *idx)
+                        && !neighbor_is_oxidized_sulfur(mol, *idx)
                 } else {
                     true
+                }
+            } else if an == 16 {
+                // Sulfur (Ertl definition includes divalent S with free lone pair)
+                if atom.aromatic {
+                    // Aromatic S (thiophene-type): count if uncharged
+                    atom.charge == 0
+                } else {
+                    // Non-aromatic S: count only if divalent (X2) and not oxidized (no S=O)
+                    let degree = mol.neighbors(*idx).count();
+                    let total_valence = degree + implicit_hcount(mol, *idx) as usize;
+                    atom.charge == 0
+                        && total_valence == 2
+                        && !has_double_bond_to(mol, *idx, 8)
                 }
             } else {
                 false
@@ -209,6 +227,14 @@ pub fn hba_count(mol: &Molecule) -> usize {
 fn neighbor_has_carbonyl(mol: &Molecule, idx: AtomIdx) -> bool {
     mol.neighbors(idx).any(|(nb_idx, _)| {
         mol.atom(nb_idx).element.atomic_number() == 6 && has_double_bond_to(mol, nb_idx, 8)
+    })
+}
+
+/// True if any neighbor of `idx` is a sulfur atom that itself has a S=O double bond
+/// (i.e., a sulfoxide, sulfone, or sulfonate S). Used to exclude S–OH from HBA count.
+fn neighbor_is_oxidized_sulfur(mol: &Molecule, idx: AtomIdx) -> bool {
+    mol.neighbors(idx).any(|(nb_idx, _)| {
+        mol.atom(nb_idx).element.atomic_number() == 16 && has_double_bond_to(mol, nb_idx, 8)
     })
 }
 
