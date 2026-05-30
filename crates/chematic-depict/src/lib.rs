@@ -12,12 +12,18 @@ use chematic_core::{AtomIdx, BondIdx, Molecule};
 
 pub use grid::depict_svg_grid;
 pub use layout::{Layout, Point, compute_layout};
-pub use svg::{render_svg, render_svg_highlighted};
+pub use svg::{render_svg, render_svg_highlighted, render_svg_opts, RenderOptions};
 
 /// Compute a 2D layout and render it as an SVG string.
 pub fn depict_svg(mol: &Molecule) -> String {
     let layout = compute_layout(mol);
     render_svg(mol, &layout)
+}
+
+/// Compute a 2D layout and render it as an SVG with full style control.
+pub fn depict_svg_opts(mol: &Molecule, opts: &RenderOptions) -> String {
+    let layout = compute_layout(mol);
+    render_svg_opts(mol, &layout, opts)
 }
 
 /// Compute a 2D layout and render it as an SVG with highlighted atoms/bonds.
@@ -236,17 +242,26 @@ mod tests {
     }
 
     // -------------------------------------------------------------------
-    // 12. depict_svg — single carbon (C): SVG produced without error,
-    //     no label for plain C.
+    // 12. depict_svg — single carbon (C): shows molecular formula "CH4".
     // -------------------------------------------------------------------
     #[test]
-    fn test_depict_svg_single_carbon_no_label() {
+    fn test_depict_svg_single_carbon_shows_ch4() {
         let m = mol("C");
         let svg = depict_svg(&m);
         assert!(svg.starts_with("<svg"), "Single C SVG must start with <svg");
         assert!(svg.ends_with("</svg>"), "Single C SVG must end with </svg>");
-        // Plain carbon has no text label.
-        assert!(!svg.contains("<text"), "Single C SVG should have no text label");
+        // Isolated carbon shows molecular formula label.
+        assert!(svg.contains("CH4"), "Single C SVG must show CH4 label");
+    }
+
+    // -------------------------------------------------------------------
+    // 13. depict_svg — single oxygen (O): shows "H2O" label.
+    // -------------------------------------------------------------------
+    #[test]
+    fn test_depict_svg_single_oxygen_shows_h2o() {
+        let m = mol("O");
+        let svg = depict_svg(&m);
+        assert!(svg.contains("H2O"), "Single O SVG must show H2O label");
     }
 
     // -------------------------------------------------------------------

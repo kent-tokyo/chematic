@@ -181,6 +181,25 @@ impl MolHandle {
         chematic_depict::depict_svg(&self.inner)
     }
 
+    /// 2D SVG depiction with style options.
+    pub fn depict_svg_opts(&self, opts: &DepictOptions) -> String {
+        let ro = chematic_depict::RenderOptions {
+            width: opts.width,
+            height: opts.height,
+            padding: opts.padding,
+            background: opts.background.clone(),
+            dark: opts.dark,
+            highlight_atoms: opts.highlight_atoms.iter()
+                .map(|&i| chematic_core::AtomIdx(i))
+                .collect(),
+            highlight_bonds: opts.highlight_bonds.iter()
+                .map(|&i| chematic_core::BondIdx(i))
+                .collect(),
+            highlight_color: opts.highlight_color.clone(),
+        };
+        chematic_depict::depict_svg_opts(&self.inner, &ro)
+    }
+
     // -----------------------------------------------------------------------
     // Topological descriptors (Sprint G)
     // -----------------------------------------------------------------------
@@ -281,6 +300,68 @@ impl MolHandle {
             .collect();
         format!("{{{}}}", entries.join(", "))
     }
+}
+
+// ---------------------------------------------------------------------------
+// Free functions exported to JS
+// ---------------------------------------------------------------------------
+
+/// Returns `true` if the SMILES string can be parsed without error.
+#[wasm_bindgen]
+pub fn is_valid_smiles(s: &str) -> bool {
+    chematic_smiles::parse(s).is_ok()
+}
+
+// ---------------------------------------------------------------------------
+// DepictOptions
+// ---------------------------------------------------------------------------
+
+/// Style options for [`MolHandle::depict_svg_opts`].
+///
+/// Construct with `new DepictOptions()`, then call setters:
+/// ```js
+/// const opts = new DepictOptions();
+/// opts.set_background("transparent");
+/// opts.set_dark(true);
+/// opts.set_width(240);
+/// opts.set_height(240);
+/// ```
+#[wasm_bindgen]
+pub struct DepictOptions {
+    width: Option<u32>,
+    height: Option<u32>,
+    padding: f64,
+    background: String,
+    dark: bool,
+    highlight_atoms: Vec<u32>,
+    highlight_bonds: Vec<u32>,
+    highlight_color: String,
+}
+
+#[wasm_bindgen]
+impl DepictOptions {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            width: None,
+            height: None,
+            padding: 20.0,
+            background: "white".into(),
+            dark: false,
+            highlight_atoms: vec![],
+            highlight_bonds: vec![],
+            highlight_color: "#FFFF00".into(),
+        }
+    }
+
+    pub fn set_width(&mut self, w: u32) { self.width = Some(w); }
+    pub fn set_height(&mut self, h: u32) { self.height = Some(h); }
+    pub fn set_padding(&mut self, p: f64) { self.padding = p; }
+    pub fn set_background(&mut self, bg: String) { self.background = bg; }
+    pub fn set_dark(&mut self, dark: bool) { self.dark = dark; }
+    pub fn set_highlight_atoms(&mut self, atoms: Vec<u32>) { self.highlight_atoms = atoms; }
+    pub fn set_highlight_bonds(&mut self, bonds: Vec<u32>) { self.highlight_bonds = bonds; }
+    pub fn set_highlight_color(&mut self, color: String) { self.highlight_color = color; }
 }
 
 // ---------------------------------------------------------------------------
@@ -655,4 +736,61 @@ mod tests {
 
     // Note: run_reactants error-path tests are omitted here because JsValue::from_str
     // panics outside a WASM runtime. Error coverage lives in chematic-rxn unit tests.
+
+    #[test]
+    fn is_valid_smiles_valid() {
+        assert!(is_valid_smiles("CCO"), "ethanol is valid");
+        assert!(is_valid_smiles("c1ccccc1"), "benzene is valid");
+        assert!(is_valid_smiles("O"), "water is valid");
+        assert!(is_valid_smiles("C"), "methane is valid");
+    }
+
+    #[test]
+    fn is_valid_smiles_invalid() {
+        assert!(!is_valid_smiles(""), "empty string is invalid");
+        assert!(!is_valid_smiles("[NOSUCHELEMENT]"), "unknown bracket atom is invalid");
+    }
+
+    #[test]
+    fn depict_svg_opts_transparent_background() {
+        let h = parse("CCO");
+        let mut opts = DepictOptions::new();
+        opts.set_background("transparent".to_string());
+        let svg = h.depict_svg_opts(&opts);
+        assert!(svg.contains("<svg"), "must produce SVG");
+        assert!(!svg.contains("fill=\"transparent\""), "no bg rect for transparent");
+    }
+
+    #[test]
+    fn depict_svg_opts_custom_size() {
+        let h = parse("CCO");
+        let mut opts = DepictOptions::new();
+        opts.set_width(300);
+        opts.set_height(200);
+        let svg = h.depict_svg_opts(&opts);
+        assert!(svg.contains("width=\"300\""), "SVG width should be 300");
+        assert!(svg.contains("height=\"200\""), "SVG height should be 200");
+    }
+
+    #[test]
+    fn depict_svg_opts_dark_theme() {
+        let h = parse("CC");
+        let mut opts = DepictOptions::new();
+        opts.set_dark(true);
+        opts.set_background("#0f172a".to_string());
+        let svg = h.depict_svg_opts(&opts);
+        assert!(svg.contains("stroke=\"white\""), "dark theme bonds should be white");
+    }
+
+    #[test]
+    fn depict_svg_single_atom_water_shows_h2o() {
+        let svg = parse("O").depict_svg();
+        assert!(svg.contains("H2O"), "water 'O' should render as H2O");
+    }
+
+    #[test]
+    fn depict_svg_single_atom_methane_shows_ch4() {
+        let svg = parse("C").depict_svg();
+        assert!(svg.contains("CH4"), "methane 'C' should render as CH4");
+    }
 }
