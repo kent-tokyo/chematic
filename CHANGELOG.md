@@ -11,6 +11,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.8] — 2026-05-31
+
+### Improved (`chematic-chem`) — Wildman-Crippen LogP accuracy (MAE 0.1174 → 0.0627)
+
+Rewrote `crippen_carbon`, `crippen_nitrogen`, and `crippen_oxygen` to match RDKit's
+atom-type priority order, confirmed via per-atom `_GetAtomContribs()` analysis
+against a 175-molecule ChEMBL benchmark.
+
+**Key fixes:**
+
+- **Aromatic C bonded to non-aromatic N** → 0.4619 (aniline, triphenylamine, etc.)
+- **Benzylic C bonded to N** (sp3 C adjacent to both N and aromatic C) → 0.1193
+- **C=N aliphatic imine C** → −0.2783 (was −0.3800)
+- **Aryl N** (bonded to aromatic C): h=0 → −0.4458, h=1 → −0.5188, h≥2 → −1.0270; aryl check now runs before carbonyl check (fixes paracetamol)
+- **Aliphatic imine =N**: h=0 → +0.1836, h≥1 → +0.0839 (was −0.335)
+- **Amide/urea N** (adjacent to C=O): tertiary urea N (N-CO-N) → 0.0000; regular amide N → −0.3187; primary/secondary → −0.7011
+- **Singly-adjacent guanidine NH** (h=1, one C=N neighbor): −0.335; preserves arginine/guanidinium accuracy
+- **Nitro O** (bonded to N⁺) → 0.0335
+- **Carbamate ether O** (N-CO-O linkage) → 0.4833 (was −0.0684 generic ether)
+
+**Benchmark results** (175-molecule ChEMBL test set, vs RDKit):
+
+| Property | v0.1.3 | v0.1.7 | v0.1.8 |
+|---|---|---|---|
+| LogP MAE | 0.298 | 0.1174 | **0.0627** (−79% from v0.1.3) |
+| Pearson r | — | — | **0.9963** |
+
+---
+
 ## [0.1.7] — 2026-05-30
 
 ### Fixed (`chematic-chem`) — HBA accuracy: Ertl S inclusion + charged N exclusion

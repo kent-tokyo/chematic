@@ -240,12 +240,6 @@ fn neighbor_is_oxidized_sulfur(mol: &Molecule, idx: AtomIdx) -> bool {
 
 /// True if any neighbor of `idx` is a carbon that has a C=N double bond
 /// (i.e., an imine/amidine/guanidinium carbon).
-fn neighbor_has_imine(mol: &Molecule, idx: AtomIdx) -> bool {
-    mol.neighbors(idx).any(|(nb_idx, _)| {
-        mol.atom(nb_idx).element.atomic_number() == 6 && has_double_bond_to(mol, nb_idx, 7)
-    })
-}
-
 // ---------------------------------------------------------------------------
 // 6. Rotatable bond count
 // ---------------------------------------------------------------------------
@@ -525,6 +519,15 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
         } else if h > 0 {
             0.1581  // C11 [cH]
         } else {
+            // Aromatic C bonded to non-aromatic N (aniline/amide/etc.) gets 0.4619.
+            // Confirmed: aniline, diphenylamine, triphenylamine, paracetamol.
+            // Does NOT apply to endocyclic aromatic N (pyridine, indole).
+            if mol.neighbors(idx).any(|(nb, _)| {
+                let a = mol.atom(nb);
+                a.element.atomic_number() == 7 && !a.aromatic
+            }) {
+                return 0.4619;
+            }
             // Ring-junction C (all neighbors aromatic, ≥2 of them aromatic C)
             // covers C4a/C8a in naphthalene, C3a/C7a in indole, etc.
             // Excludes caffeine C2 (only 1 aromatic C neighbor; 2 are aromatic N).
@@ -542,10 +545,12 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
             }
         }
     } else {
-        let has_double_to_heteroatom = mol.neighbors(idx).any(|(nb, bidx)| {
+        let has_double_to_n = has_double_bond_to(mol, idx, 7);
+        let has_double_to_heteroatom = has_double_to_n || mol.neighbors(idx).any(|(nb, bidx)| {
             let bo = mol.bond(bidx).order;
             (bo == BondOrder::Double || bo == BondOrder::Triple)
                 && mol.atom(nb).element.atomic_number() != 6
+                && mol.atom(nb).element.atomic_number() != 7
         });
         let has_double_to_c = mol.neighbors(idx).any(|(nb, bidx)| {
             mol.bond(bidx).order == BondOrder::Double
@@ -553,9 +558,13 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
                 && mol.atom(nb).element.atomic_number() == 6
         });
 
-        if has_double_to_heteroatom {
-            // C=X adjacent to aromatic C (Ar-CHO, Ar-COOH, Ar-COOR, Ar-CO-R) takes
-            // a different value than purely aliphatic C=X. Confirmed against
+        if has_double_to_n {
+            // C=N (imine, oxime, guanidine, amidine, nitrile C≡N handled here too).
+            // RDKit assigns −0.2783 regardless of aryl context.
+            -0.2783
+        } else if has_double_to_heteroatom {
+            // C=X (X = O, S, etc.) adjacent to aromatic C (Ar-CHO, Ar-COOH, Ar-CO-R)
+            // takes a different value than purely aliphatic C=X. Confirmed against
             // benzoic_acid and methyl_benzoate (+0.2574 exact).
             if has_aromatic_carbon_neighbor(mol, idx) {
                 -0.1226
@@ -567,11 +576,20 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
             0.2274
         } else {
             // sp3 C: distinguish heteroatom-bonded, benzylic, pure alkyl
-            let bonded_to_heteroatom = mol.neighbors(idx).any(|(nb, _)| {
-                matches!(mol.atom(nb).element.atomic_number(), 7|8|9|15|16|17|35|53)
+            let bonded_to_n = mol.neighbors(idx).any(|(nb, _)| {
+                mol.atom(nb).element.atomic_number() == 7
+            });
+            let bonded_to_heteroatom = bonded_to_n || mol.neighbors(idx).any(|(nb, _)| {
+                matches!(mol.atom(nb).element.atomic_number(), 8|9|15|16|17|35|53)
             });
             if bonded_to_heteroatom {
-                -0.2035  // C6/C7/C8: sp3 C bonded to N/O/S/halogen
+                // sp3 C bonded to N that is also benzylic gets 0.1193.
+                // Confirmed: N-benzyl compounds, chlorpromazine side chain.
+                if bonded_to_n && has_aromatic_carbon_neighbor(mol, idx) {
+                    0.1193
+                } else {
+                    -0.2035  // C6/C7/C8: sp3 C bonded to N/O/S/halogen
+                }
             } else if has_aromatic_carbon_neighbor(mol, idx) {
                 // Benzylic C (Wildman-Crippen C25–C28).
                 // Confirmed: toluene(C25), ethylbenzene(C26), tetralin(C26×2)
@@ -596,32 +614,69 @@ fn crippen_nitrogen(mol: &Molecule, idx: AtomIdx, ar: bool) -> f64 {
         return -0.3239;
     }
     let h = implicit_hcount(mol, idx);
+    let atom = mol.atom(idx);
+
+    // Oxidized N: N=O (nitroso) or N+(=O) (nitro). Priority: check before imine.
+    if has_double_bond_to(mol, idx, 8) {
+        // N+ in nitro group vs neutral nitroso N
+        return if atom.charge > 0 { -0.3396 } else { 0.1836 };
+    }
+    // Imine/guanidine/amidine N with direct C=N double bond.
+    // RDKit: =N (h=0) → 0.1836, =NH (h=1) → 0.0839.
+    // Does NOT apply to N merely adjacent to C=N (those use aliphatic values).
+    if has_double_bond_to(mol, idx, 6) {
+        return match h { 0 => 0.1836, _ => 0.0839 };
+    }
+    // Aryl N: bonded to aromatic C (aniline, diphenylamine, aryl amide, etc.).
+    // RDKit uses same values regardless of whether N is also amide — no amide branch.
+    if has_aromatic_carbon_neighbor(mol, idx) {
+        return match h {
+            0 => -0.4458,   // tertiary aryl N (N-methylaniline type)
+            1 => -0.5188,   // secondary aryl NH (aniline NH type)
+            _ => -1.0270,   // primary aryl NH2 (aniline NH2 type)
+        };
+    }
+    // Non-aryl N adjacent to carbonyl C (amide, carbamate, urea).
+    // Must come AFTER the aryl check: paracetamol's aryl amide N uses aryl values above.
     if neighbor_has_carbonyl(mol, idx) {
-        // Amide N: delocalized lone pair.
-        // N_prim_amide = -0.7011 (urea), N_tert_amide ≈ 0.0 (dimethylurea).
-        match h {
-            0 => 0.0000,    // tertiary amide N
-            _ => -0.7011,   // primary or secondary amide NH/NH2
+        return match h {
+            0 => {
+                // Urea-type: carbonyl C has another N neighbor (N-CO-N) → 0.0000.
+                // Regular tertiary amide (DMF, DMA, BOC): carbonyl C has no other N → -0.3187.
+                // Confirmed from dimethyl_urea vs DMF/DMA RDKit per-atom contributions.
+                let is_urea_type = mol.neighbors(idx).any(|(cn, _)| {
+                    mol.atom(cn).element.atomic_number() == 6
+                        && has_double_bond_to(mol, cn, 8)
+                        && mol.neighbors(cn).any(|(n2, _)| {
+                            mol.atom(n2).element.atomic_number() == 7 && n2 != idx
+                        })
+                });
+                if is_urea_type { 0.0000 } else { -0.3187 }
+            }
+            _ => -0.7011,  // primary/secondary amide N; confirmed from urea
+        };
+    }
+    // Secondary aliphatic N (h=1) singly adjacent to one guanidine/amidine C=N:
+    // N14 type in Wildman-Crippen (-0.335). This covers the chain NH in arginine's
+    // guanidine side chain. Does NOT apply to bridge NH between two C=N groups
+    // (that is doubly adjacent and treated as regular secondary amine).
+    if h == 1 {
+        let imine_c_nbrs = mol.neighbors(idx)
+            .filter(|(nb, _)| {
+                mol.atom(*nb).element.atomic_number() == 6
+                    && has_double_bond_to(mol, *nb, 7)
+            })
+            .count();
+        if imine_c_nbrs == 1 {
+            return -0.335;
         }
-    } else if has_double_bond_to(mol, idx, 6) || neighbor_has_imine(mol, idx) {
-        // Guanidinium/amidine N (Wildman-Crippen N14): imine =N or N adjacent to C=N.
-        // Calibrated from metformin vs RDKit reference (MAE improvement: 2.07 → ~0.00).
-        -0.335
-    } else if has_aromatic_carbon_neighbor(mol, idx) {
-        // Aniline-type N bonded to aromatic ring.
-        // Confirmed: aniline (h=2), n_methylaniline (h=1), 4_aminophenol.
-        match h {
-            0 => -0.5950,   // tertiary aniline (no data; keep aliphatic value)
-            1 => -0.2010,   // secondary aniline NH (from N-methylaniline)
-            _ => -0.7092,   // primary aniline NH2 (from aniline)
-        }
-    } else {
-        // Non-amide aliphatic N
-        match h {
-            0 => -0.5950,   // tertiary amine
-            1 => -0.7096,   // secondary amine NH
-            _ => -1.0190,   // primary amine NH2
-        }
+    }
+    // Aliphatic N: amide and amine use the same values in Wildman-Crippen.
+    // Confirmed: dimethylformamide/acetamide tertiary amide N → -0.3187 (not 0.0).
+    match h {
+        0 => -0.3187,   // tertiary N (amine or amide)
+        1 => -0.7096,   // secondary NH
+        _ => -1.0190,   // primary NH2
     }
 }
 
@@ -633,13 +688,29 @@ fn crippen_oxygen(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
         // OH (alcohol, phenol, carboxylic acid) — H contribution handled separately.
         -0.2893
     } else {
+        // Nitro group O (bonded to N+): both =O and -O- of [N+](=O)[O-] get 0.0335.
+        if mol.neighbors(idx).any(|(nb, _)| {
+            mol.atom(nb).element.atomic_number() == 7 && mol.atom(nb).charge > 0
+        }) {
+            return 0.0335;
+        }
         let is_double_bonded = mol
             .neighbors(idx)
             .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Double);
         if is_double_bonded {
             -0.0509      // O8: carbonyl =O; confirmed from acetone
         } else {
-            -0.0684      // O4/O5: ether O; confirmed from THF, THP
+            // Carbamate/urethane ether O (N-CO-O): the adjacent C has both C=O and N.
+            // This is distinct from regular ester O (C-CO-O, which has no N on the C=O carbon).
+            // Confirmed from n_boc_piperazine RDKit per-atom contributions.
+            let is_carbamate_o = mol.neighbors(idx).any(|(cn, _)| {
+                mol.atom(cn).element.atomic_number() == 6
+                    && has_double_bond_to(mol, cn, 8)
+                    && mol.neighbors(cn).any(|(n2, _)| {
+                        mol.atom(n2).element.atomic_number() == 7
+                    })
+            });
+            if is_carbamate_o { 0.4833 } else { -0.0684 }   // O4/O5: ether O
         }
     }
 }
