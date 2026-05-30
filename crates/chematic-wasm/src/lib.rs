@@ -180,6 +180,107 @@ impl MolHandle {
     pub fn depict_svg(&self) -> String {
         chematic_depict::depict_svg(&self.inner)
     }
+
+    // -----------------------------------------------------------------------
+    // Topological descriptors (Sprint G)
+    // -----------------------------------------------------------------------
+
+    /// Wiener topological index (sum of all pairwise shortest-path distances).
+    pub fn wiener_index(&self) -> f64 {
+        chematic_chem::wiener_index(&self.inner)
+    }
+
+    /// Hall–Kier κ1 shape index.
+    pub fn kappa1(&self) -> f64 {
+        chematic_chem::kappa1(&self.inner)
+    }
+
+    /// Hall–Kier κ2 shape index.
+    pub fn kappa2(&self) -> f64 {
+        chematic_chem::kappa2(&self.inner)
+    }
+
+    /// Hall–Kier κ3 shape index.
+    pub fn kappa3(&self) -> f64 {
+        chematic_chem::kappa3(&self.inner)
+    }
+
+    /// Kier–Hall χ0 molecular connectivity index.
+    pub fn chi0(&self) -> f64 {
+        chematic_chem::chi0(&self.inner)
+    }
+
+    /// Kier–Hall χ1 molecular connectivity index.
+    pub fn chi1(&self) -> f64 {
+        chematic_chem::chi1(&self.inner)
+    }
+
+    /// Kier–Hall χ2 molecular connectivity index.
+    pub fn chi2(&self) -> f64 {
+        chematic_chem::chi2(&self.inner)
+    }
+
+    /// Kier–Hall χ3 molecular connectivity index.
+    pub fn chi3(&self) -> f64 {
+        chematic_chem::chi3(&self.inner)
+    }
+
+    /// Kier–Hall χ4 molecular connectivity index.
+    pub fn chi4(&self) -> f64 {
+        chematic_chem::chi4(&self.inner)
+    }
+
+    /// Kier–Hall χ0v valence-weighted connectivity index.
+    pub fn chi0v(&self) -> f64 {
+        chematic_chem::chi0v(&self.inner)
+    }
+
+    /// Kier–Hall χ1v valence-weighted connectivity index.
+    pub fn chi1v(&self) -> f64 {
+        chematic_chem::chi1v(&self.inner)
+    }
+
+    /// Kier–Hall χ2v valence-weighted connectivity index.
+    pub fn chi2v(&self) -> f64 {
+        chematic_chem::chi2v(&self.inner)
+    }
+
+    /// Kier–Hall χ3v valence-weighted connectivity index.
+    pub fn chi3v(&self) -> f64 {
+        chematic_chem::chi3v(&self.inner)
+    }
+
+    /// Kier–Hall χ4v valence-weighted connectivity index.
+    pub fn chi4v(&self) -> f64 {
+        chematic_chem::chi4v(&self.inner)
+    }
+
+    /// Bertz complexity index (BertzCT).
+    pub fn bertz_ct(&self) -> f64 {
+        chematic_chem::bertz_ct(&self.inner)
+    }
+
+    /// Labute approximate surface area (Å²).
+    pub fn labute_asa(&self) -> f64 {
+        chematic_chem::labute_asa(&self.inner)
+    }
+
+    // -----------------------------------------------------------------------
+    // Morgan count fingerprint (Sprint G)
+    // -----------------------------------------------------------------------
+
+    /// Morgan count fingerprint as a JSON object string (`{"<hash>": count, …}`).
+    ///
+    /// `radius` controls the ECFP radius (2 = ECFP4-equivalent).
+    pub fn morgan_fp_counts_json(&self, radius: u32) -> String {
+        let counts = chematic_fp::morgan_fp_counts(&self.inner, radius);
+        let mut pairs: Vec<(u64, u32)> = counts.into_iter().collect();
+        pairs.sort_by_key(|(k, _)| *k);
+        let entries: Vec<String> = pairs.iter()
+            .map(|(k, v)| format!("\"{k}\": {v}"))
+            .collect();
+        format!("{{{}}}", entries.join(", "))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -230,6 +331,66 @@ pub fn tanimoto_torsion(a: &MolHandle, b: &MolHandle) -> f64 {
 #[wasm_bindgen]
 pub fn brics_fragment_count(mol: &MolHandle) -> usize {
     chematic_chem::brics_fragments(&mol.inner).len()
+}
+
+/// Return a copy of the molecule with all implicit hydrogens converted to explicit H atoms.
+#[wasm_bindgen]
+pub fn add_hydrogens(mol: &MolHandle) -> MolHandle {
+    MolHandle { inner: std::rc::Rc::new(chematic_chem::add_hydrogens(&mol.inner)) }
+}
+
+/// Return a copy of the molecule with all explicit hydrogen atoms removed.
+#[wasm_bindgen]
+pub fn remove_hydrogens(mol: &MolHandle) -> MolHandle {
+    MolHandle { inner: std::rc::Rc::new(chematic_chem::remove_hydrogens(&mol.inner)) }
+}
+
+/// Render a grid SVG from newline-separated SMILES (one per line).
+///
+/// Lines that fail to parse are silently skipped.
+/// `cols` controls the number of columns (each cell is 200×200 px).
+#[wasm_bindgen]
+pub fn depict_svg_grid(smiles_block: &str, cols: usize) -> String {
+    let mols: Vec<chematic_core::Molecule> = smiles_block
+        .lines()
+        .filter(|s| !s.trim().is_empty())
+        .filter_map(|s| chematic_smiles::parse(s.trim()).ok())
+        .collect();
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
+    chematic_depict::depict_svg_grid(&refs, cols)
+}
+
+/// Apply a SMIRKS reaction template and return product SMILES as a JSON string.
+///
+/// `reactants_smiles`: pipe-separated SMILES, one per reactant slot in the SMIRKS.
+/// Returns a JSON array of arrays: `[["product_smi", …], …]`.
+/// Returns a JS error on parse failure or arity mismatch.
+#[wasm_bindgen]
+pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsValue> {
+    let reactant_mols: Result<Vec<chematic_core::Molecule>, _> = reactants_smiles
+        .split('|')
+        .map(|s| {
+            chematic_smiles::parse(s.trim())
+                .map_err(|e| JsValue::from_str(&e.to_string()))
+        })
+        .collect();
+    let reactant_mols = reactant_mols?;
+    let refs: Vec<&chematic_core::Molecule> = reactant_mols.iter().collect();
+
+    let products = chematic_rxn::run_reactants(smirks, &refs)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    let outer: Vec<String> = products
+        .iter()
+        .map(|set| {
+            let inner: Vec<String> = set
+                .iter()
+                .map(|mol| format!("\"{}\"", chematic_smiles::canonical_smiles(mol)))
+                .collect();
+            format!("[{}]", inner.join(", "))
+        })
+        .collect();
+    Ok(format!("[{}]", outer.join(", ")))
 }
 
 /// Compute the ECFP4 fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
@@ -427,4 +588,71 @@ mod tests {
     fn brics_fragment_count_aspirin() {
         assert!(brics_fragment_count(&parse("CC(=O)Oc1ccccc1C(=O)O")) >= 2);
     }
+
+    #[test]
+    fn wiener_index_ethane() {
+        // Ethane: 2 atoms, distance 1 — Wiener index = 1.
+        assert_eq!(parse("CC").wiener_index(), 1.0);
+    }
+
+    #[test]
+    fn kappa1_propane_range() {
+        let k = parse("CCC").kappa1();
+        assert!(k > 0.0, "kappa1 should be positive");
+    }
+
+    #[test]
+    fn chi0_benzene_positive() {
+        assert!(parse("c1ccccc1").chi0() > 0.0);
+    }
+
+    #[test]
+    fn labute_asa_aspirin_range() {
+        let asa = parse("CC(=O)Oc1ccccc1C(=O)O").labute_asa();
+        assert!(asa > 50.0 && asa < 200.0, "aspirin LabuteASA = {asa:.2}");
+    }
+
+    #[test]
+    fn bertz_ct_benzene_positive() {
+        assert!(parse("c1ccccc1").bertz_ct() > 0.0);
+    }
+
+    #[test]
+    fn morgan_fp_counts_json_benzene() {
+        let json = parse("c1ccccc1").morgan_fp_counts_json(2);
+        assert!(json.starts_with('{') && json.ends_with('}'));
+    }
+
+    #[test]
+    fn add_remove_hydrogens_roundtrip() {
+        let mol = parse("CC");
+        let with_h = add_hydrogens(&mol);
+        assert!(with_h.atom_count() > mol.atom_count(), "H atoms should be added");
+        let back = remove_hydrogens(&with_h);
+        assert_eq!(back.atom_count(), mol.atom_count());
+    }
+
+    #[test]
+    fn depict_svg_grid_two_mols() {
+        let svg = depict_svg_grid("CC\nCCC", 2);
+        assert!(svg.contains("<svg"), "expected SVG output");
+    }
+
+    #[test]
+    fn depict_svg_grid_invalid_smiles_skipped() {
+        let svg = depict_svg_grid("CC\nNOT_A_SMILES\nCCC", 2);
+        assert!(svg.contains("<svg"), "invalid SMILES should be silently skipped");
+    }
+
+    #[test]
+    fn run_reactants_esterification() {
+        // Simple esterification: carboxylic acid + alcohol → ester + water
+        let result = run_reactants("[C:1](=O)[OH:2].[O:3][C:4]>>[C:1](=O)[O:3][C:4]", "CC(=O)O|CCO");
+        assert!(result.is_ok(), "run_reactants should succeed");
+        let json = result.unwrap();
+        assert!(json.contains('['), "expected JSON array");
+    }
+
+    // Note: run_reactants error-path tests are omitted here because JsValue::from_str
+    // panics outside a WASM runtime. Error coverage lives in chematic-rxn unit tests.
 }

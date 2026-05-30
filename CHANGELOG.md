@@ -11,6 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.6] — 2026-05-30
+
+### Added (`chematic-wasm`) — WASM bindings for Sprint G–K features
+
+**Topological descriptors** (`MolHandle` methods):
+- `wiener_index()`, `kappa1()`, `kappa2()`, `kappa3()` — Wiener index and Hall–Kier κ shape indices.
+- `chi0()` – `chi4()` — Kier–Hall molecular connectivity χ indices (unweighted).
+- `chi0v()` – `chi4v()` — valence-weighted χv indices.
+- `bertz_ct()` — Bertz complexity index.
+- `labute_asa()` — Labute approximate surface area (Å²).
+- `morgan_fp_counts_json(radius)` — Morgan count fingerprint as a JSON object string (`{"<hash>": count, …}`).
+
+**Free functions**:
+- `add_hydrogens(mol) -> MolHandle` — convert implicit H to explicit atoms.
+- `remove_hydrogens(mol) -> MolHandle` — remove explicit H atoms.
+- `depict_svg_grid(smiles_block, cols) -> String` — grid SVG from newline-separated SMILES; invalid lines silently skipped.
+- `run_reactants(smirks, reactants_smiles) -> Result<String, JsValue>` — SMIRKS reaction transform; `reactants_smiles` is pipe-separated (`"CC(=O)O|CCO"`); returns JSON `[["product_smi", …], …]`.
+
+Tests: 646 → 656 (+10 new WASM binding tests).
+
+---
+
 ## [0.1.5] — 2026-05-30
 
 ### Improved (`chematic-3d`) — UFF-derived minimizer parameters (Sprint K)
@@ -572,7 +594,8 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/kent-tokyo/chematic/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/kent-tokyo/chematic/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/kent-tokyo/chematic/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/kent-tokyo/chematic/compare/v0.1.1...v0.1.2
