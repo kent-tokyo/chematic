@@ -127,6 +127,79 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     fp
 }
 
+/// Count-based Morgan fingerprint: returns a map of `hash → count` for all
+/// atom environments up to `radius` iterations.
+///
+/// Each (atom, iteration) pair contributes its hash to the map.  Unlike the
+/// default RDKit behavior, redundant (duplicate) environments are **not**
+/// suppressed — every atom contributes at every iteration level.
+///
+/// This corresponds to `GetMorganFingerprint(mol, radius,
+/// useFeatures=False, includeRedundantEnvironments=True)` in RDKit.
+pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMap<u64, u32> {
+    use std::collections::HashMap;
+
+    let n = mol.atom_count();
+    let mut counts: HashMap<u64, u32> = HashMap::new();
+
+    if n == 0 {
+        return counts;
+    }
+
+    let ring_set = find_sssr(mol);
+
+    // Radius-0: initial atom identifiers.
+    let mut ids: Vec<u64> = (0..n)
+        .map(|i| {
+            let idx = AtomIdx(i as u32);
+            let atom = mol.atom(idx);
+            let charge_adjusted = (atom.charge as i16 + 8) as u8;
+            fnv1a(&[
+                atom.element.atomic_number(),
+                mol.neighbors(idx).count() as u8,
+                implicit_hcount(mol, idx),
+                charge_adjusted,
+                ring_set.contains_atom(idx) as u8,
+                atom.aromatic as u8,
+            ])
+        })
+        .collect();
+
+    for &id in &ids {
+        *counts.entry(id).or_insert(0) += 1;
+    }
+
+    // Radius 1..=radius: iterative expansion (same hash scheme as ecfp).
+    let mut new_ids = vec![0u64; n];
+    for r in 1..=radius {
+        for i in 0..n {
+            let idx = AtomIdx(i as u32);
+            let mut neighbor_info: Vec<(u8, u64)> = mol
+                .neighbors(idx)
+                .map(|(nb_idx, bond_idx)| {
+                    (bond_type_int(mol.bond(bond_idx).order), ids[nb_idx.0 as usize])
+                })
+                .collect();
+            neighbor_info.sort_unstable();
+
+            let mut bytes: Vec<u8> = Vec::with_capacity(1 + 8 + neighbor_info.len() * 9);
+            bytes.push(r as u8);
+            bytes.extend_from_slice(&ids[i].to_le_bytes());
+            for (btype, nb_id) in &neighbor_info {
+                bytes.push(*btype);
+                bytes.extend_from_slice(&nb_id.to_le_bytes());
+            }
+
+            let new_id = fnv1a(&bytes);
+            new_ids[i] = new_id;
+            *counts.entry(new_id).or_insert(0) += 1;
+        }
+        core::mem::swap(&mut ids, &mut new_ids);
+    }
+
+    counts
+}
+
 /// ECFP4 fingerprint (radius = 2, 2048 bits).
 pub fn ecfp4(mol: &Molecule) -> BitVec2048 {
     ecfp(mol, &EcfpConfig { radius: 2, nbits: 2048 })
@@ -252,5 +325,65 @@ mod tests {
             t < 0.5,
             "methane and benzene should be very dissimilar (tanimoto={t})"
         );
+    }
+
+    // ── morgan_fp_counts ─────────────────────────────────────────────────────
+
+    #[test]
+    fn morgan_counts_radius0_atom_count() {
+        // At radius 0, one hash per atom.
+        let m = benzene();
+        let counts = morgan_fp_counts(&m, 0);
+        let total: u32 = counts.values().sum();
+        assert_eq!(total, m.atom_count() as u32, "radius-0 total count == atom_count");
+    }
+
+    #[test]
+    fn morgan_counts_radius2_total_grows() {
+        // Each additional radius adds one hash per atom → total = n * (radius+1).
+        let m = methane();
+        let n = m.atom_count() as u32;
+        let r = 2u32;
+        let counts = morgan_fp_counts(&m, r);
+        let total: u32 = counts.values().sum();
+        assert_eq!(total, n * (r + 1), "methane total = atom_count * (radius+1)");
+    }
+
+    #[test]
+    fn morgan_counts_benzene_symmetry() {
+        // All 6 benzene C atoms are equivalent → radius-0 yields 1 unique hash.
+        let m = benzene();
+        let counts = morgan_fp_counts(&m, 0);
+        assert_eq!(counts.len(), 1, "benzene has one unique radius-0 environment");
+        assert_eq!(*counts.values().next().unwrap(), 6, "that environment appears 6 times");
+    }
+
+    #[test]
+    fn morgan_counts_empty_mol_is_empty() {
+        use chematic_core::MoleculeBuilder;
+        let m = MoleculeBuilder::new().build();
+        let counts = morgan_fp_counts(&m, 2);
+        assert!(counts.is_empty(), "empty molecule yields empty count map");
+    }
+
+    #[test]
+    fn morgan_counts_deterministic() {
+        let m = aspirin();
+        let c1 = morgan_fp_counts(&m, 2);
+        let c2 = morgan_fp_counts(&m, 2);
+        assert_eq!(c1, c2, "morgan_fp_counts must be deterministic");
+    }
+
+    #[test]
+    fn morgan_counts_consistent_with_ecfp_bits() {
+        // Every hash in the count map should be reachable from the ecfp bit set
+        // (after folding to 2048 bits).  This checks the same hash scheme.
+        let m = toluene();
+        let fp = ecfp(&m, &EcfpConfig { radius: 2, nbits: 2048 });
+        let counts = morgan_fp_counts(&m, 2);
+        for &hash in counts.keys() {
+            let bit = (hash % 2048) as usize;
+            assert!(fp.get(bit), "bit {bit} from count map not set in ECFP bitvec");
+        }
     }
 }

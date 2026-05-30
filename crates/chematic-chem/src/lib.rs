@@ -9,10 +9,12 @@ pub mod alerts;
 pub mod brics;
 pub mod cip;
 pub mod descriptors;
+pub mod hydrogen;
 pub mod qed;
 pub mod scaffold;
 pub mod standardize;
 pub mod tautomer;
+pub mod topo_descriptors;
 
 pub use cip::{assign_cip, CipAssignment};
 pub use descriptors::{
@@ -27,7 +29,16 @@ pub use descriptors::{
 
 pub use alerts::{pains_matches, pains_passes};
 pub use brics::{brics_bonds, brics_fragments};
+pub use hydrogen::{add_hydrogens, remove_hydrogens};
 pub use scaffold::{generic_murcko_scaffold, murcko_scaffold};
 pub use standardize::{largest_fragment, neutralize_charges};
 pub use tautomer::{canonical_tautomer, enumerate_tautomers};
+pub use topo_descriptors::{
+    bertz_ct,
+    chi0, chi1, chi2, chi3, chi4,
+    chi0v, chi1v, chi2v, chi3v, chi4v,
+    kappa1, kappa2, kappa3,
+    labute_asa,
+    wiener_index,
+};
 pub use qed::qed;
