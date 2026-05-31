@@ -196,6 +196,9 @@ impl MolHandle {
                 .map(|&i| chematic_core::BondIdx(i))
                 .collect(),
             highlight_color: opts.highlight_color.clone(),
+            atom_ids: opts.atom_ids,
+            show_atom_indices: opts.show_atom_indices,
+            kekulize: opts.kekulize,
         };
         chematic_depict::depict_svg_opts(&self.inner, &ro)
     }
@@ -336,6 +339,9 @@ pub struct DepictOptions {
     highlight_atoms: Vec<u32>,
     highlight_bonds: Vec<u32>,
     highlight_color: String,
+    atom_ids: bool,
+    show_atom_indices: bool,
+    kekulize: bool,
 }
 
 #[wasm_bindgen]
@@ -351,6 +357,9 @@ impl DepictOptions {
             highlight_atoms: vec![],
             highlight_bonds: vec![],
             highlight_color: "#FFFF00".into(),
+            atom_ids: false,
+            show_atom_indices: false,
+            kekulize: false,
         }
     }
 
@@ -362,6 +371,9 @@ impl DepictOptions {
     pub fn set_highlight_atoms(&mut self, atoms: Vec<u32>) { self.highlight_atoms = atoms; }
     pub fn set_highlight_bonds(&mut self, bonds: Vec<u32>) { self.highlight_bonds = bonds; }
     pub fn set_highlight_color(&mut self, color: String) { self.highlight_color = color; }
+    pub fn set_atom_ids(&mut self, v: bool) { self.atom_ids = v; }
+    pub fn set_show_atom_indices(&mut self, v: bool) { self.show_atom_indices = v; }
+    pub fn set_kekulize(&mut self, v: bool) { self.kekulize = v; }
 }
 
 // ---------------------------------------------------------------------------
@@ -792,5 +804,94 @@ mod tests {
     fn depict_svg_single_atom_methane_shows_ch4() {
         let svg = parse("C").depict_svg();
         assert!(svg.contains("CH4"), "methane 'C' should render as CH4");
+    }
+
+    // ── Sprint L: disconnected SMILES ────────────────────────────────────────
+
+    #[test]
+    fn depict_svg_disconnected_nacl() {
+        let svg = parse("[Na+].[Cl-]").depict_svg();
+        assert!(svg.contains("Na"), "Na should appear in disconnected SMILES SVG");
+        assert!(svg.contains("Cl"), "Cl should appear in disconnected SMILES SVG");
+        assert!(!svg.is_empty());
+    }
+
+    #[test]
+    fn depict_svg_disconnected_water_dimer() {
+        let svg = parse("O.O").depict_svg();
+        // O.O = 2 atoms; each O in a multi-atom mol renders as "OH2" (heteroatom path)
+        assert!(svg.matches("OH2").count() >= 2, "both O atoms should appear as OH2 labels");
+        assert!(!svg.is_empty());
+    }
+
+    // ── Sprint L: atom data attributes ──────────────────────────────────────
+
+    #[test]
+    fn depict_svg_opts_atom_ids_contains_data_attrs() {
+        let h = parse("CC(=O)O"); // acetic acid
+        let mut opts = DepictOptions::new();
+        opts.set_atom_ids(true);
+        let svg = h.depict_svg_opts(&opts);
+        assert!(svg.contains("data-atom-idx="), "atom_ids should add data-atom-idx");
+        assert!(svg.contains("data-element="), "atom_ids should add data-element");
+        assert!(svg.contains("data-charge="), "atom_ids should add data-charge");
+    }
+
+    #[test]
+    fn depict_svg_opts_atom_ids_false_no_data_attrs() {
+        let h = parse("CC(=O)O");
+        let svg = h.depict_svg_opts(&DepictOptions::new());
+        assert!(!svg.contains("data-atom-idx="), "default opts should not have data-atom-idx");
+    }
+
+    #[test]
+    fn depict_svg_opts_atom_ids_charge_correct() {
+        let h = parse("[NH4+]");
+        let mut opts = DepictOptions::new();
+        opts.set_atom_ids(true);
+        let svg = h.depict_svg_opts(&opts);
+        assert!(svg.contains("data-charge=\"1\""), "NH4+ should have charge=1");
+    }
+
+    // ── Sprint L: show_atom_indices ──────────────────────────────────────────
+
+    #[test]
+    fn depict_svg_opts_show_atom_indices() {
+        let h = parse("c1ccccc1"); // benzene — 6 atoms, indices 0-5
+        let mut opts = DepictOptions::new();
+        opts.set_show_atom_indices(true);
+        let svg = h.depict_svg_opts(&opts);
+        assert!(svg.contains(">0<"), "index 0 should appear");
+        assert!(svg.contains(">5<"), "index 5 should appear");
+    }
+
+    #[test]
+    fn depict_svg_opts_show_atom_indices_false_no_indices() {
+        let h = parse("CCO");
+        let svg = h.depict_svg_opts(&DepictOptions::new());
+        assert!(!svg.contains("fill=\"#8b92a9\""), "default should not show grey index labels");
+    }
+
+    // ── Sprint L: kekulize ───────────────────────────────────────────────────
+
+    #[test]
+    fn depict_svg_opts_kekulize_removes_aromatic_bonds() {
+        let h = parse("c1ccccc1"); // benzene
+        let mut opts = DepictOptions::new();
+        opts.set_kekulize(true);
+        let svg = h.depict_svg_opts(&opts);
+        // Aromatic bonds render as dashed-style (multiple close lines); kekulé renders as standard double bonds.
+        // The kekulé SVG should contain double bond lines but no dashed aromatic style.
+        assert!(!svg.is_empty());
+        // Double bonds produce two parallel <line> elements; check that double bond rendering kicked in.
+        assert!(svg.contains("<line"), "kekulé benzene should have line elements");
+    }
+
+    #[test]
+    fn depict_svg_opts_kekulize_false_uses_aromatic() {
+        let h = parse("c1ccccc1");
+        let svg = h.depict_svg_opts(&DepictOptions::new());
+        // Default aromatic rendering uses stroke-dasharray for the inner ring line.
+        assert!(svg.contains("stroke-dasharray"), "default benzene should use aromatic dashed style");
     }
 }

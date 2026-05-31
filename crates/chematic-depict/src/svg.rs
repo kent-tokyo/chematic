@@ -4,7 +4,7 @@
 //! into a self-contained SVG string suitable for embedding in HTML or saving
 //! as a `.svg` file.
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use chematic_core::{apply_kekule, kekulize, AtomIdx, BondIdx, BondOrder, Molecule};
 
 use crate::layout::{Layout, Point, BOND_LEN};
 
@@ -43,6 +43,17 @@ pub struct RenderOptions {
     pub highlight_bonds: std::collections::HashSet<BondIdx>,
     /// Highlight color (CSS hex, default `"#FFFF00"`).
     pub highlight_color: String,
+    /// Attach `data-atom-idx`, `data-element`, `data-charge` attributes to
+    /// atom label `<text>` elements, enabling JS hover/click tooltips.
+    /// Default: `false`.
+    pub atom_ids: bool,
+    /// Overlay atom index numbers (0-based) as small grey text near each atom.
+    /// Default: `false`.
+    pub show_atom_indices: bool,
+    /// Render aromatic bonds as Kekulé (alternating single/double) instead of
+    /// the default dashed aromatic style.
+    /// Default: `false`.
+    pub kekulize: bool,
 }
 
 impl Default for RenderOptions {
@@ -56,6 +67,9 @@ impl Default for RenderOptions {
             highlight_atoms: std::collections::HashSet::new(),
             highlight_bonds: std::collections::HashSet::new(),
             highlight_color: "#FFFF00".into(),
+            atom_ids: false,
+            show_atom_indices: false,
+            kekulize: false,
         }
     }
 }
@@ -68,6 +82,8 @@ struct DrawCtx<'a> {
     bond_color: &'a str,
     label_rect_fill: Option<&'a str>, // None = skip background rect
     dark: bool,
+    atom_ids: bool,
+    show_atom_indices: bool,
 }
 
 impl<'a> DrawCtx<'a> {
@@ -78,7 +94,7 @@ impl<'a> DrawCtx<'a> {
         } else {
             Some(opts.background.as_str())
         };
-        DrawCtx { bond_color, label_rect_fill, dark: opts.dark }
+        DrawCtx { bond_color, label_rect_fill, dark: opts.dark, atom_ids: opts.atom_ids, show_atom_indices: opts.show_atom_indices }
     }
 
     fn text_color(&self, atomic_number: u8) -> &str {
@@ -98,7 +114,7 @@ impl<'a> DrawCtx<'a> {
 ///
 /// Used by the grid renderer to compose multiple molecules into one SVG.
 pub(crate) fn render_mol_body(mol: &Molecule, layout: &Layout) -> String {
-    let ctx = DrawCtx { bond_color: "black", label_rect_fill: Some("white"), dark: false };
+    let ctx = DrawCtx { bond_color: "black", label_rect_fill: Some("white"), dark: false, atom_ids: false, show_atom_indices: false };
     let mut body = String::new();
     for (_, bond) in mol.bonds() {
         let p1 = layout.get(bond.atom1);
@@ -134,6 +150,18 @@ pub fn render_svg_highlighted(
 
 /// Render `mol` with full control over style via [`RenderOptions`].
 pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) -> String {
+    let kekule_mol;
+    let mol = if opts.kekulize {
+        if let Ok(kr) = kekulize(mol) {
+            kekule_mol = apply_kekule(mol, &kr);
+            &kekule_mol
+        } else {
+            mol
+        }
+    } else {
+        mol
+    };
+
     let ctx = DrawCtx::from_opts(opts);
     let mut svg = String::new();
 
@@ -208,35 +236,63 @@ fn write_svg_header_opts(layout: &Layout, opts: &RenderOptions, svg: &mut String
 // ---------------------------------------------------------------------------
 
 fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &mut String) {
-    for (idx, _atom) in mol.atoms() {
+    for (idx, atom) in mol.atoms() {
         let label = atom_label(mol, idx);
-        if label.is_empty() {
-            continue;
-        }
         let p = layout.get(idx);
 
-        if let Some(fill) = ctx.label_rect_fill {
-            svg.push_str(&format!(
-                "  <rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"{}\"/>\n",
-                p.x - LABEL_HALF_W,
-                p.y - LABEL_HALF_H,
-                LABEL_HALF_W * 2.0,
-                LABEL_HALF_H * 2.0,
-                fill,
-            ));
+        if !label.is_empty() {
+            if let Some(fill) = ctx.label_rect_fill {
+                svg.push_str(&format!(
+                    "  <rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"{}\"/>\n",
+                    p.x - LABEL_HALF_W,
+                    p.y - LABEL_HALF_H,
+                    LABEL_HALF_W * 2.0,
+                    LABEL_HALF_H * 2.0,
+                    fill,
+                ));
+            }
+
+            if ctx.atom_ids {
+                svg.push_str(&format!(
+                    "  <text x=\"{:.2}\" y=\"{:.2}\" \
+                     font-family=\"sans-serif\" font-size=\"{}\" \
+                     text-anchor=\"middle\" dominant-baseline=\"central\" \
+                     fill=\"{}\" \
+                     data-atom-idx=\"{}\" data-element=\"{}\" data-charge=\"{}\">{}</text>\n",
+                    p.x, p.y,
+                    FONT_SIZE as u32,
+                    ctx.text_color(atom.element.atomic_number()),
+                    idx.0,
+                    atom.element.symbol(),
+                    atom.charge,
+                    escape_xml(&label)
+                ));
+            } else {
+                svg.push_str(&format!(
+                    "  <text x=\"{:.2}\" y=\"{:.2}\" \
+                     font-family=\"sans-serif\" font-size=\"{}\" \
+                     text-anchor=\"middle\" dominant-baseline=\"central\" \
+                     fill=\"{}\">{}</text>\n",
+                    p.x, p.y,
+                    FONT_SIZE as u32,
+                    ctx.text_color(atom.element.atomic_number()),
+                    escape_xml(&label)
+                ));
+            }
         }
 
-        svg.push_str(&format!(
-            "  <text x=\"{:.2}\" y=\"{:.2}\" \
-             font-family=\"sans-serif\" font-size=\"{}\" \
-             text-anchor=\"middle\" dominant-baseline=\"central\" \
-             fill=\"{}\">{}</text>\n",
-            p.x,
-            p.y,
-            FONT_SIZE as u32,
-            ctx.text_color(mol.atom(idx).element.atomic_number()),
-            escape_xml(&label)
-        ));
+        // Atom index overlay (all atoms, including unlabelled carbons).
+        if ctx.show_atom_indices {
+            svg.push_str(&format!(
+                "  <text x=\"{:.2}\" y=\"{:.2}\" \
+                 font-family=\"sans-serif\" font-size=\"8\" \
+                 text-anchor=\"start\" dominant-baseline=\"auto\" \
+                 fill=\"#8b92a9\">{}</text>\n",
+                p.x + LABEL_HALF_W,
+                p.y - LABEL_HALF_H,
+                idx.0
+            ));
+        }
     }
 }
 
