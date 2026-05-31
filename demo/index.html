@@ -1254,24 +1254,35 @@ function init3dViewer() {
   const ph = document.getElementById('viewer-placeholder');
   const phText = document.getElementById('viewer-placeholder-text');
   phText.textContent = t('3d.generating');
-  // Show spinner
   const spin = document.createElement('div');
   spin.className = 'spinner';
   ph.prepend(spin);
 
-  // Load 3Dmol.js lazily
+  if (!generate3dPdb) {
+    phText.textContent = 'WASM build missing generate_3d_pdb — please redeploy';
+    spin.remove();
+    return;
+  }
+
   const script = document.createElement('script');
   script.src = 'https://3dmol.org/build/3Dmol-min.js';
   script.onload = () => {
-    const el = document.getElementById('viewer-3d');
-    viewer3d = $3Dmol.createViewer(el, {
-      backgroundColor: '#080a0f',
+    // Use rAF so the tab panel is fully laid out before measuring dimensions
+    requestAnimationFrame(() => {
+      const el = document.getElementById('viewer-3d');
+      const w = el.offsetWidth  || 800;
+      const h = el.offsetHeight || 480;
+      viewer3d = $3Dmol.createViewer(el, {
+        backgroundColor: '#080a0f',
+        width:  w,
+        height: h,
+      });
+      ph.style.display = 'none';
+      if (lastMol) render3d(lastMol);
     });
-    ph.style.display = 'none';
-    if (lastMol) render3d(lastMol);
   };
   script.onerror = () => {
-    phText.textContent = '3Dmol.js failed to load (offline?)';
+    phText.textContent = '3Dmol.js failed to load. Check network connection.';
     spin.remove();
   };
   document.head.appendChild(script);
@@ -1280,35 +1291,39 @@ function init3dViewer() {
 function render3d(mol) {
   viewer3dMolDirty = false;
   if (!viewer3d || !generate3dPdb) return;
+  clearError('error-3d');
   try {
     const pdb = generate3dPdb(mol);
     viewer3d.clear();
     viewer3d.addModel(pdb, 'pdb');
-    apply3dStyle();
+    applyStyleOnly();
     viewer3d.zoomTo();
     viewer3d.render();
   } catch (e) {
-    showError('error-3d', String(e));
+    showError('error-3d', '3D render error: ' + String(e));
+  }
+}
+
+// Apply style without calling render (render3d calls render at the end)
+function applyStyleOnly() {
+  if (!viewer3d) return;
+  if (current3dStyle === 'ball') {
+    viewer3d.setStyle({}, {
+      stick:  { colorscheme: 'Jmol', radius: 0.12 },
+      sphere: { colorscheme: 'Jmol', scale: 0.3 },
+    });
+  } else if (current3dStyle === 'surface') {
+    viewer3d.setStyle({}, { stick: { colorscheme: 'Jmol', radius: 0.1 } });
+    viewer3d.addSurface($3Dmol.SurfaceType.VDW, { opacity: 0.7, colorscheme: 'Jmol' });
+  } else {
+    viewer3d.setStyle({}, { stick: { colorscheme: 'Jmol', radius: 0.18 } });
   }
 }
 
 function apply3dStyle() {
   if (!viewer3d) return;
-  viewer3d.setStyle({}, {});
-  if (current3dStyle === 'ball') {
-    viewer3d.setStyle({}, {
-      stick: { colorscheme: 'Jmol', radius: 0.12 },
-      sphere: { colorscheme: 'Jmol', scale: 0.3 },
-    });
-  } else if (current3dStyle === 'surface') {
-    viewer3d.setStyle({}, { stick: { colorscheme: 'Jmol', radius: 0.1 } });
-    viewer3d.addSurface($3Dmol.SurfaceType.VDW, {
-      opacity: 0.7, colorscheme: 'Jmol',
-    });
-  } else {
-    viewer3d.setStyle({}, { stick: { colorscheme: 'Jmol', radius: 0.18 } });
-  }
-  viewer3d.render();
+  // Re-render from scratch when style button is clicked
+  if (lastMol) render3d(lastMol);
 }
 
 // ============================================================
