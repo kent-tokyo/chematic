@@ -486,6 +486,16 @@ pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsVal
     Ok(format!("[{}]", parts.join(",")))
 }
 
+/// Generate 3D coordinates for the molecule and return a PDB string.
+///
+/// Coordinates are generated using distance-geometry placement with ring templates.
+/// Returns heavy-atom PDB (HETATM records, no explicit H).
+#[wasm_bindgen]
+pub fn generate_3d_pdb(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords(&mol.inner);
+    chematic_3d::write_pdb(&mol.inner, &coords)
+}
+
 /// Compute the ECFP4 fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
 #[wasm_bindgen]
 pub fn ecfp4_bitvec(mol: &MolHandle) -> Vec<u8> {
@@ -913,6 +923,24 @@ mod tests {
         let result = smarts_match_atoms("c1ccccc1", &mol);
         assert!(result.is_ok(), "valid SMARTS on non-matching mol should not error");
         assert_eq!(result.unwrap(), "[]", "no match should return empty JSON array");
+    }
+
+    // ── Sprint N: generate_3d_pdb ────────────────────────────────────────────
+
+    #[test]
+    fn generate_3d_pdb_benzene_has_6_hetatm_lines() {
+        let mol = parse("c1ccccc1");
+        let pdb = generate_3d_pdb(&mol);
+        let hetatm_count = pdb.lines().filter(|l| l.starts_with("HETATM")).count();
+        assert_eq!(hetatm_count, 6, "benzene should produce 6 HETATM lines");
+    }
+
+    #[test]
+    fn generate_3d_pdb_aspirin_no_nan() {
+        let mol = parse("CC(=O)Oc1ccccc1C(=O)O");
+        let pdb = generate_3d_pdb(&mol);
+        assert!(!pdb.contains("nan") && !pdb.contains("inf"), "PDB must have no NaN/Inf coords");
+        assert!(pdb.contains("HETATM"), "must produce HETATM records");
     }
 
     // Note: smarts_match_atoms error-path test (invalid SMARTS) is omitted here

@@ -101,12 +101,45 @@ header {
   color: var(--accent);
 }
 
+/* ── Tab bar ─────────────────────────────────────────────────────────── */
+.tab-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  position: sticky; top: 61px; z-index: 90;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-bar-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; gap: 0;
+}
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .88rem; font-weight: 600;
+  padding: .75rem 1.2rem;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Main layout ─────────────────────────────────────────────────────── */
 main {
   max-width: 1100px; margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
-  display: flex; flex-direction: column; gap: 2.5rem;
 }
+
+.tab-panel { display: none; flex-direction: column; gap: 2.5rem; }
+.tab-panel.active { display: flex; }
 
 section {
   background: var(--surface);
@@ -225,7 +258,7 @@ section h2::before {
 .svg-area:hover .svg-zoom-reset { opacity: 1; }
 .svg-zoom-reset:hover { background: var(--accent); color: #fff; }
 
-/* ── SVG left controls (atom index toggle) ───────────────────────────── */
+/* ── SVG left controls ───────────────────────────────────────────────── */
 .svg-controls-left {
   position: absolute; top: .5rem; left: .5rem; z-index: 1;
   display: flex; gap: .3rem;
@@ -418,6 +451,37 @@ tbody td {
 .rxn-svg-wrap svg { max-width: 100%; height: auto; display: block; }
 .rxn-placeholder { color: var(--muted); font-size: .88rem; text-align: center; }
 
+/* ── 3D Viewer ───────────────────────────────────────────────────────── */
+#viewer-3d-container {
+  position: relative;
+  background: #080a0f;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 480px;
+  margin-bottom: 1rem;
+}
+#viewer-3d {
+  width: 100%; height: 100%;
+}
+.viewer-placeholder {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: .75rem;
+  color: var(--muted); font-size: .9rem;
+}
+.viewer-placeholder .spinner { width: 32px; height: 32px; border-width: 3px; }
+.viewer-controls {
+  display: flex; gap: .5rem; flex-wrap: wrap; align-items: center;
+  margin-bottom: .75rem;
+}
+.view-hint {
+  color: var(--muted); font-size: .78rem;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .25rem .6rem;
+}
+
 /* ── Drug Gallery ────────────────────────────────────────────────────── */
 .gallery-category { margin-bottom: 1.25rem; }
 .gallery-cat-title {
@@ -461,7 +525,7 @@ footer {
 
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  main { padding: 1rem .75rem 3rem; gap: 1.5rem; }
+  main { padding: 1rem .75rem 3rem; }
   header { padding: .75rem 1rem; }
   .header-inner { gap: .5rem; }
   .tagline { display: none; }
@@ -471,6 +535,7 @@ footer {
   .rules-grid { grid-template-columns: 1fr 1fr; }
   tbody td { padding: .4rem .6rem; }
   .rxn-grid { grid-template-columns: 1fr; }
+  #viewer-3d-container { height: 320px; }
 }
 @media (max-width: 380px) {
   .rules-grid { grid-template-columns: 1fr; }
@@ -489,7 +554,7 @@ footer {
 <header>
   <div class="header-inner">
     <span class="logo">chematic</span>
-    <span class="version">v0.1.11</span>
+    <span class="version">v0.1.12</span>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en">EN</button>
@@ -499,162 +564,204 @@ footer {
   </div>
 </header>
 
+<!-- Tab bar -->
+<nav class="tab-bar" role="tablist">
+  <div class="tab-bar-inner">
+    <button class="tab-btn active" data-tab="tab-2d"     id="tb-2d"      role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-sim"    id="tb-sim"     role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-rxn"    id="tb-rxn"     role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-3d"     id="tb-3d"      role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-gallery" id="tb-gallery" role="tab"></button>
+  </div>
+</nav>
+
 <main>
 
-  <!-- Section 1: Descriptor Calculator -->
-  <section id="section-descriptor">
-    <h2 id="h-desc-title"></h2>
-    <div class="input-row">
-      <input id="smiles-input" class="smiles-input" type="text"
-             spellcheck="false" autocomplete="off">
-      <button id="btn-calc" class="btn"></button>
-    </div>
-    <div class="preset-row">
-      <span class="preset-label" id="presets-label"></span>
-      <button class="btn-outline preset-btn" data-smiles="CC(=O)Oc1ccccc1C(=O)O"       id="p-aspirin"></button>
-      <button class="btn-outline preset-btn" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C"  id="p-caffeine"></button>
-      <button class="btn-outline preset-btn" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O"  id="p-ibuprofen"></button>
-      <button class="btn-outline preset-btn" data-smiles="CC1=C2C(C(=O)C3(C(CC4C(C3C(C(=C2OC1=O)C)(C)C)OC(=O)C5=CC=CC=C5)OC(=O)C4)O)(C)C" id="p-taxol"></button>
-      <button class="btn-outline preset-btn" data-smiles="OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O" id="p-glucose"></button>
-    </div>
-    <div id="error-desc" class="error-banner hidden"></div>
-    <div class="svg-area" id="svg-area">
-      <div class="svg-controls-left">
-        <button class="btn-svg-ctrl" id="toggle-indices" title="Toggle atom indices">0..n</button>
-      </div>
-      <button class="svg-zoom-reset" id="svg-zoom-reset" title="Reset zoom">1:1</button>
-      <span class="svg-placeholder" id="svg-placeholder"></span>
-    </div>
-    <!-- SMARTS substructure filter -->
-    <div class="smarts-row">
-      <span class="smarts-row-label" id="smarts-label"></span>
-      <input id="smarts-input" class="smiles-input" type="text" style="flex:1;min-width:140px"
-             placeholder="c1ccccc1" spellcheck="false" autocomplete="off">
-      <button id="btn-smarts-hi" class="btn" style="background:var(--pass)"></button>
-      <button id="btn-smarts-clear" class="btn-outline"></button>
-      <span class="smarts-badge" id="smarts-match-badge"></span>
-      <span class="smarts-nomatch" id="smarts-nomatch-msg"></span>
-    </div>
-    <div class="radar-wrap" id="radar-wrap"></div>
-    <div class="table-wrap">
-      <table id="desc-table">
-        <thead>
-          <tr>
-            <th id="th-prop"></th>
-            <th id="th-val"></th>
-          </tr>
-        </thead>
-        <tbody id="desc-tbody"></tbody>
-      </table>
-    </div>
-  </section>
+  <!-- Tab: 2D Viewer + Properties -->
+  <div class="tab-panel active" id="tab-2d" role="tabpanel">
 
-  <!-- Section 2: Drug-likeness Rules -->
-  <section id="section-rules">
-    <h2 id="h-rules-title"></h2>
-    <div class="rules-grid" id="rules-grid"></div>
-  </section>
+    <!-- Descriptor Calculator -->
+    <section id="section-descriptor">
+      <h2 id="h-desc-title"></h2>
+      <div class="input-row">
+        <input id="smiles-input" class="smiles-input" type="text"
+               spellcheck="false" autocomplete="off">
+        <button id="btn-calc" class="btn"></button>
+      </div>
+      <div class="preset-row">
+        <span class="preset-label" id="presets-label"></span>
+        <button class="btn-outline preset-btn" data-smiles="CC(=O)Oc1ccccc1C(=O)O"       id="p-aspirin"></button>
+        <button class="btn-outline preset-btn" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C"  id="p-caffeine"></button>
+        <button class="btn-outline preset-btn" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O"  id="p-ibuprofen"></button>
+        <button class="btn-outline preset-btn" data-smiles="CC1=C2C(C(=O)C3(C(CC4C(C3C(C(=C2OC1=O)C)(C)C)OC(=O)C5=CC=CC=C5)OC(=O)C4)O)(C)C" id="p-taxol"></button>
+        <button class="btn-outline preset-btn" data-smiles="OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O" id="p-glucose"></button>
+      </div>
+      <div id="error-desc" class="error-banner hidden"></div>
+      <div class="svg-area" id="svg-area">
+        <div class="svg-controls-left">
+          <button class="btn-svg-ctrl" id="toggle-indices" title="Toggle atom indices">0..n</button>
+        </div>
+        <button class="svg-zoom-reset" id="svg-zoom-reset" title="Reset zoom">1:1</button>
+        <span class="svg-placeholder" id="svg-placeholder"></span>
+      </div>
+      <!-- SMARTS substructure filter -->
+      <div class="smarts-row">
+        <span class="smarts-row-label" id="smarts-label"></span>
+        <input id="smarts-input" class="smiles-input" type="text" style="flex:1;min-width:140px"
+               placeholder="c1ccccc1" spellcheck="false" autocomplete="off">
+        <button id="btn-smarts-hi" class="btn" style="background:var(--pass)"></button>
+        <button id="btn-smarts-clear" class="btn-outline"></button>
+        <span class="smarts-badge" id="smarts-match-badge"></span>
+        <span class="smarts-nomatch" id="smarts-nomatch-msg"></span>
+      </div>
+      <div class="radar-wrap" id="radar-wrap"></div>
+      <div class="table-wrap">
+        <table id="desc-table">
+          <thead>
+            <tr>
+              <th id="th-prop"></th>
+              <th id="th-val"></th>
+            </tr>
+          </thead>
+          <tbody id="desc-tbody"></tbody>
+        </table>
+      </div>
+    </section>
 
-  <!-- Section 3: Similarity Comparison -->
-  <section id="section-similarity">
-    <h2 id="h-sim-title"></h2>
-    <div class="sim-inputs">
-      <div>
-        <div class="sim-label" id="sim-label-a"></div>
-        <div class="input-row" style="margin-bottom:.5rem">
-          <input id="sim-a" class="smiles-input" type="text"
-                 spellcheck="false" autocomplete="off">
-        </div>
-        <div class="preset-row">
-          <button class="btn-outline preset-sim" data-target="a" data-smiles="CC(=O)Oc1ccccc1C(=O)O"      id="sa-aspirin"></button>
-          <button class="btn-outline preset-sim" data-target="a" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C" id="sa-caffeine"></button>
-          <button class="btn-outline preset-sim" data-target="a" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O" id="sa-ibuprofen"></button>
-        </div>
-      </div>
-      <div>
-        <div class="sim-label" id="sim-label-b"></div>
-        <div class="input-row" style="margin-bottom:.5rem">
-          <input id="sim-b" class="smiles-input" type="text"
-                 spellcheck="false" autocomplete="off">
-        </div>
-        <div class="preset-row">
-          <button class="btn-outline preset-sim" data-target="b" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C"              id="sb-caffeine"></button>
-          <button class="btn-outline preset-sim" data-target="b" data-smiles="OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O" id="sb-glucose"></button>
-          <button class="btn-outline preset-sim" data-target="b" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O"              id="sb-ibuprofen"></button>
-        </div>
-      </div>
-    </div>
-    <div style="margin-bottom:1rem">
-      <button id="btn-sim" class="btn"></button>
-    </div>
-    <div id="error-sim" class="error-banner hidden"></div>
-    <div class="sim-svgs" id="sim-svgs" style="display:none">
-      <div>
-        <div class="sim-svg-label" id="sim-svg-label-a"></div>
-        <div class="sim-svg-box" id="sim-svg-a"></div>
-      </div>
-      <div>
-        <div class="sim-svg-label" id="sim-svg-label-b"></div>
-        <div class="sim-svg-box" id="sim-svg-b"></div>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th id="th-sim-method"></th>
-            <th id="th-sim-desc"></th>
-            <th id="th-sim-tanimoto"></th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="sim-tbody"></tbody>
-      </table>
-    </div>
-  </section>
+    <!-- Drug-likeness Rules -->
+    <section id="section-rules">
+      <h2 id="h-rules-title"></h2>
+      <div class="rules-grid" id="rules-grid"></div>
+    </section>
 
-  <!-- Section 4: Reaction Scheme -->
-  <section id="section-reaction">
-    <h2 id="h-rxn-title"></h2>
-    <div class="rxn-grid">
-      <div>
-        <div class="rxn-label" id="rxn-label-smirks"></div>
-        <div class="input-row" style="margin-bottom:.35rem">
-          <input id="rxn-smirks" class="smiles-input" type="text" spellcheck="false" autocomplete="off">
-        </div>
-      </div>
-      <div>
-        <div class="rxn-label" id="rxn-label-reactants"></div>
-        <div class="input-row" style="margin-bottom:.35rem">
-          <input id="rxn-reactants" class="smiles-input" type="text" spellcheck="false" autocomplete="off">
-        </div>
-      </div>
-    </div>
-    <div class="preset-row">
-      <span class="preset-label" id="rxn-presets-label"></span>
-      <button class="btn-outline preset-rxn"
-              data-smirks="[C:1](=O)[OH:2].[O:3][C:4]>>[C:1](=O)[O:3][C:4]"
-              data-reactants="CC(=O)O|CCO"
-              id="rxn-esterify"></button>
-      <button class="btn-outline preset-rxn"
-              data-smirks="[C:1]Br.[N:2]>>[C:1][N:2]"
-              data-reactants="CCBr|CN"
-              id="rxn-aminoalkyl"></button>
-    </div>
-    <div style="margin-bottom:.75rem">
-      <button id="btn-rxn" class="btn"></button>
-    </div>
-    <div id="error-rxn" class="error-banner hidden"></div>
-    <div class="rxn-svg-wrap" id="rxn-svg-wrap">
-      <span class="rxn-placeholder" id="rxn-placeholder"></span>
-    </div>
-  </section>
+  </div><!-- /tab-2d -->
 
-  <!-- Section 5: Drug Gallery -->
-  <section id="section-gallery">
-    <h2 id="h-gallery-title"></h2>
-    <div id="gallery-content"></div>
-  </section>
+  <!-- Tab: Similarity -->
+  <div class="tab-panel" id="tab-sim" role="tabpanel">
+    <section id="section-similarity">
+      <h2 id="h-sim-title"></h2>
+      <div class="sim-inputs">
+        <div>
+          <div class="sim-label" id="sim-label-a"></div>
+          <div class="input-row" style="margin-bottom:.5rem">
+            <input id="sim-a" class="smiles-input" type="text"
+                   spellcheck="false" autocomplete="off">
+          </div>
+          <div class="preset-row">
+            <button class="btn-outline preset-sim" data-target="a" data-smiles="CC(=O)Oc1ccccc1C(=O)O"      id="sa-aspirin"></button>
+            <button class="btn-outline preset-sim" data-target="a" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C" id="sa-caffeine"></button>
+            <button class="btn-outline preset-sim" data-target="a" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O" id="sa-ibuprofen"></button>
+          </div>
+        </div>
+        <div>
+          <div class="sim-label" id="sim-label-b"></div>
+          <div class="input-row" style="margin-bottom:.5rem">
+            <input id="sim-b" class="smiles-input" type="text"
+                   spellcheck="false" autocomplete="off">
+          </div>
+          <div class="preset-row">
+            <button class="btn-outline preset-sim" data-target="b" data-smiles="Cn1cnc2c1c(=O)n(c(=O)n2C)C"              id="sb-caffeine"></button>
+            <button class="btn-outline preset-sim" data-target="b" data-smiles="OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O" id="sb-glucose"></button>
+            <button class="btn-outline preset-sim" data-target="b" data-smiles="CC(C)Cc1ccc(cc1)C(C)C(=O)O"              id="sb-ibuprofen"></button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <button id="btn-sim" class="btn"></button>
+      </div>
+      <div id="error-sim" class="error-banner hidden"></div>
+      <div class="sim-svgs" id="sim-svgs" style="display:none">
+        <div>
+          <div class="sim-svg-label" id="sim-svg-label-a"></div>
+          <div class="sim-svg-box" id="sim-svg-a"></div>
+        </div>
+        <div>
+          <div class="sim-svg-label" id="sim-svg-label-b"></div>
+          <div class="sim-svg-box" id="sim-svg-b"></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th id="th-sim-method"></th>
+              <th id="th-sim-desc"></th>
+              <th id="th-sim-tanimoto"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="sim-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div><!-- /tab-sim -->
+
+  <!-- Tab: Reaction -->
+  <div class="tab-panel" id="tab-rxn" role="tabpanel">
+    <section id="section-reaction">
+      <h2 id="h-rxn-title"></h2>
+      <div class="rxn-grid">
+        <div>
+          <div class="rxn-label" id="rxn-label-smirks"></div>
+          <div class="input-row" style="margin-bottom:.35rem">
+            <input id="rxn-smirks" class="smiles-input" type="text" spellcheck="false" autocomplete="off">
+          </div>
+        </div>
+        <div>
+          <div class="rxn-label" id="rxn-label-reactants"></div>
+          <div class="input-row" style="margin-bottom:.35rem">
+            <input id="rxn-reactants" class="smiles-input" type="text" spellcheck="false" autocomplete="off">
+          </div>
+        </div>
+      </div>
+      <div class="preset-row">
+        <span class="preset-label" id="rxn-presets-label"></span>
+        <button class="btn-outline preset-rxn"
+                data-smirks="[C:1](=O)[OH:2].[O:3][C:4]>>[C:1](=O)[O:3][C:4]"
+                data-reactants="CC(=O)O|CCO"
+                id="rxn-esterify"></button>
+        <button class="btn-outline preset-rxn"
+                data-smirks="[C:1]Br.[N:2]>>[C:1][N:2]"
+                data-reactants="CCBr|CN"
+                id="rxn-aminoalkyl"></button>
+      </div>
+      <div style="margin-bottom:.75rem">
+        <button id="btn-rxn" class="btn"></button>
+      </div>
+      <div id="error-rxn" class="error-banner hidden"></div>
+      <div class="rxn-svg-wrap" id="rxn-svg-wrap">
+        <span class="rxn-placeholder" id="rxn-placeholder"></span>
+      </div>
+    </section>
+  </div><!-- /tab-rxn -->
+
+  <!-- Tab: 3D Viewer -->
+  <div class="tab-panel" id="tab-3d" role="tabpanel">
+    <section>
+      <h2 id="h-3d-title"></h2>
+      <div class="viewer-controls">
+        <button id="btn-3d-stick"   class="btn-outline active" data-style="stick"></button>
+        <button id="btn-3d-ball"    class="btn-outline" data-style="ball"></button>
+        <button id="btn-3d-surface" class="btn-outline" data-style="surface"></button>
+        <span class="view-hint" id="view-hint-3d"></span>
+      </div>
+      <div id="viewer-3d-container">
+        <div id="viewer-3d"></div>
+        <div class="viewer-placeholder" id="viewer-placeholder">
+          <span id="viewer-placeholder-text"></span>
+        </div>
+      </div>
+      <div id="error-3d" class="error-banner hidden"></div>
+    </section>
+  </div><!-- /tab-3d -->
+
+  <!-- Tab: Gallery -->
+  <div class="tab-panel" id="tab-gallery" role="tabpanel">
+    <section id="section-gallery">
+      <h2 id="h-gallery-title"></h2>
+      <div id="gallery-content"></div>
+    </section>
+  </div><!-- /tab-gallery -->
 
 </main>
 
@@ -764,6 +871,18 @@ const T = {
     'rxn.esterify':     'Esterification',
     'rxn.aminoalkyl':   'N-Alkylation',
     'rxn.placeholder':  'Products will appear here',
+    'tab.2d':           '2D Viewer',
+    'tab.sim':          'Similarity',
+    'tab.rxn':          'Reaction',
+    'tab.3d':           '3D Viewer',
+    'tab.gallery':      'Gallery',
+    '3d.title':         '3D Interactive Viewer',
+    '3d.stick':         'Stick',
+    '3d.ball':          'Ball & Stick',
+    '3d.surface':       'Surface',
+    '3d.hint':          'Drag to rotate · Scroll to zoom',
+    '3d.placeholder':   'Enter a SMILES on the 2D tab to view in 3D',
+    '3d.generating':    'Generating 3D…',
   },
   ja: {
     'app.tagline':      'ブラウザで動く純Rust化学情報処理ライブラリ',
@@ -858,6 +977,18 @@ const T = {
     'rxn.esterify':     'エステル化',
     'rxn.aminoalkyl':   'N-アルキル化',
     'rxn.placeholder':  '生成物がここに表示されます',
+    'tab.2d':           '2D 構造',
+    'tab.sim':          '類似度',
+    'tab.rxn':          '反応',
+    'tab.3d':           '3D ビューア',
+    'tab.gallery':      'ギャラリー',
+    '3d.title':         'インタラクティブ 3D ビューア',
+    '3d.stick':         'スティック',
+    '3d.ball':          'ボール＆スティック',
+    '3d.surface':       '表面',
+    '3d.hint':          'ドラッグで回転 · スクロールでズーム',
+    '3d.placeholder':   '2D タブで SMILES を入力すると 3D 表示されます',
+    '3d.generating':    '3D 生成中…',
   },
   zh: {
     'app.tagline':      '纯Rust化学信息学库，运行于浏览器',
@@ -952,13 +1083,24 @@ const T = {
     'rxn.esterify':     '酯化反应',
     'rxn.aminoalkyl':   'N-烷基化',
     'rxn.placeholder':  '产物将显示于此',
+    'tab.2d':           '2D 结构',
+    'tab.sim':          '相似度',
+    'tab.rxn':          '反应',
+    'tab.3d':           '3D 查看器',
+    'tab.gallery':      '图库',
+    '3d.title':         '3D 交互查看器',
+    '3d.stick':         '棍状',
+    '3d.ball':          '球棍',
+    '3d.surface':       '表面',
+    '3d.hint':          '拖动旋转 · 滚轮缩放',
+    '3d.placeholder':   '在 2D 标签中输入 SMILES 以查看 3D 结构',
+    '3d.generating':    '生成 3D 中…',
   },
 };
 
 let lang = 'en';
 function t(key) { return (T[lang] && T[lang][key]) || T.en[key] || key; }
 
-// Map of element id → i18n key for static text nodes
 const STATIC_IDS = {
   'tagline':            'app.tagline',
   'h-desc-title':       'desc.title',
@@ -1001,6 +1143,17 @@ const STATIC_IDS = {
   'sb-caffeine':        'preset.caffeine',
   'sb-glucose':         'preset.glucose',
   'sb-ibuprofen':       'preset.ibuprofen',
+  'tb-2d':              'tab.2d',
+  'tb-sim':             'tab.sim',
+  'tb-rxn':             'tab.rxn',
+  'tb-3d':              'tab.3d',
+  'tb-gallery':         'tab.gallery',
+  'h-3d-title':         '3d.title',
+  'btn-3d-stick':       '3d.stick',
+  'btn-3d-ball':        '3d.ball',
+  'btn-3d-surface':     '3d.surface',
+  'view-hint-3d':       '3d.hint',
+  'viewer-placeholder-text': '3d.placeholder',
 };
 
 function applyLang(newLang) {
@@ -1027,11 +1180,36 @@ function applyLang(newLang) {
 }
 
 // ============================================================
+// Tab switching
+// ============================================================
+let activeTab = 'tab-2d';
+let viewer3dInited = false;
+let viewer3dMolDirty = false;
+
+function switchTab(tabId) {
+  activeTab = tabId;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabId);
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === tabId);
+  });
+
+  if (tabId === 'tab-3d' && lastMol) {
+    if (!viewer3dInited) {
+      init3dViewer();
+    } else if (viewer3dMolDirty) {
+      render3d(lastMol);
+    }
+  }
+}
+
+// ============================================================
 // State
 // ============================================================
 let wasmReady = false;
 let parseSmilesWasm, tanimotoEcfp4, tanimotoFcfp4, tanimotoAtomPair, tanimotoTorsion, bricsFrag;
-let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms;
+let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms, generate3dPdb;
 let lastMol = null;
 let lastSimResults = null;
 let highlightedAtoms = [];
@@ -1055,11 +1233,82 @@ async function initWasm() {
     runReactants     = mod.run_reactants;
     depictSvgGrid    = mod.depict_svg_grid;
     smartsMatchAtoms = mod.smarts_match_atoms;
+    generate3dPdb    = mod.generate_3d_pdb;
     wasmReady = true;
   } catch (e) {
     document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
     throw e;
   }
+}
+
+// ============================================================
+// 3D Viewer (3Dmol.js)
+// ============================================================
+let viewer3d = null;
+let current3dStyle = 'stick';
+
+function init3dViewer() {
+  if (viewer3dInited) return;
+  viewer3dInited = true;
+
+  const ph = document.getElementById('viewer-placeholder');
+  const phText = document.getElementById('viewer-placeholder-text');
+  phText.textContent = t('3d.generating');
+  // Show spinner
+  const spin = document.createElement('div');
+  spin.className = 'spinner';
+  ph.prepend(spin);
+
+  // Load 3Dmol.js lazily
+  const script = document.createElement('script');
+  script.src = 'https://3dmol.org/build/3Dmol-min.js';
+  script.onload = () => {
+    const el = document.getElementById('viewer-3d');
+    viewer3d = $3Dmol.createViewer(el, {
+      backgroundColor: '#080a0f',
+    });
+    ph.style.display = 'none';
+    if (lastMol) render3d(lastMol);
+  };
+  script.onerror = () => {
+    phText.textContent = '3Dmol.js failed to load (offline?)';
+    spin.remove();
+  };
+  document.head.appendChild(script);
+}
+
+function render3d(mol) {
+  viewer3dMolDirty = false;
+  if (!viewer3d || !generate3dPdb) return;
+  try {
+    const pdb = generate3dPdb(mol);
+    viewer3d.clear();
+    viewer3d.addModel(pdb, 'pdb');
+    apply3dStyle();
+    viewer3d.zoomTo();
+    viewer3d.render();
+  } catch (e) {
+    showError('error-3d', String(e));
+  }
+}
+
+function apply3dStyle() {
+  if (!viewer3d) return;
+  viewer3d.setStyle({}, {});
+  if (current3dStyle === 'ball') {
+    viewer3d.setStyle({}, {
+      stick: { colorscheme: 'Jmol', radius: 0.12 },
+      sphere: { colorscheme: 'Jmol', scale: 0.3 },
+    });
+  } else if (current3dStyle === 'surface') {
+    viewer3d.setStyle({}, { stick: { colorscheme: 'Jmol', radius: 0.1 } });
+    viewer3d.addSurface($3Dmol.SurfaceType.VDW, {
+      opacity: 0.7, colorscheme: 'Jmol',
+    });
+  } else {
+    viewer3d.setStyle({}, { stick: { colorscheme: 'Jmol', radius: 0.18 } });
+  }
+  viewer3d.render();
 }
 
 // ============================================================
@@ -1093,9 +1342,6 @@ const DESC_DEFS = [
   { key: 'desc.bridge',      fn: m => String(m.num_bridgehead_atoms())             },
 ];
 
-// ============================================================
-// Rule definitions
-// ============================================================
 const RULE_DEFS = [
   { nameKey: 'rules.lipinski', criteriaKey: 'rules.lipinski_c', fn: m => m.lipinski_passes() },
   { nameKey: 'rules.veber',    criteriaKey: 'rules.veber_c',    fn: m => m.veber_passes()    },
@@ -1105,9 +1351,6 @@ const RULE_DEFS = [
   { nameKey: 'rules.pains',    criteriaKey: 'rules.pains_c',    fn: m => m.pains_passes()    },
 ];
 
-// ============================================================
-// Similarity definitions
-// ============================================================
 const SIM_DEFS = [
   { nameKey: 'sim.ecfp4',    descKey: 'sim.ecfp4_d',    fn: (a,b) => tanimotoEcfp4(a,b)    },
   { nameKey: 'sim.fcfp4',    descKey: 'sim.fcfp4_d',    fn: (a,b) => tanimotoFcfp4(a,b)    },
@@ -1115,9 +1358,6 @@ const SIM_DEFS = [
   { nameKey: 'sim.torsion',  descKey: 'sim.torsion_d',  fn: (a,b) => tanimotoTorsion(a,b)  },
 ];
 
-// ============================================================
-// Drug Gallery data
-// ============================================================
 const GALLERY = [
   { catKey: 'gallery.nsaids', drugs: [
     { name: 'Aspirin',      smiles: 'CC(=O)Oc1ccccc1C(=O)O' },
@@ -1157,7 +1397,7 @@ const GALLERY = [
 ];
 
 // ============================================================
-// Render: radar chart (pure SVG, no library)
+// Render: radar chart (pure SVG)
 // ============================================================
 function renderRadar(mol) {
   const wrap = document.getElementById('radar-wrap');
@@ -1186,7 +1426,6 @@ function renderRadar(mol) {
     return [cx + r * frac * Math.cos(a), cy + r * frac * Math.sin(a)];
   }
 
-  // Grid rings
   for (const frac of [0.25, 0.5, 0.75, 1.0]) {
     const pts = Array.from({ length: n }, (_, i) => pt(frac, i));
     const poly = document.createElementNS(NS, 'polygon');
@@ -1198,7 +1437,6 @@ function renderRadar(mol) {
     svg.appendChild(poly);
   }
 
-  // Axis spokes
   Array.from({ length: n }, (_, i) => {
     const [x, y] = pt(1, i);
     const line = document.createElementNS(NS, 'line');
@@ -1209,7 +1447,6 @@ function renderRadar(mol) {
     svg.appendChild(line);
   });
 
-  // Data polygon
   const clamped = axes.map(a => Math.min(Math.max(a.val, 0), 1.5));
   const allInRange = clamped.every(v => v <= 1.0);
   const dataPts = clamped.map((v, i) => pt(v, i));
@@ -1221,7 +1458,6 @@ function renderRadar(mol) {
   poly.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(poly);
 
-  // Dots at vertices
   dataPts.forEach(([x, y]) => {
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '3');
@@ -1229,7 +1465,6 @@ function renderRadar(mol) {
     svg.appendChild(dot);
   });
 
-  // Axis labels
   axes.forEach((axis, i) => {
     const [x, y] = pt(1.32, i);
     const text = document.createElementNS(NS, 'text');
@@ -1247,9 +1482,6 @@ function renderRadar(mol) {
   wrap.appendChild(svg);
 }
 
-// ============================================================
-// Render: descriptors (all text via textContent — no XSS risk)
-// ============================================================
 function renderDescriptors(mol) {
   const tbody = document.getElementById('desc-tbody');
   tbody.textContent = '';
@@ -1268,9 +1500,6 @@ function renderDescriptors(mol) {
   }
 }
 
-// ============================================================
-// Render: rule cards (all text via textContent)
-// ============================================================
 function renderRuleCards(mol) {
   const grid = document.getElementById('rules-grid');
   grid.textContent = '';
@@ -1309,9 +1538,6 @@ function renderRuleCards(mol) {
   }
 }
 
-// ============================================================
-// Render: similarity table (textContent for all text)
-// ============================================================
 function simColor(v) {
   if (v >= 0.7) return 'var(--pass)';
   if (v >= 0.3) return 'var(--warn)';
@@ -1361,9 +1587,6 @@ function renderSimTable(results) {
   }
 }
 
-// ============================================================
-// Render: similarity molecule SVGs (DOMParser — safe from Rust output)
-// ============================================================
 function renderSimSvgs(mA, mB) {
   function insertSvg(mol, boxEl) {
     boxEl.textContent = '';
@@ -1388,9 +1611,6 @@ function renderSimSvgs(mA, mB) {
   document.getElementById('sim-svgs').style.display = '';
 }
 
-// ============================================================
-// Render: drug gallery
-// ============================================================
 function renderGallery() {
   const container = document.getElementById('gallery-content');
   container.textContent = '';
@@ -1415,7 +1635,7 @@ function renderGallery() {
         document.querySelectorAll('.gallery-card.active').forEach(c => c.classList.remove('active'));
         card.classList.add('active');
         document.getElementById('smiles-input').value = drug.smiles;
-        document.getElementById('section-descriptor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        switchTab('tab-2d');
         calculate();
       });
       grid.appendChild(card);
@@ -1427,7 +1647,7 @@ function renderGallery() {
 }
 
 // ============================================================
-// DepictOptions helper — dark theme + transparent background + atom IDs
+// DepictOptions helper
 // ============================================================
 function makeDepictOpts() {
   const opts = new DepictOptions();
@@ -1439,7 +1659,7 @@ function makeDepictOpts() {
 }
 
 // ============================================================
-// SVG pan + zoom (wheel to zoom, drag to pan, dblclick/button to reset)
+// SVG pan + zoom
 // ============================================================
 function enableSvgPanZoom(area, svgEl) {
   let scale = 1, tx = 0, ty = 0;
@@ -1484,7 +1704,7 @@ function enableSvgPanZoom(area, svgEl) {
 }
 
 // ============================================================
-// SVG depiction (output from our own WASM library — trusted source)
+// SVG depiction
 // ============================================================
 function renderSvg(mol) {
   const area = document.getElementById('svg-area');
@@ -1519,7 +1739,7 @@ function renderSvg(mol) {
 }
 
 // ============================================================
-// Atom click — highlight on click, deselect on re-click, clear on background
+// Atom click — highlight on click, deselect on re-click
 // ============================================================
 function enableAtomClick(svgEl) {
   svgEl.addEventListener('click', e => {
@@ -1628,11 +1848,13 @@ function runReaction() {
 // ============================================================
 function showError(id, msg) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = msg;
   el.classList.remove('hidden');
 }
 function clearError(id) {
-  document.getElementById(id).classList.add('hidden');
+  const el = document.getElementById(id);
+  if (el) el.classList.add('hidden');
 }
 
 // ============================================================
@@ -1657,6 +1879,13 @@ function calculate() {
   renderRadar(mol);
   renderDescriptors(mol);
   renderRuleCards(mol);
+
+  // Mark 3D dirty — update when user switches to 3D tab
+  if (activeTab === 'tab-3d' && viewer3dInited && viewer3d) {
+    render3d(mol);
+  } else {
+    viewer3dMolDirty = true;
+  }
 }
 
 // ============================================================
@@ -1683,7 +1912,6 @@ function compare() {
 // Boot
 // ============================================================
 (async () => {
-  // Language detection: localStorage > browser > 'en'
   const saved = localStorage.getItem('chematic-lang');
   const browser = navigator.language.toLowerCase();
   const detected = saved ?? (browser.startsWith('zh') ? 'zh' : browser.startsWith('ja') ? 'ja' : 'en');
@@ -1700,18 +1928,21 @@ function compare() {
   document.getElementById('smiles-input').value = 'CC(=O)Oc1ccccc1C(=O)O';
   calculate();
 
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
   // Language switcher
   document.querySelectorAll('[data-lang]').forEach(btn => {
     btn.addEventListener('click', () => applyLang(btn.dataset.lang));
   });
 
-  // Calculate (button + Enter)
+  // Calculate (button + Enter + debounced input)
   document.getElementById('btn-calc').addEventListener('click', calculate);
   document.getElementById('smiles-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') calculate();
   });
-
-  // Real-time rendering: debounced input → auto-calculate
   let calcTimer;
   document.getElementById('smiles-input').addEventListener('input', () => {
     clearTimeout(calcTimer);
@@ -1765,6 +1996,16 @@ function compare() {
 
   // Run reaction
   document.getElementById('btn-rxn').addEventListener('click', runReaction);
+
+  // 3D style buttons
+  document.querySelectorAll('[data-style]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-style]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      current3dStyle = btn.dataset.style;
+      if (viewer3d && lastMol) apply3dStyle();
+    });
+  });
 })();
 </script>
 </body>
