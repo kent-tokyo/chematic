@@ -18,10 +18,11 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-chematic-core       = { path = "../chematic-core",       version = "0.1.9" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.9" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.9" }
-chematic-chem       = { path = "../chematic-chem",       version = "0.1.9" }
-chematic-fp         = { path = "../chematic-fp",         version = "0.1.9" }
-chematic-depict     = { path = "../chematic-depict",     version = "0.1.9" }
-chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.9" }
+chematic-core       = { path = "../chematic-core",       version = "0.1.11" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.11" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.11" }
+chematic-chem       = { path = "../chematic-chem",       version = "0.1.11" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.1.11" }
+chematic-depict     = { path = "../chematic-depict",     version = "0.1.11" }
+chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.11" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.11" }

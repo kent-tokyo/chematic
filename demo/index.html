@@ -225,6 +225,44 @@ section h2::before {
 .svg-area:hover .svg-zoom-reset { opacity: 1; }
 .svg-zoom-reset:hover { background: var(--accent); color: #fff; }
 
+/* ── SVG left controls (atom index toggle) ───────────────────────────── */
+.svg-controls-left {
+  position: absolute; top: .5rem; left: .5rem; z-index: 1;
+  display: flex; gap: .3rem;
+  opacity: 0; transition: opacity .15s;
+}
+.svg-area:hover .svg-controls-left { opacity: 1; }
+.btn-svg-ctrl {
+  background: var(--border); border: none; border-radius: 6px;
+  color: var(--muted); cursor: pointer;
+  font-size: .72rem; font-weight: 600; padding: .3rem .55rem;
+  transition: background .15s, color .15s;
+}
+.btn-svg-ctrl:hover { background: var(--accent); color: #fff; }
+.btn-svg-ctrl.active {
+  background: color-mix(in srgb, var(--accent) 60%, transparent);
+  color: #fff;
+}
+
+/* ── SMARTS filter row ───────────────────────────────────────────────── */
+.smarts-row {
+  display: flex; gap: .5rem; margin-bottom: 1rem;
+  flex-wrap: wrap; align-items: center;
+}
+.smarts-row-label { color: var(--muted); font-size: .82rem; white-space: nowrap; align-self: center; }
+.smarts-badge {
+  background: color-mix(in srgb, var(--pass) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pass) 35%, transparent);
+  color: var(--pass);
+  border-radius: 999px; font-size: .72rem; font-weight: 700;
+  padding: 2px 10px; display: none;
+}
+.smarts-badge.visible { display: inline-block; }
+.smarts-nomatch {
+  color: var(--muted); font-size: .8rem; display: none; align-self: center;
+}
+.smarts-nomatch.visible { display: inline; }
+
 /* ── Radar chart ─────────────────────────────────────────────────────── */
 .radar-wrap {
   display: flex;
@@ -359,6 +397,27 @@ tbody td {
 }
 .sim-svg-box svg { max-width: 100%; height: auto; display: block; }
 
+/* ── Reaction Scheme ─────────────────────────────────────────────────── */
+.rxn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+.rxn-label { color: var(--muted); font-size: .82rem; font-weight: 600; margin-bottom: .25rem; }
+.rxn-svg-wrap {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 140px;
+  margin-top: .75rem;
+  overflow-x: auto;
+  display: flex; align-items: center; justify-content: center;
+  padding: .5rem;
+}
+.rxn-svg-wrap svg { max-width: 100%; height: auto; display: block; }
+.rxn-placeholder { color: var(--muted); font-size: .88rem; text-align: center; }
+
 /* ── Drug Gallery ────────────────────────────────────────────────────── */
 .gallery-category { margin-bottom: 1.25rem; }
 .gallery-cat-title {
@@ -411,6 +470,7 @@ footer {
   .sim-svgs { grid-template-columns: 1fr; }
   .rules-grid { grid-template-columns: 1fr 1fr; }
   tbody td { padding: .4rem .6rem; }
+  .rxn-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 380px) {
   .rules-grid { grid-template-columns: 1fr; }
@@ -429,7 +489,7 @@ footer {
 <header>
   <div class="header-inner">
     <span class="logo">chematic</span>
-    <span class="version">v0.1.9</span>
+    <span class="version">v0.1.11</span>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en">EN</button>
@@ -459,8 +519,21 @@ footer {
     </div>
     <div id="error-desc" class="error-banner hidden"></div>
     <div class="svg-area" id="svg-area">
+      <div class="svg-controls-left">
+        <button class="btn-svg-ctrl" id="toggle-indices" title="Toggle atom indices">0..n</button>
+      </div>
       <button class="svg-zoom-reset" id="svg-zoom-reset" title="Reset zoom">1:1</button>
       <span class="svg-placeholder" id="svg-placeholder"></span>
+    </div>
+    <!-- SMARTS substructure filter -->
+    <div class="smarts-row">
+      <span class="smarts-row-label" id="smarts-label"></span>
+      <input id="smarts-input" class="smiles-input" type="text" style="flex:1;min-width:140px"
+             placeholder="c1ccccc1" spellcheck="false" autocomplete="off">
+      <button id="btn-smarts-hi" class="btn" style="background:var(--pass)"></button>
+      <button id="btn-smarts-clear" class="btn-outline"></button>
+      <span class="smarts-badge" id="smarts-match-badge"></span>
+      <span class="smarts-nomatch" id="smarts-nomatch-msg"></span>
     </div>
     <div class="radar-wrap" id="radar-wrap"></div>
     <div class="table-wrap">
@@ -540,7 +613,44 @@ footer {
     </div>
   </section>
 
-  <!-- Section 4: Drug Gallery -->
+  <!-- Section 4: Reaction Scheme -->
+  <section id="section-reaction">
+    <h2 id="h-rxn-title"></h2>
+    <div class="rxn-grid">
+      <div>
+        <div class="rxn-label" id="rxn-label-smirks"></div>
+        <div class="input-row" style="margin-bottom:.35rem">
+          <input id="rxn-smirks" class="smiles-input" type="text" spellcheck="false" autocomplete="off">
+        </div>
+      </div>
+      <div>
+        <div class="rxn-label" id="rxn-label-reactants"></div>
+        <div class="input-row" style="margin-bottom:.35rem">
+          <input id="rxn-reactants" class="smiles-input" type="text" spellcheck="false" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="preset-row">
+      <span class="preset-label" id="rxn-presets-label"></span>
+      <button class="btn-outline preset-rxn"
+              data-smirks="[C:1](=O)[OH:2].[O:3][C:4]>>[C:1](=O)[O:3][C:4]"
+              data-reactants="CC(=O)O|CCO"
+              id="rxn-esterify"></button>
+      <button class="btn-outline preset-rxn"
+              data-smirks="[C:1]Br.[N:2]>>[C:1][N:2]"
+              data-reactants="CCBr|CN"
+              id="rxn-aminoalkyl"></button>
+    </div>
+    <div style="margin-bottom:.75rem">
+      <button id="btn-rxn" class="btn"></button>
+    </div>
+    <div id="error-rxn" class="error-banner hidden"></div>
+    <div class="rxn-svg-wrap" id="rxn-svg-wrap">
+      <span class="rxn-placeholder" id="rxn-placeholder"></span>
+    </div>
+  </section>
+
+  <!-- Section 5: Drug Gallery -->
   <section id="section-gallery">
     <h2 id="h-gallery-title"></h2>
     <div id="gallery-content"></div>
@@ -641,6 +751,19 @@ const T = {
     'gallery.cns':      'CNS / Neurological',
     'gallery.oncology': 'Oncology',
     'gallery.nutrients': 'Nutrients / Others',
+    'smarts.label':     'SMARTS:',
+    'smarts.highlight': 'Highlight',
+    'smarts.clear':     'Clear',
+    'smarts.matches':   'matches',
+    'smarts.nomatch':   'No match',
+    'rxn.title':        'Reaction Scheme',
+    'rxn.smirks':       'SMIRKS Template',
+    'rxn.reactants':    'Reactants (pipe-separated)',
+    'rxn.run':          'Run',
+    'rxn.presets':      'Examples:',
+    'rxn.esterify':     'Esterification',
+    'rxn.aminoalkyl':   'N-Alkylation',
+    'rxn.placeholder':  'Products will appear here',
   },
   ja: {
     'app.tagline':      'ブラウザで動く純Rust化学情報処理ライブラリ',
@@ -722,6 +845,19 @@ const T = {
     'gallery.cns':      'CNS / 神経系',
     'gallery.oncology': '抗がん剤',
     'gallery.nutrients': '栄養素・その他',
+    'smarts.label':     'SMARTS:',
+    'smarts.highlight': 'ハイライト',
+    'smarts.clear':     'クリア',
+    'smarts.matches':   'マッチ',
+    'smarts.nomatch':   'マッチなし',
+    'rxn.title':        '反応スキーム',
+    'rxn.smirks':       'SMIRKS テンプレート',
+    'rxn.reactants':    '反応物（パイプ区切り）',
+    'rxn.run':          '実行',
+    'rxn.presets':      '例:',
+    'rxn.esterify':     'エステル化',
+    'rxn.aminoalkyl':   'N-アルキル化',
+    'rxn.placeholder':  '生成物がここに表示されます',
   },
   zh: {
     'app.tagline':      '纯Rust化学信息学库，运行于浏览器',
@@ -803,6 +939,19 @@ const T = {
     'gallery.cns':      'CNS / 神经系统',
     'gallery.oncology': '抗肿瘤药',
     'gallery.nutrients': '营养素 / 其他',
+    'smarts.label':     'SMARTS:',
+    'smarts.highlight': '高亮',
+    'smarts.clear':     '清除',
+    'smarts.matches':   '匹配',
+    'smarts.nomatch':   '无匹配',
+    'rxn.title':        '反应方案',
+    'rxn.smirks':       'SMIRKS 模板',
+    'rxn.reactants':    '反应物（竖线分隔）',
+    'rxn.run':          '运行',
+    'rxn.presets':      '示例:',
+    'rxn.esterify':     '酯化反应',
+    'rxn.aminoalkyl':   'N-烷基化',
+    'rxn.placeholder':  '产物将显示于此',
   },
 };
 
@@ -811,35 +960,47 @@ function t(key) { return (T[lang] && T[lang][key]) || T.en[key] || key; }
 
 // Map of element id → i18n key for static text nodes
 const STATIC_IDS = {
-  'tagline':         'app.tagline',
-  'h-desc-title':    'desc.title',
-  'btn-calc':        'desc.calculate',
-  'presets-label':   'desc.presets',
-  'svg-placeholder': 'desc.svg_ph',
-  'th-prop':         'desc.th_prop',
-  'th-val':          'desc.th_val',
-  'h-rules-title':   'rules.title',
-  'h-sim-title':     'sim.title',
-  'sim-label-a':     'sim.mol_a',
-  'sim-label-b':     'sim.mol_b',
-  'sim-svg-label-a': 'sim.mol_a',
-  'sim-svg-label-b': 'sim.mol_b',
-  'btn-sim':         'sim.compare',
-  'th-sim-method':   'sim.th_method',
-  'th-sim-desc':     'sim.th_desc',
-  'th-sim-tanimoto': 'sim.th_tanimoto',
-  'h-gallery-title': 'gallery.title',
-  'p-aspirin':       'preset.aspirin',
-  'p-caffeine':      'preset.caffeine',
-  'p-ibuprofen':     'preset.ibuprofen',
-  'p-taxol':         'preset.taxol',
-  'p-glucose':       'preset.glucose',
-  'sa-aspirin':      'preset.aspirin',
-  'sa-caffeine':     'preset.caffeine',
-  'sa-ibuprofen':    'preset.ibuprofen',
-  'sb-caffeine':     'preset.caffeine',
-  'sb-glucose':      'preset.glucose',
-  'sb-ibuprofen':    'preset.ibuprofen',
+  'tagline':            'app.tagline',
+  'h-desc-title':       'desc.title',
+  'btn-calc':           'desc.calculate',
+  'presets-label':      'desc.presets',
+  'svg-placeholder':    'desc.svg_ph',
+  'th-prop':            'desc.th_prop',
+  'th-val':             'desc.th_val',
+  'h-rules-title':      'rules.title',
+  'h-sim-title':        'sim.title',
+  'sim-label-a':        'sim.mol_a',
+  'sim-label-b':        'sim.mol_b',
+  'sim-svg-label-a':    'sim.mol_a',
+  'sim-svg-label-b':    'sim.mol_b',
+  'btn-sim':            'sim.compare',
+  'th-sim-method':      'sim.th_method',
+  'th-sim-desc':        'sim.th_desc',
+  'th-sim-tanimoto':    'sim.th_tanimoto',
+  'h-gallery-title':    'gallery.title',
+  'smarts-label':       'smarts.label',
+  'btn-smarts-hi':      'smarts.highlight',
+  'btn-smarts-clear':   'smarts.clear',
+  'smarts-nomatch-msg': 'smarts.nomatch',
+  'h-rxn-title':        'rxn.title',
+  'rxn-label-smirks':   'rxn.smirks',
+  'rxn-label-reactants':'rxn.reactants',
+  'btn-rxn':            'rxn.run',
+  'rxn-presets-label':  'rxn.presets',
+  'rxn-esterify':       'rxn.esterify',
+  'rxn-aminoalkyl':     'rxn.aminoalkyl',
+  'rxn-placeholder':    'rxn.placeholder',
+  'p-aspirin':          'preset.aspirin',
+  'p-caffeine':         'preset.caffeine',
+  'p-ibuprofen':        'preset.ibuprofen',
+  'p-taxol':            'preset.taxol',
+  'p-glucose':          'preset.glucose',
+  'sa-aspirin':         'preset.aspirin',
+  'sa-caffeine':        'preset.caffeine',
+  'sa-ibuprofen':       'preset.ibuprofen',
+  'sb-caffeine':        'preset.caffeine',
+  'sb-glucose':         'preset.glucose',
+  'sb-ibuprofen':       'preset.ibuprofen',
 };
 
 function applyLang(newLang) {
@@ -870,8 +1031,12 @@ function applyLang(newLang) {
 // ============================================================
 let wasmReady = false;
 let parseSmilesWasm, tanimotoEcfp4, tanimotoFcfp4, tanimotoAtomPair, tanimotoTorsion, bricsFrag;
+let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms;
 let lastMol = null;
 let lastSimResults = null;
+let highlightedAtoms = [];
+let highlightColor = '#4f8ef7';
+let showIndices = false;
 
 // ============================================================
 // WASM init
@@ -886,6 +1051,10 @@ async function initWasm() {
     tanimotoAtomPair = mod.tanimoto_atom_pair;
     tanimotoTorsion  = mod.tanimoto_torsion;
     bricsFrag        = mod.brics_fragment_count;
+    DepictOptions    = mod.DepictOptions;
+    runReactants     = mod.run_reactants;
+    depictSvgGrid    = mod.depict_svg_grid;
+    smartsMatchAtoms = mod.smarts_match_atoms;
     wasmReady = true;
   } catch (e) {
     document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
@@ -1053,7 +1222,7 @@ function renderRadar(mol) {
   svg.appendChild(poly);
 
   // Dots at vertices
-  dataPts.forEach(([x, y], i) => {
+  dataPts.forEach(([x, y]) => {
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '3');
     dot.setAttribute('fill', allInRange ? '#34d399' : '#f87171');
@@ -1258,12 +1427,14 @@ function renderGallery() {
 }
 
 // ============================================================
-// DepictOptions helper — dark theme + transparent background
+// DepictOptions helper — dark theme + transparent background + atom IDs
 // ============================================================
 function makeDepictOpts() {
   const opts = new DepictOptions();
   opts.set_dark(true);
   opts.set_background('transparent');
+  opts.set_atom_ids(true);
+  if (showIndices) opts.set_show_atom_indices(true);
   return opts;
 }
 
@@ -1288,6 +1459,7 @@ function enableSvgPanZoom(area, svgEl) {
 
   area.addEventListener('pointerdown', e => {
     if (e.target.classList.contains('svg-zoom-reset')) return;
+    if (e.target.classList.contains('btn-svg-ctrl')) return;
     dragging = true;
     startX = e.clientX - tx;
     startY = e.clientY - ty;
@@ -1318,6 +1490,10 @@ function renderSvg(mol) {
   const area = document.getElementById('svg-area');
   try {
     const opts = makeDepictOpts();
+    if (highlightedAtoms.length > 0) {
+      opts.set_highlight_atoms(new Uint32Array(highlightedAtoms));
+      opts.set_highlight_color(highlightColor);
+    }
     const svgStr = mol.depict_svg_opts(opts);
     opts.free();
     const parser = new DOMParser();
@@ -1334,10 +1510,116 @@ function renderSvg(mol) {
     if (ph) ph.textContent = '';
     area.appendChild(svgEl);
     enableSvgPanZoom(area, svgEl);
+    enableAtomClick(svgEl);
   } catch (_) {
     area.querySelectorAll('svg').forEach(el => el.remove());
     const ph = document.getElementById('svg-placeholder');
     if (ph) { ph.style.color = 'var(--muted)'; ph.textContent = t('desc.svg_ph'); }
+  }
+}
+
+// ============================================================
+// Atom click — highlight on click, deselect on re-click, clear on background
+// ============================================================
+function enableAtomClick(svgEl) {
+  svgEl.addEventListener('click', e => {
+    const atomEl = e.target.closest('[data-atom-idx]');
+    if (atomEl) {
+      const idx = parseInt(atomEl.getAttribute('data-atom-idx'), 10);
+      if (highlightedAtoms.length === 1 && highlightedAtoms[0] === idx) {
+        highlightedAtoms = [];
+      } else {
+        highlightedAtoms = [idx];
+        highlightColor = '#4f8ef7';
+      }
+      clearSmartsUI();
+      renderSvg(lastMol);
+    } else {
+      if (highlightedAtoms.length > 0) {
+        highlightedAtoms = [];
+        renderSvg(lastMol);
+      }
+    }
+  });
+}
+
+// ============================================================
+// SMARTS substructure highlight
+// ============================================================
+function applySmarts() {
+  if (!lastMol || !smartsMatchAtoms) return;
+  const pat = document.getElementById('smarts-input').value.trim();
+  if (!pat) return;
+  clearError('error-desc');
+  try {
+    const json = smartsMatchAtoms(pat, lastMol);
+    const matches = JSON.parse(json);
+    const idxs = [...new Set(matches.flat())].map(Number);
+    const badge = document.getElementById('smarts-match-badge');
+    const nomatch = document.getElementById('smarts-nomatch-msg');
+    if (idxs.length > 0) {
+      highlightedAtoms = idxs;
+      highlightColor = '#34d399';
+      badge.textContent = idxs.length + ' ' + t('smarts.matches');
+      badge.classList.add('visible');
+      nomatch.classList.remove('visible');
+    } else {
+      highlightedAtoms = [];
+      badge.classList.remove('visible');
+      nomatch.classList.add('visible');
+    }
+    renderSvg(lastMol);
+  } catch (e) {
+    showError('error-desc', 'SMARTS: ' + String(e));
+  }
+}
+
+function clearSmarts() {
+  clearSmartsUI();
+  highlightedAtoms = [];
+  if (lastMol) renderSvg(lastMol);
+}
+
+function clearSmartsUI() {
+  const badge = document.getElementById('smarts-match-badge');
+  const nomatch = document.getElementById('smarts-nomatch-msg');
+  if (badge) badge.classList.remove('visible');
+  if (nomatch) nomatch.classList.remove('visible');
+}
+
+// ============================================================
+// Reaction Scheme
+// ============================================================
+function runReaction() {
+  clearError('error-rxn');
+  const smirks = document.getElementById('rxn-smirks').value.trim();
+  const reactants = document.getElementById('rxn-reactants').value.trim();
+  if (!smirks || !reactants) { showError('error-rxn', t('error.empty')); return; }
+  if (!wasmReady) { showError('error-rxn', t('error.wasm')); return; }
+  try {
+    const productsJson = runReactants(smirks, reactants);
+    const products = JSON.parse(productsJson);
+    const reactantList = reactants.split('|').map(s => s.trim()).filter(Boolean);
+    const productList = products.length > 0 ? products[0] : [];
+    const allSmiles = [...reactantList, ...productList];
+    if (allSmiles.length === 0) {
+      showError('error-rxn', 'No products generated.');
+      return;
+    }
+    const cols = Math.max(reactantList.length, productList.length, 1);
+    const gridSvg = depictSvgGrid(allSmiles.join('\n'), cols);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(gridSvg, 'image/svg+xml');
+    if (doc.querySelector('parsererror')) throw new Error('Invalid SVG from grid renderer');
+    const svgEl = doc.documentElement;
+    svgEl.style.cssText = 'max-width:100%;height:auto;display:block;';
+    const wrap = document.getElementById('rxn-svg-wrap');
+    const ph = wrap.querySelector('.rxn-placeholder');
+    if (ph) ph.style.display = 'none';
+    wrap.querySelectorAll('svg').forEach(el => el.remove());
+    wrap.appendChild(svgEl);
+  } catch (e) {
+    showError('error-rxn', String(e));
   }
 }
 
@@ -1368,6 +1650,8 @@ function calculate() {
 
   if (lastMol) { try { lastMol.free(); } catch (_) {} }
   lastMol = mol;
+  highlightedAtoms = [];
+  clearSmartsUI();
 
   renderSvg(mol);
   renderRadar(mol);
@@ -1456,6 +1740,31 @@ function compare() {
       if (e.key === 'Enter') compare();
     });
   });
+
+  // Atom index toggle
+  document.getElementById('toggle-indices').addEventListener('click', () => {
+    showIndices = !showIndices;
+    document.getElementById('toggle-indices').classList.toggle('active', showIndices);
+    if (lastMol) renderSvg(lastMol);
+  });
+
+  // SMARTS
+  document.getElementById('btn-smarts-hi').addEventListener('click', applySmarts);
+  document.getElementById('btn-smarts-clear').addEventListener('click', clearSmarts);
+  document.getElementById('smarts-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') applySmarts();
+  });
+
+  // Reaction presets
+  document.querySelectorAll('.preset-rxn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('rxn-smirks').value = btn.dataset.smirks;
+      document.getElementById('rxn-reactants').value = btn.dataset.reactants;
+    });
+  });
+
+  // Run reaction
+  document.getElementById('btn-rxn').addEventListener('click', runReaction);
 })();
 </script>
 </body>

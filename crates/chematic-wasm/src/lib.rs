@@ -465,6 +465,27 @@ pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsV
     Ok(format!("[{}]", outer.join(", ")))
 }
 
+/// Find all substructure matches of a SMARTS pattern in `mol`.
+///
+/// Returns JSON array of arrays of atom indices (sorted, 0-based).
+/// Example: `[[0,1,2],[3,4,5]]` — two matches.
+/// Returns `"[]"` if no match. Returns a JS error on invalid SMARTS.
+#[wasm_bindgen]
+pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsValue> {
+    let query = chematic_smarts::parse_smarts(smarts)
+        .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    let matches = chematic_smarts::find_matches(&query, &mol.inner);
+    let parts: Vec<String> = matches
+        .into_iter()
+        .map(|m| {
+            let mut idxs: Vec<u32> = m.values().map(|a| a.0).collect();
+            idxs.sort_unstable();
+            format!("[{}]", idxs.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(","))
+        })
+        .collect();
+    Ok(format!("[{}]", parts.join(",")))
+}
+
 /// Compute the ECFP4 fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
 #[wasm_bindgen]
 pub fn ecfp4_bitvec(mol: &MolHandle) -> Vec<u8> {
@@ -872,5 +893,34 @@ mod tests {
         let svg = h.depict_svg_opts(&DepictOptions::new());
         // Default aromatic rendering uses stroke-dasharray for the inner ring line.
         assert!(svg.contains("stroke-dasharray"), "default benzene should use aromatic dashed style");
+    }
+
+    // ── Sprint M: smarts_match_atoms ─────────────────────────────────────────
+
+    #[test]
+    fn smarts_match_benzene_ring_returns_json() {
+        let mol = parse("c1ccccc1");
+        let result = smarts_match_atoms("c1ccccc1", &mol);
+        assert!(result.is_ok(), "valid SMARTS should not error");
+        let json = result.unwrap();
+        assert!(!json.is_empty() && json != "[]", "benzene ring SMARTS should find a match");
+        assert!(json.starts_with("[["), "result should be array of arrays");
+    }
+
+    #[test]
+    fn smarts_match_no_match_returns_empty_array() {
+        let mol = parse("CC"); // ethane has no aromatic ring
+        let result = smarts_match_atoms("c1ccccc1", &mol);
+        assert!(result.is_ok(), "valid SMARTS on non-matching mol should not error");
+        assert_eq!(result.unwrap(), "[]", "no match should return empty JSON array");
+    }
+
+    // Note: smarts_match_atoms error-path test (invalid SMARTS) is omitted here
+    // because JsValue::from_str panics outside a WASM runtime.
+    // The underlying chematic_smarts::parse_smarts error path is tested separately:
+    #[test]
+    fn smarts_parse_invalid_is_err() {
+        assert!(chematic_smarts::parse_smarts("[invalid").is_err(),
+            "invalid SMARTS should return Err from parse_smarts");
     }
 }
