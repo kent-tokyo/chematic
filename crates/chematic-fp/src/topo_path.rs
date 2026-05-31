@@ -100,6 +100,12 @@ fn hash_path(atoms: &[u8], bonds: &[u8], fp: &mut BitVec2048, nbits: usize) {
     fp.set((hash % nbits as u64) as usize);
 }
 
+/// Tanimoto similarity between two molecules using topological path fingerprints.
+pub fn tanimoto_topo_path(a: &Molecule, b: &Molecule) -> f64 {
+    let cfg = TopoPathConfig::default();
+    topo_path(a, &cfg).tanimoto(&topo_path(b, &cfg))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

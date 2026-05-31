@@ -567,7 +567,7 @@ footer {
 <header>
   <div class="header-inner">
     <span class="logo">chematic</span>
-    <span class="version">v0.1.12</span>
+    <span class="version">v0.1.14</span>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en">EN</button>
@@ -639,6 +639,19 @@ footer {
           <tbody id="desc-tbody"></tbody>
         </table>
       </div>
+    </section>
+
+    <!-- SDF / MOL Upload -->
+    <section id="section-sdf" class="rxn-eq-section">
+      <h3 class="rxn-eq-heading" id="h-sdf-title"></h3>
+      <textarea id="sdf-input" rows="5" class="smiles-input"
+                style="width:100%;height:auto;resize:vertical;font-size:.82rem;padding:.5rem .75rem"
+                spellcheck="false"></textarea>
+      <div style="margin:.5rem 0">
+        <button id="btn-sdf-load" class="btn"></button>
+      </div>
+      <div id="error-sdf" class="error-banner hidden"></div>
+      <div class="rxn-svg-wrap" id="sdf-grid-output"></div>
     </section>
 
     <!-- Drug-likeness Rules -->
@@ -875,6 +888,14 @@ const T = {
     'sim.atompair_d':   'Atom environment pairs',
     'sim.torsion':      'Torsion',
     'sim.torsion_d':    '4-atom torsion paths',
+    'sim.topo_path':    'TopoPF',
+    'sim.topo_path_d':  'RDKit-style topological path FP',
+    'desc.estate_sum':  'SumEStateIdx',
+    'desc.estate_max':  'MaxEStateIndex',
+    'desc.estate_min':  'MinEStateIndex',
+    'sdf.title':        'SDF / MOL Upload',
+    'sdf.load':         'Load',
+    'sdf.placeholder':  'Paste SDF or MOL V2000 block here…',
     'preset.aspirin':   'Aspirin',
     'preset.caffeine':  'Caffeine',
     'preset.ibuprofen': 'Ibuprofen',
@@ -986,6 +1007,14 @@ const T = {
     'sim.atompair_d':   '原子環境ペア指紋',
     'sim.torsion':      'Torsion',
     'sim.torsion_d':    '4原子ねじれ経路指紋',
+    'sim.topo_path':    'TopoPF',
+    'sim.topo_path_d':  'トポロジカルパス指紋 (RDKit スタイル)',
+    'desc.estate_sum':  'SumEStateIdx',
+    'desc.estate_max':  'MaxEStateIndex',
+    'desc.estate_min':  'MinEStateIndex',
+    'sdf.title':        'SDF / MOL アップロード',
+    'sdf.load':         '読み込む',
+    'sdf.placeholder':  'SDF または MOL V2000 ブロックを貼り付け…',
     'preset.aspirin':   'アスピリン',
     'preset.caffeine':  'カフェイン',
     'preset.ibuprofen': 'イブプロフェン',
@@ -1097,6 +1126,14 @@ const T = {
     'sim.atompair_d':   '原子环境对指纹',
     'sim.torsion':      'Torsion',
     'sim.torsion_d':    '四原子扭转路径指纹',
+    'sim.topo_path':    'TopoPF',
+    'sim.topo_path_d':  'RDKit 风格拓扑路径指纹',
+    'desc.estate_sum':  'SumEStateIdx',
+    'desc.estate_max':  'MaxEStateIndex',
+    'desc.estate_min':  'MinEStateIndex',
+    'sdf.title':        'SDF / MOL 文件上传',
+    'sdf.load':         '加载',
+    'sdf.placeholder':  '粘贴 SDF 或 MOL V2000 格式内容…',
     'preset.aspirin':   '阿司匹林',
     'preset.caffeine':  '咖啡因',
     'preset.ibuprofen': '布洛芬',
@@ -1206,6 +1243,8 @@ const STATIC_IDS = {
   'btn-3d-surface':     '3d.surface',
   'view-hint-3d':       '3d.hint',
   'viewer-placeholder-text': '3d.placeholder',
+  'h-sdf-title':            'sdf.title',
+  'btn-sdf-load':           'sdf.load',
 };
 
 function applyLang(newLang) {
@@ -1225,6 +1264,7 @@ function applyLang(newLang) {
   document.getElementById('smiles-input').placeholder = t('desc.placeholder');
   document.getElementById('sim-a').placeholder = t('desc.placeholder');
   document.getElementById('sim-b').placeholder = t('desc.placeholder');
+  document.getElementById('sdf-input').placeholder = t('sdf.placeholder');
 
   renderRuleCards(lastMol);
   renderSimTable(lastSimResults);
@@ -1262,6 +1302,7 @@ function switchTab(tabId) {
 let wasmReady = false;
 let parseSmilesWasm, tanimotoEcfp4, tanimotoFcfp4, tanimotoAtomPair, tanimotoTorsion, bricsFrag;
 let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms, generate3dPdb, depictReactionSvg;
+let molFromSdfBlock, sdfToSmilesJson, estateIndicesJson, tanimotoTopoPath;
 let lastMol = null;
 let lastSimResults = null;
 let highlightedAtoms = [];
@@ -1287,6 +1328,10 @@ async function initWasm() {
     smartsMatchAtoms = mod.smarts_match_atoms;
     generate3dPdb       = mod.generate_3d_pdb;
     depictReactionSvg   = mod.depict_reaction_svg;
+    molFromSdfBlock     = mod.mol_from_sdf_block;
+    sdfToSmilesJson     = mod.sdf_to_smiles_json;
+    estateIndicesJson   = mod.estate_indices_json;
+    tanimotoTopoPath    = mod.tanimoto_topo_path;
     wasmReady = true;
   } catch (e) {
     document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
@@ -1408,6 +1453,9 @@ const DESC_DEFS = [
   { key: 'desc.aliph_het',   fn: m => String(m.num_aliphatic_heterocycles())       },
   { key: 'desc.spiro',       fn: m => String(m.num_spiro_atoms())                  },
   { key: 'desc.bridge',      fn: m => String(m.num_bridgehead_atoms())             },
+  { key: 'desc.estate_sum',  fn: m => m.sum_estate().toFixed(3)                   },
+  { key: 'desc.estate_max',  fn: m => m.max_estate().toFixed(3)                   },
+  { key: 'desc.estate_min',  fn: m => m.min_estate().toFixed(3)                   },
 ];
 
 const RULE_DEFS = [
@@ -1424,6 +1472,7 @@ const SIM_DEFS = [
   { nameKey: 'sim.fcfp4',    descKey: 'sim.fcfp4_d',    fn: (a,b) => tanimotoFcfp4(a,b)    },
   { nameKey: 'sim.atompair', descKey: 'sim.atompair_d', fn: (a,b) => tanimotoAtomPair(a,b) },
   { nameKey: 'sim.torsion',  descKey: 'sim.torsion_d',  fn: (a,b) => tanimotoTorsion(a,b)  },
+  { nameKey: 'sim.topo_path',descKey: 'sim.topo_path_d',fn: (a,b) => tanimotoTopoPath(a,b) },
 ];
 
 const GALLERY = [
@@ -2002,6 +2051,56 @@ function compare() {
 }
 
 // ============================================================
+// SDF / MOL load
+// ============================================================
+function loadSdf() {
+  clearError('error-sdf');
+  const text = document.getElementById('sdf-input').value.trim();
+  if (!text) { showError('error-sdf', t('error.empty')); return; }
+  if (!wasmReady) { showError('error-sdf', t('error.wasm')); return; }
+
+  const out = document.getElementById('sdf-grid-output');
+  out.textContent = '';
+
+  let smilesList = [];
+  try {
+    const json = sdfToSmilesJson(text);
+    const parsed = JSON.parse(json);
+    smilesList = parsed.filter(s => s !== null);
+  } catch (e) {
+    showError('error-sdf', String(e));
+    return;
+  }
+
+  if (smilesList.length === 0) {
+    showError('error-sdf', 'No valid molecules found in input.');
+    return;
+  }
+
+  // Load first molecule into the descriptor panel
+  try {
+    const firstMol = parseSmilesWasm(smilesList[0]);
+    lastMol = firstMol;
+    renderSvg(firstMol);
+    renderDescriptors(firstMol);
+    renderRuleCards(firstMol);
+    viewer3dMolDirty = true;
+  } catch (_) {}
+
+  // Render molecule grid using DOMParser (same pattern as runReaction/runReactionEquation)
+  try {
+    const gridSvg = depictSvgGrid(smilesList.join('\n'), 4);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(gridSvg, 'image/svg+xml');
+    if (!doc.querySelector('parsererror')) {
+      const svgEl = doc.documentElement;
+      svgEl.style.cssText = 'max-width:100%;height:auto;display:block;';
+      out.appendChild(svgEl);
+    }
+  } catch (_) {}
+}
+
+// ============================================================
 // Boot
 // ============================================================
 (async () => {
@@ -2102,6 +2201,9 @@ function compare() {
   document.getElementById('rxn-eq-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') runReactionEquation();
   });
+
+  // SDF / MOL upload
+  document.getElementById('btn-sdf-load').addEventListener('click', loadSdf);
 
   // 3D style buttons
   document.querySelectorAll('[data-style]').forEach(btn => {
