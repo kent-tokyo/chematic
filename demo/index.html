@@ -201,6 +201,8 @@ section h2::before {
   margin-bottom: 1rem;
   min-height: 200px;
   overflow: hidden;
+  position: relative;
+  user-select: none;
 }
 .svg-area svg {
   max-width: 100%;
@@ -213,6 +215,15 @@ section h2::before {
   text-align: center;
   padding: 2rem;
 }
+.svg-zoom-reset {
+  position: absolute; top: .5rem; right: .5rem; z-index: 1;
+  background: var(--border); border: none; border-radius: 6px;
+  color: var(--muted); cursor: pointer;
+  font-size: .72rem; font-weight: 600; line-height: 1; padding: .3rem .55rem;
+  opacity: 0; transition: opacity .15s;
+}
+.svg-area:hover .svg-zoom-reset { opacity: 1; }
+.svg-zoom-reset:hover { background: var(--accent); color: #fff; }
 
 /* ── Radar chart ─────────────────────────────────────────────────────── */
 .radar-wrap {
@@ -448,6 +459,7 @@ footer {
     </div>
     <div id="error-desc" class="error-banner hidden"></div>
     <div class="svg-area" id="svg-area">
+      <button class="svg-zoom-reset" id="svg-zoom-reset" title="Reset zoom">1:1</button>
       <span class="svg-placeholder" id="svg-placeholder"></span>
     </div>
     <div class="radar-wrap" id="radar-wrap"></div>
@@ -1256,6 +1268,50 @@ function makeDepictOpts() {
 }
 
 // ============================================================
+// SVG pan + zoom (wheel to zoom, drag to pan, dblclick/button to reset)
+// ============================================================
+function enableSvgPanZoom(area, svgEl) {
+  let scale = 1, tx = 0, ty = 0;
+  let dragging = false, startX = 0, startY = 0;
+
+  function apply() {
+    svgEl.style.transformOrigin = '50% 50%';
+    svgEl.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+  }
+
+  area.addEventListener('wheel', e => {
+    e.preventDefault();
+    const f = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    scale = Math.min(Math.max(scale * f, 0.15), 12);
+    apply();
+  }, { passive: false });
+
+  area.addEventListener('pointerdown', e => {
+    if (e.target.classList.contains('svg-zoom-reset')) return;
+    dragging = true;
+    startX = e.clientX - tx;
+    startY = e.clientY - ty;
+    area.setPointerCapture(e.pointerId);
+    area.style.cursor = 'grabbing';
+  });
+  area.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    tx = e.clientX - startX;
+    ty = e.clientY - startY;
+    apply();
+  });
+  area.addEventListener('pointerup', () => { dragging = false; area.style.cursor = 'grab'; });
+  area.addEventListener('dblclick', reset);
+
+  const btn = document.getElementById('svg-zoom-reset');
+  if (btn) btn.onclick = reset;
+
+  function reset() { scale = 1; tx = 0; ty = 0; apply(); }
+  area.style.cursor = 'grab';
+  apply();
+}
+
+// ============================================================
 // SVG depiction (output from our own WASM library — trusted source)
 // ============================================================
 function renderSvg(mol) {
@@ -1266,17 +1322,22 @@ function renderSvg(mol) {
     opts.free();
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgStr, 'image/svg+xml');
-    const err = doc.querySelector('parsererror');
-    if (err) throw new Error('invalid SVG');
-    area.textContent = '';
-    area.appendChild(doc.documentElement);
+    if (doc.querySelector('parsererror')) throw new Error('invalid SVG');
+
+    const svgEl = doc.documentElement;
+    svgEl.removeAttribute('width');
+    svgEl.removeAttribute('height');
+    svgEl.style.cssText = 'max-width:100%;max-height:360px;display:block;';
+
+    area.querySelectorAll('svg').forEach(el => el.remove());
+    const ph = document.getElementById('svg-placeholder');
+    if (ph) ph.textContent = '';
+    area.appendChild(svgEl);
+    enableSvgPanZoom(area, svgEl);
   } catch (_) {
-    area.textContent = '';
-    const ph = document.createElement('span');
-    ph.className = 'svg-placeholder';
-    ph.style.color = 'var(--muted)';
-    ph.textContent = t('desc.svg_ph');
-    area.appendChild(ph);
+    area.querySelectorAll('svg').forEach(el => el.remove());
+    const ph = document.getElementById('svg-placeholder');
+    if (ph) { ph.style.color = 'var(--muted)'; ph.textContent = t('desc.svg_ph'); }
   }
 }
 
