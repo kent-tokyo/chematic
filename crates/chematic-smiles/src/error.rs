@@ -19,6 +19,8 @@ pub enum SmilesError {
     ConflictingRingBond { ring_num: u8, pos: usize },
     /// Empty SMILES string.
     EmptyInput,
+    /// Branch nesting exceeded the safe recursion limit.
+    NestingTooDeep { pos: usize },
 }
 
 impl fmt::Display for SmilesError {
@@ -38,6 +40,8 @@ impl fmt::Display for SmilesError {
                 write!(f, "conflicting bond types for ring closure {ring_num} at position {pos}"),
             Self::EmptyInput =>
                 write!(f, "SMILES input is empty"),
+            Self::NestingTooDeep { pos } =>
+                write!(f, "branch nesting too deep at position {pos}"),
         }
     }
 }

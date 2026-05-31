@@ -183,24 +183,7 @@ impl MolHandle {
 
     /// 2D SVG depiction with style options.
     pub fn depict_svg_opts(&self, opts: &DepictOptions) -> String {
-        let ro = chematic_depict::RenderOptions {
-            width: opts.width,
-            height: opts.height,
-            padding: opts.padding,
-            background: opts.background.clone(),
-            dark: opts.dark,
-            highlight_atoms: opts.highlight_atoms.iter()
-                .map(|&i| chematic_core::AtomIdx(i))
-                .collect(),
-            highlight_bonds: opts.highlight_bonds.iter()
-                .map(|&i| chematic_core::BondIdx(i))
-                .collect(),
-            highlight_color: opts.highlight_color.clone(),
-            atom_ids: opts.atom_ids,
-            show_atom_indices: opts.show_atom_indices,
-            kekulize: opts.kekulize,
-        };
-        chematic_depict::depict_svg_opts(&self.inner, &ro)
+        chematic_depict::depict_svg_opts(&self.inner, &opts.to_render_options())
     }
 
     // -----------------------------------------------------------------------
@@ -331,17 +314,10 @@ pub fn is_valid_smiles(s: &str) -> bool {
 /// ```
 #[wasm_bindgen]
 pub struct DepictOptions {
-    width: Option<u32>,
-    height: Option<u32>,
-    padding: f64,
-    background: String,
-    dark: bool,
+    // R5: store RenderOptions directly; only the JS-incompatible HashSet fields are separate.
+    inner: chematic_depict::RenderOptions,
     highlight_atoms: Vec<u32>,
     highlight_bonds: Vec<u32>,
-    highlight_color: String,
-    atom_ids: bool,
-    show_atom_indices: bool,
-    kekulize: bool,
 }
 
 #[wasm_bindgen]
@@ -349,31 +325,34 @@ impl DepictOptions {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
-            width: None,
-            height: None,
-            padding: 20.0,
-            background: "white".into(),
-            dark: false,
+            inner: chematic_depict::RenderOptions::default(),
             highlight_atoms: vec![],
             highlight_bonds: vec![],
-            highlight_color: "#FFFF00".into(),
-            atom_ids: false,
-            show_atom_indices: false,
-            kekulize: false,
         }
     }
 
-    pub fn set_width(&mut self, w: u32) { self.width = Some(w); }
-    pub fn set_height(&mut self, h: u32) { self.height = Some(h); }
-    pub fn set_padding(&mut self, p: f64) { self.padding = p; }
-    pub fn set_background(&mut self, bg: String) { self.background = bg; }
-    pub fn set_dark(&mut self, dark: bool) { self.dark = dark; }
+    pub fn set_width(&mut self, w: u32)           { self.inner.width = Some(w); }
+    pub fn set_height(&mut self, h: u32)          { self.inner.height = Some(h); }
+    pub fn set_padding(&mut self, p: f64)         { self.inner.padding = p; }
+    pub fn set_background(&mut self, bg: String)  { self.inner.background = bg; }
+    pub fn set_dark(&mut self, dark: bool)        { self.inner.dark = dark; }
     pub fn set_highlight_atoms(&mut self, atoms: Vec<u32>) { self.highlight_atoms = atoms; }
     pub fn set_highlight_bonds(&mut self, bonds: Vec<u32>) { self.highlight_bonds = bonds; }
-    pub fn set_highlight_color(&mut self, color: String) { self.highlight_color = color; }
-    pub fn set_atom_ids(&mut self, v: bool) { self.atom_ids = v; }
-    pub fn set_show_atom_indices(&mut self, v: bool) { self.show_atom_indices = v; }
-    pub fn set_kekulize(&mut self, v: bool) { self.kekulize = v; }
+    pub fn set_highlight_color(&mut self, color: String)   { self.inner.highlight_color = color; }
+    pub fn set_atom_ids(&mut self, v: bool)        { self.inner.atom_ids = v; }
+    pub fn set_show_atom_indices(&mut self, v: bool) { self.inner.show_atom_indices = v; }
+    pub fn set_kekulize(&mut self, v: bool)        { self.inner.kekulize = v; }
+
+    pub(crate) fn to_render_options(&self) -> chematic_depict::RenderOptions {
+        let mut ro = self.inner.clone();
+        ro.highlight_atoms = self.highlight_atoms.iter()
+            .map(|&i| chematic_core::AtomIdx(i))
+            .collect();
+        ro.highlight_bonds = self.highlight_bonds.iter()
+            .map(|&i| chematic_core::BondIdx(i))
+            .collect();
+        ro
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -819,8 +798,8 @@ mod tests {
     #[test]
     fn depict_svg_disconnected_water_dimer() {
         let svg = parse("O.O").depict_svg();
-        // O.O = 2 atoms; each O in a multi-atom mol renders as "OH2" (heteroatom path)
-        assert!(svg.matches("OH2").count() >= 2, "both O atoms should appear as OH2 labels");
+        // Degree-0 O atoms use isolated (Hill) notation: H2O
+        assert!(svg.matches("H2O").count() >= 2, "both water O atoms should render as H2O");
         assert!(!svg.is_empty());
     }
 
@@ -828,13 +807,15 @@ mod tests {
 
     #[test]
     fn depict_svg_opts_atom_ids_contains_data_attrs() {
-        let h = parse("CC(=O)O"); // acetic acid
+        let h = parse("CC(=O)O"); // acetic acid: 2 C (unlabelled) + 2 O (labelled)
         let mut opts = DepictOptions::new();
         opts.set_atom_ids(true);
         let svg = h.depict_svg_opts(&opts);
         assert!(svg.contains("data-atom-idx="), "atom_ids should add data-atom-idx");
         assert!(svg.contains("data-element="), "atom_ids should add data-element");
         assert!(svg.contains("data-charge="), "atom_ids should add data-charge");
+        // B3: all 4 atoms should be addressable (unlabelled carbons get invisible anchor)
+        assert_eq!(svg.matches("data-atom-idx=").count(), 4, "all atoms should have data-atom-idx");
     }
 
     #[test]
@@ -880,11 +861,9 @@ mod tests {
         let mut opts = DepictOptions::new();
         opts.set_kekulize(true);
         let svg = h.depict_svg_opts(&opts);
-        // Aromatic bonds render as dashed-style (multiple close lines); kekulé renders as standard double bonds.
-        // The kekulé SVG should contain double bond lines but no dashed aromatic style.
         assert!(!svg.is_empty());
-        // Double bonds produce two parallel <line> elements; check that double bond rendering kicked in.
         assert!(svg.contains("<line"), "kekulé benzene should have line elements");
+        assert!(!svg.contains("stroke-dasharray"), "kekulé benzene must not use aromatic dashed style"); // B1
     }
 
     #[test]

@@ -150,17 +150,13 @@ pub fn render_svg_highlighted(
 
 /// Render `mol` with full control over style via [`RenderOptions`].
 pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) -> String {
-    let kekule_mol;
-    let mol = if opts.kekulize {
-        if let Ok(kr) = kekulize(mol) {
-            kekule_mol = apply_kekule(mol, &kr);
-            &kekule_mol
-        } else {
-            mol
-        }
+    // R4: cleaner than the uninit-borrow dance; kekulize failure silently falls back to aromatic.
+    let maybe_kekule: Option<Molecule> = if opts.kekulize {
+        kekulize(mol).ok().map(|kr| apply_kekule(mol, &kr))
     } else {
-        mol
+        None
     };
+    let mol: &Molecule = maybe_kekule.as_ref().unwrap_or(mol);
 
     let ctx = DrawCtx::from_opts(opts);
     let mut svg = String::new();
@@ -168,11 +164,14 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
     write_svg_header_opts(layout, opts, &mut svg);
 
     // Highlight atom circles (beneath bonds).
+    let atom_count = mol.atom_count();
+    let hc = escape_xml(&opts.highlight_color); // S2: escape once
     for idx in &opts.highlight_atoms {
+        if idx.0 as usize >= atom_count { continue; } // S3: skip out-of-range indices
         let p = layout.get(*idx);
         svg.push_str(&format!(
             "  <circle cx=\"{:.2}\" cy=\"{:.2}\" r=\"16\" fill=\"{}\" opacity=\"0.5\"/>\n",
-            p.x, p.y, opts.highlight_color
+            p.x, p.y, hc
         ));
     }
 
@@ -181,11 +180,7 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
         let p1 = layout.get(bond.atom1);
         let p2 = layout.get(bond.atom2);
         if opts.highlight_bonds.contains(&bond_idx) {
-            svg.push_str(&format!(
-                "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
-                 stroke=\"#FF8C00\" stroke-width=\"4.0\" fill=\"none\"/>\n",
-                p1.x, p1.y, p2.x, p2.y
-            ));
+            svg.push_str(&render_line(p1, p2, "4.0", "#FF8C00")); // R1
         } else {
             svg.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
         }
@@ -226,7 +221,7 @@ fn write_svg_header_opts(layout: &Layout, opts: &RenderOptions, svg: &mut String
     if opts.background != "transparent" {
         svg.push_str(&format!(
             "  <rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"{}\"/>\n",
-            view_x, view_y, view_w, view_h, opts.background
+            view_x, view_y, view_w, view_h, escape_xml(&opts.background) // S1: escape user input
         ));
     }
 }
@@ -248,37 +243,37 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
                     p.y - LABEL_HALF_H,
                     LABEL_HALF_W * 2.0,
                     LABEL_HALF_H * 2.0,
-                    fill,
+                    escape_xml(fill), // S1: escape background colour
                 ));
             }
 
-            if ctx.atom_ids {
-                svg.push_str(&format!(
-                    "  <text x=\"{:.2}\" y=\"{:.2}\" \
-                     font-family=\"sans-serif\" font-size=\"{}\" \
-                     text-anchor=\"middle\" dominant-baseline=\"central\" \
-                     fill=\"{}\" \
-                     data-atom-idx=\"{}\" data-element=\"{}\" data-charge=\"{}\">{}</text>\n",
-                    p.x, p.y,
-                    FONT_SIZE as u32,
-                    ctx.text_color(atom.element.atomic_number()),
-                    idx.0,
-                    atom.element.symbol(),
-                    atom.charge,
-                    escape_xml(&label)
-                ));
+            // R2: build optional data attrs, then single format!
+            let data_attrs = if ctx.atom_ids {
+                format!(
+                    " data-atom-idx=\"{}\" data-element=\"{}\" data-charge=\"{}\"",
+                    idx.0, atom.element.symbol(), atom.charge
+                )
             } else {
-                svg.push_str(&format!(
-                    "  <text x=\"{:.2}\" y=\"{:.2}\" \
-                     font-family=\"sans-serif\" font-size=\"{}\" \
-                     text-anchor=\"middle\" dominant-baseline=\"central\" \
-                     fill=\"{}\">{}</text>\n",
-                    p.x, p.y,
-                    FONT_SIZE as u32,
-                    ctx.text_color(atom.element.atomic_number()),
-                    escape_xml(&label)
-                ));
-            }
+                String::new()
+            };
+            svg.push_str(&format!(
+                "  <text x=\"{:.2}\" y=\"{:.2}\" \
+                 font-family=\"sans-serif\" font-size=\"{}\" \
+                 text-anchor=\"middle\" dominant-baseline=\"central\" \
+                 fill=\"{}\"{}>{}</text>\n",
+                p.x, p.y,
+                FONT_SIZE as u32,
+                ctx.text_color(atom.element.atomic_number()),
+                data_attrs,
+                escape_xml(&label)
+            ));
+        } else if ctx.atom_ids {
+            // B3: unlabelled atoms (plain carbons) get an invisible anchor so JS can address them.
+            svg.push_str(&format!(
+                "  <text x=\"{:.2}\" y=\"{:.2}\" font-size=\"0\" \
+                 data-atom-idx=\"{}\" data-element=\"{}\" data-charge=\"{}\"/>\n",
+                p.x, p.y, idx.0, atom.element.symbol(), atom.charge
+            ));
         }
 
         // Atom index overlay (all atoms, including unlabelled carbons).
@@ -335,12 +330,10 @@ fn render_double_bond(p1: Point, p2: Point, color: &str) -> String {
     let (px, py) = perp_unit(p1, p2);
     let mut s = String::new();
     for sign in [-1.0_f64, 1.0] {
-        let ox = px * offset * sign;
-        let oy = py * offset * sign;
-        s.push_str(&format!(
-            "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
-             stroke=\"{}\" stroke-width=\"1.5\" fill=\"none\"/>\n",
-            p1.x + ox, p1.y + oy, p2.x + ox, p2.y + oy, color
+        s.push_str(&render_line(
+            Point::new(p1.x + px * offset * sign, p1.y + py * offset * sign),
+            Point::new(p2.x + px * offset * sign, p2.y + py * offset * sign),
+            "1.5", color,
         ));
     }
     s
@@ -350,34 +343,36 @@ fn render_triple_bond(p1: Point, p2: Point, color: &str) -> String {
     let (px, py) = perp_unit(p1, p2);
     let mut s = String::new();
     for &offset in &[0.0_f64, -3.0, 3.0] {
-        let ox = px * offset;
-        let oy = py * offset;
-        s.push_str(&format!(
-            "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
-             stroke=\"{}\" stroke-width=\"1.5\" fill=\"none\"/>\n",
-            p1.x + ox, p1.y + oy, p2.x + ox, p2.y + oy, color
+        s.push_str(&render_line(
+            Point::new(p1.x + px * offset, p1.y + py * offset),
+            Point::new(p2.x + px * offset, p2.y + py * offset),
+            "1.5", color,
         ));
     }
     s
+}
+
+fn render_line_dashed(p1: Point, p2: Point, stroke_width: &str, color: &str, dasharray: &str) -> String {
+    format!(
+        "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
+         stroke=\"{}\" stroke-width=\"{}\" fill=\"none\" stroke-dasharray=\"{}\"/>\n",
+        p1.x, p1.y, p2.x, p2.y, color, stroke_width, dasharray
+    )
 }
 
 fn render_aromatic_bond(p1: Point, p2: Point, color: &str) -> String {
     let offset = 2.0;
     let (px, py) = perp_unit(p1, p2);
     let mut s = String::new();
-    s.push_str(&format!(
-        "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
-         stroke=\"{}\" stroke-width=\"1.5\" fill=\"none\"/>\n",
-        p1.x - px * offset, p1.y - py * offset,
-        p2.x - px * offset, p2.y - py * offset,
-        color
+    s.push_str(&render_line(
+        Point::new(p1.x - px * offset, p1.y - py * offset),
+        Point::new(p2.x - px * offset, p2.y - py * offset),
+        "1.5", color,
     ));
-    s.push_str(&format!(
-        "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
-         stroke=\"{}\" stroke-width=\"1.5\" fill=\"none\" stroke-dasharray=\"4,3\"/>\n",
-        p1.x + px * offset, p1.y + py * offset,
-        p2.x + px * offset, p2.y + py * offset,
-        color
+    s.push_str(&render_line_dashed(
+        Point::new(p1.x + px * offset, p1.y + py * offset),
+        Point::new(p2.x + px * offset, p2.y + py * offset),
+        "1.5", color, "4,3",
     ));
     s
 }
@@ -411,12 +406,10 @@ fn render_dash_bond(p1: Point, p2: Point, color: &str) -> String {
         let cx = p1.x + t * dx;
         let cy = p1.y + t * dy;
         let hw = t * 3.0 + 0.5;
-        s.push_str(&format!(
-            "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
-             stroke=\"{}\" stroke-width=\"1.0\" fill=\"none\"/>\n",
-            cx - px * hw, cy - py * hw,
-            cx + px * hw, cy + py * hw,
-            color
+        s.push_str(&render_line(
+            Point::new(cx - px * hw, cy - py * hw),
+            Point::new(cx + px * hw, cy + py * hw),
+            "1.0", color,
         ));
     }
     s
@@ -444,18 +437,32 @@ fn atom_color(atomic_number: u8) -> &'static str {
 // Atom labels
 // ---------------------------------------------------------------------------
 
+/// Format a formal charge as a suffix string.
+/// Centralised here so the character used for minus is consistent everywhere (B5, R3).
+fn format_charge(c: i8) -> String {
+    match c {
+        0        => String::new(),
+        1        => "+".to_string(),
+        -1       => "-".to_string(),
+        c if c > 1 => format!("{c}+"),
+        c        => format!("{}-", -c), // e.g. "2-", "3-"
+    }
+}
+
 /// Compute the display label for an atom.
 ///
-/// Isolated single-atom molecules use molecular-formula style (H2O, CH4, NH3).
-/// In multi-atom molecules, plain carbons (no charge, no isotope) return "".
+/// Isolated atoms (single-atom molecule or degree-0 in a multi-atom molecule)
+/// use Hill-notation molecular-formula style: H2O, CH4, NH3.
+/// Plain carbons in bonded multi-atom molecules return "".
 fn atom_label(mol: &Molecule, idx: AtomIdx) -> String {
     let atom = mol.atom(idx);
     let is_carbon = atom.element.atomic_number() == 6;
     let has_charge = atom.charge != 0;
     let has_isotope = atom.isotope.is_some();
 
-    // Single-atom molecule: display as molecular formula (H2O, CH4, NH3...).
-    if mol.atom_count() == 1 {
+    // Isolated atom: use molecular-formula style (H2O, CH4, etc.).
+    // This covers both single-atom molecules and degree-0 atoms in disconnected SMILES (B4).
+    if mol.atom_count() == 1 || mol.degree(idx) == 0 {
         let h = chematic_core::implicit_hcount(mol, idx);
         return build_isolated_label(
             atom.element.symbol(),
@@ -465,7 +472,7 @@ fn atom_label(mol: &Molecule, idx: AtomIdx) -> String {
         );
     }
 
-    // Plain carbon in a multi-atom molecule: no label in skeletal structure.
+    // Plain carbon in a bonded multi-atom molecule: no label in skeletal structure.
     if is_carbon && !has_charge && !has_isotope {
         return String::new();
     }
@@ -483,26 +490,17 @@ fn atom_label(mol: &Molecule, idx: AtomIdx) -> String {
         }
     }
 
-    // Charge.
+    // Charge (R3: use shared helper; B5: consistent ASCII minus).
     if has_charge {
-        let c = atom.charge;
-        if c == 1 {
-            label.push('+');
-        } else if c == -1 {
-            label.push('-');
-        } else if c > 1 {
-            label.push_str(&format!("{c}+"));
-        } else {
-            label.push_str(&format!("{}−", -c));
-        }
+        label.push_str(&format_charge(atom.charge));
     }
 
     label
 }
 
-/// Build a molecular-formula-style label for an isolated single atom.
+/// Build a molecular-formula-style label for an isolated atom.
 ///
-/// Uses Hill notation convention: C first, then H, then alphabetical.
+/// Hill notation: C first, then H, then alphabetical.
 /// Examples: C→"CH4", O→"H2O", N→"H3N", S→"H2S", noble gas→"He"
 fn build_isolated_label(symbol: &str, atomic_number: u8, h: u8, charge: i8) -> String {
     let base = match atomic_number {
@@ -521,13 +519,7 @@ fn build_isolated_label(symbol: &str, atomic_number: u8, h: u8, charge: i8) -> S
     if charge == 0 {
         return base;
     }
-    let charge_str = match charge {
-        1  => "+".to_string(),
-        -1 => "-".to_string(),
-        c if c > 1 => format!("{c}+"),
-        c => format!("{}−", -c),
-    };
-    format!("{}{}", base, charge_str)
+    format!("{}{}", base, format_charge(charge)) // R3, B5
 }
 
 /// Escape XML special characters in a label string.
