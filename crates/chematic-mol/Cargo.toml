@@ -13,4 +13,4 @@ homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-mol"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.9" }
+chematic-core = { path = "../chematic-core", version = "0.1.14" }

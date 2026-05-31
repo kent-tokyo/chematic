@@ -9,6 +9,7 @@ pub mod alerts;
 pub mod brics;
 pub mod cip;
 pub mod descriptors;
+pub mod estate;
 pub mod hydrogen;
 pub mod qed;
 pub mod scaffold;
@@ -41,4 +42,5 @@ pub use topo_descriptors::{
     labute_asa,
     wiener_index,
 };
+pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
 pub use qed::qed;

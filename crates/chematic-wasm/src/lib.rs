@@ -291,6 +291,25 @@ impl MolHandle {
             .collect();
         format!("{{{}}}", entries.join(", "))
     }
+
+    // -----------------------------------------------------------------------
+    // EState descriptors (Sprint P)
+    // -----------------------------------------------------------------------
+
+    /// Sum of EState indices over all heavy atoms.
+    pub fn sum_estate(&self) -> f64 {
+        chematic_chem::sum_estate(&self.inner)
+    }
+
+    /// Maximum EState index across all heavy atoms.
+    pub fn max_estate(&self) -> f64 {
+        chematic_chem::max_estate(&self.inner)
+    }
+
+    /// Minimum EState index across all heavy atoms.
+    pub fn min_estate(&self) -> f64 {
+        chematic_chem::min_estate(&self.inner)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -582,6 +601,61 @@ pub fn depict_reaction_svg(rxn_smiles: &str) -> Result<String, JsValue> {
     }
     out.push_str("</svg>");
     Ok(out)
+}
+
+// ---------------------------------------------------------------------------
+// SDF / MOL I/O (Sprint P)
+// ---------------------------------------------------------------------------
+
+/// Parse a MOL V2000 block and return a `MolHandle`.
+///
+/// Returns a JS error string on parse failure.
+#[wasm_bindgen]
+pub fn mol_from_sdf_block(block: &str) -> Result<MolHandle, JsValue> {
+    let (mol, _meta) = chematic_mol::parse_mol(block)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(MolHandle { inner: std::rc::Rc::new(mol) })
+}
+
+/// Parse an SDF string and return a JSON array of canonical SMILES strings.
+///
+/// Invalid records are represented as `null` in the array.
+#[wasm_bindgen]
+pub fn sdf_to_smiles_json(sdf: &str) -> String {
+    let entries: Vec<String> = chematic_mol::SdfReader::new(sdf)
+        .map(|r| match r {
+            Ok((mol, _)) => {
+                let smi = chematic_smiles::canonical_smiles(&mol);
+                format!("\"{}\"", smi.replace('"', "\\\""))
+            }
+            Err(_) => "null".to_string(),
+        })
+        .collect();
+    format!("[{}]", entries.join(","))
+}
+
+// ---------------------------------------------------------------------------
+// EState free functions (Sprint P)
+// ---------------------------------------------------------------------------
+
+/// Per-atom EState values as a JSON array of f64.
+///
+/// Indices match `mol.atoms()` order.  Hydrogen atoms get 0.0.
+#[wasm_bindgen]
+pub fn estate_indices_json(mol: &MolHandle) -> String {
+    let vals = chematic_chem::estate_indices(&mol.inner);
+    let parts: Vec<String> = vals.iter().map(|v| format!("{v:.4}")).collect();
+    format!("[{}]", parts.join(","))
+}
+
+// ---------------------------------------------------------------------------
+// Tanimoto with topological path FP (Sprint P)
+// ---------------------------------------------------------------------------
+
+/// Tanimoto similarity between two molecules using topological path fingerprints.
+#[wasm_bindgen]
+pub fn tanimoto_topo_path(a: &MolHandle, b: &MolHandle) -> f64 {
+    chematic_fp::tanimoto_topo_path(&a.inner, &b.inner)
 }
 
 // ---------------------------------------------------------------------------
@@ -1020,6 +1094,69 @@ mod tests {
     fn smarts_parse_invalid_is_err() {
         assert!(chematic_smarts::parse_smarts("[invalid").is_err(),
             "invalid SMARTS should return Err from parse_smarts");
+    }
+
+    // ── Sprint P: SDF I/O, EState, topo path FP ─────────────────────────────
+
+    const ETHANE_MOL_BLOCK: &str = "\
+ethane
+  chematic
+
+  2  1  0  0  0  0  0  0  0  0  0 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+M  END
+";
+
+    #[test]
+    fn mol_from_sdf_block_ethane_atom_count() {
+        let h = mol_from_sdf_block(ETHANE_MOL_BLOCK).expect("ethane parse");
+        assert_eq!(h.atom_count(), 2);
+    }
+
+    #[test]
+    fn sdf_to_smiles_json_two_records() {
+        let sdf = format!("{ETHANE_MOL_BLOCK}$$$$\n{ETHANE_MOL_BLOCK}$$$$\n");
+        let json = sdf_to_smiles_json(&sdf);
+        assert!(json.starts_with('[') && json.ends_with(']'));
+        // Should contain 2 SMILES entries separated by comma.
+        let count = json.matches("CC").count();
+        assert_eq!(count, 2, "expected 2 ethane SMILES in JSON, got: {json}");
+    }
+
+    #[test]
+    fn estate_indices_json_acetic_acid_nonempty() {
+        let h = parse("CC(=O)O");
+        let json = estate_indices_json(&h);
+        assert!(json.starts_with('[') && json.ends_with(']'));
+        assert!(!json.is_empty() && json != "[]");
+    }
+
+    #[test]
+    fn tanimoto_topo_path_same_mol_is_one() {
+        let a = parse("c1ccccc1");
+        let b = parse("c1ccccc1");
+        assert!((tanimoto_topo_path(&a, &b) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn tanimoto_topo_path_different_mols_lt_one() {
+        let a = parse("c1ccccc1");
+        let b = parse("CC(=O)Oc1ccccc1C(=O)O");
+        assert!(tanimoto_topo_path(&a, &b) < 1.0);
+    }
+
+    #[test]
+    fn sum_estate_aspirin_positive() {
+        let h = parse("CC(=O)Oc1ccccc1C(=O)O");
+        assert!(h.sum_estate() > 0.0);
+    }
+
+    #[test]
+    fn max_min_estate_ordering() {
+        let h = parse("CC(=O)O");
+        assert!(h.max_estate() >= h.min_estate());
     }
 
     // ── Sprint O: depict_reaction_svg ────────────────────────────────────────

@@ -22,4 +22,4 @@ pub use bitvec::BitVec2048;
 pub use ecfp::{EcfpConfig, ecfp, ecfp4, ecfp6, morgan_fp_counts, tanimoto_ecfp4};
 pub use fcfp::{fcfp, fcfp4, fcfp6, tanimoto_fcfp4};
 pub use maccs::maccs;
-pub use topo_path::{TopoPathConfig, topo_path};
+pub use topo_path::{TopoPathConfig, tanimoto_topo_path, topo_path};
