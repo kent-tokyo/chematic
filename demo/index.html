@@ -195,10 +195,10 @@ section h2::before {
 
 /* ── SVG depiction ───────────────────────────────────────────────────── */
 .svg-area {
-  background: #fff;
+  background: var(--surface);
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
   min-height: 200px;
   overflow: hidden;
 }
@@ -213,6 +213,14 @@ section h2::before {
   text-align: center;
   padding: 2rem;
 }
+
+/* ── Radar chart ─────────────────────────────────────────────────────── */
+.radar-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 1.25rem;
+}
+.radar-wrap svg { max-width: 280px; height: auto; overflow: visible; }
 
 /* ── Descriptor table ────────────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; }
@@ -320,6 +328,58 @@ tbody td {
 }
 .sim-val { font-family: var(--font-mono); font-weight: 600; font-size: .9rem; }
 
+/* ── Sim molecule SVGs ───────────────────────────────────────────────── */
+.sim-svgs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.sim-svg-label {
+  font-size: .78rem; color: var(--muted); font-weight: 600;
+  margin-bottom: .3rem;
+}
+.sim-svg-box {
+  background: var(--surface);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 130px;
+  overflow: hidden;
+}
+.sim-svg-box svg { max-width: 100%; height: auto; display: block; }
+
+/* ── Drug Gallery ────────────────────────────────────────────────────── */
+.gallery-category { margin-bottom: 1.25rem; }
+.gallery-cat-title {
+  color: var(--muted);
+  font-size: .78rem; font-weight: 700;
+  letter-spacing: .06em;
+  margin-bottom: .5rem;
+  text-transform: uppercase;
+}
+.gallery-grid { display: flex; flex-wrap: wrap; gap: .4rem; }
+.gallery-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: .82rem; font-weight: 600;
+  padding: .4rem .9rem;
+  transition: border-color .15s, color .15s, background .15s;
+  white-space: nowrap;
+}
+.gallery-card:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.gallery-card.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
 /* ── Footer ──────────────────────────────────────────────────────────── */
 footer {
   text-align: center;
@@ -337,6 +397,7 @@ footer {
   .tagline { display: none; }
   section { padding: 1rem; }
   .sim-inputs { grid-template-columns: 1fr; }
+  .sim-svgs { grid-template-columns: 1fr; }
   .rules-grid { grid-template-columns: 1fr 1fr; }
   tbody td { padding: .4rem .6rem; }
 }
@@ -357,7 +418,7 @@ footer {
 <header>
   <div class="header-inner">
     <span class="logo">chematic</span>
-    <span class="version">v0.1.4</span>
+    <span class="version">v0.1.9</span>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en">EN</button>
@@ -389,6 +450,7 @@ footer {
     <div class="svg-area" id="svg-area">
       <span class="svg-placeholder" id="svg-placeholder"></span>
     </div>
+    <div class="radar-wrap" id="radar-wrap"></div>
     <div class="table-wrap">
       <table id="desc-table">
         <thead>
@@ -441,6 +503,16 @@ footer {
       <button id="btn-sim" class="btn"></button>
     </div>
     <div id="error-sim" class="error-banner hidden"></div>
+    <div class="sim-svgs" id="sim-svgs" style="display:none">
+      <div>
+        <div class="sim-svg-label" id="sim-svg-label-a"></div>
+        <div class="sim-svg-box" id="sim-svg-a"></div>
+      </div>
+      <div>
+        <div class="sim-svg-label" id="sim-svg-label-b"></div>
+        <div class="sim-svg-box" id="sim-svg-b"></div>
+      </div>
+    </div>
     <div class="table-wrap">
       <table>
         <thead>
@@ -454,6 +526,12 @@ footer {
         <tbody id="sim-tbody"></tbody>
       </table>
     </div>
+  </section>
+
+  <!-- Section 4: Drug Gallery -->
+  <section id="section-gallery">
+    <h2 id="h-gallery-title"></h2>
+    <div id="gallery-content"></div>
   </section>
 
 </main>
@@ -544,6 +622,13 @@ const T = {
     'error.empty':      'Please enter a SMILES string.',
     'error.parse':      'Failed to parse SMILES: ',
     'error.wasm':       'WASM not loaded yet — please wait.',
+    'gallery.title':    'Drug Gallery',
+    'gallery.nsaids':   'NSAIDs / Analgesics',
+    'gallery.antibiotics': 'Antibiotics',
+    'gallery.cardio':   'Cardiovascular',
+    'gallery.cns':      'CNS / Neurological',
+    'gallery.oncology': 'Oncology',
+    'gallery.nutrients': 'Nutrients / Others',
   },
   ja: {
     'app.tagline':      'ブラウザで動く純Rust化学情報処理ライブラリ',
@@ -618,6 +703,13 @@ const T = {
     'error.empty':      'SMILES を入力してください。',
     'error.parse':      'SMILES の解析に失敗しました: ',
     'error.wasm':       'WASM がまだ読み込まれていません。',
+    'gallery.title':    '医薬品ギャラリー',
+    'gallery.nsaids':   'NSAIDs / 解熱鎮痛薬',
+    'gallery.antibiotics': '抗生物質',
+    'gallery.cardio':   '心血管系',
+    'gallery.cns':      'CNS / 神経系',
+    'gallery.oncology': '抗がん剤',
+    'gallery.nutrients': '栄養素・その他',
   },
   zh: {
     'app.tagline':      '纯Rust化学信息学库，运行于浏览器',
@@ -692,6 +784,13 @@ const T = {
     'error.empty':      '请输入 SMILES 字符串。',
     'error.parse':      'SMILES 解析失败: ',
     'error.wasm':       'WASM 尚未加载，请稍候。',
+    'gallery.title':    '药物图库',
+    'gallery.nsaids':   'NSAIDs / 镇痛药',
+    'gallery.antibiotics': '抗生素',
+    'gallery.cardio':   '心血管药物',
+    'gallery.cns':      'CNS / 神经系统',
+    'gallery.oncology': '抗肿瘤药',
+    'gallery.nutrients': '营养素 / 其他',
   },
 };
 
@@ -711,10 +810,13 @@ const STATIC_IDS = {
   'h-sim-title':     'sim.title',
   'sim-label-a':     'sim.mol_a',
   'sim-label-b':     'sim.mol_b',
+  'sim-svg-label-a': 'sim.mol_a',
+  'sim-svg-label-b': 'sim.mol_b',
   'btn-sim':         'sim.compare',
   'th-sim-method':   'sim.th_method',
   'th-sim-desc':     'sim.th_desc',
   'th-sim-tanimoto': 'sim.th_tanimoto',
+  'h-gallery-title': 'gallery.title',
   'p-aspirin':       'preset.aspirin',
   'p-caffeine':      'preset.caffeine',
   'p-ibuprofen':     'preset.ibuprofen',
@@ -748,6 +850,7 @@ function applyLang(newLang) {
 
   renderRuleCards(lastMol);
   renderSimTable(lastSimResults);
+  renderGallery();
 }
 
 // ============================================================
@@ -830,6 +933,138 @@ const SIM_DEFS = [
   { nameKey: 'sim.atompair', descKey: 'sim.atompair_d', fn: (a,b) => tanimotoAtomPair(a,b) },
   { nameKey: 'sim.torsion',  descKey: 'sim.torsion_d',  fn: (a,b) => tanimotoTorsion(a,b)  },
 ];
+
+// ============================================================
+// Drug Gallery data
+// ============================================================
+const GALLERY = [
+  { catKey: 'gallery.nsaids', drugs: [
+    { name: 'Aspirin',      smiles: 'CC(=O)Oc1ccccc1C(=O)O' },
+    { name: 'Ibuprofen',    smiles: 'CC(C)Cc1ccc(cc1)C(C)C(=O)O' },
+    { name: 'Naproxen',     smiles: 'CC(C(=O)O)c1ccc2cccc(OC)c2c1' },
+    { name: 'Celecoxib',    smiles: 'Cc1ccc(-c2cc(C(F)(F)F)nn2-c2ccc(cc2)S(N)(=O)=O)cc1' },
+    { name: 'Diclofenac',   smiles: 'OC(=O)Cc1ccccc1Nc1c(Cl)cccc1Cl' },
+  ]},
+  { catKey: 'gallery.antibiotics', drugs: [
+    { name: 'Amoxicillin',   smiles: 'CC1(C(N2C(S1)C(C2=O)NC(=O)C(c3ccc(cc3)O)N)C(=O)O)C' },
+    { name: 'Ciprofloxacin', smiles: 'C1CC1N2C=C(C(=O)C3=CC(=C(C=C23)N4CCNCC4)F)C(=O)O' },
+    { name: 'Metronidazole', smiles: 'CC1=NC=C(N1CCO)[N+](=O)[O-]' },
+  ]},
+  { catKey: 'gallery.cardio', drugs: [
+    { name: 'Atorvastatin', smiles: 'CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O' },
+    { name: 'Amlodipine',   smiles: 'CCOC(=O)C1=C(COCCN)NC(=C(C1c1ccccc1Cl)C(=O)OCC)C' },
+    { name: 'Metoprolol',   smiles: 'CC(C)NCC(O)COc1ccc(CCOC)cc1' },
+    { name: 'Warfarin',     smiles: 'CC(=O)CC(c1ccccc1)c1c(O)c2ccccc2oc1=O' },
+  ]},
+  { catKey: 'gallery.cns', drugs: [
+    { name: 'Caffeine',     smiles: 'Cn1cnc2c1c(=O)n(c(=O)n2C)C' },
+    { name: 'Fluoxetine',   smiles: 'CNCCC(c1ccccc1)Oc1ccc(cc1)C(F)(F)F' },
+    { name: 'Morphine',     smiles: 'CN1CCC23C4C1CC(C2OC5=C(O)C=CC(=C35)C4O)O' },
+    { name: 'Sertraline',   smiles: 'CN[C@@H]1CC[C@H](c2ccc(Cl)c(Cl)c2)c2ccccc21' },
+  ]},
+  { catKey: 'gallery.oncology', drugs: [
+    { name: 'Imatinib',     smiles: 'Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1' },
+    { name: 'Taxol',        smiles: 'CC1=C2C(C(=O)C3(C(CC4C(C3C(C(=C2OC1=O)C)(C)C)OC(=O)C5=CC=CC=C5)OC(=O)C4)O)(C)C' },
+    { name: 'Erlotinib',    smiles: 'C#Cc1cccc(Nc2ncnc3cc(OCCO)c(OCCO)cc23)c1' },
+  ]},
+  { catKey: 'gallery.nutrients', drugs: [
+    { name: 'Glucose',      smiles: 'OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O' },
+    { name: 'Cholesterol',  smiles: 'CC(C)CCCC(C)C1CCC2C1(CCC3C2CC=C4C3(CCC(C4)O)C)C' },
+    { name: 'Vitamin C',    smiles: 'OC[C@H](O)[C@H]1OC(=O)C(O)=C1O' },
+    { name: 'Riboflavin',   smiles: 'Cc1cc2nc3c(=O)[nH]c(=O)nc3n(C[C@H](O)[C@H](O)[C@H](O)CO)c2cc1C' },
+  ]},
+];
+
+// ============================================================
+// Render: radar chart (pure SVG, no library)
+// ============================================================
+function renderRadar(mol) {
+  const wrap = document.getElementById('radar-wrap');
+  wrap.textContent = '';
+  if (!mol) return;
+
+  const axes = [
+    { label: 'MW',       val: mol.molecular_weight() / 500 },
+    { label: 'LogP',     val: (mol.logp_crippen() + 5) / 10 },
+    { label: 'HBD',      val: mol.hbd_count() / 5 },
+    { label: 'HBA',      val: mol.hba_count() / 10 },
+    { label: 'TPSA',     val: mol.tpsa() / 140 },
+    { label: 'RotBonds', val: mol.rotatable_bond_count() / 10 },
+  ];
+
+  const size = 300, cx = 150, cy = 150, r = 95;
+  const n = axes.length;
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('aria-label', 'Property radar chart');
+
+  function angle(i) { return (i / n) * 2 * Math.PI - Math.PI / 2; }
+  function pt(frac, i) {
+    const a = angle(i);
+    return [cx + r * frac * Math.cos(a), cy + r * frac * Math.sin(a)];
+  }
+
+  // Grid rings
+  for (const frac of [0.25, 0.5, 0.75, 1.0]) {
+    const pts = Array.from({ length: n }, (_, i) => pt(frac, i));
+    const poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', pts.map(p => p.join(',')).join(' '));
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', frac === 1.0 ? '#4f8ef788' : '#2e3246');
+    poly.setAttribute('stroke-width', frac === 1.0 ? '1.5' : '0.7');
+    if (frac === 1.0) poly.setAttribute('stroke-dasharray', '4 3');
+    svg.appendChild(poly);
+  }
+
+  // Axis spokes
+  Array.from({ length: n }, (_, i) => {
+    const [x, y] = pt(1, i);
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', x);  line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#2e3246');
+    line.setAttribute('stroke-width', '0.7');
+    svg.appendChild(line);
+  });
+
+  // Data polygon
+  const clamped = axes.map(a => Math.min(Math.max(a.val, 0), 1.5));
+  const allInRange = clamped.every(v => v <= 1.0);
+  const dataPts = clamped.map((v, i) => pt(v, i));
+  const poly = document.createElementNS(NS, 'polygon');
+  poly.setAttribute('points', dataPts.map(p => p.join(',')).join(' '));
+  poly.setAttribute('fill', allInRange ? 'rgba(52,211,153,.22)' : 'rgba(248,113,113,.18)');
+  poly.setAttribute('stroke', allInRange ? '#34d399' : '#f87171');
+  poly.setAttribute('stroke-width', '2');
+  poly.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(poly);
+
+  // Dots at vertices
+  dataPts.forEach(([x, y], i) => {
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '3');
+    dot.setAttribute('fill', allInRange ? '#34d399' : '#f87171');
+    svg.appendChild(dot);
+  });
+
+  // Axis labels
+  axes.forEach((axis, i) => {
+    const [x, y] = pt(1.32, i);
+    const text = document.createElementNS(NS, 'text');
+    text.setAttribute('x', x);
+    text.setAttribute('y', y);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('font-size', '11');
+    text.setAttribute('fill', '#8b92a9');
+    text.setAttribute('font-family', 'var(--font-ui, sans-serif)');
+    text.textContent = axis.label;
+    svg.appendChild(text);
+  });
+
+  wrap.appendChild(svg);
+}
 
 // ============================================================
 // Render: descriptors (all text via textContent — no XSS risk)
@@ -946,14 +1181,89 @@ function renderSimTable(results) {
 }
 
 // ============================================================
+// Render: similarity molecule SVGs (DOMParser — safe from Rust output)
+// ============================================================
+function renderSimSvgs(mA, mB) {
+  function insertSvg(mol, boxEl) {
+    boxEl.textContent = '';
+    try {
+      const opts = makeDepictOpts();
+      const str = mol.depict_svg_opts(opts);
+      opts.free();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(str, 'image/svg+xml');
+      if (doc.querySelector('parsererror')) throw new Error('bad svg');
+      boxEl.appendChild(doc.documentElement);
+    } catch (_) {
+      const ph = document.createElement('span');
+      ph.style.cssText = 'color:#aaa;font-size:.85rem;padding:1rem';
+      ph.textContent = '—';
+      boxEl.appendChild(ph);
+    }
+  }
+
+  insertSvg(mA, document.getElementById('sim-svg-a'));
+  insertSvg(mB, document.getElementById('sim-svg-b'));
+  document.getElementById('sim-svgs').style.display = '';
+}
+
+// ============================================================
+// Render: drug gallery
+// ============================================================
+function renderGallery() {
+  const container = document.getElementById('gallery-content');
+  container.textContent = '';
+  for (const cat of GALLERY) {
+    const catDiv = document.createElement('div');
+    catDiv.className = 'gallery-category';
+
+    const title = document.createElement('div');
+    title.className = 'gallery-cat-title';
+    title.textContent = t(cat.catKey);
+    catDiv.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'gallery-grid';
+
+    for (const drug of cat.drugs) {
+      const card = document.createElement('button');
+      card.className = 'gallery-card';
+      card.textContent = drug.name;
+      card.dataset.smiles = drug.smiles;
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.gallery-card.active').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        document.getElementById('smiles-input').value = drug.smiles;
+        document.getElementById('section-descriptor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        calculate();
+      });
+      grid.appendChild(card);
+    }
+
+    catDiv.appendChild(grid);
+    container.appendChild(catDiv);
+  }
+}
+
+// ============================================================
+// DepictOptions helper — dark theme + transparent background
+// ============================================================
+function makeDepictOpts() {
+  const opts = new DepictOptions();
+  opts.set_dark(true);
+  opts.set_background('transparent');
+  return opts;
+}
+
+// ============================================================
 // SVG depiction (output from our own WASM library — trusted source)
 // ============================================================
 function renderSvg(mol) {
   const area = document.getElementById('svg-area');
   try {
-    const svgStr = mol.depict_svg();
-    // svgStr is generated by our Rust SVG renderer, not user input.
-    // We use DOMParser to validate it as XML before inserting.
+    const opts = makeDepictOpts();
+    const svgStr = mol.depict_svg_opts(opts);
+    opts.free();
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgStr, 'image/svg+xml');
     const err = doc.querySelector('parsererror');
@@ -999,6 +1309,7 @@ function calculate() {
   lastMol = mol;
 
   renderSvg(mol);
+  renderRadar(mol);
   renderDescriptors(mol);
   renderRuleCards(mol);
 }
@@ -1017,6 +1328,7 @@ function compare() {
   try { mA = parseSmilesWasm(sA); } catch(e) { showError('error-sim', 'A: ' + t('error.parse') + String(e)); return; }
   try { mB = parseSmilesWasm(sB); } catch(e) { mA.free(); showError('error-sim', 'B: ' + t('error.parse') + String(e)); return; }
 
+  renderSimSvgs(mA, mB);
   const results = SIM_DEFS.map(d => d.fn(mA, mB));
   mA.free(); mB.free();
   renderSimTable(results);
@@ -1034,6 +1346,7 @@ function compare() {
 
   renderRuleCards(null);
   renderSimTable(null);
+  renderGallery();
 
   await initWasm();
   document.getElementById('loading-overlay').classList.add('hidden');
@@ -1047,10 +1360,17 @@ function compare() {
     btn.addEventListener('click', () => applyLang(btn.dataset.lang));
   });
 
-  // Calculate
+  // Calculate (button + Enter)
   document.getElementById('btn-calc').addEventListener('click', calculate);
   document.getElementById('smiles-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') calculate();
+  });
+
+  // Real-time rendering: debounced input → auto-calculate
+  let calcTimer;
+  document.getElementById('smiles-input').addEventListener('input', () => {
+    clearTimeout(calcTimer);
+    calcTimer = setTimeout(() => { if (wasmReady) calculate(); }, 350);
   });
 
   // Descriptor presets
@@ -1068,7 +1388,7 @@ function compare() {
     });
   });
 
-  // Compare
+  // Compare (button + Enter)
   document.getElementById('btn-sim').addEventListener('click', compare);
   ['sim-a', 'sim-b'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => {
