@@ -463,26 +463,22 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// - S: thioether=+0.6482, aromatic=+0.6237 (was 0.2432/0.0)
 /// - O: alcohol=−0.2893, ether=−0.0684, aromatic=+0.1552, carbonyl=−0.0509
 /// - Cl: aromatic=+0.7904, aliphatic=+0.6895
-pub fn logp_crippen(mol: &Molecule) -> f64 {
-    let mut logp = 0.0f64;
-
-    for (idx, atom) in mol.atoms() {
-        let an  = atom.element.atomic_number();
-        let ar  = atom.aromatic;
-        let h   = implicit_hcount(mol, idx);
-
-        // ── Heavy-atom contribution ───────────────────────────────────────────
+/// Per-atom Crippen LogP contributions (heavy atoms only; H contributions are
+/// folded into the heavy atom they are attached to). Index matches mol.atoms().
+pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
+    mol.atoms().map(|(idx, atom)| {
+        let an = atom.element.atomic_number();
+        let ar = atom.aromatic;
+        let h  = implicit_hcount(mol, idx);
         let heavy = match an {
             6  => crippen_carbon(mol, idx, ar, h),
             7  => crippen_nitrogen(mol, idx, ar),
             8  => crippen_oxygen(mol, idx, ar, h),
             16 => crippen_sulfur(mol, idx, ar),
-            9  => crippen_halogen(mol, idx, ar, 0.2761, 0.4202),  // F
-            17 => crippen_halogen(mol, idx, ar, 0.7904, 0.6895),  // Cl
-            35 => crippen_halogen(mol, idx, ar, 0.8995, 0.8456),  // Br
-            53 => crippen_halogen(mol, idx, ar, 0.7416, 0.8857),  // I
-            // P: Wildman-Crippen 1999. Phosphate ester P(=O) calibrated against
-            // trimethyl_phosphate (RDKit LogP=1.0337); phosphine uses original value.
+            9  => crippen_halogen(mol, idx, ar, 0.2761, 0.4202),
+            17 => crippen_halogen(mol, idx, ar, 0.7904, 0.6895),
+            35 => crippen_halogen(mol, idx, ar, 0.8995, 0.8456),
+            53 => crippen_halogen(mol, idx, ar, 0.7416, 0.8857),
             15 => {
                 let has_oxo = mol.neighbors(idx).any(|(nb, bidx)| {
                     mol.bond(bidx).order == BondOrder::Double
@@ -490,18 +486,17 @@ pub fn logp_crippen(mol: &Molecule) -> f64 {
                 });
                 if has_oxo { 0.7933 } else { -0.3451 }
             }
-            _  => 0.0,
+            _ => 0.0,
         };
-
-        // ── H contribution ────────────────────────────────────────────────────
         let h_contrib = if h == 0 { 0.0 } else {
             crippen_hydrogen(mol, idx, an, ar) * h as f64
         };
+        heavy + h_contrib
+    }).collect()
+}
 
-        logp += heavy + h_contrib;
-    }
-
-    logp
+pub fn logp_crippen(mol: &Molecule) -> f64 {
+    logp_crippen_per_atom(mol).iter().sum()
 }
 
 /// Crippen contribution for Carbon atoms.
@@ -902,37 +897,38 @@ fn mr_hydrogen(mol: &Molecule, idx: AtomIdx, an: u8, ar: bool) -> f64 {
     }
 }
 
-/// Compute Molar Refractivity using the Wildman-Crippen additive model.
-///
-/// Uses the same atom-type framework as `logp_crippen` but with MR contributions
-/// from Wildman & Crippen 1999 (J. Chem. Inf. Comput. Sci. 39, 868-873).
-pub fn molar_refractivity(mol: &Molecule) -> f64 {
-    let mut mr = 0.0f64;
-    for (idx, atom) in mol.atoms() {
-        let an  = atom.element.atomic_number();
-        let ar  = atom.aromatic;
-        let h   = implicit_hcount(mol, idx);
-
+/// Per-atom Molar Refractivity contributions (Wildman & Crippen 1999).
+/// H contributions folded into the attached heavy atom. Index matches mol.atoms().
+pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
+    mol.atoms().map(|(idx, atom)| {
+        let an = atom.element.atomic_number();
+        let ar = atom.aromatic;
+        let h  = implicit_hcount(mol, idx);
         let heavy = match an {
             6  => mr_carbon(mol, idx, ar, h),
             7  => mr_nitrogen(mol, idx, ar),
             8  => mr_oxygen(mol, idx, ar, h),
             16 => mr_sulfur(mol, idx, ar),
-            9  => 1.108,    // F
-            17 => 5.853,    // Cl
-            35 => 8.927,    // Br
-            53 => 14.02,    // I
-            15 => 6.920,    // P
-            _  => 3.243,    // CS fallback (generic carbon value)
+            9  => 1.108,
+            17 => 5.853,
+            35 => 8.927,
+            53 => 14.02,
+            15 => 6.920,
+            _  => 3.243,
         };
-
         let h_contrib = if h == 0 { 0.0 } else {
             mr_hydrogen(mol, idx, an, ar) * h as f64
         };
+        heavy + h_contrib
+    }).collect()
+}
 
-        mr += heavy + h_contrib;
-    }
-    mr
+/// Compute Molar Refractivity using the Wildman-Crippen additive model.
+///
+/// Uses the same atom-type framework as `logp_crippen` but with MR contributions
+/// from Wildman & Crippen 1999 (J. Chem. Inf. Comput. Sci. 39, 868-873).
+pub fn molar_refractivity(mol: &Molecule) -> f64 {
+    mr_per_atom(mol).iter().sum()
 }
 
 // ---------------------------------------------------------------------------

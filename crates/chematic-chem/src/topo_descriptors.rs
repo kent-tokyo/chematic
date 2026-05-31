@@ -365,6 +365,57 @@ fn bond_scale(order: BondOrder) -> f64 {
     }
 }
 
+/// Per-atom Labute approximate surface area contributions (Å²).
+/// H sphere areas are folded into the heavy atom they are attached to.
+/// Implements: P. Labute, 2000, *J. Mol. Graph. Mod.* **18**, 464–477.
+pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
+    let n = mol.atom_count();
+    if n == 0 {
+        return Vec::new();
+    }
+
+    const R_H: f64 = 0.33;
+    let mut v: Vec<f64> = vec![0.0; n];
+    let radii: Vec<f64> = (0..n)
+        .map(|i| rb0(mol.atom(AtomIdx(i as u32)).element.atomic_number()))
+        .collect();
+
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        let ri = radii[i];
+        let rj = radii[j];
+        if ri < 1e-10 || rj < 1e-10 {
+            continue;
+        }
+        let scale = bond_scale(bond.order);
+        let bij = ri + rj - scale;
+        let dij = (ri - rj).abs().max(bij).min(ri + rj);
+        let vi = (rj * rj - (ri - dij) * (ri - dij)) / dij;
+        let vj = (ri * ri - (rj - dij) * (rj - dij)) / dij;
+        if vi > 0.0 { v[i] += vi; }
+        if vj > 0.0 { v[j] += vj; }
+    }
+
+    for i in 0..n {
+        let ri = radii[i];
+        if ri < 1e-10 { continue; }
+        let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
+        for _ in 0..h_count {
+            let dij = ri + R_H;
+            let vi = (R_H * R_H - (ri - dij) * (ri - dij)) / dij;
+            if vi > 0.0 { v[i] += vi; }
+        }
+    }
+
+    (0..n).map(|i| {
+        let ri = radii[i];
+        let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
+        let heavy_area = (4.0 * PI * ri * ri - PI * ri * v[i]).max(0.0);
+        heavy_area + h_count as f64 * 4.0 * PI * R_H * R_H
+    }).collect()
+}
+
 /// Labute approximate surface area (Å²).
 ///
 /// Implements: P. Labute, 2000, *J. Mol. Graph. Mod.* **18**, 464–477.
@@ -379,71 +430,7 @@ fn bond_scale(order: BondOrder) -> f64 {
 /// Bond distance: `dij = clamp(|Ri−Rj|, Ri+Rj−scale, Ri+Rj)`.
 /// Implicit H atoms (radius 0.33 Å, single-bond scale 0) are included.
 pub fn labute_asa(mol: &Molecule) -> f64 {
-    let n = mol.atom_count();
-    if n == 0 {
-        return 0.0;
-    }
-
-    // V[i] accumulates the surface-cap contributions from all bonds of atom i.
-    let mut v: Vec<f64> = vec![0.0; n];
-    // Radii for all heavy atoms.
-    let radii: Vec<f64> = (0..n)
-        .map(|i| rb0(mol.atom(AtomIdx(i as u32)).element.atomic_number()))
-        .collect();
-
-    // Process each heavy–heavy bond.
-    for (_, bond) in mol.bonds() {
-        let i = bond.atom1.0 as usize;
-        let j = bond.atom2.0 as usize;
-        let ri = radii[i];
-        let rj = radii[j];
-        if ri < 1e-10 || rj < 1e-10 {
-            continue;
-        }
-        let scale = bond_scale(bond.order);
-        let bij = ri + rj - scale;
-        let dij = (ri - rj).abs().max(bij).min(ri + rj);
-
-        let vi = (rj * rj - (ri - dij) * (ri - dij)) / dij;
-        let vj = (ri * ri - (rj - dij) * (rj - dij)) / dij;
-        if vi > 0.0 { v[i] += vi; }
-        if vj > 0.0 { v[j] += vj; }
-    }
-
-    // Process implicit H atoms (H–heavy single bonds, scale = 0).
-    const R_H: f64 = 0.33;
-    for i in 0..n {
-        let ri = radii[i];
-        if ri < 1e-10 {
-            continue;
-        }
-        let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
-        for _ in 0..h_count {
-            // d = ri + rH (single bond, scale=0)
-            let dij = ri + R_H;
-            let vi = (R_H * R_H - (ri - dij) * (ri - dij)) / dij;
-            if vi > 0.0 { v[i] += vi; }
-            // H sphere contribution (unaffected by single bond to heavy atom):
-            // V_H from heavy atom = (ri² - (rH - dij)²)/dij
-            // = (ri² - (rH - ri - rH)²)/dij = (ri² - ri²)/dij = 0  → skip
-        }
-    }
-
-    // Sum heavy-atom exposed areas.
-    let mut asa = 0.0_f64;
-    for i in 0..n {
-        let ri = radii[i];
-        let ai = (4.0 * PI * ri * ri - PI * ri * v[i]).max(0.0);
-        asa += ai;
-    }
-
-    // Add H sphere areas (implicit H; single bonds contribute V_H = 0).
-    for i in 0..n {
-        let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
-        asa += h_count as f64 * 4.0 * PI * R_H * R_H;
-    }
-
-    asa
+    labute_asa_per_atom(mol).iter().sum()
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────

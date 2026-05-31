@@ -659,6 +659,60 @@ pub fn tanimoto_topo_path(a: &MolHandle, b: &MolHandle) -> f64 {
 }
 
 // ---------------------------------------------------------------------------
+// Sprint Q: IFG, VSA descriptors, Gasteiger charges, SA Score, Diversity
+// ---------------------------------------------------------------------------
+
+/// Identify functional groups. Returns a JSON array of objects:
+/// `[{"atoms":[0,2,3],"type":"C,N,O"}, …]`
+#[wasm_bindgen]
+pub fn identify_functional_groups(mol: &MolHandle) -> String {
+    let groups = chematic_chem::identify_functional_groups(&mol.inner);
+    let parts: Vec<String> = groups.iter().map(|g| {
+        let atoms: Vec<String> = g.atom_indices.iter().map(|i| i.to_string()).collect();
+        format!("{{\"atoms\":[{}],\"type\":\"{}\"}}", atoms.join(","), g.atom_types)
+    }).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Gasteiger-Marsili PEOE partial charges as a JSON array of f64.
+#[wasm_bindgen]
+pub fn gasteiger_charges_json(mol: &MolHandle) -> String {
+    let q = chematic_chem::gasteiger_charges(&mol.inner);
+    let parts: Vec<String> = q.iter().map(|v| format!("{v:.4}")).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Synthetic Accessibility Score (1 = easy, 10 = hard).
+#[wasm_bindgen]
+pub fn sa_score(mol: &MolHandle) -> f64 {
+    chematic_chem::sa_score(&mol.inner)
+}
+
+/// SlogP_VSA descriptors (12 bins) as a JSON array.
+#[wasm_bindgen]
+pub fn slogp_vsa_json(mol: &MolHandle) -> String {
+    let v = chematic_chem::slogp_vsa(&mol.inner);
+    let parts: Vec<String> = v.iter().map(|x| format!("{x:.4}")).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// SMR_VSA descriptors (10 bins) as a JSON array.
+#[wasm_bindgen]
+pub fn smr_vsa_json(mol: &MolHandle) -> String {
+    let v = chematic_chem::smr_vsa(&mol.inner);
+    let parts: Vec<String> = v.iter().map(|x| format!("{x:.4}")).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// PEOE_VSA descriptors (14 bins) as a JSON array.
+#[wasm_bindgen]
+pub fn peoe_vsa_json(mol: &MolHandle) -> String {
+    let v = chematic_chem::peoe_vsa(&mol.inner);
+    let parts: Vec<String> = v.iter().map(|x| format!("{x:.4}")).collect();
+    format!("[{}]", parts.join(","))
+}
+
+// ---------------------------------------------------------------------------
 // Private helper: molecular formula (Hill notation)
 // ---------------------------------------------------------------------------
 
@@ -1179,5 +1233,65 @@ M  END
     #[test]
     fn rxn_parse_missing_arrow_is_err() {
         assert!(chematic_rxn::parse_reaction("not_a_reaction").is_err());
+    }
+
+    // ── Sprint Q: IFG, Gasteiger, SA Score, VSA ──────────────────────────────
+
+    #[test]
+    fn identify_functional_groups_pyridine_has_n() {
+        let h = parse("c1ccncc1");
+        let json = identify_functional_groups(&h);
+        assert!(json.contains('N'), "pyridine FG JSON should contain N: {json}");
+        assert!(json.starts_with('['), "should be JSON array");
+    }
+
+    #[test]
+    fn identify_functional_groups_hexane_empty() {
+        let h = parse("CCCCCC");
+        let json = identify_functional_groups(&h);
+        assert_eq!(json, "[]", "hexane should have no functional groups");
+    }
+
+    #[test]
+    fn gasteiger_charges_json_oxygen_negative() {
+        let h = parse("CC(=O)O"); // acetic acid
+        let json = gasteiger_charges_json(&h);
+        assert!(json.starts_with('[') && json.ends_with(']'));
+        // Parse values and verify at least one is negative.
+        let has_negative = json.trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .any(|s| s.trim().parse::<f64>().map(|v| v < 0.0).unwrap_or(false));
+        assert!(has_negative, "acetic acid should have at least one negative charge: {json}");
+    }
+
+    #[test]
+    fn sa_score_range() {
+        let h = parse("CC(=O)Oc1ccccc1C(=O)O"); // aspirin
+        let score = sa_score(&h);
+        assert!(score >= 1.0 && score <= 10.0, "SA score out of [1,10]: {score:.2}");
+    }
+
+    #[test]
+    fn slogp_vsa_json_length_12() {
+        let h = parse("c1ccccc1");
+        let json = slogp_vsa_json(&h);
+        let count = json.trim_matches(|c| c == '[' || c == ']').split(',').count();
+        assert_eq!(count, 12, "SlogP_VSA should have 12 values");
+    }
+
+    #[test]
+    fn smr_vsa_json_length_10() {
+        let h = parse("c1ccccc1");
+        let json = smr_vsa_json(&h);
+        let count = json.trim_matches(|c| c == '[' || c == ']').split(',').count();
+        assert_eq!(count, 10, "SMR_VSA should have 10 values");
+    }
+
+    #[test]
+    fn peoe_vsa_json_length_14() {
+        let h = parse("c1ccccc1");
+        let json = peoe_vsa_json(&h);
+        let count = json.trim_matches(|c| c == '[' || c == ']').split(',').count();
+        assert_eq!(count, 14, "PEOE_VSA should have 14 values");
     }
 }
