@@ -567,7 +567,7 @@ footer {
 <header>
   <div class="header-inner">
     <span class="logo">chematic</span>
-    <span class="version">v0.1.14</span>
+    <span class="version">v0.1.15</span>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en">EN</button>
@@ -652,6 +652,12 @@ footer {
       </div>
       <div id="error-sdf" class="error-banner hidden"></div>
       <div class="rxn-svg-wrap" id="sdf-grid-output"></div>
+    </section>
+
+    <!-- Functional Group Identification -->
+    <section id="section-ifg" class="rxn-eq-section">
+      <h3 class="rxn-eq-heading" id="h-ifg-title"></h3>
+      <div id="ifg-output" style="font-family:var(--font-mono);font-size:.82rem;color:var(--muted);min-height:1.5rem"></div>
     </section>
 
     <!-- Drug-likeness Rules -->
@@ -896,6 +902,9 @@ const T = {
     'sdf.title':        'SDF / MOL Upload',
     'sdf.load':         'Load',
     'sdf.placeholder':  'Paste SDF or MOL V2000 block here…',
+    'desc.sa_score':    'SA Score',
+    'desc.labute_asa':  'LabuteASA',
+    'ifg.title':        'Functional Groups (IFG)',
     'preset.aspirin':   'Aspirin',
     'preset.caffeine':  'Caffeine',
     'preset.ibuprofen': 'Ibuprofen',
@@ -1015,6 +1024,9 @@ const T = {
     'sdf.title':        'SDF / MOL アップロード',
     'sdf.load':         '読み込む',
     'sdf.placeholder':  'SDF または MOL V2000 ブロックを貼り付け…',
+    'desc.sa_score':    'SA スコア',
+    'desc.labute_asa':  'LabuteASA',
+    'ifg.title':        '官能基識別 (IFG)',
     'preset.aspirin':   'アスピリン',
     'preset.caffeine':  'カフェイン',
     'preset.ibuprofen': 'イブプロフェン',
@@ -1134,6 +1146,9 @@ const T = {
     'sdf.title':        'SDF / MOL 文件上传',
     'sdf.load':         '加载',
     'sdf.placeholder':  '粘贴 SDF 或 MOL V2000 格式内容…',
+    'desc.sa_score':    'SA 分数',
+    'desc.labute_asa':  'LabuteASA',
+    'ifg.title':        '官能团识别 (IFG)',
     'preset.aspirin':   '阿司匹林',
     'preset.caffeine':  '咖啡因',
     'preset.ibuprofen': '布洛芬',
@@ -1245,6 +1260,7 @@ const STATIC_IDS = {
   'viewer-placeholder-text': '3d.placeholder',
   'h-sdf-title':            'sdf.title',
   'btn-sdf-load':           'sdf.load',
+  'h-ifg-title':            'ifg.title',
 };
 
 function applyLang(newLang) {
@@ -1303,6 +1319,7 @@ let wasmReady = false;
 let parseSmilesWasm, tanimotoEcfp4, tanimotoFcfp4, tanimotoAtomPair, tanimotoTorsion, bricsFrag;
 let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms, generate3dPdb, depictReactionSvg;
 let molFromSdfBlock, sdfToSmilesJson, estateIndicesJson, tanimotoTopoPath;
+let identifyFunctionalGroups, gasteigerChargesJson, saScore, slogpVsaJson, smrVsaJson, peoeVsaJson;
 let lastMol = null;
 let lastSimResults = null;
 let highlightedAtoms = [];
@@ -1328,10 +1345,16 @@ async function initWasm() {
     smartsMatchAtoms = mod.smarts_match_atoms;
     generate3dPdb       = mod.generate_3d_pdb;
     depictReactionSvg   = mod.depict_reaction_svg;
-    molFromSdfBlock     = mod.mol_from_sdf_block;
-    sdfToSmilesJson     = mod.sdf_to_smiles_json;
-    estateIndicesJson   = mod.estate_indices_json;
-    tanimotoTopoPath    = mod.tanimoto_topo_path;
+    molFromSdfBlock          = mod.mol_from_sdf_block;
+    sdfToSmilesJson          = mod.sdf_to_smiles_json;
+    estateIndicesJson        = mod.estate_indices_json;
+    tanimotoTopoPath         = mod.tanimoto_topo_path;
+    identifyFunctionalGroups = mod.identify_functional_groups;
+    gasteigerChargesJson     = mod.gasteiger_charges_json;
+    saScore                  = mod.sa_score;
+    slogpVsaJson             = mod.slogp_vsa_json;
+    smrVsaJson               = mod.smr_vsa_json;
+    peoeVsaJson              = mod.peoe_vsa_json;
     wasmReady = true;
   } catch (e) {
     document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
@@ -1456,6 +1479,8 @@ const DESC_DEFS = [
   { key: 'desc.estate_sum',  fn: m => m.sum_estate().toFixed(3)                   },
   { key: 'desc.estate_max',  fn: m => m.max_estate().toFixed(3)                   },
   { key: 'desc.estate_min',  fn: m => m.min_estate().toFixed(3)                   },
+  { key: 'desc.sa_score',    fn: m => saScore ? saScore(m).toFixed(2) : '—'       },
+  { key: 'desc.labute_asa',  fn: m => m.labute_asa().toFixed(2)                   },
 ];
 
 const RULE_DEFS = [
@@ -1615,6 +1640,18 @@ function renderDescriptors(mol) {
     tr.appendChild(tdVal);
     tbody.appendChild(tr);
   }
+}
+
+function renderIFG(mol) {
+  const out = document.getElementById('ifg-output');
+  if (!out) return;
+  if (!identifyFunctionalGroups) { out.textContent = '—'; return; }
+  try {
+    const json = identifyFunctionalGroups(mol);
+    const groups = JSON.parse(json);
+    if (!groups.length) { out.textContent = 'None'; return; }
+    out.textContent = groups.map(g => `[${g.atoms.join(',')}] ${g.type}`).join('  ·  ');
+  } catch(e) { out.textContent = '—'; }
 }
 
 function renderRuleCards(mol) {
@@ -2021,6 +2058,7 @@ function calculate() {
   renderRadar(mol);
   renderDescriptors(mol);
   renderRuleCards(mol);
+  renderIFG(mol);
 
   // Mark 3D dirty — update when user switches to 3D tab
   if (activeTab === 'tab-3d' && viewer3dInited && viewer3d) {
@@ -2084,6 +2122,7 @@ function loadSdf() {
     renderSvg(firstMol);
     renderDescriptors(firstMol);
     renderRuleCards(firstMol);
+    renderIFG(firstMol);
     viewer3dMolDirty = true;
   } catch (_) {}
 
