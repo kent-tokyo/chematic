@@ -5,6 +5,11 @@
 
 use wasm_bindgen::prelude::*;
 
+#[wasm_bindgen(start)]
+pub fn start() {
+    console_error_panic_hook::set_once();
+}
+
 // ---------------------------------------------------------------------------
 // MolHandle
 // ---------------------------------------------------------------------------
@@ -514,6 +519,71 @@ pub fn ecfp4_bitvec(mol: &MolHandle) -> Vec<u8> {
         .collect()
 }
 
+/// Render a reaction SMILES string (e.g. `"CC(=O)O.CCO>>CC(=O)OCC.O"`) as a
+/// single SVG showing reactants → products with `+` separators.
+///
+/// Returns a self-contained SVG string.  Returns a JS error on invalid input.
+#[wasm_bindgen]
+pub fn depict_reaction_svg(rxn_smiles: &str) -> Result<String, JsValue> {
+    let rxn = chematic_rxn::parse_reaction(rxn_smiles)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    const MOL_W: u32 = 200;
+    const MOL_H: u32 = 180;
+    const SEP_PLUS: u32 = 40;
+    const SEP_ARROW: u32 = 60;
+    const TOP_PAD: u32 = 20;
+
+    let opts = chematic_depict::RenderOptions {
+        width: Some(MOL_W),
+        height: Some(MOL_H),
+        ..Default::default()
+    };
+
+    let mut frags: Vec<(u32, String)> = Vec::new();
+    let mut seps: Vec<(u32, &'static str)> = Vec::new();
+    let mut cursor: u32 = 0;
+
+    for (i, mol) in rxn.reactants.iter().enumerate() {
+        if i > 0 {
+            seps.push((cursor + SEP_PLUS / 2, "+"));
+            cursor += SEP_PLUS;
+        }
+        frags.push((cursor, chematic_depict::depict_svg_opts(mol, &opts)));
+        cursor += MOL_W;
+    }
+
+    seps.push((cursor + SEP_ARROW / 2, "→"));
+    cursor += SEP_ARROW;
+
+    for (i, mol) in rxn.products.iter().enumerate() {
+        if i > 0 {
+            seps.push((cursor + SEP_PLUS / 2, "+"));
+            cursor += SEP_PLUS;
+        }
+        frags.push((cursor, chematic_depict::depict_svg_opts(mol, &opts)));
+        cursor += MOL_W;
+    }
+
+    let total_w = cursor;
+    let total_h = MOL_H + TOP_PAD;
+    let mid_y = MOL_H / 2 + TOP_PAD;
+
+    let mut out = format!(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="{total_w}" height="{total_h}" viewBox="0 0 {total_w} {total_h}">"#
+    );
+    for (x, svg) in &frags {
+        out.push_str(&svg.replacen("<svg ", &format!(r#"<svg x="{x}" y="{TOP_PAD}" "#), 1));
+    }
+    for (cx, sym) in &seps {
+        out.push_str(&format!(
+            r##"<text x="{cx}" y="{mid_y}" text-anchor="middle" dominant-baseline="central" font-size="20" font-family="sans-serif" fill="#555">{sym}</text>"##
+        ));
+    }
+    out.push_str("</svg>");
+    Ok(out)
+}
+
 // ---------------------------------------------------------------------------
 // Private helper: molecular formula (Hill notation)
 // ---------------------------------------------------------------------------
@@ -950,5 +1020,27 @@ mod tests {
     fn smarts_parse_invalid_is_err() {
         assert!(chematic_smarts::parse_smarts("[invalid").is_err(),
             "invalid SMARTS should return Err from parse_smarts");
+    }
+
+    // ── Sprint O: depict_reaction_svg ────────────────────────────────────────
+
+    #[test]
+    fn depict_reaction_svg_esterification() {
+        let svg = depict_reaction_svg("CC(=O)O.CCO>>CC(=O)OCC.O").unwrap();
+        assert!(svg.contains("→"), "must contain arrow character");
+        assert!(svg.contains("<svg"), "must be valid SVG");
+    }
+
+    #[test]
+    fn depict_reaction_svg_single_step() {
+        let svg = depict_reaction_svg("C>>CC").unwrap();
+        assert!(svg.contains("→"));
+        assert!(svg.contains("<svg"));
+    }
+
+    // Error-path tested via the underlying parse_reaction (JsValue::from_str panics outside WASM).
+    #[test]
+    fn rxn_parse_missing_arrow_is_err() {
+        assert!(chematic_rxn::parse_reaction("not_a_reaction").is_err());
     }
 }

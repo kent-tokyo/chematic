@@ -451,6 +451,19 @@ tbody td {
 .rxn-svg-wrap svg { max-width: 100%; height: auto; display: block; }
 .rxn-placeholder { color: var(--muted); font-size: .88rem; text-align: center; }
 
+/* ── Reaction Equation sub-panel ────────────────────────────────────── */
+.rxn-eq-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.rxn-eq-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 .75rem;
+}
+
 /* ── 3D Viewer ───────────────────────────────────────────────────────── */
 #viewer-3d-container {
   position: relative;
@@ -732,6 +745,25 @@ footer {
       <div class="rxn-svg-wrap" id="rxn-svg-wrap">
         <span class="rxn-placeholder" id="rxn-placeholder"></span>
       </div>
+
+      <!-- Reaction Equation Viewer -->
+      <div class="rxn-eq-section">
+        <h3 class="rxn-eq-heading" id="h-rxn-eq-title"></h3>
+        <div class="input-row" style="margin-bottom:.35rem">
+          <input id="rxn-eq-input" class="smiles-input" type="text" spellcheck="false" autocomplete="off" placeholder="CC(=O)O.CCO>>CC(=O)OCC.O">
+        </div>
+        <div class="preset-row">
+          <button class="btn-outline preset-rxn-eq" data-rxn="CC(=O)O.CCO>>CC(=O)OCC.O" id="rxn-eq-ester"></button>
+          <button class="btn-outline preset-rxn-eq" data-rxn="CC(=O)O.CN>>CC(=O)NC.O" id="rxn-eq-amide"></button>
+        </div>
+        <div style="margin-bottom:.75rem">
+          <button id="btn-rxn-eq" class="btn"></button>
+        </div>
+        <div id="error-rxn-eq" class="error-banner hidden"></div>
+        <div class="rxn-svg-wrap" id="rxn-eq-svg-wrap">
+          <span class="rxn-placeholder" id="rxn-eq-placeholder"></span>
+        </div>
+      </div>
     </section>
   </div><!-- /tab-rxn -->
 
@@ -871,6 +903,11 @@ const T = {
     'rxn.esterify':     'Esterification',
     'rxn.aminoalkyl':   'N-Alkylation',
     'rxn.placeholder':  'Products will appear here',
+    'rxn.eq.title':     'Reaction Equation',
+    'rxn.eq.draw':      'Draw',
+    'rxn.eq.esterify':  'Esterification',
+    'rxn.eq.amide':     'Amide Bond',
+    'rxn.eq.ph':        'Equation will appear here',
     'tab.2d':           '2D Viewer',
     'tab.sim':          'Similarity',
     'tab.rxn':          'Reaction',
@@ -977,6 +1014,11 @@ const T = {
     'rxn.esterify':     'エステル化',
     'rxn.aminoalkyl':   'N-アルキル化',
     'rxn.placeholder':  '生成物がここに表示されます',
+    'rxn.eq.title':     '反応式',
+    'rxn.eq.draw':      '描画',
+    'rxn.eq.esterify':  'エステル化',
+    'rxn.eq.amide':     'アミド結合',
+    'rxn.eq.ph':        '反応式がここに表示されます',
     'tab.2d':           '2D 構造',
     'tab.sim':          '類似度',
     'tab.rxn':          '反応',
@@ -1083,6 +1125,11 @@ const T = {
     'rxn.esterify':     '酯化反应',
     'rxn.aminoalkyl':   'N-烷基化',
     'rxn.placeholder':  '产物将显示于此',
+    'rxn.eq.title':     '反应方程式',
+    'rxn.eq.draw':      '绘制',
+    'rxn.eq.esterify':  '酯化反应',
+    'rxn.eq.amide':     '酰胺键',
+    'rxn.eq.ph':        '方程式将显示于此',
     'tab.2d':           '2D 结构',
     'tab.sim':          '相似度',
     'tab.rxn':          '反应',
@@ -1132,6 +1179,11 @@ const STATIC_IDS = {
   'rxn-esterify':       'rxn.esterify',
   'rxn-aminoalkyl':     'rxn.aminoalkyl',
   'rxn-placeholder':    'rxn.placeholder',
+  'h-rxn-eq-title':     'rxn.eq.title',
+  'btn-rxn-eq':         'rxn.eq.draw',
+  'rxn-eq-ester':       'rxn.eq.esterify',
+  'rxn-eq-amide':       'rxn.eq.amide',
+  'rxn-eq-placeholder': 'rxn.eq.ph',
   'p-aspirin':          'preset.aspirin',
   'p-caffeine':         'preset.caffeine',
   'p-ibuprofen':        'preset.ibuprofen',
@@ -1209,7 +1261,7 @@ function switchTab(tabId) {
 // ============================================================
 let wasmReady = false;
 let parseSmilesWasm, tanimotoEcfp4, tanimotoFcfp4, tanimotoAtomPair, tanimotoTorsion, bricsFrag;
-let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms, generate3dPdb;
+let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms, generate3dPdb, depictReactionSvg;
 let lastMol = null;
 let lastSimResults = null;
 let highlightedAtoms = [];
@@ -1233,7 +1285,8 @@ async function initWasm() {
     runReactants     = mod.run_reactants;
     depictSvgGrid    = mod.depict_svg_grid;
     smartsMatchAtoms = mod.smarts_match_atoms;
-    generate3dPdb    = mod.generate_3d_pdb;
+    generate3dPdb       = mod.generate_3d_pdb;
+    depictReactionSvg   = mod.depict_reaction_svg;
     wasmReady = true;
   } catch (e) {
     document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
@@ -1859,6 +1912,31 @@ function runReaction() {
 }
 
 // ============================================================
+// Reaction Equation Viewer
+// ============================================================
+function runReactionEquation() {
+  clearError('error-rxn-eq');
+  const smi = document.getElementById('rxn-eq-input').value.trim();
+  if (!smi) { showError('error-rxn-eq', t('error.empty')); return; }
+  if (!wasmReady) { showError('error-rxn-eq', t('error.wasm')); return; }
+  try {
+    const svg = depictReactionSvg(smi);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svg, 'image/svg+xml');
+    if (doc.querySelector('parsererror')) throw new Error('Invalid SVG from renderer');
+    const svgEl = doc.documentElement;
+    svgEl.style.cssText = 'max-width:100%;height:auto;display:block;';
+    const wrap = document.getElementById('rxn-eq-svg-wrap');
+    const ph = wrap.querySelector('.rxn-placeholder');
+    if (ph) ph.style.display = 'none';
+    wrap.querySelectorAll('svg').forEach(el => el.remove());
+    wrap.appendChild(svgEl);
+  } catch (e) {
+    showError('error-rxn-eq', String(e));
+  }
+}
+
+// ============================================================
 // Error helpers
 // ============================================================
 function showError(id, msg) {
@@ -2009,8 +2087,21 @@ function compare() {
     });
   });
 
-  // Run reaction
+  // Run reaction (SMIRKS transformer)
   document.getElementById('btn-rxn').addEventListener('click', runReaction);
+
+  // Reaction equation presets
+  document.querySelectorAll('.preset-rxn-eq').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('rxn-eq-input').value = btn.dataset.rxn;
+    });
+  });
+
+  // Draw reaction equation
+  document.getElementById('btn-rxn-eq').addEventListener('click', runReactionEquation);
+  document.getElementById('rxn-eq-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runReactionEquation();
+  });
 
   // 3D style buttons
   document.querySelectorAll('[data-style]').forEach(btn => {
