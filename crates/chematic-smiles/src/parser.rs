@@ -28,14 +28,17 @@ pub fn parse(input: &str) -> Result<Molecule, SmilesError> {
     p.parse_smiles()
 }
 
+const MAX_BRANCH_DEPTH: usize = 500;
+
 struct Parser<'a> {
     src: &'a [u8],
     pos: usize,
+    depth: usize,
 }
 
 impl<'a> Parser<'a> {
     fn new(src: &'a [u8]) -> Self {
-        Self { src, pos: 0 }
+        Self { src, pos: 0, depth: 0 }
     }
 
     #[inline]
@@ -174,9 +177,14 @@ impl<'a> Parser<'a> {
         explicit_bond: Option<BondOrder>,
         open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>)>,
     ) -> Result<(), SmilesError> {
+        if self.depth >= MAX_BRANCH_DEPTH {
+            return Err(SmilesError::NestingTooDeep { pos: self.pos });
+        }
+        self.depth += 1;
         self.advance(); // consume '('
         let bond = explicit_bond.or_else(|| self.try_parse_bond());
         self.parse_chain(mol, Some(attach_to), bond, open_rings)?;
+        self.depth -= 1;
         if self.peek() != Some(b')') {
             return Err(SmilesError::MismatchedParentheses { pos: self.pos });
         }
@@ -473,7 +481,7 @@ impl<'a> Parser<'a> {
         let mut val: u16 = 0;
         while let Some(d) = self.peek().filter(|c| c.is_ascii_digit()) {
             self.advance();
-            val = val * 10 + (d - b'0') as u16;
+            val = val.saturating_mul(10).saturating_add((d - b'0') as u16);
         }
         Some(val)
     }

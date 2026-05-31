@@ -604,48 +604,42 @@ fn min_angle_separation(angle: f64, used: &[f64]) -> f64 {
         .fold(f64::MAX, f64::min)
 }
 
-/// DFS zigzag placement: place `atom` at `BOND_LEN` from `parent` in direction `dir`,
-/// then recurse on unplaced neighbors with alternating ±30° deflection.
+/// Iterative zigzag placement: place `start_atom` at `BOND_LEN` from `start_parent`
+/// in direction `start_dir`, then expand unplaced neighbors with alternating ±30° deflection.
 fn dfs_zigzag(
     mol: &Molecule,
-    atom: AtomIdx,
-    parent: AtomIdx,
-    dir: f64,
+    start_atom: AtomIdx,
+    start_parent: AtomIdx,
+    start_dir: f64,
     placed: &mut Vec<Option<Point>>,
     component: &HashSet<AtomIdx>,
 ) {
-    if placed[atom.0 as usize].is_some() {
-        return;
-    }
+    let deflections = [-std::f64::consts::PI / 6.0, std::f64::consts::PI / 6.0];
+    let mut stack: Vec<(AtomIdx, AtomIdx, f64)> = vec![(start_atom, start_parent, start_dir)];
 
-    let Some(parent_pos) = placed[parent.0 as usize] else {
-        return;
-    };
-
-    let x = parent_pos.x + BOND_LEN * dir.cos();
-    let y = parent_pos.y + BOND_LEN * dir.sin();
-    placed[atom.0 as usize] = Some(Point::new(x, y));
-
-    // Collect unplaced neighbors (excluding parent).
-    let unplaced: Vec<AtomIdx> = mol
-        .neighbors(atom)
-        .map(|(nb, _)| nb)
-        .filter(|&nb| nb != parent && component.contains(&nb) && placed[nb.0 as usize].is_none())
-        .collect();
-
-    // Zigzag: first neighbor turns +30°, second turns -30°, alternating.
-    let deflections = [
-        -std::f64::consts::PI / 6.0,
-        std::f64::consts::PI / 6.0,
-    ];
-
-    for (i, nb) in unplaced.into_iter().enumerate() {
-        if placed[nb.0 as usize].is_some() {
+    while let Some((atom, parent, dir)) = stack.pop() {
+        if placed[atom.0 as usize].is_some() {
             continue;
         }
-        let deflection = deflections[i % 2];
-        let new_dir = dir + deflection;
-        dfs_zigzag(mol, nb, atom, new_dir, placed, component);
+        let parent_pos = match placed[parent.0 as usize] {
+            Some(p) => p,
+            None => continue,
+        };
+
+        let x = parent_pos.x + BOND_LEN * dir.cos();
+        let y = parent_pos.y + BOND_LEN * dir.sin();
+        placed[atom.0 as usize] = Some(Point::new(x, y));
+
+        let unplaced: Vec<AtomIdx> = mol
+            .neighbors(atom)
+            .map(|(nb, _)| nb)
+            .filter(|&nb| nb != parent && component.contains(&nb) && placed[nb.0 as usize].is_none())
+            .collect();
+
+        // Push in reverse so the first neighbor is popped first, preserving DFS order.
+        for (i, nb) in unplaced.into_iter().enumerate().rev() {
+            stack.push((nb, atom, dir + deflections[i % 2]));
+        }
     }
 }
 
