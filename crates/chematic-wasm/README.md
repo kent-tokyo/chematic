@@ -13,11 +13,23 @@ npm install @kent-tokyo/chematic
 ## Features
 
 - Parse SMILES strings into molecule handles
-- Molecular descriptors: MW, TPSA, LogP, Fsp3, QED, exact mass, rotatable bonds, HBD/HBA, aromatic ring count
-- Lipinski Rule-of-Five check
+- Molecular descriptors: MW, TPSA, LogP, Fsp3, QED, exact mass, rotatable bonds, HBD/HBA, aromatic ring count, Labute ASA
+- Drug-likeness filters: Lipinski, Veber, Egan, REOS, Ghose
+- EState indices (Hall & Kier 1991): per-atom values, sum/max/min
+- Gasteiger-Marsili PEOE partial charges: per-heavy-atom charges
+- VSA descriptors: SlogP_VSA (×12), SMR_VSA (×10), PEOE_VSA (×14)
+- SA score: synthetic accessibility estimate [1, 10]
+- Functional group identification (Ertl 2017 IFG)
 - Canonical SMILES generation
-- ECFP4, AtomPair, and Topological Torsion fingerprints with Tanimoto similarity
+- ECFP4/6, AtomPair, Torsion, and path fingerprints with Tanimoto similarity
 - BRICS fragment count
+- SDF/MOL block parsing
+- Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT
+- Shape descriptors (with 3D coordinates): PMI, NPR, radius of gyration, asphericity
+- 2D SVG depiction with CPK colors and atom/bond highlighting
+- SVG grid layout for multiple molecules
+- Reaction SMILES/SMIRKS parsing and transform
+- Add/remove explicit hydrogens
 
 ## Usage
 
@@ -28,6 +40,11 @@ import init, {
   tanimoto_atom_pair,
   tanimoto_torsion,
   brics_fragment_count,
+  gasteiger_charges_json,
+  slogp_vsa_json,
+  smr_vsa_json,
+  peoe_vsa_json,
+  identify_functional_groups,
 } from '@kent-tokyo/chematic';
 
 await init();
@@ -58,6 +75,25 @@ const caffeine = parse_smiles('Cn1cnc2c1c(=O)n(c(=O)n2C)C');
 console.log(tanimoto_ecfp4(mol, caffeine));    // ECFP4 Tanimoto
 console.log(tanimoto_atom_pair(mol, caffeine)); // AtomPair Tanimoto
 console.log(tanimoto_torsion(mol, caffeine));   // Torsion Tanimoto
+```
+
+```js
+// Sprint Q: New descriptors (v0.1.15)
+console.log(mol.sa_score());                     // synthetic accessibility [1,10]
+console.log(mol.labute_asa());                   // Labute approx. surface area (Å²)
+
+// Gasteiger partial charges (per heavy atom)
+const charges = JSON.parse(gasteiger_charges_json(mol));
+console.log(charges); // [-0.08, 0.12, -0.43, ...]
+
+// VSA descriptor bins
+const slogpVsa = JSON.parse(slogp_vsa_json(mol));
+const smrVsa   = JSON.parse(smr_vsa_json(mol));
+const peoeVsa  = JSON.parse(peoe_vsa_json(mol));
+
+// Functional group identification
+const ifg = JSON.parse(identify_functional_groups(mol));
+console.log(ifg); // [{"atoms":[1,2,3],"types":"OC=O"}, ...]
 ```
 
 ## Building from source

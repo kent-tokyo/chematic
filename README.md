@@ -34,7 +34,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete. 544 tests, all passing.
+All phases complete. 736 tests, all passing.
 
 | Crate                 | Description                                                                        | Tests |
 |-----------------------|------------------------------------------------------------------------------------|-------|
@@ -42,17 +42,17 @@ All phases complete. 544 tests, all passing.
 | `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES                                        | 52    |
 | `chematic-perception` | SSSR (Balducci-Pearlman), Huckel aromaticity                                       | 14    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 parser and writer                                              | 37    |
-| `chematic-depict`     | 2D SVG depiction with CPK coloring and atom/bond highlighting                      | 15    |
-| `chematic-chem`       | Descriptors, BRICS fragmentation, QED, standardization, Murcko scaffold, CIP      | 216   |
-| `chematic-fp`         | ECFP4/6, MACCS 166-bit, topological path, AtomPair, Torsion FP, Tanimoto/Dice     | 44    |
-| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS  | 76    |
-| `chematic-3d`         | 3D coordinate generation, PDB/XYZ file formats                                    | 25    |
-| `chematic-rxn`        | Reaction SMILES parser and writer                                                  | 15    |
-| `chematic-wasm`       | WebAssembly bindings — npm: `@kent-tokyo/chematic`                                 | 18    |
+| `chematic-depict`     | 2D SVG depiction with CPK coloring and atom/bond highlighting                      | 30    |
+| `chematic-chem`       | Descriptors, BRICS fragmentation, QED, standardization, Murcko scaffold, CIP, IFG, Gasteiger charges, VSA, SA score, diversity | 285   |
+| `chematic-fp`         | ECFP4/6, MACCS 166-bit, topological path, AtomPair, Torsion FP, Tanimoto/Dice     | 50    |
+| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS  | 77    |
+| `chematic-3d`         | 3D coordinate generation, PDB/XYZ file formats                                    | 68    |
+| `chematic-rxn`        | Reaction SMILES parser and writer                                                  | 26    |
+| `chematic-wasm`       | WebAssembly bindings — npm: `@kent-tokyo/chematic`                                 | 66    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates)                                  | 1     |
 
 ```
-cargo test --workspace   # 544 tests, all passing
+cargo test --workspace   # 736 tests, all passing
 ```
 
 ---
@@ -207,6 +207,8 @@ const mol = parse_smiles('CC(=O)Oc1ccccc1C(=O)O'); // aspirin
 console.log(mol.molecular_weight()); // ~180.16
 console.log(mol.logp_crippen());     // ~1.2
 console.log(mol.qed());              // drug-likeness [0,1]
+console.log(mol.sa_score());           // synthetic accessibility [1,10]
+console.log(mol.labute_asa());         // Labute approx. surface area (Å²)
 console.log(mol.fsp3());             // fraction sp3 carbons
 console.log(brics_fragment_count(mol)); // number of BRICS fragments
 
@@ -223,7 +225,7 @@ console.log(tanimoto_atom_pair(mol, caffeine)); // AtomPair similarity
 |----------------------------------|-------------------------|--------------------|----------------|-------------------|
 | Language                         | Pure Rust               | Rust + C++ FFI     | Rust + C++ FFI | Pure Rust         |
 | WASM target                      | Yes                     | No                 | No             | Partial           |
-| Binary size (core)               | ~500 KB                 | ~50 MB             | ~20 MB         | ~200 KB           |
+| Binary size (core)               | ~550 KB                 | ~50 MB             | ~20 MB         | ~200 KB           |
 | OpenSMILES parser                | Full                    | Full               | Full           | Partial           |
 | SMILES writer / canonical        | Yes                     | Yes                | Yes            | No                |
 | Kekulization                     | Yes                     | Yes                | Yes            | No                |
@@ -276,6 +278,13 @@ Reaction SMILES/SMIRKS ✓, umbrella crate with feature flags ✓,
 WASM npm package `@kent-tokyo/chematic` ✓, CPK coloring + highlighted depiction ✓,
 ChEMBL 37 full-set validation (2,897,819 molecules, 100.000%) ✓.
 
+### Phase 7 — Extended Descriptors and Diversity (v0.1.14–v0.1.15, complete)
+EState indices (Hall & Kier 1991), path fingerprint (DFS path FP, 2048-bit),
+SDF/MOL WASM bindings,
+functional group identification (Ertl 2017 IFG), Gasteiger-Marsili PEOE partial charges,
+VSA descriptors (SlogP_VSA × 12, SMR_VSA × 10, PEOE_VSA × 14),
+SA score (complexity-based), MaxMin diversity picking, Butina clustering.
+
 See `tasks/todo.md` for the detailed per-task breakdown.
 
 ---
@@ -309,7 +318,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # build all crates
-cargo test --workspace       # run all tests (544)
+cargo test --workspace       # run all tests (736)
 cargo check --workspace      # type-check without building
 cargo clippy --workspace     # lints
 ```

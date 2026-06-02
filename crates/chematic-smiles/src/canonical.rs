@@ -247,9 +247,20 @@ impl<'a> CanonicalWriter<'a> {
                 self.ring_bonds.insert(bidx);
                 let rn = self.next_ring;
                 self.next_ring += 1;
-                let order = self.mol.bond(bidx).order;
-                self.atom_ring_nums.entry(neighbor).or_default().push((rn, order));
-                self.atom_ring_nums.entry(atom).or_default().push((rn, order));
+                let bond = self.mol.bond(bidx);
+                // Direction seen from `neighbor` (the open atom) going toward `atom`.
+                let order_at_open = match bond.order {
+                    BondOrder::Up   => if bond.atom1 == neighbor { BondOrder::Up }   else { BondOrder::Down },
+                    BondOrder::Down => if bond.atom1 == neighbor { BondOrder::Down } else { BondOrder::Up },
+                    other => other,
+                };
+                // Suppress stereo at the close atom to avoid conflicting ring-closure chars.
+                let order_at_close = match bond.order {
+                    BondOrder::Up | BondOrder::Down => BondOrder::Single,
+                    other => other,
+                };
+                self.atom_ring_nums.entry(neighbor).or_default().push((rn, order_at_open));
+                self.atom_ring_nums.entry(atom).or_default().push((rn, order_at_close));
             }
         }
 
@@ -297,7 +308,16 @@ impl<'a> CanonicalWriter<'a> {
                     && !self.written[nb.0 as usize]
                     && !self.ring_bonds.contains(bidx)
             })
-            .map(|(nb, bidx)| (nb, self.mol.bond(bidx).order))
+            .map(|(nb, bidx)| {
+                let bond = self.mol.bond(bidx);
+                // Direction seen from `atom` going toward `nb`.
+                let order = match bond.order {
+                    BondOrder::Up   => if bond.atom1 == atom { BondOrder::Up }   else { BondOrder::Down },
+                    BondOrder::Down => if bond.atom1 == atom { BondOrder::Down } else { BondOrder::Up },
+                    other => other,
+                };
+                (nb, order)
+            })
             .collect();
 
         // Sort children by canonical rank (ascending → highest rank = main chain).
@@ -458,5 +478,22 @@ mod tests {
     #[test]
     fn test_disconnected_stable() {
         assert!(is_stable("[Na+].[Cl-]"));
+    }
+
+    // E/Z stereo bond direction tests.
+    #[test]
+    fn test_ez_e_stable() { assert!(is_stable("C/C=C/C")); }
+    #[test]
+    fn test_ez_z_stable() { assert!(is_stable("C/C=C\\C")); }
+    #[test]
+    fn test_ez_fluoro_e_stable() { assert!(is_stable("F/C=C/Cl")); }
+    #[test]
+    fn test_ez_fluoro_z_stable() { assert!(is_stable("F/C=C\\Cl")); }
+    #[test]
+    fn test_ez_e_ne_z() {
+        // E and Z isomers of 1-fluoro-2-chloroethylene must yield different canonical forms.
+        let mol_e = parse("F/C=C/Cl").unwrap();
+        let mol_z = parse("F/C=C\\Cl").unwrap();
+        assert_ne!(canonical_smiles(&mol_e), canonical_smiles(&mol_z));
     }
 }

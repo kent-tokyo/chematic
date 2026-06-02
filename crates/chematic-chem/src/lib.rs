@@ -8,6 +8,7 @@
 pub mod alerts;
 pub mod brics;
 pub mod cip;
+pub mod named_groups;
 pub mod descriptors;
 pub mod diversity;
 pub mod estate;
@@ -40,6 +41,7 @@ pub use diversity::{butina_cluster, maxmin_picks};
 pub use gasteiger::gasteiger_charges;
 pub use hydrogen::{add_hydrogens, remove_hydrogens};
 pub use ifg::{identify_functional_groups, FunctionalGroup};
+pub use named_groups::{detect_named_functional_groups, NamedGroup};
 pub use qed::qed;
 pub use sa_score::sa_score;
 pub use scaffold::{generic_murcko_scaffold, murcko_scaffold};

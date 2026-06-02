@@ -30,7 +30,7 @@
 
 ## 当前状态
 
-所有阶段已完成。544 个测试，全部通过。
+所有阶段已完成。736 个测试，全部通过。
 
 | Crate                 | 说明                                                                               | 测试数 |
 |-----------------------|------------------------------------------------------------------------------------|--------|
@@ -38,17 +38,17 @@
 | `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES                                             | 52     |
 | `chematic-perception` | SSSR（Balducci-Pearlman）、Hückel 芳香性                                           | 14     |
 | `chematic-mol`        | MOL/SDF V2000+V3000 解析器与写入器                                                 | 37     |
-| `chematic-depict`     | 2D SVG 绘制，CPK 配色，原子/键高亮                                                 | 15     |
-| `chematic-chem`       | 分子描述符、BRICS 碎片化、QED、标准化、Murcko 骨架、CIP                            | 216    |
-| `chematic-fp`         | ECFP4/6、MACCS 166位、拓扑路径、AtomPair、Torsion FP、Tanimoto/Dice               | 44     |
-| `chematic-smarts`     | SMARTS 解析器（递归、价键、杂化），VF2 子图同构，MCS                               | 76     |
-| `chematic-3d`         | 3D 坐标生成，PDB/XYZ 文件格式                                                      | 25     |
-| `chematic-rxn`        | 反应 SMILES 解析器与写入器                                                         | 15     |
-| `chematic-wasm`       | WebAssembly 绑定 — npm：`@kent-tokyo/chematic`                                     | 18     |
+| `chematic-depict`     | 2D SVG 绘制，CPK 配色，原子/键高亮                                                 | 30     |
+| `chematic-chem`       | 分子描述符、BRICS 碎片化、QED、标准化、Murcko 骨架、CIP、IFG、Gasteiger 电荷、VSA、SA 评分、多样性 | 285    |
+| `chematic-fp`         | ECFP4/6、MACCS 166位、拓扑路径、AtomPair、Torsion FP、Tanimoto/Dice               | 50     |
+| `chematic-smarts`     | SMARTS 解析器（递归、价键、杂化），VF2 子图同构，MCS                               | 77     |
+| `chematic-3d`         | 3D 坐标生成，PDB/XYZ 文件格式                                                      | 68     |
+| `chematic-rxn`        | 反应 SMILES 解析器与写入器                                                         | 26     |
+| `chematic-wasm`       | WebAssembly 绑定 — npm：`@kent-tokyo/chematic`                                     | 66     |
 | `chematic`            | 带功能标志的伞形 crate（含所有子 crate）                                           | 1      |
 
 ```
-cargo test --workspace   # 544 个测试，全部通过
+cargo test --workspace   # 736 个测试，全部通过
 ```
 
 ---
@@ -203,6 +203,8 @@ const mol = parse_smiles('CC(=O)Oc1ccccc1C(=O)O'); // 阿司匹林
 console.log(mol.molecular_weight()); // ~180.16
 console.log(mol.logp_crippen());     // ~1.2
 console.log(mol.qed());              // 类药性 [0,1]
+console.log(mol.sa_score());           // 合成可及性 [1,10]
+console.log(mol.labute_asa());         // Labute 近似表面积 (Å²)
 console.log(mol.fsp3());             // sp3 碳比例
 console.log(brics_fragment_count(mol)); // BRICS 碎片数
 
@@ -219,7 +221,7 @@ console.log(tanimoto_atom_pair(mol, caffeine)); // AtomPair 相似度
 |----------------------------------|-------------------------|--------------------|----------------|-------------------|
 | 语言                             | 纯 Rust                 | Rust + C++ FFI     | Rust + C++ FFI | 纯 Rust           |
 | WASM 目标                        | 支持                    | 不支持             | 不支持         | 部分支持          |
-| 二进制体积（核心）               | ~500 KB                 | ~50 MB             | ~20 MB         | ~200 KB           |
+| 二进制体积（核心）               | ~550 KB                 | ~50 MB             | ~20 MB         | ~200 KB           |
 | OpenSMILES 解析器                | 完整                    | 完整               | 完整           | 部分              |
 | SMILES 写入 / 规范化             | 支持                    | 支持               | 支持           | 不支持            |
 | Kekulization                     | 支持                    | 支持               | 支持           | 不支持            |
@@ -272,6 +274,13 @@ MCS、互变异构体规范化。
 WASM npm 包 `@kent-tokyo/chematic` ✓、CPK 配色 + 高亮绘制 ✓、
 ChEMBL 37 全集验证（2,897,819 个分子，100.000%）✓。
 
+### 第七阶段 — 扩展描述符与分子多样性（v0.1.14–v0.1.15，已完成）
+EState 指数（Hall & Kier 1991）✓、路径指纹（DFS 路径 FP，2048 位）✓、
+SDF/MOL WASM 绑定 ✓、
+官能团识别（Ertl 2017 IFG）✓、Gasteiger-Marsili PEOE 部分电荷 ✓、
+VSA 描述符（SlogP_VSA × 12、SMR_VSA × 10、PEOE_VSA × 14）✓、
+SA 评分（基于复杂度）✓、MaxMin 多样性采样 ✓、Butina 聚类 ✓。
+
 ---
 
 ## 仓库结构
@@ -303,7 +312,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # 构建所有 crate
-cargo test --workspace       # 运行所有测试（544 个）
+cargo test --workspace       # 运行所有测试（736 个）
 cargo check --workspace      # 仅类型检查，不构建
 cargo clippy --workspace     # 代码检查
 ```
