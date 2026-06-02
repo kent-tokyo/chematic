@@ -43,6 +43,10 @@ pub struct RenderOptions {
     pub highlight_bonds: std::collections::HashSet<BondIdx>,
     /// Highlight color (CSS hex, default `"#FFFF00"`).
     pub highlight_color: String,
+    /// Per-atom color overrides.  Keys are atom indices; values are CSS colors.
+    /// Takes precedence over [`highlight_color`] when both apply to the same atom.
+    /// Atoms in this map are highlighted even if absent from [`highlight_atoms`].
+    pub atom_color_map: std::collections::HashMap<AtomIdx, String>,
     /// Attach `data-atom-idx`, `data-element`, `data-charge` attributes to
     /// atom label `<text>` elements, enabling JS hover/click tooltips.
     /// Default: `false`.
@@ -67,6 +71,7 @@ impl Default for RenderOptions {
             highlight_atoms: std::collections::HashSet::new(),
             highlight_bonds: std::collections::HashSet::new(),
             highlight_color: "#FFFF00".into(),
+            atom_color_map: std::collections::HashMap::new(),
             atom_ids: false,
             show_atom_indices: false,
             kekulize: false,
@@ -164,14 +169,29 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
     write_svg_header_opts(layout, opts, &mut svg);
 
     // Highlight atom circles (beneath bonds).
+    // Union of highlight_atoms and atom_color_map keys; per-atom color overrides highlight_color.
     let atom_count = mol.atom_count();
-    let hc = escape_xml(&opts.highlight_color); // S2: escape once
+    let default_hc = escape_xml(&opts.highlight_color);
+    let mut atom_circles: Vec<(AtomIdx, String)> = Vec::new();
     for idx in &opts.highlight_atoms {
-        if idx.0 as usize >= atom_count { continue; } // S3: skip out-of-range indices
+        if idx.0 as usize >= atom_count { continue; }
+        let color = opts.atom_color_map.get(idx)
+            .map(|c| escape_xml(c))
+            .unwrap_or_else(|| default_hc.clone());
+        atom_circles.push((*idx, color));
+    }
+    for (idx, color) in &opts.atom_color_map {
+        if idx.0 as usize >= atom_count { continue; }
+        if !opts.highlight_atoms.contains(idx) {
+            atom_circles.push((*idx, escape_xml(color)));
+        }
+    }
+    atom_circles.sort_unstable_by_key(|(idx, _)| *idx);
+    for (idx, color) in &atom_circles {
         let p = layout.get(*idx);
         svg.push_str(&format!(
             "  <circle cx=\"{:.2}\" cy=\"{:.2}\" r=\"16\" fill=\"{}\" opacity=\"0.5\"/>\n",
-            p.x, p.y, hc
+            p.x, p.y, color
         ));
     }
 

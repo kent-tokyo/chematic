@@ -342,6 +342,7 @@ pub struct DepictOptions {
     inner: chematic_depict::RenderOptions,
     highlight_atoms: Vec<u32>,
     highlight_bonds: Vec<u32>,
+    atom_color_entries: Vec<(u32, String)>,
 }
 
 #[wasm_bindgen]
@@ -352,6 +353,7 @@ impl DepictOptions {
             inner: chematic_depict::RenderOptions::default(),
             highlight_atoms: vec![],
             highlight_bonds: vec![],
+            atom_color_entries: vec![],
         }
     }
 
@@ -363,6 +365,12 @@ impl DepictOptions {
     pub fn set_highlight_atoms(&mut self, atoms: Vec<u32>) { self.highlight_atoms = atoms; }
     pub fn set_highlight_bonds(&mut self, bonds: Vec<u32>) { self.highlight_bonds = bonds; }
     pub fn set_highlight_color(&mut self, color: String)   { self.inner.highlight_color = color; }
+    /// Set a per-atom color override (CSS color string).  Calling multiple times
+    /// for the same `idx` uses the last value.  The atom is highlighted even if
+    /// not in `set_highlight_atoms`.
+    pub fn set_atom_color(&mut self, idx: u32, color: String) {
+        self.atom_color_entries.push((idx, color));
+    }
     pub fn set_atom_ids(&mut self, v: bool)        { self.inner.atom_ids = v; }
     pub fn set_show_atom_indices(&mut self, v: bool) { self.inner.show_atom_indices = v; }
     pub fn set_kekulize(&mut self, v: bool)        { self.inner.kekulize = v; }
@@ -375,6 +383,9 @@ impl DepictOptions {
         ro.highlight_bonds = self.highlight_bonds.iter()
             .map(|&i| chematic_core::BondIdx(i))
             .collect();
+        ro.atom_color_map = self.atom_color_entries.iter()
+            .map(|(i, c)| (chematic_core::AtomIdx(*i), c.clone()))
+            .collect(); // last write wins for duplicate indices
         ro
     }
 }
@@ -617,6 +628,16 @@ pub fn mol_from_sdf_block(block: &str) -> Result<MolHandle, JsValue> {
     Ok(MolHandle { inner: std::rc::Rc::new(mol) })
 }
 
+/// Serialize a molecule to a MOL V2000 block.
+///
+/// All atom coordinates are written as 0.0 (the `Molecule` type has no 2D
+/// coordinate storage; real coordinates would require a separate layout pass).
+#[wasm_bindgen]
+pub fn to_mol_block(mol: &MolHandle) -> String {
+    let meta = chematic_mol::MolMetadata::default();
+    chematic_mol::write_mol(&mol.inner, &meta)
+}
+
 /// Parse an SDF string and return a JSON array of canonical SMILES strings.
 ///
 /// Invalid records are represented as `null` in the array.
@@ -710,6 +731,217 @@ pub fn peoe_vsa_json(mol: &MolHandle) -> String {
     let v = chematic_chem::peoe_vsa(&mol.inner);
     let parts: Vec<String> = v.iter().map(|x| format!("{x:.4}")).collect();
     format!("[{}]", parts.join(","))
+}
+
+// ---------------------------------------------------------------------------
+// Sprint T: named functional groups, atom info, per-atom color
+// ---------------------------------------------------------------------------
+
+/// Detect named functional groups in `mol`.
+///
+/// Returns a JSON array of `{"name":"hydroxyl","atoms":[3]}` objects.
+/// Multiple matches of the same group (e.g. two hydroxyl groups) each appear
+/// as a separate entry.  Overlapping groups (carboxylic acid → "carboxyl" +
+/// "hydroxyl" + "carbonyl") are all returned.
+#[wasm_bindgen]
+pub fn detect_functional_groups(mol: &MolHandle) -> String {
+    let groups = chematic_chem::detect_named_functional_groups(&mol.inner);
+    let parts: Vec<String> = groups.iter().map(|g| {
+        let atoms: Vec<String> = g.atoms.iter().map(|a| a.0.to_string()).collect();
+        format!("{{\"name\":\"{}\",\"atoms\":[{}]}}", g.name, atoms.join(","))
+    }).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Return information about a single atom as a JSON object.
+///
+/// `idx` is the 0-based atom index (matching `atoms()` order).
+/// Returns `"null"` if `idx` is out of range.
+///
+/// Fields: `element` (symbol), `hybridization` ("sp"/"sp2"/"sp3"),
+/// `charge` (formal charge integer), `isAromatic` (bool),
+/// `totalHydrogens` (explicit + implicit H count, integer).
+/// sp3d/sp3d2 (hypervalent P/S) are not distinguished from sp3/sp2.
+#[wasm_bindgen]
+pub fn get_atom_info(mol: &MolHandle, idx: u32) -> String {
+    use chematic_core::{AtomIdx, BondOrder, implicit_hcount};
+    let mol = &*mol.inner;
+    if idx as usize >= mol.atom_count() {
+        return "null".to_string();
+    }
+    let atom_idx = AtomIdx(idx);
+    let atom = mol.atom(atom_idx);
+    let symbol = atom.element.symbol();
+    let charge = atom.charge;
+    let is_aromatic = atom.aromatic;
+    let total_h = atom.hydrogen_count.unwrap_or(0) as u32
+        + implicit_hcount(mol, atom_idx) as u32;
+
+    let hybridization = if is_aromatic {
+        Some("sp2")
+    } else {
+        let mut double_count = 0u32;
+        let mut has_triple = false;
+        for (_, bond_idx) in mol.neighbors(atom_idx) {
+            match mol.bond(bond_idx).order {
+                BondOrder::Double => double_count += 1,
+                BondOrder::Triple => { has_triple = true; break; }
+                _ => {}
+            }
+        }
+        if has_triple { Some("sp") }
+        else if double_count >= 2 { Some("sp") }
+        else if double_count == 1 { Some("sp2") }
+        else { Some("sp3") }
+    };
+
+    let hyb_json = match hybridization {
+        Some(h) => format!("\"{}\"", h),
+        None    => "null".to_string(),
+    };
+    format!(
+        "{{\"element\":\"{}\",\"hybridization\":{},\"charge\":{},\"isAromatic\":{},\"totalHydrogens\":{}}}",
+        symbol, hyb_json, charge, is_aromatic, total_h
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Sprint U: convenience SMILES-string-in functions + bond info API
+// ---------------------------------------------------------------------------
+
+/// Render a highlighted SVG from a SMILES string in one call.
+///
+/// `atoms` — 0-based atom indices to highlight (Uint32Array in JS).
+/// `bonds` — 0-based bond indices to highlight (Uint32Array in JS).
+/// `color` — CSS color for highlights (e.g. `"#ef4444"`); empty string uses default yellow.
+///
+/// Returns a JS error on SMILES parse failure.
+#[wasm_bindgen]
+pub fn smiles_to_svg_highlighted(
+    smiles: &str,
+    atoms: Vec<u32>,
+    bonds: Vec<u32>,
+    color: &str,
+) -> Result<String, JsValue> {
+    let mol = chematic_smiles::parse(smiles)
+        .map(|m| MolHandle { inner: std::rc::Rc::new(m) })
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let mut opts = DepictOptions::new();
+    opts.set_highlight_atoms(atoms);
+    opts.set_highlight_bonds(bonds);
+    if !color.is_empty() {
+        opts.set_highlight_color(color.to_string());
+    }
+    Ok(mol.depict_svg_opts(&opts))
+}
+
+/// Find all SMARTS matches in a molecule given only SMILES strings.
+///
+/// Convenience wrapper around `smarts_match_atoms` that accepts raw SMILES
+/// instead of a `MolHandle`.  Returns the same JSON format: `[[0,1],[3,4]]`.
+/// Returns a JS error on SMILES or SMARTS parse failure.
+#[wasm_bindgen]
+pub fn match_smarts_smiles(smiles: &str, smarts: &str) -> Result<String, JsValue> {
+    let mol = chematic_smiles::parse(smiles)
+        .map(|m| MolHandle { inner: std::rc::Rc::new(m) })
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    smarts_match_atoms(smarts, &mol)
+}
+
+/// Tanimoto similarity between two molecules given only SMILES strings (ECFP4).
+///
+/// Returns a JS error on parse failure.
+#[wasm_bindgen]
+pub fn tanimoto_smiles(smiles1: &str, smiles2: &str) -> Result<f64, JsValue> {
+    let m1 = chematic_smiles::parse(smiles1)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let m2 = chematic_smiles::parse(smiles2)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(chematic_fp::tanimoto_ecfp4(&m1, &m2))
+}
+
+/// Serialize a SMILES string directly to a MOL V2000 block.
+///
+/// Convenience wrapper; all atom coordinates are 0.0.
+/// Returns a JS error on SMILES parse failure.
+#[wasm_bindgen]
+pub fn mol_block_from_smiles(smiles: &str) -> Result<String, JsValue> {
+    let mol = chematic_smiles::parse(smiles)
+        .map(|m| MolHandle { inner: std::rc::Rc::new(m) })
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(to_mol_block(&mol))
+}
+
+/// Return bond information as a JSON object, looked up by bond index.
+///
+/// `idx` is the 0-based bond index (order matches `mol.bonds()` iteration).
+/// Returns `"null"` if `idx` is out of range.
+///
+/// Fields: `bondOrder` (1.0/1.5/2.0/3.0), `isAromatic` (bool),
+/// `isInRing` (bool), `atomFrom` (u32), `atomTo` (u32).
+#[wasm_bindgen]
+pub fn get_bond_info(mol: &MolHandle, idx: u32) -> String {
+    use chematic_core::BondOrder;
+    let mol_ref = &*mol.inner;
+    if idx as usize >= mol_ref.bond_count() {
+        return "null".to_string();
+    }
+    let bond_idx = chematic_core::BondIdx(idx);
+    let bond = mol_ref.bond(bond_idx);
+    let bond_order: f64 = match bond.order {
+        BondOrder::Aromatic => 1.5,
+        other => other.order_value().unwrap_or(1.0) as f64,
+    };
+    let is_aromatic = bond.order == BondOrder::Aromatic;
+    let in_ring = bond_in_ring(mol_ref, bond.atom1, bond.atom2);
+    format!(
+        "{{\"bondOrder\":{:.1},\"isAromatic\":{},\"isInRing\":{},\"atomFrom\":{},\"atomTo\":{}}}",
+        bond_order, is_aromatic, in_ring, bond.atom1.0, bond.atom2.0
+    )
+}
+
+/// Return bond information as a JSON object, looked up by the two bonded atom indices.
+///
+/// Useful when you know the atom indices from SMARTS matching or `data-atom-idx` SVG
+/// attributes but not the bond index.  Returns `"null"` if no bond exists between them.
+///
+/// Fields: same as `get_bond_info` plus `bondIdx` (u32).
+#[wasm_bindgen]
+pub fn get_bond_between(mol: &MolHandle, atom1: u32, atom2: u32) -> String {
+    use chematic_core::{AtomIdx, BondOrder};
+    let mol_ref = &*mol.inner;
+    let a = AtomIdx(atom1);
+    let b = AtomIdx(atom2);
+    if atom1 as usize >= mol_ref.atom_count() || atom2 as usize >= mol_ref.atom_count() {
+        return "null".to_string();
+    }
+    let Some((bond_idx, bond)) = mol_ref.bond_between(a, b) else {
+        return "null".to_string();
+    };
+    let bond_order: f64 = match bond.order {
+        BondOrder::Aromatic => 1.5,
+        other => other.order_value().unwrap_or(1.0) as f64,
+    };
+    let is_aromatic = bond.order == BondOrder::Aromatic;
+    let in_ring = bond_in_ring(mol_ref, a, b);
+    format!(
+        "{{\"bondIdx\":{},\"bondOrder\":{:.1},\"isAromatic\":{},\"isInRing\":{},\"atomFrom\":{},\"atomTo\":{}}}",
+        bond_idx.0, bond_order, is_aromatic, in_ring, atom1, atom2
+    )
+}
+
+fn bond_in_ring(mol: &chematic_core::Molecule, a: chematic_core::AtomIdx, b: chematic_core::AtomIdx) -> bool {
+    let rings = chematic_perception::find_sssr(mol);
+    for ring in rings.rings() {
+        let n = ring.len();
+        for i in 0..n {
+            if (ring[i] == a && ring[(i + 1) % n] == b) ||
+               (ring[i] == b && ring[(i + 1) % n] == a) {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 // ---------------------------------------------------------------------------

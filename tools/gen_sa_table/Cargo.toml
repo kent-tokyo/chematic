@@ -1,0 +1,15 @@
+[package]
+name = "gen-sa-table"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Offline tool: generates the SA Score fragment frequency table from a SMILES corpus"
+
+[[bin]]
+name = "gen_sa_table"
+path = "src/main.rs"
+
+[dependencies]
+chematic-core    = { path = "../../crates/chematic-core" }
+chematic-fp      = { path = "../../crates/chematic-fp" }
+chematic-smiles  = { path = "../../crates/chematic-smiles" }

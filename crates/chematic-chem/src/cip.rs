@@ -638,4 +638,29 @@ mod tests {
         let has_z = assign_z.assignments.iter().any(|(_, c)| *c == CipCode::Z);
         assert!(has_e && has_z, "trans must be E, cis must be Z");
     }
+
+    #[test]
+    fn test_canonical_preserves_ez() {
+        // Canonicalizing a stereo-SMILES must preserve the E/Z assignment.
+        // Uses F/C=C/Cl (E) and F/C=C\Cl (Z) — non-symmetric so CIP is unambiguous.
+        use chematic_smiles::canonical_smiles;
+
+        let mol_e = parse("F/C=C/Cl").unwrap();
+        let can_e = canonical_smiles(&mol_e);
+        let mol_e2 = parse(&can_e).unwrap_or_else(|err| panic!("canonical E not parseable: {can_e} → {err}"));
+        let assign_e = assign_cip(&mol_e2);
+        assert!(
+            assign_e.assignments.iter().any(|(_, c)| *c == CipCode::E),
+            "canonical SMILES of E isomer must still be E, canonical='{can_e}'"
+        );
+
+        let mol_z = parse("F/C=C\\Cl").unwrap();
+        let can_z = canonical_smiles(&mol_z);
+        let mol_z2 = parse(&can_z).unwrap_or_else(|err| panic!("canonical Z not parseable: {can_z} → {err}"));
+        let assign_z = assign_cip(&mol_z2);
+        assert!(
+            assign_z.assignments.iter().any(|(_, c)| *c == CipCode::Z),
+            "canonical SMILES of Z isomer must still be Z, canonical='{can_z}'"
+        );
+    }
 }

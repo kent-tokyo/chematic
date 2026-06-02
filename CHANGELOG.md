@@ -11,6 +11,206 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.19] — 2026-06-02
+
+### Added — Sprint U: インタラクティブ記事向け WASM 利便性 API
+
+**SMILES-string-in 系フリー関数** (`crates/chematic-wasm/src/lib.rs`):
+- `smiles_to_svg_highlighted(smiles, atoms, bonds, color)` — SMILES 文字列から直接ハイライト SVG を 1 コール生成（JS: `Uint32Array` で原子・結合インデックスを渡す）
+- `match_smarts_smiles(smiles, smarts)` — SMILES + SMARTS 文字列のみで SMARTS マッチング（`parse_smiles` + `smarts_match_atoms` の 1-call wrapper）
+- `tanimoto_smiles(smiles1, smiles2)` — SMILES 文字列のみで Tanimoto 類似度計算（ECFP4）
+- `mol_block_from_smiles(smiles)` — SMILES から直接 MOL V2000 ブロック生成
+
+**結合情報 API**:
+- `get_bond_info(mol, bond_idx)` → `{"bondOrder":1.5,"isAromatic":true,"isInRing":true,"atomFrom":0,"atomTo":1}`
+- `get_bond_between(mol, atom1, atom2)` → 同 JSON + `bondIdx` フィールド。原子インデックスペアから結合を検索（SMARTS マッチ結果からの自然なフロー）
+
+**`get_atom_info` 拡張**:
+- `totalHydrogens` フィールドを追加（明示的 H + 暗黙的 H の合計）
+
+**InChIKey は未実装**（C ライブラリ級の複雑さのため Phase 3 以降）
+
+---
+
+## [0.1.18] — 2026-06-02
+
+### Added — Sprint T: インタラクティブ記事向け API
+
+**per-atom カラーハイライト** (`crates/chematic-depict/src/svg.rs`, `crates/chematic-wasm/src/lib.rs`):
+- `RenderOptions.atom_color_map: HashMap<AtomIdx, String>` — 原子ごとに異なる色で円ハイライト
+- `DepictOptions.set_atom_color(idx, color)` — WASM API。`set_highlight_atoms` と共存可能（per-atom 色が優先）
+
+**名前付き官能基検出** (`crates/chematic-chem/src/named_groups.rs` 新規):
+- `detect_named_functional_groups(mol) -> Vec<NamedGroup>` — 20グループの SMARTS パターンテーブル
+- 返却: `{"name":"hydroxyl","atoms":[3]}` 形式の JSON 配列（WASM: `detect_functional_groups(mol)`）
+- カルボン酸 → carboxyl + hydroxyl + carbonyl のように重複グループを全列挙。JS 側でユニーク化可能
+
+**原子情報取得** (`crates/chematic-wasm/src/lib.rs`):
+- `get_atom_info(mol, idx) -> String` — `{"element":"C","hybridization":"sp2","charge":0,"isAromatic":false}`
+- 混成軌道 (sp/sp2/sp3) を結合次数から計算。範囲外 idx → `"null"`
+
+**MOL V2000 出力 WASM バインド** (`crates/chematic-wasm/src/lib.rs`):
+- `to_mol_block(mol) -> String` — MOL V2000 形式文字列。座標はすべて 0.0
+
+---
+
+## [0.1.17] — 2026-06-01
+
+### Changed (`chematic-chem`) — Sprint S: SA スコア フラグメントテーブル実装
+
+**SA スコアのフラグメント頻度テーブルを実データに置き換え** (`crates/chematic-chem/src/sa_score.rs`):
+- 従来: 10 件のダミーエントリ（任意の u32 ハッシュ、意味のないスコア）
+- 新規: 145 分子の検証済みコーパスから生成した 1034 件のリアルエントリ（u64 FNV-1a ハッシュ、i16 対数頻度スコア）
+- ハッシュ互換性修正: 旧実装の非公開 32-bit FNV-1a を廃止し、`chematic_fp::morgan_fp_counts` を直接使用（ECFP と同一スキーム）
+- スコアエンコード: `i16 = (log10(freq_in_corpus) × 1000.0) as i16`; デフォルト -5000（テーブル未登録断片）
+- 検索: ソート済みスライスへの `partition_point` バイナリサーチ（O(log 1034)）
+
+### Added (`tools/gen_sa_table`) — コーパスからテーブルを再生成するオフラインツール
+
+**新規ツール** (`tools/gen_sa_table/`):
+- 145 件の検証済み SMILES（chematic テストスイート + デモプリセット + 既知医薬品）を内蔵
+- `morgan_fp_counts(mol, 2)` を呼び出し、分子横断の断片頻度を計算
+- ソート済み `static FRAGMENT_SCORES: &[(u64, i16)]` を標準出力に出力
+- ファイル引数で任意の SMILES コーパスにも対応（ChEMBL など）
+
+### Tests (`chematic-chem`)
+- `taxol_harder_than_aspirin` — Taxol (SA スコア高) > Aspirin (SA スコア低) の順序確認
+
+---
+
+## [0.1.16] — 2026-06-01
+
+### Fixed (`chematic-smiles`) — Sprint R: E/Z 二重結合立体化学 SMILES 出力
+
+**正規 SMILES ライターの E/Z 方向バグを修正** (`crates/chematic-smiles/src/canonical.rs`):
+- `write_chain()` の子ボンド方向修正: DFS トラバーサル方向が保存方向と逆の場合（`bond.atom1 == nb`）に Up/Down を反転するように修正。修正前は `F/C=C/Cl`（E）の正規形が Z として解釈される可能性があった
+- `dfs_mark()` の環クロージャ方向修正: open atom（`neighbor`）では正しい方向の Up/Down を記録し、close atom（`atom`）では Single を記録してコンフリクトを回避
+
+### Tests (`chematic-smiles`, `chematic-chem`)
+- `test_ez_e_stable` — `C/C=C/C` の正規化が安定
+- `test_ez_z_stable` — `C/C=C\C` の正規化が安定
+- `test_ez_fluoro_e_stable` — `F/C=C/Cl` の正規化が安定
+- `test_ez_fluoro_z_stable` — `F/C=C\Cl` の正規化が安定
+- `test_ez_e_ne_z` — E と Z の正規 SMILES が異なる文字列
+- `test_canonical_preserves_ez` (`cip.rs`) — 正規化後も `assign_cip` が正しい E/Z コードを返す
+
+---
+
+## [0.1.15] — 2026-05-31
+
+### Added (`chematic-chem`) — Sprint Q: 官能基識別 + SA スコア + Gasteiger 電荷 + VSA 記述子
+
+**官能基識別** (`chematic-chem/src/ifg.rs`、新規):
+- `identify_functional_groups(mol) -> Vec<FunctionalGroup>` — Ertl (2017) アルゴリズム: ヘテロ原子 + 隣接 C をマーク → BFS 接続成分 = 官能基
+- `FunctionalGroup { atom_indices: Vec<usize>, atom_types: String }` — 原子インデックスと元素記号文字列
+- 7 テスト: ヘキサン（官能基なし）、酢酸（O あり）、ピリジン（N を含む 1 基）、アスピリン（複数）、アニリン、クロロベンゼン（Cl）
+
+**Gasteiger-Marsili PEOE 部分電荷** (`chematic-chem/src/gasteiger.rs`、新規):
+- `gasteiger_charges(mol) -> Vec<f64>` — 12 反復、ダンピング 0.5^(iter+1)
+- 電気陰性度パラメータ: χ(q) = a + b·q + c·q²（C/N/O/S/F/Cl/Br/I/P/H 対応）
+- 暗黙的 H を明示的 H に展開してから PEOE を実行; 重原子分の電荷のみ返す
+- 5 テスト: メタノール O < C、水 O が負、電荷の合計≈0
+
+**VSA 記述子** (`chematic-chem/src/vsa.rs`、新規):
+- `slogp_vsa(mol) -> Vec<f64>` — 12 ビン (RDKit SlogP_VSA1–12)
+- `smr_vsa(mol) -> Vec<f64>` — 10 ビン (RDKit SMR_VSA1–10)
+- `peoe_vsa(mol) -> Vec<f64>` — 14 ビン (RDKit PEOE_VSA1–14)
+- 各ビンに Labute ASA 寄与を集計; ビン境界は RDKit MolSurf.py と同一
+- `logp_crippen_per_atom`、`mr_per_atom`、`labute_asa_per_atom` — 総和関数が移譲する per-atom 変形を追加
+
+**SA スコア** (`chematic-chem/src/sa_score.rs`、新規):
+- `sa_score(mol) -> f64` — [1, 10] 範囲; 1 = 合成容易、10 = 困難
+- 複雑度成分: スピロ原子 × 0.25 + 架橋頭炭素 × 0.35 + マクロ環 × 0.30 + 不斉中心 × 0.10 + (環数−1)×0.05 + 環結合比 × 0.50 + サイズペナルティ
+- **注**: フラグメントスコア成分（Ertl 2009 の断片頻度テーブル）は未実装; 現在の実装は複雑度ベースの近似
+
+**多様性ピッキング + クラスタリング** (`chematic-chem/src/diversity.rs`、新規):
+- `maxmin_picks(mols, n, sim_fn) -> Vec<usize>` — MaxMin 多様性ピッキング（最大-最小距離を繰り返し選択）
+- `butina_cluster(mols, cutoff, sim_fn) -> Vec<Vec<usize>>` — Butina クラスタリング（類似度閾値ベース）
+- `sim_fn: Fn(&Molecule, &Molecule) -> f64` — フィンガープリントに依存しない汎用インターフェース
+
+Tests: 697 → 736 (+39 new tests)
+
+### Added (`chematic-wasm`) — Sprint Q WASM バインディング
+
+6 新規関数:
+- `identify_functional_groups(mol) -> String` — JSON 配列 `[{"atoms":[0,1],"types":"CN"},…]`
+- `gasteiger_charges_json(mol) -> String` — JSON 配列 `[q0, q1, …]`（重原子のみ）
+- `sa_score(mol) -> f64` — 合成アクセシビリティスコア [1, 10]
+- `slogp_vsa_json(mol) -> String` — JSON 配列（12 要素）
+- `smr_vsa_json(mol) -> String` — JSON 配列（10 要素）
+- `peoe_vsa_json(mol) -> String` — JSON 配列（14 要素）
+
+### Added (`demo/index.html`) — Sprint Q UI 更新
+
+- IFG（官能基識別）パネル: 分子ロードで即時更新
+- 記述子テーブルに SA Score + Labute ASA を追加
+- バージョンバッジ: v0.1.14 → v0.1.15
+
+---
+
+## [0.1.14] — 2026-05-31
+
+### Added (`chematic-chem`) — EState インデックス
+
+**EState インデックス** (`chematic-chem/src/estate.rs`、新規):
+- `estate_indices(mol) -> Vec<f64>` — Hall & Kier (1991) 電子状態インデックス; 全重原子に対して per-atom 値を返す
+- `max_estate(mol) -> f64`, `min_estate(mol) -> f64`, `sum_estate(mol) -> f64` — 集計記述子
+- intrinsic state I_i = ((2/n)² · δᵛ + 1) / δ; 扰动 S_i = I_i + Σ (I_i − I_j) / r²_{ij} (BFS 距離)
+
+### Added (`chematic-fp`) — パスフィンガープリント
+
+**パス FP** (`chematic-fp/src/path_fp.rs`、新規):
+- `path_fp(mol) -> BitVec2048` — 長さ 1〜7 の単純パスを DFS 列挙し FNV-1a ハッシュ; 2048 ビット
+- `tanimoto_topo_path(a, b) -> f64` — パス FP の Tanimoto 係数
+
+### Added (`chematic-wasm`) — Sprint P WASM バインディング
+
+- `mol_from_sdf_block(block) -> MolHandle` — SDF/MOL V2000 ブロックから分子を生成
+- `sdf_to_smiles_json(sdf) -> String` — SDF 文字列から SMILES JSON 配列
+- `estate_indices_json(mol) -> String` — EState インデックスの JSON 配列
+- `tanimoto_path(a, b) -> f64` — パス FP Tanimoto
+- `MolHandle` に `sum_estate`, `max_estate`, `min_estate` メソッドを追加
+
+---
+
+## [0.1.13] — 2026-05-31
+
+### Added (`chematic-wasm`) — panic hook + 反応 SVG
+
+- `wasm_bindgen(start)` で `console_error_panic_hook` を設定; WASM パニックがブラウザコンソールに詳細を出力するように
+- 反応 SVG に矢印（`→`）と試薬ラベルを追加
+
+---
+
+## [0.1.12] — 2026-05-31
+
+### Added (`demo/index.html`) — タブ UI + 3D ビューア
+
+- タブ切り替え UI: 2D 描画・3D ビューア・類似度・反応スキーム・薬らしさ
+- 3D インタラクティブビューア: WebGL ベース（マウスドラッグで回転、ホイールズームを追加）
+
+---
+
+## [0.1.11] — 2026-05-31
+
+### Added (`demo/index.html`) — SMARTS ハイライト + クリックハイライト + 反応スキーム
+
+- SMARTS 検索結果の原子をクリックでハイライト
+- SMIRKS 反応スキーム UI: 反応物→生成物の SVG 表示
+- クリックで原子インデックスと元素情報を表示
+
+---
+
+## [0.1.10] — 2026-05-31
+
+### Added (`chematic-wasm`) — 原子データ属性 + Kekulé 表示
+
+- SVG 原子ラベルに `data-atom-idx` 属性を追加（JavaScript クリックハンドラ用）
+- Kekulé 表示モード: 芳香族ボンドを単結合/二重結合で交互に表示
+- npm bundler ターゲットビルドに修正（ES モジュール形式）
+
+---
+
 ## [0.1.9] — 2026-05-31
 
 ### Fixed (`chematic-depict`) — 単原子 SMILES の描画
@@ -696,7 +896,17 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.16...HEAD
+[0.1.16]: https://github.com/kent-tokyo/chematic/compare/v0.1.15...v0.1.16
+[0.1.15]: https://github.com/kent-tokyo/chematic/compare/v0.1.14...v0.1.15
+[0.1.14]: https://github.com/kent-tokyo/chematic/compare/v0.1.13...v0.1.14
+[0.1.13]: https://github.com/kent-tokyo/chematic/compare/v0.1.12...v0.1.13
+[0.1.12]: https://github.com/kent-tokyo/chematic/compare/v0.1.11...v0.1.12
+[0.1.11]: https://github.com/kent-tokyo/chematic/compare/v0.1.10...v0.1.11
+[0.1.10]: https://github.com/kent-tokyo/chematic/compare/v0.1.9...v0.1.10
+[0.1.9]: https://github.com/kent-tokyo/chematic/compare/v0.1.8...v0.1.9
+[0.1.8]: https://github.com/kent-tokyo/chematic/compare/v0.1.7...v0.1.8
+[0.1.7]: https://github.com/kent-tokyo/chematic/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/kent-tokyo/chematic/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/kent-tokyo/chematic/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/kent-tokyo/chematic/compare/v0.1.2...v0.1.3

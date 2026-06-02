@@ -30,7 +30,7 @@ rdkit-sys も openbabel バインディングも使用しない。すべての�
 
 ## 現在のステータス
 
-全フェーズ完了。544 テスト、全パス。
+全フェーズ完了。736 テスト、全パス。
 
 | クレート               | 説明                                                                                         | テスト数 |
 |------------------------|----------------------------------------------------------------------------------------------|---------|
@@ -38,17 +38,17 @@ rdkit-sys も openbabel バインディングも使用しない。すべての�
 | `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES                                                  | 52      |
 | `chematic-perception`  | SSSR (Balducci-Pearlman)、Huckel 芳香族性認識                                               | 14      |
 | `chematic-mol`         | MOL/SDF V2000+V3000 パーサーとライター                                                      | 37      |
-| `chematic-depict`      | 2D SVG 描画（CPK カラー・アトム/ボンドハイライト）                                          | 15      |
-| `chematic-chem`        | 記述子、BRICS フラグメント化、QED、標準化、Murcko スキャフォルド、CIP 立体化学             | 216     |
-| `chematic-fp`          | ECFP4/6、MACCS 166-bit、位相的パス、AtomPair、Torsion FP、Tanimoto/Dice                    | 44      |
-| `chematic-smarts`      | SMARTS（再帰・原子価・ハイブリッド化対応）、VF2 部分構造一致、MCS                          | 76      |
-| `chematic-3d`          | 3D 座標生成、PDB/XYZ ファイル形式                                                           | 25      |
-| `chematic-rxn`         | 反応 SMILES パーサーとライター                                                               | 15      |
-| `chematic-wasm`        | WebAssembly バインディング — npm: `@kent-tokyo/chematic`                                    | 18      |
+| `chematic-depict`      | 2D SVG 描画（CPK カラー・アトム/ボンドハイライト）                                          | 30      |
+| `chematic-chem`        | 記述子、BRICS フラグメント化、QED、標準化、Murcko スキャフォルド、CIP、IFG、Gasteiger 電荷、VSA、SA スコア、多様性 | 285     |
+| `chematic-fp`          | ECFP4/6、MACCS 166-bit、位相的パス、AtomPair、Torsion FP、Tanimoto/Dice                    | 50      |
+| `chematic-smarts`      | SMARTS（再帰・原子価・ハイブリッド化対応）、VF2 部分構造一致、MCS                          | 77      |
+| `chematic-3d`          | 3D 座標生成、PDB/XYZ ファイル形式                                                           | 68      |
+| `chematic-rxn`         | 反応 SMILES パーサーとライター                                                               | 26      |
+| `chematic-wasm`        | WebAssembly バインディング — npm: `@kent-tokyo/chematic`                                    | 66      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（全サブクレート）                                  | 1       |
 
 ```
-cargo test --workspace   # 544 テスト、全パス
+cargo test --workspace   # 736 テスト、全パス
 ```
 
 ---
@@ -204,6 +204,8 @@ const mol = parse_smiles('CC(=O)Oc1ccccc1C(=O)O'); // アスピリン
 console.log(mol.molecular_weight()); // ~180.16
 console.log(mol.logp_crippen());     // ~1.2
 console.log(mol.qed());              // ドラッグライクネス [0,1]
+console.log(mol.sa_score());           // 合成アクセシビリティ [1,10]
+console.log(mol.labute_asa());         // Labute 近似表面積 (Å²)
 console.log(mol.fsp3());             // sp3 炭素割合
 console.log(brics_fragment_count(mol)); // BRICS フラグメント数
 
@@ -220,7 +222,7 @@ console.log(tanimoto_atom_pair(mol, caffeine)); // AtomPair 類似度
 |------------------------------------|-------------------------------|--------------------|----------------|-------------------|
 | 実装言語                           | Pure Rust                     | Rust + C++ FFI     | Rust + C++ FFI | Pure Rust         |
 | WASM ターゲット                    | 対応                          | 非対応             | 非対応         | 部分対応          |
-| バイナリサイズ（コア）             | 約 500 KB                     | 約 50 MB           | 約 20 MB       | 約 200 KB         |
+| バイナリサイズ（コア）             | 約 550 KB                     | 約 50 MB           | 約 20 MB       | 約 200 KB         |
 | OpenSMILES パーサー                | 完全実装                      | 完全実装           | 完全実装       | 部分実装          |
 | SMILES ライター / 正規 SMILES      | 対応                          | 対応               | 対応           | 非対応            |
 | ケクレ化                           | 対応                          | 対応               | 対応           | 非対応            |
@@ -272,6 +274,13 @@ MACCS 166 ビット構造キー ✓、位相的パス FP ✓、AtomPair FP ✓�
 WASM npm パッケージ `@kent-tokyo/chematic` ✓、CPK 彩色 + ハイライト描画 ✓、
 ChEMBL 37 全量検証（2,897,819 分子 / 100.000%）✓。
 
+### Phase 7 — 拡張記述子・多様性（v0.1.14–v0.1.15、完成）
+EState インデックス（Hall & Kier 1991）✓、パスフィンガープリント（DFS パス FP、2048 ビット）✓、
+SDF/MOL WASM バインディング ✓、
+官能基識別（Ertl 2017 IFG）✓、Gasteiger-Marsili PEOE 部分電荷 ✓、
+VSA 記述子（SlogP_VSA × 12、SMR_VSA × 10、PEOE_VSA × 14）✓、
+SA スコア（複雑度ベース）✓、MaxMin 多様性ピッキング ✓、Butina クラスタリング ✓。
+
 ---
 
 ## リポジトリ構成
@@ -303,7 +312,7 @@ chematic/
 
 ```bash
 cargo build --workspace      # 全クレートのビルド
-cargo test --workspace       # 全テストの実行（544 件）
+cargo test --workspace       # 全テストの実行（736 件）
 cargo check --workspace      # ビルドなしの型チェック
 cargo clippy --workspace     # リント
 ```

@@ -225,18 +225,18 @@
 | クレート               | テスト数 | 状態     |
 |------------------------|---------|---------|
 | chematic-core          | 30      | 完了     |
-| chematic-smiles        | 52      | 完了     |
+| chematic-smiles        | 57      | 完了     |
 | chematic-perception    | 14      | 完了     |
 | chematic-mol           | 37      | 完了     |
-| chematic-depict        | 15      | 完了     |
-| chematic-chem          | 216     | 完了     |
-| chematic-fp            | 44      | 完了     |
-| chematic-smarts        | 76      | 完了     |
-| chematic-3d            | 25      | 完了     |
-| chematic-rxn           | 15      | 完了     |
-| chematic-wasm          | 18      | 完了     |
+| chematic-depict        | 30      | 完了     |
+| chematic-chem          | 287     | 完了     |
+| chematic-fp            | 50      | 完了     |
+| chematic-smarts        | 77      | 完了     |
+| chematic-3d            | 68      | 完了     |
+| chematic-rxn           | 26      | 完了     |
+| chematic-wasm          | 66      | 完了     |
 | chematic               | 1       | 完了     |
-| **合計**               | **544** | —        |
+| **合計**               | **743** | —        |
 
 ---
 
@@ -389,4 +389,27 @@ Sprint J: ✅ 7-1（RunReactants）
           → chematic-rxn/src/transform.rs、VF2 + BFS 置換基引き継ぎ、テスト +11（612→623）
 Sprint K: ✅ 7-7（UFF パラメータ改善）
           → 元素別結合長・混成軌道角・VDW 半径、テスト +10（637→646）
+Sprint L: ✅ Sprint L audit — セキュリティ/バグ/リファクタリング審査（0.1.5 → 0.1.6）
+Sprint M: ✅ SMARTS ハイライト表示 + クリックハイライト + 反応スキーム（demo 0.1.11）
+Sprint N: ✅ タブ UI + 3D インタラクティブビューア（demo 0.1.12）
+Sprint P: ✅ SDF/MOL WASM バインディング + EState インデックス + パスフィンガープリント WASM（v0.1.14）
+          → chematic-chem/src/estate.rs（Hall-Kier 1991 EState インデックス）
+          → chematic-fp/src/path_fp.rs（RDKit スタイルパス FP）
+          → WASM: mol_from_sdf_block, sdf_to_smiles_json, estate_indices_json, tanimoto_path
+Sprint Q: ✅ IFG + SA Score + Gasteiger 電荷 + VSA 記述子 + MaxMin/Butina（v0.1.15）
+          → chematic-chem/src/ifg.rs（Ertl 2017 官能基識別）
+          → chematic-chem/src/gasteiger.rs（Gasteiger-Marsili PEOE 部分電荷）
+          → chematic-chem/src/vsa.rs（SlogP_VSA × 12、SMR_VSA × 10、PEOE_VSA × 14）
+          → chematic-chem/src/sa_score.rs（合成アクセシビリティスコア・複雑度ベース）
+          → chematic-chem/src/diversity.rs（MaxMin 多様性ピッキング + Butina クラスタリング）
+          → テスト: 697 → 736（+39）
+Sprint R: ✅ E/Z 二重結合立体化学 SMILES 出力（v0.1.16）
+          → canonical.rs の write_chain + dfs_mark で Up/Down 方向を DFS トラバーサル方向に合わせて反転
+          → テスト: 736 → 742（+6: ez_e_stable, ez_z_stable, ez_fluoro_e/z, ez_e_ne_z, canonical_preserves_ez）
+Sprint S: ✅ SA スコア フラグメントテーブル実装（v0.1.17）
+          → sa_score.rs: ダミー 10 エントリ → 実データ 1034 エントリ（145 分子コーパス、u64 FNV-1a ハッシュ、i16 対数頻度スコア）
+          → morgan_fp_counts 直接使用（旧プライベート 32-bit ハッシュを廃止）
+          → ソート済みスライス + partition_point バイナリサーチで O(log 1034) 検索
+          → tools/gen_sa_table/: コーパスからテーブルを再生成するオフラインツール（新規）
+          → テスト: 742 → 743（+1: taxol_harder_than_aspirin）
 ```
