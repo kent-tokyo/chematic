@@ -1,0 +1,32 @@
+{
+  "name": "@kent-tokyo/chematic",
+  "type": "module",
+  "collaborators": [
+    "kent-tokyo <kent-tokyo@users.noreply.github.com>"
+  ],
+  "description": "WebAssembly bindings for chematic — use chematic from JavaScript/TypeScript",
+  "version": "0.1.14",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kent-tokyo/chematic"
+  },
+  "files": [
+    "chematic_wasm_bg.wasm",
+    "chematic_wasm.js",
+    "chematic_wasm.d.ts"
+  ],
+  "main": "chematic_wasm.js",
+  "homepage": "https://github.com/kent-tokyo/chematic",
+  "types": "chematic_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ],
+  "keywords": [
+    "cheminformatics",
+    "wasm",
+    "webassembly",
+    "smiles",
+    "chemistry"
+  ]
+}
