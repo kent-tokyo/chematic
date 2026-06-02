@@ -553,6 +553,41 @@ footer {
 @media (max-width: 380px) {
   .rules-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Atom info bar ───────────────────────────────────────────────────── */
+.atom-info-bar {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  padding: .45rem .9rem;
+  display: flex; align-items: center; gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: .75rem;
+  min-height: 2.1rem;
+  transition: border-color .2s;
+}
+.atom-info-bar.has-atom { border-color: var(--accent); }
+.atom-info-bar .ai-key { color: var(--muted); font-size: .73rem; margin-right: .2rem; }
+.atom-info-bar .ai-val { color: var(--text); font-weight: 600; }
+.atom-info-bar .ai-badge {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border-radius: 999px; font-size: .7rem; padding: 1px 8px;
+}
+
+/* ── Named functional group chips ────────────────────────────────────── */
+.fg-chips { display: flex; flex-wrap: wrap; gap: .4rem; min-height: 2rem; align-items: center; }
+.fg-chip {
+  border-radius: 999px; font-size: .75rem; font-weight: 600;
+  padding: 3px 11px; cursor: pointer; border: 1.5px solid;
+  transition: filter .15s, transform .1s, box-shadow .15s;
+  background: transparent;
+}
+.fg-chip:hover { filter: brightness(1.25); }
+.fg-chip.active { transform: scale(1.06); box-shadow: 0 0 0 2px currentColor; }
 </style>
 </head>
 <body>
@@ -567,7 +602,7 @@ footer {
 <header>
   <div class="header-inner">
     <span class="logo">chematic</span>
-    <span class="version">v0.1.15</span>
+    <span class="version">v0.1.19</span>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en">EN</button>
@@ -613,9 +648,14 @@ footer {
       <div class="svg-area" id="svg-area">
         <div class="svg-controls-left">
           <button class="btn-svg-ctrl" id="toggle-indices" title="Toggle atom indices">0..n</button>
+          <button class="btn-svg-ctrl" id="btn-download-mol" title="Download MOL block">MOL↓</button>
         </div>
         <button class="svg-zoom-reset" id="svg-zoom-reset" title="Reset zoom">1:1</button>
         <span class="svg-placeholder" id="svg-placeholder"></span>
+      </div>
+      <!-- Atom info bar -->
+      <div id="atom-info-bar" class="atom-info-bar">
+        <span id="atom-info-hint" style="color:var(--muted);font-size:.8rem"></span>
       </div>
       <!-- SMARTS substructure filter -->
       <div class="smarts-row">
@@ -657,7 +697,7 @@ footer {
     <!-- Functional Group Identification -->
     <section id="section-ifg" class="rxn-eq-section">
       <h3 class="rxn-eq-heading" id="h-ifg-title"></h3>
-      <div id="ifg-output" style="font-family:var(--font-mono);font-size:.82rem;color:var(--muted);min-height:1.5rem"></div>
+      <div id="ifg-output" style="min-height:2rem"></div>
     </section>
 
     <!-- Drug-likeness Rules -->
@@ -904,7 +944,8 @@ const T = {
     'sdf.placeholder':  'Paste SDF or MOL V2000 block here…',
     'desc.sa_score':    'SA Score',
     'desc.labute_asa':  'LabuteASA',
-    'ifg.title':        'Functional Groups (IFG)',
+    'ifg.title':        'Named Functional Groups',
+    'atom.hint':        'Click an atom to inspect',
     'preset.aspirin':   'Aspirin',
     'preset.caffeine':  'Caffeine',
     'preset.ibuprofen': 'Ibuprofen',
@@ -1026,7 +1067,8 @@ const T = {
     'sdf.placeholder':  'SDF または MOL V2000 ブロックを貼り付け…',
     'desc.sa_score':    'SA スコア',
     'desc.labute_asa':  'LabuteASA',
-    'ifg.title':        '官能基識別 (IFG)',
+    'ifg.title':        '名前付き官能基',
+    'atom.hint':        '原子をクリックして詳細確認',
     'preset.aspirin':   'アスピリン',
     'preset.caffeine':  'カフェイン',
     'preset.ibuprofen': 'イブプロフェン',
@@ -1148,7 +1190,8 @@ const T = {
     'sdf.placeholder':  '粘贴 SDF 或 MOL V2000 格式内容…',
     'desc.sa_score':    'SA 分数',
     'desc.labute_asa':  'LabuteASA',
-    'ifg.title':        '官能团识别 (IFG)',
+    'ifg.title':        '命名官能团',
+    'atom.hint':        '点击原子查看详情',
     'preset.aspirin':   '阿司匹林',
     'preset.caffeine':  '咖啡因',
     'preset.ibuprofen': '布洛芬',
@@ -1261,6 +1304,7 @@ const STATIC_IDS = {
   'h-sdf-title':            'sdf.title',
   'btn-sdf-load':           'sdf.load',
   'h-ifg-title':            'ifg.title',
+  'atom-info-hint':         'atom.hint',
 };
 
 function applyLang(newLang) {
@@ -1320,11 +1364,15 @@ let parseSmilesWasm, tanimotoEcfp4, tanimotoFcfp4, tanimotoAtomPair, tanimotoTor
 let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms, generate3dPdb, depictReactionSvg;
 let molFromSdfBlock, sdfToSmilesJson, estateIndicesJson, tanimotoTopoPath;
 let identifyFunctionalGroups, gasteigerChargesJson, saScore, slogpVsaJson, smrVsaJson, peoeVsaJson;
+let detectFunctionalGroups, getAtomInfo, getBondBetween, molBlockFromSmiles;
 let lastMol = null;
 let lastSimResults = null;
 let highlightedAtoms = [];
 let highlightColor = '#4f8ef7';
 let showIndices = false;
+let namedGroupsData = [];
+let activeGroupName = null;
+let groupColorMap = {};
 
 // ============================================================
 // WASM init
@@ -1355,6 +1403,10 @@ async function initWasm() {
     slogpVsaJson             = mod.slogp_vsa_json;
     smrVsaJson               = mod.smr_vsa_json;
     peoeVsaJson              = mod.peoe_vsa_json;
+    detectFunctionalGroups   = mod.detect_functional_groups;
+    getAtomInfo              = mod.get_atom_info;
+    getBondBetween           = mod.get_bond_between;
+    molBlockFromSmiles       = mod.mol_block_from_smiles;
     wasmReady = true;
   } catch (e) {
     document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
@@ -1642,16 +1694,155 @@ function renderDescriptors(mol) {
   }
 }
 
-function renderIFG(mol) {
+const NAMED_GROUP_COLORS = {
+  hydroxyl:        '#22c55e', carbonyl:        '#f97316',
+  carboxyl:        '#ef4444', aldehyde:        '#fb923c',
+  ketone:          '#f59e0b', ester:           '#84cc16',
+  amide:           '#34d399', primary_amine:   '#06b6d4',
+  secondary_amine: '#0ea5e9', tertiary_amine:  '#3b82f6',
+  nitro:           '#dc2626', nitrile:         '#8b5cf6',
+  thiol:           '#eab308', sulfide:         '#ca8a04',
+  sulfoxide:       '#d97706', sulfone:         '#b45309',
+  halogen:         '#f43f5e', ether:           '#2dd4bf',
+  epoxide:         '#a78bfa', aromatic:        '#60a5fa',
+};
+const _FALLBACK_PALETTE = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#a855f7','#ec4899','#14b8a6'];
+
+function renderNamedGroups(mol) {
   const out = document.getElementById('ifg-output');
   if (!out) return;
-  if (!identifyFunctionalGroups) { out.textContent = '—'; return; }
+  out.textContent = '';
+  namedGroupsData = [];
+  activeGroupName = null;
+  groupColorMap = {};
+
+  if (!detectFunctionalGroups) {
+    if (identifyFunctionalGroups) {
+      try {
+        const g = JSON.parse(identifyFunctionalGroups(mol));
+        out.style.fontFamily = 'var(--font-mono)';
+        out.style.fontSize = '.82rem';
+        out.style.color = 'var(--muted)';
+        out.textContent = g.length ? g.map(x => `[${x.atoms.join(',')}] ${x.type}`).join('  ·  ') : 'None';
+      } catch(_) { out.textContent = '—'; }
+    }
+    return;
+  }
+  out.style.fontFamily = '';
+  out.style.fontSize = '';
+  out.style.color = '';
+
   try {
-    const json = identifyFunctionalGroups(mol);
-    const groups = JSON.parse(json);
-    if (!groups.length) { out.textContent = 'None'; return; }
-    out.textContent = groups.map(g => `[${g.atoms.join(',')}] ${g.type}`).join('  ·  ');
-  } catch(e) { out.textContent = '—'; }
+    const raw = JSON.parse(detectFunctionalGroups(mol));
+    if (!raw.length) {
+      const none = document.createElement('span');
+      none.style.color = 'var(--muted)';
+      none.style.fontSize = '.82rem';
+      none.textContent = lang === 'ja' ? 'なし' : lang === 'zh' ? '无' : 'None';
+      out.appendChild(none);
+      return;
+    }
+    const byName = new Map();
+    for (const g of raw) {
+      if (!byName.has(g.name)) byName.set(g.name, new Set());
+      g.atoms.forEach(a => byName.get(g.name).add(a));
+    }
+    let ci = 0;
+    for (const [name, atomSet] of byName) {
+      const color = NAMED_GROUP_COLORS[name] || _FALLBACK_PALETTE[ci++ % _FALLBACK_PALETTE.length];
+      namedGroupsData.push({ name, atoms: [...atomSet], color });
+    }
+    const fgDiv = document.createElement('div');
+    fgDiv.className = 'fg-chips';
+    for (const g of namedGroupsData) {
+      const chip = document.createElement('button');
+      chip.className = 'fg-chip';
+      chip.textContent = g.name.replace(/_/g, ' ');
+      chip.style.borderColor = g.color;
+      chip.style.color = g.color;
+      chip.style.background = g.color + '22';
+      chip.dataset.name = g.name;
+      chip.addEventListener('click', () => toggleGroupHighlight(g.name));
+      fgDiv.appendChild(chip);
+    }
+    out.appendChild(fgDiv);
+  } catch(_) { out.textContent = '—'; }
+}
+
+function toggleGroupHighlight(name) {
+  const g = namedGroupsData.find(x => x.name === name);
+  if (!g) return;
+  if (activeGroupName === name) {
+    activeGroupName = null; groupColorMap = {}; highlightedAtoms = [];
+  } else {
+    activeGroupName = name; groupColorMap = {}; highlightedAtoms = [];
+    for (const idx of g.atoms) groupColorMap[idx] = g.color;
+  }
+  document.querySelectorAll('.fg-chip').forEach(c => c.classList.toggle('active', c.dataset.name === activeGroupName));
+  clearAtomInfo();
+  if (lastMol) renderSvg(lastMol);
+}
+
+function _makeAiSpan(key, val) {
+  const span = document.createElement('span');
+  const k = document.createElement('span');
+  k.className = 'ai-key';
+  k.textContent = key;
+  const v = document.createElement('span');
+  v.className = 'ai-val';
+  v.textContent = String(val);
+  span.appendChild(k);
+  span.appendChild(v);
+  return span;
+}
+
+function showAtomInfo(idx) {
+  const bar = document.getElementById('atom-info-bar');
+  if (!bar || !getAtomInfo || !lastMol) return;
+  try {
+    const info = JSON.parse(getAtomInfo(lastMol, idx));
+    if (!info) { clearAtomInfo(); return; }
+    bar.classList.add('has-atom');
+    bar.textContent = '';
+    bar.appendChild(_makeAiSpan('#', idx));
+    bar.appendChild(_makeAiSpan('El', info.element));
+    bar.appendChild(_makeAiSpan('Hyb', info.hybridization));
+    bar.appendChild(_makeAiSpan('H', info.totalHydrogens));
+    bar.appendChild(_makeAiSpan('q', (info.charge >= 0 ? '+' : '') + info.charge));
+    if (info.isAromatic) {
+      const badge = document.createElement('span');
+      badge.className = 'ai-badge';
+      badge.textContent = 'aromatic';
+      bar.appendChild(badge);
+    }
+  } catch(_) { clearAtomInfo(); }
+}
+
+function clearAtomInfo() {
+  const bar = document.getElementById('atom-info-bar');
+  if (!bar) return;
+  bar.classList.remove('has-atom');
+  bar.textContent = '';
+  const hint = document.createElement('span');
+  hint.id = 'atom-info-hint';
+  hint.style.color = 'var(--muted)';
+  hint.style.fontSize = '.8rem';
+  hint.textContent = t('atom.hint');
+  bar.appendChild(hint);
+}
+
+function downloadMol() {
+  if (!lastMol || !molBlockFromSmiles) return;
+  const smiles = document.getElementById('smiles-input').value.trim();
+  if (!smiles) return;
+  try {
+    const molBlock = molBlockFromSmiles(smiles);
+    const blob = new Blob([molBlock], { type: 'chemical/x-mdl-molfile' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'molecule.mol'; a.click();
+    URL.revokeObjectURL(url);
+  } catch(_) {}
 }
 
 function renderRuleCards(mol) {
@@ -1868,6 +2059,9 @@ function renderSvg(mol) {
       opts.set_highlight_atoms(new Uint32Array(highlightedAtoms));
       opts.set_highlight_color(highlightColor);
     }
+    for (const [idx, color] of Object.entries(groupColorMap)) {
+      opts.set_atom_color(parseInt(idx), color);
+    }
     const svgStr = mol.depict_svg_opts(opts);
     opts.free();
     const parser = new DOMParser();
@@ -1902,15 +2096,21 @@ function enableAtomClick(svgEl) {
       const idx = parseInt(atomEl.getAttribute('data-atom-idx'), 10);
       if (highlightedAtoms.length === 1 && highlightedAtoms[0] === idx) {
         highlightedAtoms = [];
+        clearAtomInfo();
       } else {
         highlightedAtoms = [idx];
         highlightColor = '#4f8ef7';
+        showAtomInfo(idx);
       }
       clearSmartsUI();
       renderSvg(lastMol);
     } else {
-      if (highlightedAtoms.length > 0) {
+      if (highlightedAtoms.length > 0 || Object.keys(groupColorMap).length > 0) {
         highlightedAtoms = [];
+        groupColorMap = {};
+        activeGroupName = null;
+        document.querySelectorAll('.fg-chip').forEach(c => c.classList.remove('active'));
+        clearAtomInfo();
         renderSvg(lastMol);
       }
     }
@@ -2052,13 +2252,16 @@ function calculate() {
   if (lastMol) { try { lastMol.free(); } catch (_) {} }
   lastMol = mol;
   highlightedAtoms = [];
+  groupColorMap = {};
+  activeGroupName = null;
   clearSmartsUI();
+  clearAtomInfo();
 
   renderSvg(mol);
   renderRadar(mol);
   renderDescriptors(mol);
   renderRuleCards(mol);
-  renderIFG(mol);
+  renderNamedGroups(mol);
 
   // Mark 3D dirty — update when user switches to 3D tab
   if (activeTab === 'tab-3d' && viewer3dInited && viewer3d) {
@@ -2119,10 +2322,13 @@ function loadSdf() {
   try {
     const firstMol = parseSmilesWasm(smilesList[0]);
     lastMol = firstMol;
+    groupColorMap = {};
+    activeGroupName = null;
+    clearAtomInfo();
     renderSvg(firstMol);
     renderDescriptors(firstMol);
     renderRuleCards(firstMol);
-    renderIFG(firstMol);
+    renderNamedGroups(firstMol);
     viewer3dMolDirty = true;
   } catch (_) {}
 
@@ -2147,6 +2353,7 @@ function loadSdf() {
   const browser = navigator.language.toLowerCase();
   const detected = saved ?? (browser.startsWith('zh') ? 'zh' : browser.startsWith('ja') ? 'ja' : 'en');
   applyLang(detected);
+  clearAtomInfo();
 
   renderRuleCards(null);
   renderSimTable(null);
@@ -2202,6 +2409,9 @@ function loadSdf() {
       if (e.key === 'Enter') compare();
     });
   });
+
+  // MOL download
+  document.getElementById('btn-download-mol').addEventListener('click', downloadMol);
 
   // Atom index toggle
   document.getElementById('toggle-indices').addEventListener('click', () => {
