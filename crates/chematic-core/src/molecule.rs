@@ -2,6 +2,7 @@
 
 use crate::atom::Atom;
 use crate::bond::{BondEntry, BondOrder};
+use crate::element::Element;
 
 /// Newtype index for an atom in a Molecule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -147,7 +148,8 @@ impl Molecule {
         (builder.build(), new_idx)
     }
 
-    /// Return a new `Molecule` with one extra bond added.
+    /// Return a new `Molecule` with one extra bond added, along with the index
+    /// of the newly added bond in the returned molecule.
     ///
     /// Returns `Err` if `a == b` or the bond already exists (same semantics as
     /// [`MoleculeBuilder::add_bond`]).
@@ -156,7 +158,7 @@ impl Molecule {
         a: AtomIdx,
         b: AtomIdx,
         order: BondOrder,
-    ) -> Result<Molecule, MolError> {
+    ) -> Result<(Molecule, BondIdx), MolError> {
         let mut builder = MoleculeBuilder::new();
         for (_, atom) in self.atoms() {
             builder.add_atom(atom.clone());
@@ -164,8 +166,45 @@ impl Molecule {
         for (_, bond) in self.bonds() {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
-        builder.add_bond(a, b, order)?;
-        Ok(builder.build())
+        let bond_idx = builder.add_bond(a, b, order)?;
+        Ok((builder.build(), bond_idx))
+    }
+
+    /// Return a new `Molecule` with the formal charge of atom `idx` changed.
+    pub fn with_atom_charge(&self, idx: AtomIdx, charge: i8) -> Molecule {
+        let mut builder = MoleculeBuilder::new();
+        for (aidx, atom) in self.atoms() {
+            let mut a = atom.clone();
+            if aidx == idx { a.charge = charge; }
+            builder.add_atom(a);
+        }
+        for (_, bond) in self.bonds() {
+            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+        }
+        builder.build()
+    }
+
+    /// Return a new `Molecule` with the element of atom `idx` changed.
+    ///
+    /// Chirality and hydrogen count are reset to `None` when the element
+    /// changes, since those properties are element-specific.
+    pub fn with_atom_element(&self, idx: AtomIdx, el: Element) -> Molecule {
+        let mut builder = MoleculeBuilder::new();
+        for (aidx, atom) in self.atoms() {
+            let mut a = atom.clone();
+            if aidx == idx {
+                a.element = el;
+                // Reset element-specific fields so valence stays consistent.
+                a.chirality = crate::atom::Chirality::None;
+                a.hydrogen_count = None;
+                a.aromatic = false;
+            }
+            builder.add_atom(a);
+        }
+        for (_, bond) in self.bonds() {
+            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+        }
+        builder.build()
     }
 
     /// Return a new `Molecule` with atom `idx` and all bonds involving it

@@ -869,6 +869,38 @@ export function canonical_tautomer(mol) {
 }
 
 /**
+ * Parse all molecular fragments from a CDXML string.
+ *
+ * Returns a JSON array of SMILES strings, one per fragment:
+ * `["CC","c1ccccc1"]`
+ *
+ * Stereochemistry (wedge/dash bonds) is read from the `Display` attribute
+ * of bond elements.
+ * @param {string} cdxml
+ * @returns {string}
+ */
+export function cdxml_to_smiles_json(cdxml) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.cdxml_to_smiles_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * CIP stereo assignments as a JSON array of `{atomIdx, cipCode}` objects.
  *
  * `cipCode` is one of `"R"`, `"S"`, `"E"`, or `"Z"`.
@@ -946,6 +978,32 @@ export function depict_data_json(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute structured depiction data using caller-supplied 2D coordinates.
+ *
+ * `coords_json` — JSON array of `[x, y]` pairs, one per atom in order.
+ *
+ * Returns the same JSON format as `depict_data_json`.
+ * @param {MolHandle} mol
+ * @param {string} coords_json
+ * @returns {string}
+ */
+export function depict_data_with_coords_json(mol, coords_json) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.depict_data_with_coords_json(mol.__wbg_ptr, ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
 }
 
@@ -1669,6 +1727,35 @@ export function mmp_pairs_json(smiles_json) {
 }
 
 /**
+ * Parse a MOL V2000 string and return 2D coordinates as a JSON array.
+ *
+ * Returns `[[x0,y0],[x1,y1],...]` in atom-insertion order.
+ * Coordinates are in Ångström as stored in the MOL file.
+ * @param {string} mol_block
+ * @returns {string}
+ */
+export function mol_block_coords_json(mol_block) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(mol_block, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mol_block_coords_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Serialize a SMILES string directly to a MOL V2000 block with 2D coordinates.
  *
  * Returns a JS error on SMILES parse failure.
@@ -1822,6 +1909,45 @@ export function mol_with_atom_added(mol, element_symbol) {
     const ptr0 = passStringToWasm0(element_symbol, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ret = wasm.mol_with_atom_added(mol.__wbg_ptr, ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Return a new `MolHandle` with the formal charge of atom `idx` changed.
+ *
+ * Returns a JS error if `idx` is out of range.
+ * @param {MolHandle} mol
+ * @param {number} idx
+ * @param {number} charge
+ * @returns {MolHandle}
+ */
+export function mol_with_atom_charge(mol, idx, charge) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.mol_with_atom_charge(mol.__wbg_ptr, idx, charge);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Return a new `MolHandle` with the element of atom `idx` changed.
+ *
+ * `element_symbol` — periodic-table symbol, e.g. `"N"`, `"O"`, `"Cl"`.
+ * Returns a JS error if `idx` is out of range or the symbol is unknown.
+ * @param {MolHandle} mol
+ * @param {number} idx
+ * @param {string} element_symbol
+ * @returns {MolHandle}
+ */
+export function mol_with_atom_element(mol, idx, element_symbol) {
+    _assertClass(mol, MolHandle);
+    const ptr0 = passStringToWasm0(element_symbol, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_with_atom_element(mol.__wbg_ptr, idx, ptr0, len0);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
