@@ -95,6 +95,147 @@ pub fn parse_sdf(input: &str) -> Result<Vec<(Molecule, MolMetadata)>, MolParseEr
 }
 
 // ---------------------------------------------------------------------------
+// SdfRecord — molecule + SD data fields
+// ---------------------------------------------------------------------------
+
+/// A parsed SDF record including the molecule, its name, and SD data fields.
+pub struct SdfRecord {
+    /// Parsed molecule.
+    pub mol: Molecule,
+    /// Molecule name from MOL header line 1.
+    pub name: String,
+    /// SD data fields in file order.  Each entry is `(field_name, value)`.
+    /// Multi-line values are joined with `\n`.
+    pub properties: Vec<(String, String)>,
+}
+
+/// Iterator over SDF records that also captures SD data fields.
+///
+/// Unlike [`SdfReader`], this iterator yields [`SdfRecord`] values so that
+/// callers can access per-molecule properties (e.g. activity values, MW, etc.).
+pub struct SdfRecordReader<'a> {
+    remaining: &'a str,
+}
+
+impl<'a> SdfRecordReader<'a> {
+    /// Create a new reader over the given SDF string.
+    pub fn new(input: &'a str) -> Self {
+        Self { remaining: input }
+    }
+}
+
+impl<'a> Iterator for SdfRecordReader<'a> {
+    type Item = Result<SdfRecord, MolParseError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Skip leading blank lines.
+        while let Some(rest) = self
+            .remaining
+            .strip_prefix("\r\n")
+            .or_else(|| self.remaining.strip_prefix('\n'))
+        {
+            self.remaining = rest;
+        }
+
+        if self.remaining.is_empty() {
+            return None;
+        }
+
+        // Scan to find the $$$$ delimiter (line-by-line to avoid false matches).
+        let mut byte_offset = 0usize;
+        let (end_byte, after_delim) = loop {
+            let rest = &self.remaining[byte_offset..];
+            match rest.find('\n') {
+                Some(nl) => {
+                    let line = rest[..nl].trim_end_matches('\r');
+                    if line == "$$$$" {
+                        break (byte_offset, &self.remaining[byte_offset + nl + 1..]);
+                    }
+                    byte_offset += nl + 1;
+                }
+                None => {
+                    if rest.trim_end_matches('\r') == "$$$$" {
+                        break (byte_offset, "");
+                    }
+                    break (self.remaining.len(), "");
+                }
+            }
+        };
+
+        let block = &self.remaining[..end_byte];
+        self.remaining = after_delim;
+
+        if block.trim().is_empty() {
+            return self.next();
+        }
+
+        // Pass the full block (including any data fields) to the V2000 parser,
+        // matching the behaviour of SdfReader — parse_mol ignores content after
+        // the "M  END" line.
+        let (mol, meta) = match parse_mol(block) {
+            Ok(pair) => pair,
+            Err(e) => return Some(Err(e)),
+        };
+
+        // Extract data fields from the part after "M  END".
+        let data_part = block
+            .find("M  END")
+            .map(|pos| &block[pos + 6..]) // 6 == len("M  END")
+            .unwrap_or("");
+        let properties = parse_sd_fields(data_part);
+
+        Some(Ok(SdfRecord { mol, name: meta.name, properties }))
+    }
+}
+
+/// Parse SD data fields from the section after `M  END`.
+///
+/// Each field starts with `> <FieldName>` on its own line.  The value is
+/// everything on subsequent lines until a blank line (or end of input).
+fn parse_sd_fields(data: &str) -> Vec<(String, String)> {
+    let mut fields = Vec::new();
+    let mut current_key: Option<String> = None;
+    let mut current_value_lines: Vec<&str> = Vec::new();
+
+    for raw_line in data.lines() {
+        let line = raw_line.trim_end_matches('\r');
+
+        if let Some(key) = parse_sd_field_header(line) {
+            // Flush previous field.
+            if let Some(k) = current_key.take() {
+                fields.push((k, current_value_lines.join("\n")));
+                current_value_lines.clear();
+            }
+            current_key = Some(key);
+        } else if line.is_empty() {
+            // Blank line ends the current field's value.
+            if let Some(k) = current_key.take() {
+                fields.push((k, current_value_lines.join("\n")));
+                current_value_lines.clear();
+            }
+        } else if current_key.is_some() {
+            current_value_lines.push(line);
+        }
+    }
+    // Flush trailing field with no blank line.
+    if let Some(k) = current_key {
+        fields.push((k, current_value_lines.join("\n")));
+    }
+
+    fields
+}
+
+/// Parse `> <FieldName>` header lines, returning the field name or `None`.
+fn parse_sd_field_header(line: &str) -> Option<String> {
+    // SDF spec: field headers start with "> " and contain the name in `<...>`.
+    // We accept "> <Name>" and also ">  <Name>" (extra spaces).
+    let rest = line.strip_prefix('>')?;
+    let rest = rest.trim();
+    let inner = rest.strip_prefix('<')?.strip_suffix('>')?;
+    Some(inner.to_string())
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 

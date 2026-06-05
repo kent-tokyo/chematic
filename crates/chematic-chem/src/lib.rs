@@ -15,6 +15,7 @@ pub mod estate;
 pub mod gasteiger;
 pub mod hydrogen;
 pub mod ifg;
+pub mod mmp;
 pub mod qed;
 pub mod sa_score;
 pub mod scaffold;
@@ -37,6 +38,7 @@ pub use descriptors::{
 
 pub use alerts::{pains_matches, pains_passes};
 pub use brics::{brics_bonds, brics_fragments};
+pub use mmp::{MmpPair, find_mmp};
 pub use diversity::{butina_cluster, maxmin_picks};
 pub use gasteiger::gasteiger_charges;
 pub use hydrogen::{add_hydrogens, remove_hydrogens};

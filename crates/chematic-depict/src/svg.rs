@@ -60,6 +60,24 @@ pub struct RenderOptions {
     pub kekulize: bool,
 }
 
+impl RenderOptions {
+    /// Return `RenderOptions` with per-atom CPK colors pre-filled for every
+    /// non-carbon atom in `mol`.  Carbon is left black (default label color).
+    ///
+    /// This is a convenience constructor for quick coloured depictions; all
+    /// other options retain their defaults.
+    pub fn with_cpk_colors_for(mol: &chematic_core::Molecule) -> Self {
+        let mut opts = Self::default();
+        for (idx, atom) in mol.atoms() {
+            let color = atom_color(atom.element.atomic_number());
+            if color != "#000000" {
+                opts.atom_color_map.insert(idx, color.to_string());
+            }
+        }
+        opts
+    }
+}
+
 impl Default for RenderOptions {
     fn default() -> Self {
         Self {
@@ -126,6 +144,48 @@ pub(crate) fn render_mol_body(mol: &Molecule, layout: &Layout) -> String {
         let p2 = layout.get(bond.atom2);
         body.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
     }
+    write_atom_labels_ctx(mol, layout, &ctx, &mut body);
+    body
+}
+
+/// Render bonds, highlight circles, and atom labels without an SVG wrapper.
+///
+/// Used by the highlighted grid renderer.
+pub(crate) fn render_mol_body_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) -> String {
+    let ctx = DrawCtx::from_opts(opts);
+    let mut body = String::new();
+
+    // Highlight atom circles (drawn beneath bonds).
+    let default_hc = escape_xml(&opts.highlight_color);
+    let atom_count = mol.atom_count();
+    let mut circles: Vec<(AtomIdx, String)> = Vec::new();
+    for idx in &opts.highlight_atoms {
+        if idx.0 as usize >= atom_count { continue; }
+        let color = opts.atom_color_map.get(idx)
+            .map(|c| escape_xml(c))
+            .unwrap_or_else(|| default_hc.clone());
+        circles.push((*idx, color));
+    }
+    circles.sort_unstable_by_key(|(idx, _)| *idx);
+    for (idx, color) in &circles {
+        let p = layout.get(*idx);
+        body.push_str(&format!(
+            "  <circle cx=\"{:.2}\" cy=\"{:.2}\" r=\"16\" fill=\"{}\" opacity=\"0.5\"/>\n",
+            p.x, p.y, color,
+        ));
+    }
+
+    // Bonds.
+    for (bond_idx, bond) in mol.bonds() {
+        let p1 = layout.get(bond.atom1);
+        let p2 = layout.get(bond.atom2);
+        if opts.highlight_bonds.contains(&bond_idx) {
+            body.push_str(&render_line(p1, p2, "4.0", "#FF8C00"));
+        } else {
+            body.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
+        }
+    }
+
     write_atom_labels_ctx(mol, layout, &ctx, &mut body);
     body
 }
@@ -439,7 +499,8 @@ fn render_dash_bond(p1: Point, p2: Point, color: &str) -> String {
 // Atom coloring (CPK palette)
 // ---------------------------------------------------------------------------
 
-fn atom_color(atomic_number: u8) -> &'static str {
+/// CPK standard color for an element (black for carbon/hydrogen/default).
+pub fn atom_color(atomic_number: u8) -> &'static str {
     match atomic_number {
         7  => "#3050F8", // N  blue
         8  => "#FF0D0D", // O  red

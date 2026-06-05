@@ -2,7 +2,9 @@
 //!
 //! Reference: MDL/Dassault Systèmes CTfile Formats specification, V3000 section.
 //!
-//! Only parsing is implemented; writing V3000 is not required.
+//! MOL V3000 (Extended Ctab) parser and writer.
+//!
+//! Reference: MDL/Dassault Systèmes CTfile Formats specification, V3000 section.
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 
@@ -752,5 +754,128 @@ M  END
 ";
         let (mol, _) = parse_mol_v3000(mol_str).expect("parse atommapped");
         assert_eq!(mol.atom(AtomIdx(0)).atom_map, Some(3));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Writer
+// ---------------------------------------------------------------------------
+
+/// Serialise `mol` to a MOL V3000 (Extended Ctab) string.
+///
+/// `coords[i]` is the `(x, y)` position for atom `i`.  Atoms beyond
+/// `coords.len()` receive `(0.0, 0.0, 0.0)`.
+pub fn write_mol_v3000(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    coords: &[(f64, f64)],
+) -> String {
+    let natoms = mol.atom_count();
+    let nbonds = mol.bond_count();
+
+    let mut out = String::new();
+
+    // Header (same 3-line format as V2000)
+    out.push_str(&metadata.name);
+    out.push('\n');
+    out.push_str("  chematic\n");
+    out.push_str(&metadata.comment);
+    out.push('\n');
+
+    // Counts line with V3000 tag (no atom/bond counts — they go in M  V30 COUNTS)
+    out.push_str("  0  0  0  0  0  0  0  0  0  0999 V3000\n");
+
+    out.push_str("M  V30 BEGIN CTAB\n");
+    out.push_str(&format!("M  V30 COUNTS {natoms} {nbonds} 0 0 0\n"));
+
+    // Atom block
+    out.push_str("M  V30 BEGIN ATOM\n");
+    for (idx, atom) in mol.atoms() {
+        let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
+        let sym = atom.element.symbol();
+        let atom_map = atom.atom_map.unwrap_or(0);
+        let i = idx.0 + 1; // 1-based
+
+        let mut line = format!(
+            "M  V30 {i} {sym} {x:.4} {y:.4} 0.0000 {atom_map}"
+        );
+        if atom.charge != 0 {
+            line.push_str(&format!(" CHG={}", atom.charge));
+        }
+        if let Some(iso) = atom.isotope {
+            line.push_str(&format!(" MASS={iso}"));
+        }
+        if let Some(h) = atom.hydrogen_count {
+            line.push_str(&format!(" HCOUNT={h}"));
+        }
+        out.push_str(&line);
+        out.push('\n');
+    }
+    out.push_str("M  V30 END ATOM\n");
+
+    // Bond block
+    out.push_str("M  V30 BEGIN BOND\n");
+    for (bidx, bond) in mol.bonds() {
+        let a1 = bond.atom1.0 + 1;
+        let a2 = bond.atom2.0 + 1;
+        let order = match bond.order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+            BondOrder::Double    => 2,
+            BondOrder::Triple    => 3,
+            BondOrder::Aromatic  => 4,
+            BondOrder::Quadruple => 4,
+        };
+        let i = bidx.0 + 1;
+        let stereo = match bond.order {
+            BondOrder::Up   => " CFG=1",
+            BondOrder::Down => " CFG=6",
+            _               => "",
+        };
+        out.push_str(&format!("M  V30 {i} {order} {a1} {a2}{stereo}\n"));
+    }
+    out.push_str("M  V30 END BOND\n");
+
+    out.push_str("M  V30 END CTAB\n");
+    out.push_str("M  END\n");
+
+    out
+}
+
+#[cfg(test)]
+mod write_tests {
+    use super::*;
+    use chematic_core::{Atom, MoleculeBuilder};
+    use chematic_core::Element;
+    use crate::mol3000::parse_mol_v3000;
+
+    fn ethanol() -> Molecule {
+        use chematic_core::BondOrder;
+        let mut b = MoleculeBuilder::new();
+        let c1 = b.add_atom(Atom::new(Element::from_symbol("C").unwrap()));
+        let c2 = b.add_atom(Atom::new(Element::from_symbol("C").unwrap()));
+        let o  = b.add_atom(Atom::new(Element::from_symbol("O").unwrap()));
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        b.add_bond(c2, o,  BondOrder::Single).unwrap();
+        b.build()
+    }
+
+    #[test]
+    fn write_v3000_roundtrip_ethanol() {
+        let mol = ethanol();
+        let meta = MolMetadata { name: "ethanol".into(), comment: String::new() };
+        let v3k = write_mol_v3000(&mol, &meta, &[]);
+        let (mol2, meta2) = parse_mol_v3000(&v3k).expect("round-trip parse");
+        assert_eq!(mol.atom_count(), mol2.atom_count());
+        assert_eq!(mol.bond_count(), mol2.bond_count());
+        assert_eq!(meta2.name, "ethanol");
+    }
+
+    #[test]
+    fn write_v3000_contains_v3000_tag() {
+        let mol = ethanol();
+        let meta = MolMetadata::default();
+        let v3k = write_mol_v3000(&mol, &meta, &[]);
+        assert!(v3k.contains("V3000"), "output should contain V3000 tag");
+        assert!(v3k.contains("M  V30 BEGIN CTAB"), "should contain CTAB block");
     }
 }

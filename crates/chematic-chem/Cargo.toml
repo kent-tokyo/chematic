@@ -15,8 +15,8 @@ documentation = "https://docs.rs/chematic-chem"
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.1.9" }
 chematic-perception = { path = "../chematic-perception", version = "0.1.9" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.9" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.9" }
 chematic-fp         = { path = "../chematic-fp",         version = "0.1.9" }
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles" }

@@ -16,6 +16,8 @@
 //! let written = write_mol(&mol, &meta);
 //! ```
 
+pub mod cdxml;
+pub mod cml;
 pub mod error;
 pub mod mol2000;
 pub mod mol3000;
@@ -25,6 +27,8 @@ pub mod sdf;
 pub use error::MolParseError;
 // Re-export MolParseError under the alias MolError as specified by the public API.
 pub use error::MolParseError as MolError;
-pub use mol2000::{MolMetadata, parse_mol, write_mol};
-pub use mol3000::parse_mol_v3000;
-pub use sdf::SdfReader;
+pub use cdxml::{CdxmlError, parse_cdxml};
+pub use cml::{CmlError, parse_cml, write_cml};
+pub use mol2000::{MolMetadata, parse_mol, write_mol, write_mol_with_coords, write_sdf};
+pub use mol3000::{parse_mol_v3000, write_mol_v3000};
+pub use sdf::{SdfReader, SdfRecord, SdfRecordReader};
