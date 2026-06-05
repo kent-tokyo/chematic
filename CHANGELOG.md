@@ -11,6 +11,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.21] — 2026-06-06
+
+### Added — Mutable Molecule API 拡張・SDF/CDXML 機能強化・DepictData with user coords
+
+#### `chematic-core` — Mutable Molecule API 拡張
+
+- `Molecule::with_atom_charge(idx: AtomIdx, charge: i8) -> Molecule` — 指定原子の形式電荷を変更した新 Molecule を返す
+- `Molecule::with_atom_element(idx: AtomIdx, el: Element) -> Molecule` — 指定原子の元素を変更した新 Molecule を返す（chirality・hydrogen_count・aromatic フラグはリセット）
+
+### Changed
+
+#### `chematic-core` — 破壊的変更 ⚠️
+
+- `Molecule::with_bond_added` の戻り値を `Result<Molecule, MolError>` から `Result<(Molecule, BondIdx), MolError>` に変更。新しく追加された結合のインデックスも同時に返すようになった。
+
+#### `chematic-mol` — SDF/MOL V2000 座標取得
+
+- `parse_mol_with_coords(input)` を新規追加し、`parse_mol` はそのラッパーに変更。V2000 atom block の x/y 座標（bytes 0–19）を `Vec<(f64, f64)>` として返す。
+- `parse_sdf_with_coords(input) -> Result<Vec<(Molecule, MolMetadata, Vec<(f64, f64)>)>, MolParseError>` を追加。
+
+#### `chematic-mol` — CDXML 複数フラグメント対応
+
+- `parse_cdxml_all(input) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError>` を追加。`<fragment>` 要素ごとに独立した Molecule を返す。
+- `parse_cdxml()` は `parse_cdxml_all` の wrapper に変更（最初の fragment のみ返す互換 API を維持）。
+
+#### `chematic-mol` — CDXML 立体化学読み取り
+
+- `<b>` 要素の `Display` 属性を読み取り、くさび結合を BondOrder に変換:
+  - `"WedgeBegin"` / `"WedgedHashBegin"` → `BondOrder::Up`
+  - `"Hash"` / `"Dash"` / `"WedgeEnd"` / `"WedgedHashEnd"` → `BondOrder::Down`
+
+#### `chematic-depict` — DepictData with user coordinates
+
+- `depict_data_with_coords(mol: &Molecule, coords: &[(f64, f64)]) -> DepictData` を追加。ユーザーが用意した 2D 座標から DepictData を生成する（`compute_layout` を呼ばない）。
+- `compute_depict_data` を内部的に `depict_data_from_layout` ヘルパーを通じて実装するよう整理。
+
+#### WASM 新規エクスポート
+
+- `mol_with_atom_charge(mol, idx, charge)` → `MolHandle`
+- `mol_with_atom_element(mol, idx, element_symbol)` → `MolHandle`
+- `cdxml_to_smiles_json(cdxml)` → 全フラグメントの canonical SMILES の JSON 配列
+- `mol_block_coords_json(mol_block)` → V2000 MOL の 2D座標 JSON `[[x,y],...]`
+- `depict_data_with_coords_json(mol, coords_json)` → ユーザー指定座標で DepictData JSON を生成
+
+### Tests
+
+- 869 tests、全パス（前版 863 から +6）
+
+---
+
 ## [0.1.20] — 2026-06-06
 
 ### Added — Sprint V〜CC: WASM 機能拡充・ファイル形式・編集 API
