@@ -1,6 +1,127 @@
 /* @ts-self-types="./chematic_wasm.d.ts" */
 
 /**
+ * A conformer ensemble: one molecule geometry with multiple 3D coordinate sets.
+ *
+ * Create with `new(smiles)`, then add conformers with `add_generated_conformer`
+ * or `add_minimized_conformer`.  Retrieve coordinates as PDB strings via
+ * `get_conformer_pdb(idx)`.  Compare conformers with `conformer_rmsd`.
+ */
+export class ConformerHandle {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        ConformerHandleFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_conformerhandle_free(ptr, 0);
+    }
+    /**
+     * Generate a new 3D conformer using distance-geometry and add it to the ensemble.
+     *
+     * Returns the index of the newly added conformer.
+     * @returns {number}
+     */
+    add_generated_conformer() {
+        const ret = wasm.conformerhandle_add_generated_conformer(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Generate a new 3D conformer, run force-field minimization, and add it.
+     *
+     * Returns the index of the newly added conformer.
+     * @returns {number}
+     */
+    add_minimized_conformer() {
+        const ret = wasm.conformerhandle_add_minimized_conformer(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Number of conformers currently stored.
+     * @returns {number}
+     */
+    conformer_count() {
+        const ret = wasm.conformerhandle_conformer_count(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Kabsch-aligned RMSD (Å) between conformers `a` and `b`.
+     *
+     * Returns `NaN` if either index is out of range.
+     * @param {number} a
+     * @param {number} b
+     * @returns {number}
+     */
+    conformer_rmsd(a, b) {
+        const ret = wasm.conformerhandle_conformer_rmsd(this.__wbg_ptr, a, b);
+        return ret;
+    }
+    /**
+     * Un-aligned (translation + rotation NOT removed) RMSD (Å) between conformers `a` and `b`.
+     *
+     * Returns `NaN` if either index is out of range.
+     * @param {number} a
+     * @param {number} b
+     * @returns {number}
+     */
+    conformer_rmsd_no_align(a, b) {
+        const ret = wasm.conformerhandle_conformer_rmsd_no_align(this.__wbg_ptr, a, b);
+        return ret;
+    }
+    /**
+     * Return conformer `idx` as a PDB string, or `null` if `idx` is out of range.
+     * @param {number} idx
+     * @returns {string | undefined}
+     */
+    get_conformer_pdb(idx) {
+        const ret = wasm.conformerhandle_get_conformer_pdb(this.__wbg_ptr, idx);
+        let v1;
+        if (ret[0] !== 0) {
+            v1 = getStringFromWasm0(ret[0], ret[1]).slice();
+            wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        }
+        return v1;
+    }
+    /**
+     * The ensemble's molecule as a `MolHandle`.
+     * @returns {MolHandle}
+     */
+    mol() {
+        const ret = wasm.conformerhandle_mol(this.__wbg_ptr);
+        return MolHandle.__wrap(ret);
+    }
+    /**
+     * Create a new empty ensemble for the molecule given by `smiles`.
+     *
+     * Returns a JS error on SMILES parse failure.
+     * @param {string} smiles
+     */
+    constructor(smiles) {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.conformerhandle_new(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        ConformerHandleFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Remove conformer `idx` and return `true`, or `false` if `idx` is out of range.
+     * @param {number} idx
+     * @returns {boolean}
+     */
+    remove_conformer(idx) {
+        const ret = wasm.conformerhandle_remove_conformer(this.__wbg_ptr, idx);
+        return ret !== 0;
+    }
+}
+if (Symbol.dispose) ConformerHandle.prototype[Symbol.dispose] = ConformerHandle.prototype.free;
+
+/**
  * Style options for [`MolHandle::depict_svg_opts`].
  *
  * Construct with `new DepictOptions()`, then call setters:
@@ -491,6 +612,14 @@ export class MolHandle {
         return ret >>> 0;
     }
     /**
+     * Count of aliphatic (non-aromatic) rings in the SSSR.
+     * @returns {number}
+     */
+    num_aliphatic_rings() {
+        const ret = wasm.molhandle_num_aliphatic_rings(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * Number of aromatic rings containing at least one heteroatom (N, O, S, …).
      * @returns {number}
      */
@@ -523,6 +652,14 @@ export class MolHandle {
         return ret >>> 0;
     }
     /**
+     * Count of fully saturated rings in the SSSR.
+     * @returns {number}
+     */
+    num_saturated_rings() {
+        const ret = wasm.molhandle_num_saturated_rings(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * Number of spiro atoms (sole shared atom between exactly 2 rings).
      * @returns {number}
      */
@@ -536,6 +673,14 @@ export class MolHandle {
      */
     num_stereocenters() {
         const ret = wasm.molhandle_num_stereocenters(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Count of tetrahedral stereocenters with unspecified configuration.
+     * @returns {number}
+     */
+    num_unspecified_stereocenters() {
+        const ret = wasm.molhandle_num_unspecified_stereocenters(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**
@@ -626,6 +771,19 @@ export function add_hydrogens(mol) {
 }
 
 /**
+ * AtomPair fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function atom_pair_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.atom_pair_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
  * Number of BRICS fragments produced by fragmenting the molecule.
  *
  * Returns 1 if no BRICS-breakable bonds exist (whole molecule is one fragment).
@@ -636,6 +794,159 @@ export function brics_fragment_count(mol) {
     _assertClass(mol, MolHandle);
     const ret = wasm.brics_fragment_count(mol.__wbg_ptr);
     return ret >>> 0;
+}
+
+/**
+ * BRICS fragment SMILES as a JSON array.
+ *
+ * Applies the BRICS fragmentation rules and returns the canonical SMILES of
+ * every resulting fragment.  Returns `[]` for molecules with no BRICS-breakable
+ * bonds (e.g. benzene).
+ *
+ * The count of fragments equals `brics_fragment_count`.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function brics_fragments_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.brics_fragments_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Cluster molecules by structural similarity (Butina algorithm, ECFP4 Tanimoto).
+ *
+ * `smiles_json` — a JSON array of SMILES strings.
+ * `cutoff` — Tanimoto similarity threshold (0.0–1.0); molecules within this
+ *   distance of a cluster centre are assigned to that cluster.
+ * Returns a JSON array of clusters, each cluster being an array of 0-based input indices.
+ * Returns a JS error if any SMILES fails to parse.
+ * @param {string} smiles_json
+ * @param {number} cutoff
+ * @returns {string}
+ */
+export function butina_cluster_ecfp4_json(smiles_json, cutoff) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.butina_cluster_ecfp4_json(ptr0, len0, cutoff);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Canonical tautomer of `mol`.
+ *
+ * Applies a rule-based tautomer normalisation and returns the canonical form
+ * as a new `MolHandle`.
+ * @param {MolHandle} mol
+ * @returns {MolHandle}
+ */
+export function canonical_tautomer(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.canonical_tautomer(mol.__wbg_ptr);
+    return MolHandle.__wrap(ret);
+}
+
+/**
+ * CIP stereo assignments as a JSON array of `{atomIdx, cipCode}` objects.
+ *
+ * `cipCode` is one of `"R"`, `"S"`, `"E"`, or `"Z"`.
+ * Returns `[]` for molecules with no specified stereocenters.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function cip_assignments_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.cip_assignments_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Return the CPK color (CSS hex string) for the given element symbol.
+ *
+ * Returns `"#000000"` (black) for carbon and unknown elements.
+ * @param {string} element_symbol
+ * @returns {string}
+ */
+export function cpk_color(element_symbol) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(element_symbol, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.cpk_color(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Compute structured depiction data for `mol` as a JSON object.
+ *
+ * Returns:
+ * ```json
+ * {
+ *   "atoms": [
+ *     {"idx": 0, "element": "C", "x": 1.5, "y": 0.0, "charge": 0,
+ *      "label": null, "color": "#000000"},
+ *     ...
+ *   ],
+ *   "bonds": [
+ *     {"idx": 0, "atom1": 0, "atom2": 1, "kind": "Single"},
+ *     ...
+ *   ]
+ * }
+ * ```
+ *
+ * `label` is `null` for carbon atoms in skeletal structures (label suppressed).
+ * `kind` is one of `"Single"`, `"Double"`, `"Triple"`, `"Aromatic"`, `"Up"`, `"Down"`.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function depict_data_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.depict_data_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
 }
 
 /**
@@ -692,6 +1003,38 @@ export function depict_svg_grid(smiles_block, cols) {
 }
 
 /**
+ * Render a molecule grid with SMARTS-based atom highlighting.
+ *
+ * `smiles_block` — newline-separated SMILES strings (same format as `depict_svg_grid`).
+ * `cols` — number of grid columns.
+ * `match_smarts` — SMARTS pattern; matched atoms in each molecule are highlighted.
+ *   Pass an empty string `""` to render without any highlighting.
+ *
+ * Invalid SMILES are rendered as empty cells; SMARTS parse failure returns an
+ * unhighlighted grid (the SMARTS is silently ignored).
+ * @param {string} smiles_block
+ * @param {number} cols
+ * @param {string} match_smarts
+ * @returns {string}
+ */
+export function depict_svg_grid_highlighted(smiles_block, cols, match_smarts) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_block, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(match_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.depict_svg_grid_highlighted(ptr0, len0, cols, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Detect named functional groups in `mol`.
  *
  * Returns a JSON array of `{"name":"hydroxyl","atoms":[3]}` objects.
@@ -716,6 +1059,45 @@ export function detect_functional_groups(mol) {
 }
 
 /**
+ * Dice similarity between `a` and `b` using ECFP4 fingerprints.
+ * @param {MolHandle} a
+ * @param {MolHandle} b
+ * @returns {number}
+ */
+export function dice_ecfp4(a, b) {
+    _assertClass(a, MolHandle);
+    _assertClass(b, MolHandle);
+    const ret = wasm.dice_ecfp4(a.__wbg_ptr, b.__wbg_ptr);
+    return ret;
+}
+
+/**
+ * Dice similarity between `a` and `b` using ECFP6 fingerprints.
+ * @param {MolHandle} a
+ * @param {MolHandle} b
+ * @returns {number}
+ */
+export function dice_ecfp6(a, b) {
+    _assertClass(a, MolHandle);
+    _assertClass(b, MolHandle);
+    const ret = wasm.dice_ecfp6(a.__wbg_ptr, b.__wbg_ptr);
+    return ret;
+}
+
+/**
+ * Dice similarity between `a` and `b` using MACCS 166-bit fingerprints.
+ * @param {MolHandle} a
+ * @param {MolHandle} b
+ * @returns {number}
+ */
+export function dice_maccs(a, b) {
+    _assertClass(a, MolHandle);
+    _assertClass(b, MolHandle);
+    const ret = wasm.dice_maccs(a.__wbg_ptr, b.__wbg_ptr);
+    return ret;
+}
+
+/**
  * Compute the ECFP4 fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
  * @param {MolHandle} mol
  * @returns {Uint8Array}
@@ -726,6 +1108,95 @@ export function ecfp4_bitvec(mol) {
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
+}
+
+/**
+ * ECFP6 (radius-3) fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function ecfp6_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.ecfp6_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Compute a fingerprint bit-vector with configurable ECFP radius and bit width.
+ *
+ * `radius` — Morgan radius (1 = ECFP2, 2 = ECFP4, 3 = ECFP6).
+ * `nbits` — bit width; must be one of 256, 512, 1024, or 2048.
+ *   Returns a `Uint8Array` of `nbits/8` bytes.
+ *
+ * The hash modulo is applied at fingerprint-generation time (`id % nbits`),
+ * so no post-processing fold is needed.
+ * @param {MolHandle} mol
+ * @param {number} radius
+ * @param {number} nbits
+ * @returns {Uint8Array}
+ */
+export function ecfp_bitvec_custom(mol, radius, nbits) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.ecfp_bitvec_custom(mol.__wbg_ptr, radius, nbits);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Enumerate all stereoisomers arising from unspecified tetrahedral stereocenters.
+ *
+ * Only considers carbon stereocenters without explicit `@`/`@@` annotation.
+ * Already-specified centers and E/Z double-bond geometry are unchanged.
+ * Returns a JSON array of canonical SMILES strings.
+ *
+ * At most 2^6 = 64 combinations are enumerated; if more than 6 unspecified
+ * centers are present this function returns a JS error to avoid combinatorial
+ * explosion.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function enumerate_stereo_isomers_json(mol) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.enumerate_stereo_isomers_json(mol.__wbg_ptr);
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * All enumerated tautomers of `mol` as a JSON array of canonical SMILES strings.
+ *
+ * Example return value: `["Oc1cccc2ccccc12","O=C1C=CC=Cc2ccccc21"]`
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function enumerate_tautomers_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.enumerate_tautomers_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
 }
 
 /**
@@ -750,6 +1221,32 @@ export function estate_indices_json(mol) {
 }
 
 /**
+ * FCFP4 (pharmacophore, radius-2) fingerprint as a bit-packed byte vector (256 bytes).
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function fcfp4_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.fcfp4_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * FCFP6 (pharmacophore, radius-3) fingerprint as a bit-packed byte vector (256 bytes).
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function fcfp6_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.fcfp6_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
  * Gasteiger-Marsili PEOE partial charges as a JSON array of f64.
  * @param {MolHandle} mol
  * @returns {string}
@@ -760,6 +1257,29 @@ export function gasteiger_charges_json(mol) {
     try {
         _assertClass(mol, MolHandle);
         const ret = wasm.gasteiger_charges_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Generate energy-minimized 3D coordinates and return a PDB string.
+ *
+ * Runs distance-geometry placement followed by gradient-descent force-field
+ * minimization.  Geometry quality is better than `generate_3d_pdb` for
+ * flexible molecules; the force field is approximate (not MMFF94/UFF).
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function generate_3d_minimized_pdb(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.generate_3d_minimized_pdb(mol.__wbg_ptr);
         deferred1_0 = ret[0];
         deferred1_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -788,6 +1308,20 @@ export function generate_3d_pdb(mol) {
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
+}
+
+/**
+ * Generic (atom-type-erased) Murcko scaffold of `mol`.
+ *
+ * All atoms become carbon and all bonds become single bonds, giving the pure
+ * graph topology of the scaffold.
+ * @param {MolHandle} mol
+ * @returns {MolHandle}
+ */
+export function generic_murcko_scaffold(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.generic_murcko_scaffold(mol.__wbg_ptr);
+    return MolHandle.__wrap(ret);
 }
 
 /**
@@ -871,6 +1405,28 @@ export function get_bond_info(mol, idx) {
 }
 
 /**
+ * All scalar molecular descriptors as a single JSON object.
+ *
+ * Keys use camelCase and match the individual `MolHandle` method names.
+ * Drug-likeness rule outcomes are included as boolean fields.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function get_descriptors_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.get_descriptors_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Identify functional groups. Returns a JSON array of objects:
  * `[{"atoms":[0,2,3],"type":"C,N,O"}, …]`
  * @param {MolHandle} mol
@@ -900,6 +1456,76 @@ export function is_valid_smiles(s) {
     const len0 = WASM_VECTOR_LEN;
     const ret = wasm.is_valid_smiles(ptr0, len0);
     return ret !== 0;
+}
+
+/**
+ * Per-atom Labute approximate surface area contributions as a JSON array of f64.
+ *
+ * Non-finite values (single-atom molecules etc.) are emitted as JSON `null`.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function labute_asa_per_atom_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.labute_asa_per_atom_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Return the largest fragment of `mol` (salt/solvent stripping).
+ *
+ * For single-component molecules returns a copy of the same molecule.
+ * @param {MolHandle} mol
+ * @returns {MolHandle}
+ */
+export function largest_fragment(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.largest_fragment(mol.__wbg_ptr);
+    return MolHandle.__wrap(ret);
+}
+
+/**
+ * Per-atom Crippen LogP contributions as a JSON array of f64.
+ *
+ * Index `i` corresponds to atom `i` in `mol.atoms()` order.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function logp_per_atom_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.logp_per_atom_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * MACCS 166-bit structural keys fingerprint as a byte array (21 bytes, LSB-first).
+ *
+ * Bit `i` (0-indexed) corresponds to MACCS key `i+1`.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function maccs_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.maccs_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
 }
 
 /**
@@ -936,9 +1562,115 @@ export function match_smarts_smiles(smiles, smarts) {
 }
 
 /**
- * Serialize a SMILES string directly to a MOL V2000 block.
+ * Select `n` maximally-diverse molecules (MaxMin algorithm, ECFP4 Tanimoto).
  *
- * Convenience wrapper; all atom coordinates are 0.0.
+ * `smiles_json` — a JSON array of SMILES strings, e.g. `["CC","c1ccccc1","CCO"]`.
+ * Returns a JSON array of 0-based indices into the input array.
+ * Returns a JS error if any SMILES fails to parse (indices would otherwise shift).
+ * @param {string} smiles_json
+ * @param {number} n
+ * @returns {string}
+ */
+export function maxmin_picks_ecfp4_json(smiles_json, n) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.maxmin_picks_ecfp4_json(ptr0, len0, n);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Maximum Common Substructure of a set of molecules, returned as a canonical SMILES string.
+ *
+ * `smiles_json` — a JSON array of at least 2 SMILES strings.
+ * Returns the MCS SMILES, or `"null"` when no common substructure was found.
+ * Returns a JS error on SMILES parse failure.
+ * @param {string} smiles_json
+ * @returns {string}
+ */
+export function mcs_smiles_json(smiles_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mcs_smiles_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Find matched molecular pairs in a set of molecules as JSON.
+ *
+ * `smiles_json` — JSON array of SMILES strings to analyze.
+ *
+ * Returns a JSON array of matched pairs:
+ * ```json
+ * [
+ *   {
+ *     "mol_a": "CC(=O)Oc1ccccc1",
+ *     "mol_b": "CC(=O)Nc1ccccc1",
+ *     "core": "c1ccccc1[*]",
+ *     "fragment_a": "[*]OC(C)=O",
+ *     "fragment_b": "[*]NC(C)=O"
+ *   }
+ * ]
+ * ```
+ *
+ * Each pair represents molecules that share a common core scaffold but differ
+ * by exactly one structural fragment at a single BRICS-breakable bond cut.
+ *
+ * Returns a JS error if any SMILES fails to parse.
+ * @param {string} smiles_json
+ * @returns {string}
+ */
+export function mmp_pairs_json(smiles_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mmp_pairs_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Serialize a SMILES string directly to a MOL V2000 block with 2D coordinates.
+ *
  * Returns a JS error on SMILES parse failure.
  * @param {string} smiles
  * @returns {string}
@@ -965,6 +1697,56 @@ export function mol_block_from_smiles(smiles) {
 }
 
 /**
+ * Parse a ChemDraw XML (CDXML) string into a `MolHandle`.
+ *
+ * Only the first molecular fragment in the document is returned.
+ * Returns a JS error if the document cannot be parsed.
+ * @param {string} cdxml
+ * @returns {MolHandle}
+ */
+export function mol_from_cdxml(cdxml) {
+    const ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_from_cdxml(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Parse a CML string into a `MolHandle`.
+ *
+ * Returns a JS error if the CML is invalid (unknown element, bad bond, etc.).
+ * @param {string} cml
+ * @returns {MolHandle}
+ */
+export function mol_from_cml(cml) {
+    const ptr0 = passStringToWasm0(cml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_from_cml(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Parse a PDB file and return a `MolHandle` (topology only; coordinates are discarded).
+ *
+ * Uses CONECT records for connectivity if present; otherwise infers bonds from
+ * atom distances (the same heuristic as the internal `pdb_to_molecule` function).
+ * @param {string} pdb
+ * @returns {MolHandle}
+ */
+export function mol_from_pdb(pdb) {
+    const ptr0 = passStringToWasm0(pdb, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_from_pdb(ptr0, len0);
+    return MolHandle.__wrap(ret);
+}
+
+/**
  * Parse a MOL V2000 block and return a `MolHandle`.
  *
  * Returns a JS error string on parse failure.
@@ -979,6 +1761,223 @@ export function mol_from_sdf_block(block) {
         throw takeFromExternrefTable0(ret[1]);
     }
     return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Parse a MOL V3000 block and return a `MolHandle`.
+ *
+ * Returns a JS error string on parse failure.
+ * @param {string} block
+ * @returns {MolHandle}
+ */
+export function mol_from_v3000_block(block) {
+    const ptr0 = passStringToWasm0(block, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_from_v3000_block(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Parse an XYZ file and return a `MolHandle` (topology only; coordinates are discarded).
+ *
+ * Returns a JS error on parse failure.
+ * @param {string} xyz
+ * @returns {MolHandle}
+ */
+export function mol_from_xyz(xyz) {
+    const ptr0 = passStringToWasm0(xyz, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_from_xyz(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Return the index that would be assigned to an atom appended to `mol`.
+ * @param {MolHandle} mol
+ * @returns {number}
+ */
+export function mol_next_atom_idx(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.mol_next_atom_idx(mol.__wbg_ptr);
+    return ret >>> 0;
+}
+
+/**
+ * Return a new `MolHandle` with one atom appended.
+ *
+ * The second return value is the new atom's index (as a JS number).
+ * Use `with_atom_added_idx` to retrieve the index.
+ * @param {MolHandle} mol
+ * @param {string} element_symbol
+ * @returns {MolHandle}
+ */
+export function mol_with_atom_added(mol, element_symbol) {
+    _assertClass(mol, MolHandle);
+    const ptr0 = passStringToWasm0(element_symbol, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.mol_with_atom_added(mol.__wbg_ptr, ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Return a new `MolHandle` with atom `idx` and all its bonds removed.
+ *
+ * Atom indices above `idx` shift down by 1.  Returns a JS error if `idx`
+ * is out of range.
+ * @param {MolHandle} mol
+ * @param {number} idx
+ * @returns {MolHandle}
+ */
+export function mol_with_atom_removed(mol, idx) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.mol_with_atom_removed(mol.__wbg_ptr, idx);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Return a new `MolHandle` with one bond added between `a` and `b`.
+ *
+ * `order` — 1 = single, 2 = double, 3 = triple.
+ * Returns a JS error if the bond already exists or `a == b`.
+ * @param {MolHandle} mol
+ * @param {number} a
+ * @param {number} b
+ * @param {number} order
+ * @returns {MolHandle}
+ */
+export function mol_with_bond_added(mol, a, b, order) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.mol_with_bond_added(mol.__wbg_ptr, a, b, order);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Return a new `MolHandle` with bond `idx` removed.
+ *
+ * Atom indices are unchanged; bond indices above `idx` shift down.
+ * Returns a JS error if `idx` is out of range.
+ * @param {MolHandle} mol
+ * @param {number} idx
+ * @returns {MolHandle}
+ */
+export function mol_with_bond_removed(mol, idx) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.mol_with_bond_removed(mol.__wbg_ptr, idx);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
+}
+
+/**
+ * Per-atom molar refractivity contributions as a JSON array of f64.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mr_per_atom_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mr_per_atom_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Murcko scaffold of `mol` — the ring system plus linkers, side-chains removed.
+ *
+ * Returns a new `MolHandle`.  For acyclic molecules returns an empty molecule.
+ * @param {MolHandle} mol
+ * @returns {MolHandle}
+ */
+export function murcko_scaffold(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.murcko_scaffold(mol.__wbg_ptr);
+    return MolHandle.__wrap(ret);
+}
+
+/**
+ * Neutralize formal charges on `mol` by proton addition/removal.
+ *
+ * Returns a new `MolHandle` with all formal charges set to zero where possible.
+ * @param {MolHandle} mol
+ * @returns {MolHandle}
+ */
+export function neutralize_charges(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.neutralize_charges(mol.__wbg_ptr);
+    return MolHandle.__wrap(ret);
+}
+
+/**
+ * Parse and re-serialise a reaction SMILES string, returning the normalised form.
+ *
+ * Useful for validating reaction SMILES and obtaining a canonical representation.
+ * Returns a JS error on parse failure.
+ * @param {string} rxn_smiles
+ * @returns {string}
+ */
+export function normalize_reaction_smiles(rxn_smiles) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(rxn_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.normalize_reaction_smiles(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * PAINS structural alert names matched by `mol` as a JSON array.
+ *
+ * Returns `[]` when no alerts fire, or e.g. `["ene_six_het_A(483)"]`.
+ * Use alongside `pains_passes()` to know *which* alerts triggered.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function pains_matches_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.pains_matches_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
 }
 
 /**
@@ -1029,6 +2028,53 @@ export function remove_hydrogens(mol) {
 }
 
 /**
+ * Decompose a set of molecules against a core SMARTS, returning R-group SMILES.
+ *
+ * `smiles_json` — JSON array of SMILES strings.
+ * `core_smarts` — SMARTS pattern with `*` (wildcard) atoms marking R-group
+ *   attachment points.  For example `c1ccc(*)cc1` for para-substituted benzene.
+ *
+ * Returns a JSON array with one entry per input molecule:
+ * ```json
+ * [
+ *   {"matched":true, "r1":"C"},
+ *   {"matched":true, "r1":"CC"},
+ *   {"matched":false}
+ * ]
+ * ```
+ * R-group keys are `"r1"`, `"r2"`, … in the order the `*` atoms appear in
+ * the SMARTS pattern.  A molecule that does not contain the core gets
+ * `"matched": false` and no R-group keys.
+ *
+ * Returns a JS error if the SMARTS fails to parse or any SMILES is invalid.
+ * @param {string} smiles_json
+ * @param {string} core_smarts
+ * @returns {string}
+ */
+export function rgroup_decompose_json(smiles_json, core_smarts) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(core_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.rgroup_decompose_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * Apply a SMIRKS reaction template and return product SMILES as a JSON string.
  *
  * `reactants_smiles`: pipe-separated SMILES, one per reactant slot in the SMIRKS.
@@ -1073,6 +2119,79 @@ export function sa_score(mol) {
 }
 
 /**
+ * Serialize multiple molecules with properties to an SDF string.
+ *
+ * # Arguments
+ * * `smiles_json` — JSON array of SMILES strings, e.g. `["CC(=O)O","c1ccccc1"]`
+ * * `names_json`  — JSON array of molecule names (same length as `smiles_json`)
+ * * `props_json`  — JSON array where each element encodes one molecule's SD data fields
+ *   as `"key1\tvalue1\nkey2\tvalue2"` (tab-separated key/value, `\n`-separated pairs;
+ *   pass `""` for a molecule with no properties)
+ *
+ * Returns the SDF string, or a JS error if any SMILES fails to parse or the
+ * arrays have mismatched lengths.
+ *
+ * The `\n` and `\t` sequences in `props_json` are JSON-escaped — they are
+ * decoded to the actual characters before SDF formatting.
+ * @param {string} smiles_json
+ * @param {string} names_json
+ * @param {string} props_json
+ * @returns {string}
+ */
+export function sdf_from_records_json(smiles_json, names_json, props_json) {
+    let deferred5_0;
+    let deferred5_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(names_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(props_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.sdf_from_records_json(ptr0, len0, ptr1, len1, ptr2, len2);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
+        if (ret[3]) {
+            ptr4 = 0; len4 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
+    } finally {
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
+}
+
+/**
+ * Parse an SDF string and return a JSON array of record objects.
+ *
+ * Each record has the shape:
+ * ```json
+ * {"smiles":"CC(=O)O","name":"aspirin","properties":{"MW":"180.2","Activity":"high"}}
+ * ```
+ *
+ * Invalid records are represented as `null`.  SD data fields are included in
+ * `properties`; multi-line values are joined with `\n`.
+ * @param {string} sdf
+ * @returns {string}
+ */
+export function sdf_to_records_json(sdf) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(sdf, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.sdf_to_records_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Parse an SDF string and return a JSON array of canonical SMILES strings.
  *
  * Invalid records are represented as `null` in the array.
@@ -1091,6 +2210,29 @@ export function sdf_to_smiles_json(sdf) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * 3D shape descriptors as a JSON object.
+ *
+ * Keys: `pmi1`, `pmi2`, `pmi3`, `npr1`, `npr2`, `asphericity`, `eccentricity`,
+ * `radiusOfGyration`, `planeOfBestFit`.  Non-finite values (e.g. single-atom
+ * molecules where pmi3 = 0) are serialised as JSON `null`.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function shape_descriptors_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.shape_descriptors_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
 
@@ -1131,6 +2273,35 @@ export function smarts_match_atoms(smarts, mol) {
         const len0 = WASM_VECTOR_LEN;
         _assertClass(mol, MolHandle);
         const ret = wasm.smarts_match_atoms(ptr0, len0, mol.__wbg_ptr);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Serialise a JSON array of SMILES to an SDF string.
+ *
+ * Generates 2D coordinates for each molecule.  Property data can be
+ * included by using `sdf_from_records_json` instead.
+ * @param {string} smiles_json
+ * @returns {string}
+ */
+export function smiles_array_to_sdf(smiles_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.smiles_array_to_sdf(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -1205,6 +2376,28 @@ export function smr_vsa_json(mol) {
     }
 }
 
+/**
+ * Smallest Set of Smallest Rings (SSSR) as a JSON array of atom-index arrays.
+ *
+ * Example return value for naphthalene:
+ * `[[0,1,2,3,4,5],[5,6,7,8,9,4]]`
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function sssr_rings_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.sssr_rings_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
 export function start() {
     wasm.start();
 }
@@ -1236,6 +2429,19 @@ export function tanimoto_ecfp4(a, b) {
 }
 
 /**
+ * Tanimoto similarity between `a` and `b` using ECFP6 fingerprints.
+ * @param {MolHandle} a
+ * @param {MolHandle} b
+ * @returns {number}
+ */
+export function tanimoto_ecfp6(a, b) {
+    _assertClass(a, MolHandle);
+    _assertClass(b, MolHandle);
+    const ret = wasm.tanimoto_ecfp6(a.__wbg_ptr, b.__wbg_ptr);
+    return ret;
+}
+
+/**
  * Tanimoto similarity between two molecules using FCFP4 fingerprints (pharmacophore-based).
  * @param {MolHandle} a
  * @param {MolHandle} b
@@ -1245,6 +2451,32 @@ export function tanimoto_fcfp4(a, b) {
     _assertClass(a, MolHandle);
     _assertClass(b, MolHandle);
     const ret = wasm.tanimoto_fcfp4(a.__wbg_ptr, b.__wbg_ptr);
+    return ret;
+}
+
+/**
+ * Tanimoto similarity between `a` and `b` using FCFP6 (radius-3 pharmacophore) fingerprints.
+ * @param {MolHandle} a
+ * @param {MolHandle} b
+ * @returns {number}
+ */
+export function tanimoto_fcfp6(a, b) {
+    _assertClass(a, MolHandle);
+    _assertClass(b, MolHandle);
+    const ret = wasm.tanimoto_fcfp6(a.__wbg_ptr, b.__wbg_ptr);
+    return ret;
+}
+
+/**
+ * Tanimoto similarity between `a` and `b` using MACCS 166-bit fingerprints.
+ * @param {MolHandle} a
+ * @param {MolHandle} b
+ * @returns {number}
+ */
+export function tanimoto_maccs(a, b) {
+    _assertClass(a, MolHandle);
+    _assertClass(b, MolHandle);
+    const ret = wasm.tanimoto_maccs(a.__wbg_ptr, b.__wbg_ptr);
     return ret;
 }
 
@@ -1295,10 +2527,31 @@ export function tanimoto_torsion(a, b) {
 }
 
 /**
- * Serialize a molecule to a MOL V2000 block.
+ * Serialise a `MolHandle` to a CML string with 2D coordinates.
  *
- * All atom coordinates are written as 0.0 (the `Molecule` type has no 2D
- * coordinate storage; real coordinates would require a separate layout pass).
+ * Coordinates are generated using the same 2D layout engine as `to_mol_block`.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function to_cml(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.to_cml(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Serialize a molecule to a MOL V2000 block with 2D coordinates.
+ *
+ * Atom positions are computed via the same layout engine used for SVG depiction
+ * and converted to Ångström units (`1.5 Å` per bond).
  * @param {MolHandle} mol
  * @returns {string}
  */
@@ -1308,6 +2561,82 @@ export function to_mol_block(mol) {
     try {
         _assertClass(mol, MolHandle);
         const ret = wasm.to_mol_block(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Serialise a `MolHandle` to MOL V3000 format with 2D coordinates.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function to_mol_v3000_block(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.to_mol_v3000_block(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Serialize a molecule to XYZ format.
+ *
+ * 3D coordinates are generated via distance-geometry placement.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function to_xyz(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.to_xyz(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Torsion fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function torsion_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.torsion_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Non-canonical SMILES for `mol`.
+ *
+ * Unlike `canonical_smiles`, the output depends on the internal atom ordering
+ * and is not normalised.  Useful when round-trip fidelity (preserving atom
+ * order) matters more than a canonical form.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function write_smiles(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.write_smiles(mol.__wbg_ptr);
         deferred1_0 = ret[0];
         deferred1_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -1364,6 +2693,9 @@ function __wbg_get_imports() {
     };
 }
 
+const ConformerHandleFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_conformerhandle_free(ptr, 1));
 const DepictOptionsFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_depictoptions_free(ptr, 1));

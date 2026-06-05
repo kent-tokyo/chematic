@@ -128,6 +128,97 @@ impl Molecule {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Immutable update methods (functional-style editing)
+// ---------------------------------------------------------------------------
+
+impl Molecule {
+    /// Return a new `Molecule` with one extra atom appended, along with the
+    /// index that the new atom will have in the returned molecule.
+    pub fn with_atom_added(&self, atom: Atom) -> (Molecule, AtomIdx) {
+        let mut builder = MoleculeBuilder::new();
+        for (_, a) in self.atoms() {
+            builder.add_atom(a.clone());
+        }
+        for (_, b) in self.bonds() {
+            let _ = builder.add_bond(b.atom1, b.atom2, b.order);
+        }
+        let new_idx = builder.add_atom(atom);
+        (builder.build(), new_idx)
+    }
+
+    /// Return a new `Molecule` with one extra bond added.
+    ///
+    /// Returns `Err` if `a == b` or the bond already exists (same semantics as
+    /// [`MoleculeBuilder::add_bond`]).
+    pub fn with_bond_added(
+        &self,
+        a: AtomIdx,
+        b: AtomIdx,
+        order: BondOrder,
+    ) -> Result<Molecule, MolError> {
+        let mut builder = MoleculeBuilder::new();
+        for (_, atom) in self.atoms() {
+            builder.add_atom(atom.clone());
+        }
+        for (_, bond) in self.bonds() {
+            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+        }
+        builder.add_bond(a, b, order)?;
+        Ok(builder.build())
+    }
+
+    /// Return a new `Molecule` with atom `idx` and all bonds involving it
+    /// removed.  Atom indices of survivors shift down past the removed slot.
+    ///
+    /// The returned tuple also includes a mapping from **old** `AtomIdx` to
+    /// **new** `AtomIdx` (indices that fall below `idx` are unchanged; indices
+    /// above `idx` decrease by 1).
+    pub fn with_atom_removed(&self, idx: AtomIdx) -> (Molecule, Vec<Option<AtomIdx>>) {
+        let n = self.atom_count();
+        let removed = idx.0 as usize;
+
+        // Build old→new index table.
+        let mut remap: Vec<Option<AtomIdx>> = vec![None; n];
+        let mut new_pos = 0u32;
+        for old in 0..n {
+            if old == removed {
+                continue;
+            }
+            remap[old] = Some(AtomIdx(new_pos));
+            new_pos += 1;
+        }
+
+        let mut builder = MoleculeBuilder::new();
+        for (aidx, atom) in self.atoms() {
+            if aidx == idx { continue; }
+            builder.add_atom(atom.clone());
+        }
+        for (_, bond) in self.bonds() {
+            if bond.atom1 == idx || bond.atom2 == idx { continue; }
+            if let (Some(a1), Some(a2)) = (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize]) {
+                let _ = builder.add_bond(a1, a2, bond.order);
+            }
+        }
+        (builder.build(), remap)
+    }
+
+    /// Return a new `Molecule` with bond `idx` removed.
+    ///
+    /// Atom indices are unchanged.  Bond indices of survivors shift down.
+    pub fn with_bond_removed(&self, idx: BondIdx) -> Molecule {
+        let mut builder = MoleculeBuilder::new();
+        for (_, atom) in self.atoms() {
+            builder.add_atom(atom.clone());
+        }
+        for (bidx, bond) in self.bonds() {
+            if bidx == idx { continue; }
+            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+        }
+        builder.build()
+    }
+}
+
 /// Builder for constructing a [`Molecule`] incrementally.
 ///
 /// Usage: add atoms, add bonds, then call `build()`.

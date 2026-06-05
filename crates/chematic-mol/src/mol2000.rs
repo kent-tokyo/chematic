@@ -211,6 +211,18 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
 /// store 2D/3D coordinates.  All other atom and bond fields are derived from
 /// the molecule graph.
 pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
+    write_mol_with_coords(mol, metadata, &[])
+}
+
+/// Serialize `mol` to a V2000 MOL block, using `coords` for atom positions.
+///
+/// `coords[i]` is the `(x, y)` position in Ångström for atom index `i`.
+/// Atoms beyond `coords.len()` receive `(0.0, 0.0, 0.0)`.
+pub fn write_mol_with_coords(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    coords: &[(f64, f64)],
+) -> String {
     let mut out = String::new();
 
     // Header lines 1–3
@@ -221,9 +233,6 @@ pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
     out.push('\n');
 
     // Counts line (line 4)
-    // Format: aaabbblllfffcccsssxxxrrrpppiiimmmvvvvvv
-    // We write atom count, bond count, then pad the remaining fixed fields and
-    // append the V2000 version tag.
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
     out.push_str(&format!(
@@ -232,16 +241,13 @@ pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
     ));
 
     // Atom block
-    for (_idx, atom) in mol.atoms() {
+    for (idx, atom) in mol.atoms() {
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
-
-        // x y z coords (10.4 format, 3 fields), then space, element symbol
-        // (left-aligned, 3 chars), then mass diff (2 chars), charge (3 chars),
-        // then trailing zeroed fields matching the standard atom line.
+        let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
         out.push_str(&format!(
             "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
-            0.0_f64, 0.0_f64, 0.0_f64,
+            x, y, 0.0_f64,
             sym,
             charge_code,
         ));
@@ -255,7 +261,6 @@ pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
             BondOrder::Aromatic => 4,
             _ => bond.order.order_int(),
         };
-        // Bond line: 111222tttsssxxxrrrccc (3-char fields)
         out.push_str(&format!(
             "{:>3}{:>3}{:>3}  0\n",
             a1, a2, btype
@@ -265,6 +270,24 @@ pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
     // Terminator
     out.push_str("M  END\n");
 
+    out
+}
+
+// ---------------------------------------------------------------------------
+// SDF writer
+// ---------------------------------------------------------------------------
+
+/// Serialise one or more molecules to SDF format.
+///
+/// `records` — slice of `(molecule, metadata, coords)` tuples.
+/// `coords` is optional; pass an empty slice to write zero coordinates.
+/// Each molecule block is terminated with `$$$$`.
+pub fn write_sdf(records: &[(&Molecule, &MolMetadata, &[(f64, f64)])]) -> String {
+    let mut out = String::new();
+    for (mol, meta, coords) in records {
+        out.push_str(&write_mol_with_coords(mol, meta, coords));
+        out.push_str("$$$$\n");
+    }
     out
 }
 

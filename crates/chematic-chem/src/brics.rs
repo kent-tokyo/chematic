@@ -470,3 +470,107 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod mmp_probe {
+    use super::*;
+    use chematic_core::{Atom, AtomIdx, BondOrder, MoleculeBuilder};
+    use chematic_smiles::{canonical_smiles, parse};
+    use std::collections::{HashMap, HashSet, VecDeque};
+
+    fn atoms_on_side(mol: &chematic_core::Molecule, from: AtomIdx, not_via: AtomIdx) -> HashSet<AtomIdx> {
+        let mut vis = HashSet::new();
+        let mut q = VecDeque::new();
+        q.push_back(from);
+        while let Some(idx) = q.pop_front() {
+            if vis.contains(&idx) { continue; }
+            vis.insert(idx);
+            for (nb, _) in mol.neighbors(idx) {
+                if nb != not_via && !vis.contains(&nb) { q.push_back(nb); }
+            }
+        }
+        vis
+    }
+
+    fn frag_smiles(mol: &chematic_core::Molecule, side: &HashSet<AtomIdx>, attach: AtomIdx) -> String {
+        let mut b = MoleculeBuilder::new();
+        let mut idx_map = HashMap::new();
+        // attachment wildcard
+        let mut wc = Atom::new(chematic_core::Element::C);
+        wc.wildcard = true;
+        let wc_new = b.add_atom(wc);
+        // side atoms
+        for &a in side {
+            let orig = mol.atom(a);
+            let mut na = Atom::new(orig.element);
+            na.charge = orig.charge; na.isotope = orig.isotope;
+            na.aromatic = orig.aromatic; na.chirality = orig.chirality;
+            na.hydrogen_count = orig.hydrogen_count;
+            idx_map.insert(a, b.add_atom(na));
+        }
+        // wildcard bond to attachment atom
+        b.add_bond(wc_new, *idx_map.get(&attach).unwrap(), BondOrder::Single).unwrap();
+        // intra-side bonds
+        for (_, bond) in mol.bonds() {
+            if side.contains(&bond.atom1) && side.contains(&bond.atom2) {
+                let n1 = *idx_map.get(&bond.atom1).unwrap();
+                let n2 = *idx_map.get(&bond.atom2).unwrap();
+                let _ = b.add_bond(n1, n2, bond.order);
+            }
+        }
+        canonical_smiles(&b.build())
+    }
+
+    fn cut_into_parts(mol: &chematic_core::Molecule, a1: AtomIdx, a2: AtomIdx)
+        -> (HashSet<AtomIdx>, HashSet<AtomIdx>, AtomIdx, AtomIdx)
+    {
+        let s1 = atoms_on_side(mol, a1, a2);
+        let s2 = atoms_on_side(mol, a2, a1);
+        if s1.len() <= s2.len() { (s1, s2, a1, a2) } else { (s2, s1, a2, a1) }
+    }
+
+    /// Enumerate all (core_smiles, sub_smiles) pairs for all BRICS cuts of `mol`.
+    /// Convention: smaller side = substituent, larger side = core.
+    fn all_cut_pairs(mol: &chematic_core::Molecule) -> Vec<(String, String)> {
+        let mut pairs = Vec::new();
+        for (a1, a2) in brics_bonds(mol) {
+            let (sub, core, at_sub, at_core) = cut_into_parts(mol, a1, a2);
+            let core_smi = frag_smiles(mol, &core, at_core);
+            let sub_smi  = frag_smiles(mol, &sub,  at_sub);
+            pairs.push((core_smi, sub_smi));
+        }
+        pairs
+    }
+
+    #[test]
+    fn core_smiles_equal_for_ethylbenzene_and_propylbenzene() {
+        // MMP exists between ethylbenzene CCc1ccccc1 and propylbenzene CCCc1ccccc1:
+        // each contributes a cut at the ring-chain bond giving the same benzene core.
+        let ethylbenz  = parse("CCc1ccccc1").unwrap();
+        let propylbenz = parse("CCCc1ccccc1").unwrap();
+
+        let eb_pairs = all_cut_pairs(&ethylbenz);
+        let pb_pairs = all_cut_pairs(&propylbenz);
+
+        eprintln!("ethylbenzene cuts:   {eb_pairs:?}");
+        eprintln!("propylbenzene cuts:  {pb_pairs:?}");
+
+        // There must be at least one core that both molecules share.
+        let eb_cores: std::collections::HashSet<&str> =
+            eb_pairs.iter().map(|(c, _)| c.as_str()).collect();
+        let shared_cores: Vec<_> = pb_pairs.iter()
+            .filter(|(c, _)| eb_cores.contains(c.as_str()))
+            .collect();
+
+        assert!(!shared_cores.is_empty(),
+            "ethylbenzene and propylbenzene must share at least one core SMILES");
+
+        // The shared core should be the benzene ring, and the substituents must differ.
+        let (shared_core, pb_sub) = &shared_cores[0];
+        let eb_sub = eb_pairs.iter()
+            .find(|(c, _)| c == shared_core).map(|(_, s)| s.as_str()).unwrap();
+        eprintln!("shared core={shared_core}  eb_sub={eb_sub}  pb_sub={pb_sub}");
+        assert_ne!(eb_sub, pb_sub.as_str(),
+            "substituents must differ: got identical '{eb_sub}'");
+    }
+}

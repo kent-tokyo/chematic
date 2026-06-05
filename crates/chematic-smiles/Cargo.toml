@@ -16,7 +16,7 @@ documentation = "https://docs.rs/chematic-smiles"
 chematic-core = { path = "../chematic-core", version = "0.1.9" }
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "parse_bench"

@@ -8,11 +8,97 @@ pub mod grid;
 pub mod layout;
 pub mod svg;
 
-use chematic_core::{AtomIdx, BondIdx, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule};
 
-pub use grid::depict_svg_grid;
+pub use grid::{depict_svg_grid, depict_svg_grid_with_opts};
 pub use layout::{Layout, Point, compute_layout};
-pub use svg::{render_svg, render_svg_highlighted, render_svg_opts, RenderOptions};
+pub use svg::{atom_color, render_svg, render_svg_highlighted, render_svg_opts, RenderOptions};
+
+// ---------------------------------------------------------------------------
+// DepictData — structured drawing data for egui/canvas renderers
+// ---------------------------------------------------------------------------
+
+/// Visual bond type for rendering.
+#[derive(Debug, Clone, PartialEq)]
+pub enum DepictBondKind {
+    Single,
+    Double,
+    Triple,
+    Aromatic,
+    /// Wedge bond pointing up (solid triangle).
+    Up,
+    /// Wedge bond pointing down (dashed lines).
+    Down,
+}
+
+/// A single atom's drawing data.
+#[derive(Debug, Clone)]
+pub struct DepictAtom {
+    /// Index in the parent molecule.
+    pub idx: AtomIdx,
+    /// Element.
+    pub element: Element,
+    /// 2D position in layout units (~40 units per Å).
+    pub pos: Point,
+    /// Formal charge.
+    pub charge: i8,
+    /// Display label.  `None` = suppress (carbon in skeletal structure).
+    pub label: Option<String>,
+    /// CPK color as CSS hex string (e.g. `"#3050F8"` for N).
+    pub color: String,
+}
+
+/// A single bond's drawing data.
+#[derive(Debug, Clone)]
+pub struct DepictBond {
+    pub idx: BondIdx,
+    pub atom1: AtomIdx,
+    pub atom2: AtomIdx,
+    pub kind: DepictBondKind,
+}
+
+/// Structured depiction data — use this to drive egui/canvas renderers instead
+/// of parsing SVG output.
+#[derive(Debug, Clone)]
+pub struct DepictData {
+    pub atoms: Vec<DepictAtom>,
+    pub bonds: Vec<DepictBond>,
+}
+
+/// Compute structured depiction data for `mol`.
+pub fn compute_depict_data(mol: &Molecule) -> DepictData {
+    let layout = compute_layout(mol);
+
+    let atoms: Vec<DepictAtom> = mol.atoms().map(|(idx, atom)| {
+        let pos = layout.get(idx);
+        let color = atom_color(atom.element.atomic_number()).to_string();
+        let label = if atom.element.atomic_number() == 6
+            && atom.charge == 0
+            && atom.isotope.is_none()
+            && mol.degree(idx) > 0
+        {
+            None
+        } else {
+            Some(atom.element.symbol().to_string())
+        };
+        DepictAtom { idx, element: atom.element, pos, charge: atom.charge, label, color }
+    }).collect();
+
+    let bonds: Vec<DepictBond> = mol.bonds().map(|(bidx, bond)| {
+        let kind = match bond.order {
+            BondOrder::Single    => DepictBondKind::Single,
+            BondOrder::Double    => DepictBondKind::Double,
+            BondOrder::Triple    => DepictBondKind::Triple,
+            BondOrder::Aromatic  => DepictBondKind::Aromatic,
+            BondOrder::Up        => DepictBondKind::Up,
+            BondOrder::Down      => DepictBondKind::Down,
+            BondOrder::Quadruple => DepictBondKind::Triple,
+        };
+        DepictBond { idx: bidx, atom1: bond.atom1, atom2: bond.atom2, kind }
+    }).collect();
+
+    DepictData { atoms, bonds }
+}
 
 /// Compute a 2D layout and render it as an SVG string.
 pub fn depict_svg(mol: &Molecule) -> String {
