@@ -11,6 +11,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.20] — 2026-06-06
+
+### Added — Sprint V〜CC: WASM 機能拡充・ファイル形式・編集 API
+
+#### WASM API（84 → 103 エクスポート）
+
+**Sprint V — Scaffold / Tautomer / 標準化 / MACCS / 一括記述子 / MOL 2D座標**
+- `murcko_scaffold`, `generic_murcko_scaffold`, `canonical_tautomer`, `enumerate_tautomers_json`
+- `largest_fragment`, `neutralize_charges`
+- `maccs_bitvec`, `tanimoto_maccs`, `get_descriptors_json`（40+ 記述子を JSON で一括返却）
+- `to_mol_block` 2D座標修正（`compute_layout` + スケーリングで実座標を出力）
+
+**Sprint W — PAINS / CIP / ECFP6 / Dice / 3D形状記述子 / MaxMin・Butina / MCS**
+- `pains_matches_json`, `cip_assignments_json`
+- `ecfp6_bitvec`, `tanimoto_ecfp6`, `dice_ecfp4`, `dice_maccs`
+- `shape_descriptors_json`（PMI, NPR, asphericity, eccentricity, radiusOfGyration）
+- `maxmin_picks_ecfp4_json`, `butina_cluster_ecfp4_json`
+- `mcs_smiles_json`
+
+**Sprint X — V3000読み込み / 3D最小化 / SDF プロパティ / SMARTS ハイライトグリッド**
+- `mol_from_v3000_block`, `generate_3d_minimized_pdb`
+- `sdf_to_records_json`（name + properties の JSON 配列）
+- `depict_svg_grid_highlighted`（SMARTS マッチ原子を黄色ハイライト）
+
+**Sprint Y — XYZ/PDB I/O / per-atom 記述子 / SSSR / カスタム ECFP / 立体異性体列挙**
+- `mol_from_xyz`, `to_xyz`, `mol_from_pdb`
+- `logp_per_atom_json`, `mr_per_atom_json`, `labute_asa_per_atom_json`
+- `sssr_rings_json`（原子インデックス配列の JSON 配列）
+- `ecfp_bitvec_custom(mol, radius, nbits)`
+- `enumerate_stereo_isomers_json`（未指定立体中心の全異性体、上限 64 組）
+
+**Sprint Z — BRICS SMILES / FP bitvec / FCFP6 / SDF 書き込み**
+- `brics_fragments_json`（SMILES 配列）
+- `atom_pair_bitvec`, `torsion_bitvec`（各 256 bytes）
+- `tanimoto_fcfp6`
+- `sdf_from_records_json`（プロパティ付き SDF 書き出し）
+
+**Sprint AA — FCFP4/6 bitvec / Dice ECFP6 / write_smiles / 反応正規化**
+- `fcfp4_bitvec`, `fcfp6_bitvec`
+- `dice_ecfp6`
+- `write_smiles`（非正規化 SMILES）
+- `normalize_reaction_smiles`
+
+**Sprint BB — ConformerEnsemble / R-group 分解**
+- `ConformerHandle` クラス: `add_generated_conformer`, `add_minimized_conformer`, `get_conformer_pdb`, `conformer_rmsd`
+- `rgroup_decompose_json(smiles_json, core_smarts)` → `[{"matched":true,"r1":"..."}]`
+
+**Sprint CC — MMP 分析**
+- `mmp_pairs_json(smiles_json)` → `[{"mol_a":"...","mol_b":"...","core":"...","fragment_a":"...","fragment_b":"..."}]`
+
+**CML / CDXML ファイル形式**（ゼロ外部依存の手書き XML パーサー）
+- `mol_from_cml`, `to_cml`（CML 読み書き）
+- `mol_from_cdxml`（ChemDraw XML 読み込みのみ、書き込みは仕様非公開のため未実装）
+
+**Mutable Molecule API**
+- `mol_with_atom_added(mol, element_symbol)` → MolHandle
+- `mol_with_bond_added(mol, a, b, order)` → MolHandle
+- `mol_with_atom_removed(mol, idx)` → MolHandle
+- `mol_with_bond_removed(mol, idx)` → MolHandle
+- `mol_next_atom_idx(mol)` → u32
+
+**SDF / V3000 書き込み**
+- `smiles_array_to_sdf(smiles_json)` — 2D座標付き SDF 生成
+- `to_mol_v3000_block(mol)` — MOL V3000 形式文字列
+
+**DepictData**
+- `depict_data_json(mol)` → `{"atoms":[{"idx","element","x","y","label","color"}],"bonds":[{"idx","atom1","atom2","kind"}]}`
+  egui / HTML5 Canvas などカスタムレンダラー向け構造化描画データ
+
+**CPK カラー**
+- `cpk_color(element_symbol)` → CSS hex 文字列
+
+#### Rust ライブラリ拡張
+
+**`chematic-core`**
+- `Molecule::with_atom_added(&self, atom)` → `(Molecule, AtomIdx)`
+- `Molecule::with_bond_added(&self, a, b, order)` → `Result<Molecule, MolError>`
+- `Molecule::with_atom_removed(&self, idx)` → `(Molecule, Vec<Option<AtomIdx>>)`
+- `Molecule::with_bond_removed(&self, idx)` → `Molecule`
+
+**`chematic-mol`**
+- `cml` モジュール新規: `parse_cml`, `write_cml`, `CmlError`
+- `cdxml` モジュール新規: `parse_cdxml`, `CdxmlError`
+- `write_sdf(records)` — 複数分子 + メタデータの SDF 書き出し
+- `write_mol_v3000(mol, meta, coords)` — MOL V3000 ライター
+
+**`chematic-depict`**
+- `DepictData`, `DepictAtom`, `DepictBond`, `DepictBondKind` 構造体新規
+- `compute_depict_data(mol) -> DepictData`
+- `RenderOptions::with_cpk_colors_for(mol)` — CPK カラー一括設定
+- `atom_color(atomic_number) -> &'static str` を `pub` に昇格
+
+**`chematic-chem`**
+- `mmp` モジュール新規: `find_mmp(mols) -> Vec<MmpPair>`
+- `chematic-smiles` を `dev-dependencies` から `dependencies` に昇格（MMP の canonical_smiles 使用のため）
+
+### Changed
+
+- `criterion` dev-dependency: 0.5 → 0.8（`chematic-fp`, `chematic-smiles`）
+- README: ゼロ C/C++ 依存の訴求を強化、WASM バイナリサイズ比較（~550 KB vs RDKit.js ~30 MB）を明記
+
+### Tests
+
+- 863 tests、全パス（前版 736 から +127）
+
+---
+
 ## [0.1.19] — 2026-06-02
 
 ### Added — Sprint U: インタラクティブ記事向け WASM 利便性 API
