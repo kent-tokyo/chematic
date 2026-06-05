@@ -381,6 +381,17 @@ export function butina_cluster_ecfp4_json(smiles_json: string, cutoff: number): 
 export function canonical_tautomer(mol: MolHandle): MolHandle;
 
 /**
+ * Parse all molecular fragments from a CDXML string.
+ *
+ * Returns a JSON array of SMILES strings, one per fragment:
+ * `["CC","c1ccccc1"]`
+ *
+ * Stereochemistry (wedge/dash bonds) is read from the `Display` attribute
+ * of bond elements.
+ */
+export function cdxml_to_smiles_json(cdxml: string): string;
+
+/**
  * CIP stereo assignments as a JSON array of `{atomIdx, cipCode}` objects.
  *
  * `cipCode` is one of `"R"`, `"S"`, `"E"`, or `"Z"`.
@@ -417,6 +428,15 @@ export function cpk_color(element_symbol: string): string;
  * `kind` is one of `"Single"`, `"Double"`, `"Triple"`, `"Aromatic"`, `"Up"`, `"Down"`.
  */
 export function depict_data_json(mol: MolHandle): string;
+
+/**
+ * Compute structured depiction data using caller-supplied 2D coordinates.
+ *
+ * `coords_json` — JSON array of `[x, y]` pairs, one per atom in order.
+ *
+ * Returns the same JSON format as `depict_data_json`.
+ */
+export function depict_data_with_coords_json(mol: MolHandle, coords_json: string): string;
 
 /**
  * Render a reaction SMILES string (e.g. `"CC(=O)O.CCO>>CC(=O)OCC.O"`) as a
@@ -695,6 +715,14 @@ export function mcs_smiles_json(smiles_json: string): string;
 export function mmp_pairs_json(smiles_json: string): string;
 
 /**
+ * Parse a MOL V2000 string and return 2D coordinates as a JSON array.
+ *
+ * Returns `[[x0,y0],[x1,y1],...]` in atom-insertion order.
+ * Coordinates are in Ångström as stored in the MOL file.
+ */
+export function mol_block_coords_json(mol_block: string): string;
+
+/**
  * Serialize a SMILES string directly to a MOL V2000 block with 2D coordinates.
  *
  * Returns a JS error on SMILES parse failure.
@@ -757,6 +785,21 @@ export function mol_next_atom_idx(mol: MolHandle): number;
  * Use `with_atom_added_idx` to retrieve the index.
  */
 export function mol_with_atom_added(mol: MolHandle, element_symbol: string): MolHandle;
+
+/**
+ * Return a new `MolHandle` with the formal charge of atom `idx` changed.
+ *
+ * Returns a JS error if `idx` is out of range.
+ */
+export function mol_with_atom_charge(mol: MolHandle, idx: number, charge: number): MolHandle;
+
+/**
+ * Return a new `MolHandle` with the element of atom `idx` changed.
+ *
+ * `element_symbol` — periodic-table symbol, e.g. `"N"`, `"O"`, `"Cl"`.
+ * Returns a JS error if `idx` is out of range or the symbol is unknown.
+ */
+export function mol_with_atom_element(mol: MolHandle, idx: number, element_symbol: string): MolHandle;
 
 /**
  * Return a new `MolHandle` with atom `idx` and all its bonds removed.
@@ -1067,6 +1110,7 @@ export interface InitOutput {
     readonly brics_fragments_json: (a: number) => [number, number];
     readonly butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly canonical_tautomer: (a: number) => number;
+    readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly cip_assignments_json: (a: number) => [number, number];
     readonly conformerhandle_add_generated_conformer: (a: number) => number;
     readonly conformerhandle_add_minimized_conformer: (a: number) => number;
@@ -1079,6 +1123,7 @@ export interface InitOutput {
     readonly conformerhandle_remove_conformer: (a: number, b: number) => number;
     readonly cpk_color: (a: number, b: number) => [number, number];
     readonly depict_data_json: (a: number) => [number, number];
+    readonly depict_data_with_coords_json: (a: number, b: number, c: number) => [number, number];
     readonly depict_reaction_svg: (a: number, b: number) => [number, number, number, number];
     readonly depict_svg_grid: (a: number, b: number, c: number) => [number, number];
     readonly depict_svg_grid_highlighted: (a: number, b: number, c: number, d: number, e: number) => [number, number];
@@ -1125,6 +1170,7 @@ export interface InitOutput {
     readonly maxmin_picks_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly mcs_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly mmp_pairs_json: (a: number, b: number) => [number, number, number, number];
+    readonly mol_block_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly mol_block_from_smiles: (a: number, b: number) => [number, number, number, number];
     readonly mol_from_cdxml: (a: number, b: number) => [number, number, number];
     readonly mol_from_cml: (a: number, b: number) => [number, number, number];
@@ -1134,6 +1180,8 @@ export interface InitOutput {
     readonly mol_from_xyz: (a: number, b: number) => [number, number, number];
     readonly mol_next_atom_idx: (a: number) => number;
     readonly mol_with_atom_added: (a: number, b: number, c: number) => [number, number, number];
+    readonly mol_with_atom_charge: (a: number, b: number, c: number) => [number, number, number];
+    readonly mol_with_atom_element: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly mol_with_atom_removed: (a: number, b: number) => [number, number, number];
     readonly mol_with_bond_added: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly mol_with_bond_removed: (a: number, b: number) => [number, number, number];

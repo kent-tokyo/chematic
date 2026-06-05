@@ -75,12 +75,12 @@ fn parse_field3(
     })
 }
 
-/// Parse a MOL V2000 string into a `(Molecule, MolMetadata)` pair.
+/// Parse a MOL V2000 string into a `(Molecule, MolMetadata, coords)` triple.
 ///
 /// The parser follows the MDL/CTfile fixed-width column layout.
-/// Coordinates are parsed but not stored (the core `Molecule` type has no
-/// coordinate fields yet).
-pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> {
+/// `coords[i]` is the `(x, y)` position for atom `i` extracted from the
+/// atom block.  Z-coordinates are discarded.
+pub fn parse_mol_with_coords(input: &str) -> Result<(Molecule, MolMetadata, Vec<(f64, f64)>), MolParseError> {
     // Yields (1-based line number, line text); short-circuits on EOF.
     let mut lines = input
         .lines()
@@ -116,10 +116,16 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
     // -- Atom block ---------------------------------------------------------
 
     let mut builder = MoleculeBuilder::new();
+    let mut coords: Vec<(f64, f64)> = Vec::with_capacity(natoms);
     let make_atom_err = |ln: usize, d: String| MolParseError::InvalidAtomLine { line: ln, detail: d };
 
     for atom_i in 0..natoms {
         let (raw_lineno, atom_line) = next_line()?;
+
+        // Coordinates: bytes 0–9 (x), 10–19 (y), 20–29 (z) — each 10 chars.
+        let x: f64 = atom_line.get(0..10).and_then(|s| s.trim().parse().ok()).unwrap_or(0.0);
+        let y: f64 = atom_line.get(10..20).and_then(|s| s.trim().parse().ok()).unwrap_or(0.0);
+        coords.push((x, y));
 
         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
         // the spec, but writers vary; trim both ends).
@@ -198,7 +204,67 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
         }
     }
 
-    Ok((builder.build(), metadata))
+    Ok((builder.build(), metadata, coords))
+}
+
+/// Parse a MOL V2000 string into a `(Molecule, MolMetadata)` pair.
+///
+/// This is a convenience wrapper around [`parse_mol_with_coords`] that discards
+/// the 2D coordinate data.
+pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> {
+    parse_mol_with_coords(input).map(|(mol, meta, _coords)| (mol, meta))
+}
+
+/// Parse all molecules from an SDF string, returning 2D coordinates.
+///
+/// Each entry contains the molecule, its metadata, and a `Vec<(x, y)>` of
+/// 2D coordinates in atom-insertion order (the same order as `.atoms()`).
+///
+/// Stops and returns an error on the first parse failure.
+pub fn parse_sdf_with_coords(
+    input: &str,
+) -> Result<Vec<(Molecule, MolMetadata, Vec<(f64, f64)>)>, MolParseError> {
+    use crate::sdf::SdfReader;
+    // Re-use the SDF record splitter by borrowing its block-splitting logic,
+    // but call parse_mol_with_coords on each block instead of parse_mol.
+    let mut result = Vec::new();
+    let mut remaining = input;
+    loop {
+        // Skip leading blank lines.
+        while let Some(rest) = remaining.strip_prefix("\r\n").or_else(|| remaining.strip_prefix('\n')) {
+            remaining = rest;
+        }
+        if remaining.is_empty() { break; }
+
+        // Find the $$$$ delimiter (line-by-line to avoid false matches inside data).
+        let mut byte_offset = 0usize;
+        let (end_byte, after_delim) = loop {
+            let rest = &remaining[byte_offset..];
+            match rest.find('\n') {
+                Some(nl) => {
+                    let line = rest[..nl].trim_end_matches('\r');
+                    if line == "$$$$" {
+                        break (byte_offset, &remaining[byte_offset + nl + 1..]);
+                    }
+                    byte_offset += nl + 1;
+                }
+                None => {
+                    if rest.trim_end_matches('\r') == "$$$$" {
+                        break (byte_offset, "");
+                    }
+                    break (remaining.len(), "");
+                }
+            }
+        };
+
+        let block = &remaining[..end_byte];
+        remaining = after_delim;
+        if block.trim().is_empty() { continue; }
+
+        let (mol, meta, coords) = parse_mol_with_coords(block)?;
+        result.push((mol, meta, coords));
+    }
+    Ok(result)
 }
 
 // ---------------------------------------------------------------------------

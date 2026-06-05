@@ -65,10 +65,26 @@ pub struct DepictData {
     pub bonds: Vec<DepictBond>,
 }
 
-/// Compute structured depiction data for `mol`.
+/// Compute structured depiction data for `mol` using auto-generated 2D layout.
 pub fn compute_depict_data(mol: &Molecule) -> DepictData {
     let layout = compute_layout(mol);
+    depict_data_from_layout(mol, &layout)
+}
 
+/// Compute structured depiction data for `mol` using caller-supplied coordinates.
+///
+/// `coords[i]` is the `(x, y)` position for atom `i` in the same units as
+/// [`compute_layout`] (~40 units per Å).  Atoms beyond `coords.len()` receive
+/// position `(0.0, 0.0)`.
+pub fn depict_data_with_coords(mol: &Molecule, coords: &[(f64, f64)]) -> DepictData {
+    let layout = Layout {
+        coords: coords.iter().map(|&(x, y)| Point { x, y }).collect(),
+    };
+    depict_data_from_layout(mol, &layout)
+}
+
+/// Internal helper: build `DepictData` from a pre-computed `Layout`.
+fn depict_data_from_layout(mol: &Molecule, layout: &Layout) -> DepictData {
     let atoms: Vec<DepictAtom> = mol.atoms().map(|(idx, atom)| {
         let pos = layout.get(idx);
         let color = atom_color(atom.element.atomic_number()).to_string();

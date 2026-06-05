@@ -1645,9 +1645,40 @@ pub fn mol_with_bond_added(mol: &MolHandle, a: u32, b: u32, order: u32) -> Resul
         3 => chematic_core::BondOrder::Triple,
         _ => chematic_core::BondOrder::Single,
     };
-    let new_mol = mol.inner
+    let (new_mol, _bond_idx) = mol.inner
         .with_bond_added(chematic_core::AtomIdx(a), chematic_core::AtomIdx(b), bond_order)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
+}
+
+/// Return a new `MolHandle` with the formal charge of atom `idx` changed.
+///
+/// Returns a JS error if `idx` is out of range.
+#[wasm_bindgen]
+pub fn mol_with_atom_charge(mol: &MolHandle, idx: u32, charge: i32) -> Result<MolHandle, JsValue> {
+    if idx as usize >= mol.inner.atom_count() {
+        return Err(JsValue::from_str(&format!(
+            "atom index {idx} out of range (molecule has {} atoms)", mol.inner.atom_count()
+        )));
+    }
+    let new_mol = mol.inner.with_atom_charge(chematic_core::AtomIdx(idx), charge as i8);
+    Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
+}
+
+/// Return a new `MolHandle` with the element of atom `idx` changed.
+///
+/// `element_symbol` — periodic-table symbol, e.g. `"N"`, `"O"`, `"Cl"`.
+/// Returns a JS error if `idx` is out of range or the symbol is unknown.
+#[wasm_bindgen]
+pub fn mol_with_atom_element(mol: &MolHandle, idx: u32, element_symbol: &str) -> Result<MolHandle, JsValue> {
+    if idx as usize >= mol.inner.atom_count() {
+        return Err(JsValue::from_str(&format!(
+            "atom index {idx} out of range (molecule has {} atoms)", mol.inner.atom_count()
+        )));
+    }
+    let el = chematic_core::Element::from_symbol(element_symbol)
+        .ok_or_else(|| JsValue::from_str(&format!("unknown element: {element_symbol}")))?;
+    let new_mol = mol.inner.with_atom_element(chematic_core::AtomIdx(idx), el);
     Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
 }
 
@@ -1858,6 +1889,102 @@ pub fn mol_from_cdxml(cdxml: &str) -> Result<MolHandle, JsValue> {
     let (mol, _coords) = chematic_mol::parse_cdxml(cdxml)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(MolHandle { inner: std::rc::Rc::new(mol) })
+}
+
+/// Parse all molecular fragments from a CDXML string.
+///
+/// Returns a JSON array of SMILES strings, one per fragment:
+/// `["CC","c1ccccc1"]`
+///
+/// Stereochemistry (wedge/dash bonds) is read from the `Display` attribute
+/// of bond elements.
+#[wasm_bindgen]
+pub fn cdxml_to_smiles_json(cdxml: &str) -> Result<String, JsValue> {
+    let fragments = chematic_mol::parse_cdxml_all(cdxml)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let parts: Vec<String> = fragments
+        .iter()
+        .map(|(mol, _)| format!("\"{}\"", escape_json_string(&chematic_smiles::canonical_smiles(mol))))
+        .collect();
+    Ok(format!("[{}]", parts.join(",")))
+}
+
+/// Parse a MOL V2000 string and return 2D coordinates as a JSON array.
+///
+/// Returns `[[x0,y0],[x1,y1],...]` in atom-insertion order.
+/// Coordinates are in Ångström as stored in the MOL file.
+#[wasm_bindgen]
+pub fn mol_block_coords_json(mol_block: &str) -> Result<String, JsValue> {
+    let (_mol, _meta, coords) = chematic_mol::parse_mol_with_coords(mol_block)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let parts: Vec<String> = coords.iter()
+        .map(|(x, y)| {
+            let xf = if x.is_finite() { format!("{x:.4}") } else { "0".to_string() };
+            let yf = if y.is_finite() { format!("{y:.4}") } else { "0".to_string() };
+            format!("[{xf},{yf}]")
+        })
+        .collect();
+    Ok(format!("[{}]", parts.join(",")))
+}
+
+/// Compute structured depiction data using caller-supplied 2D coordinates.
+///
+/// `coords_json` — JSON array of `[x, y]` pairs, one per atom in order.
+///
+/// Returns the same JSON format as `depict_data_json`.
+#[wasm_bindgen]
+pub fn depict_data_with_coords_json(mol: &MolHandle, coords_json: &str) -> String {
+    // Parse [[x,y],...] — simple format, no full JSON parser needed.
+    let coords: Vec<(f64, f64)> = {
+        let mut result = Vec::new();
+        let inner = coords_json.trim().trim_matches(|c| c == '[' || c == ']');
+        // Split on "]," pattern to get individual [x,y] pairs.
+        for pair in inner.split("],[") {
+            let clean = pair.trim().trim_matches(|c| c == '[' || c == ']');
+            let nums: Vec<f64> = clean.split(',')
+                .filter_map(|s| s.trim().parse::<f64>().ok())
+                .collect();
+            if nums.len() >= 2 {
+                result.push((nums[0], nums[1]));
+            }
+        }
+        result
+    };
+
+    let data = chematic_depict::depict_data_with_coords(&mol.inner, &coords);
+
+    let atoms: Vec<String> = data.atoms.iter().map(|a| {
+        let label = match &a.label {
+            Some(s) => format!("\"{}\"", escape_json_string(s)),
+            None => "null".to_string(),
+        };
+        let charge_suffix = if a.charge != 0 {
+            format!(",\"charge\":{}", a.charge)
+        } else {
+            String::new()
+        };
+        format!(
+            r#"{{"idx":{},"element":"{}","x":{:.4},"y":{:.4},"label":{}"color":"{}"{}}}"#,
+            a.idx.0, a.element.symbol(), a.pos.x, a.pos.y,
+            format!("{label},"), escape_json_string(&a.color), charge_suffix,
+        )
+    }).collect();
+
+    let bond_kind = |k: &chematic_depict::DepictBondKind| match k {
+        chematic_depict::DepictBondKind::Single   => "Single",
+        chematic_depict::DepictBondKind::Double   => "Double",
+        chematic_depict::DepictBondKind::Triple   => "Triple",
+        chematic_depict::DepictBondKind::Aromatic => "Aromatic",
+        chematic_depict::DepictBondKind::Up       => "Up",
+        chematic_depict::DepictBondKind::Down     => "Down",
+    };
+
+    let bonds: Vec<String> = data.bonds.iter().map(|b| {
+        format!(r#"{{"idx":{},"atom1":{},"atom2":{},"kind":"{}"}}"#,
+            b.idx.0, b.atom1.0, b.atom2.0, bond_kind(&b.kind))
+    }).collect();
+
+    format!(r#"{{"atoms":[{}],"bonds":[{}]}}"#, atoms.join(","), bonds.join(","))
 }
 
 // ---------------------------------------------------------------------------
@@ -2989,6 +3116,83 @@ M  END
         let h = parse("CC(=O)Oc1ccccc1C(=O)O"); // aspirin
         let score = sa_score(&h);
         assert!(score >= 1.0 && score <= 10.0, "SA score out of [1,10]: {score:.2}");
+    }
+
+    // v0.1.21 new API tests
+
+    // with_atom_charge
+    #[test]
+    fn mol_with_atom_charge_changes_charge() {
+        let mol = parse("N");         // neutral N
+        let mol2 = mol_with_atom_charge(&mol, 0, 1).unwrap();
+        let atom = mol2.inner.atom(chematic_core::AtomIdx(0));
+        assert_eq!(atom.charge, 1, "charge should be 1");
+    }
+
+    // with_atom_element
+    #[test]
+    fn mol_with_atom_element_changes_element() {
+        let mol = parse("CC");
+        let mol2 = mol_with_atom_element(&mol, 0, "N").unwrap();
+        let atom = mol2.inner.atom(chematic_core::AtomIdx(0));
+        assert_eq!(atom.element.symbol(), "N", "element should be N");
+    }
+
+    // SDF parse with coords
+    #[test]
+    fn mol_block_coords_json_ethanol() {
+        let mol_block = "\nethanol\n\n  3  2  0  0  0  0  0  0  0  0  0 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    3.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\nM  END\n";
+        let json = mol_block_coords_json(mol_block).unwrap();
+        assert!(json.contains("[0.0000,0.0000]"), "first atom at origin: {json}");
+        assert!(json.contains("[1.5000,0.0000]"), "second atom at x=1.5: {json}");
+    }
+
+    // CDXML all fragments
+    #[test]
+    fn cdxml_to_smiles_json_two_fragments() {
+        let cdxml = r#"<?xml version="1.0"?>
+<CDXML>
+<fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1"/>
+</fragment>
+<fragment>
+<n id="3" Element="8" p="30 0"/>
+<n id="4" Element="6" p="40 0"/>
+<b B="3" E="4" Order="1"/>
+</fragment>
+</CDXML>"#;
+        let json = cdxml_to_smiles_json(cdxml).unwrap();
+        // Should have 2 comma-separated SMILES entries.
+        let count = json.matches(',').count() + 1;
+        assert_eq!(count, 2, "should have 2 fragments: {json}");
+    }
+
+    // CDXML stereo
+    #[test]
+    fn cdxml_wedge_bond_becomes_up() {
+        let cdxml = r#"<?xml version="1.0"?>
+<CDXML>
+<fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1" Display="WedgeBegin"/>
+</fragment>
+</CDXML>"#;
+        let (mol, _) = chematic_mol::parse_cdxml(cdxml).unwrap();
+        let bond = mol.bond(chematic_core::BondIdx(0));
+        assert_eq!(bond.order, chematic_core::BondOrder::Up, "WedgeBegin → Up");
+    }
+
+    // depict_data_with_coords
+    #[test]
+    fn depict_data_with_coords_uses_provided_coords() {
+        let mol = parse("CC");
+        // Provide coords far from defaults.
+        let json = depict_data_with_coords_json(&mol, "[[100.0,200.0],[300.0,400.0]]");
+        assert!(json.contains("100."), "x coord should be 100: {json}");
+        assert!(json.contains("200."), "y coord should be 200: {json}");
     }
 
     // Mutable Molecule API
