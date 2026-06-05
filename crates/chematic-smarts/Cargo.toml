@@ -13,8 +13,8 @@ homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-smarts"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.20" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.20" }
+chematic-core = { path = "../chematic-core", version = "0.1.21" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.21" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }
