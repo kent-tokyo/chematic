@@ -588,6 +588,64 @@ footer {
 }
 .fg-chip:hover { filter: brightness(1.25); }
 .fg-chip.active { transform: scale(1.06); box-shadow: 0 0 0 2px currentColor; }
+
+/* ── Stereo isomers grid ─────────────────────────────────────────────── */
+.stereo-grid {
+  display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .75rem;
+}
+.stereo-cell {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+  width: 180px;
+}
+.stereo-cell svg { width: 180px; height: 140px; display: block; }
+.stereo-smi {
+  font-family: var(--font-mono); font-size: .65rem; color: var(--muted);
+  padding: 3px 6px 5px; text-align: center; word-break: break-all; line-height: 1.3;
+}
+
+/* ── Analysis tab (MMP + R-group) ────────────────────────────────────── */
+.sar-textarea {
+  width: 100%; min-height: 100px; resize: vertical;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: var(--font-mono); font-size: .82rem;
+  padding: .6rem .8rem; line-height: 1.5;
+}
+.sar-textarea:focus { outline: none; border-color: var(--accent); }
+.mmp-table-wrap { overflow-x: auto; }
+.mmp-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.mmp-table th {
+  background: var(--surface); color: var(--muted);
+  font-weight: 600; font-size: .7rem; text-transform: uppercase;
+  letter-spacing: .05em; padding: .5rem .75rem; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.mmp-table td {
+  padding: .5rem .75rem; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.mmp-table tr:last-child td { border-bottom: none; }
+.mmp-smi-code {
+  font-family: var(--font-mono); font-size: .75rem;
+  color: var(--accent); word-break: break-all;
+}
+.rgroup-grid {
+  display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .75rem;
+}
+.rgroup-cell {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  width: 200px;
+}
+.rgroup-cell svg { width: 200px; height: 150px; display: block; }
+.rgroup-info {
+  padding: 4px 8px 6px; font-family: var(--font-mono);
+  font-size: .65rem; color: var(--muted); line-height: 1.4;
+}
+.rgroup-info .matched { color: var(--pass); }
+.rgroup-info .unmatched { color: var(--fail); }
 </style>
 </head>
 <body>
@@ -602,7 +660,7 @@ footer {
 <header>
   <div class="header-inner">
     <span class="logo">chematic</span>
-    <span class="version">v0.1.19</span>
+    <span class="version">v0.1.20</span>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en">EN</button>
@@ -618,6 +676,7 @@ footer {
     <button class="tab-btn active" data-tab="tab-2d"     id="tb-2d"      role="tab"></button>
     <button class="tab-btn"        data-tab="tab-sim"    id="tb-sim"     role="tab"></button>
     <button class="tab-btn"        data-tab="tab-rxn"    id="tb-rxn"     role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-sar"    id="tb-sar"     role="tab"></button>
     <button class="tab-btn"        data-tab="tab-3d"     id="tb-3d"      role="tab"></button>
     <button class="tab-btn"        data-tab="tab-gallery" id="tb-gallery" role="tab"></button>
   </div>
@@ -704,6 +763,15 @@ footer {
     <section id="section-rules">
       <h2 id="h-rules-title"></h2>
       <div class="rules-grid" id="rules-grid"></div>
+    </section>
+
+    <!-- Stereo isomers -->
+    <section id="section-stereo">
+      <h2 id="h-stereo-title"></h2>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:.6rem" id="stereo-hint"></p>
+      <button id="btn-stereo" class="btn-outline" style="margin-bottom:.75rem"></button>
+      <div id="error-stereo" class="error-banner hidden"></div>
+      <div class="stereo-grid" id="stereo-grid"></div>
     </section>
 
   </div><!-- /tab-2d -->
@@ -825,6 +893,63 @@ footer {
       </div>
     </section>
   </div><!-- /tab-rxn -->
+
+  <!-- Tab: SAR Analysis (MMP + R-group) -->
+  <div class="tab-panel" id="tab-sar" role="tabpanel">
+
+    <!-- MMP Section -->
+    <section id="section-mmp">
+      <h2 id="h-mmp-title"></h2>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem" id="mmp-desc"></p>
+      <textarea id="mmp-input" class="sar-textarea" spellcheck="false" id="mmp-input"></textarea>
+      <div class="preset-row" style="margin:.5rem 0">
+        <span class="preset-label" id="mmp-presets-label"></span>
+        <button class="btn-outline preset-mmp" id="mmp-preset-alkylbenzenes"></button>
+        <button class="btn-outline preset-mmp" id="mmp-preset-nsaids"></button>
+      </div>
+      <button id="btn-mmp" class="btn" style="margin-bottom:.75rem"></button>
+      <div id="error-mmp" class="error-banner hidden"></div>
+      <div class="mmp-table-wrap">
+        <table class="mmp-table" id="mmp-table" style="display:none">
+          <thead>
+            <tr>
+              <th id="th-mmp-mol-a"></th>
+              <th id="th-mmp-mol-b"></th>
+              <th id="th-mmp-core"></th>
+              <th id="th-mmp-frag-a"></th>
+              <th id="th-mmp-frag-b"></th>
+            </tr>
+          </thead>
+          <tbody id="mmp-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- R-group Decomposition -->
+    <section id="section-rgroup">
+      <h2 id="h-rgroup-title"></h2>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem" id="rgroup-desc"></p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+        <div>
+          <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.25rem" id="rgroup-label-smiles"></label>
+          <textarea id="rgroup-input" class="sar-textarea" spellcheck="false" style="min-height:80px"></textarea>
+        </div>
+        <div>
+          <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.25rem" id="rgroup-label-core"></label>
+          <input id="rgroup-core" class="smiles-input" type="text" spellcheck="false" autocomplete="off">
+        </div>
+      </div>
+      <div class="preset-row" style="margin:.5rem 0">
+        <span class="preset-label" id="rgroup-presets-label"></span>
+        <button class="btn-outline preset-rgroup" id="rgroup-preset-benzene"></button>
+        <button class="btn-outline preset-rgroup" id="rgroup-preset-pyridine"></button>
+      </div>
+      <button id="btn-rgroup" class="btn" style="margin-bottom:.75rem"></button>
+      <div id="error-rgroup" class="error-banner hidden"></div>
+      <div class="rgroup-grid" id="rgroup-grid"></div>
+    </section>
+
+  </div><!-- /tab-sar -->
 
   <!-- Tab: 3D Viewer -->
   <div class="tab-panel" id="tab-3d" role="tabpanel">
@@ -982,8 +1107,31 @@ const T = {
     'tab.2d':           '2D Viewer',
     'tab.sim':          'Similarity',
     'tab.rxn':          'Reaction',
+    'tab.sar':          'SAR Analysis',
     'tab.3d':           '3D Viewer',
     'tab.gallery':      'Gallery',
+    'stereo.title':     'Stereoisomer Enumeration',
+    'stereo.hint':      'Enumerates all possible stereoisomers for unspecified stereocenters (up to 6 centers / 64 isomers).',
+    'stereo.btn':       'Show Stereoisomers',
+    'mmp.title':        'Matched Molecular Pairs',
+    'mmp.desc':         'Find molecule pairs that share the same scaffold but differ by exactly one structural fragment (single BRICS cut).',
+    'mmp.presets':      'Examples:',
+    'mmp.preset.alkyl': 'Alkylbenzenes',
+    'mmp.preset.nsaid': 'NSAIDs',
+    'mmp.run':          'Find MMPs',
+    'mmp.th.mol_a':     'Molecule A',
+    'mmp.th.mol_b':     'Molecule B',
+    'mmp.th.core':      'Core',
+    'mmp.th.frag_a':    'Fragment A',
+    'mmp.th.frag_b':    'Fragment B',
+    'rgroup.title':     'R-group Decomposition',
+    'rgroup.desc':      'Decompose a set of molecules against a common core scaffold. Use * in SMARTS to mark attachment points.',
+    'rgroup.lbl.smiles':'Molecules (one SMILES per line)',
+    'rgroup.lbl.core':  'Core SMARTS (use * for R-group positions)',
+    'rgroup.presets':   'Examples:',
+    'rgroup.preset.benz':'Monosubstituted benzene',
+    'rgroup.preset.pyr': 'Pyridine scaffold',
+    'rgroup.run':       'Decompose',
     '3d.title':         '3D Interactive Viewer',
     '3d.stick':         'Stick',
     '3d.ball':          'Ball & Stick',
@@ -1105,8 +1253,31 @@ const T = {
     'tab.2d':           '2D 構造',
     'tab.sim':          '類似度',
     'tab.rxn':          '反応',
+    'tab.sar':          'SAR 解析',
     'tab.3d':           '3D ビューア',
     'tab.gallery':      'ギャラリー',
+    'stereo.title':     '立体異性体列挙',
+    'stereo.hint':      '未指定の不斉中心に対して全ての立体異性体を列挙します（最大 6 中心 / 64 異性体）。',
+    'stereo.btn':       '立体異性体を表示',
+    'mmp.title':        'Matched Molecular Pairs (MMP)',
+    'mmp.desc':         '同じスキャフォールドを持ちながら 1 つの構造フラグメントだけ異なる分子ペアを探します（BRICS 1 切断）。',
+    'mmp.presets':      '例:',
+    'mmp.preset.alkyl': 'アルキルベンゼン',
+    'mmp.preset.nsaid': 'NSAIDs',
+    'mmp.run':          'MMP を検索',
+    'mmp.th.mol_a':     '分子 A',
+    'mmp.th.mol_b':     '分子 B',
+    'mmp.th.core':      'コア',
+    'mmp.th.frag_a':    'フラグメント A',
+    'mmp.th.frag_b':    'フラグメント B',
+    'rgroup.title':     'R-group 分解',
+    'rgroup.desc':      '共通コアスキャフォールドに対して分子セットを分解します。SMARTS の * で R-group の付着点を指定します。',
+    'rgroup.lbl.smiles':'分子リスト（1行1SMILES）',
+    'rgroup.lbl.core':  'コア SMARTS（* で R-group 付着点を指定）',
+    'rgroup.presets':   '例:',
+    'rgroup.preset.benz':'モノ置換ベンゼン',
+    'rgroup.preset.pyr': 'ピリジン骨格',
+    'rgroup.run':       '分解',
     '3d.title':         'インタラクティブ 3D ビューア',
     '3d.stick':         'スティック',
     '3d.ball':          'ボール＆スティック',
@@ -1228,8 +1399,31 @@ const T = {
     'tab.2d':           '2D 结构',
     'tab.sim':          '相似度',
     'tab.rxn':          '反应',
+    'tab.sar':          'SAR 分析',
     'tab.3d':           '3D 查看器',
     'tab.gallery':      '图库',
+    'stereo.title':     '立体异构体枚举',
+    'stereo.hint':      '对未指定的立体中心枚举所有可能的立体异构体（最多 6 个中心 / 64 种）。',
+    'stereo.btn':       '显示立体异构体',
+    'mmp.title':        'Matched Molecular Pairs（MMP）',
+    'mmp.desc':         '查找共享相同骨架但仅在一个结构片段上不同的分子对（单次 BRICS 切割）。',
+    'mmp.presets':      '示例:',
+    'mmp.preset.alkyl': '烷基苯系列',
+    'mmp.preset.nsaid': 'NSAIDs 系列',
+    'mmp.run':          '查找 MMP',
+    'mmp.th.mol_a':     '分子 A',
+    'mmp.th.mol_b':     '分子 B',
+    'mmp.th.core':      '核心',
+    'mmp.th.frag_a':    '片段 A',
+    'mmp.th.frag_b':    '片段 B',
+    'rgroup.title':     'R-基团分解',
+    'rgroup.desc':      '对一组分子以共同核心骨架进行分解。在 SMARTS 中使用 * 标记 R-基团连接点。',
+    'rgroup.lbl.smiles':'分子列表（每行一个 SMILES）',
+    'rgroup.lbl.core':  '核心 SMARTS（用 * 标记 R-基团位置）',
+    'rgroup.presets':   '示例:',
+    'rgroup.preset.benz':'单取代苯',
+    'rgroup.preset.pyr': '吡啶骨架',
+    'rgroup.run':       '分解',
     '3d.title':         '3D 交互查看器',
     '3d.stick':         '棍状',
     '3d.ball':          '球棍',
@@ -1293,8 +1487,31 @@ const STATIC_IDS = {
   'tb-2d':              'tab.2d',
   'tb-sim':             'tab.sim',
   'tb-rxn':             'tab.rxn',
+  'tb-sar':             'tab.sar',
   'tb-3d':              'tab.3d',
   'tb-gallery':         'tab.gallery',
+  'h-stereo-title':     'stereo.title',
+  'stereo-hint':        'stereo.hint',
+  'btn-stereo':         'stereo.btn',
+  'h-mmp-title':        'mmp.title',
+  'mmp-desc':           'mmp.desc',
+  'mmp-presets-label':  'mmp.presets',
+  'mmp-preset-alkylbenzenes': 'mmp.preset.alkyl',
+  'mmp-preset-nsaids':  'mmp.preset.nsaid',
+  'btn-mmp':            'mmp.run',
+  'th-mmp-mol-a':       'mmp.th.mol_a',
+  'th-mmp-mol-b':       'mmp.th.mol_b',
+  'th-mmp-core':        'mmp.th.core',
+  'th-mmp-frag-a':      'mmp.th.frag_a',
+  'th-mmp-frag-b':      'mmp.th.frag_b',
+  'h-rgroup-title':     'rgroup.title',
+  'rgroup-desc':        'rgroup.desc',
+  'rgroup-label-smiles':'rgroup.lbl.smiles',
+  'rgroup-label-core':  'rgroup.lbl.core',
+  'rgroup-presets-label':'rgroup.presets',
+  'rgroup-preset-benzene':'rgroup.preset.benz',
+  'rgroup-preset-pyridine':'rgroup.preset.pyr',
+  'btn-rgroup':         'rgroup.run',
   'h-3d-title':         '3d.title',
   'btn-3d-stick':       '3d.stick',
   'btn-3d-ball':        '3d.ball',
@@ -1361,6 +1578,7 @@ function switchTab(tabId) {
 // ============================================================
 let wasmReady = false;
 let parseSmilesWasm, tanimotoEcfp4, tanimotoFcfp4, tanimotoAtomPair, tanimotoTorsion, bricsFrag;
+let enumerateStereoIsomers, mmpPairsJson, rgroupDecomposeJson, depictSvgOpts;
 let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms, generate3dPdb, depictReactionSvg;
 let molFromSdfBlock, sdfToSmilesJson, estateIndicesJson, tanimotoTopoPath;
 let identifyFunctionalGroups, gasteigerChargesJson, saScore, slogpVsaJson, smrVsaJson, peoeVsaJson;
@@ -1407,6 +1625,11 @@ async function initWasm() {
     getAtomInfo              = mod.get_atom_info;
     getBondBetween           = mod.get_bond_between;
     molBlockFromSmiles       = mod.mol_block_from_smiles;
+    // v0.1.20 new APIs
+    enumerateStereoIsomers   = mod.enumerate_stereo_isomers_json;
+    mmpPairsJson             = mod.mmp_pairs_json;
+    rgroupDecomposeJson      = mod.rgroup_decompose_json;
+    depictSvgOpts            = mod.depict_svg_opts ?? mod.depict_svg;
     wasmReady = true;
   } catch (e) {
     document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
@@ -2257,11 +2480,18 @@ function calculate() {
   clearSmartsUI();
   clearAtomInfo();
 
+  // Critical path: SVG + radar + primary descriptors render immediately.
   renderSvg(mol);
   renderRadar(mol);
   renderDescriptors(mol);
-  renderRuleCards(mol);
-  renderNamedGroups(mol);
+
+  // Secondary: rule cards + functional groups are visually below the fold;
+  // defer to keep the main-thread responsive after each keystroke.
+  const rIC = typeof requestIdleCallback === 'function' ? requestIdleCallback : (fn) => setTimeout(fn, 0);
+  rIC(() => { if (lastMol === mol) renderRuleCards(mol); });
+  rIC(() => { if (lastMol === mol) renderNamedGroups(mol); });
+  // Clear stale stereo isomers when molecule changes.
+  document.getElementById('stereo-grid').textContent = '';
 
   // Mark 3D dirty — update when user switches to 3D tab
   if (activeTab === 'tab-3d' && viewer3dInited && viewer3d) {
@@ -2343,6 +2573,154 @@ function loadSdf() {
       out.appendChild(svgEl);
     }
   } catch (_) {}
+}
+
+// ============================================================
+// Stereo isomers
+// ============================================================
+function showStereoIsomers() {
+  const grid = document.getElementById('stereo-grid');
+  grid.textContent = '';
+  clearError('error-stereo');
+  if (!lastMol) return;
+  if (!enumerateStereoIsomers) { showError('error-stereo', 'enumerate_stereo_isomers_json not available'); return; }
+  try {
+    const result = enumerateStereoIsomers(lastMol);
+    const isomers = JSON.parse(result);
+    if (!isomers.length) {
+      const msg = document.createElement('span');
+      msg.style.cssText = 'color:var(--muted);font-size:.82rem';
+      msg.textContent = 'No unspecified stereocenters found.';
+      grid.appendChild(msg);
+      return;
+    }
+    for (const smi of isomers) {
+      const cell = document.createElement('div');
+      cell.className = 'stereo-cell';
+      try {
+        const svgHtml = depictSvgGrid(smi, 1);
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgHtml, 'image/svg+xml');
+        if (!doc.querySelector('parsererror')) cell.appendChild(doc.documentElement);
+      } catch (_) {}
+      const smiLabel = document.createElement('div');
+      smiLabel.className = 'stereo-smi';
+      smiLabel.textContent = smi;
+      cell.appendChild(smiLabel);
+      grid.appendChild(cell);
+    }
+  } catch (e) {
+    showError('error-stereo', String(e));
+  }
+}
+
+// ============================================================
+// MMP analysis
+// ============================================================
+const MMP_PRESETS = {
+  alkylbenzenes: 'CCc1ccccc1\nCCCc1ccccc1\nCCCCc1ccccc1\nCc1ccccc1C\nCC(C)c1ccccc1',
+  nsaids: 'CC(=O)Oc1ccccc1C(=O)O\nCC(C)Cc1ccc(cc1)C(C)C(=O)O\nCC(C(=O)O)c1ccc2cccc(OC)c2c1',
+};
+
+function makeCodeCell(text) {
+  const td = document.createElement('td');
+  const code = document.createElement('code');
+  code.className = 'mmp-smi-code';
+  code.textContent = text;
+  td.appendChild(code);
+  return td;
+}
+
+function runMmp() {
+  const tbody = document.getElementById('mmp-tbody');
+  const table = document.getElementById('mmp-table');
+  tbody.textContent = '';
+  table.style.display = 'none';
+  clearError('error-mmp');
+  if (!mmpPairsJson) { showError('error-mmp', 'mmp_pairs_json not available'); return; }
+
+  const lines = document.getElementById('mmp-input').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  if (lines.length < 2) { showError('error-mmp', 'Enter at least 2 SMILES (one per line).'); return; }
+
+  try {
+    const pairs = JSON.parse(mmpPairsJson(JSON.stringify(lines)));
+    if (!pairs.length) { showError('error-mmp', 'No matched molecular pairs found.'); return; }
+    for (const p of pairs) {
+      const tr = document.createElement('tr');
+      for (const s of [p.mol_a, p.mol_b, p.core, p.fragment_a, p.fragment_b]) {
+        tr.appendChild(makeCodeCell(s));
+      }
+      tbody.appendChild(tr);
+    }
+    table.style.display = '';
+  } catch (e) {
+    showError('error-mmp', String(e));
+  }
+}
+
+// ============================================================
+// R-group decomposition
+// ============================================================
+const RGROUP_PRESETS = {
+  benzene: { smiles: 'CCc1ccccc1\nCCCc1ccccc1\nFc1ccccc1\nClc1ccccc1\nCOc1ccccc1', core: 'c1ccc(*)cc1' },
+  pyridine: { smiles: 'CCc1ccncc1\nFc1ccncc1\nClc1ccncc1\nCOc1ccncc1', core: 'c1cc(*)ccn1' },
+};
+
+function runRgroup() {
+  const grid = document.getElementById('rgroup-grid');
+  grid.textContent = '';
+  clearError('error-rgroup');
+  if (!rgroupDecomposeJson) { showError('error-rgroup', 'rgroup_decompose_json not available'); return; }
+
+  const lines = document.getElementById('rgroup-input').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  const core = document.getElementById('rgroup-core').value.trim();
+  if (!lines.length) { showError('error-rgroup', 'Enter at least 1 SMILES.'); return; }
+  if (!core) { showError('error-rgroup', 'Enter a core SMARTS pattern.'); return; }
+
+  try {
+    const results = JSON.parse(rgroupDecomposeJson(JSON.stringify(lines), core));
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      const smi = lines[i];
+      const cell = document.createElement('div');
+      cell.className = 'rgroup-cell';
+
+      try {
+        const svgHtml = depictSvgGrid(smi, 1);
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgHtml, 'image/svg+xml');
+        if (!doc.querySelector('parsererror')) cell.appendChild(doc.documentElement);
+      } catch (_) {}
+
+      const info = document.createElement('div');
+      info.className = 'rgroup-info';
+
+      const status = document.createElement('span');
+      status.className = r.matched ? 'matched' : 'unmatched';
+      status.textContent = r.matched ? '✓ matched' : '✗ no match';
+      info.appendChild(status);
+
+      if (r.matched) {
+        const rkeys = Object.keys(r).filter(k => k !== 'matched');
+        for (const k of rkeys) {
+          const br = document.createElement('br');
+          info.appendChild(br);
+          const line = document.createElement('span');
+          line.textContent = k + ': ';
+          const code = document.createElement('code');
+          code.textContent = r[k];
+          info.appendChild(line);
+          info.appendChild(code);
+        }
+      }
+      cell.appendChild(info);
+      grid.appendChild(cell);
+    }
+  } catch (e) {
+    showError('error-rgroup', String(e));
+  }
 }
 
 // ============================================================
@@ -2449,6 +2827,31 @@ function loadSdf() {
   document.getElementById('btn-rxn-eq').addEventListener('click', runReactionEquation);
   document.getElementById('rxn-eq-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') runReactionEquation();
+  });
+
+  // Stereo isomers
+  document.getElementById('btn-stereo').addEventListener('click', showStereoIsomers);
+
+  // MMP
+  document.getElementById('btn-mmp').addEventListener('click', runMmp);
+  document.querySelectorAll('.preset-mmp').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.id === 'mmp-preset-alkylbenzenes') {
+        document.getElementById('mmp-input').value = MMP_PRESETS.alkylbenzenes;
+      } else if (btn.id === 'mmp-preset-nsaids') {
+        document.getElementById('mmp-input').value = MMP_PRESETS.nsaids;
+      }
+    });
+  });
+
+  // R-group
+  document.getElementById('btn-rgroup').addEventListener('click', runRgroup);
+  document.querySelectorAll('.preset-rgroup').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = btn.id === 'rgroup-preset-benzene' ? RGROUP_PRESETS.benzene : RGROUP_PRESETS.pyridine;
+      document.getElementById('rgroup-input').value = preset.smiles;
+      document.getElementById('rgroup-core').value = preset.core;
+    });
   });
 
   // SDF / MOL upload
