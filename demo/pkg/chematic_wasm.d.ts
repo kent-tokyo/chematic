@@ -344,6 +344,14 @@ export function add_hydrogens(mol: MolHandle): MolHandle;
 export function atom_pair_bitvec(mol: MolHandle): Uint8Array;
 
 /**
+ * Check whether a reaction SMILES is atom-balanced.
+ *
+ * Returns JSON: `{ "balanced": true|false, "diff": ["C: 1 reactant vs 2 product", ...] }`
+ * Returns `"error:<msg>"` on parse failure.
+ */
+export function balance_check_json(reaction_smiles: string): string;
+
+/**
  * Number of BRICS fragments produced by fragmenting the molecule.
  *
  * Returns 1 if no BRICS-breakable bonds exist (whole molecule is one fragment).
@@ -552,6 +560,15 @@ export function fcfp4_bitvec(mol: MolHandle): Uint8Array;
 export function fcfp6_bitvec(mol: MolHandle): Uint8Array;
 
 /**
+ * Analyze a reaction SMILES and return the reaction center as JSON.
+ *
+ * JSON schema: `{ broken: [[a1,a2],...], formed: [[a1,a2],...], changed: [a,...] }`
+ * where atom indices are 0-based within the first reactant molecule.
+ * Returns an error string prefixed with `"error:"` on failure.
+ */
+export function find_reaction_center_json(reaction_smiles: string): string;
+
+/**
  * Gasteiger-Marsili PEOE partial charges as a JSON array of f64.
  */
 export function gasteiger_charges_json(mol: MolHandle): string;
@@ -715,6 +732,13 @@ export function mcs_smiles_json(smiles_json: string): string;
 export function mmp_pairs_json(smiles_json: string): string;
 
 /**
+ * Parse a Tripos MOL2 string and return SMILES.
+ *
+ * Returns `"error:<msg>"` on failure.
+ */
+export function mol2_to_smiles(mol2_str: string): string;
+
+/**
  * Parse a MOL V2000 string and return 2D coordinates as a JSON array.
  *
  * Returns `[[x0,y0],[x1,y1],...]` in atom-insertion order.
@@ -836,6 +860,15 @@ export function mr_per_atom_json(mol: MolHandle): string;
  * Returns a new `MolHandle`.  For acyclic molecules returns an empty molecule.
  */
 export function murcko_scaffold(mol: MolHandle): MolHandle;
+
+/**
+ * Find the k nearest neighbours of a query SMILES in a list of db SMILES.
+ *
+ * `db_smiles_json`: JSON array of SMILES strings, e.g. `["CC","c1ccccc1"]`.
+ * Returns JSON: `[{"index":0,"tanimoto":0.95},...]` sorted by descending Tanimoto.
+ * Returns `"error:<msg>"` on parse failure.
+ */
+export function nearest_neighbors_json(query_smiles: string, db_smiles_json: string, k: number): string;
 
 /**
  * Neutralize formal charges on `mol` by proton addition/removal.
@@ -984,6 +1017,13 @@ export function smarts_match_atoms(smarts: string, mol: MolHandle): string;
 export function smiles_array_to_sdf(smiles_json: string): string;
 
 /**
+ * Convert a SMILES to a minimal Tripos MOL2 string (no 3D coordinates).
+ *
+ * Returns `"error:<msg>"` on parse failure.
+ */
+export function smiles_to_mol2(smiles: string): string;
+
+/**
  * Render a highlighted SVG from a SMILES string in one call.
  *
  * `atoms` — 0-based atom indices to highlight (Uint32Array in JS).
@@ -1006,6 +1046,14 @@ export function smr_vsa_json(mol: MolHandle): string;
  * `[[0,1,2,3,4,5],[5,6,7,8,9,4]]`
  */
 export function sssr_rings_json(mol: MolHandle): string;
+
+/**
+ * Standardize a SMILES string and return the canonical SMILES of the result.
+ *
+ * Applies: largest fragment extraction → charge neutralization.
+ * Returns `"error:<msg>"` on parse failure.
+ */
+export function standardize_smiles(smiles: string): string;
 
 export function start(): void;
 
@@ -1106,6 +1154,7 @@ export interface InitOutput {
     readonly __wbg_molhandle_free: (a: number, b: number) => void;
     readonly add_hydrogens: (a: number) => number;
     readonly atom_pair_bitvec: (a: number) => [number, number];
+    readonly balance_check_json: (a: number, b: number) => [number, number];
     readonly brics_fragment_count: (a: number) => number;
     readonly brics_fragments_json: (a: number) => [number, number];
     readonly butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
@@ -1152,6 +1201,7 @@ export interface InitOutput {
     readonly estate_indices_json: (a: number) => [number, number];
     readonly fcfp4_bitvec: (a: number) => [number, number];
     readonly fcfp6_bitvec: (a: number) => [number, number];
+    readonly find_reaction_center_json: (a: number, b: number) => [number, number];
     readonly gasteiger_charges_json: (a: number) => [number, number];
     readonly generate_3d_minimized_pdb: (a: number) => [number, number];
     readonly generate_3d_pdb: (a: number) => [number, number];
@@ -1170,6 +1220,7 @@ export interface InitOutput {
     readonly maxmin_picks_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly mcs_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly mmp_pairs_json: (a: number, b: number) => [number, number, number, number];
+    readonly mol2_to_smiles: (a: number, b: number) => [number, number];
     readonly mol_block_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly mol_block_from_smiles: (a: number, b: number) => [number, number, number, number];
     readonly mol_from_cdxml: (a: number, b: number) => [number, number, number];
@@ -1242,6 +1293,7 @@ export interface InitOutput {
     readonly molhandle_wiener_index: (a: number) => number;
     readonly mr_per_atom_json: (a: number) => [number, number];
     readonly murcko_scaffold: (a: number) => number;
+    readonly nearest_neighbors_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly neutralize_charges: (a: number) => number;
     readonly normalize_reaction_smiles: (a: number, b: number) => [number, number, number, number];
     readonly pains_matches_json: (a: number) => [number, number];
@@ -1258,9 +1310,11 @@ export interface InitOutput {
     readonly slogp_vsa_json: (a: number) => [number, number];
     readonly smarts_match_atoms: (a: number, b: number, c: number) => [number, number, number, number];
     readonly smiles_array_to_sdf: (a: number, b: number) => [number, number, number, number];
+    readonly smiles_to_mol2: (a: number, b: number) => [number, number];
     readonly smiles_to_svg_highlighted: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly smr_vsa_json: (a: number) => [number, number];
     readonly sssr_rings_json: (a: number) => [number, number];
+    readonly standardize_smiles: (a: number, b: number) => [number, number];
     readonly tanimoto_atom_pair: (a: number, b: number) => number;
     readonly tanimoto_ecfp4: (a: number, b: number) => number;
     readonly tanimoto_ecfp6: (a: number, b: number) => number;

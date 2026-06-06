@@ -120,7 +120,7 @@ fn main() {
     if !error_counts.is_empty() {
         println!("--- Error breakdown ---");
         let mut sorted: Vec<_> = error_counts.iter().collect();
-        sorted.sort_by_key(|(_, &v)| std::cmp::Reverse(v));
+        sorted.sort_by_key(|&(_, v)| std::cmp::Reverse(v));
         for (k, v) in sorted.iter().take(20) {
             println!("  {v:6}  {k}");
         }
