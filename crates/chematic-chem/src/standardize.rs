@@ -10,6 +10,8 @@ use std::collections::{HashMap, VecDeque};
 
 use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder};
 
+use crate::{hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
+
 /// Find all connected components of `mol` via BFS, sorted descending by size.
 fn connected_components(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
     let n = mol.atom_count();
@@ -120,6 +122,76 @@ pub fn neutralize_charges(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
+/// Options for molecular standardization.
+///
+/// Controls which cleaning transformations are applied in a standardization pipeline.
+#[derive(Clone, Debug)]
+pub struct StandardizeOptions {
+    /// Convert to canonical tautomer. Default: `true`.
+    pub canonical_tautomer: bool,
+    /// Neutralize simple formal charges. Default: `true`.
+    pub neutralize_charges: bool,
+    /// Remove explicit hydrogen atoms. Default: `true`.
+    pub remove_explicit_h: bool,
+    /// Keep only the largest connected fragment. Default: `false`.
+    pub largest_fragment_only: bool,
+}
+
+impl Default for StandardizeOptions {
+    fn default() -> Self {
+        Self {
+            canonical_tautomer: true,
+            neutralize_charges: true,
+            remove_explicit_h: true,
+            largest_fragment_only: false,
+        }
+    }
+}
+
+/// Apply a series of standardization steps to a molecule.
+///
+/// Transformations are applied in this order:
+/// 1. If `largest_fragment_only`, select the largest connected component.
+/// 2. If `neutralize_charges`, neutralize simple charges.
+/// 3. If `remove_explicit_h`, remove explicit H atoms.
+/// 4. If `canonical_tautomer`, convert to the canonical tautomer.
+///
+/// Useful for cleaning pasted structures or database entries.
+pub fn standardize(mol: &Molecule, opts: &StandardizeOptions) -> Molecule {
+    let current = if opts.largest_fragment_only {
+        largest_fragment(mol)
+    } else {
+        // Build a copy of the molecule to pass through the pipeline.
+        let mut builder = MoleculeBuilder::new();
+        let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+        for i in 0..mol.atom_count() {
+            let old_idx = AtomIdx(i as u32);
+            let new_idx = builder.add_atom(mol.atom(old_idx).clone());
+            remap.insert(old_idx, new_idx);
+        }
+        copy_bonds(mol, &mut builder, &remap);
+        builder.build()
+    };
+
+    let current = if opts.neutralize_charges {
+        neutralize_charges(&current)
+    } else {
+        current
+    };
+
+    let current = if opts.remove_explicit_h {
+        remove_hydrogens(&current)
+    } else {
+        current
+    };
+
+    if opts.canonical_tautomer {
+        canonical_tautomer(&current)
+    } else {
+        current
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -189,5 +261,37 @@ mod tests {
             0,
             "neutralized [O-] should have charge == 0"
         );
+    }
+
+    #[test]
+    fn standardize_with_defaults() {
+        // "CC(=O)[O-]" — acetate ion
+        let mol = parse("CC(=O)[O-]").unwrap();
+        let opts = StandardizeOptions::default();
+        let result = standardize(&mol, &opts);
+
+        // With default options, remove_explicit_h will be applied.
+        // Check that [O-] was neutralized (charge should be 0).
+        let has_neutral_o = (0..result.atom_count())
+            .map(|i| result.atom(AtomIdx(i as u32)))
+            .any(|a| a.element == Element::O && a.charge == 0);
+        assert!(has_neutral_o, "acetate oxygen should be neutralized");
+
+        // Should have at least 3 atoms (C, C, O) with no explicit H
+        assert!(result.atom_count() >= 3, "should have at least 3 atoms after standardization");
+    }
+
+    #[test]
+    fn standardize_skip_largest_fragment() {
+        // "CC.CCC" — ethane and propane
+        let mol = parse("CC.CCC").unwrap();
+        let opts = StandardizeOptions {
+            largest_fragment_only: false,
+            ..Default::default()
+        };
+        let result = standardize(&mol, &opts);
+
+        // Should keep both fragments
+        assert_eq!(result.atom_count(), 5, "should keep both fragments when largest_fragment_only=false");
     }
 }

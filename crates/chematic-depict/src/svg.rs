@@ -622,6 +622,142 @@ fn build_isolated_label(symbol: &str, atomic_number: u8, h: u8, charge: i8) -> S
     format!("{}{}", base, format_charge(charge)) // R3, B5
 }
 
+/// Position where H count should be displayed relative to the atom symbol.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HPosition {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+/// Hydrogen count and position for condensed notation (e.g., "CH₃", "NH₂").
+#[derive(Debug, Clone)]
+pub struct AtomLabel {
+    pub symbol: String,
+    pub h_count: u8,
+    pub h_position: HPosition,
+}
+
+/// Return the structured display label for an atom with implicit H position.
+///
+/// Terminal atoms (degree 1) and isolated atoms show condensed notation:
+/// - "CH₃" for terminal carbon
+/// - "NH₂" for terminal nitrogen
+/// - "OH" for terminal oxygen
+///
+/// Interior carbons (degree ≥ 2) with no charge/isotope return empty label.
+pub fn atom_label_with_h(mol: &Molecule, idx: AtomIdx) -> AtomLabel {
+    let atom = mol.atom(idx);
+    let is_carbon = atom.element.atomic_number() == 6;
+    let degree = mol.degree(idx);
+
+    // Single-atom molecule: always show as molecular formula
+    if mol.atom_count() == 1 {
+        let h = chematic_core::implicit_hcount(mol, idx);
+        return AtomLabel {
+            symbol: atom.element.symbol().to_string(),
+            h_count: h,
+            h_position: HPosition::Right,
+        };
+    }
+
+    // Isolated degree-0 atom: show label
+    if degree == 0 {
+        let h = chematic_core::implicit_hcount(mol, idx);
+        return AtomLabel {
+            symbol: atom.element.symbol().to_string(),
+            h_count: h,
+            h_position: HPosition::Right,
+        };
+    }
+
+    // Interior carbon with no charge/isotope: no label (skeletal structure)
+    if is_carbon && atom.charge == 0 && atom.isotope.is_none() && degree >= 2 {
+        return AtomLabel {
+            symbol: String::new(),
+            h_count: 0,
+            h_position: HPosition::Right,
+        };
+    }
+
+    // Terminal atom (degree 1): show with implicit H count
+    if degree == 1 {
+        let h = chematic_core::implicit_hcount(mol, idx);
+        return AtomLabel {
+            symbol: atom.element.symbol().to_string(),
+            h_count: h,
+            h_position: HPosition::Right,
+        };
+    }
+
+    // Non-terminal non-carbon with implicit H: show element symbol and H count
+    if !is_carbon {
+        let h = chematic_core::implicit_hcount(mol, idx);
+        return AtomLabel {
+            symbol: atom.element.symbol().to_string(),
+            h_count: h,
+            h_position: HPosition::Right,
+        };
+    }
+
+    // Fallback: carbon with charge or isotope
+    AtomLabel {
+        symbol: atom.element.symbol().to_string(),
+        h_count: 0,
+        h_position: HPosition::Right,
+    }
+}
+
+/// Return the display label string for an atom in condensed notation.
+///
+/// Examples:
+/// - Terminal carbon with 3 H: "CH₃"
+/// - Non-terminal nitrogen with 2 H: "NH₂"
+/// - Hydroxyl (O with 1 H): "OH"
+/// - Isolated oxygen with 2 H: "H₂O" (Hill notation)
+/// - Interior carbon in skeleton: "" (empty)
+pub fn atom_display_label(mol: &Molecule, idx: AtomIdx) -> String {
+    let label = atom_label_with_h(mol, idx);
+
+    if label.symbol.is_empty() {
+        return String::new();
+    }
+
+    if label.h_count == 0 {
+        return label.symbol;
+    }
+
+    // For single-atom molecules, use Hill notation (H first for non-carbon)
+    let is_isolated = mol.atom_count() == 1;
+    let is_carbon = mol.atom(idx).element.atomic_number() == 6;
+
+    if is_isolated && !is_carbon {
+        // Hill notation: H first for non-carbon atoms (e.g., H₂O not OH₂)
+        let h_subscript = match label.h_count {
+            1 => "H".to_string(),
+            2 => "H₂".to_string(),
+            3 => "H₃".to_string(),
+            4 => "H₄".to_string(),
+            5 => "H₅".to_string(),
+            n => format!("H{}", n),
+        };
+        return format!("{}{}", h_subscript, label.symbol);
+    }
+
+    // For other cases, element symbol followed by H subscript
+    let h_subscript = match label.h_count {
+        1 => "H".to_string(),
+        2 => "H₂".to_string(),
+        3 => "H₃".to_string(),
+        4 => "H₄".to_string(),
+        5 => "H₅".to_string(),
+        n => format!("H{}", n),
+    };
+
+    format!("{}{}", label.symbol, h_subscript)
+}
+
 /// Escape XML special characters in a label string.
 fn escape_xml(s: &str) -> String {
     s.replace('&', "&amp;")
@@ -744,6 +880,38 @@ mod tests {
     #[test]
     fn test_atom_color_rgb_nitrogen_blue() {
         assert_eq!(atom_color_rgb(7), [0x30, 0x50, 0xF8]);
+    }
+
+    #[test]
+    fn test_atom_display_label_terminal_carbon() {
+        let m = mol("CC");
+        // Terminal carbon has 3 implicit H
+        let label = atom_display_label(&m, chematic_core::AtomIdx(0));
+        assert_eq!(label, "CH₃", "terminal carbon should show CH₃");
+    }
+
+    #[test]
+    fn test_atom_display_label_interior_carbon() {
+        let m = mol("CCC");
+        // Interior carbons have 2 implicit H
+        let label = atom_display_label(&m, chematic_core::AtomIdx(1));
+        assert_eq!(label, "", "interior carbon should have empty label");
+    }
+
+    #[test]
+    fn test_atom_display_label_isolated_oxygen() {
+        let m = mol("O");
+        let label = atom_display_label(&m, chematic_core::AtomIdx(0));
+        assert_eq!(label, "H₂O", "isolated oxygen should show H₂O");
+    }
+
+    #[test]
+    fn test_atom_label_with_h_nitrogen() {
+        let m = mol("CCN");
+        let label = atom_label_with_h(&m, chematic_core::AtomIdx(2));
+        assert_eq!(label.symbol, "N");
+        assert_eq!(label.h_count, 2);
+        assert_eq!(label.h_position, HPosition::Right);
     }
 
     #[test]

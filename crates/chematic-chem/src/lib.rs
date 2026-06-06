@@ -10,6 +10,7 @@ pub mod alerts;
 pub mod xlogp3;
 pub mod brics;
 pub mod cip;
+pub mod hash;
 pub mod named_groups;
 pub mod descriptors;
 pub mod diversity;
@@ -49,7 +50,7 @@ pub use named_groups::{detect_named_functional_groups, NamedGroup};
 pub use qed::qed;
 pub use sa_score::sa_score;
 pub use scaffold::{generic_murcko_scaffold, murcko_scaffold};
-pub use standardize::{largest_fragment, neutralize_charges};
+pub use standardize::{largest_fragment, neutralize_charges, StandardizeOptions, standardize};
 pub use tautomer::{canonical_tautomer, enumerate_tautomers};
 pub use topo_descriptors::{
     bertz_ct,
@@ -63,3 +64,4 @@ pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
 pub use vsa::{peoe_vsa, slogp_vsa, smr_vsa};
 pub use abbreviations::{abbreviations, expand_abbreviation};
 pub use xlogp3::{xlogp3, xlogp3_per_atom};
+pub use hash::{mol_hash, are_identical};
