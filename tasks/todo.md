@@ -227,16 +227,16 @@
 | chematic-core          | 30      | 完了     |
 | chematic-smiles        | 57      | 完了     |
 | chematic-perception    | 14      | 完了     |
-| chematic-mol           | 37      | 完了     |
+| chematic-mol           | 53      | 完了     |
 | chematic-depict        | 30      | 完了     |
-| chematic-chem          | 287     | 完了     |
+| chematic-chem          | 216     | 完了     |
 | chematic-fp            | 50      | 完了     |
-| chematic-smarts        | 77      | 完了     |
+| chematic-smarts        | 82      | 完了     |
 | chematic-3d            | 68      | 完了     |
 | chematic-rxn           | 26      | 完了     |
-| chematic-wasm          | 66      | 完了     |
+| chematic-wasm          | 162     | 完了     |
 | chematic               | 1       | 完了     |
-| **合計**               | **743** | —        |
+| **合計**               | **869** | —        |
 
 ---
 
@@ -393,23 +393,31 @@ Sprint L: ✅ Sprint L audit — セキュリティ/バグ/リファクタリン
 Sprint M: ✅ SMARTS ハイライト表示 + クリックハイライト + 反応スキーム（demo 0.1.11）
 Sprint N: ✅ タブ UI + 3D インタラクティブビューア（demo 0.1.12）
 Sprint P: ✅ SDF/MOL WASM バインディング + EState インデックス + パスフィンガープリント WASM（v0.1.14）
-          → chematic-chem/src/estate.rs（Hall-Kier 1991 EState インデックス）
-          → chematic-fp/src/path_fp.rs（RDKit スタイルパス FP）
-          → WASM: mol_from_sdf_block, sdf_to_smiles_json, estate_indices_json, tanimoto_path
 Sprint Q: ✅ IFG + SA Score + Gasteiger 電荷 + VSA 記述子 + MaxMin/Butina（v0.1.15）
-          → chematic-chem/src/ifg.rs（Ertl 2017 官能基識別）
-          → chematic-chem/src/gasteiger.rs（Gasteiger-Marsili PEOE 部分電荷）
-          → chematic-chem/src/vsa.rs（SlogP_VSA × 12、SMR_VSA × 10、PEOE_VSA × 14）
-          → chematic-chem/src/sa_score.rs（合成アクセシビリティスコア・複雑度ベース）
-          → chematic-chem/src/diversity.rs（MaxMin 多様性ピッキング + Butina クラスタリング）
           → テスト: 697 → 736（+39）
 Sprint R: ✅ E/Z 二重結合立体化学 SMILES 出力（v0.1.16）
-          → canonical.rs の write_chain + dfs_mark で Up/Down 方向を DFS トラバーサル方向に合わせて反転
-          → テスト: 736 → 742（+6: ez_e_stable, ez_z_stable, ez_fluoro_e/z, ez_e_ne_z, canonical_preserves_ez）
 Sprint S: ✅ SA スコア フラグメントテーブル実装（v0.1.17）
-          → sa_score.rs: ダミー 10 エントリ → 実データ 1034 エントリ（145 分子コーパス、u64 FNV-1a ハッシュ、i16 対数頻度スコア）
-          → morgan_fp_counts 直接使用（旧プライベート 32-bit ハッシュを廃止）
-          → ソート済みスライス + partition_point バイナリサーチで O(log 1034) 検索
-          → tools/gen_sa_table/: コーパスからテーブルを再生成するオフラインツール（新規）
-          → テスト: 742 → 743（+1: taxol_harder_than_aspirin）
+          → テスト: 742 → 743（+1）
+Sprint T: ✅ per-atom カラーハイライト + 名前付き官能基検出 + 原子情報 API（demo v0.1.18）
+Sprint U: ✅ インタラクティブ記事向け WASM 利便性 API（v0.1.19）
+
+## Phase 8 — WASM 機能拡充・ファイル形式・編集 API（v0.1.20〜v0.1.21）
+
+Sprint V–AA: ✅ WASM エクスポート 84 → 103 に拡張（v0.1.20）
+  - Murcko / 互変異性体 / 標準化 / MACCS / 一括記述子 / MOL 2D座標修正
+  - PAINS/CIP 詳細 / ECFP6 / Dice / 3D 形状記述子 / MaxMin・Butina / MCS
+  - V3000 読み込み / 3D 最小化 / SDF プロパティ読み書き / SMARTS ハイライトグリッド
+  - XYZ/PDB I/O / per-atom 記述子 / SSSR / カスタム ECFP / 立体異性体列挙
+  - BRICS SMILES / AtomPair・Torsion bitvec / FCFP6 / SDF 書き込み
+  - FCFP4/6 bitvec / Dice ECFP6 / write_smiles / 反応 SMILES 正規化
+  - ConformerEnsemble WASM / R-group 分解 / MMP 分析
+  - CML read/write / CDXML read / Mutable API / DepictData / SDF・V3000 write / CPK
+  - テスト: 743 → 863（+120）
+
+Sprint v0.1.21: ✅ Mutable API 拡張・SDF/CDXML 機能強化（v0.1.21）
+  - chematic-core: with_atom_charge, with_atom_element, with_bond_added → (Mol, BondIdx)
+  - chematic-mol: parse_mol_with_coords, parse_sdf_with_coords, parse_cdxml_all, CDXML 立体化学
+  - chematic-depict: depict_data_with_coords
+  - WASM: mol_with_atom_charge, mol_with_atom_element, cdxml_to_smiles_json, mol_block_coords_json, depict_data_with_coords_json
+  - テスト: 863 → 869（+6）
 ```
