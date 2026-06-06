@@ -408,6 +408,23 @@ export function cdxml_to_smiles_json(cdxml: string): string;
 export function cip_assignments_json(mol: MolHandle): string;
 
 /**
+ * Compute direct Coulomb energy for a molecule with Gasteiger partial charges.
+ *
+ * Returns JSON object: `{ "coulomb_energy": E, "unit": "kcal/mol" }`
+ *
+ * # Arguments
+ * * `mol` - Molecule to evaluate
+ *
+ * # Example (JavaScript)
+ * ```js
+ * const mol = parse_smiles("CCO");
+ * const result = coulomb_energy_json(mol);
+ * // { "coulomb_energy": -12.34, "unit": "kcal/mol" }
+ * ```
+ */
+export function coulomb_energy_json(mol: MolHandle): string;
+
+/**
  * Return the CPK color (CSS hex string) for the given element symbol.
  *
  * Returns `"#000000"` (black) for carbon and unknown elements.
@@ -934,6 +951,15 @@ export function remove_hydrogens(mol: MolHandle): MolHandle;
 export function rgroup_decompose_json(smiles_json: string, core_smarts: string): string;
 
 /**
+ * Run molecular dynamics simulation and return trajectory as JSON.
+ *
+ * Returns JSON object with trajectory frames: `{ "frames": [{ "step": N, "potential": E, "kinetic": K, "temp": T }, …] }`
+ * Uses NVT ensemble (Berendsen thermostat) at 300 K by default.
+ * Note: Limited to molecules with ~50 atoms or fewer for practical WASM performance.
+ */
+export function run_md_json(mol: MolHandle, steps: number, temp_k: number): string;
+
+/**
  * Apply a SMIRKS reaction template and return product SMILES as a JSON string.
  *
  * `reactants_smiles`: pipe-separated SMILES, one per reactant slot in the SMIRKS.
@@ -1170,6 +1196,7 @@ export interface InitOutput {
     readonly conformerhandle_mol: (a: number) => number;
     readonly conformerhandle_new: (a: number, b: number) => [number, number, number];
     readonly conformerhandle_remove_conformer: (a: number, b: number) => number;
+    readonly coulomb_energy_json: (a: number) => [number, number];
     readonly cpk_color: (a: number, b: number) => [number, number];
     readonly depict_data_json: (a: number) => [number, number];
     readonly depict_data_with_coords_json: (a: number, b: number, c: number) => [number, number];
@@ -1301,6 +1328,7 @@ export interface InitOutput {
     readonly peoe_vsa_json: (a: number) => [number, number];
     readonly remove_hydrogens: (a: number) => number;
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly run_md_json: (a: number, b: number, c: number) => [number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly sa_score: (a: number) => number;
     readonly sdf_from_records_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];

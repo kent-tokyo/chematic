@@ -946,6 +946,37 @@ export function cip_assignments_json(mol) {
 }
 
 /**
+ * Compute direct Coulomb energy for a molecule with Gasteiger partial charges.
+ *
+ * Returns JSON object: `{ "coulomb_energy": E, "unit": "kcal/mol" }`
+ *
+ * # Arguments
+ * * `mol` - Molecule to evaluate
+ *
+ * # Example (JavaScript)
+ * ```js
+ * const mol = parse_smiles("CCO");
+ * const result = coulomb_energy_json(mol);
+ * // { "coulomb_energy": -12.34, "unit": "kcal/mol" }
+ * ```
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function coulomb_energy_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.coulomb_energy_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Return the CPK color (CSS hex string) for the given element symbol.
  *
  * Returns `"#000000"` (black) for carbon and unknown elements.
@@ -2294,6 +2325,31 @@ export function rgroup_decompose_json(smiles_json, core_smarts) {
         return getStringFromWasm0(ptr3, len3);
     } finally {
         wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Run molecular dynamics simulation and return trajectory as JSON.
+ *
+ * Returns JSON object with trajectory frames: `{ "frames": [{ "step": N, "potential": E, "kinetic": K, "temp": T }, …] }`
+ * Uses NVT ensemble (Berendsen thermostat) at 300 K by default.
+ * Note: Limited to molecules with ~50 atoms or fewer for practical WASM performance.
+ * @param {MolHandle} mol
+ * @param {number} steps
+ * @param {number} temp_k
+ * @returns {string}
+ */
+export function run_md_json(mol, steps, temp_k) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.run_md_json(mol.__wbg_ptr, steps, temp_k);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
 
