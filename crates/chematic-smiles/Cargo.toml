@@ -7,13 +7,13 @@ license.workspace = true
 repository.workspace = true
 description = "OpenSMILES parser, writer and canonical SMILES for chematic — pure Rust, WASM-compatible"
 keywords = ["smiles", "parser", "cheminformatics", "rdkit", "wasm"]
-categories = ["science", "parser-implementations"]
+categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations"]
 readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-smiles"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.26" }
+chematic-core = { path = "../chematic-core", version = "0.1.27" }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

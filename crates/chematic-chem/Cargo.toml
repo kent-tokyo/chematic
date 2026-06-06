@@ -7,16 +7,16 @@ license.workspace = true
 repository.workspace = true
 description = "Molecular descriptors (MW, LogP, TPSA, CIP), standardization and Murcko scaffold for chematic"
 keywords = ["descriptors", "lipinski", "tpsa", "logp", "cheminformatics"]
-categories = ["science"]
+categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-chem"
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.1.26" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.26" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.26" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.26" }
-chematic-fp         = { path = "../chematic-fp",         version = "0.1.26" }
+chematic-core       = { path = "../chematic-core",       version = "0.1.27" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.27" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.27" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.27" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.1.27" }
 
 [dev-dependencies]

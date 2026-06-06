@@ -7,11 +7,14 @@ license.workspace = true
 repository.workspace = true
 description = "Local IUPAC name generation for chematic — pure-Rust, no network required"
 keywords = ["cheminformatics", "iupac", "chemistry", "nomenclature"]
-categories = ["science"]
+categories = ["science", "science::computational-chemistry::cheminformatics"]
+readme = "../../README.md"
+homepage = "https://github.com/kent-tokyo/chematic"
+documentation = "https://docs.rs/chematic-iupac"
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.1.26" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.26" }
+chematic-core       = { path = "../chematic-core",       version = "0.1.27" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.27" }
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.1.26" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.27" }

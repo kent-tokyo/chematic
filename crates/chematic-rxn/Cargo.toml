@@ -7,12 +7,12 @@ license.workspace = true
 repository.workspace = true
 description = "Reaction SMILES/SMIRKS parser and writer for chematic — pure-Rust RDKit alternative"
 keywords = ["reaction", "smiles", "smirks", "cheminformatics", "chemistry"]
-categories = ["science", "parser-implementations"]
+categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations"]
 readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-rxn"
 
 [dependencies]
-chematic-core   = { path = "../chematic-core",   version = "0.1.26" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.1.26" }
-chematic-smarts = { path = "../chematic-smarts", version = "0.1.26" }
+chematic-core   = { path = "../chematic-core",   version = "0.1.27" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.27" }
+chematic-smarts = { path = "../chematic-smarts", version = "0.1.27" }

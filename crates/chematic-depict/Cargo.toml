@@ -7,15 +7,15 @@ license.workspace = true
 repository.workspace = true
 description = "2D SVG molecular depiction for chematic — pure-Rust RDKit alternative"
 keywords = ["svg", "depiction", "2d", "cheminformatics", "chemistry"]
-categories = ["science", "visualization"]
+categories = ["science", "science::computational-chemistry::cheminformatics", "visualization"]
 readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-depict"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.26" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.26" }
-chematic-rxn = { path = "../chematic-rxn", version = "0.1.26" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.1.26" }
+chematic-core = { path = "../chematic-core", version = "0.1.27" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.27" }
+chematic-rxn = { path = "../chematic-rxn", version = "0.1.27" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.27" }
 
 [dev-dependencies]

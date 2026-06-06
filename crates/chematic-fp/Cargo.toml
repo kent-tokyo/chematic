@@ -7,15 +7,15 @@ license.workspace = true
 repository.workspace = true
 description = "ECFP4/6, MACCS 166-bit and topological path fingerprints with Tanimoto/Dice similarity for chematic"
 keywords = ["fingerprints", "ecfp", "morgan", "tanimoto", "cheminformatics"]
-categories = ["science"]
+categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-fp"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.26" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.26" }
-chematic-smarts = { path = "../chematic-smarts", version = "0.1.26" }
+chematic-core = { path = "../chematic-core", version = "0.1.27" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.27" }
+chematic-smarts = { path = "../chematic-smarts", version = "0.1.27" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }
