@@ -7,13 +7,13 @@ license.workspace = true
 repository.workspace = true
 description = "SSSR ring perception and Hückel aromaticity for chematic — pure-Rust RDKit alternative"
 keywords = ["aromaticity", "rings", "sssr", "cheminformatics", "chemistry"]
-categories = ["science"]
+categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-perception"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.26" }
+chematic-core = { path = "../chematic-core", version = "0.1.27" }
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.1.26" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.27" }
