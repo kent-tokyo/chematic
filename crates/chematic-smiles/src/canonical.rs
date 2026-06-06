@@ -20,6 +20,59 @@ use std::collections::{HashMap, HashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 
+/// Return the atom indices sorted into canonical (Morgan-rank) order.
+///
+/// The returned `Vec<usize>` lists atom positions (0-based) in the order they
+/// would be encountered during a canonical DFS write.  Atoms with higher
+/// Morgan rank appear earlier.  This is the same ordering `canonical_smiles`
+/// uses internally.
+///
+/// Useful for normalizing atom-indexed property arrays to a canonical order.
+pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
+    let ranks = morgan_ranks(mol);
+    let mut order: Vec<usize> = (0..mol.atom_count()).collect();
+    // Sort descending by rank (highest rank first, as in canonical DFS).
+    order.sort_unstable_by(|&a, &b| ranks[b].cmp(&ranks[a]));
+    order
+}
+
+/// Return `true` if atoms `a` and `b` are topologically equivalent (symmetric).
+///
+/// Two atoms are considered equivalent when they have the same Morgan rank —
+/// meaning no graph-based feature (element, charge, degree, neighbour
+/// environment, …) can distinguish them.
+///
+/// # Example
+/// All six carbons of benzene are equivalent; the two carbons of ethane are
+/// equivalent; the two oxygens of acetic acid are **not** (different degree).
+/// Assign a symmetry class number to every atom.
+///
+/// Atoms with the same class number are topologically equivalent (symmetric).
+/// Class numbers are consecutive integers starting at 0, ordered by increasing
+/// Morgan rank (lowest rank = class 0).
+///
+/// # Example
+/// Benzene returns `[0,0,0,0,0,0]` (all 6 carbons equivalent).
+/// Toluene returns `[0,1,1,1,1,1,2]` (methyl-C, ring-Cs, ipso-C).
+pub fn equivalent_atom_classes(mol: &Molecule) -> Vec<usize> {
+    let ranks = morgan_ranks(mol);
+    // Sort unique rank values to assign stable class numbers.
+    let mut unique: Vec<u64> = ranks.clone();
+    unique.sort_unstable();
+    unique.dedup();
+    ranks.iter().map(|r| unique.partition_point(|&u| u < *r)).collect()
+}
+
+pub fn are_atoms_equivalent(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
+    let ranks = morgan_ranks(mol);
+    let ia = a.0 as usize;
+    let ib = b.0 as usize;
+    if ia >= ranks.len() || ib >= ranks.len() {
+        return false;
+    }
+    ranks[ia] == ranks[ib]
+}
+
 /// Return the canonical SMILES for a molecule.
 ///
 /// For molecules with no atoms, returns an empty string.

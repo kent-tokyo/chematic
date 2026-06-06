@@ -7,6 +7,9 @@
 
 pub mod abbreviations;
 pub mod alerts;
+pub mod esol;
+pub mod isotope_distribution;
+pub mod logd;
 pub mod xlogp3;
 pub mod brics;
 pub mod cip;
@@ -52,20 +55,23 @@ pub use ifg::{identify_functional_groups, FunctionalGroup};
 pub use named_groups::{detect_named_functional_groups, NamedGroup};
 pub use qed::qed;
 pub use sa_score::sa_score;
-pub use scaffold::{generic_murcko_scaffold, murcko_scaffold};
+pub use scaffold::{generic_murcko_scaffold, murcko_scaffold, scaffold_network, schuffenhauer_parents};
 pub use standardize::{largest_fragment, neutralize_charges, StandardizeOptions, standardize};
 pub use stereo::{invert_stereocenter, enumerate_stereoisomers};
-pub use tautomer::{canonical_tautomer, enumerate_tautomers};
+pub use tautomer::{TautomerConfig, canonical_tautomer, canonical_tautomer_with_config, enumerate_tautomers, enumerate_tautomers_with_config};
 pub use topo_descriptors::{
     bertz_ct,
     chi0, chi1, chi2, chi3, chi4,
     chi0v, chi1v, chi2v, chi3v, chi4v,
     kappa1, kappa2, kappa3,
     labute_asa, labute_asa_per_atom,
-    wiener_index,
+    randic_index, topological_distance_matrix, wiener_index, zagreb_index_m1,
 };
 pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
 pub use vsa::{peoe_vsa, slogp_vsa, smr_vsa};
 pub use abbreviations::{abbreviations, expand_abbreviation};
+pub use esol::esol_solubility;
+pub use isotope_distribution::isotope_distribution;
+pub use logd::{logd_profile, logd_simple};
 pub use xlogp3::{xlogp3, xlogp3_per_atom};
 pub use hash::{mol_hash, are_identical};

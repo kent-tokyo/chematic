@@ -7,7 +7,7 @@
 //! All descriptors except LabuteASA operate on the heavy-atom subgraph
 //! (hydrogen atoms excluded from path/distance calculations).
 
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::f64::consts::PI;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
@@ -429,6 +429,76 @@ pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
 ///
 /// Bond distance: `dij = clamp(|Ri−Rj|, Ri+Rj−scale, Ri+Rj)`.
 /// Implicit H atoms (radius 0.33 Å, single-bond scale 0) are included.
+/// Randić connectivity index (χ).
+///
+/// χ = Σ_{bonds} 1 / √(deg(u) × deg(v))
+///
+/// Measures branching: lower values = more branched.
+pub fn randic_index(mol: &Molecule) -> f64 {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let mut sum = 0.0f64;
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(chematic_core::BondIdx(i as u32));
+        let a = bond.atom1.0 as usize;
+        let b = bond.atom2.0 as usize;
+        if !heavy_set.contains(&a) || !heavy_set.contains(&b) {
+            continue; // skip H-containing bonds
+        }
+        let da = mol.neighbors(bond.atom1).filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize))).count() as f64;
+        let db = mol.neighbors(bond.atom2).filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize))).count() as f64;
+        if da > 0.0 && db > 0.0 {
+            sum += 1.0 / (da * db).sqrt();
+        }
+    }
+    sum
+}
+
+/// Zagreb topological index M1.
+///
+/// M1 = Σ_{atoms} deg(v)²  (heavy-atom graph only).
+pub fn zagreb_index_m1(mol: &Molecule) -> u32 {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    heavy.iter().map(|&i| {
+        let deg = mol.neighbors(chematic_core::AtomIdx(i as u32))
+            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+            .count() as u32;
+        deg * deg
+    }).sum()
+}
+
+/// Topological distance matrix for heavy atoms.
+///
+/// Entry `[i][j]` is the length of the shortest path (in bonds) between
+/// heavy atom `i` and heavy atom `j`.  Diagonal entries are 0.
+/// Disconnected atoms get `u32::MAX`.
+///
+/// The row/column index matches the atom's position in the heavy-atom list
+/// (atoms sorted by their original `AtomIdx`).
+pub fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<u32>> {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let n = heavy.len();
+    // Map original index → heavy-atom position.
+    let mut pos_of: HashMap<usize, usize> = HashMap::new();
+    for (p, &h) in heavy.iter().enumerate() {
+        pos_of.insert(h, p);
+    }
+    let mut matrix = vec![vec![u32::MAX; n]; n];
+    for p in 0..n {
+        matrix[p][p] = 0;
+        let row = bfs_from(mol, heavy[p], &heavy_set);
+        for q in 0..n {
+            let d = row[heavy[q]];
+            if d != usize::MAX {
+                matrix[p][q] = d as u32;
+            }
+        }
+    }
+    matrix
+}
+
 pub fn labute_asa(mol: &Molecule) -> f64 {
     labute_asa_per_atom(mol).iter().sum()
 }
@@ -635,5 +705,39 @@ mod tests {
         let bz = labute_asa(&mol("c1ccccc1"));  // aromatic
         let ch = labute_asa(&mol("C1CCCCC1"));  // saturated
         assert!(bz < ch, "benzene ASA {bz:.2} < cyclohexane ASA {ch:.2}");
+    }
+
+    #[test]
+    fn randic_index_ethane() {
+        // Ethane: 1 edge between two degree-1 nodes → Randic = 1/sqrt(1*1) = 1.0
+        let m = mol("CC");
+        assert!((randic_index(&m) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn zagreb_m1_ethane() {
+        // Ethane: 2 atoms each with degree 1 → Σ d² = 1+1 = 2
+        let m = mol("CC");
+        assert_eq!(zagreb_index_m1(&m), 2);
+    }
+
+    #[test]
+    fn distance_matrix_ethane() {
+        let m = mol("CC");
+        let dm = topological_distance_matrix(&m);
+        assert_eq!(dm.len(), 2);
+        assert_eq!(dm[0][0], 0);
+        assert_eq!(dm[0][1], 1);
+        assert_eq!(dm[1][0], 1);
+        assert_eq!(dm[1][1], 0);
+    }
+
+    #[test]
+    fn distance_matrix_propane() {
+        // C-C-C: d(0,1)=1, d(0,2)=2, d(1,2)=1
+        let m = mol("CCC");
+        let dm = topological_distance_matrix(&m);
+        assert_eq!(dm[0][2], 2);
+        assert_eq!(dm[1][2], 1);
     }
 }

@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod align;
+pub mod usr;
 pub mod conformer;
 pub mod coords;
 pub mod dg;
@@ -16,6 +18,8 @@ pub mod shape_descriptors;
 pub mod stereo3d;
 pub mod xyz;
 
+pub use align::{AlignResult, align_coords, apply_alignment, rmsd_no_align};
+pub use usr::{usr_descriptors, usr_similarity};
 pub use conformer::{ConformerEnsemble, ConformerError};
 pub use coords::{Coords3D, Point3};
 pub use dg::generate_coords;

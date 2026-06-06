@@ -52,12 +52,12 @@ All phases complete. **948 tests, all passing. Zero C/C++ dependencies.**
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
-| `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `add/remove_atom/bond`, `fragments()`, `is_connected()`, `formula_with_isotopes`, `validate_valence` | 48    |
+| `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `add/remove_atom/bond`, `fragments()`, `is_connected()`, `formula_with_isotopes`, `validate_valence`; `StereoGroup`/`StereoGroupKind` | 48    |
 | `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES                                                              | 57    |
-| `chematic-perception` | SSSR, Hückel aromaticity, `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`   | 18    |
-| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W             | 61    |
+| `chematic-perception` | SSSR, Hückel aromaticity, `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 18    |
+| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W | 61    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG | 43    |
-| `chematic-chem`       | 40+ descriptors, BRICS, QED, standardize, mol_hash, stereo (invert/enumerate), CIP, IFG, `parse_condensed` | 248   |
+| `chematic-chem`       | 40+ descriptors, BRICS, QED, standardize, mol_hash, stereo (invert/enumerate), CIP, IFG, `parse_condensed`, `isotope_distribution` | 248   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion — Tanimoto/Dice                           | 50    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching (`match_chiral_tag`), atom/bond compare modes                  | 87    |
 | `chematic-3d`         | 3D coordinate generation, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ       | 68    |
@@ -372,6 +372,14 @@ Mutable `Molecule` (`add/remove_atom/bond`, `set_charge/element`, `fragments`, `
 `xlogp3()` (Cheng 2007 atom types), `chematic-iupac` new crate (pure Rust, offline IUPAC naming),
 `BricsConfig { min_fragment_size }`, `MatchConfig { max_matches }`,
 `McsConfig { atom_compare: AtomCompare, bond_compare: BondCompare }` for scaffold hopping.
+
+### Phase 16 — E/Z from 2D, StereoGroup, Isotope Distribution (v0.1.27, complete)
+`assign_ez_from_2d(mol, coords)` and `cip_ez_descriptor(mol, bond_idx, coords)` — E/Z double-bond
+stereochemistry from 2D layout coordinates (cross-product + 1-sphere CIP priority, no wedge bonds required).
+`StereoGroup` / `StereoGroupKind` (Absolute / Or / And) added to `chematic-core`; `Molecule` now carries
+`stereo_groups`; V3000 MOL parser and writer support `BEGIN COLLECTION / MDLV30/STEABS / MDLV30/STEOR<n> / MDLV30/STEAND<n>`.
+`isotope_distribution(mol, resolution) -> Vec<(f64, f64)>` — convolution-based isotope envelope with
+explicit-isotope-label support and Da-level peak merging (H, C, N, O, S, Cl, Br, and 10+ more elements).
 
 ### Phase 13 — `MolMetadata` builder API (v0.1.27, complete)
 `MolMetadata::default().with_name("aspirin").with_comment("...")` — fluent builder for MOL/SDF metadata.

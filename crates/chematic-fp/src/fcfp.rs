@@ -162,12 +162,12 @@ pub fn fcfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
 
 /// FCFP4 fingerprint (radius = 2, 2048 bits).
 pub fn fcfp4(mol: &Molecule) -> BitVec2048 {
-    fcfp(mol, &EcfpConfig { radius: 2, nbits: 2048 })
+    fcfp(mol, &EcfpConfig::default())
 }
 
 /// FCFP6 fingerprint (radius = 3, 2048 bits).
 pub fn fcfp6(mol: &Molecule) -> BitVec2048 {
-    fcfp(mol, &EcfpConfig { radius: 3, nbits: 2048 })
+    fcfp(mol, &EcfpConfig { radius: 3, nbits: 2048, use_chirality: false })
 }
 
 /// Tanimoto similarity between two molecules using FCFP4.

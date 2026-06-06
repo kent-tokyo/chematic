@@ -24,18 +24,19 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 // Evaluation context (precomputed per `find_matches` call)
 // ---------------------------------------------------------------------------
 
-/// Per-call evaluation context: the target molecule and its precomputed ring set.
+/// Per-call evaluation context: the target molecule, precomputed ring set, and match config.
 ///
 /// Computing the SSSR is expensive; this struct ensures it is done once per
 /// `find_matches` call, not once per atom evaluation.
 struct EvalCtx<'a> {
     mol: &'a Molecule,
     rings: RingSet,
+    config: &'a MatchConfig,
 }
 
 impl<'a> EvalCtx<'a> {
-    fn new(mol: &'a Molecule) -> Self {
-        Self { mol, rings: find_sssr(mol) }
+    fn new(mol: &'a Molecule, config: &'a MatchConfig) -> Self {
+        Self { mol, rings: find_sssr(mol), config }
     }
 }
 
@@ -44,7 +45,7 @@ impl<'a> EvalCtx<'a> {
 // ---------------------------------------------------------------------------
 
 /// Configuration for subgraph matching.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct MatchConfig {
     /// Maximum number of matches to return.
     ///
@@ -52,6 +53,30 @@ pub struct MatchConfig {
     /// the first `n` results — useful for large molecules or generic queries
     /// where an unbounded search would be slow or produce huge `Vec`s.
     pub max_matches: Option<usize>,
+
+    /// When `true`, `[@]` / `[@@]` chirality primitives in the query are
+    /// enforced against the target atom's chirality annotation.
+    ///
+    /// Defaults to `false` (chirality is ignored, matching RDKit's default
+    /// `useChirality=False` behaviour).
+    pub use_chirality: bool,
+
+    /// When `true`, isotope primitives (`[13C]`, `[2H]`, …) are enforced
+    /// against the target atom's isotope label.
+    ///
+    /// Defaults to `false` (isotopes are ignored, matching RDKit's default
+    /// `useIsotopes=False` behaviour).
+    pub use_isotopes: bool,
+}
+
+impl Default for MatchConfig {
+    fn default() -> Self {
+        Self {
+            max_matches: None,
+            use_chirality: false,
+            use_isotopes: false,
+        }
+    }
 }
 
 /// Find all non-overlapping (injective) embeddings of `query` in `mol`.
@@ -79,7 +104,7 @@ pub fn find_matches_with_config(
         return vec![];
     }
 
-    let ctx = EvalCtx::new(mol);
+    let ctx = EvalCtx::new(mol, config);
     let mut mapping: HashMap<usize, AtomIdx> = HashMap::new();
     let mut results: Vec<HashMap<usize, AtomIdx>> = Vec::new();
 
@@ -263,6 +288,28 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             };
             hyb == *h
         }
+        AtomPrimitive::Isotope(mass) => {
+            // When use_isotopes is false (default), isotope constraints are ignored
+            // so that [13C] matches any carbon — matching RDKit's useIsotopes=False default.
+            if !ctx.config.use_isotopes {
+                return true;
+            }
+            ctx.mol.atom(idx).isotope == Some(*mass)
+        }
+        AtomPrimitive::Chirality(kind) => {
+            // When use_chirality is false (default), chirality constraints are ignored
+            // so that [@] matches any atom — matching RDKit's useChirality=False default.
+            if !ctx.config.use_chirality {
+                return true;
+            }
+            use chematic_core::Chirality;
+            let atom_chirality = ctx.mol.atom(idx).chirality;
+            match kind {
+                1 => atom_chirality == Chirality::CounterClockwise,
+                2 => atom_chirality == Chirality::Clockwise,
+                _ => atom_chirality != Chirality::None, // 0 = any specified chirality
+            }
+        }
     }
 }
 
@@ -387,5 +434,87 @@ fn eval_bond_primitive(
             // A bond is a "ring bond" if both its endpoints share at least one common ring.
             ctx.rings.rings().iter().any(|ring| ring.contains(&a) && ring.contains(&b))
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{parse_smarts, find_matches, find_matches_with_config};
+    use chematic_smiles::parse;
+
+    // -- Isotope matching -----------------------------------------------------
+
+    #[test]
+    fn test_isotope_ignored_by_default() {
+        // [13C] query should match any carbon when use_isotopes=false (default).
+        let mol = parse("CC").unwrap();
+        let query = parse_smarts("[13C]").unwrap();
+        let matches = find_matches(&query, &mol);
+        assert_eq!(matches.len(), 2, "[13C] with use_isotopes=false should match all carbons");
+    }
+
+    #[test]
+    fn test_isotope_enforced_when_enabled() {
+        // Build a molecule with one 13C and one 12C.
+        use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
+        let mut b = MoleculeBuilder::new();
+        let mut c13 = Atom::new(Element::C);
+        c13.isotope = Some(13);
+        let c13_idx = b.add_atom(c13);
+        let c12_idx = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c13_idx, c12_idx, BondOrder::Single).unwrap();
+        let mol = b.build();
+
+        let query = parse_smarts("[13C]").unwrap();
+        let config = MatchConfig { use_isotopes: true, ..MatchConfig::default() };
+        let matches = find_matches_with_config(&query, &mol, &config);
+        assert_eq!(matches.len(), 1, "[13C] with use_isotopes=true should match only the 13C atom");
+        assert_eq!(matches[0][&0], AtomIdx(0));
+    }
+
+    #[test]
+    fn test_no_isotope_match_on_unlabeled() {
+        // [13C] with use_isotopes=true should not match unlabeled carbons.
+        let mol = parse("CC").unwrap(); // both atoms have isotope=None
+        let query = parse_smarts("[13C]").unwrap();
+        let config = MatchConfig { use_isotopes: true, ..MatchConfig::default() };
+        let matches = find_matches_with_config(&query, &mol, &config);
+        assert_eq!(matches.len(), 0, "[13C] with use_isotopes=true should not match unlabeled C");
+    }
+
+    // -- Chirality matching ---------------------------------------------------
+
+    #[test]
+    fn test_chirality_ignored_by_default() {
+        // [@] query should match any atom when use_chirality=false (default).
+        let mol = parse("N[C@@H](C)C(=O)O").unwrap(); // L-alanine
+        let query = parse_smarts("[C@@H]").unwrap();
+        let matches = find_matches(&query, &mol);
+        // Default: chirality ignored, so [@] matches any C-H regardless of chirality.
+        assert!(!matches.is_empty(), "chirality should be ignored by default");
+    }
+
+    #[test]
+    fn test_chirality_enforced_when_enabled() {
+        // L-alanine has [C@@H] — query [C@@H] should match, [C@H] should not.
+        let mol = parse("N[C@@H](C)C(=O)O").unwrap();
+
+        let q_ccw = parse_smarts("[C@@H]").unwrap(); // CCW (@@) = kind 2
+        let q_cw  = parse_smarts("[C@H]").unwrap();  // CW  (@)  = kind 1
+
+        let config = MatchConfig { use_chirality: true, ..MatchConfig::default() };
+
+        let m_ccw = find_matches_with_config(&q_ccw, &mol, &config);
+        let m_cw  = find_matches_with_config(&q_cw,  &mol, &config);
+
+        // [C@@H] must match L-alanine's chiral center.
+        assert!(!m_ccw.is_empty(), "[C@@H] should match L-alanine (@@)");
+        // [C@H] must NOT match L-alanine.
+        assert!(m_cw.is_empty(), "[C@H] should not match L-alanine (@@)");
     }
 }

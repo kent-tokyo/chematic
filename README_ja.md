@@ -43,12 +43,12 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）；ミュータブル API・`fragments`・`validate_valence`・`formula_with_isotopes` | 48      |
+| `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）；ミュータブル API・`fragments`・`validate_valence`・`formula_with_isotopes`・`StereoGroup`/`StereoGroupKind` | 48      |
 | `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES                                                                                               | 57      |
-| `chematic-perception`  | SSSR、Hückel 芳香族性、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`                                     | 18      |
-| `chematic-mol`         | MOL/SDF V2000+V3000（R/W）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き                                  | 61      |
+| `chematic-perception`  | SSSR、Hückel 芳香族性、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 18      |
+| `chematic-mol`         | MOL/SDF V2000+V3000（R/W）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 61      |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG、DepictData              | 43      |
-| `chematic-chem`        | 40+ 記述子、BRICS、QED、標準化、分子ハッシング、立体化学、`parse_condensed`、CIP、IFG、Gasteiger                                    | 248     |
+| `chematic-chem`        | 40+ 記述子、BRICS、QED、標準化、分子ハッシング、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、`isotope_distribution`         | 248     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice                                               | 50      |
 | `chematic-smarts`      | SMARTS（再帰・原子価）、VF2（`MatchConfig`）、MCS（`match_chiral_tag` によるキラリティマッチング対応）                                    | 87      |
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ 形式                                                                    | 68      |
@@ -219,6 +219,12 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 `xlogp3()` (Cheng 2007 原子型)、`chematic-iupac`（純 Rust オフライン IUPAC 命名）、
 `BricsConfig { min_fragment_size }`、`MatchConfig { max_matches }`、
 `McsConfig { atom_compare: AtomCompare, bond_compare: BondCompare }` でヘテロ環 scaffold hopping 対応。
+
+### Phase 16（v0.1.27、完成）
+`assign_ez_from_2d(mol, coords)` / `cip_ez_descriptor(mol, bond_idx, coords)` — 2D 座標の外積から E/Z 二重結合立体化学を割り当て（ウェッジ結合不要、1-sphere CIP 優先度）。
+`StereoGroup` / `StereoGroupKind`（Absolute / Or / And）を `chematic-core` に追加；`Molecule` に `stereo_groups` フィールドを追加；
+V3000 MOL パーサー・ライターが `BEGIN COLLECTION / MDLV30/STEABS / MDLV30/STEOR<n> / MDLV30/STEAND<n>` に対応。
+`isotope_distribution(mol, resolution) -> Vec<(f64, f64)>` — 畳み込みによる同位体エンベロープ計算（明示的同位体ラベル優先、H/C/N/O/S/Cl/Br 等 14 元素以上対応）。
 
 ### Phase 13（v0.1.27、完成）
 `MolMetadata::default().with_name("アスピリン").with_comment("...")` — MOL/SDF メタデータ用 fluent builder。

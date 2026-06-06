@@ -43,12 +43,12 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
-| `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）；可变 API、`fragments`、`validate_valence`、`formula_with_isotopes` | 48     |
+| `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）；可变 API、`fragments`、`validate_valence`、`formula_with_isotopes`；`StereoGroup`/`StereoGroupKind` | 48     |
 | `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES                                                                | 57     |
-| `chematic-perception` | SSSR、Hückel 芳香性、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`        | 18     |
-| `chematic-mol`        | MOL/SDF V2000+V3000（读写）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写 | 61     |
+| `chematic-perception` | SSSR、Hückel 芳香性、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 18     |
+| `chematic-mol`        | MOL/SDF V2000+V3000（读写）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 61     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG         | 43     |
-| `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、分子哈希、立体化学、`parse_condensed`、CIP、IFG、Gasteiger            | 248    |
+| `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、分子哈希、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、`isotope_distribution` | 248    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice               | 50     |
 | `chematic-smarts`     | SMARTS、VF2、MCS（支持 `match_chiral_tag` 手性匹配、原子/键比较模式）                                 | 87     |
 | `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ 格式                                 | 68     |
@@ -213,6 +213,12 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 `xlogp3()`（Cheng 2007 原子类型），`chematic-iupac`（纯 Rust 离线 IUPAC 命名），
 `BricsConfig { min_fragment_size }`，`MatchConfig { max_matches }`，
 `McsConfig { atom_compare, bond_compare }` 支持异环 scaffold hopping。
+
+### 第十六阶段（v0.1.27，已完成）
+`assign_ez_from_2d(mol, coords)` / `cip_ez_descriptor(mol, bond_idx, coords)` — 通过 2D 坐标叉积计算 E/Z 双键立体化学（无需楔形键，采用 1-sphere CIP 优先级）。
+`StereoGroup` / `StereoGroupKind`（Absolute / Or / And）加入 `chematic-core`；`Molecule` 新增 `stereo_groups` 字段；
+V3000 MOL 解析器与写入器支持 `BEGIN COLLECTION / MDLV30/STEABS / MDLV30/STEOR<n> / MDLV30/STEAND<n>`。
+`isotope_distribution(mol, resolution) -> Vec<(f64, f64)>` — 基于卷积的同位素包络计算（支持显式同位素标记优先，H/C/N/O/S/Cl/Br 等 14+ 元素）。
 
 ### 第十三阶段（v0.1.27，已完成）
 `MolMetadata::default().with_name("阿司匹林").with_comment("...")` — MOL/SDF 元数据 fluent builder。

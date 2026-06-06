@@ -1,7 +1,7 @@
 # chematic vs RDKit — 定量比較レポート
 
-**作成日**: 2026-05-27  
-**chematic バージョン**: 0.1.3  
+**作成日**: 2026-06-06  
+**chematic バージョン**: 0.1.26  
 **RDKit バージョン**: 2024.x (Python)  
 **比較分子数**: 175 分子（diverse set: 有機小分子・アミノ酸・複素環・天然物・FDA 承認薬）
 
@@ -13,11 +13,23 @@ chematic の各プロパティ計算結果を RDKit のリファレンス値と�
 MW・HAC・HBD はほぼ完全一致；TPSA・HBA・LogP は今回の改善で大幅に精度向上；
 ECFP4 Tanimoto 類似度は順位相関 ρ=0.92 と実用的な精度を示す。
 
+### v0.1.26 での追加機能
+
+- **Chirality-Aware MCS** (`match_chiral_tag` オプション)
+  - MCS 計算時にキラリティを区別するオプションを追加
+  - エナンチオマー（鏡像異性体）のマッチングを防止可能
+  - `find_mcs_with_config()` で `McsConfig { match_chiral_tag: true }` として利用
+  
+- **Condensed Formula Parser** (`parse_condensed()`)
+  - 凝縮式表記から分子構造への変換 (e.g., "CH3COOH" → Molecule)
+  - 官能基の自動置換 (COOH → C(=O)O, OH → O 等)
+  - 括弧による分岐構造に対応
+
 ---
 
 ## 1. 物性値精度（n=175 分子）
 
-### 統計サマリー（v0.1.3 最新）
+### 統計サマリー（v0.1.26 — v0.1.3 以降安定版）
 
 | プロパティ | MAE | RMSE | Pearson r | 評価 |
 |-----------|----:|-----:|----------:|------|
@@ -27,6 +39,8 @@ ECFP4 Tanimoto 類似度は順位相関 ρ=0.92 と実用的な精度を示す�
 | TPSA (Å²) | 0.759 | 4.403 | 0.9941 | ✅ 優秀 |
 | 水素結合アクセプター (HBA) | 0.137 | 0.441 | 0.9750 | ✅ 優秀 |
 | LogP (Crippen) | **0.298** | 0.637 | **0.9441** | ✅ 優秀 |
+
+**注**: v0.1.3 以降、物性値計算精度は一定（v0.1.4 ～ v0.1.26 で変更なし）
 
 ### バージョン間比較
 
@@ -198,7 +212,59 @@ cargo run -p chematic-chem --example rdkit_compare --release
 
 ---
 
-## 8. 今後の改善候補
+## 8. v0.1.26 新機能 — MCS とフォーミュラパーサー
+
+### 8-1. Chirality-Aware MCS
+
+**背景**: 標準的な MCS（最大公通部分構造）は、原子・結合のトポロジーのみに基づき、
+キラリティ（立体化学）を考慮しない。そのため、エナンチオマーも「全原子マッチ」
+として扱われる。
+
+**chematic v0.1.26 での対応**:
+```rust
+let config = McsConfig {
+    match_chiral_tag: true,  // キラリティを区別
+    ..Default::default()
+};
+let mcs = find_mcs_with_config(mol1, mol2, &config);
+```
+
+**検証例（R-アラニン vs S-アラニン）**:
+- `match_chiral_tag: false` (デフォルト) → MCS 全 5 原子マッチ（トポロジー同一）
+- `match_chiral_tag: true` → MCS キラル中心のみ除外、非キラル原子 4 個のマッチ
+
+**RDKit との比較**:
+- RDKit の `HasSubstructMatch()` は chirality フラグで同様の制御が可能
+- chematic はフレキシブルな `McsConfig` で統一的に対応
+
+### 8-2. Condensed Formula Parser
+
+**機能**: 凝縮式表記（Hill notation 風）から分子を解析。
+
+```rust
+use chematic::chem::parse_condensed;
+
+let mol = parse_condensed("CH3COOH")?;  // acetic acid
+let mol = parse_condensed("CH3(CH2)4CH3")?;  // n-hexane
+```
+
+**サポート**:
+- 多文字元素記号：Cl, Br, Si, As, Se, Sn, Te, Pb, Bi, Po, At
+- 官能基置換：COOH → C(=O)O, CHO → C=O, NO2 → [N+](=O)[O-], CN → C#N など 9 種
+- 括弧による分岐：(CH2) 記法
+- 数字による繰り返し：CC は エタン、CCC は プロパン
+
+**RDKit との比較**:
+- RDKit には公式な condensed-to-SMILES コンバーター無し（ユーザー責務で SMILES 記述）
+- chematic は化学記法から直接 Molecule を構築可能
+
+**現在の制限**:
+- H カウント（CH3 の "3" は繰り返し回数として解釈）については、
+  今後の改善候補（完全な Hill 表記対応）
+
+---
+
+## 9. 今後の改善候補
 
 | 優先度 | 改善内容 | 期待効果 |
 |-------|---------|---------|

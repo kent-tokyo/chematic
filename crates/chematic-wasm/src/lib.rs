@@ -2480,7 +2480,7 @@ pub fn sssr_rings_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn ecfp_bitvec_custom(mol: &MolHandle, radius: u32, nbits: usize) -> Vec<u8> {
     let nbits = match nbits { 256 | 512 | 1024 | 2048 => nbits, _ => 2048 };
-    let fp = chematic_fp::ecfp(&mol.inner, &chematic_fp::EcfpConfig { radius, nbits });
+    let fp = chematic_fp::ecfp(&mol.inner, &chematic_fp::EcfpConfig { radius, nbits, use_chirality: false });
     let byte_count = nbits / 8;
     (0..byte_count)
         .map(|byte_idx| {
@@ -2596,6 +2596,144 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
     }
 
     Ok(format!("[{}]", results.join(",")))
+}
+
+// ---------------------------------------------------------------------------
+// Reaction center analysis
+// ---------------------------------------------------------------------------
+
+/// Analyze a reaction SMILES and return the reaction center as JSON.
+///
+/// JSON schema: `{ broken: [[a1,a2],...], formed: [[a1,a2],...], changed: [a,...] }`
+/// where atom indices are 0-based within the first reactant molecule.
+/// Returns an error string prefixed with `"error:"` on failure.
+#[wasm_bindgen]
+pub fn find_reaction_center_json(reaction_smiles: &str) -> String {
+    let rxn = match chematic_rxn::parse_reaction(reaction_smiles) {
+        Ok(r) => r,
+        Err(e) => return format!("error:{e}"),
+    };
+    let center = chematic_rxn::find_reaction_center(&rxn);
+    let broken: Vec<String> = center.broken_bonds
+        .iter()
+        .map(|(a, b)| format!("[{},{}]", a.0, b.0))
+        .collect();
+    let formed: Vec<String> = center.formed_bonds
+        .iter()
+        .map(|(a, b)| format!("[{},{}]", a.0, b.0))
+        .collect();
+    let changed: Vec<String> = center.changed_atoms
+        .iter()
+        .map(|a| a.0.to_string())
+        .collect();
+    format!(
+        "{{\"broken\":[{}],\"formed\":[{}],\"changed\":[{}]}}",
+        broken.join(","),
+        formed.join(","),
+        changed.join(","),
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Structure standardization
+// ---------------------------------------------------------------------------
+
+/// Standardize a SMILES string and return the canonical SMILES of the result.
+///
+/// Applies: largest fragment extraction → charge neutralization.
+/// Returns `"error:<msg>"` on parse failure.
+#[wasm_bindgen]
+pub fn standardize_smiles(smiles: &str) -> String {
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(e) => return format!("error:{e}"),
+    };
+    let mol = chematic_chem::largest_fragment(&mol);
+    let mol = chematic_chem::neutralize_charges(&mol);
+    chematic_smiles::canonical_smiles(&mol)
+}
+
+// ---------------------------------------------------------------------------
+// Reaction balance check
+// ---------------------------------------------------------------------------
+
+/// Check whether a reaction SMILES is atom-balanced.
+///
+/// Returns JSON: `{ "balanced": true|false, "diff": ["C: 1 reactant vs 2 product", ...] }`
+/// Returns `"error:<msg>"` on parse failure.
+#[wasm_bindgen]
+pub fn balance_check_json(reaction_smiles: &str) -> String {
+    let rxn = match chematic_rxn::parse_reaction(reaction_smiles) {
+        Ok(r) => r,
+        Err(e) => return format!("error:{e}"),
+    };
+    let result = chematic_rxn::balance_check(&rxn);
+    let diff: Vec<String> = result.diff().into_iter().map(|s| format!("\"{}\"", s)).collect();
+    format!(
+        "{{\"balanced\":{},\"diff\":[{}]}}",
+        result.balanced,
+        diff.join(",")
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Nearest-neighbour similarity search
+// ---------------------------------------------------------------------------
+
+/// Find the k nearest neighbours of a query SMILES in a list of db SMILES.
+///
+/// `db_smiles_json`: JSON array of SMILES strings, e.g. `["CC","c1ccccc1"]`.
+/// Returns JSON: `[{"index":0,"tanimoto":0.95},...]` sorted by descending Tanimoto.
+/// Returns `"error:<msg>"` on parse failure.
+#[wasm_bindgen]
+pub fn nearest_neighbors_json(query_smiles: &str, db_smiles_json: &str, k: usize) -> String {
+    let query = match chematic_smiles::parse(query_smiles) {
+        Ok(m) => m,
+        Err(e) => return format!("error:query parse failed: {e}"),
+    };
+
+    // Parse the db SMILES JSON array (simple deserialisation without serde).
+    let inner = db_smiles_json.trim().trim_start_matches('[').trim_end_matches(']');
+    let db: Vec<chematic_core::Molecule> = inner
+        .split(',')
+        .filter_map(|s| {
+            let s = s.trim().trim_matches('"');
+            chematic_smiles::parse(s).ok()
+        })
+        .collect();
+
+    let results = chematic_fp::nearest_neighbors(&query, &db, k, chematic_fp::FpType::Ecfp4);
+    let entries: Vec<String> = results
+        .iter()
+        .map(|(i, t)| format!("{{\"index\":{i},\"tanimoto\":{t:.6}}}"))
+        .collect();
+    format!("[{}]", entries.join(","))
+}
+
+// ---------------------------------------------------------------------------
+// MOL2 I/O
+// ---------------------------------------------------------------------------
+
+/// Parse a Tripos MOL2 string and return SMILES.
+///
+/// Returns `"error:<msg>"` on failure.
+#[wasm_bindgen]
+pub fn mol2_to_smiles(mol2_str: &str) -> String {
+    match chematic_mol::parse_mol2(mol2_str) {
+        Ok((mol, _)) => chematic_smiles::write(&mol),
+        Err(e) => format!("error:{e}"),
+    }
+}
+
+/// Convert a SMILES to a minimal Tripos MOL2 string (no 3D coordinates).
+///
+/// Returns `"error:<msg>"` on parse failure.
+#[wasm_bindgen]
+pub fn smiles_to_mol2(smiles: &str) -> String {
+    match chematic_smiles::parse(smiles) {
+        Ok(mol) => chematic_mol::write_mol2(&mol, &[]),
+        Err(e) => format!("error:{e}"),
+    }
 }
 
 // ---------------------------------------------------------------------------

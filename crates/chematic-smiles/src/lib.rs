@@ -29,9 +29,12 @@
 pub mod canonical;
 pub mod error;
 pub mod parser;
+pub mod smi_file;
 pub mod writer;
 
-pub use canonical::canonical_smiles;
+pub use canonical::{canonical_smiles, canonical_atom_order, equivalent_atom_classes, morgan_ranks};
+pub use canonical::are_atoms_equivalent;
+pub use smi_file::{parse_smi_file, write_smi_file};
 pub use error::SmilesError;
 pub use parser::parse;
 pub use writer::write;

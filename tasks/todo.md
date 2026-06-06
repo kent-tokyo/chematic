@@ -461,6 +461,29 @@ Sprint v0.1.27: ✅ MolMetadata builder API（v0.1.27）
   - SDF エクスポート時に MolMetadata::default().with_name("...").with_comment("...") で名前・コメントを設定可能に
   - テスト: 900 → 902（+2）
 
+Sprint v0.1.27-ext: ✅ E/Z 二重結合立体化学（2D 座標から）+ 拡張 StereoGroup + 同位体分布（v0.1.27）
+  - chematic-perception: assign_ez_from_2d(mol, coords) — 2D 座標の外積から E/Z を割り当て
+                          cip_ez_descriptor(mol, bond_idx, coords) -> Option<CipCode> — 特定結合の E/Z 返却
+                          [crates/chematic-perception/src/stereo2d.rs; lib.rs に再エクスポート]
+                          アルゴリズム: 二重結合ベクトル vs 置換基位置ベクトルの 2D 外積 + 1-sphere CIP 優先度
+  - chematic-core: StereoGroupKind 列挙型（Absolute / Or(u32) / And(u32)）、StereoGroup 構造体
+                   Molecule.stereo_groups フィールド + stereo_groups() / set_stereo_groups() / add_stereo_group() メソッド
+                   MoleculeBuilder に add_stereo_group() メソッド + from_molecule() が stereo_groups をコピー
+                   [crates/chematic-core/src/stereo_group.rs; lib.rs に再エクスポート]
+  - chematic-mol: V3000 パーサーが BEGIN COLLECTION / MDLV30/STEABS / MDLV30/STEOR<n> / MDLV30/STEAND<n> を解析
+                  V3000 ライターが stereo_groups 存在時に COLLECTION ブロックを出力
+                  ラウンドトリップテスト追加
+                  [crates/chematic-mol/src/mol3000.rs]
+  - chematic-chem: isotope_distribution(mol, resolution) -> Vec<(f64, f64)>
+                   (m/z, 相対強度) ペアを返す、基準ピーク=1.0 で正規化
+                   resolution パラメータで指定 Da 以内のピークをマージ
+                   H/C/N/O/F/Si/P/S/Cl/Br/I/Se/Na/K/As の同位体対応
+                   明示的同位体ラベル（atom.isotope）を優先使用
+                   [crates/chematic-chem/src/isotope_distribution.rs; lib.rs に再エクスポート]
+  - chematic（アンブレラクレート）: lib.rs の //! モジュールドキュメント全面改訂（機能表・クイックスタート例・フィーチャーフラグ表）
+                   Cargo.toml: description 更新、categories に parser-implementations/rendering 追加
+                   [package.metadata.docs.rs] セクション追加: features=["full"], rustdoc-args=["--cfg","docsrs"]
+
 Sprint v0.1.28: ✅ 全残タスク実装（v0.1.28）
   - Issue C: BricsConfig { min_fragment_size } + brics_fragments_with_config（chematic-chem）
   - Issue E: MatchConfig { max_matches } + find_matches_with_config（chematic-smarts）
@@ -582,3 +605,21 @@ Issue #1 のパターン: **アルゴリズムが位相的には正しい結果�
   - **状態**: ✅ Sprint v0.1.28 で実装済み（`MatchConfig { max_matches }` + `find_matches_with_config`）
   - **実装済み場所**: `crates/chematic-smarts/src/match_vf2.rs` (lines 73-78, match_recursive lines 102-104)
   - max_matches でメモリ爆発を防止可能
+
+### Issue 候補 F (🟡 中): VF2 部分構造検索 — キラリティ考慮なし
+  - **状態**: 未着手
+  - **症状**: `[C@@H](F)(Cl)Br` の SMARTS でキラルな部分構造を検索すると、R 体・S 体の両方がヒットする
+            （`matchChiralTag` 相当の VF2 サイドの制約が未実装）
+  - **RDKit 対応**: `RWMol.HasSubstructMatch(query, useChirality=True)`
+  - **対象**: `crates/chematic-smarts/src/match_vf2.rs`
+  - **実装方針**: `atoms_compatible()` で SMARTS 側の chirality `@`/`@@` フラグと分子側の `CipCode::R/S` を照合
+  - **優先度**: 中（MCS matchChiralTag の VF2 拡張として自然な対）
+
+### Issue 候補 G (🟢 低): ECFP フィンガープリント — キラリティ不変量なし
+  - **状態**: 未着手
+  - **症状**: R/S 鏡像体（例: R-Ala vs S-Ala）の ECFP4 Tanimoto が 1.0 になる
+            （chirality は原子不変量に含まれておらず、鏡像体を区別しない）
+  - **RDKit 対応**: `GetMorganFingerprintAsBitVect(mol, radius, useChirality=True)`
+  - **対象**: `crates/chematic-fp/src/ecfp.rs`
+  - **実装方針**: `EcfpConfig { use_chirality: bool }` を追加し、初期不変量の計算で `atom.cip_code` を組み込む
+  - **優先度**: 低（ECFP は通常キラリティなしで利用される。StereoGroup 対応後に検討）
