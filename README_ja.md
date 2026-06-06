@@ -39,7 +39,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了。**869 テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了。**877 テスト、全パス。C/C++ 依存ゼロ。**
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -50,14 +50,14 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-depict`      | 2D SVG 描画（CPK カラー・ハイライト・グリッド）、DepictData、ユーザー座標対応                                                            | 30      |
 | `chematic-chem`        | 40+ 記述子、BRICS、QED、標準化、Murcko スキャフォルド、CIP、IFG、Gasteiger、VSA、SA スコア、多様性、MMP 分析                             | 216     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice                                               | 50      |
-| `chematic-smarts`      | SMARTS（再帰・原子価・ハイブリッド化対応）、VF2 部分構造一致、MCS                                                                       | 82      |
+| `chematic-smarts`      | SMARTS（再帰・原子価・ハイブリッド化対応）、VF2 部分構造一致、MCS（ring-awareness 制約付き）                                             | 84      |
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ 形式                                                                    | 68      |
 | `chematic-rxn`         | 反応 SMILES パーサーとライター                                                                                                            | 26      |
 | `chematic-wasm`        | **100+ WASM エクスポート** — npm: `@kent-tokyo/chematic`                                                                                 | 162     |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（全サブクレート）                                                                              | 1       |
 
 ```
-cargo test --workspace   # 869 テスト、全パス
+cargo test --workspace   # 877 テスト、全パス
 ```
 
 ---
