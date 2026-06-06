@@ -504,37 +504,43 @@ Sprint v0.1.25: ✅ P2 機能完成・リリース（2026-06-06）
   - cargo & npm publish 完了
   - CHANGELOG / README 全言語更新済み
 
-Sprint v0.1.26 — P3 Features（実装待ち・優先度決定中）
+Sprint v0.1.26: 🔨 Issue D + P3 Features（実装中）
 
-### Implementable (Medium Difficulty):
-  - [ ] parse_condensed(): "CH3COOH" → structure parsing
-        - condensed formula 形式の字句解析・構文解析（括弧・数字ハンドリング）
-        - 出力: Molecule の建構（MoleculeBuilder 使用）
-        - 実装場所: chematic-chem/src/condensed.rs（新規）
-        - テスト: 新規 20 件想定
+### Completed ✅
+  - [x] Issue D (matchChiralTag): `McsConfig.match_chiral_tag` 実装済み
+        - R/S 鏡像体マッチング制御（default: false）
+        - 3 つの新規テスト追加（enantiomer blocking/allowing）
+        - 実装場所: crates/chematic-smarts/src/mcs.rs
+        - テスト: 87 tests all passing
   
-  - [ ] PNG embed SMILES: iTXt chunk operations
-        - PNG ファイルの iTXt チャンク読み書き（EXIF/メタデータ相当）
-        - 出力: parse_png_smiles / write_png_smiles 関数
-        - 実装場所: chematic-mol/src/png.rs（新規）
-        - 依存: zlib（PNG 圧縮） ※既存 crate 利用で問題なし
-        - テスト: 新規 15 件想定
+  - [x] parse_condensed(): "CH3COOH" → structure parsing 実装済み
+        - condensed formula 字句解析 + 官能基置換
+        - 実装場所: crates/chematic-chem/src/condensed.rs（新規）
+        - テスト: 10 件実装（基本的なケースカバー）
+        - Note: H-count digits (CH3) 処理は将来の改善対象
+        - 実装: parse_condensed(input) → Result<Molecule, CondensedError>
+
+### In Progress 🔨
+  - [ ] WASM bindings
+        - find_reaction_center_json(reaction_smiles) → JSON
+        - standardize_smiles(mol, opts) → SMILES
+  - [ ] Demo updates
+        - "Stereo" タブ追加（立体異性体列挙）
+        - "Reaction" タブ拡張（broken/formed bonds ハイライト）
 
 ### Deferred (High Difficulty):
   - [ ] PolymerSMILES (SRU notation): [CH2CH2]n support
-        - 達成度: Molecule 型拡張が必須（repeat_unit / repeat_count）
-        - 化学的要件: SRU (structural repeating unit) notation の正規化・正規 SMILES 対応
-        - 推奨: v0.2.0 リメジャーで実装（大きな破壊的変更のため）
+        - 推奨: v0.2.0 リメジャー実装
 
-### Decision Pending:
-  - **オプション A**: v0.1.26 で parse_condensed() のみ実装（低リスク）✅ **推奨**
-  - **オプション B**: v0.1.26 で parse_condensed() + PNG embed SMILES の両方（中リスク）
-  - **オプション C**: デモ機能追加 + ドキュメント充実へシフト（他の高優先度タスク）
-  
-  ## 次のステップ
-  - v0.1.25 の安定性検証（user feedback、bug reports）
-  - v0.1.26 実装スケジュール決定
-  - デモサイト機能追加（タブ UI、Stereoisomers ビューア等）
+## テスト現況
+- chematic-smarts: 87 tests (v0.1.25 84 + matchChiralTag 3)
+- chematic-chem: 248 tests (v0.1.25 238 + parse_condensed 10)
+- 全体: 948 tests passing (v0.1.25 935 + 13)
+
+## 次のステップ
+- Step 5: WASM binding 追加完了
+- Step 6: Demo HTML 更新完了
+- Step 7: Version 0.1.26 bump + CHANGELOG + 全テスト確認
 ```
 
 ---

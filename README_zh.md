@@ -39,7 +39,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成。**935 个测试，全部通过。零 C/C++ 依赖。**
+所有阶段已完成。**948 个测试，全部通过。零 C/C++ 依赖。**
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
@@ -48,9 +48,9 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-perception` | SSSR、Hückel 芳香性、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`        | 18     |
 | `chematic-mol`        | MOL/SDF V2000+V3000（读写）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写 | 61     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG         | 43     |
-| `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、分子哈希、立体化学（反演·枚举）、CIP、IFG、Gasteiger、`expand_abbreviation` | 244    |
+| `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、分子哈希、立体化学、`parse_condensed`、CIP、IFG、Gasteiger            | 248    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice               | 50     |
-| `chematic-smarts`     | SMARTS 解析器（递归、价键、杂化），VF2 子图同构，MCS（含环感知约束）                                  | 84     |
+| `chematic-smarts`     | SMARTS、VF2、MCS（支持 `match_chiral_tag` 手性匹配、原子/键比较模式）                                 | 87     |
 | `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ 格式                                 | 68     |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（含生成物价键验证）                      | 30     |
 | `chematic-wasm`       | **100+ WASM 导出** — npm：`@kent-tokyo/chematic`                                                      | 162    |
@@ -58,7 +58,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic`            | 带功能标志的伞形 crate（含所有子 crate，含 `iupac`）                                                  | 1      |
 
 ```
-cargo test --workspace   # 935 个测试，全部通过
+cargo test --workspace   # 948 个测试，全部通过
 ```
 
 ---

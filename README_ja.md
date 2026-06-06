@@ -39,7 +39,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了。**935 テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了。**948 テスト、全パス。C/C++ 依存ゼロ。**
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -48,9 +48,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-perception`  | SSSR、Hückel 芳香族性、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`                                     | 18      |
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き                                  | 61      |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG、DepictData              | 43      |
-| `chematic-chem`        | 40+ 記述子、BRICS、QED、標準化、分子ハッシング、立体化学（反転・列挙）、CIP、IFG、Gasteiger、`expand_abbreviation`                    | 244     |
+| `chematic-chem`        | 40+ 記述子、BRICS、QED、標準化、分子ハッシング、立体化学、`parse_condensed`、CIP、IFG、Gasteiger                                    | 248     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice                                               | 50      |
-| `chematic-smarts`      | SMARTS（再帰・原子価）、VF2（`MatchConfig`）、MCS（`AtomCompare`/`BondCompare`/ring-awareness）                                          | 84      |
+| `chematic-smarts`      | SMARTS（再帰・原子価）、VF2（`MatchConfig`）、MCS（`match_chiral_tag` によるキラリティマッチング対応）                                    | 87      |
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ 形式                                                                    | 68      |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（生成物原子価バリデーション付き）                                        | 30      |
 | `chematic-wasm`        | **100+ WASM エクスポート** — npm: `@kent-tokyo/chematic`                                                                                 | 162     |
@@ -58,7 +58,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac` フィーチャー追加）                                                                    | 1       |
 
 ```
-cargo test --workspace   # 935 テスト、全パス
+cargo test --workspace   # 948 テスト、全パス
 ```
 
 ---
