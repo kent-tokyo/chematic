@@ -23,6 +23,7 @@ pub mod qed;
 pub mod sa_score;
 pub mod scaffold;
 pub mod standardize;
+pub mod stereo;
 pub mod tautomer;
 pub mod topo_descriptors;
 pub mod vsa;
@@ -51,6 +52,7 @@ pub use qed::qed;
 pub use sa_score::sa_score;
 pub use scaffold::{generic_murcko_scaffold, murcko_scaffold};
 pub use standardize::{largest_fragment, neutralize_charges, StandardizeOptions, standardize};
+pub use stereo::{invert_stereocenter, enumerate_stereoisomers};
 pub use tautomer::{canonical_tautomer, enumerate_tautomers};
 pub use topo_descriptors::{
     bertz_ct,

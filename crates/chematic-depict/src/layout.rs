@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, Molecule};
+use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::find_sssr;
 
 // ---------------------------------------------------------------------------
@@ -704,6 +704,63 @@ pub fn suggest_bond_direction(mol: &Molecule, atom: AtomIdx, layout: &Layout) ->
             sa.partial_cmp(&sb).unwrap()
         })
         .unwrap_or(0.0)
+}
+
+// ---------------------------------------------------------------------------
+// Bond crossing detection
+// ---------------------------------------------------------------------------
+
+/// Detect which pairs of bonds have crossing 2D segments.
+///
+/// Returns a `Vec<(BondIdx, BondIdx)>` listing all bonds that intersect in the
+/// layout. Bonds that share a common atom (adjacent bonds) are not checked.
+///
+/// Useful for assessing layout quality: an empty result indicates a crossing-free
+/// (or at least non-crossing-bond) depiction.
+pub fn detect_crossings(layout: &Layout, mol: &Molecule) -> Vec<(BondIdx, BondIdx)> {
+    let bonds: Vec<(BondIdx, (Point, Point))> = mol
+        .bonds()
+        .filter_map(|(bidx, bond)| {
+            let p1 = layout.get(bond.atom1);
+            let p2 = layout.get(bond.atom2);
+            Some((bidx, (p1, p2)))
+        })
+        .collect();
+
+    let mut crossings = Vec::new();
+
+    for i in 0..bonds.len() {
+        for j in (i + 1)..bonds.len() {
+            let (bidx_i, (p1_i, p2_i)) = bonds[i];
+            let (bidx_j, (p1_j, p2_j)) = bonds[j];
+
+            // Skip if bonds share an atom (adjacent bonds always "cross" at the vertex)
+            let a1_i = mol.bond(bidx_i).atom1;
+            let a2_i = mol.bond(bidx_i).atom2;
+            let a1_j = mol.bond(bidx_j).atom1;
+            let a2_j = mol.bond(bidx_j).atom2;
+
+            if a1_i == a1_j || a1_i == a2_j || a2_i == a1_j || a2_i == a2_j {
+                continue;
+            }
+
+            // Check for line segment intersection using cross product
+            if segments_intersect(p1_i, p2_i, p1_j, p2_j) {
+                crossings.push((bidx_i, bidx_j));
+            }
+        }
+    }
+
+    crossings
+}
+
+/// Check if two line segments AB and CD intersect (not including endpoints touching).
+fn segments_intersect(a: Point, b: Point, c: Point, d: Point) -> bool {
+    let ccw = |p1: Point, p2: Point, p3: Point| -> bool {
+        (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x)
+    };
+
+    ccw(a, c, d) != ccw(b, c, d) && ccw(a, b, c) != ccw(a, b, d)
 }
 
 // ---------------------------------------------------------------------------

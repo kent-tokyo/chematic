@@ -1,4 +1,6 @@
-use chematic_core::Molecule;
+use std::collections::HashMap;
+
+use chematic_core::{AtomIdx, Molecule};
 use chematic_smiles::{parse as parse_smiles, write as write_smiles};
 
 /// A chemical reaction with reactants, agents, and products.
@@ -75,6 +77,127 @@ pub fn write_reaction(rxn: &Reaction) -> String {
         join(&rxn.agents),
         join(&rxn.products),
     )
+}
+
+/// The center of a chemical reaction: changed atoms and bonds.
+#[derive(Debug, Clone)]
+pub struct ReactionCenter {
+    /// Bonds present in reactants but not in products (broken bonds).
+    pub broken_bonds: Vec<(AtomIdx, AtomIdx)>,
+    /// Bonds present in products but not in reactants (formed bonds).
+    pub formed_bonds: Vec<(AtomIdx, AtomIdx)>,
+    /// Atoms whose element, charge, or aromaticity changed between reactants and products.
+    /// Uses reactant-side indexing.
+    pub changed_atoms: Vec<AtomIdx>,
+}
+
+/// Identify the reaction center: bonds broken/formed and atoms changed.
+///
+/// Uses atom_map numbers (if present) to match reactant atoms to product atoms.
+/// For each mapped atom pair:
+/// - Compares bond connectivity to identify broken/formed bonds.
+/// - Compares element, charge, aromaticity to identify changed atoms.
+///
+/// Returns empty vecs if atoms lack atom_map annotations.
+pub fn find_reaction_center(rxn: &Reaction) -> ReactionCenter {
+    let mut broken_bonds = Vec::new();
+    let mut formed_bonds = Vec::new();
+    let mut changed_atoms = Vec::new();
+
+    // Build atom_map -> (mol_idx, atom_idx) for reactants and products
+    let mut reactant_map: HashMap<u16, (usize, AtomIdx)> = HashMap::new();
+    for (mol_idx, mol) in rxn.reactants.iter().enumerate() {
+        for (atom_idx, atom) in mol.atoms() {
+            if let Some(map_num) = atom.atom_map {
+                reactant_map.insert(map_num, (mol_idx, atom_idx));
+            }
+        }
+    }
+
+    let mut product_map: HashMap<u16, (usize, AtomIdx)> = HashMap::new();
+    for (mol_idx, mol) in rxn.products.iter().enumerate() {
+        for (atom_idx, atom) in mol.atoms() {
+            if let Some(map_num) = atom.atom_map {
+                product_map.insert(map_num, (mol_idx, atom_idx));
+            }
+        }
+    }
+
+    // If no atom_map, return empty
+    if reactant_map.is_empty() {
+        return ReactionCenter { broken_bonds, formed_bonds, changed_atoms };
+    }
+
+    // Identify broken bonds (edges in reactants not in products)
+    for map_num in reactant_map.keys() {
+        let (r_mol_idx, r_atom_idx) = reactant_map[map_num];
+        let r_mol = &rxn.reactants[r_mol_idx];
+        for (r_neighbor, _) in r_mol.neighbors(r_atom_idx) {
+            if let Some(neighbor_map) = r_mol.atom(r_neighbor).atom_map {
+                if neighbor_map > *map_num {
+                    // Check if this bond exists in products
+                    if let Some((p_mol_idx, p_atom_idx)) = product_map.get(map_num) {
+                        let p_mol = &rxn.products[*p_mol_idx];
+                        if let Some((_, p_neighbor)) = product_map.get(&neighbor_map) {
+                            let bond_exists = p_mol.bond_between(*p_atom_idx, *p_neighbor).is_some();
+                            if !bond_exists {
+                                broken_bonds.push((r_atom_idx, r_neighbor));
+                            }
+                        } else {
+                            broken_bonds.push((r_atom_idx, r_neighbor));
+                        }
+                    } else {
+                        broken_bonds.push((r_atom_idx, r_neighbor));
+                    }
+                }
+            }
+        }
+    }
+
+    // Identify formed bonds (edges in products not in reactants)
+    for map_num in product_map.keys() {
+        let (p_mol_idx, p_atom_idx) = product_map[map_num];
+        let p_mol = &rxn.products[p_mol_idx];
+        for (p_neighbor, _) in p_mol.neighbors(p_atom_idx) {
+            if let Some(neighbor_map) = p_mol.atom(p_neighbor).atom_map {
+                if neighbor_map > *map_num {
+                    // Check if this bond exists in reactants
+                    if let Some((r_mol_idx, r_atom_idx)) = reactant_map.get(map_num) {
+                        let r_mol = &rxn.reactants[*r_mol_idx];
+                        if let Some((_, r_neighbor)) = reactant_map.get(&neighbor_map) {
+                            let bond_exists = r_mol.bond_between(*r_atom_idx, *r_neighbor).is_some();
+                            if !bond_exists {
+                                formed_bonds.push((p_atom_idx, p_neighbor));
+                            }
+                        } else {
+                            formed_bonds.push((p_atom_idx, p_neighbor));
+                        }
+                    } else {
+                        formed_bonds.push((p_atom_idx, p_neighbor));
+                    }
+                }
+            }
+        }
+    }
+
+    // Identify changed atoms (element/charge/aromaticity changes)
+    for map_num in reactant_map.keys() {
+        let (r_mol_idx, r_atom_idx) = reactant_map[map_num];
+        let r_atom = rxn.reactants[r_mol_idx].atom(r_atom_idx);
+
+        if let Some((p_mol_idx, p_atom_idx)) = product_map.get(map_num) {
+            let p_atom = rxn.products[*p_mol_idx].atom(*p_atom_idx);
+
+            if r_atom.element != p_atom.element
+                || r_atom.charge != p_atom.charge
+                || r_atom.aromatic != p_atom.aromatic
+            {
+                changed_atoms.push(r_atom_idx);
+            }
+        }
+    }
+
+    ReactionCenter { broken_bonds, formed_bonds, changed_atoms }
 }
 
 #[cfg(test)]
