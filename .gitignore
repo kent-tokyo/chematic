@@ -1,6 +1,6 @@
 tasks/
+tasks/*.md
 CLAUDE.md
-CLAUEDE.md
 AGENTS.md
 .env
 .env.local

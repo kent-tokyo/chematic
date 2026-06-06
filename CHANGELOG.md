@@ -13,107 +13,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.21] — 2026-06-06
 
-### Added — Mutable Molecule API 拡張・SDF/CDXML 機能強化・DepictData with user coords
+### Added — Mutable Molecule API extensions, SDF/CDXML enhancements, DepictData with user coords
 
-#### `chematic-core` — Mutable Molecule API 拡張
+#### `chematic-core` — Mutable Molecule API extensions
 
-- `Molecule::with_atom_charge(idx: AtomIdx, charge: i8) -> Molecule` — 指定原子の形式電荷を変更した新 Molecule を返す
-- `Molecule::with_atom_element(idx: AtomIdx, el: Element) -> Molecule` — 指定原子の元素を変更した新 Molecule を返す（chirality・hydrogen_count・aromatic フラグはリセット）
+- `Molecule::with_atom_charge(idx: AtomIdx, charge: i8) -> Molecule` — returns a new Molecule with the formal charge of the specified atom changed
+- `Molecule::with_atom_element(idx: AtomIdx, el: Element) -> Molecule` — returns a new Molecule with the element of the specified atom changed (chirality, hydrogen_count, and aromatic flags are reset)
 
 ### Changed
 
-#### `chematic-core` — 破壊的変更 ⚠️
+#### `chematic-core` — Breaking change (WARNING)
 
-- `Molecule::with_bond_added` の戻り値を `Result<Molecule, MolError>` から `Result<(Molecule, BondIdx), MolError>` に変更。新しく追加された結合のインデックスも同時に返すようになった。
+- Changed the return type of `Molecule::with_bond_added` from `Result<Molecule, MolError>` to `Result<(Molecule, BondIdx), MolError>`. Now also returns the index of the newly added bond.
 
-#### `chematic-mol` — SDF/MOL V2000 座標取得
+#### `chematic-mol` — SDF/MOL V2000 coordinate extraction
 
-- `parse_mol_with_coords(input)` を新規追加し、`parse_mol` はそのラッパーに変更。V2000 atom block の x/y 座標（bytes 0–19）を `Vec<(f64, f64)>` として返す。
-- `parse_sdf_with_coords(input) -> Result<Vec<(Molecule, MolMetadata, Vec<(f64, f64)>)>, MolParseError>` を追加。
+- Added `parse_mol_with_coords(input)` as the new primary function; `parse_mol` is now a wrapper around it. Returns x/y coordinates from the V2000 atom block (bytes 0–19) as `Vec<(f64, f64)>`.
+- Added `parse_sdf_with_coords(input) -> Result<Vec<(Molecule, MolMetadata, Vec<(f64, f64)>)>, MolParseError>`.
 
-#### `chematic-mol` — CDXML 複数フラグメント対応
+#### `chematic-mol` — CDXML multi-fragment support
 
-- `parse_cdxml_all(input) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError>` を追加。`<fragment>` 要素ごとに独立した Molecule を返す。
-- `parse_cdxml()` は `parse_cdxml_all` の wrapper に変更（最初の fragment のみ返す互換 API を維持）。
+- Added `parse_cdxml_all(input) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError>`. Returns an independent Molecule per `<fragment>` element.
+- `parse_cdxml()` is now a wrapper around `parse_cdxml_all` (retains the compatible API returning only the first fragment).
 
-#### `chematic-mol` — CDXML 立体化学読み取り
+#### `chematic-mol` — CDXML stereochemistry parsing
 
-- `<b>` 要素の `Display` 属性を読み取り、くさび結合を BondOrder に変換:
+- Reads the `Display` attribute of `<b>` elements and converts wedge bonds to BondOrder:
   - `"WedgeBegin"` / `"WedgedHashBegin"` → `BondOrder::Up`
   - `"Hash"` / `"Dash"` / `"WedgeEnd"` / `"WedgedHashEnd"` → `BondOrder::Down`
 
 #### `chematic-depict` — DepictData with user coordinates
 
-- `depict_data_with_coords(mol: &Molecule, coords: &[(f64, f64)]) -> DepictData` を追加。ユーザーが用意した 2D 座標から DepictData を生成する（`compute_layout` を呼ばない）。
-- `compute_depict_data` を内部的に `depict_data_from_layout` ヘルパーを通じて実装するよう整理。
+- Added `depict_data_with_coords(mol: &Molecule, coords: &[(f64, f64)]) -> DepictData`. Generates DepictData from user-supplied 2D coordinates without calling `compute_layout`.
+- Refactored `compute_depict_data` to be implemented internally via a `depict_data_from_layout` helper.
 
-#### WASM 新規エクスポート
+#### WASM new exports
 
 - `mol_with_atom_charge(mol, idx, charge)` → `MolHandle`
 - `mol_with_atom_element(mol, idx, element_symbol)` → `MolHandle`
-- `cdxml_to_smiles_json(cdxml)` → 全フラグメントの canonical SMILES の JSON 配列
-- `mol_block_coords_json(mol_block)` → V2000 MOL の 2D座標 JSON `[[x,y],...]`
-- `depict_data_with_coords_json(mol, coords_json)` → ユーザー指定座標で DepictData JSON を生成
+- `cdxml_to_smiles_json(cdxml)` → JSON array of canonical SMILES for all fragments
+- `mol_block_coords_json(mol_block)` → 2D coordinate JSON for V2000 MOL `[[x,y],...]`
+- `depict_data_with_coords_json(mol, coords_json)` → generates DepictData JSON using user-specified coordinates
 
 ### Tests
 
-- 869 tests、全パス（前版 863 から +6）
+- 869 tests, all passing (+6 from previous 863)
 
 ---
 
 ## [0.1.20] — 2026-06-06
 
-### Added — Sprint V〜CC: WASM 機能拡充・ファイル形式・編集 API
+### Added — Sprint V–CC: WASM API expansion, file formats, editing API
 
-#### WASM API（84 → 103 エクスポート）
+#### WASM API (84 → 103 exports)
 
-**Sprint V — Scaffold / Tautomer / 標準化 / MACCS / 一括記述子 / MOL 2D座標**
+**Sprint V — Scaffold / Tautomer / Standardization / MACCS / bulk descriptors / MOL 2D coords**
 - `murcko_scaffold`, `generic_murcko_scaffold`, `canonical_tautomer`, `enumerate_tautomers_json`
 - `largest_fragment`, `neutralize_charges`
-- `maccs_bitvec`, `tanimoto_maccs`, `get_descriptors_json`（40+ 記述子を JSON で一括返却）
-- `to_mol_block` 2D座標修正（`compute_layout` + スケーリングで実座標を出力）
+- `maccs_bitvec`, `tanimoto_maccs`, `get_descriptors_json` (returns 40+ descriptors as JSON in one call)
+- `to_mol_block` 2D coordinate fix (`compute_layout` + scaling outputs real coordinates)
 
-**Sprint W — PAINS / CIP / ECFP6 / Dice / 3D形状記述子 / MaxMin・Butina / MCS**
+**Sprint W — PAINS / CIP / ECFP6 / Dice / 3D shape descriptors / MaxMin, Butina / MCS**
 - `pains_matches_json`, `cip_assignments_json`
 - `ecfp6_bitvec`, `tanimoto_ecfp6`, `dice_ecfp4`, `dice_maccs`
-- `shape_descriptors_json`（PMI, NPR, asphericity, eccentricity, radiusOfGyration）
+- `shape_descriptors_json` (PMI, NPR, asphericity, eccentricity, radiusOfGyration)
 - `maxmin_picks_ecfp4_json`, `butina_cluster_ecfp4_json`
 - `mcs_smiles_json`
 
-**Sprint X — V3000読み込み / 3D最小化 / SDF プロパティ / SMARTS ハイライトグリッド**
+**Sprint X — V3000 loading / 3D minimization / SDF properties / SMARTS highlight grid**
 - `mol_from_v3000_block`, `generate_3d_minimized_pdb`
-- `sdf_to_records_json`（name + properties の JSON 配列）
-- `depict_svg_grid_highlighted`（SMARTS マッチ原子を黄色ハイライト）
+- `sdf_to_records_json` (JSON array of name + properties)
+- `depict_svg_grid_highlighted` (highlights SMARTS-matched atoms in yellow)
 
-**Sprint Y — XYZ/PDB I/O / per-atom 記述子 / SSSR / カスタム ECFP / 立体異性体列挙**
+**Sprint Y — XYZ/PDB I/O / per-atom descriptors / SSSR / custom ECFP / stereo isomer enumeration**
 - `mol_from_xyz`, `to_xyz`, `mol_from_pdb`
 - `logp_per_atom_json`, `mr_per_atom_json`, `labute_asa_per_atom_json`
-- `sssr_rings_json`（原子インデックス配列の JSON 配列）
+- `sssr_rings_json` (JSON array of atom-index arrays)
 - `ecfp_bitvec_custom(mol, radius, nbits)`
-- `enumerate_stereo_isomers_json`（未指定立体中心の全異性体、上限 64 組）
+- `enumerate_stereo_isomers_json` (all isomers of unspecified stereocenters, up to 64)
 
-**Sprint Z — BRICS SMILES / FP bitvec / FCFP6 / SDF 書き込み**
-- `brics_fragments_json`（SMILES 配列）
-- `atom_pair_bitvec`, `torsion_bitvec`（各 256 bytes）
+**Sprint Z — BRICS SMILES / FP bitvec / FCFP6 / SDF writing**
+- `brics_fragments_json` (SMILES array)
+- `atom_pair_bitvec`, `torsion_bitvec` (256 bytes each)
 - `tanimoto_fcfp6`
-- `sdf_from_records_json`（プロパティ付き SDF 書き出し）
+- `sdf_from_records_json` (SDF output with properties)
 
-**Sprint AA — FCFP4/6 bitvec / Dice ECFP6 / write_smiles / 反応正規化**
+**Sprint AA — FCFP4/6 bitvec / Dice ECFP6 / write_smiles / reaction normalization**
 - `fcfp4_bitvec`, `fcfp6_bitvec`
 - `dice_ecfp6`
-- `write_smiles`（非正規化 SMILES）
+- `write_smiles` (non-canonical SMILES)
 - `normalize_reaction_smiles`
 
-**Sprint BB — ConformerEnsemble / R-group 分解**
-- `ConformerHandle` クラス: `add_generated_conformer`, `add_minimized_conformer`, `get_conformer_pdb`, `conformer_rmsd`
+**Sprint BB — ConformerEnsemble / R-group decomposition**
+- `ConformerHandle` class: `add_generated_conformer`, `add_minimized_conformer`, `get_conformer_pdb`, `conformer_rmsd`
 - `rgroup_decompose_json(smiles_json, core_smarts)` → `[{"matched":true,"r1":"..."}]`
 
-**Sprint CC — MMP 分析**
+**Sprint CC — MMP analysis**
 - `mmp_pairs_json(smiles_json)` → `[{"mol_a":"...","mol_b":"...","core":"...","fragment_a":"...","fragment_b":"..."}]`
 
-**CML / CDXML ファイル形式**（ゼロ外部依存の手書き XML パーサー）
-- `mol_from_cml`, `to_cml`（CML 読み書き）
-- `mol_from_cdxml`（ChemDraw XML 読み込みのみ、書き込みは仕様非公開のため未実装）
+**CML / CDXML file formats** (hand-written XML parser with zero external dependencies)
+- `mol_from_cml`, `to_cml` (CML read/write)
+- `mol_from_cdxml` (ChemDraw XML read only; write not implemented due to non-public specification)
 
 **Mutable Molecule API**
 - `mol_with_atom_added(mol, element_symbol)` → MolHandle
@@ -122,18 +122,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mol_with_bond_removed(mol, idx)` → MolHandle
 - `mol_next_atom_idx(mol)` → u32
 
-**SDF / V3000 書き込み**
-- `smiles_array_to_sdf(smiles_json)` — 2D座標付き SDF 生成
-- `to_mol_v3000_block(mol)` — MOL V3000 形式文字列
+**SDF / V3000 writing**
+- `smiles_array_to_sdf(smiles_json)` — generates SDF with 2D coordinates
+- `to_mol_v3000_block(mol)` — MOL V3000 format string
 
 **DepictData**
 - `depict_data_json(mol)` → `{"atoms":[{"idx","element","x","y","label","color"}],"bonds":[{"idx","atom1","atom2","kind"}]}`
-  egui / HTML5 Canvas などカスタムレンダラー向け構造化描画データ
+  Structured drawing data for custom renderers such as egui / HTML5 Canvas
 
-**CPK カラー**
-- `cpk_color(element_symbol)` → CSS hex 文字列
+**CPK colors**
+- `cpk_color(element_symbol)` → CSS hex string
 
-#### Rust ライブラリ拡張
+#### Rust library additions
 
 **`chematic-core`**
 - `Molecule::with_atom_added(&self, atom)` → `(Molecule, AtomIdx)`
@@ -142,241 +142,241 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Molecule::with_bond_removed(&self, idx)` → `Molecule`
 
 **`chematic-mol`**
-- `cml` モジュール新規: `parse_cml`, `write_cml`, `CmlError`
-- `cdxml` モジュール新規: `parse_cdxml`, `CdxmlError`
-- `write_sdf(records)` — 複数分子 + メタデータの SDF 書き出し
-- `write_mol_v3000(mol, meta, coords)` — MOL V3000 ライター
+- New `cml` module: `parse_cml`, `write_cml`, `CmlError`
+- New `cdxml` module: `parse_cdxml`, `CdxmlError`
+- `write_sdf(records)` — SDF output for multiple molecules + metadata
+- `write_mol_v3000(mol, meta, coords)` — MOL V3000 writer
 
 **`chematic-depict`**
-- `DepictData`, `DepictAtom`, `DepictBond`, `DepictBondKind` 構造体新規
+- New structs: `DepictData`, `DepictAtom`, `DepictBond`, `DepictBondKind`
 - `compute_depict_data(mol) -> DepictData`
-- `RenderOptions::with_cpk_colors_for(mol)` — CPK カラー一括設定
-- `atom_color(atomic_number) -> &'static str` を `pub` に昇格
+- `RenderOptions::with_cpk_colors_for(mol)` — bulk CPK color assignment
+- `atom_color(atomic_number) -> &'static str` promoted to `pub`
 
 **`chematic-chem`**
-- `mmp` モジュール新規: `find_mmp(mols) -> Vec<MmpPair>`
-- `chematic-smiles` を `dev-dependencies` から `dependencies` に昇格（MMP の canonical_smiles 使用のため）
+- New `mmp` module: `find_mmp(mols) -> Vec<MmpPair>`
+- `chematic-smiles` promoted from `dev-dependencies` to `dependencies` (used by MMP for canonical_smiles)
 
 ### Changed
 
-- `criterion` dev-dependency: 0.5 → 0.8（`chematic-fp`, `chematic-smiles`）
-- README: ゼロ C/C++ 依存の訴求を強化、WASM バイナリサイズ比較（~550 KB vs RDKit.js ~30 MB）を明記
+- `criterion` dev-dependency: 0.5 → 0.8 (`chematic-fp`, `chematic-smiles`)
+- README: strengthened zero-C/C++ dependency messaging; added WASM binary size comparison (~550 KB vs RDKit.js ~30 MB)
 
 ### Tests
 
-- 863 tests、全パス（前版 736 から +127）
+- 863 tests, all passing (+127 from previous 736)
 
 ---
 
 ## [0.1.19] — 2026-06-02
 
-### Added — Sprint U: インタラクティブ記事向け WASM 利便性 API
+### Added — Sprint U: WASM convenience API
 
-**SMILES-string-in 系フリー関数** (`crates/chematic-wasm/src/lib.rs`):
-- `smiles_to_svg_highlighted(smiles, atoms, bonds, color)` — SMILES 文字列から直接ハイライト SVG を 1 コール生成（JS: `Uint32Array` で原子・結合インデックスを渡す）
-- `match_smarts_smiles(smiles, smarts)` — SMILES + SMARTS 文字列のみで SMARTS マッチング（`parse_smiles` + `smarts_match_atoms` の 1-call wrapper）
-- `tanimoto_smiles(smiles1, smiles2)` — SMILES 文字列のみで Tanimoto 類似度計算（ECFP4）
-- `mol_block_from_smiles(smiles)` — SMILES から直接 MOL V2000 ブロック生成
+**SMILES-string-in free functions** (`crates/chematic-wasm/src/lib.rs`):
+- `smiles_to_svg_highlighted(smiles, atoms, bonds, color)` — generates a highlighted SVG directly from a SMILES string in one call (JS: pass atom/bond indices as `Uint32Array`)
+- `match_smarts_smiles(smiles, smarts)` — SMARTS matching with only SMILES + SMARTS strings (1-call wrapper around `parse_smiles` + `smarts_match_atoms`)
+- `tanimoto_smiles(smiles1, smiles2)` — Tanimoto similarity (ECFP4) from SMILES strings alone
+- `mol_block_from_smiles(smiles)` — generates a MOL V2000 block directly from SMILES
 
-**結合情報 API**:
+**Bond info API**:
 - `get_bond_info(mol, bond_idx)` → `{"bondOrder":1.5,"isAromatic":true,"isInRing":true,"atomFrom":0,"atomTo":1}`
-- `get_bond_between(mol, atom1, atom2)` → 同 JSON + `bondIdx` フィールド。原子インデックスペアから結合を検索（SMARTS マッチ結果からの自然なフロー）
+- `get_bond_between(mol, atom1, atom2)` → same JSON + `bondIdx` field. Looks up a bond by atom index pair (natural flow from SMARTS match results)
 
-**`get_atom_info` 拡張**:
-- `totalHydrogens` フィールドを追加（明示的 H + 暗黙的 H の合計）
+**`get_atom_info` extension**:
+- Added `totalHydrogens` field (sum of explicit H + implicit H)
 
-**InChIKey は未実装**（C ライブラリ級の複雑さのため Phase 3 以降）
+**InChIKey not implemented** (C-library-level complexity; deferred to Phase 3 or later)
 
 ---
 
 ## [0.1.18] — 2026-06-02
 
-### Added — Sprint T: インタラクティブ記事向け API
+### Added — Sprint T: per-atom color highlight + named functional group detection + atom info API
 
-**per-atom カラーハイライト** (`crates/chematic-depict/src/svg.rs`, `crates/chematic-wasm/src/lib.rs`):
-- `RenderOptions.atom_color_map: HashMap<AtomIdx, String>` — 原子ごとに異なる色で円ハイライト
-- `DepictOptions.set_atom_color(idx, color)` — WASM API。`set_highlight_atoms` と共存可能（per-atom 色が優先）
+**Per-atom color highlight** (`crates/chematic-depict/src/svg.rs`, `crates/chematic-wasm/src/lib.rs`):
+- `RenderOptions.atom_color_map: HashMap<AtomIdx, String>` — circle highlight with a distinct color per atom
+- `DepictOptions.set_atom_color(idx, color)` — WASM API. Can coexist with `set_highlight_atoms` (per-atom color takes priority)
 
-**名前付き官能基検出** (`crates/chematic-chem/src/named_groups.rs` 新規):
-- `detect_named_functional_groups(mol) -> Vec<NamedGroup>` — 20グループの SMARTS パターンテーブル
-- 返却: `{"name":"hydroxyl","atoms":[3]}` 形式の JSON 配列（WASM: `detect_functional_groups(mol)`）
-- カルボン酸 → carboxyl + hydroxyl + carbonyl のように重複グループを全列挙。JS 側でユニーク化可能
+**Named functional group detection** (`crates/chematic-chem/src/named_groups.rs`, new):
+- `detect_named_functional_groups(mol) -> Vec<NamedGroup>` — SMARTS pattern table for 20 groups
+- Returns a JSON array of `{"name":"hydroxyl","atoms":[3]}` (WASM: `detect_functional_groups(mol)`)
+- Enumerates overlapping groups in full (e.g. carboxylic acid → carboxyl + hydroxyl + carbonyl). Deduplication can be done on the JS side.
 
-**原子情報取得** (`crates/chematic-wasm/src/lib.rs`):
+**Atom info retrieval** (`crates/chematic-wasm/src/lib.rs`):
 - `get_atom_info(mol, idx) -> String` — `{"element":"C","hybridization":"sp2","charge":0,"isAromatic":false}`
-- 混成軌道 (sp/sp2/sp3) を結合次数から計算。範囲外 idx → `"null"`
+- Hybridization (sp/sp2/sp3) computed from bond orders. Out-of-range idx → `"null"`
 
-**MOL V2000 出力 WASM バインド** (`crates/chematic-wasm/src/lib.rs`):
-- `to_mol_block(mol) -> String` — MOL V2000 形式文字列。座標はすべて 0.0
+**MOL V2000 output WASM binding** (`crates/chematic-wasm/src/lib.rs`):
+- `to_mol_block(mol) -> String` — MOL V2000 format string. All coordinates are 0.0
 
 ---
 
 ## [0.1.17] — 2026-06-01
 
-### Changed (`chematic-chem`) — Sprint S: SA スコア フラグメントテーブル実装
+### Changed (`chematic-chem`) — Sprint S: SA score fragment table implementation
 
-**SA スコアのフラグメント頻度テーブルを実データに置き換え** (`crates/chematic-chem/src/sa_score.rs`):
-- 従来: 10 件のダミーエントリ（任意の u32 ハッシュ、意味のないスコア）
-- 新規: 145 分子の検証済みコーパスから生成した 1034 件のリアルエントリ（u64 FNV-1a ハッシュ、i16 対数頻度スコア）
-- ハッシュ互換性修正: 旧実装の非公開 32-bit FNV-1a を廃止し、`chematic_fp::morgan_fp_counts` を直接使用（ECFP と同一スキーム）
-- スコアエンコード: `i16 = (log10(freq_in_corpus) × 1000.0) as i16`; デフォルト -5000（テーブル未登録断片）
-- 検索: ソート済みスライスへの `partition_point` バイナリサーチ（O(log 1034)）
+**Replaced SA score fragment frequency table with real data** (`crates/chematic-chem/src/sa_score.rs`):
+- Before: 10 dummy entries (arbitrary u32 hashes, meaningless scores)
+- After: 1034 real entries generated from a validated corpus of 145 molecules (u64 FNV-1a hashes, i16 log-frequency scores)
+- Hash compatibility fix: removed the internal 32-bit FNV-1a from the old implementation; now uses `chematic_fp::morgan_fp_counts` directly (same scheme as ECFP)
+- Score encoding: `i16 = (log10(freq_in_corpus) × 1000.0) as i16`; default -5000 for fragments not in the table
+- Lookup: `partition_point` binary search on a sorted slice (O(log 1034))
 
-### Added (`tools/gen_sa_table`) — コーパスからテーブルを再生成するオフラインツール
+### Added (`tools/gen_sa_table`) — offline tool for regenerating the table from a corpus
 
-**新規ツール** (`tools/gen_sa_table/`):
-- 145 件の検証済み SMILES（chematic テストスイート + デモプリセット + 既知医薬品）を内蔵
-- `morgan_fp_counts(mol, 2)` を呼び出し、分子横断の断片頻度を計算
-- ソート済み `static FRAGMENT_SCORES: &[(u64, i16)]` を標準出力に出力
-- ファイル引数で任意の SMILES コーパスにも対応（ChEMBL など）
+**New tool** (`tools/gen_sa_table/`):
+- Bundles 145 validated SMILES (chematic test suite + demo presets + known drugs)
+- Calls `morgan_fp_counts(mol, 2)` to compute fragment frequencies across molecules
+- Outputs a sorted `static FRAGMENT_SCORES: &[(u64, i16)]` to stdout
+- Accepts an optional file argument for any SMILES corpus (e.g. ChEMBL)
 
 ### Tests (`chematic-chem`)
-- `taxol_harder_than_aspirin` — Taxol (SA スコア高) > Aspirin (SA スコア低) の順序確認
+- `taxol_harder_than_aspirin` — verifies that Taxol (high SA score) > Aspirin (low SA score)
 
 ---
 
 ## [0.1.16] — 2026-06-01
 
-### Fixed (`chematic-smiles`) — Sprint R: E/Z 二重結合立体化学 SMILES 出力
+### Fixed (`chematic-smiles`) — Sprint R: E/Z double-bond stereochemistry SMILES output
 
-**正規 SMILES ライターの E/Z 方向バグを修正** (`crates/chematic-smiles/src/canonical.rs`):
-- `write_chain()` の子ボンド方向修正: DFS トラバーサル方向が保存方向と逆の場合（`bond.atom1 == nb`）に Up/Down を反転するように修正。修正前は `F/C=C/Cl`（E）の正規形が Z として解釈される可能性があった
-- `dfs_mark()` の環クロージャ方向修正: open atom（`neighbor`）では正しい方向の Up/Down を記録し、close atom（`atom`）では Single を記録してコンフリクトを回避
+**Fixed E/Z direction bug in canonical SMILES writer** (`crates/chematic-smiles/src/canonical.rs`):
+- `write_chain()` child bond direction fix: when the DFS traversal direction is opposite to the stored direction (`bond.atom1 == nb`), Up/Down is now inverted. Before the fix, the canonical form of `F/C=C/Cl` (E) could be interpreted as Z.
+- `dfs_mark()` ring closure direction fix: for the open atom (`neighbor`), records the correct Up/Down direction; for the close atom (`atom`), records Single to avoid conflicts.
 
 ### Tests (`chematic-smiles`, `chematic-chem`)
-- `test_ez_e_stable` — `C/C=C/C` の正規化が安定
-- `test_ez_z_stable` — `C/C=C\C` の正規化が安定
-- `test_ez_fluoro_e_stable` — `F/C=C/Cl` の正規化が安定
-- `test_ez_fluoro_z_stable` — `F/C=C\Cl` の正規化が安定
-- `test_ez_e_ne_z` — E と Z の正規 SMILES が異なる文字列
-- `test_canonical_preserves_ez` (`cip.rs`) — 正規化後も `assign_cip` が正しい E/Z コードを返す
+- `test_ez_e_stable` — canonicalization of `C/C=C/C` is stable
+- `test_ez_z_stable` — canonicalization of `C/C=C\C` is stable
+- `test_ez_fluoro_e_stable` — canonicalization of `F/C=C/Cl` is stable
+- `test_ez_fluoro_z_stable` — canonicalization of `F/C=C\Cl` is stable
+- `test_ez_e_ne_z` — canonical SMILES for E and Z are distinct strings
+- `test_canonical_preserves_ez` (`cip.rs`) — `assign_cip` returns correct E/Z codes after canonicalization
 
 ---
 
 ## [0.1.15] — 2026-05-31
 
-### Added (`chematic-chem`) — Sprint Q: 官能基識別 + SA スコア + Gasteiger 電荷 + VSA 記述子
+### Added (`chematic-chem`) — Sprint Q: functional group identification + SA score + Gasteiger charges + VSA descriptors
 
-**官能基識別** (`chematic-chem/src/ifg.rs`、新規):
-- `identify_functional_groups(mol) -> Vec<FunctionalGroup>` — Ertl (2017) アルゴリズム: ヘテロ原子 + 隣接 C をマーク → BFS 接続成分 = 官能基
-- `FunctionalGroup { atom_indices: Vec<usize>, atom_types: String }` — 原子インデックスと元素記号文字列
-- 7 テスト: ヘキサン（官能基なし）、酢酸（O あり）、ピリジン（N を含む 1 基）、アスピリン（複数）、アニリン、クロロベンゼン（Cl）
+**Functional group identification** (`chematic-chem/src/ifg.rs`, new):
+- `identify_functional_groups(mol) -> Vec<FunctionalGroup>` — Ertl (2017) algorithm: mark heteroatoms + adjacent C → BFS connected components = functional groups
+- `FunctionalGroup { atom_indices: Vec<usize>, atom_types: String }` — atom indices and element symbol string
+- 7 tests: hexane (no groups), acetic acid (O present), pyridine (1 group containing N), aspirin (multiple), aniline, chlorobenzene (Cl)
 
-**Gasteiger-Marsili PEOE 部分電荷** (`chematic-chem/src/gasteiger.rs`、新規):
-- `gasteiger_charges(mol) -> Vec<f64>` — 12 反復、ダンピング 0.5^(iter+1)
-- 電気陰性度パラメータ: χ(q) = a + b·q + c·q²（C/N/O/S/F/Cl/Br/I/P/H 対応）
-- 暗黙的 H を明示的 H に展開してから PEOE を実行; 重原子分の電荷のみ返す
-- 5 テスト: メタノール O < C、水 O が負、電荷の合計≈0
+**Gasteiger-Marsili PEOE partial charges** (`chematic-chem/src/gasteiger.rs`, new):
+- `gasteiger_charges(mol) -> Vec<f64>` — 12 iterations, damping 0.5^(iter+1)
+- Electronegativity parameters: χ(q) = a + b·q + c·q² (supports C/N/O/S/F/Cl/Br/I/P/H)
+- Expands implicit H to explicit H before running PEOE; returns charges for heavy atoms only
+- 5 tests: methanol O < C, water O is negative, sum of charges ≈ 0
 
-**VSA 記述子** (`chematic-chem/src/vsa.rs`、新規):
-- `slogp_vsa(mol) -> Vec<f64>` — 12 ビン (RDKit SlogP_VSA1–12)
-- `smr_vsa(mol) -> Vec<f64>` — 10 ビン (RDKit SMR_VSA1–10)
-- `peoe_vsa(mol) -> Vec<f64>` — 14 ビン (RDKit PEOE_VSA1–14)
-- 各ビンに Labute ASA 寄与を集計; ビン境界は RDKit MolSurf.py と同一
-- `logp_crippen_per_atom`、`mr_per_atom`、`labute_asa_per_atom` — 総和関数が移譲する per-atom 変形を追加
+**VSA descriptors** (`chematic-chem/src/vsa.rs`, new):
+- `slogp_vsa(mol) -> Vec<f64>` — 12 bins (RDKit SlogP_VSA1–12)
+- `smr_vsa(mol) -> Vec<f64>` — 10 bins (RDKit SMR_VSA1–10)
+- `peoe_vsa(mol) -> Vec<f64>` — 14 bins (RDKit PEOE_VSA1–14)
+- Accumulates Labute ASA contributions into each bin; bin boundaries match RDKit MolSurf.py
+- Added `logp_crippen_per_atom`, `mr_per_atom`, `labute_asa_per_atom` — per-atom variants delegated from the summation functions
 
-**SA スコア** (`chematic-chem/src/sa_score.rs`、新規):
-- `sa_score(mol) -> f64` — [1, 10] 範囲; 1 = 合成容易、10 = 困難
-- 複雑度成分: スピロ原子 × 0.25 + 架橋頭炭素 × 0.35 + マクロ環 × 0.30 + 不斉中心 × 0.10 + (環数−1)×0.05 + 環結合比 × 0.50 + サイズペナルティ
-- **注**: フラグメントスコア成分（Ertl 2009 の断片頻度テーブル）は未実装; 現在の実装は複雑度ベースの近似
+**SA score** (`chematic-chem/src/sa_score.rs`, new):
+- `sa_score(mol) -> f64` — range [1, 10]; 1 = easy to synthesize, 10 = difficult
+- Complexity components: spiro atoms × 0.25 + bridgehead carbons × 0.35 + macrocycles × 0.30 + stereocenters × 0.10 + (ring_count−1)×0.05 + ring-bond ratio × 0.50 + size penalty
+- **Note**: fragment score component (Ertl 2009 fragment frequency table) not yet implemented; current implementation is a complexity-based approximation
 
-**多様性ピッキング + クラスタリング** (`chematic-chem/src/diversity.rs`、新規):
-- `maxmin_picks(mols, n, sim_fn) -> Vec<usize>` — MaxMin 多様性ピッキング（最大-最小距離を繰り返し選択）
-- `butina_cluster(mols, cutoff, sim_fn) -> Vec<Vec<usize>>` — Butina クラスタリング（類似度閾値ベース）
-- `sim_fn: Fn(&Molecule, &Molecule) -> f64` — フィンガープリントに依存しない汎用インターフェース
+**Diversity picking + clustering** (`chematic-chem/src/diversity.rs`, new):
+- `maxmin_picks(mols, n, sim_fn) -> Vec<usize>` — MaxMin diversity picking (iteratively selects maximum-minimum distance)
+- `butina_cluster(mols, cutoff, sim_fn) -> Vec<Vec<usize>>` — Butina clustering (similarity threshold-based)
+- `sim_fn: Fn(&Molecule, &Molecule) -> f64` — generic interface independent of fingerprint type
 
 Tests: 697 → 736 (+39 new tests)
 
-### Added (`chematic-wasm`) — Sprint Q WASM バインディング
+### Added (`chematic-wasm`) — Sprint Q WASM bindings
 
-6 新規関数:
-- `identify_functional_groups(mol) -> String` — JSON 配列 `[{"atoms":[0,1],"types":"CN"},…]`
-- `gasteiger_charges_json(mol) -> String` — JSON 配列 `[q0, q1, …]`（重原子のみ）
-- `sa_score(mol) -> f64` — 合成アクセシビリティスコア [1, 10]
-- `slogp_vsa_json(mol) -> String` — JSON 配列（12 要素）
-- `smr_vsa_json(mol) -> String` — JSON 配列（10 要素）
-- `peoe_vsa_json(mol) -> String` — JSON 配列（14 要素）
+6 new functions:
+- `identify_functional_groups(mol) -> String` — JSON array `[{"atoms":[0,1],"types":"CN"},…]`
+- `gasteiger_charges_json(mol) -> String` — JSON array `[q0, q1, …]` (heavy atoms only)
+- `sa_score(mol) -> f64` — synthetic accessibility score [1, 10]
+- `slogp_vsa_json(mol) -> String` — JSON array (12 elements)
+- `smr_vsa_json(mol) -> String` — JSON array (10 elements)
+- `peoe_vsa_json(mol) -> String` — JSON array (14 elements)
 
-### Added (`demo/index.html`) — Sprint Q UI 更新
+### Added (`demo/index.html`) — Sprint Q UI update
 
-- IFG（官能基識別）パネル: 分子ロードで即時更新
-- 記述子テーブルに SA Score + Labute ASA を追加
-- バージョンバッジ: v0.1.14 → v0.1.15
+- IFG (functional group identification) panel: updates immediately on molecule load
+- Added SA Score + Labute ASA to descriptor table
+- Version badge: v0.1.14 → v0.1.15
 
 ---
 
 ## [0.1.14] — 2026-05-31
 
-### Added (`chematic-chem`) — EState インデックス
+### Added (`chematic-chem`) — EState indices
 
-**EState インデックス** (`chematic-chem/src/estate.rs`、新規):
-- `estate_indices(mol) -> Vec<f64>` — Hall & Kier (1991) 電子状態インデックス; 全重原子に対して per-atom 値を返す
-- `max_estate(mol) -> f64`, `min_estate(mol) -> f64`, `sum_estate(mol) -> f64` — 集計記述子
-- intrinsic state I_i = ((2/n)² · δᵛ + 1) / δ; 扰动 S_i = I_i + Σ (I_i − I_j) / r²_{ij} (BFS 距離)
+**EState indices** (`chematic-chem/src/estate.rs`, new):
+- `estate_indices(mol) -> Vec<f64>` — Hall & Kier (1991) electrotopological state indices; returns per-atom values for all heavy atoms
+- `max_estate(mol) -> f64`, `min_estate(mol) -> f64`, `sum_estate(mol) -> f64` — aggregate descriptors
+- intrinsic state I_i = ((2/n)² · δᵛ + 1) / δ; perturbation S_i = I_i + Σ (I_i − I_j) / r²_{ij} (BFS distance)
 
-### Added (`chematic-fp`) — パスフィンガープリント
+### Added (`chematic-fp`) — path fingerprint
 
-**パス FP** (`chematic-fp/src/path_fp.rs`、新規):
-- `path_fp(mol) -> BitVec2048` — 長さ 1〜7 の単純パスを DFS 列挙し FNV-1a ハッシュ; 2048 ビット
-- `tanimoto_topo_path(a, b) -> f64` — パス FP の Tanimoto 係数
+**Path FP** (`chematic-fp/src/path_fp.rs`, new):
+- `path_fp(mol) -> BitVec2048` — DFS enumeration of simple paths of length 1–7, FNV-1a hashed; 2048 bits
+- `tanimoto_topo_path(a, b) -> f64` — Tanimoto coefficient for path FP
 
-### Added (`chematic-wasm`) — Sprint P WASM バインディング
+### Added (`chematic-wasm`) — Sprint P WASM bindings
 
-- `mol_from_sdf_block(block) -> MolHandle` — SDF/MOL V2000 ブロックから分子を生成
-- `sdf_to_smiles_json(sdf) -> String` — SDF 文字列から SMILES JSON 配列
-- `estate_indices_json(mol) -> String` — EState インデックスの JSON 配列
-- `tanimoto_path(a, b) -> f64` — パス FP Tanimoto
-- `MolHandle` に `sum_estate`, `max_estate`, `min_estate` メソッドを追加
+- `mol_from_sdf_block(block) -> MolHandle` — generates a molecule from an SDF/MOL V2000 block
+- `sdf_to_smiles_json(sdf) -> String` — JSON array of SMILES from an SDF string
+- `estate_indices_json(mol) -> String` — JSON array of EState indices
+- `tanimoto_path(a, b) -> f64` — path FP Tanimoto
+- Added `sum_estate`, `max_estate`, `min_estate` methods to `MolHandle`
 
 ---
 
 ## [0.1.13] — 2026-05-31
 
-### Added (`chematic-wasm`) — panic hook + 反応 SVG
+### Added (`chematic-wasm`) — panic hook + reaction SVG
 
-- `wasm_bindgen(start)` で `console_error_panic_hook` を設定; WASM パニックがブラウザコンソールに詳細を出力するように
-- 反応 SVG に矢印（`→`）と試薬ラベルを追加
+- Set up `console_error_panic_hook` via `wasm_bindgen(start)`; WASM panics now print details to the browser console
+- Added arrow (`→`) and reagent labels to reaction SVG
 
 ---
 
 ## [0.1.12] — 2026-05-31
 
-### Added (`demo/index.html`) — タブ UI + 3D ビューア
+### Added (`demo/index.html`) — tabbed UI + 3D viewer
 
-- タブ切り替え UI: 2D 描画・3D ビューア・類似度・反応スキーム・薬らしさ
-- 3D インタラクティブビューア: WebGL ベース（マウスドラッグで回転、ホイールズームを追加）
+- Tabbed UI: 2D depiction, 3D viewer, similarity, reaction scheme, drug-likeness
+- Interactive 3D viewer: WebGL-based (mouse drag to rotate, scroll wheel zoom)
 
 ---
 
 ## [0.1.11] — 2026-05-31
 
-### Added (`demo/index.html`) — SMARTS ハイライト + クリックハイライト + 反応スキーム
+### Added (`demo/index.html`) — SMARTS highlight + click highlight + reaction scheme
 
-- SMARTS 検索結果の原子をクリックでハイライト
-- SMIRKS 反応スキーム UI: 反応物→生成物の SVG 表示
-- クリックで原子インデックスと元素情報を表示
+- Click to highlight atoms from SMARTS search results
+- SMIRKS reaction scheme UI: SVG display of reactants → products
+- Click to display atom index and element information
 
 ---
 
 ## [0.1.10] — 2026-05-31
 
-### Added (`chematic-wasm`) — 原子データ属性 + Kekulé 表示
+### Added (`chematic-wasm`) — atom data attributes + Kekulé depiction
 
-- SVG 原子ラベルに `data-atom-idx` 属性を追加（JavaScript クリックハンドラ用）
-- Kekulé 表示モード: 芳香族ボンドを単結合/二重結合で交互に表示
-- npm bundler ターゲットビルドに修正（ES モジュール形式）
+- Added `data-atom-idx` attribute to SVG atom labels (for JavaScript click handlers)
+- Kekulé depiction mode: alternates aromatic bonds as single/double bonds
+- Fixed build to use npm bundler target (ES module format)
 
 ---
 
 ## [0.1.9] — 2026-05-31
 
-### Fixed (`chematic-depict`) — 単原子 SMILES の描画
+### Fixed (`chematic-depict`) — single-atom SMILES rendering
 
-単原子分子（`"O"`, `"C"`, `"N"` 等）が空白または誤表記の SVG を返していた問題を修正。
+Fixed an issue where single-atom molecules (`"O"`, `"C"`, `"N"`, etc.) returned blank or incorrectly labeled SVG.
 
-- **`"C"` (メタン)**: 骨格式ルール（炭素はラベル不要）が孤立炭素にも適用され SVG が空になっていた → `CH4` を表示するよう修正。
-- **`"O"` (水)**: ラベルが `OH2` と表示されていた → 分子式スタイル `H2O` に修正。
-- 一般に atom_count == 1 の分子は Hill 記法の分子式（`H2O`、`CH4`、`NH3` 等）でラベルを表示。
+- **`"C"` (methane)**: the skeletal formula rule (no label needed for carbon) was applied to isolated carbons too, producing an empty SVG → fixed to display `CH4`.
+- **`"O"` (water)**: label was displayed as `OH2` → fixed to molecular formula style `H2O`.
+- In general, molecules with atom_count == 1 now display a Hill-notation molecular formula (`H2O`, `CH4`, `NH3`, etc.).
 
 ### Added (`chematic-depict`) — `RenderOptions` + `render_svg_opts`
 
@@ -390,11 +390,11 @@ let opts = RenderOptions {
 depict_svg_opts(&mol, &opts)
 ```
 
-- `width` / `height`: SVG の `width=` / `height=` 属性を上書き（`None` = 自動）。
-- `padding`: 分子外周の余白（デフォルト 20.0）。
-- `background`: 背景色。`"transparent"` で背景 rect + ラベル背景を省略。
-- `dark`: `true` のとき結合線を白、炭素ラベルを白に変更（ダークモード対応）。
-- `highlight_atoms` / `highlight_bonds` / `highlight_color`: ハイライト機能を既存の `render_svg_highlighted` と統一。
+- `width` / `height`: overrides the SVG `width=` / `height=` attributes (`None` = auto).
+- `padding`: margin around the molecule (default 20.0).
+- `background`: background color. `"transparent"` omits the background rect and label backgrounds.
+- `dark`: when `true`, changes bond lines and carbon labels to white (dark mode support).
+- `highlight_atoms` / `highlight_bonds` / `highlight_color`: unified with the existing `render_svg_highlighted` highlight API.
 
 ### Added (`chematic-wasm`) — `is_valid_smiles` + `DepictOptions` + `depict_svg_opts`
 
@@ -405,7 +405,7 @@ is_valid_smiles("")         // false
 is_valid_smiles("[INVALID]") // false
 ```
 
-**`DepictOptions` クラス**
+**`DepictOptions` class**
 ```js
 const opts = new DepictOptions();
 opts.set_background("transparent");
@@ -763,7 +763,7 @@ tetralin, histamine, aniline, n_methylaniline, 4_aminophenol, thiophenol, dopami
 
 #### Fix 5 — Thiol S (0.3132, was 0.6482 thioether)
 - Triggered when non-aromatic S has h>0 and no S=O bonds
-- Verified: thiophenol (exact), cysteine (residual 0.047 ✓)
+- Verified: thiophenol (exact), cysteine (residual 0.047)
 
 ### Added
 
@@ -1053,7 +1053,12 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.16...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.21...HEAD
+[0.1.21]: https://github.com/kent-tokyo/chematic/compare/v0.1.20...v0.1.21
+[0.1.20]: https://github.com/kent-tokyo/chematic/compare/v0.1.19...v0.1.20
+[0.1.19]: https://github.com/kent-tokyo/chematic/compare/v0.1.18...v0.1.19
+[0.1.18]: https://github.com/kent-tokyo/chematic/compare/v0.1.17...v0.1.18
+[0.1.17]: https://github.com/kent-tokyo/chematic/compare/v0.1.16...v0.1.17
 [0.1.16]: https://github.com/kent-tokyo/chematic/compare/v0.1.15...v0.1.16
 [0.1.15]: https://github.com/kent-tokyo/chematic/compare/v0.1.14...v0.1.15
 [0.1.14]: https://github.com/kent-tokyo/chematic/compare/v0.1.13...v0.1.14
