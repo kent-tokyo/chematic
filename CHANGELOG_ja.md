@@ -13,6 +13,92 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.26] — 2026-06-06
+
+### Added — Sprint v0.1.26–v0.1.28: 立体化学・スキャフォールド・3D類似度など大規模追加
+
+#### `chematic-core` — 強化立体グループ
+
+- `StereoGroup` / `StereoGroupKind`（`Absolute` / `Or(u32)` / `And(u32)`）— ChemDraw V3000 互換の AND/OR/ABSOLUTE ステレオグループ
+- `Molecule::stereo_groups()`, `set_stereo_groups()`, `add_stereo_group()`
+- `MoleculeBuilder::add_stereo_group()`、`from_molecule()` が stereo_groups をコピー
+
+#### `chematic-perception` — 立体化学・環知覚 API 拡充
+
+- `assign_ez_from_2d(mol, coords)` — 2D 座標の幾何学的外積から E/Z を割り当て
+- `cip_ez_descriptor(mol, bond_idx, coords) -> Option<CipCode>`
+- `ring_membership(mol) -> Vec<Vec<usize>>` — 原子ごとの所属環インデックス
+- `ring_sizes_for_atom(mol, atom_idx) -> Vec<usize>`
+- `is_fused_ring_system(mol) -> bool` — 縮合環システムの検出
+- `validate_stereo(mol) -> Vec<StereoError>` — `ImpossibleCenter` / `ConflictingWedges` / `RedundantStereo` 検出
+- `stereo_completeness(mol) -> StereoCompleteness` — 指定済み/未指定立体中心数
+
+#### `chematic-mol` — 新フォーマット・V3000 立体グループ
+
+- MOL V3000 `BEGIN COLLECTION` ブロック: `MDLV30/STEABS`, `MDLV30/STEOR<n>`, `MDLV30/STEAND<n>` の解析・書き出し
+- Tripos MOL2: `parse_mol2()` / `write_mol2()` — `@<TRIPOS>MOLECULE`, `ATOM`, `BOND` 対応
+
+#### `chematic-chem` — 新アルゴリズム・記述子
+
+- `isotope_distribution(mol, resolution) -> Vec<(f64,f64)>` — 多項式畳み込みによる同位体分布（H/C/N/O/F/S/Cl/Br/I 等対応）
+- `assign_cip()` でアレン軸不斉を検出・割り当て（`>C=C=C<` パターン）
+- `TautomerConfig` + `canonical_tautomer_with_config()` / `enumerate_tautomers_with_config()` — ルールセット・反復上限を設定可能に
+- `scaffold_network(mol) -> Vec<Molecule>` — Schuffenhauer 2007 階層スキャフォールド分解
+- `schuffenhauer_parents(mol) -> Vec<Molecule>` — 直接の親スキャフォールド
+- `esol_solubility(mol) -> f64` — Delaney 2004 ESOL 水溶性予測（log mol/L）
+- `logd_simple(mol, ph) -> f64` / `logd_profile()` — Henderson-Hasselbalch LogD
+- `randic_index()`, `zagreb_index_m1()`, `topological_distance_matrix()` — トポロジー指数
+
+#### `chematic-fp` — キラリティ対応 FP・一括類似度検索
+
+- `EcfpConfig::use_chirality: bool` — R/S 感受性 Morgan FP（デフォルト false、後方互換性あり）
+- `nearest_neighbors(query, db, k, FpType) -> Vec<(usize, f64)>` — 線形 Tanimoto 検索
+- `nearest_neighbors_from_fp(query_fp, db_fps, k)` — 事前計算 FP からの検索
+- `FpType` 列挙型: `Ecfp4`, `Ecfp6`, `Ecfp4Chiral`, `Fcfp4`, `Maccs`, `TopoPath`
+
+#### `chematic-smarts` — 同位体・キラリティプリミティブ
+
+- `AtomPrimitive::Isotope(u16)` — `[13C]` を同位体制約としてパース
+- `AtomPrimitive::Chirality(u8)` — `[@]` / `[@@]` をキラリティ制約としてパース
+- `MatchConfig::use_chirality: bool` — `[@]`/`[@@]` を対象分子に照合（デフォルト false）
+- `MatchConfig::use_isotopes: bool` — `[13C]` を対象分子に照合（デフォルト false）
+
+#### `chematic-smiles` — 新ユーティリティ
+
+- `canonical_atom_order(mol) -> Vec<usize>` — Morgan ランク DFS 順序
+- `equivalent_atom_classes(mol) -> Vec<usize>` — 対称クラス番号
+- `are_atoms_equivalent(mol, a, b) -> bool`
+- `parse_smi_file(s)` / `write_smi_file(records)` — `.smi` タブ/スペース区切りフォーマット
+
+#### `chematic-rxn` — 反応メトリクス・バランス確認
+
+- `balance_check(rxn) -> BalanceResult` — 元素バランス確認と差分レポート
+- `atom_economy(rxn) -> f64` — Trost 原子経済性 %
+- `e_factor(waste, product) -> f64` — Sheldon E ファクター
+- `pmi_rxn(all_masses, product) -> f64` — Process Mass Intensity
+- `reaction_mass_efficiency(reactants, product) -> f64`
+- `find_reaction_center` をクレートルートに再エクスポート
+
+#### `chematic-3d` — アライメント・形状認識
+
+- `align_coords(reference, mobile) -> AlignResult` — Kabsch 最適重ね合わせ
+- `apply_alignment(mobile, result) -> Vec<[f64;3]>` — 変換後座標を生成
+- `rmsd_no_align(a, b) -> f64` — 回転なし RMSD
+- `usr_descriptors(coords) -> [f64;12]` — Ballester-Richards USR 12 モーメント記述子
+- `usr_similarity(a, b) -> f64` — Soergel 距離類似度 ∈ [0, 1]
+
+#### `chematic`（アンブレラ）— docs.rs・WASM
+
+- `//!` モジュールドキュメント全面改訂（機能表・クイックスタート・フィーチャーフラグ表）
+- `[package.metadata.docs.rs]` で `features = ["full"]` ビルドを設定
+- WASM バインディング追加: `find_reaction_center_json`, `standardize_smiles`, `balance_check_json`, `nearest_neighbors_json`, `mol2_to_smiles`, `smiles_to_mol2`
+
+### テスト
+
+- 全クレートで約 200 件追加（前回: ~933件 → 今回: ~1133件）
+
+---
+
 ## [0.1.25] — 2026-06-06
 
 ### Added — P2 features: 2D layout quality + stereochemistry manipulation + reaction analysis

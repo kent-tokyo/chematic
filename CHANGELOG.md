@@ -11,6 +11,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.26] — 2026-06-06
+
+### Added — Sprint v0.1.26–v0.1.28: stereochemistry, scaffold networks, 3D similarity, and more
+
+#### `chematic-core` — Enhanced Stereo Groups
+
+- `StereoGroup` / `StereoGroupKind` (`Absolute` / `Or(u32)` / `And(u32)`) — ChemDraw V3000-compatible enhanced stereochemistry groups
+- `Molecule::stereo_groups()`, `set_stereo_groups()`, `add_stereo_group()`
+- `MoleculeBuilder::add_stereo_group()` — builder support for stereo groups
+- `MoleculeBuilder::from_molecule()` now copies stereo groups
+
+#### `chematic-perception` — Stereo & Ring APIs
+
+- `assign_ez_from_2d(mol, coords)` — E/Z assignment from 2D atom coordinates (geometric cross-product)
+- `cip_ez_descriptor(mol, bond_idx, coords) -> Option<CipCode>`
+- `ring_membership(mol) -> Vec<Vec<usize>>` — atom → ring index membership
+- `ring_sizes_for_atom(mol, atom_idx) -> Vec<usize>`
+- `is_fused_ring_system(mol) -> bool` — detect shared-edge ring pairs
+- `validate_stereo(mol) -> Vec<StereoError>` — detect `ImpossibleCenter` / `ConflictingWedges` / `RedundantStereo`
+- `stereo_completeness(mol) -> StereoCompleteness` — specified vs unspecified center counts
+
+#### `chematic-mol` — New Formats + V3000 Stereo
+
+- MOL V3000 `BEGIN COLLECTION` block: parse and write `MDLV30/STEABS`, `MDLV30/STEOR<n>`, `MDLV30/STEAND<n>`
+- Tripos MOL2: `parse_mol2()` / `write_mol2()` — `@<TRIPOS>MOLECULE`, `ATOM`, `BOND` sections
+
+#### `chematic-chem` — New Algorithms & Descriptors
+
+- `isotope_distribution(mol, resolution) -> Vec<(f64,f64)>` — multinomial isotope envelope (H/C/N/O/F/S/Cl/Br/I/…)
+- CIP allene axial chirality in `assign_cip()` — `>C=C=C<` pattern detection
+- `TautomerConfig` + `canonical_tautomer_with_config()` / `enumerate_tautomers_with_config()` — configurable rule set, iteration limits
+- `scaffold_network(mol) -> Vec<Molecule>` — Schuffenhauer 2007 hierarchical scaffold decomposition
+- `schuffenhauer_parents(mol) -> Vec<Molecule>` — direct parent scaffold(s)
+- `esol_solubility(mol) -> f64` — Delaney 2004 ESOL aqueous solubility (log mol/L)
+- `logd_simple(mol, ph) -> f64` / `logd_profile()` — Henderson-Hasselbalch LogD
+- `randic_index(mol)`, `zagreb_index_m1(mol)`, `topological_distance_matrix(mol)` — topology indices
+
+#### `chematic-fp` — Chirality-Aware FP & Similarity Search
+
+- `EcfpConfig::use_chirality: bool` — R/S-sensitive Morgan fingerprints (default: false, backward-compatible)
+- `nearest_neighbors(query, db, k, FpType) -> Vec<(usize, f64)>` — linear Tanimoto search
+- `nearest_neighbors_from_fp(query_fp, db_fps, k)` — search from pre-computed FPs
+- `FpType` enum: `Ecfp4`, `Ecfp6`, `Ecfp4Chiral`, `Fcfp4`, `Maccs`, `TopoPath`
+
+#### `chematic-smarts` — Isotope & Chirality Primitives
+
+- `AtomPrimitive::Isotope(u16)` — `[13C]` parses as isotope constraint
+- `AtomPrimitive::Chirality(u8)` — `[@]` / `[@@]` parse as chirality constraint
+- `MatchConfig::use_chirality: bool` — enforce `[@]`/`[@@]` against target (default: false)
+- `MatchConfig::use_isotopes: bool` — enforce `[13C]` against target (default: false)
+
+#### `chematic-smiles` — New Utilities
+
+- `canonical_atom_order(mol) -> Vec<usize>` — Morgan-rank DFS order
+- `equivalent_atom_classes(mol) -> Vec<usize>` — symmetry class numbers
+- `are_atoms_equivalent(mol, a, b) -> bool`
+- `parse_smi_file(s)` / `write_smi_file(records)` — `.smi` tab/space-separated format
+
+#### `chematic-rxn` — Reaction Metrics & Balance
+
+- `balance_check(rxn) -> BalanceResult` — atom-element balance with `diff()` report
+- `atom_economy(rxn) -> f64` — Trost atom economy %
+- `e_factor(waste, product) -> f64` — Sheldon E-factor
+- `pmi_rxn(all_masses, product) -> f64` — Process Mass Intensity
+- `reaction_mass_efficiency(reactants, product) -> f64`
+- `find_reaction_center` re-exported at crate root
+
+#### `chematic-3d` — Alignment & Shape Recognition
+
+- `align_coords(reference, mobile) -> AlignResult` — Kabsch optimal superposition
+- `apply_alignment(mobile, result) -> Vec<[f64;3]>` — transform mobile coordinates
+- `rmsd_no_align(a, b) -> f64` — raw RMSD without rotation
+- `usr_descriptors(coords) -> [f64;12]` — Ballester-Richards USR 12-moment descriptor
+- `usr_similarity(a, b) -> f64` — Soergel distance similarity ∈ [0, 1]
+
+#### `chematic` (umbrella) — docs.rs & WASM
+
+- Full `//!` module doc rewrite with capability table and quick-start example
+- `[package.metadata.docs.rs]` for `features = ["full"]` build on docs.rs
+- WASM bindings: `find_reaction_center_json`, `standardize_smiles`, `balance_check_json`, `nearest_neighbors_json`, `mol2_to_smiles`, `smiles_to_mol2`
+
+### Tests
+
+- +200 new tests across all crates (previous: ~933, current: ~1133)
+
+---
+
 ## [0.1.25] — 2026-06-06
 
 ### Added — P2 features: 2D layout quality, stereochemistry manipulation, reaction analysis
