@@ -39,7 +39,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了。**933 テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了。**935 テスト、全パス。C/C++ 依存ゼロ。**
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -47,18 +47,18 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES                                                                                               | 57      |
 | `chematic-perception`  | SSSR、Hückel 芳香族性、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`                                     | 18      |
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き                                  | 61      |
-| `chematic-depict`      | 2D SVG 描画（CPK カラー・ハイライト・グリッド）、DepictData、`suggest_bond_direction`・反応 SVG                                          | 39      |
-| `chematic-chem`        | 40+ 記述子（`xlogp3` 含む）、BRICS（`BricsConfig`）、QED、標準化、CIP、IFG、Gasteiger、`expand_abbreviation`                             | 226     |
+| `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG、DepictData              | 43      |
+| `chematic-chem`        | 40+ 記述子、BRICS、QED、標準化、分子ハッシング、立体化学（反転・列挙）、CIP、IFG、Gasteiger、`expand_abbreviation`                    | 244     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice                                               | 50      |
 | `chematic-smarts`      | SMARTS（再帰・原子価）、VF2（`MatchConfig`）、MCS（`AtomCompare`/`BondCompare`/ring-awareness）                                          | 84      |
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ 形式                                                                    | 68      |
-| `chematic-rxn`         | 反応 SMILES/SMIRKS — `run_reactants`（生成物原子価バリデーション付き）                                                                   | 28      |
+| `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（生成物原子価バリデーション付き）                                        | 30      |
 | `chematic-wasm`        | **100+ WASM エクスポート** — npm: `@kent-tokyo/chematic`                                                                                 | 162     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— アルカン、シクロアルカン、アルコール、アミン、ハロアルカン                                | 8       |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac` フィーチャー追加）                                                                    | 1       |
 
 ```
-cargo test --workspace   # 933 テスト、全パス
+cargo test --workspace   # 935 テスト、全パス
 ```
 
 ---
@@ -70,7 +70,7 @@ cargo test --workspace   # 933 テスト、全パス
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.1.23", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.1.25", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 個別クレートを使う場合
@@ -78,9 +78,9 @@ chematic = { version = "0.1.23", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.1.23"
-chematic-perception = "0.1.23"
-chematic-fp         = "0.1.23"
+chematic-smiles     = "0.1.25"
+chematic-perception = "0.1.25"
+chematic-fp         = "0.1.25"
 ```
 
 ```rust

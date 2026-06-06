@@ -48,7 +48,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete. **933 tests, all passing. Zero C/C++ dependencies.**
+All phases complete. **935 tests, all passing. Zero C/C++ dependencies.**
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -56,18 +56,18 @@ All phases complete. **933 tests, all passing. Zero C/C++ dependencies.**
 | `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES                                                              | 57    |
 | `chematic-perception` | SSSR, Hückel aromaticity, `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`   | 18    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W             | 61    |
-| `chematic-depict`     | 2D SVG depiction (CPK colors, highlighting, grid), DepictData, `suggest_bond_direction`, reaction SVG    | 39    |
-| `chematic-chem`       | 40+ descriptors incl. `xlogp3`, BRICS (`BricsConfig`), QED, standardization, CIP, IFG, `expand_abbreviation` | 226   |
+| `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG | 43    |
+| `chematic-chem`       | 40+ descriptors incl. `xlogp3`, BRICS, QED, standardize, mol_hash, stereo (invert/enumerate), CIP, IFG | 244   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion — Tanimoto/Dice                           | 50    |
 | `chematic-smarts`     | SMARTS parser, VF2 (`MatchConfig` max_matches), MCS (`AtomCompare`/`BondCompare`/ring-awareness)         | 84    |
 | `chematic-3d`         | 3D coordinate generation, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ       | 68    |
-| `chematic-rxn`        | Reaction SMILES/SMIRKS — `run_reactants` with product valence validation                                 | 28    |
+| `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
 | `chematic-wasm`       | **100+ WASM exports** — npm: `@kent-tokyo/chematic`                                                      | 162   |
 | `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes, cycloalkanes, alcohols, amines, halides    | 8     |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`)                                        | 1     |
 
 ```
-cargo test --workspace   # 933 tests, all passing
+cargo test --workspace   # 935 tests, all passing
 ```
 
 ---

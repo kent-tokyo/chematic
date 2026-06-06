@@ -39,7 +39,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成。**933 个测试，全部通过。零 C/C++ 依赖。**
+所有阶段已完成。**935 个测试，全部通过。零 C/C++ 依赖。**
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
@@ -47,18 +47,18 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES                                                                | 57     |
 | `chematic-perception` | SSSR、Hückel 芳香性、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`        | 18     |
 | `chematic-mol`        | MOL/SDF V2000+V3000（读写）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写 | 61     |
-| `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、DepictData、`suggest_bond_direction`、反应 SVG                    | 39     |
-| `chematic-chem`       | 40+ 描述符（含 `xlogp3`）、BRICS（`BricsConfig`）、QED、标准化、CIP、IFG、`expand_abbreviation`        | 226    |
+| `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG         | 43     |
+| `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、分子哈希、立体化学（反演·枚举）、CIP、IFG、Gasteiger、`expand_abbreviation` | 244    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice               | 50     |
 | `chematic-smarts`     | SMARTS 解析器（递归、价键、杂化），VF2 子图同构，MCS（含环感知约束）                                  | 84     |
 | `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ 格式                                 | 68     |
-| `chematic-rxn`        | 反应 SMILES/SMIRKS — `run_reactants`（含生成物价键验证）                                               | 28     |
+| `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（含生成物价键验证）                      | 30     |
 | `chematic-wasm`       | **100+ WASM 导出** — npm：`@kent-tokyo/chematic`                                                      | 162    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— 烷烃、环烷烃、醇、胺、卤代烃                                        | 8      |
 | `chematic`            | 带功能标志的伞形 crate（含所有子 crate，含 `iupac`）                                                  | 1      |
 
 ```
-cargo test --workspace   # 933 个测试，全部通过
+cargo test --workspace   # 935 个测试，全部通过
 ```
 
 ---
@@ -70,7 +70,7 @@ cargo test --workspace   # 933 个测试，全部通过
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.1.23", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.1.25", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 使用单独 crate
@@ -78,9 +78,9 @@ chematic = { version = "0.1.23", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.1.23"
-chematic-perception = "0.1.23"
-chematic-fp         = "0.1.23"
+chematic-smiles     = "0.1.25"
+chematic-perception = "0.1.25"
+chematic-fp         = "0.1.25"
 ```
 
 ```rust
