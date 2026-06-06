@@ -6,8 +6,10 @@
 #![forbid(unsafe_code)]
 
 pub mod real;
+pub mod pme;
 
 pub use real::{direct_coulomb, direct_coulomb_cutoff, direct_coulomb_damped, K_COULOMB};
+pub use pme::reciprocal_space_energy;
 
 /// Configuration for PME/SPME calculations.
 #[derive(Clone, Debug)]
@@ -75,30 +77,45 @@ pub struct EwaldResult {
 /// SPME Ewald energy for periodic system.
 ///
 /// Computes long-range electrostatic energy using Smooth Particle Mesh Ewald (SPME).
-/// Splits calculation into real-space (short-range, direct sum) and reciprocal-space
-/// (long-range, FFT-based).
+/// Splits calculation into real-space (short-range, direct sum with damping) and
+/// reciprocal-space (long-range, FFT-based).
 ///
 /// # Arguments
-/// * `coords` - Flat array of atomic coordinates [x0, y0, z0, x1, y1, z1, ...]
+/// * `coords` - Atomic coordinates [[x0, y0, z0], [x1, y1, z1], ...]
 /// * `charges` - Partial charges (e)
-/// * `_box_vecs` - Periodic box vectors (currently unused, reserved for future PME)
-/// * `config` - PME configuration
+/// * `box_vecs` - Periodic box vectors
+/// * `config` - PME configuration (alpha, kmax, mesh, spline_order)
 ///
 /// # Returns
-/// `EwaldResult` with breakdown of energy contributions
+/// `EwaldResult` with breakdown:
+/// - real_energy: Short-range damped Coulomb (r < r_cut)
+/// - reciprocal_energy: Long-range FFT-based contribution
+/// - self_energy: Self-interaction correction
+/// - total_energy: Sum of all contributions
 ///
-/// # Note
-/// This is a placeholder for full SPME. Currently uses direct Coulomb with cutoff.
+/// # Notes
+/// - Requires coordinates to be within the periodic box
+/// - Auto-computes alpha if not provided (α = 3.5 / r_cut)
+/// - Accurate for N up to several thousand atoms with standard mesh
 pub fn spme_energy(
     coords: &[[f64; 3]],
     charges: &[f64],
-    _box_vecs: &BoxVectors,
+    box_vecs: &BoxVectors,
     config: &PmeConfig,
 ) -> EwaldResult {
-    // TODO: Implement full SPME with reciprocal space
-    let real = direct_coulomb_cutoff_coords(coords, charges, config.r_cut);
-    let reciprocal = 0.0; // TODO: Implement reciprocal space with FFT
-    let alpha = if config.alpha > 0.0 { config.alpha } else { 3.5 / config.r_cut };
+    let alpha = if config.alpha > 0.0 {
+        config.alpha
+    } else {
+        3.5 / config.r_cut
+    };
+
+    // Real-space: short-range damped Coulomb
+    let real = real::direct_coulomb_damped(coords, charges, alpha);
+
+    // Reciprocal-space: FFT-based long-range
+    let reciprocal = pme::reciprocal_space_energy(coords, charges, box_vecs, config);
+
+    // Self-energy: correction for Gaussian charge distribution
     let self_corr = compute_self_energy(charges, alpha);
 
     EwaldResult {
