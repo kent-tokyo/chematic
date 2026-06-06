@@ -48,25 +48,25 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete. **809 tests, all passing. Zero C/C++ dependencies.**
+All phases complete. **869 tests, all passing. Zero C/C++ dependencies.**
 
-| Crate                 | Description                                                                        | Tests |
-|-----------------------|------------------------------------------------------------------------------------|-------|
-| `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps)                              | 30    |
-| `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES                                        | 52    |
-| `chematic-perception` | SSSR (Balducci-Pearlman), Huckel aromaticity                                       | 14    |
-| `chematic-mol`        | MOL/SDF V2000+V3000 parser and writer, SDF property read/write                     | 37    |
-| `chematic-depict`     | 2D SVG depiction with CPK coloring, atom/bond highlighting, SMARTS-highlighted grid | 30    |
-| `chematic-chem`       | 40+ descriptors, BRICS, QED, standardization, Murcko scaffold, CIP, IFG, Gasteiger, VSA, SA score, diversity, stereo enumeration | 285   |
-| `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion — Tanimoto/Dice      | 50    |
-| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS  | 77    |
-| `chematic-3d`         | 3D coordinate generation, force-field minimization, shape descriptors, PDB/XYZ    | 68    |
-| `chematic-rxn`        | Reaction SMILES parser and writer                                                  | 26    |
-| `chematic-wasm`       | **80 WASM exports** — npm: `@kent-tokyo/chematic`                                  | 125   |
-| `chematic`            | Umbrella crate with feature flags (all sub-crates)                                 | 1     |
+| Crate                 | Description                                                                                              | Tests |
+|-----------------------|----------------------------------------------------------------------------------------------------------|-------|
+| `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `with_atom_*` / `with_bond_*` API        | 30    |
+| `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES                                                              | 57    |
+| `chematic-perception` | SSSR (Balducci-Pearlman), Huckel aromaticity                                                             | 14    |
+| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords), CML (R/W), CDXML multi-fragment + stereo (R), SDF props       | 53    |
+| `chematic-depict`     | 2D SVG depiction (CPK colors, highlighting, grid), DepictData for canvas renderers                       | 30    |
+| `chematic-chem`       | 40+ descriptors, BRICS, QED, standardization, Murcko scaffold, CIP, IFG, Gasteiger, VSA, SA score, MMP  | 216   |
+| `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion — Tanimoto/Dice                           | 50    |
+| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS                        | 82    |
+| `chematic-3d`         | 3D coordinate generation, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ       | 68    |
+| `chematic-rxn`        | Reaction SMILES parser and writer                                                                        | 26    |
+| `chematic-wasm`       | **100+ WASM exports** — npm: `@kent-tokyo/chematic`                                                      | 162   |
+| `chematic`            | Umbrella crate with feature flags (all sub-crates)                                                       | 1     |
 
 ```
-cargo test --workspace   # 809 tests, all passing
+cargo test --workspace   # 869 tests, all passing
 ```
 
 ---
