@@ -272,6 +272,79 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
     svg
 }
 
+/// Render `mol` with embedded SMILES metadata in the SVG.
+///
+/// The canonical SMILES is embedded in a `<metadata><smiles>...</smiles></metadata>`
+/// element immediately after the opening `<svg>` tag. This allows the structure to
+/// be recovered from the image without external data.
+pub fn render_svg_with_metadata(mol: &Molecule, layout: &Layout, opts: &RenderOptions, smiles: &str) -> String {
+    use chematic_smiles::canonical_smiles;
+
+    let maybe_kekule: Option<Molecule> = if opts.kekulize {
+        kekulize(mol).ok().map(|kr| apply_kekule(mol, &kr))
+    } else {
+        None
+    };
+    let mol: &Molecule = maybe_kekule.as_ref().unwrap_or(mol);
+
+    let ctx = DrawCtx::from_opts(opts);
+    let mut svg = String::new();
+
+    write_svg_header_opts(layout, opts, &mut svg);
+
+    // Embed metadata with SMILES
+    let display_smiles = if smiles.is_empty() {
+        canonical_smiles(mol)
+    } else {
+        smiles.to_string()
+    };
+    svg.push_str(&format!(
+        "  <metadata><smiles>{}</smiles></metadata>\n",
+        escape_xml(&display_smiles)
+    ));
+
+    // Rest of rendering is identical to render_svg_opts
+    let atom_count = mol.atom_count();
+    let default_hc = escape_xml(&opts.highlight_color);
+    let mut atom_circles: Vec<(AtomIdx, String)> = Vec::new();
+    for idx in &opts.highlight_atoms {
+        if idx.0 as usize >= atom_count { continue; }
+        let color = opts.atom_color_map.get(idx)
+            .map(|c| escape_xml(c))
+            .unwrap_or_else(|| default_hc.clone());
+        atom_circles.push((*idx, color));
+    }
+    for (idx, color) in &opts.atom_color_map {
+        if idx.0 as usize >= atom_count { continue; }
+        if !opts.highlight_atoms.contains(idx) {
+            atom_circles.push((*idx, escape_xml(color)));
+        }
+    }
+    atom_circles.sort_unstable_by_key(|(idx, _)| *idx);
+    for (idx, color) in &atom_circles {
+        let p = layout.get(*idx);
+        svg.push_str(&format!(
+            "  <circle cx=\"{:.2}\" cy=\"{:.2}\" r=\"16\" fill=\"{}\" opacity=\"0.5\"/>\n",
+            p.x, p.y, color
+        ));
+    }
+
+    for (bond_idx, bond) in mol.bonds() {
+        let p1 = layout.get(bond.atom1);
+        let p2 = layout.get(bond.atom2);
+        if opts.highlight_bonds.contains(&bond_idx) {
+            svg.push_str(&render_line(p1, p2, "4.0", "#FF8C00"));
+        } else {
+            svg.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
+        }
+    }
+
+    write_atom_labels_ctx(mol, layout, &ctx, &mut svg);
+
+    svg.push_str("</svg>");
+    svg
+}
+
 // ---------------------------------------------------------------------------
 // SVG header
 // ---------------------------------------------------------------------------

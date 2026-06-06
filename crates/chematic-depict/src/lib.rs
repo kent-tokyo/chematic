@@ -11,9 +11,9 @@ pub mod svg;
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule};
 
 pub use grid::{depict_svg_grid, depict_svg_grid_with_opts};
-pub use layout::{BOND_LEN, Layout, Point, compute_layout, suggest_bond_direction};
+pub use layout::{BOND_LEN, Layout, Point, compute_layout, suggest_bond_direction, detect_crossings};
 pub use reaction_svg::{depict_reaction_svg, depict_reaction_svg_opts};
-pub use svg::{atom_color, atom_color_rgb, atom_display_label, atom_label_with_h, AtomLabel, HPosition, render_svg, render_svg_highlighted, render_svg_opts, RenderOptions};
+pub use svg::{atom_color, atom_color_rgb, atom_display_label, atom_label_with_h, AtomLabel, HPosition, render_svg, render_svg_highlighted, render_svg_opts, render_svg_with_metadata, RenderOptions};
 
 pub mod reaction_svg;
 
