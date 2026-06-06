@@ -1013,6 +1013,25 @@ footer {
           <p><strong>Optimization complete!</strong> Structure minimized.</p>
         </div>
       </div>
+
+      <div class="panel">
+        <h3>Energy Breakdown</h3>
+        <p>Visual analysis of energy components from last calculation.</p>
+        <div id="energy-chart" style="display: none;">
+          <canvas id="energy-canvas" width="400" height="250"></canvas>
+          <table id="energy-table" style="width: 100%; margin-top: 1rem; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <th style="text-align: left; padding: 0.5rem;">Component</th>
+                <th style="text-align: right; padding: 0.5rem;">Energy (kcal/mol)</th>
+                <th style="text-align: right; padding: 0.5rem;">%</th>
+              </tr>
+            </thead>
+            <tbody id="energy-table-body"></tbody>
+          </table>
+        </div>
+        <p id="energy-hint" style="color: var(--muted); font-size: 0.9rem;">Run a calculation above to see energy breakdown.</p>
+      </div>
     </section>
   </div><!-- /tab-dynamics -->
 
@@ -2917,6 +2936,13 @@ function runRgroup() {
       document.getElementById('coulomb-output').textContent =
         `Coulomb Energy: ${data.coulomb_energy.toFixed(4)} ${data.unit}`;
       document.getElementById('coulomb-result').style.display = 'block';
+
+      // Show energy breakdown
+      showEnergyBreakdown({
+        coulomb: data.coulomb_energy,
+        total: data.coulomb_energy,
+        type: 'Coulomb (Direct)'
+      });
     } catch (e) {
       showError('coulomb-result', `Error: ${e.message}`);
     }
@@ -2938,10 +2964,101 @@ function runRgroup() {
       });
       document.getElementById('md-output').textContent = output;
       document.getElementById('md-result').style.display = 'block';
+
+      // Show energy breakdown for final frame
+      if (frames.length > 0) {
+        const finalFrame = frames[frames.length - 1];
+        showEnergyBreakdown({
+          potential: finalFrame.potential,
+          kinetic: finalFrame.kinetic,
+          total: finalFrame.potential + finalFrame.kinetic,
+          type: 'MD (Final Frame)'
+        });
+      }
     } catch (e) {
       showError('md-result', `Error: ${e.message}`);
     }
   });
+
+  // Helper: Display energy breakdown chart and table
+  function showEnergyBreakdown(energyData) {
+    const energyChart = document.getElementById('energy-chart');
+    const energyHint = document.getElementById('energy-hint');
+    const tableBody = document.getElementById('energy-table-body');
+
+    // Build component list from energyData
+    const components = [];
+    if (energyData.potential !== undefined) components.push(['Potential', energyData.potential]);
+    if (energyData.kinetic !== undefined) components.push(['Kinetic', energyData.kinetic]);
+    if (energyData.coulomb !== undefined) components.push(['Coulomb', energyData.coulomb]);
+    if (energyData.bond !== undefined) components.push(['Bond', energyData.bond]);
+    if (energyData.angle !== undefined) components.push(['Angle', energyData.angle]);
+    if (energyData.vdw !== undefined) components.push(['VDW', energyData.vdw]);
+
+    // Populate table
+    tableBody.textContent = '';
+    const total = energyData.total || Math.abs(components.reduce((s, [_, e]) => s + e, 0));
+    components.forEach(([name, energy]) => {
+      const row = document.createElement('tr');
+      row.style.borderBottom = '1px solid var(--border)';
+      const pct = Math.abs(energy / total) * 100;
+      row.innerHTML = `<td style="padding: 0.5rem;">${name}</td><td style="text-align: right; padding: 0.5rem;">${energy.toFixed(4)}</td><td style="text-align: right; padding: 0.5rem;">${pct.toFixed(1)}%</td>`;
+      tableBody.appendChild(row);
+    });
+    const totalRow = document.createElement('tr');
+    totalRow.style.fontWeight = '600';
+    totalRow.innerHTML = `<td style="padding: 0.5rem;">Total</td><td style="text-align: right; padding: 0.5rem;">${total.toFixed(4)}</td><td style="text-align: right; padding: 0.5rem;">100%</td>`;
+    tableBody.appendChild(totalRow);
+
+    energyChart.style.display = 'block';
+    energyHint.style.display = 'none';
+
+    // Draw simple bar chart on canvas
+    const canvas = document.getElementById('energy-canvas');
+    if (canvas && canvas.getContext) {
+      drawEnergyChart(canvas, components, total);
+    }
+  }
+
+  function drawEnergyChart(canvas, components, total) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const padding = 40;
+    const width = canvas.width - 2 * padding;
+    const height = canvas.height - 2 * padding;
+    const barWidth = width / components.length / 1.5;
+    const maxEnergy = Math.max(...components.map(([_, e]) => Math.abs(e)));
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'var(--text)';
+    ctx.font = '12px var(--font-mono)';
+    ctx.textAlign = 'center';
+
+    const colors = ['#4f8ef7', '#34d399', '#f87171', '#fbbf24', '#a78bfa', '#06b6d4'];
+    components.forEach(([name, energy], i) => {
+      const barHeight = (Math.abs(energy) / maxEnergy) * height;
+      const x = padding + i * (width / components.length) + (width / components.length - barWidth) / 2;
+      const y = padding + height - barHeight;
+
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fillRect(x, y, barWidth, barHeight);
+
+      ctx.fillStyle = 'var(--muted)';
+      ctx.fillText(name, x + barWidth / 2, canvas.height - padding + 20);
+
+      ctx.fillStyle = 'var(--text)';
+      ctx.fillText(energy.toFixed(2), x + barWidth / 2, y - 5);
+    });
+
+    // Axes
+    ctx.strokeStyle = 'var(--border)';
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, padding + height);
+    ctx.lineTo(padding + width, padding + height);
+    ctx.stroke();
+  }
 
   // Dynamics: DREIDING minimize
   document.getElementById('btn-minimize').addEventListener('click', async () => {
