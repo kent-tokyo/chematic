@@ -11,6 +11,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.25] — 2026-06-06
+
+### Added — P2 features: 2D layout quality, stereochemistry manipulation, reaction analysis
+
+#### `chematic-depict` — 2D Layout Quality & Metadata
+
+- `detect_crossings(layout, mol) -> Vec<(BondIdx, BondIdx)>` — identify bond crossing pairs for layout quality assessment
+- `render_svg_with_metadata(mol, layout, opts, smiles) -> String` — embed SMILES in SVG `<metadata>` tags for image-based structure recovery
+
+#### `chematic-chem` — Stereochemistry Manipulation
+
+- `invert_stereocenter(mol, idx) -> Molecule` — flip R↔S configuration by inverting wedge bonds (Up↔Down)
+- `enumerate_stereoisomers(mol) -> Vec<Molecule>` — generate all 2^n stereoisomers from unspecified stereocenters (max 2^6 = 64)
+
+#### `chematic-rxn` — Reaction Center Analysis
+
+- `ReactionCenter { broken_bonds, formed_bonds, changed_atoms }` structure
+- `find_reaction_center(rxn) -> ReactionCenter` — identify bonds broken/formed and atoms changed using atom_map matching
+
+### Tests
+
+- 935 tests, all passing (865 → +70)
+
+---
+
+## [0.1.24] — 2026-06-06
+
+### Added — P1 features: atom label generation, standardization, molecular hashing
+
+#### `chematic-depict` — Atom Display Labels
+
+- `HPosition` enum (Left, Right, Up, Down) for hydrogen position hints
+- `AtomLabel` struct with symbol, h_count, h_position
+- `atom_display_label(mol, idx) -> String` — condensed notation ("CH₃", "NH₂", "OH")
+- `atom_label_with_h(mol, idx) -> AtomLabel` — structured label data with hydrogen positioning
+
+#### `chematic-chem` — Molecule Standardization
+
+- `StandardizeOptions { canonical_tautomer, neutralize_charges, remove_explicit_h, largest_fragment_only }`
+- `standardize(mol, opts) -> Molecule` — chain transformations in order: largest_fragment → neutralize → remove_h → tautomer
+
+#### `chematic-chem` — Molecular Hashing
+
+- `mol_hash(mol) -> u64` — FNV-1a hash of canonical SMILES
+- `are_identical(a, b) -> bool` — compare molecules by canonical SMILES
+
+### Tests
+
+- 935 tests, all passing (865 → +70)
+
+---
+
+## [0.1.23] — 2026-06-06
+
+### Added — Element API expansion, implicit hydrogen computation, aromaticity application
+
+#### `chematic-core` — Element Radius & Implicit Hydrogen
+
+- `Element::vdw_radius() -> f64` — Van der Waals radius (Bondi 1964 + Alvarez 2008/2013 tables)
+- `Element::covalent_radius() -> f64` — covalent radius
+- `Molecule::implicit_hydrogen_count(idx) -> u8` — implicit H count via valence rules
+- `Molecule::total_formula() -> String` — Hill notation including implicit hydrogens
+
+#### `chematic-core` — Immutable Update API
+
+- `Molecule::with_atom_aromatic(idx, aromatic) -> Molecule`
+- `Molecule::with_bond_order(idx, order) -> Molecule`
+
+#### `chematic-perception` — Aromaticity Application
+
+- `apply_aromaticity(mol) -> Molecule` — apply aromatic flags and BondOrder::Aromatic to Kekulized structure
+
+#### `chematic-3d` — Naming Clarity
+
+- `minimize_uff()` — alias for `minimize()` for better discoverability
+
+### Tests
+
+- 886 tests, all passing (877 → +9)
+
+---
+
 ## [0.1.22] — 2026-06-06
 
 ### Added (`chematic-smarts`) — MCS ring-awareness constraints (Issue #1)
