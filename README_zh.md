@@ -39,7 +39,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成。**869 个测试，全部通过。零 C/C++ 依赖。**
+所有阶段已完成。**877 个测试，全部通过。零 C/C++ 依赖。**
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
@@ -50,14 +50,14 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、DepictData、用户坐标支持                                        | 30     |
 | `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、Murcko 骨架、CIP、IFG、Gasteiger、VSA、SA 评分、多样性、MMP 分析     | 216    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice               | 50     |
-| `chematic-smarts`     | SMARTS 解析器（递归、价键、杂化），VF2 子图同构，MCS                                                 | 82     |
+| `chematic-smarts`     | SMARTS 解析器（递归、价键、杂化），VF2 子图同构，MCS（含环感知约束）                                  | 84     |
 | `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ 格式                                 | 68     |
 | `chematic-rxn`        | 反应 SMILES 解析器与写入器                                                                             | 26     |
 | `chematic-wasm`       | **100+ WASM 导出** — npm：`@kent-tokyo/chematic`                                                      | 162    |
 | `chematic`            | 带功能标志的伞形 crate（含所有子 crate）                                                              | 1      |
 
 ```
-cargo test --workspace   # 869 个测试，全部通过
+cargo test --workspace   # 877 个测试，全部通过
 ```
 
 ---

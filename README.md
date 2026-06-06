@@ -48,7 +48,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete. **869 tests, all passing. Zero C/C++ dependencies.**
+All phases complete. **877 tests, all passing. Zero C/C++ dependencies.**
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -59,14 +59,14 @@ All phases complete. **869 tests, all passing. Zero C/C++ dependencies.**
 | `chematic-depict`     | 2D SVG depiction (CPK colors, highlighting, grid), DepictData for canvas renderers                       | 30    |
 | `chematic-chem`       | 40+ descriptors, BRICS, QED, standardization, Murcko scaffold, CIP, IFG, Gasteiger, VSA, SA score, MMP  | 216   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion — Tanimoto/Dice                           | 50    |
-| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS                        | 82    |
+| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS with ring-awareness constraints | 84    |
 | `chematic-3d`         | 3D coordinate generation, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ       | 68    |
 | `chematic-rxn`        | Reaction SMILES parser and writer                                                                        | 26    |
 | `chematic-wasm`       | **100+ WASM exports** — npm: `@kent-tokyo/chematic`                                                      | 162   |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates)                                                       | 1     |
 
 ```
-cargo test --workspace   # 869 tests, all passing
+cargo test --workspace   # 877 tests, all passing
 ```
 
 ---
