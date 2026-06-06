@@ -1759,6 +1759,34 @@ export function mcs_smiles_json(smiles_json) {
 }
 
 /**
+ * Optimize molecular geometry using DREIDING force field.
+ *
+ * Performs geometry minimization with DREIDING force field parameters.
+ * Returns minimized coordinate PDB.
+ *
+ * # Arguments
+ * * `mol` - Molecule to optimize
+ *
+ * # Returns
+ * PDB format string with optimized coordinates
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function minimize_dreiding_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.minimize_dreiding_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Find matched molecular pairs in a set of molecules as JSON.
  *
  * `smiles_json` — JSON array of SMILES strings to analyze.

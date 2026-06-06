@@ -724,6 +724,20 @@ export function maxmin_picks_ecfp4_json(smiles_json: string, n: number): string;
 export function mcs_smiles_json(smiles_json: string): string;
 
 /**
+ * Optimize molecular geometry using DREIDING force field.
+ *
+ * Performs geometry minimization with DREIDING force field parameters.
+ * Returns minimized coordinate PDB.
+ *
+ * # Arguments
+ * * `mol` - Molecule to optimize
+ *
+ * # Returns
+ * PDB format string with optimized coordinates
+ */
+export function minimize_dreiding_json(mol: MolHandle): string;
+
+/**
  * Find matched molecular pairs in a set of molecules as JSON.
  *
  * `smiles_json` — JSON array of SMILES strings to analyze.
@@ -1246,6 +1260,7 @@ export interface InitOutput {
     readonly match_smarts_smiles: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly maxmin_picks_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly mcs_smiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly minimize_dreiding_json: (a: number) => [number, number];
     readonly mmp_pairs_json: (a: number, b: number) => [number, number, number, number];
     readonly mol2_to_smiles: (a: number, b: number) => [number, number];
     readonly mol_block_coords_json: (a: number, b: number) => [number, number, number, number];

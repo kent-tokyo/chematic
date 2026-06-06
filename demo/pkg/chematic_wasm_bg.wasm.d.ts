@@ -72,6 +72,7 @@ export const maccs_bitvec: (a: number) => [number, number];
 export const match_smarts_smiles: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const maxmin_picks_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
 export const mcs_smiles_json: (a: number, b: number) => [number, number, number, number];
+export const minimize_dreiding_json: (a: number) => [number, number];
 export const mmp_pairs_json: (a: number, b: number) => [number, number, number, number];
 export const mol2_to_smiles: (a: number, b: number) => [number, number];
 export const mol_block_coords_json: (a: number, b: number) => [number, number, number, number];
