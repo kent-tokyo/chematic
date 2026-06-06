@@ -70,7 +70,7 @@ cargo test --workspace   # 933 个测试，全部通过
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.1.22", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.1.23", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 使用单独 crate
@@ -78,9 +78,9 @@ chematic = { version = "0.1.22", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.1.22"
-chematic-perception = "0.1.22"
-chematic-fp         = "0.1.22"
+chematic-smiles     = "0.1.23"
+chematic-perception = "0.1.23"
+chematic-fp         = "0.1.23"
 ```
 
 ```rust
