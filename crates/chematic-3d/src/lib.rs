@@ -19,7 +19,7 @@ pub mod xyz;
 pub use conformer::{ConformerEnsemble, ConformerError};
 pub use coords::{Coords3D, Point3};
 pub use dg::generate_coords;
-pub use minimize::{MinimizeConfig, minimize, minimize_with_config};
+pub use minimize::{MinimizeConfig, minimize, minimize_uff, minimize_with_config};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
 pub use shape_descriptors::{
     asphericity, eccentricity, npr1, npr2, plane_of_best_fit,

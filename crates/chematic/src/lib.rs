@@ -31,6 +31,8 @@ pub use chematic_smarts as smarts;
 pub use chematic_rxn as rxn;
 #[cfg(feature = "threed")]
 pub use chematic_3d as threed;
+#[cfg(feature = "iupac")]
+pub use chematic_iupac as iupac;
 
 #[cfg(test)]
 mod tests {

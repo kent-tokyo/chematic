@@ -514,6 +514,25 @@ pub fn atom_color(atomic_number: u8) -> &'static str {
     }
 }
 
+/// CPK color for `atomic_number` as an `[r, g, b]` byte triple.
+///
+/// Values match [`atom_color`]; elements not in the CPK table return `[0, 0, 0]`.
+/// Use this instead of parsing the hex string when integrating with a GUI
+/// framework (e.g. `egui::Color32::from_rgb(r, g, b)`).
+pub fn atom_color_rgb(atomic_number: u8) -> [u8; 3] {
+    match atomic_number {
+        7  => [0x30, 0x50, 0xF8], // N  blue
+        8  => [0xFF, 0x0D, 0x0D], // O  red
+        16 => [0xFF, 0xFF, 0x30], // S  yellow
+        17 => [0x1F, 0xF0, 0x1F], // Cl green
+        9  => [0x90, 0xE0, 0x50], // F  light-green
+        35 => [0xA6, 0x29, 0x29], // Br brown
+        53 => [0x94, 0x00, 0x94], // I  purple
+        15 => [0xFF, 0x80, 0x00], // P  orange
+        _  => [0x00, 0x00, 0x00], // default black
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Atom labels
 // ---------------------------------------------------------------------------
@@ -707,5 +726,29 @@ mod tests {
         let opts = RenderOptions { highlight_atoms: hl, ..Default::default() };
         let svg = render_svg_opts(&m, &layout, &opts);
         assert!(svg.contains("<circle"), "highlight must produce a circle");
+    }
+
+    #[test]
+    fn test_atom_color_rgb_matches_hex() {
+        // Verify atom_color_rgb values match atom_color hex strings.
+        for atomic_number in [7u8, 8, 9, 15, 16, 17, 35, 53, 6] {
+            let hex = atom_color(atomic_number);
+            let rgb = atom_color_rgb(atomic_number);
+            let r = u8::from_str_radix(&hex[1..3], 16).unwrap();
+            let g = u8::from_str_radix(&hex[3..5], 16).unwrap();
+            let b = u8::from_str_radix(&hex[5..7], 16).unwrap();
+            assert_eq!(rgb, [r, g, b], "mismatch for atomic_number {atomic_number}: hex={hex}");
+        }
+    }
+
+    #[test]
+    fn test_atom_color_rgb_nitrogen_blue() {
+        assert_eq!(atom_color_rgb(7), [0x30, 0x50, 0xF8]);
+    }
+
+    #[test]
+    fn test_atom_color_rgb_unknown_black() {
+        assert_eq!(atom_color_rgb(0), [0, 0, 0]);
+        assert_eq!(atom_color_rgb(118), [0, 0, 0]);
     }
 }

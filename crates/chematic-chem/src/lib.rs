@@ -5,7 +5,9 @@
 
 #![forbid(unsafe_code)]
 
+pub mod abbreviations;
 pub mod alerts;
+pub mod xlogp3;
 pub mod brics;
 pub mod cip;
 pub mod named_groups;
@@ -37,7 +39,7 @@ pub use descriptors::{
 };
 
 pub use alerts::{pains_matches, pains_passes};
-pub use brics::{brics_bonds, brics_fragments};
+pub use brics::{BricsConfig, brics_bonds, brics_fragments, brics_fragments_with_config};
 pub use mmp::{MmpPair, find_mmp};
 pub use diversity::{butina_cluster, maxmin_picks};
 pub use gasteiger::gasteiger_charges;
@@ -59,3 +61,5 @@ pub use topo_descriptors::{
 };
 pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
 pub use vsa::{peoe_vsa, slogp_vsa, smr_vsa};
+pub use abbreviations::{abbreviations, expand_abbreviation};
+pub use xlogp3::{xlogp3, xlogp3_per_atom};

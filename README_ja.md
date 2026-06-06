@@ -39,25 +39,26 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了。**877 テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了。**933 テスト、全パス。C/C++ 依存ゼロ。**
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）                                                                                      | 30      |
+| `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）；ミュータブル API・`fragments`・`validate_valence`・`formula_with_isotopes` | 48      |
 | `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES                                                                                               | 57      |
-| `chematic-perception`  | SSSR (Balducci-Pearlman)、Huckel 芳香族性認識                                                                                            | 14      |
-| `chematic-mol`         | MOL/SDF V2000+V3000（R/W）、SDF プロパティ読み書き、CML（R/W）、CDXML（R）、2D 座標取得                                                  | 53      |
-| `chematic-depict`      | 2D SVG 描画（CPK カラー・ハイライト・グリッド）、DepictData、ユーザー座標対応                                                            | 30      |
-| `chematic-chem`        | 40+ 記述子、BRICS、QED、標準化、Murcko スキャフォルド、CIP、IFG、Gasteiger、VSA、SA スコア、多様性、MMP 分析                             | 216     |
+| `chematic-perception`  | SSSR、Hückel 芳香族性、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`                                     | 18      |
+| `chematic-mol`         | MOL/SDF V2000+V3000（R/W）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き                                  | 61      |
+| `chematic-depict`      | 2D SVG 描画（CPK カラー・ハイライト・グリッド）、DepictData、`suggest_bond_direction`・反応 SVG                                          | 39      |
+| `chematic-chem`        | 40+ 記述子（`xlogp3` 含む）、BRICS（`BricsConfig`）、QED、標準化、CIP、IFG、Gasteiger、`expand_abbreviation`                             | 226     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice                                               | 50      |
-| `chematic-smarts`      | SMARTS（再帰・原子価・ハイブリッド化対応）、VF2 部分構造一致、MCS（ring-awareness 制約付き）                                             | 84      |
+| `chematic-smarts`      | SMARTS（再帰・原子価）、VF2（`MatchConfig`）、MCS（`AtomCompare`/`BondCompare`/ring-awareness）                                          | 84      |
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ 形式                                                                    | 68      |
-| `chematic-rxn`         | 反応 SMILES パーサーとライター                                                                                                            | 26      |
+| `chematic-rxn`         | 反応 SMILES/SMIRKS — `run_reactants`（生成物原子価バリデーション付き）                                                                   | 28      |
 | `chematic-wasm`        | **100+ WASM エクスポート** — npm: `@kent-tokyo/chematic`                                                                                 | 162     |
-| `chematic`             | フィーチャーフラグ付きアンブレラクレート（全サブクレート）                                                                              | 1       |
+| `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— アルカン、シクロアルカン、アルコール、アミン、ハロアルカン                                | 8       |
+| `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac` フィーチャー追加）                                                                    | 1       |
 
 ```
-cargo test --workspace   # 877 テスト、全パス
+cargo test --workspace   # 933 テスト、全パス
 ```
 
 ---
@@ -69,7 +70,7 @@ cargo test --workspace   # 877 テスト、全パス
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.1.21", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.1.22", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 個別クレートを使う場合
@@ -77,9 +78,9 @@ chematic = { version = "0.1.21", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.1.21"
-chematic-perception = "0.1.21"
-chematic-fp         = "0.1.21"
+chematic-smiles     = "0.1.22"
+chematic-perception = "0.1.22"
+chematic-fp         = "0.1.22"
 ```
 
 ```rust
@@ -205,8 +206,38 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 ### Phase 7（完成）
 拡張記述子・多様性・SA スコア・EState・IFG・Gasteiger・VSA。
 
-### Phase 8（v0.1.20〜v0.1.21、完成）
-100+ WASM エクスポート・CML/CDXML・Mutable Molecule API・DepictData・MMP・R-group・ConformerEnsemble・SDF/V3000 write。
+### Phase 8（v0.1.20〜v0.1.22、完成）
+100+ WASM エクスポート・CML/CDXML・Mutable Molecule API・DepictData・MMP・R-group・ConformerEnsemble・SDF/V3000 write・MCS ring-awareness 制約。
+
+### Phase 15（v0.1.29〜32、完成）
+ミュータブル `Molecule`（`add/remove_atom/bond`・`fragments`・`is_connected`）、
+`assign_stereo_from_2d`（ウェッジ結合→R/S）、`aromatize`/`kekulize_inplace`、
+`depict_reaction_svg`、`SdfRecord`（coords+properties 統合）、MDL RXN V2000 読み書き、
+`expand_abbreviation`（30 略号）、`formula_with_isotopes`。
+
+### Phase 14（v0.1.28、完成）
+`xlogp3()` (Cheng 2007 原子型)、`chematic-iupac`（純 Rust オフライン IUPAC 命名）、
+`BricsConfig { min_fragment_size }`、`MatchConfig { max_matches }`、
+`McsConfig { atom_compare: AtomCompare, bond_compare: BondCompare }` でヘテロ環 scaffold hopping 対応。
+
+### Phase 13（v0.1.27、完成）
+`MolMetadata::default().with_name("アスピリン").with_comment("...")` — MOL/SDF メタデータ用 fluent builder。
+
+### Phase 12（v0.1.26、完成）
+`atom_color_rgb(atomic_number: u8) -> [u8; 3]` — hex 解析なしで CPK カラーを RGB バイトトリプルとして取得。
+
+### Phase 11（v0.1.25、完成）
+`suggest_bond_direction(mol, atom, layout) -> f64`（ラジアン）: sp2/sp3 角度オフセット + 最大最小分離角選択による化学的に自然な新規結合方向提案。`BOND_LEN` 定数を公開。
+
+### Phase 10（v0.1.24、完成）
+`validate_valence(mol) -> Vec<ValenceError>` 公開 API（chematic-core + chematic-perception 経由で参照可能）、`run_reactants` が過原子価の生成物セットを自動除外。
+
+### Phase 9（v0.1.23、完成）
+`Element::vdw_radius()` / `covalent_radius()`（Bondi/Alvarez テーブル 118 元素）、
+`Molecule::implicit_hydrogen_count()` / `total_formula()`（暗黙的 H を含む Hill 式）、
+`apply_aromaticity()`（ケクレ化分子 → 芳香族フラグ適用 Molecule）、
+`with_atom_aromatic()` / `with_bond_order()` immutable update API 拡張、
+`minimize_uff()` エイリアス（UFF 力場最小化の発見性向上）。
 
 ---
 

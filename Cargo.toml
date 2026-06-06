@@ -12,6 +12,7 @@ members = [
     "crates/chematic-rxn",
     "crates/chematic-wasm",
     "crates/chematic",
+    "crates/chematic-iupac",
     "tools/gen_sa_table",
 ]
 resolver = "2"

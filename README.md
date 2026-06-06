@@ -48,25 +48,26 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete. **877 tests, all passing. Zero C/C++ dependencies.**
+All phases complete. **933 tests, all passing. Zero C/C++ dependencies.**
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
-| `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `with_atom_*` / `with_bond_*` API        | 30    |
+| `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `add/remove_atom/bond`, `fragments()`, `is_connected()`, `formula_with_isotopes`, `validate_valence` | 48    |
 | `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES                                                              | 57    |
-| `chematic-perception` | SSSR (Balducci-Pearlman), Huckel aromaticity                                                             | 14    |
-| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords), CML (R/W), CDXML multi-fragment + stereo (R), SDF props       | 53    |
-| `chematic-depict`     | 2D SVG depiction (CPK colors, highlighting, grid), DepictData for canvas renderers                       | 30    |
-| `chematic-chem`       | 40+ descriptors, BRICS, QED, standardization, Murcko scaffold, CIP, IFG, Gasteiger, VSA, SA score, MMP  | 216   |
+| `chematic-perception` | SSSR, Hückel aromaticity, `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`   | 18    |
+| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W             | 61    |
+| `chematic-depict`     | 2D SVG depiction (CPK colors, highlighting, grid), DepictData, `suggest_bond_direction`, reaction SVG    | 39    |
+| `chematic-chem`       | 40+ descriptors incl. `xlogp3`, BRICS (`BricsConfig`), QED, standardization, CIP, IFG, `expand_abbreviation` | 226   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion — Tanimoto/Dice                           | 50    |
-| `chematic-smarts`     | SMARTS parser (recursive, valence, hybridization), VF2 subgraph isomorphism, MCS with ring-awareness constraints | 84    |
+| `chematic-smarts`     | SMARTS parser, VF2 (`MatchConfig` max_matches), MCS (`AtomCompare`/`BondCompare`/ring-awareness)         | 84    |
 | `chematic-3d`         | 3D coordinate generation, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ       | 68    |
-| `chematic-rxn`        | Reaction SMILES parser and writer                                                                        | 26    |
+| `chematic-rxn`        | Reaction SMILES/SMIRKS — `run_reactants` with product valence validation                                 | 28    |
 | `chematic-wasm`       | **100+ WASM exports** — npm: `@kent-tokyo/chematic`                                                      | 162   |
-| `chematic`            | Umbrella crate with feature flags (all sub-crates)                                                       | 1     |
+| `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes, cycloalkanes, alcohols, amines, halides    | 8     |
+| `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`)                                        | 1     |
 
 ```
-cargo test --workspace   # 877 tests, all passing
+cargo test --workspace   # 933 tests, all passing
 ```
 
 ---
@@ -355,6 +356,42 @@ SDF/MOL WASM bindings,
 functional group identification (Ertl 2017 IFG), Gasteiger-Marsili PEOE partial charges,
 VSA descriptors (SlogP_VSA × 12, SMR_VSA × 10, PEOE_VSA × 14),
 SA score (complexity-based), MaxMin diversity picking, Butina clustering.
+
+### Phase 8 — WASM Expansion + Mutable API (v0.1.20–v0.1.22, complete)
+100+ WASM exports, CML/CDXML, Mutable Molecule API (`with_atom_*` / `with_bond_*`),
+DepictData, MMP, R-group decomposition, ConformerEnsemble, SDF/V3000 write,
+MCS ring-awareness constraints.
+
+### Phase 15 — Mutable API, 2D Stereo, Reaction SVG, RXN format (v0.1.29–32, complete)
+Mutable `Molecule` (`add/remove_atom/bond`, `set_charge/element`, `fragments`, `is_connected`),
+`MoleculeBuilder::from_molecule`, `assign_stereo_from_2d` (wedge→R/S), `aromatize`/`kekulize_inplace`,
+`depict_reaction_svg`, `SdfRecord` with coords+properties, MDL RXN V2000 R/W,
+`expand_abbreviation` (30 symbols), `formula_with_isotopes`.
+
+### Phase 14 — XLogP3, IUPAC naming, MCS/BRICS/SMARTS config (v0.1.28, complete)
+`xlogp3()` (Cheng 2007 atom types), `chematic-iupac` new crate (pure Rust, offline IUPAC naming),
+`BricsConfig { min_fragment_size }`, `MatchConfig { max_matches }`,
+`McsConfig { atom_compare: AtomCompare, bond_compare: BondCompare }` for scaffold hopping.
+
+### Phase 13 — `MolMetadata` builder API (v0.1.27, complete)
+`MolMetadata::default().with_name("aspirin").with_comment("...")` — fluent builder for MOL/SDF metadata.
+
+### Phase 12 — `atom_color_rgb` (v0.1.26, complete)
+`atom_color_rgb(atomic_number: u8) -> [u8; 3]` — CPK color as RGB byte triple, no hex parsing needed.
+
+### Phase 11 — Bond Direction Suggestion (v0.1.25, complete)
+`suggest_bond_direction(mol, atom, layout) -> f64` (radians): chemistry-aware new-bond placement using sp2/sp3 angle offsets + maximum-separation selection.  `BOND_LEN` constant now exported.
+
+### Phase 10 — Valence Validation API (v0.1.24, complete)
+`validate_valence(mol) -> Vec<ValenceError>` public API (chematic-core + chematic-perception re-export),
+`run_reactants` now silently filters product sets containing over-valenced atoms.
+
+### Phase 9 — Element Radius API + Aromaticity Application (v0.1.23, complete)
+`Element::vdw_radius()` / `covalent_radius()` (Bondi/Alvarez tables, all 118 elements),
+`Molecule::implicit_hydrogen_count()` / `total_formula()` (Hill formula with implicit H),
+`apply_aromaticity()` (convert kekulized molecules to aromatic representation),
+`with_atom_aromatic()` / `with_bond_order()` immutable update API,
+`minimize_uff()` alias for UFF force-field minimization.
 
 See `tasks/todo.md` for the detailed per-task breakdown.
 

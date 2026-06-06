@@ -7,7 +7,7 @@
 use chematic_core::Molecule;
 
 use crate::error::MolParseError;
-use crate::mol2000::{MolMetadata, parse_mol};
+use crate::mol2000::{MolMetadata, parse_mol, parse_mol_with_coords};
 
 /// Iterator over molecules in an SDF string.
 ///
@@ -98,15 +98,21 @@ pub fn parse_sdf(input: &str) -> Result<Vec<(Molecule, MolMetadata)>, MolParseEr
 // SdfRecord — molecule + SD data fields
 // ---------------------------------------------------------------------------
 
-/// A parsed SDF record including the molecule, its name, and SD data fields.
+/// A fully-parsed SDF record: molecule, metadata, 2D coordinates, and SD properties.
+///
+/// `SdfRecordReader` yields one `SdfRecord` per molecule in an SDF string.
+/// The `properties` map corresponds to `> <FieldName>` data blocks.
 pub struct SdfRecord {
-    /// Parsed molecule.
+    /// Parsed molecule (heavy atoms only, no explicit H).
     pub mol: Molecule,
-    /// Molecule name from MOL header line 1.
-    pub name: String,
-    /// SD data fields in file order.  Each entry is `(field_name, value)`.
+    /// Metadata from the three-line MOL header (name, comment).
+    pub meta: MolMetadata,
+    /// 2D atom coordinates in Å, indexed by atom position.
+    /// Empty when the MOL block contains no coordinate data.
+    pub coords: Vec<(f64, f64)>,
+    /// SD data fields.  Keys are field names; values are field content.
     /// Multi-line values are joined with `\n`.
-    pub properties: Vec<(String, String)>,
+    pub properties: std::collections::HashMap<String, String>,
 }
 
 /// Iterator over SDF records that also captures SD data fields.
@@ -169,22 +175,21 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             return self.next();
         }
 
-        // Pass the full block (including any data fields) to the V2000 parser,
-        // matching the behaviour of SdfReader — parse_mol ignores content after
-        // the "M  END" line.
-        let (mol, meta) = match parse_mol(block) {
-            Ok(pair) => pair,
+        // Parse molecule + 2D coordinates.
+        let (mol, meta, coords) = match parse_mol_with_coords(block) {
+            Ok(triple) => triple,
             Err(e) => return Some(Err(e)),
         };
 
         // Extract data fields from the part after "M  END".
         let data_part = block
             .find("M  END")
-            .map(|pos| &block[pos + 6..]) // 6 == len("M  END")
+            .map(|pos| &block[pos + 6..])
             .unwrap_or("");
-        let properties = parse_sd_fields(data_part);
+        let properties: std::collections::HashMap<String, String> =
+            parse_sd_fields(data_part).into_iter().collect();
 
-        Some(Ok(SdfRecord { mol, name: meta.name, properties }))
+        Some(Ok(SdfRecord { mol, meta, coords, properties }))
     }
 }
 

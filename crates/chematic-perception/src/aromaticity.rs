@@ -86,6 +86,39 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
     AromaticityModel { aromatic_atoms, aromatic_bonds }
 }
 
+/// Apply aromaticity perception to a kekulized molecule.
+///
+/// Returns a new [`Molecule`] where atoms in Hückel-aromatic rings have
+/// `atom.aromatic = true` and their bonds carry [`BondOrder::Aromatic`].
+/// Non-aromatic atoms and bonds are unchanged.
+///
+/// The input must be kekulized (no `Aromatic` bond orders).  See
+/// [`chematic_core::kekulize`] / [`chematic_core::apply_kekule`] if you
+/// need to de-aromatize an aromatic-SMILES input first.
+pub fn apply_aromaticity(mol: &Molecule) -> Molecule {
+    use chematic_core::{BondOrder, MoleculeBuilder};
+
+    let model = assign_aromaticity(mol);
+    let mut builder = MoleculeBuilder::new();
+
+    for (idx, atom) in mol.atoms() {
+        let mut a = atom.clone();
+        if model.is_atom_aromatic(idx) {
+            a.aromatic = true;
+        }
+        builder.add_atom(a);
+    }
+    for (bidx, bond) in mol.bonds() {
+        let order = if model.is_bond_aromatic(bidx) {
+            BondOrder::Aromatic
+        } else {
+            bond.order
+        };
+        let _ = builder.add_bond(bond.atom1, bond.atom2, order);
+    }
+    builder.build()
+}
+
 // ---------------------------------------------------------------------------
 // Per-ring pi electron count
 // ---------------------------------------------------------------------------
@@ -383,5 +416,44 @@ mod tests {
             }
         }
         assert_eq!(count, 6, "benzene has 6 aromatic bonds");
+    }
+
+    #[test]
+    fn test_apply_aromaticity_benzene() {
+        use chematic_core::BondOrder;
+
+        let mol = benzene_kekule();
+        let aromatic = apply_aromaticity(&mol);
+
+        // All 6 atoms must have aromatic=true
+        for (_, atom) in aromatic.atoms() {
+            assert!(atom.aromatic, "every benzene carbon should be aromatic");
+        }
+
+        // All 6 bonds must have BondOrder::Aromatic
+        let mut aromatic_bond_count = 0;
+        for (_, bond) in aromatic.bonds() {
+            if bond.order == BondOrder::Aromatic {
+                aromatic_bond_count += 1;
+            }
+        }
+        assert_eq!(aromatic_bond_count, 6);
+    }
+
+    #[test]
+    fn test_apply_aromaticity_cyclohexane_unchanged() {
+        use chematic_core::BondOrder;
+
+        let mol = cyclohexane();
+        let result = apply_aromaticity(&mol);
+
+        // No atom should gain aromatic flag
+        for (_, atom) in result.atoms() {
+            assert!(!atom.aromatic);
+        }
+        // No bond should become Aromatic
+        for (_, bond) in result.bonds() {
+            assert_ne!(bond.order, BondOrder::Aromatic);
+        }
     }
 }

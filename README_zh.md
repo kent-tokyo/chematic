@@ -39,25 +39,26 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成。**877 个测试，全部通过。零 C/C++ 依赖。**
+所有阶段已完成。**933 个测试，全部通过。零 C/C++ 依赖。**
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
-| `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）                                                 | 30     |
+| `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）；可变 API、`fragments`、`validate_valence`、`formula_with_isotopes` | 48     |
 | `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES                                                                | 57     |
-| `chematic-perception` | SSSR（Balducci-Pearlman）、Hückel 芳香性                                                              | 14     |
-| `chematic-mol`        | MOL/SDF V2000+V3000（读写）、CML（读写）、CDXML（读）、2D 坐标提取                                   | 53     |
-| `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、DepictData、用户坐标支持                                        | 30     |
-| `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、Murcko 骨架、CIP、IFG、Gasteiger、VSA、SA 评分、多样性、MMP 分析     | 216    |
+| `chematic-perception` | SSSR、Hückel 芳香性、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`        | 18     |
+| `chematic-mol`        | MOL/SDF V2000+V3000（读写）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写 | 61     |
+| `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、DepictData、`suggest_bond_direction`、反应 SVG                    | 39     |
+| `chematic-chem`       | 40+ 描述符（含 `xlogp3`）、BRICS（`BricsConfig`）、QED、标准化、CIP、IFG、`expand_abbreviation`        | 226    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice               | 50     |
 | `chematic-smarts`     | SMARTS 解析器（递归、价键、杂化），VF2 子图同构，MCS（含环感知约束）                                  | 84     |
 | `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ 格式                                 | 68     |
-| `chematic-rxn`        | 反应 SMILES 解析器与写入器                                                                             | 26     |
+| `chematic-rxn`        | 反应 SMILES/SMIRKS — `run_reactants`（含生成物价键验证）                                               | 28     |
 | `chematic-wasm`       | **100+ WASM 导出** — npm：`@kent-tokyo/chematic`                                                      | 162    |
-| `chematic`            | 带功能标志的伞形 crate（含所有子 crate）                                                              | 1      |
+| `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— 烷烃、环烷烃、醇、胺、卤代烃                                        | 8      |
+| `chematic`            | 带功能标志的伞形 crate（含所有子 crate，含 `iupac`）                                                  | 1      |
 
 ```
-cargo test --workspace   # 877 个测试，全部通过
+cargo test --workspace   # 933 个测试，全部通过
 ```
 
 ---
@@ -69,7 +70,7 @@ cargo test --workspace   # 877 个测试，全部通过
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.1.21", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.1.22", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 使用单独 crate
@@ -77,9 +78,9 @@ chematic = { version = "0.1.21", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.1.21"
-chematic-perception = "0.1.21"
-chematic-fp         = "0.1.21"
+chematic-smiles     = "0.1.22"
+chematic-perception = "0.1.22"
+chematic-fp         = "0.1.22"
 ```
 
 ```rust
@@ -199,8 +200,38 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 ### 第七阶段（已完成）
 扩展描述符、多样性、SA 评分、EState、IFG、Gasteiger、VSA。
 
-### 第八阶段（v0.1.20〜v0.1.21，已完成）
-100+ WASM 导出、CML/CDXML、Mutable Molecule API、DepictData、MMP、R 基团、ConformerEnsemble、SDF/V3000 写入。
+### 第八阶段（v0.1.20〜v0.1.22，已完成）
+100+ WASM 导出、CML/CDXML、Mutable Molecule API、DepictData、MMP、R 基团、ConformerEnsemble、SDF/V3000 写入、MCS 环感知约束。
+
+### 第十五阶段（v0.1.29〜32，已完成）
+可变 `Molecule`（`add/remove_atom/bond`、`fragments`、`is_connected`），
+`assign_stereo_from_2d`（楔形键→R/S），`aromatize`/`kekulize_inplace`，
+`depict_reaction_svg`，`SdfRecord`（含坐标+属性），MDL RXN V2000 读写，
+`expand_abbreviation`（30 种缩写），`formula_with_isotopes`。
+
+### 第十四阶段（v0.1.28，已完成）
+`xlogp3()`（Cheng 2007 原子类型），`chematic-iupac`（纯 Rust 离线 IUPAC 命名），
+`BricsConfig { min_fragment_size }`，`MatchConfig { max_matches }`，
+`McsConfig { atom_compare, bond_compare }` 支持异环 scaffold hopping。
+
+### 第十三阶段（v0.1.27，已完成）
+`MolMetadata::default().with_name("阿司匹林").with_comment("...")` — MOL/SDF 元数据 fluent builder。
+
+### 第十二阶段（v0.1.26，已完成）
+`atom_color_rgb(atomic_number: u8) -> [u8; 3]` — 无需解析十六进制字符串，直接获取 CPK 颜色 RGB 字节三元组。
+
+### 第十一阶段（v0.1.25，已完成）
+`suggest_bond_direction(mol, atom, layout) -> f64`（弧度）：基于 sp2/sp3 角偏移 + 最大最小角分离选择的化学自然新键方向建议。导出 `BOND_LEN` 常量。
+
+### 第十阶段（v0.1.24，已完成）
+`validate_valence(mol) -> Vec<ValenceError>` 公开 API（chematic-core + chematic-perception 重导出），`run_reactants` 自动过滤含过价原子的生成物集合。
+
+### 第九阶段（v0.1.23，已完成）
+`Element::vdw_radius()` / `covalent_radius()`（Bondi/Alvarez 表，118 个元素），
+`Molecule::implicit_hydrogen_count()` / `total_formula()`（含隐式 H 的 Hill 式），
+`apply_aromaticity()`（Kekulize 分子 → 芳香性标志应用），
+`with_atom_aromatic()` / `with_bond_order()` 不可变更新 API，
+`minimize_uff()` 别名（UFF 力场最小化可发现性提升）。
 
 ---
 

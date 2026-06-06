@@ -43,6 +43,17 @@ impl<'a> EvalCtx<'a> {
 // Public entry point
 // ---------------------------------------------------------------------------
 
+/// Configuration for subgraph matching.
+#[derive(Debug, Clone, Default)]
+pub struct MatchConfig {
+    /// Maximum number of matches to return.
+    ///
+    /// `None` (default) returns all matches.  Set to `Some(n)` to stop after
+    /// the first `n` results — useful for large molecules or generic queries
+    /// where an unbounded search would be slow or produce huge `Vec`s.
+    pub max_matches: Option<usize>,
+}
+
 /// Find all non-overlapping (injective) embeddings of `query` in `mol`.
 ///
 /// Returns a `Vec` of mappings, each mapping a query atom index to a target
@@ -53,6 +64,17 @@ pub fn find_matches(
     query: &QueryMolecule,
     mol: &Molecule,
 ) -> Vec<HashMap<usize, AtomIdx>> {
+    find_matches_with_config(query, mol, &MatchConfig::default())
+}
+
+/// Like [`find_matches`] but with explicit configuration.
+///
+/// Use `config.max_matches = Some(n)` to cap the result count.
+pub fn find_matches_with_config(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    config: &MatchConfig,
+) -> Vec<HashMap<usize, AtomIdx>> {
     if query.atoms.is_empty() {
         return vec![];
     }
@@ -61,7 +83,7 @@ pub fn find_matches(
     let mut mapping: HashMap<usize, AtomIdx> = HashMap::new();
     let mut results: Vec<HashMap<usize, AtomIdx>> = Vec::new();
 
-    match_recursive(query, &ctx, &mut mapping, &mut results);
+    match_recursive(query, &ctx, &mut mapping, &mut results, config.max_matches);
     results
 }
 
@@ -74,7 +96,13 @@ fn match_recursive(
     ctx: &EvalCtx<'_>,
     mapping: &mut HashMap<usize, AtomIdx>,
     results: &mut Vec<HashMap<usize, AtomIdx>>,
+    max: Option<usize>,
 ) {
+    // Early exit if the result cap has been reached.
+    if max.is_some_and(|m| results.len() >= m) {
+        return;
+    }
+
     // Base case: all query atoms have been mapped.
     if mapping.len() == query.atoms.len() {
         results.push(mapping.clone());
@@ -92,6 +120,9 @@ fn match_recursive(
 
     // Try each target atom as a candidate for q_next.
     for t in 0..ctx.mol.atom_count() {
+        if max.is_some_and(|m| results.len() >= m) {
+            break;
+        }
         let t_idx = AtomIdx(t as u32);
 
         // 1. Injectivity: target atom must not already be mapped.
@@ -111,7 +142,7 @@ fn match_recursive(
 
         // Extend the mapping and recurse.
         mapping.insert(q_next, t_idx);
-        match_recursive(query, ctx, mapping, results);
+        match_recursive(query, ctx, mapping, results, max);
         mapping.remove(&q_next);
     }
 }

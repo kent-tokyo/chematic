@@ -1220,7 +1220,7 @@ pub fn sdf_to_records_json(sdf: &str) -> String {
         .map(|r| match r {
             Ok(rec) => {
                 let smi = chematic_smiles::canonical_smiles(&rec.mol);
-                let name = escape_json_string(&rec.name);
+                let name = escape_json_string(&rec.meta.name);
                 let props: Vec<String> = rec.properties
                     .iter()
                     .map(|(k, v)| format!(
