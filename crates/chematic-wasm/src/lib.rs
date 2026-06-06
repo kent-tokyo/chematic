@@ -459,6 +459,36 @@ pub fn brics_fragment_count(mol: &MolHandle) -> usize {
     chematic_chem::brics_fragments(&mol.inner).len()
 }
 
+/// Run molecular dynamics simulation and return trajectory as JSON.
+///
+/// Returns JSON object with trajectory frames: `{ "frames": [{ "step": N, "potential": E, "kinetic": K, "temp": T }, …] }`
+/// Uses NVT ensemble (Berendsen thermostat) at 300 K by default.
+/// Note: Limited to molecules with ~50 atoms or fewer for practical WASM performance.
+#[wasm_bindgen]
+pub fn run_md_json(mol: &MolHandle, steps: usize, temp_k: f64) -> String {
+    let coords = chematic_3d::generate_coords(&mol.inner);
+    let config = chematic_3d::MDConfig {
+        timestep_fs: 1.0,
+        steps,
+        temperature_k: temp_k,
+        thermostat: chematic_3d::Thermostat::Berendsen { tau_fs: 100.0 },
+        save_every: (steps / 20).max(1),
+        coulomb: true,
+    };
+    let traj = chematic_3d::run_md(&mol.inner, coords, &config);
+
+    // Serialize trajectory to JSON
+    let mut frames_json = Vec::new();
+    for frame in &traj.frames {
+        frames_json.push(format!(
+            r#"{{"step": {}, "potential": {:.4}, "kinetic": {:.4}, "temp": {:.2}}}"#,
+            frame.step, frame.potential_energy, frame.kinetic_energy, frame.temperature_k
+        ));
+    }
+
+    format!(r#"{{"frames": [{}]}}"#, frames_json.join(", "))
+}
+
 /// Return a copy of the molecule with all implicit hydrogens converted to explicit H atoms.
 #[wasm_bindgen]
 pub fn add_hydrogens(mol: &MolHandle) -> MolHandle {

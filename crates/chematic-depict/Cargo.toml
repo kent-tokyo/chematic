@@ -13,9 +13,9 @@ homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-depict"
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.1.27" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.27" }
-chematic-rxn = { path = "../chematic-rxn", version = "0.1.27" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.1.27" }
+chematic-core = { path = "../chematic-core", version = "0.1.28" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.28" }
+chematic-rxn = { path = "../chematic-rxn", version = "0.1.28" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.28" }
 
 [dev-dependencies]

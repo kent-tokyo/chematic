@@ -12,6 +12,7 @@ pub mod usr;
 pub mod conformer;
 pub mod coords;
 pub mod dg;
+pub mod md;
 pub mod minimize;
 pub mod pdb;
 pub mod shape_descriptors;
@@ -23,6 +24,7 @@ pub use usr::{usr_descriptors, usr_similarity};
 pub use conformer::{ConformerEnsemble, ConformerError};
 pub use coords::{Coords3D, Point3};
 pub use dg::generate_coords;
+pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
 pub use minimize::{MinimizeConfig, minimize, minimize_uff, minimize_with_config};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
 pub use shape_descriptors::{
