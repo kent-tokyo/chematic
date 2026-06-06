@@ -11,6 +11,7 @@ members = [
     "crates/chematic-3d",
     "crates/chematic-rxn",
     "crates/chematic-ff",
+    "crates/chematic-ewald",
     "crates/chematic-wasm",
     "crates/chematic",
     "crates/chematic-iupac",
