@@ -126,6 +126,64 @@ pub fn is_pi_bond(order: BondOrder) -> bool {
     matches!(order, BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple)
 }
 
+// ---------------------------------------------------------------------------
+// Valence validation
+// ---------------------------------------------------------------------------
+
+/// A valence violation on a specific atom.
+///
+/// Returned by [`validate_valence`] for each atom whose observed bond-order sum
+/// exceeds all allowed normal valences (after formal-charge adjustment).
+#[derive(Debug, Clone)]
+pub struct ValenceError {
+    /// Index of the over-valenced atom.
+    pub atom: AtomIdx,
+    /// Observed bond-order sum (+ explicit bracket H count).
+    pub actual: u8,
+    /// Allowed normal valences for the element (from [`crate::Element::normal_valences`]).
+    pub allowed: &'static [u8],
+}
+
+/// Check every atom in `mol` for valence violations.
+///
+/// Returns one [`ValenceError`] per over-valenced atom; an empty `Vec` means
+/// all atoms have valid valence.
+///
+/// Atoms without defined normal valences (transition metals, etc.) are skipped.
+/// Formal charge shifts the effective maximum: each unit of positive charge
+/// adds one to the allowed ceiling (e.g. `[NH4+]` with 4 bonds is valid).
+///
+/// Aromatic bonds are counted as 1 each (`order_int()`).  Molecules still
+/// written with `BondOrder::Aromatic` are handled correctly; fully kekulized
+/// molecules are also supported.
+pub fn validate_valence(mol: &Molecule) -> Vec<ValenceError> {
+    let mut errors = Vec::new();
+    for (idx, atom) in mol.atoms() {
+        if atom.wildcard {
+            continue;
+        }
+        let valences = atom.element.normal_valences();
+        if valences.is_empty() {
+            continue;
+        }
+
+        let bos = bond_order_sum(mol, idx);
+        let explicit_h = atom.hydrogen_count.unwrap_or(0);
+        let used = bos.saturating_add(explicit_h);
+        let charge = atom.charge as i16;
+
+        let has_valid = valences.iter().any(|&v| {
+            let effective = (v as i16 + charge).max(0) as u8;
+            effective >= used
+        });
+
+        if !has_valid {
+            errors.push(ValenceError { atom: idx, actual: used, allowed: valences });
+        }
+    }
+    errors
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -226,5 +284,93 @@ mod tests {
         }
         let mol = b.build();
         assert_eq!(implicit_hcount(&mol, AtomIdx(0)), 0);
+    }
+
+    // ---------------------------------------------------------------------------
+    // validate_valence tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_validate_valence_valid_molecules() {
+        // All normal molecules should produce no errors.
+        use crate::molecule::AtomIdx as AI;
+
+        // methane (C, 0 bonds): valid
+        let mol = single_atom(Element::C);
+        assert!(validate_valence(&mol).is_empty(), "isolated C must be valid");
+
+        // water (O, 0 bonds): valid
+        let mol = single_atom(Element::O);
+        assert!(validate_valence(&mol).is_empty(), "isolated O must be valid");
+
+        // ethane (C–C): C has bond_sum=1, max valence 4 → valid
+        let mol = two_atoms(Element::C, Element::C, BondOrder::Single);
+        assert!(validate_valence(&mol).is_empty(), "ethane must be valid");
+
+        // formaldehyde (C=O): C bond_sum=2, O bond_sum=2 → both valid
+        let mol = two_atoms(Element::C, Element::O, BondOrder::Double);
+        assert!(validate_valence(&mol).is_empty(), "formaldehyde must be valid");
+    }
+
+    #[test]
+    fn test_validate_valence_pentavalent_carbon() {
+        // C with 5 single bonds: bond_sum=5 > max(C valences)=4 → error
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::organic(Element::C));
+        for _ in 0..5 {
+            let h = b.add_atom(Atom::new(Element::C));
+            b.add_bond(c, h, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        let errors = validate_valence(&mol);
+        assert_eq!(errors.len(), 1, "C with 5 bonds must produce exactly 1 error");
+        assert_eq!(errors[0].atom, AtomIdx(0));
+        assert_eq!(errors[0].actual, 5);
+    }
+
+    #[test]
+    fn test_validate_valence_trivalent_oxygen() {
+        // O with 3 single bonds: bond_sum=3 > max(O valences)=2 → error
+        let mut b = MoleculeBuilder::new();
+        let o = b.add_atom(Atom::organic(Element::O));
+        for _ in 0..3 {
+            let c = b.add_atom(Atom::organic(Element::C));
+            b.add_bond(o, c, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        let errors = validate_valence(&mol);
+        assert!(!errors.is_empty(), "O with 3 bonds must be flagged as over-valenced");
+        assert_eq!(errors[0].atom, AtomIdx(0));
+    }
+
+    #[test]
+    fn test_validate_valence_ammonium_valid() {
+        // [NH4+]: N with charge +1 and 4 bonds: effective max = 3+1=4 → valid
+        let mut b = MoleculeBuilder::new();
+        let mut n_atom = Atom::organic(Element::N);
+        n_atom.charge = 1;
+        let n = b.add_atom(n_atom);
+        for _ in 0..4 {
+            let c = b.add_atom(Atom::organic(Element::C));
+            b.add_bond(n, c, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "N+ with 4 bonds must be valid (ammonium-like)"
+        );
+    }
+
+    #[test]
+    fn test_validate_valence_transition_metal_skipped() {
+        // Fe has no normal_valences → always valid regardless of bonds
+        let mut b = MoleculeBuilder::new();
+        let fe = b.add_atom(Atom::new(Element::FE));
+        for _ in 0..6 {
+            let c = b.add_atom(Atom::organic(Element::C));
+            b.add_bond(fe, c, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        assert!(validate_valence(&mol).is_empty(), "Fe with 6 bonds must be skipped");
     }
 }

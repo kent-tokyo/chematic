@@ -644,6 +644,69 @@ fn dfs_zigzag(
 }
 
 // ---------------------------------------------------------------------------
+// Public bond-direction suggestion
+// ---------------------------------------------------------------------------
+
+/// Suggest the best direction (radians, measured from positive x-axis) for a
+/// new bond leaving `atom`, given the molecule's current 2D `layout`.
+///
+/// The algorithm:
+/// 1. Collects angles to all already-placed neighbors of `atom`.
+/// 2. Generates chemistry-aware candidate directions (see below).
+/// 3. Returns the candidate with the **maximum minimum angular separation**
+///    from all existing bond angles.
+///
+/// Candidates include:
+/// - A 30-degree grid (12 directions covering 360°).
+/// - For each existing bond at angle α: the anti-direction (α+180°) and the
+///   two zigzag offsets (α+150°, α+210°) that model sp3 chain extension,
+///   plus the two sp2 offsets (α+120°, α+240°) for aromatic / double-bonded atoms.
+///
+/// Returns `0.0` (pointing right) when `atom` has no neighbors in `layout`.
+pub fn suggest_bond_direction(mol: &Molecule, atom: AtomIdx, layout: &Layout) -> f64 {
+    use std::f64::consts::PI;
+
+    let origin = layout.get(atom);
+
+    // Angles to neighbors that are already placed in the layout.
+    let used_angles: Vec<f64> = mol
+        .neighbors(atom)
+        .filter(|(nb, _)| (nb.0 as usize) < layout.coords.len())
+        .map(|(nb, _)| {
+            let p = layout.get(nb);
+            (p.y - origin.y).atan2(p.x - origin.x)
+        })
+        .collect();
+
+    if used_angles.is_empty() {
+        return 0.0;
+    }
+
+    // Build candidate set.
+    let mut candidates: Vec<f64> = (0..12).map(|i| i as f64 * PI / 6.0).collect();
+
+    for &a in &used_angles {
+        // Anti-direction (straight opposite).
+        candidates.push(a + PI);
+        // sp3 zigzag: ±30° from the anti-direction.
+        candidates.push(a + PI - PI / 6.0);
+        candidates.push(a + PI + PI / 6.0);
+        // sp2: ±120° from the existing bond.
+        candidates.push(a + 2.0 * PI / 3.0);
+        candidates.push(a - 2.0 * PI / 3.0);
+    }
+
+    candidates
+        .into_iter()
+        .max_by(|&ca, &cb| {
+            let sa = min_angle_separation(ca, &used_angles);
+            let sb = min_angle_separation(cb, &used_angles);
+            sa.partial_cmp(&sb).unwrap()
+        })
+        .unwrap_or(0.0)
+}
+
+// ---------------------------------------------------------------------------
 // Tests (unit)
 // ---------------------------------------------------------------------------
 
@@ -657,5 +720,84 @@ mod tests {
         let r = ring_radius(6);
         let expected = BOND_LEN; // sin(PI/6) = 0.5, so BOND_LEN / (2*0.5) = BOND_LEN
         assert!((r - expected).abs() < 1e-9, "hexagon radius = {}", r);
+    }
+
+    // --- suggest_bond_direction tests ---
+
+    fn make_layout(coords: &[(f64, f64)]) -> Layout {
+        Layout {
+            coords: coords.iter().map(|&(x, y)| Point { x, y }).collect(),
+        }
+    }
+
+    #[test]
+    fn test_suggest_direction_no_neighbors() {
+        use chematic_smiles::parse;
+        // Single atom: no neighbors → default 0.0 (pointing right).
+        let mol = parse("C").unwrap();
+        let layout = make_layout(&[(0.0, 0.0)]);
+        let dir = suggest_bond_direction(&mol, AtomIdx(0), &layout);
+        assert!((dir).abs() < 1e-9 || (dir - 2.0 * std::f64::consts::PI).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_suggest_direction_single_bond_avoids_existing() {
+        use chematic_smiles::parse;
+        // Ethane C-C: atom 0 at origin, atom 1 to the right (angle = 0°).
+        // Suggested direction for a third atom from atom 0 should be far from 0°.
+        let mol = parse("CC").unwrap();
+        let layout = make_layout(&[(0.0, 0.0), (BOND_LEN, 0.0)]);
+        let dir = suggest_bond_direction(&mol, AtomIdx(0), &layout);
+        // Must be at least 90° away from 0° (the existing bond).
+        let sep = min_angle_separation(dir, &[0.0_f64]);
+        assert!(
+            sep >= std::f64::consts::PI / 2.0,
+            "suggested direction {dir:.3} should be ≥90° from existing bond, sep={sep:.3}"
+        );
+    }
+
+    #[test]
+    fn test_suggest_direction_two_bonds_finds_gap() {
+        use chematic_smiles::parse;
+        // Three atoms: center C bonded to left (180°) and right (0°).
+        // Suggested direction should be ≈ 90° or ≈ -90° (the open gap above/below).
+        let mol = parse("CCC").unwrap();
+        // atom 1 (center) has neighbors at atom 0 (left) and atom 2 (right).
+        let layout = make_layout(&[(-BOND_LEN, 0.0), (0.0, 0.0), (BOND_LEN, 0.0)]);
+        let dir = suggest_bond_direction(&mol, AtomIdx(1), &layout);
+        // The gap is ≈ 90° (top) or ≈ 270° (bottom). Both have min-sep ≈ 90° from 0° and 180°.
+        let sep = {
+            let used = [0.0_f64, std::f64::consts::PI];
+            min_angle_separation(dir, &used)
+        };
+        assert!(
+            sep >= std::f64::consts::PI / 2.0 - 1e-6,
+            "center atom: suggested direction {dir:.3} should be ~90° from both bonds, sep={sep:.3}"
+        );
+    }
+
+    #[test]
+    fn test_suggest_direction_prefers_sp2_for_aromatic_ring() {
+        use chematic_smiles::parse;
+        // Benzene: use compute_layout to get real coordinates, then ask for
+        // the exit direction from atom 0. It should be ≈120° from both ring bonds.
+        let mol = parse("c1ccccc1").unwrap();
+        let layout = compute_layout(&mol);
+        let dir = suggest_bond_direction(&mol, AtomIdx(0), &layout);
+        // Atom 0 has 2 ring neighbors. The best exit is ~120° from both.
+        let p0 = layout.get(AtomIdx(0));
+        let used: Vec<f64> = mol
+            .neighbors(AtomIdx(0))
+            .map(|(nb, _)| {
+                let p = layout.get(nb);
+                (p.y - p0.y).atan2(p.x - p0.x)
+            })
+            .collect();
+        let sep = min_angle_separation(dir, &used);
+        // Minimum separation from both ring bonds should be ≥ 60°.
+        assert!(
+            sep >= std::f64::consts::PI / 3.0 - 1e-6,
+            "benzene exit direction should be ≥60° from ring bonds, sep={sep:.3}"
+        );
     }
 }

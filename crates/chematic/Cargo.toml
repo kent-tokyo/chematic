@@ -23,7 +23,8 @@ chem        = ["perception", "dep:chematic-chem"]
 smarts      = ["perception", "dep:chematic-smarts"]
 rxn         = ["smiles", "dep:chematic-rxn"]
 threed      = ["perception", "dep:chematic-3d"]
-full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed"]
+iupac       = ["dep:chematic-iupac"]
+full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "iupac"]
 
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.1.22", optional = true }
@@ -36,3 +37,4 @@ chematic-fp         = { path = "../chematic-fp",         version = "0.1.22", opt
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.22", optional = true }
 chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.22", optional = true }
 chematic-3d         = { path = "../chematic-3d",         version = "0.1.22", optional = true }
+chematic-iupac      = { path = "../chematic-iupac",      version = "0.1.22", optional = true }

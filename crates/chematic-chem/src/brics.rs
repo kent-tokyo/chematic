@@ -64,6 +64,34 @@ fn ring_bond_keys(mol: &Molecule) -> HashSet<(u32, u32)> {
     set
 }
 
+/// Configuration for BRICS fragmentation.
+#[derive(Debug, Clone)]
+pub struct BricsConfig {
+    /// Minimum number of non-wildcard (heavy) atoms a fragment must have to be kept.
+    ///
+    /// Fragments smaller than this threshold are discarded.  Set to `1` (default)
+    /// to keep all fragments, including single-atom stubs.  Set to `3` to match
+    /// RDKit's `BRICSDecompose` default, which suppresses chemically trivial pieces.
+    pub min_fragment_size: usize,
+}
+
+impl Default for BricsConfig {
+    fn default() -> Self {
+        Self { min_fragment_size: 1 }
+    }
+}
+
+/// Fragment `mol` at all BRICS-breakable bonds, then discard fragments whose
+/// non-wildcard atom count is below `config.min_fragment_size`.
+pub fn brics_fragments_with_config(mol: &Molecule, config: &BricsConfig) -> Vec<Molecule> {
+    brics_fragments(mol)
+        .into_iter()
+        .filter(|frag| {
+            frag.atoms().filter(|(_, a)| !a.wildcard).count() >= config.min_fragment_size
+        })
+        .collect()
+}
+
 /// Fragment `mol` at all BRICS-breakable bonds.
 ///
 /// Each fragment has `[*]` (wildcard) atoms at its attachment points — one for

@@ -39,6 +39,13 @@ pub fn minimize(mol: &Molecule, coords: Coords3D) -> Coords3D {
     minimize_with_config(mol, coords, &MinimizeConfig::default())
 }
 
+/// Alias for [`minimize`] using UFF-derived energy terms.
+///
+/// Provided for discoverability; identical to calling `minimize(mol, coords)`.
+pub fn minimize_uff(mol: &Molecule, coords: Coords3D) -> Coords3D {
+    minimize(mol, coords)
+}
+
 /// Minimize molecular geometry using the provided configuration.
 pub fn minimize_with_config(mol: &Molecule, coords: Coords3D, config: &MinimizeConfig) -> Coords3D {
     if mol.atom_count() <= 1 {

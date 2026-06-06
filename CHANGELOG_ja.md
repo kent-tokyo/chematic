@@ -172,7 +172,7 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ## [0.1.19] — 2026-06-02
 
-### Added — Sprint U: インタラクティブ記事向け WASM 利便性 API
+### Added — Sprint U: WASM 利便性 API
 
 **SMILES-string-in 系フリー関数** (`crates/chematic-wasm/src/lib.rs`):
 - `smiles_to_svg_highlighted(smiles, atoms, bonds, color)` — SMILES 文字列から直接ハイライト SVG を 1 コール生成（JS: `Uint32Array` で原子・結合インデックスを渡す）
@@ -193,7 +193,7 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ## [0.1.18] — 2026-06-02
 
-### Added — Sprint T: インタラクティブ記事向け API
+### Added — Sprint T: API
 
 **per-atom カラーハイライト** (`crates/chematic-depict/src/svg.rs`, `crates/chematic-wasm/src/lib.rs`):
 - `RenderOptions.atom_color_map: HashMap<AtomIdx, String>` — 原子ごとに異なる色で円ハイライト

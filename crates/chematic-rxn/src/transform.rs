@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, BondOrder, Molecule, MoleculeBuilder};
+use chematic_core::{AtomIdx, BondOrder, Molecule, MoleculeBuilder, validate_valence};
 use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches};
 
 use crate::reaction::{RxnError, parse_reaction};
@@ -104,7 +104,10 @@ pub fn run_reactants(
             .map(|pt| build_product(pt, &global_map, reactants, &all_template_atoms))
             .collect();
 
-        results.push(products);
+        // Skip product sets that contain any over-valenced atom.
+        if products.iter().all(|p| validate_valence(p).is_empty()) {
+            results.push(products);
+        }
     }
 
     Ok(results)
@@ -369,6 +372,35 @@ mod tests {
         assert!(
             matches!(err, Err(TransformError::SmirksParse(_))),
             "unknown element must yield SmirksParse error"
+        );
+    }
+
+    #[test]
+    fn overvalent_product_filtered_oxygen() {
+        // O normally has max valence 2.
+        // SMIRKS adds two carbons to an oxygen that already has one bond → 3 bonds on O → invalid.
+        // CCO: the O is bonded to 1 C (bond_sum=1). Template [O:1]>>[O:1](C)C adds 2 more.
+        let ethanol = parse("CCO").unwrap();
+        let results = run_reactants("[O:1]>>[O:1](C)C", &[&ethanol]).unwrap();
+        // The O that already had 1 bond would get 3 → over-valenced → filtered out.
+        // The only match is the terminal O (1 bond → +2 = 3 bonds, invalid).
+        assert!(
+            results.is_empty(),
+            "product with O having 3 bonds must be filtered out, got {} sets",
+            results.len()
+        );
+    }
+
+    #[test]
+    fn valid_charged_product_kept() {
+        // N with charge +1 can have up to 4 bonds (normal valences [3,5], +1 allows 4).
+        // trimethylamine N(C)(C)C has N with bond_sum=3, charge=0.
+        // Template [N:1]>>[N+:1] just changes charge, keeps 3 bonds → valid.
+        let tma = parse("N(C)(C)C").unwrap();
+        let results = run_reactants("[N:1]>>[N+:1]", &[&tma]).unwrap();
+        assert!(
+            !results.is_empty(),
+            "N+ with 3 bonds must be valid and kept"
         );
     }
 

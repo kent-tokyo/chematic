@@ -14,3 +14,4 @@ documentation = "https://docs.rs/chematic-mol"
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.14" }
+chematic-rxn  = { path = "../chematic-rxn",  version = "0.1.22" }

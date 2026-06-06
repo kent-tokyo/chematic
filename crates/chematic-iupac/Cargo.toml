@@ -1,0 +1,17 @@
+[package]
+name = "chematic-iupac"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Local IUPAC name generation for chematic — pure-Rust, no network required"
+keywords = ["cheminformatics", "iupac", "chemistry", "nomenclature"]
+categories = ["science"]
+
+[dependencies]
+chematic-core       = { path = "../chematic-core",       version = "0.1.22" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.22" }
+
+[dev-dependencies]
+chematic-smiles = { path = "../chematic-smiles", version = "0.1.22" }

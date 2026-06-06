@@ -224,19 +224,20 @@
 
 | クレート               | テスト数 | 状態     |
 |------------------------|---------|---------|
-| chematic-core          | 30      | 完了     |
+| chematic-core          | 48      | 完了     |
 | chematic-smiles        | 57      | 完了     |
-| chematic-perception    | 14      | 完了     |
-| chematic-mol           | 53      | 完了     |
-| chematic-depict        | 30      | 完了     |
-| chematic-chem          | 216     | 完了     |
+| chematic-perception    | 18      | 完了     |
+| chematic-mol           | 61      | 完了     |
+| chematic-depict        | 39      | 完了     |
+| chematic-chem          | 226     | 完了     |
 | chematic-fp            | 50      | 完了     |
-| chematic-smarts        | 82      | 完了     |
+| chematic-smarts        | 84      | 完了     |
 | chematic-3d            | 68      | 完了     |
-| chematic-rxn           | 26      | 完了     |
+| chematic-rxn           | 28      | 完了     |
 | chematic-wasm          | 162     | 完了     |
 | chematic               | 1       | 完了     |
-| **合計**               | **869** | —        |
+| chematic-iupac         | 8       | 完了     |
+| **合計**               | **933** | —        |
 
 ---
 
@@ -420,4 +421,124 @@ Sprint v0.1.21: ✅ Mutable API 拡張・SDF/CDXML 機能強化（v0.1.21）
   - chematic-depict: depict_data_with_coords
   - WASM: mol_with_atom_charge, mol_with_atom_element, cdxml_to_smiles_json, mol_block_coords_json, depict_data_with_coords_json
   - テスト: 863 → 869（+6）
+
+Sprint v0.1.22: ✅ MCS ring-awareness constraints（Issue #1）
+  - ring_matches_ring_only: McGregor 探索フェーズで SSSR を使いリング↔非リングのクロスマッチをブロック
+  - complete_rings_only: 探索後の反復後処理で mol[0] の部分リングを除去
+  - テスト: 869 → 877（+8）
+
+Sprint v0.1.23: ✅ Element 半径 API・implicit H 補完・芳香族性適用 API（v0.1.23）
+  - chematic-core: Element::vdw_radius() / covalent_radius()（Bondi 1964 + Alvarez 2013/2008 テーブル 118 元素、不明は 1.70/0.77 フォールバック）
+  - chematic-core: Molecule::implicit_hydrogen_count(idx)（valence::implicit_hcount のラッパー）
+  - chematic-core: Molecule::total_formula()（暗黙的 H を含む Hill 式 — CH4, C2H6O 等）
+  - chematic-core: Molecule::with_atom_aromatic() / with_bond_order()（immutable update API 拡張）
+  - chematic-perception: apply_aromaticity(mol) → ケクレ化分子に芳香族フラグと BondOrder::Aromatic を適用した新 Molecule を返す
+  - chematic-3d: minimize_uff() エイリアス（既存 minimize() の UFF 最小化を名前で発見しやすくする）
+  - テスト: 877 → 886（+9）
+
+Sprint v0.1.24: ✅ validate_valence 公開 API + run_reactants 生成物フィルタリング（v0.1.24）
+  - chematic-core: ValenceError 構造体 + validate_valence(mol) -> Vec<ValenceError>（元素別 normal_valences + 形式電荷調整）
+  - chematic-core/lib.rs: ValenceError / validate_valence を re-export
+  - chematic-perception/lib.rs: chematic_core から re-export（chematic::perception::validate_valence で参照可能）
+  - chematic-rxn: run_reactants で生成物に validate_valence を適用し過原子価の product set を除外
+  - テスト: 886 → 893（+7）
+
+Sprint v0.1.25: ✅ suggest_bond_direction 公開 API（v0.1.25）
+  - chematic-depict/layout.rs: suggest_bond_direction(mol, atom, layout) -> f64（ラジアン）
+    - 既存結合角度を収集 → 30° グリッド + 化学的オフセット（sp2±120°、sp3ジグザグ±150°）の候補から最大最小分離角を選択
+  - chematic-depict/lib.rs: BOND_LEN・suggest_bond_direction を re-export
+  - draw 側の 30° 総当たり独自実装の置き換えが可能に
+  - テスト: 893 → 897（+4）
+
+Sprint v0.1.26: ✅ atom_color_rgb 公開 API（v0.1.26）
+  - chematic-depict/svg.rs: atom_color_rgb(atomic_number: u8) -> [u8; 3]（atom_color と同一 CPK 値、hex 解析なし）
+  - chematic-depict/lib.rs: re-export
+  - draw 側の hex パーサー独自実装の置き換えが可能に（egui::Color32::from_rgb 直接利用）
+  - テスト: 897 → 900（+3）
+
+Sprint v0.1.27: ✅ MolMetadata builder API（v0.1.27）
+  - chematic-mol/mol2000.rs: MolMetadata::with_name(name) -> Self、with_comment(comment) -> Self
+  - SDF エクスポート時に MolMetadata::default().with_name("...").with_comment("...") で名前・コメントを設定可能に
+  - テスト: 900 → 902（+2）
+
+Sprint v0.1.28: ✅ 全残タスク実装（v0.1.28）
+  - Issue C: BricsConfig { min_fragment_size } + brics_fragments_with_config（chematic-chem）
+  - Issue E: MatchConfig { max_matches } + find_matches_with_config（chematic-smarts）
+  - Issue A: AtomCompare / BondCompare enum + McsConfig フィールド追加（chematic-smarts）
+            AnyHeavyAtom モードで異種ヘテロ環間の scaffold hopping MCS が動作
+  - ⑩ xlogp3.rs: xlogp3() / xlogp3_per_atom() — Cheng 2007 原子型貢献テーブル（chematic-chem）
+  - ⑪ chematic-iupac: 新クレート（Pure Rust、ネットワーク不要）
+            直鎖アルカン/アルケン/アルキン、シクロアルカン、アルコール/アミン/ハロアルカン
+            IupacError::NotSupported で未対応構造を明示
+  - テスト: 902 → 915（+13）
+
+Sprint v0.1.29: ✅ Mutable Molecule API + Fragments + MoleculeBuilder::from_molecule（v0.1.29）
+  - Molecule::add_atom / remove_atom / add_bond / remove_bond / set_charge / set_element / set_cip_code
+  - Molecule::is_connected() / fragments() → 連結成分分割
+  - MoleculeBuilder::from_molecule(mol)
+  - テスト: 915 → 924（+9）
+
+Sprint v0.1.30: ✅ 2D 立体化学 + Aromatize/Kekulize in-place（v0.1.30）
+  - chematic-perception: stereo2d.rs 新規（assign_stereo_from_2d / apply_stereo_from_2d）
+  - chematic-perception: aromatize(mol: &mut Molecule) / kekulize_inplace(mol: &mut Molecule)
+  - テスト: 924 → 926（+2）
+
+Sprint v0.1.31: ✅ SdfRecord 拡張 + 反応 SVG + 化学略号（v0.1.31）
+  - SdfRecord: coords: Vec<(f64,f64)> + meta: MolMetadata + properties: HashMap<String,String> 追加
+  - chematic-depict: depict_reaction_svg / depict_reaction_svg_opts（反応物→矢印→生成物 SVG）
+  - chematic-chem: expand_abbreviation / abbreviations（30 略号テーブル）
+  - テスト: 926 → 929（+3）
+
+Sprint v0.1.32: ✅ MDL RXN ファイル + formula_with_isotopes（v0.1.32）
+  - chematic-mol: parse_rxn_file / write_rxn_file（MDL RXN V2000 フォーマット）
+  - chematic-core: Molecule::formula_with_isotopes()（²H・¹³C 等の同位体ラベル付き分子式）
+  - テスト: 929 → 933（+4）
 ```
+
+---
+
+## Issue 候補（Issue #1 類似パターン — 今後発生しうる問題）
+
+Issue #1 のパターン: **アルゴリズムが位相的には正しい結果を返すが、化学的に無意味な結果になる**（RDKit にある制約オプションが chematic に未実装で、移行時にサイレントに誤った結果が生成される）。
+
+以下は同パターンで将来 Issue 化する可能性が高い項目。
+
+### ✅ Issue 候補 A (🔴 高): MCS — `atomCompare` / `bondCompare` レベル（Sprint v0.1.28 で解決）
+  - **現状**: `find_mcs_with_config` は原子比較を「同一原子番号」固定
+  - **症状**: ヘテロ環交換シリーズ（インドール vs ベンゾフラン等）で MCS が 0 原子になる
+  - **RDKit 対応**: `atomCompare=CompareAnyHeavyAtom`, `CompareElements`, `CompareAny`
+  - **対象**: `crates/chematic-smarts/src/mcs.rs`
+  - **実装**: `McsConfig` に `AtomCompare` / `BondCompare` enum を追加し McGregor フィルタで参照
+  - **推奨 Sprint**: v0.1.25
+
+### ✅ Issue 候補 B (🔴 高): `run_reactants` — 生成物の原子価バリデーションなし（Sprint v0.1.24 で解決）
+  - **現状**: SMIRKS 適用後の生成物 Molecule に valence チェックなし
+  - **症状**: 四級窒素へのアルキル化で `[N](C)(C)(C)(C)` (valence 5) が無音で生成される
+  - **RDKit 対応**: デフォルトで `sanitizeMols=True`（原子価違反で生成物を除外）
+  - **対象**: `crates/chematic-rxn/src/transform.rs`
+  - **実装**: 生成物ごとに `valence::bond_order_sum > max_valence` を検査し除外（or `TransformError::InvalidProduct`）
+  - **推奨 Sprint**: v0.1.24（正確性問題のため優先）
+
+### ✅ Issue 候補 C (🟡 中): BRICS — `minFragmentSize` オプションなし（Sprint v0.1.28 で解決）
+  - **現状**: `brics_fragments` は 1〜2 原子の化学的に無意味なフラグメントも返す
+  - **症状**: フラグメントライブラリ構築時に `[*]C`, `[*]O` 等の単原子フラグメントが混入
+  - **RDKit 対応**: `BRICSDecompose(mol, minFragmentSize=3)` がデフォルト
+  - **対象**: `crates/chematic-chem/src/brics.rs`
+  - **実装**: `BricsConfig { min_fragment_size: usize }` + `brics_fragments_with_config(mol, config)`
+  - **推奨 Sprint**: v0.1.26
+
+### Issue 候補 D (🟡 中): MCS — `matchChiralTag` オプションなし
+  - **現状**: MCS は `Atom::cip_code` / `Atom::chirality` を無視してマッチング
+  - **症状**: R/S 鏡像体間の MCS が「全原子一致」になる（化学的には別化合物）
+  - **RDKit 対応**: `matchChiralTag=True`
+  - **対象**: `crates/chematic-smarts/src/mcs.rs`
+  - **実装**: `McsConfig { match_chiral_tag: bool }` を追加し McGregor の atom-candidate フィルタで `CipCode` を比較
+  - **推奨 Sprint**: 将来（キラル SAR 解析ユースケースが増えたとき）
+
+### ✅ Issue 候補 E (🟡 中): `find_matches` — マッチ数上限なし（Sprint v0.1.28 で解決）
+  - **現状**: `find_matches(query, mol)` は全サブグラフ一致を無制限に Vec で返す
+  - **症状**: 汎用 SMARTS (`[#6]~[#6]` 等) × 大分子でメモリ・実行時間が爆発的増大（WASM 環境でクラッシュ）
+  - **RDKit 対応**: `maxMatches=1000` でデフォルトキャップ
+  - **対象**: `crates/chematic-smarts/src/match_vf2.rs`
+  - **実装**: `MatchConfig { max_matches: Option<usize> }` + `find_matches_with_config(query, mol, config)`
+  - **推奨 Sprint**: v0.1.26（C と同 Sprint）

@@ -15,6 +15,7 @@ documentation = "https://docs.rs/chematic-depict"
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.22" }
 chematic-perception = { path = "../chematic-perception", version = "0.1.22" }
+chematic-rxn = { path = "../chematic-rxn", version = "0.1.22" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }

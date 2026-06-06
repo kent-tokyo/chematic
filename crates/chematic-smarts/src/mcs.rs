@@ -18,6 +18,31 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 // Public API types
 // ---------------------------------------------------------------------------
 
+/// Atom-level comparison mode for MCS search.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum AtomCompare {
+    /// Atoms match only if they share the same atomic number and aromaticity flag.
+    /// This is the default and produces the most chemically specific MCS.
+    #[default]
+    Elements,
+    /// Any heavy atom (atomic number > 1) matches any other heavy atom, regardless of
+    /// element.  Useful for scaffold hopping across heterocycle series (C↔N, C↔O, etc.).
+    AnyHeavyAtom,
+    /// Any atom matches any other atom, including hydrogen.
+    Any,
+}
+
+/// Bond-level comparison mode for MCS search.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum BondCompare {
+    /// Bonds match only if they have the same normalized order (Up/Down → Single).
+    /// This is the default.
+    #[default]
+    OrderOrAromatic,
+    /// Any bond order matches any other bond order.
+    Any,
+}
+
 /// Configuration options for MCS search.
 #[derive(Debug, Clone)]
 pub struct McsConfig {
@@ -37,6 +62,10 @@ pub struct McsConfig {
     /// If `true`, the MCS result must not contain a partial ring.  Any ring that is only
     /// partially present in the MCS is removed entirely (iterative post-processing).
     pub complete_rings_only: bool,
+    /// Atom-level comparison strategy.  Defaults to [`AtomCompare::Elements`].
+    pub atom_compare: AtomCompare,
+    /// Bond-level comparison strategy.  Defaults to [`BondCompare::OrderOrAromatic`].
+    pub bond_compare: BondCompare,
 }
 
 impl Default for McsConfig {
@@ -47,6 +76,8 @@ impl Default for McsConfig {
             timeout_ms: None,
             ring_matches_ring_only: false,
             complete_rings_only: false,
+            atom_compare: AtomCompare::Elements,
+            bond_compare: BondCompare::OrderOrAromatic,
         }
     }
 }
@@ -362,7 +393,7 @@ fn build_frontier_candidates(
                 continue;
             }
             // Must be atom-compatible.
-            if !atoms_compatible(atom0, atom_i) {
+            if !atoms_compatible(atom0, atom_i, &config.atom_compare) {
                 continue;
             }
             // ring_matches_ring_only: ring atoms must match ring atoms only.
@@ -378,7 +409,7 @@ fn build_frontier_candidates(
                 match mol_i.bond_between(ai, m_i) {
                     None => continue 'atom,
                     Some((_bidx, bond_entry)) => {
-                        if config.match_bonds && !bonds_compatible(bond_order_0, bond_entry.order) {
+                        if config.match_bonds && !bonds_compatible(bond_order_0, bond_entry.order, &config.bond_compare) {
                             continue 'atom;
                         }
                     }
@@ -406,7 +437,7 @@ fn collect_seed_candidates(mols: &[&Molecule], a0: AtomIdx, config: &McsConfig, 
         let cands: Vec<AtomIdx> = mols[mi]
             .atoms()
             .filter(|(ai, a)| {
-                if !atoms_compatible(atom0, a) {
+                if !atoms_compatible(atom0, a, &config.atom_compare) {
                     return false;
                 }
                 if config.ring_matches_ring_only {
@@ -472,14 +503,25 @@ fn upper_bound_additional(mols: &[&Molecule], mapping: &PartialMapping) -> usize
 // Compatibility helpers
 // ---------------------------------------------------------------------------
 
-/// Atom compatibility: same atomic number and same aromaticity.
-fn atoms_compatible(a: &chematic_core::Atom, b: &chematic_core::Atom) -> bool {
-    a.element.atomic_number() == b.element.atomic_number() && a.aromatic == b.aromatic
+/// Atom compatibility according to `compare` mode.
+fn atoms_compatible(a: &chematic_core::Atom, b: &chematic_core::Atom, compare: &AtomCompare) -> bool {
+    match compare {
+        AtomCompare::Elements => {
+            a.element.atomic_number() == b.element.atomic_number() && a.aromatic == b.aromatic
+        }
+        AtomCompare::AnyHeavyAtom => {
+            a.element.atomic_number() > 1 && b.element.atomic_number() > 1
+        }
+        AtomCompare::Any => true,
+    }
 }
 
-/// Bond compatibility: same normalized bond order.
-fn bonds_compatible(a: BondOrder, b: BondOrder) -> bool {
-    normalize_bond(a) == normalize_bond(b)
+/// Bond compatibility according to `compare` mode.
+fn bonds_compatible(a: BondOrder, b: BondOrder, compare: &BondCompare) -> bool {
+    match compare {
+        BondCompare::OrderOrAromatic => normalize_bond(a) == normalize_bond(b),
+        BondCompare::Any => true,
+    }
 }
 
 /// Normalize Up/Down stereo bonds to Single for comparison purposes.

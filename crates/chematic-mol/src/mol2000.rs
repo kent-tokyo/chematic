@@ -22,6 +22,20 @@ pub struct MolMetadata {
     pub comment: String,
 }
 
+impl MolMetadata {
+    /// Set the molecule name and return `self` (builder style).
+    pub fn with_name(mut self, name: &str) -> Self {
+        self.name = name.to_owned();
+        self
+    }
+
+    /// Set the comment and return `self` (builder style).
+    pub fn with_comment(mut self, comment: &str) -> Self {
+        self.comment = comment.to_owned();
+        self
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Charge encoding table (V2000 ccc field → formal charge)
 // ---------------------------------------------------------------------------
@@ -550,5 +564,32 @@ M  END
         let (mol, _) = crate::parse_mol(mol_str).unwrap();
         let bond = mol.bond(chematic_core::BondIdx(0));
         assert_eq!(bond.order, chematic_core::BondOrder::Down);
+    }
+
+    #[test]
+    fn test_molmetadata_builder() {
+        let meta = MolMetadata::default()
+            .with_name("aspirin")
+            .with_comment("test molecule");
+        assert_eq!(meta.name, "aspirin");
+        assert_eq!(meta.comment, "test molecule");
+    }
+
+    #[test]
+    fn test_molmetadata_with_name_roundtrip() {
+        // Build a two-atom molecule and write it → name appears on MOL header line 1.
+        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+        let mut b = MoleculeBuilder::new();
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        let mol = b.build();
+
+        let meta = MolMetadata::default().with_name("acetic acid");
+        let molblock = crate::write_mol(&mol, &meta);
+        assert!(
+            molblock.starts_with("acetic acid"),
+            "MOL block must start with the molecule name"
+        );
     }
 }

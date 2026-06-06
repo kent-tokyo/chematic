@@ -284,6 +284,20 @@ impl Element {
         matches!(self.0, 5 | 6 | 7 | 8 | 9 | 15 | 16 | 17 | 35 | 53)
     }
 
+    /// van der Waals radius in Å (Bondi 1964 + Alvarez 2013).
+    /// Unknown/synthetic elements return 1.70 (carbon fallback).
+    #[inline]
+    pub fn vdw_radius(self) -> f32 {
+        VDW_RADII[(self.0 as usize) - 1]
+    }
+
+    /// Single-bond covalent radius in Å (Alvarez 2008).
+    /// Unknown elements return 0.77 (sp3 carbon fallback).
+    #[inline]
+    pub fn covalent_radius(self) -> f32 {
+        COVALENT_RADII[(self.0 as usize) - 1]
+    }
+
     /// Normal valence list (ascending). Empty = undefined (transition metals, etc.).
     /// Used for computing implicit H counts in organic-subset atoms.
     pub fn normal_valences(self) -> &'static [u8] {
@@ -329,6 +343,68 @@ static SYMBOLS: [&str; 118] = [
     "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og",
 ];
 
+/// van der Waals radii (Å) indexed by (atomic_number - 1).
+/// Sources: Bondi J.Phys.Chem. 1964; Alvarez Dalton Trans. 2013, 10.1039/c3dt50599e.
+/// Elements without published values use 1.70 (C fallback).
+#[rustfmt::skip]
+static VDW_RADII: [f32; 118] = [
+    // H     He    Li    Be    B     C     N     O     F     Ne
+    1.20, 1.40, 1.82, 1.53, 1.92, 1.70, 1.55, 1.52, 1.47, 1.54,
+    // Na    Mg    Al    Si    P     S     Cl    Ar    K     Ca
+    2.27, 1.73, 1.84, 2.10, 1.80, 1.80, 1.75, 1.88, 2.75, 2.31,
+    // Sc    Ti    V     Cr    Mn    Fe    Co    Ni    Cu    Zn
+    2.11, 2.00, 1.92, 1.93, 1.97, 1.96, 2.00, 1.63, 1.40, 1.39,
+    // Ga    Ge    As    Se    Br    Kr    Rb    Sr    Y     Zr
+    1.87, 2.11, 1.85, 1.90, 1.85, 2.02, 3.03, 2.49, 2.34, 2.23,
+    // Nb    Mo    Tc    Ru    Rh    Pd    Ag    Cd    In    Sn
+    2.18, 2.17, 2.16, 2.13, 2.10, 1.63, 1.72, 1.58, 1.93, 2.17,
+    // Sb    Te    I     Xe    Cs    Ba    La    Ce    Pr    Nd
+    2.06, 2.06, 1.98, 2.16, 3.43, 2.68, 2.57, 2.56, 2.54, 2.51,
+    // Pm    Sm    Eu    Gd    Tb    Dy    Ho    Er    Tm    Yb
+    2.50, 2.48, 2.45, 2.43, 2.42, 2.40, 2.38, 2.37, 2.36, 2.35,
+    // Lu    Hf    Ta    W     Re    Os    Ir    Pt    Au    Hg
+    2.34, 2.23, 2.22, 2.18, 2.16, 2.16, 2.13, 1.75, 1.66, 1.55,
+    // Tl    Pb    Bi    Po    At    Rn    Fr    Ra    Ac    Th
+    1.96, 2.02, 2.07, 1.97, 2.02, 2.20, 3.48, 2.83, 2.64, 2.54,
+    // Pa    U     Np    Pu    Am    Cm    Bk    Cf    Es    Fm
+    2.52, 2.41, 2.39, 2.43, 2.44, 2.45, 2.44, 2.45, 2.45, 1.70,
+    // Md    No    Lr    Rf    Db    Sg    Bh    Hs    Mt    Ds
+    1.70, 1.70, 1.70, 1.70, 1.70, 1.70, 1.70, 1.70, 1.70, 1.70,
+    // Rg    Cn    Nh    Fl    Mc    Lv    Ts    Og
+    1.70, 1.70, 1.70, 1.70, 1.70, 1.70, 1.70, 1.70,
+];
+
+/// Single-bond covalent radii (Å) indexed by (atomic_number - 1).
+/// Source: Alvarez et al. Dalton Trans. 2008, 2832–2838, 10.1039/b801115j.
+/// Elements 104–118 use computational estimates; others default to 0.77.
+#[rustfmt::skip]
+static COVALENT_RADII: [f32; 118] = [
+    // H     He    Li    Be    B     C     N     O     F     Ne
+    0.31, 0.28, 1.28, 0.96, 0.84, 0.77, 0.71, 0.66, 0.57, 0.58,
+    // Na    Mg    Al    Si    P     S     Cl    Ar    K     Ca
+    1.66, 1.41, 1.21, 1.11, 1.07, 1.05, 1.02, 1.06, 2.03, 1.76,
+    // Sc    Ti    V     Cr    Mn    Fe    Co    Ni    Cu    Zn
+    1.70, 1.60, 1.53, 1.39, 1.50, 1.52, 1.38, 1.24, 1.32, 1.22,
+    // Ga    Ge    As    Se    Br    Kr    Rb    Sr    Y     Zr
+    1.22, 1.20, 1.19, 1.20, 1.20, 1.16, 2.20, 1.95, 1.90, 1.75,
+    // Nb    Mo    Tc    Ru    Rh    Pd    Ag    Cd    In    Sn
+    1.64, 1.54, 1.47, 1.46, 1.42, 1.39, 1.45, 1.44, 1.42, 1.39,
+    // Sb    Te    I     Xe    Cs    Ba    La    Ce    Pr    Nd
+    1.39, 1.38, 1.39, 1.40, 2.44, 2.15, 2.07, 2.04, 2.03, 2.01,
+    // Pm    Sm    Eu    Gd    Tb    Dy    Ho    Er    Tm    Yb
+    1.99, 1.98, 1.98, 1.96, 1.94, 1.92, 1.92, 1.89, 1.90, 1.87,
+    // Lu    Hf    Ta    W     Re    Os    Ir    Pt    Au    Hg
+    1.87, 1.75, 1.70, 1.62, 1.51, 1.44, 1.41, 1.36, 1.36, 1.32,
+    // Tl    Pb    Bi    Po    At    Rn    Fr    Ra    Ac    Th
+    1.45, 1.46, 1.48, 1.40, 1.50, 1.50, 2.60, 2.21, 2.15, 2.06,
+    // Pa    U     Np    Pu    Am    Cm    Bk    Cf    Es    Fm
+    2.00, 1.96, 1.90, 1.87, 1.80, 1.69, 1.68, 1.68, 1.65, 1.67,
+    // Md    No    Lr    Rf    Db    Sg    Bh    Hs    Mt    Ds
+    1.73, 1.76, 1.61, 1.57, 1.49, 1.43, 1.41, 1.34, 1.29, 1.28,
+    // Rg    Cn    Nh    Fl    Mc    Lv    Ts    Og
+    1.21, 1.22, 1.36, 1.43, 1.62, 1.75, 1.65, 1.57,
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -350,6 +426,29 @@ mod tests {
         }
         assert!(!Element::H.is_organic_subset());
         assert!(!Element::FE.is_organic_subset());
+    }
+
+    #[test]
+    fn test_vdw_radii() {
+        assert!((Element::H.vdw_radius() - 1.20).abs() < 1e-4);
+        assert!((Element::C.vdw_radius() - 1.70).abs() < 1e-4);
+        assert!((Element::N.vdw_radius() - 1.55).abs() < 1e-4);
+        assert!((Element::O.vdw_radius() - 1.52).abs() < 1e-4);
+        assert!((Element::S.vdw_radius() - 1.80).abs() < 1e-4);
+        assert!((Element::CL.vdw_radius() - 1.75).abs() < 1e-4);
+        assert!((Element::BR.vdw_radius() - 1.85).abs() < 1e-4);
+        assert!((Element::I.vdw_radius() - 1.98).abs() < 1e-4);
+        // Heavy elements fall back to 1.70
+        assert!((Element::OG.vdw_radius() - 1.70).abs() < 1e-4);
+    }
+
+    #[test]
+    fn test_covalent_radii() {
+        assert!((Element::H.covalent_radius() - 0.31).abs() < 1e-4);
+        assert!((Element::C.covalent_radius() - 0.77).abs() < 1e-4);
+        assert!((Element::N.covalent_radius() - 0.71).abs() < 1e-4);
+        assert!((Element::O.covalent_radius() - 0.66).abs() < 1e-4);
+        assert!((Element::CL.covalent_radius() - 1.02).abs() < 1e-4);
     }
 
     #[test]
