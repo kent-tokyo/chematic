@@ -6,7 +6,8 @@
 
 use std::collections::HashSet;
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_ff::{assign_dreiding_types, dreiding_vdw, dreiding_bond_len, dreiding_angle};
 
 use crate::coords::{Coords3D, Point3};
 
@@ -44,6 +45,233 @@ pub fn minimize(mol: &Molecule, coords: Coords3D) -> Coords3D {
 /// Provided for discoverability; identical to calling `minimize(mol, coords)`.
 pub fn minimize_uff(mol: &Molecule, coords: Coords3D) -> Coords3D {
     minimize(mol, coords)
+}
+
+/// Minimize molecular geometry using DREIDING force field parameters.
+///
+/// Uses the same gradient descent approach as [`minimize`], but employs DREIDING
+/// force field parameters for bond lengths, angles, and VDW interactions instead of UFF.
+///
+/// # Arguments
+/// * `mol` - Molecule to minimize
+/// * `coords` - Initial 3D coordinates
+///
+/// # Returns
+/// Minimized coordinates
+pub fn minimize_dreiding(mol: &Molecule, coords: Coords3D) -> Coords3D {
+    minimize_dreiding_with_config(mol, coords, &MinimizeConfig::default())
+}
+
+/// Minimize molecular geometry using DREIDING parameters with custom configuration.
+pub fn minimize_dreiding_with_config(
+    mol: &Molecule,
+    coords: Coords3D,
+    config: &MinimizeConfig,
+) -> Coords3D {
+    if mol.atom_count() <= 1 {
+        return coords;
+    }
+
+    // Assign DREIDING types for all atoms
+    let dreiding_types = assign_dreiding_types(mol);
+
+    let mut c = coords;
+    let delta = 1e-4;
+
+    fn partial_dreiding(
+        mol: &Molecule,
+        c: &mut Coords3D,
+        idx: AtomIdx,
+        delta: f64,
+        axis: impl Fn(&mut Point3, f64),
+        dreiding_types: &[chematic_ff::DREIDINGType],
+    ) -> f64 {
+        let orig = c.get(idx);
+        let mut p = orig;
+        axis(&mut p, delta);
+        c.set(idx, p);
+        let ep = total_energy_dreiding(mol, c, dreiding_types);
+        let mut p = orig;
+        axis(&mut p, -delta);
+        c.set(idx, p);
+        let em = total_energy_dreiding(mol, c, dreiding_types);
+        c.set(idx, orig);
+        (ep - em) / (2.0 * delta)
+    }
+
+    for _ in 0..config.max_steps {
+        let mut grad = vec![Point3::zero(); mol.atom_count()];
+        let mut max_grad = 0.0f64;
+
+        for i in 0..mol.atom_count() {
+            let idx = AtomIdx(i as u32);
+            grad[i].x = partial_dreiding(mol, &mut c, idx, delta, |p, d| p.x += d, &dreiding_types);
+            grad[i].y = partial_dreiding(mol, &mut c, idx, delta, |p, d| p.y += d, &dreiding_types);
+            grad[i].z = partial_dreiding(mol, &mut c, idx, delta, |p, d| p.z += d, &dreiding_types);
+
+            let gmax = grad[i].x.abs().max(grad[i].y.abs()).max(grad[i].z.abs());
+            if gmax > max_grad {
+                max_grad = gmax;
+            }
+        }
+
+        if max_grad < config.convergence {
+            break;
+        }
+
+        let scale = config.step_size / max_grad.max(1e-8);
+        for i in 0..mol.atom_count() {
+            let idx = AtomIdx(i as u32);
+            let p = c.get(idx);
+            c.set(
+                idx,
+                Point3::new(
+                    p.x - scale * grad[i].x,
+                    p.y - scale * grad[i].y,
+                    p.z - scale * grad[i].z,
+                ),
+            );
+        }
+    }
+
+    c
+}
+
+fn total_energy_dreiding(
+    mol: &Molecule,
+    coords: &Coords3D,
+    dreiding_types: &[chematic_ff::DREIDINGType],
+) -> f64 {
+    bond_energy_dreiding(mol, coords, dreiding_types)
+        + angle_energy_dreiding(mol, coords, dreiding_types)
+        + vdw_energy_dreiding(mol, coords, dreiding_types)
+}
+
+fn bond_energy_dreiding(
+    mol: &Molecule,
+    coords: &Coords3D,
+    dreiding_types: &[chematic_ff::DREIDINGType],
+) -> f64 {
+    let mut energy = 0.0;
+    let k = 700.0; // Force constant (kcal/mol/Ų)
+    for (_, bond) in mol.bonds() {
+        let a1 = bond.atom1;
+        let a2 = bond.atom2;
+        let r = coords.get(a1).distance(&coords.get(a2));
+        let t1 = dreiding_types[a1.0 as usize];
+        let t2 = dreiding_types[a2.0 as usize];
+        let r0 = dreiding_bond_len(t1, t2, bond.order);
+        let dr = r - r0;
+        energy += 0.5 * k * dr * dr;
+    }
+    energy
+}
+
+fn angle_energy_dreiding(
+    mol: &Molecule,
+    coords: &Coords3D,
+    dreiding_types: &[chematic_ff::DREIDINGType],
+) -> f64 {
+    let mut energy = 0.0;
+    let k = 100.0; // Force constant (kcal/mol/rad²)
+
+    for b_idx in 0..mol.atom_count() {
+        let b = AtomIdx(b_idx as u32);
+        let neighbors: Vec<AtomIdx> = mol.neighbors(b).map(|(nb, _)| nb).collect();
+
+        if neighbors.len() < 2 {
+            continue;
+        }
+
+        let theta0 = dreiding_angle(dreiding_types[b_idx]);
+
+        for (i, &a) in neighbors.iter().enumerate() {
+            for &c in &neighbors[i + 1..] {
+                let pb = coords.get(b);
+
+                let pa = coords.get(a);
+                let pc = coords.get(c);
+
+                let va = pa.sub(&pb);
+                let vc = pc.sub(&pb);
+
+                let na = va.norm();
+                let nc = vc.norm();
+
+                if na < 1e-10 || nc < 1e-10 {
+                    continue;
+                }
+
+                let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
+                let theta = cos_theta.acos();
+                let dtheta = theta - theta0;
+                energy += 0.5 * k * dtheta * dtheta;
+            }
+        }
+    }
+
+    energy
+}
+
+fn vdw_energy_dreiding(
+    mol: &Molecule,
+    coords: &Coords3D,
+    dreiding_types: &[chematic_ff::DREIDINGType],
+) -> f64 {
+    let n = mol.atom_count();
+    let cutoff = 8.0_f64;
+
+    let mut excluded: HashSet<(usize, usize)> = HashSet::new();
+
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        excluded.insert((i.min(j), i.max(j)));
+    }
+
+    for b_idx in 0..n {
+        let b = AtomIdx(b_idx as u32);
+        let neighbors: Vec<usize> = mol.neighbors(b).map(|(nb, _)| nb.0 as usize).collect();
+        for ii in 0..neighbors.len() {
+            for jj in (ii + 1)..neighbors.len() {
+                let i = neighbors[ii];
+                let j = neighbors[jj];
+                excluded.insert((i.min(j), i.max(j)));
+            }
+        }
+    }
+
+    let mut energy = 0.0;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            if excluded.contains(&(i, j)) {
+                continue;
+            }
+            let r = coords
+                .get(AtomIdx(i as u32))
+                .distance(&coords.get(AtomIdx(j as u32)));
+
+            if r < 0.01 || r >= cutoff {
+                continue;
+            }
+
+            let t_i = dreiding_types[i];
+            let t_j = dreiding_types[j];
+            let (r0_i, well_i) = dreiding_vdw(t_i);
+            let (r0_j, well_j) = dreiding_vdw(t_j);
+
+            // Lorentz-Berthelot combining rules
+            let r0 = (r0_i + r0_j) / 2.0;
+            let well = (well_i * well_j).sqrt();
+
+            let ratio = r0 / r;
+            let ratio6 = ratio * ratio * ratio * ratio * ratio * ratio;
+            let ratio12 = ratio6 * ratio6;
+            energy += well * (ratio12 - 2.0 * ratio6);
+        }
+    }
+
+    energy
 }
 
 /// Minimize molecular geometry using the provided configuration.
@@ -606,6 +834,38 @@ mod tests {
                 Hybridization::SP3,
                 "propane atom {i} should be SP3"
             );
+        }
+    }
+
+    #[test]
+    fn test_minimize_dreiding_ethane_no_clash() {
+        let mol = parse("CC").unwrap();
+        let coords = generate_coords(&mol);
+        let min_coords = minimize_dreiding(&mol, coords);
+        let n = mol.atom_count();
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let d = min_coords
+                    .get(AtomIdx(i as u32))
+                    .distance(&min_coords.get(AtomIdx(j as u32)));
+                assert!(d > 0.5, "atoms {i} and {j} clashed after DREIDING minimization (d={d:.3})");
+            }
+        }
+    }
+
+    #[test]
+    fn test_minimize_dreiding_benzene_no_clash() {
+        let mol = parse("c1ccccc1").unwrap();
+        let coords = generate_coords(&mol);
+        let min_coords = minimize_dreiding(&mol, coords);
+        let n = mol.atom_count();
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let d = min_coords
+                    .get(AtomIdx(i as u32))
+                    .distance(&min_coords.get(AtomIdx(j as u32)));
+                assert!(d > 0.5, "atoms {i} and {j} clashed after DREIDING minimization (d={d:.3})");
+            }
         }
     }
 }
