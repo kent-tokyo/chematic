@@ -493,6 +493,39 @@ Sprint v0.1.32: ✅ MDL RXN ファイル + formula_with_isotopes（v0.1.32）
   - chematic-mol: parse_rxn_file / write_rxn_file（MDL RXN V2000 フォーマット）
   - chematic-core: Molecule::formula_with_isotopes()（²H・¹³C 等の同位体ラベル付き分子式）
   - テスト: 929 → 933（+4）
+
+Sprint v0.1.25-後: ✅ P3 機能評価（実装前）
+  - P2 機能（detect_crossings, invert_stereocenter, enumerate_stereoisomers, render_svg_with_metadata, find_reaction_center）が完成
+  - テスト: 865 + v0.1.24（+82） + v0.1.25（+70） = 1017（予定）
+
+Sprint v0.1.26 — P3 Features（実装待ち・優先度決定中）
+
+### Implementable (Medium Difficulty):
+  - [ ] parse_condensed(): "CH3COOH" → structure parsing
+        - condensed formula 形式の字句解析・構文解析（括弧・数字ハンドリング）
+        - 出力: Molecule の建構（MoleculeBuilder 使用）
+        - 実装場所: chematic-chem/src/condensed.rs（新規）
+        - テスト: 新規 20 件想定
+  
+  - [ ] PNG embed SMILES: iTXt chunk operations
+        - PNG ファイルの iTXt チャンク読み書き（EXIF/メタデータ相当）
+        - 出力: parse_png_smiles / write_png_smiles 関数
+        - 実装場所: chematic-mol/src/png.rs（新規）
+        - 依存: zlib（PNG 圧縮） ※既存 crate 利用で問題なし
+        - テスト: 新規 15 件想定
+
+### Deferred (High Difficulty):
+  - [ ] PolymerSMILES (SRU notation): [CH2CH2]n support
+        - 達成度: Molecule 型拡張が必須（repeat_unit / repeat_count）
+        - 化学的要件: SRU (structural repeating unit) notation の正規化・正規 SMILES 対応
+        - 推奨: v0.2.0 リメジャーで実装（大きな破壊的変更のため）
+
+### Decision Pending:
+  - **オプション A**: v0.1.26 で parse_condensed() のみ実装（低リスク）
+  - **オプション B**: v0.1.26 で parse_condensed() + PNG embed SMILES の両方（中リスク）
+  - **オプション C**: v0.1.25 公開 + デモ機能追加へシフト（遅延）
+  
+  デフォルト推奨: **オプション A** (parse_condensed のみ) → 完成度を重視
 ```
 
 ---
