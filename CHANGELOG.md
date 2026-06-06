@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.22] — 2026-06-06
+
+### Added (`chematic-smarts`) — MCS ring-awareness constraints (Issue #1)
+
+- `McsConfig::ring_matches_ring_only: bool` (default: `false`) — ring atoms can only match ring
+  atoms; non-ring atoms can only match non-ring atoms. Filtered during McGregor candidate
+  generation using pre-computed SSSR sets. Most impactful for saturated rings; aromatic systems
+  are already separated by the existing `atoms_compatible` aromaticity check.
+- `McsConfig::complete_rings_only: bool` (default: `false`) — iterative post-processing step
+  (`prune_partial_rings`) that removes partially-covered rings from the best MCS mapping. Only
+  mol[0]'s SSSR rings are checked, which is the correct reference since the MCS is expressed as
+  a subgraph of mol[0]. Cascades until no partial rings remain.
+
+### Tests
+
+- 877 tests, all passing (869 → +8)
+
+---
+
 ## [0.1.21] — 2026-06-06
 
 ### Added — Mutable Molecule API extensions, SDF/CDXML enhancements, DepictData with user coords
@@ -1053,7 +1072,8 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.21...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.22...HEAD
+[0.1.22]: https://github.com/kent-tokyo/chematic/compare/v0.1.21...v0.1.22
 [0.1.21]: https://github.com/kent-tokyo/chematic/compare/v0.1.20...v0.1.21
 [0.1.20]: https://github.com/kent-tokyo/chematic/compare/v0.1.19...v0.1.20
 [0.1.19]: https://github.com/kent-tokyo/chematic/compare/v0.1.18...v0.1.19
