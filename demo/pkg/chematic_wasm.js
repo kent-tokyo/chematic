@@ -784,6 +784,29 @@ export function atom_pair_bitvec(mol) {
 }
 
 /**
+ * Check whether a reaction SMILES is atom-balanced.
+ *
+ * Returns JSON: `{ "balanced": true|false, "diff": ["C: 1 reactant vs 2 product", ...] }`
+ * Returns `"error:<msg>"` on parse failure.
+ * @param {string} reaction_smiles
+ * @returns {string}
+ */
+export function balance_check_json(reaction_smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(reaction_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.balance_check_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Number of BRICS fragments produced by fragmenting the molecule.
  *
  * Returns 1 if no BRICS-breakable bonds exist (whole molecule is one fragment).
@@ -1305,6 +1328,30 @@ export function fcfp6_bitvec(mol) {
 }
 
 /**
+ * Analyze a reaction SMILES and return the reaction center as JSON.
+ *
+ * JSON schema: `{ broken: [[a1,a2],...], formed: [[a1,a2],...], changed: [a,...] }`
+ * where atom indices are 0-based within the first reactant molecule.
+ * Returns an error string prefixed with `"error:"` on failure.
+ * @param {string} reaction_smiles
+ * @returns {string}
+ */
+export function find_reaction_center_json(reaction_smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(reaction_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.find_reaction_center_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Gasteiger-Marsili PEOE partial charges as a JSON array of f64.
  * @param {MolHandle} mol
  * @returns {string}
@@ -1727,6 +1774,28 @@ export function mmp_pairs_json(smiles_json) {
 }
 
 /**
+ * Parse a Tripos MOL2 string and return SMILES.
+ *
+ * Returns `"error:<msg>"` on failure.
+ * @param {string} mol2_str
+ * @returns {string}
+ */
+export function mol2_to_smiles(mol2_str) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(mol2_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mol2_to_smiles(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Parse a MOL V2000 string and return 2D coordinates as a JSON array.
  *
  * Returns `[[x0,y0],[x1,y1],...]` in atom-insertion order.
@@ -2040,6 +2109,34 @@ export function murcko_scaffold(mol) {
     _assertClass(mol, MolHandle);
     const ret = wasm.murcko_scaffold(mol.__wbg_ptr);
     return MolHandle.__wrap(ret);
+}
+
+/**
+ * Find the k nearest neighbours of a query SMILES in a list of db SMILES.
+ *
+ * `db_smiles_json`: JSON array of SMILES strings, e.g. `["CC","c1ccccc1"]`.
+ * Returns JSON: `[{"index":0,"tanimoto":0.95},...]` sorted by descending Tanimoto.
+ * Returns `"error:<msg>"` on parse failure.
+ * @param {string} query_smiles
+ * @param {string} db_smiles_json
+ * @param {number} k
+ * @returns {string}
+ */
+export function nearest_neighbors_json(query_smiles, db_smiles_json, k) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.nearest_neighbors_json(ptr0, len0, ptr1, len1, k);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -2443,6 +2540,28 @@ export function smiles_array_to_sdf(smiles_json) {
 }
 
 /**
+ * Convert a SMILES to a minimal Tripos MOL2 string (no 3D coordinates).
+ *
+ * Returns `"error:<msg>"` on parse failure.
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function smiles_to_mol2(smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.smiles_to_mol2(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Render a highlighted SVG from a SMILES string in one call.
  *
  * `atoms` — 0-based atom indices to highlight (Uint32Array in JS).
@@ -2521,6 +2640,29 @@ export function sssr_rings_json(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Standardize a SMILES string and return the canonical SMILES of the result.
+ *
+ * Applies: largest fragment extraction → charge neutralization.
+ * Returns `"error:<msg>"` on parse failure.
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function standardize_smiles(smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.standardize_smiles(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
 }
 

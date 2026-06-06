@@ -1,11 +1,11 @@
 {
-  "name": "@kent-tokyo/chematic",
+  "name": "chematic-wasm",
   "type": "module",
   "collaborators": [
     "kent-tokyo <kent-tokyo@users.noreply.github.com>"
   ],
   "description": "WebAssembly bindings for chematic \u2014 use chematic from JavaScript/TypeScript",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
