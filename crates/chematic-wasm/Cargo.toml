@@ -28,4 +28,5 @@ chematic-depict     = { path = "../chematic-depict",     version = "0.1.28" }
 chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.28" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.28" }
 chematic-3d         = { path = "../chematic-3d",         version = "0.1.28" }
+chematic-ewald      = { path = "../chematic-ewald",      version = "0.1.28" }
 chematic-mol        = { path = "../chematic-mol",        version = "0.1.28" }

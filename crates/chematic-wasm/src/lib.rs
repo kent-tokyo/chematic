@@ -489,6 +489,35 @@ pub fn run_md_json(mol: &MolHandle, steps: usize, temp_k: f64) -> String {
     format!(r#"{{"frames": [{}]}}"#, frames_json.join(", "))
 }
 
+/// Compute direct Coulomb energy for a molecule with Gasteiger partial charges.
+///
+/// Returns JSON object: `{ "coulomb_energy": E, "unit": "kcal/mol" }`
+///
+/// # Arguments
+/// * `mol` - Molecule to evaluate
+///
+/// # Example (JavaScript)
+/// ```js
+/// const mol = parse_smiles("CCO");
+/// const result = coulomb_energy_json(mol);
+/// // { "coulomb_energy": -12.34, "unit": "kcal/mol" }
+/// ```
+#[wasm_bindgen]
+pub fn coulomb_energy_json(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords(&mol.inner);
+    let charges = chematic_chem::gasteiger_charges(&mol.inner);
+    let energy = chematic_ewald::direct_coulomb(
+        &(0..coords.atom_count())
+            .map(|i| {
+                let p = coords.get(chematic_core::AtomIdx(i as u32));
+                [p.x, p.y, p.z]
+            })
+            .collect::<Vec<_>>(),
+        &charges,
+    );
+    format!(r#"{{"coulomb_energy": {:.4}, "unit": "kcal/mol"}}"#, energy)
+}
+
 /// Return a copy of the molecule with all implicit hydrogens converted to explicit H atoms.
 #[wasm_bindgen]
 pub fn add_hydrogens(mol: &MolHandle) -> MolHandle {
