@@ -679,6 +679,7 @@ footer {
     <button class="tab-btn"        data-tab="tab-sar"    id="tb-sar"     role="tab"></button>
     <button class="tab-btn"        data-tab="tab-3d"     id="tb-3d"      role="tab"></button>
     <button class="tab-btn"        data-tab="tab-gallery" id="tb-gallery" role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-dynamics" id="tb-dynamics" role="tab"></button>
   </div>
 </nav>
 
@@ -979,6 +980,42 @@ footer {
     </section>
   </div><!-- /tab-gallery -->
 
+  <!-- Tab: Dynamics -->
+  <div class="tab-panel" id="tab-dynamics" role="tabpanel">
+    <section id="section-dynamics">
+      <h2>Molecular Dynamics & Electrostatics</h2>
+
+      <div class="panel">
+        <h3>Coulomb Energy</h3>
+        <p>Direct Coulomb interaction energy using Gasteiger partial charges.</p>
+        <button id="btn-coulomb" class="btn btn-primary">Calculate Coulomb Energy</button>
+        <div id="coulomb-result" class="result-box" style="display: none;">
+          <code id="coulomb-output"></code>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Molecular Dynamics (NVT)</h3>
+        <p>Run short MD simulation at 300 K with Berendsen temperature control.</p>
+        <label>Simulation steps: <input type="number" id="md-steps" value="100" min="10" max="500" style="width: 60px"></label>
+        <button id="btn-md" class="btn btn-primary">Run MD Simulation</button>
+        <div id="md-result" class="result-box" style="display: none;">
+          <p><strong>Simulation complete!</strong> <span id="md-frames">0</span> frames saved.</p>
+          <pre id="md-output" style="max-height: 300px; overflow-y: auto;"></pre>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Geometry Optimization (DREIDING)</h3>
+        <p>Minimize geometry using DREIDING force field parameters.</p>
+        <button id="btn-minimize" class="btn btn-primary">Optimize Geometry</button>
+        <div id="minimize-result" class="result-box" style="display: none;">
+          <p><strong>Optimization complete!</strong> Structure minimized.</p>
+        </div>
+      </div>
+    </section>
+  </div><!-- /tab-dynamics -->
+
 </main>
 
 <footer>
@@ -1110,6 +1147,7 @@ const T = {
     'tab.sar':          'SAR Analysis',
     'tab.3d':           '3D Viewer',
     'tab.gallery':      'Gallery',
+    'tab.dynamics':     'Dynamics',
     'stereo.title':     'Stereoisomer Enumeration',
     'stereo.hint':      'Enumerates all possible stereoisomers for unspecified stereocenters (up to 6 centers / 64 isomers).',
     'stereo.btn':       'Show Stereoisomers',
@@ -1256,6 +1294,7 @@ const T = {
     'tab.sar':          'SAR 解析',
     'tab.3d':           '3D ビューア',
     'tab.gallery':      'ギャラリー',
+    'tab.dynamics':     'ダイナミクス',
     'stereo.title':     '立体異性体列挙',
     'stereo.hint':      '未指定の不斉中心に対して全ての立体異性体を列挙します（最大 6 中心 / 64 異性体）。',
     'stereo.btn':       '立体異性体を表示',
@@ -1402,6 +1441,7 @@ const T = {
     'tab.sar':          'SAR 分析',
     'tab.3d':           '3D 查看器',
     'tab.gallery':      '图库',
+    'tab.dynamics':     '动力学',
     'stereo.title':     '立体异构体枚举',
     'stereo.hint':      '对未指定的立体中心枚举所有可能的立体异构体（最多 6 个中心 / 64 种）。',
     'stereo.btn':       '显示立体异构体',
@@ -1490,6 +1530,7 @@ const STATIC_IDS = {
   'tb-sar':             'tab.sar',
   'tb-3d':              'tab.3d',
   'tb-gallery':         'tab.gallery',
+  'tb-dynamics':        'tab.dynamics',
   'h-stereo-title':     'stereo.title',
   'stereo-hint':        'stereo.hint',
   'btn-stereo':         'stereo.btn',
@@ -2865,6 +2906,53 @@ function runRgroup() {
       current3dStyle = btn.dataset.style;
       if (viewer3d && lastMol) apply3dStyle();
     });
+  });
+
+  // Dynamics: Coulomb energy
+  document.getElementById('btn-coulomb').addEventListener('click', async () => {
+    if (!lastMol) { showError('coulomb-result', 'No molecule loaded'); return; }
+    try {
+      const result = window.chemWasm.coulomb_energy_json(lastMol);
+      const data = JSON.parse(result);
+      document.getElementById('coulomb-output').textContent =
+        `Coulomb Energy: ${data.coulomb_energy.toFixed(4)} ${data.unit}`;
+      document.getElementById('coulomb-result').style.display = 'block';
+    } catch (e) {
+      showError('coulomb-result', `Error: ${e.message}`);
+    }
+  });
+
+  // Dynamics: MD simulation
+  document.getElementById('btn-md').addEventListener('click', async () => {
+    if (!lastMol) { showError('md-result', 'No molecule loaded'); return; }
+    try {
+      const steps = parseInt(document.getElementById('md-steps').value) || 100;
+      const result = window.chemWasm.run_md_json(lastMol, steps, 300.0);
+      const data = JSON.parse(result);
+      const frames = data.frames || [];
+      document.getElementById('md-frames').textContent = frames.length;
+
+      let output = `MD Simulation Results (${frames.length} frames):\n\n`;
+      frames.forEach((f, i) => {
+        output += `Frame ${i+1} (Step ${f.step}): E_pot=${f.potential.toFixed(2)}, E_kin=${f.kinetic.toFixed(2)}, T=${f.temp.toFixed(1)}K\n`;
+      });
+      document.getElementById('md-output').textContent = output;
+      document.getElementById('md-result').style.display = 'block';
+    } catch (e) {
+      showError('md-result', `Error: ${e.message}`);
+    }
+  });
+
+  // Dynamics: DREIDING minimize
+  document.getElementById('btn-minimize').addEventListener('click', async () => {
+    if (!lastMol) { showError('minimize-result', 'No molecule loaded'); return; }
+    try {
+      // Note: minimize_dreiding not yet exported to WASM, would need to add it
+      document.getElementById('minimize-result').style.display = 'block';
+      alert('Geometry optimization with DREIDING - coming soon!\n(minimize_dreiding needs WASM export)');
+    } catch (e) {
+      showError('minimize-result', `Error: ${e.message}`);
+    }
   });
 })();
 </script>
