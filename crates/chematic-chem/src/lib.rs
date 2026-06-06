@@ -10,6 +10,7 @@ pub mod alerts;
 pub mod xlogp3;
 pub mod brics;
 pub mod cip;
+pub mod condensed;
 pub mod hash;
 pub mod named_groups;
 pub mod descriptors;
@@ -42,6 +43,7 @@ pub use descriptors::{
 
 pub use alerts::{pains_matches, pains_passes};
 pub use brics::{BricsConfig, brics_bonds, brics_fragments, brics_fragments_with_config};
+pub use condensed::{parse_condensed, CondensedError};
 pub use mmp::{MmpPair, find_mmp};
 pub use diversity::{butina_cluster, maxmin_picks};
 pub use gasteiger::gasteiger_charges;

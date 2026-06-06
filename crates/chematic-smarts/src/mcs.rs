@@ -66,6 +66,9 @@ pub struct McsConfig {
     pub atom_compare: AtomCompare,
     /// Bond-level comparison strategy.  Defaults to [`BondCompare::OrderOrAromatic`].
     pub bond_compare: BondCompare,
+    /// If `true`, stereochemistry (chirality) must match between atoms. If `false`, chirality
+    /// is ignored (default). Prevents matching of enantiomers in MCS.
+    pub match_chiral_tag: bool,
 }
 
 impl Default for McsConfig {
@@ -78,6 +81,7 @@ impl Default for McsConfig {
             complete_rings_only: false,
             atom_compare: AtomCompare::Elements,
             bond_compare: BondCompare::OrderOrAromatic,
+            match_chiral_tag: false,
         }
     }
 }
@@ -393,7 +397,7 @@ fn build_frontier_candidates(
                 continue;
             }
             // Must be atom-compatible.
-            if !atoms_compatible(atom0, atom_i, &config.atom_compare) {
+            if !atoms_compatible(atom0, atom_i, &config.atom_compare, config.match_chiral_tag) {
                 continue;
             }
             // ring_matches_ring_only: ring atoms must match ring atoms only.
@@ -437,7 +441,7 @@ fn collect_seed_candidates(mols: &[&Molecule], a0: AtomIdx, config: &McsConfig, 
         let cands: Vec<AtomIdx> = mols[mi]
             .atoms()
             .filter(|(ai, a)| {
-                if !atoms_compatible(atom0, a, &config.atom_compare) {
+                if !atoms_compatible(atom0, a, &config.atom_compare, config.match_chiral_tag) {
                     return false;
                 }
                 if config.ring_matches_ring_only {
@@ -504,8 +508,8 @@ fn upper_bound_additional(mols: &[&Molecule], mapping: &PartialMapping) -> usize
 // ---------------------------------------------------------------------------
 
 /// Atom compatibility according to `compare` mode.
-fn atoms_compatible(a: &chematic_core::Atom, b: &chematic_core::Atom, compare: &AtomCompare) -> bool {
-    match compare {
+fn atoms_compatible(a: &chematic_core::Atom, b: &chematic_core::Atom, compare: &AtomCompare, match_chiral: bool) -> bool {
+    let base = match compare {
         AtomCompare::Elements => {
             a.element.atomic_number() == b.element.atomic_number() && a.aromatic == b.aromatic
         }
@@ -513,7 +517,14 @@ fn atoms_compatible(a: &chematic_core::Atom, b: &chematic_core::Atom, compare: &
             a.element.atomic_number() > 1 && b.element.atomic_number() > 1
         }
         AtomCompare::Any => true,
+    };
+    if !base {
+        return false;
     }
+    if match_chiral && a.chirality != b.chirality {
+        return false;
+    }
+    true
 }
 
 /// Bond compatibility according to `compare` mode.
@@ -1032,6 +1043,57 @@ mod tests {
         let result = find_mcs_with_config(&[&a, &b], &config);
         assert!(result.atom_count() >= 10,
             "Combined flags should yield at least the quinoline scaffold, got {}", result.atom_count());
+    }
+
+    // -----------------------------------------------------------------------
+    // match_chiral_tag tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_match_chiral_tag_false_matches_enantiomers() {
+        // R-alanine vs S-alanine: with match_chiral_tag=false (default),
+        // should match all atoms (ignoring chirality)
+        let r_ala = parse("[C@H](C)(N)C(=O)O").unwrap();
+        let s_ala = parse("[C@@H](C)(N)C(=O)O").unwrap();
+        let default_result = find_mcs(&[&r_ala, &s_ala]);
+        assert_eq!(default_result.atom_count(), r_ala.atom_count(),
+            "Default (match_chiral_tag=false) should match all atoms of enantiomers");
+    }
+
+    #[test]
+    fn test_match_chiral_tag_true_blocks_stereocenters() {
+        // R-alanine vs S-alanine: with match_chiral_tag=true,
+        // the stereocenter C should not match (different chirality).
+        // However, non-chiral atoms (N, O, carboxyl C) can still match.
+        // So MCS should be smaller than without the constraint.
+        let r_ala = parse("[C@H](C)(N)C(=O)O").unwrap();
+        let s_ala = parse("[C@@H](C)(N)C(=O)O").unwrap();
+
+        let default_result = find_mcs(&[&r_ala, &s_ala]);
+        let config = McsConfig {
+            match_chiral_tag: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&r_ala, &s_ala], &config);
+
+        assert!(result.atom_count() < default_result.atom_count(),
+            "match_chiral_tag=true should find smaller MCS than default: {} vs {}",
+            result.atom_count(), default_result.atom_count());
+    }
+
+    #[test]
+    fn test_match_chiral_tag_true_matches_same_stereoisomer() {
+        // R-alanine vs R-alanine: with match_chiral_tag=true,
+        // should still match all atoms (same stereochemistry)
+        let r_ala1 = parse("[C@H](C)(N)C(=O)O").unwrap();
+        let r_ala2 = parse("[C@H](C)(N)C(=O)O").unwrap();
+        let config = McsConfig {
+            match_chiral_tag: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&r_ala1, &r_ala2], &config);
+        assert_eq!(result.atom_count(), r_ala1.atom_count(),
+            "match_chiral_tag=true should still match molecules with same stereochemistry");
     }
 
 }

@@ -494,9 +494,15 @@ Sprint v0.1.32: ✅ MDL RXN ファイル + formula_with_isotopes（v0.1.32）
   - chematic-core: Molecule::formula_with_isotopes()（²H・¹³C 等の同位体ラベル付き分子式）
   - テスト: 929 → 933（+4）
 
-Sprint v0.1.25-後: ✅ P3 機能評価（実装前）
-  - P2 機能（detect_crossings, invert_stereocenter, enumerate_stereoisomers, render_svg_with_metadata, find_reaction_center）が完成
-  - テスト: 865 + v0.1.24（+82） + v0.1.25（+70） = 1017（予定）
+Sprint v0.1.25: ✅ P2 機能完成・リリース（2026-06-06）
+  - detect_crossings: 2D レイアウト品質評価（結合交差検出）
+  - invert_stereocenter: R/S キラリティ反転（ウェッジ結合反転）
+  - enumerate_stereoisomers: 立体異性体全列挙（2^n、最大 64）
+  - render_svg_with_metadata: SVG メタデータ埋め込み（SMILES）
+  - find_reaction_center: 反応中心分析（broken/formed bonds + changed atoms）
+  - テスト: 865 → 935（+70）
+  - cargo & npm publish 完了
+  - CHANGELOG / README 全言語更新済み
 
 Sprint v0.1.26 — P3 Features（実装待ち・優先度決定中）
 
@@ -521,11 +527,14 @@ Sprint v0.1.26 — P3 Features（実装待ち・優先度決定中）
         - 推奨: v0.2.0 リメジャーで実装（大きな破壊的変更のため）
 
 ### Decision Pending:
-  - **オプション A**: v0.1.26 で parse_condensed() のみ実装（低リスク）
+  - **オプション A**: v0.1.26 で parse_condensed() のみ実装（低リスク）✅ **推奨**
   - **オプション B**: v0.1.26 で parse_condensed() + PNG embed SMILES の両方（中リスク）
-  - **オプション C**: v0.1.25 公開 + デモ機能追加へシフト（遅延）
+  - **オプション C**: デモ機能追加 + ドキュメント充実へシフト（他の高優先度タスク）
   
-  デフォルト推奨: **オプション A** (parse_condensed のみ) → 完成度を重視
+  ## 次のステップ
+  - v0.1.25 の安定性検証（user feedback、bug reports）
+  - v0.1.26 実装スケジュール決定
+  - デモサイト機能追加（タブ UI、Stereoisomers ビューア等）
 ```
 
 ---
@@ -537,12 +546,10 @@ Issue #1 のパターン: **アルゴリズムが位相的には正しい結果�
 以下は同パターンで将来 Issue 化する可能性が高い項目。
 
 ### ✅ Issue 候補 A (🔴 高): MCS — `atomCompare` / `bondCompare` レベル（Sprint v0.1.28 で解決）
-  - **現状**: `find_mcs_with_config` は原子比較を「同一原子番号」固定
-  - **症状**: ヘテロ環交換シリーズ（インドール vs ベンゾフラン等）で MCS が 0 原子になる
-  - **RDKit 対応**: `atomCompare=CompareAnyHeavyAtom`, `CompareElements`, `CompareAny`
-  - **対象**: `crates/chematic-smarts/src/mcs.rs`
-  - **実装**: `McsConfig` に `AtomCompare` / `BondCompare` enum を追加し McGregor フィルタで参照
-  - **推奨 Sprint**: v0.1.25
+  - **状態**: ✅ Sprint v0.1.28 で実装済み（`AtomCompare::Elements/AnyHeavyAtom/Any`, `BondCompare::OrderOrAromatic/Any`）
+  - **実装済み場所**: `crates/chematic-smarts/src/mcs.rs` (McsConfig struct lines 48-69)
+  - `find_mcs_with_config` で `McsConfig { atom_compare, bond_compare, ... }` を使用
+  - キラリティ比較は別 Issue D を参照
 
 ### ✅ Issue 候補 B (🔴 高): `run_reactants` — 生成物の原子価バリデーションなし（Sprint v0.1.24 で解決）
   - **現状**: SMIRKS 適用後の生成物 Molecule に valence チェックなし
@@ -553,25 +560,19 @@ Issue #1 のパターン: **アルゴリズムが位相的には正しい結果�
   - **推奨 Sprint**: v0.1.24（正確性問題のため優先）
 
 ### ✅ Issue 候補 C (🟡 中): BRICS — `minFragmentSize` オプションなし（Sprint v0.1.28 で解決）
-  - **現状**: `brics_fragments` は 1〜2 原子の化学的に無意味なフラグメントも返す
-  - **症状**: フラグメントライブラリ構築時に `[*]C`, `[*]O` 等の単原子フラグメントが混入
-  - **RDKit 対応**: `BRICSDecompose(mol, minFragmentSize=3)` がデフォルト
-  - **対象**: `crates/chematic-chem/src/brics.rs`
-  - **実装**: `BricsConfig { min_fragment_size: usize }` + `brics_fragments_with_config(mol, config)`
-  - **推奨 Sprint**: v0.1.26
+  - **状態**: ✅ Sprint v0.1.28 で実装済み（`BricsConfig { min_fragment_size }` + `brics_fragments_with_config`）
+  - **実装済み場所**: `crates/chematic-chem/src/brics.rs` (BricsConfig lines 69-76, brics_fragments_with_config)
+  - min_fragment_size で 1-2 原子の無意味なフラグメントを除外可能
 
-### Issue 候補 D (🟡 中): MCS — `matchChiralTag` オプションなし
-  - **現状**: MCS は `Atom::cip_code` / `Atom::chirality` を無視してマッチング
+### 🔨 Issue 候補 D (🟡 中): MCS — `matchChiralTag` オプションなし（Sprint v0.1.26 で実装中）
+  - **状態**: 実装予定（v0.1.26）— キラル SAR 解析向けの重要な機能
   - **症状**: R/S 鏡像体間の MCS が「全原子一致」になる（化学的には別化合物）
   - **RDKit 対応**: `matchChiralTag=True`
   - **対象**: `crates/chematic-smarts/src/mcs.rs`
-  - **実装**: `McsConfig { match_chiral_tag: bool }` を追加し McGregor の atom-candidate フィルタで `CipCode` を比較
-  - **推奨 Sprint**: 将来（キラル SAR 解析ユースケースが増えたとき）
+  - **実装**: `McsConfig { match_chiral_tag: bool }` (default: false) を追加、`atoms_compatible` で chirality チェック
+  - **テスト**: R-Ala vs S-Ala で動作確認
 
 ### ✅ Issue 候補 E (🟡 中): `find_matches` — マッチ数上限なし（Sprint v0.1.28 で解決）
-  - **現状**: `find_matches(query, mol)` は全サブグラフ一致を無制限に Vec で返す
-  - **症状**: 汎用 SMARTS (`[#6]~[#6]` 等) × 大分子でメモリ・実行時間が爆発的増大（WASM 環境でクラッシュ）
-  - **RDKit 対応**: `maxMatches=1000` でデフォルトキャップ
-  - **対象**: `crates/chematic-smarts/src/match_vf2.rs`
-  - **実装**: `MatchConfig { max_matches: Option<usize> }` + `find_matches_with_config(query, mol, config)`
-  - **推奨 Sprint**: v0.1.26（C と同 Sprint）
+  - **状態**: ✅ Sprint v0.1.28 で実装済み（`MatchConfig { max_matches }` + `find_matches_with_config`）
+  - **実装済み場所**: `crates/chematic-smarts/src/match_vf2.rs` (lines 73-78, match_recursive lines 102-104)
+  - max_matches でメモリ爆発を防止可能
