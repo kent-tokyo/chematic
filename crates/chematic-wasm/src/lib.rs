@@ -518,6 +518,23 @@ pub fn coulomb_energy_json(mol: &MolHandle) -> String {
     format!(r#"{{"coulomb_energy": {:.4}, "unit": "kcal/mol"}}"#, energy)
 }
 
+/// Optimize molecular geometry using DREIDING force field.
+///
+/// Performs geometry minimization with DREIDING force field parameters.
+/// Returns minimized coordinate PDB.
+///
+/// # Arguments
+/// * `mol` - Molecule to optimize
+///
+/// # Returns
+/// PDB format string with optimized coordinates
+#[wasm_bindgen]
+pub fn minimize_dreiding_json(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords(&mol.inner);
+    let min_coords = chematic_3d::minimize_dreiding(&mol.inner, coords);
+    chematic_3d::write_pdb(&mol.inner, &min_coords)
+}
+
 /// Return a copy of the molecule with all implicit hydrogens converted to explicit H atoms.
 #[wasm_bindgen]
 pub fn add_hydrogens(mol: &MolHandle) -> MolHandle {

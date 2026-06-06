@@ -2947,9 +2947,22 @@ function runRgroup() {
   document.getElementById('btn-minimize').addEventListener('click', async () => {
     if (!lastMol) { showError('minimize-result', 'No molecule loaded'); return; }
     try {
-      // Note: minimize_dreiding not yet exported to WASM, would need to add it
-      document.getElementById('minimize-result').style.display = 'block';
-      alert('Geometry optimization with DREIDING - coming soon!\n(minimize_dreiding needs WASM export)');
+      const pdbStr = window.chemWasm.minimize_dreiding_json(lastMol);
+      const resultDiv = document.getElementById('minimize-result');
+      resultDiv.textContent = '';
+      const p1 = document.createElement('p');
+      p1.textContent = '✓ Optimization complete! Geometry minimized with DREIDING force field.';
+      const p2 = document.createElement('p');
+      p2.textContent = 'Minimized structure (PDB format):';
+      const pre = document.createElement('pre');
+      pre.style.maxHeight = '200px';
+      pre.style.overflowY = 'auto';
+      pre.style.fontSize = '0.8rem';
+      pre.textContent = pdbStr.split('\n').slice(0, 10).join('\n') + '\n...';
+      resultDiv.appendChild(p1);
+      resultDiv.appendChild(p2);
+      resultDiv.appendChild(pre);
+      resultDiv.style.display = 'block';
     } catch (e) {
       showError('minimize-result', `Error: ${e.message}`);
     }
