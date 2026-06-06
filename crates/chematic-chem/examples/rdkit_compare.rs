@@ -193,7 +193,7 @@ fn main() {
         let fps50: Vec<Option<chematic_fp::bitvec::BitVec2048>> = fp_names.iter()
             .map(|name| {
                 smiles_map.get(*name).and_then(|smi| {
-                    parse(smi).ok().map(|mol| ecfp(&mol, &EcfpConfig { radius: 2, nbits: 2048 }))
+                    parse(smi).ok().map(|mol| ecfp(&mol, &EcfpConfig { radius: 2, nbits: 2048, use_chirality: false }))
                 })
             })
             .collect();

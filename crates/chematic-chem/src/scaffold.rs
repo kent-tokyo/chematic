@@ -100,6 +100,147 @@ fn build_subgraph(mol: &Molecule, atom_set: &HashSet<AtomIdx>) -> Molecule {
     builder.build()
 }
 
+// ---------------------------------------------------------------------------
+// Schuffenhauer scaffold network
+// ---------------------------------------------------------------------------
+
+/// Return the full scaffold network of `mol` as a `Vec<Molecule>`.
+///
+/// Starting from the Murcko scaffold, rings are iteratively removed one at a
+/// time following Schuffenhauer's priority rules (Schuffenhauer et al. 2007)
+/// until a single-ring scaffold remains.  Each intermediate is included.
+///
+/// The returned vector starts with the Murcko scaffold and ends with the
+/// smallest core ring.  Returns an empty `Vec` if the molecule has no rings.
+pub fn scaffold_network(mol: &Molecule) -> Vec<Molecule> {
+    let start = murcko_scaffold(mol);
+    if start.atom_count() == 0 {
+        return Vec::new();
+    }
+
+    let mut network: Vec<Molecule> = Vec::new();
+    let mut current = start;
+
+    loop {
+        // Store a copy of current before mutating.
+        let snapshot: HashSet<AtomIdx> = (0..current.atom_count())
+            .map(|i| AtomIdx(i as u32))
+            .collect();
+        network.push(build_subgraph(&current, &snapshot));
+
+        let rings = find_sssr(&current);
+        if rings.ring_count() <= 1 {
+            break; // single ring or no ring — stop
+        }
+
+        match schuffenhauer_remove_ring(&current, &rings) {
+            Some(next) => {
+                current = next;
+            }
+            None => break,
+        }
+    }
+
+    network
+}
+
+/// Return the direct Schuffenhauer parent scaffolds of `mol` (one ring removed).
+///
+/// In most cases this returns a single scaffold.  Returns an empty `Vec` if
+/// the Murcko scaffold has 0 or 1 rings.
+pub fn schuffenhauer_parents(mol: &Molecule) -> Vec<Molecule> {
+    let start = murcko_scaffold(mol);
+    let rings = find_sssr(&start);
+    if rings.ring_count() <= 1 {
+        return Vec::new();
+    }
+    schuffenhauer_remove_ring(&start, &rings)
+        .into_iter()
+        .collect()
+}
+
+/// Remove one ring from `mol` according to Schuffenhauer priority rules.
+///
+/// Rules (applied in order until a winner is found):
+/// 1. Remove an outermost ring (one that, when removed, reduces ring count by 1).
+/// 2. Among candidates, prefer all-carbon rings over heteroaromatic rings.
+/// 3. Among candidates with same heteroatom content, prefer the smallest ring.
+/// 4. Break remaining ties by preferring the ring with the lowest-priority
+///    attachment point (smallest atom index in the ring).
+fn schuffenhauer_remove_ring(mol: &Molecule, rings: &chematic_perception::RingSet) -> Option<Molecule> {
+    let n_rings = rings.ring_count();
+    if n_rings == 0 {
+        return None;
+    }
+
+    // Find "removable" rings: removing all atoms in the ring (that don't belong
+    // to other rings) still leaves a connected scaffold or is the last ring.
+    let all_rings: Vec<Vec<AtomIdx>> = rings.rings().to_vec();
+
+    // For each ring, count how many of its atoms appear in exactly 1 ring.
+    // Those atoms can be safely deleted when we remove the ring.
+    let mut candidates: Vec<usize> = (0..n_rings)
+        .filter(|&ri| {
+            // A ring is outermost if it shares at most one ring member with
+            // any other ring (i.e. it has atoms exclusive to it).
+            let exclusive: usize = all_rings[ri].iter()
+                .filter(|&&atom| {
+                    all_rings.iter().enumerate()
+                        .filter(|(j, _)| *j != ri)
+                        .all(|(_, other)| !other.contains(&atom))
+                })
+                .count();
+            exclusive > 0
+        })
+        .collect();
+
+    if candidates.is_empty() {
+        // Fallback: all rings are fused. Pick the one with the most shared atoms.
+        candidates = (0..n_rings).collect();
+    }
+
+    // Rule 2: prefer all-carbon rings (no heteroatoms).
+    let carbon_only: Vec<usize> = candidates.iter().copied()
+        .filter(|&ri| all_rings[ri].iter().all(|&a| mol.atom(a).element.atomic_number() == 6))
+        .collect();
+    if !carbon_only.is_empty() {
+        candidates = carbon_only;
+    }
+
+    // Rule 3: prefer smallest ring.
+    let min_size = candidates.iter().map(|&ri| all_rings[ri].len()).min().unwrap();
+    candidates.retain(|&ri| all_rings[ri].len() == min_size);
+
+    // Rule 4: tie-break by smallest atom index in the ring.
+    candidates.sort_by_key(|&ri| all_rings[ri].iter().map(|a| a.0).min().unwrap_or(0));
+    let chosen_ring = candidates[0];
+
+    // Build the set of atoms to DELETE: atoms exclusive to the chosen ring.
+    let to_delete: HashSet<AtomIdx> = all_rings[chosen_ring].iter().copied()
+        .filter(|&atom| {
+            all_rings.iter().enumerate()
+                .filter(|(j, _)| *j != chosen_ring)
+                .all(|(_, other)| !other.contains(&atom))
+        })
+        .collect();
+
+    if to_delete.is_empty() {
+        return None; // fused ring with no exclusive atoms — can't remove
+    }
+
+    // Build new scaffold: keep all atoms NOT in to_delete.
+    let keep: HashSet<AtomIdx> = (0..mol.atom_count())
+        .map(|i| AtomIdx(i as u32))
+        .filter(|a| !to_delete.contains(a))
+        .collect();
+
+    if keep.is_empty() {
+        return None;
+    }
+
+    Some(build_subgraph(mol, &keep))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

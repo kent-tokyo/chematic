@@ -3,6 +3,7 @@
 use crate::atom::Atom;
 use crate::bond::{BondEntry, BondOrder};
 use crate::element::Element;
+use crate::stereo_group::StereoGroup;
 
 /// Newtype index for an atom in a Molecule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -39,6 +40,8 @@ pub struct Molecule {
     bonds: Vec<BondEntry>,
     /// adjacency[atom_idx] = list of (neighbor_atom_idx, bond_idx)
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
+    /// Enhanced stereo groups (ChemDraw V3000 Absolute / Or / And).
+    stereo_groups: Vec<StereoGroup>,
 }
 
 impl Molecule {
@@ -481,6 +484,21 @@ impl Molecule {
     pub fn set_cip_code(&mut self, idx: AtomIdx, code: Option<crate::atom::CipCode>) {
         self.atoms[idx.0 as usize].cip_code = code;
     }
+
+    /// Return the enhanced stereo groups attached to this molecule.
+    pub fn stereo_groups(&self) -> &[StereoGroup] {
+        &self.stereo_groups
+    }
+
+    /// Replace the stereo group list in-place.
+    pub fn set_stereo_groups(&mut self, groups: Vec<StereoGroup>) {
+        self.stereo_groups = groups;
+    }
+
+    /// Add a single stereo group in-place.
+    pub fn add_stereo_group(&mut self, group: StereoGroup) {
+        self.stereo_groups.push(group);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -563,6 +581,7 @@ pub struct MoleculeBuilder {
     atoms: Vec<Atom>,
     bonds: Vec<BondEntry>,
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
+    stereo_groups: Vec<StereoGroup>,
 }
 
 impl MoleculeBuilder {
@@ -582,7 +601,13 @@ impl MoleculeBuilder {
         for (_, bond) in mol.bonds() {
             let _ = b.add_bond(bond.atom1, bond.atom2, bond.order);
         }
+        b.stereo_groups = mol.stereo_groups.clone();
         b
+    }
+
+    /// Append a stereo group to this builder.
+    pub fn add_stereo_group(&mut self, group: StereoGroup) {
+        self.stereo_groups.push(group);
     }
 
     /// Read-only reference to an atom already added to the builder.
@@ -643,6 +668,7 @@ impl MoleculeBuilder {
             atoms: self.atoms,
             bonds: self.bonds,
             adjacency: self.adjacency,
+            stereo_groups: self.stereo_groups,
         }
     }
 }

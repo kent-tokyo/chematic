@@ -427,19 +427,91 @@ fn apply_all_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<Molecule> {
 
 /// Return the canonical (preferred) tautomer of `mol`.
 ///
+// ---------------------------------------------------------------------------
+// TautomerConfig
+// ---------------------------------------------------------------------------
+
+/// Configuration for tautomer enumeration and canonicalization.
+///
+/// # Rule indices
+/// Rules are numbered 0-based in the order they appear in the built-in set.
+/// Use [`TautomerConfig::rule_count`] to know the total and
+/// [`TautomerConfig::rule_names`] to see what each index represents.
+///
+/// An empty `enabled_rules` (the default) activates **all** rules.
+#[derive(Debug, Clone)]
+pub struct TautomerConfig {
+    /// Maximum iterations in [`canonical_tautomer_with_config`] (default 16).
+    pub max_iter: usize,
+    /// Maximum tautomers returned by [`enumerate_tautomers_with_config`] (default 32).
+    pub max_tautomers: usize,
+    /// 0-based indices of rules to activate.  Empty = all rules active.
+    pub enabled_rules: Vec<usize>,
+}
+
+impl Default for TautomerConfig {
+    fn default() -> Self {
+        Self { max_iter: 16, max_tautomers: 32, enabled_rules: Vec::new() }
+    }
+}
+
+impl TautomerConfig {
+    /// Number of built-in tautomer rules available.
+    pub fn rule_count() -> usize {
+        RULES.len()
+    }
+
+    /// Names of all built-in rules, in index order.
+    pub fn rule_names() -> Vec<&'static str> {
+        RULES.iter().map(|r| r.name).collect()
+    }
+
+    /// Convenience: config with only the keto-enol rule (index 0) enabled.
+    pub fn keto_enol_only() -> Self {
+        Self { enabled_rules: vec![0], ..Self::default() }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Internal helper: iterate only the active rules
+// ---------------------------------------------------------------------------
+
+/// Collect the rules that are active under `config`.
+fn active_rules(config: &TautomerConfig) -> Vec<&'static TautomerRule> {
+    RULES.iter().enumerate().filter_map(|(i, r)| {
+        if config.enabled_rules.is_empty() || config.enabled_rules.contains(&i) {
+            Some(r)
+        } else {
+            None
+        }
+    }).collect()
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/// Return the canonical (preferred) tautomer of `mol`.
+///
 /// Applies forward-preferred rules iteratively until no new form is found
 /// or the iteration limit is reached. After rule-based normalization, direct
 /// aromatic 1,2-shift tautomers are compared and the form with the
 /// lexicographically smallest H-assignment vector is chosen.
+///
+/// Uses [`TautomerConfig::default`] (all rules, max_iter=16).
 pub fn canonical_tautomer(mol: &Molecule) -> Molecule {
-    const MAX_ITER: usize = 16;
+    canonical_tautomer_with_config(mol, &TautomerConfig::default())
+}
+
+/// Like [`canonical_tautomer`] but with explicit configuration.
+pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -> Molecule {
     let mut current = clone_mol(mol);
     let mut seen = HashSet::new();
     seen.insert(mol_fingerprint(&current));
 
-    for _ in 0..MAX_ITER {
+    for _ in 0..config.max_iter {
         let mut changed = false;
-        for rule in RULES.iter().filter(|r| r.prefer_forward) {
+        for rule in active_rules(config).into_iter().filter(|r| r.prefer_forward) {
             if let Some(next) = apply_first_match(&current, rule) {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
@@ -476,8 +548,14 @@ pub fn canonical_tautomer(mol: &Molecule) -> Molecule {
 ///
 /// Returns a `Vec<Molecule>` where the first element is the original molecule.
 /// Includes both 1,3-shift (rule-based) and direct aromatic 1,2-shift tautomers.
+///
+/// Uses [`TautomerConfig::default`] (all rules, max_tautomers=32).
 pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
-    const MAX_TAUTOMERS: usize = 32;
+    enumerate_tautomers_with_config(mol, &TautomerConfig::default())
+}
+
+/// Like [`enumerate_tautomers`] but with explicit configuration.
+pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) -> Vec<Molecule> {
     let mut result = vec![clone_mol(mol)];
     let mut seen = HashSet::new();
     seen.insert(mol_fingerprint(mol));
@@ -486,9 +564,9 @@ pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
     h_seen.insert(h_assignment(mol));
     let mut frontier = vec![clone_mol(mol)];
 
-    while !frontier.is_empty() && result.len() < MAX_TAUTOMERS {
+    while !frontier.is_empty() && result.len() < config.max_tautomers {
         let current = frontier.remove(0);
-        for rule in RULES.iter() {
+        for rule in active_rules(config).into_iter() {
             for next in apply_all_matches(&current, rule) {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
@@ -496,18 +574,18 @@ pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
                     h_seen.insert(h_assignment(&next));
                     frontier.push(clone_mol(&next));
                     result.push(next);
-                    if result.len() >= MAX_TAUTOMERS {
+                    if result.len() >= config.max_tautomers {
                         break;
                     }
                 }
             }
-            if result.len() >= MAX_TAUTOMERS {
+            if result.len() >= config.max_tautomers {
                 break;
             }
         }
         // Direct aromatic 1,2-shift (e.g. pyrazole N1H ↔ N2H).
         for (d, a) in find_direct_aromatic_matches(&current) {
-            if result.len() >= MAX_TAUTOMERS {
+            if result.len() >= config.max_tautomers {
                 break;
             }
             if let Some(next) = transfer_hydrogen_aromatic(&current, d, a) {
@@ -642,5 +720,74 @@ mod tests {
             canonical_smiles(&canonical_tautomer(n2h)),
             "canonical_tautomer should normalize N1H and N2H to the same form"
         );
+    }
+
+    // --- TautomerConfig ---
+
+    #[test]
+    fn test_config_default_same_as_no_config() {
+        use chematic_smiles::canonical_smiles;
+        // canonical_tautomer and canonical_tautomer_with_config(default) must agree.
+        let mol = parse("OC=C").unwrap(); // enol
+        let a = canonical_tautomer(&mol);
+        let b = canonical_tautomer_with_config(&mol, &TautomerConfig::default());
+        assert_eq!(
+            canonical_smiles(&a),
+            canonical_smiles(&b),
+            "default config should match canonical_tautomer"
+        );
+    }
+
+    #[test]
+    fn test_config_max_iter_one_limits_convergence() {
+        // With max_iter=1, at most one rule application happens.
+        // Result may differ from full convergence but should not panic.
+        let mol = parse("OC=C").unwrap();
+        let config = TautomerConfig { max_iter: 1, ..TautomerConfig::default() };
+        let _ = canonical_tautomer_with_config(&mol, &config);
+    }
+
+    #[test]
+    fn test_config_max_tautomers_caps_enumerate() {
+        // Acetylacetone has many tautomers. Capping at 2 should return exactly 2.
+        let mol = parse("CC(=O)CC(=O)C").unwrap(); // acetylacetone
+        let config = TautomerConfig { max_tautomers: 2, ..TautomerConfig::default() };
+        let tautomers = enumerate_tautomers_with_config(&mol, &config);
+        assert_eq!(tautomers.len(), 2, "max_tautomers=2 should return exactly 2");
+    }
+
+    #[test]
+    fn test_config_enabled_rules_subset() {
+        // Enabling only rule 0 (keto-enol) should still work on an enol.
+        let mol = parse("OC=C").unwrap();
+        let config = TautomerConfig::keto_enol_only();
+        let result = canonical_tautomer_with_config(&mol, &config);
+        // Should convert enol to ketone (or at least not panic).
+        assert!(result.atom_count() > 0);
+    }
+
+    #[test]
+    fn test_config_empty_enabled_rules_equals_all() {
+        use chematic_smiles::canonical_smiles;
+        let mol = parse("OC=C").unwrap();
+        let all = canonical_tautomer_with_config(&mol, &TautomerConfig::default());
+        let explicit_empty = canonical_tautomer_with_config(
+            &mol,
+            &TautomerConfig { enabled_rules: vec![], ..TautomerConfig::default() },
+        );
+        assert_eq!(
+            canonical_smiles(&all),
+            canonical_smiles(&explicit_empty),
+            "empty enabled_rules should equal all rules"
+        );
+    }
+
+    #[test]
+    fn test_rule_count_and_names() {
+        let count = TautomerConfig::rule_count();
+        let names = TautomerConfig::rule_names();
+        assert!(count > 0);
+        assert_eq!(names.len(), count);
+        assert!(!names[0].is_empty());
     }
 }

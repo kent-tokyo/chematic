@@ -6,7 +6,7 @@
 //!
 //! Reference: MDL/Dassault Systèmes CTfile Formats specification, V3000 section.
 
-use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, StereoGroup, StereoGroupKind};
 
 use crate::error::MolParseError;
 use crate::mol2000::MolMetadata;
@@ -179,11 +179,13 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
         AfterAtomBlock,
         InBondBlock,
         AfterBondBlock,
+        InCollection,
         Done,
     }
 
     let mut state = State::BeforeCtab;
     let mut expected_atoms: usize = 0;
+    let mut stereo_groups: Vec<StereoGroup> = Vec::new();
 
     for LogicalLine { line_num, payload } in &v30_lines {
         let lnum = *line_num;
@@ -363,8 +365,18 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
             }
 
             State::AfterBondBlock => {
-                if is_marker(&tokens, "END", "CTAB") {
+                if is_marker(&tokens, "BEGIN", "COLLECTION") {
+                    state = State::InCollection;
+                } else if is_marker(&tokens, "END", "CTAB") {
                     state = State::Done;
+                }
+            }
+
+            State::InCollection => {
+                if is_marker(&tokens, "END", "COLLECTION") {
+                    state = State::AfterBondBlock;
+                } else if let Some(group) = parse_stereo_group_line(payload, &atom_idx_map) {
+                    stereo_groups.push(group);
                 }
             }
 
@@ -392,12 +404,61 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
         }
     }
 
-    Ok((builder.build(), metadata))
+    let mut mol = builder.build();
+    if !stereo_groups.is_empty() {
+        mol.set_stereo_groups(stereo_groups);
+    }
+    Ok((mol, metadata))
 }
 
 /// Look up the builder `AtomIdx` for a given V3000 1-based index.
 fn resolve_atom_idx(v3k_idx: u32, map: &[(u32, AtomIdx)]) -> Option<AtomIdx> {
     map.iter().find(|&&(k, _)| k == v3k_idx).map(|&(_, v)| v)
+}
+
+/// Parse a V3000 COLLECTION line into a [`StereoGroup`].
+///
+/// Expected formats:
+/// - `MDLV30/STEABS ATOMS=(3 1 2 3)` → `StereoGroupKind::Absolute`
+/// - `MDLV30/STEOR1 ATOMS=(1 4)`     → `StereoGroupKind::Or(1)`
+/// - `MDLV30/STEAND2 ATOMS=(1 6)`    → `StereoGroupKind::And(2)`
+fn parse_stereo_group_line(payload: &str, atom_idx_map: &[(u32, AtomIdx)]) -> Option<StereoGroup> {
+    // First token is the group kind key.
+    let first_tok = payload.split_whitespace().next()?;
+
+    let kind = if first_tok == "MDLV30/STEABS" {
+        StereoGroupKind::Absolute
+    } else if let Some(n_str) = first_tok.strip_prefix("MDLV30/STEOR") {
+        let n: u32 = n_str.parse().ok()?;
+        StereoGroupKind::Or(n)
+    } else if let Some(n_str) = first_tok.strip_prefix("MDLV30/STEAND") {
+        let n: u32 = n_str.parse().ok()?;
+        StereoGroupKind::And(n)
+    } else {
+        return None; // not a stereo group line
+    };
+
+    // Extract the ATOMS=(...) value from the remainder of the payload.
+    let atoms_start = payload.find("ATOMS=(")?;
+    let after_paren = &payload[atoms_start + "ATOMS=(".len()..];
+    let close = after_paren.find(')')?;
+    let inner = &after_paren[..close];
+
+    // First number is the count; the rest are 1-based V3000 atom indices.
+    let mut nums = inner.split_whitespace();
+    let _count: usize = nums.next()?.parse().ok()?;
+    let atom_indices: Vec<AtomIdx> = nums
+        .filter_map(|s| {
+            let v3k: u32 = s.parse().ok()?;
+            resolve_atom_idx(v3k, atom_idx_map)
+        })
+        .collect();
+
+    if atom_indices.is_empty() {
+        return None;
+    }
+
+    Some(StereoGroup::new(kind, atom_indices))
 }
 
 // ---------------------------------------------------------------------------
@@ -835,6 +896,29 @@ pub fn write_mol_v3000(
     }
     out.push_str("M  V30 END BOND\n");
 
+    // Optional COLLECTION block for enhanced stereo groups.
+    let groups = mol.stereo_groups();
+    if !groups.is_empty() {
+        out.push_str("M  V30 BEGIN COLLECTION\n");
+        for group in groups {
+            let key = match &group.kind {
+                StereoGroupKind::Absolute => "MDLV30/STEABS".to_string(),
+                StereoGroupKind::Or(n)    => format!("MDLV30/STEOR{n}"),
+                StereoGroupKind::And(n)   => format!("MDLV30/STEAND{n}"),
+            };
+            let n = group.atom_indices.len();
+            let idxs: Vec<String> = group.atom_indices
+                .iter()
+                .map(|ai| (ai.0 + 1).to_string()) // 0-based → 1-based
+                .collect();
+            out.push_str(&format!(
+                "M  V30 {key} ATOMS=({n} {})\n",
+                idxs.join(" ")
+            ));
+        }
+        out.push_str("M  V30 END COLLECTION\n");
+    }
+
     out.push_str("M  V30 END CTAB\n");
     out.push_str("M  END\n");
 
@@ -877,5 +961,46 @@ mod write_tests {
         let v3k = write_mol_v3000(&mol, &meta, &[]);
         assert!(v3k.contains("V3000"), "output should contain V3000 tag");
         assert!(v3k.contains("M  V30 BEGIN CTAB"), "should contain CTAB block");
+    }
+
+    #[test]
+    fn write_v3000_stereo_group_roundtrip() {
+        use chematic_core::{AtomIdx, BondOrder, StereoGroup, StereoGroupKind};
+
+        let mut b = MoleculeBuilder::new();
+        let c1 = b.add_atom(Atom::new(Element::from_symbol("C").unwrap()));
+        let c2 = b.add_atom(Atom::new(Element::from_symbol("C").unwrap()));
+        let c3 = b.add_atom(Atom::new(Element::from_symbol("N").unwrap()));
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        b.add_bond(c2, c3, BondOrder::Single).unwrap();
+        let mut mol = b.build();
+
+        // Absolute group on atom 0; OR group on atoms 1 and 2.
+        mol.set_stereo_groups(vec![
+            StereoGroup::new(StereoGroupKind::Absolute, vec![c1]),
+            StereoGroup::new(StereoGroupKind::Or(1), vec![c2, c3]),
+        ]);
+
+        let meta = MolMetadata { name: "stereo_test".into(), comment: String::new() };
+        let v3k = write_mol_v3000(&mol, &meta, &[]);
+
+        // Verify COLLECTION block is present.
+        assert!(v3k.contains("BEGIN COLLECTION"), "should have COLLECTION block");
+        assert!(v3k.contains("MDLV30/STEABS"), "should have STEABS entry");
+        assert!(v3k.contains("MDLV30/STEOR1"), "should have STEOR1 entry");
+
+        // Round-trip: parse back and verify stereo groups are preserved.
+        let (mol2, _) = parse_mol_v3000(&v3k).expect("round-trip parse");
+        assert_eq!(mol2.stereo_groups().len(), 2, "should have 2 stereo groups after round-trip");
+
+        let abs_group = mol2.stereo_groups().iter()
+            .find(|g| g.kind == StereoGroupKind::Absolute)
+            .expect("Absolute group should exist");
+        assert_eq!(abs_group.atom_indices, vec![AtomIdx(0)]);
+
+        let or_group = mol2.stereo_groups().iter()
+            .find(|g| g.kind == StereoGroupKind::Or(1))
+            .expect("Or(1) group should exist");
+        assert_eq!(or_group.atom_indices, vec![AtomIdx(1), AtomIdx(2)]);
     }
 }

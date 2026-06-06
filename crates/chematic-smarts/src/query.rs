@@ -38,6 +38,15 @@ pub enum AtomPrimitive {
     /// `[RN]` — ring membership count: the number of SSSR rings containing this atom.
     /// `[R0]` = not in any ring; `[R1]` = in exactly 1 ring; etc.
     RingCount(u8),
+    /// `[13C]`, `[2H]` — specific isotope (mass number).
+    ///
+    /// Whether this constraint is enforced depends on `MatchConfig::use_isotopes`.
+    Isotope(u16),
+    /// `[@]` (counterclockwise, value 1) or `[@@]` (clockwise, value 2) —
+    /// tetrahedral chirality specification.
+    ///
+    /// Whether this constraint is enforced depends on `MatchConfig::use_chirality`.
+    Chirality(u8),
 }
 
 /// Logical combination of atom primitives.

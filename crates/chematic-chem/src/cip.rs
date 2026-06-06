@@ -44,6 +44,16 @@ pub fn assign_cip(mol: &Molecule) -> CipAssignment {
         }
     }
 
+    // Axial chirality for allenes (>C=C=C<)
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        if is_allene_central(mol, idx) {
+            if let Some((atom_idx, code)) = assign_allene(mol, idx) {
+                assignments.push((atom_idx, code));
+            }
+        }
+    }
+
     CipAssignment { assignments }
 }
 
@@ -361,6 +371,72 @@ fn substituent_is_up(mol: &Molecule, alkene_end: AtomIdx, sub: AtomIdx) -> Optio
     }
 }
 
+// ---------------------------------------------------------------------------
+// Allene axial chirality
+// ---------------------------------------------------------------------------
+
+/// True if `idx` is the central atom of an allene (exactly 2 double bonds,
+/// no other bonds to heavy atoms — the `>C=C=C<` pattern).
+fn is_allene_central(mol: &Molecule, idx: AtomIdx) -> bool {
+    let dbl_count = mol
+        .neighbors(idx)
+        .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
+        .count();
+    dbl_count == 2 && mol.neighbors(idx).count() == 2
+}
+
+/// Assign axial chirality for the allene centred at `central_idx`.
+///
+/// Uses the same Up/Down bond convention as [`assign_ez`]: the highest-CIP
+/// substituent at each terminal is tested for Up/Down; if both are on the same
+/// side the code is Z (aS), otherwise E (aR).
+///
+/// Returns `None` when either terminal has no stereo bond, tied priorities, or
+/// only one substituent (no axial chirality possible).
+fn assign_allene(mol: &Molecule, central_idx: AtomIdx) -> Option<(AtomIdx, CipCode)> {
+    // Collect the two terminal atoms of the allene.
+    let terminals: Vec<AtomIdx> = mol
+        .neighbors(central_idx)
+        .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
+        .map(|(nb, _)| nb)
+        .collect();
+
+    if terminals.len() != 2 {
+        return None;
+    }
+    let t1 = terminals[0];
+    let t2 = terminals[1];
+
+    // Non-allene substituents at each terminal.
+    let subs_t1: Vec<AtomIdx> = mol
+        .neighbors(t1)
+        .filter(|&(nb, bidx)| nb != central_idx && mol.bond(bidx).order != BondOrder::Double)
+        .map(|(nb, _)| nb)
+        .collect();
+
+    let subs_t2: Vec<AtomIdx> = mol
+        .neighbors(t2)
+        .filter(|&(nb, bidx)| nb != central_idx && mol.bond(bidx).order != BondOrder::Double)
+        .map(|(nb, _)| nb)
+        .collect();
+
+    // At least one substituent needed at each end for axial chirality.
+    if subs_t1.is_empty() || subs_t2.is_empty() {
+        return None;
+    }
+
+    // Highest-priority substituent with a stereo bond at each terminal.
+    let high_t1 = highest_stereo_sub(mol, t1, &subs_t1)?;
+    let high_t2 = highest_stereo_sub(mol, t2, &subs_t2)?;
+
+    let up_t1 = substituent_is_up(mol, t1, high_t1)?;
+    let up_t2 = substituent_is_up(mol, t2, high_t2)?;
+
+    // Same side → Z (aS / M); opposite → E (aR / P).
+    let code = if up_t1 == up_t2 { CipCode::Z } else { CipCode::E };
+    Some((t1, code))
+}
+
 /// Assign E/Z for the double bond at `bond_idx`.
 ///
 /// Returns `Some((atom_idx, E or Z))` using one of the double-bond endpoints
@@ -662,5 +738,71 @@ mod tests {
             assign_z.assignments.iter().any(|(_, c)| *c == CipCode::Z),
             "canonical SMILES of Z isomer must still be Z, canonical='{can_z}'"
         );
+    }
+
+    // --- Allene axial chirality ---
+
+    #[test]
+    fn test_allene_no_stereo_no_assignment() {
+        // Propadiene (allene without any stereo bonds) → no assignment.
+        let mol = parse("C=C=C").unwrap();
+        let a = assign_cip(&mol);
+        let has_allene = a.assignments.iter().any(|(_, c)| matches!(c, CipCode::E | CipCode::Z));
+        assert!(!has_allene, "unspecified allene should have no axial chirality");
+    }
+
+    #[test]
+    fn test_allene_two_enantiomers_differ() {
+        // 1,3-difluoroallene: F/C=C=C/F vs F/C=C=C\F — must give different codes.
+        // Build manually with Up/Down bonds to avoid SMILES parser allene ambiguity.
+        use chematic_core::{Atom, BondOrder as BO, Element, MoleculeBuilder};
+
+        // F1/C2=C3=C4\F5 — F at each end with opposite Up/Down
+        let mut b = MoleculeBuilder::new();
+        let f1 = b.add_atom(Atom::new(Element::F));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let c3 = b.add_atom(Atom::new(Element::C));
+        let c4 = b.add_atom(Atom::new(Element::C));
+        let f5 = b.add_atom(Atom::new(Element::F));
+        b.add_bond(f1, c2, BO::Up).unwrap();    // F1 up relative to C2
+        b.add_bond(c2, c3, BO::Double).unwrap();
+        b.add_bond(c3, c4, BO::Double).unwrap();
+        b.add_bond(c4, f5, BO::Down).unwrap();  // F5 down relative to C4
+        let mol_a = b.build();
+
+        // Same but with both F Up (same side)
+        let mut b2 = MoleculeBuilder::new();
+        let f1b = b2.add_atom(Atom::new(Element::F));
+        let c2b = b2.add_atom(Atom::new(Element::C));
+        let c3b = b2.add_atom(Atom::new(Element::C));
+        let c4b = b2.add_atom(Atom::new(Element::C));
+        let f5b = b2.add_atom(Atom::new(Element::F));
+        b2.add_bond(f1b, c2b, BO::Up).unwrap();
+        b2.add_bond(c2b, c3b, BO::Double).unwrap();
+        b2.add_bond(c3b, c4b, BO::Double).unwrap();
+        b2.add_bond(c4b, f5b, BO::Up).unwrap();  // both Up
+        let mol_b = b2.build();
+
+        let code_a = assign_cip(&mol_a).assignments.iter()
+            .find(|(_, c)| matches!(c, CipCode::E | CipCode::Z))
+            .map(|(_, c)| *c);
+        let code_b = assign_cip(&mol_b).assignments.iter()
+            .find(|(_, c)| matches!(c, CipCode::E | CipCode::Z))
+            .map(|(_, c)| *c);
+
+        // Both must get an assignment, and they must differ.
+        assert!(code_a.is_some(), "allene A should get an axial chirality code");
+        assert!(code_b.is_some(), "allene B should get an axial chirality code");
+        assert_ne!(code_a, code_b, "the two allene enantiomers must get different codes");
+    }
+
+    #[test]
+    fn test_non_allene_not_detected() {
+        // CO2 (O=C=O) has two double bonds from C but is not an allene (no axial chirality possible).
+        let mol = parse("O=C=O").unwrap();
+        let a = assign_cip(&mol);
+        // CO2 has no substituents for Up/Down bonds, so no allene assignment.
+        let has_allene = a.assignments.iter().any(|(_, c)| matches!(c, CipCode::E | CipCode::Z));
+        assert!(!has_allene, "CO2 should not get axial chirality (no stereo bonds)");
     }
 }

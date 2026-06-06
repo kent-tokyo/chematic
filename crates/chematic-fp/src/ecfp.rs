@@ -27,11 +27,16 @@ pub struct EcfpConfig {
     pub radius: u32,
     /// Output bitvector size (default 2048).
     pub nbits: usize,
+    /// When `true`, include tetrahedral chirality in the initial atom hash so
+    /// that R and S enantiomers produce different fingerprints.
+    ///
+    /// Defaults to `false` (chirality ignored, matching RDKit's `useChirality=False`).
+    pub use_chirality: bool,
 }
 
 impl Default for EcfpConfig {
     fn default() -> Self {
-        Self { radius: 2, nbits: 2048 }
+        Self { radius: 2, nbits: 2048, use_chirality: false }
     }
 }
 
@@ -81,14 +86,31 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
         // Shift formal charge by 8 so that charges in [-8, +7] map to bytes [0, 15].
         // i16 arithmetic avoids overflow on extreme charges.
         let charge_adjusted = (atom.charge as i16 + 8) as u8;
-        let id = fnv1a(&[
+        let base_bytes = [
             atom.element.atomic_number(),
             mol.neighbors(idx).count() as u8,
             implicit_hcount(mol, idx),
             charge_adjusted,
             ring_set.contains_atom(idx) as u8,
             atom.aromatic as u8,
-        ]);
+        ];
+        // When use_chirality is enabled, append the chirality byte so that R
+        // and S enantiomers produce different initial identifiers.  The extra
+        // byte is only appended when chirality is requested — this preserves
+        // bit-compatibility with the default (use_chirality=false) fingerprints.
+        let id = if config.use_chirality {
+            use chematic_core::Chirality;
+            let chirality_byte = match atom.chirality {
+                Chirality::None => 0u8,
+                Chirality::CounterClockwise => 1u8,
+                Chirality::Clockwise => 2u8,
+            };
+            let mut chiral_bytes = base_bytes.to_vec();
+            chiral_bytes.push(chirality_byte);
+            fnv1a(&chiral_bytes)
+        } else {
+            fnv1a(&base_bytes)
+        };
 
         fp.set((id % nbits as u64) as usize);
         ids.push(id);
@@ -202,12 +224,12 @@ pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMa
 
 /// ECFP4 fingerprint (radius = 2, 2048 bits).
 pub fn ecfp4(mol: &Molecule) -> BitVec2048 {
-    ecfp(mol, &EcfpConfig { radius: 2, nbits: 2048 })
+    ecfp(mol, &EcfpConfig::default())
 }
 
 /// ECFP6 fingerprint (radius = 3, 2048 bits).
 pub fn ecfp6(mol: &Molecule) -> BitVec2048 {
-    ecfp(mol, &EcfpConfig { radius: 3, nbits: 2048 })
+    ecfp(mol, &EcfpConfig { radius: 3, nbits: 2048, use_chirality: false })
 }
 
 /// Tanimoto similarity between two molecules using ECFP4.
@@ -379,11 +401,37 @@ mod tests {
         // Every hash in the count map should be reachable from the ecfp bit set
         // (after folding to 2048 bits).  This checks the same hash scheme.
         let m = toluene();
-        let fp = ecfp(&m, &EcfpConfig { radius: 2, nbits: 2048 });
+        let fp = ecfp(&m, &EcfpConfig { radius: 2, nbits: 2048, use_chirality: false });
         let counts = morgan_fp_counts(&m, 2);
         for &hash in counts.keys() {
             let bit = (hash % 2048) as usize;
             assert!(fp.get(bit), "bit {bit} from count map not set in ECFP bitvec");
         }
+    }
+
+    // -- Chirality tests ------------------------------------------------------
+
+    #[test]
+    fn ecfp4_ignores_chirality_by_default() {
+        // L-alanine and D-alanine should produce the same ECFP4 when
+        // use_chirality=false (default), since chirality is not in the hash.
+        let l_ala = parse("N[C@@H](C)C(=O)O").unwrap();
+        let d_ala = parse("N[C@H](C)C(=O)O").unwrap();
+        let fp_l = ecfp4(&l_ala);
+        let fp_d = ecfp4(&d_ala);
+        assert_eq!(fp_l, fp_d, "L/D-alanine ECFP4 should be identical when use_chirality=false");
+    }
+
+    #[test]
+    fn ecfp4_distinguishes_enantiomers_with_chirality() {
+        // With use_chirality=true, L-alanine and D-alanine must have different FPs.
+        let l_ala = parse("N[C@@H](C)C(=O)O").unwrap();
+        let d_ala = parse("N[C@H](C)C(=O)O").unwrap();
+        let config = EcfpConfig { radius: 2, nbits: 2048, use_chirality: true };
+        let fp_l = ecfp(&l_ala, &config);
+        let fp_d = ecfp(&d_ala, &config);
+        assert_ne!(fp_l, fp_d, "L/D-alanine ECFP4 must differ when use_chirality=true");
+        // Tanimoto < 1.0 confirms they are not identical.
+        assert!(fp_l.tanimoto(&fp_d) < 1.0, "Tanimoto of L/D-alanine must be < 1.0 with use_chirality");
     }
 }

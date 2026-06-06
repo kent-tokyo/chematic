@@ -552,6 +552,10 @@ impl<'a> Parser<'a> {
             Some(b'$') => true,
             // Valence `[vN]`, ring-bond count `[xN]`, hybridization `[^N]`.
             Some(b'v') | Some(b'x') | Some(b'^') => true,
+            // Isotope mass number `[13C]`, `[2H]`.
+            Some(c) if c.is_ascii_digit() => true,
+            // Chirality `[@]`, `[@@]`.
+            Some(b'@') => true,
             // Uppercase element symbol — check it's not a stop character.
             Some(c) if c.is_ascii_uppercase() => true,
             // Lowercase element symbol (but not 'a' already handled).
@@ -726,6 +730,29 @@ impl<'a> Parser<'a> {
                 self.advance(); // consume 'X'
                 let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::TotalConnectivity(n)))
+            }
+
+            // Isotope mass number: `[13C]`, `[2H]`, etc.
+            // Digits are consumed, then the element symbol follows via juxtaposition AND.
+            Some(c) if c.is_ascii_digit() => {
+                let mut mass: u16 = 0;
+                while let Some(d) = self.peek().filter(|b| b.is_ascii_digit()) {
+                    self.advance();
+                    mass = mass * 10 + (d - b'0') as u16;
+                }
+                Ok(AtomQuery::Primitive(AtomPrimitive::Isotope(mass)))
+            }
+
+            // Chirality `[@]` (CCW, value 1) or `[@@]` (CW, value 2).
+            Some(b'@') => {
+                self.advance(); // consume first '@'
+                let kind = if self.peek() == Some(b'@') {
+                    self.advance(); // consume second '@'
+                    2u8 // clockwise (@@)
+                } else {
+                    1u8 // counterclockwise (@)
+                };
+                Ok(AtomQuery::Primitive(AtomPrimitive::Chirality(kind)))
             }
 
             // Element symbol (uppercase or lowercase start).

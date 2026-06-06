@@ -9,8 +9,12 @@
 //! - [`run_reactants`]: apply a SMIRKS template to reactant molecules.
 //! - [`TransformError`]: error type for SMIRKS transformation.
 
+pub mod balance;
+pub mod green;
 pub mod reaction;
 pub mod transform;
 
-pub use reaction::{Reaction, RxnError, parse_reaction, write_reaction};
+pub use balance::{BalanceResult, balance_check};
+pub use green::{atom_economy, e_factor, pmi_rxn, reaction_mass_efficiency};
+pub use reaction::{Reaction, ReactionCenter, RxnError, find_reaction_center, parse_reaction, write_reaction};
 pub use transform::{TransformError, run_reactants};

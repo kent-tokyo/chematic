@@ -19,6 +19,7 @@ pub mod bond;
 pub mod element;
 pub mod kekulization;
 pub mod molecule;
+pub mod stereo_group;
 pub mod valence;
 
 // Re-export the most commonly used types at crate root.
@@ -27,4 +28,5 @@ pub use bond::{BondEntry, BondOrder};
 pub use element::Element;
 pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};
 pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder};
+pub use stereo_group::{StereoGroup, StereoGroupKind};
 pub use valence::{ValenceError, bond_order_sum, implicit_hcount, total_hcount, validate_valence};

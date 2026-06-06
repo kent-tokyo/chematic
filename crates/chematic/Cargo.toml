@@ -5,9 +5,9 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Pure-Rust cheminformatics library — RDKit alternative with zero C/C++ FFI (umbrella crate)"
-keywords = ["cheminformatics", "rdkit", "chemistry", "smiles", "wasm"]
-categories = ["science"]
+description = "Pure-Rust cheminformatics: SMILES/SMARTS, 2D SVG depiction, SDF/MOL V3000, ECFP/MACCS fingerprints, LogP/TPSA, CIP stereo, MCS — zero C/C++ deps, WASM-ready"
+keywords = ["cheminformatics", "smiles", "chemistry", "wasm", "rdkit"]
+categories = ["science", "parser-implementations", "rendering"]
 readme = "../../README.md"
 homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic"
@@ -25,6 +25,10 @@ rxn         = ["smiles", "dep:chematic-rxn"]
 threed      = ["perception", "dep:chematic-3d"]
 iupac       = ["dep:chematic-iupac"]
 full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "iupac"]
+
+[package.metadata.docs.rs]
+features = ["full"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.1.23", optional = true }
