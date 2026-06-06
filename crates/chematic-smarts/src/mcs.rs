@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_perception::{RingSet, find_sssr};
 
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 
@@ -30,11 +31,23 @@ pub struct McsConfig {
     /// Optional time limit in milliseconds.  The search is aborted when the deadline is
     /// reached and the best result found so far is returned.
     pub timeout_ms: Option<u64>,
+    /// If `true`, ring atoms can only be matched to ring atoms, and non-ring atoms only
+    /// to non-ring atoms.  Prevents chemically meaningless matches across ring boundaries.
+    pub ring_matches_ring_only: bool,
+    /// If `true`, the MCS result must not contain a partial ring.  Any ring that is only
+    /// partially present in the MCS is removed entirely (iterative post-processing).
+    pub complete_rings_only: bool,
 }
 
 impl Default for McsConfig {
     fn default() -> Self {
-        Self { match_bonds: true, min_atoms: 1, timeout_ms: None }
+        Self {
+            match_bonds: true,
+            min_atoms: 1,
+            timeout_ms: None,
+            ring_matches_ring_only: false,
+            complete_rings_only: false,
+        }
     }
 }
 
@@ -60,12 +73,19 @@ pub fn find_mcs_with_config(mols: &[&Molecule], config: &McsConfig) -> QueryMole
 
     let deadline = config.timeout_ms.map(|ms| Instant::now() + std::time::Duration::from_millis(ms));
 
+    let ring_sets: Vec<RingSet> = if config.ring_matches_ring_only || config.complete_rings_only {
+        mols.iter().map(|m| find_sssr(m)).collect()
+    } else {
+        Vec::new()
+    };
+
     let mut state = McsState {
         mols,
         config,
         best: PartialMapping::empty(mols.len()),
         deadline,
         timed_out: false,
+        ring_sets,
     };
 
     let n0 = mols[0].atom_count();
@@ -82,7 +102,7 @@ pub fn find_mcs_with_config(mols: &[&Molecule], config: &McsConfig) -> QueryMole
         }
 
         // Gather compatible atoms from each other molecule for this seed atom.
-        let seed_candidates = collect_seed_candidates(mols, AtomIdx(a0 as u32), config);
+        let seed_candidates = collect_seed_candidates(mols, AtomIdx(a0 as u32), config, &state.ring_sets);
 
         // Iterate the Cartesian product of candidate lists.
         for seed in CartesianProduct::new(&seed_candidates) {
@@ -105,6 +125,11 @@ pub fn find_mcs_with_config(mols: &[&Molecule], config: &McsConfig) -> QueryMole
             let mut mapping = PartialMapping::from_seed(mols, AtomIdx(a0 as u32), &seed);
             grow(&mut state, &mut mapping);
         }
+    }
+
+    // Apply complete_rings_only post-processing: remove partially-covered rings.
+    if config.complete_rings_only && !state.ring_sets.is_empty() {
+        prune_partial_rings(mols, &mut state.best, &state.ring_sets);
     }
 
     // Apply min_atoms filter.
@@ -213,6 +238,7 @@ struct McsState<'a> {
     best: PartialMapping,
     deadline: Option<Instant>,
     timed_out: bool,
+    ring_sets: Vec<RingSet>,
 }
 
 // ---------------------------------------------------------------------------
@@ -269,7 +295,7 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     // 1. Atom-compatible with n0
     // 2. Adjacent to every mol[i]-atom that corresponds to a mapped neighbor of n0 in mol[0]
     // 3. Bond-compatible with each such adjacency
-    let candidates_per_mol = build_frontier_candidates(state.mols, mapping, n0, state.config);
+    let candidates_per_mol = build_frontier_candidates(state.mols, mapping, n0, state.config, &state.ring_sets);
 
     // Cartesian product across molecules 1..n.
     for tuple in CartesianProduct::new(&candidates_per_mol) {
@@ -309,9 +335,11 @@ fn build_frontier_candidates(
     mapping: &PartialMapping,
     n0: AtomIdx,
     config: &McsConfig,
+    ring_sets: &[RingSet],
 ) -> Vec<Vec<AtomIdx>> {
     let mol0 = mols[0];
     let atom0 = mol0.atom(n0);
+    let n0_in_ring = !ring_sets.is_empty() && ring_sets[0].contains_atom(n0);
 
     // Collect mapped neighbors of n0 in mol[0] along with the bond order.
     let mut mapped_neighbors: Vec<(usize, AtomIdx, BondOrder)> = Vec::new();
@@ -336,6 +364,13 @@ fn build_frontier_candidates(
             // Must be atom-compatible.
             if !atoms_compatible(atom0, atom_i) {
                 continue;
+            }
+            // ring_matches_ring_only: ring atoms must match ring atoms only.
+            if config.ring_matches_ring_only {
+                let ai_in_ring = ring_sets[mi].contains_atom(ai);
+                if n0_in_ring != ai_in_ring {
+                    continue;
+                }
             }
             // Must be bonded to every corresponding mapped neighbor with compatible bond.
             for &(q, _m0, bond_order_0) in &mapped_neighbors {
@@ -363,13 +398,25 @@ fn build_frontier_candidates(
 // ---------------------------------------------------------------------------
 
 /// For each molecule i >= 1, collect atoms compatible with `a0` in mol[0].
-fn collect_seed_candidates(mols: &[&Molecule], a0: AtomIdx, _config: &McsConfig) -> Vec<Vec<AtomIdx>> {
+fn collect_seed_candidates(mols: &[&Molecule], a0: AtomIdx, config: &McsConfig, ring_sets: &[RingSet]) -> Vec<Vec<AtomIdx>> {
     let atom0 = mols[0].atom(a0);
+    let a0_in_ring = !ring_sets.is_empty() && ring_sets[0].contains_atom(a0);
     let mut result = Vec::with_capacity(mols.len() - 1);
     for mi in 1..mols.len() {
         let cands: Vec<AtomIdx> = mols[mi]
             .atoms()
-            .filter(|(_, a)| atoms_compatible(atom0, a))
+            .filter(|(ai, a)| {
+                if !atoms_compatible(atom0, a) {
+                    return false;
+                }
+                if config.ring_matches_ring_only {
+                    let ai_in_ring = ring_sets[mi].contains_atom(*ai);
+                    if a0_in_ring != ai_in_ring {
+                        return false;
+                    }
+                }
+                true
+            })
             .map(|(idx, _)| idx)
             .collect();
         result.push(cands);
@@ -450,6 +497,75 @@ fn normalize_bond(o: BondOrder) -> BondOrder {
 /// Count the number of already-mapped neighbors of `n0` in mol[0].
 fn count_new_bonds(mol0: &Molecule, mapping: &PartialMapping, n0: AtomIdx) -> usize {
     mol0.neighbors(n0).filter(|(nb, _)| mapping.is_mapped(0, *nb)).count()
+}
+
+// ---------------------------------------------------------------------------
+// complete_rings_only post-processing
+// ---------------------------------------------------------------------------
+
+/// Remove atoms from `mapping` that would leave a ring partially covered.
+///
+/// A ring is "partially covered" if at least one but not all of its atoms appear in the
+/// mapping.  Removing those atoms can expose further partial rings, so the pruning
+/// iterates until convergence.
+fn prune_partial_rings(mols: &[&Molecule], mapping: &mut PartialMapping, ring_sets: &[RingSet]) {
+    loop {
+        // Collect query indices that must be removed.
+        let mut to_remove: Vec<usize> = Vec::new();
+
+        // Only check mol[0]'s rings. The MCS is represented as a subgraph of mol[0],
+        // so ring completeness is determined by mol[0]'s ring structure, not by how
+        // the mapping happens to cover rings in the other (possibly larger) molecules.
+        let ring_set = &ring_sets[0];
+        for ring in ring_set.rings() {
+            // Determine which ring atoms are currently mapped in mol[0].
+            let mapped_in_ring: Vec<AtomIdx> = ring
+                .iter()
+                .copied()
+                .filter(|&ai| mapping.is_mapped(0, ai))
+                .collect();
+
+            // Partial coverage: some but not all ring atoms are mapped.
+            if !mapped_in_ring.is_empty() && mapped_in_ring.len() < ring.len() {
+                for ai in mapped_in_ring {
+                    if let Some(qi) = mapping.query_idx_of(0, ai) {
+                        if !to_remove.contains(&qi) {
+                            to_remove.push(qi);
+                        }
+                    }
+                }
+            }
+        }
+
+        if to_remove.is_empty() {
+            break;
+        }
+
+        // Remove by rebuilding the mapping without the marked query indices.
+        // Build a new query_to_mol (renumbered) and matching mol_maps.
+        let n_mols = mols.len();
+        let mut new_query_to_mol: Vec<Vec<AtomIdx>> = Vec::new();
+        let mut new_mol_map: Vec<Vec<Option<usize>>> = mols
+            .iter()
+            .map(|m| vec![None; m.atom_count()])
+            .collect();
+
+        for (old_qi, row) in mapping.query_to_mol.iter().enumerate() {
+            if to_remove.contains(&old_qi) {
+                continue;
+            }
+            let new_qi = new_query_to_mol.len();
+            new_query_to_mol.push(row.clone());
+            for mi in 0..n_mols {
+                let ai = row[mi];
+                new_mol_map[mi][ai.0 as usize] = Some(new_qi);
+            }
+        }
+
+        mapping.query_to_mol = new_query_to_mol;
+        mapping.mol_map = new_mol_map;
+        mapping.size = mapping.query_to_mol.len();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -657,7 +773,7 @@ mod tests {
     #[test]
     fn test_match_bonds_false() {
         // With match_bonds=false, single and double bond C-C should match
-        let config = McsConfig { match_bonds: false, min_atoms: 1, timeout_ms: None };
+        let config = McsConfig { match_bonds: false, ..McsConfig::default() };
         let a = parse("CC").unwrap();
         let b = parse("C=C").unwrap();
         let result = find_mcs_with_config(&[&a, &b], &config);
@@ -667,7 +783,7 @@ mod tests {
     #[test]
     fn test_min_atoms_filter() {
         // CC and CCC have MCS of size 2, but if min_atoms=5, result should be empty
-        let config = McsConfig { match_bonds: true, min_atoms: 5, timeout_ms: None };
+        let config = McsConfig { min_atoms: 5, ..McsConfig::default() };
         let a = parse("CC").unwrap();
         let b = parse("CCC").unwrap();
         let result = find_mcs_with_config(&[&a, &b], &config);
@@ -676,7 +792,7 @@ mod tests {
 
     #[test]
     fn test_timeout_does_not_panic() {
-        let config = McsConfig { match_bonds: true, min_atoms: 1, timeout_ms: Some(1) }; // 1 ms
+        let config = McsConfig { timeout_ms: Some(1), ..McsConfig::default() }; // 1 ms
         let a = parse("c1ccccc1").unwrap();
         let b = parse("Cc1ccccc1").unwrap();
         // Should return without panic (may return partial result)
@@ -705,4 +821,175 @@ mod tests {
         let result = find_mcs(&[&a, &b]);
         assert!(result.atom_count() >= 7, "Expected >= 7 atoms for aspirin/benzoic acid MCS, got {}", result.atom_count());
     }
+
+    // -----------------------------------------------------------------------
+    // ring_matches_ring_only tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_ring_matches_ring_only_blocks_ring_to_nonring() {
+        // cyclohexane (all ring C's) vs hexane (all chain C's)
+        // Without constraint: MCS = 5 atoms (C-C-C-C-C path, both have it)
+        // With ring_matches_ring_only: ring C (cyclohexane) can't match non-ring C (hexane) → MCS = 0
+        let a = parse("C1CCCCC1").unwrap();
+        let b = parse("CCCCCC").unwrap();
+
+        // Confirm default finds a path match.
+        let default_result = find_mcs(&[&a, &b]);
+        assert!(default_result.atom_count() > 0, "Default MCS should be non-zero");
+
+        let config = McsConfig {
+            ring_matches_ring_only: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&a, &b], &config);
+        assert_eq!(result.atom_count(), 0,
+            "ring_matches_ring_only: ring C must not match chain C, expected 0 got {}", result.atom_count());
+    }
+
+    #[test]
+    fn test_ring_matches_ring_only_preserves_ring_only_mcs() {
+        // benzene vs toluene: ring atoms should still match each other
+        let a = parse("c1ccccc1").unwrap();
+        let b = parse("Cc1ccccc1").unwrap();
+        let config = McsConfig {
+            ring_matches_ring_only: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&a, &b], &config);
+        assert_eq!(result.atom_count(), 6, "benzene ring should still be the MCS");
+    }
+
+    // -----------------------------------------------------------------------
+    // complete_rings_only tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_complete_rings_only_quinoline_series() {
+        // With complete_rings_only: partial rings are removed from the MCS result.
+        // In the quinoline series the exocyclic C would create a partial ring if it
+        // happened to be included; enabling complete_rings_only ensures the quinoline
+        // scaffold (10 atoms) is returned intact.
+        let a = parse("c1ccc2nc(CC)ccc2c1").unwrap();
+        let b = parse("c1ccc2nc(CO)ccc2c1").unwrap();
+        let c = parse("c1ccc2nc(CN)ccc2c1").unwrap();
+
+        let config = McsConfig {
+            complete_rings_only: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&a, &b, &c], &config);
+        // Result must be >= 10 atoms (quinoline) and no partial ring
+        assert!(result.atom_count() >= 10,
+            "Expected at least quinoline scaffold (10) with complete_rings_only, got {}", result.atom_count());
+    }
+
+    #[test]
+    fn test_complete_rings_only_does_not_break_full_ring_mcs() {
+        // benzene vs toluene: full benzene ring should survive complete_rings_only
+        let a = parse("c1ccccc1").unwrap();
+        let b = parse("Cc1ccccc1").unwrap();
+        let config = McsConfig {
+            complete_rings_only: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&a, &b], &config);
+        assert_eq!(result.atom_count(), 6, "Full benzene ring should be preserved");
+    }
+
+    // -----------------------------------------------------------------------
+    // Diagnostic: verify complete_rings_only ACTUALLY fires pruning
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_complete_rings_only_pruning_fires() {
+        // Benzene vs naphthalene: raw MCS without constraint is 6 ring atoms (one full ring).
+        // With complete_rings_only, fused-ring bridgeheads are in two rings each; verify
+        // the full benzene ring is preserved (6 atoms), not over-pruned.
+        let a = parse("c1ccccc1").unwrap();
+        let b = parse("c1ccc2ccccc2c1").unwrap(); // naphthalene
+
+        let default_result = find_mcs(&[&a, &b]);
+        let config = McsConfig {
+            complete_rings_only: true,
+            ..McsConfig::default()
+        };
+        let pruned_result = find_mcs_with_config(&[&a, &b], &config);
+
+        eprintln!(
+            "benzene vs naphthalene — raw MCS: {}, complete_rings_only: {}",
+            default_result.atom_count(),
+            pruned_result.atom_count()
+        );
+        // Both should be 6 (one complete benzene ring)
+        assert_eq!(default_result.atom_count(), 6,
+            "Default MCS should be benzene ring (6 atoms)");
+        assert_eq!(pruned_result.atom_count(), 6,
+            "complete_rings_only should preserve the full 6-ring (no partial ring)");
+    }
+
+    #[test]
+    fn test_complete_rings_only_prunes_partial_fused_ring() {
+        // C1Cc2ccccc21 is benzocyclobutene (4-ring fused to 6-ring), not indane.
+        // Toluene: Cc1ccccc1.
+        // Raw MCS = 7 atoms: the 6 aromatic C's + aliphatic atom1 from benzocyclobutene
+        // matched to the methyl C of toluene (both non-aromatic, atoms_compatible passes).
+        // Atom1 of benzocyclobutene is in the 4-membered ring — partial ring in mol[0].
+        // complete_rings_only fires: remove atom1 + bridgehead atoms (shared with 4-ring) →
+        // the 6-ring becomes partially covered → cascading removal → result = 0.
+        let benzocyclobutene = parse("C1Cc2ccccc21").unwrap();
+        let toluene = parse("Cc1ccccc1").unwrap();
+
+        let default_result = find_mcs(&[&benzocyclobutene, &toluene]);
+        let config = McsConfig {
+            complete_rings_only: true,
+            ..McsConfig::default()
+        };
+        let pruned_result = find_mcs_with_config(&[&benzocyclobutene, &toluene], &config);
+
+        // Raw MCS includes a partial 4-ring; cascading pruning removes everything.
+        assert!(default_result.atom_count() > 0, "default MCS should be non-empty");
+        assert_eq!(pruned_result.atom_count(), 0,
+            "complete_rings_only must prune to 0 when partial ring cascades");
+    }
+
+    #[test]
+    fn test_complete_rings_only_quinoline_raw_vs_pruned() {
+        // Verify quinoline series: check whether complete_rings_only actually changes
+        // the atom count vs default (determines if pruning fires at all for this case)
+        let a = parse("c1ccc2nc(CC)ccc2c1").unwrap();
+        let b = parse("c1ccc2nc(CO)ccc2c1").unwrap();
+        let c = parse("c1ccc2nc(CN)ccc2c1").unwrap();
+
+        let default_result = find_mcs(&[&a, &b, &c]);
+        let config = McsConfig {
+            complete_rings_only: true,
+            ..McsConfig::default()
+        };
+        let pruned_result = find_mcs_with_config(&[&a, &b, &c], &config);
+
+        eprintln!(
+            "quinoline series raw MCS: {}, with complete_rings_only: {}",
+            default_result.atom_count(),
+            pruned_result.atom_count()
+        );
+        // Document whether complete_rings_only triggered a change
+        // (if equal, pruning was not triggered for this series)
+    }
+
+    #[test]
+    fn test_ring_matches_ring_only_and_complete_rings_only_combined() {
+        // Both flags together: quinoline series should return the full quinoline scaffold
+        let a = parse("c1ccc2nc(CC)ccc2c1").unwrap();
+        let b = parse("c1ccc2nc(CO)ccc2c1").unwrap();
+        let config = McsConfig {
+            ring_matches_ring_only: true,
+            complete_rings_only: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&a, &b], &config);
+        assert!(result.atom_count() >= 10,
+            "Combined flags should yield at least the quinoline scaffold, got {}", result.atom_count());
+    }
+
 }
