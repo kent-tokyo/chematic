@@ -13,10 +13,10 @@ homepage = "https://github.com/kent-tokyo/chematic"
 documentation = "https://docs.rs/chematic-chem"
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.1.22" }
-chematic-perception = { path = "../chematic-perception", version = "0.1.22" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.22" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.22" }
-chematic-fp         = { path = "../chematic-fp",         version = "0.1.22" }
+chematic-core       = { path = "../chematic-core",       version = "0.1.23" }
+chematic-perception = { path = "../chematic-perception", version = "0.1.23" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.23" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.23" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.1.23" }
 
 [dev-dependencies]

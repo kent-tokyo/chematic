@@ -27,14 +27,14 @@ iupac       = ["dep:chematic-iupac"]
 full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "iupac"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.1.22", optional = true }
-chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.22", optional = true }
-chematic-perception = { path = "../chematic-perception", version = "0.1.22", optional = true }
-chematic-mol        = { path = "../chematic-mol",        version = "0.1.22", optional = true }
-chematic-depict     = { path = "../chematic-depict",     version = "0.1.22", optional = true }
-chematic-chem       = { path = "../chematic-chem",       version = "0.1.22", optional = true }
-chematic-fp         = { path = "../chematic-fp",         version = "0.1.22", optional = true }
-chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.22", optional = true }
-chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.22", optional = true }
-chematic-3d         = { path = "../chematic-3d",         version = "0.1.22", optional = true }
-chematic-iupac      = { path = "../chematic-iupac",      version = "0.1.22", optional = true }
+chematic-core       = { path = "../chematic-core",       version = "0.1.23", optional = true }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.23", optional = true }
+chematic-perception = { path = "../chematic-perception", version = "0.1.23", optional = true }
+chematic-mol        = { path = "../chematic-mol",        version = "0.1.23", optional = true }
+chematic-depict     = { path = "../chematic-depict",     version = "0.1.23", optional = true }
+chematic-chem       = { path = "../chematic-chem",       version = "0.1.23", optional = true }
+chematic-fp         = { path = "../chematic-fp",         version = "0.1.23", optional = true }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.23", optional = true }
+chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.23", optional = true }
+chematic-3d         = { path = "../chematic-3d",         version = "0.1.23", optional = true }
+chematic-iupac      = { path = "../chematic-iupac",      version = "0.1.23", optional = true }
