@@ -5,12 +5,15 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "3D coordinate generation, force-field minimization, PDB/XYZ I/O for chematic — pure Rust"
+description = "3D coordinate generation, DREIDING force field, velocity Verlet MD, PDB/XYZ I/O, conformer RMSD — pure Rust, WASM-compatible"
 keywords = ["3d", "coordinates", "pdb", "xyz", "cheminformatics"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-3d"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.1.28" }

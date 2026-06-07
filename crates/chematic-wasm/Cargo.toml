@@ -10,8 +10,13 @@ description = "WebAssembly bindings for chematic — use chematic from JavaScrip
 keywords = ["cheminformatics", "wasm", "webassembly", "smiles", "chemistry"]
 categories = ["science", "science::computational-chemistry::cheminformatics", "wasm"]
 readme = "README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-wasm"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+targets = ["wasm32-unknown-unknown"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

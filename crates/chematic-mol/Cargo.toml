@@ -9,8 +9,11 @@ description = "MOL/SDF V2000 and V3000 parser and writer for chematic — pure-R
 keywords = ["sdf", "mol", "ctfile", "cheminformatics", "chemistry"]
 categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-mol"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.28" }

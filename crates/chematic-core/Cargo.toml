@@ -9,8 +9,11 @@ description = "Core types (Atom, Bond, Molecule) for chematic — pure-Rust RDKi
 keywords = ["cheminformatics", "chemistry", "molecule", "smiles", "wasm"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-core"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 # 外部依存ゼロ: pure Rust, no FFI
 [dependencies]

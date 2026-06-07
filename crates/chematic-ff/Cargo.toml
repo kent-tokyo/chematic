@@ -9,8 +9,11 @@ description = "DREIDING force field atom typing and parameters for chematic — 
 keywords = ["force-field", "dreiding", "cheminformatics", "molecular-dynamics", "wasm"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-ff"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.1.28" }

@@ -5,12 +5,15 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Smooth Particle Mesh Ewald (SPME) for long-range electrostatics in chematic — pure-Rust, WASM-compatible"
+description = "Smooth Particle Mesh Ewald (SPME) electrostatics: real-space erfc Coulomb, reciprocal-space FFT, periodic boundary conditions — pure Rust"
 keywords = ["ewald", "electrostatics", "molecular-dynamics", "pme", "cheminformatics"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-ewald"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.28" }

@@ -9,8 +9,11 @@ description = "SSSR ring perception and Hückel aromaticity for chematic — pur
 keywords = ["aromaticity", "rings", "sssr", "cheminformatics", "chemistry"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-perception"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.28" }
