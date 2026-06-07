@@ -47,12 +47,13 @@ pub fn reciprocal_space_energy(
     let mesh_size = [config.mesh[0], config.mesh[1], config.mesh[2]];
     let mut charge_grid = vec![0.0; mesh_size[0] * mesh_size[1] * mesh_size[2]];
 
-    // Interpolate charges onto mesh (B-spline order 4)
+    // Interpolate charges onto mesh (B-spline order)
     interpolate_charges_to_mesh(
         coords,
         charges,
         box_vecs,
         &mut charge_grid,
+        &mesh_size,
         config.spline_order,
     );
 
@@ -68,39 +69,57 @@ fn interpolate_charges_to_mesh(
     charges: &[f64],
     box_vecs: &BoxVectors,
     output_grid: &mut [f64],
+    mesh_size: &[usize; 3],
     spline_order: u8,
 ) {
-    let _ = spline_order; // Use to suppress warnings
+    let [m0, m1, m2] = *mesh_size;
 
-    // TODO: Implement full B-spline interpolation
-    // For now, simple linear interpolation to nearest mesh points
-
-    for i in 0..charges.len() {
-        let charge = charges[i];
+    for (coord, &charge) in coords.iter().zip(charges.iter()) {
         if charge.abs() < 1e-10 {
             continue;
         }
 
         // Map atomic coordinate to fractional coordinates (0..1)
-        let frac = map_to_fractional(coords[i], box_vecs);
+        let frac = map_to_fractional(*coord, box_vecs);
 
-        // Approximate mesh size as cubic root (assumes cubic mesh)
-        // WARNING: This is a simplification. Proper PME requires explicit mesh dimensions.
-        let approx_mesh_side = (output_grid.len() as f64).cbrt() as usize;
-        if approx_mesh_side == 0 {
-            continue;
-        }
+        // Wrap fractional coordinates into [0, 1)
+        let frac = [
+            frac[0] - frac[0].floor(),
+            frac[1] - frac[1].floor(),
+            frac[2] - frac[2].floor(),
+        ];
 
-        // Map fractional coordinates to 3D mesh indices
-        let ix = ((frac[0] * approx_mesh_side as f64) as usize) % approx_mesh_side;
-        let iy = ((frac[1] * approx_mesh_side as f64) as usize) % approx_mesh_side;
-        let iz = ((frac[2] * approx_mesh_side as f64) as usize) % approx_mesh_side;
+        // Scale fractional coordinates to mesh indices u ∈ [0, M_d)
+        let u = [
+            frac[0] * m0 as f64,
+            frac[1] * m1 as f64,
+            frac[2] * m2 as f64,
+        ];
 
-        // Convert 3D indices to linear index: idx = ix + iy*M0 + iz*M0*M1
-        let linear_idx = ix + iy * approx_mesh_side + iz * approx_mesh_side * approx_mesh_side;
+        // Get floor of scaled coordinates (nearest grid point)
+        let n = [
+            u[0].floor() as isize,
+            u[1].floor() as isize,
+            u[2].floor() as isize,
+        ];
 
-        if linear_idx < output_grid.len() {
-            output_grid[linear_idx] += charge;
+        // Compute B-spline weights for each axis
+        let wx = bspline_weights(u[0] - n[0] as f64, spline_order);
+        let wy = bspline_weights(u[1] - n[1] as f64, spline_order);
+        let wz = bspline_weights(u[2] - n[2] as f64, spline_order);
+
+        // Spread charge to p³ grid points using 3D tensor product
+        for kx in 0..spline_order as isize {
+            let gx = (n[0] - kx).rem_euclid(m0 as isize) as usize;
+            for ky in 0..spline_order as isize {
+                let gy = (n[1] - ky).rem_euclid(m1 as isize) as usize;
+                for kz in 0..spline_order as isize {
+                    let gz = (n[2] - kz).rem_euclid(m2 as isize) as usize;
+                    let linear_idx = gx + gy * m0 + gz * m0 * m1;
+                    output_grid[linear_idx] +=
+                        charge * wx[kx as usize] * wy[ky as usize] * wz[kz as usize];
+                }
+            }
         }
     }
 }
@@ -199,7 +218,7 @@ fn compute_reciprocal_energy(
                 }
 
                 // Structure factor from charge mesh (simplified: direct sum)
-                let s_k = compute_structure_factor(charge_grid, mesh_size, &k_vec);
+                let s_k = compute_structure_factor(charge_grid, mesh_size, &k_vec, box_vecs);
 
                 // Ewald kernel: exp(-k²/4α²) / k²
                 let kernel = (-k_sq / (4.0 * alpha * alpha)).exp() / k_sq;
@@ -238,10 +257,41 @@ fn reciprocal_vector(
     ]
 }
 
+/// Compute B-spline interpolation weights for fractional offset `t ∈ [0, 1)`.
+///
+/// Returns `order` weights where `w[k]` is the weight for grid point at
+/// offset `−k` from `floor(scaled_coord)`. Weights sum to 1.0 (partition of unity).
+///
+/// Uses Cardinal B-spline recursion (Essmann et al. 1995).
+pub(crate) fn bspline_weights(t: f64, order: u8) -> Vec<f64> {
+    debug_assert!((0.0..1.0).contains(&t), "t={t} must be in [0, 1)");
+    let p = order as usize;
+    let mut w = vec![0.0f64; p];
+    w[0] = 1.0;
+    for o in 2..=p {
+        let of = o as f64;
+        for k in (1..p).rev() {
+            w[k] = ((t + k as f64) * w[k] + (of - t - k as f64) * w[k - 1]) / (of - 1.0);
+        }
+        w[0] *= t / (of - 1.0);
+    }
+    w
+}
+
 /// Compute structure factor S(k) = Σ_j ρ_j * exp(i k · r_j).
-fn compute_structure_factor(charge_grid: &[f64], mesh_size: &[usize; 3], k_vec: &[f64; 3]) -> f64 {
+fn compute_structure_factor(
+    charge_grid: &[f64],
+    mesh_size: &[usize; 3],
+    k_vec: &[f64; 3],
+    box_vecs: &BoxVectors,
+) -> f64 {
     // Simplified: direct summation over mesh points
     // In full PME, this would be computed via FFT
+    let [m0, m1, m2] = *mesh_size;
+    let a = &box_vecs.0[0];
+    let b = &box_vecs.0[1];
+    let c = &box_vecs.0[2];
+
     let mut s_real = 0.0;
     let mut s_imag = 0.0;
 
@@ -250,14 +300,23 @@ fn compute_structure_factor(charge_grid: &[f64], mesh_size: &[usize; 3], k_vec: 
             continue;
         }
 
-        // Approximate mesh point position (linear indexing)
-        let i = idx % mesh_size[0];
-        let j = (idx / mesh_size[0]) % mesh_size[1];
-        let k = idx / (mesh_size[0] * mesh_size[1]);
+        // Convert linear index to 3D mesh indices
+        let i = idx % m0;
+        let j = (idx / m0) % m1;
+        let k = idx / (m0 * m1);
 
-        let phase = k_vec[0] * (i as f64 / mesh_size[0] as f64)
-            + k_vec[1] * (j as f64 / mesh_size[1] as f64)
-            + k_vec[2] * (k as f64 / mesh_size[2] as f64);
+        // Cartesian position of mesh point: r = (i/M0)*a + (j/M1)*b + (k/M2)*c
+        let fi = i as f64 / m0 as f64;
+        let fj = j as f64 / m1 as f64;
+        let fk = k as f64 / m2 as f64;
+        let r = [
+            fi * a[0] + fj * b[0] + fk * c[0],
+            fi * a[1] + fj * b[1] + fk * c[1],
+            fi * a[2] + fj * b[2] + fk * c[2],
+        ];
+
+        // Correct phase: k · r (Å⁻¹ · Å = dimensionless)
+        let phase = k_vec[0] * r[0] + k_vec[1] * r[1] + k_vec[2] * r[2];
 
         s_real += rho * phase.cos();
         s_imag += rho * phase.sin();
@@ -298,5 +357,117 @@ mod tests {
         let charges: Vec<f64> = vec![];
         let energy = reciprocal_space_energy(&coords, &charges, &box_vecs, &config);
         assert_eq!(energy, 0.0);
+    }
+
+    #[test]
+    fn test_bspline_weights_partition_of_unity() {
+        for order in 1u8..=6 {
+            for i in 0..20 {
+                let t = i as f64 / 20.0;
+                let w = bspline_weights(t, order);
+                let sum: f64 = w.iter().sum();
+                assert!(
+                    (sum - 1.0).abs() < 1e-12,
+                    "order={order}, t={t}: sum={sum}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_bspline_weights_order4_known_values() {
+        // t=0: [0, 1/6, 2/3, 1/6]
+        let w0 = bspline_weights(0.0, 4);
+        assert!(w0[0].abs() < 1e-12, "w[0] at t=0: {}", w0[0]);
+        assert!(
+            (w0[1] - 1.0 / 6.0).abs() < 1e-12,
+            "w[1] at t=0: {}",
+            w0[1]
+        );
+        assert!(
+            (w0[2] - 2.0 / 3.0).abs() < 1e-12,
+            "w[2] at t=0: {}",
+            w0[2]
+        );
+        assert!(
+            (w0[3] - 1.0 / 6.0).abs() < 1e-12,
+            "w[3] at t=0: {}",
+            w0[3]
+        );
+
+        // t=0.5: [1/48, 23/48, 23/48, 1/48]
+        let w5 = bspline_weights(0.5, 4);
+        assert!(
+            (w5[0] - 1.0 / 48.0).abs() < 1e-12,
+            "w[0] at t=0.5: {}",
+            w5[0]
+        );
+        assert!(
+            (w5[1] - 23.0 / 48.0).abs() < 1e-12,
+            "w[1] at t=0.5: {}",
+            w5[1]
+        );
+        assert!(
+            (w5[2] - 23.0 / 48.0).abs() < 1e-12,
+            "w[2] at t=0.5: {}",
+            w5[2]
+        );
+        assert!(
+            (w5[3] - 1.0 / 48.0).abs() < 1e-12,
+            "w[3] at t=0.5: {}",
+            w5[3]
+        );
+    }
+
+    #[test]
+    fn test_charge_conservation() {
+        use crate::BoxVectors;
+        let box_vecs = BoxVectors::cubic(10.0);
+        let mesh_size = [16usize, 16, 16];
+        let mut grid = vec![0.0f64; 16 * 16 * 16];
+        let coords = vec![[2.5, 5.0, 7.5], [1.0, 1.0, 1.0]];
+        let charges = vec![1.5, -0.7];
+        interpolate_charges_to_mesh(&coords, &charges, &box_vecs, &mut grid, &mesh_size, 4);
+        let grid_total: f64 = grid.iter().sum();
+        let charge_total: f64 = charges.iter().sum();
+        assert!(
+            (grid_total - charge_total).abs() < 1e-10,
+            "grid_sum={grid_total}, charge_sum={charge_total}"
+        );
+    }
+
+    #[test]
+    fn test_charge_conservation_noncubic_mesh() {
+        use crate::BoxVectors;
+        // Verifies cbrt hack is gone — non-cubic mesh must work
+        let box_vecs = BoxVectors::cubic(10.0);
+        let mesh_size = [8usize, 12, 16];
+        let mut grid = vec![0.0f64; 8 * 12 * 16];
+        let coords = vec![[3.0, 5.0, 8.0]];
+        let charges = vec![2.0];
+        interpolate_charges_to_mesh(&coords, &charges, &box_vecs, &mut grid, &mesh_size, 4);
+        let grid_total: f64 = grid.iter().sum();
+        assert!(
+            (grid_total - 2.0).abs() < 1e-10,
+            "grid_sum={grid_total}"
+        );
+    }
+
+    #[test]
+    fn test_reciprocal_energy_nonnegative() {
+        use crate::{BoxVectors, PmeConfig};
+        // Each k-term is (2π/V) * K * exp(-k²/4α²)/k² * |S(k)|² ≥ 0
+        let box_vecs = BoxVectors::cubic(10.0);
+        let config = PmeConfig {
+            alpha: 0.3,
+            kmax: [3, 3, 3],
+            mesh: [8, 8, 8],
+            spline_order: 4,
+            ..PmeConfig::default()
+        };
+        let coords = vec![[2.0, 2.0, 2.0], [6.0, 6.0, 6.0]];
+        let charges = vec![1.0, -1.0];
+        let energy = reciprocal_space_energy(&coords, &charges, &box_vecs, &config);
+        assert!(energy >= 0.0, "reciprocal energy must be >= 0, got {energy}");
     }
 }
