@@ -426,6 +426,82 @@ pub fn parse_smiles(s: &str) -> Result<MolHandle, JsValue> {
         .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
+/// Parse CXSMILES and return preserved metadata as JSON.
+///
+/// Supported CX fields: atom labels (`$...$`), `atomProp`, atom radicals (`^n:`),
+/// and zero-order bonds (`Z:`). The `cxsmiles` field is a re-serialized
+/// round-trip form using the supported fields.
+#[wasm_bindgen]
+pub fn parse_cxsmiles_json(s: &str) -> Result<String, JsValue> {
+    let cx = chematic_smiles::parse_cxsmiles(s)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let atom_props = cx.atom_props
+        .iter()
+        .map(|p| {
+            format!(
+                r#"{{"atom":{},"key":"{}","value":"{}"}}"#,
+                p.atom.0,
+                escape_json_string(&p.key),
+                escape_json_string(&p.value)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    let zero_bonds = cx.mol
+        .bonds()
+        .filter_map(|(bidx, bond)| {
+            (bond.order == chematic_core::BondOrder::Zero).then_some(bidx.0.to_string())
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    Ok(format!(
+        r#"{{"smiles":"{}","cxsmiles":"{}","atomCount":{},"bondCount":{},"atomLabels":{},"atomProps":[{}],"atomRadicals":{},"zeroBonds":[{}]}}"#,
+        escape_json_string(&chematic_smiles::write(&cx.mol)),
+        escape_json_string(&chematic_smiles::write_cxsmiles(&cx)),
+        cx.mol.atom_count(),
+        cx.mol.bond_count(),
+        json_option_string_array(&cx.atom_labels),
+        atom_props,
+        json_option_u8_array(&cx.atom_radicals),
+        zero_bonds
+    ))
+}
+
+/// Parse and re-serialize CXSMILES, preserving supported CX metadata.
+#[wasm_bindgen]
+pub fn normalize_cxsmiles(s: &str) -> Result<String, JsValue> {
+    let cx = chematic_smiles::parse_cxsmiles(s)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(chematic_smiles::write_cxsmiles(&cx))
+}
+
+/// Parse CXSMARTS and return preserved metadata as JSON.
+#[wasm_bindgen]
+pub fn parse_cxsmarts_json(s: &str) -> Result<String, JsValue> {
+    let cx = chematic_smarts::parse_cxsmarts(s)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let atom_props = cx.atom_props
+        .iter()
+        .map(|p| {
+            format!(
+                r#"{{"atom":{},"key":"{}","value":"{}"}}"#,
+                p.atom,
+                escape_json_string(&p.key),
+                escape_json_string(&p.value)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    Ok(format!(
+        r#"{{"atomCount":{},"bondCount":{},"atomLabels":{},"atomProps":[{}],"atomRadicals":{}}}"#,
+        cx.query.atom_count(),
+        cx.query.bonds.len(),
+        json_option_string_array(&cx.atom_labels),
+        atom_props,
+        json_option_u8_array(&cx.atom_radicals)
+    ))
+}
+
 /// Tanimoto similarity between two molecules using ECFP4 fingerprints.
 #[wasm_bindgen]
 pub fn tanimoto_ecfp4(a: &MolHandle, b: &MolHandle) -> f64 {
@@ -1680,6 +1756,27 @@ fn escape_json_string(s: &str) -> String {
     out
 }
 
+fn json_option_string_array(values: &[Option<String>]) -> String {
+    let items = values
+        .iter()
+        .map(|value| match value {
+            Some(s) => format!(r#""{}""#, escape_json_string(s)),
+            None => "null".to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("[{items}]")
+}
+
+fn json_option_u8_array(values: &[Option<u8>]) -> String {
+    let items = values
+        .iter()
+        .map(|value| value.map_or_else(|| "null".to_string(), |v| v.to_string()))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("[{items}]")
+}
+
 /// Internal helper: extract SMILES strings from a JSON array like `["CC","c1ccccc1"]`.
 fn parse_smiles_json_array(json: &str) -> Vec<String> {
     // Split on '"' and take every element at an odd index (content inside quotes).
@@ -2820,6 +2917,40 @@ pub fn standardize_smiles(smiles: &str) -> String {
     chematic_smiles::canonical_smiles(&mol)
 }
 
+/// Standardize a SMILES string and return result SMILES plus an audit report as JSON.
+///
+/// Boolean flags map directly to `StandardizeOptions`.
+/// Returns `"error:<msg>"` on parse or serialization failure.
+#[wasm_bindgen]
+pub fn standardize_smiles_report_json(
+    smiles: &str,
+    largest_fragment_only: bool,
+    neutralize_charges: bool,
+    remove_explicit_h: bool,
+    canonical_tautomer: bool,
+) -> String {
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(e) => return format!("error:{e}"),
+    };
+    let pipeline = chematic_chem::StandardizationPipeline::new(chematic_chem::StandardizeOptions {
+        canonical_tautomer,
+        neutralize_charges,
+        remove_explicit_h,
+        largest_fragment_only,
+    });
+    let (standardized, report) = pipeline.run(&mol);
+    let report_json = match serde_json::to_string(&report) {
+        Ok(json) => json,
+        Err(e) => return format!("error:{e}"),
+    };
+    format!(
+        r#"{{"smiles":"{}","report":{}}}"#,
+        escape_json_string(&chematic_smiles::canonical_smiles(&standardized)),
+        report_json
+    )
+}
+
 // ---------------------------------------------------------------------------
 // Reaction balance check
 // ---------------------------------------------------------------------------
@@ -2925,6 +3056,24 @@ mod tests {
         let mol = parse("c1ccccc1");
         let cs = mol.canonical_smiles();
         assert!(!cs.is_empty());
+    }
+
+    #[test]
+    fn parse_cxsmiles_json_preserves_metadata() {
+        let json = parse_cxsmiles_json("C~O |$C1;O2$,atomProp:1.role.acceptor,^2:0,Z:0|").unwrap();
+        assert!(json.contains(r#""atomLabels":["C1","O2"]"#), "{json}");
+        assert!(json.contains(r#""key":"role""#), "{json}");
+        assert!(json.contains(r#""atomRadicals":[2,null]"#), "{json}");
+        assert!(json.contains(r#""zeroBonds":[0]"#), "{json}");
+    }
+
+    #[test]
+    fn parse_cxsmarts_json_preserves_metadata() {
+        let json = parse_cxsmarts_json("[#6]~[#8] |$C1;O2$,atomProp:1.role.acceptor,^2:0|").unwrap();
+        assert!(json.contains(r#""atomCount":2"#), "{json}");
+        assert!(json.contains(r#""atomLabels":["C1","O2"]"#), "{json}");
+        assert!(json.contains(r#""key":"role""#), "{json}");
+        assert!(json.contains(r#""atomRadicals":[2,null]"#), "{json}");
     }
 
     #[test]
@@ -4351,6 +4500,18 @@ M  END
     }
 
     #[test]
+    fn standardize_smiles_report_json_includes_audit_report() {
+        let json = standardize_smiles_report_json("CC.CCC", true, false, false, false);
+        assert!(json.contains("\"smiles\""), "missing smiles: {json}");
+        assert!(json.contains("\"report\""), "missing report: {json}");
+        assert!(json.contains("\"status\":\"Modified\""), "missing status: {json}");
+        assert!(
+            json.contains("\"step\":\"LargestFragment\""),
+            "missing largest-fragment step: {json}"
+        );
+    }
+
+    #[test]
     fn maccs_bitvec_length_21() {
         let mol = parse("c1ccccc1");
         let bv = maccs_bitvec(&mol);
@@ -4396,4 +4557,3 @@ M  END
         assert_eq!(count, 14, "PEOE_VSA should have 14 values");
     }
 }
-

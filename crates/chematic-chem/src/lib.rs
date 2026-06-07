@@ -57,7 +57,11 @@ pub use named_groups::{detect_named_functional_groups, NamedGroup};
 pub use qed::qed;
 pub use sa_score::sa_score;
 pub use scaffold::{generic_murcko_scaffold, murcko_scaffold, scaffold_network, schuffenhauer_parents};
-pub use standardize::{largest_fragment, neutralize_charges, StandardizeOptions, standardize};
+pub use standardize::{
+    largest_fragment, neutralize_charges, MoleculeSnapshot, PipelineStatus,
+    StandardizationPipeline, StandardizationReport, StandardizationStep,
+    StandardizationStepReport, StandardizationWarning, StandardizeOptions, standardize,
+};
 pub use stereo::{invert_stereocenter, enumerate_stereoisomers};
 pub use tautomer::{TautomerConfig, canonical_tautomer, canonical_tautomer_with_config, enumerate_tautomers, enumerate_tautomers_with_config};
 pub use topo_descriptors::{

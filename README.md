@@ -48,9 +48,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + Section 4 (WASM, API improvements). **992 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit). **945 tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.1.32** (2026-06-07)
+Latest release: **v0.1.33** (2026-06-07)
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -140,13 +140,48 @@ let sim = tanimoto_ecfp4(&benzene, &toluene)?;
 println!("Similarity: {:.2}", sim);  // ~0.5
 ```
 
+#### Preserve chemical metadata with CXSMILES
+
+```rust
+use chematic_smiles::parse_cxsmiles;
+
+let cx = parse_cxsmiles("CCO |$ethanol$,atomProp:1.role.acceptor,^2:0|")?;
+// cx.atom_labels: ["ethanol"]
+// cx.atom_props: [(atom: 1, key: "role", value: "acceptor")]
+// cx.atom_radicals: [None, 2, None]
+```
+
+#### Audit standardization with reports
+
+```rust
+use chematic_chem::{StandardizationPipeline, StandardizeOptions};
+
+let opts = StandardizeOptions {
+    largest_fragment_only: true,
+    neutralize_charges: true,
+    ..Default::default()
+};
+let pipeline = StandardizationPipeline::new(opts);
+let (standardized, report) = pipeline.run(&mol);
+
+println!("Status: {:?}", report.status);  // Unchanged | Modified | CompletedWithWarnings
+for step in &report.steps {
+    println!("  {}: changed={}", step.step.as_str(), step.changed);
+}
+```
+
 #### Use from WASM/JavaScript
 
 ```javascript
-import init, { molecule_report_json } from 'chematic-wasm';
+import init, { molecule_report_json, parse_cxsmiles_json } from 'chematic-wasm';
 
 await init();
 
+// Parse CXSMILES with metadata
+const cx = JSON.parse(parse_cxsmiles_json("CCO |$ethanol$|"));
+console.log(cx.atomLabels);  // ["ethanol"]
+
+// Standardize with audit report
 const report = JSON.parse(
     molecule_report_json("CC(=O)Oc1ccccc1C(=O)O")
 );

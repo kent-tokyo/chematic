@@ -359,7 +359,15 @@ fn rb0(atomic_number: u8) -> f64 {
 fn bond_scale(order: BondOrder) -> f64 {
     match order {
         BondOrder::Aromatic => 0.1,
-        BondOrder::Single | BondOrder::Up | BondOrder::Down => 0.0,
+        BondOrder::Single
+        | BondOrder::Up
+        | BondOrder::Down
+        | BondOrder::Zero
+        | BondOrder::Dative
+        | BondOrder::QueryAny
+        | BondOrder::QuerySingleOrDouble
+        | BondOrder::QuerySingleOrAromatic
+        | BondOrder::QueryDoubleOrAromatic => 0.0,
         BondOrder::Double => 0.2,
         BondOrder::Triple | BondOrder::Quadruple => 0.3,
     }

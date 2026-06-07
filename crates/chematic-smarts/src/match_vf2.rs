@@ -408,7 +408,16 @@ fn eval_bond_query(
 /// as 1 (SMARTS valence convention).
 fn bond_order_int(order: BondOrder) -> u8 {
     match order {
-        BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic => 1,
+        BondOrder::Zero => 0,
+        BondOrder::Single
+        | BondOrder::Up
+        | BondOrder::Down
+        | BondOrder::Aromatic
+        | BondOrder::Dative
+        | BondOrder::QueryAny
+        | BondOrder::QuerySingleOrDouble
+        | BondOrder::QuerySingleOrAromatic
+        | BondOrder::QueryDoubleOrAromatic => 1,
         BondOrder::Double => 2,
         BondOrder::Triple => 3,
         BondOrder::Quadruple => 4,
@@ -424,11 +433,28 @@ fn eval_bond_primitive(
 ) -> bool {
     match p {
         BondPrimitive::Single => {
-            matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down)
+            matches!(
+                order,
+                BondOrder::Single
+                    | BondOrder::Up
+                    | BondOrder::Down
+                    | BondOrder::QuerySingleOrDouble
+                    | BondOrder::QuerySingleOrAromatic
+            )
         }
-        BondPrimitive::Double => matches!(order, BondOrder::Double),
+        BondPrimitive::Double => matches!(
+            order,
+            BondOrder::Double
+                | BondOrder::QuerySingleOrDouble
+                | BondOrder::QueryDoubleOrAromatic
+        ),
         BondPrimitive::Triple => matches!(order, BondOrder::Triple),
-        BondPrimitive::Aromatic => matches!(order, BondOrder::Aromatic),
+        BondPrimitive::Aromatic => matches!(
+            order,
+            BondOrder::Aromatic
+                | BondOrder::QuerySingleOrAromatic
+                | BondOrder::QueryDoubleOrAromatic
+        ),
         BondPrimitive::Any => true,
         BondPrimitive::Ring => {
             // A bond is a "ring bond" if both its endpoints share at least one common ring.

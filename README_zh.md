@@ -39,14 +39,14 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + 第 4 部分（WASM、API 改进）。**992 个测试，全部通过。零 C/C++ 依赖。**
+所有阶段已完成 + 第 4 部分（WASM、API 改进）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 审计）。**945 个测试，全部通过。零 C/C++ 依赖。**
 
-最新版本：**v0.1.32**（2026-06-07）
+最新版本：**v0.1.33**（2026-06-07）
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
 | `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）；可变 API、`fragments`、`validate_valence`、`formula_with_isotopes`；`StereoGroup`/`StereoGroupKind` | 48     |
-| `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES                                                                | 57     |
+| `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES、**CXSMILES 元数据支持**                                      | 57     |
 | `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 34     |
 | `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 63     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 43     |
@@ -122,6 +122,60 @@ println!("LogP:     {:.2}", logp_crippen(&aspirin));     // ~1.2
 println!("Fsp3:     {:.3}", fsp3(&aspirin));             // ~0.111
 println!("QED:      {:.3}", qed(&aspirin));              // 类药性评分
 println!("Lipinski: {}", lipinski_passes(&aspirin));     // true
+```
+
+---
+
+## CXSMILES 保留元数据
+
+```rust
+use chematic_smiles::parse_cxsmiles;
+
+let cx = parse_cxsmiles("CCO |$ethanol$,atomProp:1.role.acceptor,^2:0|").unwrap();
+// cx.atom_labels: ["ethanol"]
+// cx.atom_props: [(atom: 1, key: "role", value: "acceptor")]
+// cx.atom_radicals: [None, 2, None]
+
+// 保持 CX 信息进行规范化
+let canonical = chematic_smiles::write_cxsmiles(&cx);
+println!("{}", canonical); // CCO |$ethanol$,atomProp:1.role.acceptor,^2:0|
+```
+
+---
+
+## 标准化管道与审计报告
+
+```rust
+use chematic_chem::{StandardizationPipeline, StandardizeOptions};
+
+let opts = StandardizeOptions {
+    largest_fragment_only: true,
+    neutralize_charges: true,
+    remove_explicit_h: false,
+    canonical_tautomer: false,
+};
+
+let pipeline = StandardizationPipeline::new(opts);
+let (standardized, report) = pipeline.run(&mol);
+
+// 检查整体状态（Unchanged / Modified / CompletedWithWarnings）
+println!("Status: {:?}", report.status);
+
+// 跟踪每一步的变化
+for step in &report.steps {
+    if step.changed {
+        println!("  {}: {} atoms → {} atoms",
+            step.step.as_str(),
+            step.before.atoms,
+            step.after.atoms
+        );
+    }
+}
+
+// 检查警告（金属键、价电子错误等）
+for warning in &report.warnings {
+    println!("⚠️  {}: {}", warning.code, warning.message);
+}
 ```
 
 ---

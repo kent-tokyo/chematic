@@ -122,7 +122,7 @@ impl<'a> SmilesWriter<'a> {
 
         // Write the incoming bond (if explicit / non-default).
         if let Some(bond) = incoming_bond {
-            self.out.push(bond.smiles_char());
+            self.out.push_str(bond.smiles_token());
         }
 
         // Write the atom symbol.
@@ -136,7 +136,7 @@ impl<'a> SmilesWriter<'a> {
                 // For ring closures we can't know the other atom's aromaticity here,
                 // so we emit the bond type unless it is a plain aromatic ring bond.
                 if !(bond_order == BondOrder::Aromatic && atom_aromatic) && bond_order != BondOrder::Single {
-                    self.out.push(bond_order.smiles_char());
+                    self.out.push_str(bond_order.smiles_token());
                 }
                 // Ring number: single digit for 1-9, `%NN` form for 10+.
                 if rn >= 10 {

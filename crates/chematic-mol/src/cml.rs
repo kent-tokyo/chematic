@@ -134,11 +134,16 @@ fn unescape_xml(s: &str) -> String {
 
 fn parse_bond_order(s: &str) -> Result<BondOrder, CmlError> {
     match s.trim() {
+        "0" | "zero"           => Ok(BondOrder::Zero),
         "1" | "S" | "single"   => Ok(BondOrder::Single),
         "2" | "D" | "double"   => Ok(BondOrder::Double),
         "3" | "T" | "triple"   => Ok(BondOrder::Triple),
         // Aromatic bonds: store as single (aromaticity is perceived from topology)
-        "A" | "aromatic"       => Ok(BondOrder::Single),
+        "A" | "aromatic"       => Ok(BondOrder::Aromatic),
+        "any"                  => Ok(BondOrder::QueryAny),
+        "S/D"                  => Ok(BondOrder::QuerySingleOrDouble),
+        "S/A"                  => Ok(BondOrder::QuerySingleOrAromatic),
+        "D/A"                  => Ok(BondOrder::QueryDoubleOrAromatic),
         other => Err(CmlError::InvalidBondOrder(other.to_string())),
     }
 }
@@ -334,11 +339,16 @@ pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
 
     for (_, bond) in mol.bonds() {
         let order_str = match bond.order {
-            BondOrder::Single | BondOrder::Up | BondOrder::Down => "1",
+            BondOrder::Zero => "0",
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => "1",
             BondOrder::Double    => "2",
             BondOrder::Triple    => "3",
             BondOrder::Aromatic  => "A",
             BondOrder::Quadruple => "4",
+            BondOrder::QueryAny => "any",
+            BondOrder::QuerySingleOrDouble => "S/D",
+            BondOrder::QuerySingleOrAromatic => "S/A",
+            BondOrder::QueryDoubleOrAromatic => "D/A",
         };
         let a1_id = bond.atom1.0 + 1;
         let a2_id = bond.atom2.0 + 1;

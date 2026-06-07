@@ -8,10 +8,12 @@
 #![forbid(unsafe_code)]
 
 pub mod match_vf2;
+pub mod cx;
 pub mod mcs;
 pub mod parser;
 pub mod query;
 
+pub use cx::{CxQueryAtomProp, CxSmarts, parse_cxsmarts};
 pub use match_vf2::{MatchConfig, find_matches, find_matches_with_config};
 pub use mcs::{AtomCompare, BondCompare, McsConfig, find_mcs, find_mcs_with_config};
 pub use parser::{SmartsError, parse_smarts};

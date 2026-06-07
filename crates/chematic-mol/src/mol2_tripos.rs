@@ -212,7 +212,9 @@ pub fn parse_mol2(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error
             "2"         => BondOrder::Double,
             "3"         => BondOrder::Triple,
             "ar" | "am" => BondOrder::Aromatic,
-            _           => BondOrder::Single, // un, du, nc → single
+            "un"        => BondOrder::QueryAny,
+            "du" | "nc" => BondOrder::Zero,
+            _           => BondOrder::Single,
         };
 
         // Ignore duplicate bond errors (some MOL2 files repeat bonds).
@@ -259,11 +261,16 @@ pub fn write_mol2(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
         let a1 = bond.atom1.0 + 1;
         let a2 = bond.atom2.0 + 1;
         let btype = match bond.order {
-            BondOrder::Single | BondOrder::Up | BondOrder::Down => "1",
+            BondOrder::Zero => "nc",
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => "1",
             BondOrder::Double    => "2",
             BondOrder::Triple    => "3",
             BondOrder::Aromatic  => "ar",
             BondOrder::Quadruple => "4",
+            BondOrder::QueryAny
+            | BondOrder::QuerySingleOrDouble
+            | BondOrder::QuerySingleOrAromatic
+            | BondOrder::QueryDoubleOrAromatic => "un",
         };
         out.push_str(&format!("{bi:>6} {a1:>6} {a2:>6} {btype}\n"));
     }
