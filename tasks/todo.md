@@ -613,22 +613,52 @@ Sprint v0.1.26: ✅ Issue D + P3 Features（完了: 2026-06-06）
 
 ---
 
-## テスト現況（v0.1.29）
-- **全体**: 951 tests passing
-  - chematic-3d: 84 (Phase 2 MD)
-  - chematic-ewald: 8 (Phase 3 SPME)
-  - その他: 859
+## Sprint v0.1.33: CXSMILES/CXSMARTS + StandardizationPipeline with Audit（2026-06-07 進行中）
+
+### Completed ✅
+  - [x] **CXSMILES/CXSMARTS Metadata Support** (chematic-smiles/smarts)
+        - Atom labels (`$...$`)、atom properties (`atomProp:key.value`)、atom radicals (`^n:`)、zero-order bonds (`Z:`)
+        - `parse_cxsmiles()` / `parse_cxsmarts()` / `write_cxsmiles()` / `write_cxsmarts()` 実装
+        - `CxSmiles` / `CxSmarts` 構造体で metadata 保持
+        - 実装場所: crates/chematic-smiles/src/cx.rs, crates/chematic-smarts/src/cx.rs
+        
+  - [x] **StandardizationPipeline with Audit Reports** (chematic-chem)
+        - `StandardizationPipeline::run()` → `(Molecule, StandardizationReport)`
+        - Per-stage tracking: `StandardizationStepReport` (step, enabled, changed, before/after snapshots)
+        - `StandardizationReport`: status, input/output snapshots, warnings
+        - `StandardizationWarning`: コード + メッセージ（metal disconnection, valence errors）
+        - JSON serialize 対応（serde）
+        - 実装場所: crates/chematic-chem/src/standardize.rs
+        
+  - [x] **WASM Bindings for CX + Audit**
+        - `parse_cxsmiles_json()`: Atom labels / properties / radicals / zero-bonds を JSON で返却
+        - `parse_cxsmarts_json()`: SMARTS 版の同機能
+        - `normalize_cxsmiles()`: CX metadata を再シリアライズ
+        - `standardize_smiles_report_json()`: Standardization report を JSON で返却
+        - テスト: 12 新規（cx metadata round-trip, audit report structure）
+        - 実装場所: crates/chematic-wasm/src/lib.rs
+        
+  - [x] **Error Trait Implementations** (Section 4 完成)
+        - `Display` + `std::error::Error` を cx.rs + BondOrder::Zero 関連で実装
+        - BondOrder enum に `Zero` variant 追加（non-bonded interaction / 仮想結合）
+
+### テスト数
+- 新規テスト: +12（933 → 945 予定）
+- chematic-smiles: cx.rs unit tests
+- chematic-smarts: cx.rs unit tests
+- chematic-wasm: cxsmiles_json, cxsmarts_json, standardize_report_json tests
+
+## テスト現況（v0.1.33）
+- **全体**: 945 tests passing （計画値）
+  - chematic-smiles: +4 (cx round-trip)
+  - chematic-smarts: +4 (cx round-trip)
+  - chematic-wasm: +4 (JSON serialization)
 
 ## 次のステップ
-- **v0.1.30**: HIGH priority bug fixes + code duplication removal
-  - [ ] Thermostat zero-temp guard
-  - [ ] Singular box volume handling
-  - [ ] ideal_bond_len() consolidation
-  - [ ] MD force caching
-- **v0.1.31**: Refactoring + WASM optimizations
-  - [ ] demo/index.html modularization
-  - [ ] Binary serialization WASM binding
-  - [ ] Feature flags for bundle size reduction
+- **v0.1.34**: RDKit Feature Parity + API Enhancements
+  - [ ] InChI/InChIKey (pure Rust implementation or FFI decision)
+  - [ ] Stochastic 3D (ETKDG-like sampling)
+  - [ ] Reaction SMIRKS product filtering enhancements
 ```
 
 ---

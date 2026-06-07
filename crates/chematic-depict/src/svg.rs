@@ -457,6 +457,12 @@ fn render_bond_c(order: BondOrder, p1: Point, p2: Point, color: &str) -> String 
         BondOrder::Triple   => render_triple_bond(p1, p2, color),
         BondOrder::Aromatic => render_aromatic_bond(p1, p2, color),
         BondOrder::Quadruple => render_line(p1, p2, "3.0", color),
+        BondOrder::Zero
+        | BondOrder::Dative
+        | BondOrder::QueryAny
+        | BondOrder::QuerySingleOrDouble
+        | BondOrder::QuerySingleOrAromatic
+        | BondOrder::QueryDoubleOrAromatic => render_line(p1, p2, "1.5", color),
     }
 }
 

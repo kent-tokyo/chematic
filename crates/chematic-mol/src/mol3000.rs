@@ -361,12 +361,16 @@ pub fn parse_mol_v3000_with_coords(
                     }
                 })?;
 
-                // Unknown/query bond types fall back to Single.
                 let order = match btype_raw {
+                    0 => BondOrder::Zero,
                     1 => BondOrder::Single,
                     2 => BondOrder::Double,
                     3 => BondOrder::Triple,
                     4 => BondOrder::Aromatic,
+                    5 => BondOrder::QuerySingleOrDouble,
+                    6 => BondOrder::QuerySingleOrAromatic,
+                    7 => BondOrder::QueryDoubleOrAromatic,
+                    8 => BondOrder::QueryAny,
                     _ => BondOrder::Single,
                 };
 
@@ -815,6 +819,38 @@ M  END
         assert_eq!(bond.order, BondOrder::Triple);
     }
 
+    #[test]
+    fn test_query_bond_types_preserved() {
+        let mol_str = "\
+query_bonds
+  test
+
+  0  0  0  0  0  0  0  0  0  0999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 4 2 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 C 0.0 0.0 0.0 0
+M  V30 2 C 1.0 0.0 0.0 0
+M  V30 3 C 2.0 0.0 0.0 0
+M  V30 4 C 3.0 0.0 0.0 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 5 1 2
+M  V30 2 8 3 4
+M  V30 END BOND
+M  V30 END CTAB
+M  END
+";
+        let (mol, meta) = parse_mol_v3000(mol_str).expect("parse query bonds");
+        let bonds: Vec<_> = mol.bonds().collect();
+        assert_eq!(bonds[0].1.order, BondOrder::QuerySingleOrDouble);
+        assert_eq!(bonds[1].1.order, BondOrder::QueryAny);
+
+        let written = write_mol_v3000(&mol, &meta, &[]);
+        assert!(written.contains("M  V30 1 5 1 2"), "{written}");
+        assert!(written.contains("M  V30 2 8 3 4"), "{written}");
+    }
+
     // -----------------------------------------------------------------------
     // Test 15: atom-map number stored when nonzero
     // -----------------------------------------------------------------------
@@ -902,10 +938,15 @@ pub fn write_mol_v3000(
         let a1 = bond.atom1.0 + 1;
         let a2 = bond.atom2.0 + 1;
         let order = match bond.order {
-            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+            BondOrder::Zero     => 0,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
             BondOrder::Double    => 2,
             BondOrder::Triple    => 3,
             BondOrder::Aromatic  => 4,
+            BondOrder::QuerySingleOrDouble => 5,
+            BondOrder::QuerySingleOrAromatic => 6,
+            BondOrder::QueryDoubleOrAromatic => 7,
+            BondOrder::QueryAny => 8,
             BondOrder::Quadruple => 4,
         };
         let i = bidx.0 + 1;

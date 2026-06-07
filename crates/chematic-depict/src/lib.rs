@@ -112,6 +112,12 @@ fn depict_data_from_layout(mol: &Molecule, layout: &Layout) -> DepictData {
             BondOrder::Up        => DepictBondKind::Up,
             BondOrder::Down      => DepictBondKind::Down,
             BondOrder::Quadruple => DepictBondKind::Triple,
+            BondOrder::Zero
+            | BondOrder::Dative
+            | BondOrder::QueryAny
+            | BondOrder::QuerySingleOrDouble
+            | BondOrder::QuerySingleOrAromatic
+            | BondOrder::QueryDoubleOrAromatic => DepictBondKind::Single,
         };
         DepictBond { idx: bidx, atom1: bond.atom1, atom2: bond.atom2, kind }
     }).collect();

@@ -191,8 +191,6 @@ pub fn parse_mol_with_coords(input: &str) -> Result<(Molecule, MolMetadata, Vec<
             0
         };
 
-        // Bond types 5/6/7/8 (query bonds) fall back to Single since they
-        // are not representable in BondOrder.
         let order = match btype_raw {
             1 => match stereo_raw {
                 1 | 4 => BondOrder::Up,
@@ -202,6 +200,10 @@ pub fn parse_mol_with_coords(input: &str) -> Result<(Molecule, MolMetadata, Vec<
             2 => BondOrder::Double,
             3 => BondOrder::Triple,
             4 => BondOrder::Aromatic,
+            5 => BondOrder::QuerySingleOrDouble,
+            6 => BondOrder::QuerySingleOrAromatic,
+            7 => BondOrder::QueryDoubleOrAromatic,
+            8 => BondOrder::QueryAny,
             _ => BondOrder::Single,
         };
 
@@ -338,8 +340,15 @@ pub fn write_mol_with_coords(
         let a1 = bond.atom1.0 + 1; // convert to 1-based
         let a2 = bond.atom2.0 + 1;
         let btype = match bond.order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
+            BondOrder::Double => 2,
+            BondOrder::Triple => 3,
             BondOrder::Aromatic => 4,
-            _ => bond.order.order_int(),
+            BondOrder::QuerySingleOrDouble => 5,
+            BondOrder::QuerySingleOrAromatic => 6,
+            BondOrder::QueryDoubleOrAromatic => 7,
+            BondOrder::QueryAny | BondOrder::Zero => 8,
+            BondOrder::Quadruple => 4,
         };
         out.push_str(&format!(
             "{:>3}{:>3}{:>3}  0\n",
@@ -438,6 +447,39 @@ M  END
         assert_eq!(bonds[1].1.order, BondOrder::Double);
         assert_eq!(bonds[2].1.order, BondOrder::Triple);
         assert_eq!(bonds[3].1.order, BondOrder::Aromatic);
+    }
+
+    #[test]
+    fn test_parse_query_bond_types_preserved() {
+        let mol_str = "\
+query_bonds
+  chematic
+
+  8  4  0  0  0  0  0  0  0  0  0 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    4.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    5.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    6.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    7.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  5  0
+  3  4  6  0
+  5  6  7  0
+  7  8  8  0
+M  END
+";
+        let (mol, meta) = parse_mol(mol_str).expect("parse query bonds");
+        let bonds: Vec<_> = mol.bonds().collect();
+        assert_eq!(bonds[0].1.order, BondOrder::QuerySingleOrDouble);
+        assert_eq!(bonds[1].1.order, BondOrder::QuerySingleOrAromatic);
+        assert_eq!(bonds[2].1.order, BondOrder::QueryDoubleOrAromatic);
+        assert_eq!(bonds[3].1.order, BondOrder::QueryAny);
+
+        let written = write_mol(&mol, &meta);
+        assert!(written.contains("  1  2  5  0"), "{written}");
+        assert!(written.contains("  7  8  8  0"), "{written}");
     }
 
     #[test]

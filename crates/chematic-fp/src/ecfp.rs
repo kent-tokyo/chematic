@@ -56,11 +56,16 @@ impl Default for EcfpConfig {
 #[inline]
 pub(crate) fn bond_type_int(order: BondOrder) -> u8 {
     match order {
-        BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+        BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
         BondOrder::Double => 2,
         BondOrder::Triple => 3,
         BondOrder::Aromatic => 4,
         BondOrder::Quadruple => 5,
+        BondOrder::Zero => 0,
+        BondOrder::QueryAny => 6,
+        BondOrder::QuerySingleOrDouble => 7,
+        BondOrder::QuerySingleOrAromatic => 8,
+        BondOrder::QueryDoubleOrAromatic => 9,
     }
 }
 

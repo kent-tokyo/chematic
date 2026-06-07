@@ -8,9 +8,10 @@
 
 use std::collections::{HashMap, VecDeque};
 
-use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder};
+use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder, validate_valence};
+use serde::{Deserialize, Serialize};
 
-use crate::{hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
+use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
 
 /// Find all connected components of `mol` via BFS, sorted descending by size.
 fn connected_components(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
@@ -91,8 +92,9 @@ pub fn neutralize_charges(mol: &Molecule) -> Molecule {
 
         match (atom.element, atom.charge) {
             (Element::O, -1) => {
-                let has_c_neighbor =
-                    mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).element == Element::C);
+                let has_c_neighbor = mol
+                    .neighbors(idx)
+                    .any(|(nb, _)| mol.atom(nb).element == Element::C);
                 if has_c_neighbor {
                     modifications.insert(idx, (0, Some(h + 1)));
                 }
@@ -122,6 +124,118 @@ pub fn neutralize_charges(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
+/// One transformation stage in the standardization pipeline.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum StandardizationStep {
+    /// Select the largest connected component.
+    LargestFragment,
+    /// Apply simple neutralization rules for common formal charges.
+    NeutralizeCharges,
+    /// Remove explicit hydrogen atoms.
+    RemoveExplicitHydrogens,
+    /// Canonicalize supported tautomer systems.
+    CanonicalTautomer,
+}
+
+impl StandardizationStep {
+    /// Stable machine-readable stage name.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::LargestFragment => "largest_fragment",
+            Self::NeutralizeCharges => "neutralize_charges",
+            Self::RemoveExplicitHydrogens => "remove_explicit_hydrogens",
+            Self::CanonicalTautomer => "canonical_tautomer",
+        }
+    }
+}
+
+/// High-level status for a standardization run.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PipelineStatus {
+    /// Pipeline completed and the output is structurally identical to the input.
+    Unchanged,
+    /// Pipeline completed and at least one enabled stage changed the molecule.
+    Modified,
+    /// Pipeline completed, but warnings indicate unsupported or suspicious input features.
+    CompletedWithWarnings,
+}
+
+/// Warning emitted during standardization.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StandardizationWarning {
+    /// Stable machine-readable warning code.
+    pub code: String,
+    /// Human-readable detail.
+    pub message: String,
+}
+
+impl StandardizationWarning {
+    fn new(code: &str, message: String) -> Self {
+        Self {
+            code: code.to_string(),
+            message,
+        }
+    }
+}
+
+/// Atom/bond/hash summary before or after a pipeline stage.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MoleculeSnapshot {
+    /// Number of atoms in the molecule.
+    pub atoms: usize,
+    /// Number of bonds in the molecule.
+    pub bonds: usize,
+    /// Deterministic structure hash based on canonical SMILES.
+    pub hash: u64,
+}
+
+impl MoleculeSnapshot {
+    fn from_mol(mol: &Molecule) -> Self {
+        Self {
+            atoms: mol.atom_count(),
+            bonds: mol.bond_count(),
+            hash: mol_hash(mol),
+        }
+    }
+}
+
+/// Per-stage audit entry for a standardization run.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StandardizationStepReport {
+    /// Pipeline stage.
+    pub step: StandardizationStep,
+    /// Whether the stage was enabled in the config.
+    pub enabled: bool,
+    /// Whether the stage changed the molecule hash.
+    pub changed: bool,
+    /// Molecule summary before the stage.
+    pub before: MoleculeSnapshot,
+    /// Molecule summary after the stage.
+    pub after: MoleculeSnapshot,
+}
+
+/// Full standardization audit result.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StandardizationReport {
+    /// Overall status.
+    pub status: PipelineStatus,
+    /// Summary of the input molecule.
+    pub input: MoleculeSnapshot,
+    /// Summary of the output molecule.
+    pub output: MoleculeSnapshot,
+    /// Ordered per-stage results.
+    pub steps: Vec<StandardizationStepReport>,
+    /// Validation and unsupported-feature warnings.
+    pub warnings: Vec<StandardizationWarning>,
+}
+
+impl StandardizationReport {
+    /// Returns `true` if the molecule changed at any enabled stage.
+    pub fn changed(&self) -> bool {
+        self.input.hash != self.output.hash
+    }
+}
+
 /// Options for molecular standardization.
 ///
 /// Controls which cleaning transformations are applied in a standardization pipeline.
@@ -148,6 +262,184 @@ impl Default for StandardizeOptions {
     }
 }
 
+/// RDKit-style standardization pipeline with an auditable report.
+#[derive(Clone, Debug, Default)]
+pub struct StandardizationPipeline {
+    options: StandardizeOptions,
+}
+
+impl StandardizationPipeline {
+    /// Create a pipeline from explicit options.
+    pub fn new(options: StandardizeOptions) -> Self {
+        Self { options }
+    }
+
+    /// Borrow the pipeline options.
+    pub fn options(&self) -> &StandardizeOptions {
+        &self.options
+    }
+
+    /// Standardize a molecule and return both the output molecule and an audit report.
+    pub fn run(&self, mol: &Molecule) -> (Molecule, StandardizationReport) {
+        let input = MoleculeSnapshot::from_mol(mol);
+        let mut current = clone_molecule(mol);
+        let mut steps = Vec::new();
+        let mut warnings = detect_initial_warnings(mol);
+
+        current = self.apply_stage(
+            current,
+            StandardizationStep::LargestFragment,
+            self.options.largest_fragment_only,
+            largest_fragment,
+            &mut steps,
+            &mut warnings,
+        );
+        current = self.apply_stage(
+            current,
+            StandardizationStep::NeutralizeCharges,
+            self.options.neutralize_charges,
+            neutralize_charges,
+            &mut steps,
+            &mut warnings,
+        );
+        current = self.apply_stage(
+            current,
+            StandardizationStep::RemoveExplicitHydrogens,
+            self.options.remove_explicit_h,
+            remove_hydrogens,
+            &mut steps,
+            &mut warnings,
+        );
+        current = self.apply_stage(
+            current,
+            StandardizationStep::CanonicalTautomer,
+            self.options.canonical_tautomer,
+            canonical_tautomer,
+            &mut steps,
+            &mut warnings,
+        );
+
+        let output = MoleculeSnapshot::from_mol(&current);
+        let status = if !warnings.is_empty() {
+            PipelineStatus::CompletedWithWarnings
+        } else if input.hash == output.hash {
+            PipelineStatus::Unchanged
+        } else {
+            PipelineStatus::Modified
+        };
+
+        (
+            current,
+            StandardizationReport {
+                status,
+                input,
+                output,
+                steps,
+                warnings,
+            },
+        )
+    }
+
+    fn apply_stage(
+        &self,
+        current: Molecule,
+        step: StandardizationStep,
+        enabled: bool,
+        f: fn(&Molecule) -> Molecule,
+        steps: &mut Vec<StandardizationStepReport>,
+        warnings: &mut Vec<StandardizationWarning>,
+    ) -> Molecule {
+        let before = MoleculeSnapshot::from_mol(&current);
+        let next = if enabled {
+            f(&current)
+        } else {
+            clone_molecule(&current)
+        };
+        let after = MoleculeSnapshot::from_mol(&next);
+        steps.push(StandardizationStepReport {
+            step,
+            enabled,
+            changed: before.hash != after.hash,
+            before,
+            after,
+        });
+        if enabled {
+            append_valence_warnings(step, &next, warnings);
+        }
+        next
+    }
+}
+
+fn clone_molecule(mol: &Molecule) -> Molecule {
+    MoleculeBuilder::from_molecule(mol).build()
+}
+
+fn detect_initial_warnings(mol: &Molecule) -> Vec<StandardizationWarning> {
+    let mut warnings = Vec::new();
+    let mut metal_bonds = 0usize;
+    for (idx, atom) in mol.atoms() {
+        if !is_metal(atom.element) {
+            continue;
+        }
+        metal_bonds += mol
+            .neighbors(idx)
+            .filter(|(nb, _)| !is_metal(mol.atom(*nb).element))
+            .count();
+    }
+    if metal_bonds > 0 {
+        warnings.push(StandardizationWarning::new(
+            "metal_disconnection_not_applied",
+            format!(
+                "found {metal_bonds} metal-to-nonmetal bond(s); metal disconnection is not implemented yet"
+            ),
+        ));
+    }
+    let valence_errors = validate_valence(mol);
+    if !valence_errors.is_empty() {
+        warnings.push(StandardizationWarning::new(
+            "input_valence_validation_failed",
+            format!(
+                "input molecule has {} valence validation issue(s)",
+                valence_errors.len()
+            ),
+        ));
+    }
+    warnings
+}
+
+fn append_valence_warnings(
+    step: StandardizationStep,
+    mol: &Molecule,
+    warnings: &mut Vec<StandardizationWarning>,
+) {
+    let errors = validate_valence(mol);
+    if errors.is_empty() {
+        return;
+    }
+    warnings.push(StandardizationWarning::new(
+        "valence_validation_failed",
+        format!(
+            "{} produced {} valence validation issue(s)",
+            step.as_str(),
+            errors.len()
+        ),
+    ));
+}
+
+fn is_metal(element: Element) -> bool {
+    matches!(
+        element.atomic_number(),
+        3 | 4
+            | 11 | 12 | 13
+            | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31
+            | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50
+            | 55 | 56 | 57..=71
+            | 72 | 73 | 74 | 75 | 76 | 77 | 78 | 79 | 80 | 81 | 82 | 83
+            | 87 | 88 | 89..=103
+            | 104 | 105 | 106 | 107 | 108 | 109 | 110 | 111 | 112 | 113 | 114 | 115 | 116
+    )
+}
+
 /// Apply a series of standardization steps to a molecule.
 ///
 /// Transformations are applied in this order:
@@ -158,38 +450,7 @@ impl Default for StandardizeOptions {
 ///
 /// Useful for cleaning pasted structures or database entries.
 pub fn standardize(mol: &Molecule, opts: &StandardizeOptions) -> Molecule {
-    let current = if opts.largest_fragment_only {
-        largest_fragment(mol)
-    } else {
-        // Build a copy of the molecule to pass through the pipeline.
-        let mut builder = MoleculeBuilder::new();
-        let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-        for i in 0..mol.atom_count() {
-            let old_idx = AtomIdx(i as u32);
-            let new_idx = builder.add_atom(mol.atom(old_idx).clone());
-            remap.insert(old_idx, new_idx);
-        }
-        copy_bonds(mol, &mut builder, &remap);
-        builder.build()
-    };
-
-    let current = if opts.neutralize_charges {
-        neutralize_charges(&current)
-    } else {
-        current
-    };
-
-    let current = if opts.remove_explicit_h {
-        remove_hydrogens(&current)
-    } else {
-        current
-    };
-
-    if opts.canonical_tautomer {
-        canonical_tautomer(&current)
-    } else {
-        current
-    }
+    StandardizationPipeline::new(opts.clone()).run(mol).0
 }
 
 #[cfg(test)]
@@ -278,7 +539,10 @@ mod tests {
         assert!(has_neutral_o, "acetate oxygen should be neutralized");
 
         // Should have at least 3 atoms (C, C, O) with no explicit H
-        assert!(result.atom_count() >= 3, "should have at least 3 atoms after standardization");
+        assert!(
+            result.atom_count() >= 3,
+            "should have at least 3 atoms after standardization"
+        );
     }
 
     #[test]
@@ -292,6 +556,72 @@ mod tests {
         let result = standardize(&mol, &opts);
 
         // Should keep both fragments
-        assert_eq!(result.atom_count(), 5, "should keep both fragments when largest_fragment_only=false");
+        assert_eq!(
+            result.atom_count(),
+            5,
+            "should keep both fragments when largest_fragment_only=false"
+        );
+    }
+
+    #[test]
+    fn pipeline_report_tracks_enabled_stage_changes() {
+        let mol = parse("CC.CCC").unwrap();
+        let pipeline = StandardizationPipeline::new(StandardizeOptions {
+            largest_fragment_only: true,
+            neutralize_charges: false,
+            remove_explicit_h: false,
+            canonical_tautomer: false,
+        });
+
+        let (result, report) = pipeline.run(&mol);
+
+        assert_eq!(result.atom_count(), 3);
+        assert_eq!(report.status, PipelineStatus::Modified);
+        assert!(report.changed());
+        assert_eq!(report.steps.len(), 4);
+        assert_eq!(report.steps[0].step, StandardizationStep::LargestFragment);
+        assert!(report.steps[0].enabled);
+        assert!(report.steps[0].changed);
+        assert_eq!(report.steps[1].step, StandardizationStep::NeutralizeCharges);
+        assert!(!report.steps[1].enabled);
+    }
+
+    #[test]
+    fn pipeline_report_marks_unchanged_clean_molecule() {
+        let mol = parse("CC").unwrap();
+        let pipeline = StandardizationPipeline::new(StandardizeOptions {
+            canonical_tautomer: false,
+            neutralize_charges: false,
+            remove_explicit_h: false,
+            largest_fragment_only: false,
+        });
+
+        let (_result, report) = pipeline.run(&mol);
+
+        assert_eq!(report.status, PipelineStatus::Unchanged);
+        assert!(!report.changed());
+        assert!(report.warnings.is_empty());
+        assert!(report.steps.iter().all(|s| !s.enabled && !s.changed));
+    }
+
+    #[test]
+    fn pipeline_report_warns_about_metal_disconnection_gap() {
+        let mol = parse("[Na]OC").unwrap();
+        let pipeline = StandardizationPipeline::new(StandardizeOptions {
+            canonical_tautomer: false,
+            neutralize_charges: false,
+            remove_explicit_h: false,
+            largest_fragment_only: false,
+        });
+
+        let (_result, report) = pipeline.run(&mol);
+
+        assert_eq!(report.status, PipelineStatus::CompletedWithWarnings);
+        assert!(
+            report
+                .warnings
+                .iter()
+                .any(|w| w.code == "metal_disconnection_not_applied")
+        );
     }
 }

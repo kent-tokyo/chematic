@@ -17,6 +17,18 @@ pub enum BondOrder {
     Up,
     /// Stereo bond `\` (E/Z specification)
     Down,
+    /// Zero-order bond used by CTAB/CXSMILES for non-valence connections.
+    Zero,
+    /// Dative/coordinate bond. The stored `atom1 → atom2` direction is the donor→acceptor direction.
+    Dative,
+    /// Query bond matching any bond (`~` / MDL type 8).
+    QueryAny,
+    /// Query bond matching single or double bonds (MDL type 5).
+    QuerySingleOrDouble,
+    /// Query bond matching single or aromatic bonds (MDL type 6).
+    QuerySingleOrAromatic,
+    /// Query bond matching double or aromatic bonds (MDL type 7).
+    QueryDoubleOrAromatic,
 }
 
 impl BondOrder {
@@ -27,39 +39,64 @@ impl BondOrder {
             Self::Double    => Some(2.0),
             Self::Triple    => Some(3.0),
             Self::Quadruple => Some(4.0),
+            Self::Zero      => Some(0.0),
+            Self::Dative    => Some(1.0),
             Self::Aromatic  => None,
             Self::Up | Self::Down => Some(1.0),
+            Self::QueryAny
+            | Self::QuerySingleOrDouble
+            | Self::QuerySingleOrAromatic
+            | Self::QueryDoubleOrAromatic => None,
         }
     }
 
     /// Integer bond order used for valence calculations.
-    /// Aromatic and stereo bonds count as 1.
+    /// Aromatic, stereo, dative, and query bonds count conservatively as 1.
     pub fn order_int(self) -> u8 {
         match self {
-            Self::Single | Self::Up | Self::Down | Self::Aromatic => 1,
+            Self::Zero => 0,
+            Self::Single
+            | Self::Up
+            | Self::Down
+            | Self::Aromatic
+            | Self::Dative
+            | Self::QueryAny
+            | Self::QuerySingleOrDouble
+            | Self::QuerySingleOrAromatic
+            | Self::QueryDoubleOrAromatic => 1,
             Self::Double    => 2,
             Self::Triple    => 3,
             Self::Quadruple => 4,
         }
     }
 
+    /// The SMILES/CXSMILES token that represents this bond order when available.
+    pub fn smiles_token(self) -> &'static str {
+        match self {
+            Self::Single    => "-",
+            Self::Double    => "=",
+            Self::Triple    => "#",
+            Self::Quadruple => "$",
+            Self::Aromatic  => ":",
+            Self::Up        => "/",
+            Self::Down      => "\\",
+            Self::Dative    => "->",
+            Self::Zero | Self::QueryAny => "~",
+            Self::QuerySingleOrDouble
+            | Self::QuerySingleOrAromatic
+            | Self::QueryDoubleOrAromatic => "~",
+        }
+    }
+
     /// The SMILES character that represents this bond order.
     pub fn smiles_char(self) -> char {
-        match self {
-            Self::Single    => '-',
-            Self::Double    => '=',
-            Self::Triple    => '#',
-            Self::Quadruple => '$',
-            Self::Aromatic  => ':',
-            Self::Up        => '/',
-            Self::Down      => '\\',
-        }
+        self.smiles_token().as_bytes()[0] as char
     }
 }
 
 impl core::fmt::Display for BondOrder {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.smiles_char())
+        write!(f, "{}", self.smiles_token())
     }
 }
 

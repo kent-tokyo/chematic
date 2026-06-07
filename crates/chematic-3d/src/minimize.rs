@@ -424,6 +424,12 @@ fn ideal_bond_len(sym1: &str, sym2: &str, order: BondOrder) -> f64 {
             BondOrder::Triple => 1.20,
             BondOrder::Quadruple => 1.20,
             BondOrder::Aromatic => 1.40,
+            BondOrder::Zero
+            | BondOrder::Dative
+            | BondOrder::QueryAny
+            | BondOrder::QuerySingleOrDouble
+            | BondOrder::QuerySingleOrAromatic => 1.54,
+            BondOrder::QueryDoubleOrAromatic => 1.40,
         },
     }
 }

@@ -39,14 +39,14 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + Section 4（WASM・API 改善）。**992 テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）。**945 テスト、全パス。C/C++ 依存ゼロ。**
 
-最新リリース: **v0.1.32**（2026-06-07）
+最新リリース: **v0.1.33**（2026-06-07）
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
 | `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）；ミュータブル API・`fragments`・`validate_valence`・`formula_with_isotopes`・`StereoGroup`/`StereoGroupKind` | 48      |
-| `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES                                                                                               | 57      |
+| `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES、**CXSMILES メタデータ対応**                                                                  | 57      |
 | `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 34      |
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 63      |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 43      |
@@ -122,6 +122,60 @@ println!("LogP:     {:.2}", logp_crippen(&aspirin));     // ~1.2
 println!("Fsp3:     {:.3}", fsp3(&aspirin));             // ~0.111
 println!("QED:      {:.3}", qed(&aspirin));              // ドラッグライクネス
 println!("Lipinski: {}", lipinski_passes(&aspirin));     // true
+```
+
+---
+
+## CXSMILES でメタデータを保持
+
+```rust
+use chematic_smiles::parse_cxsmiles;
+
+let cx = parse_cxsmiles("CCO |$ethanol$,atomProp:1.role.acceptor,^2:0|").unwrap();
+// cx.atom_labels: ["ethanol"]
+// cx.atom_props: [(atom: 1, key: "role", value: "acceptor")]
+// cx.atom_radicals: [None, 2, None]
+
+// CX 情報を保持したまま正規化
+let canonical = chematic_smiles::write_cxsmiles(&cx);
+println!("{}", canonical); // CCO |$ethanol$,atomProp:1.role.acceptor,^2:0|
+```
+
+---
+
+## 標準化パイプラインと監査レポート
+
+```rust
+use chematic_chem::{StandardizationPipeline, StandardizeOptions};
+
+let opts = StandardizeOptions {
+    largest_fragment_only: true,
+    neutralize_charges: true,
+    remove_explicit_h: false,
+    canonical_tautomer: false,
+};
+
+let pipeline = StandardizationPipeline::new(opts);
+let (standardized, report) = pipeline.run(&mol);
+
+// ステータスを確認（Unchanged / Modified / CompletedWithWarnings）
+println!("Status: {:?}", report.status);
+
+// 各ステップの変更を追跡
+for step in &report.steps {
+    if step.changed {
+        println!("  {}: {} atoms → {} atoms",
+            step.step.as_str(),
+            step.before.atoms,
+            step.after.atoms
+        );
+    }
+}
+
+// 警告（金属結合、原子価エラーなど）を確認
+for warning in &report.warnings {
+    println!("⚠️  {}: {}", warning.code, warning.message);
+}
 ```
 
 ---

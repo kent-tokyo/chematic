@@ -157,13 +157,27 @@ fn mol_to_query(mol: &Molecule) -> QueryMolecule {
 
     for (_bidx, bond) in mol.bonds() {
         let bq = match bond.order {
-            BondOrder::Single | BondOrder::Up | BondOrder::Down => {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => {
                 BondQuery::Primitive(BondPrimitive::Single)
             }
             BondOrder::Double => BondQuery::Primitive(BondPrimitive::Double),
             BondOrder::Triple => BondQuery::Primitive(BondPrimitive::Triple),
             BondOrder::Aromatic => BondQuery::Primitive(BondPrimitive::Aromatic),
-            BondOrder::Quadruple => BondQuery::Primitive(BondPrimitive::Single),
+            BondOrder::QuerySingleOrDouble => BondQuery::Or(
+                Box::new(BondQuery::Primitive(BondPrimitive::Single)),
+                Box::new(BondQuery::Primitive(BondPrimitive::Double)),
+            ),
+            BondOrder::QuerySingleOrAromatic => BondQuery::Or(
+                Box::new(BondQuery::Primitive(BondPrimitive::Single)),
+                Box::new(BondQuery::Primitive(BondPrimitive::Aromatic)),
+            ),
+            BondOrder::QueryDoubleOrAromatic => BondQuery::Or(
+                Box::new(BondQuery::Primitive(BondPrimitive::Double)),
+                Box::new(BondQuery::Primitive(BondPrimitive::Aromatic)),
+            ),
+            BondOrder::Quadruple | BondOrder::Zero | BondOrder::QueryAny => {
+                BondQuery::Primitive(BondPrimitive::Any)
+            }
         };
         qmol.add_bond(bond.atom1.0 as usize, bond.atom2.0 as usize, bq);
     }

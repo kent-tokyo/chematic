@@ -664,18 +664,32 @@ fn build_query(mol0: &Molecule, mapping: &PartialMapping, config: &McsConfig) ->
 /// used in a `QueryMolecule`.
 ///
 /// When `match_bonds` is false, every bond becomes `Any` (atom-only MCS).
-/// Up/Down stereo bonds collapse to Single; Quadruple has no SMARTS primitive
-/// so it also becomes `Any`.
+/// Up/Down/Dative stereo-like bonds collapse to Single. Query bond variants
+/// become their closest SMARTS query equivalent.
 fn bond_order_to_query(order: BondOrder, match_bonds: bool) -> BondQuery {
     if !match_bonds {
         return BondQuery::Primitive(BondPrimitive::Any);
     }
     match normalize_bond(order) {
-        BondOrder::Single => BondQuery::Primitive(BondPrimitive::Single),
+        BondOrder::Single | BondOrder::Dative => BondQuery::Primitive(BondPrimitive::Single),
         BondOrder::Double => BondQuery::Primitive(BondPrimitive::Double),
         BondOrder::Triple => BondQuery::Primitive(BondPrimitive::Triple),
         BondOrder::Aromatic => BondQuery::Primitive(BondPrimitive::Aromatic),
-        BondOrder::Quadruple => BondQuery::Primitive(BondPrimitive::Any),
+        BondOrder::Quadruple | BondOrder::Zero | BondOrder::QueryAny => {
+            BondQuery::Primitive(BondPrimitive::Any)
+        }
+        BondOrder::QuerySingleOrDouble => BondQuery::Or(
+            Box::new(BondQuery::Primitive(BondPrimitive::Single)),
+            Box::new(BondQuery::Primitive(BondPrimitive::Double)),
+        ),
+        BondOrder::QuerySingleOrAromatic => BondQuery::Or(
+            Box::new(BondQuery::Primitive(BondPrimitive::Single)),
+            Box::new(BondQuery::Primitive(BondPrimitive::Aromatic)),
+        ),
+        BondOrder::QueryDoubleOrAromatic => BondQuery::Or(
+            Box::new(BondQuery::Primitive(BondPrimitive::Double)),
+            Box::new(BondQuery::Primitive(BondPrimitive::Aromatic)),
+        ),
         BondOrder::Up | BondOrder::Down => BondQuery::Primitive(BondPrimitive::Single),
     }
 }

@@ -248,6 +248,16 @@ impl<'a> Parser<'a> {
 
     /// Consume a bond character and return the corresponding order, or `None`.
     fn try_parse_bond(&mut self) -> Option<BondOrder> {
+        if self.peek() == Some(b'-') && self.peek_at(1) == Some(b'>') {
+            self.advance();
+            self.advance();
+            return Some(BondOrder::Dative);
+        }
+        if self.peek() == Some(b'<') && self.peek_at(1) == Some(b'-') {
+            self.advance();
+            self.advance();
+            return Some(BondOrder::Dative);
+        }
         let order = match self.peek()? {
             b'-' => BondOrder::Single,
             b'=' => BondOrder::Double,
@@ -256,6 +266,7 @@ impl<'a> Parser<'a> {
             b':' => BondOrder::Aromatic,
             b'/' => BondOrder::Up,
             b'\\' => BondOrder::Down,
+            b'~' => BondOrder::QueryAny,
             _ => return None,
         };
         self.advance();
