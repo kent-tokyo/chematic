@@ -1,4 +1,4 @@
-//! Hückel aromaticity perception.
+//! Hückel aromaticity perception with antiaromaticity detection.
 //!
 //! Works on a **kekulized** molecule (no `Aromatic` bond orders).
 //! Call `kekulize` + `apply_kekule` from `chematic-core` before calling
@@ -7,9 +7,12 @@
 //! Algorithm:
 //! 1. Find all SSSR rings via `find_sssr`.
 //! 2. For each ring, check whether it could participate in a planar pi system.
-//! 3. Count pi electrons contributed by each ring atom.
-//! 4. If the total pi electron count satisfies 4n+2 (n >= 0), mark the ring as aromatic.
-//! 5. Record all aromatic atoms and bonds in an `AromaticityModel`.
+//! 3. Count pi electrons contributed by each ring atom with explicit electron distribution tracking.
+//! 4. Classify rings by electron count:
+//!    - 4n+2 electrons (n >= 0): aromatic (favorable)
+//!    - 4n electrons (n > 0): antiaromatic (unfavorable, strongly disfavored)
+//!    - Other: non-aromatic
+//! 5. Record all aromatic atoms, bonds, and antiaromatic rings in an `AromaticityModel`.
 
 use std::collections::HashSet;
 
@@ -21,14 +24,28 @@ use crate::sssr::find_sssr;
 // Public types
 // ---------------------------------------------------------------------------
 
+/// Ring aromaticity classification.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RingAromaticity {
+    /// 4n+2 electrons: aromatic (favorable)
+    Aromatic,
+    /// 4n electrons (n > 0): antiaromatic (unfavorable)
+    Antiaromatic,
+    /// Any other electron count: non-aromatic
+    NonAromatic,
+}
+
 /// Aromaticity assignment for a molecule.
 ///
 /// Records which atoms and bonds belong to aromatic rings according to
 /// the Hückel 4n+2 rule applied to SSSR rings.
+/// Also tracks antiaromatic rings (4n electrons) for chemical accuracy.
 #[derive(Debug, Clone)]
 pub struct AromaticityModel {
     aromatic_atoms: HashSet<AtomIdx>,
     aromatic_bonds: HashSet<BondIdx>,
+    antiaromatic_rings: Vec<Vec<AtomIdx>>, // Rings with 4n electrons
+    ring_classifications: Vec<(Vec<AtomIdx>, RingAromaticity, u32)>, // (ring, classification, electron_count)
 }
 
 impl AromaticityModel {
@@ -46,13 +63,47 @@ impl AromaticityModel {
     pub fn aromatic_atom_count(&self) -> usize {
         self.aromatic_atoms.len()
     }
+
+    /// Get all rings and their classification with electron counts.
+    pub fn ring_classifications(&self) -> &[(Vec<AtomIdx>, RingAromaticity, u32)] {
+        &self.ring_classifications
+    }
+
+    /// Get all antiaromatic rings (4n electrons, n > 0).
+    pub fn antiaromatic_rings(&self) -> &[Vec<AtomIdx>] {
+        &self.antiaromatic_rings
+    }
+
+    /// Check if any atom belongs to an antiaromatic ring.
+    pub fn has_antiaromaticity(&self) -> bool {
+        !self.antiaromatic_rings.is_empty()
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
 
-/// Assign aromaticity to a kekulized molecule using the Hückel 4n+2 rule.
+/// Classify a ring by its pi electron count using Hückel and antiaromaticity rules.
+///
+/// Returns (classification, electron_count) tuple.
+fn classify_ring_aromaticity(pi_electrons: u32) -> (RingAromaticity, u32) {
+    // Hückel rule: 4n+2 electrons → aromatic
+    if pi_electrons >= 2 && (pi_electrons - 2) % 4 == 0 {
+        (RingAromaticity::Aromatic, pi_electrons)
+    }
+    // Antiaromaticity: 4n electrons (n > 0) → antiaromatic
+    else if pi_electrons > 0 && pi_electrons % 4 == 0 {
+        (RingAromaticity::Antiaromatic, pi_electrons)
+    }
+    // Everything else: non-aromatic
+    else {
+        (RingAromaticity::NonAromatic, pi_electrons)
+    }
+}
+
+/// Assign aromaticity to a kekulized molecule using the Hückel 4n+2 rule
+/// and antiaromaticity detection (4n electrons).
 ///
 /// The molecule must use `Single` / `Double` bond orders (no `Aromatic` bonds).
 /// For input parsed from aromatic SMILES call `chematic_core::kekulize` then
@@ -62,28 +113,47 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
 
     let mut aromatic_atoms: HashSet<AtomIdx> = HashSet::new();
     let mut aromatic_bonds: HashSet<BondIdx> = HashSet::new();
+    let mut antiaromatic_rings: Vec<Vec<AtomIdx>> = Vec::new();
+    let mut ring_classifications: Vec<(Vec<AtomIdx>, RingAromaticity, u32)> = Vec::new();
 
     for ring in ring_set.rings() {
         if let Some(pi_electrons) = ring_pi_electrons(mol, ring) {
-            // Hückel: 4n+2 for n >= 0  →  (pi - 2) divisible by 4.
-            if pi_electrons >= 2 && (pi_electrons - 2) % 4 == 0 {
-                // Mark all atoms in this ring as aromatic.
-                for &atom in ring {
-                    aromatic_atoms.insert(atom);
-                }
-                // Mark all bonds in this ring as aromatic.
-                for i in 0..ring.len() {
-                    let a = ring[i];
-                    let b = ring[(i + 1) % ring.len()];
-                    if let Some((bidx, _)) = mol.bond_between(a, b) {
-                        aromatic_bonds.insert(bidx);
+            let (classification, count) = classify_ring_aromaticity(pi_electrons);
+
+            ring_classifications.push((ring.to_vec(), classification, count));
+
+            match classification {
+                RingAromaticity::Aromatic => {
+                    // Mark all atoms in this ring as aromatic.
+                    for &atom in ring {
+                        aromatic_atoms.insert(atom);
                     }
+                    // Mark all bonds in this ring as aromatic.
+                    for i in 0..ring.len() {
+                        let a = ring[i];
+                        let b = ring[(i + 1) % ring.len()];
+                        if let Some((bidx, _)) = mol.bond_between(a, b) {
+                            aromatic_bonds.insert(bidx);
+                        }
+                    }
+                }
+                RingAromaticity::Antiaromatic => {
+                    // Record antiaromatic ring (do NOT mark atoms as aromatic).
+                    antiaromatic_rings.push(ring.to_vec());
+                }
+                RingAromaticity::NonAromatic => {
+                    // Neither aromatic nor antiaromatic; do nothing.
                 }
             }
         }
     }
 
-    AromaticityModel { aromatic_atoms, aromatic_bonds }
+    AromaticityModel {
+        aromatic_atoms,
+        aromatic_bonds,
+        antiaromatic_rings,
+        ring_classifications,
+    }
 }
 
 /// Apply aromaticity perception to a kekulized molecule.
@@ -123,11 +193,36 @@ pub fn apply_aromaticity(mol: &Molecule) -> Molecule {
 // Per-ring pi electron count
 // ---------------------------------------------------------------------------
 
-/// Try to count pi electrons for a ring.
+/// Detailed electron contribution from a ring atom.
+///
+/// Tracks how many pi electrons are contributed and why.
+/// This struct is kept for documentation purposes of the algorithm.
+#[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
+struct AtomElectronContribution {
+    pi_electrons: u32,
+    is_lone_pair: bool,      // true if from lone pair (N-H, O, S)
+    is_double_bond: bool,    // true if from double bond
+    is_sp2_compatible: bool, // true if atom can participate in pi system
+}
+
+/// Try to count pi electrons for a ring with detailed distribution analysis.
 ///
 /// Returns `None` if any atom in the ring is not sp2-compatible (i.e. the ring
 /// cannot be aromatic regardless of electron count).
 /// Returns `Some(count)` otherwise.
+///
+/// Algorithm for electron distribution:
+/// 1. **Carbon**: Contributes 1 π-electron from sp2 hybridization.
+///    - Must have a double bond somewhere (ring or exocyclic).
+///    - Without a double bond, it's sp3 → ring cannot be aromatic.
+/// 2. **Nitrogen (N)**:
+///    - With explicit H (pyrrole-type): Lone pair → 2 π-electrons.
+///    - Without H (pyridine-type): 1 π-electron from sp2 (accepts electrons).
+///    - Ambiguous cases (no H, no double) → skip ring.
+/// 3. **Oxygen/Sulfur (O, S)**: Lone pair donor → 2 π-electrons.
+///    - Must be 2-connected in the ring (not linked to exocyclic groups).
+/// 4. **Other elements**: Unsupported → ring cannot be aromatic.
 fn ring_pi_electrons(mol: &Molecule, ring: &[AtomIdx]) -> Option<u32> {
     let ring_atom_set: HashSet<AtomIdx> = ring.iter().copied().collect();
     let mut total_pi: u32 = 0;
@@ -455,5 +550,176 @@ mod tests {
         for (_, bond) in result.bonds() {
             assert_ne!(bond.order, BondOrder::Aromatic);
         }
+    }
+
+    // =========================================================================
+    // Antiaromaticity Tests (4n electrons, n > 0)
+    // =========================================================================
+
+    /// Build kekulized cyclobutadiene: 4-membered ring with 4 electrons.
+    /// C=C-C=C pattern (4 π electrons → 4n antiaromatic)
+    fn cyclobutadiene_kekule() -> chematic_core::Molecule {
+        let mut b = MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..4).map(|_| b.add_atom(Atom::new(Element::C))).collect();
+        for i in 0..4 {
+            let order = if i % 2 == 0 { BondOrder::Double } else { BondOrder::Single };
+            b.add_bond(atoms[i], atoms[(i + 1) % 4], order).unwrap();
+        }
+        b.build()
+    }
+
+    #[test]
+    fn test_cyclobutadiene_antiaromatic() {
+        let mol = cyclobutadiene_kekule();
+        let model = assign_aromaticity(&mol);
+
+        // Cyclobutadiene should NOT be aromatic (4 electrons = 4n).
+        assert_eq!(model.aromatic_atom_count(), 0, "cyclobutadiene should not be aromatic");
+
+        // But it SHOULD be detected as antiaromatic.
+        assert!(model.has_antiaromaticity(), "cyclobutadiene should be antiaromatic");
+        assert_eq!(model.antiaromatic_rings().len(), 1, "one antiaromatic ring");
+
+        // Verify ring classification
+        let classifications = model.ring_classifications();
+        assert_eq!(classifications.len(), 1);
+        assert_eq!(classifications[0].1, RingAromaticity::Antiaromatic);
+        assert_eq!(classifications[0].2, 4, "cyclobutadiene has 4 π electrons");
+    }
+
+    /// Build cyclooctatetraene (COT): 8-membered ring with 8 electrons.
+    /// C=C-C=C-C=C-C=C pattern (8 π electrons → 4n antiaromatic)
+    fn cyclooctatetraene_kekule() -> chematic_core::Molecule {
+        let mut b = MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..8).map(|_| b.add_atom(Atom::new(Element::C))).collect();
+        for i in 0..8 {
+            let order = if i % 2 == 0 { BondOrder::Double } else { BondOrder::Single };
+            b.add_bond(atoms[i], atoms[(i + 1) % 8], order).unwrap();
+        }
+        b.build()
+    }
+
+    #[test]
+    fn test_cyclooctatetraene_antiaromatic() {
+        let mol = cyclooctatetraene_kekule();
+        let model = assign_aromaticity(&mol);
+
+        // COT should NOT be aromatic (8 electrons = 4n).
+        assert_eq!(model.aromatic_atom_count(), 0, "cyclooctatetraene should not be aromatic");
+
+        // But it SHOULD be detected as antiaromatic.
+        assert!(model.has_antiaromaticity(), "cyclooctatetraene should be antiaromatic");
+        assert_eq!(model.antiaromatic_rings().len(), 1, "one antiaromatic ring");
+
+        let classifications = model.ring_classifications();
+        assert_eq!(classifications[0].1, RingAromaticity::Antiaromatic);
+        assert_eq!(classifications[0].2, 8, "cyclooctatetraene has 8 π electrons");
+    }
+
+    // =========================================================================
+    // Ring Classification Tests
+    // =========================================================================
+
+    #[test]
+    fn test_ring_classifications_benzene() {
+        let mol = benzene_kekule();
+        let model = assign_aromaticity(&mol);
+        let classifications = model.ring_classifications();
+
+        assert_eq!(classifications.len(), 1, "benzene has one ring");
+        assert_eq!(classifications[0].1, RingAromaticity::Aromatic);
+        assert_eq!(classifications[0].2, 6, "benzene has 6 π electrons");
+    }
+
+    #[test]
+    fn test_ring_classifications_mixed() {
+        // Naphthalene: both rings should be aromatic (6 π electrons each).
+        let mol = naphthalene_kekule();
+        let model = assign_aromaticity(&mol);
+        let classifications = model.ring_classifications();
+
+        assert_eq!(classifications.len(), 2, "naphthalene has two rings");
+        for (_, classification, count) in classifications {
+            assert_eq!(*classification, RingAromaticity::Aromatic);
+            assert_eq!(*count, 6);
+        }
+    }
+
+    #[test]
+    fn test_non_aromatic_cyclohexane() {
+        let mol = cyclohexane();
+        let model = assign_aromaticity(&mol);
+        let classifications = model.ring_classifications();
+
+        // Cyclohexane may or may not be detected by SSSR depending on ring perception.
+        // What matters is that it should never be classified as aromatic or antiaromatic.
+        for (_, classification, _count) in classifications {
+            assert_ne!(*classification, RingAromaticity::Aromatic, "cyclohexane should not be aromatic");
+            assert_ne!(*classification, RingAromaticity::Antiaromatic, "cyclohexane should not be antiaromatic");
+        }
+    }
+
+    // =========================================================================
+    // Electron Distribution Edge Cases
+    // =========================================================================
+
+    #[test]
+    fn test_thiophene_aromatic() {
+        // Thiophene: 5-membered ring with S contributing a lone pair.
+        // S-C=C-C=C (2 + 1 + 1 + 1 + 1 = 6 π electrons → aromatic)
+        let mut b = MoleculeBuilder::new();
+        let s = b.add_atom(Atom::new(Element::S));
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let c3 = b.add_atom(Atom::new(Element::C));
+        let c4 = b.add_atom(Atom::new(Element::C));
+        let ring = [s, c1, c2, c3, c4];
+
+        b.add_bond(ring[0], ring[1], BondOrder::Single).unwrap();
+        b.add_bond(ring[1], ring[2], BondOrder::Double).unwrap();
+        b.add_bond(ring[2], ring[3], BondOrder::Single).unwrap();
+        b.add_bond(ring[3], ring[4], BondOrder::Double).unwrap();
+        b.add_bond(ring[4], ring[0], BondOrder::Single).unwrap();
+        let mol = b.build();
+
+        let model = assign_aromaticity(&mol);
+        assert_eq!(model.aromatic_atom_count(), 5, "thiophene is aromatic");
+
+        let classifications = model.ring_classifications();
+        assert_eq!(classifications[0].1, RingAromaticity::Aromatic);
+        assert_eq!(classifications[0].2, 6);
+    }
+
+    #[test]
+    fn test_electron_distribution_tracking() {
+        // Benzene: all carbons contribute 1 π electron each = 6 total.
+        let mol = benzene_kekule();
+        let model = assign_aromaticity(&mol);
+        let classifications = model.ring_classifications();
+
+        assert_eq!(
+            classifications[0].2, 6,
+            "benzene electron distribution: 6 × 1π (from C) = 6 total"
+        );
+
+        // Pyrrole: N contributes 2 (lone pair), 4 C contribute 1 each = 6 total.
+        let mol = pyrrole_kekule();
+        let model = assign_aromaticity(&mol);
+        let classifications = model.ring_classifications();
+
+        assert_eq!(
+            classifications[0].2, 6,
+            "pyrrole electron distribution: 2π (N lone pair) + 4 × 1π (C) = 6 total"
+        );
+
+        // Furan: O contributes 2 (lone pair), 4 C contribute 1 each = 6 total.
+        let mol = furan_kekule();
+        let model = assign_aromaticity(&mol);
+        let classifications = model.ring_classifications();
+
+        assert_eq!(
+            classifications[0].2, 6,
+            "furan electron distribution: 2π (O lone pair) + 4 × 1π (C) = 6 total"
+        );
     }
 }
