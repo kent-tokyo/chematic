@@ -673,4 +673,64 @@ mod tests {
             WorkflowError::TooManyAtoms { atom_count: 2, .. }
         ));
     }
+
+    #[test]
+    fn molecule_report_sulfur_compound() {
+        let report = molecule_report("c1ccccc1S(=O)(=O)N").unwrap();
+        assert_eq!(report.descriptors.num_heteroatoms, 4); // S, O, O, N
+        assert!(report.descriptors.molecular_weight > 150.0);
+    }
+
+    #[test]
+    fn molecule_report_halogenated() {
+        let report = molecule_report("ClC(Br)(F)I").unwrap();
+        assert_eq!(report.descriptors.heavy_atom_count, 5); // C, Cl, Br, F, I
+        assert!(report.descriptors.num_heteroatoms == 4); // Cl, Br, F, I (not C)
+    }
+
+    #[test]
+    fn molecule_report_complex_aromatic() {
+        // Quinoline (bicyclic aromatic)
+        let report = molecule_report("c1ccc2ncccc2c1").unwrap();
+        assert_eq!(report.descriptors.heavy_atom_count, 10); // 9 C + 1 N
+        assert!(report.descriptors.ring_count >= 2);
+        assert!(report.filters.lipinski_passes);
+    }
+
+    #[test]
+    fn molecule_report_large_valid_molecule() {
+        // Taxol-like structure (simplified, ~50 atoms)
+        let report = molecule_report("CC(=O)Oc1ccccc1C(=O)N[C@@H]1C[C@H]2CC(C)(C)[C@@H](O)C[C@]2(OC(=O)C(C)C)[C@]1(O)C(=O)c1ccccc1").unwrap();
+        assert!(report.descriptors.heavy_atom_count > 30);
+        assert!(report.descriptors.num_stereocenters > 0);
+    }
+
+    #[test]
+    fn molecule_report_charge_species() {
+        let report = molecule_report("[Na+].[Cl-]").unwrap();
+        assert_eq!(report.formula, "ClNa");
+        assert_eq!(report.descriptors.formal_charge_sum, 0); // +1 + -1 = 0
+    }
+
+    #[test]
+    fn compare_molecules_identical_molecules() {
+        let comparison = compare_molecules(&["c1ccccc1", "c1ccccc1"]).unwrap();
+        let sim = comparison.pairwise[0].similarities.ecfp4_tanimoto;
+        assert!((sim - 1.0).abs() < 1e-6, "identical molecules should have ~100% similarity");
+    }
+
+    #[test]
+    fn screen_smiles_empty_batch() {
+        let report = screen_smiles(&[]);
+        assert_eq!(report.records.len(), 0);
+        assert_eq!(report.maxmin_picks.len(), 0);
+    }
+
+    #[test]
+    fn molecule_report_aromatic_nitrogen() {
+        // Pyridine
+        let report = molecule_report("c1ccncc1").unwrap();
+        assert_eq!(report.descriptors.ring_count, 1);
+        assert!(report.descriptors.hba > 0); // N is an acceptor
+    }
 }
