@@ -31,6 +31,7 @@ pub mod stereo;
 pub mod tautomer;
 pub mod topo_descriptors;
 pub mod vsa;
+pub mod workflow;
 
 pub use cip::{assign_cip, CipAssignment};
 pub use descriptors::{
@@ -75,3 +76,10 @@ pub use isotope_distribution::isotope_distribution;
 pub use logd::{logd_profile, logd_simple};
 pub use xlogp3::{xlogp3, xlogp3_per_atom};
 pub use hash::{mol_hash, are_identical};
+pub use workflow::{
+    CompareOptions, DescriptorDelta, DescriptorSummary, FilterSummary, FunctionalGroupSummary,
+    MoleculeComparison, MoleculeReport, NamedGroupSummary, PairwiseComparison, ReportOptions,
+    ScreenOptions, ScreeningRecord, ScreeningReport, SimilaritySummary, WorkflowError,
+    WorkflowLimits, compare_molecules, compare_molecules_with_options, molecule_report,
+    molecule_report_with_options, screen_smiles, screen_smiles_with_options,
+};

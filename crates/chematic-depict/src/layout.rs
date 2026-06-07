@@ -2,6 +2,17 @@
 //!
 //! The layout algorithm is rule-based and produces SVG pixel coordinates.
 //! No physics simulation is used; atoms are placed with geometric rules.
+//!
+//! ## Algorithm Summary
+//!
+//! 1. **Ring detection**: Find SSSR (Smallest Set of Smallest Rings) via Balducci-Pearlman.
+//! 2. **Ring placement**: Place each ring as a regular polygon; fused rings reflect new atoms over shared edges.
+//! 3. **Chain placement**: Use DFS zigzag to place chain atoms from ring atoms or arbitrary start.
+//! 4. **Fragment spacing**: Offset disconnected components horizontally to prevent overlap.
+//! 5. **Collision detection**: `detect_crossings()` reports bond–bond intersections (for UI feedback).
+//!
+//! The algorithm prioritizes clarity (minimal crossing) over perfect physics simulation.
+//! Bond angles follow tetrahedral/trigonal rules where possible.
 
 use std::collections::{HashMap, HashSet, VecDeque};
 

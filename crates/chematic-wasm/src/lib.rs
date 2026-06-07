@@ -10,6 +10,9 @@ pub fn start() {
     console_error_panic_hook::set_once();
 }
 
+// High-level workflow APIs
+pub mod workflow;
+
 // ---------------------------------------------------------------------------
 // MolHandle
 // ---------------------------------------------------------------------------
