@@ -688,3 +688,47 @@ Issue #1 のパターン: **アルゴリズムが位相的には正しい結果�
   - **対象**: `crates/chematic-fp/src/ecfp.rs`
   - **実装方針**: `EcfpConfig { use_chirality: bool }` を追加し、初期不変量の計算で `atom.cip_code` を組み込む
   - **優先度**: 低（ECFP は通常キラリティなしで利用される。StereoGroup 対応後に検討）
+
+---
+
+## Phase 9 — MCP 搭載戦略（未着手、Phase 3 完了後に検討）
+
+### 🔴 決定: Phase 3 完了まで待機（2026-06-07 判断）
+
+**結論**: MCP（Model Context Protocol）搭載は今しない。Phase 3 のアルゴリズム完成（SMARTS、3D座標生成、CIP立体化学、記述子網羅）が先。
+
+### 理由
+
+1. **アルゴリズム未完成**: LogP MAE 0.054、SMARTS の制限、3D 座標生成がルールベース（ETKDG なし）、CIP 立体化学が部分的
+2. **WASM が先**: ブラウザ・サーバーレス用途は `@kent-tokyo/chematic` WASM で対応済み
+3. **フォーカス維持**: 今は Phase 1-3 のアルゴリズム完成が最優先。MCP はインフラ。
+
+### Phase 3 完了後の価値（将来）
+
+- 「RDKit なしで動く Pure Rust cheminformatics AI ツール」は明確な差別化
+- Python MCP (RDKit) に対する軽量・WASM 互換の代替として需要が出現
+- AI エージェントによる医薬品設計・スクリーニングワークフローで利用シナリオが生まれる
+
+### 將来の実装案（メモ）
+
+**リポジトリ**: `crates/chematic-mcp/`（新クレート）
+
+**実装スタック**:
+- Axum（非同期 HTTP サーバー） or stdio transport（Claude Code MCP 標準）
+- serde_json（JSON 要求応答）
+
+**優先 API** (ハイインパクト・低工数):
+- `parse_smiles(smiles) -> { atoms, bonds, mol_weight }`
+- `calc_logp(smiles) -> f64`
+- `calc_tpsa(smiles) -> f64`
+- `ecfp4(smiles) -> BitVec2048 (hex)`
+- `tanimoto_ecfp4(smiles1, smiles2) -> f64`
+- `smarts_match(query, smiles) -> [bool]` (atomwise)
+- `write_smiles(smiles) -> canonical_smiles`
+- `find_mcs(smiles_list) -> query_smiles`
+
+**テスト**: 30+ API 呼び出しテスト（chematic-mcp/tests/）
+
+**ドキュメント**: API リファレンス + Claude Code 統合例
+
+**Sprint 候補**: Phase 3 完了後のメンテナンス Sprint（v0.1.35 以降）
