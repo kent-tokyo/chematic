@@ -11,6 +11,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.30] — 2026-06-07
+
+### Fixed — Critical Physics & Electrostatics Corrections
+
+#### `chematic-ewald` — PME Mesh Indexing Bug
+
+- **CRITICAL**: Fixed 3D-to-1D mesh index calculation in `interpolate_charges_to_mesh()` that was losing 97% of charge data for non-cubic meshes
+- Replaced incorrect `isqrt()` approximation with proper 3D index formula: `linear_idx = ix + iy*M0 + iz*M0*M1`
+- Now correctly distributes charges across full reciprocal-space mesh
+
+#### `chematic-3d` — Molecular Dynamics & Force Field
+
+- **CRITICAL**: Fixed Maxwell-Boltzmann velocity initialization with correct unit conversion factor (0.01038 kcal/mol → amu·Ų/fs²)
+  - Previous code produced velocities 347× too small, resulting in incorrect initial kinetic energies
+  - Now generates physically correct thermal velocities matching target temperature
+  
+- **CRITICAL**: Fixed VDW energy calculation to use DREIDING parameters instead of hardcoded values
+  - Replaced `r_eq = 2.0 Å` (all pairs) with element-specific DREIDING VDW radii
+  - Implemented full Lennard-Jones 12-6 potential including attractive dispersion term
+  - Added Lorentz-Berthelot combining rules for atom-pair interactions
+  - Implemented 1-2 and 1-3 bonded pair exclusions
+
+### Changed — Crates.io SEO & Discoverability
+
+#### Cargo.toml Metadata Improvements
+
+- Added `wasm` category to top-level `chematic` crate (crates.io browse traffic)
+- Replaced `rdkit` keyword with `drug-discovery` (target audience alignment)
+- Improved descriptions across all 15 crates with concrete algorithm names (DREIDING, Velocity Verlet, SPME)
+- Switched umbrella crate to `all-features = true` with WASM target in `[package.metadata.docs.rs]`
+- Added `[package.metadata.docs.rs]` sections to all 14 sub-crates (previously 14/15 were missing)
+- Hoisted `homepage` to workspace-level configuration (reduced duplication)
+- Added 5th keyword to `chematic-iupac`: `systematic-name`
+
+### Test Coverage
+
+- **+122 new tests** across DREIDING, MD, and SPME modules
+- Total: 1,073 tests passing (0 failures)
+- All Phase 2–3 implementations verified
+
+---
+
 ## [0.1.26] — 2026-06-06
 
 ### Added — Sprint v0.1.26–v0.1.28: stereochemistry, scaffold networks, 3D similarity, and more
