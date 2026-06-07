@@ -13,6 +13,48 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.30] — 2026-06-07
+
+### Fixed — 重大な物理計算・静電計算バグ修正
+
+#### `chematic-ewald` — PME メッシュインデックス計算バグ
+
+- **CRITICAL**: `interpolate_charges_to_mesh()` の 3D→1D メッシュインデックス計算が 97% の電荷データを喪失していた
+- 間違った `isqrt()` 近似を適切な 3D インデックス公式に置き換え: `linear_idx = ix + iy*M0 + iz*M0*M1`
+- 非立方形メッシュでも完全に電荷を分配できるように修正
+
+#### `chematic-3d` — 分子動力学・力場
+
+- **CRITICAL**: Maxwell-Boltzmann 速度初期化のユニット換算係数を修正（0.01038 kcal/mol → amu·Ų/fs²）
+  - 従来コードは速度を 347 倍小さく生成していた（初期運動エネルギーが極度に低い）
+  - 目標温度に対応した物理的に正しい熱速度を生成するように修正
+  
+- **CRITICAL**: VDW エネルギー計算をハードコード値から DREIDING パラメータを使用するように修正
+  - `r_eq = 2.0 Å`（全ペア共通）を元素別 DREIDING VDW 半径に置き換え
+  - Lennard-Jones 12-6 ポテンシャルの完全な実装（魅力的分散項も追加）
+  - Lorentz-Berthelot 混合則を実装
+  - 1-2 および 1-3 結合ペアの除外を実装
+
+### Changed — crates.io SEO・発見性改善
+
+#### Cargo.toml メタデータの改善
+
+- 最上位クレートに `wasm` カテゴリを追加（crates.io ブラウズトラフィック向け）
+- キーワード `rdkit` → `drug-discovery` に変更（ターゲットユーザー層との適合性向上）
+- 全 15 クレートの説明文を改善（DREIDING・Velocity Verlet・SPME など具体的なアルゴリズム名を明示）
+- 最上位クレートを `all-features = true` + WASM ターゲット指定で docs.rs 設定を強化
+- 全 14 サブクレートに `[package.metadata.docs.rs]` セクションを追加（従来は 14/15 欠落）
+- `homepage` をワークスペースレベルに昇格（重複排除）
+- `chematic-iupac` に 5 番目のキーワード `systematic-name` を追加
+
+### Test Coverage
+
+- **+122 個の新規テスト** DREIDING・MD・SPME モジュール追加
+- 合計: 1,073 テスト成功（失敗 0）
+- Phase 2–3 全実装を検証済み
+
+---
+
 ## [0.1.26] — 2026-06-06
 
 ### Added — Sprint v0.1.26–v0.1.28: 立体化学・スキャフォールド・3D類似度など大規模追加
