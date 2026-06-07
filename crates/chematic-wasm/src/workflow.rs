@@ -99,6 +99,24 @@ pub fn generate_3d_from_smiles(smiles: &str) -> Result<String, JsValue> {
     Ok(pdb_str)
 }
 
+/// Generate 3D coordinates and minimize from SMILES string.
+/// Pipeline: distance geometry → DREIDING minimization.
+/// Better geometry quality than raw DG; suitable for graphics.
+///
+/// # Example (JS)
+/// ```javascript
+/// const pdbStr = module.generate_3d_optimized_pdb("c1ccccc1");
+/// console.log(pdbStr);  // PDB file with optimized geometry
+/// ```
+#[wasm_bindgen]
+pub fn generate_3d_optimized_pdb(smiles: &str) -> Result<String, JsValue> {
+    let mol = chematic_smiles::parse(smiles)
+        .map_err(|e| JsValue::from_str(&format!("SMILES parse error: {}", e)))?;
+    let coords = chematic_3d::generate_and_minimize_dreiding(&mol);
+    let pdb_str = chematic_3d::write_pdb(&mol, &coords);
+    Ok(pdb_str)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

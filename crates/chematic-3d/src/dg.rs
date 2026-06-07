@@ -455,4 +455,21 @@ mod tests {
         }
         assert!(has_nonzero, "at least some atoms should be placed away from origin");
     }
+
+    #[test]
+    fn generate_and_minimize_dreiding_benzene() {
+        use crate::minimize::minimize_dreiding;
+        let mol = parse("c1ccccc1").unwrap();
+        let coords = generate_coords(&mol);
+        let minimized = minimize_dreiding(&mol, coords);
+        assert_eq!(minimized.atom_count(), 6, "benzene still has 6 carbons after minimization");
+    }
+
+    #[test]
+    fn generate_conformer_ensemble_multiple() {
+        use crate::conformer::ConformerEnsemble;
+        let mol = parse("CC").unwrap();
+        let ensemble = ConformerEnsemble::new(mol);
+        assert_eq!(ensemble.conformer_count(), 0, "fresh ensemble has 0 conformers");
+    }
 }

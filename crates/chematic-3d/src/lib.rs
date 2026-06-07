@@ -36,6 +36,45 @@ pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
 pub use xyz::{XyzError, parse_xyz, write_xyz};
 
 // ---------------------------------------------------------------------------
+// High-level 3D generation pipeline
+// ---------------------------------------------------------------------------
+
+/// Generate 3D coordinates and minimize geometry in one step.
+/// Uses distance geometry for initial placement + DREIDING force field.
+pub fn generate_and_minimize_dreiding(mol: &chematic_core::Molecule) -> Coords3D {
+    let coords = generate_coords(mol);
+    minimize_dreiding(mol, coords)
+}
+
+/// Generate 3D coordinates and minimize using UFF force field.
+pub fn generate_and_minimize_uff(mol: &chematic_core::Molecule) -> Coords3D {
+    let coords = generate_coords(mol);
+    minimize_uff(mol, coords)
+}
+
+/// Generate multiple conformers with different initial geometries.
+/// Uses distance geometry for initial placement, then minimizes with DREIDING.
+/// Returns a ConformerEnsemble with all conformers.
+pub fn generate_conformer_ensemble(
+    mol: chematic_core::Molecule,
+    count: usize,
+) -> Result<ConformerEnsemble, ConformerError> {
+    if count == 0 {
+        return Ok(ConformerEnsemble::new(mol));
+    }
+
+    let mut ensemble = ConformerEnsemble::new(mol);
+
+    for _ in 0..count {
+        let coords = generate_coords(ensemble.mol());
+        let minimized = minimize_dreiding(ensemble.mol(), coords);
+        ensemble.add_conformer(minimized)?;
+    }
+
+    Ok(ensemble)
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
