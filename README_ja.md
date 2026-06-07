@@ -39,15 +39,17 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了。**948 テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了 + Section 4（WASM・API 改善）。**992 テスト、全パス。C/C++ 依存ゼロ。**
+
+最新リリース: **v0.1.32**（2026-06-07）
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
 | `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）；ミュータブル API・`fragments`・`validate_valence`・`formula_with_isotopes`・`StereoGroup`/`StereoGroupKind` | 48      |
 | `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES                                                                                               | 57      |
-| `chematic-perception`  | SSSR、Hückel 芳香族性、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 18      |
-| `chematic-mol`         | MOL/SDF V2000+V3000（R/W）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 61      |
-| `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG、DepictData              | 43      |
+| `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 34      |
+| `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 63      |
+| `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 43      |
 | `chematic-chem`        | 40+ 記述子、BRICS、QED、標準化、分子ハッシング、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、`isotope_distribution`         | 248     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice                                               | 50      |
 | `chematic-smarts`      | SMARTS（再帰・原子価）、VF2（`MatchConfig`）、MCS（`match_chiral_tag` によるキラリティマッチング対応）                                    | 87      |

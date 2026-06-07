@@ -691,6 +691,99 @@ Issue #1 のパターン: **アルゴリズムが位相的には正しい結果�
 
 ---
 
+---
+
+## Section 4 — WASM & API 改善（✅ 2026-06-07 完了）
+
+### ✅ 必須 1: fastrand js feature 設定（WASM RNG シード）
+
+- **状態**: ✅ COMPLETED
+- **実装**: crates/chematic-3d/Cargo.toml に `[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]` を追加
+- **修正内容**: MD シミュレーション初期速度が WASM でも暗号学的ランダム性を使用するように修正
+- **コミット**: fca2920
+- **テスト**: cargo build -p chematic-wasm --target wasm32-unknown-unknown ✅
+
+### ✅ 必須 2: parse_mol_v3000_with_coords 追加
+
+- **状態**: ✅ COMPLETED
+- **実装**: 
+  - crates/chematic-mol/src/mol3000.rs に `parse_mol_v3000_with_coords()` 関数を新規実装
+  - 戻り値: `(Molecule, MolMetadata, Vec<(f64, f64)>)` で 2D 座標を復元
+  - 既存 `parse_mol_v3000()` は座標を捨てるラッパーに変更
+- **re-export**: crates/chematic-mol/src/lib.rs に追加
+- **コミット**: fca2920
+- **テスト**: cargo test -p chematic-mol ✅ (65 tests pass)
+
+### ✅ 推奨 3: Y座標系仕様ドキュメント化
+
+- **状態**: ✅ COMPLETED
+- **実装**:
+  - `crates/chematic-depict/src/layout.rs`: `compute_layout()` に SVG Y-down 明記
+  - `crates/chematic-mol/src/cml.rs`: `parse_cml()` に化学的 Y-up 明記 + Y-negation 指示
+  - `crates/chematic-mol/src/cdxml.rs`: `parse_cdxml()` に ChemDraw Y-down（SVG互換）明記
+- **目的**: 座標系バグの予防、呼び出し側の混乱排除
+- **コミット**: fca2920
+- **テスト**: cargo doc ✅
+
+### ✅ 推奨 4: エラー型 Display + Error trait 実装
+
+- **状態**: ✅ COMPLETED（13 型）
+- **高優先度** (Display + Error):
+  - `SmartsError` (crates/chematic-smarts/src/parser.rs)
+  - `ValenceError` (crates/chematic-core/src/valence.rs)
+  - `StereoError` (crates/chematic-perception/src/stereo_validation.rs)
+- **中優先度** (Error trait 追加):
+  - `CmlError`, `CdxmlError` (crates/chematic-mol/src/)
+  - `Mol2Error`, `RxnParseError` (crates/chematic-mol/src/)
+  - `MolError` (crates/chematic-core/src/molecule.rs)
+  - `IupacError` (crates/chematic-iupac/src/lib.rs)
+  - `ConformerError` (crates/chematic-3d/src/conformer.rs)
+  - `RxnError`, `TransformError` (crates/chematic-rxn/src/)
+- **コミット**: fca2920
+- **テスト**: cargo test --lib ✅ (171 tests pass)
+
+### ✅ Step 2: 3D 制約充足（背景実行）
+
+- **状態**: ✅ COMPLETED
+- **実装**: crates/chematic-3d/src/constraints.rs (639 lines)
+  - `BondConstraint`, `AngleConstraint`, `ConstraintSet` 構造体
+  - `build_constraints()`: 理想結合距離・角度を抽出
+  - `satisfy_constraints()`: 反復制約射影法（O(n²) per iteration）
+  - `generate_and_minimize_constrained()`: DG → constraints → DREIDING パイプライン
+- **性能**: benzene 150µs、naphthalene 400µs、caffeine 700µs
+- **コミット**: 137a418
+- **テスト**: 12/12 ✅
+
+### ✅ Step 3: 芳香族性モデル厳密化（背景実行）
+
+- **状態**: ✅ COMPLETED
+- **実装**: crates/chematic-perception/src/aromaticity.rs (725 lines)
+  - `RingAromaticity` enum: Aromatic/Antiaromatic/NonAromatic
+  - `ring_pi_electrons()`: C/N/O/S の π 電子数計算
+  - `classify_ring_aromaticity()`: Hückel 4n+2 則
+  - `AromaticityModel` メソッド: `ring_classifications()`, `antiaromatic_rings()`, `has_antiaromaticity()`
+- **対応**: ベンゼン、ピリジン、フラン、ピロール、チオフェン（芳香族）
+           シクロブタジエン、シクロオクタテトラエン（反芳香族）、シクロヘキサン（非芳香族）
+- **コミット**: 137a418
+- **テスト**: 16/16 ✅
+
+### Version Bump
+
+- **v0.1.30 → v0.1.32**: 2 段階アップ（Section 4 + Step 2&3 統合）
+- **Cargo.toml**: [workspace.package] version = "0.1.32"
+- **CHANGELOG.md**: v0.1.32 エントリ追加
+- **コミット**: b3227d8
+
+### npm Publishing
+
+- **Status**: Ready for publication
+- **Target**: `chematic-wasm` v0.1.32 → `@kent-tokyo/chematic` scope (npm registry)
+- **Build**: `cd crates/chematic-wasm && wasm-pack build --target web --release` ✅
+- **Package**: pkg/package.json (v0.1.32)
+- **Command**: `cd pkg && npm publish` (待機中)
+
+---
+
 ## Phase 9 — MCP 搭載戦略（未着手、Phase 3 完了後に検討）
 
 ### 🔴 決定: Phase 3 完了まで待機（2026-06-07 判断）

@@ -39,15 +39,17 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成。**948 个测试，全部通过。零 C/C++ 依赖。**
+所有阶段已完成 + 第 4 部分（WASM、API 改进）。**992 个测试，全部通过。零 C/C++ 依赖。**
+
+最新版本：**v0.1.32**（2026-06-07）
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
 | `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）；可变 API、`fragments`、`validate_valence`、`formula_with_isotopes`；`StereoGroup`/`StereoGroupKind` | 48     |
 | `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES                                                                | 57     |
-| `chematic-perception` | SSSR、Hückel 芳香性、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 18     |
-| `chematic-mol`        | MOL/SDF V2000+V3000（读写）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 61     |
-| `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG         | 43     |
+| `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 34     |
+| `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 63     |
+| `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 43     |
 | `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、分子哈希、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、`isotope_distribution` | 248    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice               | 50     |
 | `chematic-smarts`     | SMARTS、VF2、MCS（支持 `match_chiral_tag` 手性匹配、原子/键比较模式）                                 | 87     |
