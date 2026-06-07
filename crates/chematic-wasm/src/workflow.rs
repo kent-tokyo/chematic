@@ -82,13 +82,29 @@ pub fn screen_smiles_json(smiles_batch: &str, delimiter: &str) -> String {
         .unwrap_or_else(|_| "{\"error\": \"JSON serialization failed\"}".to_string())
 }
 
+/// Generate 3D coordinates from SMILES (raw distance geometry, no minimization).
+/// Returns PDB format string with atoms positioned in 3D space.
+///
+/// # Example (JS)
+/// ```javascript
+/// const pdbStr = module.generate_3d_from_smiles("c1ccccc1");
+/// console.log(pdbStr);  // PDB file content
+/// ```
+#[wasm_bindgen]
+pub fn generate_3d_from_smiles(smiles: &str) -> Result<String, JsValue> {
+    let mol = chematic_smiles::parse(smiles)
+        .map_err(|e| JsValue::from_str(&format!("SMILES parse error: {}", e)))?;
+    let coords = chematic_3d::generate_coords(&mol);
+    let pdb_str = chematic_3d::write_pdb(&mol, &coords);
+    Ok(pdb_str)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn workflow_json_serialization_aspirin() {
-        // Test that the underlying workflow API produces serializable data
         let report = chematic_chem::molecule_report("CC(=O)Oc1ccccc1C(=O)O").unwrap();
         let json = serde_json::to_string(&report).unwrap();
         assert!(json.contains("molecular_weight"), "JSON should contain molecular_weight");
@@ -109,5 +125,22 @@ mod tests {
         let json = serde_json::to_string(&report).unwrap();
         assert!(json.contains("records"), "JSON should contain records");
         assert!(json.contains("maxmin_picks"), "JSON should contain diversity picks");
+    }
+
+    #[test]
+    fn distance_geometry_benzene_has_coords() {
+        let mol = chematic_smiles::parse("c1ccccc1").unwrap();
+        let coords = chematic_3d::generate_coords(&mol);
+        assert_eq!(coords.atom_count(), 6, "benzene has 6 carbons");
+    }
+
+    #[test]
+    fn distance_geometry_ethane_reasonable_distance() {
+        let mol = chematic_smiles::parse("CC").unwrap();
+        let coords = chematic_3d::generate_coords(&mol);
+        let p0 = coords.get(chematic_core::AtomIdx(0));
+        let p1 = coords.get(chematic_core::AtomIdx(1));
+        let dist = p0.distance(&p1);
+        assert!((dist - 1.54).abs() < 0.15, "C-C distance should be ~1.54 Å");
     }
 }
