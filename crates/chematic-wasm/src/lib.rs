@@ -2556,7 +2556,7 @@ pub fn sssr_rings_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn ecfp_bitvec_custom(mol: &MolHandle, radius: u32, nbits: usize) -> Vec<u8> {
     let nbits = match nbits { 256 | 512 | 1024 | 2048 => nbits, _ => 2048 };
-    let fp = chematic_fp::ecfp(&mol.inner, &chematic_fp::EcfpConfig { radius, nbits, use_chirality: false });
+    let fp = chematic_fp::ecfp(&mol.inner, &chematic_fp::EcfpConfig { radius, nbits, use_chirality: false, use_double_fold: false });
     let byte_count = nbits / 8;
     (0..byte_count)
         .map(|byte_idx| {

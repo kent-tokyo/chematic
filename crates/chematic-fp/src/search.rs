@@ -34,8 +34,8 @@ pub enum FpType {
 fn compute_fp(mol: &Molecule, fp_type: FpType) -> BitVec2048 {
     match fp_type {
         FpType::Ecfp4 => ecfp(mol, &EcfpConfig::default()),
-        FpType::Ecfp6 => ecfp(mol, &EcfpConfig { radius: 3, nbits: 2048, use_chirality: false }),
-        FpType::Ecfp4Chiral => ecfp(mol, &EcfpConfig { radius: 2, nbits: 2048, use_chirality: true }),
+        FpType::Ecfp6 => ecfp(mol, &EcfpConfig { radius: 3, nbits: 2048, use_chirality: false, use_double_fold: false }),
+        FpType::Ecfp4Chiral => ecfp(mol, &EcfpConfig { radius: 2, nbits: 2048, use_chirality: true, use_double_fold: false }),
         FpType::Fcfp4 => crate::fcfp::fcfp4(mol),
         FpType::Maccs => crate::maccs::maccs(mol),
         FpType::TopoPath => crate::topo_path::topo_path(mol, &crate::topo_path::TopoPathConfig::default()),
