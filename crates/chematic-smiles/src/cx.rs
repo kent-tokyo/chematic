@@ -256,4 +256,43 @@ mod tests {
         assert_eq!(cx.atom_radicals[0], Some(2));
         assert!(write_cxsmiles(&cx).contains("^2:0"));
     }
+
+    #[test]
+    fn bug1_cxsmiles_trailing_backslash_preservation() {
+        // BUG #1 Fix Verification: trailing backslashes in labels should be preserved
+        // Input: "label\\" (escaped form) -> should parse to "label\" (single backslash)
+        let cx = parse_cxsmiles(r#"CO |$label\\;O$|"#).unwrap();
+        assert_eq!(cx.atom_labels[0].as_deref(), Some("label\\"),
+            "Trailing backslash should be preserved after unescape");
+
+        // Round-trip test: parsed label should serialize back correctly
+        let serialized = write_cxsmiles(&cx);
+        let cx2 = parse_cxsmiles(&serialized).unwrap();
+        assert_eq!(cx2.atom_labels[0], cx.atom_labels[0],
+            "Trailing backslash should round-trip correctly");
+    }
+
+    #[test]
+    fn bug1_cxsmiles_double_trailing_backslash() {
+        // More complex case: label with backslash in middle and at end
+        // "C\\label\\" in escaped form -> "C\label\" after unescape
+        let cx = parse_cxsmiles(r#"CO |$C\\label\\;O$|"#).unwrap();
+        assert_eq!(cx.atom_labels[0].as_deref(), Some("C\\label\\"),
+            "Both backslashes should be preserved");
+
+        // Verify round-trip
+        let serialized = write_cxsmiles(&cx);
+        let cx2 = parse_cxsmiles(&serialized).unwrap();
+        assert_eq!(cx2.atom_labels[0], cx.atom_labels[0],
+            "Double backslash pattern should round-trip");
+    }
+
+    #[test]
+    fn bug1_cxsmiles_escaped_comma_with_trailing_backslash() {
+        // Test that escaped comma doesn't interfere with trailing backslash handling
+        // Label with escaped comma and trailing backslash
+        let cx = parse_cxsmiles(r#"CO |$label\,end\\;O$|"#).unwrap();
+        assert_eq!(cx.atom_labels[0].as_deref(), Some("label,end\\"),
+            "Escaped comma and trailing backslash should both be preserved");
+    }
 }
