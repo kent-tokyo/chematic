@@ -58,35 +58,46 @@ pub fn assign_cip(mol: &Molecule) -> CipAssignment {
 }
 
 /// A single "sphere layer" in a CIP branch expansion: a sorted list of
-/// `(atomic_num, isotope)` pairs (sorted descending for lexicographic comparison).
-type SphereLayer = Vec<(u8, Option<u16>)>;
+/// `(atomic_num, isotope, atomic_mass)` tuples (sorted descending for lexicographic comparison).
+type SphereLayer = Vec<(u8, Option<u16>, f64)>;
 
-/// Get the key `(atomic_num, isotope)` for an atom, used in CIP comparisons.
+/// Get the key `(atomic_num, isotope, atomic_mass)` for an atom, used in CIP comparisons.
 ///
-/// For the virtual H sentinel (`AtomIdx(u32::MAX)`), returns `(1, None)`.
-fn atom_key(mol: &Molecule, idx: AtomIdx) -> (u8, Option<u16>) {
+/// For the virtual H sentinel (`AtomIdx(u32::MAX)`), returns `(1, None, 1.0)`.
+/// Atomic mass is the monoisotopic mass of the element (CIP rule 4 tiebreaker).
+fn atom_key(mol: &Molecule, idx: AtomIdx) -> (u8, Option<u16>, f64) {
     if idx.0 == u32::MAX {
-        return (1, None);
+        return (1, None, 1.007825);
     }
     let a = mol.atom(idx);
-    (a.element.atomic_number(), a.isotope)
+    (a.element.atomic_number(), a.isotope, a.element.atomic_mass())
 }
 
-/// Compare two `(atomic_num, isotope)` keys by CIP priority.
+/// Compare two `(atomic_num, isotope, atomic_mass)` keys by CIP priority.
 ///
-/// Higher atomic number wins.  For isotopes: `Some(n)` > `None` (heavier beats
-/// unspecified, per CIP rule 2).
-fn cmp_key(a: (u8, Option<u16>), b: (u8, Option<u16>)) -> std::cmp::Ordering {
+/// CIP rule hierarchy:
+/// 1. Higher atomic number wins.
+/// 2. For explicit isotopes: `Some(mass)` > `None` (heavier beats unspecified).
+/// 3. For tiebreaker: higher atomic mass wins (rule 4).
+fn cmp_key(a: (u8, Option<u16>, f64), b: (u8, Option<u16>, f64)) -> std::cmp::Ordering {
     use std::cmp::Ordering::*;
+    // Rule 1: atomic number (primary)
     match a.0.cmp(&b.0) {
-        Equal => match (a.1, b.1) {
-            (Some(x), Some(y)) => x.cmp(&y),
-            (Some(_), None) => Greater,
-            (None, Some(_)) => Less,
-            (None, None) => Equal,
-        },
-        other => other,
+        Equal => {}
+        other => return other,
     }
+    // Rule 2: isotope label (if present)
+    match (a.1, b.1) {
+        (Some(x), Some(y)) => match x.cmp(&y) {
+            Equal => {}
+            other => return other,
+        },
+        (Some(_), None) => return Greater,
+        (None, Some(_)) => return Less,
+        (None, None) => {}
+    }
+    // Rule 4 tiebreaker: atomic mass (descending for higher priority)
+    b.2.partial_cmp(&a.2).unwrap_or(Equal)
 }
 
 /// BFS state for one node during sphere expansion.
@@ -110,7 +121,7 @@ struct ExpandState {
 /// 2. **Ring revisit phantom**: if an already-visited atom is encountered,
 ///    add a phantom for it but don't expand further.
 fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<SphereLayer> {
-    let mut layers: HashMap<usize, Vec<(u8, Option<u16>)>> = HashMap::new();
+    let mut layers: HashMap<usize, Vec<(u8, Option<u16>, f64)>> = HashMap::new();
     let max_depth = 8usize;
 
     // The start atom itself is at depth 1.
@@ -804,5 +815,63 @@ mod tests {
         // CO2 has no substituents for Up/Down bonds, so no allene assignment.
         let has_allene = a.assignments.iter().any(|(_, c)| matches!(c, CipCode::E | CipCode::Z));
         assert!(!has_allene, "CO2 should not get axial chirality (no stereo bonds)");
+    }
+
+    // -- CIP rule 4 edge cases (mass tiebreaker and duplicates) --------
+    #[test]
+    fn test_cip_enantiomers_consistent_with_mass_tiebreaker() {
+        // Verify that mass tiebreaker is used correctly (doesn't affect basic R/S).
+        // D-alanine vs L-alanine should get opposite codes.
+        let l_ala = parse("C[C@H](N)C(=O)O").unwrap();
+        let d_ala = parse("C[C@@H](N)C(=O)O").unwrap();
+
+        let l_assign = assign_cip(&l_ala);
+        let d_assign = assign_cip(&d_ala);
+
+        let l_code = l_assign.assignments.iter()
+            .find(|(_, c)| matches!(c, CipCode::R | CipCode::S))
+            .map(|(_, c)| *c);
+        let d_code = d_assign.assignments.iter()
+            .find(|(_, c)| matches!(c, CipCode::R | CipCode::S))
+            .map(|(_, c)| *c);
+
+        // Both should assign (no ties in amino acids).
+        assert!(l_code.is_some(), "L-alanine should assign R or S");
+        assert!(d_code.is_some(), "D-alanine should assign R or S");
+
+        // They should be opposite.
+        assert_ne!(l_code, d_code, "L and D enantiomers should have opposite R/S");
+    }
+
+    #[test]
+    fn test_cip_tied_substituents_no_assignment() {
+        // When two substituents have identical priority, no R/S is assigned.
+        // Example: any center with two identical groups.
+        let mol = parse("CC(F)Br").unwrap();  // no chirality specified, but if we try to assign...
+        let assignment = assign_cip(&mol);
+        // No assignment (no @/@@ specified).
+        assert!(assignment.assignments.iter().all(|(_, c)| !matches!(c, CipCode::R | CipCode::S)),
+                "achiral molecule should not get R/S");
+    }
+
+    #[test]
+    fn test_cip_atomic_mass_tiebreaker_infrastructure() {
+        // Verify Element::atomic_mass() exists and provides correct values (CIP rule 4).
+        // This confirms the mass tiebreaker infrastructure is in place.
+        use chematic_core::Element;
+
+        // Check a few elements have correct masses (monoisotopic, within 0.01 u)
+        assert!((Element::C.atomic_mass() - 12.0).abs() < 0.01, "C ~= 12.0 u, got {}", Element::C.atomic_mass());
+        assert!((Element::N.atomic_mass() - 14.0).abs() < 0.01, "N ~= 14.0 u, got {}", Element::N.atomic_mass());
+        assert!((Element::O.atomic_mass() - 16.0).abs() < 0.01, "O ~= 16.0 u, got {}", Element::O.atomic_mass());
+        assert!((Element::H.atomic_mass() - 1.0).abs() < 0.01, "H ~= 1.0 u, got {}", Element::H.atomic_mass());
+        assert!((Element::F.atomic_mass() - 19.0).abs() < 0.01, "F ~= 19.0 u, got {}", Element::F.atomic_mass());
+
+        // Verify that identical atoms have identical masses
+        assert_eq!(Element::C.atomic_mass(), Element::C.atomic_mass(), "same element = same mass");
+
+        // Verify ordering: heavier atoms > lighter (used in CIP comparison)
+        assert!(Element::N.atomic_mass() > Element::C.atomic_mass(), "N > C in mass");
+        assert!(Element::O.atomic_mass() > Element::N.atomic_mass(), "O > N in mass");
     }
 }

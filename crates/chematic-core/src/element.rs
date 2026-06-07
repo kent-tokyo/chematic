@@ -298,6 +298,12 @@ impl Element {
         COVALENT_RADII[(self.0 as usize) - 1]
     }
 
+    /// Monoisotopic (exact) mass of the most abundant isotope (u).
+    /// Used as CIP rule 4 tiebreaker: higher atomic mass has higher priority.
+    pub fn atomic_mass(self) -> f64 {
+        ATOMIC_MASSES[(self.0 as usize) - 1]
+    }
+
     /// Normal valence list (ascending). Empty = undefined (transition metals, etc.).
     /// Used for computing implicit H counts in organic-subset atoms.
     pub fn normal_valences(self) -> &'static [u8] {
@@ -403,6 +409,36 @@ static COVALENT_RADII: [f32; 118] = [
     1.73, 1.76, 1.61, 1.57, 1.49, 1.43, 1.41, 1.34, 1.29, 1.28,
     // Rg    Cn    Nh    Fl    Mc    Lv    Ts    Og
     1.21, 1.22, 1.36, 1.43, 1.62, 1.75, 1.65, 1.57,
+];
+
+/// Monoisotopic atomic masses (u) indexed by (atomic_number - 1).
+/// Source: NIST, exact masses of most abundant isotopes, used for CIP rule 4 (atomic mass tiebreaker).
+#[rustfmt::skip]
+static ATOMIC_MASSES: [f64; 118] = [
+    // H        He       Li       Be       B        C        N        O        F        Ne
+    1.007825, 4.002603, 7.016003, 9.012182, 11.009305, 12.000000, 14.003074, 15.994915, 18.998403, 19.992440,
+    // Na       Mg       Al       Si       P        S        Cl       Ar       K        Ca
+    22.989770, 23.985042, 26.981538, 27.976927, 30.973762, 31.972071, 34.968853, 39.962383, 38.963707, 39.962591,
+    // Sc       Ti       V        Cr       Mn       Fe       Co       Ni       Cu       Zn
+    44.955910, 47.947947, 50.943963, 51.940512, 54.938045, 55.934840, 58.933195, 57.935343, 62.929598, 63.929145,
+    // Ga       Ge       As       Se       Br       Kr       Rb       Sr       Y        Zr
+    68.925581, 73.921218, 74.921596, 79.916521, 78.918337, 83.911507, 84.911789, 87.905614, 88.905848, 89.904704,
+    // Nb       Mo       Tc       Ru       Rh       Pd       Ag       Cd       In       Sn
+    92.906378, 97.905408, 98.906255, 101.904435, 102.905504, 105.903483, 106.905093, 113.903358, 114.903878, 119.902197,
+    // Sb       Te       I        Xe       Cs       Ba       La       Ce       Pr       Nd
+    120.903818, 129.906224, 126.904477, 131.904154, 132.905447, 137.905241, 138.906349, 139.905434, 140.907648, 141.907720,
+    // Pm       Sm       Eu       Gd       Tb       Dy       Ho       Er       Tm       Yb
+    145.000000, 151.919729, 152.921227, 157.924103, 158.925343, 163.929171, 164.930319, 165.930292, 168.934211, 173.938858,
+    // Lu       Hf       Ta       W        Re       Os       Ir       Pt       Au       Hg
+    174.940768, 179.946549, 180.947885, 183.950931, 186.955751, 191.961479, 192.960837, 194.964791, 196.966569, 201.972326,
+    // Tl       Pb       Bi       Po       At       Rn       Fr       Ra       Ac       Th
+    202.972329, 207.982019, 208.980384, 209.000000, 210.000000, 222.000000, 223.000000, 226.000000, 227.000000, 232.038054,
+    // Pa       U        Np       Pu       Am       Cm       Bk       Cf       Es       Fm
+    231.035884, 238.028915, 237.000000, 244.000000, 243.000000, 247.000000, 247.000000, 251.000000, 252.000000, 257.000000,
+    // Md       No       Lr       Rf       Db       Sg       Bh       Hs       Mt       Ds
+    258.000000, 259.000000, 266.000000, 267.000000, 268.000000, 269.000000, 270.000000, 270.000000, 278.000000, 281.000000,
+    // Rg       Cn       Nh       Fl       Mc       Lv       Ts       Og
+    280.000000, 285.000000, 286.000000, 289.000000, 290.000000, 293.000000, 294.000000, 294.000000,
 ];
 
 #[cfg(test)]
