@@ -12,6 +12,7 @@ pub mod usr;
 pub mod conformer;
 pub mod coords;
 pub mod dg;
+pub mod dg_fft;
 pub mod md;
 pub mod minimize;
 pub mod pdb;
