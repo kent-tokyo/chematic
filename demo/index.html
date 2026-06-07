@@ -675,6 +675,7 @@ footer {
   <div class="tab-bar-inner">
     <button class="tab-btn active" data-tab="tab-2d"     id="tb-2d"      role="tab"></button>
     <button class="tab-btn"        data-tab="tab-sim"    id="tb-sim"     role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-report" id="tb-report"  role="tab"></button>
     <button class="tab-btn"        data-tab="tab-rxn"    id="tb-rxn"     role="tab"></button>
     <button class="tab-btn"        data-tab="tab-sar"    id="tb-sar"     role="tab"></button>
     <button class="tab-btn"        data-tab="tab-3d"     id="tb-3d"      role="tab"></button>
@@ -836,6 +837,33 @@ footer {
       </div>
     </section>
   </div><!-- /tab-sim -->
+
+  <!-- Tab: Molecular Report (workflow API) -->
+  <div class="tab-panel" id="tab-report" role="tabpanel">
+    <section id="section-report">
+      <h2 id="h-report-title"></h2>
+      <div class="input-row">
+        <input id="report-smiles" class="smiles-input" type="text"
+               spellcheck="false" autocomplete="off" placeholder="Enter SMILES">
+        <button id="btn-report" class="btn"></button>
+      </div>
+      <div id="error-report" class="error-banner hidden"></div>
+      <div id="report-output" style="display:none;margin-top:1.5rem">
+        <h3 id="report-canonical"></h3>
+        <h4 style="margin-top:1rem;color:var(--muted)">Descriptors</h4>
+        <div class="table-wrap">
+          <table id="report-desc-table">
+            <thead>
+              <tr><th>Property</th><th>Value</th></tr>
+            </thead>
+            <tbody id="report-desc-tbody"></tbody>
+          </table>
+        </div>
+        <h4 style="margin-top:1.5rem;color:var(--muted)">Drug-likeness Filters</h4>
+        <div class="rules-grid" id="report-filters-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"></div>
+      </div>
+    </section>
+  </div><!-- /tab-report -->
 
   <!-- Tab: Reaction -->
   <div class="tab-panel" id="tab-rxn" role="tabpanel">

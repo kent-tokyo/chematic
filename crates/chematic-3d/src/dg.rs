@@ -392,3 +392,67 @@ fn rotate_around_axis(v: Point3, axis: Point3, theta: f64) -> Point3 {
     let term3 = axis.scale(dot * (1.0 - cos_t));
     term1.add(&term2).add(&term3)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chematic_smiles::parse;
+
+    #[test]
+    fn generate_coords_methane() {
+        let mol = parse("C").unwrap();
+        let coords = generate_coords(&mol);
+        assert_eq!(coords.atom_count(), 1, "methane has 1 heavy atom");
+        let p0 = coords.get(AtomIdx(0));
+        assert_eq!(p0.x, 0.0, "first atom at origin");
+    }
+
+    #[test]
+    fn generate_coords_ethane_has_reasonable_distance() {
+        let mol = parse("CC").unwrap();
+        let coords = generate_coords(&mol);
+        assert_eq!(coords.atom_count(), 2, "ethane has 2 carbons");
+        let p0 = coords.get(AtomIdx(0));
+        let p1 = coords.get(AtomIdx(1));
+        let dist = p0.distance(&p1);
+        // C-C single bond is ~1.54 Å, should be within ±0.15 Å
+        assert!((dist - 1.54).abs() < 0.15, "C-C distance should be ~1.54 Å, got {}", dist);
+    }
+
+    #[test]
+    fn generate_coords_benzene_has_6_atoms() {
+        let mol = parse("c1ccccc1").unwrap();
+        let coords = generate_coords(&mol);
+        assert_eq!(coords.atom_count(), 6, "benzene has 6 carbons");
+    }
+
+    #[test]
+    fn generate_coords_cyclohexane_all_placed() {
+        let mol = parse("C1CCCCC1").unwrap();
+        let coords = generate_coords(&mol);
+        assert_eq!(coords.atom_count(), 6, "cyclohexane has 6 carbons");
+    }
+
+    #[test]
+    fn generate_coords_disconnected_molecules() {
+        let mol = parse("CC.CC").unwrap();
+        let coords = generate_coords(&mol);
+        assert_eq!(coords.atom_count(), 4, "two ethanes (disconnected) have 4 carbons total");
+    }
+
+    #[test]
+    fn generate_coords_propane_linear() {
+        let mol = parse("CCC").unwrap();
+        let coords = generate_coords(&mol);
+        assert_eq!(coords.atom_count(), 3, "propane has 3 carbons");
+        // Check that all atoms have valid positions (not all zero)
+        let mut has_nonzero = false;
+        for i in 0..3 {
+            let p = coords.get(AtomIdx(i));
+            if p.x != 0.0 || p.y != 0.0 || p.z != 0.0 {
+                has_nonzero = true;
+            }
+        }
+        assert!(has_nonzero, "at least some atoms should be placed away from origin");
+    }
+}
