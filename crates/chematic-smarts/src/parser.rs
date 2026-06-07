@@ -37,6 +37,7 @@
 //! Implicit bond between two adjacent atoms = `BondQuery::Any` (`~`).
 
 use std::collections::HashMap;
+use std::fmt;
 
 use crate::query::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule,
@@ -62,6 +63,31 @@ pub enum SmartsError {
     /// Recursive SMARTS `$(…)` nesting exceeds the safety limit.
     RecursionDepthExceeded,
 }
+
+impl fmt::Display for SmartsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SmartsError::UnexpectedEnd => write!(f, "unexpected end of SMARTS string"),
+            SmartsError::UnexpectedChar(ch, pos) => {
+                write!(f, "unexpected character {:?} at position {}", ch, pos)
+            }
+            SmartsError::UnclosedBracket(pos) => {
+                write!(f, "unclosed '[' bracket at position {}", pos)
+            }
+            SmartsError::UnclosedBranch(pos) => {
+                write!(f, "unclosed '(' branch at position {}", pos)
+            }
+            SmartsError::InvalidRingClosure(num) => {
+                write!(f, "invalid ring closure number: {}", num)
+            }
+            SmartsError::RecursionDepthExceeded => {
+                write!(f, "recursive SMARTS nesting depth exceeded safety limit")
+            }
+        }
+    }
+}
+
+impl std::error::Error for SmartsError {}
 
 // ---------------------------------------------------------------------------
 // Public entry point

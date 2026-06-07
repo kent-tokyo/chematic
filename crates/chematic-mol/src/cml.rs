@@ -56,6 +56,8 @@ impl std::fmt::Display for CmlError {
     }
 }
 
+impl std::error::Error for CmlError {}
+
 // ---------------------------------------------------------------------------
 // XML attribute scanner (no external dependency)
 // ---------------------------------------------------------------------------
@@ -162,6 +164,24 @@ struct CmlAtomData {
 /// The second element of the tuple contains one `(x, y)` entry per atom in
 /// atom-insertion order.  If a molecule has no `x2`/`y2` attributes, the
 /// coordinate pairs default to `(0.0, 0.0)`.
+/// Parse a Chemical Markup Language (CML) string into a molecule and 2D coordinates.
+///
+/// **Coordinate system:** The returned `coords` use **chemical Y-up convention**
+/// (Y increases upward, matching mathematical axes). This differs from SVG/screen Y-down.
+/// When rendering via [`crate::svg::render_svg`] or similar, callers must negate Y coordinates
+/// to match SVG pixel space.
+///
+/// # Example
+/// ```text
+/// // CML molecule with chemical Y-up coords
+/// let (mol, coords) = parse_cml(cml_str)?;
+/// // coords[i].1 increases upward (chemical convention)
+///
+/// // To render in SVG (Y-down):
+/// let svg_coords: Vec<(f64, f64)> = coords.iter()
+///     .map(|(x, y)| (x, -y))  // Negate Y
+///     .collect();
+/// ```
 pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
     // --- Pass 1: collect atoms and bonds from the CML -----------------------
 

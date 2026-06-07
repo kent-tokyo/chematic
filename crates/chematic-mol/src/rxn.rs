@@ -45,6 +45,8 @@ impl core::fmt::Display for RxnParseError {
     }
 }
 
+impl std::error::Error for RxnParseError {}
+
 impl From<MolParseError> for RxnParseError {
     fn from(e: MolParseError) -> Self { Self::MolParse(e) }
 }

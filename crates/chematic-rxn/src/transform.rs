@@ -23,6 +23,8 @@ impl core::fmt::Display for TransformError {
     }
 }
 
+impl std::error::Error for TransformError {}
+
 impl From<RxnError> for TransformError {
     fn from(e: RxnError) -> Self {
         Self::SmirksParse(e)

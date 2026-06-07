@@ -3,6 +3,7 @@
 //! Reference: OpenSMILES specification, section 3.4 (Implicit hydrogen)
 //! <http://opensmiles.org/opensmiles-spec.html>
 
+use std::fmt;
 use crate::bond::BondOrder;
 use crate::molecule::{AtomIdx, Molecule};
 
@@ -143,6 +144,24 @@ pub struct ValenceError {
     /// Allowed normal valences for the element (from [`crate::Element::normal_valences`]).
     pub allowed: &'static [u8],
 }
+
+impl fmt::Display for ValenceError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let valences_str = self
+            .allowed
+            .iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        write!(
+            f,
+            "atom {} has valence {} (allowed: [{}])",
+            self.atom.0, self.actual, valences_str
+        )
+    }
+}
+
+impl std::error::Error for ValenceError {}
 
 /// Check every atom in `mol` for valence violations.
 ///

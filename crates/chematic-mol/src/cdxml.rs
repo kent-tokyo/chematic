@@ -56,6 +56,8 @@ impl std::fmt::Display for CdxmlError {
     }
 }
 
+impl std::error::Error for CdxmlError {}
+
 // ---------------------------------------------------------------------------
 // Parser
 // ---------------------------------------------------------------------------
@@ -63,6 +65,11 @@ impl std::fmt::Display for CdxmlError {
 /// Parse a CDXML document and return the first molecular fragment.
 ///
 /// Convenience wrapper around [`parse_cdxml_all`].
+/// Parse a ChemDraw CDXML string into a molecule and 2D coordinates.
+///
+/// **Coordinate system:** The returned `coords` use **ChemDraw Y-down convention**
+/// (Y increases downward, matching screen/SVG pixel space). No Y-axis conversion is required
+/// for SVG rendering; coordinates can be used directly in [`crate::svg::render_svg`] or similar.
 pub fn parse_cdxml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlError> {
     let mut all = parse_cdxml_all(input)?;
     if all.is_empty() {

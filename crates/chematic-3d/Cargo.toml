@@ -22,5 +22,8 @@ chematic-ff         = { path = "../chematic-ff",         version = "0.1.28" }
 chematic-chem       = { path = "../chematic-chem",       version = "0.1.28" }
 fastrand            = "2.4"
 
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+fastrand = { version = "2.4", features = ["js"] }
+
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles", version = "0.1.28" }

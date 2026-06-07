@@ -26,6 +26,8 @@ impl fmt::Display for ConformerError {
     }
 }
 
+impl std::error::Error for ConformerError {}
+
 // ---------------------------------------------------------------------------
 // ConformerEnsemble
 // ---------------------------------------------------------------------------

@@ -844,7 +844,7 @@ footer {
       <h2 id="h-report-title"></h2>
       <div class="input-row">
         <input id="report-smiles" class="smiles-input" type="text"
-               spellcheck="false" autocomplete="off" placeholder="Enter SMILES">
+               spellcheck="false" autocomplete="off">
         <button id="btn-report" class="btn"></button>
       </div>
       <div id="error-report" class="error-banner hidden"></div>
@@ -1135,6 +1135,10 @@ const T = {
     'sim.th_method':    'Method',
     'sim.th_desc':      'Description',
     'sim.th_tanimoto':  'Tanimoto',
+    'tab.report':       'Molecular Report',
+    'report.title':     'Generate Comprehensive Molecular Report',
+    'report.placeholder':'Enter SMILES for full report (descriptors, filters, etc.)',
+    'report.button':    'Generate Report',
     'sim.ecfp4':        'ECFP4',
     'sim.ecfp4_d':      'Circular FP, radius 2',
     'sim.fcfp4':        'FCFP4',
@@ -1337,6 +1341,10 @@ const T = {
     'rxn.eq.ph':        '反応式がここに表示されます',
     'tab.2d':           '2D 構造',
     'tab.sim':          '類似度',
+    'tab.report':       '分子レポート',
+    'report.title':     '包括的な分子レポートを生成',
+    'report.placeholder':'SMILES を入力して完全なレポートを生成（記述子、フィルタなど）',
+    'report.button':    'レポート生成',
     'tab.rxn':          '反応',
     'tab.sar':          'SAR 解析',
     'tab.3d':           '3D ビューア',
@@ -1484,6 +1492,10 @@ const T = {
     'rxn.eq.ph':        '方程式将显示于此',
     'tab.2d':           '2D 结构',
     'tab.sim':          '相似度',
+    'tab.report':       '分子报告',
+    'report.title':     '生成综合分子报告',
+    'report.placeholder':'输入 SMILES 以生成完整报告（描述符、过滤器等）',
+    'report.button':    '生成报告',
     'tab.rxn':          '反应',
     'tab.sar':          'SAR 分析',
     'tab.3d':           '3D 查看器',
@@ -1573,6 +1585,7 @@ const STATIC_IDS = {
   'sb-ibuprofen':       'preset.ibuprofen',
   'tb-2d':              'tab.2d',
   'tb-sim':             'tab.sim',
+  'tb-report':          'tab.report',
   'tb-rxn':             'tab.rxn',
   'tb-sar':             'tab.sar',
   'tb-3d':              'tab.3d',
@@ -1630,6 +1643,10 @@ function applyLang(newLang) {
   document.getElementById('sim-a').placeholder = t('desc.placeholder');
   document.getElementById('sim-b').placeholder = t('desc.placeholder');
   document.getElementById('sdf-input').placeholder = t('sdf.placeholder');
+  document.getElementById('report-smiles').placeholder = t('report.placeholder');
+  document.getElementById('h-report-title').textContent = t('report.title');
+  const btnReport = document.getElementById('btn-report');
+  if (btnReport) btnReport.textContent = t('report.button');
 
   renderRuleCards(lastMol);
   renderSimTable(lastSimResults);
@@ -1671,6 +1688,7 @@ let DepictOptions, runReactants, depictSvgGrid, smartsMatchAtoms, generate3dPdb,
 let molFromSdfBlock, sdfToSmilesJson, estateIndicesJson, tanimotoTopoPath;
 let identifyFunctionalGroups, gasteigerChargesJson, saScore, slogpVsaJson, smrVsaJson, peoeVsaJson;
 let detectFunctionalGroups, getAtomInfo, getBondBetween, molBlockFromSmiles;
+let moleculeReportJson, compareMultipleJson, screenSmilesJson, generate3dOptimizedPdb;
 let lastMol = null;
 let lastSimResults = null;
 let highlightedAtoms = [];
@@ -1718,6 +1736,13 @@ async function initWasm() {
     mmpPairsJson             = mod.mmp_pairs_json;
     rgroupDecomposeJson      = mod.rgroup_decompose_json;
     depictSvgOpts            = mod.depict_svg_opts ?? mod.depict_svg;
+    // Workflow APIs (Phase 3 report & compare)
+    moleculeReportJson       = mod.molecule_report_json;
+    compareMultipleJson      = mod.compare_molecules_json;
+    screenSmilesJson         = mod.screen_smiles_json;
+    generate3dOptimizedPdb   = mod.generate_3d_optimized_pdb;
+    // Store in window namespace for easy access in dynamic handlers
+    window.chemWasm = mod;
     wasmReady = true;
   } catch (e) {
     document.getElementById('loading-text').textContent = 'WASM load failed: ' + String(e);
@@ -2832,6 +2857,141 @@ function runRgroup() {
   document.getElementById('smiles-input').value = 'CC(=O)Oc1ccccc1C(=O)O';
   calculate();
 
+  // Report tab: molecule_report_json workflow API
+  document.getElementById('btn-report').addEventListener('click', async () => {
+    clearError('error-report');
+    const smiles = document.getElementById('report-smiles').value.trim();
+    if (!smiles) { showError('error-report', t('error.empty')); return; }
+    if (!wasmReady) { showError('error-report', t('error.wasm')); return; }
+
+    try {
+      if (typeof window.chemWasm.molecule_report_json !== 'function') {
+        showError('error-report', 'molecule_report_json not available in WASM bindings');
+        return;
+      }
+
+      const reportJson = window.chemWasm.molecule_report_json(smiles);
+      const report = JSON.parse(reportJson);
+
+      // Display canonical SMILES
+      const canonicalEl = document.getElementById('report-canonical');
+      canonicalEl.textContent = 'Canonical SMILES: ' + report.canonical_smiles;
+      canonicalEl.style.fontSize = '.95rem';
+      canonicalEl.style.fontWeight = '600';
+      canonicalEl.style.marginBottom = '1rem';
+
+      // Populate descriptors table
+      populateReportDescriptors(report);
+
+      // Populate drug-likeness filters grid
+      populateReportFilters(report);
+
+      // Show the output
+      document.getElementById('report-output').style.display = 'block';
+    } catch (e) {
+      showError('error-report', 'Report generation failed: ' + String(e));
+    }
+  });
+
+  // Report Tab: Populate descriptors table from workflow JSON
+  function populateReportDescriptors(report) {
+    const tbody = document.getElementById('report-desc-tbody');
+    tbody.textContent = '';
+    if (!report.descriptors) return;
+
+    const desc = report.descriptors;
+    const rows = [
+      ['Canonical SMILES', report.canonical_smiles],
+      ['Molecular Formula', report.formula],
+      ['Molecular Weight (Da)', desc.molecular_weight.toFixed(2)],
+      ['Exact Mass (Da)', desc.exact_mass.toFixed(4)],
+      ['TPSA (Ų)', desc.tpsa.toFixed(2)],
+      ['LogP (Crippen)', desc.logp.toFixed(3)],
+      ['Fsp3', desc.fsp3.toFixed(3)],
+      ['QED', desc.qed.toFixed(3)],
+      ['Molar Refractivity', desc.molar_refractivity.toFixed(2)],
+      ['Heavy Atoms', String(desc.heavy_atom_count)],
+      ['HBD', String(desc.hbd)],
+      ['HBA', String(desc.hba)],
+      ['Rotatable Bonds', String(desc.rotatable_bonds)],
+      ['Ring Count (SSSR)', String(desc.ring_count)],
+      ['Heteroatoms', String(desc.num_heteroatoms)],
+      ['Stereocenters', String(desc.num_stereocenters)],
+      ['SA Score', desc.sa_score.toFixed(2)],
+      ['Bertz CT', desc.bertz_ct.toFixed(2)],
+      ['Wiener Index', desc.wiener_index.toFixed(2)],
+    ];
+
+    for (const [name, val] of rows) {
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td');
+      tdName.className = 'td-name';
+      tdName.textContent = name;
+      const tdVal = document.createElement('td');
+      tdVal.className = 'td-value';
+      tdVal.textContent = String(val);
+      tr.appendChild(tdName);
+      tr.appendChild(tdVal);
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Report Tab: Populate drug-likeness filters grid from workflow JSON
+  function populateReportFilters(report) {
+    const grid = document.getElementById('report-filters-grid');
+    grid.textContent = '';
+    if (!report.filters) return;
+
+    const filters = report.filters;
+    const filterList = [
+      { name: 'Lipinski (Ro5)',      passes: filters.lipinski_passes },
+      { name: 'Veber',               passes: filters.veber_passes },
+      { name: 'Egan',                passes: filters.egan_passes },
+      { name: 'Ghose',               passes: filters.ghose_passes },
+      { name: 'REOS',                passes: filters.reos_passes },
+      { name: 'PAINS',               passes: filters.pains_passes },
+    ];
+
+    for (const rule of filterList) {
+      const card = document.createElement('div');
+      card.className = 'rule-card';
+
+      const header = document.createElement('div');
+      header.className = 'rule-header';
+
+      const name = document.createElement('span');
+      name.className = 'rule-name';
+      name.textContent = rule.name;
+
+      const badge = document.createElement('span');
+      badge.className = 'badge ' + (rule.passes ? 'badge-pass' : 'badge-fail');
+      badge.textContent = rule.passes ? t('rules.pass') : t('rules.fail');
+
+      header.appendChild(name);
+      header.appendChild(badge);
+      card.appendChild(header);
+      grid.appendChild(card);
+    }
+
+    // Show PAINS alerts if any
+    if (filters.pains_alerts && filters.pains_alerts.length > 0) {
+      const alertCard = document.createElement('div');
+      alertCard.className = 'rule-card';
+      const header = document.createElement('div');
+      header.className = 'rule-header';
+      const name = document.createElement('span');
+      name.className = 'rule-name';
+      name.textContent = 'PAINS Alerts';
+      header.appendChild(name);
+      alertCard.appendChild(header);
+      const alerts = document.createElement('div');
+      alerts.className = 'rule-criteria';
+      alerts.textContent = filters.pains_alerts.join(', ');
+      alertCard.appendChild(alerts);
+      grid.appendChild(alertCard);
+    }
+  }
+
   // Tab switching
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -3112,6 +3272,82 @@ function runRgroup() {
       showError('minimize-result', `Error: ${e.message}`);
     }
   });
+
+  // Report tab: workflow API integration
+  document.getElementById('btn-report').addEventListener('click', async () => {
+    const smiles = document.getElementById('report-smiles').value.trim();
+    if (!smiles) { showError('error-report', 'SMILES required'); return; }
+    if (!window.chemWasm) { showError('error-report', 'WASM not ready'); return; }
+
+    try {
+      const json = window.chemWasm.molecule_report_json(smiles);
+      const report = JSON.parse(json);
+
+      document.getElementById('report-canonical').textContent = `Canonical: ${report.canonical_smiles}`;
+      populateReportDescriptors(report.descriptors);
+      populateReportFilters(report.filters);
+      document.getElementById('report-output').style.display = 'block';
+      document.getElementById('error-report').classList.add('hidden');
+    } catch (e) {
+      showError('error-report', `Error: ${e.message}`);
+    }
+  });
+
+  function populateReportDescriptors(descriptors) {
+    const tbody = document.getElementById('report-desc-tbody');
+    tbody.textContent = '';
+    const rows = [
+      ['MW', descriptors.molecular_weight.toFixed(2)],
+      ['LogP', descriptors.logp.toFixed(2)],
+      ['TPSA', descriptors.tpsa.toFixed(2)],
+      ['HBA', descriptors.hba],
+      ['HBD', descriptors.hbd],
+      ['Rot.Bonds', descriptors.rotatable_bonds],
+      ['QED', descriptors.qed.toFixed(3)],
+      ['SA Score', descriptors.sa_score.toFixed(2)],
+    ];
+    rows.forEach(([prop, val]) => {
+      const tr = document.createElement('tr');
+      const td1 = document.createElement('td');
+      td1.textContent = prop;
+      const td2 = document.createElement('td');
+      td2.textContent = val;
+      td2.style.textAlign = 'right';
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function populateReportFilters(filters) {
+    const grid = document.getElementById('report-filters-grid');
+    grid.textContent = '';
+    const filterList = [
+      ['Lipinski', filters.lipinski_passes],
+      ['Veber', filters.veber_passes],
+      ['Egan', filters.egan_passes],
+      ['Ghose', filters.ghose_passes],
+      ['REOS', filters.reos_passes],
+      ['PAINS', filters.pains_passes],
+    ];
+    filterList.forEach(([name, passes]) => {
+      const div = document.createElement('div');
+      div.style.padding = '0.75rem';
+      div.style.border = `1px solid ${passes ? 'var(--pass)' : 'var(--fail)'}`;
+      div.style.borderRadius = 'var(--radius)';
+      div.style.backgroundColor = passes ? 'color-mix(in srgb,var(--pass) 8%,transparent)' : 'color-mix(in srgb,var(--fail) 8%,transparent)';
+      div.style.color = passes ? 'var(--pass)' : 'var(--fail)';
+      div.style.textAlign = 'center';
+      div.style.fontSize = '0.85rem';
+      const strong = document.createElement('strong');
+      strong.textContent = name;
+      div.appendChild(strong);
+      div.appendChild(document.createElement('br'));
+      const status = document.createTextNode(passes ? '✓ Pass' : '✗ Fail');
+      div.appendChild(status);
+      grid.appendChild(div);
+    });
+  }
 })();
 </script>
 </body>

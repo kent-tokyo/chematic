@@ -30,6 +30,8 @@ impl core::fmt::Display for RxnError {
     }
 }
 
+impl std::error::Error for RxnError {}
+
 /// Parse a reaction SMILES string of the form `"reactants>agents>products"`.
 ///
 /// - `>` splits the string into 3 parts (reactants, agents, products).
