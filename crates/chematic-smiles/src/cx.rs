@@ -221,6 +221,9 @@ fn unescape_cx_value(value: &str) -> String {
             out.push(ch);
         }
     }
+    if escape {
+        out.push('\\');
+    }
     out
 }
 

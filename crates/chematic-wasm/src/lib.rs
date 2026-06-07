@@ -5,6 +5,9 @@
 
 use wasm_bindgen::prelude::*;
 
+/// Maximum atom count for WASM to prevent DoS via unbounded JSON output.
+const WASM_MAX_ATOMS: usize = 10_000;
+
 #[wasm_bindgen(start)]
 pub fn start() {
     console_error_panic_hook::set_once();
@@ -418,12 +421,19 @@ impl DepictOptions {
 
 /// Parse a SMILES string into a `MolHandle`.
 ///
-/// Returns a JS error string on parse failure.
+/// Returns a JS error string on parse failure or if atom count exceeds 10,000.
 #[wasm_bindgen]
 pub fn parse_smiles(s: &str) -> Result<MolHandle, JsValue> {
-    chematic_smiles::parse(s)
-        .map(|mol| MolHandle { inner: std::rc::Rc::new(mol) })
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+    let mol = chematic_smiles::parse(s)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "Molecule exceeds maximum atom count ({} > {})",
+            mol.atom_count(),
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(MolHandle { inner: std::rc::Rc::new(mol) })
 }
 
 /// Parse CXSMILES and return preserved metadata as JSON.
@@ -431,10 +441,18 @@ pub fn parse_smiles(s: &str) -> Result<MolHandle, JsValue> {
 /// Supported CX fields: atom labels (`$...$`), `atomProp`, atom radicals (`^n:`),
 /// and zero-order bonds (`Z:`). The `cxsmiles` field is a re-serialized
 /// round-trip form using the supported fields.
+/// Returns error if atom count exceeds 10,000.
 #[wasm_bindgen]
 pub fn parse_cxsmiles_json(s: &str) -> Result<String, JsValue> {
     let cx = chematic_smiles::parse_cxsmiles(s)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if cx.mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "Molecule exceeds maximum atom count ({} > {})",
+            cx.mol.atom_count(),
+            WASM_MAX_ATOMS
+        )));
+    }
     let atom_props = cx.atom_props
         .iter()
         .map(|p| {
@@ -468,18 +486,34 @@ pub fn parse_cxsmiles_json(s: &str) -> Result<String, JsValue> {
 }
 
 /// Parse and re-serialize CXSMILES, preserving supported CX metadata.
+/// Returns error if atom count exceeds 10,000.
 #[wasm_bindgen]
 pub fn normalize_cxsmiles(s: &str) -> Result<String, JsValue> {
     let cx = chematic_smiles::parse_cxsmiles(s)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if cx.mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "Molecule exceeds maximum atom count ({} > {})",
+            cx.mol.atom_count(),
+            WASM_MAX_ATOMS
+        )));
+    }
     Ok(chematic_smiles::write_cxsmiles(&cx))
 }
 
 /// Parse CXSMARTS and return preserved metadata as JSON.
+/// Returns error if atom count exceeds 10,000.
 #[wasm_bindgen]
 pub fn parse_cxsmarts_json(s: &str) -> Result<String, JsValue> {
     let cx = chematic_smarts::parse_cxsmarts(s)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if cx.query.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "Query molecule exceeds maximum atom count ({} > {})",
+            cx.query.atom_count(),
+            WASM_MAX_ATOMS
+        )));
+    }
     let atom_props = cx.atom_props
         .iter()
         .map(|p| {

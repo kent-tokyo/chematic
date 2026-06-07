@@ -286,19 +286,21 @@ impl StandardizationPipeline {
         let mut steps = Vec::new();
         let mut warnings = detect_initial_warnings(mol);
 
-        current = self.apply_stage(
-            current,
-            StandardizationStep::LargestFragment,
-            self.options.largest_fragment_only,
-            largest_fragment,
-            &mut steps,
-            &mut warnings,
-        );
+        // Apply NeutralizeCharges BEFORE LargestFragment to ensure predictable fragment selection.
+        // Example: [NH3+].[Cl-] should be neutralized first to [NH3].[Cl-], then largest fragment.
         current = self.apply_stage(
             current,
             StandardizationStep::NeutralizeCharges,
             self.options.neutralize_charges,
             neutralize_charges,
+            &mut steps,
+            &mut warnings,
+        );
+        current = self.apply_stage(
+            current,
+            StandardizationStep::LargestFragment,
+            self.options.largest_fragment_only,
+            largest_fragment,
             &mut steps,
             &mut warnings,
         );
@@ -320,10 +322,12 @@ impl StandardizationPipeline {
         );
 
         let output = MoleculeSnapshot::from_mol(&current);
-        let status = if !warnings.is_empty() {
-            PipelineStatus::CompletedWithWarnings
-        } else if input.hash == output.hash {
+        // Status depends only on structure change (hash), not on warnings.
+        // Warnings are reported separately for the user to inspect.
+        let status = if input.hash == output.hash {
             PipelineStatus::Unchanged
+        } else if !warnings.is_empty() {
+            PipelineStatus::CompletedWithWarnings
         } else {
             PipelineStatus::Modified
         };
@@ -579,11 +583,13 @@ mod tests {
         assert_eq!(report.status, PipelineStatus::Modified);
         assert!(report.changed());
         assert_eq!(report.steps.len(), 4);
-        assert_eq!(report.steps[0].step, StandardizationStep::LargestFragment);
-        assert!(report.steps[0].enabled);
-        assert!(report.steps[0].changed);
-        assert_eq!(report.steps[1].step, StandardizationStep::NeutralizeCharges);
-        assert!(!report.steps[1].enabled);
+        // NeutralizeCharges is applied first (not enabled, so no change)
+        assert_eq!(report.steps[0].step, StandardizationStep::NeutralizeCharges);
+        assert!(!report.steps[0].enabled);
+        // LargestFragment is applied second and is enabled
+        assert_eq!(report.steps[1].step, StandardizationStep::LargestFragment);
+        assert!(report.steps[1].enabled);
+        assert!(report.steps[1].changed);
     }
 
     #[test]
@@ -616,7 +622,9 @@ mod tests {
 
         let (_result, report) = pipeline.run(&mol);
 
-        assert_eq!(report.status, PipelineStatus::CompletedWithWarnings);
+        // Status is Unchanged because no stages are enabled (no modifications made).
+        // Warnings are collected but don't affect the status.
+        assert_eq!(report.status, PipelineStatus::Unchanged);
         assert!(
             report
                 .warnings
