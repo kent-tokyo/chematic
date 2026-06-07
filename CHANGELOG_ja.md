@@ -13,6 +13,67 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.32] — 2026-06-07
+
+### Added — 3D ジオメトリ・座標処理・WASM 安定性の強化
+
+#### `chematic-3d` — 距離幾何制約充足
+
+- **NEW**: `build_constraints()` & `satisfy_constraints()` による反復制約射影法
+  - 理想結合距離（±0.05 Å 許容度）と原子価角（±5° 許容度）を強制
+  - 典型分子で 5～10 回の反復で収束
+  - 反復あたり O(n²)；中規模分子（< 1000 原子）に適用可能
+- **NEW**: `generate_and_minimize_constrained()` 高水準 API：DG → 制約充足 → DREIDING
+  - ひずみのある・問題のある分子の幾何品質を改善
+- **NEW**: BondConstraint & AngleConstraint 構造体と強制メソッド
+
+#### `chematic-mol` — V3000 座標復元機能
+
+- **NEW**: `parse_mol_v3000_with_coords()` 関数が (Molecule, MolMetadata, Vec<(f64, f64)>) を返す
+  - MOL V3000 原子ブロックから 2D 座標を復元（従来は破棄していた）
+  - V2000 の `parse_mol_with_coords()` API パターンに統一
+  - ラウンドトリップで 2D 座標を保持できるように
+
+#### `chematic-perception` — 芳香族性モデルの厳密化
+
+- **NEW**: `RingAromaticity` enum が Aromatic/Antiaromatic/NonAromatic を区別
+- **NEW**: Hückel 4n+2 則と反芳香族性（4n）検出
+  - C、N（H-依存）、O、S 原子の π 電子数計算
+  - `ring_classifications()`、`antiaromatic_rings()`、`has_antiaromaticity()` メソッド
+  - 特異系検出：シクロブタジエン、シクロオクタテトラエン、アンヌレン
+
+### Fixed — WASM ビルド信頼性・座標系の明確化
+
+#### `chematic-3d` — WASM RNG シード設定（MD 必須）
+
+- **CRITICAL WASM**: `fastrand = "2.4"` が wasm32-unknown-unknown ターゲット向けに `features = ["js"]` を指定
+  - MD 速度初期化が暗号学的ランダム性を使用するように修正（従来は固定シード）
+  - WASM ビルドが非決定的（物理的に意味のある）軌跡を生成
+  - ネイティブビルドは影響なし；feature は WASM ターゲットのみ有効化
+
+#### `chematic-depict`、`chematic-mol` — 座標系ドキュメント
+
+- **明確化**: `compute_layout()` は SVG Y-down ピクセル座標を生成（化学的 Y-up ではない）
+- **明確化**: `parse_cml()` は化学的 Y-up 規約を返す；SVG レンダリング時は Y を反転すること
+- **明確化**: `parse_cdxml()` は ChemDraw Y-down（SVG 互換、変換不要）を返す
+- 座標系バグを防ぐため詳細なドキュメント文字列を追加
+
+### Changed — エラー処理の完全性
+
+#### 13 のエラー型が `std::error::Error` トレイトを実装
+
+- **高優先度**: `SmartsError`、`ValenceError`、`StereoError` — Display + Error を追加
+- **その他**: `CmlError`、`CdxmlError`、`Mol2Error`、`RxnParseError`、`MolError`、`IupacError`、`ConformerError`、`RxnError`、`TransformError` — Error トレイトを追加
+- 標準的なエラー処理パターン（`.source()`、`Box<dyn Error>` など）が使用可能に
+
+### Test Coverage
+
+- **+44 個の新テスト**: 制約充足（12）、芳香族性（16）、V3000 座標（2）、エラー型（14）
+- **合計**: 全クレートで 171 テスト合格
+- WASM ビルド検証済み（js feature での退行なし）
+
+---
+
 ## [0.1.30] — 2026-06-07
 
 ### Fixed — 重大な物理計算・静電計算バグ修正

@@ -11,6 +11,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.32] — 2026-06-07
+
+### Added — 3D Geometry, Coordinate Handling, WASM Stability
+
+#### `chematic-3d` — Distance Geometry Constraint Satisfaction
+
+- **NEW**: `build_constraints()` & `satisfy_constraints()` functions for iterative constraint projection
+  - Enforces ideal bond distances (±0.05 Å tolerance) and valence angles (±5° tolerance)
+  - Convergence in 5–10 iterations for typical molecules
+  - O(n²) per iteration; suitable for small to mid-sized molecules (< 1000 atoms)
+- **NEW**: `generate_and_minimize_constrained()` high-level API: DG → constraints → DREIDING
+  - Improves geometry quality for strained/problematic molecules
+- **NEW**: BondConstraint & AngleConstraint structs with enforcement methods
+
+#### `chematic-mol` — V3000 Coordinate Recovery
+
+- **NEW**: `parse_mol_v3000_with_coords()` function returns (Molecule, MolMetadata, Vec<(f64, f64)>)
+  - Recovers 2D coordinates from MOL V3000 atom block (previously discarded)
+  - Matches V2000 `parse_mol_with_coords()` API pattern
+  - Enables round-trip 2D coordinate preservation
+
+#### `chematic-perception` — Aromaticity Model Refinement
+
+- **NEW**: `RingAromaticity` enum distinguishes Aromatic/Antiaromatic/NonAromatic
+- **NEW**: Hückel 4n+2 rule with antiaromaticity (4n) detection
+  - π-electron counting for C, N (H-dependent), O, S atoms
+  - `ring_classifications()`, `antiaromatic_rings()`, `has_antiaromaticity()` methods
+  - Detects exotic systems: cyclobutadiene, cyclooctatetraene, annulenes
+
+### Fixed — WASM Build Reliability & Coordinate System Clarity
+
+#### `chematic-3d` — WASM RNG Seeding (Essential for MD)
+
+- **CRITICAL WASM**: `fastrand = "2.4"` now specifies `features = ["js"]` for wasm32-unknown-unknown target
+  - Fixes MD velocity initialization to use cryptographic randomness instead of fixed seed
+  - WASM builds now produce non-deterministic (physically meaningful) trajectories
+  - Native builds unaffected; feature only activated for browser/WASM targets
+
+#### `chematic-depict`, `chematic-mol` — Coordinate System Documentation
+
+- **Clarified**: `compute_layout()` produces SVG Y-down pixel coordinates (not chemical Y-up)
+- **Clarified**: `parse_cml()` returns chemical Y-up convention; callers must negate Y for SVG rendering
+- **Clarified**: `parse_cdxml()` returns ChemDraw Y-down (SVG-compatible, no conversion needed)
+- Added comprehensive docstring comments to prevent coordinate system bugs
+
+### Changed — Error Handling Completeness
+
+#### 13 Error Types Now Implement `std::error::Error` Trait
+
+- **High Priority**: `SmartsError`, `ValenceError`, `StereoError` — added Display + Error
+- **All Other Types**: `CmlError`, `CdxmlError`, `Mol2Error`, `RxnParseError`, `MolError`, `IupacError`, `ConformerError`, `RxnError`, `TransformError` — added Error trait
+- Enables standard error handling patterns (`.source()`, `Box<dyn Error>`, etc.)
+
+### Test Coverage
+
+- **+44 new tests**: constraint satisfaction (12), aromaticity (16), V3000 coords (2), error types (14)
+- **Total**: 171 tests passing across all crates
+- WASM build verified (no regressions with js feature)
+
+---
+
 ## [0.1.30] — 2026-06-07
 
 ### Fixed — Critical Physics & Electrostatics Corrections

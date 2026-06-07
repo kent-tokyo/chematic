@@ -48,21 +48,23 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete. **948 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements). **992 tests, all passing. Zero C/C++ dependencies.**
+
+Latest release: **v0.1.32** (2026-06-07)
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
 | `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `add/remove_atom/bond`, `fragments()`, `is_connected()`, `formula_with_isotopes`, `validate_valence`; `StereoGroup`/`StereoGroupKind` | 48    |
 | `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES                                                              | 57    |
-| `chematic-perception` | SSSR, Hückel aromaticity, `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 18    |
-| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W | 61    |
-| `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG | 43    |
+| `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 34    |
+| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W | 63    |
+| `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 43    |
 | `chematic-chem`       | 40+ descriptors, BRICS, QED, standardize, mol_hash, stereo (invert/enumerate), CIP, IFG, `parse_condensed`, `isotope_distribution` | 248   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion — Tanimoto/Dice                           | 50    |
-| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching (`match_chiral_tag`), atom/bond compare modes                  | 87    |
-| `chematic-3d`         | 3D coordinate generation, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ       | 68    |
+| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching (`match_chiral_tag`), atom/bond compare modes; Display + Error trait | 87    |
+| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ; WASM RNG seeded | 80    |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
-| `chematic-wasm`       | **100+ WASM exports** — npm: `@kent-tokyo/chematic`                                                      | 162   |
+| `chematic-wasm`       | **100+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.32 (~550 KB)                                   | 162   |
 | `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes, cycloalkanes, alcohols, amines, halides    | 8     |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`)                                        | 1     |
 
