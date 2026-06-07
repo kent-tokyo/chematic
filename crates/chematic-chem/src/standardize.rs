@@ -632,4 +632,34 @@ mod tests {
                 .any(|w| w.code == "metal_disconnection_not_applied")
         );
     }
+
+    #[test]
+    fn bug3_ionic_pair_neutralize_before_largest_fragment() {
+        // BUG #3 Fix Verification: NeutralizeCharges must run BEFORE LargestFragment
+        // Example: [NH3+].[OH-] (ammonium hydroxide)
+        // NH3+ will be neutralized (reduce H by 1)
+        // After neutralization: [NH2+].[OH-] - still two fragments
+        // LargestFragment then picks the larger one
+        // Key: stage order affects which fragment is selected
+        let mol = parse("[NH3+].[OH-]").unwrap();
+        let pipeline = StandardizationPipeline::new(StandardizeOptions {
+            largest_fragment_only: true,
+            neutralize_charges: true,
+            remove_explicit_h: false,
+            canonical_tautomer: false,
+        });
+
+        let (result, report) = pipeline.run(&mol);
+
+        // Verify step order: NeutralizeCharges MUST come before LargestFragment
+        assert_eq!(report.steps.len(), 4, "Should have 4 steps in pipeline");
+        assert_eq!(report.steps[0].step, StandardizationStep::NeutralizeCharges,
+            "NeutralizeCharges must be step 0");
+        assert_eq!(report.steps[1].step, StandardizationStep::LargestFragment,
+            "LargestFragment must be step 1");
+
+        // The test passes if step order is correct and the pipeline runs without error
+        assert!(report.changed(), "Pipeline should report changes");
+        assert_eq!(report.status, PipelineStatus::Modified, "Should be marked as Modified");
+    }
 }
