@@ -12,7 +12,7 @@ pub mod sssr;
 
 pub mod stereo2d;
 
-pub use aromaticity::{AromaticityModel, apply_aromaticity, assign_aromaticity};
+pub use aromaticity::{AromaticityModel, RingAromaticity, apply_aromaticity, assign_aromaticity};
 pub use chematic_core::{ValenceError, validate_valence};
 pub use sssr::{RingSet, find_sssr};
 pub use stereo_validation::{StereoCompleteness, StereoError, StereoErrorKind, stereo_completeness, validate_stereo};
