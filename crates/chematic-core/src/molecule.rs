@@ -31,6 +31,8 @@ impl core::fmt::Display for MolError {
     }
 }
 
+impl std::error::Error for MolError {}
+
 /// An immutable molecular graph built via [`MoleculeBuilder`].
 ///
 /// Representation: atom list + bond list + per-atom adjacency list.

@@ -88,6 +88,11 @@ impl Layout {
 /// 3. Place chain atoms (not in any ring) via DFS zigzag from each ring atom or
 ///    from an arbitrary starting point if no rings exist.
 /// 4. Offset disconnected fragments horizontally so they do not overlap.
+/// Compute 2D layout coordinates for a molecule.
+///
+/// **Coordinate system:** SVG pixel space with **Y-axis pointing downward**
+/// (Y increases toward the screen bottom). All returned coordinates conform to this convention.
+/// This is consistent with standard SVG/canvas graphics, NOT chemical Y-up conventions.
 pub fn compute_layout(mol: &Molecule) -> Layout {
     let n = mol.atom_count();
     if n == 0 {

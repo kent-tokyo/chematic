@@ -11,6 +11,7 @@
 //!   equivalent to a neighbour (same Morgan rank), so the stereo specification
 //!   is chemically meaningless.
 
+use std::fmt;
 use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule};
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,19 @@ pub struct StereoError {
     pub atom_idx: usize,
     pub kind: StereoErrorKind,
 }
+
+impl fmt::Display for StereoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let kind_str = match &self.kind {
+            StereoErrorKind::ImpossibleCenter => "impossible stereocenter (< 4 distinct neighbours)",
+            StereoErrorKind::ConflictingWedges => "conflicting wedge directions",
+            StereoErrorKind::RedundantStereo => "redundant stereo on symmetric atom",
+        };
+        write!(f, "atom {}: {}", self.atom_idx, kind_str)
+    }
+}
+
+impl std::error::Error for StereoError {}
 
 /// Summary of stereocenters in a molecule.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -4,12 +4,15 @@
 //! - [`generate_coords`]: rule-based 3D coordinate builder.
 //! - [`parse_pdb_atoms`], [`pdb_to_molecule`], [`write_pdb`]: PDB file support.
 //! - [`parse_xyz`], [`write_xyz`]: XYZ file support.
+//! - [`build_constraints`], [`satisfy_constraints`]: distance geometry constraint satisfaction.
+//! - [`generate_and_minimize_constrained`]: full pipeline with constraint projection.
 
 #![forbid(unsafe_code)]
 
 pub mod align;
 pub mod usr;
 pub mod conformer;
+pub mod constraints;
 pub mod coords;
 pub mod dg;
 pub mod dg_fft;
@@ -23,6 +26,7 @@ pub mod xyz;
 pub use align::{AlignResult, align_coords, apply_alignment, rmsd_no_align};
 pub use usr::{usr_descriptors, usr_similarity};
 pub use conformer::{ConformerEnsemble, ConformerError};
+pub use constraints::{AngleConstraint, BondConstraint, ConstraintSet, build_constraints, satisfy_constraints};
 pub use coords::{Coords3D, Point3};
 pub use dg::generate_coords;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
@@ -44,6 +48,20 @@ pub use xyz::{XyzError, parse_xyz, write_xyz};
 pub fn generate_and_minimize_dreiding(mol: &chematic_core::Molecule) -> Coords3D {
     let coords = generate_coords(mol);
     minimize_dreiding(mol, coords)
+}
+
+/// Generate 3D coordinates with constraint satisfaction and energy minimization.
+///
+/// Full pipeline:
+/// 1. Rule-based 3D placement (`generate_coords`)
+/// 2. Build bond/angle constraints from topology (`build_constraints`)
+/// 3. Iterative constraint projection (`satisfy_constraints`)
+/// 4. Energy minimization with DREIDING force field (`minimize_dreiding`)
+pub fn generate_and_minimize_constrained(mol: &chematic_core::Molecule) -> Coords3D {
+    let coords = generate_coords(mol);
+    let cs = build_constraints(mol);
+    let projected = satisfy_constraints(&coords, mol, &cs, 20);
+    minimize_dreiding(mol, projected)
 }
 
 /// Generate 3D coordinates and minimize using UFF force field.

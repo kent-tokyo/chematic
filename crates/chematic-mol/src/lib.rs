@@ -34,6 +34,6 @@ pub use cml::{CmlError, parse_cml, write_cml};
 pub use mol2000::{MolMetadata, parse_mol, parse_mol_with_coords, parse_sdf_with_coords,
                   write_mol, write_mol_with_coords, write_sdf};
 pub use mol2_tripos::{Mol2Error, parse_mol2, write_mol2};
-pub use mol3000::{parse_mol_v3000, write_mol_v3000};
+pub use mol3000::{parse_mol_v3000, parse_mol_v3000_with_coords, write_mol_v3000};
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
 pub use sdf::{SdfReader, SdfRecord, SdfRecordReader};

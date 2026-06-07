@@ -118,7 +118,13 @@ fn parse_kv(tokens: &[&str], key: &str) -> Option<String> {
 /// molecule name (header line 1) through `M  END`.
 ///
 /// Returns `(Molecule, MolMetadata)` on success.
-pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> {
+/// Parse a MOL V3000 string into a `(Molecule, MolMetadata, Vec<(f64, f64)>)` triple.
+///
+/// `coords[i]` is the `(x, y)` position for atom `i` extracted from the V30 atom block.
+/// Z-coordinates are not captured (V3000 stores 3D; we retain only the 2D projection).
+pub fn parse_mol_v3000_with_coords(
+    input: &str,
+) -> Result<(Molecule, MolMetadata, Vec<(f64, f64)>), MolParseError> {
     // Collect all physical lines with 1-based numbering.
     let all_lines: Vec<(usize, &str)> = input
         .lines()
@@ -171,6 +177,9 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
     // V3000 atom indices are not required to be contiguous (though they
     // usually are), so we track them explicitly.
     let mut atom_idx_map: Vec<(u32, AtomIdx)> = Vec::new(); // (v3k_idx, builder_idx)
+
+    // Collect (x, y) coordinates in the order atoms are added to builder.
+    let mut coords: Vec<(f64, f64)> = Vec::new();
 
     enum State {
         BeforeCtab,
@@ -260,6 +269,10 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
                     line: lnum,
                 })?;
 
+                // Parse x, y coordinates (tokens[2] and tokens[3]).
+                let x: f64 = tokens[2].parse().unwrap_or(0.0);
+                let y: f64 = tokens[3].parse().unwrap_or(0.0);
+
                 // Atom-map number (positional field 6, 0 = no mapping).
                 let aamap_raw = tokens[5].parse::<u16>().unwrap_or(0);
                 let atom_map = if aamap_raw == 0 { None } else { Some(aamap_raw) };
@@ -288,6 +301,7 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
 
                 let builder_idx = builder.add_atom(atom);
                 atom_idx_map.push((v3k_idx, builder_idx));
+                coords.push((x, y));
             }
 
             State::AfterAtomBlock => {
@@ -408,7 +422,15 @@ pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseE
     if !stereo_groups.is_empty() {
         mol.set_stereo_groups(stereo_groups);
     }
-    Ok((mol, metadata))
+    Ok((mol, metadata, coords))
+}
+
+/// Parse a MOL V3000 string into a `(Molecule, MolMetadata)` pair.
+///
+/// Coordinates from the atom block are discarded. Use `parse_mol_v3000_with_coords`
+/// to retain 2D coordinates.
+pub fn parse_mol_v3000(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> {
+    parse_mol_v3000_with_coords(input).map(|(mol, meta, _coords)| (mol, meta))
 }
 
 /// Look up the builder `AtomIdx` for a given V3000 1-based index.
