@@ -7,6 +7,7 @@ use std::f64;
 
 use chematic_core::Molecule;
 use chematic_chem::gasteiger_charges;
+use chematic_ff::{assign_dreiding_types, dreiding_vdw};
 
 use crate::coords::{Coords3D, Point3};
 
@@ -196,14 +197,25 @@ fn get_atom_masses(mol: &Molecule) -> Vec<f64> {
 }
 
 fn initialize_velocities(masses: &[f64], temp_k: f64) -> Vec<Point3> {
-    let sigma = (K_BOLTZMANN * temp_k).sqrt();
+    // Maxwell-Boltzmann distribution: v_i ~ sqrt(k_B * T / m)
+    // Unit conversion: 1 kcal/mol = 0.01038 amu·Ų/fs²
+    // sigma = sqrt(k_B * T * 0.01038 / m) [Å/fs]
+    const UNIT_CONVERSION: f64 = 0.01038; // kcal/mol → amu·Ų/fs²
+
     (0..masses.len())
         .map(|i| {
-            Point3::new(
-                gaussian_random() * sigma / masses[i].sqrt(),
-                gaussian_random() * sigma / masses[i].sqrt(),
-                gaussian_random() * sigma / masses[i].sqrt(),
-            )
+            let m = masses[i];
+            if m > 1e-10 {
+                let sigma_sq = K_BOLTZMANN * temp_k * UNIT_CONVERSION / m;
+                let sigma = sigma_sq.sqrt();
+                Point3::new(
+                    gaussian_random() * sigma,
+                    gaussian_random() * sigma,
+                    gaussian_random() * sigma,
+                )
+            } else {
+                Point3::zero()
+            }
         })
         .collect()
 }
@@ -325,20 +337,62 @@ fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
 fn vdw_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
     let mut energy = 0.0;
     let n = mol.atom_count();
+
+    // Assign DREIDING types to all atoms
+    let types = assign_dreiding_types(mol);
+
+    // Build exclusion list: skip bonded pairs (1-2 and 1-3)
+    let mut excluded = std::collections::HashSet::new();
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        excluded.insert((i.min(j), i.max(j)));
+    }
+    // Also exclude 1-3 pairs (atoms separated by one bond)
+    let bonds_vec: Vec<_> = mol.bonds().collect();
+    for (_, bond1) in &bonds_vec {
+        for (_, bond2) in &bonds_vec {
+            if bond1.atom2 == bond2.atom1 {
+                let i = bond1.atom1.0 as usize;
+                let k = bond2.atom2.0 as usize;
+                if i != k {
+                    excluded.insert((i.min(k), i.max(k)));
+                }
+            }
+        }
+    }
+
     for i in 0..n {
         for j in (i + 1)..n {
+            // Skip excluded pairs
+            if excluded.contains(&(i, j)) {
+                continue;
+            }
+
             let ii = chematic_core::AtomIdx(i as u32);
             let jj = chematic_core::AtomIdx(j as u32);
             let pi = coords.get(ii);
             let pj = coords.get(jj);
             let r = pi.distance(&pj);
-            if r > 0.1 {
-                let r_eq = 2.0;
-                let delta = r - r_eq;
-                if delta < 0.0 {
-                    energy += 100.0 * delta * delta;
-                }
+
+            if r < 0.1 {
+                continue;
             }
+
+            // Get VDW parameters from DREIDING
+            let (r_i, eps_i) = dreiding_vdw(types[i]);
+            let (r_j, eps_j) = dreiding_vdw(types[j]);
+
+            // Lorentz-Berthelot combining rules
+            let sigma = 0.5 * (r_i + r_j);
+            let epsilon = (eps_i * eps_j).sqrt();
+
+            // Lennard-Jones 12-6: E = eps * [(sigma/r)^12 - 2*(sigma/r)^6]
+            let sig_r = sigma / r;
+            let sig_r6 = sig_r * sig_r * sig_r * sig_r * sig_r * sig_r;
+            let sig_r12 = sig_r6 * sig_r6;
+
+            energy += epsilon * (sig_r12 - 2.0 * sig_r6);
         }
     }
     energy
