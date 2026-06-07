@@ -76,48 +76,118 @@ cargo test --workspace   # 948 tests, all passing
 
 ## Quick Start
 
-### Using the umbrella crate
+### Installation
 
-```toml
-# Cargo.toml
-[dependencies]
-chematic = { git = "https://github.com/kent-tokyo/chematic", features = ["smiles", "fp"] }
+```bash
+# Rust
+cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
+
+# JavaScript/TypeScript
+npm install chematic-wasm@0.1.32
 ```
+
+### 5-Minute Examples
+
+#### Parse SMILES & check drug-likeness
 
 ```rust
-use chematic::smiles::{parse, canonical_smiles};
-use chematic::fp::ecfp4;
+use chematic_smiles::parse;
+use chematic_chem::*;
+
+let mol = parse("CC(=O)Oc1ccccc1C(=O)O")?;  // aspirin
+
+println!("MW: {:.2}", molecular_weight(&mol));
+println!("LogP: {:.2}", logp(&mol));
+println!("TPSA: {:.2}", tpsa(&mol));
+
+if lipinski_descriptor_pass(&mol) {
+    println!("✓ Passes Lipinski's Rule of Five");
+}
 ```
 
-### Using individual crates
-
-```toml
-# Cargo.toml
-[dependencies]
-chematic-smiles     = { git = "https://github.com/kent-tokyo/chematic" }
-chematic-perception = { git = "https://github.com/kent-tokyo/chematic" }
-chematic-fp         = { git = "https://github.com/kent-tokyo/chematic" }
-```
+#### Detect rings & aromaticity
 
 ```rust
-use chematic_smiles::{parse, canonical_smiles};
 use chematic_perception::{find_sssr, assign_aromaticity};
-use chematic_fp::{ecfp4, tanimoto_ecfp4};
 
-fn main() {
-    let benzene = parse("c1ccccc1").unwrap();
-    let toluene = parse("Cc1ccccc1").unwrap();
+let rings = find_sssr(&mol);
+let aromatic = assign_aromaticity(&mol);
 
-    // Ring and aromaticity perception
+println!("Rings: {}", rings.ring_count());
+// NEW in v0.1.32: Check for antiaromatic systems
+if aromatic.has_antiaromaticity(&mol) {
+    println!("⚠ Contains antiaromatic rings (unstable)");
+}
+```
+
+#### Generate 3D coordinates
+
+```rust
+use chematic_3d::generate_and_minimize_constrained;
+
+let coords_3d = generate_and_minimize_constrained(&mol);
+// NEW in v0.1.32: Constraint satisfaction for better geometry
+```
+
+#### Calculate fingerprint similarity
+
+```rust
+use chematic_fp::tanimoto_ecfp4;
+
+let benzene = parse("c1ccccc1")?;
+let toluene = parse("Cc1ccccc1")?;
+let sim = tanimoto_ecfp4(&benzene, &toluene)?;
+println!("Similarity: {:.2}", sim);  // ~0.5
+```
+
+#### Use from WASM/JavaScript
+
+```javascript
+import init, { molecule_report_json } from 'chematic-wasm';
+
+await init();
+
+const report = JSON.parse(
+    molecule_report_json("CC(=O)Oc1ccccc1C(=O)O")
+);
+console.log(`LogP: ${report.descriptors.logp}`);
+console.log(`Lipinski: ${report.filters.lipinski_passes ? '✓' : '✗'}`);
+```
+
+### Full Example (Rust)
+
+```rust
+use chematic_smiles::parse;
+use chematic_perception::{find_sssr, assign_aromaticity};
+use chematic_chem::*;
+use chematic_3d::generate_and_minimize_dreiding;
+use chematic_fp::tanimoto_ecfp4;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Parse
+    let benzene = parse("c1ccccc1")?;
+    let toluene = parse("Cc1ccccc1")?;
+
+    // Perception
     let rings = find_sssr(&benzene);
-    println!("rings: {}", rings.ring_count()); // 1
+    let arom = assign_aromaticity(&benzene);
+    println!("Benzene: {} rings, aromatic: {}", 
+        rings.ring_count(), 
+        arom.is_aromatic(&benzene));
 
-    // Fingerprint similarity
-    let sim = tanimoto_ecfp4(&benzene, &toluene);
-    println!("Tanimoto(benzene, toluene): {sim:.3}"); // ~0.5
+    // Chemistry
+    let mw = molecular_weight(&benzene);
+    println!("Benzene MW: {:.2}", mw);
 
-    // Canonical SMILES
-    println!("{}", canonical_smiles(&benzene)); // c1ccccc1
+    // 3D
+    let coords = generate_and_minimize_dreiding(&benzene);
+    println!("3D coordinates generated");
+
+    // Fingerprints
+    let sim = tanimoto_ecfp4(&benzene, &toluene)?;
+    println!("Benzene-Toluene similarity: {:.2}", sim);
+
+    Ok(())
 }
 ```
 
