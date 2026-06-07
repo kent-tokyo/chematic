@@ -32,11 +32,17 @@ pub struct EcfpConfig {
     ///
     /// Defaults to `false` (chirality ignored, matching RDKit's `useChirality=False`).
     pub use_chirality: bool,
+    /// When `true`, each hash sets two bit positions (using single and double-folded hash)
+    /// to reduce bitvector collisions. This reduces collision probability but changes
+    /// fingerprint values — **not backwards-compatible** with stored fingerprints.
+    ///
+    /// Defaults to `false` (single-bit folding, current behavior preserved).
+    pub use_double_fold: bool,
 }
 
 impl Default for EcfpConfig {
     fn default() -> Self {
-        Self { radius: 2, nbits: 2048, use_chirality: false }
+        Self { radius: 2, nbits: 2048, use_chirality: false, use_double_fold: false }
     }
 }
 
@@ -113,6 +119,9 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
         };
 
         fp.set((id % nbits as u64) as usize);
+        if config.use_double_fold {
+            fp.set(((id >> 11) % nbits as u64) as usize);
+        }
         ids.push(id);
     }
 
@@ -142,6 +151,9 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
             let new_id = fnv1a(&bytes);
             new_ids[i] = new_id;
             fp.set((new_id % nbits as u64) as usize);
+            if config.use_double_fold {
+                fp.set(((new_id >> 11) % nbits as u64) as usize);
+            }
         }
         core::mem::swap(&mut ids, &mut new_ids);
     }
@@ -229,7 +241,7 @@ pub fn ecfp4(mol: &Molecule) -> BitVec2048 {
 
 /// ECFP6 fingerprint (radius = 3, 2048 bits).
 pub fn ecfp6(mol: &Molecule) -> BitVec2048 {
-    ecfp(mol, &EcfpConfig { radius: 3, nbits: 2048, use_chirality: false })
+    ecfp(mol, &EcfpConfig { radius: 3, nbits: 2048, use_chirality: false, use_double_fold: false })
 }
 
 /// Tanimoto similarity between two molecules using ECFP4.
@@ -401,7 +413,7 @@ mod tests {
         // Every hash in the count map should be reachable from the ecfp bit set
         // (after folding to 2048 bits).  This checks the same hash scheme.
         let m = toluene();
-        let fp = ecfp(&m, &EcfpConfig { radius: 2, nbits: 2048, use_chirality: false });
+        let fp = ecfp(&m, &EcfpConfig { radius: 2, nbits: 2048, use_chirality: false, use_double_fold: false });
         let counts = morgan_fp_counts(&m, 2);
         for &hash in counts.keys() {
             let bit = (hash % 2048) as usize;
@@ -427,7 +439,7 @@ mod tests {
         // With use_chirality=true, L-alanine and D-alanine must have different FPs.
         let l_ala = parse("N[C@@H](C)C(=O)O").unwrap();
         let d_ala = parse("N[C@H](C)C(=O)O").unwrap();
-        let config = EcfpConfig { radius: 2, nbits: 2048, use_chirality: true };
+        let config = EcfpConfig { radius: 2, nbits: 2048, use_chirality: true, use_double_fold: false };
         let fp_l = ecfp(&l_ala, &config);
         let fp_d = ecfp(&d_ala, &config);
         assert_ne!(fp_l, fp_d, "L/D-alanine ECFP4 must differ when use_chirality=true");

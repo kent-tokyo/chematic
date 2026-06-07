@@ -330,7 +330,10 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                     if h > 0 {
                         15.79 // [nH] pyrrole-type (RDKit uses 15.79, not Ertl 2000's 13.97)
                     } else if degree >= 3 {
-                        4.93  // N-substituted: N-methyl, N-aryl in aromatic ring (3+ bonds)
+                        // N-substituted aromatic N (3+ bonds): neutral → 4.93 Å²
+                        // Quaternary aromatic N+ (thiazolium [n+], charge=1) → 3.88 Å²
+                        // Confirmed: thiamine [n+]2csc(CCO)c2C, RDKit 3.88 Å²
+                        if atom.charge > 0 { 3.88 } else { 4.93 }
                     } else {
                         12.89 // [n;X2]: pyridine-type aromatic N
                     }
@@ -523,6 +526,17 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
             }) {
                 return 0.4619;
             }
+            // Aryl ether C (Ar-O-R): aromatic C bonded to O (single bond, no H on O).
+            // RDKit per-atom analysis confirmed 0.5437 for aryl ether C vs 0.1441 for standard [c].
+            let bonded_to_ether_o = mol.neighbors(idx).any(|(nb, bidx)| {
+                mol.atom(nb).element.atomic_number() == 8
+                    && !mol.atom(nb).aromatic
+                    && mol.bond(bidx).order == BondOrder::Single
+                    && implicit_hcount(mol, nb) == 0  // O has no H (ether, not phenol)
+            });
+            if bonded_to_ether_o {
+                return 0.5437;  // Aryl ether C
+            }
             // Ring-junction C (all neighbors aromatic, ≥2 of them aromatic C)
             // covers C4a/C8a in naphthalene, C3a/C7a in indole, etc.
             // Excludes caffeine C2 (only 1 aromatic C neighbor; 2 are aromatic N).
@@ -587,15 +601,22 @@ fn crippen_carbon(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
                 }
             } else if has_aromatic_carbon_neighbor(mol, idx) {
                 // Benzylic C (Wildman-Crippen C25–C28).
-                // Confirmed: toluene(C25), ethylbenzene(C26), tetralin(C26×2)
+                // Per-atom RDKit comparison confirmed the following corrected values:
                 match h {
-                    3 => 0.0764,   // CH3-Ar (C25)
-                    2 => -0.0597,  // CH2-Ar (C26)
-                    1 => -0.1415,  // CH-Ar  (C27)
-                    _ => -0.2037,  // C<-Ar  (C28)
+                    3 =>  0.0845,  // CH3-Ar (C25)  — was 0.0764
+                    2 => -0.0516,  // CH2-Ar (C26)  — was -0.0597
+                    1 =>  0.1193,  // CH-Ar  (C27)  — was -0.1415 (sign reversed!)
+                    _ => -0.0967,  // C<-Ar  (C28)  — was -0.2037
                 }
             } else {
-                0.1441   // C1/C2/C3: pure alkyl C (bonded only to C/H)
+                // Pure alkyl C: distinguish branching (C3, ≥3 C neighbors) from straight chain (C1/C2)
+                // Branching C (isobutane CH, quaternary C): 0.0000 (was incorrectly 0.1441)
+                // Straight-chain C (ethane CH3, propane CH2): 0.1441
+                // Safety: sp2 alkene C (=C<) intercepted by has_double_to_c branch above.
+                let c_nbr_count = mol.neighbors(idx)
+                    .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
+                    .count();
+                if c_nbr_count >= 3 { 0.0000 } else { 0.1441 }
             }
         }
     }
@@ -695,17 +716,27 @@ fn crippen_oxygen(mol: &Molecule, idx: AtomIdx, ar: bool, h: u8) -> f64 {
         if is_double_bonded {
             -0.0509      // O8: carbonyl =O; confirmed from acetone
         } else {
-            // Carbamate/urethane ether O (N-CO-O): the adjacent C has both C=O and N.
-            // This is distinct from regular ester O (C-CO-O, which has no N on the C=O carbon).
-            // Confirmed from n_boc_piperazine RDKit per-atom contributions.
-            let is_carbamate_o = mol.neighbors(idx).any(|(cn, _)| {
-                mol.atom(cn).element.atomic_number() == 6
-                    && has_double_bond_to(mol, cn, 8)
-                    && mol.neighbors(cn).any(|(n2, _)| {
-                        mol.atom(n2).element.atomic_number() == 7
-                    })
+            // Aryl ether O (Ar-O-R) requires special handling:
+            // When ether O is bonded to aromatic C, RDKit uses distinct atomic type.
+            // Confirmed from anisole and diphenyl_ether per-atom RDKit analysis.
+            let bonded_to_aromatic_c = mol.neighbors(idx).any(|(nb, _)| {
+                mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6
             });
-            if is_carbamate_o { 0.4833 } else { -0.0684 }   // O4/O5: ether O
+            if bonded_to_aromatic_c {
+                -0.4195  // O: aryl ether (Ar-O-R)
+            } else {
+                // Carbamate/urethane ether O (N-CO-O): the adjacent C has both C=O and N.
+                // This is distinct from regular ester O (C-CO-O, which has no N on the C=O carbon).
+                // Confirmed from n_boc_piperazine RDKit per-atom contributions.
+                let is_carbamate_o = mol.neighbors(idx).any(|(cn, _)| {
+                    mol.atom(cn).element.atomic_number() == 6
+                        && has_double_bond_to(mol, cn, 8)
+                        && mol.neighbors(cn).any(|(n2, _)| {
+                            mol.atom(n2).element.atomic_number() == 7
+                        })
+                });
+                if is_carbamate_o { 0.4833 } else { -0.0684 }   // O4/O5: ether O
+            }
         }
     }
 }
