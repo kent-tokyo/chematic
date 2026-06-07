@@ -75,7 +75,8 @@ fn interpolate_charges_to_mesh(
     // TODO: Implement full B-spline interpolation
     // For now, simple linear interpolation to nearest mesh points
 
-    for (i, &charge) in charges.iter().enumerate() {
+    for i in 0..charges.len() {
+        let charge = charges[i];
         if charge.abs() < 1e-10 {
             continue;
         }
@@ -83,17 +84,23 @@ fn interpolate_charges_to_mesh(
         // Map atomic coordinate to fractional coordinates (0..1)
         let frac = map_to_fractional(coords[i], box_vecs);
 
-        // Find nearest mesh points (linear interpolation)
-        let mesh_size = output_grid.len().isqrt() as usize; // Approximate
-        for dim in 0..3 {
-            let mesh_coord = (frac[dim] * mesh_size as f64) as usize % mesh_size;
-            // Accumulate charge to mesh point
-            if mesh_coord < mesh_size {
-                let idx = mesh_coord;
-                if idx < output_grid.len() {
-                    output_grid[idx] += charge;
-                }
-            }
+        // Approximate mesh size as cubic root (assumes cubic mesh)
+        // WARNING: This is a simplification. Proper PME requires explicit mesh dimensions.
+        let approx_mesh_side = (output_grid.len() as f64).cbrt() as usize;
+        if approx_mesh_side == 0 {
+            continue;
+        }
+
+        // Map fractional coordinates to 3D mesh indices
+        let ix = ((frac[0] * approx_mesh_side as f64) as usize) % approx_mesh_side;
+        let iy = ((frac[1] * approx_mesh_side as f64) as usize) % approx_mesh_side;
+        let iz = ((frac[2] * approx_mesh_side as f64) as usize) % approx_mesh_side;
+
+        // Convert 3D indices to linear index: idx = ix + iy*M0 + iz*M0*M1
+        let linear_idx = ix + iy * approx_mesh_side + iz * approx_mesh_side * approx_mesh_side;
+
+        if linear_idx < output_grid.len() {
+            output_grid[linear_idx] += charge;
         }
     }
 }
