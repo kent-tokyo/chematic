@@ -9,8 +9,11 @@ description = "ECFP4/6, MACCS 166-bit and topological path fingerprints with Tan
 keywords = ["fingerprints", "ecfp", "morgan", "tanimoto", "cheminformatics"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-fp"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.28" }

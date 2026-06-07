@@ -5,11 +5,11 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Pure-Rust cheminformatics: SMILES/SMARTS, 2D SVG depiction, SDF/MOL V3000, ECFP/MACCS fingerprints, LogP/TPSA, CIP stereo, MCS — zero C/C++ deps, WASM-ready"
-keywords = ["cheminformatics", "smiles", "chemistry", "wasm", "rdkit"]
-categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations", "rendering"]
+description = "A pure-Rust cheminformatics toolkit: SMILES/SMARTS, SDF/MOL V3000, ECFP/MACCS fingerprints, LogP/TPSA/QED, CIP stereo, MCS, 2D SVG depiction — no C/C++ dependencies, runs in the browser via WebAssembly."
+keywords = ["cheminformatics", "chemistry", "smiles", "drug-discovery", "wasm"]
+categories = ["science::computational-chemistry::cheminformatics", "wasm", "parser-implementations", "rendering", "science"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic"
 
 [features]
@@ -27,8 +27,9 @@ iupac       = ["dep:chematic-iupac"]
 full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "iupac"]
 
 [package.metadata.docs.rs]
-features = ["full"]
+all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.1.28", optional = true }

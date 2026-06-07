@@ -9,8 +9,11 @@ description = "OpenSMILES parser, writer and canonical SMILES for chematic — p
 keywords = ["smiles", "parser", "cheminformatics", "rdkit", "wasm"]
 categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-smiles"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.28" }

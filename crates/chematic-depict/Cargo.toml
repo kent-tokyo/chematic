@@ -5,12 +5,15 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "2D SVG molecular depiction for chematic — pure-Rust RDKit alternative"
+description = "2D molecular structure depiction as SVG: ring templates, wedge/dash stereo bonds, CPK coloring, grid layout — pure-Rust, no C/C++ dependencies"
 keywords = ["svg", "depiction", "2d", "cheminformatics", "chemistry"]
 categories = ["science", "science::computational-chemistry::cheminformatics", "visualization"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-depict"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.28" }

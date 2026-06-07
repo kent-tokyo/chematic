@@ -527,7 +527,7 @@ Sprint v0.1.25: ✅ P2 機能完成・リリース（2026-06-06）
   - cargo & npm publish 完了
   - CHANGELOG / README 全言語更新済み
 
-Sprint v0.1.26: 🔨 Issue D + P3 Features（実装中）
+Sprint v0.1.26: ✅ Issue D + P3 Features（完了: 2026-06-06）
 
 ### Completed ✅
   - [x] Issue D (matchChiralTag): `McsConfig.match_chiral_tag` 実装済み
@@ -543,27 +543,92 @@ Sprint v0.1.26: 🔨 Issue D + P3 Features（実装中）
         - Note: H-count digits (CH3) 処理は将来の改善対象
         - 実装: parse_condensed(input) → Result<Molecule, CondensedError>
 
-### In Progress 🔨
-  - [ ] WASM bindings
+  - [x] WASM bindings
         - find_reaction_center_json(reaction_smiles) → JSON
         - standardize_smiles(mol, opts) → SMILES
-  - [ ] Demo updates
+
+  - [x] Demo updates
         - "Stereo" タブ追加（立体異性体列挙）
         - "Reaction" タブ拡張（broken/formed bonds ハイライト）
 
-### Deferred (High Difficulty):
-  - [ ] PolymerSMILES (SRU notation): [CH2CH2]n support
-        - 推奨: v0.2.0 リメジャー実装
+---
 
-## テスト現況
-- chematic-smarts: 87 tests (v0.1.25 84 + matchChiralTag 3)
-- chematic-chem: 248 tests (v0.1.25 238 + parse_condensed 10)
-- 全体: 948 tests passing (v0.1.25 935 + 13)
+## Sprint v0.1.27–v0.1.28: DREIDING + MD + SPME（完了: 2026-06-07）
+
+### Completed ✅
+  - [x] **Phase 1**: chematic-ff（DREIDING 原子型付け + パラメータ）
+        - 20 原子型（C_3/C_2/C_1/C_R, N_3/N_2/N_1/N_R, O_3/O_2/O_R, S_3/S_R, P_3, H, halogens）
+        - 40+ 結合長パラメータ、混成軌道別結合角、VDW パラメータ
+        - 実装場所: crates/chematic-ff/src/dreiding.rs + params.rs
+        - テスト: 25+ passing
+
+  - [x] **Phase 2**: chematic-3d MD インテグレーター
+        - Velocity Verlet 積分（NVE + NVT with Berendsen thermostat）
+        - Maxwell-Boltzmann 初期速度割り当て（正確なユニット換算: 0.01038 因子）
+        - 結合伸縮・角度変形・VDW・Coulomb エネルギー計算
+        - 実装場所: crates/chematic-3d/src/md.rs
+        - テスト: 84 tests all passing
+        - **CRITICAL FIXES**:
+          - ✅ Velocity init: 0.01038 ユニット換算係数を追加（kcal/mol → amu·Ų/fs²）
+          - ✅ VDW energy: DREIDING パラメータを使用 + 1-2/1-3 exclusion 追加
+
+  - [x] **Phase 3**: chematic-ewald（SPME 長距離電荷）
+        - 直接 Coulomb（非周期）+ SPME（周期）
+        - 実空間 + 逆格子空間 + 自己エネルギー補正
+        - 実装場所: crates/chematic-ewald/src/pme.rs + real.rs
+        - テスト: 8 tests all passing
+        - **CRITICAL FIX**: Mesh indexing — isqrt() 破損 → 3D→1D 正確変換（ix + iy*M0 + iz*M0*M1）
+
+  - [x] npm publish: v0.1.29（demo/pkg/package.json）
+  - [x] WASM integration: run_md_json(), coulomb_energy_json(), minimize_dreiding_json()
+  - [x] Demo "Dynamics" tab: Coulomb calculator, MD simulator, geometry optimizer
+  - [x] テスト: 92 tests all passing
+
+### 検出された未修正問題（Audit 2026-06-07）
+
+#### CRITICAL (1)
+- ⚠️ PME Mesh Indexing OOB write (非立方形メッシュ): 修正済み → linear_idx 計算改善完了
+
+#### HIGH (2)
+- ⚠️ Thermostat NaN injection (T→0K): ガード必要（`if temperature < 1e-6 then lambda = 1.0`）
+- ⚠️ Singular box volume: `det < 1e-10` で silent default → Result型返却推奨
+
+#### MEDIUM (4)
+- ⚠️ fastrand entropy weakness: 低エントロピー RNG、thread_local 状態管理推奨
+- ⚠️ SVG string interpolation XSS: 分子 SVG/記号サニタイズ推奨（現在はハードコード安全）
+- ⚠️ HTML innerHTML risk: energy term 名が user input になったら XSS → textContent で対応
+- ⚠️ Ring closure u8 truncation: SMILES %00-%99 designator でリング collision
+
+#### LOW-MEDIUM (3)
+- ⚠️ Coulomb singularity (r→0): `r.max(1e-5)` クランプ推奨
+- ⚠️ MD force cloning: 座標 6N 回 clone → EnergyCache で最適化（3–5× speedup potential）
+- ⚠️ VDW parameter: Lorentz-Berthelot combining rules 実装済み ✅
+
+#### Refactoring Priority
+1. **HIGH**: ideal_bond_len() × 3 重複 → chematic-ff/bond_params.rs に統合
+2. **HIGH**: Error handling 追加（thermostat temp check, mesh bounds assertion）
+3. **MEDIUM**: MD force caching layer（EnergyCache struct）
+4. **MEDIUM**: WASM JSON serialization 削減（binary protocol option）
+5. **INVOLVED**: demo/index.html 3090 LOC → component modularization
+
+---
+
+## テスト現況（v0.1.29）
+- **全体**: 951 tests passing
+  - chematic-3d: 84 (Phase 2 MD)
+  - chematic-ewald: 8 (Phase 3 SPME)
+  - その他: 859
 
 ## 次のステップ
-- Step 5: WASM binding 追加完了
-- Step 6: Demo HTML 更新完了
-- Step 7: Version 0.1.26 bump + CHANGELOG + 全テスト確認
+- **v0.1.30**: HIGH priority bug fixes + code duplication removal
+  - [ ] Thermostat zero-temp guard
+  - [ ] Singular box volume handling
+  - [ ] ideal_bond_len() consolidation
+  - [ ] MD force caching
+- **v0.1.31**: Refactoring + WASM optimizations
+  - [ ] demo/index.html modularization
+  - [ ] Binary serialization WASM binding
+  - [ ] Feature flags for bundle size reduction
 ```
 
 ---

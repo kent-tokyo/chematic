@@ -9,8 +9,11 @@ description = "Reaction SMILES/SMIRKS parser and writer for chematic — pure-Ru
 keywords = ["reaction", "smiles", "smirks", "cheminformatics", "chemistry"]
 categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-rxn"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core   = { path = "../chematic-core",   version = "0.1.28" }

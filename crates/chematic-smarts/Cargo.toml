@@ -9,8 +9,11 @@ description = "SMARTS parser, VF2 subgraph isomorphism and MCS for chematic — 
 keywords = ["smarts", "substructure", "vf2", "mcs", "cheminformatics"]
 categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-smarts"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.1.28" }

@@ -5,12 +5,15 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Molecular descriptors (MW, LogP, TPSA, CIP), standardization and Murcko scaffold for chematic"
+description = "Molecular descriptors: MW, LogP, TPSA, QED, Gasteiger charges, CIP stereo, Murcko scaffold, tautomers, BRICS fragmentation — pure-Rust"
 keywords = ["descriptors", "lipinski", "tpsa", "logp", "cheminformatics"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-chem"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.1.28" }

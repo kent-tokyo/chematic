@@ -6,11 +6,14 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Local IUPAC name generation for chematic — pure-Rust, no network required"
-keywords = ["cheminformatics", "iupac", "chemistry", "nomenclature"]
+keywords = ["cheminformatics", "iupac", "chemistry", "nomenclature", "systematic-name"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 readme = "../../README.md"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage.workspace = true
 documentation = "https://docs.rs/chematic-iupac"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.1.28" }
