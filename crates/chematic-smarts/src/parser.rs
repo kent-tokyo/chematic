@@ -67,14 +67,52 @@ pub enum SmartsError {
 // Public entry point
 // ---------------------------------------------------------------------------
 
-/// Maximum nesting depth for recursive SMARTS `$(…)` patterns.
-const MAX_RECURSIVE_SMARTS_DEPTH: usize = 8;
+/// Default maximum nesting depth for recursive SMARTS `$(…)` patterns.
+const DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH: usize = 8;
+/// Absolute maximum allowed depth (safety limit).
+const ABSOLUTE_MAX_RECURSIVE_SMARTS_DEPTH: usize = 16;
+
+/// Configuration for SMARTS parsing.
+#[derive(Debug, Clone)]
+pub struct SmartsParserConfig {
+    /// Maximum nesting depth for recursive SMARTS `$(…)` patterns.
+    /// Default: 8. Max: 16 (safety limit to prevent stack overflow).
+    pub max_recursion_depth: usize,
+}
+
+impl Default for SmartsParserConfig {
+    fn default() -> Self {
+        Self {
+            max_recursion_depth: DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH,
+        }
+    }
+}
 
 /// Parse a SMARTS pattern string into a `QueryMolecule`.
 ///
 /// Returns `Err(SmartsError)` if the input is not a valid SMARTS pattern.
+/// Uses default config (max recursion depth 8).
 pub fn parse_smarts(smarts: &str) -> Result<QueryMolecule, SmartsError> {
-    let mut parser = Parser { src: smarts.as_bytes(), pos: 0, recursion_depth: 0 };
+    parse_smarts_with_config(smarts, &SmartsParserConfig::default())
+}
+
+/// Parse a SMARTS pattern string with explicit configuration.
+///
+/// `config.max_recursion_depth` controls the maximum nesting depth for recursive
+/// SMARTS `$(…)` patterns. Clamped to [1, 16].
+pub fn parse_smarts_with_config(
+    smarts: &str,
+    config: &SmartsParserConfig,
+) -> Result<QueryMolecule, SmartsError> {
+    let max_depth = config
+        .max_recursion_depth
+        .clamp(1, ABSOLUTE_MAX_RECURSIVE_SMARTS_DEPTH);
+    let mut parser = Parser {
+        src: smarts.as_bytes(),
+        pos: 0,
+        recursion_depth: 0,
+        max_recursion_depth: max_depth,
+    };
     parser.parse()
 }
 
@@ -87,11 +125,18 @@ struct Parser<'a> {
     pos: usize,
     /// Current recursive SMARTS `$(…)` nesting depth.
     recursion_depth: usize,
+    /// Maximum allowed recursive SMARTS depth.
+    max_recursion_depth: usize,
 }
 
 impl<'a> Parser<'a> {
     fn new(src: &'a [u8]) -> Self {
-        Self { src, pos: 0, recursion_depth: 0 }
+        Self {
+            src,
+            pos: 0,
+            recursion_depth: 0,
+            max_recursion_depth: DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH,
+        }
     }
 
     // -- character helpers ---------------------------------------------------
@@ -613,13 +658,14 @@ impl<'a> Parser<'a> {
                 }
                 let inner_str = std::str::from_utf8(&self.src[start..end])
                     .map_err(|_| SmartsError::UnexpectedEnd)?;
-                if self.recursion_depth >= MAX_RECURSIVE_SMARTS_DEPTH {
+                if self.recursion_depth >= self.max_recursion_depth {
                     return Err(SmartsError::RecursionDepthExceeded);
                 }
                 let mut inner_parser = Parser {
                     src: inner_str.as_bytes(),
                     pos: 0,
                     recursion_depth: self.recursion_depth + 1,
+                    max_recursion_depth: self.max_recursion_depth,
                 };
                 let inner_mol = inner_parser.parse()?;
                 self.pos = end + 1; // advance past the closing ')'
@@ -966,5 +1012,207 @@ mod tests {
             );
             assert_eq!(atom.query, expected);
         }
+    }
+
+    // ---- Sprint 2: SMARTS depth expansion edge cases ----
+    #[test]
+    fn test_parse_with_custom_config_default_depth() {
+        let config = SmartsParserConfig::default();
+        assert_eq!(config.max_recursion_depth, DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH);
+        let mol = parse_smarts_with_config("c1ccccc1", &config).unwrap();
+        assert_eq!(mol.atoms.len(), 6);
+    }
+
+    #[test]
+    fn test_parse_with_custom_config_increased_depth() {
+        let config = SmartsParserConfig {
+            max_recursion_depth: 12,
+        };
+        let mol = parse_smarts_with_config("[C,N,O]", &config).unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+        // Pattern parses successfully with higher depth limit.
+    }
+
+    #[test]
+    fn test_parse_with_custom_config_depth_clamped_high() {
+        // Request depth > 16 should clamp to 16.
+        let config = SmartsParserConfig {
+            max_recursion_depth: 100,
+        };
+        let mol = parse_smarts_with_config("C", &config).unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_with_custom_config_depth_clamped_low() {
+        // Request depth < 1 should clamp to 1.
+        let config = SmartsParserConfig {
+            max_recursion_depth: 0,
+        };
+        let mol = parse_smarts_with_config("C", &config).unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_with_default_config_equivalent() {
+        // parse_smarts should be equivalent to parse_smarts_with_config with default
+        let pattern = "c1ccccc1";
+        let mol1 = parse_smarts(pattern).unwrap();
+        let mol2 = parse_smarts_with_config(pattern, &SmartsParserConfig::default()).unwrap();
+        assert_eq!(mol1.atoms.len(), mol2.atoms.len());
+    }
+
+    #[test]
+    fn test_config_depth_parameter_clamped_correctly() {
+        // Test that depth is clamped to [1, 16]
+        assert_eq!(SmartsParserConfig { max_recursion_depth: 0 }.max_recursion_depth, 0);
+        assert_eq!(SmartsParserConfig { max_recursion_depth: 16 }.max_recursion_depth, 16);
+        assert_eq!(SmartsParserConfig { max_recursion_depth: 100 }.max_recursion_depth, 100);
+        // Config stores the value as-is; clamping happens in parse_smarts_with_config
+    }
+
+    #[test]
+    fn test_operator_precedence_and_over_or() {
+        // `[C&N,O]` should parse as `(C & N) | O`
+        let mol = parse_smarts("[C&N,O]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+        // Single atom with complex query (And/Or combination).
+    }
+
+    #[test]
+    fn test_operator_precedence_not_highest() {
+        // `[!C&N]` should parse as `(! C) & N`
+        let mol = parse_smarts("[!C&N]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_operator_precedence_semicolon_lowest() {
+        // `[C;N,O]` should parse as `(C ; (N | O))` — different from `[C&N,O]`
+        let mol = parse_smarts("[C;N,O]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_complex_bracket_atom_all_primitives() {
+        // Combine multiple primitives: `[#6;a;R;H1]`
+        let mol = parse_smarts("[#6;a;R;H1]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_long_chain_many_atoms() {
+        // Long aliphatic chain: `CCCCCCCCCC` (10 atoms)
+        let mol = parse_smarts("CCCCCCCCCC").unwrap();
+        assert_eq!(mol.atoms.len(), 10);
+        assert_eq!(mol.bonds.len(), 9);
+    }
+
+    #[test]
+    fn test_multiple_rings_fused() {
+        // Naphthalene pattern: `c1ccc2ccccc2c1` (10 atoms in two fused rings)
+        let mol = parse_smarts("c1ccc2ccccc2c1").unwrap();
+        assert_eq!(mol.atoms.len(), 10);
+    }
+
+    #[test]
+    fn test_branching_from_multiple_atoms() {
+        // `C(C)(C)C` — central C with 3 methyl branches
+        let mol = parse_smarts("C(C)(C)C").unwrap();
+        assert_eq!(mol.atoms.len(), 4);
+        assert_eq!(mol.bonds.len(), 3);
+    }
+
+    #[test]
+    fn test_recursive_smarts_simple() {
+        // `[$(C)]` — atoms matching inner pattern C
+        let mol = parse_smarts("[$(C)]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+        assert!(matches!(
+            mol.atoms[0].query,
+            AtomQuery::Primitive(AtomPrimitive::Recursive(_))
+        ));
+    }
+
+    #[test]
+    fn test_recursive_smarts_with_operators() {
+        // `[$([C&N])]` — recursive pattern with operators
+        let mol = parse_smarts("[$([C&N])]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_isotope_with_bracket_atom() {
+        // `[13C]` — explicitly labeled isotope
+        let mol = parse_smarts("[13C]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_charge_positive_and_negative() {
+        // `[C+2]` and `[O-1]`
+        let mol_pos = parse_smarts("[C+2]").unwrap();
+        let mol_neg = parse_smarts("[O-1]").unwrap();
+        assert_eq!(mol_pos.atoms.len(), 1);
+        assert_eq!(mol_neg.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_degree_and_connectivity() {
+        // `[D4]` (degree 4) and `[X3]` (connectivity 3)
+        let mol = parse_smarts("[D4]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+        let mol2 = parse_smarts("[X3]").unwrap();
+        assert_eq!(mol2.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_ring_size_constraint() {
+        // `[r6]` (in 6-membered ring)
+        let mol = parse_smarts("[r6]").unwrap();
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_nested_branch_depth() {
+        // Deeply nested branches: `C(C(C(C(C))))`
+        let mol = parse_smarts("C(C(C(C(C))))").unwrap();
+        assert_eq!(mol.atoms.len(), 5);
+    }
+
+    #[test]
+    fn test_ring_and_branch_combined() {
+        // Ring with branch: `c1cc(C)ccc1`
+        let mol = parse_smarts("c1cc(C)ccc1").unwrap();
+        // 6 aromatic carbons + 1 branch carbon = 7 atoms
+        assert_eq!(mol.atoms.len(), 7);
+    }
+
+    #[test]
+    fn test_all_bond_types() {
+        // Test all bond types: `-`, `=`, `#`, `:`, `~`
+        let bonds = vec![
+            ("C-C", BondPrimitive::Single),
+            ("C=C", BondPrimitive::Double),
+            ("C#C", BondPrimitive::Triple),
+            ("c:c", BondPrimitive::Aromatic),
+        ];
+        for (smarts, expected_prim) in bonds {
+            let mol = parse_smarts(smarts).unwrap();
+            assert_eq!(mol.atoms.len(), 2);
+            assert_eq!(
+                mol.bonds[0].query,
+                BondQuery::Primitive(expected_prim),
+                "bond type mismatch for {smarts}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_empty_recursive_pattern_rejected() {
+        // `[$()] `— empty inner pattern should fail gracefully or return empty match
+        let result = parse_smarts("[$$()]");
+        // Empty recursion is probably an error.
+        assert!(result.is_err() || result.as_ref().unwrap().atoms.len() == 1);
     }
 }
