@@ -616,6 +616,36 @@ pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsVal
     Ok(format!("[{}]", parts.join(",")))
 }
 
+/// Like `smarts_match_atoms` but with explicit chirality matching control.
+///
+/// When `use_chirality=true`, SMARTS chirality primitives `[@]` and `[@@]` are
+/// matched against the target molecule's stereochemistry. When `false`, chirality
+/// is ignored (RDKit default).
+#[wasm_bindgen]
+pub fn smarts_match_atoms_with_chirality(
+    smarts: &str,
+    mol: &MolHandle,
+    use_chirality: bool,
+) -> Result<String, JsValue> {
+    let query = chematic_smarts::parse_smarts(smarts)
+        .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    let config = chematic_smarts::MatchConfig {
+        max_matches: None,
+        use_chirality,
+        use_isotopes: false,
+    };
+    let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
+    let parts: Vec<String> = matches
+        .into_iter()
+        .map(|m| {
+            let mut idxs: Vec<u32> = m.values().map(|a| a.0).collect();
+            idxs.sort_unstable();
+            format!("[{}]", idxs.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(","))
+        })
+        .collect();
+    Ok(format!("[{}]", parts.join(",")))
+}
+
 /// Generate 3D coordinates for the molecule and return a PDB string.
 ///
 /// Coordinates are generated using distance-geometry placement with ring templates.
@@ -643,6 +673,60 @@ pub fn generate_3d_minimized_pdb(mol: &MolHandle) -> String {
 pub fn ecfp4_bitvec(mol: &MolHandle) -> Vec<u8> {
     let fp = chematic_fp::ecfp4(&mol.inner);
     // BitVec2048 is 2048 bits; extract them byte-by-byte via the public `get` method.
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
+/// Like `ecfp4_bitvec` but with explicit chirality control.
+///
+/// When `use_chirality=true`, tetrahedral stereochemistry is included in the
+/// initial atom hash, making enantiomers have different fingerprints.
+/// When `false` (default), chirality is ignored.
+#[wasm_bindgen]
+pub fn ecfp4_bitvec_with_chirality(mol: &MolHandle, use_chirality: bool) -> Vec<u8> {
+    let config = chematic_fp::EcfpConfig {
+        radius: 2,
+        nbits: 2048,
+        use_chirality,
+        use_double_fold: false,
+    };
+    let fp = chematic_fp::ecfp(&mol.inner, &config);
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
+/// Like `ecfp6_bitvec` but with explicit chirality control.
+///
+/// When `use_chirality=true`, tetrahedral stereochemistry is included in the
+/// initial atom hash, making enantiomers have different fingerprints.
+/// When `false` (default), chirality is ignored.
+#[wasm_bindgen]
+pub fn ecfp6_bitvec_with_chirality(mol: &MolHandle, use_chirality: bool) -> Vec<u8> {
+    let config = chematic_fp::EcfpConfig {
+        radius: 3,
+        nbits: 2048,
+        use_chirality,
+        use_double_fold: false,
+    };
+    let fp = chematic_fp::ecfp(&mol.inner, &config);
     (0..256usize)
         .map(|byte_idx| {
             let mut byte = 0u8;
@@ -2553,10 +2637,14 @@ pub fn sssr_rings_json(mol: &MolHandle) -> String {
 ///
 /// The hash modulo is applied at fingerprint-generation time (`id % nbits`),
 /// so no post-processing fold is needed.
+/// Compute a custom ECFP (Extended Connectivity FingerPrint) with specified radius and bit count.
+///
+/// When `use_chirality=true`, tetrahedral stereochemistry is included in the initial
+/// atom hash. When `false` (default), chirality is ignored.
 #[wasm_bindgen]
-pub fn ecfp_bitvec_custom(mol: &MolHandle, radius: u32, nbits: usize) -> Vec<u8> {
+pub fn ecfp_bitvec_custom(mol: &MolHandle, radius: u32, nbits: usize, use_chirality: bool) -> Vec<u8> {
     let nbits = match nbits { 256 | 512 | 1024 | 2048 => nbits, _ => 2048 };
-    let fp = chematic_fp::ecfp(&mol.inner, &chematic_fp::EcfpConfig { radius, nbits, use_chirality: false, use_double_fold: false });
+    let fp = chematic_fp::ecfp(&mol.inner, &chematic_fp::EcfpConfig { radius, nbits, use_chirality, use_double_fold: false });
     let byte_count = nbits / 8;
     (0..byte_count)
         .map(|byte_idx| {
@@ -3882,16 +3970,63 @@ M  END
     #[test]
     fn ecfp_bitvec_custom_256_length() {
         let mol = parse("c1ccccc1");
-        let bv = ecfp_bitvec_custom(&mol, 2, 256);
+        let bv = ecfp_bitvec_custom(&mol, 2, 256, false);
         assert_eq!(bv.len(), 32, "256-bit FP = 32 bytes");
     }
 
     #[test]
     fn ecfp_bitvec_custom_identical_tanimoto() {
         let mol = parse("c1ccccc1");
-        let a = ecfp_bitvec_custom(&mol, 2, 512);
-        let b = ecfp_bitvec_custom(&mol, 2, 512);
+        let a = ecfp_bitvec_custom(&mol, 2, 512, false);
+        let b = ecfp_bitvec_custom(&mol, 2, 512, false);
         assert_eq!(a, b, "same mol same FP");
+    }
+
+    // ── Chirality tests ──────────────────────────────────────────────────────
+    #[test]
+    fn ecfp4_bitvec_with_chirality_L_vs_D_alanine_different() {
+        let l_ala = parse("C[C@H](N)C(=O)O");
+        let d_ala = parse("C[C@@H](N)C(=O)O");
+        let l_fp = ecfp4_bitvec_with_chirality(&l_ala, true);
+        let d_fp = ecfp4_bitvec_with_chirality(&d_ala, true);
+        assert_ne!(l_fp, d_fp, "L-alanine and D-alanine should have different ECFP4 with use_chirality=true");
+    }
+
+    #[test]
+    fn ecfp4_bitvec_with_chirality_L_vs_D_alanine_same_without_chirality() {
+        let l_ala = parse("C[C@H](N)C(=O)O");
+        let d_ala = parse("C[C@@H](N)C(=O)O");
+        let l_fp = ecfp4_bitvec_with_chirality(&l_ala, false);
+        let d_fp = ecfp4_bitvec_with_chirality(&d_ala, false);
+        assert_eq!(l_fp, d_fp, "L-alanine and D-alanine should have identical ECFP4 with use_chirality=false");
+    }
+
+    #[test]
+    fn ecfp6_bitvec_with_chirality_L_vs_D_alanine_different() {
+        let l_ala = parse("C[C@H](N)C(=O)O");
+        let d_ala = parse("C[C@@H](N)C(=O)O");
+        let l_fp = ecfp6_bitvec_with_chirality(&l_ala, true);
+        let d_fp = ecfp6_bitvec_with_chirality(&d_ala, true);
+        assert_ne!(l_fp, d_fp, "L-alanine and D-alanine should have different ECFP6 with use_chirality=true");
+    }
+
+    #[test]
+    fn smarts_match_atoms_with_chirality_chiral_atom_matches_only_with_flag() {
+        let l_ala = parse("C[C@H](N)C(=O)O");
+        let d_ala = parse("C[C@@H](N)C(=O)O");
+        // Match [C@H] (counterclockwise) — should only match L-alanine when use_chirality=true
+        let l_matches_with = smarts_match_atoms_with_chirality("[C@H]", &l_ala, true).unwrap();
+        let l_matches_without = smarts_match_atoms_with_chirality("[C@H]", &l_ala, false).unwrap();
+        let d_matches_with = smarts_match_atoms_with_chirality("[C@H]", &d_ala, true).unwrap();
+        let d_matches_without = smarts_match_atoms_with_chirality("[C@H]", &d_ala, false).unwrap();
+
+        // With use_chirality=true: L-ala matches, D-ala doesn't
+        assert!(!l_matches_with.contains("[]"), "L-ala should match [C@H] with use_chirality=true");
+        assert!(d_matches_with.contains("[]"), "D-ala should NOT match [C@H] with use_chirality=true");
+
+        // With use_chirality=false: both match (chirality ignored)
+        assert!(!l_matches_without.contains("[]"), "L-ala should match [C@H] with use_chirality=false");
+        assert!(!d_matches_without.contains("[]"), "D-ala should match [C@H] with use_chirality=false (chirality ignored)");
     }
 
     #[test]
