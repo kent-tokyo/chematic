@@ -13,6 +13,47 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.36] — 2026-06-08
+
+### Fixed — Issue #1 監査: 位相的に正しいが化学的に無意味な結果
+
+#### `chematic-smarts` — VF2・MCS 正確性修正
+
+**BUG-2: SMARTS `[h]` プリミティブ（暗黙的 H 数）**
+- **修正**: パーサーが `[H]`/`[H2]`（合計 H 数）と `[h]`/`[h2]`（暗黙的 H のみ）を正しく区別するようになった
+- `AtomPrimitive::ImplicitHCount(u8)` バリアント を query.rs に追加
+- parser.rs を修正して、要素フォールスルーの前に小文字 `h` を処理
+- `eval_atom_primitive()` に `implicit_hcount()` を使用したマッチアームを追加
+- **影響**: 芳香族 H が明示的原子に誤ってマッチするサイレント誤マッチを防止
+
+**BUG-3: MCS `maximize_bonds` タイブレイク**
+- **修正**: mcs.rs の `grow()` 関数を修正して、原子数が等しい場合に結合数をタイブレイク条件として使用
+- 条件追加: `|| (maximize_bonds && mapping.size == best.size && mapping.bond_count > best.bond_count)`
+- デフォルト `maximize_bonds=true` で RDKit 動作と同期
+- **影響**: 複数の同等サイズマッチが存在する場合、MCS が一貫した結果を返すようになった
+
+**BUG-4: SMARTS `/\` 幾何立体結合（E/Z）**
+- **修正**: `BondPrimitive` enum に `Up` と `Down` バリアントを追加して幾何立体化学対応
+- parser.rs を修正: `is_bond_token()` が `/` と `\` 文字を認識
+- `consume_bond_prim()` を修正して `/` を `Up`、`\` を `Down` として解析
+- `eval_bond_primitive()` に `BondPrimitive::Up` と `Down` マッチアームを追加
+- **影響**: `/C=C\` のような SMARTS クエリが E/Z に設定された二重結合を正しくマッチできるようになった
+
+### テスト カバレッジ
+
+- **chematic-smarts**: 124 テスト全パス（BUG-2/3/4 検証含む）
+- **ワークスペース**: 1,120+ テスト全パス
+- clippy 警告なし
+
+### 注記
+
+- **Issue #1 パターン**: 監査で、アルゴリズムが位相的には正しいが化学的に無意味な結果を返すバグ 3 件を発見
+  - 根本原因: RDKit には制約オプションがあるが、chematic では実装されていなかった
+  - 例: VF2 `uniquify`（v0.1.33 で修正）、MCS 環認識（v0.1.22 で修正）
+  - 本 Sprint で 3 つの欠落していた正確性制約を追加
+
+---
+
 ## [0.1.32] — 2026-06-07
 
 ### Added — 3D ジオメトリ・座標処理・WASM 安定性の強化
