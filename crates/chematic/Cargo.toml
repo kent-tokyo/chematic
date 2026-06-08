@@ -23,8 +23,9 @@ chem        = ["perception", "dep:chematic-chem"]
 smarts      = ["perception", "dep:chematic-smarts"]
 rxn         = ["smiles", "dep:chematic-rxn"]
 threed      = ["perception", "dep:chematic-3d"]
+inchi       = ["chem", "dep:chematic-inchi"]
 iupac       = ["dep:chematic-iupac"]
-full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "iupac"]
+full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "inchi", "iupac"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -32,14 +33,15 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.1.33", optional = true }
-chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.33", optional = true }
-chematic-perception = { path = "../chematic-perception", version = "0.1.33", optional = true }
-chematic-mol        = { path = "../chematic-mol",        version = "0.1.33", optional = true }
-chematic-depict     = { path = "../chematic-depict",     version = "0.1.33", optional = true }
-chematic-chem       = { path = "../chematic-chem",       version = "0.1.33", optional = true }
-chematic-fp         = { path = "../chematic-fp",         version = "0.1.33", optional = true }
-chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.33", optional = true }
-chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.33", optional = true }
-chematic-3d         = { path = "../chematic-3d",         version = "0.1.33", optional = true }
-chematic-iupac      = { path = "../chematic-iupac",      version = "0.1.33", optional = true }
+chematic-core       = { path = "../chematic-core",       version = "0.1.34", optional = true }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.1.34", optional = true }
+chematic-perception = { path = "../chematic-perception", version = "0.1.34", optional = true }
+chematic-mol        = { path = "../chematic-mol",        version = "0.1.34", optional = true }
+chematic-depict     = { path = "../chematic-depict",     version = "0.1.34", optional = true }
+chematic-chem       = { path = "../chematic-chem",       version = "0.1.34", optional = true }
+chematic-fp         = { path = "../chematic-fp",         version = "0.1.34", optional = true }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.34", optional = true }
+chematic-rxn        = { path = "../chematic-rxn",        version = "0.1.34", optional = true }
+chematic-3d         = { path = "../chematic-3d",         version = "0.1.34", optional = true }
+chematic-inchi      = { path = "../chematic-inchi",      version = "0.1.34", optional = true }
+chematic-iupac      = { path = "../chematic-iupac",      version = "0.1.34", optional = true }

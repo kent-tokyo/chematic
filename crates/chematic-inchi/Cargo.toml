@@ -1,0 +1,17 @@
+[package]
+name = "chematic-inchi"
+version = "0.1.34"
+edition = "2021"
+authors = ["Kentaro Tanabe <ke.tanabe@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Pure Rust InChI and InChIKey generation for IUPAC standard organic molecules (WASM-compatible)"
+repository = "https://github.com/kent-tokyo/chematic"
+
+[dependencies]
+chematic-core = { path = "../chematic-core" }
+chematic-smiles = { path = "../chematic-smiles" }
+chematic-chem = { path = "../chematic-chem" }
+sha2 = { version = "0.10", default-features = false }
+
+[lib]
+crate-type = ["rlib", "cdylib"]

@@ -26,6 +26,7 @@
 //! | Canonical tautomers | `chem` | [`chem::canonical_tautomer`] |
 //! | Reaction SMILES parsing | `rxn` | [`rxn::parse_reaction`] |
 //! | SMIRKS template application | `rxn` | [`rxn::run_reactants`] |
+//! | InChI / InChIKey generation | `inchi` | [`inchi::inchi`], [`inchi::inchi_key`] |
 //! | 3D coordinate generation | `threed` | [`threed::generate_coords`] |
 //! | XYZ / PDB I/O | `threed` | [`threed::parse_xyz`], [`threed::parse_pdb_atoms`] |
 //! | UFF-derived geometry minimization | `threed` | [`threed::minimize`] |
@@ -65,7 +66,9 @@
 //! | `chem` | Descriptors, LogP, TPSA, scaffolds, standardization |
 //! | `smarts` | SMARTS parser, substructure search, MCS |
 //! | `rxn` | Reaction SMILES, SMIRKS transforms |
+//! | `inchi` | InChI and InChIKey generation |
 //! | `threed` | 3D coordinates, UFF minimization, XYZ/PDB I/O |
+//! | `iupac` | IUPAC nomenclature for simple molecules |
 //! | `full` | All of the above |
 
 #[cfg(feature = "threed")]
@@ -78,6 +81,8 @@ pub use chematic_core as core;
 pub use chematic_depict as depict;
 #[cfg(feature = "fp")]
 pub use chematic_fp as fp;
+#[cfg(feature = "inchi")]
+pub use chematic_inchi as inchi;
 #[cfg(feature = "iupac")]
 pub use chematic_iupac as iupac;
 #[cfg(feature = "mol")]
