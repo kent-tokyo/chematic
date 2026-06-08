@@ -341,6 +341,17 @@ impl MolHandle {
     pub fn num_unspecified_stereocenters(&self) -> usize {
         chematic_chem::num_unspecified_stereocenters(&self.inner)
     }
+
+    /// InChI string representation of the molecule.
+    pub fn to_inchi(&self) -> String {
+        chematic_inchi::inchi(&self.inner)
+    }
+
+    /// InChIKey (27-character identifier) for the molecule.
+    pub fn to_inchikey(&self) -> String {
+        let inchi_str = chematic_inchi::inchi(&self.inner);
+        chematic_inchi::inchi_key(&inchi_str)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -3148,9 +3159,16 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
 
     if n == 0 {
         // No unspecified centers — return the molecule's canonical SMILES as a
-        // single-element array.
+        // single-element array with InChI.
         let smi = chematic_smiles::canonical_smiles(m);
-        return Ok(format!("[\"{}\"]", escape_json_string(&smi)));
+        let inchi_str = chematic_inchi::inchi(m);
+        let inchikey_str = chematic_inchi::inchi_key(&inchi_str);
+        return Ok(format!(
+            r#"[{{"smiles":"{}","inchi":"{}","inchikey":"{}"}}]"#,
+            escape_json_string(&smi),
+            escape_json_string(&inchi_str),
+            escape_json_string(&inchikey_str),
+        ));
     }
 
     let mut seen = std::collections::HashSet::new();
@@ -3197,7 +3215,14 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
         let isomer = builder.build();
         let smi = chematic_smiles::canonical_smiles(&isomer);
         if seen.insert(smi.clone()) {
-            results.push(format!("\"{}\"", escape_json_string(&smi)));
+            let inchi_str = chematic_inchi::inchi(&isomer);
+            let inchikey_str = chematic_inchi::inchi_key(&inchi_str);
+            results.push(format!(
+                r#"{{"smiles":"{}","inchi":"{}","inchikey":"{}"}}"#,
+                escape_json_string(&smi),
+                escape_json_string(&inchi_str),
+                escape_json_string(&inchikey_str),
+            ));
         }
     }
 
@@ -3416,6 +3441,51 @@ pub fn smiles_to_mol2(smiles: &str) -> String {
         Ok(mol) => chematic_mol::write_mol2(&mol, &[]),
         Err(e) => format!("error:{e}"),
     }
+}
+
+// ---------------------------------------------------------------------------
+// InChI I/O
+// ---------------------------------------------------------------------------
+
+/// Generate InChI string from SMILES.
+///
+/// Returns `"error:<msg>"` on parse failure.
+#[wasm_bindgen]
+pub fn inchi_from_smiles(smiles: &str) -> String {
+    match chematic_smiles::parse(smiles) {
+        Ok(mol) => chematic_inchi::inchi(&mol),
+        Err(e) => format!("error:{e}"),
+    }
+}
+
+/// Generate InChIKey from SMILES (27-character identifier).
+///
+/// Returns `"error:<msg>"` on parse failure.
+#[wasm_bindgen]
+pub fn inchikey_from_smiles(smiles: &str) -> String {
+    match chematic_smiles::parse(smiles) {
+        Ok(mol) => {
+            let inchi_str = chematic_inchi::inchi(&mol);
+            chematic_inchi::inchi_key(&inchi_str)
+        }
+        Err(e) => format!("error:{e}"),
+    }
+}
+
+/// Invert the stereochemistry of a tetrahedral stereocenter (U/D wedge bonds).
+///
+/// If the atom has no wedge/dash bonds, returns an unchanged copy.
+/// Returns error if atom_idx is invalid.
+#[wasm_bindgen]
+pub fn invert_stereocenter_at(mol: &MolHandle, atom_idx: u32) -> Result<MolHandle, JsValue> {
+    let idx = chematic_core::AtomIdx(atom_idx);
+    if atom_idx as usize >= mol.inner.atom_count() {
+        return Err(JsValue::from_str(&format!("atom_idx {} out of range", atom_idx)));
+    }
+    let new_mol = chematic_chem::invert_stereocenter(&mol.inner, idx);
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(new_mol),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -4763,13 +4833,9 @@ M  END
         let result = enumerate_stereo_isomers_json(&mol);
         assert!(result.is_ok(), "should return Ok for valid mol");
         let json = result.unwrap();
-        // Count quoted SMILES entries: each is wrapped in "..."
-        let count = json
-            .split('"')
-            .filter(|s| {
-                !s.is_empty() && !s.starts_with(',') && !s.starts_with('[') && !s.starts_with(']')
-            })
-            .count();
+        // Count objects: each object contains "smiles", "inchi", "inchikey"
+        // So 2 isomers means 2 occurrences of "smiles" at top level
+        let count = json.matches("\"smiles\"").count();
         assert_eq!(count, 2, "expected 2 stereoisomers: {json}");
     }
 
@@ -4780,11 +4846,9 @@ M  END
         let result = enumerate_stereo_isomers_json(&mol);
         assert!(result.is_ok());
         let json = result.unwrap();
-        // Only one entry: no "," between entries
-        assert!(
-            !json.contains("\",\""),
-            "fully specified mol should give 1 isomer: {json}"
-        );
+        // Count objects: each object contains "smiles"
+        let count = json.matches("\"smiles\"").count();
+        assert_eq!(count, 1, "fully specified mol should give 1 isomer: {json}");
     }
 
     #[test]
