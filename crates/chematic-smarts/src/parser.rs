@@ -423,6 +423,8 @@ impl<'a> Parser<'a> {
             b':' => BondPrimitive::Aromatic,
             b'~' => BondPrimitive::Any,
             b'@' => BondPrimitive::Ring,
+            b'/' => BondPrimitive::Up,
+            b'\\' => BondPrimitive::Down,
             _ => return None,
         };
         self.advance();
@@ -431,7 +433,7 @@ impl<'a> Parser<'a> {
 
     #[inline]
     fn is_bond_token(c: u8) -> bool {
-        matches!(c, b'-' | b'=' | b'#' | b':' | b'~' | b'@')
+        matches!(c, b'-' | b'=' | b'#' | b':' | b'~' | b'@' | b'/' | b'\\')
     }
 
     /// Continue parsing bond OR after the first factor.
@@ -740,11 +742,18 @@ impl<'a> Parser<'a> {
                 Ok(AtomQuery::Primitive(AtomPrimitive::Charge(-(n as i8))))
             }
 
-            // H count `HN` or `H` (hcount = N or 1)
+            // H count `HN` or `H` (total hcount = N or 1; explicit + implicit)
             Some(b'H') => {
                 self.advance(); // consume 'H'
                 let n = self.parse_single_digit().unwrap_or(1);
                 Ok(AtomQuery::Primitive(AtomPrimitive::HCount(n)))
+            }
+
+            // Implicit H count `hN` or `h` (implicit hcount only = N or 1)
+            Some(b'h') => {
+                self.advance(); // consume 'h'
+                let n = self.parse_single_digit().unwrap_or(1);
+                Ok(AtomQuery::Primitive(AtomPrimitive::ImplicitHCount(n)))
             }
 
             // Degree `DN`

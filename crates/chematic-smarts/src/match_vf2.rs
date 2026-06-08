@@ -253,6 +253,10 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
                 .count() as u8;
             explicit_h + implicit_hcount(ctx.mol, idx) == *h
         }
+        AtomPrimitive::ImplicitHCount(h) => {
+            // Implicit H only (not explicit H neighbors).
+            implicit_hcount(ctx.mol, idx) == *h
+        }
         AtomPrimitive::Degree(d) => ctx.mol.neighbors(idx).count() as u8 == *d,
         AtomPrimitive::RingMembership(r) => ctx.rings.contains_atom(idx) == *r,
         AtomPrimitive::RingSize(n) => ctx
@@ -509,6 +513,8 @@ fn eval_bond_primitive(
                 .iter()
                 .any(|ring| ring.contains(&a) && ring.contains(&b))
         }
+        BondPrimitive::Up => matches!(order, BondOrder::Up),
+        BondPrimitive::Down => matches!(order, BondOrder::Down),
     }
 }
 

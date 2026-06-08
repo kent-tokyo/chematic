@@ -69,6 +69,9 @@ pub struct McsConfig {
     /// If `true`, stereochemistry (chirality) must match between atoms. If `false`, chirality
     /// is ignored (default). Prevents matching of enantiomers in MCS.
     pub match_chiral_tag: bool,
+    /// If `true`, when multiple MCS of the same atom count exist, prefer the one with more bonds.
+    /// Defaults to `true` (matching RDKit's default behavior).
+    pub maximize_bonds: bool,
 }
 
 impl Default for McsConfig {
@@ -82,6 +85,7 @@ impl Default for McsConfig {
             atom_compare: AtomCompare::Elements,
             bond_compare: BondCompare::OrderOrAromatic,
             match_chiral_tag: false,
+            maximize_bonds: true,
         }
     }
 }
@@ -287,8 +291,12 @@ struct McsState<'a> {
 // ---------------------------------------------------------------------------
 
 fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
-    // Update best if this mapping is larger.
-    if mapping.size > state.best.size {
+    // Update best if this mapping is larger, or same size but more bonds (if enabled).
+    let is_better = mapping.size > state.best.size
+        || (state.config.maximize_bonds
+            && mapping.size == state.best.size
+            && mapping.bond_count > state.best.bond_count);
+    if is_better {
         state.best = mapping.clone();
     }
 
