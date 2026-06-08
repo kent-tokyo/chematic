@@ -43,8 +43,34 @@ pub fn connectivity_layer(mol: &Molecule) -> Option<String> {
         .expect("at least one heavy atom");
 
     let mut visited = HashSet::new();
+    let mut tree_edges = HashSet::new();
     let mut result = String::new();
-    dfs_connection(&first_atom, None, mol, &inchi_index, &mut visited, &mut result);
+    dfs_connection(&first_atom, None, mol, &inchi_index, &mut visited, &mut result, &mut tree_edges);
+
+    // Add ring closure bonds (back-edges)
+    let mut ring_closures = Vec::new();
+    for (_bond_idx, bond) in mol.bonds() {
+        let atom1 = bond.atom1;
+        let atom2 = bond.atom2;
+        if !inchi_index.contains_key(&atom1) || !inchi_index.contains_key(&atom2) {
+            continue; // Skip bonds with H
+        }
+        // Check if this is a back-edge (not in tree_edges)
+        let normalized_edge = if atom1 < atom2 { (atom1, atom2) } else { (atom2, atom1) };
+        if !tree_edges.contains(&normalized_edge) {
+            let i1 = inchi_index[&atom1];
+            let i2 = inchi_index[&atom2];
+            let (lo, hi) = if i1 < i2 { (i1, i2) } else { (i2, i1) };
+            ring_closures.push((lo, hi));
+        }
+    }
+
+    // Sort and add ring closures
+    ring_closures.sort();
+    for (lo, _hi) in ring_closures {
+        result.push('-');
+        result.push_str(&lo.to_string());
+    }
 
     Some(result)
 }
@@ -56,6 +82,7 @@ fn dfs_connection(
     inchi_index: &HashMap<AtomIdx, usize>,
     visited: &mut HashSet<AtomIdx>,
     result: &mut String,
+    tree_edges: &mut HashSet<(AtomIdx, AtomIdx)>,
 ) {
     if visited.contains(atom) {
         return;
@@ -91,13 +118,17 @@ fn dfs_connection(
     let mut first = true;
     for &neighbor in &neighbors {
         if !visited.contains(&neighbor) && parent != Some(neighbor) {
+            // Record this as a tree edge (normalize to smaller index first)
+            let normalized_edge = if *atom < neighbor { (*atom, neighbor) } else { (neighbor, *atom) };
+            tree_edges.insert(normalized_edge);
+
             if first {
                 first = false;
-                dfs_connection(&neighbor, Some(*atom), mol, inchi_index, visited, result);
+                dfs_connection(&neighbor, Some(*atom), mol, inchi_index, visited, result, tree_edges);
             } else {
                 // Branch: wrap in parentheses
                 let mut branch = String::new();
-                dfs_connection(&neighbor, Some(*atom), mol, inchi_index, visited, &mut branch);
+                dfs_connection(&neighbor, Some(*atom), mol, inchi_index, visited, &mut branch, tree_edges);
                 if !branch.is_empty() {
                     result.push('(');
                     result.push_str(&branch);
@@ -133,8 +164,7 @@ mod tests {
         let c_layer = connectivity_layer(&mol);
         assert!(c_layer.is_some());
         let c_str = c_layer.unwrap();
-        // Just check that connectivity is generated for benzene
-        assert!(!c_str.is_empty());
-        assert!(c_str.contains("1"));
+        // Benzene should have ring closure: 1-2-3-4-5-6-1
+        assert_eq!(c_str, "1-2-3-4-5-6-1", "Benzene should have ring closure bond");
     }
 }
