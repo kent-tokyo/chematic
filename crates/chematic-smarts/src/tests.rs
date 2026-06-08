@@ -565,11 +565,12 @@ mod integration_tests {
     /// `[#6]=,:[#6]` matches both double bonds and aromatic bonds to carbon.
     #[test]
     fn test_bond_or_double_or_aromatic_in_benzene() {
-        // Benzene: 6 aromatic C-C bonds; VF2 finds both A→B and B→A → 12 mappings
+        // Benzene: 6 aromatic C-C bonds; with uniquify=true (default), returns 6 unique mappings
+        // (not 12 from both A→B and B→A directions)
         assert_eq!(
             match_count("[#6]=,:[#6]", "c1ccccc1"),
-            12,
-            "=,: should match all aromatic bonds in benzene (both directions)"
+            6,
+            "=,: should match all 6 aromatic bonds in benzene (deduplicated)"
         );
         // Pure single-bond query should NOT match aromatic bonds
         assert_eq!(
@@ -582,9 +583,9 @@ mod integration_tests {
     /// `[#6]=,:[#6]` also matches a double bond in ethylene.
     #[test]
     fn test_bond_or_double_or_aromatic_in_ethylene() {
-        // Ethylene C=C: 1 match (directional: each bond counted once from each atom → 2 mappings)
+        // Ethylene C=C: 1 match (with uniquify=true, one unique atom set mapping)
         let c = match_count("[#6]=,:[#6]", "C=C");
-        assert!(c >= 1, "=,: should match double bond in ethylene");
+        assert_eq!(c, 1, "=,: should match the double bond in ethylene (deduplicated)");
     }
 
     /// `C=!@C` matches a non-ring double bond (e.g. ethylene) but NOT cyclohexene ring double bond.
@@ -592,8 +593,8 @@ mod integration_tests {
     fn test_bond_non_ring_double_ethylene() {
         assert_eq!(
             match_count("C=!@C", "C=C"),
-            2,
-            "=!@ should match both orientations of ethylene double bond"
+            1,
+            "=!@ should match the non-ring double bond in ethylene (deduplicated)"
         );
     }
 

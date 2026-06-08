@@ -49,7 +49,7 @@ impl<'a> EvalCtx<'a> {
 // ---------------------------------------------------------------------------
 
 /// Configuration for subgraph matching.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct MatchConfig {
     /// Maximum number of matches to return.
     ///
@@ -71,6 +71,25 @@ pub struct MatchConfig {
     /// Defaults to `false` (isotopes are ignored, matching RDKit's default
     /// `useIsotopes=False` behaviour).
     pub use_isotopes: bool,
+
+    /// When `true`, deduplicate matches: only return one mapping per unique
+    /// set of target atoms covered, even if different orderings exist.
+    ///
+    /// Defaults to `true` (matching RDKit's `uniquify=True` default).
+    /// For symmetric queries on symmetric targets, this prevents returning
+    /// multiple embeddings of the same substructure.
+    pub uniquify: bool,
+}
+
+impl Default for MatchConfig {
+    fn default() -> Self {
+        Self {
+            max_matches: None,
+            use_chirality: false,
+            use_isotopes: false,
+            uniquify: true,
+        }
+    }
 }
 
 /// Find all non-overlapping (injective) embeddings of `query` in `mol`.
@@ -100,6 +119,17 @@ pub fn find_matches_with_config(
     let mut results: Vec<HashMap<usize, AtomIdx>> = Vec::new();
 
     match_recursive(query, &ctx, &mut mapping, &mut results, config.max_matches);
+
+    // Deduplicate matches: keep only one mapping per unique set of target atoms.
+    if config.uniquify {
+        let mut seen = std::collections::HashSet::new();
+        results.retain(|m| {
+            let mut key: Vec<u32> = m.values().map(|idx| idx.0).collect();
+            key.sort_unstable();
+            seen.insert(key)
+        });
+    }
+
     results
 }
 

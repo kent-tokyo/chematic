@@ -764,6 +764,7 @@ pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsVal
         max_matches: Some(WASM_MAX_SMARTS_MATCHES),
         use_chirality: false,
         use_isotopes: false,
+        uniquify: true,
     };
     let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
     let parts: Vec<String> = matches
@@ -800,6 +801,7 @@ pub fn smarts_match_atoms_with_chirality(
         max_matches: Some(WASM_MAX_SMARTS_MATCHES),
         use_chirality,
         use_isotopes: false,
+        uniquify: true,
     };
     let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
     let parts: Vec<String> = matches
@@ -2669,6 +2671,7 @@ pub fn rgroup_decompose_json(smiles_json: &str, core_smarts: &str) -> Result<Str
             max_matches: Some(WASM_MAX_SMARTS_MATCHES),
             use_chirality: false,
             use_isotopes: false,
+            uniquify: true,
         };
         let matches = chematic_smarts::find_matches_with_config(&query, mol, &config);
         if matches.is_empty() {
