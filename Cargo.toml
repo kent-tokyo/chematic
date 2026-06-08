@@ -27,4 +27,4 @@ rust-version = "1.85"
 authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/kent-tokyo/chematic"
-homepage = "https://github.com/kent-tokyo/chematic"
+homepage = "https://kent-tokyo.github.io/chematic/"

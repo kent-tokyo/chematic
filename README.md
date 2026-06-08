@@ -1,5 +1,9 @@
 # chematic
 
+[![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/chematic.svg)](https://crates.io/crates/chematic)
+[![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic.svg)](https://www.npmjs.com/package/@kent-tokyo/chematic)
+
 [日本語](README_ja.md) | [中文](README_zh.md)
 
 A pure-Rust cheminformatics library targeting RDKit feature parity — **with zero C/C++ dependencies**.

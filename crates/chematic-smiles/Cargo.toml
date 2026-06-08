@@ -8,7 +8,7 @@ repository.workspace = true
 description = "OpenSMILES parser, writer and canonical SMILES for chematic — pure Rust, WASM-compatible"
 keywords = ["smiles", "parser", "cheminformatics", "rdkit", "wasm"]
 categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations"]
-readme = "../../README.md"
+readme = "README.md"
 homepage.workspace = true
 documentation = "https://docs.rs/chematic-smiles"
 
