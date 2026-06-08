@@ -701,23 +701,19 @@ Issue #1 のパターン: **アルゴリズムが位相的には正しい結果�
   - **実装済み場所**: `crates/chematic-smarts/src/match_vf2.rs` (lines 73-78, match_recursive lines 102-104)
   - max_matches でメモリ爆発を防止可能
 
-### Issue 候補 F (🟡 中): VF2 部分構造検索 — キラリティ考慮なし
-  - **状態**: 未着手
-  - **症状**: `[C@@H](F)(Cl)Br` の SMARTS でキラルな部分構造を検索すると、R 体・S 体の両方がヒットする
-            （`matchChiralTag` 相当の VF2 サイドの制約が未実装）
-  - **RDKit 対応**: `RWMol.HasSubstructMatch(query, useChirality=True)`
-  - **対象**: `crates/chematic-smarts/src/match_vf2.rs`
-  - **実装方針**: `atoms_compatible()` で SMARTS 側の chirality `@`/`@@` フラグと分子側の `CipCode::R/S` を照合
-  - **優先度**: 中（MCS matchChiralTag の VF2 拡張として自然な対）
+### ✅ Issue 候補 F (🟡 中): VF2 部分構造検索 — キラリティ考慮
+  - **状態**: ✅ 実装済み（Sprint v0.1.35 で検証完了）
+  - **実装**: `MatchConfig { use_chirality: bool }` で `[@]/[@@]` マッチを制御
+  - **APIレベル**: `find_matches_with_config()` で `use_chirality=true` を指定可能
+  - **WASM**: `smarts_match_atoms_with_chirality(smarts, mol, use_chirality)` 公開
+  - **テスト**: L-alanine `[C@@H]` マッチ + D-alanine `[C@H]` マッチ (2 件 → v0.1.35 で補完)
 
-### Issue 候補 G (🟢 低): ECFP フィンガープリント — キラリティ不変量なし
-  - **状態**: 未着手
-  - **症状**: R/S 鏡像体（例: R-Ala vs S-Ala）の ECFP4 Tanimoto が 1.0 になる
-            （chirality は原子不変量に含まれておらず、鏡像体を区別しない）
-  - **RDKit 対応**: `GetMorganFingerprintAsBitVect(mol, radius, useChirality=True)`
-  - **対象**: `crates/chematic-fp/src/ecfp.rs`
-  - **実装方針**: `EcfpConfig { use_chirality: bool }` を追加し、初期不変量の計算で `atom.cip_code` を組み込む
-  - **優先度**: 低（ECFP は通常キラリティなしで利用される。StereoGroup 対応後に検討）
+### ✅ Issue 候補 G (🟢 低): ECFP フィンガープリント — キラリティ不変量対応
+  - **状態**: ✅ 実装済み（Sprint v0.1.35 で検証完了）
+  - **実装**: `EcfpConfig { use_chirality: bool }` で initial atom invariant に chirality byte を追加
+  - **APIレベル**: `ecfp(mol, config)` で config.use_chirality=true を指定可能
+  - **WASM**: `ecfp4_bitvec_with_chirality()`, `ecfp6_bitvec_with_chirality()` 公開
+  - **テスト**: L/D-alanine FP 同一 (default) ≠ L/D-alanine FP 異なり (use_chirality=true) (2 件 → v0.1.35 で補完)
 
 ---
 

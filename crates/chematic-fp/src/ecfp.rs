@@ -511,4 +511,19 @@ mod tests {
             "Tanimoto of L/D-alanine must be < 1.0 with use_chirality"
         );
     }
+
+    #[test]
+    fn ecfp4_non_chiral_generates_with_chirality_flag() {
+        // Non-chiral molecules like benzene should generate valid ECFP with use_chirality flag.
+        // This test verifies that use_chirality=true doesn't break on achiral molecules.
+        let mol = parse("c1ccccc1").unwrap(); // Benzene — no stereo centers.
+        let config = EcfpConfig {
+            radius: 2,
+            nbits: 2048,
+            use_chirality: true,
+            use_double_fold: false,
+        };
+        let fp = ecfp(&mol, &config);
+        assert!(fp.popcount() > 0, "Benzene should generate non-empty ECFP4 with use_chirality=true");
+    }
 }
