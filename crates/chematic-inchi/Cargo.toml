@@ -2,10 +2,15 @@
 name = "chematic-inchi"
 version = "0.1.34"
 edition = "2021"
-authors = ["Kentaro Tanabe <ke.tanabe@gmail.com>"]
+authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
 license = "MIT OR Apache-2.0"
 description = "Pure Rust InChI and InChIKey generation for IUPAC standard organic molecules (WASM-compatible)"
 repository = "https://github.com/kent-tokyo/chematic"
+homepage = "https://kent-tokyo.github.io/chematic/"
+documentation = "https://docs.rs/chematic-inchi"
+keywords = ["inchi", "cheminformatics", "chemistry", "smiles", "molecular"]
+categories = ["science", "parser-implementations"]
+readme = "README.md"
 
 [dependencies]
 chematic-core = { path = "../chematic-core" }
