@@ -18,6 +18,7 @@ pub mod dg;
 pub mod dg_fft;
 pub mod md;
 pub mod minimize;
+pub mod mol_transforms;
 pub mod pdb;
 pub mod shape_descriptors;
 pub mod stereo3d;
@@ -35,6 +36,10 @@ pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
 pub use minimize::{
     MinimizeConfig, minimize, minimize_dreiding, minimize_dreiding_with_config, minimize_uff,
     minimize_with_config,
+};
+pub use mol_transforms::{
+    center_on_origin, compute_centroid, get_bond_angle, get_bond_angle_deg, get_bond_length,
+    get_dihedral, get_dihedral_deg, set_dihedral, transform_conformer,
 };
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
 pub use shape_descriptors::{

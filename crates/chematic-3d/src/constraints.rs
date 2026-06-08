@@ -274,7 +274,7 @@ pub fn build_constraints(mol: &Molecule) -> ConstraintSet {
 // ---------------------------------------------------------------------------
 
 /// Compute angle A—Center—B in radians.
-fn compute_angle(coords: &Coords3D, a: AtomIdx, center: AtomIdx, b: AtomIdx) -> f64 {
+pub(crate) fn compute_angle(coords: &Coords3D, a: AtomIdx, center: AtomIdx, b: AtomIdx) -> f64 {
     let pa = coords.get(a);
     let pc = coords.get(center);
     let pb = coords.get(b);
@@ -307,7 +307,7 @@ fn perpendicular_to(v: Point3) -> Point3 {
 
 /// Rotate vector `v` around unit axis `axis` by angle `theta` (radians).
 /// Uses Rodrigues' rotation formula.
-fn rotate_around_axis(v: Point3, axis: Point3, theta: f64) -> Point3 {
+pub(crate) fn rotate_around_axis(v: Point3, axis: Point3, theta: f64) -> Point3 {
     let cos_t = theta.cos();
     let sin_t = theta.sin();
     let dot = axis.dot(&v);

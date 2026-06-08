@@ -162,7 +162,7 @@ fn assign_rs(mol: &Molecule, coords: &Coords3D, idx: AtomIdx) -> Option<CipCode>
 
 /// Dihedral angle (radians) for the sequence h1–a1=a2–h2.
 /// Returns `None` if vectors are degenerate.
-fn dihedral(pa1: Point3, pa2: Point3, ph1: Point3, ph2: Point3) -> Option<f64> {
+pub(crate) fn dihedral(pa1: Point3, pa2: Point3, ph1: Point3, ph2: Point3) -> Option<f64> {
     // b1 = a1→h1, b2 = a1→a2 (bond axis), b3 = a2→h2
     let b1 = ph1.sub(&pa1);
     let b2 = pa2.sub(&pa1);
