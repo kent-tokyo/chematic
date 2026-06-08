@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit). **945 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support). **1,120+ tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.1.33** (2026-06-07)
+Latest release: **v0.1.34** (2026-06-08)
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -68,12 +68,13 @@ Latest release: **v0.1.33** (2026-06-07)
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching (`match_chiral_tag`), atom/bond compare modes; Display + Error trait | 87    |
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ; WASM RNG seeded | 80    |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
-| `chematic-wasm`       | **100+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.32 (~550 KB)                                   | 162   |
+| `chematic-inchi`      | InChI/InChIKey generation; formula/connectivity/hydrogen/stereo/charge/isotope layers; ring closures   | 28    |
+| `chematic-wasm`       | **110+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.34 (~550 KB); InChI API + stereo inversion    | 175   |
 | `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes, cycloalkanes, alcohols, amines, halides    | 8     |
-| `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`)                                        | 1     |
+| `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace   # 948 tests, all passing
+cargo test --workspace   # 1,120+ tests, all passing
 ```
 
 ---

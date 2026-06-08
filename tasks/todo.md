@@ -654,11 +654,75 @@ Sprint v0.1.26: ✅ Issue D + P3 Features（完了: 2026-06-06）
   - chematic-smarts: +4 (cx round-trip)
   - chematic-wasm: +4 (JSON serialization)
 
+## Sprint v0.1.34: InChI Ring Closure + Stereo Layers + SEO（2026-06-08 完了）
+
+### Completed ✅
+  - [x] **InChI Ring Closure Bonds** (chematic-inchi)
+        - DFS tree edge tracking で back-edge を検出
+        - Benzene: `InChI=1S/C6H6/c1-2-3-4-5-6-1/h1-6H` (ring closure `-1` 追加)
+        - 実装場所: crates/chematic-inchi/src/layers/connection.rs
+        - テスト: test_connectivity_benzene で ring closure 確認
+
+  - [x] **InChI Stereo Layers (/t, /b)**
+        - `/t` layer: R/S tetrahedral stereo via CIP code assignment
+        - `/b` layer: E/Z double bond stereo via CIP code assignment
+        - L-alanine: `InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H,1,5-6H3/t2-` (R/S 含む)
+        - 実装場所: crates/chematic-inchi/src/layers/stereo.rs (新規)
+        - 統合: crates/chematic-inchi/src/lib.rs に stereo 層追加
+
+  - [x] **SEO Documentation Improvements** (Phase 1-2)
+        - Workspace `homepage` → live demo URL 更新
+        - `chematic-inchi` に keywords/categories 追加
+        - 9 crate に個別 README 作成 (chematic-smiles, chematic-fp, chematic-smarts, chematic-inchi, chematic-core, chematic-depict, chematic-rxn, chematic-iupac)
+        - CI workflow `.github/workflows/ci.yml` 追加 (test + clippy)
+        - README に status badges (CI, crates.io, npm)
+
+### テスト数
+- 新規テスト: +4 (stereo layers round-trip)
+- 全体: 1120+ tests passing
+- クリップイ: clean
+
+---
+
+## Sprint v0.1.35: wasmBridge Support + Version Sync（2026-06-08 完了）
+
+### Completed ✅
+  - [x] **Version Synchronization (P0)**
+        - chematic-wasm/Cargo.toml: 全 11 crate を 0.1.33 → 0.1.34
+        - chematic-inchi dependency 追加
+
+  - [x] **InChI / InChIKey WASM API (P1)**
+        - フリー関数: `inchi_from_smiles()`, `inchikey_from_smiles()`
+        - MolHandle メソッド: `.to_inchi()`, `.to_inchikey()`
+        - 実装場所: crates/chematic-wasm/src/lib.rs
+
+  - [x] **enumerate_stereo_isomers_json Enhancement (P1)**
+        - 出力形式拡張: `["smiles1", "smiles2"]` → `[{"smiles":"...", "inchi":"...", "inchikey":"..."}, ...]`
+        - 各異性体に InChI/InChIKey を含める（データベース検索対応）
+        - テスト更新: count "smiles" objects instead of string parsing
+
+  - [x] **invert_stereocenter WASM binding (P1)**
+        - 新関数: `invert_stereocenter_at(mol, atom_idx) → Result<MolHandle>`
+        - U/D wedge bonds の立体化学を反転
+
+### スコープ評価 (out-of-scope)
+- [ ] to_svg_with_metadata (仕様不明確 → P2-P3)
+- [ ] detect_layout_crossings (仕様不明確 → P2-P3)
+- [ ] validate_molecule (is_valid_smiles で代替)
+- [ ] Spiro/cumulative/metal compounds (大規模実装 → P3+)
+
+### テスト数
+- 新規テスト: +2 (enumerate_stereo format verification)
+- 全体: 1120+ tests passing
+- クリップイ: clean
+
+---
+
 ## 次のステップ
-- **v0.1.34**: RDKit Feature Parity + API Enhancements
-  - [ ] InChI/InChIKey (pure Rust implementation or FFI decision)
+- **v0.1.36**: Enhanced 3D + Reaction Templates（計画）
   - [ ] Stochastic 3D (ETKDG-like sampling)
   - [ ] Reaction SMIRKS product filtering enhancements
+  - [ ] SVG metadata embedding (P2)
 ```
 
 ---
