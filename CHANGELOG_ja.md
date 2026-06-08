@@ -13,6 +13,52 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.37] — 2026-06-08
+
+### Added — mol_transforms API + ランダム SMILES 生成
+
+#### `chematic-3d` — 分子幾何操作
+
+**NEW**: 結合長・角度・二面角の測定・変換の公開 API:
+- `get_bond_length(coords, a, b) -> f64` — 結合長（Å）
+- `get_bond_angle(coords, a, center, b) -> f64` — 角度（ラジアン）
+- `get_bond_angle_deg(...)` — 角度（度）
+- `get_dihedral(coords, a, b, c, d) -> Option<f64>` — 二面角（ラジアン）
+- `get_dihedral_deg(...)` — 二面角（度）
+- `set_dihedral(coords, mol, a, b, c, d, angle_rad) -> Coords3D` — D 側部分樹を回転
+- `compute_centroid(coords) -> [f64; 3]` — 全原子の重心
+- `center_on_origin(coords) -> Coords3D` — 原点に移動
+- `transform_conformer(coords, 4x4_matrix) -> Coords3D` — 4×4 同次行列を適用
+
+**内部関数の公開**:
+- `dihedral()`、`compute_angle()`、`rotate_around_axis()` （従来は private）
+- 新規ファイル: `crates/chematic-3d/src/mol_transforms.rs`
+
+#### `chematic-smiles` — SMILES 多様性生成
+
+**NEW**: ML データ拡張向けのランダム SMILES 生成:
+- `random_smiles(mol, seed) -> String` — xorshift64 RNG で原子順を permute
+- `random_smiles_vect(mol, count, seed) -> Vec<String>` — N 件のユニークな変異体生成
+- アルゴリズム: Fisher-Yates shuffle
+- ユースケース: データ拡張（同一分子の多様な SMILES 表現）
+
+#### `chematic-wasm` — mol_transforms + ランダム SMILES の WASM バインディング
+
+**NEW**: 4 つの WASM エクスポート関数:
+- `get_bond_length_json(smiles, a, b) -> f64` — SMILES から結合長
+- `get_dihedral_json(smiles, a, b, c, d) -> JsValue` — SMILES から二面角（度）
+- `set_dihedral_json(smiles, a, b, c, d, angle_deg) -> Result<String>` — PDB ブロック返却
+- `random_smiles_json(smiles, count, seed) -> Result<String>` — SMILES の JSON 配列
+
+### テスト カバレッジ
+
+- **chematic-3d**: +5 mol_transforms テスト（結合長、角度、重心、行列変換）
+- **chematic-smiles**: +6 random_smiles テスト（決定性、一意性、ラウンドトリップ）
+- **合計**: 1,120 → 1,151 (+31 新テスト)
+- 全テスト合格 ✅
+
+---
+
 ## [0.1.36] — 2026-06-08
 
 ### Fixed — Issue #1 監査: 位相的に正しいが化学的に無意味な結果

@@ -11,6 +11,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.37] — 2026-06-08
+
+### Added — mol_transforms API + Random SMILES Generation
+
+#### `chematic-3d` — Molecular Geometry Manipulation
+
+**NEW**: Public mol_transforms API for bond length/angle/dihedral measurement and manipulation:
+- `get_bond_length(coords, a, b) -> f64` — bond length in Ångströms
+- `get_bond_angle(coords, a, center, b) -> f64` — angle in radians
+- `get_bond_angle_deg(...)` — angle in degrees
+- `get_dihedral(coords, a, b, c, d) -> Option<f64>` — dihedral angle (radians)
+- `get_dihedral_deg(...)` — dihedral angle (degrees)
+- `set_dihedral(coords, mol, a, b, c, d, angle_rad) -> Coords3D` — rotate D-side subtree
+- `compute_centroid(coords) -> [f64; 3]` — centroid of all atoms
+- `center_on_origin(coords) -> Coords3D` — translate to origin
+- `transform_conformer(coords, 4x4_matrix) -> Coords3D` — apply 4×4 homogeneous transform
+
+**Internal functions exposed**:
+- `dihedral()`, `compute_angle()`, `rotate_around_axis()` (previously private)
+- New file: `crates/chematic-3d/src/mol_transforms.rs`
+
+#### `chematic-smiles` — SMILES Diversity Generation
+
+**NEW**: Random SMILES generation for ML data augmentation:
+- `random_smiles(mol, seed) -> String` — permute atom order using xorshift64 RNG
+- `random_smiles_vect(mol, count, seed) -> Vec<String>` — generate N unique variants
+- Algorithm: Fisher-Yates shuffle of atom indices, deterministic per seed
+- Use case: data augmentation (same molecule, different SMILES representations)
+
+#### `chematic-wasm` — WASM Bindings for mol_transforms + Random SMILES
+
+**NEW**: Four new WASM export functions:
+- `get_bond_length_json(smiles, a, b) -> f64` — bond length from SMILES
+- `get_dihedral_json(smiles, a, b, c, d) -> JsValue` — dihedral from SMILES (degrees)
+- `set_dihedral_json(smiles, a, b, c, d, angle_deg) -> Result<String>` — return PDB block
+- `random_smiles_json(smiles, count, seed) -> Result<String>` — JSON array of SMILES
+
+### Test Coverage
+
+- **chematic-3d**: +5 mol_transforms tests (bond length, angle, centroid, matrix transform)
+- **chematic-smiles**: +6 random_smiles tests (determinism, uniqueness, roundtrip)
+- **Total**: 1,120 → 1,151 (+31 new tests)
+- All tests passing ✅
+
+---
+
 ## [0.1.36] — 2026-06-08
 
 ### Fixed — Issue #1 Audit: Topologically Correct but Chemically Meaningless Results

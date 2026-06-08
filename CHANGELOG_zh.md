@@ -13,6 +13,52 @@ v0.1.8 之前的变更历史，请参考 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
+## [0.1.37] — 2026-06-08
+
+### Added — mol_transforms API + 随机 SMILES 生成
+
+#### `chematic-3d` — 分子几何操作
+
+**NEW**: 结合长/角度/二面角的测量和变换的公开 API:
+- `get_bond_length(coords, a, b) -> f64` — 结合长（Ångströms）
+- `get_bond_angle(coords, a, center, b) -> f64` — 角度（弧度）
+- `get_bond_angle_deg(...)` — 角度（度）
+- `get_dihedral(coords, a, b, c, d) -> Option<f64>` — 二面角（弧度）
+- `get_dihedral_deg(...)` — 二面角（度）
+- `set_dihedral(coords, mol, a, b, c, d, angle_rad) -> Coords3D` — 旋转 D 侧子树
+- `compute_centroid(coords) -> [f64; 3]` — 所有原子的重心
+- `center_on_origin(coords) -> Coords3D` — 平移到原点
+- `transform_conformer(coords, 4x4_matrix) -> Coords3D` — 应用 4×4 齐次变换
+
+**公开内部函数**:
+- `dihedral()`、`compute_angle()`、`rotate_around_axis()` （先前为 private）
+- 新文件: `crates/chematic-3d/src/mol_transforms.rs`
+
+#### `chematic-smiles` — SMILES 多样性生成
+
+**NEW**: 用于 ML 数据扩增的随机 SMILES 生成:
+- `random_smiles(mol, seed) -> String` — 使用 xorshift64 RNG permute 原子顺序
+- `random_smiles_vect(mol, count, seed) -> Vec<String>` — 生成 N 个唯一变体
+- 算法：Fisher-Yates 洗牌
+- 用例：数据扩增（同一分子的多种 SMILES 表示）
+
+#### `chematic-wasm` — mol_transforms + 随机 SMILES 的 WASM 绑定
+
+**NEW**: 4 个新 WASM 导出函数:
+- `get_bond_length_json(smiles, a, b) -> f64` — 从 SMILES 获取结合长
+- `get_dihedral_json(smiles, a, b, c, d) -> JsValue` — 从 SMILES 获取二面角（度）
+- `set_dihedral_json(smiles, a, b, c, d, angle_deg) -> Result<String>` — 返回 PDB 块
+- `random_smiles_json(smiles, count, seed) -> Result<String>` — SMILES 的 JSON 数组
+
+### 测试覆盖
+
+- **chematic-3d**: +5 mol_transforms 测试（结合长、角度、重心、矩阵变换）
+- **chematic-smiles**: +6 random_smiles 测试（确定性、唯一性、往返）
+- **总计**: 1,120 → 1,151 (+31 新测试)
+- 所有测试通过 ✅
+
+---
+
 ## [0.1.36] — 2026-06-08
 
 ### Fixed — Issue #1 审计：拓扑正确但化学无意义的结果
