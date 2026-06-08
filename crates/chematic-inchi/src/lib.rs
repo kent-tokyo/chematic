@@ -17,15 +17,34 @@
 pub mod layers;
 pub mod key;
 
-use chematic_core::Molecule;
-use layers::{formula, connection, hydrogen, charge, isotope};
+use chematic_core::{Molecule, AtomIdx};
+use chematic_smiles::canonical::canonical_atom_order;
+use layers::{formula, connection, hydrogen, charge, isotope, stereo};
+use std::collections::HashMap;
+
+/// Build a mapping from AtomIdx to InChI 1-indexed atom numbers (excluding H).
+fn build_inchi_index(mol: &Molecule) -> HashMap<AtomIdx, usize> {
+    let canonical_order = canonical_atom_order(mol);
+    let mut inchi_index: HashMap<AtomIdx, usize> = HashMap::new();
+    let mut inchi_num = 0;
+    for &canon_idx in &canonical_order {
+        let atom_idx = AtomIdx(canon_idx as u32);
+        let atom = mol.atom(atom_idx);
+        if atom.element.atomic_number() != 1 {
+            inchi_num += 1;
+            inchi_index.insert(atom_idx, inchi_num);
+        }
+    }
+    inchi_index
+}
 
 /// Generate InChI string for a molecule.
 ///
-/// Layers included: formula, connectivity (/c), hydrogen (/h), charge (/q if net charge ≠ 0), isotope (/i if present).
-/// Stereo layers (/b, /t, /m, /s) are not included in this version.
+/// Layers included: formula, connectivity (/c), hydrogen (/h), double-bond stereo (/b),
+/// tetrahedral stereo (/t), charge (/q if net charge ≠ 0), isotope (/i if present).
 pub fn inchi(mol: &Molecule) -> String {
     let mut result = String::from("InChI=1S/");
+    let inchi_index = build_inchi_index(mol);
 
     // Formula layer (prefix)
     let formula_str = formula::formula_layer(mol);
@@ -41,6 +60,18 @@ pub fn inchi(mol: &Molecule) -> String {
     if let Some(h_layer) = hydrogen::hydrogen_layer(mol) {
         result.push_str("/h");
         result.push_str(&h_layer);
+    }
+
+    // Double-bond stereo layer /b (E/Z)
+    if let Some(b_layer) = stereo::ez_stereo_layer(mol, &inchi_index) {
+        result.push_str("/b");
+        result.push_str(&b_layer);
+    }
+
+    // Tetrahedral stereo layer /t (R/S)
+    if let Some(t_layer) = stereo::tetrahedral_stereo_layer(mol, &inchi_index) {
+        result.push_str("/t");
+        result.push_str(&t_layer);
     }
 
     // Charge layer /q (conditional)
