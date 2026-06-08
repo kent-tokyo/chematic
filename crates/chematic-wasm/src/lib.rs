@@ -3492,6 +3492,153 @@ pub fn invert_stereocenter_at(mol: &MolHandle, atom_idx: u32) -> Result<MolHandl
 }
 
 // ---------------------------------------------------------------------------
+// mol_transforms (3D geometry manipulation)
+// ---------------------------------------------------------------------------
+
+/// Get bond length in Ångströms between two atoms from a SMILES string.
+/// Returns -1.0 if parsing fails or atom indices are out of range.
+///
+/// # Arguments
+/// - `smiles`: SMILES string
+/// - `a`: first atom index
+/// - `b`: second atom index
+///
+/// # Example
+/// ```javascript
+/// const len = get_bond_length_json("CC", 0, 1);  // C-C single bond ≈ 1.54 Å
+/// ```
+#[wasm_bindgen]
+pub fn get_bond_length_json(smiles: &str, a: u32, b: u32) -> f64 {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return -1.0;
+    }
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(_) => return -1.0,
+    };
+    let coords = chematic_3d::generate_coords(&mol);
+    let a_idx = chematic_core::AtomIdx(a);
+    let b_idx = chematic_core::AtomIdx(b);
+    if a >= mol.atom_count() as u32 || b >= mol.atom_count() as u32 {
+        return -1.0;
+    }
+    chematic_3d::get_bond_length(&coords, a_idx, b_idx)
+}
+
+/// Get dihedral angle A—B—C—D in degrees from a SMILES string.
+/// Returns null (JSON null) if any atom index is out of range or atoms are collinear.
+///
+/// # Arguments
+/// - `smiles`: SMILES string
+/// - `a`, `b`, `c`, `d`: atom indices
+///
+/// # Example
+/// ```javascript
+/// const dihedral = get_dihedral_json("CCCC", 0, 1, 2, 3);  // A-B-C-D
+/// ```
+#[wasm_bindgen]
+pub fn get_dihedral_json(smiles: &str, a: u32, b: u32, c: u32, d: u32) -> JsValue {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return JsValue::NULL;
+    }
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(_) => return JsValue::NULL,
+    };
+    if a >= mol.atom_count() as u32
+        || b >= mol.atom_count() as u32
+        || c >= mol.atom_count() as u32
+        || d >= mol.atom_count() as u32
+    {
+        return JsValue::NULL;
+    }
+    let coords = chematic_3d::generate_coords(&mol);
+    let a_idx = chematic_core::AtomIdx(a);
+    let b_idx = chematic_core::AtomIdx(b);
+    let c_idx = chematic_core::AtomIdx(c);
+    let d_idx = chematic_core::AtomIdx(d);
+    match chematic_3d::get_dihedral_deg(&coords, a_idx, b_idx, c_idx, d_idx) {
+        Some(angle) => JsValue::from_f64(angle),
+        None => JsValue::NULL,
+    }
+}
+
+/// Set dihedral angle A—B—C—D and return PDB block with modified coordinates.
+/// Rotates the D-side subtree around the B—C bond.
+/// Returns a JS error if parsing fails or atom indices are invalid.
+///
+/// # Arguments
+/// - `smiles`: SMILES string
+/// - `a`, `b`, `c`, `d`: atom indices
+/// - `angle_deg`: target dihedral angle in degrees
+///
+/// # Example
+/// ```javascript
+/// const pdbBlock = set_dihedral_json("CCCC", 0, 1, 2, 3, 120.0);
+/// ```
+#[wasm_bindgen]
+pub fn set_dihedral_json(smiles: &str, a: u32, b: u32, c: u32, d: u32, angle_deg: f64) -> Result<String, String> {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return Err("Input SMILES too long".to_string());
+    }
+    let mol = chematic_smiles::parse(smiles).map_err(|e| format!("Parse error: {}", e))?;
+    if a >= mol.atom_count() as u32
+        || b >= mol.atom_count() as u32
+        || c >= mol.atom_count() as u32
+        || d >= mol.atom_count() as u32
+    {
+        return Err("Atom index out of range".to_string());
+    }
+    let coords = chematic_3d::generate_coords(&mol);
+    let a_idx = chematic_core::AtomIdx(a);
+    let b_idx = chematic_core::AtomIdx(b);
+    let c_idx = chematic_core::AtomIdx(c);
+    let d_idx = chematic_core::AtomIdx(d);
+    let angle_rad = angle_deg.to_radians();
+    let new_coords = chematic_3d::set_dihedral(&coords, &mol, a_idx, b_idx, c_idx, d_idx, angle_rad);
+    // Return PDB block with modified coordinates
+    Ok(chematic_3d::write_pdb(&mol, &new_coords))
+}
+
+// ---------------------------------------------------------------------------
+// random_smiles (SMILES augmentation)
+// ---------------------------------------------------------------------------
+
+/// Generate `count` random SMILES from a SMILES string using the given seed.
+/// Atoms are permuted based on xorshift64 RNG. Each variant should parse back
+/// to the same molecule. Returns a JSON array of SMILES strings.
+///
+/// # Arguments
+/// - `smiles`: input SMILES string
+/// - `count`: number of variants to generate (capped at 100)
+/// - `seed`: xorshift64 seed
+///
+/// # Example
+/// ```javascript
+/// const variants = random_smiles_json("CC(C)O", 5, 42);
+/// // variants: ["CC(C)O", "C(C)(O)C", ...]
+/// ```
+#[wasm_bindgen]
+pub fn random_smiles_json(smiles: &str, count: usize, seed: u64) -> Result<String, String> {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return Err("Input SMILES too long".to_string());
+    }
+    let mol = chematic_smiles::parse(smiles).map_err(|e| format!("Parse error: {}", e))?;
+    let count = count.min(100); // Cap at 100 to prevent excessive output
+    let variants = chematic_smiles::random_smiles_vect(&mol, count, seed);
+    // Serialize as JSON array
+    let json = format!(
+        "[{}]",
+        variants
+            .iter()
+            .map(|s| format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"")))
+            .collect::<Vec<_>>()
+            .join(",")
+    );
+    Ok(json)
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
