@@ -105,7 +105,7 @@ pub fn usr_similarity(a: &[f64; 12], b: &[f64; 12]) -> f64 {
 // Helpers
 // ---------------------------------------------------------------------------
 
-fn centroid(coords: &[[f64; 3]]) -> [f64; 3] {
+pub(crate) fn centroid(coords: &[[f64; 3]]) -> [f64; 3] {
     let n = coords.len() as f64;
     let mut c = [0.0f64; 3];
     for p in coords {
