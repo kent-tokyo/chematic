@@ -15,8 +15,10 @@ pub enum AtomPrimitive {
     Aromatic(bool),
     /// `[+1]`, `[-1]`, … — formal charge.
     Charge(i8),
-    /// `[H2]`, `[H]` — implicit hydrogen count.
+    /// `[H2]`, `[H]` — total hydrogen count (explicit + implicit).
     HCount(u8),
+    /// `[h2]`, `[h]` — implicit hydrogen count only (not explicit H).
+    ImplicitHCount(u8),
     /// `[D3]` — heavy-atom degree (number of bonds).
     Degree(u8),
     /// `[R]` (true) or `[!R]` (false) — ring membership.
@@ -76,6 +78,10 @@ pub enum BondPrimitive {
     Any,
     /// `@` ring bond (both endpoints share at least one ring).
     Ring,
+    /// `/` cis-like geometric direction (for E/Z double bonds).
+    Up,
+    /// `\` trans-like geometric direction (for E/Z double bonds).
+    Down,
 }
 
 /// Logical combination of bond primitives.
