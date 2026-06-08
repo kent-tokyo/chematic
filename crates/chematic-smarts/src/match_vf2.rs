@@ -586,4 +586,18 @@ mod tests {
         // [C@H] must NOT match L-alanine.
         assert!(m_cw.is_empty(), "[C@H] should not match L-alanine (@@)");
     }
+
+    #[test]
+    fn test_chirality_d_alanine_positive_match() {
+        // D-alanine [C@H] should positively match [C@H] query when use_chirality=true.
+        // This complements test_chirality_enforced_when_enabled which only tested negative on L-ala.
+        let mol = parse("N[C@H](C)C(=O)O").unwrap(); // D-alanine (@, kind 1)
+        let q_cw = parse_smarts("[C@H]").unwrap();   // CW (@), kind 1
+        let config = MatchConfig {
+            use_chirality: true,
+            ..MatchConfig::default()
+        };
+        let m = find_matches_with_config(&q_cw, &mol, &config);
+        assert!(!m.is_empty(), "[C@H] should positively match D-alanine (@)");
+    }
 }

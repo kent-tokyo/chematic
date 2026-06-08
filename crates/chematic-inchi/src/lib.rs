@@ -33,25 +33,25 @@ pub fn inchi(mol: &Molecule) -> String {
 
     // Connectivity layer /c
     if let Some(c_layer) = connection::connectivity_layer(mol) {
-        result.push('/');
+        result.push_str("/c");
         result.push_str(&c_layer);
     }
 
     // Hydrogen layer /h
     if let Some(h_layer) = hydrogen::hydrogen_layer(mol) {
-        result.push('/');
+        result.push_str("/h");
         result.push_str(&h_layer);
     }
 
     // Charge layer /q (conditional)
     if let Some(q_layer) = charge::charge_layer(mol) {
-        result.push('/');
+        result.push_str("/q");
         result.push_str(&q_layer);
     }
 
     // Isotope layer /i (conditional)
     if let Some(i_layer) = isotope::isotope_layer(mol) {
-        result.push('/');
+        result.push_str("/i");
         result.push_str(&i_layer);
     }
 

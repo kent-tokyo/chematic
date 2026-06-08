@@ -13,9 +13,9 @@ pub fn charge_layer(mol: &Molecule) -> Option<String> {
     if total_charge == 0 {
         None
     } else if total_charge > 0 {
-        Some(format!("q+{}", total_charge))
+        Some(format!("+{}", total_charge))
     } else {
-        Some(format!("q{}", total_charge))
+        Some(format!("{}", total_charge))
     }
 }
 
@@ -34,13 +34,13 @@ mod tests {
     fn test_charge_positive() {
         let mol = parse("[NH4+]").expect("ammonium");
         let q_layer = charge_layer(&mol);
-        assert_eq!(q_layer, Some("q+1".to_string()));
+        assert_eq!(q_layer, Some("+1".to_string()));
     }
 
     #[test]
     fn test_charge_negative() {
         let mol = parse("[O-]").expect("hydroxide");
         let q_layer = charge_layer(&mol);
-        assert_eq!(q_layer, Some("q-1".to_string()));
+        assert_eq!(q_layer, Some("-1".to_string()));
     }
 }
