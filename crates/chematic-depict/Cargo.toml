@@ -8,7 +8,7 @@ repository.workspace = true
 description = "2D molecular structure depiction as SVG: ring templates, wedge/dash stereo bonds, CPK coloring, grid layout — pure-Rust, no C/C++ dependencies"
 keywords = ["svg", "depiction", "2d", "cheminformatics", "chemistry"]
 categories = ["science", "science::computational-chemistry::cheminformatics", "visualization"]
-readme = "../../README.md"
+readme = "README.md"
 homepage.workspace = true
 documentation = "https://docs.rs/chematic-depict"
 

@@ -8,7 +8,7 @@ repository.workspace = true
 description = "Local IUPAC name generation for chematic — pure-Rust, no network required"
 keywords = ["cheminformatics", "iupac", "chemistry", "nomenclature", "systematic-name"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
-readme = "../../README.md"
+readme = "README.md"
 homepage.workspace = true
 documentation = "https://docs.rs/chematic-iupac"
 
