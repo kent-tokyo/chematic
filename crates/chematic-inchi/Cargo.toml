@@ -1,6 +1,6 @@
 [package]
 name = "chematic-inchi"
-version = "0.1.34"
+version = "0.1.36"
 edition = "2021"
 authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
 license = "MIT OR Apache-2.0"
@@ -13,9 +13,9 @@ categories = ["science", "parser-implementations"]
 readme = "README.md"
 
 [dependencies]
-chematic-core = { path = "../chematic-core" }
-chematic-smiles = { path = "../chematic-smiles" }
-chematic-chem = { path = "../chematic-chem" }
+chematic-core = { version = "0.1.36", path = "../chematic-core" }
+chematic-smiles = { version = "0.1.36", path = "../chematic-smiles" }
+chematic-chem = { version = "0.1.36", path = "../chematic-chem" }
 sha2 = { version = "0.10", default-features = false }
 
 [lib]
