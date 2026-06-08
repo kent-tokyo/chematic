@@ -11,6 +11,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.36] — 2026-06-08
+
+### Fixed — Issue #1 Audit: Topologically Correct but Chemically Meaningless Results
+
+#### `chematic-smarts` — VF2 & MCS Correctness
+
+**BUG-2: SMARTS `[h]` Primitive (Implicit Hydrogen Count)**
+- **FIXED**: Parser now correctly distinguishes `[H]`/`[H2]` (total H count) from `[h]`/`[h2]` (implicit H only)
+- Added `AtomPrimitive::ImplicitHCount(u8)` variant to query.rs
+- Updated `parser.rs` to handle lowercase `h` before element fallthrough
+- Added `eval_atom_primitive()` match arm using `implicit_hcount()` function
+- **Impact**: Prevents silent incorrect matches where aromatic H was incorrectly matched against explicit atoms
+
+**BUG-3: MCS `maximize_bonds` Tiebreaking**
+- **FIXED**: Modified `grow()` function in `mcs.rs` to use bond count as tiebreaker when atom counts are equal
+- Added condition: `|| (maximize_bonds && mapping.size == best.size && mapping.bond_count > best.bond_count)`
+- Default `maximize_bonds=true` to match RDKit behavior
+- **Impact**: MCS now returns consistent results when multiple equally-sized matches exist
+
+**BUG-4: SMARTS `/\` Geometric Stereo Bonds (E/Z)**
+- **FIXED**: Added `Up` and `Down` variants to `BondPrimitive` enum for geometric stereochemistry
+- Updated `parser.rs`: `is_bond_token()` now recognizes `/` and `\` characters
+- Updated `consume_bond_prim()` to parse `/` as `Up` and `\` as `Down`
+- Added `eval_bond_primitive()` match arms for `BondPrimitive::Up` and `Down`
+- **Impact**: SMARTS queries like `/C=C\` can now correctly match E/Z configured double bonds
+
+### Test Coverage
+
+- **chematic-smarts**: 124 tests all passing (includes BUG-2/3/4 validation)
+- **Workspace**: 1,120+ tests all passing
+- No clippy warnings
+
+### Notes
+
+- **Issue #1 Pattern**: Audit discovered bugs where algorithms return topologically valid but chemically invalid results
+  - Root cause: RDKit has constraint options that weren't exposed in chematic
+  - Examples: VF2 `uniquify` (removed in v0.1.33), MCS ring-awareness (removed in v0.1.22)
+  - This sprint adds three more missing correctness constraints
+
+---
+
 ## [0.1.32] — 2026-06-07
 
 ### Added — 3D Geometry, Coordinate Handling, WASM Stability
