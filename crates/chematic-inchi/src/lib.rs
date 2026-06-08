@@ -121,8 +121,9 @@ mod tests {
         let inchi_str = inchi(&mol);
         eprintln!("Benzene InChI: {}", inchi_str);
         assert!(inchi_str.starts_with("InChI=1S/C6H6"));
-        // InChI is generated (may or may not have /c depending on connectivity)
-        assert!(!inchi_str.is_empty());
+        // Benzene should have ring closure: /c1-2-3-4-5-6-1/h1-6H
+        assert!(inchi_str.contains("/c1-2-3-4-5-6-1"), "Benzene should have ring closure in connectivity");
+        assert!(inchi_str.contains("/h1-6H"), "Benzene should have hydrogen layer");
     }
 
     #[test]
