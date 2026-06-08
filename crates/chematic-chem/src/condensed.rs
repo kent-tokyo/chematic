@@ -3,7 +3,6 @@
 //! Supports Hill notation-style chemical formulas with explicit hydrogens,
 //! functional group abbreviations (COOH, OH, NH2, etc.), and parentheses for branching.
 
-use std::collections::HashMap;
 use chematic_core::Molecule;
 use chematic_smiles::parse as parse_smiles;
 
@@ -104,8 +103,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>, CondensedError> {
             // Lowercase after uppercase was already handled, so this is error
             return Err(CondensedError::UnknownElement(format!(
                 "unexpected lowercase at position {}: {}",
-                i,
-                input
+                i, input
             )));
         } else {
             return Err(CondensedError::UnknownElement(format!(
@@ -147,7 +145,9 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
             Token::Digit(n) => {
                 // Repeat the previous atom n-1 times (because we already added it once)
                 if smiles.is_empty() {
-                    return Err(CondensedError::ParseError("digit without preceding atom".into()));
+                    return Err(CondensedError::ParseError(
+                        "digit without preceding atom".into(),
+                    ));
                 }
                 let last_char = smiles.pop().unwrap();
                 for _ in 0..*n {
@@ -157,27 +157,27 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
             }
             Token::Atom(a) => {
                 // Try to match functional groups
-                if i + 1 < tokens.len() {
-                    if let Token::Atom(b) = &tokens[i + 1] {
-                        // Try 2-char combinations
-                        let key = format!("{}{}", a, b);
-                        if let Some(replacement) = functional_groups(&key) {
-                            smiles.push_str(replacement);
-                            i += 2;
-                            continue;
-                        }
+                if i + 1 < tokens.len()
+                    && let Token::Atom(b) = &tokens[i + 1]
+                {
+                    // Try 2-char combinations
+                    let key = format!("{}{}", a, b);
+                    if let Some(replacement) = functional_groups(&key) {
+                        smiles.push_str(replacement);
+                        i += 2;
+                        continue;
                     }
                 }
 
                 // Try 3-char (e.g., CHO, NON, etc.)
-                if i + 2 < tokens.len() {
-                    if let (Token::Atom(b), Token::Atom(c)) = (&tokens[i + 1], &tokens[i + 2]) {
-                        let key = format!("{}{}{}", a, b, c);
-                        if let Some(replacement) = functional_groups(&key) {
-                            smiles.push_str(replacement);
-                            i += 3;
-                            continue;
-                        }
+                if i + 2 < tokens.len()
+                    && let (Token::Atom(b), Token::Atom(c)) = (&tokens[i + 1], &tokens[i + 2])
+                {
+                    let key = format!("{}{}{}", a, b, c);
+                    if let Some(replacement) = functional_groups(&key) {
+                        smiles.push_str(replacement);
+                        i += 3;
+                        continue;
                     }
                 }
 
@@ -189,11 +189,14 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
     }
 
     // Verify balanced parentheses
-    let paren_balance: i32 = smiles.chars().map(|c| match c {
-        '(' => 1,
-        ')' => -1,
-        _ => 0,
-    }).sum();
+    let paren_balance: i32 = smiles
+        .chars()
+        .map(|c| match c {
+            '(' => 1,
+            ')' => -1,
+            _ => 0,
+        })
+        .sum();
 
     if paren_balance != 0 {
         return Err(CondensedError::UnbalancedParens);

@@ -11,28 +11,35 @@ use chematic_core::{AtomIdx, Molecule, implicit_hcount};
 // ─── Atom-level helpers ──────────────────────────────────────────────────────
 
 fn principal_quantum_number(z: u8) -> f64 {
-    if z <= 2 { 1.0 }
-    else if z <= 10 { 2.0 }
-    else if z <= 18 { 3.0 }
-    else if z <= 36 { 4.0 }
-    else if z <= 54 { 5.0 }
-    else { 6.0 }
+    if z <= 2 {
+        1.0
+    } else if z <= 10 {
+        2.0
+    } else if z <= 18 {
+        3.0
+    } else if z <= 36 {
+        4.0
+    } else if z <= 54 {
+        5.0
+    } else {
+        6.0
+    }
 }
 
 fn valence_electrons(z: u8) -> u8 {
     match z {
-        1        => 1,
-        2        => 2,
-        3..=10   => z - 2,
-        11..=18  => z - 10,
-        19 | 20  => 1 + (z - 18),  // K, Ca
+        1 => 1,
+        2 => 2,
+        3..=10 => z - 2,
+        11..=18 => z - 10,
+        19 | 20 => 1 + (z - 18), // K, Ca
         // period 4 d-block: use group valence for common elements
-        35       => 7,  // Br
-        36       => 8,  // Kr
-        53       => 7,  // I
-        54       => 8,  // Xe
+        35 => 7, // Br
+        36 => 8, // Kr
+        53 => 7, // I
+        54 => 8, // Xe
         // fall-back: number of electrons beyond last noble gas shell (period 4+)
-        _        => {
+        _ => {
             let rem = z % 18;
             if rem == 0 { 8 } else { rem.min(8) }
         }
@@ -72,7 +79,8 @@ pub fn estate_indices(mol: &Molecule) -> Vec<f64> {
         return vec![];
     }
 
-    let heavy: Vec<usize> = mol.atoms()
+    let heavy: Vec<usize> = mol
+        .atoms()
         .filter(|(_, a)| a.element.atomic_number() != 1)
         .map(|(idx, _)| idx.0 as usize)
         .collect();
@@ -88,10 +96,10 @@ pub fn estate_indices(mol: &Molecule) -> Vec<f64> {
         let z = atom.element.atomic_number();
         let pqn = principal_quantum_number(z);
         let zv = valence_electrons(z) as f64;
-        let h_total = implicit_hcount(mol, idx) as f64
-            + atom.hydrogen_count.unwrap_or(0) as f64;
+        let h_total = implicit_hcount(mol, idx) as f64 + atom.hydrogen_count.unwrap_or(0) as f64;
         let delta_v = (zv - h_total).max(0.0);
-        let delta = mol.neighbors(idx)
+        let delta = mol
+            .neighbors(idx)
             .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
             .count() as f64;
 
@@ -156,7 +164,8 @@ mod tests {
         assert!(
             (es[0] - es[1]).abs() < 1e-9,
             "ethane carbons should have equal EState: {} vs {}",
-            es[0], es[1]
+            es[0],
+            es[1]
         );
     }
 
@@ -166,40 +175,51 @@ mod tests {
         let mol = parse("CC(=O)O").unwrap(); // acetic acid: C, C(=O), O(=C), O-H
         let es = estate_indices(&mol);
         // At least one O should have higher EState than both Cs.
-        let max_o = mol.atoms()
+        let max_o = mol
+            .atoms()
             .filter(|(_, a)| a.element == chematic_core::Element::O)
             .map(|(idx, _)| es[idx.0 as usize])
             .fold(f64::NEG_INFINITY, f64::max);
-        let max_c = mol.atoms()
+        let max_c = mol
+            .atoms()
             .filter(|(_, a)| a.element == chematic_core::Element::C)
             .map(|(idx, _)| es[idx.0 as usize])
             .fold(f64::NEG_INFINITY, f64::max);
-        assert!(max_o > max_c, "O EState ({max_o:.3}) should exceed C EState ({max_c:.3})");
+        assert!(
+            max_o > max_c,
+            "O EState ({max_o:.3}) should exceed C EState ({max_c:.3})"
+        );
     }
 
     #[test]
     fn pyridine_nitrogen_highest_estate() {
         let mol = parse("c1ccncc1").unwrap();
         let es = estate_indices(&mol);
-        let n_idx = mol.atoms()
+        let n_idx = mol
+            .atoms()
             .find(|(_, a)| a.element == chematic_core::Element::N)
             .map(|(idx, _)| idx.0 as usize)
             .unwrap();
-        let max_c = mol.atoms()
+        let max_c = mol
+            .atoms()
             .filter(|(_, a)| a.element == chematic_core::Element::C)
             .map(|(idx, _)| es[idx.0 as usize])
             .fold(f64::NEG_INFINITY, f64::max);
         assert!(
             es[n_idx] > max_c,
             "pyridine N ({:.3}) should have higher EState than max C ({:.3})",
-            es[n_idx], max_c
+            es[n_idx],
+            max_c
         );
     }
 
     #[test]
     fn sum_estate_positive() {
         let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap(); // aspirin
-        assert!(sum_estate(&mol) > 0.0, "aspirin sum_estate should be positive");
+        assert!(
+            sum_estate(&mol) > 0.0,
+            "aspirin sum_estate should be positive"
+        );
     }
 
     #[test]

@@ -35,13 +35,13 @@ impl BondOrder {
     /// Fractional bond order. Returns `None` for aromatic (non-integer).
     pub fn order_value(self) -> Option<f32> {
         match self {
-            Self::Single    => Some(1.0),
-            Self::Double    => Some(2.0),
-            Self::Triple    => Some(3.0),
+            Self::Single => Some(1.0),
+            Self::Double => Some(2.0),
+            Self::Triple => Some(3.0),
             Self::Quadruple => Some(4.0),
-            Self::Zero      => Some(0.0),
-            Self::Dative    => Some(1.0),
-            Self::Aromatic  => None,
+            Self::Zero => Some(0.0),
+            Self::Dative => Some(1.0),
+            Self::Aromatic => None,
             Self::Up | Self::Down => Some(1.0),
             Self::QueryAny
             | Self::QuerySingleOrDouble
@@ -64,8 +64,8 @@ impl BondOrder {
             | Self::QuerySingleOrDouble
             | Self::QuerySingleOrAromatic
             | Self::QueryDoubleOrAromatic => 1,
-            Self::Double    => 2,
-            Self::Triple    => 3,
+            Self::Double => 2,
+            Self::Triple => 3,
             Self::Quadruple => 4,
         }
     }
@@ -73,14 +73,14 @@ impl BondOrder {
     /// The SMILES/CXSMILES token that represents this bond order when available.
     pub fn smiles_token(self) -> &'static str {
         match self {
-            Self::Single    => "-",
-            Self::Double    => "=",
-            Self::Triple    => "#",
+            Self::Single => "-",
+            Self::Double => "=",
+            Self::Triple => "#",
             Self::Quadruple => "$",
-            Self::Aromatic  => ":",
-            Self::Up        => "/",
-            Self::Down      => "\\",
-            Self::Dative    => "->",
+            Self::Aromatic => ":",
+            Self::Up => "/",
+            Self::Down => "\\",
+            Self::Dative => "->",
             Self::Zero | Self::QueryAny => "~",
             Self::QuerySingleOrDouble
             | Self::QuerySingleOrAromatic
@@ -138,7 +138,11 @@ mod tests {
 
     #[test]
     fn test_bond_other() {
-        let b = BondEntry { atom1: AtomIdx(0), atom2: AtomIdx(1), order: BondOrder::Single };
+        let b = BondEntry {
+            atom1: AtomIdx(0),
+            atom2: AtomIdx(1),
+            order: BondOrder::Single,
+        };
         assert_eq!(b.other(AtomIdx(0)), Some(AtomIdx(1)));
         assert_eq!(b.other(AtomIdx(1)), Some(AtomIdx(0)));
         assert_eq!(b.other(AtomIdx(2)), None);

@@ -52,7 +52,9 @@ impl<'a> SmilesWriter<'a> {
         let mut first = true;
         for i in 0..self.mol.atom_count() {
             if !self.written[i] {
-                if !first { self.out.push('.'); }
+                if !first {
+                    self.out.push('.');
+                }
                 first = false;
                 self.write_chain(AtomIdx(i as u32), None, None);
             }
@@ -63,7 +65,7 @@ impl<'a> SmilesWriter<'a> {
 
     fn find_ring_closures(&mut self) {
         let n = self.mol.atom_count();
-        let mut visited  = vec![false; n];
+        let mut visited = vec![false; n];
         let mut in_stack = vec![false; n];
 
         for start in 0..n {
@@ -88,9 +90,13 @@ impl<'a> SmilesWriter<'a> {
 
         for (neighbor, bidx) in self.mol.neighbors(atom) {
             // Skip the edge we came from (undirected graph: would look like a back-edge otherwise).
-            if Some(bidx) == from_bond { continue; }
+            if Some(bidx) == from_bond {
+                continue;
+            }
             // Skip bonds already classified.
-            if self.ring_bonds.contains(&bidx) { continue; }
+            if self.ring_bonds.contains(&bidx) {
+                continue;
+            }
 
             if !visited[neighbor.0 as usize] {
                 // Tree edge: recurse.
@@ -102,8 +108,14 @@ impl<'a> SmilesWriter<'a> {
                 self.next_ring += 1;
                 let bond_order = self.mol.bond(bidx).order;
                 // Both endpoints need to emit this ring number when serialized.
-                self.atom_ring_nums.entry(neighbor).or_default().push((rn, bond_order)); // open
-                self.atom_ring_nums.entry(atom).or_default().push((rn, bond_order));     // close
+                self.atom_ring_nums
+                    .entry(neighbor)
+                    .or_default()
+                    .push((rn, bond_order)); // open
+                self.atom_ring_nums
+                    .entry(atom)
+                    .or_default()
+                    .push((rn, bond_order)); // close
             }
         }
 
@@ -135,14 +147,18 @@ impl<'a> SmilesWriter<'a> {
                 let atom_aromatic = self.mol.atom(atom).aromatic;
                 // For ring closures we can't know the other atom's aromaticity here,
                 // so we emit the bond type unless it is a plain aromatic ring bond.
-                if !(bond_order == BondOrder::Aromatic && atom_aromatic) && bond_order != BondOrder::Single {
+                if !(bond_order == BondOrder::Aromatic && atom_aromatic)
+                    && bond_order != BondOrder::Single
+                {
                     self.out.push_str(bond_order.smiles_token());
                 }
                 // Ring number: single digit for 1-9, `%NN` form for 10+.
                 if rn >= 10 {
                     self.out.push('%');
-                    self.out.push(char::from_digit((rn / 10) as u32, 10).unwrap());
-                    self.out.push(char::from_digit((rn % 10) as u32, 10).unwrap());
+                    self.out
+                        .push(char::from_digit((rn / 10) as u32, 10).unwrap());
+                    self.out
+                        .push(char::from_digit((rn % 10) as u32, 10).unwrap());
                 } else {
                     self.out.push(char::from_digit(rn as u32, 10).unwrap());
                 }
@@ -150,7 +166,8 @@ impl<'a> SmilesWriter<'a> {
         }
 
         // Collect tree-edge children (unvisited, non-ring-closure bonds).
-        let children: Vec<(AtomIdx, BondOrder)> = self.mol
+        let children: Vec<(AtomIdx, BondOrder)> = self
+            .mol
             .neighbors(atom)
             .filter(|(nb, bidx)| {
                 Some(*nb) != from_atom
@@ -167,10 +184,10 @@ impl<'a> SmilesWriter<'a> {
 
             // Determine whether the bond should be written explicitly.
             let parent_arom = self.mol.atom(atom).aromatic;
-            let child_arom  = self.mol.atom(child).aromatic;
+            let child_arom = self.mol.atom(child).aromatic;
             let implicit = match bond_order {
-                BondOrder::Single   => !(parent_arom && child_arom), // single is implicit
-                BondOrder::Aromatic => parent_arom && child_arom,    // aromatic is implicit
+                BondOrder::Single => !(parent_arom && child_arom), // single is implicit
+                BondOrder::Aromatic => parent_arom && child_arom,  // aromatic is implicit
                 _ => false,
             };
             let written_bond = if implicit { None } else { Some(bond_order) };
@@ -211,14 +228,16 @@ impl<'a> SmilesWriter<'a> {
 
             match atom.chirality {
                 chematic_core::Chirality::CounterClockwise => self.out.push('@'),
-                chematic_core::Chirality::Clockwise        => self.out.push_str("@@"),
-                chematic_core::Chirality::None             => {}
+                chematic_core::Chirality::Clockwise => self.out.push_str("@@"),
+                chematic_core::Chirality::None => {}
             }
 
-            if let Some(h) = atom.hydrogen_count {
-                if h > 0 {
-                    self.out.push('H');
-                    if h > 1 { self.out.push_str(&h.to_string()); }
+            if let Some(h) = atom.hydrogen_count
+                && h > 0
+            {
+                self.out.push('H');
+                if h > 1 {
+                    self.out.push_str(&h.to_string());
                 }
             }
 
@@ -252,49 +271,96 @@ mod tests {
     /// Parse → write → re-parse → verify atom/bond counts are preserved.
     fn roundtrip(smiles: &str) {
         let mol1 = parse(smiles).expect(smiles);
-        let out  = write(&mol1);
+        let out = write(&mol1);
         let mol2 = parse(&out).unwrap_or_else(|e| {
-            panic!("roundtrip failed for '{}': wrote '{}', error: {e}", smiles, out)
+            panic!(
+                "roundtrip failed for '{}': wrote '{}', error: {e}",
+                smiles, out
+            )
         });
-        assert_eq!(mol1.atom_count(), mol2.atom_count(),
-            "atom count mismatch: input='{}' output='{}'", smiles, out);
-        assert_eq!(mol1.bond_count(), mol2.bond_count(),
-            "bond count mismatch: input='{}' output='{}'", smiles, out);
+        assert_eq!(
+            mol1.atom_count(),
+            mol2.atom_count(),
+            "atom count mismatch: input='{}' output='{}'",
+            smiles,
+            out
+        );
+        assert_eq!(
+            mol1.bond_count(),
+            mol2.bond_count(),
+            "bond count mismatch: input='{}' output='{}'",
+            smiles,
+            out
+        );
     }
 
     #[test]
-    fn test_write_methane()          { assert_eq!(write(&parse("C").unwrap()), "C"); }
+    fn test_write_methane() {
+        assert_eq!(write(&parse("C").unwrap()), "C");
+    }
     #[test]
-    fn test_write_ethane()           { assert_eq!(write(&parse("CC").unwrap()), "CC"); }
+    fn test_write_ethane() {
+        assert_eq!(write(&parse("CC").unwrap()), "CC");
+    }
 
     #[test]
-    fn test_roundtrip_propane()      { roundtrip("CCC"); }
+    fn test_roundtrip_propane() {
+        roundtrip("CCC");
+    }
     #[test]
-    fn test_roundtrip_isobutane()    { roundtrip("CC(C)C"); }
+    fn test_roundtrip_isobutane() {
+        roundtrip("CC(C)C");
+    }
     #[test]
-    fn test_roundtrip_ethanol()      { roundtrip("CCO"); }
+    fn test_roundtrip_ethanol() {
+        roundtrip("CCO");
+    }
     #[test]
-    fn test_roundtrip_acetic_acid()  { roundtrip("CC(=O)O"); }
+    fn test_roundtrip_acetic_acid() {
+        roundtrip("CC(=O)O");
+    }
     #[test]
-    fn test_roundtrip_cyclohexane()  { roundtrip("C1CCCCC1"); }
+    fn test_roundtrip_cyclohexane() {
+        roundtrip("C1CCCCC1");
+    }
     #[test]
-    fn test_roundtrip_benzene_kekule() { roundtrip("C1=CC=CC=C1"); }
+    fn test_roundtrip_benzene_kekule() {
+        roundtrip("C1=CC=CC=C1");
+    }
     #[test]
-    fn test_roundtrip_benzene_arom() { roundtrip("c1ccccc1"); }
+    fn test_roundtrip_benzene_arom() {
+        roundtrip("c1ccccc1");
+    }
     #[test]
-    fn test_roundtrip_pyridine()     { roundtrip("c1ccncc1"); }
+    fn test_roundtrip_pyridine() {
+        roundtrip("c1ccncc1");
+    }
     #[test]
-    fn test_roundtrip_naphthalene()  { roundtrip("c1ccc2ccccc2c1"); }
+    fn test_roundtrip_naphthalene() {
+        roundtrip("c1ccc2ccccc2c1");
+    }
     #[test]
-    fn test_roundtrip_chlorobenzene() { roundtrip("c1ccccc1Cl"); }
+    fn test_roundtrip_chlorobenzene() {
+        roundtrip("c1ccccc1Cl");
+    }
     #[test]
-    fn test_roundtrip_13c()          { roundtrip("[13C]"); }
+    fn test_roundtrip_13c() {
+        roundtrip("[13C]");
+    }
     #[test]
-    fn test_roundtrip_ammonium()     { roundtrip("[NH4+]"); }
+    fn test_roundtrip_ammonium() {
+        roundtrip("[NH4+]");
+    }
     #[test]
-    fn test_roundtrip_disconnected() { roundtrip("[Na+].[Cl-]"); }
+    fn test_roundtrip_disconnected() {
+        roundtrip("[Na+].[Cl-]");
+    }
     #[test]
-    fn test_roundtrip_aspirin()      { roundtrip("CC(=O)Oc1ccccc1C(=O)O"); }
+    fn test_roundtrip_aspirin() {
+        roundtrip("CC(=O)Oc1ccccc1C(=O)O");
+    }
     #[test]
-    fn test_roundtrip_caffeine()     { roundtrip("Cn1cnc2c1c(=O)n(c(=O)n2C)C"); }
+    fn test_roundtrip_caffeine() {
+        roundtrip("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
+    }
 }

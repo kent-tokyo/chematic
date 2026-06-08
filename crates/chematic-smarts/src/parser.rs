@@ -39,9 +39,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::query::{
-    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule,
-};
+use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 
 // ---------------------------------------------------------------------------
 // Error type
@@ -156,15 +154,6 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn new(src: &'a [u8]) -> Self {
-        Self {
-            src,
-            pos: 0,
-            recursion_depth: 0,
-            max_recursion_depth: DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH,
-        }
-    }
-
     // -- character helpers ---------------------------------------------------
 
     #[inline]
@@ -196,10 +185,13 @@ impl<'a> Parser<'a> {
         }
 
         // Remaining characters (other than whitespace) are unexpected.
-        if let Some(c) = self.peek() {
-            if c != b' ' && c != b'\t' && c != b'\n' && c != b'\r' {
-                return Err(SmartsError::UnexpectedChar(c as char, self.pos));
-            }
+        if let Some(c) = self.peek()
+            && c != b' '
+            && c != b'\t'
+            && c != b'\n'
+            && c != b'\r'
+        {
+            return Err(SmartsError::UnexpectedChar(c as char, self.pos));
         }
 
         Ok(mol)
@@ -266,7 +258,9 @@ impl<'a> Parser<'a> {
                         Some(b'0'..=b'9') | Some(b'%') => {
                             let (ring_num, ring_bond) =
                                 self.parse_ring_closure_num(pending_bond)?;
-                            self.handle_ring_closure(mol, current, ring_num, ring_bond, open_rings)?;
+                            self.handle_ring_closure(
+                                mol, current, ring_num, ring_bond, open_rings,
+                            )?;
                         }
 
                         // Branch after an explicit bond character (e.g. `C=(C)C`).
@@ -291,22 +285,20 @@ impl<'a> Parser<'a> {
                         }
 
                         // Next atom in the chain.
-                        _ => {
-                            match self.try_parse_atom()? {
-                                Some(next_atom) => {
-                                    let next_idx = mol.add_atom(next_atom);
-                                    let bond = pending_bond.unwrap_or(BondQuery::Any);
-                                    mol.add_bond(current, next_idx, bond);
-                                    current = next_idx;
-                                }
-                                None => {
-                                    if pending_bond.is_some() {
-                                        return Err(SmartsError::UnexpectedEnd);
-                                    }
-                                    break;
-                                }
+                        _ => match self.try_parse_atom()? {
+                            Some(next_atom) => {
+                                let next_idx = mol.add_atom(next_atom);
+                                let bond = pending_bond.unwrap_or(BondQuery::Any);
+                                mol.add_bond(current, next_idx, bond);
+                                current = next_idx;
                             }
-                        }
+                            None => {
+                                if pending_bond.is_some() {
+                                    return Err(SmartsError::UnexpectedEnd);
+                                }
+                                break;
+                            }
+                        },
                     }
                 }
             }
@@ -365,7 +357,9 @@ impl<'a> Parser<'a> {
             tens * 10 + units
         } else {
             // Caller peeked b'0'..=b'9', so advance() is guaranteed to return Some(digit).
-            self.advance().expect("ring closure digit guaranteed by caller peek") - b'0'
+            self.advance()
+                .expect("ring closure digit guaranteed by caller peek")
+                - b'0'
         };
         Ok((ring_num, prefix_bond))
     }
@@ -398,7 +392,13 @@ impl<'a> Parser<'a> {
         match self.peek()? {
             b'!' => {
                 // Only treat `!` as bond negation when the next char is a bond token.
-                if self.src.get(self.pos + 1).copied().map(Self::is_bond_token).unwrap_or(false) {
+                if self
+                    .src
+                    .get(self.pos + 1)
+                    .copied()
+                    .map(Self::is_bond_token)
+                    .unwrap_or(false)
+                {
                     self.advance(); // consume '!'
                     let prim = self.consume_bond_prim().unwrap();
                     Some(BondQuery::Not(Box::new(BondQuery::Primitive(prim))))
@@ -463,11 +463,11 @@ impl<'a> Parser<'a> {
 
         if self.peek() == Some(b'!') {
             let next = self.src.get(self.pos + 1).copied();
-            if next.map(Self::is_bond_token).unwrap_or(false) {
-                if let Some(right) = self.try_parse_bond_factor() {
-                    let and_expr = BondQuery::And(Box::new(left), Box::new(right));
-                    return self.parse_bond_and_tail(and_expr);
-                }
+            if next.map(Self::is_bond_token).unwrap_or(false)
+                && let Some(right) = self.try_parse_bond_factor()
+            {
+                let and_expr = BondQuery::And(Box::new(left), Box::new(right));
+                return self.parse_bond_and_tail(and_expr);
             }
         }
 
@@ -485,10 +485,8 @@ impl<'a> Parser<'a> {
                 Ok(Some(AtomQuery::Primitive(AtomPrimitive::Wildcard)))
             }
             // Organic-subset atoms (uppercase aliphatic).
-            Some(b'B') | Some(b'C') | Some(b'N') | Some(b'O')
-            | Some(b'P') | Some(b'S') | Some(b'F') | Some(b'I') => {
-                Ok(Some(self.parse_organic_atom(false)?))
-            }
+            Some(b'B') | Some(b'C') | Some(b'N') | Some(b'O') | Some(b'P') | Some(b'S')
+            | Some(b'F') | Some(b'I') => Ok(Some(self.parse_organic_atom(false)?)),
             // Aromatic organic-subset atoms (lowercase, includes boron `b`).
             Some(b'b') | Some(b'c') | Some(b'n') | Some(b'o') | Some(b'p') | Some(b's') => {
                 Ok(Some(self.parse_organic_atom(true)?))
@@ -695,7 +693,9 @@ impl<'a> Parser<'a> {
                 };
                 let inner_mol = inner_parser.parse()?;
                 self.pos = end + 1; // advance past the closing ')'
-                Ok(AtomQuery::Primitive(AtomPrimitive::Recursive(Box::new(inner_mol))))
+                Ok(AtomQuery::Primitive(AtomPrimitive::Recursive(Box::new(
+                    inner_mol,
+                ))))
             }
 
             // Aromatic (`a`) — must be checked BEFORE element symbol parsing.
@@ -713,9 +713,7 @@ impl<'a> Parser<'a> {
             // Atomic number `#N`
             Some(b'#') => {
                 self.advance(); // consume '#'
-                let n = self
-                    .parse_digits_u8()
-                    .ok_or(SmartsError::UnexpectedEnd)?;
+                let n = self.parse_digits_u8().ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)))
             }
 
@@ -752,14 +750,18 @@ impl<'a> Parser<'a> {
             // Degree `DN`
             Some(b'D') => {
                 self.advance(); // consume 'D'
-                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                let n = self
+                    .parse_single_digit()
+                    .ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::Degree(n)))
             }
 
             // Ring size `rN` — must be checked BEFORE element parsing.
             Some(b'r') => {
                 self.advance(); // consume 'r'
-                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                let n = self
+                    .parse_single_digit()
+                    .ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::RingSize(n)))
             }
 
@@ -779,28 +781,36 @@ impl<'a> Parser<'a> {
             // Valence `[vN]` — total valence (bond orders + implicit H).
             Some(b'v') => {
                 self.advance(); // consume 'v'
-                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                let n = self
+                    .parse_single_digit()
+                    .ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::Valence(n)))
             }
 
             // Ring-bond count `[xN]` — bonds where both endpoints share a ring.
             Some(b'x') => {
                 self.advance(); // consume 'x'
-                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                let n = self
+                    .parse_single_digit()
+                    .ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::RingBondCount(n)))
             }
 
             // Hybridization `[^N]` — 1=sp, 2=sp2, 3=sp3.
             Some(b'^') => {
                 self.advance(); // consume '^'
-                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                let n = self
+                    .parse_single_digit()
+                    .ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::Hybridization(n)))
             }
 
             // Total connectivity `[XN]` — heavy-atom degree + implicit H count.
             Some(b'X') => {
                 self.advance(); // consume 'X'
-                let n = self.parse_single_digit().ok_or(SmartsError::UnexpectedEnd)?;
+                let n = self
+                    .parse_single_digit()
+                    .ok_or(SmartsError::UnexpectedEnd)?;
                 Ok(AtomQuery::Primitive(AtomPrimitive::TotalConnectivity(n)))
             }
 
@@ -828,9 +838,7 @@ impl<'a> Parser<'a> {
             }
 
             // Element symbol (uppercase or lowercase start).
-            Some(c) if c.is_ascii_alphabetic() => {
-                self.parse_element_primitive()
-            }
+            Some(c) if c.is_ascii_alphabetic() => self.parse_element_primitive(),
 
             Some(c) => Err(SmartsError::UnexpectedChar(c as char, pos)),
             None => Err(SmartsError::UnexpectedEnd),
@@ -847,13 +855,13 @@ impl<'a> Parser<'a> {
         let upper_first = first.to_ascii_uppercase();
 
         // Try two-character symbol first (e.g. `Cl`, `Br`).
-        if let Some(second) = self.peek() {
-            if second.is_ascii_lowercase() {
-                let candidate = format!("{upper_first}{}", second as char);
-                if chematic_core::Element::from_symbol(&candidate).is_some() {
-                    self.advance();
-                    return Ok(AtomQuery::Primitive(AtomPrimitive::Symbol(candidate)));
-                }
+        if let Some(second) = self.peek()
+            && second.is_ascii_lowercase()
+        {
+            let candidate = format!("{upper_first}{}", second as char);
+            if chematic_core::Element::from_symbol(&candidate).is_some() {
+                self.advance();
+                return Ok(AtomQuery::Primitive(AtomPrimitive::Symbol(candidate)));
             }
         }
 
@@ -944,7 +952,9 @@ mod tests {
         let mol = parse_smarts("[!C]").unwrap();
         assert_eq!(
             mol.atoms[0].query,
-            AtomQuery::Not(Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol("C".to_string()))))
+            AtomQuery::Not(Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol(
+                "C".to_string()
+            ))))
         );
     }
 
@@ -1044,7 +1054,10 @@ mod tests {
     #[test]
     fn test_parse_with_custom_config_default_depth() {
         let config = SmartsParserConfig::default();
-        assert_eq!(config.max_recursion_depth, DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH);
+        assert_eq!(
+            config.max_recursion_depth,
+            DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH
+        );
         let mol = parse_smarts_with_config("c1ccccc1", &config).unwrap();
         assert_eq!(mol.atoms.len(), 6);
     }
@@ -1091,9 +1104,27 @@ mod tests {
     #[test]
     fn test_config_depth_parameter_clamped_correctly() {
         // Test that depth is clamped to [1, 16]
-        assert_eq!(SmartsParserConfig { max_recursion_depth: 0 }.max_recursion_depth, 0);
-        assert_eq!(SmartsParserConfig { max_recursion_depth: 16 }.max_recursion_depth, 16);
-        assert_eq!(SmartsParserConfig { max_recursion_depth: 100 }.max_recursion_depth, 100);
+        assert_eq!(
+            SmartsParserConfig {
+                max_recursion_depth: 0
+            }
+            .max_recursion_depth,
+            0
+        );
+        assert_eq!(
+            SmartsParserConfig {
+                max_recursion_depth: 16
+            }
+            .max_recursion_depth,
+            16
+        );
+        assert_eq!(
+            SmartsParserConfig {
+                max_recursion_depth: 100
+            }
+            .max_recursion_depth,
+            100
+        );
         // Config stores the value as-is; clamping happens in parse_smarts_with_config
     }
 
@@ -1165,6 +1196,72 @@ mod tests {
         // `[$([C&N])]` — recursive pattern with operators
         let mol = parse_smarts("[$([C&N])]").unwrap();
         assert_eq!(mol.atoms.len(), 1);
+    }
+
+    fn nested_recursive_smarts(depth: usize) -> String {
+        let mut smarts = String::from("C");
+        for _ in 0..depth {
+            smarts = format!("[$({smarts})]");
+        }
+        smarts
+    }
+
+    #[test]
+    fn test_recursive_smarts_default_depth_boundary() {
+        let smarts = nested_recursive_smarts(DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH);
+        let mol = parse_smarts(&smarts).expect("default recursive SMARTS depth should parse");
+        assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_recursive_smarts_default_depth_rejects_too_deep_pattern() {
+        let smarts = nested_recursive_smarts(DEFAULT_MAX_RECURSIVE_SMARTS_DEPTH + 1);
+        assert!(matches!(
+            parse_smarts(&smarts),
+            Err(SmartsError::RecursionDepthExceeded)
+        ));
+    }
+
+    #[test]
+    fn test_recursive_smarts_config_depth_is_clamped_for_safety() {
+        let low_config = SmartsParserConfig {
+            max_recursion_depth: 0,
+        };
+        let too_deep_for_low_config = nested_recursive_smarts(2);
+        assert!(matches!(
+            parse_smarts_with_config(&too_deep_for_low_config, &low_config),
+            Err(SmartsError::RecursionDepthExceeded)
+        ));
+
+        let high_config = SmartsParserConfig {
+            max_recursion_depth: 100,
+        };
+        let absolute_boundary = nested_recursive_smarts(ABSOLUTE_MAX_RECURSIVE_SMARTS_DEPTH);
+        parse_smarts_with_config(&absolute_boundary, &high_config)
+            .expect("absolute recursive SMARTS depth boundary should parse");
+
+        let too_deep_for_absolute_limit =
+            nested_recursive_smarts(ABSOLUTE_MAX_RECURSIVE_SMARTS_DEPTH + 1);
+        assert!(matches!(
+            parse_smarts_with_config(&too_deep_for_absolute_limit, &high_config),
+            Err(SmartsError::RecursionDepthExceeded)
+        ));
+    }
+
+    #[test]
+    fn test_malformed_recursive_smarts_return_errors() {
+        assert!(matches!(
+            parse_smarts("[$(C]"),
+            Err(SmartsError::UnexpectedEnd)
+        ));
+        assert!(matches!(
+            parse_smarts("[$(C"),
+            Err(SmartsError::UnexpectedEnd)
+        ));
+        assert!(matches!(
+            parse_smarts("[$(C))]"),
+            Err(SmartsError::UnclosedBracket(_) | SmartsError::UnexpectedChar(_, _))
+        ));
     }
 
     #[test]

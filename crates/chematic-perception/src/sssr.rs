@@ -342,7 +342,8 @@ mod tests {
         let mut b = MoleculeBuilder::new();
         let atoms: Vec<_> = (0..6).map(|_| b.add_atom(Atom::new(Element::C))).collect();
         for i in 0..6 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Single).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Single)
+                .unwrap();
         }
         b.build()
     }
@@ -352,7 +353,8 @@ mod tests {
         let mut b = MoleculeBuilder::new();
         let atoms: Vec<_> = (0..6).map(|_| b.add_atom(Atom::new(Element::C))).collect();
         for i in 0..6 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Single).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Single)
+                .unwrap();
         }
         b.build()
     }
@@ -367,7 +369,12 @@ mod tests {
         // Ring 1: 0-1-2-3-4-9-0
         let ring1 = [0usize, 1, 2, 3, 4, 9];
         for i in 0..6 {
-            b.add_bond(atoms[ring1[i]], atoms[ring1[(i + 1) % 6]], BondOrder::Single).unwrap();
+            b.add_bond(
+                atoms[ring1[i]],
+                atoms[ring1[(i + 1) % 6]],
+                BondOrder::Single,
+            )
+            .unwrap();
         }
         // Ring 2: 4-5-6-7-8-9 (shares bond 4-9)
         // Bonds to add: 4-5, 5-6, 6-7, 7-8, 8-9
@@ -459,7 +466,11 @@ mod tests {
         let mol = cyclohexane();
         let rings = find_sssr(&mol);
         for i in 0..6u32 {
-            assert!(rings.contains_atom(AtomIdx(i)), "atom {} should be in a ring", i);
+            assert!(
+                rings.contains_atom(AtomIdx(i)),
+                "atom {} should be in a ring",
+                i
+            );
         }
     }
 
@@ -529,7 +540,8 @@ mod tests {
         let mut b = MoleculeBuilder::new();
         let atoms: Vec<_> = (0..12).map(|_| b.add_atom(Atom::new(Element::C))).collect();
         for i in 0..12 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 12], BondOrder::Single).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 12], BondOrder::Single)
+                .unwrap();
         }
         b.build()
     }

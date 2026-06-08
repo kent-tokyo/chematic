@@ -54,12 +54,7 @@ fn priority_key(mol: &Molecule, center: AtomIdx, sub: AtomIdx) -> (u8, Vec<u8>) 
 }
 
 /// Compare two substituents by simplified CIP priority (higher = Greater).
-fn cmp_priority(
-    mol: &Molecule,
-    center: AtomIdx,
-    a: AtomIdx,
-    b: AtomIdx,
-) -> Ordering {
+fn cmp_priority(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> Ordering {
     let ka = priority_key(mol, center, a);
     let kb = priority_key(mol, center, b);
     // Compare primary: atomic number.
@@ -83,11 +78,7 @@ fn cmp_priority(
 
 /// Rank 4 substituents by priority (rank 1 = lowest, rank 4 = highest).
 /// Returns `None` if any two substituents are tied (ambiguous).
-fn rank4(
-    mol: &Molecule,
-    center: AtomIdx,
-    subs: &[AtomIdx; 4],
-) -> Option<[u8; 4]> {
+fn rank4(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx; 4]) -> Option<[u8; 4]> {
     let mut order: [usize; 4] = [0, 1, 2, 3];
     order.sort_by(|&i, &j| cmp_priority(mol, center, subs[i], subs[j]).reverse());
 
@@ -204,26 +195,34 @@ fn assign_ez(mol: &Molecule, coords: &Coords3D, bond_idx: BondIdx) -> Option<(At
     let a2 = bond.atom2;
 
     // Substituents at each end (exclude the other alkene carbon).
-    let subs_a1: Vec<AtomIdx> = mol.neighbors(a1).filter(|(nb, _)| *nb != a2).map(|(nb, _)| nb).collect();
-    let subs_a2: Vec<AtomIdx> = mol.neighbors(a2).filter(|(nb, _)| *nb != a1).map(|(nb, _)| nb).collect();
+    let subs_a1: Vec<AtomIdx> = mol
+        .neighbors(a1)
+        .filter(|(nb, _)| *nb != a2)
+        .map(|(nb, _)| nb)
+        .collect();
+    let subs_a2: Vec<AtomIdx> = mol
+        .neighbors(a2)
+        .filter(|(nb, _)| *nb != a1)
+        .map(|(nb, _)| nb)
+        .collect();
 
     if subs_a1.is_empty() || subs_a2.is_empty() {
         return None; // terminal alkene
     }
 
     // Highest-priority substituent at each end (by simplified CIP).
-    let h1 = *subs_a1.iter().max_by(|&&a, &&b| cmp_priority(mol, a1, a, b))?;
-    let h2 = *subs_a2.iter().max_by(|&&a, &&b| cmp_priority(mol, a2, a, b))?;
+    let h1 = *subs_a1
+        .iter()
+        .max_by(|&&a, &&b| cmp_priority(mol, a1, a, b))?;
+    let h2 = *subs_a2
+        .iter()
+        .max_by(|&&a, &&b| cmp_priority(mol, a2, a, b))?;
 
     // If either end has two equal-priority substituents, skip.
-    if subs_a1.len() == 2
-        && cmp_priority(mol, a1, subs_a1[0], subs_a1[1]) == Ordering::Equal
-    {
+    if subs_a1.len() == 2 && cmp_priority(mol, a1, subs_a1[0], subs_a1[1]) == Ordering::Equal {
         return None;
     }
-    if subs_a2.len() == 2
-        && cmp_priority(mol, a2, subs_a2[0], subs_a2[1]) == Ordering::Equal
-    {
+    if subs_a2.len() == 2 && cmp_priority(mol, a2, subs_a2[0], subs_a2[1]) == Ordering::Equal {
         return None;
     }
 
@@ -316,13 +315,29 @@ mod tests {
 
     /// Build a known tetrahedral center manually for testing.
     /// Center at origin; substituents placed at given positions.
-    fn make_coords4(center: Point3, s1: Point3, s2: Point3, s3: Point3, s4: Point3, n: usize) -> Coords3D {
+    #[allow(dead_code)]
+    fn make_coords4(
+        center: Point3,
+        s1: Point3,
+        s2: Point3,
+        s3: Point3,
+        s4: Point3,
+        n: usize,
+    ) -> Coords3D {
         let mut c = Coords3D::new_zeroed(n);
         c.set(AtomIdx(0), center);
-        if n > 1 { c.set(AtomIdx(1), s1); }
-        if n > 2 { c.set(AtomIdx(2), s2); }
-        if n > 3 { c.set(AtomIdx(3), s3); }
-        if n > 4 { c.set(AtomIdx(4), s4); }
+        if n > 1 {
+            c.set(AtomIdx(1), s1);
+        }
+        if n > 2 {
+            c.set(AtomIdx(2), s2);
+        }
+        if n > 3 {
+            c.set(AtomIdx(3), s3);
+        }
+        if n > 4 {
+            c.set(AtomIdx(4), s4);
+        }
         c
     }
 
@@ -376,11 +391,11 @@ mod tests {
         // F(atom2)  = (-0.5, -0.87, -0.3) → lowest (9)
         // Using signed_volume(I, Br, Cl; viewed from F) > 0 → S
         let mut coords = Coords3D::new_zeroed(5);
-        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));   // C
-        coords.set(AtomIdx(1), Point3::new(1.0, 0.0, -0.3));   // Br
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0)); // C
+        coords.set(AtomIdx(1), Point3::new(1.0, 0.0, -0.3)); // Br
         coords.set(AtomIdx(2), Point3::new(-0.5, -0.87, -0.3)); // F
-        coords.set(AtomIdx(3), Point3::new(-0.5, 0.87, -0.3));  // Cl
-        coords.set(AtomIdx(4), Point3::new(0.0, 0.0, 1.0));    // I
+        coords.set(AtomIdx(3), Point3::new(-0.5, 0.87, -0.3)); // Cl
+        coords.set(AtomIdx(4), Point3::new(0.0, 0.0, 1.0)); // I
 
         let result = assign_stereo_from_3d(&m, &coords);
         let code = result.get(AtomIdx(0));
@@ -392,11 +407,11 @@ mod tests {
         let m = mol("[C]([Br])([F])([Cl])[I]");
         // Swap I and Br positions → inverts stereo → R
         let mut coords = Coords3D::new_zeroed(5);
-        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));    // C
-        coords.set(AtomIdx(1), Point3::new(0.0, 0.0, 1.0));    // Br (now at top)
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0)); // C
+        coords.set(AtomIdx(1), Point3::new(0.0, 0.0, 1.0)); // Br (now at top)
         coords.set(AtomIdx(2), Point3::new(-0.5, -0.87, -0.3)); // F
-        coords.set(AtomIdx(3), Point3::new(-0.5, 0.87, -0.3));  // Cl
-        coords.set(AtomIdx(4), Point3::new(1.0, 0.0, -0.3));   // I (now at side)
+        coords.set(AtomIdx(3), Point3::new(-0.5, 0.87, -0.3)); // Cl
+        coords.set(AtomIdx(4), Point3::new(1.0, 0.0, -0.3)); // I (now at side)
         // Now: I(53)=side, Br(35)=top, Cl(17)=side2, F(9)=bottom
         // signed_volume(I, Br, Cl; viewed from F) should be < 0 → R
         let result = assign_stereo_from_3d(&m, &coords);
@@ -420,8 +435,8 @@ mod tests {
         let mut coords = Coords3D::new_zeroed(4);
         coords.set(AtomIdx(0), Point3::new(-1.5, 0.0, 0.0)); // Cl
         coords.set(AtomIdx(1), Point3::new(-0.67, 0.0, 0.0)); // C1 (alkene)
-        coords.set(AtomIdx(2), Point3::new(0.67, 0.0, 0.0));  // C2 (alkene)
-        coords.set(AtomIdx(3), Point3::new(2.0, 0.5, 0.0));   // Br (same side as Cl → trans? no...)
+        coords.set(AtomIdx(2), Point3::new(0.67, 0.0, 0.0)); // C2 (alkene)
+        coords.set(AtomIdx(3), Point3::new(2.0, 0.5, 0.0)); // Br (same side as Cl → trans? no...)
 
         // For E (trans), Cl and Br should be on opposite sides of the C=C axis.
         // Let's define: Cl at (-1.5, 0.5, 0), C1 at (-0.67, 0, 0), C2 at (0.67, 0, 0), Br at (1.5, -0.5, 0)
@@ -430,15 +445,22 @@ mod tests {
         //   b2 = C1→C2 = (1.34, 0, 0)
         //   b3 = C2→Br = (0.83, -0.5, 0)
         //   n1 = b1 × b2 = (0, 0, 0.5*0 - 0*0) ... let's just trust the code.
-        coords.set(AtomIdx(0), Point3::new(-1.5, 0.5, 0.0));  // Cl (above)
+        coords.set(AtomIdx(0), Point3::new(-1.5, 0.5, 0.0)); // Cl (above)
         coords.set(AtomIdx(1), Point3::new(-0.67, 0.0, 0.0)); // C1
-        coords.set(AtomIdx(2), Point3::new(0.67, 0.0, 0.0));  // C2
-        coords.set(AtomIdx(3), Point3::new(1.5, -0.5, 0.0));  // Br (below) → opposite = E
+        coords.set(AtomIdx(2), Point3::new(0.67, 0.0, 0.0)); // C2
+        coords.set(AtomIdx(3), Point3::new(1.5, -0.5, 0.0)); // Br (below) → opposite = E
 
         let result = assign_stereo_from_3d(&m, &coords);
         // The double bond C1=C2 should be labeled E.
-        let found_e = result.assignments.iter().any(|(_, code)| *code == CipCode::E);
-        assert!(found_e, "expected E assignment for trans ClCH=CHBr, got {:?}", result.assignments);
+        let found_e = result
+            .assignments
+            .iter()
+            .any(|(_, code)| *code == CipCode::E);
+        assert!(
+            found_e,
+            "expected E assignment for trans ClCH=CHBr, got {:?}",
+            result.assignments
+        );
     }
 
     #[test]
@@ -446,14 +468,21 @@ mod tests {
         // Z: Cl and Br on the same side.
         let m = mol("ClC=CBr");
         let mut coords = Coords3D::new_zeroed(4);
-        coords.set(AtomIdx(0), Point3::new(-1.5, 0.5, 0.0));  // Cl (above)
+        coords.set(AtomIdx(0), Point3::new(-1.5, 0.5, 0.0)); // Cl (above)
         coords.set(AtomIdx(1), Point3::new(-0.67, 0.0, 0.0)); // C1
-        coords.set(AtomIdx(2), Point3::new(0.67, 0.0, 0.0));  // C2
-        coords.set(AtomIdx(3), Point3::new(1.5, 0.5, 0.0));   // Br (also above) → same side = Z
+        coords.set(AtomIdx(2), Point3::new(0.67, 0.0, 0.0)); // C2
+        coords.set(AtomIdx(3), Point3::new(1.5, 0.5, 0.0)); // Br (also above) → same side = Z
 
         let result = assign_stereo_from_3d(&m, &coords);
-        let found_z = result.assignments.iter().any(|(_, code)| *code == CipCode::Z);
-        assert!(found_z, "expected Z assignment for cis ClCH=CHBr, got {:?}", result.assignments);
+        let found_z = result
+            .assignments
+            .iter()
+            .any(|(_, code)| *code == CipCode::Z);
+        assert!(
+            found_z,
+            "expected Z assignment for cis ClCH=CHBr, got {:?}",
+            result.assignments
+        );
     }
 
     // -------------------------------------------------------------------------

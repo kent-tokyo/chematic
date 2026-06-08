@@ -5,8 +5,8 @@
 
 use chematic_core::Molecule;
 
-use crate::layout::{compute_layout, Layout, Point, BOND_LEN};
-use crate::svg::{render_mol_body, render_mol_body_opts, RenderOptions};
+use crate::layout::{BOND_LEN, Layout, Point, compute_layout};
+use crate::svg::{RenderOptions, render_mol_body, render_mol_body_opts};
 
 /// Padding around each molecule within its grid cell (SVG pixels).
 const PADDING: f64 = 20.0;
@@ -30,14 +30,17 @@ pub fn depict_svg_grid(mols: &[&Molecule], cols: usize) -> String {
     }
 
     let cols = cols.min(mols.len());
-    let rows = (mols.len() + cols - 1) / cols;
+    let rows = mols.len().div_ceil(cols);
 
     // Compute 2D layouts for all molecules.
     let layouts: Vec<Layout> = mols.iter().map(|m| compute_layout(m)).collect();
 
     // Determine uniform cell size from the largest molecule bounding box.
     let (cell_w, cell_h) = layouts.iter().fold(
-        (BOND_LEN * 2.0 + 2.0 * PADDING, BOND_LEN * 2.0 + 2.0 * PADDING),
+        (
+            BOND_LEN * 2.0 + 2.0 * PADDING,
+            BOND_LEN * 2.0 + 2.0 * PADDING,
+        ),
         |(cw, ch), l| {
             let (min_x, min_y, max_x, max_y) = l.bounding_box();
             let w = (max_x - min_x).max(BOND_LEN) + 2.0 * PADDING;
@@ -79,7 +82,10 @@ pub fn depict_svg_grid(mols: &[&Molecule], cols: usize) -> String {
             coords: layout
                 .coords
                 .iter()
-                .map(|p| Point { x: p.x + dx, y: p.y + dy })
+                .map(|p| Point {
+                    x: p.x + dx,
+                    y: p.y + dy,
+                })
                 .collect(),
         };
 
@@ -100,7 +106,10 @@ pub fn depict_svg_grid(mols: &[&Molecule], cols: usize) -> String {
 ///
 /// This is the primitive used by [`depict_svg_grid_highlighted_smarts`] and
 /// can be called directly when atom indices are already known.
-pub fn depict_svg_grid_with_opts(mols: &[(&Molecule, Option<&RenderOptions>)], cols: usize) -> String {
+pub fn depict_svg_grid_with_opts(
+    mols: &[(&Molecule, Option<&RenderOptions>)],
+    cols: usize,
+) -> String {
     if mols.is_empty() || cols == 0 {
         return "<svg xmlns=\"http://www.w3.org/2000/svg\" \
                 width=\"0\" height=\"0\"></svg>"
@@ -109,11 +118,14 @@ pub fn depict_svg_grid_with_opts(mols: &[(&Molecule, Option<&RenderOptions>)], c
 
     let default_opts = RenderOptions::default();
     let cols = cols.min(mols.len());
-    let rows = (mols.len() + cols - 1) / cols;
+    let rows = mols.len().div_ceil(cols);
     let layouts: Vec<Layout> = mols.iter().map(|(m, _)| compute_layout(m)).collect();
 
     let (cell_w, cell_h) = layouts.iter().fold(
-        (BOND_LEN * 2.0 + 2.0 * PADDING, BOND_LEN * 2.0 + 2.0 * PADDING),
+        (
+            BOND_LEN * 2.0 + 2.0 * PADDING,
+            BOND_LEN * 2.0 + 2.0 * PADDING,
+        ),
         |(cw, ch), l| {
             let (min_x, min_y, max_x, max_y) = l.bounding_box();
             let w = (max_x - min_x).max(BOND_LEN) + 2.0 * PADDING;
@@ -146,7 +158,14 @@ pub fn depict_svg_grid_with_opts(mols: &[(&Molecule, Option<&RenderOptions>)], c
         let dx = cx - mol_cx;
         let dy = cy - mol_cy;
         let translated = Layout {
-            coords: layout.coords.iter().map(|p| Point { x: p.x + dx, y: p.y + dy }).collect(),
+            coords: layout
+                .coords
+                .iter()
+                .map(|p| Point {
+                    x: p.x + dx,
+                    y: p.y + dy,
+                })
+                .collect(),
         };
 
         let body = render_mol_body_opts(mol, &translated, opts.unwrap_or(&default_opts));

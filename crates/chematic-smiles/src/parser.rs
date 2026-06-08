@@ -38,7 +38,11 @@ struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     fn new(src: &'a [u8]) -> Self {
-        Self { src, pos: 0, depth: 0 }
+        Self {
+            src,
+            pos: 0,
+            depth: 0,
+        }
     }
 
     #[inline]
@@ -54,7 +58,9 @@ impl<'a> Parser<'a> {
     #[inline]
     fn advance(&mut self) -> Option<u8> {
         let b = self.src.get(self.pos).copied();
-        if b.is_some() { self.pos += 1; }
+        if b.is_some() {
+            self.pos += 1;
+        }
         b
     }
 
@@ -73,7 +79,10 @@ impl<'a> Parser<'a> {
 
         // Trailing unmatched ring closures are errors
         if let Some((&num, _)) = open_rings.iter().next() {
-            return Err(SmilesError::UnmatchedRingClosure { ring_num: num, pos: self.pos });
+            return Err(SmilesError::UnmatchedRingClosure {
+                ring_num: num,
+                pos: self.pos,
+            });
         }
 
         Ok(mol.build())
@@ -206,16 +215,20 @@ impl<'a> Parser<'a> {
             let bond = match (open_bond, ring_bond) {
                 (Some(a), Some(b)) if a == b => a,
                 (Some(_), Some(_)) => {
-                    return Err(SmilesError::ConflictingRingBond { ring_num, pos: self.pos });
+                    return Err(SmilesError::ConflictingRingBond {
+                        ring_num,
+                        pos: self.pos,
+                    });
                 }
                 (Some(b), None) | (None, Some(b)) => b,
                 (None, None) => implicit_bond(mol, open_atom, current),
             };
-            mol.add_bond(open_atom, current, bond)
-                .map_err(|_| SmilesError::InvalidBracketAtom {
+            mol.add_bond(open_atom, current, bond).map_err(|_| {
+                SmilesError::InvalidBracketAtom {
                     detail: format!("duplicate ring bond {ring_num}"),
                     pos: self.pos,
-                })?;
+                }
+            })?;
         } else {
             open_rings.insert(ring_num, (current, ring_bond));
         }
@@ -230,18 +243,22 @@ impl<'a> Parser<'a> {
     ) -> Result<(u8, Option<BondOrder>), SmilesError> {
         let ring_num = if self.peek() == Some(b'%') {
             self.advance(); // consume '%'
-            let tens = self.advance()
+            let tens = self
+                .advance()
                 .filter(|c| c.is_ascii_digit())
                 .ok_or(SmilesError::UnexpectedEnd { pos: self.pos })?
                 - b'0';
-            let units = self.advance()
+            let units = self
+                .advance()
                 .filter(|c| c.is_ascii_digit())
                 .ok_or(SmilesError::UnexpectedEnd { pos: self.pos })?
                 - b'0';
             tens * 10 + units
         } else {
             // Caller peeked b'0'..=b'9', so advance() is guaranteed to return Some(digit).
-            self.advance().expect("ring closure digit guaranteed by caller peek") - b'0'
+            self.advance()
+                .expect("ring closure digit guaranteed by caller peek")
+                - b'0'
         };
         Ok((ring_num, prefix_bond))
     }
@@ -300,8 +317,10 @@ impl<'a> Parser<'a> {
             first.to_string()
         };
 
-        let element = Element::from_symbol(&symbol)
-            .ok_or_else(|| SmilesError::UnknownElement { symbol: symbol.clone(), pos })?;
+        let element = Element::from_symbol(&symbol).ok_or_else(|| SmilesError::UnknownElement {
+            symbol: symbol.clone(),
+            pos,
+        })?;
 
         let chirality = self.parse_chirality();
         let mut atom = Atom::organic(element);
@@ -324,8 +343,10 @@ impl<'a> Parser<'a> {
             (first.to_ascii_uppercase().to_string(), false)
         };
 
-        let element = Element::from_symbol(&symbol)
-            .ok_or_else(|| SmilesError::UnknownElement { symbol: symbol.clone(), pos })?;
+        let element = Element::from_symbol(&symbol).ok_or_else(|| SmilesError::UnknownElement {
+            symbol: symbol.clone(),
+            pos,
+        })?;
 
         let chirality = self.parse_chirality();
         let mut atom = Atom::aromatic(element);
@@ -341,17 +362,18 @@ impl<'a> Parser<'a> {
         let isotope = self.parse_leading_digits_u16();
 
         // Element symbol (required)
-        let (symbol, aromatic) = self.parse_bracket_symbol()
-            .ok_or_else(|| SmilesError::InvalidBracketAtom {
-                detail: "missing element symbol".to_string(),
-                pos: self.pos,
-            })?;
+        let (symbol, aromatic) =
+            self.parse_bracket_symbol()
+                .ok_or_else(|| SmilesError::InvalidBracketAtom {
+                    detail: "missing element symbol".to_string(),
+                    pos: self.pos,
+                })?;
 
         // Handle wildcard [*] — return immediately with a dedicated wildcard atom.
         if symbol == "*" {
             let chirality = self.parse_chirality();
-            let _hcount   = self.parse_hcount();
-            let _charge   = self.parse_charge();
+            let _hcount = self.parse_hcount();
+            let _charge = self.parse_charge();
             if self.peek() == Some(b':') {
                 self.advance();
                 let _ = self.parse_leading_digits_u16(); // skip atom map
@@ -368,12 +390,14 @@ impl<'a> Parser<'a> {
             return Ok(wc);
         }
 
-        let element = Element::from_symbol(&symbol)
-            .ok_or_else(|| SmilesError::UnknownElement { symbol: symbol.clone(), pos: start_pos })?;
+        let element = Element::from_symbol(&symbol).ok_or_else(|| SmilesError::UnknownElement {
+            symbol: symbol.clone(),
+            pos: start_pos,
+        })?;
 
         let chirality = self.parse_chirality();
-        let hcount    = self.parse_hcount();
-        let charge    = self.parse_charge();
+        let hcount = self.parse_hcount();
+        let charge = self.parse_charge();
 
         let atom_map = if self.peek() == Some(b':') {
             self.advance();
@@ -408,14 +432,14 @@ impl<'a> Parser<'a> {
         let upper_first = first.to_ascii_uppercase() as char;
 
         // Try two-character symbol first
-        if let Some(second) = self.peek_at(1) {
-            if second.is_ascii_lowercase() {
-                let candidate = format!("{upper_first}{}", second as char);
-                if Element::from_symbol(&candidate).is_some() {
-                    self.advance();
-                    self.advance();
-                    return Some((candidate, aromatic));
-                }
+        if let Some(second) = self.peek_at(1)
+            && second.is_ascii_lowercase()
+        {
+            let candidate = format!("{upper_first}{}", second as char);
+            if Element::from_symbol(&candidate).is_some() {
+                self.advance();
+                self.advance();
+                return Some((candidate, aromatic));
             }
         }
 
@@ -447,7 +471,10 @@ impl<'a> Parser<'a> {
         if self.peek() == Some(b'H') {
             self.advance();
             match self.peek().filter(|c| c.is_ascii_digit()) {
-                Some(d) => { self.advance(); d - b'0' }
+                Some(d) => {
+                    self.advance();
+                    d - b'0'
+                }
                 None => 1,
             }
         } else {
@@ -663,5 +690,76 @@ mod tests {
         let mol = parse("c1ccccc1Cl").unwrap();
         assert_eq!(mol.atom_count(), 7);
         assert_eq!(mol.bond_count(), 7);
+    }
+
+    fn nested_branch_smiles(depth: usize) -> String {
+        let mut smiles = String::from("C");
+        for _ in 0..depth {
+            smiles.push_str("(C");
+        }
+        for _ in 0..depth {
+            smiles.push(')');
+        }
+        smiles
+    }
+
+    #[test]
+    fn test_branch_depth_limit_accepts_boundary() {
+        let smiles = nested_branch_smiles(MAX_BRANCH_DEPTH);
+        let mol = parse(&smiles).expect("maximum configured branch depth should parse");
+        assert_eq!(mol.atom_count(), MAX_BRANCH_DEPTH + 1);
+    }
+
+    #[test]
+    fn test_branch_depth_limit_rejects_too_deep_input() {
+        let smiles = nested_branch_smiles(MAX_BRANCH_DEPTH + 1);
+        assert!(matches!(
+            parse(&smiles),
+            Err(SmilesError::NestingTooDeep { .. })
+        ));
+    }
+
+    #[test]
+    fn test_malformed_ring_closures_return_errors() {
+        assert!(matches!(
+            parse("C1"),
+            Err(SmilesError::UnmatchedRingClosure { ring_num: 1, .. })
+        ));
+        assert!(matches!(
+            parse("C%"),
+            Err(SmilesError::UnexpectedEnd { .. })
+        ));
+        assert!(matches!(
+            parse("C%1"),
+            Err(SmilesError::UnexpectedEnd { .. })
+        ));
+        assert!(matches!(
+            parse("C%AA"),
+            Err(SmilesError::UnexpectedEnd { .. })
+        ));
+        assert!(matches!(
+            parse("C=1CC-1"),
+            Err(SmilesError::ConflictingRingBond { ring_num: 1, .. })
+        ));
+    }
+
+    #[test]
+    fn test_malformed_bracket_atoms_return_errors() {
+        assert!(matches!(
+            parse("[C"),
+            Err(SmilesError::InvalidBracketAtom { .. })
+        ));
+        assert!(matches!(
+            parse("[CH4"),
+            Err(SmilesError::InvalidBracketAtom { .. })
+        ));
+        assert!(matches!(
+            parse("[Q]"),
+            Err(SmilesError::InvalidBracketAtom { .. })
+        ));
+        assert!(matches!(
+            parse("[C@"),
+            Err(SmilesError::InvalidBracketAtom { .. })
+        ));
     }
 }

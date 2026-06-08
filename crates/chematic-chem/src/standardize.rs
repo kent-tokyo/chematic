@@ -41,7 +41,7 @@ fn connected_components(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
         components.push(component);
     }
 
-    components.sort_by(|a, b| b.len().cmp(&a.len()));
+    components.sort_by_key(|b| std::cmp::Reverse(b.len()));
     components
 }
 
@@ -99,10 +99,8 @@ pub fn neutralize_charges(mol: &Molecule) -> Molecule {
                     modifications.insert(idx, (0, Some(h + 1)));
                 }
             }
-            (Element::N, 1) | (Element::O, 1) => {
-                if h > 0 {
-                    modifications.insert(idx, (0, Some(h - 1)));
-                }
+            (Element::N, 1) | (Element::O, 1) if h > 0 => {
+                modifications.insert(idx, (0, Some(h - 1)));
             }
             _ => {}
         }
@@ -649,17 +647,27 @@ mod tests {
             canonical_tautomer: false,
         });
 
-        let (result, report) = pipeline.run(&mol);
+        let (_result, report) = pipeline.run(&mol);
 
         // Verify step order: NeutralizeCharges MUST come before LargestFragment
         assert_eq!(report.steps.len(), 4, "Should have 4 steps in pipeline");
-        assert_eq!(report.steps[0].step, StandardizationStep::NeutralizeCharges,
-            "NeutralizeCharges must be step 0");
-        assert_eq!(report.steps[1].step, StandardizationStep::LargestFragment,
-            "LargestFragment must be step 1");
+        assert_eq!(
+            report.steps[0].step,
+            StandardizationStep::NeutralizeCharges,
+            "NeutralizeCharges must be step 0"
+        );
+        assert_eq!(
+            report.steps[1].step,
+            StandardizationStep::LargestFragment,
+            "LargestFragment must be step 1"
+        );
 
         // The test passes if step order is correct and the pipeline runs without error
         assert!(report.changed(), "Pipeline should report changes");
-        assert_eq!(report.status, PipelineStatus::Modified, "Should be marked as Modified");
+        assert_eq!(
+            report.status,
+            PipelineStatus::Modified,
+            "Should be marked as Modified"
+        );
     }
 }

@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
-use chematic_ff::{assign_dreiding_types, dreiding_vdw, dreiding_bond_len, dreiding_angle};
+use chematic_ff::{assign_dreiding_types, dreiding_angle, dreiding_bond_len, dreiding_vdw};
 
 use crate::coords::{Coords3D, Point3};
 
@@ -356,7 +356,11 @@ fn total_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
 /// Ideal bond length (Å) by atom element pair and bond order.
 /// Canonical pair: (a, b) where a <= b lexicographically.
 fn ideal_bond_len(sym1: &str, sym2: &str, order: BondOrder) -> f64 {
-    let (a, b) = if sym1 <= sym2 { (sym1, sym2) } else { (sym2, sym1) };
+    let (a, b) = if sym1 <= sym2 {
+        (sym1, sym2)
+    } else {
+        (sym2, sym1)
+    };
     match (a, b, order) {
         // C–C
         ("C", "C", BondOrder::Single | BondOrder::Up | BondOrder::Down) => 1.540,
@@ -437,9 +441,9 @@ fn ideal_bond_len(sym1: &str, sym2: &str, order: BondOrder) -> f64 {
 /// Atom hybridization inferred from bond orders and aromaticity.
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Hybridization {
-    SP,   // linear (triple bond present)
-    SP2,  // trigonal planar (double bond or aromatic)
-    SP3,  // tetrahedral
+    SP,  // linear (triple bond present)
+    SP2, // trigonal planar (double bond or aromatic)
+    SP3, // tetrahedral
 }
 
 fn atom_hybridization(mol: &Molecule, idx: AtomIdx) -> Hybridization {
@@ -676,7 +680,10 @@ mod tests {
         let coords = generate_coords(&mol);
         let result = minimize(&mol, coords);
         let d = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
-        assert!(d > 1.2 && d < 1.8, "C-C distance={d:.3}, expected 1.2-1.8 Å");
+        assert!(
+            d > 1.2 && d < 1.8,
+            "C-C distance={d:.3}, expected 1.2-1.8 Å"
+        );
     }
 
     #[test]
@@ -707,7 +714,10 @@ mod tests {
         let coords = generate_coords(&mol);
         let result = minimize(&mol, coords);
         let min_d = all_pairs_min_dist(&result, mol.atom_count());
-        assert!(min_d > 0.8, "atom clash in benzene: min distance={min_d:.3}");
+        assert!(
+            min_d > 0.8,
+            "atom clash in benzene: min distance={min_d:.3}"
+        );
     }
 
     #[test]
@@ -716,7 +726,10 @@ mod tests {
         let coords = generate_coords(&mol);
         let result = minimize(&mol, coords);
         let min_d = all_pairs_min_dist(&result, mol.atom_count());
-        assert!(min_d > 0.8, "atom clash in disconnected: min distance={min_d:.3}");
+        assert!(
+            min_d > 0.8,
+            "atom clash in disconnected: min distance={min_d:.3}"
+        );
     }
 
     #[test]
@@ -854,7 +867,10 @@ mod tests {
                 let d = min_coords
                     .get(AtomIdx(i as u32))
                     .distance(&min_coords.get(AtomIdx(j as u32)));
-                assert!(d > 0.5, "atoms {i} and {j} clashed after DREIDING minimization (d={d:.3})");
+                assert!(
+                    d > 0.5,
+                    "atoms {i} and {j} clashed after DREIDING minimization (d={d:.3})"
+                );
             }
         }
     }
@@ -870,7 +886,10 @@ mod tests {
                 let d = min_coords
                     .get(AtomIdx(i as u32))
                     .distance(&min_coords.get(AtomIdx(j as u32)));
-                assert!(d > 0.5, "atoms {i} and {j} clashed after DREIDING minimization (d={d:.3})");
+                assert!(
+                    d > 0.5,
+                    "atoms {i} and {j} clashed after DREIDING minimization (d={d:.3})"
+                );
             }
         }
     }

@@ -106,7 +106,9 @@ pub fn find_mcs_with_config(mols: &[&Molecule], config: &McsConfig) -> QueryMole
         return molecule_to_query(mols[0]);
     }
 
-    let deadline = config.timeout_ms.map(|ms| Instant::now() + std::time::Duration::from_millis(ms));
+    let deadline = config
+        .timeout_ms
+        .map(|ms| Instant::now() + std::time::Duration::from_millis(ms));
 
     let ring_sets: Vec<RingSet> = if config.ring_matches_ring_only || config.complete_rings_only {
         mols.iter().map(|m| find_sssr(m)).collect()
@@ -129,26 +131,27 @@ pub fn find_mcs_with_config(mols: &[&Molecule], config: &McsConfig) -> QueryMole
         if state.timed_out {
             break;
         }
-        if let Some(d) = state.deadline {
-            if Instant::now() >= d {
-                state.timed_out = true;
-                break;
-            }
+        if let Some(d) = state.deadline
+            && Instant::now() >= d
+        {
+            state.timed_out = true;
+            break;
         }
 
         // Gather compatible atoms from each other molecule for this seed atom.
-        let seed_candidates = collect_seed_candidates(mols, AtomIdx(a0 as u32), config, &state.ring_sets);
+        let seed_candidates =
+            collect_seed_candidates(mols, AtomIdx(a0 as u32), config, &state.ring_sets);
 
         // Iterate the Cartesian product of candidate lists.
         for seed in CartesianProduct::new(&seed_candidates) {
             if state.timed_out {
                 break 'outer;
             }
-            if let Some(d) = state.deadline {
-                if Instant::now() >= d {
-                    state.timed_out = true;
-                    break 'outer;
-                }
+            if let Some(d) = state.deadline
+                && Instant::now() >= d
+            {
+                state.timed_out = true;
+                break 'outer;
             }
 
             // Prune: upper bound for a single-atom seed is at most min(atom counts by element).
@@ -208,10 +211,8 @@ impl PartialMapping {
     /// Create a single-atom seed mapping: query atom 0 maps to `a0` in mol[0] and
     /// `seed[i]` in mol[i+1].
     fn from_seed(mols: &[&Molecule], a0: AtomIdx, seed: &[AtomIdx]) -> Self {
-        let mut mol_map: Vec<Vec<Option<usize>>> = mols
-            .iter()
-            .map(|m| vec![None; m.atom_count()])
-            .collect();
+        let mut mol_map: Vec<Vec<Option<usize>>> =
+            mols.iter().map(|m| vec![None; m.atom_count()]).collect();
         let mut query_to_mol: Vec<Vec<AtomIdx>> = Vec::new();
 
         // Map the seed tuple to query atom 0.
@@ -222,7 +223,12 @@ impl PartialMapping {
         }
         query_to_mol.push(row);
 
-        Self { mol_map, query_to_mol, size: 1, bond_count: 0 }
+        Self {
+            mol_map,
+            query_to_mol,
+            size: 1,
+            bond_count: 0,
+        }
     }
 
     /// Check whether `atom_idx` in molecule `mol_idx` is already mapped.
@@ -287,11 +293,11 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     }
 
     // Check timeout.
-    if let Some(d) = state.deadline {
-        if Instant::now() >= d {
-            state.timed_out = true;
-            return;
-        }
+    if let Some(d) = state.deadline
+        && Instant::now() >= d
+    {
+        state.timed_out = true;
+        return;
     }
     if state.timed_out {
         return;
@@ -330,7 +336,8 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     // 1. Atom-compatible with n0
     // 2. Adjacent to every mol[i]-atom that corresponds to a mapped neighbor of n0 in mol[0]
     // 3. Bond-compatible with each such adjacency
-    let candidates_per_mol = build_frontier_candidates(state.mols, mapping, n0, state.config, &state.ring_sets);
+    let candidates_per_mol =
+        build_frontier_candidates(state.mols, mapping, n0, state.config, &state.ring_sets);
 
     // Cartesian product across molecules 1..n.
     for tuple in CartesianProduct::new(&candidates_per_mol) {
@@ -413,7 +420,13 @@ fn build_frontier_candidates(
                 match mol_i.bond_between(ai, m_i) {
                     None => continue 'atom,
                     Some((_bidx, bond_entry)) => {
-                        if config.match_bonds && !bonds_compatible(bond_order_0, bond_entry.order, &config.bond_compare) {
+                        if config.match_bonds
+                            && !bonds_compatible(
+                                bond_order_0,
+                                bond_entry.order,
+                                &config.bond_compare,
+                            )
+                        {
                             continue 'atom;
                         }
                     }
@@ -433,7 +446,12 @@ fn build_frontier_candidates(
 // ---------------------------------------------------------------------------
 
 /// For each molecule i >= 1, collect atoms compatible with `a0` in mol[0].
-fn collect_seed_candidates(mols: &[&Molecule], a0: AtomIdx, config: &McsConfig, ring_sets: &[RingSet]) -> Vec<Vec<AtomIdx>> {
+fn collect_seed_candidates(
+    mols: &[&Molecule],
+    a0: AtomIdx,
+    config: &McsConfig,
+    ring_sets: &[RingSet],
+) -> Vec<Vec<AtomIdx>> {
     let atom0 = mols[0].atom(a0);
     let a0_in_ring = !ring_sets.is_empty() && ring_sets[0].contains_atom(a0);
     let mut result = Vec::with_capacity(mols.len() - 1);
@@ -508,14 +526,17 @@ fn upper_bound_additional(mols: &[&Molecule], mapping: &PartialMapping) -> usize
 // ---------------------------------------------------------------------------
 
 /// Atom compatibility according to `compare` mode.
-fn atoms_compatible(a: &chematic_core::Atom, b: &chematic_core::Atom, compare: &AtomCompare, match_chiral: bool) -> bool {
+fn atoms_compatible(
+    a: &chematic_core::Atom,
+    b: &chematic_core::Atom,
+    compare: &AtomCompare,
+    match_chiral: bool,
+) -> bool {
     let base = match compare {
         AtomCompare::Elements => {
             a.element.atomic_number() == b.element.atomic_number() && a.aromatic == b.aromatic
         }
-        AtomCompare::AnyHeavyAtom => {
-            a.element.atomic_number() > 1 && b.element.atomic_number() > 1
-        }
+        AtomCompare::AnyHeavyAtom => a.element.atomic_number() > 1 && b.element.atomic_number() > 1,
         AtomCompare::Any => true,
     };
     if !base {
@@ -549,7 +570,9 @@ fn normalize_bond(o: BondOrder) -> BondOrder {
 
 /// Count the number of already-mapped neighbors of `n0` in mol[0].
 fn count_new_bonds(mol0: &Molecule, mapping: &PartialMapping, n0: AtomIdx) -> usize {
-    mol0.neighbors(n0).filter(|(nb, _)| mapping.is_mapped(0, *nb)).count()
+    mol0.neighbors(n0)
+        .filter(|(nb, _)| mapping.is_mapped(0, *nb))
+        .count()
 }
 
 // ---------------------------------------------------------------------------
@@ -581,10 +604,10 @@ fn prune_partial_rings(mols: &[&Molecule], mapping: &mut PartialMapping, ring_se
             // Partial coverage: some but not all ring atoms are mapped.
             if !mapped_in_ring.is_empty() && mapped_in_ring.len() < ring.len() {
                 for ai in mapped_in_ring {
-                    if let Some(qi) = mapping.query_idx_of(0, ai) {
-                        if !to_remove.contains(&qi) {
-                            to_remove.push(qi);
-                        }
+                    if let Some(qi) = mapping.query_idx_of(0, ai)
+                        && !to_remove.contains(&qi)
+                    {
+                        to_remove.push(qi);
                     }
                 }
             }
@@ -598,10 +621,8 @@ fn prune_partial_rings(mols: &[&Molecule], mapping: &mut PartialMapping, ring_se
         // Build a new query_to_mol (renumbered) and matching mol_maps.
         let n_mols = mols.len();
         let mut new_query_to_mol: Vec<Vec<AtomIdx>> = Vec::new();
-        let mut new_mol_map: Vec<Vec<Option<usize>>> = mols
-            .iter()
-            .map(|m| vec![None; m.atom_count()])
-            .collect();
+        let mut new_mol_map: Vec<Vec<Option<usize>>> =
+            mols.iter().map(|m| vec![None; m.atom_count()]).collect();
 
         for (old_qi, row) in mapping.query_to_mol.iter().enumerate() {
             if to_remove.contains(&old_qi) {
@@ -736,7 +757,11 @@ impl<'a, T: Copy> CartesianProduct<'a, T> {
     fn new(lists: &'a [Vec<T>]) -> Self {
         let done = lists.iter().any(|l| l.is_empty());
         let indices = vec![0; lists.len()];
-        Self { lists, indices, done }
+        Self {
+            lists,
+            indices,
+            done,
+        }
     }
 }
 
@@ -749,7 +774,12 @@ impl<'a, T: Copy> Iterator for CartesianProduct<'a, T> {
         }
 
         // Emit current combination.
-        let item: Vec<T> = self.lists.iter().zip(self.indices.iter()).map(|(l, &i)| l[i]).collect();
+        let item: Vec<T> = self
+            .lists
+            .iter()
+            .zip(self.indices.iter())
+            .map(|(l, &i)| l[i])
+            .collect();
 
         // Advance indices (rightmost first).
         let mut carry = true;
@@ -799,7 +829,11 @@ mod tests {
         let a = parse("CC").unwrap();
         let b = parse("CCC").unwrap();
         let result = find_mcs(&[&a, &b]);
-        assert!(result.atom_count() >= 2, "Expected >= 2 atoms, got {}", result.atom_count());
+        assert!(
+            result.atom_count() >= 2,
+            "Expected >= 2 atoms, got {}",
+            result.atom_count()
+        );
     }
 
     #[test]
@@ -817,14 +851,19 @@ mod tests {
         let a = parse("c1ccccc1").unwrap();
         let b = parse("Cc1ccccc1").unwrap();
         let result = find_mcs(&[&a, &b]);
-        assert_eq!(result.atom_count(), 6, "Expected benzene ring (6 atoms), got {}", result.atom_count());
+        assert_eq!(
+            result.atom_count(),
+            6,
+            "Expected benzene ring (6 atoms), got {}",
+            result.atom_count()
+        );
     }
 
     #[test]
     fn test_no_common_atoms() {
         // Only N atoms vs only O atoms → no MCS
-        let a = parse("N").unwrap();  // ammonia
-        let b = parse("O").unwrap();  // water
+        let a = parse("N").unwrap(); // ammonia
+        let b = parse("O").unwrap(); // water
         let result = find_mcs(&[&a, &b]);
         assert_eq!(result.atom_count(), 0);
     }
@@ -840,7 +879,10 @@ mod tests {
     #[test]
     fn test_match_bonds_false() {
         // With match_bonds=false, single and double bond C-C should match
-        let config = McsConfig { match_bonds: false, ..McsConfig::default() };
+        let config = McsConfig {
+            match_bonds: false,
+            ..McsConfig::default()
+        };
         let a = parse("CC").unwrap();
         let b = parse("C=C").unwrap();
         let result = find_mcs_with_config(&[&a, &b], &config);
@@ -850,7 +892,10 @@ mod tests {
     #[test]
     fn test_min_atoms_filter() {
         // CC and CCC have MCS of size 2, but if min_atoms=5, result should be empty
-        let config = McsConfig { min_atoms: 5, ..McsConfig::default() };
+        let config = McsConfig {
+            min_atoms: 5,
+            ..McsConfig::default()
+        };
         let a = parse("CC").unwrap();
         let b = parse("CCC").unwrap();
         let result = find_mcs_with_config(&[&a, &b], &config);
@@ -859,7 +904,10 @@ mod tests {
 
     #[test]
     fn test_timeout_does_not_panic() {
-        let config = McsConfig { timeout_ms: Some(1), ..McsConfig::default() }; // 1 ms
+        let config = McsConfig {
+            timeout_ms: Some(1),
+            ..McsConfig::default()
+        }; // 1 ms
         let a = parse("c1ccccc1").unwrap();
         let b = parse("Cc1ccccc1").unwrap();
         // Should return without panic (may return partial result)
@@ -886,7 +934,11 @@ mod tests {
         let a = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
         let b = parse("OC(=O)c1ccccc1").unwrap();
         let result = find_mcs(&[&a, &b]);
-        assert!(result.atom_count() >= 7, "Expected >= 7 atoms for aspirin/benzoic acid MCS, got {}", result.atom_count());
+        assert!(
+            result.atom_count() >= 7,
+            "Expected >= 7 atoms for aspirin/benzoic acid MCS, got {}",
+            result.atom_count()
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -903,15 +955,22 @@ mod tests {
 
         // Confirm default finds a path match.
         let default_result = find_mcs(&[&a, &b]);
-        assert!(default_result.atom_count() > 0, "Default MCS should be non-zero");
+        assert!(
+            default_result.atom_count() > 0,
+            "Default MCS should be non-zero"
+        );
 
         let config = McsConfig {
             ring_matches_ring_only: true,
             ..McsConfig::default()
         };
         let result = find_mcs_with_config(&[&a, &b], &config);
-        assert_eq!(result.atom_count(), 0,
-            "ring_matches_ring_only: ring C must not match chain C, expected 0 got {}", result.atom_count());
+        assert_eq!(
+            result.atom_count(),
+            0,
+            "ring_matches_ring_only: ring C must not match chain C, expected 0 got {}",
+            result.atom_count()
+        );
     }
 
     #[test]
@@ -924,7 +983,11 @@ mod tests {
             ..McsConfig::default()
         };
         let result = find_mcs_with_config(&[&a, &b], &config);
-        assert_eq!(result.atom_count(), 6, "benzene ring should still be the MCS");
+        assert_eq!(
+            result.atom_count(),
+            6,
+            "benzene ring should still be the MCS"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -947,8 +1010,11 @@ mod tests {
         };
         let result = find_mcs_with_config(&[&a, &b, &c], &config);
         // Result must be >= 10 atoms (quinoline) and no partial ring
-        assert!(result.atom_count() >= 10,
-            "Expected at least quinoline scaffold (10) with complete_rings_only, got {}", result.atom_count());
+        assert!(
+            result.atom_count() >= 10,
+            "Expected at least quinoline scaffold (10) with complete_rings_only, got {}",
+            result.atom_count()
+        );
     }
 
     #[test]
@@ -961,7 +1027,11 @@ mod tests {
             ..McsConfig::default()
         };
         let result = find_mcs_with_config(&[&a, &b], &config);
-        assert_eq!(result.atom_count(), 6, "Full benzene ring should be preserved");
+        assert_eq!(
+            result.atom_count(),
+            6,
+            "Full benzene ring should be preserved"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -989,10 +1059,16 @@ mod tests {
             pruned_result.atom_count()
         );
         // Both should be 6 (one complete benzene ring)
-        assert_eq!(default_result.atom_count(), 6,
-            "Default MCS should be benzene ring (6 atoms)");
-        assert_eq!(pruned_result.atom_count(), 6,
-            "complete_rings_only should preserve the full 6-ring (no partial ring)");
+        assert_eq!(
+            default_result.atom_count(),
+            6,
+            "Default MCS should be benzene ring (6 atoms)"
+        );
+        assert_eq!(
+            pruned_result.atom_count(),
+            6,
+            "complete_rings_only should preserve the full 6-ring (no partial ring)"
+        );
     }
 
     #[test]
@@ -1015,9 +1091,15 @@ mod tests {
         let pruned_result = find_mcs_with_config(&[&benzocyclobutene, &toluene], &config);
 
         // Raw MCS includes a partial 4-ring; cascading pruning removes everything.
-        assert!(default_result.atom_count() > 0, "default MCS should be non-empty");
-        assert_eq!(pruned_result.atom_count(), 0,
-            "complete_rings_only must prune to 0 when partial ring cascades");
+        assert!(
+            default_result.atom_count() > 0,
+            "default MCS should be non-empty"
+        );
+        assert_eq!(
+            pruned_result.atom_count(),
+            0,
+            "complete_rings_only must prune to 0 when partial ring cascades"
+        );
     }
 
     #[test]
@@ -1055,8 +1137,11 @@ mod tests {
             ..McsConfig::default()
         };
         let result = find_mcs_with_config(&[&a, &b], &config);
-        assert!(result.atom_count() >= 10,
-            "Combined flags should yield at least the quinoline scaffold, got {}", result.atom_count());
+        assert!(
+            result.atom_count() >= 10,
+            "Combined flags should yield at least the quinoline scaffold, got {}",
+            result.atom_count()
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -1070,8 +1155,11 @@ mod tests {
         let r_ala = parse("[C@H](C)(N)C(=O)O").unwrap();
         let s_ala = parse("[C@@H](C)(N)C(=O)O").unwrap();
         let default_result = find_mcs(&[&r_ala, &s_ala]);
-        assert_eq!(default_result.atom_count(), r_ala.atom_count(),
-            "Default (match_chiral_tag=false) should match all atoms of enantiomers");
+        assert_eq!(
+            default_result.atom_count(),
+            r_ala.atom_count(),
+            "Default (match_chiral_tag=false) should match all atoms of enantiomers"
+        );
     }
 
     #[test]
@@ -1090,9 +1178,12 @@ mod tests {
         };
         let result = find_mcs_with_config(&[&r_ala, &s_ala], &config);
 
-        assert!(result.atom_count() < default_result.atom_count(),
+        assert!(
+            result.atom_count() < default_result.atom_count(),
             "match_chiral_tag=true should find smaller MCS than default: {} vs {}",
-            result.atom_count(), default_result.atom_count());
+            result.atom_count(),
+            default_result.atom_count()
+        );
     }
 
     #[test]
@@ -1106,8 +1197,10 @@ mod tests {
             ..McsConfig::default()
         };
         let result = find_mcs_with_config(&[&r_ala1, &r_ala2], &config);
-        assert_eq!(result.atom_count(), r_ala1.atom_count(),
-            "match_chiral_tag=true should still match molecules with same stereochemistry");
+        assert_eq!(
+            result.atom_count(),
+            r_ala1.atom_count(),
+            "match_chiral_tag=true should still match molecules with same stereochemistry"
+        );
     }
-
 }

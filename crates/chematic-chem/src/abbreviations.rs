@@ -19,7 +19,10 @@ use chematic_core::Molecule;
 /// assert_eq!(phenyl.atom_count(), 6);
 /// ```
 pub fn expand_abbreviation(symbol: &str) -> Option<Molecule> {
-    let smiles = ABBREVIATIONS.iter().find(|(s, _)| *s == symbol).map(|(_, sm)| *sm)?;
+    let smiles = ABBREVIATIONS
+        .iter()
+        .find(|(s, _)| *s == symbol)
+        .map(|(_, sm)| *sm)?;
     chematic_smiles::parse(smiles).ok()
 }
 
@@ -38,43 +41,43 @@ pub fn abbreviations() -> &'static [(&'static str, &'static str)] {
 /// `(symbol, SMILES)` pairs — sorted alphabetically by symbol for readability.
 static ABBREVIATIONS: &[(&str, &str)] = &[
     // Alkyl groups
-    ("Me",  "C"),
-    ("Et",  "CC"),
-    ("Pr",  "CCC"),
+    ("Me", "C"),
+    ("Et", "CC"),
+    ("Pr", "CCC"),
     ("iPr", "CC(C)"),
-    ("Bu",  "CCCC"),
+    ("Bu", "CCCC"),
     ("iBu", "CC(C)C"),
     ("tBu", "CC(C)(C)C"),
     ("nBu", "CCCC"),
     ("sBu", "CCC(C)"),
-    ("Pent","CCCCC"),
+    ("Pent", "CCCCC"),
     ("Hex", "CCCCCC"),
     // Acyl / protecting groups
-    ("Ac",  "CC(=O)"),
+    ("Ac", "CC(=O)"),
     ("Boc", "CC(C)(C)OC(=O)"),
     ("Cbz", "O=C(OC[*])c1ccccc1"),
-    ("Fmoc","O=C(O[*])OCC1c2ccccc2-c2ccccc21"),
+    ("Fmoc", "O=C(O[*])OCC1c2ccccc2-c2ccccc21"),
     // Aromatic / benzyl
-    ("Ph",  "c1ccccc1"),
-    ("Bn",  "Cc1ccccc1"),
-    ("Np",  "c1ccc2ccccc2c1"),   // naphthyl
-    ("Py",  "c1ccncc1"),          // pyridyl
+    ("Ph", "c1ccccc1"),
+    ("Bn", "Cc1ccccc1"),
+    ("Np", "c1ccc2ccccc2c1"), // naphthyl
+    ("Py", "c1ccncc1"),       // pyridyl
     // Functional groups
     ("OMe", "OC"),
     ("OEt", "OCC"),
-    ("NHMe","NC"),
-    ("NMe2","N(C)C"),
+    ("NHMe", "NC"),
+    ("NMe2", "N(C)C"),
     ("CF3", "C(F)(F)F"),
-    ("CCl3","C(Cl)(Cl)Cl"),
-    ("CN",  "C#N"),
+    ("CCl3", "C(Cl)(Cl)Cl"),
+    ("CN", "C#N"),
     ("NO2", "[N+](=O)[O-]"),
     // Silyl groups
     ("TMS", "[Si](C)(C)C"),
     ("TBS", "[Si](C)(C)CC(C)(C)C"),
     // Sulfonyl
-    ("Ts",  "Cc1ccc(cc1)S(=O)(=O)"),
-    ("Ms",  "CS(=O)(=O)"),
-    ("Tf",  "C(F)(F)(F)S(=O)(=O)"),
+    ("Ts", "Cc1ccc(cc1)S(=O)(=O)"),
+    ("Ms", "CS(=O)(=O)"),
+    ("Tf", "C(F)(F)(F)S(=O)(=O)"),
 ];
 
 // ---------------------------------------------------------------------------

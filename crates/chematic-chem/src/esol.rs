@@ -17,8 +17,8 @@
 
 use chematic_core::{Element, Molecule};
 
-use crate::descriptors::{heavy_atom_count, molecular_weight, rotatable_bond_count};
 use crate::descriptors::logp_crippen;
+use crate::descriptors::{heavy_atom_count, molecular_weight, rotatable_bond_count};
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -36,10 +36,10 @@ pub fn esol_solubility(mol: &Molecule) -> f64 {
         return 0.0;
     }
 
-    let clogp  = logp_crippen(mol);
-    let mw     = molecular_weight(mol);
-    let rot_b  = rotatable_bond_count(mol) as f64;
-    let ap     = aromatic_proportion(mol);
+    let clogp = logp_crippen(mol);
+    let mw = molecular_weight(mol);
+    let rot_b = rotatable_bond_count(mol) as f64;
+    let ap = aromatic_proportion(mol);
 
     0.16 - 0.63 * clogp - 0.0062 * mw + 0.066 * rot_b - 0.74 * ap
 }
@@ -54,7 +54,8 @@ fn aromatic_proportion(mol: &Molecule) -> f64 {
     if hac == 0 {
         return 0.0;
     }
-    let aromatic = mol.atoms()
+    let aromatic = mol
+        .atoms()
         .filter(|(_, atom)| atom.aromatic && atom.element != Element::H)
         .count();
     aromatic as f64 / hac as f64
@@ -84,21 +85,24 @@ mod tests {
     fn test_benzene_moderate_solubility() {
         // Benzene: logS ≈ -1.9 (Delaney model).
         let s = esol("c1ccccc1");
-        assert!(s > -4.0 && s < 0.0, "benzene logS should be in -4..0, got {s:.3}");
+        assert!(
+            s > -4.0 && s < 0.0,
+            "benzene logS should be in -4..0, got {s:.3}"
+        );
     }
 
     #[test]
     fn test_lipophilic_molecule_low_solubility() {
         // Long alkyl chain → very low solubility.
         let octane = esol("CCCCCCCC"); // octane
-        let ethane  = esol("CC");       // ethane
+        let ethane = esol("CC"); // ethane
         assert!(octane < ethane, "octane should be less soluble than ethane");
     }
 
     #[test]
     fn test_aromatic_reduces_solubility() {
         // Aromatic compounds tend to be less soluble than aliphatic.
-        let benzene   = esol("c1ccccc1");
+        let benzene = esol("c1ccccc1");
         let cyclohexane = esol("C1CCCCC1");
         assert!(
             benzene < cyclohexane,

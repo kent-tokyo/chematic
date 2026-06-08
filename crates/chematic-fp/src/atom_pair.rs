@@ -47,20 +47,20 @@ fn all_pairs_dist(mol: &Molecule) -> Vec<Vec<u8>> {
     let n = mol.atom_count();
     let mut dist = vec![vec![u8::MAX; n]; n];
 
-    for start in 0..n {
+    for (start, row) in dist.iter_mut().enumerate() {
         let s = AtomIdx(start as u32);
-        dist[start][start] = 0;
+        row[start] = 0;
         let mut queue = VecDeque::new();
         queue.push_back(s);
         while let Some(cur) = queue.pop_front() {
-            let d = dist[start][cur.0 as usize];
+            let d = row[cur.0 as usize];
             if d >= MAX_DIST {
                 continue;
             }
             for (nb, _) in mol.neighbors(cur) {
                 let ni = nb.0 as usize;
-                if dist[start][ni] == u8::MAX {
-                    dist[start][ni] = d + 1;
+                if row[ni] == u8::MAX {
+                    row[ni] = d + 1;
                     queue.push_back(nb);
                 }
             }
@@ -75,14 +75,12 @@ fn all_pairs_dist(mol: &Molecule) -> Vec<Vec<u8>> {
 /// distance `d ∈ [1, MAX_DIST]`, hashes `(type_i, d, type_j)` (types ordered
 /// canonically) and sets the corresponding bit.
 pub fn atom_pair_fp(mol: &Molecule) -> BitVec2048 {
-    let n = mol.atom_count();
     let ring_set = ring_atom_set(mol);
     let dist = all_pairs_dist(mol);
     let mut fp = BitVec2048::new();
 
-    for i in 0..n {
-        for j in (i + 1)..n {
-            let d = dist[i][j];
+    for (i, row) in dist.iter().enumerate() {
+        for (j, &d) in row.iter().enumerate().skip(i + 1) {
             if d == u8::MAX {
                 continue;
             }
@@ -92,13 +90,7 @@ pub fn atom_pair_fp(mol: &Molecule) -> BitVec2048 {
             let tj = atom_type(mol, aj, &ring_set);
             // Canonical: smaller type first.
             let (ta, tb) = if ti <= tj { (ti, tj) } else { (tj, ti) };
-            let bytes: [u8; 5] = [
-                (ta >> 8) as u8,
-                ta as u8,
-                d,
-                (tb >> 8) as u8,
-                tb as u8,
-            ];
+            let bytes: [u8; 5] = [(ta >> 8) as u8, ta as u8, d, (tb >> 8) as u8, tb as u8];
             let h = fnv1a(&bytes);
             fp.set((h % 2048) as usize);
         }
@@ -248,6 +240,9 @@ mod tests {
     fn test_torsion_butane_nonzero() {
         // CCCC: exactly one 4-atom path.
         let fp = torsion_fp(&mol("CCCC"));
-        assert!(fp.popcount() > 0, "butane should have at least one torsion path");
+        assert!(
+            fp.popcount() > 0,
+            "butane should have at least one torsion path"
+        );
     }
 }

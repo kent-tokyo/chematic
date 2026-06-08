@@ -134,7 +134,11 @@ impl QueryMolecule {
     /// Add an undirected bond between atoms `a` and `b` with the given query condition.
     pub fn add_bond(&mut self, a: usize, b: usize, query: BondQuery) {
         let bidx = self.bonds.len();
-        self.bonds.push(QueryBond { atom1: a, atom2: b, query });
+        self.bonds.push(QueryBond {
+            atom1: a,
+            atom2: b,
+            query,
+        });
         self.adj[a].push((bidx, b));
         self.adj[b].push((bidx, a));
     }

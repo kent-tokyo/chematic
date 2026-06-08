@@ -7,8 +7,8 @@
 
 #![forbid(unsafe_code)]
 
-pub mod match_vf2;
 pub mod cx;
+pub mod match_vf2;
 pub mod mcs;
 pub mod parser;
 pub mod query;

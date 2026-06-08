@@ -42,7 +42,12 @@ pub struct EcfpConfig {
 
 impl Default for EcfpConfig {
     fn default() -> Self {
-        Self { radius: 2, nbits: 2048, use_chirality: false, use_double_fold: false }
+        Self {
+            radius: 2,
+            nbits: 2048,
+            use_chirality: false,
+            use_double_fold: false,
+        }
     }
 }
 
@@ -216,7 +221,10 @@ pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMa
             let mut neighbor_info: Vec<(u8, u64)> = mol
                 .neighbors(idx)
                 .map(|(nb_idx, bond_idx)| {
-                    (bond_type_int(mol.bond(bond_idx).order), ids[nb_idx.0 as usize])
+                    (
+                        bond_type_int(mol.bond(bond_idx).order),
+                        ids[nb_idx.0 as usize],
+                    )
                 })
                 .collect();
             neighbor_info.sort_unstable();
@@ -246,7 +254,15 @@ pub fn ecfp4(mol: &Molecule) -> BitVec2048 {
 
 /// ECFP6 fingerprint (radius = 3, 2048 bits).
 pub fn ecfp6(mol: &Molecule) -> BitVec2048 {
-    ecfp(mol, &EcfpConfig { radius: 3, nbits: 2048, use_chirality: false, use_double_fold: false })
+    ecfp(
+        mol,
+        &EcfpConfig {
+            radius: 3,
+            nbits: 2048,
+            use_chirality: false,
+            use_double_fold: false,
+        },
+    )
 }
 
 /// Tanimoto similarity between two molecules using ECFP4.
@@ -313,7 +329,10 @@ mod tests {
     fn benzene_vs_toluene_tanimoto_between() {
         let t = tanimoto_ecfp4(&benzene(), &toluene());
         assert!(t > 0.0, "benzene and toluene share bits (tanimoto={t})");
-        assert!(t < 1.0, "benzene and toluene are not identical (tanimoto={t})");
+        assert!(
+            t < 1.0,
+            "benzene and toluene are not identical (tanimoto={t})"
+        );
     }
 
     #[test]
@@ -374,7 +393,11 @@ mod tests {
         let m = benzene();
         let counts = morgan_fp_counts(&m, 0);
         let total: u32 = counts.values().sum();
-        assert_eq!(total, m.atom_count() as u32, "radius-0 total count == atom_count");
+        assert_eq!(
+            total,
+            m.atom_count() as u32,
+            "radius-0 total count == atom_count"
+        );
     }
 
     #[test]
@@ -385,7 +408,11 @@ mod tests {
         let r = 2u32;
         let counts = morgan_fp_counts(&m, r);
         let total: u32 = counts.values().sum();
-        assert_eq!(total, n * (r + 1), "methane total = atom_count * (radius+1)");
+        assert_eq!(
+            total,
+            n * (r + 1),
+            "methane total = atom_count * (radius+1)"
+        );
     }
 
     #[test]
@@ -393,8 +420,16 @@ mod tests {
         // All 6 benzene C atoms are equivalent → radius-0 yields 1 unique hash.
         let m = benzene();
         let counts = morgan_fp_counts(&m, 0);
-        assert_eq!(counts.len(), 1, "benzene has one unique radius-0 environment");
-        assert_eq!(*counts.values().next().unwrap(), 6, "that environment appears 6 times");
+        assert_eq!(
+            counts.len(),
+            1,
+            "benzene has one unique radius-0 environment"
+        );
+        assert_eq!(
+            *counts.values().next().unwrap(),
+            6,
+            "that environment appears 6 times"
+        );
     }
 
     #[test]
@@ -418,11 +453,22 @@ mod tests {
         // Every hash in the count map should be reachable from the ecfp bit set
         // (after folding to 2048 bits).  This checks the same hash scheme.
         let m = toluene();
-        let fp = ecfp(&m, &EcfpConfig { radius: 2, nbits: 2048, use_chirality: false, use_double_fold: false });
+        let fp = ecfp(
+            &m,
+            &EcfpConfig {
+                radius: 2,
+                nbits: 2048,
+                use_chirality: false,
+                use_double_fold: false,
+            },
+        );
         let counts = morgan_fp_counts(&m, 2);
         for &hash in counts.keys() {
             let bit = (hash % 2048) as usize;
-            assert!(fp.get(bit), "bit {bit} from count map not set in ECFP bitvec");
+            assert!(
+                fp.get(bit),
+                "bit {bit} from count map not set in ECFP bitvec"
+            );
         }
     }
 
@@ -436,7 +482,10 @@ mod tests {
         let d_ala = parse("N[C@H](C)C(=O)O").unwrap();
         let fp_l = ecfp4(&l_ala);
         let fp_d = ecfp4(&d_ala);
-        assert_eq!(fp_l, fp_d, "L/D-alanine ECFP4 should be identical when use_chirality=false");
+        assert_eq!(
+            fp_l, fp_d,
+            "L/D-alanine ECFP4 should be identical when use_chirality=false"
+        );
     }
 
     #[test]
@@ -444,11 +493,22 @@ mod tests {
         // With use_chirality=true, L-alanine and D-alanine must have different FPs.
         let l_ala = parse("N[C@@H](C)C(=O)O").unwrap();
         let d_ala = parse("N[C@H](C)C(=O)O").unwrap();
-        let config = EcfpConfig { radius: 2, nbits: 2048, use_chirality: true, use_double_fold: false };
+        let config = EcfpConfig {
+            radius: 2,
+            nbits: 2048,
+            use_chirality: true,
+            use_double_fold: false,
+        };
         let fp_l = ecfp(&l_ala, &config);
         let fp_d = ecfp(&d_ala, &config);
-        assert_ne!(fp_l, fp_d, "L/D-alanine ECFP4 must differ when use_chirality=true");
+        assert_ne!(
+            fp_l, fp_d,
+            "L/D-alanine ECFP4 must differ when use_chirality=true"
+        );
         // Tanimoto < 1.0 confirms they are not identical.
-        assert!(fp_l.tanimoto(&fp_d) < 1.0, "Tanimoto of L/D-alanine must be < 1.0 with use_chirality");
+        assert!(
+            fp_l.tanimoto(&fp_d) < 1.0,
+            "Tanimoto of L/D-alanine must be < 1.0 with use_chirality"
+        );
     }
 }

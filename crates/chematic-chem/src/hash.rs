@@ -48,7 +48,11 @@ mod tests {
     fn mol_hash_same_smiles_same_hash() {
         let a = mol("CC");
         let b = mol("CC");
-        assert_eq!(mol_hash(&a), mol_hash(&b), "same SMILES should give same hash");
+        assert_eq!(
+            mol_hash(&a),
+            mol_hash(&b),
+            "same SMILES should give same hash"
+        );
     }
 
     #[test]
@@ -76,21 +80,29 @@ mod tests {
     fn are_identical_true_for_same_structure() {
         let a = mol("CC");
         let b = mol("CC");
-        assert!(are_identical(&a, &b), "identical structures should return true");
+        assert!(
+            are_identical(&a, &b),
+            "identical structures should return true"
+        );
     }
 
     #[test]
     fn are_identical_false_for_different() {
         let a = mol("CC");
         let b = mol("CCC");
-        assert!(!are_identical(&a, &b), "different structures should return false");
+        assert!(
+            !are_identical(&a, &b),
+            "different structures should return false"
+        );
     }
-
 
     #[test]
     fn are_identical_aspirin() {
         let aspirin1 = mol("CC(=O)Oc1ccccc1C(=O)O");
         let aspirin2 = mol("O=C(c1ccccc1OC(=O)C)O");
-        assert!(are_identical(&aspirin1, &aspirin2), "different notations of aspirin should be identical");
+        assert!(
+            are_identical(&aspirin1, &aspirin2),
+            "different notations of aspirin should be identical"
+        );
     }
 }

@@ -26,7 +26,9 @@ impl core::fmt::Display for MolError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::InvalidAtomIdx(idx) => write!(f, "invalid atom index: {}", idx.0),
-            Self::DuplicateBond(a, b) => write!(f, "duplicate bond between atoms {} and {}", a.0, b.0),
+            Self::DuplicateBond(a, b) => {
+                write!(f, "duplicate bond between atoms {} and {}", a.0, b.0)
+            }
         }
     }
 }
@@ -180,7 +182,9 @@ impl Molecule {
         let mut builder = MoleculeBuilder::new();
         for (aidx, atom) in self.atoms() {
             let mut a = atom.clone();
-            if aidx == idx { a.charge = charge; }
+            if aidx == idx {
+                a.charge = charge;
+            }
             builder.add_atom(a);
         }
         for (_, bond) in self.bonds() {
@@ -225,22 +229,28 @@ impl Molecule {
         // Build old→new index table.
         let mut remap: Vec<Option<AtomIdx>> = vec![None; n];
         let mut new_pos = 0u32;
-        for old in 0..n {
+        for (old, slot) in remap.iter_mut().enumerate() {
             if old == removed {
                 continue;
             }
-            remap[old] = Some(AtomIdx(new_pos));
+            *slot = Some(AtomIdx(new_pos));
             new_pos += 1;
         }
 
         let mut builder = MoleculeBuilder::new();
         for (aidx, atom) in self.atoms() {
-            if aidx == idx { continue; }
+            if aidx == idx {
+                continue;
+            }
             builder.add_atom(atom.clone());
         }
         for (_, bond) in self.bonds() {
-            if bond.atom1 == idx || bond.atom2 == idx { continue; }
-            if let (Some(a1), Some(a2)) = (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize]) {
+            if bond.atom1 == idx || bond.atom2 == idx {
+                continue;
+            }
+            if let (Some(a1), Some(a2)) =
+                (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize])
+            {
                 let _ = builder.add_bond(a1, a2, bond.order);
             }
         }
@@ -280,10 +290,10 @@ impl Molecule {
         if let Some(c) = counts.remove("C") {
             push_count("C", c, &mut result);
         }
-        if let Some(h) = counts.remove("H") {
-            if h > 0 {
-                push_count("H", h, &mut result);
-            }
+        if let Some(h) = counts.remove("H")
+            && h > 0
+        {
+            push_count("H", h, &mut result);
         }
         for (sym, count) in &counts {
             push_count(sym, *count, &mut result);
@@ -306,29 +316,31 @@ impl Molecule {
             let sym = atom.element.symbol();
             let key = match atom.isotope {
                 Some(n) => format!("{n}{sym}"),
-                None    => sym.to_string(),
+                None => sym.to_string(),
             };
-            if sym == "C" && atom.isotope.is_none() { has_carbon = true; }
-            if sym == "H" { has_explicit_h = true; }
+            if sym == "C" && atom.isotope.is_none() {
+                has_carbon = true;
+            }
+            if sym == "H" {
+                has_explicit_h = true;
+            }
             *counts.entry(key).or_insert(0) += 1;
         }
 
         let push_count = |key: &str, n: u32, out: &mut String| {
             out.push_str(key);
-            if n > 1 { out.push_str(&n.to_string()); }
+            if n > 1 {
+                out.push_str(&n.to_string());
+            }
         };
 
         let mut result = String::new();
         // Hill order: C first (if unlabelled C present), then H, then rest alphabetically.
-        if has_carbon {
-            if let Some(c) = counts.remove("C") {
-                push_count("C", c, &mut result);
-            }
+        if has_carbon && let Some(c) = counts.remove("C") {
+            push_count("C", c, &mut result);
         }
-        if has_explicit_h {
-            if let Some(h) = counts.remove("H") {
-                push_count("H", h, &mut result);
-            }
+        if has_explicit_h && let Some(h) = counts.remove("H") {
+            push_count("H", h, &mut result);
         }
         for (key, count) in &counts {
             push_count(key, *count, &mut result);
@@ -341,7 +353,9 @@ impl Molecule {
         let mut builder = MoleculeBuilder::new();
         for (aidx, atom) in self.atoms() {
             let mut a = atom.clone();
-            if aidx == idx { a.aromatic = aromatic; }
+            if aidx == idx {
+                a.aromatic = aromatic;
+            }
             builder.add_atom(a);
         }
         for (_, bond) in self.bonds() {
@@ -372,7 +386,9 @@ impl Molecule {
             builder.add_atom(atom.clone());
         }
         for (bidx, bond) in self.bonds() {
-            if bidx == idx { continue; }
+            if bidx == idx {
+                continue;
+            }
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.build()
@@ -403,9 +419,11 @@ impl Molecule {
 
         let mut remap: Vec<Option<AtomIdx>> = vec![None; n];
         let mut new_pos = 0u32;
-        for old in 0..n {
-            if old == removed { continue; }
-            remap[old] = Some(AtomIdx(new_pos));
+        for (old, slot) in remap.iter_mut().enumerate() {
+            if old == removed {
+                continue;
+            }
+            *slot = Some(AtomIdx(new_pos));
             new_pos += 1;
         }
 
@@ -414,9 +432,17 @@ impl Molecule {
         // Keep only bonds not involving the removed atom; remap endpoints.
         let mut new_bonds: Vec<BondEntry> = Vec::new();
         for bond in &self.bonds {
-            if bond.atom1 == idx || bond.atom2 == idx { continue; }
-            if let (Some(a1), Some(a2)) = (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize]) {
-                new_bonds.push(BondEntry { atom1: a1, atom2: a2, order: bond.order });
+            if bond.atom1 == idx || bond.atom2 == idx {
+                continue;
+            }
+            if let (Some(a1), Some(a2)) =
+                (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize])
+            {
+                new_bonds.push(BondEntry {
+                    atom1: a1,
+                    atom2: a2,
+                    order: bond.order,
+                });
             }
         }
         self.bonds = new_bonds;
@@ -436,15 +462,28 @@ impl Molecule {
     /// Add a bond between `a` and `b` with the given `order`.
     ///
     /// Returns `Err` if `a == b` or the bond already exists.
-    pub fn add_bond(&mut self, a: AtomIdx, b: AtomIdx, order: BondOrder) -> Result<BondIdx, MolError> {
+    pub fn add_bond(
+        &mut self,
+        a: AtomIdx,
+        b: AtomIdx,
+        order: BondOrder,
+    ) -> Result<BondIdx, MolError> {
         let n = self.atoms.len() as u32;
-        if a.0 >= n { return Err(MolError::InvalidAtomIdx(a)); }
-        if b.0 >= n { return Err(MolError::InvalidAtomIdx(b)); }
+        if a.0 >= n {
+            return Err(MolError::InvalidAtomIdx(a));
+        }
+        if b.0 >= n {
+            return Err(MolError::InvalidAtomIdx(b));
+        }
         if self.adjacency[a.0 as usize].iter().any(|&(nb, _)| nb == b) {
             return Err(MolError::DuplicateBond(a, b));
         }
         let bidx = BondIdx(self.bonds.len() as u32);
-        self.bonds.push(BondEntry { atom1: a, atom2: b, order });
+        self.bonds.push(BondEntry {
+            atom1: a,
+            atom2: b,
+            order,
+        });
         self.adjacency[a.0 as usize].push((b, bidx));
         self.adjacency[b.0 as usize].push((a, bidx));
         Ok(bidx)
@@ -454,7 +493,9 @@ impl Molecule {
     /// surviving bonds shift down past the removed slot.
     pub fn remove_bond(&mut self, idx: BondIdx) {
         let removed = idx.0 as usize;
-        if removed >= self.bonds.len() { return; }
+        if removed >= self.bonds.len() {
+            return;
+        }
         self.bonds.remove(removed);
         // Rebuild adjacency with renumbered bond indices.
         let n = self.atoms.len();
@@ -512,7 +553,9 @@ impl Molecule {
     /// (i.e. every atom can be reached from every other atom).
     pub fn is_connected(&self) -> bool {
         let n = self.atoms.len();
-        if n == 0 { return true; }
+        if n == 0 {
+            return true;
+        }
         let mut visited = vec![false; n];
         let mut stack = vec![AtomIdx(0)];
         visited[0] = true;
@@ -535,13 +578,17 @@ impl Molecule {
     /// renumbered within each sub-molecule starting at index 0.
     pub fn fragments(&self) -> Vec<Molecule> {
         let n = self.atoms.len();
-        if n == 0 { return vec![]; }
+        if n == 0 {
+            return vec![];
+        }
 
         let mut component: Vec<usize> = vec![usize::MAX; n];
         let mut comp_id = 0;
 
         for start in 0..n {
-            if component[start] != usize::MAX { continue; }
+            if component[start] != usize::MAX {
+                continue;
+            }
             let mut stack = vec![start];
             component[start] = comp_id;
             while let Some(cur) = stack.pop() {
@@ -556,22 +603,27 @@ impl Molecule {
             comp_id += 1;
         }
 
-        (0..comp_id).map(|cid| {
-            let mut builder = MoleculeBuilder::new();
-            let mut old_to_new: std::collections::HashMap<AtomIdx, AtomIdx> = std::collections::HashMap::new();
-            for (aidx, atom) in self.atoms() {
-                if component[aidx.0 as usize] == cid {
-                    let new_idx = builder.add_atom(atom.clone());
-                    old_to_new.insert(aidx, new_idx);
+        (0..comp_id)
+            .map(|cid| {
+                let mut builder = MoleculeBuilder::new();
+                let mut old_to_new: std::collections::HashMap<AtomIdx, AtomIdx> =
+                    std::collections::HashMap::new();
+                for (aidx, atom) in self.atoms() {
+                    if component[aidx.0 as usize] == cid {
+                        let new_idx = builder.add_atom(atom.clone());
+                        old_to_new.insert(aidx, new_idx);
+                    }
                 }
-            }
-            for (_, bond) in self.bonds() {
-                if let (Some(&a1), Some(&a2)) = (old_to_new.get(&bond.atom1), old_to_new.get(&bond.atom2)) {
-                    let _ = builder.add_bond(a1, a2, bond.order);
+                for (_, bond) in self.bonds() {
+                    if let (Some(&a1), Some(&a2)) =
+                        (old_to_new.get(&bond.atom1), old_to_new.get(&bond.atom2))
+                    {
+                        let _ = builder.add_bond(a1, a2, bond.order);
+                    }
                 }
-            }
-            builder.build()
-        }).collect()
+                builder.build()
+            })
+            .collect()
     }
 }
 
@@ -631,7 +683,9 @@ impl MoleculeBuilder {
     /// Iterate over already-added neighbors of `idx` as `(bond_idx, neighbor_atom_idx)`.
     /// Used by kekulization tests to check whether a bond already exists in the builder.
     pub fn atom_neighbors(&self, idx: AtomIdx) -> impl Iterator<Item = (BondIdx, AtomIdx)> + '_ {
-        self.adjacency[idx.0 as usize].iter().map(|&(nb, bidx)| (bidx, nb))
+        self.adjacency[idx.0 as usize]
+            .iter()
+            .map(|&(nb, bidx)| (bidx, nb))
     }
 
     /// Add an atom and return its index.
@@ -645,10 +699,19 @@ impl MoleculeBuilder {
     /// Add a bond between two existing atoms.
     ///
     /// Returns an error if either atom index is invalid or if the bond already exists.
-    pub fn add_bond(&mut self, a: AtomIdx, b: AtomIdx, order: BondOrder) -> Result<BondIdx, MolError> {
+    pub fn add_bond(
+        &mut self,
+        a: AtomIdx,
+        b: AtomIdx,
+        order: BondOrder,
+    ) -> Result<BondIdx, MolError> {
         let n = self.atoms.len() as u32;
-        if a.0 >= n { return Err(MolError::InvalidAtomIdx(a)); }
-        if b.0 >= n { return Err(MolError::InvalidAtomIdx(b)); }
+        if a.0 >= n {
+            return Err(MolError::InvalidAtomIdx(a));
+        }
+        if b.0 >= n {
+            return Err(MolError::InvalidAtomIdx(b));
+        }
 
         // Check for duplicate
         for &(nb, _) in &self.adjacency[a.0 as usize] {
@@ -658,7 +721,11 @@ impl MoleculeBuilder {
         }
 
         let bidx = BondIdx(self.bonds.len() as u32);
-        self.bonds.push(BondEntry { atom1: a, atom2: b, order });
+        self.bonds.push(BondEntry {
+            atom1: a,
+            atom2: b,
+            order,
+        });
         self.adjacency[a.0 as usize].push((b, bidx));
         self.adjacency[b.0 as usize].push((a, bidx));
         Ok(bidx)
@@ -832,7 +899,8 @@ mod tests {
         let mol = b.build();
         let frags = mol.fragments();
         assert_eq!(frags.len(), 2);
-        let sizes: std::collections::HashSet<usize> = frags.iter().map(|f| f.atom_count()).collect();
+        let sizes: std::collections::HashSet<usize> =
+            frags.iter().map(|f| f.atom_count()).collect();
         assert!(sizes.contains(&2));
         assert!(sizes.contains(&1));
     }

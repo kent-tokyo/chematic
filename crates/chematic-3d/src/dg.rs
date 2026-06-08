@@ -237,8 +237,7 @@ fn place_rings(
     coords: &mut Coords3D,
     placed: &mut [bool],
 ) {
-    let component_set: std::collections::HashSet<AtomIdx> =
-        component.iter().copied().collect();
+    let component_set: std::collections::HashSet<AtomIdx> = component.iter().copied().collect();
 
     let mut ring_cx = x_offset;
     let mut ring_cy = 0.0_f64;
@@ -416,7 +415,11 @@ mod tests {
         let p1 = coords.get(AtomIdx(1));
         let dist = p0.distance(&p1);
         // C-C single bond is ~1.54 Å, should be within ±0.15 Å
-        assert!((dist - 1.54).abs() < 0.15, "C-C distance should be ~1.54 Å, got {}", dist);
+        assert!(
+            (dist - 1.54).abs() < 0.15,
+            "C-C distance should be ~1.54 Å, got {}",
+            dist
+        );
     }
 
     #[test]
@@ -437,7 +440,11 @@ mod tests {
     fn generate_coords_disconnected_molecules() {
         let mol = parse("CC.CC").unwrap();
         let coords = generate_coords(&mol);
-        assert_eq!(coords.atom_count(), 4, "two ethanes (disconnected) have 4 carbons total");
+        assert_eq!(
+            coords.atom_count(),
+            4,
+            "two ethanes (disconnected) have 4 carbons total"
+        );
     }
 
     #[test]
@@ -453,7 +460,10 @@ mod tests {
                 has_nonzero = true;
             }
         }
-        assert!(has_nonzero, "at least some atoms should be placed away from origin");
+        assert!(
+            has_nonzero,
+            "at least some atoms should be placed away from origin"
+        );
     }
 
     #[test]
@@ -462,7 +472,11 @@ mod tests {
         let mol = parse("c1ccccc1").unwrap();
         let coords = generate_coords(&mol);
         let minimized = minimize_dreiding(&mol, coords);
-        assert_eq!(minimized.atom_count(), 6, "benzene still has 6 carbons after minimization");
+        assert_eq!(
+            minimized.atom_count(),
+            6,
+            "benzene still has 6 carbons after minimization"
+        );
     }
 
     #[test]
@@ -470,6 +484,10 @@ mod tests {
         use crate::conformer::ConformerEnsemble;
         let mol = parse("CC").unwrap();
         let ensemble = ConformerEnsemble::new(mol);
-        assert_eq!(ensemble.conformer_count(), 0, "fresh ensemble has 0 conformers");
+        assert_eq!(
+            ensemble.conformer_count(),
+            0,
+            "fresh ensemble has 0 conformers"
+        );
     }
 }

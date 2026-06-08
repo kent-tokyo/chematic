@@ -23,7 +23,7 @@ pub mod stereo_group;
 pub mod valence;
 
 // Re-export the most commonly used types at crate root.
-pub use atom::{Atom, CipCode, Chirality};
+pub use atom::{Atom, Chirality, CipCode};
 pub use bond::{BondEntry, BondOrder};
 pub use element::Element;
 pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};

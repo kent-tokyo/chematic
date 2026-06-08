@@ -72,13 +72,21 @@ pub fn usr_descriptors(coords: &[[f64; 3]]) -> [f64; 12] {
 
     let mut out = [0.0f64; 12];
     let (m0, m1, m2) = moments(&d_ctd);
-    out[0] = m0; out[1] = m1; out[2] = m2;
+    out[0] = m0;
+    out[1] = m1;
+    out[2] = m2;
     let (m0, m1, m2) = moments(&d_cst);
-    out[3] = m0; out[4] = m1; out[5] = m2;
+    out[3] = m0;
+    out[4] = m1;
+    out[5] = m2;
     let (m0, m1, m2) = moments(&d_fct);
-    out[6] = m0; out[7] = m1; out[8] = m2;
+    out[6] = m0;
+    out[7] = m1;
+    out[8] = m2;
     let (m0, m1, m2) = moments(&d_ftf);
-    out[9] = m0; out[10] = m1; out[11] = m2;
+    out[9] = m0;
+    out[10] = m1;
+    out[11] = m2;
     out
 }
 
@@ -101,20 +109,22 @@ fn centroid(coords: &[[f64; 3]]) -> [f64; 3] {
     let n = coords.len() as f64;
     let mut c = [0.0f64; 3];
     for p in coords {
-        c[0] += p[0]; c[1] += p[1]; c[2] += p[2];
+        c[0] += p[0];
+        c[1] += p[1];
+        c[2] += p[2];
     }
     [c[0] / n, c[1] / n, c[2] / n]
 }
 
 fn dist(a: &[f64; 3], b: &[f64; 3]) -> f64 {
-    ((a[0]-b[0]).powi(2) + (a[1]-b[1]).powi(2) + (a[2]-b[2]).powi(2)).sqrt()
+    ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt()
 }
 
 /// First three standardised moments (mean, variance, skewness) of a distance distribution.
 fn moments(ds: &[f64]) -> (f64, f64, f64) {
     let n = ds.len() as f64;
     let mean = ds.iter().sum::<f64>() / n;
-    let var  = ds.iter().map(|d| (d - mean).powi(2)).sum::<f64>() / n;
+    let var = ds.iter().map(|d| (d - mean).powi(2)).sum::<f64>() / n;
     let skew = ds.iter().map(|d| (d - mean).powi(3)).sum::<f64>() / n;
     (mean, var, skew)
 }
@@ -129,7 +139,12 @@ mod tests {
 
     fn square() -> Vec<[f64; 3]> {
         // Unit square in the XY plane.
-        vec![[0.0,0.0,0.0],[1.0,0.0,0.0],[1.0,1.0,0.0],[0.0,1.0,0.0]]
+        vec![
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0],
+        ]
     }
 
     #[test]
@@ -143,11 +158,16 @@ mod tests {
     fn test_different_shapes_less_than_one() {
         let square = square();
         // Elongated shape (line).
-        let line = vec![[0.0,0.0,0.0],[5.0,0.0,0.0],[10.0,0.0,0.0],[15.0,0.0,0.0]];
+        let line = vec![
+            [0.0, 0.0, 0.0],
+            [5.0, 0.0, 0.0],
+            [10.0, 0.0, 0.0],
+            [15.0, 0.0, 0.0],
+        ];
         let d_sq = usr_descriptors(&square);
         let d_ln = usr_descriptors(&line);
         let sim = usr_similarity(&d_sq, &d_ln);
-        assert!(sim < 1.0 && sim >= 0.0, "sim={sim:.4} should be in [0,1)");
+        assert!((0.0..1.0).contains(&sim), "sim={sim:.4} should be in [0,1)");
     }
 
     #[test]
@@ -166,7 +186,10 @@ mod tests {
     fn test_translation_invariance() {
         let c1 = square();
         let offset = 100.0;
-        let c2: Vec<[f64;3]> = c1.iter().map(|p| [p[0]+offset, p[1]+offset, p[2]+offset]).collect();
+        let c2: Vec<[f64; 3]> = c1
+            .iter()
+            .map(|p| [p[0] + offset, p[1] + offset, p[2] + offset])
+            .collect();
         // USR is NOT translation-invariant by design (it uses absolute distances
         // from reference points, not pairwise distances). However, centroid-based
         // reference points make it centroid-relative, so pure translation DOES
@@ -174,6 +197,9 @@ mod tests {
         let d1 = usr_descriptors(&c1);
         let d2 = usr_descriptors(&c2);
         let sim = usr_similarity(&d1, &d2);
-        assert!((sim - 1.0).abs() < 1e-6, "USR should be translation-invariant, sim={sim}");
+        assert!(
+            (sim - 1.0).abs() < 1e-6,
+            "USR should be translation-invariant, sim={sim}"
+        );
     }
 }

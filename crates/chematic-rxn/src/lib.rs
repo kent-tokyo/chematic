@@ -16,5 +16,7 @@ pub mod transform;
 
 pub use balance::{BalanceResult, balance_check};
 pub use green::{atom_economy, e_factor, pmi_rxn, reaction_mass_efficiency};
-pub use reaction::{Reaction, ReactionCenter, RxnError, find_reaction_center, parse_reaction, write_reaction};
+pub use reaction::{
+    Reaction, ReactionCenter, RxnError, find_reaction_center, parse_reaction, write_reaction,
+};
 pub use transform::{TransformError, run_reactants};

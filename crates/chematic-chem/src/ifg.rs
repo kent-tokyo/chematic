@@ -42,7 +42,9 @@ pub fn identify_functional_groups(mol: &Molecule) -> Vec<FunctionalGroup> {
 
     // 1b. C atoms bonded to at least one non-C heavy atom.
     for (idx, atom) in mol.atoms() {
-        if atom.element.atomic_number() != 6 { continue; }
+        if atom.element.atomic_number() != 6 {
+            continue;
+        }
         let has_hetero_neighbor = mol.neighbors(idx).any(|(nb, _)| {
             let an = mol.atom(nb).element.atomic_number();
             an != 1 && an != 6
@@ -63,9 +65,9 @@ pub fn identify_functional_groups(mol: &Molecule) -> Vec<FunctionalGroup> {
                 for &i in ring {
                     if !marked[i] {
                         // Only include ring carbons if the ring has a heteroatom.
-                        let ring_has_hetero = ring.iter().any(|&j| {
-                            mol.atom(AtomIdx(j as u32)).element.atomic_number() != 6
-                        });
+                        let ring_has_hetero = ring
+                            .iter()
+                            .any(|&j| mol.atom(AtomIdx(j as u32)).element.atomic_number() != 6);
                         if ring_has_hetero {
                             marked[i] = true;
                             changed = true;
@@ -102,13 +104,17 @@ pub fn identify_functional_groups(mol: &Molecule) -> Vec<FunctionalGroup> {
         }
 
         component.sort_unstable();
-        let mut syms: Vec<&str> = component.iter()
+        let mut syms: Vec<&str> = component
+            .iter()
             .map(|&i| mol.atom(AtomIdx(i as u32)).element.symbol())
             .collect();
         syms.sort_unstable();
         let atom_types = syms.join(",");
 
-        groups.push(FunctionalGroup { atom_indices: component, atom_types });
+        groups.push(FunctionalGroup {
+            atom_indices: component,
+            atom_types,
+        });
     }
 
     groups
@@ -133,7 +139,9 @@ fn ring_atom_sets(mol: &Molecule) -> Vec<Vec<usize>> {
         .collect();
 
     for root in 0..n {
-        if visited[root] { continue; }
+        if visited[root] {
+            continue;
+        }
         stack.push((root, usize::MAX));
         while let Some((cur, par)) = stack.pop() {
             if visited[cur] {
@@ -179,29 +187,44 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
 
-    fn mol(s: &str) -> Molecule { parse(s).unwrap() }
+    fn mol(s: &str) -> Molecule {
+        parse(s).unwrap()
+    }
 
     #[test]
     fn hexane_no_functional_groups() {
         let groups = identify_functional_groups(&mol("CCCCCC"));
-        assert!(groups.is_empty(), "hexane should have no FGs, got {:?}", groups);
+        assert!(
+            groups.is_empty(),
+            "hexane should have no FGs, got {:?}",
+            groups
+        );
     }
 
     #[test]
     fn acetic_acid_one_group() {
         let groups = identify_functional_groups(&mol("CC(=O)O"));
         // The carboxylic acid group: C(=O)O
-        assert!(!groups.is_empty(), "acetic acid should have at least one FG");
+        assert!(
+            !groups.is_empty(),
+            "acetic acid should have at least one FG"
+        );
         let all_types: Vec<&str> = groups.iter().map(|g| g.atom_types.as_str()).collect();
-        assert!(all_types.iter().any(|t| t.contains('O')),
-            "expected group containing O, got {:?}", all_types);
+        assert!(
+            all_types.iter().any(|t| t.contains('O')),
+            "expected group containing O, got {:?}",
+            all_types
+        );
     }
 
     #[test]
     fn pyridine_one_group_containing_n() {
         let groups = identify_functional_groups(&mol("c1ccncc1"));
         assert_eq!(groups.len(), 1, "pyridine should be one FG");
-        assert!(groups[0].atom_types.contains('N'), "pyridine FG must contain N");
+        assert!(
+            groups[0].atom_types.contains('N'),
+            "pyridine FG must contain N"
+        );
     }
 
     #[test]

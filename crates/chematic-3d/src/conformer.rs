@@ -44,7 +44,10 @@ pub struct ConformerEnsemble {
 impl ConformerEnsemble {
     /// Create an ensemble with no conformers.
     pub fn new(mol: Molecule) -> Self {
-        Self { mol, conformers: Vec::new() }
+        Self {
+            mol,
+            conformers: Vec::new(),
+        }
     }
 
     /// Create an ensemble pre-loaded with one conformer.
@@ -56,7 +59,10 @@ impl ConformerEnsemble {
         if got != expected {
             return Err(ConformerError::AtomCountMismatch { expected, got });
         }
-        Ok(Self { mol, conformers: vec![coords] })
+        Ok(Self {
+            mol,
+            conformers: vec![coords],
+        })
     }
 
     /// The molecule (topology only; no coordinates).
@@ -161,10 +167,17 @@ fn kabsch_rmsd(coords_a: &Coords3D, coords_b: &Coords3D, n: usize) -> f64 {
         let idx = AtomIdx(i as u32);
         let pa = coords_a.get(idx);
         let pb = coords_b.get(idx);
-        ca[0] += pa.x; ca[1] += pa.y; ca[2] += pa.z;
-        cb[0] += pb.x; cb[1] += pb.y; cb[2] += pb.z;
+        ca[0] += pa.x;
+        ca[1] += pa.y;
+        ca[2] += pa.z;
+        cb[0] += pb.x;
+        cb[1] += pb.y;
+        cb[2] += pb.z;
     }
-    for k in 0..3 { ca[k] /= nf; cb[k] /= nf; }
+    for k in 0..3 {
+        ca[k] /= nf;
+        cb[k] /= nf;
+    }
 
     // Centered coordinates.
     let mut p = vec![[0.0f64; 3]; n];
@@ -232,7 +245,9 @@ fn kabsch_rmsd(coords_a: &Coords3D, coords_b: &Coords3D, n: usize) -> f64 {
     let det = det3(r_mat);
     let mut v_final = v;
     if det < 0.0 {
-        for r in 0..3 { v_final[r][0] *= -1.0; }
+        for r in 0..3 {
+            v_final[r][0] *= -1.0;
+        }
         // Recompute R.
         r_mat = [[0.0f64; 3]; 3];
         for r in 0..3 {
@@ -248,9 +263,8 @@ fn kabsch_rmsd(coords_a: &Coords3D, coords_b: &Coords3D, n: usize) -> f64 {
     let mut sum_sq = 0.0f64;
     for i in 0..n {
         for row in 0..3 {
-            let rotated = r_mat[row][0] * q[i][0]
-                + r_mat[row][1] * q[i][1]
-                + r_mat[row][2] * q[i][2];
+            let rotated =
+                r_mat[row][0] * q[i][0] + r_mat[row][1] * q[i][1] + r_mat[row][2] * q[i][2];
             let diff = p[i][row] - rotated;
             sum_sq += diff * diff;
         }
@@ -313,7 +327,13 @@ mod tests {
         let wrong = Coords3D::new_zeroed(5);
         let mut ens = ConformerEnsemble::new(mol);
         let err = ens.add_conformer(wrong).unwrap_err();
-        assert!(matches!(err, ConformerError::AtomCountMismatch { expected: 2, got: 5 }));
+        assert!(matches!(
+            err,
+            ConformerError::AtomCountMismatch {
+                expected: 2,
+                got: 5
+            }
+        ));
     }
 
     #[test]
@@ -379,14 +399,20 @@ mod tests {
         let mut ens = ConformerEnsemble::with_conformer(mol, c1).unwrap();
         ens.add_conformer(c2).unwrap();
         let rmsd = ens.conformer_rmsd_no_align(0, 1).unwrap();
-        assert!(rmsd > 0.0, "translated conformers should have non-zero RMSD");
+        assert!(
+            rmsd > 0.0,
+            "translated conformers should have non-zero RMSD"
+        );
     }
 
     #[test]
     fn kabsch_rmsd_same_conformer_is_zero() {
         let ens = make_ensemble();
         let rmsd = ens.conformer_rmsd(0, 0).unwrap();
-        assert!(rmsd.abs() < 1e-8, "Kabsch self-RMSD should be 0, got {rmsd}");
+        assert!(
+            rmsd.abs() < 1e-8,
+            "Kabsch self-RMSD should be 0, got {rmsd}"
+        );
     }
 
     #[test]
@@ -399,12 +425,18 @@ mod tests {
         let offset = 5.0;
         for i in 0..n {
             let p = base.get(AtomIdx(i as u32));
-            shifted.set(AtomIdx(i as u32), Point3::new(p.x + offset, p.y + offset, p.z + offset));
+            shifted.set(
+                AtomIdx(i as u32),
+                Point3::new(p.x + offset, p.y + offset, p.z + offset),
+            );
         }
         let mut ens = ConformerEnsemble::with_conformer(mol, base).unwrap();
         ens.add_conformer(shifted).unwrap();
         let rmsd = ens.conformer_rmsd(0, 1).unwrap();
-        assert!(rmsd < 1e-6, "pure-translation Kabsch RMSD should be ~0, got {rmsd}");
+        assert!(
+            rmsd < 1e-6,
+            "pure-translation Kabsch RMSD should be ~0, got {rmsd}"
+        );
     }
 
     #[test]

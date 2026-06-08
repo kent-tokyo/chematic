@@ -68,34 +68,33 @@
 //! | `threed` | 3D coordinates, UFF minimization, XYZ/PDB I/O |
 //! | `full` | All of the above |
 
+#[cfg(feature = "threed")]
+pub use chematic_3d as threed;
+#[cfg(feature = "chem")]
+pub use chematic_chem as chem;
 #[cfg(feature = "smiles")]
 pub use chematic_core as core;
-#[cfg(feature = "smiles")]
-pub use chematic_smiles as smiles;
-#[cfg(feature = "perception")]
-pub use chematic_perception as perception;
-#[cfg(feature = "mol")]
-pub use chematic_mol as mol;
 #[cfg(feature = "depict")]
 pub use chematic_depict as depict;
 #[cfg(feature = "fp")]
 pub use chematic_fp as fp;
-#[cfg(feature = "chem")]
-pub use chematic_chem as chem;
-#[cfg(feature = "smarts")]
-pub use chematic_smarts as smarts;
-#[cfg(feature = "rxn")]
-pub use chematic_rxn as rxn;
-#[cfg(feature = "threed")]
-pub use chematic_3d as threed;
 #[cfg(feature = "iupac")]
 pub use chematic_iupac as iupac;
+#[cfg(feature = "mol")]
+pub use chematic_mol as mol;
+#[cfg(feature = "perception")]
+pub use chematic_perception as perception;
+#[cfg(feature = "rxn")]
+pub use chematic_rxn as rxn;
+#[cfg(feature = "smarts")]
+pub use chematic_smarts as smarts;
+#[cfg(feature = "smiles")]
+pub use chematic_smiles as smiles;
 
 #[cfg(test)]
 mod tests {
     #[test]
     fn test_crate_compiles() {
         // Umbrella crate compiles with no features enabled.
-        assert!(true);
     }
 }

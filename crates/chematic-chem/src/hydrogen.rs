@@ -6,7 +6,9 @@
 
 use std::collections::HashMap;
 
-use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount};
+use chematic_core::{
+    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount,
+};
 
 /// Return a new molecule in which every implicit hydrogen is converted to an
 /// explicit H atom node bonded to its parent heavy atom.
@@ -143,11 +145,13 @@ mod tests {
         let restored = remove_hydrogens(&with_h);
         // Heavy-atom count and bond count should match original.
         assert_eq!(
-            restored.atom_count(), orig.atom_count(),
+            restored.atom_count(),
+            orig.atom_count(),
             "roundtrip atom count"
         );
         assert_eq!(
-            restored.bond_count(), orig.bond_count(),
+            restored.bond_count(),
+            orig.bond_count(),
             "roundtrip bond count"
         );
     }
@@ -183,7 +187,8 @@ mod tests {
         // Aspirin: 9 C + 4 O = 13 heavy; 8 H added → 21 total
         let orig = mol("CC(=O)Oc1ccccc1C(=O)O");
         let with_h = add_hydrogens(&orig);
-        let h_count = with_h.atoms()
+        let h_count = with_h
+            .atoms()
             .filter(|(_, a)| a.element == Element::H)
             .count();
         assert_eq!(h_count, 8, "aspirin should gain 8 H atoms (C9H8O4)");

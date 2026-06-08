@@ -189,7 +189,12 @@ impl<'a> Iterator for SdfRecordReader<'a> {
         let properties: std::collections::HashMap<String, String> =
             parse_sd_fields(data_part).into_iter().collect();
 
-        Some(Ok(SdfRecord { mol, meta, coords, properties }))
+        Some(Ok(SdfRecord {
+            mol,
+            meta,
+            coords,
+            properties,
+        }))
     }
 }
 
@@ -332,12 +337,31 @@ M  END
     #[test]
     fn test_sdf_with_data_fields() {
         // SDF with data fields between M  END and $$$$ — should be ignored.
-        let sdf_with_data = format!(
-            "{MOL_A}> <MW>\n44.0\n\n$$$$\n"
-        );
+        let sdf_with_data = format!("{MOL_A}> <MW>\n44.0\n\n$$$$\n");
         let results: Vec<_> = SdfReader::new(&sdf_with_data).collect();
         assert_eq!(results.len(), 1);
         let (mol, _) = results[0].as_ref().expect("parse");
         assert_eq!(mol.atom_count(), 2);
+    }
+
+    #[test]
+    fn test_sdf_reader_reports_truncated_large_count_record() {
+        let bad_sdf = "\
+max_atoms
+  chematic
+
+999  0  0  0  0  0  0  0  0  0  0 V2000
+$$$$
+";
+        let mut reader = SdfReader::new(bad_sdf);
+        assert!(matches!(
+            reader.next(),
+            Some(Err(MolParseError::UnexpectedEnd))
+        ));
+        assert!(reader.next().is_none());
+        assert!(matches!(
+            parse_sdf(bad_sdf),
+            Err(MolParseError::UnexpectedEnd)
+        ));
     }
 }

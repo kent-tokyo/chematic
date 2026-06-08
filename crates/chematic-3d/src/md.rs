@@ -5,8 +5,8 @@
 
 use std::f64;
 
-use chematic_core::Molecule;
 use chematic_chem::gasteiger_charges;
+use chematic_core::Molecule;
 use chematic_ff::{assign_dreiding_types, dreiding_vdw};
 
 use crate::coords::{Coords3D, Point3};
@@ -96,9 +96,7 @@ pub fn run_md(mol: &Molecule, coords: Coords3D, config: &MDConfig) -> MDTrajecto
     // Initialize velocities from Maxwell-Boltzmann distribution
     let mut velocities = initialize_velocities(&masses, config.temperature_k);
 
-    let mut trajectory = MDTrajectory {
-        frames: vec![],
-    };
+    let mut trajectory = MDTrajectory { frames: vec![] };
 
     let mut current_coords = coords;
 
@@ -149,8 +147,12 @@ pub fn run_md(mol: &Molecule, coords: Coords3D, config: &MDConfig) -> MDTrajecto
         match config.thermostat {
             Thermostat::None => {}
             Thermostat::Berendsen { tau_fs } => {
-                let tau = tau_fs / 1000.0; // Convert to ps
-                let lambda = (1.0 + (dt / tau) * (config.temperature_k / temperature - 1.0)).sqrt();
+                let lambda = if temperature < 1e-6 {
+                    1.0
+                } else {
+                    let tau = tau_fs / 1000.0;
+                    (1.0 + (dt / tau) * (config.temperature_k / temperature - 1.0)).sqrt()
+                };
                 for v in &mut velocities {
                     v.x *= lambda;
                     v.y *= lambda;
@@ -161,7 +163,8 @@ pub fn run_md(mol: &Molecule, coords: Coords3D, config: &MDConfig) -> MDTrajecto
 
         // Save frame
         if (step + 1) % config.save_every == 0 {
-            let (ke, temp) = compute_kinetic_energy_and_temp(&velocities, &masses, config.temperature_k);
+            let (ke, temp) =
+                compute_kinetic_energy_and_temp(&velocities, &masses, config.temperature_k);
             trajectory.frames.push(MDFrame {
                 step: step + 1,
                 coords: current_coords.clone(),
@@ -270,13 +273,10 @@ fn compute_forces(
     forces
 }
 
-fn total_energy(
-    mol: &Molecule,
-    coords: &Coords3D,
-    charges: &[f64],
-    coulomb: bool,
-) -> f64 {
-    bond_energy(mol, coords) + angle_energy(mol, coords) + vdw_energy(mol, coords)
+fn total_energy(mol: &Molecule, coords: &Coords3D, charges: &[f64], coulomb: bool) -> f64 {
+    bond_energy(mol, coords)
+        + angle_energy(mol, coords)
+        + vdw_energy(mol, coords)
         + if coulomb {
             coulomb_energy(coords, charges)
         } else {
@@ -400,7 +400,11 @@ fn vdw_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
 
 fn ideal_bond_len(sym1: &str, sym2: &str, order: chematic_core::BondOrder) -> f64 {
     use chematic_core::BondOrder;
-    let (a, b) = if sym1 <= sym2 { (sym1, sym2) } else { (sym2, sym1) };
+    let (a, b) = if sym1 <= sym2 {
+        (sym1, sym2)
+    } else {
+        (sym2, sym1)
+    };
     match (a, b, order) {
         ("C", "C", BondOrder::Single | BondOrder::Up | BondOrder::Down) => 1.540,
         ("C", "C", BondOrder::Double) => 1.340,
@@ -477,7 +481,7 @@ fn angle_from_vectors(v1: &Point3, v2: &Point3) -> f64 {
     let mag1 = (v1.x * v1.x + v1.y * v1.y + v1.z * v1.z).sqrt();
     let mag2 = (v2.x * v2.x + v2.y * v2.y + v2.z * v2.z).sqrt();
     if mag1 > 1e-10 && mag2 > 1e-10 {
-        let cos_angle = (dot / (mag1 * mag2)).max(-1.0).min(1.0);
+        let cos_angle = (dot / (mag1 * mag2)).clamp(-1.0, 1.0);
         cos_angle.acos()
     } else {
         0.0
@@ -500,7 +504,11 @@ fn coulomb_energy(coords: &Coords3D, charges: &[f64]) -> f64 {
     energy
 }
 
-fn compute_kinetic_energy_and_temp(velocities: &[Point3], masses: &[f64], _target_temp: f64) -> (f64, f64) {
+fn compute_kinetic_energy_and_temp(
+    velocities: &[Point3],
+    masses: &[f64],
+    _target_temp: f64,
+) -> (f64, f64) {
     let mut ke = 0.0;
     for (i, v) in velocities.iter().enumerate() {
         let speed_sq = v.x * v.x + v.y * v.y + v.z * v.z;
@@ -550,5 +558,27 @@ mod tests {
         // Check that simulation completes without crashing
         let final_frame = traj.frames.last().unwrap();
         assert!(final_frame.temperature_k > 0.0);
+    }
+
+    #[test]
+    fn test_berendsen_zero_temperature_no_nan() {
+        let mol = parse("C").expect("methane");
+        let coords = crate::generate_coords(&mol);
+        let config = MDConfig {
+            timestep_fs: 1.0,
+            steps: 1,
+            temperature_k: 300.0,
+            thermostat: Thermostat::Berendsen { tau_fs: 100.0 },
+            save_every: 1,
+            coulomb: false,
+        };
+        let traj = run_md(&mol, coords, &config);
+        assert!(!traj.frames.is_empty());
+        let frame = traj.frames.first().unwrap();
+        for (i, coord) in frame.coords.points.iter().enumerate() {
+            assert!(coord.x.is_finite(), "coord[{}].x is NaN", i);
+            assert!(coord.y.is_finite(), "coord[{}].y is NaN", i);
+            assert!(coord.z.is_finite(), "coord[{}].z is NaN", i);
+        }
     }
 }

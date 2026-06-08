@@ -3,9 +3,9 @@
 //! Reference: OpenSMILES specification, section 3.4 (Implicit hydrogen)
 //! <http://opensmiles.org/opensmiles-spec.html>
 
-use std::fmt;
 use crate::bond::BondOrder;
 use crate::molecule::{AtomIdx, Molecule};
+use std::fmt;
 
 /// Compute the implicit hydrogen count for atom `idx`.
 ///
@@ -70,8 +70,7 @@ pub fn implicit_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
         // Combined with non-aromatic substituents (e.g. N−CH₃) this correctly yields
         // 0 H for all substituted aromatic atoms without needing Kekulization.
         // Always use the lowest normal valence; aromatic atoms cannot be hypervalent.
-        let effective_sum =
-            (aromatic_count as f64 * 1.5).floor() as i32 + non_aromatic_sum;
+        let effective_sum = (aromatic_count as f64 * 1.5).floor() as i32 + non_aromatic_sum;
         let v = normal_valences[0] as i32 + charge;
         if v <= 0 || effective_sum >= v {
             return 0;
@@ -124,7 +123,10 @@ pub fn bond_order_sum(mol: &Molecule, idx: AtomIdx) -> u8 {
 
 /// Returns true if the bond is counted as a "double bond equivalent" in valence sums.
 pub fn is_pi_bond(order: BondOrder) -> bool {
-    matches!(order, BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple)
+    matches!(
+        order,
+        BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +199,11 @@ pub fn validate_valence(mol: &Molecule) -> Vec<ValenceError> {
         });
 
         if !has_valid {
-            errors.push(ValenceError { atom: idx, actual: used, allowed: valences });
+            errors.push(ValenceError {
+                atom: idx,
+                actual: used,
+                allowed: valences,
+            });
         }
     }
     errors
@@ -312,15 +318,19 @@ mod tests {
     #[test]
     fn test_validate_valence_valid_molecules() {
         // All normal molecules should produce no errors.
-        use crate::molecule::AtomIdx as AI;
-
         // methane (C, 0 bonds): valid
         let mol = single_atom(Element::C);
-        assert!(validate_valence(&mol).is_empty(), "isolated C must be valid");
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "isolated C must be valid"
+        );
 
         // water (O, 0 bonds): valid
         let mol = single_atom(Element::O);
-        assert!(validate_valence(&mol).is_empty(), "isolated O must be valid");
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "isolated O must be valid"
+        );
 
         // ethane (C–C): C has bond_sum=1, max valence 4 → valid
         let mol = two_atoms(Element::C, Element::C, BondOrder::Single);
@@ -328,7 +338,10 @@ mod tests {
 
         // formaldehyde (C=O): C bond_sum=2, O bond_sum=2 → both valid
         let mol = two_atoms(Element::C, Element::O, BondOrder::Double);
-        assert!(validate_valence(&mol).is_empty(), "formaldehyde must be valid");
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "formaldehyde must be valid"
+        );
     }
 
     #[test]
@@ -342,7 +355,11 @@ mod tests {
         }
         let mol = b.build();
         let errors = validate_valence(&mol);
-        assert_eq!(errors.len(), 1, "C with 5 bonds must produce exactly 1 error");
+        assert_eq!(
+            errors.len(),
+            1,
+            "C with 5 bonds must produce exactly 1 error"
+        );
         assert_eq!(errors[0].atom, AtomIdx(0));
         assert_eq!(errors[0].actual, 5);
     }
@@ -358,7 +375,10 @@ mod tests {
         }
         let mol = b.build();
         let errors = validate_valence(&mol);
-        assert!(!errors.is_empty(), "O with 3 bonds must be flagged as over-valenced");
+        assert!(
+            !errors.is_empty(),
+            "O with 3 bonds must be flagged as over-valenced"
+        );
         assert_eq!(errors[0].atom, AtomIdx(0));
     }
 
@@ -390,6 +410,9 @@ mod tests {
             b.add_bond(fe, c, BondOrder::Single).unwrap();
         }
         let mol = b.build();
-        assert!(validate_valence(&mol).is_empty(), "Fe with 6 bonds must be skipped");
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "Fe with 6 bonds must be skipped"
+        );
     }
 }

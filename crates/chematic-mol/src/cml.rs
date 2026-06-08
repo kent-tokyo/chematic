@@ -48,10 +48,10 @@ pub enum CmlError {
 impl std::fmt::Display for CmlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CmlError::UnknownElement(s)    => write!(f, "unknown element symbol: {s}"),
-            CmlError::UnknownAtomRef(s)    => write!(f, "unknown atom ref: {s}"),
-            CmlError::InvalidAtomRefs2(s)  => write!(f, "invalid atomRefs2: {s}"),
-            CmlError::InvalidBondOrder(s)  => write!(f, "invalid bond order: {s}"),
+            CmlError::UnknownElement(s) => write!(f, "unknown element symbol: {s}"),
+            CmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
+            CmlError::InvalidAtomRefs2(s) => write!(f, "invalid atomRefs2: {s}"),
+            CmlError::InvalidBondOrder(s) => write!(f, "invalid bond order: {s}"),
         }
     }
 }
@@ -80,7 +80,9 @@ pub(crate) fn parse_xml_attrs(line: &str) -> HashMap<String, String> {
         while i < len && (bytes[i].is_ascii_whitespace() || bytes[i] == b'/' || bytes[i] == b'>') {
             i += 1;
         }
-        if i >= len { break; }
+        if i >= len {
+            break;
+        }
 
         // Read attribute key: stop at '=' or whitespace.
         let key_start = i;
@@ -88,26 +90,44 @@ pub(crate) fn parse_xml_attrs(line: &str) -> HashMap<String, String> {
             i += 1;
         }
         let key = line[key_start..i].trim().to_string();
-        if key.is_empty() { i += 1; continue; }
+        if key.is_empty() {
+            i += 1;
+            continue;
+        }
 
         // Expect '='
-        while i < len && bytes[i].is_ascii_whitespace() { i += 1; }
-        if i >= len || bytes[i] != b'=' { continue; }
+        while i < len && bytes[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        if i >= len || bytes[i] != b'=' {
+            continue;
+        }
         i += 1;
 
         // Expect opening '"' or '\''
-        while i < len && bytes[i].is_ascii_whitespace() { i += 1; }
-        if i >= len { break; }
+        while i < len && bytes[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        if i >= len {
+            break;
+        }
         let quote = bytes[i];
-        if quote != b'"' && quote != b'\'' { i += 1; continue; }
+        if quote != b'"' && quote != b'\'' {
+            i += 1;
+            continue;
+        }
         i += 1;
 
         // Read until closing quote.
         let value_start = i;
-        while i < len && bytes[i] != quote { i += 1; }
+        while i < len && bytes[i] != quote {
+            i += 1;
+        }
         let raw_value = &line[value_start..i];
         let value = unescape_xml(raw_value);
-        if i < len { i += 1; } // consume closing quote
+        if i < len {
+            i += 1;
+        } // consume closing quote
 
         if !key.is_empty() {
             map.insert(key, value);
@@ -122,10 +142,10 @@ fn unescape_xml(s: &str) -> String {
         return s.to_string();
     }
     s.replace("&amp;", "&")
-     .replace("&lt;", "<")
-     .replace("&gt;", ">")
-     .replace("&quot;", "\"")
-     .replace("&apos;", "'")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&apos;", "'")
 }
 
 // ---------------------------------------------------------------------------
@@ -134,16 +154,16 @@ fn unescape_xml(s: &str) -> String {
 
 fn parse_bond_order(s: &str) -> Result<BondOrder, CmlError> {
     match s.trim() {
-        "0" | "zero"           => Ok(BondOrder::Zero),
-        "1" | "S" | "single"   => Ok(BondOrder::Single),
-        "2" | "D" | "double"   => Ok(BondOrder::Double),
-        "3" | "T" | "triple"   => Ok(BondOrder::Triple),
+        "0" | "zero" => Ok(BondOrder::Zero),
+        "1" | "S" | "single" => Ok(BondOrder::Single),
+        "2" | "D" | "double" => Ok(BondOrder::Double),
+        "3" | "T" | "triple" => Ok(BondOrder::Triple),
         // Aromatic bonds: store as single (aromaticity is perceived from topology)
-        "A" | "aromatic"       => Ok(BondOrder::Aromatic),
-        "any"                  => Ok(BondOrder::QueryAny),
-        "S/D"                  => Ok(BondOrder::QuerySingleOrDouble),
-        "S/A"                  => Ok(BondOrder::QuerySingleOrAromatic),
-        "D/A"                  => Ok(BondOrder::QueryDoubleOrAromatic),
+        "A" | "aromatic" => Ok(BondOrder::Aromatic),
+        "any" => Ok(BondOrder::QueryAny),
+        "S/D" => Ok(BondOrder::QuerySingleOrDouble),
+        "S/A" => Ok(BondOrder::QuerySingleOrAromatic),
+        "D/A" => Ok(BondOrder::QueryDoubleOrAromatic),
         other => Err(CmlError::InvalidBondOrder(other.to_string())),
     }
 }
@@ -154,7 +174,6 @@ fn parse_bond_order(s: &str) -> Result<BondOrder, CmlError> {
 
 /// Intermediate atom data before building the `Molecule`.
 struct CmlAtomData {
-    id: String,
     element: Element,
     charge: i8,
     isotope: Option<u16>,
@@ -193,57 +212,89 @@ pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
     let mut atom_data: Vec<CmlAtomData> = Vec::new();
     let mut atom_id_to_pos: HashMap<String, usize> = HashMap::new();
 
-    struct BondData { a1: usize, a2: usize, order: BondOrder, aromatic: bool }
+    struct BondData {
+        a1: usize,
+        a2: usize,
+        order: BondOrder,
+        aromatic: bool,
+    }
     let mut bond_data: Vec<BondData> = Vec::new();
 
     for raw_line in input.lines() {
         let line = raw_line.trim();
-        if line.is_empty() { continue; }
+        if line.is_empty() {
+            continue;
+        }
 
         if is_element_tag(line, "atom") {
             let attrs = parse_xml_attrs(line);
             let id = attrs.get("id").cloned().unwrap_or_default();
 
-            let element_sym = attrs.get("elementType")
-                .map(String::as_str)
-                .unwrap_or("C");
+            let element_sym = attrs.get("elementType").map(String::as_str).unwrap_or("C");
             let element = Element::from_symbol(element_sym)
                 .ok_or_else(|| CmlError::UnknownElement(element_sym.to_string()))?;
 
-            let charge = attrs.get("formalCharge")
+            let charge = attrs
+                .get("formalCharge")
                 .and_then(|s| s.trim().parse::<i8>().ok())
                 .unwrap_or(0);
-            let isotope = attrs.get("isotope")
+            let isotope = attrs
+                .get("isotope")
                 .or_else(|| attrs.get("isotopeNumber"))
                 .and_then(|s| s.trim().parse::<u16>().ok())
                 .filter(|&v| v > 0);
-            let hydrogen_count = attrs.get("hydrogenCount")
+            let hydrogen_count = attrs
+                .get("hydrogenCount")
                 .and_then(|s| s.trim().parse::<u8>().ok());
-            let x2 = attrs.get("x2").and_then(|s| s.trim().parse::<f64>().ok()).unwrap_or(0.0);
-            let y2 = attrs.get("y2").and_then(|s| s.trim().parse::<f64>().ok()).unwrap_or(0.0);
+            let x2 = attrs
+                .get("x2")
+                .and_then(|s| s.trim().parse::<f64>().ok())
+                .unwrap_or(0.0);
+            let y2 = attrs
+                .get("y2")
+                .and_then(|s| s.trim().parse::<f64>().ok())
+                .unwrap_or(0.0);
 
             let pos = atom_data.len();
-            if !id.is_empty() { atom_id_to_pos.insert(id.clone(), pos); }
-            atom_data.push(CmlAtomData { id, element, charge, isotope, hydrogen_count, x2, y2, aromatic: false });
+            if !id.is_empty() {
+                atom_id_to_pos.insert(id.clone(), pos);
+            }
+            atom_data.push(CmlAtomData {
+                element,
+                charge,
+                isotope,
+                hydrogen_count,
+                x2,
+                y2,
+                aromatic: false,
+            });
             continue;
         }
 
         if is_element_tag(line, "bond") {
             let attrs = parse_xml_attrs(line);
-            let refs = attrs.get("atomRefs2")
+            let refs = attrs
+                .get("atomRefs2")
                 .ok_or_else(|| CmlError::InvalidAtomRefs2("missing atomRefs2".to_string()))?;
             let parts: Vec<&str> = refs.split_whitespace().collect();
             if parts.len() < 2 {
                 return Err(CmlError::InvalidAtomRefs2(refs.clone()));
             }
-            let a1 = *atom_id_to_pos.get(parts[0])
+            let a1 = *atom_id_to_pos
+                .get(parts[0])
                 .ok_or_else(|| CmlError::UnknownAtomRef(parts[0].to_string()))?;
-            let a2 = *atom_id_to_pos.get(parts[1])
+            let a2 = *atom_id_to_pos
+                .get(parts[1])
                 .ok_or_else(|| CmlError::UnknownAtomRef(parts[1].to_string()))?;
             let order_s = attrs.get("order").map(String::as_str).unwrap_or("1");
             let is_aromatic = matches!(order_s.trim(), "A" | "aromatic");
             let order = parse_bond_order(order_s)?;
-            bond_data.push(BondData { a1, a2, order, aromatic: is_aromatic });
+            bond_data.push(BondData {
+                a1,
+                a2,
+                order,
+                aromatic: is_aromatic,
+            });
         }
     }
 
@@ -251,8 +302,12 @@ pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
 
     for bd in &bond_data {
         if bd.aromatic {
-            if let Some(a) = atom_data.get_mut(bd.a1) { a.aromatic = true; }
-            if let Some(a) = atom_data.get_mut(bd.a2) { a.aromatic = true; }
+            if let Some(a) = atom_data.get_mut(bd.a1) {
+                a.aromatic = true;
+            }
+            if let Some(a) = atom_data.get_mut(bd.a2) {
+                a.aromatic = true;
+            }
         }
     }
 
@@ -274,7 +329,8 @@ pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
     for bd in &bond_data {
         let a1 = idx_by_pos[bd.a1];
         let a2 = idx_by_pos[bd.a2];
-        builder.add_bond(a1, a2, bd.order)
+        builder
+            .add_bond(a1, a2, bd.order)
             .map_err(|_| CmlError::InvalidAtomRefs2(format!("{} {}", bd.a1, bd.a2)))?;
     }
 
@@ -317,11 +373,11 @@ pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
             format!("id=\"a{}\"", idx.0 + 1),
             format!("elementType=\"{sym}\""),
         ];
-        if let Some(cs) = coords {
-            if let Some(&(x, y)) = cs.get(i) {
-                parts.push(format!("x2=\"{x:.4}\""));
-                parts.push(format!("y2=\"{y:.4}\""));
-            }
+        if let Some(cs) = coords
+            && let Some(&(x, y)) = cs.get(i)
+        {
+            parts.push(format!("x2=\"{x:.4}\""));
+            parts.push(format!("y2=\"{y:.4}\""));
         }
         if atom.charge != 0 {
             parts.push(format!("formalCharge=\"{}\"", atom.charge));
@@ -341,9 +397,9 @@ pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
         let order_str = match bond.order {
             BondOrder::Zero => "0",
             BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => "1",
-            BondOrder::Double    => "2",
-            BondOrder::Triple    => "3",
-            BondOrder::Aromatic  => "A",
+            BondOrder::Double => "2",
+            BondOrder::Triple => "3",
+            BondOrder::Aromatic => "A",
             BondOrder::Quadruple => "4",
             BondOrder::QueryAny => "any",
             BondOrder::QuerySingleOrDouble => "S/D",
@@ -441,7 +497,10 @@ mod tests {
 
         assert_eq!(mol.atom_count(), mol2.atom_count(), "atom count preserved");
         assert_eq!(mol.bond_count(), mol2.bond_count(), "bond count preserved");
-        assert!((coords[1].0 - coords2[1].0).abs() < 0.001, "x coord preserved");
+        assert!(
+            (coords[1].0 - coords2[1].0).abs() < 0.001,
+            "x coord preserved"
+        );
     }
 
     #[test]

@@ -32,7 +32,10 @@ pub fn brics_bonds(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
         let (a, b) = (bond.atom1, bond.atom2);
 
         // BRICS only cuts single bonds; Up/Down are SMILES stereo flags for single.
-        if !matches!(bond.order, BondOrder::Single | BondOrder::Up | BondOrder::Down) {
+        if !matches!(
+            bond.order,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down
+        ) {
             continue;
         }
         if ring_bond_set.contains(&bond_key(a, b)) {
@@ -77,7 +80,9 @@ pub struct BricsConfig {
 
 impl Default for BricsConfig {
     fn default() -> Self {
-        Self { min_fragment_size: 1 }
+        Self {
+            min_fragment_size: 1,
+        }
     }
 }
 
@@ -141,8 +146,7 @@ fn is_carbonyl_c(mol: &Molecule, idx: AtomIdx) -> bool {
     at.element.atomic_number() == 6
         && !at.aromatic
         && mol.neighbors(idx).any(|(nb, bid)| {
-            mol.atom(nb).element.atomic_number() == 8
-                && mol.bond(bid).order == BondOrder::Double
+            mol.atom(nb).element.atomic_number() == 8 && mol.bond(bid).order == BondOrder::Double
         })
 }
 
@@ -174,8 +178,7 @@ fn is_brics_breakable(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
 
     // L1 — amide/ester C — paired with aliphatic C, N, or thioether S.
     let l1_partner = |an: u8, arom: bool, deg: usize| {
-        (an == 6 && !arom && deg > 1)        // L1-L3
-            || (an == 7 && !arom && deg > 1) // L1-L5
+        (!arom && deg > 1 && (an == 6 || an == 7)) // L1-L3, L1-L5
             || is_thioether_s(an, arom, deg) // L1-L10
     };
     if is_amide_ester_c(an_a, arom_a, deg_a, carb_a) && l1_partner(an_b, arom_b, deg_b) {
@@ -325,7 +328,10 @@ fn build_subgraph(mol: &Molecule, atom_set: &HashSet<AtomIdx>) -> Molecule {
 
 /// Copy `mol` into a new `Molecule` (used when there are no BRICS cuts).
 fn copy_molecule(mol: &Molecule) -> Molecule {
-    build_subgraph(mol, &(0..mol.atom_count()).map(|i| AtomIdx(i as u32)).collect())
+    build_subgraph(
+        mol,
+        &(0..mol.atom_count()).map(|i| AtomIdx(i as u32)).collect(),
+    )
 }
 
 #[cfg(test)]
@@ -376,7 +382,11 @@ mod tests {
         // Our test: 0 BRICS cuts for toluene.
         let bonds = brics_bonds(&mol("Cc1ccccc1"));
         // Methyl C: degree 1 → not L3-breakable. Aromatic carbons: in ring → not breakable.
-        assert_eq!(bonds.len(), 0, "toluene has no BRICS bonds (methyl C is D1)");
+        assert_eq!(
+            bonds.len(),
+            0,
+            "toluene has no BRICS bonds (methyl C is D1)"
+        );
     }
 
     #[test]
@@ -386,7 +396,11 @@ mod tests {
         // C-c: CH2 (D2, non-terminal, non-carbonyl) bonded to aromatic c → L3-L4 → BRICS breakable.
         // CH3-CH2: D1 methyl bonded to D2 CH2 → L8-L8 needs both D>1 → methyl is D1 → NOT breakable.
         let bonds = brics_bonds(&mol("CCc1ccccc1"));
-        assert_eq!(bonds.len(), 1, "ethylbenzene has 1 BRICS bond (alkyl-aryl C-c)");
+        assert_eq!(
+            bonds.len(),
+            1,
+            "ethylbenzene has 1 BRICS bond (alkyl-aryl C-c)"
+        );
     }
 
     #[test]
@@ -396,7 +410,7 @@ mod tests {
         // NC bond: amide N (D2) bonded to methyl C (D1) → L5 requires D>1, methyl D=1 → not L3.
         let bonds = brics_bonds(&mol("CC(=O)NC"));
         // The C(=O)-N bond should be breakable (L1-L5: carbonyl C D3 and amide N D>1).
-        assert!(bonds.len() >= 1, "amide C-N should be BRICS breakable");
+        assert!(!bonds.is_empty(), "amide C-N should be BRICS breakable");
     }
 
     #[test]
@@ -420,7 +434,10 @@ mod tests {
         // Hmm, that's different from my simplified rules.
         let bonds = brics_bonds(&mol("CC(=O)OC"));
         // For now just verify it returns a valid (possibly 0) count
-        assert!(bonds.len() <= 3, "methyl acetate should have at most 3 BRICS bonds");
+        assert!(
+            bonds.len() <= 3,
+            "methyl acetate should have at most 3 BRICS bonds"
+        );
     }
 
     #[test]
@@ -433,7 +450,11 @@ mod tests {
         // 4. c-C(=O)O: aromatic C bonded to carbonyl C → L4-L6 or similar
         // At minimum, the Ar-O-C ester linkage should give 1 BRICS cut.
         let bonds = brics_bonds(&mol("CC(=O)Oc1ccccc1C(=O)O"));
-        assert!(bonds.len() >= 1, "aspirin should have at least 1 BRICS bond, got {}", bonds.len());
+        assert!(
+            !bonds.is_empty(),
+            "aspirin should have at least 1 BRICS bond, got {}",
+            bonds.len()
+        );
     }
 
     // --- brics_fragments ---
@@ -464,36 +485,44 @@ mod tests {
     fn test_brics_fragments_aspirin_multiple() {
         // Aspirin should give ≥ 2 fragments.
         let frags = brics_fragments(&mol("CC(=O)Oc1ccccc1C(=O)O"));
-        assert!(frags.len() >= 2, "aspirin should fragment into ≥ 2 pieces, got {}", frags.len());
+        assert!(
+            frags.len() >= 2,
+            "aspirin should fragment into ≥ 2 pieces, got {}",
+            frags.len()
+        );
     }
 
     #[test]
     fn test_brics_fragments_atom_count_conservation() {
         // Total atoms across all fragments == original atoms + 2 * number_of_cuts.
-        let mol = mol("CC(=O)Nc1ccccc1");  // acetanilide: amide C-N bond
+        let mol = mol("CC(=O)Nc1ccccc1"); // acetanilide: amide C-N bond
         let n_cuts = brics_bonds(&mol).len();
         let frags = brics_fragments(&mol);
         let total_atoms: usize = frags.iter().map(|f| f.atom_count()).sum();
         let expected = mol.atom_count() + 2 * n_cuts;
-        assert_eq!(total_atoms, expected, "atom count should be conserved (original + 2 per cut)");
+        assert_eq!(
+            total_atoms, expected,
+            "atom count should be conserved (original + 2 per cut)"
+        );
     }
 
     #[test]
     fn test_brics_fragments_all_valid_range() {
         // Various drug-like molecules should produce valid fragments (1–10).
         for smiles in &[
-            "CC(=O)Oc1ccccc1C(=O)O",   // aspirin
-            "Cn1cnc2c1c(=O)n(c(=O)n2C)C",  // caffeine
-            "CC(C)Cc1ccc(cc1)C(C)C(=O)O",  // ibuprofen
-            "c1ccccc1",                 // benzene
-            "CC",                       // ethane
-            "CCCC",                     // butane
+            "CC(=O)Oc1ccccc1C(=O)O",      // aspirin
+            "Cn1cnc2c1c(=O)n(c(=O)n2C)C", // caffeine
+            "CC(C)Cc1ccc(cc1)C(C)C(=O)O", // ibuprofen
+            "c1ccccc1",                   // benzene
+            "CC",                         // ethane
+            "CCCC",                       // butane
         ] {
             let m = mol(smiles);
             let frags = brics_fragments(&m);
             assert!(
                 !frags.is_empty() && frags.len() <= 20,
-                "'{smiles}' should give 1-20 fragments, got {}", frags.len()
+                "'{smiles}' should give 1-20 fragments, got {}",
+                frags.len()
             );
         }
     }
@@ -506,21 +535,33 @@ mod mmp_probe {
     use chematic_smiles::{canonical_smiles, parse};
     use std::collections::{HashMap, HashSet, VecDeque};
 
-    fn atoms_on_side(mol: &chematic_core::Molecule, from: AtomIdx, not_via: AtomIdx) -> HashSet<AtomIdx> {
+    fn atoms_on_side(
+        mol: &chematic_core::Molecule,
+        from: AtomIdx,
+        not_via: AtomIdx,
+    ) -> HashSet<AtomIdx> {
         let mut vis = HashSet::new();
         let mut q = VecDeque::new();
         q.push_back(from);
         while let Some(idx) = q.pop_front() {
-            if vis.contains(&idx) { continue; }
+            if vis.contains(&idx) {
+                continue;
+            }
             vis.insert(idx);
             for (nb, _) in mol.neighbors(idx) {
-                if nb != not_via && !vis.contains(&nb) { q.push_back(nb); }
+                if nb != not_via && !vis.contains(&nb) {
+                    q.push_back(nb);
+                }
             }
         }
         vis
     }
 
-    fn frag_smiles(mol: &chematic_core::Molecule, side: &HashSet<AtomIdx>, attach: AtomIdx) -> String {
+    fn frag_smiles(
+        mol: &chematic_core::Molecule,
+        side: &HashSet<AtomIdx>,
+        attach: AtomIdx,
+    ) -> String {
         let mut b = MoleculeBuilder::new();
         let mut idx_map = HashMap::new();
         // attachment wildcard
@@ -531,13 +572,16 @@ mod mmp_probe {
         for &a in side {
             let orig = mol.atom(a);
             let mut na = Atom::new(orig.element);
-            na.charge = orig.charge; na.isotope = orig.isotope;
-            na.aromatic = orig.aromatic; na.chirality = orig.chirality;
+            na.charge = orig.charge;
+            na.isotope = orig.isotope;
+            na.aromatic = orig.aromatic;
+            na.chirality = orig.chirality;
             na.hydrogen_count = orig.hydrogen_count;
             idx_map.insert(a, b.add_atom(na));
         }
         // wildcard bond to attachment atom
-        b.add_bond(wc_new, *idx_map.get(&attach).unwrap(), BondOrder::Single).unwrap();
+        b.add_bond(wc_new, *idx_map.get(&attach).unwrap(), BondOrder::Single)
+            .unwrap();
         // intra-side bonds
         for (_, bond) in mol.bonds() {
             if side.contains(&bond.atom1) && side.contains(&bond.atom2) {
@@ -549,12 +593,18 @@ mod mmp_probe {
         canonical_smiles(&b.build())
     }
 
-    fn cut_into_parts(mol: &chematic_core::Molecule, a1: AtomIdx, a2: AtomIdx)
-        -> (HashSet<AtomIdx>, HashSet<AtomIdx>, AtomIdx, AtomIdx)
-    {
+    fn cut_into_parts(
+        mol: &chematic_core::Molecule,
+        a1: AtomIdx,
+        a2: AtomIdx,
+    ) -> (HashSet<AtomIdx>, HashSet<AtomIdx>, AtomIdx, AtomIdx) {
         let s1 = atoms_on_side(mol, a1, a2);
         let s2 = atoms_on_side(mol, a2, a1);
-        if s1.len() <= s2.len() { (s1, s2, a1, a2) } else { (s2, s1, a2, a1) }
+        if s1.len() <= s2.len() {
+            (s1, s2, a1, a2)
+        } else {
+            (s2, s1, a2, a1)
+        }
     }
 
     /// Enumerate all (core_smiles, sub_smiles) pairs for all BRICS cuts of `mol`.
@@ -564,7 +614,7 @@ mod mmp_probe {
         for (a1, a2) in brics_bonds(mol) {
             let (sub, core, at_sub, at_core) = cut_into_parts(mol, a1, a2);
             let core_smi = frag_smiles(mol, &core, at_core);
-            let sub_smi  = frag_smiles(mol, &sub,  at_sub);
+            let sub_smi = frag_smiles(mol, &sub, at_sub);
             pairs.push((core_smi, sub_smi));
         }
         pairs
@@ -574,7 +624,7 @@ mod mmp_probe {
     fn core_smiles_equal_for_ethylbenzene_and_propylbenzene() {
         // MMP exists between ethylbenzene CCc1ccccc1 and propylbenzene CCCc1ccccc1:
         // each contributes a cut at the ring-chain bond giving the same benzene core.
-        let ethylbenz  = parse("CCc1ccccc1").unwrap();
+        let ethylbenz = parse("CCc1ccccc1").unwrap();
         let propylbenz = parse("CCCc1ccccc1").unwrap();
 
         let eb_pairs = all_cut_pairs(&ethylbenz);
@@ -586,19 +636,28 @@ mod mmp_probe {
         // There must be at least one core that both molecules share.
         let eb_cores: std::collections::HashSet<&str> =
             eb_pairs.iter().map(|(c, _)| c.as_str()).collect();
-        let shared_cores: Vec<_> = pb_pairs.iter()
+        let shared_cores: Vec<_> = pb_pairs
+            .iter()
             .filter(|(c, _)| eb_cores.contains(c.as_str()))
             .collect();
 
-        assert!(!shared_cores.is_empty(),
-            "ethylbenzene and propylbenzene must share at least one core SMILES");
+        assert!(
+            !shared_cores.is_empty(),
+            "ethylbenzene and propylbenzene must share at least one core SMILES"
+        );
 
         // The shared core should be the benzene ring, and the substituents must differ.
         let (shared_core, pb_sub) = &shared_cores[0];
-        let eb_sub = eb_pairs.iter()
-            .find(|(c, _)| c == shared_core).map(|(_, s)| s.as_str()).unwrap();
+        let eb_sub = eb_pairs
+            .iter()
+            .find(|(c, _)| c == shared_core)
+            .map(|(_, s)| s.as_str())
+            .unwrap();
         eprintln!("shared core={shared_core}  eb_sub={eb_sub}  pb_sub={pb_sub}");
-        assert_ne!(eb_sub, pb_sub.as_str(),
-            "substituents must differ: got identical '{eb_sub}'");
+        assert_ne!(
+            eb_sub,
+            pb_sub.as_str(),
+            "substituents must differ: got identical '{eb_sub}'"
+        );
     }
 }

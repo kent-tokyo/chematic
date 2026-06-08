@@ -26,7 +26,10 @@ impl BitVec2048 {
     /// # Panics
     /// Panics if `bit >= 2048`.
     pub fn set(&mut self, bit: usize) {
-        assert!(bit < 2048, "bit index {bit} out of range for BitVec2048 (max 2047)");
+        assert!(
+            bit < 2048,
+            "bit index {bit} out of range for BitVec2048 (max 2047)"
+        );
         self.words[bit / 64] |= 1u64 << (bit % 64);
     }
 
@@ -35,7 +38,10 @@ impl BitVec2048 {
     /// # Panics
     /// Panics if `bit >= 2048`.
     pub fn get(&self, bit: usize) -> bool {
-        assert!(bit < 2048, "bit index {bit} out of range for BitVec2048 (max 2047)");
+        assert!(
+            bit < 2048,
+            "bit index {bit} out of range for BitVec2048 (max 2047)"
+        );
         (self.words[bit / 64] >> (bit % 64)) & 1 == 1
     }
 

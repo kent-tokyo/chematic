@@ -39,9 +39,7 @@ pub fn parse_xyz(input: &str) -> Result<(Molecule, Coords3D), XyzError> {
 
     // Line 1: atom count.
     let count_line = lines.next().unwrap_or("").trim();
-    let n: usize = count_line
-        .parse()
-        .map_err(|_| XyzError::InvalidAtomCount)?;
+    let n: usize = count_line.parse().map_err(|_| XyzError::InvalidAtomCount)?;
 
     // Line 2: comment — consumed and discarded.
     lines.next();
@@ -51,10 +49,7 @@ pub fn parse_xyz(input: &str) -> Result<(Molecule, Coords3D), XyzError> {
 
     for i in 0..n {
         // Line index in the file is i + 3 (1-indexed), but we just use i for clarity.
-        let line = lines
-            .next()
-            .ok_or(XyzError::InvalidLine(i + 3))?
-            .trim();
+        let line = lines.next().ok_or(XyzError::InvalidLine(i + 3))?.trim();
 
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() < 4 {

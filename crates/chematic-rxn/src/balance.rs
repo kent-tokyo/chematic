@@ -59,9 +59,13 @@ impl BalanceResult {
 /// Agents are ignored (they are catalysts / solvents, not consumed or formed).
 pub fn balance_check(rxn: &Reaction) -> BalanceResult {
     let reactant_formula = sum_formula(&rxn.reactants);
-    let product_formula  = sum_formula(&rxn.products);
+    let product_formula = sum_formula(&rxn.products);
     let balanced = reactant_formula == product_formula;
-    BalanceResult { balanced, reactant_formula, product_formula }
+    BalanceResult {
+        balanced,
+        reactant_formula,
+        product_formula,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -116,7 +120,10 @@ mod tests {
         // Both sides: 2C 8H 2O → balanced
         let rxn = parse_reaction("CO.CO>>COC.O").unwrap();
         let result = balance_check(&rxn);
-        assert!(result.balanced, "2 methanol → dimethyl ether + water should be balanced");
+        assert!(
+            result.balanced,
+            "2 methanol → dimethyl ether + water should be balanced"
+        );
     }
 
     #[test]
@@ -125,7 +132,10 @@ mod tests {
         let result = balance_check(&rxn);
         let diff = result.diff();
         assert!(!diff.is_empty(), "diff should report imbalance");
-        assert!(diff.iter().any(|s| s.contains('C')), "diff should mention C");
+        assert!(
+            diff.iter().any(|s| s.contains('C')),
+            "diff should mention C"
+        );
     }
 
     #[test]

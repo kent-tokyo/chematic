@@ -8,9 +8,9 @@
 //! - [`generate_and_minimize_constrained`]: full pipeline with constraint projection.
 
 #![forbid(unsafe_code)]
+#![allow(clippy::needless_range_loop)]
 
 pub mod align;
-pub mod usr;
 pub mod conformer;
 pub mod constraints;
 pub mod coords;
@@ -21,22 +21,28 @@ pub mod minimize;
 pub mod pdb;
 pub mod shape_descriptors;
 pub mod stereo3d;
+pub mod usr;
 pub mod xyz;
 
 pub use align::{AlignResult, align_coords, apply_alignment, rmsd_no_align};
-pub use usr::{usr_descriptors, usr_similarity};
 pub use conformer::{ConformerEnsemble, ConformerError};
-pub use constraints::{AngleConstraint, BondConstraint, ConstraintSet, build_constraints, satisfy_constraints};
+pub use constraints::{
+    AngleConstraint, BondConstraint, ConstraintSet, build_constraints, satisfy_constraints,
+};
 pub use coords::{Coords3D, Point3};
 pub use dg::generate_coords;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
-pub use minimize::{MinimizeConfig, minimize, minimize_uff, minimize_with_config, minimize_dreiding, minimize_dreiding_with_config};
+pub use minimize::{
+    MinimizeConfig, minimize, minimize_dreiding, minimize_dreiding_with_config, minimize_uff,
+    minimize_with_config,
+};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
 pub use shape_descriptors::{
-    asphericity, eccentricity, npr1, npr2, plane_of_best_fit,
-    pmi, pmi1, pmi2, pmi3, radius_of_gyration,
+    asphericity, eccentricity, npr1, npr2, plane_of_best_fit, pmi, pmi1, pmi2, pmi3,
+    radius_of_gyration,
 };
 pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
+pub use usr::{usr_descriptors, usr_similarity};
 pub use xyz::{XyzError, parse_xyz, write_xyz};
 
 // ---------------------------------------------------------------------------
@@ -293,7 +299,8 @@ mod tests {
     #[test]
     fn test_pdb_parse_minimal_hetatm() {
         // Standard 80-column PDB HETATM line with known values.
-        let pdb_line = "HETATM    1  C   LIG A   1       1.000   2.000   3.000  1.00  0.00           C\n";
+        let pdb_line =
+            "HETATM    1  C   LIG A   1       1.000   2.000   3.000  1.00  0.00           C\n";
         let atoms = parse_pdb_atoms(pdb_line);
         assert_eq!(atoms.len(), 1);
         let a = &atoms[0];

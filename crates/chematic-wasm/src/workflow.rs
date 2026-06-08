@@ -5,6 +5,40 @@
 
 use wasm_bindgen::prelude::*;
 
+const WORKFLOW_MAX_INPUT_BYTES: usize = 1_000_000;
+const WORKFLOW_MAX_BATCH_ITEMS: usize = 1_024;
+
+fn enforce_input_len(label: &str, input: &str) -> Result<(), JsValue> {
+    if input.len() > WORKFLOW_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "{label} exceeds maximum input size ({} > {} bytes)",
+            input.len(),
+            WORKFLOW_MAX_INPUT_BYTES
+        )));
+    }
+    Ok(())
+}
+
+fn split_bounded_batch<'a>(
+    smiles_batch: &'a str,
+    delimiter: &str,
+    label: &str,
+) -> Result<Vec<&'a str>, JsValue> {
+    enforce_input_len(label, smiles_batch)?;
+    if delimiter.is_empty() {
+        return Err(JsValue::from_str("delimiter must not be empty"));
+    }
+    let smiles_vec: Vec<&str> = smiles_batch.split(delimiter).collect();
+    if smiles_vec.len() > WORKFLOW_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "{label} exceeds maximum item count ({} > {})",
+            smiles_vec.len(),
+            WORKFLOW_MAX_BATCH_ITEMS
+        )));
+    }
+    Ok(smiles_vec)
+}
+
 /// Generate a complete molecular report (JSON string) from a SMILES.
 /// Returns the JSON representation of a `MoleculeReport` struct.
 ///
@@ -16,8 +50,9 @@ use wasm_bindgen::prelude::*;
 /// ```
 #[wasm_bindgen]
 pub fn molecule_report_json(smiles: &str) -> Result<String, JsValue> {
-    let report = chematic_chem::molecule_report(smiles)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    enforce_input_len("smiles", smiles)?;
+    let report =
+        chematic_chem::molecule_report(smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
     serde_json::to_string(&report)
         .map_err(|e| JsValue::from_str(&format!("JSON serialization failed: {}", e)))
 }
@@ -33,9 +68,11 @@ pub fn molecule_report_json(smiles: &str) -> Result<String, JsValue> {
 /// ```
 #[wasm_bindgen]
 pub fn compare_molecules_json(smiles1: &str, smiles2: &str) -> Result<String, JsValue> {
+    enforce_input_len("smiles1", smiles1)?;
+    enforce_input_len("smiles2", smiles2)?;
     let smiles = [smiles1, smiles2];
-    let comparison = chematic_chem::compare_molecules(&smiles)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let comparison =
+        chematic_chem::compare_molecules(&smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
     serde_json::to_string(&comparison)
         .map_err(|e| JsValue::from_str(&format!("JSON serialization failed: {}", e)))
 }
@@ -54,7 +91,7 @@ pub fn compare_molecules_batch_json(
     smiles_batch: &str,
     delimiter: &str,
 ) -> Result<String, JsValue> {
-    let smiles_vec: Vec<&str> = smiles_batch.split(delimiter).collect();
+    let smiles_vec = split_bounded_batch(smiles_batch, delimiter, "smiles_batch")?;
     let comparison = chematic_chem::compare_molecules(&smiles_vec)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     serde_json::to_string(&comparison)
@@ -76,7 +113,15 @@ pub fn compare_molecules_batch_json(
 /// ```
 #[wasm_bindgen]
 pub fn screen_smiles_json(smiles_batch: &str, delimiter: &str) -> String {
-    let smiles_vec: Vec<&str> = smiles_batch.split(delimiter).collect();
+    let smiles_vec = match split_bounded_batch(smiles_batch, delimiter, "smiles_batch") {
+        Ok(values) => values,
+        Err(e) => {
+            let msg = e
+                .as_string()
+                .unwrap_or_else(|| "invalid batch input".to_string());
+            return format!("{{\"error\":\"{}\"}}", msg.replace('"', "\\\""));
+        }
+    };
     let report = chematic_chem::screen_smiles(&smiles_vec);
     serde_json::to_string(&report)
         .unwrap_or_else(|_| "{\"error\": \"JSON serialization failed\"}".to_string())
@@ -92,6 +137,7 @@ pub fn screen_smiles_json(smiles_batch: &str, delimiter: &str) -> String {
 /// ```
 #[wasm_bindgen]
 pub fn generate_3d_from_smiles(smiles: &str) -> Result<String, JsValue> {
+    enforce_input_len("smiles", smiles)?;
     let mol = chematic_smiles::parse(smiles)
         .map_err(|e| JsValue::from_str(&format!("SMILES parse error: {}", e)))?;
     let coords = chematic_3d::generate_coords(&mol);
@@ -110,6 +156,7 @@ pub fn generate_3d_from_smiles(smiles: &str) -> Result<String, JsValue> {
 /// ```
 #[wasm_bindgen]
 pub fn generate_3d_optimized_pdb(smiles: &str) -> Result<String, JsValue> {
+    enforce_input_len("smiles", smiles)?;
     let mol = chematic_smiles::parse(smiles)
         .map_err(|e| JsValue::from_str(&format!("SMILES parse error: {}", e)))?;
     let coords = chematic_3d::generate_and_minimize_dreiding(&mol);
@@ -119,13 +166,14 @@ pub fn generate_3d_optimized_pdb(smiles: &str) -> Result<String, JsValue> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn workflow_json_serialization_aspirin() {
         let report = chematic_chem::molecule_report("CC(=O)Oc1ccccc1C(=O)O").unwrap();
         let json = serde_json::to_string(&report).unwrap();
-        assert!(json.contains("molecular_weight"), "JSON should contain molecular_weight");
+        assert!(
+            json.contains("molecular_weight"),
+            "JSON should contain molecular_weight"
+        );
         assert!(json.contains("tpsa"), "JSON should contain tpsa");
     }
 
@@ -134,7 +182,10 @@ mod tests {
         let comparison = chematic_chem::compare_molecules(&["c1ccccc1", "Cc1ccccc1"]).unwrap();
         let json = serde_json::to_string(&comparison).unwrap();
         assert!(json.contains("pairwise"), "JSON should contain pairwise");
-        assert!(json.contains("ecfp4_tanimoto"), "JSON should have similarity metrics");
+        assert!(
+            json.contains("ecfp4_tanimoto"),
+            "JSON should have similarity metrics"
+        );
     }
 
     #[test]
@@ -142,7 +193,10 @@ mod tests {
         let report = chematic_chem::screen_smiles(&["c1ccccc1", "CC", "CCC"]);
         let json = serde_json::to_string(&report).unwrap();
         assert!(json.contains("records"), "JSON should contain records");
-        assert!(json.contains("maxmin_picks"), "JSON should contain diversity picks");
+        assert!(
+            json.contains("maxmin_picks"),
+            "JSON should contain diversity picks"
+        );
     }
 
     #[test]
