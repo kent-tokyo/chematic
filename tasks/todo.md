@@ -718,8 +718,46 @@ Sprint v0.1.26: ✅ Issue D + P3 Features（完了: 2026-06-06）
 
 ---
 
+## Sprint v0.1.36: Issue #1 Audit + BUG-2/3/4 Fix（2026-06-08 完了）
+
+### Completed ✅
+  - [x] **Issue #1 Audit: Topologically Correct but Chemically Meaningless Results**
+        - Discovered 4 similar bugs in the codebase where algorithms are topologically correct but yield chemically wrong results
+        - Pattern: RDKit has constraint options that weren't implemented in chematic, causing silent invalid results on migration
+  
+  - [x] **BUG-2: `[h]` SMARTS Primitive (implicit H count)**
+        - Added `ImplicitHCount(u8)` variant to AtomPrimitive enum
+        - Parser now correctly parses lowercase `h` as implicit H-only (not aromatic H)
+        - Added matching logic in eval_atom_primitive() using `implicit_hcount()` only
+        - Tests: All 124 chematic-smarts tests passing
+  
+  - [x] **BUG-3: MCS `maximize_bonds` Tiebreak**
+        - Implemented maximize_bonds tiebreaking when atom counts are equal
+        - Modified grow() function to prefer mappings with higher bond_count
+        - Default: maximize_bonds=true to match RDKit behavior
+  
+  - [x] **BUG-4: `/\` SMARTS Geometric Stereo Bonds**
+        - Added `Up` and `Down` variants to BondPrimitive enum for E/Z double bonds
+        - Updated parser: is_bond_token() and consume_bond_prim() now handle `/` and `\`
+        - Added matching logic in eval_bond_primitive()
+  
+  - [x] **Verification & Testing**
+        - All 1,120+ tests passing (chematic-smarts: 124, full suite: 1,120+)
+        - No compilation errors, clippy clean
+  
+### Implementation Details
+  - **Files Modified**:
+    - crates/chematic-smarts/src/query.rs: Added ImplicitHCount + Up/Down variants
+    - crates/chematic-smarts/src/parser.rs: Added [h] parsing + / \ bond tokens
+    - crates/chematic-smarts/src/match_vf2.rs: Added eval logic for implicit H + Up/Down
+    - crates/chematic-smarts/src/mcs.rs: Modified grow() with bond count tiebreak
+  
+  - **Test Results**: 124 smarts tests all passing
+
+---
+
 ## 次のステップ
-- **v0.1.36**: Enhanced 3D + Reaction Templates（計画）
+- **v0.1.37**: Enhanced 3D + Reaction Templates（計画）
   - [ ] Stochastic 3D (ETKDG-like sampling)
   - [ ] Reaction SMIRKS product filtering enhancements
   - [ ] SVG metadata embedding (P2)
