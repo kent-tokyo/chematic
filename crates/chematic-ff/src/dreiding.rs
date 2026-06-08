@@ -1,5 +1,6 @@
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 
+#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DREIDINGType {
     C_3,

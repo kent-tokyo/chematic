@@ -49,7 +49,9 @@ pub fn murcko_scaffold(mol: &Molecule) -> Molecule {
                 changed = true;
             }
         }
-        if !changed { break; }
+        if !changed {
+            break;
+        }
     }
 
     build_subgraph(mol, &scaffold_atoms)
@@ -167,7 +169,10 @@ pub fn schuffenhauer_parents(mol: &Molecule) -> Vec<Molecule> {
 /// 3. Among candidates with same heteroatom content, prefer the smallest ring.
 /// 4. Break remaining ties by preferring the ring with the lowest-priority
 ///    attachment point (smallest atom index in the ring).
-fn schuffenhauer_remove_ring(mol: &Molecule, rings: &chematic_perception::RingSet) -> Option<Molecule> {
+fn schuffenhauer_remove_ring(
+    mol: &Molecule,
+    rings: &chematic_perception::RingSet,
+) -> Option<Molecule> {
     let n_rings = rings.ring_count();
     if n_rings == 0 {
         return None;
@@ -183,9 +188,12 @@ fn schuffenhauer_remove_ring(mol: &Molecule, rings: &chematic_perception::RingSe
         .filter(|&ri| {
             // A ring is outermost if it shares at most one ring member with
             // any other ring (i.e. it has atoms exclusive to it).
-            let exclusive: usize = all_rings[ri].iter()
+            let exclusive: usize = all_rings[ri]
+                .iter()
                 .filter(|&&atom| {
-                    all_rings.iter().enumerate()
+                    all_rings
+                        .iter()
+                        .enumerate()
                         .filter(|(j, _)| *j != ri)
                         .all(|(_, other)| !other.contains(&atom))
                 })
@@ -200,15 +208,25 @@ fn schuffenhauer_remove_ring(mol: &Molecule, rings: &chematic_perception::RingSe
     }
 
     // Rule 2: prefer all-carbon rings (no heteroatoms).
-    let carbon_only: Vec<usize> = candidates.iter().copied()
-        .filter(|&ri| all_rings[ri].iter().all(|&a| mol.atom(a).element.atomic_number() == 6))
+    let carbon_only: Vec<usize> = candidates
+        .iter()
+        .copied()
+        .filter(|&ri| {
+            all_rings[ri]
+                .iter()
+                .all(|&a| mol.atom(a).element.atomic_number() == 6)
+        })
         .collect();
     if !carbon_only.is_empty() {
         candidates = carbon_only;
     }
 
     // Rule 3: prefer smallest ring.
-    let min_size = candidates.iter().map(|&ri| all_rings[ri].len()).min().unwrap();
+    let min_size = candidates
+        .iter()
+        .map(|&ri| all_rings[ri].len())
+        .min()
+        .unwrap();
     candidates.retain(|&ri| all_rings[ri].len() == min_size);
 
     // Rule 4: tie-break by smallest atom index in the ring.
@@ -216,9 +234,13 @@ fn schuffenhauer_remove_ring(mol: &Molecule, rings: &chematic_perception::RingSe
     let chosen_ring = candidates[0];
 
     // Build the set of atoms to DELETE: atoms exclusive to the chosen ring.
-    let to_delete: HashSet<AtomIdx> = all_rings[chosen_ring].iter().copied()
+    let to_delete: HashSet<AtomIdx> = all_rings[chosen_ring]
+        .iter()
+        .copied()
         .filter(|&atom| {
-            all_rings.iter().enumerate()
+            all_rings
+                .iter()
+                .enumerate()
                 .filter(|(j, _)| *j != chosen_ring)
                 .all(|(_, other)| !other.contains(&atom))
         })
@@ -290,11 +312,7 @@ mod tests {
         }
         for i in 0..generic.bond_count() {
             let bond = generic.bond(chematic_core::BondIdx(i as u32));
-            assert_eq!(
-                bond.order,
-                BondOrder::Single,
-                "all bonds should be Single"
-            );
+            assert_eq!(bond.order, BondOrder::Single, "all bonds should be Single");
         }
     }
 

@@ -14,17 +14,17 @@ use crate::coords::{Coords3D, Point3};
 /// Average atomic mass (Da). Covers common organic / drug-like elements.
 fn avg_mass(an: u8) -> f64 {
     match an {
-        1  => 1.008,
-        6  => 12.011,
-        7  => 14.007,
-        8  => 15.999,
-        9  => 18.998,
+        1 => 1.008,
+        6 => 12.011,
+        7 => 14.007,
+        8 => 15.999,
+        9 => 18.998,
         15 => 30.974,
         16 => 32.065,
         17 => 35.453,
         35 => 79.904,
         53 => 126.904,
-        n  => n as f64,
+        n => n as f64,
     }
 }
 
@@ -329,9 +329,21 @@ mod tests {
         let (evals, _) = jacobi3(m);
         let mut sorted = evals;
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        assert!((sorted[0] - 1.0).abs() < 1e-9, "expected 1, got {}", sorted[0]);
-        assert!((sorted[1] - 2.0).abs() < 1e-9, "expected 2, got {}", sorted[1]);
-        assert!((sorted[2] - 3.0).abs() < 1e-9, "expected 3, got {}", sorted[2]);
+        assert!(
+            (sorted[0] - 1.0).abs() < 1e-9,
+            "expected 1, got {}",
+            sorted[0]
+        );
+        assert!(
+            (sorted[1] - 2.0).abs() < 1e-9,
+            "expected 2, got {}",
+            sorted[1]
+        );
+        assert!(
+            (sorted[2] - 3.0).abs() < 1e-9,
+            "expected 3, got {}",
+            sorted[2]
+        );
     }
 
     #[test]
@@ -353,7 +365,10 @@ mod tests {
         let m = mol("C");
         let c = generate_coords(&m);
         let (p1, p2, p3) = pmi(&m, &c);
-        assert!(p1 < 1e-9 && p2 < 1e-9 && p3 < 1e-9, "single atom PMI should be 0");
+        assert!(
+            p1 < 1e-9 && p2 < 1e-9 && p3 < 1e-9,
+            "single atom PMI should be 0"
+        );
     }
 
     #[test]
@@ -372,8 +387,8 @@ mod tests {
         let c = generate_coords(&m);
         let n1 = npr1(&m, &c);
         let n2 = npr2(&m, &c);
-        assert!(n1 >= 0.0 && n1 <= 1.0 + 1e-9, "NPR1 out of range: {n1}");
-        assert!(n2 >= 0.0 && n2 <= 1.0 + 1e-9, "NPR2 out of range: {n2}");
+        assert!((0.0..=1.0 + 1e-9).contains(&n1), "NPR1 out of range: {n1}");
+        assert!((0.0..=1.0 + 1e-9).contains(&n2), "NPR2 out of range: {n2}");
         assert!(n1 <= n2 + 1e-9, "NPR1 <= NPR2: {n1} vs {n2}");
     }
 
@@ -410,7 +425,10 @@ mod tests {
         let m = mol("CCC");
         let c = generate_coords(&m);
         let e = eccentricity(&m, &c);
-        assert!(e >= 0.0 && e <= 1.0 + 1e-9, "eccentricity out of range: {e}");
+        assert!(
+            (0.0..=1.0 + 1e-9).contains(&e),
+            "eccentricity out of range: {e}"
+        );
     }
 
     // --- PBF -----------------------------------------------------------------
@@ -447,6 +465,9 @@ mod tests {
         c.set(chematic_core::AtomIdx(2), Point3::new(0.0, 1.0, 0.0));
         c.set(chematic_core::AtomIdx(3), Point3::new(0.0, 0.0, 1.0));
         let pbf = plane_of_best_fit(&m, &c);
-        assert!(pbf > 0.1, "non-coplanar atoms should have PBF > 0, got {pbf:.4}");
+        assert!(
+            pbf > 0.1,
+            "non-coplanar atoms should have PBF > 0, got {pbf:.4}"
+        );
     }
 }

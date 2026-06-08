@@ -20,7 +20,7 @@
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 
 use crate::bitvec::BitVec2048;
-use crate::ecfp::{bond_type_int, fnv1a, EcfpConfig};
+use crate::ecfp::{EcfpConfig, bond_type_int, fnv1a};
 
 // Feature class bit positions
 const DONOR: u8 = 1 << 0;
@@ -167,7 +167,15 @@ pub fn fcfp4(mol: &Molecule) -> BitVec2048 {
 
 /// FCFP6 fingerprint (radius = 3, 2048 bits).
 pub fn fcfp6(mol: &Molecule) -> BitVec2048 {
-    fcfp(mol, &EcfpConfig { radius: 3, nbits: 2048, use_chirality: false, use_double_fold: false })
+    fcfp(
+        mol,
+        &EcfpConfig {
+            radius: 3,
+            nbits: 2048,
+            use_chirality: false,
+            use_double_fold: false,
+        },
+    )
 }
 
 /// Tanimoto similarity between two molecules using FCFP4.
@@ -200,7 +208,10 @@ mod tests {
         let aspirin = mol("CC(=O)Oc1ccccc1C(=O)O");
         let sim = tanimoto_fcfp4(&benzene, &aspirin);
         assert!(sim < 1.0, "FCFP4 of benzene vs aspirin should differ");
-        assert!(sim > 0.0, "FCFP4 of benzene vs aspirin should share some bits");
+        assert!(
+            sim > 0.0,
+            "FCFP4 of benzene vs aspirin should share some bits"
+        );
     }
 
     #[test]
@@ -212,8 +223,10 @@ mod tests {
         let pyridine = mol("c1ccncc1");
         let fcfp_sim = tanimoto_fcfp4(&benzene, &pyridine);
         let ecfp_sim = tanimoto_ecfp4(&benzene, &pyridine);
-        assert!(fcfp_sim >= ecfp_sim,
-            "FCFP4({fcfp_sim:.3}) should be ≥ ECFP4({ecfp_sim:.3}) for bioisosteres");
+        assert!(
+            fcfp_sim >= ecfp_sim,
+            "FCFP4({fcfp_sim:.3}) should be ≥ ECFP4({ecfp_sim:.3}) for bioisosteres"
+        );
     }
 
     #[test]

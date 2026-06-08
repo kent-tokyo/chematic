@@ -11,8 +11,8 @@
 //!   equivalent to a neighbour (same Morgan rank), so the stereo specification
 //!   is chemically meaningless.
 
-use std::fmt;
 use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule};
+use std::fmt;
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -43,7 +43,9 @@ pub struct StereoError {
 impl fmt::Display for StereoError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let kind_str = match &self.kind {
-            StereoErrorKind::ImpossibleCenter => "impossible stereocenter (< 4 distinct neighbours)",
+            StereoErrorKind::ImpossibleCenter => {
+                "impossible stereocenter (< 4 distinct neighbours)"
+            }
             StereoErrorKind::ConflictingWedges => "conflicting wedge directions",
             StereoErrorKind::RedundantStereo => "redundant stereo on symmetric atom",
         };
@@ -71,7 +73,6 @@ pub struct StereoCompleteness {
 /// Compute simple Morgan connectivity ranks for atoms in `mol`.
 /// Uses initial invariant = atomic_number * 1000 + degree.
 fn simple_morgan_ranks(mol: &Molecule) -> Vec<u64> {
-    use std::collections::HashSet;
     let n = mol.atom_count();
     let mut ranks: Vec<u64> = (0..n)
         .map(|i| {
@@ -95,23 +96,43 @@ fn simple_morgan_ranks(mol: &Molecule) -> Vec<u64> {
     };
 
     for _ in 0..(n + 2) {
-        let old_distinct = { let mut v = ranks.clone(); v.sort_unstable(); v.dedup(); v.len() };
-        let new_ranks: Vec<u64> = (0..n).map(|i| {
-            let idx = AtomIdx(i as u32);
-            let mut nb_ranks: Vec<u64> = mol.neighbors(idx).map(|(nb, _)| ranks[nb.0 as usize]).collect();
-            nb_ranks.sort_unstable();
-            hash_round(ranks[i], &nb_ranks)
-        }).collect();
-        let new_distinct = { let mut v = new_ranks.clone(); v.sort_unstable(); v.dedup(); v.len() };
+        let old_distinct = {
+            let mut v = ranks.clone();
+            v.sort_unstable();
+            v.dedup();
+            v.len()
+        };
+        let new_ranks: Vec<u64> = (0..n)
+            .map(|i| {
+                let idx = AtomIdx(i as u32);
+                let mut nb_ranks: Vec<u64> = mol
+                    .neighbors(idx)
+                    .map(|(nb, _)| ranks[nb.0 as usize])
+                    .collect();
+                nb_ranks.sort_unstable();
+                hash_round(ranks[i], &nb_ranks)
+            })
+            .collect();
+        let new_distinct = {
+            let mut v = new_ranks.clone();
+            v.sort_unstable();
+            v.dedup();
+            v.len()
+        };
         ranks = new_ranks;
-        if new_distinct <= old_distinct { break; }
+        if new_distinct <= old_distinct {
+            break;
+        }
     }
 
     // Normalise to consecutive ordinals.
     let mut sorted = ranks.clone();
     sorted.sort_unstable();
     sorted.dedup();
-    ranks.iter().map(|r| sorted.partition_point(|&u| u < *r) as u64).collect()
+    ranks
+        .iter()
+        .map(|r| sorted.partition_point(|&u| u < *r) as u64)
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -144,7 +165,10 @@ pub fn validate_stereo(mol: &Molecule) -> Vec<StereoError> {
         let implicit_h = chematic_core::implicit_hcount(mol, idx);
         let total_groups = heavy_neighbors.len() + implicit_h as usize;
         if total_groups < 4 {
-            errors.push(StereoError { atom_idx: i, kind: StereoErrorKind::ImpossibleCenter });
+            errors.push(StereoError {
+                atom_idx: i,
+                kind: StereoErrorKind::ImpossibleCenter,
+            });
             continue; // no point checking further
         }
 
@@ -155,23 +179,31 @@ pub fn validate_stereo(mol: &Molecule) -> Vec<StereoError> {
             let bond = mol.bond(bid);
             if bond.atom1 == idx {
                 match bond.order {
-                    BondOrder::Up   => has_up   = true,
+                    BondOrder::Up => has_up = true,
                     BondOrder::Down => has_down = true,
                     _ => {}
                 }
             }
         }
         if has_up && has_down {
-            errors.push(StereoError { atom_idx: i, kind: StereoErrorKind::ConflictingWedges });
+            errors.push(StereoError {
+                atom_idx: i,
+                kind: StereoErrorKind::ConflictingWedges,
+            });
         }
 
         // Rule 3: RedundantStereo — all heavy neighbours have the same rank.
         if !heavy_neighbors.is_empty() {
             let first_rank = ranks[heavy_neighbors[0].0 as usize];
-            let all_same = heavy_neighbors.iter().all(|nb| ranks[nb.0 as usize] == first_rank);
+            let all_same = heavy_neighbors
+                .iter()
+                .all(|nb| ranks[nb.0 as usize] == first_rank);
             // Also check the center itself doesn't break ties via implicit H.
             if all_same && implicit_h == 0 {
-                errors.push(StereoError { atom_idx: i, kind: StereoErrorKind::RedundantStereo });
+                errors.push(StereoError {
+                    atom_idx: i,
+                    kind: StereoErrorKind::RedundantStereo,
+                });
             }
         }
     }
@@ -190,7 +222,9 @@ pub fn stereo_completeness(mol: &Molecule) -> StereoCompleteness {
 
     for (idx, atom) in mol.atoms() {
         // Skip aromatics and obvious non-centers.
-        if atom.aromatic { continue; }
+        if atom.aromatic {
+            continue;
+        }
 
         let heavy_nbs: Vec<AtomIdx> = mol
             .neighbors(idx)
@@ -200,16 +234,22 @@ pub fn stereo_completeness(mol: &Molecule) -> StereoCompleteness {
         let implicit_h = chematic_core::implicit_hcount(mol, idx) as usize;
         let groups = heavy_nbs.len() + implicit_h;
 
-        if groups != 4 { continue; } // only tetrahedral candidates
+        if groups != 4 {
+            continue;
+        } // only tetrahedral candidates
 
         // Check all neighbours have distinct ranks (including implicit H as rank 0).
         let mut nb_ranks: Vec<u64> = heavy_nbs.iter().map(|nb| ranks[nb.0 as usize]).collect();
-        if implicit_h > 0 { nb_ranks.push(0); }
+        if implicit_h > 0 {
+            nb_ranks.push(0);
+        }
 
         let mut sorted = nb_ranks.clone();
         sorted.sort_unstable();
         sorted.dedup();
-        if sorted.len() < 4 { continue; } // symmetric neighbours — not a stereocenter
+        if sorted.len() < 4 {
+            continue;
+        } // symmetric neighbours — not a stereocenter
 
         if atom.chirality != Chirality::None {
             specified += 1;
@@ -239,14 +279,17 @@ mod tests {
         // L-alanine: valid R/S center with 4 distinct groups.
         let mol = parse("N[C@@H](C)C(=O)O").unwrap();
         let errors = validate_stereo(&mol);
-        assert!(errors.is_empty(), "L-alanine should have no stereo errors: {errors:?}");
+        assert!(
+            errors.is_empty(),
+            "L-alanine should have no stereo errors: {errors:?}"
+        );
     }
 
     #[test]
     fn test_impossible_center_explicit_h_zero() {
         // A carbon with chirality annotation, 1 heavy bond, and explicit H=0
         // gives total_groups = 1 → ImpossibleCenter.
-        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder, Chirality};
+        use chematic_core::{Atom, BondOrder, Chirality, Element, MoleculeBuilder};
         let mut b = MoleculeBuilder::new();
         let mut c = Atom::new(Element::C);
         c.chirality = Chirality::CounterClockwise;
@@ -257,7 +300,9 @@ mod tests {
         let mol = b.build();
         let errors = validate_stereo(&mol);
         assert!(
-            errors.iter().any(|e| e.atom_idx == 0 && e.kind == StereoErrorKind::ImpossibleCenter),
+            errors
+                .iter()
+                .any(|e| e.atom_idx == 0 && e.kind == StereoErrorKind::ImpossibleCenter),
             "should detect ImpossibleCenter (1 group total): {errors:?}"
         );
     }

@@ -43,7 +43,9 @@ where
     // Update min_dist for seed.
     for i in 0..mols.len() {
         let d = 1.0 - sim_fn(&mols[seed], &mols[i]);
-        if d < min_dist[i] { min_dist[i] = d; }
+        if d < min_dist[i] {
+            min_dist[i] = d;
+        }
     }
 
     while picked.len() < n {
@@ -58,7 +60,9 @@ where
         // Update min_dist.
         for i in 0..mols.len() {
             let d = 1.0 - sim_fn(&mols[next], &mols[i]);
-            if d < min_dist[i] { min_dist[i] = d; }
+            if d < min_dist[i] {
+                min_dist[i] = d;
+            }
         }
     }
 
@@ -103,9 +107,7 @@ where
         // Find unassigned mol with most unassigned neighbours.
         let centroid = (0..n)
             .filter(|&i| !assigned[i])
-            .max_by_key(|&i| {
-                neighbours[i].iter().filter(|&&j| !assigned[j]).count()
-            });
+            .max_by_key(|&i| neighbours[i].iter().filter(|&&j| !assigned[j]).count());
         let centroid = match centroid {
             Some(c) => c,
             None => break,
@@ -124,7 +126,7 @@ where
         clusters.push(cluster);
     }
 
-    clusters.sort_by(|a, b| b.len().cmp(&a.len()));
+    clusters.sort_by_key(|b| std::cmp::Reverse(b.len()));
     clusters
 }
 

@@ -37,7 +37,7 @@ pub fn parse_smi_file(s: &str) -> Vec<Result<(Molecule, String), SmilesError>> {
         // Split on first whitespace run: first token = SMILES, rest = name.
         let mut parts = line.splitn(2, |c: char| c.is_whitespace());
         let smiles = parts.next().unwrap_or("").trim();
-        let name   = parts.next().unwrap_or("").trim().to_string();
+        let name = parts.next().unwrap_or("").trim().to_string();
         if smiles.is_empty() {
             continue;
         }
@@ -124,7 +124,7 @@ mod tests {
     fn test_write_roundtrip() {
         use crate::parser::parse as parse_smiles;
         let benzene = parse_smiles("c1ccccc1").unwrap();
-        let ethane  = parse_smiles("CC").unwrap();
+        let ethane = parse_smiles("CC").unwrap();
         let records: Vec<(Molecule, &str)> = vec![(benzene, "benzene"), (ethane, "ethane")];
         let s = write_smi_file(&records);
         let back = parse_smi_file(&s);

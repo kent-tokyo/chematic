@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, MoleculeBuilder, validate_valence};
-use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches};
+use chematic_smarts::{
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches,
+};
 
 use crate::reaction::{RxnError, parse_reaction};
 
@@ -143,13 +145,13 @@ fn mol_to_query(mol: &Molecule) -> QueryMolecule {
             );
         }
 
-        if let Some(h) = atom.hydrogen_count {
-            if h > 0 {
-                q = AtomQuery::And(
-                    Box::new(q),
-                    Box::new(AtomQuery::Primitive(AtomPrimitive::HCount(h))),
-                );
-            }
+        if let Some(h) = atom.hydrogen_count
+            && h > 0
+        {
+            q = AtomQuery::And(
+                Box::new(q),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::HCount(h))),
+            );
         }
 
         qmol.add_atom(q);
@@ -202,15 +204,14 @@ fn build_product(
     let mut builder = MoleculeBuilder::new();
 
     // template_idx_to_new[i]: new AtomIdx for product template atom i.
-    let mut template_idx_to_new: Vec<Option<AtomIdx>> =
-        vec![None; product_template.atom_count()];
+    let mut template_idx_to_new: Vec<Option<AtomIdx>> = vec![None; product_template.atom_count()];
     // src_to_new: (mol_idx, src_AtomIdx) → new AtomIdx in the product.
     let mut src_to_new: HashMap<(usize, AtomIdx), AtomIdx> = HashMap::new();
 
     // --- Step 1: add product template atoms ---
     let core_keys: HashSet<(usize, AtomIdx)> = global_map.values().cloned().collect();
 
-    for i in 0..product_template.atom_count() {
+    for (i, slot) in template_idx_to_new.iter_mut().enumerate() {
         let tmpl_atom = product_template.atom(AtomIdx(i as u32));
         let new_idx = if let Some(am) = tmpl_atom.atom_map {
             if let Some(&(mol_idx, src_idx)) = global_map.get(&am) {
@@ -238,7 +239,7 @@ fn build_product(
             new_atom.atom_map = None;
             builder.add_atom(new_atom)
         };
-        template_idx_to_new[i] = Some(new_idx);
+        *slot = Some(new_idx);
     }
 
     // --- Step 2: BFS from core atoms to collect substituents ---
@@ -336,7 +337,10 @@ mod tests {
     fn no_match_returns_empty() {
         let mol = parse("C").unwrap();
         let results = run_reactants("[N:1]>>[N:1]", &[&mol]).unwrap();
-        assert!(results.is_empty(), "nitrogen template must not match methane");
+        assert!(
+            results.is_empty(),
+            "nitrogen template must not match methane"
+        );
     }
 
     #[test]
@@ -375,7 +379,10 @@ mod tests {
         assert!(
             matches!(
                 err,
-                Err(TransformError::ReactantCountMismatch { expected: 2, got: 1 })
+                Err(TransformError::ReactantCountMismatch {
+                    expected: 2,
+                    got: 1
+                })
             ),
             "two-template SMIRKS with one reactant must error"
         );
@@ -432,10 +439,9 @@ mod tests {
     #[test]
     fn amide_bond_formation() {
         // NH3 + H-C(=O)-Cl → H-C(=O)-NH2 (formamide)
-        let nh3   = parse("N").unwrap();
+        let nh3 = parse("N").unwrap();
         let hcocl = parse("C(=O)Cl").unwrap();
-        let results =
-            run_reactants("[N:1].[C:2](=O)Cl>>[C:2](=O)[N:1]", &[&nh3, &hcocl]).unwrap();
+        let results = run_reactants("[N:1].[C:2](=O)Cl>>[C:2](=O)[N:1]", &[&nh3, &hcocl]).unwrap();
         assert!(!results.is_empty());
         let prod = &results[0][0];
         assert_eq!(prod.atom_count(), 3, "C + O(new) + N = 3 atoms");
@@ -460,7 +466,7 @@ mod tests {
         // Methylamine + acetyl chloride → N-methylacetamide (5 heavy atoms)
         // CH3-NH2 + CH3-C(=O)-Cl → CH3-C(=O)-NH-CH3
         let methylamine = parse("NC").unwrap();
-        let acetyl_cl   = parse("CC(=O)Cl").unwrap();
+        let acetyl_cl = parse("CC(=O)Cl").unwrap();
         let results = run_reactants(
             "[N:1].[C:2](=O)Cl>>[C:2](=O)[N:1]",
             &[&methylamine, &acetyl_cl],

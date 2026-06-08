@@ -21,8 +21,8 @@
 //! minimize_dreiding()               // energy minimization
 //! ```
 
-use chematic_core::{AtomIdx, BondOrder, Molecule};
 use crate::coords::{Coords3D, Point3};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
 use core::f64::consts::PI;
 
 // ---------------------------------------------------------------------------
@@ -34,8 +34,8 @@ use core::f64::consts::PI;
 pub struct BondConstraint {
     pub atom1: AtomIdx,
     pub atom2: AtomIdx,
-    pub target_distance: f64,  // Å
-    pub tolerance: f64,         // Å
+    pub target_distance: f64, // Å
+    pub tolerance: f64,       // Å
 }
 
 impl BondConstraint {
@@ -78,8 +78,8 @@ pub struct AngleConstraint {
     pub atom1: AtomIdx,
     pub center: AtomIdx,
     pub atom2: AtomIdx,
-    pub target_angle: f64,  // radians
-    pub tolerance: f64,     // radians
+    pub target_angle: f64, // radians
+    pub tolerance: f64,    // radians
 }
 
 impl AngleConstraint {
@@ -217,11 +217,11 @@ fn get_ideal_angle(mol: &Molecule, center: AtomIdx) -> f64 {
     }
 
     if has_triple {
-        PI  // 180°
+        PI // 180°
     } else if has_double_or_arom {
-        PI * 2.0 / 3.0  // 120°
+        PI * 2.0 / 3.0 // 120°
     } else {
-        109.47_f64.to_radians()  // sp3
+        109.47_f64.to_radians() // sp3
     }
 }
 
@@ -294,6 +294,7 @@ fn compute_angle(coords: &Coords3D, a: AtomIdx, center: AtomIdx, b: AtomIdx) -> 
 }
 
 /// Return any unit vector perpendicular to `v`.
+#[allow(dead_code)]
 fn perpendicular_to(v: Point3) -> Point3 {
     let candidate = if v.x.abs() < 0.9 {
         Point3::new(1.0, 0.0, 0.0)
@@ -331,7 +332,7 @@ fn project_bond_constraint(coords: &mut Coords3D, constraint: &BondConstraint) {
 
     let current_dist = p1.distance(&p2);
     if current_dist < 1e-6 {
-        return;  // atoms coincident, can't project
+        return; // atoms coincident, can't project
     }
 
     let target_dist = constraint.target_distance;
@@ -354,11 +355,7 @@ fn project_bond_constraint(coords: &mut Coords3D, constraint: &BondConstraint) {
     );
 
     // Target distance: move to nearer boundary if out of tolerance
-    let target_effective = if current_dist < lower {
-        lower
-    } else {
-        upper
-    };
+    let target_effective = if current_dist < lower { lower } else { upper };
 
     // New positions: symmetric movement from midpoint
     let offset = direction.scale(target_effective / 2.0);
@@ -385,7 +382,7 @@ fn project_angle_constraint(coords: &mut Coords3D, constraint: &AngleConstraint)
     let n2 = v2.norm();
 
     if n1 < 1e-10 || n2 < 1e-10 {
-        return;  // degenerate geometry
+        return; // degenerate geometry
     }
 
     // Current angle
@@ -491,17 +488,16 @@ mod tests {
         assert_eq!(constraints.bonds.len(), 1, "ethane has 1 bond");
 
         let bond = &constraints.bonds[0];
-        assert!((bond.target_distance - 1.54).abs() < 0.01, "C-C ideal ~1.54 Å");
+        assert!(
+            (bond.target_distance - 1.54).abs() < 0.01,
+            "C-C ideal ~1.54 Å"
+        );
     }
 
     #[test]
     fn test_angle_constraint_creation() {
-        let constraint = AngleConstraint::new(
-            AtomIdx(0),
-            AtomIdx(1),
-            AtomIdx(2),
-            109.47_f64.to_radians(),
-        );
+        let constraint =
+            AngleConstraint::new(AtomIdx(0), AtomIdx(1), AtomIdx(2), 109.47_f64.to_radians());
         assert!((constraint.target_angle - 109.47_f64.to_radians()).abs() < 1e-6);
     }
 
@@ -517,36 +513,48 @@ mod tests {
             .filter(|a| a.center == AtomIdx(1))
             .collect();
 
-        assert_eq!(center_angles.len(), 1, "center of propane has 1 angle constraint");
+        assert_eq!(
+            center_angles.len(),
+            1,
+            "center of propane has 1 angle constraint"
+        );
     }
 
     #[test]
     fn test_project_bond_constraint_too_far() {
-        let mol = parse("CC").unwrap();
+        let _mol = parse("CC").unwrap();
         let mut coords = Coords3D::new_zeroed(2);
         coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
-        coords.set(AtomIdx(1), Point3::new(5.0, 0.0, 0.0));  // too far: 5.0 Å
+        coords.set(AtomIdx(1), Point3::new(5.0, 0.0, 0.0)); // too far: 5.0 Å
 
         let constraint = BondConstraint::new(AtomIdx(0), AtomIdx(1), 1.54);
         project_bond_constraint(&mut coords, &constraint);
 
         let d = coords.get(AtomIdx(0)).distance(&coords.get(AtomIdx(1)));
         // Should be near 1.54 (within tolerance + some projection error)
-        assert!(d > 1.4 && d < 1.7, "projected distance {:.3}, expected ~1.54", d);
+        assert!(
+            d > 1.4 && d < 1.7,
+            "projected distance {:.3}, expected ~1.54",
+            d
+        );
     }
 
     #[test]
     fn test_project_bond_constraint_too_close() {
-        let mol = parse("CC").unwrap();
+        let _mol = parse("CC").unwrap();
         let mut coords = Coords3D::new_zeroed(2);
         coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
-        coords.set(AtomIdx(1), Point3::new(0.5, 0.0, 0.0));  // too close: 0.5 Å
+        coords.set(AtomIdx(1), Point3::new(0.5, 0.0, 0.0)); // too close: 0.5 Å
 
         let constraint = BondConstraint::new(AtomIdx(0), AtomIdx(1), 1.54);
         project_bond_constraint(&mut coords, &constraint);
 
         let d = coords.get(AtomIdx(0)).distance(&coords.get(AtomIdx(1)));
-        assert!(d > 1.4 && d < 1.7, "projected distance {:.3}, expected ~1.54", d);
+        assert!(
+            d > 1.4 && d < 1.7,
+            "projected distance {:.3}, expected ~1.54",
+            d
+        );
     }
 
     #[test]
@@ -562,7 +570,10 @@ mod tests {
         let satisfied = satisfy_constraints(&coords, &mol, &constraints, 10);
         let after_violations = constraints.violated_count(&satisfied);
 
-        assert!(after_violations <= before_violations, "should reduce violations");
+        assert!(
+            after_violations <= before_violations,
+            "should reduce violations"
+        );
     }
 
     #[test]
@@ -595,13 +606,18 @@ mod tests {
         let mut min_d = f64::MAX;
         for i in 0..4 {
             for j in (i + 1)..4 {
-                let d = satisfied.get(AtomIdx(i as u32))
+                let d = satisfied
+                    .get(AtomIdx(i as u32))
                     .distance(&satisfied.get(AtomIdx(j as u32)));
                 min_d = min_d.min(d);
             }
         }
 
-        assert!(min_d > 0.1, "minimum distance {:.3}, atoms may clash", min_d);
+        assert!(
+            min_d > 0.1,
+            "minimum distance {:.3}, atoms may clash",
+            min_d
+        );
     }
 
     #[test]

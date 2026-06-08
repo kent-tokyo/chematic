@@ -21,15 +21,15 @@ use crate::reaction::Reaction;
 /// Average atomic mass (Da) for the most common elements.
 fn avg_mass(an: u8) -> f64 {
     match an {
-        1  => 1.008,   // H
-        2  => 4.003,   // He
-        3  => 6.941,   // Li
-        4  => 9.012,   // Be
-        5  => 10.811,  // B
-        6  => 12.011,  // C
-        7  => 14.007,  // N
-        8  => 15.999,  // O
-        9  => 18.998,  // F
+        1 => 1.008,    // H
+        2 => 4.003,    // He
+        3 => 6.941,    // Li
+        4 => 9.012,    // Be
+        5 => 10.811,   // B
+        6 => 12.011,   // C
+        7 => 14.007,   // N
+        8 => 15.999,   // O
+        9 => 18.998,   // F
         11 => 22.990,  // Na
         12 => 24.305,  // Mg
         13 => 26.982,  // Al
@@ -44,7 +44,7 @@ fn avg_mass(an: u8) -> f64 {
         30 => 65.38,   // Zn
         35 => 79.904,  // Br
         53 => 126.904, // I
-        n  => n as f64,
+        n => n as f64,
     }
 }
 
@@ -72,7 +72,7 @@ fn molecular_weight(mol: &Molecule) -> f64 {
 /// Returns `0.0` if there are no reactants.
 pub fn atom_economy(rxn: &Reaction) -> f64 {
     let reactant_mw: f64 = rxn.reactants.iter().map(molecular_weight).sum();
-    let product_mw: f64  = rxn.products.iter().map(molecular_weight).sum();
+    let product_mw: f64 = rxn.products.iter().map(molecular_weight).sum();
     if reactant_mw == 0.0 {
         return 0.0;
     }
@@ -141,7 +141,10 @@ mod tests {
         // A → A: all atoms end up in the product.
         let rxn = parse_reaction("CC>>CC").unwrap();
         let ae = atom_economy(&rxn);
-        assert!((ae - 100.0).abs() < 0.1, "AA→AA should be 100% atom economy, got {ae:.2}");
+        assert!(
+            (ae - 100.0).abs() < 0.1,
+            "AA→AA should be 100% atom economy, got {ae:.2}"
+        );
     }
 
     #[test]
@@ -151,8 +154,11 @@ mod tests {
         // Reactant MW ≈ CH4 (16) + O2 (32) = 48; Product MW = CO2 ≈ 44 → ~91.7%
         let rxn = parse_reaction("C.O=O>>O=C=O").unwrap();
         let ae = atom_economy(&rxn);
-        assert!(ae > 0.0,   "atom economy should be > 0%");
-        assert!(ae < 100.0, "partial product should give < 100% atom economy, got {ae:.2}");
+        assert!(ae > 0.0, "atom economy should be > 0%");
+        assert!(
+            ae < 100.0,
+            "partial product should give < 100% atom economy, got {ae:.2}"
+        );
     }
 
     #[test]

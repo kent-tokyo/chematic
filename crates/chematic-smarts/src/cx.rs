@@ -47,11 +47,11 @@ pub fn parse_cxsmarts(input: &str) -> Result<CxSmarts, SmartsError> {
 
 fn split_cx(input: &str) -> (&str, Option<&str>) {
     let trimmed = input.trim();
-    if let Some(start) = trimmed.find('|') {
-        if let Some(end_rel) = trimmed[start + 1..].find('|') {
-            let end = start + 1 + end_rel;
-            return (&trimmed[..start], Some(&trimmed[start + 1..end]));
-        }
+    if let Some(start) = trimmed.find('|')
+        && let Some(end_rel) = trimmed[start + 1..].find('|')
+    {
+        let end = start + 1 + end_rel;
+        return (&trimmed[..start], Some(&trimmed[start + 1..end]));
     }
     (trimmed, None)
 }
@@ -104,10 +104,14 @@ fn parse_labels(labels: &str, out: &mut CxSmarts) {
 fn parse_atom_props(props: &str, out: &mut CxSmarts) {
     for prop in props.split(':') {
         let mut parts = prop.splitn(3, '.');
-        let Some(atom_raw) = parts.next() else { continue };
+        let Some(atom_raw) = parts.next() else {
+            continue;
+        };
         let Some(key) = parts.next() else { continue };
         let Some(value) = parts.next() else { continue };
-        let Ok(atom) = atom_raw.parse::<usize>() else { continue };
+        let Ok(atom) = atom_raw.parse::<usize>() else {
+            continue;
+        };
         if atom >= out.query.atom_count() {
             continue;
         }
@@ -120,10 +124,16 @@ fn parse_atom_props(props: &str, out: &mut CxSmarts) {
 }
 
 fn parse_radicals(rest: &str, out: &mut CxSmarts) {
-    let Some((class_raw, atoms_raw)) = rest.split_once(':') else { return };
-    let Ok(class) = class_raw.parse::<u8>() else { return };
+    let Some((class_raw, atoms_raw)) = rest.split_once(':') else {
+        return;
+    };
+    let Ok(class) = class_raw.parse::<u8>() else {
+        return;
+    };
     for atom_raw in atoms_raw.split(',') {
-        let Ok(atom) = atom_raw.trim().parse::<usize>() else { continue };
+        let Ok(atom) = atom_raw.trim().parse::<usize>() else {
+            continue;
+        };
         if atom < out.atom_radicals.len() {
             out.atom_radicals[atom] = Some(class);
         }
@@ -173,8 +183,11 @@ mod tests {
         // BUG #1 Fix Verification: trailing backslashes in labels should be preserved
         // Input: "label\\" (escaped form) -> should parse to "label\" (single backslash)
         let cx = parse_cxsmarts(r#"[#6] |$label\\$|"#).unwrap();
-        assert_eq!(cx.atom_labels[0].as_deref(), Some("label\\"),
-            "Trailing backslash should be preserved after unescape");
+        assert_eq!(
+            cx.atom_labels[0].as_deref(),
+            Some("label\\"),
+            "Trailing backslash should be preserved after unescape"
+        );
     }
 
     #[test]
@@ -182,8 +195,11 @@ mod tests {
         // More complex case: label with backslash in middle and at end
         // "C\\label\\" in escaped form -> "C\label\" after unescape
         let cx = parse_cxsmarts(r#"[#6] |$C\\label\\$|"#).unwrap();
-        assert_eq!(cx.atom_labels[0].as_deref(), Some("C\\label\\"),
-            "Both backslashes should be preserved");
+        assert_eq!(
+            cx.atom_labels[0].as_deref(),
+            Some("C\\label\\"),
+            "Both backslashes should be preserved"
+        );
     }
 
     #[test]
@@ -191,7 +207,10 @@ mod tests {
         // Test that escaped comma doesn't interfere with trailing backslash handling
         // Label with escaped comma and trailing backslash
         let cx = parse_cxsmarts(r#"[#6] |$label\,end\\$|"#).unwrap();
-        assert_eq!(cx.atom_labels[0].as_deref(), Some("label,end\\"),
-            "Escaped comma and trailing backslash should both be preserved");
+        assert_eq!(
+            cx.atom_labels[0].as_deref(),
+            Some("label,end\\"),
+            "Escaped comma and trailing backslash should both be preserved"
+        );
     }
 }

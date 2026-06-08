@@ -29,17 +29,17 @@ use crate::coords::{Coords3D, Point3};
 
 fn covalent_radius(element: &Element) -> f64 {
     match element.atomic_number() {
-        1  => 0.31, // H
-        6  => 0.77, // C
-        7  => 0.75, // N
-        8  => 0.73, // O
-        9  => 0.71, // F
+        1 => 0.31,  // H
+        6 => 0.77,  // C
+        7 => 0.75,  // N
+        8 => 0.73,  // O
+        9 => 0.71,  // F
         15 => 1.07, // P
         16 => 1.03, // S
         17 => 0.99, // Cl
         35 => 1.14, // Br
         53 => 1.33, // I
-        _  => 0.77, // default
+        _ => 0.77,  // default
     }
 }
 
@@ -135,7 +135,13 @@ pub fn pdb_to_molecule(atoms: &[PdbAtom]) -> (Molecule, Coords3D) {
         let sym = if !pdb_atom.element.is_empty() {
             pdb_atom.element.clone()
         } else {
-            pdb_atom.name.trim().chars().next().unwrap_or('C').to_string()
+            pdb_atom
+                .name
+                .trim()
+                .chars()
+                .next()
+                .unwrap_or('C')
+                .to_string()
         };
         let element = Element::from_symbol(&sym).unwrap_or(Element::C);
         elements.push(element);
@@ -209,22 +215,22 @@ pub fn write_pdb(mol: &Molecule, coords: &Coords3D) -> String {
         let line = format!(
             //  0-5    6-10   11  12-15         16   17-19  20  21   22-25  26  27-29   30-37     38-45     46-53     54-59     60-65       66-75         76-77
             "{:<6}{:>5} {:<4} {:>3} {:1}{:>4}    {:>8.3}{:>8.3}{:>8.3}{:>6.2}{:>6.2}          {:>2}\n",
-            "HETATM",  // 0-5
-            serial,    // 6-10
+            "HETATM", // 0-5
+            serial,   // 6-10
             // space at 11 (literal in format)
             atom_name, // 12-15
             // altLoc at 16 (space, literal in format)
-            "LIG",     // 17-19
+            "LIG", // 17-19
             // space at 20 (literal in format)
-            'A',       // 21
-            1_i32,     // 22-25
+            'A',   // 21
+            1_i32, // 22-25
             // iCode + 3 spaces (27-29) handled by 4-space literal in format
-            p.x,       // 30-37
-            p.y,       // 38-45
-            p.z,       // 46-53
-            1.00_f64,  // 54-59
-            0.00_f64,  // 60-65
-            elem_sym,  // 76-77
+            p.x,      // 30-37
+            p.y,      // 38-45
+            p.z,      // 46-53
+            1.00_f64, // 54-59
+            0.00_f64, // 60-65
+            elem_sym, // 76-77
         );
         out.push_str(&line);
     }

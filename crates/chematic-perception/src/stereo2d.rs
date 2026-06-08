@@ -31,7 +31,10 @@ pub struct StereoAssignment2D {
 impl StereoAssignment2D {
     /// Look up the CIP code for atom `idx`.
     pub fn get(&self, idx: AtomIdx) -> Option<CipCode> {
-        self.assignments.iter().find(|(i, _)| *i == idx).map(|(_, c)| *c)
+        self.assignments
+            .iter()
+            .find(|(i, _)| *i == idx)
+            .map(|(_, c)| *c)
     }
 }
 
@@ -206,7 +209,11 @@ fn cross2d(vx: f64, vy: f64, ux: f64, uy: f64) -> f64 {
 
 /// 3D point (x, y, z).
 #[derive(Clone, Copy)]
-struct P3 { x: f64, y: f64, z: f64 }
+struct P3 {
+    x: f64,
+    y: f64,
+    z: f64,
+}
 
 fn assign_rs(mol: &Molecule, coords: &[(f64, f64)], center: AtomIdx) -> Option<CipCode> {
     let center_pos = coords.get(center.0 as usize)?;
@@ -227,7 +234,10 @@ fn assign_rs(mol: &Molecule, coords: &[(f64, f64)], center: AtomIdx) -> Option<C
     ];
 
     let pts: [P3; 4] = [0, 1, 2, 3].map(|i| {
-        let (x, y) = coords.get(subs[i].0 as usize).copied().unwrap_or(*center_pos);
+        let (x, y) = coords
+            .get(subs[i].0 as usize)
+            .copied()
+            .unwrap_or(*center_pos);
         P3 { x, y, z: z_for[i] }
     });
 
@@ -259,12 +269,18 @@ fn wedge_z(mol: &Molecule, center: AtomIdx, neighbor: AtomIdx) -> f64 {
                 // If bond.atom1 == center, neighbor is in front (+z).
                 // If bond.atom1 == neighbor (bond drawn away), neighbor is behind (−z).
                 // Standard convention: wedge tip at atom1, base at atom2 → atom2 is in front.
-                if bond.atom1 == center { return 1.0; }
-                else { return -1.0; }
+                if bond.atom1 == center {
+                    return 1.0;
+                } else {
+                    return -1.0;
+                }
             }
             BondOrder::Down => {
-                if bond.atom1 == center { return -1.0; }
-                else { return 1.0; }
+                if bond.atom1 == center {
+                    return -1.0;
+                } else {
+                    return 1.0;
+                }
             }
             _ => {}
         }
@@ -352,7 +368,10 @@ mod tests {
         let mol = parse("C=C").unwrap();
         let coords = vec![(0.0, 0.0), (1.5, 0.0)];
         // No E/Z should be assigned for a terminal alkene
-        let bond_idx = mol.bonds().find(|(_, b)| b.order == BondOrder::Double).map(|(i, _)| i);
+        let bond_idx = mol
+            .bonds()
+            .find(|(_, b)| b.order == BondOrder::Double)
+            .map(|(i, _)| i);
         assert!(bond_idx.is_some());
         let result = cip_ez_descriptor(&mol, bond_idx.unwrap(), &coords);
         assert!(result.is_none(), "terminal alkene should have no E/Z");
@@ -370,12 +389,16 @@ mod tests {
         //
         let mol = parse("CC=CC").unwrap();
         // Double bond is between atoms 1 and 2 (0-indexed SMILES order).
-        let bond_idx = mol.bonds().find(|(_, b)| b.order == BondOrder::Double).map(|(i, _)| i).unwrap();
+        let bond_idx = mol
+            .bonds()
+            .find(|(_, b)| b.order == BondOrder::Double)
+            .map(|(i, _)| i)
+            .unwrap();
         let coords = vec![
-            (-0.866, 0.5),  // C0 (methyl at a1 end, above)
-            (0.0,   0.0),   // C1 (left alkene carbon)
-            (1.5,   0.0),   // C2 (right alkene carbon)
-            (2.366, 0.5),   // C3 (methyl at a2 end, above — same side as C0)
+            (-0.866, 0.5), // C0 (methyl at a1 end, above)
+            (0.0, 0.0),    // C1 (left alkene carbon)
+            (1.5, 0.0),    // C2 (right alkene carbon)
+            (2.366, 0.5),  // C3 (methyl at a2 end, above — same side as C0)
         ];
         let result = cip_ez_descriptor(&mol, bond_idx, &coords);
         assert_eq!(result, Some(CipCode::Z), "(Z)-but-2-ene should be Z");
@@ -393,12 +416,16 @@ mod tests {
         //               C3
         //
         let mol = parse("CC=CC").unwrap();
-        let bond_idx = mol.bonds().find(|(_, b)| b.order == BondOrder::Double).map(|(i, _)| i).unwrap();
+        let bond_idx = mol
+            .bonds()
+            .find(|(_, b)| b.order == BondOrder::Double)
+            .map(|(i, _)| i)
+            .unwrap();
         let coords = vec![
-            (-0.866,  0.5),  // C0 above
-            (0.0,    0.0),   // C1
-            (1.5,    0.0),   // C2
-            (2.366, -0.5),   // C3 below → opposite side → E
+            (-0.866, 0.5), // C0 above
+            (0.0, 0.0),    // C1
+            (1.5, 0.0),    // C2
+            (2.366, -0.5), // C3 below → opposite side → E
         ];
         let result = cip_ez_descriptor(&mol, bond_idx, &coords);
         assert_eq!(result, Some(CipCode::E), "(E)-but-2-ene should be E");
@@ -409,13 +436,15 @@ mod tests {
         let mut mol = parse("CC=CC").unwrap();
         let coords = vec![
             (-0.866, 0.5),
-            (0.0,   0.0),
-            (1.5,   0.0),
-            (2.366, 0.5),  // same side → Z
+            (0.0, 0.0),
+            (1.5, 0.0),
+            (2.366, 0.5), // same side → Z
         ];
         assign_ez_from_2d(&mut mol, &coords);
         // At least one atom should have a Z cip_code after assignment.
-        let has_z = mol.atoms().any(|(_, atom)| atom.cip_code == Some(CipCode::Z));
+        let has_z = mol
+            .atoms()
+            .any(|(_, atom)| atom.cip_code == Some(CipCode::Z));
         assert!(has_z, "assign_ez_from_2d should set Z on but-2-ene");
     }
 
@@ -439,23 +468,23 @@ mod tests {
         // just that an assignment is returned when a wedge bond is present.
         use chematic_core::{Atom, BondOrder as BO, Element, MoleculeBuilder};
         let mut b = MoleculeBuilder::new();
-        let c  = b.add_atom(Atom::new(Element::C));
-        let f  = b.add_atom(Atom::new(Element::F));
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
         let cl = b.add_atom(Atom::new(Element::CL));
         let br = b.add_atom(Atom::new(Element::BR));
-        let h  = b.add_atom(Atom::new(Element::H));
-        b.add_bond(c, f,  BO::Single).unwrap();
+        let h = b.add_atom(Atom::new(Element::H));
+        b.add_bond(c, f, BO::Single).unwrap();
         b.add_bond(c, cl, BO::Single).unwrap();
-        b.add_bond(c, br, BO::Up).unwrap();    // Br is in front of plane
-        b.add_bond(c, h,  BO::Down).unwrap();  // H is behind plane
+        b.add_bond(c, br, BO::Up).unwrap(); // Br is in front of plane
+        b.add_bond(c, h, BO::Down).unwrap(); // H is behind plane
         let mol = b.build();
         // Use non-degenerate 2D positions to avoid a zero-volume determinant.
         let coords = vec![
-            (0.0,   0.0),   // C
-            (-1.0, -0.5),   // F
-            (1.0,  -0.5),   // Cl
-            (0.0,   1.0),   // Br  (z = +1 from Up bond)
-            (0.0,  -1.0),   // H   (z = -1 from Down bond)
+            (0.0, 0.0),   // C
+            (-1.0, -0.5), // F
+            (1.0, -0.5),  // Cl
+            (0.0, 1.0),   // Br  (z = +1 from Up bond)
+            (0.0, -1.0),  // H   (z = -1 from Down bond)
         ];
         let result = assign_stereo_from_2d(&mol, &coords);
         // Should assign one chiral center.

@@ -143,29 +143,29 @@ impl Element {
     /// Case-sensitive: "C" is carbon, "c" is not accepted.
     pub fn from_symbol(s: &str) -> Option<Self> {
         match s {
-            "H"  => Some(Self::H),
+            "H" => Some(Self::H),
             "He" => Some(Self::HE),
             "Li" => Some(Self::LI),
             "Be" => Some(Self::BE),
-            "B"  => Some(Self::B),
-            "C"  => Some(Self::C),
-            "N"  => Some(Self::N),
-            "O"  => Some(Self::O),
-            "F"  => Some(Self::F),
+            "B" => Some(Self::B),
+            "C" => Some(Self::C),
+            "N" => Some(Self::N),
+            "O" => Some(Self::O),
+            "F" => Some(Self::F),
             "Ne" => Some(Self::NE),
             "Na" => Some(Self::NA),
             "Mg" => Some(Self::MG),
             "Al" => Some(Self::AL),
             "Si" => Some(Self::SI),
-            "P"  => Some(Self::P),
-            "S"  => Some(Self::S),
+            "P" => Some(Self::P),
+            "S" => Some(Self::S),
             "Cl" => Some(Self::CL),
             "Ar" => Some(Self::AR),
-            "K"  => Some(Self::K),
+            "K" => Some(Self::K),
             "Ca" => Some(Self::CA),
             "Sc" => Some(Self::SC),
             "Ti" => Some(Self::TI),
-            "V"  => Some(Self::V),
+            "V" => Some(Self::V),
             "Cr" => Some(Self::CR),
             "Mn" => Some(Self::MN),
             "Fe" => Some(Self::FE),
@@ -181,7 +181,7 @@ impl Element {
             "Kr" => Some(Self::KR),
             "Rb" => Some(Self::RB),
             "Sr" => Some(Self::SR),
-            "Y"  => Some(Self::Y),
+            "Y" => Some(Self::Y),
             "Zr" => Some(Self::ZR),
             "Nb" => Some(Self::NB),
             "Mo" => Some(Self::MO),
@@ -195,7 +195,7 @@ impl Element {
             "Sn" => Some(Self::SN),
             "Sb" => Some(Self::SB),
             "Te" => Some(Self::TE),
-            "I"  => Some(Self::I),
+            "I" => Some(Self::I),
             "Xe" => Some(Self::XE),
             "Cs" => Some(Self::CS),
             "Ba" => Some(Self::BA),
@@ -216,7 +216,7 @@ impl Element {
             "Lu" => Some(Self::LU),
             "Hf" => Some(Self::HF),
             "Ta" => Some(Self::TA),
-            "W"  => Some(Self::W),
+            "W" => Some(Self::W),
             "Re" => Some(Self::RE),
             "Os" => Some(Self::OS),
             "Ir" => Some(Self::IR),
@@ -234,7 +234,7 @@ impl Element {
             "Ac" => Some(Self::AC),
             "Th" => Some(Self::TH),
             "Pa" => Some(Self::PA),
-            "U"  => Some(Self::U),
+            "U" => Some(Self::U),
             "Np" => Some(Self::NP),
             "Pu" => Some(Self::PU),
             "Am" => Some(Self::AM),
@@ -308,21 +308,21 @@ impl Element {
     /// Used for computing implicit H counts in organic-subset atoms.
     pub fn normal_valences(self) -> &'static [u8] {
         match self.0 {
-            1  => &[1],           // H
-            5  => &[3],           // B
-            6  => &[4],           // C
-            7  => &[3, 5],        // N
-            8  => &[2],           // O
-            9  => &[1],           // F
-            14 => &[4],           // Si
-            15 => &[3, 5],        // P
-            16 => &[2, 4, 6],     // S
-            17 => &[1, 3, 5, 7],  // Cl
-            33 => &[3, 5],        // As
-            34 => &[2, 4, 6],     // Se
-            35 => &[1, 3, 5, 7],  // Br
-            53 => &[1, 3, 5, 7],  // I
-            _  => &[],
+            1 => &[1],           // H
+            5 => &[3],           // B
+            6 => &[4],           // C
+            7 => &[3, 5],        // N
+            8 => &[2],           // O
+            9 => &[1],           // F
+            14 => &[4],          // Si
+            15 => &[3, 5],       // P
+            16 => &[2, 4, 6],    // S
+            17 => &[1, 3, 5, 7], // Cl
+            33 => &[3, 5],       // As
+            34 => &[2, 4, 6],    // Se
+            35 => &[1, 3, 5, 7], // Br
+            53 => &[1, 3, 5, 7], // I
+            _ => &[],
         }
     }
 }
@@ -335,18 +335,14 @@ impl core::fmt::Display for Element {
 
 /// Element symbol table indexed by (atomic_number - 1), covering elements 1–118.
 static SYMBOLS: [&str; 118] = [
-    "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne",
-    "Na", "Mg", "Al", "Si", "P",  "S",  "Cl", "Ar", "K",  "Ca",
-    "Sc", "Ti", "V",  "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn",
-    "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y",  "Zr",
-    "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn",
-    "Sb", "Te", "I",  "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd",
-    "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb",
-    "Lu", "Hf", "Ta", "W",  "Re", "Os", "Ir", "Pt", "Au", "Hg",
-    "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th",
-    "Pa", "U",  "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",
-    "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds",
-    "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og",
+    "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl",
+    "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As",
+    "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In",
+    "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb",
+    "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl",
+    "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk",
+    "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh",
+    "Fl", "Mc", "Lv", "Ts", "Og",
 ];
 
 /// van der Waals radii (Å) indexed by (atomic_number - 1).
@@ -450,7 +446,8 @@ mod tests {
         for n in 1u8..=118 {
             let elem = Element::from_atomic_number(n).unwrap();
             let sym = elem.symbol();
-            let back = Element::from_symbol(sym).unwrap_or_else(|| panic!("no elem for symbol {sym}"));
+            let back =
+                Element::from_symbol(sym).unwrap_or_else(|| panic!("no elem for symbol {sym}"));
             assert_eq!(elem, back, "roundtrip failed for atomic number {n}");
         }
     }
@@ -458,7 +455,10 @@ mod tests {
     #[test]
     fn test_organic_subset() {
         for sym in &["B", "C", "N", "O", "P", "S", "F", "Cl", "Br", "I"] {
-            assert!(Element::from_symbol(sym).unwrap().is_organic_subset(), "{sym} should be in organic subset");
+            assert!(
+                Element::from_symbol(sym).unwrap().is_organic_subset(),
+                "{sym} should be in organic subset"
+            );
         }
         assert!(!Element::H.is_organic_subset());
         assert!(!Element::FE.is_organic_subset());

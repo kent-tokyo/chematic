@@ -78,17 +78,32 @@ impl<'a> Namer<'a> {
         }
 
         let rings = find_sssr(mol);
-        let ring_atoms: HashSet<AtomIdx> = rings.rings().iter().flat_map(|r| r.iter().copied()).collect();
+        let ring_atoms: HashSet<AtomIdx> = rings
+            .rings()
+            .iter()
+            .flat_map(|r| r.iter().copied())
+            .collect();
 
         // Classify atoms.
-        let carbons: Vec<AtomIdx> = mol.atoms().filter(|(_, a)| a.element.atomic_number() == 6).map(|(i,_)| i).collect();
-        let heteroatoms: Vec<AtomIdx> = mol.atoms().filter(|(_, a)| {
-            let an = a.element.atomic_number();
-            an != 6 && an != 1
-        }).map(|(i,_)| i).collect();
+        let carbons: Vec<AtomIdx> = mol
+            .atoms()
+            .filter(|(_, a)| a.element.atomic_number() == 6)
+            .map(|(i, _)| i)
+            .collect();
+        let heteroatoms: Vec<AtomIdx> = mol
+            .atoms()
+            .filter(|(_, a)| {
+                let an = a.element.atomic_number();
+                an != 6 && an != 1
+            })
+            .map(|(i, _)| i)
+            .collect();
 
         // Must be purely organic (C + H + one heteroatom class).
-        let het_elements: HashSet<u8> = heteroatoms.iter().map(|&i| mol.atom(i).element.atomic_number()).collect();
+        let het_elements: HashSet<u8> = heteroatoms
+            .iter()
+            .map(|&i| mol.atom(i).element.atomic_number())
+            .collect();
 
         if het_elements.len() > 1 {
             return Err(IupacError::NotSupported);
@@ -100,11 +115,11 @@ impl<'a> Namer<'a> {
         let cyclic = !ring_atoms.is_empty();
 
         match (cyclic, het_elements.iter().next().copied()) {
-            (true, None)  => self.name_cycloalkane(&ring_atoms, &carbons),
+            (true, None) => self.name_cycloalkane(&ring_atoms, &carbons),
             (false, None) => self.name_acyclic_hydrocarbon(&carbons),
             (false, Some(8)) => self.name_alcohol_or_acid(&carbons, &heteroatoms),
             (false, Some(7)) => self.name_amine(&carbons, &heteroatoms),
-            (false, Some(9))  => self.name_haloalkane(&carbons, &heteroatoms, "fluoro"),
+            (false, Some(9)) => self.name_haloalkane(&carbons, &heteroatoms, "fluoro"),
             (false, Some(17)) => self.name_haloalkane(&carbons, &heteroatoms, "chloro"),
             (false, Some(35)) => self.name_haloalkane(&carbons, &heteroatoms, "bromo"),
             (false, Some(53)) => self.name_haloalkane(&carbons, &heteroatoms, "iodo"),
@@ -116,7 +131,11 @@ impl<'a> Namer<'a> {
     // Cycloalkane naming
     // -----------------------------------------------------------------------
 
-    fn name_cycloalkane(&self, ring_atoms: &HashSet<AtomIdx>, carbons: &[AtomIdx]) -> Result<String, IupacError> {
+    fn name_cycloalkane(
+        &self,
+        ring_atoms: &HashSet<AtomIdx>,
+        carbons: &[AtomIdx],
+    ) -> Result<String, IupacError> {
         // All carbons must be in the ring (no substituents).
         if ring_atoms.len() != carbons.len() {
             return Err(IupacError::NotSupported);
@@ -138,8 +157,14 @@ impl<'a> Namer<'a> {
         let n = carbons.len();
 
         // Unsaturation check.
-        let double_bonds = mol.bonds().filter(|(_, b)| b.order == BondOrder::Double).count();
-        let triple_bonds = mol.bonds().filter(|(_, b)| b.order == BondOrder::Triple).count();
+        let double_bonds = mol
+            .bonds()
+            .filter(|(_, b)| b.order == BondOrder::Double)
+            .count();
+        let triple_bonds = mol
+            .bonds()
+            .filter(|(_, b)| b.order == BondOrder::Triple)
+            .count();
 
         if double_bonds > 1 || triple_bonds > 1 || (double_bonds > 0 && triple_bonds > 0) {
             return Err(IupacError::NotSupported);
@@ -148,7 +173,10 @@ impl<'a> Namer<'a> {
         // Must be an unbranched chain: each C has at most 2 C neighbors.
         let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
         for &c in carbons {
-            let c_degree = mol.neighbors(c).filter(|(nb, _)| c_set.contains(nb)).count();
+            let c_degree = mol
+                .neighbors(c)
+                .filter(|(nb, _)| c_set.contains(nb))
+                .count();
             if c_degree > 2 {
                 return Err(IupacError::NotSupported);
             }
@@ -169,7 +197,11 @@ impl<'a> Namer<'a> {
     // Alcohol / carboxylic acid naming
     // -----------------------------------------------------------------------
 
-    fn name_alcohol_or_acid(&self, carbons: &[AtomIdx], heteroatoms: &[AtomIdx]) -> Result<String, IupacError> {
+    fn name_alcohol_or_acid(
+        &self,
+        carbons: &[AtomIdx],
+        heteroatoms: &[AtomIdx],
+    ) -> Result<String, IupacError> {
         let mol = self.mol;
         let o_idx = heteroatoms[0];
         let o_atom = mol.atom(o_idx);
@@ -177,26 +209,31 @@ impl<'a> Namer<'a> {
         // Determine O type: OH (alcohol), =O + neighbor C (aldehyde if terminal, ketone if internal),
         // COOH (carboxylic acid).
         let o_neighbors: Vec<AtomIdx> = mol.neighbors(o_idx).map(|(nb, _)| nb).collect();
-        let is_carbonyl = mol.neighbors(o_idx).any(|(_, bi)| mol.bond(bi).order == BondOrder::Double);
+        let is_carbonyl = mol
+            .neighbors(o_idx)
+            .any(|(_, bi)| mol.bond(bi).order == BondOrder::Double);
 
         let n = carbons.len();
         let base = alkane_stem(n);
 
         // Carboxylic acid: COOH — C bonded to two O (one =O, one -OH).
-        if let Some(&c_idx) = o_neighbors.first() {
-            if mol.atom(c_idx).element.atomic_number() == 6 {
-                let c_o_count = mol.neighbors(c_idx)
-                    .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 8)
-                    .count();
-                if c_o_count == 2 && is_carbonyl {
-                    return Ok(format!("{base}anoic acid"));
-                }
+        if let Some(&c_idx) = o_neighbors.first()
+            && mol.atom(c_idx).element.atomic_number() == 6
+        {
+            let c_o_count = mol
+                .neighbors(c_idx)
+                .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 8)
+                .count();
+            if c_o_count == 2 && is_carbonyl {
+                return Ok(format!("{base}anoic acid"));
             }
         }
 
         // Aldehyde: terminal C=O (CHO).
         if is_carbonyl {
-            let c_idx = o_neighbors.iter().find(|&&nb| mol.atom(nb).element.atomic_number() == 6);
+            let c_idx = o_neighbors
+                .iter()
+                .find(|&&nb| mol.atom(nb).element.atomic_number() == 6);
             if let Some(&c_idx) = c_idx {
                 let c_h = implicit_hcount(mol, c_idx);
                 if c_h > 0 {
@@ -219,7 +256,11 @@ impl<'a> Namer<'a> {
     // Amine naming
     // -----------------------------------------------------------------------
 
-    fn name_amine(&self, carbons: &[AtomIdx], heteroatoms: &[AtomIdx]) -> Result<String, IupacError> {
+    fn name_amine(
+        &self,
+        carbons: &[AtomIdx],
+        heteroatoms: &[AtomIdx],
+    ) -> Result<String, IupacError> {
         let mol = self.mol;
         let n_idx = heteroatoms[0];
         let n_h = implicit_hcount(mol, n_idx);
@@ -238,7 +279,12 @@ impl<'a> Namer<'a> {
     // Haloalkane naming
     // -----------------------------------------------------------------------
 
-    fn name_haloalkane(&self, carbons: &[AtomIdx], heteroatoms: &[AtomIdx], prefix: &str) -> Result<String, IupacError> {
+    fn name_haloalkane(
+        &self,
+        carbons: &[AtomIdx],
+        heteroatoms: &[AtomIdx],
+        prefix: &str,
+    ) -> Result<String, IupacError> {
         let n = carbons.len();
         let base = alkane_suffix(n);
         let count = heteroatoms.len();
@@ -259,32 +305,32 @@ impl<'a> Namer<'a> {
 /// Stem used before a suffix (e.g. "meth", "eth", "prop").
 fn alkane_stem(n: usize) -> &'static str {
     match n {
-        1  => "meth",
-        2  => "eth",
-        3  => "prop",
-        4  => "but",
-        5  => "pent",
-        6  => "hex",
-        7  => "hept",
-        8  => "oct",
-        9  => "non",
+        1 => "meth",
+        2 => "eth",
+        3 => "prop",
+        4 => "but",
+        5 => "pent",
+        6 => "hex",
+        7 => "hept",
+        8 => "oct",
+        9 => "non",
         10 => "dec",
-        _  => "long",
+        _ => "long",
     }
 }
 
 /// Full alkane name (stem + "ane").
 fn alkane_suffix(n: usize) -> String {
     match n {
-        1  => "methane".into(),
-        2  => "ethane".into(),
-        3  => "propane".into(),
-        4  => "butane".into(),
-        5  => "pentane".into(),
-        6  => "hexane".into(),
-        7  => "heptane".into(),
-        8  => "octane".into(),
-        9  => "nonane".into(),
+        1 => "methane".into(),
+        2 => "ethane".into(),
+        3 => "propane".into(),
+        4 => "butane".into(),
+        5 => "pentane".into(),
+        6 => "hexane".into(),
+        7 => "heptane".into(),
+        8 => "octane".into(),
+        9 => "nonane".into(),
         10 => "decane".into(),
         11 => "undecane".into(),
         12 => "dodecane".into(),
@@ -296,7 +342,7 @@ fn alkane_suffix(n: usize) -> String {
         18 => "octadecane".into(),
         19 => "nonadecane".into(),
         20 => "icosane".into(),
-        _  => format!("{n}alkane"),
+        _ => format!("{n}alkane"),
     }
 }
 
@@ -316,11 +362,15 @@ fn alkyne_suffix(n: usize) -> String {
 
 fn count_components(mol: &Molecule) -> usize {
     let n = mol.atom_count();
-    if n == 0 { return 0; }
+    if n == 0 {
+        return 0;
+    }
     let mut visited = vec![false; n];
     let mut count = 0;
     for start in 0..n {
-        if visited[start] { continue; }
+        if visited[start] {
+            continue;
+        }
         count += 1;
         let mut queue = VecDeque::new();
         queue.push_back(AtomIdx(start as u32));
@@ -352,49 +402,49 @@ mod tests {
 
     #[test]
     fn test_alkanes() {
-        assert_eq!(name(&mol("C")).unwrap(),      "methane");
-        assert_eq!(name(&mol("CC")).unwrap(),     "ethane");
-        assert_eq!(name(&mol("CCC")).unwrap(),    "propane");
-        assert_eq!(name(&mol("CCCC")).unwrap(),   "butane");
-        assert_eq!(name(&mol("CCCCC")).unwrap(),  "pentane");
+        assert_eq!(name(&mol("C")).unwrap(), "methane");
+        assert_eq!(name(&mol("CC")).unwrap(), "ethane");
+        assert_eq!(name(&mol("CCC")).unwrap(), "propane");
+        assert_eq!(name(&mol("CCCC")).unwrap(), "butane");
+        assert_eq!(name(&mol("CCCCC")).unwrap(), "pentane");
         assert_eq!(name(&mol("CCCCCC")).unwrap(), "hexane");
     }
 
     #[test]
     fn test_alkenes_alkynes() {
-        assert_eq!(name(&mol("C=C")).unwrap(),  "ethene");
-        assert_eq!(name(&mol("CC=C")).unwrap(), "propene");  // prop-1-ene simplified
-        assert_eq!(name(&mol("C#C")).unwrap(),  "ethyne");
+        assert_eq!(name(&mol("C=C")).unwrap(), "ethene");
+        assert_eq!(name(&mol("CC=C")).unwrap(), "propene"); // prop-1-ene simplified
+        assert_eq!(name(&mol("C#C")).unwrap(), "ethyne");
         assert_eq!(name(&mol("CC#C")).unwrap(), "propyne");
     }
 
     #[test]
     fn test_cycloalkanes() {
-        assert_eq!(name(&mol("C1CC1")).unwrap(),      "cyclopropane");
-        assert_eq!(name(&mol("C1CCC1")).unwrap(),     "cyclobutane");
-        assert_eq!(name(&mol("C1CCCC1")).unwrap(),    "cyclopentane");
-        assert_eq!(name(&mol("C1CCCCC1")).unwrap(),   "cyclohexane");
+        assert_eq!(name(&mol("C1CC1")).unwrap(), "cyclopropane");
+        assert_eq!(name(&mol("C1CCC1")).unwrap(), "cyclobutane");
+        assert_eq!(name(&mol("C1CCCC1")).unwrap(), "cyclopentane");
+        assert_eq!(name(&mol("C1CCCCC1")).unwrap(), "cyclohexane");
     }
 
     #[test]
     fn test_alcohol() {
-        assert_eq!(name(&mol("CO")).unwrap(),    "methanol");
-        assert_eq!(name(&mol("CCO")).unwrap(),   "ethanol");
-        assert_eq!(name(&mol("CCCO")).unwrap(),  "propanol");
+        assert_eq!(name(&mol("CO")).unwrap(), "methanol");
+        assert_eq!(name(&mol("CCO")).unwrap(), "ethanol");
+        assert_eq!(name(&mol("CCCO")).unwrap(), "propanol");
     }
 
     #[test]
     fn test_amine() {
-        assert_eq!(name(&mol("CN")).unwrap(),  "methan-1-amine");
+        assert_eq!(name(&mol("CN")).unwrap(), "methan-1-amine");
         assert_eq!(name(&mol("CCN")).unwrap(), "ethan-1-amine");
     }
 
     #[test]
     fn test_haloalkane() {
-        assert_eq!(name(&mol("CCCl")).unwrap(),  "chloroethane");
-        assert_eq!(name(&mol("CCBr")).unwrap(),  "bromoethane");
-        assert_eq!(name(&mol("CF")).unwrap(),    "fluoromethane");
-        assert_eq!(name(&mol("CI")).unwrap(),    "iodomethane");
+        assert_eq!(name(&mol("CCCl")).unwrap(), "chloroethane");
+        assert_eq!(name(&mol("CCBr")).unwrap(), "bromoethane");
+        assert_eq!(name(&mol("CF")).unwrap(), "fluoromethane");
+        assert_eq!(name(&mol("CI")).unwrap(), "iodomethane");
     }
 
     #[test]

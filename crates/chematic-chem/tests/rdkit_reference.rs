@@ -9,9 +9,9 @@
 //!   HBD:  ±0         (exact integer)
 
 use chematic_chem::descriptors::{
-    molecular_weight, tpsa, heavy_atom_count, hbd_count, hba_count, logp_crippen, lipinski_passes,
-    num_aromatic_heterocycles, num_aliphatic_heterocycles, num_saturated_heterocycles,
-    num_spiro_atoms, num_bridgehead_atoms,
+    hba_count, hbd_count, heavy_atom_count, lipinski_passes, logp_crippen, molecular_weight,
+    num_aliphatic_heterocycles, num_aromatic_heterocycles, num_bridgehead_atoms,
+    num_saturated_heterocycles, num_spiro_atoms, tpsa,
 };
 use chematic_smiles::parse;
 
@@ -31,81 +31,146 @@ fn assert_approx(label: &str, got: f64, expected: f64, tol: f64) {
 #[test]
 fn mw_aspirin() {
     // C9H8O4 — RDKit: 180.159
-    assert_approx("MW aspirin", molecular_weight(&mol("CC(=O)Oc1ccccc1C(=O)O")), 180.159, 0.01);
+    assert_approx(
+        "MW aspirin",
+        molecular_weight(&mol("CC(=O)Oc1ccccc1C(=O)O")),
+        180.159,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_caffeine() {
     // C8H10N4O2 — RDKit: 194.194
-    assert_approx("MW caffeine", molecular_weight(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 194.194, 0.01);
+    assert_approx(
+        "MW caffeine",
+        molecular_weight(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")),
+        194.194,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_indole() {
     // C8H7N — RDKit: 117.151
-    assert_approx("MW indole", molecular_weight(&mol("c1ccc2[nH]ccc2c1")), 117.151, 0.01);
+    assert_approx(
+        "MW indole",
+        molecular_weight(&mol("c1ccc2[nH]ccc2c1")),
+        117.151,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_glucose() {
     // C6H12O6 — RDKit: 180.156
-    assert_approx("MW glucose", molecular_weight(&mol("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O")), 180.156, 0.01);
+    assert_approx(
+        "MW glucose",
+        molecular_weight(&mol("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O")),
+        180.156,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_lidocaine() {
     // C14H22N2O — RDKit: 234.338
-    assert_approx("MW lidocaine", molecular_weight(&mol("CCN(CC)CC(=O)Nc1c(C)cccc1C")), 234.338, 0.01);
+    assert_approx(
+        "MW lidocaine",
+        molecular_weight(&mol("CCN(CC)CC(=O)Nc1c(C)cccc1C")),
+        234.338,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_warfarin() {
     // Real warfarin: C19H16O4 — RDKit: 308.333
-    assert_approx("MW warfarin", molecular_weight(&mol("CC(=O)CC(c1ccccc1)C1C(=O)c2ccccc2OC1=O")), 308.333, 0.01);
+    assert_approx(
+        "MW warfarin",
+        molecular_weight(&mol("CC(=O)CC(c1ccccc1)C1C(=O)c2ccccc2OC1=O")),
+        308.333,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_naproxen() {
     // C14H14O3 — RDKit: 230.259
-    assert_approx("MW naproxen", molecular_weight(&mol("CC(C(=O)O)c1ccc2cc(OC)ccc2c1")), 230.259, 0.01);
+    assert_approx(
+        "MW naproxen",
+        molecular_weight(&mol("CC(C(=O)O)c1ccc2cc(OC)ccc2c1")),
+        230.259,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_methotrexate() {
     // C20H22N8O5 — RDKit: 454.447
-    assert_approx("MW methotrexate",
-        molecular_weight(&mol("CN(Cc1cnc2nc(N)nc(N)c2n1)c1ccc(cc1)C(=O)NC(CCC(=O)O)C(=O)O")),
-        454.447, 0.01);
+    assert_approx(
+        "MW methotrexate",
+        molecular_weight(&mol(
+            "CN(Cc1cnc2nc(N)nc(N)c2n1)c1ccc(cc1)C(=O)NC(CCC(=O)O)C(=O)O",
+        )),
+        454.447,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_paracetamol() {
     // C8H9NO2 — RDKit: 151.163
-    assert_approx("MW paracetamol", molecular_weight(&mol("CC(=O)Nc1ccc(O)cc1")), 151.163, 0.01);
+    assert_approx(
+        "MW paracetamol",
+        molecular_weight(&mol("CC(=O)Nc1ccc(O)cc1")),
+        151.163,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_ibuprofen() {
     // C13H18O2 — RDKit: 206.285
-    assert_approx("MW ibuprofen", molecular_weight(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")), 206.285, 0.01);
+    assert_approx(
+        "MW ibuprofen",
+        molecular_weight(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")),
+        206.285,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_glycine() {
     // C2H5NO2 — RDKit: 75.067
-    assert_approx("MW glycine", molecular_weight(&mol("NCC(=O)O")), 75.067, 0.01);
+    assert_approx(
+        "MW glycine",
+        molecular_weight(&mol("NCC(=O)O")),
+        75.067,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_benzene() {
     // C6H6 — RDKit: 78.114
-    assert_approx("MW benzene", molecular_weight(&mol("c1ccccc1")), 78.114, 0.01);
+    assert_approx(
+        "MW benzene",
+        molecular_weight(&mol("c1ccccc1")),
+        78.114,
+        0.01,
+    );
 }
 
 #[test]
 fn mw_naphthalene() {
     // C10H8 — RDKit: 128.174
-    assert_approx("MW naphthalene", molecular_weight(&mol("c1ccc2ccccc2c1")), 128.174, 0.01);
+    assert_approx(
+        "MW naphthalene",
+        molecular_weight(&mol("c1ccc2ccccc2c1")),
+        128.174,
+        0.01,
+    );
 }
 
 // ── TPSA ─────────────────────────────────────────────────────────────────────
@@ -113,7 +178,12 @@ fn mw_naphthalene() {
 #[test]
 fn tpsa_aspirin() {
     // RDKit: 63.60 Å²
-    assert_approx("TPSA aspirin", tpsa(&mol("CC(=O)Oc1ccccc1C(=O)O")), 63.60, 1.0);
+    assert_approx(
+        "TPSA aspirin",
+        tpsa(&mol("CC(=O)Oc1ccccc1C(=O)O")),
+        63.60,
+        1.0,
+    );
 }
 
 #[test]
@@ -121,26 +191,45 @@ fn tpsa_caffeine() {
     // RDKit: 61.82 Å²
     // Fix: aromatic N with deg≥3 (N-substituted) gets 4.93 (RDKit value), not 12.89.
     // 3 N-methyl/N-aryl @ 4.93 + 1 pyridine-type @ 12.89 + 2 C=O @ 17.07 = 61.82.
-    assert_approx("TPSA caffeine", tpsa(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 61.82, 1.0);
+    assert_approx(
+        "TPSA caffeine",
+        tpsa(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")),
+        61.82,
+        1.0,
+    );
 }
 
 #[test]
 fn tpsa_paracetamol() {
     // RDKit: 49.33 Å²
-    assert_approx("TPSA paracetamol", tpsa(&mol("CC(=O)Nc1ccc(O)cc1")), 49.33, 5.0);
+    assert_approx(
+        "TPSA paracetamol",
+        tpsa(&mol("CC(=O)Nc1ccc(O)cc1")),
+        49.33,
+        5.0,
+    );
 }
 
 #[test]
 fn tpsa_lidocaine() {
     // RDKit: 32.34 Å² (amide N-H + tertiary N)
-    assert_approx("TPSA lidocaine", tpsa(&mol("CCN(CC)CC(=O)Nc1c(C)cccc1C")), 32.34, 10.0);
+    assert_approx(
+        "TPSA lidocaine",
+        tpsa(&mol("CCN(CC)CC(=O)Nc1c(C)cccc1C")),
+        32.34,
+        10.0,
+    );
 }
 
 #[test]
 fn tpsa_glucose() {
     // RDKit: 110.38 Å²
-    assert_approx("TPSA glucose",
-        tpsa(&mol("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O")), 110.38, 1.0);
+    assert_approx(
+        "TPSA glucose",
+        tpsa(&mol("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O")),
+        110.38,
+        1.0,
+    );
 }
 
 #[test]
@@ -182,13 +271,23 @@ fn tpsa_dimethyl_sulfoxide() {
 #[test]
 fn tpsa_dimethyl_sulfone() {
     // RDKit: 42.52 Å² (sulfone S; each S=O oxygen contributes 0)
-    assert_approx("TPSA dimethylsulfone", tpsa(&mol("CS(C)(=O)=O")), 42.52, 0.1);
+    assert_approx(
+        "TPSA dimethylsulfone",
+        tpsa(&mol("CS(C)(=O)=O")),
+        42.52,
+        0.1,
+    );
 }
 
 #[test]
 fn tpsa_methanesulfonic_acid() {
     // RDKit: 62.75 Å² (sulfone 42.52 + OH 20.23)
-    assert_approx("TPSA methanesulfonic acid", tpsa(&mol("CS(=O)(=O)O")), 62.75, 0.1);
+    assert_approx(
+        "TPSA methanesulfonic acid",
+        tpsa(&mol("CS(=O)(=O)O")),
+        62.75,
+        0.1,
+    );
 }
 
 #[test]
@@ -206,9 +305,14 @@ fn tpsa_indole() {
 #[test]
 fn tpsa_methotrexate() {
     // RDKit: 210.54 Å²
-    assert_approx("TPSA methotrexate",
-        tpsa(&mol("CN(Cc1cnc2nc(N)nc(N)c2n1)c1ccc(cc1)C(=O)NC(CCC(=O)O)C(=O)O")),
-        210.54, 2.0);
+    assert_approx(
+        "TPSA methotrexate",
+        tpsa(&mol(
+            "CN(Cc1cnc2nc(N)nc(N)c2n1)c1ccc(cc1)C(=O)NC(CCC(=O)O)C(=O)O",
+        )),
+        210.54,
+        2.0,
+    );
 }
 
 #[test]
@@ -256,7 +360,10 @@ fn hbd_aspirin() {
 #[test]
 fn hbd_glucose() {
     // 5 OH groups
-    assert_eq!(hbd_count(&mol("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O")), 5);
+    assert_eq!(
+        hbd_count(&mol("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O")),
+        5
+    );
 }
 
 #[test]
@@ -346,13 +453,23 @@ fn logp_benzene() {
 #[test]
 fn logp_pyridine() {
     // RDKit: 1.0816 — confirms [n]=−0.3239
-    assert_approx("LogP pyridine", logp_crippen(&mol("c1ccncc1")), 1.0816, 0.02);
+    assert_approx(
+        "LogP pyridine",
+        logp_crippen(&mol("c1ccncc1")),
+        1.0816,
+        0.02,
+    );
 }
 
 #[test]
 fn logp_thiophene() {
     // RDKit: 1.7481 — confirms [s]=+0.6237
-    assert_approx("LogP thiophene", logp_crippen(&mol("c1ccsc1")), 1.7481, 0.02);
+    assert_approx(
+        "LogP thiophene",
+        logp_crippen(&mol("c1ccsc1")),
+        1.7481,
+        0.02,
+    );
 }
 
 #[test]
@@ -376,25 +493,45 @@ fn logp_acetone() {
 #[test]
 fn logp_acetic_acid() {
     // RDKit: 0.0909 — confirms carboxylic acid H=+0.2980
-    assert_approx("LogP acetic acid", logp_crippen(&mol("CC(=O)O")), 0.0909, 0.05);
+    assert_approx(
+        "LogP acetic acid",
+        logp_crippen(&mol("CC(=O)O")),
+        0.0909,
+        0.05,
+    );
 }
 
 #[test]
 fn logp_aspirin() {
     // RDKit: 1.3101; ester-type C=O gets slightly different weight in full Crippen (tol=0.35)
-    assert_approx("LogP aspirin", logp_crippen(&mol("CC(=O)Oc1ccccc1C(=O)O")), 1.3101, 0.35);
+    assert_approx(
+        "LogP aspirin",
+        logp_crippen(&mol("CC(=O)Oc1ccccc1C(=O)O")),
+        1.3101,
+        0.35,
+    );
 }
 
 #[test]
 fn logp_caffeine() {
     // RDKit: -1.0293
-    assert_approx("LogP caffeine", logp_crippen(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), -1.0293, 0.20);
+    assert_approx(
+        "LogP caffeine",
+        logp_crippen(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")),
+        -1.0293,
+        0.20,
+    );
 }
 
 #[test]
 fn logp_pyrimidine() {
     // RDKit: 0.4766 — confirms two [n] = 2×(−0.3239)
-    assert_approx("LogP pyrimidine", logp_crippen(&mol("c1ccncn1")), 0.4766, 0.02);
+    assert_approx(
+        "LogP pyrimidine",
+        logp_crippen(&mol("c1ccncn1")),
+        0.4766,
+        0.02,
+    );
 }
 
 #[test]
@@ -406,13 +543,23 @@ fn logp_tetrahydrofuran() {
 #[test]
 fn logp_dimethyl_sulfide() {
     // RDKit: 0.9792 — confirms thioether S=+0.6482
-    assert_approx("LogP dimethyl sulfide", logp_crippen(&mol("CSC")), 0.9792, 0.02);
+    assert_approx(
+        "LogP dimethyl sulfide",
+        logp_crippen(&mol("CSC")),
+        0.9792,
+        0.02,
+    );
 }
 
 #[test]
 fn logp_chlorobenzene() {
     // RDKit: 2.3400 — confirms Cl_ar=+0.7904
-    assert_approx("LogP chlorobenzene", logp_crippen(&mol("Clc1ccccc1")), 2.3400, 0.02);
+    assert_approx(
+        "LogP chlorobenzene",
+        logp_crippen(&mol("Clc1ccccc1")),
+        2.3400,
+        0.02,
+    );
 }
 
 #[test]
@@ -427,49 +574,84 @@ fn logp_dichloromethane() {
 fn logp_phenol() {
     // Fix1: phenolic H = +0.1319 (was −0.2677 aliphatic alcohol)
     // RDKit: 1.3922 — exact match
-    assert_approx("LogP phenol", logp_crippen(&mol("c1ccccc1O")), 1.3922, 0.005);
+    assert_approx(
+        "LogP phenol",
+        logp_crippen(&mol("c1ccccc1O")),
+        1.3922,
+        0.005,
+    );
 }
 
 #[test]
 fn logp_catechol() {
     // Fix1 × 2: two phenolic OH groups
     // RDKit: 1.0978 — exact match
-    assert_approx("LogP catechol", logp_crippen(&mol("Oc1ccccc1O")), 1.0978, 0.005);
+    assert_approx(
+        "LogP catechol",
+        logp_crippen(&mol("Oc1ccccc1O")),
+        1.0978,
+        0.005,
+    );
 }
 
 #[test]
 fn logp_salicylic_acid() {
     // Fix1 (phenolic OH) + Fix2 (ArC=O); combined 0.6570 exact
     // RDKit: 1.0904 — exact match
-    assert_approx("LogP salicylic acid", logp_crippen(&mol("OC(=O)c1ccccc1O")), 1.0904, 0.01);
+    assert_approx(
+        "LogP salicylic acid",
+        logp_crippen(&mol("OC(=O)c1ccccc1O")),
+        1.0904,
+        0.01,
+    );
 }
 
 #[test]
 fn logp_toluene() {
     // Fix3: benzyl CH3-Ar = 0.0764 (was 0.1441 pure alkyl)
     // RDKit: 1.9950 — exact match
-    assert_approx("LogP toluene", logp_crippen(&mol("Cc1ccccc1")), 1.9950, 0.01);
+    assert_approx(
+        "LogP toluene",
+        logp_crippen(&mol("Cc1ccccc1")),
+        1.9950,
+        0.01,
+    );
 }
 
 #[test]
 fn logp_ethylbenzene() {
     // Fix3: benzyl CH2-Ar = −0.0597 (was 0.1441)
     // RDKit: 2.2490 — exact match
-    assert_approx("LogP ethylbenzene", logp_crippen(&mol("CCc1ccccc1")), 2.2490, 0.01);
+    assert_approx(
+        "LogP ethylbenzene",
+        logp_crippen(&mol("CCc1ccccc1")),
+        2.2490,
+        0.01,
+    );
 }
 
 #[test]
 fn logp_aniline() {
     // Fix4: primary aniline N (h=2, adj to Ar) = −0.7092 (was −1.0190 aliphatic)
     // RDKit: 1.2688 — exact match
-    assert_approx("LogP aniline", logp_crippen(&mol("Nc1ccccc1")), 1.2688, 0.01);
+    assert_approx(
+        "LogP aniline",
+        logp_crippen(&mol("Nc1ccccc1")),
+        1.2688,
+        0.01,
+    );
 }
 
 #[test]
 fn logp_thiophenol() {
     // Fix5: thiol S (h>0, no =O) = 0.3132 (was 0.6482 thioether)
     // RDKit: 1.9753 — exact match
-    assert_approx("LogP thiophenol", logp_crippen(&mol("Sc1ccccc1")), 1.9753, 0.02);
+    assert_approx(
+        "LogP thiophenol",
+        logp_crippen(&mol("Sc1ccccc1")),
+        1.9753,
+        0.02,
+    );
 }
 
 // ── Sprint D: TPSA imine NH, phosphate P ────────────────────────────────────
@@ -478,28 +660,48 @@ fn logp_thiophenol() {
 fn tpsa_metformin() {
     // CN(C)C(=N)NC(=N)N — RDKit: 88.99 Å²
     // Tests terminal imine C=N-H (h=1, sp2) → 23.79 Å² (not 12.03 like sp3 NH)
-    assert_approx("TPSA metformin", tpsa(&mol("CN(C)C(=N)NC(=N)N")), 88.99, 0.5);
+    assert_approx(
+        "TPSA metformin",
+        tpsa(&mol("CN(C)C(=N)NC(=N)N")),
+        88.99,
+        0.5,
+    );
 }
 
 #[test]
 fn tpsa_arginine() {
     // N[C@@H](CCCNC(=N)N)C(=O)O — RDKit: 125.22 Å²
     // Tests guanidinium =N-H in amino acid side chain
-    assert_approx("TPSA arginine", tpsa(&mol("N[C@@H](CCCNC(=N)N)C(=O)O")), 125.22, 0.5);
+    assert_approx(
+        "TPSA arginine",
+        tpsa(&mol("N[C@@H](CCCNC(=N)N)C(=O)O")),
+        125.22,
+        0.5,
+    );
 }
 
 #[test]
 fn tpsa_trimethyl_phosphate() {
     // COP(=O)(OC)OC — RDKit: 54.57 Å²
     // Tests phosphate P=O → 26.88 Å² (not 34.14 for phosphine)
-    assert_approx("TPSA trimethyl phosphate", tpsa(&mol("COP(=O)(OC)OC")), 54.57, 0.5);
+    assert_approx(
+        "TPSA trimethyl phosphate",
+        tpsa(&mol("COP(=O)(OC)OC")),
+        54.57,
+        0.5,
+    );
 }
 
 #[test]
 fn logp_trimethyl_phosphate() {
     // COP(=O)(OC)OC — RDKit: 1.0337
     // Tests phosphate ester P(=O) LogP contribution (+0.7933)
-    assert_approx("LogP trimethyl phosphate", logp_crippen(&mol("COP(=O)(OC)OC")), 1.0337, 0.15);
+    assert_approx(
+        "LogP trimethyl phosphate",
+        logp_crippen(&mol("COP(=O)(OC)OC")),
+        1.0337,
+        0.15,
+    );
 }
 
 // ── Sprint D: new ring descriptors ──────────────────────────────────────────
@@ -507,9 +709,21 @@ fn logp_trimethyl_phosphate() {
 #[test]
 fn ring_descs_pyridine() {
     let m = mol("c1ccncc1");
-    assert_eq!(num_aromatic_heterocycles(&m), 1, "pyridine aromatic hetero rings");
-    assert_eq!(num_aliphatic_heterocycles(&m), 0, "pyridine aliphatic hetero rings");
-    assert_eq!(num_saturated_heterocycles(&m), 0, "pyridine saturated hetero rings");
+    assert_eq!(
+        num_aromatic_heterocycles(&m),
+        1,
+        "pyridine aromatic hetero rings"
+    );
+    assert_eq!(
+        num_aliphatic_heterocycles(&m),
+        0,
+        "pyridine aliphatic hetero rings"
+    );
+    assert_eq!(
+        num_saturated_heterocycles(&m),
+        0,
+        "pyridine saturated hetero rings"
+    );
     assert_eq!(num_spiro_atoms(&m), 0, "pyridine spiro");
     assert_eq!(num_bridgehead_atoms(&m), 0, "pyridine bridgehead");
 }
@@ -517,7 +731,11 @@ fn ring_descs_pyridine() {
 #[test]
 fn ring_descs_benzene() {
     let m = mol("c1ccccc1");
-    assert_eq!(num_aromatic_heterocycles(&m), 0, "benzene has no hetero ring");
+    assert_eq!(
+        num_aromatic_heterocycles(&m),
+        0,
+        "benzene has no hetero ring"
+    );
     assert_eq!(num_spiro_atoms(&m), 0);
     assert_eq!(num_bridgehead_atoms(&m), 0);
 }
@@ -567,12 +785,22 @@ fn ring_descs_naphthalene_no_spiro() {
 fn logp_metformin() {
     // CN(C)C(=N)NC(=N)N — RDKit: -1.0340
     // All 5 N atoms are guanidinium/amidine type (Crippen N14) → -0.335 each.
-    assert_approx("LogP metformin", logp_crippen(&mol("CN(C)C(=N)NC(=N)N")), -1.034, 0.05);
+    assert_approx(
+        "LogP metformin",
+        logp_crippen(&mol("CN(C)C(=N)NC(=N)N")),
+        -1.034,
+        0.05,
+    );
 }
 
 #[test]
 fn logp_arginine_guanidinium() {
     // N[C@@H](CCCNC(=N)N)C(=O)O — RDKit: -1.01
     // Guanidinium =N and two adjacent N atoms get N14 type.
-    assert_approx("LogP arginine", logp_crippen(&mol("N[C@@H](CCCNC(=N)N)C(=O)O")), -1.01, 0.25);
+    assert_approx(
+        "LogP arginine",
+        logp_crippen(&mol("N[C@@H](CCCNC(=N)N)C(=O)O")),
+        -1.01,
+        0.25,
+    );
 }

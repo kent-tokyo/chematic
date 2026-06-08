@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Chirality, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Molecule};
 
 /// The result of a CIP stereochemistry assignment run.
 #[derive(Debug)]
@@ -47,10 +47,10 @@ pub fn assign_cip(mol: &Molecule) -> CipAssignment {
     // Axial chirality for allenes (>C=C=C<)
     for i in 0..mol.atom_count() {
         let idx = AtomIdx(i as u32);
-        if is_allene_central(mol, idx) {
-            if let Some((atom_idx, code)) = assign_allene(mol, idx) {
-                assignments.push((atom_idx, code));
-            }
+        if is_allene_central(mol, idx)
+            && let Some((atom_idx, code)) = assign_allene(mol, idx)
+        {
+            assignments.push((atom_idx, code));
         }
     }
 
@@ -70,7 +70,11 @@ fn atom_key(mol: &Molecule, idx: AtomIdx) -> (u8, Option<u16>, f64) {
         return (1, None, 1.007825);
     }
     let a = mol.atom(idx);
-    (a.element.atomic_number(), a.isotope, a.element.atomic_mass())
+    (
+        a.element.atomic_number(),
+        a.isotope,
+        a.element.atomic_mass(),
+    )
 }
 
 /// Compare two `(atomic_num, isotope, atomic_mass)` keys by CIP priority.
@@ -148,11 +152,11 @@ fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<Sp
         let child_depth = state.depth + 1;
 
         // Phantom of parent: add if the bond used to reach this node was double.
-        if let Some((_, bond_to_parent)) = mol.bond_between(state.node, state.parent) {
-            if bond_to_parent.order == BondOrder::Double {
-                let phantom_key = atom_key(mol, state.parent);
-                layers.entry(child_depth).or_default().push(phantom_key);
-            }
+        if let Some((_, bond_to_parent)) = mol.bond_between(state.node, state.parent)
+            && bond_to_parent.order == BondOrder::Double
+        {
+            let phantom_key = atom_key(mol, state.parent);
+            layers.entry(child_depth).or_default().push(phantom_key);
         }
 
         for (nb, _) in mol.neighbors(state.node) {
@@ -193,12 +197,7 @@ fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<Sp
 /// Compare two branches from `center` starting at `a` and `b`.
 ///
 /// Returns `Ordering::Greater` if branch `a` has higher CIP priority than `b`.
-fn compare_branches(
-    mol: &Molecule,
-    center: AtomIdx,
-    a: AtomIdx,
-    b: AtomIdx,
-) -> std::cmp::Ordering {
+fn compare_branches(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> std::cmp::Ordering {
     use std::cmp::Ordering::*;
 
     // Depth-0 comparison: the substituent atoms themselves.
@@ -292,14 +291,11 @@ fn assign_tetrahedral(mol: &Molecule, idx: AtomIdx) -> Option<CipCode> {
     // "Preceding atom" = the atom that forms the bond into this atom from the left in
     // the SMILES string.  In the adjacency list, that atom is always added FIRST
     // (before branches and continuations) and therefore has a SMALLER atom index.
-    let has_bracket_h = atom.hydrogen_count.map_or(false, |h| h > 0);
+    let has_bracket_h = atom.hydrogen_count.is_some_and(|h| h > 0);
     if has_bracket_h {
         // Detect whether a preceding atom is present: the first neighbor, if its index
         // is smaller than `idx`, is the preceding atom.
-        let has_preceding = neighbors
-            .first()
-            .map(|&nb| nb.0 < idx.0)
-            .unwrap_or(false);
+        let has_preceding = neighbors.first().map(|&nb| nb.0 < idx.0).unwrap_or(false);
         let h_insert_pos = if has_preceding { 1 } else { 0 };
         neighbors.insert(h_insert_pos, AtomIdx(u32::MAX));
     }
@@ -444,7 +440,11 @@ fn assign_allene(mol: &Molecule, central_idx: AtomIdx) -> Option<(AtomIdx, CipCo
     let up_t2 = substituent_is_up(mol, t2, high_t2)?;
 
     // Same side → Z (aS / M); opposite → E (aR / P).
-    let code = if up_t1 == up_t2 { CipCode::Z } else { CipCode::E };
+    let code = if up_t1 == up_t2 {
+        CipCode::Z
+    } else {
+        CipCode::E
+    };
     Some((t1, code))
 }
 
@@ -487,7 +487,11 @@ fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
     let up_a2 = substituent_is_up(mol, a2, high_sub_a2)?;
 
     // Same side → Z (zusammen); opposite → E (entgegen).
-    let code = if up_a1 == up_a2 { CipCode::Z } else { CipCode::E };
+    let code = if up_a1 == up_a2 {
+        CipCode::Z
+    } else {
+        CipCode::E
+    };
     Some((a1, code))
 }
 
@@ -734,7 +738,8 @@ mod tests {
 
         let mol_e = parse("F/C=C/Cl").unwrap();
         let can_e = canonical_smiles(&mol_e);
-        let mol_e2 = parse(&can_e).unwrap_or_else(|err| panic!("canonical E not parseable: {can_e} → {err}"));
+        let mol_e2 = parse(&can_e)
+            .unwrap_or_else(|err| panic!("canonical E not parseable: {can_e} → {err}"));
         let assign_e = assign_cip(&mol_e2);
         assert!(
             assign_e.assignments.iter().any(|(_, c)| *c == CipCode::E),
@@ -743,7 +748,8 @@ mod tests {
 
         let mol_z = parse("F/C=C\\Cl").unwrap();
         let can_z = canonical_smiles(&mol_z);
-        let mol_z2 = parse(&can_z).unwrap_or_else(|err| panic!("canonical Z not parseable: {can_z} → {err}"));
+        let mol_z2 = parse(&can_z)
+            .unwrap_or_else(|err| panic!("canonical Z not parseable: {can_z} → {err}"));
         let assign_z = assign_cip(&mol_z2);
         assert!(
             assign_z.assignments.iter().any(|(_, c)| *c == CipCode::Z),
@@ -758,8 +764,14 @@ mod tests {
         // Propadiene (allene without any stereo bonds) → no assignment.
         let mol = parse("C=C=C").unwrap();
         let a = assign_cip(&mol);
-        let has_allene = a.assignments.iter().any(|(_, c)| matches!(c, CipCode::E | CipCode::Z));
-        assert!(!has_allene, "unspecified allene should have no axial chirality");
+        let has_allene = a
+            .assignments
+            .iter()
+            .any(|(_, c)| matches!(c, CipCode::E | CipCode::Z));
+        assert!(
+            !has_allene,
+            "unspecified allene should have no axial chirality"
+        );
     }
 
     #[test]
@@ -775,10 +787,10 @@ mod tests {
         let c3 = b.add_atom(Atom::new(Element::C));
         let c4 = b.add_atom(Atom::new(Element::C));
         let f5 = b.add_atom(Atom::new(Element::F));
-        b.add_bond(f1, c2, BO::Up).unwrap();    // F1 up relative to C2
+        b.add_bond(f1, c2, BO::Up).unwrap(); // F1 up relative to C2
         b.add_bond(c2, c3, BO::Double).unwrap();
         b.add_bond(c3, c4, BO::Double).unwrap();
-        b.add_bond(c4, f5, BO::Down).unwrap();  // F5 down relative to C4
+        b.add_bond(c4, f5, BO::Down).unwrap(); // F5 down relative to C4
         let mol_a = b.build();
 
         // Same but with both F Up (same side)
@@ -791,20 +803,33 @@ mod tests {
         b2.add_bond(f1b, c2b, BO::Up).unwrap();
         b2.add_bond(c2b, c3b, BO::Double).unwrap();
         b2.add_bond(c3b, c4b, BO::Double).unwrap();
-        b2.add_bond(c4b, f5b, BO::Up).unwrap();  // both Up
+        b2.add_bond(c4b, f5b, BO::Up).unwrap(); // both Up
         let mol_b = b2.build();
 
-        let code_a = assign_cip(&mol_a).assignments.iter()
+        let code_a = assign_cip(&mol_a)
+            .assignments
+            .iter()
             .find(|(_, c)| matches!(c, CipCode::E | CipCode::Z))
             .map(|(_, c)| *c);
-        let code_b = assign_cip(&mol_b).assignments.iter()
+        let code_b = assign_cip(&mol_b)
+            .assignments
+            .iter()
             .find(|(_, c)| matches!(c, CipCode::E | CipCode::Z))
             .map(|(_, c)| *c);
 
         // Both must get an assignment, and they must differ.
-        assert!(code_a.is_some(), "allene A should get an axial chirality code");
-        assert!(code_b.is_some(), "allene B should get an axial chirality code");
-        assert_ne!(code_a, code_b, "the two allene enantiomers must get different codes");
+        assert!(
+            code_a.is_some(),
+            "allene A should get an axial chirality code"
+        );
+        assert!(
+            code_b.is_some(),
+            "allene B should get an axial chirality code"
+        );
+        assert_ne!(
+            code_a, code_b,
+            "the two allene enantiomers must get different codes"
+        );
     }
 
     #[test]
@@ -813,8 +838,14 @@ mod tests {
         let mol = parse("O=C=O").unwrap();
         let a = assign_cip(&mol);
         // CO2 has no substituents for Up/Down bonds, so no allene assignment.
-        let has_allene = a.assignments.iter().any(|(_, c)| matches!(c, CipCode::E | CipCode::Z));
-        assert!(!has_allene, "CO2 should not get axial chirality (no stereo bonds)");
+        let has_allene = a
+            .assignments
+            .iter()
+            .any(|(_, c)| matches!(c, CipCode::E | CipCode::Z));
+        assert!(
+            !has_allene,
+            "CO2 should not get axial chirality (no stereo bonds)"
+        );
     }
 
     // -- CIP rule 4 edge cases (mass tiebreaker and duplicates) --------
@@ -828,10 +859,14 @@ mod tests {
         let l_assign = assign_cip(&l_ala);
         let d_assign = assign_cip(&d_ala);
 
-        let l_code = l_assign.assignments.iter()
+        let l_code = l_assign
+            .assignments
+            .iter()
             .find(|(_, c)| matches!(c, CipCode::R | CipCode::S))
             .map(|(_, c)| *c);
-        let d_code = d_assign.assignments.iter()
+        let d_code = d_assign
+            .assignments
+            .iter()
             .find(|(_, c)| matches!(c, CipCode::R | CipCode::S))
             .map(|(_, c)| *c);
 
@@ -840,18 +875,26 @@ mod tests {
         assert!(d_code.is_some(), "D-alanine should assign R or S");
 
         // They should be opposite.
-        assert_ne!(l_code, d_code, "L and D enantiomers should have opposite R/S");
+        assert_ne!(
+            l_code, d_code,
+            "L and D enantiomers should have opposite R/S"
+        );
     }
 
     #[test]
     fn test_cip_tied_substituents_no_assignment() {
         // When two substituents have identical priority, no R/S is assigned.
         // Example: any center with two identical groups.
-        let mol = parse("CC(F)Br").unwrap();  // no chirality specified, but if we try to assign...
+        let mol = parse("CC(F)Br").unwrap(); // no chirality specified, but if we try to assign...
         let assignment = assign_cip(&mol);
         // No assignment (no @/@@ specified).
-        assert!(assignment.assignments.iter().all(|(_, c)| !matches!(c, CipCode::R | CipCode::S)),
-                "achiral molecule should not get R/S");
+        assert!(
+            assignment
+                .assignments
+                .iter()
+                .all(|(_, c)| !matches!(c, CipCode::R | CipCode::S)),
+            "achiral molecule should not get R/S"
+        );
     }
 
     #[test]
@@ -861,17 +904,47 @@ mod tests {
         use chematic_core::Element;
 
         // Check a few elements have correct masses (monoisotopic, within 0.01 u)
-        assert!((Element::C.atomic_mass() - 12.0).abs() < 0.01, "C ~= 12.0 u, got {}", Element::C.atomic_mass());
-        assert!((Element::N.atomic_mass() - 14.0).abs() < 0.01, "N ~= 14.0 u, got {}", Element::N.atomic_mass());
-        assert!((Element::O.atomic_mass() - 16.0).abs() < 0.01, "O ~= 16.0 u, got {}", Element::O.atomic_mass());
-        assert!((Element::H.atomic_mass() - 1.0).abs() < 0.01, "H ~= 1.0 u, got {}", Element::H.atomic_mass());
-        assert!((Element::F.atomic_mass() - 19.0).abs() < 0.01, "F ~= 19.0 u, got {}", Element::F.atomic_mass());
+        assert!(
+            (Element::C.atomic_mass() - 12.0).abs() < 0.01,
+            "C ~= 12.0 u, got {}",
+            Element::C.atomic_mass()
+        );
+        assert!(
+            (Element::N.atomic_mass() - 14.0).abs() < 0.01,
+            "N ~= 14.0 u, got {}",
+            Element::N.atomic_mass()
+        );
+        assert!(
+            (Element::O.atomic_mass() - 16.0).abs() < 0.01,
+            "O ~= 16.0 u, got {}",
+            Element::O.atomic_mass()
+        );
+        assert!(
+            (Element::H.atomic_mass() - 1.0).abs() < 0.01,
+            "H ~= 1.0 u, got {}",
+            Element::H.atomic_mass()
+        );
+        assert!(
+            (Element::F.atomic_mass() - 19.0).abs() < 0.01,
+            "F ~= 19.0 u, got {}",
+            Element::F.atomic_mass()
+        );
 
         // Verify that identical atoms have identical masses
-        assert_eq!(Element::C.atomic_mass(), Element::C.atomic_mass(), "same element = same mass");
+        assert_eq!(
+            Element::C.atomic_mass(),
+            Element::C.atomic_mass(),
+            "same element = same mass"
+        );
 
         // Verify ordering: heavier atoms > lighter (used in CIP comparison)
-        assert!(Element::N.atomic_mass() > Element::C.atomic_mass(), "N > C in mass");
-        assert!(Element::O.atomic_mass() > Element::N.atomic_mass(), "O > N in mass");
+        assert!(
+            Element::N.atomic_mass() > Element::C.atomic_mass(),
+            "N > C in mass"
+        );
+        assert!(
+            Element::O.atomic_mass() > Element::N.atomic_mass(),
+            "O > N in mass"
+        );
     }
 }

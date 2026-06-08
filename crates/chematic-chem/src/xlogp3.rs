@@ -46,17 +46,17 @@ pub fn xlogp3_per_atom(mol: &Molecule) -> Vec<f64> {
                 .any(|(_, bi)| mol.bond(bi).order == BondOrder::Triple);
 
             match an {
-                6  => carbon(mol, idx, h, arom, in_ring, has_double, has_triple),
-                7  => nitrogen(mol, idx, h, arom, in_ring, has_double, charge),
-                8  => oxygen(mol, idx, h, arom, in_ring, has_double),
+                6 => carbon(mol, idx, h, arom, in_ring, has_double, has_triple),
+                7 => nitrogen(mol, idx, h, arom, in_ring, has_double, charge),
+                8 => oxygen(mol, idx, h, arom, in_ring, has_double),
                 16 => sulfur(mol, idx, arom, in_ring, has_double),
                 15 => phosphorus(mol, idx),
-                9  => 0.4202,  // F
-                17 => 0.6437,  // Cl
-                35 => 0.6923,  // Br
-                53 => 0.7937,  // I
-                1  => 0.1230,  // explicit H
-                _  => 0.0,
+                9 => 0.4202,  // F
+                17 => 0.6437, // Cl
+                35 => 0.6923, // Br
+                53 => 0.7937, // I
+                1 => 0.1230,  // explicit H
+                _ => 0.0,
             }
         })
         .collect()
@@ -96,8 +96,8 @@ fn carbon(
         } else {
             match h {
                 2.. => 0.3035,
-                1   => 0.2756,
-                _   => 0.0918,
+                1 => 0.2756,
+                _ => 0.0918,
             }
         };
     }
@@ -105,15 +105,15 @@ fn carbon(
     if in_ring {
         match h {
             0 => -0.0460,
-            1 =>  0.0460,
-            _ =>  0.1059,
+            1 => 0.0460,
+            _ => 0.1059,
         }
     } else {
         match h {
-            0 =>  0.0516,
-            1 =>  0.1551,
-            2 =>  0.3741,
-            _ =>  0.5441,
+            0 => 0.0516,
+            1 => 0.1551,
+            2 => 0.3741,
+            _ => 0.5441,
         }
     }
 }
@@ -153,22 +153,22 @@ fn nitrogen(
     }
     // sp3 nitrogen
     if in_ring {
-        if h > 0 { -0.5247 } else { -0.5247 }
+        -0.5247
     } else {
         match h {
             2.. => -0.9923,
-            1   => -0.5893,
-            _   => -0.8406,
+            1 => -0.5893,
+            _ => -0.8406,
         }
     }
 }
 
 fn oxygen(
-    mol: &Molecule,
-    idx: AtomIdx,
+    _mol: &Molecule,
+    _idx: AtomIdx,
     h: u8,
     arom: bool,
-    in_ring: bool,
+    _in_ring: bool,
     has_double: bool,
 ) -> f64 {
     if arom {
@@ -188,9 +188,12 @@ fn sulfur(mol: &Molecule, idx: AtomIdx, arom: bool, _in_ring: bool, has_double: 
         return 0.3765;
     }
     // Sulfoxide: S with exactly one =O
-    let double_o = mol.neighbors(idx).filter(|(nb, bi)| {
-        mol.atom(*nb).element.atomic_number() == 8 && mol.bond(*bi).order == BondOrder::Double
-    }).count();
+    let double_o = mol
+        .neighbors(idx)
+        .filter(|(nb, bi)| {
+            mol.atom(*nb).element.atomic_number() == 8 && mol.bond(*bi).order == BondOrder::Double
+        })
+        .count();
     if double_o == 1 {
         return -0.0093; // sulfoxide
     }
@@ -213,7 +216,8 @@ fn phosphorus(mol: &Molecule, idx: AtomIdx) -> f64 {
     let has_oxo = mol.neighbors(idx).any(|(nb, bi)| {
         mol.atom(nb).element.atomic_number() == 8 && mol.bond(bi).order == BondOrder::Double
     });
-    if has_oxo { 0.1543 } else { 0.1543 }
+    let _has_oxo = has_oxo;
+    0.1543
 }
 
 // ---------------------------------------------------------------------------
@@ -253,7 +257,7 @@ mod tests {
     fn test_xlogp3_ethanol_less_than_hexane() {
         // Ethanol is more hydrophilic than hexane
         let ethanol = xlogp3(&mol("CCO"));
-        let hexane  = xlogp3(&mol("CCCCCC"));
+        let hexane = xlogp3(&mol("CCCCCC"));
         assert!(
             ethanol < hexane,
             "ethanol ({ethanol:.3}) should be less lipophilic than hexane ({hexane:.3})"

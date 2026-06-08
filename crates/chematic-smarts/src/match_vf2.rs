@@ -15,8 +15,8 @@
 use std::collections::HashMap;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
-use chematic_perception::find_sssr;
 use chematic_perception::RingSet;
+use chematic_perception::find_sssr;
 
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 
@@ -36,7 +36,11 @@ struct EvalCtx<'a> {
 
 impl<'a> EvalCtx<'a> {
     fn new(mol: &'a Molecule, config: &'a MatchConfig) -> Self {
-        Self { mol, rings: find_sssr(mol), config }
+        Self {
+            mol,
+            rings: find_sssr(mol),
+            config,
+        }
     }
 }
 
@@ -45,7 +49,7 @@ impl<'a> EvalCtx<'a> {
 // ---------------------------------------------------------------------------
 
 /// Configuration for subgraph matching.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct MatchConfig {
     /// Maximum number of matches to return.
     ///
@@ -69,26 +73,13 @@ pub struct MatchConfig {
     pub use_isotopes: bool,
 }
 
-impl Default for MatchConfig {
-    fn default() -> Self {
-        Self {
-            max_matches: None,
-            use_chirality: false,
-            use_isotopes: false,
-        }
-    }
-}
-
 /// Find all non-overlapping (injective) embeddings of `query` in `mol`.
 ///
 /// Returns a `Vec` of mappings, each mapping a query atom index to a target
 /// `AtomIdx`.  Each individual mapping is injective (no two query atoms map to
 /// the same target atom), but the same target atom may appear in different
 /// mappings.
-pub fn find_matches(
-    query: &QueryMolecule,
-    mol: &Molecule,
-) -> Vec<HashMap<usize, AtomIdx>> {
+pub fn find_matches(query: &QueryMolecule, mol: &Molecule) -> Vec<HashMap<usize, AtomIdx>> {
     find_matches_with_config(query, mol, &MatchConfig::default())
 }
 
@@ -225,16 +216,20 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         AtomPrimitive::Charge(c) => atom.charge == *c,
         AtomPrimitive::HCount(h) => {
             // Total H = explicit H neighbors + implicit H (SMARTS spec includes both).
-            let explicit_h = ctx.mol.neighbors(idx)
+            let explicit_h = ctx
+                .mol
+                .neighbors(idx)
                 .filter(|(nb, _)| ctx.mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             explicit_h + implicit_hcount(ctx.mol, idx) == *h
         }
         AtomPrimitive::Degree(d) => ctx.mol.neighbors(idx).count() as u8 == *d,
         AtomPrimitive::RingMembership(r) => ctx.rings.contains_atom(idx) == *r,
-        AtomPrimitive::RingSize(n) => ctx.rings.rings().iter().any(|ring| {
-            ring.len() == *n as usize && ring.contains(&idx)
-        }),
+        AtomPrimitive::RingSize(n) => ctx
+            .rings
+            .rings()
+            .iter()
+            .any(|ring| ring.len() == *n as usize && ring.contains(&idx)),
         AtomPrimitive::Wildcard => true,
         AtomPrimitive::Recursive(sub_query) => {
             // The target atom `idx` must be the root of at least one embedding
@@ -243,16 +238,25 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         }
         AtomPrimitive::Valence(v) => {
             // Total valence = sum of explicit bond orders + implicit H count.
-            let bond_sum: u8 = ctx.mol.neighbors(idx)
+            let bond_sum: u8 = ctx
+                .mol
+                .neighbors(idx)
                 .map(|(_, bid)| bond_order_int(ctx.mol.bond(bid).order))
                 .sum();
             bond_sum + implicit_hcount(ctx.mol, idx) == *v
         }
         AtomPrimitive::RingBondCount(x) => {
             // Count bonds where both endpoints share at least one SSSR ring.
-            let count = ctx.mol.neighbors(idx).filter(|(nb, _)| {
-                ctx.rings.rings().iter().any(|ring| ring.contains(&idx) && ring.contains(nb))
-            }).count() as u8;
+            let count = ctx
+                .mol
+                .neighbors(idx)
+                .filter(|(nb, _)| {
+                    ctx.rings
+                        .rings()
+                        .iter()
+                        .any(|ring| ring.contains(&idx) && ring.contains(nb))
+                })
+                .count() as u8;
             count == *x
         }
         AtomPrimitive::TotalConnectivity(x) => {
@@ -262,7 +266,12 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         }
         AtomPrimitive::RingCount(n) => {
             // Count how many SSSR rings contain this atom.
-            let count = ctx.rings.rings().iter().filter(|ring| ring.contains(&idx)).count() as u8;
+            let count = ctx
+                .rings
+                .rings()
+                .iter()
+                .filter(|ring| ring.contains(&idx))
+                .count() as u8;
             count == *n
         }
         AtomPrimitive::Hybridization(h) => {
@@ -279,12 +288,21 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
                 let mut has_double = false;
                 for (_, bid) in ctx.mol.neighbors(idx) {
                     match ctx.mol.bond(bid).order {
-                        BondOrder::Triple => { has_triple = true; break; }
+                        BondOrder::Triple => {
+                            has_triple = true;
+                            break;
+                        }
                         BondOrder::Double => has_double = true,
                         _ => {}
                     }
                 }
-                if has_triple { 1 } else if has_double { 2 } else { 3 }
+                if has_triple {
+                    1
+                } else if has_double {
+                    2
+                } else {
+                    3
+                }
             };
             hyb == *h
         }
@@ -444,9 +462,7 @@ fn eval_bond_primitive(
         }
         BondPrimitive::Double => matches!(
             order,
-            BondOrder::Double
-                | BondOrder::QuerySingleOrDouble
-                | BondOrder::QueryDoubleOrAromatic
+            BondOrder::Double | BondOrder::QuerySingleOrDouble | BondOrder::QueryDoubleOrAromatic
         ),
         BondPrimitive::Triple => matches!(order, BondOrder::Triple),
         BondPrimitive::Aromatic => matches!(
@@ -458,7 +474,10 @@ fn eval_bond_primitive(
         BondPrimitive::Any => true,
         BondPrimitive::Ring => {
             // A bond is a "ring bond" if both its endpoints share at least one common ring.
-            ctx.rings.rings().iter().any(|ring| ring.contains(&a) && ring.contains(&b))
+            ctx.rings
+                .rings()
+                .iter()
+                .any(|ring| ring.contains(&a) && ring.contains(&b))
         }
     }
 }
@@ -470,7 +489,7 @@ fn eval_bond_primitive(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parse_smarts, find_matches, find_matches_with_config};
+    use crate::{find_matches, find_matches_with_config, parse_smarts};
     use chematic_smiles::parse;
 
     // -- Isotope matching -----------------------------------------------------
@@ -481,7 +500,11 @@ mod tests {
         let mol = parse("CC").unwrap();
         let query = parse_smarts("[13C]").unwrap();
         let matches = find_matches(&query, &mol);
-        assert_eq!(matches.len(), 2, "[13C] with use_isotopes=false should match all carbons");
+        assert_eq!(
+            matches.len(),
+            2,
+            "[13C] with use_isotopes=false should match all carbons"
+        );
     }
 
     #[test]
@@ -497,9 +520,16 @@ mod tests {
         let mol = b.build();
 
         let query = parse_smarts("[13C]").unwrap();
-        let config = MatchConfig { use_isotopes: true, ..MatchConfig::default() };
+        let config = MatchConfig {
+            use_isotopes: true,
+            ..MatchConfig::default()
+        };
         let matches = find_matches_with_config(&query, &mol, &config);
-        assert_eq!(matches.len(), 1, "[13C] with use_isotopes=true should match only the 13C atom");
+        assert_eq!(
+            matches.len(),
+            1,
+            "[13C] with use_isotopes=true should match only the 13C atom"
+        );
         assert_eq!(matches[0][&0], AtomIdx(0));
     }
 
@@ -508,9 +538,16 @@ mod tests {
         // [13C] with use_isotopes=true should not match unlabeled carbons.
         let mol = parse("CC").unwrap(); // both atoms have isotope=None
         let query = parse_smarts("[13C]").unwrap();
-        let config = MatchConfig { use_isotopes: true, ..MatchConfig::default() };
+        let config = MatchConfig {
+            use_isotopes: true,
+            ..MatchConfig::default()
+        };
         let matches = find_matches_with_config(&query, &mol, &config);
-        assert_eq!(matches.len(), 0, "[13C] with use_isotopes=true should not match unlabeled C");
+        assert_eq!(
+            matches.len(),
+            0,
+            "[13C] with use_isotopes=true should not match unlabeled C"
+        );
     }
 
     // -- Chirality matching ---------------------------------------------------
@@ -522,7 +559,10 @@ mod tests {
         let query = parse_smarts("[C@@H]").unwrap();
         let matches = find_matches(&query, &mol);
         // Default: chirality ignored, so [@] matches any C-H regardless of chirality.
-        assert!(!matches.is_empty(), "chirality should be ignored by default");
+        assert!(
+            !matches.is_empty(),
+            "chirality should be ignored by default"
+        );
     }
 
     #[test]
@@ -531,12 +571,15 @@ mod tests {
         let mol = parse("N[C@@H](C)C(=O)O").unwrap();
 
         let q_ccw = parse_smarts("[C@@H]").unwrap(); // CCW (@@) = kind 2
-        let q_cw  = parse_smarts("[C@H]").unwrap();  // CW  (@)  = kind 1
+        let q_cw = parse_smarts("[C@H]").unwrap(); // CW  (@)  = kind 1
 
-        let config = MatchConfig { use_chirality: true, ..MatchConfig::default() };
+        let config = MatchConfig {
+            use_chirality: true,
+            ..MatchConfig::default()
+        };
 
         let m_ccw = find_matches_with_config(&q_ccw, &mol, &config);
-        let m_cw  = find_matches_with_config(&q_cw,  &mol, &config);
+        let m_cw = find_matches_with_config(&q_cw, &mol, &config);
 
         // [C@@H] must match L-alanine's chiral center.
         assert!(!m_ccw.is_empty(), "[C@@H] should match L-alanine (@@)");

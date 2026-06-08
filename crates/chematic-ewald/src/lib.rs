@@ -5,11 +5,32 @@
 
 #![forbid(unsafe_code)]
 
-pub mod real;
-pub mod pme;
+use std::fmt;
 
-pub use real::{direct_coulomb, direct_coulomb_cutoff, direct_coulomb_damped, K_COULOMB};
+pub mod pme;
+pub mod real;
+
 pub use pme::reciprocal_space_energy;
+pub use real::{K_COULOMB, direct_coulomb, direct_coulomb_cutoff, direct_coulomb_damped};
+
+/// Error type for SPME calculations.
+#[derive(Debug, Clone, PartialEq)]
+pub enum EwaldError {
+    /// Box matrix is singular or near-singular (determinant < 1e-10).
+    SingularBoxMatrix,
+}
+
+impl fmt::Display for EwaldError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EwaldError::SingularBoxMatrix => {
+                write!(f, "singular or near-singular box matrix (determinant < 1e-10)")
+            }
+        }
+    }
+}
+
+impl std::error::Error for EwaldError {}
 
 /// Configuration for PME/SPME calculations.
 #[derive(Clone, Debug)]
@@ -53,15 +74,14 @@ impl BoxVectors {
         let a = self.0[0];
         let b = self.0[1];
         let c = self.0[2];
-        (a[0] * (b[1] * c[2] - b[2] * c[1])
-            - a[1] * (b[0] * c[2] - b[2] * c[0])
+        (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
             + a[2] * (b[0] * c[1] - b[1] * c[0]))
             .abs()
     }
 }
 
 /// Result of Ewald energy calculation.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EwaldResult {
     /// Real-space Coulomb energy (kcal/mol).
     pub real_energy: f64,
@@ -72,7 +92,6 @@ pub struct EwaldResult {
     /// Total Ewald energy = real + reciprocal + self.
     pub total_energy: f64,
 }
-
 
 /// SPME Ewald energy for periodic system.
 ///
@@ -87,11 +106,14 @@ pub struct EwaldResult {
 /// * `config` - PME configuration (alpha, kmax, mesh, spline_order)
 ///
 /// # Returns
-/// `EwaldResult` with breakdown:
+/// `Result<EwaldResult, EwaldError>` with breakdown:
 /// - real_energy: Short-range damped Coulomb (r < r_cut)
 /// - reciprocal_energy: Long-range FFT-based contribution
 /// - self_energy: Self-interaction correction
 /// - total_energy: Sum of all contributions
+///
+/// # Errors
+/// Returns `EwaldError::SingularBoxMatrix` if the box matrix is singular.
 ///
 /// # Notes
 /// - Requires coordinates to be within the periodic box
@@ -102,7 +124,11 @@ pub fn spme_energy(
     charges: &[f64],
     box_vecs: &BoxVectors,
     config: &PmeConfig,
-) -> EwaldResult {
+) -> Result<EwaldResult, EwaldError> {
+    if box_vecs.volume().abs() < 1e-10 {
+        return Err(EwaldError::SingularBoxMatrix);
+    }
+
     let alpha = if config.alpha > 0.0 {
         config.alpha
     } else {
@@ -113,20 +139,21 @@ pub fn spme_energy(
     let real = real::direct_coulomb_damped(coords, charges, alpha);
 
     // Reciprocal-space: FFT-based long-range
-    let reciprocal = pme::reciprocal_space_energy(coords, charges, box_vecs, config);
+    let reciprocal = pme::reciprocal_space_energy(coords, charges, box_vecs, config)?;
 
     // Self-energy: correction for Gaussian charge distribution
     let self_corr = compute_self_energy(charges, alpha);
 
-    EwaldResult {
+    Ok(EwaldResult {
         real_energy: real,
         reciprocal_energy: reciprocal,
         self_energy: self_corr,
         total_energy: real + reciprocal + self_corr,
-    }
+    })
 }
 
 /// Helper: Direct Coulomb with cutoff using flat coordinate array.
+#[allow(dead_code)]
 fn direct_coulomb_cutoff_coords(coords: &[[f64; 3]], charges: &[f64], r_cut: f64) -> f64 {
     let mut energy = 0.0;
     let n = coords.len();
@@ -157,7 +184,6 @@ fn compute_self_energy(charges: &[f64], alpha: f64) -> f64 {
     self_e
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -176,6 +202,29 @@ mod tests {
         let energy = direct_coulomb(&coords, &charges);
         // Expected: K * 1.0 * (-1.0) / 1.0 = -332.0637 kcal/mol (approx)
         let expected = -K_COULOMB;
-        assert!((energy - expected).abs() < 1.0, "energy={}, expected={}", energy, expected);
+        assert!(
+            (energy - expected).abs() < 1.0,
+            "energy={}, expected={}",
+            energy,
+            expected
+        );
+    }
+
+    #[test]
+    fn test_spme_singular_box_returns_error() {
+        let degenerate_box = BoxVectors([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]);
+        let coords = [[0.0, 0.0, 0.0]];
+        let charges = [1.0];
+        let result = spme_energy(&coords, &charges, &degenerate_box, &PmeConfig::default());
+        assert_eq!(result, Err(EwaldError::SingularBoxMatrix));
+    }
+
+    #[test]
+    fn test_spme_valid_box() {
+        let box_vecs = BoxVectors::cubic(10.0);
+        let coords = [[5.0, 5.0, 5.0]];
+        let charges = [1.0];
+        let result = spme_energy(&coords, &charges, &box_vecs, &PmeConfig::default());
+        assert!(result.is_ok());
     }
 }

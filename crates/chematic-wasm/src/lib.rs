@@ -7,6 +7,14 @@ use wasm_bindgen::prelude::*;
 
 /// Maximum atom count for WASM to prevent DoS via unbounded JSON output.
 const WASM_MAX_ATOMS: usize = 10_000;
+/// Maximum input string length accepted by WASM convenience APIs.
+const WASM_MAX_INPUT_BYTES: usize = 1_000_000;
+/// Maximum number of SMILES records accepted by WASM batch APIs.
+const WASM_MAX_BATCH_ITEMS: usize = 1_024;
+/// Maximum length of one SMILES/name/property JSON array string element.
+const WASM_MAX_JSON_STRING_BYTES: usize = 100_000;
+/// Maximum SMARTS matches returned by WASM APIs.
+const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
 #[wasm_bindgen(start)]
 pub fn start() {
@@ -292,9 +300,7 @@ impl MolHandle {
         let counts = chematic_fp::morgan_fp_counts(&self.inner, radius);
         let mut pairs: Vec<(u64, u32)> = counts.into_iter().collect();
         pairs.sort_by_key(|(k, _)| *k);
-        let entries: Vec<String> = pairs.iter()
-            .map(|(k, v)| format!("\"{k}\": {v}"))
-            .collect();
+        let entries: Vec<String> = pairs.iter().map(|(k, v)| format!("\"{k}\": {v}")).collect();
         format!("{{{}}}", entries.join(", "))
     }
 
@@ -370,6 +376,12 @@ pub struct DepictOptions {
     atom_color_entries: Vec<(u32, String)>,
 }
 
+impl Default for DepictOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl DepictOptions {
     #[wasm_bindgen(constructor)]
@@ -382,33 +394,61 @@ impl DepictOptions {
         }
     }
 
-    pub fn set_width(&mut self, w: u32)           { self.inner.width = Some(w); }
-    pub fn set_height(&mut self, h: u32)          { self.inner.height = Some(h); }
-    pub fn set_padding(&mut self, p: f64)         { self.inner.padding = p; }
-    pub fn set_background(&mut self, bg: String)  { self.inner.background = bg; }
-    pub fn set_dark(&mut self, dark: bool)        { self.inner.dark = dark; }
-    pub fn set_highlight_atoms(&mut self, atoms: Vec<u32>) { self.highlight_atoms = atoms; }
-    pub fn set_highlight_bonds(&mut self, bonds: Vec<u32>) { self.highlight_bonds = bonds; }
-    pub fn set_highlight_color(&mut self, color: String)   { self.inner.highlight_color = color; }
+    pub fn set_width(&mut self, w: u32) {
+        self.inner.width = Some(w);
+    }
+    pub fn set_height(&mut self, h: u32) {
+        self.inner.height = Some(h);
+    }
+    pub fn set_padding(&mut self, p: f64) {
+        self.inner.padding = p;
+    }
+    pub fn set_background(&mut self, bg: String) {
+        self.inner.background = bg;
+    }
+    pub fn set_dark(&mut self, dark: bool) {
+        self.inner.dark = dark;
+    }
+    pub fn set_highlight_atoms(&mut self, atoms: Vec<u32>) {
+        self.highlight_atoms = atoms;
+    }
+    pub fn set_highlight_bonds(&mut self, bonds: Vec<u32>) {
+        self.highlight_bonds = bonds;
+    }
+    pub fn set_highlight_color(&mut self, color: String) {
+        self.inner.highlight_color = color;
+    }
     /// Set a per-atom color override (CSS color string).  Calling multiple times
     /// for the same `idx` uses the last value.  The atom is highlighted even if
     /// not in `set_highlight_atoms`.
     pub fn set_atom_color(&mut self, idx: u32, color: String) {
         self.atom_color_entries.push((idx, color));
     }
-    pub fn set_atom_ids(&mut self, v: bool)        { self.inner.atom_ids = v; }
-    pub fn set_show_atom_indices(&mut self, v: bool) { self.inner.show_atom_indices = v; }
-    pub fn set_kekulize(&mut self, v: bool)        { self.inner.kekulize = v; }
+    pub fn set_atom_ids(&mut self, v: bool) {
+        self.inner.atom_ids = v;
+    }
+    pub fn set_show_atom_indices(&mut self, v: bool) {
+        self.inner.show_atom_indices = v;
+    }
+    pub fn set_kekulize(&mut self, v: bool) {
+        self.inner.kekulize = v;
+    }
 
     pub(crate) fn to_render_options(&self) -> chematic_depict::RenderOptions {
         let mut ro = self.inner.clone();
-        ro.highlight_atoms = self.highlight_atoms.iter()
+        ro.highlight_atoms = self
+            .highlight_atoms
+            .iter()
             .map(|&i| chematic_core::AtomIdx(i))
             .collect();
-        ro.highlight_bonds = self.highlight_bonds.iter()
+        ro.highlight_bonds = self
+            .highlight_bonds
+            .iter()
             .map(|&i| chematic_core::BondIdx(i))
             .collect();
-        ro.atom_color_map = self.atom_color_entries.iter()
+        ro.atom_color_map = self
+            .atom_color_entries
+            .iter()
             .map(|(i, c)| (chematic_core::AtomIdx(*i), c.clone()))
             .collect(); // last write wins for duplicate indices
         ro
@@ -424,16 +464,12 @@ impl DepictOptions {
 /// Returns a JS error string on parse failure or if atom count exceeds 10,000.
 #[wasm_bindgen]
 pub fn parse_smiles(s: &str) -> Result<MolHandle, JsValue> {
-    let mol = chematic_smiles::parse(s)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    if mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!(
-            "Molecule exceeds maximum atom count ({} > {})",
-            mol.atom_count(),
-            WASM_MAX_ATOMS
-        )));
-    }
-    Ok(MolHandle { inner: std::rc::Rc::new(mol) })
+    enforce_wasm_input_len("smiles", s)?;
+    let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    enforce_wasm_molecule_size(&mol)?;
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
 }
 
 /// Parse CXSMILES and return preserved metadata as JSON.
@@ -444,16 +480,11 @@ pub fn parse_smiles(s: &str) -> Result<MolHandle, JsValue> {
 /// Returns error if atom count exceeds 10,000.
 #[wasm_bindgen]
 pub fn parse_cxsmiles_json(s: &str) -> Result<String, JsValue> {
-    let cx = chematic_smiles::parse_cxsmiles(s)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    if cx.mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!(
-            "Molecule exceeds maximum atom count ({} > {})",
-            cx.mol.atom_count(),
-            WASM_MAX_ATOMS
-        )));
-    }
-    let atom_props = cx.atom_props
+    enforce_wasm_input_len("cxsmiles", s)?;
+    let cx = chematic_smiles::parse_cxsmiles(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    enforce_wasm_molecule_size(&cx.mol)?;
+    let atom_props = cx
+        .atom_props
         .iter()
         .map(|p| {
             format!(
@@ -465,7 +496,8 @@ pub fn parse_cxsmiles_json(s: &str) -> Result<String, JsValue> {
         })
         .collect::<Vec<_>>()
         .join(",");
-    let zero_bonds = cx.mol
+    let zero_bonds = cx
+        .mol
         .bonds()
         .filter_map(|(bidx, bond)| {
             (bond.order == chematic_core::BondOrder::Zero).then_some(bidx.0.to_string())
@@ -489,8 +521,7 @@ pub fn parse_cxsmiles_json(s: &str) -> Result<String, JsValue> {
 /// Returns error if atom count exceeds 10,000.
 #[wasm_bindgen]
 pub fn normalize_cxsmiles(s: &str) -> Result<String, JsValue> {
-    let cx = chematic_smiles::parse_cxsmiles(s)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let cx = chematic_smiles::parse_cxsmiles(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
     if cx.mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "Molecule exceeds maximum atom count ({} > {})",
@@ -505,8 +536,7 @@ pub fn normalize_cxsmiles(s: &str) -> Result<String, JsValue> {
 /// Returns error if atom count exceeds 10,000.
 #[wasm_bindgen]
 pub fn parse_cxsmarts_json(s: &str) -> Result<String, JsValue> {
-    let cx = chematic_smarts::parse_cxsmarts(s)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let cx = chematic_smarts::parse_cxsmarts(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
     if cx.query.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "Query molecule exceeds maximum atom count ({} > {})",
@@ -514,7 +544,8 @@ pub fn parse_cxsmarts_json(s: &str) -> Result<String, JsValue> {
             WASM_MAX_ATOMS
         )));
     }
-    let atom_props = cx.atom_props
+    let atom_props = cx
+        .atom_props
         .iter()
         .map(|p| {
             format!(
@@ -651,13 +682,17 @@ pub fn minimize_dreiding_json(mol: &MolHandle) -> String {
 /// Return a copy of the molecule with all implicit hydrogens converted to explicit H atoms.
 #[wasm_bindgen]
 pub fn add_hydrogens(mol: &MolHandle) -> MolHandle {
-    MolHandle { inner: std::rc::Rc::new(chematic_chem::add_hydrogens(&mol.inner)) }
+    MolHandle {
+        inner: std::rc::Rc::new(chematic_chem::add_hydrogens(&mol.inner)),
+    }
 }
 
 /// Return a copy of the molecule with all explicit hydrogen atoms removed.
 #[wasm_bindgen]
 pub fn remove_hydrogens(mol: &MolHandle) -> MolHandle {
-    MolHandle { inner: std::rc::Rc::new(chematic_chem::remove_hydrogens(&mol.inner)) }
+    MolHandle {
+        inner: std::rc::Rc::new(chematic_chem::remove_hydrogens(&mol.inner)),
+    }
 }
 
 /// Render a grid SVG from newline-separated SMILES (one per line).
@@ -684,10 +719,7 @@ pub fn depict_svg_grid(smiles_block: &str, cols: usize) -> String {
 pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsValue> {
     let reactant_mols: Result<Vec<chematic_core::Molecule>, _> = reactants_smiles
         .split('|')
-        .map(|s| {
-            chematic_smiles::parse(s.trim())
-                .map_err(|e| JsValue::from_str(&e.to_string()))
-        })
+        .map(|s| chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string())))
         .collect();
     let reactant_mols = reactant_mols?;
     let refs: Vec<&chematic_core::Molecule> = reactant_mols.iter().collect();
@@ -715,15 +747,26 @@ pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsV
 /// Returns `"[]"` if no match. Returns a JS error on invalid SMARTS.
 #[wasm_bindgen]
 pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsValue> {
-    let query = chematic_smarts::parse_smarts(smarts)
-        .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
-    let matches = chematic_smarts::find_matches(&query, &mol.inner);
+    let query =
+        chematic_smarts::parse_smarts(smarts).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    let config = chematic_smarts::MatchConfig {
+        max_matches: Some(WASM_MAX_SMARTS_MATCHES),
+        use_chirality: false,
+        use_isotopes: false,
+    };
+    let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
     let parts: Vec<String> = matches
         .into_iter()
         .map(|m| {
             let mut idxs: Vec<u32> = m.values().map(|a| a.0).collect();
             idxs.sort_unstable();
-            format!("[{}]", idxs.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(","))
+            format!(
+                "[{}]",
+                idxs.iter()
+                    .map(|i| i.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
         })
         .collect();
     Ok(format!("[{}]", parts.join(",")))
@@ -740,10 +783,10 @@ pub fn smarts_match_atoms_with_chirality(
     mol: &MolHandle,
     use_chirality: bool,
 ) -> Result<String, JsValue> {
-    let query = chematic_smarts::parse_smarts(smarts)
-        .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    let query =
+        chematic_smarts::parse_smarts(smarts).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
     let config = chematic_smarts::MatchConfig {
-        max_matches: None,
+        max_matches: Some(WASM_MAX_SMARTS_MATCHES),
         use_chirality,
         use_isotopes: false,
     };
@@ -753,7 +796,13 @@ pub fn smarts_match_atoms_with_chirality(
         .map(|m| {
             let mut idxs: Vec<u32> = m.values().map(|a| a.0).collect();
             idxs.sort_unstable();
-            format!("[{}]", idxs.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(","))
+            format!(
+                "[{}]",
+                idxs.iter()
+                    .map(|i| i.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
         })
         .collect();
     Ok(format!("[{}]", parts.join(",")))
@@ -777,7 +826,7 @@ pub fn generate_3d_pdb(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn generate_3d_minimized_pdb(mol: &MolHandle) -> String {
     let coords = chematic_3d::generate_coords(&mol.inner);
-    let minimized = chematic_3d::minimize(&*mol.inner, coords);
+    let minimized = chematic_3d::minimize(&mol.inner, coords);
     chematic_3d::write_pdb(&mol.inner, &minimized)
 }
 
@@ -859,8 +908,8 @@ pub fn ecfp6_bitvec_with_chirality(mol: &MolHandle, use_chirality: bool) -> Vec<
 /// Returns a self-contained SVG string.  Returns a JS error on invalid input.
 #[wasm_bindgen]
 pub fn depict_reaction_svg(rxn_smiles: &str) -> Result<String, JsValue> {
-    let rxn = chematic_rxn::parse_reaction(rxn_smiles)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let rxn =
+        chematic_rxn::parse_reaction(rxn_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     const MOL_W: u32 = 200;
     const MOL_H: u32 = 180;
@@ -927,9 +976,11 @@ pub fn depict_reaction_svg(rxn_smiles: &str) -> Result<String, JsValue> {
 /// Returns a JS error string on parse failure.
 #[wasm_bindgen]
 pub fn mol_from_v3000_block(block: &str) -> Result<MolHandle, JsValue> {
-    let (mol, _meta) = chematic_mol::parse_mol_v3000(block)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(MolHandle { inner: std::rc::Rc::new(mol) })
+    let (mol, _meta) =
+        chematic_mol::parse_mol_v3000(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
 }
 
 /// Parse a MOL V2000 block and return a `MolHandle`.
@@ -937,9 +988,11 @@ pub fn mol_from_v3000_block(block: &str) -> Result<MolHandle, JsValue> {
 /// Returns a JS error string on parse failure.
 #[wasm_bindgen]
 pub fn mol_from_sdf_block(block: &str) -> Result<MolHandle, JsValue> {
-    let (mol, _meta) = chematic_mol::parse_mol(block)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(MolHandle { inner: std::rc::Rc::new(mol) })
+    let (mol, _meta) =
+        chematic_mol::parse_mol(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
 }
 
 /// Serialize a molecule to a MOL V2000 block with 2D coordinates.
@@ -1012,10 +1065,17 @@ pub fn tanimoto_topo_path(a: &MolHandle, b: &MolHandle) -> f64 {
 #[wasm_bindgen]
 pub fn identify_functional_groups(mol: &MolHandle) -> String {
     let groups = chematic_chem::identify_functional_groups(&mol.inner);
-    let parts: Vec<String> = groups.iter().map(|g| {
-        let atoms: Vec<String> = g.atom_indices.iter().map(|i| i.to_string()).collect();
-        format!("{{\"atoms\":[{}],\"type\":\"{}\"}}", atoms.join(","), g.atom_types)
-    }).collect();
+    let parts: Vec<String> = groups
+        .iter()
+        .map(|g| {
+            let atoms: Vec<String> = g.atom_indices.iter().map(|i| i.to_string()).collect();
+            format!(
+                "{{\"atoms\":[{}],\"type\":\"{}\"}}",
+                atoms.join(","),
+                g.atom_types
+            )
+        })
+        .collect();
     format!("[{}]", parts.join(","))
 }
 
@@ -1070,10 +1130,17 @@ pub fn peoe_vsa_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn detect_functional_groups(mol: &MolHandle) -> String {
     let groups = chematic_chem::detect_named_functional_groups(&mol.inner);
-    let parts: Vec<String> = groups.iter().map(|g| {
-        let atoms: Vec<String> = g.atoms.iter().map(|a| a.0.to_string()).collect();
-        format!("{{\"name\":\"{}\",\"atoms\":[{}]}}", g.name, atoms.join(","))
-    }).collect();
+    let parts: Vec<String> = groups
+        .iter()
+        .map(|g| {
+            let atoms: Vec<String> = g.atoms.iter().map(|a| a.0.to_string()).collect();
+            format!(
+                "{{\"name\":\"{}\",\"atoms\":[{}]}}",
+                g.name,
+                atoms.join(",")
+            )
+        })
+        .collect();
     format!("[{}]", parts.join(","))
 }
 
@@ -1098,8 +1165,7 @@ pub fn get_atom_info(mol: &MolHandle, idx: u32) -> String {
     let symbol = atom.element.symbol();
     let charge = atom.charge;
     let is_aromatic = atom.aromatic;
-    let total_h = atom.hydrogen_count.unwrap_or(0) as u32
-        + implicit_hcount(mol, atom_idx) as u32;
+    let total_h = atom.hydrogen_count.unwrap_or(0) as u32 + implicit_hcount(mol, atom_idx) as u32;
 
     let hybridization = if is_aromatic {
         Some("sp2")
@@ -1109,19 +1175,25 @@ pub fn get_atom_info(mol: &MolHandle, idx: u32) -> String {
         for (_, bond_idx) in mol.neighbors(atom_idx) {
             match mol.bond(bond_idx).order {
                 BondOrder::Double => double_count += 1,
-                BondOrder::Triple => { has_triple = true; break; }
+                BondOrder::Triple => {
+                    has_triple = true;
+                    break;
+                }
                 _ => {}
             }
         }
-        if has_triple { Some("sp") }
-        else if double_count >= 2 { Some("sp") }
-        else if double_count == 1 { Some("sp2") }
-        else { Some("sp3") }
+        if has_triple || double_count >= 2 {
+            Some("sp")
+        } else if double_count == 1 {
+            Some("sp2")
+        } else {
+            Some("sp3")
+        }
     };
 
     let hyb_json = match hybridization {
         Some(h) => format!("\"{}\"", h),
-        None    => "null".to_string(),
+        None => "null".to_string(),
     };
     format!(
         "{{\"element\":\"{}\",\"hybridization\":{},\"charge\":{},\"isAromatic\":{},\"totalHydrogens\":{}}}",
@@ -1148,7 +1220,9 @@ pub fn smiles_to_svg_highlighted(
     color: &str,
 ) -> Result<String, JsValue> {
     let mol = chematic_smiles::parse(smiles)
-        .map(|m| MolHandle { inner: std::rc::Rc::new(m) })
+        .map(|m| MolHandle {
+            inner: std::rc::Rc::new(m),
+        })
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let mut opts = DepictOptions::new();
     opts.set_highlight_atoms(atoms);
@@ -1167,7 +1241,9 @@ pub fn smiles_to_svg_highlighted(
 #[wasm_bindgen]
 pub fn match_smarts_smiles(smiles: &str, smarts: &str) -> Result<String, JsValue> {
     let mol = chematic_smiles::parse(smiles)
-        .map(|m| MolHandle { inner: std::rc::Rc::new(m) })
+        .map(|m| MolHandle {
+            inner: std::rc::Rc::new(m),
+        })
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     smarts_match_atoms(smarts, &mol)
 }
@@ -1177,10 +1253,8 @@ pub fn match_smarts_smiles(smiles: &str, smarts: &str) -> Result<String, JsValue
 /// Returns a JS error on parse failure.
 #[wasm_bindgen]
 pub fn tanimoto_smiles(smiles1: &str, smiles2: &str) -> Result<f64, JsValue> {
-    let m1 = chematic_smiles::parse(smiles1)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let m2 = chematic_smiles::parse(smiles2)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let m1 = chematic_smiles::parse(smiles1).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let m2 = chematic_smiles::parse(smiles2).map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(chematic_fp::tanimoto_ecfp4(&m1, &m2))
 }
 
@@ -1190,7 +1264,9 @@ pub fn tanimoto_smiles(smiles1: &str, smiles2: &str) -> Result<f64, JsValue> {
 #[wasm_bindgen]
 pub fn mol_block_from_smiles(smiles: &str) -> Result<String, JsValue> {
     let mol = chematic_smiles::parse(smiles)
-        .map(|m| MolHandle { inner: std::rc::Rc::new(m) })
+        .map(|m| MolHandle {
+            inner: std::rc::Rc::new(m),
+        })
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(to_mol_block(&mol))
 }
@@ -1253,13 +1329,17 @@ pub fn get_bond_between(mol: &MolHandle, atom1: u32, atom2: u32) -> String {
     )
 }
 
-fn bond_in_ring(mol: &chematic_core::Molecule, a: chematic_core::AtomIdx, b: chematic_core::AtomIdx) -> bool {
+fn bond_in_ring(
+    mol: &chematic_core::Molecule,
+    a: chematic_core::AtomIdx,
+    b: chematic_core::AtomIdx,
+) -> bool {
     let rings = chematic_perception::find_sssr(mol);
     for ring in rings.rings() {
         let n = ring.len();
         for i in 0..n {
-            if (ring[i] == a && ring[(i + 1) % n] == b) ||
-               (ring[i] == b && ring[(i + 1) % n] == a) {
+            if (ring[i] == a && ring[(i + 1) % n] == b) || (ring[i] == b && ring[(i + 1) % n] == a)
+            {
                 return true;
             }
         }
@@ -1335,7 +1415,9 @@ fn molecular_formula(mol: &chematic_core::Molecule) -> String {
 #[wasm_bindgen]
 pub fn murcko_scaffold(mol: &MolHandle) -> MolHandle {
     let scaffold = chematic_chem::murcko_scaffold(&mol.inner);
-    MolHandle { inner: std::rc::Rc::new(scaffold) }
+    MolHandle {
+        inner: std::rc::Rc::new(scaffold),
+    }
 }
 
 /// Generic (atom-type-erased) Murcko scaffold of `mol`.
@@ -1345,7 +1427,9 @@ pub fn murcko_scaffold(mol: &MolHandle) -> MolHandle {
 #[wasm_bindgen]
 pub fn generic_murcko_scaffold(mol: &MolHandle) -> MolHandle {
     let scaffold = chematic_chem::generic_murcko_scaffold(&mol.inner);
-    MolHandle { inner: std::rc::Rc::new(scaffold) }
+    MolHandle {
+        inner: std::rc::Rc::new(scaffold),
+    }
 }
 
 /// Canonical tautomer of `mol`.
@@ -1355,7 +1439,9 @@ pub fn generic_murcko_scaffold(mol: &MolHandle) -> MolHandle {
 #[wasm_bindgen]
 pub fn canonical_tautomer(mol: &MolHandle) -> MolHandle {
     let t = chematic_chem::canonical_tautomer(&mol.inner);
-    MolHandle { inner: std::rc::Rc::new(t) }
+    MolHandle {
+        inner: std::rc::Rc::new(t),
+    }
 }
 
 /// All enumerated tautomers of `mol` as a JSON array of canonical SMILES strings.
@@ -1366,7 +1452,12 @@ pub fn enumerate_tautomers_json(mol: &MolHandle) -> String {
     let tautomers = chematic_chem::enumerate_tautomers(&mol.inner);
     let parts: Vec<String> = tautomers
         .iter()
-        .map(|m| format!("\"{}\"", chematic_smiles::canonical_smiles(m).replace('"', "\\\"")))
+        .map(|m| {
+            format!(
+                "\"{}\"",
+                chematic_smiles::canonical_smiles(m).replace('"', "\\\"")
+            )
+        })
         .collect();
     format!("[{}]", parts.join(","))
 }
@@ -1377,7 +1468,9 @@ pub fn enumerate_tautomers_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn largest_fragment(mol: &MolHandle) -> MolHandle {
     let frag = chematic_chem::largest_fragment(&mol.inner);
-    MolHandle { inner: std::rc::Rc::new(frag) }
+    MolHandle {
+        inner: std::rc::Rc::new(frag),
+    }
 }
 
 /// Neutralize formal charges on `mol` by proton addition/removal.
@@ -1386,7 +1479,9 @@ pub fn largest_fragment(mol: &MolHandle) -> MolHandle {
 #[wasm_bindgen]
 pub fn neutralize_charges(mol: &MolHandle) -> MolHandle {
     let neutral = chematic_chem::neutralize_charges(&mol.inner);
-    MolHandle { inner: std::rc::Rc::new(neutral) }
+    MolHandle {
+        inner: std::rc::Rc::new(neutral),
+    }
 }
 
 /// MACCS 166-bit structural keys fingerprint as a byte array (21 bytes, LSB-first).
@@ -1443,33 +1538,33 @@ pub fn get_descriptors_json(mol: &MolHandle) -> String {
             "\"reosPasses\":{reos},\"painsPasses\":{pains}",
             "}}"
         ),
-        mw    = chematic_chem::molecular_weight(m),
-        em    = chematic_chem::exact_mass(m),
-        tpsa  = chematic_chem::tpsa(m),
-        logp  = chematic_chem::logp_crippen(m),
-        mr    = chematic_chem::molar_refractivity(m),
-        hbd   = chematic_chem::hbd_count(m),
-        hba   = chematic_chem::hba_count(m),
-        rb    = chematic_chem::rotatable_bond_count(m),
-        hac   = chematic_chem::heavy_atom_count(m),
-        rc    = chematic_chem::ring_count(m),
-        arc   = chematic_chem::aromatic_ring_count(m),
-        nh    = chematic_chem::num_heteroatoms(m),
-        nsc   = chematic_chem::num_stereocenters(m),
-        nsp   = chematic_chem::num_spiro_atoms(m),
-        nbh   = chematic_chem::num_bridgehead_atoms(m),
-        fsp3  = chematic_chem::fsp3(m),
-        qed   = chematic_chem::qed(m),
-        sa    = chematic_chem::sa_score(m),
-        fc    = chematic_chem::formal_charge_sum(m),
-        asa   = chematic_chem::labute_asa(m),
+        mw = chematic_chem::molecular_weight(m),
+        em = chematic_chem::exact_mass(m),
+        tpsa = chematic_chem::tpsa(m),
+        logp = chematic_chem::logp_crippen(m),
+        mr = chematic_chem::molar_refractivity(m),
+        hbd = chematic_chem::hbd_count(m),
+        hba = chematic_chem::hba_count(m),
+        rb = chematic_chem::rotatable_bond_count(m),
+        hac = chematic_chem::heavy_atom_count(m),
+        rc = chematic_chem::ring_count(m),
+        arc = chematic_chem::aromatic_ring_count(m),
+        nh = chematic_chem::num_heteroatoms(m),
+        nsc = chematic_chem::num_stereocenters(m),
+        nsp = chematic_chem::num_spiro_atoms(m),
+        nbh = chematic_chem::num_bridgehead_atoms(m),
+        fsp3 = chematic_chem::fsp3(m),
+        qed = chematic_chem::qed(m),
+        sa = chematic_chem::sa_score(m),
+        fc = chematic_chem::formal_charge_sum(m),
+        asa = chematic_chem::labute_asa(m),
         bertz = chematic_chem::bertz_ct(m),
-        wi    = chematic_chem::wiener_index(m),
-        lip   = chematic_chem::lipinski_passes(m),
-        veb   = chematic_chem::veber_passes(m),
-        egan  = chematic_chem::egan_passes(m),
+        wi = chematic_chem::wiener_index(m),
+        lip = chematic_chem::lipinski_passes(m),
+        veb = chematic_chem::veber_passes(m),
+        egan = chematic_chem::egan_passes(m),
         ghose = chematic_chem::ghose_passes(m),
-        reos  = chematic_chem::reos_passes(m),
+        reos = chematic_chem::reos_passes(m),
         pains = chematic_chem::pains_passes(m),
     )
 }
@@ -1494,13 +1589,16 @@ pub fn sdf_to_records_json(sdf: &str) -> String {
             Ok(rec) => {
                 let smi = chematic_smiles::canonical_smiles(&rec.mol);
                 let name = escape_json_string(&rec.meta.name);
-                let props: Vec<String> = rec.properties
+                let props: Vec<String> = rec
+                    .properties
                     .iter()
-                    .map(|(k, v)| format!(
-                        "\"{}\":\"{}\"",
-                        escape_json_string(k),
-                        escape_json_string(v)
-                    ))
+                    .map(|(k, v)| {
+                        format!(
+                            "\"{}\":\"{}\"",
+                            escape_json_string(k),
+                            escape_json_string(v)
+                        )
+                    })
                     .collect();
                 format!(
                     "{{\"smiles\":\"{}\",\"name\":\"{}\",\"properties\":{{{}}}}}",
@@ -1552,17 +1650,20 @@ pub fn depict_svg_grid_highlighted(smiles_block: &str, cols: usize, match_smarts
             let mut opts = chematic_depict::svg::RenderOptions::default();
             if let Some(q) = &query {
                 let matches = chematic_smarts::find_matches(q, mol);
-                opts.highlight_atoms = matches
-                    .into_iter()
-                    .flat_map(|m| m.into_values())
-                    .collect();
+                opts.highlight_atoms = matches.into_iter().flat_map(|m| m.into_values()).collect();
             }
             opts
         })
         .collect();
 
-    let pairs: Vec<(&chematic_core::Molecule, Option<&chematic_depict::svg::RenderOptions>)> =
-        mols.iter().zip(cell_opts.iter()).map(|(m, o)| (m, Some(o))).collect();
+    let pairs: Vec<(
+        &chematic_core::Molecule,
+        Option<&chematic_depict::svg::RenderOptions>,
+    )> = mols
+        .iter()
+        .zip(cell_opts.iter())
+        .map(|(m, o)| (m, Some(o)))
+        .collect();
 
     chematic_depict::depict_svg_grid_with_opts(&pairs, cols)
 }
@@ -1579,7 +1680,8 @@ pub fn depict_svg_grid_highlighted(smiles_block: &str, cols: usize, match_smarts
 #[wasm_bindgen]
 pub fn pains_matches_json(mol: &MolHandle) -> String {
     let names = chematic_chem::pains_matches(&mol.inner);
-    let parts: Vec<String> = names.iter()
+    let parts: Vec<String> = names
+        .iter()
         .map(|n| format!("\"{}\"", n.replace('"', "\\\"")))
         .collect();
     format!("[{}]", parts.join(","))
@@ -1592,7 +1694,9 @@ pub fn pains_matches_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn cip_assignments_json(mol: &MolHandle) -> String {
     let assignment = chematic_chem::assign_cip(&mol.inner);
-    let parts: Vec<String> = assignment.assignments.iter()
+    let parts: Vec<String> = assignment
+        .assignments
+        .iter()
         .map(|(idx, code)| {
             let code_str = match code {
                 chematic_core::CipCode::R => "R",
@@ -1652,7 +1756,11 @@ pub fn shape_descriptors_json(mol: &MolHandle) -> String {
     let m = &*mol.inner;
 
     fn fmt(v: f64) -> String {
-        if v.is_finite() { format!("{v:.4}") } else { "null".to_string() }
+        if v.is_finite() {
+            format!("{v:.4}")
+        } else {
+            "null".to_string()
+        }
     }
 
     format!(
@@ -1677,10 +1785,14 @@ pub fn shape_descriptors_json(mol: &MolHandle) -> String {
 /// Returns a JS error if any SMILES fails to parse (indices would otherwise shift).
 #[wasm_bindgen]
 pub fn maxmin_picks_ecfp4_json(smiles_json: &str, n: usize) -> Result<String, JsValue> {
-    let smiles_list = parse_smiles_json_array(smiles_json);
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
     let mols: Vec<chematic_core::Molecule> = smiles_list
         .iter()
-        .map(|s| chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string())))
+        .map(|s| {
+            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
         .collect::<Result<_, _>>()?;
     let picks = chematic_chem::maxmin_picks(&mols, n, |a, b| {
         chematic_fp::ecfp4(a).tanimoto(&chematic_fp::ecfp4(b))
@@ -1698,10 +1810,14 @@ pub fn maxmin_picks_ecfp4_json(smiles_json: &str, n: usize) -> Result<String, Js
 /// Returns a JS error if any SMILES fails to parse.
 #[wasm_bindgen]
 pub fn butina_cluster_ecfp4_json(smiles_json: &str, cutoff: f64) -> Result<String, JsValue> {
-    let smiles_list = parse_smiles_json_array(smiles_json);
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
     let mols: Vec<chematic_core::Molecule> = smiles_list
         .iter()
-        .map(|s| chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string())))
+        .map(|s| {
+            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
         .collect::<Result<_, _>>()?;
     let clusters = chematic_chem::butina_cluster(&mols, cutoff, |a, b| {
         chematic_fp::ecfp4(a).tanimoto(&chematic_fp::ecfp4(b))
@@ -1723,13 +1839,19 @@ pub fn butina_cluster_ecfp4_json(smiles_json: &str, cutoff: f64) -> Result<Strin
 /// Returns a JS error on SMILES parse failure.
 #[wasm_bindgen]
 pub fn mcs_smiles_json(smiles_json: &str) -> Result<String, JsValue> {
-    let smiles_list = parse_smiles_json_array(smiles_json);
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
     if smiles_list.len() < 2 {
-        return Err(JsValue::from_str("mcs_smiles_json requires at least 2 SMILES"));
+        return Err(JsValue::from_str(
+            "mcs_smiles_json requires at least 2 SMILES",
+        ));
     }
     let mols: Vec<chematic_core::Molecule> = smiles_list
         .iter()
-        .map(|s| chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string())))
+        .map(|s| {
+            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
         .collect::<Result<_, _>>()?;
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let qmol = chematic_smarts::find_mcs(&mol_refs);
@@ -1746,8 +1868,9 @@ pub fn mcs_smiles_json(smiles_json: &str) -> Result<String, JsValue> {
     let mut builder = MoleculeBuilder::new();
     for qa in &qmol.atoms {
         let elem = match &qa.query {
-            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) =>
-                Element::from_atomic_number(*n).unwrap_or(Element::C),
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => {
+                Element::from_atomic_number(*n).unwrap_or(Element::C)
+            }
             _ => Element::C,
         };
         builder.add_atom(Atom::new(elem));
@@ -1756,8 +1879,8 @@ pub fn mcs_smiles_json(smiles_json: &str) -> Result<String, JsValue> {
         for (bond_idx, neighbor_idx) in neighbors {
             if atom_idx < *neighbor_idx {
                 let order = match &qmol.bonds[*bond_idx].query {
-                    BondQuery::Primitive(BondPrimitive::Double)  => BondOrder::Double,
-                    BondQuery::Primitive(BondPrimitive::Triple)  => BondOrder::Triple,
+                    BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
+                    BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
                     BondQuery::Primitive(BondPrimitive::Aromatic) => BondOrder::Aromatic,
                     _ => BondOrder::Single,
                 };
@@ -1778,13 +1901,13 @@ fn escape_json_string(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for ch in s.chars() {
         match ch {
-            '"'  => out.push_str("\\\""),
+            '"' => out.push_str("\\\""),
             '\\' => out.push_str("\\\\"),
             '\n' => out.push_str("\\n"),
             '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
             c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
-            c    => out.push(c),
+            c => out.push(c),
         }
     }
     out
@@ -1811,14 +1934,56 @@ fn json_option_u8_array(values: &[Option<u8>]) -> String {
     format!("[{items}]")
 }
 
-/// Internal helper: extract SMILES strings from a JSON array like `["CC","c1ccccc1"]`.
-fn parse_smiles_json_array(json: &str) -> Vec<String> {
-    // Split on '"' and take every element at an odd index (content inside quotes).
-    json.split('"')
+fn enforce_wasm_input_len(label: &str, input: &str) -> Result<(), JsValue> {
+    if input.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "{label} exceeds maximum input size ({} > {} bytes)",
+            input.len(),
+            WASM_MAX_INPUT_BYTES
+        )));
+    }
+    Ok(())
+}
+
+fn enforce_wasm_molecule_size(mol: &chematic_core::Molecule) -> Result<(), JsValue> {
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "Molecule exceeds maximum atom count ({} > {})",
+            mol.atom_count(),
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(())
+}
+
+fn parse_wasm_string_json_array(json: &str, label: &str) -> Result<Vec<String>, JsValue> {
+    enforce_wasm_input_len(label, json)?;
+    let values: Vec<String> = serde_json::from_str(json)
+        .map_err(|e| JsValue::from_str(&format!("{label} must be a JSON array of strings: {e}")))?;
+    if values.len() > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "{label} exceeds maximum item count ({} > {})",
+            values.len(),
+            WASM_MAX_BATCH_ITEMS
+        )));
+    }
+    if let Some((idx, value)) = values
+        .iter()
         .enumerate()
-        .filter(|(i, _)| i % 2 == 1)
-        .map(|(_, s)| s.to_string())
-        .collect()
+        .find(|(_, value)| value.len() > WASM_MAX_JSON_STRING_BYTES)
+    {
+        return Err(JsValue::from_str(&format!(
+            "{label}[{idx}] exceeds maximum string size ({} > {} bytes)",
+            value.len(),
+            WASM_MAX_JSON_STRING_BYTES
+        )));
+    }
+    Ok(values)
+}
+
+/// Internal helper: extract SMILES strings from a JSON array like `["CC","c1ccccc1"]`.
+fn parse_smiles_json_array(json: &str) -> Result<Vec<String>, JsValue> {
+    parse_wasm_string_json_array(json, "smiles_json")
 }
 
 // ---------------------------------------------------------------------------
@@ -1842,8 +2007,7 @@ impl ConformerHandle {
     /// Returns a JS error on SMILES parse failure.
     #[wasm_bindgen(constructor)]
     pub fn new(smiles: &str) -> Result<ConformerHandle, JsValue> {
-        let mol = chematic_smiles::parse(smiles)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let mol = chematic_smiles::parse(smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
         Ok(ConformerHandle {
             inner: chematic_3d::ConformerEnsemble::new(mol),
         })
@@ -1859,7 +2023,9 @@ impl ConformerHandle {
         let smi = chematic_smiles::canonical_smiles(self.inner.mol());
         let mol = chematic_smiles::parse(&smi)
             .unwrap_or_else(|_| chematic_core::MoleculeBuilder::new().build());
-        MolHandle { inner: std::rc::Rc::new(mol) }
+        MolHandle {
+            inner: std::rc::Rc::new(mol),
+        }
     }
 
     /// Generate a new 3D conformer using distance-geometry and add it to the ensemble.
@@ -1881,7 +2047,8 @@ impl ConformerHandle {
 
     /// Return conformer `idx` as a PDB string, or `null` if `idx` is out of range.
     pub fn get_conformer_pdb(&self, idx: usize) -> Option<String> {
-        self.inner.get_conformer(idx)
+        self.inner
+            .get_conformer(idx)
             .map(|coords| chematic_3d::write_pdb(self.inner.mol(), coords))
     }
 
@@ -1919,7 +2086,9 @@ pub fn mol_with_atom_added(mol: &MolHandle, element_symbol: &str) -> Result<MolH
         .ok_or_else(|| JsValue::from_str(&format!("unknown element: {element_symbol}")))?;
     let atom = chematic_core::Atom::new(element);
     let (new_mol, _) = mol.inner.with_atom_added(atom);
-    Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(new_mol),
+    })
 }
 
 /// Return the index that would be assigned to an atom appended to `mol`.
@@ -1933,16 +2102,28 @@ pub fn mol_next_atom_idx(mol: &MolHandle) -> u32 {
 /// `order` — 1 = single, 2 = double, 3 = triple.
 /// Returns a JS error if the bond already exists or `a == b`.
 #[wasm_bindgen]
-pub fn mol_with_bond_added(mol: &MolHandle, a: u32, b: u32, order: u32) -> Result<MolHandle, JsValue> {
+pub fn mol_with_bond_added(
+    mol: &MolHandle,
+    a: u32,
+    b: u32,
+    order: u32,
+) -> Result<MolHandle, JsValue> {
     let bond_order = match order {
         2 => chematic_core::BondOrder::Double,
         3 => chematic_core::BondOrder::Triple,
         _ => chematic_core::BondOrder::Single,
     };
-    let (new_mol, _bond_idx) = mol.inner
-        .with_bond_added(chematic_core::AtomIdx(a), chematic_core::AtomIdx(b), bond_order)
+    let (new_mol, _bond_idx) = mol
+        .inner
+        .with_bond_added(
+            chematic_core::AtomIdx(a),
+            chematic_core::AtomIdx(b),
+            bond_order,
+        )
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(new_mol),
+    })
 }
 
 /// Return a new `MolHandle` with the formal charge of atom `idx` changed.
@@ -1952,11 +2133,16 @@ pub fn mol_with_bond_added(mol: &MolHandle, a: u32, b: u32, order: u32) -> Resul
 pub fn mol_with_atom_charge(mol: &MolHandle, idx: u32, charge: i32) -> Result<MolHandle, JsValue> {
     if idx as usize >= mol.inner.atom_count() {
         return Err(JsValue::from_str(&format!(
-            "atom index {idx} out of range (molecule has {} atoms)", mol.inner.atom_count()
+            "atom index {idx} out of range (molecule has {} atoms)",
+            mol.inner.atom_count()
         )));
     }
-    let new_mol = mol.inner.with_atom_charge(chematic_core::AtomIdx(idx), charge as i8);
-    Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
+    let new_mol = mol
+        .inner
+        .with_atom_charge(chematic_core::AtomIdx(idx), charge as i8);
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(new_mol),
+    })
 }
 
 /// Return a new `MolHandle` with the element of atom `idx` changed.
@@ -1964,16 +2150,23 @@ pub fn mol_with_atom_charge(mol: &MolHandle, idx: u32, charge: i32) -> Result<Mo
 /// `element_symbol` — periodic-table symbol, e.g. `"N"`, `"O"`, `"Cl"`.
 /// Returns a JS error if `idx` is out of range or the symbol is unknown.
 #[wasm_bindgen]
-pub fn mol_with_atom_element(mol: &MolHandle, idx: u32, element_symbol: &str) -> Result<MolHandle, JsValue> {
+pub fn mol_with_atom_element(
+    mol: &MolHandle,
+    idx: u32,
+    element_symbol: &str,
+) -> Result<MolHandle, JsValue> {
     if idx as usize >= mol.inner.atom_count() {
         return Err(JsValue::from_str(&format!(
-            "atom index {idx} out of range (molecule has {} atoms)", mol.inner.atom_count()
+            "atom index {idx} out of range (molecule has {} atoms)",
+            mol.inner.atom_count()
         )));
     }
     let el = chematic_core::Element::from_symbol(element_symbol)
         .ok_or_else(|| JsValue::from_str(&format!("unknown element: {element_symbol}")))?;
     let new_mol = mol.inner.with_atom_element(chematic_core::AtomIdx(idx), el);
-    Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(new_mol),
+    })
 }
 
 /// Return a new `MolHandle` with atom `idx` and all its bonds removed.
@@ -1989,7 +2182,9 @@ pub fn mol_with_atom_removed(mol: &MolHandle, idx: u32) -> Result<MolHandle, JsV
         )));
     }
     let (new_mol, _remap) = mol.inner.with_atom_removed(chematic_core::AtomIdx(idx));
-    Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(new_mol),
+    })
 }
 
 /// Return a new `MolHandle` with bond `idx` removed.
@@ -2005,7 +2200,9 @@ pub fn mol_with_bond_removed(mol: &MolHandle, idx: u32) -> Result<MolHandle, JsV
         )));
     }
     let new_mol = mol.inner.with_bond_removed(chematic_core::BondIdx(idx));
-    Ok(MolHandle { inner: std::rc::Rc::new(new_mol) })
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(new_mol),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -2017,13 +2214,18 @@ pub fn mol_with_bond_removed(mol: &MolHandle, idx: u32) -> Result<MolHandle, JsV
 /// Generates 2D coordinates for each molecule.  Property data can be
 /// included by using `sdf_from_records_json` instead.
 #[wasm_bindgen]
+#[allow(clippy::type_complexity)]
 pub fn smiles_array_to_sdf(smiles_json: &str) -> Result<String, JsValue> {
-    let smiles_list = parse_smiles_json_array(smiles_json);
-    let mut records: Vec<(chematic_core::Molecule, chematic_mol::MolMetadata, Vec<(f64, f64)>)> = Vec::new();
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
+    let mut records: Vec<(
+        chematic_core::Molecule,
+        chematic_mol::MolMetadata,
+        Vec<(f64, f64)>,
+    )> = Vec::new();
 
     for smi in &smiles_list {
-        let mol = chematic_smiles::parse(smi)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let mol = chematic_smiles::parse(smi).map_err(|e| JsValue::from_str(&e.to_string()))?;
+        enforce_wasm_molecule_size(&mol)?;
         let layout = chematic_depict::compute_layout(&mol);
         const SCALE: f64 = 1.5 / 40.0;
         let coords: Vec<(f64, f64)> = (0..mol.atom_count())
@@ -2036,8 +2238,14 @@ pub fn smiles_array_to_sdf(smiles_json: &str) -> Result<String, JsValue> {
         records.push((mol, meta, coords));
     }
 
-    let refs: Vec<(&chematic_core::Molecule, &chematic_mol::MolMetadata, &[(f64, f64)])> =
-        records.iter().map(|(m, meta, c)| (m, meta, c.as_slice())).collect();
+    let refs: Vec<(
+        &chematic_core::Molecule,
+        &chematic_mol::MolMetadata,
+        &[(f64, f64)],
+    )> = records
+        .iter()
+        .map(|(m, meta, c)| (m, meta, c.as_slice()))
+        .collect();
 
     Ok(chematic_mol::write_sdf(&refs))
 }
@@ -2084,43 +2292,55 @@ pub fn to_mol_v3000_block(mol: &MolHandle) -> String {
 pub fn depict_data_json(mol: &MolHandle) -> String {
     let data = chematic_depict::compute_depict_data(&mol.inner);
 
-    let atoms: Vec<String> = data.atoms.iter().map(|a| {
-        let label = match &a.label {
-            Some(s) => format!("\"{}\"", escape_json_string(s)),
-            None => "null".to_string(),
-        };
-        let charge_suffix = if a.charge != 0 {
-            format!(",\"charge\":{}", a.charge)
-        } else {
-            String::new()
-        };
-        format!(
-            r#"{{"idx":{},"element":"{}","x":{:.4},"y":{:.4},"label":{}"color":"{}"{}}}"#,
-            a.idx.0,
-            a.element.symbol(),
-            a.pos.x,
-            a.pos.y,
-            format!("{label},"),
-            escape_json_string(&a.color),
-            charge_suffix,
-        )
-    }).collect();
+    let atoms: Vec<String> = data
+        .atoms
+        .iter()
+        .map(|a| {
+            let label = match &a.label {
+                Some(s) => format!("\"{}\"", escape_json_string(s)),
+                None => "null".to_string(),
+            };
+            let charge_suffix = if a.charge != 0 {
+                format!(",\"charge\":{}", a.charge)
+            } else {
+                String::new()
+            };
+            let label_prefix = format!("{label},");
+            format!(
+                r#"{{"idx":{},"element":"{}","x":{:.4},"y":{:.4},"label":{}"color":"{}"{}}}"#,
+                a.idx.0,
+                a.element.symbol(),
+                a.pos.x,
+                a.pos.y,
+                label_prefix,
+                escape_json_string(&a.color),
+                charge_suffix,
+            )
+        })
+        .collect();
 
     let bond_kind = |k: &chematic_depict::DepictBondKind| match k {
-        chematic_depict::DepictBondKind::Single   => "Single",
-        chematic_depict::DepictBondKind::Double   => "Double",
-        chematic_depict::DepictBondKind::Triple   => "Triple",
+        chematic_depict::DepictBondKind::Single => "Single",
+        chematic_depict::DepictBondKind::Double => "Double",
+        chematic_depict::DepictBondKind::Triple => "Triple",
         chematic_depict::DepictBondKind::Aromatic => "Aromatic",
-        chematic_depict::DepictBondKind::Up       => "Up",
-        chematic_depict::DepictBondKind::Down     => "Down",
+        chematic_depict::DepictBondKind::Up => "Up",
+        chematic_depict::DepictBondKind::Down => "Down",
     };
 
-    let bonds: Vec<String> = data.bonds.iter().map(|b| {
-        format!(
-            r#"{{"idx":{},"atom1":{},"atom2":{},"kind":"{}"}}"#,
-            b.idx.0, b.atom1.0, b.atom2.0, bond_kind(&b.kind)
-        )
-    }).collect();
+    let bonds: Vec<String> = data
+        .bonds
+        .iter()
+        .map(|b| {
+            format!(
+                r#"{{"idx":{},"atom1":{},"atom2":{},"kind":"{}"}}"#,
+                b.idx.0,
+                b.atom1.0,
+                b.atom2.0,
+                bond_kind(&b.kind)
+            )
+        })
+        .collect();
 
     format!(
         r#"{{"atoms":[{}],"bonds":[{}]}}"#,
@@ -2153,9 +2373,11 @@ pub fn cpk_color(element_symbol: &str) -> String {
 /// Returns a JS error if the CML is invalid (unknown element, bad bond, etc.).
 #[wasm_bindgen]
 pub fn mol_from_cml(cml: &str) -> Result<MolHandle, JsValue> {
-    let (mol, _coords) = chematic_mol::parse_cml(cml)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(MolHandle { inner: std::rc::Rc::new(mol) })
+    let (mol, _coords) =
+        chematic_mol::parse_cml(cml).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
 }
 
 /// Serialise a `MolHandle` to a CML string with 2D coordinates.
@@ -2180,9 +2402,11 @@ pub fn to_cml(mol: &MolHandle) -> String {
 /// Returns a JS error if the document cannot be parsed.
 #[wasm_bindgen]
 pub fn mol_from_cdxml(cdxml: &str) -> Result<MolHandle, JsValue> {
-    let (mol, _coords) = chematic_mol::parse_cdxml(cdxml)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(MolHandle { inner: std::rc::Rc::new(mol) })
+    let (mol, _coords) =
+        chematic_mol::parse_cdxml(cdxml).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
 }
 
 /// Parse all molecular fragments from a CDXML string.
@@ -2194,11 +2418,16 @@ pub fn mol_from_cdxml(cdxml: &str) -> Result<MolHandle, JsValue> {
 /// of bond elements.
 #[wasm_bindgen]
 pub fn cdxml_to_smiles_json(cdxml: &str) -> Result<String, JsValue> {
-    let fragments = chematic_mol::parse_cdxml_all(cdxml)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let fragments =
+        chematic_mol::parse_cdxml_all(cdxml).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let parts: Vec<String> = fragments
         .iter()
-        .map(|(mol, _)| format!("\"{}\"", escape_json_string(&chematic_smiles::canonical_smiles(mol))))
+        .map(|(mol, _)| {
+            format!(
+                "\"{}\"",
+                escape_json_string(&chematic_smiles::canonical_smiles(mol))
+            )
+        })
         .collect();
     Ok(format!("[{}]", parts.join(",")))
 }
@@ -2211,10 +2440,19 @@ pub fn cdxml_to_smiles_json(cdxml: &str) -> Result<String, JsValue> {
 pub fn mol_block_coords_json(mol_block: &str) -> Result<String, JsValue> {
     let (_mol, _meta, coords) = chematic_mol::parse_mol_with_coords(mol_block)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let parts: Vec<String> = coords.iter()
+    let parts: Vec<String> = coords
+        .iter()
         .map(|(x, y)| {
-            let xf = if x.is_finite() { format!("{x:.4}") } else { "0".to_string() };
-            let yf = if y.is_finite() { format!("{y:.4}") } else { "0".to_string() };
+            let xf = if x.is_finite() {
+                format!("{x:.4}")
+            } else {
+                "0".to_string()
+            };
+            let yf = if y.is_finite() {
+                format!("{y:.4}")
+            } else {
+                "0".to_string()
+            };
             format!("[{xf},{yf}]")
         })
         .collect();
@@ -2235,7 +2473,8 @@ pub fn depict_data_with_coords_json(mol: &MolHandle, coords_json: &str) -> Strin
         // Split on "]," pattern to get individual [x,y] pairs.
         for pair in inner.split("],[") {
             let clean = pair.trim().trim_matches(|c| c == '[' || c == ']');
-            let nums: Vec<f64> = clean.split(',')
+            let nums: Vec<f64> = clean
+                .split(',')
                 .filter_map(|s| s.trim().parse::<f64>().ok())
                 .collect();
             if nums.len() >= 2 {
@@ -2247,38 +2486,61 @@ pub fn depict_data_with_coords_json(mol: &MolHandle, coords_json: &str) -> Strin
 
     let data = chematic_depict::depict_data_with_coords(&mol.inner, &coords);
 
-    let atoms: Vec<String> = data.atoms.iter().map(|a| {
-        let label = match &a.label {
-            Some(s) => format!("\"{}\"", escape_json_string(s)),
-            None => "null".to_string(),
-        };
-        let charge_suffix = if a.charge != 0 {
-            format!(",\"charge\":{}", a.charge)
-        } else {
-            String::new()
-        };
-        format!(
-            r#"{{"idx":{},"element":"{}","x":{:.4},"y":{:.4},"label":{}"color":"{}"{}}}"#,
-            a.idx.0, a.element.symbol(), a.pos.x, a.pos.y,
-            format!("{label},"), escape_json_string(&a.color), charge_suffix,
-        )
-    }).collect();
+    let atoms: Vec<String> = data
+        .atoms
+        .iter()
+        .map(|a| {
+            let label = match &a.label {
+                Some(s) => format!("\"{}\"", escape_json_string(s)),
+                None => "null".to_string(),
+            };
+            let charge_suffix = if a.charge != 0 {
+                format!(",\"charge\":{}", a.charge)
+            } else {
+                String::new()
+            };
+            let label_prefix = format!("{label},");
+            format!(
+                r#"{{"idx":{},"element":"{}","x":{:.4},"y":{:.4},"label":{}"color":"{}"{}}}"#,
+                a.idx.0,
+                a.element.symbol(),
+                a.pos.x,
+                a.pos.y,
+                label_prefix,
+                escape_json_string(&a.color),
+                charge_suffix,
+            )
+        })
+        .collect();
 
     let bond_kind = |k: &chematic_depict::DepictBondKind| match k {
-        chematic_depict::DepictBondKind::Single   => "Single",
-        chematic_depict::DepictBondKind::Double   => "Double",
-        chematic_depict::DepictBondKind::Triple   => "Triple",
+        chematic_depict::DepictBondKind::Single => "Single",
+        chematic_depict::DepictBondKind::Double => "Double",
+        chematic_depict::DepictBondKind::Triple => "Triple",
         chematic_depict::DepictBondKind::Aromatic => "Aromatic",
-        chematic_depict::DepictBondKind::Up       => "Up",
-        chematic_depict::DepictBondKind::Down     => "Down",
+        chematic_depict::DepictBondKind::Up => "Up",
+        chematic_depict::DepictBondKind::Down => "Down",
     };
 
-    let bonds: Vec<String> = data.bonds.iter().map(|b| {
-        format!(r#"{{"idx":{},"atom1":{},"atom2":{},"kind":"{}"}}"#,
-            b.idx.0, b.atom1.0, b.atom2.0, bond_kind(&b.kind))
-    }).collect();
+    let bonds: Vec<String> = data
+        .bonds
+        .iter()
+        .map(|b| {
+            format!(
+                r#"{{"idx":{},"atom1":{},"atom2":{},"kind":"{}"}}"#,
+                b.idx.0,
+                b.atom1.0,
+                b.atom2.0,
+                bond_kind(&b.kind)
+            )
+        })
+        .collect();
 
-    format!(r#"{{"atoms":[{}],"bonds":[{}]}}"#, atoms.join(","), bonds.join(","))
+    format!(
+        r#"{{"atoms":[{}],"bonds":[{}]}}"#,
+        atoms.join(","),
+        bonds.join(",")
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -2308,10 +2570,14 @@ pub fn depict_data_with_coords_json(mol: &MolHandle, coords_json: &str) -> Strin
 /// Returns a JS error if any SMILES fails to parse.
 #[wasm_bindgen]
 pub fn mmp_pairs_json(smiles_json: &str) -> Result<String, JsValue> {
-    let smiles_list = parse_smiles_json_array(smiles_json);
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
     let mols: Vec<chematic_core::Molecule> = smiles_list
         .iter()
-        .map(|s| chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string())))
+        .map(|s| {
+            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
         .collect::<Result<_, _>>()?;
 
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
@@ -2359,30 +2625,41 @@ pub fn mmp_pairs_json(smiles_json: &str) -> Result<String, JsValue> {
 /// Returns a JS error if the SMARTS fails to parse or any SMILES is invalid.
 #[wasm_bindgen]
 pub fn rgroup_decompose_json(smiles_json: &str, core_smarts: &str) -> Result<String, JsValue> {
-    use chematic_core::{Atom, AtomIdx, BondOrder, MoleculeBuilder};
+    use chematic_core::AtomIdx;
     use chematic_smarts::{AtomPrimitive, AtomQuery};
-    use std::collections::{HashMap, HashSet, VecDeque};
+    use std::collections::{HashMap, HashSet};
 
     let query = chematic_smarts::parse_smarts(core_smarts)
         .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
 
     // Identify which query atoms are wildcards and record their order.
-    let wildcard_indices: Vec<usize> = query.atoms.iter()
+    let wildcard_indices: Vec<usize> = query
+        .atoms
+        .iter()
         .enumerate()
         .filter(|(_, qa)| matches!(&qa.query, AtomQuery::Primitive(AtomPrimitive::Wildcard)))
         .map(|(i, _)| i)
         .collect();
 
-    let smiles_list = parse_smiles_json_array(smiles_json);
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
     let mols: Vec<chematic_core::Molecule> = smiles_list
         .iter()
-        .map(|s| chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string())))
+        .map(|s| {
+            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
         .collect::<Result<_, _>>()?;
 
     let mut entries: Vec<String> = Vec::new();
 
     for mol in &mols {
-        let matches = chematic_smarts::find_matches(&query, mol);
+        let config = chematic_smarts::MatchConfig {
+            max_matches: Some(WASM_MAX_SMARTS_MATCHES),
+            use_chirality: false,
+            use_isotopes: false,
+        };
+        let matches = chematic_smarts::find_matches_with_config(&query, mol, &config);
         if matches.is_empty() {
             entries.push("{\"matched\":false}".to_string());
             continue;
@@ -2392,7 +2669,8 @@ pub fn rgroup_decompose_json(smiles_json: &str, core_smarts: &str) -> Result<Str
         let mapping: &HashMap<usize, AtomIdx> = &matches[0];
 
         // Core atoms = molecule atoms matched by non-wildcard query atoms.
-        let core_atoms: HashSet<AtomIdx> = mapping.iter()
+        let core_atoms: HashSet<AtomIdx> = mapping
+            .iter()
             .filter(|(qi, _)| !wildcard_indices.contains(qi))
             .map(|(_, &mol_idx)| mol_idx)
             .collect();
@@ -2434,7 +2712,9 @@ fn rgroup_fragment_smiles(
     let mut queue: VecDeque<AtomIdx> = VecDeque::new();
     queue.push_back(start);
     while let Some(idx) = queue.pop_front() {
-        if visited.contains(&idx) || core_atoms.contains(&idx) { continue; }
+        if visited.contains(&idx) || core_atoms.contains(&idx) {
+            continue;
+        }
         visited.insert(idx);
         fragment.push(idx);
         for (neighbor, _) in mol.neighbors(idx) {
@@ -2490,7 +2770,9 @@ pub fn fcfp4_bitvec(mol: &MolHandle) -> Vec<u8> {
         .map(|byte_idx| {
             let mut byte = 0u8;
             for bit in 0..8usize {
-                if fp.get(byte_idx * 8 + bit) { byte |= 1 << bit; }
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
             }
             byte
         })
@@ -2505,7 +2787,9 @@ pub fn fcfp6_bitvec(mol: &MolHandle) -> Vec<u8> {
         .map(|byte_idx| {
             let mut byte = 0u8;
             for bit in 0..8usize {
-                if fp.get(byte_idx * 8 + bit) { byte |= 1 << bit; }
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
             }
             byte
         })
@@ -2534,8 +2818,8 @@ pub fn write_smiles(mol: &MolHandle) -> String {
 /// Returns a JS error on parse failure.
 #[wasm_bindgen]
 pub fn normalize_reaction_smiles(rxn_smiles: &str) -> Result<String, JsValue> {
-    let rxn = chematic_rxn::parse_reaction(rxn_smiles)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let rxn =
+        chematic_rxn::parse_reaction(rxn_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(chematic_rxn::write_reaction(&rxn))
 }
 
@@ -2555,7 +2839,12 @@ pub fn brics_fragments_json(mol: &MolHandle) -> String {
     let frags = chematic_chem::brics_fragments(&mol.inner);
     let parts: Vec<String> = frags
         .iter()
-        .map(|m| format!("\"{}\"", escape_json_string(&chematic_smiles::canonical_smiles(m))))
+        .map(|m| {
+            format!(
+                "\"{}\"",
+                escape_json_string(&chematic_smiles::canonical_smiles(m))
+            )
+        })
         .collect();
     format!("[{}]", parts.join(","))
 }
@@ -2568,7 +2857,9 @@ pub fn atom_pair_bitvec(mol: &MolHandle) -> Vec<u8> {
         .map(|byte_idx| {
             let mut byte = 0u8;
             for bit in 0..8usize {
-                if fp.get(byte_idx * 8 + bit) { byte |= 1 << bit; }
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
             }
             byte
         })
@@ -2583,7 +2874,9 @@ pub fn torsion_bitvec(mol: &MolHandle) -> Vec<u8> {
         .map(|byte_idx| {
             let mut byte = 0u8;
             for bit in 0..8usize {
-                if fp.get(byte_idx * 8 + bit) { byte |= 1 << bit; }
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
             }
             byte
         })
@@ -2616,9 +2909,9 @@ pub fn sdf_from_records_json(
     names_json: &str,
     props_json: &str,
 ) -> Result<String, JsValue> {
-    let smiles_list = parse_smiles_json_array(smiles_json);
-    let names_list  = parse_smiles_json_array(names_json);
-    let props_list  = parse_smiles_json_array(props_json);
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
+    let names_list = parse_wasm_string_json_array(names_json, "names_json")?;
+    let props_list = parse_wasm_string_json_array(props_json, "props_json")?;
 
     let n = smiles_list.len();
     if names_list.len() != n || props_list.len() != n {
@@ -2631,6 +2924,7 @@ pub fn sdf_from_records_json(
     for i in 0..n {
         let mol = chematic_smiles::parse(&smiles_list[i])
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        enforce_wasm_molecule_size(&mol)?;
 
         // Build 2D coordinates using the same pipeline as to_mol_block.
         let layout = chematic_depict::compute_layout(&mol);
@@ -2642,12 +2936,14 @@ pub fn sdf_from_records_json(
             })
             .collect();
 
-        let meta = chematic_mol::MolMetadata { name: names_list[i].clone(), comment: String::new() };
+        let meta = chematic_mol::MolMetadata {
+            name: names_list[i].clone(),
+            comment: String::new(),
+        };
         sdf.push_str(&chematic_mol::write_mol_with_coords(&mol, &meta, &coords));
 
-        // SD data fields from "key\tvalue\nkey\tvalue" format (JSON-escaped).
-        let props_raw = unescape_json_string(&props_list[i]);
-        for pair in props_raw.lines() {
+        // SD data fields from "key\tvalue\nkey\tvalue" format.
+        for pair in props_list[i].lines() {
             if let Some((key, value)) = pair.split_once('\t') {
                 sdf.push_str(&format!("> <{key}>\n{value}\n\n"));
             }
@@ -2657,28 +2953,6 @@ pub fn sdf_from_records_json(
     }
 
     Ok(sdf)
-}
-
-/// Unescape basic JSON string escape sequences (`\n`, `\t`, `\r`, `\\`, `\"`).
-fn unescape_json_string(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    let mut chars = s.chars();
-    while let Some(ch) = chars.next() {
-        if ch == '\\' {
-            match chars.next() {
-                Some('n')  => out.push('\n'),
-                Some('t')  => out.push('\t'),
-                Some('r')  => out.push('\r'),
-                Some('"')  => out.push('"'),
-                Some('\\') => out.push('\\'),
-                Some(c)    => { out.push('\\'); out.push(c); }
-                None       => out.push('\\'),
-            }
-        } else {
-            out.push(ch);
-        }
-    }
-    out
 }
 
 // ---------------------------------------------------------------------------
@@ -2691,9 +2965,11 @@ fn unescape_json_string(s: &str) -> String {
 /// Returns a JS error on parse failure.
 #[wasm_bindgen]
 pub fn mol_from_xyz(xyz: &str) -> Result<MolHandle, JsValue> {
-    let (mol, _coords) = chematic_3d::parse_xyz(xyz)
-        .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
-    Ok(MolHandle { inner: std::rc::Rc::new(mol) })
+    let (mol, _coords) =
+        chematic_3d::parse_xyz(xyz).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
 }
 
 /// Serialize a molecule to XYZ format.
@@ -2713,7 +2989,9 @@ pub fn to_xyz(mol: &MolHandle) -> String {
 pub fn mol_from_pdb(pdb: &str) -> MolHandle {
     let atoms = chematic_3d::parse_pdb_atoms(pdb);
     let (mol, _coords) = chematic_3d::pdb_to_molecule(&atoms);
-    MolHandle { inner: std::rc::Rc::new(mol) }
+    MolHandle {
+        inner: std::rc::Rc::new(mol),
+    }
 }
 
 /// Per-atom Crippen LogP contributions as a JSON array of f64.
@@ -2740,8 +3018,15 @@ pub fn mr_per_atom_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn labute_asa_per_atom_json(mol: &MolHandle) -> String {
     let vals = chematic_chem::labute_asa_per_atom(&mol.inner);
-    let parts: Vec<String> = vals.iter()
-        .map(|v| if v.is_finite() { format!("{v:.4}") } else { "null".to_string() })
+    let parts: Vec<String> = vals
+        .iter()
+        .map(|v| {
+            if v.is_finite() {
+                format!("{v:.4}")
+            } else {
+                "null".to_string()
+            }
+        })
         .collect();
     format!("[{}]", parts.join(","))
 }
@@ -2753,7 +3038,8 @@ pub fn labute_asa_per_atom_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn sssr_rings_json(mol: &MolHandle) -> String {
     let ring_set = chematic_perception::find_sssr(&mol.inner);
-    let outer: Vec<String> = ring_set.rings()
+    let outer: Vec<String> = ring_set
+        .rings()
         .iter()
         .map(|ring| {
             let inner: Vec<String> = ring.iter().map(|idx| idx.0.to_string()).collect();
@@ -2776,9 +3062,25 @@ pub fn sssr_rings_json(mol: &MolHandle) -> String {
 /// When `use_chirality=true`, tetrahedral stereochemistry is included in the initial
 /// atom hash. When `false` (default), chirality is ignored.
 #[wasm_bindgen]
-pub fn ecfp_bitvec_custom(mol: &MolHandle, radius: u32, nbits: usize, use_chirality: bool) -> Vec<u8> {
-    let nbits = match nbits { 256 | 512 | 1024 | 2048 => nbits, _ => 2048 };
-    let fp = chematic_fp::ecfp(&mol.inner, &chematic_fp::EcfpConfig { radius, nbits, use_chirality, use_double_fold: false });
+pub fn ecfp_bitvec_custom(
+    mol: &MolHandle,
+    radius: u32,
+    nbits: usize,
+    use_chirality: bool,
+) -> Vec<u8> {
+    let nbits = match nbits {
+        256 | 512 | 1024 | 2048 => nbits,
+        _ => 2048,
+    };
+    let fp = chematic_fp::ecfp(
+        &mol.inner,
+        &chematic_fp::EcfpConfig {
+            radius,
+            nbits,
+            use_chirality,
+            use_double_fold: false,
+        },
+    );
     let byte_count = nbits / 8;
     (0..byte_count)
         .map(|byte_idx| {
@@ -2812,7 +3114,8 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
     // Criteria (same as num_unspecified_stereocenters in chematic-chem, plus
     // a degree≥2 guard that excludes terminal atoms like methyl groups whose
     // substituents are always identical).
-    let unspecified: Vec<AtomIdx> = m.atoms()
+    let unspecified: Vec<AtomIdx> = m
+        .atoms()
         .filter(|(idx, atom)| {
             if atom.element.atomic_number() != 6 || atom.aromatic {
                 return false;
@@ -2823,7 +3126,9 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
             let degree = m.neighbors(*idx).count();
             // Require at least 2 explicit heavy-atom neighbors; terminal atoms
             // (methyl, –CH3, degree=1) cannot be stereocenters.
-            if degree < 2 { return false; }
+            if degree < 2 {
+                return false;
+            }
             let total = degree + chematic_core::implicit_hcount(m, *idx) as usize;
             total == 4
                 && m.neighbors(*idx).all(|(_, bidx)| {
@@ -2832,7 +3137,6 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
         })
         .map(|(idx, _)| idx)
         .collect();
-
 
     let n = unspecified.len();
     if n > 6 {
@@ -2858,7 +3162,11 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
             .enumerate()
             .map(|(i, &idx)| {
                 let cw = (bits >> i) & 1 == 1;
-                let chirality = if cw { Chirality::Clockwise } else { Chirality::CounterClockwise };
+                let chirality = if cw {
+                    Chirality::Clockwise
+                } else {
+                    Chirality::CounterClockwise
+                };
                 (idx, chirality)
             })
             .collect();
@@ -2912,15 +3220,18 @@ pub fn find_reaction_center_json(reaction_smiles: &str) -> String {
         Err(e) => return format!("error:{e}"),
     };
     let center = chematic_rxn::find_reaction_center(&rxn);
-    let broken: Vec<String> = center.broken_bonds
+    let broken: Vec<String> = center
+        .broken_bonds
         .iter()
         .map(|(a, b)| format!("[{},{}]", a.0, b.0))
         .collect();
-    let formed: Vec<String> = center.formed_bonds
+    let formed: Vec<String> = center
+        .formed_bonds
         .iter()
         .map(|(a, b)| format!("[{},{}]", a.0, b.0))
         .collect();
-    let changed: Vec<String> = center.changed_atoms
+    let changed: Vec<String> = center
+        .changed_atoms
         .iter()
         .map(|a| a.0.to_string())
         .collect();
@@ -3000,7 +3311,11 @@ pub fn balance_check_json(reaction_smiles: &str) -> String {
         Err(e) => return format!("error:{e}"),
     };
     let result = chematic_rxn::balance_check(&rxn);
-    let diff: Vec<String> = result.diff().into_iter().map(|s| format!("\"{}\"", s)).collect();
+    let diff: Vec<String> = result
+        .diff()
+        .into_iter()
+        .map(|s| format!("\"{}\"", s))
+        .collect();
     format!(
         "{{\"balanced\":{},\"diff\":[{}]}}",
         result.balanced,
@@ -3019,25 +3334,60 @@ pub fn balance_check_json(reaction_smiles: &str) -> String {
 /// Returns `"error:<msg>"` on parse failure.
 #[wasm_bindgen]
 pub fn nearest_neighbors_json(query_smiles: &str, db_smiles_json: &str, k: usize) -> String {
+    if let Err(e) = enforce_wasm_input_len("query_smiles", query_smiles) {
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "input too large".to_string())
+        );
+    }
     let query = match chematic_smiles::parse(query_smiles) {
         Ok(m) => m,
         Err(e) => return format!("error:query parse failed: {e}"),
     };
+    if let Err(e) = enforce_wasm_molecule_size(&query) {
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "molecule too large".to_string())
+        );
+    }
 
-    // Parse the db SMILES JSON array (simple deserialisation without serde).
-    let inner = db_smiles_json.trim().trim_start_matches('[').trim_end_matches(']');
-    let db: Vec<chematic_core::Molecule> = inner
-        .split(',')
-        .filter_map(|s| {
-            let s = s.trim().trim_matches('"');
-            chematic_smiles::parse(s).ok()
-        })
-        .collect();
+    let smiles_list = match parse_smiles_json_array(db_smiles_json) {
+        Ok(values) => values,
+        Err(e) => {
+            return format!(
+                "error:{}",
+                e.as_string()
+                    .unwrap_or_else(|| "db_smiles_json parse failed".to_string())
+            );
+        }
+    };
+    let mut db = Vec::with_capacity(smiles_list.len());
+    let mut original_indices = Vec::with_capacity(smiles_list.len());
+    for (idx, smiles) in smiles_list.iter().enumerate() {
+        let mol = match chematic_smiles::parse(smiles) {
+            Ok(mol) => mol,
+            Err(e) => return format!("error:db parse failed at index {idx}: {e}"),
+        };
+        if let Err(e) = enforce_wasm_molecule_size(&mol) {
+            return format!(
+                "error:db molecule at index {idx}: {}",
+                e.as_string()
+                    .unwrap_or_else(|| "molecule too large".to_string())
+            );
+        }
+        db.push(mol);
+        original_indices.push(idx);
+    }
 
     let results = chematic_fp::nearest_neighbors(&query, &db, k, chematic_fp::FpType::Ecfp4);
     let entries: Vec<String> = results
         .iter()
-        .map(|(i, t)| format!("{{\"index\":{i},\"tanimoto\":{t:.6}}}"))
+        .map(|(i, t)| {
+            let original_idx = original_indices[*i];
+            format!("{{\"index\":{original_idx},\"tanimoto\":{t:.6}}}")
+        })
         .collect();
     format!("[{}]", entries.join(","))
 }
@@ -3077,7 +3427,9 @@ mod tests {
     use super::*;
 
     fn parse(s: &str) -> MolHandle {
-        MolHandle { inner: std::rc::Rc::new(chematic_smiles::parse(s).unwrap()) }
+        MolHandle {
+            inner: std::rc::Rc::new(chematic_smiles::parse(s).unwrap()),
+        }
     }
 
     #[test]
@@ -3103,7 +3455,8 @@ mod tests {
 
     #[test]
     fn parse_cxsmarts_json_preserves_metadata() {
-        let json = parse_cxsmarts_json("[#6]~[#8] |$C1;O2$,atomProp:1.role.acceptor,^2:0|").unwrap();
+        let json =
+            parse_cxsmarts_json("[#6]~[#8] |$C1;O2$,atomProp:1.role.acceptor,^2:0|").unwrap();
         assert!(json.contains(r#""atomCount":2"#), "{json}");
         assert!(json.contains(r#""atomLabels":["C1","O2"]"#), "{json}");
         assert!(json.contains(r#""key":"role""#), "{json}");
@@ -3179,7 +3532,7 @@ mod tests {
     fn rotatable_bond_count_aspirin() {
         // Aspirin has 3 rotatable bonds (OC, C=O ester, and COOH)
         let rb = parse("CC(=O)Oc1ccccc1C(=O)O").rotatable_bond_count();
-        assert!(rb >= 2 && rb <= 5, "aspirin rotbonds = {rb}");
+        assert!((2..=5).contains(&rb), "aspirin rotbonds = {rb}");
     }
 
     #[test]
@@ -3244,7 +3597,10 @@ mod tests {
     fn add_remove_hydrogens_roundtrip() {
         let mol = parse("CC");
         let with_h = add_hydrogens(&mol);
-        assert!(with_h.atom_count() > mol.atom_count(), "H atoms should be added");
+        assert!(
+            with_h.atom_count() > mol.atom_count(),
+            "H atoms should be added"
+        );
         let back = remove_hydrogens(&with_h);
         assert_eq!(back.atom_count(), mol.atom_count());
     }
@@ -3258,13 +3614,19 @@ mod tests {
     #[test]
     fn depict_svg_grid_invalid_smiles_skipped() {
         let svg = depict_svg_grid("CC\nNOT_A_SMILES\nCCC", 2);
-        assert!(svg.contains("<svg"), "invalid SMILES should be silently skipped");
+        assert!(
+            svg.contains("<svg"),
+            "invalid SMILES should be silently skipped"
+        );
     }
 
     #[test]
     fn run_reactants_esterification() {
         // Simple esterification: carboxylic acid + alcohol → ester + water
-        let result = run_reactants("[C:1](=O)[OH:2].[O:3][C:4]>>[C:1](=O)[O:3][C:4]", "CC(=O)O|CCO");
+        let result = run_reactants(
+            "[C:1](=O)[OH:2].[O:3][C:4]>>[C:1](=O)[O:3][C:4]",
+            "CC(=O)O|CCO",
+        );
         assert!(result.is_ok(), "run_reactants should succeed");
         let json = result.unwrap();
         assert!(json.contains('['), "expected JSON array");
@@ -3284,7 +3646,10 @@ mod tests {
     #[test]
     fn is_valid_smiles_invalid() {
         assert!(!is_valid_smiles(""), "empty string is invalid");
-        assert!(!is_valid_smiles("[NOSUCHELEMENT]"), "unknown bracket atom is invalid");
+        assert!(
+            !is_valid_smiles("[NOSUCHELEMENT]"),
+            "unknown bracket atom is invalid"
+        );
     }
 
     #[test]
@@ -3294,7 +3659,10 @@ mod tests {
         opts.set_background("transparent".to_string());
         let svg = h.depict_svg_opts(&opts);
         assert!(svg.contains("<svg"), "must produce SVG");
-        assert!(!svg.contains("fill=\"transparent\""), "no bg rect for transparent");
+        assert!(
+            !svg.contains("fill=\"transparent\""),
+            "no bg rect for transparent"
+        );
     }
 
     #[test]
@@ -3315,7 +3683,10 @@ mod tests {
         opts.set_dark(true);
         opts.set_background("#0f172a".to_string());
         let svg = h.depict_svg_opts(&opts);
-        assert!(svg.contains("stroke=\"white\""), "dark theme bonds should be white");
+        assert!(
+            svg.contains("stroke=\"white\""),
+            "dark theme bonds should be white"
+        );
     }
 
     #[test]
@@ -3335,8 +3706,14 @@ mod tests {
     #[test]
     fn depict_svg_disconnected_nacl() {
         let svg = parse("[Na+].[Cl-]").depict_svg();
-        assert!(svg.contains("Na"), "Na should appear in disconnected SMILES SVG");
-        assert!(svg.contains("Cl"), "Cl should appear in disconnected SMILES SVG");
+        assert!(
+            svg.contains("Na"),
+            "Na should appear in disconnected SMILES SVG"
+        );
+        assert!(
+            svg.contains("Cl"),
+            "Cl should appear in disconnected SMILES SVG"
+        );
         assert!(!svg.is_empty());
     }
 
@@ -3344,7 +3721,10 @@ mod tests {
     fn depict_svg_disconnected_water_dimer() {
         let svg = parse("O.O").depict_svg();
         // Degree-0 O atoms use isolated (Hill) notation: H2O
-        assert!(svg.matches("H2O").count() >= 2, "both water O atoms should render as H2O");
+        assert!(
+            svg.matches("H2O").count() >= 2,
+            "both water O atoms should render as H2O"
+        );
         assert!(!svg.is_empty());
     }
 
@@ -3356,18 +3736,34 @@ mod tests {
         let mut opts = DepictOptions::new();
         opts.set_atom_ids(true);
         let svg = h.depict_svg_opts(&opts);
-        assert!(svg.contains("data-atom-idx="), "atom_ids should add data-atom-idx");
-        assert!(svg.contains("data-element="), "atom_ids should add data-element");
-        assert!(svg.contains("data-charge="), "atom_ids should add data-charge");
+        assert!(
+            svg.contains("data-atom-idx="),
+            "atom_ids should add data-atom-idx"
+        );
+        assert!(
+            svg.contains("data-element="),
+            "atom_ids should add data-element"
+        );
+        assert!(
+            svg.contains("data-charge="),
+            "atom_ids should add data-charge"
+        );
         // B3: all 4 atoms should be addressable (unlabelled carbons get invisible anchor)
-        assert_eq!(svg.matches("data-atom-idx=").count(), 4, "all atoms should have data-atom-idx");
+        assert_eq!(
+            svg.matches("data-atom-idx=").count(),
+            4,
+            "all atoms should have data-atom-idx"
+        );
     }
 
     #[test]
     fn depict_svg_opts_atom_ids_false_no_data_attrs() {
         let h = parse("CC(=O)O");
         let svg = h.depict_svg_opts(&DepictOptions::new());
-        assert!(!svg.contains("data-atom-idx="), "default opts should not have data-atom-idx");
+        assert!(
+            !svg.contains("data-atom-idx="),
+            "default opts should not have data-atom-idx"
+        );
     }
 
     #[test]
@@ -3376,7 +3772,10 @@ mod tests {
         let mut opts = DepictOptions::new();
         opts.set_atom_ids(true);
         let svg = h.depict_svg_opts(&opts);
-        assert!(svg.contains("data-charge=\"1\""), "NH4+ should have charge=1");
+        assert!(
+            svg.contains("data-charge=\"1\""),
+            "NH4+ should have charge=1"
+        );
     }
 
     // ── Sprint L: show_atom_indices ──────────────────────────────────────────
@@ -3395,7 +3794,10 @@ mod tests {
     fn depict_svg_opts_show_atom_indices_false_no_indices() {
         let h = parse("CCO");
         let svg = h.depict_svg_opts(&DepictOptions::new());
-        assert!(!svg.contains("fill=\"#8b92a9\""), "default should not show grey index labels");
+        assert!(
+            !svg.contains("fill=\"#8b92a9\""),
+            "default should not show grey index labels"
+        );
     }
 
     // ── Sprint L: kekulize ───────────────────────────────────────────────────
@@ -3407,8 +3809,14 @@ mod tests {
         opts.set_kekulize(true);
         let svg = h.depict_svg_opts(&opts);
         assert!(!svg.is_empty());
-        assert!(svg.contains("<line"), "kekulé benzene should have line elements");
-        assert!(!svg.contains("stroke-dasharray"), "kekulé benzene must not use aromatic dashed style"); // B1
+        assert!(
+            svg.contains("<line"),
+            "kekulé benzene should have line elements"
+        );
+        assert!(
+            !svg.contains("stroke-dasharray"),
+            "kekulé benzene must not use aromatic dashed style"
+        ); // B1
     }
 
     #[test]
@@ -3416,7 +3824,10 @@ mod tests {
         let h = parse("c1ccccc1");
         let svg = h.depict_svg_opts(&DepictOptions::new());
         // Default aromatic rendering uses stroke-dasharray for the inner ring line.
-        assert!(svg.contains("stroke-dasharray"), "default benzene should use aromatic dashed style");
+        assert!(
+            svg.contains("stroke-dasharray"),
+            "default benzene should use aromatic dashed style"
+        );
     }
 
     // ── Sprint M: smarts_match_atoms ─────────────────────────────────────────
@@ -3427,7 +3838,10 @@ mod tests {
         let result = smarts_match_atoms("c1ccccc1", &mol);
         assert!(result.is_ok(), "valid SMARTS should not error");
         let json = result.unwrap();
-        assert!(!json.is_empty() && json != "[]", "benzene ring SMARTS should find a match");
+        assert!(
+            !json.is_empty() && json != "[]",
+            "benzene ring SMARTS should find a match"
+        );
         assert!(json.starts_with("[["), "result should be array of arrays");
     }
 
@@ -3435,8 +3849,15 @@ mod tests {
     fn smarts_match_no_match_returns_empty_array() {
         let mol = parse("CC"); // ethane has no aromatic ring
         let result = smarts_match_atoms("c1ccccc1", &mol);
-        assert!(result.is_ok(), "valid SMARTS on non-matching mol should not error");
-        assert_eq!(result.unwrap(), "[]", "no match should return empty JSON array");
+        assert!(
+            result.is_ok(),
+            "valid SMARTS on non-matching mol should not error"
+        );
+        assert_eq!(
+            result.unwrap(),
+            "[]",
+            "no match should return empty JSON array"
+        );
     }
 
     // ── Sprint N: generate_3d_pdb ────────────────────────────────────────────
@@ -3453,7 +3874,10 @@ mod tests {
     fn generate_3d_pdb_aspirin_no_nan() {
         let mol = parse("CC(=O)Oc1ccccc1C(=O)O");
         let pdb = generate_3d_pdb(&mol);
-        assert!(!pdb.contains("nan") && !pdb.contains("inf"), "PDB must have no NaN/Inf coords");
+        assert!(
+            !pdb.contains("nan") && !pdb.contains("inf"),
+            "PDB must have no NaN/Inf coords"
+        );
         assert!(pdb.contains("HETATM"), "must produce HETATM records");
     }
 
@@ -3462,8 +3886,10 @@ mod tests {
     // The underlying chematic_smarts::parse_smarts error path is tested separately:
     #[test]
     fn smarts_parse_invalid_is_err() {
-        assert!(chematic_smarts::parse_smarts("[invalid").is_err(),
-            "invalid SMARTS should return Err from parse_smarts");
+        assert!(
+            chematic_smarts::parse_smarts("[invalid").is_err(),
+            "invalid SMARTS should return Err from parse_smarts"
+        );
     }
 
     // ── Sprint P: SDF I/O, EState, topo path FP ─────────────────────────────
@@ -3557,7 +3983,10 @@ M  END
     fn identify_functional_groups_pyridine_has_n() {
         let h = parse("c1ccncc1");
         let json = identify_functional_groups(&h);
-        assert!(json.contains('N'), "pyridine FG JSON should contain N: {json}");
+        assert!(
+            json.contains('N'),
+            "pyridine FG JSON should contain N: {json}"
+        );
         assert!(json.starts_with('['), "should be JSON array");
     }
 
@@ -3574,10 +4003,14 @@ M  END
         let json = gasteiger_charges_json(&h);
         assert!(json.starts_with('[') && json.ends_with(']'));
         // Parse values and verify at least one is negative.
-        let has_negative = json.trim_matches(|c| c == '[' || c == ']')
+        let has_negative = json
+            .trim_matches(|c| c == '[' || c == ']')
             .split(',')
             .any(|s| s.trim().parse::<f64>().map(|v| v < 0.0).unwrap_or(false));
-        assert!(has_negative, "acetic acid should have at least one negative charge: {json}");
+        assert!(
+            has_negative,
+            "acetic acid should have at least one negative charge: {json}"
+        );
     }
 
     #[test]
@@ -3586,24 +4019,29 @@ M  END
         let block = to_mol_block(&h);
         // Extract atom-block lines (lines 4..10, 0-indexed) and check at least
         // one coordinate is non-zero.
-        let nonzero = block.lines()
-            .skip(4)
-            .take(6)
-            .any(|line| {
-                // Atom line: first 30 chars are three 10.4 coordinate fields.
-                if line.len() < 30 { return false; }
-                let x: f64 = line[0..10].trim().parse().unwrap_or(0.0);
-                let y: f64 = line[10..20].trim().parse().unwrap_or(0.0);
-                x.abs() > 0.01 || y.abs() > 0.01
-            });
-        assert!(nonzero, "to_mol_block should write real 2D coordinates, got:\n{block}");
+        let nonzero = block.lines().skip(4).take(6).any(|line| {
+            // Atom line: first 30 chars are three 10.4 coordinate fields.
+            if line.len() < 30 {
+                return false;
+            }
+            let x: f64 = line[0..10].trim().parse().unwrap_or(0.0);
+            let y: f64 = line[10..20].trim().parse().unwrap_or(0.0);
+            x.abs() > 0.01 || y.abs() > 0.01
+        });
+        assert!(
+            nonzero,
+            "to_mol_block should write real 2D coordinates, got:\n{block}"
+        );
     }
 
     #[test]
     fn sa_score_range() {
         let h = parse("CC(=O)Oc1ccccc1C(=O)O"); // aspirin
         let score = sa_score(&h);
-        assert!(score >= 1.0 && score <= 10.0, "SA score out of [1,10]: {score:.2}");
+        assert!(
+            (1.0..=10.0).contains(&score),
+            "SA score out of [1,10]: {score:.2}"
+        );
     }
 
     // v0.1.21 new API tests
@@ -3611,7 +4049,7 @@ M  END
     // with_atom_charge
     #[test]
     fn mol_with_atom_charge_changes_charge() {
-        let mol = parse("N");         // neutral N
+        let mol = parse("N"); // neutral N
         let mol2 = mol_with_atom_charge(&mol, 0, 1).unwrap();
         let atom = mol2.inner.atom(chematic_core::AtomIdx(0));
         assert_eq!(atom.charge, 1, "charge should be 1");
@@ -3631,8 +4069,14 @@ M  END
     fn mol_block_coords_json_ethanol() {
         let mol_block = "\nethanol\n\n  3  2  0  0  0  0  0  0  0  0  0 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    3.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\nM  END\n";
         let json = mol_block_coords_json(mol_block).unwrap();
-        assert!(json.contains("[0.0000,0.0000]"), "first atom at origin: {json}");
-        assert!(json.contains("[1.5000,0.0000]"), "second atom at x=1.5: {json}");
+        assert!(
+            json.contains("[0.0000,0.0000]"),
+            "first atom at origin: {json}"
+        );
+        assert!(
+            json.contains("[1.5000,0.0000]"),
+            "second atom at x=1.5: {json}"
+        );
     }
 
     // CDXML all fragments
@@ -3751,7 +4195,10 @@ M  END
         let mol = parse("c1ccncc1");
         let json = depict_data_json(&mol);
         // Nitrogen has a label
-        assert!(json.contains("\"label\":\"N\""), "pyridine N should have label: {json}");
+        assert!(
+            json.contains("\"label\":\"N\""),
+            "pyridine N should have label: {json}"
+        );
     }
 
     // CPK colors
@@ -3798,8 +4245,16 @@ M  END
         let mol = parse("CC(=O)O");
         let cml = to_cml(&mol);
         let mol2 = mol_from_cml(&cml).unwrap();
-        assert_eq!(mol.atom_count(), mol2.atom_count(), "CML round-trip preserves atom count");
-        assert_eq!(mol.bond_count(), mol2.bond_count(), "CML round-trip preserves bond count");
+        assert_eq!(
+            mol.atom_count(),
+            mol2.atom_count(),
+            "CML round-trip preserves atom count"
+        );
+        assert_eq!(
+            mol.bond_count(),
+            mol2.bond_count(),
+            "CML round-trip preserves bond count"
+        );
     }
 
     #[test]
@@ -3836,10 +4291,22 @@ M  END
         let result = mmp_pairs_json(smiles_json).unwrap();
 
         // Should find exactly 1 pair with the benzene core.
-        assert!(result.contains("\"core\":"), "should have core key: {result}");
-        assert!(result.contains("c1(ccccc1)[*]"), "core should be benzene: {result}");
-        assert!(result.contains("\"fragment_a\":"), "should have fragment_a: {result}");
-        assert!(result.contains("\"fragment_b\":"), "should have fragment_b: {result}");
+        assert!(
+            result.contains("\"core\":"),
+            "should have core key: {result}"
+        );
+        assert!(
+            result.contains("c1(ccccc1)[*]"),
+            "core should be benzene: {result}"
+        );
+        assert!(
+            result.contains("\"fragment_a\":"),
+            "should have fragment_a: {result}"
+        );
+        assert!(
+            result.contains("\"fragment_b\":"),
+            "should have fragment_b: {result}"
+        );
     }
 
     #[test]
@@ -3857,11 +4324,20 @@ M  END
         let result = mmp_pairs_json(smiles_json).unwrap();
 
         // Should find at least 1 pair (the minimum for 3 benzene-derived molecules).
-        assert!(result.contains("\"mol_a\":"), "should have mol_a key: {result}");
-        assert!(result.contains("\"core\":"), "should have core key: {result}");
+        assert!(
+            result.contains("\"mol_a\":"),
+            "should have mol_a key: {result}"
+        );
+        assert!(
+            result.contains("\"core\":"),
+            "should have core key: {result}"
+        );
         // Extract pair count by counting top-level braces.
         let pair_count = result.matches("\"mol_a\":").count();
-        assert!(pair_count >= 1, "should have >= 1 pair, got {pair_count}: {result}");
+        assert!(
+            pair_count >= 1,
+            "should have >= 1 pair, got {pair_count}: {result}"
+        );
     }
 
     // Sprint BB
@@ -3926,7 +4402,7 @@ M  END
 
     #[test]
     fn conformer_handle_mol_returns_correct_atom_count() {
-        let mut ens = ConformerHandle::new("CC(=O)O").unwrap(); // acetic acid, 4 heavy atoms
+        let ens = ConformerHandle::new("CC(=O)O").unwrap(); // acetic acid, 4 heavy atoms
         let mol = ens.mol();
         assert_eq!(mol.atom_count(), 4);
     }
@@ -3941,7 +4417,10 @@ M  END
         let json = rgroup_decompose_json(smiles_json, "c1ccc(*)cc1").unwrap();
 
         // Both should match.
-        assert!(json.contains("\"matched\":true"), "both should match: {json}");
+        assert!(
+            json.contains("\"matched\":true"),
+            "both should match: {json}"
+        );
         // R-groups should be C and CC (canonical forms may vary slightly).
         assert!(json.contains("\"r1\":"), "should have r1 key: {json}");
     }
@@ -3951,7 +4430,10 @@ M  END
         // Benzene has no substituent → doesn't match c1ccc(*)cc1.
         let smiles_json = r#"["c1ccccc1"]"#;
         let json = rgroup_decompose_json(smiles_json, "c1ccc(*)cc1").unwrap();
-        assert!(json.contains("\"matched\":false"), "unsubstituted benzene should not match: {json}");
+        assert!(
+            json.contains("\"matched\":false"),
+            "unsubstituted benzene should not match: {json}"
+        );
     }
 
     #[test]
@@ -3960,7 +4442,10 @@ M  END
         // 1,3-dimethylbenzene m-xylene Cc1cccc(C)c1 → R1=C, R2=C
         let smiles_json = r#"["Cc1cccc(C)c1"]"#;
         let json = rgroup_decompose_json(smiles_json, "c1cc(*)cc(*)c1").unwrap();
-        assert!(json.contains("\"matched\":true"), "m-xylene should match: {json}");
+        assert!(
+            json.contains("\"matched\":true"),
+            "m-xylene should match: {json}"
+        );
         assert!(json.contains("\"r1\":"), "should have r1: {json}");
         assert!(json.contains("\"r2\":"), "should have r2: {json}");
     }
@@ -4005,7 +4490,10 @@ M  END
         assert!(result.is_ok(), "simple reaction should parse");
         let rxn = result.unwrap();
         let out = chematic_rxn::write_reaction(&rxn);
-        assert!(out.contains(">>"), "written reaction should contain >>: {out}");
+        assert!(
+            out.contains(">>"),
+            "written reaction should contain >>: {out}"
+        );
     }
 
     // Sprint Z
@@ -4013,10 +4501,19 @@ M  END
     fn brics_fragments_json_aspirin() {
         let mol = parse("CC(=O)Oc1ccccc1C(=O)O"); // aspirin
         let json = brics_fragments_json(&mol);
-        let count_from_json = json.split('"').filter(|s| s.contains('C') || s.contains('c')).count();
-        assert!(json.starts_with('[') && json.ends_with(']'), "not a JSON array: {json}");
-        assert_eq!(count_from_json, brics_fragment_count(&mol),
-            "fragment count mismatch: json={json}");
+        let count_from_json = json
+            .split('"')
+            .filter(|s| s.contains('C') || s.contains('c'))
+            .count();
+        assert!(
+            json.starts_with('[') && json.ends_with(']'),
+            "not a JSON array: {json}"
+        );
+        assert_eq!(
+            count_from_json,
+            brics_fragment_count(&mol),
+            "fragment count mismatch: json={json}"
+        );
     }
 
     #[test]
@@ -4025,8 +4522,11 @@ M  END
         let mol = parse("c1ccccc1");
         let json = brics_fragments_json(&mol);
         assert!(json.starts_with('[') && json.ends_with(']'));
-        assert_eq!(brics_fragment_count(&mol), 1,
-            "benzene has 1 fragment (itself): {json}");
+        assert_eq!(
+            brics_fragment_count(&mol),
+            1,
+            "benzene has 1 fragment (itself): {json}"
+        );
     }
 
     #[test]
@@ -4051,8 +4551,8 @@ M  END
     fn sdf_from_records_json_round_trip() {
         // Build a 1-record SDF, read it back, check name and property.
         let smiles_json = r#"["CC"]"#;
-        let names_json  = r#"["ethane"]"#;
-        let props_json  = r#"["MW\t30.07\nSource\ttest"]"#;
+        let names_json = r#"["ethane"]"#;
+        let props_json = r#"["MW\t30.07\nSource\ttest"]"#;
         let sdf = sdf_from_records_json(smiles_json, names_json, props_json).unwrap();
         assert!(sdf.contains("ethane"), "name missing: {sdf}");
         assert!(sdf.contains("> <MW>"), "MW field missing: {sdf}");
@@ -4072,9 +4572,16 @@ M  END
     fn sdf_from_records_json_length_mismatch_returns_err() {
         // Mismatched array lengths — note: testing via underlying logic,
         // not .is_err() on the wrapper (JsValue native-abort).
-        let smiles = parse_smiles_json_array(r#"["CC","CCC"]"#);
-        let names  = parse_smiles_json_array(r#"["ethane"]"#);
+        let smiles = parse_smiles_json_array(r#"["CC","CCC"]"#).unwrap();
+        let names = parse_smiles_json_array(r#"["ethane"]"#).unwrap();
         assert_ne!(smiles.len(), names.len(), "lengths should differ");
+    }
+
+    #[test]
+    fn parse_smiles_json_array_handles_escaped_strings() {
+        let smiles = parse_smiles_json_array(r#"["C\\C=C\\O","CC"]"#).unwrap();
+        assert_eq!(smiles[0], r#"C\C=C\O"#);
+        assert_eq!(smiles[1], "CC");
     }
 
     // Sprint Y
@@ -4110,15 +4617,25 @@ M  END
     fn logp_per_atom_json_length() {
         let mol = parse("CC(=O)O"); // acetic acid
         let json = logp_per_atom_json(&mol);
-        let count = json.trim_matches(|c| c == '[' || c == ']').split(',').count();
-        assert_eq!(count, mol.atom_count(), "per-atom logP array length mismatch");
+        let count = json
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .count();
+        assert_eq!(
+            count,
+            mol.atom_count(),
+            "per-atom logP array length mismatch"
+        );
     }
 
     #[test]
     fn mr_per_atom_json_length() {
         let mol = parse("CC(=O)O");
         let json = mr_per_atom_json(&mol);
-        let count = json.trim_matches(|c| c == '[' || c == ']').split(',').count();
+        let count = json
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .count();
         assert_eq!(count, mol.atom_count());
     }
 
@@ -4134,8 +4651,10 @@ M  END
         let mol = parse("c1ccccc1");
         let json = sssr_rings_json(&mol);
         // One ring: [[0,1,2,3,4,5]]
-        assert!(json.starts_with("[[") && json.ends_with("]]"),
-            "expected one ring: {json}");
+        assert!(
+            json.starts_with("[[") && json.ends_with("]]"),
+            "expected one ring: {json}"
+        );
         let ring: Vec<usize> = json
             .trim_matches(|c| c == '[' || c == ']')
             .split(',')
@@ -4170,30 +4689,39 @@ M  END
 
     // ── Chirality tests ──────────────────────────────────────────────────────
     #[test]
-    fn ecfp4_bitvec_with_chirality_L_vs_D_alanine_different() {
+    fn ecfp4_bitvec_with_chirality_l_vs_d_alanine_different() {
         let l_ala = parse("C[C@H](N)C(=O)O");
         let d_ala = parse("C[C@@H](N)C(=O)O");
         let l_fp = ecfp4_bitvec_with_chirality(&l_ala, true);
         let d_fp = ecfp4_bitvec_with_chirality(&d_ala, true);
-        assert_ne!(l_fp, d_fp, "L-alanine and D-alanine should have different ECFP4 with use_chirality=true");
+        assert_ne!(
+            l_fp, d_fp,
+            "L-alanine and D-alanine should have different ECFP4 with use_chirality=true"
+        );
     }
 
     #[test]
-    fn ecfp4_bitvec_with_chirality_L_vs_D_alanine_same_without_chirality() {
+    fn ecfp4_bitvec_with_chirality_l_vs_d_alanine_same_without_chirality() {
         let l_ala = parse("C[C@H](N)C(=O)O");
         let d_ala = parse("C[C@@H](N)C(=O)O");
         let l_fp = ecfp4_bitvec_with_chirality(&l_ala, false);
         let d_fp = ecfp4_bitvec_with_chirality(&d_ala, false);
-        assert_eq!(l_fp, d_fp, "L-alanine and D-alanine should have identical ECFP4 with use_chirality=false");
+        assert_eq!(
+            l_fp, d_fp,
+            "L-alanine and D-alanine should have identical ECFP4 with use_chirality=false"
+        );
     }
 
     #[test]
-    fn ecfp6_bitvec_with_chirality_L_vs_D_alanine_different() {
+    fn ecfp6_bitvec_with_chirality_l_vs_d_alanine_different() {
         let l_ala = parse("C[C@H](N)C(=O)O");
         let d_ala = parse("C[C@@H](N)C(=O)O");
         let l_fp = ecfp6_bitvec_with_chirality(&l_ala, true);
         let d_fp = ecfp6_bitvec_with_chirality(&d_ala, true);
-        assert_ne!(l_fp, d_fp, "L-alanine and D-alanine should have different ECFP6 with use_chirality=true");
+        assert_ne!(
+            l_fp, d_fp,
+            "L-alanine and D-alanine should have different ECFP6 with use_chirality=true"
+        );
     }
 
     #[test]
@@ -4207,12 +4735,24 @@ M  END
         let d_matches_without = smarts_match_atoms_with_chirality("[C@H]", &d_ala, false).unwrap();
 
         // With use_chirality=true: L-ala matches, D-ala doesn't
-        assert!(!l_matches_with.contains("[]"), "L-ala should match [C@H] with use_chirality=true");
-        assert!(d_matches_with.contains("[]"), "D-ala should NOT match [C@H] with use_chirality=true");
+        assert!(
+            !l_matches_with.contains("[]"),
+            "L-ala should match [C@H] with use_chirality=true"
+        );
+        assert!(
+            d_matches_with.contains("[]"),
+            "D-ala should NOT match [C@H] with use_chirality=true"
+        );
 
         // With use_chirality=false: both match (chirality ignored)
-        assert!(!l_matches_without.contains("[]"), "L-ala should match [C@H] with use_chirality=false");
-        assert!(!d_matches_without.contains("[]"), "D-ala should match [C@H] with use_chirality=false (chirality ignored)");
+        assert!(
+            !l_matches_without.contains("[]"),
+            "L-ala should match [C@H] with use_chirality=false"
+        );
+        assert!(
+            !d_matches_without.contains("[]"),
+            "D-ala should match [C@H] with use_chirality=false (chirality ignored)"
+        );
     }
 
     #[test]
@@ -4224,7 +4764,12 @@ M  END
         assert!(result.is_ok(), "should return Ok for valid mol");
         let json = result.unwrap();
         // Count quoted SMILES entries: each is wrapped in "..."
-        let count = json.split('"').filter(|s| !s.is_empty() && !s.starts_with(',') && !s.starts_with('[') && !s.starts_with(']')).count();
+        let count = json
+            .split('"')
+            .filter(|s| {
+                !s.is_empty() && !s.starts_with(',') && !s.starts_with('[') && !s.starts_with(']')
+            })
+            .count();
         assert_eq!(count, 2, "expected 2 stereoisomers: {json}");
     }
 
@@ -4236,7 +4781,10 @@ M  END
         assert!(result.is_ok());
         let json = result.unwrap();
         // Only one entry: no "," between entries
-        assert!(!json.contains("\",\""), "fully specified mol should give 1 isomer: {json}");
+        assert!(
+            !json.contains("\",\""),
+            "fully specified mol should give 1 isomer: {json}"
+        );
     }
 
     #[test]
@@ -4254,14 +4802,17 @@ M  END
     fn mol_from_v3000_block_parses_atom_count() {
         // Borrow a minimal V3000 fixture from the mol3000 test suite.
         // (Parse failure tested via underlying parse_mol_v3000 — see JsValue note.)
-        assert!(chematic_mol::parse_mol_v3000(
-            "\n  \n\n  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\n\
+        assert!(
+            chematic_mol::parse_mol_v3000(
+                "\n  \n\n  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\n\
              M  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\n\
              M  V30 1 C 0 0 0 0\nM  V30 2 C 1.5 0 0 0\n\
              M  V30 END ATOM\nM  V30 BEGIN BOND\n\
              M  V30 1 1 1 2\nM  V30 END BOND\n\
              M  V30 END CTAB\nM  END"
-        ).is_ok());
+            )
+            .is_ok()
+        );
     }
 
     #[test]
@@ -4270,16 +4821,19 @@ M  END
         let pdb = generate_3d_minimized_pdb(&mol);
         assert!(pdb.contains("HETATM"), "expected HETATM records");
         // At least one non-zero coordinate in the PDB output.
-        let has_nonzero = pdb.lines()
-            .filter(|l| l.starts_with("HETATM"))
-            .any(|l| {
-                // PDB columns 31-38, 39-46, 47-54 are x,y,z
-                if l.len() < 54 { return false; }
-                let x: f64 = l[30..38].trim().parse().unwrap_or(0.0);
-                let y: f64 = l[38..46].trim().parse().unwrap_or(0.0);
-                x.abs() > 0.01 || y.abs() > 0.01
-            });
-        assert!(has_nonzero, "minimized PDB should have non-zero coords:\n{pdb}");
+        let has_nonzero = pdb.lines().filter(|l| l.starts_with("HETATM")).any(|l| {
+            // PDB columns 31-38, 39-46, 47-54 are x,y,z
+            if l.len() < 54 {
+                return false;
+            }
+            let x: f64 = l[30..38].trim().parse().unwrap_or(0.0);
+            let y: f64 = l[38..46].trim().parse().unwrap_or(0.0);
+            x.abs() > 0.01 || y.abs() > 0.01
+        });
+        assert!(
+            has_nonzero,
+            "minimized PDB should have non-zero coords:\n{pdb}"
+        );
     }
 
     #[test]
@@ -4303,9 +4857,15 @@ M  END
             "$$$$\n",
         );
         let json = sdf_to_records_json(sdf);
-        assert!(json.contains("\"name\":\"aspirin\""), "name missing: {json}");
+        assert!(
+            json.contains("\"name\":\"aspirin\""),
+            "name missing: {json}"
+        );
         assert!(json.contains("\"MW\":\"180.2\""), "MW missing: {json}");
-        assert!(json.contains("\"Source\":\"ChEMBL\""), "Source missing: {json}");
+        assert!(
+            json.contains("\"Source\":\"ChEMBL\""),
+            "Source missing: {json}"
+        );
     }
 
     #[test]
@@ -4325,7 +4885,10 @@ M  END
         );
         let json = sdf_to_records_json(sdf);
         // "line1\nline2" value joined with \n, then JSON-escaped to \\n
-        assert!(json.contains("\\n"), "newline in multi-line value should be escaped: {json}");
+        assert!(
+            json.contains("\\n"),
+            "newline in multi-line value should be escaped: {json}"
+        );
     }
 
     #[test]
@@ -4421,7 +4984,10 @@ M  END
         let json = shape_descriptors_json(&mol);
         assert!(json.contains("\"pmi1\""), "missing pmi1: {json}");
         assert!(json.contains("\"npr1\""), "missing npr1: {json}");
-        assert!(json.contains("\"asphericity\""), "missing asphericity: {json}");
+        assert!(
+            json.contains("\"asphericity\""),
+            "missing asphericity: {json}"
+        );
     }
 
     #[test]
@@ -4437,8 +5003,10 @@ M  END
     fn maxmin_picks_returns_correct_count() {
         let json = r#"["CC","c1ccccc1","CCO","CCCC","c1cccnc1"]"#;
         let result = maxmin_picks_ecfp4_json(json, 3).unwrap();
-        let count = result.trim_matches(|c| c == '[' || c == ']')
-            .split(',').count();
+        let count = result
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .count();
         assert_eq!(count, 3, "expected 3 picks: {result}");
     }
 
@@ -4448,7 +5016,10 @@ M  END
         // each string through chematic_smiles::parse, which rejects unclosed rings.
         // (Calling maxmin_picks_ecfp4_json directly would invoke JsValue::from_str,
         // which panics outside WASM — see comment on rxn_parse_missing_arrow_is_err.)
-        assert!(chematic_smiles::parse("C1CC").is_err(), "unclosed ring should fail");
+        assert!(
+            chematic_smiles::parse("C1CC").is_err(),
+            "unclosed ring should fail"
+        );
     }
 
     #[test]
@@ -4481,7 +5052,8 @@ M  END
         // via the Result variant rather than calling is_err() (which would
         // materialise a JsValue drop on non-wasm32 and cause a panic).
         let json = r#"["CC"]"#;
-        let smiles_list: Vec<String> = json.split('"')
+        let smiles_list: Vec<String> = json
+            .split('"')
             .enumerate()
             .filter(|(i, _)| i % 2 == 1)
             .map(|(_, s)| s.to_string())
@@ -4522,8 +5094,10 @@ M  END
         let frag = largest_fragment(&mol);
         // acetate has 4 heavy atoms; Na has 1
         assert!(frag.atom_count() > 1, "expected the larger fragment");
-        assert!(frag.atom_count() < mol.atom_count(),
-            "fragment should be smaller than the salt");
+        assert!(
+            frag.atom_count() < mol.atom_count(),
+            "fragment should be smaller than the salt"
+        );
     }
 
     #[test]
@@ -4538,7 +5112,10 @@ M  END
         let json = standardize_smiles_report_json("CC.CCC", true, false, false, false);
         assert!(json.contains("\"smiles\""), "missing smiles: {json}");
         assert!(json.contains("\"report\""), "missing report: {json}");
-        assert!(json.contains("\"status\":\"Modified\""), "missing status: {json}");
+        assert!(
+            json.contains("\"status\":\"Modified\""),
+            "missing status: {json}"
+        );
         assert!(
             json.contains("\"step\":\"LargestFragment\""),
             "missing largest-fragment step: {json}"
@@ -4571,7 +5148,10 @@ M  END
     fn slogp_vsa_json_length_12() {
         let h = parse("c1ccccc1");
         let json = slogp_vsa_json(&h);
-        let count = json.trim_matches(|c| c == '[' || c == ']').split(',').count();
+        let count = json
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .count();
         assert_eq!(count, 12, "SlogP_VSA should have 12 values");
     }
 
@@ -4579,7 +5159,10 @@ M  END
     fn smr_vsa_json_length_10() {
         let h = parse("c1ccccc1");
         let json = smr_vsa_json(&h);
-        let count = json.trim_matches(|c| c == '[' || c == ']').split(',').count();
+        let count = json
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .count();
         assert_eq!(count, 10, "SMR_VSA should have 10 values");
     }
 
@@ -4587,7 +5170,10 @@ M  END
     fn peoe_vsa_json_length_14() {
         let h = parse("c1ccccc1");
         let json = peoe_vsa_json(&h);
-        let count = json.trim_matches(|c| c == '[' || c == ']').split(',').count();
+        let count = json
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .count();
         assert_eq!(count, 14, "PEOE_VSA should have 14 values");
     }
 }

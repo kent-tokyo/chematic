@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 use chematic_fp::{atom_pair_fp, ecfp4, maccs};
@@ -716,7 +716,10 @@ mod tests {
     fn compare_molecules_identical_molecules() {
         let comparison = compare_molecules(&["c1ccccc1", "c1ccccc1"]).unwrap();
         let sim = comparison.pairwise[0].similarities.ecfp4_tanimoto;
-        assert!((sim - 1.0).abs() < 1e-6, "identical molecules should have ~100% similarity");
+        assert!(
+            (sim - 1.0).abs() < 1e-6,
+            "identical molecules should have ~100% similarity"
+        );
     }
 
     #[test]

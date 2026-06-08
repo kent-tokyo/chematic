@@ -6,14 +6,16 @@
 //! Parameters from RDKit GasteigerParams.cpp. Runs on an H-explicit molecule
 //! (via `add_hydrogens`) and returns charges for heavy atoms only.
 
-use chematic_core::{AtomIdx, BondOrder, Molecule};
 use crate::hydrogen::add_hydrogens;
+use chematic_core::{AtomIdx, BondOrder, Molecule};
 
 /// (a, b, c) electronegativity polynomial: χ(q) = a + b·q + c·q²
 type AbC = (f64, f64, f64);
 
 fn hybridisation_sp(mol: &Molecule, idx: AtomIdx) -> u8 {
-    if mol.atom(idx).aromatic { return 2; }
+    if mol.atom(idx).aromatic {
+        return 2;
+    }
     let mut has_double = false;
     let mut has_triple = false;
     for (_, bidx) in mol.neighbors(idx) {
@@ -23,7 +25,13 @@ fn hybridisation_sp(mol: &Molecule, idx: AtomIdx) -> u8 {
             _ => {}
         }
     }
-    if has_triple { 1 } else if has_double { 2 } else { 3 }
+    if has_triple {
+        1
+    } else if has_double {
+        2
+    } else {
+        3
+    }
 }
 
 /// Return (a, b, c) for the given atom; None for unsupported elements.
@@ -34,25 +42,43 @@ fn params(mol: &Molecule, idx: AtomIdx) -> Option<AbC> {
     let ar = atom.aromatic;
 
     Some(match an {
-        1  => (7.17, 6.24, -0.56),
-        6  => match hyb {
+        1 => (7.17, 6.24, -0.56),
+        6 => match hyb {
             3 => (7.98, 9.18, 1.88),
             2 => (8.79, 9.32, 1.51),
             _ => (10.39, 9.45, 0.73),
         },
-        7  => match hyb {
+        7 => match hyb {
             3 => (11.54, 10.82, 1.36),
             2 => (12.87, 11.15, 0.85),
             _ => (15.68, 11.70, -0.27),
         },
-        8  => if ar || hyb == 2 { (17.07, 13.79, 0.47) } else { (14.18, 12.92, 1.39) },
-        16 => if ar           { (10.88, 9.49, 1.33) } else { (10.14, 9.13, 1.38) },
-        9  => (14.66, 13.85, 2.31),
-        17 => (11.00, 9.69,  1.35),
-        35 => (10.08, 8.47,  1.16),
-        53 => (9.90,  7.96,  0.96),
-        15 => if hyb == 2 { (9.665, 8.530, 0.735) } else { (8.90, 8.24, 0.96) },
-        _  => return None,
+        8 => {
+            if ar || hyb == 2 {
+                (17.07, 13.79, 0.47)
+            } else {
+                (14.18, 12.92, 1.39)
+            }
+        }
+        16 => {
+            if ar {
+                (10.88, 9.49, 1.33)
+            } else {
+                (10.14, 9.13, 1.38)
+            }
+        }
+        9 => (14.66, 13.85, 2.31),
+        17 => (11.00, 9.69, 1.35),
+        35 => (10.08, 8.47, 1.16),
+        53 => (9.90, 7.96, 0.96),
+        15 => {
+            if hyb == 2 {
+                (9.665, 8.530, 0.735)
+            } else {
+                (8.90, 8.24, 0.96)
+            }
+        }
+        _ => return None,
     })
 }
 
@@ -69,9 +95,7 @@ pub fn gasteiger_charges(mol: &Molecule) -> Vec<f64> {
     let n = hmol.atom_count();
     let mut q: Vec<f64> = vec![0.0; n];
 
-    let pars: Vec<Option<AbC>> = (0..n)
-        .map(|i| params(&hmol, AtomIdx(i as u32)))
-        .collect();
+    let pars: Vec<Option<AbC>> = (0..n).map(|i| params(&hmol, AtomIdx(i as u32))).collect();
 
     let chi = |par: AbC, qi: f64| par.0 + par.1 * qi + par.2 * qi * qi;
 
@@ -91,7 +115,9 @@ pub fn gasteiger_charges(mol: &Molecule) -> Vec<f64> {
             };
             let ei = ens[i];
             let ej = ens[j];
-            if (ei - ej).abs() < 1e-10 { continue; }
+            if (ei - ej).abs() < 1e-10 {
+                continue;
+            }
 
             // Electron density flows from lower EN (donor) to higher EN (acceptor).
             // Donor becomes more positive → q[donor] increases.
@@ -104,16 +130,20 @@ pub fn gasteiger_charges(mol: &Molecule) -> Vec<f64> {
 
             // Cation EN of donor = a+b+c (q=+1 state).
             let cation_en = p_donor.0 + p_donor.1 + p_donor.2;
-            if cation_en.abs() < 1e-10 { continue; }
+            if cation_en.abs() < 1e-10 {
+                continue;
+            }
 
             let delta = (e_acceptor - e_donor) / cation_en * damp;
             // Donor loses electron density → more positive
-            dq[donor]   += delta;
+            dq[donor] += delta;
             // Acceptor gains electron density → more negative
             dq[acceptor] -= delta;
         }
 
-        for i in 0..n { q[i] += dq[i]; }
+        for i in 0..n {
+            q[i] += dq[i];
+        }
         damp *= DAMP0;
     }
 
@@ -131,21 +161,33 @@ mod tests {
     fn methanol_oxygen_more_negative_than_carbon() {
         let mol = parse("CO").unwrap();
         let q = gasteiger_charges(&mol);
-        let o_idx = mol.atoms()
+        let o_idx = mol
+            .atoms()
             .find(|(_, a)| a.element.atomic_number() == 8)
-            .map(|(i, _)| i.0 as usize).unwrap();
-        let c_idx = mol.atoms()
+            .map(|(i, _)| i.0 as usize)
+            .unwrap();
+        let c_idx = mol
+            .atoms()
             .find(|(_, a)| a.element.atomic_number() == 6)
-            .map(|(i, _)| i.0 as usize).unwrap();
-        assert!(q[o_idx] < q[c_idx],
-            "O charge {:.4} should be < C charge {:.4}", q[o_idx], q[c_idx]);
+            .map(|(i, _)| i.0 as usize)
+            .unwrap();
+        assert!(
+            q[o_idx] < q[c_idx],
+            "O charge {:.4} should be < C charge {:.4}",
+            q[o_idx],
+            q[c_idx]
+        );
     }
 
     #[test]
     fn water_oxygen_negative() {
         let mol = parse("O").unwrap();
         let q = gasteiger_charges(&mol);
-        assert!(q[0] < 0.0, "water O should have negative charge, got {:.4}", q[0]);
+        assert!(
+            q[0] < 0.0,
+            "water O should have negative charge, got {:.4}",
+            q[0]
+        );
     }
 
     #[test]
@@ -173,8 +215,11 @@ mod tests {
         let q = gasteiger_charges(&mol);
         for (idx, atom) in mol.atoms() {
             if atom.element.atomic_number() == 8 {
-                assert!(q[idx.0 as usize] < 0.0,
-                    "O charge should be negative, got {:.4}", q[idx.0 as usize]);
+                assert!(
+                    q[idx.0 as usize] < 0.0,
+                    "O charge should be negative, got {:.4}",
+                    q[idx.0 as usize]
+                );
             }
         }
     }

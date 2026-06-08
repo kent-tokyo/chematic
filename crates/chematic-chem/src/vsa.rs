@@ -6,10 +6,10 @@
 //! - SMR_VSA1–10:   bins per-atom Labute ASA by Crippen MR contribution.
 //! - PEOE_VSA1–14:  bins per-atom Labute ASA by Gasteiger partial charge.
 
-use chematic_core::Molecule;
 use crate::descriptors::{logp_crippen_per_atom, mr_per_atom};
 use crate::gasteiger::gasteiger_charges;
 use crate::topo_descriptors::labute_asa_per_atom;
+use chematic_core::Molecule;
 
 /// SlogP_VSA bin boundaries (11 cuts → 12 bins).
 /// Source: RDKit MolSurf.py _slogpVSA_bins
@@ -21,7 +21,9 @@ const SMR_CUTS: &[f64] = &[1.29, 1.82, 2.24, 2.45, 2.75, 3.05, 3.63, 3.8, 4.0];
 
 /// PEOE_VSA bin boundaries (13 cuts → 14 bins).
 /// Source: RDKit MolSurf.py _peoe_VSA_bins
-const PEOE_CUTS: &[f64] = &[-0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3];
+const PEOE_CUTS: &[f64] = &[
+    -0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3,
+];
 
 fn bin_idx(value: f64, cuts: &[f64]) -> usize {
     cuts.partition_point(|&c| value >= c)
@@ -70,7 +72,9 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
 
-    fn mol(s: &str) -> Molecule { parse(s).unwrap() }
+    fn mol(s: &str) -> Molecule {
+        parse(s).unwrap()
+    }
 
     #[test]
     fn slogp_vsa_length_is_12() {
@@ -93,8 +97,10 @@ mod tests {
         let mol = mol("c1ccccc1");
         let total: f64 = slogp_vsa(&mol).iter().sum();
         let expected = labute_asa(&mol);
-        assert!((total - expected).abs() < 1e-6,
-            "SlogP_VSA sum {total:.4} != LabuteASA {expected:.4}");
+        assert!(
+            (total - expected).abs() < 1e-6,
+            "SlogP_VSA sum {total:.4} != LabuteASA {expected:.4}"
+        );
     }
 
     #[test]
@@ -103,8 +109,10 @@ mod tests {
         let mol = mol("CC(=O)Oc1ccccc1C(=O)O");
         let total: f64 = smr_vsa(&mol).iter().sum();
         let expected = labute_asa(&mol);
-        assert!((total - expected).abs() < 1e-6,
-            "SMR_VSA sum {total:.4} != LabuteASA {expected:.4}");
+        assert!(
+            (total - expected).abs() < 1e-6,
+            "SMR_VSA sum {total:.4} != LabuteASA {expected:.4}"
+        );
     }
 
     #[test]
@@ -113,13 +121,18 @@ mod tests {
         let mol = mol("c1ccccc1");
         let total: f64 = peoe_vsa(&mol).iter().sum();
         let expected = labute_asa(&mol);
-        assert!((total - expected).abs() < 1e-6,
-            "PEOE_VSA sum {total:.4} != LabuteASA {expected:.4}");
+        assert!(
+            (total - expected).abs() < 1e-6,
+            "PEOE_VSA sum {total:.4} != LabuteASA {expected:.4}"
+        );
     }
 
     #[test]
     fn empty_molecule_zero_bins() {
         let mol = mol("C");
-        assert!(slogp_vsa(&mol).iter().any(|&v| v > 0.0), "methane should have nonzero VSA");
+        assert!(
+            slogp_vsa(&mol).iter().any(|&v| v > 0.0),
+            "methane should have nonzero VSA"
+        );
     }
 }

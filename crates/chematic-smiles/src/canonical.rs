@@ -60,7 +60,10 @@ pub fn equivalent_atom_classes(mol: &Molecule) -> Vec<usize> {
     let mut unique: Vec<u64> = ranks.clone();
     unique.sort_unstable();
     unique.dedup();
-    ranks.iter().map(|r| unique.partition_point(|&u| u < *r)).collect()
+    ranks
+        .iter()
+        .map(|r| unique.partition_point(|&u| u < *r))
+        .collect()
 }
 
 pub fn are_atoms_equivalent(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
@@ -132,23 +135,18 @@ fn initial_invariant(mol: &Molecule, idx: AtomIdx) -> u64 {
         return 0;
     }
 
-    let an     = atom.element.atomic_number() as u64;
+    let an = atom.element.atomic_number() as u64;
     let degree = mol.degree(idx) as u64;
     let charge = (atom.charge as i64 + 128) as u64;
-    let iso    = atom.isotope.unwrap_or(0) as u64;
-    let arom   = atom.aromatic as u64;
+    let iso = atom.isotope.unwrap_or(0) as u64;
+    let arom = atom.aromatic as u64;
     let h_flag = atom.hydrogen_count.map(|h| h as u64 + 1).unwrap_or(0);
 
-    (an     << 56)
-        | (degree << 48)
-        | (charge << 40)
-        | (iso    << 24)
-        | (h_flag << 16)
-        | (arom   <<  8)
+    (an << 56) | (degree << 48) | (charge << 40) | (iso << 24) | (h_flag << 16) | (arom << 8)
 }
 
 fn fnv_hash_sequence(base: u64, values: &[u64]) -> u64 {
-    const FNV_PRIME:  u64 = 0x0000_0100_0000_01B3;
+    const FNV_PRIME: u64 = 0x0000_0100_0000_01B3;
     const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
     let mut h = FNV_OFFSET ^ base.wrapping_mul(FNV_PRIME);
     for &v in values {
@@ -223,8 +221,12 @@ impl<'a> CanonicalWriter<'a> {
         let starts = self.canonical_atom_list();
         let mut first = true;
         for start in starts {
-            if self.written[start.0 as usize] { continue; }
-            if !first { self.out.push('.'); }
+            if self.written[start.0 as usize] {
+                continue;
+            }
+            if !first {
+                self.out.push('.');
+            }
             first = false;
             self.write_chain(start, None, None);
         }
@@ -248,14 +250,24 @@ impl<'a> CanonicalWriter<'a> {
     fn canonical_cmp(&self, a: AtomIdx, b: AtomIdx) -> std::cmp::Ordering {
         let ra = self.ranks[a.0 as usize];
         let rb = self.ranks[b.0 as usize];
-        if ra != rb { return ra.cmp(&rb); }
+        if ra != rb {
+            return ra.cmp(&rb);
+        }
 
         let atom_a = self.mol.atom(a);
         let atom_b = self.mol.atom(b);
 
         // Break ties with: atomic_number → isotope → charge → aromatic → degree
-        atom_a.element.atomic_number().cmp(&atom_b.element.atomic_number())
-            .then_with(|| atom_a.isotope.unwrap_or(0).cmp(&atom_b.isotope.unwrap_or(0)))
+        atom_a
+            .element
+            .atomic_number()
+            .cmp(&atom_b.element.atomic_number())
+            .then_with(|| {
+                atom_a
+                    .isotope
+                    .unwrap_or(0)
+                    .cmp(&atom_b.isotope.unwrap_or(0))
+            })
             .then_with(|| atom_a.charge.cmp(&atom_b.charge))
             .then_with(|| (atom_a.aromatic as u8).cmp(&(atom_b.aromatic as u8)))
             .then_with(|| self.mol.degree(a).cmp(&self.mol.degree(b)))
@@ -265,7 +277,7 @@ impl<'a> CanonicalWriter<'a> {
     /// Using identical traversal order ensures ring-closure numbers are stable.
     fn find_ring_closures(&mut self) {
         let n = self.mol.atom_count();
-        let mut visited  = vec![false; n];
+        let mut visited = vec![false; n];
         let mut in_stack = vec![false; n];
 
         // Iterate in canonical order (same as write_all).
@@ -291,8 +303,12 @@ impl<'a> CanonicalWriter<'a> {
         self.sort_neighbors_canonical(&mut neighbors);
 
         for (neighbor, bidx) in neighbors {
-            if Some(bidx) == from_bond { continue; }
-            if self.ring_bonds.contains(&bidx) { continue; }
+            if Some(bidx) == from_bond {
+                continue;
+            }
+            if self.ring_bonds.contains(&bidx) {
+                continue;
+            }
 
             if !visited[neighbor.0 as usize] {
                 self.dfs_mark(neighbor, Some(bidx), visited, in_stack);
@@ -303,8 +319,20 @@ impl<'a> CanonicalWriter<'a> {
                 let bond = self.mol.bond(bidx);
                 // Direction seen from `neighbor` (the open atom) going toward `atom`.
                 let order_at_open = match bond.order {
-                    BondOrder::Up   => if bond.atom1 == neighbor { BondOrder::Up }   else { BondOrder::Down },
-                    BondOrder::Down => if bond.atom1 == neighbor { BondOrder::Down } else { BondOrder::Up },
+                    BondOrder::Up => {
+                        if bond.atom1 == neighbor {
+                            BondOrder::Up
+                        } else {
+                            BondOrder::Down
+                        }
+                    }
+                    BondOrder::Down => {
+                        if bond.atom1 == neighbor {
+                            BondOrder::Down
+                        } else {
+                            BondOrder::Up
+                        }
+                    }
                     other => other,
                 };
                 // Suppress stereo at the close atom to avoid conflicting ring-closure chars.
@@ -312,8 +340,14 @@ impl<'a> CanonicalWriter<'a> {
                     BondOrder::Up | BondOrder::Down => BondOrder::Single,
                     other => other,
                 };
-                self.atom_ring_nums.entry(neighbor).or_default().push((rn, order_at_open));
-                self.atom_ring_nums.entry(atom).or_default().push((rn, order_at_close));
+                self.atom_ring_nums
+                    .entry(neighbor)
+                    .or_default()
+                    .push((rn, order_at_open));
+                self.atom_ring_nums
+                    .entry(atom)
+                    .or_default()
+                    .push((rn, order_at_close));
             }
         }
 
@@ -345,8 +379,10 @@ impl<'a> CanonicalWriter<'a> {
                 }
                 if rn >= 10 {
                     self.out.push('%');
-                    self.out.push(char::from_digit((rn / 10) as u32, 10).unwrap());
-                    self.out.push(char::from_digit((rn % 10) as u32, 10).unwrap());
+                    self.out
+                        .push(char::from_digit((rn / 10) as u32, 10).unwrap());
+                    self.out
+                        .push(char::from_digit((rn % 10) as u32, 10).unwrap());
                 } else {
                     self.out.push(char::from_digit(rn as u32, 10).unwrap());
                 }
@@ -354,7 +390,8 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         // Tree-edge children, sorted canonically.
-        let mut children: Vec<(AtomIdx, BondOrder)> = self.mol
+        let mut children: Vec<(AtomIdx, BondOrder)> = self
+            .mol
             .neighbors(atom)
             .filter(|(nb, bidx)| {
                 Some(*nb) != from_atom
@@ -365,8 +402,20 @@ impl<'a> CanonicalWriter<'a> {
                 let bond = self.mol.bond(bidx);
                 // Direction seen from `atom` going toward `nb`.
                 let order = match bond.order {
-                    BondOrder::Up   => if bond.atom1 == atom { BondOrder::Up }   else { BondOrder::Down },
-                    BondOrder::Down => if bond.atom1 == atom { BondOrder::Down } else { BondOrder::Up },
+                    BondOrder::Up => {
+                        if bond.atom1 == atom {
+                            BondOrder::Up
+                        } else {
+                            BondOrder::Down
+                        }
+                    }
+                    BondOrder::Down => {
+                        if bond.atom1 == atom {
+                            BondOrder::Down
+                        } else {
+                            BondOrder::Up
+                        }
+                    }
                     other => other,
                 };
                 (nb, order)
@@ -380,9 +429,9 @@ impl<'a> CanonicalWriter<'a> {
         for (i, (child, bond_order)) in children.into_iter().enumerate() {
             let is_last = i == n - 1;
             let parent_arom = self.mol.atom(atom).aromatic;
-            let child_arom  = self.mol.atom(child).aromatic;
+            let child_arom = self.mol.atom(child).aromatic;
             let implicit = match bond_order {
-                BondOrder::Single   => !(parent_arom && child_arom),
+                BondOrder::Single => !(parent_arom && child_arom),
                 BondOrder::Aromatic => parent_arom && child_arom,
                 _ => false,
             };
@@ -399,7 +448,7 @@ impl<'a> CanonicalWriter<'a> {
     }
 
     /// Sort a neighbor list in canonical order (for consistent DFS traversal).
-    fn sort_neighbors_canonical(&self, neighbors: &mut Vec<(AtomIdx, BondIdx)>) {
+    fn sort_neighbors_canonical(&self, neighbors: &mut [(AtomIdx, BondIdx)]) {
         neighbors.sort_by(|&(a, _), &(b, _)| self.canonical_cmp(b, a)); // descending
     }
 
@@ -431,14 +480,16 @@ impl<'a> CanonicalWriter<'a> {
 
             match atom.chirality {
                 chematic_core::Chirality::CounterClockwise => self.out.push('@'),
-                chematic_core::Chirality::Clockwise        => self.out.push_str("@@"),
-                chematic_core::Chirality::None             => {}
+                chematic_core::Chirality::Clockwise => self.out.push_str("@@"),
+                chematic_core::Chirality::None => {}
             }
 
-            if let Some(h) = atom.hydrogen_count {
-                if h > 0 {
-                    self.out.push('H');
-                    if h > 1 { self.out.push_str(&h.to_string()); }
+            if let Some(h) = atom.hydrogen_count
+                && h > 0
+            {
+                self.out.push('H');
+                if h > 1 {
+                    self.out.push_str(&h.to_string());
                 }
             }
 
@@ -473,10 +524,12 @@ mod tests {
     fn is_stable(smiles: &str) -> bool {
         let mol1 = parse(smiles).expect(smiles);
         let c1 = canonical_smiles(&mol1);
-        assert!(!c1.is_empty(), "canonical_smiles returned empty for '{smiles}'");
-        let mol2 = parse(&c1).unwrap_or_else(|e| {
-            panic!("canonical SMILES '{c1}' is not parseable: {e}")
-        });
+        assert!(
+            !c1.is_empty(),
+            "canonical_smiles returned empty for '{smiles}'"
+        );
+        let mol2 =
+            parse(&c1).unwrap_or_else(|e| panic!("canonical SMILES '{c1}' is not parseable: {e}"));
         let c2 = canonical_smiles(&mol2);
         c1 == c2
     }
@@ -489,23 +542,41 @@ mod tests {
     }
 
     #[test]
-    fn test_methane_stable()      { assert!(is_stable("C")); }
+    fn test_methane_stable() {
+        assert!(is_stable("C"));
+    }
     #[test]
-    fn test_ethane_stable()       { assert!(is_stable("CC")); }
+    fn test_ethane_stable() {
+        assert!(is_stable("CC"));
+    }
     #[test]
-    fn test_ethanol_stable()      { assert!(is_stable("CCO")); }
+    fn test_ethanol_stable() {
+        assert!(is_stable("CCO"));
+    }
     #[test]
-    fn test_acetic_acid_stable()  { assert!(is_stable("CC(=O)O")); }
+    fn test_acetic_acid_stable() {
+        assert!(is_stable("CC(=O)O"));
+    }
     #[test]
-    fn test_benzene_stable()      { assert!(is_stable("c1ccccc1")); }
+    fn test_benzene_stable() {
+        assert!(is_stable("c1ccccc1"));
+    }
     #[test]
-    fn test_pyridine_stable()     { assert!(is_stable("c1ccncc1")); }
+    fn test_pyridine_stable() {
+        assert!(is_stable("c1ccncc1"));
+    }
     #[test]
-    fn test_naphthalene_stable()  { assert!(is_stable("c1ccc2ccccc2c1")); }
+    fn test_naphthalene_stable() {
+        assert!(is_stable("c1ccc2ccccc2c1"));
+    }
     #[test]
-    fn test_aspirin_stable()      { assert!(is_stable("CC(=O)Oc1ccccc1C(=O)O")); }
+    fn test_aspirin_stable() {
+        assert!(is_stable("CC(=O)Oc1ccccc1C(=O)O"));
+    }
     #[test]
-    fn test_caffeine_stable()     { assert!(is_stable("Cn1cnc2c1c(=O)n(c(=O)n2C)C")); }
+    fn test_caffeine_stable() {
+        assert!(is_stable("Cn1cnc2c1c(=O)n(c(=O)n2C)C"));
+    }
 
     #[test]
     fn test_ethanol_same_from_different_starts() {
@@ -535,13 +606,21 @@ mod tests {
 
     // E/Z stereo bond direction tests.
     #[test]
-    fn test_ez_e_stable() { assert!(is_stable("C/C=C/C")); }
+    fn test_ez_e_stable() {
+        assert!(is_stable("C/C=C/C"));
+    }
     #[test]
-    fn test_ez_z_stable() { assert!(is_stable("C/C=C\\C")); }
+    fn test_ez_z_stable() {
+        assert!(is_stable("C/C=C\\C"));
+    }
     #[test]
-    fn test_ez_fluoro_e_stable() { assert!(is_stable("F/C=C/Cl")); }
+    fn test_ez_fluoro_e_stable() {
+        assert!(is_stable("F/C=C/Cl"));
+    }
     #[test]
-    fn test_ez_fluoro_z_stable() { assert!(is_stable("F/C=C\\Cl")); }
+    fn test_ez_fluoro_z_stable() {
+        assert!(is_stable("F/C=C\\Cl"));
+    }
     #[test]
     fn test_ez_e_ne_z() {
         // E and Z isomers of 1-fluoro-2-chloroethylene must yield different canonical forms.

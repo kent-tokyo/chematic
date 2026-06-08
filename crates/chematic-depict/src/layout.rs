@@ -69,7 +69,12 @@ impl Layout {
         self.coords.iter().fold(
             (f64::MAX, f64::MAX, f64::MIN, f64::MIN),
             |(min_x, min_y, max_x, max_y), p| {
-                (min_x.min(p.x), min_y.min(p.y), max_x.max(p.x), max_y.max(p.y))
+                (
+                    min_x.min(p.x),
+                    min_y.min(p.y),
+                    max_x.max(p.x),
+                    max_y.max(p.y),
+                )
             },
         )
     }
@@ -88,6 +93,7 @@ impl Layout {
 /// 3. Place chain atoms (not in any ring) via DFS zigzag from each ring atom or
 ///    from an arbitrary starting point if no rings exist.
 /// 4. Offset disconnected fragments horizontally so they do not overlap.
+///
 /// Compute 2D layout coordinates for a molecule.
 ///
 /// **Coordinate system:** SVG pixel space with **Y-axis pointing downward**
@@ -101,7 +107,9 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
 
     // Special case: single atom.
     if n == 1 {
-        return Layout { coords: vec![Point::new(0.0, 0.0)] };
+        return Layout {
+            coords: vec![Point::new(0.0, 0.0)],
+        };
     }
 
     // Collect connected components so each can be laid out separately.
@@ -237,10 +245,10 @@ fn group_ring_systems(rings: &[Vec<AtomIdx>]) -> Vec<Vec<Vec<AtomIdx>>> {
     }
 
     // Two rings in the same system if they share any atom.
-    for i in 0..n {
-        let set_i: HashSet<AtomIdx> = rings[i].iter().copied().collect();
-        for j in (i + 1)..n {
-            if rings[j].iter().any(|a| set_i.contains(a)) {
+    for (i, ring_i) in rings.iter().enumerate() {
+        let set_i: HashSet<AtomIdx> = ring_i.iter().copied().collect();
+        for (j, ring_j) in rings.iter().enumerate().skip(i + 1) {
+            if ring_j.iter().any(|a| set_i.contains(a)) {
                 union(&mut parent, i, j);
             }
         }
@@ -264,7 +272,7 @@ fn group_ring_systems(rings: &[Vec<AtomIdx>]) -> Vec<Vec<Vec<AtomIdx>>> {
 // ---------------------------------------------------------------------------
 
 /// Place all atoms of a ring system (a connected group of rings).
-fn place_ring_system(_mol: &Molecule, system: &[Vec<AtomIdx>], placed: &mut Vec<Option<Point>>) {
+fn place_ring_system(_mol: &Molecule, system: &[Vec<AtomIdx>], placed: &mut [Option<Point>]) {
     if system.is_empty() {
         return;
     }
@@ -297,12 +305,10 @@ fn place_ring_system(_mol: &Molecule, system: &[Vec<AtomIdx>], placed: &mut Vec<
             let shared_edge = find_shared_edge(ring, placed);
 
             // Fall back: use the first two placed atoms.
-            let (anchor1, anchor2) = shared_edge
-                .unwrap_or((already_placed[0], already_placed[1]));
+            let (anchor1, anchor2) = shared_edge.unwrap_or((already_placed[0], already_placed[1]));
 
             // Both anchors are confirmed placed (either from find_shared_edge or already_placed).
-            let (Some(p1), Some(p2)) =
-                (placed[anchor1.0 as usize], placed[anchor2.0 as usize])
+            let (Some(p1), Some(p2)) = (placed[anchor1.0 as usize], placed[anchor2.0 as usize])
             else {
                 return true; // Not ready.
             };
@@ -334,13 +340,11 @@ fn find_shared_edge(ring: &[AtomIdx], placed: &[Option<Point>]) -> Option<(AtomI
     ring.windows(2)
         .map(|w| (w[0], w[1]))
         .chain(std::iter::once((ring[n - 1], ring[0])))
-        .find(|&(a, b)| {
-            placed[a.0 as usize].is_some() && placed[b.0 as usize].is_some()
-        })
+        .find(|&(a, b)| placed[a.0 as usize].is_some() && placed[b.0 as usize].is_some())
 }
 
 /// Place atoms of a ring as a regular polygon centered at the origin.
-fn place_regular_ring(ring: &[AtomIdx], placed: &mut Vec<Option<Point>>) {
+fn place_regular_ring(ring: &[AtomIdx], placed: &mut [Option<Point>]) {
     let n = ring.len();
     if n == 0 {
         return;
@@ -371,7 +375,7 @@ fn place_ring_anchored(
     p1: Point,
     anchor2: AtomIdx,
     p2: Point,
-    placed: &mut Vec<Option<Point>>,
+    placed: &mut [Option<Point>],
 ) {
     let n = ring.len();
     let radius = ring_radius(n);
@@ -434,8 +438,12 @@ fn place_ring_anchored(
 
     // Signed angle from a1 to a2 (normalized to -PI..PI).
     let mut delta = angle_to_a2 - angle_to_a1;
-    while delta > std::f64::consts::PI { delta -= 2.0 * std::f64::consts::PI; }
-    while delta < -std::f64::consts::PI { delta += 2.0 * std::f64::consts::PI; }
+    while delta > std::f64::consts::PI {
+        delta -= 2.0 * std::f64::consts::PI;
+    }
+    while delta < -std::f64::consts::PI {
+        delta += 2.0 * std::f64::consts::PI;
+    }
 
     // Expected angular step per ring step (2*PI/n in either direction).
     // If going steps_forward ring steps gives delta angle, then:
@@ -487,7 +495,7 @@ fn place_chains(
     mol: &Molecule,
     component: &HashSet<AtomIdx>,
     in_ring: &HashSet<AtomIdx>,
-    placed: &mut Vec<Option<Point>>,
+    placed: &mut [Option<Point>],
 ) {
     // Step 1: extend chains from ring attachment points.
     // We process ring atoms that have unplaced neighbors.
@@ -548,7 +556,11 @@ fn place_chains(
         if placed[nb.0 as usize].is_some() {
             continue;
         }
-        let dir = if i == 0 { init_dir } else { init_dir + std::f64::consts::PI };
+        let dir = if i == 0 {
+            init_dir
+        } else {
+            init_dir + std::f64::consts::PI
+        };
         dfs_zigzag(mol, nb, start, dir, placed, component);
     }
 
@@ -627,7 +639,7 @@ fn dfs_zigzag(
     start_atom: AtomIdx,
     start_parent: AtomIdx,
     start_dir: f64,
-    placed: &mut Vec<Option<Point>>,
+    placed: &mut [Option<Point>],
     component: &HashSet<AtomIdx>,
 ) {
     let deflections = [-std::f64::consts::PI / 6.0, std::f64::consts::PI / 6.0];
@@ -649,7 +661,9 @@ fn dfs_zigzag(
         let unplaced: Vec<AtomIdx> = mol
             .neighbors(atom)
             .map(|(nb, _)| nb)
-            .filter(|&nb| nb != parent && component.contains(&nb) && placed[nb.0 as usize].is_none())
+            .filter(|&nb| {
+                nb != parent && component.contains(&nb) && placed[nb.0 as usize].is_none()
+            })
             .collect();
 
         // Push in reverse so the first neighbor is popped first, preserving DFS order.
@@ -736,10 +750,10 @@ pub fn suggest_bond_direction(mol: &Molecule, atom: AtomIdx, layout: &Layout) ->
 pub fn detect_crossings(layout: &Layout, mol: &Molecule) -> Vec<(BondIdx, BondIdx)> {
     let bonds: Vec<(BondIdx, (Point, Point))> = mol
         .bonds()
-        .filter_map(|(bidx, bond)| {
+        .map(|(bidx, bond)| {
             let p1 = layout.get(bond.atom1);
             let p2 = layout.get(bond.atom2);
-            Some((bidx, (p1, p2)))
+            (bidx, (p1, p2))
         })
         .collect();
 

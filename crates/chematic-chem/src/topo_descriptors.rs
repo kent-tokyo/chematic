@@ -55,8 +55,7 @@ fn delta_v(mol: &Molecule, idx: AtomIdx) -> f64 {
     let atom = mol.atom(idx);
     let z = atom.element.atomic_number() as i32;
     let zv = valence_electrons(atom.element.atomic_number()) as i32;
-    let h = implicit_hcount(mol, idx) as i32
-        + atom.hydrogen_count.unwrap_or(0) as i32;
+    let h = implicit_hcount(mol, idx) as i32 + atom.hydrogen_count.unwrap_or(0) as i32;
     let denom = z - zv - 1;
     if denom <= 0 {
         return (zv - h).max(1) as f64;
@@ -66,11 +65,26 @@ fn delta_v(mol: &Molecule, idx: AtomIdx) -> f64 {
 
 fn valence_electrons(z: u8) -> u8 {
     match z {
-        1  => 1,
-        2  => 2,
-        3  => 1, 4 => 2, 5 => 3, 6 => 4, 7 => 5, 8 => 6, 9 => 7, 10 => 8,
-        11 => 1, 12 => 2, 13 => 3, 14 => 4, 15 => 5, 16 => 6, 17 => 7, 18 => 8,
-        35 => 7, 53 => 7,
+        1 => 1,
+        2 => 2,
+        3 => 1,
+        4 => 2,
+        5 => 3,
+        6 => 4,
+        7 => 5,
+        8 => 6,
+        9 => 7,
+        10 => 8,
+        11 => 1,
+        12 => 2,
+        13 => 3,
+        14 => 4,
+        15 => 5,
+        16 => 6,
+        17 => 7,
+        18 => 8,
+        35 => 7,
+        53 => 7,
         _ => z.min(8),
     }
 }
@@ -78,6 +92,7 @@ fn valence_electrons(z: u8) -> u8 {
 /// DFS: accumulate chi contributions for paths of exactly `target_len` bonds
 /// starting from `cur`.  `running_product` is the product of delta values of
 /// atoms visited so far (including `cur`).
+#[allow(clippy::too_many_arguments)]
 fn chi_dfs(
     mol: &Molecule,
     cur: usize,
@@ -103,8 +118,14 @@ fn chi_dfs(
             if d_nb > 0.0 {
                 visited[ni] = true;
                 sum += chi_dfs(
-                    mol, ni, target_len, cur_len + 1,
-                    running_product * d_nb, visited, heavy_set, use_valence,
+                    mol,
+                    ni,
+                    target_len,
+                    cur_len + 1,
+                    running_product * d_nb,
+                    visited,
+                    heavy_set,
+                    use_valence,
                 );
                 visited[ni] = false;
             }
@@ -166,7 +187,16 @@ fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
         }
         let mut visited = vec![false; mol.atom_count()];
         visited[start] = true;
-        total += chi_dfs(mol, start, n, 0, d_start, &mut visited, &heavy_set, use_valence);
+        total += chi_dfs(
+            mol,
+            start,
+            n,
+            0,
+            d_start,
+            &mut visited,
+            &heavy_set,
+            use_valence,
+        );
     }
     total / 2.0
 }
@@ -237,6 +267,7 @@ pub fn kappa2(mol: &Molecule) -> f64 {
 /// Formula depends on parity of heavy-atom count:
 /// - odd n:  κ3 = (n−1)·(n−3)² / p3²
 /// - even n: κ3 = (n−2)·(n−3)² / p3²
+///
 /// Returns 0.0 when fewer than 4 heavy atoms or no 3-bond paths exist.
 pub fn kappa3(mol: &Molecule) -> f64 {
     let heavy = heavy_indices(mol);
@@ -263,46 +294,68 @@ pub fn kappa3(mol: &Molecule) -> f64 {
 pub fn chi0(mol: &Molecule) -> f64 {
     let heavy = heavy_indices(mol);
     let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
-    heavy.iter().map(|&i| {
-        let d = delta(mol, AtomIdx(i as u32), &heavy_set);
-        if d > 0.0 { d.powf(-0.5) } else { 0.0 }
-    }).sum()
+    heavy
+        .iter()
+        .map(|&i| {
+            let d = delta(mol, AtomIdx(i as u32), &heavy_set);
+            if d > 0.0 { d.powf(-0.5) } else { 0.0 }
+        })
+        .sum()
 }
 
 /// Kier-Hall χ1 connectivity index (bond-path sum).
-pub fn chi1(mol: &Molecule) -> f64 { chi_n(mol, 1, false) }
+pub fn chi1(mol: &Molecule) -> f64 {
+    chi_n(mol, 1, false)
+}
 
 /// Kier-Hall χ2 connectivity index (2-bond path sum).
-pub fn chi2(mol: &Molecule) -> f64 { chi_n(mol, 2, false) }
+pub fn chi2(mol: &Molecule) -> f64 {
+    chi_n(mol, 2, false)
+}
 
 /// Kier-Hall χ3 connectivity index (3-bond path sum).
-pub fn chi3(mol: &Molecule) -> f64 { chi_n(mol, 3, false) }
+pub fn chi3(mol: &Molecule) -> f64 {
+    chi_n(mol, 3, false)
+}
 
 /// Kier-Hall χ4 connectivity index (4-bond path sum).
-pub fn chi4(mol: &Molecule) -> f64 { chi_n(mol, 4, false) }
+pub fn chi4(mol: &Molecule) -> f64 {
+    chi_n(mol, 4, false)
+}
 
 /// Valence-corrected χ0v connectivity index.
 ///
 /// Uses δᵥ = (Zᵥ − H) / (Z − Zᵥ − 1) instead of the simple degree.
 pub fn chi0v(mol: &Molecule) -> f64 {
     let heavy = heavy_indices(mol);
-    heavy.iter().map(|&i| {
-        let d = delta_v(mol, AtomIdx(i as u32));
-        if d > 0.0 { d.powf(-0.5) } else { 0.0 }
-    }).sum()
+    heavy
+        .iter()
+        .map(|&i| {
+            let d = delta_v(mol, AtomIdx(i as u32));
+            if d > 0.0 { d.powf(-0.5) } else { 0.0 }
+        })
+        .sum()
 }
 
 /// Valence-corrected χ1v connectivity index.
-pub fn chi1v(mol: &Molecule) -> f64 { chi_n(mol, 1, true) }
+pub fn chi1v(mol: &Molecule) -> f64 {
+    chi_n(mol, 1, true)
+}
 
 /// Valence-corrected χ2v connectivity index.
-pub fn chi2v(mol: &Molecule) -> f64 { chi_n(mol, 2, true) }
+pub fn chi2v(mol: &Molecule) -> f64 {
+    chi_n(mol, 2, true)
+}
 
 /// Valence-corrected χ3v connectivity index.
-pub fn chi3v(mol: &Molecule) -> f64 { chi_n(mol, 3, true) }
+pub fn chi3v(mol: &Molecule) -> f64 {
+    chi_n(mol, 3, true)
+}
 
 /// Valence-corrected χ4v connectivity index.
-pub fn chi4v(mol: &Molecule) -> f64 { chi_n(mol, 4, true) }
+pub fn chi4v(mol: &Molecule) -> f64 {
+    chi_n(mol, 4, true)
+}
 
 // ─── Bertz Complexity ────────────────────────────────────────────────────────
 
@@ -335,20 +388,20 @@ pub fn bertz_ct(mol: &Molecule) -> f64 {
 /// Returns 0.0 for unrecognized elements (they contribute no surface area).
 fn rb0(atomic_number: u8) -> f64 {
     match atomic_number {
-        1  => 0.33,   // H
-        6  => 0.77,   // C
-        7  => 0.70,   // N
-        8  => 0.66,   // O
-        9  => 0.611,  // F
-        14 => 1.04,   // Si
-        15 => 0.89,   // P
-        16 => 1.04,   // S
-        17 => 0.997,  // Cl
-        33 => 1.21,   // As
-        34 => 1.20,   // Se
-        35 => 1.167,  // Br
-        53 => 1.387,  // I
-        _  => 0.0,
+        1 => 0.33,   // H
+        6 => 0.77,   // C
+        7 => 0.70,   // N
+        8 => 0.66,   // O
+        9 => 0.611,  // F
+        14 => 1.04,  // Si
+        15 => 0.89,  // P
+        16 => 1.04,  // S
+        17 => 0.997, // Cl
+        33 => 1.21,  // As
+        34 => 1.20,  // Se
+        35 => 1.167, // Br
+        53 => 1.387, // I
+        _ => 0.0,
     }
 }
 
@@ -401,27 +454,37 @@ pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
         let dij = (ri - rj).abs().max(bij).min(ri + rj);
         let vi = (rj * rj - (ri - dij) * (ri - dij)) / dij;
         let vj = (ri * ri - (rj - dij) * (rj - dij)) / dij;
-        if vi > 0.0 { v[i] += vi; }
-        if vj > 0.0 { v[j] += vj; }
+        if vi > 0.0 {
+            v[i] += vi;
+        }
+        if vj > 0.0 {
+            v[j] += vj;
+        }
     }
 
     for i in 0..n {
         let ri = radii[i];
-        if ri < 1e-10 { continue; }
+        if ri < 1e-10 {
+            continue;
+        }
         let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
         for _ in 0..h_count {
             let dij = ri + R_H;
             let vi = (R_H * R_H - (ri - dij) * (ri - dij)) / dij;
-            if vi > 0.0 { v[i] += vi; }
+            if vi > 0.0 {
+                v[i] += vi;
+            }
         }
     }
 
-    (0..n).map(|i| {
-        let ri = radii[i];
-        let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
-        let heavy_area = (4.0 * PI * ri * ri - PI * ri * v[i]).max(0.0);
-        heavy_area + h_count as f64 * 4.0 * PI * R_H * R_H
-    }).collect()
+    (0..n)
+        .map(|i| {
+            let ri = radii[i];
+            let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
+            let heavy_area = (4.0 * PI * ri * ri - PI * ri * v[i]).max(0.0);
+            heavy_area + h_count as f64 * 4.0 * PI * R_H * R_H
+        })
+        .collect()
 }
 
 /// Labute approximate surface area (Å²).
@@ -453,8 +516,14 @@ pub fn randic_index(mol: &Molecule) -> f64 {
         if !heavy_set.contains(&a) || !heavy_set.contains(&b) {
             continue; // skip H-containing bonds
         }
-        let da = mol.neighbors(bond.atom1).filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize))).count() as f64;
-        let db = mol.neighbors(bond.atom2).filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize))).count() as f64;
+        let da = mol
+            .neighbors(bond.atom1)
+            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+            .count() as f64;
+        let db = mol
+            .neighbors(bond.atom2)
+            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+            .count() as f64;
         if da > 0.0 && db > 0.0 {
             sum += 1.0 / (da * db).sqrt();
         }
@@ -468,12 +537,16 @@ pub fn randic_index(mol: &Molecule) -> f64 {
 pub fn zagreb_index_m1(mol: &Molecule) -> u32 {
     let heavy = heavy_indices(mol);
     let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
-    heavy.iter().map(|&i| {
-        let deg = mol.neighbors(chematic_core::AtomIdx(i as u32))
-            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
-            .count() as u32;
-        deg * deg
-    }).sum()
+    heavy
+        .iter()
+        .map(|&i| {
+            let deg = mol
+                .neighbors(chematic_core::AtomIdx(i as u32))
+                .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+                .count() as u32;
+            deg * deg
+        })
+        .sum()
 }
 
 /// Topological distance matrix for heavy atoms.
@@ -548,9 +621,9 @@ mod tests {
 
     #[test]
     fn wiener_increases_with_chain_length() {
-        let w2 = wiener_index(&mol("CC"));       // ethane
-        let w3 = wiener_index(&mol("CCC"));      // propane
-        let w4 = wiener_index(&mol("CCCC"));     // butane
+        let w2 = wiener_index(&mol("CC")); // ethane
+        let w3 = wiener_index(&mol("CCC")); // propane
+        let w4 = wiener_index(&mol("CCCC")); // butane
         assert!(w2 < w3 && w3 < w4);
     }
 
@@ -702,7 +775,10 @@ mod tests {
         // Larger molecule → larger ASA.
         let bz = labute_asa(&mol("c1ccccc1"));
         let asp = labute_asa(&mol("CC(=O)Oc1ccccc1C(=O)O"));
-        assert!(bz < asp, "benzene ASA {bz:.2} should be < aspirin ASA {asp:.2}");
+        assert!(
+            bz < asp,
+            "benzene ASA {bz:.2} should be < aspirin ASA {asp:.2}"
+        );
     }
 
     #[test]
@@ -710,8 +786,8 @@ mod tests {
         // Aromatic C-C bonds (scale=0.1) create more surface overlap than
         // single C-C bonds (scale=0), so benzene ASA < cyclohexane ASA
         // (same atom count, but less overlap in cyclohexane).
-        let bz = labute_asa(&mol("c1ccccc1"));  // aromatic
-        let ch = labute_asa(&mol("C1CCCCC1"));  // saturated
+        let bz = labute_asa(&mol("c1ccccc1")); // aromatic
+        let ch = labute_asa(&mol("C1CCCCC1")); // saturated
         assert!(bz < ch, "benzene ASA {bz:.2} < cyclohexane ASA {ch:.2}");
     }
 

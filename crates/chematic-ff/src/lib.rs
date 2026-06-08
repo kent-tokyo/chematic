@@ -10,5 +10,5 @@
 pub mod dreiding;
 pub mod params;
 
-pub use dreiding::{assign_dreiding_types, DREIDINGType};
+pub use dreiding::{DREIDINGType, assign_dreiding_types};
 pub use params::{dreiding_angle, dreiding_bond_len, dreiding_torsion_barrier, dreiding_vdw};

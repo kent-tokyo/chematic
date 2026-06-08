@@ -8,7 +8,7 @@
 
 use chematic_rxn::Reaction;
 
-use crate::layout::{compute_layout, BOND_LEN};
+use crate::layout::{BOND_LEN, compute_layout};
 use crate::svg::{RenderOptions, render_svg_opts};
 
 /// Render a `Reaction` as a self-contained SVG string using default options.
@@ -22,9 +22,9 @@ pub fn depict_reaction_svg(rxn: &Reaction) -> String {
 /// the right.  Each component is laid out independently at the same vertical
 /// centre line.  A "+" separator is inserted between components on each side.
 pub fn depict_reaction_svg_opts(rxn: &Reaction, opts: &RenderOptions) -> String {
-    let pad = BOND_LEN;           // padding between components
+    let pad = BOND_LEN; // padding between components
     let arrow_w = BOND_LEN * 2.0; // width of the reaction arrow
-    let sep_w = BOND_LEN;         // width of the "+" separator
+    let sep_w = BOND_LEN; // width of the "+" separator
 
     // -----------------------------------------------------------------------
     // Step 1: render each molecule to SVG and measure its bounding box.
@@ -43,13 +43,19 @@ pub fn depict_reaction_svg_opts(rxn: &Reaction, opts: &RenderOptions) -> String 
         let mol_svg = render_svg_opts(mol, &layout, opts);
         // Strip the outer <svg …> wrapper so we can re-embed with a translate.
         let inner = strip_svg_wrapper(&mol_svg);
-        Component { svg_inner: inner, w: mw + pad, h: mh + pad }
+        Component {
+            svg_inner: inner,
+            w: mw + pad,
+            h: mh + pad,
+        }
     };
 
     let reactants: Vec<Component> = rxn.reactants.iter().map(render_mol).collect();
-    let products: Vec<Component>  = rxn.products.iter().map(render_mol).collect();
+    let products: Vec<Component> = rxn.products.iter().map(render_mol).collect();
 
-    let max_h = reactants.iter().chain(products.iter())
+    let max_h = reactants
+        .iter()
+        .chain(products.iter())
         .map(|c| c.h)
         .fold(BOND_LEN * 4.0, f64::max);
 
@@ -60,7 +66,10 @@ pub fn depict_reaction_svg_opts(rxn: &Reaction, opts: &RenderOptions) -> String 
     let mut svg_parts: Vec<String> = Vec::new();
     let mut cursor_x = pad;
 
-    let emit_components = |parts: &mut Vec<String>, comps: &[Component], cursor: &mut f64, max_h: f64| {
+    let emit_components = |parts: &mut Vec<String>,
+                           comps: &[Component],
+                           cursor: &mut f64,
+                           max_h: f64| {
         for (i, comp) in comps.iter().enumerate() {
             if i > 0 {
                 // "+" separator
@@ -86,7 +95,7 @@ pub fn depict_reaction_svg_opts(rxn: &Reaction, opts: &RenderOptions) -> String 
     // Reaction arrow
     let arrow_x1 = cursor_x + pad / 2.0;
     let arrow_x2 = arrow_x1 + arrow_w;
-    let arrow_y  = max_h / 2.0;
+    let arrow_y = max_h / 2.0;
     svg_parts.push(format!(
         "<line x1=\"{:.1}\" y1=\"{arrow_y:.1}\" x2=\"{:.1}\" y2=\"{arrow_y:.1}\" stroke=\"#333\" stroke-width=\"2\" marker-end=\"url(#arrowhead)\"/>",
         arrow_x1, arrow_x2

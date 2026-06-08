@@ -33,10 +33,12 @@ pub mod parser;
 pub mod smi_file;
 pub mod writer;
 
-pub use canonical::{canonical_smiles, canonical_atom_order, equivalent_atom_classes, morgan_ranks};
 pub use canonical::are_atoms_equivalent;
+pub use canonical::{
+    canonical_atom_order, canonical_smiles, equivalent_atom_classes, morgan_ranks,
+};
 pub use cx::{CxAtomProp, CxSmiles, parse_cxsmiles, write_cxsmiles};
-pub use smi_file::{parse_smi_file, write_smi_file};
 pub use error::SmilesError;
 pub use parser::parse;
+pub use smi_file::{parse_smi_file, write_smi_file};
 pub use writer::write;

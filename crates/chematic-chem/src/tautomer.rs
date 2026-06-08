@@ -59,7 +59,9 @@ static RULES: &[TautomerRule] = &[
     // 1. keto-enol: O-H adjacent to C=C → O=C-C (prefer keto)
     TautomerRule {
         name: "keto-enol",
-        donor_elem: 8, bridge_elem: Some(6), acceptor_elem: 6,
+        donor_elem: 8,
+        bridge_elem: Some(6),
+        acceptor_elem: 6,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
@@ -67,7 +69,9 @@ static RULES: &[TautomerRule] = &[
     // 2. amide-iminol: N-H adjacent to C=O → N=C-O (prefer amide — forward=false)
     TautomerRule {
         name: "amide-iminol",
-        donor_elem: 7, bridge_elem: Some(6), acceptor_elem: 8,
+        donor_elem: 7,
+        bridge_elem: Some(6),
+        acceptor_elem: 8,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -75,7 +79,9 @@ static RULES: &[TautomerRule] = &[
     // 3. iminol→amide: O-H adjacent to C=N → O=C-N (prefer amide — forward=true)
     TautomerRule {
         name: "iminol-amide",
-        donor_elem: 8, bridge_elem: Some(6), acceptor_elem: 7,
+        donor_elem: 8,
+        bridge_elem: Some(6),
+        acceptor_elem: 7,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
@@ -83,7 +89,9 @@ static RULES: &[TautomerRule] = &[
     // 4. imine-enamine: N-H adjacent to C=C → N=C-C (prefer imine)
     TautomerRule {
         name: "imine-enamine",
-        donor_elem: 7, bridge_elem: Some(6), acceptor_elem: 6,
+        donor_elem: 7,
+        bridge_elem: Some(6),
+        acceptor_elem: 6,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
@@ -91,7 +99,9 @@ static RULES: &[TautomerRule] = &[
     // 5. 1,3-H-shift N→O (any bridge): e.g. nitroso/oxime, hydroxamic acid
     TautomerRule {
         name: "1,3-N-to-O",
-        donor_elem: 7, bridge_elem: None, acceptor_elem: 8,
+        donor_elem: 7,
+        bridge_elem: None,
+        acceptor_elem: 8,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -99,7 +109,9 @@ static RULES: &[TautomerRule] = &[
     // 6. 1,3-H-shift N→N (any bridge): imidazole, pyrazole, guanidine
     TautomerRule {
         name: "1,3-N-to-N",
-        donor_elem: 7, bridge_elem: None, acceptor_elem: 7,
+        donor_elem: 7,
+        bridge_elem: None,
+        acceptor_elem: 7,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -107,7 +119,9 @@ static RULES: &[TautomerRule] = &[
     // 7. thioamide: N-H adjacent to C=S → N=C-S (prefer thioamide — forward=false)
     TautomerRule {
         name: "thioamide",
-        donor_elem: 7, bridge_elem: Some(6), acceptor_elem: 16,
+        donor_elem: 7,
+        bridge_elem: Some(6),
+        acceptor_elem: 16,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -115,7 +129,9 @@ static RULES: &[TautomerRule] = &[
     // 8. thio-iminol→thioamide: S-H adjacent to C=N → S=C-N
     TautomerRule {
         name: "thio-iminol-amide",
-        donor_elem: 16, bridge_elem: Some(6), acceptor_elem: 7,
+        donor_elem: 16,
+        bridge_elem: Some(6),
+        acceptor_elem: 7,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
@@ -123,7 +139,9 @@ static RULES: &[TautomerRule] = &[
     // 9. thio keto-enol: S-H adjacent to C=C → S=C-C (prefer thioketone)
     TautomerRule {
         name: "thio-keto-enol",
-        donor_elem: 16, bridge_elem: Some(6), acceptor_elem: 6,
+        donor_elem: 16,
+        bridge_elem: Some(6),
+        acceptor_elem: 6,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
@@ -131,7 +149,9 @@ static RULES: &[TautomerRule] = &[
     // 10. thio-enol→thioketone: O-H adjacent to C=S → O=C-S
     TautomerRule {
         name: "thio-enol-ketone",
-        donor_elem: 8, bridge_elem: Some(6), acceptor_elem: 16,
+        donor_elem: 8,
+        bridge_elem: Some(6),
+        acceptor_elem: 16,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -139,7 +159,9 @@ static RULES: &[TautomerRule] = &[
     // 11. 1,3-N→S (any bridge): sulfonamide/thioamide-type
     TautomerRule {
         name: "1,3-N-to-S",
-        donor_elem: 7, bridge_elem: None, acceptor_elem: 16,
+        donor_elem: 7,
+        bridge_elem: None,
+        acceptor_elem: 16,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -147,7 +169,9 @@ static RULES: &[TautomerRule] = &[
     // 12. 1,3-S→O (any bridge)
     TautomerRule {
         name: "1,3-S-to-O",
-        donor_elem: 16, bridge_elem: None, acceptor_elem: 8,
+        donor_elem: 16,
+        bridge_elem: None,
+        acceptor_elem: 8,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -155,7 +179,9 @@ static RULES: &[TautomerRule] = &[
     // 13. 1,3-S→N (any bridge)
     TautomerRule {
         name: "1,3-S-to-N",
-        donor_elem: 16, bridge_elem: None, acceptor_elem: 7,
+        donor_elem: 16,
+        bridge_elem: None,
+        acceptor_elem: 7,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -163,7 +189,9 @@ static RULES: &[TautomerRule] = &[
     // 14. 1,3-O→S (any bridge)
     TautomerRule {
         name: "1,3-O-to-S",
-        donor_elem: 8, bridge_elem: None, acceptor_elem: 16,
+        donor_elem: 8,
+        bridge_elem: None,
+        acceptor_elem: 16,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -171,7 +199,9 @@ static RULES: &[TautomerRule] = &[
     // 15. 1,3-S→S (any bridge): dithioamide, xanthate-type
     TautomerRule {
         name: "1,3-S-to-S",
-        donor_elem: 16, bridge_elem: None, acceptor_elem: 16,
+        donor_elem: 16,
+        bridge_elem: None,
+        acceptor_elem: 16,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -180,7 +210,9 @@ static RULES: &[TautomerRule] = &[
     //     e.g. O-H + S=N, N=N → O=X + N-H (hydroxamic acid, thiohydroximate)
     TautomerRule {
         name: "1,3-O-to-N-any-bridge",
-        donor_elem: 8, bridge_elem: None, acceptor_elem: 7,
+        donor_elem: 8,
+        bridge_elem: None,
+        acceptor_elem: 7,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
@@ -189,7 +221,9 @@ static RULES: &[TautomerRule] = &[
     //     e.g. hydroxylamine HO-N=O ↔ O=N-OH (N-oxide tautomer)
     TautomerRule {
         name: "1,3-O-to-O-any-bridge",
-        donor_elem: 8, bridge_elem: None, acceptor_elem: 8,
+        donor_elem: 8,
+        bridge_elem: None,
+        acceptor_elem: 8,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -198,7 +232,9 @@ static RULES: &[TautomerRule] = &[
     //     e.g. N-H + S=C, N=C via N bridge → N= + X-C-H
     TautomerRule {
         name: "1,3-N-to-C-any-bridge",
-        donor_elem: 7, bridge_elem: None, acceptor_elem: 6,
+        donor_elem: 7,
+        bridge_elem: None,
+        acceptor_elem: 6,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
@@ -207,7 +243,9 @@ static RULES: &[TautomerRule] = &[
     //     Forward: C-H + X=O → C=X + O-H. prefer_forward:false → prefer keto/C-H form.
     TautomerRule {
         name: "1,3-C-to-O-any-bridge",
-        donor_elem: 6, bridge_elem: None, acceptor_elem: 8,
+        donor_elem: 6,
+        bridge_elem: None,
+        acceptor_elem: 8,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -216,7 +254,9 @@ static RULES: &[TautomerRule] = &[
     //     Forward: C-H + X=N → C=X + N-H. prefer_forward:false → prefer N-H form.
     TautomerRule {
         name: "1,3-C-to-N-any-bridge",
-        donor_elem: 6, bridge_elem: None, acceptor_elem: 7,
+        donor_elem: 6,
+        bridge_elem: None,
+        acceptor_elem: 7,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
@@ -240,7 +280,7 @@ fn find_direct_aromatic_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
         if !da.aromatic || da.element.atomic_number() != 7 {
             continue;
         }
-        if da.hydrogen_count.map_or(true, |h| h == 0) {
+        if da.hydrogen_count.is_none_or(|h| h == 0) {
             continue;
         }
         for (a, _) in mol.neighbors(d) {
@@ -256,7 +296,11 @@ fn find_direct_aromatic_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
 /// Transfer one H from an aromatic donor to an aromatic acceptor without changing bond orders.
 ///
 /// Only handles atoms with an explicit `hydrogen_count` on the donor.
-fn transfer_hydrogen_aromatic(mol: &Molecule, donor: AtomIdx, acceptor: AtomIdx) -> Option<Molecule> {
+fn transfer_hydrogen_aromatic(
+    mol: &Molecule,
+    donor: AtomIdx,
+    acceptor: AtomIdx,
+) -> Option<Molecule> {
     let donor_h = mol.atom(donor).hydrogen_count?;
     if donor_h == 0 {
         return None;
@@ -277,7 +321,8 @@ fn transfer_hydrogen_aromatic(mol: &Molecule, donor: AtomIdx, acceptor: AtomIdx)
     for i in 0..mol.bond_count() {
         let bidx = BondIdx(i as u32);
         let b = mol.bond(bidx);
-        builder.add_bond(b.atom1, b.atom2, b.order)
+        builder
+            .add_bond(b.atom1, b.atom2, b.order)
             .expect("transfer_hydrogen_aromatic: bond from a valid molecule must be re-addable");
     }
     Some(builder.build())
@@ -290,7 +335,8 @@ fn clone_mol(mol: &Molecule) -> Molecule {
     }
     for i in 0..mol.bond_count() {
         let b = mol.bond(BondIdx(i as u32));
-        builder.add_bond(b.atom1, b.atom2, b.order)
+        builder
+            .add_bond(b.atom1, b.atom2, b.order)
             .expect("clone_mol: bond from a valid molecule must be re-addable");
     }
     builder.build()
@@ -305,7 +351,8 @@ fn mol_fingerprint(mol: &Molecule) -> u64 {
         .map(|i| {
             let idx = AtomIdx(i as u32);
             let a = mol.atom(idx);
-            let bos: u32 = mol.neighbors(idx)
+            let bos: u32 = mol
+                .neighbors(idx)
                 .map(|(_, bidx)| mol.bond(bidx).order.order_int() as u32)
                 .sum();
             (a.element.atomic_number(), a.charge, bos)
@@ -342,10 +389,10 @@ fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, A
             if !rule.donor_bridge_order.matches(mol.bond(db_bidx).order) {
                 continue;
             }
-            if let Some(br_elem) = rule.bridge_elem {
-                if mol.atom(b).element.atomic_number() != br_elem {
-                    continue;
-                }
+            if let Some(br_elem) = rule.bridge_elem
+                && mol.atom(b).element.atomic_number() != br_elem
+            {
+                continue;
             }
 
             for (a, ba_bidx) in mol.neighbors(b) {
@@ -388,7 +435,9 @@ fn transfer_hydrogen(
         let mut atom = mol.atom(idx).clone();
         if let Some(h) = atom.hydrogen_count {
             if idx == donor {
-                if h == 0 { return None; }
+                if h == 0 {
+                    return None;
+                }
                 atom.hydrogen_count = Some(h - 1);
             } else if idx == acceptor {
                 atom.hydrogen_count = Some(h.saturating_add(1));
@@ -425,8 +474,6 @@ fn apply_all_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<Molecule> {
         .collect()
 }
 
-/// Return the canonical (preferred) tautomer of `mol`.
-///
 // ---------------------------------------------------------------------------
 // TautomerConfig
 // ---------------------------------------------------------------------------
@@ -451,7 +498,11 @@ pub struct TautomerConfig {
 
 impl Default for TautomerConfig {
     fn default() -> Self {
-        Self { max_iter: 16, max_tautomers: 32, enabled_rules: Vec::new() }
+        Self {
+            max_iter: 16,
+            max_tautomers: 32,
+            enabled_rules: Vec::new(),
+        }
     }
 }
 
@@ -468,7 +519,10 @@ impl TautomerConfig {
 
     /// Convenience: config with only the keto-enol rule (index 0) enabled.
     pub fn keto_enol_only() -> Self {
-        Self { enabled_rules: vec![0], ..Self::default() }
+        Self {
+            enabled_rules: vec![0],
+            ..Self::default()
+        }
     }
 }
 
@@ -478,13 +532,17 @@ impl TautomerConfig {
 
 /// Collect the rules that are active under `config`.
 fn active_rules(config: &TautomerConfig) -> Vec<&'static TautomerRule> {
-    RULES.iter().enumerate().filter_map(|(i, r)| {
-        if config.enabled_rules.is_empty() || config.enabled_rules.contains(&i) {
-            Some(r)
-        } else {
-            None
-        }
-    }).collect()
+    RULES
+        .iter()
+        .enumerate()
+        .filter_map(|(i, r)| {
+            if config.enabled_rules.is_empty() || config.enabled_rules.contains(&i) {
+                Some(r)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -511,7 +569,10 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
 
     for _ in 0..config.max_iter {
         let mut changed = false;
-        for rule in active_rules(config).into_iter().filter(|r| r.prefer_forward) {
+        for rule in active_rules(config)
+            .into_iter()
+            .filter(|r| r.prefer_forward)
+        {
             if let Some(next) = apply_first_match(&current, rule) {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
@@ -536,10 +597,7 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
         }
     }
     if candidates.len() > 1 {
-        current = candidates
-            .into_iter()
-            .min_by_key(|t| h_assignment(t))
-            .unwrap();
+        current = candidates.into_iter().min_by_key(h_assignment).unwrap();
     }
     current
 }
@@ -637,7 +695,7 @@ mod tests {
         let mol = parse("CC(=O)CC(=O)C").unwrap(); // acetylacetone
         let tautomers = enumerate_tautomers(&mol);
         assert!(tautomers.len() <= 32);
-        assert!(tautomers.len() >= 1);
+        assert!(!tautomers.is_empty());
     }
 
     #[test]
@@ -645,7 +703,11 @@ mod tests {
         // OC=C → should find at least 1 more tautomer (keto form CC=O)
         let mol = parse("OC=C").unwrap();
         let tautomers = enumerate_tautomers(&mol);
-        assert!(tautomers.len() >= 2, "Expected >= 2 tautomers for vinyl alcohol, got {}", tautomers.len());
+        assert!(
+            tautomers.len() >= 2,
+            "Expected >= 2 tautomers for vinyl alcohol, got {}",
+            tautomers.len()
+        );
     }
 
     #[test]
@@ -743,7 +805,10 @@ mod tests {
         // With max_iter=1, at most one rule application happens.
         // Result may differ from full convergence but should not panic.
         let mol = parse("OC=C").unwrap();
-        let config = TautomerConfig { max_iter: 1, ..TautomerConfig::default() };
+        let config = TautomerConfig {
+            max_iter: 1,
+            ..TautomerConfig::default()
+        };
         let _ = canonical_tautomer_with_config(&mol, &config);
     }
 
@@ -751,9 +816,16 @@ mod tests {
     fn test_config_max_tautomers_caps_enumerate() {
         // Acetylacetone has many tautomers. Capping at 2 should return exactly 2.
         let mol = parse("CC(=O)CC(=O)C").unwrap(); // acetylacetone
-        let config = TautomerConfig { max_tautomers: 2, ..TautomerConfig::default() };
+        let config = TautomerConfig {
+            max_tautomers: 2,
+            ..TautomerConfig::default()
+        };
         let tautomers = enumerate_tautomers_with_config(&mol, &config);
-        assert_eq!(tautomers.len(), 2, "max_tautomers=2 should return exactly 2");
+        assert_eq!(
+            tautomers.len(),
+            2,
+            "max_tautomers=2 should return exactly 2"
+        );
     }
 
     #[test]
@@ -773,7 +845,10 @@ mod tests {
         let all = canonical_tautomer_with_config(&mol, &TautomerConfig::default());
         let explicit_empty = canonical_tautomer_with_config(
             &mol,
-            &TautomerConfig { enabled_rules: vec![], ..TautomerConfig::default() },
+            &TautomerConfig {
+                enabled_rules: vec![],
+                ..TautomerConfig::default()
+            },
         );
         assert_eq!(
             canonical_smiles(&all),

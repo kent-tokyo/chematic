@@ -22,8 +22,8 @@
 //! qualitative rule-of-5 assessments.  For high-accuracy LogD a dedicated
 //! pKa model is required.
 
-use chematic_core::{Molecule, implicit_hcount};
 use crate::descriptors::logp_crippen;
+use chematic_core::{Molecule, implicit_hcount};
 
 // ---------------------------------------------------------------------------
 // Estimated pKa constants
@@ -49,7 +49,7 @@ fn ionisation_class(mol: &Molecule) -> (bool, bool) {
 
     for (idx, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
-        let h  = implicit_hcount(mol, idx) as u32;
+        let h = implicit_hcount(mol, idx) as u32;
         match an {
             // Oxygen: O-H with a double-bonded O neighbor → COOH / phenol
             8 if h > 0 => {
@@ -61,10 +61,14 @@ fn ionisation_class(mol: &Molecule) -> (bool, bool) {
                                 && mol.bond(bid2).order == chematic_core::BondOrder::Double
                         })
                 });
-                if has_carbonyl { acid_sites += 1; }
+                if has_carbonyl {
+                    acid_sites += 1;
+                }
             }
             // Sulfur: S-H
-            16 if h > 0 => { acid_sites += 1; }
+            16 if h > 0 => {
+                acid_sites += 1;
+            }
             // Nitrogen: N-H or NR3 with sp3 character → base
             7 if atom.charge >= 0 => {
                 let heavy_deg = mol.neighbors(idx).count() as u32;
@@ -122,13 +126,10 @@ pub fn logd_simple(mol: &Molecule, ph: f64) -> f64 {
 ///
 /// Returns a `Vec<(ph, logd)>` with `steps` evenly-spaced points from
 /// `ph_start` to `ph_end` (inclusive).
-pub fn logd_profile(
-    mol: &Molecule,
-    ph_start: f64,
-    ph_end: f64,
-    steps: usize,
-) -> Vec<(f64, f64)> {
-    if steps == 0 { return Vec::new(); }
+pub fn logd_profile(mol: &Molecule, ph_start: f64, ph_end: f64, steps: usize) -> Vec<(f64, f64)> {
+    if steps == 0 {
+        return Vec::new();
+    }
     if steps == 1 {
         let ph = (ph_start + ph_end) / 2.0;
         return vec![(ph, logd_simple(mol, ph))];
@@ -151,7 +152,9 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
 
-    fn mol(s: &str) -> chematic_core::Molecule { parse(s).unwrap() }
+    fn mol(s: &str) -> chematic_core::Molecule {
+        parse(s).unwrap()
+    }
 
     #[test]
     fn test_neutral_logd_equals_logp() {
@@ -159,7 +162,10 @@ mod tests {
         let m = mol("c1ccccc1");
         let logp = logp_crippen(&m);
         let logd = logd_simple(&m, 7.4);
-        assert!((logd - logp).abs() < 0.01, "neutral: logD={logd:.3} logP={logp:.3}");
+        assert!(
+            (logd - logp).abs() < 0.01,
+            "neutral: logD={logd:.3} logP={logp:.3}"
+        );
     }
 
     #[test]
@@ -167,7 +173,7 @@ mod tests {
         // Acetic acid: at pH >> pKa (4.0), logD << logP.
         let m = mol("CC(=O)O");
         let logp = logp_crippen(&m);
-        let logd_acid = logd_simple(&m, 9.0);  // well above pKa
+        let logd_acid = logd_simple(&m, 9.0); // well above pKa
         assert!(
             logd_acid < logp,
             "acid at high pH: logD={logd_acid:.3} should be < logP={logp:.3}"

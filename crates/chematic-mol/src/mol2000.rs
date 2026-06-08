@@ -81,12 +81,13 @@ fn parse_field3(
     line_num: usize,
     make_err: impl Fn(usize, String) -> MolParseError,
 ) -> Result<usize, MolParseError> {
-    let field = line.get(start..start + 3).ok_or_else(|| {
-        make_err(line_num, format!("line too short at column {start}"))
-    })?;
-    field.trim().parse::<usize>().map_err(|_| {
-        make_err(line_num, format!("cannot parse integer from '{field}'"))
-    })
+    let field = line
+        .get(start..start + 3)
+        .ok_or_else(|| make_err(line_num, format!("line too short at column {start}")))?;
+    field
+        .trim()
+        .parse::<usize>()
+        .map_err(|_| make_err(line_num, format!("cannot parse integer from '{field}'")))
 }
 
 /// Parse a MOL V2000 string into a `(Molecule, MolMetadata, coords)` triple.
@@ -94,12 +95,12 @@ fn parse_field3(
 /// The parser follows the MDL/CTfile fixed-width column layout.
 /// `coords[i]` is the `(x, y)` position for atom `i` extracted from the
 /// atom block.  Z-coordinates are discarded.
-pub fn parse_mol_with_coords(input: &str) -> Result<(Molecule, MolMetadata, Vec<(f64, f64)>), MolParseError> {
+#[allow(clippy::type_complexity)]
+pub fn parse_mol_with_coords(
+    input: &str,
+) -> Result<(Molecule, MolMetadata, Vec<(f64, f64)>), MolParseError> {
     // Yields (1-based line number, line text); short-circuits on EOF.
-    let mut lines = input
-        .lines()
-        .enumerate()
-        .map(|(i, l)| (i + 1, l));
+    let mut lines = input.lines().enumerate().map(|(i, l)| (i + 1, l));
     let mut next_line = || lines.next().ok_or(MolParseError::UnexpectedEnd);
 
     // -- Header block: lines 1–3 -------------------------------------------
@@ -122,7 +123,10 @@ pub fn parse_mol_with_coords(input: &str) -> Result<(Molecule, MolMetadata, Vec<
         });
     }
 
-    let make_count_err = |ln: usize, d: String| MolParseError::InvalidCountLine { line: ln, detail: d };
+    let make_count_err = |ln: usize, d: String| MolParseError::InvalidCountLine {
+        line: ln,
+        detail: d,
+    };
 
     let natoms = parse_field3(counts_line, 0, counts_lineno, make_count_err)?;
     let nbonds = parse_field3(counts_line, 3, counts_lineno, make_count_err)?;
@@ -131,21 +135,36 @@ pub fn parse_mol_with_coords(input: &str) -> Result<(Molecule, MolMetadata, Vec<
 
     let mut builder = MoleculeBuilder::new();
     let mut coords: Vec<(f64, f64)> = Vec::with_capacity(natoms);
-    let make_atom_err = |ln: usize, d: String| MolParseError::InvalidAtomLine { line: ln, detail: d };
+    let make_atom_err = |ln: usize, d: String| MolParseError::InvalidAtomLine {
+        line: ln,
+        detail: d,
+    };
 
     for atom_i in 0..natoms {
         let (raw_lineno, atom_line) = next_line()?;
 
         // Coordinates: bytes 0–9 (x), 10–19 (y), 20–29 (z) — each 10 chars.
-        let x: f64 = atom_line.get(0..10).and_then(|s| s.trim().parse().ok()).unwrap_or(0.0);
-        let y: f64 = atom_line.get(10..20).and_then(|s| s.trim().parse().ok()).unwrap_or(0.0);
+        let x: f64 = atom_line
+            .get(0..10)
+            .and_then(|s| s.trim().parse().ok())
+            .unwrap_or(0.0);
+        let y: f64 = atom_line
+            .get(10..20)
+            .and_then(|s| s.trim().parse().ok())
+            .unwrap_or(0.0);
         coords.push((x, y));
 
         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
         // the spec, but writers vary; trim both ends).
-        let sym = atom_line.get(31..34).ok_or_else(|| {
-            make_atom_err(raw_lineno, format!("atom line {atom_i} too short for element field"))
-        })?.trim();
+        let sym = atom_line
+            .get(31..34)
+            .ok_or_else(|| {
+                make_atom_err(
+                    raw_lineno,
+                    format!("atom line {atom_i} too short for element field"),
+                )
+            })?
+            .trim();
 
         let element = Element::from_symbol(sym).ok_or_else(|| MolParseError::UnknownElement {
             symbol: sym.to_string(),
@@ -165,7 +184,10 @@ pub fn parse_mol_with_coords(input: &str) -> Result<(Molecule, MolMetadata, Vec<
 
     // -- Bond block ---------------------------------------------------------
 
-    let make_bond_err = |ln: usize, d: String| MolParseError::InvalidBondLine { line: ln, detail: d };
+    let make_bond_err = |ln: usize, d: String| MolParseError::InvalidBondLine {
+        line: ln,
+        detail: d,
+    };
 
     for bond_i in 0..nbonds {
         let (raw_lineno, bond_line) = next_line()?;
@@ -207,10 +229,12 @@ pub fn parse_mol_with_coords(input: &str) -> Result<(Molecule, MolMetadata, Vec<
             _ => BondOrder::Single,
         };
 
-        builder.add_bond(a1, a2, order).map_err(|e| MolParseError::InvalidBondLine {
-            line: raw_lineno,
-            detail: format!("bond {bond_i}: {e}"),
-        })?;
+        builder
+            .add_bond(a1, a2, order)
+            .map_err(|e| MolParseError::InvalidBondLine {
+                line: raw_lineno,
+                detail: format!("bond {bond_i}: {e}"),
+            })?;
     }
 
     // Skip property lines until "M  END" (or EOF if absent).
@@ -237,20 +261,25 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
 /// 2D coordinates in atom-insertion order (the same order as `.atoms()`).
 ///
 /// Stops and returns an error on the first parse failure.
+#[allow(clippy::type_complexity)]
 pub fn parse_sdf_with_coords(
     input: &str,
 ) -> Result<Vec<(Molecule, MolMetadata, Vec<(f64, f64)>)>, MolParseError> {
-    use crate::sdf::SdfReader;
     // Re-use the SDF record splitter by borrowing its block-splitting logic,
     // but call parse_mol_with_coords on each block instead of parse_mol.
     let mut result = Vec::new();
     let mut remaining = input;
     loop {
         // Skip leading blank lines.
-        while let Some(rest) = remaining.strip_prefix("\r\n").or_else(|| remaining.strip_prefix('\n')) {
+        while let Some(rest) = remaining
+            .strip_prefix("\r\n")
+            .or_else(|| remaining.strip_prefix('\n'))
+        {
             remaining = rest;
         }
-        if remaining.is_empty() { break; }
+        if remaining.is_empty() {
+            break;
+        }
 
         // Find the $$$$ delimiter (line-by-line to avoid false matches inside data).
         let mut byte_offset = 0usize;
@@ -275,7 +304,9 @@ pub fn parse_sdf_with_coords(
 
         let block = &remaining[..end_byte];
         remaining = after_delim;
-        if block.trim().is_empty() { continue; }
+        if block.trim().is_empty() {
+            continue;
+        }
 
         let (mol, meta, coords) = parse_mol_with_coords(block)?;
         result.push((mol, meta, coords));
@@ -329,9 +360,7 @@ pub fn write_mol_with_coords(
         let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
         out.push_str(&format!(
             "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
-            x, y, 0.0_f64,
-            sym,
-            charge_code,
+            x, y, 0.0_f64, sym, charge_code,
         ));
     }
 
@@ -350,10 +379,7 @@ pub fn write_mol_with_coords(
             BondOrder::QueryAny | BondOrder::Zero => 8,
             BondOrder::Quadruple => 4,
         };
-        out.push_str(&format!(
-            "{:>3}{:>3}{:>3}  0\n",
-            a1, a2, btype
-        ));
+        out.push_str(&format!("{:>3}{:>3}{:>3}  0\n", a1, a2, btype));
     }
 
     // Terminator
@@ -371,6 +397,7 @@ pub fn write_mol_with_coords(
 /// `records` — slice of `(molecule, metadata, coords)` tuples.
 /// `coords` is optional; pass an empty slice to write zero coordinates.
 /// Each molecule block is terminated with `$$$$`.
+#[allow(clippy::type_complexity)]
 pub fn write_sdf(records: &[(&Molecule, &MolMetadata, &[(f64, f64)])]) -> String {
     let mut out = String::new();
     for (mol, meta, coords) in records {
@@ -633,5 +660,28 @@ M  END
             molblock.starts_with("acetic acid"),
             "MOL block must start with the molecule name"
         );
+    }
+
+    #[test]
+    fn test_declared_max_atom_count_truncated_input_errors() {
+        let bad = "\
+max_atoms
+  chematic
+
+999  0  0  0  0  0  0  0  0  0  0 V2000
+";
+        assert!(matches!(parse_mol(bad), Err(MolParseError::UnexpectedEnd)));
+    }
+
+    #[test]
+    fn test_declared_large_bond_count_truncated_input_errors() {
+        let bad = "\
+many_bonds
+  chematic
+
+  1 999  0  0  0  0  0  0  0  0  0 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+";
+        assert!(matches!(parse_mol(bad), Err(MolParseError::UnexpectedEnd)));
     }
 }

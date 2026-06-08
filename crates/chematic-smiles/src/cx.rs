@@ -63,7 +63,12 @@ pub fn write_cxsmiles(cx: &CxSmiles) -> String {
 
     if cx.atom_labels.iter().any(|label| label.is_some()) {
         let labels = (0..cx.mol.atom_count())
-            .map(|i| cx.atom_labels.get(i).and_then(|v| v.as_deref()).unwrap_or(""))
+            .map(|i| {
+                cx.atom_labels
+                    .get(i)
+                    .and_then(|v| v.as_deref())
+                    .unwrap_or("")
+            })
             .map(escape_cx_value)
             .collect::<Vec<_>>()
             .join(";");
@@ -71,16 +76,25 @@ pub fn write_cxsmiles(cx: &CxSmiles) -> String {
     }
 
     if !cx.atom_props.is_empty() {
-        let props = cx.atom_props
+        let props = cx
+            .atom_props
             .iter()
-            .map(|p| format!("{}.{}.{}", p.atom.0, escape_cx_value(&p.key), escape_cx_value(&p.value)))
+            .map(|p| {
+                format!(
+                    "{}.{}.{}",
+                    p.atom.0,
+                    escape_cx_value(&p.key),
+                    escape_cx_value(&p.value)
+                )
+            })
             .collect::<Vec<_>>()
             .join(":");
         fields.push(format!("atomProp:{props}"));
     }
 
     for class in 1..=7u8 {
-        let atoms = cx.atom_radicals
+        let atoms = cx
+            .atom_radicals
             .iter()
             .enumerate()
             .filter_map(|(i, radical)| (*radical == Some(class)).then_some(i.to_string()))
@@ -90,7 +104,8 @@ pub fn write_cxsmiles(cx: &CxSmiles) -> String {
         }
     }
 
-    let zero_bonds = cx.mol
+    let zero_bonds = cx
+        .mol
         .bonds()
         .filter_map(|(bidx, bond)| (bond.order == BondOrder::Zero).then_some(bidx.0.to_string()))
         .collect::<Vec<_>>();
@@ -108,11 +123,11 @@ pub fn write_cxsmiles(cx: &CxSmiles) -> String {
 
 fn split_cx(input: &str) -> (&str, Option<&str>) {
     let trimmed = input.trim();
-    if let Some(start) = trimmed.find('|') {
-        if let Some(end_rel) = trimmed[start + 1..].find('|') {
-            let end = start + 1 + end_rel;
-            return (&trimmed[..start], Some(&trimmed[start + 1..end]));
-        }
+    if let Some(start) = trimmed.find('|')
+        && let Some(end_rel) = trimmed[start + 1..].find('|')
+    {
+        let end = start + 1 + end_rel;
+        return (&trimmed[..start], Some(&trimmed[start + 1..end]));
     }
     (trimmed, None)
 }
@@ -167,10 +182,14 @@ fn parse_labels(labels: &str, out: &mut CxSmiles) {
 fn parse_atom_props(props: &str, out: &mut CxSmiles) {
     for prop in props.split(':') {
         let mut parts = prop.splitn(3, '.');
-        let Some(atom_raw) = parts.next() else { continue };
+        let Some(atom_raw) = parts.next() else {
+            continue;
+        };
         let Some(key) = parts.next() else { continue };
         let Some(value) = parts.next() else { continue };
-        let Ok(atom) = atom_raw.parse::<u32>() else { continue };
+        let Ok(atom) = atom_raw.parse::<u32>() else {
+            continue;
+        };
         if atom as usize >= out.mol.atom_count() {
             continue;
         }
@@ -185,7 +204,9 @@ fn parse_atom_props(props: &str, out: &mut CxSmiles) {
 fn parse_zero_bonds(rest: &str, out: &mut CxSmiles) {
     let mut mol = chematic_core::MoleculeBuilder::from_molecule(&out.mol).build();
     for item in rest.split(',') {
-        let Ok(idx) = item.trim().parse::<u32>() else { continue };
+        let Ok(idx) = item.trim().parse::<u32>() else {
+            continue;
+        };
         if (idx as usize) < mol.bond_count() {
             mol = mol.with_bond_order(BondIdx(idx), BondOrder::Zero);
         }
@@ -194,10 +215,16 @@ fn parse_zero_bonds(rest: &str, out: &mut CxSmiles) {
 }
 
 fn parse_radicals(rest: &str, out: &mut CxSmiles) {
-    let Some((class_raw, atoms_raw)) = rest.split_once(':') else { return };
-    let Ok(class) = class_raw.parse::<u8>() else { return };
+    let Some((class_raw, atoms_raw)) = rest.split_once(':') else {
+        return;
+    };
+    let Ok(class) = class_raw.parse::<u8>() else {
+        return;
+    };
     for atom_raw in atoms_raw.split(',') {
-        let Ok(atom) = atom_raw.trim().parse::<usize>() else { continue };
+        let Ok(atom) = atom_raw.trim().parse::<usize>() else {
+            continue;
+        };
         if atom < out.atom_radicals.len() {
             out.atom_radicals[atom] = Some(class);
         }
@@ -205,7 +232,11 @@ fn parse_radicals(rest: &str, out: &mut CxSmiles) {
 }
 
 fn escape_cx_value(value: &str) -> String {
-    value.replace('\\', "\\\\").replace(';', "\\;").replace(',', "\\,").replace('|', "\\|")
+    value
+        .replace('\\', "\\\\")
+        .replace(';', "\\;")
+        .replace(',', "\\,")
+        .replace('|', "\\|")
 }
 
 fn unescape_cx_value(value: &str) -> String {
@@ -262,14 +293,19 @@ mod tests {
         // BUG #1 Fix Verification: trailing backslashes in labels should be preserved
         // Input: "label\\" (escaped form) -> should parse to "label\" (single backslash)
         let cx = parse_cxsmiles(r#"CO |$label\\;O$|"#).unwrap();
-        assert_eq!(cx.atom_labels[0].as_deref(), Some("label\\"),
-            "Trailing backslash should be preserved after unescape");
+        assert_eq!(
+            cx.atom_labels[0].as_deref(),
+            Some("label\\"),
+            "Trailing backslash should be preserved after unescape"
+        );
 
         // Round-trip test: parsed label should serialize back correctly
         let serialized = write_cxsmiles(&cx);
         let cx2 = parse_cxsmiles(&serialized).unwrap();
-        assert_eq!(cx2.atom_labels[0], cx.atom_labels[0],
-            "Trailing backslash should round-trip correctly");
+        assert_eq!(
+            cx2.atom_labels[0], cx.atom_labels[0],
+            "Trailing backslash should round-trip correctly"
+        );
     }
 
     #[test]
@@ -277,14 +313,19 @@ mod tests {
         // More complex case: label with backslash in middle and at end
         // "C\\label\\" in escaped form -> "C\label\" after unescape
         let cx = parse_cxsmiles(r#"CO |$C\\label\\;O$|"#).unwrap();
-        assert_eq!(cx.atom_labels[0].as_deref(), Some("C\\label\\"),
-            "Both backslashes should be preserved");
+        assert_eq!(
+            cx.atom_labels[0].as_deref(),
+            Some("C\\label\\"),
+            "Both backslashes should be preserved"
+        );
 
         // Verify round-trip
         let serialized = write_cxsmiles(&cx);
         let cx2 = parse_cxsmiles(&serialized).unwrap();
-        assert_eq!(cx2.atom_labels[0], cx.atom_labels[0],
-            "Double backslash pattern should round-trip");
+        assert_eq!(
+            cx2.atom_labels[0], cx.atom_labels[0],
+            "Double backslash pattern should round-trip"
+        );
     }
 
     #[test]
@@ -292,7 +333,10 @@ mod tests {
         // Test that escaped comma doesn't interfere with trailing backslash handling
         // Label with escaped comma and trailing backslash
         let cx = parse_cxsmiles(r#"CO |$label\,end\\;O$|"#).unwrap();
-        assert_eq!(cx.atom_labels[0].as_deref(), Some("label,end\\"),
-            "Escaped comma and trailing backslash should both be preserved");
+        assert_eq!(
+            cx.atom_labels[0].as_deref(),
+            Some("label,end\\"),
+            "Escaped comma and trailing backslash should both be preserved"
+        );
     }
 }

@@ -51,10 +51,7 @@ impl std::error::Error for Mol2Error {}
 ///
 /// Returns the (1-based line number, content) pairs starting immediately
 /// after the section header, stopping at the next `@<TRIPOS>` header or EOF.
-fn section_lines<'a>(
-    lines: &'a [(usize, &'a str)],
-    name: &str,
-) -> Vec<(usize, &'a str)> {
+fn section_lines<'a>(lines: &'a [(usize, &'a str)], name: &str) -> Vec<(usize, &'a str)> {
     let header = format!("@<TRIPOS>{name}");
     let mut in_section = false;
     let mut result = Vec::new();
@@ -93,12 +90,9 @@ fn strip_atom_type(sym: &str) -> &str {
 ///
 /// 3D coordinates are returned as `Vec<(f64, f64, f64)>` aligned with the
 /// molecule's atom indices.
+#[allow(clippy::type_complexity)]
 pub fn parse_mol2(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error> {
-    let all_lines: Vec<(usize, &str)> = s
-        .lines()
-        .enumerate()
-        .map(|(i, l)| (i + 1, l))
-        .collect();
+    let all_lines: Vec<(usize, &str)> = s.lines().enumerate().map(|(i, l)| (i + 1, l)).collect();
 
     // -- MOLECULE section: we read it but only need it for sanity; skip for now.
 
@@ -195,12 +189,18 @@ pub fn parse_mol2(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error
             detail: format!("cannot parse target atom_id from '{}'", parts[2]),
         })?;
 
-        let a1 = atom_id_map.iter().find(|&&(k, _)| k == a1_id).map(|&(_, v)| v)
+        let a1 = atom_id_map
+            .iter()
+            .find(|&&(k, _)| k == a1_id)
+            .map(|&(_, v)| v)
             .ok_or_else(|| Mol2Error::InvalidBondLine {
                 line: *lineno,
                 detail: format!("atom_id {a1_id} not found"),
             })?;
-        let a2 = atom_id_map.iter().find(|&&(k, _)| k == a2_id).map(|&(_, v)| v)
+        let a2 = atom_id_map
+            .iter()
+            .find(|&&(k, _)| k == a2_id)
+            .map(|&(_, v)| v)
             .ok_or_else(|| Mol2Error::InvalidBondLine {
                 line: *lineno,
                 detail: format!("atom_id {a2_id} not found"),
@@ -209,12 +209,12 @@ pub fn parse_mol2(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error
         let bond_type = parts[3];
         let order = match bond_type {
             "1" | "1.5" => BondOrder::Single,
-            "2"         => BondOrder::Double,
-            "3"         => BondOrder::Triple,
+            "2" => BondOrder::Double,
+            "3" => BondOrder::Triple,
             "ar" | "am" => BondOrder::Aromatic,
-            "un"        => BondOrder::QueryAny,
+            "un" => BondOrder::QueryAny,
             "du" | "nc" => BondOrder::Zero,
-            _           => BondOrder::Single,
+            _ => BondOrder::Single,
         };
 
         // Ignore duplicate bond errors (some MOL2 files repeat bonds).
@@ -247,7 +247,10 @@ pub fn write_mol2(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
     for (idx, atom) in mol.atoms() {
         let i = idx.0 + 1; // 1-based
         let sym = atom.element.symbol();
-        let (x, y, z) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0, 0.0));
+        let (x, y, z) = coords
+            .get(idx.0 as usize)
+            .copied()
+            .unwrap_or((0.0, 0.0, 0.0));
         // Use symbol as atom type (simplified; no hybridisation-based suffix).
         out.push_str(&format!(
             "{i:>6} {sym:<4} {x:>10.4} {y:>10.4} {z:>10.4} {sym:<8} 1  LIG  0.0000\n"
@@ -263,9 +266,9 @@ pub fn write_mol2(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
         let btype = match bond.order {
             BondOrder::Zero => "nc",
             BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => "1",
-            BondOrder::Double    => "2",
-            BondOrder::Triple    => "3",
-            BondOrder::Aromatic  => "ar",
+            BondOrder::Double => "2",
+            BondOrder::Triple => "3",
+            BondOrder::Aromatic => "ar",
             BondOrder::Quadruple => "4",
             BondOrder::QueryAny
             | BondOrder::QuerySingleOrDouble

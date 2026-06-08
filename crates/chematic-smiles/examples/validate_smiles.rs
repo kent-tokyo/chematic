@@ -13,7 +13,7 @@ use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 
-use chematic_smiles::{parse, canonical_smiles};
+use chematic_smiles::{canonical_smiles, parse};
 
 fn main() {
     let reader: Box<dyn BufRead> = match env::args().nth(1) {
@@ -43,8 +43,11 @@ fn main() {
         let smiles = smiles.split('\t').next().unwrap_or(smiles);
 
         total += 1;
+        #[allow(clippy::manual_is_multiple_of)]
         if total % 10_000 == 0 {
-            eprintln!("  [{total}] ok={ok} fail_parse={fail_parse} fail_roundtrip={fail_roundtrip}");
+            eprintln!(
+                "  [{total}] ok={ok} fail_parse={fail_parse} fail_roundtrip={fail_roundtrip}"
+            );
         }
 
         // Step 1: parse
@@ -75,7 +78,10 @@ fn main() {
                 let key = format!("roundtrip_parse: {}", error_key(&e.to_string()));
                 *error_counts.entry(key).or_default() += 1;
                 if first_failures.len() < 50 {
-                    first_failures.push((smiles.to_string(), format!("roundtrip parse of '{canon}': {e}")));
+                    first_failures.push((
+                        smiles.to_string(),
+                        format!("roundtrip parse of '{canon}': {e}"),
+                    ));
                 }
                 continue;
             }
@@ -139,10 +145,10 @@ fn main() {
 fn error_key(msg: &str) -> String {
     if msg.contains("unknown element") {
         // Extract just the symbol
-        if let Some(start) = msg.find('\'') {
-            if let Some(end) = msg[start+1..].find('\'') {
-                return format!("unknown_element_{}", &msg[start+1..start+1+end]);
-            }
+        if let Some(start) = msg.find('\'')
+            && let Some(end) = msg[start + 1..].find('\'')
+        {
+            return format!("unknown_element_{}", &msg[start + 1..start + 1 + end]);
         }
         "unknown_element".to_string()
     } else if msg.contains("unmatched ring") {

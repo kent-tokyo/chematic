@@ -39,7 +39,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-wasm-
 
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        run: cargo install wasm-pack --version 0.13.1 --locked
 
       - name: Build WASM (--target web)
         working-directory: crates/chematic-wasm

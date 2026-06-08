@@ -63,8 +63,8 @@ pub fn parse_reaction(s: &str) -> Result<Reaction, RxnError> {
 
     Ok(Reaction {
         reactants: parse_part(parts[0])?,
-        agents:    parse_part(parts[1])?,
-        products:  parse_part(parts[2])?,
+        agents: parse_part(parts[1])?,
+        products: parse_part(parts[2])?,
     })
 }
 
@@ -127,7 +127,11 @@ pub fn find_reaction_center(rxn: &Reaction) -> ReactionCenter {
 
     // If no atom_map, return empty
     if reactant_map.is_empty() {
-        return ReactionCenter { broken_bonds, formed_bonds, changed_atoms };
+        return ReactionCenter {
+            broken_bonds,
+            formed_bonds,
+            changed_atoms,
+        };
     }
 
     // Identify broken bonds (edges in reactants not in products)
@@ -135,22 +139,22 @@ pub fn find_reaction_center(rxn: &Reaction) -> ReactionCenter {
         let (r_mol_idx, r_atom_idx) = reactant_map[map_num];
         let r_mol = &rxn.reactants[r_mol_idx];
         for (r_neighbor, _) in r_mol.neighbors(r_atom_idx) {
-            if let Some(neighbor_map) = r_mol.atom(r_neighbor).atom_map {
-                if neighbor_map > *map_num {
-                    // Check if this bond exists in products
-                    if let Some((p_mol_idx, p_atom_idx)) = product_map.get(map_num) {
-                        let p_mol = &rxn.products[*p_mol_idx];
-                        if let Some((_, p_neighbor)) = product_map.get(&neighbor_map) {
-                            let bond_exists = p_mol.bond_between(*p_atom_idx, *p_neighbor).is_some();
-                            if !bond_exists {
-                                broken_bonds.push((r_atom_idx, r_neighbor));
-                            }
-                        } else {
+            if let Some(neighbor_map) = r_mol.atom(r_neighbor).atom_map
+                && neighbor_map > *map_num
+            {
+                // Check if this bond exists in products
+                if let Some((p_mol_idx, p_atom_idx)) = product_map.get(map_num) {
+                    let p_mol = &rxn.products[*p_mol_idx];
+                    if let Some((_, p_neighbor)) = product_map.get(&neighbor_map) {
+                        let bond_exists = p_mol.bond_between(*p_atom_idx, *p_neighbor).is_some();
+                        if !bond_exists {
                             broken_bonds.push((r_atom_idx, r_neighbor));
                         }
                     } else {
                         broken_bonds.push((r_atom_idx, r_neighbor));
                     }
+                } else {
+                    broken_bonds.push((r_atom_idx, r_neighbor));
                 }
             }
         }
@@ -161,22 +165,22 @@ pub fn find_reaction_center(rxn: &Reaction) -> ReactionCenter {
         let (p_mol_idx, p_atom_idx) = product_map[map_num];
         let p_mol = &rxn.products[p_mol_idx];
         for (p_neighbor, _) in p_mol.neighbors(p_atom_idx) {
-            if let Some(neighbor_map) = p_mol.atom(p_neighbor).atom_map {
-                if neighbor_map > *map_num {
-                    // Check if this bond exists in reactants
-                    if let Some((r_mol_idx, r_atom_idx)) = reactant_map.get(map_num) {
-                        let r_mol = &rxn.reactants[*r_mol_idx];
-                        if let Some((_, r_neighbor)) = reactant_map.get(&neighbor_map) {
-                            let bond_exists = r_mol.bond_between(*r_atom_idx, *r_neighbor).is_some();
-                            if !bond_exists {
-                                formed_bonds.push((p_atom_idx, p_neighbor));
-                            }
-                        } else {
+            if let Some(neighbor_map) = p_mol.atom(p_neighbor).atom_map
+                && neighbor_map > *map_num
+            {
+                // Check if this bond exists in reactants
+                if let Some((r_mol_idx, r_atom_idx)) = reactant_map.get(map_num) {
+                    let r_mol = &rxn.reactants[*r_mol_idx];
+                    if let Some((_, r_neighbor)) = reactant_map.get(&neighbor_map) {
+                        let bond_exists = r_mol.bond_between(*r_atom_idx, *r_neighbor).is_some();
+                        if !bond_exists {
                             formed_bonds.push((p_atom_idx, p_neighbor));
                         }
                     } else {
                         formed_bonds.push((p_atom_idx, p_neighbor));
                     }
+                } else {
+                    formed_bonds.push((p_atom_idx, p_neighbor));
                 }
             }
         }
@@ -199,7 +203,11 @@ pub fn find_reaction_center(rxn: &Reaction) -> ReactionCenter {
         }
     }
 
-    ReactionCenter { broken_bonds, formed_bonds, changed_atoms }
+    ReactionCenter {
+        broken_bonds,
+        formed_bonds,
+        changed_atoms,
+    }
 }
 
 #[cfg(test)]
@@ -314,7 +322,10 @@ mod tests {
         let rxn2 = parse_reaction(&written).unwrap();
         assert_eq!(rxn.reactants.len(), rxn2.reactants.len());
         assert_eq!(rxn.products.len(), rxn2.products.len());
-        assert_eq!(rxn.reactants[0].atom_count(), rxn2.reactants[0].atom_count());
+        assert_eq!(
+            rxn.reactants[0].atom_count(),
+            rxn2.reactants[0].atom_count()
+        );
     }
 
     #[test]

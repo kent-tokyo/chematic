@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use chematic_core::{AtomIdx, Atom, BondOrder, Chirality, Molecule, MoleculeBuilder};
+use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder};
 
 /// Invert the stereochemistry of a tetrahedral stereocenter.
 ///
@@ -17,11 +17,10 @@ use chematic_core::{AtomIdx, Atom, BondOrder, Chirality, Molecule, MoleculeBuild
 /// unchanged. Returned molecule preserves all other properties.
 pub fn invert_stereocenter(mol: &Molecule, idx: AtomIdx) -> Molecule {
     // Only invert if the atom has a wedge/dash bond
-    let has_wedge = mol.neighbors(idx)
-        .any(|(_, bidx)| {
-            let bond = mol.bond(bidx);
-            matches!(bond.order, BondOrder::Up | BondOrder::Down)
-        });
+    let has_wedge = mol.neighbors(idx).any(|(_, bidx)| {
+        let bond = mol.bond(bidx);
+        matches!(bond.order, BondOrder::Up | BondOrder::Down)
+    });
 
     if !has_wedge {
         // No stereochemistry annotation, return a copy unchanged
@@ -77,7 +76,8 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
     use chematic_smiles::canonical_smiles;
 
     // Identify unspecified tetrahedral carbon stereocenters
-    let unspecified: Vec<AtomIdx> = mol.atoms()
+    let unspecified: Vec<AtomIdx> = mol
+        .atoms()
         .filter(|(idx, atom)| {
             if atom.element.atomic_number() != 6 || atom.aromatic {
                 return false;
@@ -86,7 +86,9 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
                 return false;
             }
             let degree = mol.neighbors(*idx).count();
-            if degree < 2 { return false; }
+            if degree < 2 {
+                return false;
+            }
             let total = degree + chematic_core::implicit_hcount(mol, *idx) as usize;
             total == 4
                 && mol.neighbors(*idx).all(|(_, bidx)| {
@@ -126,7 +128,11 @@ pub fn enumerate_stereoisomers(mol: &Molecule) -> Vec<Molecule> {
             .enumerate()
             .map(|(i, &idx)| {
                 let cw = (bits >> i) & 1 == 1;
-                let chirality = if cw { Chirality::Clockwise } else { Chirality::CounterClockwise };
+                let chirality = if cw {
+                    Chirality::Clockwise
+                } else {
+                    Chirality::CounterClockwise
+                };
                 (idx, chirality)
             })
             .collect();
@@ -178,7 +184,10 @@ mod tests {
         let inverted = invert_stereocenter(&m, AtomIdx(0));
         // After inversion, should have @ (S) instead of @@
         let inverted_smiles = chematic_smiles::canonical_smiles(&inverted);
-        assert!(inverted_smiles.contains("@"), "inverted should have chirality marker");
+        assert!(
+            inverted_smiles.contains("@"),
+            "inverted should have chirality marker"
+        );
     }
 
     #[test]
@@ -187,7 +196,11 @@ mod tests {
         let m = mol("C(F)(Cl)Br");
         let isomers = enumerate_stereoisomers(&m);
         // Should generate 2 isomers (R and S)
-        assert_eq!(isomers.len(), 2, "single stereocenter should yield 2 isomers");
+        assert_eq!(
+            isomers.len(),
+            2,
+            "single stereocenter should yield 2 isomers"
+        );
     }
 
     #[test]

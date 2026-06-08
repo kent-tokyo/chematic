@@ -133,10 +133,10 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
         if atom >= partner {
             continue; // each pair shows up twice in `matching`; visit one orientation
         }
-        if let Some((bidx, _)) = mol.bond_between(atom, partner) {
-            if mol.bond(bidx).order == BondOrder::Aromatic {
-                double_bonds.insert(bidx);
-            }
+        if let Some((bidx, _)) = mol.bond_between(atom, partner)
+            && mol.bond(bidx).order == BondOrder::Aromatic
+        {
+            double_bonds.insert(bidx);
         }
     }
 
@@ -171,7 +171,8 @@ pub fn apply_kekule(mol: &Molecule, kekule: &KekuleResult) -> Molecule {
     // Re-add bonds, substituting updated orders for aromatic bonds.
     for (bidx, bond) in mol.bonds() {
         let order = kekule.get(&bidx).copied().unwrap_or(bond.order);
-        builder.add_bond(bond.atom1, bond.atom2, order)
+        builder
+            .add_bond(bond.atom1, bond.atom2, order)
             .expect("duplicate bond during apply_kekule");
     }
 
@@ -186,7 +187,9 @@ fn augment(
     matching: &mut HashMap<AtomIdx, AtomIdx>,
     visited: &mut HashSet<AtomIdx>,
 ) -> bool {
-    let Some(neighbors) = adj.get(&v) else { return false };
+    let Some(neighbors) = adj.get(&v) else {
+        return false;
+    };
     for &(u, _) in neighbors {
         if !visited.insert(u) {
             continue;
@@ -243,9 +246,12 @@ mod tests {
     /// Build benzene as a fully aromatic SMILES-style molecule.
     fn benzene() -> Molecule {
         let mut b = MoleculeBuilder::new();
-        let atoms: Vec<_> = (0..6).map(|_| b.add_atom(Atom::aromatic(Element::C))).collect();
+        let atoms: Vec<_> = (0..6)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
         for i in 0..6 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
         }
         b.build()
     }
@@ -256,12 +262,13 @@ mod tests {
         let c1 = b.add_atom(Atom::aromatic(Element::C));
         let c2 = b.add_atom(Atom::aromatic(Element::C));
         let c3 = b.add_atom(Atom::aromatic(Element::C));
-        let n  = b.add_atom(Atom::aromatic(Element::N));
+        let n = b.add_atom(Atom::aromatic(Element::N));
         let c4 = b.add_atom(Atom::aromatic(Element::C));
         let c5 = b.add_atom(Atom::aromatic(Element::C));
         let atoms = [c1, c2, c3, n, c4, c5];
         for i in 0..6 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
         }
         b.build()
     }
@@ -269,14 +276,15 @@ mod tests {
     /// Build furan (4 aromatic C + 1 aromatic O, ring).
     fn furan() -> Molecule {
         let mut b = MoleculeBuilder::new();
-        let o  = b.add_atom(Atom::aromatic(Element::O));
+        let o = b.add_atom(Atom::aromatic(Element::O));
         let c1 = b.add_atom(Atom::aromatic(Element::C));
         let c2 = b.add_atom(Atom::aromatic(Element::C));
         let c3 = b.add_atom(Atom::aromatic(Element::C));
         let c4 = b.add_atom(Atom::aromatic(Element::C));
         let atoms = [o, c1, c2, c3, c4];
         for i in 0..5 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 5], BondOrder::Aromatic).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
         }
         b.build()
     }
@@ -287,14 +295,15 @@ mod tests {
         // N with 1 H — bracket-style (hydrogen_count = Some(1))
         let mut n_atom = Atom::aromatic(Element::N);
         n_atom.hydrogen_count = Some(1);
-        let n  = b.add_atom(n_atom);
+        let n = b.add_atom(n_atom);
         let c1 = b.add_atom(Atom::aromatic(Element::C));
         let c2 = b.add_atom(Atom::aromatic(Element::C));
         let c3 = b.add_atom(Atom::aromatic(Element::C));
         let c4 = b.add_atom(Atom::aromatic(Element::C));
         let atoms = [n, c1, c2, c3, c4];
         for i in 0..5 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 5], BondOrder::Aromatic).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
         }
         b.build()
     }
@@ -339,17 +348,24 @@ mod tests {
     fn test_kekulize_naphthalene() {
         // 10 aromatic C, 11 aromatic bonds (fused bicyclic)
         let mut b = MoleculeBuilder::new();
-        let atoms: Vec<_> = (0..10).map(|_| b.add_atom(Atom::aromatic(Element::C))).collect();
+        let atoms: Vec<_> = (0..10)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
         // Ring 1: 0-1-2-3-4-9
-        let ring1 = [0,1,2,3,4,9];
+        let ring1 = [0, 1, 2, 3, 4, 9];
         for i in 0..ring1.len() {
-            b.add_bond(atoms[ring1[i]], atoms[ring1[(i+1)%ring1.len()]], BondOrder::Aromatic).unwrap();
+            b.add_bond(
+                atoms[ring1[i]],
+                atoms[ring1[(i + 1) % ring1.len()]],
+                BondOrder::Aromatic,
+            )
+            .unwrap();
         }
         // Ring 2: 4-5-6-7-8-9 (shares bond 4-9)
-        let ring2 = [4,5,6,7,8,9];
+        let ring2 = [4, 5, 6, 7, 8, 9];
         for i in 0..ring2.len() {
             let a = atoms[ring2[i]];
-            let bb = atoms[ring2[(i+1)%ring2.len()]];
+            let bb = atoms[ring2[(i + 1) % ring2.len()]];
             // Skip already-added bond (4-9)
             if mol_has_no_bond_yet(&b, a, bb) {
                 b.add_bond(a, bb, BondOrder::Aromatic).unwrap();
@@ -369,8 +385,11 @@ mod tests {
 
         // After applying, no aromatic bonds should remain.
         for (_, bond) in kekule_mol.bonds() {
-            assert_ne!(bond.order, BondOrder::Aromatic,
-                "apply_kekule should remove all aromatic bonds");
+            assert_ne!(
+                bond.order,
+                BondOrder::Aromatic,
+                "apply_kekule should remove all aromatic bonds"
+            );
         }
     }
 
@@ -389,7 +408,9 @@ mod tests {
     // Helper: check that the builder does not yet have a bond between a and b.
     fn mol_has_no_bond_yet(b: &MoleculeBuilder, a: AtomIdx, bb: AtomIdx) -> bool {
         for (_, partner) in b.atom_neighbors(a) {
-            if partner == bb { return false; }
+            if partner == bb {
+                return false;
+            }
         }
         true
     }

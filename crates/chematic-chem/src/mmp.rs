@@ -46,9 +46,7 @@ pub struct MmpPair {
 /// Pairs are deduplicated: (A,B,core,fA,fB) and (B,A,core,fB,fA) are the same pair.
 pub fn find_mmp(mols: &[&Molecule]) -> Vec<MmpPair> {
     // 1. For every molecule, collect all (core_smiles, sub_smiles) from all BRICS cuts.
-    let mol_smiles: Vec<String> = mols.iter()
-        .map(|m| canonical_smiles(m))
-        .collect();
+    let mol_smiles: Vec<String> = mols.iter().map(|m| canonical_smiles(m)).collect();
 
     // index: core_smiles → Vec<(mol_idx, sub_smiles)>
     let mut index: HashMap<String, Vec<(usize, String)>> = HashMap::new();
@@ -96,7 +94,8 @@ pub fn find_mmp(mols: &[&Molecule]) -> Vec<MmpPair> {
     }
 
     pairs.sort_by(|a, b| {
-        a.mol_a.cmp(&b.mol_a)
+        a.mol_a
+            .cmp(&b.mol_a)
             .then(a.mol_b.cmp(&b.mol_b))
             .then(a.core.cmp(&b.core))
     });
@@ -120,7 +119,7 @@ fn all_cuts(mol: &Molecule) -> Vec<(String, String)> {
             (side2, side1, a2, a1)
         };
         let core_smi = fragment_smiles(mol, &core, at_core);
-        let sub_smi  = fragment_smiles(mol, &sub,  at_sub);
+        let sub_smi = fragment_smiles(mol, &sub, at_sub);
         result.push((core_smi, sub_smi));
     }
     result
@@ -132,7 +131,9 @@ fn atoms_on_side(mol: &Molecule, from: AtomIdx, not_via: AtomIdx) -> HashSet<Ato
     let mut queue = std::collections::VecDeque::new();
     queue.push_back(from);
     while let Some(idx) = queue.pop_front() {
-        if visited.contains(&idx) { continue; }
+        if visited.contains(&idx) {
+            continue;
+        }
         visited.insert(idx);
         for (nb, _) in mol.neighbors(idx) {
             if nb != not_via && !visited.contains(&nb) {
@@ -173,10 +174,11 @@ fn fragment_smiles(mol: &Molecule, side: &HashSet<AtomIdx>, attach: AtomIdx) -> 
 
     // Intra-side bonds.
     for (_, bond) in mol.bonds() {
-        if side.contains(&bond.atom1) && side.contains(&bond.atom2) {
-            if let (Some(&n1), Some(&n2)) = (idx_map.get(&bond.atom1), idx_map.get(&bond.atom2)) {
-                let _ = builder.add_bond(n1, n2, bond.order);
-            }
+        if side.contains(&bond.atom1)
+            && side.contains(&bond.atom2)
+            && let (Some(&n1), Some(&n2)) = (idx_map.get(&bond.atom1), idx_map.get(&bond.atom2))
+        {
+            let _ = builder.add_bond(n1, n2, bond.order);
         }
     }
 
@@ -204,18 +206,23 @@ mod tests {
         let pairs = find_mmp(&[&a, &b]);
 
         // There must be exactly 1 MMP (the ring-chain cut).
-        let matching: Vec<_> = pairs.iter()
-            .filter(|p| p.core == "c1(ccccc1)[*]")
-            .collect();
-        assert_eq!(matching.len(), 1,
-            "expected 1 pair with benzene core, got: {pairs:?}");
+        let matching: Vec<_> = pairs.iter().filter(|p| p.core == "c1(ccccc1)[*]").collect();
+        assert_eq!(
+            matching.len(),
+            1,
+            "expected 1 pair with benzene core, got: {pairs:?}"
+        );
 
         let pair = &matching[0];
         // Oracle values from the probe test.
-        assert_eq!(pair.fragment_a, "C(C)[*]",
-            "ethylbenzene substituent should be C(C)[*]: {pair:?}");
-        assert_eq!(pair.fragment_b, "C(CC)[*]",
-            "propylbenzene substituent should be C(CC)[*]: {pair:?}");
+        assert_eq!(
+            pair.fragment_a, "C(C)[*]",
+            "ethylbenzene substituent should be C(C)[*]: {pair:?}"
+        );
+        assert_eq!(
+            pair.fragment_b, "C(CC)[*]",
+            "propylbenzene substituent should be C(CC)[*]: {pair:?}"
+        );
     }
 
     #[test]
@@ -231,8 +238,10 @@ mod tests {
         let a = mol("c1ccccc1");
         let b = mol("c1ccncc1");
         let pairs = find_mmp(&[&a, &b]);
-        assert!(pairs.is_empty(),
-            "benzene/pyridine have no BRICS bonds, expect 0 pairs: {pairs:?}");
+        assert!(
+            pairs.is_empty(),
+            "benzene/pyridine have no BRICS bonds, expect 0 pairs: {pairs:?}"
+        );
     }
 
     #[test]
@@ -256,10 +265,11 @@ mod tests {
         let c = mol("CCCCc1ccccc1"); // butylbenzene
         let pairs = find_mmp(&[&a, &b, &c]);
         // Expected: (a,b), (a,c), (b,c) — 3 pairs at minimum.
-        let benzene_pairs: Vec<_> = pairs.iter()
-            .filter(|p| p.core == "c1(ccccc1)[*]")
-            .collect();
-        assert_eq!(benzene_pairs.len(), 3,
-            "3 molecules → 3 benzene-core MMP pairs: {pairs:?}");
+        let benzene_pairs: Vec<_> = pairs.iter().filter(|p| p.core == "c1(ccccc1)[*]").collect();
+        assert_eq!(
+            benzene_pairs.len(),
+            3,
+            "3 molecules → 3 benzene-core MMP pairs: {pairs:?}"
+        );
     }
 }

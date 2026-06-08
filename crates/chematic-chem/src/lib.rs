@@ -7,22 +7,21 @@
 
 pub mod abbreviations;
 pub mod alerts;
-pub mod esol;
-pub mod isotope_distribution;
-pub mod logd;
-pub mod xlogp3;
 pub mod brics;
 pub mod cip;
 pub mod condensed;
-pub mod hash;
-pub mod named_groups;
 pub mod descriptors;
 pub mod diversity;
+pub mod esol;
 pub mod estate;
 pub mod gasteiger;
+pub mod hash;
 pub mod hydrogen;
 pub mod ifg;
+pub mod isotope_distribution;
+pub mod logd;
 pub mod mmp;
+pub mod named_groups;
 pub mod qed;
 pub mod sa_score;
 pub mod scaffold;
@@ -32,54 +31,55 @@ pub mod tautomer;
 pub mod topo_descriptors;
 pub mod vsa;
 pub mod workflow;
+pub mod xlogp3;
 
-pub use cip::{assign_cip, CipAssignment};
+pub use cip::{CipAssignment, assign_cip};
 pub use descriptors::{
-    aromatic_ring_count, egan_passes, exact_mass, formal_charge_sum, fsp3,
-    ghose_passes, heavy_atom_count, hba_count, hbd_count, lipinski_passes,
-    logp_crippen, logp_crippen_per_atom, molar_refractivity, mr_per_atom,
-    molecular_weight, num_aliphatic_heterocycles,
-    num_aliphatic_rings, num_aromatic_heterocycles, num_bridgehead_atoms,
-    num_heteroatoms, num_saturated_heterocycles, num_saturated_rings,
-    num_spiro_atoms, num_stereocenters, num_unspecified_stereocenters,
-    reos_passes, ring_count, rotatable_bond_count, tpsa, veber_passes,
+    aromatic_ring_count, egan_passes, exact_mass, formal_charge_sum, fsp3, ghose_passes, hba_count,
+    hbd_count, heavy_atom_count, lipinski_passes, logp_crippen, logp_crippen_per_atom,
+    molar_refractivity, molecular_weight, mr_per_atom, num_aliphatic_heterocycles,
+    num_aliphatic_rings, num_aromatic_heterocycles, num_bridgehead_atoms, num_heteroatoms,
+    num_saturated_heterocycles, num_saturated_rings, num_spiro_atoms, num_stereocenters,
+    num_unspecified_stereocenters, reos_passes, ring_count, rotatable_bond_count, tpsa,
+    veber_passes,
 };
 
+pub use abbreviations::{abbreviations, expand_abbreviation};
 pub use alerts::{pains_matches, pains_passes};
 pub use brics::{BricsConfig, brics_bonds, brics_fragments, brics_fragments_with_config};
-pub use condensed::{parse_condensed, CondensedError};
-pub use mmp::{MmpPair, find_mmp};
+pub use condensed::{CondensedError, parse_condensed};
 pub use diversity::{butina_cluster, maxmin_picks};
-pub use gasteiger::gasteiger_charges;
-pub use hydrogen::{add_hydrogens, remove_hydrogens};
-pub use ifg::{identify_functional_groups, FunctionalGroup};
-pub use named_groups::{detect_named_functional_groups, NamedGroup};
-pub use qed::qed;
-pub use sa_score::sa_score;
-pub use scaffold::{generic_murcko_scaffold, murcko_scaffold, scaffold_network, schuffenhauer_parents};
-pub use standardize::{
-    largest_fragment, neutralize_charges, MoleculeSnapshot, PipelineStatus,
-    StandardizationPipeline, StandardizationReport, StandardizationStep,
-    StandardizationStepReport, StandardizationWarning, StandardizeOptions, standardize,
-};
-pub use stereo::{invert_stereocenter, enumerate_stereoisomers};
-pub use tautomer::{TautomerConfig, canonical_tautomer, canonical_tautomer_with_config, enumerate_tautomers, enumerate_tautomers_with_config};
-pub use topo_descriptors::{
-    bertz_ct,
-    chi0, chi1, chi2, chi3, chi4,
-    chi0v, chi1v, chi2v, chi3v, chi4v,
-    kappa1, kappa2, kappa3,
-    labute_asa, labute_asa_per_atom,
-    randic_index, topological_distance_matrix, wiener_index, zagreb_index_m1,
-};
-pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
-pub use vsa::{peoe_vsa, slogp_vsa, smr_vsa};
-pub use abbreviations::{abbreviations, expand_abbreviation};
 pub use esol::esol_solubility;
+pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
+pub use gasteiger::gasteiger_charges;
+pub use hash::{are_identical, mol_hash};
+pub use hydrogen::{add_hydrogens, remove_hydrogens};
+pub use ifg::{FunctionalGroup, identify_functional_groups};
 pub use isotope_distribution::isotope_distribution;
 pub use logd::{logd_profile, logd_simple};
-pub use xlogp3::{xlogp3, xlogp3_per_atom};
-pub use hash::{mol_hash, are_identical};
+pub use mmp::{MmpPair, find_mmp};
+pub use named_groups::{NamedGroup, detect_named_functional_groups};
+pub use qed::qed;
+pub use sa_score::sa_score;
+pub use scaffold::{
+    generic_murcko_scaffold, murcko_scaffold, scaffold_network, schuffenhauer_parents,
+};
+pub use standardize::{
+    MoleculeSnapshot, PipelineStatus, StandardizationPipeline, StandardizationReport,
+    StandardizationStep, StandardizationStepReport, StandardizationWarning, StandardizeOptions,
+    largest_fragment, neutralize_charges, standardize,
+};
+pub use stereo::{enumerate_stereoisomers, invert_stereocenter};
+pub use tautomer::{
+    TautomerConfig, canonical_tautomer, canonical_tautomer_with_config, enumerate_tautomers,
+    enumerate_tautomers_with_config,
+};
+pub use topo_descriptors::{
+    bertz_ct, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v, kappa1, kappa2,
+    kappa3, labute_asa, labute_asa_per_atom, randic_index, topological_distance_matrix,
+    wiener_index, zagreb_index_m1,
+};
+pub use vsa::{peoe_vsa, slogp_vsa, smr_vsa};
 pub use workflow::{
     CompareOptions, DescriptorDelta, DescriptorSummary, FilterSummary, FunctionalGroupSummary,
     MoleculeComparison, MoleculeReport, NamedGroupSummary, PairwiseComparison, ReportOptions,
@@ -87,3 +87,4 @@ pub use workflow::{
     WorkflowLimits, compare_molecules, compare_molecules_with_options, molecule_report,
     molecule_report_with_options, screen_smiles, screen_smiles_with_options,
 };
+pub use xlogp3::{xlogp3, xlogp3_per_atom};

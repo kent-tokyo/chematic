@@ -36,9 +36,11 @@ pub fn rmsd_no_align(a: &[[f64; 3]], b: &[[f64; 3]]) -> f64 {
     if n == 0 {
         return 0.0;
     }
-    let sum_sq: f64 = a.iter().zip(b.iter()).map(|(pa, pb)| {
-        (0..3).map(|i| (pa[i] - pb[i]).powi(2)).sum::<f64>()
-    }).sum();
+    let sum_sq: f64 = a
+        .iter()
+        .zip(b.iter())
+        .map(|(pa, pb)| (0..3).map(|i| (pa[i] - pb[i]).powi(2)).sum::<f64>())
+        .sum();
     (sum_sq / n as f64).sqrt()
 }
 
@@ -71,13 +73,25 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
     let mut cr = [0.0f64; 3];
     let mut cm = [0.0f64; 3];
     for i in 0..n {
-        for k in 0..3 { cr[k] += reference[i][k]; cm[k] += mobile[i][k]; }
+        for k in 0..3 {
+            cr[k] += reference[i][k];
+            cm[k] += mobile[i][k];
+        }
     }
-    for k in 0..3 { cr[k] /= nf; cm[k] /= nf; }
+    for k in 0..3 {
+        cr[k] /= nf;
+        cm[k] /= nf;
+    }
 
     // Centered coordinates.
-    let p: Vec<[f64; 3]> = reference.iter().map(|v| [v[0]-cr[0], v[1]-cr[1], v[2]-cr[2]]).collect();
-    let q: Vec<[f64; 3]> = mobile.iter().map(|v| [v[0]-cm[0], v[1]-cm[1], v[2]-cm[2]]).collect();
+    let p: Vec<[f64; 3]> = reference
+        .iter()
+        .map(|v| [v[0] - cr[0], v[1] - cr[1], v[2] - cr[2]])
+        .collect();
+    let q: Vec<[f64; 3]> = mobile
+        .iter()
+        .map(|v| [v[0] - cm[0], v[1] - cm[1], v[2] - cm[2]])
+        .collect();
 
     // H = P^T * Q  (3×3 cross-covariance).
     let mut h = [[0.0f64; 3]; 3];
@@ -93,7 +107,9 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
     let mut hth = [[0.0f64; 3]; 3];
     for r in 0..3 {
         for c in 0..3 {
-            for k in 0..3 { hth[r][c] += h[k][r] * h[k][c]; }
+            for k in 0..3 {
+                hth[r][c] += h[k][r] * h[k][c];
+            }
         }
     }
     let (evals, v) = jacobi3(hth);
@@ -102,7 +118,9 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
     let mut hv = [[0.0f64; 3]; 3];
     for r in 0..3 {
         for c in 0..3 {
-            for k in 0..3 { hv[r][c] += h[r][k] * v[k][c]; }
+            for k in 0..3 {
+                hv[r][c] += h[r][k] * v[k][c];
+            }
         }
     }
     let mut u = [[0.0f64; 3]; 3];
@@ -118,18 +136,24 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
     let mut v_final = v;
     for r in 0..3 {
         for c in 0..3 {
-            for k in 0..3 { rot[r][c] += v_final[r][k] * u[c][k]; }
+            for k in 0..3 {
+                rot[r][c] += v_final[r][k] * u[c][k];
+            }
         }
     }
 
     // Reflection correction.
     let det = det3(rot);
     if det < 0.0 {
-        for r in 0..3 { v_final[r][0] *= -1.0; }
+        for r in 0..3 {
+            v_final[r][0] *= -1.0;
+        }
         rot = [[0.0; 3]; 3];
         for r in 0..3 {
             for c in 0..3 {
-                for k in 0..3 { rot[r][c] += v_final[r][k] * u[c][k]; }
+                for k in 0..3 {
+                    rot[r][c] += v_final[r][k] * u[c][k];
+                }
             }
         }
     }
@@ -148,7 +172,11 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
     // Translation: after rotating mobile around its centroid, shift to reference centroid.
     let translation = [cr[0] - cm[0], cr[1] - cm[1], cr[2] - cm[2]];
 
-    AlignResult { rmsd, rotation: rot, translation }
+    AlignResult {
+        rmsd,
+        rotation: rot,
+        translation,
+    }
 }
 
 /// Apply an [`AlignResult`] to transform `mobile` coordinates.
@@ -157,25 +185,43 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
 pub fn apply_alignment(mobile: &[[f64; 3]], result: &AlignResult) -> Vec<[f64; 3]> {
     // Compute mobile centroid.
     let n = mobile.len();
-    if n == 0 { return Vec::new(); }
+    if n == 0 {
+        return Vec::new();
+    }
     let mut cm = [0.0f64; 3];
-    for v in mobile { for k in 0..3 { cm[k] += v[k]; } }
-    for k in 0..3 { cm[k] /= n as f64; }
+    for v in mobile {
+        for k in 0..3 {
+            cm[k] += v[k];
+        }
+    }
+    for k in 0..3 {
+        cm[k] /= n as f64;
+    }
 
     // Compute reference centroid from translation.
     // translation = cr - cm_orig, so cr = cm_orig + translation.
     // We need the reference centroid to shift into, but it's embedded in translation.
     // Simpler: rotate (mobile - cm) then add (cm + translation).
-    let cr = [cm[0] + result.translation[0], cm[1] + result.translation[1], cm[2] + result.translation[2]];
+    let cr = [
+        cm[0] + result.translation[0],
+        cm[1] + result.translation[1],
+        cm[2] + result.translation[2],
+    ];
 
-    mobile.iter().map(|v| {
-        let centered = [v[0] - cm[0], v[1] - cm[1], v[2] - cm[2]];
-        let mut out = [0.0f64; 3];
-        for row in 0..3 {
-            out[row] = (0..3).map(|k| result.rotation[row][k] * centered[k]).sum::<f64>() + cr[row];
-        }
-        out
-    }).collect()
+    mobile
+        .iter()
+        .map(|v| {
+            let centered = [v[0] - cm[0], v[1] - cm[1], v[2] - cm[2]];
+            let mut out = [0.0f64; 3];
+            for row in 0..3 {
+                out[row] = (0..3)
+                    .map(|k| result.rotation[row][k] * centered[k])
+                    .sum::<f64>()
+                    + cr[row];
+            }
+            out
+        })
+        .collect()
 }
 
 fn det3(m: [[f64; 3]; 3]) -> f64 {
@@ -219,22 +265,31 @@ mod tests {
     fn test_align_identical() {
         let coords = vec![[0.0, 0.0, 0.0], [1.5, 0.0, 0.0], [0.75, 1.3, 0.0]];
         let result = align_coords(&coords, &coords);
-        assert!(approx_eq(result.rmsd, 0.0, 1e-9), "identical coords → RMSD 0");
+        assert!(
+            approx_eq(result.rmsd, 0.0, 1e-9),
+            "identical coords → RMSD 0"
+        );
     }
 
     #[test]
     fn test_align_pure_translation() {
         // Two identical shapes offset by a constant translation → RMSD after align = 0.
         let reference = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.0]];
-        let mobile: Vec<[f64; 3]> = reference.iter().map(|v| [v[0]+3.0, v[1]-2.0, v[2]+1.0]).collect();
+        let mobile: Vec<[f64; 3]> = reference
+            .iter()
+            .map(|v| [v[0] + 3.0, v[1] - 2.0, v[2] + 1.0])
+            .collect();
         let result = align_coords(&reference, &mobile);
-        assert!(approx_eq(result.rmsd, 0.0, 1e-6), "pure translation → RMSD 0 after Kabsch");
+        assert!(
+            approx_eq(result.rmsd, 0.0, 1e-6),
+            "pure translation → RMSD 0 after Kabsch"
+        );
     }
 
     #[test]
     fn test_align_different_shapes_nonzero_rmsd() {
         let reference = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.0]];
-        let mobile    = vec![[0.0, 0.0, 0.0], [1.0, 0.1, 0.0], [0.5, 1.1, 0.0]]; // perturbed
+        let mobile = vec![[0.0, 0.0, 0.0], [1.0, 0.1, 0.0], [0.5, 1.1, 0.0]]; // perturbed
         let result = align_coords(&reference, &mobile);
         assert!(result.rmsd > 0.0, "different shapes → RMSD > 0");
     }
@@ -242,10 +297,16 @@ mod tests {
     #[test]
     fn test_apply_alignment_reduces_rmsd() {
         let reference = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.0]];
-        let mobile: Vec<[f64; 3]> = reference.iter().map(|v| [v[0]+2.0, v[1]+2.0, v[2]]).collect();
+        let mobile: Vec<[f64; 3]> = reference
+            .iter()
+            .map(|v| [v[0] + 2.0, v[1] + 2.0, v[2]])
+            .collect();
         let result = align_coords(&reference, &mobile);
         let aligned = apply_alignment(&mobile, &result);
         let rmsd_after = rmsd_no_align(&reference, &aligned);
-        assert!(approx_eq(rmsd_after, result.rmsd, 1e-6), "apply_alignment should match reported RMSD");
+        assert!(
+            approx_eq(rmsd_after, result.rmsd, 1e-6),
+            "apply_alignment should match reported RMSD"
+        );
     }
 }

@@ -8,7 +8,7 @@
 
 use std::f64::consts::PI;
 
-use crate::{PmeConfig, BoxVectors};
+use crate::{BoxVectors, EwaldError, PmeConfig};
 
 const K_COULOMB: f64 = 332.0637; // kcal·Å/(mol·e²)
 
@@ -25,15 +25,22 @@ const K_COULOMB: f64 = 332.0637; // kcal·Å/(mol·e²)
 /// * `config` - PME configuration (alpha, kmax, mesh, spline_order)
 ///
 /// # Returns
-/// Reciprocal-space energy contribution (kcal/mol)
+/// `Result<f64, EwaldError>` with reciprocal-space energy contribution (kcal/mol)
+///
+/// # Errors
+/// Returns `EwaldError::SingularBoxMatrix` if the box matrix is singular.
 pub fn reciprocal_space_energy(
     coords: &[[f64; 3]],
     charges: &[f64],
     box_vecs: &BoxVectors,
     config: &PmeConfig,
-) -> f64 {
+) -> Result<f64, EwaldError> {
     if coords.is_empty() {
-        return 0.0;
+        return Ok(0.0);
+    }
+
+    if box_vecs.volume().abs() < 1e-10 {
+        return Err(EwaldError::SingularBoxMatrix);
     }
 
     // Auto-compute alpha if not provided
@@ -58,9 +65,7 @@ pub fn reciprocal_space_energy(
     );
 
     // Compute reciprocal space energy from charge density
-    let energy = compute_reciprocal_energy(&charge_grid, box_vecs, &mesh_size, alpha, config.kmax);
-
-    energy
+    Ok(compute_reciprocal_energy(&charge_grid, box_vecs, &mesh_size, alpha, config.kmax))
 }
 
 /// Interpolate point charges onto 3D mesh using B-splines.
@@ -132,12 +137,11 @@ fn map_to_fractional(coord: [f64; 3], box_vecs: &BoxVectors) -> [f64; 3] {
     let b = &box_vecs.0[1];
     let c = &box_vecs.0[2];
 
-    let det = a[0] * (b[1] * c[2] - b[2] * c[1])
-        - a[1] * (b[0] * c[2] - b[2] * c[0])
+    let det = a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
         + a[2] * (b[0] * c[1] - b[1] * c[0]);
 
     if det.abs() < 1e-10 {
-        return [0.0; 3];
+        panic!("singular box matrix in map_to_fractional: det={}", det);
     }
 
     // Inverse: frac = inv(M) * coord
@@ -155,12 +159,11 @@ fn matrix_inverse_3x3(mat: &[&[f64; 3]]) -> [[f64; 3]; 3] {
     let b = mat[1];
     let c = mat[2];
 
-    let det = a[0] * (b[1] * c[2] - b[2] * c[1])
-        - a[1] * (b[0] * c[2] - b[2] * c[0])
+    let det = a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
         + a[2] * (b[0] * c[1] - b[1] * c[0]);
 
     if det.abs() < 1e-10 {
-        return [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+        panic!("singular matrix in matrix_inverse_3x3: det={}", det);
     }
 
     let inv_det = 1.0 / det;
@@ -204,13 +207,7 @@ fn compute_reciprocal_energy(
                 }
 
                 // Reciprocal lattice vectors
-                let k_vec = reciprocal_vector(
-                    kx as i32,
-                    ky as i32,
-                    kz as i32,
-                    box_vecs,
-                    mesh_size,
-                );
+                let k_vec = reciprocal_vector(kx as i32, ky as i32, kz as i32, box_vecs, mesh_size);
 
                 let k_sq = k_vec[0] * k_vec[0] + k_vec[1] * k_vec[1] + k_vec[2] * k_vec[2];
                 if k_sq < 1e-10 {
@@ -242,9 +239,21 @@ fn reciprocal_vector(
     // Reciprocal basis = 2π * (inverse of real basis transposed)
     let inv = matrix_inverse_3x3(&[&box_vecs.0[0], &box_vecs.0[1], &box_vecs.0[2]]);
 
-    let bx = [2.0 * PI * inv[0][0], 2.0 * PI * inv[1][0], 2.0 * PI * inv[2][0]];
-    let by = [2.0 * PI * inv[0][1], 2.0 * PI * inv[1][1], 2.0 * PI * inv[2][1]];
-    let bz = [2.0 * PI * inv[0][2], 2.0 * PI * inv[1][2], 2.0 * PI * inv[2][2]];
+    let bx = [
+        2.0 * PI * inv[0][0],
+        2.0 * PI * inv[1][0],
+        2.0 * PI * inv[2][0],
+    ];
+    let by = [
+        2.0 * PI * inv[0][1],
+        2.0 * PI * inv[1][1],
+        2.0 * PI * inv[2][1],
+    ];
+    let bz = [
+        2.0 * PI * inv[0][2],
+        2.0 * PI * inv[1][2],
+        2.0 * PI * inv[2][2],
+    ];
 
     let kx_frac = kx as f64 / mesh_size[0] as f64;
     let ky_frac = ky as f64 / mesh_size[1] as f64;
@@ -355,7 +364,7 @@ mod tests {
         let config = PmeConfig::default();
         let coords: Vec<[f64; 3]> = vec![];
         let charges: Vec<f64> = vec![];
-        let energy = reciprocal_space_energy(&coords, &charges, &box_vecs, &config);
+        let energy = reciprocal_space_energy(&coords, &charges, &box_vecs, &config).unwrap();
         assert_eq!(energy, 0.0);
     }
 
@@ -366,10 +375,7 @@ mod tests {
                 let t = i as f64 / 20.0;
                 let w = bspline_weights(t, order);
                 let sum: f64 = w.iter().sum();
-                assert!(
-                    (sum - 1.0).abs() < 1e-12,
-                    "order={order}, t={t}: sum={sum}"
-                );
+                assert!((sum - 1.0).abs() < 1e-12, "order={order}, t={t}: sum={sum}");
             }
         }
     }
@@ -379,21 +385,9 @@ mod tests {
         // t=0: [0, 1/6, 2/3, 1/6]
         let w0 = bspline_weights(0.0, 4);
         assert!(w0[0].abs() < 1e-12, "w[0] at t=0: {}", w0[0]);
-        assert!(
-            (w0[1] - 1.0 / 6.0).abs() < 1e-12,
-            "w[1] at t=0: {}",
-            w0[1]
-        );
-        assert!(
-            (w0[2] - 2.0 / 3.0).abs() < 1e-12,
-            "w[2] at t=0: {}",
-            w0[2]
-        );
-        assert!(
-            (w0[3] - 1.0 / 6.0).abs() < 1e-12,
-            "w[3] at t=0: {}",
-            w0[3]
-        );
+        assert!((w0[1] - 1.0 / 6.0).abs() < 1e-12, "w[1] at t=0: {}", w0[1]);
+        assert!((w0[2] - 2.0 / 3.0).abs() < 1e-12, "w[2] at t=0: {}", w0[2]);
+        assert!((w0[3] - 1.0 / 6.0).abs() < 1e-12, "w[3] at t=0: {}", w0[3]);
 
         // t=0.5: [1/48, 23/48, 23/48, 1/48]
         let w5 = bspline_weights(0.5, 4);
@@ -447,10 +441,7 @@ mod tests {
         let charges = vec![2.0];
         interpolate_charges_to_mesh(&coords, &charges, &box_vecs, &mut grid, &mesh_size, 4);
         let grid_total: f64 = grid.iter().sum();
-        assert!(
-            (grid_total - 2.0).abs() < 1e-10,
-            "grid_sum={grid_total}"
-        );
+        assert!((grid_total - 2.0).abs() < 1e-10, "grid_sum={grid_total}");
     }
 
     #[test]
@@ -467,7 +458,10 @@ mod tests {
         };
         let coords = vec![[2.0, 2.0, 2.0], [6.0, 6.0, 6.0]];
         let charges = vec![1.0, -1.0];
-        let energy = reciprocal_space_energy(&coords, &charges, &box_vecs, &config);
-        assert!(energy >= 0.0, "reciprocal energy must be >= 0, got {energy}");
+        let energy = reciprocal_space_energy(&coords, &charges, &box_vecs, &config).unwrap();
+        assert!(
+            energy >= 0.0,
+            "reciprocal energy must be >= 0, got {energy}"
+        );
     }
 }

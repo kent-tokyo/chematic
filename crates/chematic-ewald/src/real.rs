@@ -122,7 +122,7 @@ fn complementary_error_function(x: f64) -> f64 {
     if x >= 0.0 {
         1.0 - erf
     } else {
-        1.0 + erf  // erf(x) = -erf(-x), so erfc(x) = 1 - erf(x) = 1 + erf(-x)
+        1.0 + erf // erf(x) = -erf(-x), so erfc(x) = 1 - erf(x) = 1 + erf(-x)
     }
 }
 

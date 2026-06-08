@@ -19,24 +19,35 @@ use chematic_core::{Element, Molecule, implicit_hcount};
 /// Only isotopes with abundance > 0.0001 (0.01 %) are listed.
 fn isotopes(element: Element) -> &'static [(f64, f64)] {
     match element.atomic_number() {
-        1  => &[(1.00783, 0.99985), (2.01410, 0.00015)],                           // H
-        6  => &[(12.0000, 0.9893),  (13.00335, 0.0107)],                           // C
-        7  => &[(14.0031, 0.99636), (15.0001, 0.00364)],                           // N
-        8  => &[(15.9949, 0.99757), (16.9991, 0.00038), (17.9992, 0.00205)],       // O
-        9  => &[(18.9984, 1.0)],                                                    // F
-        11 => &[(22.9898, 1.0)],                                                    // Na
-        14 => &[(27.9769, 0.9223), (28.9765, 0.0467), (29.9738, 0.0310)],          // Si
-        15 => &[(30.9738, 1.0)],                                                    // P
-        16 => &[(31.9721, 0.9493), (32.9715, 0.0076), (33.9679, 0.0429), (35.9671, 0.0002)], // S
-        17 => &[(34.9689, 0.7576), (36.9659, 0.2424)],                             // Cl
-        19 => &[(38.9637, 0.9326), (40.9618, 0.0673)],                             // K (approx)
-        33 => &[(74.9216, 1.0)],                                                    // As
-        34 => &[(73.9225, 0.0089), (75.9192, 0.0937), (76.9199, 0.0763),
-                (77.9173, 0.2377), (79.9165, 0.4961), (81.9167, 0.0873)],          // Se
-        35 => &[(78.9183, 0.5069), (80.9163, 0.4931)],                             // Br
-        53 => &[(126.9045, 1.0)],                                                   // I
+        1 => &[(1.00783, 0.99985), (2.01410, 0.00015)], // H
+        6 => &[(12.0000, 0.9893), (13.00335, 0.0107)],  // C
+        7 => &[(14.0031, 0.99636), (15.0001, 0.00364)], // N
+        8 => &[(15.9949, 0.99757), (16.9991, 0.00038), (17.9992, 0.00205)], // O
+        9 => &[(18.9984, 1.0)],                         // F
+        11 => &[(22.9898, 1.0)],                        // Na
+        14 => &[(27.9769, 0.9223), (28.9765, 0.0467), (29.9738, 0.0310)], // Si
+        15 => &[(30.9738, 1.0)],                        // P
+        16 => &[
+            (31.9721, 0.9493),
+            (32.9715, 0.0076),
+            (33.9679, 0.0429),
+            (35.9671, 0.0002),
+        ], // S
+        17 => &[(34.9689, 0.7576), (36.9659, 0.2424)],  // Cl
+        19 => &[(38.9637, 0.9326), (40.9618, 0.0673)],  // K (approx)
+        33 => &[(74.9216, 1.0)],                        // As
+        34 => &[
+            (73.9225, 0.0089),
+            (75.9192, 0.0937),
+            (76.9199, 0.0763),
+            (77.9173, 0.2377),
+            (79.9165, 0.4961),
+            (81.9167, 0.0873),
+        ], // Se
+        35 => &[(78.9183, 0.5069), (80.9163, 0.4931)],  // Br
+        53 => &[(126.9045, 1.0)],                       // I
         // Default: treat as monoisotopic (100 % at the nominal atomic number mass).
-        n  => {
+        n => {
             // Static fallback — only the most common elements reach here in practice.
             // We return a single-isotope slice stored as a leaked box to satisfy
             // the lifetime requirement.  This path is rarely hit.
@@ -49,11 +60,11 @@ fn isotopes(element: Element) -> &'static [(f64, f64)] {
 /// Return the monoisotopic mass of an element for the fallback case.
 fn mono_mass_fallback(an: u8) -> f64 {
     match an {
-        1  => 1.00783,
-        6  => 12.0000,
-        7  => 14.0031,
-        8  => 15.9949,
-        9  => 18.9984,
+        1 => 1.00783,
+        6 => 12.0000,
+        7 => 14.0031,
+        8 => 15.9949,
+        9 => 18.9984,
         14 => 27.9769,
         15 => 30.9738,
         16 => 31.9721,
@@ -61,7 +72,7 @@ fn mono_mass_fallback(an: u8) -> f64 {
         35 => 78.9183,
         34 => 79.9165,
         53 => 126.9045,
-        n  => n as f64,
+        n => n as f64,
     }
 }
 
@@ -109,7 +120,7 @@ fn merge_peaks(mut peaks: Vec<(f64, f64)>, resolution: f64) -> Vec<(f64, f64)> {
 
     let mut merged: Vec<(f64, f64)> = Vec::new();
     let mut cur_mass = peaks[0].0;
-    let mut cur_int  = peaks[0].1;
+    let mut cur_int = peaks[0].1;
 
     for &(m, i) in &peaks[1..] {
         if m - cur_mass < resolution {
@@ -119,7 +130,7 @@ fn merge_peaks(mut peaks: Vec<(f64, f64)>, resolution: f64) -> Vec<(f64, f64)> {
         } else {
             merged.push((cur_mass, cur_int));
             cur_mass = m;
-            cur_int  = i;
+            cur_int = i;
         }
     }
     merged.push((cur_mass, cur_int));
@@ -162,7 +173,7 @@ pub fn isotope_distribution(mol: &Molecule, resolution: f64) -> Vec<(f64, f64)> 
         // Atom's own isotope distribution.
         let atom_dist: Vec<(f64, f64)> = match atom.isotope {
             Some(iso) => vec![(iso as f64, 1.0)], // explicit label → monoisotopic
-            None      => isotope_list(atom.element),
+            None => isotope_list(atom.element),
         };
         dist = convolve(&dist, &atom_dist);
 
@@ -197,7 +208,10 @@ mod tests {
 
     /// Find the peak with the highest intensity.
     fn base_peak(dist: &[(f64, f64)]) -> (f64, f64) {
-        dist.iter().cloned().max_by(|a, b| a.1.partial_cmp(&b.1).unwrap()).unwrap()
+        dist.iter()
+            .cloned()
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .unwrap()
     }
 
     #[test]
@@ -207,7 +221,10 @@ mod tests {
         let dist = isotope_distribution(&mol, 0.0);
         assert!(!dist.is_empty());
         let (mass, _) = base_peak(&dist);
-        assert!((mass - 18.0106).abs() < 0.01, "H2O base peak ≈ 18.011 Da, got {mass:.4}");
+        assert!(
+            (mass - 18.0106).abs() < 0.01,
+            "H2O base peak ≈ 18.011 Da, got {mass:.4}"
+        );
     }
 
     #[test]
@@ -217,7 +234,10 @@ mod tests {
         let dist = isotope_distribution(&mol, 0.01);
         // At least two peaks with significant intensity.
         let significant: Vec<_> = dist.iter().filter(|&&(_, i)| i > 0.1).collect();
-        assert!(significant.len() >= 2, "CH3Cl should show M and M+2 peaks from Cl isotopes");
+        assert!(
+            significant.len() >= 2,
+            "CH3Cl should show M and M+2 peaks from Cl isotopes"
+        );
     }
 
     #[test]
@@ -244,7 +264,10 @@ mod tests {
         let mol = parse("c1ccccc1").unwrap();
         let dist = isotope_distribution(&mol, 0.0);
         let (mass, _) = base_peak(&dist);
-        assert!((mass - 78.047).abs() < 0.01, "C6H6 M+ ≈ 78.047, got {mass:.4}");
+        assert!(
+            (mass - 78.047).abs() < 0.01,
+            "C6H6 M+ ≈ 78.047, got {mass:.4}"
+        );
     }
 
     #[test]
@@ -252,7 +275,10 @@ mod tests {
         let mol = parse("CC(=O)O").unwrap(); // acetic acid
         let dist = isotope_distribution(&mol, 0.01);
         let max_int = dist.iter().map(|&(_, i)| i).fold(0.0_f64, f64::max);
-        assert!((max_int - 1.0).abs() < 1e-9, "base peak should be normalised to 1.0");
+        assert!(
+            (max_int - 1.0).abs() < 1e-9,
+            "base peak should be normalised to 1.0"
+        );
     }
 
     #[test]

@@ -87,6 +87,7 @@ impl AromaticityModel {
 /// Classify a ring by its pi electron count using Hückel and antiaromaticity rules.
 ///
 /// Returns (classification, electron_count) tuple.
+#[allow(clippy::manual_is_multiple_of)]
 fn classify_ring_aromaticity(pi_electrons: u32) -> (RingAromaticity, u32) {
     // Hückel rule: 4n+2 electrons → aromatic
     if pi_electrons >= 2 && (pi_electrons - 2) % 4 == 0 {
@@ -342,7 +343,11 @@ mod tests {
         let mut b = MoleculeBuilder::new();
         let atoms: Vec<_> = (0..6).map(|_| b.add_atom(Atom::new(Element::C))).collect();
         for i in 0..6 {
-            let order = if i % 2 == 0 { BondOrder::Double } else { BondOrder::Single };
+            let order = if i % 2 == 0 {
+                BondOrder::Double
+            } else {
+                BondOrder::Single
+            };
             b.add_bond(atoms[i], atoms[(i + 1) % 6], order).unwrap();
         }
         b.build()
@@ -353,7 +358,8 @@ mod tests {
         let mut b = MoleculeBuilder::new();
         let atoms: Vec<_> = (0..6).map(|_| b.add_atom(Atom::new(Element::C))).collect();
         for i in 0..6 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Single).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Single)
+                .unwrap();
         }
         b.build()
     }
@@ -364,10 +370,16 @@ mod tests {
         let mut b = MoleculeBuilder::new();
         let n = b.add_atom(Atom::new(Element::N));
         let atoms_c: Vec<_> = (0..5).map(|_| b.add_atom(Atom::new(Element::C))).collect();
-        let ring = [n, atoms_c[0], atoms_c[1], atoms_c[2], atoms_c[3], atoms_c[4]];
+        let ring = [
+            n, atoms_c[0], atoms_c[1], atoms_c[2], atoms_c[3], atoms_c[4],
+        ];
         // N=C-C=C-C=N  alternating, starting with double
         for i in 0..6 {
-            let order = if i % 2 == 0 { BondOrder::Double } else { BondOrder::Single };
+            let order = if i % 2 == 0 {
+                BondOrder::Double
+            } else {
+                BondOrder::Single
+            };
             b.add_bond(ring[i], ring[(i + 1) % 6], order).unwrap();
         }
         b.build()
@@ -432,7 +444,8 @@ mod tests {
             BondOrder::Single,
         ];
         for i in 0..6 {
-            b.add_bond(atoms[ring1[i]], atoms[ring1[(i + 1) % 6]], orders1[i]).unwrap();
+            b.add_bond(atoms[ring1[i]], atoms[ring1[(i + 1) % 6]], orders1[i])
+                .unwrap();
         }
         // Ring 2 extra bonds (4-9 already added):
         let ring2_extra = [(4, 5), (5, 6), (6, 7), (7, 8), (8, 9)];
@@ -453,9 +466,17 @@ mod tests {
     fn test_benzene_is_aromatic() {
         let mol = benzene_kekule();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 6, "all 6 benzene atoms are aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "all 6 benzene atoms are aromatic"
+        );
         for i in 0..6u32 {
-            assert!(model.is_atom_aromatic(AtomIdx(i)), "atom {} should be aromatic", i);
+            assert!(
+                model.is_atom_aromatic(AtomIdx(i)),
+                "atom {} should be aromatic",
+                i
+            );
         }
     }
 
@@ -463,28 +484,44 @@ mod tests {
     fn test_cyclohexane_not_aromatic() {
         let mol = cyclohexane();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 0, "cyclohexane has no aromatic atoms");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            0,
+            "cyclohexane has no aromatic atoms"
+        );
     }
 
     #[test]
     fn test_pyridine_is_aromatic() {
         let mol = pyridine_kekule();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 6, "all 6 pyridine atoms are aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "all 6 pyridine atoms are aromatic"
+        );
     }
 
     #[test]
     fn test_furan_is_aromatic() {
         let mol = furan_kekule();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 5, "all 5 furan atoms are aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            5,
+            "all 5 furan atoms are aromatic"
+        );
     }
 
     #[test]
     fn test_pyrrole_is_aromatic() {
         let mol = pyrrole_kekule();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 5, "all 5 pyrrole atoms are aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            5,
+            "all 5 pyrrole atoms are aromatic"
+        );
     }
 
     #[test]
@@ -562,7 +599,11 @@ mod tests {
         let mut b = MoleculeBuilder::new();
         let atoms: Vec<_> = (0..4).map(|_| b.add_atom(Atom::new(Element::C))).collect();
         for i in 0..4 {
-            let order = if i % 2 == 0 { BondOrder::Double } else { BondOrder::Single };
+            let order = if i % 2 == 0 {
+                BondOrder::Double
+            } else {
+                BondOrder::Single
+            };
             b.add_bond(atoms[i], atoms[(i + 1) % 4], order).unwrap();
         }
         b.build()
@@ -574,10 +615,17 @@ mod tests {
         let model = assign_aromaticity(&mol);
 
         // Cyclobutadiene should NOT be aromatic (4 electrons = 4n).
-        assert_eq!(model.aromatic_atom_count(), 0, "cyclobutadiene should not be aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            0,
+            "cyclobutadiene should not be aromatic"
+        );
 
         // But it SHOULD be detected as antiaromatic.
-        assert!(model.has_antiaromaticity(), "cyclobutadiene should be antiaromatic");
+        assert!(
+            model.has_antiaromaticity(),
+            "cyclobutadiene should be antiaromatic"
+        );
         assert_eq!(model.antiaromatic_rings().len(), 1, "one antiaromatic ring");
 
         // Verify ring classification
@@ -593,7 +641,11 @@ mod tests {
         let mut b = MoleculeBuilder::new();
         let atoms: Vec<_> = (0..8).map(|_| b.add_atom(Atom::new(Element::C))).collect();
         for i in 0..8 {
-            let order = if i % 2 == 0 { BondOrder::Double } else { BondOrder::Single };
+            let order = if i % 2 == 0 {
+                BondOrder::Double
+            } else {
+                BondOrder::Single
+            };
             b.add_bond(atoms[i], atoms[(i + 1) % 8], order).unwrap();
         }
         b.build()
@@ -605,15 +657,25 @@ mod tests {
         let model = assign_aromaticity(&mol);
 
         // COT should NOT be aromatic (8 electrons = 4n).
-        assert_eq!(model.aromatic_atom_count(), 0, "cyclooctatetraene should not be aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            0,
+            "cyclooctatetraene should not be aromatic"
+        );
 
         // But it SHOULD be detected as antiaromatic.
-        assert!(model.has_antiaromaticity(), "cyclooctatetraene should be antiaromatic");
+        assert!(
+            model.has_antiaromaticity(),
+            "cyclooctatetraene should be antiaromatic"
+        );
         assert_eq!(model.antiaromatic_rings().len(), 1, "one antiaromatic ring");
 
         let classifications = model.ring_classifications();
         assert_eq!(classifications[0].1, RingAromaticity::Antiaromatic);
-        assert_eq!(classifications[0].2, 8, "cyclooctatetraene has 8 π electrons");
+        assert_eq!(
+            classifications[0].2, 8,
+            "cyclooctatetraene has 8 π electrons"
+        );
     }
 
     // =========================================================================
@@ -654,8 +716,16 @@ mod tests {
         // Cyclohexane may or may not be detected by SSSR depending on ring perception.
         // What matters is that it should never be classified as aromatic or antiaromatic.
         for (_, classification, _count) in classifications {
-            assert_ne!(*classification, RingAromaticity::Aromatic, "cyclohexane should not be aromatic");
-            assert_ne!(*classification, RingAromaticity::Antiaromatic, "cyclohexane should not be antiaromatic");
+            assert_ne!(
+                *classification,
+                RingAromaticity::Aromatic,
+                "cyclohexane should not be aromatic"
+            );
+            assert_ne!(
+                *classification,
+                RingAromaticity::Antiaromatic,
+                "cyclohexane should not be antiaromatic"
+            );
         }
     }
 

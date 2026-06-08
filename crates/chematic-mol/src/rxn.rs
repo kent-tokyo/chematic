@@ -19,7 +19,7 @@
 //! …
 //! ```
 
-use chematic_rxn::{Reaction, RxnError};
+use chematic_rxn::Reaction;
 
 use crate::error::MolParseError;
 use crate::mol2000::parse_mol;
@@ -38,9 +38,9 @@ pub enum RxnParseError {
 impl core::fmt::Display for RxnParseError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::MissingHeader  => write!(f, "RXN file must start with $RXN"),
-            Self::BadCountLine   => write!(f, "cannot parse reactant/product count line"),
-            Self::MolParse(e)    => write!(f, "MOL parse error in RXN: {e}"),
+            Self::MissingHeader => write!(f, "RXN file must start with $RXN"),
+            Self::BadCountLine => write!(f, "cannot parse reactant/product count line"),
+            Self::MolParse(e) => write!(f, "MOL parse error in RXN: {e}"),
         }
     }
 }
@@ -48,7 +48,9 @@ impl core::fmt::Display for RxnParseError {
 impl std::error::Error for RxnParseError {}
 
 impl From<MolParseError> for RxnParseError {
-    fn from(e: MolParseError) -> Self { Self::MolParse(e) }
+    fn from(e: MolParseError) -> Self {
+        Self::MolParse(e)
+    }
 }
 
 /// Parse an MDL RXN V2000 string into a [`Reaction`].
@@ -62,7 +64,9 @@ pub fn parse_rxn_file(text: &str) -> Result<Reaction, RxnParseError> {
     }
 
     // Lines 2-4: blank, program, comment (skip)
-    for _ in 0..3 { lines.next(); }
+    for _ in 0..3 {
+        lines.next();
+    }
 
     // Line 5: "  nreactants  nproducts  …"
     let count_line = lines.next().unwrap_or("");
@@ -74,13 +78,19 @@ pub fn parse_rxn_file(text: &str) -> Result<Reaction, RxnParseError> {
         return Err(RxnParseError::BadCountLine);
     }
     let n_reactants = counts[0].max(0) as usize;
-    let n_products  = counts[1].max(0) as usize;
+    let n_products = counts[1].max(0) as usize;
 
     // Work directly on the remaining text to find "$MOL" blocks.
     // Find the position of the first "$MOL" in the original text.
     let first_mol_pos = match text.find("$MOL") {
         Some(p) => p,
-        None => return Ok(Reaction { reactants: vec![], agents: vec![], products: vec![] }),
+        None => {
+            return Ok(Reaction {
+                reactants: vec![],
+                agents: vec![],
+                products: vec![],
+            });
+        }
     };
     let mol_section = &text[first_mol_pos..];
 
@@ -88,7 +98,7 @@ pub fn parse_rxn_file(text: &str) -> Result<Reaction, RxnParseError> {
     let mol_blocks: Vec<&str> = mol_section.split("$MOL\n").skip(1).collect();
 
     let mut reactants = Vec::with_capacity(n_reactants);
-    let mut products  = Vec::with_capacity(n_products);
+    let mut products = Vec::with_capacity(n_products);
 
     for (i, block) in mol_blocks.iter().enumerate() {
         // Each block is already a valid MOL V2000 block (3 header lines + data).
@@ -100,7 +110,11 @@ pub fn parse_rxn_file(text: &str) -> Result<Reaction, RxnParseError> {
         }
     }
 
-    Ok(Reaction { reactants, agents: vec![], products })
+    Ok(Reaction {
+        reactants,
+        agents: vec![],
+        products,
+    })
 }
 
 /// Write a [`Reaction`] as an MDL RXN V2000 string.
@@ -109,9 +123,9 @@ pub fn write_rxn_file(rxn: &Reaction) -> String {
 
     let mut out = String::new();
     out.push_str("$RXN\n");
-    out.push_str("\n");                              // program line (blank)
-    out.push_str("     chematic\n");                // program/date
-    out.push_str("\n");                              // comment (blank)
+    out.push('\n'); // program line (blank)
+    out.push_str("     chematic\n"); // program/date
+    out.push('\n'); // comment (blank)
     out.push_str(&format!(
         "{:3}{:3}\n",
         rxn.reactants.len(),
@@ -148,9 +162,9 @@ mod tests {
         let mut b2 = MoleculeBuilder::new();
         let c1 = b2.add_atom(Atom::new(Element::C));
         let c2 = b2.add_atom(Atom::new(Element::C));
-        let o  = b2.add_atom(Atom::new(Element::O));
+        let o = b2.add_atom(Atom::new(Element::O));
         b2.add_bond(c1, c2, BondOrder::Single).unwrap();
-        b2.add_bond(c2, o,  BondOrder::Single).unwrap();
+        b2.add_bond(c2, o, BondOrder::Single).unwrap();
         let ethanol = b2.build();
 
         let meta = MolMetadata::default();
@@ -167,7 +181,7 @@ mod tests {
         assert_eq!(rxn.reactants.len(), 1);
         assert_eq!(rxn.products.len(), 1);
         assert_eq!(rxn.reactants[0].atom_count(), 2); // ethane
-        assert_eq!(rxn.products[0].atom_count(), 3);  // ethanol
+        assert_eq!(rxn.products[0].atom_count(), 3); // ethanol
     }
 
     #[test]

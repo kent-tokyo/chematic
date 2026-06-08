@@ -9,11 +9,13 @@
 //! This provides more accurate geometry than rule-based placement, especially
 //! for complex molecules with many torsion degrees of freedom.
 
+#![allow(dead_code)]
+
 use std::f64::consts::PI;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 
-use crate::coords::{Coords3D, Point3};
+use crate::coords::Coords3D;
 
 // ---------------------------------------------------------------------------
 // Bound matrix construction
@@ -29,9 +31,7 @@ use crate::coords::{Coords3D, Point3};
 /// - Bond lengths (from ideal values ± tolerance)
 /// - Angle constraints (from ideal angles)
 /// - Van der Waals (from VDW radii sum)
-fn build_bound_matrix(
-    mol: &Molecule,
-) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+fn build_bound_matrix(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
     let n = mol.atom_count();
     let mut lower = vec![vec![0.0; n]; n];
     let mut upper = vec![vec![f64::INFINITY; n]; n];
@@ -179,7 +179,7 @@ fn vdw_radius(atomic_num: u8) -> f64 {
 /// Full implementation requires eigenvalue solver (eigenvalues/eigenvectors).
 pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
     let n = mol.atom_count();
-    let mut coords = Coords3D::new_zeroed(n);
+    let coords = Coords3D::new_zeroed(n);
 
     if n == 0 {
         return coords;
@@ -210,7 +210,7 @@ mod tests {
     #[test]
     fn test_bound_matrix_benzene() {
         let mol = parse("c1ccccc1").unwrap();
-        let (lower, upper) = build_bound_matrix(&mol);
+        let (lower, _upper) = build_bound_matrix(&mol);
         assert_eq!(lower.len(), 6);
         // Aromatic C-C should be ~1.40 Å
         assert!(lower[0][1] > 1.3 && lower[0][1] < 1.5);
@@ -238,10 +238,6 @@ mod tests {
     }
 
     fn ideal_bond_angle_test(aromatic: bool) -> f64 {
-        if aromatic {
-            2.0 * PI / 3.0
-        } else {
-            1.91
-        }
+        if aromatic { 2.0 * PI / 3.0 } else { 1.91 }
     }
 }

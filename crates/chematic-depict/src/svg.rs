@@ -4,9 +4,9 @@
 //! into a self-contained SVG string suitable for embedding in HTML or saving
 //! as a `.svg` file.
 
-use chematic_core::{apply_kekule, kekulize, AtomIdx, BondIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, apply_kekule, kekulize};
 
-use crate::layout::{Layout, Point, BOND_LEN};
+use crate::layout::{BOND_LEN, Layout, Point};
 
 /// Font size used for atom labels, in SVG pixels.
 const FONT_SIZE: f64 = 12.0;
@@ -117,7 +117,13 @@ impl<'a> DrawCtx<'a> {
         } else {
             Some(opts.background.as_str())
         };
-        DrawCtx { bond_color, label_rect_fill, dark: opts.dark, atom_ids: opts.atom_ids, show_atom_indices: opts.show_atom_indices }
+        DrawCtx {
+            bond_color,
+            label_rect_fill,
+            dark: opts.dark,
+            atom_ids: opts.atom_ids,
+            show_atom_indices: opts.show_atom_indices,
+        }
     }
 
     fn text_color(&self, atomic_number: u8) -> &str {
@@ -137,7 +143,13 @@ impl<'a> DrawCtx<'a> {
 ///
 /// Used by the grid renderer to compose multiple molecules into one SVG.
 pub(crate) fn render_mol_body(mol: &Molecule, layout: &Layout) -> String {
-    let ctx = DrawCtx { bond_color: "black", label_rect_fill: Some("white"), dark: false, atom_ids: false, show_atom_indices: false };
+    let ctx = DrawCtx {
+        bond_color: "black",
+        label_rect_fill: Some("white"),
+        dark: false,
+        atom_ids: false,
+        show_atom_indices: false,
+    };
     let mut body = String::new();
     for (_, bond) in mol.bonds() {
         let p1 = layout.get(bond.atom1);
@@ -151,7 +163,11 @@ pub(crate) fn render_mol_body(mol: &Molecule, layout: &Layout) -> String {
 /// Render bonds, highlight circles, and atom labels without an SVG wrapper.
 ///
 /// Used by the highlighted grid renderer.
-pub(crate) fn render_mol_body_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) -> String {
+pub(crate) fn render_mol_body_opts(
+    mol: &Molecule,
+    layout: &Layout,
+    opts: &RenderOptions,
+) -> String {
     let ctx = DrawCtx::from_opts(opts);
     let mut body = String::new();
 
@@ -160,8 +176,12 @@ pub(crate) fn render_mol_body_opts(mol: &Molecule, layout: &Layout, opts: &Rende
     let atom_count = mol.atom_count();
     let mut circles: Vec<(AtomIdx, String)> = Vec::new();
     for idx in &opts.highlight_atoms {
-        if idx.0 as usize >= atom_count { continue; }
-        let color = opts.atom_color_map.get(idx)
+        if idx.0 as usize >= atom_count {
+            continue;
+        }
+        let color = opts
+            .atom_color_map
+            .get(idx)
             .map(|c| escape_xml(c))
             .unwrap_or_else(|| default_hc.clone());
         circles.push((*idx, color));
@@ -234,14 +254,20 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
     let default_hc = escape_xml(&opts.highlight_color);
     let mut atom_circles: Vec<(AtomIdx, String)> = Vec::new();
     for idx in &opts.highlight_atoms {
-        if idx.0 as usize >= atom_count { continue; }
-        let color = opts.atom_color_map.get(idx)
+        if idx.0 as usize >= atom_count {
+            continue;
+        }
+        let color = opts
+            .atom_color_map
+            .get(idx)
             .map(|c| escape_xml(c))
             .unwrap_or_else(|| default_hc.clone());
         atom_circles.push((*idx, color));
     }
     for (idx, color) in &opts.atom_color_map {
-        if idx.0 as usize >= atom_count { continue; }
+        if idx.0 as usize >= atom_count {
+            continue;
+        }
         if !opts.highlight_atoms.contains(idx) {
             atom_circles.push((*idx, escape_xml(color)));
         }
@@ -277,7 +303,12 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
 /// The canonical SMILES is embedded in a `<metadata><smiles>...</smiles></metadata>`
 /// element immediately after the opening `<svg>` tag. This allows the structure to
 /// be recovered from the image without external data.
-pub fn render_svg_with_metadata(mol: &Molecule, layout: &Layout, opts: &RenderOptions, smiles: &str) -> String {
+pub fn render_svg_with_metadata(
+    mol: &Molecule,
+    layout: &Layout,
+    opts: &RenderOptions,
+    smiles: &str,
+) -> String {
     use chematic_smiles::canonical_smiles;
 
     let maybe_kekule: Option<Molecule> = if opts.kekulize {
@@ -308,14 +339,20 @@ pub fn render_svg_with_metadata(mol: &Molecule, layout: &Layout, opts: &RenderOp
     let default_hc = escape_xml(&opts.highlight_color);
     let mut atom_circles: Vec<(AtomIdx, String)> = Vec::new();
     for idx in &opts.highlight_atoms {
-        if idx.0 as usize >= atom_count { continue; }
-        let color = opts.atom_color_map.get(idx)
+        if idx.0 as usize >= atom_count {
+            continue;
+        }
+        let color = opts
+            .atom_color_map
+            .get(idx)
             .map(|c| escape_xml(c))
             .unwrap_or_else(|| default_hc.clone());
         atom_circles.push((*idx, color));
     }
     for (idx, color) in &opts.atom_color_map {
-        if idx.0 as usize >= atom_count { continue; }
+        if idx.0 as usize >= atom_count {
+            continue;
+        }
         if !opts.highlight_atoms.contains(idx) {
             atom_circles.push((*idx, escape_xml(color)));
         }
@@ -374,7 +411,11 @@ fn write_svg_header_opts(layout: &Layout, opts: &RenderOptions, svg: &mut String
     if opts.background != "transparent" {
         svg.push_str(&format!(
             "  <rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"{}\"/>\n",
-            view_x, view_y, view_w, view_h, escape_xml(&opts.background) // S1: escape user input
+            view_x,
+            view_y,
+            view_w,
+            view_h,
+            escape_xml(&opts.background) // S1: escape user input
         ));
     }
 }
@@ -404,7 +445,9 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
             let data_attrs = if ctx.atom_ids {
                 format!(
                     " data-atom-idx=\"{}\" data-element=\"{}\" data-charge=\"{}\"",
-                    idx.0, atom.element.symbol(), atom.charge
+                    idx.0,
+                    atom.element.symbol(),
+                    atom.charge
                 )
             } else {
                 String::new()
@@ -414,7 +457,8 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
                  font-family=\"sans-serif\" font-size=\"{}\" \
                  text-anchor=\"middle\" dominant-baseline=\"central\" \
                  fill=\"{}\"{}>{}</text>\n",
-                p.x, p.y,
+                p.x,
+                p.y,
                 FONT_SIZE as u32,
                 ctx.text_color(atom.element.atomic_number()),
                 data_attrs,
@@ -425,7 +469,11 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
             svg.push_str(&format!(
                 "  <text x=\"{:.2}\" y=\"{:.2}\" font-size=\"0\" \
                  data-atom-idx=\"{}\" data-element=\"{}\" data-charge=\"{}\"/>\n",
-                p.x, p.y, idx.0, atom.element.symbol(), atom.charge
+                p.x,
+                p.y,
+                idx.0,
+                atom.element.symbol(),
+                atom.charge
             ));
         }
 
@@ -450,11 +498,11 @@ fn write_atom_labels_ctx(mol: &Molecule, layout: &Layout, ctx: &DrawCtx, svg: &m
 
 fn render_bond_c(order: BondOrder, p1: Point, p2: Point, color: &str) -> String {
     match order {
-        BondOrder::Single   => render_line(p1, p2, "1.5", color),
-        BondOrder::Up       => render_wedge_up(p1, p2, color),
-        BondOrder::Down     => render_dash_bond(p1, p2, color),
-        BondOrder::Double   => render_double_bond(p1, p2, color),
-        BondOrder::Triple   => render_triple_bond(p1, p2, color),
+        BondOrder::Single => render_line(p1, p2, "1.5", color),
+        BondOrder::Up => render_wedge_up(p1, p2, color),
+        BondOrder::Down => render_dash_bond(p1, p2, color),
+        BondOrder::Double => render_double_bond(p1, p2, color),
+        BondOrder::Triple => render_triple_bond(p1, p2, color),
         BondOrder::Aromatic => render_aromatic_bond(p1, p2, color),
         BondOrder::Quadruple => render_line(p1, p2, "3.0", color),
         BondOrder::Zero
@@ -492,7 +540,8 @@ fn render_double_bond(p1: Point, p2: Point, color: &str) -> String {
         s.push_str(&render_line(
             Point::new(p1.x + px * offset * sign, p1.y + py * offset * sign),
             Point::new(p2.x + px * offset * sign, p2.y + py * offset * sign),
-            "1.5", color,
+            "1.5",
+            color,
         ));
     }
     s
@@ -505,13 +554,20 @@ fn render_triple_bond(p1: Point, p2: Point, color: &str) -> String {
         s.push_str(&render_line(
             Point::new(p1.x + px * offset, p1.y + py * offset),
             Point::new(p2.x + px * offset, p2.y + py * offset),
-            "1.5", color,
+            "1.5",
+            color,
         ));
     }
     s
 }
 
-fn render_line_dashed(p1: Point, p2: Point, stroke_width: &str, color: &str, dasharray: &str) -> String {
+fn render_line_dashed(
+    p1: Point,
+    p2: Point,
+    stroke_width: &str,
+    color: &str,
+    dasharray: &str,
+) -> String {
     format!(
         "  <line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" \
          stroke=\"{}\" stroke-width=\"{}\" fill=\"none\" stroke-dasharray=\"{}\"/>\n",
@@ -526,12 +582,15 @@ fn render_aromatic_bond(p1: Point, p2: Point, color: &str) -> String {
     s.push_str(&render_line(
         Point::new(p1.x - px * offset, p1.y - py * offset),
         Point::new(p2.x - px * offset, p2.y - py * offset),
-        "1.5", color,
+        "1.5",
+        color,
     ));
     s.push_str(&render_line_dashed(
         Point::new(p1.x + px * offset, p1.y + py * offset),
         Point::new(p2.x + px * offset, p2.y + py * offset),
-        "1.5", color, "4,3",
+        "1.5",
+        color,
+        "4,3",
     ));
     s
 }
@@ -568,7 +627,8 @@ fn render_dash_bond(p1: Point, p2: Point, color: &str) -> String {
         s.push_str(&render_line(
             Point::new(cx - px * hw, cy - py * hw),
             Point::new(cx + px * hw, cy + py * hw),
-            "1.0", color,
+            "1.0",
+            color,
         ));
     }
     s
@@ -581,15 +641,15 @@ fn render_dash_bond(p1: Point, p2: Point, color: &str) -> String {
 /// CPK standard color for an element (black for carbon/hydrogen/default).
 pub fn atom_color(atomic_number: u8) -> &'static str {
     match atomic_number {
-        7  => "#3050F8", // N  blue
-        8  => "#FF0D0D", // O  red
+        7 => "#3050F8",  // N  blue
+        8 => "#FF0D0D",  // O  red
         16 => "#FFFF30", // S  yellow
         17 => "#1FF01F", // Cl green
-        9  => "#90E050", // F  light-green
+        9 => "#90E050",  // F  light-green
         35 => "#A62929", // Br dark-red/brown
         53 => "#940094", // I  purple
         15 => "#FF8000", // P  orange
-        _  => "#000000", // default black
+        _ => "#000000",  // default black
     }
 }
 
@@ -600,15 +660,15 @@ pub fn atom_color(atomic_number: u8) -> &'static str {
 /// framework (e.g. `egui::Color32::from_rgb(r, g, b)`).
 pub fn atom_color_rgb(atomic_number: u8) -> [u8; 3] {
     match atomic_number {
-        7  => [0x30, 0x50, 0xF8], // N  blue
-        8  => [0xFF, 0x0D, 0x0D], // O  red
+        7 => [0x30, 0x50, 0xF8],  // N  blue
+        8 => [0xFF, 0x0D, 0x0D],  // O  red
         16 => [0xFF, 0xFF, 0x30], // S  yellow
         17 => [0x1F, 0xF0, 0x1F], // Cl green
-        9  => [0x90, 0xE0, 0x50], // F  light-green
+        9 => [0x90, 0xE0, 0x50],  // F  light-green
         35 => [0xA6, 0x29, 0x29], // Br brown
         53 => [0x94, 0x00, 0x94], // I  purple
         15 => [0xFF, 0x80, 0x00], // P  orange
-        _  => [0x00, 0x00, 0x00], // default black
+        _ => [0x00, 0x00, 0x00],  // default black
     }
 }
 
@@ -620,11 +680,11 @@ pub fn atom_color_rgb(atomic_number: u8) -> [u8; 3] {
 /// Centralised here so the character used for minus is consistent everywhere (B5, R3).
 fn format_charge(c: i8) -> String {
     match c {
-        0        => String::new(),
-        1        => "+".to_string(),
-        -1       => "-".to_string(),
+        0 => String::new(),
+        1 => "+".to_string(),
+        -1 => "-".to_string(),
         c if c > 1 => format!("{c}+"),
-        c        => format!("{}-", -c), // e.g. "2-", "3-"
+        c => format!("{}-", -c), // e.g. "2-", "3-"
     }
 }
 
@@ -870,7 +930,11 @@ mod tests {
         let m = mol("O");
         let layout = crate::layout::compute_layout(&m);
         let svg = render_svg(&m, &layout);
-        assert!(svg.contains("H2O"), "water 'O' should show H2O label, got: {}", svg);
+        assert!(
+            svg.contains("H2O"),
+            "water 'O' should show H2O label, got: {}",
+            svg
+        );
     }
 
     #[test]
@@ -878,7 +942,11 @@ mod tests {
         let m = mol("C");
         let layout = crate::layout::compute_layout(&m);
         let svg = render_svg(&m, &layout);
-        assert!(svg.contains("CH4"), "methane 'C' should show CH4 label, got: {}", svg);
+        assert!(
+            svg.contains("CH4"),
+            "methane 'C' should show CH4 label, got: {}",
+            svg
+        );
         assert!(svg.contains("<text"), "single C must have a text label now");
     }
 
@@ -902,18 +970,28 @@ mod tests {
     fn render_opts_transparent_no_bg_rect() {
         let m = mol("c1ccccc1");
         let layout = crate::layout::compute_layout(&m);
-        let opts = RenderOptions { background: "transparent".into(), ..Default::default() };
+        let opts = RenderOptions {
+            background: "transparent".into(),
+            ..Default::default()
+        };
         let svg = render_svg_opts(&m, &layout, &opts);
         assert!(svg.contains("<svg"), "must be valid SVG");
         // No background rect when transparent.
-        assert!(!svg.contains("fill=\"transparent\""), "no bg rect fill for transparent");
+        assert!(
+            !svg.contains("fill=\"transparent\""),
+            "no bg rect fill for transparent"
+        );
     }
 
     #[test]
     fn render_opts_custom_size() {
         let m = mol("CCO");
         let layout = crate::layout::compute_layout(&m);
-        let opts = RenderOptions { width: Some(300), height: Some(200), ..Default::default() };
+        let opts = RenderOptions {
+            width: Some(300),
+            height: Some(200),
+            ..Default::default()
+        };
         let svg = render_svg_opts(&m, &layout, &opts);
         assert!(svg.contains("width=\"300\""), "SVG width should be 300");
         assert!(svg.contains("height=\"200\""), "SVG height should be 200");
@@ -923,22 +1001,33 @@ mod tests {
     fn render_opts_dark_theme_white_bonds() {
         let m = mol("CC");
         let layout = crate::layout::compute_layout(&m);
-        let opts = RenderOptions { dark: true, background: "#0f172a".into(), ..Default::default() };
+        let opts = RenderOptions {
+            dark: true,
+            background: "#0f172a".into(),
+            ..Default::default()
+        };
         let svg = render_svg_opts(&m, &layout, &opts);
-        assert!(svg.contains("stroke=\"white\""), "dark theme bonds should be white");
+        assert!(
+            svg.contains("stroke=\"white\""),
+            "dark theme bonds should be white"
+        );
     }
 
     #[test]
     fn render_opts_highlight_atoms() {
         let m = mol("c1ccncc1");
         let layout = crate::layout::compute_layout(&m);
-        let n_idx = m.atoms()
+        let n_idx = m
+            .atoms()
             .find(|(_, a)| a.element.atomic_number() == 7)
             .map(|(idx, _)| idx)
             .expect("pyridine has N");
         let mut hl = std::collections::HashSet::new();
         hl.insert(n_idx);
-        let opts = RenderOptions { highlight_atoms: hl, ..Default::default() };
+        let opts = RenderOptions {
+            highlight_atoms: hl,
+            ..Default::default()
+        };
         let svg = render_svg_opts(&m, &layout, &opts);
         assert!(svg.contains("<circle"), "highlight must produce a circle");
     }
@@ -952,7 +1041,11 @@ mod tests {
             let r = u8::from_str_radix(&hex[1..3], 16).unwrap();
             let g = u8::from_str_radix(&hex[3..5], 16).unwrap();
             let b = u8::from_str_radix(&hex[5..7], 16).unwrap();
-            assert_eq!(rgb, [r, g, b], "mismatch for atomic_number {atomic_number}: hex={hex}");
+            assert_eq!(
+                rgb,
+                [r, g, b],
+                "mismatch for atomic_number {atomic_number}: hex={hex}"
+            );
         }
     }
 

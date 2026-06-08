@@ -11,9 +11,15 @@ pub mod svg;
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule};
 
 pub use grid::{depict_svg_grid, depict_svg_grid_with_opts};
-pub use layout::{BOND_LEN, Layout, Point, compute_layout, suggest_bond_direction, detect_crossings};
+pub use layout::{
+    BOND_LEN, Layout, Point, compute_layout, detect_crossings, suggest_bond_direction,
+};
 pub use reaction_svg::{depict_reaction_svg, depict_reaction_svg_opts};
-pub use svg::{atom_color, atom_color_rgb, atom_display_label, atom_label_with_h, AtomLabel, HPosition, render_svg, render_svg_highlighted, render_svg_opts, render_svg_with_metadata, RenderOptions};
+pub use svg::{
+    AtomLabel, HPosition, RenderOptions, atom_color, atom_color_rgb, atom_display_label,
+    atom_label_with_h, render_svg, render_svg_highlighted, render_svg_opts,
+    render_svg_with_metadata,
+};
 
 pub mod reaction_svg;
 
@@ -88,39 +94,57 @@ pub fn depict_data_with_coords(mol: &Molecule, coords: &[(f64, f64)]) -> DepictD
 
 /// Internal helper: build `DepictData` from a pre-computed `Layout`.
 fn depict_data_from_layout(mol: &Molecule, layout: &Layout) -> DepictData {
-    let atoms: Vec<DepictAtom> = mol.atoms().map(|(idx, atom)| {
-        let pos = layout.get(idx);
-        let color = atom_color(atom.element.atomic_number()).to_string();
-        let label = if atom.element.atomic_number() == 6
-            && atom.charge == 0
-            && atom.isotope.is_none()
-            && mol.degree(idx) > 0
-        {
-            None
-        } else {
-            Some(atom.element.symbol().to_string())
-        };
-        DepictAtom { idx, element: atom.element, pos, charge: atom.charge, label, color }
-    }).collect();
+    let atoms: Vec<DepictAtom> = mol
+        .atoms()
+        .map(|(idx, atom)| {
+            let pos = layout.get(idx);
+            let color = atom_color(atom.element.atomic_number()).to_string();
+            let label = if atom.element.atomic_number() == 6
+                && atom.charge == 0
+                && atom.isotope.is_none()
+                && mol.degree(idx) > 0
+            {
+                None
+            } else {
+                Some(atom.element.symbol().to_string())
+            };
+            DepictAtom {
+                idx,
+                element: atom.element,
+                pos,
+                charge: atom.charge,
+                label,
+                color,
+            }
+        })
+        .collect();
 
-    let bonds: Vec<DepictBond> = mol.bonds().map(|(bidx, bond)| {
-        let kind = match bond.order {
-            BondOrder::Single    => DepictBondKind::Single,
-            BondOrder::Double    => DepictBondKind::Double,
-            BondOrder::Triple    => DepictBondKind::Triple,
-            BondOrder::Aromatic  => DepictBondKind::Aromatic,
-            BondOrder::Up        => DepictBondKind::Up,
-            BondOrder::Down      => DepictBondKind::Down,
-            BondOrder::Quadruple => DepictBondKind::Triple,
-            BondOrder::Zero
-            | BondOrder::Dative
-            | BondOrder::QueryAny
-            | BondOrder::QuerySingleOrDouble
-            | BondOrder::QuerySingleOrAromatic
-            | BondOrder::QueryDoubleOrAromatic => DepictBondKind::Single,
-        };
-        DepictBond { idx: bidx, atom1: bond.atom1, atom2: bond.atom2, kind }
-    }).collect();
+    let bonds: Vec<DepictBond> = mol
+        .bonds()
+        .map(|(bidx, bond)| {
+            let kind = match bond.order {
+                BondOrder::Single => DepictBondKind::Single,
+                BondOrder::Double => DepictBondKind::Double,
+                BondOrder::Triple => DepictBondKind::Triple,
+                BondOrder::Aromatic => DepictBondKind::Aromatic,
+                BondOrder::Up => DepictBondKind::Up,
+                BondOrder::Down => DepictBondKind::Down,
+                BondOrder::Quadruple => DepictBondKind::Triple,
+                BondOrder::Zero
+                | BondOrder::Dative
+                | BondOrder::QueryAny
+                | BondOrder::QuerySingleOrDouble
+                | BondOrder::QuerySingleOrAromatic
+                | BondOrder::QueryDoubleOrAromatic => DepictBondKind::Single,
+            };
+            DepictBond {
+                idx: bidx,
+                atom1: bond.atom1,
+                atom2: bond.atom2,
+                kind,
+            }
+        })
+        .collect();
 
     DepictData { atoms, bonds }
 }
@@ -201,7 +225,11 @@ mod tests {
         assert_eq!(layout.coords.len(), 1);
         // Single atom should be placed at (0, 0).
         let p = layout.coords[0];
-        assert!((p.x).abs() < 1.0 && (p.y).abs() < 1.0, "Single atom not near origin: {:?}", p);
+        assert!(
+            (p.x).abs() < 1.0 && (p.y).abs() < 1.0,
+            "Single atom not near origin: {:?}",
+            p
+        );
     }
 
     // -------------------------------------------------------------------
@@ -290,7 +318,10 @@ mod tests {
         let svg = render_svg(&m, &layout);
         assert!(svg.contains("<svg"), "SVG must start with <svg");
         assert!(svg.contains("<line"), "SVG must have bond lines");
-        assert!(!svg.contains("<text"), "Benzene SVG must have no atom text labels");
+        assert!(
+            !svg.contains("<text"),
+            "Benzene SVG must have no atom text labels"
+        );
     }
 
     // -------------------------------------------------------------------
@@ -304,7 +335,10 @@ mod tests {
         assert!(svg.contains("<text"), "Pyridine SVG must have a text label");
         assert!(svg.contains('N'), "Pyridine SVG must contain 'N' label");
         // N should be colored blue (#3050F8).
-        assert!(svg.contains("#3050F8"), "Pyridine N label should be blue (#3050F8)");
+        assert!(
+            svg.contains("#3050F8"),
+            "Pyridine N label should be blue (#3050F8)"
+        );
     }
 
     // -------------------------------------------------------------------
@@ -316,7 +350,10 @@ mod tests {
         let layout = compute_layout(&m);
         let svg = render_svg(&m, &layout);
         assert!(!svg.is_empty(), "Aspirin SVG must be non-empty");
-        assert!(svg.contains("<line"), "Aspirin SVG must contain line elements");
+        assert!(
+            svg.contains("<line"),
+            "Aspirin SVG must contain line elements"
+        );
     }
 
     // -------------------------------------------------------------------
@@ -328,7 +365,11 @@ mod tests {
         let layout = compute_layout(&m);
         let svg = render_svg(&m, &layout);
         let count = svg.matches("<line").count();
-        assert!(count >= 2, "C=C SVG should have >= 2 <line elements, got {}", count);
+        assert!(
+            count >= 2,
+            "C=C SVG should have >= 2 <line elements, got {}",
+            count
+        );
     }
 
     // -------------------------------------------------------------------
@@ -383,14 +424,18 @@ mod tests {
         use std::collections::HashSet;
         let m = mol("c1ccncc1");
         // Find the N atom index.
-        let n_idx = m.atoms()
+        let n_idx = m
+            .atoms()
             .find(|(_, a)| a.element.atomic_number() == 7)
             .map(|(idx, _)| idx)
             .expect("pyridine has no N");
         let mut hl_atoms = HashSet::new();
         hl_atoms.insert(n_idx);
         let svg = depict_svg_highlighted(&m, &hl_atoms, &HashSet::new());
-        assert!(svg.contains("circle"), "highlighted SVG must contain a circle");
+        assert!(
+            svg.contains("circle"),
+            "highlighted SVG must contain a circle"
+        );
         assert!(svg.contains("FFFF00"), "highlight circle should be yellow");
     }
 }
