@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 pub mod aromaticity;
+pub mod pharmacophore;
 pub mod ring_family;
 pub mod sssr;
 pub mod stereo_validation;
@@ -15,6 +16,7 @@ pub mod stereo2d;
 
 pub use aromaticity::{AromaticityModel, RingAromaticity, apply_aromaticity, assign_aromaticity};
 pub use chematic_core::{ValenceError, validate_valence};
+pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitvec};
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families};
 pub use sssr::{RingSet, find_sssr};
 pub use stereo_validation::{
