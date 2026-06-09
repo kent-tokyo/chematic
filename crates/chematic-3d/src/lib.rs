@@ -16,6 +16,7 @@ pub mod constraints;
 pub mod coords;
 pub mod dg;
 pub mod dg_fft;
+pub mod etkdg;
 pub mod md;
 pub mod minimize;
 pub mod mol_transforms;
@@ -32,6 +33,7 @@ pub use constraints::{
 };
 pub use coords::{Coords3D, Point3};
 pub use dg::generate_coords;
+pub use etkdg::generate_coords_etkdg;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
 pub use minimize::{
     MinimizeConfig, minimize, minimize_dreiding, minimize_dreiding_with_config, minimize_uff,

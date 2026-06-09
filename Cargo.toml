@@ -16,7 +16,7 @@ members = [
     "crates/chematic-wasm",
     "crates/chematic",
     "crates/chematic-iupac",
-    "tools/gen_sa_table",
+    "tools/gen_sa_table", "crates/chematic-mcp",
 ]
 resolver = "2"
 
