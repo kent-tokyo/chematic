@@ -5391,3 +5391,48 @@ M  END
         assert_eq!(count, 14, "PEOE_VSA should have 14 values");
     }
 }
+
+// ---------------------------------------------------------------------------
+// Ring Family Detection
+// ---------------------------------------------------------------------------
+
+/// Ring family classification and detection as JSON.
+/// Returns an array of ring families with their atoms, ring indices, and topology kind.
+#[wasm_bindgen]
+pub fn ring_families_json(mol: &MolHandle) -> Result<String, JsValue> {
+    use chematic_perception::{find_sssr, find_ring_families, RingSystemKind};
+
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "Molecule exceeds maximum atom count ({} > {})",
+            mol.inner.atom_count(),
+            WASM_MAX_ATOMS
+        )));
+    }
+
+    let sssr = find_sssr(&mol.inner);
+    let families = find_ring_families(&mol.inner, &sssr);
+
+    let json_families: Vec<serde_json::Value> = families
+        .iter()
+        .map(|fam| {
+            let kind_str = match fam.kind {
+                RingSystemKind::Simple => "Simple",
+                RingSystemKind::Fused => "Fused",
+                RingSystemKind::Spiro => "Spiro",
+                RingSystemKind::Bridged => "Bridged",
+            };
+
+            serde_json::json!({
+                "kind": kind_str,
+                "atoms": fam.atoms.iter().map(|a| a.0).collect::<Vec<_>>(),
+                "ringIndices": fam.ring_indices.clone(),
+                "atomCount": fam.atoms.len(),
+                "ringCount": fam.ring_indices.len(),
+            })
+        })
+        .collect();
+
+    serde_json::to_string(&json_families)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+}
