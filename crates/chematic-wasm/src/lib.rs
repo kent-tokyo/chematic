@@ -1109,6 +1109,33 @@ pub fn identify_functional_groups(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
+/// Detect pharmacophore features for virtual screening and lead optimization.
+/// Returns JSON array of features: [{type, atom_idx, neighbor_count}, ...]
+#[wasm_bindgen]
+pub fn pharmacophore_features_json(mol: &MolHandle) -> String {
+    let features = chematic_perception::detect_features(&mol.inner);
+    let parts: Vec<String> = features
+        .iter()
+        .map(|f| {
+            let ftype = match f.ftype {
+                chematic_perception::FeatureType::Donor => "Donor",
+                chematic_perception::FeatureType::Acceptor => "Acceptor",
+                chematic_perception::FeatureType::Aromatic => "Aromatic",
+                chematic_perception::FeatureType::Hydrophobic => "Hydrophobic",
+                chematic_perception::FeatureType::Positive => "Positive",
+                chematic_perception::FeatureType::Negative => "Negative",
+            };
+            format!(
+                "{{\"type\":\"{}\",\"atom\":{},\"neighbors\":{}}}",
+                ftype,
+                f.atom.0,
+                f.neighbors.len()
+            )
+        })
+        .collect();
+    format!("[{}]", parts.join(","))
+}
+
 /// Gasteiger-Marsili PEOE partial charges as a JSON array of f64.
 #[wasm_bindgen]
 pub fn gasteiger_charges_json(mol: &MolHandle) -> String {
