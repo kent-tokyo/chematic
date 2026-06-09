@@ -16,6 +16,7 @@ pub mod constraints;
 pub mod coords;
 pub mod dg;
 pub mod dg_fft;
+pub mod descriptors_3d;
 pub mod etkdg;
 pub mod md;
 pub mod minimize;
@@ -32,6 +33,7 @@ pub use constraints::{
     AngleConstraint, BondConstraint, ConstraintSet, build_constraints, satisfy_constraints,
 };
 pub use coords::{Coords3D, Point3};
+pub use descriptors_3d::{getaway_descriptors, whim_descriptors, whim_getaway_combined};
 pub use dg::generate_coords;
 pub use etkdg::generate_coords_etkdg;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};

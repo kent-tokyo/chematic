@@ -860,6 +860,40 @@ pub fn generate_3d_etkdg_minimized_pdb(mol: &MolHandle) -> String {
     chematic_3d::write_pdb(&mol.inner, &minimized)
 }
 
+/// Compute WHIM descriptors (Weighted Holistic Invariant Molecular) from 3D coordinates.
+/// Returns JSON array of 10 values: [L1, L2, L3, P1, P2, P3, ALPHA, BETA, GAMMA, DELTA]
+/// where L* = inertia tensor eigenvalues, P* = principal moments, ALPHA = sum of moments,
+/// BETA = average pairwise interaction, GAMMA = geometric mean, DELTA = anisotropy.
+#[wasm_bindgen]
+pub fn whim_descriptors_json(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords(&mol.inner);
+    let desc = chematic_3d::whim_descriptors(&mol.inner, &coords);
+    let parts: Vec<String> = desc.iter().map(|&v| v.to_string()).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Compute GETAWAY descriptors (GEometric, Topologic And wAveleT descriptors) from 3D coordinates.
+/// Returns JSON array of 9 values: [G1, G2, G3, D1, D2, D3, T, V, A]
+/// where G* = geometric autocorrelations (lag-1,2,3), D* = topologic distances,
+/// T = total pairwise distance, V = bounding-box volume, A = anisotropy ratio.
+#[wasm_bindgen]
+pub fn getaway_descriptors_json(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords(&mol.inner);
+    let desc = chematic_3d::getaway_descriptors(&mol.inner, &coords);
+    let parts: Vec<String> = desc.iter().map(|&v| v.to_string()).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Compute combined WHIM + GETAWAY descriptors (19 values total) as JSON array.
+/// Useful for ML pipelines requiring both shape and topologic features.
+#[wasm_bindgen]
+pub fn whim_getaway_combined_json(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords(&mol.inner);
+    let desc = chematic_3d::whim_getaway_combined(&mol.inner, &coords);
+    let parts: Vec<String> = desc.iter().map(|&v| v.to_string()).collect();
+    format!("[{}]", parts.join(","))
+}
+
 /// Compute the ECFP4 fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
 #[wasm_bindgen]
 pub fn ecfp4_bitvec(mol: &MolHandle) -> Vec<u8> {
