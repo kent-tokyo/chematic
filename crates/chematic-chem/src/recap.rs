@@ -67,7 +67,7 @@ pub fn recap_fragment(mol: &Molecule) -> Vec<Fragment> {
 
     // Simple approach: identify all breakable bonds
     let mut breakable_bonds = Vec::new();
-    for (bond_idx, bond) in mol.bonds() {
+    for (_, bond) in mol.bonds() {
         if is_breakable_recap(mol, bond.atom1, bond.atom2) {
             breakable_bonds.push((bond.atom1, bond.atom2));
         }
