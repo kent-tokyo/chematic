@@ -23,6 +23,7 @@ pub mod logd;
 pub mod mmp;
 pub mod named_groups;
 pub mod qed;
+pub mod recap;
 pub mod sa_score;
 pub mod scaffold;
 pub mod standardize;
@@ -60,6 +61,7 @@ pub use logd::{logd_profile, logd_simple};
 pub use mmp::{MmpPair, find_mmp};
 pub use named_groups::{NamedGroup, detect_named_functional_groups};
 pub use qed::qed;
+pub use recap::{recap_breakable_bond_count, recap_fragment};
 pub use sa_score::sa_score;
 pub use scaffold::{
     generic_murcko_scaffold, murcko_scaffold, scaffold_network, schuffenhauer_parents,
