@@ -843,6 +843,23 @@ pub fn generate_3d_minimized_pdb(mol: &MolHandle) -> String {
     chematic_3d::write_pdb(&mol.inner, &minimized)
 }
 
+/// Generate 3D coordinates using ETKDG (torsion angle preferences) and return PDB block.
+/// ETKDG produces higher-quality conformations than rule-based DG by applying
+/// experimental torsion angle preferences to common structural patterns.
+#[wasm_bindgen]
+pub fn generate_3d_etkdg_pdb(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords_etkdg(&mol.inner);
+    chematic_3d::write_pdb(&mol.inner, &coords)
+}
+
+/// Generate 3D coordinates using ETKDG and minimize with DREIDING force field.
+#[wasm_bindgen]
+pub fn generate_3d_etkdg_minimized_pdb(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords_etkdg(&mol.inner);
+    let minimized = chematic_3d::minimize(&mol.inner, coords);
+    chematic_3d::write_pdb(&mol.inner, &minimized)
+}
+
 /// Compute the ECFP4 fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
 #[wasm_bindgen]
 pub fn ecfp4_bitvec(mol: &MolHandle) -> Vec<u8> {
