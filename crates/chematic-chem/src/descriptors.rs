@@ -1922,6 +1922,72 @@ pub fn num_hydrogens(mol: &Molecule) -> usize {
 }
 
 // ---------------------------------------------------------------------------
+// Molecular Formula Generation
+// ---------------------------------------------------------------------------
+
+/// Generate molecular formula in Hill notation (C first, H second, then alphabetical).
+///
+/// Example: "C6H12O2" for acetic acid derivative, "H2O" for water (no carbon).
+/// Standard RDKit/chemical notation for composition display.
+pub fn calc_mol_formula(mol: &Molecule) -> String {
+    use std::collections::BTreeMap;
+
+    // Count atoms by element
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+
+    for (_, atom) in mol.atoms() {
+        let symbol = atom.element.symbol().to_string();
+        *counts.entry(symbol).or_insert(0) += 1;
+    }
+
+    // Count total implicit hydrogens
+    let total_h: usize = mol
+        .atoms()
+        .map(|(idx, _)| implicit_hcount(mol, idx) as usize)
+        .sum();
+
+    if total_h > 0 {
+        *counts.entry("H".to_string()).or_insert(0) += total_h;
+    }
+
+    // Build formula in Hill notation: C first, H second, rest alphabetical
+    let mut formula = String::new();
+
+    // Carbon
+    if let Some(&c_count) = counts.get("C") {
+        formula.push('C');
+        if c_count > 1 {
+            formula.push_str(&c_count.to_string());
+        }
+    }
+
+    // Hydrogen (always include if present)
+    if let Some(&h_count) = counts.get("H") {
+        formula.push('H');
+        if h_count > 1 {
+            formula.push_str(&h_count.to_string());
+        }
+    }
+
+    // Rest in alphabetical order (excluding C, H)
+    for (symbol, &count) in counts.iter() {
+        if symbol != "C" && symbol != "H" {
+            formula.push_str(symbol);
+            if count > 1 {
+                formula.push_str(&count.to_string());
+            }
+        }
+    }
+
+    // If no atoms at all, return empty
+    if formula.is_empty() {
+        formula.push_str("H0"); // or empty string, depending on convention
+    }
+
+    formula
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -2703,5 +2769,31 @@ mod tests {
         let m = mol("O");
         // Water: 2 implicit hydrogens on oxygen
         assert_eq!(num_hydrogens(&m), 2);
+    }
+
+    // -- Molecular formula tests -----------------------------------------------
+
+    #[test]
+    fn test_calc_mol_formula_ethane() {
+        let m = mol("CC");
+        assert_eq!(calc_mol_formula(&m), "C2H6");
+    }
+
+    #[test]
+    fn test_calc_mol_formula_water() {
+        let m = mol("O");
+        assert_eq!(calc_mol_formula(&m), "H2O");
+    }
+
+    #[test]
+    fn test_calc_mol_formula_benzene() {
+        let m = mol("c1ccccc1");
+        assert_eq!(calc_mol_formula(&m), "C6H6");
+    }
+
+    #[test]
+    fn test_calc_mol_formula_acetic_acid() {
+        let m = mol("CC(=O)O");
+        assert_eq!(calc_mol_formula(&m), "C2H4O2");
     }
 }
