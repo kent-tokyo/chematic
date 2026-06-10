@@ -758,6 +758,48 @@ pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsV
     Ok(format!("[{}]", outer.join(", ")))
 }
 
+/// Enumerate a combinatorial library from a SMIRKS template and two fragment sets.
+///
+/// Generates all products by combining every scaffold with every building block.
+/// Input format: `scaffolds_smiles` and `building_blocks_smiles` are pipe-delimited
+/// SMILES strings (e.g., `"c1ccccc1|Cc1ccccc1"`).
+///
+/// Returns JSON array of product SMILES strings.
+/// Example: `enumerate_library_2way("[C:1][Cl].[C:2][NH2]>>[C:1]N[C:2]", "c1ccccc1|Cc1ccccc1", "NCc1ccccc1|NCC")`
+#[wasm_bindgen]
+pub fn enumerate_library_2way(
+    template: &str,
+    scaffolds_smiles: &str,
+    building_blocks_smiles: &str,
+) -> Result<String, JsValue> {
+    let scaffolds: Result<Vec<chematic_core::Molecule>, _> = scaffolds_smiles
+        .split('|')
+        .map(|s| chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string())))
+        .collect();
+    let scaffolds = scaffolds?;
+
+    let building_blocks: Result<Vec<chematic_core::Molecule>, _> = building_blocks_smiles
+        .split('|')
+        .map(|s| chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string())))
+        .collect();
+    let building_blocks = building_blocks?;
+
+    let config = chematic_rxn::LibraryConfig {
+        skip_failures: true,
+        max_size: Some(WASM_MAX_BATCH_ITEMS), // Limit enumeration size
+    };
+
+    let products = chematic_rxn::enumerate_library_2way(template, scaffolds, building_blocks, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    let smiles_list: Vec<String> = products
+        .iter()
+        .map(|mol| format!("\"{}\"", chematic_smiles::canonical_smiles(mol)))
+        .collect();
+
+    Ok(format!("[{}]", smiles_list.join(", ")))
+}
+
 /// Find all substructure matches of a SMARTS pattern in `mol`.
 ///
 /// Returns JSON array of arrays of atom indices (sorted, 0-based).
