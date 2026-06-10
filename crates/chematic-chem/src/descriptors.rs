@@ -1923,8 +1923,8 @@ mod tests {
         let desc = mqn(&m);
         assert_eq!(desc.len(), 42);
         assert_eq!(desc[1], 0); // N count (should be 0)
-        assert!(desc[2] >= 4); // O count (should be 4)
-        assert!(desc[37] >= 13); // heavy atoms (should be ~13)
+        assert!(desc[2] > 3); // O count (should be 4)
+        assert!(desc[37] > 12); // heavy atoms (should be ~13)
     }
 
     // -- AutoCorr2D tests ---------------------------------------------------
