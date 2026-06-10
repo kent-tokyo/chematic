@@ -2698,6 +2698,45 @@ mod tests {
         assert_eq!(calc_mol_formula(&m), "C2H6");
     }
 
+    // -- Bridgehead and spiro atom tests -----------------------------------
+
+    #[test]
+    fn test_num_bridgehead_atoms_acyclic() {
+        // Acyclic molecule should return 0
+        let m = mol("CCC");
+        assert_eq!(num_bridgehead_atoms(&m), 0);
+    }
+
+    #[test]
+    fn test_num_bridgehead_atoms_single_ring() {
+        // Cyclohexane (single ring) should have 0 bridgeheads
+        let m = mol("C1CCCCC1");
+        assert_eq!(num_bridgehead_atoms(&m), 0);
+    }
+
+    #[test]
+    fn test_num_bridgehead_atoms_norbornane() {
+        // Norbornane (bicyclo[2.2.1]heptane): 2 bridgehead atoms
+        // Structure: two rings sharing 2 atoms at positions 1 and 2, with bridges
+        let m = mol("C1CC2CCC1C2");
+        assert_eq!(num_bridgehead_atoms(&m), 2);
+    }
+
+    #[test]
+    fn test_num_bridgehead_atoms_naphthalene_fused() {
+        // Naphthalene is fused ring system (not bridged)
+        // Bridgeheads = atoms in 2+ rings but only on shared edges (fused, no bridges)
+        let m = mol("c1ccc2ccccc2c1");
+        assert_eq!(num_bridgehead_atoms(&m), 0, "naphthalene is fused, not bridged");
+    }
+
+    #[test]
+    fn test_num_spiro_atoms_single_ring() {
+        // Cyclohexane has no spiro atoms
+        let m = mol("C1CCCCC1");
+        assert_eq!(num_spiro_atoms(&m), 0);
+    }
+
     #[test]
     fn test_calc_mol_formula_water() {
         let m = mol("O");
