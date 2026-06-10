@@ -55,25 +55,104 @@ fn copy_bonds(mol: &Molecule, builder: &mut MoleculeBuilder, remap: &HashMap<Ato
     }
 }
 
-/// Return a new `Molecule` containing only the largest connected fragment.
+/// Check if a fragment is a common inorganic salt or counterion.
 ///
-/// If the molecule is empty, an empty `Molecule` is returned.
-pub fn largest_fragment(mol: &Molecule) -> Molecule {
+/// Returns true if fragment matches patterns like: NaCl, KCl, Na+, K+, Cl-, Br-, I-, etc.
+fn is_salt_fragment(frag: &Molecule) -> bool {
+    let n = frag.atom_count();
+
+    // Single atom: check if it's a common counterion
+    if n == 1 {
+        let atom = frag.atom(AtomIdx(0));
+        return matches!(
+            atom.element.atomic_number(),
+            11 | 19 | 37 | 55 |  // Na, K, Rb, Cs (alkali metals)
+            17 | 35 | 53 |       // Cl, Br, I (halogens)
+            8                    // O (oxide)
+        );
+    }
+
+    // Two atoms: check for common binary salts (NaCl, KBr, etc.)
+    if n == 2 {
+        let a0 = frag.atom(AtomIdx(0)).element.atomic_number();
+        let a1 = frag.atom(AtomIdx(1)).element.atomic_number();
+        let bond_count = frag.bond_count();
+
+        // Ionic pair (no bond between them) — cation + anion
+        if bond_count == 0 {
+            let metals = [11, 19, 37, 55];     // Na, K, Rb, Cs
+            let nonmetals = [17, 35, 53, 8];   // Cl, Br, I, O
+            return (metals.contains(&a0) && nonmetals.contains(&a1))
+                || (metals.contains(&a1) && nonmetals.contains(&a0));
+        }
+    }
+
+    // Small molecules with only metal/nonmetal atoms (common solvate salts)
+    if n <= 4 {
+        let has_organic = frag.atoms().any(|(_, a)| a.element.atomic_number() == 6);
+        if !has_organic {
+            // Pure inorganic salt (no carbons)
+            return true;
+        }
+    }
+
+    false
+}
+
+/// Return a new `Molecule` with inorganic salts removed, keeping largest organic fragment.
+///
+/// Attempts to identify and exclude common counterions (Na+, K+, Cl-, etc.) and
+/// inorganic salt fragments, returning the largest non-salt fragment instead.
+///
+/// If no non-salt fragment exists or molecule is empty, returns the original largest fragment.
+pub fn remove_salts(mol: &Molecule) -> Molecule {
     if mol.atom_count() == 0 {
         return MoleculeBuilder::new().build();
     }
 
     let components = connected_components(mol);
-    let largest = &components[0];
+
+    // Find largest non-salt fragment
+    let mut largest_non_salt: Option<&Vec<AtomIdx>> = None;
+    let mut largest_non_salt_size = 0;
+
+    for component in &components {
+        // Extract fragment molecule temporarily to check if it's a salt
+        let mut builder = MoleculeBuilder::new();
+        let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+        for &old_idx in component {
+            let new_idx = builder.add_atom(mol.atom(old_idx).clone());
+            remap.insert(old_idx, new_idx);
+        }
+        copy_bonds(mol, &mut builder, &remap);
+        let frag = builder.build();
+
+        // If not a salt and larger than current best, use it
+        if !is_salt_fragment(&frag) && component.len() > largest_non_salt_size {
+            largest_non_salt = Some(component);
+            largest_non_salt_size = component.len();
+        }
+    }
+
+    // Fall back to largest fragment if no non-salt found
+    let component = largest_non_salt.unwrap_or(&components[0]);
 
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
     let mut builder = MoleculeBuilder::new();
-    for &old_idx in largest {
+    for &old_idx in component {
         let new_idx = builder.add_atom(mol.atom(old_idx).clone());
         remap.insert(old_idx, new_idx);
     }
     copy_bonds(mol, &mut builder, &remap);
     builder.build()
+}
+
+/// Return a new `Molecule` containing only the largest connected fragment.
+///
+/// If the molecule is empty, an empty `Molecule` is returned.
+/// This is an alias for `remove_salts()` for backward compatibility.
+pub fn largest_fragment(mol: &Molecule) -> Molecule {
+    remove_salts(mol)
 }
 
 /// Neutralize simple formal charges in a molecule.

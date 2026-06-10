@@ -7,6 +7,7 @@
 
 pub mod abbreviations;
 pub mod alerts;
+pub mod atropisomer;
 pub mod brics;
 pub mod cip;
 pub mod condensed;
@@ -47,6 +48,9 @@ pub use descriptors::{
 
 pub use abbreviations::{abbreviations, expand_abbreviation};
 pub use alerts::{pains_matches, pains_passes};
+pub use atropisomer::{
+    AtropisomerType, assign_atropisomer_chirality, detect_atropisomers,
+};
 pub use brics::{BricsConfig, brics_bonds, brics_fragments, brics_fragments_with_config};
 pub use condensed::{CondensedError, parse_condensed};
 pub use diversity::{butina_cluster, maxmin_picks};
