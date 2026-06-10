@@ -1507,35 +1507,6 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
 // ---------------------------------------------------------------------------
 
 /// Compute topological distance matrix using BFS.
-fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<usize>> {
-    use std::collections::VecDeque;
-
-    let n = mol.atom_count();
-    let mut dist = vec![vec![usize::MAX; n]; n];
-
-    for start in 0..n {
-        let start_idx = AtomIdx(start as u32);
-        dist[start][start] = 0;
-
-        let mut queue = VecDeque::from([start_idx]);
-        let mut visited = vec![false; n];
-        visited[start] = true;
-
-        while let Some(curr_idx) = queue.pop_front() {
-            let curr = curr_idx.0 as usize;
-            for (nb_idx, _) in mol.neighbors(curr_idx) {
-                let nb = nb_idx.0 as usize;
-                if !visited[nb] {
-                    visited[nb] = true;
-                    dist[start][nb] = dist[start][curr] + 1;
-                    queue.push_back(nb_idx);
-                }
-            }
-        }
-    }
-    dist
-}
-
 /// Compute atomic valence for AutoCorr feature (number of bonds + implicit H).
 fn atomic_valence(mol: &Molecule, idx: AtomIdx) -> f64 {
     let degree = mol.neighbors(idx).count() as f64;
@@ -1555,7 +1526,7 @@ pub fn autocorr_2d(mol: &Molecule) -> Vec<f64> {
         return vec![0.0; 7];
     }
 
-    let dist = topological_distance_matrix(mol);
+    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol).iter().map(|row| row.iter().map(|&d| d as usize).collect()).collect();
     let n = mol.atom_count();
     let mut result = vec![0.0; 7];
 
@@ -1619,7 +1590,7 @@ pub fn ipc(mol: &Molecule) -> f64 {
         return 0.0;
     }
 
-    let dist = topological_distance_matrix(mol);
+    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol).iter().map(|row| row.iter().map(|&d| d as usize).collect()).collect();
     let mut result = 0.0;
 
     for i in 0..n {
@@ -1699,7 +1670,7 @@ pub fn usrcat(mol: &Molecule) -> [f64; 42] {
     }
 
     // Part 1: USR-like distance features (36 values)
-    let dist_matrix = topological_distance_matrix(mol);
+    let dist_matrix: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol).iter().map(|row| row.iter().map(|&d| d as usize).collect()).collect();
     let n = mol.atom_count();
 
     // Compute centroid (average atomic position in connectivity space)
@@ -1795,7 +1766,7 @@ pub fn mmff94_charges(mol: &Molecule) -> Vec<f64> {
     };
 
     // Distance matrix for topological distances
-    let dist = topological_distance_matrix(mol);
+    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol).iter().map(|row| row.iter().map(|&d| d as usize).collect()).collect();
 
     // Initialize with formal charges
     for i in 0..n {
