@@ -1220,6 +1220,14 @@ pub fn pharmacophore_fp_3d_summary(mol: &MolHandle) -> String {
     )
 }
 
+/// MQN descriptor (42 integer values: Molecular Quantum Numbers).
+#[wasm_bindgen]
+pub fn mqn_json(mol: &MolHandle) -> String {
+    let desc = chematic_chem::mqn(&mol.inner);
+    let values: Vec<String> = desc.iter().map(|&v| v.to_string()).collect();
+    format!("[{}]", values.join(","))
+}
+
 /// AutoCorr2D descriptor (7 values: topological distance lags 1-7).
 #[wasm_bindgen]
 pub fn autocorr_2d_json(mol: &MolHandle) -> String {
