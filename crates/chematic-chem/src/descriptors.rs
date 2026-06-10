@@ -303,129 +303,94 @@ fn is_amide_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
 /// Compute the topological polar surface area (Å²) using the Ertl (2000) table.
 ///
 /// Reference: P. Ertl, B. Rohde, P. Selzer, J. Med. Chem. 2000, 43, 3714-3717.
+fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i8) -> f64 {
+    if is_aromatic {
+        let degree = mol.neighbors(idx).count();
+        if h > 0 {
+            15.79
+        } else if degree >= 3 {
+            if charge > 0 { 3.88 } else { 4.93 }
+        } else {
+            12.89
+        }
+    } else {
+        if charge == 1 {
+            let (has_oxo, has_o_minus) = mol.neighbors(idx)
+                .fold((false, false), |(oxo, om), (nb, bidx)| {
+                    let nb_atom = mol.atom(nb);
+                    let is_o = nb_atom.element.atomic_number() == 8;
+                    (oxo || (is_o && mol.bond(bidx).order == BondOrder::Double),
+                     om || (is_o && nb_atom.charge == -1))
+                });
+            if has_oxo && has_o_minus { 41.44 } else { 3.24 }
+        } else if h >= 2 {
+            26.02
+        } else if h == 1 {
+            if has_double_bond_to(mol, idx, 6) { 23.79 } else { 12.03 }
+        } else {
+            if has_double_bond_to(mol, idx, 6) { 12.89 } else { 3.24 }
+        }
+    }
+}
+
+fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i8) -> f64 {
+    if is_aromatic {
+        13.14
+    } else if h > 0 {
+        20.23
+    } else {
+        let is_nitro_o_minus = charge == -1
+            && mol.neighbors(idx).any(|(nb, _)| {
+                mol.atom(nb).element.atomic_number() == 7 && mol.atom(nb).charge == 1
+            });
+        if is_nitro_o_minus {
+            0.0
+        } else {
+            let dbl_neighbor_an = mol.neighbors(idx)
+                .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
+                .map(|(nei, _)| mol.atom(nei).element.atomic_number());
+            match dbl_neighbor_an {
+                Some(6) => 17.07,
+                Some(_) => 0.0,
+                None => 9.23,
+            }
+        }
+    }
+}
+
+fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8) -> f64 {
+    if is_aromatic {
+        28.24
+    } else if h > 0 {
+        38.80
+    } else {
+        match count_double_bonds_to(mol, idx, 8) {
+            0 => 25.30,
+            1 => 36.28,
+            _ => 42.52,
+        }
+    }
+}
+
+fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx) -> f64 {
+    if has_double_bond_to(mol, idx, 8) { 26.88 } else { 34.14 }
+}
+
 pub fn tpsa(mol: &Molecule) -> f64 {
     let mut psa = 0.0f64;
-
     for (idx, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
         let is_aromatic = atom.aromatic;
         let h = implicit_hcount(mol, idx);
-
         let contribution = match an {
-            // Nitrogen
-            // Reference values verified against RDKit's _CalcTPSAContribs (2024.x):
-            //   [n;H0;X2] (pyridine-type, 2 bonds)           = 12.89 Å²
-            //   [n;H1;X2] (pyrrole-type NH, 2 bonds)         = 15.79 Å²  ← RDKit updated value
-            //   [n;H0;X≥3] (N-substituted aromatic N, 3+ bonds) = 4.93 Å²
-            //   aliphatic NH2                                 = 26.02 Å²
-            //   aliphatic NH (secondary)                      = 12.03 Å²
-            //   aliphatic N (tertiary, no H)                  =  3.24 Å²
-            7 => {
-                if is_aromatic {
-                    // Count the number of heavy-atom bonds on this aromatic N.
-                    let degree = mol.neighbors(idx).count();
-                    if h > 0 {
-                        15.79 // [nH] pyrrole-type (RDKit uses 15.79, not Ertl 2000's 13.97)
-                    } else if degree >= 3 {
-                        // N-substituted aromatic N (3+ bonds): neutral → 4.93 Å²
-                        // Quaternary aromatic N+ (thiazolium [n+], charge=1) → 3.88 Å²
-                        // Confirmed: thiamine [n+]2csc(CCO)c2C, RDKit 3.88 Å²
-                        if atom.charge > 0 { 3.88 } else { 4.93 }
-                    } else {
-                        12.89 // [n;X2]: pyridine-type aromatic N
-                    }
-                } else {
-                    // aliphatic N
-                    if atom.charge == 1 {
-                        // Nitro group [N+](=O)[O-]: Ertl 2000 value = 41.44 Å²
-                        // (the =O and O- oxygens contribute 0 for this group)
-                        let (has_oxo, has_o_minus) =
-                            mol.neighbors(idx)
-                                .fold((false, false), |(oxo, om), (nb, bidx)| {
-                                    let nb_atom = mol.atom(nb);
-                                    let is_o = nb_atom.element.atomic_number() == 8;
-                                    (
-                                        oxo || (is_o && mol.bond(bidx).order == BondOrder::Double),
-                                        om || (is_o && nb_atom.charge == -1),
-                                    )
-                                });
-                        if has_oxo && has_o_minus { 41.44 } else { 3.24 }
-                    } else if h >= 2 {
-                        26.02 // NH2
-                    } else if h == 1 {
-                        // Ertl 2000: sp2 imine N-H (C=N-H in amidine/guanidinium) has
-                        // the same TPSA as terminal =NH without H: 23.79 Å².
-                        // Regular secondary amine N-H (sp3, no double bond from N): 12.03 Å².
-                        if has_double_bond_to(mol, idx, 6) { 23.79 } else { 12.03 }
-                    } else {
-                        // h=0: tertiary N or bridged/ring imine
-                        // Ertl 2000 distinguishes:
-                        //   ring/bridged C=N-C (degree≥2, diazepam ring, imidazoline): 12.89 Å²
-                        //   tertiary amine (no double bond): 3.24 Å²
-                        if has_double_bond_to(mol, idx, 6) { 12.89 } else { 3.24 }
-                    }
-                }
-            }
-            // Oxygen
-            8 => {
-                if is_aromatic {
-                    13.14
-                } else if h > 0 {
-                    20.23 // OH
-                } else {
-                    // [O-] in nitro group ([N+](=O)[O-]): contribution absorbed into N+.
-                    let is_nitro_o_minus = atom.charge == -1
-                        && mol.neighbors(idx).any(|(nb, _)| {
-                            mol.atom(nb).element.atomic_number() == 7 && mol.atom(nb).charge == 1
-                        });
-                    if is_nitro_o_minus {
-                        0.0
-                    } else {
-                        // S=O / P=O / N=O contributions are assigned to the heteroatom in
-                        // Ertl 2000, so the doubly-bonded O is 0 for those.
-                        let dbl_neighbor_an = mol
-                            .neighbors(idx)
-                            .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
-                            .map(|(nei, _)| mol.atom(nei).element.atomic_number());
-                        match dbl_neighbor_an {
-                            Some(6) => 17.07, // carbonyl C=O
-                            Some(_) => 0.0,   // S=O, P=O, N=O — handled by the other atom
-                            None => 9.23,     // ether O
-                        }
-                    }
-                }
-            }
-            // Sulfur — Ertl 2000 atom-type contributions:
-            //   aromatic S (thiophene)   = 28.24 Å²
-            //   SH (thiol)               = 38.80 Å²
-            //   thioether (S, 0 oxo)     = 25.30 Å²
-            //   sulfoxide  (S, 1 oxo)    = 36.28 Å²  (S=O O counted as 0)
-            //   sulfone/sulfonyl (2+ oxo)= 42.52 Å²  (each S=O O counted as 0)
-            16 => {
-                if is_aromatic {
-                    28.24
-                } else if h > 0 {
-                    38.80 // S-H (thiol)
-                } else {
-                    match count_double_bonds_to(mol, idx, 8) {
-                        0 => 25.30, // thioether / ring S
-                        1 => 36.28, // sulfoxide
-                        _ => 42.52, // sulfone, sulfonyl
-                    }
-                }
-            }
-            // Phosphorus — Ertl 2000:
-            //   P=O present (phosphate, phosphonate): 26.88 Å²
-            //   P=O absent (phosphine, phosphite):    34.14 Å²
-            15 if !is_aromatic => {
-                if has_double_bond_to(mol, idx, 8) { 26.88 } else { 34.14 }
-            }
+            7 => tpsa_nitrogen(mol, idx, is_aromatic, h, atom.charge),
+            8 => tpsa_oxygen(mol, idx, is_aromatic, h, atom.charge),
+            16 => tpsa_sulfur(mol, idx, is_aromatic, h),
+            15 if !is_aromatic => tpsa_phosphorus(mol, idx),
             _ => 0.0,
         };
-
         psa += contribution;
     }
-
     psa
 }
 
@@ -478,6 +443,9 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
         .collect()
 }
 
+/// Compute the Crippen log P (octanol/water partition coefficient) of `mol`.
+///
+/// Sums per-atom contributions from [`logp_crippen_per_atom`].
 pub fn logp_crippen(mol: &Molecule) -> f64 {
     logp_crippen_per_atom(mol).iter().sum()
 }
@@ -1279,22 +1247,32 @@ pub fn ghose_passes(mol: &Molecule) -> bool {
 /// 35-36: Saturated/aromatic ring heteroatom count
 /// 37-40: Heavy atom count, sp3 carbon count, fused ring count, bridgehead count
 /// 41: Spiro atom count
+fn fill_mqn_stats(mqn: &mut Vec<u8>, vals: &mut Vec<u8>, base: usize) {
+    if !vals.is_empty() {
+        vals.sort();
+        mqn[base] = vals[0];
+        mqn[base + 1] = vals[vals.len() - 1];
+        let avg = vals.iter().map(|&v| v as usize).sum::<usize>() / vals.len();
+        mqn[base + 2] = avg.min(255) as u8;
+    }
+}
+
 pub fn mqn(mol: &Molecule) -> Vec<u8> {
     let mut mqn = vec![0u8; 42];
 
     // 0-9: Atom counts
     for (_, atom) in mol.atoms() {
         match atom.element.atomic_number() {
-            6 => mqn[0] = (mqn[0] as usize + 1).min(255) as u8,   // C
-            7 => mqn[1] = (mqn[1] as usize + 1).min(255) as u8,   // N
-            8 => mqn[2] = (mqn[2] as usize + 1).min(255) as u8,   // O
-            9 => mqn[3] = (mqn[3] as usize + 1).min(255) as u8,   // F
-            14 => mqn[4] = (mqn[4] as usize + 1).min(255) as u8,  // Si
-            15 => mqn[5] = (mqn[5] as usize + 1).min(255) as u8,  // P
-            16 => mqn[6] = (mqn[6] as usize + 1).min(255) as u8,  // S
-            17 => mqn[7] = (mqn[7] as usize + 1).min(255) as u8,  // Cl
-            35 => mqn[8] = (mqn[8] as usize + 1).min(255) as u8,  // Br
-            53 => mqn[9] = (mqn[9] as usize + 1).min(255) as u8,  // I
+            6 => mqn[0] = mqn[0].saturating_add(1),   // C
+            7 => mqn[1] = mqn[1].saturating_add(1),   // N
+            8 => mqn[2] = mqn[2].saturating_add(1),   // O
+            9 => mqn[3] = mqn[3].saturating_add(1),   // F
+            14 => mqn[4] = mqn[4].saturating_add(1),  // Si
+            15 => mqn[5] = mqn[5].saturating_add(1),  // P
+            16 => mqn[6] = mqn[6].saturating_add(1),  // S
+            17 => mqn[7] = mqn[7].saturating_add(1),  // Cl
+            35 => mqn[8] = mqn[8].saturating_add(1),  // Br
+            53 => mqn[9] = mqn[9].saturating_add(1),  // I
             _ => {}
         }
     }
@@ -1306,14 +1284,14 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     let mut aromatic = 0u8;
     for (_, bond) in mol.bonds() {
         match bond.order {
-            BondOrder::Single => single = (single as usize + 1).min(255) as u8,
-            BondOrder::Double => double = (double as usize + 1).min(255) as u8,
-            BondOrder::Triple => triple = (triple as usize + 1).min(255) as u8,
-            BondOrder::Aromatic => aromatic = (aromatic as usize + 1).min(255) as u8,
+            BondOrder::Single => single = single.saturating_add(1),
+            BondOrder::Double => double = double.saturating_add(1),
+            BondOrder::Triple => triple = triple.saturating_add(1),
+            BondOrder::Aromatic => aromatic = aromatic.saturating_add(1),
             _ => {
                 // All other bond types (Query*, Up, Down, Zero, Dative, Quadruple, etc.)
                 // Count as single for MQN purposes
-                single = (single as usize + 1).min(255) as u8;
+                single = single.saturating_add(1);
             }
         }
     }
@@ -1348,13 +1326,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
         let deg = mol.neighbors(idx).count() as u8;
         degrees.push(deg);
     }
-    if !degrees.is_empty() {
-        degrees.sort();
-        mqn[17] = degrees[0];
-        mqn[18] = degrees[degrees.len() - 1];
-        let avg = degrees.iter().map(|&d| d as usize).sum::<usize>() / degrees.len();
-        mqn[19] = avg.min(255) as u8;
-    }
+    fill_mqn_stats(&mut mqn, &mut degrees, 17);
 
     // 20-22: Valence stats
     let mut valences = vec![];
@@ -1362,22 +1334,20 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
         let valence = (mol.neighbors(idx).count() + implicit_hcount(mol, idx) as usize) as u8;
         valences.push(valence);
     }
-    if !valences.is_empty() {
-        valences.sort();
-        mqn[20] = valences[0];
-        mqn[21] = valences[valences.len() - 1];
-        let avg = valences.iter().map(|&v| v as usize).sum::<usize>() / valences.len();
-        mqn[22] = avg.min(255) as u8;
-    }
+    fill_mqn_stats(&mut mqn, &mut valences, 20);
 
     // 23-25: Hydrogen counts (on C, N, O)
     for (idx, atom) in mol.atoms() {
+        let h = implicit_hcount(mol, idx);
         if atom.element.atomic_number() == 6 {
-            mqn[23] = (mqn[23] as usize + implicit_hcount(mol, idx) as usize).min(255) as u8;
+            let val = (mqn[23] as usize + h as usize).min(255) as u8;
+            mqn[23] = val;
         } else if atom.element.atomic_number() == 7 {
-            mqn[24] = (mqn[24] as usize + implicit_hcount(mol, idx) as usize).min(255) as u8;
+            let val = (mqn[24] as usize + h as usize).min(255) as u8;
+            mqn[24] = val;
         } else if atom.element.atomic_number() == 8 {
-            mqn[25] = (mqn[25] as usize + implicit_hcount(mol, idx) as usize).min(255) as u8;
+            let val = (mqn[25] as usize + h as usize).min(255) as u8;
+            mqn[25] = val;
         }
     }
 
@@ -1396,13 +1366,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
             hetero_degrees.push(deg);
         }
     }
-    if !hetero_degrees.is_empty() {
-        hetero_degrees.sort();
-        mqn[28] = hetero_degrees[0];
-        mqn[29] = hetero_degrees[hetero_degrees.len() - 1];
-        let avg = hetero_degrees.iter().map(|&d| d as usize).sum::<usize>() / hetero_degrees.len();
-        mqn[30] = avg.min(255) as u8;
-    }
+    fill_mqn_stats(&mut mqn, &mut hetero_degrees, 28);
 
     // 31: Rotatable bonds
     mqn[31] = rotatable_bond_count(mol).min(255) as u8;
@@ -1426,9 +1390,9 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
         if has_hetero {
             let is_arom = ring.iter().all(|&idx| mol.atom(idx).aromatic);
             if is_arom {
-                mqn[35] = (mqn[35] as usize + 1).min(255) as u8;
+                mqn[35] = mqn[35].saturating_add(1);
             } else {
-                mqn[36] = (mqn[36] as usize + 1).min(255) as u8;
+                mqn[36] = mqn[36].saturating_add(1);
             }
         }
     }
@@ -1458,7 +1422,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
                 .filter(|idx| rings[j].contains(idx))
                 .count();
             if overlap > 1 {
-                fused_count = (fused_count as usize + 1).min(255) as u8;
+                fused_count = fused_count.saturating_add(1);
             }
         }
     }
@@ -1472,7 +1436,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
             .filter(|r| r.contains(&idx))
             .count();
         if in_rings >= 2 {
-            bridgehead = (bridgehead as usize + 1).min(255) as u8;
+            bridgehead = bridgehead.saturating_add(1);
         }
     }
     mqn[40] = bridgehead;
@@ -1493,7 +1457,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
                         .any(|ring| ring.contains(&nb))
                 });
             if all_neighbors_in_rings {
-                spiro = (spiro as usize + 1).min(255) as u8;
+                spiro = spiro.saturating_add(1);
             }
         }
     }
