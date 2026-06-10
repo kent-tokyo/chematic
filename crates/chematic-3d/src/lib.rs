@@ -119,7 +119,7 @@ mod tests {
     use chematic_smiles::parse;
 
     use crate::{
-        coords::Point3,
+        coords::{Coords3D, Point3},
         dg::generate_coords,
         pdb::{parse_pdb_atoms, pdb_to_molecule, write_pdb},
         xyz::{XyzError, parse_xyz, write_xyz},
@@ -368,5 +368,165 @@ mod tests {
         let (mol, _coords) = pdb_to_molecule(&atoms);
         assert_eq!(mol.atom_count(), 2);
         assert_eq!(mol.bond_count(), 1);
+    }
+
+    // =========================================================================
+    // Point3 additional tests
+    // =========================================================================
+
+    #[test]
+    fn test_point3_zero() {
+        let p = Point3::zero();
+        assert_eq!(p.x, 0.0);
+        assert_eq!(p.y, 0.0);
+        assert_eq!(p.z, 0.0);
+    }
+
+    #[test]
+    fn test_point3_add() {
+        let p1 = Point3::new(1.0, 2.0, 3.0);
+        let p2 = Point3::new(4.0, 5.0, 6.0);
+        let sum = p1.add(&p2);
+        assert_eq!(sum.x, 5.0);
+        assert_eq!(sum.y, 7.0);
+        assert_eq!(sum.z, 9.0);
+    }
+
+    #[test]
+    fn test_point3_sub() {
+        let p1 = Point3::new(5.0, 7.0, 9.0);
+        let p2 = Point3::new(1.0, 2.0, 3.0);
+        let diff = p1.sub(&p2);
+        assert_eq!(diff.x, 4.0);
+        assert_eq!(diff.y, 5.0);
+        assert_eq!(diff.z, 6.0);
+    }
+
+    #[test]
+    fn test_point3_scale() {
+        let p = Point3::new(1.0, 2.0, 3.0);
+        let scaled = p.scale(2.0);
+        assert_eq!(scaled.x, 2.0);
+        assert_eq!(scaled.y, 4.0);
+        assert_eq!(scaled.z, 6.0);
+    }
+
+    #[test]
+    fn test_point3_dot() {
+        let p1 = Point3::new(1.0, 0.0, 0.0);
+        let p2 = Point3::new(0.0, 1.0, 0.0);
+        assert_eq!(p1.dot(&p2), 0.0, "perpendicular vectors have zero dot product");
+
+        let p3 = Point3::new(1.0, 2.0, 3.0);
+        let p4 = Point3::new(1.0, 2.0, 3.0);
+        assert_eq!(p3.dot(&p4), 14.0); // 1 + 4 + 9
+    }
+
+    #[test]
+    fn test_point3_norm() {
+        let p = Point3::new(3.0, 4.0, 0.0);
+        assert_eq!(p.norm(), 5.0, "3-4-5 triangle");
+    }
+
+    #[test]
+    fn test_point3_normalize() {
+        let p = Point3::new(3.0, 4.0, 0.0);
+        let unit = p.normalize();
+        assert!((unit.x - 0.6).abs() < 1e-9);
+        assert!((unit.y - 0.8).abs() < 1e-9);
+        assert_eq!(unit.z, 0.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_point3_normalize_zero_panics() {
+        let p = Point3::zero();
+        let _ = p.normalize();
+    }
+
+    // =========================================================================
+    // Coords3D additional tests
+    // =========================================================================
+
+    #[test]
+    fn test_coords3d_new_zeroed() {
+        let coords = Coords3D::new_zeroed(5);
+        assert_eq!(coords.atom_count(), 5);
+        for i in 0..5 {
+            let p = coords.get(AtomIdx(i as u32));
+            assert_eq!(p.x, 0.0);
+            assert_eq!(p.y, 0.0);
+            assert_eq!(p.z, 0.0);
+        }
+    }
+
+    #[test]
+    fn test_coords3d_get_set_roundtrip() {
+        let mut coords = Coords3D::new_zeroed(3);
+        let p = Point3::new(1.5, 2.5, 3.5);
+        coords.set(AtomIdx(1), p);
+        let retrieved = coords.get(AtomIdx(1));
+        assert_eq!(retrieved.x, 1.5);
+        assert_eq!(retrieved.y, 2.5);
+        assert_eq!(retrieved.z, 3.5);
+    }
+
+    #[test]
+    fn test_coords3d_atom_count() {
+        let coords = Coords3D::new_zeroed(10);
+        assert_eq!(coords.atom_count(), 10);
+    }
+
+    // =========================================================================
+    // XYZ edge cases
+    // =========================================================================
+
+    #[test]
+    fn test_xyz_unknown_element() {
+        let xyz = "2\n\nXx   0.0 0.0 0.0\nC    1.0 1.0 1.0\n";
+        let result = parse_xyz(xyz);
+        match result {
+            Err(XyzError::UnknownElement(_)) => (),
+            _ => panic!("expected UnknownElement error"),
+        }
+    }
+
+    #[test]
+    fn test_xyz_invalid_line() {
+        let xyz = "2\n\nC 0.0 0.0\nC 1.0 1.0 1.0\n"; // first atom line too short
+        let result = parse_xyz(xyz);
+        assert!(matches!(result, Err(XyzError::InvalidLine(_))));
+    }
+
+    // =========================================================================
+    // PDB edge cases
+    // =========================================================================
+
+    #[test]
+    fn test_pdb_atom_record_parsed() {
+        // ATOM record (not only HETATM)
+        let pdb = "ATOM      1  C   ALA A   1       0.000   0.000   0.000  1.00  0.00           C\nEND\n";
+        let atoms = parse_pdb_atoms(pdb);
+        assert_eq!(atoms.len(), 1);
+        assert_eq!(atoms[0].element, "C");
+    }
+
+    #[test]
+    fn test_pdb_remark_skipped() {
+        let pdb = "REMARK This is a comment\nHETATM    1  C   LIG A   1       0.000   0.000   0.000  1.00  0.00           C\nEND\n";
+        let atoms = parse_pdb_atoms(pdb);
+        assert_eq!(atoms.len(), 1, "only HETATM/ATOM records should be parsed");
+    }
+
+    #[test]
+    fn test_pdb_write_ends_with_end() {
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+        let mut builder = MoleculeBuilder::new();
+        let c = Atom::new(Element::from_atomic_number(6).unwrap());
+        builder.add_atom(c);
+        let mol = builder.build();
+        let coords = Coords3D::new_zeroed(1);
+        let pdb = write_pdb(&mol, &coords);
+        assert!(pdb.ends_with("END\n"), "PDB should end with 'END\\n'");
     }
 }
