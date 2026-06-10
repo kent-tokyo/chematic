@@ -1171,4 +1171,38 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_minimize_mmff94_ethane() {
+        let mol = parse("CC").unwrap();
+        let c = generate_coords(&mol);
+        let result = minimize_mmff94(&mol, c);
+        assert_eq!(result.atom_count(), 2);
+        let d = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
+        assert!(d > 1.4 && d < 1.7, "C-C should be ~1.54 Å, got {:.3}", d);
+    }
+
+    #[test]
+    fn test_minimize_mmff94_benzene() {
+        let mol = parse("c1ccccc1").unwrap();
+        let c = generate_coords(&mol);
+        let result = minimize_mmff94(&mol, c);
+        assert_eq!(result.atom_count(), 6);
+        let min_d = all_pairs_min_dist(&result, 6);
+        assert!(min_d > 1.2, "benzene clash: {min_d:.3}");
+    }
+
+    #[test]
+    fn test_minimize_mmff94_aspirin() {
+        let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
+        let c = generate_coords(&mol);
+        let result = minimize_mmff94(&mol, c);
+        // Verify minimize_mmff94 completes without error and produces valid coordinates
+        assert_eq!(result.atom_count(), mol.atom_count());
+        for i in 0..mol.atom_count() {
+            let p = result.get(chematic_core::AtomIdx(i as u32));
+            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
+                   "aspirin atom {i} has invalid coords");
+        }
+    }
 }
