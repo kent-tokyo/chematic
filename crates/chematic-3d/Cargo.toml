@@ -20,6 +20,7 @@ chematic-core       = { path = "../chematic-core",       version = "0.1.33" }
 chematic-perception = { path = "../chematic-perception", version = "0.1.33" }
 chematic-ff         = { path = "../chematic-ff",         version = "0.1.33" }
 chematic-chem       = { path = "../chematic-chem",       version = "0.1.33" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.1.33" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.1.33" }
 fastrand            = "2.4"
 

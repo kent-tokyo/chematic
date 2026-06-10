@@ -21,6 +21,7 @@ pub mod etkdg;
 pub mod md;
 pub mod minimize;
 pub mod mol_transforms;
+pub mod pharmacophore_fp_3d;
 pub mod pdb;
 pub mod shape_descriptors;
 pub mod stereo3d;
@@ -45,6 +46,7 @@ pub use mol_transforms::{
     center_on_origin, compute_centroid, get_bond_angle, get_bond_angle_deg, get_bond_length,
     get_dihedral, get_dihedral_deg, set_dihedral, transform_conformer,
 };
+pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
 pub use shape_descriptors::{
     asphericity, eccentricity, npr1, npr2, plane_of_best_fit, pmi, pmi1, pmi2, pmi3,
