@@ -3,7 +3,7 @@
 //! Detects rotationally constrained bonds (biaryl, allene) and assigns
 //! M/P stereochemistry based on CIP rules adapted for axial centers.
 
-use chematic_core::{BondIdx, BondOrder, Chirality, Molecule};
+use chematic_core::{BondIdx, BondOrder, Molecule};
 
 /// Type of atropisomeric bond/center.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -141,13 +141,11 @@ mod tests {
 
     #[test]
     fn detect_atropisomers_biaryl() {
-        // Biaryl: two aromatic rings connected by C-C
+        // Biaryl: biphenyl has no ortho substituents, so no atropisomer detected
         let m = mol("c1ccccc1c2ccccc2");
         let atrops = detect_atropisomers(&m);
-        // Should detect biaryl bond (if ortho substituted)
-        // Biphenyl has no ortho substituents, so may not detect
-        // Use more constrained example instead
-        assert!(atrops.len() >= 0, "biaryl detection should not panic");
+        // Function should not panic and return results
+        assert!(atrops.is_empty(), "biphenyl without ortho subs should have no atropisomers");
     }
 
     #[test]
