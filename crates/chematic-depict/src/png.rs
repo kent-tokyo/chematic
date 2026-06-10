@@ -12,6 +12,23 @@ const PIXELS_PER_UNIT: f64 = 10.0;
 const BOND_WIDTH: f32 = 1.5;
 const ATOM_RADIUS: f32 = 3.0;
 
+/// CPK color table: atomic number → RGB tuple
+fn cpk_color(atomic_number: u8) -> (u8, u8, u8) {
+    match atomic_number {
+        1 => (255, 255, 255),   // H: white
+        6 => (80, 80, 80),       // C: dark grey
+        7 => (48, 80, 248),      // N: blue
+        8 => (255, 13, 13),      // O: red
+        9 => (144, 224, 80),     // F: green
+        15 => (255, 128, 0),     // P: orange
+        16 => (255, 200, 50),    // S: yellow
+        17 => (31, 240, 31),     // Cl: light green
+        35 => (166, 41, 41),     // Br: dark red
+        53 => (148, 0, 148),     // I: purple
+        _ => (255, 20, 147),     // Other: pink
+    }
+}
+
 /// Bitmap patterns for element labels (5×4 pixels each).
 fn get_char_bitmap(ch: char) -> Option<[u8; 5]> {
     match ch.to_ascii_uppercase() {
@@ -64,17 +81,19 @@ pub fn render_png_opts(
     let mut paint_bond = Paint::default();
     paint_bond.set_color(Color::BLACK);
 
-    // Draw atoms as markers with element labels
+    // Draw atoms as markers with CPK colors and element labels
     for (idx, _) in mol.atoms() {
         let p = layout.get(idx);
         let x = ((p.x + offset_x) * PIXELS_PER_UNIT) as f32;
         let y = ((p.y + offset_y) * PIXELS_PER_UNIT) as f32;
         let r = ATOM_RADIUS;
 
-        // Draw filled rectangle as atom marker
+        // Draw filled rectangle with CPK color
         if let Some(rect) = tiny_skia::Rect::from_xywh(x - r, y - r, 2.0 * r, 2.0 * r) {
+            let atom = mol.atom(idx);
+            let (r_val, g_val, b_val) = cpk_color(atom.element.atomic_number());
             let mut paint = Paint::default();
-            paint.set_color(Color::from_rgba8(150, 150, 150, 255));
+            paint.set_color(Color::from_rgba8(r_val, g_val, b_val, 255));
             pixmap.fill_rect(rect, &paint, tiny_skia::Transform::default(), None);
         }
 
@@ -105,11 +124,9 @@ pub fn render_png_opts(
         }
     }
 
-    // Draw bonds as lines between atoms
-    let stroke = Stroke {
-        width: BOND_WIDTH,
-        ..Default::default()
-    };
+    // Draw bonds as lines between atoms (with wedge/dash styling)
+    use chematic_core::BondOrder;
+
     for (_, bond) in mol.bonds() {
         let p1 = layout.get(bond.atom1);
         let p2 = layout.get(bond.atom2);
@@ -118,11 +135,56 @@ pub fn render_png_opts(
         let x2 = ((p2.x + offset_x) * PIXELS_PER_UNIT) as f32;
         let y2 = ((p2.y + offset_y) * PIXELS_PER_UNIT) as f32;
 
+        // Determine stroke width and style based on bond order
+        let stroke_width = match bond.order {
+            BondOrder::Up => BOND_WIDTH * 2.5,      // Wedge: thicker
+            BondOrder::Down => BOND_WIDTH * 0.8,    // Dash: thinner
+            _ => BOND_WIDTH,                          // Normal: regular
+        };
+
+        let stroke = Stroke {
+            width: stroke_width,
+            ..Default::default()
+        };
+
         let mut pb = tiny_skia::PathBuilder::new();
         pb.move_to(x1, y1);
         pb.line_to(x2, y2);
         if let Some(path) = pb.finish() {
             pixmap.stroke_path(&path, &paint_bond, &stroke, tiny_skia::Transform::default(), None);
+        }
+
+        // Draw dashed lines for down bonds (approximation)
+        if bond.order == BondOrder::Down {
+            let dx = x2 - x1;
+            let dy = y2 - y1;
+            let len = (dx * dx + dy * dy).sqrt();
+            if len > 0.0 {
+                let ux = dx / len;
+                let uy = dy / len;
+                let dash_len = 2.0;
+                let gap_len = 2.0;
+
+                let mut pos = 0.0;
+                while pos < len {
+                    let start_pos = (pos).min(len);
+                    let end_pos = (pos + dash_len).min(len);
+
+                    let sx = x1 + ux * start_pos;
+                    let sy = y1 + uy * start_pos;
+                    let ex = x1 + ux * end_pos;
+                    let ey = y1 + uy * end_pos;
+
+                    let mut pb = tiny_skia::PathBuilder::new();
+                    pb.move_to(sx, sy);
+                    pb.line_to(ex, ey);
+                    if let Some(path) = pb.finish() {
+                        pixmap.stroke_path(&path, &paint_bond, &stroke, tiny_skia::Transform::default(), None);
+                    }
+
+                    pos += dash_len + gap_len;
+                }
+            }
         }
     }
 
