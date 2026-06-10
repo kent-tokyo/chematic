@@ -6,6 +6,7 @@
 
 pub mod grid;
 pub mod layout;
+pub mod png;
 pub mod svg;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule};
@@ -14,6 +15,7 @@ pub use grid::{depict_svg_grid, depict_svg_grid_with_opts};
 pub use layout::{
     BOND_LEN, Layout, Point, compute_layout, detect_crossings, suggest_bond_direction,
 };
+pub use png::{render_png, render_png_opts};
 pub use reaction_svg::{depict_reaction_svg, depict_reaction_svg_opts};
 pub use svg::{
     AtomLabel, HPosition, RenderOptions, atom_color, atom_color_rgb, atom_display_label,

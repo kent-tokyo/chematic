@@ -205,6 +205,13 @@ impl MolHandle {
         chematic_depict::depict_svg_opts(&self.inner, &opts.to_render_options())
     }
 
+    /// 2D PNG depiction (rasterized from SVG).
+    /// Returns PNG data as base64-encoded string for embedding in HTML/JS.
+    pub fn depict_png(&self) -> Vec<u8> {
+        let layout = chematic_depict::compute_layout(&self.inner);
+        chematic_depict::render_png(&self.inner, &layout)
+    }
+
     // -----------------------------------------------------------------------
     // Topological descriptors (Sprint G)
     // -----------------------------------------------------------------------
