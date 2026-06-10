@@ -1397,9 +1397,11 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
         }
     }
 
-    // 26-27: Formal charge (sum, absolute sum)
+    // 26-27: Formal charge (signed sum, absolute sum)
     let charge_sum = formal_charge_sum(mol);
-    mqn[26] = (charge_sum as i32).abs().min(255) as u8;
+    // mqn[26]: signed charge mapped to u8 (127 = 0, 126 = -1, 128 = +1)
+    mqn[26] = (charge_sum.clamp(-127, 127) + 127) as u8;
+    // mqn[27]: absolute charge
     mqn[27] = charge_sum.abs().min(255) as u8;
 
     // 28-30: Heteroatom degree (N, O, F neighbors)
@@ -1450,13 +1452,14 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     // 37: Heavy atom count
     mqn[37] = heavy_atom_count(mol).min(255) as u8;
 
-    // 38: sp3 carbon count
+    // 38: sp3 carbon count (all C with valence 4, including CH3/CH2/CH)
     let sp3_count = mol
         .atoms()
         .filter(|(idx, atom)| {
             atom.element.atomic_number() == 6 && {
                 let degree = mol.neighbors(*idx).count();
-                degree == 4 || (degree == 3 && implicit_hcount(mol, *idx) == 1)
+                let h_count = implicit_hcount(mol, *idx) as usize;
+                degree + h_count == 4  // includes degree=4, 3+H1, 2+H2, 1+H3, 0+H4
             }
         })
         .count() as u8;
@@ -1477,17 +1480,15 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     }
     mqn[39] = fused_count;
 
-    // 40: Bridgehead atom count
+    // 40: Bridgehead atom count (iterate atoms once, not rings)
     let mut bridgehead = 0u8;
-    for ring in rings {
-        for idx in ring {
-            let in_rings = rings
-                .iter()
-                .filter(|r| r.contains(idx))
-                .count();
-            if in_rings >= 2 {
-                bridgehead = (bridgehead as usize + 1).min(255) as u8;
-            }
+    for (idx, _) in mol.atoms() {
+        let in_rings = rings
+            .iter()
+            .filter(|r| r.contains(&idx))
+            .count();
+        if in_rings >= 2 {
+            bridgehead = (bridgehead as usize + 1).min(255) as u8;
         }
     }
     mqn[40] = bridgehead;
@@ -1523,6 +1524,8 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
 
 /// Compute topological distance matrix using BFS.
 fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<usize>> {
+    use std::collections::VecDeque;
+
     let n = mol.atom_count();
     let mut dist = vec![vec![usize::MAX; n]; n];
 
@@ -1530,18 +1533,18 @@ fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<usize>> {
         let start_idx = AtomIdx(start as u32);
         dist[start][start] = 0;
 
-        let mut queue = vec![start_idx];
+        let mut queue = VecDeque::from([start_idx]);
         let mut visited = vec![false; n];
         visited[start] = true;
 
-        while let Some(curr_idx) = queue.pop() {
+        while let Some(curr_idx) = queue.pop_front() {
             let curr = curr_idx.0 as usize;
             for (nb_idx, _) in mol.neighbors(curr_idx) {
                 let nb = nb_idx.0 as usize;
                 if !visited[nb] {
                     visited[nb] = true;
                     dist[start][nb] = dist[start][curr] + 1;
-                    queue.push(nb_idx);
+                    queue.push_back(nb_idx);
                 }
             }
         }

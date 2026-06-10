@@ -3,7 +3,7 @@
 //! Generates virtual libraries by combining reaction templates with scaffolds and building blocks.
 
 use chematic_core::Molecule;
-use crate::transform::{run_reactants, TransformError};
+use crate::transform::run_reactants;
 
 /// Configuration for library enumeration.
 #[derive(Clone, Debug)]
@@ -96,8 +96,9 @@ pub fn enumerate_library(
         }
 
         iteration += 1;
+        // Check product count (actual size, not just iteration count)
         if let Some(max) = config.max_size {
-            if iteration >= max {
+            if products.len() >= max {
                 return Err(LibraryError::EnumerationLimitExceeded);
             }
         }
