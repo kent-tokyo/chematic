@@ -1273,6 +1273,78 @@ pub fn ghose_passes(mol: &Molecule) -> bool {
 }
 
 // ---------------------------------------------------------------------------
+// AutoCorr2D: Moreau-Broto Self-Correlation (Topological Distance)
+// ---------------------------------------------------------------------------
+
+/// Compute topological distance matrix using BFS.
+fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<usize>> {
+    let n = mol.atom_count();
+    let mut dist = vec![vec![usize::MAX; n]; n];
+
+    for start in 0..n {
+        let start_idx = AtomIdx(start as u32);
+        dist[start][start] = 0;
+
+        let mut queue = vec![start_idx];
+        let mut visited = vec![false; n];
+        visited[start] = true;
+
+        while let Some(curr_idx) = queue.pop() {
+            let curr = curr_idx.0 as usize;
+            for (nb_idx, _) in mol.neighbors(curr_idx) {
+                let nb = nb_idx.0 as usize;
+                if !visited[nb] {
+                    visited[nb] = true;
+                    dist[start][nb] = dist[start][curr] + 1;
+                    queue.push(nb_idx);
+                }
+            }
+        }
+    }
+    dist
+}
+
+/// Compute atomic valence for AutoCorr feature (number of bonds + implicit H).
+fn atomic_valence(mol: &Molecule, idx: AtomIdx) -> f64 {
+    let degree = mol.neighbors(idx).count() as f64;
+    let h_count = implicit_hcount(mol, idx) as f64;
+    degree + h_count
+}
+
+/// Compute AutoCorr2D descriptor (topological distance-based).
+///
+/// Moreau-Broto self-correlation: for each lag k (1..=7),
+/// sum over all atom pairs (i,j) with distance d(i,j) = k of v(i) * v(j),
+/// where v(i) is the atomic valence.
+///
+/// Returns a vector of 7 floats (one per lag).
+pub fn autocorr_2d(mol: &Molecule) -> Vec<f64> {
+    if mol.atom_count() < 2 {
+        return vec![0.0; 7];
+    }
+
+    let dist = topological_distance_matrix(mol);
+    let n = mol.atom_count();
+    let mut result = vec![0.0; 7];
+
+    for lag in 1..=7 {
+        let mut sum = 0.0;
+        for i in 0..n {
+            for j in i + 1..n {
+                if dist[i][j] == lag {
+                    let val_i = atomic_valence(mol, AtomIdx(i as u32));
+                    let val_j = atomic_valence(mol, AtomIdx(j as u32));
+                    sum += val_i * val_j;
+                }
+            }
+        }
+        result[lag - 1] = sum;
+    }
+
+    result
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -1561,6 +1633,60 @@ mod tests {
             (fsp3(&m) - 0.0).abs() < 1e-9,
             "no-carbon mol Fsp3 should be 0"
         );
+    }
+
+    // -- AutoCorr2D tests ---------------------------------------------------
+
+    #[test]
+    fn test_autocorr_2d_single_atom() {
+        let m = mol("C");
+        let ac = autocorr_2d(&m);
+        assert_eq!(ac.len(), 7);
+        // Single atom: no pairs → all zeros
+        for val in ac {
+            assert!((val - 0.0).abs() < 1e-9);
+        }
+    }
+
+    #[test]
+    fn test_autocorr_2d_ethane() {
+        let m = mol("CC");
+        let ac = autocorr_2d(&m);
+        assert_eq!(ac.len(), 7);
+        // Ethane: distance 1 pair (C-C), both have valence 4
+        // autocorr[0] (lag 1) = 4 * 4 = 16
+        assert!((ac[0] - 16.0).abs() < 1e-9, "lag 1: {}", ac[0]);
+        // Lag 2+ → no pairs
+        for i in 1..7 {
+            assert!((ac[i] - 0.0).abs() < 1e-9, "lag {}: {}", i + 1, ac[i]);
+        }
+    }
+
+    #[test]
+    fn test_autocorr_2d_propane() {
+        let m = mol("CCC");
+        let ac = autocorr_2d(&m);
+        assert_eq!(ac.len(), 7);
+        // Propane: C1-C2 dist=1, C2-C3 dist=1, C1-C3 dist=2
+        // C1 (terminal): degree 1, implicit H = 3, valence = 1 + 3 = 4
+        // C2 (central): degree 2, implicit H = 2, valence = 2 + 2 = 4
+        // C3 (terminal): degree 1, implicit H = 3, valence = 1 + 3 = 4
+        // lag 1: C1-C2 + C2-C3 = 4*4 + 4*4 = 32
+        assert!((ac[0] - 32.0).abs() < 1e-9, "lag 1: {}", ac[0]);
+        // lag 2: C1-C3 = 4*4 = 16
+        assert!((ac[1] - 16.0).abs() < 1e-9, "lag 2: {}", ac[1]);
+    }
+
+    #[test]
+    fn test_autocorr_2d_benzene() {
+        let m = mol("c1ccccc1");
+        let ac = autocorr_2d(&m);
+        assert_eq!(ac.len(), 7);
+        // Benzene: aromatic ring, all C have valence 3 (2 bonds + 1 H)
+        // lag 1: 6 C-C bonds = 6 * (3*3) = 54
+        assert!((ac[0] - 54.0).abs() < 1e-9, "lag 1 benzene: {}", ac[0]);
+        // Should have non-zero values for multiple lags (cyclic)
+        assert!(ac[1] > 0.0, "lag 2 should be non-zero");
     }
 
     // -- aromatic_ring_count tests -----------------------------------------
