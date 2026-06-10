@@ -356,21 +356,13 @@ pub fn tpsa(mol: &Molecule) -> f64 {
                         // Ertl 2000: sp2 imine N-H (C=N-H in amidine/guanidinium) has
                         // the same TPSA as terminal =NH without H: 23.79 Å².
                         // Regular secondary amine N-H (sp3, no double bond from N): 12.03 Å².
-                        let is_imine_nh = mol.neighbors(idx).any(|(nb, bidx)| {
-                            mol.bond(bidx).order == BondOrder::Double
-                                && mol.atom(nb).element.atomic_number() == 6
-                        });
-                        if is_imine_nh { 23.79 } else { 12.03 }
+                        if has_double_bond_to(mol, idx, 6) { 23.79 } else { 12.03 }
                     } else {
                         // h=0: tertiary N or bridged/ring imine
                         // Ertl 2000 distinguishes:
                         //   ring/bridged C=N-C (degree≥2, diazepam ring, imidazoline): 12.89 Å²
                         //   tertiary amine (no double bond): 3.24 Å²
-                        let is_imine = mol.neighbors(idx).any(|(nb, bidx)| {
-                            mol.bond(bidx).order == BondOrder::Double
-                                && mol.atom(nb).element.atomic_number() == 6
-                        });
-                        if is_imine { 12.89 } else { 3.24 }
+                        if has_double_bond_to(mol, idx, 6) { 12.89 } else { 3.24 }
                     }
                 }
             }
@@ -426,11 +418,7 @@ pub fn tpsa(mol: &Molecule) -> f64 {
             //   P=O present (phosphate, phosphonate): 26.88 Å²
             //   P=O absent (phosphine, phosphite):    34.14 Å²
             15 if !is_aromatic => {
-                let has_oxo = mol.neighbors(idx).any(|(nb, bidx)| {
-                    mol.bond(bidx).order == BondOrder::Double
-                        && mol.atom(nb).element.atomic_number() == 8
-                });
-                if has_oxo { 26.88 } else { 34.14 }
+                if has_double_bond_to(mol, idx, 8) { 26.88 } else { 34.14 }
             }
             _ => 0.0,
         };
@@ -476,11 +464,7 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
                 35 => crippen_halogen(mol, idx, ar, 0.8995, 0.8456),
                 53 => crippen_halogen(mol, idx, ar, 0.7416, 0.8857),
                 15 => {
-                    let has_oxo = mol.neighbors(idx).any(|(nb, bidx)| {
-                        mol.bond(bidx).order == BondOrder::Double
-                            && mol.atom(nb).element.atomic_number() == 8
-                    });
-                    if has_oxo { 0.7933 } else { -0.3451 }
+                    if has_double_bond_to(mol, idx, 8) { 0.7933 } else { -0.3451 }
                 }
                 _ => 0.0,
             };
