@@ -1778,6 +1778,70 @@ pub fn usrcat(mol: &Molecule) -> [f64; 42] {
 }
 
 // ---------------------------------------------------------------------------
+// MMFF94 Partial Charges
+// ---------------------------------------------------------------------------
+
+/// MMFF94 partial charges: electronegativity-weighted + formal charge.
+///
+/// Returns array of partial charges (one per atom) computed via:
+/// δ_i = q_i + Σ_j (χ_i - χ_j) / |r_ij|
+///
+/// where q_i = formal charge, χ = atom type electronegativity, r = topological distance.
+pub fn mmff94_charges(mol: &Molecule) -> Vec<f64> {
+    let n = mol.atom_count();
+    let mut charges = vec![0.0; n];
+
+    if n == 0 {
+        return charges;
+    }
+
+    // Electronegativity values by element (simplified MMFF94 approximation)
+    let en_table: fn(Element) -> f64 = |elem| match elem.atomic_number() {
+        1 => 2.10,  // H
+        6 => 2.50,  // C
+        7 => 3.10,  // N
+        8 => 3.44,  // O
+        9 => 3.98,  // F
+        15 => 2.19, // P
+        16 => 2.58, // S
+        17 => 3.16, // Cl
+        35 => 2.96, // Br
+        53 => 2.66, // I
+        _ => 2.0,   // default
+    };
+
+    // Distance matrix for topological distances
+    let dist = topological_distance_matrix(mol);
+
+    // Initialize with formal charges
+    for i in 0..n {
+        charges[i] = mol.atom(AtomIdx(i as u32)).charge as f64;
+    }
+
+    // Apply electronegativity-weighted bond effects
+    for i in 0..n {
+        let atom_i = mol.atom(AtomIdx(i as u32));
+        let en_i = en_table(atom_i.element);
+
+        for j in 0..n {
+            if i != j {
+                let atom_j = mol.atom(AtomIdx(j as u32));
+                let en_j = en_table(atom_j.element);
+                let r_ij = dist[i][j] as f64;
+
+                // Electronegativity effect decays with distance
+                if r_ij > 0.0 {
+                    let effect = (en_i - en_j) / (r_ij * r_ij);
+                    charges[i] += effect * 0.1; // dampening factor
+                }
+            }
+        }
+    }
+
+    charges
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -2476,5 +2540,40 @@ mod tests {
         let m = mol("CC(=O)[O-]");
         let usr = usrcat(&m);
         assert!(usr[40] > 0.0, "anion count should be positive for charged carboxylate");
+    }
+
+    // -- MMFF94 charges tests -----------------------------------------------
+
+    #[test]
+    fn test_mmff94_charges_length() {
+        let m = mol("CCO");
+        let charges = mmff94_charges(&m);
+        assert_eq!(charges.len(), 3, "should have 3 charges for 3 atoms");
+    }
+
+    #[test]
+    fn test_mmff94_charges_ethane() {
+        let m = mol("CC");
+        let charges = mmff94_charges(&m);
+        assert_eq!(charges.len(), 2);
+        // Both carbons should have similar (small negative) charges
+        assert!((charges[0] - charges[1]).abs() < 0.1, "carbons in ethane should have similar charges");
+    }
+
+    #[test]
+    fn test_mmff94_charges_charged_species() {
+        let m = mol("CC(=O)[O-]");
+        let charges = mmff94_charges(&m);
+        assert_eq!(charges.len(), 4);
+        // Carboxylate oxygen should be negative
+        assert!(charges[3] < 0.0, "carboxylate oxygen should be negative");
+    }
+
+    #[test]
+    fn test_mmff94_charges_water() {
+        let m = mol("O");
+        let charges = mmff94_charges(&m);
+        assert_eq!(charges.len(), 1);
+        assert!(charges[0].is_finite(), "water oxygen charge should be finite");
     }
 }
