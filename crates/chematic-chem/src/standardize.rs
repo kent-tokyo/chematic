@@ -286,6 +286,56 @@ pub fn neutralize_charges(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
+/// Remove all isotope labels from atoms.
+///
+/// Returns a new molecule with `atom.isotope = None` for all atoms.
+pub fn remove_isotopes(mol: &Molecule) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+
+    for i in 0..mol.atom_count() {
+        let old_idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(old_idx).clone();
+        atom.isotope = None;
+        let new_idx = builder.add_atom(atom);
+        remap.insert(old_idx, new_idx);
+    }
+    copy_bonds(mol, &mut builder, &remap);
+    builder.build()
+}
+
+/// Remove all stereochemistry from a molecule.
+///
+/// Sets `atom.chirality = Chirality::None` for all atoms and converts
+/// wedge/wedge-hash bonds to single bonds.
+pub fn remove_stereo(mol: &Molecule) -> Molecule {
+    use chematic_core::{BondOrder, Chirality};
+
+    let mut builder = MoleculeBuilder::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+
+    for i in 0..mol.atom_count() {
+        let old_idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(old_idx).clone();
+        atom.chirality = Chirality::None;
+        let new_idx = builder.add_atom(atom);
+        remap.insert(old_idx, new_idx);
+    }
+
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        if let (Some(&new_a), Some(&new_b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
+            let order = match bond.order {
+                BondOrder::Up | BondOrder::Down => BondOrder::Single,
+                other => other,
+            };
+            let _ = builder.add_bond(new_a, new_b, order);
+        }
+    }
+
+    builder.build()
+}
+
 /// One transformation stage in the standardization pipeline.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StandardizationStep {
@@ -299,6 +349,14 @@ pub enum StandardizationStep {
     RemoveExplicitHydrogens,
     /// Canonicalize supported tautomer systems.
     CanonicalTautomer,
+    /// Keep only the largest non-salt fragment.
+    FragmentParent,
+    /// Neutralize all formal charges.
+    ChargeParent,
+    /// Remove all isotope labels.
+    IsotopeParent,
+    /// Remove all stereochemistry (wedge/wedge-hash bonds, chirality).
+    StereoParent,
 }
 
 impl StandardizationStep {
@@ -310,6 +368,10 @@ impl StandardizationStep {
             Self::NormalizeGroups => "normalize_groups",
             Self::RemoveExplicitHydrogens => "remove_explicit_hydrogens",
             Self::CanonicalTautomer => "canonical_tautomer",
+            Self::FragmentParent => "fragment_parent",
+            Self::ChargeParent => "charge_parent",
+            Self::IsotopeParent => "isotope_parent",
+            Self::StereoParent => "stereo_parent",
         }
     }
 }
@@ -836,5 +898,94 @@ mod tests {
             PipelineStatus::Modified,
             "Should be marked as Modified"
         );
+    }
+
+    // ── Parent structure extraction tests ────────────────────────────────────
+
+    #[test]
+    fn remove_isotopes_strips_isotope_labels() {
+        // "[13C]CC" has one 13C isotope label
+        let mol = parse("[13C]CC").unwrap();
+        let result = remove_isotopes(&mol);
+        for i in 0..result.atom_count() {
+            assert_eq!(
+                result.atom(chematic_core::AtomIdx(i as u32)).isotope,
+                None,
+                "atom {} should have no isotope",
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn remove_isotopes_preserves_structure() {
+        // "[13C]CC" and "CC" should be structurally identical after isotope removal
+        let mol = parse("[13C]CC").unwrap();
+        let result = remove_isotopes(&mol);
+        assert_eq!(result.atom_count(), 3, "atom count preserved");
+        assert_eq!(result.bond_count(), 2, "bond count preserved");
+    }
+
+    #[test]
+    fn remove_stereo_strips_chirality() {
+        // "N[C@@H](C)C(=O)O" — alanine with (S) stereochemistry
+        let mol = parse("N[C@@H](C)C(=O)O").unwrap();
+        let result = remove_stereo(&mol);
+        for i in 0..result.atom_count() {
+            use chematic_core::Chirality;
+            assert_eq!(
+                result.atom(chematic_core::AtomIdx(i as u32)).chirality,
+                Chirality::None,
+                "atom {} should have no chirality",
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn remove_stereo_converts_wedge_bonds_to_single() {
+        // "C[C@H](O)C" — methylcarbinol with wedge stereochemistry
+        // After remove_stereo, Up/Down bonds should become Single
+        let mol = parse("C[C@H](O)C").unwrap();
+        let result = remove_stereo(&mol);
+        for i in 0..result.bond_count() {
+            use chematic_core::BondOrder;
+            let bond = result.bond(chematic_core::BondIdx(i as u32));
+            assert_ne!(
+                bond.order,
+                BondOrder::Up,
+                "bond {} should not be Up after stereo removal",
+                i
+            );
+            assert_ne!(
+                bond.order,
+                BondOrder::Down,
+                "bond {} should not be Down after stereo removal",
+                i
+            );
+        }
+    }
+
+    #[test]
+    fn remove_stereo_preserves_structure() {
+        // "N[C@@H](C)C(=O)O" (alanine) should keep 6 atoms, 5 bonds after stereo removal
+        let mol = parse("N[C@@H](C)C(=O)O").unwrap();
+        let result = remove_stereo(&mol);
+        assert_eq!(result.atom_count(), 6, "atom count preserved");
+        assert_eq!(result.bond_count(), 5, "bond count preserved");
+    }
+
+    #[test]
+    fn parent_variant_step_names_distinct() {
+        // Verify that the 4 new parent variants have distinct step names
+        let frag_parent = StandardizationStep::FragmentParent;
+        let charge_parent = StandardizationStep::ChargeParent;
+        let isotope_parent = StandardizationStep::IsotopeParent;
+        let stereo_parent = StandardizationStep::StereoParent;
+
+        assert_eq!(frag_parent.as_str(), "fragment_parent");
+        assert_eq!(charge_parent.as_str(), "charge_parent");
+        assert_eq!(isotope_parent.as_str(), "isotope_parent");
+        assert_eq!(stereo_parent.as_str(), "stereo_parent");
     }
 }

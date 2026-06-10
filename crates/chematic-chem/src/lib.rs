@@ -77,7 +77,7 @@ pub use scaffold::{
 pub use standardize::{
     MoleculeSnapshot, PipelineStatus, StandardizationPipeline, StandardizationReport,
     StandardizationStep, StandardizationStepReport, StandardizationWarning, StandardizeOptions,
-    largest_fragment, neutralize_charges, standardize,
+    largest_fragment, neutralize_charges, remove_isotopes, remove_stereo, standardize,
 };
 pub use stereo::{enumerate_stereoisomers, invert_stereocenter};
 pub use tautomer::{
