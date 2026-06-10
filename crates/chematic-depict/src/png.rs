@@ -11,7 +11,6 @@ use tiny_skia::{Color, Paint, Pixmap, Stroke};
 const PIXELS_PER_UNIT: f64 = 10.0;
 const BOND_WIDTH: f32 = 1.5;
 const ATOM_RADIUS: f32 = 3.0;
-const FONT_SIZE: usize = 4;
 
 /// Bitmap patterns for element labels (5×4 pixels each).
 fn get_char_bitmap(ch: char) -> Option<[u8; 5]> {
