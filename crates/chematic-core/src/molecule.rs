@@ -114,12 +114,24 @@ impl Molecule {
         self.adjacency[i].len()
     }
 
-    /// Return the bond between `a` and `b`, or `None` if not connected.
+    /// Return the bond between `a` and `b`, or `None` if not connected or indices are out of bounds.
     pub fn bond_between(&self, a: AtomIdx, b: AtomIdx) -> Option<(BondIdx, &BondEntry)> {
-        self.adjacency[a.0 as usize]
+        let a_idx = a.0 as usize;
+        let b_idx = b.0 as usize;
+        if a_idx >= self.adjacency.len() || b_idx >= self.atoms.len() {
+            return None;
+        }
+        self.adjacency[a_idx]
             .iter()
             .find(|&&(nb, _)| nb == b)
-            .map(|&(_, bidx)| (bidx, &self.bonds[bidx.0 as usize]))
+            .and_then(|&(_, bidx)| {
+                let bond_idx = bidx.0 as usize;
+                if bond_idx < self.bonds.len() {
+                    Some((bidx, &self.bonds[bond_idx]))
+                } else {
+                    None
+                }
+            })
     }
 
     /// Molecular formula as a Hill-order string (C first, H second, then alphabetical).
