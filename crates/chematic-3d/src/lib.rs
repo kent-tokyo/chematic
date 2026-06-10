@@ -39,8 +39,8 @@ pub use dg::generate_coords;
 pub use etkdg::generate_coords_etkdg;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
 pub use minimize::{
-    MinimizeConfig, minimize, minimize_dreiding, minimize_dreiding_with_config, minimize_uff,
-    minimize_with_config,
+    ForceField, MinimizeConfig, minimize, minimize_dreiding, minimize_dreiding_with_config,
+    minimize_mmff94, minimize_uff, minimize_with_config,
 };
 pub use mol_transforms::{
     center_on_origin, compute_centroid, get_bond_angle, get_bond_angle_deg, get_bond_length,
