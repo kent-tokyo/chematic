@@ -13,6 +13,12 @@ use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder
 
 use crate::error::MolParseError;
 
+/// Maximum number of atoms allowed in a MOL file (prevents memory exhaustion).
+const MAX_ATOMS: usize = 100_000;
+
+/// Maximum number of bonds allowed in a MOL file (prevents memory exhaustion).
+const MAX_BONDS: usize = 200_000;
+
 /// Metadata extracted from the three-line MOL header.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct MolMetadata {
@@ -130,6 +136,20 @@ pub fn parse_mol_with_coords(
 
     let natoms = parse_field3(counts_line, 0, counts_lineno, make_count_err)?;
     let nbonds = parse_field3(counts_line, 3, counts_lineno, make_count_err)?;
+
+    if natoms > MAX_ATOMS {
+        return Err(MolParseError::InvalidCountLine {
+            line: counts_lineno,
+            detail: format!("atom count {} exceeds maximum allowed {}", natoms, MAX_ATOMS),
+        });
+    }
+
+    if nbonds > MAX_BONDS {
+        return Err(MolParseError::InvalidCountLine {
+            line: counts_lineno,
+            detail: format!("bond count {} exceeds maximum allowed {}", nbonds, MAX_BONDS),
+        });
+    }
 
     // -- Atom block ---------------------------------------------------------
 

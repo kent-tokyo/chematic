@@ -64,12 +64,20 @@ impl Molecule {
     /// # Panics
     /// Panics if `idx` is out of range (should not happen with indices from this molecule).
     pub fn atom(&self, idx: AtomIdx) -> &Atom {
-        &self.atoms[idx.0 as usize]
+        let i = idx.0 as usize;
+        if i >= self.atoms.len() {
+            panic!("atom index {} out of range (molecule has {} atoms)", idx.0, self.atoms.len());
+        }
+        &self.atoms[i]
     }
 
     /// Borrow bond by index.
     pub fn bond(&self, idx: BondIdx) -> &BondEntry {
-        &self.bonds[idx.0 as usize]
+        let i = idx.0 as usize;
+        if i >= self.bonds.len() {
+            panic!("bond index {} out of range (molecule has {} bonds)", idx.0, self.bonds.len());
+        }
+        &self.bonds[i]
     }
 
     /// Iterate over all atoms as `(AtomIdx, &Atom)`.
@@ -90,12 +98,20 @@ impl Molecule {
 
     /// Iterate over neighbors of `idx` as `(neighbor_atom_idx, bond_idx)`.
     pub fn neighbors(&self, idx: AtomIdx) -> impl Iterator<Item = (AtomIdx, BondIdx)> + '_ {
-        self.adjacency[idx.0 as usize].iter().copied()
+        let i = idx.0 as usize;
+        if i >= self.adjacency.len() {
+            panic!("atom index {} out of range (molecule has {} atoms)", idx.0, self.adjacency.len());
+        }
+        self.adjacency[i].iter().copied()
     }
 
     /// Degree (number of connected bonds) of atom `idx`.
     pub fn degree(&self, idx: AtomIdx) -> usize {
-        self.adjacency[idx.0 as usize].len()
+        let i = idx.0 as usize;
+        if i >= self.adjacency.len() {
+            panic!("atom index {} out of range (molecule has {} atoms)", idx.0, self.adjacency.len());
+        }
+        self.adjacency[i].len()
     }
 
     /// Return the bond between `a` and `b`, or `None` if not connected.
