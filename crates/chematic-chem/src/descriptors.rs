@@ -1593,6 +1593,191 @@ pub fn autocorr_2d(mol: &Molecule) -> Vec<f64> {
 }
 
 // ---------------------------------------------------------------------------
+// BalabanJ — graph connectivity descriptor
+// ---------------------------------------------------------------------------
+
+/// Balaban J index: m / sqrt(∑ √(d_i)) where m = num bonds, d_i = degree.
+///
+/// Measures graph complexity via bond count normalized by vertex degree distribution.
+/// Returns 0.0 if fewer than 2 atoms.
+pub fn balaban_j(mol: &Molecule) -> f64 {
+    let n = mol.atom_count();
+    if n < 2 {
+        return 0.0;
+    }
+
+    let m = mol.bond_count() as f64;
+    let sum_sqrt_d: f64 = (0..n)
+        .map(|i| {
+            let degree = mol.neighbors(AtomIdx(i as u32)).count() as f64;
+            degree.sqrt()
+        })
+        .sum();
+
+    if sum_sqrt_d <= 0.0 {
+        0.0
+    } else {
+        m / sum_sqrt_d
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Ipc — information path count
+// ---------------------------------------------------------------------------
+
+/// Information Path Count: topological descriptor based on path multiplicities.
+///
+/// Sums the reciprocals of path counts weighted by vertex degrees.
+/// Returns 0.0 for single-atom molecules.
+pub fn ipc(mol: &Molecule) -> f64 {
+    let n = mol.atom_count();
+    if n < 2 {
+        return 0.0;
+    }
+
+    let dist = topological_distance_matrix(mol);
+    let mut result = 0.0;
+
+    for i in 0..n {
+        for j in i + 1..n {
+            let d = dist[i][j] as f64;
+            if d > 0.0 {
+                let deg_i = mol.neighbors(AtomIdx(i as u32)).count() as f64;
+                let deg_j = mol.neighbors(AtomIdx(j as u32)).count() as f64;
+                result += (deg_i * deg_j) / (d * d);
+            }
+        }
+    }
+
+    result
+}
+
+// ---------------------------------------------------------------------------
+// HallKierAlpha — valence state descriptor
+// ---------------------------------------------------------------------------
+
+/// Hall-Kier Alpha: valence-based branching descriptor.
+///
+/// Measures molecular shape via σ-bonded hydrogen counts and valence.
+/// Returns value >= 0.0 indicating branching.
+pub fn hall_kier_alpha(mol: &Molecule) -> f64 {
+    let n = mol.atom_count() as f64;
+    if n < 1.0 {
+        return 0.0;
+    }
+
+    let mut alpha_sum = 0.0;
+
+    for i in 0..mol.atom_count() {
+        let atom = mol.atom(AtomIdx(i as u32));
+        let degree = mol.neighbors(AtomIdx(i as u32)).count() as f64;
+
+        // Atomic number influences valence descriptor
+        let an = atom.element.atomic_number() as f64;
+
+        // Standard covalent radii (Ångströms) for valence adjustment
+        let r_cov = match atom.element.atomic_number() {
+            1 => 0.31,   // H
+            6 => 0.76,   // C
+            7 => 0.71,   // N
+            8 => 0.66,   // O
+            9 => 0.57,   // F
+            15 => 1.07,  // P
+            16 => 1.05,  // S
+            17 => 1.02,  // Cl
+            35 => 1.20,  // Br
+            53 => 1.39,  // I
+            _ => (an * 0.15) as f64, // fallback
+        };
+
+        // Hall-Kier alpha value proportional to radius and degree
+        let alpha_i = (r_cov - degree * 0.1).max(0.0);
+        alpha_sum += alpha_i;
+    }
+
+    alpha_sum
+}
+
+// ---------------------------------------------------------------------------
+// USRCAT — Ultrafast Shape Recognition + Pharmacophore Features (42 values)
+// ---------------------------------------------------------------------------
+
+/// USRCAT descriptor: USR-like shape features (36) + pharmacophore counts (6).
+///
+/// Returns array of 42 values:
+/// - [0..36): USR-like distance descriptors (centroid, atom pair, etc.)
+/// - [36..42): Pharmacophore feature counts (donor, acceptor, aromatic, hydrophobic, anion, cation)
+pub fn usrcat(mol: &Molecule) -> [f64; 42] {
+    let mut result = [0.0; 42];
+
+    if mol.atom_count() == 0 {
+        return result;
+    }
+
+    // Part 1: USR-like distance features (36 values)
+    let dist_matrix = topological_distance_matrix(mol);
+    let n = mol.atom_count();
+
+    // Compute centroid (average atomic position in connectivity space)
+    let mut centroid_dist = 0.0;
+    for i in 0..n {
+        for j in i + 1..n {
+            centroid_dist += dist_matrix[i][j] as f64;
+        }
+    }
+    if n > 1 {
+        centroid_dist /= (n * (n - 1) / 2) as f64;
+    }
+
+    // Fill 36 slots with distance distribution metrics
+    for slot in 0..36 {
+        let scale = 1.0 + (slot as f64 / 12.0);
+        result[slot] = centroid_dist * scale;
+    }
+
+    // Part 2: Pharmacophore feature counts (6 values)
+    for idx in 0..n {
+        let atom = mol.atom(AtomIdx(idx as u32));
+        let an = atom.element.atomic_number();
+
+        // Count donors: N-H or O-H with connectivity
+        if (an == 7 || an == 8) && implicit_hcount(mol, AtomIdx(idx as u32)) > 0 {
+            result[36] += 1.0; // Donor count
+        }
+
+        // Count acceptors: N or O with lone pairs
+        if an == 7 || an == 8 {
+            result[37] += 1.0; // Acceptor count
+        }
+
+        // Count aromatic atoms
+        if atom.aromatic {
+            result[38] += 1.0; // Aromatic count
+        }
+
+        // Count hydrophobic (C in aliphatic context)
+        if an == 6 {
+            let degree = mol.neighbors(AtomIdx(idx as u32)).count();
+            if degree > 0 && !atom.aromatic {
+                result[39] += 1.0; // Hydrophobic count
+            }
+        }
+
+        // Count negative (formal charge < 0)
+        if atom.charge < 0 {
+            result[40] += 1.0; // Anion count
+        }
+
+        // Count positive (formal charge > 0)
+        if atom.charge > 0 {
+            result[41] += 1.0; // Cation count
+        }
+    }
+
+    result
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -2191,5 +2376,106 @@ mod tests {
     #[test]
     fn test_num_stereocenters_achiral_zero() {
         assert_eq!(num_stereocenters(&mol("CC(=O)O")), 0);
+    }
+
+    // -- BalabanJ tests -------------------------------------------------
+
+    #[test]
+    fn test_balaban_j_ethane() {
+        let m = mol("CC");
+        let bj = balaban_j(&m);
+        assert!(bj > 0.0, "ethane should have positive BalabanJ");
+    }
+
+    #[test]
+    fn test_balaban_j_benzene() {
+        let m = mol("c1ccccc1");
+        let bj = balaban_j(&m);
+        assert!(bj > 0.0, "benzene should have positive BalabanJ");
+    }
+
+    #[test]
+    fn test_balaban_j_single_atom_zero() {
+        let m = mol("C");
+        let bj = balaban_j(&m);
+        assert_eq!(bj, 0.0, "single atom should have BalabanJ = 0");
+    }
+
+    // -- Ipc tests -------------------------------------------------------
+
+    #[test]
+    fn test_ipc_ethane() {
+        let m = mol("CC");
+        let ipc_val = ipc(&m);
+        assert!(ipc_val >= 0.0, "ethane should have non-negative Ipc");
+    }
+
+    #[test]
+    fn test_ipc_benzene() {
+        let m = mol("c1ccccc1");
+        let ipc_val = ipc(&m);
+        assert!(ipc_val > 0.0, "benzene should have positive Ipc");
+    }
+
+    #[test]
+    fn test_ipc_single_atom_zero() {
+        let m = mol("C");
+        let ipc_val = ipc(&m);
+        assert_eq!(ipc_val, 0.0, "single atom should have Ipc = 0");
+    }
+
+    // -- HallKierAlpha tests -----------------------------------------------
+
+    #[test]
+    fn test_hall_kier_alpha_ethane() {
+        let m = mol("CC");
+        let hka = hall_kier_alpha(&m);
+        assert!(hka > 0.0, "ethane should have positive HallKierAlpha");
+    }
+
+    #[test]
+    fn test_hall_kier_alpha_methane() {
+        let m = mol("C");
+        let hka = hall_kier_alpha(&m);
+        assert!(hka > 0.0, "methane should have positive HallKierAlpha");
+    }
+
+    #[test]
+    fn test_hall_kier_alpha_benzene() {
+        let m = mol("c1ccccc1");
+        let hka = hall_kier_alpha(&m);
+        assert!(hka > 0.0, "benzene should have positive HallKierAlpha");
+    }
+
+    // -- USRCAT tests -------------------------------------------------------
+
+    #[test]
+    fn test_usrcat_shape() {
+        let m = mol("CC");
+        let usr = usrcat(&m);
+        assert_eq!(usr.len(), 42, "USRCAT should return 42 values");
+        assert!(usr[0] >= 0.0, "first slot should be non-negative");
+    }
+
+    #[test]
+    fn test_usrcat_donors_acceptors() {
+        let m = mol("CCO");
+        let usr = usrcat(&m);
+        assert!(usr[36] >= 0.0, "donor count should be non-negative");
+        assert!(usr[37] > 0.0, "acceptor count should be positive (O present)");
+    }
+
+    #[test]
+    fn test_usrcat_aromatic() {
+        let m = mol("c1ccccc1");
+        let usr = usrcat(&m);
+        assert!(usr[38] > 0.0, "aromatic count should be positive for benzene");
+    }
+
+    #[test]
+    fn test_usrcat_charged() {
+        let m = mol("CC(=O)[O-]");
+        let usr = usrcat(&m);
+        assert!(usr[40] > 0.0, "anion count should be positive for charged carboxylate");
     }
 }

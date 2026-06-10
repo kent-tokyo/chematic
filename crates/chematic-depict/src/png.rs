@@ -1,7 +1,7 @@
 //! PNG depiction via tiny-skia rasterization.
 //!
 //! Renders molecules directly to PNG using tiny-skia 2D graphics.
-//! Draws bonds and atom positions from Layout data.
+//! Draws bonds, atom positions, and element labels from Layout data.
 
 use crate::layout::Layout;
 use crate::svg::RenderOptions;
@@ -11,6 +11,25 @@ use tiny_skia::{Color, Paint, Pixmap, Stroke};
 const PIXELS_PER_UNIT: f64 = 10.0;
 const BOND_WIDTH: f32 = 1.5;
 const ATOM_RADIUS: f32 = 3.0;
+const FONT_SIZE: usize = 4;
+
+/// Bitmap patterns for element labels (5×4 pixels each).
+fn get_char_bitmap(ch: char) -> Option<[u8; 5]> {
+    match ch.to_ascii_uppercase() {
+        'C' => Some([0b0110, 0b1001, 0b1000, 0b1001, 0b0110]),
+        'N' => Some([0b1001, 0b1011, 0b1101, 0b1001, 0b1001]),
+        'O' => Some([0b0110, 0b1001, 0b1001, 0b1001, 0b0110]),
+        'H' => Some([0b1001, 0b1001, 0b1111, 0b1001, 0b1001]),
+        'F' => Some([0b1111, 0b1000, 0b1110, 0b1000, 0b1000]),
+        'P' => Some([0b1110, 0b1001, 0b1110, 0b1000, 0b1000]),
+        'S' => Some([0b0110, 0b1000, 0b0110, 0b0001, 0b1110]),
+        'B' => Some([0b1110, 0b1001, 0b1110, 0b1001, 0b1110]),
+        'I' => Some([0b1111, 0b0100, 0b0100, 0b0100, 0b1111]),
+        'K' => Some([0b1001, 0b1010, 0b1100, 0b1010, 0b1001]),
+        'X' => Some([0b1001, 0b0110, 0b0110, 0b0110, 0b1001]),
+        _ => None,
+    }
+}
 
 /// Render molecule as PNG bytes using tiny-skia.
 pub fn render_png(mol: &Molecule, layout: &Layout) -> Vec<u8> {
@@ -46,7 +65,7 @@ pub fn render_png_opts(
     let mut paint_bond = Paint::default();
     paint_bond.set_color(Color::BLACK);
 
-    // Draw atoms as small circles (using fill_rect as approximation)
+    // Draw atoms as markers with element labels
     for (idx, _) in mol.atoms() {
         let p = layout.get(idx);
         let x = ((p.x + offset_x) * PIXELS_PER_UNIT) as f32;
@@ -58,6 +77,32 @@ pub fn render_png_opts(
             let mut paint = Paint::default();
             paint.set_color(Color::from_rgba8(150, 150, 150, 255));
             pixmap.fill_rect(rect, &paint, tiny_skia::Transform::default(), None);
+        }
+
+        // Draw element symbol as text label
+        let atom = mol.atom(idx);
+        let symbol = atom.element.symbol();
+        for (i, ch) in symbol.chars().enumerate() {
+            if let Some(bitmap) = get_char_bitmap(ch) {
+                let label_x = x - 2.0 + (i as f32 * 3.0);
+                let label_y = y - 2.5;
+
+                let mut text_paint = Paint::default();
+                text_paint.set_color(Color::BLACK);
+
+                // Draw 5 rows × 4 columns
+                for row in 0..5 {
+                    for col in 0..4 {
+                        if (bitmap[row] >> (3 - col)) & 1 == 1 {
+                            let px = label_x + (col as f32 * 0.5);
+                            let py = label_y + (row as f32 * 0.5);
+                            if let Some(rect) = tiny_skia::Rect::from_xywh(px, py, 0.5, 0.5) {
+                                pixmap.fill_rect(rect, &text_paint, tiny_skia::Transform::default(), None);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
