@@ -15,6 +15,7 @@ pub mod bitvec;
 pub mod ecfp;
 pub mod fcfp;
 pub mod maccs;
+pub mod path;
 pub mod pharmacophore_fp;
 pub mod search;
 pub mod topo_path;
@@ -24,6 +25,7 @@ pub use bitvec::BitVec2048;
 pub use ecfp::{EcfpConfig, ecfp, ecfp4, ecfp6, morgan_fp_counts, tanimoto_ecfp4};
 pub use fcfp::{fcfp, fcfp4, fcfp6, tanimoto_fcfp4};
 pub use maccs::maccs;
+pub use path::{RdkitPathConfig, rdkit_path_fp, rdkit_path_fp_with_config, tanimoto_rdkit_path};
 pub use pharmacophore_fp::{
     pharmacophore_feature_counts, pharmacophore_fp_2d,
     tanimoto_pharmacophore_2d,
