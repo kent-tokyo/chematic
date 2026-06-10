@@ -155,6 +155,91 @@ pub fn largest_fragment(mol: &Molecule) -> Molecule {
     remove_salts(mol)
 }
 
+/// Normalize chemical groups (nitro groups, etc.).
+///
+/// Transforms:
+/// - `[N+](=O)[O-]` → `N(=O)=O` (nitro normalization: N charge 0, O- → double bond)
+///
+/// Returns a new molecule with normalized groups.
+pub fn normalize_groups(mol: &Molecule) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    let mut nitro_atoms = std::collections::HashSet::new();
+
+    // First pass: identify nitro groups [N+](=O)[O-]
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() == 7 && atom.charge == 1 {
+            let o_neighbors: Vec<_> = mol
+                .neighbors(idx)
+                .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 8)
+                .collect();
+
+            if o_neighbors.len() == 2 {
+                // Check for pattern: one =O, one -O
+                let mut has_double_o = false;
+                let mut has_single_negative_o = false;
+
+                for (o_idx, bond_idx) in &o_neighbors {
+                    let o_atom = mol.atom(*o_idx);
+                    let bond = mol.bond(*bond_idx);
+                    if bond.order == chematic_core::BondOrder::Double && o_atom.charge == 0 {
+                        has_double_o = true;
+                    }
+                    if bond.order == chematic_core::BondOrder::Single && o_atom.charge == -1 {
+                        has_single_negative_o = true;
+                        nitro_atoms.insert(*o_idx);
+                    }
+                }
+
+                if has_double_o && has_single_negative_o {
+                    nitro_atoms.insert(idx);
+                }
+            }
+        }
+    }
+
+    // Second pass: copy atoms with normalized charges
+    for (idx, atom) in mol.atoms() {
+        let mut new_atom = atom.clone();
+
+        if nitro_atoms.contains(&idx) {
+            // Neutral the N and O in nitro group
+            if atom.element.atomic_number() == 7 || atom.element.atomic_number() == 8 {
+                new_atom.charge = 0;
+            }
+        }
+
+        let new_idx = builder.add_atom(new_atom);
+        remap.insert(idx, new_idx);
+    }
+
+    // Third pass: copy bonds, converting S→O to double in nitro groups
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(chematic_core::BondIdx(i as u32));
+        let mut new_order = bond.order;
+
+        // If this is a single N-O bond in a nitro group where O is negative, make it double
+        if nitro_atoms.contains(&bond.atom1) && nitro_atoms.contains(&bond.atom2) {
+            let a1_is_n = mol.atom(bond.atom1).element.atomic_number() == 7;
+            let a2_is_o = mol.atom(bond.atom2).element.atomic_number() == 8;
+            let a1_is_o = mol.atom(bond.atom1).element.atomic_number() == 8;
+            let a2_is_n = mol.atom(bond.atom2).element.atomic_number() == 7;
+
+            if (a1_is_n && a2_is_o && bond.order == chematic_core::BondOrder::Single && mol.atom(bond.atom2).charge == -1)
+                || (a1_is_o && a2_is_n && bond.order == chematic_core::BondOrder::Single && mol.atom(bond.atom1).charge == -1)
+            {
+                new_order = chematic_core::BondOrder::Double;
+            }
+        }
+
+        if let (Some(&new_a1), Some(&new_a2)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
+            let _ = builder.add_bond(new_a1, new_a2, new_order);
+        }
+    }
+
+    builder.build()
+}
+
 /// Neutralize simple formal charges in a molecule.
 ///
 /// Rules applied:
@@ -208,6 +293,8 @@ pub enum StandardizationStep {
     LargestFragment,
     /// Apply simple neutralization rules for common formal charges.
     NeutralizeCharges,
+    /// Normalize chemical groups (nitro groups, etc.).
+    NormalizeGroups,
     /// Remove explicit hydrogen atoms.
     RemoveExplicitHydrogens,
     /// Canonicalize supported tautomer systems.
@@ -220,6 +307,7 @@ impl StandardizationStep {
         match self {
             Self::LargestFragment => "largest_fragment",
             Self::NeutralizeCharges => "neutralize_charges",
+            Self::NormalizeGroups => "normalize_groups",
             Self::RemoveExplicitHydrogens => "remove_explicit_hydrogens",
             Self::CanonicalTautomer => "canonical_tautomer",
         }
