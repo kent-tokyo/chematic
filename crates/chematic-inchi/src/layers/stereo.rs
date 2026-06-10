@@ -8,7 +8,7 @@ use std::collections::HashMap;
 /// Only generated if molecule has 2+ stereogenic centers.
 pub fn relative_stereo_parity_layer(
     mol: &Molecule,
-    inchi_index: &HashMap<AtomIdx, usize>,
+    _inchi_index: &HashMap<AtomIdx, usize>,
 ) -> Option<String> {
     let cip = assign_cip(mol);
     let r_count = cip.assignments.iter().filter(|(_, c)| *c == CipCode::R).count();
