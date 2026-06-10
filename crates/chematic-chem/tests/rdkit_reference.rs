@@ -9,9 +9,10 @@
 //!   HBD:  ±0         (exact integer)
 
 use chematic_chem::descriptors::{
-    hba_count, hbd_count, heavy_atom_count, lipinski_passes, logp_crippen, molecular_weight,
+    aromatic_ring_count, exact_mass, formal_charge_sum, fsp3, hba_count, hbd_count,
+    heavy_atom_count, lipinski_passes, logp_crippen, molar_refractivity, molecular_weight, mqn,
     num_aliphatic_heterocycles, num_aromatic_heterocycles, num_bridgehead_atoms,
-    num_saturated_heterocycles, num_spiro_atoms, tpsa,
+    num_saturated_heterocycles, num_spiro_atoms, rotatable_bond_count, tpsa,
 };
 use chematic_smiles::parse;
 
@@ -803,4 +804,152 @@ fn logp_arginine_guanidinium() {
         -1.01,
         0.25,
     );
+}
+
+// ── Missing public descriptors (regression coverage) ────────────────────
+
+#[test]
+fn exact_mass_aspirin() {
+    // C9H8O4 — RDKit: 180.042259
+    assert_approx(
+        "exact_mass aspirin",
+        exact_mass(&mol("CC(=O)Oc1ccccc1C(=O)O")),
+        180.042259,
+        0.001,
+    );
+}
+
+#[test]
+fn fsp3_benzene() {
+    // All sp2 carbons → fsp3 = 0.0
+    assert_approx(
+        "fsp3 benzene",
+        fsp3(&mol("c1ccccc1")),
+        0.0,
+        0.01,
+    );
+}
+
+#[test]
+fn fsp3_cyclohexane() {
+    // All sp3 carbons → fsp3 = 1.0
+    assert_approx(
+        "fsp3 cyclohexane",
+        fsp3(&mol("C1CCCCC1")),
+        1.0,
+        0.01,
+    );
+}
+
+#[test]
+fn molar_refractivity_aspirin() {
+    // C9H8O4 — chematic ~44.03 (Wildman-Crippen)
+    assert_approx(
+        "molar_refractivity aspirin",
+        molar_refractivity(&mol("CC(=O)Oc1ccccc1C(=O)O")),
+        44.03,
+        0.1,
+    );
+}
+
+#[test]
+fn rotatable_bond_count_ethanol() {
+    // CCO → 0 rotatable bonds
+    assert_approx(
+        "rotatable_bond_count ethanol",
+        rotatable_bond_count(&mol("CCO")) as f64,
+        0.0,
+        0.1,
+    );
+}
+
+#[test]
+fn rotatable_bond_count_aspirin() {
+    // CC(=O)Oc1ccccc1C(=O)O → 3 rotatable bonds
+    assert_approx(
+        "rotatable_bond_count aspirin",
+        rotatable_bond_count(&mol("CC(=O)Oc1ccccc1C(=O)O")) as f64,
+        3.0,
+        0.1,
+    );
+}
+
+#[test]
+fn aromatic_ring_count_benzene() {
+    // c1ccccc1 → 1 aromatic ring
+    assert_approx(
+        "aromatic_ring_count benzene",
+        aromatic_ring_count(&mol("c1ccccc1")) as f64,
+        1.0,
+        0.1,
+    );
+}
+
+#[test]
+fn aromatic_ring_count_naphthalene() {
+    // c1ccc2ccccc2c1 → 2 aromatic rings (fused)
+    assert_approx(
+        "aromatic_ring_count naphthalene",
+        aromatic_ring_count(&mol("c1ccc2ccccc2c1")) as f64,
+        2.0,
+        0.1,
+    );
+}
+
+#[test]
+fn formal_charge_sum_aspirin() {
+    // CC(=O)Oc1ccccc1C(=O)O → neutral (sum = 0)
+    assert_approx(
+        "formal_charge_sum aspirin",
+        formal_charge_sum(&mol("CC(=O)Oc1ccccc1C(=O)O")) as f64,
+        0.0,
+        0.1,
+    );
+}
+
+#[test]
+fn formal_charge_sum_chloride() {
+    // [Cl-] → charge sum = -1
+    assert_approx(
+        "formal_charge_sum chloride",
+        formal_charge_sum(&mol("[Cl-]")) as f64,
+        -1.0,
+        0.1,
+    );
+}
+
+// ── MQN (Molecular Quantum Numbers) ──────────────────────────────────────
+
+#[test]
+fn mqn_benzene() {
+    // C6H6 — simple aromatic ring
+    let m = &mol("c1ccccc1");
+    let result = mqn(m);
+    assert_eq!(result.len(), 42, "MQN must return 42 descriptors");
+    // Aromatic C atoms: all should be 6. Heavy atoms = 6.
+    // These values are placeholders until RDKit reference computed.
+}
+
+#[test]
+fn mqn_aspirin() {
+    // C9H8O4 — acetylated salicylic acid (contains ester and aromatic groups)
+    let m = &mol("CC(=O)Oc1ccccc1C(=O)O");
+    let result = mqn(m);
+    assert_eq!(result.len(), 42, "MQN must return 42 descriptors");
+}
+
+#[test]
+fn mqn_alanine() {
+    // C3H7NO2 — simple amino acid with primary amine and carboxylic acid
+    let m = &mol("CC(N)C(=O)O");
+    let result = mqn(m);
+    assert_eq!(result.len(), 42, "MQN must return 42 descriptors");
+}
+
+#[test]
+fn mqn_caffeine() {
+    // C8H10N4O2 — fused bicyclic purine derivative with multiple N atoms
+    let m = &mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
+    let result = mqn(m);
+    assert_eq!(result.len(), 42, "MQN must return 42 descriptors");
 }
