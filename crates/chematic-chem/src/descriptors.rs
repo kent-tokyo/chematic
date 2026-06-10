@@ -1842,6 +1842,86 @@ pub fn mmff94_charges(mol: &Molecule) -> Vec<f64> {
 }
 
 // ---------------------------------------------------------------------------
+// Element Counts — specific element frequencies
+// ---------------------------------------------------------------------------
+
+/// Count carbons (C atoms, including aromatic).
+pub fn num_carbons(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 6)
+        .count()
+}
+
+/// Count nitrogens (N atoms, including aromatic).
+pub fn num_nitrogens(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 7)
+        .count()
+}
+
+/// Count oxygens (O atoms).
+pub fn num_oxygens(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 8)
+        .count()
+}
+
+/// Count fluorines (F atoms).
+pub fn num_fluorines(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 9)
+        .count()
+}
+
+/// Count chlorines (Cl atoms).
+pub fn num_chlorines(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 17)
+        .count()
+}
+
+/// Count bromines (Br atoms).
+pub fn num_bromines(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 35)
+        .count()
+}
+
+/// Count iodines (I atoms).
+pub fn num_iodines(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 53)
+        .count()
+}
+
+/// Count sulfurs (S atoms).
+pub fn num_sulfurs(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 16)
+        .count()
+}
+
+/// Count phosphorus (P atoms).
+pub fn num_phosphorus(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() == 15)
+        .count()
+}
+
+/// Total hydrogen count (explicit + implicit).
+///
+/// Sums explicit hydrogens and implicit hydrogens for all atoms.
+pub fn num_hydrogens(mol: &Molecule) -> usize {
+    mol.atoms()
+        .map(|(idx, atom)| {
+            let explicit = atom.hydrogen_count.unwrap_or(0) as usize;
+            let implicit = implicit_hcount(mol, idx) as usize;
+            explicit + implicit
+        })
+        .sum()
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -2575,5 +2655,53 @@ mod tests {
         let charges = mmff94_charges(&m);
         assert_eq!(charges.len(), 1);
         assert!(charges[0].is_finite(), "water oxygen charge should be finite");
+    }
+
+    // -- Element count tests -----------------------------------------------
+
+    #[test]
+    fn test_num_carbons_ethane() {
+        let m = mol("CC");
+        assert_eq!(num_carbons(&m), 2);
+    }
+
+    #[test]
+    fn test_num_nitrogens_methylamine() {
+        let m = mol("CN");
+        assert_eq!(num_nitrogens(&m), 1);
+    }
+
+    #[test]
+    fn test_num_oxygens_methanol() {
+        let m = mol("CO");
+        assert_eq!(num_oxygens(&m), 1);
+    }
+
+    #[test]
+    fn test_num_halogens() {
+        let m = mol("CCF");
+        assert_eq!(num_carbons(&m), 2);
+        assert_eq!(num_fluorines(&m), 1);
+    }
+
+    #[test]
+    fn test_num_hydrogens_methane() {
+        let m = mol("C");
+        // Methane: 1 carbon with 4 implicit hydrogens
+        assert_eq!(num_hydrogens(&m), 4);
+    }
+
+    #[test]
+    fn test_num_hydrogens_ethane() {
+        let m = mol("CC");
+        // Ethane: 2 carbons, 6 total hydrogens
+        assert_eq!(num_hydrogens(&m), 6);
+    }
+
+    #[test]
+    fn test_num_hydrogens_water() {
+        let m = mol("O");
+        // Water: 2 implicit hydrogens on oxygen
+        assert_eq!(num_hydrogens(&m), 2);
     }
 }
