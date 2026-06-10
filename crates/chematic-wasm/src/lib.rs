@@ -1178,6 +1178,41 @@ pub fn gasteiger_charges_json(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
+/// Compute 2D pharmacophore fingerprint (2048 bits) as a JSON feature count summary.
+/// Returns simplified JSON with feature type counts: {Donor, Acceptor, Aromatic, Hydrophobic, Positive, Negative}
+#[wasm_bindgen]
+pub fn pharmacophore_fp_2d_summary(mol: &MolHandle) -> String {
+    let counts = chematic_fp::pharmacophore_feature_counts(&mol.inner);
+    format!(
+        "{{\"Donor\":{},\"Acceptor\":{},\"Aromatic\":{},\"Hydrophobic\":{},\"Positive\":{},\"Negative\":{}}}",
+        counts[0], counts[1], counts[2], counts[3], counts[4], counts[5]
+    )
+}
+
+/// Compute 3D pharmacophore fingerprint from generated 3D coordinates.
+/// Returns simplified JSON with feature type counts (3D-aware version).
+#[wasm_bindgen]
+pub fn pharmacophore_fp_3d_summary(mol: &MolHandle) -> String {
+    let _coords = chematic_3d::generate_coords(&mol.inner);
+    let features = chematic_perception::detect_features(&mol.inner);
+    let mut counts = [0; 6];
+    for feat in features {
+        let idx = match feat.ftype {
+            chematic_perception::FeatureType::Donor => 0,
+            chematic_perception::FeatureType::Acceptor => 1,
+            chematic_perception::FeatureType::Aromatic => 2,
+            chematic_perception::FeatureType::Hydrophobic => 3,
+            chematic_perception::FeatureType::Positive => 4,
+            chematic_perception::FeatureType::Negative => 5,
+        };
+        counts[idx] += 1;
+    }
+    format!(
+        "{{\"Donor\":{},\"Acceptor\":{},\"Aromatic\":{},\"Hydrophobic\":{},\"Positive\":{},\"Negative\":{}}}",
+        counts[0], counts[1], counts[2], counts[3], counts[4], counts[5]
+    )
+}
+
 /// Synthetic Accessibility Score (1 = easy, 10 = hard).
 #[wasm_bindgen]
 pub fn sa_score(mol: &MolHandle) -> f64 {
