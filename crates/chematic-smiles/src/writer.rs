@@ -24,10 +24,10 @@ struct SmilesWriter<'a> {
     ring_bonds: HashSet<BondIdx>,
     /// ring number(s) each atom must write when serialized.
     /// Both the "open" ancestor and "close" descendant of a ring store the same number.
-    atom_ring_nums: HashMap<AtomIdx, Vec<(u8, BondOrder)>>,
+    atom_ring_nums: HashMap<AtomIdx, Vec<(u16, BondOrder)>>,
     /// Whether each atom has been serialized in phase 2.
     written: Vec<bool>,
-    next_ring: u8,
+    next_ring: u16,
     out: String,
 }
 
@@ -152,8 +152,13 @@ impl<'a> SmilesWriter<'a> {
                 {
                     self.out.push_str(bond_order.smiles_token());
                 }
-                // Ring number: single digit for 1-9, `%NN` form for 10+.
-                if rn >= 10 {
+                // Ring number: single digit for 1-9, `%NN` form for 10-99, `%NNN` for 100+.
+                if rn >= 100 {
+                    self.out.push('%');
+                    for ch in rn.to_string().chars() {
+                        self.out.push(ch);
+                    }
+                } else if rn >= 10 {
                     self.out.push('%');
                     self.out
                         .push(char::from_digit((rn / 10) as u32, 10).unwrap());

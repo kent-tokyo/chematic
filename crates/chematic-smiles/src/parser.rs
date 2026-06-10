@@ -30,6 +30,9 @@ pub fn parse(input: &str) -> Result<Molecule, SmilesError> {
 
 const MAX_BRANCH_DEPTH: usize = 500;
 
+/// Maximum number of atoms allowed in a SMILES molecule (prevents memory exhaustion).
+const MAX_ATOMS: usize = 100_000;
+
 struct Parser<'a> {
     src: &'a [u8],
     pos: usize,
@@ -103,6 +106,13 @@ impl<'a> Parser<'a> {
             None => return Ok(attach_to),
         };
 
+        if mol.atom_count() >= MAX_ATOMS {
+            return Err(SmilesError::InvalidBracketAtom {
+                detail: format!("molecule exceeds maximum atom count {}", MAX_ATOMS),
+                pos: self.pos,
+            });
+        }
+
         let first_idx = mol.add_atom(first_atom);
 
         // Connect to the preceding atom if requested
@@ -152,6 +162,12 @@ impl<'a> Parser<'a> {
                         }
                         _ => match self.try_parse_atom()? {
                             Some(next_atom) => {
+                                if mol.atom_count() >= MAX_ATOMS {
+                                    return Err(SmilesError::InvalidBracketAtom {
+                                        detail: format!("molecule exceeds maximum atom count {}", MAX_ATOMS),
+                                        pos: self.pos,
+                                    });
+                                }
                                 let next_idx = mol.add_atom(next_atom);
                                 let bond = pending_bond
                                     .unwrap_or_else(|| implicit_bond(mol, current, next_idx));
