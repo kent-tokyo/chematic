@@ -2083,7 +2083,6 @@ mod tests {
         let desc = mqn(&m);
         assert_eq!(desc.len(), 42);
         assert_eq!(desc[0], 1); // 1 carbon
-        assert!(desc.iter().all(|&v| v <= 255)); // all u8
     }
 
     #[test]
