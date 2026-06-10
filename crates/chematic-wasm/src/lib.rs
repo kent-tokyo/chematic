@@ -1213,6 +1213,28 @@ pub fn pharmacophore_fp_3d_summary(mol: &MolHandle) -> String {
     )
 }
 
+/// AutoCorr2D descriptor (7 values: topological distance lags 1-7).
+#[wasm_bindgen]
+pub fn autocorr_2d_json(mol: &MolHandle) -> String {
+    let ac = chematic_chem::autocorr_2d(&mol.inner);
+    format!(
+        "[{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}]",
+        ac[0], ac[1], ac[2], ac[3], ac[4], ac[5], ac[6]
+    )
+}
+
+/// AutoCorr3D descriptor (8 values: Euclidean distance bins 1-8 Å).
+/// Requires 3D coordinates (generated automatically).
+#[wasm_bindgen]
+pub fn autocorr_3d_json(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords(&mol.inner);
+    let ac = chematic_3d::autocorr_3d(&mol.inner, &coords);
+    format!(
+        "[{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}]",
+        ac[0], ac[1], ac[2], ac[3], ac[4], ac[5], ac[6], ac[7]
+    )
+}
+
 /// Synthetic Accessibility Score (1 = easy, 10 = hard).
 #[wasm_bindgen]
 pub fn sa_score(mol: &MolHandle) -> f64 {

@@ -164,6 +164,54 @@ pub fn whim_getaway_combined(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
     result
 }
 
+/// AutoCorr3D: Moreau-Broto Self-Correlation (Euclidean Distance).
+///
+/// Compute self-correlation for 3D coordinates using binned Euclidean distances.
+/// Each lag corresponds to a distance bin (k * 1Å):
+/// - lag 1: 0-1 Å
+/// - lag 2: 1-2 Å
+/// - lag 3: 2-3 Å
+/// - ... lag 8: 7-8 Å
+///
+/// For each lag, sum over all atom pairs (i,j) with distance in bin of v(i) * v(j),
+/// where v(i) is the atomic mass (simplified feature for 3D self-correlation).
+pub fn autocorr_3d(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
+    if mol.atom_count() < 2 {
+        return vec![0.0; 8];
+    }
+
+    let n = mol.atom_count();
+    let mut result = vec![0.0; 8];
+
+    for lag in 1..=8 {
+        let lower = (lag - 1) as f64;
+        let upper = lag as f64;
+        let mut sum = 0.0;
+
+        for i in 0..n {
+            let idx_i = chematic_core::AtomIdx(i as u32);
+            let atom_i = mol.atom(idx_i);
+            let mass_i = atom_i.element.atomic_mass();
+            let p_i = coords.get(idx_i);
+
+            for j in (i + 1)..n {
+                let idx_j = chematic_core::AtomIdx(j as u32);
+                let atom_j = mol.atom(idx_j);
+                let mass_j = atom_j.element.atomic_mass();
+                let p_j = coords.get(idx_j);
+
+                let dist = p_i.distance(&p_j);
+                if dist >= lower && dist < upper {
+                    sum += mass_i * mass_j;
+                }
+            }
+        }
+        result[lag - 1] = sum;
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -195,5 +243,51 @@ mod tests {
         let desc = whim_getaway_combined(&mol, &coords);
         assert_eq!(desc.len(), 19);
         assert!(desc.iter().all(|&d| d.is_finite()), "all combined descriptors should be finite");
+    }
+
+    #[test]
+    fn test_autocorr_3d_single_atom() {
+        let mol = parse("C").unwrap();
+        let coords = generate_coords(&mol);
+        let ac = autocorr_3d(&mol, &coords);
+        assert_eq!(ac.len(), 8);
+        // Single atom: no pairs → all zeros
+        for val in ac {
+            assert!((val - 0.0).abs() < 1e-9);
+        }
+    }
+
+    #[test]
+    fn test_autocorr_3d_ethane() {
+        let mol = parse("CC").unwrap();
+        let coords = generate_coords(&mol);
+        let ac = autocorr_3d(&mol, &coords);
+        assert_eq!(ac.len(), 8);
+        // Ethane: C-C distance ≈ 1.54 Å → lag 2 (1-2 Å)
+        // Mass of C ≈ 12.0, so product ≈ 144
+        assert!(ac[0] < 1.0, "lag 1 (0-1Å) should be minimal: {}", ac[0]);
+        assert!(ac[1] > 100.0, "lag 2 (1-2Å) should be ~144: {}", ac[1]);
+    }
+
+    #[test]
+    fn test_autocorr_3d_propane() {
+        let mol = parse("CCC").unwrap();
+        let coords = generate_coords(&mol);
+        let ac = autocorr_3d(&mol, &coords);
+        assert_eq!(ac.len(), 8);
+        // Should have non-zero values in appropriate distance bins
+        assert!(ac.iter().any(|&x| x > 0.0), "should have non-zero autocorr values");
+        assert!(ac.iter().all(|&x| x.is_finite()), "all values should be finite");
+    }
+
+    #[test]
+    fn test_autocorr_3d_benzene() {
+        let mol = parse("c1ccccc1").unwrap();
+        let coords = generate_coords(&mol);
+        let ac = autocorr_3d(&mol, &coords);
+        assert_eq!(ac.len(), 8);
+        // Benzene: ring structure with various distances
+        assert!(ac.iter().any(|&x| x > 0.0), "benzene should have non-zero autocorr");
+        assert!(ac.iter().all(|&x| x.is_finite()), "all values should be finite");
     }
 }
