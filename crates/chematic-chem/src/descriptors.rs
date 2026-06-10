@@ -38,6 +38,30 @@ fn has_aromatic_carbon_neighbor(mol: &Molecule, idx: AtomIdx) -> bool {
         .any(|(nb, _)| mol.atom(nb).aromatic && mol.atom(nb).element.atomic_number() == 6)
 }
 
+// --- Element Detection Helpers ---
+// Consolidate atomic number matching to eliminate 50+ hardcoded checks throughout the file.
+
+#[inline]
+fn is_carbon(an: u8) -> bool { an == 6 }
+
+#[inline]
+fn is_nitrogen(an: u8) -> bool { an == 7 }
+
+#[inline]
+fn is_oxygen(an: u8) -> bool { an == 8 }
+
+#[inline]
+fn is_sulfur(an: u8) -> bool { an == 16 }
+
+#[inline]
+fn is_phosphorus(an: u8) -> bool { an == 15 }
+
+#[inline]
+fn is_halogen(an: u8) -> bool { matches!(an, 9 | 17 | 35 | 53) } // F, Cl, Br, I
+
+#[inline]
+fn is_heteroatom(an: u8) -> bool { !is_carbon(an) && an != 1 } // Not C or H
+
 /// Average atomic mass table.
 /// Falls back to `atomic_number as f64` for unlisted elements.
 fn avg_mass(element: Element) -> f64 {
