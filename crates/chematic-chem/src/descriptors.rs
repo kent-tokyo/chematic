@@ -182,7 +182,7 @@ pub fn hbd_count(mol: &Molecule) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
-            (an == 7 || an == 8) && implicit_hcount(mol, *idx) > 0
+            (is_nitrogen(an) || is_oxygen(an)) && implicit_hcount(mol, *idx) > 0
         })
         .count()
 }
@@ -204,7 +204,7 @@ pub fn hba_count(mol: &Molecule) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
-            if an == 7 {
+            if is_nitrogen(an) {
                 // Nitrogen: charged N (N+ in nitro, quaternary, n+ in thiazolium) is never HBA.
                 if atom.charge != 0 {
                     return false;
@@ -217,7 +217,7 @@ pub fn hba_count(mol: &Molecule) -> usize {
                     // Non-aromatic N: exclude amide N (bonded to C=O)
                     !neighbor_has_carbonyl(mol, *idx)
                 }
-            } else if an == 8 {
+            } else if is_oxygen(an) {
                 // Oxygen: exclude acid OH bonded to C=O or to oxidized S with S=O
                 let h = implicit_hcount(mol, *idx);
                 if h > 0 {
@@ -225,7 +225,7 @@ pub fn hba_count(mol: &Molecule) -> usize {
                 } else {
                     true
                 }
-            } else if an == 16 {
+            } else if is_sulfur(an) {
                 // Sulfur (Ertl definition includes divalent S with free lone pair)
                 if atom.aromatic {
                     // Aromatic S (thiophene-type): count if uncharged
@@ -1684,12 +1684,12 @@ pub fn usrcat(mol: &Molecule) -> [f64; 42] {
         let an = atom.element.atomic_number();
 
         // Count donors: N-H or O-H with connectivity
-        if (an == 7 || an == 8) && implicit_hcount(mol, AtomIdx(idx as u32)) > 0 {
+        if (is_nitrogen(an) || is_oxygen(an)) && implicit_hcount(mol, AtomIdx(idx as u32)) > 0 {
             result[36] += 1.0; // Donor count
         }
 
         // Count acceptors: N or O with lone pairs
-        if an == 7 || an == 8 {
+        if is_nitrogen(an) || is_oxygen(an) {
             result[37] += 1.0; // Acceptor count
         }
 
@@ -1699,7 +1699,7 @@ pub fn usrcat(mol: &Molecule) -> [f64; 42] {
         }
 
         // Count hydrophobic (C in aliphatic context)
-        if an == 6 {
+        if is_carbon(an) {
             let degree = mol.neighbors(AtomIdx(idx as u32)).count();
             if degree > 0 && !atom.aromatic {
                 result[39] += 1.0; // Hydrophobic count
