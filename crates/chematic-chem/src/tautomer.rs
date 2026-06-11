@@ -35,23 +35,30 @@ impl BondOrderMatch {
 
 /// A tautomer transformation rule: donor loses an H and the bond orders shift.
 ///
-/// Pattern: donor -[donor_bridge_order]- bridge -[bridge_acceptor_order]- acceptor
-/// After transform: donor =[new]= bridge -[new]- acceptor (with H shifted to acceptor)
+/// For path_len=3 (1,3-shift):
+///   Pattern: donor -[donor_bridge_order]- bridge -[bridge_acceptor_order]- acceptor
+///   After: donor =[new]= bridge -[new]- acceptor
+///
+/// For path_len=5 (1,5-shift):
+///   Pattern: donor -[donor_bridge_order]- b1 -[any]- b2 -[any]- b3 -[bridge_acceptor_order]- acceptor
+///   After: donor =[new]= b1 -[any]- b2 -[any]- b3 -[new]- acceptor (with H shifted)
 struct TautomerRule {
     #[allow(dead_code)]
     name: &'static str,
     /// Atomic number of the donor atom (loses H).
     donor_elem: u8,
-    /// Atomic number of the bridge atom (None = any).
+    /// Atomic number of the bridge atom(s). For 1,3-shift: single bridge. For 1,5-shift: central atom (b2) if specified.
     bridge_elem: Option<u8>,
     /// Atomic number of the acceptor atom (gains H via implicit valence).
     acceptor_elem: u8,
-    /// Required bond order between donor and bridge.
+    /// Required bond order between donor and bridge (or donor and b1 for 1,5-shift).
     donor_bridge_order: BondOrderMatch,
-    /// Required bond order between bridge and acceptor.
+    /// Required bond order between bridge and acceptor (or b3 and acceptor for 1,5-shift).
     bridge_acceptor_order: BondOrderMatch,
     /// If true, this rule is applied in canonical_tautomer to normalize toward a preferred form.
     prefer_forward: bool,
+    /// Path length: 3 for 1,3-shift (donor-bridge-acceptor), 5 for 1,5-shift.
+    path_len: usize,
 }
 
 /// The 15 tautomer rules.
@@ -65,6 +72,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
+        path_len: 3,
     },
     // 2. amide-iminol: N-H adjacent to C=O → N=C-O (prefer amide — forward=false)
     TautomerRule {
@@ -75,6 +83,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 3. iminol→amide: O-H adjacent to C=N → O=C-N (prefer amide — forward=true)
     TautomerRule {
@@ -85,6 +94,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
+        path_len: 3,
     },
     // 4. imine-enamine: N-H adjacent to C=C → N=C-C (prefer imine)
     TautomerRule {
@@ -95,6 +105,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
+        path_len: 3,
     },
     // 5. 1,3-H-shift N→O (any bridge): e.g. nitroso/oxime, hydroxamic acid
     TautomerRule {
@@ -105,6 +116,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 6. 1,3-H-shift N→N (any bridge): imidazole, pyrazole, guanidine
     TautomerRule {
@@ -115,6 +127,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 7. thioamide: N-H adjacent to C=S → N=C-S (prefer thioamide — forward=false)
     TautomerRule {
@@ -125,6 +138,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 8. thio-iminol→thioamide: S-H adjacent to C=N → S=C-N
     TautomerRule {
@@ -135,6 +149,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
+        path_len: 3,
     },
     // 9. thio keto-enol: S-H adjacent to C=C → S=C-C (prefer thioketone)
     TautomerRule {
@@ -145,6 +160,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
+        path_len: 3,
     },
     // 10. thio-enol→thioketone: O-H adjacent to C=S → O=C-S
     TautomerRule {
@@ -155,6 +171,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 11. 1,3-N→S (any bridge): sulfonamide/thioamide-type
     TautomerRule {
@@ -165,6 +182,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 12. 1,3-S→O (any bridge)
     TautomerRule {
@@ -175,6 +193,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 13. 1,3-S→N (any bridge)
     TautomerRule {
@@ -185,6 +204,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 14. 1,3-O→S (any bridge)
     TautomerRule {
@@ -195,6 +215,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 15. 1,3-S→S (any bridge): dithioamide, xanthate-type
     TautomerRule {
@@ -205,6 +226,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 16. 1,3-O→N any bridge: extends iminol-amide (rule 3) to non-C bridges
     //     e.g. O-H + S=N, N=N → O=X + N-H (hydroxamic acid, thiohydroximate)
@@ -216,6 +238,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
+        path_len: 3,
     },
     // 17. 1,3-O→O any bridge: O-H via N or S bridge to =O
     //     e.g. hydroxylamine HO-N=O ↔ O=N-OH (N-oxide tautomer)
@@ -227,6 +250,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 18. 1,3-N→C any bridge: extends imine-enamine (rule 4) to non-C bridges
     //     e.g. N-H + S=C, N=C via N bridge → N= + X-C-H
@@ -238,6 +262,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: true,
+        path_len: 3,
     },
     // 19. 1,3-C→O any bridge: active methylene (or terminal alkyne) to O-H
     //     Forward: C-H + X=O → C=X + O-H. prefer_forward:false → prefer keto/C-H form.
@@ -249,6 +274,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
     // 20. 1,3-C→N any bridge: active methylene adjacent to =N (via S, O, or N bridge)
     //     Forward: C-H + X=N → C=X + N-H. prefer_forward:false → prefer N-H form.
@@ -260,6 +286,7 @@ static RULES: &[TautomerRule] = &[
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
         prefer_forward: false,
+        path_len: 3,
     },
 ];
 
@@ -344,6 +371,37 @@ fn clone_mol(mol: &Molecule) -> Molecule {
 
 const FNV1A_OFFSET: u64 = 0xcbf29ce484222325;
 const FNV1A_PRIME: u64 = 0x100000001b3;
+
+/// Tautomer form score for canonical selection: prefers O-H > N-H > S-H and aromatic rings.
+fn tautomer_score(mol: &Molecule) -> i32 {
+    let mut score = 0i32;
+    let mut has_aromatic = false;
+
+    for (_, atom) in mol.atoms() {
+        // Aromatic ring bonus
+        if atom.aromatic {
+            has_aromatic = true;
+        }
+
+        // Heteroatom hydrogen: O-H > N-H > S-H (explicit or implicit)
+        let h_count = atom.hydrogen_count.unwrap_or(0) as i32;
+        if h_count > 0 {
+            match atom.element.atomic_number() {
+                8 => score += h_count * 100,  // O-H: highest priority
+                7 => score += h_count * 50,   // N-H: medium priority
+                16 => score += h_count * 25,  // S-H: low priority
+                _ => {}
+            }
+        }
+    }
+
+    // Aromatic system bonus
+    if has_aromatic {
+        score += 1000;
+    }
+
+    score
+}
 
 /// Order-independent structural hash for convergence detection.
 fn mol_fingerprint(mol: &Molecule) -> u64 {
@@ -588,8 +646,8 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
         }
     }
 
-    // Among direct aromatic 1,2-shift tautomers, pick the lexicographically
-    // smallest H-assignment so both N1H and N2H forms converge to the same output.
+    // Among direct aromatic 1,2-shift tautomers, pick by tautomer score
+    // (O-H > N-H > S-H, aromatic rings), with H-assignment as tiebreaker.
     let mut candidates: Vec<Molecule> = vec![clone_mol(&current)];
     for (d, a) in find_direct_aromatic_matches(&current) {
         if let Some(t) = transfer_hydrogen_aromatic(&current, d, a) {
@@ -597,7 +655,12 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
         }
     }
     if candidates.len() > 1 {
-        current = candidates.into_iter().min_by_key(h_assignment).unwrap();
+        candidates.sort_by(|a, b| {
+            tautomer_score(b)
+                .cmp(&tautomer_score(a))
+                .then_with(|| h_assignment(a).cmp(&h_assignment(b)))
+        });
+        current = candidates.into_iter().next().unwrap();
     }
     current
 }
