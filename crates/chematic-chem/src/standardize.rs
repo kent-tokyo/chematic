@@ -259,6 +259,7 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
     let mut nitro_atoms = std::collections::HashSet::new();
+    let mut oxide_atoms = std::collections::HashSet::new();
 
     // First pass: identify nitro groups [N+](=O)[O-]
     for (idx, atom) in mol.atoms() {
@@ -288,6 +289,19 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
                 if has_double_o && has_single_negative_o {
                     nitro_atoms.insert(idx);
                 }
+            } else if o_neighbors.len() == 1 {
+                // Check for aromatic N-oxide: aromatic N+ bonded to O-
+                if let Some((o_idx, bond_idx)) = o_neighbors.first() {
+                    let o_atom = mol.atom(*o_idx);
+                    let bond = mol.bond(*bond_idx);
+                    if atom.aromatic
+                        && bond.order == chematic_core::BondOrder::Single
+                        && o_atom.charge == -1
+                    {
+                        nitro_atoms.insert(idx);
+                        oxide_atoms.insert(*o_idx);
+                    }
+                }
             }
         }
     }
@@ -307,12 +321,12 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
         remap.insert(idx, new_idx);
     }
 
-    // Third pass: copy bonds, converting S→O to double in nitro groups
+    // Third pass: copy bonds, converting N-O bonds in nitro/oxide groups
     for i in 0..mol.bond_count() {
         let bond = mol.bond(chematic_core::BondIdx(i as u32));
         let mut new_order = bond.order;
 
-        // If this is a single N-O bond in a nitro group where O is negative, make it double
+        // Nitro groups: convert single N-O (where O is negative) to double
         if nitro_atoms.contains(&bond.atom1) && nitro_atoms.contains(&bond.atom2) {
             let a1_is_n = mol.atom(bond.atom1).element.atomic_number() == 7;
             let a2_is_o = mol.atom(bond.atom2).element.atomic_number() == 8;
@@ -324,6 +338,11 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
             {
                 new_order = chematic_core::BondOrder::Double;
             }
+        }
+
+        // N-oxide: keep as single bond (already correct after atom charge normalization)
+        if oxide_atoms.contains(&bond.atom1) || oxide_atoms.contains(&bond.atom2) {
+            // No bond order change needed — already single
         }
 
         if let (Some(&new_a1), Some(&new_a2)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
@@ -623,48 +642,55 @@ pub fn reionize(mol: &Molecule) -> Molecule {
         let mut atom = mol.atom(idx).clone();
         let an = atom.element.atomic_number();
 
-        // Check for carboxylic acid or phenol: C=O with O-H
+        // Check for carboxylic acid or phenol: C=O with O-H or Ar-O-H
         if an == 8 {
-            // Oxygen: check if it's OH bonded to C with C=O nearby
-            let is_hydroxyl = mol
+            // Oxygen: check if it's OH bonded to C
+            if let Some((c_idx, _)) = mol
                 .neighbors(idx)
-                .any(|(neighbor, bond_idx)| {
-                    mol.bond(bond_idx).order == chematic_core::BondOrder::Single
-                        && mol.atom(neighbor).element.atomic_number() == 6
-                });
+                .find(|(neighbor, bond_idx)| {
+                    mol.bond(*bond_idx).order == chematic_core::BondOrder::Single
+                        && mol.atom(*neighbor).element.atomic_number() == 6
+                })
+            {
+                // Check if C is aromatic (phenol) or has a double-bonded O (carboxylic acid)
+                let is_aromatic = mol.atom(c_idx).aromatic;
+                let has_double_bonded_o = mol
+                    .neighbors(c_idx)
+                    .any(|(other, bond_idx)| {
+                        mol.bond(bond_idx).order == chematic_core::BondOrder::Double
+                            && mol.atom(other).element.atomic_number() == 8
+                            && other != idx
+                    });
 
-            if is_hydroxyl {
-                // Check if carbon has a C=O (carboxylic acid or phenol pattern)
-                let neighbor_c = mol
-                    .neighbors(idx)
-                    .find(|(neighbor, bond_idx)| {
-                        mol.bond(*bond_idx).order == chematic_core::BondOrder::Single
-                            && mol.atom(*neighbor).element.atomic_number() == 6
-                    })
-                    .map(|(n, b)| (n, b));
-
-                if let Some((c_idx, _)) = neighbor_c {
-                    let has_double_bonded_o = mol
-                        .neighbors(c_idx)
-                        .any(|(other, bond_idx)| {
-                            mol.bond(bond_idx).order == chematic_core::BondOrder::Double
-                                && mol.atom(other).element.atomic_number() == 8
-                                && other != idx
-                        });
-
-                    if has_double_bonded_o && atom.charge >= 0 {
-                        atom.charge -= 1;  // Deprotonate: OH → O-
-                    }
+                // Only deprotonate if it's a phenol or carboxylic acid, not aliphatic OH
+                if (is_aromatic || has_double_bonded_o) && atom.charge >= 0 {
+                    atom.charge -= 1;  // Deprotonate: OH → O-
                 }
             }
         }
 
-        // Check for primary/secondary amines
+        // Check for primary/secondary amines (but NOT amides)
         if an == 7 {
-            let h_count = chematic_core::implicit_hcount(mol, idx);
-            // Protonate amines (primary: NH2, secondary: NH)
-            if (h_count == 2 || h_count == 1) && atom.charge <= 0 {
-                atom.charge += 1;  // Protonate: NH2 → NH3+
+            // Check if this N is NOT part of an amide (C(=O)-N)
+            let is_amide = mol
+                .neighbors(idx)
+                .any(|(neighbor, bond_idx)| {
+                    mol.bond(bond_idx).order == chematic_core::BondOrder::Single
+                        && mol.atom(neighbor).element.atomic_number() == 6
+                        && mol
+                            .neighbors(neighbor)
+                            .any(|(o_neighbor, o_bond)| {
+                                mol.bond(o_bond).order == chematic_core::BondOrder::Double
+                                    && mol.atom(o_neighbor).element.atomic_number() == 8
+                            })
+                });
+
+            if !is_amide {
+                let h_count = chematic_core::implicit_hcount(mol, idx);
+                // Protonate free amines only (not amides)
+                if (h_count == 2 || h_count == 1) && atom.charge <= 0 {
+                    atom.charge += 1;  // Protonate: NH2 → NH3+
+                }
             }
         }
 
