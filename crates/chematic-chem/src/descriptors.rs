@@ -1858,6 +1858,87 @@ pub fn num_hydrogens(mol: &Molecule) -> usize {
 }
 
 // ---------------------------------------------------------------------------
+// Functional Group Bond Counts (granular classification)
+// ---------------------------------------------------------------------------
+
+/// Count amide C(=O)-N bonds in the molecule.
+///
+/// Identifies carbonyl carbons (C=O) connected to nitrogen atoms.
+/// Counts C(=O)-N linkages (primary amides, secondary amides, etc.).
+pub fn num_amide_bonds(mol: &Molecule) -> usize {
+    let mut count = 0;
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() != 6 {
+            continue;
+        }
+        // Check if this carbon is part of a carbonyl (C=O)
+        let has_carbonyl_o = mol
+            .neighbors(idx)
+            .any(|(nb, bid)| {
+                mol.atom(nb).element.atomic_number() == 8 && mol.bond(bid).order == BondOrder::Double
+            });
+
+        if !has_carbonyl_o {
+            continue;
+        }
+
+        // Check if this carbon is bonded to nitrogen
+        if mol
+            .neighbors(idx)
+            .any(|(nb, _)| mol.atom(nb).element.atomic_number() == 7)
+        {
+            count += 1;
+        }
+    }
+    count
+}
+
+/// Count ester C(=O)-O bonds in the molecule.
+///
+/// Identifies ester linkages: carbonyl C bonded to O (via C-O-) where the
+/// oxygen is bonded to a carbon (R-O-C=O, not H-O-C=O which is carboxylic acid).
+pub fn num_ester_bonds(mol: &Molecule) -> usize {
+    let mut count = 0;
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() != 6 {
+            continue;
+        }
+        // Check if this carbon is part of a carbonyl (C=O)
+        let has_carbonyl_o = mol
+            .neighbors(idx)
+            .any(|(nb, bid)| {
+                mol.atom(nb).element.atomic_number() == 8 && mol.bond(bid).order == BondOrder::Double
+            });
+
+        if !has_carbonyl_o {
+            continue;
+        }
+
+        // Check if this carbon is bonded to oxygen (via single bond)
+        for (o_idx, bid) in mol.neighbors(idx) {
+            let is_oxygen = mol.atom(o_idx).element.atomic_number() == 8;
+            let is_single = matches!(
+                mol.bond(bid).order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down
+            );
+            if !is_oxygen || !is_single {
+                continue;
+            }
+
+            // Found C(=O)-O. Check if the O is bonded to a carbon (ester) not just H (acid)
+            let o_bonded_to_carbon = mol
+                .neighbors(o_idx)
+                .any(|(nb, _)| nb != idx && mol.atom(nb).element.atomic_number() == 6);
+
+            if o_bonded_to_carbon {
+                count += 1;
+            }
+        }
+    }
+    count
+}
+
+// ---------------------------------------------------------------------------
 // Molecular Formula Generation
 // ---------------------------------------------------------------------------
 
@@ -2770,5 +2851,67 @@ mod tests {
     fn test_calc_mol_formula_acetic_acid() {
         let m = mol("CC(=O)O");
         assert_eq!(calc_mol_formula(&m), "C2H4O2");
+    }
+
+    // =========================================================================
+    // Functional group bond counts (C4 - granular classification)
+    // =========================================================================
+
+    #[test]
+    fn test_num_amide_bonds_acetamide() {
+        // CH3-C(=O)-N-H: one amide bond
+        let m = mol("CC(=O)N");
+        assert_eq!(num_amide_bonds(&m), 1);
+    }
+
+    #[test]
+    fn test_num_amide_bonds_urea() {
+        // N-C(=O)-N: one amide bond (C=O-N)
+        let m = mol("NC(=O)N");
+        assert_eq!(num_amide_bonds(&m), 1);
+    }
+
+    #[test]
+    fn test_num_amide_bonds_primary_amide() {
+        // CH3-C(=O)-NH2: primary amide
+        let m = mol("CC(=O)N");
+        assert_eq!(num_amide_bonds(&m), 1);
+    }
+
+    #[test]
+    fn test_num_amide_bonds_none() {
+        // Benzene has no amide bonds
+        let m = mol("c1ccccc1");
+        assert_eq!(num_amide_bonds(&m), 0);
+    }
+
+    #[test]
+    fn test_num_ester_bonds_methyl_formate() {
+        // H-C(=O)-O-CH3: one ester bond
+        let m = mol("COC=O");
+        assert_eq!(num_ester_bonds(&m), 1);
+    }
+
+    #[test]
+    fn test_num_ester_bonds_acetic_acid_methyl_ester() {
+        // CH3-C(=O)-O-CH3: one ester bond
+        let m = mol("CC(=O)OC");
+        assert_eq!(num_ester_bonds(&m), 1);
+    }
+
+    #[test]
+    fn test_num_ester_bonds_none() {
+        // Carboxylic acid (COOH) is not an ester
+        let m = mol("CC(=O)O");
+        // CC(=O)O is acetic acid: C=O with O-H (not O-C)
+        assert_eq!(num_ester_bonds(&m), 0);
+    }
+
+    #[test]
+    fn test_num_ester_bonds_aspirin() {
+        // Aspirin CC(=O)Oc1ccccc1C(=O)O has one ester bond (acetyl ester)
+        // and one carboxylic acid (not counted)
+        let m = mol("CC(=O)Oc1ccccc1C(=O)O");
+        assert_eq!(num_ester_bonds(&m), 1, "aspirin has one ester bond (aryl ester)");
     }
 }
