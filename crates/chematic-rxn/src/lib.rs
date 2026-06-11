@@ -13,6 +13,7 @@
 pub mod balance;
 pub mod enumerate;
 pub mod green;
+pub mod query;
 pub mod reaction;
 pub mod transform;
 
@@ -21,6 +22,9 @@ pub use enumerate::{
     LibraryConfig, LibraryError, enumerate_library, enumerate_library_2way, enumerate_library_3way,
 };
 pub use green::{atom_economy, e_factor, pmi_rxn, reaction_mass_efficiency};
+pub use query::{
+    ReactionQuery, ReactionQueryError, has_reaction_substructure_match, parse_reaction_query,
+};
 pub use reaction::{
     Reaction, ReactionCenter, RxnError, find_reaction_center, parse_reaction, write_reaction,
 };
