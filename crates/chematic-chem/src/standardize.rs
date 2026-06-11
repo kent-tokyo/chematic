@@ -681,7 +681,8 @@ pub fn reionize(mol: &Molecule) -> Molecule {
                             .neighbors(neighbor)
                             .any(|(o_neighbor, o_bond)| {
                                 mol.bond(o_bond).order == chematic_core::BondOrder::Double
-                                    && mol.atom(o_neighbor).element.atomic_number() == 8
+                                    && (mol.atom(o_neighbor).element.atomic_number() == 8
+                                        || mol.atom(o_neighbor).element.atomic_number() == 16)
                             })
                 });
 
@@ -1514,6 +1515,44 @@ mod tests {
         assert!(
             has_positive_nitrogen,
             "reionize should protonate amines"
+        );
+    }
+
+    #[test]
+    fn reionize_protects_amide_nitrogen() {
+        // BUG FIX #2: Amide nitrogen should NOT be protonated
+        // "CC(=O)N" — primary amide
+        let mol = parse("CC(=O)N").unwrap();
+
+        let result = reionize(&mol);
+
+        // Should NOT have a positively charged nitrogen
+        let has_positive_nitrogen = result
+            .atoms()
+            .any(|(_, a)| a.element.atomic_number() == 7 && a.charge > 0);
+
+        assert!(
+            !has_positive_nitrogen,
+            "reionize should NOT protonate amide nitrogen"
+        );
+    }
+
+    #[test]
+    fn reionize_protects_thioamide_nitrogen() {
+        // BUG FIX #2: Thioamide nitrogen should also NOT be protonated
+        // "CC(=S)N" — thioamide
+        let mol = parse("CC(=S)N").unwrap();
+
+        let result = reionize(&mol);
+
+        // Should NOT have a positively charged nitrogen
+        let has_positive_nitrogen = result
+            .atoms()
+            .any(|(_, a)| a.element.atomic_number() == 7 && a.charge > 0);
+
+        assert!(
+            !has_positive_nitrogen,
+            "reionize should NOT protonate thioamide nitrogen (C=S conjugation)"
         );
     }
 }
