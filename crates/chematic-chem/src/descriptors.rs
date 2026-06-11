@@ -400,6 +400,14 @@ fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx) -> f64 {
     if has_double_bond_to(mol, idx, 8) { 26.88 } else { 34.14 }
 }
 
+/// Topological Polar Surface Area (Ertl 2000).
+///
+/// Sum of Ertl atom-type contributions for N, O, S, and P atoms.
+/// Hydrogen atoms are implicit (not computed). Values match RDKit defaults with calibrations
+/// for secondary amide N (12.03 Å²), aromatic N (15.79 Å²), and phosphorus atoms.
+///
+/// Algorithm dispatches per element (tpsa_nitrogen, tpsa_oxygen, tpsa_sulfur, tpsa_phosphorus)
+/// to reduce cyclomatic complexity and improve readability.
 pub fn tpsa(mol: &Molecule) -> f64 {
     let mut psa = 0.0f64;
     for (idx, atom) in mol.atoms() {
@@ -434,9 +442,12 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// - S: thioether=+0.6482, aromatic=+0.6237 (was 0.2432/0.0)
 /// - O: alcohol=−0.2893, ether=−0.0684, aromatic=+0.1552, carbonyl=−0.0509
 /// - Cl: aromatic=+0.7904, aliphatic=+0.6895
+/// Wildman-Crippen LogP per-atom contributions.
 ///
-/// Per-atom Crippen LogP contributions (heavy atoms only; H contributions are
-/// folded into the heavy atom they are attached to). Index matches mol.atoms().
+/// Dispatches to per-element atom-type functions (crippen_carbon, crippen_nitrogen, etc.)
+/// to compute Wildman-Crippen atom-type contributions. Per-atom LogP contributions
+/// (heavy atoms only; H contributions are folded into the heavy atom they are attached to).
+/// Index matches mol.atoms().
 pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
     mol.atoms()
         .map(|(idx, atom)| {
@@ -1088,25 +1099,19 @@ pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
                 return false;
             }
             let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
-            for i in 0..member_rings.len() {
-                for j in (i + 1)..member_rings.len() {
-                    let shared: Vec<AtomIdx> = member_rings[i]
-                        .iter()
-                        .filter(|a| member_rings[j].contains(a))
+            let ring_sets: Vec<HashSet<AtomIdx>> = member_rings.iter().map(|r| r.iter().copied().collect()).collect();
+            for i in 0..ring_sets.len() {
+                for j in (i + 1)..ring_sets.len() {
+                    let shared: Vec<AtomIdx> = ring_sets[i]
+                        .intersection(&ring_sets[j])
                         .copied()
                         .collect();
                     if shared.len() < 2 {
                         continue;
                     }
-                    // Skip when one ring is entirely contained in the other — this is an artifact
-                    // of the SSSR returning a symmetric-difference ring instead of the minimal ring.
-                    // Real ring pairs always have |shared| < min(|R_i|, |R_j|).
-                    if shared.len() == member_rings[i].len()
-                        || shared.len() == member_rings[j].len()
-                    {
+                    if shared.len() == ring_sets[i].len() || shared.len() == ring_sets[j].len() {
                         continue;
                     }
-                    // If any pair of shared atoms is not directly bonded, this is a bridge junction.
                     for a in 0..shared.len() {
                         for b in (a + 1)..shared.len() {
                             if mol.bond_between(shared[a], shared[b]).is_none() {
@@ -1247,6 +1252,28 @@ fn fill_mqn_stats(mqn: &mut Vec<u8>, vals: &mut Vec<u8>, base: usize) {
     }
 }
 
+/// Molecular Quantum Numbers (MQN) — 42-element topological descriptor.
+///
+/// Returns a vector of 42 u8 values encoding:
+/// - [0-9]: Atom counts (C, N, O, F, Si, P, S, Cl, Br, I)
+/// - [10-13]: Bond counts (single, double, triple, aromatic)
+/// - [14-16]: Ring counts (total, aromatic, saturated)
+/// - [17-19]: Degree stats (min, max, avg of heavy-atom neighbors)
+/// - [20-22]: Valence stats (min, max, avg)
+/// - [23-25]: Hydrogen counts on C/N/O
+/// - [26-27]: Formal charge (signed offset from 127, absolute)
+/// - [28-30]: Heteroatom degree stats (N/O/S/halogens)
+/// - [31]: Rotatable bond count
+/// - [32]: Aromatic atom count
+/// - [33-34]: H-bond donors/acceptors
+/// - [35-36]: Aromatic/saturated heterocyclic rings
+/// - [37]: Heavy atom count
+/// - [38]: sp3 carbon count
+/// - [39]: Fused ring count (rings sharing >1 atom)
+/// - [40]: Bridgehead atom count
+/// - [41]: Spiro atom count
+///
+/// All counts saturate at u8::MAX (255) for large molecules.
 pub fn mqn(mol: &Molecule) -> Vec<u8> {
     let mut mqn = vec![0u8; 42];
 
@@ -1404,13 +1431,12 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     mqn[38] = sp3_count;
 
     // 39: Fused ring count (approximate: rings sharing >1 atom)
+    // Convert rings to HashSet for O(1) overlap checking
+    let ring_sets: Vec<HashSet<AtomIdx>> = rings.iter().map(|r| r.iter().copied().collect()).collect();
     let mut fused_count = 0u8;
-    for i in 0..rings.len() {
-        for j in (i + 1)..rings.len() {
-            let overlap = rings[i]
-                .iter()
-                .filter(|idx| rings[j].contains(idx))
-                .count();
+    for i in 0..ring_sets.len() {
+        for j in (i + 1)..ring_sets.len() {
+            let overlap = ring_sets[i].intersection(&ring_sets[j]).count();
             if overlap > 1 {
                 fused_count = fused_count.saturating_add(1);
             }
@@ -1421,7 +1447,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     // 40: Bridgehead atom count (iterate atoms once, not rings)
     let mut bridgehead = 0u8;
     for (idx, _) in mol.atoms() {
-        let in_rings = rings
+        let in_rings = ring_sets
             .iter()
             .filter(|r| r.contains(&idx))
             .count();
