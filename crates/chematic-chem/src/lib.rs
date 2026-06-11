@@ -89,7 +89,7 @@ pub use topo_descriptors::{
     kappa3, labute_asa, labute_asa_per_atom, randic_index, topological_distance_matrix,
     wiener_index, zagreb_index_m1,
 };
-pub use vsa::{peoe_vsa, slogp_vsa, smr_vsa};
+pub use vsa::{estate_vsa, peoe_vsa, slogp_vsa, smr_vsa};
 pub use workflow::{
     CompareOptions, DescriptorDelta, DescriptorSummary, FilterSummary, FunctionalGroupSummary,
     MoleculeComparison, MoleculeReport, NamedGroupSummary, PairwiseComparison, ReportOptions,
