@@ -1946,7 +1946,7 @@ const BRENK_SMARTS: &[(&str, &str)] = &[
     ("sulfonamide", "[#16](=[#8])(=[#8])-[#7]"),
     ("sulfonyl_chloride", "[#16](=[#8])(=[#8])-[#17]"),
     ("sulfonyl_fluoride", "[#16](=[#8])(=[#8])-[#9]"),
-    ("aldehyde", "[CH1]=O"),
+    ("aldehyde", "[CH1,CH2]=O"),
     ("ketone_alpha", "[#6](-[#1])(-[#1])-[#6](=[#8])"),
     ("acyl_halide", "[#6](=[#8])-[#17]"),
     ("acyl_fluoride", "[#6](=[#8])-[#9]"),
@@ -2155,6 +2155,26 @@ mod tests {
         // Thiol is a Brenk alert
         let hits = brenk_matches(&mol("Cc1ccccc1S"));
         assert!(!hits.is_empty(), "thiol should trigger Brenk alert");
+    }
+
+    #[test]
+    fn test_aldehyde_formaldehyde_matches() {
+        // BUG FIX #1: Formaldehyde should match aldehyde pattern [CH1,CH2]=O
+        let hits = brenk_matches(&mol("C=O"));
+        assert!(
+            hits.contains(&"aldehyde"),
+            "formaldehyde should match aldehyde alert"
+        );
+    }
+
+    #[test]
+    fn test_aldehyde_acetaldehyde_matches() {
+        // BUG FIX #1 regression: acetaldehyde should still match
+        let hits = brenk_matches(&mol("CC=O"));
+        assert!(
+            hits.contains(&"aldehyde"),
+            "acetaldehyde should match aldehyde alert"
+        );
     }
 
     #[test]
