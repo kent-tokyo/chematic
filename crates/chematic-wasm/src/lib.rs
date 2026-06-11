@@ -3503,6 +3503,7 @@ pub fn standardize_smiles_report_json(
         neutralize_charges,
         remove_explicit_h,
         largest_fragment_only,
+        zwitterion_handling: chematic_chem::ZwitterionHandling::Normalize,
     });
     let (standardized, report) = pipeline.run(&mol);
     let report_json = match serde_json::to_string(&report) {

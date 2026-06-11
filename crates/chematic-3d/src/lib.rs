@@ -18,11 +18,13 @@ pub mod dg;
 pub mod dg_fft;
 pub mod descriptors_3d;
 pub mod etkdg;
+pub mod etkdg_knowledge;
 pub mod md;
 pub mod minimize;
 pub mod mol_transforms;
 pub mod pharmacophore_fp_3d;
 pub mod pdb;
+pub mod sasa;
 pub mod shape_descriptors;
 pub mod stereo3d;
 pub mod usr;
@@ -49,6 +51,7 @@ pub use mol_transforms::{
 };
 pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
+pub use sasa::{sasa_per_atom, shrake_rupley_sasa};
 pub use shape_descriptors::{
     asphericity, eccentricity, npr1, npr2, plane_of_best_fit, pmi, pmi1, pmi2, pmi3,
     radius_of_gyration,
