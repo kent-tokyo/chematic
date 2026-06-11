@@ -14,6 +14,7 @@ use chematic_chem::descriptors::{
     num_aliphatic_heterocycles, num_aromatic_heterocycles, num_bridgehead_atoms,
     num_saturated_heterocycles, num_spiro_atoms, rotatable_bond_count, tpsa,
 };
+use chematic_chem::brics_fragments;
 use chematic_smiles::parse;
 
 fn mol(smi: &str) -> chematic_core::molecule::Molecule {
@@ -952,4 +953,51 @@ fn mqn_caffeine() {
     let m = &mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
     let result = mqn(m);
     assert_eq!(result.len(), 42, "MQN must return 42 descriptors");
+}
+
+// ── BRICS Fragmentation ──────────────────────────────────────────────────────
+
+#[test]
+fn brics_fragments_aspirin() {
+    // CC(=O)Oc1ccccc1C(=O)O — contains ester (Ar-O-C) and carboxylic acid.
+    // RDKit BRICS breaks: Ar-O (L2/L7 type) and possibly C(=O)-O (ester).
+    // Expected: 2–3 fragments depending on ester handling.
+    let frags = brics_fragments(&mol("CC(=O)Oc1ccccc1C(=O)O"));
+    assert!(
+        frags.len() >= 2,
+        "aspirin BRICS should yield ≥2 fragments, got {}",
+        frags.len()
+    );
+    // Check all fragments are nonzero size
+    for (i, frag) in frags.iter().enumerate() {
+        assert!(
+            frag.atom_count() > 0,
+            "fragment {} has zero atoms",
+            i
+        );
+    }
+}
+
+#[test]
+fn brics_fragments_acetanilide() {
+    // CC(=O)Nc1ccccc1 — amide C-N linkage (L1-L5).
+    // Expected: 2 fragments (amide C and N-Ar side).
+    let frags = brics_fragments(&mol("CC(=O)Nc1ccccc1"));
+    assert!(
+        frags.len() >= 2,
+        "acetanilide BRICS should yield ≥2 fragments, got {}",
+        frags.len()
+    );
+}
+
+#[test]
+fn brics_fragments_ibuprofen() {
+    // CC(C)Cc1ccc(cc1)C(C)C(=O)O — contains aliphatic chain, aromatic, and carboxylic acid.
+    // Expected: ≥2 fragments (chain-ring and possibly acid breakage).
+    let frags = brics_fragments(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O"));
+    assert!(
+        frags.len() >= 2,
+        "ibuprofen BRICS should yield ≥2 fragments, got {}",
+        frags.len()
+    );
 }
