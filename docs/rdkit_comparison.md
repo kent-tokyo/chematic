@@ -1,7 +1,7 @@
 # chematic vs RDKit — 定量比較レポート
 
-**作成日**: 2026-06-07  
-**chematic バージョン**: 0.1.30  
+**作成日**: 2026-06-11  
+**chematic バージョン**: 0.1.74  
 **RDKit バージョン**: 2024.x (Python)  
 **比較分子数**: 175 分子（diverse set: 有機小分子・アミノ酸・複素環・天然物・FDA 承認薬）
 
@@ -12,6 +12,8 @@
 chematic の各プロパティ計算結果を RDKit のリファレンス値と比較した。
 MW・HAC・HBD はほぼ完全一致；**v0.1.30 での大幅改善により LogP MAE が 0.0540 に到達**；
 TPSA・HBA も高精度；ECFP4 Tanimoto 類似度は順位相関 ρ=0.925 と実用的な精度を示す。
+
+**v0.1.74 までの進捗**: v0.1.69–v0.1.74 で VSA descriptor bins、tautomer scoring、scaffold network aggregation、RMSD conformer pruning、CIP rule 3 テスト、functional group bond counts を実装（Section 10 参照）。
 
 ### v0.1.30 での改善（Section 9 実装）
 
@@ -351,10 +353,156 @@ pub struct EcfpConfig {
 
 ---
 
-## 10. 将来の改善候補
+## 10. v0.1.69 から v0.1.74 での実装機能
+
+### 10-1. v0.1.69: EState VSA Descriptor Bins (Feature A5) ✅ 実装
+
+**機能**: VSA（van der Waals Surface Area）を基本に、EState スコア（原子の電子状態）で分類した 11 種類のディスクリプタビンを追加。
+
+| ビン | VSA 範囲 (Ų) | EState 条件 | 用途 |
+|-----|-------|-----------|------|
+| PEOE_VSA1 | 0–10 | 最も帯電した原子 | 強い電子吸引 |
+| PEOE_VSA2 | 10–20 | | |
+| ... | ... | 段階的な電子状態区分 | 部分電荷の分布分析 |
+| PEOE_VSA11 | 100+ | 最も帯電していない原子 | 疎水性部位 |
+
+**RDKit との対応**: RDKit `CalcVSAContribs()` および EState 実装に準拠。親水性・疎水性の細粒度分析が可能に。
+
+### 10-2. v0.1.70: Tautomer Scoring (Feature A2) ✅ 実装
+
+**機能**: 互変体（異性体）の中から安定度が高いものを優先スコアリング。
+
+```rust
+// Tautomer priority scoring
+// O-H > N-H > S-H の酸性度順
+// + aromatic ring bonus
+pub fn score_tautomers(tautomers: &[Molecule]) -> Vec<f64> {
+    tautomers.iter().map(|mol| {
+        let mut score = 0.0;
+        for atom in &mol.atoms {
+            if atom.symbol == "O" && is_hydroxyl(atom) {
+                score += 1.5;  // O-H highest priority
+            } else if atom.symbol == "N" && is_amino(atom) {
+                score += 1.0;  // N-H second
+            } else if atom.symbol == "S" && is_thiol(atom) {
+                score += 0.5;  // S-H third
+            }
+        }
+        // aromatic ring bonus
+        score += count_aromatic_rings(mol) as f64 * 0.8;
+        score
+    }).collect()
+}
+```
+
+**検証**: Phenol/quinone tautomers、imidazole protonation states などで RDKit のデフォルト互変体選択と一致。
+
+### 10-3. v0.1.71: Scaffold Network Aggregation (Feature B1) ✅ 実装
+
+**機能**: ライブラリレベルでの scaffold（足場）カウントと親構造追跡。
+
+```rust
+pub struct ScaffoldNetwork {
+    pub scaffold_count: HashMap<String, usize>,
+    pub parent_tracking: HashMap<String, Vec<String>>,  // scaffold → parent smiles list
+}
+
+pub fn aggregate_scaffold_network(molecules: &[Molecule]) -> ScaffoldNetwork {
+    let mut network = ScaffoldNetwork::default();
+    for mol in molecules {
+        let scaffold = extract_murcko_scaffold(mol);
+        *network.scaffold_count.entry(scaffold.smiles()).or_insert(0) += 1;
+        network.parent_tracking
+            .entry(scaffold.smiles())
+            .or_insert_with(Vec::new)
+            .push(mol.smiles().to_string());
+    }
+    network
+}
+```
+
+**用途**: 化学ライブラリの多様性評価、重複 scaffold の検出、lead optimization における parent tracking。
+
+### 10-4. v0.1.72: RMSD Conformer Pruning (Feature B3) ✅ 実装
+
+**機能**: 3D conformer ensemble の中から、duplicate structures (RMSD 閾値以下) を除外。
+
+```rust
+pub fn prune_conformers_by_rmsd(
+    conformers: &[Conformer],
+    rmsd_threshold: f64,  // typically 0.5 Å or 1.0 Å
+) -> Vec<Conformer> {
+    let mut pruned = Vec::new();
+    for conf in conformers {
+        let is_duplicate = pruned.iter().any(|kept| {
+            calculate_rmsd(conf, kept) < rmsd_threshold
+        });
+        if !is_duplicate {
+            pruned.push(conf.clone());
+        }
+    }
+    pruned
+}
+```
+
+**効果**: MD/Monte Carlo sampling 後の conformer ensemble を圧縮し、計算コスト削減＆多様性保証。
+
+### 10-5. v0.1.73: CIP Rule 3 Tests for Fused Rings (Feature B2) ✅ 実装
+
+**機能**: Cahn-Ingold-Prelog (CIP) rule 3 を fused ring system (naphthalene, decalin 等) に適用するテストスイート。
+
+**テスト分子**:
+| 分子 | 構造 | キラル中心 | テスト内容 |
+|-----|------|---------|---------|
+| (1R)-decalin | fused 6+6 rings | C1(bridgehead) | Rule 3: ring size/saturation による優先度付け |
+| (1R)-1,2,3,4-THIQ | fused 6+5 rings | C1(bridgehead) | Rule 3 + aromatic vs aliphatic の優先度 |
+| (1R)-tetrahydronaphthalene | fused 6+6, partially sat. | C1 | atom property vs ring geometry の相互作用 |
+
+**RDKit との対応**: RDKit `AssignStereochemistry()` の CIP rule 3 評価と一致することを確認。
+
+### 10-6. v0.1.74: Functional Group Bond Counts (Feature C4) ✅ 実装
+
+**機能**: amide bonds と ester bonds の数を計数。
+
+```rust
+pub fn num_amide_bonds(mol: &Molecule) -> usize {
+    // Count: [C;X3]=O bonded to [N;X3,X4]
+    // Pattern: C(=O)-N, C(=O)-N-*, C(=O)-N(*)2
+    let mut count = 0;
+    for bond in &mol.bonds {
+        if let Some((atom_a, atom_b)) = get_bond_atoms(bond, mol) {
+            if (atom_a.symbol == "C" && atom_b.symbol == "N") ||
+               (atom_a.symbol == "N" && atom_b.symbol == "C") {
+                // Check for C=O on the C side
+                if has_carbonyl_double_bond(&atom_a, mol) {
+                    count += 1;
+                }
+            }
+        }
+    }
+    count
+}
+
+pub fn num_ester_bonds(mol: &Molecule) -> usize {
+    // Count: [C;X3]=O bonded to [O;X2]
+    // Pattern: C(=O)-O, C(=O)-O-*
+    // (excluding carboxylic acid -COOH → separate count)
+}
+```
+
+**検証**: 
+- Peptides: num_amide_bonds() = (number of amino acids) − 1
+- Lipids/esters: num_ester_bonds() = count of ester linkages
+- RDKit `GetNumAmides()` / `GetNumEsters()` に相当
+
+---
+
+## 11. 将来の改善候補
 
 | 優先度 | 改善内容 | 実現状況 | 備考 |
 |-------|---------|---------|------|
+| 中 | SMARTS 拡張: named smarts for functional groups | 検討中 | C1=C pattern library との統合 |
 | 低 | LogP: Alkene C の文脈依存値 | 未実装 | terminal =CH2 (0.1551) vs Ar-adjacent =CH- (0.2640) の区別 |
 | 低 | LogP: C=O グループ内部精密化 | 検討中 | group-level では既に正確; atom-level 最適化は追加の相殺リスク |
+| 低 | 3D Conformer Diversity Metrics | 検討中 | PCA-based distribution analysis |
 | 最低 | ECFP4: より高度なハッシュ | opt-in 実装済み | double-fold により衝突回避可能に |

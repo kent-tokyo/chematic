@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES). **1,151 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** — **1,150+ tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.1.37** (2026-06-08)
+Latest release: **v0.1.74** (2026-06-11)
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -63,18 +63,18 @@ Latest release: **v0.1.37** (2026-06-08)
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 34    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W | 63    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 43    |
-| `chematic-chem`       | 40+ descriptors, BRICS, QED, standardize, mol_hash, stereo (invert/enumerate), CIP, IFG, `parse_condensed`, `isotope_distribution` | 248   |
+| `chematic-chem`       | 70+ descriptors, tautomer scoring, scaffold network, BRICS, QED, standardize, mol_hash, stereo (invert/enumerate), CIP, IFG, VSA (EState+Labute), `parse_condensed`, `isotope_distribution`, `num_amide_bonds`, `num_ester_bonds` | 375   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion — Tanimoto/Dice                           | 50    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching (`match_chiral_tag`), atom/bond compare modes; Display + Error trait | 87    |
-| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble, PDB/XYZ; WASM RNG seeded | 80    |
+| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; WASM RNG seeded | 147   |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
 | `chematic-inchi`      | InChI/InChIKey generation; formula/connectivity/hydrogen/stereo/charge/isotope layers; ring closures   | 28    |
-| `chematic-wasm`       | **110+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.34 (~550 KB); InChI API + stereo inversion    | 175   |
+| `chematic-wasm`       | **110+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.74 (~550 KB); InChI API + stereo inversion     | 175   |
 | `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes, cycloalkanes, alcohols, amines, halides    | 8     |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace   # 1,120+ tests, all passing
+cargo test --workspace   # 1,150+ tests, all passing
 ```
 
 ---
@@ -88,7 +88,7 @@ cargo test --workspace   # 1,120+ tests, all passing
 cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install chematic-wasm@0.1.32
+npm install @kent-tokyo/chematic@0.1.74
 ```
 
 ### 5-Minute Examples

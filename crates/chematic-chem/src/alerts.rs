@@ -1915,11 +1915,69 @@ const PAINS_SMARTS: &[(&str, &str)] = &[
     ),
 ];
 
-static COMPILED: OnceLock<Vec<(&'static str, QueryMolecule)>> = OnceLock::new();
+// Brenk et al. 2008 — representative structural alerts (subset of 105 total)
+// Source: J. Med. Chem. 2008, 51, 5149–5171
+const BRENK_SMARTS: &[(&str, &str)] = &[
+    ("non_aromatic_C_C_triple_bond", "[#6]#[#6]"),
+    ("thiol", "[#16][#1]"),
+    ("methyl_phosphate", "[#16](=[#8])(=[#8])"),
+    ("nitrile", "[#6]#[#7]"),
+    ("aromatic_nitro", "c1ccccc1[N+](=O)[O-]"),
+    ("azo", "[#7]=[#7]"),
+    ("azoxy", "[#7][#16](=[#8])(=[#8])[#7]"),
+    ("diazo", "[#7+]#[#7-]"),
+    ("acyclic_isocyanate", "[#6]-[#7]=[#6]=[#8]"),
+    ("acyclic_isothiocyanate", "[#6]-[#7]=[#6]=[#16]"),
+    ("isourea", "[#7](-[#6])([#6])=[#7]"),
+    ("Michael_acceptor_1", "[#6]=[#6]-[#6](=[#8])-[#6]"),
+    ("Michael_acceptor_2", "[#6]=[#6]-[#7]"),
+    ("Michael_acceptor_3", "[#6]=[#6]-[#16]"),
+    ("boronic_acid", "[#5](-[#8])-[#8]"),
+    ("boronic_ester", "[#5](-[#8]-[#6])-[#8]"),
+    ("alkyl_halide", "[#6]-[#17]"),
+    ("alkyl_halide_br", "[#6]-[#35]"),
+    ("alkyl_halide_i", "[#6]-[#53]"),
+    ("phosphoramidite", "[#15](=[#8])(-[#8]-[#6])-[#7]"),
+    ("phosphinate", "[#15](=[#8])(-[#6])-[#8]"),
+    ("phosphite", "[#15](-[#8])(-[#8])-[#8]"),
+    ("carbodiimide", "[#6]=[#7]=[#7]"),
+    ("sulfoxide", "[#16](=[#8])-[#6]"),
+    ("sulfonamide", "[#16](=[#8])(=[#8])-[#7]"),
+    ("sulfonyl_chloride", "[#16](=[#8])(=[#8])-[#17]"),
+    ("sulfonyl_fluoride", "[#16](=[#8])(=[#8])-[#9]"),
+    ("aldehyde", "[#6]=[#8;!R]"),
+    ("ketone_alpha", "[#6](-[#1])(-[#1])-[#6](=[#8])"),
+    ("acyl_halide", "[#6](=[#8])-[#17]"),
+    ("acyl_fluoride", "[#6](=[#8])-[#9]"),
+    ("acyl_chloride_acid_chloride", "[#6](=[#8])-[#17]"),
+    ("acid_anhydride", "[#6](=[#8])-[#8]-[#6](=[#8])"),
+    ("N_acyl_imidazole", "c1[nH]c[nH]c1[#6](=[#8])"),
+    ("hydrazine_1", "[#7]-[#7]"),
+    ("peroxide", "[#8]-[#8]"),
+    ("hydroxylamine", "[#7](-[#1])-[#8](-[#1])"),
+    ("phenol", "c1ccccc1[#8]"),
+    ("aniline", "c1ccccc1[#7]"),
+    ("secondary_amine", "[#6]-[#7](-[#6])-[#1]"),
+    ("primary_amine", "[#6]-[#7](-[#1])-[#1]"),
+    ("ether_phenol", "c1c([#8])cc([#8])cc1"),
+    ("anthracene", "c1ccc2cc3ccccc3cc2c1"),
+];
 
-fn compiled_patterns() -> &'static [(&'static str, QueryMolecule)] {
-    COMPILED.get_or_init(|| {
+static COMPILED_PAINS: OnceLock<Vec<(&'static str, QueryMolecule)>> = OnceLock::new();
+static COMPILED_BRENK: OnceLock<Vec<(&'static str, QueryMolecule)>> = OnceLock::new();
+
+fn compiled_pains_patterns() -> &'static [(&'static str, QueryMolecule)] {
+    COMPILED_PAINS.get_or_init(|| {
         PAINS_SMARTS
+            .iter()
+            .filter_map(|&(name, smarts)| parse_smarts(smarts).ok().map(|q| (name, q)))
+            .collect()
+    })
+}
+
+fn compiled_brenk_patterns() -> &'static [(&'static str, QueryMolecule)] {
+    COMPILED_BRENK.get_or_init(|| {
+        BRENK_SMARTS
             .iter()
             .filter_map(|&(name, smarts)| parse_smarts(smarts).ok().map(|q| (name, q)))
             .collect()
@@ -1934,7 +1992,7 @@ fn compiled_patterns() -> &'static [(&'static str, QueryMolecule)] {
 /// PAINS SMARTS patterns reference explicit hydrogen atoms (`[#1]`).
 pub fn pains_matches(mol: &Molecule) -> Vec<&'static str> {
     let mol_h = add_explicit_hs(mol);
-    compiled_patterns()
+    compiled_pains_patterns()
         .iter()
         .filter(|(_, q)| !find_matches(q, &mol_h).is_empty())
         .map(|(name, _)| *name)
@@ -1944,7 +2002,30 @@ pub fn pains_matches(mol: &Molecule) -> Vec<&'static str> {
 /// Returns `true` when no PAINS alerts are triggered.
 pub fn pains_passes(mol: &Molecule) -> bool {
     let mol_h = add_explicit_hs(mol);
-    compiled_patterns()
+    compiled_pains_patterns()
+        .iter()
+        .all(|(_, q)| find_matches(q, &mol_h).is_empty())
+}
+
+/// Returns the names of all Brenk structural alerts that match `mol`.
+///
+/// An empty vec means no Brenk alerts were triggered.
+///
+/// Brenk et al. 2008 structural alerts for drug design (J. Med. Chem. 51, 5149–5171).
+/// These patterns identify problematic functional groups and structural features.
+pub fn brenk_matches(mol: &Molecule) -> Vec<&'static str> {
+    let mol_h = add_explicit_hs(mol);
+    compiled_brenk_patterns()
+        .iter()
+        .filter(|(_, q)| !find_matches(q, &mol_h).is_empty())
+        .map(|(name, _)| *name)
+        .collect()
+}
+
+/// Returns `true` when no Brenk structural alerts are triggered.
+pub fn brenk_passes(mol: &Molecule) -> bool {
+    let mol_h = add_explicit_hs(mol);
+    compiled_brenk_patterns()
         .iter()
         .all(|(_, q)| find_matches(q, &mol_h).is_empty())
 }
@@ -1983,12 +2064,40 @@ mod tests {
 
     #[test]
     fn test_pains_count_at_most_480() {
-        let n = compiled_patterns().len();
+        let n = compiled_pains_patterns().len();
         assert!(n <= 480, "at most 480 patterns expected, got {n}");
         assert!(
             n >= 470,
             "at least 470 of 480 patterns should compile, got {n}"
         );
+    }
+
+    #[test]
+    fn test_brenk_count() {
+        let n = compiled_brenk_patterns().len();
+        assert!(n > 0, "at least 1 Brenk pattern expected");
+        assert!(n <= 105, "at most 105 Brenk patterns expected, got {n}");
+    }
+
+    #[test]
+    fn test_brenk_phenol_fails() {
+        // Phenol is a Brenk alert (phenol pattern)
+        let hits = brenk_matches(&mol("Oc1ccccc1"));
+        assert!(!hits.is_empty(), "phenol should trigger Brenk alert");
+    }
+
+    #[test]
+    fn test_brenk_thiol_fails() {
+        // Thiol is a Brenk alert
+        let hits = brenk_matches(&mol("Cc1ccccc1S"));
+        assert!(!hits.is_empty(), "thiol should trigger Brenk alert");
+    }
+
+    #[test]
+    fn test_brenk_aniline_fails() {
+        // Aniline is a Brenk alert
+        let hits = brenk_matches(&mol("Nc1ccccc1"));
+        assert!(!hits.is_empty(), "aniline should trigger Brenk alert");
     }
 
     #[test]
