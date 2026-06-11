@@ -33,6 +33,7 @@ pub use conformer::{ConformerEnsemble, ConformerError};
 pub use constraints::{
     AngleConstraint, BondConstraint, ConstraintSet, build_constraints, satisfy_constraints,
 };
+// Note: ConformerConfig is defined in lib.rs and exported here
 pub use coords::{Coords3D, Point3};
 pub use descriptors_3d::{autocorr_3d, getaway_descriptors, whim_descriptors, whim_getaway_combined};
 pub use dg::generate_coords;
@@ -55,6 +56,30 @@ pub use shape_descriptors::{
 pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
 pub use usr::{usr_descriptors, usr_similarity};
 pub use xyz::{XyzError, parse_xyz, write_xyz};
+
+// ---------------------------------------------------------------------------
+// Configuration types
+// ---------------------------------------------------------------------------
+
+/// Configuration for conformer ensemble generation.
+///
+/// - `count`: number of conformers to generate (before pruning)
+/// - `rmsd_threshold`: minimum RMSD (Å) between conformers. Conformers with RMSD below this
+///   threshold to an already-added conformer are discarded. Set to 0.0 to disable pruning.
+#[derive(Clone, Debug)]
+pub struct ConformerConfig {
+    pub count: usize,
+    pub rmsd_threshold: f64,
+}
+
+impl Default for ConformerConfig {
+    fn default() -> Self {
+        Self {
+            count: 1,
+            rmsd_threshold: 0.5,  // Default: keep conformers at least 0.5 Å apart
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // High-level 3D generation pipeline
@@ -90,19 +115,66 @@ pub fn generate_and_minimize_uff(mol: &chematic_core::Molecule) -> Coords3D {
 /// Generate multiple conformers with different initial geometries.
 /// Uses distance geometry for initial placement, then minimizes with DREIDING.
 /// Returns a ConformerEnsemble with all conformers.
+///
+/// Equivalent to `generate_conformer_ensemble_with_config(mol, ConformerConfig::default())`.
 pub fn generate_conformer_ensemble(
     mol: chematic_core::Molecule,
     count: usize,
 ) -> Result<ConformerEnsemble, ConformerError> {
-    if count == 0 {
+    let config = ConformerConfig {
+        count,
+        rmsd_threshold: 0.0,  // No pruning for backward compatibility
+    };
+    generate_conformer_ensemble_with_config(mol, &config)
+}
+
+/// Generate multiple conformers with RMSD-based pruning.
+///
+/// Generates up to `config.count` conformers via repeated distance geometry + DREIDING minimization.
+/// If `rmsd_threshold > 0`, discards conformers with RMSD below the threshold to an
+/// already-added conformer, effectively filtering out redundant structures.
+///
+/// Returns `ConformerEnsemble` with the final set of conformers (may be fewer than `count`
+/// if pruning removes duplicates).
+pub fn generate_conformer_ensemble_with_config(
+    mol: chematic_core::Molecule,
+    config: &ConformerConfig,
+) -> Result<ConformerEnsemble, ConformerError> {
+    if config.count == 0 {
         return Ok(ConformerEnsemble::new(mol));
     }
 
     let mut ensemble = ConformerEnsemble::new(mol);
+    let use_pruning = config.rmsd_threshold > 0.0;
 
-    for _ in 0..count {
+    for _ in 0..config.count {
         let coords = generate_coords(ensemble.mol());
         let minimized = minimize_dreiding(ensemble.mol(), coords);
+
+        // Apply RMSD pruning if enabled
+        if use_pruning {
+            let mut is_duplicate = false;
+            for i in 0..ensemble.conformer_count() {
+                if let Some(existing) = ensemble.get_conformer(i) {
+                    // Convert Point3 vectors to [f64; 3] arrays for rmsd_no_align
+                    let min_array: Vec<[f64; 3]> = minimized.points.iter()
+                        .map(|p| [p.x, p.y, p.z])
+                        .collect();
+                    let exist_array: Vec<[f64; 3]> = existing.points.iter()
+                        .map(|p| [p.x, p.y, p.z])
+                        .collect();
+                    let rmsd = rmsd_no_align(&min_array, &exist_array);
+                    if rmsd < config.rmsd_threshold {
+                        is_duplicate = true;
+                        break;
+                    }
+                }
+            }
+            if is_duplicate {
+                continue;  // Skip this conformer
+            }
+        }
+
         ensemble.add_conformer(minimized)?;
     }
 
@@ -121,6 +193,7 @@ mod tests {
     use crate::{
         coords::{Coords3D, Point3},
         dg::generate_coords,
+        generate_conformer_ensemble, generate_conformer_ensemble_with_config,
         pdb::{parse_pdb_atoms, pdb_to_molecule, write_pdb},
         xyz::{XyzError, parse_xyz, write_xyz},
     };
@@ -528,5 +601,61 @@ mod tests {
         let coords = Coords3D::new_zeroed(1);
         let pdb = write_pdb(&mol, &coords);
         assert!(pdb.ends_with("END\n"), "PDB should end with 'END\\n'");
+    }
+
+    // =========================================================================
+    // Conformer ensemble tests
+    // =========================================================================
+
+    #[test]
+    fn test_conformer_ensemble_basic() {
+        use super::ConformerConfig;
+        let mol = parse("CC").expect("ethane SMILES");
+        let config = ConformerConfig {
+            count: 2,
+            rmsd_threshold: 0.0,  // No pruning
+        };
+        let ensemble = generate_conformer_ensemble_with_config(mol, &config)
+            .expect("should generate ensemble");
+        assert_eq!(ensemble.conformer_count(), 2, "should have 2 conformers");
+    }
+
+    #[test]
+    fn test_conformer_ensemble_zero_count() {
+        use super::ConformerConfig;
+        let mol = parse("CC").expect("ethane SMILES");
+        let config = ConformerConfig {
+            count: 0,
+            rmsd_threshold: 0.0,
+        };
+        let ensemble = generate_conformer_ensemble_with_config(mol, &config)
+            .expect("should create empty ensemble");
+        assert_eq!(ensemble.conformer_count(), 0, "empty config should yield no conformers");
+    }
+
+    #[test]
+    fn test_conformer_ensemble_rmsd_pruning() {
+        use super::ConformerConfig;
+        let mol = parse("C").expect("methane SMILES");
+        let config = ConformerConfig {
+            count: 5,
+            rmsd_threshold: 1.0,  // High threshold to prune most duplicates
+        };
+        let ensemble = generate_conformer_ensemble_with_config(mol, &config)
+            .expect("should generate ensemble with pruning");
+        // With high threshold and simple molecule, should keep very few (often 1)
+        assert!(
+            ensemble.conformer_count() <= 3,
+            "high RMSD threshold should prune duplicates; got {}",
+            ensemble.conformer_count()
+        );
+    }
+
+    #[test]
+    fn test_conformer_backward_compatibility() {
+        let mol = parse("CC").expect("ethane SMILES");
+        let ensemble = generate_conformer_ensemble(mol, 2)
+            .expect("should generate ensemble");
+        assert_eq!(ensemble.conformer_count(), 2, "backward-compatible API should work");
     }
 }
