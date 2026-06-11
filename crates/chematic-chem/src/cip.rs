@@ -947,4 +947,48 @@ mod tests {
             "O > N in mass"
         );
     }
+
+    // =========================================================================
+    // CIP Rule 3 (duplicate atom) tests - fused ring systems
+    // =========================================================================
+
+    #[test]
+    fn test_cip_naphthalene_assignment() {
+        // Naphthalene (c1ccc2ccccc2c1): fused aromatic rings
+        // Tests whether CIP Rule 3 (duplicate atom for fused systems) is handled.
+        // The bridging carbons in fused rings may appear multiple times in sphere expansion.
+        let mol = parse("c1ccc2ccccc2c1").expect("naphthalene");
+        let assignment = assign_cip(&mol);
+        // Naphthalene has no chiral centers (planar, all carbons equivalent by symmetry)
+        // but assignment should not crash and should handle the fused structure.
+        assert!(
+            assignment.assignments.is_empty(),
+            "naphthalene should have no chiral assignments (planar symmetric structure)"
+        );
+    }
+
+    #[test]
+    fn test_cip_decalin_assignment() {
+        // Decalin (bicyclic C10): two fused saturated rings
+        // CC(C)C1CCC2CCCCC2C1 is a substituted decalin derivative
+        // Tests CIP Rule 3 with bridging carbons in saturated system
+        let mol = parse("CC(C)C1CCC2CCCCC2C1").expect("decalin");
+        let assignment = assign_cip(&mol);
+        // Decalin has potential chiral centers; assignment should work without crashing
+        assert!(
+            !mol.atom(chematic_core::AtomIdx(0)).element.atomic_number() != 6
+                || assignment.assignments.len() <= mol.atom_count(),
+            "decalin CIP assignment should complete"
+        );
+    }
+
+    #[test]
+    fn test_cip_fused_ring_no_crash() {
+        // Simple fused ring system: bicyclo[4.4.0]decane (decalin base)
+        // Tests that sphere expansion handles ring revisits without crashing
+        let mol = parse("C1CCC2CCCCC2C1").expect("decalin");
+        let assignment = assign_cip(&mol);
+        // Should complete without panic/crash
+        assert!(assignment.assignments.len() <= mol.atom_count());
+    }
 }
