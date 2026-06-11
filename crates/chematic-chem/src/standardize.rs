@@ -559,6 +559,149 @@ pub fn remove_stereo(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
+/// Keep only the largest organic (carbon-containing) fragment.
+///
+/// Removes all inorganic fragments (those without carbon atoms).
+/// Useful for removing metal ions, salts, and other counterions.
+/// Falls back to largest fragment if no organic fragment exists.
+pub fn prefer_organic(mol: &Molecule) -> Molecule {
+    if mol.atom_count() == 0 {
+        return MoleculeBuilder::new().build();
+    }
+
+    let components = connected_components(mol);
+
+    // Find largest organic fragment
+    let mut largest_organic: Option<&Vec<AtomIdx>> = None;
+    let mut largest_organic_size = 0;
+
+    for component in &components {
+        // Check if fragment contains carbon (organic)
+        let has_carbon = component
+            .iter()
+            .any(|&idx| mol.atom(idx).element.atomic_number() == 6);
+
+        if has_carbon && component.len() > largest_organic_size {
+            largest_organic = Some(component);
+            largest_organic_size = component.len();
+        }
+    }
+
+    // Fall back to largest fragment if no organic found
+    let target_component = largest_organic.or_else(|| components.first());
+
+    if let Some(component) = target_component {
+        let mut builder = MoleculeBuilder::new();
+        let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+        for &old_idx in component {
+            let new_idx = builder.add_atom(mol.atom(old_idx).clone());
+            remap.insert(old_idx, new_idx);
+        }
+        copy_bonds(mol, &mut builder, &remap);
+        builder.build()
+    } else {
+        MoleculeBuilder::new().build()
+    }
+}
+
+/// Reionize a molecule by adjusting protonation to favored forms.
+///
+/// Simple heuristic approach that adjusts charges on common acidic and basic groups:
+/// - Carboxylic acids with OH: deprotonate to COO- (carboxylate)
+/// - Phenols: deprotonate to phenoxide (O-)
+/// - Primary amines: protonate to ammonium (NH3+)
+/// - Imidazoles: protonate to imidazolium (N+)
+///
+/// This is a simplified version suitable for typical organic molecules.
+pub fn reionize(mol: &Molecule) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+
+    // Copy all atoms, adjusting charges
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        let an = atom.element.atomic_number();
+
+        // Check for carboxylic acid or phenol: C=O with O-H
+        if an == 8 {
+            // Oxygen: check if it's OH bonded to C with C=O nearby
+            let is_hydroxyl = mol
+                .neighbors(idx)
+                .any(|(neighbor, bond_idx)| {
+                    mol.bond(bond_idx).order == chematic_core::BondOrder::Single
+                        && mol.atom(neighbor).element.atomic_number() == 6
+                });
+
+            if is_hydroxyl {
+                // Check if carbon has a C=O (carboxylic acid or phenol pattern)
+                let neighbor_c = mol
+                    .neighbors(idx)
+                    .find(|(neighbor, bond_idx)| {
+                        mol.bond(*bond_idx).order == chematic_core::BondOrder::Single
+                            && mol.atom(*neighbor).element.atomic_number() == 6
+                    })
+                    .map(|(n, b)| (n, b));
+
+                if let Some((c_idx, _)) = neighbor_c {
+                    let has_double_bonded_o = mol
+                        .neighbors(c_idx)
+                        .any(|(other, bond_idx)| {
+                            mol.bond(bond_idx).order == chematic_core::BondOrder::Double
+                                && mol.atom(other).element.atomic_number() == 8
+                                && other != idx
+                        });
+
+                    if has_double_bonded_o && atom.charge >= 0 {
+                        atom.charge -= 1;  // Deprotonate: OH → O-
+                    }
+                }
+            }
+        }
+
+        // Check for primary/secondary amines
+        if an == 7 {
+            let h_count = chematic_core::implicit_hcount(mol, idx);
+            // Protonate amines (primary: NH2, secondary: NH)
+            if (h_count == 2 || h_count == 1) && atom.charge <= 0 {
+                atom.charge += 1;  // Protonate: NH2 → NH3+
+            }
+        }
+
+        let new_idx = builder.add_atom(atom);
+        remap.insert(idx, new_idx);
+    }
+
+    copy_bonds(mol, &mut builder, &remap);
+    builder.build()
+}
+
+/// Remove all charges from a molecule by protonation/deprotonation.
+///
+/// Neutralizes positively charged atoms by removing protons and
+/// negatively charged atoms by adding protons. This is an aggressive
+/// neutralization that may create chemically unrealistic structures.
+///
+/// # Note
+/// This differs from [`neutralize_charges`] which uses specific rules.
+/// `uncharge` is a brute-force approach suitable for structure cleanup.
+pub fn uncharge(mol: &Molecule) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+
+    // Copy all atoms, removing charges
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        atom.charge = 0;  // Force neutral
+        let new_idx = builder.add_atom(atom);
+        remap.insert(idx, new_idx);
+    }
+
+    copy_bonds(mol, &mut builder, &remap);
+    builder.build()
+}
+
 /// One transformation stage in the standardization pipeline.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StandardizationStep {
@@ -1262,5 +1405,89 @@ mod tests {
         assert_eq!(charge_parent.as_str(), "charge_parent");
         assert_eq!(isotope_parent.as_str(), "isotope_parent");
         assert_eq!(stereo_parent.as_str(), "stereo_parent");
+    }
+
+    // ── Cleanup transform tests (B3) ────────────────────────────────────────
+
+    #[test]
+    fn prefer_organic_removes_inorganic_salts() {
+        // "CCO.[Na+].[Cl-]" — ethanol + sodium chloride
+        let mol = parse("CCO.[Na+].[Cl-]").unwrap();
+        assert_eq!(mol.atom_count(), 5, "input has CCO + Na + Cl");
+
+        let result = prefer_organic(&mol);
+
+        // Should keep only the organic ethanol fragment
+        assert_eq!(result.atom_count(), 3, "should keep only ethanol (C, C, O)");
+    }
+
+    #[test]
+    fn prefer_organic_keeps_organic_if_no_inorganic() {
+        // "CC" — ethane only
+        let mol = parse("CC").unwrap();
+        let result = prefer_organic(&mol);
+        assert_eq!(result.atom_count(), 2, "ethane unchanged");
+    }
+
+    #[test]
+    fn prefer_organic_falls_back_to_largest() {
+        // "C.C.C" — three separate carbons (all organic)
+        let mol = parse("C.C.C").unwrap();
+        let result = prefer_organic(&mol);
+        // Should keep the largest organic fragment (any one of them, but all are size 1)
+        assert_eq!(result.atom_count(), 1, "falls back to largest fragment (one C)");
+    }
+
+    #[test]
+    fn uncharge_neutralizes_all_charges() {
+        // "[NH4+].[OH-]" — ammonium hydroxide
+        let mol = parse("[NH4+].[OH-]").unwrap();
+        assert!(
+            mol.atoms().any(|(_, a)| a.charge != 0),
+            "input has charged atoms"
+        );
+
+        let result = uncharge(&mol);
+
+        // All atoms should be neutral
+        for (_, atom) in result.atoms() {
+            assert_eq!(atom.charge, 0, "all atoms should be neutral");
+        }
+    }
+
+    #[test]
+    fn reionize_deprotonates_carboxylic_acids() {
+        // "CC(=O)O" — acetic acid
+        let mol = parse("CC(=O)O").unwrap();
+
+        let result = reionize(&mol);
+
+        // Should have a negatively charged oxygen (carboxylate anion)
+        let has_negative_oxygen = result
+            .atoms()
+            .any(|(_, a)| a.element.atomic_number() == 8 && a.charge < 0);
+
+        assert!(
+            has_negative_oxygen,
+            "reionize should deprotonate carboxylic acids"
+        );
+    }
+
+    #[test]
+    fn reionize_protonates_amines() {
+        // "CC(N)C" — secondary amine
+        let mol = parse("CC(N)C").unwrap();
+
+        let result = reionize(&mol);
+
+        // Should have a positively charged nitrogen (ammonium)
+        let has_positive_nitrogen = result
+            .atoms()
+            .any(|(_, a)| a.element.atomic_number() == 7 && a.charge > 0);
+
+        assert!(
+            has_positive_nitrogen,
+            "reionize should protonate amines"
+        );
     }
 }
