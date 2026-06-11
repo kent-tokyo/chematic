@@ -1375,10 +1375,11 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     // mqn[27]: absolute charge
     mqn[27] = charge_sum.abs().min(255) as u8;
 
-    // 28-30: Heteroatom degree (N, O, F neighbors)
+    // 28-30: Heteroatom degree (N, O, and halogens)
     let mut hetero_degrees = vec![];
     for (idx, atom) in mol.atoms() {
-        if matches!(atom.element.atomic_number(), 7 | 8 | 9 | 17 | 35 | 53) {
+        let an = atom.element.atomic_number();
+        if is_nitrogen(an) || is_oxygen(an) || is_halogen(an) {
             let deg = mol.neighbors(idx).count() as u8;
             hetero_degrees.push(deg);
         }
