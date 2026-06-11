@@ -240,6 +240,135 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
+/// Detect if a molecule contains a zwitterion (internal salt).
+///
+/// A zwitterion is defined as having both positive and negative formal charges.
+/// Examples: amino acids in zwitterionic form ([NH3+][COO-]).
+pub fn has_zwitterion(mol: &Molecule) -> bool {
+    let mut has_positive = false;
+    let mut has_negative = false;
+
+    for (_, atom) in mol.atoms() {
+        if atom.charge > 0 {
+            has_positive = true;
+        } else if atom.charge < 0 {
+            has_negative = true;
+        }
+        if has_positive && has_negative {
+            return true;
+        }
+    }
+    false
+}
+
+/// Normalize a zwitterion to neutral form by proton transfer.
+///
+/// For each negatively-charged atom, find the nearest positively-charged atom
+/// and transfer one proton (increase positive charge's H count, decrease negative charge).
+///
+/// Returns a new molecule with normalized charges.
+pub fn normalize_zwitterion(mol: &Molecule) -> Molecule {
+    if !has_zwitterion(mol) {
+        return clone_molecule(mol);
+    }
+
+    let mut modifications: HashMap<AtomIdx, (i8, Option<u8>)> = HashMap::new();
+
+    // Collect positive and negative charge atoms
+    let mut positive_atoms: Vec<AtomIdx> = Vec::new();
+    let mut negative_atoms: Vec<AtomIdx> = Vec::new();
+
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let atom = mol.atom(idx);
+        if atom.charge > 0 {
+            positive_atoms.push(idx);
+        } else if atom.charge < 0 {
+            negative_atoms.push(idx);
+        }
+    }
+
+    // For each negative atom, transfer proton from nearest positive atom
+    for &neg_idx in &negative_atoms {
+        if positive_atoms.is_empty() {
+            continue;
+        }
+
+        // Find nearest positive charge (by BFS distance)
+        let mut closest_pos_idx = positive_atoms[0];
+        let mut closest_distance = i32::MAX;
+
+        for &pos_idx in &positive_atoms {
+            if let Some(dist) = bfs_distance(mol, neg_idx, pos_idx) {
+                if dist < closest_distance {
+                    closest_distance = dist;
+                    closest_pos_idx = pos_idx;
+                }
+            }
+        }
+
+        // Transfer proton: N+ loses H, O- gains H
+        let neg_atom = mol.atom(neg_idx);
+        let pos_atom = mol.atom(closest_pos_idx);
+
+        // Decrease negative charge
+        let new_neg_charge = neg_atom.charge + 1;
+        let neg_h = neg_atom.hydrogen_count.unwrap_or(0);
+        modifications.insert(neg_idx, (new_neg_charge, Some(neg_h + 1)));
+
+        // Decrease positive charge by decreasing H count
+        let pos_h = pos_atom.hydrogen_count.unwrap_or(0);
+        if pos_h > 0 {
+            let new_pos_charge = pos_atom.charge - 1;
+            modifications.insert(closest_pos_idx, (new_pos_charge, Some(pos_h - 1)));
+        }
+    }
+
+    // Reconstruct molecule with modified charges
+    let mut builder = MoleculeBuilder::new();
+    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+
+    for i in 0..mol.atom_count() {
+        let old_idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(old_idx).clone();
+        if let Some(&(new_charge, new_h)) = modifications.get(&old_idx) {
+            atom.charge = new_charge;
+            atom.hydrogen_count = new_h;
+        }
+        let new_idx = builder.add_atom(atom);
+        remap.insert(old_idx, new_idx);
+    }
+    copy_bonds(mol, &mut builder, &remap);
+    builder.build()
+}
+
+/// BFS distance between two atoms in a molecule.
+fn bfs_distance(mol: &Molecule, start: AtomIdx, end: AtomIdx) -> Option<i32> {
+    if start == end {
+        return Some(0);
+    }
+
+    let n = mol.atom_count();
+    let mut visited = vec![false; n];
+    let mut queue = std::collections::VecDeque::new();
+    queue.push_back((start, 0));
+    visited[start.0 as usize] = true;
+
+    while let Some((current, dist)) = queue.pop_front() {
+        for (neighbor, _) in mol.neighbors(current) {
+            if neighbor == end {
+                return Some(dist + 1);
+            }
+            let ni = neighbor.0 as usize;
+            if !visited[ni] {
+                visited[ni] = true;
+                queue.push_back((neighbor, dist + 1));
+            }
+        }
+    }
+    None
+}
+
 /// Neutralize simple formal charges in a molecule.
 ///
 /// Rules applied:
@@ -345,6 +474,8 @@ pub enum StandardizationStep {
     NeutralizeCharges,
     /// Normalize chemical groups (nitro groups, etc.).
     NormalizeGroups,
+    /// Normalize zwitterionic forms to neutral molecules.
+    ZwitterionNormalization,
     /// Remove explicit hydrogen atoms.
     RemoveExplicitHydrogens,
     /// Canonicalize supported tautomer systems.
@@ -366,6 +497,7 @@ impl StandardizationStep {
             Self::LargestFragment => "largest_fragment",
             Self::NeutralizeCharges => "neutralize_charges",
             Self::NormalizeGroups => "normalize_groups",
+            Self::ZwitterionNormalization => "zwitterion_normalization",
             Self::RemoveExplicitHydrogens => "remove_explicit_hydrogens",
             Self::CanonicalTautomer => "canonical_tautomer",
             Self::FragmentParent => "fragment_parent",
@@ -463,6 +595,21 @@ impl StandardizationReport {
     }
 }
 
+/// Handling strategy for zwitterions (internal salts).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ZwitterionHandling {
+    /// Keep zwitterionic form as-is.
+    Keep,
+    /// Normalize to neutral form via proton transfer.
+    Normalize,
+}
+
+impl Default for ZwitterionHandling {
+    fn default() -> Self {
+        Self::Normalize
+    }
+}
+
 /// Options for molecular standardization.
 ///
 /// Controls which cleaning transformations are applied in a standardization pipeline.
@@ -476,6 +623,8 @@ pub struct StandardizeOptions {
     pub remove_explicit_h: bool,
     /// Keep only the largest connected fragment. Default: `false`.
     pub largest_fragment_only: bool,
+    /// Handle zwitterions (internal salts). Default: `Normalize`.
+    pub zwitterion_handling: ZwitterionHandling,
 }
 
 impl Default for StandardizeOptions {
@@ -485,6 +634,7 @@ impl Default for StandardizeOptions {
             neutralize_charges: true,
             remove_explicit_h: true,
             largest_fragment_only: false,
+            zwitterion_handling: ZwitterionHandling::Normalize,
         }
     }
 }
@@ -528,6 +678,15 @@ impl StandardizationPipeline {
             StandardizationStep::LargestFragment,
             self.options.largest_fragment_only,
             largest_fragment,
+            &mut steps,
+            &mut warnings,
+        );
+        let zwitterion_enabled = self.options.zwitterion_handling == ZwitterionHandling::Normalize;
+        current = self.apply_stage(
+            current,
+            StandardizationStep::ZwitterionNormalization,
+            zwitterion_enabled,
+            normalize_zwitterion,
             &mut steps,
             &mut warnings,
         );
@@ -781,6 +940,7 @@ mod tests {
         // "CC.CCC" — ethane and propane
         let mol = parse("CC.CCC").unwrap();
         let opts = StandardizeOptions {
+            zwitterion_handling: ZwitterionHandling::Normalize,
             largest_fragment_only: false,
             ..Default::default()
         };
@@ -802,6 +962,7 @@ mod tests {
             neutralize_charges: false,
             remove_explicit_h: false,
             canonical_tautomer: false,
+            zwitterion_handling: ZwitterionHandling::Keep,
         });
 
         let (result, report) = pipeline.run(&mol);
@@ -809,7 +970,7 @@ mod tests {
         assert_eq!(result.atom_count(), 3);
         assert_eq!(report.status, PipelineStatus::Modified);
         assert!(report.changed());
-        assert_eq!(report.steps.len(), 4);
+        assert_eq!(report.steps.len(), 5);
         // NeutralizeCharges is applied first (not enabled, so no change)
         assert_eq!(report.steps[0].step, StandardizationStep::NeutralizeCharges);
         assert!(!report.steps[0].enabled);
@@ -827,6 +988,7 @@ mod tests {
             neutralize_charges: false,
             remove_explicit_h: false,
             largest_fragment_only: false,
+            zwitterion_handling: ZwitterionHandling::Keep,
         });
 
         let (_result, report) = pipeline.run(&mol);
@@ -845,6 +1007,7 @@ mod tests {
             neutralize_charges: false,
             remove_explicit_h: false,
             largest_fragment_only: false,
+            zwitterion_handling: ZwitterionHandling::Keep,
         });
 
         let (_result, report) = pipeline.run(&mol);
@@ -874,12 +1037,13 @@ mod tests {
             neutralize_charges: true,
             remove_explicit_h: false,
             canonical_tautomer: false,
+            zwitterion_handling: ZwitterionHandling::Normalize,
         });
 
         let (_result, report) = pipeline.run(&mol);
 
         // Verify step order: NeutralizeCharges MUST come before LargestFragment
-        assert_eq!(report.steps.len(), 4, "Should have 4 steps in pipeline");
+        assert_eq!(report.steps.len(), 5, "Should have 5 steps in pipeline");
         assert_eq!(
             report.steps[0].step,
             StandardizationStep::NeutralizeCharges,

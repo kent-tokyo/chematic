@@ -51,7 +51,7 @@ pub use descriptors::{
 };
 
 pub use abbreviations::{abbreviations, expand_abbreviation};
-pub use alerts::{pains_matches, pains_passes};
+pub use alerts::{brenk_matches, brenk_passes, pains_matches, pains_passes};
 pub use atropisomer::{
     AtropisomerType, assign_atropisomer_chirality, detect_atropisomers,
 };
@@ -79,7 +79,8 @@ pub use scaffold::{
 pub use standardize::{
     MoleculeSnapshot, PipelineStatus, StandardizationPipeline, StandardizationReport,
     StandardizationStep, StandardizationStepReport, StandardizationWarning, StandardizeOptions,
-    largest_fragment, neutralize_charges, remove_isotopes, remove_stereo, standardize,
+    ZwitterionHandling, has_zwitterion, largest_fragment, neutralize_charges, normalize_zwitterion,
+    remove_isotopes, remove_stereo, standardize,
 };
 pub use stereo::{enumerate_stereoisomers, invert_stereocenter};
 pub use tautomer::{

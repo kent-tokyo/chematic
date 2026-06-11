@@ -39,9 +39,9 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + 第 4 部分（WASM、API 改进）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 审计）+ Sprint v0.1.34（InChI 环闭合 + 立体层）+ Sprint v0.1.35（wasmBridge 支持）+ Sprint v0.1.36（Issue #1 审计：BUG-2/3/4 修复）+ Sprint v0.1.37（mol_transforms API + 随机 SMILES）。**1,151 个测试，全部通过。零 C/C++ 依赖。**
+所有阶段已完成 + 第 4 部分（WASM、API 改进）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 审计）+ Sprint v0.1.34（InChI 环闭合 + 立体层）+ Sprint v0.1.35（wasmBridge 支持）+ Sprint v0.1.36（Issue #1 审计：BUG-2/3/4 修复）+ Sprint v0.1.37（mol_transforms API + 随机 SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit 功能缺口分析：6 项功能实现）。**1,150+ 个测试，全部通过。零 C/C++ 依赖。**
 
-最新版本：**v0.1.37**（2026-06-08）
+最新版本：**v0.1.74**（2026-06-11）
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
@@ -50,18 +50,18 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 34     |
 | `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 63     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 43     |
-| `chematic-chem`       | 40+ 描述符、BRICS、QED、标准化、分子哈希、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、`isotope_distribution` | 248    |
+| `chematic-chem`       | 70+ 描述符、互变异构体评分、骨架网络、BRICS、QED、标准化、分子哈希、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、VSA（EState+Labute）、`isotope_distribution`、`num_amide_bonds`、`num_ester_bonds` | 375    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice               | 50     |
 | `chematic-smarts`     | SMARTS、VF2、MCS（支持 `match_chiral_tag` 手性匹配、原子/键比较模式）                                 | 87     |
-| `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ 格式                                 | 80     |
+| `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble（含 RMSD 剪枝）、PDB/XYZ 格式                 | 147    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（含生成物价键验证）                      | 30     |
 | `chematic-inchi`      | InChI/InChIKey 生成；formula/connectivity/hydrogen/stereo/charge/isotope 层；环闭合支持               | 28     |
-| `chematic-wasm`       | **110+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.1.34；InChI API + 立体反演                         | 175    |
+| `chematic-wasm`       | **110+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.1.74；InChI API + 立体反演                         | 175    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— 烷烃、环烷烃、醇、胺、卤代烃                                        | 8      |
 | `chematic`            | 带功能标志的伞形 crate（含所有子 crate，含 `iupac`、`inchi`）                                         | 1      |
 
 ```
-cargo test --workspace   # 1,120+ 个测试，全部通过
+cargo test --workspace   # 1,150+ 个测试，全部通过
 ```
 
 ---
