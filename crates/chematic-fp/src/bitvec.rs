@@ -136,11 +136,130 @@ impl BitVec2048 {
 
         current
     }
+
+    /// Convert to a variable-length BitVecN with the same bits.
+    pub fn to_bitvecn(&self) -> BitVecN {
+        BitVecN {
+            words: self.words.to_vec(),
+            bits: 2048,
+        }
+    }
+}
+
+/// A variable-length bitvector with dynamic bit width.
+///
+/// Unlike `BitVec2048` which is fixed at 2048 bits, `BitVecN` allows
+/// arbitrary bit widths (512, 1024, 2048, 4096, etc.).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BitVecN {
+    words: Vec<u64>,
+    bits: usize,
+}
+
+impl BitVecN {
+    /// Create a new all-zero bitvector with specified bit width.
+    ///
+    /// # Panics
+    /// Panics if `bits == 0`.
+    pub fn new(bits: usize) -> Self {
+        assert!(bits > 0, "BitVecN must have at least 1 bit");
+        let num_words = (bits + 63) / 64;
+        Self {
+            words: vec![0u64; num_words],
+            bits,
+        }
+    }
+
+    /// Return the bit width.
+    pub fn bit_width(&self) -> usize {
+        self.bits
+    }
+
+    /// Set bit `bit` to 1.
+    ///
+    /// # Panics
+    /// Panics if `bit >= self.bits`.
+    pub fn set(&mut self, bit: usize) {
+        assert!(
+            bit < self.bits,
+            "bit index {bit} out of range for BitVecN (max {})",
+            self.bits - 1
+        );
+        self.words[bit / 64] |= 1u64 << (bit % 64);
+    }
+
+    /// Return the value of bit `bit`.
+    ///
+    /// # Panics
+    /// Panics if `bit >= self.bits`.
+    pub fn get(&self, bit: usize) -> bool {
+        assert!(
+            bit < self.bits,
+            "bit index {bit} out of range for BitVecN (max {})",
+            self.bits - 1
+        );
+        (self.words[bit / 64] >> (bit % 64)) & 1 == 1
+    }
+
+    /// Count the number of bits set to 1.
+    pub fn popcount(&self) -> u32 {
+        self.words.iter().map(|w| w.count_ones()).sum()
+    }
+
+    /// Tanimoto similarity with another BitVecN.
+    ///
+    /// Both vectors must have the same bit width.
+    ///
+    /// # Panics
+    /// Panics if the two vectors have different bit widths.
+    pub fn tanimoto(&self, other: &Self) -> f64 {
+        assert_eq!(
+            self.bits, other.bits,
+            "BitVecN tanimoto requires same bit width"
+        );
+        let mut intersection = 0u32;
+        for (a, b) in self.words.iter().zip(other.words.iter()) {
+            intersection += (a & b).count_ones();
+        }
+        let intersection = intersection as f64;
+        let a = self.popcount() as f64;
+        let b = other.popcount() as f64;
+        let union = a + b - intersection;
+        if union == 0.0 {
+            1.0
+        } else {
+            intersection / union
+        }
+    }
+
+    /// Convert from a BitVec2048 (truncates to same 2048 bits).
+    pub fn from_bitvec2048(bv: &BitVec2048) -> Self {
+        BitVecN {
+            words: bv.words.to_vec(),
+            bits: 2048,
+        }
+    }
+
+    /// Convert to a BitVec2048 if the bit width is exactly 2048.
+    ///
+    /// Returns None if the bit width is not 2048.
+    pub fn to_bitvec2048(&self) -> Option<BitVec2048> {
+        if self.bits != 2048 {
+            return None;
+        }
+        let mut arr = [0u64; 32];
+        for (i, &w) in self.words.iter().enumerate() {
+            arr[i] = w;
+        }
+        Some(BitVec2048 { words: arr })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ===== BitVec2048 Tests =====
 
     #[test]
     fn new_bitvec_is_all_zero() {
@@ -219,5 +338,71 @@ mod tests {
         assert!(or.get(10), "OR: bit 10 should be set");
         assert!(or.get(15), "OR: bit 15 should be set");
         assert!(!or.get(0), "OR: bit 0 should be clear");
+    }
+
+    // ===== BitVecN Tests =====
+
+    #[test]
+    fn bitvecn_new_creates_zero_vector() {
+        let bv = BitVecN::new(512);
+        assert_eq!(bv.bit_width(), 512);
+        assert_eq!(bv.popcount(), 0);
+    }
+
+    #[test]
+    fn bitvecn_set_get_basic() {
+        let mut bv = BitVecN::new(1024);
+        bv.set(0);
+        bv.set(512);
+        bv.set(1023);
+        assert!(bv.get(0));
+        assert!(bv.get(512));
+        assert!(bv.get(1023));
+        assert!(!bv.get(1));
+        assert_eq!(bv.popcount(), 3);
+    }
+
+    #[test]
+    fn bitvecn_tanimoto_identical() {
+        let mut bv = BitVecN::new(256);
+        bv.set(10);
+        bv.set(50);
+        assert_eq!(bv.tanimoto(&bv.clone()), 1.0);
+    }
+
+    #[test]
+    fn bitvecn_tanimoto_disjoint() {
+        let mut a = BitVecN::new(256);
+        a.set(5);
+        let mut b = BitVecN::new(256);
+        b.set(10);
+        assert_eq!(a.tanimoto(&b), 0.0);
+    }
+
+    #[test]
+    fn bitvecn_conversion_to_from_2048() {
+        let mut bv2048 = BitVec2048::new();
+        bv2048.set(42);
+        bv2048.set(100);
+
+        let bvn = BitVecN::from_bitvec2048(&bv2048);
+        assert_eq!(bvn.bit_width(), 2048);
+        assert!(bvn.get(42));
+        assert!(bvn.get(100));
+        assert_eq!(bvn.popcount(), 2);
+
+        let bv2048_back = bvn.to_bitvec2048();
+        assert_eq!(bv2048_back, Some(bv2048));
+    }
+
+    #[test]
+    fn bitvecn_arbitrary_sizes() {
+        for size in [128, 256, 512, 1024, 2048, 4096] {
+            let mut bv = BitVecN::new(size);
+            bv.set(0);
+            bv.set(size - 1);
+            assert_eq!(bv.popcount(), 2);
+            assert_eq!(bv.bit_width(), size);
+        }
     }
 }
