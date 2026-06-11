@@ -12,6 +12,88 @@ use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder, valida
 use serde::{Deserialize, Serialize};
 
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
+use chematic_smarts::{parse_smarts, find_matches};
+
+/// Salt removal catalog: common salt patterns (counterions and solvates).
+///
+/// Each pattern is a (name, SMARTS) tuple for organic and inorganic salts.
+/// Used by [`remove_salts`] to filter out counterions and keep drug-like fragments.
+#[derive(Clone, Debug)]
+pub struct SaltCatalog {
+    /// (name, SMARTS) pairs for salt patterns
+    patterns: Vec<(&'static str, &'static str)>,
+}
+
+impl Default for SaltCatalog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SaltCatalog {
+    /// Create a default salt catalog with common counterions and solvates.
+    pub fn new() -> Self {
+        Self {
+            patterns: vec![
+                // Organic salts (carboxylates, sulfonates, etc.)
+                ("acetate", "[#6](-[#1])(-[#1])-[#6](=[#8])[O-]"),
+                ("formate", "[#6](=[#8])[O-]"),
+                ("propionate", "[#6](-[#1])(-[#1])-[#6](-[#1])-[#6](=[#8])[O-]"),
+                ("benzoate", "c1ccccc1-[#6](=[#8])[O-]"),
+                ("trifluoroacetate", "[#9]-[#6](-[#9])(-[#9])-[#6](=[#8])[O-]"),
+                ("mesylate", "[#16](=[#8])(=[#8])-[#8]-[#6](-[#1])(-[#1])-[#1]"),
+                ("tosylate", "c1ccc(cc1)-[#16](=[#8])(=[#8])-[#8]"),
+                ("nosylate", "[#8]-[#6](-[#1])(-[#1])-[#8]-[#16](=[#8])(=[#8])-c1ccc([N+](=O)[O-])cc1"),
+                ("sulfate", "[#16](=[#8])(=[#8])(-[#8])-[#8]"),
+                ("phosphate", "[#15](=[#8])(-[#8])(-[#8])-[#8]"),
+                ("citrate", "[#6](-[#6](=[#8])[O-])(-[#6](=[#8])[O-])-[#6](-[#8])-[#6](=[#8])[O-]"),
+                ("tartrate", "[#6](-[#8])(-[#6](-[#8])-[#6](=[#8])[O-])-[#6](=[#8])[O-]"),
+
+                // Inorganic salts (single atoms/small molecules)
+                ("sodium_cation", "[Na+]"),
+                ("potassium_cation", "[K+]"),
+                ("lithium_cation", "[Li+]"),
+                ("calcium_cation", "[Ca+2]"),
+                ("magnesium_cation", "[Mg+2]"),
+                ("chloride_anion", "[Cl-]"),
+                ("bromide_anion", "[Br-]"),
+                ("iodide_anion", "[I-]"),
+                ("fluoride_anion", "[F-]"),
+                ("oxide_anion", "[O-2]"),
+                ("sulfate_anion", "[#16](=[#8])(=[#8])(-[#8])-[#8-]"),
+                ("phosphate_anion", "[#15](=[#8])(-[#8])(-[#8-])-[#8]"),
+
+                // Solvates and additives
+                ("water", "[#8](-[#1])-[#1]"),
+                ("dmso", "[#16](=[#8])(-[#6](-[#1])(-[#1])-[#1])-[#6](-[#1])(-[#1])-[#1]"),
+                ("methanol", "[#6](-[#1])(-[#1])-[#8]-[#1]"),
+                ("ethanol", "[#6](-[#1])(-[#1])-[#6](-[#1])(-[#1])-[#8]-[#1]"),
+                ("isopropanol", "[#6](-[#1])(-[#1])-[#6](-[#8]-[#1])(-[#1])-[#6](-[#1])(-[#1])-[#1]"),
+
+                // Rare but important salts
+                ("borate", "[#5](-[#8])(-[#8])-[#8]"),
+                ("ammonium", "[#7+;H0,H1,H2,H3]"),
+            ],
+        }
+    }
+
+    /// Add a custom salt pattern to this catalog.
+    pub fn add(&mut self, name: &'static str, smarts: &'static str) {
+        self.patterns.push((name, smarts));
+    }
+
+    /// Check if a molecule fragment matches any salt pattern.
+    pub fn is_salt(&self, frag: &Molecule) -> bool {
+        for (_, smarts_str) in &self.patterns {
+            if let Ok(query) = parse_smarts(smarts_str) {
+                if !find_matches(&query, frag).is_empty() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+}
 
 /// Find all connected components of `mol` via BFS, sorted descending by size.
 fn connected_components(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
@@ -101,11 +183,20 @@ fn is_salt_fragment(frag: &Molecule) -> bool {
 
 /// Return a new `Molecule` with inorganic salts removed, keeping largest organic fragment.
 ///
-/// Attempts to identify and exclude common counterions (Na+, K+, Cl-, etc.) and
-/// inorganic salt fragments, returning the largest non-salt fragment instead.
+/// Uses a comprehensive salt catalog (SMARTS patterns) and heuristic detection to identify
+/// and exclude common counterions (Na+, K+, TFA-, acetate, etc.) and inorganic salt fragments.
 ///
 /// If no non-salt fragment exists or molecule is empty, returns the original largest fragment.
 pub fn remove_salts(mol: &Molecule) -> Molecule {
+    remove_salts_with_catalog(mol, &SaltCatalog::new())
+}
+
+/// Remove salts using a custom catalog.
+///
+/// # Arguments
+/// - `mol`: the molecule to process
+/// - `catalog`: custom salt catalog (use `SaltCatalog::new()` for default)
+pub fn remove_salts_with_catalog(mol: &Molecule, catalog: &SaltCatalog) -> Molecule {
     if mol.atom_count() == 0 {
         return MoleculeBuilder::new().build();
     }
@@ -127,8 +218,11 @@ pub fn remove_salts(mol: &Molecule) -> Molecule {
         copy_bonds(mol, &mut builder, &remap);
         let frag = builder.build();
 
+        // Check with catalog first, fall back to heuristic
+        let is_salt = catalog.is_salt(&frag) || is_salt_fragment(&frag);
+
         // If not a salt and larger than current best, use it
-        if !is_salt_fragment(&frag) && component.len() > largest_non_salt_size {
+        if !is_salt && component.len() > largest_non_salt_size {
             largest_non_salt = Some(component);
             largest_non_salt_size = component.len();
         }
@@ -663,6 +757,12 @@ impl StandardizationPipeline {
         let mut steps = Vec::new();
         let mut warnings = detect_initial_warnings(mol);
 
+        // Disconnect metals early (remove dative/coordinate bonds)
+        let has_metals = current.atoms().any(|(_, a)| is_metal(a.element));
+        if has_metals {
+            current = disconnect_metals(&current);
+        }
+
         // Apply NeutralizeCharges BEFORE LargestFragment to ensure predictable fragment selection.
         // Example: [NH3+].[Cl-] should be neutralized first to [NH3].[Cl-], then largest fragment.
         current = self.apply_stage(
@@ -766,24 +866,7 @@ fn clone_molecule(mol: &Molecule) -> Molecule {
 
 fn detect_initial_warnings(mol: &Molecule) -> Vec<StandardizationWarning> {
     let mut warnings = Vec::new();
-    let mut metal_bonds = 0usize;
-    for (idx, atom) in mol.atoms() {
-        if !is_metal(atom.element) {
-            continue;
-        }
-        metal_bonds += mol
-            .neighbors(idx)
-            .filter(|(nb, _)| !is_metal(mol.atom(*nb).element))
-            .count();
-    }
-    if metal_bonds > 0 {
-        warnings.push(StandardizationWarning::new(
-            "metal_disconnection_not_applied",
-            format!(
-                "found {metal_bonds} metal-to-nonmetal bond(s); metal disconnection is not implemented yet"
-            ),
-        ));
-    }
+    // Metal disconnection is now handled in the pipeline, so we don't warn about it
     let valence_errors = validate_valence(mol);
     if !valence_errors.is_empty() {
         warnings.push(StandardizationWarning::new(
@@ -814,6 +897,34 @@ fn append_valence_warnings(
             errors.len()
         ),
     ));
+}
+
+/// Disconnect metal-nonmetal bonds by removing dative/coordinate bonds to metals.
+///
+/// Iterates through all atoms; if a metal is found, removes all bonds between
+/// that metal and organic/inorganic atoms. Returns the molecule with metal
+/// coordination bonds severed.
+fn disconnect_metals(mol: &Molecule) -> Molecule {
+    let mut builder = MoleculeBuilder::new();
+
+    // Copy all atoms
+    for i in 0..mol.atom_count() {
+        builder.add_atom(mol.atom(AtomIdx(i as u32)).clone());
+    }
+
+    // Copy only non-metal bonds
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        let atom1_is_metal = is_metal(mol.atom(bond.atom1).element);
+        let atom2_is_metal = is_metal(mol.atom(bond.atom2).element);
+
+        // Skip bonds where at least one atom is a metal
+        if !atom1_is_metal && !atom2_is_metal {
+            builder.add_bond(bond.atom1, bond.atom2, bond.order).ok();
+        }
+    }
+
+    builder.build()
 }
 
 fn is_metal(element: Element) -> bool {
@@ -1000,8 +1111,10 @@ mod tests {
     }
 
     #[test]
-    fn pipeline_report_warns_about_metal_disconnection_gap() {
+    fn pipeline_report_disconnects_metal_bonds() {
         let mol = parse("[Na]OC").unwrap();
+        assert_eq!(mol.bond_count(), 2, "input has Na-O and O-C bonds");
+
         let pipeline = StandardizationPipeline::new(StandardizeOptions {
             canonical_tautomer: false,
             neutralize_charges: false,
@@ -1010,16 +1123,14 @@ mod tests {
             zwitterion_handling: ZwitterionHandling::Keep,
         });
 
-        let (_result, report) = pipeline.run(&mol);
+        let (result, _report) = pipeline.run(&mol);
 
-        // Status is Unchanged because no stages are enabled (no modifications made).
-        // Warnings are collected but don't affect the status.
-        assert_eq!(report.status, PipelineStatus::Unchanged);
+        // Metal disconnection should run automatically, removing the Na-O bond
+        assert_eq!(result.bond_count(), 1, "Na-O bond should be disconnected");
+        // The remaining bond should be O-C
         assert!(
-            report
-                .warnings
-                .iter()
-                .any(|w| w.code == "metal_disconnection_not_applied")
+            result.bond(BondIdx(0)).atom1.0 < 3 && result.bond(BondIdx(0)).atom2.0 < 3,
+            "remaining bond should connect organic atoms"
         );
     }
 

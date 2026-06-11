@@ -288,6 +288,64 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 3,
     },
+
+    // 1,5-H shift rules (path_len=5)
+    // 21. 1,5-O→O: β-diketone (acetylacetone)
+    //     Pattern: O-C(-)-C(-)-C(=O) → O=C(-)-C(-)-C(-O)
+    TautomerRule {
+        name: "1,5-O-to-O-beta-diketone",
+        donor_elem: 8,
+        bridge_elem: Some(6),  // Central carbon in pattern (b2)
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 22. 1,5-O→N: enol imine
+    TautomerRule {
+        name: "1,5-O-to-N",
+        donor_elem: 8,
+        bridge_elem: Some(6),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 23. 1,5-N→N: extended guanidine/amidine tautomerism
+    TautomerRule {
+        name: "1,5-N-to-N",
+        donor_elem: 7,
+        bridge_elem: Some(6),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 24. 1,5-N→O: hydroxamic acid type
+    TautomerRule {
+        name: "1,5-N-to-O",
+        donor_elem: 7,
+        bridge_elem: Some(6),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 25. 1,5-C→O: active methylene with conjugation
+    TautomerRule {
+        name: "1,5-C-to-O",
+        donor_elem: 6,
+        bridge_elem: Some(6),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
 ];
 
 /// Per-atom explicit hydrogen count vector (position-sensitive, for 1,2-shift dedup).
@@ -430,40 +488,103 @@ fn mol_fingerprint(mol: &Molecule) -> u64 {
 }
 
 /// Find all (donor, bridge, acceptor) triples matching the rule in `mol`.
+/// For path_len=3: donor-bridge-acceptor (standard 1,3-shift)
+/// For path_len=5: donor-b1-b2-b3-acceptor (1,5-shift) where b2 is stored in "bridge"
 fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, AtomIdx)> {
     let mut matches = Vec::new();
 
-    for i in 0..mol.atom_count() {
-        let d = AtomIdx(i as u32);
-        let donor_atom = mol.atom(d);
-        if donor_atom.element.atomic_number() != rule.donor_elem {
-            continue;
-        }
-        if implicit_hcount(mol, d) == 0 {
-            continue;
-        }
-
-        for (b, db_bidx) in mol.neighbors(d) {
-            if !rule.donor_bridge_order.matches(mol.bond(db_bidx).order) {
+    if rule.path_len == 5 {
+        // 1,5-shift: donor -[single]- b1 -[any]- b2 -[any]- b3 -[double]- acceptor
+        for i in 0..mol.atom_count() {
+            let d = AtomIdx(i as u32);
+            let donor_atom = mol.atom(d);
+            if donor_atom.element.atomic_number() != rule.donor_elem {
                 continue;
             }
-            if let Some(br_elem) = rule.bridge_elem
-                && mol.atom(b).element.atomic_number() != br_elem
-            {
+            if implicit_hcount(mol, d) == 0 {
                 continue;
             }
 
-            for (a, ba_bidx) in mol.neighbors(b) {
-                if a == d {
+            for (b1, db_bidx) in mol.neighbors(d) {
+                if !rule.donor_bridge_order.matches(mol.bond(db_bidx).order) {
                     continue;
                 }
-                if !rule.bridge_acceptor_order.matches(mol.bond(ba_bidx).order) {
+                // b1 should be a carbon (or be flexible)
+                if mol.atom(b1).element.atomic_number() != 6 {
                     continue;
                 }
-                if mol.atom(a).element.atomic_number() != rule.acceptor_elem {
+
+                for (b2, _) in mol.neighbors(b1) {
+                    if b2 == d {
+                        continue;
+                    }
+                    // b2 can be any type (relaxed)
+                    if let Some(br_elem) = rule.bridge_elem {
+                        if mol.atom(b2).element.atomic_number() != br_elem {
+                            continue;
+                        }
+                    }
+
+                    for (b3, _) in mol.neighbors(b2) {
+                        if b3 == b1 {
+                            continue;
+                        }
+                        // b3 should be a carbon
+                        if mol.atom(b3).element.atomic_number() != 6 {
+                            continue;
+                        }
+
+                        for (a, ba_bidx) in mol.neighbors(b3) {
+                            if a == b2 {
+                                continue;
+                            }
+                            if !rule.bridge_acceptor_order.matches(mol.bond(ba_bidx).order) {
+                                continue;
+                            }
+                            if mol.atom(a).element.atomic_number() != rule.acceptor_elem {
+                                continue;
+                            }
+                            // Return (donor, b2_as_central, acceptor) for the transfer logic
+                            matches.push((d, b2, a));
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // Standard 1,3-shift (path_len=3)
+        for i in 0..mol.atom_count() {
+            let d = AtomIdx(i as u32);
+            let donor_atom = mol.atom(d);
+            if donor_atom.element.atomic_number() != rule.donor_elem {
+                continue;
+            }
+            if implicit_hcount(mol, d) == 0 {
+                continue;
+            }
+
+            for (b, db_bidx) in mol.neighbors(d) {
+                if !rule.donor_bridge_order.matches(mol.bond(db_bidx).order) {
                     continue;
                 }
-                matches.push((d, b, a));
+                if let Some(br_elem) = rule.bridge_elem
+                    && mol.atom(b).element.atomic_number() != br_elem
+                {
+                    continue;
+                }
+
+                for (a, ba_bidx) in mol.neighbors(b) {
+                    if a == d {
+                        continue;
+                    }
+                    if !rule.bridge_acceptor_order.matches(mol.bond(ba_bidx).order) {
+                        continue;
+                    }
+                    if mol.atom(a).element.atomic_number() != rule.acceptor_elem {
+                        continue;
+                    }
+                    matches.push((d, b, a));
+                }
             }
         }
     }

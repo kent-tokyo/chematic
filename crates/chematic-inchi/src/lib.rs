@@ -1,21 +1,27 @@
-//! Pure Rust InChI and InChIKey generation for IUPAC standard molecules.
+//! Pure Rust InChI and InChIKey generation and parsing for IUPAC standard molecules.
 //!
 //! Generates deterministic InChI strings (formula, connectivity, hydrogen, charge, isotope layers)
-//! without stereo layers. Fully WASM-compatible, FFI-free.
+//! and parses InChI strings back to Molecule representation (simple molecules).
+//! Fully WASM-compatible, FFI-free.
 //!
 //! # Examples
 //!
 //! ```ignore
 //! use chematic_smiles::parse;
-//! use chematic_inchi::inchi;
+//! use chematic_inchi::{inchi, parse_inchi};
 //!
 //! let mol = parse("c1ccccc1").expect("benzene");
 //! let inchi_str = inchi(&mol);
 //! assert_eq!(inchi_str, "InChI=1S/C6H6/c1-2-3-4-5-6-1/h1-6H");
+//!
+//! // Parse InChI back to Molecule
+//! let mol2 = parse_inchi(&inchi_str).expect("parse");
+//! assert_eq!(mol2.atom_count(), 6);
 //! ```
 
 pub mod layers;
 pub mod key;
+pub mod parser;
 
 use chematic_core::{Molecule, AtomIdx};
 use chematic_smiles::canonical::canonical_atom_order;
@@ -108,6 +114,12 @@ pub fn inchi(mol: &Molecule) -> String {
 pub fn inchi_key(inchi_str: &str) -> String {
     key::inchi_key(inchi_str)
 }
+
+/// Parse an InChI string back into a Molecule representation.
+///
+/// Supports simple organic molecules (alkanes, alkenes, basic aromatics).
+/// Stereo layers, isotopes, and charges are not yet supported.
+pub use parser::{parse_inchi, InchiParseError};
 
 #[cfg(test)]
 mod tests {

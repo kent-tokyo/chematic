@@ -82,7 +82,7 @@ pub use standardize::{
     ZwitterionHandling, has_zwitterion, largest_fragment, neutralize_charges, normalize_zwitterion,
     remove_isotopes, remove_stereo, standardize,
 };
-pub use stereo::{enumerate_stereoisomers, invert_stereocenter};
+pub use stereo::{assign_complete_stereochemistry, enumerate_stereoisomers, invert_stereocenter};
 pub use tautomer::{
     TautomerConfig, canonical_tautomer, canonical_tautomer_with_config, enumerate_tautomers,
     enumerate_tautomers_with_config,

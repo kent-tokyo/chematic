@@ -10,6 +10,7 @@
 
 use chematic_core::{Molecule, AtomIdx};
 use crate::coords::Coords3D;
+use crate::etkdg_knowledge::{get_torsion_preference, default_torsion_preference};
 
 /// Generate 3D coordinates using ETKDG with torsion angle preferences.
 ///
@@ -35,8 +36,10 @@ pub fn generate_coords_etkdg(mol: &Molecule) -> Coords3D {
     coords
 }
 
-/// Apply torsion angle preferences to coordinates.
-/// Uses simple heuristics for common structural patterns.
+/// Apply torsion angle preferences to coordinates using knowledge base.
+///
+/// Uses experimental torsion angle preferences based on atom types and
+/// chemical patterns to refine the initial coordinates.
 fn apply_torsion_preferences(mol: &Molecule, coords: &mut Coords3D) {
     let n = mol.atom_count();
     let mut applied = std::collections::HashSet::new();
@@ -90,10 +93,13 @@ fn apply_torsion_preferences(mol: &Molecule, coords: &mut Coords3D) {
 
                     let current_deg = current.unwrap() * 180.0 / std::f64::consts::PI;
 
-                    // Prefer 180° (anti) for aliphatic systems
-                    let target_deg = 180.0;
+                    // Get torsion preference from knowledge base
+                    let preference = get_torsion_preference(mol, a_idx, b_idx, c_idx, d_idx)
+                        .unwrap_or_else(|| default_torsion_preference());
 
-                    // Only apply if difference is significant
+                    let target_deg = preference.angle_deg;
+
+                    // Only apply if difference is significant (> 20°)
                     if (current_deg - target_deg).abs() > 20.0 {
                         let target_rad = target_deg * std::f64::consts::PI / 180.0;
                         *coords = super::mol_transforms::set_dihedral(
