@@ -3,6 +3,7 @@
 //! Provides functions to extract the Murcko scaffold from a molecule:
 //! - `murcko_scaffold`: ring atoms plus atoms on paths connecting ring systems.
 //! - `generic_murcko_scaffold`: scaffold with all atoms replaced by C and all bonds by Single.
+//! - `scaffold_network_with_counts`: compute scaffold network with molecule frequencies across a library.
 
 #![forbid(unsafe_code)]
 
@@ -10,6 +11,21 @@ use std::collections::{HashMap, HashSet};
 
 use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 use chematic_perception::find_sssr;
+use chematic_smiles::canonical_smiles;
+
+/// Scaffold network of a molecule library: hierarchical scaffolds with occurrence counts.
+///
+/// Represents a directed acyclic graph (DAG) where each node is a scaffold and edges
+/// represent parent-child relationships (parent = one ring removed). Each scaffold
+/// tracks how many molecules in the input library had that scaffold in their hierarchy.
+pub struct ScaffoldNetwork {
+    /// Unique scaffolds in canonical order (by SMILES).
+    pub scaffolds: Vec<Molecule>,
+    /// Occurrence count for each scaffold across the input library.
+    pub counts: Vec<usize>,
+    /// Parent scaffold index for each scaffold (if any). `None` indicates root (single ring).
+    pub parents: Vec<Option<usize>>,
+}
 
 /// Extract the Murcko scaffold from `mol`.
 ///
@@ -263,6 +279,88 @@ fn schuffenhauer_remove_ring(
     Some(build_subgraph(mol, &keep))
 }
 
+/// Compute the scaffold network from a molecule library with occurrence counts.
+///
+/// For each molecule in `mols`, extracts its scaffold hierarchy via `scaffold_network()`,
+/// then aggregates all unique scaffolds by canonical SMILES, counting occurrences.
+///
+/// Returns a `ScaffoldNetwork` with:
+/// - `scaffolds`: unique scaffolds (deduplicated by canonical SMILES)
+/// - `counts`: occurrence frequency of each scaffold across the library
+/// - `parents`: parent scaffold index (one ring removed in the Schuffenhauer hierarchy)
+///
+/// Returns an empty network if no scaffolds are found.
+pub fn scaffold_network_with_counts(mols: &[Molecule]) -> ScaffoldNetwork {
+    // Collect scaffolds and metadata: SMILES → (count, parent_smiles_opt)
+    let mut smi_counts: HashMap<String, usize> = HashMap::new();
+    let mut smi_parents: HashMap<String, Option<String>> = HashMap::new();
+    let mut scaffolds_list: Vec<(String, Molecule)> = Vec::new();  // Ordered by first encounter
+    let mut seen_smiles: HashSet<String> = HashSet::new();
+
+    for mol in mols {
+        let network = scaffold_network(mol);
+        for (i, scaffold) in network.iter().enumerate() {
+            let smiles = canonical_smiles(scaffold);
+
+            // Track count
+            smi_counts.entry(smiles.clone()).and_modify(|c| *c += 1).or_insert(1);
+
+            // Track parent (by computing SMILES of network[i-1])
+            if i > 0 {
+                let parent_smiles = canonical_smiles(&network[i - 1]);
+                smi_parents.entry(smiles.clone()).or_insert(Some(parent_smiles));
+            } else {
+                smi_parents.entry(smiles.clone()).or_insert(None);
+            }
+
+            // Store first occurrence by reconstructing the scaffold
+            if !seen_smiles.contains(&smiles) {
+                seen_smiles.insert(smiles.clone());
+                // Reconstruct the scaffold since we're borrowing from network
+                let atom_set: HashSet<AtomIdx> = (0..scaffold.atom_count())
+                    .map(|i| AtomIdx(i as u32))
+                    .collect();
+                let rebuilt = build_subgraph(scaffold, &atom_set);
+                scaffolds_list.push((smiles, rebuilt));
+            }
+        }
+    }
+
+    // Sort by SMILES for stable output
+    scaffolds_list.sort_by(|a, b| a.0.cmp(&b.0));
+
+    // Build SMILES → index mapping before consuming scaffolds_list
+    let smiles_vec: Vec<String> = scaffolds_list.iter().map(|(smi, _)| smi.clone()).collect();
+    let smi_to_idx: HashMap<String, usize> = smiles_vec
+        .iter()
+        .enumerate()
+        .map(|(idx, smi)| (smi.clone(), idx))
+        .collect();
+
+    // Extract molecules and build count/parent arrays
+    let (_, scaffolds_vec): (Vec<_>, Vec<_>) = scaffolds_list.into_iter().unzip();
+    let counts: Vec<usize> = smiles_vec
+        .iter()
+        .map(|smi| smi_counts.get(smi).copied().unwrap_or(0))
+        .collect();
+    let parents: Vec<Option<usize>> = smiles_vec
+        .iter()
+        .map(|smi| {
+            smi_parents
+                .get(smi)
+                .cloned()
+                .flatten()
+                .and_then(|parent_smi| smi_to_idx.get(&parent_smi).copied())
+        })
+        .collect();
+
+    ScaffoldNetwork {
+        scaffolds: scaffolds_vec,
+        counts,
+        parents,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -325,6 +423,100 @@ mod tests {
             scaffold.atom_count() >= 12,
             "biphenyl scaffold should have at least 12 atoms, got {}",
             scaffold.atom_count()
+        );
+    }
+
+    // scaffold_network_with_counts tests
+
+    #[test]
+    fn scaffold_network_with_counts_empty_input() {
+        let network = scaffold_network_with_counts(&[]);
+        assert!(
+            network.scaffolds.is_empty(),
+            "empty input should yield empty network"
+        );
+    }
+
+    #[test]
+    fn scaffold_network_with_counts_single_molecule() {
+        // Single molecule with multiple scaffold layers (e.g. naphthalene)
+        let mol = parse("c1ccc2ccccc2c1").unwrap();
+        let network = scaffold_network_with_counts(&[mol]);
+        assert!(
+            !network.scaffolds.is_empty(),
+            "naphthalene should yield at least one scaffold"
+        );
+        assert_eq!(
+            network.scaffolds.len(),
+            network.counts.len(),
+            "scaffolds and counts must have same length"
+        );
+        assert_eq!(
+            network.scaffolds.len(),
+            network.parents.len(),
+            "scaffolds and parents must have same length"
+        );
+    }
+
+    #[test]
+    fn scaffold_network_with_counts_duplicate_scaffolds() {
+        // Two molecules sharing a common scaffold should increment its count
+        let mol1 = parse("c1ccc2c(c1)ccc1ccccc12").unwrap(); // Anthracene
+        let mol2 = parse("c1ccc2c(c1)ccc1ccccc12").unwrap(); // Same anthracene
+        let network = scaffold_network_with_counts(&[mol1, mol2]);
+
+        // Both molecules have the same scaffold hierarchy,
+        // so each scaffold should be counted twice
+        for count in &network.counts {
+            assert!(
+                *count >= 1,
+                "each scaffold should appear at least once (but may appear multiple times)"
+            );
+        }
+
+        // At least the root scaffold should appear twice
+        let has_count_2_or_more = network.counts.iter().any(|&c| c >= 2);
+        assert!(
+            has_count_2_or_more,
+            "at least one scaffold should have count >= 2 from duplicate molecules"
+        );
+    }
+
+    #[test]
+    fn scaffold_network_with_counts_parent_relationships() {
+        // Scaffold network should have parent relationships
+        let mol = parse("c1ccc2c(c1)ccc1ccccc12").unwrap(); // Anthracene (3 fused rings)
+        let network = scaffold_network_with_counts(&[mol]);
+
+        // Should have multiple scaffolds (one for each layer)
+        assert!(
+            network.scaffolds.len() > 1,
+            "Anthracene should yield multiple scaffold layers"
+        );
+
+        // Parent relationships should form a chain (root has None, intermediate have Some)
+        let root_count = network.parents.iter().filter(|p| p.is_none()).count();
+        assert_eq!(root_count, 1, "should have exactly one root scaffold");
+    }
+
+    #[test]
+    fn scaffold_network_with_counts_multiple_molecules() {
+        // Multiple molecules with different scaffolds
+        let benzene = parse("c1ccccc1").unwrap();
+        let naphthalene = parse("c1ccc2ccccc2c1").unwrap();
+        let network = scaffold_network_with_counts(&[benzene, naphthalene]);
+
+        // Should have scaffolds from both molecules
+        assert!(
+            network.scaffolds.len() >= 2,
+            "network should include scaffolds from both benzene and naphthalene"
+        );
+
+        // Benzene appears once, naphthalene scaffolds appear once each
+        assert_eq!(
+            network.scaffolds.len(),
+            network.counts.len(),
+            "lengths must match"
         );
     }
 }

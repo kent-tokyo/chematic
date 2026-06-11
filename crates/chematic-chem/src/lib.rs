@@ -72,7 +72,8 @@ pub use qed::qed;
 pub use recap::{recap_breakable_bond_count, recap_fragment};
 pub use sa_score::sa_score;
 pub use scaffold::{
-    generic_murcko_scaffold, murcko_scaffold, scaffold_network, schuffenhauer_parents,
+    generic_murcko_scaffold, murcko_scaffold, scaffold_network, scaffold_network_with_counts,
+    schuffenhauer_parents, ScaffoldNetwork,
 };
 pub use standardize::{
     MoleculeSnapshot, PipelineStatus, StandardizationPipeline, StandardizationReport,
