@@ -183,8 +183,11 @@ pub fn schuffenhauer_parents(mol: &Molecule) -> Vec<Molecule> {
 /// 1. Remove an outermost ring (one that, when removed, reduces ring count by 1).
 /// 2. Among candidates, prefer all-carbon rings over heteroaromatic rings.
 /// 3. Among candidates with same heteroatom content, prefer the smallest ring.
-/// 4. Break remaining ties by preferring the ring with the lowest-priority
-///    attachment point (smallest atom index in the ring).
+/// 4. Prefer rings with fewer nitrogen atoms (nitrogen-containing rings deprioritized).
+/// 5. Prefer rings with fewer heavy-atom substituents (attachments to other rings).
+/// 6. Prefer 5-membered rings over 6-membered and larger (5-ring priority).
+/// 7. Prefer rings with fewer linker bonds (fewest connections to other rings).
+/// 8. Break remaining ties by smallest atom index in the ring.
 fn schuffenhauer_remove_ring(
     mol: &Molecule,
     rings: &chematic_perception::RingSet,
@@ -245,7 +248,57 @@ fn schuffenhauer_remove_ring(
         .unwrap();
     candidates.retain(|&ri| all_rings[ri].len() == min_size);
 
-    // Rule 4: tie-break by smallest atom index in the ring.
+    // Rule 4: prefer rings with fewer nitrogen atoms.
+    let count_heteroatoms = |ri: usize| {
+        all_rings[ri]
+            .iter()
+            .filter(|&&a| mol.atom(a).element.atomic_number() == 7)
+            .count()
+    };
+    let min_nitrogen = candidates.iter().map(|&ri| count_heteroatoms(ri)).min().unwrap();
+    candidates.retain(|&ri| count_heteroatoms(ri) == min_nitrogen);
+
+    // Rule 5: prefer rings with fewer heavy-atom substituents (linker attachments).
+    let count_substituents = |ri: usize| {
+        all_rings[ri]
+            .iter()
+            .filter(|&&atom| {
+                mol.neighbors(atom).any(|(nb, _)| {
+                    // A substituent is a neighbor not in this ring and not hydrogen
+                    !all_rings[ri].contains(&nb) && mol.atom(nb).element.atomic_number() != 1
+                })
+            })
+            .count()
+    };
+    let min_subs = candidates.iter().map(|&ri| count_substituents(ri)).min().unwrap();
+    candidates.retain(|&ri| count_substituents(ri) == min_subs);
+
+    // Rule 6: prefer 5-membered rings over larger rings (5-ring priority).
+    let prefer_5ring: Vec<usize> = candidates
+        .iter()
+        .copied()
+        .filter(|&ri| all_rings[ri].len() == 5)
+        .collect();
+    if !prefer_5ring.is_empty() {
+        candidates = prefer_5ring;
+    }
+
+    // Rule 7: prefer rings with fewer linker bonds (fewest inter-ring connections).
+    let count_linker_bonds = |ri: usize| {
+        all_rings[ri]
+            .iter()
+            .filter(|&&atom| {
+                all_rings
+                    .iter()
+                    .enumerate()
+                    .any(|(j, other)| j != ri && other.contains(&atom))
+            })
+            .count()
+    };
+    let min_linker = candidates.iter().map(|&ri| count_linker_bonds(ri)).min().unwrap();
+    candidates.retain(|&ri| count_linker_bonds(ri) == min_linker);
+
+    // Rule 8: tie-break by smallest atom index in the ring.
     candidates.sort_by_key(|&ri| all_rings[ri].iter().map(|a| a.0).min().unwrap_or(0));
     let chosen_ring = candidates[0];
 
