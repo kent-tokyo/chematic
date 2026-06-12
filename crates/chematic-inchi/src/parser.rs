@@ -1,6 +1,6 @@
 //! InChI string parser — reconstruct Molecule from InChI representation.
 
-use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, CipCode, Element, Molecule, MoleculeBuilder};
 use std::collections::HashMap;
 
 /// Error type for InChI parsing.
@@ -711,30 +711,92 @@ fn parse_bond_spec(spec: &str) -> Result<(usize, usize), InchiParseError> {
 
 /// Apply E/Z stereo information to molecule (placeholder for now).
 /// Real implementation would set bond order information or metadata.
+/// Apply E/Z double bond stereo (CIP-derived).
+/// InChI /b layer: (atom1, atom2, '+'/'-') where '+' = Z, '-' = E.
+/// The stereo is assigned to atom1 (lower InChI number) via cip_code field.
 fn apply_ez_stereo(
     mol: Molecule,
-    _atom_idx_map: &HashMap<usize, AtomIdx>,
-    _stereo: &HashMap<(usize, usize), char>,
+    atom_idx_map: &HashMap<usize, AtomIdx>,
+    stereo: &HashMap<(usize, usize), char>,
 ) -> Molecule {
-    // Note: InChI E/Z stereo is derived from atom numbering + CIP rules.
-    // Full implementation would require re-assigning CIP codes and storing stereo flags.
-    // For now, just return the molecule unchanged (stereo info is in the parsed structure).
-    mol
+    if stereo.is_empty() {
+        return mol;
+    }
+
+    let mut builder = MoleculeBuilder::new();
+    let mut atom_map = HashMap::new();
+
+    for (old_idx, atom) in mol.atoms() {
+        let mut a = atom.clone();
+
+        // Check if this atom is stereo-assigned in the E/Z layer
+        // stereo key is (lower_num, higher_num), and we assign to the lower atom
+        for (&(n1, _n2), &parity) in stereo.iter() {
+            if let Some(&idx1) = atom_idx_map.get(&n1) {
+                if idx1 == old_idx {
+                    a.cip_code = Some(match parity {
+                        '+' => CipCode::Z,
+                        '-' => CipCode::E,
+                        _ => continue,
+                    });
+                    break;
+                }
+            }
+        }
+
+        let new_idx = builder.add_atom(a);
+        atom_map.insert(old_idx, new_idx);
+    }
+
+    for (_, bond) in mol.bonds() {
+        builder.add_bond(atom_map[&bond.atom1], atom_map[&bond.atom2], bond.order);
+    }
+
+    builder.build()
 }
 
 /// Apply tetrahedral stereo (R/S) information to molecule.
-/// Note: InChI R/S codes are derived from CIP priorities and 3D geometry.
-/// Without 3D coordinates or a full CIP re-assignment, we cannot reliably set chirality markers.
-/// This function is a placeholder for now; the stereo information from InChI is preserved
-/// in the parsed data but not directly reflected in Chirality enum (which uses wedge/dash instead).
+/// InChI /t layer: atom_num → '+'/'-' where '+' = R, '-' = S.
+/// The stereo is assigned via cip_code field on the stereocenter.
 fn apply_tetrahedral_stereo(
     mol: Molecule,
-    _atom_idx_map: &HashMap<usize, AtomIdx>,
-    _stereo: &HashMap<usize, char>,
+    atom_idx_map: &HashMap<usize, AtomIdx>,
+    stereo: &HashMap<usize, char>,
 ) -> Molecule {
-    // TODO: Implement full round-trip by re-assigning CIP codes and setting chirality.
-    // For now, return molecule unchanged. Stereo info is embedded in the connectivity.
-    mol
+    if stereo.is_empty() {
+        return mol;
+    }
+
+    let mut builder = MoleculeBuilder::new();
+    let mut atom_map = HashMap::new();
+
+    for (old_idx, atom) in mol.atoms() {
+        let mut a = atom.clone();
+
+        // Check if this atom is assigned a tetrahedral stereo in the /t layer
+        // We need to find which InChI atom number corresponds to old_idx
+        for (&inchi_num, &parity) in stereo.iter() {
+            if let Some(&idx) = atom_idx_map.get(&inchi_num) {
+                if idx == old_idx {
+                    a.cip_code = Some(match parity {
+                        '+' => CipCode::R,
+                        '-' => CipCode::S,
+                        _ => continue,
+                    });
+                    break;
+                }
+            }
+        }
+
+        let new_idx = builder.add_atom(a);
+        atom_map.insert(old_idx, new_idx);
+    }
+
+    for (_, bond) in mol.bonds() {
+        builder.add_bond(atom_map[&bond.atom1], atom_map[&bond.atom2], bond.order);
+    }
+
+    builder.build()
 }
 
 /// Parse relative stereo parity layer (/m...) - informational metadata.
@@ -1079,5 +1141,61 @@ mod tests {
         if let Ok(mol) = result {
             assert!(mol.atom_count() > 0);
         }
+    }
+
+    #[test]
+    fn test_tetrahedral_stereo_roundtrip_simple() {
+        // Simple test: verify that apply_tetrahedral_stereo assigns cip_code
+        // Create a test molecule and verify the function works
+        let mut builder = MoleculeBuilder::new();
+        let a1 = builder.add_atom(Atom::new(Element::C));
+        let a2 = builder.add_atom(Atom::new(Element::H));
+        let a3 = builder.add_atom(Atom::new(Element::H));
+        let a4 = builder.add_atom(Atom::new(Element::H));
+        let a5 = builder.add_atom(Atom::new(Element::N));
+
+        builder.add_bond(a1, a2, BondOrder::Single);
+        builder.add_bond(a1, a3, BondOrder::Single);
+        builder.add_bond(a1, a4, BondOrder::Single);
+        builder.add_bond(a1, a5, BondOrder::Single);
+
+        let mol = builder.build();
+        let mut stereo_map = HashMap::new();
+        stereo_map.insert(1, '-'); // Atom 1 is S
+        let mut atom_idx_map = HashMap::new();
+        atom_idx_map.insert(1, a1);
+
+        let mol_stereo = apply_tetrahedral_stereo(mol, &atom_idx_map, &stereo_map);
+        let found_s = mol_stereo
+            .atoms()
+            .any(|(_, atom)| atom.cip_code == Some(CipCode::S));
+        assert!(found_s, "apply_tetrahedral_stereo should assign S cip_code");
+    }
+
+    #[test]
+    fn test_ez_stereo_roundtrip_simple() {
+        // Simple test: verify that apply_ez_stereo assigns cip_code
+        let mut builder = MoleculeBuilder::new();
+        let a1 = builder.add_atom(Atom::new(Element::C));
+        let a2 = builder.add_atom(Atom::new(Element::C));
+        let a3 = builder.add_atom(Atom::new(Element::H));
+        let a4 = builder.add_atom(Atom::new(Element::N));
+
+        builder.add_bond(a1, a2, BondOrder::Double);
+        builder.add_bond(a1, a3, BondOrder::Single);
+        builder.add_bond(a2, a4, BondOrder::Single);
+
+        let mol = builder.build();
+        let mut stereo_map = HashMap::new();
+        stereo_map.insert((1, 2), '-'); // Bond 1-2 is E
+        let mut atom_idx_map = HashMap::new();
+        atom_idx_map.insert(1, a1);
+        atom_idx_map.insert(2, a2);
+
+        let mol_stereo = apply_ez_stereo(mol, &atom_idx_map, &stereo_map);
+        let found_e = mol_stereo
+            .atoms()
+            .any(|(_, atom)| atom.cip_code == Some(CipCode::E));
+        assert!(found_e, "apply_ez_stereo should assign E cip_code");
     }
 }

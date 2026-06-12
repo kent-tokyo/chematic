@@ -1,10 +1,11 @@
-//! RDKit-compatible path fingerprints (Daylight-like algorithm).
+//! v0.1.92: RDKit-compatible path fingerprints with bond type inclusion.
 //!
 //! Enumerates all topological paths up to a configurable length,
-//! hashes them, and aggregates into a 2048-bit fingerprint.
+//! hashes each path (including bond types), and aggregates into a 2048-bit fingerprint.
+//! Bond types (single/double/triple/aromatic) are interleaved with atomic numbers in hash.
 
 use crate::bitvec::BitVec2048;
-use chematic_core::{AtomIdx, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
 
 const HASH_MOD: usize = 2048;
 
@@ -26,10 +27,10 @@ impl Default for RdkitPathConfig {
     }
 }
 
-/// Compute RDKit path fingerprint (Daylight-like).
+/// Compute RDKit path fingerprint (Daylight-like, with bond types).
 ///
-/// Enumerates all simple paths up to `max_path_len`, hashes each path,
-/// and sets corresponding bits in a 2048-bit fingerprint.
+/// Enumerates all simple paths up to `max_path_len`, hashes each path
+/// (including bond order types), and sets corresponding bits in a 2048-bit fingerprint.
 pub fn rdkit_path_fp(mol: &Molecule) -> BitVec2048 {
     rdkit_path_fp_with_config(mol, &RdkitPathConfig::default())
 }
@@ -47,10 +48,14 @@ pub fn rdkit_path_fp_with_config(
 
     for start_idx in 0..mol.atom_count() {
         let start = AtomIdx(start_idx as u32);
+        let initial_path = PathWithBonds {
+            atoms: vec![start],
+            bonds: vec![],
+        };
         enumerate_paths_from(
             mol,
             start,
-            vec![start],
+            initial_path,
             &mut |path| {
                 let hash = hash_path(mol, path);
                 let bit_idx = hash % HASH_MOD;
@@ -63,29 +68,37 @@ pub fn rdkit_path_fp_with_config(
     fp
 }
 
-/// Recursive DFS path enumeration.
+/// Path with atoms and their connecting bond orders.
+struct PathWithBonds {
+    atoms: Vec<AtomIdx>,
+    bonds: Vec<BondOrder>, // len = atoms.len() - 1
+}
+
+/// Recursive DFS path enumeration with bond tracking.
 fn enumerate_paths_from<F>(
     mol: &Molecule,
     current: AtomIdx,
-    path: Vec<AtomIdx>,
+    path: PathWithBonds,
     callback: &mut F,
     max_len: usize,
 ) where
-    F: FnMut(&[AtomIdx]),
+    F: FnMut(&PathWithBonds),
 {
-    if path.len() <= max_len {
+    if path.atoms.len() <= max_len {
         // Callback for the current path
-        if path.len() > 1 {
+        if path.atoms.len() > 1 {
             callback(&path);
         }
 
         // Extend to neighbors
-        if path.len() < max_len {
-            for (neighbor, _) in mol.neighbors(current) {
+        if path.atoms.len() < max_len {
+            for (neighbor, bond_idx) in mol.neighbors(current) {
                 // Avoid cycles — don't revisit atoms already in path
-                if !path.contains(&neighbor) {
+                if !path.atoms.contains(&neighbor) {
+                    let bond_order = mol.bond(bond_idx).order;
                     let mut new_path = path.clone();
-                    new_path.push(neighbor);
+                    new_path.atoms.push(neighbor);
+                    new_path.bonds.push(bond_order);
                     enumerate_paths_from(mol, neighbor, new_path, callback, max_len);
                 }
             }
@@ -93,21 +106,49 @@ fn enumerate_paths_from<F>(
     }
 }
 
-/// Hash a path using FNV-1a.
-fn hash_path(mol: &Molecule, path: &[AtomIdx]) -> usize {
-    // Use portable FNV constants that work on both 32-bit and 64-bit
-    let fnv_prime: usize = 16777619; // FNV prime (32-bit compatible)
-    let mut hash: usize = 2166136261; // FNV offset basis (32-bit compatible)
+impl Clone for PathWithBonds {
+    fn clone(&self) -> Self {
+        PathWithBonds {
+            atoms: self.atoms.clone(),
+            bonds: self.bonds.clone(),
+        }
+    }
+}
 
-    for atom_idx in path {
-        let atom = mol.atom(*atom_idx);
-        // Include atomic number in hash
-        let an = atom.element.atomic_number() as usize;
+/// Hash a path using FNV-1a, interleaving atoms and bond types.
+fn hash_path(mol: &Molecule, path: &PathWithBonds) -> usize {
+    // Use portable FNV constants
+    let fnv_prime: u64 = 1099511628211; // FNV-1a 64-bit prime
+    let mut hash: u64 = 14695981039346656037; // FNV-1a 64-bit offset
+
+    for (i, &atom_idx) in path.atoms.iter().enumerate() {
+        // Hash bond before this atom (except for first atom)
+        if i > 0 {
+            let bond_byte = bond_order_to_byte(path.bonds[i - 1]);
+            hash ^= bond_byte as u64;
+            hash = hash.wrapping_mul(fnv_prime);
+        }
+
+        // Hash atom's atomic number
+        let atom = mol.atom(atom_idx);
+        let an = atom.element.atomic_number() as u64;
         hash ^= an;
         hash = hash.wrapping_mul(fnv_prime);
     }
 
-    hash
+    (hash as usize)
+}
+
+/// Convert BondOrder to a hash byte.
+fn bond_order_to_byte(order: BondOrder) -> u8 {
+    match order {
+        BondOrder::Single => 1,
+        BondOrder::Double => 2,
+        BondOrder::Triple => 3,
+        BondOrder::Aromatic => 4,
+        BondOrder::Quadruple => 5,
+        _ => 0,
+    }
 }
 
 /// Tanimoto similarity between two RDKit path fingerprints.
@@ -160,5 +201,54 @@ mod tests {
         let fp = rdkit_path_fp(&m);
         // Single atom has no paths (path length >= 2)
         assert_eq!(fp.popcount(), 0, "single atom should have zero bits");
+    }
+
+    #[test]
+    fn test_rdkit_path_fp_bond_type_distinction() {
+        // Single vs double bond: same atoms, different bond types → different FP
+        let m_single = mol("CC");
+        let m_double = mol("C=C");
+        let fp_single = rdkit_path_fp(&m_single);
+        let fp_double = rdkit_path_fp(&m_double);
+        // FPs should differ due to bond type
+        assert!(
+            tanimoto_rdkit_path(&fp_single, &fp_double) < 1.0,
+            "single and double bonds should produce different fingerprints"
+        );
+    }
+
+    #[test]
+    fn test_rdkit_path_fp_bond_type_consistency() {
+        // Identical molecules with same bond types should have identical FPs
+        let m1 = mol("C=C");
+        let m2 = mol("C=C");
+        let fp1 = rdkit_path_fp(&m1);
+        let fp2 = rdkit_path_fp(&m2);
+        assert_eq!(
+            tanimoto_rdkit_path(&fp1, &fp2),
+            1.0,
+            "identical bond types should produce identical fingerprints"
+        );
+    }
+
+    #[test]
+    fn test_rdkit_path_fp_triple_bond() {
+        let m = mol("C#C");
+        let fp = rdkit_path_fp(&m);
+        assert!(fp.popcount() > 0, "triple bond should have non-zero bits");
+    }
+
+    #[test]
+    fn test_rdkit_path_fp_aromatic_distinction() {
+        // Benzene (aromatic) vs cyclohexatriene-like (not aromatic)
+        let m_aromatic = mol("c1ccccc1");
+        let m_aliphatic = mol("C1CCCC=CC=C1"); // approximation, just for structure
+        let fp_aromatic = rdkit_path_fp(&m_aromatic);
+        let fp_aliphatic = rdkit_path_fp(&m_aliphatic);
+        // Should differ due to aromatic vs single/double bonds
+        assert!(
+            tanimoto_rdkit_path(&fp_aromatic, &fp_aliphatic) < 1.0,
+            "aromatic and aliphatic should produce different fingerprints"
+        );
     }
 }

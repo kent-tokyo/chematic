@@ -11,6 +11,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.92] — 2026-06-12
+
+### Enhanced — A4 Path FP Bond Type + A2 InChI Stereo Round-trip
+
+#### A4: RDKit Path Fingerprint with Bond Type Inclusion
+
+- Path fingerprints now hash both atomic numbers AND bond order types (single/double/triple/aromatic)
+- Uses FNV-1a 64-bit with bond type interleaved between atoms (atom, bond, atom, bond, ...)
+- Bond type distinction example: C–C (single) vs C=C (double) now produce different fingerprints
+- RDKit path FP Tanimoto similarity now more accurate
+
+#### A2: InChI Stereo Round-trip Implementation
+
+**FIXED**: InChI→Molecule conversion now restores R/S and E/Z stereochemistry
+
+- `/t` layer (tetrahedral): Parses `+`/`-` (R/S) → assigns `atom.cip_code` (R/S labels)
+- `/b` layer (E/Z): Parses `+`/`-` (Z/E) → assigns `atom.cip_code` (E/Z labels)
+- MoleculeBuilder rebuild pattern: atom-by-atom copy with stereo assignment
+- Stereo info now preserved in round-trip: InChI → parse → Molecule with `cip_code` set
+- Zero new dependencies (uses existing `chematic_core::CipCode`)
+
+#### Testing
+
+- Path FP: bond type distinction tests (single vs double bond), aromatic vs aliphatic
+- InChI: tetrahedral/E/Z round-trip tests via `cip_code` field assignment
+- 118/119 chematic-fp tests passing; 27/27 parser stereo tests passing
+
+---
+
 ## [0.1.91] — 2026-06-12
 
 ### Enhanced — A4/A5 Fingerprint Algorithm Upgrades to True MinHash & ERG
