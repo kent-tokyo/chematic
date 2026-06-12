@@ -120,23 +120,11 @@ fn hash_path(mol: &Molecule, path: &PathWithBonds) -> usize {
     let mut bytes: Vec<u8> = Vec::with_capacity(path.atoms.len() * 2);
     for (i, &atom_idx) in path.atoms.iter().enumerate() {
         if i > 0 {
-            bytes.push(bond_order_to_byte(path.bonds[i - 1]));
+            bytes.push(crate::ecfp::bond_type_int(path.bonds[i - 1]));
         }
         bytes.push(mol.atom(atom_idx).element.atomic_number());
     }
     crate::ecfp::fnv1a(&bytes) as usize
-}
-
-/// Convert BondOrder to a hash byte.
-fn bond_order_to_byte(order: BondOrder) -> u8 {
-    match order {
-        BondOrder::Single => 1,
-        BondOrder::Double => 2,
-        BondOrder::Triple => 3,
-        BondOrder::Aromatic => 4,
-        BondOrder::Quadruple => 5,
-        _ => 0,
-    }
 }
 
 /// Tanimoto similarity between two RDKit path fingerprints.

@@ -271,19 +271,8 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         AtomPrimitive::Symbol(s) => atom.element.symbol() == s.as_str(),
         AtomPrimitive::Aromatic(a) => atom.aromatic == *a,
         AtomPrimitive::Charge(c) => atom.charge == *c,
-        AtomPrimitive::HCount(h) => {
-            // Total H = explicit H neighbors + implicit H (SMARTS spec includes both).
-            let explicit_h = ctx
-                .mol
-                .neighbors(idx)
-                .filter(|(nb, _)| ctx.mol.atom(*nb).element.atomic_number() == 1)
-                .count() as u8;
-            explicit_h + implicit_hcount(ctx.mol, idx) == *h
-        }
-        AtomPrimitive::ImplicitHCount(h) => {
-            // Implicit H only (not explicit H neighbors).
-            implicit_hcount(ctx.mol, idx) == *h
-        }
+        AtomPrimitive::HCount(h) => eval_hcount(idx, ctx, *h),
+        AtomPrimitive::ImplicitHCount(h) => implicit_hcount(ctx.mol, idx) == *h,
         AtomPrimitive::Degree(d) => ctx.mol.neighbors(idx).count() as u8 == *d,
         AtomPrimitive::RingMembership(r) => ctx.rings.contains_atom(idx) == *r,
         AtomPrimitive::RingSize(n) => ctx
@@ -292,103 +281,90 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             .iter()
             .any(|ring| ring.len() == *n as usize && ring.contains(&idx)),
         AtomPrimitive::Wildcard => true,
-        AtomPrimitive::Recursive(sub_query) => {
-            // The target atom `idx` must be the root of at least one embedding
-            // of `sub_query` in the same target molecule.
-            has_match_anchored(sub_query, idx, ctx)
-        }
-        AtomPrimitive::Valence(v) => {
-            // Total valence = sum of explicit bond orders + implicit H count.
-            let bond_sum: u8 = ctx
-                .mol
-                .neighbors(idx)
-                .map(|(_, bid)| bond_order_int(ctx.mol.bond(bid).order))
-                .sum();
-            bond_sum + implicit_hcount(ctx.mol, idx) == *v
-        }
-        AtomPrimitive::RingBondCount(x) => {
-            // Count bonds where both endpoints share at least one SSSR ring.
-            let count = ctx
-                .mol
-                .neighbors(idx)
-                .filter(|(nb, _)| {
-                    ctx.rings
-                        .rings()
-                        .iter()
-                        .any(|ring| ring.contains(&idx) && ring.contains(nb))
-                })
-                .count() as u8;
-            count == *x
-        }
+        AtomPrimitive::Recursive(sub_query) => has_match_anchored(sub_query, idx, ctx),
+        AtomPrimitive::Valence(v) => eval_valence(idx, ctx, *v),
+        AtomPrimitive::RingBondCount(x) => eval_ring_bond_count(idx, ctx, *x),
         AtomPrimitive::TotalConnectivity(x) => {
-            // Total connectivity = heavy-atom degree + implicit H count.
-            let deg = ctx.mol.neighbors(idx).count() as u8;
-            deg + implicit_hcount(ctx.mol, idx) == *x
+            ctx.mol.neighbors(idx).count() as u8 + implicit_hcount(ctx.mol, idx) == *x
         }
         AtomPrimitive::RingCount(n) => {
-            // Count how many SSSR rings contain this atom.
-            let count = ctx
-                .rings
+            ctx.rings.rings().iter().filter(|r| r.contains(&idx)).count() as u8 == *n
+        }
+        AtomPrimitive::Hybridization(h) => eval_hybridization(idx, ctx, *h),
+        AtomPrimitive::Isotope(mass) => {
+            ctx.config.use_isotopes && ctx.mol.atom(idx).isotope == Some(*mass)
+                || !ctx.config.use_isotopes
+        }
+        AtomPrimitive::Chirality(kind) => eval_chirality(idx, ctx, *kind),
+    }
+}
+
+/// Total H count (explicit H neighbors + implicit H) for HCount primitive.
+fn eval_hcount(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
+    let explicit_h = ctx
+        .mol
+        .neighbors(idx)
+        .filter(|(nb, _)| ctx.mol.atom(*nb).element.atomic_number() == 1)
+        .count() as u8;
+    explicit_h + implicit_hcount(ctx.mol, idx) == h
+}
+
+/// Total valence (bond order sum + implicit H) for Valence primitive.
+fn eval_valence(idx: AtomIdx, ctx: &EvalCtx<'_>, v: u8) -> bool {
+    let bond_sum: u8 = ctx
+        .mol
+        .neighbors(idx)
+        .map(|(_, bid)| bond_order_int(ctx.mol.bond(bid).order))
+        .sum();
+    bond_sum + implicit_hcount(ctx.mol, idx) == v
+}
+
+/// Ring bond count: bonds where both endpoints share at least one SSSR ring.
+fn eval_ring_bond_count(idx: AtomIdx, ctx: &EvalCtx<'_>, x: u8) -> bool {
+    let count = ctx
+        .mol
+        .neighbors(idx)
+        .filter(|(nb, _)| {
+            ctx.rings
                 .rings()
                 .iter()
-                .filter(|ring| ring.contains(&idx))
-                .count() as u8;
-            count == *n
-        }
-        AtomPrimitive::Hybridization(h) => {
-            // Inferred hybridization:
-            //   aromatic atom → sp2 (2)
-            //   atom with any triple bond → sp (1)
-            //   atom with any double bond → sp2 (2)
-            //   otherwise → sp3 (3)
-            let atom = ctx.mol.atom(idx);
-            let hyb = if atom.aromatic {
-                2u8
-            } else {
-                let mut has_triple = false;
-                let mut has_double = false;
-                for (_, bid) in ctx.mol.neighbors(idx) {
-                    match ctx.mol.bond(bid).order {
-                        BondOrder::Triple => {
-                            has_triple = true;
-                            break;
-                        }
-                        BondOrder::Double => has_double = true,
-                        _ => {}
-                    }
-                }
-                if has_triple {
-                    1
-                } else if has_double {
-                    2
-                } else {
-                    3
-                }
-            };
-            hyb == *h
-        }
-        AtomPrimitive::Isotope(mass) => {
-            // When use_isotopes is false (default), isotope constraints are ignored
-            // so that [13C] matches any carbon — matching RDKit's useIsotopes=False default.
-            if !ctx.config.use_isotopes {
-                return true;
-            }
-            ctx.mol.atom(idx).isotope == Some(*mass)
-        }
-        AtomPrimitive::Chirality(kind) => {
-            // When use_chirality is false (default), chirality constraints are ignored
-            // so that [@] matches any atom — matching RDKit's useChirality=False default.
-            if !ctx.config.use_chirality {
-                return true;
-            }
-            use chematic_core::Chirality;
-            let atom_chirality = ctx.mol.atom(idx).chirality;
-            match kind {
-                1 => atom_chirality == Chirality::CounterClockwise,
-                2 => atom_chirality == Chirality::Clockwise,
-                _ => atom_chirality != Chirality::None, // 0 = any specified chirality
+                .any(|ring| ring.contains(&idx) && ring.contains(nb))
+        })
+        .count() as u8;
+    count == x
+}
+
+/// Inferred hybridization: aromatic→sp2, triple→sp, double→sp2, else→sp3.
+fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
+    let atom = ctx.mol.atom(idx);
+    let hyb = if atom.aromatic {
+        2u8
+    } else {
+        let mut has_triple = false;
+        let mut has_double = false;
+        for (_, bid) in ctx.mol.neighbors(idx) {
+            match ctx.mol.bond(bid).order {
+                BondOrder::Triple => { has_triple = true; break; }
+                BondOrder::Double => has_double = true,
+                _ => {}
             }
         }
+        if has_triple { 1 } else if has_double { 2 } else { 3 }
+    };
+    hyb == h
+}
+
+/// Chirality primitive: ignored when use_chirality is false.
+fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
+    if !ctx.config.use_chirality {
+        return true;
+    }
+    use chematic_core::Chirality;
+    let c = ctx.mol.atom(idx).chirality;
+    match kind {
+        1 => c == Chirality::CounterClockwise,
+        2 => c == Chirality::Clockwise,
+        _ => c != Chirality::None,
     }
 }
 

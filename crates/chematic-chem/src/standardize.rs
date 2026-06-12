@@ -262,97 +262,14 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
     let mut azide_atoms = std::collections::HashSet::new();
     let mut sulfoxide_atoms = std::collections::HashSet::new();
 
-    // First pass: identify functional groups
+    // First pass: identify functional groups via per-group detectors.
     for (idx, atom) in mol.atoms() {
-        // NITRO: [N+](=O)[O-]
         if atom.element.atomic_number() == 7 && atom.charge == 1 {
-            let o_neighbors: Vec<_> = mol
-                .neighbors(idx)
-                .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 8)
-                .collect();
-
-            if o_neighbors.len() == 2 {
-                // Check for pattern: one =O, one -O
-                let mut has_double_o = false;
-                let mut has_single_negative_o = false;
-
-                for (o_idx, bond_idx) in &o_neighbors {
-                    let o_atom = mol.atom(*o_idx);
-                    let bond = mol.bond(*bond_idx);
-                    if bond.order == chematic_core::BondOrder::Double && o_atom.charge == 0 {
-                        has_double_o = true;
-                    }
-                    if bond.order == chematic_core::BondOrder::Single && o_atom.charge == -1 {
-                        has_single_negative_o = true;
-                        nitro_atoms.insert(*o_idx);
-                    }
-                }
-
-                if has_double_o && has_single_negative_o {
-                    nitro_atoms.insert(idx);
-                }
-            } else if o_neighbors.len() == 1 {
-                // Check for aromatic N-oxide: aromatic N+ bonded to O-
-                if let Some((o_idx, bond_idx)) = o_neighbors.first() {
-                    let o_atom = mol.atom(*o_idx);
-                    let bond = mol.bond(*bond_idx);
-                    if atom.aromatic
-                        && bond.order == chematic_core::BondOrder::Single
-                        && o_atom.charge == -1
-                    {
-                        nitro_atoms.insert(idx);
-                        oxide_atoms.insert(*o_idx);
-                    }
-                }
-            }
+            detect_nitro(mol, idx, atom, &mut nitro_atoms, &mut oxide_atoms);
+            detect_azide(mol, idx, &mut azide_atoms);
         }
-
-        // AZIDE: [N-][N+]#N pattern
-        if atom.element.atomic_number() == 7 && atom.charge == 1 {
-            let n_neighbors: Vec<_> = mol
-                .neighbors(idx)
-                .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 7)
-                .collect();
-
-            // Check for central N+ bonded to N- and terminal N#
-            for (n_idx, bond_idx) in &n_neighbors {
-                let n_atom = mol.atom(*n_idx);
-                let bond = mol.bond(*bond_idx);
-
-                if bond.order == chematic_core::BondOrder::Triple && n_atom.charge == 0 {
-                    // Found terminal N# — now check for N- on idx
-                    for (other_n_idx, other_bond_idx) in n_neighbors.iter() {
-                        if other_n_idx == n_idx {
-                            continue;
-                        }
-                        let other_n = mol.atom(*other_n_idx);
-                        let other_bond = mol.bond(*other_bond_idx);
-                        if other_bond.order == chematic_core::BondOrder::Single && other_n.charge == -1 {
-                            // Azide pattern found: [N-][N+]#N
-                            azide_atoms.insert(idx);
-                            azide_atoms.insert(*n_idx);
-                            azide_atoms.insert(*other_n_idx);
-                        }
-                    }
-                }
-            }
-        }
-
-        // SULFOXIDE: S(=O)(R)(R) pattern
         if atom.element.atomic_number() == 16 {
-            let o_neighbors: Vec<_> = mol
-                .neighbors(idx)
-                .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 8)
-                .collect();
-
-            for (o_idx, bond_idx) in &o_neighbors {
-                let bond = mol.bond(*bond_idx);
-                if bond.order == chematic_core::BondOrder::Double {
-                    // Found S=O pattern
-                    sulfoxide_atoms.insert(idx);
-                    sulfoxide_atoms.insert(*o_idx);
-                }
-            }
+            detect_sulfoxide(mol, idx, &mut sulfoxide_atoms);
         }
     }
 
@@ -423,6 +340,98 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
     }
 
     builder.build()
+}
+
+// ---------------------------------------------------------------------------
+// Functional group detectors for normalize_groups
+// ---------------------------------------------------------------------------
+
+/// Mark nitro [N+](=O)[O-] and aromatic N-oxide atoms.
+fn detect_nitro(
+    mol: &Molecule,
+    idx: AtomIdx,
+    atom: &chematic_core::Atom,
+    nitro_atoms: &mut std::collections::HashSet<AtomIdx>,
+    oxide_atoms: &mut std::collections::HashSet<AtomIdx>,
+) {
+    let o_nbrs: Vec<_> = mol
+        .neighbors(idx)
+        .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 8)
+        .collect();
+
+    if o_nbrs.len() == 2 {
+        let mut has_double_o = false;
+        let mut has_single_neg_o = false;
+        for (o_idx, bid) in &o_nbrs {
+            let o = mol.atom(*o_idx);
+            let b = mol.bond(*bid);
+            if b.order == chematic_core::BondOrder::Double && o.charge == 0 {
+                has_double_o = true;
+            }
+            if b.order == chematic_core::BondOrder::Single && o.charge == -1 {
+                has_single_neg_o = true;
+                nitro_atoms.insert(*o_idx);
+            }
+        }
+        if has_double_o && has_single_neg_o {
+            nitro_atoms.insert(idx);
+        }
+    } else if let Some((o_idx, bid)) = o_nbrs.first() {
+        let o = mol.atom(*o_idx);
+        let b = mol.bond(*bid);
+        if atom.aromatic
+            && b.order == chematic_core::BondOrder::Single
+            && o.charge == -1
+        {
+            nitro_atoms.insert(idx);
+            oxide_atoms.insert(*o_idx);
+        }
+    }
+}
+
+/// Mark azide [N-][N+]#N atoms.
+fn detect_azide(
+    mol: &Molecule,
+    idx: AtomIdx,
+    azide_atoms: &mut std::collections::HashSet<AtomIdx>,
+) {
+    let n_nbrs: Vec<_> = mol
+        .neighbors(idx)
+        .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 7)
+        .collect();
+
+    for (n_idx, bid) in &n_nbrs {
+        let n = mol.atom(*n_idx);
+        let b = mol.bond(*bid);
+        if b.order == chematic_core::BondOrder::Triple && n.charge == 0 {
+            for (other_idx, other_bid) in n_nbrs.iter() {
+                if other_idx == n_idx { continue; }
+                let other = mol.atom(*other_idx);
+                let other_b = mol.bond(*other_bid);
+                if other_b.order == chematic_core::BondOrder::Single && other.charge == -1 {
+                    azide_atoms.insert(idx);
+                    azide_atoms.insert(*n_idx);
+                    azide_atoms.insert(*other_idx);
+                }
+            }
+        }
+    }
+}
+
+/// Mark sulfoxide S=O atoms.
+fn detect_sulfoxide(
+    mol: &Molecule,
+    idx: AtomIdx,
+    sulfoxide_atoms: &mut std::collections::HashSet<AtomIdx>,
+) {
+    for (o_idx, bid) in mol.neighbors(idx) {
+        if mol.atom(o_idx).element.atomic_number() == 8
+            && mol.bond(bid).order == chematic_core::BondOrder::Double
+        {
+            sulfoxide_atoms.insert(idx);
+            sulfoxide_atoms.insert(o_idx);
+        }
+    }
 }
 
 /// Detect if a molecule contains a zwitterion (internal salt).

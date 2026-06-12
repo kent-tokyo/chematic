@@ -236,7 +236,7 @@ pub fn hba_count(mol: &Molecule) -> usize {
                     atom.charge == 0
                 } else {
                     // Non-aromatic S: count only if divalent (X2) and not oxidized (no S=O)
-                    let degree = mol.neighbors(*idx).count();
+                    let degree = mol.degree(*idx);
                     let total_valence = degree + implicit_hcount(mol, *idx) as usize;
                     atom.charge == 0 && total_valence == 2 && !has_double_bond_to(mol, *idx, 8)
                 }
@@ -333,7 +333,7 @@ fn is_amide_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
 /// Reference: P. Ertl, B. Rohde, P. Selzer, J. Med. Chem. 2000, 43, 3714-3717.
 fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i8) -> f64 {
     if is_aromatic {
-        let degree = mol.neighbors(idx).count();
+        let degree = mol.degree(idx);
         if h > 0 {
             15.79
         } else if degree >= 3 {
@@ -1189,7 +1189,7 @@ pub fn num_unspecified_stereocenters(mol: &Molecule) -> usize {
             if atom.chirality != Chirality::None {
                 return false;
             }
-            let degree = mol.neighbors(*idx).count();
+            let degree = mol.degree(*idx);
             let total = degree + implicit_hcount(mol, *idx) as usize;
             total == 4
                 && mol.neighbors(*idx).all(|(_, bidx)| {
@@ -1312,26 +1312,40 @@ fn fill_mqn_stats(mqn: &mut [u8], vals: &mut [u8], base: usize) {
 ///
 /// All counts saturate at u8::MAX (255) for large molecules.
 pub fn mqn(mol: &Molecule) -> Vec<u8> {
-    let mut mqn = vec![0u8; 42];
+    let mut m = vec![0u8; 42];
+    mqn_atom_counts(mol, &mut m);
+    mqn_bond_counts(mol, &mut m);
+    let ring_set = find_sssr(mol);
+    let rings = ring_set.rings();
+    let ring_sets: Vec<HashSet<AtomIdx>> =
+        rings.iter().map(|r| r.iter().copied().collect()).collect();
+    mqn_ring_stats(mol, rings, &mut m);
+    mqn_degree_stats(mol, &mut m);
+    mqn_valence_stats(mol, &mut m);
+    mqn_h_counts(mol, &mut m);
+    mqn_charge_stats(mol, &mut m);
+    mqn_heteroatom_stats(mol, &mut m);
+    m[31] = rotatable_bond_count(mol).min(255) as u8;
+    m[32] = mol.atoms().filter(|(_, a)| a.aromatic).count() as u8;
+    m[33] = hbd_count(mol).min(255) as u8;
+    m[34] = hba_count(mol).min(255) as u8;
+    m[37] = heavy_atom_count(mol).min(255) as u8;
+    mqn_topology_stats(mol, rings, &ring_sets, &mut m);
+    m
+}
 
-    // 0-9: Atom counts
+fn mqn_atom_counts(mol: &Molecule, m: &mut Vec<u8>) {
     for (_, atom) in mol.atoms() {
-        match atom.element.atomic_number() {
-            6 => mqn[0] = mqn[0].saturating_add(1),  // C
-            7 => mqn[1] = mqn[1].saturating_add(1),  // N
-            8 => mqn[2] = mqn[2].saturating_add(1),  // O
-            9 => mqn[3] = mqn[3].saturating_add(1),  // F
-            14 => mqn[4] = mqn[4].saturating_add(1), // Si
-            15 => mqn[5] = mqn[5].saturating_add(1), // P
-            16 => mqn[6] = mqn[6].saturating_add(1), // S
-            17 => mqn[7] = mqn[7].saturating_add(1), // Cl
-            35 => mqn[8] = mqn[8].saturating_add(1), // Br
-            53 => mqn[9] = mqn[9].saturating_add(1), // I
-            _ => {}
-        }
+        let slot = match atom.element.atomic_number() {
+            6 => 0, 7 => 1, 8 => 2, 9 => 3, 14 => 4,
+            15 => 5, 16 => 6, 17 => 7, 35 => 8, 53 => 9,
+            _ => continue,
+        };
+        m[slot] = m[slot].saturating_add(1);
     }
+}
 
-    // 10-13: Bond counts
+fn mqn_bond_counts(mol: &Molecule, m: &mut Vec<u8>) {
     let mut single = 0u8;
     let mut double = 0u8;
     let mut triple = 0u8;
@@ -1342,168 +1356,119 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
             BondOrder::Double => double = double.saturating_add(1),
             BondOrder::Triple => triple = triple.saturating_add(1),
             BondOrder::Aromatic => aromatic = aromatic.saturating_add(1),
-            _ => {
-                // All other bond types (Query*, Up, Down, Zero, Dative, Quadruple, etc.)
-                // Count as single for MQN purposes
-                single = single.saturating_add(1);
-            }
+            _ => single = single.saturating_add(1),
         }
     }
-    mqn[10] = single;
-    mqn[11] = double;
-    mqn[12] = triple;
-    mqn[13] = aromatic;
+    m[10] = single; m[11] = double; m[12] = triple; m[13] = aromatic;
+}
 
-    // 14-16: Ring counts
-    let ring_set = find_sssr(mol);
-    let rings = ring_set.rings();
-    mqn[14] = rings.len().min(255) as u8;
-
+fn mqn_ring_stats(mol: &Molecule, rings: &[Vec<AtomIdx>], m: &mut Vec<u8>) {
+    m[14] = rings.len().min(255) as u8;
     let mut aromatic_rings = 0u8;
     let mut saturated_rings = 0u8;
     for ring in rings {
-        let is_aromatic = ring.iter().all(|&idx| mol.atom(idx).aromatic);
-        if is_aromatic {
+        if ring.iter().all(|&idx| mol.atom(idx).aromatic) {
             aromatic_rings = (aromatic_rings as usize + 1).min(255) as u8;
         } else {
             saturated_rings = (saturated_rings as usize + 1).min(255) as u8;
         }
-    }
-    mqn[15] = aromatic_rings;
-    mqn[16] = saturated_rings;
-
-    // 17-19: Degree stats (heavy atom neighbors)
-    let mut degrees = vec![];
-    for (idx, _) in mol.atoms() {
-        let deg = mol.neighbors(idx).count() as u8;
-        degrees.push(deg);
-    }
-    fill_mqn_stats(&mut mqn, &mut degrees, 17);
-
-    // 20-22: Valence stats
-    let mut valences = vec![];
-    for (idx, _) in mol.atoms() {
-        let valence = (mol.neighbors(idx).count() + implicit_hcount(mol, idx) as usize) as u8;
-        valences.push(valence);
-    }
-    fill_mqn_stats(&mut mqn, &mut valences, 20);
-
-    // 23-25: Hydrogen counts (on C, N, O)
-    for (idx, atom) in mol.atoms() {
-        let h = implicit_hcount(mol, idx);
-        if atom.element.atomic_number() == 6 {
-            let val = (mqn[23] as usize + h as usize).min(255) as u8;
-            mqn[23] = val;
-        } else if atom.element.atomic_number() == 7 {
-            let val = (mqn[24] as usize + h as usize).min(255) as u8;
-            mqn[24] = val;
-        } else if atom.element.atomic_number() == 8 {
-            let val = (mqn[25] as usize + h as usize).min(255) as u8;
-            mqn[25] = val;
-        }
-    }
-
-    // 26-27: Formal charge (signed sum, absolute sum)
-    let charge_sum = formal_charge_sum(mol);
-    // mqn[26]: signed charge mapped to u8 (127 = 0, 126 = -1, 128 = +1)
-    mqn[26] = (charge_sum.clamp(-127, 127) + 127) as u8;
-    // mqn[27]: absolute charge
-    mqn[27] = charge_sum.abs().min(255) as u8;
-
-    // 28-30: Heteroatom degree (N, O, and halogens)
-    let mut hetero_degrees = vec![];
-    for (idx, atom) in mol.atoms() {
-        let an = atom.element.atomic_number();
-        if is_nitrogen(an) || is_oxygen(an) || is_halogen(an) {
-            let deg = mol.neighbors(idx).count() as u8;
-            hetero_degrees.push(deg);
-        }
-    }
-    fill_mqn_stats(&mut mqn, &mut hetero_degrees, 28);
-
-    // 31: Rotatable bonds
-    mqn[31] = rotatable_bond_count(mol).min(255) as u8;
-
-    // 32: Aromatic atoms
-    let aromatic_count = mol.atoms().filter(|(_, atom)| atom.aromatic).count() as u8;
-    mqn[32] = aromatic_count;
-
-    // 33-34: H donors, H acceptors
-    mqn[33] = hbd_count(mol).min(255) as u8;
-    mqn[34] = hba_count(mol).min(255) as u8;
-
-    // 35-36: Saturated/aromatic ring heteroatom count
-    for ring in rings {
-        let has_hetero = ring
-            .iter()
-            .any(|&idx| matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16));
+        // 35-36: ring heteroatom classification (N/O/S only — intentional subset)
+        let has_hetero = ring.iter().any(|&idx| matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16));
         if has_hetero {
-            let is_arom = ring.iter().all(|&idx| mol.atom(idx).aromatic);
-            if is_arom {
-                mqn[35] = mqn[35].saturating_add(1);
+            if ring.iter().all(|&idx| mol.atom(idx).aromatic) {
+                m[35] = m[35].saturating_add(1);
             } else {
-                mqn[36] = mqn[36].saturating_add(1);
+                m[36] = m[36].saturating_add(1);
             }
         }
     }
+    m[15] = aromatic_rings;
+    m[16] = saturated_rings;
+}
 
-    // 37: Heavy atom count
-    mqn[37] = heavy_atom_count(mol).min(255) as u8;
+fn mqn_degree_stats(mol: &Molecule, m: &mut Vec<u8>) {
+    let mut degrees: Vec<u8> = mol.atoms().map(|(idx, _)| mol.degree(idx) as u8).collect();
+    fill_mqn_stats(m, &mut degrees, 17);
+}
 
-    // 38: sp3 carbon count (all C with valence 4, including CH3/CH2/CH)
-    let sp3_count = mol
+fn mqn_valence_stats(mol: &Molecule, m: &mut Vec<u8>) {
+    let mut valences: Vec<u8> = mol
         .atoms()
-        .filter(|(idx, atom)| {
-            atom.element.atomic_number() == 6 && {
-                let degree = mol.neighbors(*idx).count();
-                let h_count = implicit_hcount(mol, *idx) as usize;
-                degree + h_count == 4 // includes degree=4, 3+H1, 2+H2, 1+H3, 0+H4
-            }
+        .map(|(idx, _)| (mol.degree(idx) + implicit_hcount(mol, idx) as usize) as u8)
+        .collect();
+    fill_mqn_stats(m, &mut valences, 20);
+}
+
+fn mqn_h_counts(mol: &Molecule, m: &mut Vec<u8>) {
+    for (idx, atom) in mol.atoms() {
+        let h = implicit_hcount(mol, idx) as usize;
+        let slot = match atom.element.atomic_number() {
+            6 => 23, 7 => 24, 8 => 25, _ => continue,
+        };
+        m[slot] = (m[slot] as usize + h).min(255) as u8;
+    }
+}
+
+fn mqn_charge_stats(mol: &Molecule, m: &mut Vec<u8>) {
+    let charge_sum = formal_charge_sum(mol);
+    m[26] = (charge_sum.clamp(-127, 127) + 127) as u8;
+    m[27] = charge_sum.abs().min(255) as u8;
+}
+
+fn mqn_heteroatom_stats(mol: &Molecule, m: &mut Vec<u8>) {
+    let mut hetero_degrees: Vec<u8> = mol
+        .atoms()
+        .filter(|(_, a)| {
+            let an = a.element.atomic_number();
+            is_nitrogen(an) || is_oxygen(an) || is_halogen(an)
+        })
+        .map(|(idx, _)| mol.degree(idx) as u8)
+        .collect();
+    fill_mqn_stats(m, &mut hetero_degrees, 28);
+}
+
+fn mqn_topology_stats(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    ring_sets: &[HashSet<AtomIdx>],
+    m: &mut Vec<u8>,
+) {
+    // 38: sp3 carbons
+    m[38] = mol
+        .atoms()
+        .filter(|(idx, a)| {
+            a.element.atomic_number() == 6
+                && mol.degree(*idx) + implicit_hcount(mol, *idx) as usize == 4
         })
         .count() as u8;
-    mqn[38] = sp3_count;
 
-    // 39: Fused ring count (approximate: rings sharing >1 atom)
-    // Convert rings to HashSet for O(1) overlap checking
-    let ring_sets: Vec<HashSet<AtomIdx>> =
-        rings.iter().map(|r| r.iter().copied().collect()).collect();
-    let mut fused_count = 0u8;
+    // 39: fused ring pairs (rings sharing > 1 atom)
+    let mut fused = 0u8;
     for i in 0..ring_sets.len() {
         for j in (i + 1)..ring_sets.len() {
-            let overlap = ring_sets[i].intersection(&ring_sets[j]).count();
-            if overlap > 1 {
-                fused_count = fused_count.saturating_add(1);
+            if ring_sets[i].intersection(&ring_sets[j]).count() > 1 {
+                fused = fused.saturating_add(1);
             }
         }
     }
-    mqn[39] = fused_count;
+    m[39] = fused;
 
-    // 40: Bridgehead atom count (iterate atoms once, not rings)
-    let mut bridgehead = 0u8;
-    for (idx, _) in mol.atoms() {
-        let in_rings = ring_sets.iter().filter(|r| r.contains(&idx)).count();
-        if in_rings >= 2 {
-            bridgehead = bridgehead.saturating_add(1);
-        }
-    }
-    mqn[40] = bridgehead;
+    // 40: bridgehead atoms (in ≥ 2 rings)
+    m[40] = mol
+        .atoms()
+        .filter(|(idx, _)| ring_sets.iter().filter(|r| r.contains(idx)).count() >= 2)
+        .count() as u8;
 
-    // 41: Spiro atom count
+    // 41: spiro atoms
     let mut spiro = 0u8;
     for (idx, _) in mol.atoms() {
-        let ring_count = rings.iter().filter(|ring| ring.contains(&idx)).count();
-        if ring_count >= 2 {
-            let all_neighbors_in_rings = mol
-                .neighbors(idx)
-                .all(|(nb, _)| rings.iter().any(|ring| ring.contains(&nb)));
-            if all_neighbors_in_rings {
-                spiro = spiro.saturating_add(1);
-            }
+        if rings.iter().filter(|r| r.contains(&idx)).count() >= 2
+            && mol.neighbors(idx).all(|(nb, _)| rings.iter().any(|r| r.contains(&nb)))
+        {
+            spiro = spiro.saturating_add(1);
         }
     }
-    mqn[41] = spiro;
-
-    mqn
+    m[41] = spiro;
 }
 
 // ---------------------------------------------------------------------------
@@ -1513,7 +1478,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
 /// Compute topological distance matrix using BFS.
 /// Compute atomic valence for AutoCorr feature (number of bonds + implicit H).
 fn atomic_valence(mol: &Molecule, idx: AtomIdx) -> f64 {
-    let degree = mol.neighbors(idx).count() as f64;
+    let degree = mol.degree(idx) as f64;
     let h_count = implicit_hcount(mol, idx) as f64;
     degree + h_count
 }
@@ -1571,7 +1536,7 @@ pub fn balaban_j(mol: &Molecule) -> f64 {
     let m = mol.bond_count() as f64;
     let sum_sqrt_d: f64 = (0..n)
         .map(|i| {
-            let degree = mol.neighbors(AtomIdx(i as u32)).count() as f64;
+            let degree = mol.degree(AtomIdx(i as u32)) as f64;
             degree.sqrt()
         })
         .sum();
@@ -1607,8 +1572,8 @@ pub fn ipc(mol: &Molecule) -> f64 {
         for (j, &distance) in row.iter().enumerate().take(n).skip(i + 1) {
             let d = distance as f64;
             if d > 0.0 {
-                let deg_i = mol.neighbors(AtomIdx(i as u32)).count() as f64;
-                let deg_j = mol.neighbors(AtomIdx(j as u32)).count() as f64;
+                let deg_i = mol.degree(AtomIdx(i as u32)) as f64;
+                let deg_j = mol.degree(AtomIdx(j as u32)) as f64;
                 result += (deg_i * deg_j) / (d * d);
             }
         }
@@ -1635,25 +1600,10 @@ pub fn hall_kier_alpha(mol: &Molecule) -> f64 {
 
     for i in 0..mol.atom_count() {
         let atom = mol.atom(AtomIdx(i as u32));
-        let degree = mol.neighbors(AtomIdx(i as u32)).count() as f64;
+        let degree = mol.degree(AtomIdx(i as u32)) as f64;
 
-        // Atomic number influences valence descriptor
-        let an = atom.element.atomic_number() as f64;
-
-        // Standard covalent radii (Ångströms) for valence adjustment
-        let r_cov = match atom.element.atomic_number() {
-            1 => 0.31,      // H
-            6 => 0.76,      // C
-            7 => 0.71,      // N
-            8 => 0.66,      // O
-            9 => 0.57,      // F
-            15 => 1.07,     // P
-            16 => 1.05,     // S
-            17 => 1.02,     // Cl
-            35 => 1.20,     // Br
-            53 => 1.39,     // I
-            _ => an * 0.15, // fallback
-        };
+        // Covalent radius from the periodic table (Ångströms).
+        let r_cov = atom.element.covalent_radius() as f64;
 
         // Hall-Kier alpha value proportional to radius and degree
         let alpha_i = (r_cov - degree * 0.1).max(0.0);
@@ -1725,7 +1675,7 @@ pub fn usrcat(mol: &Molecule) -> [f64; 42] {
 
         // Count hydrophobic (C in aliphatic context)
         if is_carbon(an) {
-            let degree = mol.neighbors(AtomIdx(idx as u32)).count();
+            let degree = mol.degree(AtomIdx(idx as u32));
             if degree > 0 && !atom.aromatic {
                 result[39] += 1.0; // Hydrophobic count
             }
