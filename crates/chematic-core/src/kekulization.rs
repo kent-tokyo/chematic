@@ -110,7 +110,10 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
             continue; // already matched
         }
         // Try to find an augmenting path from `start`.
+        // Pre-insert start so the DFS cannot treat the search root as an "unmatched"
+        // vertex when traversing an odd cycle (blossom prevention).
         let mut visited: HashSet<AtomIdx> = HashSet::new();
+        visited.insert(start);
         augment(start, &adj, &mut matching, &mut visited);
     }
 
@@ -413,5 +416,100 @@ mod tests {
             }
         }
         true
+    }
+
+    // B6 coverage: exotic ring systems that require correct matching on non-bipartite graphs.
+
+    /// Azulene: fused 5+7 bicyclic, 10 aromatic C, 11 bonds.
+    /// Valid Kekulé form exists → must yield 5 double bonds.
+    #[test]
+    fn test_kekulize_azulene() {
+        let mut b = MoleculeBuilder::new();
+        let a: Vec<_> = (0..10)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        // 5-ring: 0-1-2-3-4-0
+        for i in 0..5 {
+            b.add_bond(a[i], a[(i + 1) % 5], BondOrder::Aromatic).unwrap();
+        }
+        // 7-ring extras (shares bond 0-4): 4-5-6-7-8-9-0
+        for (x, y) in [(4usize, 5usize), (5, 6), (6, 7), (7, 8), (8, 9), (9, 0)] {
+            if mol_has_no_bond_yet(&b, a[x], a[y]) {
+                b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+            }
+        }
+        let mol = b.build();
+        let result = kekulize(&mol).expect("azulene kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 5, "azulene needs 5 double bonds");
+    }
+
+    /// Acenaphthylene: naphthalene + fused cyclopentadiene bridge, 12 aromatic C.
+    #[test]
+    fn test_kekulize_acenaphthylene() {
+        // Connectivity: naphthalene core (atoms 0-9) + bridge atoms 10,11
+        // Naphthalene: ring1=0-1-2-3-4-9, ring2=4-5-6-7-8-9
+        // Bridge: 0-11-10-1 (the 5-ring across the 1,8 positions of naphthalene)
+        let mut b = MoleculeBuilder::new();
+        let a: Vec<_> = (0..12)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        // Naphthalene ring 1: 0-1-2-3-4-9-0
+        for (x, y) in [(0,1),(1,2),(2,3),(3,4),(4,9),(9,0)] {
+            b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+        }
+        // Naphthalene ring 2: 4-5-6-7-8-9 (4-9 shared)
+        for (x, y) in [(4,5),(5,6),(6,7),(7,8),(8,9)] {
+            b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+        }
+        // Bridge: 0-11-10-1
+        for (x, y) in [(0,11),(11,10),(10,1)] {
+            b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+        }
+        let mol = b.build();
+        let result = kekulize(&mol).expect("acenaphthylene kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 6, "acenaphthylene needs 6 double bonds");
+    }
+
+    /// Fluoranthene: 16 aromatic C in a fused 5+6+6+6 system.
+    #[test]
+    fn test_kekulize_fluoranthene() {
+        // Simplified: 3 fused 6-rings + 1 fused 5-ring sharing atoms
+        // Build as corannulene-like: two naphthalene units bridged by a 5-ring
+        // Atoms 0-15 (16 aromatic C), total bonds = 19 (for fluoranthene)
+        // Use a simplified topology that gives the right ring count
+        // 6-ring A: 0-1-2-3-4-5
+        // 6-ring B: 0-5-6-7-8-9
+        // 6-ring C: 2-3-10-11-12-13
+        // 5-ring D: 0-9-14-15-1 (bridge)
+        let mut b = MoleculeBuilder::new();
+        let a: Vec<_> = (0..16)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        // Ring A (6-ring): 0-1-2-3-4-5-0
+        for i in 0..6 { b.add_bond(a[i], a[(i+1)%6], BondOrder::Aromatic).unwrap(); }
+        // Ring B (6-ring): 0-5-6-7-8-9-0
+        for (x,y) in [(5,6),(6,7),(7,8),(8,9),(9,0)] {
+            if mol_has_no_bond_yet(&b, a[x], a[y]) {
+                b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+            }
+        }
+        // Ring C (6-ring): 1-2-10-11-12-13-1
+        for (x,y) in [(2,10),(10,11),(11,12),(12,13),(13,1)] {
+            if mol_has_no_bond_yet(&b, a[x], a[y]) {
+                b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+            }
+        }
+        // Ring D (5-ring): 9-8-14-15-13-9
+        for (x,y) in [(8,14),(14,15),(15,13)] {
+            if mol_has_no_bond_yet(&b, a[x], a[y]) {
+                b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+            }
+        }
+        let mol = b.build();
+        let result = kekulize(&mol).expect("fluoranthene-like kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 8, "fluoranthene-like structure needs 8 double bonds");
     }
 }

@@ -414,4 +414,62 @@ mod tests {
             "unknown atomic number should return Err"
         );
     }
+
+    // B4: multi-fragment CDXML document tests
+
+    const TWO_FRAGMENT_CDXML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<CDXML>
+<fragment>
+<n id="1" p="10.0 20.0" Element="6"/>
+<n id="2" p="25.0 20.0" Element="8"/>
+<b B="1" E="2" Order="1"/>
+</fragment>
+<fragment>
+<n id="3" p="60.0 20.0" Element="7"/>
+<n id="4" p="75.0 20.0" Element="6"/>
+<n id="5" p="90.0 20.0" Element="6"/>
+<b B="3" E="4" Order="1"/>
+<b B="4" E="5" Order="1"/>
+</fragment>
+</CDXML>"#;
+
+    #[test]
+    fn parse_cdxml_all_two_fragments_count() {
+        let mols = parse_cdxml_all(TWO_FRAGMENT_CDXML).unwrap();
+        assert_eq!(mols.len(), 2, "two <fragment> elements → two molecules");
+    }
+
+    #[test]
+    fn parse_cdxml_all_first_fragment_co() {
+        let mols = parse_cdxml_all(TWO_FRAGMENT_CDXML).unwrap();
+        let (mol, _) = &mols[0];
+        assert_eq!(mol.atom_count(), 2, "first fragment: C + O");
+        assert_eq!(mol.bond_count(), 1);
+    }
+
+    #[test]
+    fn parse_cdxml_all_second_fragment_ncc() {
+        let mols = parse_cdxml_all(TWO_FRAGMENT_CDXML).unwrap();
+        let (mol, _) = &mols[1];
+        assert_eq!(mol.atom_count(), 3, "second fragment: N + C + C");
+        assert_eq!(mol.bond_count(), 2);
+    }
+
+    #[test]
+    fn parse_cdxml_all_coords_independent() {
+        let mols = parse_cdxml_all(TWO_FRAGMENT_CDXML).unwrap();
+        let (_, coords0) = &mols[0];
+        let (_, coords1) = &mols[1];
+        // First fragment atom 0 at x=10
+        assert!((coords0[0].0 - 10.0).abs() < 0.01);
+        // Second fragment atom 0 at x=60
+        assert!((coords1[0].0 - 60.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn parse_cdxml_empty_doc_returns_empty_vec() {
+        let cdxml = r#"<?xml version="1.0"?><CDXML></CDXML>"#;
+        let mols = parse_cdxml_all(cdxml).unwrap();
+        assert!(mols.is_empty(), "empty CDXML → empty Vec");
+    }
 }

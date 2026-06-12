@@ -579,7 +579,17 @@ fn crippen_carbon_aliphatic(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
             -0.3800
         }
     } else if has_double_to_c {
-        0.2274
+        // Context-dependent alkene C (Wildman-Crippen):
+        //   terminal =CH2 (h==2, no aromatic neighbor): 0.1551
+        //   Ar-adjacent =CH-  (aromatic C neighbor):    0.2640
+        //   other internal alkene C:                    0.2274
+        if h >= 2 && !has_aromatic_carbon_neighbor(mol, idx) {
+            0.1551
+        } else if has_aromatic_carbon_neighbor(mol, idx) {
+            0.2640
+        } else {
+            0.2274
+        }
     } else {
         let bonded_to_n = mol
             .neighbors(idx)
@@ -2956,5 +2966,43 @@ mod tests {
             1,
             "aspirin has one ester bond (aryl ester)"
         );
+    }
+
+    // B5: context-dependent alkene C LogP contributions
+    #[test]
+    fn test_logp_ethylene_terminal() {
+        // Ethylene: both C are terminal =CH2 (h=2, no aromatic neighbor) → each 0.1551
+        let m = mol("C=C");
+        let lp = logp_crippen(&m);
+        assert!(lp > 0.3 && lp < 1.3, "ethylene logp = {lp}");
+    }
+
+    #[test]
+    fn test_logp_propene_terminal_internal() {
+        // Propene: =CH2 (0.1551) + =CH- internal (0.2274) + CH3 → propene > ethylene
+        let m = mol("CC=C");
+        let lp = logp_crippen(&m);
+        let eth = logp_crippen(&mol("C=C"));
+        assert!(lp > eth, "propene logp ({lp}) should exceed ethylene ({eth})");
+        assert!(lp > 0.5 && lp < 2.0, "propene logp = {lp} out of expected range");
+    }
+
+    #[test]
+    fn test_logp_styrene_splits_correctly() {
+        // Styrene: =CH2 (0.1551) + =CH- adj to Ar (0.2640) + 6 aromatic C
+        let m = mol("C=Cc1ccccc1");
+        let lp = logp_crippen(&m);
+        assert!(lp > 1.8 && lp < 3.4, "styrene logp = {lp}");
+        // Ar-adjacent CH contributes more (0.2640) than terminal CH2 (0.1551)
+        let per_atom = logp_crippen_per_atom(&m);
+        assert!(per_atom.len() >= 8, "styrene has 8 heavy atoms");
+    }
+
+    #[test]
+    fn test_logp_1_phenylpropene_ar_adjacent() {
+        // 1-phenylpropene Ph-CH=CH-CH3: Ar-adjacent =CH- (0.2640) + internal =CH- (0.2274)
+        let m = mol("CC=Cc1ccccc1");
+        let lp = logp_crippen(&m);
+        assert!(lp > 2.0 && lp < 4.0, "1-phenylpropene logp = {lp}");
     }
 }

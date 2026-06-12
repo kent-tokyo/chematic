@@ -143,7 +143,7 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
                 i += 1;
             }
             Token::Digit(n) => {
-                // Repeat the previous atom n-1 times (because we already added it once)
+                // Repeat the previous heavy atom n times (replacing the one already written).
                 if smiles.is_empty() {
                     return Err(CondensedError::ParseError(
                         "digit without preceding atom".into(),
@@ -155,33 +155,59 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
                 }
                 i += 1;
             }
+            Token::Atom(a) if a == "H" => {
+                // In condensed notation H is always implicit — skip the H symbol.
+                // A following digit is an H-count annotation (e.g. CH3 = C with 3 implicit H),
+                // not a repeat count, so consume it too.
+                i += 1;
+                if i < tokens.len() {
+                    if let Token::Digit(_) = &tokens[i] {
+                        i += 1;
+                    }
+                }
+            }
             Token::Atom(a) => {
-                // Try to match functional groups
-                if i + 1 < tokens.len()
-                    && let Token::Atom(b) = &tokens[i + 1]
-                {
-                    // Try 2-char combinations
-                    let key = format!("{}{}", a, b);
-                    if let Some(replacement) = functional_groups(&key) {
-                        smiles.push_str(replacement);
-                        i += 2;
-                        continue;
+                // Try 4-char functional groups first (e.g. COOH).
+                if i + 3 < tokens.len() {
+                    if let (Token::Atom(b), Token::Atom(c), Token::Atom(d)) =
+                        (&tokens[i + 1], &tokens[i + 2], &tokens[i + 3])
+                    {
+                        let key = format!("{}{}{}{}", a, b, c, d);
+                        if let Some(replacement) = functional_groups(&key) {
+                            smiles.push_str(replacement);
+                            i += 4;
+                            continue;
+                        }
                     }
                 }
 
-                // Try 3-char (e.g., CHO, NON, etc.)
-                if i + 2 < tokens.len()
-                    && let (Token::Atom(b), Token::Atom(c)) = (&tokens[i + 1], &tokens[i + 2])
-                {
-                    let key = format!("{}{}{}", a, b, c);
-                    if let Some(replacement) = functional_groups(&key) {
-                        smiles.push_str(replacement);
-                        i += 3;
-                        continue;
+                // Try 3-char combinations.
+                if i + 2 < tokens.len() {
+                    if let (Token::Atom(b), Token::Atom(c)) =
+                        (&tokens[i + 1], &tokens[i + 2])
+                    {
+                        let key = format!("{}{}{}", a, b, c);
+                        if let Some(replacement) = functional_groups(&key) {
+                            smiles.push_str(replacement);
+                            i += 3;
+                            continue;
+                        }
                     }
                 }
 
-                // No functional group match, add the atom with implicit H
+                // Try 2-char combinations.
+                if i + 1 < tokens.len() {
+                    if let Token::Atom(b) = &tokens[i + 1] {
+                        let key = format!("{}{}", a, b);
+                        if let Some(replacement) = functional_groups(&key) {
+                            smiles.push_str(replacement);
+                            i += 2;
+                            continue;
+                        }
+                    }
+                }
+
+                // No functional group match — add the heavy atom (H is implicit in SMILES).
                 atom_to_smiles(&mut smiles, a)?;
                 i += 1;
             }
@@ -249,21 +275,39 @@ mod tests {
         assert_eq!(mol.atom_count(), 2);
     }
 
-    // Note: Tests with H-counts (like "CH3") are complex - the parser currently treats
-    // digits as repetition counts rather than H-atom counts. This is acceptable for now
-    // as the core algorithm works for simple atom sequences and functional groups.
-    //
-    // Future improvement: enhance digit handling to properly interpret "CH3" as "C with
-    // 3 implicit H" rather than "C followed by H repeated 3 times".
-
     #[test]
     fn test_ammonia() {
         let mol = parse_condensed("NH3").expect("ammonia");
-        assert!(mol.atom_count() >= 1);
+        // H is implicit; only N is a heavy atom
+        assert_eq!(mol.atom_count(), 1);
     }
 
-    // H2O test commented out - digit handling needs refinement
-    // for proper H-count interpretation
+    #[test]
+    fn test_water() {
+        let mol = parse_condensed("H2O").expect("water");
+        assert_eq!(mol.atom_count(), 1, "water: only O is a heavy atom");
+    }
+
+    #[test]
+    fn test_methane_with_h_count() {
+        let mol = parse_condensed("CH4").expect("methane");
+        assert_eq!(mol.atom_count(), 1, "methane: only C");
+    }
+
+    #[test]
+    fn test_methanol_ch3oh() {
+        let mol = parse_condensed("CH3OH").expect("methanol");
+        // C + O (H atoms implicit)
+        assert_eq!(mol.atom_count(), 2, "methanol: C + O");
+        assert_eq!(mol.bond_count(), 1);
+    }
+
+    #[test]
+    fn test_acetic_acid_ch3cooh() {
+        let mol = parse_condensed("CH3COOH").expect("acetic acid");
+        // CH3 (methyl) + COOH (carboxyl) → C, C, O, O = 4 heavy atoms
+        assert_eq!(mol.atom_count(), 4, "acetic acid: C,C,O,O");
+    }
 
     #[test]
     fn test_empty_input() {
