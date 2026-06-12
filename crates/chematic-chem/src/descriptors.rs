@@ -580,13 +580,14 @@ fn crippen_carbon_aliphatic(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
         }
     } else if has_double_to_c {
         // Context-dependent alkene C (Wildman-Crippen):
-        //   terminal =CH2 (h==2, no aromatic neighbor): 0.1551
         //   Ar-adjacent =CH-  (aromatic C neighbor):    0.2640
+        //   terminal =CH2 (h≥2, no aromatic neighbor):  0.1551
         //   other internal alkene C:                    0.2274
-        if h >= 2 && !has_aromatic_carbon_neighbor(mol, idx) {
-            0.1551
-        } else if has_aromatic_carbon_neighbor(mol, idx) {
+        let ar_c_nbr = has_aromatic_carbon_neighbor(mol, idx);
+        if ar_c_nbr {
             0.2640
+        } else if h >= 2 {
+            0.1551
         } else {
             0.2274
         }

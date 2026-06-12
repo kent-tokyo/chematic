@@ -107,8 +107,8 @@ pub fn implicit_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
     0
 }
 
-/// Compute the *total* hydrogen count (explicit implicit H + explicit bracket H).
-/// For bracket atoms the explicit H is already returned by `implicit_hcount`.
+#[deprecated(since = "0.1.95", note = "use `implicit_hcount` directly — the two functions are identical")]
+/// Alias for [`implicit_hcount`]; kept for API compatibility.
 pub fn total_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
     implicit_hcount(mol, idx)
 }

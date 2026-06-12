@@ -16,7 +16,7 @@ pub enum InchiParseError {
     InvalidConnectivity,
     /// Failed to parse hydrogen layer.
     InvalidHydrogen,
-    /// Unsupported feature (e.g., stereo, charge layers).
+    /// Unsupported or unrecognised InChI feature.
     Unsupported(String),
 }
 
