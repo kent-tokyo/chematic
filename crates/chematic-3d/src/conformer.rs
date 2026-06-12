@@ -147,6 +147,39 @@ impl ConformerEnsemble {
         let n = self.mol.atom_count();
         Some(kabsch_rmsd(ca, cb, n))
     }
+
+    /// Compute the 12 USR shape descriptors for conformer `idx`.
+    ///
+    /// Returns `None` if `idx` is out of range.
+    pub fn conformer_usr_descriptors(&self, idx: usize) -> Option<[f64; 12]> {
+        let c = self.conformers.get(idx)?;
+        let pts: Vec<[f64; 3]> = c.points.iter().map(|p| [p.x, p.y, p.z]).collect();
+        Some(crate::usr::usr_descriptors(&pts))
+    }
+
+    /// Mean pairwise USR dissimilarity across all conformers.
+    ///
+    /// Returns a value in `[0.0, 1.0]`: 0.0 means all conformers are identical
+    /// shapes; values closer to 1.0 indicate a highly diverse ensemble.
+    /// Returns 0.0 for ensembles with fewer than 2 conformers.
+    pub fn conformer_diversity_usr(&self) -> f64 {
+        let n = self.conformers.len();
+        if n < 2 {
+            return 0.0;
+        }
+        let descs: Vec<[f64; 12]> = (0..n)
+            .filter_map(|i| self.conformer_usr_descriptors(i))
+            .collect();
+        let mut total = 0.0;
+        let mut count = 0usize;
+        for i in 0..descs.len() {
+            for j in i + 1..descs.len() {
+                total += 1.0 - crate::usr::usr_similarity(&descs[i], &descs[j]);
+                count += 1;
+            }
+        }
+        if count == 0 { 0.0 } else { total / count as f64 }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -469,5 +502,78 @@ mod tests {
     fn rmsd_no_align_out_of_range_returns_none() {
         let ens = make_ensemble();
         assert!(ens.conformer_rmsd_no_align(0, 99).is_none());
+    }
+
+    // C4: conformer diversity metrics
+
+    #[test]
+    fn usr_descriptors_single_conformer() {
+        let ens = make_ensemble();
+        let d = ens.conformer_usr_descriptors(0);
+        assert!(d.is_some(), "valid index must return Some");
+        assert!(d.unwrap().iter().all(|v| v.is_finite()), "all USR values finite");
+    }
+
+    #[test]
+    fn usr_descriptors_out_of_range() {
+        let ens = make_ensemble();
+        assert!(ens.conformer_usr_descriptors(99).is_none());
+    }
+
+    #[test]
+    fn diversity_usr_single_conformer_is_zero() {
+        let ens = make_ensemble();
+        assert_eq!(ens.conformer_diversity_usr(), 0.0,
+            "single conformer → diversity 0");
+    }
+
+    #[test]
+    fn diversity_usr_identical_conformers_is_zero() {
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+        use crate::coords::Point3;
+
+        let mut b = MoleculeBuilder::new();
+        let a0 = b.add_atom(Atom::new(Element::C));
+        let a1 = b.add_atom(Atom::new(Element::C));
+        let mol = b.build();
+
+        let mut c = Coords3D::new_zeroed(2);
+        c.set(a0, Point3::new(0.0, 0.0, 0.0));
+        c.set(a1, Point3::new(1.5, 0.0, 0.0));
+
+        let mut ens = ConformerEnsemble::with_conformer(mol, c.clone()).unwrap();
+        ens.add_conformer(c).unwrap();
+
+        let div = ens.conformer_diversity_usr();
+        assert!(div.abs() < 1e-9, "identical conformers → diversity ~0, got {div}");
+    }
+
+    #[test]
+    fn diversity_usr_different_shapes_positive() {
+        use crate::coords::Point3;
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+
+        // 3-atom molecule; two very different conformers
+        let mut b = MoleculeBuilder::new();
+        let a0 = b.add_atom(Atom::new(Element::C));
+        let a1 = b.add_atom(Atom::new(Element::C));
+        let a2 = b.add_atom(Atom::new(Element::C));
+        let mol = b.build();
+
+        let mut c1 = Coords3D::new_zeroed(3);
+        c1.set(a0, Point3::new(0.0, 0.0, 0.0));
+        c1.set(a1, Point3::new(1.0, 0.0, 0.0));
+        c1.set(a2, Point3::new(2.0, 0.0, 0.0));
+
+        let mut c2 = Coords3D::new_zeroed(3);
+        c2.set(a0, Point3::new(0.0, 0.0, 0.0));
+        c2.set(a1, Point3::new(0.0, 10.0, 0.0));
+        c2.set(a2, Point3::new(0.0, 0.0, 10.0));
+
+        let mut ens = ConformerEnsemble::with_conformer(mol, c1).unwrap();
+        ens.add_conformer(c2).unwrap();
+
+        let div = ens.conformer_diversity_usr();
+        assert!(div > 0.0 && div <= 1.0, "diverse ensemble → diversity in (0,1], got {div}");
     }
 }

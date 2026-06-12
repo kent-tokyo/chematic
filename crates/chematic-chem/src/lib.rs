@@ -34,9 +34,11 @@ pub mod tautomer;
 pub mod topo_descriptors;
 pub mod vsa;
 pub mod workflow;
+pub mod iupac_stereo;
 pub mod xlogp3;
 
 pub use cip::{CipAssignment, assign_cip};
+pub use iupac_stereo::iupac_name_stereo;
 pub use descriptors::{
     aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, egan_passes, exact_mass,
     formal_charge_sum, fsp3, ghose_passes, hba_count, hbd_count, hall_kier_alpha,
