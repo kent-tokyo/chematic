@@ -617,8 +617,7 @@ fn clone_mol(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
-const FNV1A_OFFSET: u64 = 0xcbf29ce484222325;
-const FNV1A_PRIME: u64 = 0x100000001b3;
+use crate::hash::{FNV1A_OFFSET, FNV1A_PRIME};
 
 /// Tautomer form score for canonical selection: prefers O-H > N-H > S-H and aromatic rings.
 fn tautomer_score(mol: &Molecule) -> i32 {

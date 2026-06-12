@@ -6,8 +6,18 @@
 use chematic_core::Molecule;
 use chematic_smiles::canonical_smiles;
 
-const FNV1A_OFFSET: u64 = 0xcbf29ce484222325;
-const FNV1A_PRIME: u64 = 0x100000001b3;
+pub(crate) const FNV1A_OFFSET: u64 = 0xcbf29ce484222325;
+pub(crate) const FNV1A_PRIME: u64 = 0x100000001b3;
+
+/// FNV-1a 64-bit hash of a byte slice.
+pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
+    let mut h = FNV1A_OFFSET;
+    for &b in bytes {
+        h ^= b as u64;
+        h = h.wrapping_mul(FNV1A_PRIME);
+    }
+    h
+}
 
 /// Compute a structural hash for a molecule using FNV-1a on the canonical SMILES.
 ///
@@ -18,13 +28,7 @@ const FNV1A_PRIME: u64 = 0x100000001b3;
 /// Useful for rapid duplicate detection in large sets; pair with [`are_identical`]
 /// for validation.
 pub fn mol_hash(mol: &Molecule) -> u64 {
-    let smiles = canonical_smiles(mol);
-    let mut hash = FNV1A_OFFSET;
-    for byte in smiles.as_bytes() {
-        hash ^= *byte as u64;
-        hash = hash.wrapping_mul(FNV1A_PRIME);
-    }
-    hash
+    fnv1a(canonical_smiles(mol).as_bytes())
 }
 
 /// Check whether two molecules are structurally identical.

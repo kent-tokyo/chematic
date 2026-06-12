@@ -89,40 +89,36 @@ pub fn parse_cdxml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlErro
 /// Wedge bonds are derived from the `Display` attribute of `<b>` elements:
 /// `"WedgeBegin"` / `"WedgedHashBegin"` → [`BondOrder::Up`];
 /// `"Hash"` / `"Dash"` / `"WedgeEnd"` / `"WedgedHashEnd"` → [`BondOrder::Down`].
-#[allow(clippy::type_complexity)]
-pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
-    // Per-fragment atom and bond accumulators.
-    let mut atom_ids: Vec<String> = Vec::new();
-    let mut atom_elems: Vec<Element> = Vec::new();
-    let mut atom_charges: Vec<i8> = Vec::new();
-    let mut atom_isotopes: Vec<Option<u16>> = Vec::new();
-    let mut atom_h: Vec<Option<u8>> = Vec::new();
-    let mut atom_xs: Vec<f64> = Vec::new();
-    let mut atom_ys: Vec<f64> = Vec::new();
+/// Accumulator for a single CDXML `<fragment>` being parsed.
+#[derive(Default)]
+struct FragAccum {
+    atom_ids: Vec<String>,
+    atom_elems: Vec<Element>,
+    atom_charges: Vec<i8>,
+    atom_isotopes: Vec<Option<u16>>,
+    atom_h: Vec<Option<u8>>,
+    atom_xs: Vec<f64>,
+    atom_ys: Vec<f64>,
+    bond_bs: Vec<String>,
+    bond_es: Vec<String>,
+    bond_ords: Vec<BondOrder>,
+}
 
-    let mut bond_bs: Vec<String> = Vec::new();
-    let mut bond_es: Vec<String> = Vec::new();
-    let mut bond_ords: Vec<BondOrder> = Vec::new();
+impl FragAccum {
+    fn is_empty(&self) -> bool {
+        self.atom_ids.is_empty() && self.bond_bs.is_empty()
+    }
 
-    let mut results: Vec<(Molecule, Vec<(f64, f64)>)> = Vec::new();
-    let flush = |atom_ids: &mut Vec<String>,
-                 atom_elems: &mut Vec<Element>,
-                 atom_charges: &mut Vec<i8>,
-                 atom_isotopes: &mut Vec<Option<u16>>,
-                 atom_h: &mut Vec<Option<u8>>,
-                 atom_xs: &mut Vec<f64>,
-                 atom_ys: &mut Vec<f64>,
-                 bond_bs: &mut Vec<String>,
-                 bond_es: &mut Vec<String>,
-                 bond_ords: &mut Vec<BondOrder>,
-                 results: &mut Vec<(Molecule, Vec<(f64, f64)>)>|
-     -> Result<(), CdxmlError> {
-        if atom_ids.is_empty() && bond_bs.is_empty() {
+    fn flush(
+        &mut self,
+        results: &mut Vec<(Molecule, Vec<(f64, f64)>)>,
+    ) -> Result<(), CdxmlError> {
+        if self.is_empty() {
             return Ok(());
         }
 
         let mut id_to_pos: HashMap<&str, usize> = HashMap::new();
-        for (i, id) in atom_ids.iter().enumerate() {
+        for (i, id) in self.atom_ids.iter().enumerate() {
             id_to_pos.insert(id.as_str(), i);
         }
 
@@ -130,43 +126,40 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
         let mut idx_map: HashMap<usize, AtomIdx> = HashMap::new();
         let mut coords: Vec<(f64, f64)> = Vec::new();
 
-        for (i, _) in atom_ids.iter().enumerate() {
-            let mut a = Atom::new(atom_elems[i]);
-            a.charge = atom_charges[i];
-            a.isotope = atom_isotopes[i];
-            a.hydrogen_count = atom_h[i];
+        for i in 0..self.atom_ids.len() {
+            let mut a = Atom::new(self.atom_elems[i]);
+            a.charge = self.atom_charges[i];
+            a.isotope = self.atom_isotopes[i];
+            a.hydrogen_count = self.atom_h[i];
             let new_idx = builder.add_atom(a);
             idx_map.insert(i, new_idx);
-            coords.push((atom_xs[i], atom_ys[i]));
+            coords.push((self.atom_xs[i], self.atom_ys[i]));
         }
 
-        for k in 0..bond_bs.len() {
+        for k in 0..self.bond_bs.len() {
             let pos_b = *id_to_pos
-                .get(bond_bs[k].as_str())
-                .ok_or_else(|| CdxmlError::UnknownAtomRef(bond_bs[k].clone()))?;
+                .get(self.bond_bs[k].as_str())
+                .ok_or_else(|| CdxmlError::UnknownAtomRef(self.bond_bs[k].clone()))?;
             let pos_e = *id_to_pos
-                .get(bond_es[k].as_str())
-                .ok_or_else(|| CdxmlError::UnknownAtomRef(bond_es[k].clone()))?;
+                .get(self.bond_es[k].as_str())
+                .ok_or_else(|| CdxmlError::UnknownAtomRef(self.bond_es[k].clone()))?;
             let a1 = idx_map[&pos_b];
             let a2 = idx_map[&pos_e];
-            builder.add_bond(a1, a2, bond_ords[k]).map_err(|_| {
-                CdxmlError::UnknownAtomRef(format!("{} {}", bond_bs[k], bond_es[k]))
+            builder.add_bond(a1, a2, self.bond_ords[k]).map_err(|_| {
+                CdxmlError::UnknownAtomRef(format!("{} {}", self.bond_bs[k], self.bond_es[k]))
             })?;
         }
 
         results.push((builder.build(), coords));
-        atom_ids.clear();
-        atom_elems.clear();
-        atom_charges.clear();
-        atom_isotopes.clear();
-        atom_h.clear();
-        atom_xs.clear();
-        atom_ys.clear();
-        bond_bs.clear();
-        bond_es.clear();
-        bond_ords.clear();
+        *self = FragAccum::default();
         Ok(())
-    };
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+    let mut acc = FragAccum::default();
+    let mut results: Vec<(Molecule, Vec<(f64, f64)>)> = Vec::new();
 
     for raw_line in input.lines() {
         let line = raw_line.trim();
@@ -175,33 +168,12 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
         }
 
         if line.starts_with("<fragment") {
-            atom_ids.clear();
-            atom_elems.clear();
-            atom_charges.clear();
-            atom_isotopes.clear();
-            atom_h.clear();
-            atom_xs.clear();
-            atom_ys.clear();
-            bond_bs.clear();
-            bond_es.clear();
-            bond_ords.clear();
+            acc = FragAccum::default();
             continue;
         }
 
         if line.starts_with("</fragment>") {
-            flush(
-                &mut atom_ids,
-                &mut atom_elems,
-                &mut atom_charges,
-                &mut atom_isotopes,
-                &mut atom_h,
-                &mut atom_xs,
-                &mut atom_ys,
-                &mut bond_bs,
-                &mut bond_es,
-                &mut bond_ords,
-                &mut results,
-            )?;
+            acc.flush(&mut results)?;
             continue;
         }
 
@@ -243,13 +215,13 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
             } else {
                 (0.0, 0.0)
             };
-            atom_ids.push(id);
-            atom_elems.push(element);
-            atom_charges.push(charge);
-            atom_isotopes.push(isotope);
-            atom_h.push(hcount);
-            atom_xs.push(x);
-            atom_ys.push(y);
+            acc.atom_ids.push(id);
+            acc.atom_elems.push(element);
+            acc.atom_charges.push(charge);
+            acc.atom_isotopes.push(isotope);
+            acc.atom_h.push(hcount);
+            acc.atom_xs.push(x);
+            acc.atom_ys.push(y);
             continue;
         }
 
@@ -279,28 +251,14 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
             } else {
                 base
             };
-            bond_bs.push(b);
-            bond_es.push(e);
-            bond_ords.push(order);
+            acc.bond_bs.push(b);
+            acc.bond_es.push(e);
+            acc.bond_ords.push(order);
         }
     }
 
     // Handle documents without explicit </fragment> closing tags.
-    if !atom_ids.is_empty() || !bond_bs.is_empty() {
-        flush(
-            &mut atom_ids,
-            &mut atom_elems,
-            &mut atom_charges,
-            &mut atom_isotopes,
-            &mut atom_h,
-            &mut atom_xs,
-            &mut atom_ys,
-            &mut bond_bs,
-            &mut bond_es,
-            &mut bond_ords,
-            &mut results,
-        )?;
-    }
+    acc.flush(&mut results)?;
 
     Ok(results)
 }

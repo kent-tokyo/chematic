@@ -13,17 +13,7 @@
 use std::collections::HashSet;
 use chematic_core::{AtomIdx, Molecule, BondOrder};
 
-/// FNV-1a hash for consistent hashing across platforms
-fn fnv1a_hash(data: &[u8]) -> u64 {
-    const FNV_OFFSET: u64 = 14695981039346656037;
-    const FNV_PRIME: u64 = 1099511628211;
-    let mut h = FNV_OFFSET;
-    for &b in data {
-        h ^= b as u64;
-        h = h.wrapping_mul(FNV_PRIME);
-    }
-    h
-}
+use crate::ecfp::fnv1a as fnv1a_hash;
 
 /// Configuration for MinHash fingerprint generation.
 #[derive(Clone, Debug)]

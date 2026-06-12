@@ -20,6 +20,43 @@ pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     h
 }
 
+/// Compute the FNV-1a atom identifier for iteration 0 of the Morgan algorithm.
+///
+/// The six-byte invariant covers: atomic number, degree, implicit H count, formal
+/// charge (clamped to byte range), ring membership, and aromaticity.  When
+/// `use_chirality` is true an extra chirality byte is appended; this preserves
+/// bit-compatibility with the default (`use_chirality=false`) fingerprints.
+pub(crate) fn initial_atom_id(
+    mol: &Molecule,
+    idx: AtomIdx,
+    ring_set: &chematic_perception::RingSet,
+    use_chirality: bool,
+) -> u64 {
+    let atom = mol.atom(idx);
+    let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
+    let base_bytes = [
+        atom.element.atomic_number(),
+        mol.neighbors(idx).count() as u8,
+        implicit_hcount(mol, idx),
+        charge_adjusted,
+        ring_set.contains_atom(idx) as u8,
+        atom.aromatic as u8,
+    ];
+    if use_chirality {
+        use chematic_core::Chirality;
+        let chirality_byte = match atom.chirality {
+            Chirality::None => 0u8,
+            Chirality::CounterClockwise => 1u8,
+            Chirality::Clockwise => 2u8,
+        };
+        let mut chiral_bytes = base_bytes.to_vec();
+        chiral_bytes.push(chirality_byte);
+        fnv1a(&chiral_bytes)
+    } else {
+        fnv1a(&base_bytes)
+    }
+}
+
 /// Configuration for ECFP computation.
 #[derive(Debug, Clone)]
 pub struct EcfpConfig {
@@ -97,37 +134,7 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     let mut ids: Vec<u64> = Vec::with_capacity(n);
     for i in 0..n {
         let idx = AtomIdx(i as u32);
-        let atom = mol.atom(idx);
-
-        // Shift formal charge by 8 so that charges in [-8, +7] map to bytes [0, 15].
-        // i16 arithmetic avoids overflow on extreme charges.
-        let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
-        let base_bytes = [
-            atom.element.atomic_number(),
-            mol.neighbors(idx).count() as u8,
-            implicit_hcount(mol, idx),
-            charge_adjusted,
-            ring_set.contains_atom(idx) as u8,
-            atom.aromatic as u8,
-        ];
-        // When use_chirality is enabled, append the chirality byte so that R
-        // and S enantiomers produce different initial identifiers.  The extra
-        // byte is only appended when chirality is requested — this preserves
-        // bit-compatibility with the default (use_chirality=false) fingerprints.
-        let id = if config.use_chirality {
-            use chematic_core::Chirality;
-            let chirality_byte = match atom.chirality {
-                Chirality::None => 0u8,
-                Chirality::CounterClockwise => 1u8,
-                Chirality::Clockwise => 2u8,
-            };
-            let mut chiral_bytes = base_bytes.to_vec();
-            chiral_bytes.push(chirality_byte);
-            fnv1a(&chiral_bytes)
-        } else {
-            fnv1a(&base_bytes)
-        };
-
+        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality);
         fp.set((id % nbits as u64) as usize);
         if config.use_double_fold {
             fp.set(((id >> 11) % nbits as u64) as usize);
@@ -194,19 +201,7 @@ pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMa
 
     // Radius-0: initial atom identifiers.
     let mut ids: Vec<u64> = (0..n)
-        .map(|i| {
-            let idx = AtomIdx(i as u32);
-            let atom = mol.atom(idx);
-            let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
-            fnv1a(&[
-                atom.element.atomic_number(),
-                mol.neighbors(idx).count() as u8,
-                implicit_hcount(mol, idx),
-                charge_adjusted,
-                ring_set.contains_atom(idx) as u8,
-                atom.aromatic as u8,
-            ])
-        })
+        .map(|i| initial_atom_id(mol, AtomIdx(i as u32), &ring_set, false))
         .collect();
 
     for &id in &ids {

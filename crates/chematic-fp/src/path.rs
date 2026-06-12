@@ -117,26 +117,14 @@ impl Clone for PathWithBonds {
 
 /// Hash a path using FNV-1a, interleaving atoms and bond types.
 fn hash_path(mol: &Molecule, path: &PathWithBonds) -> usize {
-    // Use portable FNV constants
-    let fnv_prime: u64 = 1099511628211; // FNV-1a 64-bit prime
-    let mut hash: u64 = 14695981039346656037; // FNV-1a 64-bit offset
-
+    let mut bytes: Vec<u8> = Vec::with_capacity(path.atoms.len() * 2);
     for (i, &atom_idx) in path.atoms.iter().enumerate() {
-        // Hash bond before this atom (except for first atom)
         if i > 0 {
-            let bond_byte = bond_order_to_byte(path.bonds[i - 1]);
-            hash ^= bond_byte as u64;
-            hash = hash.wrapping_mul(fnv_prime);
+            bytes.push(bond_order_to_byte(path.bonds[i - 1]));
         }
-
-        // Hash atom's atomic number
-        let atom = mol.atom(atom_idx);
-        let an = atom.element.atomic_number() as u64;
-        hash ^= an;
-        hash = hash.wrapping_mul(fnv_prime);
+        bytes.push(mol.atom(atom_idx).element.atomic_number());
     }
-
-    hash as usize
+    crate::ecfp::fnv1a(&bytes) as usize
 }
 
 /// Convert BondOrder to a hash byte.
