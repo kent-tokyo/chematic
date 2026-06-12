@@ -55,7 +55,7 @@ impl ElectrostaticMatrix {
                     continue;
                 }
 
-                let d = dist[i][j] as i32;
+                let d = dist[i][j];
 
                 if d == 1 {
                     // 1-2 pairs: typically excluded

@@ -1623,7 +1623,7 @@ pub fn hall_kier_alpha(mol: &Molecule) -> f64 {
             17 => 1.02,  // Cl
             35 => 1.20,  // Br
             53 => 1.39,  // I
-            _ => (an * 0.15) as f64, // fallback
+            _ => an * 0.15, // fallback
         };
 
         // Hall-Kier alpha value proportional to radius and degree

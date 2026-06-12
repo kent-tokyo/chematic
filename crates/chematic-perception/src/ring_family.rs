@@ -77,7 +77,7 @@ pub fn find_ring_families(mol: &Molecule, sssr: &RingSet) -> Vec<RingFamily> {
     let mut groups: std::collections::HashMap<usize, Vec<usize>> = std::collections::HashMap::new();
     for i in 0..rings.len() {
         let root = find(&mut parent, i);
-        groups.entry(root).or_insert_with(Vec::new).push(i);
+        groups.entry(root).or_default().push(i);
     }
 
     // Build ring families

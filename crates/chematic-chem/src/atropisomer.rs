@@ -95,8 +95,8 @@ pub fn assign_atropisomer_chirality(mol: &Molecule) -> Molecule {
         let mut new_bond_order = bond.order;
 
         // Check if this bond is atropisomeric and apply stereochemistry
-        if let Some((_, _)) = atropisomers.iter().find(|(b, _)| b == &bidx) {
-            if bond.order == BondOrder::Single {
+        if let Some((_, _)) = atropisomers.iter().find(|(b, _)| b == &bidx)
+            && bond.order == BondOrder::Single {
                 let a1_neighbors: Vec<_> = mol.neighbors(bond.atom1).collect();
                 let a2_neighbors: Vec<_> = mol.neighbors(bond.atom2).collect();
 
@@ -120,7 +120,6 @@ pub fn assign_atropisomer_chirality(mol: &Molecule) -> Molecule {
                     new_bond_order = BondOrder::Down;
                 }
             }
-        }
 
         if let (Some(&a), Some(&b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
             let _ = builder.add_bond(a, b, new_bond_order);

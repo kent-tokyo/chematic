@@ -239,7 +239,7 @@ mod tests {
         let similarity = fp1.tanimoto(&fp2);
 
         // Tanimoto should be in [0, 1]
-        assert!(similarity >= 0.0 && similarity <= 1.0);
+        assert!((0.0..=1.0).contains(&similarity));
     }
 
     #[test]
@@ -277,6 +277,6 @@ mod tests {
         // Different transformation types should generally have different FPs
         // (though not guaranteed to be completely opposite)
         let similarity = fp1.tanimoto(&fp2);
-        assert!(similarity >= 0.0 && similarity <= 1.0);
+        assert!((0.0..=1.0).contains(&similarity));
     }
 }

@@ -386,8 +386,8 @@ mod tests {
         let sim_ethanol_pyridine = fp_ethanol.tanimoto(&fp_pyridine);
 
         // All similarities should be in valid range
-        assert!(sim_methane_ethanol >= 0.0 && sim_methane_ethanol <= 1.0);
-        assert!(sim_methane_pyridine >= 0.0 && sim_methane_pyridine <= 1.0);
-        assert!(sim_ethanol_pyridine >= 0.0 && sim_ethanol_pyridine <= 1.0);
+        assert!((0.0..=1.0).contains(&sim_methane_ethanol));
+        assert!((0.0..=1.0).contains(&sim_methane_pyridine));
+        assert!((0.0..=1.0).contains(&sim_ethanol_pyridine));
     }
 }

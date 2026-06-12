@@ -204,14 +204,13 @@ fn assign_carbon_type(mol: &Molecule, idx: AtomIdx) -> Result<MMFF94Type, Assign
     if double_bonds > 0 {
         for (_, bond) in mol.bonds() {
             let other = if bond.atom1 == idx { bond.atom2 } else if bond.atom2 == idx { bond.atom1 } else { continue };
-            if bond.order == chematic_core::BondOrder::Double {
-                if mol.atom(other).element == Element::O {
+            if bond.order == chematic_core::BondOrder::Double
+                && mol.atom(other).element == Element::O {
                     // Could be carboxylic or ester
                     // Check if O is bonded to another C or has H
                     let has_oh = false; // Simplified
                     return Ok(if has_oh { MMFF94Type::C_Carboxylic } else { MMFF94Type::C_Ester });
                 }
-            }
         }
     }
 
@@ -379,7 +378,7 @@ pub fn mmff94_charges_3d(
     apply_formal_charge_redistribution(mol, &types, &mut charges);
 
     // Apply electronegativity-based bond polarization using 3D geometry
-    apply_bond_polarization_3d(mol, &coords, &types, &mut charges);
+    apply_bond_polarization_3d(mol, coords, &types, &mut charges);
 
     // Apply hydrogen bonding environment effects
     apply_hbond_effects(mol, &types, &mut charges);
@@ -454,7 +453,7 @@ fn apply_bond_polarization_3d(
     _types: &[MMFF94Type],
     charges: &mut [f64],
 ) {
-    let n = mol.atom_count();
+    let _n = mol.atom_count();
 
     // Electronegativity values (Pauling scale, approximate)
     let en_table: fn(Element) -> f64 = |elem| match elem.atomic_number() {
@@ -501,7 +500,7 @@ fn apply_bond_polarization_3d(
 
 /// Apply hydrogen bonding environment corrections.
 /// Atoms involved in H-bonds may have modified charges.
-fn apply_hbond_effects(mol: &Molecule, types: &[MMFF94Type], charges: &mut [f64]) {
+fn apply_hbond_effects(_mol: &Molecule, types: &[MMFF94Type], charges: &mut [f64]) {
     use MMFF94Type::*;
 
     for (i, &atom_type) in types.iter().enumerate() {

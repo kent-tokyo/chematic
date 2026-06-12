@@ -137,13 +137,12 @@ fn topological_distance(mol: &Molecule, a: chematic_core::AtomIdx, b: chematic_c
                 None
             };
 
-            if let Some(next_idx) = next {
-                if !visited[next_idx.0 as usize] {
+            if let Some(next_idx) = next
+                && !visited[next_idx.0 as usize] {
                     visited[next_idx.0 as usize] = true;
                     dist[next_idx.0 as usize] = dist[curr.0 as usize] + 1;
                     queue.push_back(next_idx);
                 }
-            }
         }
     }
 

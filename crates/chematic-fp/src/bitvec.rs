@@ -163,7 +163,7 @@ impl BitVecN {
     /// Panics if `bits == 0`.
     pub fn new(bits: usize) -> Self {
         assert!(bits > 0, "BitVecN must have at least 1 bit");
-        let num_words = (bits + 63) / 64;
+        let num_words = bits.div_ceil(64);
         Self {
             words: vec![0u64; num_words],
             bits,

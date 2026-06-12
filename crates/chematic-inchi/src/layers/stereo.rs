@@ -114,8 +114,7 @@ pub fn ez_stereo_layer(
         for (_bond_idx, bond) in mol.bonds() {
             if (bond.atom1 == *atom_idx || bond.atom2 == *atom_idx)
                 && bond.order == BondOrder::Double
-            {
-                if let (Some(&i1), Some(&i2)) = (
+                && let (Some(&i1), Some(&i2)) = (
                     inchi_index.get(&bond.atom1),
                     inchi_index.get(&bond.atom2),
                 ) {
@@ -123,7 +122,6 @@ pub fn ez_stereo_layer(
                     b_list.push(format!("{}-{}{}", lo, hi, sign));
                     break;
                 }
-            }
         }
     }
 

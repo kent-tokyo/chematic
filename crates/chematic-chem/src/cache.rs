@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 
 /// Descriptor cache entry: stores computed descriptor values.
 #[derive(Clone, Debug, PartialEq)]
+#[derive(Default)]
 pub struct DescriptorEntry {
     /// Molecular weight (Ø = computed on demand)
     pub mw: Option<f64>,
@@ -23,18 +24,6 @@ pub struct DescriptorEntry {
     pub rotb: Option<usize>,
 }
 
-impl Default for DescriptorEntry {
-    fn default() -> Self {
-        Self {
-            mw: None,
-            logp: None,
-            tpsa: None,
-            hba: None,
-            hbd: None,
-            rotb: None,
-        }
-    }
-}
 
 /// Thread-safe descriptor cache with max_size limit.
 #[derive(Clone, Debug)]

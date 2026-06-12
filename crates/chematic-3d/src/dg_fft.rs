@@ -256,7 +256,7 @@ pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
         let mut y = 0.0;
         let mut z = 0.0;
 
-        if use_indices.len() > 0 {
+        if !use_indices.is_empty() {
             x = (eigenvalues[use_indices[0]].abs().sqrt()) * eigenvectors[i][use_indices[0]];
         }
         if use_indices.len() > 1 {

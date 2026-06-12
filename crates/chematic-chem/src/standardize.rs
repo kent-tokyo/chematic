@@ -85,11 +85,10 @@ impl SaltCatalog {
     /// Check if a molecule fragment matches any salt pattern.
     pub fn is_salt(&self, frag: &Molecule) -> bool {
         for (_, smarts_str) in &self.patterns {
-            if let Ok(query) = parse_smarts(smarts_str) {
-                if !find_matches(&query, frag).is_empty() {
+            if let Ok(query) = parse_smarts(smarts_str)
+                && !find_matches(&query, frag).is_empty() {
                     return true;
                 }
-            }
         }
         false
     }
@@ -485,12 +484,11 @@ pub fn normalize_zwitterion(mol: &Molecule) -> Molecule {
         let mut closest_distance = i32::MAX;
 
         for &pos_idx in &positive_atoms {
-            if let Some(dist) = bfs_distance(mol, neg_idx, pos_idx) {
-                if dist < closest_distance {
+            if let Some(dist) = bfs_distance(mol, neg_idx, pos_idx)
+                && dist < closest_distance {
                     closest_distance = dist;
                     closest_pos_idx = pos_idx;
                 }
-            }
         }
 
         // Transfer proton: N+ loses H, O- gains H
@@ -934,18 +932,15 @@ impl StandardizationReport {
 
 /// Handling strategy for zwitterions (internal salts).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Default)]
 pub enum ZwitterionHandling {
     /// Keep zwitterionic form as-is.
     Keep,
     /// Normalize to neutral form via proton transfer.
+    #[default]
     Normalize,
 }
 
-impl Default for ZwitterionHandling {
-    fn default() -> Self {
-        Self::Normalize
-    }
-}
 
 /// Options for molecular standardization.
 ///
@@ -1648,13 +1643,11 @@ mod tests {
         for (_, bond) in result.bonds() {
             let a1 = result.atom(bond.atom1);
             let a2 = result.atom(bond.atom2);
-            if (a1.element.atomic_number() == 7 && a2.element.atomic_number() == 8)
-                || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 7)
-            {
-                if bond.order == chematic_core::BondOrder::Double {
+            if ((a1.element.atomic_number() == 7 && a2.element.atomic_number() == 8)
+                || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 7))
+                && bond.order == chematic_core::BondOrder::Double {
                     has_double_bond = true;
                 }
-            }
         }
         assert!(has_double_bond, "nitro should have N=O double bond");
     }
@@ -1676,11 +1669,10 @@ mod tests {
         for (_, bond) in result.bonds() {
             let a1 = result.atom(bond.atom1);
             let a2 = result.atom(bond.atom2);
-            if a1.element.atomic_number() == 7 && a2.element.atomic_number() == 7 {
-                if bond.order == chematic_core::BondOrder::Double {
+            if a1.element.atomic_number() == 7 && a2.element.atomic_number() == 7
+                && bond.order == chematic_core::BondOrder::Double {
                     has_double_bond_count += 1;
                 }
-            }
         }
         assert!(has_double_bond_count > 0, "azide should have N=N double bonds after normalization");
     }
@@ -1696,13 +1688,11 @@ mod tests {
         for (_, bond) in result.bonds() {
             let a1 = result.atom(bond.atom1);
             let a2 = result.atom(bond.atom2);
-            if (a1.element.atomic_number() == 16 && a2.element.atomic_number() == 8)
-                || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 16)
-            {
-                if bond.order == chematic_core::BondOrder::Double {
+            if ((a1.element.atomic_number() == 16 && a2.element.atomic_number() == 8)
+                || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 16))
+                && bond.order == chematic_core::BondOrder::Double {
                     has_s_double_o = true;
                 }
-            }
         }
         assert!(has_s_double_o, "sulfoxide should have S=O double bond");
     }

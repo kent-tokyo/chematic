@@ -182,7 +182,7 @@ mod tests {
 
         // Different molecules should have different hashes (usually)
         let similarity = fp1.tanimoto(&fp2);
-        assert!(similarity >= 0.0 && similarity <= 1.0);
+        assert!((0.0..=1.0).contains(&similarity));
     }
 
     #[test]
@@ -242,6 +242,6 @@ mod tests {
 
         let similarity = fp1.tanimoto(&fp2);
         // Jaccard-like similarity should be in [0, 1]
-        assert!(similarity >= 0.0 && similarity <= 1.0);
+        assert!((0.0..=1.0).contains(&similarity));
     }
 }

@@ -127,7 +127,7 @@ mod tests {
         // In naphthalene SSSR, some atoms appear in 2 rings depending on the ring decomposition
         // Just verify all atoms are in at least 1 ring
         for mem in &membership {
-            assert!(mem.len() >= 1, "all naphthalene atoms should be in at least 1 ring");
+            assert!(!mem.is_empty(), "all naphthalene atoms should be in at least 1 ring");
         }
     }
 

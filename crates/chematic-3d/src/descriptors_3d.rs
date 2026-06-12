@@ -102,9 +102,9 @@ pub fn getaway_descriptors(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
 
     // Autocorrelation at different lags
     if !distances.is_empty() {
-        g1 = distances.iter().take(n as usize).map(|&d| d).sum::<f64>() / n.max(1.0);
-        g2 = distances.iter().skip(n as usize / 2).take(n as usize).map(|&d| d).sum::<f64>() / n.max(1.0);
-        g3 = distances.iter().rev().take(n as usize).map(|&d| d).sum::<f64>() / n.max(1.0);
+        g1 = distances.iter().take(n as usize).copied().sum::<f64>() / n.max(1.0);
+        g2 = distances.iter().skip(n as usize / 2).take(n as usize).copied().sum::<f64>() / n.max(1.0);
+        g3 = distances.iter().rev().take(n as usize).copied().sum::<f64>() / n.max(1.0);
     }
 
     // Topologic distances (simplified: bond distances)

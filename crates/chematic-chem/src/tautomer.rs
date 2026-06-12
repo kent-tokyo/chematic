@@ -709,11 +709,10 @@ fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, A
                         continue;
                     }
                     // b2 can be any type (relaxed)
-                    if let Some(br_elem) = rule.bridge_elem {
-                        if mol.atom(b2).element.atomic_number() != br_elem {
+                    if let Some(br_elem) = rule.bridge_elem
+                        && mol.atom(b2).element.atomic_number() != br_elem {
                             continue;
                         }
-                    }
 
                     for (b3, _) in mol.neighbors(b2) {
                         if b3 == b1 {
@@ -1257,7 +1256,7 @@ mod tests {
         let mol = parse("CC(=N)CC(=O)C").unwrap();
         let tautomers = enumerate_tautomers(&mol);
         // Should enumerate without panic
-        assert!(tautomers.len() >= 1);
+        assert!(!tautomers.is_empty());
     }
 
     #[test]
@@ -1267,7 +1266,7 @@ mod tests {
         let mol = parse("OC1=C(O)C(=O)C(=O)C=C1").unwrap();
         let tautomers = enumerate_tautomers(&mol);
         // Should enumerate with N bridge possibility
-        assert!(tautomers.len() >= 1);
+        assert!(!tautomers.is_empty());
     }
 
     #[test]
@@ -1275,7 +1274,7 @@ mod tests {
         // O-C-S(=O)-C-O: thio-β-diketone variant
         let mol = parse("CC(=O)CS(=O)C(=O)C").unwrap();
         let tautomers = enumerate_tautomers(&mol);
-        assert!(tautomers.len() >= 1);
+        assert!(!tautomers.is_empty());
     }
 
     #[test]
@@ -1283,7 +1282,7 @@ mod tests {
         // N-C-N(=)-C-N: guanidine-type via N bridge
         let mol = parse("NC(=N)NC(=N)N").unwrap();
         let tautomers = enumerate_tautomers(&mol);
-        assert!(tautomers.len() >= 1);
+        assert!(!tautomers.is_empty());
     }
 
     #[test]
