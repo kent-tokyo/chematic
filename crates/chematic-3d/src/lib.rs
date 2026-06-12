@@ -51,7 +51,11 @@ pub use mol_transforms::{
 };
 pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
-pub use sasa::{sasa_per_atom, shrake_rupley_sasa};
+pub use sasa::{
+    sasa, sasa_per_atom, shrake_rupley_sasa, sasa_descriptor, sasa_per_element,
+    sasa_from_dg, sasa_per_atom_from_dg, sasa_descriptor_from_dg, sasa_per_element_from_dg,
+    calc_mol_sasa, calc_mol_sasa_with_probe, SasaDescriptor, PerElementSasa,
+};
 pub use shape_descriptors::{
     asphericity, eccentricity, npr1, npr2, plane_of_best_fit, pmi, pmi1, pmi2, pmi3,
     radius_of_gyration,
