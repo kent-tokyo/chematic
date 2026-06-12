@@ -39,9 +39,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）+ Sprint v0.1.34（InChI 環クロージャー + 立体層）+ Sprint v0.1.35（wasmBridge サポート）+ Sprint v0.1.36（Issue #1 監査: BUG-2/3/4 修正）+ Sprint v0.1.37（mol_transforms API + ランダム SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit ギャップ分析：6 機能実装）。**1,150+ テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）+ Sprint v0.1.34（InChI 環クロージャー + 立体層）+ Sprint v0.1.35（wasmBridge サポート）+ Sprint v0.1.36（Issue #1 監査: BUG-2/3/4 修正）+ Sprint v0.1.37（mol_transforms API + ランダム SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit ギャップ分析：6 機能実装）+ v0.1.88–v0.1.89（ギャップ分析 89% 完成：A1–A6, B1–B2 実装）。** 1,521 テスト、全パス。C/C++ 依存ゼロ。**
 
-最新リリース: **v0.1.74**（2026-06-11）
+最新リリース: **v0.1.89**（2026-06-12）— ギャップ分析 89% 完成
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -56,12 +56,12 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble（RMSD 剪定付き）、PDB/XYZ 形式                                                  | 147     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（生成物原子価バリデーション付き）                                        | 30      |
 | `chematic-inchi`       | InChI/InChIKey 生成；formula/connectivity/hydrogen/stereo/charge/isotope レイヤー；環クロージャー対応                                | 28      |
-| `chematic-wasm`        | **110+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.1.74；InChI API + 立体反転                                                   | 175     |
+| `chematic-wasm`        | **110+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.1.89；InChI API + 立体反転                                                   | 175     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— アルカン、シクロアルカン、アルコール、アミン、ハロアルカン                                | 8       |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac`, `inchi` フィーチャー追加）                                                         | 1       |
 
 ```
-cargo test --workspace   # 1,150+ テスト、全パス
+cargo test --workspace   # 1,521 テスト、全パス
 ```
 
 ---
