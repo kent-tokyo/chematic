@@ -1,8 +1,20 @@
 //! Solvent-Accessible Surface Area (SASA) calculation using Shrake-Rupley algorithm.
+//!
+//! B8: 3D SASA Descriptor
+//!
+//! Provides efficient SASA calculation for 3D molecular structures from distance geometry (A3).
+//! SASA is the surface area of a molecule that is accessible to a solvent probe (typically water).
+//! Useful for:
+//! - Molecular property prediction (solubility, binding affinity)
+//! - Descriptor calculation for ML models
+//! - Comparison with RDKit calculations
+//!
+//! Default parameters: probe_radius=1.4 Å (water), sphere_points=100 (speed/accuracy trade-off)
 
 use chematic_core::{AtomIdx, Molecule};
 
 use crate::coords::{Coords3D, Point3};
+use crate::dg::generate_coords;
 
 /// Standard Bondi VDW radii (Ångströms) from Bondi 1964.
 fn bondi_vdw_radius(atomic_number: u8) -> f64 {
@@ -19,6 +31,55 @@ fn bondi_vdw_radius(atomic_number: u8) -> f64 {
         53 => 1.98, // I
         _ => 1.70,  // default fallback
     }
+}
+
+/// Calculate SASA with default parameters (RDKit-compatible).
+///
+/// Convenience function using standard parameters:
+/// - probe_radius = 1.4 Ångströms (water)
+/// - sphere_points = 100 (good balance of speed/accuracy)
+///
+/// # Arguments
+/// - `mol`: molecule (for atom properties)
+/// - `coords`: 3D coordinates (from distance geometry or force field)
+///
+/// # Returns
+/// Total SASA in Ų (square Ångströms)
+pub fn sasa(mol: &Molecule, coords: &Coords3D) -> f64 {
+    shrake_rupley_sasa(mol, coords, 1.4, 100)
+}
+
+/// Calculate per-atom SASA with default parameters.
+///
+/// # Arguments
+/// - `mol`: molecule (for atom properties)
+/// - `coords`: 3D coordinates
+///
+/// # Returns
+/// Vector of SASA values (one per atom) in Ų
+pub fn sasa_per_atom_default(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
+    sasa_per_atom(mol, coords, 1.4, 100)
+}
+
+/// Calculate SASA from SMILES string with distance geometry.
+///
+/// Generates 3D coordinates using distance geometry, then calculates SASA.
+/// Useful for quick SASA calculations without pre-computed coordinates.
+///
+/// # Arguments
+/// - `mol`: molecule
+///
+/// # Returns
+/// Total SASA in Ų, or error if coordinate generation fails
+pub fn sasa_from_dg(mol: &Molecule) -> Result<f64, String> {
+    let coords = generate_coords(mol);
+    Ok(sasa(mol, &coords))
+}
+
+/// Calculate per-atom SASA from distance geometry coordinates.
+pub fn sasa_per_atom_from_dg(mol: &Molecule) -> Result<Vec<f64>, String> {
+    let coords = generate_coords(mol);
+    Ok(sasa_per_atom_default(mol, &coords))
 }
 
 /// Calculate Solvent-Accessible Surface Area (SASA) using Shrake-Rupley algorithm.
@@ -244,5 +305,186 @@ mod tests {
         let coords = Coords3D::new_zeroed(0);
         let sasa = shrake_rupley_sasa(&mol, &coords, 1.4, 100);
         assert_eq!(sasa, 0.0, "empty molecule should have zero SASA");
+    }
+
+    // ===== Phase 1: Distance Geometry Integration & Comprehensive Testing =====
+
+    #[test]
+    fn test_sasa_with_default_params() {
+        // Test convenience function with default parameters
+        let mol = parse("C").unwrap();
+        let coords = Coords3D::new_zeroed(1);
+        let sasa_default = sasa(&mol, &coords);
+        let sasa_explicit = shrake_rupley_sasa(&mol, &coords, 1.4, 100);
+
+        assert!((sasa_default - sasa_explicit).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_sasa_per_atom_default() {
+        // Test per-atom convenience function
+        let mol = parse("CC").unwrap();
+        let mut coords = Coords3D::new_zeroed(2);
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(10.0, 0.0, 0.0));
+
+        let per_atom = sasa_per_atom_default(&mol, &coords);
+        assert_eq!(per_atom.len(), 2);
+        assert!(per_atom[0] > 0.0 && per_atom[1] > 0.0);
+    }
+
+    #[test]
+    fn test_sasa_from_distance_geometry_methane() {
+        // Test SASA calculation with DG-generated coordinates
+        let mol = parse("C").unwrap();
+        let result = sasa_from_dg(&mol);
+
+        assert!(result.is_ok());
+        let sasa = result.unwrap();
+
+        // Single carbon should have SASA around 4πr² where r = vdW + probe
+        // Carbon vdW = 1.70 Å, probe = 1.4 Å, so r = 3.1 Å
+        // Expected SASA ≈ 4π(3.1)² ≈ 121 Ų
+        assert!(sasa > 80.0 && sasa < 160.0, "methane SASA out of expected range: {}", sasa);
+    }
+
+    #[test]
+    fn test_sasa_from_dg_ethane() {
+        // Two-atom molecule
+        let mol = parse("CC").unwrap();
+        let result = sasa_from_dg(&mol);
+
+        assert!(result.is_ok());
+        let sasa = result.unwrap();
+
+        // Two carbons, some overlap, should be larger than single atom but less than 2×
+        assert!(sasa > 100.0, "ethane SASA should be substantial: {}", sasa);
+    }
+
+    #[test]
+    fn test_sasa_per_atom_from_dg() {
+        // Test per-atom SASA from distance geometry
+        let mol = parse("CCO").unwrap();
+        let result = sasa_per_atom_from_dg(&mol);
+
+        assert!(result.is_ok());
+        let per_atom = result.unwrap();
+
+        assert_eq!(per_atom.len(), 3);
+        // All atoms should have positive SASA
+        for (i, &sasa) in per_atom.iter().enumerate() {
+            assert!(sasa > 0.0, "atom {} SASA should be positive", i);
+        }
+    }
+
+    #[test]
+    fn test_sasa_is_additive_separated_atoms() {
+        // When atoms are far apart (no occlusion), total SASA should approximately equal sum
+        let mol = parse("CC").unwrap();
+        let mut coords = Coords3D::new_zeroed(2);
+
+        // Place atoms very far apart
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(100.0, 0.0, 0.0));
+
+        let total = sasa(&mol, &coords);
+        let per_atom = sasa_per_atom_default(&mol, &coords);
+        let sum: f64 = per_atom.iter().sum();
+
+        // With atoms far apart, total should approximately equal sum
+        assert!((total - sum).abs() < 1.0, "far atoms should have additive SASA");
+    }
+
+    #[test]
+    fn test_sasa_occlusion_effect() {
+        // Close atoms should have lower SASA than far atoms
+        let mol = parse("CC").unwrap();
+
+        // Configuration 1: atoms far apart
+        let mut coords_far = Coords3D::new_zeroed(2);
+        coords_far.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords_far.set(AtomIdx(1), Point3::new(50.0, 0.0, 0.0));
+        let sasa_far = sasa(&mol, &coords_far);
+
+        // Configuration 2: atoms close together
+        let mut coords_close = Coords3D::new_zeroed(2);
+        coords_close.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords_close.set(AtomIdx(1), Point3::new(2.0, 0.0, 0.0));
+        let sasa_close = sasa(&mol, &coords_close);
+
+        // Close atoms should have lower total SASA due to occlusion
+        assert!(sasa_close < sasa_far, "close atoms should have lower SASA due to occlusion");
+    }
+
+    #[test]
+    fn test_sasa_probe_radius_effect() {
+        // Larger probe radius should increase SASA
+        let mol = parse("C").unwrap();
+        let coords = Coords3D::new_zeroed(1);
+
+        let sasa_small = shrake_rupley_sasa(&mol, &coords, 1.0, 100);
+        let sasa_large = shrake_rupley_sasa(&mol, &coords, 2.0, 100);
+
+        assert!(sasa_large > sasa_small, "larger probe radius should increase SASA");
+    }
+
+    #[test]
+    fn test_sasa_sphere_points_convergence() {
+        // More sphere points should give more accurate results
+        let mol = parse("CC").unwrap();
+        let mut coords = Coords3D::new_zeroed(2);
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(1.5, 0.0, 0.0));
+
+        let sasa_100 = shrake_rupley_sasa(&mol, &coords, 1.4, 100);
+        let sasa_500 = shrake_rupley_sasa(&mol, &coords, 1.4, 500);
+
+        // Results should be similar but 500 points may give slightly different value
+        // Due to better sampling
+        assert!((sasa_100 - sasa_500).abs() < sasa_100 * 0.2,
+                "different sphere points should give similar results");
+    }
+
+    #[test]
+    fn test_sasa_benzene() {
+        // Benzene with DG coordinates
+        let mol = parse("c1ccccc1").unwrap();
+        let result = sasa_from_dg(&mol);
+
+        assert!(result.is_ok());
+        let sasa = result.unwrap();
+
+        // Benzene should have substantial SASA (larger than ethane)
+        assert!(sasa > 150.0, "benzene SASA should be substantial: {}", sasa);
+    }
+
+    #[test]
+    fn test_sasa_finite_nonzero() {
+        // All SASA values should be finite and non-negative
+        let mol = parse("C1CCCCC1").unwrap(); // Cyclohexane
+        let result = sasa_from_dg(&mol);
+
+        assert!(result.is_ok());
+        let sasa = result.unwrap();
+
+        assert!(sasa.is_finite(), "SASA should be finite");
+        assert!(sasa > 0.0, "SASA should be positive");
+        assert!(sasa < 1e6, "SASA should not be unreasonably large");
+    }
+
+    #[test]
+    fn test_sasa_per_atom_polar_molecule() {
+        // Test per-atom SASA for polar molecule (ethanol)
+        let mol = parse("CCO").unwrap();
+        let coords = generate_coords(&mol);
+
+        let per_atom = sasa_per_atom_default(&mol, &coords);
+        assert_eq!(per_atom.len(), 3);
+
+        // Oxygen should be exposed (high SASA)
+        // Carbon values depend on conformation
+        for &sasa in &per_atom {
+            assert!(sasa > 0.0 && sasa.is_finite());
+        }
     }
 }
