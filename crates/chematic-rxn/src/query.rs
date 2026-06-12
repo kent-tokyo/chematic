@@ -185,6 +185,155 @@ impl core::fmt::Display for ReactionQueryError {
 
 impl std::error::Error for ReactionQueryError {}
 
+/// RDKit compatibility information and validation.
+pub mod rdkit_compat {
+    use super::*;
+
+    /// Result of RDKit compatibility checking.
+    #[derive(Clone, Debug)]
+    pub struct RDKitCompatReport {
+        /// Whether the reaction SMARTS is fully RDKit-compatible.
+        pub is_compatible: bool,
+        /// Warnings about potential differences in behavior.
+        pub warnings: Vec<String>,
+        /// RDKit format (legacy ">>" vs new ">").
+        pub rdkit_format: RDKitFormat,
+    }
+
+    /// RDKit reaction SMARTS format variants.
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub enum RDKitFormat {
+        /// Legacy 2-part format: "reactants>>products"
+        Legacy,
+        /// New 3-part format: "reactants>agents>products"
+        WithAgents,
+    }
+
+    /// Check RDKit compatibility of a reaction SMARTS pattern.
+    ///
+    /// Returns a `RDKitCompatReport` with compatibility status and any warnings.
+    /// Both chematic and RDKit support the same reaction SMARTS format, but
+    /// there may be subtle differences in pattern matching behavior.
+    pub fn check_rdkit_compatibility(smarts: &str) -> Result<RDKitCompatReport, ReactionQueryError> {
+        let mut warnings = Vec::new();
+
+        // Detect format
+        let rdkit_format = if smarts.contains(">>") {
+            RDKitFormat::Legacy
+        } else if smarts.contains('>') {
+            RDKitFormat::WithAgents
+        } else {
+            return Err(ReactionQueryError::MissingArrowDelimiter);
+        };
+
+        // Try to parse to validate syntax
+        let _pattern = super::parse_reaction_smarts(smarts)?;
+
+        // Check for RDKit-specific concerns
+        if smarts.contains("[#") {
+            // Atomic number queries are fully supported
+        }
+
+        if smarts.contains("[*") {
+            // Wildcard atoms
+            warnings.push("wildcard atoms [*] may match behavior differently".to_string());
+        }
+
+        if smarts.contains("$") {
+            // Recursive SMARTS are complex
+            warnings.push("recursive SMARTS ($(...)) have complex matching behavior".to_string());
+        }
+
+        // Check for pipe-separated OR patterns
+        let section_count = smarts.matches('>').count();
+        let has_or_patterns = smarts.contains('|');
+        if has_or_patterns && section_count == 0 {
+            warnings.push("pipe-separated patterns (|) require at least one > delimiter".to_string());
+        }
+
+        Ok(RDKitCompatReport {
+            is_compatible: warnings.is_empty(),
+            warnings,
+            rdkit_format,
+        })
+    }
+
+    /// Convert chematic ReactionSmartsMatch result to RDKit-compatible format.
+    ///
+    /// Returns a summary suitable for comparison with RDKit results.
+    pub fn match_to_rdkit_format(smarts_match: &ReactionSmartsMatch) -> RDKitMatchSummary {
+        RDKitMatchSummary {
+            matched: smarts_match.is_complete_match,
+            reactant_count: smarts_match.reactant_matches.pattern_matches.len(),
+            product_count: smarts_match.product_matches.pattern_matches.len(),
+            reactant_molecules_matched: smarts_match
+                .reactant_matches
+                .pattern_matches
+                .iter()
+                .filter(|m| !m.is_empty())
+                .count(),
+            product_molecules_matched: smarts_match
+                .product_matches
+                .pattern_matches
+                .iter()
+                .filter(|m| !m.is_empty())
+                .count(),
+        }
+    }
+
+    /// Summary of match result in RDKit-comparable format.
+    #[derive(Clone, Debug)]
+    pub struct RDKitMatchSummary {
+        /// Whether the reaction matched the pattern.
+        pub matched: bool,
+        /// Number of reactant patterns in the query.
+        pub reactant_count: usize,
+        /// Number of product patterns in the query.
+        pub product_count: usize,
+        /// How many reactant patterns matched.
+        pub reactant_molecules_matched: usize,
+        /// How many product patterns matched.
+        pub product_molecules_matched: usize,
+    }
+
+    /// Validate that a reaction SMARTS follows RDKit conventions.
+    pub fn validate_rdkit_conventions(smarts: &str) -> Result<(), String> {
+        // Check for balanced arrow delimiters
+        let arrow_count = smarts.matches('>').count();
+        if arrow_count == 0 {
+            return Err("must contain at least one '>' or '>>' delimiter".to_string());
+        }
+
+        // Check for empty sections (three > in a row would be >>>)
+        if smarts.contains(">>>") {
+            return Err("invalid delimiter sequence >>>".to_string());
+        }
+
+        // Map numbers must be between 1 and 999 in RDKit
+        // Extract all map numbers
+        let map_nums: Vec<u16> = smarts
+            .match_indices(':')
+            .filter_map(|(i, _)| {
+                let remainder = &smarts[i + 1..];
+                let digits: String = remainder.chars().take_while(|c| c.is_ascii_digit()).collect();
+                if !digits.is_empty() {
+                    digits.parse().ok()
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for map_num in map_nums {
+            if map_num == 0 || map_num > 999 {
+                return Err(format!("map number :{} outside RDKit range [1-999]", map_num));
+            }
+        }
+
+        Ok(())
+    }
+}
+
 /// Parse a reaction SMARTS pattern with agents section and atom mapping support.
 ///
 /// Format: `"reactants>[agents]>products"` (new) or `"reactants>>products"` (legacy)
@@ -854,5 +1003,170 @@ mod tests {
         // Product has one molecule matching the pattern
         assert_eq!(matches.product_matches.pattern_matches[0].len(), 1);
         assert!(matches.product_matches.pattern_matches[0][0].atom_indices.len() >= 1);
+    }
+
+    // ===== Phase 3: RDKit Compatibility Tooling =====
+
+    #[test]
+    fn test_rdkit_compat_check_legacy_format() {
+        use crate::query::rdkit_compat::*;
+
+        let result = check_rdkit_compatibility("[C:1][C:2]>>[C:2][C:1]").unwrap();
+        assert!(result.is_compatible);
+        assert_eq!(result.rdkit_format, RDKitFormat::Legacy);
+        assert!(result.warnings.is_empty());
+    }
+
+    #[test]
+    fn test_rdkit_compat_check_agents_format() {
+        use crate::query::rdkit_compat::*;
+
+        let result = check_rdkit_compatibility("[C:1][C:2]>[Pd]>[C:2][C:1]").unwrap();
+        assert!(result.is_compatible);
+        assert_eq!(result.rdkit_format, RDKitFormat::WithAgents);
+        assert!(result.warnings.is_empty());
+    }
+
+    #[test]
+    fn test_rdkit_compat_wildcard_warning() {
+        use crate::query::rdkit_compat::*;
+
+        let result = check_rdkit_compatibility("[*:1]>>[*:1]").unwrap();
+        assert!(!result.is_compatible);
+        assert!(result.warnings.iter().any(|w| w.contains("wildcard")));
+    }
+
+    #[test]
+    fn test_rdkit_compat_recursive_smarts_warning() {
+        use crate::query::rdkit_compat::*;
+
+        // Use simpler recursive SMARTS pattern
+        let result = check_rdkit_compatibility("[#6;$([#6]~[#8])]>>[#6]").unwrap();
+        assert!(!result.is_compatible);
+        assert!(result.warnings.iter().any(|w| w.contains("recursive")));
+    }
+
+    #[test]
+    fn test_rdkit_compat_missing_delimiter() {
+        use crate::query::rdkit_compat::*;
+
+        let result = check_rdkit_compatibility("[C:1][C:2][C:1][C:2]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_rdkit_format_detection_legacy() {
+        use crate::query::rdkit_compat::*;
+
+        let result = check_rdkit_compatibility("C>>C").unwrap();
+        assert_eq!(result.rdkit_format, RDKitFormat::Legacy);
+    }
+
+    #[test]
+    fn test_rdkit_format_detection_agents() {
+        use crate::query::rdkit_compat::*;
+
+        let result = check_rdkit_compatibility("C>[Pd]>C").unwrap();
+        assert_eq!(result.rdkit_format, RDKitFormat::WithAgents);
+    }
+
+    #[test]
+    fn test_rdkit_match_summary_complete() {
+        use crate::query::rdkit_compat::*;
+
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#6]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        let summary = match_to_rdkit_format(&matches);
+        assert!(summary.matched);
+        assert_eq!(summary.reactant_count, 1);
+        assert_eq!(summary.product_count, 1);
+        assert_eq!(summary.reactant_molecules_matched, 1);
+        assert_eq!(summary.product_molecules_matched, 1);
+    }
+
+    #[test]
+    fn test_rdkit_match_summary_incomplete() {
+        use crate::query::rdkit_compat::*;
+
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#7]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        let summary = match_to_rdkit_format(&matches);
+        assert!(!summary.matched);
+        assert_eq!(summary.reactant_molecules_matched, 0);
+    }
+
+    #[test]
+    fn test_rdkit_validate_conventions_valid() {
+        use crate::query::rdkit_compat::*;
+
+        let result = validate_rdkit_conventions("[C:1][C:2]>>[C:2][C:1]");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_rdkit_validate_conventions_no_delimiter() {
+        use crate::query::rdkit_compat::*;
+
+        let result = validate_rdkit_conventions("[C:1][C:2][C:1][C:2]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_rdkit_validate_conventions_triple_arrow() {
+        use crate::query::rdkit_compat::*;
+
+        let result = validate_rdkit_conventions("[C:1]>>>[C:1]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_rdkit_validate_conventions_map_number_zero() {
+        use crate::query::rdkit_compat::*;
+
+        let result = validate_rdkit_conventions("[C:0]>>[C:0]");
+        assert!(result.is_err());
+        if let Err(msg) = result {
+            assert!(msg.contains("outside RDKit range"));
+        }
+    }
+
+    #[test]
+    fn test_rdkit_validate_conventions_map_number_out_of_range() {
+        use crate::query::rdkit_compat::*;
+
+        let result = validate_rdkit_conventions("[C:1000]>>[C:1000]");
+        assert!(result.is_err());
+        if let Err(msg) = result {
+            assert!(msg.contains("outside RDKit range"));
+        }
+    }
+
+    #[test]
+    fn test_rdkit_validate_conventions_map_number_valid() {
+        use crate::query::rdkit_compat::*;
+
+        let result = validate_rdkit_conventions("[C:1][N:999]>>[N:999][C:1]");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_rdkit_compat_agents_pipes() {
+        use crate::query::rdkit_compat::*;
+
+        let result = check_rdkit_compatibility("[C:1]>[Pd]|[Ni]>[C:1]").unwrap();
+        assert!(result.is_compatible);
+        assert_eq!(result.rdkit_format, RDKitFormat::WithAgents);
+    }
+
+    #[test]
+    fn test_rdkit_compat_multiple_patterns() {
+        use crate::query::rdkit_compat::*;
+
+        let result = check_rdkit_compatibility("[#6]|[#7]>>[#8]|[#9]").unwrap();
+        assert!(result.is_compatible);
     }
 }
