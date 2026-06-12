@@ -199,29 +199,42 @@ fn compute_reciprocal_energy(
     let volume = box_vecs.volume();
     let mut energy = 0.0;
 
-    // Iterate over reciprocal lattice vectors
-    for kx in 0..kmax[0] {
-        for ky in 0..kmax[1] {
-            for kz in 0..kmax[2] {
-                if kx == 0 && ky == 0 && kz == 0 {
-                    continue; // Skip k=0 (handled by self-energy)
+    // Iterate over the z-positive half of reciprocal space.
+    // compute_structure_factor returns |S(k)|² (a real scalar).
+    // For real charge distributions |S(-k)|² = |S(k)|², so summing over the
+    // half-space and multiplying by 2 covers all k ≠ 0 without double-counting.
+    // The Ewald reciprocal formula is:
+    //   E = Σ_{half-space k} 2 * (2π/V) * K * exp(-k²/4α²)/k² * |S(k)|²
+    //     = Σ_{half-space k} (4π/V) * K * kernel * |S(k)|²
+    let kxmax = kmax[0] as i32;
+    let kymax = kmax[1] as i32;
+    let kzmax = kmax[2] as i32;
+    for kxi in -kxmax..=kxmax {
+        for kyi in -kymax..=kymax {
+            for kzi in 0..=kzmax {
+                // z-positive half-space selection (canonical half to avoid double-counting)
+                if kzi == 0 && kyi < 0 {
+                    continue;
+                }
+                if kzi == 0 && kyi == 0 && kxi <= 0 {
+                    continue; // also excludes k = (0,0,0)
                 }
 
-                // Reciprocal lattice vectors
-                let k_vec = reciprocal_vector(kx as i32, ky as i32, kz as i32, box_vecs, mesh_size)?;
+                let k_vec = reciprocal_vector(kxi, kyi, kzi, box_vecs, mesh_size)?;
 
                 let k_sq = k_vec[0] * k_vec[0] + k_vec[1] * k_vec[1] + k_vec[2] * k_vec[2];
                 if k_sq < 1e-10 {
                     continue;
                 }
 
-                // Structure factor from charge mesh (simplified: direct sum)
+                // Structure factor: compute_structure_factor returns |S(k)|²
                 let s_k = compute_structure_factor(charge_grid, mesh_size, &k_vec, box_vecs);
 
                 // Ewald kernel: exp(-k²/4α²) / k²
                 let kernel = (-k_sq / (4.0 * alpha * alpha)).exp() / k_sq;
 
-                energy += 2.0 * PI / volume * K_COULOMB * kernel * s_k * s_k;
+                // Factor 4π/V accounts for the 2× conjugate pair and the 2π/V prefactor
+                energy += 4.0 * PI / volume * K_COULOMB * kernel * s_k;
             }
         }
     }
@@ -464,5 +477,33 @@ mod tests {
             energy >= 0.0,
             "reciprocal energy must be >= 0, got {energy}"
         );
+    }
+
+    #[test]
+    fn test_reciprocal_energy_scales_as_charge_squared() {
+        // The reciprocal-space energy must scale as q².
+        // If it scaled as q⁴ (double-squaring bug), doubling q would give 16× not 4×.
+        use crate::{BoxVectors, PmeConfig};
+        let box_vecs = BoxVectors::cubic(10.0);
+        let config = PmeConfig {
+            alpha: 0.3,
+            kmax: [3, 3, 3],
+            mesh: [8, 8, 8],
+            spline_order: 4,
+            ..PmeConfig::default()
+        };
+        let coords = vec![[2.0, 2.0, 2.0], [6.0, 6.0, 6.0]];
+        let charges1 = vec![1.0_f64, -1.0_f64];
+        let charges2 = vec![2.0_f64, -2.0_f64]; // 2× charges
+        let e1 = reciprocal_space_energy(&coords, &charges1, &box_vecs, &config).unwrap();
+        let e2 = reciprocal_space_energy(&coords, &charges2, &box_vecs, &config).unwrap();
+        // e2 / e1 should be 4.0 (q²), not 16.0 (q⁴)
+        if e1.abs() > 1e-30 {
+            let ratio = e2 / e1;
+            assert!(
+                (ratio - 4.0).abs() < 1e-6,
+                "energy should scale as q²: ratio = {ratio} (expected 4.0)"
+            );
+        }
     }
 }

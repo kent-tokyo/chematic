@@ -131,34 +131,49 @@ fn is_valid_element(s: &str) -> bool {
     )
 }
 
+/// Maximum atom repeat count accepted from a digit token.
+const MAX_REPEAT: u32 = 999;
+
 /// Substitute known functional groups (COOH → C(=O)O, etc.).
 fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedError> {
     let mut smiles = String::new();
+    // Length (in bytes) of the last single heavy-atom symbol written to `smiles`.
+    // Used by the Digit arm to repeat multi-char atoms (Cl, Br, Si…) correctly.
+    let mut last_atom_len: usize = 0;
     let mut i = 0;
 
     while i < tokens.len() {
         match &tokens[i] {
             Token::Paren(c) => {
                 smiles.push(*c);
+                last_atom_len = 0; // parens break repeat context
                 i += 1;
             }
             Token::Digit(n) => {
-                // Repeat the previous heavy atom n times (replacing the one already written).
-                if smiles.is_empty() {
+                if *n > MAX_REPEAT {
+                    return Err(CondensedError::ParseError(format!(
+                        "repeat count {n} exceeds maximum {MAX_REPEAT}"
+                    )));
+                }
+                if last_atom_len == 0 || smiles.len() < last_atom_len {
                     return Err(CondensedError::ParseError(
                         "digit without preceding atom".into(),
                     ));
                 }
-                let last_char = smiles.pop().unwrap();
+                // Pop the one copy already written, then push n copies.
+                let atom_str = smiles[smiles.len() - last_atom_len..].to_owned();
+                smiles.truncate(smiles.len() - last_atom_len);
                 for _ in 0..*n {
-                    smiles.push(last_char);
+                    smiles.push_str(&atom_str);
                 }
+                last_atom_len = 0;
                 i += 1;
             }
             Token::Atom(a) if a == "H" => {
                 // In condensed notation H is always implicit — skip the H symbol.
                 // A following digit is an H-count annotation (e.g. CH3 = C with 3 implicit H),
                 // not a repeat count, so consume it too.
+                last_atom_len = 0;
                 i += 1;
                 if i < tokens.len() {
                     if let Token::Digit(_) = &tokens[i] {
@@ -175,6 +190,7 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
                         let key = format!("{}{}{}{}", a, b, c, d);
                         if let Some(replacement) = functional_groups(&key) {
                             smiles.push_str(replacement);
+                            last_atom_len = 0; // multi-atom groups can't be simply repeated
                             i += 4;
                             continue;
                         }
@@ -189,6 +205,7 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
                         let key = format!("{}{}{}", a, b, c);
                         if let Some(replacement) = functional_groups(&key) {
                             smiles.push_str(replacement);
+                            last_atom_len = 0;
                             i += 3;
                             continue;
                         }
@@ -201,6 +218,7 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
                         let key = format!("{}{}", a, b);
                         if let Some(replacement) = functional_groups(&key) {
                             smiles.push_str(replacement);
+                            last_atom_len = 0;
                             i += 2;
                             continue;
                         }
@@ -208,7 +226,9 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
                 }
 
                 // No functional group match — add the heavy atom (H is implicit in SMILES).
+                let before = smiles.len();
                 atom_to_smiles(&mut smiles, a)?;
+                last_atom_len = smiles.len() - before; // track byte length for repeat
                 i += 1;
             }
         }
@@ -307,6 +327,27 @@ mod tests {
         let mol = parse_condensed("CH3COOH").expect("acetic acid");
         // CH3 (methyl) + COOH (carboxyl) → C, C, O, O = 4 heavy atoms
         assert_eq!(mol.atom_count(), 4, "acetic acid: C,C,O,O");
+    }
+
+    #[test]
+    fn test_multi_char_atom_repeat_cl2() {
+        // Cl2 — digit repeat must pop the full "Cl" symbol, not just 'l'
+        let mol = parse_condensed("Cl2").expect("dichlorine");
+        assert_eq!(mol.atom_count(), 2, "Cl2: two Cl atoms");
+    }
+
+    #[test]
+    fn test_multi_char_atom_repeat_br2() {
+        let mol = parse_condensed("Br2").expect("dibromine");
+        assert_eq!(mol.atom_count(), 2, "Br2: two Br atoms");
+    }
+
+    #[test]
+    fn test_digit_repeat_cap_rejects_large_count() {
+        // A very large repeat count must return an error, not OOM.
+        let result = parse_condensed("C9999999");
+        // parse::<u32> on "9999999" succeeds (< u32::MAX) but > MAX_REPEAT
+        assert!(result.is_err(), "huge repeat count should be rejected");
     }
 
     #[test]

@@ -215,6 +215,9 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
                 .get("Element")
                 .and_then(|s| s.trim().parse().ok())
                 .unwrap_or(6);
+            if element_num > 255 {
+                return Err(CdxmlError::UnknownAtomicNumber(element_num));
+            }
             let element = Element::from_atomic_number(element_num as u8)
                 .ok_or(CdxmlError::UnknownAtomicNumber(element_num))?;
             let charge = attrs
@@ -412,6 +415,20 @@ mod tests {
         assert!(
             matches!(result, Err(CdxmlError::UnknownAtomicNumber(_))),
             "unknown atomic number should return Err"
+        );
+    }
+
+    #[test]
+    fn parse_cdxml_element_above_255_is_rejected() {
+        // Element=300 would silently truncate to 44 (Ru) via u32 as u8.
+        // Must be caught as UnknownAtomicNumber before the cast.
+        let cdxml = r#"<CDXML><fragment>
+<n id="1" Element="300" p="0 0"/>
+</fragment></CDXML>"#;
+        let result = parse_cdxml(cdxml);
+        assert!(
+            matches!(result, Err(CdxmlError::UnknownAtomicNumber(300))),
+            "Element=300 must return UnknownAtomicNumber(300)"
         );
     }
 

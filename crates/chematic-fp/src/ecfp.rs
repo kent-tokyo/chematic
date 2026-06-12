@@ -101,7 +101,7 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
 
         // Shift formal charge by 8 so that charges in [-8, +7] map to bytes [0, 15].
         // i16 arithmetic avoids overflow on extreme charges.
-        let charge_adjusted = (atom.charge as i16 + 8) as u8;
+        let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
         let base_bytes = [
             atom.element.atomic_number(),
             mol.neighbors(idx).count() as u8,
@@ -197,7 +197,7 @@ pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMa
         .map(|i| {
             let idx = AtomIdx(i as u32);
             let atom = mol.atom(idx);
-            let charge_adjusted = (atom.charge as i16 + 8) as u8;
+            let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
             fnv1a(&[
                 atom.element.atomic_number(),
                 mol.neighbors(idx).count() as u8,

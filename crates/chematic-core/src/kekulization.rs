@@ -502,7 +502,7 @@ mod tests {
             }
         }
         // Ring D (5-ring): 9-8-14-15-13-9
-        for (x,y) in [(8,14),(14,15),(15,13)] {
+        for (x,y) in [(8,14),(14,15),(15,13),(13,9)] {
             if mol_has_no_bond_yet(&b, a[x], a[y]) {
                 b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
             }

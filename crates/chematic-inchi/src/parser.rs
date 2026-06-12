@@ -246,108 +246,91 @@ fn parse_formula(formula_str: &str) -> Result<Vec<(Element, usize)>, InchiParseE
 }
 
 /// Parse connectivity layer: build bonds from InChI connection table format.
-/// E.g., "1-2-3-4-5-6-1" (benzene ring)
+/// E.g., "1-2-3-4-5-6-1" (benzene ring), "1-4(2)3" (isobutane branch)
 fn parse_connectivity(
     conn_str: &str,
     atom_idx_map: &HashMap<usize, AtomIdx>,
     builder: &mut MoleculeBuilder,
 ) -> Result<(), InchiParseError> {
-    // Simple parser: split by hyphens and parse groups
-    // Format: atom1-atom2,bond_type;atom1-atom3,bond_type;...
-    // Single bond is default (no explicit type)
-
-    let mut current_atom = 1;
+    // Format: atom1-atom2-atom3 for chains; (…) for branches.
+    // `(` saves current_atom on a stack; `)` restores it (bonds after the
+    // branch continue from the atom that opened the branch).
+    let mut current_atom: usize = 1;
+    let mut branch_stack: Vec<usize> = Vec::new();
     let mut chars = conn_str.chars().peekable();
 
+    // Helper: read a run of ASCII digits from `chars` as usize.
+    // Returns None if no digits are available.
+    fn read_num<I: Iterator<Item = char>>(chars: &mut std::iter::Peekable<I>) -> Option<usize> {
+        let mut s = String::new();
+        while chars.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+            s.push(chars.next().unwrap());
+        }
+        s.parse().ok()
+    }
+
+    // Consume the optional leading atom number that starts the connectivity string.
+    if let Some(n) = read_num(&mut chars) {
+        current_atom = n;
+    }
+
     while let Some(ch) = chars.next() {
-        if ch == '-' {
-            // Single bond to next atom
-            let mut next_atom_str = String::new();
-            while let Some(&next_ch) = chars.peek() {
-                if next_ch.is_numeric() {
-                    next_atom_str.push(chars.next().unwrap());
-                } else if next_ch == '='
-                    || next_ch == '#'
-                    || next_ch == '-'
-                    || next_ch == ','
-                    || next_ch == ';'
-                {
-                    break;
-                } else {
-                    chars.next(); // Skip unknown chars
-                    break;
+        match ch {
+            '-' | '=' | '#' => {
+                let order = match ch {
+                    '=' => BondOrder::Double,
+                    '#' => BondOrder::Triple,
+                    _ => BondOrder::Single,
+                };
+                if let Some(next_atom) = read_num(&mut chars) {
+                    if let (Some(&a_idx), Some(&b_idx)) = (
+                        atom_idx_map.get(&current_atom),
+                        atom_idx_map.get(&next_atom),
+                    ) {
+                        let _ = builder.add_bond(a_idx, b_idx, order);
+                        current_atom = next_atom;
+                    } else {
+                        return Err(InchiParseError::InvalidConnectivity);
+                    }
                 }
             }
-
-            if let Ok(next_atom) = next_atom_str.parse::<usize>() {
-                if let (Some(&a_idx), Some(&b_idx)) = (
-                    atom_idx_map.get(&current_atom),
-                    atom_idx_map.get(&next_atom),
-                ) {
-                    let _ = builder.add_bond(a_idx, b_idx, BondOrder::Single);
-                    current_atom = next_atom;
-                } else {
-                    return Err(InchiParseError::InvalidConnectivity);
+            ',' | ';' => {
+                // Reset current atom to the next number in the string.
+                if let Some(n) = read_num(&mut chars) {
+                    current_atom = n;
                 }
             }
-        } else if ch == '=' {
-            // Double bond
-            let mut next_atom_str = String::new();
-            while let Some(&next_ch) = chars.peek() {
-                if next_ch.is_numeric() {
-                    next_atom_str.push(chars.next().unwrap());
-                } else {
-                    break;
+            '(' => {
+                // Branch start: save the atom we'll return to after ')'.
+                branch_stack.push(current_atom);
+            }
+            ')' => {
+                // Branch end: restore the atom from before the branch.
+                if let Some(saved) = branch_stack.pop() {
+                    current_atom = saved;
                 }
             }
-
-            if let Ok(next_atom) = next_atom_str.parse::<usize>() {
-                if let (Some(&a_idx), Some(&b_idx)) = (
-                    atom_idx_map.get(&current_atom),
-                    atom_idx_map.get(&next_atom),
-                ) {
-                    let _ = builder.add_bond(a_idx, b_idx, BondOrder::Double);
-                    current_atom = next_atom;
-                } else {
-                    return Err(InchiParseError::InvalidConnectivity);
+            c if c.is_ascii_digit() => {
+                // Bare digit inside or after a branch: implicit single bond
+                // from current_atom to this atom (e.g., the "2" in "1-4(2)3"
+                // or the "3" after the closing paren).
+                let mut s = String::from(c);
+                while chars.peek().map(|ch| ch.is_ascii_digit()).unwrap_or(false) {
+                    s.push(chars.next().unwrap());
+                }
+                if let Ok(next_atom) = s.parse::<usize>() {
+                    if let (Some(&a_idx), Some(&b_idx)) = (
+                        atom_idx_map.get(&current_atom),
+                        atom_idx_map.get(&next_atom),
+                    ) {
+                        let _ = builder.add_bond(a_idx, b_idx, BondOrder::Single);
+                        current_atom = next_atom;
+                    } else {
+                        return Err(InchiParseError::InvalidConnectivity);
+                    }
                 }
             }
-        } else if ch == '#' {
-            // Triple bond
-            let mut next_atom_str = String::new();
-            while let Some(&next_ch) = chars.peek() {
-                if next_ch.is_numeric() {
-                    next_atom_str.push(chars.next().unwrap());
-                } else {
-                    break;
-                }
-            }
-
-            if let Ok(next_atom) = next_atom_str.parse::<usize>() {
-                if let (Some(&a_idx), Some(&b_idx)) = (
-                    atom_idx_map.get(&current_atom),
-                    atom_idx_map.get(&next_atom),
-                ) {
-                    let _ = builder.add_bond(a_idx, b_idx, BondOrder::Triple);
-                    current_atom = next_atom;
-                } else {
-                    return Err(InchiParseError::InvalidConnectivity);
-                }
-            }
-        } else if ch == ',' || ch == ';' {
-            // Group separator (bonds to different atom)
-            // Reset current atom; next number will be starting point
-            let mut next_atom_str = String::new();
-            while let Some(&next_ch) = chars.peek() {
-                if next_ch.is_numeric() {
-                    next_atom_str.push(chars.next().unwrap());
-                } else {
-                    break;
-                }
-            }
-            if let Ok(atom) = next_atom_str.parse::<usize>() {
-                current_atom = atom;
-            }
+            _ => {} // skip unknown characters
         }
     }
 
@@ -1227,5 +1210,57 @@ mod tests {
             .atoms()
             .any(|(_, atom)| atom.cip_code == Some(CipCode::E));
         assert!(found_e, "apply_ez_stereo should assign E cip_code");
+    }
+
+    // B-tier: InChI /c layer branch-bond parsing
+
+    #[test]
+    fn test_parse_connectivity_branch_isobutane() {
+        // Isobutane /c layer: "1-4(2)3"
+        // Bonds: 1-4, 4-2, 4-3  (atom 4 is the branch point)
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+        use crate::parser::parse_inchi;
+
+        // Build the atom_idx_map manually and call parse_connectivity
+        use std::collections::HashMap;
+        use chematic_core::AtomIdx;
+
+        let mut builder = MoleculeBuilder::new();
+        let a1 = builder.add_atom(Atom::new(Element::C));
+        let a2 = builder.add_atom(Atom::new(Element::C));
+        let a3 = builder.add_atom(Atom::new(Element::C));
+        let a4 = builder.add_atom(Atom::new(Element::C));
+        let mut map: HashMap<usize, AtomIdx> = HashMap::new();
+        map.insert(1, a1);
+        map.insert(2, a2);
+        map.insert(3, a3);
+        map.insert(4, a4);
+
+        super::parse_connectivity("1-4(2)3", &map, &mut builder).expect("isobutane /c parse");
+        let mol = builder.build();
+        // atom 4 must be connected to atoms 1, 2, and 3 (3 bonds to the central C)
+        assert_eq!(
+            mol.bond_count(),
+            3,
+            "isobutane /c should yield 3 bonds, got {}",
+            mol.bond_count()
+        );
+    }
+
+    #[test]
+    fn test_parse_connectivity_nested_branch() {
+        // Neopentane-like: "1-5(2)(3)4"  (atom 5 has 4 branches: 1,2,3,4)
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+        use std::collections::HashMap;
+        use chematic_core::AtomIdx;
+
+        let mut builder = MoleculeBuilder::new();
+        let atoms: Vec<AtomIdx> = (0..5).map(|_| builder.add_atom(Atom::new(Element::C))).collect();
+        let mut map: HashMap<usize, AtomIdx> = HashMap::new();
+        for (i, &a) in atoms.iter().enumerate() { map.insert(i + 1, a); }
+
+        super::parse_connectivity("1-5(2)(3)4", &map, &mut builder).expect("neopentane /c parse");
+        let mol = builder.build();
+        assert_eq!(mol.bond_count(), 4, "neopentane /c should yield 4 bonds");
     }
 }

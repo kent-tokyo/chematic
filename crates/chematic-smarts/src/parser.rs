@@ -895,7 +895,7 @@ impl<'a> Parser<'a> {
             self.advance();
             val = val * 10 + (d - b'0') as u16;
         }
-        Some(val as u8)
+        if val > 255 { None } else { Some(val as u8) }
     }
 
     /// Parse a single ASCII digit, if present. Returns the digit value 0–9.
