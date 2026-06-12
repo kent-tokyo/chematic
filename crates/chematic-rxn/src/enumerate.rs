@@ -63,11 +63,10 @@ pub fn enumerate_library(
         .map(|set| set.len())
         .product();
 
-    if let Some(max) = config.max_size {
-        if total_combos > max {
+    if let Some(max) = config.max_size
+        && total_combos > max {
             return Err(LibraryError::EnumerationTooLarge(total_combos, max));
         }
-    }
 
     let mut products: Vec<Molecule> = Vec::new();
     let mut indices = vec![0usize; fragment_sets.len()];
@@ -97,11 +96,10 @@ pub fn enumerate_library(
 
         iteration += 1;
         // Check product count (actual size, not just iteration count)
-        if let Some(max) = config.max_size {
-            if products.len() >= max {
+        if let Some(max) = config.max_size
+            && products.len() >= max {
                 return Err(LibraryError::EnumerationLimitExceeded);
             }
-        }
 
         // Increment indices (counter-like behavior)
         let mut carry = 1usize;

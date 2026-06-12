@@ -67,7 +67,7 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
     }
 
     // Parse formula layer (first part, no prefix)
-    let element_counts = parse_formula(&parts[0])?;
+    let element_counts = parse_formula(parts[0])?;
 
     // Initialize builder
     let mut builder = MoleculeBuilder::new();
@@ -98,7 +98,7 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
     }
 
     if !connectivity_str.is_empty() {
-        parse_connectivity(&connectivity_str, &atom_idx_map, &mut builder)?;
+        parse_connectivity(connectivity_str, &atom_idx_map, &mut builder)?;
     }
 
     // Parse hydrogen layer (/h...) to get hydrogen counts

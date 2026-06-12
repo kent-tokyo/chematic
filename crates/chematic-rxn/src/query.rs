@@ -68,7 +68,7 @@ impl ReactantMatches {
     pub fn pattern_matched(&self, pattern_index: usize) -> bool {
         self.pattern_matches
             .get(pattern_index)
-            .map_or(false, |matches| !matches.is_empty())
+            .is_some_and(|matches| !matches.is_empty())
     }
 }
 
@@ -89,7 +89,7 @@ impl ProductMatches {
     pub fn pattern_matched(&self, pattern_index: usize) -> bool {
         self.pattern_matches
             .get(pattern_index)
-            .map_or(false, |matches| !matches.is_empty())
+            .is_some_and(|matches| !matches.is_empty())
     }
 }
 
@@ -489,11 +489,10 @@ fn extract_map_numbers_from_section(smarts: &str) -> Vec<u16> {
                 j += 1;
             }
 
-            if !num_str.is_empty() {
-                if let Ok(num) = num_str.parse::<u16>() {
+            if !num_str.is_empty()
+                && let Ok(num) = num_str.parse::<u16>() {
                     map_numbers.push(num);
                 }
-            }
         }
     }
 
@@ -1095,13 +1094,13 @@ mod tests {
         let reactant_matches = &matches.reactant_matches.pattern_matches[0];
         assert_eq!(reactant_matches.len(), 1);
         assert_eq!(reactant_matches[0].molecule_index, 0);
-        assert!(reactant_matches[0].atom_indices.len() >= 1); // At least one carbon matched
+        assert!(!reactant_matches[0].atom_indices.is_empty()); // At least one carbon matched
 
         // Product carbon pattern matches
         let product_matches = &matches.product_matches.pattern_matches[0];
         assert_eq!(product_matches.len(), 1);
         assert_eq!(product_matches[0].molecule_index, 0);
-        assert!(product_matches[0].atom_indices.len() >= 1); // At least one carbon matched
+        assert!(!product_matches[0].atom_indices.is_empty()); // At least one carbon matched
     }
 
     #[test]
@@ -1184,11 +1183,11 @@ mod tests {
 
         // Reactant has one molecule matching the pattern
         assert_eq!(matches.reactant_matches.pattern_matches[0].len(), 1);
-        assert!(matches.reactant_matches.pattern_matches[0][0].atom_indices.len() >= 1);
+        assert!(!matches.reactant_matches.pattern_matches[0][0].atom_indices.is_empty());
 
         // Product has one molecule matching the pattern
         assert_eq!(matches.product_matches.pattern_matches[0].len(), 1);
-        assert!(matches.product_matches.pattern_matches[0][0].atom_indices.len() >= 1);
+        assert!(!matches.product_matches.pattern_matches[0][0].atom_indices.is_empty());
     }
 
     // ===== Phase 3: RDKit Compatibility Tooling =====
@@ -1383,7 +1382,7 @@ mod tests {
 
         let batch = result.unwrap();
         assert_eq!(batch.total_reactions, 1);
-        assert!(batch.matching_reactions >= 0);
+        assert!(batch.matching_reactions > 0);
     }
 
     #[test]
@@ -1507,7 +1506,7 @@ mod tests {
 
         let match_result = result.unwrap();
         // Check that it produced a valid result structure
-        assert!(match_result.reactant_matches.pattern_matches.len() >= 0);
+        assert!(!match_result.reactant_matches.pattern_matches.is_empty());
     }
 
     #[test]

@@ -422,7 +422,7 @@ mod tests {
         let mut grid = vec![0.0f64; 16 * 16 * 16];
         let coords = vec![[2.5, 5.0, 7.5], [1.0, 1.0, 1.0]];
         let charges = vec![1.5, -0.7];
-        interpolate_charges_to_mesh(&coords, &charges, &box_vecs, &mut grid, &mesh_size, 4);
+        let _ = interpolate_charges_to_mesh(&coords, &charges, &box_vecs, &mut grid, &mesh_size, 4);
         let grid_total: f64 = grid.iter().sum();
         let charge_total: f64 = charges.iter().sum();
         assert!(
@@ -440,7 +440,7 @@ mod tests {
         let mut grid = vec![0.0f64; 8 * 12 * 16];
         let coords = vec![[3.0, 5.0, 8.0]];
         let charges = vec![2.0];
-        interpolate_charges_to_mesh(&coords, &charges, &box_vecs, &mut grid, &mesh_size, 4);
+        let _ = interpolate_charges_to_mesh(&coords, &charges, &box_vecs, &mut grid, &mesh_size, 4);
         let grid_total: f64 = grid.iter().sum();
         assert!((grid_total - 2.0).abs() < 1e-10, "grid_sum={grid_total}");
     }

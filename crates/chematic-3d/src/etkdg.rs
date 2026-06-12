@@ -95,7 +95,7 @@ fn apply_torsion_preferences(mol: &Molecule, coords: &mut Coords3D) {
 
                     // Get torsion preference from knowledge base
                     let preference = get_torsion_preference(mol, a_idx, b_idx, c_idx, d_idx)
-                        .unwrap_or_else(|| default_torsion_preference());
+                        .unwrap_or_else(default_torsion_preference);
 
                     let target_deg = preference.angle_deg;
 
@@ -103,7 +103,7 @@ fn apply_torsion_preferences(mol: &Molecule, coords: &mut Coords3D) {
                     if (current_deg - target_deg).abs() > 20.0 {
                         let target_rad = target_deg * std::f64::consts::PI / 180.0;
                         *coords = super::mol_transforms::set_dihedral(
-                            &coords,
+                            coords,
                             mol,
                             a_idx,
                             b_idx,

@@ -205,6 +205,6 @@ mod tests {
         let fp1 = layered_fp(&mol1);
         let fp2 = layered_fp(&mol2);
         let sim = tanimoto_layered(&fp1, &fp2);
-        assert!(sim >= 0.0 && sim <= 1.0, "tanimoto must be between 0 and 1, got {}", sim);
+        assert!((0.0..=1.0).contains(&sim), "tanimoto must be between 0 and 1, got {}", sim);
     }
 }

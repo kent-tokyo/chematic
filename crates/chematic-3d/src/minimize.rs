@@ -20,20 +20,17 @@ use crate::coords::{Coords3D, Point3};
 
 /// Force field selection for minimization.
 #[derive(Debug, Clone, Copy)]
+#[derive(Default)]
 pub enum ForceField {
     /// UFF-derived force field (default, fast).
     UFF,
     /// DREIDING force field.
+    #[default]
     DREIDING,
     /// MMFF94 force field (Merck Molecular Force Field 94, industry standard).
     MMFF94,
 }
 
-impl Default for ForceField {
-    fn default() -> Self {
-        Self::DREIDING
-    }
-}
 
 /// Configuration for the minimization algorithm.
 pub struct MinimizeConfig {
@@ -776,10 +773,7 @@ fn total_energy_mmff94(
     let vdw_e = vdw_energy_mmff94(mol, coords, mmff94_types);
 
     // Add electrostatic energy using 3D-based charges (B5 Phase 2)
-    let elec_e = match electrostatic_energy_mmff94(mol, coords, mmff94_types) {
-        Ok(e) => e,
-        Err(_) => 0.0, // Fall back to no electrostatic if charge calculation fails
-    };
+    let elec_e = electrostatic_energy_mmff94(mol, coords, mmff94_types).unwrap_or(0.0);
 
     bond_e + angle_e + vdw_e + elec_e
 }
@@ -918,7 +912,7 @@ fn vdw_energy_mmff94(
 fn electrostatic_energy_mmff94(
     mol: &Molecule,
     coords: &Coords3D,
-    mmff94_types: &[chematic_ff::MMFF94Type],
+    _mmff94_types: &[chematic_ff::MMFF94Type],
 ) -> Result<f64, String> {
     // Convert coordinates to tuple format for charge calculation
     let coord_tuples: Vec<(f64, f64, f64)> = (0..mol.atom_count())
