@@ -1,4 +1,4 @@
-//! Stereochemistry assignment from 2D coordinates and wedge bonds.
+//! v0.1.93: Stereochemistry assignment from 2D coordinates with full CIP prioritization.
 //!
 //! [`assign_stereo_from_2d`] infers R/S tetrahedral stereo descriptors by
 //! combining the 2D layout positions of substituents with the wedge-bond
@@ -11,12 +11,13 @@
 //! - `BondOrder::Down` (dashed wedge): the far atom is behind the plane (z < 0).
 //! - All other bonds: both endpoints are coplanar (z = 0).
 //!
-//! Priority is determined with the same simplified 1-sphere CIP rule used by
-//! `chematic-3d`'s `assign_stereo_from_3d`.
+//! Priority is determined using full multi-sphere BFS CIP rules (v0.1.93+),
+//! superseding the simplified 1-sphere approach from v0.1.92.
 
 use std::cmp::Ordering;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Molecule};
+use crate::cip_priority;
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -191,8 +192,10 @@ fn highest_ez_priority(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx]) -> Opt
         return Some(subs[0]);
     }
     let mut sorted = subs.to_vec();
-    sorted.sort_by(|&a, &b| cmp_priority(mol, center, a, b).reverse());
-    if cmp_priority(mol, center, sorted[0], sorted[1]) == Ordering::Equal {
+    sorted.sort_by(|&a, &b| {
+        cip_priority::compare_branches(mol, center, a, b).reverse()
+    });
+    if cip_priority::compare_branches(mol, center, sorted[0], sorted[1]) == Ordering::Equal {
         return None; // tied top priorities → E/Z not determinable
     }
     Some(sorted[0])
@@ -288,46 +291,17 @@ fn wedge_z(mol: &Molecule, center: AtomIdx, neighbor: AtomIdx) -> f64 {
     0.0
 }
 
-// ---------------------------------------------------------------------------
-// CIP priority helpers (same logic as stereo3d.rs)
-// ---------------------------------------------------------------------------
-
-fn priority_key(mol: &Molecule, center: AtomIdx, sub: AtomIdx) -> (u8, Vec<u8>) {
-    let an = mol.atom(sub).element.atomic_number();
-    let mut nbs: Vec<u8> = mol
-        .neighbors(sub)
-        .filter(|(nb, _)| *nb != center)
-        .map(|(nb, _)| mol.atom(nb).element.atomic_number())
-        .collect();
-    nbs.sort_unstable_by(|a, b| b.cmp(a));
-    (an, nbs)
-}
-
-fn cmp_priority(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> Ordering {
-    let ka = priority_key(mol, center, a);
-    let kb = priority_key(mol, center, b);
-    match ka.0.cmp(&kb.0) {
-        Ordering::Equal => {
-            let max_len = ka.1.len().max(kb.1.len());
-            for i in 0..max_len {
-                let va = ka.1.get(i).copied().unwrap_or(0);
-                let vb = kb.1.get(i).copied().unwrap_or(0);
-                match va.cmp(&vb) {
-                    Ordering::Equal => {}
-                    other => return other,
-                }
-            }
-            Ordering::Equal
-        }
-        other => other,
-    }
-}
+// Note: 1-sphere CIP helpers removed in v0.1.93; now using cip_priority module
 
 fn rank4(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx; 4]) -> Option<[u8; 4]> {
     let mut order: [usize; 4] = [0, 1, 2, 3];
-    order.sort_by(|&i, &j| cmp_priority(mol, center, subs[i], subs[j]).reverse());
+    order.sort_by(|&i, &j| {
+        cip_priority::compare_branches(mol, center, subs[i], subs[j]).reverse()
+    });
     for k in 0..3 {
-        if cmp_priority(mol, center, subs[order[k]], subs[order[k + 1]]) == Ordering::Equal {
+        if cip_priority::compare_branches(mol, center, subs[order[k]], subs[order[k + 1]])
+            == Ordering::Equal
+        {
             return None;
         }
     }

@@ -1,18 +1,16 @@
-//! Stereochemistry assignment from 3D coordinates.
+//! v0.1.93: Stereochemistry assignment from 3D coordinates with full CIP prioritization.
 //!
 //! [`assign_stereo_from_3d`] determines R/S (tetrahedral) and E/Z (alkene)
 //! stereo descriptors from 3D atom positions, without relying on SMILES
 //! wedge/dash bond annotations.
 //!
-//! **Priority rule**: uses a simplified CIP priority based on atomic number
-//! (primary) and sorted neighbor atomic numbers (secondary, one sphere).
-//! Handles the majority of drug-like stereocenters.  Stereocenters where
-//! full multi-sphere CIP tree expansion is required to break ties are
-//! returned without an assignment.
+//! **Priority rule**: v0.1.93+ uses full multi-sphere BFS CIP priority rules,
+//! superseding the simplified 1-sphere approach from prior versions.
 
 use std::cmp::Ordering;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Molecule};
+use chematic_perception::cip_priority;
 
 use crate::coords::{Coords3D, Point3};
 
@@ -36,55 +34,22 @@ impl StereoAssignment3D {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Priority helpers (simplified 1-sphere CIP)
-// ---------------------------------------------------------------------------
-
-/// Atom priority key: (atomic_number, sorted_neighbor_atomic_numbers).
-/// Higher → higher CIP priority.  Returns a comparable key.
-fn priority_key(mol: &Molecule, center: AtomIdx, sub: AtomIdx) -> (u8, Vec<u8>) {
-    let an = mol.atom(sub).element.atomic_number();
-    let mut nbs: Vec<u8> = mol
-        .neighbors(sub)
-        .filter(|(nb, _)| *nb != center)
-        .map(|(nb, _)| mol.atom(nb).element.atomic_number())
-        .collect();
-    nbs.sort_unstable_by(|a, b| b.cmp(a)); // descending
-    (an, nbs)
-}
-
-/// Compare two substituents by simplified CIP priority (higher = Greater).
-fn cmp_priority(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> Ordering {
-    let ka = priority_key(mol, center, a);
-    let kb = priority_key(mol, center, b);
-    // Compare primary: atomic number.
-    match ka.0.cmp(&kb.0) {
-        Ordering::Equal => {
-            // Compare secondary: sorted neighbor list lexicographically.
-            let max_len = ka.1.len().max(kb.1.len());
-            for i in 0..max_len {
-                let va = ka.1.get(i).copied().unwrap_or(0);
-                let vb = kb.1.get(i).copied().unwrap_or(0);
-                match va.cmp(&vb) {
-                    Ordering::Equal => {}
-                    other => return other,
-                }
-            }
-            Ordering::Equal
-        }
-        other => other,
-    }
-}
+// Note: priority helpers moved to chematic_perception::cip_priority (v0.1.93+)
 
 /// Rank 4 substituents by priority (rank 1 = lowest, rank 4 = highest).
 /// Returns `None` if any two substituents are tied (ambiguous).
+/// Uses full multi-sphere BFS CIP from chematic_perception.
 fn rank4(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx; 4]) -> Option<[u8; 4]> {
     let mut order: [usize; 4] = [0, 1, 2, 3];
-    order.sort_by(|&i, &j| cmp_priority(mol, center, subs[i], subs[j]).reverse());
+    order.sort_by(|&i, &j| {
+        cip_priority::compare_branches(mol, center, subs[i], subs[j]).reverse()
+    });
 
     // Check for ties.
     for k in 0..3 {
-        if cmp_priority(mol, center, subs[order[k]], subs[order[k + 1]]) == Ordering::Equal {
+        if cip_priority::compare_branches(mol, center, subs[order[k]], subs[order[k + 1]])
+            == Ordering::Equal
+        {
             return None;
         }
     }
@@ -210,19 +175,23 @@ fn assign_ez(mol: &Molecule, coords: &Coords3D, bond_idx: BondIdx) -> Option<(At
         return None; // terminal alkene
     }
 
-    // Highest-priority substituent at each end (by simplified CIP).
+    // Highest-priority substituent at each end (by full multi-sphere CIP).
     let h1 = *subs_a1
         .iter()
-        .max_by(|&&a, &&b| cmp_priority(mol, a1, a, b))?;
+        .max_by(|&&a, &&b| cip_priority::compare_branches(mol, a1, a, b))?;
     let h2 = *subs_a2
         .iter()
-        .max_by(|&&a, &&b| cmp_priority(mol, a2, a, b))?;
+        .max_by(|&&a, &&b| cip_priority::compare_branches(mol, a2, a, b))?;
 
     // If either end has two equal-priority substituents, skip.
-    if subs_a1.len() == 2 && cmp_priority(mol, a1, subs_a1[0], subs_a1[1]) == Ordering::Equal {
+    if subs_a1.len() == 2
+        && cip_priority::compare_branches(mol, a1, subs_a1[0], subs_a1[1]) == Ordering::Equal
+    {
         return None;
     }
-    if subs_a2.len() == 2 && cmp_priority(mol, a2, subs_a2[0], subs_a2[1]) == Ordering::Equal {
+    if subs_a2.len() == 2
+        && cip_priority::compare_branches(mol, a2, subs_a2[0], subs_a2[1]) == Ordering::Equal
+    {
         return None;
     }
 
@@ -249,9 +218,8 @@ fn assign_ez(mol: &Molecule, coords: &Coords3D, bond_idx: BondIdx) -> Option<(At
 
 /// Assign R/S and E/Z stereochemistry from 3D coordinates.
 ///
-/// Uses a simplified 1-sphere CIP priority (atomic number + sorted neighbor
-/// atomic numbers).  Centers where priorities cannot be resolved by this rule
-/// are omitted from the result.
+/// Uses full multi-sphere BFS CIP priority rules (v0.1.93+).
+/// Centers where priorities cannot be resolved are omitted from the result.
 ///
 /// # Example
 /// ```rust,ignore

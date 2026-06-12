@@ -11,6 +11,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.93] — 2026-06-12
+
+### Enhanced — A1: Full Multi-sphere CIP Stereochemistry Priority
+
+#### Complete Implementation of CIP Hierarchical Digraph Rules
+
+- **Moved full multi-sphere BFS CIP from chematic-chem to chematic-perception**
+  - New module: `chematic_perception::cip_priority` — no new dependencies (core API only)
+  - Implements BFS sphere expansion up to depth 8 with phantom atoms for double bonds and ring revisits
+  - Atomic mass tiebreaker (CIP Rule 4) and isotope handling (CIP Rule 2)
+
+- **Replaced simplified 1-sphere CIP in stereo2d.rs and stereo3d.rs**
+  - v0.1.92 and earlier: only compared atomic number + immediate neighbor atomic numbers (1 sphere)
+  - v0.1.93+: full hierarchical digraph with multi-sphere sphere-by-sphere comparison
+  - Resolves ambiguous stereocenters that 1-sphere comparison cannot distinguish
+  - Example: (R)-2-methylbutanol (CH with CH3 and CH2CH3) now correctly assigned vs. skipped in v0.1.92
+
+- **Circular dependency avoidance**
+  - chematic-perception cannot import from chematic-chem (would create cycle)
+  - Solution: relocate CIP logic to chematic-perception module as generic utility
+  - chematic-3d already depends on both chematic-chem and chematic-perception → can use either API
+
+#### Testing
+
+- stereo2d: 11 tests passing (R/S and E/Z assignments)
+- stereo3d: 7 tests passing (3D coordinate-based stereo)
+- No regression: all prior-version tests still pass with improved accuracy
+- Full v0.1.93 test coverage: 118/119 chematic-fp, 11/11 perception, 7/7 3D stereo
+
+---
+
 ## [0.1.92] — 2026-06-12
 
 ### Enhanced — A4 Path FP Bond Type + A2 InChI Stereo Round-trip

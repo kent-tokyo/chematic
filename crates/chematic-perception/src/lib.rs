@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 pub mod aromaticity;
+pub mod cip_priority;
 pub mod pharmacophore;
 pub mod ring_family;
 pub mod sssr;
