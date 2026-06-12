@@ -15,7 +15,7 @@ use std::f64::consts::PI;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 
-use crate::coords::Coords3D;
+use crate::coords::{Coords3D, Point3};
 
 // ---------------------------------------------------------------------------
 // Bound matrix construction
@@ -173,22 +173,241 @@ fn vdw_radius(atomic_num: u8) -> f64 {
 // Eigenvalue decomposition & coordinate generation
 // ---------------------------------------------------------------------------
 
-/// Generate 3D coordinates via distance geometry.
+/// Generate 3D coordinates via distance geometry (ETDKG-style).
 ///
-/// Currently a placeholder that falls back to rule-based generation.
-/// Full implementation requires eigenvalue solver (eigenvalues/eigenvectors).
+/// Algorithm:
+/// 1. Build distance bounds from bond lengths and angles
+/// 2. Create target distance matrix (average of bounds)
+/// 3. Compute Gram matrix from distances
+/// 4. Eigenvalue decomposition via Jacobi method
+/// 5. Extract 3D coordinates from top 3 eigenvectors
+/// 6. Center molecule at origin
 pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
     let n = mol.atom_count();
-    let coords = Coords3D::new_zeroed(n);
 
     if n == 0 {
+        return Coords3D::new_zeroed(0);
+    }
+
+    if n == 1 {
+        let mut coords = Coords3D::new_zeroed(1);
+        coords.set(AtomIdx(0), Point3 { x: 0.0, y: 0.0, z: 0.0 });
         return coords;
     }
 
-    // For now, return zeroed coords with a note that full DG is not yet implemented.
-    // TODO: Implement eigenvalue decomposition to extract 3D coordinates from gram matrix.
+    // Step 1: Build bounds
+    let (lower, upper) = build_bound_matrix(mol);
+
+    // Step 2: Create target distance matrix (average of bounds)
+    let mut dist_matrix = vec![vec![0.0; n]; n];
+    for i in 0..n {
+        for j in 0..n {
+            if i == j {
+                dist_matrix[i][j] = 0.0;
+            } else {
+                dist_matrix[i][j] = (lower[i][j] + upper[i][j]) / 2.0;
+            }
+        }
+    }
+
+    // Step 3: Compute Gram matrix
+    let gram = distance_to_gram_matrix(&dist_matrix);
+
+    // Step 4: Eigenvalue decomposition (Jacobi method)
+    let (eigenvalues, eigenvectors) = jacobi_eigendecompose(&gram);
+
+    // Step 5: Extract 3D coordinates from top 3 positive eigenvectors
+    let mut coords = Coords3D::new_zeroed(n);
+
+    // Find indices of 3 largest positive eigenvalues
+    let mut eval_indices: Vec<usize> = (0..n).collect();
+    eval_indices.sort_by(|&a, &b| {
+        let av = eigenvalues[a].abs();
+        let bv = eigenvalues[b].abs();
+        // Handle NaN by treating it as zero
+        let av = if av.is_nan() { 0.0 } else { av };
+        let bv = if bv.is_nan() { 0.0 } else { bv };
+        bv.partial_cmp(&av).unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    // Use top 3 eigenvectors (or fewer if not enough positive eigenvalues)
+    let mut pos_count = 0;
+    let mut use_indices = Vec::new();
+    for &idx in &eval_indices {
+        if eigenvalues[idx] > 1e-10 && pos_count < 3 {
+            use_indices.push(idx);
+            pos_count += 1;
+        }
+    }
+
+    // If fewer than 3 positive eigenvalues, pad with smaller ones
+    for &idx in &eval_indices {
+        if use_indices.len() >= 3 {
+            break;
+        }
+        if !use_indices.contains(&idx) {
+            use_indices.push(idx);
+        }
+    }
+
+    // Set coordinates
+    for i in 0..n {
+        let mut x = 0.0;
+        let mut y = 0.0;
+        let mut z = 0.0;
+
+        if use_indices.len() > 0 {
+            x = (eigenvalues[use_indices[0]].abs().sqrt()) * eigenvectors[i][use_indices[0]];
+        }
+        if use_indices.len() > 1 {
+            y = (eigenvalues[use_indices[1]].abs().sqrt()) * eigenvectors[i][use_indices[1]];
+        }
+        if use_indices.len() > 2 {
+            z = (eigenvalues[use_indices[2]].abs().sqrt()) * eigenvectors[i][use_indices[2]];
+        }
+
+        coords.set(AtomIdx(i as u32), Point3 { x, y, z });
+    }
+
+    // Step 6: Center molecule
+    center_coordinates(&mut coords);
 
     coords
+}
+
+/// Convert distance matrix to Gram matrix.
+///
+/// Gram[i,j] = 0.5 * (D[0,i]² + D[0,j]² - D[i,j]²)
+/// where atom 0 is the reference point (origin).
+fn distance_to_gram_matrix(dist: &[Vec<f64>]) -> Vec<Vec<f64>> {
+    let n = dist.len();
+    let mut gram = vec![vec![0.0; n]; n];
+
+    for i in 0..n {
+        for j in 0..n {
+            gram[i][j] =
+                0.5 * (dist[0][i] * dist[0][i] + dist[0][j] * dist[0][j] - dist[i][j] * dist[i][j]);
+        }
+    }
+
+    gram
+}
+
+/// Jacobi eigendecomposition for symmetric matrices.
+///
+/// Returns (eigenvalues, eigenvectors) where eigenvectors[i][j] is the
+/// i-th component of the j-th eigenvector.
+fn jacobi_eigendecompose(mat: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>>) {
+    let n = mat.len();
+    let mut a = mat.to_vec();
+    let mut v = vec![vec![0.0; n]; n];
+
+    // Initialize eigenvector matrix to identity
+    for i in 0..n {
+        v[i][i] = 1.0;
+    }
+
+    let max_iterations = 100;
+    let tolerance = 1e-10;
+
+    for _iteration in 0..max_iterations {
+        // Find largest off-diagonal element
+        let mut max_val = 0.0;
+        let mut p = 0;
+        let mut q = 1;
+
+        for i in 0..n {
+            for j in (i + 1)..n {
+                if a[i][j].abs() > max_val {
+                    max_val = a[i][j].abs();
+                    p = i;
+                    q = j;
+                }
+            }
+        }
+
+        if max_val < tolerance {
+            break;
+        }
+
+        // Compute rotation angle
+        let apq = a[p][q];
+        let app = a[p][p];
+        let aqq = a[q][q];
+
+        let theta = 0.5 * (2.0 * apq / (aqq - app)).atan();
+        let c = theta.cos();
+        let s = theta.sin();
+
+        // Apply Givens rotation
+        for i in 0..n {
+            if i == p || i == q {
+                continue;
+            }
+
+            let aip = a[i][p];
+            let aiq = a[i][q];
+
+            a[i][p] = c * aip - s * aiq;
+            a[p][i] = a[i][p];
+            a[i][q] = s * aip + c * aiq;
+            a[q][i] = a[i][q];
+        }
+
+        // Update diagonal
+        a[p][p] = c * c * app - 2.0 * s * c * apq + s * s * aqq;
+        a[q][q] = s * s * app + 2.0 * s * c * apq + c * c * aqq;
+        a[p][q] = 0.0;
+        a[q][p] = 0.0;
+
+        // Update eigenvectors
+        for i in 0..n {
+            let vip = v[i][p];
+            let viq = v[i][q];
+            v[i][p] = c * vip - s * viq;
+            v[i][q] = s * vip + c * viq;
+        }
+    }
+
+    // Extract eigenvalues from diagonal
+    let mut eigenvalues = vec![0.0; n];
+    for i in 0..n {
+        eigenvalues[i] = a[i][i];
+    }
+
+    (eigenvalues, v)
+}
+
+/// Center coordinates at origin (centroid).
+fn center_coordinates(coords: &mut Coords3D) {
+    let n = coords.atom_count();
+    if n == 0 {
+        return;
+    }
+
+    let mut cx = 0.0;
+    let mut cy = 0.0;
+    let mut cz = 0.0;
+
+    for i in 0..n {
+        let p = coords.get(AtomIdx(i as u32));
+        cx += p.x;
+        cy += p.y;
+        cz += p.z;
+    }
+
+    cx /= n as f64;
+    cy /= n as f64;
+    cz /= n as f64;
+
+    for i in 0..n {
+        let p = coords.get(AtomIdx(i as u32));
+        coords.set(AtomIdx(i as u32), Point3 {
+            x: p.x - cx,
+            y: p.y - cy,
+            z: p.z - cz,
+        });
+    }
 }
 
 #[cfg(test)]
@@ -225,6 +444,156 @@ mod tests {
     fn test_ideal_bond_angle_sp2() {
         let angle = ideal_bond_angle_test(true);
         assert!((angle - 2.0 * PI / 3.0).abs() < 0.01); // 120°
+    }
+
+    #[test]
+    fn test_generate_coords_dg_ethane() {
+        let mol = parse("CC").unwrap();
+        let coords = generate_coords_dg(&mol);
+
+        assert_eq!(coords.atom_count(), 2);
+
+        let p0 = coords.get(AtomIdx(0));
+        let p1 = coords.get(AtomIdx(1));
+
+        // Should have non-zero distance
+        let dist = p0.distance(&p1);
+        assert!(dist > 1.4 && dist < 1.7, "C-C bond distance: {}", dist);
+    }
+
+    #[test]
+    fn test_generate_coords_dg_finite() {
+        let mol = parse("c1ccc(C)cc1").unwrap();
+        let coords = generate_coords_dg(&mol);
+
+        // All coordinates must be finite (no NaN, no Inf)
+        for i in 0..mol.atom_count() {
+            let p = coords.get(AtomIdx(i as u32));
+            assert!(p.x.is_finite(), "atom {} x is not finite", i);
+            assert!(p.y.is_finite(), "atom {} y is not finite", i);
+            assert!(p.z.is_finite(), "atom {} z is not finite", i);
+        }
+    }
+
+    #[test]
+    fn test_generate_coords_dg_centered() {
+        let mol = parse("CCC").unwrap();
+        let coords = generate_coords_dg(&mol);
+
+        // Calculate centroid
+        let mut cx = 0.0;
+        let mut cy = 0.0;
+        let mut cz = 0.0;
+
+        for i in 0..mol.atom_count() {
+            let p = coords.get(AtomIdx(i as u32));
+            cx += p.x;
+            cy += p.y;
+            cz += p.z;
+        }
+
+        cx /= mol.atom_count() as f64;
+        cy /= mol.atom_count() as f64;
+        cz /= mol.atom_count() as f64;
+
+        // Centroid should be near origin
+        assert!(cx.abs() < 1e-6, "centroid x: {}", cx);
+        assert!(cy.abs() < 1e-6, "centroid y: {}", cy);
+        assert!(cz.abs() < 1e-6, "centroid z: {}", cz);
+    }
+
+    #[test]
+    fn test_generate_coords_dg_single_atom() {
+        let mol = parse("C").unwrap();
+        let coords = generate_coords_dg(&mol);
+
+        assert_eq!(coords.atom_count(), 1);
+        let p = coords.get(AtomIdx(0));
+        assert_eq!(p.x, 0.0);
+        assert_eq!(p.y, 0.0);
+        assert_eq!(p.z, 0.0);
+    }
+
+    #[test]
+    fn test_generate_coords_dg_ethene() {
+        let mol = parse("C=C").unwrap();
+        let coords = generate_coords_dg(&mol);
+
+        let p0 = coords.get(AtomIdx(0));
+        let p1 = coords.get(AtomIdx(1));
+        let dist = p0.distance(&p1);
+
+        // Double bond C=C is ~1.34 Å
+        assert!(dist > 1.2 && dist < 1.5, "C=C bond distance: {}", dist);
+    }
+
+    #[test]
+    fn test_generate_coords_dg_propane() {
+        let mol = parse("CCC").unwrap();
+        let coords = generate_coords_dg(&mol);
+
+        assert_eq!(coords.atom_count(), 3);
+
+        let p0 = coords.get(AtomIdx(0));
+        let p1 = coords.get(AtomIdx(1));
+        let p2 = coords.get(AtomIdx(2));
+
+        // All bonds should have reasonable distances
+        let d01 = p0.distance(&p1);
+        let d12 = p1.distance(&p2);
+        let d02 = p0.distance(&p2);
+
+        assert!(d01 > 1.4 && d01 < 1.7);
+        assert!(d12 > 1.4 && d12 < 1.7);
+        assert!(d02 > 2.0 && d02 < 3.5);
+    }
+
+    #[test]
+    fn test_generate_coords_dg_benzene() {
+        let mol = parse("c1ccccc1").unwrap();
+        let coords = generate_coords_dg(&mol);
+
+        assert_eq!(coords.atom_count(), 6);
+
+        // All atoms should have non-zero positions
+        let mut all_nonzero = true;
+        for i in 0..6 {
+            let p = coords.get(AtomIdx(i as u32));
+            if p.x.abs() < 1e-10 && p.y.abs() < 1e-10 && p.z.abs() < 1e-10 {
+                all_nonzero = false;
+            }
+        }
+        assert!(all_nonzero, "some atoms have zero coordinates");
+    }
+
+    #[test]
+    fn test_gram_matrix_simple() {
+        let dist = vec![
+            vec![0.0, 1.5, 2.5],
+            vec![1.5, 0.0, 1.6],
+            vec![2.5, 1.6, 0.0],
+        ];
+
+        let gram = distance_to_gram_matrix(&dist);
+        assert_eq!(gram.len(), 3);
+        assert_eq!(gram[0].len(), 3);
+
+        // Gram matrix should be symmetric
+        for i in 0..3 {
+            for j in 0..3 {
+                assert!((gram[i][j] - gram[j][i]).abs() < 1e-10);
+            }
+        }
+    }
+
+    #[test]
+    fn test_jacobi_eigendecompose_identity() {
+        let mat = vec![vec![1.0, 0.0], vec![0.0, 1.0]];
+
+        let (eigenvalues, _eigenvectors) = jacobi_eigendecompose(&mat);
+        assert_eq!(eigenvalues.len(), 2);
+        assert!((eigenvalues[0] - 1.0).abs() < 1e-6);
+        assert!((eigenvalues[1] - 1.0).abs() < 1e-6);
     }
 
     // Helper functions for testing
