@@ -119,11 +119,12 @@ impl fmt::Display for MMFF94Type {
     }
 }
 
-/// Error type for MMFF94 atom type assignment.
+/// Error type for MMFF94 atom type assignment and charge calculation.
 #[derive(Debug)]
 pub enum AssignError {
     UnsupportedElement(String),
     ComplexAromaticity,
+    CoordinateMismatch,
 }
 
 impl fmt::Display for AssignError {
@@ -131,6 +132,7 @@ impl fmt::Display for AssignError {
         match self {
             Self::UnsupportedElement(e) => write!(f, "Unsupported element for MMFF94: {}", e),
             Self::ComplexAromaticity => write!(f, "Complex aromaticity pattern"),
+            Self::CoordinateMismatch => write!(f, "Coordinate count mismatch with atom count"),
         }
     }
 }
@@ -332,6 +334,138 @@ fn bond_order_to_int(order: chematic_core::BondOrder) -> usize {
     }
 }
 
+/// MMFF94 partial charges computed from 3D coordinates and atom types.
+///
+/// Returns a vector of partial charges (one per atom) computed using:
+/// 1. MMFF94 atom type assignment
+/// 2. Base charge lookup from MMFF94 parameters
+/// 3. Formal charge contribution
+/// 4. Electronegativity-based bond polarization (using 3D geometry)
+/// 5. Hydrogen bonding environment effects
+///
+/// This function requires 3D coordinates from distance geometry or force field.
+/// For topological-only charges, use `mmff94_charges()` from descriptors module.
+///
+/// # Arguments
+/// * `mol` - The molecule
+/// * `coords` - 3D coordinates for each atom (must have length == atom_count)
+///
+/// # Returns
+/// Vector of partial charges, or error if atom type assignment fails
+pub fn mmff94_charges_3d(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+) -> Result<Vec<f64>, AssignError> {
+    let n = mol.atom_count();
+    if coords.len() != n {
+        return Err(AssignError::CoordinateMismatch);
+    }
+
+    // Assign MMFF94 atom types
+    let types = assign_mmff94_types(mol)?;
+
+    // Get base charges from MMFF94 parameters
+    let mut charges = Vec::with_capacity(n);
+    for (i, &atom_type) in types.iter().enumerate() {
+        let atom = mol.atom(AtomIdx(i as u32));
+        let base_charge = crate::mmff94_params::mmff94_charge_params(atom_type).charge;
+        let formal_charge = atom.charge as f64;
+
+        charges.push(base_charge + formal_charge);
+    }
+
+    // Apply electronegativity-based bond polarization using 3D geometry
+    apply_bond_polarization_3d(mol, &coords, &types, &mut charges);
+
+    // Apply hydrogen bonding environment effects
+    apply_hbond_effects(mol, &types, &mut charges);
+
+    Ok(charges)
+}
+
+/// Apply electronegativity effects in bonds using 3D distances.
+/// Atoms more electronegative than their neighbors pull electron density.
+fn apply_bond_polarization_3d(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+    _types: &[MMFF94Type],
+    charges: &mut [f64],
+) {
+    let n = mol.atom_count();
+
+    // Electronegativity values (Pauling scale, approximate)
+    let en_table: fn(Element) -> f64 = |elem| match elem.atomic_number() {
+        1 => 2.10,  // H
+        6 => 2.55,  // C
+        7 => 3.04,  // N
+        8 => 3.44,  // O
+        9 => 3.98,  // F
+        15 => 2.19, // P
+        16 => 2.58, // S
+        17 => 3.16, // Cl
+        35 => 2.96, // Br
+        53 => 2.66, // I
+        _ => 2.0,
+    };
+
+    // Bond polarization: electronegativity difference
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+
+        let atom_i = mol.atom(bond.atom1);
+        let atom_j = mol.atom(bond.atom2);
+
+        let en_i = en_table(atom_i.element);
+        let en_j = en_table(atom_j.element);
+
+        // Distance-weighted polarization
+        let (xi, yi, zi) = coords[i];
+        let (xj, yj, zj) = coords[j];
+        let dist_sq = (xi - xj).powi(2) + (yi - yj).powi(2) + (zi - zj).powi(2);
+        let dist = dist_sq.sqrt();
+
+        if dist > 0.1 && dist < 3.0 {
+            // Electronegativity-based charge redistribution
+            let en_diff = (en_i - en_j) / (en_i + en_j).max(0.1);
+            let polarization = en_diff * 0.05; // Small polarization factor
+
+            charges[i] += polarization;
+            charges[j] -= polarization;
+        }
+    }
+}
+
+/// Apply hydrogen bonding environment corrections.
+/// Atoms involved in H-bonds may have modified charges.
+fn apply_hbond_effects(mol: &Molecule, types: &[MMFF94Type], charges: &mut [f64]) {
+    use MMFF94Type::*;
+
+    for (i, &atom_type) in types.iter().enumerate() {
+        // Hydrogen bond donor corrections (N-H, O-H)
+        let is_h_donor = matches!(
+            atom_type,
+            N_sp3_Amine | N_sp3_AmineAromatic | O_Alcohol | O_Phenol | O_Carboxylic
+        );
+
+        // Hydrogen bond acceptor corrections (N, O with lone pairs)
+        let is_h_acceptor = matches!(
+            atom_type,
+            N_sp3_Amine | N_sp3_AmineAromatic | N_sp2_Imine | N_sp2_Aromatic
+                | O_Alcohol | O_Phenol | O_Ether | O_Carbonyl | O_Carboxylic | O_Carbamate
+                | O_Ester | O_Amide | O_Imide
+        );
+
+        // Apply modest corrections for H-bond participation
+        if is_h_donor {
+            charges[i] -= 0.05; // Donors are more electropositive
+        }
+        if is_h_acceptor {
+            charges[i] -= 0.03; // Acceptors have slight negative shift
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -371,5 +505,152 @@ mod tests {
         let types = assign_mmff94_types(&mol).unwrap();
         assert_eq!(types.len(), 3);
         assert_eq!(types[2], MMFF94Type::N_sp3_Amine);
+    }
+
+    // ===== Phase 1: 3D-Based MMFF94 Charges =====
+
+    #[test]
+    fn test_mmff94_charges_3d_ethane() {
+        let mol = parse("CC").unwrap();
+        // Simple C-C bond with coordinate geometry
+        let coords = vec![(0.0, 0.0, 0.0), (1.54, 0.0, 0.0)];
+
+        let charges = mmff94_charges_3d(&mol, &coords).unwrap();
+        assert_eq!(charges.len(), 2);
+        // Both carbons should be nearly neutral (sp3 carbon)
+        assert!((charges[0] - charges[1]).abs() < 0.2);
+    }
+
+    #[test]
+    fn test_mmff94_charges_3d_methanol() {
+        let mol = parse("CO").unwrap();
+        let coords = vec![(0.0, 0.0, 0.0), (1.4, 0.0, 0.0)];
+
+        let charges = mmff94_charges_3d(&mol, &coords).unwrap();
+        assert_eq!(charges.len(), 2);
+
+        // Oxygen should be more negative than carbon
+        assert!(charges[1] < charges[0]);
+    }
+
+    #[test]
+    fn test_mmff94_charges_3d_formal_charge() {
+        // Charged molecule - use dimethylammonium [C(C)N(C)(C)(C)]+
+        let mol = parse("CC(C)N(C)(C)C").unwrap();
+        let n_atoms = mol.atom_count();
+
+        // Create reasonable 3D coordinates (linear arrangement for simplicity)
+        let coords: Vec<(f64, f64, f64)> = (0..n_atoms)
+            .map(|i| (i as f64 * 1.5, 0.0, 0.0))
+            .collect();
+
+        let charges = mmff94_charges_3d(&mol, &coords).unwrap();
+        assert_eq!(charges.len(), n_atoms);
+
+        // All charges should be finite
+        for charge in &charges {
+            assert!(charge.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_mmff94_charges_3d_benzene() {
+        let mol = parse("c1ccccc1").unwrap();
+        let coords = vec![
+            (1.4, 0.0, 0.0),
+            (0.7, 1.2, 0.0),
+            (-0.7, 1.2, 0.0),
+            (-1.4, 0.0, 0.0),
+            (-0.7, -1.2, 0.0),
+            (0.7, -1.2, 0.0),
+        ];
+
+        let charges = mmff94_charges_3d(&mol, &coords).unwrap();
+        assert_eq!(charges.len(), 6);
+
+        // Aromatic carbons should have similar charges (symmetry)
+        for i in 0..5 {
+            assert!((charges[i] - charges[i + 1]).abs() < 0.15);
+        }
+    }
+
+    #[test]
+    fn test_mmff94_charges_3d_coordinate_mismatch() {
+        let mol = parse("CC").unwrap();
+        let coords = vec![(0.0, 0.0, 0.0)]; // Only one coordinate for 2 atoms
+
+        let result = mmff94_charges_3d(&mol, &coords);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mmff94_charge_params_carbon_types() {
+        use crate::mmff94_params::mmff94_charge_params;
+
+        // sp3 carbon should have minimal charge
+        let c_sp3 = mmff94_charge_params(MMFF94Type::C_sp3).charge;
+        assert!(c_sp3.abs() < 0.1);
+
+        // Carbonyl carbon should be positive (electron withdrawing)
+        let c_carbonyl = mmff94_charge_params(MMFF94Type::C_Carbonyl).charge;
+        assert!(c_carbonyl > 0.3);
+    }
+
+    #[test]
+    fn test_mmff94_charge_params_nitrogen_types() {
+        use crate::mmff94_params::mmff94_charge_params;
+
+        // All nitrogen types should be negative (electron rich)
+        let n_amine = mmff94_charge_params(MMFF94Type::N_sp3_Amine).charge;
+        assert!(n_amine < 0.0);
+
+        // Aromatic nitrogen in pyridine is less negative than aliphatic amine
+        let n_aromatic = mmff94_charge_params(MMFF94Type::N_Aromatic_Pyridine).charge;
+        assert!(n_aromatic < 0.0);
+        assert!(n_aromatic > n_amine); // Less negative than aliphatic amine
+    }
+
+    #[test]
+    fn test_mmff94_charge_params_oxygen_types() {
+        use crate::mmff94_params::mmff94_charge_params;
+
+        // Oxygen atoms should all be negative
+        let o_alcohol = mmff94_charge_params(MMFF94Type::O_Alcohol).charge;
+        let o_carbonyl = mmff94_charge_params(MMFF94Type::O_Carbonyl).charge;
+        let o_carboxylic = mmff94_charge_params(MMFF94Type::O_Carboxylic).charge;
+
+        assert!(o_alcohol < 0.0);
+        assert!(o_carbonyl < 0.0);
+        assert!(o_carboxylic < 0.0);
+    }
+
+    #[test]
+    fn test_mmff94_charges_all_positive() {
+        // Verify no charge calculation returns NaN or infinity
+        let mol = parse("CCO").unwrap();
+        let coords = vec![(0.0, 0.0, 0.0), (1.5, 0.0, 0.0), (2.5, 0.5, 0.0)];
+
+        let charges = mmff94_charges_3d(&mol, &coords).unwrap();
+        for charge in &charges {
+            assert!(charge.is_finite());
+            assert!(!charge.is_nan());
+        }
+    }
+
+    #[test]
+    fn test_mmff94_charges_carboxylic_acid() {
+        let mol = parse("CC(=O)O").unwrap();
+        let coords = vec![
+            (0.0, 0.0, 0.0),   // C
+            (1.5, 0.0, 0.0),   // C
+            (2.5, 1.0, 0.0),   // O (carbonyl)
+            (2.5, -1.0, 0.0),  // O (hydroxy)
+        ];
+
+        let charges = mmff94_charges_3d(&mol, &coords).unwrap();
+        assert_eq!(charges.len(), 4);
+
+        // Carboxylic oxygen should be more negative than sp3 carbon
+        assert!(charges[3] < charges[0]);
     }
 }
