@@ -182,33 +182,65 @@ pub fn apply_kekule(mol: &Molecule, kekule: &KekuleResult) -> Molecule {
     builder.build()
 }
 
-/// Attempt to find an augmenting path starting from `v` and update `matching`.
-/// Returns true if an augmenting path was found.
+/// Attempt to find an augmenting path starting from `start` and update `matching`.
+///
+/// Uses iterative BFS with parent-pointer path reconstruction to avoid stack
+/// overflow on large aromatic systems (wasm32 default stack is ~1 MB).
+/// `visited` must already contain `start` (prevents root re-entry in odd cycles).
+///
+/// Returns true if an augmenting path was found and the matching was updated.
 fn augment(
-    v: AtomIdx,
+    start: AtomIdx,
     adj: &HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>>,
     matching: &mut HashMap<AtomIdx, AtomIdx>,
     visited: &mut HashSet<AtomIdx>,
 ) -> bool {
-    let Some(neighbors) = adj.get(&v) else {
-        return false;
-    };
-    for &(u, _) in neighbors {
-        if !visited.insert(u) {
+    // parent[u] = v means "u was reached from v in the BFS tree"
+    let mut parent: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+    let mut queue: std::collections::VecDeque<AtomIdx> = std::collections::VecDeque::new();
+    queue.push_back(start);
+
+    'bfs: while let Some(v) = queue.pop_front() {
+        let Some(neighbors) = adj.get(&v) else {
             continue;
-        }
-        // u is unmatched, or we can re-route from u's current partner.
-        let can_augment = match matching.get(&u).copied() {
-            None => true,
-            Some(partner) => augment(partner, adj, matching, visited),
         };
-        if can_augment {
-            matching.insert(v, u);
-            matching.insert(u, v);
-            return true;
+        for &(u, _) in neighbors {
+            if !visited.insert(u) {
+                continue;
+            }
+            parent.insert(u, v);
+
+            match matching.get(&u).copied() {
+                None => {
+                    // Found a free vertex — trace back through parent pointers
+                    // and flip every edge along the augmenting path.
+                    let mut cur = u;
+                    loop {
+                        let prev = parent[&cur];
+                        let prev_old_match = matching.get(&prev).copied();
+                        matching.insert(prev, cur);
+                        matching.insert(cur, prev);
+                        match prev_old_match {
+                            None | Some(_) if prev == start => break,
+                            Some(m) => cur = m,
+                            None => break,
+                        }
+                    }
+                    break 'bfs;
+                }
+                Some(partner) => {
+                    // u is matched to partner — explore further from partner.
+                    if visited.insert(partner) {
+                        parent.insert(partner, u);
+                        queue.push_back(partner);
+                    }
+                }
+            }
         }
     }
-    false
+
+    // Augmentation succeeded iff start is now matched.
+    matching.contains_key(&start)
 }
 
 /// Determine whether an aromatic atom *must* appear in the matching

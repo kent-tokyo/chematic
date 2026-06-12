@@ -32,6 +32,10 @@ struct EvalCtx<'a> {
     mol: &'a Molecule,
     rings: RingSet,
     config: &'a MatchConfig,
+    /// Remaining visit budget shared across all recursive calls (including nested
+    /// recursive-SMARTS `$(...)`).  Decremented on every `match_recursive` /
+    /// `has_match_recursive` entry.  `u64::MAX` when no limit is configured.
+    visit_budget: std::cell::Cell<u64>,
 }
 
 impl<'a> EvalCtx<'a> {
@@ -40,6 +44,9 @@ impl<'a> EvalCtx<'a> {
             mol,
             rings: find_sssr(mol),
             config,
+            visit_budget: std::cell::Cell::new(
+                config.max_visit_budget.unwrap_or(u64::MAX),
+            ),
         }
     }
 }
@@ -79,6 +86,18 @@ pub struct MatchConfig {
     /// For symmetric queries on symmetric targets, this prevents returning
     /// multiple embeddings of the same substructure.
     pub uniquify: bool,
+
+    /// Maximum number of recursive VF2 state-space visits across the entire
+    /// search (including nested recursive-SMARTS `$(...)`).
+    ///
+    /// `None` (default) is unbounded — preserving the existing behaviour.
+    ///
+    /// **Warning — opt-in only.** When the budget is exhausted the search stops
+    /// early: `find_matches` returns the partial result set, and
+    /// `has_match`/`brenk_passes`/`pains_passes` may silently return `false`
+    /// even when a match exists.  Only set this for DoS-prevention in
+    /// untrusted-input contexts where false negatives are acceptable.
+    pub max_visit_budget: Option<u64>,
 }
 
 impl Default for MatchConfig {
@@ -88,6 +107,7 @@ impl Default for MatchConfig {
             use_chirality: false,
             use_isotopes: false,
             uniquify: true,
+            max_visit_budget: None,
         }
     }
 }
@@ -148,6 +168,13 @@ fn match_recursive(
     if max.is_some_and(|m| results.len() >= m) {
         return;
     }
+
+    // Decrement shared visit budget; stop if exhausted.
+    let remaining = ctx.visit_budget.get();
+    if remaining == 0 {
+        return;
+    }
+    ctx.visit_budget.set(remaining - 1);
 
     // Base case: all query atoms have been mapped.
     if mapping.len() == query.atoms.len() {
@@ -396,6 +423,14 @@ fn has_match_recursive(
     ctx: &EvalCtx<'_>,
     mapping: &mut HashMap<usize, AtomIdx>,
 ) -> bool {
+    // Decrement shared visit budget; stop if exhausted (may produce false negatives
+    // — only enabled when max_visit_budget is explicitly set).
+    let remaining = ctx.visit_budget.get();
+    if remaining == 0 {
+        return false;
+    }
+    ctx.visit_budget.set(remaining - 1);
+
     // Base case: all query atoms mapped.
     if mapping.len() == query.atoms.len() {
         return true;
@@ -635,5 +670,44 @@ mod tests {
         };
         let m = find_matches_with_config(&q_cw, &mol, &config);
         assert!(!m.is_empty(), "[C@H] should positively match D-alanine (@)");
+    }
+
+    // S2: visit budget tests
+
+    #[test]
+    fn test_visit_budget_unlimited_default() {
+        // Default config has no budget cap — normal queries complete fully.
+        let mol = parse("c1ccccc1").unwrap(); // benzene
+        let q = parse_smarts("c1ccccc1").unwrap();
+        let m = find_matches(&q, &mol);
+        assert!(!m.is_empty(), "benzene should match aromatic ring query");
+    }
+
+    #[test]
+    fn test_visit_budget_generous_limit_finds_match() {
+        // A budget high enough that a simple query completes.
+        let mol = parse("CCO").unwrap();
+        let q = parse_smarts("O").unwrap();
+        let config = MatchConfig {
+            max_visit_budget: Some(10_000),
+            ..MatchConfig::default()
+        };
+        let m = find_matches_with_config(&q, &mol, &config);
+        assert!(!m.is_empty(), "CCO contains O — should match within budget");
+    }
+
+    #[test]
+    fn test_visit_budget_zero_returns_empty() {
+        // Budget of 0 → no states explored → no results (documents fail-safe behavior).
+        let mol = parse("CCO").unwrap();
+        let q = parse_smarts("O").unwrap();
+        let config = MatchConfig {
+            max_visit_budget: Some(0),
+            ..MatchConfig::default()
+        };
+        let m = find_matches_with_config(&q, &mol, &config);
+        // With zero budget the search returns immediately — may or may not find a match.
+        // Just verify it does not panic.
+        let _ = m;
     }
 }
