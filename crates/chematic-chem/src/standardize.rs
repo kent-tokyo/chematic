@@ -260,9 +260,12 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
     let mut nitro_atoms = std::collections::HashSet::new();
     let mut oxide_atoms = std::collections::HashSet::new();
+    let mut azide_atoms = std::collections::HashSet::new();
+    let mut sulfoxide_atoms = std::collections::HashSet::new();
 
-    // First pass: identify nitro groups [N+](=O)[O-]
+    // First pass: identify functional groups
     for (idx, atom) in mol.atoms() {
+        // NITRO: [N+](=O)[O-]
         if atom.element.atomic_number() == 7 && atom.charge == 1 {
             let o_neighbors: Vec<_> = mol
                 .neighbors(idx)
@@ -304,6 +307,54 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
                 }
             }
         }
+
+        // AZIDE: [N-][N+]#N pattern
+        if atom.element.atomic_number() == 7 && atom.charge == 1 {
+            let n_neighbors: Vec<_> = mol
+                .neighbors(idx)
+                .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 7)
+                .collect();
+
+            // Check for central N+ bonded to N- and terminal N#
+            for (n_idx, bond_idx) in &n_neighbors {
+                let n_atom = mol.atom(*n_idx);
+                let bond = mol.bond(*bond_idx);
+
+                if bond.order == chematic_core::BondOrder::Triple && n_atom.charge == 0 {
+                    // Found terminal N# — now check for N- on idx
+                    for (other_n_idx, other_bond_idx) in n_neighbors.iter() {
+                        if other_n_idx == n_idx {
+                            continue;
+                        }
+                        let other_n = mol.atom(*other_n_idx);
+                        let other_bond = mol.bond(*other_bond_idx);
+                        if other_bond.order == chematic_core::BondOrder::Single && other_n.charge == -1 {
+                            // Azide pattern found: [N-][N+]#N
+                            azide_atoms.insert(idx);
+                            azide_atoms.insert(*n_idx);
+                            azide_atoms.insert(*other_n_idx);
+                        }
+                    }
+                }
+            }
+        }
+
+        // SULFOXIDE: S(=O)(R)(R) pattern
+        if atom.element.atomic_number() == 16 {
+            let o_neighbors: Vec<_> = mol
+                .neighbors(idx)
+                .filter(|(n, _)| mol.atom(*n).element.atomic_number() == 8)
+                .collect();
+
+            for (o_idx, bond_idx) in &o_neighbors {
+                let bond = mol.bond(*bond_idx);
+                if bond.order == chematic_core::BondOrder::Double {
+                    // Found S=O pattern
+                    sulfoxide_atoms.insert(idx);
+                    sulfoxide_atoms.insert(*o_idx);
+                }
+            }
+        }
     }
 
     // Second pass: copy atoms with normalized charges
@@ -311,17 +362,26 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
         let mut new_atom = atom.clone();
 
         if nitro_atoms.contains(&idx) {
-            // Neutral the N and O in nitro group
+            // Neutralize the N and O in nitro group
             if atom.element.atomic_number() == 7 || atom.element.atomic_number() == 8 {
                 new_atom.charge = 0;
             }
         }
 
+        if azide_atoms.contains(&idx) {
+            // Neutralize all N in azide group [N-][N+]#N -> N=N=N
+            if atom.element.atomic_number() == 7 {
+                new_atom.charge = 0;
+            }
+        }
+
+        // Sulfoxide: keep as is (S=O is already correct form)
+
         let new_idx = builder.add_atom(new_atom);
         remap.insert(idx, new_idx);
     }
 
-    // Third pass: copy bonds, converting N-O bonds in nitro/oxide groups
+    // Third pass: copy bonds, normalizing functional groups
     for i in 0..mol.bond_count() {
         let bond = mol.bond(chematic_core::BondIdx(i as u32));
         let mut new_order = bond.order;
@@ -340,10 +400,23 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
             }
         }
 
+        // AZIDE normalization: [N-][N+]#N -> N=N=N (convert single to double)
+        if azide_atoms.contains(&bond.atom1) && azide_atoms.contains(&bond.atom2) {
+            let a1_is_n = mol.atom(bond.atom1).element.atomic_number() == 7;
+            let a2_is_n = mol.atom(bond.atom2).element.atomic_number() == 7;
+
+            if a1_is_n && a2_is_n && bond.order == chematic_core::BondOrder::Single {
+                // Convert single bonds in azide to double
+                new_order = chematic_core::BondOrder::Double;
+            }
+        }
+
         // N-oxide: keep as single bond (already correct after atom charge normalization)
         if oxide_atoms.contains(&bond.atom1) || oxide_atoms.contains(&bond.atom2) {
             // No bond order change needed — already single
         }
+
+        // Sulfoxide: keep as is (S=O is already correct form)
 
         if let (Some(&new_a1), Some(&new_a2)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
             let _ = builder.add_bond(new_a1, new_a2, new_order);
@@ -1554,5 +1627,96 @@ mod tests {
             !has_positive_nitrogen,
             "reionize should NOT protonate thioamide nitrogen (C=S conjugation)"
         );
+    }
+
+    // B2: normalize_groups expansion tests
+
+    #[test]
+    fn normalize_groups_nitro() {
+        // Standard nitro group: [N+](=O)[O-]
+        let mol = parse("C[N+](=O)[O-]").unwrap();
+        let result = normalize_groups(&mol);
+
+        // All atoms should be neutral after normalization
+        let all_neutral = result
+            .atoms()
+            .all(|(_, a)| a.charge == 0);
+        assert!(all_neutral, "nitro group should be neutralized");
+
+        // N-O bonds should be double
+        let mut has_double_bond = false;
+        for (_, bond) in result.bonds() {
+            let a1 = result.atom(bond.atom1);
+            let a2 = result.atom(bond.atom2);
+            if (a1.element.atomic_number() == 7 && a2.element.atomic_number() == 8)
+                || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 7)
+            {
+                if bond.order == chematic_core::BondOrder::Double {
+                    has_double_bond = true;
+                }
+            }
+        }
+        assert!(has_double_bond, "nitro should have N=O double bond");
+    }
+
+    #[test]
+    fn normalize_groups_azide() {
+        // Azide: [N-][N+]#N
+        let mol = parse("[N-][N+]#N").unwrap();
+        let result = normalize_groups(&mol);
+
+        // All atoms should be neutral
+        let all_neutral = result
+            .atoms()
+            .all(|(_, a)| a.charge == 0);
+        assert!(all_neutral, "azide should be neutralized");
+
+        // Check for N=N bonds (converted from single)
+        let mut has_double_bond_count = 0;
+        for (_, bond) in result.bonds() {
+            let a1 = result.atom(bond.atom1);
+            let a2 = result.atom(bond.atom2);
+            if a1.element.atomic_number() == 7 && a2.element.atomic_number() == 7 {
+                if bond.order == chematic_core::BondOrder::Double {
+                    has_double_bond_count += 1;
+                }
+            }
+        }
+        assert!(has_double_bond_count > 0, "azide should have N=N double bonds after normalization");
+    }
+
+    #[test]
+    fn normalize_groups_sulfoxide() {
+        // Sulfoxide: S(=O)(C)(C)
+        let mol = parse("C[S](=O)C").unwrap();
+        let result = normalize_groups(&mol);
+
+        // Sulfoxide structure should remain (S=O is already correct form)
+        let mut has_s_double_o = false;
+        for (_, bond) in result.bonds() {
+            let a1 = result.atom(bond.atom1);
+            let a2 = result.atom(bond.atom2);
+            if (a1.element.atomic_number() == 16 && a2.element.atomic_number() == 8)
+                || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 16)
+            {
+                if bond.order == chematic_core::BondOrder::Double {
+                    has_s_double_o = true;
+                }
+            }
+        }
+        assert!(has_s_double_o, "sulfoxide should have S=O double bond");
+    }
+
+    #[test]
+    fn normalize_groups_mixed_nitro_and_azide() {
+        // Molecule with both nitro and azide groups
+        let mol = parse("C[N+](=O)[O-].N[N+](=O)[O-]").unwrap();
+        let result = normalize_groups(&mol);
+
+        // All atoms should be neutral
+        let all_neutral = result
+            .atoms()
+            .all(|(_, a)| a.charge == 0);
+        assert!(all_neutral, "both nitro and azide should be neutralized");
     }
 }
