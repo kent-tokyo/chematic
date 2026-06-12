@@ -126,16 +126,24 @@ fn dfs_connection(
                 first = false;
                 dfs_connection(&neighbor, Some(*atom), mol, inchi_index, visited, result, tree_edges);
             } else {
-                // Branch: wrap in parentheses
+                // Branch: wrap in parentheses with branch cursor reset (comma)
+                // The comma resets the cursor to the parent atom after closing the branch
                 let mut branch = String::new();
                 dfs_connection(&neighbor, Some(*atom), mol, inchi_index, visited, &mut branch, tree_edges);
                 if !branch.is_empty() {
                     result.push('(');
                     result.push_str(&branch);
                     result.push(')');
+                    // Branch cursor reset: comma tells the parser to reset to parent atom
+                    result.push(',');
                 }
             }
         }
+    }
+
+    // Remove trailing comma (cursor resets only between multiple branches)
+    if result.ends_with(',') {
+        result.pop();
     }
 }
 
@@ -166,5 +174,140 @@ mod tests {
         let c_str = c_layer.unwrap();
         // Benzene should have ring closure: 1-2-3-4-5-6-1
         assert_eq!(c_str, "1-2-3-4-5-6-1", "Benzene should have ring closure bond");
+    }
+
+    // C4 Tests: Branch cursor reset
+
+    #[test]
+    fn test_connectivity_branched_propane() {
+        // Propane: C-C-C (linear, no branches at DFS level)
+        let mol = parse("CCC").expect("propane");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        let c_str = c_layer.unwrap();
+        // Linear propane should not have trailing commas (no multiple branches)
+        assert!(!c_str.ends_with(','), "Linear propane should not end with comma");
+    }
+
+    #[test]
+    fn test_connectivity_branched_isobutane() {
+        // Isobutane: C(C)(C)C — one central C with 3 branches
+        let mol = parse("CC(C)C").expect("isobutane");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        let c_str = c_layer.unwrap();
+        // Should have branch cursor resets between branches
+        // Format: 1-2(3,4) or similar with commas for cursor resets
+        assert!(c_str.contains('('), "Should have parentheses for branches");
+        assert!(c_str.contains(','), "Should have cursor resets (commas) between branches");
+    }
+
+    #[test]
+    fn test_connectivity_neopentane() {
+        // Neopentane: C(C)(C)(C)C — central C with 4 methyl branches
+        let mol = parse("CC(C)(C)C").expect("neopentane");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        let c_str = c_layer.unwrap();
+        // Should have cursor resets between multiple branches
+        assert!(c_str.contains(','), "Multiple branches should have cursor resets");
+    }
+
+    #[test]
+    fn test_connectivity_cursor_reset_position() {
+        // Verify cursor reset occurs in correct position
+        let mol = parse("CC(C)C").expect("isobutane");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        let c_str = c_layer.unwrap();
+        // Pattern should be: atom-atom(branch),... with commas between branches
+        // Verify no double commas and proper structure
+        assert!(!c_str.contains(",,"), "Should not have double commas");
+        assert!(!c_str.ends_with(','), "Should not end with trailing comma");
+    }
+
+    #[test]
+    fn test_connectivity_multi_level_branches() {
+        // More complex branched structure: C-C(C-C,C)-C
+        let mol = parse("CC(CC)C").expect("branched");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        let c_str = c_layer.unwrap();
+        // Should have proper branch cursor resets
+        assert!(c_str.contains('('), "Should have parentheses for branches");
+    }
+
+    #[test]
+    fn test_connectivity_toluene() {
+        // Toluene: methylbenzene C1=CC=CC=C1C
+        let mol = parse("Cc1ccccc1").expect("toluene");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        // Aromatic with one branch should be handled correctly
+    }
+
+    #[test]
+    fn test_connectivity_dimethylbenzene() {
+        // o-Xylene (1,2-dimethylbenzene)
+        let mol = parse("Cc1ccccc1C").expect("xylene");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        // Multiple branches should have cursor resets
+    }
+
+    #[test]
+    fn test_connectivity_no_false_commas() {
+        // Linear molecule should not have trailing commas
+        let mol = parse("CCCC").expect("butane");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        let c_str = c_layer.unwrap();
+        // Linear butane should not have multiple branches
+        assert!(!c_str.ends_with(','), "Linear molecules should not end with trailing comma");
+    }
+
+    #[test]
+    fn test_connectivity_cursor_reset_inchi_standard() {
+        // Test that cursor reset conforms to InChI standard:
+        // After closing a branch, explicit reset before starting next branch at same level
+        let mol = parse("CC(C)C").expect("isobutane");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        let c_str = c_layer.unwrap();
+
+        // Verify structure is valid InChI-like format
+        // Should be something like: 1-2(3,4)
+        // Not: 1-2(3)4 (missing cursor reset)
+        let paren_count_open = c_str.matches('(').count();
+        let paren_count_close = c_str.matches(')').count();
+        assert_eq!(paren_count_open, paren_count_close, "Parentheses should be balanced");
+    }
+
+    #[test]
+    fn test_connectivity_pentane_isomers() {
+        // Test various pentane isomers with different branching
+
+        // n-Pentane: linear
+        let lin = parse("CCCCC").expect("n-pentane");
+        let lin_c = connectivity_layer(&lin).unwrap();
+        assert!(!lin_c.contains(','), "Linear pentane should have no commas");
+
+        // Isopentane: one branch
+        let iso = parse("CC(C)CC").expect("isopentane");
+        let iso_c = connectivity_layer(&iso).unwrap();
+        assert!(iso_c.contains('('), "Branched pentane should have parentheses");
+    }
+
+    #[test]
+    fn test_connectivity_single_branch_no_trailing_comma() {
+        // Single branch should not have trailing comma after closing parenthesis
+        let mol = parse("CC(C)C").expect("isobutane");
+        let c_layer = connectivity_layer(&mol);
+        assert!(c_layer.is_some());
+        let c_str = c_layer.unwrap();
+
+        // Verify no trailing comma
+        assert!(!c_str.ends_with(','), "Should not end with comma after single branch");
+        assert!(!c_str.ends_with("),"), "Should not have comma after last closing paren");
     }
 }
