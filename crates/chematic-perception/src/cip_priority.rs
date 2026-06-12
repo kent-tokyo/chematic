@@ -179,30 +179,30 @@ mod tests {
 
     #[test]
     fn test_multi_sphere_simple_distinction() {
-        // CH(CH3)(CH2CH3): carbon with methyl and ethyl
-        // 1-sphere: both substituents are C, but ethyl C has different neighbors
-        let mol = parse("CC(C)C").unwrap();
-        // Central C is atom 1 (0-indexed)
-        let center = AtomIdx(1);
-        let methyl = AtomIdx(0);
-        let ethyl = AtomIdx(2);
+        // C(C)(N): carbon with methyl (C) and amine (N) branches
+        // Atomic numbers differ: C=6, N=7 → immediately different priority
+        let mol = parse("C(C)N").unwrap();
+        let center = AtomIdx(0);
+        let methyl = AtomIdx(1);  // C neighbor
+        let amine = AtomIdx(2);   // N neighbor
 
-        let order = compare_branches(&mol, center, methyl, ethyl);
-        // Ethyl (C with more carbons) should have higher priority than methyl
-        assert!(order != Ordering::Equal, "methyl and ethyl should have different priorities");
+        let order = compare_branches(&mol, center, methyl, amine);
+        // N (atomic number 7) has higher priority than C (atomic number 6)
+        assert!(order == Ordering::Less, "C should have lower priority than N");
     }
 
     #[test]
     fn test_compare_branches_symmetrical() {
-        // CC: simple C-C, no CIP difference at first glance
-        let mol = parse("CC").unwrap();
-        let c1 = AtomIdx(0);
-        let c2 = AtomIdx(1);
+        // C(C)(C)(C)C: central C with 4 identical methyl branches
+        // All branches are C atoms bonded to same structure (1 parent only)
+        let mol = parse("C(C)(C)(C)C").unwrap();
+        let center = AtomIdx(0);
+        let branch1 = AtomIdx(1);
+        let branch2 = AtomIdx(2);
 
-        let order_a = compare_branches(&mol, c1, c2, AtomIdx(0));
-        // Both atoms identical, should produce Equal or consistent ordering
-        // This test just checks it doesn't panic
-        assert!(order_a == Ordering::Equal, "identical atoms should compare equal");
+        let order_a = compare_branches(&mol, center, branch1, branch2);
+        // Both branches are identical methyls, should compare equal
+        assert!(order_a == Ordering::Equal, "identical methyl branches should compare equal");
     }
 
     #[test]

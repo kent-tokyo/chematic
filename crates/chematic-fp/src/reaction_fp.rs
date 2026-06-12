@@ -197,7 +197,7 @@ mod tests {
     #[test]
     fn test_reaction_fp_different_products() {
         let rxn1 = create_test_reaction("CC>>C");
-        let rxn2 = create_test_reaction("CC>>CC");
+        let rxn2 = create_test_reaction("CC>>CCC");
 
         let fp1 = reaction_fp(&rxn1);
         let fp2 = reaction_fp(&rxn2);
