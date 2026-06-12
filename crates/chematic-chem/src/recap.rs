@@ -9,7 +9,7 @@
 //! Unlike BRICS, RECAP prioritizes bonds that are typically synthesized last
 //! (C-N, C-O amide/ether linkages) rather than bonds that are typically broken first.
 
-use chematic_core::{Molecule, AtomIdx, BondOrder, Element};
+use chematic_core::{AtomIdx, BondOrder, Element, Molecule};
 
 /// A molecular fragment from RECAP fragmentation.
 #[derive(Debug, Clone)]
@@ -26,35 +26,32 @@ fn is_breakable_recap(mol: &Molecule, atom1: AtomIdx, atom2: AtomIdx) -> bool {
     let a1 = mol.atom(atom1);
     let a2 = mol.atom(atom2);
 
-    if let Some((_, bond)) = mol.bond_between(atom1, atom2) {
-        match bond.order {
-            // C-N bonds (amides, secondary amines): breakable
-            BondOrder::Single => {
-                if (a1.element == Element::C && a2.element == Element::N)
-                    || (a1.element == Element::N && a2.element == Element::C)
-                {
-                    return true;
-                }
-
-                // C-O bonds (ethers, esters, alcohols): breakable
-                if (a1.element == Element::C && a2.element == Element::O)
-                    || (a1.element == Element::O && a2.element == Element::C)
-                {
-                    return true;
-                }
-
-                // C-S bonds (thiols, thioethers): breakable
-                if (a1.element == Element::C && a2.element == Element::S)
-                    || (a1.element == Element::S && a2.element == Element::C)
-                {
-                    return true;
-                }
-
-                // N-C bonds in amines/amides
-                // Already covered above
-            }
-            _ => {}
+    if let Some((_, bond)) = mol.bond_between(atom1, atom2)
+        && bond.order == BondOrder::Single
+    {
+        // C-N bonds (amides, secondary amines): breakable
+        if (a1.element == Element::C && a2.element == Element::N)
+            || (a1.element == Element::N && a2.element == Element::C)
+        {
+            return true;
         }
+
+        // C-O bonds (ethers, esters, alcohols): breakable
+        if (a1.element == Element::C && a2.element == Element::O)
+            || (a1.element == Element::O && a2.element == Element::C)
+        {
+            return true;
+        }
+
+        // C-S bonds (thiols, thioethers): breakable
+        if (a1.element == Element::C && a2.element == Element::S)
+            || (a1.element == Element::S && a2.element == Element::C)
+        {
+            return true;
+        }
+
+        // N-C bonds in amines/amides
+        // Already covered above
     }
 
     false

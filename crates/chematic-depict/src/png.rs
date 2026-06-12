@@ -15,17 +15,17 @@ const ATOM_RADIUS: f32 = 3.0;
 /// CPK color table: atomic number → RGB tuple
 fn cpk_color(atomic_number: u8) -> (u8, u8, u8) {
     match atomic_number {
-        1 => (255, 255, 255),   // H: white
-        6 => (80, 80, 80),       // C: dark grey
-        7 => (48, 80, 248),      // N: blue
-        8 => (255, 13, 13),      // O: red
-        9 => (144, 224, 80),     // F: green
-        15 => (255, 128, 0),     // P: orange
-        16 => (255, 200, 50),    // S: yellow
-        17 => (31, 240, 31),     // Cl: light green
-        35 => (166, 41, 41),     // Br: dark red
-        53 => (148, 0, 148),     // I: purple
-        _ => (255, 20, 147),     // Other: pink
+        1 => (255, 255, 255), // H: white
+        6 => (80, 80, 80),    // C: dark grey
+        7 => (48, 80, 248),   // N: blue
+        8 => (255, 13, 13),   // O: red
+        9 => (144, 224, 80),  // F: green
+        15 => (255, 128, 0),  // P: orange
+        16 => (255, 200, 50), // S: yellow
+        17 => (31, 240, 31),  // Cl: light green
+        35 => (166, 41, 41),  // Br: dark red
+        53 => (148, 0, 148),  // I: purple
+        _ => (255, 20, 147),  // Other: pink
     }
 }
 
@@ -53,11 +53,7 @@ pub fn render_png(mol: &Molecule, layout: &Layout) -> Vec<u8> {
 }
 
 /// Render PNG with custom options.
-pub fn render_png_opts(
-    mol: &Molecule,
-    layout: &Layout,
-    _opts: &RenderOptions,
-) -> Vec<u8> {
+pub fn render_png_opts(mol: &Molecule, layout: &Layout, _opts: &RenderOptions) -> Vec<u8> {
     if mol.atom_count() == 0 {
         return empty_png();
     }
@@ -109,13 +105,18 @@ pub fn render_png_opts(
                 text_paint.set_color(Color::BLACK);
 
                 // Draw 5 rows × 4 columns
-                for row in 0..5 {
+                for (row, bits) in bitmap.iter().enumerate() {
                     for col in 0..4 {
-                        if (bitmap[row] >> (3 - col)) & 1 == 1 {
+                        if (bits >> (3 - col)) & 1 == 1 {
                             let px = label_x + (col as f32 * 0.5);
                             let py = label_y + (row as f32 * 0.5);
                             if let Some(rect) = tiny_skia::Rect::from_xywh(px, py, 0.5, 0.5) {
-                                pixmap.fill_rect(rect, &text_paint, tiny_skia::Transform::default(), None);
+                                pixmap.fill_rect(
+                                    rect,
+                                    &text_paint,
+                                    tiny_skia::Transform::default(),
+                                    None,
+                                );
                             }
                         }
                     }
@@ -137,9 +138,9 @@ pub fn render_png_opts(
 
         // Determine stroke width and style based on bond order
         let stroke_width = match bond.order {
-            BondOrder::Up => BOND_WIDTH * 2.5,      // Wedge: thicker
-            BondOrder::Down => BOND_WIDTH * 0.8,    // Dash: thinner
-            _ => BOND_WIDTH,                          // Normal: regular
+            BondOrder::Up => BOND_WIDTH * 2.5,   // Wedge: thicker
+            BondOrder::Down => BOND_WIDTH * 0.8, // Dash: thinner
+            _ => BOND_WIDTH,                     // Normal: regular
         };
 
         let stroke = Stroke {
@@ -151,7 +152,13 @@ pub fn render_png_opts(
         pb.move_to(x1, y1);
         pb.line_to(x2, y2);
         if let Some(path) = pb.finish() {
-            pixmap.stroke_path(&path, &paint_bond, &stroke, tiny_skia::Transform::default(), None);
+            pixmap.stroke_path(
+                &path,
+                &paint_bond,
+                &stroke,
+                tiny_skia::Transform::default(),
+                None,
+            );
         }
 
         // Draw dashed lines for down bonds (approximation)
@@ -179,7 +186,13 @@ pub fn render_png_opts(
                     pb.move_to(sx, sy);
                     pb.line_to(ex, ey);
                     if let Some(path) = pb.finish() {
-                        pixmap.stroke_path(&path, &paint_bond, &stroke, tiny_skia::Transform::default(), None);
+                        pixmap.stroke_path(
+                            &path,
+                            &paint_bond,
+                            &stroke,
+                            tiny_skia::Transform::default(),
+                            None,
+                        );
                     }
 
                     pos += dash_len + gap_len;
@@ -193,14 +206,10 @@ pub fn render_png_opts(
 
 fn empty_png() -> Vec<u8> {
     vec![
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
-        0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
-        0x54, 0x08, 0x99, 0x01, 0x01, 0x00, 0x00, 0xFE,
-        0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x9A,
-        0x7E, 0x0B, 0xBB, 0x00, 0x00, 0x00, 0x00, 0x49,
-        0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44,
+        0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90,
+        0x77, 0x53, 0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0x99, 0x01, 0x01,
+        0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x9A, 0x7E, 0x0B, 0xBB, 0x00,
+        0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
     ]
 }

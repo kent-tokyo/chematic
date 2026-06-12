@@ -3,12 +3,13 @@
 //! Provides atom type enumeration (106 types) and SMARTS-based assignment
 //! for the MMFF94 force field, suitable for small molecule optimization.
 
-use chematic_core::{Molecule, AtomIdx, Element};
+use chematic_core::{AtomIdx, Element, Molecule};
 use std::fmt;
 
 /// MMFF94 atom type (106 variants based on element + environment).
 /// See: Halgren TA (1996) J. Comp. Chem. 17(5-6), 490-519.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[allow(non_camel_case_types)]
 pub enum MMFF94Type {
     // Carbon types (C, C_sp2, C_sp, C_aromatic, C_carb, etc.)
     C_sp3,
@@ -146,11 +147,11 @@ impl std::error::Error for AssignError {}
 pub fn assign_mmff94_types(mol: &Molecule) -> Result<Vec<MMFF94Type>, AssignError> {
     let mut types = vec![MMFF94Type::Generic; mol.atom_count()];
 
-    for i in 0..mol.atom_count() {
+    for (i, atom_type) in types.iter_mut().enumerate().take(mol.atom_count()) {
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
 
-        types[i] = match atom.element {
+        *atom_type = match atom.element {
             Element::C => assign_carbon_type(mol, idx)?,
             Element::N => assign_nitrogen_type(mol, idx)?,
             Element::O => assign_oxygen_type(mol, idx)?,
@@ -162,9 +163,12 @@ pub fn assign_mmff94_types(mol: &Molecule) -> Result<Vec<MMFF94Type>, AssignErro
             Element::I => MMFF94Type::I,
             Element::H => assign_hydrogen_type(mol, idx)?,
             Element::SI => assign_silicon_type(mol, idx)?,
-            _ => return Err(AssignError::UnsupportedElement(
-                format!("{:?}", atom.element),
-            )),
+            _ => {
+                return Err(AssignError::UnsupportedElement(format!(
+                    "{:?}",
+                    atom.element
+                )));
+            }
         };
     }
 
@@ -203,14 +207,25 @@ fn assign_carbon_type(mol: &Molecule, idx: AtomIdx) -> Result<MMFF94Type, Assign
     // Check for carbonyl
     if double_bonds > 0 {
         for (_, bond) in mol.bonds() {
-            let other = if bond.atom1 == idx { bond.atom2 } else if bond.atom2 == idx { bond.atom1 } else { continue };
+            let other = if bond.atom1 == idx {
+                bond.atom2
+            } else if bond.atom2 == idx {
+                bond.atom1
+            } else {
+                continue;
+            };
             if bond.order == chematic_core::BondOrder::Double
-                && mol.atom(other).element == Element::O {
-                    // Could be carboxylic or ester
-                    // Check if O is bonded to another C or has H
-                    let has_oh = false; // Simplified
-                    return Ok(if has_oh { MMFF94Type::C_Carboxylic } else { MMFF94Type::C_Ester });
-                }
+                && mol.atom(other).element == Element::O
+            {
+                // Could be carboxylic or ester
+                // Check if O is bonded to another C or has H
+                let has_oh = false; // Simplified
+                return Ok(if has_oh {
+                    MMFF94Type::C_Carboxylic
+                } else {
+                    MMFF94Type::C_Ester
+                });
+            }
         }
     }
 
@@ -235,7 +250,9 @@ fn assign_nitrogen_type(mol: &Molecule, idx: AtomIdx) -> Result<MMFF94Type, Assi
         // Count double bonds and neighbors
         let mut double_bonds = 0;
         for (_, bond) in mol.bonds() {
-            if (bond.atom1 == idx || bond.atom2 == idx) && bond.order == chematic_core::BondOrder::Double {
+            if (bond.atom1 == idx || bond.atom2 == idx)
+                && bond.order == chematic_core::BondOrder::Double
+            {
                 double_bonds += 1;
             }
         }
@@ -253,14 +270,19 @@ fn assign_oxygen_type(mol: &Molecule, idx: AtomIdx) -> Result<MMFF94Type, Assign
 
     // Check for double bond (carbonyl)
     for (_, bond) in mol.bonds() {
-        if (bond.atom1 == idx || bond.atom2 == idx) && bond.order == chematic_core::BondOrder::Double {
+        if (bond.atom1 == idx || bond.atom2 == idx)
+            && bond.order == chematic_core::BondOrder::Double
+        {
             return Ok(MMFF94Type::O_Carbonyl);
         }
     }
 
     // Single bond: ether or alcohol
     // Count implicit hydrogens
-    let bond_count = mol.bonds().filter(|(_, b)| b.atom1 == idx || b.atom2 == idx).count();
+    let bond_count = mol
+        .bonds()
+        .filter(|(_, b)| b.atom1 == idx || b.atom2 == idx)
+        .count();
     let max_valence = *atom.element.normal_valences().iter().max().unwrap_or(&2) as usize;
     let h_count = max_valence.saturating_sub(bond_count);
 
@@ -277,7 +299,9 @@ fn assign_sulfur_type(mol: &Molecule, idx: AtomIdx) -> Result<MMFF94Type, Assign
     let mut double_bonds = 0;
 
     for (_, bond) in mol.bonds() {
-        if (bond.atom1 == idx || bond.atom2 == idx) && bond.order == chematic_core::BondOrder::Double {
+        if (bond.atom1 == idx || bond.atom2 == idx)
+            && bond.order == chematic_core::BondOrder::Double
+        {
             double_bonds += 1;
         }
     }
@@ -304,9 +328,13 @@ fn assign_silicon_type(mol: &Molecule, idx: AtomIdx) -> Result<MMFF94Type, Assig
 fn assign_hydrogen_type(mol: &Molecule, idx: AtomIdx) -> Result<MMFF94Type, AssignError> {
     // Find bonded atom
     for (_, bond) in mol.bonds() {
-        let other = if bond.atom1 == idx { Some(bond.atom2) }
-                   else if bond.atom2 == idx { Some(bond.atom1) }
-                   else { None };
+        let other = if bond.atom1 == idx {
+            Some(bond.atom2)
+        } else if bond.atom2 == idx {
+            Some(bond.atom1)
+        } else {
+            None
+        };
 
         if let Some(other_idx) = other {
             let other_atom = mol.atom(other_idx);
@@ -389,11 +417,7 @@ pub fn mmff94_charges_3d(
 /// Apply formal charge redistribution to bonded atoms.
 /// For example, in carboxylate (-COO-), the negative charge is distributed
 /// among the oxygen atoms based on their formal charges and electronegativity.
-fn apply_formal_charge_redistribution(
-    mol: &Molecule,
-    types: &[MMFF94Type],
-    charges: &mut [f64],
-) {
+fn apply_formal_charge_redistribution(mol: &Molecule, types: &[MMFF94Type], charges: &mut [f64]) {
     use MMFF94Type::*;
 
     // Carboxylate pattern: C bonded to two O atoms with one O having formal charge -1
@@ -513,9 +537,19 @@ fn apply_hbond_effects(_mol: &Molecule, types: &[MMFF94Type], charges: &mut [f64
         // Hydrogen bond acceptor corrections (N, O with lone pairs)
         let is_h_acceptor = matches!(
             atom_type,
-            N_sp3_Amine | N_sp3_AmineAromatic | N_sp2_Imine | N_sp2_Aromatic
-                | O_Alcohol | O_Phenol | O_Ether | O_Carbonyl | O_Carboxylic | O_Carbamate
-                | O_Ester | O_Amide | O_Imide
+            N_sp3_Amine
+                | N_sp3_AmineAromatic
+                | N_sp2_Imine
+                | N_sp2_Aromatic
+                | O_Alcohol
+                | O_Phenol
+                | O_Ether
+                | O_Carbonyl
+                | O_Carboxylic
+                | O_Carbamate
+                | O_Ester
+                | O_Amide
+                | O_Imide
         );
 
         // Apply modest corrections for H-bond participation
@@ -602,9 +636,8 @@ mod tests {
         let n_atoms = mol.atom_count();
 
         // Create reasonable 3D coordinates (linear arrangement for simplicity)
-        let coords: Vec<(f64, f64, f64)> = (0..n_atoms)
-            .map(|i| (i as f64 * 1.5, 0.0, 0.0))
-            .collect();
+        let coords: Vec<(f64, f64, f64)> =
+            (0..n_atoms).map(|i| (i as f64 * 1.5, 0.0, 0.0)).collect();
 
         let charges = mmff94_charges_3d(&mol, &coords).unwrap();
         assert_eq!(charges.len(), n_atoms);
@@ -703,10 +736,10 @@ mod tests {
     fn test_mmff94_charges_carboxylic_acid() {
         let mol = parse("CC(=O)O").unwrap();
         let coords = vec![
-            (0.0, 0.0, 0.0),   // C
-            (1.5, 0.0, 0.0),   // C
-            (2.5, 1.0, 0.0),   // O (carbonyl)
-            (2.5, -1.0, 0.0),  // O (hydroxy)
+            (0.0, 0.0, 0.0),  // C
+            (1.5, 0.0, 0.0),  // C
+            (2.5, 1.0, 0.0),  // O (carbonyl)
+            (2.5, -1.0, 0.0), // O (hydroxy)
         ];
 
         let charges = mmff94_charges_3d(&mol, &coords).unwrap();
@@ -723,10 +756,10 @@ mod tests {
 
         let mol = parse("CC(=O)[O-]").unwrap();
         let coords = vec![
-            (0.0, 0.0, 0.0),    // C_sp3 (methyl)
-            (1.5, 0.0, 0.0),    // C_carboxylic
-            (2.5, 1.0, 0.0),    // O_carbonyl
-            (2.5, -1.0, 0.0),   // O_carboxylic (with formal charge -1)
+            (0.0, 0.0, 0.0),  // C_sp3 (methyl)
+            (1.5, 0.0, 0.0),  // C_carboxylic
+            (2.5, 1.0, 0.0),  // O_carbonyl
+            (2.5, -1.0, 0.0), // O_carboxylic (with formal charge -1)
         ];
 
         let charges = mmff94_charges_3d(&mol, &coords).unwrap();
@@ -736,10 +769,17 @@ mod tests {
         // Due to formal charge redistribution, total should be -1
         let total_charge: f64 = charges.iter().sum();
         // Verify charge is present (not all zero)
-        assert!(total_charge < -0.5, "total charge should be negative (carboxylate), got {}", total_charge);
+        assert!(
+            total_charge < -0.5,
+            "total charge should be negative (carboxylate), got {}",
+            total_charge
+        );
 
         // At least one oxygen should be negatively charged
-        assert!(charges[2] < -0.2 || charges[3] < -0.2, "at least one O should be negative");
+        assert!(
+            charges[2] < -0.2 || charges[3] < -0.2,
+            "at least one O should be negative"
+        );
     }
 
     #[test]
@@ -761,7 +801,10 @@ mod tests {
 
         // Oxygens should be more negative than carbons
         let avg_o_charge = (charges[1] + charges[2] + charges[3]) / 3.0;
-        assert!(avg_o_charge < charges[0], "average O charge should be more negative than C");
+        assert!(
+            avg_o_charge < charges[0],
+            "average O charge should be more negative than C"
+        );
     }
 
     #[test]
@@ -769,14 +812,25 @@ mod tests {
         // Ensure all charges are finite (no NaN, inf)
         let mol = parse("C1=CC=CC=C1[N+](=O)[O-]").unwrap(); // Nitrobenzene
         let coords = vec![
-            (0.0, 0.0, 0.0), (1.4, 0.0, 0.0), (2.1, 1.2, 0.0), (1.4, 2.4, 0.0),
-            (0.0, 2.4, 0.0), (-0.7, 1.2, 0.0), (2.8, 1.2, 0.0), (3.6, 1.2, 0.0),
+            (0.0, 0.0, 0.0),
+            (1.4, 0.0, 0.0),
+            (2.1, 1.2, 0.0),
+            (1.4, 2.4, 0.0),
+            (0.0, 2.4, 0.0),
+            (-0.7, 1.2, 0.0),
+            (2.8, 1.2, 0.0),
+            (3.6, 1.2, 0.0),
             (2.8, 0.4, 0.0),
         ];
 
         if let Ok(charges) = mmff94_charges_3d(&mol, &coords) {
             for (i, &charge) in charges.iter().enumerate() {
-                assert!(charge.is_finite(), "charge[{}] = {} is not finite", i, charge);
+                assert!(
+                    charge.is_finite(),
+                    "charge[{}] = {} is not finite",
+                    i,
+                    charge
+                );
             }
         }
     }

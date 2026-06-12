@@ -1,6 +1,8 @@
 //! InChI string parser — reconstruct Molecule from InChI representation.
 
-use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, CipCode, Element, Molecule, MoleculeBuilder};
+use chematic_core::{
+    Atom, AtomIdx, BondIdx, BondOrder, CipCode, Element, Molecule, MoleculeBuilder,
+};
 use std::collections::HashMap;
 
 /// Error type for InChI parsing.
@@ -56,7 +58,7 @@ impl std::error::Error for InchiParseError {}
 pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
     // Remove "InChI=1S/" prefix
     let content = if let Some(pos) = inchi_str.find("/") {
-        &inchi_str[pos + 1..]  // Skip the opening "/"
+        &inchi_str[pos + 1..] // Skip the opening "/"
     } else {
         return Err(InchiParseError::InvalidFormat);
     };
@@ -90,9 +92,9 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
 
     // Parse connectivity layer (/c...)
     let mut connectivity_str = "";
-    for i in 1..parts.len() {
-        if parts[i].starts_with('c') {
-            connectivity_str = &parts[i][1..];
+    for part in parts.iter().skip(1) {
+        if let Some(layer) = part.strip_prefix('c') {
+            connectivity_str = layer;
             break;
         }
     }
@@ -103,9 +105,8 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
 
     // Parse hydrogen layer (/h...) to get hydrogen counts
     let mut h_counts: HashMap<usize, u8> = HashMap::new();
-    for i in 1..parts.len() {
-        if parts[i].starts_with('h') {
-            let hydrogen_str = &parts[i][1..];
+    for part in parts.iter().skip(1) {
+        if let Some(hydrogen_str) = part.strip_prefix('h') {
             h_counts = parse_hydrogen_layer_to_map(hydrogen_str)?;
             break;
         }
@@ -113,9 +114,8 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
 
     // Parse charge layer (/q...)
     let mut charges: HashMap<usize, i8> = HashMap::new();
-    for i in 1..parts.len() {
-        if parts[i].starts_with('q') {
-            let charge_str = &parts[i][1..];
+    for part in parts.iter().skip(1) {
+        if let Some(charge_str) = part.strip_prefix('q') {
             charges = parse_charge_layer(charge_str)?;
             break;
         }
@@ -123,9 +123,8 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
 
     // Parse isotope layer (/i...)
     let mut isotopes: HashMap<usize, u8> = HashMap::new();
-    for i in 1..parts.len() {
-        if parts[i].starts_with('i') {
-            let isotope_str = &parts[i][1..];
+    for part in parts.iter().skip(1) {
+        if let Some(isotope_str) = part.strip_prefix('i') {
             isotopes = parse_isotope_layer(isotope_str)?;
             break;
         }
@@ -133,9 +132,8 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
 
     // Parse E/Z stereo layer (/b...)
     let mut ez_stereo: HashMap<(usize, usize), char> = HashMap::new();
-    for i in 1..parts.len() {
-        if parts[i].starts_with('b') {
-            let b_str = &parts[i][1..];
+    for part in parts.iter().skip(1) {
+        if let Some(b_str) = part.strip_prefix('b') {
             ez_stereo = parse_ez_stereo_layer(b_str)?;
             break;
         }
@@ -143,30 +141,25 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
 
     // Parse tetrahedral stereo layer (/t...)
     let mut tet_stereo: HashMap<usize, char> = HashMap::new();
-    for i in 1..parts.len() {
-        if parts[i].starts_with('t') {
-            let t_str = &parts[i][1..];
+    for part in parts.iter().skip(1) {
+        if let Some(t_str) = part.strip_prefix('t') {
             tet_stereo = parse_tetrahedral_stereo_layer(t_str)?;
             break;
         }
     }
 
     // Parse relative stereo parity layer (/m...) - informational metadata
-    let mut rel_stereo_parity: HashMap<usize, String> = HashMap::new();
-    for i in 1..parts.len() {
-        if parts[i].starts_with('m') {
-            let m_str = &parts[i][1..];
-            rel_stereo_parity = parse_relative_stereo_layer(m_str)?;
+    for part in parts.iter().skip(1) {
+        if let Some(m_str) = part.strip_prefix('m') {
+            let _ = parse_relative_stereo_layer(m_str)?;
             break;
         }
     }
 
     // Parse stereo type layer (/s...) - informational metadata
-    let mut stereo_type: String = String::new();
-    for i in 1..parts.len() {
-        if parts[i].starts_with('s') {
-            let s_str = &parts[i][1..];
-            stereo_type = parse_stereo_type_layer(s_str)?;
+    for part in parts.iter().skip(1) {
+        if let Some(s_str) = part.strip_prefix('s') {
+            let _ = parse_stereo_type_layer(s_str)?;
             break;
         }
     }
@@ -222,8 +215,7 @@ fn parse_formula(formula_str: &str) -> Result<Vec<(Element, usize)>, InchiParseE
             }
         }
 
-        let element = Element::from_symbol(&elem_sym)
-            .ok_or(InchiParseError::InvalidFormula)?;
+        let element = Element::from_symbol(&elem_sym).ok_or(InchiParseError::InvalidFormula)?;
 
         // Parse count
         let mut count_str = String::new();
@@ -238,7 +230,9 @@ fn parse_formula(formula_str: &str) -> Result<Vec<(Element, usize)>, InchiParseE
         let count = if count_str.is_empty() {
             1
         } else {
-            count_str.parse::<usize>().map_err(|_| InchiParseError::InvalidFormula)?
+            count_str
+                .parse::<usize>()
+                .map_err(|_| InchiParseError::InvalidFormula)?
         };
 
         elements.push((element, count));
@@ -272,10 +266,15 @@ fn parse_connectivity(
             while let Some(&next_ch) = chars.peek() {
                 if next_ch.is_numeric() {
                     next_atom_str.push(chars.next().unwrap());
-                } else if next_ch == '=' || next_ch == '#' || next_ch == '-' || next_ch == ',' || next_ch == ';' {
+                } else if next_ch == '='
+                    || next_ch == '#'
+                    || next_ch == '-'
+                    || next_ch == ','
+                    || next_ch == ';'
+                {
                     break;
                 } else {
-                    chars.next();  // Skip unknown chars
+                    chars.next(); // Skip unknown chars
                     break;
                 }
             }
@@ -379,12 +378,13 @@ fn parse_hydrogen_layer_to_map(h_str: &str) -> Result<HashMap<usize, u8>, InchiP
             return Err(InchiParseError::InvalidHydrogen);
         }
 
-        let atom_spec = parts[0];  // "1", "2", or "3-6"
-        let h_count_str = parts[1];  // "", "2", "3", etc.
+        let atom_spec = parts[0]; // "1", "2", or "3-6"
+        let h_count_str = parts[1]; // "", "2", "3", etc.
         let h_count: u8 = if h_count_str.is_empty() {
-            1  // If no number after H, it means 1 hydrogen
+            1 // If no number after H, it means 1 hydrogen
         } else {
-            h_count_str.parse::<u8>()
+            h_count_str
+                .parse::<u8>()
                 .map_err(|_| InchiParseError::InvalidHydrogen)?
         };
 
@@ -393,9 +393,11 @@ fn parse_hydrogen_layer_to_map(h_str: &str) -> Result<HashMap<usize, u8>, InchiP
             // Range: "1-6"
             let start_str = &atom_spec[..dash_pos];
             let end_str = &atom_spec[dash_pos + 1..];
-            let start: usize = start_str.parse::<usize>()
+            let start: usize = start_str
+                .parse::<usize>()
                 .map_err(|_| InchiParseError::InvalidHydrogen)?;
-            let end: usize = end_str.parse::<usize>()
+            let end: usize = end_str
+                .parse::<usize>()
                 .map_err(|_| InchiParseError::InvalidHydrogen)?;
 
             for atom_num in start..=end {
@@ -403,7 +405,8 @@ fn parse_hydrogen_layer_to_map(h_str: &str) -> Result<HashMap<usize, u8>, InchiP
             }
         } else {
             // Single atom: "1"
-            let atom_num: usize = atom_spec.parse::<usize>()
+            let atom_num: usize = atom_spec
+                .parse::<usize>()
                 .map_err(|_| InchiParseError::InvalidHydrogen)?;
             h_counts.insert(atom_num, h_count);
         }
@@ -488,9 +491,11 @@ fn parse_charge_layer(q_str: &str) -> Result<HashMap<usize, i8>, InchiParseError
             // Range: "2-5+1"
             let parts: Vec<&str> = atom_str.split('-').collect();
             if parts.len() == 2 {
-                let start: usize = parts[0].parse::<usize>()
+                let start: usize = parts[0]
+                    .parse::<usize>()
                     .map_err(|_| InchiParseError::Unsupported("invalid atom range".to_string()))?;
-                let end: usize = parts[1].parse::<usize>()
+                let end: usize = parts[1]
+                    .parse::<usize>()
                     .map_err(|_| InchiParseError::Unsupported("invalid atom range".to_string()))?;
 
                 for atom_num in start..=end {
@@ -530,9 +535,9 @@ fn parse_isotope_layer(i_str: &str) -> Result<HashMap<usize, u8>, InchiParseErro
         let parts: Vec<&str> = spec.split('/').collect();
         if parts.len() >= 2 {
             // First part is atom number
-            let atom_num: usize = parts[0]
-                .parse::<usize>()
-                .map_err(|_| InchiParseError::Unsupported("invalid atom number in isotope layer".to_string()))?;
+            let atom_num: usize = parts[0].parse::<usize>().map_err(|_| {
+                InchiParseError::Unsupported("invalid atom number in isotope layer".to_string())
+            })?;
 
             // Rest is isotope spec like "13C" or "2H"
             let isotope_spec = parts[1];
@@ -545,9 +550,9 @@ fn parse_isotope_layer(i_str: &str) -> Result<HashMap<usize, u8>, InchiParseErro
             }
 
             if !mass_str.is_empty() {
-                let mass: u8 = mass_str
-                    .parse::<u8>()
-                    .map_err(|_| InchiParseError::Unsupported("invalid isotope mass".to_string()))?;
+                let mass: u8 = mass_str.parse::<u8>().map_err(|_| {
+                    InchiParseError::Unsupported("invalid isotope mass".to_string())
+                })?;
                 isotopes.insert(atom_num, mass);
             }
         }
@@ -676,15 +681,15 @@ fn parse_tetrahedral_stereo_layer(t_str: &str) -> Result<HashMap<usize, char>, I
         // Format: "1-" or "2+"
         if let Some(pos) = spec.rfind('+') {
             let atom_part = &spec[..pos];
-            let atom_num: usize = atom_part
-                .parse::<usize>()
-                .map_err(|_| InchiParseError::Unsupported("invalid atom number in stereo layer".to_string()))?;
+            let atom_num: usize = atom_part.parse::<usize>().map_err(|_| {
+                InchiParseError::Unsupported("invalid atom number in stereo layer".to_string())
+            })?;
             stereo.insert(atom_num, '+');
         } else if let Some(pos) = spec.rfind('-') {
             let atom_part = &spec[..pos];
-            let atom_num: usize = atom_part
-                .parse::<usize>()
-                .map_err(|_| InchiParseError::Unsupported("invalid atom number in stereo layer".to_string()))?;
+            let atom_num: usize = atom_part.parse::<usize>().map_err(|_| {
+                InchiParseError::Unsupported("invalid atom number in stereo layer".to_string())
+            })?;
             stereo.insert(atom_num, '-');
         }
     }
@@ -696,7 +701,9 @@ fn parse_tetrahedral_stereo_layer(t_str: &str) -> Result<HashMap<usize, char>, I
 fn parse_bond_spec(spec: &str) -> Result<(usize, usize), InchiParseError> {
     let parts: Vec<&str> = spec.split('-').collect();
     if parts.len() != 2 {
-        return Err(InchiParseError::Unsupported("invalid bond spec".to_string()));
+        return Err(InchiParseError::Unsupported(
+            "invalid bond spec".to_string(),
+        ));
     }
 
     let a1: usize = parts[0]
@@ -732,15 +739,15 @@ fn apply_ez_stereo(
         // Check if this atom is stereo-assigned in the E/Z layer
         // stereo key is (lower_num, higher_num), and we assign to the lower atom
         for (&(n1, _n2), &parity) in stereo.iter() {
-            if let Some(&idx1) = atom_idx_map.get(&n1) {
-                if idx1 == old_idx {
-                    a.cip_code = Some(match parity {
-                        '+' => CipCode::Z,
-                        '-' => CipCode::E,
-                        _ => continue,
-                    });
-                    break;
-                }
+            if let Some(&idx1) = atom_idx_map.get(&n1)
+                && idx1 == old_idx
+            {
+                a.cip_code = Some(match parity {
+                    '+' => CipCode::Z,
+                    '-' => CipCode::E,
+                    _ => continue,
+                });
+                break;
             }
         }
 
@@ -749,7 +756,7 @@ fn apply_ez_stereo(
     }
 
     for (_, bond) in mol.bonds() {
-        builder.add_bond(atom_map[&bond.atom1], atom_map[&bond.atom2], bond.order);
+        let _ = builder.add_bond(atom_map[&bond.atom1], atom_map[&bond.atom2], bond.order);
     }
 
     builder.build()
@@ -776,15 +783,15 @@ fn apply_tetrahedral_stereo(
         // Check if this atom is assigned a tetrahedral stereo in the /t layer
         // We need to find which InChI atom number corresponds to old_idx
         for (&inchi_num, &parity) in stereo.iter() {
-            if let Some(&idx) = atom_idx_map.get(&inchi_num) {
-                if idx == old_idx {
-                    a.cip_code = Some(match parity {
-                        '+' => CipCode::R,
-                        '-' => CipCode::S,
-                        _ => continue,
-                    });
-                    break;
-                }
+            if let Some(&idx) = atom_idx_map.get(&inchi_num)
+                && idx == old_idx
+            {
+                a.cip_code = Some(match parity {
+                    '+' => CipCode::R,
+                    '-' => CipCode::S,
+                    _ => continue,
+                });
+                break;
             }
         }
 
@@ -793,7 +800,7 @@ fn apply_tetrahedral_stereo(
     }
 
     for (_, bond) in mol.bonds() {
-        builder.add_bond(atom_map[&bond.atom1], atom_map[&bond.atom2], bond.order);
+        let _ = builder.add_bond(atom_map[&bond.atom1], atom_map[&bond.atom2], bond.order);
     }
 
     builder.build()
@@ -845,7 +852,13 @@ mod tests {
         let result = parse_formula("C2H6");
         assert!(result.is_ok());
         let elements = result.unwrap();
-        assert_eq!(elements.iter().find(|(e, _)| e.atomic_number() == 6).map(|(_, c)| c), Some(&2));
+        assert_eq!(
+            elements
+                .iter()
+                .find(|(e, _)| e.atomic_number() == 6)
+                .map(|(_, c)| c),
+            Some(&2)
+        );
     }
 
     #[test]
@@ -931,11 +944,18 @@ mod tests {
         let result = parse_inchi("InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3");
         assert!(result.is_ok());
         let mol = result.unwrap();
-        assert_eq!(mol.atom_count(), 3, "ethanol should have 3 heavy atoms (C, C, O)");
+        assert_eq!(
+            mol.atom_count(),
+            3,
+            "ethanol should have 3 heavy atoms (C, C, O)"
+        );
 
         // Check that at least one atom has hydrogen_count set
         let has_h_count = mol.atoms().any(|(_, atom)| atom.hydrogen_count.is_some());
-        assert!(has_h_count, "at least one atom should have explicit hydrogen_count");
+        assert!(
+            has_h_count,
+            "at least one atom should have explicit hydrogen_count"
+        );
     }
 
     #[test]
@@ -981,7 +1001,11 @@ mod tests {
     #[test]
     fn test_parse_isotope_layer_multiple() {
         let isotopes = parse_isotope_layer("1/2H,2/13C").unwrap();
-        assert_eq!(isotopes.get(&1), Some(&2), "atom 1 should be H-2 (deuterium)");
+        assert_eq!(
+            isotopes.get(&1),
+            Some(&2),
+            "atom 1 should be H-2 (deuterium)"
+        );
         assert_eq!(isotopes.get(&2), Some(&13), "atom 2 should be C-13");
     }
 
@@ -1010,13 +1034,19 @@ mod tests {
     #[test]
     fn test_empty_charge_layer() {
         let charges = parse_charge_layer("").unwrap();
-        assert!(charges.is_empty(), "empty charge layer should yield no charges");
+        assert!(
+            charges.is_empty(),
+            "empty charge layer should yield no charges"
+        );
     }
 
     #[test]
     fn test_empty_isotope_layer() {
         let isotopes = parse_isotope_layer("").unwrap();
-        assert!(isotopes.is_empty(), "empty isotope layer should yield no isotopes");
+        assert!(
+            isotopes.is_empty(),
+            "empty isotope layer should yield no isotopes"
+        );
     }
 
     #[test]
@@ -1154,10 +1184,10 @@ mod tests {
         let a4 = builder.add_atom(Atom::new(Element::H));
         let a5 = builder.add_atom(Atom::new(Element::N));
 
-        builder.add_bond(a1, a2, BondOrder::Single);
-        builder.add_bond(a1, a3, BondOrder::Single);
-        builder.add_bond(a1, a4, BondOrder::Single);
-        builder.add_bond(a1, a5, BondOrder::Single);
+        let _ = builder.add_bond(a1, a2, BondOrder::Single);
+        let _ = builder.add_bond(a1, a3, BondOrder::Single);
+        let _ = builder.add_bond(a1, a4, BondOrder::Single);
+        let _ = builder.add_bond(a1, a5, BondOrder::Single);
 
         let mol = builder.build();
         let mut stereo_map = HashMap::new();
@@ -1181,9 +1211,9 @@ mod tests {
         let a3 = builder.add_atom(Atom::new(Element::H));
         let a4 = builder.add_atom(Atom::new(Element::N));
 
-        builder.add_bond(a1, a2, BondOrder::Double);
-        builder.add_bond(a1, a3, BondOrder::Single);
-        builder.add_bond(a2, a4, BondOrder::Single);
+        let _ = builder.add_bond(a1, a2, BondOrder::Double);
+        let _ = builder.add_bond(a1, a3, BondOrder::Single);
+        let _ = builder.add_bond(a2, a4, BondOrder::Single);
 
         let mol = builder.build();
         let mut stereo_map = HashMap::new();

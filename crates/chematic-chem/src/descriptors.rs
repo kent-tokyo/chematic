@@ -42,25 +42,29 @@ fn has_aromatic_carbon_neighbor(mol: &Molecule, idx: AtomIdx) -> bool {
 // Consolidate atomic number matching to eliminate 50+ hardcoded checks throughout the file.
 
 #[inline]
-fn is_carbon(an: u8) -> bool { an == 6 }
+fn is_carbon(an: u8) -> bool {
+    an == 6
+}
 
 #[inline]
-fn is_nitrogen(an: u8) -> bool { an == 7 }
+fn is_nitrogen(an: u8) -> bool {
+    an == 7
+}
 
 #[inline]
-fn is_oxygen(an: u8) -> bool { an == 8 }
+fn is_oxygen(an: u8) -> bool {
+    an == 8
+}
 
 #[inline]
-fn is_sulfur(an: u8) -> bool { an == 16 }
+fn is_sulfur(an: u8) -> bool {
+    an == 16
+}
 
 #[inline]
-fn is_phosphorus(an: u8) -> bool { an == 15 }
-
-#[inline]
-fn is_halogen(an: u8) -> bool { matches!(an, 9 | 17 | 35 | 53) } // F, Cl, Br, I
-
-#[inline]
-fn is_heteroatom(an: u8) -> bool { !is_carbon(an) && an != 1 } // Not C or H
+fn is_halogen(an: u8) -> bool {
+    matches!(an, 9 | 17 | 35 | 53)
+} // F, Cl, Br, I
 
 /// Average atomic mass table.
 /// Falls back to `atomic_number as f64` for unlisted elements.
@@ -339,20 +343,31 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
         }
     } else {
         if charge == 1 {
-            let (has_oxo, has_o_minus) = mol.neighbors(idx)
-                .fold((false, false), |(oxo, om), (nb, bidx)| {
-                    let nb_atom = mol.atom(nb);
-                    let is_o = nb_atom.element.atomic_number() == 8;
-                    (oxo || (is_o && mol.bond(bidx).order == BondOrder::Double),
-                     om || (is_o && nb_atom.charge == -1))
-                });
+            let (has_oxo, has_o_minus) =
+                mol.neighbors(idx)
+                    .fold((false, false), |(oxo, om), (nb, bidx)| {
+                        let nb_atom = mol.atom(nb);
+                        let is_o = nb_atom.element.atomic_number() == 8;
+                        (
+                            oxo || (is_o && mol.bond(bidx).order == BondOrder::Double),
+                            om || (is_o && nb_atom.charge == -1),
+                        )
+                    });
             if has_oxo && has_o_minus { 41.44 } else { 3.24 }
         } else if h >= 2 {
             26.02
         } else if h == 1 {
-            if has_double_bond_to(mol, idx, 6) { 23.79 } else { 12.03 }
+            if has_double_bond_to(mol, idx, 6) {
+                23.79
+            } else {
+                12.03
+            }
         } else {
-            if has_double_bond_to(mol, idx, 6) { 12.89 } else { 3.24 }
+            if has_double_bond_to(mol, idx, 6) {
+                12.89
+            } else {
+                3.24
+            }
         }
     }
 }
@@ -370,7 +385,8 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
         if is_nitro_o_minus {
             0.0
         } else {
-            let dbl_neighbor_an = mol.neighbors(idx)
+            let dbl_neighbor_an = mol
+                .neighbors(idx)
                 .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
                 .map(|(nei, _)| mol.atom(nei).element.atomic_number());
             match dbl_neighbor_an {
@@ -397,7 +413,11 @@ fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8) -> f64 {
 }
 
 fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx) -> f64 {
-    if has_double_bond_to(mol, idx, 8) { 26.88 } else { 34.14 }
+    if has_double_bond_to(mol, idx, 8) {
+        26.88
+    } else {
+        34.14
+    }
 }
 
 /// Topological Polar Surface Area (Ertl 2000).
@@ -442,6 +462,7 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// - S: thioether=+0.6482, aromatic=+0.6237 (was 0.2432/0.0)
 /// - O: alcohol=−0.2893, ether=−0.0684, aromatic=+0.1552, carbonyl=−0.0509
 /// - Cl: aromatic=+0.7904, aliphatic=+0.6895
+///
 /// Wildman-Crippen LogP per-atom contributions.
 ///
 /// Dispatches to per-element atom-type functions (crippen_carbon, crippen_nitrogen, etc.)
@@ -464,7 +485,11 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
                 35 => crippen_halogen(mol, idx, ar, 0.8995, 0.8456),
                 53 => crippen_halogen(mol, idx, ar, 0.7416, 0.8857),
                 15 => {
-                    if has_double_bond_to(mol, idx, 8) { 0.7933 } else { -0.3451 }
+                    if has_double_bond_to(mol, idx, 8) {
+                        0.7933
+                    } else {
+                        -0.3451
+                    }
                 }
                 _ => 0.0,
             };
@@ -621,9 +646,9 @@ fn crippen_nitrogen_aliphatic(mol: &Molecule, idx: AtomIdx) -> f64 {
                 let is_urea_type = mol.neighbors(idx).any(|(cn, _)| {
                     is_carbon(mol.atom(cn).element.atomic_number())
                         && has_double_bond_to(mol, cn, 8)
-                        && mol
-                            .neighbors(cn)
-                            .any(|(n2, _)| is_nitrogen(mol.atom(n2).element.atomic_number()) && n2 != idx)
+                        && mol.neighbors(cn).any(|(n2, _)| {
+                            is_nitrogen(mol.atom(n2).element.atomic_number()) && n2 != idx
+                        })
                 });
                 if is_urea_type { 0.0000 } else { -0.3187 }
             }
@@ -1099,13 +1124,14 @@ pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
                 return false;
             }
             let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
-            let ring_sets: Vec<HashSet<AtomIdx>> = member_rings.iter().map(|r| r.iter().copied().collect()).collect();
+            let ring_sets: Vec<HashSet<AtomIdx>> = member_rings
+                .iter()
+                .map(|r| r.iter().copied().collect())
+                .collect();
             for i in 0..ring_sets.len() {
                 for j in (i + 1)..ring_sets.len() {
-                    let shared: Vec<AtomIdx> = ring_sets[i]
-                        .intersection(&ring_sets[j])
-                        .copied()
-                        .collect();
+                    let shared: Vec<AtomIdx> =
+                        ring_sets[i].intersection(&ring_sets[j]).copied().collect();
                     if shared.len() < 2 {
                         continue;
                     }
@@ -1242,7 +1268,7 @@ pub fn ghose_passes(mol: &Molecule) -> bool {
 /// 35-36: Saturated/aromatic ring heteroatom count
 /// 37-40: Heavy atom count, sp3 carbon count, fused ring count, bridgehead count
 /// 41: Spiro atom count
-fn fill_mqn_stats(mqn: &mut Vec<u8>, vals: &mut Vec<u8>, base: usize) {
+fn fill_mqn_stats(mqn: &mut [u8], vals: &mut [u8], base: usize) {
     if !vals.is_empty() {
         vals.sort();
         mqn[base] = vals[0];
@@ -1280,16 +1306,16 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     // 0-9: Atom counts
     for (_, atom) in mol.atoms() {
         match atom.element.atomic_number() {
-            6 => mqn[0] = mqn[0].saturating_add(1),   // C
-            7 => mqn[1] = mqn[1].saturating_add(1),   // N
-            8 => mqn[2] = mqn[2].saturating_add(1),   // O
-            9 => mqn[3] = mqn[3].saturating_add(1),   // F
-            14 => mqn[4] = mqn[4].saturating_add(1),  // Si
-            15 => mqn[5] = mqn[5].saturating_add(1),  // P
-            16 => mqn[6] = mqn[6].saturating_add(1),  // S
-            17 => mqn[7] = mqn[7].saturating_add(1),  // Cl
-            35 => mqn[8] = mqn[8].saturating_add(1),  // Br
-            53 => mqn[9] = mqn[9].saturating_add(1),  // I
+            6 => mqn[0] = mqn[0].saturating_add(1),  // C
+            7 => mqn[1] = mqn[1].saturating_add(1),  // N
+            8 => mqn[2] = mqn[2].saturating_add(1),  // O
+            9 => mqn[3] = mqn[3].saturating_add(1),  // F
+            14 => mqn[4] = mqn[4].saturating_add(1), // Si
+            15 => mqn[5] = mqn[5].saturating_add(1), // P
+            16 => mqn[6] = mqn[6].saturating_add(1), // S
+            17 => mqn[7] = mqn[7].saturating_add(1), // Cl
+            35 => mqn[8] = mqn[8].saturating_add(1), // Br
+            53 => mqn[9] = mqn[9].saturating_add(1), // I
             _ => {}
         }
     }
@@ -1325,9 +1351,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     let mut aromatic_rings = 0u8;
     let mut saturated_rings = 0u8;
     for ring in rings {
-        let is_aromatic = ring
-            .iter()
-            .all(|&idx| mol.atom(idx).aromatic);
+        let is_aromatic = ring.iter().all(|&idx| mol.atom(idx).aromatic);
         if is_aromatic {
             aromatic_rings = (aromatic_rings as usize + 1).min(255) as u8;
         } else {
@@ -1390,10 +1414,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     mqn[31] = rotatable_bond_count(mol).min(255) as u8;
 
     // 32: Aromatic atoms
-    let aromatic_count = mol
-        .atoms()
-        .filter(|(_, atom)| atom.aromatic)
-        .count() as u8;
+    let aromatic_count = mol.atoms().filter(|(_, atom)| atom.aromatic).count() as u8;
     mqn[32] = aromatic_count;
 
     // 33-34: H donors, H acceptors
@@ -1402,9 +1423,9 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
 
     // 35-36: Saturated/aromatic ring heteroatom count
     for ring in rings {
-        let has_hetero = ring.iter().any(|&idx| {
-            matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16)
-        });
+        let has_hetero = ring
+            .iter()
+            .any(|&idx| matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16));
         if has_hetero {
             let is_arom = ring.iter().all(|&idx| mol.atom(idx).aromatic);
             if is_arom {
@@ -1425,7 +1446,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
             atom.element.atomic_number() == 6 && {
                 let degree = mol.neighbors(*idx).count();
                 let h_count = implicit_hcount(mol, *idx) as usize;
-                degree + h_count == 4  // includes degree=4, 3+H1, 2+H2, 1+H3, 0+H4
+                degree + h_count == 4 // includes degree=4, 3+H1, 2+H2, 1+H3, 0+H4
             }
         })
         .count() as u8;
@@ -1433,7 +1454,8 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
 
     // 39: Fused ring count (approximate: rings sharing >1 atom)
     // Convert rings to HashSet for O(1) overlap checking
-    let ring_sets: Vec<HashSet<AtomIdx>> = rings.iter().map(|r| r.iter().copied().collect()).collect();
+    let ring_sets: Vec<HashSet<AtomIdx>> =
+        rings.iter().map(|r| r.iter().copied().collect()).collect();
     let mut fused_count = 0u8;
     for i in 0..ring_sets.len() {
         for j in (i + 1)..ring_sets.len() {
@@ -1448,10 +1470,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     // 40: Bridgehead atom count (iterate atoms once, not rings)
     let mut bridgehead = 0u8;
     for (idx, _) in mol.atoms() {
-        let in_rings = ring_sets
-            .iter()
-            .filter(|r| r.contains(&idx))
-            .count();
+        let in_rings = ring_sets.iter().filter(|r| r.contains(&idx)).count();
         if in_rings >= 2 {
             bridgehead = bridgehead.saturating_add(1);
         }
@@ -1461,18 +1480,11 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     // 41: Spiro atom count
     let mut spiro = 0u8;
     for (idx, _) in mol.atoms() {
-        let ring_count = rings
-            .iter()
-            .filter(|ring| ring.contains(&idx))
-            .count();
+        let ring_count = rings.iter().filter(|ring| ring.contains(&idx)).count();
         if ring_count >= 2 {
             let all_neighbors_in_rings = mol
                 .neighbors(idx)
-                .all(|(nb, _)| {
-                    rings
-                        .iter()
-                        .any(|ring| ring.contains(&nb))
-                });
+                .all(|(nb, _)| rings.iter().any(|ring| ring.contains(&nb)));
             if all_neighbors_in_rings {
                 spiro = spiro.saturating_add(1);
             }
@@ -1507,15 +1519,18 @@ pub fn autocorr_2d(mol: &Molecule) -> Vec<f64> {
         return vec![0.0; 7];
     }
 
-    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol).iter().map(|row| row.iter().map(|&d| d as usize).collect()).collect();
+    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol)
+        .iter()
+        .map(|row| row.iter().map(|&d| d as usize).collect())
+        .collect();
     let n = mol.atom_count();
     let mut result = vec![0.0; 7];
 
     for lag in 1..=7 {
         let mut sum = 0.0;
-        for i in 0..n {
-            for j in i + 1..n {
-                if dist[i][j] == lag {
+        for (i, row) in dist.iter().enumerate().take(n) {
+            for (j, &distance) in row.iter().enumerate().take(n).skip(i + 1) {
+                if distance == lag {
                     let val_i = atomic_valence(mol, AtomIdx(i as u32));
                     let val_j = atomic_valence(mol, AtomIdx(j as u32));
                     sum += val_i * val_j;
@@ -1571,12 +1586,15 @@ pub fn ipc(mol: &Molecule) -> f64 {
         return 0.0;
     }
 
-    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol).iter().map(|row| row.iter().map(|&d| d as usize).collect()).collect();
+    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol)
+        .iter()
+        .map(|row| row.iter().map(|&d| d as usize).collect())
+        .collect();
     let mut result = 0.0;
 
-    for i in 0..n {
-        for j in i + 1..n {
-            let d = dist[i][j] as f64;
+    for (i, row) in dist.iter().enumerate().take(n) {
+        for (j, &distance) in row.iter().enumerate().take(n).skip(i + 1) {
+            let d = distance as f64;
             if d > 0.0 {
                 let deg_i = mol.neighbors(AtomIdx(i as u32)).count() as f64;
                 let deg_j = mol.neighbors(AtomIdx(j as u32)).count() as f64;
@@ -1613,16 +1631,16 @@ pub fn hall_kier_alpha(mol: &Molecule) -> f64 {
 
         // Standard covalent radii (Ångströms) for valence adjustment
         let r_cov = match atom.element.atomic_number() {
-            1 => 0.31,   // H
-            6 => 0.76,   // C
-            7 => 0.71,   // N
-            8 => 0.66,   // O
-            9 => 0.57,   // F
-            15 => 1.07,  // P
-            16 => 1.05,  // S
-            17 => 1.02,  // Cl
-            35 => 1.20,  // Br
-            53 => 1.39,  // I
+            1 => 0.31,      // H
+            6 => 0.76,      // C
+            7 => 0.71,      // N
+            8 => 0.66,      // O
+            9 => 0.57,      // F
+            15 => 1.07,     // P
+            16 => 1.05,     // S
+            17 => 1.02,     // Cl
+            35 => 1.20,     // Br
+            53 => 1.39,     // I
             _ => an * 0.15, // fallback
         };
 
@@ -1651,14 +1669,17 @@ pub fn usrcat(mol: &Molecule) -> [f64; 42] {
     }
 
     // Part 1: USR-like distance features (36 values)
-    let dist_matrix: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol).iter().map(|row| row.iter().map(|&d| d as usize).collect()).collect();
+    let dist_matrix: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol)
+        .iter()
+        .map(|row| row.iter().map(|&d| d as usize).collect())
+        .collect();
     let n = mol.atom_count();
 
     // Compute centroid (average atomic position in connectivity space)
     let mut centroid_dist = 0.0;
-    for i in 0..n {
-        for j in i + 1..n {
-            centroid_dist += dist_matrix[i][j] as f64;
+    for (i, row) in dist_matrix.iter().enumerate().take(n) {
+        for &distance in row.iter().take(n).skip(i + 1) {
+            centroid_dist += distance as f64;
         }
     }
     if n > 1 {
@@ -1666,9 +1687,9 @@ pub fn usrcat(mol: &Molecule) -> [f64; 42] {
     }
 
     // Fill 36 slots with distance distribution metrics
-    for slot in 0..36 {
+    for (slot, value) in result.iter_mut().enumerate().take(36) {
         let scale = 1.0 + (slot as f64 / 12.0);
-        result[slot] = centroid_dist * scale;
+        *value = centroid_dist * scale;
     }
 
     // Part 2: Pharmacophore feature counts (6 values)
@@ -1747,28 +1768,31 @@ pub fn mmff94_charges(mol: &Molecule) -> Vec<f64> {
     };
 
     // Distance matrix for topological distances
-    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol).iter().map(|row| row.iter().map(|&d| d as usize).collect()).collect();
+    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol)
+        .iter()
+        .map(|row| row.iter().map(|&d| d as usize).collect())
+        .collect();
 
     // Initialize with formal charges
-    for i in 0..n {
-        charges[i] = mol.atom(AtomIdx(i as u32)).charge as f64;
+    for (i, charge) in charges.iter_mut().enumerate().take(n) {
+        *charge = mol.atom(AtomIdx(i as u32)).charge as f64;
     }
 
     // Apply electronegativity-weighted bond effects
-    for i in 0..n {
+    for (i, charge) in charges.iter_mut().enumerate().take(n) {
         let atom_i = mol.atom(AtomIdx(i as u32));
         let en_i = en_table(atom_i.element);
 
-        for j in 0..n {
+        for (j, &distance) in dist[i].iter().enumerate().take(n) {
             if i != j {
                 let atom_j = mol.atom(AtomIdx(j as u32));
                 let en_j = en_table(atom_j.element);
-                let r_ij = dist[i][j] as f64;
+                let r_ij = distance as f64;
 
                 // Electronegativity effect decays with distance
                 if r_ij > 0.0 {
                     let effect = (en_i - en_j) / (r_ij * r_ij);
-                    charges[i] += effect * 0.1; // dampening factor
+                    *charge += effect * 0.1; // dampening factor
                 }
             }
         }
@@ -1872,11 +1896,9 @@ pub fn num_amide_bonds(mol: &Molecule) -> usize {
             continue;
         }
         // Check if this carbon is part of a carbonyl (C=O)
-        let has_carbonyl_o = mol
-            .neighbors(idx)
-            .any(|(nb, bid)| {
-                mol.atom(nb).element.atomic_number() == 8 && mol.bond(bid).order == BondOrder::Double
-            });
+        let has_carbonyl_o = mol.neighbors(idx).any(|(nb, bid)| {
+            mol.atom(nb).element.atomic_number() == 8 && mol.bond(bid).order == BondOrder::Double
+        });
 
         if !has_carbonyl_o {
             continue;
@@ -1904,11 +1926,9 @@ pub fn num_ester_bonds(mol: &Molecule) -> usize {
             continue;
         }
         // Check if this carbon is part of a carbonyl (C=O)
-        let has_carbonyl_o = mol
-            .neighbors(idx)
-            .any(|(nb, bid)| {
-                mol.atom(nb).element.atomic_number() == 8 && mol.bond(bid).order == BondOrder::Double
-            });
+        let has_carbonyl_o = mol.neighbors(idx).any(|(nb, bid)| {
+            mol.atom(nb).element.atomic_number() == 8 && mol.bond(bid).order == BondOrder::Double
+        });
 
         if !has_carbonyl_o {
             continue;
@@ -2688,21 +2708,30 @@ mod tests {
         let m = mol("CCO");
         let usr = usrcat(&m);
         assert!(usr[36] >= 0.0, "donor count should be non-negative");
-        assert!(usr[37] > 0.0, "acceptor count should be positive (O present)");
+        assert!(
+            usr[37] > 0.0,
+            "acceptor count should be positive (O present)"
+        );
     }
 
     #[test]
     fn test_usrcat_aromatic() {
         let m = mol("c1ccccc1");
         let usr = usrcat(&m);
-        assert!(usr[38] > 0.0, "aromatic count should be positive for benzene");
+        assert!(
+            usr[38] > 0.0,
+            "aromatic count should be positive for benzene"
+        );
     }
 
     #[test]
     fn test_usrcat_charged() {
         let m = mol("CC(=O)[O-]");
         let usr = usrcat(&m);
-        assert!(usr[40] > 0.0, "anion count should be positive for charged carboxylate");
+        assert!(
+            usr[40] > 0.0,
+            "anion count should be positive for charged carboxylate"
+        );
     }
 
     // -- MMFF94 charges tests -----------------------------------------------
@@ -2720,7 +2749,10 @@ mod tests {
         let charges = mmff94_charges(&m);
         assert_eq!(charges.len(), 2);
         // Both carbons should have similar (small negative) charges
-        assert!((charges[0] - charges[1]).abs() < 0.1, "carbons in ethane should have similar charges");
+        assert!(
+            (charges[0] - charges[1]).abs() < 0.1,
+            "carbons in ethane should have similar charges"
+        );
     }
 
     #[test]
@@ -2737,7 +2769,10 @@ mod tests {
         let m = mol("O");
         let charges = mmff94_charges(&m);
         assert_eq!(charges.len(), 1);
-        assert!(charges[0].is_finite(), "water oxygen charge should be finite");
+        assert!(
+            charges[0].is_finite(),
+            "water oxygen charge should be finite"
+        );
     }
 
     // -- Element count tests -----------------------------------------------
@@ -2825,7 +2860,11 @@ mod tests {
         // Naphthalene is fused ring system (not bridged)
         // Bridgeheads = atoms in 2+ rings but only on shared edges (fused, no bridges)
         let m = mol("c1ccc2ccccc2c1");
-        assert_eq!(num_bridgehead_atoms(&m), 0, "naphthalene is fused, not bridged");
+        assert_eq!(
+            num_bridgehead_atoms(&m),
+            0,
+            "naphthalene is fused, not bridged"
+        );
     }
 
     #[test]
@@ -2912,6 +2951,10 @@ mod tests {
         // Aspirin CC(=O)Oc1ccccc1C(=O)O has one ester bond (acetyl ester)
         // and one carboxylic acid (not counted)
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
-        assert_eq!(num_ester_bonds(&m), 1, "aspirin has one ester bond (aryl ester)");
+        assert_eq!(
+            num_ester_bonds(&m),
+            1,
+            "aspirin has one ester bond (aryl ester)"
+        );
     }
 }

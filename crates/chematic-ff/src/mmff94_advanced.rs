@@ -8,7 +8,7 @@
 
 use chematic_core::{AtomIdx, Molecule};
 
-use crate::mmff94::{MMFF94Type};
+use crate::mmff94::MMFF94Type;
 use crate::mmff94_params::mmff94_electrostatic_scaling_1_4;
 
 /// Electrostatic scaling matrix for a complete molecule.
@@ -200,14 +200,20 @@ impl MMFF94BatchProperties {
     }
 }
 
+impl Default for MMFF94BatchProperties {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Compute topological distance matrix (BFS-based).
 fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<i32>> {
     let n = mol.atom_count();
     let mut dist = vec![vec![i32::MAX; n]; n];
 
     // Initialize
-    for i in 0..n {
-        dist[i][i] = 0;
+    for (i, row) in dist.iter_mut().enumerate().take(n) {
+        row[i] = 0;
     }
 
     // BFS from each atom
@@ -237,8 +243,8 @@ fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<i32>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::parse;
     use crate::mmff94::assign_mmff94_types;
+    use chematic_smiles::parse;
 
     #[test]
     fn test_electrostatic_matrix_creation() {
