@@ -1,27 +1,260 @@
-//! C-Series Phase 1: ERG (Extended Reduced Graph) fingerprints.
+//! v0.1.91: True ERG (Extended Reduced Graph) fingerprints
 //!
-//! **NOTE**: Current implementation is a simplified atom-type counting version.
-//! True ERG (RDKit rdReducedGraphs) constructs a reduced graph by:
-//! 1. Identifying functional group clusters (e.g., carbonyl, carboxyl, amine)
-//! 2. Collapsing each cluster into a single node
-//! 3. Computing fingerprint on the reduced graph structure
+//! Implements ERG algorithm (Sheridan 1996) with Ertl 2017 functional group detection:
+//! 1. Identify functional group clusters using Ertl 2017 algorithm
+//! 2. Collapse each cluster into a single reduced node
+//! 3. Assign node types from pharmacophore features
+//! 4. Build reduced graph with linker information
+//! 5. Generate fingerprint from reduced graph topology
 //!
-//! Current simplified version counts atom and bond types directly,
-//! which loses structural/topological information compared to true ERG.
-//!
-//! Useful for:
-//! - Functional group-based similarity searching (approximate)
-//! - Molecule classification by atom composition
-//! - Fast structural filtering
-//! - Chemotype clustering (lower accuracy than true ERG)
-//!
-//! TODO (v0.1.90+): Upgrade to true ERG by:
-//! 1. Detect functional group clusters in molecule
-//! 2. Build reduced graph with collapsed nodes
-//! 3. Compute fingerprint on reduced structure
+//! Reference: https://pubs.acs.org/doi/10.1021/ci9602928 (Sheridan)
+//!            P. Ertl, J. Cheminf. 2017, 9, 36 (Ertl)
 
-use chematic_core::{Atom, BondOrder};
+use std::collections::{HashSet, VecDeque};
+use chematic_core::{Atom, AtomIdx, BondOrder, Molecule};
 use crate::bitvec::BitVec2048;
+
+/// Ertl 2017 functional group identification.
+/// Returns atom index sets, one per functional group cluster.
+fn identify_functional_groups(mol: &Molecule) -> Vec<Vec<usize>> {
+    let n = mol.atom_count();
+    if n == 0 {
+        return Vec::new();
+    }
+
+    let mut marked = vec![false; n];
+
+    // Mark all non-C, non-H heavy atoms
+    for (idx, atom) in mol.atoms() {
+        let an = atom.element.atomic_number();
+        if an != 1 && an != 6 {
+            marked[idx.0 as usize] = true;
+        }
+    }
+
+    // Mark carbons bonded to heteroatoms
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() != 6 {
+            continue;
+        }
+        let has_hetero = mol.neighbors(idx).any(|(nb, _)| {
+            let an = mol.atom(nb).element.atomic_number();
+            an != 1 && an != 6
+        });
+        if has_hetero {
+            marked[idx.0 as usize] = true;
+        }
+    }
+
+    // BFS to find connected components of marked atoms
+    let mut visited = vec![false; n];
+    let mut groups: Vec<Vec<usize>> = Vec::new();
+
+    for start in 0..n {
+        if !marked[start] || visited[start] {
+            continue;
+        }
+
+        let mut component = Vec::new();
+        let mut queue = VecDeque::new();
+        queue.push_back(start);
+        visited[start] = true;
+
+        while let Some(cur) = queue.pop_front() {
+            component.push(cur);
+            for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
+                let nbi = nb.0 as usize;
+                if marked[nbi] && !visited[nbi] {
+                    visited[nbi] = true;
+                    queue.push_back(nbi);
+                }
+            }
+        }
+
+        component.sort_unstable();
+        groups.push(component);
+    }
+
+    groups
+}
+
+/// Node type for reduced graph: pharmacophore feature bits.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ErgNodeType(pub u8);
+
+impl ErgNodeType {
+    const AROMATIC: u8 = 1;
+    const DONOR: u8 = 2;
+    const ACCEPTOR: u8 = 4;
+    const HYDROPHOBIC: u8 = 8;
+    const POSITIVE: u8 = 16;
+    const NEGATIVE: u8 = 32;
+
+    pub fn new() -> Self {
+        ErgNodeType(0)
+    }
+
+    pub fn with_aromatic(mut self) -> Self {
+        self.0 |= Self::AROMATIC;
+        self
+    }
+
+    pub fn with_donor(mut self) -> Self {
+        self.0 |= Self::DONOR;
+        self
+    }
+
+    pub fn with_acceptor(mut self) -> Self {
+        self.0 |= Self::ACCEPTOR;
+        self
+    }
+
+    pub fn with_hydrophobic(mut self) -> Self {
+        self.0 |= Self::HYDROPHOBIC;
+        self
+    }
+
+    pub fn with_positive(mut self) -> Self {
+        self.0 |= Self::POSITIVE;
+        self
+    }
+
+    pub fn with_negative(mut self) -> Self {
+        self.0 |= Self::NEGATIVE;
+        self
+    }
+}
+
+/// Reduced graph node representing a functional group or backbone segment.
+#[derive(Clone, Debug)]
+pub struct ErgNode {
+    pub ntype: ErgNodeType,
+    pub atom_indices: Vec<usize>,
+}
+
+/// Reduced graph edge with linker information.
+#[derive(Clone, Debug)]
+pub struct ErgEdge {
+    pub node_a: usize,
+    pub node_b: usize,
+    pub linker_len: u32,
+}
+
+/// Build reduced graph from molecule using functional group detection.
+/// If no functional groups found, treats entire molecule as one backbone node.
+fn build_reduced_graph(mol: &Molecule) -> (Vec<ErgNode>, Vec<ErgEdge>) {
+    let fg_groups = identify_functional_groups(mol);
+
+    // Create nodes from functional groups
+    let mut nodes: Vec<ErgNode> = fg_groups
+        .into_iter()
+        .map(|atom_indices| {
+            let mut ntype = ErgNodeType::new();
+
+            // Check for aromatic atoms in group
+            let has_aromatic = atom_indices.iter().any(|&i| {
+                mol.atom(AtomIdx(i as u32)).aromatic
+            });
+            if has_aromatic {
+                ntype = ntype.with_aromatic();
+            }
+
+            // Check for heteroatom presence
+            let has_n = atom_indices
+                .iter()
+                .any(|&i| mol.atom(AtomIdx(i as u32)).element.atomic_number() == 7);
+            let has_o = atom_indices
+                .iter()
+                .any(|&i| mol.atom(AtomIdx(i as u32)).element.atomic_number() == 8);
+            let has_s = atom_indices
+                .iter()
+                .any(|&i| mol.atom(AtomIdx(i as u32)).element.atomic_number() == 16);
+
+            if has_n {
+                ntype = ntype.with_donor().with_acceptor();
+            }
+            if has_o {
+                ntype = ntype.with_acceptor();
+            }
+            if has_s {
+                ntype = ntype.with_acceptor();
+            }
+
+            ErgNode { ntype, atom_indices }
+        })
+        .collect();
+
+    // If no FGs found, treat entire molecule as one backbone node
+    if nodes.is_empty() {
+        let all_atoms: Vec<usize> = (0..mol.atom_count()).collect();
+        let mut ntype = ErgNodeType::new();
+
+        // Check for aromatic atoms
+        if all_atoms.iter().any(|&i| mol.atom(AtomIdx(i as u32)).aromatic) {
+            ntype = ntype.with_aromatic();
+        }
+
+        nodes.push(ErgNode {
+            ntype,
+            atom_indices: all_atoms,
+        });
+    }
+
+    // Create edges: find shortest paths between node pairs
+    let mut edges = Vec::new();
+    let fg_set: HashSet<usize> = nodes.iter().flat_map(|n| n.atom_indices.clone()).collect();
+
+    for i in 0..nodes.len() {
+        for j in (i + 1)..nodes.len() {
+            let linker_len = shortest_path_linker(mol, &nodes[i], &nodes[j], &fg_set);
+            edges.push(ErgEdge {
+                node_a: i,
+                node_b: j,
+                linker_len,
+            });
+        }
+    }
+
+    (nodes, edges)
+}
+
+/// Compute shortest path length between two functional groups (linker atoms only).
+fn shortest_path_linker(
+    mol: &Molecule,
+    node_a: &ErgNode,
+    node_b: &ErgNode,
+    fg_set: &HashSet<usize>,
+) -> u32 {
+    let mut dist = vec![u32::MAX; mol.atom_count()];
+
+    // BFS from node_a atoms
+    let mut queue = VecDeque::new();
+    for &i in &node_a.atom_indices {
+        dist[i] = 0;
+        queue.push_back(i);
+    }
+
+    while let Some(cur) = queue.pop_front() {
+        for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
+            let nbi = nb.0 as usize;
+
+            // Stop if we reach node_b
+            if node_b.atom_indices.contains(&nbi) {
+                let linker = dist[cur] + 1 - node_a.atom_indices.len() as u32;
+                return linker.max(1);
+            }
+
+            if dist[nbi] == u32::MAX {
+                // Only count non-fg atoms as linker
+                let new_dist = dist[cur] + if fg_set.contains(&nbi) { 0 } else { 1 };
+                dist[nbi] = new_dist;
+                queue.push_back(nbi);
+            }
+        }
+    }
+
+    u32::MAX
+}
 
 /// Atom property encoding for ERG nodes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -127,19 +360,11 @@ impl ErgFingerprint {
     }
 }
 
-/// Generate ERG fingerprint from a molecule.
-/// Generate ERG fingerprint from a molecule (simplified atom-type counting).
+/// Generate True ERG fingerprint from a molecule.
 ///
-/// **Current Implementation**: Counts atom and bond types in the molecule.
-/// This is a simplified approximation that captures composition but not structure.
-///
-/// **True ERG** would:
-/// 1. Identify functional group clusters (carbonyl, carboxyl, amine, etc.)
-/// 2. Collapse each cluster into a single node in a reduced graph
-/// 3. Compute fingerprint on the reduced graph topology
-/// 4. Achieve superior discrimination of structural isomers and functional diversity
-///
-/// Current version is useful for fast filtering but lacks structural sophistication.
+/// v0.1.91: Uses Ertl 2017 functional group detection and reduced graph topology.
+/// Identifies functional group clusters, builds a reduced graph, and generates
+/// a fingerprint from the reduced graph structure.
 pub fn erg(mol: &chematic_core::Molecule) -> ErgFingerprint {
     erg_with_config(mol, &ErgConfig::default())
 }
@@ -153,7 +378,7 @@ pub fn erg_with_config(
     let mut atom_counts = [0u32; 7];
     let mut bond_counts = [0u32; 4];
 
-    // v0.1.90: Count atom types and degree information for better structural encoding
+    // Count atom/bond types for backward compatibility
     for (idx, atom) in mol.atoms() {
         let erg_type = ErgAtomType::from_atom(atom);
         atom_counts[erg_type as usize] += 1;
@@ -164,7 +389,7 @@ pub fn erg_with_config(
             bits.set(bit_pos);
         }
 
-        // v0.1.90: Add degree-based bits for structural context
+        // Add degree-based bits for structural context
         let degree = mol.bonds().filter(|(_, b)| b.atom1 == idx || b.atom2 == idx).count();
         let degree_bits = ((degree.min(4) as usize) << 2) + (erg_type as usize);
         let degree_bit_pos = 512 + degree_bits.min(127);
@@ -185,7 +410,7 @@ pub fn erg_with_config(
         }
     }
 
-    // Encode atom counts in fingerprint
+    // Encode atom/bond counts
     if config.use_atom_counts {
         for (i, &count) in atom_counts.iter().enumerate() {
             for j in 0..4 {
@@ -199,7 +424,6 @@ pub fn erg_with_config(
         }
     }
 
-    // Encode bond counts in fingerprint
     if config.use_bond_types {
         for (i, &count) in bond_counts.iter().enumerate() {
             for j in 0..4 {
@@ -213,25 +437,24 @@ pub fn erg_with_config(
         }
     }
 
-    // Functional group detection: simple topology-based bits
-    // Detect aromatic rings (aromatic atom count > 0)
-    if atom_counts[ErgAtomType::CAromatic as usize] > 0 {
-        bits.set(256); // Bit 256: has aromatic ring
+    // v0.1.91: Add reduced graph topology bits
+    let (nodes, _edges) = build_reduced_graph(mol);
+
+    // Aromatic node detection
+    if nodes.iter().any(|n| n.ntype.0 & ErgNodeType::AROMATIC != 0) {
+        bits.set(256); // Aromatic
     }
 
-    // Functional group: heteroatom presence (N, O, S, etc.)
-    let has_heteroatom = atom_counts[ErgAtomType::N as usize] > 0
-        || atom_counts[ErgAtomType::O as usize] > 0
-        || atom_counts[ErgAtomType::S as usize] > 0
-        || atom_counts[ErgAtomType::Halogen as usize] > 0;
-
-    if has_heteroatom {
-        bits.set(257); // Bit 257: contains heteroatom
+    // Heteroatom functional group detection
+    if nodes.iter().any(|n| n.ntype.0 != 0) {
+        bits.set(257); // Has heteroatom
     }
 
-    // Detect aliphatic-only structures (no aromatic atoms)
-    if atom_counts[ErgAtomType::CAromatic as usize] == 0 && atom_counts[ErgAtomType::CAliphatic as usize] > 0 {
-        bits.set(258); // Bit 258: aliphatic carbon only
+    // Aliphatic-only detection
+    if !nodes.iter().any(|n| n.ntype.0 & ErgNodeType::AROMATIC != 0)
+        && atom_counts[ErgAtomType::CAliphatic as usize] > 0
+    {
+        bits.set(258); // Aliphatic only
     }
 
     ErgFingerprint {

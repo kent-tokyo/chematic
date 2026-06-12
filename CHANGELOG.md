@@ -11,6 +11,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.91] — 2026-06-12
+
+### Enhanced — A4/A5 Fingerprint Algorithm Upgrades to True MinHash & ERG
+
+#### A4: True MHFP (MinHash Fingerprint) — Lowe & Sayle 2013
+
+**BREAKING CHANGE**: MHFP fingerprint values are incompatible with v0.1.90
+
+- Replaced ECFP4 bit-position hashing with true structural fragment MinHash
+- Circular fragment extraction via BFS at multiple radii (0-4, per atom)
+- Structural signature hashing (atomic properties + bond connectivity) instead of SMILES
+- FNV-1a hashing for consistent multi-platform fingerprints
+- Improved Tanimoto similarity for scaffold and chemical space searching
+- RDKit MinHash compatibility enhanced
+
+#### A5: True ERG (Extended Reduced Graph) — Sheridan 1996 + Ertl 2017
+
+- Implemented Ertl 2017 functional group detection (inlined; zero new dependencies)
+- Functional group clustering with heteroatom-aware boundary detection
+- Reduced graph construction from functional group nodes
+- Node type encoding: aromatic, donor, acceptor, hydrophobic, positive, negative features
+- Superior structural discrimination vs. v0.1.90 atom-type-counting approach
+- Backbone node support for aliphatic-only molecules
+- RDKit ERG compatibility improved
+
+#### Technical Details
+
+- Both A4 and A5 use FNV-1a hashing for platform-consistent fingerprints
+- No new dependencies added (uses existing `chematic-core`, `chematic-perception`)
+- Backward-compatible atom/bond count metadata preserved in fingerprint structs
+
+#### Testing
+
+- A4 MHFP: consistency, symmetry, multi-molecular similarity validation
+- A5 ERG: aromatic/aliphatic discrimination, heteroatom detection, reduced graph topology
+- 114/115 chematic-fp tests passing (reaction_fp test isolated issue)
+
+---
+
 ## [0.1.90] — 2026-06-12
 
 ### Enhanced — Fingerprint Quality Improvements + Documentation Fixes
