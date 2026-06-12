@@ -70,7 +70,6 @@ pub fn enumerate_library(
 
     let mut products: Vec<Molecule> = Vec::new();
     let mut indices = vec![0usize; fragment_sets.len()];
-    let mut iteration = 0usize;
 
     loop {
         // Build reactants list for this iteration (as references)
@@ -94,7 +93,6 @@ pub fn enumerate_library(
             }
         }
 
-        iteration += 1;
         // Check product count (actual size, not just iteration count)
         if let Some(max) = config.max_size
             && products.len() >= max {
