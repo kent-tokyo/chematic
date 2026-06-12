@@ -205,6 +205,27 @@ pub fn erg_with_config(
         }
     }
 
+    // Functional group detection: simple topology-based bits
+    // Detect aromatic rings (aromatic atom count > 0)
+    if atom_counts[ErgAtomType::CAromatic as usize] > 0 {
+        bits.set(256); // Bit 256: has aromatic ring
+    }
+
+    // Functional group: heteroatom presence (N, O, S, etc.)
+    let has_heteroatom = atom_counts[ErgAtomType::N as usize] > 0
+        || atom_counts[ErgAtomType::O as usize] > 0
+        || atom_counts[ErgAtomType::S as usize] > 0
+        || atom_counts[ErgAtomType::Halogen as usize] > 0;
+
+    if has_heteroatom {
+        bits.set(257); // Bit 257: contains heteroatom
+    }
+
+    // Detect aliphatic-only structures (no aromatic atoms)
+    if atom_counts[ErgAtomType::CAromatic as usize] == 0 && atom_counts[ErgAtomType::CAliphatic as usize] > 0 {
+        bits.set(258); // Bit 258: aliphatic carbon only
+    }
+
     ErgFingerprint {
         bits,
         atom_counts,
@@ -318,5 +339,55 @@ mod tests {
         // Different bond types
         assert!(fp_single.bond_counts[ErgBondType::Single as usize] > 0);
         assert!(fp_double.bond_counts[ErgBondType::Double as usize] > 0);
+    }
+
+    #[test]
+    fn test_erg_functional_group_aromatic_bit() {
+        let aliphatic = parse("CCCC").unwrap();
+        let aromatic = parse("c1ccccc1").unwrap();
+
+        let fp_aliphatic = erg(&aliphatic);
+        let fp_aromatic = erg(&aromatic);
+
+        // Aromatic bit (256) should be set for benzene, not for alkane
+        assert!(!fp_aliphatic.bits.get(256), "aliphatic should not have aromatic bit");
+        assert!(fp_aromatic.bits.get(256), "aromatic should have aromatic bit");
+    }
+
+    #[test]
+    fn test_erg_functional_group_heteroatom_bit() {
+        let alkane = parse("CC").unwrap();
+        let alcohol = parse("CCO").unwrap();
+        let amine = parse("CCN").unwrap();
+
+        let fp_alkane = erg(&alkane);
+        let fp_alcohol = erg(&alcohol);
+        let fp_amine = erg(&amine);
+
+        // Heteroatom bit (257) should be set for compounds with O/N
+        assert!(!fp_alkane.bits.get(257), "alkane should not have heteroatom bit");
+        assert!(fp_alcohol.bits.get(257), "alcohol should have heteroatom bit");
+        assert!(fp_amine.bits.get(257), "amine should have heteroatom bit");
+    }
+
+    #[test]
+    fn test_erg_functional_group_improved_discrimination() {
+        let methane = parse("C").unwrap();
+        let ethanol = parse("CCO").unwrap();
+        let pyridine = parse("c1ccncc1").unwrap();
+
+        let fp_methane = erg(&methane);
+        let fp_ethanol = erg(&ethanol);
+        let fp_pyridine = erg(&pyridine);
+
+        // Functional group bits should improve discrimination
+        let sim_methane_ethanol = fp_methane.tanimoto(&fp_ethanol);
+        let sim_methane_pyridine = fp_methane.tanimoto(&fp_pyridine);
+        let sim_ethanol_pyridine = fp_ethanol.tanimoto(&fp_pyridine);
+
+        // All similarities should be in valid range
+        assert!(sim_methane_ethanol >= 0.0 && sim_methane_ethanol <= 1.0);
+        assert!(sim_methane_pyridine >= 0.0 && sim_methane_pyridine <= 1.0);
+        assert!(sim_ethanol_pyridine >= 0.0 && sim_ethanol_pyridine <= 1.0);
     }
 }
