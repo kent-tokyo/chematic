@@ -62,10 +62,10 @@ pub fn reciprocal_space_energy(
         &mut charge_grid,
         &mesh_size,
         config.spline_order,
-    );
+    )?;
 
     // Compute reciprocal space energy from charge density
-    Ok(compute_reciprocal_energy(&charge_grid, box_vecs, &mesh_size, alpha, config.kmax))
+    compute_reciprocal_energy(&charge_grid, box_vecs, &mesh_size, alpha, config.kmax)
 }
 
 /// Interpolate point charges onto 3D mesh using B-splines.
@@ -76,7 +76,7 @@ fn interpolate_charges_to_mesh(
     output_grid: &mut [f64],
     mesh_size: &[usize; 3],
     spline_order: u8,
-) {
+) -> Result<(), EwaldError> {
     let [m0, m1, m2] = *mesh_size;
 
     for (coord, &charge) in coords.iter().zip(charges.iter()) {
@@ -85,7 +85,7 @@ fn interpolate_charges_to_mesh(
         }
 
         // Map atomic coordinate to fractional coordinates (0..1)
-        let frac = map_to_fractional(*coord, box_vecs);
+        let frac = map_to_fractional(*coord, box_vecs)?;
 
         // Wrap fractional coordinates into [0, 1)
         let frac = [
@@ -127,10 +127,11 @@ fn interpolate_charges_to_mesh(
             }
         }
     }
+    Ok(())
 }
 
 /// Map Cartesian coordinates to fractional coordinates (0..1) in the box.
-fn map_to_fractional(coord: [f64; 3], box_vecs: &BoxVectors) -> [f64; 3] {
+fn map_to_fractional(coord: [f64; 3], box_vecs: &BoxVectors) -> Result<[f64; 3], EwaldError> {
     // Solve: coord = frac[0]*a + frac[1]*b + frac[2]*c
     // For orthogonal boxes, this is simple division
     let a = &box_vecs.0[0];
@@ -141,20 +142,20 @@ fn map_to_fractional(coord: [f64; 3], box_vecs: &BoxVectors) -> [f64; 3] {
         + a[2] * (b[0] * c[1] - b[1] * c[0]);
 
     if det.abs() < 1e-10 {
-        panic!("singular box matrix in map_to_fractional: det={}", det);
+        return Err(EwaldError::SingularBoxMatrix);
     }
 
     // Inverse: frac = inv(M) * coord
-    let inv = matrix_inverse_3x3(&[a, b, c]);
-    [
+    let inv = matrix_inverse_3x3(&[a, b, c])?;
+    Ok([
         inv[0][0] * coord[0] + inv[0][1] * coord[1] + inv[0][2] * coord[2],
         inv[1][0] * coord[0] + inv[1][1] * coord[1] + inv[1][2] * coord[2],
         inv[2][0] * coord[0] + inv[2][1] * coord[1] + inv[2][2] * coord[2],
-    ]
+    ])
 }
 
 /// Compute 3×3 matrix inverse.
-fn matrix_inverse_3x3(mat: &[&[f64; 3]]) -> [[f64; 3]; 3] {
+fn matrix_inverse_3x3(mat: &[&[f64; 3]]) -> Result<[[f64; 3]; 3], EwaldError> {
     let a = mat[0];
     let b = mat[1];
     let c = mat[2];
@@ -163,12 +164,12 @@ fn matrix_inverse_3x3(mat: &[&[f64; 3]]) -> [[f64; 3]; 3] {
         + a[2] * (b[0] * c[1] - b[1] * c[0]);
 
     if det.abs() < 1e-10 {
-        panic!("singular matrix in matrix_inverse_3x3: det={}", det);
+        return Err(EwaldError::SingularBoxMatrix);
     }
 
     let inv_det = 1.0 / det;
 
-    [
+    Ok([
         [
             inv_det * (b[1] * c[2] - b[2] * c[1]),
             inv_det * (a[2] * c[1] - a[1] * c[2]),
@@ -184,7 +185,7 @@ fn matrix_inverse_3x3(mat: &[&[f64; 3]]) -> [[f64; 3]; 3] {
             inv_det * (a[1] * c[0] - a[0] * c[1]),
             inv_det * (a[0] * b[1] - a[1] * b[0]),
         ],
-    ]
+    ])
 }
 
 /// Compute reciprocal-space energy from charge density.
@@ -194,7 +195,7 @@ fn compute_reciprocal_energy(
     mesh_size: &[usize; 3],
     alpha: f64,
     kmax: [usize; 3],
-) -> f64 {
+) -> Result<f64, EwaldError> {
     let volume = box_vecs.volume();
     let mut energy = 0.0;
 
@@ -207,7 +208,7 @@ fn compute_reciprocal_energy(
                 }
 
                 // Reciprocal lattice vectors
-                let k_vec = reciprocal_vector(kx as i32, ky as i32, kz as i32, box_vecs, mesh_size);
+                let k_vec = reciprocal_vector(kx as i32, ky as i32, kz as i32, box_vecs, mesh_size)?;
 
                 let k_sq = k_vec[0] * k_vec[0] + k_vec[1] * k_vec[1] + k_vec[2] * k_vec[2];
                 if k_sq < 1e-10 {
@@ -225,7 +226,7 @@ fn compute_reciprocal_energy(
         }
     }
 
-    energy
+    Ok(energy)
 }
 
 /// Compute reciprocal lattice vector from mesh indices.
@@ -235,9 +236,9 @@ fn reciprocal_vector(
     kz: i32,
     box_vecs: &BoxVectors,
     mesh_size: &[usize; 3],
-) -> [f64; 3] {
+) -> Result<[f64; 3], EwaldError> {
     // Reciprocal basis = 2π * (inverse of real basis transposed)
-    let inv = matrix_inverse_3x3(&[&box_vecs.0[0], &box_vecs.0[1], &box_vecs.0[2]]);
+    let inv = matrix_inverse_3x3(&[&box_vecs.0[0], &box_vecs.0[1], &box_vecs.0[2]])?;
 
     let bx = [
         2.0 * PI * inv[0][0],
@@ -259,11 +260,11 @@ fn reciprocal_vector(
     let ky_frac = ky as f64 / mesh_size[1] as f64;
     let kz_frac = kz as f64 / mesh_size[2] as f64;
 
-    [
+    Ok([
         kx_frac * bx[0] + ky_frac * by[0] + kz_frac * bz[0],
         kx_frac * bx[1] + ky_frac * by[1] + kz_frac * bz[1],
         kx_frac * bx[2] + ky_frac * by[2] + kz_frac * bz[2],
-    ]
+    ])
 }
 
 /// Compute B-spline interpolation weights for fractional offset `t ∈ [0, 1)`.
@@ -342,7 +343,7 @@ mod tests {
     #[test]
     fn test_map_to_fractional_identity() {
         let box_vecs = BoxVectors::cubic(10.0);
-        let frac = map_to_fractional([5.0, 5.0, 5.0], &box_vecs);
+        let frac = map_to_fractional([5.0, 5.0, 5.0], &box_vecs).unwrap();
         assert!((frac[0] - 0.5).abs() < 1e-6);
         assert!((frac[1] - 0.5).abs() < 1e-6);
         assert!((frac[2] - 0.5).abs() < 1e-6);
@@ -352,7 +353,7 @@ mod tests {
     fn test_reciprocal_vector_zero() {
         let box_vecs = BoxVectors::cubic(10.0);
         let mesh_size = [10, 10, 10];
-        let k = reciprocal_vector(0, 0, 0, &box_vecs, &mesh_size);
+        let k = reciprocal_vector(0, 0, 0, &box_vecs, &mesh_size).unwrap();
         assert!((k[0]).abs() < 1e-10);
         assert!((k[1]).abs() < 1e-10);
         assert!((k[2]).abs() < 1e-10);
