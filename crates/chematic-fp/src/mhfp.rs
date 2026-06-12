@@ -173,7 +173,7 @@ pub fn mhfp_with_config(mol: &Molecule, config: &MhfpConfig) -> MhfpFingerprint 
     // Compute MinHash: for each hash function, find the minimum hash value
     let mut hashes = vec![u64::MAX; config.num_hashes];
 
-    for h in 0..config.num_hashes {
+    for (h, hash_slot) in hashes.iter_mut().enumerate() {
         let seed = config.seed.wrapping_add(h as u64);
 
         for sig in &signatures {
@@ -183,8 +183,8 @@ pub fn mhfp_with_config(mol: &Molecule, config: &MhfpConfig) -> MhfpFingerprint 
 
             let hash_val = fnv1a_hash(&hash_data);
 
-            if hash_val < hashes[h] {
-                hashes[h] = hash_val;
+            if hash_val < *hash_slot {
+                *hash_slot = hash_val;
             }
         }
     }

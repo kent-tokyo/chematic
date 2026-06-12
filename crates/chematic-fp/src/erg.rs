@@ -93,6 +93,15 @@ impl ErgNodeType {
     pub fn new() -> Self {
         ErgNodeType(0)
     }
+}
+
+impl Default for ErgNodeType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ErgNodeType {
 
     pub fn with_aromatic(mut self) -> Self {
         self.0 |= Self::AROMATIC;
@@ -391,7 +400,7 @@ pub fn erg_with_config(
 
         // Add degree-based bits for structural context
         let degree = mol.bonds().filter(|(_, b)| b.atom1 == idx || b.atom2 == idx).count();
-        let degree_bits = ((degree.min(4) as usize) << 2) + (erg_type as usize);
+        let degree_bits = (degree.min(4) << 2) + (erg_type as usize);
         let degree_bit_pos = 512 + degree_bits.min(127);
         if degree_bit_pos < 2048 {
             bits.set(degree_bit_pos);

@@ -45,7 +45,7 @@ pub fn layered_fp_by_layer(mol: &Molecule) -> [BitVec2048; 7] {
         let atom = mol.atom(AtomIdx(i as u32));
         let elem_code = atom.element.atomic_number() as usize;
         let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
-        let charge = ((atom.charge.max(-8).min(7) + 8) & 0xF) as usize;  // Clamp to [-8, 7] for safe encoding
+        let charge = ((atom.charge.clamp(-8, 7) + 8) & 0xF) as usize;  // Clamp to [-8, 7] for safe encoding
         let hash = (i * 7919 + elem_code * 199 + h_count * 73 + charge * 11) % 292;
         layers[0].set(hash);
     }

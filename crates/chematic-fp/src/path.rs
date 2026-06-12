@@ -136,7 +136,7 @@ fn hash_path(mol: &Molecule, path: &PathWithBonds) -> usize {
         hash = hash.wrapping_mul(fnv_prime);
     }
 
-    (hash as usize)
+    hash as usize
 }
 
 /// Convert BondOrder to a hash byte.
