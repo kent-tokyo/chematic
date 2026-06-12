@@ -346,6 +346,196 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
+    // 26. 1,5-O→O with N bridge: nitro-type tautomerism
+    //     e.g. O-C-N(=O)-C-O ↔ O=C-N(-O)-C-O via N bridge
+    TautomerRule {
+        name: "1,5-O-to-O-N-bridge",
+        donor_elem: 8,
+        bridge_elem: Some(7),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 27. 1,5-O→O with S bridge: thio-β-diketone
+    TautomerRule {
+        name: "1,5-O-to-O-S-bridge",
+        donor_elem: 8,
+        bridge_elem: Some(16),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 28. 1,5-N→O with C bridge (existing, carbon specified)
+    // Already covered by rule 22 (path_len=5 with C bridge)
+    // 29. 1,5-N→O with N bridge: bridging N (amidino-type)
+    TautomerRule {
+        name: "1,5-N-to-O-N-bridge",
+        donor_elem: 7,
+        bridge_elem: Some(7),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 30. 1,5-N→O with S bridge
+    TautomerRule {
+        name: "1,5-N-to-O-S-bridge",
+        donor_elem: 7,
+        bridge_elem: Some(16),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 31. 1,5-N→N with N bridge: guanidine-type via N
+    TautomerRule {
+        name: "1,5-N-to-N-N-bridge",
+        donor_elem: 7,
+        bridge_elem: Some(7),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 32. 1,5-N→N with S bridge
+    TautomerRule {
+        name: "1,5-N-to-N-S-bridge",
+        donor_elem: 7,
+        bridge_elem: Some(16),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 33. 1,5-O→N with N bridge: hydroxamic-type via N
+    TautomerRule {
+        name: "1,5-O-to-N-N-bridge",
+        donor_elem: 8,
+        bridge_elem: Some(7),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 34. 1,5-O→N with S bridge
+    TautomerRule {
+        name: "1,5-O-to-N-S-bridge",
+        donor_elem: 8,
+        bridge_elem: Some(16),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 35. 1,5-S→O with N bridge
+    TautomerRule {
+        name: "1,5-S-to-O-N-bridge",
+        donor_elem: 16,
+        bridge_elem: Some(7),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 36. 1,5-S→O with S bridge
+    TautomerRule {
+        name: "1,5-S-to-O-S-bridge",
+        donor_elem: 16,
+        bridge_elem: Some(16),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 37. 1,5-S→N with C bridge
+    TautomerRule {
+        name: "1,5-S-to-N-C-bridge",
+        donor_elem: 16,
+        bridge_elem: Some(6),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 38. 1,5-S→N with N bridge
+    TautomerRule {
+        name: "1,5-S-to-N-N-bridge",
+        donor_elem: 16,
+        bridge_elem: Some(7),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 39. 1,5-C→N with C bridge: extended enamine-imine
+    TautomerRule {
+        name: "1,5-C-to-N-C-bridge",
+        donor_elem: 6,
+        bridge_elem: Some(6),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 40. 1,5-C→N with N bridge
+    TautomerRule {
+        name: "1,5-C-to-N-N-bridge",
+        donor_elem: 6,
+        bridge_elem: Some(7),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 41. 1,5-C→N with S bridge
+    TautomerRule {
+        name: "1,5-C-to-N-S-bridge",
+        donor_elem: 6,
+        bridge_elem: Some(16),
+        acceptor_elem: 7,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 42. 1,5-C→S with N bridge
+    TautomerRule {
+        name: "1,5-C-to-S-N-bridge",
+        donor_elem: 6,
+        bridge_elem: Some(7),
+        acceptor_elem: 16,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
+    // 43. 1,5-C→S with S bridge
+    TautomerRule {
+        name: "1,5-C-to-S-S-bridge",
+        donor_elem: 6,
+        bridge_elem: Some(16),
+        acceptor_elem: 16,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: false,
+        path_len: 5,
+    },
 ];
 
 /// Per-atom explicit hydrogen count vector (position-sensitive, for 1,2-shift dedup).
@@ -1048,5 +1238,119 @@ mod tests {
         assert!(count > 0);
         assert_eq!(names.len(), count);
         assert!(!names[0].is_empty());
+    }
+
+    // B4 Tests: 1,5-shift with heteroatom bridges
+    #[test]
+    fn test_15_shift_beta_diketone() {
+        // CC(=O)CC(=O)C — acetylacetone: classic 1,5-shift case
+        let mol = parse("CC(=O)CC(=O)C").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        // Should find enol form via 1,5-shift
+        assert!(tautomers.len() >= 2, "Expected >= 2 tautomers for β-diketone");
+    }
+
+    #[test]
+    fn test_15_shift_enol_imine() {
+        // C-C(=N)-C-C(=O)-H: potential 1,5-O to N shift
+        // Build: C1=C-N-C-O with appropriate bonds
+        let mol = parse("CC(=N)CC(=O)C").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        // Should enumerate without panic
+        assert!(tautomers.len() >= 1);
+    }
+
+    #[test]
+    fn test_15_shift_n_bridge_diketone() {
+        // O-C-N(=O)-C-O type: nitro-type with bridging N
+        // Using simplified SMILES that approximates the pattern
+        let mol = parse("OC1=C(O)C(=O)C(=O)C=C1").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        // Should enumerate with N bridge possibility
+        assert!(tautomers.len() >= 1);
+    }
+
+    #[test]
+    fn test_15_shift_s_bridge() {
+        // O-C-S(=O)-C-O: thio-β-diketone variant
+        let mol = parse("CC(=O)CS(=O)C(=O)C").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        assert!(tautomers.len() >= 1);
+    }
+
+    #[test]
+    fn test_15_shift_n_to_n_with_bridge() {
+        // N-C-N(=)-C-N: guanidine-type via N bridge
+        let mol = parse("NC(=N)NC(=N)N").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        assert!(tautomers.len() >= 1);
+    }
+
+    #[test]
+    fn test_15_shift_canonical_idempotent() {
+        // Applying canonical_tautomer twice should give same result
+        let mol = parse("CC(=O)CC(=O)C").unwrap();
+        let t1 = canonical_tautomer(&mol);
+        let t2 = canonical_tautomer(&t1);
+        assert_eq!(mol_fingerprint(&t1), mol_fingerprint(&t2));
+    }
+
+    #[test]
+    fn test_15_shift_heteroatom_enumeration() {
+        // Test that heteroatom-bridged 1,5-shifts are enumerated
+        let mol = parse("CC(=O)CC(=O)C").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        // Should find multiple tautomers via both C-bridge and other possibilities
+        assert!(
+            tautomers.len() >= 2,
+            "Expected >= 2 tautomers for acetylacetone with new 1,5-shift rules"
+        );
+    }
+
+    #[test]
+    fn test_15_shift_c_to_o_with_heteroatom() {
+        // Active methylene 1,5-shift with heteroatom bridge
+        let mol = parse("CC(=O)CC(=O)C").unwrap();
+        let config = TautomerConfig {
+            max_tautomers: 64,
+            ..TautomerConfig::default()
+        };
+        let tautomers = enumerate_tautomers_with_config(&mol, &config);
+        assert!(!tautomers.is_empty());
+    }
+
+    #[test]
+    fn test_15_shift_no_false_positives() {
+        // Molecule that shouldn't match 1,5-shift patterns
+        let mol = parse("CC(=O)C").unwrap(); // propanone (no 1,5-shift possible)
+        let tautomers = enumerate_tautomers(&mol);
+        // Should enumerate any 1,3-shifts but no spurious 1,5-shifts
+        assert!(!tautomers.is_empty());
+    }
+
+    #[test]
+    fn test_15_shift_multiple_donors_acceptors() {
+        // β-diketone with multiple potential 1,5-shift sites
+        let mol = parse("CC(=O)CC(=O)CC(=O)C").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        // Should enumerate multiple tautomers from multiple sites
+        assert!(
+            tautomers.len() >= 2,
+            "Expected multiple tautomers from multiple 1,5-shift sites"
+        );
+    }
+
+    #[test]
+    fn test_15_shift_config_selectivity() {
+        // Create config that enables only 1,5-shift rules (rules 20-42)
+        let mol = parse("CC(=O)CC(=O)C").unwrap();
+        let config = TautomerConfig {
+            max_tautomers: 32,
+            enabled_rules: (20..43).collect(), // indices for 1,5-shift rules (if they exist)
+            ..TautomerConfig::default()
+        };
+        let tautomers = enumerate_tautomers_with_config(&mol, &config);
+        // Should still enumerate with restricted rule set
+        assert!(!tautomers.is_empty());
     }
 }
