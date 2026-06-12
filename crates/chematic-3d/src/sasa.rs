@@ -257,6 +257,112 @@ fn generate_sphere_points(center: Point3, radius: f64, num_points: usize) -> Vec
     points
 }
 
+/// SASA descriptor statistics for a molecule.
+#[derive(Clone, Debug)]
+pub struct SasaDescriptor {
+    /// Total solvent-accessible surface area (Ų)
+    pub total: f64,
+    /// Mean SASA per atom (Ų)
+    pub mean: f64,
+    /// Standard deviation of per-atom SASA
+    pub std_dev: f64,
+    /// Per-atom SASA values
+    pub per_atom: Vec<f64>,
+}
+
+impl SasaDescriptor {
+    /// Create a SASA descriptor from per-atom values.
+    pub fn from_per_atom(per_atom: Vec<f64>) -> Self {
+        let total: f64 = per_atom.iter().sum();
+        let n = per_atom.len() as f64;
+        let mean = if n > 0.0 { total / n } else { 0.0 };
+
+        let variance = if n > 0.0 {
+            per_atom
+                .iter()
+                .map(|&x| (x - mean).powi(2))
+                .sum::<f64>()
+                / n
+        } else {
+            0.0
+        };
+        let std_dev = variance.sqrt();
+
+        SasaDescriptor {
+            total,
+            mean,
+            std_dev,
+            per_atom,
+        }
+    }
+}
+
+/// Calculate SASA descriptor with statistics using default parameters.
+///
+/// Returns a SasaDescriptor containing total, mean, std_dev, and per-atom values.
+pub fn sasa_descriptor(mol: &Molecule, coords: &Coords3D) -> SasaDescriptor {
+    let per_atom = sasa_per_atom_default(mol, coords);
+    SasaDescriptor::from_per_atom(per_atom)
+}
+
+/// Calculate SASA descriptor from distance geometry coordinates.
+pub fn sasa_descriptor_from_dg(mol: &Molecule) -> Result<SasaDescriptor, String> {
+    let coords = generate_coords(mol);
+    Ok(sasa_descriptor(mol, &coords))
+}
+
+/// Per-element SASA breakdown.
+/// Returns a vector where index corresponds to atomic number.
+#[derive(Clone, Debug)]
+pub struct PerElementSasa {
+    /// SASA by atomic number (index = Z, value = total SASA for that element)
+    pub by_element: Vec<f64>,
+}
+
+impl PerElementSasa {
+    /// Get SASA for a specific element (by atomic number).
+    pub fn get(&self, atomic_number: u8) -> f64 {
+        if (atomic_number as usize) < self.by_element.len() {
+            self.by_element[atomic_number as usize]
+        } else {
+            0.0
+        }
+    }
+}
+
+/// Calculate per-element SASA breakdown.
+pub fn sasa_per_element(mol: &Molecule, coords: &Coords3D) -> PerElementSasa {
+    let per_atom = sasa_per_atom_default(mol, coords);
+    let mut by_element = vec![0.0; 119]; // Periodic table up to element 118
+
+    for (i, &sasa_val) in per_atom.iter().enumerate() {
+        let idx = AtomIdx(i as u32);
+        let z = mol.atom(idx).element.atomic_number() as usize;
+        if z < by_element.len() {
+            by_element[z] += sasa_val;
+        }
+    }
+
+    PerElementSasa { by_element }
+}
+
+/// Calculate per-element SASA from distance geometry coordinates.
+pub fn sasa_per_element_from_dg(mol: &Molecule) -> Result<PerElementSasa, String> {
+    let coords = generate_coords(mol);
+    Ok(sasa_per_element(mol, &coords))
+}
+
+/// RDKit-compatible SASA calculation (wraps the standard implementation).
+/// This function signature mirrors RDKit's Descriptors.CalcMolSASA().
+pub fn calc_mol_sasa(mol: &Molecule, coords: &Coords3D) -> f64 {
+    sasa(mol, coords)
+}
+
+/// RDKit-compatible name: compute SASA with custom probe radius.
+pub fn calc_mol_sasa_with_probe(mol: &Molecule, coords: &Coords3D, probe_radius: f64) -> f64 {
+    shrake_rupley_sasa(mol, coords, probe_radius, 100)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -485,6 +591,168 @@ mod tests {
         // Carbon values depend on conformation
         for &sasa in &per_atom {
             assert!(sasa > 0.0 && sasa.is_finite());
+        }
+    }
+
+    // B8 Enhancement Tests: Descriptor statistics and per-element breakdown
+
+    #[test]
+    fn test_sasa_descriptor_basic() {
+        // Test SasaDescriptor computation
+        let mol = parse("C").unwrap();
+        let coords = Coords3D::new_zeroed(1);
+        let desc = sasa_descriptor(&mol, &coords);
+
+        assert!(desc.total > 0.0);
+        assert_eq!(desc.per_atom.len(), 1);
+        assert!((desc.mean - desc.total).abs() < 1e-6); // Single atom: mean = total
+    }
+
+    #[test]
+    fn test_sasa_descriptor_multiple_atoms() {
+        // Test descriptor with multiple atoms
+        let mol = parse("CC").unwrap();
+        let mut coords = Coords3D::new_zeroed(2);
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(10.0, 0.0, 0.0));
+
+        let desc = sasa_descriptor(&mol, &coords);
+
+        assert_eq!(desc.per_atom.len(), 2);
+        let sum: f64 = desc.per_atom.iter().sum();
+        assert!((desc.total - sum).abs() < 1e-6);
+
+        // Mean should be total / number of atoms
+        let expected_mean = desc.total / 2.0;
+        assert!((desc.mean - expected_mean).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_sasa_descriptor_std_dev() {
+        // Test standard deviation calculation
+        let mol = parse("CC").unwrap();
+        let mut coords = Coords3D::new_zeroed(2);
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(2.0, 0.0, 0.0)); // Close atoms
+
+        let desc = sasa_descriptor(&mol, &coords);
+
+        // Standard deviation should be non-negative
+        assert!(desc.std_dev >= 0.0);
+    }
+
+    #[test]
+    fn test_sasa_descriptor_from_dg() {
+        // Test descriptor from distance geometry
+        let mol = parse("CCO").unwrap();
+        let result = sasa_descriptor_from_dg(&mol);
+
+        assert!(result.is_ok());
+        let desc = result.unwrap();
+
+        assert_eq!(desc.per_atom.len(), 3);
+        assert!(desc.total > 0.0);
+        assert!(desc.mean > 0.0);
+        assert!(desc.std_dev >= 0.0);
+    }
+
+    #[test]
+    fn test_sasa_per_element_single_element() {
+        // Test per-element breakdown for single element
+        let mol = parse("C").unwrap(); // Single carbon
+        let coords = Coords3D::new_zeroed(1);
+        let per_elem = sasa_per_element(&mol, &coords);
+
+        let carbon_sasa = per_elem.get(6); // Carbon
+        assert!(carbon_sasa > 0.0);
+
+        // Other elements should have zero
+        assert_eq!(per_elem.get(1), 0.0); // Hydrogen
+        assert_eq!(per_elem.get(8), 0.0); // Oxygen
+    }
+
+    #[test]
+    fn test_sasa_per_element_mixed() {
+        // Test per-element breakdown for mixed molecule
+        let mol = parse("CCO").unwrap();
+        let coords = generate_coords(&mol);
+        let per_elem = sasa_per_element(&mol, &coords);
+
+        let carbon_sasa = per_elem.get(6);
+        let oxygen_sasa = per_elem.get(8);
+
+        assert!(carbon_sasa > 0.0);
+        assert!(oxygen_sasa > 0.0);
+
+        // Sum of elements should equal total
+        let total: f64 = per_elem.by_element.iter().sum();
+        let expected = sasa(&mol, &coords);
+        assert!((total - expected).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_sasa_per_element_from_dg() {
+        // Test per-element breakdown from DG
+        let mol = parse("C1CCCCC1").unwrap(); // Cyclohexane
+        let result = sasa_per_element_from_dg(&mol);
+
+        assert!(result.is_ok());
+        let per_elem = result.unwrap();
+
+        let carbon_sasa = per_elem.get(6);
+        assert!(carbon_sasa > 0.0);
+    }
+
+    #[test]
+    fn test_sasa_rdkit_compatible() {
+        // Test RDKit-compatible wrapper function
+        let mol = parse("C").unwrap();
+        let coords = Coords3D::new_zeroed(1);
+
+        let sasa_std = sasa(&mol, &coords);
+        let sasa_rdkit = calc_mol_sasa(&mol, &coords);
+
+        assert!((sasa_std - sasa_rdkit).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_sasa_rdkit_probe_radius() {
+        // Test RDKit-compatible probe radius variant
+        let mol = parse("CC").unwrap();
+        let coords = generate_coords(&mol);
+
+        let sasa_default = calc_mol_sasa(&mol, &coords);
+        let sasa_custom = calc_mol_sasa_with_probe(&mol, &coords, 1.4);
+
+        // With same probe radius, should be same
+        assert!((sasa_default - sasa_custom).abs() < 1e-6);
+
+        // Different probe radius should give different result
+        let sasa_large_probe = calc_mol_sasa_with_probe(&mol, &coords, 2.0);
+        assert!((sasa_large_probe - sasa_default).abs() > 0.1);
+    }
+
+    #[test]
+    fn test_sasa_descriptor_consistency() {
+        // Descriptor total should equal sasa() result
+        let mol = parse("CCO").unwrap();
+        let coords = generate_coords(&mol);
+
+        let desc = sasa_descriptor(&mol, &coords);
+        let total_sasa = sasa(&mol, &coords);
+
+        assert!((desc.total - total_sasa).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_sasa_descriptor_nonzero_atoms() {
+        // All per-atom values should be positive for reasonable molecules
+        let mol = parse("c1ccccc1").unwrap(); // Benzene
+        let coords = generate_coords(&mol);
+        let desc = sasa_descriptor(&mol, &coords);
+
+        for (i, &sasa_val) in desc.per_atom.iter().enumerate() {
+            assert!(sasa_val > 0.0, "atom {} should have positive SASA", i);
         }
     }
 }
