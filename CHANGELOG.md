@@ -11,6 +11,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.90] — 2026-06-12
+
+### Enhanced — Fingerprint Quality Improvements + Documentation Fixes
+
+#### Fingerprint Precision Upgrades
+
+**A4: MHFP (MinHash) Context Inclusion**
+- Improved MinHash seed diversity by including molecular atom/bond counts in hash computation
+- Reduces false positive similarities in large-scale screening
+- Better specificity for chemical library searches
+
+**A6: Reaction Fingerprint Structural Difference**
+- Upgraded reaction FP to compute true symmetric difference (XOR-like) between reactant/product ECFP4
+- Reactant-specific bits (broken structures) and product-specific bits (formed structures) now distinguished
+- Higher discrimination for reaction similarity searching
+
+**A5: ERG Topological Refinement**
+- Added degree-based structural context to ERG fingerprints
+- Atom degree + type combinations now encoded for better scaffold discrimination
+- Improved chemotype clustering accuracy
+
+#### Documentation
+
+**C3: InChI Parser Docstring Update**
+- Corrected `parse_inchi` documentation: stereo layers (/b, /t, /m, /s), isotope (/i), and charge (/q) are now fully supported
+- Reflects v0.1.89 stereo layer implementation completion
+
+---
+
 ## [0.1.37] — 2026-06-08
 
 ### Added — mol_transforms API + Random SMILES Generation

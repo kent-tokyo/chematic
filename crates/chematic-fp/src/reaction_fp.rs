@@ -70,17 +70,30 @@ fn combine_fps_or(fps: &[BitVec2048]) -> BitVec2048 {
 }
 
 /// XOR-like combination: structural difference via bit-level operations.
-/// Since BitVec2048 only supports OR, we approximate XOR by:
-/// - Computing which bits differ between two fingerprints
-/// - Using the union of bits that appear in only one fingerprint
+/// Computes symmetric difference: bits that appear in reactants OR products but not both.
+/// This represents formed and broken structures in the reaction.
 fn compute_structural_difference(reactant_fp: &BitVec2048, product_fp: &BitVec2048) -> BitVec2048 {
-    // XOR-like: bits that are in reactants OR products but not both (symmetric difference)
-    // Approximate: (reactants OR products) gives us what's involved in transformation
-    // Better: we want bits that are NEW (in products but not reactants) or LOST (in reactants but not products)
+    // v0.1.90: True symmetric difference for structural transformation encoding
+    // XOR approximation: bits that differ between reactants and products
+    // Represents:
+    // - Bits ON only in reactants: broken bonds/structures
+    // - Bits ON only in products: formed bonds/structures
+    // - Bits ON in both: unchanged structures
 
-    // Since we don't have true XOR, we use OR of reactant and product to highlight
-    // what structures participate in the transformation
-    reactant_fp.or(product_fp)
+    let mut result = BitVec2048::new();
+
+    // For each bit, set it if it differs between reactant and product (XOR behavior)
+    for i in 0..2048 {
+        let r_bit = reactant_fp.get(i);
+        let p_bit = product_fp.get(i);
+
+        // Set bit if it differs: this highlights the transformation
+        if r_bit != p_bit {
+            result.set(i);
+        }
+    }
+
+    result
 }
 
 /// Generate a reaction fingerprint from a reaction (OR combination, simplified).

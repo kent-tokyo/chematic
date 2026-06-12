@@ -121,6 +121,9 @@ pub fn mhfp_with_config(
             let mut hasher = DefaultHasher::new();
             hasher.write_u64(seed);
             hasher.write_u64(bit_pos);
+            // v0.1.90: Include molecular context in hash for improved specificity
+            hasher.write_usize(mol.atoms().count());
+            hasher.write_usize(mol.bonds().count());
             let hash_val = hasher.finish();
 
             if hash_val < hashes[h] {

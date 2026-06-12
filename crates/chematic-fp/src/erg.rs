@@ -153,8 +153,8 @@ pub fn erg_with_config(
     let mut atom_counts = [0u32; 7];
     let mut bond_counts = [0u32; 4];
 
-    // Count atom types
-    for (_, atom) in mol.atoms() {
+    // v0.1.90: Count atom types and degree information for better structural encoding
+    for (idx, atom) in mol.atoms() {
         let erg_type = ErgAtomType::from_atom(atom);
         atom_counts[erg_type as usize] += 1;
 
@@ -162,6 +162,14 @@ pub fn erg_with_config(
         let bit_pos = (erg_type as usize) * 16;
         if bit_pos < 2048 {
             bits.set(bit_pos);
+        }
+
+        // v0.1.90: Add degree-based bits for structural context
+        let degree = mol.bonds().filter(|(_, b)| b.atom1 == idx || b.atom2 == idx).count();
+        let degree_bits = ((degree.min(4) as usize) << 2) + (erg_type as usize);
+        let degree_bit_pos = 512 + degree_bits.min(127);
+        if degree_bit_pos < 2048 {
+            bits.set(degree_bit_pos);
         }
     }
 

@@ -117,8 +117,10 @@ pub fn inchi_key(inchi_str: &str) -> String {
 
 /// Parse an InChI string back into a Molecule representation.
 ///
-/// Supports simple organic molecules (alkanes, alkenes, basic aromatics).
-/// Stereo layers, isotopes, and charges are not yet supported.
+/// Parse an InChI string back into a Molecule.
+///
+/// Supports organic molecules with stereo layers (`/b`, `/t`, `/m`, `/s`),
+/// isotope layers (`/i`), and charge layers (`/q`).
 pub use parser::{parse_inchi, InchiParseError};
 
 #[cfg(test)]
