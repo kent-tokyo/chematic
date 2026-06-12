@@ -7,6 +7,7 @@
 //! - **Topological path fingerprints**: DFS path enumeration up to a configurable length.
 //! - **AtomPair fingerprints**: atom-pair encoding with topological distances.
 //! - **Topological Torsion fingerprints**: four-atom path encoding.
+//! - **C-Series Reaction fingerprints**: Chemical transformation encoding (Phase 1)
 
 #![forbid(unsafe_code)]
 
@@ -19,6 +20,7 @@ pub mod maccs;
 pub mod path;
 pub mod pattern;
 pub mod pharmacophore_fp;
+pub mod reaction_fp;
 pub mod search;
 pub mod topo_path;
 
@@ -33,6 +35,10 @@ pub use pattern::{pattern_fp, tanimoto_pattern};
 pub use pharmacophore_fp::{
     pharmacophore_feature_counts, pharmacophore_fp_2d,
     tanimoto_pharmacophore_2d,
+};
+pub use reaction_fp::{
+    reaction_fp, reaction_fp_with_config, reaction_fp_ecfp4, tanimoto_reaction_fp,
+    ReactionFingerprint, ReactionFpConfig,
 };
 pub use search::{FpType, nearest_neighbors, nearest_neighbors_from_fp};
 pub use topo_path::{TopoPathConfig, tanimoto_topo_path, topo_path};
