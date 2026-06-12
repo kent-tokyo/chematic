@@ -24,6 +24,8 @@ pub use enumerate::{
 pub use green::{atom_economy, e_factor, pmi_rxn, reaction_mass_efficiency};
 pub use query::{
     ReactionQuery, ReactionQueryError, has_reaction_substructure_match, parse_reaction_query,
+    BatchQueryResults, ReactionPatternLibrary, query_reaction, batch_query_reactions,
+    batch_query_with_library,
 };
 pub use reaction::{
     Reaction, ReactionCenter, RxnError, find_reaction_center, parse_reaction, write_reaction,

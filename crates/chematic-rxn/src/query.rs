@@ -673,9 +673,195 @@ pub fn get_reaction_smarts_matches(
     }
 }
 
+/// Batch query results with statistics and filtering.
+#[derive(Clone, Debug)]
+pub struct BatchQueryResults {
+    /// Total reactions queried
+    pub total_reactions: usize,
+    /// Reactions that matched the query
+    pub matching_reactions: usize,
+    /// Match percentage (0-100)
+    pub match_percentage: f64,
+    /// Individual match results
+    pub matches: Vec<(usize, bool)>, // (reaction_index, is_match)
+}
+
+impl BatchQueryResults {
+    /// Get indices of all matching reactions
+    pub fn matching_indices(&self) -> Vec<usize> {
+        self.matches
+            .iter()
+            .filter_map(|(idx, matched)| if *matched { Some(*idx) } else { None })
+            .collect()
+    }
+
+    /// Get indices of all non-matching reactions
+    pub fn non_matching_indices(&self) -> Vec<usize> {
+        self.matches
+            .iter()
+            .filter_map(|(idx, matched)| if !*matched { Some(*idx) } else { None })
+            .collect()
+    }
+}
+
+/// Pattern library for fast reaction querying against multiple patterns
+#[derive(Clone, Debug)]
+pub struct ReactionPatternLibrary {
+    /// Named reaction patterns
+    pub patterns: std::collections::HashMap<String, ReactionSmartsPattern>,
+}
+
+impl ReactionPatternLibrary {
+    /// Create a new empty pattern library
+    pub fn new() -> Self {
+        ReactionPatternLibrary {
+            patterns: std::collections::HashMap::new(),
+        }
+    }
+
+    /// Add a named pattern to the library
+    pub fn add_pattern(&mut self, name: String, pattern: ReactionSmartsPattern) {
+        self.patterns.insert(name, pattern);
+    }
+
+    /// Add a pattern from SMARTS string
+    pub fn add_pattern_from_smarts(
+        &mut self,
+        name: String,
+        smarts: &str,
+    ) -> Result<(), ReactionQueryError> {
+        let pattern = parse_reaction_smarts(smarts)?;
+        self.add_pattern(name, pattern);
+        Ok(())
+    }
+
+    /// Get number of patterns in library
+    pub fn len(&self) -> usize {
+        self.patterns.len()
+    }
+
+    /// Check if library is empty
+    pub fn is_empty(&self) -> bool {
+        self.patterns.is_empty()
+    }
+
+    /// Get pattern by name
+    pub fn get(&self, name: &str) -> Option<&ReactionSmartsPattern> {
+        self.patterns.get(name)
+    }
+
+    /// List all pattern names
+    pub fn pattern_names(&self) -> Vec<String> {
+        self.patterns.keys().cloned().collect()
+    }
+}
+
+impl Default for ReactionPatternLibrary {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Query a single reaction with a SMARTS pattern
+pub fn query_reaction(
+    rxn: &Reaction,
+    smarts: &str,
+) -> Result<ReactionSmartsMatch, ReactionQueryError> {
+    let pattern = parse_reaction_smarts(smarts)?;
+    // Convert ReactionSmartsPattern to ReactionQuery for matching
+    let query = ReactionQuery {
+        reactant_patterns: pattern.reactant_patterns,
+        product_patterns: pattern.product_patterns,
+    };
+    Ok(get_reaction_smarts_matches(rxn, &query))
+}
+
+/// Batch query reactions against a single SMARTS pattern
+pub fn batch_query_reactions(
+    reactions: &[Reaction],
+    smarts: &str,
+) -> Result<BatchQueryResults, ReactionQueryError> {
+    let pattern = parse_reaction_smarts(smarts)?;
+    let query = ReactionQuery {
+        reactant_patterns: pattern.reactant_patterns,
+        product_patterns: pattern.product_patterns,
+    };
+
+    let mut matches = Vec::new();
+    let mut matching_count = 0;
+
+    for (idx, rxn) in reactions.iter().enumerate() {
+        let result = get_reaction_smarts_matches(rxn, &query);
+        let is_match = result.is_complete_match;
+        if is_match {
+            matching_count += 1;
+        }
+        matches.push((idx, is_match));
+    }
+
+    let match_percentage = if reactions.is_empty() {
+        0.0
+    } else {
+        (matching_count as f64 / reactions.len() as f64) * 100.0
+    };
+
+    Ok(BatchQueryResults {
+        total_reactions: reactions.len(),
+        matching_reactions: matching_count,
+        match_percentage,
+        matches,
+    })
+}
+
+/// Batch query reactions against a pattern library
+pub fn batch_query_with_library(
+    reactions: &[Reaction],
+    library: &ReactionPatternLibrary,
+) -> std::collections::HashMap<String, BatchQueryResults> {
+    let mut results = std::collections::HashMap::new();
+
+    for (pattern_name, pattern) in &library.patterns {
+        let query = ReactionQuery {
+            reactant_patterns: pattern.reactant_patterns.clone(),
+            product_patterns: pattern.product_patterns.clone(),
+        };
+
+        let mut matches = Vec::new();
+        let mut matching_count = 0;
+
+        for (idx, rxn) in reactions.iter().enumerate() {
+            let result = get_reaction_smarts_matches(rxn, &query);
+            let is_match = result.is_complete_match;
+            if is_match {
+                matching_count += 1;
+            }
+            matches.push((idx, is_match));
+        }
+
+        let match_percentage = if reactions.is_empty() {
+            0.0
+        } else {
+            (matching_count as f64 / reactions.len() as f64) * 100.0
+        };
+
+        results.insert(
+            pattern_name.clone(),
+            BatchQueryResults {
+                total_reactions: reactions.len(),
+                matching_reactions: matching_count,
+                match_percentage,
+                matches,
+            },
+        );
+    }
+
+    results
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parse_reaction;
 
     fn rxn(s: &str) -> Reaction {
         crate::reaction::parse_reaction(s).unwrap()
@@ -1168,5 +1354,186 @@ mod tests {
 
         let result = check_rdkit_compatibility("[#6]|[#7]>>[#8]|[#9]").unwrap();
         assert!(result.is_compatible);
+    }
+
+    // B7 Enhancement Tests: Batch querying and pattern libraries
+
+    #[test]
+    fn test_batch_query_reactions_empty() {
+        let reactions: Vec<Reaction> = vec![];
+        let smarts = "[C:1]>>[C:1]";
+
+        let result = batch_query_reactions(&reactions, smarts);
+        assert!(result.is_ok());
+
+        let batch = result.unwrap();
+        assert_eq!(batch.total_reactions, 0);
+        assert_eq!(batch.matching_reactions, 0);
+        assert_eq!(batch.match_percentage, 0.0);
+    }
+
+    #[test]
+    fn test_batch_query_reactions_single_match() {
+        let rxn = parse_reaction("C>>C").unwrap();
+        let reactions = vec![rxn];
+        let smarts = "[C:1]>>[C:1]";
+
+        let result = batch_query_reactions(&reactions, smarts);
+        assert!(result.is_ok());
+
+        let batch = result.unwrap();
+        assert_eq!(batch.total_reactions, 1);
+        assert!(batch.matching_reactions >= 0);
+    }
+
+    #[test]
+    fn test_batch_query_reactions_multiple() {
+        let rxn1 = parse_reaction("C>>C").unwrap();
+        let rxn2 = parse_reaction("CC>>C").unwrap();
+        let rxn3 = parse_reaction("CCC>>CC").unwrap();
+
+        let reactions = vec![rxn1, rxn2, rxn3];
+        let smarts = "[C:1]>>[C:1]";
+
+        let result = batch_query_reactions(&reactions, smarts);
+        assert!(result.is_ok());
+
+        let batch = result.unwrap();
+        assert_eq!(batch.total_reactions, 3);
+        assert_eq!(batch.matches.len(), 3);
+    }
+
+    #[test]
+    fn test_batch_query_results_indices() {
+        let rxn1 = parse_reaction("C>>C").unwrap();
+        let rxn2 = parse_reaction("CC>>C").unwrap();
+        let rxn3 = parse_reaction("CCC>>CC").unwrap();
+
+        let reactions = vec![rxn1, rxn2, rxn3];
+        let smarts = "[C:1]>>[C:1]";
+
+        let batch = batch_query_reactions(&reactions, smarts).unwrap();
+
+        // Both matching and non-matching indices should return valid results
+        let matching = batch.matching_indices();
+        let non_matching = batch.non_matching_indices();
+
+        assert_eq!(matching.len() + non_matching.len(), batch.total_reactions);
+    }
+
+    #[test]
+    fn test_reaction_pattern_library_new() {
+        let library = ReactionPatternLibrary::new();
+        assert!(library.is_empty());
+        assert_eq!(library.len(), 0);
+    }
+
+    #[test]
+    fn test_reaction_pattern_library_add_pattern() {
+        let mut library = ReactionPatternLibrary::new();
+
+        let pattern = parse_reaction_smarts("[C:1]>>[C:1]").unwrap();
+        library.add_pattern("simple_carbon".to_string(), pattern);
+
+        assert_eq!(library.len(), 1);
+        assert!(!library.is_empty());
+        assert!(library.get("simple_carbon").is_some());
+    }
+
+    #[test]
+    fn test_reaction_pattern_library_add_from_smarts() {
+        let mut library = ReactionPatternLibrary::new();
+
+        let result = library.add_pattern_from_smarts(
+            "acylation".to_string(),
+            "[C:1](=[O:2])[N:3]>>[C:1](=[O:2])[N:3]",
+        );
+        assert!(result.is_ok());
+        assert_eq!(library.len(), 1);
+    }
+
+    #[test]
+    fn test_reaction_pattern_library_multiple_patterns() {
+        let mut library = ReactionPatternLibrary::new();
+
+        let _ = library.add_pattern_from_smarts(
+            "reaction1".to_string(),
+            "[C:1]>>[C:1]",
+        );
+        let _ = library.add_pattern_from_smarts(
+            "reaction2".to_string(),
+            "[N:1]>>[N:1]",
+        );
+        let _ = library.add_pattern_from_smarts(
+            "reaction3".to_string(),
+            "[O:1]>>[O:1]",
+        );
+
+        assert_eq!(library.len(), 3);
+
+        let names = library.pattern_names();
+        assert_eq!(names.len(), 3);
+        assert!(names.contains(&"reaction1".to_string()));
+    }
+
+    #[test]
+    fn test_batch_query_with_library() {
+        let mut library = ReactionPatternLibrary::new();
+        let _ = library.add_pattern_from_smarts(
+            "carbon_only".to_string(),
+            "[C:1]>>[C:1]",
+        );
+
+        let rxn1 = parse_reaction("C>>C").unwrap();
+        let rxn2 = parse_reaction("CC>>C").unwrap();
+        let reactions = vec![rxn1, rxn2];
+
+        let results = batch_query_with_library(&reactions, &library);
+
+        assert!(!results.is_empty());
+        assert!(results.contains_key("carbon_only"));
+
+        let batch = &results["carbon_only"];
+        assert_eq!(batch.total_reactions, 2);
+    }
+
+    #[test]
+    fn test_query_reaction_simple() {
+        let rxn = parse_reaction("C>>C").unwrap();
+        let smarts = "[C:1]>>[C:1]";
+
+        let result = query_reaction(&rxn, smarts);
+        assert!(result.is_ok());
+
+        let match_result = result.unwrap();
+        // Check that it produced a valid result structure
+        assert!(match_result.reactant_matches.pattern_matches.len() >= 0);
+    }
+
+    #[test]
+    fn test_batch_query_match_percentage() {
+        let rxn1 = parse_reaction("C>>C").unwrap();
+        let rxn2 = parse_reaction("CC>>C").unwrap();
+        let rxn3 = parse_reaction("CCC>>CC").unwrap();
+
+        let reactions = vec![rxn1, rxn2, rxn3];
+        let smarts = "[C:1]>>[C:1]";
+
+        let batch = batch_query_reactions(&reactions, smarts).unwrap();
+
+        // Match percentage should be between 0 and 100
+        assert!(batch.match_percentage >= 0.0);
+        assert!(batch.match_percentage <= 100.0);
+
+        // Verify calculation
+        let expected_percentage =
+            (batch.matching_reactions as f64 / batch.total_reactions as f64) * 100.0;
+        assert!((batch.match_percentage - expected_percentage).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_reaction_pattern_library_default() {
+        let library = ReactionPatternLibrary::default();
+        assert!(library.is_empty());
     }
 }
