@@ -505,12 +505,12 @@ fn render_bond_c(order: BondOrder, p1: Point, p2: Point, color: &str) -> String 
         BondOrder::Triple => render_triple_bond(p1, p2, color),
         BondOrder::Aromatic => render_aromatic_bond(p1, p2, color),
         BondOrder::Quadruple => render_line(p1, p2, "3.0", color),
-        BondOrder::Zero
-        | BondOrder::Dative
-        | BondOrder::QueryAny
-        | BondOrder::QuerySingleOrDouble
-        | BondOrder::QuerySingleOrAromatic
-        | BondOrder::QueryDoubleOrAromatic => render_line(p1, p2, "1.5", color),
+        BondOrder::Zero => render_line(p1, p2, "1.0", color), // Zero-order as thin line
+        BondOrder::Dative => render_dative_bond(p1, p2, color),
+        BondOrder::QueryAny => render_query_any_bond(p1, p2, color),
+        BondOrder::QuerySingleOrDouble => render_query_dashed_bond(p1, p2, color, "2,2"),
+        BondOrder::QuerySingleOrAromatic => render_query_dashed_bond(p1, p2, color, "4,2"),
+        BondOrder::QueryDoubleOrAromatic => render_query_dashed_bond(p1, p2, color, "3,3"),
     }
 }
 
@@ -632,6 +632,92 @@ fn render_dash_bond(p1: Point, p2: Point, color: &str) -> String {
         ));
     }
     s
+}
+
+/// Render a dative bond (coordinate covalent) as an arrow from donor to acceptor.
+/// Typically indicates a bond where both electrons come from one atom.
+fn render_dative_bond(p1: Point, p2: Point, color: &str) -> String {
+    let dx = p2.x - p1.x;
+    let dy = p2.y - p1.y;
+    let len = (dx * dx + dy * dy).sqrt();
+    if len < 1e-10 {
+        return String::new();
+    }
+
+    let mut s = String::new();
+
+    // Draw the line from p1 to p2
+    s.push_str(&render_line(p1, p2, "1.5", color));
+
+    // Draw arrowhead at p2 pointing in the direction of the bond
+    let arrow_len = 8.0;
+    let arrow_width = 6.0;
+
+    // Normalize direction
+    let dx_norm = dx / len;
+    let dy_norm = dy / len;
+
+    // Arrowhead point is slightly before p2
+    let arrow_tip_x = p2.x - dx_norm * 2.0;
+    let arrow_tip_y = p2.y - dy_norm * 2.0;
+
+    // Perpendicular direction
+    let perp_x = -dy_norm;
+    let perp_y = dx_norm;
+
+    // Arrow base
+    let base_x = arrow_tip_x - dx_norm * arrow_len;
+    let base_y = arrow_tip_y - dy_norm * arrow_len;
+
+    // Arrowhead polygon (filled triangle)
+    let left_x = base_x + perp_x * arrow_width / 2.0;
+    let left_y = base_y + perp_y * arrow_width / 2.0;
+    let right_x = base_x - perp_x * arrow_width / 2.0;
+    let right_y = base_y - perp_y * arrow_width / 2.0;
+
+    s.push_str(&format!(
+        "  <polygon points=\"{:.2},{:.2} {:.2},{:.2} {:.2},{:.2}\" \
+         fill=\"{}\" stroke=\"{}\" stroke-width=\"0.5\"/>\n",
+        p2.x, p2.y, left_x, left_y, right_x, right_y, color, color
+    ));
+
+    s
+}
+
+/// Render a query bond for "any bond type" as a dotted line with asterisks.
+fn render_query_any_bond(p1: Point, p2: Point, color: &str) -> String {
+    let dx = p2.x - p1.x;
+    let dy = p2.y - p1.y;
+    let len = (dx * dx + dy * dy).sqrt();
+    if len < 1e-10 {
+        return String::new();
+    }
+
+    let mut s = String::new();
+
+    // Draw main dotted line
+    s.push_str(&render_line_dashed(p1, p2, "1.5", color, "3,3"));
+
+    // Add asterisk marker in the middle
+    let mid_x = (p1.x + p2.x) / 2.0;
+    let mid_y = (p1.y + p2.y) / 2.0;
+
+    s.push_str(&format!(
+        "  <text x=\"{:.2}\" y=\"{:.2}\" font-family=\"serif\" font-size=\"14\" \
+         text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"{}\" \
+         font-weight=\"bold\">*</text>\n",
+        mid_x, mid_y, color
+    ));
+
+    s
+}
+
+/// Render query bonds with different dash patterns to distinguish bond types.
+/// - QuerySingleOrDouble: short dashes (2,2)
+/// - QuerySingleOrAromatic: medium dashes (4,2)
+/// - QueryDoubleOrAromatic: long dashes (3,3)
+fn render_query_dashed_bond(p1: Point, p2: Point, color: &str, dasharray: &str) -> String {
+    render_line_dashed(p1, p2, "1.5", color, dasharray)
 }
 
 // ---------------------------------------------------------------------------
@@ -1090,5 +1176,140 @@ mod tests {
     fn test_atom_color_rgb_unknown_black() {
         assert_eq!(atom_color_rgb(0), [0, 0, 0]);
         assert_eq!(atom_color_rgb(118), [0, 0, 0]);
+    }
+
+    // C5 Tests: Dative and query bond rendering
+
+    #[test]
+    fn test_render_dative_bond() {
+        // Test that dative bonds render with arrow notation
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(10.0, 0.0);
+        let svg = render_dative_bond(p1, p2, "black");
+
+        // Should contain line SVG element
+        assert!(svg.contains("<line"), "dative bond should include line element");
+        // Should contain polygon for arrowhead
+        assert!(svg.contains("<polygon"), "dative bond should include arrowhead polygon");
+    }
+
+    #[test]
+    fn test_render_query_any_bond() {
+        // Test that query_any bonds render with dotted line and asterisk
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(10.0, 0.0);
+        let svg = render_query_any_bond(p1, p2, "black");
+
+        // Should contain dashed line
+        assert!(svg.contains("stroke-dasharray"), "query_any should have dashed line");
+        // Should contain asterisk marker
+        assert!(svg.contains("*"), "query_any should include asterisk marker");
+        assert!(svg.contains("<text"), "query_any should include text for asterisk");
+    }
+
+    #[test]
+    fn test_render_query_single_or_double() {
+        // Test query single-or-double bond with short dashes
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(10.0, 0.0);
+        let svg = render_query_dashed_bond(p1, p2, "black", "2,2");
+
+        assert!(svg.contains("stroke-dasharray=\"2,2\""), "should have correct dash pattern");
+    }
+
+    #[test]
+    fn test_render_query_single_or_aromatic() {
+        // Test query single-or-aromatic bond with medium dashes
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(10.0, 0.0);
+        let svg = render_query_dashed_bond(p1, p2, "black", "4,2");
+
+        assert!(svg.contains("stroke-dasharray=\"4,2\""), "should have correct dash pattern");
+    }
+
+    #[test]
+    fn test_render_query_double_or_aromatic() {
+        // Test query double-or-aromatic bond with long dashes
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(10.0, 0.0);
+        let svg = render_query_dashed_bond(p1, p2, "black", "3,3");
+
+        assert!(svg.contains("stroke-dasharray=\"3,3\""), "should have correct dash pattern");
+    }
+
+    #[test]
+    fn test_bond_rendering_all_types() {
+        // Comprehensive test ensuring all bond types render without errors
+        let positions = vec![
+            (BondOrder::Single, "single"),
+            (BondOrder::Double, "double"),
+            (BondOrder::Triple, "triple"),
+            (BondOrder::Aromatic, "aromatic"),
+            (BondOrder::Up, "wedge up"),
+            (BondOrder::Down, "down"),
+            (BondOrder::Dative, "dative"),
+            (BondOrder::QueryAny, "query any"),
+            (BondOrder::QuerySingleOrDouble, "query single-or-double"),
+            (BondOrder::QuerySingleOrAromatic, "query single-or-aromatic"),
+            (BondOrder::QueryDoubleOrAromatic, "query double-or-aromatic"),
+        ];
+
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(10.0, 0.0);
+
+        for (bond_order, name) in positions {
+            let svg = render_bond_c(bond_order, p1, p2, "black");
+            assert!(!svg.is_empty(), "{} bond should produce non-empty SVG", name);
+            assert!(svg.contains("<"), "{} bond should contain SVG elements", name);
+        }
+    }
+
+    #[test]
+    fn test_dative_bond_color() {
+        // Test that dative bond respects color parameter
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(10.0, 0.0);
+        let svg = render_dative_bond(p1, p2, "#FF0000");
+
+        assert!(svg.contains("#FF0000"), "dative bond should use specified color");
+    }
+
+    #[test]
+    fn test_query_any_bond_midpoint_marker() {
+        // Test that asterisk appears approximately at bond midpoint
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(20.0, 0.0);
+        let svg = render_query_any_bond(p1, p2, "black");
+
+        // Should have text element with coordinates near midpoint (10.0, 0.0)
+        assert!(svg.contains("x=\"10.00\""), "asterisk should be near midpoint");
+    }
+
+    #[test]
+    fn test_bond_rendering_coverage() {
+        // Ensure all BondOrder variants are handled
+        let orders = vec![
+            BondOrder::Zero,
+            BondOrder::Single,
+            BondOrder::Double,
+            BondOrder::Triple,
+            BondOrder::Aromatic,
+            BondOrder::Up,
+            BondOrder::Down,
+            BondOrder::Quadruple,
+            BondOrder::Dative,
+            BondOrder::QueryAny,
+            BondOrder::QuerySingleOrDouble,
+            BondOrder::QuerySingleOrAromatic,
+            BondOrder::QueryDoubleOrAromatic,
+        ];
+
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(10.0, 0.0);
+
+        for order in orders {
+            // Each should render without panicking
+            let _ = render_bond_c(order, p1, p2, "black");
+        }
     }
 }
