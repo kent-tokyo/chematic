@@ -1,14 +1,24 @@
 //! C-Series Phase 1: ERG (Extended Reduced Graph) fingerprints.
 //!
-//! Extended Reduced Graph fingerprints encode the topological structure of molecules
-//! using reduced graphs where nodes represent functional groups and edges represent
-//! the connectivity between them.
+//! **NOTE**: Current implementation is a simplified atom-type counting version.
+//! True ERG (RDKit rdReducedGraphs) constructs a reduced graph by:
+//! 1. Identifying functional group clusters (e.g., carbonyl, carboxyl, amine)
+//! 2. Collapsing each cluster into a single node
+//! 3. Computing fingerprint on the reduced graph structure
+//!
+//! Current simplified version counts atom and bond types directly,
+//! which loses structural/topological information compared to true ERG.
 //!
 //! Useful for:
-//! - Functional group-based similarity searching
-//! - Molecule classification by functional group composition
-//! - Scaffold identification
-//! - Chemotype clustering
+//! - Functional group-based similarity searching (approximate)
+//! - Molecule classification by atom composition
+//! - Fast structural filtering
+//! - Chemotype clustering (lower accuracy than true ERG)
+//!
+//! TODO (v0.1.90+): Upgrade to true ERG by:
+//! 1. Detect functional group clusters in molecule
+//! 2. Build reduced graph with collapsed nodes
+//! 3. Compute fingerprint on reduced structure
 
 use chematic_core::{Atom, BondOrder};
 use crate::bitvec::BitVec2048;
@@ -118,6 +128,18 @@ impl ErgFingerprint {
 }
 
 /// Generate ERG fingerprint from a molecule.
+/// Generate ERG fingerprint from a molecule (simplified atom-type counting).
+///
+/// **Current Implementation**: Counts atom and bond types in the molecule.
+/// This is a simplified approximation that captures composition but not structure.
+///
+/// **True ERG** would:
+/// 1. Identify functional group clusters (carbonyl, carboxyl, amine, etc.)
+/// 2. Collapse each cluster into a single node in a reduced graph
+/// 3. Compute fingerprint on the reduced graph topology
+/// 4. Achieve superior discrimination of structural isomers and functional diversity
+///
+/// Current version is useful for fast filtering but lacks structural sophistication.
 pub fn erg(mol: &chematic_core::Molecule) -> ErgFingerprint {
     erg_with_config(mol, &ErgConfig::default())
 }

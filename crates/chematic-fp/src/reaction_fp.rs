@@ -1,11 +1,24 @@
 //! C-Series Phase 1: Reaction fingerprints for chemical transformation encoding.
 //!
-//! Reaction fingerprints capture the essence of a chemical transformation by
-//! combining reactant and product fingerprints. Useful for:
-//! - Reaction similarity searching
-//! - Reaction classification
-//! - Machine learning on reaction networks
-//! - Retrosynthesis prediction
+//! **NOTE**: Current implementation uses OR of reactant/product ECFP4 fingerprints.
+//! This captures the structural components but not the actual transformation.
+//!
+//! True structural reaction fingerprint (RDKit CreateStructuralFingerprintForReaction)
+//! uses XOR encoding to capture what actually changes:
+//! - Bits set in products but not reactants = formed structures
+//! - Bits set in reactants but not products = broken structures
+//! - Current OR approach loses this difference information
+//!
+//! Useful for:
+//! - Reaction similarity searching (lower accuracy than true reaction FP)
+//! - Reaction classification (coarse-grained)
+//! - Reaction database filtering
+//! - Basic reaction clustering
+//!
+//! TODO (v0.1.90+): Upgrade to true structural reaction FP by:
+//! 1. Compute XOR of reactant and product fingerprints
+//! 2. Separate formed vs broken structures
+//! 3. Weight transformations by chemical significance
 
 use crate::bitvec::BitVec2048;
 use crate::ecfp::ecfp4;
@@ -63,9 +76,18 @@ fn combine_fps(fps: &[BitVec2048], use_xor: bool) -> BitVec2048 {
     result
 }
 
-/// Generate a reaction fingerprint from a reaction.
+/// Generate a reaction fingerprint from a reaction (OR combination, simplified).
 ///
-/// Combines ECFP4 fingerprints of all reactants and products.
+/// **Current Implementation**: Combines ECFP4 fingerprints via OR operation.
+/// Captures what structures are present but not what actually changed.
+///
+/// **True Structural Reaction FP** (RDKit CreateStructuralFingerprintForReaction) uses XOR:
+/// - Bits ON in products → structures formed
+/// - Bits ON in reactants → structures broken
+/// - XOR highlights the transformation itself
+/// - Much more discriminative for reaction similarity
+///
+/// Current OR approach is useful for composition filtering but weak for transformation matching.
 pub fn reaction_fp(rxn: &chematic_rxn::Reaction) -> ReactionFingerprint {
     reaction_fp_with_config(rxn, &ReactionFpConfig::default())
 }

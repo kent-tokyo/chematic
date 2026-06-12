@@ -1,14 +1,21 @@
 //! C-Series Phase 1: MHFP/SECFP MinHash fingerprints.
 //!
-//! MinHash-based hashing for fast approximate similarity searching.
-//! MHFP (Molecular Hash Fingerprint) uses a set of hash functions to
-//! create compact fingerprints suitable for large-scale similarity search.
+//! **NOTE**: Current implementation is a simplified MinHash approximation.
+//! Uses ECFP4-derived bit positions with DefaultHasher.
+//! Full MHFP (Lowe & Sayle 2013) would extract circular substructure SMILES
+//! and compute MinHash on those strings for improved accuracy.
+//! See: https://pubs.acs.org/doi/10.1021/ci034236b
 //!
 //! Useful for:
-//! - Fast approximate similarity searches
+//! - Fast approximate similarity searches (lower accuracy than true MHFP)
 //! - Large molecular library screening
 //! - Hash-based clustering
 //! - Scalable molecular database queries
+//!
+//! TODO (v0.1.90+): Upgrade to true MHFP by:
+//! 1. Extract circular substructure SMILES (radius 0-4 like ECFP)
+//! 2. Hash each SMILES string individually
+//! 3. Return K smallest hashes across all radii
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
@@ -63,9 +70,19 @@ impl MhfpFingerprint {
     }
 }
 
-/// Generate MinHash fingerprint from a molecule.
+/// Generate MinHash fingerprint from a molecule (simplified approximation).
 ///
-/// Uses ECFP4-derived bit positions as the set for MinHash.
+/// **Current Implementation**: Uses ECFP4-derived bit positions with DefaultHasher.
+/// This is a simplified approximation for fast similarity search.
+///
+/// **True MHFP** (Lowe & Sayle 2013) would:
+/// 1. Extract circular substructure SMILES (radius 0-4)
+/// 2. Hash each SMILES string individually
+/// 3. Retain K smallest hashes
+/// 4. Achieve higher accuracy for similarity searching
+///
+/// For production systems requiring high accuracy, consider ECFP4 Tanimoto
+/// instead, or implement full MHFP per reference paper.
 pub fn mhfp(mol: &chematic_core::Molecule) -> MhfpFingerprint {
     mhfp_with_config(mol, &MhfpConfig::default())
 }
