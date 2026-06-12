@@ -93,11 +93,10 @@ fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<Sp
 
         // Phantom of parent: add if the bond used to reach this node was double.
         if let Some((_, bond_to_parent)) = mol.bond_between(state.node, state.parent)
+            && bond_to_parent.order == BondOrder::Double
         {
-            if bond_to_parent.order == BondOrder::Double {
-                let phantom_key = atom_key(mol, state.parent);
-                layers.entry(child_depth).or_default().push(phantom_key);
-            }
+            let phantom_key = atom_key(mol, state.parent);
+            layers.entry(child_depth).or_default().push(phantom_key);
         }
 
         for (nb, _) in mol.neighbors(state.node) {
