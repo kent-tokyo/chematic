@@ -151,8 +151,25 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
         }
     }
 
-    // Note: /m (relative stereo parity) and /s (stereo type) are informational only
-    // They don't affect the 3D structure, just metadata about chirality type
+    // Parse relative stereo parity layer (/m...) - informational metadata
+    let mut rel_stereo_parity: HashMap<usize, String> = HashMap::new();
+    for i in 1..parts.len() {
+        if parts[i].starts_with('m') {
+            let m_str = &parts[i][1..];
+            rel_stereo_parity = parse_relative_stereo_layer(m_str)?;
+            break;
+        }
+    }
+
+    // Parse stereo type layer (/s...) - informational metadata
+    let mut stereo_type: String = String::new();
+    for i in 1..parts.len() {
+        if parts[i].starts_with('s') {
+            let s_str = &parts[i][1..];
+            stereo_type = parse_stereo_type_layer(s_str)?;
+            break;
+        }
+    }
 
     // Build initial molecule
     let mut mol = builder.build();
@@ -720,6 +737,35 @@ fn apply_tetrahedral_stereo(
     mol
 }
 
+/// Parse relative stereo parity layer (/m...) - informational metadata.
+/// Format: "M#" where # is the parity number (e.g., "M1", "M2")
+/// Indicates meso compounds or relative stereochemistry between multiple stereocenters.
+fn parse_relative_stereo_layer(m_str: &str) -> Result<HashMap<usize, String>, InchiParseError> {
+    let mut parity_map = HashMap::new();
+
+    if m_str.is_empty() {
+        return Ok(parity_map);
+    }
+
+    // Parse format like "1" or "1-2" or multiple entries
+    let entries: Vec<&str> = m_str.split(',').collect();
+    for (idx, entry) in entries.iter().enumerate() {
+        if !entry.is_empty() {
+            parity_map.insert(idx + 1, entry.to_string());
+        }
+    }
+
+    Ok(parity_map)
+}
+
+/// Parse stereo type layer (/s...) - informational metadata.
+/// Format: "obsolete" or "new" or version identifier
+/// Indicates the version of stereo information encoding.
+fn parse_stereo_type_layer(s_str: &str) -> Result<String, InchiParseError> {
+    // Simply return the string as-is; valid values are "obsolete" or stereo layer version info
+    Ok(s_str.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -978,5 +1024,60 @@ mod tests {
         let (a1, a2) = parse_bond_spec("12-15").unwrap();
         assert_eq!(a1, 12);
         assert_eq!(a2, 15);
+    }
+
+    #[test]
+    fn test_parse_relative_stereo_layer_single() {
+        let parity = parse_relative_stereo_layer("1").unwrap();
+        assert_eq!(parity.len(), 1);
+        assert_eq!(parity.get(&1), Some(&"1".to_string()));
+    }
+
+    #[test]
+    fn test_parse_relative_stereo_layer_multiple() {
+        let parity = parse_relative_stereo_layer("1,2").unwrap();
+        assert_eq!(parity.len(), 2);
+        assert_eq!(parity.get(&1), Some(&"1".to_string()));
+        assert_eq!(parity.get(&2), Some(&"2".to_string()));
+    }
+
+    #[test]
+    fn test_parse_relative_stereo_layer_empty() {
+        let parity = parse_relative_stereo_layer("").unwrap();
+        assert!(parity.is_empty());
+    }
+
+    #[test]
+    fn test_parse_stereo_type_layer_obsolete() {
+        let stereo_type = parse_stereo_type_layer("obsolete").unwrap();
+        assert_eq!(stereo_type, "obsolete");
+    }
+
+    #[test]
+    fn test_parse_stereo_type_layer_new() {
+        let stereo_type = parse_stereo_type_layer("new").unwrap();
+        assert_eq!(stereo_type, "new");
+    }
+
+    #[test]
+    fn test_parse_inchi_with_relative_stereo() {
+        // InChI with /m layer (relative stereo metadata)
+        let result = parse_inchi("InChI=1S/C4H10/c1-3-4-2/h3-4H,1-2H3/m0");
+        // Should parse successfully even with /m layer
+        assert!(result.is_ok(), "should parse InChI with /m layer");
+        if let Ok(mol) = result {
+            assert!(mol.atom_count() > 0);
+        }
+    }
+
+    #[test]
+    fn test_parse_inchi_with_stereo_type() {
+        // InChI with /s layer (stereo type metadata)
+        let result = parse_inchi("InChI=1S/C2H6/c1-2/h1-2H3/s1");
+        // Should parse successfully even with /s layer
+        assert!(result.is_ok(), "should parse InChI with /s layer");
+        if let Ok(mol) = result {
+            assert!(mol.atom_count() > 0);
+        }
     }
 }
