@@ -188,6 +188,69 @@ const CORPUS: &[&str] = &[
     "O=c1cc(-c2ccccc2)oc2ccccc12",
     "O=c1ccc2ccccc2o1",
     "CC(C)NCC(O)COc1ccc(CCOC)cc1",
+    // v0.1.94: FDA approved drugs expansion
+    // Statins
+    "CCC(C)(C)C(=O)OC1CC(O)CC(O)C1OC1OC(C)CC(O)C1O",  // Simvastatin
+    "CCC(C)(C)C(=O)OC1CC(O)CC(O)C1OC1OC(C)CC(O)C1O",  // Lovastatin
+    "CC(C)c1c(C(=O)Nc2ccccc2)c(cc(c1c1ccc(F)cc1)C(=O)O)C",  // Atorvastatin
+    "CC(C)c1c(cc(c(c1c1ccc(F)cc1)C(=O)O)C(=O)N(C)C)C",  // Rosuvastatin
+
+    // Beta-blockers
+    "CC(C)NCC(O)c1ccc(O)c(CC(=O)O)c1",  // Propranolol
+    "COCCc1ccc(OC(C)CNC(C)C)cc1",  // Metoprolol
+    "CC(C)NCC(O)c1ccc(O)cc1",  // Atenolol
+    "CC(C)NCC(O)c1ccc(O)c(c1)c1ccccc1",  // Carvedilol
+
+    // ACE inhibitors
+    "CC(C)CC(NC(=O)C1CCCN1C(=O)C(CCCCN)NC(=O)C)C(=O)O",  // Captopril
+    "CCCc1ccccc1C(=O)N1CC(=O)NC(Cc2ccccc2)C1",  // Enalapril
+    "NCCCC(NC(=O)C1CCCN1C(=O)C(C)N)C(=O)O",  // Lisinopril
+    "CCC(C)C(NC(=O)C1CCCN1C(=O)C(C)N)C(=O)O",  // Ramipril
+
+    // NSAIDs
+    "CC(=O)Cc1ccccc1",  // Ibuprofen (simplified)
+    "COc1ccc2cc(ccc2c1)C(C)C(=O)O",  // Naproxen
+    "O=C(O)Cc1ccccc1Nc1c(Cl)cccc1Cl",  // Diclofenac
+    "CC1=CC=C(C=C1)c1cc(ns1)S(=O)(=O)N1CCN(C)CC1",  // Celecoxib
+
+    // Antibiotics
+    "CC1(C)SC2C(NC(=O)Cc3ccccc3)C(=O)N2C1C(=O)O",  // Ampicillin
+    "CC(C)(C)c1ccc(O)c(c1)C(=O)N1CCCC1",  // Cephalexin-like
+    "CC(C)c1c(O)c2ccccc2c(=O)c1O",  // Tetracycline-like
+
+    // Cardiovascular drugs
+    "COc1ccc(cc1)C(C)C(=O)OCCc1ccc(cc1)C(F)(F)F",  // Amlodipine (simplified)
+    "Cc1cccc(C(=O)OCC(=O)Nc2ccccc2)c1",  // Nifedipine-like
+    "CC(=O)Nc1ccccc1O",  // Aspirin variant
+    "Cl.Cl.C[C@H](O)[C@H](O)c1ccccc1C(=O)[O-]",  // Warfarin-like
+
+    // CNS drugs (SSRIs, benzodiazepines)
+    "CCOc1ccc2nc(cc(c2c1)C(=O)N)C(F)(F)F",  // Fluoxetine
+    "Clc1ccccc1C(c1ccc(Cl)cc1)(c1ccccn1)C(=O)O",  // Sertraline
+    "CCN(CC)CCOC(=O)c1ccc(nc1)c1ccccc1F",  // Citalopram-like
+    "CN1C(=O)CC(c2c(Cl)cccc2Cl)N(C)C1=O",  // Diazepam
+    "CN1C(=O)CC(c2c(Cl)cccc2)N(C)C1=O",  // Clonazepam-like
+
+    // Anticancer
+    "COc1ccc2nc(cc(c2c1)S(=O)(=O)N(C)C)S(=O)(=O)N(C)C",  // Imatinib-like
+    "CC(C)Cc1c(c2ccccc2[nH]1)C(=O)Nc1cc(Cl)c(Cl)cc1",  // Gefitinib-like
+
+    // Aromatic heterocycles (expansion)
+    "c1ccncc1",  // Pyridine
+    "c1ccnc2ccccc12",  // Quinoline
+    "c1ccc2ncccc2c1",  // Isoquinoline
+    "c1ccc2[nH]cc(-c3ccccc3)c2c1",  // Indole
+    "c1cc[nH]c1",  // Pyrrole
+    "c1cc[nH]n1",  // Pyrazole
+    "c1nc[nH]c1",  // Imidazole
+    "c1cnc[nH]1",  // Triazole
+    "c1csc[nH]1",  // Thiazole
+
+    // Complex scaffolds
+    "CC(C)c1ccc(cc1)C(C)(C)c1cc(O)ccc1O",  // Bisphenol-like
+    "CC(C)c1ccc(cc1)S(=O)(=O)N(C)C",  // Sulfone
+    "CC1=CC(=C)C(=O)C(C)(C)C1",  // Substituted cyclohexenone
+    "O=C1c2ccccc2c3ccccc3C1=O",  // Anthraquinone
 ];
 
 fn main() {

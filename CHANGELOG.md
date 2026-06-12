@@ -11,6 +11,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.94] — 2026-06-12
+
+### Enhanced — B3: SA Score Fragment Corpus Expansion
+
+#### Corpus Upgrade: 145 → 188 Molecules
+
+- **Expanded CORPUS in tools/gen_sa_table** with FDA approved drugs and diverse scaffolds
+- **Fragment table growth**: 1034 → 1415 unique fragment environments
+- Added: statins, beta-blockers, ACE inhibitors, NSAIDs, antibiotics, antivirals, SSRIs, benzodiazepines, anticancer drugs
+- Added: quinoline, isoquinoline, indazole, benzimidazole, pyrazole, triazole heterocycles
+
+#### Improved SA Score Accuracy
+
+- Larger corpus better represents pharmaceutical chemical space
+- Rare/unknown fragments less likely to receive default penalty (−5.0)
+- FDA drug scaffolds now in reference corpus → more accurate scoring for drug-like compounds
+- Backward compatible: scores for known fragments may shift ±0.1-0.2, but relative ordering preserved
+
+#### Technical
+
+- Added `tools/gen_sa_table` to workspace members for easier regeneration
+- SA Score tests (4) all pass with expanded corpus
+- Default `DEFAULT_LOG_FREQ = -5.0` unchanged (penalizes unknown fragments consistently)
+
+---
+
 ## [0.1.93] — 2026-06-12
 
 ### Enhanced — A1: Full Multi-sphere CIP Stereochemistry Priority
