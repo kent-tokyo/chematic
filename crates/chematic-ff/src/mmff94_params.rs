@@ -1,13 +1,16 @@
-//! MMFF94 force field parameters: bonds, angles, torsions, van der Waals.
+//! MMFF94 force field parameters: bonds, angles, torsions, van der Waals, partial charges.
 //!
 //! Contains lookup tables for:
 //! - Bond stretching (r0, force constant)
 //! - Angle bending (theta0, force constant)
 //! - Torsion dihedral (barrier, periodicity, phase)
 //! - Van der Waals (radius, well depth)
+//! - Partial charges (MMFF94 atom type → charge increment)
 //!
 //! Parameters derived from Merck MMFF94 publication (Halgren 1996).
 //! Covers ~2000+ representative bonds, angles, and torsions for organic chemistry.
+//! Charges are geometry-independent atom type assignments (for 3D coordinate-dependent charges,
+//! use `mmff94_charges_3d()` from the parent module).
 
 use super::MMFF94Type;
 use chematic_core::BondOrder;
@@ -39,6 +42,107 @@ pub struct TorsionParams {
 pub struct VdWParams {
     pub r_star: f64,  // Effective vdW distance (Å)
     pub epsilon: f64, // Well depth (kcal/mol)
+}
+
+/// Partial charge parameters: default charge for MMFF94 atom type.
+/// These are geometry-independent base charges; actual charges incorporate:
+/// - Formal charge on the atom
+/// - Bond electronegativity effects
+/// - Hydrogen bonding environment
+#[derive(Debug, Clone, Copy)]
+pub struct ChargeParams {
+    pub charge: f64, // Base partial charge (electrons)
+}
+
+/// Look up default partial charges by MMFF94 atom type.
+/// Returns the baseline charge for an atom type (before formal charge or environment corrections).
+/// For accurate geometry-dependent charges, use `mmff94_charges_3d()`.
+pub fn mmff94_charge_params(t: MMFF94Type) -> ChargeParams {
+    use MMFF94Type::*;
+    let charge = match t {
+        // Carbon atoms
+        C_sp3 => 0.000,
+        C_sp2_Alkene => -0.050,
+        C_sp_Alkyne => -0.100,
+        C_Aromatic => 0.000,
+        C_Carbonyl => 0.500,
+        C_Carboxylic => 0.700,
+        C_Carbamate => 0.600,
+        C_Ester => 0.600,
+        C_Amide => 0.550,
+        C_Imide => 0.550,
+        C_CarbamideN => 0.500,
+
+        // Nitrogen atoms
+        N_sp3_Amine => -0.900,
+        N_sp3_AmineAromatic => -0.700,
+        N_sp2_Imine => -0.600,
+        N_sp2_Aromatic => -0.500,
+        N_sp2_Carbonyl => -0.600,
+        N_sp_Nitrile => -0.800,
+        N_Amide => -0.700,
+        N_Carbamate => -0.700,
+        N_Ester => -0.700,
+        N_Imide => -0.700,
+        N_Aromatic_5ring => -0.300,
+        N_Aromatic_6ring => -0.250,
+        N_Aromatic_Pyridine => -0.150,
+        N_Aromatic_Pyrrole => -0.400,
+        N_Aromatic_Imidazole => -0.250,
+        N_Aromatic_Triazole => -0.200,
+        N_Aromatic_Tetrazole => -0.150,
+        N_Aromatic_Pyrimidine => -0.200,
+        N_Aromatic_Pyrazine => -0.200,
+
+        // Oxygen atoms
+        O_Alcohol => -0.660,
+        O_Phenol => -0.700,
+        O_Ether => -0.500,
+        O_Carbonyl => -0.500,
+        O_Carboxylic => -0.800,
+        O_Carbamate => -0.800,
+        O_Ester => -0.800,
+        O_Amide => -0.800,
+        O_Imide => -0.800,
+        O_CarbamideN => -0.800,
+        O_Sulfoxide => -0.550,
+        O_Sulfone => -0.550,
+
+        // Sulfur atoms
+        S_Thiol => -0.300,
+        S_Thioether => -0.200,
+        S_Disulfide => -0.200,
+        S_Sulfoxide => -0.100,
+        S_Sulfone => -0.050,
+        S_Aromatic => -0.150,
+
+        // Phosphorus
+        P_sp3 => 1.050,
+        P_Oxide => 1.150,
+
+        // Silicon
+        Si_sp3 => 0.400,
+        Si_sp2 => 0.350,
+
+        // Halogens
+        F => -0.800,
+        Cl => -0.400,
+        Br => -0.300,
+        I => -0.200,
+
+        // Hydrogens (bonded to various atoms)
+        H_Carbon => 0.150,
+        H_Nitrogen => 0.250,
+        H_Oxygen => 0.300,
+        H_Sulfur => 0.200,
+        H_Halogen => 0.200,
+        H_Aromatic => 0.100,
+
+        // Generic fallback
+        Generic => 0.000,
+    };
+
+    ChargeParams { charge }
 }
 
 /// Look up bond parameters by atom type pair and bond order.
