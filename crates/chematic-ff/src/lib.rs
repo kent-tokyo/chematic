@@ -9,11 +9,15 @@
 
 pub mod dreiding;
 pub mod mmff94;
+pub mod mmff94_advanced;
 pub mod mmff94_params;
 pub mod params;
 
 pub use dreiding::{DREIDINGType, assign_dreiding_types};
 pub use mmff94::{MMFF94Type, assign_mmff94_types, AssignError, mmff94_charges_3d};
+pub use mmff94_advanced::{
+    ElectrostaticMatrix, MMFF94BatchProperties,
+};
 pub use mmff94_params::{
     mmff94_angle_params, mmff94_bond_dipole, mmff94_bond_params, mmff94_charge_params,
     mmff94_electrostatic_scaling_1_4, mmff94_torsion_params, mmff94_vdw_params,
