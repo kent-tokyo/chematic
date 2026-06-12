@@ -13,9 +13,9 @@ pub mod mmff94_params;
 pub mod params;
 
 pub use dreiding::{DREIDINGType, assign_dreiding_types};
-pub use mmff94::{MMFF94Type, assign_mmff94_types, AssignError};
+pub use mmff94::{MMFF94Type, assign_mmff94_types, AssignError, mmff94_charges_3d};
 pub use mmff94_params::{
-    mmff94_angle_params, mmff94_bond_params, mmff94_torsion_params, mmff94_vdw_params,
-    AngleParams, BondParams, TorsionParams, VdWParams,
+    mmff94_angle_params, mmff94_bond_params, mmff94_charge_params, mmff94_torsion_params, mmff94_vdw_params,
+    AngleParams, BondParams, ChargeParams, TorsionParams, VdWParams,
 };
 pub use params::{dreiding_angle, dreiding_bond_len, dreiding_torsion_barrier, dreiding_vdw};

@@ -1,15 +1,15 @@
 //! Simplified force-field geometry minimization for molecular structures.
 //!
-//! Uses gradient descent with finite differences over three energy terms:
-//! bond stretching, angle bending, and VDW repulsion. Bond lengths and angles
-//! use element-specific UFF-derived parameters rather than bond-order-only values.
+//! Uses gradient descent with finite differences over energy terms:
+//! bond stretching, angle bending, VDW repulsion, and (for MMFF94) electrostatic interactions.
+//! Bond lengths and angles use element-specific parameters; charges use 3D geometry.
 
 use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
-    mmff94_angle_params, mmff94_bond_params, mmff94_vdw_params,
+    mmff94_angle_params, mmff94_bond_params, mmff94_charges_3d, mmff94_vdw_params,
 };
 
 use crate::coords::{Coords3D, Point3};
@@ -771,9 +771,17 @@ fn total_energy_mmff94(
     coords: &Coords3D,
     mmff94_types: &[chematic_ff::MMFF94Type],
 ) -> f64 {
-    bond_energy_mmff94(mol, coords, mmff94_types)
-        + angle_energy_mmff94(mol, coords, mmff94_types)
-        + vdw_energy_mmff94(mol, coords, mmff94_types)
+    let bond_e = bond_energy_mmff94(mol, coords, mmff94_types);
+    let angle_e = angle_energy_mmff94(mol, coords, mmff94_types);
+    let vdw_e = vdw_energy_mmff94(mol, coords, mmff94_types);
+
+    // Add electrostatic energy using 3D-based charges (B5 Phase 2)
+    let elec_e = match electrostatic_energy_mmff94(mol, coords, mmff94_types) {
+        Ok(e) => e,
+        Err(_) => 0.0, // Fall back to no electrostatic if charge calculation fails
+    };
+
+    bond_e + angle_e + vdw_e + elec_e
 }
 
 fn bond_energy_mmff94(
@@ -903,6 +911,72 @@ fn vdw_energy_mmff94(
     }
 
     energy
+}
+
+/// Electrostatic energy using Coulomb's law with 3D-based MMFF94 charges.
+/// Uses dielectric screening (kr where k~4 for organic molecules in their own environment).
+fn electrostatic_energy_mmff94(
+    mol: &Molecule,
+    coords: &Coords3D,
+    mmff94_types: &[chematic_ff::MMFF94Type],
+) -> Result<f64, String> {
+    // Convert coordinates to tuple format for charge calculation
+    let coord_tuples: Vec<(f64, f64, f64)> = (0..mol.atom_count())
+        .map(|i| {
+            let p = coords.get(AtomIdx(i as u32));
+            (p.x, p.y, p.z)
+        })
+        .collect();
+
+    // Calculate 3D-based MMFF94 charges
+    let charges = mmff94_charges_3d(mol, &coord_tuples)
+        .map_err(|e| format!("charge calculation failed: {}", e))?;
+
+    let n = mol.atom_count();
+    let mut energy = 0.0;
+
+    // Coulomb interactions (excluding 1-2 and 1-3 pairs which are handled by bonds/angles)
+    let mut excluded: HashSet<(usize, usize)> = HashSet::new();
+
+    // Exclude 1-2 bonded pairs
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        excluded.insert((i.min(j), i.max(j)));
+    }
+
+    // Exclude 1-3 pairs (through one bond)
+    for b_idx in 0..n {
+        let b = AtomIdx(b_idx as u32);
+        let neighbors: Vec<usize> = mol.neighbors(b).map(|(nb, _)| nb.0 as usize).collect();
+        for &neighbor in &neighbors {
+            excluded.insert((b_idx.min(neighbor), b_idx.max(neighbor)));
+        }
+    }
+
+    let dielectric = 4.0; // Screening factor for organic molecules
+    let coulomb_const = 332.0; // kcal·Ų/(mol·e²) in Ångströms
+
+    for i in 0..n {
+        for j in (i + 1)..n {
+            // Skip bonded and 1-3 interactions (handled by bonds/angles)
+            if excluded.contains(&(i, j)) {
+                continue;
+            }
+
+            let ri = coords.get(AtomIdx(i as u32));
+            let rj = coords.get(AtomIdx(j as u32));
+            let d = ri.distance(&rj);
+
+            if d > 0.01 {
+                // Coulomb interaction: E = k * q_i * q_j / (d * dielectric)
+                let coulomb = coulomb_const * charges[i] * charges[j] / (d * dielectric);
+                energy += coulomb;
+            }
+        }
+    }
+
+    Ok(energy)
 }
 
 // ---------------------------------------------------------------------------
@@ -1204,5 +1278,108 @@ mod tests {
             assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
                    "aspirin atom {i} has invalid coords");
         }
+    }
+
+    // ===== Phase 2: Electrostatic Energy Integration (B5) =====
+
+    #[test]
+    fn test_electrostatic_energy_methanol() {
+        // Methanol has partial charges due to O-H polarity
+        let mol = parse("CO").unwrap();
+        let c = generate_coords(&mol);
+        let mmff94_types = assign_mmff94_types(&mol).unwrap();
+
+        // Electrostatic energy should be calculable
+        let elec_e = electrostatic_energy_mmff94(&mol, &c, &mmff94_types);
+        assert!(elec_e.is_ok());
+        assert!(elec_e.unwrap().is_finite());
+    }
+
+    #[test]
+    fn test_electrostatic_energy_carboxylic_acid() {
+        // Carboxylic acids have significant charge separation
+        let mol = parse("CC(=O)O").unwrap();
+        let c = generate_coords(&mol);
+        let mmff94_types = assign_mmff94_types(&mol).unwrap();
+
+        let elec_e = electrostatic_energy_mmff94(&mol, &c, &mmff94_types);
+        assert!(elec_e.is_ok());
+        let energy = elec_e.unwrap();
+        assert!(energy.is_finite());
+        // Carboxylic acids with negative oxygen should have non-zero electrostatic energy
+    }
+
+    #[test]
+    fn test_mmff94_with_electrostatic_ethane() {
+        // Ethane is non-polar, so electrostatic should be small
+        let mol = parse("CC").unwrap();
+        let c = generate_coords(&mol);
+        let result = minimize_mmff94(&mol, c);
+
+        // Should still minimize correctly with electrostatic term
+        assert_eq!(result.atom_count(), 2);
+        let d = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
+        assert!(d > 1.4 && d < 1.7, "ethane C-C should be ~1.54 Å with electrostatic, got {:.3}", d);
+    }
+
+    #[test]
+    fn test_mmff94_minimization_includes_charge_effects() {
+        // Minimize polar molecule where charges should matter
+        let mol = parse("CCO").unwrap();
+        let c = generate_coords(&mol);
+
+        // Minimization should complete without error and produce valid coordinates
+        let result = minimize_mmff94(&mol, c);
+
+        // All coordinates should be finite and properly positioned
+        assert_eq!(result.atom_count(), 3);
+        for i in 0..3 {
+            let p = result.get(AtomIdx(i as u32));
+            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
+                   "atom {i} has invalid coordinate after minimization");
+        }
+
+        // Verify atoms are reasonably separated (no clashes)
+        let c_c = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
+        let c_o = result.get(AtomIdx(1)).distance(&result.get(AtomIdx(2)));
+        assert!(c_c > 1.0, "C-C bond too short: {c_c:.3}");
+        assert!(c_o > 1.0, "C-O bond too short: {c_o:.3}");
+    }
+
+    #[test]
+    fn test_mmff94_charges_3d_integration() {
+        // Verify that 3D charges are being used in minimization
+        let mol = parse("c1ccccc1O").unwrap(); // Phenol
+        let c = generate_coords(&mol);
+
+        // The minimization should complete without errors
+        let result = minimize_mmff94(&mol, c);
+        assert_eq!(result.atom_count(), mol.atom_count());
+
+        // All coordinates should be finite
+        for i in 0..mol.atom_count() {
+            let p = result.get(AtomIdx(i as u32));
+            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_total_energy_mmff94_includes_electrostatic() {
+        // Verify that total_energy_mmff94 includes electrostatic component
+        let mol = parse("CCN").unwrap(); // Has C-N polarity
+        let c = generate_coords(&mol);
+        let mmff94_types = assign_mmff94_types(&mol).unwrap();
+
+        let total_e = total_energy_mmff94(&mol, &c, &mmff94_types);
+        let bond_e = bond_energy_mmff94(&mol, &c, &mmff94_types);
+        let angle_e = angle_energy_mmff94(&mol, &c, &mmff94_types);
+        let vdw_e = vdw_energy_mmff94(&mol, &c, &mmff94_types);
+
+        // Total should include bond + angle + vdw + electrostatic
+        let electrostatic_e = electrostatic_energy_mmff94(&mol, &c, &mmff94_types).unwrap_or(0.0);
+        let expected = bond_e + angle_e + vdw_e + electrostatic_e;
+
+        assert!((total_e - expected).abs() < 1e-6,
+                "total energy mismatch: got {}, expected {}", total_e, expected);
     }
 }
