@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** — **1,521 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** — **1,521 tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.1.89** (2026-06-12) — Gap analysis 89% closure
+Latest release: **v0.1.94** (2026-06-12) — RDKit gap analysis complete (A1–A5, B3 implemented)
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -69,7 +69,7 @@ Latest release: **v0.1.89** (2026-06-12) — Gap analysis 89% closure
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; WASM RNG seeded | 147   |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
 | `chematic-inchi`      | InChI/InChIKey generation; formula/connectivity/hydrogen/stereo/charge/isotope layers; ring closures   | 28    |
-| `chematic-wasm`       | **110+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.89 (~550 KB); InChI API + stereo inversion     | 175   |
+| `chematic-wasm`       | **110+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.94 (~550 KB); InChI API + stereo inversion     | 175   |
 | `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes, cycloalkanes, alcohols, amines, halides    | 8     |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
@@ -88,7 +88,7 @@ cargo test --workspace   # 1,521 tests, all passing
 cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install @kent-tokyo/chematic@0.1.74
+npm install @kent-tokyo/chematic@0.1.94
 ```
 
 ### 5-Minute Examples

@@ -172,6 +172,10 @@ cargo test --lib
 
 ## Version History
 
+**v0.1.93** (2026-06-12):
+- Integrated with full multi-sphere CIP stereochemistry assignment
+- Correct R/S stereoisomer geometry in 3D
+
 **v0.1.32** (2026-06-07):
 - NEW: Constraint satisfaction algorithm with bond/angle enforcement
 - NEW: WASM RNG seeding fix (MD now uses cryptographic randomness in browser)

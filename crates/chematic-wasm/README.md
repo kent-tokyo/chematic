@@ -96,6 +96,26 @@ const ifg = JSON.parse(identify_functional_groups(mol));
 console.log(ifg); // [{"atoms":[1,2,3],"types":"OC=O"}, ...]
 ```
 
+## Version History
+
+**v0.1.94** (2026-06-12):
+- SA Score corpus expanded: 188 FDA molecules (1415 unique fragments)
+- Enhanced fingerprints: True MHFP, True ERG, path FP with bond types
+- Full multi-sphere CIP stereochemistry for R/S assignment
+- InChI stereo layer round-trip support (tetrahedral and E/Z)
+
+**v0.1.93** (2026-06-12):
+- Full multi-sphere CIP priority rules
+- Correct stereochemistry assignment for complex chiral centers
+
+**v0.1.92** (2026-06-12):
+- InChI stereo layer parsing (tetrahedral `/t` and E/Z `/b`)
+- Path fingerprint with bond type interleaving
+
+**v0.1.91** (2026-06-12):
+- True MHFP (structural fragment hashing)
+- True ERG (Ertl 2017 functional group detection)
+
 ## Building from source
 
 ```sh

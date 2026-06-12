@@ -126,6 +126,14 @@ cargo test --lib
 
 ## Version History
 
+**v0.1.94** (2026-06-12):
+- SA Score fragment corpus expanded: 145 → 188 FDA molecules (1034 → 1415 unique fragments)
+- Integrated with multi-sphere CIP and enhanced fingerprints
+
+**v0.1.93** (2026-06-12):
+- Full multi-sphere CIP priority rules (moved from chematic-chem to chematic-perception)
+- Correct R/S stereochemistry assignment (>2 distinct substituents)
+
 **v0.1.32** (2026-06-07):
 - 992 total tests (v0.1.30: 948)
 - Integrated with v0.1.32 crate updates (3D constraints, aromaticity)

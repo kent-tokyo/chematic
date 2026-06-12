@@ -175,6 +175,10 @@ cargo test --lib
 
 ## Version History
 
+**v0.1.93** (2026-06-12):
+- Integrated with full multi-sphere CIP stereochemistry
+- Improved stereo-group handling in molecular round-trips
+
 **v0.1.32** (2026-06-07):
 - NEW: `parse_mol_v3000_with_coords()` recovers 2D coordinates from V3000 atom blocks
 - NEW: Y-coordinate system documentation (CML, CDXML, compute_layout)

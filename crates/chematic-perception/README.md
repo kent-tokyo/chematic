@@ -30,6 +30,26 @@ Pure Rust molecular structure perception — **ring detection, aromaticity, ster
 - **Formal Charges**: Automatic charge assignment
 - **Heteroatoms**: N, O, S, P, halogens with correct aromaticity
 
+## Version History
+
+**v0.1.93** (2026-06-12):
+- NEW: Full multi-sphere CIP priority module (`cip_priority` module)
+- Hierarchical sphere-by-sphere comparison with phantom atoms for double bonds
+- Atomic mass tiebreaker (Rule 4), isotope handling (Rule 2)
+- Correct R/S assignment for chiral centers with more complex stereochemistry
+
+**v0.1.92** (2026-06-12):
+- InChI `/t` (tetrahedral) and `/b` (E/Z) stereo layer parsing
+- CIP code assignment from InChI round-trip
+
+**v0.1.91** (2026-06-12):
+- Enhanced ECFP radii and Ertl functional group detection
+- True structural fragment signatures
+
+**v0.1.32** (2026-06-07):
+- Antiaromaticity detection (4n systems like cyclobutadiene)
+- Improved ring classification APIs
+
 ## Quick Start
 
 ### Detect rings

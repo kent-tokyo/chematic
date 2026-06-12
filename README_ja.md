@@ -41,7 +41,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）+ Sprint v0.1.34（InChI 環クロージャー + 立体層）+ Sprint v0.1.35（wasmBridge サポート）+ Sprint v0.1.36（Issue #1 監査: BUG-2/3/4 修正）+ Sprint v0.1.37（mol_transforms API + ランダム SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit ギャップ分析：6 機能実装）+ v0.1.88–v0.1.89（ギャップ分析 89% 完成：A1–A6, B1–B2 実装）。** 1,521 テスト、全パス。C/C++ 依存ゼロ。**
 
-最新リリース: **v0.1.89**（2026-06-12）— ギャップ分析 89% 完成
+最新リリース: **v0.1.94**（2026-06-12）— RDKit ギャップ分析完了（A1–A5, B3 実装）
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -73,7 +73,7 @@ cargo test --workspace   # 1,521 テスト、全パス
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.1.25", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.1.94", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 個別クレートを使う場合
@@ -81,9 +81,9 @@ chematic = { version = "0.1.25", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.1.25"
-chematic-perception = "0.1.25"
-chematic-fp         = "0.1.25"
+chematic-smiles     = "0.1.94"
+chematic-perception = "0.1.94"
+chematic-fp         = "0.1.94"
 ```
 
 ```rust
@@ -289,7 +289,7 @@ V3000 MOL パーサー・ライターが `BEGIN COLLECTION / MDLV30/STEABS / MDL
 ### Phase 12（v0.1.26、完成）
 `atom_color_rgb(atomic_number: u8) -> [u8; 3]` — hex 解析なしで CPK カラーを RGB バイトトリプルとして取得。
 
-### Phase 11（v0.1.25、完成）
+### Phase 11（v0.1.94、完成）
 `suggest_bond_direction(mol, atom, layout) -> f64`（ラジアン）: sp2/sp3 角度オフセット + 最大最小分離角選択による化学的に自然な新規結合方向提案。`BOND_LEN` 定数を公開。
 
 ### Phase 10（v0.1.24、完成）
