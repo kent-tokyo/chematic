@@ -40,6 +40,82 @@ pub struct MapNumberInfo {
     pub product_maps: HashSet<u16>,
 }
 
+/// Detailed information about a single reactant or product pattern match.
+#[derive(Clone, Debug)]
+pub struct MoleculeMatch {
+    /// Index of the molecule in the reaction (reactants or products list).
+    pub molecule_index: usize,
+    /// Index of the pattern that matched.
+    pub pattern_index: usize,
+    /// Indices of the matched atoms in the molecule.
+    pub atom_indices: Vec<usize>,
+}
+
+/// Detailed information about reactant pattern matches in a reaction.
+#[derive(Clone, Debug)]
+pub struct ReactantMatches {
+    /// Matches for each reactant pattern.
+    pub pattern_matches: Vec<Vec<MoleculeMatch>>,
+}
+
+impl ReactantMatches {
+    /// Get all molecules that matched a specific reactant pattern.
+    pub fn get_pattern_matches(&self, pattern_index: usize) -> Option<&[MoleculeMatch]> {
+        self.pattern_matches.get(pattern_index).map(|v| v.as_slice())
+    }
+
+    /// Check if a specific reactant pattern matched any molecule.
+    pub fn pattern_matched(&self, pattern_index: usize) -> bool {
+        self.pattern_matches
+            .get(pattern_index)
+            .map_or(false, |matches| !matches.is_empty())
+    }
+}
+
+/// Detailed information about product pattern matches in a reaction.
+#[derive(Clone, Debug)]
+pub struct ProductMatches {
+    /// Matches for each product pattern.
+    pub pattern_matches: Vec<Vec<MoleculeMatch>>,
+}
+
+impl ProductMatches {
+    /// Get all molecules that matched a specific product pattern.
+    pub fn get_pattern_matches(&self, pattern_index: usize) -> Option<&[MoleculeMatch]> {
+        self.pattern_matches.get(pattern_index).map(|v| v.as_slice())
+    }
+
+    /// Check if a specific product pattern matched any molecule.
+    pub fn pattern_matched(&self, pattern_index: usize) -> bool {
+        self.pattern_matches
+            .get(pattern_index)
+            .map_or(false, |matches| !matches.is_empty())
+    }
+}
+
+/// Detailed match information for a reaction against a SMARTS pattern.
+#[derive(Clone, Debug)]
+pub struct ReactionSmartsMatch {
+    /// Reactant pattern matches (all patterns must have at least one match for overall match).
+    pub reactant_matches: ReactantMatches,
+    /// Product pattern matches (all patterns must have at least one match for overall match).
+    pub product_matches: ProductMatches,
+    /// Whether all patterns matched (true if reaction is valid against the query).
+    pub is_complete_match: bool,
+}
+
+impl ReactionSmartsMatch {
+    /// Check if all reactant patterns matched.
+    pub fn all_reactants_matched(&self) -> bool {
+        self.reactant_matches.pattern_matches.iter().all(|m| !m.is_empty())
+    }
+
+    /// Check if all product patterns matched.
+    pub fn all_products_matched(&self) -> bool {
+        self.product_matches.pattern_matches.iter().all(|m| !m.is_empty())
+    }
+}
+
 impl MapNumberInfo {
     /// Check if all map numbers are consistent across reactants and products.
     pub fn validate(&self) -> Result<(), String> {
@@ -376,6 +452,78 @@ pub fn has_reaction_substructure_match(rxn: &Reaction, query: &ReactionQuery) ->
     true
 }
 
+/// Get detailed match information for a reaction against a query pattern.
+///
+/// Returns a `ReactionSmartsMatch` containing:
+/// - All matched atoms for each pattern
+/// - Which molecules matched which patterns
+/// - Overall match status
+///
+/// This is useful for understanding *how* a reaction matches, not just *whether* it matches.
+pub fn get_reaction_smarts_matches(
+    rxn: &Reaction,
+    query: &ReactionQuery,
+) -> ReactionSmartsMatch {
+    // Collect all reactant pattern matches
+    let mut reactant_pattern_matches = Vec::new();
+    for (pattern_idx, pattern) in query.reactant_patterns.iter().enumerate() {
+        let mut matches_for_pattern = Vec::new();
+        for (mol_idx, mol) in rxn.reactants.iter().enumerate() {
+            let atom_matches = find_matches(pattern, mol);
+            // Use first match if any exist (we only care that it matched)
+            if let Some(first_match) = atom_matches.first() {
+                let atom_indices: Vec<usize> = first_match
+                    .values()
+                    .map(|atom_idx| atom_idx.0 as usize)
+                    .collect();
+                matches_for_pattern.push(MoleculeMatch {
+                    molecule_index: mol_idx,
+                    pattern_index: pattern_idx,
+                    atom_indices,
+                });
+            }
+        }
+        reactant_pattern_matches.push(matches_for_pattern);
+    }
+
+    // Collect all product pattern matches
+    let mut product_pattern_matches = Vec::new();
+    for (pattern_idx, pattern) in query.product_patterns.iter().enumerate() {
+        let mut matches_for_pattern = Vec::new();
+        for (mol_idx, mol) in rxn.products.iter().enumerate() {
+            let atom_matches = find_matches(pattern, mol);
+            // Use first match if any exist (we only care that it matched)
+            if let Some(first_match) = atom_matches.first() {
+                let atom_indices: Vec<usize> = first_match
+                    .values()
+                    .map(|atom_idx| atom_idx.0 as usize)
+                    .collect();
+                matches_for_pattern.push(MoleculeMatch {
+                    molecule_index: mol_idx,
+                    pattern_index: pattern_idx,
+                    atom_indices,
+                });
+            }
+        }
+        product_pattern_matches.push(matches_for_pattern);
+    }
+
+    // Check if all patterns matched
+    let all_reactants_matched = reactant_pattern_matches.iter().all(|m| !m.is_empty());
+    let all_products_matched = product_pattern_matches.iter().all(|m| !m.is_empty());
+    let is_complete_match = all_reactants_matched && all_products_matched;
+
+    ReactionSmartsMatch {
+        reactant_matches: ReactantMatches {
+            pattern_matches: reactant_pattern_matches,
+        },
+        product_matches: ProductMatches {
+            pattern_matches: product_pattern_matches,
+        },
+        is_complete_match,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -544,5 +692,167 @@ mod tests {
         assert!(pattern.map_number_info.agent_maps.contains(&99));
         // Agent map :99 is not required in reactants/products
         assert!(!pattern.map_number_info.reactant_maps.contains(&99));
+    }
+
+    // ===== Phase 2: Detailed Match Information =====
+
+    #[test]
+    fn test_get_reaction_smarts_matches_basic() {
+        // Simple match: ethane to ethane with carbon pattern
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#6]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Should have one reactant pattern and one product pattern
+        assert_eq!(matches.reactant_matches.pattern_matches.len(), 1);
+        assert_eq!(matches.product_matches.pattern_matches.len(), 1);
+
+        // Both patterns should match
+        assert!(matches.all_reactants_matched());
+        assert!(matches.all_products_matched());
+        assert!(matches.is_complete_match);
+    }
+
+    #[test]
+    fn test_get_reaction_smarts_matches_multiple_reactants() {
+        // Multiple reactants: C + C >> CC
+        let rxn = rxn("C.C>>CC");
+        let query = parse_reaction_query("[#6]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Reactant pattern should match both molecules
+        assert_eq!(matches.reactant_matches.pattern_matches[0].len(), 2);
+        // Product pattern should match the combined molecule
+        assert_eq!(matches.product_matches.pattern_matches[0].len(), 1);
+    }
+
+    #[test]
+    fn test_get_reaction_smarts_matches_incomplete() {
+        // Query for nitrogen (not present) should have incomplete match
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#7]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Reactant pattern should not match
+        assert!(!matches.all_reactants_matched());
+        assert!(!matches.is_complete_match);
+    }
+
+    #[test]
+    fn test_get_reaction_smarts_matches_empty_patterns() {
+        // Empty query should match anything
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query(">>").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Empty patterns should be considered complete matches
+        assert!(matches.is_complete_match);
+    }
+
+    #[test]
+    fn test_molecule_match_has_correct_indices() {
+        // Verify that matched atoms have correct indices
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#6]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Reactant carbon pattern matches (first match = first atom)
+        let reactant_matches = &matches.reactant_matches.pattern_matches[0];
+        assert_eq!(reactant_matches.len(), 1);
+        assert_eq!(reactant_matches[0].molecule_index, 0);
+        assert!(reactant_matches[0].atom_indices.len() >= 1); // At least one carbon matched
+
+        // Product carbon pattern matches
+        let product_matches = &matches.product_matches.pattern_matches[0];
+        assert_eq!(product_matches.len(), 1);
+        assert_eq!(product_matches[0].molecule_index, 0);
+        assert!(product_matches[0].atom_indices.len() >= 1); // At least one carbon matched
+    }
+
+    #[test]
+    fn test_reactant_matches_get_pattern_matches() {
+        // Test the get_pattern_matches helper method
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#6]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Should be able to retrieve matches for a specific pattern
+        let reactant_pattern_0 = matches.reactant_matches.get_pattern_matches(0);
+        assert!(reactant_pattern_0.is_some());
+        assert_eq!(reactant_pattern_0.unwrap().len(), 1);
+
+        // Out of bounds pattern should return None
+        let reactant_pattern_1 = matches.reactant_matches.get_pattern_matches(1);
+        assert!(reactant_pattern_1.is_none());
+    }
+
+    #[test]
+    fn test_product_matches_get_pattern_matches() {
+        // Test the get_pattern_matches helper method for products
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#6]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        let product_pattern_0 = matches.product_matches.get_pattern_matches(0);
+        assert!(product_pattern_0.is_some());
+        assert_eq!(product_pattern_0.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_pattern_matched_helper() {
+        // Test the pattern_matched helper method
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#6]>>[#7]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Reactant pattern should match
+        assert!(matches.reactant_matches.pattern_matched(0));
+
+        // Product pattern should not match (looking for nitrogen)
+        assert!(!matches.product_matches.pattern_matched(0));
+    }
+
+    #[test]
+    fn test_multiple_patterns_or_logic() {
+        // Test with multiple patterns (OR logic)
+        let rxn = rxn("CC>>CC");
+        let query = parse_reaction_query("[#6]|[#7]>>[#6]|[#8]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Should have two patterns each (carbon|nitrogen and carbon|oxygen)
+        assert_eq!(matches.reactant_matches.pattern_matches.len(), 2);
+        assert_eq!(matches.product_matches.pattern_matches.len(), 2);
+
+        // Both reactant patterns should match (we have carbons)
+        assert!(matches.reactant_matches.pattern_matched(0)); // [#6]
+        assert!(!matches.reactant_matches.pattern_matched(1)); // [#7] - no nitrogen
+
+        // Both product patterns should match
+        assert!(matches.product_matches.pattern_matched(0)); // [#6]
+        assert!(!matches.product_matches.pattern_matched(1)); // [#8] - no oxygen
+
+        // Overall match should be false (nitrogen pattern in reactants didn't match)
+        assert!(!matches.is_complete_match);
+    }
+
+    #[test]
+    fn test_complex_reaction_matches() {
+        // Test with more complex reaction
+        let rxn = rxn("CC(C)>>CC=C");
+        let query = parse_reaction_query("[#6]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Both should match
+        assert!(matches.all_reactants_matched());
+        assert!(matches.all_products_matched());
+        assert!(matches.is_complete_match);
+
+        // Reactant has one molecule matching the pattern
+        assert_eq!(matches.reactant_matches.pattern_matches[0].len(), 1);
+        assert!(matches.reactant_matches.pattern_matches[0][0].atom_indices.len() >= 1);
+
+        // Product has one molecule matching the pattern
+        assert_eq!(matches.product_matches.pattern_matches[0].len(), 1);
+        assert!(matches.product_matches.pattern_matches[0][0].atom_indices.len() >= 1);
     }
 }
