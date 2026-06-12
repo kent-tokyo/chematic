@@ -255,52 +255,19 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 
 ---
 
-## ロードマップ
+## 最近の開発（v0.1.89–v0.1.94）
 
-### Phase 1〜6（完成）
-基盤・分子認識・化学インテリジェンス・類似性・3D・エコシステム。
+**v0.1.91–v0.1.94: RDKit ギャップ分析クロージャー（A1–A5, B3）**
+- **v0.1.91**: True MHFP（構造フラグメント ハッシング）、True ERG（Ertl 2017 機能基）
+- **v0.1.92**: パス FP に結合型を含む、InChI 立体層パース（`/t`, `/b`）
+- **v0.1.93**: 完全な多球 CIP 優先度ルール（chematic-perception に移動、循環依存回避）
+- **v0.1.94**: SA Score コーパス拡張（145 → 188 FDA 分子、1034 → 1415 ユニークフラグメント）
 
-### Phase 7（完成）
-拡張記述子・多様性・SA スコア・EState・IFG・Gasteiger・VSA。
+**v0.1.88–v0.1.90**: InChI 立体層、Brenk SMARTS、再イオン化、グループ標準化
 
-### Phase 8（v0.1.20〜v0.1.22、完成）
-100+ WASM エクスポート・CML/CDXML・Mutable Molecule API・DepictData・MMP・R-group・ConformerEnsemble・SDF/V3000 write・MCS ring-awareness 制約。
+**v0.1.69–v0.1.87**: RDKit ギャップ分析初期 — SSSR、ケクレ化、CIP、3D 幾何、WASM API 成熟度
 
-### Phase 9（v0.1.23、完成）
-`Element::vdw_radius()` / `covalent_radius()`（Bondi/Alvarez テーブル 118 元素）、
-`Molecule::implicit_hydrogen_count()` / `total_formula()`（暗黙的 H を含む Hill 式）、
-`apply_aromaticity()`（ケクレ化分子 → 芳香族フラグ適用 Molecule）、
-`with_atom_aromatic()` / `with_bond_order()` immutable update API 拡張、
-`minimize_uff()` エイリアス（UFF 力場最小化の発見性向上）。
-
-### Phase 10（v0.1.24、完成）
-`validate_valence(mol) -> Vec<ValenceError>` 公開 API（chematic-core + chematic-perception 経由で参照可能）、`run_reactants` が過原子価の生成物セットを自動除外。
-
-### Phase 11（v0.1.25、完成）
-`suggest_bond_direction(mol, atom, layout) -> f64`（ラジアン）: sp2/sp3 角度オフセット + 最大最小分離角選択による化学的に自然な新規結合方向提案。`BOND_LEN` 定数を公開。
-
-### Phase 12（v0.1.26、完成）
-`atom_color_rgb(atomic_number: u8) -> [u8; 3]` — hex 解析なしで CPK カラーを RGB バイトトリプルとして取得。
-
-### Phase 13（v0.1.27、完成）
-`MolMetadata::default().with_name("アスピリン").with_comment("...")` — MOL/SDF メタデータ用 fluent builder。
-
-### Phase 14（v0.1.28、完成）
-`xlogp3()` (Cheng 2007 原子型)、`chematic-iupac`（純 Rust オフライン IUPAC 命名）、
-`BricsConfig { min_fragment_size }`、`MatchConfig { max_matches }`、
-`McsConfig { atom_compare: AtomCompare, bond_compare: BondCompare }` でヘテロ環 scaffold hopping 対応。
-
-### Phase 15（v0.1.29〜32、完成）
-ミュータブル `Molecule`（`add/remove_atom/bond`・`fragments`・`is_connected`）、
-`assign_stereo_from_2d`（ウェッジ結合→R/S）、`aromatize`/`kekulize_inplace`、
-`depict_reaction_svg`、`SdfRecord`（coords+properties 統合）、MDL RXN V2000 読み書き、
-`expand_abbreviation`（30 略号）、`formula_with_isotopes`。
-
-### Phase 16（v0.1.33、完成）
-`assign_ez_from_2d(mol, coords)` / `cip_ez_descriptor(mol, bond_idx, coords)` — 2D 座標の外積から E/Z 二重結合立体化学を割り当て（ウェッジ結合不要、1-sphere CIP 優先度）。
-`StereoGroup` / `StereoGroupKind`（Absolute / Or / And）を `chematic-core` に追加；`Molecule` に `stereo_groups` フィールドを追加；
-V3000 MOL パーサー・ライターが `BEGIN COLLECTION / MDLV30/STEABS / MDLV30/STEOR<n> / MDLV30/STEAND<n>` に対応。
-`isotope_distribution(mol, resolution) -> Vec<(f64, f64)>` — 畳み込みによる同位体エンベロープ計算（明示的同位体ラベル優先、H/C/N/O/S/Cl/Br 等 14 元素以上対応）。
+詳細な歴史的ロードマップ（Phase 1–16, v0.1.14–v0.1.33）は `tasks/todo.md` を参照。
 
 ---
 

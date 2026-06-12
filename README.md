@@ -437,83 +437,19 @@ Notes:
 
 ---
 
-## Roadmap
+## Recent Development (v0.1.89–v0.1.94)
 
-### Phase 1 — Foundation (complete)
-Core types, OpenSMILES parse/write, Kekulization, canonical SMILES.
+**v0.1.91–v0.1.94: RDKit Gap Closure (A1–A5, B3)**
+- **v0.1.91**: True MHFP (structural fragment hashing), True ERG (Ertl 2017 functional groups)
+- **v0.1.92**: Path FP with bond type interleaving, InChI stereo layer parsing (`/t`, `/b`)
+- **v0.1.93**: Full multi-sphere CIP stereochemistry priority rules (moved to chematic-perception, avoids circular dependency)
+- **v0.1.94**: SA Score corpus expanded (145 → 188 FDA molecules, 1034 → 1415 unique fragments)
 
-### Phase 2 — Molecular Perception (complete)
-SSSR, Huckel aromaticity, SDF/MOL V2000+V3000, 2D SVG depiction.
+**v0.1.88–v0.1.90**: InChI stereo layers, Brenk SMARTS, reionization, group normalization
 
-### Phase 3 — Chemical Intelligence (complete)
-Descriptors (MW, LogP, TPSA, Fsp3, Lipinski), QED, BRICS fragmentation,
-ECFP4/6 fingerprints, SMARTS+VF2 (recursive SMARTS, valence, hybridization),
-molecular standardization, Murcko scaffold, CIP R/S and E/Z.
+**v0.1.69–v0.1.87**: Initial RDKit gap analysis — SSSR, Kekulization, CIP, 3D geometry, WASM API maturity
 
-### Phase 4 — Similarity and Search (complete)
-MACCS 166-bit keys, topological path FP, AtomPair FP, Topological Torsion FP,
-MCS, tautomer normalization.
-
-### Phase 5 — 3D Chemistry (complete)
-Rule-based 3D coordinate generation, PDB/XYZ formats, UFF-like minimization.
-
-### Phase 6 — RDKit Parity (complete)
-Reaction SMILES/SMIRKS ✓, umbrella crate with feature flags ✓,
-WASM npm package `@kent-tokyo/chematic` ✓, CPK coloring + highlighted depiction ✓,
-ChEMBL 37 full-set validation (2,897,819 molecules, 100.000%) ✓.
-
-### Phase 7 — Extended Descriptors and Diversity (v0.1.14–v0.1.15, complete)
-EState indices (Hall & Kier 1991), path fingerprint (DFS path FP, 2048-bit),
-SDF/MOL WASM bindings,
-functional group identification (Ertl 2017 IFG), Gasteiger-Marsili PEOE partial charges,
-VSA descriptors (SlogP_VSA × 12, SMR_VSA × 10, PEOE_VSA × 14),
-SA score (complexity-based), MaxMin diversity picking, Butina clustering.
-
-### Phase 8 — WASM Expansion + Mutable API (v0.1.20–v0.1.22, complete)
-100+ WASM exports, CML/CDXML, Mutable Molecule API (`with_atom_*` / `with_bond_*`),
-DepictData, MMP, R-group decomposition, ConformerEnsemble, SDF/V3000 write,
-MCS ring-awareness constraints.
-
-### Phase 9 — Element Radius API + Aromaticity Application (v0.1.23, complete)
-`Element::vdw_radius()` / `covalent_radius()` (Bondi/Alvarez tables, all 118 elements),
-`Molecule::implicit_hydrogen_count()` / `total_formula()` (Hill formula with implicit H),
-`apply_aromaticity()` (convert kekulized molecules to aromatic representation),
-`with_atom_aromatic()` / `with_bond_order()` immutable update API,
-`minimize_uff()` alias for UFF force-field minimization.
-
-### Phase 10 — Valence Validation API (v0.1.24, complete)
-`validate_valence(mol) -> Vec<ValenceError>` public API (chematic-core + chematic-perception re-export),
-`run_reactants` now silently filters product sets containing over-valenced atoms.
-
-### Phase 11 — Bond Direction Suggestion (v0.1.25, complete)
-`suggest_bond_direction(mol, atom, layout) -> f64` (radians): chemistry-aware new-bond placement using sp2/sp3 angle offsets + maximum-separation selection.  `BOND_LEN` constant now exported.
-
-### Phase 12 — `atom_color_rgb` (v0.1.26, complete)
-`atom_color_rgb(atomic_number: u8) -> [u8; 3]` — CPK color as RGB byte triple, no hex parsing needed.
-
-### Phase 13 — `MolMetadata` builder API (v0.1.27, complete)
-`MolMetadata::default().with_name("aspirin").with_comment("...")` — fluent builder for MOL/SDF metadata.
-
-### Phase 14 — XLogP3, IUPAC naming, MCS/BRICS/SMARTS config (v0.1.28, complete)
-`xlogp3()` (Cheng 2007 atom types), `chematic-iupac` new crate (pure Rust, offline IUPAC naming),
-`BricsConfig { min_fragment_size }`, `MatchConfig { max_matches }`,
-`McsConfig { atom_compare: AtomCompare, bond_compare: BondCompare }` for scaffold hopping.
-
-### Phase 15 — Mutable API, 2D Stereo, Reaction SVG, RXN format (v0.1.29–32, complete)
-Mutable `Molecule` (`add/remove_atom/bond`, `set_charge/element`, `fragments`, `is_connected`),
-`MoleculeBuilder::from_molecule`, `assign_stereo_from_2d` (wedge→R/S), `aromatize`/`kekulize_inplace`,
-`depict_reaction_svg`, `SdfRecord` with coords+properties, MDL RXN V2000 R/W,
-`expand_abbreviation` (30 symbols), `formula_with_isotopes`.
-
-### Phase 16 — E/Z from 2D, StereoGroup, Isotope Distribution (v0.1.33, complete)
-`assign_ez_from_2d(mol, coords)` and `cip_ez_descriptor(mol, bond_idx, coords)` — E/Z double-bond
-stereochemistry from 2D layout coordinates (cross-product + 1-sphere CIP priority, no wedge bonds required).
-`StereoGroup` / `StereoGroupKind` (Absolute / Or / And) added to `chematic-core`; `Molecule` now carries
-`stereo_groups`; V3000 MOL parser and writer support `BEGIN COLLECTION / MDLV30/STEABS / MDLV30/STEOR<n> / MDLV30/STEAND<n>`.
-`isotope_distribution(mol, resolution) -> Vec<(f64, f64)>` — convolution-based isotope envelope with
-explicit-isotope-label support and Da-level peak merging (H, C, N, O, S, Cl, Br, and 10+ more elements).
-
-See `tasks/todo.md` for the detailed per-task breakdown.
+For detailed historical roadmap (Phases 1–16, v0.1.14–v0.1.33), see `tasks/todo.md`.
 
 ---
 
