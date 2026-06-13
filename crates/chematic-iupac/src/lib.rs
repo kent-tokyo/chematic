@@ -564,9 +564,54 @@ impl<'a> Namer<'a> {
             let alcohol_n = count_c_chain(mol, alc_c, ester_o);
             Ok(format!("{}yl {}anoate", alkane_stem(alcohol_n), alkane_stem(acid_n)))
         } else {
-            // Carboxylic acid
-            let n = carbons.len();
-            Ok(format!("{}anoic acid", alkane_stem(n)))
+            // Carboxylic acid — find principal chain from carboxyl C (always position 1).
+            let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
+            let chain = {
+                let mut parent: std::collections::HashMap<AtomIdx, AtomIdx> =
+                    std::collections::HashMap::new();
+                let mut visited: HashSet<AtomIdx> = HashSet::new();
+                let mut queue = VecDeque::new();
+                let mut farthest = carbonyl_c;
+                visited.insert(carbonyl_c);
+                queue.push_back(carbonyl_c);
+                while let Some(cur) = queue.pop_front() {
+                    farthest = cur;
+                    for (nb, _) in mol.neighbors(cur) {
+                        if c_set.contains(&nb) && visited.insert(nb) {
+                            parent.insert(nb, cur);
+                            queue.push_back(nb);
+                        }
+                    }
+                }
+                let mut path = vec![farthest];
+                let mut cur = farthest;
+                while cur != carbonyl_c {
+                    cur = parent[&cur];
+                    path.push(cur);
+                }
+                path.reverse(); // carbonyl_c at index 0 = position 1
+                path
+            };
+            let n = chain.len();
+            let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
+            // Collect alkyl substituents (skip position 1 = carbonyl C).
+            let mut subs: Vec<(usize, usize)> = Vec::new();
+            for (pos0, &chain_c) in chain.iter().enumerate() {
+                if pos0 == 0 { continue; }
+                let position = pos0 + 1;
+                for (nb, _) in mol.neighbors(chain_c) {
+                    if c_set.contains(&nb) && !chain_set.contains(&nb) {
+                        let sub_len = count_c_chain(mol, nb, chain_c);
+                        if sub_len > 4 { return Err(IupacError::NotSupported); }
+                        subs.push((position, sub_len));
+                    }
+                }
+            }
+            if subs.is_empty() {
+                Ok(format!("{}anoic acid", alkane_stem(n)))
+            } else {
+                Ok(format!("{}{}anoic acid", format_substituents(&subs), alkane_stem(n)))
+            }
         }
     }
 
@@ -725,19 +770,25 @@ impl<'a> Namer<'a> {
 
     fn name_thiol(&self, carbons: &[AtomIdx], s_idx: AtomIdx) -> Result<String, IupacError> {
         let mol = self.mol;
-        // Only primary thiols (S has an implicit H).
         if implicit_hcount(mol, s_idx) == 0 {
             return Err(IupacError::NotSupported);
         }
-        // Unbranched chain only.
-        let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
-        if carbons.iter().any(|&c| {
-            mol.neighbors(c).filter(|(nb, _)| c_set.contains(nb)).count() > 2
-        }) {
-            return Err(IupacError::NotSupported);
+        let chain = find_longest_c_chain(mol, carbons);
+        let n = chain.len();
+        let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
+        let thiol_c = mol.neighbors(s_idx)
+            .filter(|(nb, _)| chain_set.contains(nb))
+            .map(|(nb, _)| nb)
+            .next()
+            .ok_or(IupacError::NotSupported)?;
+        let pos_fwd = chain.iter().position(|&c| c == thiol_c).map(|p| p + 1).unwrap_or(1);
+        let pos = pos_fwd.min(n + 1 - pos_fwd);
+        // Terminal SH (pos=1): no locant; internal: add locant.
+        if pos == 1 {
+            Ok(format!("{}anethiol", alkane_stem(n)))
+        } else {
+            Ok(format!("{}ane-{}-thiol", alkane_stem(n), pos))
         }
-        let n = carbons.len();
-        Ok(format!("{}anethiol", alkane_stem(n)))
     }
 
     // -----------------------------------------------------------------------
@@ -1550,6 +1601,21 @@ mod tests {
         assert_eq!(name(&mol("CCNCC")).unwrap(),  "N-ethylethanamine");
         assert_eq!(name(&mol("CNCC")).unwrap(),   "N-methylethanamine");
         assert_eq!(name(&mol("CN(C)C")).unwrap(), "N,N-dimethylmethanamine");
+    }
+
+    // ---- New Round 7 tests (v0.1.107) ----------------------------------------
+
+    #[test]
+    fn test_secondary_thiol() {
+        assert_eq!(name(&mol("CCC(S)C")).unwrap(),  "butane-2-thiol");
+        assert_eq!(name(&mol("CCCC(S)C")).unwrap(), "pentane-2-thiol");
+    }
+
+    #[test]
+    fn test_branched_carboxylic_acid() {
+        assert_eq!(name(&mol("CC(C)C(=O)O")).unwrap(),    "2-methylpropanoic acid");
+        assert_eq!(name(&mol("CCC(C)C(=O)O")).unwrap(),   "2-methylbutanoic acid");
+        assert_eq!(name(&mol("CC(C)(C)C(=O)O")).unwrap(), "2,2-dimethylpropanoic acid");
     }
 
     // ---- New Round 6 tests (v0.1.106) ----------------------------------------
