@@ -360,6 +360,49 @@ impl MolHandle {
         chematic_inchi::inchi_key(&inchi_str)
     }
 
+    /// LogD (distribution coefficient) at a specific pH.
+    ///
+    /// Accounts for ionization state: neutral molecules return LogP unchanged,
+    /// ionizable molecules are adjusted by log(neutral_fraction).
+    pub fn logd_at_ph(&self, ph: f64) -> f64 {
+        chematic_chem::logd_simple(&self.inner, ph)
+    }
+
+    /// LogD profile across a pH range as JSON.
+    ///
+    /// Returns `[{"ph":0.0,"logd":2.5}, ...]` with `steps` evenly-spaced pH points.
+    pub fn logd_profile_json(&self, ph_start: f64, ph_end: f64, steps: usize) -> String {
+        let profile = chematic_chem::logd_profile(&self.inner, ph_start, ph_end, steps);
+        let items: Vec<String> = profile.iter()
+            .map(|(ph, ld)| format!(r#"{{"ph":{ph:.2},"logd":{ld:.4}}}"#))
+            .collect();
+        format!("[{}]", items.join(","))
+    }
+
+    /// Isotope distribution as JSON.
+    ///
+    /// Returns `[{"mass":100.0,"abundance":0.9},...]` sorted by mass.
+    /// `resolution`: m/z bin width in Da (e.g. `0.1` for nominal, `0.01` for high-res).
+    pub fn isotope_distribution_json(&self, resolution: f64) -> String {
+        let dist = chematic_chem::isotope_distribution(&self.inner, resolution);
+        let items: Vec<String> = dist.iter()
+            .map(|(mass, abund)| format!(r#"{{"mass":{mass:.4},"abundance":{abund:.6}}}"#))
+            .collect();
+        format!("[{}]", items.join(","))
+    }
+
+    /// Randić connectivity index (χ₀).
+    ///
+    /// χ₀ = Σ 1/√(d_i × d_j) over all bonds, where d is heavy-atom degree.
+    pub fn randic_index(&self) -> f64 {
+        chematic_chem::randic_index(&self.inner)
+    }
+
+    /// Zagreb index M1: Σ d_i² over all heavy atoms.
+    pub fn zagreb_index_m1(&self) -> u32 {
+        chematic_chem::zagreb_index_m1(&self.inner)
+    }
+
     /// Generate IUPAC systematic name for the molecule.
     ///
     /// Returns the name string on success, or an empty string when the
@@ -3913,6 +3956,49 @@ mod tests {
     #[test]
     fn parse_benzene_atom_count() {
         assert_eq!(parse("c1ccccc1").atom_count(), 6);
+    }
+
+    // --- logd / isotope / topological index tests ---------------------------
+
+    #[test]
+    fn logd_at_ph7_benzene() {
+        let h = parse("c1ccccc1");
+        let logd = h.logd_at_ph(7.0);
+        assert!(logd.is_finite(), "logD should be finite, got {logd}");
+    }
+
+    #[test]
+    fn logd_profile_json_has_ph_fields() {
+        let h = parse("c1ccccc1");
+        let json = h.logd_profile_json(0.0, 14.0, 15);
+        assert!(json.starts_with('[') && json.ends_with(']'),
+            "should be JSON array: {json}");
+        assert!(json.contains(r#""ph":"#), "should contain ph field: {json}");
+        assert!(json.contains(r#""logd":"#), "should contain logd field: {json}");
+    }
+
+    #[test]
+    fn isotope_distribution_json_nonempty() {
+        let h = parse("C");
+        let json = h.isotope_distribution_json(0.1);
+        assert!(json.starts_with('['), "should be JSON array: {json}");
+        assert!(json.contains(r#""mass":"#), "should contain mass entries: {json}");
+    }
+
+    #[test]
+    fn randic_index_ethane() {
+        let h = parse("CC");
+        let r = h.randic_index();
+        // Ethane: 1 C-C bond, both heavy atoms have degree 1 → χ = 1/√(1×1) = 1.0
+        assert!((r - 1.0).abs() < 1e-6, "ethane Randic index = 1.0, got {r}");
+    }
+
+    #[test]
+    fn zagreb_m1_ethane() {
+        let h = parse("CC");
+        let z = h.zagreb_index_m1();
+        // Ethane: each C has heavy-atom degree 1 → M1 = 1² + 1² = 2
+        assert_eq!(z, 2, "ethane Zagreb M1 = 2, got {z}");
     }
 
     // --- iupac_name tests ---------------------------------------------------
