@@ -359,6 +359,39 @@ impl MolHandle {
         let inchi_str = chematic_inchi::inchi(&self.inner);
         chematic_inchi::inchi_key(&inchi_str)
     }
+
+    /// Generate IUPAC systematic name for the molecule.
+    ///
+    /// Returns the name string on success, or an empty string when the
+    /// structure is outside the supported naming scope (complex polycyclics,
+    /// multi-functional groups, etc.).
+    pub fn iupac_name(&self) -> String {
+        match chematic_iupac::name(&self.inner) {
+            Ok(name) => name,
+            Err(_) => String::new(),
+        }
+    }
+
+    /// Assign CIP (R/S/E/Z) stereocenters and return JSON.
+    ///
+    /// Format: `{"centers":[{"atom":0,"code":"R"},{"atom":3,"code":"E"}]}`
+    pub fn assign_cip_json(&self) -> String {
+        use chematic_chem::assign_cip;
+        use chematic_core::CipCode;
+        let assignment = assign_cip(&self.inner);
+        let centers: Vec<String> = assignment.assignments.iter()
+            .map(|(idx, code)| {
+                let code_str = match code {
+                    CipCode::R => "R",
+                    CipCode::S => "S",
+                    CipCode::E => "E",
+                    CipCode::Z => "Z",
+                };
+                format!(r#"{{"atom":{},"code":"{}"}}"#, idx.0, code_str)
+            })
+            .collect();
+        format!(r#"{{"centers":[{}]}}"#, centers.join(","))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -3880,6 +3913,47 @@ mod tests {
     #[test]
     fn parse_benzene_atom_count() {
         assert_eq!(parse("c1ccccc1").atom_count(), 6);
+    }
+
+    // --- iupac_name tests ---------------------------------------------------
+
+    #[test]
+    fn iupac_name_benzene() {
+        assert_eq!(parse("c1ccccc1").iupac_name(), "benzene");
+    }
+
+    #[test]
+    fn iupac_name_ethanol() {
+        assert_eq!(parse("CCO").iupac_name(), "ethanol");
+    }
+
+    #[test]
+    fn iupac_name_branched_acid() {
+        assert_eq!(parse("CC(C)C(=O)O").iupac_name(), "2-methylpropanoic acid");
+    }
+
+    #[test]
+    fn iupac_name_unsupported_returns_empty() {
+        // Disconnected molecule → unsupported → empty string
+        let h = parse("C.C");
+        assert!(h.iupac_name().is_empty(), "disconnected should return empty");
+    }
+
+    // --- assign_cip_json tests ----------------------------------------------
+
+    #[test]
+    fn assign_cip_json_no_centers() {
+        // Ethane has no stereocenters
+        let json = parse("CC").assign_cip_json();
+        assert_eq!(json, r#"{"centers":[]}"#);
+    }
+
+    #[test]
+    fn assign_cip_json_chiral_center() {
+        // L-alanine SMILES with explicit chirality
+        let json = parse("N[C@@H](C)C(=O)O").assign_cip_json();
+        assert!(json.contains("\"code\":"), "should contain code field: {json}");
+        assert!(json.contains("\"atom\":"), "should contain atom field: {json}");
     }
 
     #[test]

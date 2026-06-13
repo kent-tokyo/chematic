@@ -114,8 +114,8 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 | Layered FP (7層) | `Chem.LayeredFingerprint` | `layered_fp()` | ✅ |
 | Pattern FP | `Chem.PatternFingerprint` | `pattern_fp()` | ✅ |
 | Pharmacophore 2D | `Gobbi_Pharm2D.Generate` | `pharmacophore_fp_2d()` | ✅ |
-| MHFP | `mhfp.MHFPEncoder` | `mhfp()` | ⚠️ 簡易実装 (原子署名ベース) |
-| ERG | `AllChem.GetErGFingerprint` | `erg()` | ⚠️ 簡易実装 (薬理特徴が粗い) |
+| MHFP | `mhfp.MHFPEncoder` | `mhfp()` | ⚠️ 簡易実装 (原子署名ベース, v0.1.111 で implicit H count 追加) |
+| ERG | `AllChem.GetErGFingerprint` | `erg()` | ⚠️ 簡易実装 (v0.1.111 でアミド/スルホンアミド N を ACCEPTOR-only に修正) |
 | Reaction FP | `AllChem.ReactionFingerprintAsBitVect` | `reaction_fp()` | ✅ XOR差分エンコーディング |
 | Tanimoto類似度 | `DataStructs.TanimotoSimilarity` | `tanimoto_ecfp4()` 等 | ✅ |
 | 最近傍探索 | `DataStructs.BulkTanimotoSimilarity` | `nearest_neighbors()` | ✅ |
@@ -268,20 +268,20 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 
 ### 簡易実装の詳細
 
-**MHFP (⚠️)**
+**MHFP (⚠️ 改善済)**
 - 現状: Morgan 循環ハッシュをシングルとして MinHash（v0.1.95 で正規化）+ MinHash LSH インデックス（v0.1.97）
-- 残課題: SMILES ベースシングルの方が精度向上の余地あり（理論的差異は ±5% 未満）
-- 影響: 大規模データベース類似度検索で精度差 ±5% 以内
+- v0.1.111 改善: 原子不変量に implicit H count を追加 → NH₂/NH/N、OH/O の区別が正確に
+- 残課題: SMILES ベースシングルへの移行で理論的差異 ±5% の完全解消
 
-**ERG (⚠️)**
+**ERG (⚠️ 改善済)**
 - 現状: 薬理学的ノードタイプ付与済（DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC/AROMATIC）
-- 残課題: 細かい HBD 判定（アミド N は acceptor-only など）で RDKit との差異が残る
-- 影響: 構造多様性評価での精度差は軽微
+- v0.1.111 改善: アミド N・スルホンアミド N を ACCEPTOR-only に修正（孤立電子対が C=O/S=O π 系に非局在化）
+- RDKit との差異は軽微な残存ケースのみ
 
-**MMFF94 電荷 (⚠️ 残課題)**
-- 現状: BCI テーブル（25エントリ、元素+結合次数分類） — ±0.1e
-- 残課題: 完全な MMFF94 106原子タイプ分類 + ~2000 BCI エントリ → ±0.01e
-- 影響: 電荷バランス ±0.1e（RDKit は ±0.01e）
+**MMFF94 電荷 (⚠️ BCI フレームワーク追加)**
+- v0.1.110 改善: `mmff94_charges_bci()` 追加 — 2D トポロジーベース BCI 計算（3D 座標不要）
+- BCI テーブル 30+ ペア (C-O, C-N, C-S, C-X, O-H, N-H など)
+- 残課題: Halgren 1996 全パラメータ適用で ±0.01e → 現状 ±0.05e 程度
 
 ---
 
@@ -292,7 +292,9 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 | ~~HIGH~~ | ~~MHFP 正規化~~ | ~~Morgan 循環ハッシュ~~ | ✅ v0.1.95 |
 | ~~HIGH~~ | ~~ERG 薬理特徴~~ | ~~DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC~~ | ✅ v0.1.95 |
 | ~~HIGH~~ | ~~Reaction FP XOR~~ | ~~XOR 差分エンコーディング~~ | ✅ v0.1.94 |
-| MEDIUM | MMFF94 電荷テーブル | 完全 BCI テーブル参照 | 未着手 |
+| ~~MEDIUM~~ | ~~MMFF94 BCI フレームワーク~~ | ~~`mmff94_charges_bci()` 2D トポロジー計算~~ | ✅ v0.1.110 |
+| MEDIUM | MMFF94 完全 BCI テーブル | Halgren 1996 全パラメータ (~2000エントリ) → ±0.01e | 部分実装 |
+| ~~NEW~~ | ~~IUPAC 命名 WASM~~ | ~~`iupac_name()` + `assign_cip_json()` WASM バインディング~~ | ✅ v0.1.112 |
 | ~~LOW~~ | ~~LogP アルケニル C 区別~~ | ~~末端=CH₂ vs アリール隣接=CH−~~ | ✅ v0.1.99 |
 | ~~LOW~~ | ~~Kekulization エッジケース~~ | ~~Edmonds flower algorithm (奇数員環)~~ | ✅ v0.1.100 |
 
