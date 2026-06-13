@@ -23,6 +23,7 @@ pub mod ifg;
 pub mod isotope_distribution;
 pub mod logd;
 pub mod mmp;
+pub mod mmff94_bci;
 pub mod named_groups;
 pub mod qed;
 pub mod recap;

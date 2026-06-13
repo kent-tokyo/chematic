@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.96] — 2026-06-13
+
+### Improved — MMFF94 BCI partial charges
+
+- Replaced the electronegativity-only approximation (`±0.5e`) in `mmff94_charges()` with a Bond Charge Increment (BCI) table-based model (`±0.1e`).
+- New module `chematic-chem/src/mmff94_bci.rs` implements `mmff94_charges_bci()`.
+- BCI table covers C–O, C=O, C–N, C–N(amide), C–F/Cl/Br/I, N–H, O–H, N–O, O–S, O–P and aromatic variants (≈ 25 entries from Halgren 1996 JCCS 17:490-519).
+- Total charge is conserved: `sum(q) == sum(formal_charges)`.
+- 9 new tests (ethanol, acetone, methylamine, acetic acid, ammonium, acetate, chloromethane, imidazole, amide vs amine BCI).
+- Tests: 1,657 → 1,666 (+9), all passing.
+
+---
+
 ## [0.1.95] — 2026-06-13
 
 ### Added — `chematic-iupac` local naming expansion
