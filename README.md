@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** + **v0.1.95: MHFP canonical hash, ERG pharmacophore node types, Reaction FP XOR confirmed** — **1,657 library tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** + **v0.1.95–v0.1.96: MHFP/ERG/Reaction FP true algorithms + MMFF94 BCI charges** — **1,666 library tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.1.95** (2026-06-13) — MHFP/ERG/Reaction FP true algorithm implementations
+Latest release: **v0.1.96** (2026-06-13) — MMFF94 BCI partial charges (±0.1e)
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -74,7 +74,7 @@ Latest release: **v0.1.95** (2026-06-13) — MHFP/ERG/Reaction FP true algorithm
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace --lib   # 1,657 library tests, all passing
+cargo test --workspace --lib   # 1,666 library tests, all passing
 ```
 
 ---
@@ -439,12 +439,16 @@ Notes:
 
 ## Recent Development (v0.1.89–v0.1.95)
 
+**v0.1.96**: MMFF94 BCI partial charges
+- `mmff94_charges()` upgraded from electronegativity-only (±0.5e) to BCI table (±0.1e). 25 entries covering C=O, C–O, C–N, N–H, O–H, halogens etc. (Halgren 1996).
+- Charge conservation guaranteed: sum(q) == sum(formal charges).
+- 1,666 library tests, all passing.
+
 **v0.1.95**: True fingerprint algorithms + IUPAC naming expansion
-- **MHFP canonical hash**: Morgan-style circular fragment hashes replace atom-index-dependent byte signatures. Same fingerprint regardless of SMILES atom ordering.
-- **ERG pharmacophore node types**: `assign_pharmacophore_features()` correctly assigns DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC; pyridine N (acceptor) vs pyrrole N-H (donor) correctly distinguished.
-- **Reaction FP**: XOR structural difference encoding confirmed as default (`use_xor: true`).
+- **MHFP canonical hash**: Morgan-style circular fragment hashes replace atom-index-dependent byte signatures.
+- **ERG pharmacophore node types**: DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC; pyridine N vs pyrrole N-H correctly distinguished.
+- **Reaction FP XOR**: confirmed as default.
 - **IUPAC naming**: ketones, carboxylic acids, esters, amides, benzene, aromatic heterocycles.
-- 1,657 library tests, all passing.
 
 **v0.1.91–v0.1.94: RDKit Gap Closure (A1–A5, B3)**
 - **v0.1.91**: True MHFP (structural fragment hashing), True ERG (Ertl 2017 functional groups)

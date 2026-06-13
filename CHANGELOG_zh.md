@@ -13,6 +13,18 @@ v0.1.8 之前的变更历史，请参考 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
+## [0.1.96] — 2026-06-13
+
+### Improved — MMFF94 BCI 部分电荷
+
+- 将 `mmff94_charges()` 从电负性近似（±0.5e）替换为基于 Bond Charge Increment (BCI) 表的模型（±0.1e）。
+- 新模块 `chematic-chem/src/mmff94_bci.rs`：包含 25 个 BCI 条目，涵盖 C=O (+0.47)、C–O (+0.04)、C–N (+0.10)、C–N(酰胺) (+0.31)、N–H (-0.16)、O–H (-0.30)、C–F (+0.22) 等（Halgren 1996）。
+- 保证电荷守恒：`sum(q) == sum(形式电荷)`。
+- 新增测试 +9（乙醇、丙酮、甲胺、乙酸、铵离子、乙酸根、氯甲烷、咪唑、酰胺 vs 胺 BCI 对比）。
+- 测试数量：1,657 → 1,666 (+9)，全部通过。
+
+---
+
 ## [0.1.95] — 2026-06-13
 
 ### Added — `chematic-iupac` 本地命名范围扩展
