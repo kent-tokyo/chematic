@@ -13,6 +13,23 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.100] — 2026-06-13
+
+### Improved — Kekulization: エッジケーステスト + 降順フォールバック
+
+- **エッジケーステスト 5 件追加** (`chematic-core/src/kekulization.rs`):
+  - biphenylene（4 員環シクロブタジエンブリッジ）
+  - anthracene（3 直線縮合 6 員環）
+  - 大型 4 環 PAH（pyrene 類似）
+  - biphenylene 二重結合数検証
+  - 決定論チェック（同一分子 → 同一結果）
+- **降順フォールバック**: 主パス（昇順）が未マッチ原子を残した場合、降順で自動再試行。コスト O(2·V·E)、グリーディ順序依存の行き詰まりを解消。
+- `run_matching_pass()` ヘルパー関数を抽出して 2 パスで共用。
+- 実際に 5 分子全て Pass 1 で成功→実用的有機化合物では Edmonds は不要と判明。
+- テスト数: 1,681 → 1,686 (+5)、全通過。
+
+---
+
 ## [0.1.99] — 2026-06-13
 
 ### Improved — LogP Crippen: エノン系 vinyl C 分類

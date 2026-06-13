@@ -294,7 +294,7 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 | ~~HIGH~~ | ~~Reaction FP XOR~~ | ~~XOR 差分エンコーディング~~ | ✅ v0.1.94 |
 | MEDIUM | MMFF94 電荷テーブル | 完全 BCI テーブル参照 | 未着手 |
 | ~~LOW~~ | ~~LogP アルケニル C 区別~~ | ~~末端=CH₂ vs アリール隣接=CH−~~ | ✅ v0.1.99 |
-| LOW | Kekulization エッジケース | Edmonds flower algorithm (奇数員環) | 未着手 |
+| ~~LOW~~ | ~~Kekulization エッジケース~~ | ~~Edmonds flower algorithm (奇数員環)~~ | ✅ v0.1.100 |
 
 ---
 

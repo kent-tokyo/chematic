@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** + **v0.1.95–v0.1.99: true FP algorithms + MMFF94 BCI + MinHash LSH + WASM API + LogP enone** — **1,681 library tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** + **v0.1.95–v0.1.100: true FP algorithms + MMFF94 BCI + MinHash LSH + WASM API + LogP enone + Kekulization edge cases** — **1,686 library tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.1.99** (2026-06-13) — LogP enone vinyl C classification
+Latest release: **v0.1.100** (2026-06-13) — Kekulization edge cases + descending-order fallback
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -74,7 +74,7 @@ Latest release: **v0.1.99** (2026-06-13) — LogP enone vinyl C classification
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace --lib   # 1,681 library tests, all passing
+cargo test --workspace --lib   # 1,686 library tests, all passing
 ```
 
 ---
@@ -438,6 +438,9 @@ Notes:
 ---
 
 ## Recent Development (v0.1.89–v0.1.95)
+
+**v0.1.100**: Kekulization edge cases + order fallback
+- 5 new edge-case tests (biphenylene, anthracene, large PAH). Descending-order fallback pass added for robustness. All practical organic molecules handled by ascending pass.
 
 **v0.1.99**: LogP Crippen enone vinyl C
 - Adds `C=C-C=O` (enone/enal) vinyl C detection: Crippen contribution 0.2274→0.1302.
