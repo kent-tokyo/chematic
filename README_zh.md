@@ -39,9 +39,9 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + 第 4 部分（WASM、API 改进）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 审计）+ Sprint v0.1.34（InChI 环闭合 + 立体层）+ Sprint v0.1.35（wasmBridge 支持）+ Sprint v0.1.36（Issue #1 审计：BUG-2/3/4 修复）+ Sprint v0.1.37（mol_transforms API + 随机 SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit 功能缺口分析：6 项功能实现）+ v0.1.88–v0.1.89（功能缺口分析 89% 完成：A1–A6、B1–B2 实现）+ v0.1.91–v0.1.94（功能缺口分析 100% 完成：A1–A5、B3 实现）+ v0.1.95–v0.1.98（真实算法 + MMFF94 BCI + MinHash LSH + WASM API 扩展）。** 1,677 个库测试，全部通过。零 C/C++ 依赖。
+所有阶段已完成 + 第 4 部分（WASM、API 改进）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 审计）+ Sprint v0.1.34（InChI 环闭合 + 立体层）+ Sprint v0.1.35（wasmBridge 支持）+ Sprint v0.1.36（Issue #1 审计：BUG-2/3/4 修复）+ Sprint v0.1.37（mol_transforms API + 随机 SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit 功能缺口分析：6 项功能实现）+ v0.1.88–v0.1.89（功能缺口分析 89% 完成：A1–A6、B1–B2 实现）+ v0.1.91–v0.1.94（功能缺口分析 100% 完成：A1–A5、B3 实现）+ v0.1.95–v0.1.99（真实算法 + MMFF94 BCI + MinHash LSH + WASM API 扩展 + LogP 烯酮）。** 1,681 个库测试，全部通过。零 C/C++ 依赖。
 
-最新版本：**v0.1.98**（2026-06-13）— WASM API：MMFF94 电荷、MHFP、MinHash LSH
+最新版本：**v0.1.99**（2026-06-13）— LogP 烯酮系 vinyl C 区分
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
@@ -61,7 +61,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic`            | 带功能标志的伞形 crate（含所有子 crate，含 `iupac`、`inchi`）                                         | 1      |
 
 ```
-cargo test --workspace --lib   # 1,677 个库测试，全部通过
+cargo test --workspace --lib   # 1,681 个库测试，全部通过
 ```
 
 ---

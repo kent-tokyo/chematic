@@ -39,9 +39,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）+ Sprint v0.1.34（InChI 環クロージャー + 立体層）+ Sprint v0.1.35（wasmBridge サポート）+ Sprint v0.1.36（Issue #1 監査: BUG-2/3/4 修正）+ Sprint v0.1.37（mol_transforms API + ランダム SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit ギャップ分析：6 機能実装）+ v0.1.88–v0.1.89（ギャップ分析 89% 完成：A1–A6, B1–B2 実装）+ v0.1.91–v0.1.94（ギャップ分析 100% 完成：A1–A5, B3 実装）+ v0.1.95–v0.1.98（真アルゴリズム + MMFF94 BCI + MinHash LSH + WASM API 拡充）。** 1,677 ライブラリテスト、全パス。C/C++ 依存ゼロ。
+全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）+ Sprint v0.1.34（InChI 環クロージャー + 立体層）+ Sprint v0.1.35（wasmBridge サポート）+ Sprint v0.1.36（Issue #1 監査: BUG-2/3/4 修正）+ Sprint v0.1.37（mol_transforms API + ランダム SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit ギャップ分析：6 機能実装）+ v0.1.88–v0.1.89（ギャップ分析 89% 完成：A1–A6, B1–B2 実装）+ v0.1.91–v0.1.94（ギャップ分析 100% 完成：A1–A5, B3 実装）+ v0.1.95–v0.1.99（真アルゴリズム + MMFF94 BCI + MinHash LSH + WASM API 拡充 + LogP エノン）。** 1,681 ライブラリテスト、全パス。C/C++ 依存ゼロ。
 
-最新リリース: **v0.1.98**（2026-06-13）— WASM API: MMFF94 電荷・MHFP・MinHash LSH
+最新リリース: **v0.1.99**（2026-06-13）— LogP エノン系 vinyl C 区別
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -61,7 +61,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac`, `inchi` フィーチャー追加）                                                         | 1       |
 
 ```
-cargo test --workspace --lib   # 1,677 ライブラリテスト、全パス
+cargo test --workspace --lib   # 1,681 ライブラリテスト、全パス
 ```
 
 ---
