@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.97] — 2026-06-13
+
+### Added — MinHash LSH index (`chematic-fp`)
+
+- New `MhfpLshIndex` in `crates/chematic-fp/src/lsh.rs` for sub-linear approximate similarity search over MHFP fingerprints.
+- Band decomposition: 16 bands × 8 rows (default, `new(128)`); configurable with `with_bands(bands, rows)`.
+- `add(fp) -> usize` inserts a fingerprint; `query(fp, threshold) -> Vec<(usize, f64)>` returns all entries above the threshold sorted by descending similarity.
+- Probabilistic recall: P(found | s=0.8) ≈ 94%, P(found | s=0.7) ≈ 90%.
+- 6 new tests (empty query, self-similarity, threshold filtering, similar-mols-found, sorted-descending, custom-bands).
+- Tests: 1,666 → 1,672 (+6), all passing.
+
+---
+
 ## [0.1.96] — 2026-06-13
 
 ### Improved — MMFF94 BCI partial charges

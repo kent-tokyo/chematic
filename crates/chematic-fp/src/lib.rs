@@ -19,6 +19,7 @@ pub mod ecfp;
 pub mod erg;
 pub mod fcfp;
 pub mod layered;
+pub mod lsh;
 pub mod maccs;
 pub mod mhfp;
 pub mod path;
@@ -46,5 +47,6 @@ pub use reaction_fp::{
     reaction_fp, reaction_fp_with_config, reaction_fp_ecfp4, tanimoto_reaction_fp,
     ReactionFingerprint, ReactionFpConfig,
 };
+pub use lsh::MhfpLshIndex;
 pub use search::{FpType, nearest_neighbors, nearest_neighbors_from_fp};
 pub use topo_path::{TopoPathConfig, tanimoto_topo_path, topo_path};
