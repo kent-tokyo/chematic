@@ -134,6 +134,7 @@ impl<'a> Namer<'a> {
                     self.name_amine(&carbons, n_atoms[0])
                 }
             }
+            (0, 0, 1, 0) => self.name_thiol(&carbons, s_atoms[0]),
             (0, 0, 0, _) if !halogens.is_empty() => {
                 if het_elements.len() != 1 {
                     return Err(IupacError::NotSupported);
@@ -204,10 +205,13 @@ impl<'a> Namer<'a> {
         sub_atoms: &[AtomIdx],
     ) -> Result<String, IupacError> {
         let mol = self.mol;
-        // Ensure exactly one ring C is attached to the substituent.
+        // Count how many ring C have substituents.
         let attach_count = ring_atoms.iter().filter(|&&r| {
             mol.neighbors(r).any(|(nb, _)| !ring_atoms.contains(&nb))
         }).count();
+        if attach_count == 2 {
+            return self.name_disubstituted_benzene(ring_atoms, sub_atoms);
+        }
         if attach_count != 1 {
             return Err(IupacError::NotSupported);
         }
@@ -270,13 +274,33 @@ impl<'a> Namer<'a> {
         ring_atoms: &HashSet<AtomIdx>,
         carbons: &[AtomIdx],
     ) -> Result<String, IupacError> {
-        if ring_atoms.len() != carbons.len() {
+        let mol = self.mol;
+        if carbons.iter().any(|&c| mol.atom(c).aromatic) {
             return Err(IupacError::NotSupported);
         }
-        if carbons.iter().any(|&c| self.mol.atom(c).aromatic) {
-            return Err(IupacError::NotSupported);
+        // All carbons in ring: unsubstituted cycloalkane.
+        if ring_atoms.len() == carbons.len() {
+            return Ok(format!("cyclo{}", alkane_suffix(ring_atoms.len())));
         }
-        Ok(format!("cyclo{}", alkane_suffix(ring_atoms.len())))
+        // Exactly one exocyclic C attached to ring (methylcycloalkane).
+        let outside: Vec<AtomIdx> = carbons.iter()
+            .filter(|&&c| !ring_atoms.contains(&c))
+            .copied()
+            .collect();
+        if outside.len() == 1 {
+            let sub_c = outside[0];
+            // sub_c must be a terminal methyl (no further C neighbors outside ring).
+            let further_c = mol.neighbors(sub_c)
+                .filter(|(nb, _)| {
+                    mol.atom(*nb).element.atomic_number() == 6 && !ring_atoms.contains(nb)
+                })
+                .count();
+            if further_c == 0 {
+                // Format: "methylcyclopropane", "methylcyclopentane", "methylcyclohexane", etc.
+                return Ok(format!("methylcyclo{}", alkane_suffix(ring_atoms.len())));
+            }
+        }
+        Err(IupacError::NotSupported)
     }
 
     // -----------------------------------------------------------------------
@@ -325,9 +349,32 @@ impl<'a> Namer<'a> {
         let is_double = mol.neighbors(o_idx).any(|(_, bi)| mol.bond(bi).order == BondOrder::Double);
 
         if !is_double {
-            // Alcohol: C–OH
-            let n = carbons.len();
-            return Ok(format!("{}anol", alkane_stem(n)));
+            // Find the OH carbon.
+            let oh_c = mol.neighbors(o_idx)
+                .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
+                .map(|(nb, _)| nb)
+                .next()
+                .ok_or(IupacError::NotSupported)?;
+
+            // Check for branching.
+            let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
+            let is_branched = carbons.iter().any(|&c| {
+                mol.neighbors(c).filter(|(nb, _)| c_set.contains(nb)).count() > 2
+            });
+            if is_branched {
+                return self.name_branched_alcohol(carbons, oh_c);
+            }
+
+            // Straight-chain: determine OH position using longest chain.
+            let chain = find_longest_c_chain(mol, carbons);
+            let n = chain.len();
+            let pos_fwd = chain.iter().position(|&c| c == oh_c).map(|p| p + 1).unwrap_or(1);
+            let pos = pos_fwd.min(n + 1 - pos_fwd);
+            if pos == 1 && n <= 2 {
+                // Short common names without locant: methanol, ethanol.
+                return Ok(format!("{}anol", alkane_stem(n)));
+            }
+            return Ok(format!("{}-{}-ol", alkane_base(n), pos));
         }
 
         // Carbonyl: find the C=O carbon.
@@ -486,6 +533,192 @@ impl<'a> Namer<'a> {
             _ => return Err(IupacError::NotSupported),
         };
         Ok(format!("{mult}{base}"))
+    }
+
+    // -----------------------------------------------------------------------
+    // Thiol naming (R-SH → "...anethiol")
+    // -----------------------------------------------------------------------
+
+    fn name_thiol(&self, carbons: &[AtomIdx], s_idx: AtomIdx) -> Result<String, IupacError> {
+        let mol = self.mol;
+        // Only primary thiols (S has an implicit H).
+        if implicit_hcount(mol, s_idx) == 0 {
+            return Err(IupacError::NotSupported);
+        }
+        // Unbranched chain only.
+        let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
+        if carbons.iter().any(|&c| {
+            mol.neighbors(c).filter(|(nb, _)| c_set.contains(nb)).count() > 2
+        }) {
+            return Err(IupacError::NotSupported);
+        }
+        let n = carbons.len();
+        Ok(format!("{}anethiol", alkane_stem(n)))
+    }
+
+    // -----------------------------------------------------------------------
+    // Branched alcohol naming (e.g., "propan-2-ol")
+    // -----------------------------------------------------------------------
+
+    fn name_branched_alcohol(
+        &self,
+        carbons: &[AtomIdx],
+        oh_c: AtomIdx,
+    ) -> Result<String, IupacError> {
+        // Find principal chain.
+        let chain = find_longest_c_chain(self.mol, carbons);
+        let n = chain.len();
+        if n < 2 { return Err(IupacError::NotSupported); }
+
+        let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
+        let all_c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
+
+        // The OH carbon must be on the principal chain.
+        let pos_on_chain = if chain_set.contains(&oh_c) {
+            chain.iter().position(|&c| c == oh_c).map(|p| p + 1)
+        } else {
+            None
+        };
+
+        let pos_fwd = pos_on_chain.ok_or(IupacError::NotSupported)?;
+        let pos = pos_fwd.min(n + 1 - pos_fwd);
+
+        // Also collect any alkyl substituents on the chain.
+        let mut subs: Vec<(usize, usize)> = Vec::new();
+        for (pos0, &chain_c) in chain.iter().enumerate() {
+            let position = pos0 + 1;
+            for (nb, _) in self.mol.neighbors(chain_c) {
+                if all_c_set.contains(&nb) && !chain_set.contains(&nb) {
+                    let sub_len = count_c_chain(self.mol, nb, chain_c);
+                    if sub_len > 2 { return Err(IupacError::NotSupported); }
+                    subs.push((position, sub_len));
+                }
+            }
+        }
+
+        // Re-number subs with the same locant direction as OH position.
+        if pos_fwd > n + 1 - pos_fwd {
+            // Reverse direction was chosen for OH; re-number subs accordingly.
+            subs = subs.iter().map(|&(p, l)| (n + 1 - p, l)).collect();
+        }
+
+        let prefix = if subs.is_empty() {
+            String::new()
+        } else {
+            subs.sort_unstable();
+            let subs_rev: Vec<(usize, usize)> = subs.iter()
+                .map(|&(p, l)| (n + 1 - p, l))
+                .collect();
+            let first_fwd = subs.iter().map(|&(p, _)| p).min().unwrap_or(usize::MAX);
+            let first_rev = subs_rev.iter().map(|&(p, _)| p).min().unwrap_or(usize::MAX);
+            let best = if first_fwd <= first_rev { subs.clone() } else { subs_rev };
+            format!("{}-", format_substituents(&best))
+        };
+
+        Ok(format!("{}{}-{}-ol", prefix, alkane_base(n), pos))
+    }
+
+    // -----------------------------------------------------------------------
+    // Disubstituted benzene naming (e.g., "4-chlorophenol")
+    // -----------------------------------------------------------------------
+
+    fn name_disubstituted_benzene(
+        &self,
+        ring_atoms: &HashSet<AtomIdx>,
+        _sub_atoms: &[AtomIdx],
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+
+        // Identify the two ring C attachment points and their substituent sets.
+        let attach_points: Vec<AtomIdx> = ring_atoms.iter()
+            .filter(|&&r| mol.neighbors(r).any(|(nb, _)| !ring_atoms.contains(&nb)))
+            .copied()
+            .collect();
+        if attach_points.len() != 2 {
+            return Err(IupacError::NotSupported);
+        }
+
+        // Compute ring distance (shortest path within ring) between the two attachment points.
+        let ring_dist = {
+            let ring_vec: Vec<AtomIdx> = ring_atoms.iter().copied().collect();
+            let mut dist = usize::MAX;
+            // BFS within the ring
+            let mut queue = VecDeque::new();
+            let mut visited: HashSet<AtomIdx> = HashSet::new();
+            queue.push_back((attach_points[0], 0usize));
+            visited.insert(attach_points[0]);
+            while let Some((cur, d)) = queue.pop_front() {
+                if cur == attach_points[1] { dist = d; break; }
+                for (nb, _) in mol.neighbors(cur) {
+                    if ring_atoms.contains(&nb) && visited.insert(nb) {
+                        queue.push_back((nb, d + 1));
+                    }
+                }
+            }
+            // Take minimum of this and the longer path
+            dist.min(ring_vec.len() - dist)
+        };
+
+        // Classify each substituent group.
+        let classify_sub = |attach: AtomIdx| -> Option<(&str, bool)> {
+            // Returns (substituent_name, is_principal)
+            // is_principal: true if this substituent determines the compound root name
+            // Collect sub atoms for this attachment (unused for now, just for documentation)
+            // Simple: just look at atoms directly bonded to attach that are not in ring
+            let direct: Vec<AtomIdx> = mol.neighbors(attach)
+                .filter(|(nb, _)| !ring_atoms.contains(nb))
+                .map(|(nb, _)| nb)
+                .collect();
+            if direct.is_empty() { return None; }
+            let first = direct[0];
+            let an = mol.atom(first).element.atomic_number();
+            match an {
+                8 if !mol.neighbors(first).any(|(_, bi)| mol.bond(bi).order == BondOrder::Double) => {
+                    Some(("hydroxy", true)) // -OH → phenol as principal
+                }
+                7 if implicit_hcount(mol, first) > 0 => Some(("amino", true)), // -NH2 → aniline
+                6 => Some(("methyl", false)), // -CH3 → toluene substituent
+                17 => Some(("chloro", false)),
+                35 => Some(("bromo", false)),
+                9  => Some(("fluoro", false)),
+                53 => Some(("iodo", false)),
+                _ => None,
+            }
+        };
+
+        let sub_a = classify_sub(attach_points[0]);
+        let sub_b = classify_sub(attach_points[1]);
+
+        let (sub_a, sub_b) = match (sub_a, sub_b) {
+            (Some(a), Some(b)) => (a, b),
+            _ => return Err(IupacError::NotSupported),
+        };
+
+        // Determine locant prefix (1,2= ortho, 1,3= meta, 1,4= para for 6-ring).
+        let pos2 = ring_dist + 1; // position of the second substituent from first
+
+        // Build name: principal group determines root, non-principal is prefix.
+        let (prefix_sub, root_name) = if sub_a.1 {
+            // sub_a is principal (phenol/aniline): prefix comes from sub_b
+            let root = match sub_a.0 {
+                "hydroxy" => "phenol",
+                "amino" => "aniline",
+                _ => return Err(IupacError::NotSupported),
+            };
+            (sub_b.0, root)
+        } else if sub_b.1 {
+            let root = match sub_b.0 {
+                "hydroxy" => "phenol",
+                "amino" => "aniline",
+                _ => return Err(IupacError::NotSupported),
+            };
+            (sub_a.0, root)
+        } else {
+            // Neither is principal → both are substituents on benzene, use larger locant
+            return Err(IupacError::NotSupported);
+        };
+
+        Ok(format!("{}-{}{}", pos2, prefix_sub, root_name))
     }
 
     // -----------------------------------------------------------------------
@@ -787,7 +1020,7 @@ mod tests {
     fn test_alcohol() {
         assert_eq!(name(&mol("CO")).unwrap(),   "methanol");
         assert_eq!(name(&mol("CCO")).unwrap(),  "ethanol");
-        assert_eq!(name(&mol("CCCO")).unwrap(), "propanol");
+        assert_eq!(name(&mol("CCCO")).unwrap(), "propan-1-ol");
     }
 
     #[test]
@@ -907,5 +1140,36 @@ mod tests {
     fn test_nitriles() {
         assert_eq!(name(&mol("CC#N")).unwrap(),  "ethanenitrile");
         assert_eq!(name(&mol("CCC#N")).unwrap(), "propanenitrile");
+    }
+
+    // ---- New Round 2 tests (v0.1.102) ---------------------------------------
+
+    #[test]
+    fn test_thiols() {
+        assert_eq!(name(&mol("CS")).unwrap(),   "methanethiol");
+        assert_eq!(name(&mol("CCS")).unwrap(),  "ethanethiol");
+        assert_eq!(name(&mol("CCCS")).unwrap(), "propanethiol");
+    }
+
+    #[test]
+    fn test_alcohol_locants() {
+        assert_eq!(name(&mol("CCCCO")).unwrap(),  "butan-1-ol");
+        assert_eq!(name(&mol("CC(O)C")).unwrap(), "propan-2-ol");
+        assert_eq!(name(&mol("CCC(O)C")).unwrap(), "butan-2-ol");
+    }
+
+    #[test]
+    fn test_disubstituted_benzene() {
+        // Para-chlorophenol: OH and Cl are 3 bonds apart in the ring (positions 1 and 4).
+        assert_eq!(name(&mol("Oc1ccc(Cl)cc1")).unwrap(), "4-chlorophenol");
+        // Meta-chlorophenol: OH and Cl are 2 bonds apart (positions 1 and 3).
+        assert_eq!(name(&mol("c1ccc(O)cc1Cl")).unwrap(), "3-chlorophenol");
+    }
+
+    #[test]
+    fn test_methylcycloalkane() {
+        assert_eq!(name(&mol("CC1CCCCC1")).unwrap(), "methylcyclohexane");
+        assert_eq!(name(&mol("CC1CCCC1")).unwrap(),  "methylcyclopentane");
+        assert_eq!(name(&mol("CC1CCC1")).unwrap(),   "methylcyclobutane");
     }
 }

@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.102] — 2026-06-13
+
+### Added — IUPAC naming Round 2: thiols, alcohol locants, disubstituted benzenes, methylcycloalkanes
+
+**`chematic-iupac/src/lib.rs`** — 4 new classes, 4 new test functions:
+
+- **Thiols** (`name_thiol()`): `CS` → "methanethiol", `CCS` → "ethanethiol". Detects S–H by implicit_hcount.
+- **Alcohol position locants**: `CCCO` now returns "propan-1-ol" (was "propanol"). Branched alcohols also supported: `CC(O)C` → "propan-2-ol", `CCC(O)C` → "butan-2-ol". Uses `find_longest_c_chain()` for chain identification and IUPAC lowest-locant rule.
+- **Disubstituted benzenes** (`name_disubstituted_benzene()`): ring BFS distance determines ortho(2)/meta(3)/para(4) prefix. `Oc1ccc(Cl)cc1` → "4-chlorophenol", `c1ccc(O)cc1Cl` → "3-chlorophenol".
+- **Methylcycloalkanes**: `CC1CCCCC1` → "methylcyclohexane", `CC1CCCC1` → "methylcyclopentane".
+- Tests: 1,691 → 1,695 (+4 test functions), all passing.
+
+---
+
 ## [0.1.101] — 2026-06-13
 
 ### Added — IUPAC naming: branched alkanes, substituted benzenes, nitriles
