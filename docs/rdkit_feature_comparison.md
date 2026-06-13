@@ -1,6 +1,6 @@
-# chematic vs RDKit 機能比較 (v0.1.95)
+# chematic vs RDKit 機能比較 (v0.1.96)
 
-> **更新日**: 2026-06-13 | **バージョン**: chematic v0.1.95 | **テスト数**: 1,657 (100% pass)
+> **更新日**: 2026-06-13 | **バージョン**: chematic v0.1.96 | **テスト数**: 1,666 (100% pass)
 
 ---
 
@@ -97,7 +97,7 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 | SASA | `rdFreeSASA` | `sasa()` | ✅ Shrake-Rupley |
 | 元素カウント (C/N/O/F/Cl/Br/I/S/P) | `Descriptors.NumAtomCountX` | `num_carbons()` 等 | ✅ |
 | Gasteiger 電荷 | `AllChem.ComputeGasteigerCharges` | `gasteiger_charges()` | ✅ |
-| MMFF94 電荷 | `AllChem.MMFFGetMoleculeProperties` | `mmff94_charges()` | ⚠️ 近似 (±0.5e) |
+| MMFF94 電荷 | `AllChem.MMFFGetMoleculeProperties` | `mmff94_charges()` | ✅ BCI テーブル (±0.1e) |
 | アミド/エステル結合数 | `rdMolDescriptors.CalcNumAmideBonds` | `num_amide_bonds()` 等 | ✅ |
 
 ### 3.2 フィンガープリント (Fingerprints)
@@ -278,10 +278,10 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 - 残課題: 細かい HBD 判定（アミド N は acceptor-only など）で RDKit との差異が残る
 - 影響: 構造多様性評価での精度差は軽微
 
-**MMFF94 電荷 (⚠️)**
-- 現状: 電気陰性度近似 + 形式電荷再分配（カルボキシラート/アンモニウム）
-- 真実装: 完全な BCI テーブル参照
-- 影響: 電荷バランス ±0.5e（RDKit は ±0.01e）
+**MMFF94 電荷 (⚠️ 残課題)**
+- 現状: BCI テーブル（25エントリ、元素+結合次数分類） — ±0.1e
+- 残課題: 完全な MMFF94 106原子タイプ分類 + ~2000 BCI エントリ → ±0.01e
+- 影響: 電荷バランス ±0.1e（RDKit は ±0.01e）
 
 ---
 
@@ -308,4 +308,4 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 
 ---
 
-*chematic v0.1.95 — 2026-06-13*
+*chematic v0.1.96 — 2026-06-13*
