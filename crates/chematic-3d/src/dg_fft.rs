@@ -175,6 +175,12 @@ fn vdw_radius(atomic_num: u8) -> f64 {
 // Eigenvalue decomposition & coordinate generation
 // ---------------------------------------------------------------------------
 
+/// Maximum atom count accepted by the DG coordinate generator.
+///
+/// O(n²) memory and O(n³) Floyd-Warshall make larger molecules prohibitive;
+/// callers that need coordinates for bigger structures must use an external tool.
+pub const DG_MAX_ATOMS: usize = 500;
+
 /// Generate 3D coordinates via distance geometry (ETDKG-style).
 ///
 /// Algorithm:
@@ -184,12 +190,6 @@ fn vdw_radius(atomic_num: u8) -> f64 {
 /// 4. Eigenvalue decomposition via Jacobi method
 /// 5. Extract 3D coordinates from top 3 eigenvectors
 /// 6. Center molecule at origin
-/// Maximum atom count accepted by the DG coordinate generator.
-///
-/// O(n²) memory and O(n³) Floyd-Warshall make larger molecules prohibitive;
-/// callers that need coordinates for bigger structures must use an external tool.
-pub const DG_MAX_ATOMS: usize = 500;
-
 pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
     let n = mol.atom_count();
 

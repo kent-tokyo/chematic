@@ -12,7 +12,7 @@ use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder, valida
 use serde::{Deserialize, Serialize};
 
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
-use chematic_smarts::{parse_smarts, find_matches, find_matches_with_config, MatchConfig};
+use chematic_smarts::{parse_smarts, find_matches_with_config, MatchConfig};
 
 /// Salt removal catalog: common salt patterns (counterions and solvates).
 ///

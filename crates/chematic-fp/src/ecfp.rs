@@ -167,9 +167,9 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     // Step 2: iterative expansion.
     let mut new_ids: Vec<u64> = vec![0u64; n];
     for r in 1..=config.radius {
-        for i in 0..n {
+        for (i, slot) in new_ids.iter_mut().enumerate() {
             let new_id = expand_atom_id(mol, i, r, &ids);
-            new_ids[i] = new_id;
+            *slot = new_id;
             fp.set((new_id % nbits as u64) as usize);
             if config.use_double_fold {
                 fp.set(((new_id >> 11) % nbits as u64) as usize);
@@ -217,9 +217,9 @@ pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMa
     // Radius 1..=radius: iterative expansion (same hash scheme as ecfp).
     let mut new_ids = vec![0u64; n];
     for r in 1..=radius {
-        for i in 0..n {
+        for (i, slot) in new_ids.iter_mut().enumerate() {
             let new_id = expand_atom_id(mol, i, r, &ids);
-            new_ids[i] = new_id;
+            *slot = new_id;
             *counts.entry(new_id).or_insert(0) += 1;
         }
         core::mem::swap(&mut ids, &mut new_ids);

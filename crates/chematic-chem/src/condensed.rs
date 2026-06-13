@@ -175,53 +175,50 @@ fn substitute_functional_groups(tokens: &[Token]) -> Result<String, CondensedErr
                 // not a repeat count, so consume it too.
                 last_atom_len = 0;
                 i += 1;
-                if i < tokens.len() {
-                    if let Token::Digit(_) = &tokens[i] {
-                        i += 1;
-                    }
+                if i < tokens.len()
+                    && let Token::Digit(_) = &tokens[i]
+                {
+                    i += 1;
                 }
             }
             Token::Atom(a) => {
                 // Try 4-char functional groups first (e.g. COOH).
-                if i + 3 < tokens.len() {
-                    if let (Token::Atom(b), Token::Atom(c), Token::Atom(d)) =
+                if i + 3 < tokens.len()
+                    && let (Token::Atom(b), Token::Atom(c), Token::Atom(d)) =
                         (&tokens[i + 1], &tokens[i + 2], &tokens[i + 3])
-                    {
-                        let key = format!("{}{}{}{}", a, b, c, d);
-                        if let Some(replacement) = functional_groups(&key) {
-                            smiles.push_str(replacement);
-                            last_atom_len = 0; // multi-atom groups can't be simply repeated
-                            i += 4;
-                            continue;
-                        }
+                {
+                    let key = format!("{}{}{}{}", a, b, c, d);
+                    if let Some(replacement) = functional_groups(&key) {
+                        smiles.push_str(replacement);
+                        last_atom_len = 0; // multi-atom groups can't be simply repeated
+                        i += 4;
+                        continue;
                     }
                 }
 
                 // Try 3-char combinations.
-                if i + 2 < tokens.len() {
-                    if let (Token::Atom(b), Token::Atom(c)) =
-                        (&tokens[i + 1], &tokens[i + 2])
-                    {
-                        let key = format!("{}{}{}", a, b, c);
-                        if let Some(replacement) = functional_groups(&key) {
-                            smiles.push_str(replacement);
-                            last_atom_len = 0;
-                            i += 3;
-                            continue;
-                        }
+                if i + 2 < tokens.len()
+                    && let (Token::Atom(b), Token::Atom(c)) = (&tokens[i + 1], &tokens[i + 2])
+                {
+                    let key = format!("{}{}{}", a, b, c);
+                    if let Some(replacement) = functional_groups(&key) {
+                        smiles.push_str(replacement);
+                        last_atom_len = 0;
+                        i += 3;
+                        continue;
                     }
                 }
 
                 // Try 2-char combinations.
-                if i + 1 < tokens.len() {
-                    if let Token::Atom(b) = &tokens[i + 1] {
-                        let key = format!("{}{}", a, b);
-                        if let Some(replacement) = functional_groups(&key) {
-                            smiles.push_str(replacement);
-                            last_atom_len = 0;
-                            i += 2;
-                            continue;
-                        }
+                if i + 1 < tokens.len()
+                    && let Token::Atom(b) = &tokens[i + 1]
+                {
+                    let key = format!("{}{}", a, b);
+                    if let Some(replacement) = functional_groups(&key) {
+                        smiles.push_str(replacement);
+                        last_atom_len = 0;
+                        i += 2;
+                        continue;
                     }
                 }
 
