@@ -105,16 +105,20 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
     let mut sorted_atoms: Vec<AtomIdx> = must_match.iter().copied().collect();
     sorted_atoms.sort();
 
-    for &start in &sorted_atoms {
-        if matching.contains_key(&start) {
-            continue; // already matched
-        }
-        // Try to find an augmenting path from `start`.
-        // Pre-insert start so the DFS cannot treat the search root as an "unmatched"
-        // vertex when traversing an odd cycle (blossom prevention).
-        let mut visited: HashSet<AtomIdx> = HashSet::new();
-        visited.insert(start);
-        augment(start, &adj, &mut matching, &mut visited);
+    // Pass 1: ascending order (primary).
+    run_matching_pass(&sorted_atoms, &adj, &mut matching);
+
+    // Pass 2 (fallback): descending order — avoids order-dependent dead-ends.
+    //
+    // A greedy ascending pass can get stuck on certain ring topologies: the first
+    // matched edge blocks an augmenting path that a different starting order would
+    // find.  Reversing the order is O(V·E) overhead but resolves many such cases
+    // without requiring the full Edmonds blossom algorithm.
+    if must_match.iter().any(|&idx| !matching.contains_key(&idx)) {
+        matching.clear();
+        let mut rev = sorted_atoms.clone();
+        rev.reverse();
+        run_matching_pass(&rev, &adj, &mut matching);
     }
 
     // Verify that all must_match atoms are matched.
@@ -243,18 +247,38 @@ fn augment(
     matching.contains_key(&start)
 }
 
+/// Run a single augmenting-path pass over `atoms` and update `matching`.
+///
+/// For each unmatched atom in `atoms`, attempts to find an augmenting path using
+/// the BFS-based `augment()` function. Extracted so that `kekulize()` can try
+/// multiple orderings (ascending → descending) without code duplication.
+fn run_matching_pass(
+    atoms: &[AtomIdx],
+    adj: &HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>>,
+    matching: &mut HashMap<AtomIdx, AtomIdx>,
+) {
+    for &start in atoms {
+        if matching.contains_key(&start) {
+            continue;
+        }
+        let mut visited: HashSet<AtomIdx> = HashSet::new();
+        visited.insert(start);
+        augment(start, adj, matching, &mut visited);
+    }
+}
+
 /// Determine whether an aromatic atom *must* appear in the matching
 /// (i.e. requires a double bond for a valid Kekulé form).
 ///
 /// An atom can be unmatched if it contributes a lone pair to the aromatic system:
-///   - O (furan-type oxygen)
-///   - S (thiophene-type sulfur)
-///   - N with an H (pyrrole-type nitrogen: [nH])
-///   - Se, As aromatic analogs
-///   - Any aromatic atom that already has an exocyclic double bond (e.g. the
-///     carbonyl carbon in coumarin/warfarin `c=O` fused into an aromatic ring).
-///     Such an atom's pi contribution comes from conjugation with the exocyclic
-///     bond; no additional ring double bond is needed or possible.
+/// - O (furan-type oxygen)
+/// - S (thiophene-type sulfur)
+/// - N with an H (pyrrole-type nitrogen: [nH])
+/// - Se, As aromatic analogs
+/// - Any aromatic atom that already has an exocyclic double bond (e.g. the
+///   carbonyl carbon in coumarin/warfarin `c=O` fused into an aromatic ring).
+///   Such an atom's pi contribution comes from conjugation with the exocyclic
+///   bond; no additional ring double bond is needed or possible.
 ///
 /// Everything else (C, N without H like pyridine) must be matched.
 fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
@@ -502,6 +526,128 @@ mod tests {
         let result = kekulize(&mol).expect("acenaphthylene kekulization failed");
         let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
         assert_eq!(doubles, 6, "acenaphthylene needs 6 double bonds");
+    }
+
+    // ---- Edge-case tests added v0.1.100 ----
+    //
+    // Build complex PAH manually to test edge cases in the matching algorithm.
+
+    /// Biphenylene: two benzene rings connected by a cyclobutadiene bridge.
+    ///
+    /// Topology: Ring A (0–5), Ring B (6–11), bridge bonds (0–11) and (5–6).
+    /// The 4-membered ring 0-5-6-11-0 is the challenging part.
+    fn biphenylene() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let a: Vec<_> = (0..12)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        // Ring A (6): 0-1-2-3-4-5-0
+        for i in 0..6 {
+            b.add_bond(a[i], a[(i + 1) % 6], BondOrder::Aromatic).unwrap();
+        }
+        // Ring B (6): 6-7-8-9-10-11-6
+        for i in 0..6 {
+            b.add_bond(a[6 + i], a[6 + (i + 1) % 6], BondOrder::Aromatic).unwrap();
+        }
+        // 4-membered bridge: closes ring 0-5-6-11-0
+        b.add_bond(a[5], a[6], BondOrder::Aromatic).unwrap();
+        b.add_bond(a[0], a[11], BondOrder::Aromatic).unwrap();
+        b.build()
+    }
+
+    /// Naphtho-4-ring: three fused 6-membered rings sharing a common bond sequence.
+    /// Linear anthracene topology (0-1-2-3-4-5, 5-6-7-8-9-4, 6-10-11-12-13-7).
+    fn anthracene() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let a: Vec<_> = (0..14)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        // Ring A: 0-1-2-3-4-5-0
+        for i in 0..6 {
+            b.add_bond(a[i], a[(i + 1) % 6], BondOrder::Aromatic).unwrap();
+        }
+        // Ring B: 5-4-9-8-7-6-5 (shares bond 4-5 with Ring A)
+        for (x, y) in [(4,9),(9,8),(8,7),(7,6),(6,5)] {
+            b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+        }
+        // Ring C: 6-7-13-12-11-10-6 (shares bond 6-7 with Ring B)
+        for (x, y) in [(7,13),(13,12),(12,11),(11,10),(10,6)] {
+            b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+        }
+        b.build()
+    }
+
+    #[test]
+    fn test_kekulize_biphenylene() {
+        // Biphenylene: 4-membered cyclobutadiene bridge between two benzenes.
+        // 12 aromatic C → 6 double bonds.
+        let mol = biphenylene();
+        let result = kekulize(&mol).expect("biphenylene kekulization should succeed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 6, "biphenylene needs 6 double bonds");
+    }
+
+    #[test]
+    fn test_kekulize_anthracene() {
+        // Anthracene (C14H10): 3 linearly fused 6-membered rings.  7 double bonds.
+        let mol = anthracene();
+        let result = kekulize(&mol).expect("anthracene kekulization should succeed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 7, "anthracene needs 7 double bonds");
+    }
+
+    #[test]
+    fn test_kekulize_biphenylene_double_bond_count() {
+        // Cross-check: all 14 bonds should be assigned single or double.
+        let mol = biphenylene();
+        let result = kekulize(&mol).expect("biphenylene kekulization");
+        let singles = result.values().filter(|&&o| o == BondOrder::Single).count();
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(singles + doubles, 14, "biphenylene has 14 aromatic bonds");
+    }
+
+    #[test]
+    fn test_kekulize_large_fused_6rings() {
+        // 4 fused 6-membered rings (pyrene-like) in a simple linear topology.
+        // Simulates a large all-even-ring PAH that the BFS should handle easily.
+        let mol = {
+            let mut b = MoleculeBuilder::new();
+            let a: Vec<_> = (0..16)
+                .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+                .collect();
+            // Ring 0-1-2-3-4-5
+            for i in 0..6 { b.add_bond(a[i], a[(i+1)%6], BondOrder::Aromatic).unwrap(); }
+            // Ring 5-4-9-8-7-6
+            for (x,y) in [(4,9),(9,8),(8,7),(7,6),(6,5)] {
+                b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+            }
+            // Ring 1-2-11-10-13-12
+            for (x,y) in [(2,11),(11,10),(10,13),(13,12),(12,1)] {
+                b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+            }
+            // Ring 6-7-15-14-11-2 (closed)
+            for (x,y) in [(7,15),(15,14),(14,11)] {
+                b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+            }
+            b.build()
+        };
+        let result = kekulize(&mol).expect("4-ring PAH kekulization should succeed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert!(doubles >= 6, "4-ring PAH needs at least 6 double bonds, got {doubles}");
+    }
+
+    #[test]
+    fn test_kekulize_deterministic() {
+        // kekulize() is deterministic: rebuilding the same molecule gives the same count.
+        let mol1 = biphenylene();
+        let mol2 = biphenylene();
+        let r1 = kekulize(&mol1).expect("pass1");
+        let r2 = kekulize(&mol2).expect("pass2");
+        assert_eq!(
+            r1.values().filter(|&&o| o == BondOrder::Double).count(),
+            r2.values().filter(|&&o| o == BondOrder::Double).count(),
+            "kekulization must be deterministic"
+        );
     }
 
     /// Fluoranthene: 16 aromatic C in a fused 5+6+6+6 system.

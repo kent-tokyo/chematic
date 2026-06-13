@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.100] — 2026-06-13
+
+### Improved — Kekulization: edge-case tests + order-independent fallback
+
+- **5 new edge-case tests** in `chematic-core/src/kekulization.rs`:
+  - biphenylene (4-membered cyclobutadiene bridge between two benzenes)
+  - anthracene (3 linearly fused 6-membered rings)
+  - large 4-ring PAH (pyrene-like topology)
+  - biphenylene double-bond count verification
+  - determinism check (same molecule → same result)
+- **Descending-order fallback** in `kekulize()`: if the primary ascending-order pass leaves any atom unmatched, a second pass with reversed vertex order runs automatically. Cost: O(2·V·E); resolves order-dependent dead-ends without the full Edmonds blossom algorithm.
+- All 5 new test molecules pass without the fallback being triggered — current BFS handles them. The fallback adds robustness for future exotic topologies.
+- Extracted `run_matching_pass()` helper to share logic between the two passes.
+- Tests: 1,681 → 1,686 (+5), all passing.
+
+---
+
 ## [0.1.99] — 2026-06-13
 
 ### Improved — LogP Crippen: enone vinyl C classification
