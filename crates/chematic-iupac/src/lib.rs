@@ -467,9 +467,25 @@ impl<'a> Namer<'a> {
             .ok_or(IupacError::NotSupported)?;
 
         if implicit_hcount(mol, carbonyl_c) > 0 {
-            // Aldehyde: terminal CHO.
-            let n = carbons.len();
-            return Ok(format!("{}anal", alkane_stem(n)));
+            // Aldehyde: CHO is position 1; find chain from carbonyl_c.
+            let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
+            let chain = chain_from_anchor(mol, &c_set, carbonyl_c);
+            let n = chain.len();
+            let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
+            let mut subs: Vec<(usize, usize)> = Vec::new();
+            for (pos0, &chain_c) in chain.iter().enumerate() {
+                if pos0 == 0 { continue; }
+                let position = pos0 + 1;
+                for (nb, _) in mol.neighbors(chain_c) {
+                    if c_set.contains(&nb) && !chain_set.contains(&nb) {
+                        let sub_len = count_c_chain(mol, nb, chain_c);
+                        if sub_len > 4 { return Err(IupacError::NotSupported); }
+                        subs.push((position, sub_len));
+                    }
+                }
+            }
+            let prefix = if subs.is_empty() { String::new() } else { format_substituents(&subs) };
+            return Ok(format!("{}{}anal", prefix, alkane_stem(n)));
         }
 
         // Ketone: internal C=O — find principal chain and position.
@@ -569,32 +585,10 @@ impl<'a> Namer<'a> {
             .map(|(nb, _)| nb)
             .next();
 
+        let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
         if let Some(alc_c) = alcohol_c {
             // Ester: find acid chain from carbonyl_c (handles branched acid parts).
-            let c_set_est: HashSet<AtomIdx> = carbons.iter().copied().collect();
-            let chain_acid = {
-                let mut parent: std::collections::HashMap<AtomIdx, AtomIdx> =
-                    std::collections::HashMap::new();
-                let mut visited: HashSet<AtomIdx> = HashSet::new();
-                let mut queue = VecDeque::new();
-                let mut farthest = carbonyl_c;
-                visited.insert(carbonyl_c);
-                queue.push_back(carbonyl_c);
-                while let Some(cur) = queue.pop_front() {
-                    farthest = cur;
-                    for (nb, _) in mol.neighbors(cur) {
-                        if c_set_est.contains(&nb) && visited.insert(nb) {
-                            parent.insert(nb, cur);
-                            queue.push_back(nb);
-                        }
-                    }
-                }
-                let mut path = vec![farthest];
-                let mut cur = farthest;
-                while cur != carbonyl_c { cur = parent[&cur]; path.push(cur); }
-                path.reverse();
-                path
-            };
+            let chain_acid = chain_from_anchor(mol, &c_set, carbonyl_c);
             let acid_n = chain_acid.len();
             let chain_acid_set: HashSet<AtomIdx> = chain_acid.iter().copied().collect();
             let mut subs: Vec<(usize, usize)> = Vec::new();
@@ -602,7 +596,7 @@ impl<'a> Namer<'a> {
                 if pos0 == 0 { continue; }
                 let position = pos0 + 1;
                 for (nb, _) in mol.neighbors(chain_c) {
-                    if c_set_est.contains(&nb) && !chain_acid_set.contains(&nb) {
+                    if c_set.contains(&nb) && !chain_acid_set.contains(&nb) {
                         let sub_len = count_c_chain(mol, nb, chain_c);
                         if sub_len > 4 { return Err(IupacError::NotSupported); }
                         subs.push((position, sub_len));
@@ -618,36 +612,9 @@ impl<'a> Namer<'a> {
             Ok(format!("{}yl {}", alkane_stem(alcohol_n), acid_part))
         } else {
             // Carboxylic acid — find principal chain from carboxyl C (always position 1).
-            let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
-            let chain = {
-                let mut parent: std::collections::HashMap<AtomIdx, AtomIdx> =
-                    std::collections::HashMap::new();
-                let mut visited: HashSet<AtomIdx> = HashSet::new();
-                let mut queue = VecDeque::new();
-                let mut farthest = carbonyl_c;
-                visited.insert(carbonyl_c);
-                queue.push_back(carbonyl_c);
-                while let Some(cur) = queue.pop_front() {
-                    farthest = cur;
-                    for (nb, _) in mol.neighbors(cur) {
-                        if c_set.contains(&nb) && visited.insert(nb) {
-                            parent.insert(nb, cur);
-                            queue.push_back(nb);
-                        }
-                    }
-                }
-                let mut path = vec![farthest];
-                let mut cur = farthest;
-                while cur != carbonyl_c {
-                    cur = parent[&cur];
-                    path.push(cur);
-                }
-                path.reverse(); // carbonyl_c at index 0 = position 1
-                path
-            };
+            let chain = chain_from_anchor(mol, &c_set, carbonyl_c);
             let n = chain.len();
             let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
-            // Collect alkyl substituents (skip position 1 = carbonyl C).
             let mut subs: Vec<(usize, usize)> = Vec::new();
             for (pos0, &chain_c) in chain.iter().enumerate() {
                 if pos0 == 0 { continue; }
@@ -702,9 +669,28 @@ impl<'a> Namer<'a> {
             return Err(IupacError::NotSupported);
         }
 
-        // Acid chain length: all Cs reachable from carbonyl_c not through N.
-        let n_carbons = count_c_chain(mol, carbonyl_c, n_idx);
-        Ok(format!("{}anamide", alkane_stem(n_carbons)))
+        // Amide chain from carbonyl_c (handles branched structures).
+        let c_set: HashSet<AtomIdx> = mol.atoms()
+            .filter(|(_, a)| a.element.atomic_number() == 6)
+            .map(|(i, _)| i)
+            .collect();
+        let chain = chain_from_anchor(mol, &c_set, carbonyl_c);
+        let n = chain.len();
+        let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
+        let mut subs: Vec<(usize, usize)> = Vec::new();
+        for (pos0, &chain_c) in chain.iter().enumerate() {
+            if pos0 == 0 { continue; }
+            let position = pos0 + 1;
+            for (nb, _) in mol.neighbors(chain_c) {
+                if c_set.contains(&nb) && !chain_set.contains(&nb) {
+                    let sub_len = count_c_chain(mol, nb, chain_c);
+                    if sub_len > 4 { return Err(IupacError::NotSupported); }
+                    subs.push((position, sub_len));
+                }
+            }
+        }
+        let prefix = if subs.is_empty() { String::new() } else { format_substituents(&subs) };
+        Ok(format!("{}{}anamide", prefix, alkane_stem(n)))
     }
 
     // -----------------------------------------------------------------------
@@ -1299,6 +1285,35 @@ fn format_substituents(subs: &[(usize, usize)]) -> String {
     parts.join("-")
 }
 
+/// BFS chain anchored at `anchor` (always at index 0 = IUPAC position 1 in result).
+fn chain_from_anchor(
+    mol: &Molecule,
+    c_set: &HashSet<AtomIdx>,
+    anchor: AtomIdx,
+) -> Vec<AtomIdx> {
+    let mut parent: std::collections::HashMap<AtomIdx, AtomIdx> =
+        std::collections::HashMap::new();
+    let mut visited: HashSet<AtomIdx> = HashSet::new();
+    let mut queue = VecDeque::new();
+    let mut farthest = anchor;
+    visited.insert(anchor);
+    queue.push_back(anchor);
+    while let Some(cur) = queue.pop_front() {
+        farthest = cur;
+        for (nb, _) in mol.neighbors(cur) {
+            if c_set.contains(&nb) && visited.insert(nb) {
+                parent.insert(nb, cur);
+                queue.push_back(nb);
+            }
+        }
+    }
+    let mut path = vec![farthest];
+    let mut cur = farthest;
+    while cur != anchor { cur = parent[&cur]; path.push(cur); }
+    path.reverse();
+    path
+}
+
 /// Return the IUPAC locant (1-based, lowest) of a double or triple bond on the chain.
 fn unsaturation_locant(mol: &Molecule, carbons: &[AtomIdx], order: BondOrder) -> usize {
     let chain = find_longest_c_chain(mol, carbons);
@@ -1654,6 +1669,20 @@ mod tests {
         assert_eq!(name(&mol("CCNCC")).unwrap(),  "N-ethylethanamine");
         assert_eq!(name(&mol("CNCC")).unwrap(),   "N-methylethanamine");
         assert_eq!(name(&mol("CN(C)C")).unwrap(), "N,N-dimethylmethanamine");
+    }
+
+    // ---- New Round 9 tests (v0.1.109) ----------------------------------------
+
+    #[test]
+    fn test_branched_aldehyde() {
+        assert_eq!(name(&mol("CC(C)C=O")).unwrap(),  "2-methylpropanal");
+        assert_eq!(name(&mol("CCC(C)C=O")).unwrap(), "2-methylbutanal");
+    }
+
+    #[test]
+    fn test_branched_amide() {
+        assert_eq!(name(&mol("CC(C)C(=O)N")).unwrap(),  "2-methylpropanamide");
+        assert_eq!(name(&mol("CCC(C)C(=O)N")).unwrap(), "2-methylbutanamide");
     }
 
     // ---- New Round 8 tests (v0.1.108) ----------------------------------------
