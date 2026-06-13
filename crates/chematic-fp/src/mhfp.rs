@@ -1,17 +1,17 @@
-//! v0.1.91: True MHFP (MinHash Fingerprint) — Circular Fragment MinHash
+//! MHFP (MinHash Fingerprint) — Canonical Circular Fragment MinHash
 //!
-//! Implements MinHash algorithm based on Lowe & Sayle 2013:
-//! 1. Extract circular fragments (radius 0-4, centered on each atom)
-//! 2. Hash each fragment's structural signature
-//! 3. Retain K smallest hashes to form the fingerprint
+//! Implements the MinHash algorithm (Lowe & Sayle 2013) using Morgan-style
+//! circular fragment hashes as shingles:
+//! 1. For each (center_atom, radius=0..r), compute a canonical circular hash
+//!    via iterative Morgan expansion (atomic invariants only, no atom indices).
+//! 2. MinHash over the set of u64 shingle hashes.
+//! 3. Tanimoto similarity ≈ Jaccard(A, B) via MinHash theory.
 //!
-//! Structural signature includes atomic properties and bond connectivity
-//! without requiring SMILES generation (to avoid dev-dep on chematic_smiles).
-//!
-//! Reference: https://pubs.acs.org/doi/10.1021/ci034236b
+//! Key improvement over v0.1.91: fragment hashes no longer include raw atom
+//! indices, so the fingerprint is canonical across different SMILES orderings.
 
-use std::collections::HashSet;
-use chematic_core::{AtomIdx, Molecule, BondOrder};
+use std::collections::{HashMap, HashSet};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
 
 use crate::ecfp::fnv1a as fnv1a_hash;
 
@@ -22,7 +22,7 @@ pub struct MhfpConfig {
     pub num_hashes: usize,
     /// Seed offset for hash functions
     pub seed: u64,
-    /// ECFP radius for circular fragment extraction (default 2 = ECFP4)
+    /// Morgan radius for circular fragment extraction (default 2 = ECFP4 equivalent)
     pub radius: u32,
 }
 
@@ -55,12 +55,9 @@ impl MhfpFingerprint {
             return 1.0;
         }
 
-        let mut agreements = 0;
-        for (h1, h2) in self.hashes.iter().zip(other.hashes.iter()) {
-            if h1 == h2 {
-                agreements += 1;
-            }
-        }
+        let agreements = self.hashes.iter().zip(other.hashes.iter())
+            .filter(|(h1, h2)| h1 == h2)
+            .count();
 
         agreements as f64 / self.num_hashes as f64
     }
@@ -87,102 +84,103 @@ fn atoms_within_radius(mol: &Molecule, center: AtomIdx, radius: u32) -> Vec<Atom
     visited.into_iter().collect()
 }
 
-/// Compute structural hash of a fragment (centered at atom, within radius).
-/// Uses atomic properties + bond connectivity as the signature.
-fn fragment_structural_hash(mol: &Molecule, atom_set: &[AtomIdx]) -> Vec<u8> {
-    let mut sig = Vec::new();
+/// Compute a canonical circular hash for the subgraph at (center, radius).
+///
+/// Uses Morgan-style iterative expansion over atomic invariants (element, charge,
+/// degree, aromaticity) — no atom indices, so the result is canonical regardless
+/// of the order atoms were added to the molecule.
+fn circular_fragment_hash(mol: &Molecule, center: AtomIdx, radius: u32) -> u64 {
+    let atom_set: Vec<AtomIdx> = atoms_within_radius(mol, center, radius);
+    let atom_set_hs: HashSet<AtomIdx> = atom_set.iter().copied().collect();
 
-    // Sort atoms by index for consistent ordering
-    let mut sorted = atom_set.to_vec();
-    sorted.sort_unstable();
-
-    // Add atomic properties
-    for &idx in &sorted {
+    // Initial invariant: element, charge, in-fragment degree, aromaticity
+    let mut ids: HashMap<AtomIdx, u64> = atom_set.iter().map(|&idx| {
         let atom = mol.atom(idx);
-        sig.push(atom.element.atomic_number());
-        sig.push(atom.charge.wrapping_add(8) as u8); // shift to [0, 15]
-        sig.push(atom.aromatic as u8);
-        let degree = mol.neighbors(idx).count() as u8;
-        sig.push(degree);
-    }
+        let frag_degree = mol.neighbors(idx)
+            .filter(|(nb, _)| atom_set_hs.contains(nb))
+            .count() as u8;
+        let h = fnv1a_hash(&[
+            atom.element.atomic_number(),
+            (atom.charge.wrapping_add(8)) as u8,
+            frag_degree,
+            atom.aromatic as u8,
+        ]);
+        (idx, h)
+    }).collect();
 
-    // Add bond connectivity between atoms in the fragment
-    let atom_set_sorted: HashSet<_> = sorted.iter().copied().collect();
-    for (_, bond) in mol.bonds() {
-        if atom_set_sorted.contains(&bond.atom1) && atom_set_sorted.contains(&bond.atom2) {
-            sig.push(bond.atom1.0 as u8 % 255);
-            sig.push(bond.atom2.0 as u8 % 255);
-            let bond_type = match bond.order {
-                BondOrder::Single => 1,
-                BondOrder::Double => 2,
-                BondOrder::Triple => 3,
-                BondOrder::Aromatic => 4,
-                BondOrder::Quadruple => 5,
-                _ => 0,
-            };
-            sig.push(bond_type);
+    // Morgan expansion (radius iterations)
+    for _ in 0..radius {
+        let prev = ids.clone();
+        for &idx in &atom_set {
+            let mut nb_info: Vec<(u8, u64)> = mol.neighbors(idx)
+                .filter(|(nb, _)| atom_set_hs.contains(nb))
+                .map(|(nb_idx, bond_idx)| {
+                    let bond_t = match mol.bond(bond_idx).order {
+                        BondOrder::Single => 1u8,
+                        BondOrder::Double => 2,
+                        BondOrder::Triple => 3,
+                        BondOrder::Aromatic => 4,
+                        _ => 0,
+                    };
+                    (bond_t, prev[&nb_idx])
+                })
+                .collect();
+            nb_info.sort_unstable(); // canonical order
+
+            let mut buf = prev[&idx].to_le_bytes().to_vec();
+            for (bt, nh) in &nb_info {
+                buf.push(*bt);
+                buf.extend_from_slice(&nh.to_le_bytes());
+            }
+            ids.insert(idx, fnv1a_hash(&buf));
         }
     }
 
-    sig
+    ids[&center]
 }
 
-/// Extract circular fragment signatures from a molecule at all radii.
-fn extract_fragment_signatures(mol: &Molecule, radius: u32) -> Vec<Vec<u8>> {
-    let mut signatures = Vec::new();
-
-    for i in 0..mol.atom_count() {
-        let center = AtomIdx(i as u32);
-        for r in 0..=radius {
-            let atom_set = atoms_within_radius(mol, center, r);
-            let sig = fragment_structural_hash(mol, &atom_set);
-            signatures.push(sig);
-        }
-    }
-
-    signatures
+/// Compute all circular fragment hashes for a molecule (one per center × radius).
+fn extract_fragment_hashes(mol: &Molecule, radius: u32) -> Vec<u64> {
+    (0..mol.atom_count())
+        .flat_map(|i| {
+            let center = AtomIdx(i as u32);
+            (0..=radius).map(move |r| circular_fragment_hash(mol, center, r))
+        })
+        .collect()
 }
 
-/// Generate MinHash fingerprint from a molecule (true MHFP, v0.1.91+).
+/// Generate MinHash fingerprint from a molecule.
 pub fn mhfp(mol: &Molecule) -> MhfpFingerprint {
     mhfp_with_config(mol, &MhfpConfig::default())
 }
 
 /// Generate MinHash fingerprint with custom configuration.
 pub fn mhfp_with_config(mol: &Molecule, config: &MhfpConfig) -> MhfpFingerprint {
-    let signatures = extract_fragment_signatures(mol, config.radius);
+    let shingles = extract_fragment_hashes(mol, config.radius);
 
-    // If no fragments, return all max values
-    if signatures.is_empty() {
+    if shingles.is_empty() {
         return MhfpFingerprint {
             hashes: vec![u64::MAX; config.num_hashes],
             num_hashes: config.num_hashes,
         };
     }
 
-    // Compute MinHash: for each hash function, find the minimum hash value
-    let mut hashes = vec![u64::MAX; config.num_hashes];
-
-    for (h, hash_slot) in hashes.iter_mut().enumerate() {
+    // For each hash lane h, find min over all shingles of fnv1a(seed_h || shingle)
+    let mut minhashes = vec![u64::MAX; config.num_hashes];
+    for (h, slot) in minhashes.iter_mut().enumerate() {
         let seed = config.seed.wrapping_add(h as u64);
-
-        for sig in &signatures {
-            let mut hash_data = Vec::new();
-            hash_data.extend_from_slice(&seed.to_le_bytes());
-            hash_data.extend_from_slice(sig);
-
-            let hash_val = fnv1a_hash(&hash_data);
-
-            if hash_val < *hash_slot {
-                *hash_slot = hash_val;
+        let seed_bytes = seed.to_le_bytes();
+        for &shingle in &shingles {
+            let mut buf = seed_bytes.to_vec();
+            buf.extend_from_slice(&shingle.to_le_bytes());
+            let v = fnv1a_hash(&buf);
+            if v < *slot {
+                *slot = v;
             }
         }
     }
 
-    MhfpFingerprint {
-        hashes,
-        num_hashes: config.num_hashes,
-    }
+    MhfpFingerprint { hashes: minhashes, num_hashes: config.num_hashes }
 }
 
 /// Convenience function for standard MHFP generation.
@@ -192,9 +190,7 @@ pub fn mhfp_128(mol: &Molecule) -> MhfpFingerprint {
 
 /// Calculate Tanimoto-like similarity between two molecules using MHFP.
 pub fn tanimoto_mhfp(mol1: &Molecule, mol2: &Molecule) -> f64 {
-    let fp1 = mhfp(mol1);
-    let fp2 = mhfp(mol2);
-    fp1.tanimoto(&fp2)
+    mhfp(mol1).tanimoto(&mhfp(mol2))
 }
 
 #[cfg(test)]
@@ -207,7 +203,6 @@ mod tests {
         let mol = parse("CC").unwrap();
         let fp1 = mhfp(&mol);
         let fp2 = mhfp(&mol);
-
         assert_eq!(fp1.hashes, fp2.hashes);
         assert!((fp1.tanimoto(&fp2) - 1.0).abs() < 1e-6);
     }
@@ -216,10 +211,8 @@ mod tests {
     fn test_mhfp_different_molecules() {
         let mol1 = parse("CC").unwrap();
         let mol2 = parse("CCC").unwrap();
-
         let fp1 = mhfp(&mol1);
         let fp2 = mhfp(&mol2);
-
         let similarity = fp1.tanimoto(&fp2);
         assert!((0.0..=1.0).contains(&similarity));
     }
@@ -228,22 +221,15 @@ mod tests {
     fn test_mhfp_symmetry() {
         let mol1 = parse("CC").unwrap();
         let mol2 = parse("CCC").unwrap();
-
         let sim12 = tanimoto_mhfp(&mol1, &mol2);
         let sim21 = tanimoto_mhfp(&mol2, &mol1);
-
         assert!((sim12 - sim21).abs() < 1e-10);
     }
 
     #[test]
     fn test_mhfp_config() {
         let mol = parse("CC").unwrap();
-        let config = MhfpConfig {
-            num_hashes: 64,
-            seed: 42,
-            radius: 2,
-        };
-
+        let config = MhfpConfig { num_hashes: 64, seed: 42, radius: 2 };
         let fp = mhfp_with_config(&mol, &config);
         assert_eq!(fp.num_hashes, 64);
     }
@@ -252,20 +238,54 @@ mod tests {
     fn test_atoms_within_radius() {
         let mol = parse("CCCC").unwrap();
         let center = AtomIdx(1);
-
         let r0 = atoms_within_radius(&mol, center, 0);
-        assert_eq!(r0.len(), 1); // just the center
-
+        assert_eq!(r0.len(), 1);
         let r1 = atoms_within_radius(&mol, center, 1);
-        assert!(r1.len() >= 2); // center + neighbors
+        assert!(r1.len() >= 2);
     }
 
     #[test]
-    fn test_extract_fragment_signatures() {
+    fn test_extract_fragment_hashes() {
         let mol = parse("CC").unwrap();
-        let sigs = extract_fragment_signatures(&mol, 2);
+        let hashes = extract_fragment_hashes(&mol, 2);
+        assert!(!hashes.is_empty());
+    }
 
-        // Should have signatures for each atom at each radius
-        assert!(!sigs.is_empty());
+    /// Canonical test: the same molecule parsed from different SMILES orderings
+    /// should produce the same fingerprint.
+    #[test]
+    fn test_mhfp_canonical_same_mol_different_parse() {
+        // Ethanol: same molecule, two valid SMILES
+        let mol1 = parse("CCO").unwrap();
+        let mol2 = parse("OCC").unwrap();
+        let fp1 = mhfp(&mol1);
+        let fp2 = mhfp(&mol2);
+        // With canonical Morgan hashes, identical topology → identical fingerprint
+        assert!((fp1.tanimoto(&fp2) - 1.0).abs() < 1e-6,
+            "Same molecule with reversed SMILES should have Tanimoto=1.0, got {}", fp1.tanimoto(&fp2));
+    }
+
+    /// Similar molecules should score higher than dissimilar ones.
+    #[test]
+    fn test_mhfp_similar_mols_higher_than_dissimilar() {
+        let ethane = parse("CC").unwrap();
+        let propane = parse("CCC").unwrap();
+        let benzene = parse("c1ccccc1").unwrap();
+
+        let sim_ec = tanimoto_mhfp(&ethane, &propane);    // similar (aliphatic C chain)
+        let sim_eb = tanimoto_mhfp(&ethane, &benzene);   // dissimilar (aromatic vs aliphatic)
+
+        assert!(sim_ec > sim_eb,
+            "ethane~propane ({:.3}) should be > ethane~benzene ({:.3})", sim_ec, sim_eb);
+    }
+
+    /// Larger radius should produce finer-grained differentiation for larger molecules.
+    #[test]
+    fn test_mhfp_radius_effect() {
+        let mol = parse("c1ccccc1CC").unwrap(); // toluene-like
+        let fp_r1 = mhfp_with_config(&mol, &MhfpConfig { radius: 1, ..Default::default() });
+        let fp_r3 = mhfp_with_config(&mol, &MhfpConfig { radius: 3, ..Default::default() });
+        // Different radii → different fingerprints
+        assert_ne!(fp_r1.hashes, fp_r3.hashes);
     }
 }

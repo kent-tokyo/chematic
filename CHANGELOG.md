@@ -11,6 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.95] — 2026-06-13
+
+### Added — `chematic-iupac` local naming expansion
+
+- Ketones with position locants: `propan-2-one`, `butan-2-one`, `pentan-3-one`.
+- Carboxylic acids, esters, and primary/secondary amides: `ethanoic acid`, `methyl ethanoate`, `ethanamide`.
+- Unsubstituted benzene and common aromatic heterocycles: pyridine, furan, thiophene, pyrrole, imidazole, pyrimidine.
+- IUPAC unit coverage expanded from 8 to 14 tests.
+
+### Fixed — CI Clippy compatibility
+
+- `cargo clippy --workspace -- -D warnings` passes on current stable Clippy.
+- Kept deprecated `total_hcount` available at crate root while suppressing the deprecation warning only on the compatibility re-export.
+- Updated ECFP iteration loops, condensed formula parsing guards, and DG coordinate-generator docs for newer Clippy lints.
+
+### Improved — True fingerprint algorithms (A4/A5/A6)
+
+- **MHFP canonical hashing**: replaced atom-index-dependent byte signature with Morgan-style circular fragment hash. Fingerprint is now canonical across different SMILES orderings of the same molecule. Added 3 new tests.
+- **ERG pharmacophore node types**: `assign_pharmacophore_features()` replaces coarse element-based detection. Now correctly assigns DONOR (N-H, O-H), ACCEPTOR (N without H, O, F), POSITIVE/NEGATIVE (formal charge), HYDROPHOBIC (pure C/H groups). Added 5 new tests including pyridine vs pyrrole donor/acceptor distinction.
+- **Reaction FP**: XOR-based structural difference encoding (`use_xor: true`) confirmed as default since v0.1.94; comparison table updated to ✅.
+- Total tests: 1,649 → 1,657 (+8). All pass.
+
+---
+
 ## [0.1.94] — 2026-06-12
 
 ### Enhanced — B3: SA Score Fragment Corpus Expansion

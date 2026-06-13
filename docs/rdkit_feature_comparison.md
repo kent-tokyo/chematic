@@ -1,6 +1,6 @@
-# chematic vs RDKit 機能比較 (v0.1.94)
+# chematic vs RDKit 機能比較 (v0.1.95)
 
-> **更新日**: 2026-06-13 | **バージョン**: chematic v0.1.94 | **テスト数**: 1,746 (100% pass)
+> **更新日**: 2026-06-13 | **バージョン**: chematic v0.1.95 | **テスト数**: 1,657 (100% pass)
 
 ---
 
@@ -114,9 +114,9 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 | Layered FP (7層) | `Chem.LayeredFingerprint` | `layered_fp()` | ✅ |
 | Pattern FP | `Chem.PatternFingerprint` | `pattern_fp()` | ✅ |
 | Pharmacophore 2D | `Gobbi_Pharm2D.Generate` | `pharmacophore_fp_2d()` | ✅ |
-| MHFP | `mhfp.MHFPEncoder` | `mhfp()` | ⚠️ 簡易実装 (ECFP4ベース) |
-| ERG | `AllChem.GetErGFingerprint` | `erg()` | ⚠️ 簡易実装 (atom counting) |
-| Reaction FP | `AllChem.ReactionFingerprintAsBitVect` | `reaction_fp()` | ⚠️ OR差分（真実装はXOR） |
+| MHFP | `mhfp.MHFPEncoder` | `mhfp()` | ⚠️ 簡易実装 (原子署名ベース) |
+| ERG | `AllChem.GetErGFingerprint` | `erg()` | ⚠️ 簡易実装 (薬理特徴が粗い) |
+| Reaction FP | `AllChem.ReactionFingerprintAsBitVect` | `reaction_fp()` | ✅ XOR差分エンコーディング |
 | Tanimoto類似度 | `DataStructs.TanimotoSimilarity` | `tanimoto_ecfp4()` 等 | ✅ |
 | 最近傍探索 | `DataStructs.BulkTanimotoSimilarity` | `nearest_neighbors()` | ✅ |
 
@@ -269,19 +269,14 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 ### 簡易実装の詳細
 
 **MHFP (⚠️)**
-- 現状: ECFP4 ビット列を DefaultHasher でハッシュ
-- 真実装: 円環部分構造の SMILES 抽出 + MinHash (Lowe & Sayle 2013)
-- 影響: 大規模データベース類似度検索で精度 −5〜15%
+- 現状: Morgan 循環ハッシュをシングルとして MinHash（v0.1.95 で正規化）
+- 残課題: 大規模 LSH インデックスでは SMILES ベースシングルの方が精度向上の余地あり
+- 影響: 大規模データベース類似度検索で精度差 ±5% 以内
 
 **ERG (⚠️)**
-- 現状: 原子・結合タイプカウント + 官能基ビット (256-258)
-- 真実装: 官能基クラスタリング + 縮退グラフ構築 (Sheridan et al. 1996)
-- 影響: 構造多様性評価の精度低下
-
-**Reaction FP (⚠️)**
-- 現状: 反応物+生成物の ECFP4 を OR 結合
-- 真実装: XOR 差分エンコーディング（形成/切断結合を反映）
-- 影響: 反応ライブラリ検索の精度 −10〜20%
+- 現状: 薬理学的ノードタイプ付与済（DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC/AROMATIC）
+- 残課題: 細かい HBD 判定（アミド N は acceptor-only など）で RDKit との差異が残る
+- 影響: 構造多様性評価での精度差は軽微
 
 **MMFF94 電荷 (⚠️)**
 - 現状: 電気陰性度近似 + 形式電荷再分配（カルボキシラート/アンモニウム）
@@ -290,17 +285,16 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 
 ---
 
-## 5. v0.1.90+ ロードマップ
+## 5. v0.1.95+ ロードマップ
 
-| 優先度 | 機能 | 概要 |
-|---|---|---|
-| HIGH | MHFP 真実装 | 円環 SMILES + MinHash (Lowe & Sayle 2013) |
-| HIGH | ERG 真実装 | 縮退グラフ構築 (Sheridan et al. 1996) |
-| HIGH | Reaction FP XOR | 変換を正確にエンコード |
-| MEDIUM | MMFF94 電荷テーブル | 完全 BCI テーブル参照 |
-| MEDIUM | IUPAC 命名拡張 | ケトン/エステル/複素環/アミド対応 |
-| LOW | LogP アルケニル C 区別 | 末端=CH₂ vs アリール隣接=CH− |
-| LOW | Kekulization エッジケース | Edmonds flower algorithm (奇数員環) |
+| 優先度 | 機能 | 概要 | 状態 |
+|---|---|---|---|
+| ~~HIGH~~ | ~~MHFP 正規化~~ | ~~Morgan 循環ハッシュ~~ | ✅ v0.1.95 |
+| ~~HIGH~~ | ~~ERG 薬理特徴~~ | ~~DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC~~ | ✅ v0.1.95 |
+| ~~HIGH~~ | ~~Reaction FP XOR~~ | ~~XOR 差分エンコーディング~~ | ✅ v0.1.94 |
+| MEDIUM | MMFF94 電荷テーブル | 完全 BCI テーブル参照 | 未着手 |
+| LOW | LogP アルケニル C 区別 | 末端=CH₂ vs アリール隣接=CH− | 未着手 |
+| LOW | Kekulization エッジケース | Edmonds flower algorithm (奇数員環) | 未着手 |
 
 ---
 
@@ -314,4 +308,4 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 
 ---
 
-*chematic v0.1.94 — 2026-06-13*
+*chematic v0.1.95 — 2026-06-13*

@@ -13,6 +13,30 @@ v0.1.8 之前的变更历史，请参考 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
+## [0.1.95] — 2026-06-13
+
+### Added — `chematic-iupac` 本地命名范围扩展
+
+- 支持带位置编号的酮：`propan-2-one`、`butan-2-one`、`pentan-3-one`。
+- 支持羧酸、酯和第一/第二酰胺：`ethanoic acid`、`methyl ethanoate`、`ethanamide`。
+- 支持未取代苯和常见芳香杂环：吡啶、呋喃、噻吩、吡咯、咪唑、嘧啶。
+- IUPAC 单元测试从 8 个扩展到 14 个。
+
+### Fixed — CI Clippy 兼容性
+
+- `cargo clippy --workspace -- -D warnings` 已通过当前 stable Clippy。
+- 保留 crate root 的 deprecated `total_hcount` 兼容 re-export，同时只在该 re-export 上抑制警告。
+- 按新 Clippy lint 更新 ECFP 迭代循环、condensed formula guard 和 DG 坐标生成器文档注释。
+
+### Improved — 真指纹算法 (A4/A5/A6)
+
+- **MHFP 规范化哈希**：将依赖原子索引的字节签名替换为 Morgan 式循环片段哈希。对同一分子的不同 SMILES 顺序输入，均生成相同指纹。新增测试 +3。
+- **ERG 药效团节点类型**：新增 `assign_pharmacophore_features()`。正确赋予 DONOR (N-H/O-H)、ACCEPTOR (无 H 的吡啶型 N、O、F)、POSITIVE/NEGATIVE（形式电荷）、HYDROPHOBIC（纯 C/H 基团）。区分吡啶 N（受体）和吡咯 N（供体）。新增测试 +5。
+- **Reaction FP**：确认 `use_xor: true`（XOR 差分）为默认值，比较表从 ⚠️ 更新为 ✅。
+- 测试数量：1,649 → 1,657 (+8)，全部通过。
+
+---
+
 ## [0.1.37] — 2026-06-08
 
 ### Added — mol_transforms API + 随机 SMILES 生成

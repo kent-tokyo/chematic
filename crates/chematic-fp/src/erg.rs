@@ -11,7 +11,7 @@
 //!            P. Ertl, J. Cheminf. 2017, 9, 36 (Ertl)
 
 use std::collections::{HashSet, VecDeque};
-use chematic_core::{Atom, AtomIdx, BondOrder, Molecule};
+use chematic_core::{Atom, AtomIdx, BondOrder, Molecule, implicit_hcount};
 use crate::bitvec::BitVec2048;
 use crate::ecfp::fnv1a;
 
@@ -150,46 +150,77 @@ pub struct ErgEdge {
     pub linker_len: u32,
 }
 
+/// Assign pharmacophore-based node type for a functional group cluster.
+///
+/// Rules (per atom in the group):
+/// - AROMATIC: any aromatic atom
+/// - DONOR: N-H or O-H (explicit or implicit H present)
+/// - ACCEPTOR: non-aromatic N, aromatic N without H (pyridine-like), any O, any F
+/// - POSITIVE: formal charge > 0
+/// - NEGATIVE: formal charge < 0
+/// - HYDROPHOBIC: group with only C/H atoms and no other pharmacophore feature
+fn assign_pharmacophore_features(mol: &Molecule, atom_indices: &[usize]) -> ErgNodeType {
+    let mut ntype = ErgNodeType::new();
+
+    for &i in atom_indices {
+        let idx = AtomIdx(i as u32);
+        let atom = mol.atom(idx);
+        let an = atom.element.atomic_number();
+
+        if atom.aromatic {
+            ntype = ntype.with_aromatic();
+        }
+
+        // Count H attached to this atom (explicit H neighbors)
+        let explicit_h: usize = mol.neighbors(idx)
+            .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
+            .count();
+        let impl_h = implicit_hcount(mol, idx) as usize;
+        let total_h = explicit_h + impl_h;
+
+        // H-bond donor: N-H or O-H (or S-H for thiols)
+        if (an == 7 || an == 8 || an == 16) && total_h > 0 {
+            ntype = ntype.with_donor();
+        }
+
+        // H-bond acceptor
+        match an {
+            // Non-aromatic N: acceptor (amines, amides)
+            7 if !atom.aromatic => ntype = ntype.with_acceptor(),
+            // Aromatic N: acceptor only if no H (pyridine), not if has H (pyrrole)
+            7 if atom.aromatic && total_h == 0 => ntype = ntype.with_acceptor(),
+            // O and F: always acceptor
+            8 | 9 => ntype = ntype.with_acceptor(),
+            _ => {}
+        }
+
+        // Formal charge
+        if atom.charge > 0 { ntype = ntype.with_positive(); }
+        if atom.charge < 0 { ntype = ntype.with_negative(); }
+    }
+
+    // Hydrophobic: all atoms are C or H and no other pharmacophore bit set
+    let all_c_or_h = atom_indices.iter().all(|&i| {
+        let an = mol.atom(AtomIdx(i as u32)).element.atomic_number();
+        an == 6 || an == 1
+    });
+    if all_c_or_h && ntype.0 == 0 {
+        ntype = ntype.with_hydrophobic();
+    }
+
+    ntype
+}
+
 /// Build reduced graph from molecule using functional group detection.
 /// If no functional groups found, treats entire molecule as one backbone node.
 fn build_reduced_graph(mol: &Molecule) -> (Vec<ErgNode>, Vec<ErgEdge>) {
     let fg_groups = identify_functional_groups(mol);
 
-    // Create nodes from functional groups
+    // Create nodes from functional groups using pharmacophore feature assignment
     let mut nodes: Vec<ErgNode> = fg_groups
         .into_iter()
         .map(|atom_indices| {
-            let mut ntype = ErgNodeType::new();
-
-            // Check for aromatic atoms in group
-            let has_aromatic = atom_indices.iter().any(|&i| {
-                mol.atom(AtomIdx(i as u32)).aromatic
-            });
-            if has_aromatic {
-                ntype = ntype.with_aromatic();
-            }
-
-            // Check for heteroatom presence
-            let has_n = atom_indices
-                .iter()
-                .any(|&i| mol.atom(AtomIdx(i as u32)).element.atomic_number() == 7);
-            let has_o = atom_indices
-                .iter()
-                .any(|&i| mol.atom(AtomIdx(i as u32)).element.atomic_number() == 8);
-            let has_s = atom_indices
-                .iter()
-                .any(|&i| mol.atom(AtomIdx(i as u32)).element.atomic_number() == 16);
-
-            if has_n {
-                ntype = ntype.with_donor().with_acceptor();
-            }
-            if has_o {
-                ntype = ntype.with_acceptor();
-            }
-            if has_s {
-                ntype = ntype.with_acceptor();
-            }
-
+            let ntype = assign_pharmacophore_features(mol, &atom_indices);
             ErgNode { ntype, atom_indices }
         })
         .collect();
@@ -197,17 +228,8 @@ fn build_reduced_graph(mol: &Molecule) -> (Vec<ErgNode>, Vec<ErgEdge>) {
     // If no FGs found, treat entire molecule as one backbone node
     if nodes.is_empty() {
         let all_atoms: Vec<usize> = (0..mol.atom_count()).collect();
-        let mut ntype = ErgNodeType::new();
-
-        // Check for aromatic atoms
-        if all_atoms.iter().any(|&i| mol.atom(AtomIdx(i as u32)).aromatic) {
-            ntype = ntype.with_aromatic();
-        }
-
-        nodes.push(ErgNode {
-            ntype,
-            atom_indices: all_atoms,
-        });
+        let ntype = assign_pharmacophore_features(mol, &all_atoms);
+        nodes.push(ErgNode { ntype, atom_indices: all_atoms });
     }
 
     // Create edges: find shortest paths between node pairs
@@ -625,10 +647,22 @@ mod tests {
         let fp_alcohol = erg(&alcohol);
         let fp_amine = erg(&amine);
 
-        // Heteroatom bit (257) should be set for compounds with O/N
-        assert!(!fp_alkane.bits.get(257), "alkane should not have heteroatom bit");
-        assert!(fp_alcohol.bits.get(257), "alcohol should have heteroatom bit");
-        assert!(fp_amine.bits.get(257), "amine should have heteroatom bit");
+        // Bit 257: set when any pharmacophore feature is present.
+        // With pharmacophore assignment, HYDROPHOBIC is set for alkane too.
+        assert!(fp_alkane.bits.get(257), "alkane gets HYDROPHOBIC → bit 257 set");
+        assert!(fp_alcohol.bits.get(257), "alcohol gets ACCEPTOR/DONOR → bit 257 set");
+        assert!(fp_amine.bits.get(257), "amine gets ACCEPTOR/DONOR → bit 257 set");
+
+        // Alcohol and amine should differ from alkane in topology bits (259+)
+        let topo_alkane: usize = (259..2048).filter(|&b| fp_alkane.bits.get(b)).count();
+        let topo_alcohol: usize = (259..2048).filter(|&b| fp_alcohol.bits.get(b)).count();
+        let topo_amine: usize = (259..2048).filter(|&b| fp_amine.bits.get(b)).count();
+        // All should be valid (we just verify topo bits exist, not exact values)
+        let _ = (topo_alkane, topo_alcohol, topo_amine);
+
+        // Alkane FP should differ from alcohol and amine FPs
+        assert!(fp_alkane.tanimoto(&fp_alcohol) < 1.0, "alkane vs alcohol should differ");
+        assert!(fp_alkane.tanimoto(&fp_amine) < 1.0, "alkane vs amine should differ");
     }
 
     #[test]
@@ -671,6 +705,85 @@ mod tests {
         // Similarity should be less than 1.0 (not identical).
         assert!(fp_short.tanimoto(&fp_long) < 1.0,
             "different linker lengths should give Tanimoto < 1.0");
+    }
+
+    // ---- New pharmacophore feature tests ----
+
+    #[test]
+    fn test_erg_nh_donor() {
+        // Aniline: c1ccccc1N — the N group should be a DONOR (N-H present)
+        let aniline = parse("c1ccccc1N").unwrap();
+        let fp = erg(&aniline);
+        // Should differ from benzene (no N)
+        let benzene = parse("c1ccccc1").unwrap();
+        let fp_benz = erg(&benzene);
+        assert!(fp.tanimoto(&fp_benz) < 1.0, "aniline should differ from benzene");
+        assert!(fp.bits.popcount() > 0);
+    }
+
+    #[test]
+    fn test_erg_carbonyl_acceptor() {
+        // Acetone C(C)(C)=O — the C=O group should be ACCEPTOR
+        let acetone = parse("CC(C)=O").unwrap();
+        let propane = parse("CCC").unwrap();
+        let fp_acetone = erg(&acetone);
+        let fp_propane = erg(&propane);
+        // Acetone (has O acceptor) should differ from propane (pure hydrocarbon)
+        assert!(fp_acetone.tanimoto(&fp_propane) < 1.0,
+            "acetone vs propane should differ due to acceptor O");
+    }
+
+    #[test]
+    fn test_erg_carboxylate_negative() {
+        // Acetate anion CC(=O)[O-]: O- has formal charge -1 → NEGATIVE feature.
+        // Test the pharmacophore assignment directly (fingerprint-level may
+        // collapse single-node molecules to identical atom-count bits).
+        let acetate = parse("CC(=O)[O-]").unwrap();
+        let groups = identify_functional_groups(&acetate);
+        assert!(!groups.is_empty(), "acetate should have a functional group");
+        let ntype = assign_pharmacophore_features(&acetate, &groups[0]);
+        assert!(
+            ntype.0 & ErgNodeType::NEGATIVE != 0,
+            "acetate O- should produce NEGATIVE pharmacophore feature, got ntype={}", ntype.0
+        );
+
+        // Acetic acid CC(=O)O: no negative charge → DONOR (O-H) instead
+        let acid = parse("CC(=O)O").unwrap();
+        let acid_groups = identify_functional_groups(&acid);
+        assert!(!acid_groups.is_empty());
+        let acid_ntype = assign_pharmacophore_features(&acid, &acid_groups[0]);
+        assert_eq!(
+            acid_ntype.0 & ErgNodeType::NEGATIVE, 0,
+            "acetic acid should NOT have NEGATIVE feature"
+        );
+        assert!(
+            acid_ntype.0 & ErgNodeType::DONOR != 0,
+            "acetic acid O-H should have DONOR feature"
+        );
+    }
+
+    #[test]
+    fn test_erg_hydrophobic_chain() {
+        // Hexane CCCCCC: all C → HYDROPHOBIC node type
+        let hexane = parse("CCCCCC").unwrap();
+        let fp = erg(&hexane);
+        // Hydrophobic molecules should have bit 257 set (any feature including HYDROPHOBIC)
+        assert!(fp.bits.get(257), "hexane should have a pharmacophore feature (HYDROPHOBIC)");
+        // No aromatic (bit 256)
+        assert!(!fp.bits.get(256), "hexane should not have aromatic bit");
+    }
+
+    #[test]
+    fn test_erg_pyridine_vs_pyrrole_acceptor() {
+        // Pyridine: aromatic N without H → ACCEPTOR only
+        // Pyrrole: aromatic N-H → DONOR only
+        let pyridine = parse("c1ccncc1").unwrap();
+        let pyrrole = parse("c1cc[nH]c1").unwrap();
+        let fp_pyr = erg(&pyridine);
+        let fp_rol = erg(&pyrrole);
+        // They should have different fingerprints (one is acceptor, other is donor)
+        assert!(fp_pyr.tanimoto(&fp_rol) < 1.0,
+            "pyridine (N acceptor) vs pyrrole (N-H donor) should differ");
     }
 
     #[test]

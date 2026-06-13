@@ -39,9 +39,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）+ Sprint v0.1.34（InChI 環クロージャー + 立体層）+ Sprint v0.1.35（wasmBridge サポート）+ Sprint v0.1.36（Issue #1 監査: BUG-2/3/4 修正）+ Sprint v0.1.37（mol_transforms API + ランダム SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit ギャップ分析：6 機能実装）+ v0.1.88–v0.1.89（ギャップ分析 89% 完成：A1–A6, B1–B2 実装）。** 1,521 テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）+ Sprint v0.1.34（InChI 環クロージャー + 立体層）+ Sprint v0.1.35（wasmBridge サポート）+ Sprint v0.1.36（Issue #1 監査: BUG-2/3/4 修正）+ Sprint v0.1.37（mol_transforms API + ランダム SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit ギャップ分析：6 機能実装）+ v0.1.88–v0.1.89（ギャップ分析 89% 完成：A1–A6, B1–B2 実装）+ v0.1.91–v0.1.94（ギャップ分析 100% 完成：A1–A5, B3 実装）+ v0.1.95（MHFP 正規化・ERG 薬理特徴・Reaction FP XOR 確定）。** 1,657 ライブラリテスト、全パス。C/C++ 依存ゼロ。
 
-最新リリース: **v0.1.94**（2026-06-12）— RDKit ギャップ分析完了（A1–A5, B3 実装）
+最新リリース: **v0.1.95**（2026-06-13）— MHFP/ERG/Reaction FP 真アルゴリズム実装
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -57,11 +57,11 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（生成物原子価バリデーション付き）                                        | 30      |
 | `chematic-inchi`       | InChI/InChIKey 生成；formula/connectivity/hydrogen/stereo/charge/isotope レイヤー；環クロージャー対応                                | 28      |
 | `chematic-wasm`        | **110+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.1.89；InChI API + 立体反転                                                   | 175     |
-| `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— アルカン、シクロアルカン、アルコール、アミン、ハロアルカン                                | 8       |
+| `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— アルカン/シクロアルカン、アルケン/アルキン、アルコール、アミン、ハロアルカン、アルデヒド、ケトン、カルボン酸、エステル、アミド、ベンゼン、芳香族ヘテロ環 | 14      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac`, `inchi` フィーチャー追加）                                                         | 1       |
 
 ```
-cargo test --workspace   # 1,521 テスト、全パス
+cargo test --workspace --lib   # 1,657 ライブラリテスト、全パス
 ```
 
 ---
@@ -255,7 +255,14 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 
 ---
 
-## 最近の開発（v0.1.89–v0.1.94）
+## 最近の開発（v0.1.89–v0.1.95）
+
+**v0.1.95**: 真フィンガープリントアルゴリズム + IUPAC 命名拡張
+- **MHFP 正規化ハッシュ**: Morgan 式循環フラグメントハッシュでアトムインデックス依存を解消。
+- **ERG 薬理ノードタイプ**: DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC を正確に付与。ピリジン N と ピロール N を区別。
+- **Reaction FP**: XOR 差分エンコーディングがデフォルトであることを確認。
+- **IUPAC 命名**: 位置番号付きケトン、カルボン酸、エステル、アミド、ベンゼン、芳香族ヘテロ環に対応。
+- 1,657 ライブラリテスト、全パス。
 
 **v0.1.91–v0.1.94: RDKit ギャップ分析クロージャー（A1–A5, B3）**
 - **v0.1.91**: True MHFP（構造フラグメント ハッシング）、True ERG（Ertl 2017 機能基）

@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** — **1,521 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** + **v0.1.95: MHFP canonical hash, ERG pharmacophore node types, Reaction FP XOR confirmed** — **1,657 library tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.1.94** (2026-06-12) — RDKit gap analysis complete (A1–A5, B3 implemented)
+Latest release: **v0.1.95** (2026-06-13) — MHFP/ERG/Reaction FP true algorithm implementations
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -69,12 +69,12 @@ Latest release: **v0.1.94** (2026-06-12) — RDKit gap analysis complete (A1–A
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; WASM RNG seeded | 147   |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
 | `chematic-inchi`      | InChI/InChIKey generation; formula/connectivity/hydrogen/stereo/charge/isotope layers; ring closures   | 28    |
-| `chematic-wasm`       | **110+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.94 (~550 KB); InChI API + stereo inversion     | 175   |
-| `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes, cycloalkanes, alcohols, amines, halides    | 8     |
+| `chematic-wasm`       | **110+ WASM exports** — npm: `@kent-tokyo/chematic` v0.1.95 (~550 KB); InChI API + stereo inversion     | 175   |
+| `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes/cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, benzene, aromatic heterocycles | 14    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace   # 1,521 tests, all passing
+cargo test --workspace --lib   # 1,657 library tests, all passing
 ```
 
 ---
@@ -437,7 +437,14 @@ Notes:
 
 ---
 
-## Recent Development (v0.1.89–v0.1.94)
+## Recent Development (v0.1.89–v0.1.95)
+
+**v0.1.95**: True fingerprint algorithms + IUPAC naming expansion
+- **MHFP canonical hash**: Morgan-style circular fragment hashes replace atom-index-dependent byte signatures. Same fingerprint regardless of SMILES atom ordering.
+- **ERG pharmacophore node types**: `assign_pharmacophore_features()` correctly assigns DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC; pyridine N (acceptor) vs pyrrole N-H (donor) correctly distinguished.
+- **Reaction FP**: XOR structural difference encoding confirmed as default (`use_xor: true`).
+- **IUPAC naming**: ketones, carboxylic acids, esters, amides, benzene, aromatic heterocycles.
+- 1,657 library tests, all passing.
 
 **v0.1.91–v0.1.94: RDKit Gap Closure (A1–A5, B3)**
 - **v0.1.91**: True MHFP (structural fragment hashing), True ERG (Ertl 2017 functional groups)

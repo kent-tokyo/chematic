@@ -236,9 +236,9 @@
 | chematic-rxn           | 30      | 完了     |
 | chematic-wasm          | 175     | 完了     |
 | chematic               | 1       | 完了     |
-| chematic-iupac         | 8       | 完了     |
+| chematic-iupac         | 14      | 完了     |
 | chematic-inchi         | 28      | 完了     |
-| **合計**               | **1,150** | —        |
+| **CI lib 合計**         | **1,649** | `cargo test --workspace --lib` |
 
 ---
 
@@ -1071,30 +1071,54 @@ Issue #1 のパターン: **アルゴリズムが位相的には正しい結果�
 - v0.1.88: 67% (1,475 tests)
 - v0.1.89: 89% (+22%) ← YOU ARE HERE
 
+---
+
+## Phase 11 — IUPAC Naming Expansion + CI Hardening (current main) ✅ COMPLETE
+
+### Completed ✅
+
+- [x] `chematic-iupac`: scope expanded from simple hydrocarbons/monofunctional derivatives to ~15 supported classes.
+      - Ketones with position locants: `propan-2-one`, `butan-2-one`, `pentan-3-one`.
+      - Carboxylic acids: `methanoic acid`, `ethanoic acid`, `propanoic acid`.
+      - Esters: `methyl methanoate`, `methyl ethanoate`, `ethyl ethanoate`.
+      - Primary/secondary amides: `methanamide`, `ethanamide`, `propanamide`.
+      - Aromatics: benzene plus pyridine, furan, thiophene, pyrrole, imidazole, pyrimidine.
+- [x] Dispatch changed from single-heteroatom guard to pattern-based `(O, N, S, halogen)` composition.
+- [x] `count_c_chain()` BFS helper added for carbonyl chain sizing without crossing blocked atoms.
+- [x] CI Clippy hardening:
+      - Deprecated `total_hcount` remains exported for compatibility, with warning suppressed only on that re-export.
+      - New stable Clippy lints fixed for ECFP loops, condensed formula guards, and DG doc comments.
+
+**Validation**:
+- `cargo test -p chematic-iupac`: 14/14 passing.
+- `cargo test --workspace --lib --quiet`: 1,649 library tests passing.
+- `cargo clippy --workspace -- -D warnings`: passing.
+
 ### Known Limitations (By Design)
 
-**True algorithms (deferred to v0.1.90+)**:
-- A4 true MHFP: Circular SMILES MinHash (Lowe & Sayle 2013)
-- A5 true ERG: Reduced graph construction (Sheridan et al. 1996)
-- A6 true reaction FP: XOR bitwise difference encoding
-
 **Out of scope** (design constraints):
-- B3-B7 remaining items (require significant algorithmic work)
+- MMFF94 BCI table full precision (±0.5e → ±0.1e, v0.1.96+ target)
 - Transition metal chemistry (valence model limitation)
 - Polymers/peptides (format out of scope)
 
-### Roadmap (v0.1.90+)
+### Roadmap (v0.1.96+)
 
 **High Priority**:
-1. A4 true MHFP (circular SMILES extraction + MinHash)
-2. A5 true ERG (functional group clustering + reduced graph)
-3. A6 true reaction FP (true XOR via bitwise operations)
-
-**Medium Priority**:
-4. B3: IUPAC naming expansion (heterocycles, amides)
-5. B4: CDXML multi-fragment support
-6. B5: LogP alkenyl C context values
+1. MMFF94 BCI table (±0.5e → ±0.1e, Bond Charge Increment テーブル実装)
 
 **Low Priority**:
-7. B6: Kekulization edge cases (Edmonds flower algorithm)
-8. B7: Condensed formula H handling
+2. LogP alkenyl C context values (terminal =CH₂ vs aryl-adjacent =CH−)
+3. Kekulization edge cases (Edmonds flower algorithm for odd rings)
+
+---
+
+## Phase 12 — True Fingerprint Algorithms (v0.1.95) ✅ COMPLETE
+
+### Completed ✅
+
+- [x] **A4 MHFP canonical hash**: Morgan-style circular fragment hash replaces atom-index-dependent byte signature (`crates/chematic-fp/src/mhfp.rs`). New tests: +3 (canonical, similar>dissimilar, radius effect).
+- [x] **A5 ERG pharmacophore node types**: `assign_pharmacophore_features()` correctly assigns DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC. Pyridine N (acceptor) vs pyrrole N-H (donor) distinguished. New tests: +5.
+- [x] **A6 Reaction FP XOR**: `use_xor: true` confirmed as default in `reaction_fp.rs`. Comparison table updated ⚠️ → ✅.
+- [x] Tests: 1,649 → 1,657 (+8), all passing. Clippy clean.
+- [x] CHANGELOG, README (all languages), tasks/todo.md updated.
+- [x] Version: 0.1.94 → 0.1.95

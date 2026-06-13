@@ -13,6 +13,30 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.95] — 2026-06-13
+
+### Added — `chematic-iupac` ローカル命名範囲の拡張
+
+- 位置番号付きケトンに対応: `propan-2-one`、`butan-2-one`、`pentan-3-one`。
+- カルボン酸、エステル、第一/第二アミドに対応: `ethanoic acid`、`methyl ethanoate`、`ethanamide`。
+- 非置換ベンゼンと主要な芳香族ヘテロ環に対応: ピリジン、フラン、チオフェン、ピロール、イミダゾール、ピリミジン。
+- IUPAC ユニットテストを 8 → 14 に拡張。
+
+### Fixed — CI Clippy 互換性
+
+- `cargo clippy --workspace -- -D warnings` が現在の stable Clippy で通過。
+- deprecated な `total_hcount` は crate root で互換維持しつつ、互換 re-export のみ警告を抑制。
+- 新しい Clippy lint に合わせて ECFP 反復ループ、condensed formula のガード、DG 座標生成器の doc コメントを更新。
+
+### Improved — 真フィンガープリントアルゴリズム (A4/A5/A6)
+
+- **MHFP 正規化ハッシュ**: アトムインデックス依存の byte 署名を Morgan 式循環フラグメントハッシュに置換。同一分子を異なる SMILES 順で入力しても同一 FP を生成。テスト +3。
+- **ERG 薬理ノードタイプ**: `assign_pharmacophore_features()` を新設。DONOR (N-H/O-H)・ACCEPTOR (無 H のピリジン型 N、O、F)・POSITIVE/NEGATIVE (形式電荷)・HYDROPHOBIC (純 C/H) を正確に付与。ピリジン N とピロール N を区別。テスト +5。
+- **Reaction FP**: `use_xor: true` (XOR 差分) がデフォルトであることを確認、比較表を ⚠️ → ✅ に更新。
+- テスト数: 1,649 → 1,657 (+8)、全通過。
+
+---
+
 ## [0.1.37] — 2026-06-08
 
 ### Added — mol_transforms API + ランダム SMILES 生成
