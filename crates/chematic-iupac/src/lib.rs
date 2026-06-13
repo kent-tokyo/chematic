@@ -113,9 +113,13 @@ impl<'a> Namer<'a> {
             if any_aromatic {
                 return self.name_aromatic_ring(&ring_atoms);
             }
-            // Non-aromatic ring: only unsubstituted cycloalkanes.
-            if !het_elements.is_empty() {
+            // Non-aromatic ring: allow OH substituent (cycloalkanol), block others.
+            let only_oxygen = het_elements.len() == 1 && het_elements.contains(&8);
+            if !het_elements.is_empty() && !only_oxygen {
                 return Err(IupacError::NotSupported);
+            }
+            if only_oxygen {
+                return self.name_cycloalkanol(&ring_atoms, &carbons, &o_atoms);
             }
             return self.name_cycloalkane(&ring_atoms, &carbons);
         }
@@ -331,6 +335,34 @@ impl<'a> Namer<'a> {
         }
 
         Err(IupacError::NotSupported)
+    }
+
+    // -----------------------------------------------------------------------
+    // Cycloalkanol naming (cyclopentanol, cyclohexanol, ...)
+    // -----------------------------------------------------------------------
+
+    fn name_cycloalkanol(
+        &self,
+        ring_atoms: &HashSet<AtomIdx>,
+        carbons: &[AtomIdx],
+        o_atoms: &[AtomIdx],
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+        // Only one OH substituent.
+        if o_atoms.len() != 1 { return Err(IupacError::NotSupported); }
+        let o_idx = o_atoms[0];
+        // O must be single-bond –OH (not carbonyl).
+        if mol.neighbors(o_idx).any(|(_, bi)| mol.bond(bi).order == BondOrder::Double) {
+            return Err(IupacError::NotSupported);
+        }
+        // O must have implicit H.
+        if implicit_hcount(mol, o_idx) == 0 {
+            return Err(IupacError::NotSupported);
+        }
+        // No exocyclic carbons (unsubstituted ring + OH only).
+        let exo_c = carbons.iter().filter(|&&c| !ring_atoms.contains(&c)).count();
+        if exo_c > 0 { return Err(IupacError::NotSupported); }
+        Ok(format!("cyclo{}ol", alkane_base(ring_atoms.len())))
     }
 
     // -----------------------------------------------------------------------
@@ -619,16 +651,50 @@ impl<'a> Namer<'a> {
         halogen_atoms: &[AtomIdx],
         prefix: &str,
     ) -> Result<String, IupacError> {
-        let n     = carbons.len();
-        let base  = alkane_suffix(n);
+        let mol = self.mol;
+        let chain = find_longest_c_chain(mol, carbons);
+        let n = chain.len();
+        let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
+
+        // Find the locant of each halogen on the chain.
+        let mut locants: Vec<usize> = Vec::new();
+        for &hal in halogen_atoms {
+            let hal_c = mol.neighbors(hal)
+                .filter(|(nb, _)| chain_set.contains(nb))
+                .map(|(nb, _)| nb)
+                .next()
+                .ok_or(IupacError::NotSupported)?;
+            let pos = chain.iter().position(|&c| c == hal_c).map(|p| p + 1)
+                .ok_or(IupacError::NotSupported)?;
+            locants.push(pos);
+        }
+
+        // Apply lowest-locant rule (compare forward vs reversed numbering).
+        let locants_rev: Vec<usize> = locants.iter().map(|&p| n + 1 - p).collect();
+        let best = if locants.iter().min() <= locants_rev.iter().min() {
+            locants
+        } else {
+            locants_rev
+        };
+
         let count = halogen_atoms.len();
-        let mult  = match count {
+        let mult = match count {
             1 => prefix.to_string(),
             2 => format!("di{prefix}"),
             3 => format!("tri{prefix}"),
             _ => return Err(IupacError::NotSupported),
         };
-        Ok(format!("{mult}{base}"))
+
+        let mut sorted_locs = best;
+        sorted_locs.sort_unstable();
+        let locant_str = sorted_locs.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(",");
+
+        // Omit locant for short unambiguous cases (n≤2, single halogen at terminal).
+        if n <= 2 && count == 1 {
+            Ok(format!("{mult}{}", alkane_suffix(n)))
+        } else {
+            Ok(format!("{locant_str}-{mult}{}", alkane_suffix(n)))
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -1443,6 +1509,30 @@ mod tests {
         assert_eq!(name(&mol("CCNCC")).unwrap(),  "N-ethylethanamine");
         assert_eq!(name(&mol("CNCC")).unwrap(),   "N-methylethanamine");
         assert_eq!(name(&mol("CN(C)C")).unwrap(), "N,N-dimethylmethanamine");
+    }
+
+    // ---- New Round 5 tests (v0.1.105) ----------------------------------------
+
+    #[test]
+    fn test_haloalkane_locants() {
+        // n=3: terminal → "1-chloropropane"
+        assert_eq!(name(&mol("CCCCl")).unwrap(),   "1-chloropropane");
+        // n=4: terminal → "1-chlorobutane"
+        assert_eq!(name(&mol("CCCCCl")).unwrap(),  "1-chlorobutane");
+        // n=4: internal → "2-chlorobutane"
+        assert_eq!(name(&mol("CCC(Cl)C")).unwrap(), "2-chlorobutane");
+        // n=5: internal → "2-chloropentane"
+        assert_eq!(name(&mol("CCCC(Cl)C")).unwrap(), "2-chloropentane");
+        // di-halo: ClCCCl = 2C → "1,2-dichloroethane"; ClCCCCl = 3C → "1,3-dichloropropane"
+        assert_eq!(name(&mol("ClCCCl")).unwrap(),   "1,2-dichloroethane");
+        assert_eq!(name(&mol("ClCCCCl")).unwrap(),  "1,3-dichloropropane");
+    }
+
+    #[test]
+    fn test_cycloalkanol() {
+        assert_eq!(name(&mol("OC1CCC1")).unwrap(),   "cyclobutanol");
+        assert_eq!(name(&mol("OC1CCCC1")).unwrap(),  "cyclopentanol");
+        assert_eq!(name(&mol("OC1CCCCC1")).unwrap(), "cyclohexanol");
     }
 
     // ---- New Round 4 tests (v0.1.104) ----------------------------------------
