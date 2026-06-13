@@ -20,6 +20,28 @@ pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     h
 }
 
+/// Hash one atom's neighbourhood at iteration `r` of the Morgan expansion.
+///
+/// Byte layout: `[r as u8, self_id (8 bytes), (bond_type (1) ++ nb_id (8))*]`
+/// Neighbours are sorted before hashing to make the result order-independent.
+fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u64 {
+    let idx = AtomIdx(i as u32);
+    let mut neighbor_info: Vec<(u8, u64)> = mol
+        .neighbors(idx)
+        .map(|(nb_idx, bond_idx)| (bond_type_int(mol.bond(bond_idx).order), ids[nb_idx.0 as usize]))
+        .collect();
+    neighbor_info.sort_unstable();
+
+    let mut bytes: Vec<u8> = Vec::with_capacity(1 + 8 + neighbor_info.len() * 9);
+    bytes.push(r as u8);
+    bytes.extend_from_slice(&ids[i].to_le_bytes());
+    for (btype, nb_id) in &neighbor_info {
+        bytes.push(*btype);
+        bytes.extend_from_slice(&nb_id.to_le_bytes());
+    }
+    fnv1a(&bytes)
+}
+
 /// Compute the FNV-1a atom identifier for iteration 0 of the Morgan algorithm.
 ///
 /// The six-byte invariant covers: atomic number, degree, implicit H count, formal
@@ -146,26 +168,7 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     let mut new_ids: Vec<u64> = vec![0u64; n];
     for r in 1..=config.radius {
         for i in 0..n {
-            let idx = AtomIdx(i as u32);
-            let mut neighbor_info: Vec<(u8, u64)> = mol
-                .neighbors(idx)
-                .map(|(nb_idx, bond_idx)| {
-                    let btype = bond_type_int(mol.bond(bond_idx).order);
-                    (btype, ids[nb_idx.0 as usize])
-                })
-                .collect();
-            neighbor_info.sort_unstable();
-
-            // Byte layout: [round_u8, self_id(8), (btype(1) ++ nb_id(8))*]
-            let mut bytes: Vec<u8> = Vec::with_capacity(1 + 8 + neighbor_info.len() * 9);
-            bytes.push(r as u8);
-            bytes.extend_from_slice(&ids[i].to_le_bytes());
-            for (btype, nb_id) in &neighbor_info {
-                bytes.push(*btype);
-                bytes.extend_from_slice(&nb_id.to_le_bytes());
-            }
-
-            let new_id = fnv1a(&bytes);
+            let new_id = expand_atom_id(mol, i, r, &ids);
             new_ids[i] = new_id;
             fp.set((new_id % nbits as u64) as usize);
             if config.use_double_fold {
@@ -212,27 +215,7 @@ pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMa
     let mut new_ids = vec![0u64; n];
     for r in 1..=radius {
         for i in 0..n {
-            let idx = AtomIdx(i as u32);
-            let mut neighbor_info: Vec<(u8, u64)> = mol
-                .neighbors(idx)
-                .map(|(nb_idx, bond_idx)| {
-                    (
-                        bond_type_int(mol.bond(bond_idx).order),
-                        ids[nb_idx.0 as usize],
-                    )
-                })
-                .collect();
-            neighbor_info.sort_unstable();
-
-            let mut bytes: Vec<u8> = Vec::with_capacity(1 + 8 + neighbor_info.len() * 9);
-            bytes.push(r as u8);
-            bytes.extend_from_slice(&ids[i].to_le_bytes());
-            for (btype, nb_id) in &neighbor_info {
-                bytes.push(*btype);
-                bytes.extend_from_slice(&nb_id.to_le_bytes());
-            }
-
-            let new_id = fnv1a(&bytes);
+            let new_id = expand_atom_id(mol, i, r, &ids);
             new_ids[i] = new_id;
             *counts.entry(new_id).or_insert(0) += 1;
         }

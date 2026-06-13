@@ -1,379 +1,317 @@
-# RDKit vs chematic — 機能対応表 (v0.1.89)
+# chematic vs RDKit 機能比較 (v0.1.94)
 
-**作成日**: 2026-06-12  
-**chematic バージョン**: 0.1.89 (1,521 テスト)  
-**RDKit バージョン**: 2024.x  
-**比較フォーカス**: RDKit gap analysis v0.1.88 完了（A1–A6, B1–B2）
+> **更新日**: 2026-06-13 | **バージョン**: chematic v0.1.94 | **テスト数**: 1,746 (100% pass)
 
 ---
 
-## 概要
+## 1. 概要 (Executive Summary)
 
-chematic は Rust による RDKit 相互運用可能な化学ライブラリ。v0.1.89 で計算化学の主要ギャップ 8 項目を実装完了。
-本表は **機能対応**, **精度**, **実装状態** を定量的に比較する。
+chematic は Rust 製のピュア実装チェムインフォマティクスライブラリです。  
+FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機能の **約 90%** をカバーしています。
 
-**Key Metrics**:
-- 📊 物性値精度: LogP MAE 0.054, TPSA MAE 0.075 (RDKit 準拠)
-- 🔬 分子構造: 立体化学・InChI 完全互換性
-- 📈 フィンガープリント: ECFP4 Tanimoto ρ=0.925 (順位相関)
-- ✅ テストカバレッジ: 1,521 テスト全パス, zero regressions
-
----
-
-## 1. 正確性バグ修正 (Priority A)
-
-### A1: PME 特異行列パニック
-
-| 機能 | RDKit | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **Error handling** | Result型 (非パニック) | Result<T, EwaldError> | ✅ 完全互換 | 2/2 |
-| Singular box matrix | 計算スキップ | Err(EwaldError::SingularBoxMatrix) | ✅ | test_map_to_fractional_identity |
-| Reciprocal energy | 回避策 | Result<f64, EwaldError> | ✅ | test_reciprocal_vector_zero |
-| **本番クラッシュ防止** | Yes | Yes | ✅ |  |
-
-**改善**: 
-- 4 関数署名を `Result<T, EwaldError>` に変更
-- panic!() → Err(EwaldError::SingularBoxMatrix)
-- すべての呼び出し側を .unwrap() で更新
+| 指標 | 値 |
+|---|---|
+| Gap closure (RDKit比) | **~90%** |
+| テスト数 | **1,746** (全パス) |
+| LogP MAE | **0.054** (175分子, RDKit Crippen値との比較) |
+| TPSA MAE | **0.075 Å²** |
+| ECFP4 Tanimoto相関 | **Spearman ρ = 0.925** (2,450ペア) |
+| WASM対応 | ✅ (ブラウザ/Node.js で動作) |
 
 ---
 
-### A2: InChI Stereo 層パース
+## 2. 精度ベンチマーク
 
-| 機能 | RDKit | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **/b層 (E/Z)** | 完全パース | parse_ez_stereo_layer() | ✅ 完全互換 | 3/3 |
-| **/t層 (R/S)** | 完全パース | parse_tetrahedral_stereo_layer() | ✅ 完全互換 | 3/3 |
-| **/m層 (相対立体)** | 完全パース | parse_relative_stereo_layer() | ✅ NEW | 3/3 |
-| **/s層 (版情報)** | 完全パース | parse_stereo_type_layer() | ✅ NEW | 3/3 |
-| **Round-trip** | inchi() → parse_inchi() | ✅ | ✅ | test_parse_inchi_with_*.*, roundtrip tests |
+### 2.1 分子記述子 (175分子テストセット)
 
-**改善**:
-- `/b` (E/Z) `HashMap<(usize,usize), char>` 実装
-- `/t` (R/S) `HashMap<usize, char>` 実装
-- `/m`,`/s` メタデータパース追加
-- 9 個の新テスト追加
+| 記述子 | MAE | RMSE | Pearson r | 状態 |
+|---|---|---|---|---|
+| 分子量 (MW) | 0.0002 Da | 0.0007 | 1.0000 | ✅ 完全一致 |
+| 重原子数 (HAC) | 0.000 | 0.000 | 1.0000 | ✅ 完全一致 |
+| LogP (Crippen-Wildman) | **0.0540** | 0.1406 | 0.9968 | ✅ 優秀 |
+| TPSA | **0.0748 Å²** | 0.4659 | 0.9999 | ✅ 優秀 |
+| HBA | 0.0400 | 0.2928 | 0.9888 | ✅ 優秀 |
+| HBD | 0.0114 | 0.1069 | 0.9974 | ✅ 優秀 |
 
----
+**LogP の改善履歴**: v0.1.0 (MAE=1.346) → v0.1.30 (MAE=0.054) — **96% 改善**
 
-### A3: MMFF94 電荷精度
+**高誤差分子 (参考)**:
 
-| 機能 | RDKit | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **形式電荷再分配** | Pauling + MMFF94テーブル | apply_formal_charge_redistribution() | ⚠️ 近似実装 | 3/3 |
-| Carboxylate (-COO⁻) | [C](=O)[O⁻] 分布 | 30% 因子で C に再分配 | ✅ | test_mmff94_charges_acetate_carboxylate |
-| Ammonium (+NH4) | [N⁺] 分布 | H 原子に分散 | ✅ | test_mmff94_charges_phosphate |
-| **電荷バランス** | ±0.01以内 | ±0.5以内 (近似) | ⚠️ 改善余地 | test_mmff94_charges_finite |
-| **基本実装** | Yes | Yes | ✅ |  |
+| 分子 | RDKit | chematic | Δ | 原因 |
+|---|---|---|---|---|
+| Curcumin | 3.370 | 0.584 | −2.79 | ビニル-フェノール分類 |
+| Methotrexate | 0.268 | −1.512 | −1.78 | プテリン N 複雑性 |
+| Folic acid | −0.045 | −1.348 | −1.30 | 複数アミド N |
 
-**実装状態**:
-- MMFF94 完全テーブル参照は未実装 (FFI ゼロ方針)
-- 形式電荷パターンマッチング + 簡易分配
-- RDKit `MMFFGetMoleculeProperties` との精度差 ~5-10%
+### 2.2 フィンガープリント (ECFP4, 50分子, 2,450ペア)
 
----
-
-## 2. 機能欠落 (Priority B)
-
-### B1: InChI 解析 — 相対立体層
-
-| 機能 | RDKit | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **/m層** | Meso/racemic parity | parse_relative_stereo_layer() | ✅ NEW | 3/3 |
-| **/s層** | Version metadata | parse_stereo_type_layer() | ✅ NEW | 3/3 |
-| **Round-trip** | Yes | Yes (metadata only) | ✅ | test_parse_inchi_with_relative_stereo/stereo_type |
-| **3D 構造への影響** | Metadata only | Metadata only | ✅ | — |
-
-**実装内容**:
-- `/m` format: "M1", "M1-2" (parity group indices)
-- `/s` format: "obsolete", "new" (version info)
-- どちらも分子構造には影響しない (informational)
+| 指標 | 値 |
+|---|---|
+| Tanimoto MAE | 0.0137 |
+| Spearman ρ | **0.925** |
+| 90パーセンタイル誤差 | 0.040 |
+| 同一分子の類似度 | 1.000 (完全一致) |
 
 ---
 
-### B2: Chemical Standardization — normalize_groups 拡張
+## 3. 機能対応表
 
-| 機能 | RDKit | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **Nitro** ([N+](=O)[O⁻]) | Yes | Yes (既実装) | ✅ | 1/1 |
-| **Azide** ([N⁻][N⁺]#N) | Yes | 3-pass detection: N⁻, N⁺, N# | ✅ NEW | test_normalize_groups_azide |
-| **N-oxide** (aromatic N→O⁻) | Yes | Yes (既実装) | ✅ | 1/1 |
-| **Sulfoxide** (S=O) | Yes | Pattern detection + no-change rule | ✅ NEW | test_normalize_groups_sulfoxide |
-| **Mixed patterns** | Yes | Yes (multi-group same molecule) | ✅ NEW | test_normalize_groups_mixed_nitro_and_azide |
+### 3.1 分子記述子 (Descriptors)
 
-**実装方法**:
-- 3-pass approach:
-  1. **Group identification**: パターンマッチング (nitro, azide, N-oxide, sulfoxide)
-  2. **Charge normalization**: 各グループの形式電荷リセット
-  3. **Bond order conversion**: 単結合→二重結合 (azide, nitro のみ)
+| 機能 | RDKit API | chematic | 精度/備考 |
+|---|---|---|---|
+| 分子量 | `Descriptors.MolWt` | `molecular_weight()` | ✅ MAE=0.0002 |
+| 正確質量 | `Descriptors.ExactMolWt` | `exact_mass()` | ✅ |
+| LogP | `Descriptors.MolLogP` | `logp_crippen()` | ✅ MAE=0.054 |
+| TPSA | `Descriptors.TPSA` | `tpsa()` | ✅ MAE=0.075 |
+| HBA/HBD | `Descriptors.NumHBD/A` | `hbd_count()` / `hba_count()` | ✅ |
+| 回転結合数 | `Descriptors.NumRotatableBonds` | `rotatable_bond_count()` | ✅ |
+| モル屈折率 | `Descriptors.MolMR` | `molar_refractivity()` | ✅ |
+| Fsp3 | `Descriptors.FractionCSP3` | `fsp3()` | ✅ |
+| 芳香族環数 | `Descriptors.NumAromaticRings` | `aromatic_ring_count()` | ✅ |
+| ヘテロ原子数 | `Descriptors.NumHeteroatoms` | `num_heteroatoms()` | ✅ |
+| 形式電荷 | `Chem.GetFormalCharge` | `formal_charge_sum()` | ✅ |
+| 分子式 | `rdMolDescriptors.CalcMolFormula` | `calc_mol_formula()` | ✅ |
+| EState indices | `EState.EStateIndices` | `estate_indices()` | ✅ |
+| 立体中心数 | `rdMolDescriptors.CalcNumStereocenters` | `num_stereocenters()` | ✅ |
+| 架橋頭原子数 | `rdMolDescriptors.CalcNumBridgeheadAtoms` | `num_bridgehead_atoms()` | ✅ |
+| QED | `QED.qed` | `qed()` | ✅ |
+| SA Score | `SA_Score.calculateScore` | `sa_score()` | ✅ |
+| XLogP3 | — | `xlogp3()` | ✅ |
+| LogD | — | `logd_simple()` | ✅ |
+| ESOL溶解度 | `esol` | `esol_solubility()` | ✅ |
+| Balaban J | `GraphDescriptors.BalabanJ` | `balaban_j()` | ✅ |
+| chi 指標 (0-4) | `Descriptors.Chi0-4` | `chi0()` ~ `chi4()` | ✅ |
+| kappa 指標 (1-3) | `Descriptors.Kappa1-3` | `kappa1()` ~ `kappa3()` | ✅ |
+| Bertz CT | `GraphDescriptors.BertzCT` | `bertz_ct()` | ✅ |
+| Wiener index | — | `wiener_index()` | ✅ |
+| Ipc | `GraphDescriptors.Ipc` | `ipc()` | ✅ |
+| HallKier Alpha | `rdMolDescriptors.CalcHallKierAlpha` | `hall_kier_alpha()` | ✅ |
+| AutoCorr2D | `rdMolDescriptors.CalcAUTOCORR2D` | `autocorr_2d()` | ✅ |
+| AutoCorr3D | `rdMolDescriptors.CalcAUTOCORR3D` | `autocorr_3d()` | ✅ |
+| MQN (42次元) | `MQNs.MQNs_` | `mqn()` | ✅ |
+| USRCAT (42次元) | `rdMolDescriptors.CalcUSRCAT` | `usrcat()` | ✅ |
+| VSA descriptors (SlogP/SMR/PEOE) | `rdMolDescriptors.SlogP_VSA*` | `slogp_vsa()` 等 | ✅ |
+| WHIM | `rdMolDescriptors.CalcWHIM` | `whim_descriptors()` | ✅ |
+| GETAWAY | `rdMolDescriptors.CalcGETAWAY` | `getaway_descriptors()` | ✅ |
+| SASA | `rdFreeSASA` | `sasa()` | ✅ Shrake-Rupley |
+| 元素カウント (C/N/O/F/Cl/Br/I/S/P) | `Descriptors.NumAtomCountX` | `num_carbons()` 等 | ✅ |
+| Gasteiger 電荷 | `AllChem.ComputeGasteigerCharges` | `gasteiger_charges()` | ✅ |
+| MMFF94 電荷 | `AllChem.MMFFGetMoleculeProperties` | `mmff94_charges()` | ⚠️ 近似 (±0.5e) |
+| アミド/エステル結合数 | `rdMolDescriptors.CalcNumAmideBonds` | `num_amide_bonds()` 等 | ✅ |
 
----
+### 3.2 フィンガープリント (Fingerprints)
 
-## 3. 物性値精度 (Comparative Metrics)
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| ECFP4/6 (2048-bit) | `AllChem.GetMorganFingerprintAsBitVect` | `ecfp4()` / `ecfp6()` | ✅ ρ=0.925 |
+| FCFP4/6 | `AllChem.GetMorganFingerprintAsBitVect(useFeatures=True)` | `fcfp4()` / `fcfp6()` | ✅ |
+| Morgan counts | `AllChem.GetMorganFingerprint` | `morgan_fp_counts()` | ✅ |
+| MACCS keys (167-bit) | `MACCSkeys.GenMACCSKeys` | `maccs()` | ✅ |
+| RDKit Path FP | `Chem.RDKFingerprint` | `rdkit_path_fp()` | ✅ |
+| Atom Pair FP | `AllChem.GetAtomPairFingerprintAsBitVect` | `atom_pair_fp()` | ✅ |
+| Torsion FP | `AllChem.GetTopologicalTorsionFingerprintAsBitVect` | `torsion_fp()` | ✅ |
+| Layered FP (7層) | `Chem.LayeredFingerprint` | `layered_fp()` | ✅ |
+| Pattern FP | `Chem.PatternFingerprint` | `pattern_fp()` | ✅ |
+| Pharmacophore 2D | `Gobbi_Pharm2D.Generate` | `pharmacophore_fp_2d()` | ✅ |
+| MHFP | `mhfp.MHFPEncoder` | `mhfp()` | ⚠️ 簡易実装 (ECFP4ベース) |
+| ERG | `AllChem.GetErGFingerprint` | `erg()` | ⚠️ 簡易実装 (atom counting) |
+| Reaction FP | `AllChem.ReactionFingerprintAsBitVect` | `reaction_fp()` | ⚠️ OR差分（真実装はXOR） |
+| Tanimoto類似度 | `DataStructs.TanimotoSimilarity` | `tanimoto_ecfp4()` 等 | ✅ |
+| 最近傍探索 | `DataStructs.BulkTanimotoSimilarity` | `nearest_neighbors()` | ✅ |
 
-### 3-1. 水素結合・分子量・TPSA
+### 3.3 SMARTS・部分構造マッチ
 
-| プロパティ | RDKit | chematic (v0.1.30) | MAE | RMSE | Pearson r | 評価 |
-|-----------|-------|-----------------|-----|------|-----------|------|
-| **MW (Da)** | 精密テーブル | 原子量テーブル | 0.0002 | 0.0007 | 1.0000 | ✅ 完全一致 |
-| **HBD** | Lipinski + 除外 | RDKit 準拠ルール | 0.0114 | 0.1069 | 0.9974 | ✅ 優秀 |
-| **TPSA (Å²)** | Ertl 1996 | Ertl + 文脈分類 | **0.0748** | **0.4659** | **0.9999** | ✅✅ 優秀 |
-| **HBA** | Lipinski 例外 | RDKit 准拠 ([nH] 除外等) | **0.0400** | **0.2928** | **0.9888** | ✅ 優秀 |
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| SMARTS パース | `Chem.MolFromSmarts` | `parse_smarts()` | ✅ |
+| 部分構造マッチ | `mol.HasSubstructMatch` | `find_matches()` | ✅ VF2アルゴリズム |
+| 全マッチ列挙 | `mol.GetSubstructMatches` | `find_matches()` | ✅ visit budget付き |
+| MCS | `rdFMCS.FindMCS` | `find_mcs()` | ✅ |
+| CXSmarts | ChemAxon拡張 | `parse_cxsmarts()` | ✅ |
+| Reaction SMARTS | `AllChem.ReactionFromSmarts` | `ReactionPatternLibrary` | ✅ バッチ対応 |
 
-### 3-2. LogP (Crippen-Wildman)
+### 3.4 3D 構造
 
-| 指標 | RDKit | chematic (v0.1.30) | 改善内容 |
-|-----|-------|-----------------|---------|
-| **MAE** | — | **0.0540** | H原子寄与 + aryl ether修正 + benzyl C修正 |
-| **RMSE** | — | **0.1406** | — |
-| **Pearson r** | — | **0.9968** | — |
-| **テスト分子数** | 175 | 175 | 同一セット |
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| ETKDGv3 構造生成 | `AllChem.EmbedMolecule(ETKDGv3)` | `generate_coords_dg()` | ✅ 上限: 500原子 |
+| UFF 最小化 | `AllChem.UFFOptimizeMolecule` | `minimize_uff()` | ✅ |
+| MMFF94 最小化 | `AllChem.MMFFOptimizeMolecule` | `minimize_mmff94()` | ✅ |
+| DREIDING 最小化 | — | `minimize_dreiding()` | ✅ |
+| PMI / NPR | `rdMolDescriptors.CalcPMI*` | `pmi()`, `npr1/2()` | ✅ |
+| 慣性半径 | `rdMolDescriptors.CalcRadiusOfGyration` | `radius_of_gyration()` | ✅ |
+| Asphericity | `rdMolDescriptors.CalcAsphericity` | `asphericity()` | ✅ |
+| Eccentricity | `rdMolDescriptors.CalcEccentricity` | `eccentricity()` | ✅ |
+| PBF | `rdMolDescriptors.CalcPBF` | `plane_of_best_fit()` | ✅ |
+| Kabsch RMSD | `AllChem.AlignMol` | `conformer_rmsd()` | ✅ v0.1.94で修正済み |
+| コンフォーマーアンサンブル | `AllChem.EmbedMultipleConfs` | `ConformerEnsemble` | ✅ |
+| USR / USRCAT | `rdMolDescriptors.GetUSRScore` | `usr_descriptors()` | ✅ |
+| 結合長/角度/二面角 | `AllChem.GetBondLength` 等 | `get_bond_length()` 等 | ✅ |
+| MD シミュレーション | — | `run_md()` | ✅ |
 
-**v0.1.0 → v0.1.30 改善トレンド**:
-- LogP: 1.346 → 0.0540 (−96.0%)
-- TPSA: 1.330 → 0.0748 (−94.4%)
-- HBA: 0.606 → 0.0400 (−93.4%)
+### 3.5 InChI
 
----
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| InChI 生成 | `Chem.inchi.MolToInchi` | `inchi()` | ✅ /c /h /b /t 層対応 |
+| InChI Key | `Chem.InchiToInchiKey` | `inchi_key()` | ✅ |
+| InChI 解析 | `Chem.inchi.InchiToMol` | `parse_inchi()` | ✅ /b /t /m /s 層対応 |
 
-## 4. 立体化学・分子構造 (Structural Features)
+### 3.6 標準化・変換 (Standardization)
 
-### 4-1. 立体記述子
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| 標準化パイプライン | `MolStandardize` | `standardize()` | ✅ |
+| 塩除去 | `MolStandardize.RemoveFragments` | `remove_salts()` | ✅ |
+| 最大フラグメント | `MolStandardize.LargestFragmentChooser` | `largest_fragment()` | ✅ |
+| 官能基正規化 | `MolStandardize.Normalize` | `normalize_groups()` | ✅ ニトロ/アジド/N-オキシド/スルホキシド |
+| 電荷中和 | `MolStandardize.Uncharger` | `neutralize_charges()` | ✅ |
+| 再イオン化 | `MolStandardize.Reionizer` | `reionize()` | ✅ |
+| 互変異体標準化 | `MolStandardize.TautomerEnumerator` | `canonical_tautomer()` | ✅ 1,5-シフト含む |
+| 互変異体列挙 | `TautomerEnumerator.Enumerate` | `enumerate_tautomers()` | ✅ |
+| 同位体除去 | `MolStandardize.RemoveIsotopes` | `remove_isotopes()` | ✅ |
+| 立体情報除去 | `MolStandardize.RemoveStereo` | `remove_stereo()` | ✅ |
+| 水素付加/除去 | `AllChem.AddHs` / `RemoveHs` | `add_hydrogens()` / `remove_hydrogens()` | ✅ |
 
-| 機能 | RDKit | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **IUPAC R/S** | CIP priority assignment | CIP rule 1–4 実装 | ✅ | 15/15 |
-| **E/Z double bond** | CIP-based | Priority-based | ✅ | 8/8 |
-| **SMARTS stereo** | `/\`, `\`, `/` bonds | Wedge/dash detection | ✅ | 10/10 |
-| **InChI stereo round-trip** | Yes (full) | Yes (層生成 + パース) | ✅ NEW | test_parse_inchi_with_* (12 tests) |
-| **3D conformer** | Yes (ETKDG) | ETKDGv3 via FFT DG | ✅ | 13/13 |
+### 3.7 フィルター・薬物様性
 
-### 4-2. 立体検証テスト
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| Lipinski Ro5 | `Descriptors` 各値から判定 | `lipinski_passes()` | ✅ |
+| Veber ルール | — | `veber_passes()` | ✅ |
+| PAINS アラート | `FilterCatalog.PAINS` | `pains_matches()` | ✅ |
+| Brenk アラート | `FilterCatalog.BRENK` | `brenk_matches()` | ✅ |
+| Egan ルール | — | `egan_passes()` | ✅ |
+| Ghose ルール | — | `ghose_passes()` | ✅ |
+| REOS フィルター | — | `reos_passes()` | ✅ |
 
-| テスト | RDKit | chematic v0.1.89 | 例 |
-|-------|-------|---------------|-----|
-| (R)-lactic acid | Assign(R) | ✅ Assign(R) | CC(O)C(=O)O |
-| (S)-naproxen | Assign(S) | ✅ Assign(S) | [C@@H](C)c1ccc(cc1)C(=O)O |
-| (E)-2-butene | Assign(E) | ✅ Assign(E) | C/C=C/C |
-| (Z)-2-butene | Assign(Z) | ✅ Assign(Z) | C\C=C\C |
+### 3.8 スキャフォールド・フラグメント
 
----
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| Murcko スキャフォールド | `MurckoScaffold.GetScaffoldForMol` | `murcko_scaffold()` | ✅ |
+| Generic Murcko | `MurckoScaffold.MakeScaffoldGeneric` | `generic_murcko_scaffold()` | ✅ |
+| Scaffold network | `ScaffoldNetwork.CreateScaffoldNetwork` | `scaffold_network()` | ✅ |
+| Schuffenhauer rules | — | `schuffenhauer_parents()` | ✅ ルール 1-8 |
+| BRICS 分解 | `BRICS.BRICSDecompose` | `brics_fragments()` | ✅ |
+| RECAP 分解 | `Recap.RecapDecompose` | `recap_fragment()` | ✅ |
+| MMP | `MatchedMolecularPairs` | `find_mmp()` | ✅ |
+| MaxMin ダイバーシティ | `SimDivFilters.MaxMinPicker` | `maxmin_picks()` | ✅ |
+| Butina クラスタリング | `SimDivFilters.ClusterData` | `butina_cluster()` | ✅ |
+| 機能基同定 | `ifg.identify_functional_groups` | `identify_functional_groups()` | ✅ Ertl 2017 |
 
-## 5. フィンガープリント (Fingerprints)
+### 3.9 ファイル I/O
 
-### 5-1. ECFP4 (Circular)
+| 形式 | RDKit | chematic | 備考 |
+|---|---|---|---|
+| SMILES | `Chem.MolFromSmiles` | `parse()` | ✅ |
+| SMILES (書き出し) | `Chem.MolToSmiles` | `write()` / `canonical_smiles()` | ✅ |
+| Randomized SMILES | — | `random_smiles()` | ✅ |
+| MOL v2000 / v3000 | `Chem.MolFromMolFile` | `parse_mol()` / `parse_mol_v3000()` | ✅ |
+| SDF (読み込み) | `Chem.SDMolSupplier` | `SdfReader` | ✅ ストリーミング対応 |
+| SDF (書き出し) | `Chem.SDWriter` | `write_sdf()` | ✅ |
+| MOL2 (Tripos) | `Chem.MolFromMol2File` | `parse_mol2()` | ✅ |
+| CML | — | `parse_cml()` | ✅ |
+| CDXML (ChemDraw) | — | `parse_cdxml()` | ✅ 上限: 10,000原子 |
+| RXN | `AllChem.ReactionFromRxnFile` | `parse_rxn_file()` | ✅ |
+| CXSmiles | ChemAxon | `parse_cxsmiles()` | ✅ |
 
-| 指標 | RDKit | chematic | 相関 | テスト |
-|-----|-------|---------|------|--------|
-| **Bit length** | 2048 | 2048 | ✅ | 5/5 |
-| **Radius** | 4 (ECFP equiv) | 4 | ✅ | — |
-| **Hash function** | Morgan hash | FNV-1a 64-bit | ⚠️ 異なる | ecfp4_tests |
-| **Tanimoto (2450 pairs)** | — | ρ=0.925 | ✅ 順位相関 | tanimoto_ecfp4_* |
-| **Identical mol** | Tanimoto=1.0 | Tanimoto=1.0 | ✅ | test_ecfp4_identical |
+### 3.10 可視化 (Depiction)
 
-### 5-2. MHFP (A4 — 実装品質向上)
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| SVG 描画 | `Draw.MolToSVG` | `depict_svg()` | ✅ |
+| SVG ハイライト | `Draw.MolToSVG(highlightAtoms)` | `depict_svg_highlighted()` | ✅ |
+| SVG グリッド | `Draw.MolsToGridImage` | `depict_svg_grid()` | ✅ |
+| PNG 描画 | `Draw.MolToImage` | `render_png()` | ✅ tiny-skia |
+| 反応 SVG | `Draw.ReactionToImage` | `depict_reaction_svg()` | ✅ |
+| Dative/Query 結合 | — | ✅ | 矢印・点線表示 |
+| 2D 座標計算 | `Chem.Compute2DCoords` | `compute_layout()` | ✅ |
+| 原子色マップ | — | `atom_color_map` (RenderOptions) | ✅ |
+| WASM バインディング | — | `chematic-wasm` | ✅ |
 
-| 機能 | RDKit (true) | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **実装方式** | Circular SMILES MinHash | ECFP4 bits + DefaultHasher | ⚠️ 近似 | 8/8 |
-| **精度** | 高 (Lowe & Sayle 2013) | 中 (ECFP4ベース) | ⚠️ | — |
-| **Hash lane数** | 128 (default) | 128 | ✅ | test_mhfp_config |
-| **Documentation** | — | 完全なTODO含む | ✅ NEW | — |
-| **TODO (v0.1.90+)** | — | True MHFP へ upgrade path | 📋 | — |
+### 3.11 反応 (Reactions)
 
-**現状**:
-- ECFP4 ビット位置から MinHash 計算 (簡略版)
-- True MHFP (circular SMILES抽出) は未実装
-- Tanimoto 精度は RDKit 比 5-15% 劣化
+| 機能 | RDKit API | chematic | 備考 |
+|---|---|---|---|
+| 反応 SMILES 解析 | `AllChem.ReactionFromSmarts` | `parse_reaction()` | ✅ |
+| 反応中心検出 | — | `find_reaction_center()` | ✅ |
+| Atom economy | — | `atom_economy()` | ✅ |
+| E-factor | — | `e_factor()` | ✅ |
+| ライブラリ列挙 | — | `enumerate_library()` | ✅ 2-3 way |
+| テンプレート適用 | `AllChem.RunReactants` | `run_reactants()` | ✅ |
 
-### 5-3. ERG (A5 — 実装品質向上)
+### 3.12 スコープ外 (Out of Scope)
 
-| 機能 | RDKit (true) | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **実装方式** | Reduced graph (functional group clustering) | Atom/bond counting + FG bits | ⚠️ 近似 | 11/11 |
-| **Aromatic detection** | Yes | Bit 256 (new) | ✅ NEW | test_erg_functional_group_aromatic_bit |
-| **Heteroatom detection** | Yes | Bit 257 (new) | ✅ NEW | test_erg_functional_group_heteroatom_bit |
-| **Aliphatic vs aromatic** | Yes (full) | Bit 256/258 discrimination | ✅ | test_erg_aromatic_vs_aliphatic |
-| **Accuracy** | High | Medium (composition only) | ⚠️ | — |
-| **TODO (v0.1.90+)** | — | Full reduced graph (Sheridan et al.) | 📋 | — |
-
-### 5-4. Reaction FP (A6 — XOR-like 差分エンコーディング)
-
-| 機能 | RDKit (CreateStructuralFingerprintForReaction) | chematic v0.1.89 | 状態 | テスト |
-|-----|-------|---------------|------|--------|
-| **実装方式** | XOR difference (formed/broken bonds) | OR-based difference (OR union) | ⚠️ 近似 | 10/10 |
-| **Reactant FP** | ECFP4 OR | ECFP4 OR (combine_fps_or) | ✅ | test_reaction_fp_simple |
-| **Product FP** | ECFP4 OR | ECFP4 OR (combine_fps_or) | ✅ | test_reaction_fp_simple |
-| **Difference encoding** | True XOR | compute_structural_difference (OR approx) | ⚠️ | test_reaction_fp_structural_difference |
-| **Transformation detection** | Yes | Partial (OR-based) | ⚠️ | test_reaction_fp_transformation_vs_composition |
-| **Documentation** | — | Complete + RDKit analogy | ✅ NEW | — |
-
-**現状**:
-- True XOR: bits that differ (bit_in_reactants XOR bit_in_products)
-- Approx: OR (all bits from both sets) で transformation encode
-- 精度: composition より transformation detection は劣る (~10-20%)
-
----
-
-## 6. 統計サマリー (v0.1.89)
-
-### 6-1. テストカバレッジ
-
-| カテゴリ | テスト数 | 全体 | 状態 |
-|---------|---------|------|------|
-| chematic-core | 407 | 26.8% | ✅ |
-| chematic-chem | 198 | 13.0% | ✅ |
-| chematic-mol | 52 | 3.4% | ✅ |
-| chematic-smiles | 77 | 5.1% | ✅ |
-| chematic-smarts | 124 | 8.2% | ✅ |
-| chematic-fp | 175 | 11.5% | ✅ |
-| chematic-inchi | 39 | 2.6% | ✅ NEW |
-| chematic-iupac | 8 | 0.5% | ✅ |
-| Other | ~239 | 15.7% | ✅ |
-| **合計** | **1,521** | **100%** | **✅✅** |
-
-### 6-2. v0.1.88 → v0.1.89 進捗
-
-| 項目 | v0.1.88 | v0.1.89 | 差分 | 状態 |
-|-----|---------|---------|------|------|
-| Priority A items | 6 | 6 ✅ | +0 (all complete) | ✅ |
-| Priority B items | 2 | 4 ✅ | +2 (B1, B2 complete) | ✅ |
-| テスト数 | ~1,475 | 1,521 | +46 | ✅ |
-| コミット | 26 | 34 | +8 | ✅ |
-| Gap closure | 67% | **89%** | +22% | 🎯 |
-
-### 6-3. 実装完了チェックリスト
-
-```
-A-Series (正確性バグ):
-✅ A1: PME panic → Result型
-✅ A2: InChI stereo parsing (/b,/t,/m,/s)
-✅ A3: MMFF94 charge accuracy (形式電荷再分配)
-✅ A4: MHFP documentation + test expansion
-✅ A5: ERG documentation + FG bits
-✅ A6: Reaction FP XOR-like difference encoding
-
-B-Series (機能欠落):
-✅ B1: InChI metadata層 (/m,/s)
-✅ B2: normalize_groups expansion (azide, sulfoxide)
-⏸️  B3: (scope確認済み)
-⏸️  B4: (v0.1.88で実装済み)
-⏸️  B5: (3D幾何依存)
-⏸️  B6: (Edmonds flower algorithm — スコープ外)
-⏸️  B7: (v0.1.88で実装済み)
-
-C-Series (精度改善):
-✅ C1-C5: v0.1.88で実装済み
-```
-
----
-
-## 7. 実装完了サマリー (v0.1.89)
-
-### 実装内容
-
-**A1: PME Panic Fix**
-```rust
-// Before: panic!("Singular box matrix")
-// After:
-map_to_fractional(...) -> Result<[f64;3], EwaldError>
-Err(EwaldError::SingularBoxMatrix)
-```
-- 4 関数署名更新
-- すべてのテスト .unwrap() で更新
-- 本番クラッシュ防止 ✅
-
-**A2: InChI Stereo Parsing**
-```rust
-parse_ez_stereo_layer("2-3+,5-6-") 
-  -> HashMap<(usize,usize), char> {(2,3)='+', (5,6)='-'}
-
-parse_tetrahedral_stereo_layer("1-,2+") 
-  -> HashMap<usize, char> {1='-', 2='+'}
-```
-- 4 パース関数
-- 9 新テスト
-- Round-trip 対応 ✅
-
-**A3: MMFF94 Charge Accuracy**
-```rust
-apply_formal_charge_redistribution(mol, types, charges)
-  - carboxylate: C に 30% 再分配
-  - ammonium: H に分散
-  - 形式電荷バランス: ±0.5以内
-```
-
-**A4-A6: Fingerprint Quality Documentation**
-- MHFP true algorithm notes + reference
-- ERG reduced graph roadmap
-- Reaction FP XOR approx explanation
-- 各 TODO (v0.1.90+) 記載
-
-**B1: InChI Metadata Parsing**
-```rust
-parse_relative_stereo_layer("1-2") -> HashMap
-parse_stereo_type_layer("obsolete") -> String
-```
-- 2 新パース関数
-- 6 新テスト
-- メタデータ情報保持
-
-**B2: normalize_groups Expansion**
-```
-3-pass approach:
-1. Group detection (nitro, azide, N-oxide, sulfoxide)
-2. Charge normalization
-3. Bond order conversion
-```
-- 4 検出パターン
-- 4 新テスト
-- Multi-group同時処理
+| 機能 | 理由 |
+|---|---|
+| 遷移金属化学 | 有機化学専用の原子価モデル |
+| ポリマー / HELM / FASTA | 対象スコープ外 |
+| ML 予測モデル | 外部モデル非依存方針 |
+| StandardInChI FFI | FFI ゼロ方針 |
 
 ---
 
-## 8. 既知の制限 & ロードマップ
+## 4. 実装品質ノート (v0.1.94)
 
-### スコープ外（設計方針）
-| 機能 | 理由 | 例 |
-|-----|------|-----|
-| 遷移金属化学 | Core原子価モデル非対応 | Coordination, d-block |
-| ポリマー/生物高分子 | フォーマット非対応 | HELM, FASTA, peptide |
-| ML予測 | 外部モデル連携必要 | LogP機械学習, 溶解度予測 |
-| StandardInChI FFI | FFI ゼロ方針 | IUPAC C実装呼び出し禁止 |
+### 最近の主要修正
 
-### v0.1.90+ Roadmap
+| 修正 | 詳細 |
+|---|---|
+| **Kabsch RMSD** (BUG-3) | 回転行列の向きが逆だった問題 (R=VUᵀ→R=UVᵀ) を修正。純回転で RMSD≈0 を確認するテスト追加 |
+| **Jacobi 符号** (BUG-1) | 固有値分解の回転角 θ 式の符号誤り修正 `(aqq-app)→(app-aqq)` |
+| **Jacobi 反復数** (BUG-2) | `max_iterations=100` → `n*(n+1)/2*5`。n>14 の分子で精度不足だった問題を解消 |
+| **距離幾何 smooth_bounds** | 環分子（トルエン等）で upper bound が ∞ になる問題を Floyd-Warshall 伝播で解消 |
+| **DoS ガード** (SEC-1) | `generate_coords_dg`: `DG_MAX_ATOMS=500` 超の分子は空座標を返す |
+| **DoS ガード** (SEC-6) | CDXML パーサー: `CDXML_MAX_ATOMS=10,000` 超でエラー返却 |
 
-```
-高優先度:
-1. A4 true MHFP (circular SMILES + MinHash)
-2. A5 true ERG (reduced graph construction)
-3. A6 true reaction FP (XOR via bitwise ops)
+### 簡易実装の詳細
 
-中優先度:
-4. B3 IUPAC naming expansion (複素環対応)
-5. B4 CDXML multi-fragment support
-6. B5 LogP alkenyl C context values
+**MHFP (⚠️)**
+- 現状: ECFP4 ビット列を DefaultHasher でハッシュ
+- 真実装: 円環部分構造の SMILES 抽出 + MinHash (Lowe & Sayle 2013)
+- 影響: 大規模データベース類似度検索で精度 −5〜15%
 
-低優先度:
-7. B6 Kekulization (奇数員環ラジカル)
-8. B7 Condensed H counting edge cases
-```
+**ERG (⚠️)**
+- 現状: 原子・結合タイプカウント + 官能基ビット (256-258)
+- 真実装: 官能基クラスタリング + 縮退グラフ構築 (Sheridan et al. 1996)
+- 影響: 構造多様性評価の精度低下
 
----
+**Reaction FP (⚠️)**
+- 現状: 反応物+生成物の ECFP4 を OR 結合
+- 真実装: XOR 差分エンコーディング（形成/切断結合を反映）
+- 影響: 反応ライブラリ検索の精度 −10〜20%
 
-## 9. 参考資料・引用
-
-| 項目 | 参考 | URL |
-|-----|-----|-----|
-| MMFF94 | Halgren 1996 | — |
-| Crippen LogP | Wildman & Crippen 1999 | — |
-| TPSA | Ertl et al. 1996 | — |
-| MHFP | Lowe & Sayle 2013 | https://pubs.acs.org/doi/10.1021/ci034236b |
-| ERG | Sheridan et al. 1996 | — |
-| CIP Rules | Cahn-Ingold-Prelog | — |
-| RDKit | Landrum et al. | https://www.rdkit.org |
+**MMFF94 電荷 (⚠️)**
+- 現状: 電気陰性度近似 + 形式電荷再分配（カルボキシラート/アンモニウム）
+- 真実装: 完全な BCI テーブル参照
+- 影響: 電荷バランス ±0.5e（RDKit は ±0.01e）
 
 ---
 
-**作成**: 2026-06-12 (v0.1.89 release notes)  
-**ステータス**: 🎯 **Gap analysis 89% closure** (A1-A6, B1-B2 complete)
+## 5. v0.1.90+ ロードマップ
+
+| 優先度 | 機能 | 概要 |
+|---|---|---|
+| HIGH | MHFP 真実装 | 円環 SMILES + MinHash (Lowe & Sayle 2013) |
+| HIGH | ERG 真実装 | 縮退グラフ構築 (Sheridan et al. 1996) |
+| HIGH | Reaction FP XOR | 変換を正確にエンコード |
+| MEDIUM | MMFF94 電荷テーブル | 完全 BCI テーブル参照 |
+| MEDIUM | IUPAC 命名拡張 | ケトン/エステル/複素環/アミド対応 |
+| LOW | LogP アルケニル C 区別 | 末端=CH₂ vs アリール隣接=CH− |
+| LOW | Kekulization エッジケース | Edmonds flower algorithm (奇数員環) |
+
+---
+
+## 6. 参考資料
+
+| ドキュメント | 内容 |
+|---|---|
+| `docs/rdkit_comparison.md` | 定量ベンチマーク元データ (175分子, v0.1.74) |
+| `docs/rdkit_gap_analysis.md` | ギャップ分析詳細 (A1-A6, B1-B7 series) |
+| `RELEASE_NOTES_v0.1.89.md` | v0.1.89 フィーチャー一覧 |
+
+---
+
+*chematic v0.1.94 — 2026-06-13*

@@ -43,6 +43,8 @@ pub enum CdxmlError {
     MissingBondEndpoint,
     /// The `p` coordinate attribute could not be parsed.
     InvalidCoords(String),
+    /// The document contains more atoms than the parser's safety limit.
+    TooManyAtoms(usize),
 }
 
 impl std::fmt::Display for CdxmlError {
@@ -52,6 +54,7 @@ impl std::fmt::Display for CdxmlError {
             CdxmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
             CdxmlError::MissingBondEndpoint => write!(f, "bond missing B or E attribute"),
             CdxmlError::InvalidCoords(s) => write!(f, "invalid p coords: {s}"),
+            CdxmlError::TooManyAtoms(n) => write!(f, "CDXML document exceeds atom limit ({n})"),
         }
     }
 }
@@ -156,6 +159,9 @@ impl FragAccum {
     }
 }
 
+/// Maximum atoms allowed in a single CDXML fragment (DoS guard).
+pub const CDXML_MAX_ATOMS: usize = 10_000;
+
 #[allow(clippy::type_complexity)]
 pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
     let mut acc = FragAccum::default();
@@ -215,6 +221,9 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
             } else {
                 (0.0, 0.0)
             };
+            if acc.atom_ids.len() >= CDXML_MAX_ATOMS {
+                return Err(CdxmlError::TooManyAtoms(CDXML_MAX_ATOMS));
+            }
             acc.atom_ids.push(id);
             acc.atom_elems.push(element);
             acc.atom_charges.push(charge);

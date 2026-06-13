@@ -264,12 +264,12 @@ fn kabsch_rmsd(coords_a: &Coords3D, coords_b: &Coords3D, n: usize) -> f64 {
         }
     }
 
-    // R = V * U^T.  R[r][c] = Σ_k V[r][k] * U[c][k].
+    // R = U * V^T.  R[r][c] = Σ_k U[r][k] * V[c][k].
     let mut r_mat = [[0.0f64; 3]; 3];
     for r in 0..3 {
         for c in 0..3 {
             for k in 0..3 {
-                r_mat[r][c] += v[r][k] * u[c][k];
+                r_mat[r][c] += u[r][k] * v[c][k];
             }
         }
     }
@@ -281,12 +281,12 @@ fn kabsch_rmsd(coords_a: &Coords3D, coords_b: &Coords3D, n: usize) -> f64 {
         for r in 0..3 {
             v_final[r][0] *= -1.0;
         }
-        // Recompute R.
+        // Recompute R = U * V_final^T.
         r_mat = [[0.0f64; 3]; 3];
         for r in 0..3 {
             for c in 0..3 {
                 for k in 0..3 {
-                    r_mat[r][c] += v_final[r][k] * u[c][k];
+                    r_mat[r][c] += u[r][k] * v_final[c][k];
                 }
             }
         }
@@ -470,6 +470,24 @@ mod tests {
             rmsd < 1e-6,
             "pure-translation Kabsch RMSD should be ~0, got {rmsd}"
         );
+    }
+
+    #[test]
+    fn kabsch_rmsd_pure_rotation_is_zero() {
+        // A pure rotation must give RMSD = 0 after Kabsch superposition.
+        let mol = parse("CCC").unwrap();
+        let n = mol.atom_count();
+        let base = generate_coords(&mol);
+        // 90° rotation around z-axis: (x,y,z) → (−y, x, z).
+        let mut rotated = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            let p = base.get(AtomIdx(i as u32));
+            rotated.set(AtomIdx(i as u32), Point3::new(-p.y, p.x, p.z));
+        }
+        let mut ens = ConformerEnsemble::with_conformer(mol, base).unwrap();
+        ens.add_conformer(rotated).unwrap();
+        let rmsd = ens.conformer_rmsd(0, 1).unwrap();
+        assert!(rmsd < 1e-6, "pure-rotation Kabsch RMSD should be ~0, got {rmsd}");
     }
 
     #[test]

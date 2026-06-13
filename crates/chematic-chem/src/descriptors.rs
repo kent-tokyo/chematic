@@ -1483,6 +1483,13 @@ fn atomic_valence(mol: &Molecule, idx: AtomIdx) -> f64 {
     degree + h_count
 }
 
+fn topo_dist_usize(mol: &Molecule) -> Vec<Vec<usize>> {
+    crate::topo_descriptors::topological_distance_matrix(mol)
+        .iter()
+        .map(|row| row.iter().map(|&d| d as usize).collect())
+        .collect()
+}
+
 /// Compute AutoCorr2D descriptor (topological distance-based).
 ///
 /// Moreau-Broto self-correlation: for each lag k (1..=7),
@@ -1495,10 +1502,7 @@ pub fn autocorr_2d(mol: &Molecule) -> Vec<f64> {
         return vec![0.0; 7];
     }
 
-    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol)
-        .iter()
-        .map(|row| row.iter().map(|&d| d as usize).collect())
-        .collect();
+    let dist = topo_dist_usize(mol);
     let n = mol.atom_count();
     let mut result = vec![0.0; 7];
 
@@ -1562,10 +1566,7 @@ pub fn ipc(mol: &Molecule) -> f64 {
         return 0.0;
     }
 
-    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol)
-        .iter()
-        .map(|row| row.iter().map(|&d| d as usize).collect())
-        .collect();
+    let dist = topo_dist_usize(mol);
     let mut result = 0.0;
 
     for (i, row) in dist.iter().enumerate().take(n) {
@@ -1630,10 +1631,7 @@ pub fn usrcat(mol: &Molecule) -> [f64; 42] {
     }
 
     // Part 1: USR-like distance features (36 values)
-    let dist_matrix: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol)
-        .iter()
-        .map(|row| row.iter().map(|&d| d as usize).collect())
-        .collect();
+    let dist_matrix = topo_dist_usize(mol);
     let n = mol.atom_count();
 
     // Compute centroid (average atomic position in connectivity space)
@@ -1729,10 +1727,7 @@ pub fn mmff94_charges(mol: &Molecule) -> Vec<f64> {
     };
 
     // Distance matrix for topological distances
-    let dist: Vec<Vec<usize>> = crate::topo_descriptors::topological_distance_matrix(mol)
-        .iter()
-        .map(|row| row.iter().map(|&d| d as usize).collect())
-        .collect();
+    let dist = topo_dist_usize(mol);
 
     // Initialize with formal charges
     for (i, charge) in charges.iter_mut().enumerate().take(n) {
@@ -1766,68 +1761,38 @@ pub fn mmff94_charges(mol: &Molecule) -> Vec<f64> {
 // Element Counts — specific element frequencies
 // ---------------------------------------------------------------------------
 
-/// Count carbons (C atoms, including aromatic).
-pub fn num_carbons(mol: &Molecule) -> usize {
+fn count_element(mol: &Molecule, atomic_num: u8) -> usize {
     mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 6)
+        .filter(|(_, a)| a.element.atomic_number() == atomic_num)
         .count()
 }
+
+/// Count carbons (C atoms, including aromatic).
+pub fn num_carbons(mol: &Molecule) -> usize { count_element(mol, 6) }
 
 /// Count nitrogens (N atoms, including aromatic).
-pub fn num_nitrogens(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 7)
-        .count()
-}
+pub fn num_nitrogens(mol: &Molecule) -> usize { count_element(mol, 7) }
 
 /// Count oxygens (O atoms).
-pub fn num_oxygens(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 8)
-        .count()
-}
+pub fn num_oxygens(mol: &Molecule) -> usize { count_element(mol, 8) }
 
 /// Count fluorines (F atoms).
-pub fn num_fluorines(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 9)
-        .count()
-}
+pub fn num_fluorines(mol: &Molecule) -> usize { count_element(mol, 9) }
 
 /// Count chlorines (Cl atoms).
-pub fn num_chlorines(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 17)
-        .count()
-}
+pub fn num_chlorines(mol: &Molecule) -> usize { count_element(mol, 17) }
 
 /// Count bromines (Br atoms).
-pub fn num_bromines(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 35)
-        .count()
-}
+pub fn num_bromines(mol: &Molecule) -> usize { count_element(mol, 35) }
 
 /// Count iodines (I atoms).
-pub fn num_iodines(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 53)
-        .count()
-}
+pub fn num_iodines(mol: &Molecule) -> usize { count_element(mol, 53) }
 
 /// Count sulfurs (S atoms).
-pub fn num_sulfurs(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 16)
-        .count()
-}
+pub fn num_sulfurs(mol: &Molecule) -> usize { count_element(mol, 16) }
 
 /// Count phosphorus (P atoms).
-pub fn num_phosphorus(mol: &Molecule) -> usize {
-    mol.atoms()
-        .filter(|(_, a)| a.element.atomic_number() == 15)
-        .count()
-}
+pub fn num_phosphorus(mol: &Molecule) -> usize { count_element(mol, 15) }
 
 /// Total hydrogen count (explicit + implicit).
 ///
