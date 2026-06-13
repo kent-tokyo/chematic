@@ -157,6 +157,13 @@ pub fn find_matches_with_config(
 // Recursive VF2 search
 // ---------------------------------------------------------------------------
 
+/// Returns the index of the smallest unmapped query atom.
+fn next_unmapped(mapping: &HashMap<usize, AtomIdx>, query_len: usize) -> usize {
+    (0..query_len)
+        .find(|i| !mapping.contains_key(i))
+        .unwrap() // safe: caller guarantees mapping.len() < query_len
+}
+
 fn match_recursive(
     query: &QueryMolecule,
     ctx: &EvalCtx<'_>,
@@ -183,9 +190,7 @@ fn match_recursive(
     }
 
     // Pick the next unmapped query atom (smallest index not yet in mapping).
-    let q_next = (0..query.atoms.len())
-        .find(|i| !mapping.contains_key(i))
-        .unwrap(); // safe: mapping.len() < query.atoms.len()
+    let q_next = next_unmapped(mapping, query.atoms.len());
 
     // Collect the set of target atoms already used in this mapping so we can
     // enforce injectivity.
@@ -412,9 +417,7 @@ fn has_match_recursive(
     }
 
     // Pick the next unmapped query atom.
-    let q_next = (0..query.atoms.len())
-        .find(|i| !mapping.contains_key(i))
-        .unwrap();
+    let q_next = next_unmapped(mapping, query.atoms.len());
 
     let used_targets: std::collections::HashSet<AtomIdx> = mapping.values().copied().collect();
 

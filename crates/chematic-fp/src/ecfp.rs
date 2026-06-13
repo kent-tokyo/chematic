@@ -235,15 +235,7 @@ pub fn ecfp4(mol: &Molecule) -> BitVec2048 {
 
 /// ECFP6 fingerprint (radius = 3, 2048 bits).
 pub fn ecfp6(mol: &Molecule) -> BitVec2048 {
-    ecfp(
-        mol,
-        &EcfpConfig {
-            radius: 3,
-            nbits: 2048,
-            use_chirality: false,
-            use_double_fold: false,
-        },
-    )
+    ecfp(mol, &EcfpConfig { radius: 3, ..EcfpConfig::default() })
 }
 
 /// Tanimoto similarity between two molecules using ECFP4.

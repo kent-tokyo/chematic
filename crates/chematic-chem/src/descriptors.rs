@@ -1334,7 +1334,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     m
 }
 
-fn mqn_atom_counts(mol: &Molecule, m: &mut Vec<u8>) {
+fn mqn_atom_counts(mol: &Molecule, m: &mut [u8]) {
     for (_, atom) in mol.atoms() {
         let slot = match atom.element.atomic_number() {
             6 => 0, 7 => 1, 8 => 2, 9 => 3, 14 => 4,
@@ -1345,7 +1345,7 @@ fn mqn_atom_counts(mol: &Molecule, m: &mut Vec<u8>) {
     }
 }
 
-fn mqn_bond_counts(mol: &Molecule, m: &mut Vec<u8>) {
+fn mqn_bond_counts(mol: &Molecule, m: &mut [u8]) {
     let mut single = 0u8;
     let mut double = 0u8;
     let mut triple = 0u8;
@@ -1374,7 +1374,7 @@ fn ring_has_heteroatom(mol: &Molecule, ring: &[AtomIdx]) -> bool {
     ring.iter().any(|&idx| matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16))
 }
 
-fn mqn_ring_stats(mol: &Molecule, rings: &[Vec<AtomIdx>], m: &mut Vec<u8>) {
+fn mqn_ring_stats(mol: &Molecule, rings: &[Vec<AtomIdx>], m: &mut [u8]) {
     m[14] = rings.len().min(255) as u8;
     let mut aromatic_rings = 0u8;
     let mut saturated_rings = 0u8;
@@ -1398,12 +1398,12 @@ fn mqn_ring_stats(mol: &Molecule, rings: &[Vec<AtomIdx>], m: &mut Vec<u8>) {
     m[16] = saturated_rings;
 }
 
-fn mqn_degree_stats(mol: &Molecule, m: &mut Vec<u8>) {
+fn mqn_degree_stats(mol: &Molecule, m: &mut [u8]) {
     let mut degrees: Vec<u8> = mol.atoms().map(|(idx, _)| mol.degree(idx) as u8).collect();
     fill_mqn_stats(m, &mut degrees, 17);
 }
 
-fn mqn_valence_stats(mol: &Molecule, m: &mut Vec<u8>) {
+fn mqn_valence_stats(mol: &Molecule, m: &mut [u8]) {
     let mut valences: Vec<u8> = mol
         .atoms()
         .map(|(idx, _)| (mol.degree(idx) + implicit_hcount(mol, idx) as usize) as u8)
@@ -1411,7 +1411,7 @@ fn mqn_valence_stats(mol: &Molecule, m: &mut Vec<u8>) {
     fill_mqn_stats(m, &mut valences, 20);
 }
 
-fn mqn_h_counts(mol: &Molecule, m: &mut Vec<u8>) {
+fn mqn_h_counts(mol: &Molecule, m: &mut [u8]) {
     for (idx, atom) in mol.atoms() {
         let h = implicit_hcount(mol, idx) as usize;
         let slot = match atom.element.atomic_number() {
@@ -1421,13 +1421,13 @@ fn mqn_h_counts(mol: &Molecule, m: &mut Vec<u8>) {
     }
 }
 
-fn mqn_charge_stats(mol: &Molecule, m: &mut Vec<u8>) {
+fn mqn_charge_stats(mol: &Molecule, m: &mut [u8]) {
     let charge_sum = formal_charge_sum(mol);
     m[26] = (charge_sum.clamp(-127, 127) + 127) as u8;
     m[27] = charge_sum.abs().min(255) as u8;
 }
 
-fn mqn_heteroatom_stats(mol: &Molecule, m: &mut Vec<u8>) {
+fn mqn_heteroatom_stats(mol: &Molecule, m: &mut [u8]) {
     let mut hetero_degrees: Vec<u8> = mol
         .atoms()
         .filter(|(_, a)| {
@@ -1443,7 +1443,7 @@ fn mqn_topology_stats(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
     ring_sets: &[HashSet<AtomIdx>],
-    m: &mut Vec<u8>,
+    m: &mut [u8],
 ) {
     // 38: sp3 carbons
     m[38] = mol
