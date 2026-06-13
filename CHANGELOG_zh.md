@@ -13,6 +13,17 @@ v0.1.8 之前的变更历史，请参考 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
+## [0.1.101] — 2026-06-13
+
+### Added — IUPAC 命名扩展 Round 1
+
+- **支链烷烃**：新增 `name_branched_alkane()` + `find_longest_c_chain()` + `format_substituents()`。按 IUPAC 最小定位原则选择主链，支持甲基/乙基取代基。例：`CC(C)C` → "2-methylpropane"，`CC(C)(C)C` → "2,2-dimethylpropane"。
+- **单取代苯惯用名**：新增 `name_monosubstituted_benzene()`。OH → phenol，CH3 → toluene，NH2 → aniline，Cl → chlorobenzene，Br → bromobenzene，CHO → benzaldehyde，COOH → benzoic acid，CN → benzonitrile。
+- **腈**：新增 `is_nitrile()` + `name_nitrile()`，检测 R-C≡N 并命名为 "ethanenitrile" 格式。
+- 测试数量：1,686 → 1,691 (+5 个测试函数 / 12+ 个断言)，全部通过。
+
+---
+
 ## [0.1.100] — 2026-06-13
 
 ### Improved — Kekulization：边缘情况测试 + 降序回退

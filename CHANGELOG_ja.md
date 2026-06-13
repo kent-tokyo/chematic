@@ -13,6 +13,17 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.101] — 2026-06-13
+
+### Added — IUPAC 命名拡充 Round 1
+
+- **分枝アルカン**: `name_branched_alkane()` + `find_longest_c_chain()` + `format_substituents()` を新設。IUPAC 最小ロカント規則で主鎖選択、メチル/エチル置換基に対応。例: `CC(C)C` → "2-methylpropane"、`CC(C)(C)C` → "2,2-dimethylpropane"。
+- **一置換ベンゼン慣用名**: `name_monosubstituted_benzene()` を新設。OH → phenol、CH3 → toluene、NH2 → aniline、Cl → chlorobenzene、Br → bromobenzene、CHO → benzaldehyde、COOH → benzoic acid、CN → benzonitrile。
+- **ニトリル**: `is_nitrile()` + `name_nitrile()` で R-C≡N を検出し "ethanenitrile" 形式で命名。
+- テスト数: 1,686 → 1,691 (+5 テスト関数 / 12+ アサーション)、全通過。
+
+---
+
 ## [0.1.100] — 2026-06-13
 
 ### Improved — Kekulization: エッジケーステスト + 降順フォールバック
