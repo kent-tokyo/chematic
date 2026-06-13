@@ -126,7 +126,14 @@ impl<'a> Namer<'a> {
             (1, 0, 0, 0) => self.name_one_oxygen(&carbons, o_atoms[0]),
             (2, 0, 0, 0) => self.name_two_oxygens(&carbons, &o_atoms),
             (1, 1, 0, 0) => self.name_amide(&carbons, o_atoms[0], n_atoms[0]),
-            (0, 1, 0, 0) => self.name_amine(&carbons, n_atoms[0]),
+            (0, 1, 0, 0) => {
+                // Nitrile (C≡N) takes priority over amine.
+                if self.is_nitrile(n_atoms[0]) {
+                    self.name_nitrile(&carbons, n_atoms[0])
+                } else {
+                    self.name_amine(&carbons, n_atoms[0])
+                }
+            }
             (0, 0, 0, _) if !halogens.is_empty() => {
                 if het_elements.len() != 1 {
                     return Err(IupacError::NotSupported);
@@ -150,27 +157,107 @@ impl<'a> Namer<'a> {
 
     fn name_aromatic_ring(&self, ring_atoms: &HashSet<AtomIdx>) -> Result<String, IupacError> {
         let mol = self.mol;
-        // All atoms must be in the ring (no substituents).
-        if ring_atoms.len() != mol.atom_count() {
-            return Err(IupacError::NotSupported);
-        }
         // All ring atoms must be aromatic.
         if !ring_atoms.iter().all(|&i| mol.atom(i).aromatic) {
             return Err(IupacError::NotSupported);
         }
+
         let n_n = ring_atoms.iter().filter(|&&i| mol.atom(i).element.atomic_number() == 7).count();
         let n_o = ring_atoms.iter().filter(|&&i| mol.atom(i).element.atomic_number() == 8).count();
         let n_s = ring_atoms.iter().filter(|&&i| mol.atom(i).element.atomic_number() == 16).count();
         let sz  = ring_atoms.len();
-        match (sz, n_n, n_o, n_s) {
-            (6, 0, 0, 0) => Ok("benzene".into()),
-            (6, 1, 0, 0) => Ok("pyridine".into()),
-            (6, 2, 0, 0) => Ok("pyrimidine".into()),
-            (5, 0, 1, 0) => Ok("furan".into()),
-            (5, 0, 0, 1) => Ok("thiophene".into()),
-            (5, 1, 0, 0) => Ok("pyrrole".into()),
-            (5, 2, 0, 0) => Ok("imidazole".into()),
-            _            => Err(IupacError::NotSupported),
+
+        // Case 1: Pure aromatic ring (no substituents).
+        if ring_atoms.len() == mol.atom_count() {
+            return match (sz, n_n, n_o, n_s) {
+                (6, 0, 0, 0) => Ok("benzene".into()),
+                (6, 1, 0, 0) => Ok("pyridine".into()),
+                (6, 2, 0, 0) => Ok("pyrimidine".into()),
+                (5, 0, 1, 0) => Ok("furan".into()),
+                (5, 0, 0, 1) => Ok("thiophene".into()),
+                (5, 1, 0, 0) => Ok("pyrrole".into()),
+                (5, 2, 0, 0) => Ok("imidazole".into()),
+                _            => Err(IupacError::NotSupported),
+            };
+        }
+
+        // Case 2: Monosubstituted benzene (phenol, toluene, aniline, etc.)
+        // Only support pure benzene ring (6 C, no N/O/S in ring).
+        if sz == 6 && n_n == 0 && n_o == 0 && n_s == 0 {
+            let sub_atoms: Vec<AtomIdx> = mol.atoms()
+                .filter(|(i, _)| !ring_atoms.contains(i))
+                .map(|(i, _)| i)
+                .collect();
+            return self.name_monosubstituted_benzene(ring_atoms, &sub_atoms);
+        }
+
+        Err(IupacError::NotSupported)
+    }
+
+    // -----------------------------------------------------------------------
+    // Monosubstituted benzene naming
+    // -----------------------------------------------------------------------
+
+    fn name_monosubstituted_benzene(
+        &self,
+        ring_atoms: &HashSet<AtomIdx>,
+        sub_atoms: &[AtomIdx],
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+        // Ensure exactly one ring C is attached to the substituent.
+        let attach_count = ring_atoms.iter().filter(|&&r| {
+            mol.neighbors(r).any(|(nb, _)| !ring_atoms.contains(&nb))
+        }).count();
+        if attach_count != 1 {
+            return Err(IupacError::NotSupported);
+        }
+
+        // Classify substituent by element counts + bond types.
+        let mut n_c = 0usize; let mut n_n = 0usize;
+        let mut n_o = 0usize; let mut n_hal = 0usize;
+        let mut halogen_an = 0u8;
+        for &a in sub_atoms {
+            match mol.atom(a).element.atomic_number() {
+                6  => n_c += 1,
+                7  => n_n += 1,
+                8  => n_o += 1,
+                1  => {},
+                an @ (9 | 17 | 35 | 53) => { n_hal += 1; halogen_an = an; }
+                _  => return Err(IupacError::NotSupported),
+            }
+        }
+
+        let sub_set: HashSet<AtomIdx> = sub_atoms.iter().copied().collect();
+        let has_triple = mol.bonds().any(|(_, b)| {
+            b.order == BondOrder::Triple
+                && (sub_set.contains(&b.atom1) || sub_set.contains(&b.atom2))
+        });
+        let has_double = mol.bonds().any(|(_, b)| {
+            b.order == BondOrder::Double
+                && (sub_set.contains(&b.atom1) || sub_set.contains(&b.atom2))
+        });
+
+        match (n_c, n_n, n_o, n_hal, has_double, has_triple) {
+            // Phenol: c1ccccc1O
+            (0, 0, 1, 0, false, false) => Ok("phenol".into()),
+            // Aniline: c1ccccc1N
+            (0, 1, 0, 0, false, false) => Ok("aniline".into()),
+            // Halo-benzenes
+            (0, 0, 0, 1, false, false) => {
+                let prefix = match halogen_an {
+                    9 => "fluoro", 17 => "chloro", 35 => "bromo", 53 => "iodo", _ => return Err(IupacError::NotSupported),
+                };
+                Ok(format!("{prefix}benzene"))
+            }
+            // Toluene: c1ccccc1C (one CH3)
+            (1, 0, 0, 0, false, false) => Ok("toluene".into()),
+            // Benzaldehyde: c1ccccc1C=O (n_c=1, n_o=1, has_double)
+            (1, 0, 1, 0, true, false) => Ok("benzaldehyde".into()),
+            // Benzoic acid: c1ccccc1C(=O)O (n_c=1, n_o=2, has_double)
+            (1, 0, 2, 0, true, false) => Ok("benzoic acid".into()),
+            // Benzonitrile: c1ccccc1C#N (n_c=1, n_n=1, has_triple)
+            (1, 1, 0, 0, false, true) => Ok("benzonitrile".into()),
+            _ => Err(IupacError::NotSupported),
         }
     }
 
@@ -206,12 +293,18 @@ impl<'a> Namer<'a> {
             return Err(IupacError::NotSupported);
         }
 
-        // Unbranched chain: each C has ≤ 2 C neighbors.
+        // Check for branching.
         let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
-        for &c in carbons {
-            if mol.neighbors(c).filter(|(nb, _)| c_set.contains(nb)).count() > 2 {
+        let is_branched = carbons.iter().any(|&c| {
+            mol.neighbors(c).filter(|(nb, _)| c_set.contains(nb)).count() > 2
+        });
+
+        if is_branched {
+            // Only saturated branched alkanes supported for now.
+            if double_bonds > 0 || triple_bonds > 0 {
                 return Err(IupacError::NotSupported);
             }
+            return self.name_branched_alkane(carbons);
         }
 
         Ok(if triple_bonds == 1 {
@@ -394,6 +487,95 @@ impl<'a> Namer<'a> {
         };
         Ok(format!("{mult}{base}"))
     }
+
+    // -----------------------------------------------------------------------
+    // Nitrile naming (R-C≡N → "...nitrile")
+    // -----------------------------------------------------------------------
+
+    fn is_nitrile(&self, n_idx: AtomIdx) -> bool {
+        self.mol.neighbors(n_idx)
+            .any(|(_, bi)| self.mol.bond(bi).order == BondOrder::Triple)
+    }
+
+    fn name_nitrile(&self, carbons: &[AtomIdx], n_idx: AtomIdx) -> Result<String, IupacError> {
+        let mol = self.mol;
+        // Find the C≡N carbon.
+        let nitrile_c = mol.neighbors(n_idx)
+            .filter(|(_, bi)| mol.bond(*bi).order == BondOrder::Triple)
+            .map(|(nb, _)| nb)
+            .next()
+            .ok_or(IupacError::NotSupported)?;
+        // Count the total C chain (nitrile C + alkyl chain).
+        // count_c_chain gives all C reachable from nitrile_c without crossing N.
+        let n_carbons = count_c_chain(mol, nitrile_c, n_idx);
+        // n_carbons already includes the nitrile carbon itself.
+        if n_carbons == 0 { return Err(IupacError::NotSupported); }
+        // Verify no branching on the C chain
+        let c_set: std::collections::HashSet<AtomIdx> = carbons.iter().copied().collect();
+        for &c in carbons {
+            if mol.neighbors(c)
+                .filter(|(nb, _)| c_set.contains(nb))
+                .count() > 2
+            {
+                return Err(IupacError::NotSupported); // branched nitrile not supported
+            }
+        }
+        Ok(format!("{}enitrile", alkane_base(n_carbons)))
+    }
+
+    // -----------------------------------------------------------------------
+    // Branched alkane naming (e.g., "2-methylpropane", "2,2-dimethylpropane")
+    // -----------------------------------------------------------------------
+
+    fn name_branched_alkane(&self, carbons: &[AtomIdx]) -> Result<String, IupacError> {
+        let mol = self.mol;
+
+        // Find the principal chain (longest C–C path).
+        let chain = find_longest_c_chain(mol, carbons);
+        let n = chain.len();
+        if n < 2 {
+            return Err(IupacError::NotSupported);
+        }
+
+        let chain_set: std::collections::HashSet<AtomIdx> = chain.iter().copied().collect();
+        let all_c_set: std::collections::HashSet<AtomIdx> = carbons.iter().copied().collect();
+
+        // Collect substituents: (chain_position_1based, alkyl_length).
+        let mut subs: Vec<(usize, usize)> = Vec::new();
+        for (pos0, &chain_c) in chain.iter().enumerate() {
+            let position = pos0 + 1;
+            for (nb, _) in mol.neighbors(chain_c) {
+                if all_c_set.contains(&nb) && !chain_set.contains(&nb) {
+                    // Substituent rooted at `nb`, blocked by chain_c.
+                    let sub_len = count_c_chain(mol, nb, chain_c);
+                    // Only support methyl (1) and ethyl (2) substituents.
+                    if sub_len > 2 {
+                        return Err(IupacError::NotSupported);
+                    }
+                    subs.push((position, sub_len));
+                }
+            }
+        }
+
+        if subs.is_empty() {
+            return Err(IupacError::NotSupported);
+        }
+
+        // Apply IUPAC lowest-locant rule: try forward and reverse numbering.
+        let subs_rev: Vec<(usize, usize)> = subs.iter()
+            .map(|&(pos, len)| (n + 1 - pos, len))
+            .collect();
+
+        let first_fwd = subs.iter().map(|&(p, _)| p).min().unwrap_or(usize::MAX);
+        let first_rev = subs_rev.iter().map(|&(p, _)| p).min().unwrap_or(usize::MAX);
+        let best_subs = if first_fwd <= first_rev { subs } else { subs_rev };
+
+        Ok(format!(
+            "{}{}",
+            format_substituents(&best_subs),
+            alkane_suffix(n)
+        ))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -422,6 +604,85 @@ fn count_c_chain(mol: &Molecule, start: AtomIdx, blocked: AtomIdx) -> usize {
         }
     }
     visited.len()
+}
+
+/// Find the longest carbon chain in a C-subgraph using two-pass BFS.
+///
+/// Returns the sequence of AtomIdx forming the longest simple path.
+/// For branched alkanes this gives the principal chain (IUPAC rule: longest chain).
+fn find_longest_c_chain(mol: &Molecule, carbons: &[AtomIdx]) -> Vec<AtomIdx> {
+    if carbons.is_empty() { return Vec::new(); }
+
+    let c_set: std::collections::HashSet<AtomIdx> = carbons.iter().copied().collect();
+
+    // BFS to find the farthest atom from a given start, returning (farthest, parents).
+    let bfs_far = |start: AtomIdx| -> (AtomIdx, std::collections::HashMap<AtomIdx, AtomIdx>) {
+        let mut parent: std::collections::HashMap<AtomIdx, AtomIdx> = std::collections::HashMap::new();
+        let mut visited: std::collections::HashSet<AtomIdx> = std::collections::HashSet::new();
+        let mut queue = VecDeque::new();
+        let mut farthest = start;
+        visited.insert(start);
+        queue.push_back(start);
+        while let Some(cur) = queue.pop_front() {
+            farthest = cur;
+            for (nb, _) in mol.neighbors(cur) {
+                if c_set.contains(&nb) && visited.insert(nb) {
+                    parent.insert(nb, cur);
+                    queue.push_back(nb);
+                }
+            }
+        }
+        (farthest, parent)
+    };
+
+    let reconstruct = |end: AtomIdx, start: AtomIdx,
+                        parents: &std::collections::HashMap<AtomIdx, AtomIdx>| -> Vec<AtomIdx> {
+        let mut path = vec![end];
+        let mut cur = end;
+        while cur != start {
+            cur = parents[&cur];
+            path.push(cur);
+        }
+        path.reverse();
+        path
+    };
+
+    // Pass 1: BFS from first carbon to find one endpoint of the longest chain.
+    let (end1, _) = bfs_far(carbons[0]);
+    // Pass 2: BFS from end1 to find the other endpoint.
+    let (end2, parents) = bfs_far(end1);
+
+    reconstruct(end2, end1, &parents)
+}
+
+/// Format substituents as an IUPAC prefix string ("2-methyl", "2,2-dimethyl", etc.).
+fn format_substituents(subs: &[(usize, usize)]) -> String {
+    // Group by alkyl name; sort alphabetically.
+    let mut groups: std::collections::BTreeMap<&str, Vec<usize>> =
+        std::collections::BTreeMap::new();
+    for &(pos, len) in subs {
+        let alkyl = match len {
+            1 => "methyl",
+            2 => "ethyl",
+            3 => "propyl",
+            _ => continue,
+        };
+        groups.entry(alkyl).or_default().push(pos);
+    }
+
+    let mut parts: Vec<String> = Vec::new();
+    for (alkyl, mut positions) in groups {
+        positions.sort_unstable();
+        let locants = positions.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(",");
+        let mult = match positions.len() {
+            1 => String::new(),
+            2 => "di".to_string(),
+            3 => "tri".to_string(),
+            _ => "?".to_string(),
+        };
+        parts.push(format!("{}-{}{}", locants, mult, alkyl));
+    }
+    parts.join("-")
 }
 
 fn count_components(mol: &Molecule) -> usize {
@@ -606,5 +867,45 @@ mod tests {
         assert_eq!(name(&mol("CC(=O)N")).unwrap(),   "ethanamide");
         assert_eq!(name(&mol("C(=O)N")).unwrap(),    "methanamide");
         assert_eq!(name(&mol("CCC(=O)N")).unwrap(),  "propanamide");
+    }
+
+    // ---- New: branched alkanes (v0.1.101) ------------------------------------
+
+    #[test]
+    fn test_branched_alkanes() {
+        assert_eq!(name(&mol("CC(C)C")).unwrap(),    "2-methylpropane");
+        assert_eq!(name(&mol("CC(C)CC")).unwrap(),   "2-methylbutane");
+        assert_eq!(name(&mol("CC(C)(C)C")).unwrap(), "2,2-dimethylpropane");
+        assert_eq!(name(&mol("CCCC(C)CC")).unwrap(), "3-methylhexane");
+    }
+
+    #[test]
+    fn test_branched_alkane_lowest_locant() {
+        // CCC(C)C = 2-methylbutane (not 3-methylbutane — lower locant wins).
+        assert_eq!(name(&mol("CCC(C)C")).unwrap(), "2-methylbutane");
+    }
+
+    // ---- New: substituted benzenes (v0.1.101) --------------------------------
+
+    #[test]
+    fn test_substituted_benzenes() {
+        assert_eq!(name(&mol("c1ccccc1O")).unwrap(),     "phenol");
+        assert_eq!(name(&mol("c1ccccc1N")).unwrap(),     "aniline");
+        assert_eq!(name(&mol("c1ccccc1Cl")).unwrap(),    "chlorobenzene");
+        assert_eq!(name(&mol("c1ccccc1Br")).unwrap(),    "bromobenzene");
+    }
+
+    #[test]
+    fn test_substituted_benzene_carbonyl() {
+        assert_eq!(name(&mol("c1ccccc1C=O")).unwrap(),        "benzaldehyde");
+        assert_eq!(name(&mol("c1ccccc1C(=O)O")).unwrap(),     "benzoic acid");
+    }
+
+    // ---- New: nitriles (v0.1.101) -------------------------------------------
+
+    #[test]
+    fn test_nitriles() {
+        assert_eq!(name(&mol("CC#N")).unwrap(),  "ethanenitrile");
+        assert_eq!(name(&mol("CCC#N")).unwrap(), "propanenitrile");
     }
 }

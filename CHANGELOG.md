@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.101] — 2026-06-13
+
+### Added — IUPAC naming: branched alkanes, substituted benzenes, nitriles
+
+**`chematic-iupac/src/lib.rs`** — 3 new chemical classes, 5 new tests:
+
+- **Branched alkanes**: `name_branched_alkane()` + `find_longest_c_chain()` + `format_substituents()`. Identifies the principal chain by two-pass BFS, collects methyl/ethyl substituents, applies IUPAC lowest-locant rule. Examples: `CC(C)C` → "2-methylpropane", `CC(C)(C)C` → "2,2-dimethylpropane".
+- **Monosubstituted benzenes**: `name_monosubstituted_benzene()` detects phenol, aniline, chlorobenzene, bromobenzene, toluene, benzaldehyde, benzoic acid, benzonitrile by substituent composition.
+- **Nitriles**: `is_nitrile()` + `name_nitrile()` intercepts R−C≡N before amine dispatch. Returns "ethanenitrile", "propanenitrile", etc.
+- Tests: 1,686 → 1,691 (+5 test functions covering 12+ assertions), all passing.
+
+---
+
 ## [0.1.100] — 2026-06-13
 
 ### Improved — Kekulization: edge-case tests + order-independent fallback
