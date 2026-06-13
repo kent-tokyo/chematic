@@ -472,20 +472,31 @@ impl<'a> Namer<'a> {
             return Ok(format!("{}anal", alkane_stem(n)));
         }
 
-        // Ketone: internal C=O.  Determine chain length and position.
-        let c_sides: Vec<AtomIdx> = mol
-            .neighbors(carbonyl_c)
-            .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
-            .map(|(nb, _)| nb)
-            .collect();
-        if c_sides.len() < 2 {
-            return Err(IupacError::NotSupported);
+        // Ketone: internal C=O — find principal chain and position.
+        let chain = find_longest_c_chain(mol, carbons);
+        let n = chain.len();
+        if n < 3 { return Err(IupacError::NotSupported); }
+        let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
+        let all_c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
+        let pos_fwd = chain.iter().position(|&c| c == carbonyl_c)
+            .map(|p| p + 1).ok_or(IupacError::NotSupported)?;
+        let pos = pos_fwd.min(n + 1 - pos_fwd);
+        let reversed = pos_fwd > n + 1 - pos_fwd;
+        // Collect alkyl substituents on the chain.
+        let mut subs: Vec<(usize, usize)> = Vec::new();
+        for (idx, &chain_c) in chain.iter().enumerate() {
+            let position = idx + 1;
+            for (nb, _) in mol.neighbors(chain_c) {
+                if all_c_set.contains(&nb) && !chain_set.contains(&nb) {
+                    let sub_len = count_c_chain(mol, nb, chain_c);
+                    if sub_len > 4 { return Err(IupacError::NotSupported); }
+                    let adj_pos = if reversed { n + 1 - position } else { position };
+                    subs.push((adj_pos, sub_len));
+                }
+            }
         }
-        let left  = count_c_chain(mol, c_sides[0], carbonyl_c);
-        let right = count_c_chain(mol, c_sides[1], carbonyl_c);
-        let n   = left + right + 1;
-        let pos = left.min(right) + 1;
-        Ok(format!("{}-{}-one", alkane_base(n), pos))
+        let prefix = if subs.is_empty() { String::new() } else { format_substituents(&subs) };
+        Ok(format!("{}{}-{}-one", prefix, alkane_base(n), pos))
     }
 
     // -----------------------------------------------------------------------
@@ -559,10 +570,52 @@ impl<'a> Namer<'a> {
             .next();
 
         if let Some(alc_c) = alcohol_c {
-            // Ester: alkyl alkanoate
-            let acid_n    = count_c_chain(mol, carbonyl_c, ester_o);
+            // Ester: find acid chain from carbonyl_c (handles branched acid parts).
+            let c_set_est: HashSet<AtomIdx> = carbons.iter().copied().collect();
+            let chain_acid = {
+                let mut parent: std::collections::HashMap<AtomIdx, AtomIdx> =
+                    std::collections::HashMap::new();
+                let mut visited: HashSet<AtomIdx> = HashSet::new();
+                let mut queue = VecDeque::new();
+                let mut farthest = carbonyl_c;
+                visited.insert(carbonyl_c);
+                queue.push_back(carbonyl_c);
+                while let Some(cur) = queue.pop_front() {
+                    farthest = cur;
+                    for (nb, _) in mol.neighbors(cur) {
+                        if c_set_est.contains(&nb) && visited.insert(nb) {
+                            parent.insert(nb, cur);
+                            queue.push_back(nb);
+                        }
+                    }
+                }
+                let mut path = vec![farthest];
+                let mut cur = farthest;
+                while cur != carbonyl_c { cur = parent[&cur]; path.push(cur); }
+                path.reverse();
+                path
+            };
+            let acid_n = chain_acid.len();
+            let chain_acid_set: HashSet<AtomIdx> = chain_acid.iter().copied().collect();
+            let mut subs: Vec<(usize, usize)> = Vec::new();
+            for (pos0, &chain_c) in chain_acid.iter().enumerate() {
+                if pos0 == 0 { continue; }
+                let position = pos0 + 1;
+                for (nb, _) in mol.neighbors(chain_c) {
+                    if c_set_est.contains(&nb) && !chain_acid_set.contains(&nb) {
+                        let sub_len = count_c_chain(mol, nb, chain_c);
+                        if sub_len > 4 { return Err(IupacError::NotSupported); }
+                        subs.push((position, sub_len));
+                    }
+                }
+            }
             let alcohol_n = count_c_chain(mol, alc_c, ester_o);
-            Ok(format!("{}yl {}anoate", alkane_stem(alcohol_n), alkane_stem(acid_n)))
+            let acid_part = if subs.is_empty() {
+                format!("{}anoate", alkane_stem(acid_n))
+            } else {
+                format!("{}{}anoate", format_substituents(&subs), alkane_stem(acid_n))
+            };
+            Ok(format!("{}yl {}", alkane_stem(alcohol_n), acid_part))
         } else {
             // Carboxylic acid — find principal chain from carboxyl C (always position 1).
             let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
@@ -1601,6 +1654,20 @@ mod tests {
         assert_eq!(name(&mol("CCNCC")).unwrap(),  "N-ethylethanamine");
         assert_eq!(name(&mol("CNCC")).unwrap(),   "N-methylethanamine");
         assert_eq!(name(&mol("CN(C)C")).unwrap(), "N,N-dimethylmethanamine");
+    }
+
+    // ---- New Round 8 tests (v0.1.108) ----------------------------------------
+
+    #[test]
+    fn test_branched_ester() {
+        assert_eq!(name(&mol("CC(C)C(=O)OC")).unwrap(),  "methyl 2-methylpropanoate");
+        assert_eq!(name(&mol("CC(C)C(=O)OCC")).unwrap(), "ethyl 2-methylpropanoate");
+    }
+
+    #[test]
+    fn test_branched_ketone() {
+        assert_eq!(name(&mol("CC(=O)C(C)C")).unwrap(),    "3-methylbutan-2-one");
+        assert_eq!(name(&mol("CC(=O)C(C)(C)C")).unwrap(), "3,3-dimethylbutan-2-one");
     }
 
     // ---- New Round 7 tests (v0.1.107) ----------------------------------------
