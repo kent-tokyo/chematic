@@ -393,13 +393,23 @@ impl<'a> Namer<'a> {
             return self.name_branched_alkane(carbons);
         }
 
-        Ok(if triple_bonds == 1 {
-            alkyne_suffix(n)
+        if triple_bonds == 1 {
+            if n >= 4 {
+                let pos = unsaturation_locant(mol, carbons, BondOrder::Triple);
+                Ok(format!("{}-{}-yne", alkane_stem(n), pos))
+            } else {
+                Ok(alkyne_suffix(n))
+            }
         } else if double_bonds == 1 {
-            alkene_suffix(n)
+            if n >= 4 {
+                let pos = unsaturation_locant(mol, carbons, BondOrder::Double);
+                Ok(format!("{}-{}-ene", alkane_stem(n), pos))
+            } else {
+                Ok(alkene_suffix(n))
+            }
         } else {
-            alkane_suffix(n)
-        })
+            Ok(alkane_suffix(n))
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -603,7 +613,7 @@ impl<'a> Namer<'a> {
     // Amine naming
     // -----------------------------------------------------------------------
 
-    fn name_amine(&self, _carbons: &[AtomIdx], n_idx: AtomIdx) -> Result<String, IupacError> {
+    fn name_amine(&self, carbons: &[AtomIdx], n_idx: AtomIdx) -> Result<String, IupacError> {
         let mol = self.mol;
         let n_h = implicit_hcount(mol, n_idx);
         let c_sides: Vec<AtomIdx> = mol.neighbors(n_idx)
@@ -616,8 +626,20 @@ impl<'a> Namer<'a> {
         chain_lens.sort_unstable_by(|a, b| b.cmp(a)); // descending
         match n_h {
             2 => {
-                let len = chain_lens.first().copied().unwrap_or(0);
-                Ok(format!("{}an-1-amine", alkane_stem(len)))
+                // Find N-bearing C's position on the principal chain.
+                let chain = find_longest_c_chain(mol, carbons);
+                let n_chain = chain.len();
+                let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
+                let amine_c = mol.neighbors(n_idx)
+                    .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6
+                                   && chain_set.contains(nb))
+                    .map(|(nb, _)| nb)
+                    .next()
+                    .ok_or(IupacError::NotSupported)?;
+                let pos_fwd = chain.iter().position(|&c| c == amine_c)
+                    .map(|p| p + 1).unwrap_or(1);
+                let pos = pos_fwd.min(n_chain + 1 - pos_fwd);
+                Ok(format!("{}an-{}-amine", alkane_stem(n_chain), pos))
             }
             1 => {
                 if chain_lens.len() != 2 { return Err(IupacError::NotSupported); }
@@ -1173,6 +1195,25 @@ fn format_substituents(subs: &[(usize, usize)]) -> String {
     parts.join("-")
 }
 
+/// Return the IUPAC locant (1-based, lowest) of a double or triple bond on the chain.
+fn unsaturation_locant(mol: &Molecule, carbons: &[AtomIdx], order: BondOrder) -> usize {
+    let chain = find_longest_c_chain(mol, carbons);
+    let n = chain.len();
+    for (_, b) in mol.bonds() {
+        if b.order == order {
+            if let (Some(p1), Some(p2)) = (
+                chain.iter().position(|&c| c == b.atom1),
+                chain.iter().position(|&c| c == b.atom2),
+            ) {
+                let fwd = p1.min(p2) + 1;  // 1-based lower position in forward direction
+                let rev = n - p1.max(p2);  // 1-based lower position in reversed direction
+                return fwd.min(rev);
+            }
+        }
+    }
+    1
+}
+
 /// Return ring atoms in cyclic traversal order.
 fn ring_order_traversal(mol: &Molecule, ring_atoms: &HashSet<AtomIdx>) -> Vec<AtomIdx> {
     if ring_atoms.is_empty() { return Vec::new(); }
@@ -1509,6 +1550,29 @@ mod tests {
         assert_eq!(name(&mol("CCNCC")).unwrap(),  "N-ethylethanamine");
         assert_eq!(name(&mol("CNCC")).unwrap(),   "N-methylethanamine");
         assert_eq!(name(&mol("CN(C)C")).unwrap(), "N,N-dimethylmethanamine");
+    }
+
+    // ---- New Round 6 tests (v0.1.106) ----------------------------------------
+
+    #[test]
+    fn test_alkene_locants() {
+        assert_eq!(name(&mol("CC=CC")).unwrap(),   "but-2-ene");
+        assert_eq!(name(&mol("C=CCC")).unwrap(),   "but-1-ene");
+        assert_eq!(name(&mol("CC=CCC")).unwrap(),  "pent-2-ene");
+        assert_eq!(name(&mol("C=CCCC")).unwrap(),  "pent-1-ene");
+    }
+
+    #[test]
+    fn test_alkyne_locants() {
+        assert_eq!(name(&mol("CC#CC")).unwrap(),  "but-2-yne");
+        assert_eq!(name(&mol("C#CCC")).unwrap(),  "but-1-yne");
+    }
+
+    #[test]
+    fn test_amine_locants() {
+        assert_eq!(name(&mol("CCCN")).unwrap(),     "propan-1-amine");
+        assert_eq!(name(&mol("CCC(N)C")).unwrap(),  "butan-2-amine");
+        assert_eq!(name(&mol("CC(N)CCC")).unwrap(), "pentan-2-amine");
     }
 
     // ---- New Round 5 tests (v0.1.105) ----------------------------------------
