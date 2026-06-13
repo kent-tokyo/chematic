@@ -212,6 +212,9 @@ impl<'a> Namer<'a> {
         if attach_count == 2 {
             return self.name_disubstituted_benzene(ring_atoms, sub_atoms);
         }
+        if attach_count == 3 {
+            return self.name_trisubstituted_benzene(ring_atoms);
+        }
         if attach_count != 1 {
             return Err(IupacError::NotSupported);
         }
@@ -282,24 +285,51 @@ impl<'a> Namer<'a> {
         if ring_atoms.len() == carbons.len() {
             return Ok(format!("cyclo{}", alkane_suffix(ring_atoms.len())));
         }
-        // Exactly one exocyclic C attached to ring (methylcycloalkane).
         let outside: Vec<AtomIdx> = carbons.iter()
             .filter(|&&c| !ring_atoms.contains(&c))
             .copied()
             .collect();
-        if outside.len() == 1 {
-            let sub_c = outside[0];
-            // sub_c must be a terminal methyl (no further C neighbors outside ring).
-            let further_c = mol.neighbors(sub_c)
-                .filter(|(nb, _)| {
-                    mol.atom(*nb).element.atomic_number() == 6 && !ring_atoms.contains(nb)
-                })
-                .count();
-            if further_c == 0 {
-                // Format: "methylcyclopropane", "methylcyclopentane", "methylcyclohexane", etc.
-                return Ok(format!("methylcyclo{}", alkane_suffix(ring_atoms.len())));
-            }
+
+        let is_terminal_methyl = |sub: AtomIdx| -> bool {
+            mol.neighbors(sub)
+                .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6 && !ring_atoms.contains(nb))
+                .count() == 0
+        };
+
+        if outside.len() == 1 && is_terminal_methyl(outside[0]) {
+            return Ok(format!("methylcyclo{}", alkane_suffix(ring_atoms.len())));
         }
+
+        if outside.len() == 2 && is_terminal_methyl(outside[0]) && is_terminal_methyl(outside[1]) {
+            let att_a = mol.neighbors(outside[0])
+                .find(|(nb, _)| ring_atoms.contains(nb))
+                .map(|(nb, _)| nb)
+                .ok_or(IupacError::NotSupported)?;
+            let att_b = mol.neighbors(outside[1])
+                .find(|(nb, _)| ring_atoms.contains(nb))
+                .map(|(nb, _)| nb)
+                .ok_or(IupacError::NotSupported)?;
+            // BFS shortest path within ring.
+            let raw_dist = {
+                let mut dist = 0usize;
+                let mut queue = VecDeque::new();
+                let mut visited: HashSet<AtomIdx> = HashSet::new();
+                queue.push_back((att_a, 0usize));
+                visited.insert(att_a);
+                'bfs: while let Some((cur, d)) = queue.pop_front() {
+                    if cur == att_b { dist = d; break 'bfs; }
+                    for (nb, _) in mol.neighbors(cur) {
+                        if ring_atoms.contains(&nb) && visited.insert(nb) {
+                            queue.push_back((nb, d + 1));
+                        }
+                    }
+                }
+                dist
+            };
+            let ring_dist = raw_dist.min(ring_atoms.len() - raw_dist);
+            return Ok(format!("1,{}-dimethylcyclo{}", ring_dist + 1, alkane_suffix(ring_atoms.len())));
+        }
+
         Err(IupacError::NotSupported)
     }
 
@@ -349,6 +379,15 @@ impl<'a> Namer<'a> {
         let is_double = mol.neighbors(o_idx).any(|(_, bi)| mol.bond(bi).order == BondOrder::Double);
 
         if !is_double {
+            // Ether check: O with 2 C neighbors and no implicit H → R-O-R
+            let o_c_nb: Vec<AtomIdx> = mol.neighbors(o_idx)
+                .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
+                .map(|(nb, _)| nb)
+                .collect();
+            if o_c_nb.len() == 2 && implicit_hcount(mol, o_idx) == 0 {
+                return self.name_ether(carbons, o_idx, o_c_nb[0], o_c_nb[1]);
+            }
+
             // Find the OH carbon.
             let oh_c = mol.neighbors(o_idx)
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
@@ -405,6 +444,38 @@ impl<'a> Namer<'a> {
         let n   = left + right + 1;
         let pos = left.min(right) + 1;
         Ok(format!("{}-{}-one", alkane_base(n), pos))
+    }
+
+    // -----------------------------------------------------------------------
+    // Ether naming (R-O-R → "alkoxyalkane")
+    // -----------------------------------------------------------------------
+
+    fn name_ether(
+        &self,
+        carbons: &[AtomIdx],
+        o_idx: AtomIdx,
+        side_a: AtomIdx,
+        side_b: AtomIdx,
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+        // Only unbranched ethers.
+        let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
+        if carbons.iter().any(|&c| {
+            mol.neighbors(c).filter(|(nb, _)| c_set.contains(nb)).count() > 2
+        }) {
+            return Err(IupacError::NotSupported);
+        }
+        let len_a = count_c_chain(mol, side_a, o_idx);
+        let len_b = count_c_chain(mol, side_b, o_idx);
+        let (alkoxy_len, parent_len) = if len_a <= len_b { (len_a, len_b) } else { (len_b, len_a) };
+        let alkoxy = format!("{}oxy", alkane_stem(alkoxy_len));
+        let parent = alkane_suffix(parent_len);
+        // Add locant "1-" when parent ≥ 3 C and chains differ (O position is ambiguous).
+        if parent_len >= 3 && alkoxy_len != parent_len {
+            Ok(format!("1-{alkoxy}{parent}"))
+        } else {
+            Ok(format!("{alkoxy}{parent}"))
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -500,15 +571,40 @@ impl<'a> Namer<'a> {
     // Amine naming
     // -----------------------------------------------------------------------
 
-    fn name_amine(&self, carbons: &[AtomIdx], n_idx: AtomIdx) -> Result<String, IupacError> {
+    fn name_amine(&self, _carbons: &[AtomIdx], n_idx: AtomIdx) -> Result<String, IupacError> {
         let mol = self.mol;
         let n_h = implicit_hcount(mol, n_idx);
-        let n   = carbons.len();
-        let base = alkane_stem(n);
+        let c_sides: Vec<AtomIdx> = mol.neighbors(n_idx)
+            .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
+            .map(|(nb, _)| nb)
+            .collect();
+        let mut chain_lens: Vec<usize> = c_sides.iter()
+            .map(|&nb| count_c_chain(mol, nb, n_idx))
+            .collect();
+        chain_lens.sort_unstable_by(|a, b| b.cmp(a)); // descending
         match n_h {
-            2 => Ok(format!("{base}an-1-amine")),
-            1 => Ok(format!("di{base}ylamine")),
-            0 => Ok(format!("tri{base}ylamine")),
+            2 => {
+                let len = chain_lens.first().copied().unwrap_or(0);
+                Ok(format!("{}an-1-amine", alkane_stem(len)))
+            }
+            1 => {
+                if chain_lens.len() != 2 { return Err(IupacError::NotSupported); }
+                let parent_len = chain_lens[0];
+                let sub_len    = chain_lens[1];
+                Ok(format!("N-{}yl{}anamine", alkane_stem(sub_len), alkane_stem(parent_len)))
+            }
+            0 => {
+                if chain_lens.len() != 3 { return Err(IupacError::NotSupported); }
+                let parent_len = chain_lens[0];
+                let sub1 = chain_lens[1];
+                let sub2 = chain_lens[2];
+                if sub1 == sub2 {
+                    Ok(format!("N,N-di{}yl{}anamine", alkane_stem(sub1), alkane_stem(parent_len)))
+                } else {
+                    let (lo, hi) = (sub1.min(sub2), sub1.max(sub2));
+                    Ok(format!("N-{}yl-N-{}yl{}anamine", alkane_stem(lo), alkane_stem(hi), alkane_stem(parent_len)))
+                }
+            }
             _ => Err(IupacError::NotSupported),
         }
     }
@@ -722,6 +818,89 @@ impl<'a> Namer<'a> {
     }
 
     // -----------------------------------------------------------------------
+    // Trisubstituted benzene naming
+    // -----------------------------------------------------------------------
+
+    fn name_trisubstituted_benzene(
+        &self,
+        ring_atoms: &HashSet<AtomIdx>,
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+        let attach_points: Vec<AtomIdx> = ring_atoms.iter()
+            .filter(|&&r| mol.neighbors(r).any(|(nb, _)| !ring_atoms.contains(&nb)))
+            .copied()
+            .collect();
+        if attach_points.len() != 3 {
+            return Err(IupacError::NotSupported);
+        }
+
+        let locant_map = best_benzene_locants(mol, ring_atoms, &attach_points);
+
+        // Classify each substituent.
+        let mut sub_list: Vec<(usize, String)> = Vec::new();
+        for &(locant, attach) in &locant_map {
+            let sub = self.classify_benzene_sub_simple(attach, ring_atoms)
+                .ok_or(IupacError::NotSupported)?;
+            sub_list.push((locant, sub));
+        }
+
+        // Sort alphabetically by substituent name, then numerically by locant.
+        sub_list.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
+
+        // Group identical substituents for di/tri multiplier.
+        let mut groups: Vec<(String, Vec<usize>)> = Vec::new();
+        for (locant, name) in sub_list {
+            if let Some(last) = groups.last_mut() {
+                if last.0 == name {
+                    last.1.push(locant);
+                    continue;
+                }
+            }
+            groups.push((name, vec![locant]));
+        }
+
+        let mut parts: Vec<String> = Vec::new();
+        for (name, mut locs) in groups {
+            locs.sort_unstable();
+            let locant_str = locs.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(",");
+            let mult = match locs.len() {
+                1 => String::new(),
+                2 => "di".to_string(),
+                3 => "tri".to_string(),
+                _ => return Err(IupacError::NotSupported),
+            };
+            parts.push(format!("{}-{}{}", locant_str, mult, name));
+        }
+
+        Ok(format!("{}benzene", parts.join("-")))
+    }
+
+    /// Classify a single benzene substituent by element type (for trisubstituted naming).
+    fn classify_benzene_sub_simple(
+        &self,
+        attach: AtomIdx,
+        ring_atoms: &HashSet<AtomIdx>,
+    ) -> Option<String> {
+        let mol = self.mol;
+        let direct: Vec<AtomIdx> = mol.neighbors(attach)
+            .filter(|(nb, _)| !ring_atoms.contains(nb))
+            .map(|(nb, _)| nb)
+            .collect();
+        if direct.is_empty() { return None; }
+        let first = direct[0];
+        match mol.atom(first).element.atomic_number() {
+            6  => Some("methyl".to_string()),
+            7  => Some("amino".to_string()),
+            8  => Some("hydroxy".to_string()),
+            9  => Some("fluoro".to_string()),
+            17 => Some("chloro".to_string()),
+            35 => Some("bromo".to_string()),
+            53 => Some("iodo".to_string()),
+            _  => None,
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Nitrile naming (R-C≡N → "...nitrile")
     // -----------------------------------------------------------------------
 
@@ -916,6 +1095,65 @@ fn format_substituents(subs: &[(usize, usize)]) -> String {
         parts.push(format!("{}-{}{}", locants, mult, alkyl));
     }
     parts.join("-")
+}
+
+/// Return ring atoms in cyclic traversal order.
+fn ring_order_traversal(mol: &Molecule, ring_atoms: &HashSet<AtomIdx>) -> Vec<AtomIdx> {
+    if ring_atoms.is_empty() { return Vec::new(); }
+    let start = *ring_atoms.iter().next().unwrap();
+    let mut order = vec![start];
+    let first_nb = mol.neighbors(start).find(|(nb, _)| ring_atoms.contains(nb)).map(|(nb, _)| nb);
+    let mut cur = match first_nb { Some(nb) => nb, None => return order };
+    let mut prev = start;
+    while cur != start {
+        order.push(cur);
+        let next = mol.neighbors(cur)
+            .find(|(nb, _)| ring_atoms.contains(nb) && *nb != prev)
+            .map(|(nb, _)| nb);
+        prev = cur;
+        match next { Some(nb) => cur = nb, None => break }
+    }
+    order
+}
+
+/// Find the minimum IUPAC locant assignment for `attach_points` on a ring.
+/// Returns sorted `(locant, attach_atom)` pairs.
+fn best_benzene_locants(
+    mol: &Molecule,
+    ring_atoms: &HashSet<AtomIdx>,
+    attach_points: &[AtomIdx],
+) -> Vec<(usize, AtomIdx)> {
+    let ring_order = ring_order_traversal(mol, ring_atoms);
+    let ring_n = ring_order.len();
+    if ring_n == 0 { return Vec::new(); }
+    let n = attach_points.len();
+    let pos_of: Vec<usize> = attach_points.iter()
+        .map(|a| ring_order.iter().position(|r| r == a).unwrap_or(0))
+        .collect();
+    let mut best_locs: Option<Vec<usize>> = None;
+    let mut best_assignment: Vec<(usize, AtomIdx)> = Vec::new();
+    for start in 0..n {
+        for &reverse in &[false, true] {
+            let mut assignment: Vec<(usize, AtomIdx)> = Vec::new();
+            for k in 0..n {
+                let idx = (start + k) % n;
+                let pos = if !reverse {
+                    (pos_of[idx] + ring_n - pos_of[start]) % ring_n
+                } else {
+                    (pos_of[start] + ring_n - pos_of[idx]) % ring_n
+                };
+                assignment.push((pos + 1, attach_points[idx]));
+            }
+            assignment.sort_by_key(|&(l, _)| l);
+            let locs: Vec<usize> = assignment.iter().map(|&(l, _)| l).collect();
+            let is_better = best_locs.as_ref().map_or(true, |b| locs < *b);
+            if is_better {
+                best_locs = Some(locs);
+                best_assignment = assignment;
+            }
+        }
+    }
+    best_assignment
 }
 
 fn count_components(mol: &Molecule) -> usize {
@@ -1171,5 +1409,36 @@ mod tests {
         assert_eq!(name(&mol("CC1CCCCC1")).unwrap(), "methylcyclohexane");
         assert_eq!(name(&mol("CC1CCCC1")).unwrap(),  "methylcyclopentane");
         assert_eq!(name(&mol("CC1CCC1")).unwrap(),   "methylcyclobutane");
+    }
+
+    // ---- New Round 3 tests (v0.1.103) ----------------------------------------
+
+    #[test]
+    fn test_ethers() {
+        assert_eq!(name(&mol("COC")).unwrap(),    "methoxymethane");
+        assert_eq!(name(&mol("COCC")).unwrap(),   "methoxyethane");
+        assert_eq!(name(&mol("CCOCC")).unwrap(),  "ethoxyethane");
+        assert_eq!(name(&mol("COCCC")).unwrap(),  "1-methoxypropane");
+    }
+
+    #[test]
+    fn test_trimethylbenzene() {
+        assert_eq!(name(&mol("Cc1cccc(C)c1C")).unwrap(),   "1,2,3-trimethylbenzene");
+        assert_eq!(name(&mol("Cc1ccc(C)cc1C")).unwrap(),   "1,2,4-trimethylbenzene");
+        assert_eq!(name(&mol("Cc1cc(C)cc(C)c1")).unwrap(), "1,3,5-trimethylbenzene");
+    }
+
+    #[test]
+    fn test_secondary_amine() {
+        assert_eq!(name(&mol("CCNCC")).unwrap(),  "N-ethylethanamine");
+        assert_eq!(name(&mol("CNCC")).unwrap(),   "N-methylethanamine");
+        assert_eq!(name(&mol("CN(C)C")).unwrap(), "N,N-dimethylmethanamine");
+    }
+
+    #[test]
+    fn test_dimethylcycloalkane() {
+        assert_eq!(name(&mol("CC1CCC(C)CC1")).unwrap(), "1,4-dimethylcyclohexane");
+        assert_eq!(name(&mol("CC1CCCC1C")).unwrap(),    "1,2-dimethylcyclopentane");
+        assert_eq!(name(&mol("CC1CCC(C)C1")).unwrap(),  "1,3-dimethylcyclopentane");
     }
 }
