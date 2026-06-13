@@ -1225,6 +1225,39 @@ pub fn gasteiger_charges_json(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
+/// MMFF94 partial charges (BCI table, ±0.1e accuracy) as a JSON array of f64.
+///
+/// Uses Bond Charge Increment (BCI) model (Halgren 1996) for 25 common bond types.
+/// Returns `[q0, q1, ..., qN]` — one value per heavy atom.
+/// Total charge equals the sum of formal charges (charge conserved).
+#[wasm_bindgen]
+pub fn mmff94_charges_json(mol: &MolHandle) -> String {
+    let q = chematic_chem::mmff94_charges(&mol.inner);
+    let parts: Vec<String> = q.iter().map(|v| format!("{v:.6}")).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// MinHash fingerprint (128 hashes) as JSON.
+///
+/// Returns `{"num_hashes":128,"hashes":[u64,...]}`.
+/// Use `tanimoto_mhfp_smiles` for direct SMILES-to-SMILES similarity.
+#[wasm_bindgen]
+pub fn mhfp_hashes_json(mol: &MolHandle) -> String {
+    let fp = chematic_fp::mhfp(&mol.inner);
+    let hs: Vec<String> = fp.hashes.iter().map(|h| h.to_string()).collect();
+    format!(r#"{{"num_hashes":{},"hashes":[{}]}}"#, fp.num_hashes, hs.join(","))
+}
+
+/// Tanimoto-like similarity between two SMILES via MHFP (MinHash Jaccard approximation).
+#[wasm_bindgen]
+pub fn tanimoto_mhfp_smiles(smi1: &str, smi2: &str) -> Result<f64, JsValue> {
+    let m1 = chematic_smiles::parse(smi1)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let m2 = chematic_smiles::parse(smi2)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(chematic_fp::tanimoto_mhfp(&m1, &m2))
+}
+
 /// Compute 2D pharmacophore fingerprint (2048 bits) as a JSON feature count summary.
 /// Returns simplified JSON with feature type counts: {Donor, Acceptor, Aromatic, Hydrophobic, Positive, Negative}
 #[wasm_bindgen]
@@ -4426,6 +4459,62 @@ M  END
     }
 
     #[test]
+    fn test_mmff94_charges_json_length() {
+        // Acetic acid has 4 heavy atoms (2C, 2O)
+        let h = parse("CC(=O)O");
+        let json = mmff94_charges_json(&h);
+        assert!(json.starts_with('[') && json.ends_with(']'));
+        let count = json
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .count();
+        assert_eq!(count, 4, "acetic acid should have 4 charges, got {count}");
+    }
+
+    #[test]
+    fn test_mmff94_charges_json_acetate_negative() {
+        // Acetate [O-] → total charge = -1
+        let h = parse("CC(=O)[O-]");
+        let json = mmff94_charges_json(&h);
+        let total: f64 = json
+            .trim_matches(|c| c == '[' || c == ']')
+            .split(',')
+            .filter_map(|s| s.trim().parse::<f64>().ok())
+            .sum();
+        assert!(
+            (total + 1.0).abs() < 0.01,
+            "acetate total charge should be -1, got {total}"
+        );
+    }
+
+    #[test]
+    fn test_mhfp_hashes_json_format() {
+        let h = parse("c1ccccc1");
+        let json = mhfp_hashes_json(&h);
+        assert!(json.contains("\"num_hashes\":128"), "should have num_hashes:128");
+        assert!(json.contains("\"hashes\":"), "should have hashes key");
+    }
+
+    #[test]
+    fn test_tanimoto_mhfp_smiles_self() {
+        let result = tanimoto_mhfp_smiles("c1ccccc1", "c1ccccc1").unwrap();
+        assert!((result - 1.0).abs() < 1e-9, "self-similarity should be 1.0, got {result}");
+    }
+
+    #[test]
+    fn test_mhfp_lsh_handle_query() {
+        let mut idx = MhfpLshHandle::new(128);
+        idx.add_smiles("c1ccccc1").unwrap();    // benzene → 0
+        idx.add_smiles("Cc1ccccc1").unwrap();   // toluene → 1
+        idx.add_smiles("CC").unwrap();           // ethane  → 2
+
+        let json = idx.query_json("c1ccccc1", 0.99).unwrap();
+        // Benzene should find itself at similarity 1.0
+        assert!(json.contains("\"index\":0"), "benzene should find itself: {json}");
+        assert_eq!(idx.len(), 3);
+    }
+
+    #[test]
     fn to_mol_block_has_nonzero_coords() {
         let h = parse("c1ccccc1"); // benzene
         let block = to_mol_block(&h);
@@ -5627,4 +5716,69 @@ pub fn ring_families_json(mol: &MolHandle) -> Result<String, JsValue> {
 
     serde_json::to_string(&json_families)
         .map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+// ---------------------------------------------------------------------------
+// MHFP LSH Index
+// ---------------------------------------------------------------------------
+
+/// MinHash LSH index: insert MHFP fingerprints and query by approximate similarity.
+///
+/// ```js
+/// const idx = new MhfpLshHandle(128);
+/// const i0 = idx.add_smiles("c1ccccc1");    // benzene → index 0
+/// const i1 = idx.add_smiles("Cc1ccccc1");   // toluene → index 1
+/// const hits = JSON.parse(idx.query_json("c1ccccc1", 0.5));
+/// // hits: [{index:0,similarity:1.0}, {index:1,similarity:0.xxx}]
+/// ```
+#[wasm_bindgen]
+pub struct MhfpLshHandle {
+    inner: chematic_fp::MhfpLshIndex,
+}
+
+#[wasm_bindgen]
+impl MhfpLshHandle {
+    /// Create a new LSH index for MHFP fingerprints with `num_hashes` hash lanes.
+    /// Default band decomposition: 16 bands × (num_hashes / 16) rows.
+    /// `num_hashes` must be a multiple of 16 (e.g. 128).
+    #[wasm_bindgen(constructor)]
+    pub fn new(num_hashes: usize) -> MhfpLshHandle {
+        MhfpLshHandle {
+            inner: chematic_fp::MhfpLshIndex::new(num_hashes),
+        }
+    }
+
+    /// Add a molecule by SMILES; returns its 0-based index in the index.
+    pub fn add_smiles(&mut self, smiles: &str) -> Result<usize, JsValue> {
+        let mol = chematic_smiles::parse(smiles)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let fp = chematic_fp::mhfp(&mol);
+        Ok(self.inner.add(fp))
+    }
+
+    /// Query by SMILES for all entries with similarity ≥ threshold.
+    ///
+    /// Returns a JSON array `[{"index":N,"similarity":0.xxx},...]` sorted by
+    /// descending similarity.  Empty array `[]` when nothing qualifies.
+    pub fn query_json(&self, query_smiles: &str, threshold: f64) -> Result<String, JsValue> {
+        let mol = chematic_smiles::parse(query_smiles)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let fp = chematic_fp::mhfp(&mol);
+        let results = self.inner.query(&fp, threshold);
+        let items: Vec<String> = results
+            .iter()
+            .map(|(i, s)| format!(r#"{{"index":{},"similarity":{:.6}}}"#, i, s))
+            .collect();
+        Ok(format!("[{}]", items.join(",")))
+    }
+
+    /// Number of molecules in the index.
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    /// True if the index contains no molecules.
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
 }

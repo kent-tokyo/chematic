@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.98] — 2026-06-13
+
+### Added — WASM API: MMFF94 charges, MHFP fingerprint, MinHash LSH index
+
+**`chematic-wasm/src/lib.rs`** — 3 new exports (+5 tests):
+
+- `mmff94_charges_json(mol)` → `[q0, q1, ..., qN]` — MMFF94 BCI partial charges (±0.1e). Same algorithm as `mmff94_charges()` in chematic-chem v0.1.96.
+- `mhfp_hashes_json(mol)` → `{"num_hashes":128,"hashes":[...]}` — MinHash fingerprint (128 lanes).
+- `tanimoto_mhfp_smiles(smi1, smi2)` → `f64` — Tanimoto-like MHFP similarity between two SMILES.
+- `MhfpLshHandle` — stateful JS class wrapping `MhfpLshIndex`. Methods: `new(num_hashes)`, `add_smiles(smiles)`, `query_json(smiles, threshold)`, `len()`, `is_empty()`.
+- Tests: 1,672 → 1,677 (+5), all passing.
+
+---
+
 ## [0.1.97] — 2026-06-13
 
 ### Added — MinHash LSH index (`chematic-fp`)
