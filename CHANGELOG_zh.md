@@ -13,6 +13,18 @@ v0.1.8 之前的变更历史，请参考 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
+## [0.1.97] — 2026-06-13
+
+### Added — MinHash LSH 索引（`chematic-fp`）
+
+- 在 `crates/chematic-fp/src/lsh.rs` 中新增 `MhfpLshIndex`，通过乐队分解法实现大规模分子库的近似相似度检索（亚线性时间复杂度）。
+- 默认配置：16 个波段 × 8 行（适用于 128 哈希），支持通过 `with_bands(bands, rows)` 自定义。
+- `add(fp) -> usize` 注册指纹，`query(fp, threshold)` 返回相似度 ≥ threshold 的所有条目（按降序排列）。
+- 召回率：P(s=0.8) ≈ 94%，P(s=0.7) ≈ 90%（概率近似检索）。
+- 新增测试 +6。测试数量：1,666 → 1,672 (+6)，全部通过。
+
+---
+
 ## [0.1.96] — 2026-06-13
 
 ### Improved — MMFF94 BCI 部分电荷

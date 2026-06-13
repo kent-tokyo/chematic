@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** + **v0.1.95–v0.1.96: MHFP/ERG/Reaction FP true algorithms + MMFF94 BCI charges** — **1,666 library tests, all passing. Zero C/C++ dependencies.**
+All phases complete + Section 4 (WASM, API improvements) + Sprint v0.1.33 (CXSMILES/CXSMARTS + audit) + Sprint v0.1.34 (InChI ring closure + stereo layers) + Sprint v0.1.35 (wasmBridge support) + Sprint v0.1.36 (Issue #1 Audit: BUG-2/3/4 fix) + Sprint v0.1.37 (mol_transforms API + random SMILES) + **Sprint v0.1.69–v0.1.74 (RDKit Gap Analysis: 6 feature implementations)** + **v0.1.88–v0.1.89 (Gap closure 89%: A1–A6, B1–B2 complete)** + **v0.1.91–v0.1.94 (Gap closure 100%: A1–A5, B3 complete)** + **v0.1.95–v0.1.97: MHFP/ERG/Reaction FP true algorithms + MMFF94 BCI charges + MinHash LSH index** — **1,672 library tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.1.96** (2026-06-13) — MMFF94 BCI partial charges (±0.1e)
+Latest release: **v0.1.97** (2026-06-13) — MinHash LSH index for fast approximate similarity search
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -74,7 +74,7 @@ Latest release: **v0.1.96** (2026-06-13) — MMFF94 BCI partial charges (±0.1e)
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace --lib   # 1,666 library tests, all passing
+cargo test --workspace --lib   # 1,672 library tests, all passing
 ```
 
 ---
@@ -439,10 +439,13 @@ Notes:
 
 ## Recent Development (v0.1.89–v0.1.95)
 
+**v0.1.97**: MinHash LSH index (`MhfpLshIndex`)
+- Band-decomposition LSH for sub-linear approximate Jaccard similarity search over large molecular libraries.
+- P(found | s=0.8) ≈ 94%, P(found | s=0.7) ≈ 90%. Configurable bands/rows.
+- 1,672 library tests, all passing.
+
 **v0.1.96**: MMFF94 BCI partial charges
-- `mmff94_charges()` upgraded from electronegativity-only (±0.5e) to BCI table (±0.1e). 25 entries covering C=O, C–O, C–N, N–H, O–H, halogens etc. (Halgren 1996).
-- Charge conservation guaranteed: sum(q) == sum(formal charges).
-- 1,666 library tests, all passing.
+- `mmff94_charges()` upgraded from electronegativity-only (±0.5e) to BCI table (±0.1e). Charge conservation guaranteed.
 
 **v0.1.95**: True fingerprint algorithms + IUPAC naming expansion
 - **MHFP canonical hash**: Morgan-style circular fragment hashes replace atom-index-dependent byte signatures.
