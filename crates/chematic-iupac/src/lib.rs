@@ -686,7 +686,7 @@ impl<'a> Namer<'a> {
             for (nb, _) in self.mol.neighbors(chain_c) {
                 if all_c_set.contains(&nb) && !chain_set.contains(&nb) {
                     let sub_len = count_c_chain(self.mol, nb, chain_c);
-                    if sub_len > 2 { return Err(IupacError::NotSupported); }
+                    if sub_len > 4 { return Err(IupacError::NotSupported); }
                     subs.push((position, sub_len));
                 }
             }
@@ -810,8 +810,18 @@ impl<'a> Namer<'a> {
             };
             (sub_a.0, root)
         } else {
-            // Neither is principal → both are substituents on benzene, use larger locant
-            return Err(IupacError::NotSupported);
+            // Neither is principal — both are substituents on benzene.
+            // Alphabetically first substituent gets locant 1.
+            let (s1, s2) = if sub_a.0 <= sub_b.0 {
+                (sub_a.0, sub_b.0)
+            } else {
+                (sub_b.0, sub_a.0)
+            };
+            return if s1 == s2 {
+                Ok(format!("1,{}-di{}benzene", pos2, s1))
+            } else {
+                Ok(format!("1-{}-{}-{}benzene", s1, pos2, s2))
+            };
         };
 
         Ok(format!("{}-{}{}", pos2, prefix_sub, root_name))
@@ -960,8 +970,7 @@ impl<'a> Namer<'a> {
                 if all_c_set.contains(&nb) && !chain_set.contains(&nb) {
                     // Substituent rooted at `nb`, blocked by chain_c.
                     let sub_len = count_c_chain(mol, nb, chain_c);
-                    // Only support methyl (1) and ethyl (2) substituents.
-                    if sub_len > 2 {
+                    if sub_len > 4 {
                         return Err(IupacError::NotSupported);
                     }
                     subs.push((position, sub_len));
@@ -1077,6 +1086,7 @@ fn format_substituents(subs: &[(usize, usize)]) -> String {
             1 => "methyl",
             2 => "ethyl",
             3 => "propyl",
+            4 => "butyl",
             _ => continue,
         };
         groups.entry(alkyl).or_default().push(pos);
@@ -1433,6 +1443,26 @@ mod tests {
         assert_eq!(name(&mol("CCNCC")).unwrap(),  "N-ethylethanamine");
         assert_eq!(name(&mol("CNCC")).unwrap(),   "N-methylethanamine");
         assert_eq!(name(&mol("CN(C)C")).unwrap(), "N,N-dimethylmethanamine");
+    }
+
+    // ---- New Round 4 tests (v0.1.104) ----------------------------------------
+
+    #[test]
+    fn test_disubstituted_benzene_non_principal() {
+        // Two halogens (para)
+        assert_eq!(name(&mol("Clc1ccc(Br)cc1")).unwrap(), "1-bromo-4-chlorobenzene");
+        assert_eq!(name(&mol("Clc1ccc(F)cc1")).unwrap(),  "1-chloro-4-fluorobenzene");
+        // Two methyls: ortho (Cc1ccccc1C) and para (Cc1ccc(C)cc1)
+        assert_eq!(name(&mol("Cc1ccccc1C")).unwrap(),     "1,2-dimethylbenzene");
+        assert_eq!(name(&mol("Cc1ccc(C)cc1")).unwrap(),   "1,4-dimethylbenzene");
+        // Methyl + halogen (para)
+        assert_eq!(name(&mol("Cc1ccc(Cl)cc1")).unwrap(),  "1-chloro-4-methylbenzene");
+    }
+
+    #[test]
+    fn test_propyl_substituent() {
+        // 11C: longest chain = octane (8C), propyl substituent at C4
+        assert_eq!(name(&mol("CCCC(CCC)CCCC")).unwrap(), "4-propyloctane");
     }
 
     #[test]
