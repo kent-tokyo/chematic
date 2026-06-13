@@ -11,6 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.99] — 2026-06-13
+
+### Improved — LogP Crippen: enone vinyl C classification
+
+- Added detection for vinyl C in α,β-unsaturated carbonyl systems (C=C-C=O).
+- Uses existing `neighbor_has_carbonyl()` helper to identify when an internal alkene C is conjugated with a carbonyl.
+- Crippen contribution: `0.2274` (generic internal alkene) → `0.1302` (enone vinyl C).
+- Rationale: electron withdrawal by C=O reduces hydrophobicity of the β-vinyl carbon.
+- Roadmap entry "LogP アルケニル C 区別" now fully complete:
+  - terminal =CH₂: `0.1551` ✓ (since v0.1.30)
+  - Ar-adjacent =CH−: `0.2640` ✓ (since v0.1.30)
+  - enone =CH− (C=C-C=O): `0.1302` ✓ (v0.1.99, new)
+  - other internal: `0.2274` ✓
+- 4 new tests: MVK, chalcone, crotonate, enone-vs-alkene comparison.
+- Tests: 1,677 → 1,681 (+4), all passing.
+
+---
+
 ## [0.1.98] — 2026-06-13
 
 ### Added — WASM API: MMFF94 charges, MHFP fingerprint, MinHash LSH index

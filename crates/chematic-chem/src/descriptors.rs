@@ -580,14 +580,22 @@ fn crippen_carbon_aliphatic(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
         }
     } else if has_double_to_c {
         // Context-dependent alkene C (Wildman-Crippen):
-        //   Ar-adjacent =CH-  (aromatic C neighbor):    0.2640
-        //   terminal =CH2 (h≥2, no aromatic neighbor):  0.1551
-        //   other internal alkene C:                    0.2274
+        //   Ar-adjacent =CH-  (aromatic C neighbor):           0.2640
+        //   terminal =CH2 (h≥2, no aromatic neighbor):         0.1551
+        //   internal =CH- in enone/enal (C=C-C=O neighbor):   0.1302
+        //   other internal alkene C:                           0.2274
+        //
+        // The enone case (C=C conjugated with C=O) uses a lower contribution
+        // because electron withdrawal by the carbonyl reduces hydrophobicity.
+        // neighbor_has_carbonyl() is the existing helper (line ~252).
         let ar_c_nbr = has_aromatic_carbon_neighbor(mol, idx);
+        let conjugated = neighbor_has_carbonyl(mol, idx);
         if ar_c_nbr {
             0.2640
         } else if h >= 2 {
             0.1551
+        } else if conjugated {
+            0.1302
         } else {
             0.2274
         }
@@ -2905,5 +2913,48 @@ mod tests {
         // Both should be finite; just document that they exist
         assert!(crippen.is_finite(), "crippen logp must be finite");
         assert!(xl3.is_finite(), "xlogp3 must be finite");
+    }
+
+    // ---- Enone vinyl C tests (v0.1.99) ----
+
+    #[test]
+    fn test_logp_mvk_enone_vinyl() {
+        // Methyl vinyl ketone: CH2=CH-C(=O)-CH3
+        // =CH2 (0.1551) + =CH- adj to C=O (enone, 0.1302) + C=O + CH3
+        // RDKit Crippen ~0.44; expect reasonable range
+        let m = mol("C=CC(=O)C");
+        let lp = logp_crippen(&m);
+        assert!(lp > 0.0 && lp < 1.5, "MVK logp = {lp}");
+    }
+
+    #[test]
+    fn test_logp_chalcone_enone() {
+        // Chalcone: Ph-CH=CH-C(=O)-Ph
+        // Ar-CH= (0.2640, ar-adjacent wins) + =CH-C(=O) (0.1302, enone)
+        // RDKit ~3.04; Crippen gives slightly different value
+        let m = mol("c1ccccc1/C=C/C(=O)c1ccccc1");
+        let lp = logp_crippen(&m);
+        assert!(lp > 1.8 && lp < 4.5, "chalcone logp = {lp}");
+    }
+
+    #[test]
+    fn test_logp_crotonate_internal_enone() {
+        // Crotonic acid: CH3-CH=CH-COOH (trans)
+        // =CH- (0.2274, non-ar, 1H) adj to C=O → enone case (0.1302)
+        let m = mol("CC=CC(=O)O");
+        let lp = logp_crippen(&m);
+        assert!(lp > -0.5 && lp < 1.5, "crotonate logp = {lp}");
+    }
+
+    #[test]
+    fn test_logp_enone_vs_plain_alkene() {
+        // Enone vinyl C (0.1302) is less hydrophobic than plain internal alkene (0.2274)
+        // MVK (C=C-C=O) vs 1-butene (C=C-CC)
+        let enone = logp_crippen(&mol("C=CC(=O)C")); // MVK
+        let alkene = logp_crippen(&mol("C=CCC"));    // 1-butene
+        assert!(
+            enone < alkene,
+            "MVK ({enone:.4}) should be < 1-butene ({alkene:.4}): enone is less hydrophobic"
+        );
     }
 }

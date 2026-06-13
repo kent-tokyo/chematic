@@ -269,8 +269,8 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 ### 簡易実装の詳細
 
 **MHFP (⚠️)**
-- 現状: Morgan 循環ハッシュをシングルとして MinHash（v0.1.95 で正規化）
-- 残課題: 大規模 LSH インデックスでは SMILES ベースシングルの方が精度向上の余地あり
+- 現状: Morgan 循環ハッシュをシングルとして MinHash（v0.1.95 で正規化）+ MinHash LSH インデックス（v0.1.97）
+- 残課題: SMILES ベースシングルの方が精度向上の余地あり（理論的差異は ±5% 未満）
 - 影響: 大規模データベース類似度検索で精度差 ±5% 以内
 
 **ERG (⚠️)**
@@ -293,7 +293,7 @@ FFI ゼロ方針（C/Python 実装への依存なし）で、RDKit の主要機�
 | ~~HIGH~~ | ~~ERG 薬理特徴~~ | ~~DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC~~ | ✅ v0.1.95 |
 | ~~HIGH~~ | ~~Reaction FP XOR~~ | ~~XOR 差分エンコーディング~~ | ✅ v0.1.94 |
 | MEDIUM | MMFF94 電荷テーブル | 完全 BCI テーブル参照 | 未着手 |
-| LOW | LogP アルケニル C 区別 | 末端=CH₂ vs アリール隣接=CH− | 未着手 |
+| ~~LOW~~ | ~~LogP アルケニル C 区別~~ | ~~末端=CH₂ vs アリール隣接=CH−~~ | ✅ v0.1.99 |
 | LOW | Kekulization エッジケース | Edmonds flower algorithm (奇数員環) | 未着手 |
 
 ---
