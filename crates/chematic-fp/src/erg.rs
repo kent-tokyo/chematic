@@ -13,6 +13,7 @@
 use std::collections::{HashSet, VecDeque};
 use chematic_core::{Atom, AtomIdx, BondOrder, Molecule};
 use crate::bitvec::BitVec2048;
+use crate::ecfp::fnv1a;
 
 /// Ertl 2017 functional group identification.
 /// Returns atom index sets, one per functional group cluster.
@@ -446,24 +447,44 @@ pub fn erg_with_config(
         }
     }
 
-    // v0.1.91: Add reduced graph topology bits
-    let (nodes, _edges) = build_reduced_graph(mol);
+    // Reduced graph topology encoding.
+    //
+    // For each edge (i, j) in the reduced graph, encode:
+    //   (sorted node types, binned linker length) → bit in [259, 2047]
+    //
+    // Linker bins: 0=adjacent, 1=short(1-2), 2=medium(3-5), 3=long(6+)
+    // This makes the fingerprint sensitive to inter-group distance.
+    let (nodes, edges) = build_reduced_graph(mol);
 
-    // Aromatic node detection
+    for edge in &edges {
+        if edge.linker_len == u32::MAX {
+            continue; // no path between groups — skip
+        }
+        let ta = nodes[edge.node_a].ntype.0;
+        let tb = nodes[edge.node_b].ntype.0;
+        let bin: u8 = match edge.linker_len {
+            0 => 0,
+            1..=2 => 1,
+            3..=5 => 2,
+            _ => 3,
+        };
+        let (t_lo, t_hi) = if ta <= tb { (ta, tb) } else { (tb, ta) };
+        // Hash the triplet into [259, 2047] for topology bits.
+        let h = fnv1a(&[t_lo, t_hi, bin, 0xE7]) as usize;
+        bits.set(259 + h % (2048 - 259));
+    }
+
+    // Global node-level flags (bits 256-258)
     if nodes.iter().any(|n| n.ntype.0 & ErgNodeType::AROMATIC != 0) {
-        bits.set(256); // Aromatic
+        bits.set(256);
     }
-
-    // Heteroatom functional group detection
     if nodes.iter().any(|n| n.ntype.0 != 0) {
-        bits.set(257); // Has heteroatom
+        bits.set(257);
     }
-
-    // Aliphatic-only detection
     if !nodes.iter().any(|n| n.ntype.0 & ErgNodeType::AROMATIC != 0)
         && atom_counts[ErgAtomType::CAliphatic as usize] > 0
     {
-        bits.set(258); // Aliphatic only
+        bits.set(258);
     }
 
     ErgFingerprint {
@@ -629,5 +650,41 @@ mod tests {
         assert!((0.0..=1.0).contains(&sim_methane_ethanol));
         assert!((0.0..=1.0).contains(&sim_methane_pyridine));
         assert!((0.0..=1.0).contains(&sim_ethanol_pyridine));
+    }
+
+    #[test]
+    fn test_erg_linker_distance_changes_fingerprint() {
+        // Same terminal functional groups (NH2 and COOH) but different linker lengths.
+        // The reduced graph edge topology bits (259+) must differ.
+        let short = parse("NCC(=O)O").unwrap();   // 1 linker C
+        let long  = parse("NCCCCCC(=O)O").unwrap(); // 5 linker Cs
+
+        let fp_short = erg(&short);
+        let fp_long  = erg(&long);
+
+        // Topology bits in [259, 2047] must differ for different linker lengths.
+        let short_topo: Vec<usize> = (259..2048).filter(|&b| fp_short.bits.get(b)).collect();
+        let long_topo:  Vec<usize> = (259..2048).filter(|&b| fp_long.bits.get(b)).collect();
+        assert_ne!(short_topo, long_topo,
+            "different linker lengths must produce different topology bits");
+
+        // Similarity should be less than 1.0 (not identical).
+        assert!(fp_short.tanimoto(&fp_long) < 1.0,
+            "different linker lengths should give Tanimoto < 1.0");
+    }
+
+    #[test]
+    fn test_erg_adjacent_groups_bin0() {
+        // Two functional groups with 0 linker atoms (directly bonded): bin=0.
+        // OCCO: O and O separated by 2 C linker atoms → bin=1 (short).
+        // ON: O and N directly bonded → linker_len should be small.
+        let direct = parse("NO").unwrap();   // N-O: effectively adjacent FGs
+        let indirect = parse("NCCCO").unwrap(); // N-CCC-O: 3-linker
+
+        let fp_direct   = erg(&direct);
+        let fp_indirect = erg(&indirect);
+
+        assert!(fp_direct.tanimoto(&fp_indirect) < 1.0,
+            "adjacent vs. 3-linker groups should differ");
     }
 }
