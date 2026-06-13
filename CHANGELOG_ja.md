@@ -13,6 +13,20 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.1.98] — 2026-06-13
+
+### Added — WASM API: MMFF94 電荷・MHFP フィンガープリント・MinHash LSH インデックス
+
+`chematic-wasm` に 3 つの新しいエクスポートを追加（テスト +5）：
+
+- `mmff94_charges_json(mol)` → `[q0, q1, ..., qN]` — MMFF94 BCI 部分電荷の配列（±0.1e）。
+- `mhfp_hashes_json(mol)` → `{"num_hashes":128,"hashes":[...]}` — MinHash FP を JSON 形式で返す。
+- `tanimoto_mhfp_smiles(smi1, smi2)` → `f64` — 2 つの SMILES 間の MHFP Tanimoto 類似度。
+- `MhfpLshHandle` — ステートフルな JS クラス。`add_smiles(smiles)` で分子を登録し、`query_json(smiles, threshold)` で閾値以上の近傍を高速検索。
+- テスト数: 1,672 → 1,677 (+5)、全通過。
+
+---
+
 ## [0.1.97] — 2026-06-13
 
 ### Added — MinHash LSH インデックス (`chematic-fp`)

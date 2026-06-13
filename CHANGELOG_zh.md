@@ -13,6 +13,20 @@ v0.1.8 之前的变更历史，请参考 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
+## [0.1.98] — 2026-06-13
+
+### Added — WASM API：MMFF94 电荷、MHFP 指纹、MinHash LSH 索引
+
+在 `chematic-wasm` 中新增 3 个导出（+5 个测试）：
+
+- `mmff94_charges_json(mol)` → `[q0, q1, ..., qN]` — MMFF94 BCI 部分电荷数组（±0.1e）。
+- `mhfp_hashes_json(mol)` → `{"num_hashes":128,"hashes":[...]}` — MinHash 指纹的 JSON 格式。
+- `tanimoto_mhfp_smiles(smi1, smi2)` → `f64` — 两个 SMILES 之间的 MHFP Tanimoto 相似度。
+- `MhfpLshHandle` — 有状态的 JS 类。通过 `add_smiles()` 注册分子，`query_json(smiles, threshold)` 进行快速近似近邻搜索。
+- 测试数量：1,672 → 1,677 (+5)，全部通过。
+
+---
+
 ## [0.1.97] — 2026-06-13
 
 ### Added — MinHash LSH 索引（`chematic-fp`）
