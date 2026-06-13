@@ -1326,7 +1326,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     mqn_charge_stats(mol, &mut m);
     mqn_heteroatom_stats(mol, &mut m);
     m[31] = rotatable_bond_count(mol).min(255) as u8;
-    m[32] = mol.atoms().filter(|(_, a)| a.aromatic).count() as u8;
+    m[32] = mol.atoms().filter(|(_, a)| a.aromatic).count().min(255) as u8;
     m[33] = hbd_count(mol).min(255) as u8;
     m[34] = hba_count(mol).min(255) as u8;
     m[37] = heavy_atom_count(mol).min(255) as u8;
@@ -1362,20 +1362,32 @@ fn mqn_bond_counts(mol: &Molecule, m: &mut Vec<u8>) {
     m[10] = single; m[11] = double; m[12] = triple; m[13] = aromatic;
 }
 
+fn ring_is_saturated(mol: &Molecule, ring: &[AtomIdx]) -> bool {
+    ring.iter().all(|&idx| {
+        mol.neighbors(idx).all(|(_, bidx)| {
+            !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
+        })
+    })
+}
+
+fn ring_has_heteroatom(mol: &Molecule, ring: &[AtomIdx]) -> bool {
+    ring.iter().any(|&idx| matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16))
+}
+
 fn mqn_ring_stats(mol: &Molecule, rings: &[Vec<AtomIdx>], m: &mut Vec<u8>) {
     m[14] = rings.len().min(255) as u8;
     let mut aromatic_rings = 0u8;
     let mut saturated_rings = 0u8;
     for ring in rings {
-        if ring.iter().all(|&idx| mol.atom(idx).aromatic) {
+        let is_aromatic = ring.iter().all(|&idx| mol.atom(idx).aromatic);
+        if is_aromatic {
             aromatic_rings = (aromatic_rings as usize + 1).min(255) as u8;
-        } else {
+        } else if ring_is_saturated(mol, ring) {
             saturated_rings = (saturated_rings as usize + 1).min(255) as u8;
         }
         // 35-36: ring heteroatom classification (N/O/S only — intentional subset)
-        let has_hetero = ring.iter().any(|&idx| matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16));
-        if has_hetero {
-            if ring.iter().all(|&idx| mol.atom(idx).aromatic) {
+        if ring_has_heteroatom(mol, ring) {
+            if is_aromatic {
                 m[35] = m[35].saturating_add(1);
             } else {
                 m[36] = m[36].saturating_add(1);
@@ -1440,7 +1452,7 @@ fn mqn_topology_stats(
             a.element.atomic_number() == 6
                 && mol.degree(*idx) + implicit_hcount(mol, *idx) as usize == 4
         })
-        .count() as u8;
+        .count().min(255) as u8;
 
     // 39: fused ring pairs (rings sharing > 1 atom)
     let mut fused = 0u8;
@@ -1457,7 +1469,7 @@ fn mqn_topology_stats(
     m[40] = mol
         .atoms()
         .filter(|(idx, _)| ring_sets.iter().filter(|r| r.contains(idx)).count() >= 2)
-        .count() as u8;
+        .count().min(255) as u8;
 
     // 41: spiro atoms
     let mut spiro = 0u8;
@@ -1821,20 +1833,10 @@ pub fn num_amide_bonds(mol: &Molecule) -> usize {
         if atom.element.atomic_number() != 6 {
             continue;
         }
-        // Check if this carbon is part of a carbonyl (C=O)
-        let has_carbonyl_o = mol.neighbors(idx).any(|(nb, bid)| {
-            mol.atom(nb).element.atomic_number() == 8 && mol.bond(bid).order == BondOrder::Double
-        });
-
-        if !has_carbonyl_o {
+        if !has_double_bond_to(mol, idx, 8) {
             continue;
         }
-
-        // Check if this carbon is bonded to nitrogen
-        if mol
-            .neighbors(idx)
-            .any(|(nb, _)| mol.atom(nb).element.atomic_number() == 7)
-        {
+        if mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).element.atomic_number() == 7) {
             count += 1;
         }
     }

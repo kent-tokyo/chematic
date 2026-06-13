@@ -41,8 +41,7 @@ pub fn iupac_name_stereo(mol: &Molecule) -> Result<String, IupacError> {
     } else {
         let parts: Vec<String> = rs_pairs
             .iter()
-            .enumerate()
-            .map(|(pos, (_, code))| format!("{}{}", pos + 1, code))
+            .map(|(atom_idx, code)| format!("{}{}", atom_idx + 1, code))
             .collect();
         format!("({})", parts.join(","))
     };

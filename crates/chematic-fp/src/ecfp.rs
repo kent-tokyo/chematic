@@ -58,7 +58,7 @@ pub(crate) fn initial_atom_id(
     let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
     let base_bytes = [
         atom.element.atomic_number(),
-        mol.neighbors(idx).count() as u8,
+        mol.neighbors(idx).count().min(255) as u8,
         implicit_hcount(mol, idx),
         charge_adjusted,
         ring_set.contains_atom(idx) as u8,
@@ -192,6 +192,9 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
 /// useFeatures=False, includeRedundantEnvironments=True)` in RDKit.
 pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMap<u64, u32> {
     use std::collections::HashMap;
+
+    const MAX_RADIUS: u32 = 20;
+    let radius = radius.min(MAX_RADIUS);
 
     let n = mol.atom_count();
     let mut counts: HashMap<u64, u32> = HashMap::new();

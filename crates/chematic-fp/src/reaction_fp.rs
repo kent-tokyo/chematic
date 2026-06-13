@@ -96,18 +96,12 @@ fn compute_structural_difference(reactant_fp: &BitVec2048, product_fp: &BitVec20
     result
 }
 
-/// Generate a reaction fingerprint from a reaction (OR combination, simplified).
+/// Generate a reaction fingerprint from a reaction.
 ///
-/// **Current Implementation**: Combines ECFP4 fingerprints via OR operation.
-/// Captures what structures are present but not what actually changed.
-///
-/// **True Structural Reaction FP** (RDKit CreateStructuralFingerprintForReaction) uses XOR:
-/// - Bits ON in products → structures formed
-/// - Bits ON in reactants → structures broken
-/// - XOR highlights the transformation itself
-/// - Much more discriminative for reaction similarity
-///
-/// Current OR approach is useful for composition filtering but weak for transformation matching.
+/// Uses XOR-based structural difference encoding by default (RDKit-equivalent):
+/// - Bits ON only in products → formed structures
+/// - Bits ON only in reactants → broken structures
+/// - `use_xor: false` falls back to OR union (composition only, less discriminative)
 pub fn reaction_fp(rxn: &chematic_rxn::Reaction) -> ReactionFingerprint {
     reaction_fp_with_config(rxn, &ReactionFpConfig::default())
 }
@@ -115,40 +109,20 @@ pub fn reaction_fp(rxn: &chematic_rxn::Reaction) -> ReactionFingerprint {
 /// Generate a reaction fingerprint with custom configuration.
 pub fn reaction_fp_with_config(
     rxn: &chematic_rxn::Reaction,
-    _config: &ReactionFpConfig,
+    config: &ReactionFpConfig,
 ) -> ReactionFingerprint {
-    // Generate ECFP4 for each reactant
-    let mut reactant_fps = Vec::new();
-    for mol in &rxn.reactants {
-        let fp = ecfp4(mol);
-        reactant_fps.push(fp);
-    }
-
-    // Combine reactant fingerprints via OR (union of structural features)
-    let reactant_fp = combine_fps_or(&reactant_fps);
-
-    // Generate ECFP4 for each product
-    let mut product_fps = Vec::new();
-    for mol in &rxn.products {
-        let fp = ecfp4(mol);
-        product_fps.push(fp);
-    }
-
-    // Combine product fingerprints via OR (union of structural features)
-    let product_fp = combine_fps_or(&product_fps);
-
-    // Create combined fingerprint using structural difference encoding
-    // This highlights what structures are transformed in the reaction:
-    // - Bits in reactants but not products = broken bonds/atoms
-    // - Bits in products but not reactants = formed bonds/atoms
-    // - OR of both = all structures involved in transformation
-    let combined_fp = compute_structural_difference(&reactant_fp, &product_fp);
-
-    ReactionFingerprint {
-        reactant_fp,
-        product_fp,
-        combined_fp,
-    }
+    let reactant_fp = combine_fps_or(
+        &rxn.reactants.iter().map(ecfp4).collect::<Vec<_>>(),
+    );
+    let product_fp = combine_fps_or(
+        &rxn.products.iter().map(ecfp4).collect::<Vec<_>>(),
+    );
+    let combined_fp = if config.use_xor {
+        compute_structural_difference(&reactant_fp, &product_fp)
+    } else {
+        reactant_fp.or(&product_fp)
+    };
+    ReactionFingerprint { reactant_fp, product_fp, combined_fp }
 }
 
 /// Reaction fingerprint using ECFP4.

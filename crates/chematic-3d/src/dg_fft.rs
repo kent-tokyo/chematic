@@ -43,8 +43,7 @@ fn build_bound_matrix(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
     }
 
     // Bond length constraints (distance = 1)
-    for j in 0..mol.bond_count() {
-        let bond = mol.bond(chematic_core::BondIdx(j as u32));
+    for (_, bond) in mol.bonds() {
         let a = bond.atom1;
         let b = bond.atom2;
         let dist = ideal_bond_length(mol, a, b);
@@ -346,7 +345,7 @@ fn refine_coords(
 /// After smoothing, upper[i][j] is finite for all atom pairs in a connected
 /// molecule, eliminating the infinity entries that would produce NaN in the
 /// Gram matrix.
-fn smooth_bounds(lower: &mut Vec<Vec<f64>>, upper: &mut Vec<Vec<f64>>) {
+fn smooth_bounds(lower: &mut [Vec<f64>], upper: &mut [Vec<f64>]) {
     let n = lower.len();
     for k in 0..n {
         for i in 0..n {
@@ -476,12 +475,7 @@ fn jacobi_eigendecompose(mat: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>>) {
         }
     }
 
-    // Extract eigenvalues from diagonal
-    let mut eigenvalues = vec![0.0; n];
-    for i in 0..n {
-        eigenvalues[i] = a[i][i];
-    }
-
+    let eigenvalues: Vec<f64> = (0..n).map(|i| a[i][i]).collect();
     (eigenvalues, v)
 }
 

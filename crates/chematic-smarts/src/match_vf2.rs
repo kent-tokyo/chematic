@@ -292,8 +292,7 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
         }
         AtomPrimitive::Hybridization(h) => eval_hybridization(idx, ctx, *h),
         AtomPrimitive::Isotope(mass) => {
-            ctx.config.use_isotopes && ctx.mol.atom(idx).isotope == Some(*mass)
-                || !ctx.config.use_isotopes
+            !ctx.config.use_isotopes || ctx.mol.atom(idx).isotope == Some(*mass)
         }
         AtomPrimitive::Chirality(kind) => eval_chirality(idx, ctx, *kind),
     }

@@ -12,7 +12,7 @@ use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder, valida
 use serde::{Deserialize, Serialize};
 
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
-use chematic_smarts::{parse_smarts, find_matches};
+use chematic_smarts::{parse_smarts, find_matches, find_matches_with_config, MatchConfig};
 
 /// Salt removal catalog: common salt patterns (counterions and solvates).
 ///
@@ -84,9 +84,10 @@ impl SaltCatalog {
 
     /// Check if a molecule fragment matches any salt pattern.
     pub fn is_salt(&self, frag: &Molecule) -> bool {
+        let config = MatchConfig { max_visit_budget: Some(1_000_000), ..Default::default() };
         for (_, smarts_str) in &self.patterns {
             if let Ok(query) = parse_smarts(smarts_str)
-                && !find_matches(&query, frag).is_empty() {
+                && !find_matches_with_config(&query, frag, &config).is_empty() {
                     return true;
                 }
         }
