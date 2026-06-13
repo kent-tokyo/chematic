@@ -261,6 +261,12 @@ fn build_reduced_graph(mol: &Molecule) -> (Vec<ErgNode>, Vec<ErgEdge>) {
         nodes.push(ErgNode { ntype, atom_indices: all_atoms });
     }
 
+    // Cap node count to prevent O(k²·n) blow-up on pathological all-heteroatom inputs.
+    const MAX_ERG_NODES: usize = 128;
+    if nodes.len() > MAX_ERG_NODES {
+        nodes.truncate(MAX_ERG_NODES);
+    }
+
     // Create edges: find shortest paths between node pairs
     let mut edges = Vec::new();
     let fg_set: HashSet<usize> = nodes.iter().flat_map(|n| n.atom_indices.clone()).collect();
@@ -301,7 +307,8 @@ fn shortest_path_linker(
 
             // Stop if we reach node_b
             if node_b.atom_indices.contains(&nbi) {
-                let linker = dist[cur] + 1 - node_a.atom_indices.len() as u32;
+                let linker = (dist[cur] + 1)
+                    .saturating_sub(node_a.atom_indices.len() as u32);
                 return linker.max(1);
             }
 
@@ -451,7 +458,7 @@ pub fn erg_with_config(
         }
 
         // Add degree-based bits for structural context
-        let degree = mol.bonds().filter(|(_, b)| b.atom1 == idx || b.atom2 == idx).count();
+        let degree = mol.neighbors(idx).count();
         let degree_bits = (degree.min(4) << 2) + (erg_type as usize);
         let degree_bit_pos = 512 + degree_bits.min(127);
         if degree_bit_pos < 2048 {

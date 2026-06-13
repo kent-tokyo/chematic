@@ -1319,6 +1319,9 @@ pub fn mmff94_charges_json(mol: &MolHandle) -> String {
 /// Use `tanimoto_mhfp_smiles` for direct SMILES-to-SMILES similarity.
 #[wasm_bindgen]
 pub fn mhfp_hashes_json(mol: &MolHandle) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
     let fp = chematic_fp::mhfp(&mol.inner);
     let hs: Vec<String> = fp.hashes.iter().map(|h| h.to_string()).collect();
     format!(r#"{{"num_hashes":{},"hashes":[{}]}}"#, fp.num_hashes, hs.join(","))
@@ -1331,6 +1334,9 @@ pub fn tanimoto_mhfp_smiles(smi1: &str, smi2: &str) -> Result<f64, JsValue> {
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let m2 = chematic_smiles::parse(smi2)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if m1.atom_count() > WASM_MAX_ATOMS || m2.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+    }
     Ok(chematic_fp::tanimoto_mhfp(&m1, &m2))
 }
 
