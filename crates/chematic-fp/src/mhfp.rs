@@ -11,7 +11,7 @@
 //! indices, so the fingerprint is canonical across different SMILES orderings.
 
 use std::collections::{HashMap, HashSet};
-use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 
 use crate::ecfp::fnv1a as fnv1a_hash;
 
@@ -93,17 +93,20 @@ fn circular_fragment_hash(mol: &Molecule, center: AtomIdx, radius: u32) -> u64 {
     let atom_set: Vec<AtomIdx> = atoms_within_radius(mol, center, radius);
     let atom_set_hs: HashSet<AtomIdx> = atom_set.iter().copied().collect();
 
-    // Initial invariant: element, charge, in-fragment degree, aromaticity
+    // Initial invariant: element, charge, in-fragment degree, aromaticity, implicit H count
+    // H count distinguishes NH2/NH/N and OH/O, reducing false-positive collisions.
     let mut ids: HashMap<AtomIdx, u64> = atom_set.iter().map(|&idx| {
         let atom = mol.atom(idx);
         let frag_degree = mol.neighbors(idx)
             .filter(|(nb, _)| atom_set_hs.contains(nb))
             .count() as u8;
+        let h_count = implicit_hcount(mol, idx).min(255) as u8;
         let h = fnv1a_hash(&[
             atom.element.atomic_number(),
             (atom.charge.wrapping_add(8)) as u8,
             frag_degree,
             atom.aromatic as u8,
+            h_count,
         ]);
         (idx, h)
     }).collect();
@@ -277,6 +280,32 @@ mod tests {
 
         assert!(sim_ec > sim_eb,
             "ethane~propane ({:.3}) should be > ethane~benzene ({:.3})", sim_ec, sim_eb);
+    }
+
+    /// H count in invariants: pyridine (no NH) vs pyrrole (has NH) should differ.
+    #[test]
+    fn test_mhfp_pyridine_vs_pyrrole() {
+        let pyridine = parse("c1ccncc1").unwrap();
+        let pyrrole  = parse("c1cc[nH]c1").unwrap();
+        let sim = tanimoto_mhfp(&pyridine, &pyrrole);
+        // They share aromatic ring structure, but pyridine N has no H, pyrrole does
+        // Should be similar but NOT identical
+        assert!(sim < 1.0,
+            "pyridine and pyrrole should NOT be identical (got sim={sim:.3})");
+    }
+
+    /// H count distinguishes methylamine (NH2) from dimethylamine (NH)
+    #[test]
+    fn test_mhfp_amine_h_count() {
+        let methylamine    = parse("CN").unwrap();   // NH2
+        let dimethylamine  = parse("CNC").unwrap();  // NH
+        let trimethylamine = parse("CN(C)C").unwrap(); // N (no H)
+        let fp_m  = mhfp(&methylamine);
+        let fp_dm = mhfp(&dimethylamine);
+        let fp_tm = mhfp(&trimethylamine);
+        // All three should be distinct fingerprints
+        assert!(fp_m.tanimoto(&fp_dm) < 1.0);
+        assert!(fp_dm.tanimoto(&fp_tm) < 1.0);
     }
 
     /// Larger radius should produce finer-grained differentiation for larger molecules.

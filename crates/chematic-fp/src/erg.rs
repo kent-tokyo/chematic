@@ -150,15 +150,40 @@ pub struct ErgEdge {
     pub linker_len: u32,
 }
 
+/// Return true if atom `n_idx` (nitrogen) is in an amide or sulfonamide context.
+///
+/// Amide: N directly bonded to C=O.
+/// Sulfonamide: N directly bonded to S(=O).
+/// In both cases the N lone pair is delocalized → acts as ACCEPTOR, not DONOR.
+fn is_amide_like_nitrogen(mol: &Molecule, n_idx: AtomIdx) -> bool {
+    mol.neighbors(n_idx).any(|(nb, _)| {
+        let nb_an = mol.atom(nb).element.atomic_number();
+        match nb_an {
+            6 => mol.neighbors(nb).any(|(c_nb, bond_idx)| {
+                mol.atom(c_nb).element.atomic_number() == 8
+                    && mol.bond(bond_idx).order == BondOrder::Double
+            }),
+            16 => mol.neighbors(nb).any(|(s_nb, bond_idx)| {
+                mol.atom(s_nb).element.atomic_number() == 8
+                    && mol.bond(bond_idx).order == BondOrder::Double
+            }),
+            _ => false,
+        }
+    })
+}
+
 /// Assign pharmacophore-based node type for a functional group cluster.
 ///
 /// Rules (per atom in the group):
 /// - AROMATIC: any aromatic atom
-/// - DONOR: N-H or O-H (explicit or implicit H present)
-/// - ACCEPTOR: non-aromatic N, aromatic N without H (pyridine-like), any O, any F
+/// - DONOR: N-H (non-amide/sulfonamide), O-H, or S-H
+/// - ACCEPTOR: N (non-amide unless aromatic), amide/sulfonamide N, any O, any F
 /// - POSITIVE: formal charge > 0
 /// - NEGATIVE: formal charge < 0
 /// - HYDROPHOBIC: group with only C/H atoms and no other pharmacophore feature
+///
+/// Key fix vs prior version: amide/sulfonamide N is ACCEPTOR-only even when it
+/// carries an H, because the lone pair is delocalized into the C=O or S=O π system.
 fn assign_pharmacophore_features(mol: &Molecule, atom_indices: &[usize]) -> ErgNodeType {
     let mut ntype = ErgNodeType::new();
 
@@ -178,16 +203,20 @@ fn assign_pharmacophore_features(mol: &Molecule, atom_indices: &[usize]) -> ErgN
         let impl_h = implicit_hcount(mol, idx) as usize;
         let total_h = explicit_h + impl_h;
 
-        // H-bond donor: N-H or O-H (or S-H for thiols)
-        if (an == 7 || an == 8 || an == 16) && total_h > 0 {
+        // H-bond donor:
+        //   - O-H and S-H: always donors when H present
+        //   - N-H: donor ONLY when NOT in amide/sulfonamide context
+        if (an == 8 || an == 16) && total_h > 0 {
+            ntype = ntype.with_donor();
+        } else if an == 7 && total_h > 0 && !is_amide_like_nitrogen(mol, idx) {
             ntype = ntype.with_donor();
         }
 
         // H-bond acceptor
         match an {
-            // Non-aromatic N: acceptor (amines, amides)
+            // Non-aromatic N: acceptor (including amide N — delocalized lone pair)
             7 if !atom.aromatic => ntype = ntype.with_acceptor(),
-            // Aromatic N: acceptor only if no H (pyridine), not if has H (pyrrole)
+            // Aromatic N: acceptor only if no H (pyridine-like), not if has H (pyrrole)
             7 if atom.aromatic && total_h == 0 => ntype = ntype.with_acceptor(),
             // O and F: always acceptor
             8 | 9 => ntype = ntype.with_acceptor(),
@@ -799,5 +828,70 @@ mod tests {
 
         assert!(fp_direct.tanimoto(&fp_indirect) < 1.0,
             "adjacent vs. 3-linker groups should differ");
+    }
+
+    /// Amide N: ACCEPTOR only, NOT donor (lone pair delocalized into C=O).
+    #[test]
+    fn test_erg_amide_n_is_acceptor_not_donor() {
+        use super::{assign_pharmacophore_features, identify_functional_groups};
+
+        let acetamide = parse("CC(=O)N").unwrap(); // CH3-C(=O)-NH2
+        let groups = identify_functional_groups(&acetamide);
+
+        // Find the group containing N (atomic number 7)
+        let n_group = groups.iter().find(|g| {
+            g.iter().any(|&i| acetamide.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
+        }).expect("should find N-containing group");
+
+        let ntype = assign_pharmacophore_features(&acetamide, n_group);
+
+        // Amide N should be ACCEPTOR (bit 4 set)
+        assert!(ntype.0 & ErgNodeType::ACCEPTOR != 0,
+            "amide N should be ACCEPTOR (bits={:#010b})", ntype.0);
+
+        // Amide N should NOT be DONOR (bit 2) — lone pair delocalized into C=O
+        assert!(ntype.0 & ErgNodeType::DONOR == 0,
+            "amide N should NOT be DONOR (bits={:#010b})", ntype.0);
+    }
+
+    /// Ethylamine N: both DONOR and ACCEPTOR (free lone pair + N-H).
+    #[test]
+    fn test_erg_amine_n_is_donor_and_acceptor() {
+        use super::{assign_pharmacophore_features, identify_functional_groups};
+
+        let ethylamine = parse("CCN").unwrap(); // CH3CH2-NH2
+        let groups = identify_functional_groups(&ethylamine);
+
+        let n_group = groups.iter().find(|g| {
+            g.iter().any(|&i| ethylamine.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
+        }).expect("should find N-containing group");
+
+        let ntype = assign_pharmacophore_features(&ethylamine, n_group);
+
+        // Amine N should be both DONOR and ACCEPTOR
+        assert!(ntype.0 & ErgNodeType::DONOR != 0,
+            "amine N should be DONOR (bits={:#010b})", ntype.0);
+        assert!(ntype.0 & ErgNodeType::ACCEPTOR != 0,
+            "amine N should be ACCEPTOR (bits={:#010b})", ntype.0);
+    }
+
+    /// Sulfonamide N: ACCEPTOR only (same logic as amide N).
+    #[test]
+    fn test_erg_sulfonamide_n_is_acceptor_not_donor() {
+        use super::{assign_pharmacophore_features, identify_functional_groups};
+
+        let sulfonamide = parse("CS(=O)(=O)N").unwrap(); // methanesulfonamide
+        let groups = identify_functional_groups(&sulfonamide);
+
+        let n_group = groups.iter().find(|g| {
+            g.iter().any(|&i| sulfonamide.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
+        }).expect("should find N-containing group");
+
+        let ntype = assign_pharmacophore_features(&sulfonamide, n_group);
+
+        assert!(ntype.0 & ErgNodeType::ACCEPTOR != 0,
+            "sulfonamide N should be ACCEPTOR (bits={:#010b})", ntype.0);
+        assert!(ntype.0 & ErgNodeType::DONOR == 0,
+            "sulfonamide N should NOT be DONOR (bits={:#010b})", ntype.0);
     }
 }
