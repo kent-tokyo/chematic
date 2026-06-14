@@ -1790,6 +1790,34 @@ pub fn canonical_tautomer(mol: &MolHandle) -> MolHandle {
     }
 }
 
+/// Compute the canonical tautomer with specific atoms blocked from H-transfer.
+///
+/// `blocked_atom_indices_json`: JSON array of 0-based atom indices, e.g. `[0, 3]`.
+/// Any tautomer move whose donor, bridge, or acceptor is in the blocked set is suppressed.
+///
+/// Returns canonical SMILES of the result, or `{"error":"..."}` on failure.
+/// Out-of-range indices are silently ignored (no effect).
+#[wasm_bindgen]
+pub fn canonical_tautomer_with_blocked_atoms_json(
+    mol: &MolHandle,
+    blocked_atom_indices_json: &str,
+) -> String {
+    let indices: Vec<u32> = match serde_json::from_str(blocked_atom_indices_json) {
+        Ok(v) => v,
+        Err(e) => return format!(r#"{{"error":"invalid JSON: {e}"}}"#),
+    };
+    let blocked_atoms: std::collections::HashSet<chematic_core::AtomIdx> =
+        indices.into_iter().map(chematic_core::AtomIdx).collect();
+    let config = chematic_chem::TautomerConfig {
+        blocked_atoms,
+        ..chematic_chem::TautomerConfig::default()
+    };
+    let result = chematic_chem::canonical_tautomer_with_config(&mol.inner, &config);
+    let smi = chematic_smiles::canonical_smiles(&result);
+    let escaped = smi.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("\"{escaped}\"")
+}
+
 /// All enumerated tautomers of `mol` as a JSON array of canonical SMILES strings.
 ///
 /// Example return value: `["Oc1cccc2ccccc12","O=C1C=CC=Cc2ccccc21"]`
