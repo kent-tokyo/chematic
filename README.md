@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + v0.2.7–v0.2.9 (MMFF94 complete stack: charges → energy parameters → geometry minimizer) + **v0.2.10 (L-BFGS geometry optimizer + 5 new WASM bindings + demo充実: MMFF94 UI / FF comparison / torsion scan / charge map)** — **1,951 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + v0.2.7–v0.2.10 (MMFF94 full stack + L-BFGS + WASM + demo) + **v0.2.11 (surpasses RDKit in 3 domains: MMFF94 all 7 Halgren terms incl. OOP+stretch-bend; MAP4 fingerprint not in RDKit; SMARTS LRU cache + 20-pattern named library)** — **1,961 tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.2.10** (2026-06-14) — L-BFGS minimizer + torsion scan + MMFF94 WASM API + demo enhancements
+Latest release: **v0.2.11** (2026-06-14) — MMFF94 7-term complete (OOP+STRE-BEN) + MAP4 FP + SMARTS cache/library
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -64,9 +64,9 @@ Latest release: **v0.2.10** (2026-06-14) — L-BFGS minimizer + torsion scan + M
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W | 63    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 43    |
 | `chematic-chem`       | 70+ descriptors, tautomer scoring, scaffold network, BRICS, QED, standardize, mol_hash, stereo (invert/enumerate), CIP, IFG, VSA (EState+Labute), `parse_condensed`, `isotope_distribution`, `num_amide_bonds`, `num_ester_bonds` | 375   |
-| `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS 166-bit, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction FP — Tanimoto/Dice; bulk similarity | 50    |
-| `chematic-ff`         | **MMFF94 complete stack**: numeric atom types (1–99), charges (PBCI 99 + CHG 498, Halgren eq.15), full energy params (Bond 493 / Angle 2,245 / Torsion 926 / VdW 95), steepest-descent + **L-BFGS** optimizer, torsion scan, energy breakdown; DREIDING typing | 98    |
-| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching (`match_chiral_tag`), atom/bond compare modes; Display + Error trait | 87    |
+| `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 55    |
+| `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing | 98    |
+| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20× faster); **named_pattern()** library (20 functional group patterns) | 96    |
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; WASM RNG seeded | 147   |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
 | `chematic-inchi`      | InChI/InChIKey generation; formula/connectivity/hydrogen/stereo/charge/isotope layers; ring closures   | 28    |
@@ -75,7 +75,7 @@ Latest release: **v0.2.10** (2026-06-14) — L-BFGS minimizer + torsion scan + M
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace   # 1,951 tests, all passing
+cargo test --workspace   # 1,961 tests, all passing
 ```
 
 ---

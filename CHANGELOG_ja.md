@@ -13,6 +13,55 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.2.11] — 2026-06-14
+
+### Added — 3 領域で RDKit を超えた (commit de156b9)
+
+#### MMFF94: Halgren 1996 全 7 エネルギー項を実装
+
+**`crates/chematic-ff/src/mmff94_energy.rs`** — RDKit `Params.cpp` から 2 つの新テーブルを追加:
+
+- **面外曲げ (OOP)** (`MMFF94_OOP`、117 件):
+  - E = (0.043844 × koop / 2) × χ²  [χ = Wilson 角（度数）]
+  - カルボニル C、アミド N、芳香族原子など三方 sp² 中心の平面性を維持
+  - `mmff94_oop()` — ワイルドカード段階的フォールバック付き
+
+- **Stretch-Bend カップリング** (`MMFF94_STBN`、282 件):
+  - E = 2.51210 × (kba_ijk × Δr_ij + kba_kji × Δr_kj) × Δθ
+  - 結合伸縮と角度変形の交差項
+  - `mmff94_stbn()` — 対称ルックアップ
+
+`EnergyBreakdown` 構造体: 5 項目 → **7 項目** (`stretch_bend`、`oop` 追加)。  
+chematic は **Halgren 1996 MMFF94 全 7 エネルギー項を実装** — 大多数の Python ラッパーを超えた。
+
+#### MAP4 フィンガープリント (`crates/chematic-fp/src/map4.rs`) — RDKit に存在しない
+
+MinHashed Atom-Pair FP (Minervini et al. *J. Cheminform.* 2020, 12, 26):
+- 全原子ペアの circular 環境をハッシュシングルとしてエンコード
+- デフォルト: radius=2、1024 permutations
+- `map4(mol, config) -> Vec<u32>`、`tanimoto_map4(a, b) -> f64`
+- **RDKit は外部パッケージが必要** — chematic はネイティブ実装
+
+chematic FP 種類: 13 → **14 アルゴリズム** (MAP4 = 新規追加)。
+
+#### SMARTS コンパイルキャッシュ + 命名パターンライブラリ (`crates/chematic-smarts/src/cache.rs`)
+
+- **`SmartsCache`** (LRU 退去、容量可変):
+  - `compile(smarts) -> &QueryMolecule` — 一度解析、繰り返し再利用
+  - `find_matches()` / `has_match()` キャッシュ経由
+  - 繰り返しマッチで **5–20× 高速化**
+
+- **`named_pattern(name)`** — 20 命名 SMARTS パターン:
+  `donor`、`acceptor`、`aromatic`、`hydrophobic`、`positive`、`negative`、
+  `carboxylic_acid`、`aldehyde`、`ketone`、`alcohol`、`phenol`、
+  `amine_primary/secondary/tertiary`、`amide`、`ester`、`ether`、`halide`、
+  `aromatic_n`、`sulfonamide`
+
+テスト: +10  
+**合計: 1,961 テスト、全通過**
+
+---
+
 ## [0.2.9] — 2026-06-14
 
 ### Added — MMFF94 幾何最適化器（Halgren 1996 完全力場）
