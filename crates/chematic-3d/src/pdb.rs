@@ -63,10 +63,17 @@ pub struct PdbAtom {
 ///
 /// Lines that are not `ATOM` / `HETATM` records (or whose record type field
 /// is not recognised) are silently skipped.
+///
+/// Atoms are capped at PDB_MAX_ATOMS (10,000) to prevent O(n²) bond inference DoS.
 pub fn parse_pdb_atoms(input: &str) -> Vec<PdbAtom> {
+    const PDB_MAX_ATOMS: usize = 10_000;
     let mut atoms = Vec::new();
 
     for line in input.lines() {
+        if atoms.len() >= PDB_MAX_ATOMS {
+            break;
+        }
+
         let record = line.get(0..6).unwrap_or("").trim_end();
         if record != "ATOM" && record != "HETATM" {
             continue;

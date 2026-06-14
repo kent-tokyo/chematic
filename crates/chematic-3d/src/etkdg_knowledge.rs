@@ -12,8 +12,11 @@ pub struct TorsionPreference {
 }
 
 /// Atom type for torsion matching based on hybridization and neighbors.
+///
+/// Classifies atoms by element and hybridization state (sp, sp2, sp3, aromatic).
+/// Useful for matching chemical patterns and determining properties.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum AtomType {
+pub enum AtomType {
     /// sp3 carbon
     CSp3,
     /// sp2 carbon (alkene)
@@ -56,7 +59,10 @@ fn count_incident_bonds(mol: &Molecule, idx: AtomIdx, order: chematic_core::Bond
 }
 
 /// Classify an atom's type based on its chemical environment.
-fn atom_type(mol: &Molecule, idx: AtomIdx) -> AtomType {
+///
+/// Returns an [`AtomType`] indicating the atom's hybridization state and element.
+/// Useful for pattern matching, property prediction, and chemical classification.
+pub fn classify_atom_type(mol: &Molecule, idx: AtomIdx) -> AtomType {
     let atom = mol.atom(idx);
     let an = atom.element.atomic_number();
 
@@ -133,10 +139,10 @@ pub fn get_torsion_preference(
     c_idx: AtomIdx,
     d_idx: AtomIdx,
 ) -> Option<TorsionPreference> {
-    let a_type = atom_type(mol, a_idx);
-    let b_type = atom_type(mol, b_idx);
-    let c_type = atom_type(mol, c_idx);
-    let d_type = atom_type(mol, d_idx);
+    let a_type = classify_atom_type(mol, a_idx);
+    let b_type = classify_atom_type(mol, b_idx);
+    let c_type = classify_atom_type(mol, c_idx);
+    let d_type = classify_atom_type(mol, d_idx);
 
     // Alkane C-C-C-C: strongly prefer 180° (staggered, anti)
     if b_type == AtomType::CSp3

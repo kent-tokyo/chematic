@@ -59,12 +59,14 @@ fn apply_torsion_preferences(mol: &Molecule, coords: &mut Coords3D) {
             }
 
             // Find neighbors of B (excluding C) and C (excluding B)
-            let b_neighbors: Vec<usize> = (0..n)
-                .filter(|&a| a != c && mol.bond_between(b_idx, AtomIdx(a as u32)).is_some())
+            let b_neighbors: Vec<usize> = mol.neighbors(b_idx)
+                .filter(|(nb, _)| nb.0 as usize != c)
+                .map(|(nb, _)| nb.0 as usize)
                 .collect();
 
-            let c_neighbors: Vec<usize> = (0..n)
-                .filter(|&a| a != b && mol.bond_between(c_idx, AtomIdx(a as u32)).is_some())
+            let c_neighbors: Vec<usize> = mol.neighbors(c_idx)
+                .filter(|(nb, _)| nb.0 as usize != b)
+                .map(|(nb, _)| nb.0 as usize)
                 .collect();
 
             // Try all A-B-C-D combinations

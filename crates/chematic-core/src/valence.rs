@@ -70,7 +70,8 @@ pub fn implicit_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
         // Combined with non-aromatic substituents (e.g. N−CH₃) this correctly yields
         // 0 H for all substituted aromatic atoms without needing Kekulization.
         // Always use the lowest normal valence; aromatic atoms cannot be hypervalent.
-        let effective_sum = (aromatic_count as f64 * 1.5).floor() as i32 + non_aromatic_sum;
+        let aromatic_contribution = (aromatic_count as f64 * 1.5).floor() as i32;
+        let effective_sum = aromatic_contribution.saturating_add(non_aromatic_sum);
         let v = normal_valences[0] as i32 + charge;
         if v <= 0 || effective_sum >= v {
             return 0;

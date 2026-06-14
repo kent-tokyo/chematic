@@ -652,4 +652,59 @@ mod tests {
         let constraint = BondConstraint::new(AtomIdx(0), AtomIdx(1), 1.54);
         assert!(!constraint.satisfied(&coords));
     }
+
+    #[test]
+    fn test_satisfy_constraints_single_bond() {
+        use chematic_core::{Molecule, MoleculeBuilder, Element};
+
+        let mut builder = MoleculeBuilder::new();
+        builder.add_atom(chematic_core::Atom::new(Element::C));
+        builder.add_atom(chematic_core::Atom::new(Element::C));
+        let _ = builder.add_bond(AtomIdx(0), AtomIdx(1), chematic_core::BondOrder::Single);
+        let mol = builder.build();
+
+        let mut coords = Coords3D::new_zeroed(2);
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(3.0, 0.0, 0.0)); // Far from ideal
+
+        let target_dist = 1.54;
+        let constraint = BondConstraint::new(AtomIdx(0), AtomIdx(1), target_dist);
+
+        let config = ConstraintConfig::default();
+        let result = satisfy_constraints(&mol, coords, &[constraint], &config);
+
+        let dist = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
+        assert!((dist - target_dist).abs() < 0.1, "Bond constraint should converge to target distance");
+    }
+
+    #[test]
+    fn test_satisfy_constraints_convergence() {
+        use chematic_core::{Molecule, MoleculeBuilder, Element};
+
+        let mut builder = MoleculeBuilder::new();
+        for _ in 0..3 {
+            builder.add_atom(chematic_core::Atom::new(Element::C));
+        }
+        let _ = builder.add_bond(AtomIdx(0), AtomIdx(1), chematic_core::BondOrder::Single);
+        let _ = builder.add_bond(AtomIdx(1), AtomIdx(2), chematic_core::BondOrder::Single);
+        let mol = builder.build();
+
+        let mut coords = Coords3D::new_zeroed(3);
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(5.0, 0.0, 0.0));
+        coords.set(AtomIdx(2), Point3::new(5.0, 5.0, 0.0));
+
+        let constraints = vec![
+            BondConstraint::new(AtomIdx(0), AtomIdx(1), 1.54),
+            BondConstraint::new(AtomIdx(1), AtomIdx(2), 1.54),
+        ];
+
+        let config = ConstraintConfig::default();
+        let result = satisfy_constraints(&mol, coords, &constraints, &config);
+
+        let dist01 = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
+        let dist12 = result.get(AtomIdx(1)).distance(&result.get(AtomIdx(2)));
+        assert!((dist01 - 1.54).abs() < 0.15);
+        assert!((dist12 - 1.54).abs() < 0.15);
+    }
 }

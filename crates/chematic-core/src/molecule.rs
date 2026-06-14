@@ -209,26 +209,7 @@ impl Molecule {
         for (_, atom) in self.atoms() {
             *counts.entry(atom.element.symbol()).or_insert(0) += 1;
         }
-
-        let mut result = String::new();
-        let push_count = |sym: &str, n: u32, out: &mut String| {
-            out.push_str(sym);
-            if n > 1 {
-                out.push_str(&n.to_string());
-            }
-        };
-
-        // Hill order: C, then H, then the remaining symbols alphabetically.
-        if let Some(c) = counts.remove("C") {
-            push_count("C", c, &mut result);
-        }
-        if let Some(h) = counts.remove("H") {
-            push_count("H", h, &mut result);
-        }
-        for (sym, count) in &counts {
-            push_count(sym, *count, &mut result);
-        }
-        result
+        Self::format_hill_order_formula(&counts)
     }
 }
 
@@ -237,17 +218,34 @@ impl Molecule {
 // ---------------------------------------------------------------------------
 
 impl Molecule {
+    /// Format element counts in Hill order: C, H, then alphabetically.
+    fn format_hill_order_formula(counts: &std::collections::BTreeMap<&str, u32>) -> String {
+        let mut counts = counts.clone();
+        let mut result = String::new();
+        let push_count = |sym: &str, n: u32, out: &mut String| {
+            out.push_str(sym);
+            if n > 1 {
+                out.push_str(&n.to_string());
+            }
+        };
+        if let Some(c) = counts.remove("C") {
+            push_count("C", c, &mut result);
+        }
+        if let Some(h) = counts.remove("H") {
+            if h > 0 {
+                push_count("H", h, &mut result);
+            }
+        }
+        for (sym, count) in &counts {
+            push_count(sym, *count, &mut result);
+        }
+        result
+    }
+
     /// Return a new `Molecule` with one extra atom appended, along with the
     /// index that the new atom will have in the returned molecule.
     pub fn with_atom_added(&self, atom: Atom) -> (Molecule, AtomIdx) {
-        let mut builder = MoleculeBuilder::new();
-        for (_, a) in self.atoms() {
-            builder.add_atom(a.clone());
-        }
-        for (_, b) in self.bonds() {
-            let _ = builder.add_bond(b.atom1, b.atom2, b.order);
-        }
-        builder.copy_stereo_from(self);
+        let mut builder = MoleculeBuilder::from_molecule(self);
         let new_idx = builder.add_atom(atom);
         (builder.build(), new_idx)
     }
@@ -263,14 +261,7 @@ impl Molecule {
         b: AtomIdx,
         order: BondOrder,
     ) -> Result<(Molecule, BondIdx), MolError> {
-        let mut builder = MoleculeBuilder::new();
-        for (_, atom) in self.atoms() {
-            builder.add_atom(atom.clone());
-        }
-        for (_, bond) in self.bonds() {
-            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
-        }
-        builder.copy_stereo_from(self);
+        let mut builder = MoleculeBuilder::from_molecule(self);
         let bond_idx = builder.add_bond(a, b, order)?;
         Ok((builder.build(), bond_idx))
     }
@@ -402,27 +393,7 @@ impl Molecule {
             implicit_h += crate::valence::implicit_hcount(self, aidx) as u32;
         }
         *counts.entry("H").or_insert(0) += implicit_h;
-
-        let mut result = String::new();
-        let push_count = |sym: &str, n: u32, out: &mut String| {
-            out.push_str(sym);
-            if n > 1 {
-                out.push_str(&n.to_string());
-            }
-        };
-
-        if let Some(c) = counts.remove("C") {
-            push_count("C", c, &mut result);
-        }
-        if let Some(h) = counts.remove("H")
-            && h > 0
-        {
-            push_count("H", h, &mut result);
-        }
-        for (sym, count) in &counts {
-            push_count(sym, *count, &mut result);
-        }
-        result
+        Self::format_hill_order_formula(&counts)
     }
 
     /// Hill-order molecular formula with isotope labels.

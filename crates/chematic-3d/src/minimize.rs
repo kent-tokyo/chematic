@@ -15,6 +15,22 @@ use chematic_ff::{
 use crate::coords::{Coords3D, Point3};
 
 // ---------------------------------------------------------------------------
+// Force field parameters
+// ---------------------------------------------------------------------------
+
+/// Bond stretching spring constant (kcal/mol/Ų).
+/// Used in both DREIDING and generic force fields.
+const BOND_SPRING_CONSTANT: f64 = 700.0;
+
+/// Angle bending spring constant (kcal/mol/rad²).
+/// Used in both DREIDING and generic force fields.
+const ANGLE_SPRING_CONSTANT: f64 = 100.0;
+
+/// Van der Waals interaction cutoff distance (Ångströms).
+/// Interactions beyond this distance are ignored.
+const VDW_CUTOFF: f64 = 8.0;
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -261,7 +277,7 @@ fn bond_energy_dreiding(
     dreiding_types: &[chematic_ff::DREIDINGType],
 ) -> f64 {
     let mut energy = 0.0;
-    let k = 700.0; // Force constant (kcal/mol/Ų)
+    let k = BOND_SPRING_CONSTANT;
     for (_, bond) in mol.bonds() {
         let a1 = bond.atom1;
         let a2 = bond.atom2;
@@ -281,7 +297,7 @@ fn angle_energy_dreiding(
     dreiding_types: &[chematic_ff::DREIDINGType],
 ) -> f64 {
     let mut energy = 0.0;
-    let k = 100.0; // Force constant (kcal/mol/rad²)
+    let k = ANGLE_SPRING_CONSTANT;
 
     for b_idx in 0..mol.atom_count() {
         let b = AtomIdx(b_idx as u32);
@@ -327,7 +343,7 @@ fn vdw_energy_dreiding(
     dreiding_types: &[chematic_ff::DREIDINGType],
 ) -> f64 {
     let n = mol.atom_count();
-    let cutoff = 8.0_f64;
+    let cutoff = VDW_CUTOFF;
 
     let mut excluded: HashSet<(usize, usize)> = HashSet::new();
 
@@ -578,7 +594,7 @@ fn bond_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
         let sym2 = mol.atom(a2).element.symbol();
         let r0 = ideal_bond_len(sym1, sym2, bond.order);
         let dr = r - r0;
-        energy += 0.5 * 700.0 * dr * dr;
+        energy += 0.5 * BOND_SPRING_CONSTANT * dr * dr;
     }
     energy
 }
@@ -624,7 +640,7 @@ fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
                 let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
                 let theta = cos_theta.acos();
                 let dtheta = theta - theta0;
-                energy += 0.5 * 100.0 * dtheta * dtheta;
+                energy += 0.5 * ANGLE_SPRING_CONSTANT * dtheta * dtheta;
             }
         }
     }
@@ -638,7 +654,7 @@ fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
 
 fn vdw_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
     let n = mol.atom_count();
-    let cutoff = 8.0_f64;
+    let cutoff = VDW_CUTOFF;
 
     let mut excluded: HashSet<(usize, usize)> = HashSet::new();
 
@@ -784,7 +800,7 @@ fn vdw_energy_mmff94(
     mmff94_types: &[chematic_ff::MMFF94Type],
 ) -> f64 {
     let n = mol.atom_count();
-    let cutoff = 8.0_f64;
+    let cutoff = VDW_CUTOFF;
     let mut excluded: HashSet<(usize, usize)> = HashSet::new();
 
     for (_, bond) in mol.bonds() {

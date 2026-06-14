@@ -704,6 +704,11 @@ pub fn run_md_json(mol: &MolHandle, steps: usize, temp_k: f64) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
         return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
     }
+    const MIN_TEMP_K: f64 = 1.0;
+    const MAX_TEMP_K: f64 = 100_000.0;
+    if !temp_k.is_finite() || temp_k < MIN_TEMP_K || temp_k > MAX_TEMP_K {
+        return format!(r#"{{"error":"temperature must be between {} and {} K"}}"#, MIN_TEMP_K, MAX_TEMP_K);
+    }
     const MAX_MD_STEPS: usize = 10_000;
     let steps = steps.min(MAX_MD_STEPS);
     let coords = chematic_3d::generate_coords(&mol.inner);
@@ -887,8 +892,9 @@ pub fn enumerate_library_2way(
 pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsValue> {
     let query =
         chematic_smarts::parse_smarts(smarts).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    const WASM_MAX_SMARTS_VISITS: usize = 1_000_000;
     let config = chematic_smarts::MatchConfig {
-        max_matches: Some(WASM_MAX_SMARTS_MATCHES), use_chirality: false, use_isotopes: false, uniquify: true, max_visit_budget: None,
+        max_matches: Some(WASM_MAX_SMARTS_MATCHES), use_chirality: false, use_isotopes: false, uniquify: true, max_visit_budget: Some(WASM_MAX_SMARTS_VISITS),
     };
     let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
     let parts: Vec<String> = matches
@@ -921,12 +927,13 @@ pub fn smarts_match_atoms_with_chirality(
 ) -> Result<String, JsValue> {
     let query =
         chematic_smarts::parse_smarts(smarts).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    const WASM_MAX_SMARTS_VISITS: usize = 1_000_000;
     let config = chematic_smarts::MatchConfig {
         max_matches: Some(WASM_MAX_SMARTS_MATCHES),
         use_chirality,
         use_isotopes: false,
         uniquify: true,
-        max_visit_budget: None,
+        max_visit_budget: Some(WASM_MAX_SMARTS_VISITS),
     };
     let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
     let parts: Vec<String> = matches

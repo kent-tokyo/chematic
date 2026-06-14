@@ -81,6 +81,16 @@ impl Point3 {
         assert!(n > 0.0, "cannot normalize a zero-length vector");
         self.scale(1.0 / n)
     }
+
+    /// Try to normalize to a unit vector, returning None if the vector has zero length.
+    pub fn try_normalize(&self) -> Option<Self> {
+        let n = self.norm();
+        if n > 0.0 {
+            Some(self.scale(1.0 / n))
+        } else {
+            None
+        }
+    }
 }
 
 /// 3D coordinates for all heavy atoms in a molecule.
