@@ -101,45 +101,32 @@ pub fn minimize_mmff94(mol: &Molecule, coords: Coords3D) -> Coords3D {
     minimize_with_config(mol, coords, &config)
 }
 
-/// Internal MMFF94 minimization implementation with custom config.
-fn minimize_mmff94_with_config(
+/// Generic gradient descent minimization with custom energy evaluation function.
+///
+/// This function encapsulates the core gradient descent loop, accepting a closure
+/// that computes the energy given current coordinates. This allows different force fields
+/// to share the same optimization control flow.
+///
+/// # Arguments
+/// * `mol` - Molecule to minimize
+/// * `coords` - Initial 3D coordinates
+/// * `config` - Minimization configuration
+/// * `energy_fn` - Closure that computes total energy for given coordinates
+fn minimize_gradient_descent<F>(
     mol: &Molecule,
     coords: Coords3D,
     config: &MinimizeConfig,
-) -> Coords3D {
+    energy_fn: F,
+) -> Coords3D
+where
+    F: Fn(&Coords3D) -> f64,
+{
     if mol.atom_count() <= 1 {
         return coords;
     }
 
-    // Assign MMFF94 types for all atoms
-    let mmff94_types = match assign_mmff94_types(mol) {
-        Ok(types) => types,
-        Err(_) => return coords, // Fall back if type assignment fails
-    };
-
     let mut c = coords;
     let delta = 1e-4;
-
-    fn partial_mmff94(
-        mol: &Molecule,
-        c: &mut Coords3D,
-        idx: AtomIdx,
-        delta: f64,
-        axis: impl Fn(&mut Point3, f64),
-        mmff94_types: &[chematic_ff::MMFF94Type],
-    ) -> f64 {
-        let orig = c.get(idx);
-        let mut p = orig;
-        axis(&mut p, delta);
-        c.set(idx, p);
-        let ep = total_energy_mmff94(mol, c, mmff94_types);
-        let mut p = orig;
-        axis(&mut p, -delta);
-        c.set(idx, p);
-        let em = total_energy_mmff94(mol, c, mmff94_types);
-        c.set(idx, orig);
-        (ep - em) / (2.0 * delta)
-    }
 
     for _ in 0..config.max_steps {
         let mut grad = vec![Point3::zero(); mol.atom_count()];
@@ -147,9 +134,49 @@ fn minimize_mmff94_with_config(
 
         for i in 0..mol.atom_count() {
             let idx = AtomIdx(i as u32);
-            grad[i].x = partial_mmff94(mol, &mut c, idx, delta, |p, d| p.x += d, &mmff94_types);
-            grad[i].y = partial_mmff94(mol, &mut c, idx, delta, |p, d| p.y += d, &mmff94_types);
-            grad[i].z = partial_mmff94(mol, &mut c, idx, delta, |p, d| p.z += d, &mmff94_types);
+
+            // Compute gradient components via finite differences along x, y, z
+            grad[i].x = {
+                let orig = c.get(idx);
+                let mut p = orig;
+                p.x += delta;
+                c.set(idx, p);
+                let ep = energy_fn(&c);
+                let mut p = orig;
+                p.x -= delta;
+                c.set(idx, p);
+                let em = energy_fn(&c);
+                c.set(idx, orig);
+                (ep - em) / (2.0 * delta)
+            };
+
+            grad[i].y = {
+                let orig = c.get(idx);
+                let mut p = orig;
+                p.y += delta;
+                c.set(idx, p);
+                let ep = energy_fn(&c);
+                let mut p = orig;
+                p.y -= delta;
+                c.set(idx, p);
+                let em = energy_fn(&c);
+                c.set(idx, orig);
+                (ep - em) / (2.0 * delta)
+            };
+
+            grad[i].z = {
+                let orig = c.get(idx);
+                let mut p = orig;
+                p.z += delta;
+                c.set(idx, p);
+                let ep = energy_fn(&c);
+                let mut p = orig;
+                p.z -= delta;
+                c.set(idx, p);
+                let em = energy_fn(&c);
+                c.set(idx, orig);
+                (ep - em) / (2.0 * delta)
+            };
 
             let gmax = grad[i].x.abs().max(grad[i].y.abs()).max(grad[i].z.abs());
             if gmax > max_grad {
@@ -179,6 +206,27 @@ fn minimize_mmff94_with_config(
     c
 }
 
+/// Internal MMFF94 minimization implementation with custom config.
+fn minimize_mmff94_with_config(
+    mol: &Molecule,
+    coords: Coords3D,
+    config: &MinimizeConfig,
+) -> Coords3D {
+    if mol.atom_count() <= 1 {
+        return coords;
+    }
+
+    // Assign MMFF94 types for all atoms
+    let mmff94_types = match assign_mmff94_types(mol) {
+        Ok(types) => types,
+        Err(_) => return coords, // Fall back if type assignment fails
+    };
+
+    minimize_gradient_descent(mol, coords, config, |c| {
+        total_energy_mmff94(mol, c, &mmff94_types)
+    })
+}
+
 /// Minimize molecular geometry using DREIDING parameters with custom configuration.
 pub fn minimize_dreiding_with_config(
     mol: &Molecule,
@@ -192,66 +240,9 @@ pub fn minimize_dreiding_with_config(
     // Assign DREIDING types for all atoms
     let dreiding_types = assign_dreiding_types(mol);
 
-    let mut c = coords;
-    let delta = 1e-4;
-
-    fn partial_dreiding(
-        mol: &Molecule,
-        c: &mut Coords3D,
-        idx: AtomIdx,
-        delta: f64,
-        axis: impl Fn(&mut Point3, f64),
-        dreiding_types: &[chematic_ff::DREIDINGType],
-    ) -> f64 {
-        let orig = c.get(idx);
-        let mut p = orig;
-        axis(&mut p, delta);
-        c.set(idx, p);
-        let ep = total_energy_dreiding(mol, c, dreiding_types);
-        let mut p = orig;
-        axis(&mut p, -delta);
-        c.set(idx, p);
-        let em = total_energy_dreiding(mol, c, dreiding_types);
-        c.set(idx, orig);
-        (ep - em) / (2.0 * delta)
-    }
-
-    for _ in 0..config.max_steps {
-        let mut grad = vec![Point3::zero(); mol.atom_count()];
-        let mut max_grad = 0.0f64;
-
-        for i in 0..mol.atom_count() {
-            let idx = AtomIdx(i as u32);
-            grad[i].x = partial_dreiding(mol, &mut c, idx, delta, |p, d| p.x += d, &dreiding_types);
-            grad[i].y = partial_dreiding(mol, &mut c, idx, delta, |p, d| p.y += d, &dreiding_types);
-            grad[i].z = partial_dreiding(mol, &mut c, idx, delta, |p, d| p.z += d, &dreiding_types);
-
-            let gmax = grad[i].x.abs().max(grad[i].y.abs()).max(grad[i].z.abs());
-            if gmax > max_grad {
-                max_grad = gmax;
-            }
-        }
-
-        if max_grad < config.convergence {
-            break;
-        }
-
-        let scale = config.step_size / max_grad.max(1e-8);
-        for i in 0..mol.atom_count() {
-            let idx = AtomIdx(i as u32);
-            let p = c.get(idx);
-            c.set(
-                idx,
-                Point3::new(
-                    p.x - scale * grad[i].x,
-                    p.y - scale * grad[i].y,
-                    p.z - scale * grad[i].z,
-                ),
-            );
-        }
-    }
-
-    c
+    minimize_gradient_descent(mol, coords, config, |c| {
+        total_energy_dreiding(mol, c, &dreiding_types)
+    })
 }
 
 fn total_energy_dreiding(
@@ -408,69 +399,7 @@ pub fn minimize_with_config(mol: &Molecule, coords: Coords3D, config: &MinimizeC
 }
 
 fn minimize_generic_with_config(mol: &Molecule, coords: Coords3D, config: &MinimizeConfig) -> Coords3D {
-    if mol.atom_count() <= 1 {
-        return coords;
-    }
-
-    let mut c = coords;
-    let delta = 1e-4;
-
-    fn partial(
-        mol: &Molecule,
-        c: &mut Coords3D,
-        idx: AtomIdx,
-        delta: f64,
-        axis: impl Fn(&mut Point3, f64),
-    ) -> f64 {
-        let orig = c.get(idx);
-        let mut p = orig;
-        axis(&mut p, delta);
-        c.set(idx, p);
-        let ep = total_energy(mol, c);
-        let mut p = orig;
-        axis(&mut p, -delta);
-        c.set(idx, p);
-        let em = total_energy(mol, c);
-        c.set(idx, orig);
-        (ep - em) / (2.0 * delta)
-    }
-
-    for _ in 0..config.max_steps {
-        let mut grad = vec![Point3::zero(); mol.atom_count()];
-        let mut max_grad = 0.0f64;
-
-        for i in 0..mol.atom_count() {
-            let idx = AtomIdx(i as u32);
-            grad[i].x = partial(mol, &mut c, idx, delta, |p, d| p.x += d);
-            grad[i].y = partial(mol, &mut c, idx, delta, |p, d| p.y += d);
-            grad[i].z = partial(mol, &mut c, idx, delta, |p, d| p.z += d);
-
-            let gmax = grad[i].x.abs().max(grad[i].y.abs()).max(grad[i].z.abs());
-            if gmax > max_grad {
-                max_grad = gmax;
-            }
-        }
-
-        if max_grad < config.convergence {
-            break;
-        }
-
-        let scale = config.step_size / max_grad.max(1e-8);
-        for i in 0..mol.atom_count() {
-            let idx = AtomIdx(i as u32);
-            let p = c.get(idx);
-            c.set(
-                idx,
-                Point3::new(
-                    p.x - scale * grad[i].x,
-                    p.y - scale * grad[i].y,
-                    p.z - scale * grad[i].z,
-                ),
-            );
-        }
-    }
-
-    c
+    minimize_gradient_descent(mol, coords, config, |c| total_energy(mol, c))
 }
 
 // ---------------------------------------------------------------------------
