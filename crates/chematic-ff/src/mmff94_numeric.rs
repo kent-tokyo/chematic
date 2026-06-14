@@ -18,6 +18,8 @@
 //!   - Found as (bt, i, j): atom i is first  → sign=−1, contrib = −bci
 //!   - Not found: contrib = PBCI(type_i) − PBCI(type_j)
 
+#![allow(clippy::approx_constant)]
+
 use chematic_core::{AtomIdx, BondOrder, Element, Molecule};
 use chematic_perception::ring_sizes_for_atom;
 
@@ -695,7 +697,7 @@ pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTyp
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
 
-    for i in 0..n {
+    for (i, ty) in types.iter_mut().enumerate().take(n) {
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
         let t = match atom.element {
@@ -714,7 +716,7 @@ pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTyp
                 "unsupported element {:?} at atom {i}", atom.element
             ))),
         };
-        types[i] = t;
+        *ty = t;
     }
     Ok(types)
 }
@@ -757,13 +759,6 @@ fn is_neighbor(mol: &Molecule, idx: AtomIdx, elem: Element) -> bool {
     neighbor_elements(mol, idx).contains(&elem)
 }
 
-/// True if atom `idx` is in an aromatic ring of size `sz`.
-fn is_in_aromatic_ring_of_size(mol: &Molecule, idx: AtomIdx, sz: usize) -> bool {
-    ring_sizes_for_atom(mol, idx.0 as usize)
-        .into_iter()
-        .any(|s| s == sz && mol.atom(idx).aromatic)
-}
-
 // ── C type assignment ────────────────────────────────────────────────────────
 
 fn assign_c_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
@@ -801,8 +796,8 @@ fn assign_c_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 fn aromatic_c_type(mol: &Molecule, idx: AtomIdx) -> u8 {
     // 6-membered aromatic ring → type 63 (CB, benzene-type)
     let ring_sizes = ring_sizes_for_atom(mol, idx.0 as usize);
-    let in_6 = ring_sizes.iter().any(|&s| s == 6);
-    let in_5 = ring_sizes.iter().any(|&s| s == 5);
+    let in_6 = ring_sizes.contains(&6);
+    let in_5 = ring_sizes.contains(&5);
 
     if in_6 && !in_5 {
         return 63;  // CB: benzene/pyridine ring carbon
@@ -882,7 +877,7 @@ fn assign_n_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 
 fn aromatic_n_type(mol: &Molecule, idx: AtomIdx) -> u8 {
     let ring_sizes = ring_sizes_for_atom(mol, idx.0 as usize);
-    let in_5 = ring_sizes.iter().any(|&s| s == 5);
+    let in_5 = ring_sizes.contains(&5);
 
     // Check if atom has an explicit H or implicit H (pyrrole-type)
     let has_h = is_neighbor(mol, idx, Element::H);
@@ -1042,7 +1037,6 @@ pub fn mmff94_charges_numeric(
     for i in 0..n {
         let idx = AtomIdx(i as u32);
         let (_, fcadj_i) = pbci_for(types[i]);
-        let m = bonds_of(mol, idx).len() as f64;
         if fcadj_i > 0.0 {
             // v*sumFormalCharge: redistribute neighbor formal charges
             let sum_fc: f64 = bonds_of(mol, idx)
@@ -1069,6 +1063,8 @@ pub fn mmff94_charges_numeric(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::needless_range_loop)]
+
     use super::*;
     use chematic_smiles::parse;
 

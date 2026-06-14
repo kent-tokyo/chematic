@@ -1219,7 +1219,6 @@ mod tests {
         // Isobutane /c layer: "1-4(2)3"
         // Bonds: 1-4, 4-2, 4-3  (atom 4 is the branch point)
         use chematic_core::{Atom, Element, MoleculeBuilder};
-        use crate::parser::parse_inchi;
 
         // Build the atom_idx_map manually and call parse_connectivity
         use std::collections::HashMap;

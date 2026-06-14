@@ -88,8 +88,10 @@ mod tests {
     #[test]
     fn cache_put_get() {
         let cache = DescriptorCache::new(100);
-        let mut entry = DescriptorEntry::default();
-        entry.mw = Some(46.0);
+        let entry = DescriptorEntry {
+            mw: Some(46.0),
+            ..DescriptorEntry::default()
+        };
 
         cache.put("CC".to_string(), entry.clone());
         let retrieved = cache.get("CC").unwrap();

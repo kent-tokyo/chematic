@@ -107,7 +107,7 @@ fn identify_functional_groups(mol: &Molecule) -> Vec<Vec<usize>> {
     }).collect()
 }
 
-fn uf_find(parent: &mut Vec<usize>, mut x: usize) -> usize {
+fn uf_find(parent: &mut [usize], mut x: usize) -> usize {
     while parent[x] != x {
         parent[x] = parent[parent[x]]; // path halving
         x = parent[x];
@@ -115,7 +115,7 @@ fn uf_find(parent: &mut Vec<usize>, mut x: usize) -> usize {
     x
 }
 
-fn uf_union(parent: &mut Vec<usize>, a: usize, b: usize) {
+fn uf_union(parent: &mut [usize], a: usize, b: usize) {
     let ra = uf_find(parent, a);
     let rb = uf_find(parent, b);
     if ra != rb {
@@ -250,9 +250,7 @@ fn assign_pharmacophore_features(mol: &Molecule, atom_indices: &[usize]) -> ErgN
         // H-bond donor:
         //   - O-H and S-H: always donors when H present
         //   - N-H: donor ONLY when NOT in amide/sulfonamide context
-        if (an == 8 || an == 16) && total_h > 0 {
-            ntype = ntype.with_donor();
-        } else if an == 7 && total_h > 0 && !is_amide_like_nitrogen(mol, idx) {
+        if total_h > 0 && ((an == 8 || an == 16) || (an == 7 && !is_amide_like_nitrogen(mol, idx))) {
             ntype = ntype.with_donor();
         }
 
@@ -723,7 +721,7 @@ pub fn tanimoto_erg_vec(v1: &[f64; ERG_VEC_LEN], v2: &[f64; ERG_VEC_LEN]) -> f64
     let n2: f64 = v2.iter().map(|x| x * x).sum();
     let denom = n1 + n2 - dot;
     if denom < 1e-12 { return 1.0; }
-    (dot / denom).max(0.0).min(1.0)
+    (dot / denom).clamp(0.0, 1.0)
 }
 
 #[cfg(test)]

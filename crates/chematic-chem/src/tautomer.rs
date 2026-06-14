@@ -1064,6 +1064,8 @@ pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) 
 
 #[cfg(test)]
 mod tests {
+    #![allow(dead_code)]
+
     use super::*;
     use chematic_core::{AtomIdx, Chirality};
     use chematic_smiles::{canonical_smiles, parse};

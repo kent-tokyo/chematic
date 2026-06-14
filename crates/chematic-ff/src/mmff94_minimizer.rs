@@ -22,6 +22,9 @@ use crate::mmff94_energy::{
 };
 use crate::mmff94_numeric::{assign_mmff94_numeric_types, mmff94_charges_numeric, NumericTypeError};
 
+type CoordVec = Vec<[f64; 3]>;
+type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
+
 // ─── Public types ────────────────────────────────────────────────────────────
 
 /// Result of a geometry minimization run.
@@ -208,7 +211,7 @@ pub fn mmff94_energy_breakdown(
 /// * `max_iter` — maximum gradient steps (200 typically sufficient)
 pub fn minimize_mmff94_full(
     mol: &Molecule,
-    coords: &mut Vec<[f64; 3]>,
+    coords: &mut [[f64; 3]],
     max_iter: usize,
 ) -> Result<MinimizeResult, MinimizerError> {
     if mol.atom_count() <= 1 {
@@ -224,7 +227,7 @@ pub fn minimize_mmff94_full(
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
 
     let n = mol.atom_count();
-    let initial = coords.clone();
+    let initial = coords.to_vec();
     let convergence = 1e-4_f64;
     let step_size = 0.05_f64;
     let delta = 1e-4_f64;
@@ -283,7 +286,7 @@ pub fn minimize_mmff94_full(
 /// Uses finite-difference gradients (δ=1e-4 Å) and backtracking Armijo line search.
 pub fn minimize_mmff94_lbfgs(
     mol: &Molecule,
-    coords: &mut Vec<[f64; 3]>,
+    coords: &mut [[f64; 3]],
     max_iter: usize,
 ) -> Result<MinimizeResult, MinimizerError> {
     const M: usize = 5;            // L-BFGS history size
@@ -300,10 +303,10 @@ pub fn minimize_mmff94_lbfgs(
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
 
     let n = mol.atom_count();
-    let initial = coords.clone();
+    let initial = coords.to_vec();
 
     // Circular history buffer: (s_k = Δx, y_k = Δg, ρ_k = 1/(y·s))
-    let mut history: VecDeque<(Vec<[f64; 3]>, Vec<[f64; 3]>, f64)> = VecDeque::new();
+    let mut history: LbfgsHistory = VecDeque::new();
 
     let mut g = compute_gradient(mol, coords, &types, &charges, DELTA);
     let mut f0 = total_energy(mol, coords, &types, &charges);
@@ -374,7 +377,7 @@ pub fn minimize_mmff94_lbfgs(
             history.push_back((s, y, 1.0 / ys));
         }
 
-        *coords = new_coords;
+        coords.copy_from_slice(&new_coords);
         g = g_new;
         f0 = f_new;
     }
@@ -397,9 +400,8 @@ pub fn minimize_mmff94_lbfgs(
 /// L-BFGS two-loop recursion: compute search direction p = -H_k × g.
 fn lbfgs_direction(
     g: &[[f64; 3]],
-    history: &VecDeque<(Vec<[f64; 3]>, Vec<[f64; 3]>, f64)>,
+    history: &LbfgsHistory,
 ) -> Vec<[f64; 3]> {
-    let n = g.len();
     let m = history.len();
 
     if m == 0 {
@@ -682,12 +684,12 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
             if r > cutoff {
                 continue;
             }
-            if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j]) {
-                if r_star > 0.0 && eps > 0.0 && r > 0.01 {
-                    let t = (1.07 * r_star) / (r + 0.07 * r_star);
-                    let t7 = t.powi(7);
-                    energy += eps * t7 * (t7 - 2.0);
-                }
+            if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j])
+                && r_star > 0.0 && eps > 0.0 && r > 0.01
+            {
+                let t = (1.07 * r_star) / (r + 0.07 * r_star);
+                let t7 = t.powi(7);
+                energy += eps * t7 * (t7 - 2.0);
             }
         }
     }

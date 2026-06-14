@@ -6,6 +6,8 @@
 //! Units: bond kb in md/Å, angle ka in md·Å/rad², theta0 in degrees,
 //! torsion v1/v2/v3 in kcal/mol, vdW alpha_i in Å³.
 
+#![allow(clippy::approx_constant, clippy::items_after_test_module, clippy::type_complexity)]
+
 /// Bond stretching parameters (Halgren 1996, MMFF.II eq. 1).
 /// Energy = (143.9325 × kb / 2) × (ΔR)²  [kcal/mol]
 #[derive(Debug, Clone, Copy)]

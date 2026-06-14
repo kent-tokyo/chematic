@@ -112,7 +112,7 @@ fn circular_env_hash(mol: &Molecule, center: usize, radius: usize, dist: &[Vec<u
             if d <= radius {
                 let atom_hash = fnv1a(&[
                     atom.element.atomic_number(),
-                    atom.charge.unsigned_abs() as u8,
+                    atom.charge.unsigned_abs(),
                     atom.element.atomic_number().wrapping_add(d as u8),
                 ]);
                 Some((d, atom_hash))
@@ -136,13 +136,13 @@ fn circular_env_hash(mol: &Molecule, center: usize, radius: usize, dist: &[Vec<u
 fn minhash(shingles: &[u64], n_permutations: usize) -> Vec<u32> {
     let mut sig = vec![u32::MAX; n_permutations];
     for &h in shingles {
-        for i in 0..n_permutations {
+        for (i, slot) in sig.iter_mut().enumerate().take(n_permutations) {
             // Deterministic hash family: H_i(x) = (a_i * x + b_i) mod p
             // We use FNV-based mixing for speed (no true universal hash needed)
             let mixed = fnv1a_mix(h, i as u64);
             let v = (mixed >> 32) as u32;
-            if v < sig[i] {
-                sig[i] = v;
+            if v < *slot {
+                *slot = v;
             }
         }
     }

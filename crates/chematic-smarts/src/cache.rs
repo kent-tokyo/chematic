@@ -191,7 +191,6 @@ mod tests {
     #[test]
     fn named_patterns_all_parse() {
         let mut cache = SmartsCache::new(50);
-        let mol = parse("c1ccccc1").expect("benzene");
         for name in &["donor","acceptor","aromatic","hydrophobic","positive","negative",
                       "carboxylic_acid","aldehyde","ketone","alcohol","phenol",
                       "amine_primary","amine_secondary","amide","ester","halide"] {

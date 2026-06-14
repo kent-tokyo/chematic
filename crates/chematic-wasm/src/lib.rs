@@ -409,10 +409,7 @@ impl MolHandle {
     /// structure is outside the supported naming scope (complex polycyclics,
     /// multi-functional groups, etc.).
     pub fn iupac_name(&self) -> String {
-        match chematic_iupac::name(&self.inner) {
-            Ok(name) => name,
-            Err(_) => String::new(),
-        }
+        chematic_iupac::name(&self.inner).unwrap_or_default()
     }
 
     /// Assign CIP (R/S/E/Z) stereocenters and return JSON.

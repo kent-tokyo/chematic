@@ -2273,8 +2273,8 @@ mod tests {
         // autocorr[0] (lag 1) = 4 * 4 = 16
         assert!((ac[0] - 16.0).abs() < 1e-9, "lag 1: {}", ac[0]);
         // Lag 2+ → no pairs
-        for i in 1..7 {
-            assert!((ac[i] - 0.0).abs() < 1e-9, "lag {}: {}", i + 1, ac[i]);
+        for (i, value) in ac.iter().enumerate().take(7).skip(1) {
+            assert!((*value - 0.0).abs() < 1e-9, "lag {}: {}", i + 1, value);
         }
     }
 

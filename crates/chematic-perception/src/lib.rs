@@ -114,9 +114,9 @@ mod tests {
         let m = mol("c1ccccc1");
         let membership = ring_membership(&m);
         assert_eq!(membership.len(), 6);
-        for i in 0..6 {
-            assert_eq!(membership[i].len(), 1, "each benzene atom in exactly 1 ring");
-            assert_eq!(membership[i][0], 0, "all in ring index 0");
+        for atom_membership in membership.iter().take(6) {
+            assert_eq!(atom_membership.len(), 1, "each benzene atom in exactly 1 ring");
+            assert_eq!(atom_membership[0], 0, "all in ring index 0");
         }
     }
 

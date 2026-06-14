@@ -71,10 +71,10 @@ impl<'a> Parser<'a> {
 
     /// Push an entry to the active stereo record (if one is open for the given atom).
     fn stereo_push(&mut self, current: AtomIdx, entry: StereoEntry) {
-        if let Some((tracked, ref mut entries)) = self.current_stereo {
-            if tracked == current {
-                entries.push(entry);
-            }
+        if let Some((tracked, ref mut entries)) = self.current_stereo
+            && tracked == current
+        {
+            entries.push(entry);
         }
     }
 
@@ -140,10 +140,10 @@ impl<'a> Parser<'a> {
         // Resolve any remaining PendingRing entries using recorded close partners.
         for (_, entries) in &mut self.stereo_records {
             for entry in entries.iter_mut() {
-                if let StereoEntry::PendingRing(rn) = entry {
-                    if let Some(&partner) = self.ring_close_partners.get(rn) {
-                        *entry = StereoEntry::Atom(partner);
-                    }
+                if let StereoEntry::PendingRing(rn) = entry
+                    && let Some(&partner) = self.ring_close_partners.get(rn)
+                {
+                    *entry = StereoEntry::Atom(partner);
                 }
             }
         }
@@ -336,7 +336,7 @@ impl<'a> Parser<'a> {
         if let Some(prev) = from_atom {
             entries.push(StereoEntry::Atom(prev));
         }
-        if atom.hydrogen_count.map_or(false, |h| h > 0) {
+        if atom.hydrogen_count.is_some_and(|h| h > 0) {
             entries.push(StereoEntry::ImplicitH);
         }
         *current_stereo = Some((atom_idx, entries));
@@ -406,13 +406,13 @@ impl<'a> Parser<'a> {
             // Record the close partner for final PendingRing resolution.
             self.ring_close_partners.insert(ring_num, current);
             // Also resolve any PendingRing(ring_num) in already-finalized stereo records.
-            if let Some(rec_idx) = self.pending_ring_stereo.remove(&ring_num) {
-                if let Some((_, entries)) = self.stereo_records.get_mut(rec_idx) {
-                    for entry in entries.iter_mut() {
-                        if matches!(entry, StereoEntry::PendingRing(n) if *n == ring_num) {
-                            *entry = StereoEntry::Atom(current);
-                            break;
-                        }
+            if let Some(rec_idx) = self.pending_ring_stereo.remove(&ring_num)
+                && let Some((_, entries)) = self.stereo_records.get_mut(rec_idx)
+            {
+                for entry in entries.iter_mut() {
+                    if matches!(entry, StereoEntry::PendingRing(n) if *n == ring_num) {
+                        *entry = StereoEntry::Atom(current);
+                        break;
                     }
                 }
             }

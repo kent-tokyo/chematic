@@ -435,7 +435,7 @@ pub fn mmff94_charges_typed(mol: &Molecule) -> Vec<f64> {
 
 /// Determine H atom type based on the heavy atom it's bonded to.
 fn h_type_for(mol: &Molecule, h_idx: AtomIdx) -> MmffType {
-    for (nb, _) in mol.neighbors(h_idx) {
+    if let Some((nb, _)) = mol.neighbors(h_idx).next() {
         let t = assign_mmff94_type(mol, nb);
         return match t {
             MmffType::Namine => MmffType::Hamine,
@@ -451,6 +451,8 @@ fn h_type_for(mol: &Molecule, h_idx: AtomIdx) -> MmffType {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::manual_contains)]
+
     use super::*;
     use chematic_smiles::parse;
 

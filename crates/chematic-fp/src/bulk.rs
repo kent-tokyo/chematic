@@ -126,7 +126,7 @@ mod tests {
     #[test]
     fn test_tanimoto_slice_all_zero_convention() {
         let zero = BitVec2048::new();
-        let result = tanimoto_slice(&zero, &[zero.clone()]);
+        let result = tanimoto_slice(&zero, std::slice::from_ref(&zero));
         assert_eq!(result.len(), 1);
         assert!((result[0] - 1.0).abs() < 1e-6, "both zero → 1.0");
     }

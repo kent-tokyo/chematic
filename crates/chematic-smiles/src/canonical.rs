@@ -538,7 +538,7 @@ impl<'a> CanonicalWriter<'a> {
         };
 
         let atom_data = self.mol.atom(atom);
-        let has_h = atom_data.hydrogen_count.map_or(false, |h| h > 0);
+        let has_h = atom_data.hydrogen_count.is_some_and(|h| h > 0);
 
         // Build canonical neighbor sequence in SMILES output order:
         // 1. from_atom   (or H_SENTINEL if root and has bracket H)

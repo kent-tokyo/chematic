@@ -141,6 +141,7 @@ pub(crate) fn bond_type_int(order: BondOrder) -> u8 {
 ///    (with their bond types) for `config.radius` rounds.
 /// 3. After each iteration (including iteration 0), map every identifier to a
 ///    bit in the output bitvector.
+///
 /// Maximum supported radius for `ecfp`.  Matches the cap in `morgan_fp_counts`.
 /// Beyond this, `r as u8` would silently truncate, producing hash collisions.
 pub const MAX_ECFP_RADIUS: u32 = 20;

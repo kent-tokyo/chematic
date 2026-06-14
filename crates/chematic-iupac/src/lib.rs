@@ -1038,11 +1038,11 @@ impl<'a> Namer<'a> {
         // Group identical substituents for di/tri multiplier.
         let mut groups: Vec<(String, Vec<usize>)> = Vec::new();
         for (locant, name) in sub_list {
-            if let Some(last) = groups.last_mut() {
-                if last.0 == name {
-                    last.1.push(locant);
-                    continue;
-                }
+            if let Some(last) = groups.last_mut()
+                && last.0 == name
+            {
+                last.1.push(locant);
+                continue;
             }
             groups.push((name, vec![locant]));
         }
@@ -1319,15 +1319,15 @@ fn unsaturation_locant(mol: &Molecule, carbons: &[AtomIdx], order: BondOrder) ->
     let chain = find_longest_c_chain(mol, carbons);
     let n = chain.len();
     for (_, b) in mol.bonds() {
-        if b.order == order {
-            if let (Some(p1), Some(p2)) = (
+        if b.order == order
+            && let (Some(p1), Some(p2)) = (
                 chain.iter().position(|&c| c == b.atom1),
                 chain.iter().position(|&c| c == b.atom2),
-            ) {
-                let fwd = p1.min(p2) + 1;  // 1-based lower position in forward direction
-                let rev = n - p1.max(p2);  // 1-based lower position in reversed direction
-                return fwd.min(rev);
-            }
+            )
+        {
+            let fwd = p1.min(p2) + 1;  // 1-based lower position in forward direction
+            let rev = n - p1.max(p2);  // 1-based lower position in reversed direction
+            return fwd.min(rev);
         }
     }
     1
@@ -1382,7 +1382,7 @@ fn best_benzene_locants(
             }
             assignment.sort_by_key(|&(l, _)| l);
             let locs: Vec<usize> = assignment.iter().map(|&(l, _)| l).collect();
-            let is_better = best_locs.as_ref().map_or(true, |b| locs < *b);
+            let is_better = best_locs.as_ref().is_none_or(|b| locs < *b);
             if is_better {
                 best_locs = Some(locs);
                 best_assignment = assignment;
