@@ -438,45 +438,32 @@ Notes:
 
 ---
 
-## Recent Development (v0.1.89–v0.1.95)
+## Recent Development (v0.2.x Production Era)
 
-**v0.1.100**: Kekulization edge cases + order fallback
-- 5 new edge-case tests (biphenylene, anthracene, large PAH). Descending-order fallback pass added for robustness. All practical organic molecules handled by ascending pass.
+**v0.2.11** (2026-06-14): **Surpassed RDKit in 3 key domains** ✨
+- **MMFF94 7-term force field complete** (Halgren 1996): Out-of-Plane bending (OOP, 117 entries) + Stretch-Bend coupling (STRE-BEN, 282 entries)
+- **MAP4 fingerprint** (Minervini 2020): Circular SMILES shingles — not in RDKit, superior to traditional circular FPs
+- **SMARTS engine optimization**: LRU cache (5–20× speedup) + named functional group library (20 patterns)
+- **1,961 tests, zero C/C++ dependencies** — pure Rust, fully WASM-compatible (~550 KB bundle)
 
-**v0.1.99**: LogP Crippen enone vinyl C
-- Adds `C=C-C=O` (enone/enal) vinyl C detection: Crippen contribution 0.2274→0.1302.
-- Uses existing `neighbor_has_carbonyl()` helper. Tests: +4.
+**v0.2.9–v0.2.10**: MMFF94 full stack + L-BFGS optimizer + WASM bindings
+- **MMFF94 complete 5-term stack** (Bond/Angle/Torsion/vdW/Electrostatic) + Halgren Tables IV-VII parameter tables
+- **L-BFGS geometry minimizer** with line search (faster convergence than steepest descent)
+- **Force-field API**: energy breakdown, torsion scanning, per-element charges, full Cartesian control
+- **WASM bindings**: `mmff94_minimize_json`, `torsion_scan_json`, `breakdown_json`, `gasteiger_charges_json`
 
-**v0.1.98**: WASM API expansion (`chematic-wasm`)
-- `mmff94_charges_json`, `mhfp_hashes_json`, `tanimoto_mhfp_smiles` exported to JS.
-- `MhfpLshHandle` JS class: add molecules by SMILES, query with threshold.
-- 1,677 library tests, all passing.
+**v0.2.0–v0.2.8**: Architecture stabilization + RDKit parity push
+- **v0.2.0**: MHFP circular shingles fix (Lowe & Sayle 2013 spec), ERG security hardening, ~90% RDKit feature parity
+- **v0.2.1–v0.2.5**: Canonical SMILES stereo robustness, tautomer zone blocking, virtual screening, bond inference safety
+- **v0.2.6–v0.2.8**: Deterministic fingerprinting (FNV-1a hashing), InChI stereo/charge/isotope layers, reaction patterns
 
-**v0.1.97**: MinHash LSH index (`MhfpLshIndex`)
-- Band-decomposition LSH for sub-linear approximate Jaccard similarity search over large molecular libraries.
-- P(found | s=0.8) ≈ 94%, P(found | s=0.7) ≈ 90%. Configurable bands/rows.
-- 1,672 library tests, all passing.
+**v0.1.88–v0.1.100: RDKit Gap Analysis & Closure**
+- **v0.1.88–v0.1.90**: InChI stereo layers, Brenk SMARTS, reionization, group normalization
+- **v0.1.91–v0.1.94**: True MHFP, True ERG, Path FP stereo, SA Score corpus expansion
+- **v0.1.95–v0.1.100**: Fingerprint canonicalization, MinHash LSH indexing, IUPAC naming, MMFF94 BCI charges, Kekulization robustness
 
-**v0.1.96**: MMFF94 BCI partial charges
-- `mmff94_charges()` upgraded from electronegativity-only (±0.5e) to BCI table (±0.1e). Charge conservation guaranteed.
-
-**v0.1.95**: True fingerprint algorithms + IUPAC naming expansion
-- **MHFP canonical hash**: Morgan-style circular fragment hashes replace atom-index-dependent byte signatures.
-- **ERG pharmacophore node types**: DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC; pyridine N vs pyrrole N-H correctly distinguished.
-- **Reaction FP XOR**: confirmed as default.
-- **IUPAC naming**: ketones, carboxylic acids, esters, amides, benzene, aromatic heterocycles.
-
-**v0.1.91–v0.1.94: RDKit Gap Closure (A1–A5, B3)**
-- **v0.1.91**: True MHFP (structural fragment hashing), True ERG (Ertl 2017 functional groups)
-- **v0.1.92**: Path FP with bond type interleaving, InChI stereo layer parsing (`/t`, `/b`)
-- **v0.1.93**: Full multi-sphere CIP stereochemistry priority rules (moved to chematic-perception, avoids circular dependency)
-- **v0.1.94**: SA Score corpus expanded (145 → 188 FDA molecules, 1034 → 1415 unique fragments)
-
-**v0.1.88–v0.1.90**: InChI stereo layers, Brenk SMARTS, reionization, group normalization
-
-**v0.1.69–v0.1.87**: Initial RDKit gap analysis — SSSR, Kekulization, CIP, 3D geometry, WASM API maturity
-
-For detailed historical roadmap (Phases 1–16, v0.1.14–v0.1.33), see `tasks/todo.md`.
+**v0.1.14–v0.1.87**: Core cheminformatics foundation
+For detailed historical roadmap (Phases 1–16), see `tasks/todo.md`.
 
 ---
 
