@@ -12,6 +12,7 @@ pub mod mmff94;
 pub mod mmff94_advanced;
 pub mod mmff94_bci;
 pub mod mmff94_energy;
+pub mod mmff94_minimizer;
 pub mod mmff94_numeric;
 pub mod mmff94_params;
 pub mod params;
@@ -31,6 +32,9 @@ pub use mmff94_params::{
 pub use mmff94_energy::{
     mmff94_angle_energy, mmff94_bond_energy, mmff94_torsion_energy, mmff94_vdw_combined,
     mmff94_vdw_energy, AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, VdwEnergyParams,
+};
+pub use mmff94_minimizer::{
+    minimize_mmff94_full, mmff94_total_energy, MinimizeResult, MinimizerError,
 };
 pub use mmff94_numeric::{
     assign_mmff94_numeric_types, mmff94_charges_numeric, pbci_for, NumericTypeError,
