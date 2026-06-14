@@ -152,7 +152,7 @@ impl Molecule {
     pub fn neighbors_opt(&self, idx: AtomIdx) -> Option<Vec<(AtomIdx, BondIdx)>> {
         let i = idx.0 as usize;
         if i < self.adjacency.len() {
-            Some(self.adjacency[i].iter().copied().collect())
+            Some(self.adjacency[i].to_vec())
         } else {
             None
         }
@@ -231,10 +231,10 @@ impl Molecule {
         if let Some(c) = counts.remove("C") {
             push_count("C", c, &mut result);
         }
-        if let Some(h) = counts.remove("H") {
-            if h > 0 {
-                push_count("H", h, &mut result);
-            }
+        if let Some(h) = counts.remove("H")
+            && h > 0
+        {
+            push_count("H", h, &mut result);
         }
         for (sym, count) in &counts {
             push_count(sym, *count, &mut result);

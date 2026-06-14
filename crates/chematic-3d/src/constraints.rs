@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn test_satisfy_constraints_single_bond() {
-        use chematic_core::{Molecule, MoleculeBuilder, Element};
+        use chematic_core::{Element, MoleculeBuilder};
 
         let mut builder = MoleculeBuilder::new();
         builder.add_atom(chematic_core::Atom::new(Element::C));
@@ -669,9 +669,12 @@ mod tests {
 
         let target_dist = 1.54;
         let constraint = BondConstraint::new(AtomIdx(0), AtomIdx(1), target_dist);
+        let constraints = ConstraintSet {
+            bonds: vec![constraint],
+            angles: Vec::new(),
+        };
 
-        let config = ConstraintConfig::default();
-        let result = satisfy_constraints(&mol, coords, &[constraint], &config);
+        let result = satisfy_constraints(&coords, &mol, &constraints, 20);
 
         let dist = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
         assert!((dist - target_dist).abs() < 0.1, "Bond constraint should converge to target distance");
@@ -679,7 +682,7 @@ mod tests {
 
     #[test]
     fn test_satisfy_constraints_convergence() {
-        use chematic_core::{Molecule, MoleculeBuilder, Element};
+        use chematic_core::{Element, MoleculeBuilder};
 
         let mut builder = MoleculeBuilder::new();
         for _ in 0..3 {
@@ -694,13 +697,15 @@ mod tests {
         coords.set(AtomIdx(1), Point3::new(5.0, 0.0, 0.0));
         coords.set(AtomIdx(2), Point3::new(5.0, 5.0, 0.0));
 
-        let constraints = vec![
-            BondConstraint::new(AtomIdx(0), AtomIdx(1), 1.54),
-            BondConstraint::new(AtomIdx(1), AtomIdx(2), 1.54),
-        ];
+        let constraints = ConstraintSet {
+            bonds: vec![
+                BondConstraint::new(AtomIdx(0), AtomIdx(1), 1.54),
+                BondConstraint::new(AtomIdx(1), AtomIdx(2), 1.54),
+            ],
+            angles: Vec::new(),
+        };
 
-        let config = ConstraintConfig::default();
-        let result = satisfy_constraints(&mol, coords, &constraints, &config);
+        let result = satisfy_constraints(&coords, &mol, &constraints, 20);
 
         let dist01 = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
         let dist12 = result.get(AtomIdx(1)).distance(&result.get(AtomIdx(2)));

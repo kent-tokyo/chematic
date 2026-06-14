@@ -54,8 +54,8 @@ pub fn compute_centroid(coords: &Coords3D) -> [f64; 3] {
     super::usr::centroid(&all_coords)
 }
 
-/// Set dihedral angle A—B—C—D to target_angle (radians) by rotating the C-D bond.
-/// Returns new Coords3D with atoms D and its neighbors rotated.
+/// Set dihedral angle A—B—C—D to target_angle (radians) by rotating the B-C bond.
+/// Returns new Coords3D with atoms on the C side of the bond rotated.
 pub fn set_dihedral(
     coords: &Coords3D,
     mol: &Molecule,
@@ -71,22 +71,22 @@ pub fn set_dihedral(
     };
 
     let delta = target_angle - current;
+    let pb = coords.get(b);
     let pc = coords.get(c);
-    let pd = coords.get(d);
 
-    // Guard against degenerate geometry: C and D atoms must not coincide
-    if pd.distance(&pc) < 1e-10 {
+    // Guard against degenerate geometry: B and C define the rotation axis.
+    if pc.distance(&pb) < 1e-10 {
         return coords.clone();
     }
 
-    let axis = pd.sub(&pc).normalize();
+    let axis = pc.sub(&pb).normalize();
 
     let mut new_coords = coords.clone();
 
-    // Find atoms connected to D that should be rotated (entire subtree beyond C)
-    let rotated = find_rotated_atoms(mol, c, d);
+    // Find atoms on the C side of the B-C bond.
+    let rotated = find_rotated_atoms(mol, b, c);
 
-    // Rotate D and all atoms in subtree
+    // Rotate C-side atoms around the B-C axis. Atom C lies on the axis and is unchanged.
     for idx in rotated {
         let p = coords.get(idx);
         let relative = p.sub(&pc);
@@ -253,16 +253,30 @@ mod tests {
     #[test]
     fn test_set_dihedral_linear() {
         let mol = parse("CCCC").unwrap();
-        let mut coords = crate::dg::generate_coords(&mol);
+        let mut coords = Coords3D::new_zeroed(4);
+        coords.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
+        coords.set(AtomIdx(1), Point3::new(1.0, 0.0, 0.0));
+        coords.set(AtomIdx(2), Point3::new(1.0, 1.0, 0.0));
+        coords.set(AtomIdx(3), Point3::new(2.0, 1.0, 1.0));
         let original_p3 = coords.get(AtomIdx(3));
 
-        // Set dihedral to 180 degrees
-        let result = set_dihedral(&mol, &coords, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3), 180.0);
+        let target = 60.0_f64.to_radians();
+        let result = set_dihedral(
+            &coords,
+            &mol,
+            AtomIdx(0),
+            AtomIdx(1),
+            AtomIdx(2),
+            AtomIdx(3),
+            target,
+        );
         let new_p3 = result.get(AtomIdx(3));
 
-        // Position should change (dihedral was modified)
         let dist_change = original_p3.distance(&new_p3);
         assert!(dist_change > 0.1, "Atom position should change for different dihedral");
+
+        let dihedral = get_dihedral(&result, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)).unwrap();
+        assert!((dihedral - target).abs() < 1e-8);
     }
 
     #[test]
@@ -272,7 +286,7 @@ mod tests {
 
         // Degenerate case: C and D are too close (not a valid 4-atom chain)
         // Should return coords unchanged or early
-        let result = set_dihedral(&mol, &coords, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(2), 180.0);
+        let result = set_dihedral(&coords, &mol, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(2), 180.0);
         let p = result.get(AtomIdx(0));
         let p_orig = coords.get(AtomIdx(0));
 

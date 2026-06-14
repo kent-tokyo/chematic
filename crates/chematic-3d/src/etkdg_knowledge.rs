@@ -238,29 +238,29 @@ mod tests {
     #[test]
     fn test_atom_type_methane() {
         let mol = parse("C").unwrap();
-        assert_eq!(atom_type(&mol, AtomIdx(0)), AtomType::CSp3);
+        assert_eq!(classify_atom_type(&mol, AtomIdx(0)), AtomType::CSp3);
     }
 
     #[test]
     fn test_atom_type_ethene() {
         let mol = parse("C=C").unwrap();
-        assert_eq!(atom_type(&mol, AtomIdx(0)), AtomType::CSp2Alkene);
-        assert_eq!(atom_type(&mol, AtomIdx(1)), AtomType::CSp2Alkene);
+        assert_eq!(classify_atom_type(&mol, AtomIdx(0)), AtomType::CSp2Alkene);
+        assert_eq!(classify_atom_type(&mol, AtomIdx(1)), AtomType::CSp2Alkene);
     }
 
     #[test]
     fn test_atom_type_benzene() {
         let mol = parse("c1ccccc1").unwrap();
-        assert_eq!(atom_type(&mol, AtomIdx(0)), AtomType::CAromatic);
+        assert_eq!(classify_atom_type(&mol, AtomIdx(0)), AtomType::CAromatic);
     }
 
     #[test]
     fn test_atom_type_acetaldehyde() {
         let mol = parse("CC=O").unwrap();
         let c_sp3 = if mol.atom(AtomIdx(0)).aromatic {
-            atom_type(&mol, AtomIdx(1))
+            classify_atom_type(&mol, AtomIdx(1))
         } else {
-            atom_type(&mol, AtomIdx(0))
+            classify_atom_type(&mol, AtomIdx(0))
         };
         assert_eq!(c_sp3, AtomType::CSp3);
     }
