@@ -1508,4 +1508,133 @@ mod tests {
         let result = canonical_tautomer_with_config(&mol, &config);
         assert!(result.atom_count() > 0);
     }
+
+    // ── Stereo preservation tests (RDKit #7969: canonical_tautomer should NOT ──
+    // ── erase sp3 chirality at stereocenters not involved in tautomerism)     ──
+
+    /// RDKit issue #7969: canonical_tautomer erases sp3 chirality.
+    /// chematic must NOT have this bug — chirality fields are preserved via clone().
+    #[test]
+    fn test_remote_stereo_preserved_keto_enol() {
+        use chematic_core::{AtomIdx, Chirality};
+        use chematic_smiles::canonical_smiles;
+
+        // C[C@H](O)CC(=O)C: keto-enol fires at the C(=O) end.
+        // The [C@H] stereocenter (index 1) is remote — must be preserved.
+        let mol = parse("C[C@H](O)CC(=O)C").unwrap();
+        let before_chirality = mol.atom(AtomIdx(1)).chirality;
+        assert_ne!(before_chirality, Chirality::None, "test setup: atom 1 must be chiral");
+
+        let t = canonical_tautomer(&mol);
+        let after_chirality = t.atom(AtomIdx(1)).chirality;
+        assert_ne!(
+            after_chirality, Chirality::None,
+            "Remote [C@H] chirality erased by canonical_tautomer (RDKit #7969 regression)"
+        );
+
+        // Additionally verify canonical SMILES contains a chirality marker
+        let smi = canonical_smiles(&t);
+        assert!(
+            smi.contains('@'),
+            "Canonical SMILES lost chirality marker: '{}'", smi
+        );
+    }
+
+    #[test]
+    fn test_alanine_stereo_trivially_preserved() {
+        use chematic_core::{AtomIdx, Chirality};
+
+        // [C@@H](N)(C(=O)O)C — no tautomer rule fires; stereo must be unchanged.
+        let mol = parse("[C@@H](N)(C(=O)O)C").unwrap();
+        let before = mol.atom(AtomIdx(0)).chirality;
+        let t = canonical_tautomer(&mol);
+        let after = t.atom(AtomIdx(0)).chirality;
+        assert_eq!(before, after, "Alanine chirality changed; was {:?}, got {:?}", before, after);
+    }
+
+    #[test]
+    fn test_glucose_all_stereocenters_preserved() {
+        use chematic_core::{AtomIdx, Chirality};
+
+        let mol = parse("OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O").unwrap();
+        let before: Vec<Chirality> = (0..mol.atom_count())
+            .map(|i| mol.atom(AtomIdx(i as u32)).chirality)
+            .collect();
+
+        let t = canonical_tautomer(&mol);
+        let after: Vec<Chirality> = (0..t.atom_count())
+            .map(|i| t.atom(AtomIdx(i as u32)).chirality)
+            .collect();
+
+        assert_eq!(
+            before, after,
+            "Glucose: stereocenters changed through canonical_tautomer"
+        );
+    }
+
+    #[test]
+    fn test_pyrazole_no_phantom_chirality() {
+        use chematic_core::{AtomIdx, Chirality};
+
+        // c1cc[nH]n1: N-H tautomers possible, no stereocenters → must stay chiral-free
+        let mol = parse("c1cc[nH]n1").unwrap();
+        let t = canonical_tautomer(&mol);
+        let chiral_count = (0..t.atom_count())
+            .filter(|&i| t.atom(AtomIdx(i as u32)).chirality != Chirality::None)
+            .count();
+        assert_eq!(chiral_count, 0, "Phantom chirality introduced by pyrazole tautomerism");
+    }
+
+    #[test]
+    fn test_stereo_at_donor_does_not_panic() {
+        use chematic_smiles::canonical_smiles;
+
+        // [C@@H](O)(C)C(=O)O — lactic acid: O (donor) is adjacent to stereocentre.
+        // The tautomer may legitimately change chirality; we just verify no panic.
+        let mol = parse("[C@@H](O)(C)C(=O)O").unwrap();
+        let t = canonical_tautomer(&mol);
+        assert!(t.atom_count() > 0);
+        let smi = canonical_smiles(&t);
+        assert!(!smi.is_empty());
+    }
+
+    #[test]
+    fn test_enumerate_tautomers_remote_stereo_preserved() {
+        use chematic_core::{AtomIdx, Chirality};
+
+        // C[C@H](O)CC(=O)C: enumerate all tautomers.
+        // Every produced tautomer must preserve chirality at atom 1 (remote centre).
+        let mol = parse("C[C@H](O)CC(=O)C").unwrap();
+        let original_chirality = mol.atom(AtomIdx(1)).chirality;
+
+        let tautomers = enumerate_tautomers(&mol);
+        for (i, t) in tautomers.iter().enumerate() {
+            if t.atom_count() == mol.atom_count() {
+                let ch = t.atom(AtomIdx(1)).chirality;
+                assert_eq!(
+                    ch, original_chirality,
+                    "Tautomer #{}: chirality at atom 1 changed ({:?} → {:?})", i, original_chirality, ch
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_blocked_stereo_preserved_with_zone_blocking() {
+        use chematic_core::{AtomIdx, Chirality};
+
+        // O[C@@H](F)C(=O)C: block O (index 0) to suppress keto-enol.
+        // Stereocentre [C@@H] (index 1) must be preserved.
+        let mol = parse("O[C@@H](F)C(=O)C").unwrap();
+        let config = TautomerConfig {
+            blocked_atoms: [AtomIdx(0)].into_iter().collect(),
+            ..TautomerConfig::default()
+        };
+        let t = canonical_tautomer_with_config(&mol, &config);
+        let chirality_after = t.atom(AtomIdx(1)).chirality;
+        assert_ne!(
+            chirality_after, Chirality::None,
+            "Chirality erased from blocked stereocentre"
+        );
+    }
 }
