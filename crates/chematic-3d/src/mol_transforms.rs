@@ -74,6 +74,11 @@ pub fn set_dihedral(
     let pc = coords.get(c);
     let pd = coords.get(d);
 
+    // Guard against degenerate geometry: C and D atoms must not coincide
+    if pd.distance(&pc) < 1e-10 {
+        return coords.clone();
+    }
+
     let axis = pd.sub(&pc).normalize();
 
     let mut new_coords = coords.clone();
