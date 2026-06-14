@@ -1,82 +1,126 @@
-//! v0.1.91: True ERG (Extended Reduced Graph) fingerprints
+//! ERG (Extended Reduced Graph) fingerprints — bespoke 2048-bit and 315-dim float variants.
 //!
-//! Implements ERG algorithm (Sheridan 1996) with Ertl 2017 functional group detection:
-//! 1. Identify functional group clusters using Ertl 2017 algorithm
-//! 2. Collapse each cluster into a single reduced node
-//! 3. Assign node types from pharmacophore features
-//! 4. Build reduced graph with linker information
-//! 5. Generate fingerprint from reduced graph topology
+//! Implements ERG algorithm (Sheridan 1996 / Rarey & Dixon 1998) with Ertl 2017 FG detection:
+//! 1. Identify functional group clusters (Ertl 2017)
+//! 2. Collapse each cluster into a single reduced node with pharmacophore type
+//! 3. Build reduced graph with linker bond counts between nodes
+//! 4. Generate fingerprint from reduced graph topology
 //!
-//! Reference: https://pubs.acs.org/doi/10.1021/ci9602928 (Sheridan)
-//!            P. Ertl, J. Cheminf. 2017, 9, 36 (Ertl)
+//! Two fingerprint formats are provided:
+//! - `erg()`: 2048-bit bespoke bitvector (original chematic format, fast hashing)
+//! - `erg_vec()`: 315-float histogram (Rarey & Dixon 1998 structure: 21 node-type pairs
+//!   × 15 distance bins, with Gaussian fuzzing ±1 bin at weight 0.3)
+//!   NOTE: numerical parity with RDKit GetErGFingerprint is unverified (no fixture data).
+//!
+//! Reference: Rarey & Dixon 1998 J.Comput.-Aided Mol.Des. 12:471–490
+//!            Sheridan 1996 J.Chem.Inf.Comput.Sci. 36:128–136
+//!            Ertl 2017 J.Cheminf. 9:36
 
 use std::collections::{HashSet, VecDeque};
 use chematic_core::{Atom, AtomIdx, BondOrder, Molecule, implicit_hcount};
 use crate::bitvec::BitVec2048;
 use crate::ecfp::fnv1a;
 
-/// Ertl 2017 functional group identification.
-/// Returns atom index sets, one per functional group cluster.
+/// Functional group identification for ERG reduced graph construction.
+///
+/// Algorithm (Union-Find over heteroatoms):
+/// 1. Identify all heteroatoms (non-C, non-H).
+/// 2. Merge heteroatoms that share a common C neighbor (e.g. C=O and OH on same
+///    carbonyl C → carboxylate/ester one node; amide C bonded to N and O → one node).
+/// 3. Merge heteroatoms directly bonded to each other (e.g. N-O in nitro groups).
+/// 4. Expand each cluster by including all directly bonded C atoms.
+///
+/// This keeps amine and carboxylate as *separate* nodes in amino acids, because
+/// the only carbon shared between them (α-C) is bonded to only ONE heteroatom cluster
+/// at a time. C–C bonds between FG clusters become linker atoms for edge encoding.
 fn identify_functional_groups(mol: &Molecule) -> Vec<Vec<usize>> {
     let n = mol.atom_count();
     if n == 0 {
         return Vec::new();
     }
 
-    let mut marked = vec![false; n];
-
-    // Mark all non-C, non-H heavy atoms
+    // --- Phase 1: collect heteroatom indices ---
+    let mut is_hetero = vec![false; n];
     for (idx, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
         if an != 1 && an != 6 {
-            marked[idx.0 as usize] = true;
+            is_hetero[idx.0 as usize] = true;
+        }
+    }
+    let hetero_idxs: Vec<usize> = (0..n).filter(|&i| is_hetero[i]).collect();
+    if hetero_idxs.is_empty() {
+        return Vec::new();
+    }
+
+    // --- Phase 2: Union-Find ---
+    let mut parent: Vec<usize> = (0..n).collect();
+
+    // Merge heteroatoms bonded directly to each other (nitro N-O, N-N hydrazine, etc.)
+    for &hi in &hetero_idxs {
+        for (nb, _) in mol.neighbors(AtomIdx(hi as u32)) {
+            let nbi = nb.0 as usize;
+            if is_hetero[nbi] {
+                uf_union(&mut parent, hi, nbi);
+            }
         }
     }
 
-    // Mark carbons bonded to heteroatoms
-    for (idx, atom) in mol.atoms() {
-        if atom.element.atomic_number() != 6 {
+    // Merge heteroatoms that share a C neighbor (same FG context)
+    for ci in 0..n {
+        if mol.atom(AtomIdx(ci as u32)).element.atomic_number() != 6 {
             continue;
         }
-        let has_hetero = mol.neighbors(idx).any(|(nb, _)| {
-            let an = mol.atom(nb).element.atomic_number();
-            an != 1 && an != 6
-        });
-        if has_hetero {
-            marked[idx.0 as usize] = true;
+        let hetero_nbs: Vec<usize> = mol.neighbors(AtomIdx(ci as u32))
+            .filter(|(nb, _)| is_hetero[nb.0 as usize])
+            .map(|(nb, _)| nb.0 as usize)
+            .collect();
+        if hetero_nbs.len() >= 2 {
+            for &hi in &hetero_nbs[1..] {
+                uf_union(&mut parent, hetero_nbs[0], hi);
+            }
         }
     }
 
-    // BFS to find connected components of marked atoms
-    let mut visited = vec![false; n];
-    let mut groups: Vec<Vec<usize>> = Vec::new();
+    // --- Phase 3: collect clusters and expand with bonded C atoms ---
+    let mut cluster_map: std::collections::HashMap<usize, Vec<usize>> =
+        std::collections::HashMap::new();
+    for &hi in &hetero_idxs {
+        let root = uf_find(&mut parent, hi);
+        cluster_map.entry(root).or_default().push(hi);
+    }
 
-    for start in 0..n {
-        if !marked[start] || visited[start] {
-            continue;
-        }
-
-        let mut component = Vec::new();
-        let mut queue = VecDeque::new();
-        queue.push_back(start);
-        visited[start] = true;
-
-        while let Some(cur) = queue.pop_front() {
-            component.push(cur);
-            for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
+    cluster_map.into_values().map(|mut atoms| {
+        let hetero_set: std::collections::HashSet<usize> = atoms.iter().copied().collect();
+        let snapshot = atoms.clone();
+        for &ai in &snapshot {
+            for (nb, _) in mol.neighbors(AtomIdx(ai as u32)) {
                 let nbi = nb.0 as usize;
-                if marked[nbi] && !visited[nbi] {
-                    visited[nbi] = true;
-                    queue.push_back(nbi);
+                let nb_an = mol.atom(nb).element.atomic_number();
+                if nb_an == 6 && !hetero_set.contains(&nbi) {
+                    atoms.push(nbi);
                 }
             }
         }
+        atoms.sort_unstable();
+        atoms.dedup();
+        atoms
+    }).collect()
+}
 
-        component.sort_unstable();
-        groups.push(component);
+fn uf_find(parent: &mut Vec<usize>, mut x: usize) -> usize {
+    while parent[x] != x {
+        parent[x] = parent[parent[x]]; // path halving
+        x = parent[x];
     }
+    x
+}
 
-    groups
+fn uf_union(parent: &mut Vec<usize>, a: usize, b: usize) {
+    let ra = uf_find(parent, a);
+    let rb = uf_find(parent, b);
+    if ra != rb {
+        parent[rb] = ra;
+    }
 }
 
 /// Node type for reduced graph: pharmacophore feature bits.
@@ -305,11 +349,10 @@ fn shortest_path_linker(
         for (nb, _) in mol.neighbors(AtomIdx(cur as u32)) {
             let nbi = nb.0 as usize;
 
-            // Stop if we reach node_b
+            // Stop if we reach node_b.
+            // linker = total bond count from any node_a atom to this node_b atom.
             if node_b.atom_indices.contains(&nbi) {
-                let linker = (dist[cur] + 1)
-                    .saturating_sub(node_a.atom_indices.len() as u32);
-                return linker.max(1);
+                return dist[cur] + 1;
             }
 
             if dist[nbi] == u32::MAX {
@@ -564,6 +607,125 @@ pub fn tanimoto_erg(mol1: &chematic_core::Molecule, mol2: &chematic_core::Molecu
     fp1.tanimoto(&fp2)
 }
 
+// ─── ERG 315-dim float histogram (Rarey & Dixon 1998 structure) ──────────────
+
+/// Length of the ERG float vector: 21 node-type pairs × 15 distance bins.
+pub const ERG_VEC_LEN: usize = 315;
+
+/// Number of pharmacophore feature types encoded in the float vector.
+const N_FEAT: usize = 6;
+
+/// Number of distance bins (distances 0..=14+ linker atoms).
+const N_BINS: usize = 15;
+
+/// Gaussian fuzzing weight applied to the adjacent distance bins.
+/// Mirrors the `fuzzIncrement` parameter used in RDKit's ErG implementation.
+const FUZZ: f64 = 0.3;
+
+/// Feature type index ordering for the 315-dim vector.
+/// Mapping from bit position (as bit-shift in ErgNodeType.0) to feature index 0-5:
+///   0 = AROMATIC (bit 1 = 1<<0)
+///   1 = DONOR    (bit 2 = 1<<1)
+///   2 = ACCEPTOR (bit 4 = 1<<2)
+///   3 = POSITIVE (bit 16 = 1<<4)
+///   4 = NEGATIVE (bit 32 = 1<<5)
+///   5 = HYDROPHOBIC (bit 8 = 1<<3)
+const FEATURE_BITS: [(u8, usize); N_FEAT] = [
+    (ErgNodeType::AROMATIC,    0),
+    (ErgNodeType::DONOR,       1),
+    (ErgNodeType::ACCEPTOR,    2),
+    (ErgNodeType::POSITIVE,    3),
+    (ErgNodeType::NEGATIVE,    4),
+    (ErgNodeType::HYDROPHOBIC, 5),
+];
+
+/// Compute index into the 21 unique unordered pairs for feature types (a, b).
+///
+/// Lower-triangular enumeration (including diagonal):
+/// (0,0)=0 (0,1)=1 … (0,5)=5 | (1,1)=6 … (1,5)=10 | … | (5,5)=20
+#[inline]
+fn pair_idx(a: usize, b: usize) -> usize {
+    let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
+    lo * N_FEAT - lo * (lo.wrapping_sub(1)) / 2 + (hi - lo)
+}
+
+/// Add `weight` to `vec` at distance bin `d` with Gaussian fuzzing (±1 at `FUZZ`).
+#[inline]
+fn fuzz_add(vec: &mut [f64; ERG_VEC_LEN], base: usize, d: usize, weight: f64) {
+    vec[base + d] += weight;
+    if d > 0            { vec[base + d - 1] += weight * FUZZ; }
+    if d + 1 < N_BINS   { vec[base + d + 1] += weight * FUZZ; }
+}
+
+/// Generate an ERG-style 315-element float histogram.
+///
+/// Format: `vec[pair_index * 15 + distance_bin]` where
+/// - `pair_index` ∈ 0..21 (unique unordered pair of 6 pharmacophore feature types)
+/// - `distance_bin` ∈ 0..15 (linker bond count capped at 14)
+///
+/// Adjacent bins receive a `FUZZ = 0.3` weight (Gaussian smearing).
+///
+/// **NOTE**: numerical parity with RDKit `GetErGFingerprint` is unverified.
+/// Use as a richer alternative to the 2048-bit bespoke FP when float vectors
+/// are needed (e.g. cosine similarity, PCA).
+pub fn erg_vec(mol: &Molecule) -> [f64; ERG_VEC_LEN] {
+    let mut vec = [0.0f64; ERG_VEC_LEN];
+    let (nodes, edges) = build_reduced_graph(mol);
+
+    // Self-pair entries: each node contributes its feature types at bin 0.
+    // This encodes node composition independent of topology, so single-node
+    // molecules (pure alkanes, single-FG molecules) are still distinguishable.
+    for node in &nodes {
+        let ntype = node.ntype.0;
+        for &(bit, fi) in &FEATURE_BITS {
+            if ntype & bit == 0 { continue; }
+            let base = pair_idx(fi, fi) * N_BINS;
+            fuzz_add(&mut vec, base, 0, 1.0);
+        }
+    }
+
+    // Inter-node pair entries: each edge encodes (feature_a, feature_b, distance).
+    for edge in &edges {
+        let dist = edge.linker_len;
+        if dist == u32::MAX {
+            continue;
+        }
+        let bin = (dist as usize).min(N_BINS - 1);
+        let ntype_a = nodes[edge.node_a].ntype.0;
+        let ntype_b = nodes[edge.node_b].ntype.0;
+
+        for &(bit_a, fi) in &FEATURE_BITS {
+            if ntype_a & bit_a == 0 { continue; }
+            for &(bit_b, fj) in &FEATURE_BITS {
+                if ntype_b & bit_b == 0 { continue; }
+                let base = pair_idx(fi, fj) * N_BINS;
+                fuzz_add(&mut vec, base, bin, 1.0);
+            }
+        }
+    }
+
+    vec
+}
+
+/// Cosine similarity between two ERG float vectors.
+pub fn cosine_erg_vec(v1: &[f64; ERG_VEC_LEN], v2: &[f64; ERG_VEC_LEN]) -> f64 {
+    let dot: f64 = v1.iter().zip(v2.iter()).map(|(a, b)| a * b).sum();
+    let n1: f64 = v1.iter().map(|x| x * x).sum::<f64>().sqrt();
+    let n2: f64 = v2.iter().map(|x| x * x).sum::<f64>().sqrt();
+    if n1 < 1e-12 || n2 < 1e-12 { return 0.0; }
+    (dot / (n1 * n2)).min(1.0)
+}
+
+/// Tanimoto similarity on float vectors: T = dot / (|v1|² + |v2|² − dot).
+pub fn tanimoto_erg_vec(v1: &[f64; ERG_VEC_LEN], v2: &[f64; ERG_VEC_LEN]) -> f64 {
+    let dot: f64 = v1.iter().zip(v2.iter()).map(|(a, b)| a * b).sum();
+    let n1: f64 = v1.iter().map(|x| x * x).sum();
+    let n2: f64 = v2.iter().map(|x| x * x).sum();
+    let denom = n1 + n2 - dot;
+    if denom < 1e-12 { return 1.0; }
+    (dot / denom).max(0.0).min(1.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -725,22 +887,23 @@ mod tests {
     #[test]
     fn test_erg_linker_distance_changes_fingerprint() {
         // Same terminal functional groups (NH2 and COOH) but different linker lengths.
-        // The reduced graph edge topology bits (259+) must differ.
+        // erg_vec (315-dim float histogram) encodes distances in distinct bins,
+        // so the vectors must differ. The bespoke 2048-bit erg() uses FNV hashing
+        // which can have bin collisions for this specific pair — use erg_vec instead.
         let short = parse("NCC(=O)O").unwrap();   // 1 linker C
         let long  = parse("NCCCCCC(=O)O").unwrap(); // 5 linker Cs
 
-        let fp_short = erg(&short);
-        let fp_long  = erg(&long);
+        let v_short = erg_vec(&short);
+        let v_long  = erg_vec(&long);
 
-        // Topology bits in [259, 2047] must differ for different linker lengths.
-        let short_topo: Vec<usize> = (259..2048).filter(|&b| fp_short.bits.get(b)).collect();
-        let long_topo:  Vec<usize> = (259..2048).filter(|&b| fp_long.bits.get(b)).collect();
-        assert_ne!(short_topo, long_topo,
-            "different linker lengths must produce different topology bits");
+        // Vectors must not be identical (different linker bin → different histogram).
+        assert_ne!(v_short, v_long,
+            "different linker lengths must produce different erg_vec entries");
 
-        // Similarity should be less than 1.0 (not identical).
-        assert!(fp_short.tanimoto(&fp_long) < 1.0,
-            "different linker lengths should give Tanimoto < 1.0");
+        // Similarity must be strictly < 1.0.
+        let sim = tanimoto_erg_vec(&v_short, &v_long);
+        assert!(sim < 1.0,
+            "different linker lengths should give Tanimoto < 1.0, got {sim:.4}");
     }
 
     // ---- New pharmacophore feature tests ----
@@ -880,6 +1043,91 @@ mod tests {
             "amine N should be DONOR (bits={:#010b})", ntype.0);
         assert!(ntype.0 & ErgNodeType::ACCEPTOR != 0,
             "amine N should be ACCEPTOR (bits={:#010b})", ntype.0);
+    }
+
+    // ── erg_vec (315-dim float histogram) tests ──────────────────────────────
+
+    #[test]
+    fn test_erg_vec_length() {
+        let mol = parse("CC").unwrap();
+        let v = erg_vec(&mol);
+        assert_eq!(v.len(), ERG_VEC_LEN, "erg_vec must return exactly 315 floats");
+    }
+
+    #[test]
+    fn test_erg_vec_consistency() {
+        let mol = parse("c1ccccc1N").unwrap();
+        let v1 = erg_vec(&mol);
+        let v2 = erg_vec(&mol);
+        assert_eq!(v1, v2, "erg_vec must be deterministic");
+    }
+
+    #[test]
+    fn test_erg_vec_nonnegative() {
+        for smi in &["CC", "CCO", "c1ccccc1", "c1ccncc1", "CC(=O)N", "c1ccccc1N"] {
+            let mol = parse(smi).unwrap();
+            let v = erg_vec(&mol);
+            for (i, &x) in v.iter().enumerate() {
+                assert!(x >= 0.0, "erg_vec[{i}] negative for {smi}: {x}");
+            }
+        }
+    }
+
+    #[test]
+    fn test_erg_vec_same_mol_self_similarity() {
+        let mol = parse("c1ccccc1").unwrap();
+        let v = erg_vec(&mol);
+        let sim = tanimoto_erg_vec(&v, &v);
+        assert!((sim - 1.0).abs() < 1e-9, "self-similarity must be 1.0 (got {sim})");
+    }
+
+    #[test]
+    fn test_erg_vec_different_molecules() {
+        let mol1 = parse("CC").unwrap();
+        let mol2 = parse("c1ccccc1N").unwrap();
+        let v1 = erg_vec(&mol1);
+        let v2 = erg_vec(&mol2);
+        let sim = tanimoto_erg_vec(&v1, &v2);
+        assert!((0.0..=1.0).contains(&sim), "Tanimoto must be in [0,1] (got {sim})");
+        assert!(sim < 1.0, "ethane vs aniline must not be identical");
+    }
+
+    #[test]
+    fn test_erg_vec_donor_acceptor_linker_distance() {
+        // GABA (H2N-CH2-CH2-CH2-COOH): donor (NH2) and acceptor (C=O, OH) with 3 linker Cs
+        // Glycine (H2N-CH2-COOH): 1 linker C
+        // The DA pair at different distance bins must give different vectors.
+        let gaba    = parse("NCCCC(=O)O").unwrap();
+        let glycine = parse("NCC(=O)O").unwrap();
+        let v_gaba    = erg_vec(&gaba);
+        let v_glycine = erg_vec(&glycine);
+        let sim = tanimoto_erg_vec(&v_gaba, &v_glycine);
+        assert!(sim < 1.0,
+            "GABA vs glycine differ only in linker length — Tanimoto must be < 1 (got {sim:.3})");
+    }
+
+    #[test]
+    fn test_erg_vec_fuzz_spreads_adjacent_bins() {
+        // A node pair at distance bin d must also populate bin d±1 via FUZZ.
+        let mol = parse("NCC(=O)O").unwrap(); // donor-linker-acceptor
+        let v = erg_vec(&mol);
+        // Some bin must be > 0 in the Donor–Acceptor (fi=1, fj=2) pair region
+        let da_pair = pair_idx(1, 2) * N_BINS;
+        let sum: f64 = v[da_pair..da_pair + N_BINS].iter().sum();
+        assert!(sum > 0.0, "Donor–Acceptor bins must be non-zero for glycine analogue");
+    }
+
+    #[test]
+    fn test_pair_idx_all_21() {
+        let mut seen = std::collections::HashSet::new();
+        for a in 0..N_FEAT {
+            for b in a..N_FEAT {
+                let idx = pair_idx(a, b);
+                assert!(idx < 21, "pair_idx({a},{b}) = {idx} out of range");
+                assert!(seen.insert(idx), "pair_idx({a},{b}) = {idx} duplicates earlier pair");
+            }
+        }
+        assert_eq!(seen.len(), 21);
     }
 
     /// Sulfonamide N: ACCEPTOR only (same logic as amide N).

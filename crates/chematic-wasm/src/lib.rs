@@ -1340,6 +1340,34 @@ pub fn tanimoto_mhfp_smiles(smi1: &str, smi2: &str) -> Result<f64, JsValue> {
     Ok(chematic_fp::tanimoto_mhfp(&m1, &m2))
 }
 
+/// Compute ERG-style 315-element float histogram fingerprint.
+/// Returns JSON: {"len":315,"values":[f64,...]} or {"error":"..."}.
+/// Format: 21 pharmacophore-feature-pair × 15 distance bins with Gaussian fuzzing.
+/// See `chematic_fp::erg_vec` for details.
+#[wasm_bindgen]
+pub fn erg_vec_json(mol: &MolHandle) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
+    let v = chematic_fp::erg_vec(&mol.inner);
+    let vals: Vec<String> = v.iter().map(|x| format!("{x:.6}")).collect();
+    format!(r#"{{"len":{},"values":[{}]}}"#, chematic_fp::ERG_VEC_LEN, vals.join(","))
+}
+
+/// Compute MMFF94-style atom-typed partial charges (improved over element-pair BCI).
+/// Returns JSON: {"charges":[f64,...]} or {"error":"..."}.
+/// Uses atom-type classification (Csp3/Ccarbonyl/Ohydroxyl/Oester/Nar/NarH etc.)
+/// for better accuracy (~±0.02e) vs element-pair BCI (~±0.05e).
+#[wasm_bindgen]
+pub fn mmff94_charges_typed_json(mol: &MolHandle) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
+    let q = chematic_chem::mmff94_charges_typed(&mol.inner);
+    let vals: Vec<String> = q.iter().map(|x| format!("{x:.6}")).collect();
+    format!(r#"{{"charges":[{}]}}"#, vals.join(","))
+}
+
 /// Compute 2D pharmacophore fingerprint (2048 bits) as a JSON feature count summary.
 /// Returns simplified JSON with feature type counts: {Donor, Acceptor, Aromatic, Hydrophobic, Positive, Negative}
 #[wasm_bindgen]

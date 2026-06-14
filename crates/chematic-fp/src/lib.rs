@@ -32,7 +32,8 @@ pub mod topo_path;
 pub use atom_pair::{atom_pair_fp, torsion_fp};
 pub use bitvec::{BitVec2048, BitVecN};
 pub use ecfp::{EcfpConfig, ecfp, ecfp4, ecfp6, morgan_fp_counts, tanimoto_ecfp4};
-pub use erg::{erg, erg_with_config, erg_extended, tanimoto_erg, ErgFingerprint, ErgConfig, ErgAtomType, ErgBondType};
+pub use erg::{erg, erg_with_config, erg_extended, tanimoto_erg, ErgFingerprint, ErgConfig, ErgAtomType, ErgBondType,
+              erg_vec, cosine_erg_vec, tanimoto_erg_vec, ERG_VEC_LEN};
 pub use fcfp::{fcfp, fcfp4, fcfp6, tanimoto_fcfp4};
 pub use layered::{layered_fp, layered_fp_by_layer, tanimoto_layered};
 pub use maccs::maccs;

@@ -90,6 +90,7 @@ pub use tautomer::{
     TautomerConfig, canonical_tautomer, canonical_tautomer_with_config, enumerate_tautomers,
     enumerate_tautomers_with_config,
 };
+pub use mmff94_bci::{mmff94_charges_bci, mmff94_charges_typed, assign_mmff94_type, MmffType};
 pub use topo_descriptors::{
     bertz_ct, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v, kappa1, kappa2,
     kappa3, labute_asa, labute_asa_per_atom, randic_index, topological_distance_matrix,
