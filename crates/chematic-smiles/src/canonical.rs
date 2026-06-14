@@ -18,7 +18,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
 
 /// Return the atom indices sorted into canonical (Morgan-rank) order.
 ///
@@ -192,7 +192,8 @@ struct CanonicalWriter<'a> {
     ranks: &'a [u64],
     written: Vec<bool>,
     ring_bonds: HashSet<BondIdx>,
-    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, BondOrder)>>,
+    /// (ring_num, bond_order, ring_partner_atom)
+    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, BondOrder, AtomIdx)>>,
     next_ring: u32,
     out: String,
 }
@@ -343,11 +344,11 @@ impl<'a> CanonicalWriter<'a> {
                 self.atom_ring_nums
                     .entry(neighbor)
                     .or_default()
-                    .push((rn, order_at_open));
+                    .push((rn, order_at_open, atom)); // partner = close atom
                 self.atom_ring_nums
                     .entry(atom)
                     .or_default()
-                    .push((rn, order_at_close));
+                    .push((rn, order_at_close, neighbor)); // partner = open atom
             }
         }
 
@@ -366,11 +367,13 @@ impl<'a> CanonicalWriter<'a> {
             self.out.push(bond.smiles_char());
         }
 
-        self.emit_atom(atom);
+        // Compute parity-corrected chirality before ring data is consumed.
+        let corrected_chirality = self.corrected_chirality(atom, from_atom);
+        self.emit_atom(atom, corrected_chirality);
 
         // Ring-closure digits.
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
-            for (rn, bond_order) in rings {
+            for (rn, bond_order, _partner) in rings {
                 let atom_arom = self.mol.atom(atom).aromatic;
                 if !(bond_order == BondOrder::Aromatic && atom_arom)
                     && bond_order != BondOrder::Single
@@ -457,7 +460,7 @@ impl<'a> CanonicalWriter<'a> {
         neighbors.sort_by(|&(a, _), &(b, _)| self.canonical_cmp(b, a)); // descending
     }
 
-    fn emit_atom(&mut self, idx: AtomIdx) {
+    fn emit_atom(&mut self, idx: AtomIdx, chirality: Chirality) {
         let atom = self.mol.atom(idx);
 
         if atom.wildcard {
@@ -483,10 +486,10 @@ impl<'a> CanonicalWriter<'a> {
             };
             self.out.push_str(&sym);
 
-            match atom.chirality {
-                chematic_core::Chirality::CounterClockwise => self.out.push('@'),
-                chematic_core::Chirality::Clockwise => self.out.push_str("@@"),
-                chematic_core::Chirality::None => {}
+            match chirality {
+                Chirality::CounterClockwise => self.out.push('@'),
+                Chirality::Clockwise => self.out.push_str("@@"),
+                Chirality::None => {}
             }
 
             if let Some(h) = atom.hydrogen_count
@@ -518,6 +521,113 @@ impl<'a> CanonicalWriter<'a> {
             self.out.push_str(atom.element.symbol());
         }
     }
+
+    /// Compute the parity-corrected chirality for `atom` when it is written
+    /// with `from_atom` as the predecessor in the canonical DFS.
+    ///
+    /// Returns the stored chirality unchanged when no stereo neighbor order is
+    /// recorded (e.g. programmatically constructed molecules).
+    fn corrected_chirality(&self, atom: AtomIdx, from_atom: Option<AtomIdx>) -> Chirality {
+        let stored = self.mol.atom(atom).chirality;
+        if stored == Chirality::None {
+            return Chirality::None;
+        }
+
+        let Some(original) = self.mol.stereo_neighbor_order(atom) else {
+            return stored; // no parse-time data → return as-is
+        };
+
+        let atom_data = self.mol.atom(atom);
+        let has_h = atom_data.hydrogen_count.map_or(false, |h| h > 0);
+
+        // Build canonical neighbor sequence in SMILES output order:
+        // 1. from_atom   (or H_SENTINEL if root and has bracket H)
+        // 2. bracket H   (only when from_atom is Some and has_h)
+        // 3. ring-closure partners in ring-number order
+        // 4. children in ascending canonical rank (branches first, main chain last)
+        let mut canonical: Vec<u32> = Vec::with_capacity(original.len());
+
+        match from_atom {
+            Some(prev) => {
+                canonical.push(prev.0);
+                if has_h {
+                    canonical.push(STEREO_H_SENTINEL);
+                }
+            }
+            None => {
+                if has_h {
+                    canonical.push(STEREO_H_SENTINEL);
+                }
+            }
+        }
+
+        if let Some(rings) = self.atom_ring_nums.get(&atom) {
+            for &(_, _, partner) in rings {
+                canonical.push(partner.0);
+            }
+        }
+
+        let mut children: Vec<AtomIdx> = self
+            .mol
+            .neighbors(atom)
+            .filter(|(nb, bidx)| {
+                Some(*nb) != from_atom
+                    && !self.written[nb.0 as usize]
+                    && !self.ring_bonds.contains(bidx)
+            })
+            .map(|(nb, _)| nb)
+            .collect();
+        children.sort_by(|&a, &b| self.canonical_cmp(a, b)); // ascending rank
+        for child in children {
+            canonical.push(child.0);
+        }
+
+        if canonical.len() != original.len() {
+            return stored; // size mismatch → fallback
+        }
+
+        if permutation_is_odd(original, &canonical) {
+            match stored {
+                Chirality::CounterClockwise => Chirality::Clockwise,
+                Chirality::Clockwise => Chirality::CounterClockwise,
+                Chirality::None => Chirality::None,
+            }
+        } else {
+            stored
+        }
+    }
+}
+
+/// Return `true` if the permutation mapping `original` order to `canonical` order
+/// has odd parity (i.e. requires an odd number of transpositions).
+///
+/// Both slices must contain the same multiset of `u32` values.
+fn permutation_is_odd(original: &[u32], canonical: &[u32]) -> bool {
+    let n = original.len();
+    let mut pos: HashMap<u32, usize> = HashMap::with_capacity(n);
+    for (i, &v) in original.iter().enumerate() {
+        pos.insert(v, i);
+    }
+    // perm[i] = position in `original` of the element at `canonical[i]`
+    let perm: Vec<usize> = canonical
+        .iter()
+        .map(|v| *pos.get(v).unwrap_or(&0))
+        .collect();
+
+    // Count cycles in the permutation; parity = (n - #cycles) % 2
+    let mut visited = vec![false; n];
+    let mut num_cycles = 0usize;
+    for start in 0..n {
+        if !visited[start] {
+            num_cycles += 1;
+            let mut j = start;
+            while !visited[j] {
+                visited[j] = true;
+                j = perm[j];
+            }
+        }
+    }
+    (n - num_cycles) % 2 == 1
 }
 
 #[cfg(test)]
@@ -632,5 +742,88 @@ mod tests {
         let mol_e = parse("F/C=C/Cl").unwrap();
         let mol_z = parse("F/C=C\\Cl").unwrap();
         assert_ne!(canonical_smiles(&mol_e), canonical_smiles(&mol_z));
+    }
+
+    // ── Tetrahedral stereo parity tests ─────────────────────────────────────
+
+    #[test]
+    fn test_tetrahedral_stable_no_from_atom() {
+        // Bracket-H form at start of fragment — no from-atom.
+        assert!(is_stable("[C@@H](F)(Cl)Br"));
+        assert!(is_stable("[C@H](F)(Cl)Br"));
+    }
+
+    #[test]
+    fn test_tetrahedral_stable_with_from_atom() {
+        // L-alanine: chiral atom has a from-atom (N).
+        assert!(is_stable("N[C@@H](C)C(=O)O"));
+        assert!(is_stable("N[C@H](C)C(=O)O"));
+    }
+
+    #[test]
+    fn test_enantiomers_differ() {
+        // R and S configurations must give distinct canonical SMILES.
+        assert!(!same_canonical("N[C@@H](C)C(=O)O", "N[C@H](C)C(=O)O"));
+        assert!(!same_canonical("[C@@H](F)(Cl)Br", "[C@H](F)(Cl)Br"));
+    }
+
+    #[test]
+    fn test_tetrahedral_same_from_different_starts() {
+        // L-alanine from N vs from methyl — odd permutation, parity correction required.
+        // RDKit: N[C@@H](C)C(=O)O and C[C@H](N)C(=O)O both → C[C@H](N)C(=O)O.
+        assert!(same_canonical("N[C@@H](C)C(=O)O", "C[C@H](N)C(=O)O"));
+        // D-alanine must differ from L-alanine.
+        assert!(!same_canonical("N[C@@H](C)C(=O)O", "N[C@H](C)C(=O)O"));
+    }
+
+    #[test]
+    fn test_rdkit_agreement_alanine() {
+        // Pairs where the Morgan ranks distinguish all atoms unambiguously.
+        // N[C@@H](C)C(=O)O and C[C@H](N)C(=O)O: same L-alanine (RDKit agrees).
+        assert!(same_canonical("N[C@@H](C)C(=O)O", "C[C@H](N)C(=O)O"));
+        // Enantiomers must differ (RDKit: C[C@@H](N)C(=O)O for D-alanine).
+        assert!(!same_canonical("N[C@@H](C)C(=O)O", "N[C@H](C)C(=O)O"));
+        // Stability: L-alanine canonical is self-stable.
+        assert!(is_stable("N[C@@H](C)C(=O)O"));
+        assert!(is_stable("C[C@H](N)C(=O)O"));
+    }
+
+    #[test]
+    fn test_tetrahedral_all_heavy_substituents_stable() {
+        // Chiral centre with no bracket H (all four heavy substituents).
+        assert!(is_stable("[C@](F)(Cl)(Br)I"));
+        assert!(is_stable("[C@@](F)(Cl)(Br)I"));
+    }
+
+    #[test]
+    fn test_tetrahedral_all_heavy_enantiomers_differ() {
+        assert!(!same_canonical("[C@](F)(Cl)(Br)I", "[C@@](F)(Cl)(Br)I"));
+    }
+
+    #[test]
+    fn test_ring_stereocentre_stable() {
+        // Chiral atom inside a ring — tests ring-closure partner resolution.
+        assert!(is_stable("[C@@H]1CCCC1F"));
+        assert!(is_stable("[C@H]1CCCC1F"));
+    }
+
+    #[test]
+    fn test_ring_stereocentre_enantiomers_differ() {
+        assert!(!same_canonical("[C@@H]1CCCC1F", "[C@H]1CCCC1F"));
+    }
+
+    #[test]
+    fn test_chirality_from_different_entry_points() {
+        // Same chiral molecule, two SMILES with different traversal order.
+        // F[C@@H](Cl)Br  ≡  Cl[C@H](F)Br  (same S-configuration, just written
+        // from different entry atoms — verified by signed-tetrahedral-volume).
+        // Their canonical SMILES must be identical.
+        let c1 = canonical_smiles(&parse("F[C@@H](Cl)Br").unwrap());
+        let c2 = canonical_smiles(&parse("Cl[C@H](F)Br").unwrap());
+        assert_eq!(c1, c2, "same molecule from different starts should match");
+
+        // Cross-check: the enantiomer gives a different canonical form.
+        let c3 = canonical_smiles(&parse("F[C@H](Cl)Br").unwrap());
+        assert_ne!(c1, c3, "enantiomers must differ");
     }
 }

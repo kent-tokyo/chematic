@@ -27,7 +27,7 @@ pub use atom::{Atom, Chirality, CipCode};
 pub use bond::{BondEntry, BondOrder};
 pub use element::Element;
 pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};
-pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder};
+pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
 pub use stereo_group::{StereoGroup, StereoGroupKind};
 #[allow(deprecated)]
 pub use valence::total_hcount;

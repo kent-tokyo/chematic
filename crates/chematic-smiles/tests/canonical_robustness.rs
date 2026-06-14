@@ -9,10 +9,9 @@
 //!    All cases are expected to pass.
 //! 2. **Platform independence (topology)**: two SMILES of the same molecule (no stereo)
 //!    must give identical canonical forms. All expected to pass.
-//! 3. **Stereo parity gap (documentation)**: same molecule written with different atom
-//!    ordering produces *different* canonical SMILES when a stereocenter's neighbor
-//!    permutation is odd — canonical.rs does not yet flip @/@@. This test *documents*
-//!    the known gap without panicking, so it can track progress toward a fix.
+//! 3. **Stereo parity**: same molecule written with different atom ordering must produce
+//!    the same canonical SMILES. Implemented via parse-time stereo neighbor recording and
+//!    permutation-parity correction in canonical.rs (v0.2.7+).
 
 use chematic_smiles::{canonical_smiles, parse};
 
@@ -187,44 +186,34 @@ fn bridged_bicyclic_canonical_gap_documentation() {
 /// neighbor permutation at stereocenters. Two SMILES encoding the same stereochemistry
 /// but with different input atom traversal orders may produce different canonical forms.
 ///
-/// This is tracked as a known limitation. The test records whether each pair diverges
-/// or converges, without panicking either way. When the parity-flip fix is implemented
-/// in `canonical.rs::emit_atom`, these pairs should start producing the same canonical
-/// SMILES, and the `unexpected_passes` log will appear.
+/// Stereo parity is now corrected in canonical.rs.  These pairs must converge.
 #[test]
 fn stereo_parity_gap_documentation() {
-    // Pairs: same absolute configuration, different SMILES atom ordering.
     let pairs: &[(&str, &str, &str)] = &[
-        // Same L-alanine, started from N vs from C
+        // L-alanine written from N vs from C — odd permutation, parity must flip
         ("N[C@@H](C)C(=O)O", "C[C@H](N)C(=O)O", "L-alanine"),
-        // Aminocyclopentane written with ring-first vs NH2-first
+        // Aminocyclopentane: ring-first vs NH2-first
         ("[C@@H]1(N)CCCC1", "[C@H]1(CCCC1)N", "aminocyclopentane"),
+        // Ring stereocenter: exercises PendingRing path.
+        // [C@H]1(F)CCCCC1 and F[C@H]1CCCCC1 are the same enantiomer:
+        //   both encode [H/F/C6/C2] negative via an even permutation.
+        ("F[C@H]1CCCCC1", "[C@H]1(F)CCCCC1", "fluorocyclohexane"),
     ];
 
-    let mut diverge: Vec<&str> = Vec::new();
-    let mut converge: Vec<&str> = Vec::new();
+    let failures: Vec<String> = pairs
+        .iter()
+        .filter_map(|&(a, b, label)| {
+            check_same_canonical(a, b)
+                .err()
+                .map(|e| format!("{label}: {e}"))
+        })
+        .collect();
 
-    for &(a, b, label) in pairs {
-        match check_same_canonical(a, b) {
-            Err(_) => diverge.push(label),  // expected: parity gap active
-            Ok(()) => converge.push(label), // good: parity gap resolved for this case
-        }
-    }
-
-    // Do NOT assert failure direction — this is a documentation test.
-    if !converge.is_empty() {
-        eprintln!(
-            "ℹ stereo parity gap resolved for: {:?} (canonical.rs parity fix in effect?)",
-            converge
-        );
-    }
-    if !diverge.is_empty() {
-        eprintln!(
-            "ℹ stereo parity gap still active for: {:?} (known limitation, not a regression)",
-            diverge
-        );
-    }
-    // Always passes — this test documents, it does not gate.
+    assert!(
+        failures.is_empty(),
+        "stereo parity gap not fully resolved:\n{}",
+        failures.join("\n")
+    );
 }
 
 /// Charged aromatics may or may not parse depending on aromatic valence model.

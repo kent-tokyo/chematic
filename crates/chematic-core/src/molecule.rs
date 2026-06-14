@@ -39,6 +39,9 @@ impl std::error::Error for MolError {}
 ///
 /// Representation: atom list + bond list + per-atom adjacency list.
 /// No external graph library is used; all graph traversal is domain-aware.
+/// Sentinel used in `stereo_neighbor_order` to represent the implicit H in a bracket atom.
+pub const STEREO_H_SENTINEL: u32 = u32::MAX;
+
 pub struct Molecule {
     atoms: Vec<Atom>,
     bonds: Vec<BondEntry>,
@@ -46,6 +49,14 @@ pub struct Molecule {
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
     /// Enhanced stereo groups (ChemDraw V3000 Absolute / Or / And).
     stereo_groups: Vec<StereoGroup>,
+    /// SMILES-text-order neighbor sequence for chiral atoms.
+    ///
+    /// Keyed by atom index.  Each value lists the atom indices of neighbors in
+    /// the order they appeared in the SMILES string (including ring-closure
+    /// partners), with [`STEREO_H_SENTINEL`] (`u32::MAX`) standing in for the
+    /// implicit bracket H.  Populated by the SMILES parser; absent for atoms
+    /// not parsed from SMILES or without recorded stereo.
+    stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
 }
 
 impl Molecule {
@@ -179,6 +190,7 @@ impl Molecule {
         for (_, b) in self.bonds() {
             let _ = builder.add_bond(b.atom1, b.atom2, b.order);
         }
+        builder.copy_stereo_from(self);
         let new_idx = builder.add_atom(atom);
         (builder.build(), new_idx)
     }
@@ -201,6 +213,7 @@ impl Molecule {
         for (_, bond) in self.bonds() {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
+        builder.copy_stereo_from(self);
         let bond_idx = builder.add_bond(a, b, order)?;
         Ok((builder.build(), bond_idx))
     }
@@ -218,6 +231,7 @@ impl Molecule {
         for (_, bond) in self.bonds() {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
+        builder.copy_stereo_from(self);
         builder.build()
     }
 
@@ -241,6 +255,9 @@ impl Molecule {
         for (_, bond) in self.bonds() {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
+        builder.copy_stereo_from(self);
+        // Chirality was cleared for the changed atom; remove its stereo order too.
+        builder.clear_stereo_neighbor_order(idx);
         builder.build()
     }
 
@@ -280,6 +297,28 @@ impl Molecule {
                 (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize])
             {
                 let _ = builder.add_bond(a1, a2, bond.order);
+            }
+        }
+        // Remap stereo neighbor order: drop removed atom's entry, remap neighbor indices.
+        for (old_key, order) in &self.stereo_neighbor_order {
+            let old_atom = *old_key as usize;
+            if old_atom == removed {
+                continue; // removed atom's stereo is gone
+            }
+            if let Some(Some(new_key)) = remap.get(old_atom) {
+                let new_order: Vec<u32> = order
+                    .iter()
+                    .filter_map(|&v| {
+                        if v == STEREO_H_SENTINEL {
+                            Some(STEREO_H_SENTINEL)
+                        } else if v as usize == removed {
+                            None // neighbor was the removed atom — stereo is now invalid
+                        } else {
+                            remap.get(v as usize).and_then(|r| r.map(|a| a.0))
+                        }
+                    })
+                    .collect();
+                builder.set_stereo_neighbor_order(*new_key, new_order);
             }
         }
         (builder.build(), remap)
@@ -389,6 +428,7 @@ impl Molecule {
         for (_, bond) in self.bonds() {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
+        builder.copy_stereo_from(self);
         builder.build()
     }
 
@@ -402,6 +442,7 @@ impl Molecule {
             let o = if bidx == idx { order } else { bond.order };
             let _ = builder.add_bond(bond.atom1, bond.atom2, o);
         }
+        builder.copy_stereo_from(self);
         builder.build()
     }
 
@@ -419,6 +460,7 @@ impl Molecule {
             }
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
+        builder.copy_stereo_from(self);
         builder.build()
     }
 }
@@ -482,6 +524,30 @@ impl Molecule {
             let bi = BondIdx(bidx as u32);
             self.adjacency[bond.atom1.0 as usize].push((bond.atom2, bi));
             self.adjacency[bond.atom2.0 as usize].push((bond.atom1, bi));
+        }
+
+        // Remap stereo neighbor order in-place.
+        let old_stereo = std::mem::take(&mut self.stereo_neighbor_order);
+        for (old_key, order) in old_stereo {
+            let old_atom = old_key as usize;
+            if old_atom == removed {
+                continue;
+            }
+            if let Some(Some(new_key)) = remap.get(old_atom) {
+                let new_order: Vec<u32> = order
+                    .iter()
+                    .filter_map(|&v| {
+                        if v == STEREO_H_SENTINEL {
+                            Some(STEREO_H_SENTINEL)
+                        } else if v as usize == removed {
+                            None
+                        } else {
+                            remap.get(v as usize).and_then(|r| r.map(|a| a.0))
+                        }
+                    })
+                    .collect();
+                self.stereo_neighbor_order.insert(new_key.0, new_order);
+            }
         }
 
         remap
@@ -569,6 +635,22 @@ impl Molecule {
     /// Add a single stereo group in-place.
     pub fn add_stereo_group(&mut self, group: StereoGroup) {
         self.stereo_groups.push(group);
+    }
+
+    /// SMILES-text-order neighbor sequence for a chiral atom.
+    ///
+    /// Returns `None` for atoms not parsed from SMILES or without stereo.
+    /// The slice contains neighbor atom indices in SMILES text order;
+    /// [`STEREO_H_SENTINEL`] (`u32::MAX`) marks the implicit bracket-H slot.
+    pub fn stereo_neighbor_order(&self, idx: AtomIdx) -> Option<&[u32]> {
+        self.stereo_neighbor_order
+            .get(&idx.0)
+            .map(|v| v.as_slice())
+    }
+
+    /// Set the SMILES stereo neighbor order for atom `idx`.
+    pub fn set_stereo_neighbor_order(&mut self, idx: AtomIdx, order: Vec<u32>) {
+        self.stereo_neighbor_order.insert(idx.0, order);
     }
 }
 
@@ -664,6 +746,7 @@ pub struct MoleculeBuilder {
     bonds: Vec<BondEntry>,
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
     stereo_groups: Vec<StereoGroup>,
+    stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
 }
 
 impl MoleculeBuilder {
@@ -684,12 +767,28 @@ impl MoleculeBuilder {
             let _ = b.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         b.stereo_groups = mol.stereo_groups.clone();
+        b.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
         b
+    }
+
+    /// Set the SMILES stereo neighbor order for atom `idx`.
+    pub fn set_stereo_neighbor_order(&mut self, idx: AtomIdx, order: Vec<u32>) {
+        self.stereo_neighbor_order.insert(idx.0, order);
+    }
+
+    /// Remove the stereo neighbor order entry for atom `idx`.
+    pub fn clear_stereo_neighbor_order(&mut self, idx: AtomIdx) {
+        self.stereo_neighbor_order.remove(&idx.0);
     }
 
     /// Append a stereo group to this builder.
     pub fn add_stereo_group(&mut self, group: StereoGroup) {
         self.stereo_groups.push(group);
+    }
+
+    /// Copy all stereo neighbor order entries from `mol` into this builder.
+    pub fn copy_stereo_from(&mut self, mol: &Molecule) {
+        self.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
     }
 
     /// Read-only reference to an atom already added to the builder.
@@ -766,6 +865,7 @@ impl MoleculeBuilder {
             bonds: self.bonds,
             adjacency: self.adjacency,
             stereo_groups: self.stereo_groups,
+            stereo_neighbor_order: self.stereo_neighbor_order,
         }
     }
 }

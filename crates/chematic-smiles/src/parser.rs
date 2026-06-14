@@ -12,7 +12,7 @@
 
 use std::collections::HashMap;
 
-use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilder};
+use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilder, STEREO_H_SENTINEL};
 
 use crate::error::SmilesError;
 
@@ -33,10 +33,27 @@ const MAX_BRANCH_DEPTH: usize = 500;
 /// Maximum number of atoms allowed in a SMILES molecule (prevents memory exhaustion).
 const MAX_ATOMS: usize = 100_000;
 
+/// An entry in the stereo neighbor sequence accumulated during parsing.
+#[derive(Clone, Copy)]
+enum StereoEntry {
+    Atom(AtomIdx),
+    ImplicitH,
+    /// Ring opened at the chiral atom; will be resolved to `Atom` when the ring closes.
+    PendingRing(u8),
+}
+
 struct Parser<'a> {
     src: &'a [u8],
     pos: usize,
     depth: usize,
+    /// Completed stereo records (may still contain `PendingRing` until `resolve_rings`).
+    stereo_records: Vec<(AtomIdx, Vec<StereoEntry>)>,
+    /// Stereo record being built for the current chiral atom.
+    current_stereo: Option<(AtomIdx, Vec<StereoEntry>)>,
+    /// ring_num → index in `stereo_records` for records with an unresolved `PendingRing(n)`.
+    pending_ring_stereo: HashMap<u8, usize>,
+    /// ring_num → close_atom, populated when rings close, for final resolution.
+    ring_close_partners: HashMap<u8, AtomIdx>,
 }
 
 impl<'a> Parser<'a> {
@@ -45,6 +62,35 @@ impl<'a> Parser<'a> {
             src,
             pos: 0,
             depth: 0,
+            stereo_records: Vec::new(),
+            current_stereo: None,
+            pending_ring_stereo: HashMap::new(),
+            ring_close_partners: HashMap::new(),
+        }
+    }
+
+    /// Push an entry to the active stereo record (if one is open for the given atom).
+    fn stereo_push(&mut self, current: AtomIdx, entry: StereoEntry) {
+        if let Some((tracked, ref mut entries)) = self.current_stereo {
+            if tracked == current {
+                entries.push(entry);
+            }
+        }
+    }
+
+    /// Finalise the current stereo record: move it to `stereo_records` and register
+    /// any `PendingRing` entries so they can be resolved when the ring closes.
+    fn finalize_current_stereo(&mut self) {
+        if let Some((atom_idx, entries)) = self.current_stereo.take() {
+            let record_idx = self.stereo_records.len();
+            for e in &entries {
+                if let StereoEntry::PendingRing(rn) = e {
+                    // Last-writer-wins for reused ring numbers (safe: ring must be closed
+                    // before the same number can be reused).
+                    self.pending_ring_stereo.insert(*rn, record_idx);
+                }
+            }
+            self.stereo_records.push((atom_idx, entries));
         }
     }
 
@@ -88,6 +134,34 @@ impl<'a> Parser<'a> {
             });
         }
 
+        // Finalise any active stereo record (shouldn't normally be needed).
+        self.finalize_current_stereo();
+
+        // Resolve any remaining PendingRing entries using recorded close partners.
+        for (_, entries) in &mut self.stereo_records {
+            for entry in entries.iter_mut() {
+                if let StereoEntry::PendingRing(rn) = entry {
+                    if let Some(&partner) = self.ring_close_partners.get(rn) {
+                        *entry = StereoEntry::Atom(partner);
+                    }
+                }
+            }
+        }
+
+        // Store stereo neighbor orders in the molecule builder.
+        let records = std::mem::take(&mut self.stereo_records);
+        for (atom_idx, entries) in records {
+            let order: Vec<u32> = entries
+                .iter()
+                .map(|e| match e {
+                    StereoEntry::Atom(a) => a.0,
+                    StereoEntry::ImplicitH => STEREO_H_SENTINEL,
+                    StereoEntry::PendingRing(_) => STEREO_H_SENTINEL, // unresolved → skip
+                })
+                .collect();
+            mol.set_stereo_neighbor_order(atom_idx, order);
+        }
+
         Ok(mol.build())
     }
 
@@ -113,7 +187,7 @@ impl<'a> Parser<'a> {
             });
         }
 
-        let first_idx = mol.add_atom(first_atom);
+        let first_idx = mol.add_atom(first_atom.clone());
 
         // Connect to the preceding atom if requested
         if let Some(prev) = attach_to {
@@ -125,17 +199,39 @@ impl<'a> Parser<'a> {
                 })?;
         }
 
+        // Save any parent stereo record (branches interrupt the parent's tracking).
+        let saved_stereo = self.current_stereo.take();
+
+        // Begin stereo tracking if the first atom is chiral.
+        Self::begin_stereo_if_chiral(
+            &first_atom,
+            first_idx,
+            attach_to,
+            &mut self.current_stereo,
+        );
+
+        // `current` is the atom we're currently processing.
+        // `current_from` is the from-atom for `current` (needed to start stereo for next atoms).
         let mut current = first_idx;
+        let mut current_from: Option<AtomIdx> = attach_to;
 
         // Process the rest of the chain
         loop {
             match self.peek() {
-                Some(b'(') => self.parse_branch(mol, current, None, open_rings)?,
+                Some(b'(') => {
+                    let first_branch_atom =
+                        self.parse_branch(mol, current, None, open_rings)?;
+                    if let Some(fa) = first_branch_atom {
+                        self.stereo_push(current, StereoEntry::Atom(fa));
+                    }
+                }
 
                 // Ring closure (digit or %nn) — no preceding bond char.
                 Some(b'0'..=b'9') | Some(b'%') => {
                     let (ring_num, ring_bond) = self.parse_ring_num(None)?;
-                    self.close_or_open_ring(mol, current, ring_num, ring_bond, open_rings)?;
+                    let ring_entry =
+                        self.close_or_open_ring(mol, current, ring_num, ring_bond, open_rings)?;
+                    self.stereo_push(current, ring_entry);
                 }
 
                 // End of this chain: ')' closes a branch, '.' starts new fragment, or EOF.
@@ -147,11 +243,18 @@ impl<'a> Parser<'a> {
                     match self.peek() {
                         Some(b'0'..=b'9') | Some(b'%') => {
                             let (ring_num, ring_bond) = self.parse_ring_num(pending_bond)?;
-                            self.close_or_open_ring(mol, current, ring_num, ring_bond, open_rings)?;
+                            let ring_entry = self.close_or_open_ring(
+                                mol, current, ring_num, ring_bond, open_rings,
+                            )?;
+                            self.stereo_push(current, ring_entry);
                         }
                         // Branch after explicit bond (unusual but valid: e.g. C=(C)C).
                         Some(b'(') => {
-                            self.parse_branch(mol, current, pending_bond, open_rings)?;
+                            let first_branch_atom =
+                                self.parse_branch(mol, current, pending_bond, open_rings)?;
+                            if let Some(fa) = first_branch_atom {
+                                self.stereo_push(current, StereoEntry::Atom(fa));
+                            }
                         }
                         // Disconnected or end — explicit bond with nothing after is an error.
                         None | Some(b')') | Some(b'.') => {
@@ -164,11 +267,14 @@ impl<'a> Parser<'a> {
                             Some(next_atom) => {
                                 if mol.atom_count() >= MAX_ATOMS {
                                     return Err(SmilesError::InvalidBracketAtom {
-                                        detail: format!("molecule exceeds maximum atom count {}", MAX_ATOMS),
+                                        detail: format!(
+                                            "molecule exceeds maximum atom count {}",
+                                            MAX_ATOMS
+                                        ),
                                         pos: self.pos,
                                     });
                                 }
-                                let next_idx = mol.add_atom(next_atom);
+                                let next_idx = mol.add_atom(next_atom.clone());
                                 let bond = pending_bond
                                     .unwrap_or_else(|| implicit_bond(mol, current, next_idx));
                                 mol.add_bond(current, next_idx, bond).map_err(|_| {
@@ -177,7 +283,21 @@ impl<'a> Parser<'a> {
                                         pos: self.pos,
                                     }
                                 })?;
+                                // next_idx is the last stereo entry for `current`.
+                                self.stereo_push(current, StereoEntry::Atom(next_idx));
+                                // Finalise stereo for `current` before advancing.
+                                self.finalize_current_stereo();
+                                // Advance: next_idx is the new current, old current is its from-atom.
+                                let old_current = current;
                                 current = next_idx;
+                                current_from = Some(old_current);
+                                // Begin stereo for next_idx if it's chiral.
+                                Self::begin_stereo_if_chiral(
+                                    &next_atom,
+                                    current,
+                                    current_from,
+                                    &mut self.current_stereo,
+                                );
                             }
                             None => {
                                 if pending_bond.is_some() {
@@ -191,41 +311,79 @@ impl<'a> Parser<'a> {
             }
         }
 
+        // Finalise stereo for the last atom in this chain segment.
+        self.finalize_current_stereo();
+        // Restore the parent's stereo record (the branch is done).
+        if saved_stereo.is_some() {
+            self.current_stereo = saved_stereo;
+        }
+
+        let _ = current_from; // suppress unused warning
         Ok(Some(current))
     }
 
+    /// Start a stereo record for `atom_idx` if `atom` has chirality.
+    fn begin_stereo_if_chiral(
+        atom: &Atom,
+        atom_idx: AtomIdx,
+        from_atom: Option<AtomIdx>,
+        current_stereo: &mut Option<(AtomIdx, Vec<StereoEntry>)>,
+    ) {
+        if atom.chirality == Chirality::None {
+            return;
+        }
+        let mut entries: Vec<StereoEntry> = Vec::new();
+        if let Some(prev) = from_atom {
+            entries.push(StereoEntry::Atom(prev));
+        }
+        if atom.hydrogen_count.map_or(false, |h| h > 0) {
+            entries.push(StereoEntry::ImplicitH);
+        }
+        *current_stereo = Some((atom_idx, entries));
+    }
+
     /// Parse a `(...)` branch: consume `(`, parse the inner chain, then `)`.
+    /// Returns the first atom added inside the branch, or `None` if empty.
     fn parse_branch(
         &mut self,
         mol: &mut MoleculeBuilder,
         attach_to: AtomIdx,
         explicit_bond: Option<BondOrder>,
         open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>)>,
-    ) -> Result<(), SmilesError> {
+    ) -> Result<Option<AtomIdx>, SmilesError> {
         if self.depth >= MAX_BRANCH_DEPTH {
             return Err(SmilesError::NestingTooDeep { pos: self.pos });
         }
         self.depth += 1;
         self.advance(); // consume '('
         let bond = explicit_bond.or_else(|| self.try_parse_bond());
+        let count_before = mol.atom_count();
         self.parse_chain(mol, Some(attach_to), bond, open_rings)?;
         self.depth -= 1;
         if self.peek() != Some(b')') {
             return Err(SmilesError::MismatchedParentheses { pos: self.pos });
         }
         self.advance(); // consume ')'
-        Ok(())
+        let first_branch_atom = if mol.atom_count() > count_before {
+            Some(AtomIdx(count_before as u32))
+        } else {
+            None
+        };
+        Ok(first_branch_atom)
     }
 
     /// Handle ring closure: close an existing open ring, or register a new one.
+    /// Returns the stereo entry to push for the current atom's stereo sequence:
+    /// - `Atom(open_atom)` when the ring is closed (partner = open_atom)
+    /// - `PendingRing(ring_num)` when the ring is opened (partner unknown until close)
     fn close_or_open_ring(
-        &self,
+        &mut self,
         mol: &mut MoleculeBuilder,
         current: AtomIdx,
         ring_num: u8,
         ring_bond: Option<BondOrder>,
         open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>)>,
-    ) -> Result<(), SmilesError> {
+    ) -> Result<StereoEntry, SmilesError> {
         if let Some((open_atom, open_bond)) = open_rings.remove(&ring_num) {
             // Resolve the bond type (both ends may specify one; they must agree)
             let bond = match (open_bond, ring_bond) {
@@ -245,10 +403,26 @@ impl<'a> Parser<'a> {
                     pos: self.pos,
                 }
             })?;
+            // Record the close partner for final PendingRing resolution.
+            self.ring_close_partners.insert(ring_num, current);
+            // Also resolve any PendingRing(ring_num) in already-finalized stereo records.
+            if let Some(rec_idx) = self.pending_ring_stereo.remove(&ring_num) {
+                if let Some((_, entries)) = self.stereo_records.get_mut(rec_idx) {
+                    for entry in entries.iter_mut() {
+                        if matches!(entry, StereoEntry::PendingRing(n) if *n == ring_num) {
+                            *entry = StereoEntry::Atom(current);
+                            break;
+                        }
+                    }
+                }
+            }
+            // Return: the stereo entry for `current` is the open atom.
+            Ok(StereoEntry::Atom(open_atom))
         } else {
             open_rings.insert(ring_num, (current, ring_bond));
+            // Return: we opened a ring; partner not yet known.
+            Ok(StereoEntry::PendingRing(ring_num))
         }
-        Ok(())
     }
 
     /// Parse a ring closure number (single digit or `%nn`), together with an
