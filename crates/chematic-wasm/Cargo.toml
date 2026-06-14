@@ -38,3 +38,4 @@ chematic-ewald      = { path = "../chematic-ewald",      version = "0.2.0" }
 chematic-mol        = { path = "../chematic-mol",        version = "0.2.0" }
 chematic-inchi      = { path = "../chematic-inchi",      version = "0.2.0" }
 chematic-iupac      = { path = "../chematic-iupac",      version = "0.2.0" }
+chematic-ff         = { path = "../chematic-ff",         version = "0.2.0" }

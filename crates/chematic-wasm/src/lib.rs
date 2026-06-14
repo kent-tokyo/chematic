@@ -1389,6 +1389,119 @@ pub fn mmff94_charges_typed_json(mol: &MolHandle) -> String {
     format!(r#"{{"charges":[{}]}}"#, vals.join(","))
 }
 
+// ── MMFF94 Full Force Field (v0.2.10) ───────────────────────────────────────
+
+/// Minimize geometry using MMFF94 steepest descent (Halgren 1996 full parameters).
+/// Generates 3D coords internally if needed.
+/// Returns JSON: {"energy":E,"rmsd":R,"converged":true,"iterations":N} or {"error":"..."}.
+#[wasm_bindgen]
+pub fn minimize_mmff94_json(mol: &MolHandle, max_iter: u32) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
+    let conf = chematic_3d::generate_coords(&mol.inner);
+    let n = mol.inner.atom_count();
+    let mut coords: Vec<[f64; 3]> = (0..n)
+        .map(|i| { let p = conf.get(chematic_core::AtomIdx(i as u32)); [p.x, p.y, p.z] })
+        .collect();
+    match chematic_ff::minimize_mmff94_full(&mol.inner, &mut coords, max_iter as usize) {
+        Ok(r) => format!(
+            r#"{{"energy":{:.4},"rmsd":{:.4},"converged":{},"iterations":{}}}"#,
+            r.energy, r.rmsd, r.converged, r.iterations
+        ),
+        Err(e) => format!(r#"{{"error":"{}"}}"#, e),
+    }
+}
+
+/// Minimize geometry using MMFF94 L-BFGS (faster convergence than steepest descent).
+/// Returns JSON: {"energy":E,"rmsd":R,"converged":true,"iterations":N} or {"error":"..."}.
+#[wasm_bindgen]
+pub fn minimize_mmff94_lbfgs_json(mol: &MolHandle, max_iter: u32) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
+    let conf = chematic_3d::generate_coords(&mol.inner);
+    let n = mol.inner.atom_count();
+    let mut coords: Vec<[f64; 3]> = (0..n)
+        .map(|i| { let p = conf.get(chematic_core::AtomIdx(i as u32)); [p.x, p.y, p.z] })
+        .collect();
+    match chematic_ff::minimize_mmff94_lbfgs(&mol.inner, &mut coords, max_iter as usize) {
+        Ok(r) => format!(
+            r#"{{"energy":{:.4},"rmsd":{:.4},"converged":{},"iterations":{}}}"#,
+            r.energy, r.rmsd, r.converged, r.iterations
+        ),
+        Err(e) => format!(r#"{{"error":"{}"}}"#, e),
+    }
+}
+
+/// Compute MMFF94 energy breakdown for current rule-based 3D geometry.
+/// Returns JSON: {"bond":B,"angle":A,"torsion":T,"vdw":V,"elec":E,"total":X} or {"error":"..."}.
+#[wasm_bindgen]
+pub fn mmff94_energy_breakdown_json(mol: &MolHandle) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
+    let conf = chematic_3d::generate_coords(&mol.inner);
+    let n = mol.inner.atom_count();
+    let coords: Vec<[f64; 3]> = (0..n)
+        .map(|i| { let p = conf.get(chematic_core::AtomIdx(i as u32)); [p.x, p.y, p.z] })
+        .collect();
+    match chematic_ff::mmff94_energy_breakdown(&mol.inner, &coords) {
+        Ok(bd) => format!(
+            r#"{{"bond":{:.4},"angle":{:.4},"torsion":{:.4},"vdw":{:.4},"elec":{:.4},"total":{:.4}}}"#,
+            bd.bond, bd.angle, bd.torsion, bd.vdw, bd.electrostatic, bd.total
+        ),
+        Err(e) => format!(r#"{{"error":"{}"}}"#, e),
+    }
+}
+
+/// Scan a torsion dihedral i-j-k-l from 0° to 360° in `steps` increments.
+/// Returns JSON array: [{"angle":0.0,"energy":E},...] or {"error":"..."}.
+#[wasm_bindgen]
+pub fn torsion_scan_json(mol: &MolHandle, i: u32, j: u32, k: u32, l: u32, steps: u32) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
+    let n = mol.inner.atom_count();
+    if i as usize >= n || j as usize >= n || k as usize >= n || l as usize >= n {
+        return r#"{"error":"atom index out of range"}"#.to_string();
+    }
+    let conf = chematic_3d::generate_coords(&mol.inner);
+    let coords: Vec<[f64; 3]> = (0..n)
+        .map(|idx| { let p = conf.get(chematic_core::AtomIdx(idx as u32)); [p.x, p.y, p.z] })
+        .collect();
+    let steps = (steps as usize).clamp(4, 360);
+    match chematic_ff::mmff94_torsion_scan(
+        &mol.inner, &coords,
+        i as usize, j as usize, k as usize, l as usize,
+        steps,
+    ) {
+        Ok(pts) => {
+            let entries: Vec<String> = pts.iter()
+                .map(|(a, e)| format!(r#"{{"angle":{:.2},"energy":{:.4}}}"#, a, e))
+                .collect();
+            format!("[{}]", entries.join(","))
+        }
+        Err(e) => format!(r#"{{"error":"{}"}}"#, e),
+    }
+}
+
+/// Compute MMFF94 partial charges using numeric atom types (Halgren 1996 eq. 15).
+/// Returns JSON: {"charges":[-0.28,0.15,...]} or {"error":"..."}.
+#[wasm_bindgen]
+pub fn mmff94_partial_charges_json(mol: &MolHandle) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
+    match chematic_ff::mmff94_charges_numeric(&mol.inner) {
+        Ok(q) => {
+            let vals: Vec<String> = q.iter().map(|x| format!("{x:.4}")).collect();
+            format!(r#"{{"charges":[{}]}}"#, vals.join(","))
+        }
+        Err(e) => format!(r#"{{"error":"{}"}}"#, e),
+    }
+}
+
 /// Compute 2D pharmacophore fingerprint (2048 bits) as a JSON feature count summary.
 /// Returns simplified JSON with feature type counts: {Donor, Acceptor, Aromatic, Hydrophobic, Positive, Negative}
 #[wasm_bindgen]

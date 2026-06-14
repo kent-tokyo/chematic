@@ -34,7 +34,8 @@ pub use mmff94_energy::{
     mmff94_vdw_energy, AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, VdwEnergyParams,
 };
 pub use mmff94_minimizer::{
-    minimize_mmff94_full, mmff94_total_energy, MinimizeResult, MinimizerError,
+    minimize_mmff94_full, minimize_mmff94_lbfgs, mmff94_energy_breakdown, mmff94_torsion_scan,
+    mmff94_total_energy, EnergyBreakdown, MinimizeResult, MinimizerError,
 };
 pub use mmff94_numeric::{
     assign_mmff94_numeric_types, mmff94_charges_numeric, pbci_for, NumericTypeError,

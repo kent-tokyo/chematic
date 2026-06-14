@@ -712,6 +712,7 @@ footer {
         <div class="svg-controls-left">
           <button class="btn-svg-ctrl" id="toggle-indices" title="Toggle atom indices">0..n</button>
           <button class="btn-svg-ctrl" id="btn-download-mol" title="Download MOL block">MOL↓</button>
+          <button class="btn-svg-ctrl" id="btn-charge-map" title="MMFF94 partial charge color map" style="font-size:.75rem">±q</button>
         </div>
         <button class="svg-zoom-reset" id="svg-zoom-reset" title="Reset zoom">1:1</button>
         <span class="svg-placeholder" id="svg-placeholder"></span>
@@ -1062,6 +1063,90 @@ footer {
         </div>
         <p id="energy-hint" style="color: var(--muted); font-size: 0.9rem;">Run a calculation above to see energy breakdown.</p>
       </div>
+
+      <!-- MMFF94 Full Force Field Optimizer -->
+      <div class="panel">
+        <h3>MMFF94 Force Field Optimization</h3>
+        <p>Full Halgren 1996 MMFF94: bond / angle / torsion / vdW / electrostatic energy terms.</p>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem">
+          <label style="font-size:.9rem">Algorithm:
+            <select id="mmff94-algo" style="margin-left:.4rem;padding:.25rem .5rem;border:1px solid var(--border);border-radius:4px;background:var(--surface)">
+              <option value="lbfgs" selected>L-BFGS (faster)</option>
+              <option value="sd">Steepest Descent</option>
+            </select>
+          </label>
+          <label style="font-size:.9rem">Max iterations:
+            <input id="mmff94-max-iter" type="number" value="300" min="10" max="2000" style="width:65px;margin-left:.4rem;padding:.25rem .5rem;border:1px solid var(--border);border-radius:4px">
+          </label>
+          <button id="btn-mmff94-opt" class="btn btn-primary">Optimize (MMFF94)</button>
+        </div>
+        <div id="mmff94-opt-result" style="display:none">
+          <p style="font-size:.9rem;margin:.4rem 0">
+            <strong>Energy:</strong> <span id="mmff94-energy">—</span> kcal/mol &nbsp;|&nbsp;
+            <strong>RMSD:</strong> <span id="mmff94-rmsd">—</span> Å &nbsp;|&nbsp;
+            <strong>Iterations:</strong> <span id="mmff94-iters">—</span> &nbsp;|&nbsp;
+            <strong>Converged:</strong> <span id="mmff94-conv">—</span>
+          </p>
+          <table style="width:100%;border-collapse:collapse;font-size:.88rem;margin-top:.5rem">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:.4rem .6rem">Term</th>
+              <th style="text-align:right;padding:.4rem .6rem">kcal/mol</th>
+              <th style="text-align:right;padding:.4rem .6rem">%</th>
+              <td style="width:40%"><div style="background:var(--surface-alt,#f0f0f0);border-radius:3px;height:10px"></div></td>
+            </tr></thead>
+            <tbody id="mmff94-breakdown-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Force Field Comparison -->
+      <div class="panel">
+        <h3>Force Field Comparison</h3>
+        <p>Compare DREIDING vs MMFF94 optimization on the same molecule.</p>
+        <button id="btn-ff-compare" class="btn btn-primary">Compare DREIDING vs MMFF94</button>
+        <div id="ff-compare-result" style="display:none;margin-top:.75rem">
+          <table style="width:100%;border-collapse:collapse;font-size:.88rem">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:.4rem .6rem">Force Field</th>
+              <th style="text-align:right;padding:.4rem .6rem">Energy (kcal/mol)</th>
+              <th style="text-align:right;padding:.4rem .6rem">RMSD (Å)</th>
+              <th style="text-align:right;padding:.4rem .6rem">Iterations</th>
+            </tr></thead>
+            <tbody id="ff-compare-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Torsion Scan -->
+      <div class="panel">
+        <h3>Torsion Scan (MMFF94)</h3>
+        <p>Rotate a dihedral angle from 0° to 360° and plot the MMFF94 energy landscape.</p>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem">
+          <label style="font-size:.88rem">Atoms (0-indexed):
+            <input id="scan-i" type="number" min="0" value="0" style="width:48px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
+            −
+            <input id="scan-j" type="number" min="0" value="1" style="width:48px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
+            −
+            <input id="scan-k" type="number" min="0" value="2" style="width:48px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
+            −
+            <input id="scan-l" type="number" min="0" value="3" style="width:48px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
+          </label>
+          <label style="font-size:.88rem">Steps:
+            <input id="scan-steps" type="number" value="36" min="8" max="360" style="width:52px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
+          </label>
+          <button id="btn-torsion-scan" class="btn btn-primary">Scan</button>
+        </div>
+        <div id="torsion-scan-result" style="display:none">
+          <svg id="torsion-plot" width="420" height="180" style="border:1px solid var(--border);border-radius:4px;background:var(--surface)">
+            <text x="210" y="95" text-anchor="middle" fill="var(--muted)" font-size="12">No data</text>
+          </svg>
+          <p style="font-size:.8rem;color:var(--muted);margin:.3rem 0">
+            Min: <span id="scan-min">—</span> kcal/mol at <span id="scan-min-angle">—</span>° &nbsp;|&nbsp;
+            Max: <span id="scan-max">—</span> kcal/mol at <span id="scan-max-angle">—</span>°
+          </p>
+        </div>
+      </div>
+
     </section>
   </div><!-- /tab-dynamics -->
 
@@ -3272,6 +3357,202 @@ function runRgroup() {
       resultDiv.style.display = 'block';
     } catch (e) {
       showError('minimize-result', `Error: ${e.message}`);
+    }
+  });
+
+  // ── MMFF94 Force Field Optimizer ─────────────────────────────────────────────
+  function makeTd(text, style) {
+    const td = document.createElement('td');
+    td.textContent = text;
+    if (style) Object.assign(td.style, style);
+    return td;
+  }
+  function makeBar(pct, color) {
+    const td = document.createElement('td');
+    const bar = document.createElement('div');
+    Object.assign(bar.style, {background:color,height:'10px',borderRadius:'3px',width:Math.max(0,pct)+'%',minWidth:'2px'});
+    td.appendChild(bar);
+    return td;
+  }
+
+  document.getElementById('btn-mmff94-opt').addEventListener('click', async () => {
+    if (!lastMol) { alert('No molecule loaded'); return; }
+    if (!window.chemWasm) { alert('WASM not ready'); return; }
+    const algo = document.getElementById('mmff94-algo').value;
+    const maxIter = parseInt(document.getElementById('mmff94-max-iter').value, 10) || 300;
+    try {
+      const fn = algo === 'lbfgs' ? 'minimize_mmff94_lbfgs_json' : 'minimize_mmff94_json';
+      const r = JSON.parse(window.chemWasm[fn](lastMol, maxIter));
+      if (r.error) { alert('MMFF94 error: ' + r.error); return; }
+      document.getElementById('mmff94-energy').textContent = r.energy.toFixed(4);
+      document.getElementById('mmff94-rmsd').textContent   = r.rmsd.toFixed(3);
+      document.getElementById('mmff94-iters').textContent  = r.iterations;
+      document.getElementById('mmff94-conv').textContent   = r.converged ? 'Yes' : 'No';
+
+      const bd = JSON.parse(window.chemWasm.mmff94_energy_breakdown_json(lastMol));
+      const tbody = document.getElementById('mmff94-breakdown-body');
+      tbody.textContent = '';
+      const terms = [['Bond', bd.bond], ['Angle', bd.angle], ['Torsion', bd.torsion], ['vdW', bd.vdw], ['Electrostatic', bd.elec]];
+      const posSum = terms.reduce((s, [, v]) => s + Math.max(0, v), 0) || 1;
+      const colors = ['#4c9be8','#f59e42','#6bcb77','#e84c4c','#a78bfa'];
+      terms.forEach(([name, val], idx) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border)';
+        const pct = (Math.abs(val) / Math.abs(bd.total || 1) * 100).toFixed(1);
+        tr.appendChild(makeTd(name, {padding:'.35rem .6rem'}));
+        tr.appendChild(makeTd(val.toFixed(4), {textAlign:'right',padding:'.35rem .6rem'}));
+        tr.appendChild(makeTd(pct+'%', {textAlign:'right',padding:'.35rem .6rem'}));
+        tr.appendChild(makeBar(Math.max(0, val / posSum * 100), colors[idx]));
+        tbody.appendChild(tr);
+      });
+      const tr2 = document.createElement('tr');
+      tr2.style.fontWeight = '600';
+      tr2.appendChild(makeTd('Total', {padding:'.35rem .6rem'}));
+      tr2.appendChild(makeTd(bd.total.toFixed(4), {textAlign:'right',padding:'.35rem .6rem'}));
+      tr2.appendChild(document.createElement('td'));
+      tr2.appendChild(document.createElement('td'));
+      tbody.appendChild(tr2);
+      document.getElementById('mmff94-opt-result').style.display = 'block';
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  });
+
+  // ── Force Field Comparison ────────────────────────────────────────────────────
+  document.getElementById('btn-ff-compare').addEventListener('click', async () => {
+    if (!lastMol) { alert('No molecule loaded'); return; }
+    if (!window.chemWasm) { alert('WASM not ready'); return; }
+    try {
+      const t0 = performance.now();
+      window.chemWasm.minimize_dreiding_json(lastMol);
+      const drMs = (performance.now() - t0).toFixed(0);
+
+      const t1 = performance.now();
+      const mr = JSON.parse(window.chemWasm.minimize_mmff94_lbfgs_json(lastMol, 300));
+      const mmMs = (performance.now() - t1).toFixed(0);
+
+      const tbody = document.getElementById('ff-compare-body');
+      tbody.textContent = '';
+      [[`DREIDING`, `—`, `—`, `~${drMs} ms`],
+       [`MMFF94 L-BFGS`, mr.error ? 'error' : mr.energy.toFixed(4), mr.error ? '—' : mr.rmsd.toFixed(3), `${mr.iterations||'—'} iters / ${mmMs} ms`]
+      ].forEach(([ff, e, rmsd, extra]) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border)';
+        const b = document.createElement('strong'); b.textContent = ff;
+        const td0 = document.createElement('td'); td0.style.padding = '.4rem .6rem'; td0.appendChild(b);
+        tr.appendChild(td0);
+        tr.appendChild(makeTd(e,    {textAlign:'right',padding:'.4rem .6rem'}));
+        tr.appendChild(makeTd(rmsd, {textAlign:'right',padding:'.4rem .6rem'}));
+        tr.appendChild(makeTd(extra,{textAlign:'right',padding:'.4rem .6rem',color:'var(--muted)',fontSize:'.82rem'}));
+        tbody.appendChild(tr);
+      });
+      document.getElementById('ff-compare-result').style.display = 'block';
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  });
+
+  // ── Torsion Scan ─────────────────────────────────────────────────────────────
+  document.getElementById('btn-torsion-scan').addEventListener('click', async () => {
+    if (!lastMol) { alert('No molecule loaded'); return; }
+    if (!window.chemWasm) { alert('WASM not ready'); return; }
+    const si = parseInt(document.getElementById('scan-i').value, 10);
+    const sj = parseInt(document.getElementById('scan-j').value, 10);
+    const sk = parseInt(document.getElementById('scan-k').value, 10);
+    const sl = parseInt(document.getElementById('scan-l').value, 10);
+    const steps = parseInt(document.getElementById('scan-steps').value, 10) || 36;
+    try {
+      const result = JSON.parse(window.chemWasm.torsion_scan_json(lastMol, si, sj, sk, sl, steps));
+      if (result.error) { alert('Scan error: ' + result.error); return; }
+      const energies = result.map(p => p.energy);
+      const minE = Math.min(...energies), maxE = Math.max(...energies);
+      const range = (maxE - minE) || 1;
+      const W = 420, H = 180, pl = 55, pt = 15, pr = 15, pb = 30;
+      const cW = W - pl - pr, cH = H - pt - pb;
+      const toX = a => pl + (a / 360) * cW;
+      const toY = e => pt + (1 - (e - minE) / range) * cH;
+      const pts = result.map(p => `${toX(p.angle).toFixed(1)},${toY(p.energy).toFixed(1)}`).join(' ');
+      const minIdx = energies.indexOf(minE), maxIdx = energies.indexOf(maxE);
+      document.getElementById('scan-min').textContent = minE.toFixed(3);
+      document.getElementById('scan-min-angle').textContent = result[minIdx].angle.toFixed(1);
+      document.getElementById('scan-max').textContent = maxE.toFixed(3);
+      document.getElementById('scan-max-angle').textContent = result[maxIdx].angle.toFixed(1);
+      const ns = 'http://www.w3.org/2000/svg';
+      const svg = document.getElementById('torsion-plot');
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      function svgEl(tag, attrs) {
+        const el = document.createElementNS(ns, tag);
+        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+        return el;
+      }
+      svg.appendChild(svgEl('line', {x1:pl,y1:pt,x2:pl,y2:pt+cH,stroke:'var(--border)','stroke-width':1}));
+      svg.appendChild(svgEl('line', {x1:pl,y1:pt+cH,x2:pl+cW,y2:pt+cH,stroke:'var(--border)','stroke-width':1}));
+      [0,90,180,270,360].forEach(a => {
+        const t = svgEl('text', {x:toX(a).toFixed(1),y:pt+cH+12,'text-anchor':'middle','font-size':9,fill:'var(--muted)'}); t.textContent = a; svg.appendChild(t);
+      });
+      const tmin = svgEl('text',{x:pl-4,y:pt+cH+4,'text-anchor':'end','font-size':9,fill:'var(--muted)'}); tmin.textContent = minE.toFixed(1); svg.appendChild(tmin);
+      const tmax = svgEl('text',{x:pl-4,y:pt+4,'text-anchor':'end','font-size':9,fill:'var(--muted)'}); tmax.textContent = maxE.toFixed(1); svg.appendChild(tmax);
+      svg.appendChild(svgEl('polyline', {points:pts,fill:'none',stroke:'#4c9be8','stroke-width':2,'stroke-linejoin':'round'}));
+      svg.appendChild(svgEl('circle', {cx:toX(result[minIdx].angle).toFixed(1),cy:toY(minE).toFixed(1),r:4,fill:'#6bcb77'}));
+      svg.appendChild(svgEl('circle', {cx:toX(result[maxIdx].angle).toFixed(1),cy:toY(maxE).toFixed(1),r:4,fill:'#e84c4c'}));
+      document.getElementById('torsion-scan-result').style.display = 'block';
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  });
+
+  // ── MMFF94 Charge Map (2D tab) ────────────────────────────────────────────────
+  let chargeMapActive = false;
+  document.getElementById('btn-charge-map').addEventListener('click', async () => {
+    if (!lastMol) { alert('No molecule loaded'); return; }
+    if (!window.chemWasm) { alert('WASM not ready'); return; }
+    chargeMapActive = !chargeMapActive;
+    const btn = document.getElementById('btn-charge-map');
+    btn.style.background = chargeMapActive ? '#4c9be8' : '';
+    btn.style.color = chargeMapActive ? '#fff' : '';
+    if (!chargeMapActive) { if (lastSmiles) document.getElementById('btn-calc').click(); return; }
+    try {
+      const qJson = JSON.parse(window.chemWasm.mmff94_partial_charges_json(lastMol));
+      if (qJson.error) { alert('Charge error: ' + qJson.error); chargeMapActive = false; btn.style.background = ''; return; }
+      const charges = qJson.charges;
+      function chargeColor(q) {
+        const v = Math.max(-1, Math.min(1, q / 0.5));
+        if (v < 0) {
+          const g = Math.round(220 * (1 + v));
+          return 'rgb(220,' + g + ',' + g + ')';
+        }
+        const rb = Math.round(220 * (1 - v));
+        return 'rgb(' + rb + ',' + rb + ',220)';
+      }
+      // Build atom_color_map JSON and request highlighted SVG
+      const colorMap = {};
+      charges.forEach((q, idx) => { colorMap[idx] = chargeColor(q); });
+      const smiles = lastSmiles || document.getElementById('smiles-input').value;
+      const colorMapJson = JSON.stringify(colorMap);
+      let svgStr;
+      if (window.chemWasm.depict_svg_with_atom_colors_json) {
+        svgStr = window.chemWasm.depict_svg_with_atom_colors_json(lastMol, colorMapJson);
+      } else {
+        const opts = JSON.stringify({atomColorMap: colorMap});
+        svgStr = window.chemWasm.depict_svg_json
+          ? window.chemWasm.depict_svg_json(lastMol, opts)
+          : window.chemWasm.depict_svg(lastMol);
+      }
+      const svgArea = document.getElementById('svg-area');
+      const existing = svgArea.querySelector('svg');
+      if (existing && svgStr && svgStr.startsWith('<svg')) {
+        const tmp = document.createElement('div');
+        tmp.textContent = svgStr;
+        // Parse SVG safely via DOMParser
+        const parser = new DOMParser();
+        const parsed = parser.parseFromString(svgStr, 'image/svg+xml');
+        const newSvg = parsed.querySelector('svg');
+        if (newSvg) svgArea.replaceChild(document.adoptNode(newSvg), existing);
+      }
+    } catch (e) {
+      chargeMapActive = false;
+      document.getElementById('btn-charge-map').style.background = '';
+      alert('Error: ' + e.message);
     }
   });
 
