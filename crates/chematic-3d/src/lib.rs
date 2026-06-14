@@ -14,6 +14,7 @@ pub mod align;
 pub mod conformer;
 pub mod constraints;
 pub mod coords;
+pub mod determine_bonds;
 pub mod dg;
 pub mod dg_fft;
 pub mod descriptors_3d;
@@ -31,6 +32,7 @@ pub mod usr;
 pub mod xyz;
 
 pub use align::{AlignResult, align_coords, apply_alignment, rmsd_no_align};
+pub use determine_bonds::{DetermineError, MAX_ATOMS as DETERMINE_BONDS_MAX_ATOMS, determine_bonds};
 pub use conformer::{ConformerEnsemble, ConformerError};
 pub use constraints::{
     AngleConstraint, BondConstraint, ConstraintSet, build_constraints, satisfy_constraints,

@@ -3369,6 +3369,45 @@ pub fn mol_from_xyz(xyz: &str) -> Result<MolHandle, JsValue> {
     })
 }
 
+/// Infer bond connectivity and bond orders from an XYZ-format string.
+///
+/// Explicit hydrogen atoms must be present in the XYZ for reliable bond-order
+/// assignment (without H, carbonyl C=O cannot be distinguished from C-O).
+///
+/// Returns JSON on success: `{"smiles":"CCO","atom_count":3,"bond_count":2}`.
+/// `atom_count` and `bond_count` refer to the heavy-atom skeleton (H removed).
+///
+/// Returns JSON on error: `{"error":"molecule has 450 atoms; maximum is 300"}`.
+///
+/// Safe: never freezes. All internal loops are O(n²). Capped at 300 atoms.
+#[wasm_bindgen]
+pub fn determine_bonds_from_xyz_json(xyz_str: &str) -> String {
+    if xyz_str.len() > WASM_MAX_JSON_STRING_BYTES {
+        return format!(r#"{{"error":"XYZ input too large ({} bytes)"}}"#, xyz_str.len());
+    }
+    let (mol_topo, coords) = match chematic_3d::parse_xyz(xyz_str) {
+        Ok(r) => r,
+        Err(e) => return format!(r#"{{"error":"{}"}}"#, format!("{e:?}").replace('"', "\\\"")),
+    };
+    let atom_pairs: Vec<(chematic_core::Element, chematic_3d::Point3)> = mol_topo
+        .atoms()
+        .map(|(idx, atom)| (atom.element, coords.get(idx)))
+        .collect();
+    let mol_bonded = match chematic_3d::determine_bonds(&atom_pairs, 0.40) {
+        Ok(m) => m,
+        Err(e) => return format!(r#"{{"error":"{}"}}"#, e),
+    };
+    let mol_heavy = chematic_chem::remove_hydrogens(&mol_bonded);
+    let smiles = chematic_smiles::canonical_smiles(&mol_heavy);
+    let smiles_escaped = smiles.replace('\\', "\\\\").replace('"', "\\\"");
+    format!(
+        r#"{{"smiles":"{}","atom_count":{},"bond_count":{}}}"#,
+        smiles_escaped,
+        mol_heavy.atom_count(),
+        mol_heavy.bond_count(),
+    )
+}
+
 /// Serialize a molecule to XYZ format.
 ///
 /// 3D coordinates are generated via distance-geometry placement.
