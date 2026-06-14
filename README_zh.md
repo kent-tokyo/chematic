@@ -39,9 +39,9 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + v0.1.95–v0.1.101（真实算法 + MMFF94 BCI + MinHash LSH + IUPAC 扩展）+ **v0.2.7（规范 SMILES 立体校验 — 预先解决 RDKit issue #8775，`@`/`@@` 奇置换自动翻转 — + MMFF94 电荷：PBCI 99 条 + CHG 498 条，Halgren eq.15 完整实现）** + **v0.2.8（MMFF94 完整能量参数：Bond 493 / Angle 2,245 / Torsion 926 / VdW 95 条，逐字提取自 Halgren 1996 RDKit Params.cpp，交叉验证）** + **v0.2.9（MMFF94 几何优化器：三次校正 bond/angle + 三项 Fourier torsion + buffered-14-7 vdW + Coulomb — 完整 Halgren 1996 力场栈）。** 1,947 个测试，全部通过。零 C/C++ 依赖。
+所有阶段已完成 + v0.2.7–v0.2.9（MMFF94 完整栈：电荷 → 能量参数 → 几何优化器）+ **v0.2.10（L-BFGS 几何优化器 + 5 个新 WASM 绑定：MMFF94 最小化/L-BFGS/能量分解/扭转扫描/电荷 + Demo 增强：MMFF94 UI / 力场比较 / 扭转扫描 / 电荷着色）。** 1,951 个测试，全部通过。零 C/C++ 依赖。
 
-最新版本：**v0.2.9**（2026-06-14）— MMFF94 完整栈：电荷 → 能量参数 → 几何优化器
+最新版本：**v0.2.10**（2026-06-14）— L-BFGS 优化器 + 扭转扫描 + MMFF94 WASM API + Demo 增强
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
@@ -52,12 +52,12 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 43     |
 | `chematic-chem`       | 70+ 描述符、互变异构体评分、骨架网络、BRICS、QED、标准化、分子哈希、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、VSA（EState+Labute）、`isotope_distribution`、`num_amide_bonds`、`num_ester_bonds` | 375    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction FP — bitvec + Tanimoto/Dice；批量相似度 | 50     |
-| `chematic-ff`         | **MMFF94 完整栈**：数值原子类型 (1–99)、电荷 (PBCI 99 + CHG 498，Halgren eq.15)、完整能量参数 (Bond 493 / Angle 2,245 / Torsion 926 / VdW 95)、几何优化器 (buffered-14-7 vdW + 三次 bond/angle + torsion)；DREIDING 原子类型 | 94     |
+| `chematic-ff`         | **MMFF94 完整栈**：数值原子类型 (1–99)、电荷 (PBCI 99 + CHG 498，Halgren eq.15)、完整能量参数 (Bond 493 / Angle 2,245 / Torsion 926 / VdW 95)、最速下降 + **L-BFGS** 优化器、扭转扫描、能量分解；DREIDING 原子类型 | 98     |
 | `chematic-smarts`     | SMARTS、VF2、MCS（支持 `match_chiral_tag` 手性匹配、原子/键比较模式）                                 | 87     |
 | `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble（含 RMSD 剪枝）、PDB/XYZ 格式                 | 147    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（含生成物价键验证）                      | 30     |
 | `chematic-inchi`      | InChI/InChIKey 生成；formula/connectivity/hydrogen/stereo/charge/isotope 层；环闭合支持               | 28     |
-| `chematic-wasm`       | **110+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.1.95；InChI API + 立体反演                         | 175    |
+| `chematic-wasm`       | **115+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.2.10；MMFF94 最小化/L-BFGS/能量分解/扭转扫描/电荷 | 175    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— 烷烃/环烷烃、烯烃/炔烃、醇、胺、卤代烃、醛、酮、羧酸、酯、酰胺、苯、芳香杂环 | 14     |
 | `chematic`            | 带功能标志的伞形 crate（含所有子 crate，含 `iupac`、`inchi`）                                         | 1      |
 

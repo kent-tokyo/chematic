@@ -39,9 +39,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + v0.1.95–v0.1.101（真アルゴリズム + MMFF94 BCI + MinHash LSH + IUPAC 拡充）+ **v0.2.7（Canonical SMILES ステレオパリティ補正 — RDKit issue #8775 先行解決、`@`/`@@` 奇置換自動反転 — + MMFF94 電荷: PBCI 99件 + CHG 498件, Halgren eq.15 完全実装）** + **v0.2.8（MMFF94 全エネルギーパラメータ: Bond 493 / Angle 2,245 / Torsion 926 / VdW 95件、Halgren 1996 RDKit Params.cpp から逐語抽出・クロス検証済み）** + **v0.2.9（MMFF94 幾何最適化器: cubic 補正 bond/angle + 3項 Fourier torsion + buffered-14-7 vdW + Coulomb — Halgren 1996 完全 FF スタック）。** 1,947 テスト、全パス。C/C++ 依存ゼロ。
+全フェーズ完了 + v0.2.7–v0.2.9（MMFF94 完全スタック: 電荷 → エネルギーパラメータ → 幾何最適化器）+ **v0.2.10（L-BFGS 幾何最適化器 + WASM 5関数追加: MMFF94 minimize/L-BFGS/エネルギー内訳/トーションスキャン/電荷 + Demo 充実: MMFF94 UI・FF比較・トーションスキャン・電荷マップ）。** 1,951 テスト、全パス。C/C++ 依存ゼロ。
 
-最新リリース: **v0.2.9**（2026-06-14）— MMFF94 完全スタック: 電荷 → エネルギーパラメータ → 幾何最適化器
+最新リリース: **v0.2.10**（2026-06-14）— L-BFGS 最小化器 + トーションスキャン + MMFF94 WASM API + Demo 充実
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -52,12 +52,12 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 43      |
 | `chematic-chem`        | 70+ 記述子、タウトマー スコアリング、スキャフォルド ネットワーク、BRICS、QED、標準化、分子ハッシング、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、VSA（EState+Labute）、`isotope_distribution`、`num_amide_bonds`、`num_ester_bonds` | 375     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction FP — bitvec + Tanimoto/Dice；バルク類似度 | 50      |
-| `chematic-ff`          | **MMFF94 完全スタック**: 数値原子型 (1–99)、電荷 (PBCI 99 + CHG 498, Halgren eq.15)、全エネルギーパラメータ (Bond 493 / Angle 2,245 / Torsion 926 / VdW 95)、幾何最適化器 (buffered-14-7 vdW + cubic bond/angle + torsion)；DREIDING 原子型付け | 94      |
+| `chematic-ff`          | **MMFF94 完全スタック**: 数値原子型 (1–99)、電荷 (PBCI 99 + CHG 498, Halgren eq.15)、全エネルギーパラメータ (Bond 493 / Angle 2,245 / Torsion 926 / VdW 95)、steepest descent + **L-BFGS** 最適化器、トーションスキャン、エネルギー内訳；DREIDING 原子型付け | 98      |
 | `chematic-smarts`      | SMARTS（再帰・原子価）、VF2（`MatchConfig`）、MCS（`match_chiral_tag` によるキラリティマッチング対応）                                    | 87      |
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble（RMSD 剪定付き）、PDB/XYZ 形式                                                  | 147     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（生成物原子価バリデーション付き）                                        | 30      |
 | `chematic-inchi`       | InChI/InChIKey 生成；formula/connectivity/hydrogen/stereo/charge/isotope レイヤー；環クロージャー対応                                | 28      |
-| `chematic-wasm`        | **110+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.1.89；InChI API + 立体反転                                                   | 175     |
+| `chematic-wasm`        | **115+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.2.10；MMFF94 minimize/L-BFGS/エネルギー内訳/トーションスキャン/電荷 | 175     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— アルカン/シクロアルカン、アルケン/アルキン、アルコール、アミン、ハロアルカン、アルデヒド、ケトン、カルボン酸、エステル、アミド、ベンゼン、芳香族ヘテロ環 | 14      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac`, `inchi` フィーチャー追加）                                                         | 1       |
 
