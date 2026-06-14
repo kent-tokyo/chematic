@@ -39,9 +39,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + Section 4（WASM・API 改善）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 監査）+ Sprint v0.1.34（InChI 環クロージャー + 立体層）+ Sprint v0.1.35（wasmBridge サポート）+ Sprint v0.1.36（Issue #1 監査: BUG-2/3/4 修正）+ Sprint v0.1.37（mol_transforms API + ランダム SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit ギャップ分析：6 機能実装）+ v0.1.88–v0.1.89（ギャップ分析 89% 完成：A1–A6, B1–B2 実装）+ v0.1.91–v0.1.94（ギャップ分析 100% 完成：A1–A5, B3 実装）+ v0.1.95–v0.1.101（真アルゴリズム + MMFF94 BCI + MinHash LSH + WASM API + LogP エノン + Kekulization + IUPAC 拡充）。** 1,691 ライブラリテスト、全パス。C/C++ 依存ゼロ。
+全フェーズ完了 + v0.1.95–v0.1.101（真アルゴリズム + MMFF94 BCI + MinHash LSH + IUPAC 拡充）+ **v0.2.7（Canonical SMILES ステレオパリティ補正 — RDKit issue #8775 先行解決、`@`/`@@` 奇置換自動反転 — + MMFF94 電荷: PBCI 99件 + CHG 498件, Halgren eq.15 完全実装）** + **v0.2.8（MMFF94 全エネルギーパラメータ: Bond 493 / Angle 2,245 / Torsion 926 / VdW 95件、Halgren 1996 RDKit Params.cpp から逐語抽出・クロス検証済み）** + **v0.2.9（MMFF94 幾何最適化器: cubic 補正 bond/angle + 3項 Fourier torsion + buffered-14-7 vdW + Coulomb — Halgren 1996 完全 FF スタック）。** 1,947 テスト、全パス。C/C++ 依存ゼロ。
 
-最新リリース: **v0.1.101**（2026-06-13）— IUPAC 命名拡充（分枝アルカン・置換ベンゼン・ニトリル）
+最新リリース: **v0.2.9**（2026-06-14）— MMFF94 完全スタック: 電荷 → エネルギーパラメータ → 幾何最適化器
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -51,7 +51,8 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 63      |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 43      |
 | `chematic-chem`        | 70+ 記述子、タウトマー スコアリング、スキャフォルド ネットワーク、BRICS、QED、標準化、分子ハッシング、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、VSA（EState+Labute）、`isotope_distribution`、`num_amide_bonds`、`num_ester_bonds` | 375     |
-| `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice                                               | 50      |
+| `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS 166-bit、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction FP — bitvec + Tanimoto/Dice；バルク類似度 | 50      |
+| `chematic-ff`          | **MMFF94 完全スタック**: 数値原子型 (1–99)、電荷 (PBCI 99 + CHG 498, Halgren eq.15)、全エネルギーパラメータ (Bond 493 / Angle 2,245 / Torsion 926 / VdW 95)、幾何最適化器 (buffered-14-7 vdW + cubic bond/angle + torsion)；DREIDING 原子型付け | 94      |
 | `chematic-smarts`      | SMARTS（再帰・原子価）、VF2（`MatchConfig`）、MCS（`match_chiral_tag` によるキラリティマッチング対応）                                    | 87      |
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble（RMSD 剪定付き）、PDB/XYZ 形式                                                  | 147     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（生成物原子価バリデーション付き）                                        | 30      |

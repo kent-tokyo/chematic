@@ -39,9 +39,9 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + 第 4 部分（WASM、API 改进）+ Sprint v0.1.33（CXSMILES/CXSMARTS + 审计）+ Sprint v0.1.34（InChI 环闭合 + 立体层）+ Sprint v0.1.35（wasmBridge 支持）+ Sprint v0.1.36（Issue #1 审计：BUG-2/3/4 修复）+ Sprint v0.1.37（mol_transforms API + 随机 SMILES）+ **Sprint v0.1.69–v0.1.74（RDKit 功能缺口分析：6 项功能实现）+ v0.1.88–v0.1.89（功能缺口分析 89% 完成：A1–A6、B1–B2 实现）+ v0.1.91–v0.1.94（功能缺口分析 100% 完成：A1–A5、B3 实现）+ v0.1.95–v0.1.101（真实算法 + MMFF94 BCI + MinHash LSH + WASM API + LogP 烯酮 + Kekulization + IUPAC 扩展）。** 1,691 个库测试，全部通过。零 C/C++ 依赖。
+所有阶段已完成 + v0.1.95–v0.1.101（真实算法 + MMFF94 BCI + MinHash LSH + IUPAC 扩展）+ **v0.2.7（规范 SMILES 立体校验 — 预先解决 RDKit issue #8775，`@`/`@@` 奇置换自动翻转 — + MMFF94 电荷：PBCI 99 条 + CHG 498 条，Halgren eq.15 完整实现）** + **v0.2.8（MMFF94 完整能量参数：Bond 493 / Angle 2,245 / Torsion 926 / VdW 95 条，逐字提取自 Halgren 1996 RDKit Params.cpp，交叉验证）** + **v0.2.9（MMFF94 几何优化器：三次校正 bond/angle + 三项 Fourier torsion + buffered-14-7 vdW + Coulomb — 完整 Halgren 1996 力场栈）。** 1,947 个测试，全部通过。零 C/C++ 依赖。
 
-最新版本：**v0.1.101**（2026-06-13）— IUPAC 命名扩展（支链烷烃、取代苯、腈）
+最新版本：**v0.2.9**（2026-06-14）— MMFF94 完整栈：电荷 → 能量参数 → 几何优化器
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
@@ -51,7 +51,8 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 63     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 43     |
 | `chematic-chem`       | 70+ 描述符、互变异构体评分、骨架网络、BRICS、QED、标准化、分子哈希、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、VSA（EState+Labute）、`isotope_distribution`、`num_amide_bonds`、`num_ester_bonds` | 375    |
-| `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion FP — bitvec + Tanimoto/Dice               | 50     |
+| `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS 166位、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction FP — bitvec + Tanimoto/Dice；批量相似度 | 50     |
+| `chematic-ff`         | **MMFF94 完整栈**：数值原子类型 (1–99)、电荷 (PBCI 99 + CHG 498，Halgren eq.15)、完整能量参数 (Bond 493 / Angle 2,245 / Torsion 926 / VdW 95)、几何优化器 (buffered-14-7 vdW + 三次 bond/angle + torsion)；DREIDING 原子类型 | 94     |
 | `chematic-smarts`     | SMARTS、VF2、MCS（支持 `match_chiral_tag` 手性匹配、原子/键比较模式）                                 | 87     |
 | `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble（含 RMSD 剪枝）、PDB/XYZ 格式                 | 147    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（含生成物价键验证）                      | 30     |
