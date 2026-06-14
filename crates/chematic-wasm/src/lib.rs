@@ -2444,6 +2444,27 @@ impl ConformerHandle {
     pub fn remove_conformer(&mut self, idx: usize) -> bool {
         self.inner.remove_conformer(idx).is_some()
     }
+
+    /// Cluster conformers by Kabsch-aligned RMSD and return a JSON object
+    /// describing which conformers to keep.
+    ///
+    /// Uses greedy leader-linkage: conformers are visited in index order; each
+    /// is compared against existing cluster representatives. If the RMSD to any
+    /// representative is < `rms_threshold`, the conformer is discarded; otherwise
+    /// it starts a new cluster and is kept.
+    ///
+    /// Returns `{"kept_indices":[0,3,7,...],"removed_count":5}` on success.
+    pub fn cluster_conformers_json(&self, rms_threshold: f64) -> String {
+        let kept = self.inner.cluster_conformers_by_rms(rms_threshold);
+        let total = self.inner.conformer_count();
+        let removed = total.saturating_sub(kept.len());
+        let indices_str: Vec<String> = kept.iter().map(|i| i.to_string()).collect();
+        format!(
+            r#"{{"kept_indices":[{}],"removed_count":{}}}"#,
+            indices_str.join(","),
+            removed
+        )
+    }
 }
 
 // ---------------------------------------------------------------------------

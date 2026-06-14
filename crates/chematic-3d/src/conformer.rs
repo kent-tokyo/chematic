@@ -157,6 +157,47 @@ impl ConformerEnsemble {
         Some(crate::usr::usr_descriptors(&pts))
     }
 
+    /// Cluster conformers by Kabsch-aligned RMSD and return the indices of
+    /// representative conformers to keep (one per cluster).
+    ///
+    /// Uses a **greedy leader-linkage** algorithm: conformers are visited in
+    /// index order; each is compared against the representative (first member)
+    /// of every existing cluster via [`conformer_rmsd`]. If the RMSD to any
+    /// cluster leader is strictly less than `rms_threshold`, the conformer joins
+    /// that cluster and is discarded. Otherwise it starts a new cluster and is kept.
+    ///
+    /// # Returns
+    /// Indices of kept conformers in ascending order, at most one per cluster.
+    /// - Empty ensemble → `[]`
+    /// - Single conformer → `[0]`
+    /// - `rms_threshold <= 0.0` → all indices kept
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// // Remove near-duplicate conformers within 0.5 Å RMSD
+    /// let kept = ensemble.cluster_conformers_by_rms(0.5);
+    /// ```
+    pub fn cluster_conformers_by_rms(&self, rms_threshold: f64) -> Vec<usize> {
+        let n = self.conformers.len();
+        if n == 0 {
+            return vec![];
+        }
+        if rms_threshold <= 0.0 {
+            return (0..n).collect();
+        }
+        let mut leaders: Vec<usize> = Vec::new();
+        'outer: for i in 0..n {
+            for &leader in &leaders {
+                let rmsd = self.conformer_rmsd(i, leader).unwrap_or(f64::INFINITY);
+                if rmsd < rms_threshold {
+                    continue 'outer; // duplicate — skip
+                }
+            }
+            leaders.push(i); // new cluster representative
+        }
+        leaders
+    }
+
     /// Mean pairwise USR dissimilarity across all conformers.
     ///
     /// Returns a value in `[0.0, 1.0]`: 0.0 means all conformers are identical
@@ -593,5 +634,87 @@ mod tests {
 
         let div = ens.conformer_diversity_usr();
         assert!(div > 0.0 && div <= 1.0, "diverse ensemble → diversity in (0,1], got {div}");
+    }
+
+    // --- cluster_conformers_by_rms ------------------------------------------
+
+    #[test]
+    fn cluster_empty_ensemble() {
+        let mol = parse("C").unwrap();
+        let ens = ConformerEnsemble::new(mol);
+        assert!(ens.cluster_conformers_by_rms(0.5).is_empty());
+    }
+
+    #[test]
+    fn cluster_single_conformer() {
+        let ens = make_ensemble();
+        assert_eq!(ens.cluster_conformers_by_rms(0.5), vec![0]);
+    }
+
+    #[test]
+    fn cluster_zero_threshold_keeps_all() {
+        let mol = parse("CCC").unwrap();
+        let c = generate_coords(&mol);
+        let mut ens = ConformerEnsemble::with_conformer(mol, c.clone()).unwrap();
+        ens.add_conformer(c.clone()).unwrap();
+        ens.add_conformer(c).unwrap();
+        let kept = ens.cluster_conformers_by_rms(0.0);
+        assert_eq!(kept, vec![0, 1, 2], "threshold ≤ 0 → keep all");
+    }
+
+    #[test]
+    fn cluster_negative_threshold_keeps_all() {
+        let mol = parse("CCC").unwrap();
+        let c = generate_coords(&mol);
+        let mut ens = ConformerEnsemble::with_conformer(mol, c.clone()).unwrap();
+        ens.add_conformer(c).unwrap();
+        assert_eq!(ens.cluster_conformers_by_rms(-1.0), vec![0, 1]);
+    }
+
+    #[test]
+    fn cluster_identical_conformers_keeps_first() {
+        let mol = parse("CCC").unwrap();
+        let c = generate_coords(&mol);
+        let mut ens = ConformerEnsemble::with_conformer(mol, c.clone()).unwrap();
+        ens.add_conformer(c.clone()).unwrap();
+        ens.add_conformer(c).unwrap();
+        let kept = ens.cluster_conformers_by_rms(0.01);
+        assert_eq!(kept, vec![0], "three identical conformers → keep only first");
+    }
+
+    #[test]
+    fn cluster_distinct_conformers_keeps_all() {
+        // Two conformers with RMSD >> threshold: both kept.
+        let mol = parse("CCC").unwrap();
+        let n = mol.atom_count();
+        let mut ca = Coords3D::new_zeroed(n);
+        let mut cb = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            ca.set(chematic_core::AtomIdx(i as u32), Point3 { x: i as f64, y: 0.0, z: 0.0 });
+            cb.set(chematic_core::AtomIdx(i as u32), Point3 { x: 0.0, y: i as f64 * 100.0, z: 0.0 });
+        }
+        let mut ens = ConformerEnsemble::with_conformer(mol, ca).unwrap();
+        ens.add_conformer(cb).unwrap();
+        let kept = ens.cluster_conformers_by_rms(0.5);
+        assert_eq!(kept, vec![0, 1], "two distinct conformers → both kept");
+    }
+
+    #[test]
+    fn cluster_ascending_order() {
+        // Kept indices must always be in ascending order.
+        let mol = parse("CCC").unwrap();
+        let c0 = generate_coords(&mol);
+        let mut ens = ConformerEnsemble::with_conformer(mol, c0.clone()).unwrap();
+        ens.add_conformer(c0).unwrap(); // identical → cluster with 0
+        let n = ens.mol().atom_count();
+        let mut far = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            far.set(chematic_core::AtomIdx(i as u32), Point3 { x: 0.0, y: i as f64 * 100.0, z: 0.0 });
+        }
+        ens.add_conformer(far).unwrap(); // distinct → new cluster
+        let kept = ens.cluster_conformers_by_rms(0.1);
+        for w in kept.windows(2) {
+            assert!(w[0] < w[1], "kept indices not ascending");
+        }
     }
 }
