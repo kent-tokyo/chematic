@@ -74,6 +74,8 @@ impl Molecule {
     ///
     /// # Panics
     /// Panics if `idx` is out of range (should not happen with indices from this molecule).
+    ///
+    /// For a non-panicking variant, use [`Self::atom_opt`].
     pub fn atom(&self, idx: AtomIdx) -> &Atom {
         let i = idx.0 as usize;
         if i >= self.atoms.len() {
@@ -82,13 +84,38 @@ impl Molecule {
         &self.atoms[i]
     }
 
+    /// Borrow atom by index, returning `None` if out of range.
+    pub fn atom_opt(&self, idx: AtomIdx) -> Option<&Atom> {
+        let i = idx.0 as usize;
+        if i < self.atoms.len() {
+            Some(&self.atoms[i])
+        } else {
+            None
+        }
+    }
+
     /// Borrow bond by index.
+    ///
+    /// # Panics
+    /// Panics if `idx` is out of range (should not happen with indices from this molecule).
+    ///
+    /// For a non-panicking variant, use [`Self::bond_opt`].
     pub fn bond(&self, idx: BondIdx) -> &BondEntry {
         let i = idx.0 as usize;
         if i >= self.bonds.len() {
             panic!("bond index {} out of range (molecule has {} bonds)", idx.0, self.bonds.len());
         }
         &self.bonds[i]
+    }
+
+    /// Borrow bond by index, returning `None` if out of range.
+    pub fn bond_opt(&self, idx: BondIdx) -> Option<&BondEntry> {
+        let i = idx.0 as usize;
+        if i < self.bonds.len() {
+            Some(&self.bonds[i])
+        } else {
+            None
+        }
     }
 
     /// Iterate over all atoms as `(AtomIdx, &Atom)`.
@@ -108,6 +135,11 @@ impl Molecule {
     }
 
     /// Iterate over neighbors of `idx` as `(neighbor_atom_idx, bond_idx)`.
+    ///
+    /// # Panics
+    /// Panics if `idx` is out of range (should not happen with indices from this molecule).
+    ///
+    /// For a non-panicking variant, use [`Self::neighbors_opt`].
     pub fn neighbors(&self, idx: AtomIdx) -> impl Iterator<Item = (AtomIdx, BondIdx)> + '_ {
         let i = idx.0 as usize;
         if i >= self.adjacency.len() {
@@ -116,13 +148,38 @@ impl Molecule {
         self.adjacency[i].iter().copied()
     }
 
+    /// Iterate over neighbors of `idx` as `(neighbor_atom_idx, bond_idx)`, returning `None` if out of range.
+    pub fn neighbors_opt(&self, idx: AtomIdx) -> Option<Vec<(AtomIdx, BondIdx)>> {
+        let i = idx.0 as usize;
+        if i < self.adjacency.len() {
+            Some(self.adjacency[i].iter().copied().collect())
+        } else {
+            None
+        }
+    }
+
     /// Degree (number of connected bonds) of atom `idx`.
+    ///
+    /// # Panics
+    /// Panics if `idx` is out of range (should not happen with indices from this molecule).
+    ///
+    /// For a non-panicking variant, use [`Self::degree_opt`].
     pub fn degree(&self, idx: AtomIdx) -> usize {
         let i = idx.0 as usize;
         if i >= self.adjacency.len() {
             panic!("atom index {} out of range (molecule has {} atoms)", idx.0, self.adjacency.len());
         }
         self.adjacency[i].len()
+    }
+
+    /// Degree (number of connected bonds) of atom `idx`, returning `None` if out of range.
+    pub fn degree_opt(&self, idx: AtomIdx) -> Option<usize> {
+        let i = idx.0 as usize;
+        if i < self.adjacency.len() {
+            Some(self.adjacency[i].len())
+        } else {
+            None
+        }
     }
 
     /// Return the bond between `a` and `b`, or `None` if not connected or indices are out of bounds.
@@ -1041,5 +1098,105 @@ mod tests {
         let mol2 = b.build();
         assert_eq!(mol2.atom_count(), 3);
         assert_eq!(mol2.bond_count(), 1); // original bond preserved
+    }
+
+    // --- safe Option-returning variants ---
+
+    #[test]
+    fn test_atom_opt_valid() {
+        let mol = ethane();
+        assert!(mol.atom_opt(AtomIdx(0)).is_some());
+        assert!(mol.atom_opt(AtomIdx(1)).is_some());
+        let atom = mol.atom_opt(AtomIdx(0)).unwrap();
+        assert_eq!(atom.element.atomic_number(), 6);
+    }
+
+    #[test]
+    fn test_atom_opt_invalid() {
+        let mol = ethane();
+        assert!(mol.atom_opt(AtomIdx(2)).is_none());
+        assert!(mol.atom_opt(AtomIdx(1000)).is_none());
+    }
+
+    #[test]
+    fn test_bond_opt_valid() {
+        let mol = ethane();
+        assert!(mol.bond_opt(BondIdx(0)).is_some());
+        let bond = mol.bond_opt(BondIdx(0)).unwrap();
+        assert_eq!(bond.order, BondOrder::Single);
+    }
+
+    #[test]
+    fn test_bond_opt_invalid() {
+        let mol = ethane();
+        assert!(mol.bond_opt(BondIdx(1)).is_none());
+        assert!(mol.bond_opt(BondIdx(1000)).is_none());
+    }
+
+    #[test]
+    fn test_neighbors_opt_valid() {
+        let mol = ethane();
+        let neighbors = mol.neighbors_opt(AtomIdx(0)).unwrap();
+        assert_eq!(neighbors.len(), 1);
+        assert_eq!(neighbors[0].0, AtomIdx(1));
+    }
+
+    #[test]
+    fn test_neighbors_opt_isolated_atom() {
+        let mut b = MoleculeBuilder::new();
+        b.add_atom(Atom::new(Element::C));
+        b.add_atom(Atom::new(Element::N));
+        let mol = b.build();
+        let neighbors = mol.neighbors_opt(AtomIdx(0)).unwrap();
+        assert_eq!(neighbors.len(), 0);
+    }
+
+    #[test]
+    fn test_neighbors_opt_invalid() {
+        let mol = ethane();
+        assert!(mol.neighbors_opt(AtomIdx(2)).is_none());
+        assert!(mol.neighbors_opt(AtomIdx(1000)).is_none());
+    }
+
+    #[test]
+    fn test_degree_opt_valid() {
+        let mol = ethane();
+        assert_eq!(mol.degree_opt(AtomIdx(0)), Some(1));
+        assert_eq!(mol.degree_opt(AtomIdx(1)), Some(1));
+    }
+
+    #[test]
+    fn test_degree_opt_isolated_atom() {
+        let mut b = MoleculeBuilder::new();
+        b.add_atom(Atom::new(Element::C));
+        b.add_atom(Atom::new(Element::N));
+        let mol = b.build();
+        assert_eq!(mol.degree_opt(AtomIdx(0)), Some(0));
+        assert_eq!(mol.degree_opt(AtomIdx(1)), Some(0));
+    }
+
+    #[test]
+    fn test_degree_opt_invalid() {
+        let mol = ethane();
+        assert!(mol.degree_opt(AtomIdx(2)).is_none());
+        assert!(mol.degree_opt(AtomIdx(1000)).is_none());
+    }
+
+    #[test]
+    fn test_degree_opt_multiple_bonds() {
+        // Create a central atom with 3 neighbors
+        let mut b = MoleculeBuilder::new();
+        let center = b.add_atom(Atom::new(Element::C));
+        let n1 = b.add_atom(Atom::new(Element::C));
+        let n2 = b.add_atom(Atom::new(Element::N));
+        let n3 = b.add_atom(Atom::new(Element::O));
+        b.add_bond(center, n1, BondOrder::Single).unwrap();
+        b.add_bond(center, n2, BondOrder::Double).unwrap();
+        b.add_bond(center, n3, BondOrder::Single).unwrap();
+        let mol = b.build();
+        assert_eq!(mol.degree_opt(center), Some(3));
+        assert_eq!(mol.degree_opt(n1), Some(1));
+        assert_eq!(mol.degree_opt(n2), Some(1));
+        assert_eq!(mol.degree_opt(n3), Some(1));
     }
 }
