@@ -76,6 +76,33 @@ impl BitVec2048 {
         result
     }
 
+    /// Count the number of bits set in `A & B` without allocating a temporary.
+    ///
+    /// This is the fundamental primitive for bulk Tanimoto computation:
+    /// hoisting the query popcount and reusing this per db entry avoids
+    /// the per-pair allocation of `self.and(other).popcount()`.
+    pub fn intersection_popcount(&self, other: &Self) -> u32 {
+        self.words.iter().zip(other.words.iter())
+            .map(|(a, b)| (a & b).count_ones())
+            .sum()
+    }
+
+    /// Tanimoto similarity given precomputed popcounts, returning `f32`.
+    ///
+    /// Use when calling one query against many db entries: hoist
+    /// `self_popcount = query.popcount()` outside the loop, compute
+    /// `other_popcount = db_entry.popcount()` once per entry, then call
+    /// this instead of `tanimoto()` to avoid redundant allocation and
+    /// recomputation.
+    ///
+    /// Returns `1.0` when union is zero (both all-zero convention).
+    #[inline]
+    pub fn tanimoto_with_counts(&self, other: &Self, self_popcount: u32, other_popcount: u32) -> f32 {
+        let inter = self.intersection_popcount(other) as f32;
+        let union = self_popcount as f32 + other_popcount as f32 - inter;
+        if union == 0.0 { 1.0 } else { inter / union }
+    }
+
     /// Tanimoto similarity: `|A & B| / |A | B|`.
     ///
     /// Returns `1.0` when both vectors are all-zero (the empty-set convention).

@@ -3755,6 +3755,89 @@ pub fn nearest_neighbors_json(query_smiles: &str, db_smiles_json: &str, k: usize
     format!("[{}]", entries.join(","))
 }
 
+/// Virtual screen a query SMILES against a database of SMILES using ECFP4 Tanimoto.
+///
+/// `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).
+/// `k`: number of top hits to return; clamped to db size if larger.
+///
+/// Returns JSON: `{"results":[{"rank":1,"score":0.85,"smiles":"CCO","idx":42},...]}`.
+/// Returns `"error:<msg>"` on any parse failure or oversized input.
+#[wasm_bindgen]
+pub fn virtual_screen_ecfp4_json(query_smi: &str, db_smiles_json: &str, k: u32) -> String {
+    if let Err(e) = enforce_wasm_input_len("query_smi", query_smi) {
+        return format!("error:{}", e.as_string().unwrap_or_else(|| "input too large".to_string()));
+    }
+    let query_mol = match chematic_smiles::parse(query_smi) {
+        Ok(m) => m,
+        Err(e) => return format!("error:query parse failed: {e}"),
+    };
+    if let Err(e) = enforce_wasm_molecule_size(&query_mol) {
+        return format!("error:{}", e.as_string().unwrap_or_else(|| "molecule too large".to_string()));
+    }
+    let smiles_list = match parse_smiles_json_array(db_smiles_json) {
+        Ok(v) => v,
+        Err(e) => return format!("error:{}", e.as_string().unwrap_or_else(|| "db parse failed".to_string())),
+    };
+    let mut db_fps = Vec::with_capacity(smiles_list.len());
+    for (idx, smi) in smiles_list.iter().enumerate() {
+        let mol = match chematic_smiles::parse(smi) {
+            Ok(m) => m,
+            Err(e) => return format!("error:db parse failed at index {idx}: {e}"),
+        };
+        if let Err(e) = enforce_wasm_molecule_size(&mol) {
+            return format!("error:db molecule at index {idx}: {}",
+                e.as_string().unwrap_or_else(|| "molecule too large".to_string()));
+        }
+        db_fps.push(chematic_fp::ecfp4(&mol));
+    }
+    let query_fp = chematic_fp::ecfp4(&query_mol);
+    let k = (k as usize).min(smiles_list.len());
+    let hits = chematic_fp::top_k_similar(&query_fp, &db_fps, k);
+    let entries: Vec<String> = hits.iter().enumerate().map(|(rank, (idx, score))| {
+        let smi_escaped = smiles_list[*idx].replace('\\', "\\\\").replace('"', "\\\"");
+        format!(r#"{{"rank":{},"score":{:.6},"smiles":"{}","idx":{}}}"#,
+            rank + 1, score, smi_escaped, idx)
+    }).collect();
+    format!(r#"{{"results":[{}]}}"#, entries.join(","))
+}
+
+/// Compute ECFP4 Tanimoto similarity from one query SMILES to all db SMILES (dense output).
+///
+/// `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).
+///
+/// Returns a flat JSON array of f32 scores, one per db entry, e.g. `[0.12,0.0,0.85]`.
+/// No zero-filtering: the length always equals the number of db entries.
+/// Returns `"error:<msg>"` on parse failure or oversized input.
+#[wasm_bindgen]
+pub fn tanimoto_row_json(query_smi: &str, db_smiles_json: &str) -> String {
+    if let Err(e) = enforce_wasm_input_len("query_smi", query_smi) {
+        return format!("error:{}", e.as_string().unwrap_or_else(|| "input too large".to_string()));
+    }
+    let query_mol = match chematic_smiles::parse(query_smi) {
+        Ok(m) => m,
+        Err(e) => return format!("error:query parse failed: {e}"),
+    };
+    if let Err(e) = enforce_wasm_molecule_size(&query_mol) {
+        return format!("error:{}", e.as_string().unwrap_or_else(|| "molecule too large".to_string()));
+    }
+    let smiles_list = match parse_smiles_json_array(db_smiles_json) {
+        Ok(v) => v,
+        Err(e) => return format!("error:{}", e.as_string().unwrap_or_else(|| "db parse failed".to_string())),
+    };
+    let mut db_fps = Vec::with_capacity(smiles_list.len());
+    for (idx, smi) in smiles_list.iter().enumerate() {
+        let mol = match chematic_smiles::parse(smi) {
+            Ok(m) => m,
+            Err(e) => return format!("error:db parse failed at index {idx}: {e}"),
+        };
+        db_fps.push(chematic_fp::ecfp4(&mol));
+    }
+    let query_fp = chematic_fp::ecfp4(&query_mol);
+    let scores = chematic_fp::tanimoto_slice(&query_fp, &db_fps);
+    let parts: Vec<String> = scores.iter().map(|s| format!("{s:.6}")).collect();
+    format!("[{}]", parts.join(","))
+}
+
 // ---------------------------------------------------------------------------
 // MOL2 I/O
 // ---------------------------------------------------------------------------

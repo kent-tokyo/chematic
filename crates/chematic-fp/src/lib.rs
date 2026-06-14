@@ -15,6 +15,7 @@
 
 pub mod atom_pair;
 pub mod bitvec;
+pub mod bulk;
 pub mod ecfp;
 pub mod erg;
 pub mod fcfp;
@@ -30,6 +31,7 @@ pub mod search;
 pub mod topo_path;
 
 pub use atom_pair::{atom_pair_fp, torsion_fp};
+pub use bulk::{tanimoto_slice, tanimoto_matrix, top_k_similar};
 pub use bitvec::{BitVec2048, BitVecN};
 pub use ecfp::{EcfpConfig, ecfp, ecfp4, ecfp6, morgan_fp_counts, tanimoto_ecfp4};
 pub use erg::{erg, erg_with_config, erg_extended, tanimoto_erg, ErgFingerprint, ErgConfig, ErgAtomType, ErgBondType,
