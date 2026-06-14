@@ -30,8 +30,9 @@ pub use mmff94_params::{
     MMFF94MoleculeProperties, TorsionParams, VdWParams,
 };
 pub use mmff94_energy::{
-    mmff94_angle_energy, mmff94_bond_energy, mmff94_torsion_energy, mmff94_vdw_combined,
-    mmff94_vdw_energy, AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, VdwEnergyParams,
+    mmff94_angle_energy, mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
+    mmff94_vdw_combined, mmff94_vdw_energy, AngleEnergyParams, BondEnergyParams,
+    TorsionEnergyParams, VdwEnergyParams,
 };
 pub use mmff94_minimizer::{
     minimize_mmff94_full, minimize_mmff94_lbfgs, mmff94_energy_breakdown, mmff94_torsion_scan,

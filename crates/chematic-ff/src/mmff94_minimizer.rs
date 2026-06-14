@@ -17,7 +17,8 @@ use std::collections::VecDeque;
 use chematic_core::{AtomIdx, Molecule};
 
 use crate::mmff94_energy::{
-    mmff94_angle_energy, mmff94_bond_energy, mmff94_torsion_energy, mmff94_vdw_combined,
+    mmff94_angle_energy, mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
+    mmff94_vdw_combined,
 };
 use crate::mmff94_numeric::{assign_mmff94_numeric_types, mmff94_charges_numeric, NumericTypeError};
 
@@ -58,12 +59,16 @@ impl std::fmt::Display for MinimizerError {
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
-/// Per-term MMFF94 energy breakdown (kcal/mol).
+/// Per-term MMFF94 energy breakdown (kcal/mol). Includes all 7 Halgren 1996 energy terms.
 #[derive(Debug, Clone, Copy)]
 pub struct EnergyBreakdown {
     pub bond: f64,
     pub angle: f64,
+    /// Stretch-bend coupling (STRE-BEN, Halgren MMFF.V)
+    pub stretch_bend: f64,
     pub torsion: f64,
+    /// Out-of-plane bending for sp2 atoms (Halgren MMFF.VI)
+    pub oop: f64,
     pub vdw: f64,
     pub electrostatic: f64,
     pub total: f64,
@@ -175,16 +180,20 @@ pub fn mmff94_energy_breakdown(
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     let b = bond_energy(mol, coords, &types);
     let a = angle_energy(mol, coords, &types);
+    let sb = stretch_bend_energy(mol, coords, &types);
     let t = torsion_energy(mol, coords, &types);
+    let o = oop_energy(mol, coords, &types);
     let v = vdw_energy(mol, coords, &types);
     let e = elec_energy(mol, coords, &charges);
     Ok(EnergyBreakdown {
         bond: b,
         angle: a,
+        stretch_bend: sb,
         torsion: t,
+        oop: o,
         vdw: v,
         electrostatic: e,
-        total: b + a + t + v + e,
+        total: b + a + sb + t + o + v + e,
     })
 }
 
@@ -470,9 +479,99 @@ fn total_energy(
 ) -> f64 {
     bond_energy(mol, coords, types)
         + angle_energy(mol, coords, types)
+        + stretch_bend_energy(mol, coords, types)
         + torsion_energy(mol, coords, types)
+        + oop_energy(mol, coords, types)
         + vdw_energy(mol, coords, types)
         + elec_energy(mol, coords, charges)
+}
+
+/// Stretch-bend coupling (Halgren MMFF.V eq. 4)
+/// E_sb = 2.51210 × (kba_ijk × Δr_ij + kba_kji × Δr_kj) × Δθ   [kcal/mol, Δθ in degrees]
+fn stretch_bend_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+    const CONV: f64 = 2.51210; // md/Å → kcal/(mol·Å·deg)
+    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    const KB_CONV: f64 = 143.9325;
+    const CS: f64 = 2.0;
+    let mut energy = 0.0;
+    for j_idx in 0..mol.atom_count() {
+        let j = AtomIdx(j_idx as u32);
+        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+        if neighbors.len() < 2 {
+            continue;
+        }
+        let at = angle_type_for(types[j_idx]);
+        for (ii, &i) in neighbors.iter().enumerate() {
+            for &k in &neighbors[ii + 1..] {
+                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(at, types[i], types[j_idx], types[k]) {
+                    // Δr_ij
+                    let r_ij = dist(coords[i], coords[j_idx]);
+                    let bt_ij = bond_type_for(types[i], types[j_idx]);
+                    let dr_ij = if let Some(p) = mmff94_bond_energy(bt_ij, types[i], types[j_idx]) {
+                        r_ij - p.r0
+                    } else { 0.0 };
+                    // Δr_kj
+                    let r_kj = dist(coords[k], coords[j_idx]);
+                    let bt_kj = bond_type_for(types[k], types[j_idx]);
+                    let dr_kj = if let Some(p) = mmff94_bond_energy(bt_kj, types[k], types[j_idx]) {
+                        r_kj - p.r0
+                    } else { 0.0 };
+                    // Δθ in degrees
+                    let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
+                    if let Some(ap) = mmff94_angle_energy(at, types[i], types[j_idx], types[k]) {
+                        let dtheta = cos_t.acos() * RAD_TO_DEG - ap.theta0;
+                        energy += CONV * (kba_ijk * dr_ij + kba_kji * dr_kj) * dtheta;
+                    }
+                    let _ = (KB_CONV, CS); // suppress warnings
+                }
+            }
+        }
+    }
+    energy
+}
+
+/// Out-of-plane bending for trigonal sp2 centers (Halgren MMFF.VI eq. 6)
+/// E_oop = (0.043844 × koop / 2) × χ²  (χ in degrees: Wilson angle of out-of-plane distortion)
+fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+    const CONV: f64 = 0.043844;
+    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    // sp2 atom types that can have OOP bending
+    const SP2_TYPES: &[u8] = &[
+        2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57,
+        58, 59, 63, 64, 65, 66, 67, 76, 78, 79, 80, 81, 82,
+    ];
+    let mut energy = 0.0;
+    for j_idx in 0..mol.atom_count() {
+        if SP2_TYPES.binary_search(&types[j_idx]).is_err() {
+            continue;
+        }
+        let j = AtomIdx(j_idx as u32);
+        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+        if neighbors.len() != 3 {
+            continue; // OOP only for exactly 3 substituents (trigonal)
+        }
+        let [i, k, l] = [neighbors[0], neighbors[1], neighbors[2]];
+        if let Some(koop) = mmff94_oop(types[j_idx], types[i], types[k], types[l]) {
+            // Wilson out-of-plane angle: angle between j→l vector and plane (i,j,k)
+            let pj = coords[j_idx];
+            let pi = coords[i];
+            let pk = coords[k];
+            let pl = coords[l];
+            let rji = [pi[0]-pj[0], pi[1]-pj[1], pi[2]-pj[2]];
+            let rjk = [pk[0]-pj[0], pk[1]-pj[1], pk[2]-pj[2]];
+            let rjl = [pl[0]-pj[0], pl[1]-pj[1], pl[2]-pj[2]];
+            let n = cross(rji, rjk); // normal to ijk plane
+            let n_len = (n[0]*n[0]+n[1]*n[1]+n[2]*n[2]).sqrt();
+            let l_len = (rjl[0]*rjl[0]+rjl[1]*rjl[1]+rjl[2]*rjl[2]).sqrt();
+            if n_len < 1e-12 || l_len < 1e-12 {
+                continue;
+            }
+            let sin_chi = dot3(n, rjl) / (n_len * l_len);
+            let chi_deg = sin_chi.clamp(-1.0, 1.0).asin() * RAD_TO_DEG;
+            energy += (CONV * koop / 2.0) * chi_deg * chi_deg;
+        }
+    }
+    energy
 }
 
 /// Bond stretching: cubic-corrected harmonic (Halgren MMFF.II eq. 1)
@@ -929,7 +1028,7 @@ mod tests {
     fn energy_breakdown_sums_to_total() {
         let (mol, coords) = methane_mol();
         let bd = mmff94_energy_breakdown(&mol, &coords).expect("breakdown");
-        let sum = bd.bond + bd.angle + bd.torsion + bd.vdw + bd.electrostatic;
+        let sum = bd.bond + bd.angle + bd.stretch_bend + bd.torsion + bd.oop + bd.vdw + bd.electrostatic;
         assert!((sum - bd.total).abs() < 1e-10, "sum={} total={}", sum, bd.total);
         assert!(bd.total.is_finite());
     }
