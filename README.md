@@ -70,7 +70,7 @@ Latest release: **v0.2.11** (2026-06-14) — MMFF94 7-term complete (OOP+STRE-BE
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; WASM RNG seeded | 147   |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
 | `chematic-inchi`      | InChI/InChIKey generation; formula/connectivity/hydrogen/stereo/charge/isotope layers; ring closures   | 28    |
-| `chematic-wasm`       | **115+ WASM exports** — npm: `@kent-tokyo/chematic` v0.2.10 (~550 KB); MMFF94 minimize/L-BFGS/breakdown/torsion-scan/charges | 175   |
+| `chematic-wasm`       | **115+ WASM exports** — npm: `@kent-tokyo/chematic` v0.2.11 (~550 KB); MMFF94 minimize/L-BFGS/breakdown/torsion-scan/charges | 175   |
 | `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes/cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, benzene, aromatic heterocycles | 14    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
@@ -89,7 +89,7 @@ cargo test --workspace   # 1,961 tests, all passing
 cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install @kent-tokyo/chematic@0.1.94
+npm install @kent-tokyo/chematic@0.2.11
 ```
 
 ### 5-Minute Examples

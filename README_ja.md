@@ -57,7 +57,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble（RMSD 剪定付き）、PDB/XYZ 形式                                                  | 147     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（生成物原子価バリデーション付き）                                        | 30      |
 | `chematic-inchi`       | InChI/InChIKey 生成；formula/connectivity/hydrogen/stereo/charge/isotope レイヤー；環クロージャー対応                                | 28      |
-| `chematic-wasm`        | **115+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.2.10；MMFF94 minimize/L-BFGS/エネルギー内訳/トーションスキャン/電荷 | 175     |
+| `chematic-wasm`        | **115+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.2.11；MMFF94 minimize/L-BFGS/エネルギー内訳/トーションスキャン/電荷 | 175     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— アルカン/シクロアルカン、アルケン/アルキン、アルコール、アミン、ハロアルカン、アルデヒド、ケトン、カルボン酸、エステル、アミド、ベンゼン、芳香族ヘテロ環 | 14      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac`, `inchi` フィーチャー追加）                                                         | 1       |
 
@@ -74,7 +74,7 @@ cargo test --workspace --lib   # 1,691 ライブラリテスト、全パス
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.1.94", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.2.11", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 個別クレートを使う場合
@@ -82,9 +82,9 @@ chematic = { version = "0.1.94", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.1.94"
-chematic-perception = "0.1.94"
-chematic-fp         = "0.1.94"
+chematic-smiles     = "0.2.11"
+chematic-perception = "0.2.11"
+chematic-fp         = "0.2.11"
 ```
 
 ```rust

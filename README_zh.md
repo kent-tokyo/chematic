@@ -57,7 +57,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-3d`         | 3D 坐标生成、力场最小化、形状描述符、ConformerEnsemble（含 RMSD 剪枝）、PDB/XYZ 格式                 | 147    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（含生成物价键验证）                      | 30     |
 | `chematic-inchi`      | InChI/InChIKey 生成；formula/connectivity/hydrogen/stereo/charge/isotope 层；环闭合支持               | 28     |
-| `chematic-wasm`       | **115+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.2.10；MMFF94 最小化/L-BFGS/能量分解/扭转扫描/电荷 | 175    |
+| `chematic-wasm`       | **115+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.2.11；MMFF94 最小化/L-BFGS/能量分解/扭转扫描/电荷 | 175    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— 烷烃/环烷烃、烯烃/炔烃、醇、胺、卤代烃、醛、酮、羧酸、酯、酰胺、苯、芳香杂环 | 14     |
 | `chematic`            | 带功能标志的伞形 crate（含所有子 crate，含 `iupac`、`inchi`）                                         | 1      |
 
@@ -74,7 +74,7 @@ cargo test --workspace --lib   # 1,691 个库测试，全部通过
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.1.94", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.2.11", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 使用单独 crate
@@ -82,9 +82,9 @@ chematic = { version = "0.1.94", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.1.94"
-chematic-perception = "0.1.94"
-chematic-fp         = "0.1.94"
+chematic-smiles     = "0.2.11"
+chematic-perception = "0.2.11"
+chematic-fp         = "0.2.11"
 ```
 
 ```rust
