@@ -13,6 +13,100 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.2.9] — 2026-06-14
+
+### Added — MMFF94 幾何最適化器（Halgren 1996 完全力場）
+
+**`crates/chematic-ff/src/mmff94_minimizer.rs`** (新規, ~590 行):
+
+- `mmff94_total_energy(mol, coords)` — 5 項全エネルギー評価
+- `minimize_mmff94_full(mol, coords, max_iter)` — steepest descent 幾何最適化
+- `MinimizeResult { energy, rmsd, converged, iterations }`
+
+**実装エネルギー項:**
+
+| 項 | 式 |
+|----|----|
+| 結合伸縮 | `(143.9325×kb/2)×ΔR²×(1−cs×ΔR+(7/12)cs²ΔR²)` (cubic補正, cs=2.0) |
+| 角度変形 | `(0.043844×ka/2)×Δθ²×(1−0.007×Δθ)` (Δθ in degrees) |
+| **二面角 (初実装)** | `(v1/2)(1+cosφ)+(v2/2)(1−cos2φ)+(v3/2)(1+cos3φ)` |
+| vdW | buffered 14-7: `ε×t⁷×(t⁷−2)`, Slater-Kirkwood 結合則 |
+| 静電 | `332.0716×qi×qj/(r+0.05)`, 1-4 スケーリング 0.75 |
+
+- 有限差分勾配 (δ=1e-4 Å)、収束閾値 1e-4、1-2/1-3 除外、1-4 静電 0.75
+- テスト: +6（gauche/anti torsion エネルギー差、vdW 近距離反発、二面角、最適化でエネルギー低下）
+- **合計: 1,947 テスト、全通過**
+
+---
+
+## [0.2.8] — 2026-06-14
+
+### Added — MMFF94 全エネルギーパラメータ（Halgren 1996 Tables IV–VII）
+
+**`crates/chematic-ff/src/mmff94_energy.rs`** (新規, ~4,000 行):
+
+RDKit `Code/ForceField/MMFF/Params.cpp` (BSD ライセンス) から `gh api` でダウンロードして逐語抽出。Copyright © Merck and Co., Inc., 1994–1996。
+
+| テーブル | エントリ数 | インデックス |
+|---------|-----------|-------------|
+| `MMFF94_BOND_ENERGY` (Table IV) | 493 | (bond_type, type_i, type_j) |
+| `MMFF94_ANGLE_ENERGY` (Table V) | 2,245 | (angle_type, type_i, type_j, type_k) |
+| `MMFF94_TORSION_ENERGY` (Table VI) | 926 | (tors_type, type_i, type_j, type_k, type_l) |
+| `MMFF94_VDW_ENERGY` (Table VII) | 95 | type_i |
+
+- ソート済みスライスに対する O(log n) バイナリサーチ
+- Torsion wildcard フォールバック階層: exact → reversed → wildcard ends → both wildcards → generic
+- **RDKit Python API クロス検証**: C-C-C-C torsion v1=0.103/v2=0.681/v3=0.332 ✅、C-C bond kb=4.258/r0=1.508 ✅
+- **PBCI 99件全値一致** vs Params.cpp ✅
+- テスト: +11
+- **合計: 1,941 テスト、全通過**
+
+---
+
+## [0.2.7] — 2026-06-14
+
+### Added — Canonical SMILES ステレオパリティ補正 + MMFF94 忠実電荷
+
+#### Canonical SMILES ステレオパリティ補正（RDKit issue #8775 先行解決）
+
+**`crates/chematic-smiles/src/parser.rs`**:
+- `StereoEntry` enum で parse 時の隣接原子順序を記録（`Atom`・`ImplicitH`・`PendingRing` の 3 種）
+- リングクロージャー完了時に `PendingRing` を解決し `set_stereo_neighbor_order()` で保存
+
+**`crates/chematic-smiles/src/canonical.rs`**:
+- `corrected_chirality()` — parse 時順序 vs canonical 書き出し順序を比較、奇置換を検出して `@`/`@@` を自動反転
+
+**`crates/chematic-core/src/molecule.rs`**:
+- `stereo_neighbor_order: HashMap<AtomIdx, Vec<u32>>` フィールド追加
+- `STEREO_H_SENTINEL: u32 = u32::MAX` 定数
+
+検証: L-アラニン（N優先 vs C優先書き出し）、アミノシクロペンタン、フルオロシクロヘキサン。全テスト hard-assert。
+
+#### MMFF94 忠実電荷（Halgren 1996 equation 15）
+
+**`crates/chematic-ff/src/mmff94_numeric.rs`** (新規, ~1,300 行):
+- `assign_mmff94_numeric_types()` — 環サイズ考慮芳香族型付け (5 員環 C→37/38, 6 員環 C→63, 5 員環 N→40/58, 6 員環 N→67)
+- `MMFF94_PBCI` 99 件、`MMFF94_CHG` 498 件（RDKit Params.cpp 由来）
+- `mmff94_charges_numeric()` — equation 15 完全実装
+- グリシン参照ログ照合: C-O 結合 O→−0.28 ✅、N-H 結合 N→−0.36 ✅
+
+テスト: +15
+- **合計: 1,930 テスト、全通過**
+
+---
+
+## [0.1.102] — 2026-06-13
+
+### Added — IUPAC 命名拡充 Round 2: チオール・アルコール位置ロカント・二置換ベンゼン・メチルシクロアルカン
+
+- **チオール** (`name_thiol()`): `CS` → "methanethiol"、`CCS` → "ethanethiol"
+- **アルコール位置ロカント**: `CCCO` → "propan-1-ol"（旧 "propanol"）、`CC(O)C` → "propan-2-ol"
+- **二置換ベンゼン** (`name_disubstituted_benzene()`): ortho(2)/meta(3)/para(4) プレフィックスを環 BFS 距離で決定
+- **メチルシクロアルカン**: `CC1CCCCC1` → "methylcyclohexane"
+- テスト数: 1,691 → 1,695 (+4)、全通過。
+
+---
+
 ## [0.1.101] — 2026-06-13
 
 ### Added — IUPAC 命名拡充 Round 1

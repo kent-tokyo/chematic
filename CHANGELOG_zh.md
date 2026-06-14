@@ -13,6 +13,100 @@ v0.1.8 之前的变更历史，请参考 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
+## [0.2.9] — 2026-06-14
+
+### Added — MMFF94 几何优化器（完整 Halgren 1996 力场）
+
+**`crates/chematic-ff/src/mmff94_minimizer.rs`**（新增，约 590 行）：
+
+- `mmff94_total_energy(mol, coords)` — 评估全部 5 个 MMFF94 能量项
+- `minimize_mmff94_full(mol, coords, max_iter)` — 最速下降几何优化
+- `MinimizeResult { energy, rmsd, converged, iterations }`
+
+**实现的能量项：**
+
+| 能量项 | 公式 |
+|--------|------|
+| 键伸缩 | `(143.9325×kb/2)×ΔR²×(1−cs×ΔR+(7/12)cs²ΔR²)`（三次校正，cs=2.0） |
+| 角弯曲 | `(0.043844×ka/2)×Δθ²×(1−0.007×Δθ)`（Δθ 以度为单位） |
+| **扭转（首次实现）** | `(v1/2)(1+cosφ)+(v2/2)(1−cos2φ)+(v3/2)(1+cos3φ)` |
+| vdW | buffered 14-7：`ε×t⁷×(t⁷−2)`，Slater-Kirkwood 组合规则 |
+| 静电 | `332.0716×qi×qj/(r+0.05)`，1-4 缩放 0.75 |
+
+- 有限差分梯度（δ=1e-4 Å），收敛阈值 1e-4，1-2/1-3 排除，1-4 静电缩放 0.75
+- 测试：+6（顺式/反式扭转能量差、vdW 近距离排斥、二面角几何、优化降低能量）
+- **总计：1,947 个测试，全部通过**
+
+---
+
+## [0.2.8] — 2026-06-14
+
+### Added — MMFF94 完整能量参数（Halgren 1996 Tables IV–VII）
+
+**`crates/chematic-ff/src/mmff94_energy.rs`**（新增，约 4,000 行）：
+
+逐字提取自 RDKit `Code/ForceField/MMFF/Params.cpp`（BSD 许可证），通过 `gh api` 下载。版权 © Merck and Co., Inc., 1994–1996。
+
+| 参数表 | 条目数 | 索引 |
+|--------|--------|------|
+| `MMFF94_BOND_ENERGY`（Table IV） | 493 | (bond_type, type_i, type_j) |
+| `MMFF94_ANGLE_ENERGY`（Table V） | 2,245 | (angle_type, type_i, type_j, type_k) |
+| `MMFF94_TORSION_ENERGY`（Table VI） | 926 | (tors_type, type_i, type_j, type_k, type_l) |
+| `MMFF94_VDW_ENERGY`（Table VII） | 95 | type_i |
+
+- 已排序切片，O(log n) 二分搜索
+- 扭转通配符回退层次：精确匹配 → 反向 → 端点通配符 → 双通配符 → 通用默认
+- **与 RDKit Python API 交叉验证**：C-C-C-C 扭转 v1=0.103/v2=0.681/v3=0.332 ✅，C-C 键 kb=4.258/r0=1.508 ✅
+- **PBCI 99 条全部一致** vs Params.cpp ✅
+- 测试：+11
+- **总计：1,941 个测试，全部通过**
+
+---
+
+## [0.2.7] — 2026-06-14
+
+### Added — 规范 SMILES 立体校验 + MMFF94 精确部分电荷
+
+#### 规范 SMILES 立体校验（预先解决 RDKit issue #8775）
+
+**`crates/chematic-smiles/src/parser.rs`**：
+- `StereoEntry` 枚举（`Atom`、`ImplicitH`、`PendingRing`）记录解析时邻接原子顺序
+- 环闭合完成时解析 `PendingRing`，通过 `set_stereo_neighbor_order()` 保存
+
+**`crates/chematic-smiles/src/canonical.rs`**：
+- `corrected_chirality()` — 比较解析时与规范写入时的邻居顺序，检测奇置换，自动翻转 `@`/`@@`
+
+**`crates/chematic-core/src/molecule.rs`**：
+- 新增 `stereo_neighbor_order: HashMap<AtomIdx, Vec<u32>>` 字段
+- `STEREO_H_SENTINEL: u32 = u32::MAX` 常量
+
+验证：L-丙氨酸（以 N 或 C 为起点书写）、氨基环戊烷、氟代环己烷。全部硬断言（非仅 `eprintln!`）。
+
+#### MMFF94 精确部分电荷（Halgren 1996 方程 15）
+
+**`crates/chematic-ff/src/mmff94_numeric.rs`**（新增，约 1,300 行）：
+- `assign_mmff94_numeric_types()` — 环感知芳香族类型分配（5 元环 C→37/38，6 元环 C→63，5 元环 N→40/58，6 元环 N→67）
+- `MMFF94_PBCI` 99 条，`MMFF94_CHG` 498 条（提取自 RDKit Params.cpp）
+- `mmff94_charges_numeric()` — 完整实现方程 15
+- 与甘氨酸参考日志交叉验证：C-O 键 O→−0.28 ✅，N-H 键 N→−0.36 ✅
+
+测试：+15
+- **总计：1,930 个测试，全部通过**
+
+---
+
+## [0.1.102] — 2026-06-13
+
+### Added — IUPAC 命名扩展 Round 2：硫醇、醇位置定位、二取代苯、甲基环烷烃
+
+- **硫醇**（`name_thiol()`）：`CS` → "methanethiol"，`CCS` → "ethanethiol"
+- **醇位置定位**：`CCCO` → "propan-1-ol"（原 "propanol"），`CC(O)C` → "propan-2-ol"
+- **二取代苯**（`name_disubstituted_benzene()`）：通过环 BFS 距离确定 ortho(2)/meta(3)/para(4) 前缀
+- **甲基环烷烃**：`CC1CCCCC1` → "methylcyclohexane"
+- 测试数量：1,691 → 1,695 (+4)，全部通过。
+
+---
+
 ## [0.1.101] — 2026-06-13
 
 ### Added — IUPAC 命名扩展 Round 1

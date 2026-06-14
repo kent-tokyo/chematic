@@ -11,6 +11,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.9] — 2026-06-14
+
+### Added — MMFF94 geometry minimizer (full Halgren 1996 force field)
+
+**`crates/chematic-ff/src/mmff94_minimizer.rs`** (new, ~590 lines):
+
+- `mmff94_total_energy(mol, coords) -> Result<f64, MinimizerError>` — evaluate all 5 MMFF94 energy terms
+- `minimize_mmff94_full(mol, coords, max_iter) -> Result<MinimizeResult, MinimizerError>` — steepest descent geometry optimization
+- `MinimizeResult { energy, rmsd, converged, iterations }` — structured result type
+
+**Energy terms implemented:**
+
+| Term | Formula | Parameters |
+|------|---------|-----------|
+| Bond stretching | `(143.9325×kb/2)×ΔR²×(1−cs×ΔR+(7/12)cs²ΔR²)` (cubic, cs=2.0) | `MMFF94_BOND_ENERGY` (v0.2.8) |
+| Angle bending | `(0.043844×ka/2)×Δθ²×(1−0.007×Δθ)` (Δθ in degrees) | `MMFF94_ANGLE_ENERGY` (v0.2.8) |
+| Torsion | `(v1/2)(1+cosφ)+(v2/2)(1−cos2φ)+(v3/2)(1+cos3φ)` | `MMFF94_TORSION_ENERGY` (v0.2.8) |
+| vdW | buffered 14-7: `ε×t⁷×(t⁷−2)`, `t=1.07r*/(r+0.07r*)` + Slater-Kirkwood combining rule | `mmff94_vdw_combined()` (v0.2.8) |
+| Electrostatic | `332.0716×qi×qj/(r+0.05)`, 1-4 scaling 0.75, 1-2/1-3 excluded | `mmff94_charges_numeric()` (v0.2.7) |
+
+- Steepest descent with finite-difference gradients (δ=1e-4 Å), convergence threshold 1e-4
+- 1-2 and 1-3 exclusions for vdW and electrostatic; 1-4 electrostatic scaling 0.75
+- Uses numeric u8 atom types (1–99) from `assign_mmff94_numeric_types()`
+- Tests: +6 (torsion energy differs gauche vs anti, vdW repulsion at short range, dihedral geometry, minimize reduces energy for distorted methane)
+- **Total: 1,947 tests, all passing**
+
+---
+
+## [0.2.8] — 2026-06-14
+
+### Added — MMFF94 full energy parameters (Halgren 1996 Tables IV–VII)
+
+**`crates/chematic-ff/src/mmff94_energy.rs`** (new, ~4,000 lines):
+
+Data extracted verbatim from RDKit `Code/ForceField/MMFF/Params.cpp` (BSD license) via `gh api` download. Copyright © Merck and Co., Inc., 1994–1996.
+
+| Table | Entries | Index | Units |
+|-------|---------|-------|-------|
+| `MMFF94_BOND_ENERGY` (Table IV) | 493 | `(bond_type, type_i, type_j)` | kb in md/Å, r0 in Å |
+| `MMFF94_ANGLE_ENERGY` (Table V) | 2,245 | `(angle_type, type_i, type_j, type_k)` | ka in md·Å/rad², theta0 in degrees |
+| `MMFF94_TORSION_ENERGY` (Table VI) | 926 | `(tors_type, type_i, type_j, type_k, type_l)` | v1/v2/v3 in kcal/mol |
+| `MMFF94_VDW_ENERGY` (Table VII) | 95 | `(type_i,)` | alpha_i, N_i, A_i, G_i (Slater-Kirkwood) |
+
+- All tables sorted for O(log n) binary search
+- Torsion wildcard fallback hierarchy: exact → reversed → wildcard ends → both wildcards → tors_type-generic
+- Angle lookup symmetric: both (ti,tj,tk) and (tk,tj,ti) tried
+- Bond lookup normalized: always (min(ti,tj), max(ti,tj))
+- Public API: `mmff94_bond_energy()`, `mmff94_angle_energy()`, `mmff94_torsion_energy()`, `mmff94_vdw_energy()`, `mmff94_vdw_combined()`
+- **Cross-validated against RDKit Python API**: C-C-C-C torsion v1=0.103/v2=0.681/v3=0.332 ✅, C-C bond kb=4.258/r0=1.508 ✅
+- **PBCI/CHG spot-check**: all 99 PBCI values match Params.cpp ✅, CHG (0,1,6)=−0.2800 ✅
+- Tests: +11 (table_sizes, bond_cc_sp3, bond_ch_sp3, bond_symmetric, angle_ccc_sp3, angle_symmetric, torsion_cccc, torsion_hcch, torsion_wildcard_fallback, vdw_carbon_sp3, vdw_combined_cc)
+- **Total: 1,941 tests, all passing**
+
+---
+
+## [0.2.7] — 2026-06-14
+
+### Added — Canonical SMILES stereo parity correction + MMFF94 faithful partial charges
+
+#### Canonical SMILES stereo parity (pre-solves RDKit issue #8775)
+
+**`crates/chematic-smiles/src/parser.rs`**:
+- `StereoEntry` enum: `Atom(AtomIdx)`, `ImplicitH`, `PendingRing(u8)` — records parse-time neighbor order
+- Resolves `PendingRing` entries when ring closures complete
+- Stores final sequence via `mol.set_stereo_neighbor_order()`
+
+**`crates/chematic-smiles/src/canonical.rs`**:
+- `corrected_chirality()` — compares parse-time vs canonical write-time neighbor order; detects odd permutations; flips `@`/`@@` accordingly
+- Handles bracket-H atoms, ring-closure partners, tree-edge children
+
+**`crates/chematic-core/src/molecule.rs`**:
+- `stereo_neighbor_order: HashMap<AtomIdx, Vec<u32>>` field added to `Molecule`
+- `STEREO_H_SENTINEL: u32 = u32::MAX` constant for implicit H in stereo tracking
+- Methods: `stereo_neighbor_order()`, `set_stereo_neighbor_order()`, `copy_stereo_from()`
+
+Tests: L-alanine written from N vs C, aminocyclopentane ring-first vs NH2-first, fluorocyclohexane PendingRing path. All hard-asserting (not `eprintln!`-only).
+
+#### MMFF94 faithful partial charges (Halgren 1996 equation 15)
+
+**`crates/chematic-ff/src/mmff94_numeric.rs`** (new, ~1,300 lines):
+- `assign_mmff94_numeric_types(mol) -> Result<Vec<u8>, NumericTypeError>` — ring-aware aromatic typing: 5-ring C→37/38, 6-ring C→63, 5-ring N w/H→40, without H→58, 6-ring N→67
+- `MMFF94_PBCI: [(u8, f64, f64); 99]` — pbci + fcadj per numeric atom type
+- `MMFF94_CHG: [(u8, u8, u8, f64); 498]` — bond charge increments; sign convention: entry (bt,a,b,bci) → b gets +bci, a gets −bci
+- `mmff94_charges_numeric(mol) -> Result<Vec<f64>, NumericTypeError>` — implements equation 15: `q_i = (1−M·v)·q0 + v·ΣqFormal + ΣbciContribs`
+- `pbci_for(atom_type: u8) -> (f64, f64)`
+
+Cross-validated against MMFF94_reference.log (glycine/AGLYSL01): C-O bond O gets −0.28, C gets +0.28 ✅; N-H bond N gets −0.36, H gets +0.36 ✅
+
+- Tests: +15 (glycine_types, benzene_aromatic_c_is_63, pyridine_n_is_67, furan_o_is_43, halogens, pbci_table_size, h_on_nitrogen_positive, ...)
+- **Total: 1,930 tests, all passing**
+
+---
+
 ## [0.1.102] — 2026-06-13
 
 ### Added — IUPAC naming Round 2: thiols, alcohol locants, disubstituted benzenes, methylcycloalkanes
