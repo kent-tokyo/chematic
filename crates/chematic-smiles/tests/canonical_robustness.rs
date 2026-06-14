@@ -51,6 +51,17 @@ fn check_same_canonical(a: &str, b: &str) -> Result<(), String> {
     }
 }
 
+/// Assert all SMILES in `cases` are roundtrip-stable, collecting all failures before panicking.
+/// `#[track_caller]` ensures the panic points at the calling test, not this helper.
+#[track_caller]
+fn assert_all_stable(cases: &[&str]) {
+    let failures: Vec<_> = cases
+        .iter()
+        .filter_map(|s| check_canonical_stable(s).err())
+        .collect();
+    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+}
+
 // ── Test 1: Roundtrip stability ──────────────────────────────────────────────
 
 /// Every SMILES here must be roundtrip-stable (parse → canonical → parse → canonical
@@ -62,8 +73,7 @@ fn stability_bridged_bicyclics() {
         "C1CC2CCCC2C1",       // bicyclo[3.2.1]octane variant
         "C1CCC2CC3CCCCC3CC2C1", // polycycle
     ];
-    let failures: Vec<_> = cases.iter().filter_map(|s| check_canonical_stable(s).err()).collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert_all_stable(&cases);
 }
 
 #[test]
@@ -72,8 +82,7 @@ fn stability_spiro() {
         "C1CCC2(CC1)CCCC2",   // spiro[4.5]decane
         "C1CC2(CCC1)CCC2",    // spiro[4.4]nonane
     ];
-    let failures: Vec<_> = cases.iter().filter_map(|s| check_canonical_stable(s).err()).collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert_all_stable(&cases);
 }
 
 #[test]
@@ -83,8 +92,7 @@ fn stability_ring_stereocenters() {
         "[C@H]1(N)CCCC1",           // (S)-aminocyclopentane
         "[C@H]1([C@@H](O)CO)CCCO1", // bicyclic-ish stereocenters
     ];
-    let failures: Vec<_> = cases.iter().filter_map(|s| check_canonical_stable(s).err()).collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert_all_stable(&cases);
 }
 
 #[test]
@@ -93,8 +101,7 @@ fn stability_fused_ring_stereo() {
         "[C@@H]1(CC[C@H]2CCCC[C@@H]12)O",  // trans-decalin-OH
         "[C@H]1(CC[C@H]2CCCC[C@@H]12)O",   // cis-decalin-OH
     ];
-    let failures: Vec<_> = cases.iter().filter_map(|s| check_canonical_stable(s).err()).collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert_all_stable(&cases);
 }
 
 #[test]
@@ -104,8 +111,7 @@ fn stability_ez_bonds() {
         "C/C=C\\C",  // cis-but-2-ene
         "F/C=C/Cl",  // E-1-chloro-2-fluoroethylene
     ];
-    let failures: Vec<_> = cases.iter().filter_map(|s| check_canonical_stable(s).err()).collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert_all_stable(&cases);
 }
 
 #[test]
@@ -113,8 +119,7 @@ fn stability_complex_sugars() {
     let cases = [
         "OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O", // D-glucose
     ];
-    let failures: Vec<_> = cases.iter().filter_map(|s| check_canonical_stable(s).err()).collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert_all_stable(&cases);
 }
 
 #[test]
@@ -124,8 +129,7 @@ fn stability_fused_aromatics() {
         "c1ccc2ccccc2c1",          // naphthalene
         "c1ccc2[nH]ccc2c1",        // indole
     ];
-    let failures: Vec<_> = cases.iter().filter_map(|s| check_canonical_stable(s).err()).collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert_all_stable(&cases);
 }
 
 #[test]
@@ -136,8 +140,7 @@ fn stability_amino_acids() {
         "N[C@H](C)C(=O)O",     // D-alanine
         "N[C@@H](Cc1ccccc1)C(=O)O", // L-phenylalanine
     ];
-    let failures: Vec<_> = cases.iter().filter_map(|s| check_canonical_stable(s).err()).collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert_all_stable(&cases);
 }
 
 // ── Test 2: Platform independence (topology only) ────────────────────────────

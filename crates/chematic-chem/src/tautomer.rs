@@ -1065,7 +1065,8 @@ pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::parse;
+    use chematic_core::{AtomIdx, Chirality};
+    use chematic_smiles::{canonical_smiles, parse};
 
     #[test]
     fn test_canonical_no_tautomers() {
@@ -1172,7 +1173,7 @@ mod tests {
 
     #[test]
     fn test_canonical_pyrazole_normalization() {
-        use chematic_smiles::canonical_smiles;
+
         let n1h = parse("c1cc[nH]n1").unwrap();
         let tautomers = enumerate_tautomers(&n1h);
         let n2h = tautomers
@@ -1190,7 +1191,7 @@ mod tests {
 
     #[test]
     fn test_config_default_same_as_no_config() {
-        use chematic_smiles::canonical_smiles;
+
         // canonical_tautomer and canonical_tautomer_with_config(default) must agree.
         let mol = parse("OC=C").unwrap(); // enol
         let a = canonical_tautomer(&mol);
@@ -1242,7 +1243,7 @@ mod tests {
 
     #[test]
     fn test_config_empty_enabled_rules_equals_all() {
-        use chematic_smiles::canonical_smiles;
+
         let mol = parse("OC=C").unwrap();
         let all = canonical_tautomer_with_config(&mol, &TautomerConfig::default());
         let explicit_empty = canonical_tautomer_with_config(
@@ -1386,14 +1387,14 @@ mod tests {
 
     /// Helper: canonical SMILES of the canonical tautomer.
     fn canonical_smi(smi: &str) -> String {
-        use chematic_smiles::canonical_smiles;
+
         let mol = parse(smi).unwrap();
         canonical_smiles(&canonical_tautomer(&mol))
     }
 
     /// Helper: canonical SMILES of the canonical tautomer with blocked atoms.
     fn blocked_smi(smi: &str, blocked: &[u32]) -> String {
-        use chematic_smiles::canonical_smiles;
+
         let mol = parse(smi).unwrap();
         let config = TautomerConfig {
             blocked_atoms: blocked.iter().map(|&i| AtomIdx(i)).collect(),
@@ -1438,7 +1439,7 @@ mod tests {
                 ..TautomerConfig::default()
             };
             let explicit_empty = canonical_tautomer_with_config(&mol, &empty_config);
-            use chematic_smiles::canonical_smiles;
+    
             assert_eq!(
                 canonical_smiles(&default),
                 canonical_smiles(&explicit_empty),
@@ -1475,7 +1476,7 @@ mod tests {
         };
         let result = canonical_tautomer_with_config(&mol, &config);
         // Result must equal the input (no tautomer can fire).
-        use chematic_smiles::canonical_smiles;
+
         assert_eq!(
             canonical_smiles(&result),
             canonical_smiles(&mol),
@@ -1516,8 +1517,7 @@ mod tests {
     /// chematic must NOT have this bug — chirality fields are preserved via clone().
     #[test]
     fn test_remote_stereo_preserved_keto_enol() {
-        use chematic_core::{AtomIdx, Chirality};
-        use chematic_smiles::canonical_smiles;
+
 
         // C[C@H](O)CC(=O)C: keto-enol fires at the C(=O) end.
         // The [C@H] stereocenter (index 1) is remote — must be preserved.
@@ -1542,7 +1542,6 @@ mod tests {
 
     #[test]
     fn test_alanine_stereo_trivially_preserved() {
-        use chematic_core::{AtomIdx, Chirality};
 
         // [C@@H](N)(C(=O)O)C — no tautomer rule fires; stereo must be unchanged.
         let mol = parse("[C@@H](N)(C(=O)O)C").unwrap();
@@ -1554,17 +1553,12 @@ mod tests {
 
     #[test]
     fn test_glucose_all_stereocenters_preserved() {
-        use chematic_core::{AtomIdx, Chirality};
 
         let mol = parse("OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O").unwrap();
-        let before: Vec<Chirality> = (0..mol.atom_count())
-            .map(|i| mol.atom(AtomIdx(i as u32)).chirality)
-            .collect();
+        let before: Vec<Chirality> = mol.atoms().map(|(_, a)| a.chirality).collect();
 
         let t = canonical_tautomer(&mol);
-        let after: Vec<Chirality> = (0..t.atom_count())
-            .map(|i| t.atom(AtomIdx(i as u32)).chirality)
-            .collect();
+        let after: Vec<Chirality> = t.atoms().map(|(_, a)| a.chirality).collect();
 
         assert_eq!(
             before, after,
@@ -1574,20 +1568,17 @@ mod tests {
 
     #[test]
     fn test_pyrazole_no_phantom_chirality() {
-        use chematic_core::{AtomIdx, Chirality};
 
         // c1cc[nH]n1: N-H tautomers possible, no stereocenters → must stay chiral-free
         let mol = parse("c1cc[nH]n1").unwrap();
         let t = canonical_tautomer(&mol);
-        let chiral_count = (0..t.atom_count())
-            .filter(|&i| t.atom(AtomIdx(i as u32)).chirality != Chirality::None)
-            .count();
+        let chiral_count = t.atoms().filter(|(_, a)| a.chirality != Chirality::None).count();
         assert_eq!(chiral_count, 0, "Phantom chirality introduced by pyrazole tautomerism");
     }
 
     #[test]
     fn test_stereo_at_donor_does_not_panic() {
-        use chematic_smiles::canonical_smiles;
+
 
         // [C@@H](O)(C)C(=O)O — lactic acid: O (donor) is adjacent to stereocentre.
         // The tautomer may legitimately change chirality; we just verify no panic.
@@ -1600,7 +1591,6 @@ mod tests {
 
     #[test]
     fn test_enumerate_tautomers_remote_stereo_preserved() {
-        use chematic_core::{AtomIdx, Chirality};
 
         // C[C@H](O)CC(=O)C: enumerate all tautomers.
         // Every produced tautomer must preserve chirality at atom 1 (remote centre).
@@ -1621,7 +1611,6 @@ mod tests {
 
     #[test]
     fn test_blocked_stereo_preserved_with_zone_blocking() {
-        use chematic_core::{AtomIdx, Chirality};
 
         // O[C@@H](F)C(=O)C: block O (index 0) to suppress keto-enol.
         // Stereocentre [C@@H] (index 1) must be preserved.

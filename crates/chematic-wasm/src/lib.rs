@@ -1802,6 +1802,12 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
     mol: &MolHandle,
     blocked_atom_indices_json: &str,
 ) -> String {
+    if blocked_atom_indices_json.len() > WASM_MAX_JSON_STRING_BYTES {
+        return format!(r#"{{"error":"blocked_atom_indices_json too large ({} bytes)"}}"#, blocked_atom_indices_json.len());
+    }
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
     let indices: Vec<u32> = match serde_json::from_str(blocked_atom_indices_json) {
         Ok(v) => v,
         Err(e) => return format!(r#"{{"error":"invalid JSON: {e}"}}"#),
@@ -1823,6 +1829,9 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
 /// Example return value: `["Oc1cccc2ccccc12","O=C1C=CC=Cc2ccccc21"]`
 #[wasm_bindgen]
 pub fn enumerate_tautomers_json(mol: &MolHandle) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"["{{"error":"molecule too large (max {} atoms)"}}"]"#, WASM_MAX_ATOMS);
+    }
     let tautomers = chematic_chem::enumerate_tautomers(&mol.inner);
     let parts: Vec<String> = tautomers
         .iter()
@@ -3423,7 +3432,13 @@ pub fn to_xyz(mol: &MolHandle) -> String {
 /// atom distances (the same heuristic as the internal `pdb_to_molecule` function).
 #[wasm_bindgen]
 pub fn mol_from_pdb(pdb: &str) -> MolHandle {
+    if pdb.len() > WASM_MAX_JSON_STRING_BYTES {
+        return MolHandle { inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()) };
+    }
     let atoms = chematic_3d::parse_pdb_atoms(pdb);
+    if atoms.len() > WASM_MAX_ATOMS {
+        return MolHandle { inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()) };
+    }
     let (mol, _coords) = chematic_3d::pdb_to_molecule(&atoms);
     MolHandle {
         inner: std::rc::Rc::new(mol),
@@ -3918,6 +3933,10 @@ pub fn tanimoto_row_json(query_smi: &str, db_smiles_json: &str) -> String {
             Ok(m) => m,
             Err(e) => return format!("error:db parse failed at index {idx}: {e}"),
         };
+        if let Err(e) = enforce_wasm_molecule_size(&mol) {
+            return format!("error:db molecule at index {idx}: {}",
+                e.as_string().unwrap_or_else(|| "molecule too large".to_string()));
+        }
         db_fps.push(chematic_fp::ecfp4(&mol));
     }
     let query_fp = chematic_fp::ecfp4(&query_mol);

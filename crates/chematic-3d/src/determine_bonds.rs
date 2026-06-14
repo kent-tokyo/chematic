@@ -122,13 +122,21 @@ pub fn determine_bonds(
         .map(|i| mol.bond(BondIdx(i as u32)).order)
         .collect();
 
+    // Precompute bond endpoints: they are immutable throughout Phase 2,
+    // so fetching once avoids repeated mol.bond() calls in the hot loop.
+    let endpoints: Vec<(AtomIdx, AtomIdx)> = (0..bond_count)
+        .map(|i| {
+            let b = mol.bond(BondIdx(i as u32));
+            (b.atom1, b.atom2)
+        })
+        .collect();
+
     let mut changed = true;
     while changed {
         changed = false;
-        for bi in 0..bond_count {
-            let bond = mol.bond(BondIdx(bi as u32));
-            let a = bond.atom1.0 as usize;
-            let b = bond.atom2.0 as usize;
+        for (bi, &(a_idx, b_idx)) in endpoints.iter().enumerate() {
+            let a = a_idx.0 as usize;
+            let b = b_idx.0 as usize;
             match bond_orders[bi] {
                 BondOrder::Single if remaining[a] > 0 && remaining[b] > 0 => {
                     bond_orders[bi] = BondOrder::Double;
@@ -147,14 +155,13 @@ pub fn determine_bonds(
         }
     }
 
-    // Rebuild with upgraded bond orders
+    // Rebuild with upgraded bond orders (endpoints reused — no extra mol.bond() calls)
     let mut final_builder = MoleculeBuilder::new();
     for (_, atom) in mol.atoms() {
         final_builder.add_atom(atom.clone());
     }
-    for bi in 0..bond_count {
-        let bond = mol.bond(BondIdx(bi as u32));
-        let _ = final_builder.add_bond(bond.atom1, bond.atom2, bond_orders[bi]);
+    for (bi, &(a_idx, b_idx)) in endpoints.iter().enumerate() {
+        let _ = final_builder.add_bond(a_idx, b_idx, bond_orders[bi]);
     }
     let mol_kekulized = final_builder.build();
 
@@ -309,7 +316,9 @@ mod tests {
     #[test]
     fn test_formaldehyde_double_bond() {
         // H2C=O: C should have Double bond to O.
-        // Without H: C degree=1 (only O), remaining=3; O degree=1, remaining=1 → upgrades to Triple (wrong!)
+        // Without H: C degree=1 (only O), remaining=3; O degree=1, remaining=1 → upgrades to Double
+        //   (O's remaining hits 0, blocking further upgrade — accidentally correct for C=O but
+        //    misleading for C≡N where N remaining=2 would allow Triple).
         // With H: C degree=3 (2×H + 1×O), remaining=1; O degree=1, remaining=1 → upgrades to Double (correct)
         let atoms = vec![
             (Element::C, Point3::new(0.000,  0.000, 0.000)),
