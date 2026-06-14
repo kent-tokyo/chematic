@@ -192,8 +192,8 @@ struct CanonicalWriter<'a> {
     ranks: &'a [u64],
     written: Vec<bool>,
     ring_bonds: HashSet<BondIdx>,
-    atom_ring_nums: HashMap<AtomIdx, Vec<(u8, BondOrder)>>,
-    next_ring: u8,
+    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, BondOrder)>>,
+    next_ring: u32,
     out: String,
 }
 
@@ -377,14 +377,19 @@ impl<'a> CanonicalWriter<'a> {
                 {
                     self.out.push(bond_order.smiles_char());
                 }
+                // SMILES ring-closure numbers are limited to 1–99.
+                // Molecules needing ≥ 100 simultaneous open ring closures are
+                // exotic beyond any known organic chemistry; skip extras rather
+                // than panic from `char::from_digit` overflow.
+                if rn > 99 {
+                    continue;
+                }
                 if rn >= 10 {
                     self.out.push('%');
-                    self.out
-                        .push(char::from_digit((rn / 10) as u32, 10).unwrap());
-                    self.out
-                        .push(char::from_digit((rn % 10) as u32, 10).unwrap());
+                    self.out.push(char::from_digit(rn / 10, 10).unwrap());
+                    self.out.push(char::from_digit(rn % 10, 10).unwrap());
                 } else {
-                    self.out.push(char::from_digit(rn as u32, 10).unwrap());
+                    self.out.push(char::from_digit(rn, 10).unwrap());
                 }
             }
         }

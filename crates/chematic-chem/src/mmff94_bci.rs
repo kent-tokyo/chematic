@@ -300,7 +300,6 @@ pub fn assign_mmff94_type(mol: &Molecule, idx: AtomIdx) -> MmffType {
 /// Canonical pair is (lo, hi) by discriminant; result is negated if `a_type` was hi.
 fn bci_typed(a_type: MmffType, b_type: MmffType, order: BondOrder) -> f64 {
     use MmffType::*;
-    use BondOrder::*;
 
     let (lo, hi, flipped) = {
         let da = a_type as u8;

@@ -141,9 +141,18 @@ pub(crate) fn bond_type_int(order: BondOrder) -> u8 {
 ///    (with their bond types) for `config.radius` rounds.
 /// 3. After each iteration (including iteration 0), map every identifier to a
 ///    bit in the output bitvector.
+/// Maximum supported radius for `ecfp`.  Matches the cap in `morgan_fp_counts`.
+/// Beyond this, `r as u8` would silently truncate, producing hash collisions.
+pub const MAX_ECFP_RADIUS: u32 = 20;
+
 pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     let n = mol.atom_count();
     let nbits = config.nbits;
+    // Cap radius to prevent `r as u8` truncation at r > 255 (hash collision bug).
+    let config = &EcfpConfig {
+        radius: config.radius.min(MAX_ECFP_RADIUS),
+        ..*config
+    };
     let mut fp = BitVec2048::new();
 
     if n == 0 {

@@ -594,7 +594,7 @@ fn transfer_hydrogen_aromatic(
         if idx == donor {
             atom.hydrogen_count = Some(donor_h - 1);
         } else if idx == acceptor {
-            atom.hydrogen_count = Some(acceptor_h + 1);
+            atom.hydrogen_count = Some(acceptor_h.saturating_add(1));
         }
         builder.add_atom(atom);
     }

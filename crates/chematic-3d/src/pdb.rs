@@ -23,25 +23,6 @@ use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder
 
 use crate::coords::{Coords3D, Point3};
 
-// ---------------------------------------------------------------------------
-// Covalent radii (angstroms) for distance-based bonding.
-// ---------------------------------------------------------------------------
-
-fn covalent_radius(element: &Element) -> f64 {
-    match element.atomic_number() {
-        1 => 0.31,  // H
-        6 => 0.77,  // C
-        7 => 0.75,  // N
-        8 => 0.73,  // O
-        9 => 0.71,  // F
-        15 => 1.07, // P
-        16 => 1.03, // S
-        17 => 0.99, // Cl
-        35 => 1.14, // Br
-        53 => 1.33, // I
-        _ => 0.77,  // default
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -153,7 +134,7 @@ pub fn pdb_to_molecule(atoms: &[PdbAtom]) -> (Molecule, Coords3D) {
     let n = points.len();
     for i in 0..n {
         for j in (i + 1)..n {
-            let threshold = 1.3 * (covalent_radius(&elements[i]) + covalent_radius(&elements[j]));
+            let threshold = 1.3 * (elements[i].covalent_radius() as f64 + elements[j].covalent_radius() as f64);
             if points[i].distance(&points[j]) < threshold {
                 // Ignore duplicate-bond errors (shouldn't occur for distinct pairs).
                 let _ = builder.add_bond(AtomIdx(i as u32), AtomIdx(j as u32), BondOrder::Single);

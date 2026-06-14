@@ -704,6 +704,11 @@ pub fn brics_fragment_count(mol: &MolHandle) -> usize {
 /// Note: Limited to molecules with ~50 atoms or fewer for practical WASM performance.
 #[wasm_bindgen]
 pub fn run_md_json(mol: &MolHandle, steps: usize, temp_k: f64) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+    }
+    const MAX_MD_STEPS: usize = 10_000;
+    let steps = steps.min(MAX_MD_STEPS);
     let coords = chematic_3d::generate_coords(&mol.inner);
     let config = chematic_3d::MDConfig {
         timestep_fs: 1.0,
@@ -1163,8 +1168,14 @@ pub fn depict_reaction_svg(rxn_smiles: &str) -> Result<String, JsValue> {
 /// Returns a JS error string on parse failure.
 #[wasm_bindgen]
 pub fn mol_from_v3000_block(block: &str) -> Result<MolHandle, JsValue> {
+    if block.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("V3000 block too large"));
+    }
     let (mol, _meta) =
         chematic_mol::parse_mol_v3000(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+    }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
     })
@@ -1175,8 +1186,14 @@ pub fn mol_from_v3000_block(block: &str) -> Result<MolHandle, JsValue> {
 /// Returns a JS error string on parse failure.
 #[wasm_bindgen]
 pub fn mol_from_sdf_block(block: &str) -> Result<MolHandle, JsValue> {
+    if block.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("MOL block too large"));
+    }
     let (mol, _meta) =
         chematic_mol::parse_mol(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+    }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
     })
@@ -1207,7 +1224,11 @@ pub fn to_mol_block(mol: &MolHandle) -> String {
 /// Invalid records are represented as `null` in the array.
 #[wasm_bindgen]
 pub fn sdf_to_smiles_json(sdf: &str) -> String {
+    if sdf.len() > WASM_MAX_INPUT_BYTES {
+        return format!(r#"[{{"error":"SDF input too large ({} bytes)"}}]"#, sdf.len());
+    }
     let entries: Vec<String> = chematic_mol::SdfReader::new(sdf)
+        .take(WASM_MAX_BATCH_ITEMS)
         .map(|r| match r {
             Ok((mol, _)) => {
                 let smi = chematic_smiles::canonical_smiles(&mol);
@@ -1967,7 +1988,11 @@ pub fn get_descriptors_json(mol: &MolHandle) -> String {
 /// `properties`; multi-line values are joined with `\n`.
 #[wasm_bindgen]
 pub fn sdf_to_records_json(sdf: &str) -> String {
+    if sdf.len() > WASM_MAX_INPUT_BYTES {
+        return format!(r#"[{{"error":"SDF input too large ({} bytes)"}}]"#, sdf.len());
+    }
     let entries: Vec<String> = chematic_mol::SdfRecordReader::new(sdf)
+        .take(WASM_MAX_BATCH_ITEMS)
         .map(|r| match r {
             Ok(rec) => {
                 let smi = chematic_smiles::canonical_smiles(&rec.mol);
@@ -2777,8 +2802,14 @@ pub fn cpk_color(element_symbol: &str) -> String {
 /// Returns a JS error if the CML is invalid (unknown element, bad bond, etc.).
 #[wasm_bindgen]
 pub fn mol_from_cml(cml: &str) -> Result<MolHandle, JsValue> {
+    if cml.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("CML input too large"));
+    }
     let (mol, _coords) =
         chematic_mol::parse_cml(cml).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+    }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
     })
@@ -2806,8 +2837,14 @@ pub fn to_cml(mol: &MolHandle) -> String {
 /// Returns a JS error if the document cannot be parsed.
 #[wasm_bindgen]
 pub fn mol_from_cdxml(cdxml: &str) -> Result<MolHandle, JsValue> {
+    if cdxml.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("CDXML input too large"));
+    }
     let (mol, _coords) =
         chematic_mol::parse_cdxml(cdxml).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+    }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
     })
@@ -2822,10 +2859,14 @@ pub fn mol_from_cdxml(cdxml: &str) -> Result<MolHandle, JsValue> {
 /// of bond elements.
 #[wasm_bindgen]
 pub fn cdxml_to_smiles_json(cdxml: &str) -> Result<String, JsValue> {
+    if cdxml.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("CDXML input too large"));
+    }
     let fragments =
         chematic_mol::parse_cdxml_all(cdxml).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let parts: Vec<String> = fragments
         .iter()
+        .take(WASM_MAX_BATCH_ITEMS)
         .map(|(mol, _)| {
             format!(
                 "\"{}\"",
@@ -3371,8 +3412,14 @@ pub fn sdf_from_records_json(
 /// Returns a JS error on parse failure.
 #[wasm_bindgen]
 pub fn mol_from_xyz(xyz: &str) -> Result<MolHandle, JsValue> {
+    if xyz.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("XYZ input too large"));
+    }
     let (mol, _coords) =
         chematic_3d::parse_xyz(xyz).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+    }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
     })
