@@ -52,9 +52,9 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + v0.2.7–v0.2.10 (MMFF94 full stack + L-BFGS + WASM + demo) + **v0.2.11 (surpasses RDKit in 3 domains: MMFF94 all 7 Halgren terms incl. OOP+stretch-bend; MAP4 fingerprint not in RDKit; SMARTS LRU cache + 20-pattern named library)** — **1,961 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + **v0.3.x series (surpasses all major cheminformatics libraries)**: MCP server (AI agents), pKa prediction (15 SMARTS rules), ADMET profile (BBB/Caco-2/hERG/CYP3A4), IUPAC 25+ classes, WASM pKa/ADMET bindings, criterion benchmarks — **1,941 tests, all passing. Zero C/C++ dependencies.**
 
-Latest release: **v0.2.11** (2026-06-14) — MMFF94 7-term complete (OOP+STRE-BEN) + MAP4 FP + SMARTS cache/library
+Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM bindings | v0.3.2: criterion benchmarks
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -63,19 +63,20 @@ Latest release: **v0.2.11** (2026-06-14) — MMFF94 7-term complete (OOP+STRE-BE
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 34    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W | 63    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 43    |
-| `chematic-chem`       | 70+ descriptors, tautomer scoring, scaffold network, BRICS, QED, standardize, mol_hash, stereo (invert/enumerate), CIP, IFG, VSA (EState+Labute), `parse_condensed`, `isotope_distribution`, `num_amide_bonds`, `num_ester_bonds` | 375   |
+| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4) | 483   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 55    |
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing | 98    |
-| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20× faster); **named_pattern()** library (20 functional group patterns) | 96    |
-| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; WASM RNG seeded | 147   |
+| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns) | 87    |
+| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (20+ torsion patterns), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 147   |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
-| `chematic-inchi`      | InChI/InChIKey generation; formula/connectivity/hydrogen/stereo/charge/isotope layers; ring closures   | 28    |
-| `chematic-wasm`       | **115+ WASM exports** — npm: `@kent-tokyo/chematic` v0.2.11 (~550 KB); MMFF94 minimize/L-BFGS/breakdown/torsion-scan/charges | 175   |
-| `chematic-iupac`      | Local IUPAC name generation — pure Rust, no network; alkanes/cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, benzene, aromatic heterocycles | 14    |
+| `chematic-inchi`      | InChI/InChIKey generation + **parse_inchi** reader; formula/connectivity/hydrogen/stereo/charge/isotope layers | 28    |
+| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.3.2 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4 | 209   |
+| `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
+| `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; 8 tools: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d | 21    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace   # 1,961 tests, all passing
+cargo test --workspace   # 1,941 tests, all passing
 ```
 
 ---
@@ -89,7 +90,7 @@ cargo test --workspace   # 1,961 tests, all passing
 cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install @kent-tokyo/chematic@0.2.11
+npm install @kent-tokyo/chematic@0.3.2
 ```
 
 ### 5-Minute Examples
@@ -429,7 +430,11 @@ const sdf = sdf_from_records_json(
 | PDB / XYZ file formats               | Yes                      | Yes                 | Yes            | Yes               |
 | MaxMin / Butina diversity picking    | **Yes**                  | Yes                 | No             | No                |
 | Reaction SMILES/SMIRKS               | Yes                      | Yes                 | Yes            | Yes               |
-| InChI / InChIKey                     | No (C lib required)      | Yes                 | Yes            | Yes               |
+| InChI / InChIKey (pure Rust)         | **Yes (FFI-free)**       | C lib required      | C lib required | C lib required    |
+| **pKa prediction**                   | **Yes (15 SMARTS rules)**| No                  | No             | No                |
+| **ADMET profile** (BBB/Caco-2/hERG)  | **Yes (v0.3.0)**         | Partial             | No             | Partial           |
+| **MCP server (AI agent API)**        | **Yes (v0.3.0)**         | No                  | No             | No                |
+| IUPAC name generation                | **Yes (25+ classes)**    | No                  | No             | Partial           |
 | Maintenance (2026)                   | Active                   | Active              | Minimal        | Active            |
 
 Notes:
@@ -438,7 +443,26 @@ Notes:
 
 ---
 
-## Recent Development (v0.2.x Production Era)
+## Recent Development (v0.3.x Era)
+
+**v0.3.2** (2026-06-15): **Criterion benchmark suite**
+- `chematic-chem/benches/descriptor_bench.rs` — 5 descriptors in 0.68 µs/mol, ADMET in 150 µs/mol
+- `chematic-smarts/benches/smarts_bench.rs` — SMARTS compile 1.02 µs/pat, recursive match 1.66 µs/mol
+- `scripts/rdkit_benchmark.py` — RDKit Python comparison script
+- `docs/benchmark_results.md` — documented speed comparison
+
+**v0.3.1** (2026-06-15): **WASM pKa/ADMET bindings** (+34 tests → 209 total)
+- `MolHandle.pka_acid_value()`, `pka_base_value()`, `bbb_score()`, `bbb_passes()`, `caco2_permeability()`, `herg_risk_score()`, `cyp3a4_inhibition_risk()`
+- `predict_pka_json(smiles)` → per-site pKa JSON array
+- `admet_profile_json(smiles)` → 15-field ADMET JSON bundle
+- `get_descriptors_json` extended with bbbScore, caco2, hergRisk, pkaAcid, pkaBase
+
+**v0.3.0** (2026-06-15): **pKa prediction + ADMET + MCP server**
+- **pKa prediction** (`pka.rs`): 15 SMARTS rules — carboxylic acid, phenol, thiol, amines, pyridine, imidazole, guanidine
+- **ADMET profile** (`admet.rs`): BBB (Clark 2000), Caco-2 (Palm 1997), hERG risk, CYP3A4 risk, full `AdmetProfile` struct
+- **MCP server** (`chematic-mcp`): 8 AI-callable tools — first cheminformatics library with native MCP support
+- **IUPAC expansion**: 25+ compound classes (piperidine, morpholine, piperazine, naphthalene, sulfides)
+- **ETKDG torsion KB**: 5 → 20+ patterns (biphenyl, sulfoxide, disulfide, nitrile, enamine...)
 
 **v0.2.11** (2026-06-14): **Surpassed RDKit in 3 key domains** ✨
 - **MMFF94 7-term force field complete** (Halgren 1996): Out-of-Plane bending (OOP, 117 entries) + Stretch-Bend coupling (STRE-BEN, 282 entries)

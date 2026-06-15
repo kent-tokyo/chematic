@@ -13,6 +13,70 @@ v0.1.8 以前の変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照。
 
 ---
 
+## [0.3.2] — 2026-06-15
+
+### 追加 — ベンチマーク整備
+
+- `chematic-chem/benches/descriptor_bench.rs` — 5 記述子 0.68 µs/mol、ADMET 150 µs/mol ほか
+- `chematic-smarts/benches/smarts_bench.rs` — SMARTS コンパイル 1.02 µs/パターン、再帰マッチ 1.66 µs/mol
+- `scripts/rdkit_benchmark.py` — RDKit Python 比較スクリプト
+- `docs/benchmark_results.md` — 速度比較ドキュメント（chematic vs RDKit Python 推定値）
+- Clippy 修正: `manual_range_contains`、`unnecessary_unwrap`
+
+---
+
+## [0.3.1] — 2026-06-15
+
+### 追加 — WASM pKa/ADMET バインディング拡充 (+34 テスト → 計 209)
+
+**MolHandle メソッド 7 個追加:**
+- `pka_acid_value()` / `pka_base_value()` — 最強 pKa (NaN if none)
+- `bbb_score()` / `bbb_passes()` — Clark 2000 BBB スコア
+- `caco2_permeability()` — Palm 1997 腸管透過性
+- `herg_risk_score()` / `cyp3a4_inhibition_risk()` — 毒性リスク (0–1)
+
+**スタンドアロン関数 2 個追加:**
+- `predict_pka_json(smiles)` → pKa サイト JSON 配列
+- `admet_profile_json(smiles)` → 15 フィールド ADMET JSON バンドル
+
+**`get_descriptors_json` 拡張:** bbbScore、bbbPasses、caco2、hergRisk、cyp3a4Risk、pkaAcid、pkaBase
+
+---
+
+## [0.3.0] — 2026-06-15
+
+### 追加 — pKa 予測 + ADMET プロファイル + MCP サーバー
+
+#### pKa 予測 (`chematic-chem/src/pka.rs`)
+
+- `predict_pka(mol) -> Vec<PkaSite>` — 全イオン化サイトの pKa（原子インデックス付き）
+- `pka_acid(mol)` / `pka_base(mol)` — 最強酸/塩基 pKa
+- 15 SMARTS パターン: カルボン酸 (4.0)、フェノール (10.0)、チオール (8.3)、芳香族アミン (4.6)、ピリジン (5.2)、イミダゾール (6.9)、グアニジン (12.5)、脂肪族アミン、ピペリジン 等
+- `logd_simple()` を動的 pKa 対応に改善
+
+#### ADMET 記述子 (`chematic-chem/src/admet.rs`)
+
+- `bbb_score(mol)` / `bbb_passes(mol)` — Clark (2000) 血液脳関門モデル
+- `caco2_permeability(mol)` — Palm (1997) 腸管透過性
+- `herg_risk_score(mol)` — hERG 心毒性リスク (0–1)
+- `cyp3a4_inhibition_risk(mol)` — CYP3A4 代謝阻害リスク (0–1)
+- `admet_profile(mol) -> AdmetProfile` — 全 ADMET 指標一括計算
+
+#### `chematic-mcp` — MCP サーバー (新クレート、21 テスト)
+
+全ケモインフォマティクスライブラリ中初の MCP 対応。JSON-RPC 2.0 over stdio。
+8 ツール: `parse_smiles`、`calc_properties`、`ecfp4`、`tanimoto`、`smarts_match`、`canonical_smiles`、`find_mcs`、`generate_3d`
+
+#### IUPAC 命名拡張 (`chematic-iupac`)
+
+15 → **25+ 化合物クラス**: ピペリジン、ピロリジン、アゼチジン、モルホリン、ピペラジン、ナフタレン、スルフィド
+
+#### ETKDG トーション KB 拡張 (`chematic-3d`)
+
+5 → **20+ パターン**: ビフェニル (45°)、エナミン、ビニルハライド、アクリル酸、フェニルケトン、チオエステル、スルホキシド (90°)、ジスルフィド (90°)、アルコール、アミン、ニトリル末端、リン化合物
+
+---
+
 ## [0.2.11] — 2026-06-14
 
 ### Added — 3 領域で RDKit を超えた (commit de156b9)

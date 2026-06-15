@@ -368,6 +368,43 @@ impl MolHandle {
         chematic_chem::logd_simple(&self.inner, ph)
     }
 
+    /// Most acidic pKa in the molecule, or NaN if no acidic site.
+    pub fn pka_acid_value(&self) -> f64 {
+        chematic_chem::pka_acid(&self.inner).unwrap_or(f64::NAN)
+    }
+
+    /// Most basic pKa in the molecule, or NaN if no basic site.
+    pub fn pka_base_value(&self) -> f64 {
+        chematic_chem::pka_base(&self.inner).unwrap_or(f64::NAN)
+    }
+
+    /// Clark (2000) blood-brain barrier logBB score.
+    /// logBB > −1.0 = likely CNS penetrant.
+    pub fn bbb_score(&self) -> f64 {
+        chematic_chem::bbb_score(&self.inner)
+    }
+
+    /// Returns true when TPSA < 90 Å², MW < 400, HBD ≤ 3.
+    pub fn bbb_passes(&self) -> bool {
+        chematic_chem::bbb_passes(&self.inner)
+    }
+
+    /// Palm (1997) Caco-2 intestinal permeability (logPCaco2).
+    /// > −5.5 = high permeability.
+    pub fn caco2_permeability(&self) -> f64 {
+        chematic_chem::caco2_permeability(&self.inner)
+    }
+
+    /// hERG cardiac toxicity risk score (0.0–1.0).
+    pub fn herg_risk_score(&self) -> f64 {
+        chematic_chem::herg_risk_score(&self.inner)
+    }
+
+    /// CYP3A4 metabolic inhibition risk score (0.0–1.0).
+    pub fn cyp3a4_inhibition_risk(&self) -> f64 {
+        chematic_chem::cyp3a4_inhibition_risk(&self.inner)
+    }
+
     /// LogD profile across a pH range as JSON.
     ///
     /// Returns `[{"ph":0.0,"logd":2.5}, ...]` with `steps` evenly-spaced pH points.
@@ -2056,7 +2093,11 @@ pub fn get_descriptors_json(mol: &MolHandle) -> String {
             "\"bertzCT\":{bertz:.4},\"wienerIndex\":{wi:.4},",
             "\"lipinskiPasses\":{lip},\"veberPasses\":{veb},",
             "\"eganPasses\":{egan},\"ghosePasses\":{ghose},",
-            "\"reosPasses\":{reos},\"painsPasses\":{pains}",
+            "\"reosPasses\":{reos},\"painsPasses\":{pains},",
+            "\"bbbScore\":{bbb:.4},\"bbbPasses\":{bbp},",
+            "\"caco2\":{caco:.4},\"hergRisk\":{herg:.4},",
+            "\"cyp3a4Risk\":{cyp:.4},",
+            "\"pkaAcid\":{acid},\"pkaBase\":{base}",
             "}}"
         ),
         mw = chematic_chem::molecular_weight(m),
@@ -2087,6 +2128,95 @@ pub fn get_descriptors_json(mol: &MolHandle) -> String {
         ghose = chematic_chem::ghose_passes(m),
         reos = chematic_chem::reos_passes(m),
         pains = chematic_chem::pains_passes(m),
+        bbb = chematic_chem::bbb_score(m),
+        bbp = chematic_chem::bbb_passes(m),
+        caco = chematic_chem::caco2_permeability(m),
+        herg = chematic_chem::herg_risk_score(m),
+        cyp = chematic_chem::cyp3a4_inhibition_risk(m),
+        acid = chematic_chem::pka_acid(m).map_or("null".to_string(), |v| format!("{v:.2}")),
+        base = chematic_chem::pka_base(m).map_or("null".to_string(), |v| format!("{v:.2}")),
+    )
+}
+
+// ---------------------------------------------------------------------------
+// pKa + ADMET JSON functions
+// ---------------------------------------------------------------------------
+
+/// Predict pKa for all ionizable sites in a molecule.
+///
+/// Returns a JSON array: `[{"atom_idx":8,"pka":4.0,"type":"acid","group":"carboxylic_acid"},...]`
+///
+/// Returns `[]` if no ionizable sites are found, or `{"error":"..."}` on parse failure.
+#[wasm_bindgen]
+pub fn predict_pka_json(smiles: &str) -> String {
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(e) => return format!(r#"{{"error":"{}"}}"#, escape_json_string(&e.to_string())),
+    };
+    let sites = chematic_chem::predict_pka(&mol);
+    if sites.is_empty() {
+        return "[]".to_string();
+    }
+    let items: Vec<String> = sites
+        .iter()
+        .map(|s| {
+            let type_str = match s.site_type {
+                chematic_chem::PkaSiteType::Acid => "acid",
+                chematic_chem::PkaSiteType::Base => "base",
+            };
+            format!(
+                r#"{{"atom_idx":{},"pka":{:.2},"type":"{}","group":"{}"}}"#,
+                s.atom_idx.0, s.pka, type_str, s.group_name
+            )
+        })
+        .collect();
+    format!("[{}]", items.join(","))
+}
+
+/// Compute a full ADMET property profile for a molecule.
+///
+/// Returns a JSON object with fields:
+/// `bbb_score`, `bbb_passes`, `caco2`, `herg_risk`, `cyp3a4_risk`,
+/// `pka_acid` (null if absent), `pka_base` (null if absent),
+/// `esol`, `logd74`, `mw`, `logp`, `tpsa`, `hbd`, `hba`, `rotatable_bonds`
+///
+/// Returns `{"error":"..."}` on parse failure.
+#[wasm_bindgen]
+pub fn admet_profile_json(smiles: &str) -> String {
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(e) => return format!(r#"{{"error":"{}"}}"#, escape_json_string(&e.to_string())),
+    };
+    let p = chematic_chem::admet_profile(&mol);
+    let acid_str = p.pka_acid.map_or("null".to_string(), |v| format!("{v:.2}"));
+    let base_str = p.pka_base.map_or("null".to_string(), |v| format!("{v:.2}"));
+    format!(
+        concat!(
+            "{{",
+            "\"bbb_score\":{bbb:.4},\"bbb_passes\":{bbp},",
+            "\"caco2\":{caco:.4},\"herg_risk\":{herg:.4},",
+            "\"cyp3a4_risk\":{cyp:.4},",
+            "\"pka_acid\":{acid},\"pka_base\":{base},",
+            "\"esol\":{esol:.4},\"logd74\":{logd:.4},",
+            "\"mw\":{mw:.4},\"logp\":{logp:.4},\"tpsa\":{tpsa:.4},",
+            "\"hbd\":{hbd},\"hba\":{hba},\"rotatable_bonds\":{rb}",
+            "}}"
+        ),
+        bbb  = p.bbb_score,
+        bbp  = p.bbb_passes,
+        caco = p.caco2,
+        herg = p.herg_risk,
+        cyp  = p.cyp3a4_risk,
+        acid = acid_str,
+        base = base_str,
+        esol = p.esol,
+        logd = p.logd74,
+        mw   = p.mw,
+        logp = p.logp,
+        tpsa = p.tpsa,
+        hbd  = p.hbd,
+        hba  = p.hba,
+        rb   = p.rotatable_bonds,
     )
 }
 
@@ -6218,6 +6348,149 @@ M  END
             .split(',')
             .count();
         assert_eq!(count, 14, "PEOE_VSA should have 14 values");
+    }
+
+    // ── pKa / ADMET MolHandle methods ────────────────────────────────────────
+
+    #[test]
+    fn test_pka_acid_value_acetic_acid() {
+        let h = parse("CC(=O)O");
+        let pka = h.pka_acid_value();
+        assert!(pka.is_finite(), "acetic acid pKa should be finite");
+        assert!((pka - 4.0).abs() < 1.0, "acetic acid pKa ~4.0, got {pka:.2}");
+    }
+
+    #[test]
+    fn test_pka_base_value_aniline() {
+        let h = parse("Nc1ccccc1");
+        let pka = h.pka_base_value();
+        assert!(pka.is_finite(), "aniline pKa_base should be finite");
+        assert!((pka - 4.6).abs() < 1.0, "aniline pKa_base ~4.6, got {pka:.2}");
+    }
+
+    #[test]
+    fn test_pka_acid_value_benzene_nan() {
+        let h = parse("c1ccccc1");
+        let pka = h.pka_acid_value();
+        assert!(pka.is_nan(), "benzene has no acidic site → NaN");
+    }
+
+    #[test]
+    fn test_pka_base_value_benzene_nan() {
+        let h = parse("c1ccccc1");
+        let pka = h.pka_base_value();
+        assert!(pka.is_nan(), "benzene has no basic site → NaN");
+    }
+
+    #[test]
+    fn test_bbb_score_benzene_positive() {
+        let h = parse("c1ccccc1");
+        let score = h.bbb_score();
+        assert!(score > -1.0, "benzene should be CNS penetrant (logBB > -1), got {score:.3}");
+    }
+
+    #[test]
+    fn test_bbb_passes_benzene() {
+        let h = parse("c1ccccc1");
+        assert!(h.bbb_passes(), "benzene (TPSA=0, MW=78) should pass BBB rules");
+    }
+
+    #[test]
+    fn test_caco2_hexane_high() {
+        let h = parse("CCCCCC");
+        let c = h.caco2_permeability();
+        assert!(c > -5.5, "hexane should have high Caco-2 permeability, got {c:.3}");
+    }
+
+    #[test]
+    fn test_herg_risk_range() {
+        let h = parse("c1ccccc1");
+        let r = h.herg_risk_score();
+        assert!((0.0..=1.0).contains(&r), "hERG risk must be in [0,1], got {r}");
+    }
+
+    #[test]
+    fn test_cyp3a4_risk_range() {
+        let h = parse("c1ccccc1");
+        let r = h.cyp3a4_inhibition_risk();
+        assert!((0.0..=1.0).contains(&r), "CYP3A4 risk must be in [0,1], got {r}");
+    }
+
+    // ── predict_pka_json ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_predict_pka_json_acetic_acid() {
+        let json = predict_pka_json("CC(=O)O");
+        assert!(json.starts_with('[') && json.ends_with(']'), "should be JSON array");
+        assert!(json.contains("\"type\":\"acid\""), "should contain acid site");
+        assert!(!json.contains("\"error\""), "should not contain error");
+    }
+
+    #[test]
+    fn test_predict_pka_json_benzene_empty() {
+        let json = predict_pka_json("c1ccccc1");
+        assert_eq!(json, "[]", "benzene has no ionizable sites");
+    }
+
+    #[test]
+    fn test_predict_pka_json_invalid_smiles() {
+        let json = predict_pka_json("C1CC");
+        assert!(json.contains("\"error\""), "invalid SMILES should return error JSON");
+    }
+
+    #[test]
+    fn test_predict_pka_json_glycine_both() {
+        let json = predict_pka_json("NCC(=O)O");
+        assert!(json.contains("\"type\":\"acid\""), "glycine should have acid site");
+        assert!(json.contains("\"type\":\"base\""), "glycine should have base site");
+    }
+
+    // ── admet_profile_json ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_admet_profile_json_aspirin_valid() {
+        let json = admet_profile_json("CC(=O)Oc1ccccc1C(=O)O");
+        assert!(!json.contains("\"error\""), "aspirin should parse without error");
+        assert!(json.contains("\"bbb_score\""), "should have bbb_score field");
+        assert!(json.contains("\"caco2\""), "should have caco2 field");
+        assert!(json.contains("\"herg_risk\""), "should have herg_risk field");
+        assert!(json.contains("\"pka_acid\""), "should have pka_acid field");
+        assert!(json.contains("\"bbb_passes\":true"), "aspirin should pass BBB");
+    }
+
+    #[test]
+    fn test_admet_profile_json_benzene_null_pka() {
+        let json = admet_profile_json("c1ccccc1");
+        assert!(json.contains("\"pka_acid\":null"), "benzene pka_acid should be null");
+        assert!(json.contains("\"pka_base\":null"), "benzene pka_base should be null");
+    }
+
+    #[test]
+    fn test_admet_profile_json_invalid_smiles() {
+        let json = admet_profile_json("C1CC");
+        assert!(json.contains("\"error\""), "invalid SMILES should return error JSON");
+    }
+
+    // ── get_descriptors_json ADMET extension ─────────────────────────────────
+
+    #[test]
+    fn test_get_descriptors_json_has_admet_fields() {
+        let h = parse("c1ccccc1");
+        let json = get_descriptors_json(&h);
+        assert!(json.contains("\"bbbScore\""), "should have bbbScore field");
+        assert!(json.contains("\"caco2\""), "should have caco2 field");
+        assert!(json.contains("\"hergRisk\""), "should have hergRisk field");
+        assert!(json.contains("\"cyp3a4Risk\""), "should have cyp3a4Risk field");
+        assert!(json.contains("\"pkaAcid\""), "should have pkaAcid field");
+        assert!(json.contains("\"pkaBase\""), "should have pkaBase field");
+    }
+
+    #[test]
+    fn test_get_descriptors_json_benzene_null_pka() {
+        let h = parse("c1ccccc1");
+        let json = get_descriptors_json(&h);
+        assert!(json.contains("\"pkaAcid\":null"), "benzene pkaAcid should be null");
+        assert!(json.contains("\"pkaBase\":null"), "benzene pkaBase should be null");
     }
 }
 

@@ -16,8 +16,13 @@ documentation = "https://docs.rs/chematic-smarts"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.2.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.2.0" }
+chematic-core = { path = "../chematic-core", version = "0.3.2" }
+chematic-perception = { path = "../chematic-perception", version = "0.3.2" }
 
 [dev-dependencies]
 chematic-smiles = { path = "../chematic-smiles" }
+criterion = { version = "0.8", features = ["html_reports"] }
+
+[[bench]]
+name = "smarts_bench"
+harness = false

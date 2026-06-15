@@ -16,12 +16,13 @@ members = [
     "crates/chematic-wasm",
     "crates/chematic",
     "crates/chematic-iupac",
+    "crates/chematic-mcp",
     "tools/gen_sa_table",
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.2.11"
+version = "0.3.2"
 edition = "2024"
 rust-version = "1.85"
 authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]

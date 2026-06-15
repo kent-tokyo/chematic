@@ -23,6 +23,7 @@
 //! pKa model is required.
 
 use crate::descriptors::logp_crippen;
+use crate::pka::{pka_acid, pka_base};
 use chematic_core::{Molecule, implicit_hcount};
 
 // ---------------------------------------------------------------------------
@@ -106,15 +107,21 @@ fn hh_correction(logp: f64, ph: f64, pka: f64, is_acid: bool) -> f64 {
 /// Returns LogD (dimensionless, same scale as LogP).
 pub fn logd_simple(mol: &Molecule, ph: f64) -> f64 {
     let logp = logp_crippen(mol);
-    let (is_acid, is_base) = ionisation_class(mol);
+    let (is_acid_legacy, is_base_legacy) = ionisation_class(mol);
+
+    // Use pKa module values when available; fall back to legacy constants.
+    let pka_a = pka_acid(mol).unwrap_or(PKA_ACID);
+    let pka_b = pka_base(mol).unwrap_or(PKA_BASE);
+    let is_acid = is_acid_legacy || pka_acid(mol).is_some();
+    let is_base = is_base_legacy || pka_base(mol).is_some();
 
     match (is_acid, is_base) {
-        (true, false) => hh_correction(logp, ph, PKA_ACID, true),
-        (false, true) => hh_correction(logp, ph, PKA_BASE, false),
+        (true, false) => hh_correction(logp, ph, pka_a, true),
+        (false, true) => hh_correction(logp, ph, pka_b, false),
         // Zwitterion: apply both corrections (approximate).
         (true, true) => {
-            let acid_corr = hh_correction(logp, ph, PKA_ACID, true);
-            let base_corr = hh_correction(logp, ph, PKA_BASE, false);
+            let acid_corr = hh_correction(logp, ph, pka_a, true);
+            let base_corr = hh_correction(logp, ph, pka_b, false);
             (acid_corr + base_corr) / 2.0
         }
         // Neutral: LogD ≈ LogP

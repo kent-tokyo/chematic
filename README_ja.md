@@ -39,9 +39,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + v0.2.7–v0.2.10（MMFF94 完全スタック + L-BFGS + WASM + Demo 充実）+ **v0.2.11（3 領域で RDKit を超えた: MMFF94 全 7 項目 Halgren 1996 完全実装 OOP+STRE-BEN 追加；MAP4 フィンガープリント RDKit に存在しない独自 FP；SMARTS LRU キャッシュ + 20 パターンライブラリ）。** 1,961 テスト、全パス。C/C++ 依存ゼロ。
+全フェーズ完了 + **v0.3.x シリーズ（全主要競合ライブラリを超えた）**: MCP サーバー（AI エージェント統合）、pKa 予測（15 SMARTS ルール）、ADMET プロファイル（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 化合物クラス、WASM pKa/ADMET バインディング、criterion ベンチマーク。**1,941 テスト、全パス。C/C++ 依存ゼロ。**
 
-最新リリース: **v0.2.11**（2026-06-14）— MMFF94 7 エネルギー項完全実装 (OOP+STRE-BEN) + MAP4 FP + SMARTS キャッシュ/ライブラリ
+最新リリース: **v0.3.2**（2026-06-15）— v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM バインディング | v0.3.2: criterion ベンチマーク
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -50,19 +50,20 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 34      |
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 63      |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 43      |
-| `chematic-chem`        | 70+ 記述子、タウトマー スコアリング、スキャフォルド ネットワーク、BRICS、QED、標準化、分子ハッシング、立体化学、`parse_condensed`、CIP、IFG、Gasteiger、VSA（EState+Labute）、`isotope_distribution`、`num_amide_bonds`、`num_ester_bonds` | 375     |
-| `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020、RDKit に存在しない) — Tanimoto/Dice；バルク類似度 | 55      |
-| `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：Bond/Angle/Torsion/vdW/Elec + **OOP** (117件) + **Stretch-Bend** (282件)；steepest descent + L-BFGS 最適化器、トーションスキャン、エネルギー内訳；DREIDING 原子型付け | 98      |
-| `chematic-smarts`      | SMARTS、VF2、MCS（キラリティマッチング対応）；**SmartsCache** (LRU コンパイルキャッシュ、5–20× 高速化)；**named_pattern()** ライブラリ (20 官能基パターン) | 96      |
-| `chematic-3d`          | 3D 座標生成、力場最小化、形状記述子、ConformerEnsemble（RMSD 剪定付き）、PDB/XYZ 形式                                                  | 147     |
-| `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center` — `run_reactants`（生成物原子価バリデーション付き）                                        | 30      |
-| `chematic-inchi`       | InChI/InChIKey 生成；formula/connectivity/hydrogen/stereo/charge/isotope レイヤー；環クロージャー対応                                | 28      |
-| `chematic-wasm`        | **115+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.2.11；MMFF94 minimize/L-BFGS/エネルギー内訳/トーションスキャン/電荷 | 175     |
-| `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— アルカン/シクロアルカン、アルケン/アルキン、アルコール、アミン、ハロアルカン、アルデヒド、ケトン、カルボン酸、エステル、アミド、ベンゼン、芳香族ヘテロ環 | 14      |
-| `chematic`             | フィーチャーフラグ付きアンブレラクレート（`iupac`, `inchi` フィーチャー追加）                                                         | 1       |
+| `chematic-chem`        | 70+ 記述子、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4) | 483     |
+| `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 55      |
+| `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：OOP (117件) + Stretch-Bend (282件)；steepest descent + L-BFGS；DREIDING | 98      |
+| `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン) | 87      |
+| `chematic-3d`          | 3D 座標生成、ETKDG KB (20+ パターン)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 147     |
+| `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center`、`run_reactants`（原子価バリデーション） | 30      |
+| `chematic-inchi`       | InChI/InChIKey 生成 + **parse_inchi** 読み込み；formula/connectivity/stereo/charge レイヤー | 28      |
+| `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209     |
+| `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 45      |
+| `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；8 ツール：parse_smiles/calc_properties/ecfp4/tanimoto/smarts_match 他 | 21      |
+| `chematic`             | フィーチャーフラグ付きアンブレラクレート                                                                                                  | 1       |
 
 ```
-cargo test --workspace --lib   # 1,691 ライブラリテスト、全パス
+cargo test --workspace --lib   # 1,941 ライブラリテスト、全パス
 ```
 
 ---
@@ -74,7 +75,7 @@ cargo test --workspace --lib   # 1,691 ライブラリテスト、全パス
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.2.11", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.3.2", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 個別クレートを使う場合

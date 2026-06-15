@@ -27,6 +27,8 @@ pub mod mmff94_bci;
 pub mod named_groups;
 pub mod qed;
 pub mod recap;
+pub mod pka;
+pub mod admet;
 pub mod sa_score;
 pub mod scaffold;
 pub mod standardize;
@@ -105,3 +107,11 @@ pub use workflow::{
     molecule_report_with_options, screen_smiles, screen_smiles_with_options,
 };
 pub use xlogp3::{xlogp3, xlogp3_per_atom};
+pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, predict_pka};
+pub use admet::{
+    AdmetProfile, admet_profile,
+    bbb_passes, bbb_score,
+    caco2_permeability,
+    cyp3a4_inhibition_risk,
+    herg_risk_score,
+};

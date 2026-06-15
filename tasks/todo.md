@@ -814,13 +814,30 @@ Sprint v0.1.26: ✅ Issue D + P3 Features（完了: 2026-06-06）
 
 ---
 
-## 次のステップ
-- **v0.1.75+**: Priority B4-B8、C1-C5 の段階的実装（計画）
-  - [ ] B4: ETKDG torsion knowledge base（3D geometry）
-  - [ ] B5-B6: LayeredFingerprint + variable-length BitVec
-  - [ ] B7: Reaction SMARTS queries
-  - [ ] B8: 3D SASA descriptor
-  - [ ] C1-C5: Specialty features (atropisomer, IUPAC extent, InChI parser, etc.)
+## 完了済み (v0.3.x シリーズ)
+
+### Phase 16 — MCP サーバー + pKa/ADMET (v0.3.0–v0.3.2) ✅ COMPLETE
+
+- [x] **MCP サーバー** (`chematic-mcp`) — AI エージェント統合、8 ツール、JSON-RPC 2.0 over stdio
+- [x] **pKa 予測** (`pka.rs`) — 15 SMARTS ルール、`predict_pka`/`pka_acid`/`pka_base`
+- [x] **ADMET プロファイル** (`admet.rs`) — BBB/Caco-2/hERG/CYP3A4 + `AdmetProfile`
+- [x] **IUPAC 拡張** — 15 → 25+ 化合物クラス（ピペリジン、モルホリン、ナフタレン、スルフィド等）
+- [x] **ETKDG KB 拡張** — 5 → 20+ トーションパターン（ビフェニル、スルホキシド、ジスルフィド等）
+- [x] **WASM バインディング** — pKa/ADMET を 130+ WASM 関数として公開（v0.3.1）
+- [x] **criterion ベンチマーク** — descriptor/SMARTS の速度測定、RDKit 比較スクリプト（v0.3.2）
+- テスト数: 1,961 (v0.2.11) → **1,941 lib / 2,100+ all** (v0.3.2)
+
+## 次のステップ (v0.4.x 候補)
+
+- [ ] B4: ETKDG torsion knowledge base 拡充（さらに官能基特有パターン）
+- [ ] B5-B6: LayeredFingerprint + variable-length BitVec
+- [ ] B7: Reaction SMARTS queries
+- [ ] B8: 3D SASA descriptor
+- [ ] C1-C5: Specialty features (atropisomer M/P SMILES, IUPAC bridged/spiro, InChI parser)
+- [ ] Mol2 ファイル形式（Open Babel 対抗）
+- [ ] 仮想スクリーニング（3D 形状類似度）
+- [ ] さらなる ADMET 指標（Ames 変異原性、PPB、クリアランス）
+- [ ] performance: SIMD 最適化候補調査
 
 ---
 

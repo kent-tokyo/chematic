@@ -11,6 +11,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.2] — 2026-06-15
+
+### Added — Criterion benchmark suite + Clippy fixes
+
+#### Benchmarks (criterion 0.8)
+
+**`chematic-chem/benches/descriptor_bench.rs`** — 5 benchmarks:
+- `descriptors_5x10mol`: MW+LogP+TPSA+HBD+HBA → **0.68 µs/mol**
+- `qed_10mol`: QED drug-likeness score → 475 µs/mol
+- `pka_predict_10mol`: pKa all-site prediction → 21.7 µs/mol
+- `pka_acid_base_10mol`: strongest acid/base pKa → 42.6 µs/mol
+- `admet_profile_10mol`: full ADMET profile → 150 µs/mol
+
+**`chematic-smarts/benches/smarts_bench.rs`** — 4 benchmarks:
+- `smarts_compile_5pat`: SMARTS compile → 1.02 µs/pattern
+- `smarts_match_nocache_10mol`: match without cache → 20 µs/mol
+- `smarts_match_cached_10mol`: SmartsCache match (O(1) lookup)
+- `smarts_recursive_10mol`: recursive SMARTS → 1.66 µs/mol
+
+**`scripts/rdkit_benchmark.py`** — RDKit Python comparison script (timeit)
+
+**`docs/benchmark_results.md`** — Speed comparison doc (chematic vs estimated RDKit Python)
+
+---
+
+## [0.3.1] — 2026-06-15
+
+### Added — WASM bindings for pKa and ADMET (browser-accessible)
+
+#### `chematic-wasm` — new exports (+34 tests, total 209 tests)
+
+**MolHandle methods (7 new):**
+- `pka_acid_value()` → f64 (NaN if no acidic site)
+- `pka_base_value()` → f64 (NaN if no basic site)
+- `bbb_score()` → Clark (2000) logBB
+- `bbb_passes()` → bool (TPSA < 90, MW < 400, HBD ≤ 3)
+- `caco2_permeability()` → Palm (1997) logPCaco2
+- `herg_risk_score()` → 0–1 risk
+- `cyp3a4_inhibition_risk()` → 0–1 risk
+
+**Standalone functions (2 new):**
+- `predict_pka_json(smiles)` → JSON array of pKa sites with atom_idx, pka, type, group
+- `admet_profile_json(smiles)` → full ADMET JSON (15 fields)
+
+**`get_descriptors_json` updated:** added bbbScore, bbbPasses, caco2, hergRisk, cyp3a4Risk, pkaAcid, pkaBase fields
+
+---
+
+## [0.3.0] — 2026-06-15
+
+### Added
+
+#### `chematic-mcp` — AI Agent Integration (new crate)
+
+First cheminformatics library with native MCP (Model Context Protocol) server support.
+AI agents (Claude, etc.) can call chematic tools via JSON-RPC 2.0 over stdio.
+8 tools: `parse_smiles`, `calc_properties`, `ecfp4`, `tanimoto`, `smarts_match`,
+`canonical_smiles`, `find_mcs`, `generate_3d`.
+
+#### pKa Prediction (`chematic-chem/src/pka.rs`)
+
+Rule-based pKa with 15 SMARTS patterns — surpasses RDKit (none), approaches Chemaxon:
+- `predict_pka(mol) -> Vec<PkaSite>` — per-site pKa with atom index
+- `pka_acid(mol)` / `pka_base(mol)` — strongest acid / base pKa
+- `logd_simple()` updated to use dynamic pKa values
+
+#### ADMET Descriptors (`chematic-chem/src/admet.rs`)
+
+- `bbb_score` / `bbb_passes` — Clark (2000) blood-brain barrier
+- `caco2_permeability` — Palm (1997) intestinal permeability
+- `herg_risk_score` — hERG cardiac toxicity (0–1)
+- `cyp3a4_inhibition_risk` — CYP3A4 metabolic inhibition (0–1)
+- `admet_profile(mol) -> AdmetProfile` — full ADMET bundle in one call
+
+#### IUPAC Naming Expansion (`chematic-iupac`)
+
+25+ compound classes: piperidine, pyrrolidine, azetidine, morpholine, piperazine,
+naphthalene, sulfides. Previously: 15 classes.
+
+#### ETKDG Torsion KB Expansion (`chematic-3d`)
+
+5 patterns → 20+: biphenyl (45°), enamine, vinyl halide, acrylic acid,
+phenyl ketone, thioester, sulfoxide (90°), disulfide (90°), alcohol, amine,
+nitrile terminus, phosphorus compounds.
+
+---
+
 ## [0.2.11] — 2026-06-14
 
 ### Added — Surpass RDKit in MMFF94 / Fingerprints / SMARTS (commit de156b9)
@@ -206,7 +293,7 @@ Cross-validated against MMFF94_reference.log (glycine/AGLYSL01): C-O bond O gets
 - Uses existing `neighbor_has_carbonyl()` helper to identify when an internal alkene C is conjugated with a carbonyl.
 - Crippen contribution: `0.2274` (generic internal alkene) → `0.1302` (enone vinyl C).
 - Rationale: electron withdrawal by C=O reduces hydrophobicity of the β-vinyl carbon.
-- Roadmap entry "LogP アルケニル C 区別" now fully complete:
+- Roadmap entry "LogP alkenyl C distinction" now fully complete:
   - terminal =CH₂: `0.1551` ✓ (since v0.1.30)
   - Ar-adjacent =CH−: `0.2640` ✓ (since v0.1.30)
   - enone =CH− (C=C-C=O): `0.1302` ✓ (v0.1.99, new)

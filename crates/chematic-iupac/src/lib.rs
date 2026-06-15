@@ -113,13 +113,27 @@ impl<'a> Namer<'a> {
             if any_aromatic {
                 return self.name_aromatic_ring(&ring_atoms);
             }
-            // Non-aromatic ring: allow OH substituent (cycloalkanol), block others.
-            let only_oxygen = het_elements.len() == 1 && het_elements.contains(&8);
-            if !het_elements.is_empty() && !only_oxygen {
+            let only_oxygen   = het_elements.len() == 1 && het_elements.contains(&8);
+            let only_nitrogen  = het_elements.len() == 1 && het_elements.contains(&7);
+            let n_and_o = het_elements.len() == 2
+                && het_elements.contains(&7)
+                && het_elements.contains(&8);
+            // Non-aromatic ring: supported heteroatom patterns only.
+            if !het_elements.is_empty()
+                && !only_oxygen
+                && !only_nitrogen
+                && !n_and_o
+            {
                 return Err(IupacError::NotSupported);
             }
             if only_oxygen {
                 return self.name_cycloalkanol(&ring_atoms, &carbons, &o_atoms);
+            }
+            if only_nitrogen {
+                return self.name_aza_ring(&ring_atoms);
+            }
+            if n_and_o {
+                return self.name_oxaaza_ring(&ring_atoms);
             }
             return self.name_cycloalkane(&ring_atoms, &carbons);
         }
@@ -138,7 +152,13 @@ impl<'a> Namer<'a> {
                     self.name_amine(&carbons, n_atoms[0])
                 }
             }
-            (0, 0, 1, 0) => self.name_thiol(&carbons, s_atoms[0]),
+            (0, 0, 1, 0) => {
+                if implicit_hcount(self.mol, s_atoms[0]) > 0 {
+                    self.name_thiol(&carbons, s_atoms[0])
+                } else {
+                    self.name_sulfide(&carbons, s_atoms[0])
+                }
+            }
             (0, 0, 0, _) if !halogens.is_empty() => {
                 if het_elements.len() != 1 {
                     return Err(IupacError::NotSupported);
@@ -182,6 +202,7 @@ impl<'a> Namer<'a> {
                 (5, 0, 0, 1) => Ok("thiophene".into()),
                 (5, 1, 0, 0) => Ok("pyrrole".into()),
                 (5, 2, 0, 0) => Ok("imidazole".into()),
+                (10, 0, 0, 0) => Ok("naphthalene".into()),
                 _            => Err(IupacError::NotSupported),
             };
         }
@@ -807,6 +828,80 @@ impl<'a> Namer<'a> {
     // Thiol naming (R-SH → "...anethiol")
     // -----------------------------------------------------------------------
 
+    // -----------------------------------------------------------------------
+    // Saturated N-heterocycles (piperidine, pyrrolidine, azetidine)
+    // -----------------------------------------------------------------------
+
+    fn name_aza_ring(&self, ring_atoms: &HashSet<AtomIdx>) -> Result<String, IupacError> {
+        let mol = self.mol;
+        let sz = ring_atoms.len();
+        let n_n = ring_atoms.iter()
+            .filter(|&&i| mol.atom(i).element.atomic_number() == 7)
+            .count();
+        // Only support pure monocyclic rings (no substituents).
+        if mol.atom_count() != sz {
+            return Err(IupacError::NotSupported);
+        }
+        match (sz, n_n) {
+            (4, 1) => Ok("azetidine".into()),
+            (5, 1) => Ok("pyrrolidine".into()),
+            (6, 1) => Ok("piperidine".into()),
+            (6, 2) => Ok("piperazine".into()),
+            (7, 1) => Ok("azepane".into()),
+            _      => Err(IupacError::NotSupported),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Saturated N+O heterocycles (morpholine) and N+N (piperazine)
+    // -----------------------------------------------------------------------
+
+    fn name_oxaaza_ring(&self, ring_atoms: &HashSet<AtomIdx>) -> Result<String, IupacError> {
+        let mol = self.mol;
+        let sz = ring_atoms.len();
+        if mol.atom_count() != sz {
+            return Err(IupacError::NotSupported);
+        }
+        let n_n = ring_atoms.iter()
+            .filter(|&&i| mol.atom(i).element.atomic_number() == 7)
+            .count();
+        let n_o = ring_atoms.iter()
+            .filter(|&&i| mol.atom(i).element.atomic_number() == 8)
+            .count();
+        // Morpholine: 6-membered ring, 4C + 1N + 1O
+        if sz == 6 && n_n == 1 && n_o == 1 {
+            return Ok("morpholine".into());
+        }
+        // Piperazine: 6-membered ring, 4C + 2N
+        if sz == 6 && n_n == 2 && n_o == 0 {
+            return Ok("piperazine".into());
+        }
+        Err(IupacError::NotSupported)
+    }
+
+    // -----------------------------------------------------------------------
+    // Sulfide naming (C-S-C, no SH)
+    // -----------------------------------------------------------------------
+
+    fn name_sulfide(&self, carbons: &[AtomIdx], s_idx: AtomIdx) -> Result<String, IupacError> {
+        let mol = self.mol;
+        // Collect both C neighbors of S.
+        let c_neighbors: Vec<AtomIdx> = mol.neighbors(s_idx)
+            .filter(|(nb, _)| carbons.contains(nb))
+            .map(|(nb, _)| nb)
+            .collect();
+        if c_neighbors.len() != 2 {
+            return Err(IupacError::NotSupported);
+        }
+        // Build the two chains from each side of the S.
+        let chain1_len = count_c_chain(mol, c_neighbors[0], s_idx);
+        let chain2_len = count_c_chain(mol, c_neighbors[1], s_idx);
+        // Use alphabetical order (IUPAC-preferred).
+        let mut names = [alkyl_prefix(chain1_len), alkyl_prefix(chain2_len)];
+        names.sort();
+        Ok(format!("{} {} sulfide", names[0], names[1]))
+    }
+
     fn name_thiol(&self, carbons: &[AtomIdx], s_idx: AtomIdx) -> Result<String, IupacError> {
         let mol = self.mol;
         if implicit_hcount(mol, s_idx) == 0 {
@@ -1419,6 +1514,11 @@ fn count_components(mol: &Molecule) -> usize {
 // Naming helpers
 // ---------------------------------------------------------------------------
 
+/// Return the alkyl group name prefix (e.g. 1 → "methyl", 2 → "ethyl").
+fn alkyl_prefix(n: usize) -> String {
+    format!("{}yl", alkane_stem(n))
+}
+
 fn alkane_stem(n: usize) -> &'static str {
     match n {
         1 => "meth", 2 => "eth",  3 => "prop", 4 => "but",
@@ -1786,5 +1886,39 @@ mod tests {
         assert_eq!(name(&mol("CC1CCC(C)CC1")).unwrap(), "1,4-dimethylcyclohexane");
         assert_eq!(name(&mol("CC1CCCC1C")).unwrap(),    "1,2-dimethylcyclopentane");
         assert_eq!(name(&mol("CC1CCC(C)C1")).unwrap(),  "1,3-dimethylcyclopentane");
+    }
+
+    // ---- Sprint 4 tests: N-heterocycles, sulfides, naphthalene ------------------
+
+    #[test]
+    fn test_saturated_n_rings() {
+        assert_eq!(name(&mol("C1CCNCC1")).unwrap(), "piperidine");
+        assert_eq!(name(&mol("C1CCNC1")).unwrap(),  "pyrrolidine");
+        assert_eq!(name(&mol("C1CCN1")).unwrap(),   "azetidine");
+    }
+
+    #[test]
+    fn test_morpholine() {
+        // Morpholine: 6-membered ring with O and N
+        assert_eq!(name(&mol("C1COCCN1")).unwrap(), "morpholine");
+        assert_eq!(name(&mol("C1CNCCO1")).unwrap(), "morpholine");
+    }
+
+    #[test]
+    fn test_piperazine() {
+        // Piperazine: 4C + 2N in 6-membered ring
+        assert_eq!(name(&mol("C1CNCCN1")).unwrap(), "piperazine");
+    }
+
+    #[test]
+    fn test_naphthalene() {
+        assert_eq!(name(&mol("c1ccc2ccccc2c1")).unwrap(), "naphthalene");
+    }
+
+    #[test]
+    fn test_sulfide_naming() {
+        assert_eq!(name(&mol("CSC")).unwrap(),   "methyl methyl sulfide");
+        assert_eq!(name(&mol("CSCC")).unwrap(),  "ethyl methyl sulfide");
+        assert_eq!(name(&mol("CCSCC")).unwrap(), "ethyl ethyl sulfide");
     }
 }

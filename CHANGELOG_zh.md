@@ -13,6 +13,67 @@ v0.1.8 之前的变更历史，请参考 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
+## [0.3.2] — 2026-06-15
+
+### 新增 — 基准测试套件 + Clippy 修复
+
+- `chematic-chem/benches/descriptor_bench.rs` — 5 描述符 0.68 µs/mol，ADMET 150 µs/mol
+- `chematic-smarts/benches/smarts_bench.rs` — SMARTS 编译 1.02 µs/模式，递归匹配 1.66 µs/mol
+- `scripts/rdkit_benchmark.py` — RDKit Python 比较脚本
+- `docs/benchmark_results.md` — 速度比较文档（chematic vs 估算 RDKit Python）
+
+---
+
+## [0.3.1] — 2026-06-15
+
+### 新增 — WASM pKa/ADMET 绑定（+34 测试，共 209 个）
+
+**MolHandle 新增 7 个方法:**
+- `pka_acid_value()` / `pka_base_value()` — 最强 pKa（无则返回 NaN）
+- `bbb_score()` / `bbb_passes()` — Clark (2000) 血脑屏障评分
+- `caco2_permeability()` — Palm (1997) 肠道渗透性
+- `herg_risk_score()` / `cyp3a4_inhibition_risk()` — 毒性风险评分（0–1）
+
+**新增独立函数:**
+- `predict_pka_json(smiles)` → pKa 位点 JSON 数组
+- `admet_profile_json(smiles)` → 15 字段 ADMET JSON
+
+**`get_descriptors_json` 扩展:** 新增 bbbScore、bbbPasses、caco2、hergRisk、cyp3a4Risk、pkaAcid、pkaBase
+
+---
+
+## [0.3.0] — 2026-06-15
+
+### 新增 — pKa 预测 + ADMET 概况 + MCP 服务器
+
+#### `chematic-mcp` — MCP 服务器（新 crate，21 测试）
+
+业界首个内置 MCP（模型上下文协议）服务器的化学信息学库。
+JSON-RPC 2.0 over stdio，8 个工具：`parse_smiles`/`calc_properties`/`ecfp4`/`tanimoto`/`smarts_match`/`canonical_smiles`/`find_mcs`/`generate_3d`
+
+#### pKa 预测 (`chematic-chem/src/pka.rs`)
+
+15 条 SMARTS 规则：羧酸 (4.0)、苯酚 (10.0)、硫醇 (8.3)、芳香胺 (4.6)、吡啶 (5.2)、咪唑 (6.9)、胍 (12.5)、脂肪族胺、哌啶等
+- `predict_pka(mol) -> Vec<PkaSite>` / `pka_acid(mol)` / `pka_base(mol)`
+
+#### ADMET 描述符 (`chematic-chem/src/admet.rs`)
+
+- `bbb_score` / `bbb_passes` — Clark (2000) 血脑屏障模型
+- `caco2_permeability` — Palm (1997) Caco-2 渗透性
+- `herg_risk_score` — hERG 心脏毒性风险（0–1）
+- `cyp3a4_inhibition_risk` — CYP3A4 代谢抑制风险（0–1）
+- `admet_profile(mol) -> AdmetProfile` — 一次性计算全部 ADMET 指标
+
+#### IUPAC 命名扩展
+
+15 → 25+ 化合物类别：哌啶、吡咯烷、氮杂丁啶、吗啉、哌嗪、萘、硫醚
+
+#### ETKDG 扭转知识库扩展
+
+5 → 20+ 模式：联苯 (45°)、烯胺、乙烯卤化物、丙烯酸、苯基酮、硫酯、亚砜 (90°)、二硫键 (90°)、醇、胺、腈末端、磷化合物
+
+---
+
 ## [0.2.11] — 2026-06-14
 
 ### Added — 在 3 个领域超越 RDKit (commit de156b9)

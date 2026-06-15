@@ -1,0 +1,25 @@
+[package]
+name = "chematic-mcp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MCP (Model Context Protocol) server for chematic — AI-agent-ready cheminformatics tools"
+keywords = ["cheminformatics", "mcp", "ai", "chemistry", "smiles"]
+categories = ["science", "command-line-utilities"]
+homepage.workspace = true
+
+[[bin]]
+name = "chematic-mcp"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = "1.0"
+chematic-core       = { path = "../chematic-core",       version = "0.3.2" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.3.2" }
+chematic-chem       = { path = "../chematic-chem",       version = "0.3.2" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.3.2" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.3.2" }
+chematic-3d         = { path = "../chematic-3d",         version = "0.3.2" }
+chematic-perception = { path = "../chematic-perception", version = "0.3.2" }
