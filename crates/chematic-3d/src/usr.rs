@@ -102,6 +102,48 @@ pub fn usr_similarity(a: &[f64; 12], b: &[f64; 12]) -> f64 {
 }
 
 // ---------------------------------------------------------------------------
+// Convenience wrappers using distance-geometry 3D coordinates
+// ---------------------------------------------------------------------------
+
+/// Compute USR descriptors for a molecule using auto-generated 3D coordinates.
+///
+/// Generates rule-based 3D coordinates via distance geometry, then computes
+/// 12 USR moments. Heavy atoms only (H excluded).
+pub fn usr_from_dg(mol: &chematic_core::Molecule) -> [f64; 12] {
+    use chematic_core::AtomIdx;
+    let coords = crate::dg::generate_coords(mol);
+    let pts: Vec<[f64; 3]> = (0..mol.atom_count())
+        .filter(|&i| mol.atom(AtomIdx(i as u32)).element.atomic_number() != 1)
+        .map(|i| {
+            let p = coords.get(AtomIdx(i as u32));
+            [p.x, p.y, p.z]
+        })
+        .collect();
+    usr_descriptors(&pts)
+}
+
+/// Screen a library of molecules by 3D shape similarity to a query molecule.
+///
+/// Returns `(index, similarity)` pairs sorted by decreasing similarity.
+/// Both query and library molecules have 3D coordinates auto-generated.
+pub fn shape_screen(
+    query: &chematic_core::Molecule,
+    library: &[&chematic_core::Molecule],
+) -> Vec<(usize, f64)> {
+    let q_desc = usr_from_dg(query);
+    let mut results: Vec<(usize, f64)> = library
+        .iter()
+        .enumerate()
+        .map(|(i, mol)| {
+            let desc = usr_from_dg(mol);
+            (i, usr_similarity(&q_desc, &desc))
+        })
+        .collect();
+    results.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    results
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -180,6 +222,40 @@ mod tests {
     fn test_single_atom() {
         let d = usr_descriptors(&[[1.0, 2.0, 3.0]]);
         assert_eq!(d, [0.0f64; 12]);
+    }
+
+    #[test]
+    fn test_usr_from_dg_benzene() {
+        let mol = chematic_smiles::parse("c1ccccc1").unwrap();
+        let desc = usr_from_dg(&mol);
+        // Self-similarity should be 1.0
+        assert!((usr_similarity(&desc, &desc) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_usr_from_dg_different_molecules() {
+        let benzene  = chematic_smiles::parse("c1ccccc1").unwrap();
+        let ethanol  = chematic_smiles::parse("CCO").unwrap();
+        let d_benz   = usr_from_dg(&benzene);
+        let d_eth    = usr_from_dg(&ethanol);
+        let sim = usr_similarity(&d_benz, &d_eth);
+        assert!(sim < 1.0, "benzene and ethanol should not have identical shape");
+        assert!(sim >= 0.0, "similarity must be non-negative");
+    }
+
+    #[test]
+    fn test_shape_screen_returns_sorted() {
+        let query   = chematic_smiles::parse("c1ccccc1").unwrap();
+        let toluene = chematic_smiles::parse("Cc1ccccc1").unwrap();
+        let ethanol = chematic_smiles::parse("CCO").unwrap();
+        let library = vec![&ethanol as &chematic_core::Molecule, &toluene];
+        let results = shape_screen(&query, &library);
+        assert_eq!(results.len(), 2);
+        // Results should be sorted descending
+        assert!(results[0].1 >= results[1].1, "results should be sorted by decreasing similarity");
+        // Toluene (index 1) should score higher than ethanol (index 0) vs benzene
+        let toluene_hit = results.iter().find(|(i, _)| *i == 1);
+        assert!(toluene_hit.is_some());
     }
 
     #[test]

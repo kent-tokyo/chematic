@@ -114,4 +114,7 @@ pub use admet::{
     caco2_permeability,
     cyp3a4_inhibition_risk,
     herg_risk_score,
+    ames_alerts, ames_passes, ames_risk_score,
+    ppb_percent,
+    ClearanceClass, clearance_class, clearance_score,
 };

@@ -2,7 +2,10 @@
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/chematic.svg)](https://crates.io/crates/chematic)
+[![PyPI](https://img.shields.io/pypi/v/chematic.svg)](https://pypi.org/project/chematic/)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic.svg)](https://www.npmjs.com/package/@kent-tokyo/chematic)
+[![Docs](https://img.shields.io/badge/docs-site-blue)](https://kent-tokyo.github.io/chematic/)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kent-tokyo/chematic/blob/main/notebooks/quickstart.ipynb)
 
 [日本語](README_ja.md) | [中文](README_zh.md)
 
@@ -449,7 +452,6 @@ Notes:
 - `chematic-chem/benches/descriptor_bench.rs` — 5 descriptors in 0.68 µs/mol, ADMET in 150 µs/mol
 - `chematic-smarts/benches/smarts_bench.rs` — SMARTS compile 1.02 µs/pat, recursive match 1.66 µs/mol
 - `scripts/rdkit_benchmark.py` — RDKit Python comparison script
-- `docs/benchmark_results.md` — documented speed comparison
 
 **v0.3.1** (2026-06-15): **WASM pKa/ADMET bindings** (+34 tests → 209 total)
 - `MolHandle.pka_acid_value()`, `pka_base_value()`, `bbb_score()`, `bbb_passes()`, `caco2_permeability()`, `herg_risk_score()`, `cyp3a4_inhibition_risk()`

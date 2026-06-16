@@ -63,7 +63,7 @@ pub use shape_descriptors::{
     radius_of_gyration,
 };
 pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
-pub use usr::{usr_descriptors, usr_similarity};
+pub use usr::{usr_descriptors, usr_similarity, usr_from_dg, shape_screen};
 pub use xyz::{XyzError, parse_xyz, write_xyz};
 
 // ---------------------------------------------------------------------------

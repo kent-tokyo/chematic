@@ -17,7 +17,7 @@
 #![forbid(unsafe_code)]
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
-use chematic_perception::find_sssr;
+use chematic_perception::{find_sssr, find_ring_families, RingSystemKind};
 use std::collections::{HashSet, VecDeque};
 
 // ---------------------------------------------------------------------------
@@ -134,6 +134,12 @@ impl<'a> Namer<'a> {
             }
             if n_and_o {
                 return self.name_oxaaza_ring(&ring_atoms);
+            }
+            // Check for spiro / bridged polycyclic systems (all-carbon only).
+            if het_elements.is_empty() {
+                if let Ok(name) = self.name_polycyclic(&ring_atoms, &carbons) {
+                    return Ok(name);
+                }
             }
             return self.name_cycloalkane(&ring_atoms, &carbons);
         }
@@ -356,6 +362,133 @@ impl<'a> Namer<'a> {
         }
 
         Err(IupacError::NotSupported)
+    }
+
+    // -----------------------------------------------------------------------
+    // Polycyclic naming: spiro and bicyclo (bridged)
+    // -----------------------------------------------------------------------
+
+    fn name_polycyclic(
+        &self,
+        ring_atoms: &HashSet<AtomIdx>,
+        carbons: &[AtomIdx],
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+        let sssr = find_sssr(mol);
+        let families = find_ring_families(mol, &sssr);
+
+        // Must be a single ring family.
+        if families.len() != 1 {
+            return Err(IupacError::NotSupported);
+        }
+        let family = &families[0];
+
+        match family.kind {
+            RingSystemKind::Spiro => self.name_spiro(ring_atoms, carbons, &sssr),
+            RingSystemKind::Bridged => self.name_bicyclo(ring_atoms, carbons, &sssr),
+            _ => Err(IupacError::NotSupported),
+        }
+    }
+
+    /// Name a simple spiro compound: spiro[a.b]alkane.
+    fn name_spiro(
+        &self,
+        ring_atoms: &HashSet<AtomIdx>,
+        carbons: &[AtomIdx],
+        sssr: &chematic_perception::RingSet,
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+        let rings = sssr.rings();
+
+        // Must have exactly 2 rings, no substituents outside the ring system.
+        if rings.len() != 2 {
+            return Err(IupacError::NotSupported);
+        }
+        if ring_atoms.len() != carbons.len() {
+            return Err(IupacError::NotSupported);
+        }
+        // All ring atoms must be sp3 carbons.
+        if ring_atoms.iter().any(|&a| {
+            mol.atom(a).aromatic
+                || mol.bonds().any(|(_, b)| {
+                    (b.atom1 == a || b.atom2 == a)
+                        && !matches!(b.order, chematic_core::BondOrder::Single)
+                })
+        }) {
+            return Err(IupacError::NotSupported);
+        }
+
+        // Find spiro atom (shared by both rings).
+        let shared: Vec<AtomIdx> = rings[0].iter()
+            .filter(|a| rings[1].contains(a))
+            .copied()
+            .collect();
+        if shared.len() != 1 {
+            return Err(IupacError::NotSupported);
+        }
+        let _spiro_atom = shared[0];
+
+        // Bridge sizes = ring_size - 1 (excluding the spiro atom).
+        let mut bridges = [rings[0].len() - 1, rings[1].len() - 1];
+        bridges.sort_unstable();
+        let total_c = ring_atoms.len();
+
+        Ok(format!("spiro[{}.{}]{}", bridges[0], bridges[1], alkane_suffix(total_c)))
+    }
+
+    /// Name a bicyclic bridged compound: bicyclo[x.y.z]alkane.
+    fn name_bicyclo(
+        &self,
+        ring_atoms: &HashSet<AtomIdx>,
+        carbons: &[AtomIdx],
+        _sssr: &chematic_perception::RingSet,
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+
+        // Must have no substituents outside the ring system.
+        if ring_atoms.len() != carbons.len() {
+            return Err(IupacError::NotSupported);
+        }
+        // All ring atoms must be sp3 (no double bonds, no aromatic).
+        if ring_atoms.iter().any(|&a| {
+            mol.atom(a).aromatic
+                || mol.bonds().any(|(_, b)| {
+                    (b.atom1 == a || b.atom2 == a)
+                        && !matches!(b.order, chematic_core::BondOrder::Single)
+                })
+        }) {
+            return Err(IupacError::NotSupported);
+        }
+
+        // Bridgehead atoms: ring atoms with degree ≥ 3 in the ring subgraph.
+        let bridgeheads: Vec<AtomIdx> = ring_atoms.iter().copied()
+            .filter(|&a| {
+                mol.neighbors(a)
+                    .filter(|(nb, _)| ring_atoms.contains(nb))
+                    .count() >= 3
+            })
+            .collect();
+        if bridgeheads.len() != 2 {
+            return Err(IupacError::NotSupported);
+        }
+        let bh0 = bridgeheads[0];
+        let bh1 = bridgeheads[1];
+
+        // Find bridge sizes: simple paths between bridgeheads through non-bridgehead ring atoms.
+        let bridge_sizes = find_bridge_sizes(mol, bh0, bh1, ring_atoms);
+        if bridge_sizes.len() != 3 {
+            return Err(IupacError::NotSupported);
+        }
+
+        let mut bridges = bridge_sizes;
+        bridges.sort_unstable_by(|a, b| b.cmp(a)); // descending
+        let total_c = ring_atoms.len();
+
+        Ok(format!(
+            "bicyclo[{}.{}.{}]{}",
+            bridges[0], bridges[1], bridges[2],
+            alkane_suffix(total_c)
+        ))
     }
 
     // -----------------------------------------------------------------------
@@ -1528,6 +1661,43 @@ fn alkane_stem(n: usize) -> &'static str {
 }
 
 /// Stem with "an" appended — base for most suffix compounds.
+/// Find the lengths of all simple paths between two bridgehead atoms.
+///
+/// Returns a Vec of bridge lengths (number of atoms in bridge, excluding bridgeheads).
+/// Uses DFS to enumerate paths, stopping early if more than 3 are found.
+fn find_bridge_sizes(
+    mol: &Molecule,
+    bh0: AtomIdx,
+    bh1: AtomIdx,
+    ring_atoms: &HashSet<AtomIdx>,
+) -> Vec<usize> {
+    let mut bridges: Vec<usize> = Vec::new();
+    let mut stack: Vec<(AtomIdx, Vec<AtomIdx>)> = vec![(bh0, vec![bh0])];
+
+    while let Some((curr, path)) = stack.pop() {
+        if bridges.len() > 4 {
+            break; // Guard against complex polycyclics
+        }
+        for (nb, _) in mol.neighbors(curr) {
+            if !ring_atoms.contains(&nb) {
+                continue;
+            }
+            if nb == bh1 {
+                // Found a bridge; length = path len - 1 (excludes bh0, counts intermediate atoms)
+                bridges.push(path.len() - 1);
+                continue;
+            }
+            if nb == bh0 || path.contains(&nb) {
+                continue; // Avoid revisiting start or cycling
+            }
+            let mut new_path = path.clone();
+            new_path.push(nb);
+            stack.push((nb, new_path));
+        }
+    }
+    bridges
+}
+
 fn alkane_base(n: usize) -> String {
     format!("{}an", alkane_stem(n))
 }
@@ -1920,5 +2090,34 @@ mod tests {
         assert_eq!(name(&mol("CSC")).unwrap(),   "methyl methyl sulfide");
         assert_eq!(name(&mol("CSCC")).unwrap(),  "ethyl methyl sulfide");
         assert_eq!(name(&mol("CCSCC")).unwrap(), "ethyl ethyl sulfide");
+    }
+
+    // ---- C2: spiro / bicyclo naming (v0.4.x) --------------------------------
+
+    #[test]
+    fn test_spiro_naming() {
+        // spiro[4.4]nonane — two cyclopentane rings sharing one atom (9 C total)
+        // SMILES: C1CCC2(C1)CCCC2 = 9 atoms
+        let m = mol("C1CCC2(C1)CCCC2");
+        assert_eq!(name(&m).unwrap(), "spiro[4.4]nonane");
+        // spiro[4.5]decane — cyclopentane + cyclohexane (10 C total)
+        let m3 = mol("C1CCC2(C1)CCCCC2");
+        assert_eq!(name(&m3).unwrap(), "spiro[4.5]decane");
+        // spiro[2.3]hexane — cyclopropane + cyclobutane (6 C total)
+        // Ring1 = 4-membered (bridge=3) via C1..C1, Ring2 = 3-membered (bridge=2) via C2..C2
+        let m4 = mol("C1CC2(C1)CC2");
+        assert_eq!(name(&m4).unwrap(), "spiro[2.3]hexane");
+    }
+
+    #[test]
+    fn test_bicyclo_naming() {
+        // bicyclo[2.2.2]octane (8 C: 2 bridgeheads + bridges 2,2,2)
+        // SMILES: C1CC2CCC1CC2 = 8 atoms, bridges 2,2,2
+        let m = mol("C1CC2CCC1CC2");
+        assert_eq!(name(&m).unwrap(), "bicyclo[2.2.2]octane");
+        // bicyclo[2.2.1]heptane = norbornane (7 C: bridges 2,2,1)
+        // SMILES: C1CC2CCC1C2 = 7 atoms
+        let m2 = mol("C1CC2CCC1C2");
+        assert_eq!(name(&m2).unwrap(), "bicyclo[2.2.1]heptane");
     }
 }

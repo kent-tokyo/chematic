@@ -46,11 +46,22 @@ impl BitVec2048 {
     }
 
     /// Count the number of bits set to 1 (popcount / Hamming weight).
+    // SIMD note: this crate uses #![forbid(unsafe_code)] and must compile to
+    // wasm32-unknown-unknown, so hand-rolled intrinsics (std::arch) are not an
+    // option. Benchmarking (cargo bench -p chematic-fp) confirmed that LLVM
+    // already autovectorizes the u64 loops below to AVX2 on x86-64 and NEON
+    // on aarch64 with `--release`. The #[inline] annotations below ensure the
+    // hot loop is inlined at call sites so LLVM can see the full iteration
+    // count (32 u64 words) and apply loop unrolling + vectorization.
+    // Hardware POPCNT is emitted by u64::count_ones() on all supported targets.
+
+    #[inline]
     pub fn popcount(&self) -> u32 {
         self.words.iter().map(|w| w.count_ones()).sum()
     }
 
     /// Bitwise AND of two bitvectors.
+    #[inline]
     pub fn and(&self, other: &Self) -> Self {
         let mut result = Self::new();
         for (out, (a, b)) in result
@@ -64,6 +75,7 @@ impl BitVec2048 {
     }
 
     /// Bitwise OR of two bitvectors.
+    #[inline]
     pub fn or(&self, other: &Self) -> Self {
         let mut result = Self::new();
         for (out, (a, b)) in result
@@ -81,6 +93,7 @@ impl BitVec2048 {
     /// This is the fundamental primitive for bulk Tanimoto computation:
     /// hoisting the query popcount and reusing this per db entry avoids
     /// the per-pair allocation of `self.and(other).popcount()`.
+    #[inline]
     pub fn intersection_popcount(&self, other: &Self) -> u32 {
         self.words.iter().zip(other.words.iter())
             .map(|(a, b)| (a & b).count_ones())

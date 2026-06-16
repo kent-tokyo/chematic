@@ -309,6 +309,103 @@ pub fn get_torsion_preference(
         });
     }
 
+    // Urea N-C(=O)-N: planar, prefer 0° (both N lone pairs overlap with C=O)
+    if b_type == AtomType::NSp2 && c_type == AtomType::NSp2
+        && mol.neighbors(b_idx).any(|(n, _)| {
+            classify_atom_type(mol, n) == AtomType::CCarbonyl
+        })
+    {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.18,
+        });
+    }
+
+    // Sulfonamide N-S(=O)(=O): prefer 90° (tetrahedral S, gauche N)
+    if (b_type == AtomType::NSp3 || b_type == AtomType::NSp2) && c_type == AtomType::S {
+        return Some(TorsionPreference {
+            angle_deg: 90.0,
+            penalty_per_degree: 0.08,
+        });
+    }
+    if b_type == AtomType::S && (c_type == AtomType::NSp3 || c_type == AtomType::NSp2) {
+        return Some(TorsionPreference {
+            angle_deg: 90.0,
+            penalty_per_degree: 0.08,
+        });
+    }
+
+    // Aryl ether Ar-O-C: prefer 0° (oxygen lone pair conjugation with ring)
+    if b_type == AtomType::CAromatic && c_type == AtomType::OSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.09,
+        });
+    }
+    if b_type == AtomType::OSp3 && c_type == AtomType::CAromatic {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.09,
+        });
+    }
+
+    // Fluoroalkane C-C-C-F: prefer anti (180°) to minimise F dipole interactions
+    if (b_type == AtomType::CSp3 || b_type == AtomType::CSp2Alkene)
+        && c_type == AtomType::Halogen
+        && (d_type == AtomType::H || d_type == AtomType::Halogen)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.07,
+        });
+    }
+
+    // Nitro group C-N(=O)=O: coplanar with aromatic ring if attached to Ar
+    if b_type == AtomType::CAromatic && c_type == AtomType::NSp2 {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.12,
+        });
+    }
+
+    // Hydrazone/oxime C=N-N or C=N-O: prefer 0° (E/Z isomerism; E is more stable)
+    if (b_type == AtomType::CSp2Alkene || b_type == AtomType::CCarbonyl)
+        && (c_type == AtomType::NSp2 || c_type == AtomType::OSp3)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.11,
+        });
+    }
+
+    // Imide N-C(=O)-C(=O): prefer 0° (both carbonyls on same side for conjugation)
+    if b_type == AtomType::NSp2 && c_type == AtomType::CCarbonyl
+        && mol.neighbors(c_idx).any(|(n, _)| {
+            classify_atom_type(mol, n) == AtomType::CCarbonyl
+        })
+    {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.15,
+        });
+    }
+
+    // Benzyl (Ar-C-X): prefer 90° perpendicular to ring plane
+    if b_type == AtomType::CAromatic && c_type == AtomType::CSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 90.0,
+            penalty_per_degree: 0.04,
+        });
+    }
+
+    // Allylic C=C-C-X: prefer 0° (s-cis/s-trans mixture; use 0° as default)
+    if b_type == AtomType::CSp2Alkene && c_type == AtomType::CSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.05,
+        });
+    }
+
     None  // No specific preference; use default
 }
 

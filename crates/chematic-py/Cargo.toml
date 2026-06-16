@@ -31,3 +31,4 @@ chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.0" }
 chematic-inchi      = { path = "../chematic-inchi",      version = "0.4.0" }
 chematic-iupac      = { path = "../chematic-iupac",      version = "0.4.0" }
 chematic-rxn        = { path = "../chematic-rxn",        version = "0.4.0" }
+chematic-3d         = { path = "../chematic-3d",         version = "0.4.0" }

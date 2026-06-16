@@ -244,6 +244,13 @@ impl Mol {
         d.set_item("caco2", chematic_chem::caco2_permeability(m))?;
         d.set_item("herg_risk", chematic_chem::herg_risk_score(m))?;
         d.set_item("cyp3a4_risk", chematic_chem::cyp3a4_inhibition_risk(m))?;
+        d.set_item("ames_risk", chematic_chem::ames_risk_score(m))?;
+        d.set_item("ppb", chematic_chem::ppb_percent(m))?;
+        d.set_item("clearance", match chematic_chem::clearance_class(m) {
+            chematic_chem::ClearanceClass::Low    => "Low",
+            chematic_chem::ClearanceClass::Medium => "Medium",
+            chematic_chem::ClearanceClass::High   => "High",
+        })?;
         Ok(d)
     }
 
@@ -548,6 +555,119 @@ impl Mol {
     }
 
     // -----------------------------------------------------------------------
+    // B5: Layered fingerprint
+    // -----------------------------------------------------------------------
+
+    /// Layered fingerprint as bytes (256 bytes = 2048 bits).
+    ///
+    /// 7-layer structural fingerprint encoding atom type, aromaticity, ring
+    /// membership, charge, and connectivity. RDKit-compatible layer design.
+    fn layered_fp(&self) -> Vec<u8> {
+        bitvec2048_to_bytes(&chematic_fp::layered_fp(&self.inner))
+    }
+
+    /// Layered fingerprint as a numpy array of shape ``(2048,)`` with ``dtype=uint8`` (0/1).
+    fn layered_fp_numpy<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<u8>> {
+        let fp = chematic_fp::layered_fp(&self.inner);
+        let bits: Vec<u8> = (0..2048usize).map(|i| u8::from(fp.get(i))).collect();
+        Array1::from_vec(bits).into_pyarray(py)
+    }
+
+    // -----------------------------------------------------------------------
+    // B8: 3D SASA
+    // -----------------------------------------------------------------------
+
+    /// Solvent-Accessible Surface Area (Å²) via Shrake-Rupley algorithm.
+    ///
+    /// Uses distance-geometry 3D coordinates (no prior minimization).
+    /// probe_radius = 1.4 Å (water), sphere_points = 100.
+    fn sasa(&self) -> f64 {
+        chematic_3d::sasa_from_dg(&self.inner).unwrap_or(0.0)
+    }
+
+    /// Per-atom SASA as a list of float values (Å²).
+    fn sasa_per_atom(&self) -> Vec<f64> {
+        chematic_3d::sasa_per_atom_from_dg(&self.inner).unwrap_or_default()
+    }
+
+    // -----------------------------------------------------------------------
+    // Task 1: 3D shape similarity (USR)
+    // -----------------------------------------------------------------------
+
+    /// 12 USR shape descriptors computed from auto-generated 3D coordinates.
+    ///
+    /// Based on Ballester & Richards (2007) Ultrafast Shape Recognition.
+    /// Returns a list of 12 floats (3 statistical moments × 4 reference points).
+    fn usr_descriptors(&self) -> Vec<f64> {
+        chematic_3d::usr_from_dg(&self.inner).to_vec()
+    }
+
+    /// USR 3D shape similarity to another molecule (0.0–1.0).
+    ///
+    /// 1.0 = identical shape, approaches 0.0 for very different shapes.
+    fn usr_similarity(&self, other: &Mol) -> f64 {
+        let a = chematic_3d::usr_from_dg(&self.inner);
+        let b = chematic_3d::usr_from_dg(&other.inner);
+        chematic_3d::usr_similarity(&a, &b)
+    }
+
+    // -----------------------------------------------------------------------
+    // Task 2: Additional ADMET — Ames, PPB, clearance
+    // -----------------------------------------------------------------------
+
+    /// Ames mutagenicity risk score (0.0–1.0).
+    ///
+    /// Based on SMARTS structural alerts (Kazius 2005, simplified).
+    /// Score > 0 indicates at least one alert pattern was matched.
+    fn ames_risk(&self) -> f64 {
+        chematic_chem::ames_risk_score(&self.inner)
+    }
+
+    /// Returns `True` if no Ames structural alerts are present.
+    fn ames_passes(&self) -> bool {
+        chematic_chem::ames_passes(&self.inner)
+    }
+
+    /// Predicted plasma protein binding (%).
+    ///
+    /// Logistic model based on LogP (Arnott 2012 heuristic).
+    /// Interpretation: > 90% = highly bound, < 20% = low binding.
+    fn ppb(&self) -> f64 {
+        chematic_chem::ppb_percent(&self.inner)
+    }
+
+    /// Predicted hepatic clearance class: ``"Low"``, ``"Medium"``, or ``"High"``.
+    fn clearance(&self) -> &'static str {
+        match chematic_chem::clearance_class(&self.inner) {
+            chematic_chem::ClearanceClass::Low    => "Low",
+            chematic_chem::ClearanceClass::Medium => "Medium",
+            chematic_chem::ClearanceClass::High   => "High",
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // C1: Atropisomer detection
+    // -----------------------------------------------------------------------
+
+    /// Detect atropisomeric axes in the molecule.
+    ///
+    /// Returns a list of ``(bond_idx, kind)`` tuples where ``kind`` is
+    /// ``"Biaryl"`` or ``"Allene"``.
+    fn atropisomers(&self) -> Vec<(usize, String)> {
+        chematic_chem::detect_atropisomers(&self.inner)
+            .into_iter()
+            .map(|(bidx, kind)| {
+                let label = match kind {
+                    chematic_chem::AtropisomerType::Biaryl      => "Biaryl",
+                    chematic_chem::AtropisomerType::Allene      => "Allene",
+                    chematic_chem::AtropisomerType::Constrained => "Constrained",
+                };
+                (bidx.0 as usize, label.to_string())
+            })
+            .collect()
+    }
+
+    // -----------------------------------------------------------------------
     // Dunder methods
     // -----------------------------------------------------------------------
 
@@ -675,6 +795,39 @@ fn from_inchi(inchi: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Screen a SMILES library by 3D shape similarity to a query molecule.
+///
+/// Returns ``[(index, similarity), ...]`` sorted by decreasing similarity.
+/// 3D coordinates are auto-generated via distance geometry for each molecule.
+///
+///     hits = chematic.shape_screen(query, smiles_list)
+///     for idx, sim in hits[:10]:
+///         print(f"{smiles_list[idx]}  sim={sim:.3f}")
+#[pyfunction]
+fn shape_screen(query: &Mol, smiles_list: Vec<String>) -> Vec<(usize, f64)> {
+    let mols: Vec<chematic_core::Molecule> = smiles_list
+        .iter()
+        .filter_map(|s| chematic_smiles::parse(s).ok())
+        .collect();
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
+    chematic_3d::shape_screen(&query.inner, &refs)
+}
+
+/// Test whether a reaction SMARTS pattern matches a reaction SMILES.
+///
+/// ``smarts``: reaction SMARTS (e.g. ``"[OH:1]>>[O-:1]"``).
+/// ``reaction_smiles``: reaction SMILES in ``"R>>P"`` or ``"R>A>P"`` format.
+///
+///     ok = chematic.reaction_smarts_match("[OH]>>[O-]", "CCO>>CC[O-]")
+#[pyfunction]
+fn reaction_smarts_match(smarts: &str, reaction_smiles: &str) -> PyResult<bool> {
+    let query = chematic_rxn::parse_reaction_query(smarts)
+        .map_err(|e| PyValueError::new_err(format!("invalid reaction SMARTS: {e}")))?;
+    let rxn = chematic_rxn::parse_reaction(reaction_smiles)
+        .map_err(|e| PyValueError::new_err(format!("invalid reaction SMILES: {e}")))?;
+    Ok(chematic_rxn::has_reaction_substructure_match(&rxn, &query))
+}
+
 /// Render a list of molecules as a grid SVG.
 ///
 ///     svg = chematic.depict_grid([mol1, mol2, mol3], cols=3)
@@ -792,6 +945,8 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(depict_grid, m)?)?;
     m.add_function(wrap_pyfunction!(run_smirks, m)?)?;
     m.add_function(wrap_pyfunction!(find_mcs, m)?)?;
+    m.add_function(wrap_pyfunction!(reaction_smarts_match, m)?)?;
+    m.add_function(wrap_pyfunction!(shape_screen, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
 
     // bulk submodule
