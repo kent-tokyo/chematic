@@ -827,8 +827,81 @@ Sprint v0.1.26: ✅ Issue D + P3 Features（完了: 2026-06-06）
 - [x] **criterion ベンチマーク** — descriptor/SMARTS の速度測定、RDKit 比較スクリプト（v0.3.2）
 - テスト数: 1,961 (v0.2.11) → **1,941 lib / 2,100+ all** (v0.3.2)
 
+## Phase 17 — Python PyO3 バインディング (`chematic-py`) ✅ COMPLETE
+
+### Sprint v0.4.0 ✅ (実装済み、未コミット)
+
+#### クレート構成
+
+```
+crates/chematic-py/
+  src/
+    lib.rs    — Mol クラス（70+ 記述子）+ モジュールレベル関数
+    io.rs     — SDF ストリーミング（iter_sdf / iter_sdf_str / SdfRecord / SdfIter）
+    index.rs  — SimilarityIndex（MinHash LSH 近似近傍探索）
+    bulk.rs   — Rayon 並列バッチ処理（parse / FP / 記述子 / Tanimoto 行列）
+  python/chematic/
+    __init__.py   — re-export + 型ヒント
+    __init__.pyi  — スタブ（mypy / IDE 補完用）
+  Cargo.toml    — PyO3 + maturin + numpy + rayon 依存
+  pyproject.toml — maturin ビルド設定
+```
+
+#### 実装済み機能
+
+**Mol クラス**
+- 識別子: `smiles`, `formula`, `inchi`, `inchikey`, `iupac_name`
+- 基本物性: `mw`, `exact_mass`, `logp`, `tpsa`, `qed`, `hbd`, `hba`, `rotatable_bonds`, `fsp3`, `sa_score`, `molar_refractivity`, `formal_charge`
+- 環/立体: `ring_count`, `aromatic_ring_count`, `num_stereocenters`
+- ドラッグライクネスフィルタ: `lipinski_passes`, `veber_passes`, `pains_passes`, `ghose_passes`, `egan_passes`, `reos_passes`, `brenk_passes`
+- pKa/ADMET: `pka()`, `admet()`, `esol`
+- 全記述子一括: `descriptors()` → dict（70+ キー）
+- フィンガープリント（bytes）: `ecfp4()`, `ecfp6()`, `fcfp4()`, `atom_pair_fp()`, `torsion_fp()`, `ecfp4_chiral()`, `maccs()`
+- numpy FP: `ecfp4_numpy()`, `maccs_numpy()`（scikit-learn / PyTorch 直接利用）
+- SVG 描画: `svg()`, `svg_highlighted(atom_indices, color)`
+- 変換: `standardize()`, `scaffold()`, `canonical_tautomer()`, `enumerate_tautomers()`, `enumerate_stereoisomers()`, `add_hydrogens()`, `remove_hydrogens()`, `remove_stereo()`, `remove_isotopes()`, `largest_fragment()`, `neutralize()`, `generic_scaffold()`, `brics_fragments()`
+
+**モジュールレベル関数**
+- `from_smiles(smiles)`, `from_mol_block(block)`, `from_inchi(inchi)`, `is_valid_smiles(smiles)`
+- `tanimoto(a, b)` — bytes 対応（ECFP4/MACCS 等）
+- `smarts_match(smarts, mol)`, `smarts_find(smarts, mol)`
+- `depict_grid(mols, cols)`
+- `run_smirks(smirks, reactants)`, `find_mcs(mols)`
+
+**SDF ストリーミング**（`io.rs`）
+- `iter_sdf(path)` — ファイルパスから遅延イテレータ
+- `iter_sdf_str(content)` — 文字列から遅延イテレータ
+- `SdfRecord` — `mol`, `name`, `properties()`, `get(key)`
+
+**LSH 類似度インデックス**（`index.rs`）— **RDKit に存在しない**
+- `SimilarityIndex(num_hashes=128)`, `from_smiles(smiles_list)`
+- `add(smiles)`, `search(query, threshold=0.7, k=None)`, `get_smiles(index)`
+
+**並列バッチ処理**（`bulk.rs`、Rayon）
+- バッチ SMILES パース、バッチ FP 計算（ECFP4 numpy 行列）、バッチ記述子 DataFrame 行
+- Tanimoto 類似度行列（N×N）
+
+#### 公開インフラ
+
+- `publish-pypi.yml` — GitHub Actions + maturin + PyPI Trusted Publishing
+  - Linux x86_64 / aarch64 / macOS x86_64 / aarch64 / Windows ✅
+  - `v*` タグで自動トリガー
+  - PyPI パッケージ名: `chematic`（pip install chematic）
+
+#### 次のアクション
+
+- [ ] `cargo test -p chematic-py` でテスト追加・確認
+- [ ] `maturin develop` でローカル動作確認
+- [ ] PyPI に `v0.4.0` タグで初回公開
+- [ ] JOSS 論文の執筆開始
+
+---
+
 ## 次のステップ (v0.4.x 候補)
 
+- [ ] PyPI 初回リリース（`git tag v0.4.0 && git push --tags`）
+- [ ] chematic-py テスト拡充（tests/ ディレクトリ、pytest）
+- [ ] JOSS 論文執筆（Python バインディング完成が前提条件）
 - [ ] B4: ETKDG torsion knowledge base 拡充（さらに官能基特有パターン）
 - [ ] B5-B6: LayeredFingerprint + variable-length BitVec
 - [ ] B7: Reaction SMARTS queries

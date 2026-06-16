@@ -13,6 +13,18 @@ docs/*.md
 /target
 Cargo.lock
 **/*.rs.bk
+rust_out/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+dist/
+*.egg-info/
+.pytest_cache/
 
 # OS
 .DS_Store
