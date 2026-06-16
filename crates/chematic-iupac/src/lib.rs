@@ -136,10 +136,10 @@ impl<'a> Namer<'a> {
                 return self.name_oxaaza_ring(&ring_atoms);
             }
             // Check for spiro / bridged polycyclic systems (all-carbon only).
-            if het_elements.is_empty() {
-                if let Ok(name) = self.name_polycyclic(&ring_atoms, &carbons) {
-                    return Ok(name);
-                }
+            if het_elements.is_empty()
+                && let Ok(name) = self.name_polycyclic(&ring_atoms, &carbons)
+            {
+                return Ok(name);
             }
             return self.name_cycloalkane(&ring_atoms, &carbons);
         }
