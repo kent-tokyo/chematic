@@ -45,16 +45,12 @@ impl BitVec2048 {
         (self.words[bit / 64] >> (bit % 64)) & 1 == 1
     }
 
-    /// Count the number of bits set to 1 (popcount / Hamming weight).
-    // SIMD note: this crate uses #![forbid(unsafe_code)] and must compile to
-    // wasm32-unknown-unknown, so hand-rolled intrinsics (std::arch) are not an
-    // option. Benchmarking (cargo bench -p chematic-fp) confirmed that LLVM
-    // already autovectorizes the u64 loops below to AVX2 on x86-64 and NEON
-    // on aarch64 with `--release`. The #[inline] annotations below ensure the
-    // hot loop is inlined at call sites so LLVM can see the full iteration
-    // count (32 u64 words) and apply loop unrolling + vectorization.
-    // Hardware POPCNT is emitted by u64::count_ones() on all supported targets.
+    // SIMD note: #![forbid(unsafe_code)] + wasm32 target means hand-rolled
+    // intrinsics (std::arch) are not an option. LLVM autovectorizes these loops
+    // to AVX2/NEON with --release; #[inline] lets it see the fixed trip count
+    // (32 words) and apply unrolling. u64::count_ones() → hardware POPCNT.
 
+    /// Count the number of bits set to 1 (popcount / Hamming weight).
     #[inline]
     pub fn popcount(&self) -> u32 {
         self.words.iter().map(|w| w.count_ones()).sum()
