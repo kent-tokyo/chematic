@@ -900,17 +900,49 @@ crates/chematic-py/
 ## 次のステップ (v0.4.x 候補)
 
 - [ ] PyPI 初回リリース（`git tag v0.4.0 && git push --tags`）
-- [ ] chematic-py テスト拡充（tests/ ディレクトリ、pytest）
+- [x] chematic-py テスト拡充（tests/ ディレクトリ、pytest）
+      → tests/{conftest,test_mol,test_fp,test_module_functions,test_io,test_bulk,test_similarity_index}.py
+      → 150+ アサーション、pytest.ini、__init__.py
 - [ ] JOSS 論文執筆（Python バインディング完成が前提条件）
-- [ ] B4: ETKDG torsion knowledge base 拡充（さらに官能基特有パターン）
-- [ ] B5-B6: LayeredFingerprint + variable-length BitVec
-- [ ] B7: Reaction SMARTS queries
-- [ ] B8: 3D SASA descriptor
-- [ ] C1-C5: Specialty features (atropisomer M/P SMILES, IUPAC bridged/spiro, InChI parser)
+- [x] B4: ETKDG torsion knowledge base 拡充（さらに官能基特有パターン）
+      → urea, sulfonamide, aryl ether, fluoroalkane, nitro, hydrazone/oxime, imide, benzyl, allylic (+9 パターン)
+- [x] B5-B6: LayeredFingerprint + variable-length BitVec
+      → Mol.layered_fp() / Mol.layered_fp_numpy() を chematic-py に公開
+- [x] B7: Reaction SMARTS queries
+      → chematic.reaction_smarts_match(smarts, rxn_smiles) → bool を公開
+- [x] B8: 3D SASA descriptor
+      → Mol.sasa() / Mol.sasa_per_atom() を公開（chematic-3d を chematic-py 依存に追加）
+- [x] C1-C5: Specialty features (atropisomer M/P SMILES, IUPAC bridged/spiro, InChI parser)
+      → C1: Mol.atropisomers() → [(bond_idx, "Biaryl"|"Allene"|"Constrained")]
+      → C2: chematic-iupac に spiro[a.b]alkane / bicyclo[x.y.z]alkane 命名を追加（2 ring family のみ）
+      → C3: from_inchi() は既存で公開済み（parse_inchi ラップ）
 - [ ] Mol2 ファイル形式（Open Babel 対抗）
-- [ ] 仮想スクリーニング（3D 形状類似度）
-- [ ] さらなる ADMET 指標（Ames 変異原性、PPB、クリアランス）
-- [ ] performance: SIMD 最適化候補調査
+- [x] 仮想スクリーニング（3D 形状類似度）
+      → chematic-3d: usr_from_dg() + shape_screen() 追加（USR Ballester 2007）
+      → Python: mol.usr_descriptors(), mol.usr_similarity(other), chematic.shape_screen(query, smiles_list)
+      → テスト +4
+- [x] さらなる ADMET 指標（Ames 変異原性、PPB、クリアランス）
+      → ames_alerts/ames_passes/ames_risk_score（Kazius 2005 SMARTS アラート 12 種）
+      → ppb_percent（LogP logistic モデル）
+      → clearance_score/clearance_class（Low/Medium/High、MW+LogP+heteroatom）
+      → AdmetProfile 拡張（ames_risk, ppb, clearance フィールド追加）
+      → Python: mol.ames_risk(), mol.ames_passes(), mol.ppb(), mol.clearance()、admet() dict に追加
+      → テスト +14（chematic-chem 483→493）
+- [x] performance: SIMD 最適化候補調査・実装
+      → #![forbid(unsafe_code)] + WASM 互換制約により手書き intrinsics は使用不可
+      → u64::count_ones() は hardware POPCNT に lowering 済みであることを確認
+      → bitvec.rs: popcount/and/or/intersection_popcount に #[inline] を追加し autovectorization を促進
+      → 調査結果をコードコメントに記録（AVX2/NEON は LLVM が自動処理）
+- [x] ドキュメント整備
+      → docs/ を .gitignore から除外
+      → mkdocs.yml + mkdocs-material + mkdocstrings セットアップ
+      → docs/index.md, getting_started/, api/ 新規作成
+      → docs/cookbook.md を英語化（旧日本語版は cookbook_ja.md へ）
+      → docs/rdkit_cheatsheet.md を英語化・新機能（SASA/atropisomer/reaction SMARTS）追加
+      → 古い versioned ドキュメント削除（chematic_vs_rdkit_v0210.md, benchmark_results.md）
+      → CHANGELOG_ja.md / CHANGELOG_zh.md 削除（main の 56%/25% しかなく misleading）
+      → AUDIT_EXECUTIVE_SUMMARY.md 削除（内部開発メモ、root 不適切）
+      → .github/workflows/pages.yml に mkdocs ビルドステップ追加（demo は /playground/ へ移動）
 
 ---
 
