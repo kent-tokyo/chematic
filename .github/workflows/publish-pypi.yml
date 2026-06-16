@@ -10,20 +10,24 @@ permissions:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
-        target: [x86_64, aarch64]
+        platform:
+          - runner: ubuntu-latest
+            target: x86_64
+          - runner: ubuntu-24.04-arm
+            target: aarch64
     steps:
       - uses: actions/checkout@v4
       - uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
+          target: ${{ matrix.platform.target }}
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
           manylinux: auto
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.target }}
+          name: wheels-linux-${{ matrix.platform.target }}
           path: dist
 
   macos:
