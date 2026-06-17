@@ -2,13 +2,14 @@
 
 [English](README.md) | [中文](README_zh.md)
 
-Pure Rust 製のケモインフォマティクスライブラリ。RDKit の代替を目指す、**C/C++ FFI ゼロ**の Rust 実装。
+Pure Rust 製のケモインフォマティクスライブラリ。RDKit の代替を目指す、**デフォルトで C/C++ FFI ゼロ**の Rust 実装。
 
 > **なぜ C/C++ ゼロが重要か？**
 > RDKit.js、Indigo WASM、OpenBabel はいずれも C++ コードを Emscripten でコンパイルしています。
 > そのため **30〜50 MB の WASM バイナリ**、複雑なビルドツールチェーン、プラットフォーム固有のビルドエラーが生じます。
 > chematic は `wasm-pack build` 一発で **〜550 KB の WASM バンドル**を生成します。
 > `cmake`・`clang`・`-sys` クレート・`build.rs` での C コンパイルは依存ツリー全体にわたって一切使用しません。
+> *（例外：`native-inchi` feature のみ opt-in で C コンパイラが必要。WASM ビルドには影響なし。）*
 
 ---
 
@@ -20,8 +21,10 @@ Pure Rust 製のケモインフォマティクスライブラリ。RDKit の代�
 
 ## 設計目標
 
-**Pure Rust、C/C++ FFI ゼロ — 保証済み**
-`rdkit-sys`・`openbabel-sys`・`cc` ビルド依存・`bindgen` なし。SSSR 環認識から ECFP フィンガープリント、力場最小化まで、すべてのアルゴリズムを 100% 安全な Rust で実装。依存ツリー全体を FFI フリーで検証済み。
+**Pure Rust、C/C++ FFI ゼロ — デフォルトビルドで保証済み**
+`rdkit-sys`・`openbabel-sys`・`bindgen` なし。SSSR 環認識から ECFP フィンガープリント、力場最小化まで、すべてのアルゴリズムを 100% 安全な Rust で実装。依存ツリー全体を FFI フリーで検証済み。
+
+> **任意例外**: `chematic-inchi` の `native-inchi` feature を有効にすると、IUPAC InChI C ライブラリ (v1.07.5) が vendored でリンクされ、ビット完全一致の標準 InChI/InChIKey が生成できます。C コンパイラが必要ですが完全 opt-in で、デフォルトビルドは FFI フリーのまま。
 
 **WASM 対応、軽量**
 全クレートが `wasm32-unknown-unknown` に無修正でコンパイルできる。npm パッケージ `@kent-tokyo/chematic` は **〜550 KB**（C++ FFI 代替の 30〜50 MB とは対照的）。`cmake`・`emcc`・Emscripten ツールチェーン不要。
@@ -39,7 +42,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + **v0.3.x シリーズ（全主要競合ライブラリを超えた）**: MCP サーバー（AI エージェント統合）、pKa 予測（15 SMARTS ルール）、ADMET プロファイル（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 化合物クラス、WASM pKa/ADMET バインディング、criterion ベンチマーク。**1,941 テスト、全パス。C/C++ 依存ゼロ。**
+全フェーズ完了 + **v0.3.x シリーズ（全主要競合ライブラリを超えた）**: MCP サーバー（AI エージェント統合）、pKa 予測（15 SMARTS ルール）、ADMET プロファイル（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 化合物クラス、WASM pKa/ADMET バインディング、criterion ベンチマーク。**1,941 テスト、全パス。C/C++ 依存ゼロ（デフォルトビルド）。**
 
 最新リリース: **v0.3.2**（2026-06-15）— v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM バインディング | v0.3.2: criterion ベンチマーク
 
@@ -56,21 +59,22 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン) | 87      |
 | `chematic-3d`          | 3D 座標生成、ETKDG KB (20+ パターン)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 147     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center`、`run_reactants`（原子価バリデーション） | 30      |
-| `chematic-inchi`       | InChI/InChIKey 生成 + **parse_inchi** 読み込み；formula/connectivity/stereo/charge レイヤー | 28      |
+| `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み | 28 (+14*)   |
 | `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 45      |
 | `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；8 ツール：parse_smiles/calc_properties/ecfp4/tanimoto/smarts_match 他 | 21      |
-| `chematic`             | フィーチャーフラグ付きアンブレラクレート                                                                                                  | 1       |
+| `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
-cargo test --workspace --lib   # 1,941 ライブラリテスト、全パス
+cargo test --workspace --lib                                                       # 1,941 ライブラリテスト、全パス
+cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +14 IUPAC 標準 InChI 統合テスト
 ```
 
 ---
 
 ## クイックスタート
 
-### アンブレラクレートを使う場合
+### アンブレラクレート（統合クレート）を使う場合
 
 ```toml
 # Cargo.toml
@@ -239,7 +243,7 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 
 | 観点                               | **chematic**             | RDKit.js (WASM)  | OCL.js | Indigo WASM |
 |------------------------------------|--------------------------|------------------|--------|-------------|
-| **C/C++ 依存**                     | **ゼロ — Pure Rust**     | C++（Emscripten）| △      | C++（Emscripten）|
+| **C/C++ 依存**                     | **ゼロ（デフォルト）**†  | C++（Emscripten）| △      | C++（Emscripten）|
 | **WASM バイナリサイズ**            | **〜550 KB**             | 〜30 MB          | 〜5 MB | 〜10 MB     |
 | **ビルド要件**                     | `cargo build` のみ       | cmake + clang    | —      | Emscripten SDK |
 | 記述子の豊富さ                     | **◎ 40+**                | ○ 〜30           | △      | △           |
@@ -252,8 +256,10 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 | 分子編集 API                       | **◎ with_atom_* 系**     | ○                | ○      | ○           |
 | CML 読み書き                       | ✓                        | ✓                | ✓      | ✓           |
 | CDXML 読み込み（複数フラグメント・立体化学）| ✓               | ✓                | ✓      | ✓           |
-| InChI / InChIKey                   | ✗（C ライブラリ依存）    | ✓                | ✓      | ✓           |
+| InChI / InChIKey                   | ✓ `native-inchi` feature（C ライブラリ 1.07.5 vendored） | ✓ | ✓ | ✓ |
 | unsafe Rust                        | **なし**                 | —                | —      | —           |
+
+† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要（WASM ビルド不可）。他の全クレートは FFI フリーを維持。
 
 ---
 
@@ -297,7 +303,7 @@ chematic/
 │   ├── chematic-smarts/     SMARTS パーサー + VF2 部分構造一致（再帰 SMARTS）
 │   ├── chematic-3d/         3D 座標生成、ConformerEnsemble、PDB/XYZ 形式
 │   ├── chematic-rxn/        反応 SMILES/SMIRKS
-│   └── chematic/            フィーチャーフラグ付きアンブレラクレート
+│   └── chematic/            フィーチャーフラグ付きアンブレラクレート（統合クレート）
 └── tasks/
     ├── todo.md              全フェーズロードマップチェックリスト（日本語）
     └── lessons.md           開発の教訓

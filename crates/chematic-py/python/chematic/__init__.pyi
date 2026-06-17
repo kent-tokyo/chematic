@@ -50,12 +50,24 @@ class Mol:
 
     @property
     def inchi(self) -> str:
-        """InChI string."""
+        """Non-standard InChI string (pure-Rust approximation). Use ``standard_inchi`` for IUPAC-compliant output."""
         ...
 
     @property
     def inchikey(self) -> str:
-        """InChIKey (27-character identifier)."""
+        """Non-standard InChIKey (pure-Rust approximation). Use ``standard_inchikey`` for IUPAC-compliant output."""
+        ...
+
+    @property
+    def standard_inchi(self) -> str:
+        """Standard IUPAC InChI string via the vendored InChI C library (v1.07.5).
+        Requires the ``native-inchi`` Cargo feature. Raises ``RuntimeError`` on failure."""
+        ...
+
+    @property
+    def standard_inchikey(self) -> str:
+        """Standard IUPAC InChIKey (27 characters) via the vendored InChI C library.
+        Requires the ``native-inchi`` Cargo feature. Raises ``RuntimeError`` on failure."""
         ...
 
     @property

@@ -9,13 +9,14 @@
 
 [日本語](README_ja.md) | [中文](README_zh.md)
 
-A pure-Rust cheminformatics library targeting RDKit feature parity — **with zero C/C++ dependencies**.
+A pure-Rust cheminformatics library targeting RDKit feature parity — **zero C/C++ by default**.
 
 > **Why does zero C/C++ matter?**
 > RDKit.js, Indigo WASM, and OpenBabel all ship C++ code compiled via Emscripten.
 > That means **30–50 MB WASM binaries**, complex build toolchains, and platform-specific build failures.
 > chematic compiles to a **~550 KB WASM bundle** with a single `wasm-pack build` — no `cmake`, no `clang`,
 > no `-sys` crates, no `build.rs` C compilation anywhere in the dependency tree.
+> *(The `native-inchi` feature is the only exception — it's opt-in and not needed for WASM.)*
 
 ---
 
@@ -27,10 +28,14 @@ A pure-Rust cheminformatics library targeting RDKit feature parity — **with ze
 
 ## Design Goals
 
-**Pure Rust, zero C/C++ FFI — guaranteed**
-No `rdkit-sys`, no `openbabel-sys`, no `cc` build dependencies, no `bindgen`. Every
-algorithm — from SSSR ring perception to ECFP fingerprints to force-field minimization —
-is implemented in 100% safe Rust. The entire dependency tree is verified FFI-free.
+**Pure Rust, zero C/C++ FFI — guaranteed (default build)**
+No `rdkit-sys`, no `openbabel-sys`, no `bindgen`. Every algorithm — from SSSR ring
+perception to ECFP fingerprints to force-field minimization — is implemented in 100% safe
+Rust. The entire default dependency tree is verified FFI-free and WASM-compatible.
+
+> **Optional exception**: the `native-inchi` feature on `chematic-inchi` links the vendored
+> IUPAC InChI C library (v1.07.5) for bit-exact standard InChI/InChIKey. This requires a C
+> compiler but is completely opt-in — the default build stays FFI-free.
 
 **WASM-compatible and lightweight**
 All crates compile to `wasm32-unknown-unknown` without modification. The npm package
@@ -55,7 +60,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + **v0.3.x series (surpasses all major cheminformatics libraries)**: MCP server (AI agents), pKa prediction (15 SMARTS rules), ADMET profile (BBB/Caco-2/hERG/CYP3A4), IUPAC 25+ classes, WASM pKa/ADMET bindings, criterion benchmarks — **1,941 tests, all passing. Zero C/C++ dependencies.**
+All phases complete + **v0.3.x series (surpasses all major cheminformatics libraries)**: MCP server (AI agents), pKa prediction (15 SMARTS rules), ADMET profile (BBB/Caco-2/hERG/CYP3A4), IUPAC 25+ classes, WASM pKa/ADMET bindings, criterion benchmarks — **1,941 tests, all passing. Zero C/C++ dependencies by default.**
 
 Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM bindings | v0.3.2: criterion benchmarks
 
@@ -72,14 +77,15 @@ Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns) | 87    |
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (20+ torsion patterns), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 147   |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
-| `chematic-inchi`      | InChI/InChIKey generation + **parse_inchi** reader; formula/connectivity/hydrogen/stereo/charge/isotope layers | 28    |
+| `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+14*)    |
 | `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.3.2 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4 | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
 | `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; 8 tools: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d | 21    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace   # 1,941 tests, all passing
+cargo test --workspace                                                       # 1,941 tests, all passing
+cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +14 IUPAC-exact InChI tests
 ```
 
 ---
@@ -408,7 +414,7 @@ const sdf = sdf_from_records_json(
 
 | Feature                              | **chematic**             | RDKit (rdkit-sys)   | OpenBabel FFI  | RDKit.js (WASM)   |
 |--------------------------------------|--------------------------|---------------------|----------------|-------------------|
-| **C/C++ dependencies**               | **None — pure Rust**     | Extensive C++       | Extensive C++  | C++ via Emscripten |
+| **C/C++ dependencies**               | **None (default)**†      | Extensive C++       | Extensive C++  | C++ via Emscripten |
 | **WASM binary size**                 | **~550 KB**              | N/A (no WASM)       | N/A (no WASM)  | ~30 MB            |
 | **Build requirement**                | `cargo build` only       | cmake + clang       | cmake + clang  | Emscripten SDK    |
 | **WASM target support**              | **Full (native)**        | No                  | No             | Yes (Emscripten)  |
@@ -433,7 +439,7 @@ const sdf = sdf_from_records_json(
 | PDB / XYZ file formats               | Yes                      | Yes                 | Yes            | Yes               |
 | MaxMin / Butina diversity picking    | **Yes**                  | Yes                 | No             | No                |
 | Reaction SMILES/SMIRKS               | Yes                      | Yes                 | Yes            | Yes               |
-| InChI / InChIKey (pure Rust)         | **Yes (FFI-free)**       | C lib required      | C lib required | C lib required    |
+| InChI / InChIKey                     | **Yes** — pure-Rust (default) + **IUPAC-exact** via `native-inchi` feature | C lib required | C lib required | C lib required |
 | **pKa prediction**                   | **Yes (15 SMARTS rules)**| No                  | No             | No                |
 | **ADMET profile** (BBB/Caco-2/hERG)  | **Yes (v0.3.0)**         | Partial             | No             | Partial           |
 | **MCP server (AI agent API)**        | **Yes (v0.3.0)**         | No                  | No             | No                |
@@ -442,7 +448,7 @@ const sdf = sdf_from_records_json(
 
 Notes:
 - chematic WASM binary size measured with `wasm-opt` optimization; RDKit.js is the official WASM build.
-- "None" for C/C++ means verified: no `*-sys` crates, no `cc` build dependencies, no `build.rs` C compilation in the entire dependency tree.
+- † Default build only. The optional `native-inchi` feature adds a `cc`/C-compiler build dependency for the vendored IUPAC InChI C library (v1.07.5). All other crates remain FFI-free. Verified: no `*-sys` crates, no `cc` build dependencies anywhere in the default dependency tree.
 
 ---
 
@@ -470,7 +476,7 @@ Notes:
 - **MMFF94 7-term force field complete** (Halgren 1996): Out-of-Plane bending (OOP, 117 entries) + Stretch-Bend coupling (STRE-BEN, 282 entries)
 - **MAP4 fingerprint** (Minervini 2020): Circular SMILES shingles — not in RDKit, superior to traditional circular FPs
 - **SMARTS engine optimization**: LRU cache (5–20× speedup) + named functional group library (20 patterns)
-- **1,961 tests, zero C/C++ dependencies** — pure Rust, fully WASM-compatible (~550 KB bundle)
+- **1,941 tests, zero C/C++ dependencies (default)** — pure Rust, fully WASM-compatible (~550 KB bundle); optional `native-inchi` feature adds IUPAC-exact InChI via vendored C lib
 
 **v0.2.9–v0.2.10**: MMFF94 full stack + L-BFGS optimizer + WASM bindings
 - **MMFF94 complete 5-term stack** (Bond/Angle/Torsion/vdW/Electrostatic) + Halgren Tables IV-VII parameter tables

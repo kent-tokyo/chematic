@@ -11,6 +11,11 @@ keywords = ["cheminformatics", "smiles", "rdkit", "python", "chemistry"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
 publish = false
 
+[features]
+# Enables standard_inchi / standard_inchikey via the vendored IUPAC InChI C library.
+# Requires a C compiler; not available for WASM targets.
+native-inchi = ["chematic-inchi/native-inchi"]
+
 [lib]
 name = "chematic"
 crate-type = ["cdylib"]

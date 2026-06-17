@@ -2,13 +2,14 @@
 
 [English](README.md) | [日本語](README_ja.md)
 
-纯 Rust 实现的化学信息学库，目标是与 RDKit 功能对等，**零 C/C++ FFI**。
+纯 Rust 实现的化学信息学库，目标是与 RDKit 功能对等，**默认零 C/C++ FFI**。
 
 > **为什么零 C/C++ 如此重要？**
 > RDKit.js、Indigo WASM 和 OpenBabel 均使用 Emscripten 编译 C++ 代码，
 > 这意味着 **30〜50 MB 的 WASM 包**、复杂的构建工具链和平台相关的构建错误。
 > chematic 只需 `wasm-pack build` 即可生成 **〜550 KB 的 WASM 包**，
-> 整个依赖树中没有任何 `-sys` crate、`cc` 构建依赖或 `build.rs` C 编译。
+> 默认依赖树中没有任何 `-sys` crate、`cc` 构建依赖或 `build.rs` C 编译。
+> *（例外：`native-inchi` feature 是唯一的可选项，需要 C 编译器，WASM 构建不受影响。）*
 
 ---
 
@@ -20,8 +21,10 @@
 
 ## 设计目标
 
-**纯 Rust，零 C/C++ FFI — 已验证**
-不使用 `rdkit-sys`、`openbabel-sys`、`cc` 构建依赖或 `bindgen`。从 SSSR 环感知到 ECFP 指纹再到力场最小化，所有算法均以 100% 安全 Rust 实现。已验证整个依赖树无 FFI。
+**纯 Rust，零 C/C++ FFI — 默认构建已验证**
+不使用 `rdkit-sys`、`openbabel-sys`、`bindgen`。从 SSSR 环感知到 ECFP 指纹再到力场最小化，所有算法均以 100% 安全 Rust 实现。已验证整个默认依赖树无 FFI。
+
+> **可选例外**：`chematic-inchi` 的 `native-inchi` feature 可链接 vendored IUPAC InChI C 库 (v1.07.5)，生成与 IUPAC 参考实现逐位一致的标准 InChI/InChIKey。需要 C 编译器，完全 opt-in，默认构建仍保持零 FFI。
 
 **WASM 兼容，体积轻量**
 所有 crate 无需修改即可编译至 `wasm32-unknown-unknown`。npm 包 `@kent-tokyo/chematic` **〜550 KB**，远小于 C++ FFI 替代方案的 30〜50 MB。无需 cmake、emcc 或 Emscripten 工具链。
@@ -39,7 +42,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + **v0.3.x 系列（超越所有主要竞争库）**：MCP 服务器（AI 代理集成）、pKa 预测（15 条 SMARTS 规则）、ADMET 概况（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 类、WASM pKa/ADMET 绑定、criterion 性能基准测试。**1,941 个测试，全部通过。零 C/C++ 依赖。**
+所有阶段已完成 + **v0.3.x 系列（超越所有主要竞争库）**：MCP 服务器（AI 代理集成）、pKa 预测（15 条 SMARTS 规则）、ADMET 概况（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 类、WASM pKa/ADMET 绑定、criterion 性能基准测试。**1,941 个测试，全部通过。零 C/C++ 依赖（默认构建）。**
 
 最新版本：**v0.3.2**（2026-06-15）— v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM 绑定 | v0.3.2: criterion 基准
 
@@ -56,14 +59,15 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式） | 87     |
 | `chematic-3d`         | 3D 坐标生成、ETKDG KB（20+ 模式）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 147    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center`、`run_reactants` | 30     |
-| `chematic-inchi`      | InChI/InChIKey 生成 + **parse_inchi** 读取；formula/connectivity/stereo/charge 层 | 28     |
+| `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取 | 28 (+14*)   |
 | `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 45     |
 | `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；8 个工具：parse_smiles/calc_properties/ecfp4/tanimoto/smarts_match 等 | 21     |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
-cargo test --workspace --lib   # 1,941 个库测试，全部通过
+cargo test --workspace --lib                                                       # 1,941 个库测试，全部通过
+cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +14 IUPAC 标准 InChI 集成测试
 ```
 
 ---
@@ -234,7 +238,7 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 
 | 功能                                      | **chematic**             | RDKit.js (WASM)   | OCL.js | Indigo WASM |
 |-------------------------------------------|--------------------------|-------------------|--------|-------------|
-| **C/C++ 依赖**                            | **零 — 纯 Rust**         | C++（Emscripten）| △      | C++（Emscripten）|
+| **C/C++ 依赖**                            | **零（默认）**†          | C++（Emscripten）| △      | C++（Emscripten）|
 | **WASM 二进制体积**                       | **〜550 KB**             | 〜30 MB           | 〜5 MB | 〜10 MB     |
 | 描述符丰富度                              | **◎ 40+**                | ○ 〜30            | △      | △           |
 | 指纹种类与设置自由度                      | **◎ 7 种 bitvec + 相似度**| ◎                | ○      | △           |
@@ -246,8 +250,10 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 | 分子编辑 API                              | **◎ with_atom_* 系列**   | ○                 | ○      | ○           |
 | CML 读写                                  | ✓                        | ✓                 | ✓      | ✓           |
 | CDXML 读取（多分子片段 + 立体化学）       | ✓                        | ✓                 | ✓      | ✓           |
-| InChI / InChIKey                          | ✗（依赖 C 库）           | ✓                 | ✓      | ✓           |
+| InChI / InChIKey                          | ✓ `native-inchi` feature（IUPAC C 库 1.07.5）| ✓       | ✓      | ✓           |
 | Unsafe Rust                               | **无**                   | —                 | —      | —           |
+
+† 仅限默认构建。`native-inchi` feature 是可选例外，需要 C 编译器（vendored IUPAC InChI C 库 1.07.5）。其余所有 crate 保持零 FFI。
 
 ---
 

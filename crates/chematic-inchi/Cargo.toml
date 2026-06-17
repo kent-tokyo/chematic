@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
 license = "MIT OR Apache-2.0"
-description = "Pure Rust InChI and InChIKey generation for IUPAC standard organic molecules (WASM-compatible)"
+description = "Pure Rust InChI/InChIKey generation (WASM-compatible) + optional IUPAC-standard InChI via native-inchi feature"
 repository = "https://github.com/kent-tokyo/chematic"
 homepage = "https://kent-tokyo.github.io/chematic/"
 documentation = "https://docs.rs/chematic-inchi"
@@ -12,11 +12,19 @@ keywords = ["inchi", "cheminformatics", "chemistry", "smiles", "molecular"]
 categories = ["science", "parser-implementations"]
 readme = "README.md"
 
+[features]
+# Link the vendored IUPAC InChI C library (v1.07.5) for standard-compliant
+# InChI/InChIKey generation. Requires a C compiler. Not available for WASM targets.
+native-inchi = ["dep:cc"]
+
 [dependencies]
 chematic-core = { version = "0.4.0", path = "../chematic-core" }
 chematic-smiles = { version = "0.4.0", path = "../chematic-smiles" }
 chematic-chem = { version = "0.4.0", path = "../chematic-chem" }
 sha2 = { version = "0.11", default-features = false }
+
+[build-dependencies]
+cc = { version = "1", optional = true }
 
 [lib]
 crate-type = ["rlib", "cdylib"]

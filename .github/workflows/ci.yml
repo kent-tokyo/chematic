@@ -15,6 +15,19 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --workspace --lib --quiet
 
+  test-native-inchi:
+    name: Test (native-inchi)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install C compiler
+        run: sudo apt-get install -y gcc
+      - name: Unit tests with native-inchi feature
+        run: cargo test -p chematic-inchi --features native-inchi --lib --quiet
+      - name: Integration tests with native-inchi feature
+        run: cargo test -p chematic-inchi --features native-inchi --test standard_inchi --quiet
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest

@@ -44,17 +44,64 @@ impl Mol {
         self.inner.atom_count()
     }
 
-    /// InChI string.
+    /// Non-standard InChI string (pure-Rust approximation, not IUPAC-compliant).
+    ///
+    /// For standard IUPAC InChI, use :attr:`standard_inchi` (requires the
+    /// ``native-inchi`` feature at build time).
     #[getter]
     fn inchi(&self) -> String {
         chematic_inchi::inchi(&self.inner)
     }
 
-    /// InChIKey (27-character identifier).
+    /// Non-standard InChIKey (pure-Rust approximation, not IUPAC-compliant).
+    ///
+    /// For standard IUPAC InChIKey, use :attr:`standard_inchikey`.
     #[getter]
     fn inchikey(&self) -> String {
         let s = chematic_inchi::inchi(&self.inner);
         chematic_inchi::inchi_key(&s)
+    }
+
+    /// Standard IUPAC InChI string via the vendored InChI C library (v1.07.5).
+    ///
+    /// Returns a :exc:`RuntimeError` if generation fails or if the ``native-inchi``
+    /// Cargo feature was not enabled at build time.
+    #[cfg(feature = "native-inchi")]
+    #[getter]
+    fn standard_inchi(&self) -> pyo3::PyResult<String> {
+        chematic_inchi::standard_inchi(&self.inner)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))
+    }
+
+    #[cfg(not(feature = "native-inchi"))]
+    #[getter]
+    fn standard_inchi(&self) -> pyo3::PyResult<String> {
+        Err(pyo3::exceptions::PyRuntimeError::new_err(
+            "standard_inchi requires the native-inchi feature \
+             (rebuild chematic from source with --features native-inchi)",
+        ))
+    }
+
+    /// Standard IUPAC InChIKey (27 characters) via the vendored InChI C library.
+    ///
+    /// Returns a :exc:`RuntimeError` if generation fails or if the ``native-inchi``
+    /// Cargo feature was not enabled at build time.
+    #[cfg(feature = "native-inchi")]
+    #[getter]
+    fn standard_inchikey(&self) -> pyo3::PyResult<String> {
+        let inchi = chematic_inchi::standard_inchi(&self.inner)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        chematic_inchi::standard_inchi_key(&inchi)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))
+    }
+
+    #[cfg(not(feature = "native-inchi"))]
+    #[getter]
+    fn standard_inchikey(&self) -> pyo3::PyResult<String> {
+        Err(pyo3::exceptions::PyRuntimeError::new_err(
+            "standard_inchikey requires the native-inchi feature \
+             (rebuild chematic from source with --features native-inchi)",
+        ))
     }
 
     /// IUPAC systematic name. Returns an empty string for unsupported structures.

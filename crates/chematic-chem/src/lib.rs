@@ -40,7 +40,7 @@ pub mod workflow;
 pub mod iupac_stereo;
 pub mod xlogp3;
 
-pub use cip::{CipAssignment, assign_cip};
+pub use cip::{CipAssignment, assign_cip, tetrahedral_stereo_neighbors};
 pub use iupac_stereo::iupac_name_stereo;
 pub use descriptors::{
     aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, egan_passes, exact_mass,

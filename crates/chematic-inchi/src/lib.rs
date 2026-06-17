@@ -1,8 +1,23 @@
-//! Pure Rust InChI and InChIKey generation and parsing for IUPAC standard molecules.
+//! InChI and InChIKey generation and parsing.
 //!
-//! Generates deterministic InChI strings (formula, connectivity, hydrogen, charge, isotope layers)
-//! and parses InChI strings back to Molecule representation (simple molecules).
-//! Fully WASM-compatible, FFI-free.
+//! # Default (pure Rust, WASM-compatible)
+//!
+//! [`inchi`] and [`inchi_key`] are a pure-Rust, FFI-free approximation.
+//! They are **not bit-exact** with the IUPAC reference implementation.
+//! Use them when WASM compatibility or zero C dependencies are required.
+//!
+//! # Standard InChI (`native-inchi` feature)
+//!
+//! Enable the `native-inchi` Cargo feature to build with the vendored
+//! IUPAC InChI C library (v1.07.5, MIT license). This provides
+//! [`standard_inchi`] and [`standard_inchi_key`] which produce output
+//! bit-exact with the IUPAC reference. Requires a C compiler; not
+//! available for WASM targets.
+//!
+//! ```toml
+//! [dependencies]
+//! chematic-inchi = { version = "0.4", features = ["native-inchi"] }
+//! ```
 //!
 //! # Examples
 //!
@@ -12,7 +27,6 @@
 //!
 //! let mol = parse("c1ccccc1").expect("benzene");
 //! let inchi_str = inchi(&mol);
-//! assert_eq!(inchi_str, "InChI=1S/C6H6/c1-2-3-4-5-6-1/h1-6H");
 //!
 //! // Parse InChI back to Molecule
 //! let mol2 = parse_inchi(&inchi_str).expect("parse");
@@ -22,6 +36,11 @@
 pub mod layers;
 pub mod key;
 pub mod parser;
+
+#[cfg(feature = "native-inchi")]
+pub mod native;
+#[cfg(feature = "native-inchi")]
+pub use native::{standard_inchi, standard_inchi_key, InchiError};
 
 use chematic_core::{Molecule, AtomIdx};
 use chematic_smiles::canonical::canonical_atom_order;
@@ -44,11 +63,13 @@ pub fn build_inchi_index(mol: &Molecule) -> HashMap<AtomIdx, usize> {
     inchi_index
 }
 
-/// Generate InChI string for a molecule.
+/// Generate an InChI-like string for a molecule using the pure-Rust implementation.
 ///
-/// Layers included: formula, connectivity (/c), hydrogen (/h), double-bond stereo (/b),
-/// tetrahedral stereo (/t), charge (/q if net charge ≠ 0), isotope (/i if present),
-/// relative stereo parity (/m if 2+ stereocenters), stereo type (/s).
+/// **Note**: this output is **not standard IUPAC InChI**. It uses a different canonical
+/// ordering and does not match the IUPAC reference library. For standard-compliant
+/// InChI, enable the `native-inchi` feature and use [`standard_inchi`] instead.
+///
+/// Layers: formula, /c, /h, /b, /t, /m, /s, /q, /i.
 pub fn inchi(mol: &Molecule) -> String {
     let mut result = String::from("InChI=1S/");
     let inchi_index = build_inchi_index(mol);
@@ -108,9 +129,11 @@ pub fn inchi(mol: &Molecule) -> String {
     result
 }
 
-/// Generate InChIKey (27-character alphanumeric identifier) from an InChI string.
+/// Generate an InChIKey from an InChI string using the pure-Rust implementation.
 ///
-/// Format: `XXXXXXXXXXXXXX-XXXXXXXXXX-N` where N is the version/protonation flag.
+/// **Note**: this uses a non-standard SHA-256-based algorithm and does **not** match
+/// IUPAC standard InChIKeys. For standard-compliant keys, enable the `native-inchi`
+/// feature and use [`standard_inchi_key`] instead.
 pub fn inchi_key(inchi_str: &str) -> String {
     key::inchi_key(inchi_str)
 }

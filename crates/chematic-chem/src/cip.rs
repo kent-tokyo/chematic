@@ -23,6 +23,51 @@ impl CipAssignment {
     }
 }
 
+/// For a tetrahedral chiral center, return the CIP code and the 4 neighbor atom indices
+/// sorted by **decreasing CIP priority** (highest priority = index 0, lowest = index 3).
+///
+/// The virtual sentinel `AtomIdx(u32::MAX)` is inserted for bracket-H atoms (`[C@H]`, etc.)
+/// following the same convention as [`assign_cip`] internally.
+///
+/// Returns `None` if the atom has no chirality annotation, has fewer than 4 neighbors
+/// (including H), or if CIP priorities are tied (cannot be uniquely ranked).
+pub fn tetrahedral_stereo_neighbors(
+    mol: &Molecule,
+    center: AtomIdx,
+) -> Option<(CipCode, [AtomIdx; 4])> {
+    let atom = mol.atom(center);
+    if atom.chirality == Chirality::None {
+        return None;
+    }
+
+    let mut neighbors: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
+
+    // Insert virtual H at the SMILES-correct position for bracket-H atoms.
+    let has_bracket_h = atom.hydrogen_count.is_some_and(|h| h > 0);
+    if has_bracket_h {
+        let has_preceding = neighbors.first().map(|&nb| nb.0 < center.0).unwrap_or(false);
+        let h_insert_pos = if has_preceding { 1 } else { 0 };
+        neighbors.insert(h_insert_pos, AtomIdx(u32::MAX));
+    }
+    if neighbors.len() != 4 {
+        return None;
+    }
+
+    let cip_code = assign_tetrahedral(mol, center)?;
+    let ranks = rank_substituents(mol, center, &neighbors)?;
+
+    // Sort neighbors by decreasing CIP priority (rank N first, rank 1 last).
+    let mut sorted: Vec<(u8, AtomIdx)> = ranks
+        .iter()
+        .zip(neighbors.iter())
+        .map(|(&r, &n)| (r, n))
+        .collect();
+    sorted.sort_by_key(|x| std::cmp::Reverse(x.0));
+    let arr = [sorted[0].1, sorted[1].1, sorted[2].1, sorted[3].1];
+
+    Some((cip_code, arr))
+}
+
 /// Run CIP assignment on `mol`.  Returns R/S for chiral tetrahedral centers
 /// and E/Z for stereospecified double bonds.
 pub fn assign_cip(mol: &Molecule) -> CipAssignment {

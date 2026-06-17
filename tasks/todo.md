@@ -237,8 +237,10 @@
 | chematic-wasm          | 175     | 完了     |
 | chematic               | 1       | 完了     |
 | chematic-iupac         | 14      | 完了     |
-| chematic-inchi         | 28      | 完了     |
+| chematic-inchi         | 28 lib + 14 integration* | 完了     |
 | **CI lib 合計**         | **1,649** | `cargo test --workspace --lib` |
+
+\* integration tests: `cargo test -p chematic-inchi --features native-inchi --test standard_inchi`
 
 ---
 
@@ -359,19 +361,21 @@ RDKit と比較して未実装の主要機能を優先度順に列挙する。
   - 実装場所: chematic-fp/src/ecfp.rs の拡張
   - 難易度: 低（既存 ECFP の出力形式を変えるだけ）
 
-#### 7-11. InChI / InChIKey
-  - [ ] 標準 InChI 文字列の生成
-  - [ ] InChIKey（27文字ハッシュ）の生成
-  - **制約**: IUPAC 公式実装は C ライブラリのみ。Pure Rust では未完成実装のみ存在。
-  - FFI ゼロ方針と相反するため、pure Rust 実装が成熟するまで保留
-  - 難易度: 非常に高 or FFI 許容が必要
+#### 7-11. InChI / InChIKey ✅ Sprint v0.4.0 完了
+  - [x] 標準 InChI 文字列の生成（`standard_inchi()` — IUPAC C ライブラリ 1.07.5 経由）
+  - [x] InChIKey（27文字ハッシュ）の生成（`standard_inchi_key()` — ビット完全一致）
+  - **実装方針**: vendored IUPAC InChI C library (v1.07.5) を `native-inchi` feature で opt-in FFI
+  - デフォルトビルドは FFI ゼロ・WASM 互換を維持。`native-inchi` feature 有効時のみ C コンパイル発生
+  - 実装場所: `crates/chematic-inchi/src/native/` + `build.rs` + `vendor/inchi-src/`
+  - テスト: 14 件統合テスト（`cargo test -p chematic-inchi --features native-inchi --test standard_inchi`）
+  - 備考: InChI 1.07.5 は PubChem (1.06) と一部立体化学キーが異なる（/m レイヤー割り当て変更）
 
 ---
 
 ### スコープ外（FFI ゼロ方針と相反、または工数が過大）
 
 - ETKDG の完全再現（確率的サンプリング + DG）
-- InChI（C ライブラリが唯一の正式実装）
+- InChI（~~C ライブラリが唯一の正式実装~~ → v0.4.0 `native-inchi` feature で解決済み）
 - ML ベース予測モデル（LogP, solubility 等）
 - HELM / FASTA 記法（ペプチド/タンパク質）
 - 遷移金属・錯体化合物への対応（配位化学）
@@ -890,6 +894,8 @@ crates/chematic-py/
 
 #### 次のアクション
 
+- [x] `native-inchi` feature 実装（IUPAC InChI C ライブラリ 1.07.5 vendored、`standard_inchi()` / `standard_inchi_key()` 公開）
+      `cargo test -p chematic-inchi --features native-inchi --test standard_inchi` で 14 件パス
 - [ ] `cargo test -p chematic-py` でテスト追加・確認
 - [ ] `maturin develop` でローカル動作確認
 - [ ] PyPI に `v0.4.0` タグで初回公開
@@ -1314,7 +1320,7 @@ ECFP, FCFP, MACCS, RDKit Path, Atom Pairs, Topological Torsion, MHFP, ERG, Layer
 | WASM/Browser | ✅ Surpassed (60× smaller, native WASM) |
 | Rust-native pharma tools | ✅ Surpassed (all major features ≥ RDKit) |
 | MMFF94 force field | ✅ Full parity (complete stack v0.2.9) |
-| StandardInChI compliance | ❌ RDKit only (requires C libinchi) |
+| StandardInChI compliance | ✅ `native-inchi` feature (vendored IUPAC C lib 1.07.5) |
 | General purpose (no FFI) | ✅ Surpassed (only 1 remaining gap) |
 
 ---

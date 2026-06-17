@@ -288,9 +288,32 @@ fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
         8 | 16 | 34 => false,
         // Boron aromatic (rare) — can donate lone pair.
         5 => false,
-        // N with explicit H ([nH]) is a lone-pair donor; bare aromatic N (pyridine) must match.
-        7 => !matches!(atom.hydrogen_count, Some(h) if h > 0),
-        // Carbon and everything else: must be in the matching.
+        // N with explicit H ([nH]) is a lone-pair donor.
+        7 if matches!(atom.hydrogen_count, Some(h) if h > 0) => false,
+        // Anionic aromatic N ([n-]) also donates its lone pair; the extra electron
+        // occupies the lone-pair slot rather than a ring π bond (same as [nH]).
+        7 if atom.charge < 0 => false,
+        // Neutral N with a non-aromatic substituent (e.g. N-methyl in caffeine) is a lone-pair
+        // donor: the substituent "replaces" the H, and the N contributes its lone pair to
+        // aromaticity rather than a π bond (same as [nH] in pyrrole).
+        // Charged N (pyridinium [n+], N-oxide) must still be matched even with a substituent.
+        7 if atom.charge == 0
+            && mol
+                .neighbors(idx)
+                .any(|(_, bidx)| mol.bond(bidx).order != BondOrder::Aromatic) => false,
+        // Bare aromatic N with only aromatic bonds (pyridine-type): must be matched.
+        7 => true,
+        // Any anionic aromatic atom (e.g. cyclopentadienyl [cH-]) donates its lone pair.
+        _ if atom.charge < 0 => false,
+        // Any atom (typically C) that already has an exocyclic π bond (e.g. `c(=O)` in
+        // a heterocyclic carbonyl) cannot also carry a ring double bond — its π-slot is
+        // occupied by the exocyclic bond. Such atoms contribute via conjugation, like
+        // lone-pair donors, and should not be forced into the matching.
+        _ if mol.neighbors(idx).any(|(_, bidx)| {
+            let o = mol.bond(bidx).order;
+            o == BondOrder::Double || o == BondOrder::Triple
+        }) => false,
+        // All other atoms must appear in the matching.
         _ => true,
     }
 }

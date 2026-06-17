@@ -1,28 +1,50 @@
 # chematic-inchi
 
-Pure Rust InChI and InChIKey generation for IUPAC standard organic molecules. WASM-compatible, zero C/C++ dependencies.
+InChI and InChIKey generation for Rust. Two modes:
 
-## Features
+| Mode | Function | Compliance | WASM |
+|------|----------|-----------|------|
+| **Standard** (`native-inchi` feature) | `standard_inchi` / `standard_inchi_key` | Bit-exact with IUPAC InChI 1.07.5 | No (requires C compiler) |
+| **Approximate** (default) | `inchi` / `inchi_key` | Non-standard — different canonical order, no tautomer normalization | Yes (zero C deps) |
 
-- **InChI string generation**: formula, connectivity, hydrogen, stereo (R/S, E/Z), charge, and isotope layers
-- **InChIKey generation**: 27-character deterministic identifier
-- **Ring closure bonds**: correctly appends back-edge bonds to connectivity layer
-- **Stereo chemistry**: tetrahedral (R/S) and double-bond (E/Z) stereo layers via CIP rules
-- **WASM-compatible**: no FFI, compiles to WebAssembly
+## Standard IUPAC InChI (`native-inchi` feature)
 
-## Quick Start
+Enable the `native-inchi` feature to link the vendored IUPAC InChI C library (v1.07.5, MIT).
+Output is **bit-exact** with the reference implementation.
+
+```toml
+[dependencies]
+chematic-inchi = { version = "0.4", features = ["native-inchi"] }
+```
+
+```rust
+use chematic_inchi::{standard_inchi, standard_inchi_key};
+use chematic_smiles::parse;
+
+let mol = parse("c1ccccc1").expect("benzene");
+let inchi_str = standard_inchi(&mol).unwrap();
+// Produces the IUPAC-standard InChI (canonical order matches reference):
+// InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H
+let key = standard_inchi_key(&inchi_str).unwrap();
+assert_eq!(key, "UHOVQNZJYSORNB-UHFFFAOYSA-N");
+```
+
+All layers are handled by the IUPAC reference library: formula, connectivity, hydrogen,
+tautomer normalization, mobile-H, stereo (/t, /m, /s), charge (/q, /p), and isotope (/i).
+
+## Approximate InChI (WASM / zero-C-dependency fallback)
+
+The default `inchi()` / `inchi_key()` functions are **not standard IUPAC InChI**. They use
+a different canonical ordering and do not implement tautomer or mobile-H normalization.
+Use them only when WASM compatibility or a zero-C-dependency build is required.
 
 ```rust
 use chematic_inchi::inchi;
 use chematic_smiles::parse;
 
 let mol = parse("c1ccccc1").expect("benzene");
-let inchi_str = inchi(&mol);
-assert_eq!(inchi_str, "InChI=1S/C6H6/c1-2-3-4-5-6-1/h1-6H");
-
-// Generate InChIKey
-let key = chematic_inchi::inchi_key(&inchi_str);
-assert_eq!(key.len(), 27);
+// Non-standard approximation — does NOT match the IUPAC reference:
+let approx = inchi(&mol);
 ```
 
 ## Dependencies
@@ -30,23 +52,13 @@ assert_eq!(key.len(), 27);
 - [`chematic-core`](../chematic-core/README.md) — molecular graph types
 - [`chematic-smiles`](../chematic-smiles/README.md) — SMILES parser
 - [`chematic-chem`](../chematic-chem/README.md) — CIP rules for stereo assignment
-- [`sha2`](https://docs.rs/sha2/) — SHA256 for InChIKey hash
-
-## Layers Generated
-
-| Layer | Description | Example |
-|---|---|---|
-| `/c` | Connectivity (atom adjacency) | `/c1-2-3-4-5-6-1` |
-| `/h` | Hydrogen count per atom | `/h1-6H` |
-| `/b` | E/Z double bond stereo | `/b2-3-` |
-| `/t` | R/S tetrahedral stereo | `/t2-` |
-| `/q` | Formal charge (if net ≠ 0) | `/q+1` |
-| `/i` | Isotope information (if present) | `/i1D` |
+- [`sha2`](https://docs.rs/sha2/) — SHA-256 for approximate InChIKey hash
+- `cc` *(optional, `native-inchi` only)* — C compiler for vendored IUPAC library
 
 ## References
 
 - IUPAC InChI standard: https://iupac.org/what-we-do/inchi/
-- InChI layer structure: https://www.inchi-trust.org/
+- InChI Trust: https://www.inchi-trust.org/
 
 ## See Also
 
