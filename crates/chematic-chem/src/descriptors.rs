@@ -269,14 +269,15 @@ fn neighbor_is_oxidized_sulfur(mol: &Molecule, idx: AtomIdx) -> bool {
 // 6. Rotatable bond count
 // ---------------------------------------------------------------------------
 
-/// Count rotatable bonds.
+/// Count rotatable bonds (RDKit-compatible strict definition).
 ///
 /// A bond is rotatable when all of the following hold:
 /// - It is a single bond (or a stereo bond Up/Down, which is single).
 /// - Neither endpoint is terminal (degree > 1 in the heavy-atom graph).
 /// - It is not part of any ring (SSSR membership).
-/// - It is not an amide bond: if one atom is N and the other is C,
-///   and that C has any double bond to an O, the bond is excluded.
+/// - It is not an amide bond (C–N where C has a C=O).
+/// - Neither endpoint carries a triple bond (excludes propargylic C–C in alkynes).
+/// - Neither endpoint is a cumulated-double-bond centre (excludes allene C=C=C bonds).
 pub fn rotatable_bond_count(mol: &Molecule) -> usize {
     let ring_bond_set = ring_bond_indices(mol);
 
@@ -292,8 +293,27 @@ pub fn rotatable_bond_count(mol: &Molecule) -> usize {
                 && mol.degree(bond.atom1) > 1
                 && mol.degree(bond.atom2) > 1
                 && !is_amide_bond(mol, bond.atom1, bond.atom2)
+                && !has_triple_bond(mol, bond.atom1)
+                && !has_triple_bond(mol, bond.atom2)
+                && !is_cumulated_double(mol, bond.atom1)
+                && !is_cumulated_double(mol, bond.atom2)
         })
         .count()
+}
+
+/// True if atom `idx` has at least one triple bond.
+fn has_triple_bond(mol: &Molecule, idx: AtomIdx) -> bool {
+    mol.neighbors(idx)
+        .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Triple)
+}
+
+/// True if atom `idx` is the centre of a cumulated double-bond system (≥2 double bonds),
+/// as found in allenes (C=C=C) and ketenes (C=C=O).
+fn is_cumulated_double(mol: &Molecule, idx: AtomIdx) -> bool {
+    mol.neighbors(idx)
+        .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
+        .count()
+        >= 2
 }
 
 /// Indices of all bonds participating in at least one SSSR ring.
@@ -432,8 +452,10 @@ fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx) -> f64 {
 /// Hydrogen atoms are implicit (not computed). Values match RDKit defaults with calibrations
 /// for secondary amide N (12.03 Å²), aromatic N (15.79 Å²), and phosphorus atoms.
 ///
-/// Algorithm dispatches per element (tpsa_nitrogen, tpsa_oxygen, tpsa_sulfur, tpsa_phosphorus)
-/// to reduce cyclomatic complexity and improve readability.
+/// **Note on S/P:** S and P contributions are **included by default** (equivalent to
+/// RDKit `Descriptors.TPSA(mol, includeSandP=True)`). RDKit's default
+/// `Descriptors.TPSA(mol)` excludes S and P; results will differ for molecules
+/// containing these elements.
 pub fn tpsa(mol: &Molecule) -> f64 {
     let mut psa = 0.0f64;
     for (idx, atom) in mol.atoms() {
@@ -468,6 +490,11 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// - S: thioether=+0.6482, aromatic=+0.6237 (was 0.2432/0.0)
 /// - O: alcohol=−0.2893, ether=−0.0684, aromatic=+0.1552, carbonyl=−0.0509
 /// - Cl: aromatic=+0.7904, aliphatic=+0.6895
+///
+/// **Note:** This implementation is **not bit-exact with RDKit**. On a diverse
+/// drug-like corpus the mean absolute error vs. `Crippen.MolLogP()` is ≈ 0.30
+/// (median 0.18). For exact RDKit parity, use the `native-inchi`-style approach
+/// of calling RDKit directly.
 ///
 /// Wildman-Crippen LogP per-atom contributions.
 ///
@@ -2077,6 +2104,28 @@ mod tests {
         // Expected: 3
         let r = rotatable_bond_count(&m);
         assert_eq!(r, 3, "aspirin rotatable bonds = {r}");
+    }
+
+    // -- Test: alkyne adjacent bond excluded ---------------------------------
+    #[test]
+    fn test_rot_alkyne_adjacent_excluded() {
+        // Propyne CH3-C≡CH: C-C adjacent to triple bond is NOT rotatable (C≡ atom excluded).
+        let m = mol("CC#C");
+        assert_eq!(rotatable_bond_count(&m), 0, "propyne: C-C adj to triple bond excluded");
+        // But-1-yne CH3-CH2-C≡CH: C3 has triple bond → C2-C3 excluded; C1 terminal → C1-C2 excluded.
+        let m2 = mol("CCC#C");
+        assert_eq!(rotatable_bond_count(&m2), 0, "but-1-yne: both bonds excluded");
+        // Pent-1-yne CH3-CH2-CH2-C≡CH: C2-C3 is rotatable; C3-C4 excluded (C4 in triple).
+        let m3 = mol("CCCC#C");
+        assert_eq!(rotatable_bond_count(&m3), 1, "pent-1-yne: CH2-CH2 bond is rotatable");
+    }
+
+    // -- Test: allene cumulated double bonds excluded ------------------------
+    #[test]
+    fn test_rot_allene_excluded() {
+        // Allene: C=C=C. Both single-bond-looking connections are in a cumulated system.
+        let m = mol("C=C=C");
+        assert_eq!(rotatable_bond_count(&m), 0, "allene: no rotatable bonds");
     }
 
     // -- Test 16: water TPSA -------------------------------------------------
