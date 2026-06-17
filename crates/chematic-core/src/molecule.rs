@@ -209,7 +209,16 @@ impl Molecule {
         for (_, atom) in self.atoms() {
             *counts.entry(atom.element.symbol()).or_insert(0) += 1;
         }
-        Self::format_hill_order_formula(&counts)
+        let mut result = Self::format_hill_order_formula(&counts);
+        let total_charge: i32 = self.atoms().map(|(_, a)| a.charge as i32).sum();
+        match total_charge {
+            0 => {}
+            1 => result.push('+'),
+            -1 => result.push('-'),
+            n if n > 0 => result.push_str(&format!("+{n}")),
+            n => result.push_str(&n.to_string()),
+        }
+        result
     }
 }
 

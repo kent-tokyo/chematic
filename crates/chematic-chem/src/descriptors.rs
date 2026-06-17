@@ -376,7 +376,13 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
     if is_aromatic {
         13.14
     } else if h > 0 {
-        20.23
+        // Water (H₂O): isolated O with no heavy-atom neighbors → 31.50
+        // Hydroxyl (–OH): O with one heavy-atom neighbor → 20.23
+        if mol.neighbors(idx).count() == 0 {
+            31.50
+        } else {
+            20.23
+        }
     } else {
         let is_nitro_o_minus = charge == -1
             && mol.neighbors(idx).any(|(nb, _)| {
@@ -2077,9 +2083,9 @@ mod tests {
     #[test]
     fn test_tpsa_water() {
         let m = mol("O");
-        // single O with 2H → 20.23
+        // H₂O: isolated O with no heavy-atom neighbors → 31.50 (Ertl water type)
         let t = tpsa(&m);
-        assert!(approx(t, 20.23, 1.0), "water TPSA = {t}");
+        assert!(approx(t, 31.50, 0.1), "water TPSA = {t}");
     }
 
     // -- Test 17: aniline TPSA -----------------------------------------------
