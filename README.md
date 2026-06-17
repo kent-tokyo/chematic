@@ -499,6 +499,33 @@ For detailed historical roadmap (Phases 1–16), see `tasks/todo.md`.
 
 ---
 
+## Known Limitations
+
+### Kekulization (128 / 5,000 molecules)
+
+`chematic-core`'s Kekulé assignment uses a greedy bipartite maximum matching.
+This algorithm cannot handle the odd-cycle topology that arises when a nitrogen
+atom sits at a bridgehead of two fused aromatic rings (e.g. indolizine
+`c1ccn2cccc2c1`). On the 5,000-molecule corpus from issue #11, 128 molecules
+(2.6%) fail kekulization:
+
+| Category | Count | Example |
+|---|---|---|
+| Fused bridgehead-N systems | 109 | `c1ccn2cccc2c1` (indolizine) |
+| Other complex polycyclics | 17 | quinone-aromatic hybrids |
+| Boron aromatic ring | 1 | `b1ccccn1` |
+| Pure H₂ (no heavy atoms) | 1 | `[H][H]` |
+
+**Impact**: any feature that requires kekulization — `standard_inchi()`,
+`standard_inchi_key()`, and certain SMARTS patterns — returns
+`InchiError::KekulizationFailed` for these molecules. No silent wrong output
+is produced; the error is explicit.
+
+**Fix planned**: replacing the greedy matcher with Edmonds' blossom algorithm
+in `chematic-core`.
+
+---
+
 ## Repository Structure
 
 ```

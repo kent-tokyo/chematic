@@ -32,6 +32,12 @@ assert_eq!(key, "UHOVQNZJYSORNB-UHFFFAOYSA-N");
 All layers are handled by the IUPAC reference library: formula, connectivity, hydrogen,
 tautomer normalization, mobile-H, stereo (/t, /m, /s), charge (/q, /p), and isotope (/i).
 
+> **Known limitation:** 2.6% of drug-like molecules (128 / 5,000 in the issue #11 corpus)
+> fail with `InchiError::KekulizationFailed` due to a greedy kekulization algorithm in
+> `chematic-core` that cannot handle bridgehead-N fused rings (e.g. indolizine). No silent
+> wrong output is produced — the error is always explicit. See the
+> [main README](../../README.md#known-limitations) for the full breakdown and fix roadmap.
+
 ## Approximate InChI (WASM / zero-C-dependency fallback)
 
 The default `inchi()` / `inchi_key()` functions are **not standard IUPAC InChI**. They use
