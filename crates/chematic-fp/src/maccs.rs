@@ -209,10 +209,10 @@ pub fn maccs(mol: &Molecule) -> BitVec2048 {
         if pattern == "?" || pattern.is_empty() {
             continue;
         }
-        if let Ok(query) = parse_smarts(pattern) {
-            if find_matches(&query, mol).len() > min_count {
-                fp.set(i);
-            }
+        if let Ok(query) = parse_smarts(pattern)
+            && find_matches(&query, mol).len() > min_count
+        {
+            fp.set(i);
         }
         // Patterns that fail to parse silently leave the bit unset.
     }
