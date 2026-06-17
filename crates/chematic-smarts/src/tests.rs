@@ -68,12 +68,14 @@ mod integration_tests {
     /// `[!C]` → Not(Symbol("C")).
     #[test]
     fn test_parser_not() {
+        // [C] inside brackets means aliphatic C (uppercase → Aromatic(false) added).
         let mol = parse_smarts("[!C]").unwrap();
         assert_eq!(
             mol.atoms[0].query,
-            AtomQuery::Not(Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol(
-                "C".to_string()
-            ))))
+            AtomQuery::Not(Box::new(AtomQuery::And(
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol("C".to_string()))),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(false))),
+            )))
         );
     }
 

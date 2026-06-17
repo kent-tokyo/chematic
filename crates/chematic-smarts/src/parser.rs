@@ -486,6 +486,16 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(Some(AtomQuery::Primitive(AtomPrimitive::Wildcard)))
             }
+            // `a` — any aromatic atom (standalone shorthand, equivalent to `[a]`).
+            Some(b'a') => {
+                self.advance();
+                Ok(Some(AtomQuery::Primitive(AtomPrimitive::Aromatic(true))))
+            }
+            // `A` — any aliphatic atom (standalone shorthand, equivalent to `[A]`).
+            Some(b'A') => {
+                self.advance();
+                Ok(Some(AtomQuery::Primitive(AtomPrimitive::Aromatic(false))))
+            }
             // Organic-subset atoms (uppercase aliphatic).
             Some(b'B') | Some(b'C') | Some(b'N') | Some(b'O') | Some(b'P') | Some(b'S')
             | Some(b'F') | Some(b'I') => Ok(Some(self.parse_organic_atom(false)?)),
@@ -856,11 +866,12 @@ impl<'a> Parser<'a> {
 
     /// Parse an element symbol as a primitive inside a bracket atom.
     ///
-    /// Accepts both uppercase (aliphatic) and lowercase (aromatic) symbols.
+    /// Uppercase (e.g. `[O]`) → aliphatic atom of that element.
+    /// Lowercase (e.g. `[o]`) → aromatic atom of that element (adds `Aromatic(true)` constraint).
     fn parse_element_primitive(&mut self) -> Result<AtomQuery, SmartsError> {
         let pos = self.pos;
         let first = self.advance().unwrap() as char;
-        let _aromatic = first.is_ascii_lowercase();
+        let aromatic = first.is_ascii_lowercase();
         let upper_first = first.to_ascii_uppercase();
 
         // Try two-character symbol first (e.g. `Cl`, `Br`).
@@ -870,6 +881,7 @@ impl<'a> Parser<'a> {
             let candidate = format!("{upper_first}{}", second as char);
             if chematic_core::Element::from_symbol(&candidate).is_some() {
                 self.advance();
+                // Two-character symbols are never written as aromatic in SMARTS.
                 return Ok(AtomQuery::Primitive(AtomPrimitive::Symbol(candidate)));
             }
         }
@@ -877,7 +889,12 @@ impl<'a> Parser<'a> {
         // Single-character symbol.
         let sym = upper_first.to_string();
         if chematic_core::Element::from_symbol(&sym).is_some() {
-            Ok(AtomQuery::Primitive(AtomPrimitive::Symbol(sym)))
+            let sym_q = AtomQuery::Primitive(AtomPrimitive::Symbol(sym));
+            // Lowercase (e.g. `[o]`, `[n]`) → aromatic; uppercase (e.g. `[O]`, `[N]`) → aliphatic.
+            Ok(AtomQuery::And(
+                Box::new(sym_q),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(aromatic))),
+            ))
         } else {
             Err(SmartsError::UnexpectedChar(first, pos))
         }
@@ -957,13 +974,15 @@ mod tests {
 
     #[test]
     fn test_parse_not() {
-        // `[!C]` → Not(Symbol("C"))
+        // `[!C]` → Not(And(Symbol("C"), Aromatic(false)))
+        // [C] inside brackets means aliphatic C (uppercase → Aromatic(false) added).
         let mol = parse_smarts("[!C]").unwrap();
         assert_eq!(
             mol.atoms[0].query,
-            AtomQuery::Not(Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol(
-                "C".to_string()
-            ))))
+            AtomQuery::Not(Box::new(AtomQuery::And(
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Symbol("C".to_string()))),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(false))),
+            )))
         );
     }
 
