@@ -45,7 +45,7 @@ static MACCS_SMARTS: &[(&str, usize)] = &[
     ("[#7]~[#6](~[#8])~[#8]", 0),                                       // key 23 - NC(O)O
     ("[#7]-[#8]", 0),                                                    // key 24 - N-O
     ("[#7]~[#6](~[#7])~[#7]", 0),                                       // key 25 - NC(N)N
-    ("[#6]=;@[#6](@*)@*", 0),                                           // key 26 - ring C=C
+    ("[#6;R]=[#6;R]", 0),                                               // key 26 - ring C=C (was =;@ which fails to parse)
     ("[I]", 0),                                                          // key 27 - I
     ("[!#6;!#1]~[CH2]~[!#6;!#1]", 0),                                  // key 28 - QCH2Q
     ("[#15]", 0),                                                        // key 29 - P
@@ -335,5 +335,33 @@ mod tests {
         let mol = parse("NCCN").unwrap();
         let fp = maccs(&mol);
         assert!(fp.get(141), "key 142 (N>1) should be set for ethylenediamine");
+    }
+
+    #[test]
+    fn maccs_key26_ring_double_bond() {
+        // Cyclohexene has a ring C=C → key 26 (index 25) should be set
+        let mol = parse("C1=CCCCC1").unwrap();
+        assert!(maccs(&mol).get(25), "cyclohexene should set key 26 (ring C=C)");
+        // Ethylene has C=C but not in ring → key 26 should NOT be set
+        let mol2 = parse("C=C").unwrap();
+        assert!(!maccs(&mol2).get(25), "ethylene: key 26 (ring C=C) should be 0");
+    }
+
+    #[test]
+    fn all_maccs_smarts_parse() {
+        let mut failed = Vec::new();
+        for (i, &(pattern, _)) in MACCS_SMARTS.iter().enumerate() {
+            if pattern == "?" || pattern.is_empty() {
+                continue;
+            }
+            if parse_smarts(pattern).is_err() {
+                failed.push((i + 1, pattern));
+            }
+        }
+        assert!(
+            failed.is_empty(),
+            "MACCS SMARTS parse failures: {:?}",
+            failed
+        );
     }
 }

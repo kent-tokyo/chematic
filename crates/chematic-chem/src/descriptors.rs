@@ -830,7 +830,7 @@ fn h_mr_for_parent(
                 1.395 // H2: aliphatic or phenolic OH
             }
         }
-        _ => -0.2677, // H2: H on other heteroatom (S, P, …) — uses LogP value; MR uses fallback
+        _ => fallback, // HS: H on other heteroatom (S, P, …) — MR HS fallback (1.112)
     }
 }
 
@@ -2863,6 +2863,21 @@ mod tests {
         assert!(
             enone < alkene,
             "MVK ({enone:.4}) should be < 1-butene ({alkene:.4}): enone is less hydrophobic"
+        );
+    }
+
+    #[test]
+    fn all_crippen_smarts_parse() {
+        let mut failed = Vec::new();
+        for (i, &(pattern, _, _)) in CRIPPEN_SMARTS.iter().enumerate() {
+            if parse_smarts(pattern).is_err() {
+                failed.push((i, pattern));
+            }
+        }
+        assert!(
+            failed.is_empty(),
+            "CRIPPEN_SMARTS parse failures (index, pattern): {:?}",
+            failed
         );
     }
 }

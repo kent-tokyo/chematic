@@ -716,8 +716,16 @@ impl<'a> Parser<'a> {
                 Ok(AtomQuery::Primitive(AtomPrimitive::Aromatic(true)))
             }
 
-            // Aliphatic (`A`) — checked BEFORE element parsing (there is no element 'A').
+            // Aliphatic (`A`) — but if followed by a lowercase letter that forms a valid
+            // two-character element symbol (Ac, Ag, Al, Am, Ar, As, At, Au), parse as element.
             Some(b'A') => {
+                let next = self.src.get(self.pos + 1).copied();
+                if next.is_some_and(|c| c.is_ascii_lowercase()) {
+                    let candidate = format!("A{}", next.unwrap() as char);
+                    if chematic_core::Element::from_symbol(&candidate).is_some() {
+                        return self.parse_element_primitive();
+                    }
+                }
                 self.advance();
                 Ok(AtomQuery::Primitive(AtomPrimitive::Aromatic(false)))
             }
@@ -753,7 +761,16 @@ impl<'a> Parser<'a> {
             }
 
             // H count `HN` or `H` (total hcount = N or 1; explicit + implicit)
+            // Exception: if followed by a lowercase letter forming a valid element (Hg, Ho, Hs),
+            // treat as element symbol instead.
             Some(b'H') => {
+                let next = self.src.get(self.pos + 1).copied();
+                if next.is_some_and(|c| c.is_ascii_lowercase()) {
+                    let candidate = format!("H{}", next.unwrap() as char);
+                    if chematic_core::Element::from_symbol(&candidate).is_some() {
+                        return self.parse_element_primitive();
+                    }
+                }
                 self.advance(); // consume 'H'
                 let n = self.parse_single_digit().unwrap_or(1);
                 Ok(AtomQuery::Primitive(AtomPrimitive::HCount(n)))
@@ -767,7 +784,16 @@ impl<'a> Parser<'a> {
             }
 
             // Degree `DN`
+            // Exception: if followed by a lowercase letter forming a valid element (Dy, Db, Ds),
+            // treat as element symbol instead.
             Some(b'D') => {
+                let next = self.src.get(self.pos + 1).copied();
+                if next.is_some_and(|c| c.is_ascii_lowercase()) {
+                    let candidate = format!("D{}", next.unwrap() as char);
+                    if chematic_core::Element::from_symbol(&candidate).is_some() {
+                        return self.parse_element_primitive();
+                    }
+                }
                 self.advance(); // consume 'D'
                 let n = self
                     .parse_single_digit()
@@ -788,7 +814,16 @@ impl<'a> Parser<'a> {
             // `[R]`  = in any ring (RingMembership(true))
             // `[R0]` = not in any ring (RingCount(0))
             // `[R1]` = in exactly 1 ring, etc.
+            // Exception: if followed by a lowercase letter forming a valid element (Ra, Rb, Re,
+            // Rf, Rg, Rh, Rn, Ru), treat as element symbol instead.
             Some(b'R') => {
+                let next = self.src.get(self.pos + 1).copied();
+                if next.is_some_and(|c| c.is_ascii_lowercase()) {
+                    let candidate = format!("R{}", next.unwrap() as char);
+                    if chematic_core::Element::from_symbol(&candidate).is_some() {
+                        return self.parse_element_primitive();
+                    }
+                }
                 self.advance(); // consume 'R'
                 if let Some(n) = self.parse_single_digit() {
                     Ok(AtomQuery::Primitive(AtomPrimitive::RingCount(n)))
