@@ -524,6 +524,25 @@ is produced; the error is explicit.
 **Fix planned**: replacing the greedy matcher with Edmonds' blossom algorithm
 in `chematic-core`.
 
+### Aromaticity model (Hückel vs RDKit)
+
+chematic uses the **Hückel 4n+2 rule applied independently to each SSSR ring**,
+while RDKit uses a more sophisticated fused-ring electron-delocalization model.
+Differences are most visible in N-heterocycles (pyridone, quinolone, indolizine).
+
+**Cascade effects on a 5,000-molecule corpus (issue #12):**
+
+| Feature | Agreement | Cause |
+|---|---|---|
+| Aromatic ring count | 92.6% | Fused-ring classification differs |
+| `[nH]` SMARTS match | 67% | Ring N H-count assigned differently |
+| HBA count | 87.7% | Aromatic N H-count drives inclusion/exclusion |
+
+No code fix is planned — this is a design-level trade-off between simplicity and
+full RDKit compatibility. Patterns and descriptors that depend on aromaticity
+(ring counts, `[n]`/`[nH]` SMARTS, HBA on N-heterocycles) may disagree with
+RDKit on edge-case heterocyclic systems.
+
 ---
 
 ## Repository Structure

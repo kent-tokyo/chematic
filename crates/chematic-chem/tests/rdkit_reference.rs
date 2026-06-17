@@ -844,11 +844,11 @@ fn fsp3_cyclohexane() {
 
 #[test]
 fn molar_refractivity_aspirin() {
-    // C9H8O4 — chematic ~44.03 (Wildman-Crippen)
+    // C9H8O4 — RDKit Crippen.MolMR ≈ 44.71 (SMARTS-based; old hand-coded gave 44.03)
     assert_approx(
         "molar_refractivity aspirin",
         molar_refractivity(&mol("CC(=O)Oc1ccccc1C(=O)O")),
-        44.03,
+        44.71,
         0.1,
     );
 }
