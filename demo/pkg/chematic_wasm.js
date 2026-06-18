@@ -39,6 +39,31 @@ export class ConformerHandle {
         return ret >>> 0;
     }
     /**
+     * Cluster conformers by Kabsch-aligned RMSD and return a JSON object
+     * describing which conformers to keep.
+     *
+     * Uses greedy leader-linkage: conformers are visited in index order; each
+     * is compared against existing cluster representatives. If the RMSD to any
+     * representative is < `rms_threshold`, the conformer is discarded; otherwise
+     * it starts a new cluster and is kept.
+     *
+     * Returns `{"kept_indices":[0,3,7,...],"removed_count":5}` on success.
+     * @param {number} rms_threshold
+     * @returns {string}
+     */
+    cluster_conformers_json(rms_threshold) {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.conformerhandle_cluster_conformers_json(this.__wbg_ptr, rms_threshold);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
      * Number of conformers currently stored.
      * @returns {number}
      */
@@ -240,6 +265,102 @@ export class DepictOptions {
 if (Symbol.dispose) DepictOptions.prototype[Symbol.dispose] = DepictOptions.prototype.free;
 
 /**
+ * MinHash LSH index: insert MHFP fingerprints and query by approximate similarity.
+ *
+ * ```js
+ * const idx = new MhfpLshHandle(128);
+ * const i0 = idx.add_smiles("c1ccccc1");    // benzene → index 0
+ * const i1 = idx.add_smiles("Cc1ccccc1");   // toluene → index 1
+ * const hits = JSON.parse(idx.query_json("c1ccccc1", 0.5));
+ * // hits: [{index:0,similarity:1.0}, {index:1,similarity:0.xxx}]
+ * ```
+ */
+export class MhfpLshHandle {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        MhfpLshHandleFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_mhfplshhandle_free(ptr, 0);
+    }
+    /**
+     * Add a molecule by SMILES; returns its 0-based index in the index.
+     * @param {string} smiles
+     * @returns {number}
+     */
+    add_smiles(smiles) {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mhfplshhandle_add_smiles(this.__wbg_ptr, ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0] >>> 0;
+    }
+    /**
+     * True if the index contains no molecules.
+     * @returns {boolean}
+     */
+    is_empty() {
+        const ret = wasm.mhfplshhandle_is_empty(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * Number of molecules in the index.
+     * @returns {number}
+     */
+    len() {
+        const ret = wasm.mhfplshhandle_len(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Create a new LSH index for MHFP fingerprints with `num_hashes` hash lanes.
+     * Default band decomposition: 16 bands × (num_hashes / 16) rows.
+     * `num_hashes` must be a multiple of 16 (e.g. 128).
+     * @param {number} num_hashes
+     */
+    constructor(num_hashes) {
+        const ret = wasm.mhfplshhandle_new(num_hashes);
+        this.__wbg_ptr = ret;
+        MhfpLshHandleFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Query by SMILES for all entries with similarity ≥ threshold.
+     *
+     * Returns a JSON array `[{"index":N,"similarity":0.xxx},...]` sorted by
+     * descending similarity.  Empty array `[]` when nothing qualifies.
+     * @param {string} query_smiles
+     * @param {number} threshold
+     * @returns {string}
+     */
+    query_json(query_smiles, threshold) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.mhfplshhandle_query_json(this.__wbg_ptr, ptr0, len0, threshold);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+}
+if (Symbol.dispose) MhfpLshHandle.prototype[Symbol.dispose] = MhfpLshHandle.prototype.free;
+
+/**
  * A handle to a parsed molecule.  Owns the molecule behind an `Rc` so that
  * it can be cheaply cloned on the JS side without copying atom/bond data.
  */
@@ -269,12 +390,47 @@ export class MolHandle {
         return ret >>> 0;
     }
     /**
+     * Assign CIP (R/S/E/Z) stereocenters and return JSON.
+     *
+     * Format: `{"centers":[{"atom":0,"code":"R"},{"atom":3,"code":"E"}]}`
+     * @returns {string}
+     */
+    assign_cip_json() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.molhandle_assign_cip_json(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
      * Number of heavy atoms (explicit atoms in the graph; does not count implicit H).
      * @returns {number}
      */
     atom_count() {
         const ret = wasm.molhandle_atom_count(this.__wbg_ptr);
         return ret >>> 0;
+    }
+    /**
+     * Returns true when TPSA < 90 Å², MW < 400, HBD ≤ 3.
+     * @returns {boolean}
+     */
+    bbb_passes() {
+        const ret = wasm.molhandle_bbb_passes(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * Clark (2000) blood-brain barrier logBB score.
+     * logBB > −1.0 = likely CNS penetrant.
+     * @returns {number}
+     */
+    bbb_score() {
+        const ret = wasm.molhandle_bbb_score(this.__wbg_ptr);
+        return ret;
     }
     /**
      * Bertz complexity index (BertzCT).
@@ -291,6 +447,15 @@ export class MolHandle {
     bond_count() {
         const ret = wasm.molhandle_bond_count(this.__wbg_ptr);
         return ret >>> 0;
+    }
+    /**
+     * Palm (1997) Caco-2 intestinal permeability (logPCaco2).
+     * > −5.5 = high permeability.
+     * @returns {number}
+     */
+    caco2_permeability() {
+        const ret = wasm.molhandle_caco2_permeability(this.__wbg_ptr);
+        return ret;
     }
     /**
      * Canonical SMILES string.
@@ -387,6 +552,25 @@ export class MolHandle {
     chi4v() {
         const ret = wasm.molhandle_chi4v(this.__wbg_ptr);
         return ret;
+    }
+    /**
+     * CYP3A4 metabolic inhibition risk score (0.0–1.0).
+     * @returns {number}
+     */
+    cyp3a4_inhibition_risk() {
+        const ret = wasm.molhandle_cyp3a4_inhibition_risk(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 2D PNG depiction (rasterized from SVG).
+     * Returns PNG data as base64-encoded string for embedding in HTML/JS.
+     * @returns {Uint8Array}
+     */
+    depict_png() {
+        const ret = wasm.molhandle_depict_png(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * 2D SVG depiction of the molecule (CPK coloring).
@@ -505,6 +689,54 @@ export class MolHandle {
         return ret >>> 0;
     }
     /**
+     * hERG cardiac toxicity risk score (0.0–1.0).
+     * @returns {number}
+     */
+    herg_risk_score() {
+        const ret = wasm.molhandle_herg_risk_score(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Isotope distribution as JSON.
+     *
+     * Returns `[{"mass":100.0,"abundance":0.9},...]` sorted by mass.
+     * `resolution`: m/z bin width in Da (e.g. `0.1` for nominal, `0.01` for high-res).
+     * @param {number} resolution
+     * @returns {string}
+     */
+    isotope_distribution_json(resolution) {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.molhandle_isotope_distribution_json(this.__wbg_ptr, resolution);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Generate IUPAC systematic name for the molecule.
+     *
+     * Returns the name string on success, or an empty string when the
+     * structure is outside the supported naming scope (complex polycyclics,
+     * multi-functional groups, etc.).
+     * @returns {string}
+     */
+    iupac_name() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.molhandle_iupac_name(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
      * Hall–Kier κ1 shape index.
      * @returns {number}
      */
@@ -543,6 +775,39 @@ export class MolHandle {
     lipinski_passes() {
         const ret = wasm.molhandle_lipinski_passes(this.__wbg_ptr);
         return ret !== 0;
+    }
+    /**
+     * LogD (distribution coefficient) at a specific pH.
+     *
+     * Accounts for ionization state: neutral molecules return LogP unchanged,
+     * ionizable molecules are adjusted by log(neutral_fraction).
+     * @param {number} ph
+     * @returns {number}
+     */
+    logd_at_ph(ph) {
+        const ret = wasm.molhandle_logd_at_ph(this.__wbg_ptr, ph);
+        return ret;
+    }
+    /**
+     * LogD profile across a pH range as JSON.
+     *
+     * Returns `[{"ph":0.0,"logd":2.5}, ...]` with `steps` evenly-spaced pH points.
+     * @param {number} ph_start
+     * @param {number} ph_end
+     * @param {number} steps
+     * @returns {string}
+     */
+    logd_profile_json(ph_start, ph_end, steps) {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.molhandle_logd_profile_json(this.__wbg_ptr, ph_start, ph_end, steps);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
     }
     /**
      * Crippen–Wildman octanol/water partition coefficient (LogP).
@@ -692,11 +957,37 @@ export class MolHandle {
         return ret !== 0;
     }
     /**
+     * Most acidic pKa in the molecule, or NaN if no acidic site.
+     * @returns {number}
+     */
+    pka_acid_value() {
+        const ret = wasm.molhandle_pka_acid_value(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Most basic pKa in the molecule, or NaN if no basic site.
+     * @returns {number}
+     */
+    pka_base_value() {
+        const ret = wasm.molhandle_pka_base_value(this.__wbg_ptr);
+        return ret;
+    }
+    /**
      * Quantitative Estimate of Drug-likeness (QED); range [0, 1].
      * @returns {number}
      */
     qed() {
         const ret = wasm.molhandle_qed(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Randić connectivity index (χ₀).
+     *
+     * χ₀ = Σ 1/√(d_i × d_j) over all bonds, where d is heavy-atom degree.
+     * @returns {number}
+     */
+    randic_index() {
+        const ret = wasm.molhandle_randic_index(this.__wbg_ptr);
         return ret;
     }
     /**
@@ -732,6 +1023,38 @@ export class MolHandle {
         return ret;
     }
     /**
+     * InChI string representation of the molecule.
+     * @returns {string}
+     */
+    to_inchi() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.molhandle_to_inchi(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * InChIKey (27-character identifier) for the molecule.
+     * @returns {string}
+     */
+    to_inchikey() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.molhandle_to_inchikey(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
      * Topological polar surface area (Å²).
      * @returns {number}
      */
@@ -756,6 +1079,14 @@ export class MolHandle {
         const ret = wasm.molhandle_wiener_index(this.__wbg_ptr);
         return ret;
     }
+    /**
+     * Zagreb index M1: Σ d_i² over all heavy atoms.
+     * @returns {number}
+     */
+    zagreb_index_m1() {
+        const ret = wasm.molhandle_zagreb_index_m1(this.__wbg_ptr);
+        return ret >>> 0;
+    }
 }
 if (Symbol.dispose) MolHandle.prototype[Symbol.dispose] = MolHandle.prototype.free;
 
@@ -771,6 +1102,33 @@ export function add_hydrogens(mol) {
 }
 
 /**
+ * Compute a full ADMET property profile for a molecule.
+ *
+ * Returns a JSON object with fields:
+ * `bbb_score`, `bbb_passes`, `caco2`, `herg_risk`, `cyp3a4_risk`,
+ * `pka_acid` (null if absent), `pka_base` (null if absent),
+ * `esol`, `logd74`, `mw`, `logp`, `tpsa`, `hbd`, `hba`, `rotatable_bonds`
+ *
+ * Returns `{"error":"..."}` on parse failure.
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function admet_profile_json(smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.admet_profile_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * AtomPair fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
  * @param {MolHandle} mol
  * @returns {Uint8Array}
@@ -781,6 +1139,45 @@ export function atom_pair_bitvec(mol) {
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
+}
+
+/**
+ * AutoCorr2D descriptor (7 values: topological distance lags 1-7).
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function autocorr_2d_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.autocorr_2d_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * AutoCorr3D descriptor (8 values: Euclidean distance bins 1-8 Å).
+ * Requires 3D coordinates (generated automatically).
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function autocorr_3d_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.autocorr_3d_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
 }
 
 /**
@@ -892,6 +1289,34 @@ export function canonical_tautomer(mol) {
 }
 
 /**
+ * Compute the canonical tautomer with specific atoms blocked from H-transfer.
+ *
+ * `blocked_atom_indices_json`: JSON array of 0-based atom indices, e.g. `[0, 3]`.
+ * Any tautomer move whose donor, bridge, or acceptor is in the blocked set is suppressed.
+ *
+ * Returns canonical SMILES of the result, or `{"error":"..."}` on failure.
+ * Out-of-range indices are silently ignored (no effect).
+ * @param {MolHandle} mol
+ * @param {string} blocked_atom_indices_json
+ * @returns {string}
+ */
+export function canonical_tautomer_with_blocked_atoms_json(mol, blocked_atom_indices_json) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(blocked_atom_indices_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.canonical_tautomer_with_blocked_atoms_json(mol.__wbg_ptr, ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Parse all molecular fragments from a CDXML string.
  *
  * Returns a JSON array of SMILES strings, one per fragment:
@@ -942,6 +1367,80 @@ export function cip_assignments_json(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compare multiple SMILES strings (up to 256 by default).
+ * Accepts a delimiter-separated list (e.g., newline or comma).
+ *
+ * # Example (JS)
+ * ```javascript
+ * const smilesList = "c1ccccc1\nCc1ccccc1\nCCc1ccccc1";
+ * const json = module.compare_molecules_batch_json(smilesList, "\n");
+ * const comparison = JSON.parse(json);
+ * ```
+ * @param {string} smiles_batch
+ * @param {string} delimiter
+ * @returns {string}
+ */
+export function compare_molecules_batch_json(smiles_batch, delimiter) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.compare_molecules_batch_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Compare two or more SMILES strings (JSON string output).
+ * Returns the JSON representation of a `MoleculeComparison` struct.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const json = module.compare_molecules_json("c1ccccc1", "Cc1ccccc1");
+ * const comparison = JSON.parse(json);
+ * console.log(comparison.pairwise[0].similarities.ecfp4_tanimoto);
+ * ```
+ * @param {string} smiles1
+ * @param {string} smiles2
+ * @returns {string}
+ */
+export function compare_molecules_json(smiles1, smiles2) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(smiles2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.compare_molecules_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -1171,6 +1670,36 @@ export function detect_functional_groups(mol) {
 }
 
 /**
+ * Infer bond connectivity and bond orders from an XYZ-format string.
+ *
+ * Explicit hydrogen atoms must be present in the XYZ for reliable bond-order
+ * assignment (without H, carbonyl C=O cannot be distinguished from C-O).
+ *
+ * Returns JSON on success: `{"smiles":"CCO","atom_count":3,"bond_count":2}`.
+ * `atom_count` and `bond_count` refer to the heavy-atom skeleton (H removed).
+ *
+ * Returns JSON on error: `{"error":"molecule has 450 atoms; maximum is 300"}`.
+ *
+ * Safe: never freezes. All internal loops are O(n²). Capped at 300 atoms.
+ * @param {string} xyz_str
+ * @returns {string}
+ */
+export function determine_bonds_from_xyz_json(xyz_str) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(xyz_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.determine_bonds_from_xyz_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Dice similarity between `a` and `b` using ECFP4 fingerprints.
  * @param {MolHandle} a
  * @param {MolHandle} b
@@ -1223,6 +1752,24 @@ export function ecfp4_bitvec(mol) {
 }
 
 /**
+ * Like `ecfp4_bitvec` but with explicit chirality control.
+ *
+ * When `use_chirality=true`, tetrahedral stereochemistry is included in the
+ * initial atom hash, making enantiomers have different fingerprints.
+ * When `false` (default), chirality is ignored.
+ * @param {MolHandle} mol
+ * @param {boolean} use_chirality
+ * @returns {Uint8Array}
+ */
+export function ecfp4_bitvec_with_chirality(mol, use_chirality) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.ecfp4_bitvec_with_chirality(mol.__wbg_ptr, use_chirality);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
  * ECFP6 (radius-3) fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
  * @param {MolHandle} mol
  * @returns {Uint8Array}
@@ -1230,6 +1777,24 @@ export function ecfp4_bitvec(mol) {
 export function ecfp6_bitvec(mol) {
     _assertClass(mol, MolHandle);
     const ret = wasm.ecfp6_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Like `ecfp6_bitvec` but with explicit chirality control.
+ *
+ * When `use_chirality=true`, tetrahedral stereochemistry is included in the
+ * initial atom hash, making enantiomers have different fingerprints.
+ * When `false` (default), chirality is ignored.
+ * @param {MolHandle} mol
+ * @param {boolean} use_chirality
+ * @returns {Uint8Array}
+ */
+export function ecfp6_bitvec_with_chirality(mol, use_chirality) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.ecfp6_bitvec_with_chirality(mol.__wbg_ptr, use_chirality);
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
@@ -1244,17 +1809,61 @@ export function ecfp6_bitvec(mol) {
  *
  * The hash modulo is applied at fingerprint-generation time (`id % nbits`),
  * so no post-processing fold is needed.
+ * Compute a custom ECFP (Extended Connectivity FingerPrint) with specified radius and bit count.
+ *
+ * When `use_chirality=true`, tetrahedral stereochemistry is included in the initial
+ * atom hash. When `false` (default), chirality is ignored.
  * @param {MolHandle} mol
  * @param {number} radius
  * @param {number} nbits
+ * @param {boolean} use_chirality
  * @returns {Uint8Array}
  */
-export function ecfp_bitvec_custom(mol, radius, nbits) {
+export function ecfp_bitvec_custom(mol, radius, nbits, use_chirality) {
     _assertClass(mol, MolHandle);
-    const ret = wasm.ecfp_bitvec_custom(mol.__wbg_ptr, radius, nbits);
+    const ret = wasm.ecfp_bitvec_custom(mol.__wbg_ptr, radius, nbits, use_chirality);
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
+}
+
+/**
+ * Enumerate a combinatorial library from a SMIRKS template and two fragment sets.
+ *
+ * Generates all products by combining every scaffold with every building block.
+ * Input format: `scaffolds_smiles` and `building_blocks_smiles` are pipe-delimited
+ * SMILES strings (e.g., `"c1ccccc1|Cc1ccccc1"`).
+ *
+ * Returns JSON array of product SMILES strings.
+ * Example: `enumerate_library_2way("[C:1][Cl].[C:2][NH2]>>[C:1]N[C:2]", "c1ccccc1|Cc1ccccc1", "NCc1ccccc1|NCC")`
+ * @param {string} template
+ * @param {string} scaffolds_smiles
+ * @param {string} building_blocks_smiles
+ * @returns {string}
+ */
+export function enumerate_library_2way(template, scaffolds_smiles, building_blocks_smiles) {
+    let deferred5_0;
+    let deferred5_1;
+    try {
+        const ptr0 = passStringToWasm0(template, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(scaffolds_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(building_blocks_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.enumerate_library_2way(ptr0, len0, ptr1, len1, ptr2, len2);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
+        if (ret[3]) {
+            ptr4 = 0; len4 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
+    } finally {
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
 }
 
 /**
@@ -1303,6 +1912,28 @@ export function enumerate_tautomers_json(mol) {
     try {
         _assertClass(mol, MolHandle);
         const ret = wasm.enumerate_tautomers_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute ERG-style 315-element float histogram fingerprint.
+ * Returns JSON: {"len":315,"values":[f64,...]} or {"error":"..."}.
+ * Format: 21 pharmacophore-feature-pair × 15 distance bins with Gaussian fuzzing.
+ * See `chematic_fp::erg_vec` for details.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function erg_vec_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.erg_vec_json(mol.__wbg_ptr);
         deferred1_0 = ret[0];
         deferred1_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -1402,6 +2033,79 @@ export function gasteiger_charges_json(mol) {
 }
 
 /**
+ * Generate 3D coordinates using ETKDG and minimize with DREIDING force field.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function generate_3d_etkdg_minimized_pdb(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.generate_3d_etkdg_minimized_pdb(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Generate 3D coordinates using ETKDG (torsion angle preferences) and return PDB block.
+ * ETKDG produces higher-quality conformations than rule-based DG by applying
+ * experimental torsion angle preferences to common structural patterns.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function generate_3d_etkdg_pdb(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.generate_3d_etkdg_pdb(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Generate 3D coordinates from SMILES (raw distance geometry, no minimization).
+ * Returns PDB format string with atoms positioned in 3D space.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const pdbStr = module.generate_3d_from_smiles("c1ccccc1");
+ * console.log(pdbStr);  // PDB file content
+ * ```
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function generate_3d_from_smiles(smiles) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.generate_3d_from_smiles(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Generate energy-minimized 3D coordinates and return a PDB string.
  *
  * Runs distance-geometry placement followed by gradient-descent force-field
@@ -1421,6 +2125,40 @@ export function generate_3d_minimized_pdb(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Generate 3D coordinates and minimize from SMILES string.
+ * Pipeline: distance geometry → DREIDING minimization.
+ * Better geometry quality than raw DG; suitable for graphics.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const pdbStr = module.generate_3d_optimized_pdb("c1ccccc1");
+ * console.log(pdbStr);  // PDB file with optimized geometry
+ * ```
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function generate_3d_optimized_pdb(smiles) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.generate_3d_optimized_pdb(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -1541,6 +2279,31 @@ export function get_bond_info(mol, idx) {
 }
 
 /**
+ * Get bond length in Ångströms between two atoms from a SMILES string.
+ * Returns -1.0 if parsing fails or atom indices are out of range.
+ *
+ * # Arguments
+ * - `smiles`: SMILES string
+ * - `a`: first atom index
+ * - `b`: second atom index
+ *
+ * # Example
+ * ```javascript
+ * const len = get_bond_length_json("CC", 0, 1);  // C-C single bond ≈ 1.54 Å
+ * ```
+ * @param {string} smiles
+ * @param {number} a
+ * @param {number} b
+ * @returns {number}
+ */
+export function get_bond_length_json(smiles, a, b) {
+    const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.get_bond_length_json(ptr0, len0, a, b);
+    return ret;
+}
+
+/**
  * All scalar molecular descriptors as a single JSON object.
  *
  * Keys use camelCase and match the individual `MolHandle` method names.
@@ -1554,6 +2317,54 @@ export function get_descriptors_json(mol) {
     try {
         _assertClass(mol, MolHandle);
         const ret = wasm.get_descriptors_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Get dihedral angle A—B—C—D in degrees from a SMILES string.
+ * Returns null (JSON null) if any atom index is out of range or atoms are collinear.
+ *
+ * # Arguments
+ * - `smiles`: SMILES string
+ * - `a`, `b`, `c`, `d`: atom indices
+ *
+ * # Example
+ * ```javascript
+ * const dihedral = get_dihedral_json("CCCC", 0, 1, 2, 3);  // A-B-C-D
+ * ```
+ * @param {string} smiles
+ * @param {number} a
+ * @param {number} b
+ * @param {number} c
+ * @param {number} d
+ * @returns {any}
+ */
+export function get_dihedral_json(smiles, a, b, c, d) {
+    const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.get_dihedral_json(ptr0, len0, a, b, c, d);
+    return ret;
+}
+
+/**
+ * Compute GETAWAY descriptors (GEometric, Topologic And wAveleT descriptors) from 3D coordinates.
+ * Returns JSON array of 9 values: [G1, G2, G3, D1, D2, D3, T, V, A]
+ * where G* = geometric autocorrelations (lag-1,2,3), D* = topologic distances,
+ * T = total pairwise distance, V = bounding-box volume, A = anisotropy ratio.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function getaway_descriptors_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.getaway_descriptors_json(mol.__wbg_ptr);
         deferred1_0 = ret[0];
         deferred1_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -1580,6 +2391,68 @@ export function identify_functional_groups(mol) {
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
+}
+
+/**
+ * Generate InChI string from SMILES.
+ *
+ * Returns `"error:<msg>"` on parse failure.
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function inchi_from_smiles(smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.inchi_from_smiles(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Generate InChIKey from SMILES (27-character identifier).
+ *
+ * Returns `"error:<msg>"` on parse failure.
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function inchikey_from_smiles(smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.inchikey_from_smiles(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Invert the stereochemistry of a tetrahedral stereocenter (U/D wedge bonds).
+ *
+ * If the atom has no wedge/dash bonds, returns an unchanged copy.
+ * Returns error if atom_idx is invalid.
+ * @param {MolHandle} mol
+ * @param {number} atom_idx
+ * @returns {MolHandle}
+ */
+export function invert_stereocenter_at(mol, atom_idx) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.invert_stereocenter_at(mol.__wbg_ptr, atom_idx);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
 }
 
 /**
@@ -1759,6 +2632,61 @@ export function mcs_smiles_json(smiles_json) {
 }
 
 /**
+ * MCS with ring-awareness constraints.
+ *
+ * `smiles_json` — JSON array of at least 2 SMILES strings.
+ * `ring_matches_ring_only` — ring atoms may only match ring atoms.
+ * `complete_rings_only` — partial ring inclusion is removed from the result.
+ * Returns the MCS SMILES, or `"null"` when no common substructure was found.
+ * @param {string} smiles_json
+ * @param {boolean} ring_matches_ring_only
+ * @param {boolean} complete_rings_only
+ * @returns {string}
+ */
+export function mcs_smiles_json_with_ring_config(smiles_json, ring_matches_ring_only, complete_rings_only) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.mcs_smiles_json_with_ring_config(ptr0, len0, ring_matches_ring_only, complete_rings_only);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * MinHash fingerprint (128 hashes) as JSON.
+ *
+ * Returns `{"num_hashes":128,"hashes":[u64,...]}`.
+ * Use `tanimoto_mhfp_smiles` for direct SMILES-to-SMILES similarity.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mhfp_hashes_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mhfp_hashes_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Optimize molecular geometry using DREIDING force field.
  *
  * Performs geometry minimization with DREIDING force field parameters.
@@ -1778,6 +2706,134 @@ export function minimize_dreiding_json(mol) {
     try {
         _assertClass(mol, MolHandle);
         const ret = wasm.minimize_dreiding_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Minimize geometry using MMFF94 steepest descent (Halgren 1996 full parameters).
+ * Generates 3D coords internally if needed.
+ * Returns JSON: {"energy":E,"rmsd":R,"converged":true,"iterations":N} or {"error":"..."}.
+ * @param {MolHandle} mol
+ * @param {number} max_iter
+ * @returns {string}
+ */
+export function minimize_mmff94_json(mol, max_iter) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.minimize_mmff94_json(mol.__wbg_ptr, max_iter);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Minimize geometry using MMFF94 L-BFGS (faster convergence than steepest descent).
+ * Returns JSON: {"energy":E,"rmsd":R,"converged":true,"iterations":N} or {"error":"..."}.
+ * @param {MolHandle} mol
+ * @param {number} max_iter
+ * @returns {string}
+ */
+export function minimize_mmff94_lbfgs_json(mol, max_iter) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.minimize_mmff94_lbfgs_json(mol.__wbg_ptr, max_iter);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * MMFF94 partial charges (BCI table, ±0.1e accuracy) as a JSON array of f64.
+ *
+ * Uses Bond Charge Increment (BCI) model (Halgren 1996) for 25 common bond types.
+ * Returns `[q0, q1, ..., qN]` — one value per heavy atom.
+ * Total charge equals the sum of formal charges (charge conserved).
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mmff94_charges_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mmff94_charges_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute MMFF94-style atom-typed partial charges (improved over element-pair BCI).
+ * Returns JSON: {"charges":[f64,...]} or {"error":"..."}.
+ * Uses atom-type classification (Csp3/Ccarbonyl/Ohydroxyl/Oester/Nar/NarH etc.)
+ * for better accuracy (~±0.02e) vs element-pair BCI (~±0.05e).
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mmff94_charges_typed_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mmff94_charges_typed_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute MMFF94 energy breakdown for current rule-based 3D geometry.
+ * Returns JSON: {"bond":B,"angle":A,"torsion":T,"vdw":V,"elec":E,"total":X} or {"error":"..."}.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mmff94_energy_breakdown_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mmff94_energy_breakdown_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute MMFF94 partial charges using numeric atom types (Halgren 1996 eq. 15).
+ * Returns JSON: {"charges":[-0.28,0.15,...]} or {"error":"..."}.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mmff94_partial_charges_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mmff94_partial_charges_json(mol.__wbg_ptr);
         deferred1_0 = ret[0];
         deferred1_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -2139,6 +3195,59 @@ export function mol_with_bond_removed(mol, idx) {
 }
 
 /**
+ * Generate a complete molecular report (JSON string) from a SMILES.
+ * Returns the JSON representation of a `MoleculeReport` struct.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const json = module.molecule_report_json("CC(=O)Oc1ccccc1C(=O)O");
+ * const report = JSON.parse(json);
+ * console.log(report.canonical_smiles, report.descriptors.tpsa);
+ * ```
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function molecule_report_json(smiles) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.molecule_report_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * MQN descriptor (42 integer values: Molecular Quantum Numbers).
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function mqn_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.mqn_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Per-atom molar refractivity contributions as a JSON array of f64.
  * @param {MolHandle} mol
  * @returns {string}
@@ -2212,6 +3321,33 @@ export function neutralize_charges(mol) {
 }
 
 /**
+ * Parse and re-serialize CXSMILES, preserving supported CX metadata.
+ * Returns error if atom count exceeds 10,000.
+ * @param {string} s
+ * @returns {string}
+ */
+export function normalize_cxsmiles(s) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(s, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.normalize_cxsmiles(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Parse and re-serialise a reaction SMILES string, returning the normalised form.
  *
  * Useful for validating reaction SMILES and obtaining a canonical representation.
@@ -2263,9 +3399,67 @@ export function pains_matches_json(mol) {
 }
 
 /**
+ * Parse CXSMARTS and return preserved metadata as JSON.
+ * Returns error if atom count exceeds 10,000.
+ * @param {string} s
+ * @returns {string}
+ */
+export function parse_cxsmarts_json(s) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(s, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_cxsmarts_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Parse CXSMILES and return preserved metadata as JSON.
+ *
+ * Supported CX fields: atom labels (`$...$`), `atomProp`, atom radicals (`^n:`),
+ * and zero-order bonds (`Z:`). The `cxsmiles` field is a re-serialized
+ * round-trip form using the supported fields.
+ * Returns error if atom count exceeds 10,000.
+ * @param {string} s
+ * @returns {string}
+ */
+export function parse_cxsmiles_json(s) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(s, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_cxsmiles_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Parse a SMILES string into a `MolHandle`.
  *
- * Returns a JS error string on parse failure.
+ * Returns a JS error string on parse failure or if atom count exceeds 10,000.
  * @param {string} s
  * @returns {MolHandle}
  */
@@ -2295,6 +3489,131 @@ export function peoe_vsa_json(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Detect pharmacophore features for virtual screening and lead optimization.
+ * Returns JSON array of features: [{type, atom_idx, neighbor_count}, ...]
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function pharmacophore_features_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.pharmacophore_features_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute 2D pharmacophore fingerprint (2048 bits) as a JSON feature count summary.
+ * Returns simplified JSON with feature type counts: {Donor, Acceptor, Aromatic, Hydrophobic, Positive, Negative}
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function pharmacophore_fp_2d_summary(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.pharmacophore_fp_2d_summary(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute 3D pharmacophore fingerprint from generated 3D coordinates.
+ * Returns simplified JSON with feature type counts (3D-aware version).
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function pharmacophore_fp_3d_summary(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.pharmacophore_fp_3d_summary(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Predict pKa for all ionizable sites in a molecule.
+ *
+ * Returns a JSON array: `[{"atom_idx":8,"pka":4.0,"type":"acid","group":"carboxylic_acid"},...]`
+ *
+ * Returns `[]` if no ionizable sites are found, or `{"error":"..."}` on parse failure.
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function predict_pka_json(smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.predict_pka_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Generate `count` random SMILES from a SMILES string using the given seed.
+ * Atoms are permuted based on xorshift64 RNG. Each variant should parse back
+ * to the same molecule. Returns a JSON array of SMILES strings.
+ *
+ * # Arguments
+ * - `smiles`: input SMILES string
+ * - `count`: number of variants to generate (capped at 100)
+ * - `seed`: xorshift64 seed
+ *
+ * # Example
+ * ```javascript
+ * const variants = random_smiles_json("CC(C)O", 5, 42);
+ * // variants: ["CC(C)O", "C(C)(O)C", ...]
+ * ```
+ * @param {string} smiles
+ * @param {number} count
+ * @param {bigint} seed
+ * @returns {string}
+ */
+export function random_smiles_json(smiles, count, seed) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.random_smiles_json(ptr0, len0, count, seed);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -2353,6 +3672,32 @@ export function rgroup_decompose_json(smiles_json, core_smarts) {
         return getStringFromWasm0(ptr3, len3);
     } finally {
         wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Ring family classification and detection as JSON.
+ * Returns an array of ring families with their atoms, ring indices, and topology kind.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function ring_families_json(mol) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.ring_families_json(mol.__wbg_ptr);
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
 }
 
@@ -2423,6 +3768,41 @@ export function sa_score(mol) {
     _assertClass(mol, MolHandle);
     const ret = wasm.sa_score(mol.__wbg_ptr);
     return ret;
+}
+
+/**
+ * Screen a batch of SMILES strings (JSON string output).
+ * Returns per-record results including pass/fail with error details.
+ * Includes MaxMin diversity picking and Butina clustering by default.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const smilesList = "c1ccccc1\nCC\nCCC";
+ * const json = module.screen_smiles_json(smilesList, "\n");
+ * const report = JSON.parse(json);
+ * console.log(report.records); // Array of ScreeningRecord
+ * console.log(report.maxmin_picks); // Diversity-selected indices
+ * console.log(report.butina_clusters); // Clustering result
+ * ```
+ * @param {string} smiles_batch
+ * @param {string} delimiter
+ * @returns {string}
+ */
+export function screen_smiles_json(smiles_batch, delimiter) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.screen_smiles_json(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -2521,6 +3901,49 @@ export function sdf_to_smiles_json(sdf) {
 }
 
 /**
+ * Set dihedral angle A—B—C—D and return PDB block with modified coordinates.
+ * Rotates the D-side subtree around the B—C bond.
+ * Returns a JS error if parsing fails or atom indices are invalid.
+ *
+ * # Arguments
+ * - `smiles`: SMILES string
+ * - `a`, `b`, `c`, `d`: atom indices
+ * - `angle_deg`: target dihedral angle in degrees
+ *
+ * # Example
+ * ```javascript
+ * const pdbBlock = set_dihedral_json("CCCC", 0, 1, 2, 3, 120.0);
+ * ```
+ * @param {string} smiles
+ * @param {number} a
+ * @param {number} b
+ * @param {number} c
+ * @param {number} d
+ * @param {number} angle_deg
+ * @returns {string}
+ */
+export function set_dihedral_json(smiles, a, b, c, d, angle_deg) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.set_dihedral_json(ptr0, len0, a, b, c, d, angle_deg);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * 3D shape descriptors as a JSON object.
  *
  * Keys: `pmi1`, `pmi2`, `pmi3`, `npr1`, `npr2`, `asphericity`, `eccentricity`,
@@ -2580,6 +4003,39 @@ export function smarts_match_atoms(smarts, mol) {
         const len0 = WASM_VECTOR_LEN;
         _assertClass(mol, MolHandle);
         const ret = wasm.smarts_match_atoms(ptr0, len0, mol.__wbg_ptr);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Like `smarts_match_atoms` but with explicit chirality matching control.
+ *
+ * When `use_chirality=true`, SMARTS chirality primitives `[@]` and `[@@]` are
+ * matched against the target molecule's stereochemistry. When `false`, chirality
+ * is ignored (RDKit default).
+ * @param {string} smarts
+ * @param {MolHandle} mol
+ * @param {boolean} use_chirality
+ * @returns {string}
+ */
+export function smarts_match_atoms_with_chirality(smarts, mol, use_chirality) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        _assertClass(mol, MolHandle);
+        const ret = wasm.smarts_match_atoms_with_chirality(ptr0, len0, mol.__wbg_ptr, use_chirality);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -2750,6 +4206,33 @@ export function standardize_smiles(smiles) {
     }
 }
 
+/**
+ * Standardize a SMILES string and return result SMILES plus an audit report as JSON.
+ *
+ * Boolean flags map directly to `StandardizeOptions`.
+ * Returns `"error:<msg>"` on parse or serialization failure.
+ * @param {string} smiles
+ * @param {boolean} largest_fragment_only
+ * @param {boolean} neutralize_charges
+ * @param {boolean} remove_explicit_h
+ * @param {boolean} canonical_tautomer
+ * @returns {string}
+ */
+export function standardize_smiles_report_json(smiles, largest_fragment_only, neutralize_charges, remove_explicit_h, canonical_tautomer) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.standardize_smiles_report_json(ptr0, len0, largest_fragment_only, neutralize_charges, remove_explicit_h, canonical_tautomer);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
 export function start() {
     wasm.start();
 }
@@ -2830,6 +4313,53 @@ export function tanimoto_maccs(a, b) {
     _assertClass(b, MolHandle);
     const ret = wasm.tanimoto_maccs(a.__wbg_ptr, b.__wbg_ptr);
     return ret;
+}
+
+/**
+ * Tanimoto-like similarity between two SMILES via MHFP (MinHash Jaccard approximation).
+ * @param {string} smi1
+ * @param {string} smi2
+ * @returns {number}
+ */
+export function tanimoto_mhfp_smiles(smi1, smi2) {
+    const ptr0 = passStringToWasm0(smi1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(smi2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.tanimoto_mhfp_smiles(ptr0, len0, ptr1, len1);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0];
+}
+
+/**
+ * Compute ECFP4 Tanimoto similarity from one query SMILES to all db SMILES (dense output).
+ *
+ * `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).
+ *
+ * Returns a flat JSON array of f32 scores, one per db entry, e.g. `[0.12,0.0,0.85]`.
+ * No zero-filtering: the length always equals the number of db entries.
+ * Returns `"error:<msg>"` on parse failure or oversized input.
+ * @param {string} query_smi
+ * @param {string} db_smiles_json
+ * @returns {string}
+ */
+export function tanimoto_row_json(query_smi, db_smiles_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(query_smi, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.tanimoto_row_json(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -2975,6 +4505,103 @@ export function torsion_bitvec(mol) {
 }
 
 /**
+ * Scan a torsion dihedral i-j-k-l from 0° to 360° in `steps` increments.
+ * Returns JSON array: [{"angle":0.0,"energy":E},...] or {"error":"..."}.
+ * @param {MolHandle} mol
+ * @param {number} i
+ * @param {number} j
+ * @param {number} k
+ * @param {number} l
+ * @param {number} steps
+ * @returns {string}
+ */
+export function torsion_scan_json(mol, i, j, k, l, steps) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.torsion_scan_json(mol.__wbg_ptr, i, j, k, l, steps);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Virtual screen a query SMILES against a database of SMILES using ECFP4 Tanimoto.
+ *
+ * `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).
+ * `k`: number of top hits to return; clamped to db size if larger.
+ *
+ * Returns JSON: `{"results":[{"rank":1,"score":0.85,"smiles":"CCO","idx":42},...]}`.
+ * Returns `"error:<msg>"` on any parse failure or oversized input.
+ * @param {string} query_smi
+ * @param {string} db_smiles_json
+ * @param {number} k
+ * @returns {string}
+ */
+export function virtual_screen_ecfp4_json(query_smi, db_smiles_json, k) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(query_smi, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.virtual_screen_ecfp4_json(ptr0, len0, ptr1, len1, k);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Compute WHIM descriptors (Weighted Holistic Invariant Molecular) from 3D coordinates.
+ * Returns JSON array of 10 values: [L1, L2, L3, P1, P2, P3, ALPHA, BETA, GAMMA, DELTA]
+ * where L* = inertia tensor eigenvalues, P* = principal moments, ALPHA = sum of moments,
+ * BETA = average pairwise interaction, GAMMA = geometric mean, DELTA = anisotropy.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function whim_descriptors_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.whim_descriptors_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute combined WHIM + GETAWAY descriptors (19 values total) as JSON array.
+ * Useful for ML pipelines requiring both shape and topologic features.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function whim_getaway_combined_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.whim_getaway_combined_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Non-canonical SMILES for `mol`.
  *
  * Unlike `canonical_smiles`, the output depends on the internal atom ordering
@@ -2999,6 +4626,14 @@ export function write_smiles(mol) {
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
+        __wbg___wbindgen_string_get_72bdf95d3ae505b1: function(arg0, arg1) {
+            const obj = arg1;
+            const ret = typeof(obj) === 'string' ? obj : undefined;
+            var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            var len1 = WASM_VECTOR_LEN;
+            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+        },
         __wbg___wbindgen_throw_1506f2235d1bdba0: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
@@ -3013,6 +4648,9 @@ function __wbg_get_imports() {
                 wasm.__wbindgen_free(deferred0_0, deferred0_1, 1);
             }
         },
+        __wbg_getRandomValues_3f44b700395062e5: function() { return handleError(function (arg0, arg1) {
+            globalThis.crypto.getRandomValues(getArrayU8FromWasm0(arg0, arg1));
+        }, arguments); },
         __wbg_new_227d7c05414eb861: function() {
             const ret = new Error();
             return ret;
@@ -3024,7 +4662,12 @@ function __wbg_get_imports() {
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
-        __wbindgen_cast_0000000000000001: function(arg0, arg1) {
+        __wbindgen_cast_0000000000000001: function(arg0) {
+            // Cast intrinsic for `F64 -> Externref`.
+            const ret = arg0;
+            return ret;
+        },
+        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return ret;
@@ -3051,9 +4694,18 @@ const ConformerHandleFinalization = (typeof FinalizationRegistry === 'undefined'
 const DepictOptionsFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_depictoptions_free(ptr, 1));
+const MhfpLshHandleFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_mhfplshhandle_free(ptr, 1));
 const MolHandleFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_molhandle_free(ptr, 1));
+
+function addToExternrefTable0(obj) {
+    const idx = wasm.__externref_table_alloc();
+    wasm.__wbindgen_externrefs.set(idx, obj);
+    return idx;
+}
 
 function _assertClass(instance, klass) {
     if (!(instance instanceof klass)) {
@@ -3092,6 +4744,19 @@ function getUint8ArrayMemory0() {
         cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
     }
     return cachedUint8ArrayMemory0;
+}
+
+function handleError(f, args) {
+    try {
+        return f.apply(this, args);
+    } catch (e) {
+        const idx = addToExternrefTable0(e);
+        wasm.__wbindgen_exn_store(idx);
+    }
+}
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
 }
 
 function passArray32ToWasm0(arg, malloc) {

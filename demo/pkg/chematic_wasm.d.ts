@@ -24,6 +24,18 @@ export class ConformerHandle {
      */
     add_minimized_conformer(): number;
     /**
+     * Cluster conformers by Kabsch-aligned RMSD and return a JSON object
+     * describing which conformers to keep.
+     *
+     * Uses greedy leader-linkage: conformers are visited in index order; each
+     * is compared against existing cluster representatives. If the RMSD to any
+     * representative is < `rms_threshold`, the conformer is discarded; otherwise
+     * it starts a new cluster and is kept.
+     *
+     * Returns `{"kept_indices":[0,3,7,...],"removed_count":5}` on success.
+     */
+    cluster_conformers_json(rms_threshold: number): string;
+    /**
      * Number of conformers currently stored.
      */
     conformer_count(): number;
@@ -95,6 +107,47 @@ export class DepictOptions {
 }
 
 /**
+ * MinHash LSH index: insert MHFP fingerprints and query by approximate similarity.
+ *
+ * ```js
+ * const idx = new MhfpLshHandle(128);
+ * const i0 = idx.add_smiles("c1ccccc1");    // benzene → index 0
+ * const i1 = idx.add_smiles("Cc1ccccc1");   // toluene → index 1
+ * const hits = JSON.parse(idx.query_json("c1ccccc1", 0.5));
+ * // hits: [{index:0,similarity:1.0}, {index:1,similarity:0.xxx}]
+ * ```
+ */
+export class MhfpLshHandle {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Add a molecule by SMILES; returns its 0-based index in the index.
+     */
+    add_smiles(smiles: string): number;
+    /**
+     * True if the index contains no molecules.
+     */
+    is_empty(): boolean;
+    /**
+     * Number of molecules in the index.
+     */
+    len(): number;
+    /**
+     * Create a new LSH index for MHFP fingerprints with `num_hashes` hash lanes.
+     * Default band decomposition: 16 bands × (num_hashes / 16) rows.
+     * `num_hashes` must be a multiple of 16 (e.g. 128).
+     */
+    constructor(num_hashes: number);
+    /**
+     * Query by SMILES for all entries with similarity ≥ threshold.
+     *
+     * Returns a JSON array `[{"index":N,"similarity":0.xxx},...]` sorted by
+     * descending similarity.  Empty array `[]` when nothing qualifies.
+     */
+    query_json(query_smiles: string, threshold: number): string;
+}
+
+/**
  * A handle to a parsed molecule.  Owns the molecule behind an `Rc` so that
  * it can be cheaply cloned on the JS side without copying atom/bond data.
  */
@@ -107,9 +160,24 @@ export class MolHandle {
      */
     aromatic_ring_count(): number;
     /**
+     * Assign CIP (R/S/E/Z) stereocenters and return JSON.
+     *
+     * Format: `{"centers":[{"atom":0,"code":"R"},{"atom":3,"code":"E"}]}`
+     */
+    assign_cip_json(): string;
+    /**
      * Number of heavy atoms (explicit atoms in the graph; does not count implicit H).
      */
     atom_count(): number;
+    /**
+     * Returns true when TPSA < 90 Å², MW < 400, HBD ≤ 3.
+     */
+    bbb_passes(): boolean;
+    /**
+     * Clark (2000) blood-brain barrier logBB score.
+     * logBB > −1.0 = likely CNS penetrant.
+     */
+    bbb_score(): number;
     /**
      * Bertz complexity index (BertzCT).
      */
@@ -118,6 +186,11 @@ export class MolHandle {
      * Number of bonds.
      */
     bond_count(): number;
+    /**
+     * Palm (1997) Caco-2 intestinal permeability (logPCaco2).
+     * > −5.5 = high permeability.
+     */
+    caco2_permeability(): number;
     /**
      * Canonical SMILES string.
      */
@@ -162,6 +235,15 @@ export class MolHandle {
      * Kier–Hall χ4v valence-weighted connectivity index.
      */
     chi4v(): number;
+    /**
+     * CYP3A4 metabolic inhibition risk score (0.0–1.0).
+     */
+    cyp3a4_inhibition_risk(): number;
+    /**
+     * 2D PNG depiction (rasterized from SVG).
+     * Returns PNG data as base64-encoded string for embedding in HTML/JS.
+     */
+    depict_png(): Uint8Array;
     /**
      * 2D SVG depiction of the molecule (CPK coloring).
      */
@@ -209,6 +291,25 @@ export class MolHandle {
      */
     heavy_atom_count(): number;
     /**
+     * hERG cardiac toxicity risk score (0.0–1.0).
+     */
+    herg_risk_score(): number;
+    /**
+     * Isotope distribution as JSON.
+     *
+     * Returns `[{"mass":100.0,"abundance":0.9},...]` sorted by mass.
+     * `resolution`: m/z bin width in Da (e.g. `0.1` for nominal, `0.01` for high-res).
+     */
+    isotope_distribution_json(resolution: number): string;
+    /**
+     * Generate IUPAC systematic name for the molecule.
+     *
+     * Returns the name string on success, or an empty string when the
+     * structure is outside the supported naming scope (complex polycyclics,
+     * multi-functional groups, etc.).
+     */
+    iupac_name(): string;
+    /**
      * Hall–Kier κ1 shape index.
      */
     kappa1(): number;
@@ -228,6 +329,19 @@ export class MolHandle {
      * Returns `true` if the molecule satisfies Lipinski's Rule of Five.
      */
     lipinski_passes(): boolean;
+    /**
+     * LogD (distribution coefficient) at a specific pH.
+     *
+     * Accounts for ionization state: neutral molecules return LogP unchanged,
+     * ionizable molecules are adjusted by log(neutral_fraction).
+     */
+    logd_at_ph(ph: number): number;
+    /**
+     * LogD profile across a pH range as JSON.
+     *
+     * Returns `[{"ph":0.0,"logd":2.5}, ...]` with `steps` evenly-spaced pH points.
+     */
+    logd_profile_json(ph_start: number, ph_end: number, steps: number): string;
     /**
      * Crippen–Wildman octanol/water partition coefficient (LogP).
      */
@@ -299,9 +413,23 @@ export class MolHandle {
      */
     pains_passes(): boolean;
     /**
+     * Most acidic pKa in the molecule, or NaN if no acidic site.
+     */
+    pka_acid_value(): number;
+    /**
+     * Most basic pKa in the molecule, or NaN if no basic site.
+     */
+    pka_base_value(): number;
+    /**
      * Quantitative Estimate of Drug-likeness (QED); range [0, 1].
      */
     qed(): number;
+    /**
+     * Randić connectivity index (χ₀).
+     *
+     * χ₀ = Σ 1/√(d_i × d_j) over all bonds, where d is heavy-atom degree.
+     */
+    randic_index(): number;
     /**
      * Returns `true` if the molecule passes the REOS (Rapid Elimination Of Swill) filter.
      */
@@ -319,6 +447,14 @@ export class MolHandle {
      */
     sum_estate(): number;
     /**
+     * InChI string representation of the molecule.
+     */
+    to_inchi(): string;
+    /**
+     * InChIKey (27-character identifier) for the molecule.
+     */
+    to_inchikey(): string;
+    /**
      * Topological polar surface area (Å²).
      */
     tpsa(): number;
@@ -331,6 +467,10 @@ export class MolHandle {
      * Wiener topological index (sum of all pairwise shortest-path distances).
      */
     wiener_index(): number;
+    /**
+     * Zagreb index M1: Σ d_i² over all heavy atoms.
+     */
+    zagreb_index_m1(): number;
 }
 
 /**
@@ -339,9 +479,32 @@ export class MolHandle {
 export function add_hydrogens(mol: MolHandle): MolHandle;
 
 /**
+ * Compute a full ADMET property profile for a molecule.
+ *
+ * Returns a JSON object with fields:
+ * `bbb_score`, `bbb_passes`, `caco2`, `herg_risk`, `cyp3a4_risk`,
+ * `pka_acid` (null if absent), `pka_base` (null if absent),
+ * `esol`, `logd74`, `mw`, `logp`, `tpsa`, `hbd`, `hba`, `rotatable_bonds`
+ *
+ * Returns `{"error":"..."}` on parse failure.
+ */
+export function admet_profile_json(smiles: string): string;
+
+/**
  * AtomPair fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
  */
 export function atom_pair_bitvec(mol: MolHandle): Uint8Array;
+
+/**
+ * AutoCorr2D descriptor (7 values: topological distance lags 1-7).
+ */
+export function autocorr_2d_json(mol: MolHandle): string;
+
+/**
+ * AutoCorr3D descriptor (8 values: Euclidean distance bins 1-8 Å).
+ * Requires 3D coordinates (generated automatically).
+ */
+export function autocorr_3d_json(mol: MolHandle): string;
 
 /**
  * Check whether a reaction SMILES is atom-balanced.
@@ -389,6 +552,17 @@ export function butina_cluster_ecfp4_json(smiles_json: string, cutoff: number): 
 export function canonical_tautomer(mol: MolHandle): MolHandle;
 
 /**
+ * Compute the canonical tautomer with specific atoms blocked from H-transfer.
+ *
+ * `blocked_atom_indices_json`: JSON array of 0-based atom indices, e.g. `[0, 3]`.
+ * Any tautomer move whose donor, bridge, or acceptor is in the blocked set is suppressed.
+ *
+ * Returns canonical SMILES of the result, or `{"error":"..."}` on failure.
+ * Out-of-range indices are silently ignored (no effect).
+ */
+export function canonical_tautomer_with_blocked_atoms_json(mol: MolHandle, blocked_atom_indices_json: string): string;
+
+/**
  * Parse all molecular fragments from a CDXML string.
  *
  * Returns a JSON array of SMILES strings, one per fragment:
@@ -406,6 +580,32 @@ export function cdxml_to_smiles_json(cdxml: string): string;
  * Returns `[]` for molecules with no specified stereocenters.
  */
 export function cip_assignments_json(mol: MolHandle): string;
+
+/**
+ * Compare multiple SMILES strings (up to 256 by default).
+ * Accepts a delimiter-separated list (e.g., newline or comma).
+ *
+ * # Example (JS)
+ * ```javascript
+ * const smilesList = "c1ccccc1\nCc1ccccc1\nCCc1ccccc1";
+ * const json = module.compare_molecules_batch_json(smilesList, "\n");
+ * const comparison = JSON.parse(json);
+ * ```
+ */
+export function compare_molecules_batch_json(smiles_batch: string, delimiter: string): string;
+
+/**
+ * Compare two or more SMILES strings (JSON string output).
+ * Returns the JSON representation of a `MoleculeComparison` struct.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const json = module.compare_molecules_json("c1ccccc1", "Cc1ccccc1");
+ * const comparison = JSON.parse(json);
+ * console.log(comparison.pairwise[0].similarities.ecfp4_tanimoto);
+ * ```
+ */
+export function compare_molecules_json(smiles1: string, smiles2: string): string;
 
 /**
  * Compute direct Coulomb energy for a molecule with Gasteiger partial charges.
@@ -503,6 +703,21 @@ export function depict_svg_grid_highlighted(smiles_block: string, cols: number, 
 export function detect_functional_groups(mol: MolHandle): string;
 
 /**
+ * Infer bond connectivity and bond orders from an XYZ-format string.
+ *
+ * Explicit hydrogen atoms must be present in the XYZ for reliable bond-order
+ * assignment (without H, carbonyl C=O cannot be distinguished from C-O).
+ *
+ * Returns JSON on success: `{"smiles":"CCO","atom_count":3,"bond_count":2}`.
+ * `atom_count` and `bond_count` refer to the heavy-atom skeleton (H removed).
+ *
+ * Returns JSON on error: `{"error":"molecule has 450 atoms; maximum is 300"}`.
+ *
+ * Safe: never freezes. All internal loops are O(n²). Capped at 300 atoms.
+ */
+export function determine_bonds_from_xyz_json(xyz_str: string): string;
+
+/**
  * Dice similarity between `a` and `b` using ECFP4 fingerprints.
  */
 export function dice_ecfp4(a: MolHandle, b: MolHandle): number;
@@ -523,9 +738,27 @@ export function dice_maccs(a: MolHandle, b: MolHandle): number;
 export function ecfp4_bitvec(mol: MolHandle): Uint8Array;
 
 /**
+ * Like `ecfp4_bitvec` but with explicit chirality control.
+ *
+ * When `use_chirality=true`, tetrahedral stereochemistry is included in the
+ * initial atom hash, making enantiomers have different fingerprints.
+ * When `false` (default), chirality is ignored.
+ */
+export function ecfp4_bitvec_with_chirality(mol: MolHandle, use_chirality: boolean): Uint8Array;
+
+/**
  * ECFP6 (radius-3) fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
  */
 export function ecfp6_bitvec(mol: MolHandle): Uint8Array;
+
+/**
+ * Like `ecfp6_bitvec` but with explicit chirality control.
+ *
+ * When `use_chirality=true`, tetrahedral stereochemistry is included in the
+ * initial atom hash, making enantiomers have different fingerprints.
+ * When `false` (default), chirality is ignored.
+ */
+export function ecfp6_bitvec_with_chirality(mol: MolHandle, use_chirality: boolean): Uint8Array;
 
 /**
  * Compute a fingerprint bit-vector with configurable ECFP radius and bit width.
@@ -536,8 +769,24 @@ export function ecfp6_bitvec(mol: MolHandle): Uint8Array;
  *
  * The hash modulo is applied at fingerprint-generation time (`id % nbits`),
  * so no post-processing fold is needed.
+ * Compute a custom ECFP (Extended Connectivity FingerPrint) with specified radius and bit count.
+ *
+ * When `use_chirality=true`, tetrahedral stereochemistry is included in the initial
+ * atom hash. When `false` (default), chirality is ignored.
  */
-export function ecfp_bitvec_custom(mol: MolHandle, radius: number, nbits: number): Uint8Array;
+export function ecfp_bitvec_custom(mol: MolHandle, radius: number, nbits: number, use_chirality: boolean): Uint8Array;
+
+/**
+ * Enumerate a combinatorial library from a SMIRKS template and two fragment sets.
+ *
+ * Generates all products by combining every scaffold with every building block.
+ * Input format: `scaffolds_smiles` and `building_blocks_smiles` are pipe-delimited
+ * SMILES strings (e.g., `"c1ccccc1|Cc1ccccc1"`).
+ *
+ * Returns JSON array of product SMILES strings.
+ * Example: `enumerate_library_2way("[C:1][Cl].[C:2][NH2]>>[C:1]N[C:2]", "c1ccccc1|Cc1ccccc1", "NCc1ccccc1|NCC")`
+ */
+export function enumerate_library_2way(template: string, scaffolds_smiles: string, building_blocks_smiles: string): string;
 
 /**
  * Enumerate all stereoisomers arising from unspecified tetrahedral stereocenters.
@@ -558,6 +807,14 @@ export function enumerate_stereo_isomers_json(mol: MolHandle): string;
  * Example return value: `["Oc1cccc2ccccc12","O=C1C=CC=Cc2ccccc21"]`
  */
 export function enumerate_tautomers_json(mol: MolHandle): string;
+
+/**
+ * Compute ERG-style 315-element float histogram fingerprint.
+ * Returns JSON: {"len":315,"values":[f64,...]} or {"error":"..."}.
+ * Format: 21 pharmacophore-feature-pair × 15 distance bins with Gaussian fuzzing.
+ * See `chematic_fp::erg_vec` for details.
+ */
+export function erg_vec_json(mol: MolHandle): string;
 
 /**
  * Per-atom EState values as a JSON array of f64.
@@ -591,6 +848,30 @@ export function find_reaction_center_json(reaction_smiles: string): string;
 export function gasteiger_charges_json(mol: MolHandle): string;
 
 /**
+ * Generate 3D coordinates using ETKDG and minimize with DREIDING force field.
+ */
+export function generate_3d_etkdg_minimized_pdb(mol: MolHandle): string;
+
+/**
+ * Generate 3D coordinates using ETKDG (torsion angle preferences) and return PDB block.
+ * ETKDG produces higher-quality conformations than rule-based DG by applying
+ * experimental torsion angle preferences to common structural patterns.
+ */
+export function generate_3d_etkdg_pdb(mol: MolHandle): string;
+
+/**
+ * Generate 3D coordinates from SMILES (raw distance geometry, no minimization).
+ * Returns PDB format string with atoms positioned in 3D space.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const pdbStr = module.generate_3d_from_smiles("c1ccccc1");
+ * console.log(pdbStr);  // PDB file content
+ * ```
+ */
+export function generate_3d_from_smiles(smiles: string): string;
+
+/**
  * Generate energy-minimized 3D coordinates and return a PDB string.
  *
  * Runs distance-geometry placement followed by gradient-descent force-field
@@ -598,6 +879,19 @@ export function gasteiger_charges_json(mol: MolHandle): string;
  * flexible molecules; the force field is approximate (not MMFF94/UFF).
  */
 export function generate_3d_minimized_pdb(mol: MolHandle): string;
+
+/**
+ * Generate 3D coordinates and minimize from SMILES string.
+ * Pipeline: distance geometry → DREIDING minimization.
+ * Better geometry quality than raw DG; suitable for graphics.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const pdbStr = module.generate_3d_optimized_pdb("c1ccccc1");
+ * console.log(pdbStr);  // PDB file with optimized geometry
+ * ```
+ */
+export function generate_3d_optimized_pdb(smiles: string): string;
 
 /**
  * Generate 3D coordinates for the molecule and return a PDB string.
@@ -650,6 +944,22 @@ export function get_bond_between(mol: MolHandle, atom1: number, atom2: number): 
 export function get_bond_info(mol: MolHandle, idx: number): string;
 
 /**
+ * Get bond length in Ångströms between two atoms from a SMILES string.
+ * Returns -1.0 if parsing fails or atom indices are out of range.
+ *
+ * # Arguments
+ * - `smiles`: SMILES string
+ * - `a`: first atom index
+ * - `b`: second atom index
+ *
+ * # Example
+ * ```javascript
+ * const len = get_bond_length_json("CC", 0, 1);  // C-C single bond ≈ 1.54 Å
+ * ```
+ */
+export function get_bond_length_json(smiles: string, a: number, b: number): number;
+
+/**
  * All scalar molecular descriptors as a single JSON object.
  *
  * Keys use camelCase and match the individual `MolHandle` method names.
@@ -658,10 +968,55 @@ export function get_bond_info(mol: MolHandle, idx: number): string;
 export function get_descriptors_json(mol: MolHandle): string;
 
 /**
+ * Get dihedral angle A—B—C—D in degrees from a SMILES string.
+ * Returns null (JSON null) if any atom index is out of range or atoms are collinear.
+ *
+ * # Arguments
+ * - `smiles`: SMILES string
+ * - `a`, `b`, `c`, `d`: atom indices
+ *
+ * # Example
+ * ```javascript
+ * const dihedral = get_dihedral_json("CCCC", 0, 1, 2, 3);  // A-B-C-D
+ * ```
+ */
+export function get_dihedral_json(smiles: string, a: number, b: number, c: number, d: number): any;
+
+/**
+ * Compute GETAWAY descriptors (GEometric, Topologic And wAveleT descriptors) from 3D coordinates.
+ * Returns JSON array of 9 values: [G1, G2, G3, D1, D2, D3, T, V, A]
+ * where G* = geometric autocorrelations (lag-1,2,3), D* = topologic distances,
+ * T = total pairwise distance, V = bounding-box volume, A = anisotropy ratio.
+ */
+export function getaway_descriptors_json(mol: MolHandle): string;
+
+/**
  * Identify functional groups. Returns a JSON array of objects:
  * `[{"atoms":[0,2,3],"type":"C,N,O"}, …]`
  */
 export function identify_functional_groups(mol: MolHandle): string;
+
+/**
+ * Generate InChI string from SMILES.
+ *
+ * Returns `"error:<msg>"` on parse failure.
+ */
+export function inchi_from_smiles(smiles: string): string;
+
+/**
+ * Generate InChIKey from SMILES (27-character identifier).
+ *
+ * Returns `"error:<msg>"` on parse failure.
+ */
+export function inchikey_from_smiles(smiles: string): string;
+
+/**
+ * Invert the stereochemistry of a tetrahedral stereocenter (U/D wedge bonds).
+ *
+ * If the atom has no wedge/dash bonds, returns an unchanged copy.
+ * Returns error if atom_idx is invalid.
+ */
+export function invert_stereocenter_at(mol: MolHandle, atom_idx: number): MolHandle;
 
 /**
  * Returns `true` if the SMILES string can be parsed without error.
@@ -724,6 +1079,24 @@ export function maxmin_picks_ecfp4_json(smiles_json: string, n: number): string;
 export function mcs_smiles_json(smiles_json: string): string;
 
 /**
+ * MCS with ring-awareness constraints.
+ *
+ * `smiles_json` — JSON array of at least 2 SMILES strings.
+ * `ring_matches_ring_only` — ring atoms may only match ring atoms.
+ * `complete_rings_only` — partial ring inclusion is removed from the result.
+ * Returns the MCS SMILES, or `"null"` when no common substructure was found.
+ */
+export function mcs_smiles_json_with_ring_config(smiles_json: string, ring_matches_ring_only: boolean, complete_rings_only: boolean): string;
+
+/**
+ * MinHash fingerprint (128 hashes) as JSON.
+ *
+ * Returns `{"num_hashes":128,"hashes":[u64,...]}`.
+ * Use `tanimoto_mhfp_smiles` for direct SMILES-to-SMILES similarity.
+ */
+export function mhfp_hashes_json(mol: MolHandle): string;
+
+/**
  * Optimize molecular geometry using DREIDING force field.
  *
  * Performs geometry minimization with DREIDING force field parameters.
@@ -736,6 +1109,48 @@ export function mcs_smiles_json(smiles_json: string): string;
  * PDB format string with optimized coordinates
  */
 export function minimize_dreiding_json(mol: MolHandle): string;
+
+/**
+ * Minimize geometry using MMFF94 steepest descent (Halgren 1996 full parameters).
+ * Generates 3D coords internally if needed.
+ * Returns JSON: {"energy":E,"rmsd":R,"converged":true,"iterations":N} or {"error":"..."}.
+ */
+export function minimize_mmff94_json(mol: MolHandle, max_iter: number): string;
+
+/**
+ * Minimize geometry using MMFF94 L-BFGS (faster convergence than steepest descent).
+ * Returns JSON: {"energy":E,"rmsd":R,"converged":true,"iterations":N} or {"error":"..."}.
+ */
+export function minimize_mmff94_lbfgs_json(mol: MolHandle, max_iter: number): string;
+
+/**
+ * MMFF94 partial charges (BCI table, ±0.1e accuracy) as a JSON array of f64.
+ *
+ * Uses Bond Charge Increment (BCI) model (Halgren 1996) for 25 common bond types.
+ * Returns `[q0, q1, ..., qN]` — one value per heavy atom.
+ * Total charge equals the sum of formal charges (charge conserved).
+ */
+export function mmff94_charges_json(mol: MolHandle): string;
+
+/**
+ * Compute MMFF94-style atom-typed partial charges (improved over element-pair BCI).
+ * Returns JSON: {"charges":[f64,...]} or {"error":"..."}.
+ * Uses atom-type classification (Csp3/Ccarbonyl/Ohydroxyl/Oester/Nar/NarH etc.)
+ * for better accuracy (~±0.02e) vs element-pair BCI (~±0.05e).
+ */
+export function mmff94_charges_typed_json(mol: MolHandle): string;
+
+/**
+ * Compute MMFF94 energy breakdown for current rule-based 3D geometry.
+ * Returns JSON: {"bond":B,"angle":A,"torsion":T,"vdw":V,"elec":E,"total":X} or {"error":"..."}.
+ */
+export function mmff94_energy_breakdown_json(mol: MolHandle): string;
+
+/**
+ * Compute MMFF94 partial charges using numeric atom types (Halgren 1996 eq. 15).
+ * Returns JSON: {"charges":[-0.28,0.15,...]} or {"error":"..."}.
+ */
+export function mmff94_partial_charges_json(mol: MolHandle): string;
 
 /**
  * Find matched molecular pairs in a set of molecules as JSON.
@@ -881,6 +1296,24 @@ export function mol_with_bond_added(mol: MolHandle, a: number, b: number, order:
 export function mol_with_bond_removed(mol: MolHandle, idx: number): MolHandle;
 
 /**
+ * Generate a complete molecular report (JSON string) from a SMILES.
+ * Returns the JSON representation of a `MoleculeReport` struct.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const json = module.molecule_report_json("CC(=O)Oc1ccccc1C(=O)O");
+ * const report = JSON.parse(json);
+ * console.log(report.canonical_smiles, report.descriptors.tpsa);
+ * ```
+ */
+export function molecule_report_json(smiles: string): string;
+
+/**
+ * MQN descriptor (42 integer values: Molecular Quantum Numbers).
+ */
+export function mqn_json(mol: MolHandle): string;
+
+/**
  * Per-atom molar refractivity contributions as a JSON array of f64.
  */
 export function mr_per_atom_json(mol: MolHandle): string;
@@ -909,6 +1342,12 @@ export function nearest_neighbors_json(query_smiles: string, db_smiles_json: str
 export function neutralize_charges(mol: MolHandle): MolHandle;
 
 /**
+ * Parse and re-serialize CXSMILES, preserving supported CX metadata.
+ * Returns error if atom count exceeds 10,000.
+ */
+export function normalize_cxsmiles(s: string): string;
+
+/**
  * Parse and re-serialise a reaction SMILES string, returning the normalised form.
  *
  * Useful for validating reaction SMILES and obtaining a canonical representation.
@@ -925,9 +1364,25 @@ export function normalize_reaction_smiles(rxn_smiles: string): string;
 export function pains_matches_json(mol: MolHandle): string;
 
 /**
+ * Parse CXSMARTS and return preserved metadata as JSON.
+ * Returns error if atom count exceeds 10,000.
+ */
+export function parse_cxsmarts_json(s: string): string;
+
+/**
+ * Parse CXSMILES and return preserved metadata as JSON.
+ *
+ * Supported CX fields: atom labels (`$...$`), `atomProp`, atom radicals (`^n:`),
+ * and zero-order bonds (`Z:`). The `cxsmiles` field is a re-serialized
+ * round-trip form using the supported fields.
+ * Returns error if atom count exceeds 10,000.
+ */
+export function parse_cxsmiles_json(s: string): string;
+
+/**
  * Parse a SMILES string into a `MolHandle`.
  *
- * Returns a JS error string on parse failure.
+ * Returns a JS error string on parse failure or if atom count exceeds 10,000.
  */
 export function parse_smiles(s: string): MolHandle;
 
@@ -935,6 +1390,51 @@ export function parse_smiles(s: string): MolHandle;
  * PEOE_VSA descriptors (14 bins) as a JSON array.
  */
 export function peoe_vsa_json(mol: MolHandle): string;
+
+/**
+ * Detect pharmacophore features for virtual screening and lead optimization.
+ * Returns JSON array of features: [{type, atom_idx, neighbor_count}, ...]
+ */
+export function pharmacophore_features_json(mol: MolHandle): string;
+
+/**
+ * Compute 2D pharmacophore fingerprint (2048 bits) as a JSON feature count summary.
+ * Returns simplified JSON with feature type counts: {Donor, Acceptor, Aromatic, Hydrophobic, Positive, Negative}
+ */
+export function pharmacophore_fp_2d_summary(mol: MolHandle): string;
+
+/**
+ * Compute 3D pharmacophore fingerprint from generated 3D coordinates.
+ * Returns simplified JSON with feature type counts (3D-aware version).
+ */
+export function pharmacophore_fp_3d_summary(mol: MolHandle): string;
+
+/**
+ * Predict pKa for all ionizable sites in a molecule.
+ *
+ * Returns a JSON array: `[{"atom_idx":8,"pka":4.0,"type":"acid","group":"carboxylic_acid"},...]`
+ *
+ * Returns `[]` if no ionizable sites are found, or `{"error":"..."}` on parse failure.
+ */
+export function predict_pka_json(smiles: string): string;
+
+/**
+ * Generate `count` random SMILES from a SMILES string using the given seed.
+ * Atoms are permuted based on xorshift64 RNG. Each variant should parse back
+ * to the same molecule. Returns a JSON array of SMILES strings.
+ *
+ * # Arguments
+ * - `smiles`: input SMILES string
+ * - `count`: number of variants to generate (capped at 100)
+ * - `seed`: xorshift64 seed
+ *
+ * # Example
+ * ```javascript
+ * const variants = random_smiles_json("CC(C)O", 5, 42);
+ * // variants: ["CC(C)O", "C(C)(O)C", ...]
+ * ```
+ */
+export function random_smiles_json(smiles: string, count: number, seed: bigint): string;
 
 /**
  * Return a copy of the molecule with all explicit hydrogen atoms removed.
@@ -965,6 +1465,12 @@ export function remove_hydrogens(mol: MolHandle): MolHandle;
 export function rgroup_decompose_json(smiles_json: string, core_smarts: string): string;
 
 /**
+ * Ring family classification and detection as JSON.
+ * Returns an array of ring families with their atoms, ring indices, and topology kind.
+ */
+export function ring_families_json(mol: MolHandle): string;
+
+/**
  * Run molecular dynamics simulation and return trajectory as JSON.
  *
  * Returns JSON object with trajectory frames: `{ "frames": [{ "step": N, "potential": E, "kinetic": K, "temp": T }, …] }`
@@ -986,6 +1492,23 @@ export function run_reactants(smirks: string, reactants_smiles: string): string;
  * Synthetic Accessibility Score (1 = easy, 10 = hard).
  */
 export function sa_score(mol: MolHandle): number;
+
+/**
+ * Screen a batch of SMILES strings (JSON string output).
+ * Returns per-record results including pass/fail with error details.
+ * Includes MaxMin diversity picking and Butina clustering by default.
+ *
+ * # Example (JS)
+ * ```javascript
+ * const smilesList = "c1ccccc1\nCC\nCCC";
+ * const json = module.screen_smiles_json(smilesList, "\n");
+ * const report = JSON.parse(json);
+ * console.log(report.records); // Array of ScreeningRecord
+ * console.log(report.maxmin_picks); // Diversity-selected indices
+ * console.log(report.butina_clusters); // Clustering result
+ * ```
+ */
+export function screen_smiles_json(smiles_batch: string, delimiter: string): string;
 
 /**
  * Serialize multiple molecules with properties to an SDF string.
@@ -1026,6 +1549,23 @@ export function sdf_to_records_json(sdf: string): string;
 export function sdf_to_smiles_json(sdf: string): string;
 
 /**
+ * Set dihedral angle A—B—C—D and return PDB block with modified coordinates.
+ * Rotates the D-side subtree around the B—C bond.
+ * Returns a JS error if parsing fails or atom indices are invalid.
+ *
+ * # Arguments
+ * - `smiles`: SMILES string
+ * - `a`, `b`, `c`, `d`: atom indices
+ * - `angle_deg`: target dihedral angle in degrees
+ *
+ * # Example
+ * ```javascript
+ * const pdbBlock = set_dihedral_json("CCCC", 0, 1, 2, 3, 120.0);
+ * ```
+ */
+export function set_dihedral_json(smiles: string, a: number, b: number, c: number, d: number, angle_deg: number): string;
+
+/**
  * 3D shape descriptors as a JSON object.
  *
  * Keys: `pmi1`, `pmi2`, `pmi3`, `npr1`, `npr2`, `asphericity`, `eccentricity`,
@@ -1047,6 +1587,15 @@ export function slogp_vsa_json(mol: MolHandle): string;
  * Returns `"[]"` if no match. Returns a JS error on invalid SMARTS.
  */
 export function smarts_match_atoms(smarts: string, mol: MolHandle): string;
+
+/**
+ * Like `smarts_match_atoms` but with explicit chirality matching control.
+ *
+ * When `use_chirality=true`, SMARTS chirality primitives `[@]` and `[@@]` are
+ * matched against the target molecule's stereochemistry. When `false`, chirality
+ * is ignored (RDKit default).
+ */
+export function smarts_match_atoms_with_chirality(smarts: string, mol: MolHandle, use_chirality: boolean): string;
 
 /**
  * Serialise a JSON array of SMILES to an SDF string.
@@ -1095,6 +1644,14 @@ export function sssr_rings_json(mol: MolHandle): string;
  */
 export function standardize_smiles(smiles: string): string;
 
+/**
+ * Standardize a SMILES string and return result SMILES plus an audit report as JSON.
+ *
+ * Boolean flags map directly to `StandardizeOptions`.
+ * Returns `"error:<msg>"` on parse or serialization failure.
+ */
+export function standardize_smiles_report_json(smiles: string, largest_fragment_only: boolean, neutralize_charges: boolean, remove_explicit_h: boolean, canonical_tautomer: boolean): string;
+
 export function start(): void;
 
 /**
@@ -1126,6 +1683,22 @@ export function tanimoto_fcfp6(a: MolHandle, b: MolHandle): number;
  * Tanimoto similarity between `a` and `b` using MACCS 166-bit fingerprints.
  */
 export function tanimoto_maccs(a: MolHandle, b: MolHandle): number;
+
+/**
+ * Tanimoto-like similarity between two SMILES via MHFP (MinHash Jaccard approximation).
+ */
+export function tanimoto_mhfp_smiles(smi1: string, smi2: string): number;
+
+/**
+ * Compute ECFP4 Tanimoto similarity from one query SMILES to all db SMILES (dense output).
+ *
+ * `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).
+ *
+ * Returns a flat JSON array of f32 scores, one per db entry, e.g. `[0.12,0.0,0.85]`.
+ * No zero-filtering: the length always equals the number of db entries.
+ * Returns `"error:<msg>"` on parse failure or oversized input.
+ */
+export function tanimoto_row_json(query_smi: string, db_smiles_json: string): string;
 
 /**
  * Tanimoto similarity between two molecules given only SMILES strings (ECFP4).
@@ -1177,6 +1750,37 @@ export function to_xyz(mol: MolHandle): string;
 export function torsion_bitvec(mol: MolHandle): Uint8Array;
 
 /**
+ * Scan a torsion dihedral i-j-k-l from 0° to 360° in `steps` increments.
+ * Returns JSON array: [{"angle":0.0,"energy":E},...] or {"error":"..."}.
+ */
+export function torsion_scan_json(mol: MolHandle, i: number, j: number, k: number, l: number, steps: number): string;
+
+/**
+ * Virtual screen a query SMILES against a database of SMILES using ECFP4 Tanimoto.
+ *
+ * `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).
+ * `k`: number of top hits to return; clamped to db size if larger.
+ *
+ * Returns JSON: `{"results":[{"rank":1,"score":0.85,"smiles":"CCO","idx":42},...]}`.
+ * Returns `"error:<msg>"` on any parse failure or oversized input.
+ */
+export function virtual_screen_ecfp4_json(query_smi: string, db_smiles_json: string, k: number): string;
+
+/**
+ * Compute WHIM descriptors (Weighted Holistic Invariant Molecular) from 3D coordinates.
+ * Returns JSON array of 10 values: [L1, L2, L3, P1, P2, P3, ALPHA, BETA, GAMMA, DELTA]
+ * where L* = inertia tensor eigenvalues, P* = principal moments, ALPHA = sum of moments,
+ * BETA = average pairwise interaction, GAMMA = geometric mean, DELTA = anisotropy.
+ */
+export function whim_descriptors_json(mol: MolHandle): string;
+
+/**
+ * Compute combined WHIM + GETAWAY descriptors (19 values total) as JSON array.
+ * Useful for ML pipelines requiring both shape and topologic features.
+ */
+export function whim_getaway_combined_json(mol: MolHandle): string;
+
+/**
  * Non-canonical SMILES for `mol`.
  *
  * Unlike `canonical_smiles`, the output depends on the internal atom ordering
@@ -1191,18 +1795,24 @@ export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_conformerhandle_free: (a: number, b: number) => void;
     readonly __wbg_depictoptions_free: (a: number, b: number) => void;
+    readonly __wbg_mhfplshhandle_free: (a: number, b: number) => void;
     readonly __wbg_molhandle_free: (a: number, b: number) => void;
     readonly add_hydrogens: (a: number) => number;
+    readonly admet_profile_json: (a: number, b: number) => [number, number];
     readonly atom_pair_bitvec: (a: number) => [number, number];
+    readonly autocorr_2d_json: (a: number) => [number, number];
+    readonly autocorr_3d_json: (a: number) => [number, number];
     readonly balance_check_json: (a: number, b: number) => [number, number];
     readonly brics_fragment_count: (a: number) => number;
     readonly brics_fragments_json: (a: number) => [number, number];
     readonly butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly canonical_tautomer: (a: number) => number;
+    readonly canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
     readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly cip_assignments_json: (a: number) => [number, number];
     readonly conformerhandle_add_generated_conformer: (a: number) => number;
     readonly conformerhandle_add_minimized_conformer: (a: number) => number;
+    readonly conformerhandle_cluster_conformers_json: (a: number, b: number) => [number, number];
     readonly conformerhandle_conformer_count: (a: number) => number;
     readonly conformerhandle_conformer_rmsd: (a: number, b: number, c: number) => number;
     readonly conformerhandle_conformer_rmsd_no_align: (a: number, b: number, c: number) => number;
@@ -1231,27 +1841,40 @@ export interface InitOutput {
     readonly depictoptions_set_show_atom_indices: (a: number, b: number) => void;
     readonly depictoptions_set_width: (a: number, b: number) => void;
     readonly detect_functional_groups: (a: number) => [number, number];
+    readonly determine_bonds_from_xyz_json: (a: number, b: number) => [number, number];
     readonly dice_ecfp4: (a: number, b: number) => number;
     readonly dice_ecfp6: (a: number, b: number) => number;
     readonly dice_maccs: (a: number, b: number) => number;
     readonly ecfp4_bitvec: (a: number) => [number, number];
+    readonly ecfp4_bitvec_with_chirality: (a: number, b: number) => [number, number];
     readonly ecfp6_bitvec: (a: number) => [number, number];
-    readonly ecfp_bitvec_custom: (a: number, b: number, c: number) => [number, number];
+    readonly ecfp6_bitvec_with_chirality: (a: number, b: number) => [number, number];
+    readonly ecfp_bitvec_custom: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly enumerate_library_2way: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly enumerate_stereo_isomers_json: (a: number) => [number, number, number, number];
     readonly enumerate_tautomers_json: (a: number) => [number, number];
+    readonly erg_vec_json: (a: number) => [number, number];
     readonly estate_indices_json: (a: number) => [number, number];
     readonly fcfp4_bitvec: (a: number) => [number, number];
     readonly fcfp6_bitvec: (a: number) => [number, number];
     readonly find_reaction_center_json: (a: number, b: number) => [number, number];
     readonly gasteiger_charges_json: (a: number) => [number, number];
+    readonly generate_3d_etkdg_minimized_pdb: (a: number) => [number, number];
+    readonly generate_3d_etkdg_pdb: (a: number) => [number, number];
     readonly generate_3d_minimized_pdb: (a: number) => [number, number];
     readonly generate_3d_pdb: (a: number) => [number, number];
     readonly generic_murcko_scaffold: (a: number) => number;
     readonly get_atom_info: (a: number, b: number) => [number, number];
     readonly get_bond_between: (a: number, b: number, c: number) => [number, number];
     readonly get_bond_info: (a: number, b: number) => [number, number];
+    readonly get_bond_length_json: (a: number, b: number, c: number, d: number) => number;
     readonly get_descriptors_json: (a: number) => [number, number];
+    readonly get_dihedral_json: (a: number, b: number, c: number, d: number, e: number, f: number) => any;
+    readonly getaway_descriptors_json: (a: number) => [number, number];
     readonly identify_functional_groups: (a: number) => [number, number];
+    readonly inchi_from_smiles: (a: number, b: number) => [number, number];
+    readonly inchikey_from_smiles: (a: number, b: number) => [number, number];
+    readonly invert_stereocenter_at: (a: number, b: number) => [number, number, number];
     readonly is_valid_smiles: (a: number, b: number) => number;
     readonly labute_asa_per_atom_json: (a: number) => [number, number];
     readonly largest_fragment: (a: number) => number;
@@ -1260,7 +1883,20 @@ export interface InitOutput {
     readonly match_smarts_smiles: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly maxmin_picks_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly mcs_smiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly mcs_smiles_json_with_ring_config: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly mhfp_hashes_json: (a: number) => [number, number];
+    readonly mhfplshhandle_add_smiles: (a: number, b: number, c: number) => [number, number, number];
+    readonly mhfplshhandle_is_empty: (a: number) => number;
+    readonly mhfplshhandle_len: (a: number) => number;
+    readonly mhfplshhandle_new: (a: number) => number;
+    readonly mhfplshhandle_query_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly minimize_dreiding_json: (a: number) => [number, number];
+    readonly minimize_mmff94_json: (a: number, b: number) => [number, number];
+    readonly minimize_mmff94_lbfgs_json: (a: number, b: number) => [number, number];
+    readonly mmff94_charges_json: (a: number) => [number, number];
+    readonly mmff94_charges_typed_json: (a: number) => [number, number];
+    readonly mmff94_energy_breakdown_json: (a: number) => [number, number];
+    readonly mmff94_partial_charges_json: (a: number) => [number, number];
     readonly mmp_pairs_json: (a: number, b: number) => [number, number, number, number];
     readonly mol2_to_smiles: (a: number, b: number) => [number, number];
     readonly mol_block_coords_json: (a: number, b: number) => [number, number, number, number];
@@ -1279,8 +1915,12 @@ export interface InitOutput {
     readonly mol_with_bond_added: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly mol_with_bond_removed: (a: number, b: number) => [number, number, number];
     readonly molhandle_aromatic_ring_count: (a: number) => number;
+    readonly molhandle_assign_cip_json: (a: number) => [number, number];
+    readonly molhandle_bbb_passes: (a: number) => number;
+    readonly molhandle_bbb_score: (a: number) => number;
     readonly molhandle_bertz_ct: (a: number) => number;
     readonly molhandle_bond_count: (a: number) => number;
+    readonly molhandle_caco2_permeability: (a: number) => number;
     readonly molhandle_canonical_smiles: (a: number) => [number, number];
     readonly molhandle_chi0: (a: number) => number;
     readonly molhandle_chi0v: (a: number) => number;
@@ -1292,6 +1932,8 @@ export interface InitOutput {
     readonly molhandle_chi3v: (a: number) => number;
     readonly molhandle_chi4: (a: number) => number;
     readonly molhandle_chi4v: (a: number) => number;
+    readonly molhandle_cyp3a4_inhibition_risk: (a: number) => number;
+    readonly molhandle_depict_png: (a: number) => [number, number];
     readonly molhandle_depict_svg: (a: number) => [number, number];
     readonly molhandle_depict_svg_opts: (a: number, b: number) => [number, number];
     readonly molhandle_egan_passes: (a: number) => number;
@@ -1303,11 +1945,16 @@ export interface InitOutput {
     readonly molhandle_hba_count: (a: number) => number;
     readonly molhandle_hbd_count: (a: number) => number;
     readonly molhandle_heavy_atom_count: (a: number) => number;
+    readonly molhandle_herg_risk_score: (a: number) => number;
+    readonly molhandle_isotope_distribution_json: (a: number, b: number) => [number, number];
+    readonly molhandle_iupac_name: (a: number) => [number, number];
     readonly molhandle_kappa1: (a: number) => number;
     readonly molhandle_kappa2: (a: number) => number;
     readonly molhandle_kappa3: (a: number) => number;
     readonly molhandle_labute_asa: (a: number) => number;
     readonly molhandle_lipinski_passes: (a: number) => number;
+    readonly molhandle_logd_at_ph: (a: number, b: number) => number;
+    readonly molhandle_logd_profile_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly molhandle_logp_crippen: (a: number) => number;
     readonly molhandle_max_estate: (a: number) => number;
     readonly molhandle_min_estate: (a: number) => number;
@@ -1325,45 +1972,66 @@ export interface InitOutput {
     readonly molhandle_num_stereocenters: (a: number) => number;
     readonly molhandle_num_unspecified_stereocenters: (a: number) => number;
     readonly molhandle_pains_passes: (a: number) => number;
+    readonly molhandle_pka_acid_value: (a: number) => number;
+    readonly molhandle_pka_base_value: (a: number) => number;
     readonly molhandle_qed: (a: number) => number;
+    readonly molhandle_randic_index: (a: number) => number;
     readonly molhandle_reos_passes: (a: number) => number;
     readonly molhandle_ring_count: (a: number) => number;
     readonly molhandle_rotatable_bond_count: (a: number) => number;
     readonly molhandle_sum_estate: (a: number) => number;
+    readonly molhandle_to_inchi: (a: number) => [number, number];
+    readonly molhandle_to_inchikey: (a: number) => [number, number];
     readonly molhandle_tpsa: (a: number) => number;
     readonly molhandle_veber_passes: (a: number) => number;
     readonly molhandle_wiener_index: (a: number) => number;
+    readonly molhandle_zagreb_index_m1: (a: number) => number;
+    readonly mqn_json: (a: number) => [number, number];
     readonly mr_per_atom_json: (a: number) => [number, number];
     readonly murcko_scaffold: (a: number) => number;
     readonly nearest_neighbors_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly neutralize_charges: (a: number) => number;
+    readonly normalize_cxsmiles: (a: number, b: number) => [number, number, number, number];
     readonly normalize_reaction_smiles: (a: number, b: number) => [number, number, number, number];
     readonly pains_matches_json: (a: number) => [number, number];
+    readonly parse_cxsmarts_json: (a: number, b: number) => [number, number, number, number];
+    readonly parse_cxsmiles_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_smiles: (a: number, b: number) => [number, number, number];
     readonly peoe_vsa_json: (a: number) => [number, number];
+    readonly pharmacophore_features_json: (a: number) => [number, number];
+    readonly pharmacophore_fp_2d_summary: (a: number) => [number, number];
+    readonly pharmacophore_fp_3d_summary: (a: number) => [number, number];
+    readonly predict_pka_json: (a: number, b: number) => [number, number];
+    readonly random_smiles_json: (a: number, b: number, c: number, d: bigint) => [number, number, number, number];
     readonly remove_hydrogens: (a: number) => number;
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly ring_families_json: (a: number) => [number, number, number, number];
     readonly run_md_json: (a: number, b: number, c: number) => [number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly sa_score: (a: number) => number;
     readonly sdf_from_records_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly sdf_to_records_json: (a: number, b: number) => [number, number];
     readonly sdf_to_smiles_json: (a: number, b: number) => [number, number];
+    readonly set_dihedral_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly shape_descriptors_json: (a: number) => [number, number];
     readonly slogp_vsa_json: (a: number) => [number, number];
     readonly smarts_match_atoms: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly smarts_match_atoms_with_chirality: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly smiles_array_to_sdf: (a: number, b: number) => [number, number, number, number];
     readonly smiles_to_mol2: (a: number, b: number) => [number, number];
     readonly smiles_to_svg_highlighted: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly smr_vsa_json: (a: number) => [number, number];
     readonly sssr_rings_json: (a: number) => [number, number];
     readonly standardize_smiles: (a: number, b: number) => [number, number];
+    readonly standardize_smiles_report_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly tanimoto_atom_pair: (a: number, b: number) => number;
     readonly tanimoto_ecfp4: (a: number, b: number) => number;
     readonly tanimoto_ecfp6: (a: number, b: number) => number;
     readonly tanimoto_fcfp4: (a: number, b: number) => number;
     readonly tanimoto_fcfp6: (a: number, b: number) => number;
     readonly tanimoto_maccs: (a: number, b: number) => number;
+    readonly tanimoto_mhfp_smiles: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly tanimoto_row_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly tanimoto_smiles: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly tanimoto_topo_path: (a: number, b: number) => number;
     readonly tanimoto_torsion: (a: number, b: number) => number;
@@ -1372,12 +2040,24 @@ export interface InitOutput {
     readonly to_mol_v3000_block: (a: number) => [number, number];
     readonly to_xyz: (a: number) => [number, number];
     readonly torsion_bitvec: (a: number) => [number, number];
+    readonly torsion_scan_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly virtual_screen_ecfp4_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
+    readonly whim_descriptors_json: (a: number) => [number, number];
+    readonly whim_getaway_combined_json: (a: number) => [number, number];
     readonly write_smiles: (a: number) => [number, number];
     readonly start: () => void;
     readonly molhandle_atom_count: (a: number) => number;
-    readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+    readonly compare_molecules_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly compare_molecules_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly generate_3d_from_smiles: (a: number, b: number) => [number, number, number, number];
+    readonly generate_3d_optimized_pdb: (a: number, b: number) => [number, number, number, number];
+    readonly molecule_report_json: (a: number, b: number) => [number, number, number, number];
+    readonly screen_smiles_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+    readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+    readonly __wbindgen_exn_store: (a: number) => void;
+    readonly __externref_table_alloc: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __externref_table_dealloc: (a: number) => void;
     readonly __wbindgen_start: () => void;

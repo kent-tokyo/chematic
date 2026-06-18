@@ -5,7 +5,7 @@
     "kent-tokyo <kent-tokyo@users.noreply.github.com>"
   ],
   "description": "WebAssembly bindings for chematic — use chematic from JavaScript/TypeScript",
-  "version": "0.1.30",
+  "version": "0.4.5",
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
     "chematic_wasm.d.ts"
   ],
   "main": "chematic_wasm.js",
-  "homepage": "https://github.com/kent-tokyo/chematic",
+  "homepage": "https://kent-tokyo.github.io/chematic/",
   "types": "chematic_wasm.d.ts",
   "sideEffects": [
     "./snippets/*"
