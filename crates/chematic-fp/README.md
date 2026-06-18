@@ -9,6 +9,9 @@ Fast molecular fingerprints for similarity search and clustering. ECFP4/6, RDKit
 - **Topological path**: branching-aware path enumeration
 - **RDKit-compatible Morgan**: identical to RDKit's default ECFP (FNV-1a 64-bit hash)
 - **Similarity metrics**: Tanimoto, Dice, complement similarity
+- **MAP4**: MinHashed Atom-Pair fingerprint (Minervini 2020) — `map4(mol, config)` / `tanimoto_map4(a, b)`
+- **MHFP / SECFP**: MinHash fingerprint for small molecules — `mhfp(mol, config)`
+- **ERG**: Extended Reduced Graph pharmacophore fingerprint — `erg(mol)`
 - **Chirality-aware**: optional stereo center consideration (R/S, E/Z)
 - **WASM-compatible**: zero C/C++ dependencies
 

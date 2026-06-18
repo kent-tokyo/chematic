@@ -2,6 +2,15 @@
 
 [English](README.md) | [中文](README_zh.md)
 
+[![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/chematic.svg)](https://crates.io/crates/chematic)
+[![PyPI](https://img.shields.io/pypi/v/chematic.svg)](https://pypi.org/project/chematic/)
+[![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic.svg)](https://www.npmjs.com/package/@kent-tokyo/chematic)
+[![ライセンス](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
+[![Docs](https://img.shields.io/badge/docs-site-blue)](https://kent-tokyo.github.io/chematic/getting_started/installation/)
+[![デモ](https://img.shields.io/badge/demo-live-brightgreen)](https://kent-tokyo.github.io/chematic/playground/)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kent-tokyo/chematic/blob/main/notebooks/quickstart.ipynb)
+
 Pure Rust 製のケモインフォマティクスライブラリ。RDKit の代替を目指す、**デフォルトで C/C++ FFI ゼロ**の Rust 実装。
 
 > **なぜ C/C++ ゼロが重要か？**
@@ -15,7 +24,7 @@ Pure Rust 製のケモインフォマティクスライブラリ。RDKit の代�
 
 ## ライブデモ
 
-**[https://kent-tokyo.github.io/chematic/](https://kent-tokyo.github.io/chematic/)** — 記述子計算、薬らしさルール、フィンガープリント類似度、3D ビューア、反応スキーム、SAR 解析をブラウザ上の WebAssembly で実行できるインタラクティブデモ。
+**[https://kent-tokyo.github.io/chematic/playground/](https://kent-tokyo.github.io/chematic/playground/)** — 記述子計算、薬らしさルール、フィンガープリント類似度、3D ビューア、反応スキーム、SAR 解析をブラウザ上の WebAssembly で実行できるインタラクティブデモ。
 
 ---
 
@@ -62,7 +71,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み | 28 (+14*)   |
 | `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 45      |
-| `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；8 ツール：parse_smiles/calc_properties/ecfp4/tanimoto/smarts_match 他 | 21      |
+| `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**14 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check | 28      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
@@ -263,26 +272,52 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 
 ---
 
-## 最近の開発（v0.1.89–v0.1.95）
+## 最近の開発（v0.4.5）
 
-**v0.1.95**: 真フィンガープリントアルゴリズム + IUPAC 命名拡張
-- **MHFP 正規化ハッシュ**: Morgan 式循環フラグメントハッシュでアトムインデックス依存を解消。
-- **ERG 薬理ノードタイプ**: DONOR/ACCEPTOR/POSITIVE/NEGATIVE/HYDROPHOBIC を正確に付与。ピリジン N と ピロール N を区別。
-- **Reaction FP**: XOR 差分エンコーディングがデフォルトであることを確認。
-- **IUPAC 命名**: 位置番号付きケトン、カルボン酸、エステル、アミド、ベンゼン、芳香族ヘテロ環に対応。
-- 1,657 ライブラリテスト、全パス。
+**v0.4.5**（2026-06-19）: ケクレ化 blossom アルゴリズム、E/Z 立体化学、MCP 新ツール、BOILED-Egg
+- **ケクレ化 4-pass + Edmonds blossom**: 5,000 分子コーパスで**2件のみ残存**（ホウ素芳香環・純 H₂）。
+- **E/Z 立体化学**: SMILES パーサーが E/Z 二重結合を正確に読み書き。
+- **MCP 6 新ツール**: `pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check` を追加し、合計 14 ツールへ。
+- **BOILED-Egg**: BBB 透過性 / GI 吸収を LogP vs TPSA 空間で視覚化するフィルタ実装。
 
-**v0.1.91–v0.1.94: RDKit ギャップ分析クロージャー（A1–A5, B3）**
-- **v0.1.91**: True MHFP（構造フラグメント ハッシング）、True ERG（Ertl 2017 機能基）
-- **v0.1.92**: パス FP に結合型を含む、InChI 立体層パース（`/t`, `/b`）
-- **v0.1.93**: 完全な多球 CIP 優先度ルール（chematic-perception に移動、循環依存回避）
-- **v0.1.94**: SA Score コーパス拡張（145 → 188 FDA 分子、1034 → 1415 ユニークフラグメント）
+**v0.3.2–v0.3.0**: criterion ベンチマーク、WASM pKa/ADMET バインディング、MCP サーバー + pKa + ADMET
 
-**v0.1.88–v0.1.90**: InChI 立体層、Brenk SMARTS、再イオン化、グループ標準化
+**v0.2.x**: MMFF94 全 7 項、MAP4 フィンガープリント、SMARTS キャッシュ
 
-**v0.1.69–v0.1.87**: RDKit ギャップ分析初期 — SSSR、ケクレ化、CIP、3D 幾何、WASM API 成熟度
+**v0.1.x**: コア基盤 — SSSR、ケクレ化、CIP、3D 幾何、WASM API
 
-詳細な歴史的ロードマップ（Phase 1–16, v0.1.14–v0.1.33）は `tasks/todo.md` を参照。
+---
+
+## 既知の制限事項
+
+### ケクレ化（5,000 分子中 **2件のみ残存** — ほぼ解決済み）
+
+`chematic-core` のケクレ代入は 4-pass 戦略を使用：
+
+- **Pass 1/2**: BFS 増加パス（昇順 / 降順）。
+- **Pass 3**: 橋頭 N 除外 — 環接合部の N 原子（芳香族次数 ≥ 3）は二重結合を占有せずにローンペアを提供し、残りの C 原子を二部グラフで照合。インドリジン型システム（コーパス約 109 件）を修正。
+- **Pass 4**: Edmonds' blossom アルゴリズム（O(n²m)）— 奇数サイクル（コラニュレン C₂₀H₁₀ など）を持つ非二部 C 芳香族サブグラフに対応。残りの複雑な多環系を修正。
+
+5,000 分子コーパス（issue #11）において、これらの修正後にケクレ化が失敗するのは**2件のみ**：
+
+| カテゴリ | 件数 | 例 |
+|---|---|---|
+| ホウ素芳香環 | 1 | `b1ccccn1` |
+| 純 H₂（重原子なし） | 1 | `[H][H]` |
+
+**影響**: `KekuleError` が明示的に返され、無音の誤出力は生じない。
+
+### 芳香族性モデル（Hückel vs RDKit）
+
+chematic は **Hückel 4n+2 則を各 SSSR 環に独立適用**するのに対し、RDKit はより高度な縮合環電子非局在化モデルを使用。差異は N-ヘテロ環（ピリドン、キノロン、インドリジン）で顕著。
+
+**5,000 分子コーパス（issue #12）の現状：**
+
+| 特徴量 | issue #12 クローズ時 | 現在 | 状態 |
+|---|---|---|---|
+| `[nH]` SMARTS 一致 | 67% | **100% recall / 99.8% precision** | 解決済み |
+| HBA カウント | 87.7% | **99.98%**（4,999 / 5,000） | 解決済み |
+| 芳香族環数 | 92.6% | **95.6%**（4,778 / 5,000） | 改善済み |
 
 ---
 
@@ -304,9 +339,6 @@ chematic/
 │   ├── chematic-3d/         3D 座標生成、ConformerEnsemble、PDB/XYZ 形式
 │   ├── chematic-rxn/        反応 SMILES/SMIRKS
 │   └── chematic/            フィーチャーフラグ付きアンブレラクレート（統合クレート）
-└── tasks/
-    ├── todo.md              全フェーズロードマップチェックリスト（日本語）
-    └── lessons.md           開発の教訓
 ```
 
 ---

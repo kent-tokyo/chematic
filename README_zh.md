@@ -2,6 +2,15 @@
 
 [English](README.md) | [日本語](README_ja.md)
 
+[![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/chematic.svg)](https://crates.io/crates/chematic)
+[![PyPI](https://img.shields.io/pypi/v/chematic.svg)](https://pypi.org/project/chematic/)
+[![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic.svg)](https://www.npmjs.com/package/@kent-tokyo/chematic)
+[![ライセンス](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
+[![Docs](https://img.shields.io/badge/docs-site-blue)](https://kent-tokyo.github.io/chematic/getting_started/installation/)
+[![演示](https://img.shields.io/badge/demo-live-brightgreen)](https://kent-tokyo.github.io/chematic/playground/)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kent-tokyo/chematic/blob/main/notebooks/quickstart.ipynb)
+
 纯 Rust 实现的化学信息学库，目标是与 RDKit 功能对等，**默认零 C/C++ FFI**。
 
 > **为什么零 C/C++ 如此重要？**
@@ -15,7 +24,7 @@
 
 ## 在线演示
 
-**[https://kent-tokyo.github.io/chematic/](https://kent-tokyo.github.io/chematic/)** — 可在浏览器中通过 WebAssembly 运行的交互式演示：描述符计算、类药性规则、相似度比较、3D 查看器、反应方案、SAR 分析。
+**[https://kent-tokyo.github.io/chematic/playground/](https://kent-tokyo.github.io/chematic/playground/)** — 可在浏览器中通过 WebAssembly 运行的交互式演示：描述符计算、类药性规则、相似度比较、3D 查看器、反应方案、SAR 分析。
 
 ---
 
@@ -62,7 +71,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取 | 28 (+14*)   |
 | `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 45     |
-| `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；8 个工具：parse_smiles/calc_properties/ecfp4/tanimoto/smarts_match 等 | 21     |
+| `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**14 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check | 28     |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
@@ -257,55 +266,52 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 
 ---
 
-## 路线图
+## 近期更新
 
-### 第一阶段〜第六阶段（已完成）
-基础、分子感知、化学智能、相似性搜索、3D 化学、生态系统。
+**v0.4.5**（2026-06-19）：Kekulization blossom 算法、E/Z 立体化学、6 个新 MCP 工具、BOILED-Egg
+- **Kekulization 4-pass + Edmonds blossom**：5,000 分子语料库中**仅 2 个**失败（硼芳香环、纯 H₂）。
+- **E/Z 立体化学**：SMILES 解析器精确读写 E/Z 双键。
+- **MCP 新增 6 个工具**：`pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check`，共计 14 个工具。
+- **BOILED-Egg**：在 LogP vs TPSA 空间可视化 BBB 渗透性 / GI 吸收的过滤器实现。
 
-### 第七阶段（已完成）
-扩展描述符、多样性、SA 评分、EState、IFG、Gasteiger、VSA。
+**v0.3.2–v0.3.0**：criterion 基准测试、WASM pKa/ADMET 绑定、MCP 服务器 + pKa + ADMET
 
-### 第八阶段（v0.1.20〜v0.1.22，已完成）
-100+ WASM 导出、CML/CDXML、Mutable Molecule API、DepictData、MMP、R 基团、ConformerEnsemble、SDF/V3000 写入、MCS 环感知约束。
+**v0.2.x**：MMFF94 全 7 项、MAP4 指纹、SMARTS 缓存
 
-### 第十五阶段（v0.1.29〜32，已完成）
-可变 `Molecule`（`add/remove_atom/bond`、`fragments`、`is_connected`），
-`assign_stereo_from_2d`（楔形键→R/S），`aromatize`/`kekulize_inplace`，
-`depict_reaction_svg`，`SdfRecord`（含坐标+属性），MDL RXN V2000 读写，
-`expand_abbreviation`（30 种缩写），`formula_with_isotopes`。
+**v0.1.x**：核心基础 — SSSR、Kekulization、CIP、3D 几何、WASM API
 
-### 第十四阶段（v0.1.28，已完成）
-`xlogp3()`（Cheng 2007 原子类型），`chematic-iupac`（纯 Rust 离线 IUPAC 命名），
-`BricsConfig { min_fragment_size }`，`MatchConfig { max_matches }`，
-`McsConfig { atom_compare, bond_compare }` 支持异环 scaffold hopping。
+---
 
-### 第十六阶段（v0.1.27，已完成）
-`assign_ez_from_2d(mol, coords)` / `cip_ez_descriptor(mol, bond_idx, coords)` — 通过 2D 坐标叉积计算 E/Z 双键立体化学（无需楔形键，采用 1-sphere CIP 优先级）。
-`StereoGroup` / `StereoGroupKind`（Absolute / Or / And）加入 `chematic-core`；`Molecule` 新增 `stereo_groups` 字段；
-V3000 MOL 解析器与写入器支持 `BEGIN COLLECTION / MDLV30/STEABS / MDLV30/STEOR<n> / MDLV30/STEAND<n>`。
-`isotope_distribution(mol, resolution) -> Vec<(f64, f64)>` — 基于卷积的同位素包络计算（支持显式同位素标记优先，H/C/N/O/S/Cl/Br 等 14+ 元素）。
+## 已知限制
 
-### 第十三阶段（v0.1.27，已完成）
-`MolMetadata::default().with_name("阿司匹林").with_comment("...")` — MOL/SDF 元数据 fluent builder。
+### Kekulization（5,000 分子中**仅 2 个**失败 — 基本解决）
 
-### 第十二阶段（v0.1.26，已完成）
-`atom_color_rgb(atomic_number: u8) -> [u8; 3]` — 无需解析十六进制字符串，直接获取 CPK 颜色 RGB 字节三元组。
+`chematic-core` 的 Kekulé 赋值采用 4-pass 策略：
 
-### 当前 main（v0.1.94 之后）
-`chematic-iupac`：支持带位置编号的酮、羧酸、酯、第一/第二酰胺、苯及常见芳香杂环。CI 中 `cargo clippy --workspace -- -D warnings` 已通过当前 stable Clippy。
+- **Pass 1/2**：BFS 增广路径（升序 / 降序）。
+- **Pass 3**：桥头 N 排除 — 位于环连接处的 N 原子（芳香度 ≥ 3）提供孤对电子而非占据双键，剩余 C 原子在二部子图上匹配。修复 indolizine 类系统（语料库约 109 例）。
+- **Pass 4**：Edmonds' blossom 算法（O(n²m)）— 处理含奇数环的非二部 C 芳香子图（如 corannulene C₂₀H₁₀）。修复剩余的复杂多环系统。
 
-### 第十一阶段（v0.1.94，已完成）
-`suggest_bond_direction(mol, atom, layout) -> f64`（弧度）：基于 sp2/sp3 角偏移 + 最大最小角分离选择的化学自然新键方向建议。导出 `BOND_LEN` 常量。
+在 5,000 分子语料库（issue #11）中，经上述修复后 Kekulization 仍失败的**仅 2 个**：
 
-### 第十阶段（v0.1.24，已完成）
-`validate_valence(mol) -> Vec<ValenceError>` 公开 API（chematic-core + chematic-perception 重导出），`run_reactants` 自动过滤含过价原子的生成物集合。
+| 类别 | 数量 | 示例 |
+|---|---|---|
+| 硼芳香环 | 1 | `b1ccccn1` |
+| 纯 H₂（无重原子） | 1 | `[H][H]` |
 
-### 第九阶段（v0.1.23，已完成）
-`Element::vdw_radius()` / `covalent_radius()`（Bondi/Alvarez 表，118 个元素），
-`Molecule::implicit_hydrogen_count()` / `total_formula()`（含隐式 H 的 Hill 式），
-`apply_aromaticity()`（Kekulize 分子 → 芳香性标志应用），
-`with_atom_aromatic()` / `with_bond_order()` 不可变更新 API，
-`minimize_uff()` 别名（UFF 力场最小化可发现性提升）。
+**影响**：明确返回 `KekuleError`，不产生无声的错误输出。
+
+### 芳香性模型（Hückel vs RDKit）
+
+chematic 使用 **Hückel 4n+2 规则独立应用于每个 SSSR 环**，而 RDKit 使用更复杂的稠合环电子离域模型。差异在 N-杂环（吡啶酮、喹啉酮、吲哚嗪）中最为明显。
+
+**5,000 分子语料库（issue #12）当前状态：**
+
+| 特征 | issue #12 关闭时 | 当前 | 状态 |
+|---|---|---|---|
+| `[nH]` SMARTS 匹配 | 67% | **100% recall / 99.8% precision** | 已解决 |
+| HBA 计数 | 87.7% | **99.98%**（4,999 / 5,000） | 已解决 |
+| 芳香环计数 | 92.6% | **95.6%**（4,778 / 5,000） | 已改善 |
 
 ---
 
@@ -327,9 +333,6 @@ chematic/
 │   ├── chematic-3d/         3D 坐标生成、ConformerEnsemble、PDB/XYZ 格式
 │   ├── chematic-rxn/        反应 SMILES/SMIRKS
 │   └── chematic/            带功能标志的伞形 crate
-└── tasks/
-    ├── todo.md              详细路线图清单（日语）
-    └── lessons.md           开发经验总结
 ```
 
 ---

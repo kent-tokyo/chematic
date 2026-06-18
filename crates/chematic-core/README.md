@@ -9,6 +9,7 @@ Core types for chematic: `Atom`, `Bond`, `Molecule`, and `Element`. Low-level gr
 - **Bond types**: single, double, triple, aromatic bonds with configurable order
 - **Element table**: periodic table with atomic number, mass, electronegativity, van der Waals radius
 - **Molecular properties**: atom count, bond count, molecular weight, formula
+- **Kekulization**: 4-pass kekulization (BFS + bridgehead-N exclusion + Edmonds' blossom) — handles 99.96% of drug-like molecules
 - **WASM-compatible**: zero C/C++ dependencies
 
 ## Quick Start

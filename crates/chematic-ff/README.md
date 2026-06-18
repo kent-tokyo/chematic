@@ -1,6 +1,6 @@
-# chematic-ff — DREIDING Force Field for Pure-Rust Cheminformatics
+# chematic-ff — DREIDING + MMFF94 Force Fields
 
-Pure-Rust implementation of the DREIDING force field for molecular dynamics, geometry optimization, and energy calculations. Zero external FFI dependencies, full WASM support.
+Pure-Rust implementation of the DREIDING and MMFF94 (full 7-term stack) force fields for molecular dynamics, geometry optimization, and energy calculations. Zero external FFI dependencies, full WASM support.
 
 ## Features
 
@@ -60,6 +60,44 @@ let optimized = minimize_dreiding_with_config(&mol, coords, &config);
 - **Bond stretching**: k=700 kcal/mol/Ų × (r - r₀)²
 - **Angle bending**: k=100 kcal/mol/rad² × (θ - θ₀)²
 - **VDW repulsion**: Lennard-Jones 12-6 potential with Lorentz-Berthelot combining rules
+
+## MMFF94
+
+Full Merck Molecular Force Field 94 implementation with PBCI/BCI partial charges.
+
+### Atom Typing & Charges
+
+```rust
+use chematic_ff::{assign_mmff94_type, mmff94_charges_bci};
+
+let types   = assign_mmff94_type(&mol);           // → Vec<Mmff94Type>
+let charges = mmff94_charges_bci(&mol, &types);   // PBCI/BCI partial charges → Vec<f64>
+```
+
+### Energy Terms (7-term stack)
+
+| Term | Description |
+|------|-------------|
+| Bond (cubic) | Cubic stretch with quadratic + cubic force constants |
+| Angle | Angle bending with ideal angles per type pair |
+| Stretch-bend | Coupling between adjacent bond and angle distortions |
+| Out-of-plane (OOP) | Improper torsion for sp² centres |
+| Torsion | 3-term Fourier dihedral expansion |
+| VdW (buffered-14-7) | Halgren buffered 14-7 potential |
+| Electrostatic | Coulombic with distance-dependent dielectric (ε = r) |
+
+### Minimization
+
+```rust
+use chematic_ff::{mmff94_total_energy, minimize_mmff94_lbfgs, EnergyBreakdown};
+
+let e: EnergyBreakdown = mmff94_total_energy(&mol, &coords);
+// e.bond / e.angle / e.torsion / e.vdw / e.electrostatic / e.stretch_bend / e.oop / e.total
+
+let optimized = minimize_mmff94_lbfgs(&mol, &coords, 500);  // L-BFGS, max 500 iters
+```
+
+`EnergyBreakdown` fields: `bond`, `angle`, `torsion`, `vdw`, `electrostatic`, `stretch_bend`, `oop`, `total` (all in kcal/mol).
 
 ## WASM Support
 

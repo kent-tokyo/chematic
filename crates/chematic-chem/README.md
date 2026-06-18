@@ -20,6 +20,8 @@ Pure Rust chemical intelligence library — **descriptors, drug-likeness rules, 
 - **Ghose's Rule**: MW 160-480, LogP -0.4-5.6, TPSA 40-130
 - **REOS Filters**: Removes likely PAINS, toxic patterns
 - **PAINS Filters**: Pan-Assay Interference compounds + alerts
+- **Brenk Filters**: Toxicity / instability structural alerts
+- **BOILED-Egg** (`boiled_egg()` → `BoiledEggProfile`): GI absorption + BBB penetration prediction (Daina & Zoete 2016)
 
 ### Advanced Analysis
 - **Murcko Scaffold**: Generic scaffold from molecule
@@ -106,6 +108,7 @@ println!("Selected {} diverse molecules", picks.len());
 | `screen_smiles(smiles_list)` | Batch descriptor + filtering |
 | `maxmin_diversity(mols, k)` | Diverse subset picking |
 | `find_mcs(mols)` | Maximum common substructure |
+| `boiled_egg(mol)` | BOILED-Egg GI/BBB prediction (→ `BoiledEggProfile`) |
 
 ## Crate Dependencies
 

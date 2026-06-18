@@ -30,7 +30,8 @@ assert_eq!(key, "UHOVQNZJYSORNB-UHFFFAOYSA-N");
 ```
 
 All layers are handled by the IUPAC reference library: formula, connectivity, hydrogen,
-tautomer normalization, mobile-H, stereo (/t, /m, /s), charge (/q, /p), and isotope (/i).
+tautomer normalization, mobile-H, stereo (/b E/Z double-bond, /t tetrahedral, /m, /s),
+charge (/q, /p), and isotope (/i).
 
 > **Known limitation:** 2 of 5,000 drug-like molecules (0.04%) still fail with
 > `InchiError::KekulizationFailed`: one boron-aromatic ring (`b1ccccn1`) and pure H₂
