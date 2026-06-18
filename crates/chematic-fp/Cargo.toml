@@ -16,11 +16,11 @@ documentation = "https://docs.rs/chematic-fp"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.4.4" }
-chematic-perception = { path = "../chematic-perception", version = "0.4.4" }
-chematic-rxn = { path = "../chematic-rxn", version = "0.4.4" }
-chematic-smarts = { path = "../chematic-smarts", version = "0.4.4" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.4" }
+chematic-core = { path = "../chematic-core", version = "0.4.5" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.5" }
+chematic-rxn = { path = "../chematic-rxn", version = "0.4.5" }
+chematic-smarts = { path = "../chematic-smarts", version = "0.4.5" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.5" }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

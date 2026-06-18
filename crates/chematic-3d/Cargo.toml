@@ -16,16 +16,16 @@ documentation = "https://docs.rs/chematic-3d"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.4.4" }
-chematic-perception = { path = "../chematic-perception", version = "0.4.4" }
-chematic-ff         = { path = "../chematic-ff",         version = "0.4.4" }
-chematic-chem       = { path = "../chematic-chem",       version = "0.4.4" }
-chematic-fp         = { path = "../chematic-fp",         version = "0.4.4" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.4" }
+chematic-core       = { path = "../chematic-core",       version = "0.4.5" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.5" }
+chematic-ff         = { path = "../chematic-ff",         version = "0.4.5" }
+chematic-chem       = { path = "../chematic-chem",       version = "0.4.5" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.4.5" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.5" }
 fastrand            = "2.4"
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 fastrand = { version = "2.4", features = ["js"] }
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.4" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.5" }
