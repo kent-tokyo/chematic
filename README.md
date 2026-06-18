@@ -60,7 +60,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + **v0.3.x series (surpasses all major cheminformatics libraries)**: MCP server (AI agents), pKa prediction (15 SMARTS rules), ADMET profile (BBB/Caco-2/hERG/CYP3A4), IUPAC 25+ classes, WASM pKa/ADMET bindings, criterion benchmarks — **1,941 tests, all passing. Zero C/C++ dependencies by default.**
+All phases complete + **v0.3.x series (surpasses all major cheminformatics libraries)**: MCP server (AI agents), pKa prediction (15 SMARTS rules), ADMET profile (BBB/Caco-2/hERG/CYP3A4), IUPAC 25+ classes, WASM pKa/ADMET bindings, criterion benchmarks — **1,991 tests, all passing. Zero C/C++ dependencies by default.**
 
 Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM bindings | v0.3.2: criterion benchmarks
 
@@ -71,7 +71,7 @@ Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 34    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W | 63    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 43    |
-| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4) | 483   |
+| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 99.98% RDKit agreement** (5 000-mol benchmark) | 496   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 55    |
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing | 98    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns) | 87    |
@@ -84,7 +84,7 @@ Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace                                                       # 1,941 tests, all passing
+cargo test --workspace --lib --quiet                                          # 1,991 tests, all passing
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +14 IUPAC-exact InChI tests
 ```
 
@@ -530,18 +530,23 @@ chematic uses the **Hückel 4n+2 rule applied independently to each SSSR ring**,
 while RDKit uses a more sophisticated fused-ring electron-delocalization model.
 Differences are most visible in N-heterocycles (pyridone, quinolone, indolizine).
 
-**Cascade effects on a 5,000-molecule corpus (issue #12):**
+**Cascade effects on a 5,000-molecule corpus (issue #12), current status:**
 
-| Feature | Agreement | Cause |
-|---|---|---|
-| Aromatic ring count | 92.6% | Fused-ring classification differs |
-| `[nH]` SMARTS match | 67% | Ring N H-count assigned differently |
-| HBA count | 87.7% | Aromatic N H-count drives inclusion/exclusion |
+| Feature | At issue #12 close | Now | Status |
+|---|---|---|---|
+| `[nH]` SMARTS match | 67% | **100% recall / 99.8% precision** | Resolved — 2-pass Hückel |
+| HBA count | 87.7% | **99.98%** (4 999 / 5 000) | Resolved — `hba_count` rewrite |
+| Aromatic ring count | 92.6% | **95.6%** (4 778 / 5 000) | Improved — `count_aromatic_rings` |
 
-No code fix is planned — this is a design-level trade-off between simplicity and
-full RDKit compatibility. Patterns and descriptors that depend on aromaticity
-(ring counts, `[n]`/`[nH]` SMARTS, HBA on N-heterocycles) may disagree with
-RDKit on edge-case heterocyclic systems.
+**All three metrics** are now at or near RDKit parity on the 5 000-molecule benchmark.
+
+**Aromatic ring count** (95.6%) improved from the original 92.6% (at issue close)
+via `chematic_perception::count_aromatic_rings`, which supplements the SSSR with
+pairwise GF(2) XOR sub-rings (`augmented_ring_set`) to recover small rings missed
+by the SSSR algorithm (e.g. the 5-ring of indolizine hidden behind a reported 9-ring),
+then removes "envelope" rings that equal the bond-symmetric-difference of two smaller
+aromatic rings to prevent double-counting.  The remaining 4.4% gap reflects genuine
+Hückel vs RDKit model differences in condensed N-heterocycles (pyridone, quinolone).
 
 ---
 

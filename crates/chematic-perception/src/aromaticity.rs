@@ -354,7 +354,13 @@ fn ring_atoms_from_bond_set(mol: &Molecule, bonds: &[BondIdx]) -> Option<Vec<Ato
 /// the XOR of the 6-ring and the 9-ring the algorithm reports).
 /// This augmentation adds such missing smaller rings so that aromaticity
 /// perception works on the correct smallest rings without modifying the SSSR.
-fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Vec<AtomIdx>> {
+///
+/// The returned `Vec` starts with all SSSR rings in their original order; any
+/// additional sub-rings derived by GF(2) pairwise XOR follow.  The function
+/// only adds a ring if it is strictly smaller than *both* parents, ensuring
+/// that envelope rings (e.g. the 10-membered perimeter of naphthalene) are
+/// never introduced.
+pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Vec<AtomIdx>> {
     let mut rings: Vec<Vec<AtomIdx>> = sssr_rings.to_vec();
 
     // Build bond sets for all SSSR rings.
@@ -393,6 +399,60 @@ fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Vec<At
     }
 
     rings
+}
+
+/// Count aromatic rings in `mol`.
+///
+/// Uses the augmented ring set so that fused systems where the SSSR stores a
+/// large fundamental cycle (e.g. a 9-ring for indolizine) still report the
+/// correct small-ring count.  After building the augmented set, any "envelope"
+/// ring — one that equals the bond-symmetric-difference of two smaller aromatic
+/// rings — is excluded, preventing double-counting.
+pub fn count_aromatic_rings(mol: &Molecule) -> usize {
+    let sssr = crate::sssr::find_sssr(mol);
+    let aug = augmented_ring_set(mol, sssr.rings());
+
+    // Keep only rings where every atom carries the aromatic flag.
+    let aromatic: Vec<Vec<AtomIdx>> = aug
+        .into_iter()
+        .filter(|ring| ring.iter().all(|&idx| mol.atom(idx).aromatic))
+        .collect();
+
+    if aromatic.len() <= 1 {
+        return aromatic.len();
+    }
+
+    // Build sorted bond-index sets for each aromatic ring.
+    let bond_sets: Vec<Vec<BondIdx>> = aromatic
+        .iter()
+        .map(|r| ring_bond_set(mol, r))
+        .collect();
+
+    // Mark rings that are the XOR of two strictly smaller aromatic rings.
+    // Such rings are "envelope" cycles introduced when the SSSR chose a large
+    // fundamental cycle instead of its two smaller GF(2) components.
+    let n = aromatic.len();
+    let mut is_envelope = vec![false; n];
+    for i in 0..n {
+        let si = aromatic[i].len();
+        'jk: for j in 0..n {
+            if j == i || aromatic[j].len() >= si {
+                continue;
+            }
+            for k in (j + 1)..n {
+                if k == i || aromatic[k].len() >= si {
+                    continue;
+                }
+                let xor = bond_sym_diff(&bond_sets[j], &bond_sets[k]);
+                if xor == bond_sets[i] {
+                    is_envelope[i] = true;
+                    break 'jk;
+                }
+            }
+        }
+    }
+
+    is_envelope.iter().filter(|&&e| !e).count()
 }
 
 // ---------------------------------------------------------------------------

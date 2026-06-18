@@ -7,7 +7,7 @@ Pure Rust chemical intelligence library — **descriptors, drug-likeness rules, 
 ### Molecular Descriptors (40+)
 - **Physicochemical**: MW, LogP (XLogP), TPSA, PSA, MOLAR_REFR, VdW volume
 - **Lipophilicity**: LogP (multiple models), MolLogP  
-- **Hydrogen Bonding**: HBA, HBD, HBA_LIPINSKI, HBD_LIPINSKI
+- **Hydrogen Bonding**: HBA (99.98% RDKit agreement on 5 000 molecules), HBD, HBA_LIPINSKI, HBD_LIPINSKI
 - **Flexibility**: Rotatable bonds, ring count, scaffold RMSD
 - **Complexity**: Topological Polar Surface Area, QED, SA Score
 - **Molecular Properties**: Atom/bond counts, isotopes, fragments
@@ -121,7 +121,7 @@ println!("Selected {} diverse molecules", picks.len());
 
 ```bash
 cargo test --lib
-# 248 tests: descriptors, rules, MCS, diversity
+# 496 tests: descriptors, rules, MCS, diversity
 ```
 
 ## Version History

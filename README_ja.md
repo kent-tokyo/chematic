@@ -42,7 +42,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + **v0.3.x シリーズ（全主要競合ライブラリを超えた）**: MCP サーバー（AI エージェント統合）、pKa 予測（15 SMARTS ルール）、ADMET プロファイル（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 化合物クラス、WASM pKa/ADMET バインディング、criterion ベンチマーク。**1,941 テスト、全パス。C/C++ 依存ゼロ（デフォルトビルド）。**
+全フェーズ完了 + **v0.3.x シリーズ（全主要競合ライブラリを超えた）**: MCP サーバー（AI エージェント統合）、pKa 予測（15 SMARTS ルール）、ADMET プロファイル（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 化合物クラス、WASM pKa/ADMET バインディング、criterion ベンチマーク。**1,991 テスト、全パス。C/C++ 依存ゼロ（デフォルトビルド）。**
 
 最新リリース: **v0.3.2**（2026-06-15）— v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM バインディング | v0.3.2: criterion ベンチマーク
 
@@ -53,7 +53,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 34      |
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 63      |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 43      |
-| `chematic-chem`        | 70+ 記述子、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4) | 483     |
+| `chematic-chem`        | 70+ 記述子、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 99.98% RDKit 一致率**（5,000 分子ベンチマーク） | 496     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 55      |
 | `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：OOP (117件) + Stretch-Bend (282件)；steepest descent + L-BFGS；DREIDING | 98      |
 | `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン) | 87      |
@@ -66,7 +66,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
-cargo test --workspace --lib                                                       # 1,941 ライブラリテスト、全パス
+cargo test --workspace --lib --quiet                                               # 1,991 ライブラリテスト、全パス
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +14 IUPAC 標準 InChI 統合テスト
 ```
 

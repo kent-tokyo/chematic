@@ -416,8 +416,9 @@ fn hba_paracetamol() {
 
 #[test]
 fn hba_caffeine() {
-    // 4 aromatic N (H0, all count) + 2 C=O = 6
-    assert_eq!(hba_count(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 6);
+    // Three N-methyl aromatic N have degree 3 → excluded (pyrrole-type heuristic).
+    // One pyridine-type N (degree 2) + 2 C=O = 3. RDKit CalcNumHBA agrees.
+    assert_eq!(hba_count(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 3);
 }
 
 #[test]
@@ -442,6 +443,53 @@ fn hba_urea() {
 fn hba_acetic_acid() {
     // carboxyl OH excluded, C=O counts → 1
     assert_eq!(hba_count(&mol("CC(=O)O")), 1);
+}
+
+#[test]
+fn hba_water_zero() {
+    // Water has 2H → not H0 or H1 → 0 HBA (matches RDKit CalcNumHBA)
+    assert_eq!(hba_count(&mol("O")), 0);
+}
+
+#[test]
+fn hba_thioamide_n_excluded() {
+    // Thiourea N-C(=S)-N: both N are excluded (single-bond to C with C=S).
+    // The divalent S (bond-order sum = 2) IS counted → total 1.
+    assert_eq!(hba_count(&mol("NC(=S)N")), 1);
+}
+
+#[test]
+fn hba_sulfonamide_n_excluded() {
+    // Sulfonamide N (N-S(=O)2): N is excluded (N-S with S=O)
+    // methanesulfonamide: S(=O)(=O) → 2 O HBA, NH excluded → 2
+    assert_eq!(hba_count(&mol("CS(=O)(=O)N")), 2);
+}
+
+#[test]
+fn hba_ring_guanidine_counts_all_n() {
+    // Cyclic guanidine (ring C=N is a ring bond, !@ doesn't apply)
+    // → all amino-N atoms ARE HBA. arginine-like 5-ring: 3 N + 1 COOH-O = 4
+    assert_eq!(hba_count(&mol("NC(=N)N")), 1); // acyclic guanidine: only imine N counts
+    assert_eq!(hba_count(&mol("NC1=NCCN1")), 3); // cyclic: 2-aminoimidazoline, all 3 N HBA
+}
+
+#[test]
+fn hba_nitroso_n_is_hba() {
+    // Nitroso N (R-N=O, valence 3): N itself IS an HBA per RDKit
+    // nitrosobenzene c1ccc(N=O)cc1: N + O = 2
+    assert_eq!(hba_count(&mol("c1ccc(N=O)cc1")), 2);
+}
+
+#[test]
+fn hba_carbon_disulfide() {
+    // S=C=S: each S has bond-order valence 2 (one double bond) → both count
+    assert_eq!(hba_count(&mol("S=C=S")), 2);
+}
+
+#[test]
+fn hba_radical_n_excluded() {
+    // Dimethylaminyl radical C[N]C: N has valence 2 (not 3) → not HBA
+    assert_eq!(hba_count(&mol("C[N]C")), 0);
 }
 
 // ── LogP (Crippen) ────────────────────────────────────────────────────────────

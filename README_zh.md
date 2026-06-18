@@ -42,7 +42,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + **v0.3.x 系列（超越所有主要竞争库）**：MCP 服务器（AI 代理集成）、pKa 预测（15 条 SMARTS 规则）、ADMET 概况（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 类、WASM pKa/ADMET 绑定、criterion 性能基准测试。**1,941 个测试，全部通过。零 C/C++ 依赖（默认构建）。**
+所有阶段已完成 + **v0.3.x 系列（超越所有主要竞争库）**：MCP 服务器（AI 代理集成）、pKa 预测（15 条 SMARTS 规则）、ADMET 概况（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 类、WASM pKa/ADMET 绑定、criterion 性能基准测试。**1,991 个测试，全部通过。零 C/C++ 依赖（默认构建）。**
 
 最新版本：**v0.3.2**（2026-06-15）— v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM 绑定 | v0.3.2: criterion 基准
 
@@ -53,7 +53,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 34     |
 | `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 63     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 43     |
-| `chematic-chem`       | 70+ 描述符、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4） | 483    |
+| `chematic-chem`       | 70+ 描述符、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 99.98%**（5,000 分子基准） | 496    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** — Tanimoto/Dice | 55     |
 | `chematic-ff`         | **MMFF94 全 7 能量项**（Halgren 1996）：OOP（117 条）+ STRE-BEN（282 条）；L-BFGS；DREIDING | 98     |
 | `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式） | 87     |
@@ -66,7 +66,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
-cargo test --workspace --lib                                                       # 1,941 个库测试，全部通过
+cargo test --workspace --lib --quiet                                               # 1,991 个库测试，全部通过
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +14 IUPAC 标准 InChI 集成测试
 ```
 

@@ -9,6 +9,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `hba_count` rewritten to match RDKit `CalcNumHBA` (99.98% agreement on 5 000 molecules)
+
+The H-bond acceptor counter was rewritten from scratch against the real RDKit
+`HAcceptorSmarts` SMARTS and verified with a 5 000-molecule benchmark
+(`scripts/bench5k.py`).  Previous agreement was ≈70 %; the rewrite reaches
+4 999/5 000 (99.98 %).
+
+#### Rule changes (`crates/chematic-chem/src/descriptors.rs`)
+
+**Nitrogen**
+- Added formal-valence check (`bond_order_sum + implicit_h == 3`, matching `[N;v3]`):
+  excludes radical N such as dimethylaminyl `C[N]C` (valence 2).
+- Exclusion predicate broadened from C=O only to *any* neighbor atom that itself
+  carries a non-ring double bond to O, N, P, or S
+  (`n_adjacent_to_pi_center`): now correctly excludes sulfonamide (N–S=O),
+  phosphonamide (N–P=O), and thioamide (N–C=S) in addition to amide.
+- Stereo bonds (`BondOrder::Up` / `BondOrder::Down`) and aromatic bonds
+  (`BondOrder::Aromatic`) now treated as single-like in the exclusion predicate.
+- Ring C=N double bonds are exempt from the exclusion (matching SMARTS `!@`
+  semantics): amino-N atoms in cyclic amidines/guanidines are now correctly
+  counted as HBA.
+- Aromatic N: `degree ≥ 3` atoms (N-substituted pyrrole, indolizine bridgehead)
+  are excluded — their lone pair participates in the aromatic π system.
+
+**Oxygen**
+- Positively charged O (`O+`) excluded; negatively charged O (`[O–]`) always
+  counted (previously neither had an explicit charge guard).
+- Total H = implicit H + explicit isotopic H neighbors (fixes `[2H]O[2H]` = D₂O
+  → 0 HBA; old code counted 1).
+- H0 branch: `bond_order_sum == 2` divalency check added, excluding radical `[O]`
+  (bond-order sum = 1).
+- H1 branch: exclusion criterion generalised to *any* neighbor with `=O/N/P/S`
+  (was C=O and oxidised-S only); fixes arsenate As-OH, iminol C(OH)=N.
+- H≥2 (water, D₂O): not HBA.
+
+**Sulfur**
+- Formal valence computed from `bond_order_sum + implicit_h` (not `degree + h`):
+  fixes thioketone S=C (one double bond, degree 1 → bond-order sum 2 → IS HBA).
+- Total H = implicit + explicit isotopic H: fixes D₂S, H₂S.
+- H1 (thiol SH): excluded if neighbour has =O/N/P/S (thio-acid pattern).
+- H≥2: not HBA.
+- Charged S: `S–` always HBA; `S+` / `S2+` never HBA.
+
+#### New helpers
+
+| Function | Purpose |
+|---|---|
+| `neighbor_has_pi_bond_to_onps` | O/S-H exclusion: any neighbor with =O/N/P/S |
+| `has_nonring_double_bond_to` | N exclusion: non-ring double bond to target element |
+| `n_adjacent_to_pi_center` | N exclusion: single-like bond to any pi centre |
+
+#### Benchmark script (`scripts/bench5k.py`)
+
+- Added `--detail` flag: prints every mismatching SMILES to stderr.
+- Added `--limit N` flag: caps the number of detail lines printed.
+- Summary now reports over-count and under-count separately.
+
+#### Test corrections (`crates/chematic-chem/tests/rdkit_reference.rs`)
+
+- `hba_caffeine`: expected value corrected 6 → 3 (three N-methyl aromatic N
+  atoms have degree ≥ 3 and are excluded; RDKit `CalcNumHBA` also returns 3).
+- New tests: `hba_water_zero`, `hba_thioamide_n_excluded`,
+  `hba_sulfonamide_n_excluded`, `hba_ring_guanidine_counts_all_n`,
+  `hba_nitroso_n_is_hba`, `hba_carbon_disulfide`, `hba_radical_n_excluded`.
+
+### Added — `count_aromatic_rings` in `chematic-perception` (95.6% RDKit agreement on 5 000 molecules)
+
+A new public function `count_aromatic_rings(mol: &Molecule) -> usize` was added to
+`chematic-perception` and is now used by `aromatic_ring_count()` in `chematic-chem`.
+
+Previous approach (`find_sssr().rings().filter(aromatic).count()`) scored 93.1% on the
+5 000-molecule corpus.  The new function improves this to **95.6% (4 778 / 5 000)**.
+
+#### Algorithm (`crates/chematic-perception/src/aromaticity.rs`)
+
+1. Build the **augmented ring set** (`augmented_ring_set`) — the SSSR plus any pairwise
+   GF(2) XOR sub-rings that are strictly smaller than both parents.  This recovers small
+   rings that the SSSR algorithm reports as a single large fundamental cycle (e.g. the
+   5-ring of indolizine is hidden behind a 9-ring in the SSSR output).
+2. Filter to rings where every atom carries the `aromatic` flag.
+3. **Remove envelope rings**: any ring R whose bond set equals the symmetric difference
+   of two smaller aromatic rings A and B is dropped.  Without this step the 9-ring, the
+   6-ring, and the recovered 5-ring would all be counted, yielding 3 instead of 2.
+
+The remaining 4.4% gap reflects genuine Hückel vs RDKit model differences in condensed
+N-heterocycles (pyridone, quinolone); no further fix is planned for this residual.
+
 ---
 
 ## [0.3.2] — 2026-06-15

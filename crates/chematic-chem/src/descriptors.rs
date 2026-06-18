@@ -6,7 +6,7 @@
 
 use std::collections::HashSet;
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, implicit_hcount};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount};
 use chematic_perception::find_sssr;
 use chematic_smarts::{find_matches, parse_smarts};
 
@@ -196,6 +196,11 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 /// - O with H bonded to oxidized S with S=O (sulfonic/sulfonamide acid OH).
 /// - Oxidized S (degree > 2 or has S=O bonds): lone pair engaged in S=O resonance.
 pub fn hba_count(mol: &Molecule) -> usize {
+    // Pre-compute ring bond set once: used by n_adjacent_to_pi_center to apply
+    // the SMARTS !@ (non-ring) constraint — cyclic amidine/guanidine C=N bonds
+    // are ring bonds and must NOT trigger the N-exclusion rule.
+    let ring_bonds = ring_bond_indices(mol);
+
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
@@ -206,30 +211,64 @@ pub fn hba_count(mol: &Molecule) -> usize {
                 }
                 let h = implicit_hcount(mol, *idx);
                 if atom.aromatic {
-                    // [nH] (pyrrole-type aromatic N) is NOT an HBA
-                    h == 0
+                    // Pyridine-type aromatic N (lone pair orthogonal to pi) IS an HBA.
+                    // Excluded cases:
+                    //   h > 0  → [nH] pyrrole-type: lone pair in pi system
+                    //   degree >= 3 → N-substituted pyrrole or bridgehead N
+                    //                 (e.g. N-methyl pyrrole, indolizine N): lone pair
+                    //                 participates in the aromatic π system
+                    h == 0 && mol.degree(*idx) < 3
                 } else {
-                    // Non-aromatic N: exclude amide N (bonded to C=O)
-                    !neighbor_has_carbonyl(mol, *idx)
+                    // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
+                    // this excludes radical N (C[N]C, valence 2) and unusual species.
+                    let bov = bond_order_sum(mol, *idx) as usize + h as usize;
+                    if bov != 3 { return false; }
+                    // Exclude N with single bond to any atom that itself has a
+                    // NON-RING pi bond to O/N/P/S: amide, sulfonamide, phosphonamide,
+                    // thioamide, etc.  Ring pi bonds (e.g. ring C=N in guanidinium)
+                    // do NOT trigger the exclusion — matching SMARTS !@ semantics.
+                    !n_adjacent_to_pi_center(mol, *idx, &ring_bonds)
                 }
             } else if is_oxygen(an) {
-                // Oxygen: exclude acid OH bonded to C=O or to oxidized S with S=O
-                let h = implicit_hcount(mol, *idx);
-                if h > 0 {
-                    !neighbor_has_carbonyl(mol, *idx) && !neighbor_is_oxidized_sulfur(mol, *idx)
-                } else {
-                    true
+                if atom.charge > 0 { return false; } // O+ (oxonium) never HBA
+                if atom.charge < 0 { return true; }  // [O-] (carboxylate etc.) always HBA
+                // Total H = implicit + explicit isotopic H (e.g. [2H]O[2H] = D2O)
+                let impl_h = implicit_hcount(mol, *idx);
+                let expl_h = mol.neighbors(*idx)
+                    .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
+                    .count() as u8;
+                match impl_h + expl_h {
+                    // H0: ether, carbonyl, epoxide — divalent check excludes radical [O]
+                    0 => bond_order_sum(mol, *idx) == 2,
+                    // H1: alcohol/phenol OH — exclude if neighbor has =O/=N/=P/=S
+                    1 => !neighbor_has_pi_bond_to_onps(mol, *idx),
+                    // H2+ (H2O, D2O, etc.) — not HBA
+                    _ => false,
                 }
             } else if is_sulfur(an) {
-                // Sulfur (Ertl definition includes divalent S with free lone pair)
+                if atom.charge < 0 { return true; }  // [S-] always HBA
+                if atom.charge != 0 { return false; } // S+/S2+ etc. never HBA
                 if atom.aromatic {
-                    // Aromatic S (thiophene-type): count if uncharged
-                    atom.charge == 0
+                    // Aromatic s (thiophene-type): lone pair available
+                    true
                 } else {
-                    // Non-aromatic S: count only if divalent (X2) and not oxidized (no S=O)
-                    let degree = mol.degree(*idx);
-                    let total_valence = degree + implicit_hcount(mol, *idx) as usize;
-                    atom.charge == 0 && total_valence == 2 && !has_double_bond_to(mol, *idx, 8)
+                    // Total H = implicit + explicit isotopic H (handles [2H]S[2H] = D2S)
+                    let impl_h = implicit_hcount(mol, *idx);
+                    let expl_h = mol.neighbors(*idx)
+                        .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
+                        .count() as u8;
+                    let total_h = impl_h + expl_h;
+                    // Formal valence = bond-order sum + implicit H (handles S=C case)
+                    let bos = bond_order_sum(mol, *idx) as usize + impl_h as usize;
+                    if bos != 2 { return false; } // not divalent (sulfoxide/sulfone etc.)
+                    match total_h {
+                        // SH: thiol — exclude if neighbor has =O/=N/=P/=S (thio-acid)
+                        1 => !neighbor_has_pi_bond_to_onps(mol, *idx),
+                        // S with 0H: sulfide, thioketone — HBA
+                        0 => true,
+                        // H2S or higher — not HBA
+                        _ => false,
+                    }
                 }
             } else {
                 false
@@ -238,24 +277,56 @@ pub fn hba_count(mol: &Molecule) -> usize {
         .count()
 }
 
-/// True if any neighbor of `idx` is a carbon that itself has a double bond to oxygen
-/// (i.e., a carbonyl carbon).
-fn neighbor_has_carbonyl(mol: &Molecule, idx: AtomIdx) -> bool {
+/// True if any heavy-atom neighbor of `idx` itself carries a double bond to
+/// N, O, P, or S.  Used to exclude OH/SH groups from the HBA count when the
+/// attached heavy atom has such a π-bond (e.g. C=O, C=N, As=O, P=O, S=O).
+/// Matches the `[!$(*=[O,N,P,S])]` exclusion in the RDKit HBA SMARTS.
+fn neighbor_has_pi_bond_to_onps(mol: &Molecule, idx: AtomIdx) -> bool {
     mol.neighbors(idx).any(|(nb_idx, _)| {
-        mol.atom(nb_idx).element.atomic_number() == 6 && has_double_bond_to(mol, nb_idx, 8)
+        has_double_bond_to(mol, nb_idx, 7)   // =N
+            || has_double_bond_to(mol, nb_idx, 8)  // =O
+            || has_double_bond_to(mol, nb_idx, 15) // =P
+            || has_double_bond_to(mol, nb_idx, 16) // =S
     })
 }
 
-/// True if any neighbor of `idx` is a sulfur atom that itself has a S=O double bond
-/// (i.e., a sulfoxide, sulfone, or sulfonate S). Used to exclude S–OH from HBA count.
-fn neighbor_is_oxidized_sulfur(mol: &Molecule, idx: AtomIdx) -> bool {
-    mol.neighbors(idx).any(|(nb_idx, _)| {
-        mol.atom(nb_idx).element.atomic_number() == 16 && has_double_bond_to(mol, nb_idx, 8)
+/// True if `nb_idx` has a **non-ring** double bond to an atom with atomic
+/// number `target_an`.  Implements the SMARTS `!@` (non-ring bond) constraint:
+/// ring double bonds (e.g. C=N inside a cyclic amidine) do NOT trigger the
+/// N-exclusion and must not be treated as π-centres.
+fn has_nonring_double_bond_to(
+    mol: &Molecule,
+    nb_idx: AtomIdx,
+    target_an: u8,
+    ring_bonds: &HashSet<BondIdx>,
+) -> bool {
+    mol.neighbors(nb_idx).any(|(far, bidx)| {
+        mol.bond(bidx).order == BondOrder::Double
+            && mol.atom(far).element.atomic_number() == target_an
+            && !ring_bonds.contains(&bidx)
     })
 }
 
-// True if any neighbor of `idx` is a carbon that has a C=N double bond
-// (i.e., an imine/amidine/guanidinium carbon).
+/// True if `idx` (an N atom) has a **single-like** bond (including `/`/`\`
+/// stereo bonds stored as `BondOrder::Up`/`Down`) to any neighbor that itself
+/// carries a **non-ring** double bond to O, N, P, or S.
+///
+/// Matches the RDKit HBA SMARTS exclusion `!$(N-*=!@[O,N,P,S])` where:
+/// - `*` is any atom — C (amide, thioamide, guanidine), S (sulfonamide),
+///   P (phosphonamide), N (nitroso-adjacent), etc.
+/// - `-` includes stereo-direction bonds (`/`, `\` → `Up`/`Down`)
+/// - `=!@` means double bond that is NOT a ring bond
+fn n_adjacent_to_pi_center(mol: &Molecule, idx: AtomIdx, ring_bonds: &HashSet<BondIdx>) -> bool {
+    mol.neighbors(idx).any(|(nb_idx, bidx)| {
+        // Accept single, E/Z stereo, and aromatic bonds as "single-like"
+        matches!(mol.bond(bidx).order, BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic)
+            && (has_nonring_double_bond_to(mol, nb_idx, 8, ring_bonds)   // *=O
+                || has_nonring_double_bond_to(mol, nb_idx, 7, ring_bonds)  // *=N
+                || has_nonring_double_bond_to(mol, nb_idx, 16, ring_bonds) // *=S
+                || has_nonring_double_bond_to(mol, nb_idx, 15, ring_bonds)) // *=P
+    })
+}
+
 // ---------------------------------------------------------------------------
 // 6. Rotatable bond count
 // ---------------------------------------------------------------------------
@@ -773,11 +844,8 @@ pub fn fsp3(mol: &Molecule) -> f64 {
 /// A ring is considered aromatic when every atom in it carries the
 /// `aromatic` flag.
 pub fn aromatic_ring_count(mol: &Molecule) -> usize {
-    find_sssr(mol)
-        .rings()
-        .iter()
-        .filter(|ring| ring.iter().all(|&idx| mol.atom(idx).aromatic))
-        .count()
+    use chematic_perception::count_aromatic_rings;
+    count_aromatic_rings(mol)
 }
 
 // ---------------------------------------------------------------------------

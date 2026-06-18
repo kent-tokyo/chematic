@@ -16,6 +16,10 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("smiles_csv", help="CSV with a 'SMILES' column (or first column)")
+    parser.add_argument("--detail", action="store_true",
+                        help="Print every mismatching molecule to stderr")
+    parser.add_argument("--limit", type=int, default=None,
+                        help="Only show first N mismatches per category in --detail mode")
     args = parser.parse_args()
 
     # --- load libraries ---
@@ -49,9 +53,13 @@ def main():
 
     # hba
     hba_match = 0
+    hba_over = 0   # chematic > rdkit
+    hba_under = 0  # chematic < rdkit
+    hba_detail_count = 0
 
     # aromatic ring count
     arc_match = 0
+    arc_detail_count = 0
 
     # [nH] SMARTS: whether the molecule has ANY [nH] atom
     nh_tp = 0  # both say yes
@@ -94,9 +102,22 @@ def main():
 
         if rd_hba == ch_hba:
             hba_match += 1
+        else:
+            delta = ch_hba - rd_hba
+            if delta > 0:
+                hba_over += 1
+            else:
+                hba_under += 1
+            if args.detail and (args.limit is None or hba_detail_count < args.limit):
+                print(f"HBA {delta:+d}  rd={rd_hba} ch={ch_hba}  {smi}", file=sys.stderr)
+                hba_detail_count += 1
 
         if rd_arc == ch_arc:
             arc_match += 1
+        else:
+            if args.detail and (args.limit is None or arc_detail_count < args.limit):
+                print(f"ARC  rd={rd_arc} ch={ch_arc}  {smi}", file=sys.stderr)
+                arc_detail_count += 1
 
         if rd_has_nh and ch_has_nh:
             nh_tp += 1
@@ -113,7 +134,10 @@ def main():
     print(f"  RDKit parse failures:  {parse_fail_rd:>6}")
     print(f"  chematic parse fails:  {parse_fail_ch:>6}")
     print(f"{'='*55}")
+    hba_miss = total - hba_match
     print(f"  HBA agreement:         {hba_match/total*100:6.1f}%  ({hba_match}/{total})")
+    print(f"    over-count (ch>rd):  {hba_over:>6}  ({hba_over/total*100:.1f}%)")
+    print(f"    under-count(ch<rd):  {hba_under:>6}  ({hba_under/total*100:.1f}%)")
     print(f"  Aromatic ring count:   {arc_match/total*100:6.1f}%  ({arc_match}/{total})")
     nh_denom = nh_tp + nh_tn + nh_fp + nh_fn
     nh_agree = (nh_tp + nh_tn) / nh_denom * 100 if nh_denom else 0
