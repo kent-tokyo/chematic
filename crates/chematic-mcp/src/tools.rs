@@ -9,8 +9,11 @@ use chematic_3d::{generate_and_minimize_dreiding, write_xyz};
 use serde_json::{Value, json};
 
 use chematic_chem::{
-    exact_mass, hba_count, hbd_count, heavy_atom_count, logp_crippen, molecular_weight, qed,
-    rotatable_bond_count, tpsa,
+    admet_profile, boiled_egg,
+    brenk_passes, brenk_matches,
+    exact_mass, hba_count, hbd_count, heavy_atom_count, lipinski_passes, logp_crippen,
+    molecular_weight, pains_passes, pains_matches,
+    qed, rotatable_bond_count, sa_score, tpsa,
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -175,6 +178,72 @@ pub fn list_tools() -> Value {
                 },
                 "required": ["smiles"]
             }
+        },
+        {
+            "name": "pains_check",
+            "description": "Check whether a molecule contains Pan-Assay Interference Compounds (PAINS) structural alerts. PAINS compounds often produce false positives in high-throughput screening.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string" }
+                },
+                "required": ["smiles"]
+            }
+        },
+        {
+            "name": "brenk_check",
+            "description": "Check whether a molecule contains Brenk structural alerts (unwanted functional groups associated with toxicity, metabolic instability, or undesirable reactivity).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string" }
+                },
+                "required": ["smiles"]
+            }
+        },
+        {
+            "name": "sa_score",
+            "description": "Estimate synthetic accessibility (SA Score, Ertl & Schuffenhauer 2009). Returns a score from 1 (easy to synthesize) to 10 (very difficult). Drug-like molecules typically score 2–4.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string" }
+                },
+                "required": ["smiles"]
+            }
+        },
+        {
+            "name": "admet_profile",
+            "description": "Compute a full ADMET (Absorption, Distribution, Metabolism, Excretion, Toxicity) profile including BBB penetration, Caco-2 permeability, hERG risk, CYP3A4 inhibition risk, AMES mutagenicity risk, plasma protein binding, and hepatic clearance class.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string" }
+                },
+                "required": ["smiles"]
+            }
+        },
+        {
+            "name": "boiled_egg",
+            "description": "Predict passive gastrointestinal (GI) absorption and blood-brain barrier (BBB) penetration using the BOILED-Egg method (Daina & Zoete 2016). Uses LogP and TPSA thresholds to classify molecules into the egg-white (GI absorbed) and egg-yolk (BBB penetrant) zones.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string" }
+                },
+                "required": ["smiles"]
+            }
+        },
+        {
+            "name": "lipinski_check",
+            "description": "Check Lipinski's Rule of Five for oral drug-likeness (MW ≤ 500, LogP ≤ 5, HBD ≤ 5, HBA ≤ 10). Returns whether the molecule passes and individual property values.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string" }
+                },
+                "required": ["smiles"]
+            }
         }
     ]})
 }
@@ -191,6 +260,12 @@ pub fn call_tool(name: &str, args: &Value) -> Result<Value, String> {
         "canonical_smiles" => tool_canonical_smiles(args),
         "find_mcs" => tool_find_mcs(args),
         "generate_3d" => tool_generate_3d(args),
+        "pains_check" => tool_pains_check(args),
+        "brenk_check" => tool_brenk_check(args),
+        "sa_score" => tool_sa_score(args),
+        "admet_profile" => tool_admet_profile(args),
+        "boiled_egg" => tool_boiled_egg(args),
+        "lipinski_check" => tool_lipinski_check(args),
         _ => Err(format!("Unknown tool: {name}")),
     }
 }
@@ -313,6 +388,107 @@ fn tool_generate_3d(args: &Value) -> Result<Value, String> {
     Ok(content(&json!({
         "xyz": xyz,
         "atom_count": mol.atom_count()
+    })))
+}
+
+fn tool_pains_check(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let mol = parse_mol(smiles)?;
+    let passes = pains_passes(&mol);
+    let alerts: Vec<&str> = pains_matches(&mol);
+    Ok(content(&json!({
+        "passes": passes,
+        "alert_count": alerts.len(),
+        "alerts": alerts
+    })))
+}
+
+fn tool_brenk_check(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let mol = parse_mol(smiles)?;
+    let passes = brenk_passes(&mol);
+    let alerts: Vec<&str> = brenk_matches(&mol);
+    Ok(content(&json!({
+        "passes": passes,
+        "alert_count": alerts.len(),
+        "alerts": alerts
+    })))
+}
+
+fn tool_sa_score(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let mol = parse_mol(smiles)?;
+    let score = sa_score(&mol);
+    Ok(content(&json!({
+        "sa_score": round3(score),
+        "easy_to_synthesize": score < 6.0,
+        "note": "1 = easiest, 10 = hardest; < 6 = synthesizable, > 6 = challenging"
+    })))
+}
+
+fn tool_admet_profile(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let mol = parse_mol(smiles)?;
+    let p = admet_profile(&mol);
+    Ok(content(&json!({
+        "bbb_score": round3(p.bbb_score),
+        "bbb_passes": p.bbb_passes,
+        "caco2_logp": round3(p.caco2),
+        "herg_risk": round3(p.herg_risk),
+        "cyp3a4_risk": round3(p.cyp3a4_risk),
+        "pka_acid": p.pka_acid.map(round2),
+        "pka_base": p.pka_base.map(round2),
+        "esol_logs": round3(p.esol),
+        "logd_74": round3(p.logd74),
+        "mw": round2(p.mw),
+        "logp": round3(p.logp),
+        "tpsa": round2(p.tpsa),
+        "hbd": p.hbd,
+        "hba": p.hba,
+        "rotatable_bonds": p.rotatable_bonds,
+        "ames_risk": round3(p.ames_risk),
+        "ppb_percent": round2(p.ppb),
+        "clearance_class": format!("{:?}", p.clearance)
+    })))
+}
+
+fn tool_boiled_egg(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let mol = parse_mol(smiles)?;
+    let e = boiled_egg(&mol);
+    Ok(content(&json!({
+        "gi_absorbed": e.gi_absorbed,
+        "bbb_penetrant": e.bbb_penetrant,
+        "logp": round3(e.logp),
+        "tpsa": round2(e.tpsa),
+        "method": "BOILED-Egg (Daina & Zoete 2016)",
+        "thresholds": {
+            "gi_white": "logP ≤ 5.88 AND TPSA ≤ 131.6 Å²",
+            "bbb_yolk": "logP ∈ [-0.3, 6.1] AND TPSA ≤ 71.1 Å²"
+        }
+    })))
+}
+
+fn tool_lipinski_check(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let mol = parse_mol(smiles)?;
+    let passes = lipinski_passes(&mol);
+    let mw = round2(molecular_weight(&mol));
+    let logp = round3(logp_crippen(&mol));
+    let hbd = hbd_count(&mol);
+    let hba = hba_count(&mol);
+    Ok(content(&json!({
+        "passes": passes,
+        "mw": mw,
+        "logp": logp,
+        "hbd": hbd,
+        "hba": hba,
+        "rules": {
+            "mw_le_500": mw <= 500.0,
+            "logp_le_5": logp <= 5.0,
+            "hbd_le_5": hbd <= 5,
+            "hba_le_10": hba <= 10
+        }
     })))
 }
 
@@ -450,6 +626,59 @@ mod tests {
     fn test_list_tools_count() {
         let tools = list_tools();
         let count = tools["tools"].as_array().unwrap().len();
-        assert_eq!(count, 8);
+        assert_eq!(count, 14);
+    }
+
+    #[test]
+    fn test_pains_check_clean() {
+        let result = tool_pains_check(&args(&[("smiles", "CCO")])).unwrap();
+        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(v["passes"], true);
+        assert_eq!(v["alert_count"], 0);
+    }
+
+    #[test]
+    fn test_brenk_check_clean() {
+        let result = tool_brenk_check(&args(&[("smiles", "CCO")])).unwrap();
+        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(v["passes"], true);
+    }
+
+    #[test]
+    fn test_sa_score_ethanol() {
+        let result = tool_sa_score(&args(&[("smiles", "CCO")])).unwrap();
+        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let score = v["sa_score"].as_f64().unwrap();
+        assert!((1.0..=10.0).contains(&score), "SA score out of range: {score}");
+    }
+
+    #[test]
+    fn test_sa_score_aspirin_easy() {
+        let result = tool_sa_score(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
+        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(v["easy_to_synthesize"], true);
+    }
+
+    #[test]
+    fn test_admet_profile_benzene() {
+        let result = tool_admet_profile(&args(&[("smiles", "c1ccccc1")])).unwrap();
+        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert!(v.get("bbb_passes").is_some());
+        assert!(v.get("clearance_class").is_some());
+    }
+
+    #[test]
+    fn test_boiled_egg_aspirin() {
+        let result = tool_boiled_egg(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
+        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(v["gi_absorbed"], true);
+    }
+
+    #[test]
+    fn test_lipinski_check_ethanol() {
+        let result = tool_lipinski_check(&args(&[("smiles", "CCO")])).unwrap();
+        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(v["passes"], true);
+        assert!(v["mw"].as_f64().unwrap() < 500.0);
     }
 }

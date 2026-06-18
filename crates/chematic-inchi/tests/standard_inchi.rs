@@ -135,6 +135,17 @@ fn inchikey_d_alanine() {
     check_key("N[C@H](C)C(=O)O", "QNAYBMKLOCPYGJ-UWTATZPHSA-N");
 }
 
+// (E)-but-2-ene and (Z)-but-2-ene differ only in the /b stereo layer.
+// InChIKeys sourced from PubChem: CID 12112 (E) and CID 12113 (Z).
+#[test]
+fn inchikey_e_but2ene() {
+    check_key("C/C=C/C", "IAQRGUVFOMOMEM-ONEGZZNKSA-N");
+}
+#[test]
+fn inchikey_z_but2ene() {
+    check_key("C/C=C\\C", "IAQRGUVFOMOMEM-ARJAWSKDSA-N");
+}
+
 fn check_key(smiles: &str, expected_key: &str) {
     let mol = parse(smiles).unwrap_or_else(|e| panic!("parse {smiles:?}: {e}"));
     let inchi = standard_inchi(&mol).unwrap_or_else(|e| panic!("standard_inchi({smiles:?}): {e}"));

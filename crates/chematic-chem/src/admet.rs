@@ -318,6 +318,37 @@ pub fn admet_profile(mol: &Molecule) -> AdmetProfile {
     }
 }
 
+/// BOILED-Egg prediction result (Daina & Zoete 2016).
+///
+/// Uses Crippen LogP as an approximation for WLOGP.
+/// - GI absorption zone: LogP ≤ 5.88 **and** TPSA ≤ 131.6 Å²
+/// - BBB zone:           LogP ∈ [−0.3, 6.1] **and** TPSA ≤ 71.1 Å²
+#[derive(Debug, Clone, PartialEq)]
+pub struct BoiledEggProfile {
+    /// True if the molecule falls in the GI-absorbed (egg-white) zone.
+    pub gi_absorbed: bool,
+    /// True if the molecule falls in the BBB-penetrant (egg-yolk) zone.
+    pub bbb_penetrant: bool,
+    /// Crippen LogP value used (WLOGP approximation).
+    pub logp: f64,
+    /// TPSA value used.
+    pub tpsa: f64,
+}
+
+/// Predict passive GI absorption and BBB penetration using the BOILED-Egg method.
+///
+/// Reference: Daina A, Zoete V. *ChemMedChem* 2016, **11**(11), 1117-1121.
+pub fn boiled_egg(mol: &Molecule) -> BoiledEggProfile {
+    let logp = logp_crippen(mol);
+    let tpsa_val = tpsa(mol);
+    BoiledEggProfile {
+        gi_absorbed: logp <= 5.88 && tpsa_val <= 131.6,
+        bbb_penetrant: (-0.3..=6.1).contains(&logp) && tpsa_val <= 71.1,
+        logp,
+        tpsa: tpsa_val,
+    }
+}
+
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -544,6 +575,24 @@ mod tests {
             let s = clearance_score(&m);
             assert!((0.0..=1.0).contains(&s), "clearance_score out of range for {smi}: {s}");
         }
+    }
+
+    // ── BOILED-Egg ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_boiled_egg_aspirin_gi_absorbed() {
+        let m = mol("CC(=O)Oc1ccccc1C(=O)O");
+        let e = boiled_egg(&m);
+        assert!(e.gi_absorbed, "aspirin should be GI absorbed");
+    }
+
+    #[test]
+    fn test_boiled_egg_zone_keys() {
+        let m = mol("CCO");
+        let e = boiled_egg(&m);
+        // ethanol: low logP, low TPSA → both zones
+        assert!(e.gi_absorbed);
+        assert!(e.bbb_penetrant);
     }
 
     // ── AdmetProfile extended ─────────────────────────────────────────────────

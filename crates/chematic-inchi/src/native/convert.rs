@@ -181,5 +181,51 @@ pub fn mol_to_inchi_atoms(
         });
     }
 
+    // --- Phase 6: build Stereo0D descriptors (E/Z double bond) -------------------
+    //
+    // For each double bond, look for Up/Down stereo bonds on non-H substituents.
+    // Same direction (both up or both down) → Z (zusammen) → ODD (1).
+    // Opposite directions → E (entgegen) → EVEN (2).
+    // central_atom = -1 (NO_ATOM), stereo_type = 1 (DoubleBond).
+    //
+    // is_up(alkene_end, sub) mirrors substituent_is_up in chematic-chem/cip.rs:
+    //   Up bond: atom1 == alkene_end → true
+    //   Down bond: atom1 == sub → true (i.e. atom1 != alkene_end)
+    let find_stereo_sub = |alkene_end: AtomIdx, other: AtomIdx| -> Option<(i16, bool)> {
+        for (nb, _) in mol.neighbors(alkene_end) {
+            if nb == other { continue; }
+            if mol.atom(nb).element.atomic_number() == 1 { continue; }
+            let Some((_, nb_bond)) = mol.bond_between(alkene_end, nb) else { continue };
+            let is_up = match nb_bond.order {
+                BondOrder::Up   => Some(nb_bond.atom1 == alkene_end),
+                BondOrder::Down => Some(nb_bond.atom1 == nb),
+                _ => None,
+            };
+            if let (Some(up), Some(&ni)) = (is_up, inchi_idx.get(&nb)) {
+                return Some((ni, up));
+            }
+        }
+        None
+    };
+
+    for (_, bond) in mol.bonds() {
+        if bond.order != BondOrder::Double { continue; }
+        let a = bond.atom1;
+        let b = bond.atom2;
+        let (Some(&a_ni), Some(&b_ni)) = (inchi_idx.get(&a), inchi_idx.get(&b)) else { continue };
+
+        let Some((x_ni, x_up)) = find_stereo_sub(a, b) else { continue };
+        let Some((y_ni, y_up)) = find_stereo_sub(b, a) else { continue };
+
+        let parity: i8 = if x_up == y_up { 1 } else { 2 };
+
+        stereo.push(InchiStereo0D {
+            neighbor: [x_ni, a_ni, b_ni, y_ni],
+            central_atom: -1,
+            stereo_type: 1,
+            parity,
+        });
+    }
+
     Ok((c_atoms, stereo))
 }

@@ -110,6 +110,7 @@ pub use xlogp3::{xlogp3, xlogp3_per_atom};
 pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, predict_pka};
 pub use admet::{
     AdmetProfile, admet_profile,
+    BoiledEggProfile, boiled_egg,
     bbb_passes, bbb_score,
     caco2_permeability,
     cyp3a4_inhibition_risk,

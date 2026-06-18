@@ -32,11 +32,12 @@ assert_eq!(key, "UHOVQNZJYSORNB-UHFFFAOYSA-N");
 All layers are handled by the IUPAC reference library: formula, connectivity, hydrogen,
 tautomer normalization, mobile-H, stereo (/t, /m, /s), charge (/q, /p), and isotope (/i).
 
-> **Known limitation:** 2.6% of drug-like molecules (128 / 5,000 in the issue #11 corpus)
-> fail with `InchiError::KekulizationFailed` due to a greedy kekulization algorithm in
-> `chematic-core` that cannot handle bridgehead-N fused rings (e.g. indolizine). No silent
-> wrong output is produced — the error is always explicit. See the
-> [main README](../../README.md#known-limitations) for the full breakdown and fix roadmap.
+> **Known limitation:** 2 of 5,000 drug-like molecules (0.04%) still fail with
+> `InchiError::KekulizationFailed`: one boron-aromatic ring (`b1ccccn1`) and pure H₂
+> (`[H][H]`, which has no heavy atoms).  All other previously failing molecules —
+> including indolizine-type bridgehead-N systems (~109 cases) and complex polycyclics
+> (~17 cases) — are now handled by the 4-pass kekulization algorithm in `chematic-core`.
+> No silent wrong output is produced; the error is always explicit.
 
 ## Approximate InChI (WASM / zero-C-dependency fallback)
 

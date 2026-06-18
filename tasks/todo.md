@@ -364,10 +364,13 @@ Constraints: Zero FFI and WASM compatibility remain unchanged.
 #### 7-11. InChI / InChIKey (complete: Sprint v0.4.0)
   - [x] Standard InChI string generation (`standard_inchi()` — via IUPAC C library 1.07.5)
   - [x] InChIKey (27-character hash) generation (`standard_inchi_key()` — bit-exact match)
+  - [x] E/Z double-bond stereo `/b` layer in native path (Phase 6 in `convert.rs`, v0.4.4+)
+  - [x] Tetrahedral stereo `/t`, `/m`, `/s` layers (existing, via IUPAC C library)
   - **Implementation approach**: vendored IUPAC InChI C library (v1.07.5) as opt-in FFI via `native-inchi` feature
   - Default build maintains zero FFI / WASM compatibility; C compilation only occurs when `native-inchi` feature is enabled
   - Implementation: `crates/chematic-inchi/src/native/` + `build.rs` + `vendor/inchi-src/`
-  - Tests: 14 integration tests (`cargo test -p chematic-inchi --features native-inchi --test standard_inchi`)
+  - Tests: 16 integration tests (`cargo test -p chematic-inchi --features native-inchi --test standard_inchi`)
+    incl. `inchikey_e_but2ene` / `inchikey_z_but2ene` for E/Z discrimination
   - Note: InChI 1.07.5 differs from PubChem (1.06) in some stereo keys (/m layer assignment changed)
 
 ---
@@ -822,9 +825,11 @@ Sprint v0.1.26: (complete) Issue D + P3 Features (complete: 2026-06-06)
 
 ### Phase 16 — MCP Server + pKa/ADMET (v0.3.0–v0.3.2) (complete)
 
-- [x] **MCP server** (`chematic-mcp`) — AI agent integration, 8 tools, JSON-RPC 2.0 over stdio
+- [x] **MCP server** (`chematic-mcp`) — AI agent integration, **14 tools** (8 original + 6 added v0.4.4+), JSON-RPC 2.0 over stdio
+      New tools: `pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check`
+      Inspired by ChemCrow (GPT-4 + 19 tools) and CACTUS (LLM + 10 ADMET tools) analysis
 - [x] **pKa prediction** (`pka.rs`) — 15 SMARTS rules, `predict_pka`/`pka_acid`/`pka_base`
-- [x] **ADMET profile** (`admet.rs`) — BBB/Caco-2/hERG/CYP3A4 + `AdmetProfile`
+- [x] **ADMET profile** (`admet.rs`) — BBB/Caco-2/hERG/CYP3A4 + `AdmetProfile` + `BoiledEggProfile`/`boiled_egg()` (v0.4.4+)
 - [x] **IUPAC expansion** — 15 → 25+ compound classes (piperidine, morpholine, naphthalene, sulfide, etc.)
 - [x] **ETKDG KB expansion** — 5 → 20+ torsion patterns (biphenyl, sulfoxide, disulfide, etc.)
 - [x] **WASM bindings** — pKa/ADMET exposed as 130+ WASM functions (v0.3.1)
@@ -1235,7 +1240,9 @@ The following items have a high likelihood of becoming future issues following t
 
 **Low Priority**:
 2. LogP alkenyl C context values (terminal =CH₂ vs aryl-adjacent =CH−)
-3. Kekulization edge cases (Edmonds flower algorithm for odd rings)
+3. ~~Kekulization edge cases (Edmonds' blossom algorithm for odd rings)~~ — **resolved** (v0.4.4+):
+   Pass 3 (bridgehead-N exclusion) + Pass 4 (Edmonds' blossom) added to `kekulize()`.
+   Corpus failures: 128 → 2 (boron aromatic + pure H₂ remain; all others fixed).
 
 ---
 

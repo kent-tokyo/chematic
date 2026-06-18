@@ -9,6 +9,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-mcp`: 6 new MCP tools (8 → 14) inspired by ChemCrow / CACTUS
+
+Following analysis of the ChemCrow (GPT-4 + 19 tools) and CACTUS (LLM + chemistry databases)
+papers, six tools were added to `crates/chematic-mcp/src/tools.rs` to expose chematic-chem
+capabilities already implemented but not previously callable by AI agents:
+
+| Tool | Function | Description |
+|------|----------|-------------|
+| `pains_check` | `pains_passes` / `pains_matches` | PAINS structural alerts (HTS false-positive filter) |
+| `brenk_check` | `brenk_passes` / `brenk_matches` | Brenk toxicity / instability alerts |
+| `sa_score` | `sa_score` | Synthetic accessibility score (1=easy, 10=hard; < 6 = synthesizable) |
+| `admet_profile` | `admet_profile` | Full ADMET bundle: BBB, Caco-2, hERG, CYP3A4, AMES, PPB, clearance |
+| `boiled_egg` | `boiled_egg` | BOILED-Egg GI absorption + BBB zone classification |
+| `lipinski_check` | `lipinski_passes` + per-rule breakdown | Lipinski Rule-of-Five with individual rule results |
+
+### Added — `chematic-chem`: BOILED-Egg method (`admet.rs`)
+
+`BoiledEggProfile` struct and `boiled_egg(mol)` function implementing the 2D passive
+permeability classifier (Daina & Zoete, *ChemMedChem* 2016):
+
+- **Egg-white (GI absorbed)**: Crippen LogP ≤ 5.88 **and** TPSA ≤ 131.6 Å²
+- **Egg-yolk (BBB penetrant)**: Crippen LogP ∈ [−0.3, 6.1] **and** TPSA ≤ 71.1 Å²
+
+Uses `logp_crippen()` as a WLOGP approximation (Crippen ≈ Wildman-Crippen for drug-like space).
+Exported from `chematic_chem::{BoiledEggProfile, boiled_egg}`.
+
+---
+
+### Fixed — `chematic-core`: Kekulization now handles bridgehead-N and non-bipartite aromatic graphs
+
+`kekulize()` in `chematic-core/src/kekulization.rs` now succeeds on molecules that
+previously returned `KekuleError`. Two new fallback passes were added:
+
+**Pass 3 — Bridgehead-N exclusion (fixes ~109 / 128 corpus failures)**
+
+Aromatic N atoms at ring junctions (aromatic degree ≥ 3, e.g. indolizine C9a-N)
+contribute a lone pair to the π system rather than occupying a double bond.
+The previous algorithm misclassified these as *must-match* atoms, making it impossible
+to form a valid matching in odd-atom-count systems (9 atoms in indolizine).
+
+Pass 3 identifies such bridgehead-N atoms and excludes them from the matching problem.
+The remaining C atoms form a bipartite subgraph that the existing BFS solver handles
+correctly, leaving N atoms with all single bonds (lone-pair donors).
+
+Affected SMILES families: indolizine (`c1ccn2cccc2c1`), imidazo[1,2-a]pyridine
+(`c1ccn2ccnc2c1`), pyrazolo[1,5-a]pyridine, s-triazolo[4,3-a]pyridine, and
+hundreds of analogues.
+
+**Pass 4 — Edmonds' blossom (fixes ~17 / 128 remaining corpus failures)**
+
+For aromatic subgraphs that contain odd cycles in the C-only must-match set
+(non-bipartite topology), the BFS augmenting-path algorithm can miss valid matchings.
+Edmonds' blossom algorithm (Gabow 1976 formulation, O(n²m)) correctly handles these
+by contracting odd cycles into super-vertices before searching for augmenting paths.
+
+New function `blossom_max_matching(n, adj)` is called as a last resort when passes 1–3
+all fail.  Representative test case: corannulene C₂₀H₁₀ (five 5-membered rings fused
+to five 6-membered rings, 25 aromatic bonds).
+
+**New tests** (in `chematic-core/src/kekulization.rs`):
+
+| Test | Structure | Pass |
+|------|-----------|------|
+| `kekulize_indolizine` | `c1ccn2cccc2c1` (9 atoms, bridgehead-N) | 3 |
+| `kekulize_quinolizine` | `c1ccn2ccccc2c1` (10 atoms, regression) | 1/2 |
+| `kekulize_corannulene` | C₂₀H₁₀ (20 atoms, non-bipartite) | 4 |
+
+### Fixed — `chematic-inchi`: E/Z double-bond stereo (`/b` layer) in `standard_inchi()`
+
+The native-inchi path (`standard_inchi()`) previously omitted the `/b` layer for
+molecules with E/Z double-bond stereochemistry, producing InChIs that were incorrect
+for stereospecific alkenes and making `(E)-but-2-ene` and `(Z)-but-2-ene` return
+identical strings.
+
+`mol_to_inchi_atoms()` in `crates/chematic-inchi/src/native/convert.rs` now includes
+a Phase 6 that scans aromatic bonds with `BondOrder::Up`/`BondOrder::Down` stereo bonds
+on substituents.  For each stereogenic double bond, it emits an `InchiStereo0D` descriptor
+with `stereo_type = 1` (DoubleBond) and parity derived from the relative orientation of
+the stereo bonds: same direction → Z/ODD(1), opposite → E/EVEN(2).
+
+**New integration tests** (in `crates/chematic-inchi/tests/standard_inchi.rs`):
+
+| Test | SMILES | Expected InChIKey |
+|------|--------|-------------------|
+| `inchikey_e_but2ene` | `C/C=C/C` | `IAQRGUVFOMOMEM-ONEGZZNKSA-N` |
+| `inchikey_z_but2ene` | `C/C=C\C` | `IAQRGUVFOMOMEM-ARJAWSKDSA-N` |
+
+The module-level doc comment in `native/mod.rs` was also updated to correctly state
+that both tetrahedral stereo (`/t`, `/m`, `/s`) and E/Z stereo (`/b`) are now included.
+
 ---
 
 ## [0.4.1] — 2026-06-18

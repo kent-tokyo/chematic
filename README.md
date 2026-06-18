@@ -80,7 +80,7 @@ Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+14*)    |
 | `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.3.2 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4 | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
-| `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; 8 tools: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d | 21    |
+| `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **14 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, **pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check** | 28    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
@@ -468,7 +468,7 @@ Notes:
 **v0.3.0** (2026-06-15): **pKa prediction + ADMET + MCP server**
 - **pKa prediction** (`pka.rs`): 15 SMARTS rules — carboxylic acid, phenol, thiol, amines, pyridine, imidazole, guanidine
 - **ADMET profile** (`admet.rs`): BBB (Clark 2000), Caco-2 (Palm 1997), hERG risk, CYP3A4 risk, full `AdmetProfile` struct
-- **MCP server** (`chematic-mcp`): 8 AI-callable tools — first cheminformatics library with native MCP support
+- **MCP server** (`chematic-mcp`): 14 AI-callable tools — first cheminformatics library with native MCP support
 - **IUPAC expansion**: 25+ compound classes (piperidine, morpholine, piperazine, naphthalene, sulfides)
 - **ETKDG torsion KB**: 5 → 20+ patterns (biphenyl, sulfoxide, disulfide, nitrile, enamine...)
 
@@ -501,28 +501,28 @@ For detailed historical roadmap (Phases 1–16), see `tasks/todo.md`.
 
 ## Known Limitations
 
-### Kekulization (128 / 5,000 molecules)
+### Kekulization (2 / 5,000 molecules — nearly resolved)
 
-`chematic-core`'s Kekulé assignment uses a greedy bipartite maximum matching.
-This algorithm cannot handle the odd-cycle topology that arises when a nitrogen
-atom sits at a bridgehead of two fused aromatic rings (e.g. indolizine
-`c1ccn2cccc2c1`). On the 5,000-molecule corpus from issue #11, 128 molecules
-(2.6%) fail kekulization:
+`chematic-core`'s Kekulé assignment uses a 4-pass strategy:
+
+- **Pass 1/2**: BFS augmenting paths (ascending / descending order).
+- **Pass 3**: Bridgehead-N exclusion — N atoms at ring junctions (aromatic degree ≥ 3)
+  donate a lone pair instead of occupying a double bond; the remaining C atoms are matched
+  on a bipartite subgraph.  Fixes indolizine-type systems (~109 corpus cases).
+- **Pass 4**: Edmonds' blossom algorithm (O(n²m)) for non-bipartite C aromatic subgraphs
+  with odd cycles (e.g. corannulene C₂₀H₁₀).  Fixes the remaining complex polycyclic cases.
+
+On the 5,000-molecule corpus from issue #11, only **2 molecules** still fail kekulization
+after these fixes:
 
 | Category | Count | Example |
 |---|---|---|
-| Fused bridgehead-N systems | 109 | `c1ccn2cccc2c1` (indolizine) |
-| Other complex polycyclics | 17 | quinone-aromatic hybrids |
 | Boron aromatic ring | 1 | `b1ccccn1` |
 | Pure H₂ (no heavy atoms) | 1 | `[H][H]` |
 
-**Impact**: any feature that requires kekulization — `standard_inchi()`,
-`standard_inchi_key()`, and certain SMARTS patterns — returns
-`InchiError::KekulizationFailed` for these molecules. No silent wrong output
-is produced; the error is explicit.
-
-**Fix planned**: replacing the greedy matcher with Edmonds' blossom algorithm
-in `chematic-core`.
+**Impact**: `KekuleError` is returned explicitly; no silent wrong output is produced.
+The boron-aromatic case is a genuine edge case; `[H][H]` has no heavy atoms and is
+rejected by the IUPAC InChI library regardless of kekulization.
 
 ### Aromaticity model (Hückel vs RDKit)
 

@@ -1,19 +1,17 @@
 //! Kekulization: assign alternating single/double bonds to aromatic systems.
 //!
-//! Algorithm:
-//! 1. Collect all aromatic atoms and aromatic bonds.
-//! 2. Build an adjacency structure restricted to aromatic bonds.
-//! 3. Find a maximum matching on the aromatic subgraph using
-//!    augmenting paths (DFS-based, O(V*E)).
-//! 4. Matched edges → Double bond; unmatched edges → Single bond.
-//! 5. Return the updated bond order map, or an error if no valid
-//!    Kekulé form exists (i.e. some atom that *must* be doubled is unmatched).
+//! Algorithm (4 passes):
 //!
-//! Scope: handles all standard aromatic systems (benzene, naphthalene,
-//! pyridine, pyrrole, furan, thiophene, indole, imidazole, …).
-//! Edmond's blossom algorithm for exotic odd-member cycles is a future todo.
+//! 1. Collect all aromatic atoms and bonds.
+//! 2. Determine the must-match set (atoms that need a double bond).
+//! 3. Find a maximum matching:
+//!    - Pass 1: BFS augmenting paths, ascending atom order.
+//!    - Pass 2: BFS augmenting paths, descending order (fallback).
+//!    - Pass 3: Bridgehead-N exclusion (lone-pair donors at ring junctions).
+//!    - Pass 4: Edmonds' blossom for non-bipartite aromatic subgraphs.
+//! 4. Matched edges → Double; unmatched → Single.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::bond::BondOrder;
 use crate::molecule::{AtomIdx, BondIdx, Molecule};
@@ -121,6 +119,96 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
         run_matching_pass(&rev, &adj, &mut matching);
     }
 
+    // --- Pass 3: bridgehead-N exclusion fallback ----------------------------
+    //
+    // N at the junction of two fused aromatic rings (e.g. indolizine C9a-N)
+    // has aromatic degree ≥ 3 and contributes a lone pair to the π system
+    // rather than occupying a double bond.  The `atom_must_be_matched` rule
+    // correctly handles isolated pyridine-N (degree 2) but incorrectly forces
+    // bridgehead-N into the matching, making it impossible to form a perfect
+    // matching in odd-atom-count fused systems (9 atoms in indolizine).
+    //
+    // Strategy: identify must-match N atoms whose degree in `adj` is ≥ 3,
+    // remove them from the matching problem, rebuild adjacency on the remaining
+    // (all-carbon) atoms, and retry.  If those atoms can all be matched, the
+    // bridgehead-N atoms receive only single bonds and donate their lone pair.
+    if must_match.iter().any(|&idx| !matching.contains_key(&idx)) {
+        let bridgehead_n: HashSet<AtomIdx> = must_match
+            .iter()
+            .copied()
+            .filter(|&idx| {
+                mol.atom(idx).element.atomic_number() == 7
+                    && adj.get(&idx).map_or(0, |v| v.len()) >= 3
+            })
+            .collect();
+
+        if !bridgehead_n.is_empty() {
+            let must_match_nb: HashSet<AtomIdx> =
+                must_match.difference(&bridgehead_n).copied().collect();
+
+            let mut adj_nb: HashMap<AtomIdx, Vec<(AtomIdx, BondIdx)>> = HashMap::new();
+            for &bidx in &aromatic_bonds {
+                let bond = mol.bond(bidx);
+                if must_match_nb.contains(&bond.atom1) && must_match_nb.contains(&bond.atom2) {
+                    adj_nb.entry(bond.atom1).or_default().push((bond.atom2, bidx));
+                    adj_nb.entry(bond.atom2).or_default().push((bond.atom1, bidx));
+                }
+            }
+
+            let mut sorted_nb: Vec<AtomIdx> = must_match_nb.iter().copied().collect();
+            sorted_nb.sort();
+
+            matching.clear();
+            run_matching_pass(&sorted_nb, &adj_nb, &mut matching);
+            if must_match_nb.iter().any(|&idx| !matching.contains_key(&idx)) {
+                matching.clear();
+                let rev_nb: Vec<AtomIdx> = sorted_nb.iter().copied().rev().collect();
+                run_matching_pass(&rev_nb, &adj_nb, &mut matching);
+            }
+
+            if must_match_nb.iter().all(|&idx| matching.contains_key(&idx)) {
+                return Ok(build_kekule_result(&aromatic_bonds, mol, &matching));
+            }
+        }
+    }
+
+    // --- Pass 4: Edmonds' blossom (general graph maximum matching) ----------
+    //
+    // Passes 1–3 use BFS augmenting paths which are correct for bipartite graphs
+    // but can miss augmenting paths that traverse odd cycles (blossoms).
+    // Edmonds' blossom algorithm contracts odd cycles into single super-vertices,
+    // allowing the BFS to find augmenting paths through non-bipartite subgraphs.
+    // This fixes molecules where the must-match C subgraph has odd cycles
+    // (e.g. corannulene: 5 five-membered rings, 20 C atoms).
+    if must_match.iter().any(|&idx| !matching.contains_key(&idx)) {
+        let n = sorted_atoms.len();
+        let idx_to_int: HashMap<AtomIdx, usize> = sorted_atoms
+            .iter()
+            .enumerate()
+            .map(|(i, &a)| (a, i))
+            .collect();
+        let int_adj: Vec<Vec<usize>> = sorted_atoms
+            .iter()
+            .map(|&a| {
+                adj.get(&a)
+                    .map(|nbrs| {
+                        nbrs.iter()
+                            .filter_map(|(nb, _)| idx_to_int.get(nb).copied())
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            })
+            .collect();
+
+        matching.clear();
+        let int_mate = blossom_max_matching(n, &int_adj);
+        for (i, &j) in int_mate.iter().enumerate() {
+            if j != usize::MAX {
+                matching.insert(sorted_atoms[i], sorted_atoms[j]);
+            }
+        }
+    }
+
     // Verify that all must_match atoms are matched.
     for &idx in &must_match {
         if !matching.contains_key(&idx) {
@@ -134,20 +222,25 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
         }
     }
 
-    // Build the result map: matched aromatic bonds → Double, rest → Single.
+    Ok(build_kekule_result(&aromatic_bonds, mol, &matching))
+}
+
+/// Build the KekuleResult map from the current matching.
+fn build_kekule_result(
+    aromatic_bonds: &[BondIdx],
+    mol: &Molecule,
+    matching: &HashMap<AtomIdx, AtomIdx>,
+) -> KekuleResult {
     let mut double_bonds: HashSet<BondIdx> = HashSet::new();
-    for (&atom, &partner) in &matching {
-        if atom >= partner {
-            continue; // each pair shows up twice in `matching`; visit one orientation
-        }
+    for (&atom, &partner) in matching {
+        if atom >= partner { continue; }
         if let Some((bidx, _)) = mol.bond_between(atom, partner)
             && mol.bond(bidx).order == BondOrder::Aromatic
         {
             double_bonds.insert(bidx);
         }
     }
-
-    let result: KekuleResult = aromatic_bonds
+    aromatic_bonds
         .iter()
         .map(|&bidx| {
             let order = if double_bonds.contains(&bidx) {
@@ -157,8 +250,7 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
             };
             (bidx, order)
         })
-        .collect();
-    Ok(result)
+        .collect()
 }
 
 /// Apply a Kekulé result to a molecule, returning a new Molecule with updated bond orders.
@@ -266,6 +358,143 @@ fn run_matching_pass(
         augment(start, adj, matching, &mut visited);
     }
 }
+
+// ─── Edmonds' blossom maximum matching ───────────────────────────────────────
+//
+// General (non-bipartite) maximum matching via Gabow's blossom formulation.
+// Vertices are integers 0..n; the returned `mate[i] = j` if matched, else NONE.
+//
+// `NONE` sentinel: usize::MAX — safe because `n` is always < 32 k for drug-like
+// molecules (InChI library limit) and we never index at NONE.
+
+const NONE: usize = usize::MAX;
+
+/// Find a maximum matching in a general graph (Edmonds' blossom, O(n²m)).
+fn blossom_max_matching(n: usize, adj: &[Vec<usize>]) -> Vec<usize> {
+    let mut mate = vec![NONE; n];
+    for v in 0..n {
+        if mate[v] == NONE {
+            blossom_augment(v, n, adj, &mut mate);
+        }
+    }
+    mate
+}
+
+/// Attempt to augment the matching from free vertex `root`.
+fn blossom_augment(root: usize, n: usize, adj: &[Vec<usize>], mate: &mut [usize]) {
+    // base[v]: representative of the blossom containing v.
+    let mut base: Vec<usize> = (0..n).collect();
+    // parent[v]: predecessor of v on the augmenting path (NONE = unlabeled).
+    let mut parent: Vec<usize> = vec![NONE; n];
+    // is_outer[v]: true if v is an outer (even-level) vertex in the BFS forest.
+    let mut is_outer: Vec<bool> = vec![false; n];
+
+    is_outer[root] = true;
+    let mut queue: VecDeque<usize> = VecDeque::new();
+    queue.push_back(root);
+
+    'bfs: while let Some(v) = queue.pop_front() {
+        for &w in &adj[v] {
+            if base[v] == base[w] { continue; } // same blossom
+            if mate[v] == w { continue; }         // already-matched edge, skip
+
+            if is_outer[w] {
+                // Both v and w are outer → odd cycle (blossom).
+                let b = blossom_lca(v, w, &base, &parent, mate, n);
+                blossom_mark_path(v, b, w, &mut base, &mut parent, &mut is_outer, &mut queue, mate, n);
+                blossom_mark_path(w, b, v, &mut base, &mut parent, &mut is_outer, &mut queue, mate, n);
+            } else if parent[w] == NONE {
+                // w is unlabeled.
+                parent[w] = v;
+                if mate[w] == NONE {
+                    // Augmenting path ends at w.  Trace parent[] and flip matching.
+                    let mut cur = w;
+                    while cur != NONE {
+                        let prev = parent[cur];
+                        let prev_old = mate[prev];
+                        mate[cur] = prev;
+                        mate[prev] = cur;
+                        cur = prev_old;
+                    }
+                    break 'bfs;
+                }
+                // w is matched — add mate[w] as the next outer vertex.
+                let u = mate[w];
+                if !is_outer[u] {
+                    is_outer[u] = true;
+                    parent[u] = w;
+                    queue.push_back(u);
+                }
+            }
+            // else: w is inner (labeled but not outer) → skip.
+        }
+    }
+}
+
+/// Lowest common ancestor of `a` and `b` in the alternating BFS tree.
+///
+/// Traces both paths toward `root` (following outer→matched-inner→outer chains)
+/// and returns the first vertex visited by both traces.
+fn blossom_lca(
+    mut a: usize,
+    mut b: usize,
+    base: &[usize],
+    parent: &[usize],
+    mate: &[usize],
+    n: usize,
+) -> usize {
+    let mut visited = vec![false; n];
+    loop {
+        a = base[a];
+        visited[a] = true;
+        if mate[a] == NONE { break; }    // reached a free vertex (root or its base)
+        a = parent[mate[a]];             // hop: outer→matched inner→outer parent
+    }
+    loop {
+        b = base[b];
+        if visited[b] { return b; }      // first vertex seen by both traces
+        b = parent[mate[b]];
+    }
+}
+
+/// Walk from `x` toward blossom base `b`, updating `base[]`, `parent[]`,
+/// and promoting inner vertices to outer so the BFS can traverse the blossom.
+#[allow(clippy::too_many_arguments)]
+fn blossom_mark_path(
+    mut x: usize,
+    b: usize,
+    child: usize,
+    base: &mut [usize],
+    parent: &mut [usize],
+    is_outer: &mut [bool],
+    queue: &mut VecDeque<usize>,
+    mate: &[usize],
+    n: usize,
+) {
+    let mut ch = child;
+    while base[x] != b {
+        let bx = base[x];
+        let bmx = base[mate[x]];
+        // Merge blossom: all vertices in bx or bmx become part of base b.
+        for slot in base.iter_mut().take(n) {
+            if *slot == bx || *slot == bmx {
+                *slot = b;
+            }
+        }
+        // Update augmenting-path parent pointers inside the blossom.
+        parent[x] = ch;
+        // Promote mate[x] to outer so the BFS can continue through the blossom.
+        let mx = mate[x];
+        if !is_outer[mx] {
+            is_outer[mx] = true;
+            queue.push_back(mx);
+        }
+        ch = mx;
+        x = parent[mx];
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 /// Determine whether an aromatic atom *must* appear in the matching
 /// (i.e. requires a double bond for a valid Kekulé form).
@@ -712,5 +941,78 @@ mod tests {
         let result = kekulize(&mol).expect("fluoranthene-like kekulization failed");
         let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
         assert_eq!(doubles, 8, "fluoranthene-like structure needs 8 double bonds");
+    }
+
+    /// Indolizine (`c1ccn2cccc2c1`) — bridgehead N at C9a (aromatic degree 3).
+    /// 9 atoms: N contributes lone pair, 8 C atoms form 4 double bonds.
+    /// Requires Pass 3 (bridgehead-N exclusion).
+    #[test]
+    fn kekulize_indolizine() {
+        // Bonds: 6-ring (0-1-2-3-7-8-0) ∪ 5-ring (3-4-5-6-7-3), fused at edge 3-7.
+        let mut b = MoleculeBuilder::new();
+        let c: Vec<_> = (0..9)
+            .map(|i| if i == 3 { b.add_atom(Atom::aromatic(Element::N)) }
+                     else       { b.add_atom(Atom::aromatic(Element::C)) })
+            .collect();
+        for (x, y) in [(0,1),(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,3),(7,8),(8,0)] {
+            b.add_bond(c[x], c[y], BondOrder::Aromatic).unwrap();
+        }
+        let mol = b.build();
+        let result = kekulize(&mol);
+        assert!(result.is_ok(), "indolizine kekulization failed: {:?}", result.err());
+        let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 4, "indolizine: 4 double bonds (N lone-pair donor)");
+    }
+
+    /// Quinolizine (`c1ccn2ccccc2c1`) — bridgehead N in two 6-membered rings.
+    /// 10 atoms (even), bipartite graph → passes 1/2 handle it; Pass 3 must not break it.
+    #[test]
+    fn kekulize_quinolizine() {
+        // 6-ring A: 0-1-2-3-8-9-0  6-ring B: 3-4-5-6-7-8-3  fused at edge 3-8.
+        let mut b = MoleculeBuilder::new();
+        let c: Vec<_> = (0..10)
+            .map(|i| if i == 3 { b.add_atom(Atom::aromatic(Element::N)) }
+                     else       { b.add_atom(Atom::aromatic(Element::C)) })
+            .collect();
+        for (x, y) in [(0,1),(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,3),(8,9),(9,0)] {
+            b.add_bond(c[x], c[y], BondOrder::Aromatic).unwrap();
+        }
+        let mol = b.build();
+        let result = kekulize(&mol);
+        assert!(result.is_ok(), "quinolizine kekulization failed: {:?}", result.err());
+        let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 5, "quinolizine: 5 double bonds");
+    }
+
+    /// Corannulene (C₂₀H₁₀) — bowl-shaped PAH with five 5-membered rings fused to
+    /// five 6-membered rings.  The C-only aromatic subgraph is non-bipartite (five odd
+    /// cycles), so passes 1–3 fail; requires Pass 4 (Edmonds' blossom).
+    #[test]
+    fn kekulize_corannulene() {
+        // Inner 5-ring hub: 0-1-2-3-4-0
+        // Spokes to outer ring: 0-5, 1-7, 2-9, 3-11, 4-13
+        // Outer 10-ring: 5-6-7-8-9-10-11-12-13-14-5
+        // Outer 5 "cap" pairs: (5,15),(6,15),(7,16),(8,16),(9,17),(10,17),(11,18),(12,18),(13,19),(14,19)
+        // 20 vertices, 25 edges, 10 double bonds expected.
+        let mut b = MoleculeBuilder::new();
+        let a: Vec<_> = (0..20).map(|_| b.add_atom(Atom::aromatic(Element::C))).collect();
+        let edges: &[(usize,usize)] = &[
+            // inner 5-ring
+            (0,1),(1,2),(2,3),(3,4),(4,0),
+            // spokes
+            (0,5),(1,7),(2,9),(3,11),(4,13),
+            // outer 10-ring
+            (5,6),(6,7),(7,8),(8,9),(9,10),(10,11),(11,12),(12,13),(13,14),(14,5),
+            // outer "cap" bonds
+            (5,15),(6,15),(7,16),(8,16),(9,17),(10,17),(11,18),(12,18),(13,19),(14,19),
+        ];
+        for &(x, y) in edges {
+            b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
+        }
+        let mol = b.build();
+        let result = kekulize(&mol);
+        assert!(result.is_ok(), "corannulene kekulization failed: {:?}", result.err());
+        let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 10, "corannulene: 10 double bonds");
     }
 }

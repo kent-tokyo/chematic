@@ -3,8 +3,9 @@
 //! Enabled only with the `native-inchi` feature. Not available for WASM targets.
 //!
 //! # Stereo note
-//! Tetrahedral and E/Z stereo layers are not yet included. Formula, connectivity,
-//! hydrogen, charge and isotope layers are bit-exact with the IUPAC reference.
+//! Tetrahedral stereo (/t, /m, /s) and E/Z double bond stereo (/b) are included.
+//! Formula, connectivity, hydrogen, charge and isotope layers are bit-exact with
+//! the IUPAC reference.
 
 mod convert;
 pub(crate) mod ffi;
@@ -52,7 +53,7 @@ impl std::error::Error for InchiError {}
 /// Generate a standard IUPAC InChI string using the vendored InChI C library.
 ///
 /// Layers included: formula, connectivity (/c), hydrogen (/h), charge (/q if non-zero),
-/// isotope (/i if present). Stereo layers (/b, /t, /m, /s) are **not yet implemented**.
+/// isotope (/i if present), tetrahedral stereo (/t, /m, /s) and E/Z double bond stereo (/b).
 ///
 /// Returns an `Err` only if the C library signals an error. Warnings are accepted
 /// as success (return code 1).
