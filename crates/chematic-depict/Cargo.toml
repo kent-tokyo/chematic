@@ -16,10 +16,10 @@ documentation = "https://docs.rs/chematic-depict"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.4.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.4.0" }
-chematic-rxn = { path = "../chematic-rxn", version = "0.4.0" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.0" }
+chematic-core = { path = "../chematic-core", version = "0.4.1" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.1" }
+chematic-rxn = { path = "../chematic-rxn", version = "0.4.1" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.1" }
 tiny-skia = "0.12"
 image = "0.25"
 

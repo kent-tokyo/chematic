@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.4.1] — 2026-06-18
+
+> Accuracy improvements for `aromatic_ring_count`, `hba_count`, MACCS keys,
+> Molar Refractivity, and TPSA/H₂O — closes issue \#12.
+
 ### Changed — `hba_count` rewritten to match RDKit `CalcNumHBA` (99.98% agreement on 5 000 molecules)
 
 The H-bond acceptor counter was rewritten from scratch against the real RDKit
