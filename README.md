@@ -556,23 +556,35 @@ Hückel vs RDKit model differences in condensed N-heterocycles (pyridone, quinol
 
 ```
 chematic/
-├── Cargo.toml               workspace root
-├── CHANGELOG.md             version history
+├── Cargo.toml                    workspace root (v0.4.5)
+├── CHANGELOG.md
 ├── crates/
-│   ├── chematic-core/       Atom, Bond, Molecule, Element, kekulization
-│   ├── chematic-smiles/     OpenSMILES parser, writer, canonical SMILES
-│   ├── chematic-perception/ SSSR ring perception, Huckel aromaticity
-│   ├── chematic-mol/        MOL/SDF V2000+V3000 parser and writer
-│   ├── chematic-depict/     2D SVG depiction engine (CPK colors, highlighting)
-│   ├── chematic-chem/       Descriptors, BRICS, QED, standardization, scaffold
-│   ├── chematic-fp/         ECFP4/6, MACCS, path, AtomPair, Torsion FP
-│   ├── chematic-smarts/     SMARTS parser + VF2 subgraph isomorphism, MCS
-│   ├── chematic-3d/         3D coordinate generation, PDB/XYZ formats
-│   ├── chematic-rxn/        Reaction SMILES parser and writer
-│   └── chematic/            Umbrella crate with feature flags
-└── tasks/
-    ├── todo.md              full roadmap checklist (Japanese)
-    └── lessons.md           development lessons learned
+│   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
+│   ├── chematic-smiles/          OpenSMILES parser/writer, canonical SMILES
+│   ├── chematic-perception/      SSSR, 2-pass Hückel aromaticity, CIP stereo
+│   ├── chematic-smarts/          SMARTS parser, VF2 subgraph isomorphism, MCS, LRU cache
+│   ├── chematic-chem/            70+ descriptors, pKa, ADMET, BOILED-Egg, QED, SA Score,
+│   │                             PAINS/Brenk filters, scaffold, standardization, BRICS/RECAP
+│   ├── chematic-fp/              ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG
+│   ├── chematic-ff/              MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer
+│   ├── chematic-3d/              ETKDG, MD, SASA, USR shape screen, WHIM, XYZ/PDB I/O
+│   ├── chematic-depict/          2D SVG rendering, grid layout, CPK colors, highlighting
+│   ├── chematic-rxn/             Reaction SMILES/SMIRKS, RunReactants, RECAP/BRICS
+│   ├── chematic-mol/             SDF/MOL V2000+V3000, CML, CDXML parser/writer
+│   ├── chematic-inchi/           InChI/InChIKey (pure-Rust approx + IUPAC-exact via native-inchi)
+│   ├── chematic-iupac/           IUPAC name generation (25+ compound classes)
+│   ├── chematic-mcp/             MCP server — 14 AI-callable tools (JSON-RPC 2.0 over stdio)
+│   ├── chematic-wasm/            130+ WASM exports → npm @kent-tokyo/chematic
+│   ├── chematic-py/              PyO3 Python bindings → pip install chematic
+│   ├── chematic-ewald/           PME Ewald summation, B-spline interpolation
+│   └── chematic/                 Umbrella crate with feature flags
+├── demo/                         Interactive WASM playground (→ /playground/ on GitHub Pages)
+│   ├── index.html
+│   └── pkg/                      Pre-built WASM bundle (rebuilt on each release)
+└── docs/                         MkDocs documentation site source
+    ├── cookbook.md
+    ├── getting_started/
+    └── api/
 ```
 
 ---
@@ -580,10 +592,10 @@ chematic/
 ## Development Commands
 
 ```bash
-cargo build --workspace      # build all crates
-cargo test --workspace       # run all tests (736)
-cargo check --workspace      # type-check without building
-cargo clippy --workspace     # lints
+cargo build --workspace                                                   # build all crates
+cargo test --workspace --lib --quiet                                      # 211 lib tests
+cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +16 InChI tests
+cargo clippy --workspace -- -D warnings                                   # lints (zero warnings)
 ```
 
 ---
