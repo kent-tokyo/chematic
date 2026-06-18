@@ -913,13 +913,18 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
 ///
 ///     mcs = chematic.find_mcs([mol1, mol2])
 ///     if mcs: print(mcs.smiles)
+///
+///     # Ring-aware scaffold extraction
+///     scaffold = chematic.find_mcs(mols, ring_matches_ring_only=True, complete_rings_only=True)
 #[pyfunction]
-fn find_mcs(mols: Vec<Mol>) -> Option<Mol> {
+#[pyo3(signature = (mols, ring_matches_ring_only=false, complete_rings_only=false))]
+fn find_mcs(mols: Vec<Mol>, ring_matches_ring_only: bool, complete_rings_only: bool) -> Option<Mol> {
     use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
-    use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
+    use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, McsConfig};
 
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
-    let qmol = chematic_smarts::find_mcs(&refs);
+    let config = McsConfig { ring_matches_ring_only, complete_rings_only, ..McsConfig::default() };
+    let qmol = chematic_smarts::find_mcs_with_config(&refs, &config);
 
     if qmol.atoms.is_empty() {
         return None;

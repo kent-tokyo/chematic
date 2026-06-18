@@ -2551,6 +2551,78 @@ pub fn mcs_smiles_json(smiles_json: &str) -> Result<String, JsValue> {
     Ok(chematic_smiles::canonical_smiles(&mol))
 }
 
+/// MCS with ring-awareness constraints.
+///
+/// `smiles_json` — JSON array of at least 2 SMILES strings.
+/// `ring_matches_ring_only` — ring atoms may only match ring atoms.
+/// `complete_rings_only` — partial ring inclusion is removed from the result.
+/// Returns the MCS SMILES, or `"null"` when no common substructure was found.
+#[wasm_bindgen]
+pub fn mcs_smiles_json_with_ring_config(
+    smiles_json: &str,
+    ring_matches_ring_only: bool,
+    complete_rings_only: bool,
+) -> Result<String, JsValue> {
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
+    if smiles_list.len() < 2 {
+        return Err(JsValue::from_str(
+            "mcs_smiles_json_with_ring_config requires at least 2 SMILES",
+        ));
+    }
+    let mols: Vec<chematic_core::Molecule> = smiles_list
+        .iter()
+        .map(|s| {
+            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
+        .collect::<Result<_, _>>()?;
+    let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
+    let config = chematic_smarts::McsConfig {
+        ring_matches_ring_only,
+        complete_rings_only,
+        ..chematic_smarts::McsConfig::default()
+    };
+    let qmol = chematic_smarts::find_mcs_with_config(&mol_refs, &config);
+
+    if qmol.atoms.is_empty() {
+        return Ok("null".to_string());
+    }
+
+    use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
+    use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
+
+    let mut builder = MoleculeBuilder::new();
+    for qa in &qmol.atoms {
+        let elem = match &qa.query {
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => {
+                Element::from_atomic_number(*n).unwrap_or(Element::C)
+            }
+            _ => Element::C,
+        };
+        builder.add_atom(Atom::new(elem));
+    }
+    for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
+        for (bond_idx, neighbor_idx) in neighbors {
+            if atom_idx < *neighbor_idx {
+                let order = match &qmol.bonds[*bond_idx].query {
+                    BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
+                    BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
+                    BondQuery::Primitive(BondPrimitive::Aromatic) => BondOrder::Aromatic,
+                    _ => BondOrder::Single,
+                };
+                let _ = builder.add_bond(
+                    AtomIdx(atom_idx as u32),
+                    AtomIdx(*neighbor_idx as u32),
+                    order,
+                );
+            }
+        }
+    }
+    let mol = builder.build();
+    Ok(chematic_smiles::canonical_smiles(&mol))
+}
+
 /// Escape a string for use as a JSON string value.
 fn escape_json_string(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
@@ -6217,6 +6289,30 @@ M  END
         let result = mcs_smiles_json(json).unwrap();
         // May return a single-atom MCS or null depending on algorithm
         assert!(result == "null" || !result.is_empty());
+    }
+
+    #[test]
+    fn mcs_with_ring_config_quinoline_series_complete_rings() {
+        // Issue #1 example: quinoline series with both ring constraints.
+        // ring_matches_ring_only blocks ring<->non-ring; complete_rings_only ensures
+        // no partial ring is included.  The shared exocyclic CH₂ (non-ring in all three
+        // molecules) is still valid under ring_matches_ring_only (non-ring matches
+        // non-ring), so the result is quinoline (10) + exocyclic C (1) = 11 atoms.
+        let json = r#"["c1ccc2nc(CC)ccc2c1","c1ccc2nc(CO)ccc2c1","c1ccc2nc(CN)ccc2c1"]"#;
+        let result = mcs_smiles_json_with_ring_config(json, true, true).unwrap();
+        assert_ne!(result, "null");
+        let mol = chematic_smiles::parse(&result).expect("valid SMILES");
+        assert!(mol.atom_count() >= 10, "expected at least the quinoline scaffold (10 atoms), got {}", mol.atom_count());
+    }
+
+    #[test]
+    fn mcs_with_ring_config_benzene_toluene() {
+        // benzene vs toluene with complete_rings_only: full benzene ring (6 atoms).
+        let json = r#"["c1ccccc1","Cc1ccccc1"]"#;
+        let result = mcs_smiles_json_with_ring_config(json, false, true).unwrap();
+        assert_ne!(result, "null");
+        let mol = chematic_smiles::parse(&result).expect("valid SMILES");
+        assert_eq!(mol.atom_count(), 6, "expected full benzene ring (6 atoms), got {}", mol.atom_count());
     }
 
     #[test]

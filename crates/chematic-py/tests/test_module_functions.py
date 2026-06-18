@@ -128,6 +128,37 @@ def test_find_mcs_returns_none_or_mol():
     assert result is None or isinstance(result, chematic.Mol)
 
 
+def test_find_mcs_ring_config_quinoline_scaffold():
+    # Issue #1 example: quinoline series with both ring constraints.
+    # The shared exocyclic CH₂ (non-ring in all) remains valid under ring_matches_ring_only,
+    # so the result is at least the quinoline scaffold (10 atoms).
+    mols = [
+        chematic.from_smiles("c1ccc2nc(CC)ccc2c1"),
+        chematic.from_smiles("c1ccc2nc(CO)ccc2c1"),
+        chematic.from_smiles("c1ccc2nc(CN)ccc2c1"),
+    ]
+    mcs = chematic.find_mcs(mols, ring_matches_ring_only=True, complete_rings_only=True)
+    assert mcs is not None
+    assert mcs.heavy_atoms >= 10, f"expected at least 10-atom quinoline scaffold, got {mcs.heavy_atoms}"
+
+
+def test_find_mcs_ring_config_complete_rings_benzene_toluene():
+    # complete_rings_only: benzene vs toluene should give exactly the 6-atom benzene ring.
+    m1 = chematic.from_smiles("c1ccccc1")
+    m2 = chematic.from_smiles("Cc1ccccc1")
+    mcs = chematic.find_mcs([m1, m2], complete_rings_only=True)
+    assert mcs is not None
+    assert mcs.heavy_atoms == 6, f"expected 6-atom benzene ring, got {mcs.heavy_atoms}"
+
+
+def test_find_mcs_default_kwargs_unchanged():
+    # Calling without kwargs should work as before (backward compat).
+    m1 = chematic.from_smiles("c1ccccc1")
+    m2 = chematic.from_smiles("Cc1ccccc1")
+    mcs = chematic.find_mcs([m1, m2])
+    assert mcs is not None
+
+
 # ---------------------------------------------------------------------------
 # B7: Reaction SMARTS matching
 # ---------------------------------------------------------------------------
