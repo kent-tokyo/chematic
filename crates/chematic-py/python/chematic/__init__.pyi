@@ -75,6 +75,17 @@ class Mol:
         """IUPAC systematic name. Returns an empty string for unsupported structures."""
         ...
 
+    def to_mol2(self) -> str:
+        """Serialize to Tripos MOL2 format string.
+
+        Example::
+
+            mol = chematic.from_smiles("CCO")
+            with open("ethanol.mol2", "w") as f:
+                f.write(mol.to_mol2())
+        """
+        ...
+
     # -- Core physicochemical descriptors ------------------------------------
 
     @property
@@ -415,6 +426,20 @@ def from_mol_block(block: str) -> Mol:
 
     Raises:
         ValueError: on parse failure.
+    """
+    ...
+
+def from_mol2(mol2_str: str) -> Mol:
+    """Parse a Tripos MOL2 string and return a :class:`Mol`.
+
+    Raises:
+        ValueError: on parse failure.
+
+    Example::
+
+        with open("ligand.mol2") as f:
+            mol = chematic.from_mol2(f.read())
+        print(mol.mw)
     """
     ...
 

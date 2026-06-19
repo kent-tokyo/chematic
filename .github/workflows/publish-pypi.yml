@@ -35,27 +35,37 @@ jobs:
     strategy:
       matrix:
         target: [x86_64, aarch64]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
       - uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-${{ matrix.target }}
+          name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
 
   windows:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
       - uses: PyO3/maturin-action@v1
         with:
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows
+          name: wheels-windows-py${{ matrix.python-version }}
           path: dist
 
   sdist:

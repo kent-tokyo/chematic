@@ -110,6 +110,17 @@ impl Mol {
         chematic_iupac::name(&self.inner).unwrap_or_default()
     }
 
+    /// Serialize to Tripos MOL2 format string.
+    ///
+    /// Example::
+    ///
+    ///     mol = chematic.from_smiles("CCO")
+    ///     with open("ethanol.mol2", "w") as f:
+    ///         f.write(mol.to_mol2())
+    fn to_mol2(&self) -> String {
+        chematic_mol::write_mol2(&self.inner, &[])
+    }
+
     // -----------------------------------------------------------------------
     // Core physicochemical descriptors
     // -----------------------------------------------------------------------
@@ -801,6 +812,22 @@ fn from_mol_block(block: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Parse a Tripos MOL2 string into a ``Mol`` object.
+///
+/// Example::
+///
+///     with open("ligand.mol2") as f:
+///         mol = chematic.from_mol2(f.read())
+///     print(mol.mw)
+///
+/// Raises ``ValueError`` on parse failure.
+#[pyfunction]
+fn from_mol2(mol2_str: &str) -> PyResult<Mol> {
+    chematic_mol::parse_mol2(mol2_str)
+        .map(|(mol, _coords)| Mol { inner: Arc::new(mol) })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Return True if the SMILES can be parsed without error.
 #[pyfunction]
 fn is_valid_smiles(smiles: &str) -> bool {
@@ -1021,6 +1048,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Mol>()?;
     m.add_function(wrap_pyfunction!(from_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_block, m)?)?;
+    m.add_function(wrap_pyfunction!(from_mol2, m)?)?;
     m.add_function(wrap_pyfunction!(from_inchi, m)?)?;
     m.add_function(wrap_pyfunction!(is_valid_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
