@@ -1204,6 +1204,29 @@ export function balance_check_json(reaction_smiles) {
 }
 
 /**
+ * Predict GI absorption and BBB penetration using the BOILED-Egg method
+ * (Daina & Zoete 2016).
+ *
+ * Returns JSON: `{"gi_absorbed":bool,"bbb_penetrant":bool,"logp":f64,"tpsa":f64}`
+ * @param {string} smiles
+ * @returns {string}
+ */
+export function boiled_egg_json(smiles) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.boiled_egg_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Number of BRICS fragments produced by fragmenting the molecule.
  *
  * Returns 1 if no BRICS-breakable bonds exist (whole molecule is one fragment).

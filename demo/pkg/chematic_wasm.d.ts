@@ -515,6 +515,14 @@ export function autocorr_3d_json(mol: MolHandle): string;
 export function balance_check_json(reaction_smiles: string): string;
 
 /**
+ * Predict GI absorption and BBB penetration using the BOILED-Egg method
+ * (Daina & Zoete 2016).
+ *
+ * Returns JSON: `{"gi_absorbed":bool,"bbb_penetrant":bool,"logp":f64,"tpsa":f64}`
+ */
+export function boiled_egg_json(smiles: string): string;
+
+/**
  * Number of BRICS fragments produced by fragmenting the molecule.
  *
  * Returns 1 if no BRICS-breakable bonds exist (whole molecule is one fragment).
@@ -1803,6 +1811,7 @@ export interface InitOutput {
     readonly autocorr_2d_json: (a: number) => [number, number];
     readonly autocorr_3d_json: (a: number) => [number, number];
     readonly balance_check_json: (a: number, b: number) => [number, number];
+    readonly boiled_egg_json: (a: number, b: number) => [number, number];
     readonly brics_fragment_count: (a: number) => number;
     readonly brics_fragments_json: (a: number) => [number, number];
     readonly butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];

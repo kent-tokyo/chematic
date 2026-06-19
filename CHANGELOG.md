@@ -11,6 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.7] — (next)
+
+### Fixed — `chematic-core`: boron aromatic kekulization (`b1ccccn1`)
+
+Aromatic B contributes an **empty p orbital** (electron acceptor), not a lone pair.
+The previous `atom_must_be_matched()` returned `false` for B (atomic number 5),
+treating it as a lone-pair donor like O/S.  This left 5 must-match atoms (4C + 1N)
+in a chain that cannot be perfectly matched, causing `KekuleError`.
+
+Fix: changed `5 => false` to `5 => true` in `atom_must_be_matched()`.
+The 6-membered B–C–C–C–C–N ring now produces 3 double bonds (B=C, C=C, C=N).
+
+Corpus kekulization failures: 128 → **1** (only pure H₂ `[H][H]` remains —
+not a kekulization issue; the IUPAC InChI library requires at least one heavy atom).
+
+New test: `kekulize_boron_azine` in `chematic-core/src/kekulization.rs`.
+
+### Added — `chematic-wasm`: `admet_profile_json()` now includes BOILED-Egg fields
+
+`gi_absorbed` (bool) and `bbb_penetrant` (bool) added to the JSON output of
+`admet_profile_json()`, matching the Python `admet()` dict.
+
+---
+
 ## [0.4.6] — 2026-06-19
 
 ### Added — `chematic-py`: `boiled_egg()` method and BOILED-Egg in `admet()`
@@ -24,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed — `chematic-py`: `admet()` docstring updated to list all returned keys
 
 ---
+
+## [0.4.5] — 2026-06-19
 
 ### Added — `chematic-mcp`: 6 new MCP tools (8 → 14) inspired by ChemCrow / CACTUS
 

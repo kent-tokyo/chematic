@@ -2190,6 +2190,7 @@ pub fn admet_profile_json(smiles: &str) -> String {
     let p = chematic_chem::admet_profile(&mol);
     let acid_str = p.pka_acid.map_or("null".to_string(), |v| format!("{v:.2}"));
     let base_str = p.pka_base.map_or("null".to_string(), |v| format!("{v:.2}"));
+    let egg = chematic_chem::boiled_egg(&mol);
     format!(
         concat!(
             "{{",
@@ -2199,7 +2200,8 @@ pub fn admet_profile_json(smiles: &str) -> String {
             "\"pka_acid\":{acid},\"pka_base\":{base},",
             "\"esol\":{esol:.4},\"logd74\":{logd:.4},",
             "\"mw\":{mw:.4},\"logp\":{logp:.4},\"tpsa\":{tpsa:.4},",
-            "\"hbd\":{hbd},\"hba\":{hba},\"rotatable_bonds\":{rb}",
+            "\"hbd\":{hbd},\"hba\":{hba},\"rotatable_bonds\":{rb},",
+            "\"gi_absorbed\":{gi},\"bbb_penetrant\":{bbbp}",
             "}}"
         ),
         bbb  = p.bbb_score,
@@ -2217,6 +2219,8 @@ pub fn admet_profile_json(smiles: &str) -> String {
         hbd  = p.hbd,
         hba  = p.hba,
         rb   = p.rotatable_bonds,
+        gi   = egg.gi_absorbed,
+        bbbp = egg.bbb_penetrant,
     )
 }
 

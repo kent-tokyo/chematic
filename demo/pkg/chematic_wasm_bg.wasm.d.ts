@@ -11,6 +11,7 @@ export const atom_pair_bitvec: (a: number) => [number, number];
 export const autocorr_2d_json: (a: number) => [number, number];
 export const autocorr_3d_json: (a: number) => [number, number];
 export const balance_check_json: (a: number, b: number) => [number, number];
+export const boiled_egg_json: (a: number, b: number) => [number, number];
 export const brics_fragment_count: (a: number) => number;
 export const brics_fragments_json: (a: number) => [number, number];
 export const butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];

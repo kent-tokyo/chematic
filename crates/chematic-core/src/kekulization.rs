@@ -515,8 +515,9 @@ fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
     match atom.element.atomic_number() {
         // O, S, Se always donate a lone pair → don't need a double bond.
         8 | 16 | 34 => false,
-        // Boron aromatic (rare) — can donate lone pair.
-        5 => false,
+        // Aromatic B contributes an empty p orbital (electron acceptor), not a lone pair.
+        // It must appear in a double bond in the Kekulé form, just like aromatic C.
+        5 => true,
         // N with explicit H ([nH]) is a lone-pair donor.
         7 if matches!(atom.hydrogen_count, Some(h) if h > 0) => false,
         // Anionic aromatic N ([n-]) also donates its lone pair; the extra electron
@@ -1014,5 +1015,28 @@ mod tests {
         assert!(result.is_ok(), "corannulene kekulization failed: {:?}", result.err());
         let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
         assert_eq!(doubles, 10, "corannulene: 10 double bonds");
+    }
+
+    /// 1-borazarobenzene (`b1ccccn1`) — aromatic B has an empty p orbital
+    /// (electron acceptor), not a lone pair. B must be in a double bond.
+    /// This was the last remaining kekulization failure in the 5000-molecule corpus.
+    #[test]
+    fn kekulize_boron_azine() {
+        // 6-ring: B(0)-C(1)-C(2)-C(3)-C(4)-N(5)-B(0)
+        // Valid Kekulé: B=C, C=C, C=N  (3 double bonds)
+        let mut b = MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..6).map(|i| {
+            if i == 0 { b.add_atom(Atom::aromatic(Element::B)) }
+            else if i == 5 { b.add_atom(Atom::aromatic(Element::N)) }
+            else { b.add_atom(Atom::aromatic(Element::C)) }
+        }).collect();
+        for i in 0..6 {
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic).unwrap();
+        }
+        let mol = b.build();
+        let result = kekulize(&mol);
+        assert!(result.is_ok(), "b1ccccn1 kekulization failed: {:?}", result.err());
+        let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(doubles, 3, "b1ccccn1: 3 double bonds");
     }
 }
