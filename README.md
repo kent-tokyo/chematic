@@ -414,43 +414,48 @@ const sdf = sdf_from_records_json(
 
 ## Comparison with Other Cheminformatics Libraries
 
-| Feature                              | **chematic**             | RDKit (rdkit-sys)   | OpenBabel FFI  | RDKit.js (WASM)   |
-|--------------------------------------|--------------------------|---------------------|----------------|-------------------|
-| **C/C++ dependencies**               | **None (default)**†      | Extensive C++       | Extensive C++  | C++ via Emscripten |
-| **WASM binary size**                 | **~550 KB**              | N/A (no WASM)       | N/A (no WASM)  | ~30 MB            |
-| **Build requirement**                | `cargo build` only       | cmake + clang       | cmake + clang  | Emscripten SDK    |
-| **WASM target support**              | **Full (native)**        | No                  | No             | Yes (Emscripten)  |
-| Unsafe Rust                          | **None**                 | Extensive           | Extensive      | N/A               |
-| OpenSMILES parser                    | Full                     | Full                | Full           | Full              |
-| SMILES writer / canonical            | Yes                      | Yes                 | Yes            | Yes               |
-| Kekulization                         | Yes                      | Yes                 | Yes            | Yes               |
-| Ring perception (SSSR)               | Yes                      | Yes                 | Yes            | Yes               |
-| SDF/MOL V2000+V3000 + SD fields      | Yes                      | Yes                 | Yes            | Yes               |
-| 2D depiction (SVG, CPK colors)       | Yes                      | Yes                 | Yes            | Yes               |
-| ECFP/FCFP fingerprints (2/4/6)       | **All variants + bitvec**| Yes                 | Yes            | Yes               |
-| AtomPair / Torsion / MACCS FP        | Yes                      | Yes                 | Yes            | Yes               |
-| Molecular descriptors                | **40+ (MW/LogP/…/SA)**   | ~30                 | ~20            | ~30               |
-| BRICS fragmentation                  | Yes (bonds + SMILES)     | Yes                 | No             | Yes               |
-| Murcko scaffold                      | Yes                      | Yes                 | No             | Yes               |
-| Tautomer normalisation               | Yes                      | Yes                 | No             | Yes               |
-| MCS                                  | Yes                      | Yes                 | No             | Yes               |
-| Stereoisomer enumeration             | **Yes**                  | Yes                 | No             | Yes               |
-| CIP stereo (R/S, E/Z) detail         | **Yes (per-atom JSON)**  | Yes                 | Yes            | Yes               |
-| 3D coordinate generation             | Yes (DG + minimization)  | Yes (ETKDG)         | Yes            | Yes               |
-| 3D shape descriptors (PMI/NPR/…)     | **Yes**                  | Yes                 | No             | Yes               |
-| PDB / XYZ file formats               | Yes                      | Yes                 | Yes            | Yes               |
-| MaxMin / Butina diversity picking    | **Yes**                  | Yes                 | No             | No                |
-| Reaction SMILES/SMIRKS               | Yes                      | Yes                 | Yes            | Yes               |
-| InChI / InChIKey                     | **Yes** — pure-Rust (default) + **IUPAC-exact** via `native-inchi` feature | C lib required | C lib required | C lib required |
-| **pKa prediction**                   | **Yes (15 SMARTS rules)**| No                  | No             | No                |
-| **ADMET profile** (BBB/Caco-2/hERG)  | **Yes (v0.3.0)**         | Partial             | No             | Partial           |
-| **MCP server (AI agent API)**        | **Yes (v0.3.0)**         | No                  | No             | No                |
-| IUPAC name generation                | **Yes (25+ classes)**    | No                  | No             | Partial           |
-| Maintenance (2026)                   | Active                   | Active              | Minimal        | Active            |
+| Feature                                    | **chematic**                                  | RDKit (rdkit-sys)   | OpenBabel FFI  | RDKit.js (WASM)   |
+|--------------------------------------------|-----------------------------------------------|---------------------|----------------|-------------------|
+| **C/C++ dependencies**                     | **None (default)**†                           | Extensive C++       | Extensive C++  | C++ via Emscripten |
+| **WASM binary size**                       | **~550 KB**                                   | N/A (no WASM)       | N/A (no WASM)  | ~30 MB            |
+| **Build requirement**                      | `cargo build` only                            | cmake + clang       | cmake + clang  | Emscripten SDK    |
+| **WASM target support**                    | **Full (native)**                             | No                  | No             | Yes (Emscripten)  |
+| **Python bindings**                        | **Yes** (`pip install chematic`, PyO3/maturin)| Yes (rdkit-sys)     | Yes            | No                |
+| Unsafe Rust                                | **None**                                      | Extensive           | Extensive      | N/A               |
+| OpenSMILES parser                          | Full                                          | Full                | Full           | Full              |
+| SMILES writer / canonical                  | Yes                                           | Yes                 | Yes            | Yes               |
+| Kekulization                               | **4-pass (incl. Edmonds' blossom)**           | Yes                 | Yes            | Yes               |
+| Ring perception (SSSR)                     | Yes + iterative augmentation                  | Yes                 | Yes            | Yes               |
+| SDF/MOL V2000+V3000 + SD fields            | Yes                                           | Yes                 | Yes            | Yes               |
+| Tripos MOL2 format                         | **Yes** (parser + writer)                     | Yes                 | Yes            | No                |
+| 2D depiction (SVG, CPK colors)             | Yes                                           | Yes                 | Yes            | Yes               |
+| ECFP/FCFP fingerprints (2/4/6)             | **All variants + bitvec**                     | Yes                 | Yes            | Yes               |
+| AtomPair / Torsion / MACCS FP              | Yes                                           | Yes                 | Yes            | Yes               |
+| **MAP4 fingerprint**                       | **Yes** (Minervini 2020)                      | No (external pkg)   | No             | No                |
+| Molecular descriptors                      | **70+ (incl. BOILED-Egg, QED, SA Score)**     | ~30                 | ~20            | ~30               |
+| BRICS / RECAP fragmentation                | Yes                                           | Yes                 | No             | Yes               |
+| Murcko scaffold                            | Yes                                           | Yes                 | No             | Yes               |
+| Tautomer normalisation                     | Yes                                           | Yes                 | No             | Yes               |
+| MCS                                        | Yes                                           | Yes                 | No             | Yes               |
+| Stereoisomer enumeration                   | **Yes**                                       | Yes                 | No             | Yes               |
+| CIP stereo (R/S, E/Z) detail               | **Yes (per-atom JSON)**                       | Yes                 | Yes            | Yes               |
+| 3D coordinate generation                   | Yes (DG + MMFF94/DREIDING + L-BFGS)          | Yes (ETKDG)         | Yes            | Yes               |
+| 3D shape descriptors (PMI/NPR/USR/…)       | **Yes**                                       | Yes                 | No             | Yes               |
+| MMFF94 force field (all 7 energy terms)    | **Yes**                                       | Yes                 | Yes            | No                |
+| PDB / XYZ file formats                     | Yes                                           | Yes                 | Yes            | Yes               |
+| MaxMin / Butina diversity picking          | **Yes**                                       | Yes                 | No             | No                |
+| Reaction SMILES/SMIRKS                     | Yes                                           | Yes                 | Yes            | Yes               |
+| InChI / InChIKey                           | **Yes** — pure-Rust (default) + **IUPAC-exact** via `native-inchi` | C lib required | C lib required | C lib required |
+| **pKa prediction**                         | **Yes (15 SMARTS rules)**                     | No                  | No             | No                |
+| **ADMET profile** (BBB/Caco-2/hERG/CYP3A4)| **Yes + BOILED-Egg**                          | Partial             | No             | Partial           |
+| **MCP server (AI agent API)**              | **Yes — 15 tools incl. Name→SMILES**         | No                  | No             | No                |
+| IUPAC name generation                      | **Yes (25+ classes)**                         | No                  | No             | Partial           |
+| Name → SMILES (PubChem proxy)              | **Yes** (`name_to_smiles` MCP tool)           | No                  | No             | No                |
+| Maintenance (2026)                         | Active                                        | Active              | Minimal        | Active            |
 
 Notes:
 - chematic WASM binary size measured with `wasm-opt` optimization; RDKit.js is the official WASM build.
-- † Default build only. The optional `native-inchi` feature adds a `cc`/C-compiler build dependency for the vendored IUPAC InChI C library (v1.07.5). All other crates remain FFI-free. Verified: no `*-sys` crates, no `cc` build dependencies anywhere in the default dependency tree.
+- † Default build only. The optional `native-inchi` feature adds a C-compiler dependency for the vendored IUPAC InChI C library (v1.07.5). All other crates remain FFI-free.
 
 ---
 
