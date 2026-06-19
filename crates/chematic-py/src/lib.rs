@@ -301,6 +301,28 @@ impl Mol {
         Ok(d)
     }
 
+    /// Predict GI absorption and BBB penetration using the BOILED-Egg method
+    /// (Daina & Zoete 2016).
+    ///
+    /// Returns a dict with keys:
+    /// ``gi_absorbed`` (bool), ``bbb_penetrant`` (bool),
+    /// ``logp`` (float), ``tpsa`` (float).
+    ///
+    /// Example::
+    ///
+    ///     egg = mol.boiled_egg()
+    ///     print(egg["gi_absorbed"])    # True / False
+    ///     print(egg["bbb_penetrant"])  # True / False
+    fn boiled_egg<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+        let e = chematic_chem::boiled_egg(&self.inner);
+        let d = PyDict::new(py);
+        d.set_item("gi_absorbed", e.gi_absorbed)?;
+        d.set_item("bbb_penetrant", e.bbb_penetrant)?;
+        d.set_item("logp", e.logp)?;
+        d.set_item("tpsa", e.tpsa)?;
+        Ok(d)
+    }
+
     // -----------------------------------------------------------------------
     // All descriptors in one call
     // -----------------------------------------------------------------------
@@ -370,6 +392,9 @@ impl Mol {
         d.set_item("caco2", chematic_chem::caco2_permeability(m))?;
         d.set_item("herg_risk", chematic_chem::herg_risk_score(m))?;
         d.set_item("cyp3a4_risk", chematic_chem::cyp3a4_inhibition_risk(m))?;
+        let egg = chematic_chem::boiled_egg(m);
+        d.set_item("gi_absorbed", egg.gi_absorbed)?;
+        d.set_item("bbb_penetrant", egg.bbb_penetrant)?;
         match chematic_chem::pka_acid(m) {
             Some(v) => d.set_item("pka_acid", v)?,
             None => d.set_item("pka_acid", py.None())?,
