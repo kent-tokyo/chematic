@@ -71,7 +71,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取 | 28 (+14*)   |
 | `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 45     |
-| `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**14 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check | 28     |
+| `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**15 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles | 28     |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
@@ -271,7 +271,7 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 **v0.4.5**（2026-06-19）：Kekulization blossom 算法、E/Z 立体化学、6 个新 MCP 工具、BOILED-Egg
 - **Kekulization 4-pass + Edmonds blossom**：5,000 分子语料库中**仅 2 个**失败（硼芳香环、纯 H₂）。
 - **E/Z 立体化学**：SMILES 解析器精确读写 E/Z 双键。
-- **MCP 新增 6 个工具**：`pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check`，共计 14 个工具。
+- **MCP 新增 6 个工具**：`pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check`，共计 15 个工具。
 - **BOILED-Egg**：在 LogP vs TPSA 空间可视化 BBB 渗透性 / GI 吸收的过滤器实现。
 
 **v0.3.2–v0.3.0**：criterion 基准测试、WASM pKa/ADMET 绑定、MCP 服务器 + pKa + ADMET

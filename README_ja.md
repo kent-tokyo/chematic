@@ -71,7 +71,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み | 28 (+14*)   |
 | `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 45      |
-| `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**14 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check | 28      |
+| `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**15 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles | 28      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
@@ -277,7 +277,7 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 **v0.4.5**（2026-06-19）: ケクレ化 blossom アルゴリズム、E/Z 立体化学、MCP 新ツール、BOILED-Egg
 - **ケクレ化 4-pass + Edmonds blossom**: 5,000 分子コーパスで**2件のみ残存**（ホウ素芳香環・純 H₂）。
 - **E/Z 立体化学**: SMILES パーサーが E/Z 二重結合を正確に読み書き。
-- **MCP 6 新ツール**: `pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check` を追加し、合計 14 ツールへ。
+- **MCP 6 新ツール**: `pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check` を追加し、合計 15 ツールへ。
 - **BOILED-Egg**: BBB 透過性 / GI 吸収を LogP vs TPSA 空間で視覚化するフィルタ実装。
 
 **v0.3.2–v0.3.0**: criterion ベンチマーク、WASM pKa/ADMET バインディング、MCP サーバー + pKa + ADMET

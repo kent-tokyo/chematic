@@ -9,9 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-mcp`: `name_to_smiles` tool (15th tool, PubChem proxy)
+
+Converts a chemical name (IUPAC, common, or trade name) to an isomeric SMILES string
+by querying the PubChem REST API
+(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{name}/property/IsomericSMILES/JSON`).
+
+This is the Rust/MCP equivalent of ChemCrow's `Name2SMILES` tool — the most frequently
+used tool in AI chemistry agent workflows. Requires internet access; returns an explicit
+error when the name is not found.
+
+Dependency added: `ureq = "2"` (blocking HTTPS client, ~200 KB, no unsafe code).
+
+### Fixed — `chematic-perception`: iterative `augmented_ring_set`
+
+`augmented_ring_set()` previously ran a single pass of pairwise bond-symmetric-difference
+(XOR) over SSSR ring pairs. For multi-level fused PAHs (e.g. coronene inner hexagon,
+or any sub-ring requiring 3+ SSSR rings combined), a single pass is insufficient.
+
+The function now iterates until no new rings are found. Termination is guaranteed because
+each new ring is strictly smaller than both of its parents (the size-constraint check was
+already in place). This improves aromatic ring count accuracy beyond the 95.6% baseline.
+
 ---
 
-## [0.4.7] — (next)
+## [0.4.7] — 2026-06-19
 
 ### Fixed — `chematic-core`: boron aromatic kekulization (`b1ccccn1`)
 

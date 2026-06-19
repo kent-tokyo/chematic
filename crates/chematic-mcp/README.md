@@ -4,7 +4,7 @@ MCP (Model Context Protocol) server for chematic — call cheminformatics tools 
 
 ## Overview
 
-`chematic-mcp` exposes 14 cheminformatics tools via JSON-RPC 2.0 over stdio,
+`chematic-mcp` exposes 15 cheminformatics tools via JSON-RPC 2.0 over stdio,
 making them directly callable by Claude and other MCP-compatible AI agents.
 
 ```toml
@@ -32,7 +32,13 @@ responses to stdout. Add it to your Claude Desktop or Claude Code MCP config:
 }
 ```
 
-## Available tools (14)
+## Available tools (15)
+
+### Name resolution (requires internet)
+
+| Tool | Description |
+|------|-------------|
+| `name_to_smiles` | Convert a chemical name (IUPAC, common, or trade name) to SMILES via PubChem |
 
 ### Parsing & basic info
 
@@ -92,6 +98,6 @@ Response:
 
 ## Design
 
-- **Zero network I/O** — all computations are local; no API keys required.
+- **Mostly local** — 14 of 15 tools are pure computation with no network I/O. `name_to_smiles` is the exception (PubChem REST, requires internet).
 - **No unsafe code** — `#![forbid(unsafe_code)]` enforced.
 - **WASM-incompatible** — stdio transport requires OS process; use `chematic-wasm` for browser.

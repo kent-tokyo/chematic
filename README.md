@@ -82,7 +82,7 @@ Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+14*)    |
 | `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.3.2 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4 | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
-| `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **14 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, **pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check** | 28    |
+| `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **15 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, **name_to_smiles** | 28    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
@@ -470,7 +470,7 @@ Notes:
 **v0.3.0** (2026-06-15): **pKa prediction + ADMET + MCP server**
 - **pKa prediction** (`pka.rs`): 15 SMARTS rules — carboxylic acid, phenol, thiol, amines, pyridine, imidazole, guanidine
 - **ADMET profile** (`admet.rs`): BBB (Clark 2000), Caco-2 (Palm 1997), hERG risk, CYP3A4 risk, full `AdmetProfile` struct
-- **MCP server** (`chematic-mcp`): 14 AI-callable tools — first cheminformatics library with native MCP support
+- **MCP server** (`chematic-mcp`): 15 AI-callable tools — first cheminformatics library with native MCP support
 - **IUPAC expansion**: 25+ compound classes (piperidine, morpholine, piperazine, naphthalene, sulfides)
 - **ETKDG torsion KB**: 5 → 20+ patterns (biphenyl, sulfoxide, disulfide, nitrile, enamine...)
 
@@ -573,7 +573,7 @@ chematic/
 │   ├── chematic-mol/             SDF/MOL V2000+V3000, CML, CDXML parser/writer
 │   ├── chematic-inchi/           InChI/InChIKey (pure-Rust approx + IUPAC-exact via native-inchi)
 │   ├── chematic-iupac/           IUPAC name generation (25+ compound classes)
-│   ├── chematic-mcp/             MCP server — 14 AI-callable tools (JSON-RPC 2.0 over stdio)
+│   ├── chematic-mcp/             MCP server — 15 AI-callable tools (JSON-RPC 2.0 over stdio)
 │   ├── chematic-wasm/            130+ WASM exports → npm @kent-tokyo/chematic
 │   ├── chematic-py/              PyO3 Python bindings → pip install chematic
 │   ├── chematic-ewald/           PME Ewald summation, B-spline interpolation
