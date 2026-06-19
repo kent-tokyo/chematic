@@ -250,37 +250,47 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 
 ## 他のケモインフォマティクスライブラリとの比較
 
-| 観点                               | **chematic**             | RDKit.js (WASM)  | OCL.js | Indigo WASM |
-|------------------------------------|--------------------------|------------------|--------|-------------|
-| **C/C++ 依存**                     | **ゼロ（デフォルト）**†  | C++（Emscripten）| △      | C++（Emscripten）|
-| **WASM バイナリサイズ**            | **〜550 KB**             | 〜30 MB          | 〜5 MB | 〜10 MB     |
-| **ビルド要件**                     | `cargo build` のみ       | cmake + clang    | —      | Emscripten SDK |
-| 記述子の豊富さ                     | **◎ 40+**                | ○ 〜30           | △      | △           |
-| FP 種類・設定自由度                | **◎ 7 種 bitvec + 類似度**| ◎               | ○      | △           |
-| 立体化学（CIP + 列挙）             | **◎**                    | ○                | ○      | △           |
-| 3D + コンフォーマー管理            | **◎**                    | ○                | △      | △           |
-| 多様性選択（MaxMin/Butina）        | **◎**                    | ○                | ✗      | ✗           |
-| MMP 分析                           | ✓                        | ✓                | ✗      | ✗           |
-| R-group 分解                       | ✓                        | ✓                | ✗      | ✗           |
-| 分子編集 API                       | **◎ with_atom_* 系**     | ○                | ○      | ○           |
-| CML 読み書き                       | ✓                        | ✓                | ✓      | ✓           |
-| CDXML 読み込み（複数フラグメント・立体化学）| ✓               | ✓                | ✓      | ✓           |
-| InChI / InChIKey                   | ✓ `native-inchi` feature（C ライブラリ 1.07.5 vendored） | ✓ | ✓ | ✓ |
-| unsafe Rust                        | **なし**                 | —                | —      | —           |
+| 観点                                        | **chematic**                               | RDKit (rdkit-sys)  | OpenBabel FFI | RDKit.js (WASM)  |
+|---------------------------------------------|--------------------------------------------|--------------------|---------------|------------------|
+| **C/C++ 依存**                              | **ゼロ（デフォルト）**†                    | 大規模 C++         | 大規模 C++    | C++（Emscripten）|
+| **WASM バイナリサイズ**                     | **〜550 KB**                               | N/A（WASM 非対応） | N/A           | 〜30 MB          |
+| **ビルド要件**                              | `cargo build` のみ                         | cmake + clang      | cmake + clang | Emscripten SDK   |
+| **Python バインディング**                   | **あり** (`pip install chematic`, PyO3)    | あり（rdkit-sys）  | あり          | なし             |
+| unsafe Rust                                 | **なし**                                   | 大規模             | 大規模        | N/A              |
+| ケクレ化                                    | **4-pass（Edmonds' blossom 含む）**        | あり               | あり          | あり             |
+| SDF/MOL V2000+V3000                         | あり                                       | あり               | あり          | あり             |
+| Tripos MOL2 形式                            | **あり**（読み書き + Python）              | あり               | あり          | なし             |
+| 分子記述子                                  | **70+（BOILED-Egg、QED、SA Score 含む）**  | 〜30               | 〜20          | 〜30             |
+| **MAP4 フィンガープリント**                 | **あり**（Minervini 2020）                 | なし（外部pkg）    | なし          | なし             |
+| MMFF94 全 7 エネルギー項                    | **あり**                                   | あり               | あり          | なし             |
+| 3D 座標生成                                 | あり（DG + MMFF94/DREIDING + L-BFGS）      | あり（ETKDG）      | あり          | あり             |
+| 多様性選択（MaxMin/Butina）                 | **あり**                                   | あり               | なし          | なし             |
+| InChI / InChIKey                            | **あり** — 純 Rust（デフォルト）+ **IUPAC 準拠**（`native-inchi`）| C ライブラリ必要 | C ライブラリ必要 | C ライブラリ必要 |
+| **pKa 予測**                                | **あり（15 SMARTS ルール）**               | なし               | なし          | なし             |
+| **ADMET プロファイル + BOILED-Egg**         | **あり**                                   | 一部               | なし          | 一部             |
+| **MCP サーバー（AI エージェント API）**     | **あり — 15 ツール（Name→SMILES 含む）**  | なし               | なし          | なし             |
+| IUPAC 名生成                                | **あり（25+ 化合物クラス）**               | なし               | なし          | 一部             |
+| メンテナンス（2026）                        | アクティブ                                 | アクティブ         | 最小限        | アクティブ       |
 
-† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要（WASM ビルド不可）。他の全クレートは FFI フリーを維持。
+† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要。他の全クレートは FFI フリー。
 
 ---
 
-## 最近の開発（v0.4.5）
+## 最近の開発（v0.4.8）
 
-**v0.4.5**（2026-06-19）: ケクレ化 blossom アルゴリズム、E/Z 立体化学、MCP 新ツール、BOILED-Egg
-- **ケクレ化 4-pass + Edmonds blossom**: 5,000 分子コーパスで**2件のみ残存**（ホウ素芳香環・純 H₂）。
-- **E/Z 立体化学**: SMILES パーサーが E/Z 二重結合を正確に読み書き。
-- **MCP 6 新ツール**: `pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check` を追加し、合計 15 ツールへ。
-- **BOILED-Egg**: BBB 透過性 / GI 吸収を LogP vs TPSA 空間で視覚化するフィルタ実装。
+**v0.4.8**（2026-06-19）: `name_to_smiles` MCP ツール、反復 `augmented_ring_set`
+- **`name_to_smiles`**: PubChem REST プロキシを追加（MCP ツール 15 個目）。化学名 → SMILES 変換。
+- **反復 `augmented_ring_set`**: 3+ SSSR リングの XOR が必要な縮合 PAH に対応。芳香環カウント精度向上。
+- **Python `from_mol2()` / `to_mol2()`**: Tripos MOL2 形式の Python バインディング追加。
+- **Python 3.13 wheel**: PyPI の配布物に Python 3.9〜3.13 の wheel を追加。
 
-**v0.3.2–v0.3.0**: criterion ベンチマーク、WASM pKa/ADMET バインディング、MCP サーバー + pKa + ADMET
+**v0.4.7**（2026-06-19）: ホウ素芳香環ケクレ化修正、WASM ADMET BOILED-Egg 追加
+
+**v0.4.6**（2026-06-19）: Python `boiled_egg()` メソッド、`admet()` 拡張
+
+**v0.4.5**（2026-06-19）: ケクレ化 Edmonds' blossom（128→2 件）、InChI E/Z `/b`、MCP 6 新ツール、BOILED-Egg
+
+**v0.4.0–v0.3.x**: Python PyO3 バインディング、native-inchi、MCP サーバー、pKa、ADMET
 
 **v0.2.x**: MMFF94 全 7 項、MAP4 フィンガープリント、SMARTS キャッシュ
 

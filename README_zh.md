@@ -245,34 +245,49 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 
 ## 与其他化学信息学库的比较
 
-| 功能                                      | **chematic**             | RDKit.js (WASM)   | OCL.js | Indigo WASM |
-|-------------------------------------------|--------------------------|-------------------|--------|-------------|
-| **C/C++ 依赖**                            | **零（默认）**†          | C++（Emscripten）| △      | C++（Emscripten）|
-| **WASM 二进制体积**                       | **〜550 KB**             | 〜30 MB           | 〜5 MB | 〜10 MB     |
-| 描述符丰富度                              | **◎ 40+**                | ○ 〜30            | △      | △           |
-| 指纹种类与设置自由度                      | **◎ 7 种 bitvec + 相似度**| ◎                | ○      | △           |
-| 立体化学（CIP + 枚举）                    | **◎**                    | ○                 | ○      | △           |
-| 3D + 构象管理                             | **◎**                    | ○                 | △      | △           |
-| 多样性筛选（MaxMin/Butina）               | **◎**                    | ○                 | ✗      | ✗           |
-| MMP 分析                                  | ✓                        | ✓                 | ✗      | ✗           |
-| R 基团分解                                | ✓                        | ✓                 | ✗      | ✗           |
-| 分子编辑 API                              | **◎ with_atom_* 系列**   | ○                 | ○      | ○           |
-| CML 读写                                  | ✓                        | ✓                 | ✓      | ✓           |
-| CDXML 读取（多分子片段 + 立体化学）       | ✓                        | ✓                 | ✓      | ✓           |
-| InChI / InChIKey                          | ✓ `native-inchi` feature（IUPAC C 库 1.07.5）| ✓       | ✓      | ✓           |
-| Unsafe Rust                               | **无**                   | —                 | —      | —           |
+| 功能                                         | **chematic**                                 | RDKit (rdkit-sys)  | OpenBabel FFI | RDKit.js (WASM)   |
+|----------------------------------------------|----------------------------------------------|--------------------|---------------|-------------------|
+| **C/C++ 依赖**                               | **零（默认）**†                              | 大量 C++           | 大量 C++      | C++（Emscripten） |
+| **WASM 二进制体积**                          | **〜550 KB**                                 | N/A（不支持 WASM） | N/A           | 〜30 MB           |
+| **构建要求**                                 | 仅需 `cargo build`                           | cmake + clang      | cmake + clang | Emscripten SDK    |
+| **Python 绑定**                              | **有** (`pip install chematic`, PyO3)        | 有（rdkit-sys）    | 有            | 无                |
+| Unsafe Rust                                  | **无**                                       | 大量               | 大量          | N/A               |
+| Kekulization                                 | **4-pass（含 Edmonds' blossom）**            | 有                 | 有            | 有                |
+| SDF/MOL V2000+V3000                          | 有                                           | 有                 | 有            | 有                |
+| Tripos MOL2 格式                             | **有**（读写 + Python）                      | 有                 | 有            | 无                |
+| 分子描述符                                   | **70+（含 BOILED-Egg、QED、SA Score）**      | 〜30               | 〜20          | 〜30              |
+| **MAP4 指纹**                                | **有**（Minervini 2020）                     | 无（外部包）       | 无            | 无                |
+| MMFF94 全 7 能量项                           | **有**                                       | 有                 | 有            | 无                |
+| 3D 坐标生成                                  | 有（DG + MMFF94/DREIDING + L-BFGS）          | 有（ETKDG）        | 有            | 有                |
+| 多样性筛选（MaxMin/Butina）                  | **有**                                       | 有                 | 无            | 无                |
+| InChI / InChIKey                             | **有** — 纯 Rust（默认）+ **IUPAC 标准**（`native-inchi`）| 需 C 库 | 需 C 库 | 需 C 库 |
+| **pKa 预测**                                 | **有（15 条 SMARTS 规则）**                  | 无                 | 无            | 无                |
+| **ADMET 简况 + BOILED-Egg**                  | **有**                                       | 部分               | 无            | 部分              |
+| **MCP 服务器（AI Agent API）**               | **有 — 15 个工具（含 Name→SMILES）**        | 无                 | 无            | 无                |
+| IUPAC 命名生成                               | **有（25+ 化合物类）**                       | 无                 | 无            | 部分              |
+| 维护状态（2026）                             | 活跃                                         | 活跃               | 最小维护      | 活跃              |
 
-† 仅限默认构建。`native-inchi` feature 是可选例外，需要 C 编译器（vendored IUPAC InChI C 库 1.07.5）。其余所有 crate 保持零 FFI。
+† 仅限默认构建。`native-inchi` feature 需要 C 编译器，为可选例外。其余所有 crate 保持零 FFI。
 
 ---
 
 ## 近期更新
 
-**v0.4.5**（2026-06-19）：Kekulization blossom 算法、E/Z 立体化学、6 个新 MCP 工具、BOILED-Egg
-- **Kekulization 4-pass + Edmonds blossom**：5,000 分子语料库中**仅 2 个**失败（硼芳香环、纯 H₂）。
-- **E/Z 立体化学**：SMILES 解析器精确读写 E/Z 双键。
-- **MCP 新增 6 个工具**：`pains_check`, `brenk_check`, `sa_score`, `admet_profile`, `boiled_egg`, `lipinski_check`，共计 15 个工具。
-- **BOILED-Egg**：在 LogP vs TPSA 空间可视化 BBB 渗透性 / GI 吸收的过滤器实现。
+**v0.4.8**（2026-06-19）：`name_to_smiles` MCP 工具、迭代 `augmented_ring_set`
+- **`name_to_smiles`**：通过 PubChem REST 代理，化学名称 → SMILES（MCP 第 15 个工具）。
+- **迭代 `augmented_ring_set`**：支持需要 3+ 个 SSSR 环 XOR 的稠合 PAH，提升芳香环计数精度。
+- **Python `from_mol2()` / `to_mol2()`**：Tripos MOL2 格式 Python 绑定。
+- **Python 3.13 wheel**：PyPI 发行版新增 Python 3.9〜3.13 的 wheel。
+
+**v0.4.7**（2026-06-19）：硼芳香环 Kekulization 修复（2→1 个失败）
+
+**v0.4.6**（2026-06-19）：Python `boiled_egg()` 方法、`admet()` 扩展
+
+**v0.4.5**（2026-06-19）：Edmonds' blossom（128→2 个失败）、InChI E/Z、MCP 6 新工具、BOILED-Egg
+
+**v0.4.0–v0.3.x**：Python PyO3 绑定、native-inchi、MCP 服务器、pKa、ADMET
+
+**v0.2.x**：MMFF94 全 7 项、MAP4 指纹、SMARTS 缓存
 
 **v0.3.2–v0.3.0**：criterion 基准测试、WASM pKa/ADMET 绑定、MCP 服务器 + pKa + ADMET
 
