@@ -121,6 +121,71 @@ impl Mol {
         chematic_mol::write_mol2(&self.inner, &[])
     }
 
+    /// Write this molecule to AutoDock PDBQT format.
+    ///
+    /// Args:
+    ///     coords: list of ``(x, y, z)`` tuples (Å) — one per heavy atom.
+    ///             Pass ``[]`` to write zero coordinates.
+    ///     charges: list of partial charges (float) — one per heavy atom.
+    ///              Pass ``[]`` to write zeros. Use
+    ///              ``chematic_ff.gasteiger_charges()`` or MMFF94 BCI for
+    ///              best docking accuracy.
+    ///     name: ligand name embedded in the REMARK header (e.g. ``"LIG"``).
+    ///
+    /// Returns:
+    ///     str: PDBQT-format string (rigid body, no torsion tree).
+    ///
+    /// Example::
+    ///
+    ///     mol = chematic.from_smiles("CCO")
+    ///     pdbqt = mol.to_pdbqt([], [], "ETH")
+    ///     with open("ethanol.pdbqt", "w") as f:
+    ///         f.write(pdbqt)
+    fn to_pdbqt(
+        &self,
+        coords: Vec<(f64, f64, f64)>,
+        charges: Vec<f64>,
+        name: &str,
+    ) -> String {
+        chematic_mol::write_pdbqt(&self.inner, &coords, &charges, name)
+    }
+
+    /// Minimise geometry using the Universal Force Field (UFF, Rappé 1992).
+    ///
+    /// UFF handles all elements including metals, making it suitable for
+    /// metal-ligand complexes where MMFF94 is not parameterised.
+    ///
+    /// Args:
+    ///     coords: list of ``[x, y, z]`` lists (Å) — initial 3D coordinates.
+    ///     max_iter: maximum steepest-descent iterations (default 500).
+    ///
+    /// Returns:
+    ///     dict with keys:
+    ///     ``coords`` (list of [x,y,z]), ``energy`` (float, kcal/mol),
+    ///     ``iterations`` (int), ``converged`` (bool).
+    ///
+    /// Example::
+    ///
+    ///     mol = chematic.from_smiles("CCO")
+    ///     result = mol.minimize_uff([[0,0,0],[1.54,0,0],[2.5,1.2,0]])
+    ///     print(result["energy"], result["converged"])
+    fn minimize_uff<'py>(
+        &self,
+        py: Python<'py>,
+        coords: Vec<[f64; 3]>,
+        max_iter: Option<usize>,
+    ) -> PyResult<pyo3::Bound<'py, pyo3::types::PyDict>> {
+        let types = chematic_ff::assign_uff_types(&self.inner);
+        let result = chematic_ff::minimize_uff(&self.inner, &types, coords, max_iter.unwrap_or(500));
+        let d = pyo3::types::PyDict::new(py);
+        let py_coords: Vec<Vec<f64>> = result.coords.iter().map(|c| c.to_vec()).collect();
+        d.set_item("coords", py_coords)?;
+        d.set_item("energy", result.energy)?;
+        d.set_item("iterations", result.iterations)?;
+        d.set_item("converged", result.converged)?;
+        Ok(d)
+    }
+
     // -----------------------------------------------------------------------
     // Core physicochemical descriptors
     // -----------------------------------------------------------------------
@@ -828,6 +893,27 @@ fn from_mol2(mol2_str: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Parse an AutoDock PDBQT string and return a :class:`Mol`.
+///
+/// Only the molecular graph (elements and bonds) is extracted; 3D coordinates
+/// and partial charges are discarded.  To retain them, use the lower-level
+/// :func:`chematic_mol.parse_pdbqt` Rust API directly.
+///
+/// Raises:
+///     ValueError: on parse failure.
+///
+/// Example::
+///
+///     with open("ligand.pdbqt") as f:
+///         mol = chematic.from_pdbqt(f.read())
+///     print(mol.mw)
+#[pyfunction]
+fn from_pdbqt(pdbqt_str: &str) -> PyResult<Mol> {
+    chematic_mol::parse_pdbqt(pdbqt_str)
+        .map(|(mol, _coords, _charges)| Mol { inner: Arc::new(mol) })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Return True if the SMILES can be parsed without error.
 #[pyfunction]
 fn is_valid_smiles(smiles: &str) -> bool {
@@ -1049,6 +1135,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_block, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol2, m)?)?;
+    m.add_function(wrap_pyfunction!(from_pdbqt, m)?)?;
     m.add_function(wrap_pyfunction!(from_inchi, m)?)?;
     m.add_function(wrap_pyfunction!(is_valid_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;

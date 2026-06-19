@@ -75,6 +75,46 @@ class Mol:
         """IUPAC systematic name. Returns an empty string for unsupported structures."""
         ...
 
+    def to_pdbqt(
+        self,
+        coords: list[tuple[float, float, float]],
+        charges: list[float],
+        name: str = "LIG",
+    ) -> str:
+        """Write molecule to AutoDock PDBQT format (rigid body, no torsion tree).
+
+        Args:
+            coords: list of (x, y, z) tuples in Å, one per heavy atom.
+            charges: partial charges (float) per heavy atom. Use
+                     ``chematic_ff.gasteiger_charges()`` or MMFF94 BCI charges
+                     for best docking accuracy.
+            name: ligand name in the REMARK header (e.g. ``"LIG"``).
+
+        Returns:
+            str: PDBQT-format string.
+        """
+        ...
+
+    def minimize_uff(
+        self,
+        coords: list[list[float]],
+        max_iter: int = 500,
+    ) -> dict[str, object]:
+        """Minimise geometry using the Universal Force Field (UFF, Rappé 1992).
+
+        UFF covers all elements including metals, unlike MMFF94 which is limited
+        to common organic/heteroatoms.
+
+        Args:
+            coords: list of ``[x, y, z]`` lists (Å) — initial 3D coordinates.
+            max_iter: maximum steepest-descent iterations.
+
+        Returns:
+            dict with keys ``coords`` (list[list[float]]), ``energy`` (float,
+            kcal/mol), ``iterations`` (int), ``converged`` (bool).
+        """
+        ...
+
     def to_mol2(self) -> str:
         """Serialize to Tripos MOL2 format string (SYBYL MOL2).
 
@@ -470,6 +510,23 @@ def from_mol2(mol2_str: str) -> Mol:
         mol2_str = mol.to_mol2()
         mol2 = chematic.from_mol2(mol2_str)
         assert mol2.atom_count() == mol.atom_count()
+    """
+    ...
+
+def from_pdbqt(pdbqt_str: str) -> Mol:
+    """Parse an AutoDock PDBQT string and return a :class:`Mol`.
+
+    Only the molecular graph is extracted; 3D coordinates and partial charges
+    are discarded.
+
+    Raises:
+        ValueError: on parse failure.
+
+    Example::
+
+        with open("ligand.pdbqt") as f:
+            mol = chematic.from_pdbqt(f.read())
+        print(mol.mw)
     """
     ...
 

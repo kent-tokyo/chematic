@@ -11,6 +11,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.9] — 2026-06-19
+
+### Added — `chematic-mol`: AutoDock PDBQT format (`pdbqt.rs`)
+
+New module `crates/chematic-mol/src/pdbqt.rs` for the AutoDock4 / Vina docking format:
+
+- `autodock_atom_type(mol, idx)` — assigns AutoDock type (C, A, N, NA, O, OA, S, SA, H, HD, P, F, Cl, Br, I, Zn, …)
+- `write_pdbqt(mol, coords, charges, name)` — writes a rigid-body PDBQT (no torsion tree)
+- `parse_pdbqt(s)` → `(Molecule, Vec<(f64,f64,f64)>, Vec<f64>)` — reads ATOM/HETATM records
+
+With this, the full zero-FFI docking preparation pipeline is possible:
+SMILES → 3D generation → MMFF94 optimisation → `write_pdbqt()` → Vina input.
+
+### Added — `chematic-ff`: Universal Force Field (`uff.rs`)
+
+New module `crates/chematic-ff/src/uff.rs` implementing UFF (Rappé et al. 1992):
+
+- `assign_uff_types(mol)` — maps all elements to `UffType` (C_3/C_2/C_R, N_3/N_R, O_3, metals Zn/Fe/Cu/…)
+- `uff_total_energy(mol, types, coords)` — bond stretching + angle bending + Lennard-Jones vdW
+- `minimize_uff(mol, types, coords, max_iter)` → `UffMinimizeResult` — steepest descent minimiser
+
+Unlike MMFF94 (organic-only), UFF handles metal-ligand complexes and organometallics.
+
+### Added — `chematic-mol`: SDF partial charge writing
+
+`write_sdf_with_charges(records)` writes Gasteiger / MMFF94 BCI charges as an SD property:
+```
+> <PARTIAL_CHARGES>
+-0.2359 0.1076 -0.4500 0.1806
+```
+
+### Added — `chematic-py` / `chematic-wasm`: PDBQT and UFF bindings
+
+Python (`chematic-py`):
+- `Mol.to_pdbqt(coords, charges, name)` — PDBQT string
+- `Mol.minimize_uff(coords, max_iter)` → `{"coords", "energy", "iterations", "converged"}`
+- `chematic.from_pdbqt(s)` → `Mol`
+- `__init__.pyi` stubs updated for all new methods
+
+WASM (`chematic-wasm`):
+- `smiles_to_pdbqt(smiles, coords_json, charges_json, name)` → PDBQT string
+- `minimize_uff_json(smiles, coords_json, max_iter)` → JSON result
+
+---
+
 ## [0.4.8] — 2026-06-19
 
 ### Added — `chematic-mcp`: `name_to_smiles` tool (15th tool, PubChem proxy)

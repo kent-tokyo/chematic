@@ -17,10 +17,10 @@ path = "src/main.rs"
 [dependencies]
 serde_json = "1.0"
 ureq = { version = "2", features = ["json"] }
-chematic-core       = { path = "../chematic-core",       version = "0.4.8" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "0.4.8" }
-chematic-chem       = { path = "../chematic-chem",       version = "0.4.8" }
-chematic-fp         = { path = "../chematic-fp",         version = "0.4.8" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.8" }
-chematic-3d         = { path = "../chematic-3d",         version = "0.4.8" }
-chematic-perception = { path = "../chematic-perception", version = "0.4.8" }
+chematic-core       = { path = "../chematic-core",       version = "0.4.9" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.4.9" }
+chematic-chem       = { path = "../chematic-chem",       version = "0.4.9" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.4.9" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.9" }
+chematic-3d         = { path = "../chematic-3d",         version = "0.4.9" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.9" }

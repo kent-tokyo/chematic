@@ -4358,6 +4358,60 @@ pub fn smiles_to_mol2(smiles: &str) -> String {
     }
 }
 
+/// Write a molecule to AutoDock PDBQT format.
+///
+/// `coords_json` — JSON array of `[x,y,z]` arrays (Å). Pass `"[]"` for zero coords.
+/// `charges_json` — JSON array of partial charges. Pass `"[]"` to write zeros.
+/// `name` — ligand name for the REMARK header.
+///
+/// Returns the PDBQT string, or `"error:<msg>"` on failure.
+#[wasm_bindgen]
+pub fn smiles_to_pdbqt(smiles: &str, coords_json: &str, charges_json: &str, name: &str) -> String {
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(e) => return format!("error:{e}"),
+    };
+    let coords: Vec<(f64, f64, f64)> = serde_json::from_str::<Vec<[f64; 3]>>(coords_json)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|c| (c[0], c[1], c[2]))
+        .collect();
+    let charges: Vec<f64> = serde_json::from_str(charges_json).unwrap_or_default();
+    chematic_mol::write_pdbqt(&mol, &coords, &charges, name)
+}
+
+/// Minimise a molecule's geometry using the Universal Force Field (UFF).
+///
+/// `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
+/// `max_iter` — maximum iterations (0 = default 500).
+///
+/// Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool}`
+/// or `{"error":"<msg>"}` on failure.
+#[wasm_bindgen]
+pub fn minimize_uff_json(smiles: &str, coords_json: &str, max_iter: u32) -> String {
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(e) => return format!("{{\"error\":\"{e}\"}}"),
+    };
+    let coords_arr: Vec<[f64; 3]> = match serde_json::from_str(coords_json) {
+        Ok(v) => v,
+        Err(e) => return format!("{{\"error\":\"coords parse error: {e}\"}}"),
+    };
+    let types = chematic_ff::assign_uff_types(&mol);
+    let iters = if max_iter == 0 { 500 } else { max_iter as usize };
+    let result = chematic_ff::minimize_uff(&mol, &types, coords_arr, iters);
+    let coords_out: Vec<[f64; 3]> = result.coords;
+    let coords_str = coords_out
+        .iter()
+        .map(|c| format!("[{:.4},{:.4},{:.4}]", c[0], c[1], c[2]))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "{{\"coords\":[{coords_str}],\"energy\":{:.4},\"iterations\":{},\"converged\":{}}}",
+        result.energy, result.iterations, result.converged
+    )
+}
+
 // ---------------------------------------------------------------------------
 // InChI I/O
 // ---------------------------------------------------------------------------
