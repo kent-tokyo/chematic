@@ -298,6 +298,9 @@ impl Mol {
             chematic_chem::ClearanceClass::Medium => "Medium",
             chematic_chem::ClearanceClass::High   => "High",
         })?;
+        let egg = chematic_chem::boiled_egg(m);
+        d.set_item("gi_absorbed", egg.gi_absorbed)?;
+        d.set_item("bbb_penetrant", egg.bbb_penetrant)?;
         Ok(d)
     }
 

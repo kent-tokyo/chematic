@@ -211,14 +211,38 @@ class Mol:
         """
         ...
 
-    def admet(self) -> dict[str, float | bool]:
+    def admet(self) -> dict[str, float | bool | str]:
         """ADMET profile.
 
         Returns a dict with keys:
         ``bbb`` (bool), ``bbb_score`` (float),
         ``caco2`` (float, logPCaco2),
         ``herg_risk`` (float, 0–1),
-        ``cyp3a4_risk`` (float, 0–1).
+        ``cyp3a4_risk`` (float, 0–1),
+        ``ames_risk`` (float, 0–1),
+        ``ppb`` (float, plasma protein binding %),
+        ``clearance`` (str: ``"Low"`` / ``"Medium"`` / ``"High"``),
+        ``gi_absorbed`` (bool), ``bbb_penetrant`` (bool).
+        """
+        ...
+
+    def boiled_egg(self) -> dict[str, float | bool]:
+        """Predict GI absorption and BBB penetration (Daina & Zoete 2016).
+
+        Uses LogP and TPSA thresholds:
+
+        - **GI absorbed** (egg-white): LogP ≤ 5.88 and TPSA ≤ 131.6 Å²
+        - **BBB penetrant** (egg-yolk): LogP ∈ [−0.3, 6.1] and TPSA ≤ 71.1 Å²
+
+        Returns a dict with keys:
+        ``gi_absorbed`` (bool), ``bbb_penetrant`` (bool),
+        ``logp`` (float), ``tpsa`` (float).
+
+        Example::
+
+            egg = mol.boiled_egg()
+            print(egg["gi_absorbed"])    # True
+            print(egg["bbb_penetrant"])  # False
         """
         ...
 
