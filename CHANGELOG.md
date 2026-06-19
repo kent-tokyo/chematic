@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.4.6] — 2026-06-19
+
+### Added — `chematic-py`: `boiled_egg()` method and BOILED-Egg in `admet()`
+
+- `Mol.boiled_egg()` — new method returning `{"gi_absorbed": bool, "bbb_penetrant": bool, "logp": float, "tpsa": float}` (Daina & Zoete 2016)
+- `Mol.admet()` — now includes `gi_absorbed` and `bbb_penetrant` keys
+- `Mol.descriptors()` — now includes `gi_absorbed` and `bbb_penetrant` keys
+- `chematic-wasm`: `boiled_egg_json(smiles)` exposed for JavaScript/WASM consumers
+- `notebooks/quickstart.ipynb`: Section 10 added — BOILED-Egg comparison table for 5 drug molecules
+
+### Fixed — `chematic-py`: `admet()` docstring updated to list all returned keys
+
+---
+
 ### Added — `chematic-mcp`: 6 new MCP tools (8 → 14) inspired by ChemCrow / CACTUS
 
 Following analysis of the ChemCrow (GPT-4 + 19 tools) and CACTUS (LLM + chemistry databases)

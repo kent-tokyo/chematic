@@ -2220,6 +2220,23 @@ pub fn admet_profile_json(smiles: &str) -> String {
     )
 }
 
+/// Predict GI absorption and BBB penetration using the BOILED-Egg method
+/// (Daina & Zoete 2016).
+///
+/// Returns JSON: `{"gi_absorbed":bool,"bbb_penetrant":bool,"logp":f64,"tpsa":f64}`
+#[wasm_bindgen]
+pub fn boiled_egg_json(smiles: &str) -> String {
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(m) => m,
+        Err(e) => return format!(r#"{{"error":"{}"}}"#, escape_json_string(&e.to_string())),
+    };
+    let e = chematic_chem::boiled_egg(&mol);
+    format!(
+        r#"{{"gi_absorbed":{},"bbb_penetrant":{},"logp":{:.4},"tpsa":{:.4}}}"#,
+        e.gi_absorbed, e.bbb_penetrant, e.logp, e.tpsa
+    )
+}
+
 // ---------------------------------------------------------------------------
 // Sprint X: V3000 read, 3D minimization, SDF properties, highlighted grid
 // ---------------------------------------------------------------------------

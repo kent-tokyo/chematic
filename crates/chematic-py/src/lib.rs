@@ -282,7 +282,11 @@ impl Mol {
     /// ``bbb`` (bool), ``bbb_score`` (float),
     /// ``caco2`` (float, logPCaco2),
     /// ``herg_risk`` (float, 0–1),
-    /// ``cyp3a4_risk`` (float, 0–1).
+    /// ``cyp3a4_risk`` (float, 0–1),
+    /// ``ames_risk`` (float, 0–1),
+    /// ``ppb`` (float, plasma protein binding %),
+    /// ``clearance`` (str: ``"Low"`` / ``"Medium"`` / ``"High"``),
+    /// ``gi_absorbed`` (bool), ``bbb_penetrant`` (bool).
     fn admet<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let d = PyDict::new(py);
         let m = &self.inner;
