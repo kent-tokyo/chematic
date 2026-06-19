@@ -244,6 +244,17 @@ pub fn list_tools() -> Value {
                 },
                 "required": ["smiles"]
             }
+        },
+        {
+            "name": "name_to_smiles",
+            "description": "Convert a chemical name (IUPAC, trivial, or trade name) to an isomeric SMILES string via the PubChem REST API. Requires internet access. Examples: 'aspirin', 'caffeine', 'ibuprofen', '2-propanol'.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "name": { "type": "string", "description": "Chemical name (IUPAC, common, or trade name)" }
+                },
+                "required": ["name"]
+            }
         }
     ]})
 }
@@ -266,6 +277,7 @@ pub fn call_tool(name: &str, args: &Value) -> Result<Value, String> {
         "admet_profile" => tool_admet_profile(args),
         "boiled_egg" => tool_boiled_egg(args),
         "lipinski_check" => tool_lipinski_check(args),
+        "name_to_smiles" => tool_name_to_smiles(args),
         _ => Err(format!("Unknown tool: {name}")),
     }
 }
@@ -492,6 +504,49 @@ fn tool_lipinski_check(args: &Value) -> Result<Value, String> {
     })))
 }
 
+fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
+    let name = get_str(args, "name")?;
+    // Percent-encode the name for the URL path segment.
+    let encoded: String = name
+        .chars()
+        .flat_map(|c| {
+            if c.is_ascii_alphanumeric() || "-_.~".contains(c) {
+                vec![c]
+            } else if c == ' ' {
+                vec!['%', '2', '0']
+            } else {
+                let b = c as u8;
+                vec!['%', char::from_digit((b >> 4) as u32, 16).unwrap_or('0'),
+                          char::from_digit((b & 0xf) as u32, 16).unwrap_or('0')]
+            }
+        })
+        .collect();
+
+    let url = format!(
+        "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{}/property/IsomericSMILES/JSON",
+        encoded
+    );
+
+    let resp = ureq::get(&url)
+        .timeout(std::time::Duration::from_secs(10))
+        .call()
+        .map_err(|e| format!("PubChem request failed: {e}"))?;
+
+    let body: Value = resp.into_json()
+        .map_err(|e| format!("PubChem response parse error: {e}"))?;
+
+    let smiles = body
+        .pointer("/PropertyTable/Properties/0/IsomericSMILES")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| format!("Name not found in PubChem: {name}"))?;
+
+    Ok(content(&json!({
+        "name": name,
+        "smiles": smiles,
+        "source": "PubChem"
+    })))
+}
+
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -626,7 +681,7 @@ mod tests {
     fn test_list_tools_count() {
         let tools = list_tools();
         let count = tools["tools"].as_array().unwrap().len();
-        assert_eq!(count, 14);
+        assert_eq!(count, 15);
     }
 
     #[test]

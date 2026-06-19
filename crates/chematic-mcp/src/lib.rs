@@ -146,7 +146,7 @@ mod tests {
         let resp = handle_line(req).unwrap();
         assert!(resp["result"]["tools"].is_array());
         let count = resp["result"]["tools"].as_array().unwrap().len();
-        assert_eq!(count, 14);
+        assert_eq!(count, 15);
     }
 
     #[test]
