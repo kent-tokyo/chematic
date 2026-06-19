@@ -76,13 +76,26 @@ class Mol:
         ...
 
     def to_mol2(self) -> str:
-        """Serialize to Tripos MOL2 format string.
+        """Serialize to Tripos MOL2 format string (SYBYL MOL2).
+
+        The output contains the mandatory @<TRIPOS>MOLECULE, @<TRIPOS>ATOM,
+        and @<TRIPOS>BOND sections.  Atom coordinates are all zero when no
+        3D geometry is available; use :func:`chematic.generate_3d` first if
+        you need 3D coordinates.
+
+        Returns:
+            str: A complete MOL2-format string.
 
         Example::
 
             mol = chematic.from_smiles("CCO")
             with open("ethanol.mol2", "w") as f:
                 f.write(mol.to_mol2())
+
+            # With 3D coordinates
+            mol3d = chematic.generate_3d("CCO")   # returns Mol with coords
+            with open("ethanol_3d.mol2", "w") as f:
+                f.write(mol3d.to_mol2())
         """
         ...
 
@@ -432,14 +445,31 @@ def from_mol_block(block: str) -> Mol:
 def from_mol2(mol2_str: str) -> Mol:
     """Parse a Tripos MOL2 string and return a :class:`Mol`.
 
+    Reads the mandatory @<TRIPOS>MOLECULE, @<TRIPOS>ATOM, and @<TRIPOS>BOND
+    sections.  Atom coordinates are parsed but not stored on the :class:`Mol`
+    object (use :func:`generate_3d` to generate or reload coordinates).
+
+    Args:
+        mol2_str: Complete MOL2-format string (not a file path).
+
+    Returns:
+        Mol: Parsed molecule.
+
     Raises:
-        ValueError: on parse failure.
+        ValueError: If the MOL2 string is malformed or missing required sections.
 
     Example::
 
         with open("ligand.mol2") as f:
             mol = chematic.from_mol2(f.read())
         print(mol.mw)
+        print(mol.formula)
+
+        # Round-trip
+        mol = chematic.from_smiles("c1ccccc1")
+        mol2_str = mol.to_mol2()
+        mol2 = chematic.from_mol2(mol2_str)
+        assert mol2.atom_count() == mol.atom_count()
     """
     ...
 
