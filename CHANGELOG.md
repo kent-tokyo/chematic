@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.4.8] — 2026-06-19
+
 ### Added — `chematic-mcp`: `name_to_smiles` tool (15th tool, PubChem proxy)
 
 Converts a chemical name (IUPAC, common, or trade name) to an isomeric SMILES string
@@ -30,6 +34,11 @@ or any sub-ring requiring 3+ SSSR rings combined), a single pass is insufficient
 The function now iterates until no new rings are found. Termination is guaranteed because
 each new ring is strictly smaller than both of its parents (the size-constraint check was
 already in place). This improves aromatic ring count accuracy beyond the 95.6% baseline.
+
+### Other
+
+- `demo/pkg` rebuilt to v0.4.8 (iterative ring augmentation now in WASM bundle)
+- Python stubs (`__init__.pyi`): expanded docstrings for `from_mol2()` and `to_mol2()`
 
 ---
 
