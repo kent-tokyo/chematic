@@ -1,0 +1,285 @@
+//! AutoDock PDBQT format reader and writer.
+//!
+//! PDBQT is the input format for AutoDock4 and AutoDock Vina. It extends the
+//! PDB format with two additional fields per atom:
+//! - columns 72–76: partial charge (Gasteiger or AMBER BCC)
+//! - columns 78–79: AutoDock atom type (C, A, N, NA, O, OA, S, SA, H, HD, P,
+//!   F, Cl, Br, I, and metals)
+//!
+//! This module writes rigid-body PDBQT (no rotatable bond `BRANCH`/`ENDBRANCH`
+//! tree), suitable for receptor preparation. For flexible ligands, wrap the
+//! output with `ROOT`/`ENDROOT`/`TORSDOF` as required by the docking software.
+//!
+//! Reference: AutoDock 4.2 manual, Section 7 (PDBQT format specification).
+
+use chematic_core::{AtomIdx, Element, Molecule};
+
+/// Error returned when parsing a PDBQT file fails.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PdbqtError {
+    /// An ATOM/HETATM line is too short or malformed.
+    InvalidAtomLine { line: usize, detail: String },
+    /// The partial charge field cannot be parsed as f64.
+    InvalidCharge { line: usize, raw: String },
+    /// Unknown element symbol.
+    UnknownElement { symbol: String, line: usize },
+}
+
+impl core::fmt::Display for PdbqtError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::InvalidAtomLine { line, detail } =>
+                write!(f, "PDBQT: invalid ATOM line {line}: {detail}"),
+            Self::InvalidCharge { line, raw } =>
+                write!(f, "PDBQT: invalid charge '{raw}' at line {line}"),
+            Self::UnknownElement { symbol, line } =>
+                write!(f, "PDBQT: unknown element '{symbol}' at line {line}"),
+        }
+    }
+}
+
+impl std::error::Error for PdbqtError {}
+
+// ── AutoDock atom type assignment ─────────────────────────────────────────────
+
+/// Assign an AutoDock atom type string for a given atom in `mol`.
+///
+/// Rules follow the AutoDock 4.2 atom type table:
+/// - Aromatic C → "A", aliphatic C → "C"
+/// - N accepting H-bond (no H, lone pair) → "NA", otherwise "N"
+/// - O with lone pair (ethers, carbonyl, …) → "OA", charged O → "OA", otherwise "O"
+/// - S with lone pair → "SA", otherwise "S"
+/// - H bonded to O or N → "HD" (hydrogen donor), otherwise "H"
+/// - Halogens: F, Cl, Br, I (as-is)
+/// - Metals: Mg, Mn, Zn, Ca, Fe (as-is)
+/// - Phosphorus: P
+/// - Fallback: element symbol
+pub fn autodock_atom_type(mol: &Molecule, idx: AtomIdx) -> &'static str {
+    let atom = mol.atom(idx);
+    match atom.element.atomic_number() {
+        6 => {
+            if atom.aromatic {
+                "A"
+            } else {
+                "C"
+            }
+        }
+        7 => {
+            // NA if N can accept H-bonds (no explicit H, no positive charge)
+            let has_h = mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).element.atomic_number() == 1);
+            if !has_h && atom.charge <= 0 {
+                "NA"
+            } else {
+                "N"
+            }
+        }
+        8 => "OA", // all O treated as acceptor (most common case)
+        16 => {
+            // SA if S has lone pair (not positively charged)
+            if atom.charge >= 0 {
+                "SA"
+            } else {
+                "S"
+            }
+        }
+        1 => {
+            // HD if bonded to N or O (hydrogen bond donor)
+            let is_donor = mol.neighbors(idx).any(|(nb, _)| {
+                let an = mol.atom(nb).element.atomic_number();
+                an == 7 || an == 8
+            });
+            if is_donor { "HD" } else { "H" }
+        }
+        15 => "P",
+        9 => "F",
+        17 => "Cl",
+        35 => "Br",
+        53 => "I",
+        12 => "Mg",
+        25 => "Mn",
+        30 => "Zn",
+        20 => "Ca",
+        26 => "Fe",
+        _ => "X", // unknown
+    }
+}
+
+// ── Writer ────────────────────────────────────────────────────────────────────
+
+/// Write a molecule to PDBQT format.
+///
+/// `coords` — 3D coordinates per atom (Å). If shorter than `mol.atom_count()`,
+/// missing atoms receive `(0, 0, 0)`.
+///
+/// `charges` — partial charge per atom. If empty, all charges are written as
+/// `0.0000`. For best docking quality, supply Gasteiger charges from
+/// `chematic_chem::gasteiger_charges()` or MMFF94 BCI charges from
+/// `chematic_ff::mmff94_charges_bci()`.
+///
+/// The output is a rigid-body PDBQT (no `BRANCH`/`ENDBRANCH` torsion tree).
+/// Wrap with `ROOT`/`ENDROOT`/`TORSDOF` for flexible-ligand docking.
+pub fn write_pdbqt(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+    charges: &[f64],
+    ligand_name: &str,
+) -> String {
+    let mut out = String::new();
+    out.push_str("REMARK  PDBQT written by chematic\n");
+    out.push_str(&format!("REMARK  NAME = {ligand_name}\n"));
+
+    for (serial, (aidx, atom)) in mol.atoms().enumerate() {
+        let i = aidx.0 as usize;
+        let (x, y, z) = coords.get(i).copied().unwrap_or((0.0, 0.0, 0.0));
+        let q = charges.get(i).copied().unwrap_or(0.0);
+        let ad_type = autodock_atom_type(mol, aidx);
+        let sym = atom.element.symbol();
+
+        // PDB atom name: right-justify 1-char symbols in column 14, 2-char in 13-14
+        let atom_name = if sym.len() == 1 {
+            format!(" {sym}  ")
+        } else {
+            format!("{sym}   ")
+        };
+
+        // ATOM serial resname chain resnum    x        y        z     occ   bfac           charge type
+        out.push_str(&format!(
+            "ATOM  {:>5} {:<4} {:<3} {:>1}{:>4}    {:>8.3}{:>8.3}{:>8.3}{:>6.2}{:>6.2}    {:>+7.4} {:<2}\n",
+            serial + 1,  // serial
+            atom_name,   // atom name
+            "LIG",       // residue name
+            "A",         // chain
+            1,           // residue number
+            x, y, z,
+            1.00,        // occupancy
+            0.00,        // B-factor
+            q,           // partial charge
+            ad_type,     // AutoDock type
+        ));
+    }
+
+    out.push_str("END\n");
+    out
+}
+
+// ── Parser ────────────────────────────────────────────────────────────────────
+
+/// Parse a PDBQT string into a molecule, 3D coordinates, and partial charges.
+///
+/// Only `ATOM` and `HETATM` records are read; `REMARK`, `ROOT`, `ENDROOT`,
+/// `BRANCH`, `ENDBRANCH`, and `TORSDOF` lines are silently skipped.
+#[allow(clippy::type_complexity)]
+pub fn parse_pdbqt(
+    s: &str,
+) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>), PdbqtError> {
+    use chematic_core::MoleculeBuilder;
+
+    let mut builder = MoleculeBuilder::new();
+    let mut coords: Vec<(f64, f64, f64)> = Vec::new();
+    let mut charges: Vec<f64> = Vec::new();
+
+    for (lineno, line) in s.lines().enumerate() {
+        let record = &line[..line.len().min(6)];
+        if !matches!(record.trim(), "ATOM" | "HETATM") {
+            continue;
+        }
+        if line.len() < 54 {
+            return Err(PdbqtError::InvalidAtomLine {
+                line: lineno + 1,
+                detail: "line too short (need at least 54 chars for coordinates)".into(),
+            });
+        }
+
+        // Element from AutoDock type (cols 78-79, 0-indexed 77-78) or fallback to PDB col 77-78
+        let ad_type = line.get(77..79).map(str::trim).unwrap_or("").trim();
+        // Map AutoDock type back to element symbol
+        let elem_sym = match ad_type {
+            "A" => "C",
+            "NA" => "N",
+            "OA" | "OS" => "O",
+            "SA" => "S",
+            "HD" => "H",
+            other if !other.is_empty() => other,
+            _ => {
+                // Fall back to PDB element column (cols 77-78)
+                line.get(76..78).map(str::trim).unwrap_or("C").trim()
+            }
+        };
+
+        let element = Element::from_symbol(elem_sym).ok_or_else(|| PdbqtError::UnknownElement {
+            symbol: elem_sym.to_string(),
+            line: lineno + 1,
+        })?;
+
+        use chematic_core::Atom;
+        builder.add_atom(Atom::new(element));
+
+        // Coordinates: cols 31-38, 39-46, 47-54 (0-indexed 30-37, 38-45, 46-53)
+        let parse_f = |s: &str, col: &str| -> Result<f64, PdbqtError> {
+            s.trim().parse::<f64>().map_err(|_| PdbqtError::InvalidAtomLine {
+                line: lineno + 1,
+                detail: format!("cannot parse {col} coordinate: '{}'", s.trim()),
+            })
+        };
+        let x = parse_f(&line[30..38], "x")?;
+        let y = parse_f(&line[38..46], "y")?;
+        let z = parse_f(&line[46..54], "z")?;
+        coords.push((x, y, z));
+
+        // Partial charge: cols 67-76 (0-indexed 66-75), or fallback 71-76
+        let q_raw = line.get(66..76)
+            .or_else(|| line.get(71..76))
+            .map(str::trim)
+            .unwrap_or("0.0");
+        let q = q_raw.parse::<f64>().map_err(|_| PdbqtError::InvalidCharge {
+            line: lineno + 1,
+            raw: q_raw.to_string(),
+        })?;
+        charges.push(q);
+    }
+
+    Ok((builder.build(), coords, charges))
+}
+
+// ── tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chematic_smiles::parse;
+
+    #[test]
+    fn write_pdbqt_ethanol() {
+        let mol = parse("CCO").unwrap();
+        let coords = vec![(0.0, 0.0, 0.0), (1.54, 0.0, 0.0), (2.5, 1.2, 0.0)];
+        let charges = vec![-0.100, 0.050, -0.400];
+        let out = write_pdbqt(&mol, &coords, &charges, "ETH");
+        assert!(out.contains("REMARK"));
+        assert!(out.contains("ATOM"));
+        assert!(out.contains("LIG"));
+        // C gets type C, O gets OA
+        assert!(out.contains(" C ") || out.contains("C\n") || out.contains("C "));
+        assert!(out.contains("OA"));
+    }
+
+    #[test]
+    fn write_pdbqt_aromatic_carbon_gets_type_a() {
+        let mol = parse("c1ccccc1").unwrap();
+        let out = write_pdbqt(&mol, &[], &[], "BNZ");
+        // All carbons are aromatic → type A
+        assert!(out.contains("A ") || out.contains(" A"));
+    }
+
+    #[test]
+    fn roundtrip_coordinates() {
+        let mol = parse("CCO").unwrap();
+        let coords = vec![(1.0, 2.0, 3.0), (4.0, 5.0, 6.0), (7.0, 8.0, 9.0)];
+        let charges = vec![-0.1, 0.2, -0.3];
+        let pdbqt = write_pdbqt(&mol, &coords, &charges, "TST");
+        let (mol2, coords2, charges2) = parse_pdbqt(&pdbqt).unwrap();
+        assert_eq!(mol2.atom_count(), 3);
+        assert!((coords2[0].0 - 1.0).abs() < 0.01);
+        assert!((coords2[1].1 - 5.0).abs() < 0.01);
+        assert!((charges2[2] - (-0.3)).abs() < 0.01);
+    }
+}

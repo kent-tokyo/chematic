@@ -427,6 +427,38 @@ pub fn write_sdf(records: &[(&Molecule, &MolMetadata, &[(f64, f64)])]) -> String
     out
 }
 
+/// Serialise one or more molecules to SDF format, appending per-atom partial
+/// charges as an SD property `<PARTIAL_CHARGES>`.
+///
+/// `records` — slice of `(molecule, metadata, 2D-coords, charges)` tuples.
+/// `charges[i]` is the partial charge for atom `i` (heavy atoms only).
+/// Pass an empty charges slice to omit the property block.
+///
+/// Example SD block appended after `M  END`:
+/// ```text
+/// > <PARTIAL_CHARGES>
+/// -0.2359 0.1076 -0.4500 0.1806
+///
+/// $$$$
+/// ```
+#[allow(clippy::type_complexity)]
+pub fn write_sdf_with_charges(
+    records: &[(&Molecule, &MolMetadata, &[(f64, f64)], &[f64])],
+) -> String {
+    let mut out = String::new();
+    for (mol, meta, coords, charges) in records {
+        out.push_str(&write_mol_with_coords(mol, meta, coords));
+        if !charges.is_empty() {
+            out.push_str("> <PARTIAL_CHARGES>\n");
+            let vals: Vec<String> = charges.iter().map(|q| format!("{q:.4}")).collect();
+            out.push_str(&vals.join(" "));
+            out.push_str("\n\n");
+        }
+        out.push_str("$$$$\n");
+    }
+    out
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------

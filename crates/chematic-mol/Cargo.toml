@@ -18,3 +18,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.4.8" }
 chematic-rxn  = { path = "../chematic-rxn",  version = "0.4.8" }
+
+[dev-dependencies]
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.8" }

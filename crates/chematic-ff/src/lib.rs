@@ -2,13 +2,15 @@
 //! `chematic-ff` — Force field atom typing and parameters.
 //!
 //! Provides pure-Rust force field support for molecular mechanics calculations:
-//! - **DREIDING**: general-purpose force field (existing)
-//! - **MMFF94**: Merck Molecular Force Field (new, for small molecules)
+//! - **DREIDING**: general-purpose force field
+//! - **MMFF94**: Merck Molecular Force Field (small organic molecules)
+//! - **UFF**: Universal Force Field (all elements, metal complexes)
 //!
 //! Includes atom type enumerations, assignment functions, and parameter lookups.
 
 pub mod dreiding;
 pub mod mmff94;
+pub mod uff;
 pub mod mmff94_advanced;
 pub mod mmff94_bci;
 pub mod mmff94_energy;
@@ -42,3 +44,4 @@ pub use mmff94_numeric::{
     assign_mmff94_numeric_types, mmff94_charges_numeric, pbci_for, NumericTypeError,
 };
 pub use params::{dreiding_angle, dreiding_bond_len, dreiding_torsion_barrier, dreiding_vdw};
+pub use uff::{UffType, assign_uff_types, uff_total_energy, minimize_uff, UffMinimizeResult};
