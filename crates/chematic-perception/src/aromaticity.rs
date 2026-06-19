@@ -363,38 +363,53 @@ fn ring_atoms_from_bond_set(mol: &Molecule, bonds: &[BondIdx]) -> Option<Vec<Ato
 pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Vec<AtomIdx>> {
     let mut rings: Vec<Vec<AtomIdx>> = sssr_rings.to_vec();
 
-    // Build bond sets for all SSSR rings.
-    let bond_sets: Vec<Vec<BondIdx>> = sssr_rings
-        .iter()
-        .map(|r| ring_bond_set(mol, r))
-        .collect();
-
-    let n = sssr_rings.len();
     // Track which atom-sets we already have (as sorted atom lists).
     let mut known: std::collections::HashSet<Vec<AtomIdx>> = sssr_rings
         .iter()
         .map(|r| { let mut s = r.clone(); s.sort(); s })
         .collect();
 
-    for i in 0..n {
-        for j in (i + 1)..n {
-            // Only consider pairs that share atoms (fused rings).
-            let shares_atom = sssr_rings[i].iter().any(|a| sssr_rings[j].contains(a));
-            if !shares_atom {
-                continue;
-            }
-            let xor_bonds = bond_sym_diff(&bond_sets[i], &bond_sets[j]);
-            // Only interesting if the XOR ring is smaller than both parents.
-            if xor_bonds.len() >= sssr_rings[i].len().min(sssr_rings[j].len()) {
-                continue;
-            }
-            if let Some(new_ring) = ring_atoms_from_bond_set(mol, &xor_bonds) {
-                let mut key = new_ring.clone();
-                key.sort();
-                if known.insert(key) {
-                    rings.push(new_ring);
+    // Iterative pairwise XOR until convergence.
+    //
+    // A single pass only finds rings that are the XOR of two SSSR rings.
+    // Iterating also finds rings that require XOR of 3+ SSSR rings
+    // (e.g. the inner hexagon of coronene, or sub-rings in multi-step
+    // fused PAHs where the SSSR chose large perimeter cycles).
+    // Termination is guaranteed because each new ring is strictly smaller
+    // than both of its parents, so ring size can only decrease.
+    loop {
+        let mut changed = false;
+        let n = rings.len();
+        let bond_sets: Vec<Vec<BondIdx>> = rings.iter().map(|r| ring_bond_set(mol, r)).collect();
+
+        for i in 0..n {
+            for j in (i + 1)..n {
+                // Only consider pairs that share atoms (fused rings).
+                let shares_atom = rings[i].iter().any(|a| rings[j].contains(a));
+                if !shares_atom {
+                    continue;
+                }
+                let xor_bonds = bond_sym_diff(&bond_sets[i], &bond_sets[j]);
+                if xor_bonds.is_empty() {
+                    continue;
+                }
+                // Only interesting if the XOR ring is strictly smaller than both parents.
+                if xor_bonds.len() >= rings[i].len().min(rings[j].len()) {
+                    continue;
+                }
+                if let Some(new_ring) = ring_atoms_from_bond_set(mol, &xor_bonds) {
+                    let mut key = new_ring.clone();
+                    key.sort();
+                    if known.insert(key) {
+                        rings.push(new_ring);
+                        changed = true;
+                    }
                 }
             }
+        }
+
+        if !changed {
+            break;
         }
     }
 
