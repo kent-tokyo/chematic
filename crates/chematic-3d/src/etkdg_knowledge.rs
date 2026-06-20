@@ -401,6 +401,90 @@ pub fn get_torsion_preference(
         });
     }
 
+    // ── Heteroaromatic patterns ──────────────────────────────────────────────
+
+    // Heteroaromatic biaryl: NAromatic–CAromatic or CAromatic–NAromatic
+    // (e.g. phenyl-pyridine, bipyridine, pyrimidine-phenyl).
+    // ~45° twist like biphenyl; very soft potential.
+    // NAromatic–NAromatic is intentionally excluded: adjacent aromatic nitrogens
+    // occur as intra-ring bonds (pyrimidine, pyridazine) whose torsion is already
+    // constrained by ring closure; applying a 45° soft preference there conflicts
+    // with satisfy_constraints and can distort ring geometry.
+    if (b_type == AtomType::NAromatic && c_type == AtomType::CAromatic)
+        || (b_type == AtomType::CAromatic && c_type == AtomType::NAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 45.0,
+            penalty_per_degree: 0.03,
+        });
+    }
+
+    // N-alkyl heteroaromatic (N-methyl pyridine, N-methyl imidazole, etc.).
+    // The N–C(sp3) bond prefers anti (180°) to minimise lone-pair / σ* repulsion.
+    if (b_type == AtomType::NAromatic && c_type == AtomType::CSp3)
+        || (b_type == AtomType::CSp3 && c_type == AtomType::NAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.09,
+        });
+    }
+
+    // Heteroaromatic N adjacent to carbonyl (prodrug, lactam-like contexts).
+    // Prefer planar (0°) for lone-pair conjugation.
+    if (b_type == AtomType::NAromatic && c_type == AtomType::CCarbonyl)
+        || (b_type == AtomType::CCarbonyl && c_type == AtomType::NAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+
+    // Heteroaromatic N to sp2 alkene (vinylogous conjugation).
+    if (b_type == AtomType::NAromatic && c_type == AtomType::CSp2Alkene)
+        || (b_type == AtomType::CSp2Alkene && c_type == AtomType::NAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.08,
+        });
+    }
+
+    // Thioaryl / aryl thioether: S–CAromatic or CAromatic–S.
+    // Diaryl sulfide and aryl thioether prefer ~90° (sulphur p-lone-pair
+    // perpendicular to ring π system).
+    if (b_type == AtomType::S && c_type == AtomType::CAromatic)
+        || (b_type == AtomType::CAromatic && c_type == AtomType::S)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 90.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+
+    // OSp3 as B in O–C(sp3) torsion (e.g. C–O–C–C ether chain, reverse of the
+    // CSp3–OSp3 rule).  Prefer anti (180°).
+    if b_type == AtomType::OSp3 && c_type == AtomType::CSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.07,
+        });
+    }
+
+    // Aryl amine Ar–NR2 (aniline-like, single bond to sp3 N): prefer planar (0°)
+    // for lone-pair conjugation with ring, slightly softer than aryl amide.
+    // Both traversal directions are covered so the rule fires regardless of
+    // which end of the Ar–N bond is atom B vs C.
+    if (b_type == AtomType::CAromatic && c_type == AtomType::NSp3)
+        || (b_type == AtomType::NSp3 && c_type == AtomType::CAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.07,
+        });
+    }
+
     None // No specific preference; use default
 }
 

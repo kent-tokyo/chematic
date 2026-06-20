@@ -17,8 +17,10 @@
 //! ```
 
 pub mod cdxml;
+pub mod cif;
 pub mod cml;
 pub mod error;
+pub mod gaussian;
 pub mod mol2000;
 pub mod mol2_tripos;
 pub mod mol3000;
@@ -30,7 +32,9 @@ pub mod sdf;
 pub use error::MolParseError;
 // Re-export MolParseError under the alias MolError as specified by the public API.
 pub use cdxml::{CdxmlError, parse_cdxml, parse_cdxml_all};
+pub use cif::{CifError, CifResult, UnitCell, parse_cif, write_cif};
 pub use cml::{CmlError, parse_cml, write_cml};
+pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_gjf, write_gjf};
 pub use error::MolParseError as MolError;
 pub use mol2_tripos::{Mol2Error, parse_mol2, write_mol2};
 pub use mol2000::{

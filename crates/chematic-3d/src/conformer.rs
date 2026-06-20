@@ -198,6 +198,21 @@ impl ConformerEnsemble {
         leaders
     }
 
+    /// Return `true` if `coords` is within `rmsd_threshold` Å of any existing
+    /// conformer after Kabsch superposition.
+    ///
+    /// Used by ensemble generators to discard near-duplicate structures before
+    /// adding them.  O(k) Kabsch operations where k is the current ensemble size.
+    pub fn is_duplicate(&self, coords: &Coords3D, rmsd_threshold: f64) -> bool {
+        if rmsd_threshold <= 0.0 {
+            return false;
+        }
+        let n = self.mol.atom_count();
+        self.conformers
+            .iter()
+            .any(|existing| kabsch_rmsd(coords, existing, n) < rmsd_threshold)
+    }
+
     /// Mean pairwise USR dissimilarity across all conformers.
     ///
     /// Returns a value in `[0.0, 1.0]`: 0.0 means all conformers are identical

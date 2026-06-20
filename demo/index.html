@@ -1014,11 +1014,11 @@ footer {
   <!-- Tab: Dynamics -->
   <div class="tab-panel" id="tab-dynamics" role="tabpanel">
     <section id="section-dynamics">
-      <h2>Molecular Dynamics & Electrostatics</h2>
+      <h2 id="h-dyn-title">Molecular Dynamics &amp; Electrostatics</h2>
 
       <div class="panel">
-        <h3>Coulomb Energy</h3>
-        <p>Direct Coulomb interaction energy using Gasteiger partial charges.</p>
+        <h3 id="h-dyn-coulomb">Coulomb Energy</h3>
+        <p id="p-dyn-coulomb">Direct Coulomb interaction energy using Gasteiger partial charges.</p>
         <button id="btn-coulomb" class="btn btn-primary">Calculate Coulomb Energy</button>
         <div id="coulomb-result" class="result-box" style="display: none;">
           <code id="coulomb-output"></code>
@@ -1026,36 +1026,36 @@ footer {
       </div>
 
       <div class="panel">
-        <h3>Molecular Dynamics (NVT)</h3>
-        <p>Run short MD simulation at 300 K with Berendsen temperature control.</p>
-        <label>Simulation steps: <input type="number" id="md-steps" value="100" min="10" max="500" style="width: 60px"></label>
+        <h3 id="h-dyn-md">Molecular Dynamics (NVT)</h3>
+        <p id="p-dyn-md">Run short MD simulation at 300 K with Berendsen temperature control.</p>
+        <label><span id="lbl-dyn-steps">Simulation steps:</span> <input type="number" id="md-steps" value="100" min="10" max="500" style="width: 60px"></label>
         <button id="btn-md" class="btn btn-primary">Run MD Simulation</button>
         <div id="md-result" class="result-box" style="display: none;">
-          <p><strong>Simulation complete!</strong> <span id="md-frames">0</span> frames saved.</p>
+          <p><strong id="dyn-md-done">Simulation complete!</strong> <span id="md-frames">0</span> <span id="dyn-md-frames-saved">frames saved.</span></p>
           <pre id="md-output" style="max-height: 300px; overflow-y: auto;"></pre>
         </div>
       </div>
 
       <div class="panel">
-        <h3>Geometry Optimization (DREIDING)</h3>
-        <p>Minimize geometry using DREIDING force field parameters.</p>
+        <h3 id="h-dyn-dreiding">Geometry Optimization (DREIDING)</h3>
+        <p id="p-dyn-dreiding">Minimize geometry using DREIDING force field parameters.</p>
         <button id="btn-minimize" class="btn btn-primary">Optimize Geometry</button>
         <div id="minimize-result" class="result-box" style="display: none;">
-          <p><strong>Optimization complete!</strong> Structure minimized.</p>
+          <p><strong id="dyn-dreiding-done">Optimization complete!</strong> <span id="dyn-dreiding-msg">Structure minimized.</span></p>
         </div>
       </div>
 
       <div class="panel">
-        <h3>Energy Breakdown</h3>
-        <p>Visual analysis of energy components from last calculation.</p>
+        <h3 id="h-dyn-energy">Energy Breakdown</h3>
+        <p id="p-dyn-energy">Visual analysis of energy components from last calculation.</p>
         <div id="energy-chart" style="display: none;">
           <canvas id="energy-canvas" width="400" height="250"></canvas>
           <table id="energy-table" style="width: 100%; margin-top: 1rem; border-collapse: collapse; font-size: 0.9rem;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border);">
-                <th style="text-align: left; padding: 0.5rem;">Component</th>
-                <th style="text-align: right; padding: 0.5rem;">Energy (kcal/mol)</th>
-                <th style="text-align: right; padding: 0.5rem;">%</th>
+                <th style="text-align: left; padding: 0.5rem;" id="th-dyn-component">Component</th>
+                <th style="text-align: right; padding: 0.5rem;" id="th-dyn-energy-kcal">Energy (kcal/mol)</th>
+                <th style="text-align: right; padding: 0.5rem;" id="th-dyn-pct">%</th>
               </tr>
             </thead>
             <tbody id="energy-table-body"></tbody>
@@ -1066,32 +1066,32 @@ footer {
 
       <!-- MMFF94 Full Force Field Optimizer -->
       <div class="panel">
-        <h3>MMFF94 Force Field Optimization</h3>
-        <p>Full Halgren 1996 MMFF94: bond / angle / torsion / vdW / electrostatic energy terms.</p>
+        <h3 id="h-dyn-mmff94">MMFF94 Force Field Optimization</h3>
+        <p id="p-dyn-mmff94">Full Halgren 1996 MMFF94: bond / angle / torsion / vdW / electrostatic energy terms.</p>
         <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem">
-          <label style="font-size:.9rem">Algorithm:
+          <label style="font-size:.9rem"><span id="lbl-dyn-algo">Algorithm:</span>
             <select id="mmff94-algo" style="margin-left:.4rem;padding:.25rem .5rem;border:1px solid var(--border);border-radius:4px;background:var(--surface)">
               <option value="lbfgs" selected>L-BFGS (faster)</option>
               <option value="sd">Steepest Descent</option>
             </select>
           </label>
-          <label style="font-size:.9rem">Max iterations:
+          <label style="font-size:.9rem"><span id="lbl-dyn-maxiter">Max iterations:</span>
             <input id="mmff94-max-iter" type="number" value="300" min="10" max="2000" style="width:65px;margin-left:.4rem;padding:.25rem .5rem;border:1px solid var(--border);border-radius:4px">
           </label>
           <button id="btn-mmff94-opt" class="btn btn-primary">Optimize (MMFF94)</button>
         </div>
         <div id="mmff94-opt-result" style="display:none">
           <p style="font-size:.9rem;margin:.4rem 0">
-            <strong>Energy:</strong> <span id="mmff94-energy">—</span> kcal/mol &nbsp;|&nbsp;
-            <strong>RMSD:</strong> <span id="mmff94-rmsd">—</span> Å &nbsp;|&nbsp;
-            <strong>Iterations:</strong> <span id="mmff94-iters">—</span> &nbsp;|&nbsp;
-            <strong>Converged:</strong> <span id="mmff94-conv">—</span>
+            <strong id="lbl-dyn-energy">Energy:</strong> <span id="mmff94-energy">—</span> kcal/mol &nbsp;|&nbsp;
+            <strong id="lbl-dyn-rmsd">RMSD:</strong> <span id="mmff94-rmsd">—</span> Å &nbsp;|&nbsp;
+            <strong id="lbl-dyn-iters">Iterations:</strong> <span id="mmff94-iters">—</span> &nbsp;|&nbsp;
+            <strong id="lbl-dyn-conv">Converged:</strong> <span id="mmff94-conv">—</span>
           </p>
           <table style="width:100%;border-collapse:collapse;font-size:.88rem;margin-top:.5rem">
             <thead><tr style="border-bottom:1px solid var(--border)">
-              <th style="text-align:left;padding:.4rem .6rem">Term</th>
-              <th style="text-align:right;padding:.4rem .6rem">kcal/mol</th>
-              <th style="text-align:right;padding:.4rem .6rem">%</th>
+              <th style="text-align:left;padding:.4rem .6rem" id="th-dyn-term">Term</th>
+              <th style="text-align:right;padding:.4rem .6rem" id="th-dyn-kcal">kcal/mol</th>
+              <th style="text-align:right;padding:.4rem .6rem" id="th-dyn-pct2">%</th>
               <td style="width:40%"><div style="background:var(--surface-alt,#f0f0f0);border-radius:3px;height:10px"></div></td>
             </tr></thead>
             <tbody id="mmff94-breakdown-body"></tbody>
@@ -1101,16 +1101,16 @@ footer {
 
       <!-- Force Field Comparison -->
       <div class="panel">
-        <h3>Force Field Comparison</h3>
-        <p>Compare DREIDING vs MMFF94 optimization on the same molecule.</p>
+        <h3 id="h-dyn-ffcomp">Force Field Comparison</h3>
+        <p id="p-dyn-ffcomp">Compare DREIDING vs MMFF94 optimization on the same molecule.</p>
         <button id="btn-ff-compare" class="btn btn-primary">Compare DREIDING vs MMFF94</button>
         <div id="ff-compare-result" style="display:none;margin-top:.75rem">
           <table style="width:100%;border-collapse:collapse;font-size:.88rem">
             <thead><tr style="border-bottom:1px solid var(--border)">
-              <th style="text-align:left;padding:.4rem .6rem">Force Field</th>
-              <th style="text-align:right;padding:.4rem .6rem">Energy (kcal/mol)</th>
-              <th style="text-align:right;padding:.4rem .6rem">RMSD (Å)</th>
-              <th style="text-align:right;padding:.4rem .6rem">Iterations</th>
+              <th style="text-align:left;padding:.4rem .6rem" id="th-dyn-ff">Force Field</th>
+              <th style="text-align:right;padding:.4rem .6rem" id="th-dyn-ff-energy">Energy (kcal/mol)</th>
+              <th style="text-align:right;padding:.4rem .6rem" id="th-dyn-ff-rmsd">RMSD (Å)</th>
+              <th style="text-align:right;padding:.4rem .6rem" id="th-dyn-ff-iters">Iterations</th>
             </tr></thead>
             <tbody id="ff-compare-body"></tbody>
           </table>
@@ -1119,10 +1119,10 @@ footer {
 
       <!-- Torsion Scan -->
       <div class="panel">
-        <h3>Torsion Scan (MMFF94)</h3>
-        <p>Rotate a dihedral angle from 0° to 360° and plot the MMFF94 energy landscape.</p>
+        <h3 id="h-dyn-torsion">Torsion Scan (MMFF94)</h3>
+        <p id="p-dyn-torsion">Rotate a dihedral angle from 0° to 360° and plot the MMFF94 energy landscape.</p>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem">
-          <label style="font-size:.88rem">Atoms (0-indexed):
+          <label style="font-size:.88rem"><span id="lbl-dyn-atoms">Atoms (0-indexed):</span>
             <input id="scan-i" type="number" min="0" value="0" style="width:48px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
             −
             <input id="scan-j" type="number" min="0" value="1" style="width:48px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
@@ -1131,7 +1131,7 @@ footer {
             −
             <input id="scan-l" type="number" min="0" value="3" style="width:48px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
           </label>
-          <label style="font-size:.88rem">Steps:
+          <label style="font-size:.88rem"><span id="lbl-dyn-scan-steps">Steps:</span>
             <input id="scan-steps" type="number" value="36" min="8" max="360" style="width:52px;padding:.25rem;border:1px solid var(--border);border-radius:4px">
           </label>
           <button id="btn-torsion-scan" class="btn btn-primary">Scan</button>
@@ -1315,6 +1315,49 @@ const T = {
     '3d.hint':          'Drag to rotate · Scroll to zoom',
     '3d.placeholder':   'Enter a SMILES on the 2D tab to view in 3D',
     '3d.generating':    'Generating 3D…',
+    'dyn.title':        'Molecular Dynamics & Electrostatics',
+    'dyn.coulomb':      'Coulomb Energy',
+    'dyn.coulomb.desc': 'Direct Coulomb interaction energy using Gasteiger partial charges.',
+    'dyn.coulomb.btn':  'Calculate Coulomb Energy',
+    'dyn.md':           'Molecular Dynamics (NVT)',
+    'dyn.md.desc':      'Run short MD simulation at 300 K with Berendsen temperature control.',
+    'dyn.md.steps':     'Simulation steps:',
+    'dyn.md.btn':       'Run MD Simulation',
+    'dyn.md.done':      'Simulation complete!',
+    'dyn.md.saved':     'frames saved.',
+    'dyn.dreiding':     'Geometry Optimization (DREIDING)',
+    'dyn.dreiding.desc':'Minimize geometry using DREIDING force field parameters.',
+    'dyn.dreiding.btn': 'Optimize Geometry',
+    'dyn.dreiding.done':'Optimization complete!',
+    'dyn.dreiding.msg': 'Structure minimized.',
+    'dyn.energy':       'Energy Breakdown',
+    'dyn.energy.desc':  'Visual analysis of energy components from last calculation.',
+    'dyn.energy.hint':  'Run a calculation above to see energy breakdown.',
+    'dyn.energy.comp':  'Component',
+    'dyn.energy.kcal':  'Energy (kcal/mol)',
+    'dyn.energy.pct':   '%',
+    'dyn.mmff94':       'MMFF94 Force Field Optimization',
+    'dyn.mmff94.desc':  'Full Halgren 1996 MMFF94: bond / angle / torsion / vdW / electrostatic energy terms.',
+    'dyn.mmff94.algo':  'Algorithm:',
+    'dyn.mmff94.maxiter':'Max iterations:',
+    'dyn.mmff94.btn':   'Optimize (MMFF94)',
+    'dyn.mmff94.energy':'Energy:',
+    'dyn.mmff94.rmsd':  'RMSD:',
+    'dyn.mmff94.iters': 'Iterations:',
+    'dyn.mmff94.conv':  'Converged:',
+    'dyn.mmff94.term':  'Term',
+    'dyn.ffcomp':       'Force Field Comparison',
+    'dyn.ffcomp.desc':  'Compare DREIDING vs MMFF94 optimization on the same molecule.',
+    'dyn.ffcomp.btn':   'Compare DREIDING vs MMFF94',
+    'dyn.ffcomp.ff':    'Force Field',
+    'dyn.ffcomp.energy':'Energy (kcal/mol)',
+    'dyn.ffcomp.rmsd':  'RMSD (Å)',
+    'dyn.ffcomp.iters': 'Iterations',
+    'dyn.torsion':      'Torsion Scan (MMFF94)',
+    'dyn.torsion.desc': 'Rotate a dihedral angle from 0° to 360° and plot the MMFF94 energy landscape.',
+    'dyn.torsion.atoms':'Atoms (0-indexed):',
+    'dyn.torsion.steps':'Steps:',
+    'dyn.torsion.btn':  'Scan',
   },
   ja: {
     'app.tagline':      'ブラウザで動く純Rust化学情報処理ライブラリ',
@@ -1466,6 +1509,49 @@ const T = {
     '3d.hint':          'ドラッグで回転 · スクロールでズーム',
     '3d.placeholder':   '2D タブで SMILES を入力すると 3D 表示されます',
     '3d.generating':    '3D 生成中…',
+    'dyn.title':        '分子動力学 & 静電計算',
+    'dyn.coulomb':      'クーロンエネルギー',
+    'dyn.coulomb.desc': 'Gasteiger 部分電荷を使った直接クーロン相互作用エネルギーを計算します。',
+    'dyn.coulomb.btn':  'クーロンエネルギーを計算',
+    'dyn.md':           '分子動力学 (NVT)',
+    'dyn.md.desc':      'Berendsen 温度制御で 300 K の短時間 MD シミュレーションを実行します。',
+    'dyn.md.steps':     'シミュレーションステップ数:',
+    'dyn.md.btn':       'MD シミュレーション実行',
+    'dyn.md.done':      'シミュレーション完了！',
+    'dyn.md.saved':     'フレームを保存しました。',
+    'dyn.dreiding':     'ジオメトリ最適化 (DREIDING)',
+    'dyn.dreiding.desc':'DREIDING 力場パラメータを用いてジオメトリを最小化します。',
+    'dyn.dreiding.btn': 'ジオメトリ最適化',
+    'dyn.dreiding.done':'最適化完了！',
+    'dyn.dreiding.msg': '構造を最小化しました。',
+    'dyn.energy':       'エネルギー内訳',
+    'dyn.energy.desc':  '直前の計算で得られたエネルギー成分の可視化分析。',
+    'dyn.energy.hint':  '上の計算を実行するとエネルギー内訳が表示されます。',
+    'dyn.energy.comp':  '成分',
+    'dyn.energy.kcal':  'エネルギー (kcal/mol)',
+    'dyn.energy.pct':   '%',
+    'dyn.mmff94':       'MMFF94 力場最適化',
+    'dyn.mmff94.desc':  'Halgren 1996 MMFF94 全項目: 結合 / 角度 / ねじれ / vdW / 静電エネルギー。',
+    'dyn.mmff94.algo':  'アルゴリズム:',
+    'dyn.mmff94.maxiter':'最大反復回数:',
+    'dyn.mmff94.btn':   '最適化 (MMFF94)',
+    'dyn.mmff94.energy':'エネルギー:',
+    'dyn.mmff94.rmsd':  'RMSD:',
+    'dyn.mmff94.iters': '反復回数:',
+    'dyn.mmff94.conv':  '収束:',
+    'dyn.mmff94.term':  '項目',
+    'dyn.ffcomp':       '力場比較',
+    'dyn.ffcomp.desc':  '同じ分子に対して DREIDING と MMFF94 の最適化結果を比較します。',
+    'dyn.ffcomp.btn':   'DREIDING vs MMFF94 を比較',
+    'dyn.ffcomp.ff':    '力場',
+    'dyn.ffcomp.energy':'エネルギー (kcal/mol)',
+    'dyn.ffcomp.rmsd':  'RMSD (Å)',
+    'dyn.ffcomp.iters': '反復回数',
+    'dyn.torsion':      'トーションスキャン (MMFF94)',
+    'dyn.torsion.desc': '二面角を 0° から 360° まで回転させ MMFF94 エネルギー曲線を描画します。',
+    'dyn.torsion.atoms':'原子 (0 始まり):',
+    'dyn.torsion.steps':'ステップ数:',
+    'dyn.torsion.btn':  'スキャン',
   },
   zh: {
     'app.tagline':      '纯Rust化学信息学库，运行于浏览器',
@@ -1617,6 +1703,49 @@ const T = {
     '3d.hint':          '拖动旋转 · 滚轮缩放',
     '3d.placeholder':   '在 2D 标签中输入 SMILES 以查看 3D 结构',
     '3d.generating':    '生成 3D 中…',
+    'dyn.title':        '分子动力学 & 静电计算',
+    'dyn.coulomb':      '库仑能',
+    'dyn.coulomb.desc': '使用 Gasteiger 部分电荷计算直接库仑相互作用能。',
+    'dyn.coulomb.btn':  '计算库仑能',
+    'dyn.md':           '分子动力学 (NVT)',
+    'dyn.md.desc':      '使用 Berendsen 控温在 300 K 下运行短时间 MD 模拟。',
+    'dyn.md.steps':     '模拟步数:',
+    'dyn.md.btn':       '运行 MD 模拟',
+    'dyn.md.done':      '模拟完成！',
+    'dyn.md.saved':     '帧已保存。',
+    'dyn.dreiding':     '几何优化 (DREIDING)',
+    'dyn.dreiding.desc':'使用 DREIDING 力场参数最小化几何结构。',
+    'dyn.dreiding.btn': '优化几何',
+    'dyn.dreiding.done':'优化完成！',
+    'dyn.dreiding.msg': '结构已最小化。',
+    'dyn.energy':       '能量分解',
+    'dyn.energy.desc':  '可视化分析上次计算的能量组成。',
+    'dyn.energy.hint':  '运行上方的计算以查看能量分解。',
+    'dyn.energy.comp':  '成分',
+    'dyn.energy.kcal':  '能量 (kcal/mol)',
+    'dyn.energy.pct':   '%',
+    'dyn.mmff94':       'MMFF94 力场优化',
+    'dyn.mmff94.desc':  'Halgren 1996 MMFF94 全项: 键 / 角 / 扭转 / vdW / 静电能。',
+    'dyn.mmff94.algo':  '算法:',
+    'dyn.mmff94.maxiter':'最大迭代次数:',
+    'dyn.mmff94.btn':   '优化 (MMFF94)',
+    'dyn.mmff94.energy':'能量:',
+    'dyn.mmff94.rmsd':  'RMSD:',
+    'dyn.mmff94.iters': '迭代次数:',
+    'dyn.mmff94.conv':  '收敛:',
+    'dyn.mmff94.term':  '项',
+    'dyn.ffcomp':       '力场比较',
+    'dyn.ffcomp.desc':  '对同一分子比较 DREIDING 与 MMFF94 的优化结果。',
+    'dyn.ffcomp.btn':   '比较 DREIDING vs MMFF94',
+    'dyn.ffcomp.ff':    '力场',
+    'dyn.ffcomp.energy':'能量 (kcal/mol)',
+    'dyn.ffcomp.rmsd':  'RMSD (Å)',
+    'dyn.ffcomp.iters': '迭代次数',
+    'dyn.torsion':      '扭转扫描 (MMFF94)',
+    'dyn.torsion.desc': '将二面角从 0° 旋转至 360°，绘制 MMFF94 能量曲线。',
+    'dyn.torsion.atoms':'原子（从 0 开始编号）:',
+    'dyn.torsion.steps':'步数:',
+    'dyn.torsion.btn':  '扫描',
   },
 };
 
@@ -1710,6 +1839,52 @@ const STATIC_IDS = {
   'btn-sdf-load':           'sdf.load',
   'h-ifg-title':            'ifg.title',
   'atom-info-hint':         'atom.hint',
+  // Dynamics tab
+  'h-dyn-title':            'dyn.title',
+  'h-dyn-coulomb':          'dyn.coulomb',
+  'p-dyn-coulomb':          'dyn.coulomb.desc',
+  'btn-coulomb':            'dyn.coulomb.btn',
+  'h-dyn-md':               'dyn.md',
+  'p-dyn-md':               'dyn.md.desc',
+  'lbl-dyn-steps':          'dyn.md.steps',
+  'btn-md':                 'dyn.md.btn',
+  'dyn-md-done':            'dyn.md.done',
+  'dyn-md-frames-saved':    'dyn.md.saved',
+  'h-dyn-dreiding':         'dyn.dreiding',
+  'p-dyn-dreiding':         'dyn.dreiding.desc',
+  'btn-minimize':           'dyn.dreiding.btn',
+  'dyn-dreiding-done':      'dyn.dreiding.done',
+  'dyn-dreiding-msg':       'dyn.dreiding.msg',
+  'h-dyn-energy':           'dyn.energy',
+  'p-dyn-energy':           'dyn.energy.desc',
+  'energy-hint':            'dyn.energy.hint',
+  'th-dyn-component':       'dyn.energy.comp',
+  'th-dyn-energy-kcal':     'dyn.energy.kcal',
+  'th-dyn-pct':             'dyn.energy.pct',
+  'h-dyn-mmff94':           'dyn.mmff94',
+  'p-dyn-mmff94':           'dyn.mmff94.desc',
+  'lbl-dyn-algo':           'dyn.mmff94.algo',
+  'lbl-dyn-maxiter':        'dyn.mmff94.maxiter',
+  'btn-mmff94-opt':         'dyn.mmff94.btn',
+  'lbl-dyn-energy':         'dyn.mmff94.energy',
+  'lbl-dyn-rmsd':           'dyn.mmff94.rmsd',
+  'lbl-dyn-iters':          'dyn.mmff94.iters',
+  'lbl-dyn-conv':           'dyn.mmff94.conv',
+  'th-dyn-term':            'dyn.mmff94.term',
+  'th-dyn-kcal':            'dyn.energy.kcal',
+  'th-dyn-pct2':            'dyn.energy.pct',
+  'h-dyn-ffcomp':           'dyn.ffcomp',
+  'p-dyn-ffcomp':           'dyn.ffcomp.desc',
+  'btn-ff-compare':         'dyn.ffcomp.btn',
+  'th-dyn-ff':              'dyn.ffcomp.ff',
+  'th-dyn-ff-energy':       'dyn.ffcomp.energy',
+  'th-dyn-ff-rmsd':         'dyn.ffcomp.rmsd',
+  'th-dyn-ff-iters':        'dyn.ffcomp.iters',
+  'h-dyn-torsion':          'dyn.torsion',
+  'p-dyn-torsion':          'dyn.torsion.desc',
+  'lbl-dyn-atoms':          'dyn.torsion.atoms',
+  'lbl-dyn-scan-steps':     'dyn.torsion.steps',
+  'btn-torsion-scan':       'dyn.torsion.btn',
 };
 
 function applyLang(newLang) {

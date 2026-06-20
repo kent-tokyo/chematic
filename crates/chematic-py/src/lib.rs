@@ -901,6 +901,22 @@ impl Mol {
         chematic_chem::esol_solubility(&self.inner)
     }
 
+    /// Predict aqueous solubility (logS, log mol/L) using an ECFP4-based MLP.
+    ///
+    /// When trained weights are installed (`MLP_SOLUBILITY_TRAINED = true`),
+    /// runs a neural-network forward pass on the molecule's ECFP4 fingerprint.
+    /// Until then, transparently falls back to the Delaney ESOL linear regression.
+    ///
+    /// To install trained weights, run `scripts/train_solubility_mlp.py` and
+    /// follow the instructions printed at the end.
+    ///
+    ///     mol = chematic.from_smiles("c1ccccc1")
+    ///     logs = mol.ml_solubility   # same as .esol until weights are trained
+    #[getter]
+    fn ml_solubility(&self) -> f64 {
+        chematic_chem::mlp_solubility(&self.inner)
+    }
+
     // -----------------------------------------------------------------------
     // Transformations
     // -----------------------------------------------------------------------
@@ -1379,17 +1395,36 @@ impl Mol {
     /// Args:
     ///     n: Number of conformers to attempt.
     ///     rmsd_threshold: Minimum RMSD (Å) between conformers (default 0.5).
-    #[pyo3(signature = (n, rmsd_threshold = 0.5))]
-    fn conformer_ensemble(&self, n: usize, rmsd_threshold: f64) -> Vec<Vec<Vec<f64>>> {
-        // generate_conformer_ensemble_with_config takes Molecule by value; re-parse from SMILES.
+    /// Generate a conformer ensemble using ETKDG + force-field minimization + RMSD pruning.
+    ///
+    /// Args:
+    ///     n: Number of conformers to attempt.
+    ///     rmsd_threshold: Minimum Kabsch-aligned RMSD (Å) between retained conformers (default 0.5).
+    ///     force_field: ``"dreiding"`` (fast, default) or ``"mmff94"`` (higher accuracy).
+    ///     noise_sigma_deg: Gaussian torsion noise σ in degrees (default 30.0).
+    #[pyo3(signature = (n, rmsd_threshold = 0.5, force_field = "dreiding", noise_sigma_deg = 30.0))]
+    fn conformer_ensemble(
+        &self,
+        n: usize,
+        rmsd_threshold: f64,
+        force_field: &str,
+        noise_sigma_deg: f64,
+    ) -> Vec<Vec<Vec<f64>>> {
         let smiles = chematic_smiles::canonical_smiles(&self.inner);
         let mol = match chematic_smiles::parse(&smiles) {
             Ok(m) => m,
             Err(_) => return Vec::new(),
         };
+        let ff = if force_field.eq_ignore_ascii_case("mmff94") {
+            chematic_3d::ConformerForceField::Mmff94
+        } else {
+            chematic_3d::ConformerForceField::Dreiding
+        };
         let config = chematic_3d::ConformerConfig {
             count: n,
             rmsd_threshold,
+            force_field: ff,
+            noise_sigma_deg,
         };
         match chematic_3d::generate_conformer_ensemble_with_config(mol, &config) {
             Ok(ensemble) => (0..ensemble.conformer_count())
@@ -3194,6 +3229,106 @@ fn from_pdbqt(pdbqt_str: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Parse a Gaussian input file (`.gjf` / `.com`) and return a :class:`Mol`.
+///
+/// Raises:
+///     ValueError: on parse failure.
+///
+/// Example::
+///
+///     mol = chematic.from_gjf(open("mol.gjf").read())
+#[pyfunction]
+fn from_gjf(gjf_str: &str) -> PyResult<Mol> {
+    chematic_mol::parse_gjf(gjf_str)
+        .map(|(mol, _coords, _charge, _mult)| Mol { inner: Arc::new(mol) })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Parse a Gaussian output file (`.log` / `.out`) and return a dict with
+/// ``mol``, ``coords`` and ``scf_energy`` fields.
+///
+/// Returns:
+///     dict: ``{"mol": Mol, "coords": list[list[float]], "scf_energy": float | None}``
+///
+/// Raises:
+///     ValueError: when no `Standard orientation:` block is found.
+#[pyfunction]
+fn parse_gaussian_log<'py>(py: Python<'py>, log_str: &str) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
+    let result = chematic_mol::parse_gaussian_log(log_str)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let mol = Mol { inner: Arc::new(result.mol) };
+    let coords: Vec<Vec<f64>> = result.coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
+    let d = pyo3::types::PyDict::new(py);
+    d.set_item("mol", mol)?;
+    d.set_item("coords", coords)?;
+    d.set_item("scf_energy", result.scf_energy)?;
+    Ok(d)
+}
+
+/// Generate a Gaussian input file (`.gjf`) string from a molecule.
+///
+/// Args:
+///     mol: The molecule to write.
+///     coords: Atomic coordinates as ``[[x, y, z], ...]`` in Ångströms.
+///     charge: Formal charge (default 0).
+///     multiplicity: Spin multiplicity (default 1).
+///     method: Route section keywords (default ``"B3LYP/6-31G* opt"``).
+///     title: Job title comment (default ``"chematic"``).
+///
+/// Returns:
+///     str: GJF file contents.
+#[pyfunction]
+#[pyo3(signature = (mol, coords, charge=0, multiplicity=1, method="B3LYP/6-31G* opt", title="chematic"))]
+fn write_gjf(
+    mol: &Mol,
+    coords: Vec<[f64; 3]>,
+    charge: i32,
+    multiplicity: u32,
+    method: &str,
+    title: &str,
+) -> String {
+    let c: Vec<(f64, f64, f64)> = coords.into_iter().map(|[x, y, z]| (x, y, z)).collect();
+    chematic_mol::write_gjf(&mol.inner, &c, charge, multiplicity, method, title)
+}
+
+/// Parse a CIF (Crystallographic Information File) string and return a dict.
+///
+/// Returns:
+///     dict: ``{"mol": Mol, "coords": list[list[float]], "cell": dict | None}``
+///     where ``cell`` has keys ``a, b, c, alpha, beta, gamma``.
+///
+/// Raises:
+///     ValueError: on parse failure.
+///
+/// Example::
+///
+///     result = chematic.parse_cif(open("structure.cif").read())
+///     mol = result["mol"]
+///     coords = result["coords"]
+#[pyfunction]
+fn parse_cif<'py>(py: Python<'py>, cif_str: &str) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
+    let result = chematic_mol::parse_cif(cif_str)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let mol = Mol { inner: Arc::new(result.mol) };
+    let coords: Vec<Vec<f64>> = result.coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
+    let d = pyo3::types::PyDict::new(py);
+    d.set_item("mol", mol)?;
+    d.set_item("coords", coords)?;
+    if let Some(cell) = result.cell {
+        let cd = pyo3::types::PyDict::new(py);
+        cd.set_item("a", cell.a)?;
+        cd.set_item("b", cell.b)?;
+        cd.set_item("c", cell.c)?;
+        cd.set_item("alpha", cell.alpha)?;
+        cd.set_item("beta", cell.beta)?;
+        cd.set_item("gamma", cell.gamma)?;
+        d.set_item("cell", cd)?;
+    } else {
+        d.set_item("cell", py.None())?;
+    }
+    Ok(d)
+}
+
 /// Return True if the SMILES can be parsed without error.
 #[pyfunction]
 fn is_valid_smiles(smiles: &str) -> bool {
@@ -4648,8 +4783,45 @@ fn depict_grid(mols: Vec<Mol>, cols: usize) -> String {
 ///     # → [[product_mol], ...]
 #[pyfunction]
 fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
+    for mol in &reactants {
+        if mol.inner.atom_count() > 300 {
+            return Err(PyValueError::new_err(
+                "reactant too large for run_smirks (max 300 heavy atoms)",
+            ));
+        }
+    }
     let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
     chematic_rxn::run_reactants(smirks, &refs)
+        .map(|sets| {
+            sets.into_iter()
+                .map(|set| {
+                    set.into_iter()
+                        .map(|m| Mol { inner: Arc::new(m) })
+                        .collect()
+                })
+                .collect()
+        })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Apply a SMIRKS reaction template to a list of reactant molecules (strict mode).
+///
+/// Like :func:`run_smirks` but **does not carry substituents** into products.
+/// Only atoms explicitly mapped in the product template are included.
+///
+///     products = chematic.run_smirks_strict("[N:1][C:2]>>[N:1].[C:2]", [mol])
+///     # → only the mapped N and C atoms; no R-groups attached
+#[pyfunction]
+fn run_smirks_strict(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
+    for mol in &reactants {
+        if mol.inner.atom_count() > 300 {
+            return Err(PyValueError::new_err(
+                "reactant too large for run_smirks_strict (max 300 heavy atoms)",
+            ));
+        }
+    }
+    let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
+    chematic_rxn::run_reactants_strict(smirks, &refs)
         .map(|sets| {
             sets.into_iter()
                 .map(|set| {
@@ -4767,6 +4939,10 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_sdf_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol2, m)?)?;
     m.add_function(wrap_pyfunction!(from_pdbqt, m)?)?;
+    m.add_function(wrap_pyfunction!(from_gjf, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_gaussian_log, m)?)?;
+    m.add_function(wrap_pyfunction!(write_gjf, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_cif, m)?)?;
     m.add_function(wrap_pyfunction!(from_inchi, m)?)?;
     m.add_function(wrap_pyfunction!(is_valid_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(is_valid_smarts, m)?)?;
@@ -4782,6 +4958,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(reaction_svg, m)?)?;
     m.add_function(wrap_pyfunction!(scaffold_network_counts, m)?)?;
     m.add_function(wrap_pyfunction!(run_smirks, m)?)?;
+    m.add_function(wrap_pyfunction!(run_smirks_strict, m)?)?;
     m.add_function(wrap_pyfunction!(find_mcs, m)?)?;
     m.add_function(wrap_pyfunction!(reaction_smarts_match, m)?)?;
     m.add_function(wrap_pyfunction!(query_reaction, m)?)?;

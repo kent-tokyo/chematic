@@ -404,8 +404,14 @@ pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Ve
                 if xor_bonds.is_empty() {
                     continue;
                 }
-                // Only interesting if the XOR ring is strictly smaller than both parents.
-                if xor_bonds.len() >= rings[i].len().min(rings[j].len()) {
+                // Only interesting if the XOR ring is strictly smaller than the
+                // larger parent. Using max() instead of min() recovers missing
+                // rings when the SSSR chose a large cycle over a same-size one
+                // (e.g. SSSR returns a 10-bond macro ring instead of the 6-bond
+                // benzene twin; the missing benzene equals the XOR of the
+                // 6-bond lactone and the 10-bond macro, and is not strictly
+                // smaller than the lactone but IS strictly smaller than the macro).
+                if xor_bonds.len() >= rings[i].len().max(rings[j].len()) {
                     continue;
                 }
                 if let Some(new_ring) = ring_atoms_from_bond_set(mol, &xor_bonds) {
@@ -451,13 +457,20 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
     // Build sorted bond-index sets for each aromatic ring.
     let bond_sets: Vec<Vec<BondIdx>> = aromatic.iter().map(|r| ring_bond_set(mol, r)).collect();
 
-    // Mark rings that are the XOR of two strictly smaller aromatic rings.
-    // Such rings are "envelope" cycles introduced when the SSSR chose a large
-    // fundamental cycle instead of its two smaller GF(2) components.
+    // Mark rings that are the GF(2) sum (bond-XOR) of 2, 3, or 4 strictly
+    // smaller aromatic rings.  Such rings are "envelope" cycles introduced
+    // when the SSSR chose a large fundamental cycle instead of its smaller
+    // GF(2) components.
+    // 2-ring XOR: handles linear/angular fused systems (naphthalene, indolizine…).
+    // 3-ring XOR: handles compact PAHs like pyrene.
+    // 4-ring XOR: handles coronene-class PAHs where the outer perimeter is the
+    //   GF(2) sum of four inner hexagons.
     let n = aromatic.len();
     let mut is_envelope = vec![false; n];
     for i in 0..n {
         let si = aromatic[i].len();
+
+        // Check pair XOR first (most common case, O(n²)).
         'jk: for j in 0..n {
             if j == i || aromatic[j].len() >= si {
                 continue;
@@ -470,6 +483,56 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
                 if xor == bond_sets[i] {
                     is_envelope[i] = true;
                     break 'jk;
+                }
+            }
+        }
+
+        // If not resolved by pair XOR, try triple XOR (O(n³)).
+        if !is_envelope[i] {
+            'jkl: for j in 0..n {
+                if j == i || aromatic[j].len() >= si {
+                    continue;
+                }
+                for k in (j + 1)..n {
+                    if k == i || aromatic[k].len() >= si {
+                        continue;
+                    }
+                    let xor_jk = bond_sym_diff(&bond_sets[j], &bond_sets[k]);
+                    for l in (k + 1)..n {
+                        if l == i || aromatic[l].len() >= si {
+                            continue;
+                        }
+                        let xor_jkl = bond_sym_diff(&xor_jk, &bond_sets[l]);
+                        if xor_jkl == bond_sets[i] {
+                            is_envelope[i] = true;
+                            break 'jkl;
+                        }
+                    }
+                }
+            }
+        }
+
+        // If still not resolved, try quadruple XOR (O(n⁴)).
+        // Handles coronene-class PAHs where the perimeter is the GF(2) sum of
+        // four inner hexagons.
+        if !is_envelope[i] {
+            'jklm: for j in 0..n {
+                if j == i || aromatic[j].len() >= si { continue; }
+                for k in (j + 1)..n {
+                    if k == i || aromatic[k].len() >= si { continue; }
+                    let xor_jk = bond_sym_diff(&bond_sets[j], &bond_sets[k]);
+                    for l in (k + 1)..n {
+                        if l == i || aromatic[l].len() >= si { continue; }
+                        let xor_jkl = bond_sym_diff(&xor_jk, &bond_sets[l]);
+                        for m in (l + 1)..n {
+                            if m == i || aromatic[m].len() >= si { continue; }
+                            let xor_jklm = bond_sym_diff(&xor_jkl, &bond_sets[m]);
+                            if xor_jklm == bond_sets[i] {
+                                is_envelope[i] = true;
+                                break 'jklm;
+                            }
+                        }
+                    }
                 }
             }
         }

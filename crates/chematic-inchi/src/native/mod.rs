@@ -60,6 +60,15 @@ pub fn standard_inchi(mol: &Molecule) -> Result<String, InchiError> {
         ConvertError::KekulizationFailed(msg) => InchiError::KekulizationFailed(msg),
     })?;
 
+    // Guard: InChI is not defined for molecules with no heavy atoms (e.g. [H][H]).
+    // The C library returns NullOutput for num_atoms=0; return a clean error instead.
+    if atoms.is_empty() {
+        return Err(InchiError::InvalidInput(
+            "molecule has no heavy atoms; InChI is not defined for pure-hydrogen molecules"
+                .to_string(),
+        ));
+    }
+
     // The InChI C library uses i16 (AT_NUM / signed short) for atom counts.
     // Guard against silent wrapping: i16::MAX = 32767, but the library rejects
     // anything above its internal NORMALLY_ALLOWED_INP_MAX_ATOMS (1024 by default)
@@ -72,11 +81,7 @@ pub fn standard_inchi(mol: &Molecule) -> Result<String, InchiError> {
     }
 
     let mut input = InchiInput {
-        atom: if atoms.is_empty() {
-            std::ptr::null_mut()
-        } else {
-            atoms.as_mut_ptr()
-        },
+        atom: atoms.as_mut_ptr(), // non-empty guaranteed by the guard above
         stereo0d: if stereo.is_empty() {
             std::ptr::null_mut()
         } else {

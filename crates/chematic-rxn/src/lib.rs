@@ -30,4 +30,4 @@ pub use query::{
 pub use reaction::{
     Reaction, ReactionCenter, RxnError, find_reaction_center, parse_reaction, write_reaction,
 };
-pub use transform::{TransformError, run_reactants};
+pub use transform::{TransformError, run_reactants, run_reactants_strict};
