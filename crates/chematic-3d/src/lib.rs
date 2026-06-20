@@ -159,9 +159,12 @@ pub fn generate_conformer_ensemble_with_config(
 
     let mut ensemble = ConformerEnsemble::new(mol);
     let use_pruning = config.rmsd_threshold > 0.0;
+    // For ensemble > 1, add ±30° torsion noise so each conformer samples a
+    // different region of conformational space (the DG itself is deterministic).
+    let noise_sigma = if config.count > 1 { 30.0_f64 } else { 0.0 };
 
     for _ in 0..config.count {
-        let coords = generate_coords(ensemble.mol());
+        let coords = etkdg::generate_coords_etkdg_with_noise(ensemble.mol(), noise_sigma);
         let minimized = minimize_dreiding(ensemble.mol(), coords);
 
         // Apply RMSD pruning if enabled
