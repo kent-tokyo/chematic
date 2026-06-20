@@ -1263,6 +1263,136 @@ pub fn ghose_passes(mol: &Molecule) -> bool {
 }
 
 // ---------------------------------------------------------------------------
+// Fragment / Lead-like filters
+// ---------------------------------------------------------------------------
+
+/// Rule of Three (Ro3) — fragment-based drug discovery filter (Congreve 2003).
+///
+/// Passes when MW ≤ 300, LogP ≤ 3, HBD ≤ 3, HBA ≤ 3, and RotBonds ≤ 3.
+/// Used to screen fragment libraries for FBDD campaigns.
+pub fn ro3_passes(mol: &Molecule) -> bool {
+    molecular_weight(mol) <= 300.0
+        && logp_crippen(mol) <= 3.0
+        && hbd_count(mol) <= 3
+        && hba_count(mol) <= 3
+        && rotatable_bond_count(mol) <= 3
+}
+
+/// Lead-like filter (Oprea 2001).
+///
+/// Passes when MW ≤ 450, LogP −3.5 to 4.5, RotBonds ≤ 10, and RingCount 1–4.
+/// Lead-like compounds have lower MW and LogP than typical drug candidates,
+/// leaving room for optimisation-related property increases.
+pub fn lead_like_passes(mol: &Molecule) -> bool {
+    let mw = molecular_weight(mol);
+    let lp = logp_crippen(mol);
+    let rotb = rotatable_bond_count(mol);
+    let rings = ring_count(mol);
+
+    mw <= 450.0 && (-3.5..=4.5).contains(&lp) && rotb <= 10 && (1..=4).contains(&rings)
+}
+
+/// Pfizer 3/75 filter (Leeson & Springthorpe 2007).
+///
+/// Returns `true` when the compound is NOT in the high-metabolic-liability zone,
+/// i.e. the combination `LogP > 3 AND TPSA < 75` is **absent**.
+/// Compounds in the "3/75" zone are more likely to be CYP3A4 substrates with
+/// high metabolic clearance.
+pub fn pfizer_3_75_passes(mol: &Molecule) -> bool {
+    !(logp_crippen(mol) > 3.0 && tpsa(mol) < 75.0)
+}
+
+// ---------------------------------------------------------------------------
+// CNS MPO Score
+// ---------------------------------------------------------------------------
+
+/// Central Nervous System Multi-Parameter Optimisation (CNS MPO) score (Wager 2010).
+///
+/// Combines six desirability functions, each returning 0–1, for a total of 0–6.
+/// Higher scores indicate better predicted CNS drug-like properties.
+///
+/// Component properties and desirability thresholds:
+/// - cLogP: 1.0 if ≤ 3; 0.0 if ≥ 5; linear between 3–5
+/// - cLogD (pH 7.4): 1.0 if ≤ 2; 0.0 if ≥ 4; linear between 2–4
+/// - MW: 1.0 if ≤ 360; 0.0 if ≥ 500; linear between 360–500
+/// - TPSA: 1.0 if 40–90; 0.0 if <0 or >120; linear in 0–40 and 90–120 shoulders
+/// - HBD: 1.0 if 0; 0.0 if ≥ 2; linear between 0–2
+/// - pKa (most basic site): 1.0 if ≤ 8; 0.0 if ≥ 10; linear between 8–10
+///
+/// Reference: Wager T.T. et al., ACS Chem. Neurosci. 2010, 1, 435–449.
+pub fn cns_mpo_score(mol: &Molecule) -> f64 {
+    #[inline]
+    fn linear_desirability(val: f64, lo: f64, hi: f64) -> f64 {
+        if val <= lo {
+            1.0
+        } else if val >= hi {
+            0.0
+        } else {
+            (hi - val) / (hi - lo)
+        }
+    }
+
+    // cLogP: optimal ≤ 3, zero ≥ 5
+    let d_logp = linear_desirability(logp_crippen(mol), 3.0, 5.0);
+
+    // cLogD pH 7.4: optimal ≤ 2, zero ≥ 4
+    let d_logd = linear_desirability(crate::logd::logd_simple(mol, 7.4), 2.0, 4.0);
+
+    // MW: optimal ≤ 360, zero ≥ 500
+    let d_mw = linear_desirability(molecular_weight(mol), 360.0, 500.0);
+
+    // TPSA: plateau 40–90, shoulders 0–40 and 90–120
+    let psa = tpsa(mol);
+    let d_tpsa = if !(0.0..=120.0).contains(&psa) {
+        0.0
+    } else if psa <= 40.0 {
+        psa / 40.0
+    } else if psa <= 90.0 {
+        1.0
+    } else {
+        (120.0 - psa) / 30.0
+    };
+
+    // HBD: optimal 0, zero ≥ 2
+    let hbd = hbd_count(mol) as f64;
+    let d_hbd = (1.0 - hbd / 2.0).clamp(0.0, 1.0);
+
+    // pKa (most basic): optimal ≤ 8, zero ≥ 10; None (no basic site) → pKa ≈ 0 → score 1.0
+    let pka_b = crate::pka::pka_base(mol).unwrap_or(0.0);
+    let d_pka = linear_desirability(pka_b, 8.0, 10.0);
+
+    d_logp + d_logd + d_mw + d_tpsa + d_hbd + d_pka
+}
+
+// ---------------------------------------------------------------------------
+// TPSA per-atom
+// ---------------------------------------------------------------------------
+
+/// Per-atom TPSA contributions (Ertl 2000).
+///
+/// Returns a `Vec<f64>` of length `mol.atom_count()` where index `i` holds the
+/// TPSA contribution of `AtomIdx(i as u32)`.  Atoms that contribute nothing
+/// (C, halogens, metals, …) have value `0.0`.  The sum equals `tpsa(mol)`.
+///
+/// Mirrors the pattern of [`logp_crippen_per_atom`].
+pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
+    let n = mol.atom_count();
+    let mut out = vec![0.0f64; n];
+    for (idx, atom) in mol.atoms() {
+        let an = atom.element.atomic_number();
+        let h = implicit_hcount(mol, idx);
+        out[idx.0 as usize] = match an {
+            7 => tpsa_nitrogen(mol, idx, atom.aromatic, h, atom.charge),
+            8 => tpsa_oxygen(mol, idx, atom.aromatic, h, atom.charge),
+            16 => tpsa_sulfur(mol, idx, atom.aromatic, h),
+            15 if !atom.aromatic => tpsa_phosphorus(mol, idx),
+            _ => 0.0,
+        };
+    }
+    out
+}
+
+// ---------------------------------------------------------------------------
 // MQN: Molecular Quantum Numbers (42 integer descriptors)
 // ---------------------------------------------------------------------------
 
@@ -3048,5 +3178,96 @@ mod tests {
             "CRIPPEN_SMARTS parse failures (index, pattern): {:?}",
             failed
         );
+    }
+
+    // ── Ro3 / Lead-like / Pfizer 3/75 / CNS MPO / TPSA per-atom ─────────────
+
+    #[test]
+    fn test_ro3_ethanol_passes() {
+        // ethanol: MW=46, LogP≈-0.3, HBD=1, HBA=1, RotBonds=0
+        assert!(ro3_passes(&mol("CCO")));
+    }
+
+    #[test]
+    fn test_ro3_lipinski_drug_fails() {
+        // aspirin (MW=180): just passes; ibuprofen (MW=206, LogP≈3.8): fails on LogP
+        assert!(!ro3_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
+    }
+
+    #[test]
+    fn test_lead_like_ibuprofen_passes() {
+        // ibuprofen: MW=206, LogP≈3.8, RotBonds=4, RingCount=1 — borderline but passes
+        assert!(lead_like_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
+    }
+
+    #[test]
+    fn test_lead_like_large_drug_fails() {
+        // MW > 450 should fail lead_like
+        let big = mol("CC(C)c1ccc(cc1)C(=O)NC2CCN(CC2)c3ncnc4c3ccc(c4)OC(F)(F)F");
+        assert!(!lead_like_passes(&big));
+    }
+
+    #[test]
+    fn test_pfizer_3_75_safe_compound_passes() {
+        // Aspirin: LogP≈1.2, TPSA≈63 → LogP ≤ 3 → passes (not in danger zone)
+        assert!(pfizer_3_75_passes(&mol("CC(=O)Oc1ccccc1C(=O)O")));
+    }
+
+    #[test]
+    fn test_pfizer_3_75_risky_compound_fails() {
+        // Ibuprofen: LogP≈3.8, TPSA≈37 → LogP > 3 AND TPSA < 75 → risky
+        assert!(!pfizer_3_75_passes(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")));
+    }
+
+    #[test]
+    fn test_cns_mpo_score_range() {
+        // All CNS MPO scores must be in [0, 6]
+        for smi in [
+            "c1ccccc1",
+            "CC(=O)Oc1ccccc1C(=O)O",
+            "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+            "c1ccc2[nH]cnc2c1",
+        ] {
+            let s = cns_mpo_score(&mol(smi));
+            assert!(
+                (0.0..=6.0).contains(&s),
+                "CNS MPO out of range for {smi}: {s}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_cns_mpo_small_cns_drug_high_score() {
+        // Caffeine: small, low LogP, moderate TPSA, low HBD → expect score ≥ 3
+        let s = cns_mpo_score(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C"));
+        assert!(s >= 3.0, "caffeine CNS MPO should be ≥ 3, got {s}");
+    }
+
+    #[test]
+    fn test_tpsa_per_atom_sum_equals_tpsa() {
+        for smi in [
+            "CC(=O)Oc1ccccc1C(=O)O",
+            "Cn1cnc2c1c(=O)n(c(=O)n2C)C",
+            "c1ccncc1",
+        ] {
+            let m = mol(smi);
+            let per_atom = tpsa_per_atom(&m);
+            assert_eq!(per_atom.len(), m.atom_count());
+            let sum: f64 = per_atom.iter().sum();
+            let direct = tpsa(&m);
+            assert!(
+                (sum - direct).abs() < 1e-9,
+                "tpsa_per_atom sum {sum} ≠ tpsa {direct} for {smi}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_tpsa_per_atom_carbon_contributes_zero() {
+        // In benzene all atoms are C — per-atom TPSA must all be 0.0
+        let benz = mol("c1ccccc1");
+        for v in tpsa_per_atom(&benz) {
+            assert_eq!(v, 0.0);
+        }
     }
 }

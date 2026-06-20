@@ -30,6 +30,7 @@ pub mod named_groups;
 pub mod pka;
 pub mod qed;
 pub mod recap;
+pub mod rgroup;
 pub mod sa_score;
 pub mod scaffold;
 pub mod standardize;
@@ -42,15 +43,16 @@ pub mod xlogp3;
 
 pub use cip::{CipAssignment, assign_cip, tetrahedral_stereo_neighbors};
 pub use descriptors::{
-    aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, egan_passes, exact_mass,
-    formal_charge_sum, fsp3, ghose_passes, hall_kier_alpha, hba_count, hbd_count, heavy_atom_count,
-    ipc, lipinski_passes, logp_crippen, logp_crippen_per_atom, mmff94_charges, molar_refractivity,
-    molecular_weight, mqn, mr_per_atom, num_aliphatic_heterocycles, num_aliphatic_rings,
-    num_amide_bonds, num_aromatic_heterocycles, num_bridgehead_atoms, num_bromines, num_carbons,
-    num_chlorines, num_ester_bonds, num_fluorines, num_heteroatoms, num_hydrogens, num_iodines,
-    num_nitrogens, num_oxygens, num_phosphorus, num_saturated_heterocycles, num_saturated_rings,
-    num_spiro_atoms, num_stereocenters, num_sulfurs, num_unspecified_stereocenters, reos_passes,
-    ring_count, rotatable_bond_count, tpsa, usrcat, veber_passes,
+    aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, cns_mpo_score, egan_passes,
+    exact_mass, formal_charge_sum, fsp3, ghose_passes, hall_kier_alpha, hba_count, hbd_count,
+    heavy_atom_count, ipc, lead_like_passes, lipinski_passes, logp_crippen, logp_crippen_per_atom,
+    mmff94_charges, molar_refractivity, molecular_weight, mqn, mr_per_atom,
+    num_aliphatic_heterocycles, num_aliphatic_rings, num_amide_bonds, num_aromatic_heterocycles,
+    num_bridgehead_atoms, num_bromines, num_carbons, num_chlorines, num_ester_bonds, num_fluorines,
+    num_heteroatoms, num_hydrogens, num_iodines, num_nitrogens, num_oxygens, num_phosphorus,
+    num_saturated_heterocycles, num_saturated_rings, num_spiro_atoms, num_stereocenters,
+    num_sulfurs, num_unspecified_stereocenters, pfizer_3_75_passes, reos_passes, ring_count,
+    ro3_passes, rotatable_bond_count, tpsa, tpsa_per_atom, usrcat, veber_passes,
 };
 pub use iupac_stereo::iupac_name_stereo;
 
@@ -80,6 +82,7 @@ pub use named_groups::{NamedGroup, detect_named_functional_groups};
 pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, predict_pka};
 pub use qed::qed;
 pub use recap::{recap_breakable_bond_count, recap_fragment};
+pub use rgroup::{RGroupError, RGroupResult, rgroup_decompose};
 pub use sa_score::sa_score;
 pub use scaffold::{
     ScaffoldNetwork, generic_murcko_scaffold, murcko_scaffold, scaffold_network,

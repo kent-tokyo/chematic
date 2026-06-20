@@ -474,6 +474,40 @@ impl Mol {
         chematic_chem::brenk_passes(&self.inner)
     }
 
+    /// True if Rule of Three criteria pass (fragment-based drug discovery, Congreve 2003).
+    ///
+    /// Passes when MW ≤ 300, LogP ≤ 3, HBD ≤ 3, HBA ≤ 3, RotBonds ≤ 3.
+    #[getter]
+    fn ro3_passes(&self) -> bool {
+        chematic_chem::ro3_passes(&self.inner)
+    }
+
+    /// True if lead-like criteria pass (Oprea 2001).
+    ///
+    /// Passes when MW ≤ 450, LogP −3.5–4.5, RotBonds ≤ 10, RingCount 1–4.
+    #[getter]
+    fn lead_like_passes(&self) -> bool {
+        chematic_chem::lead_like_passes(&self.inner)
+    }
+
+    /// True if compound is NOT in the Pfizer 3/75 high-metabolic-liability zone.
+    ///
+    /// The danger zone is ``LogP > 3 AND TPSA < 75``; compounds there have higher CYP3A4
+    /// metabolic clearance risk (Leeson & Springthorpe 2007).
+    #[getter]
+    fn pfizer_3_75_passes(&self) -> bool {
+        chematic_chem::pfizer_3_75_passes(&self.inner)
+    }
+
+    /// CNS Multi-Parameter Optimisation (MPO) score (Wager 2010), range 0–6.
+    ///
+    /// Combines desirability functions for cLogP, cLogD, MW, TPSA, HBD, and pKa.
+    /// Higher scores indicate better CNS drug-like properties.
+    #[getter]
+    fn cns_mpo_score(&self) -> f64 {
+        chematic_chem::cns_mpo_score(&self.inner)
+    }
+
     // -----------------------------------------------------------------------
     // pKa and ADMET
     // -----------------------------------------------------------------------
@@ -629,6 +663,10 @@ impl Mol {
         d.set_item("ghose_passes", chematic_chem::ghose_passes(m))?;
         d.set_item("reos_passes", chematic_chem::reos_passes(m))?;
         d.set_item("pains_passes", chematic_chem::pains_passes(m))?;
+        d.set_item("ro3_passes", chematic_chem::ro3_passes(m))?;
+        d.set_item("lead_like_passes", chematic_chem::lead_like_passes(m))?;
+        d.set_item("pfizer_3_75_passes", chematic_chem::pfizer_3_75_passes(m))?;
+        d.set_item("cns_mpo_score", chematic_chem::cns_mpo_score(m))?;
         d.set_item("bbb_score", chematic_chem::bbb_score(m))?;
         d.set_item("bbb_passes", chematic_chem::bbb_passes(m))?;
         d.set_item("caco2", chematic_chem::caco2_permeability(m))?;
@@ -760,6 +798,32 @@ impl Mol {
             opts.highlight_atoms.insert(AtomIdx(i as u32));
         }
         chematic_depict::depict_svg_opts(&self.inner, &opts)
+    }
+
+    /// 2D SVG depiction with atoms coloured by LogP contribution.
+    ///
+    /// Positive (lipophilic) atoms → blue, negative (hydrophilic) atoms → red,
+    /// zero-contribution atoms → white.  Uses :meth:`logp_per_atom` as weights.
+    fn logp_map_svg(&self) -> String {
+        let weights = chematic_chem::logp_crippen_per_atom(&self.inner);
+        chematic_depict::similarity_map_svg(&self.inner, &weights)
+    }
+
+    /// 2D SVG depiction with atoms coloured by TPSA contribution.
+    ///
+    /// Atoms contributing to TPSA (N, O, S, P) are coloured blue; zero-contribution
+    /// atoms (C, halogens, …) remain white.  Uses :meth:`tpsa_per_atom` as weights.
+    fn tpsa_map_svg(&self) -> String {
+        let weights = chematic_chem::tpsa_per_atom(&self.inner);
+        chematic_depict::similarity_map_svg(&self.inner, &weights)
+    }
+
+    /// 2D SVG depiction with atoms coloured by custom weights.
+    ///
+    /// ``weights``: list of floats, one per heavy atom (length = :attr:`heavy_atoms`).
+    /// Positive → blue, negative → red, zero → white.
+    fn similarity_map_svg(&self, weights: Vec<f64>) -> String {
+        chematic_depict::similarity_map_svg(&self.inner, &weights)
     }
 
     // -----------------------------------------------------------------------
@@ -1156,6 +1220,13 @@ impl Mol {
     /// Per-atom Crippen LogP contributions — one float per heavy atom, in atom order.
     fn logp_per_atom(&self) -> Vec<f64> {
         chematic_chem::logp_crippen_per_atom(&self.inner)
+    }
+
+    /// Per-atom TPSA contributions (Ertl 2000) — one float per heavy atom, in atom order.
+    ///
+    /// Only N, O, S, P atoms can have non-zero contributions. Sums to :attr:`tpsa`.
+    fn tpsa_per_atom(&self) -> Vec<f64> {
+        chematic_chem::tpsa_per_atom(&self.inner)
     }
 
     /// Isotopic distribution — list of ``(mass, relative_intensity)`` pairs.
@@ -3381,6 +3452,58 @@ fn find_mmp<'py>(smiles: Vec<String>, py: Python<'py>) -> PyResult<Vec<Bound<'py
         .collect()
 }
 
+/// R-group decomposition — split molecules into a scaffold core and variable R-groups.
+///
+/// ``scaffold_smarts``: SMARTS pattern defining the common scaffold.
+/// ``mols``: list of :class:`Mol` objects to decompose.
+///
+/// Returns a list of dicts (one per input molecule), or ``None`` when the scaffold
+/// does not match a particular molecule.  Each dict contains:
+///   ``mol_idx``   (int)  — index in the input list,
+///   ``core``      (str)  — scaffold SMILES with ``[*]`` at attachment points,
+///   ``R1``, ``R2``, … (str) — SMILES for each R-group (``[*]`` marks attachment).
+///
+///     mols = [chematic.from_smiles(s) for s in ["CCc1ccccc1", "CCCc1ccccc1"]]
+///     results = chematic.rgroup_decompose("c1ccccc1", mols)
+///     # [{"mol_idx": 0, "core": "...", "R1": "[*]CC"}, ...]
+#[pyfunction]
+fn rgroup_decompose<'py>(
+    scaffold_smarts: &str,
+    mols: Vec<Mol>,
+    py: Python<'py>,
+) -> PyResult<Vec<Option<Bound<'py, PyDict>>>> {
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+    let results = chematic_chem::rgroup_decompose(scaffold_smarts, &refs)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    results
+        .into_iter()
+        .map(|opt| match opt {
+            None => Ok(None),
+            Some(r) => {
+                let d = PyDict::new(py);
+                d.set_item("mol_idx", r.mol_idx)?;
+                d.set_item("core", &r.core_smiles)?;
+                for (k, v) in &r.r_groups {
+                    d.set_item(format!("R{k}"), v)?;
+                }
+                Ok(Some(d))
+            }
+        })
+        .collect()
+}
+
+/// Render a molecule SVG with atoms coloured by a weight vector.
+///
+/// ``mol``: :class:`Mol` to render.
+/// ``weights``: list of floats, one per heavy atom.  Positive → blue, negative → red, zero → white.
+///
+///     weights = mol.logp_per_atom()
+///     svg = chematic.similarity_map_svg(mol, weights)
+#[pyfunction]
+fn similarity_map_svg(mol: &Mol, weights: Vec<f64>) -> String {
+    chematic_depict::similarity_map_svg(&mol.inner, &weights)
+}
+
 /// Identify the reaction center: bonds broken/formed and atoms changed.
 ///
 /// Returns a dict with keys:
@@ -4488,6 +4611,8 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(screen_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(compare_molecules, m)?)?;
     m.add_function(wrap_pyfunction!(find_mmp, m)?)?;
+    m.add_function(wrap_pyfunction!(rgroup_decompose, m)?)?;
+    m.add_function(wrap_pyfunction!(similarity_map_svg, m)?)?;
     m.add_function(wrap_pyfunction!(find_reaction_center, m)?)?;
     m.add_function(wrap_pyfunction!(mol_hash, m)?)?;
     m.add_function(wrap_pyfunction!(are_identical, m)?)?;

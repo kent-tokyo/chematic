@@ -7,6 +7,7 @@
 pub mod grid;
 pub mod layout;
 pub mod png;
+pub mod similarity_map;
 pub mod svg;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule};
@@ -24,6 +25,8 @@ pub use svg::{
 };
 
 pub mod reaction_svg;
+
+pub use similarity_map::{similarity_map_svg, similarity_map_svg_opts};
 
 // ---------------------------------------------------------------------------
 // DepictData — structured drawing data for egui/canvas renderers

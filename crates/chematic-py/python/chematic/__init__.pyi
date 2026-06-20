@@ -366,6 +366,51 @@ class Mol:
         """True if no Brenk structural alerts are present."""
         ...
 
+    def ro3_passes(self) -> bool:
+        """True if Rule of Three criteria pass (Congreve 2003).
+
+        MW ≤ 300, LogP ≤ 3, HBD ≤ 3, HBA ≤ 3, RotBonds ≤ 3.
+        Used for fragment-based drug discovery (FBDD) library screening.
+        """
+        ...
+
+    def lead_like_passes(self) -> bool:
+        """True if lead-like criteria pass (Oprea 2001).
+
+        MW ≤ 450, LogP −3.5–4.5, RotBonds ≤ 10, RingCount 1–4.
+        Lead-like compounds have lower MW/LogP than drugs, leaving room
+        for optimisation-related property increases.
+        """
+        ...
+
+    def pfizer_3_75_passes(self) -> bool:
+        """True if compound is NOT in the Pfizer 3/75 high-metabolic-liability zone.
+
+        The danger zone is ``LogP > 3 AND TPSA < 75``; compounds there have
+        higher CYP3A4 metabolic clearance risk (Leeson & Springthorpe 2007).
+        Returns ``True`` = safe (not in danger zone).
+
+        Example::
+
+            ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(cc1)C(C)C(=O)O")
+            ibuprofen.pfizer_3_75_passes  # False (LogP≈3.8, TPSA≈37)
+        """
+        ...
+
+    def cns_mpo_score(self) -> float:
+        """CNS Multi-Parameter Optimisation (MPO) score (Wager 2010), range 0–6.
+
+        Combines desirability functions for cLogP, cLogD (pH 7.4), MW, TPSA,
+        HBD, and pKa (most basic site). Higher scores indicate better CNS
+        drug-like properties. Scores ≥ 4 are generally considered CNS-appropriate.
+
+        Example::
+
+            mol = chematic.from_smiles("Cn1cnc2c1c(=O)n(c(=O)n2C)C")  # caffeine
+            mol.cns_mpo_score  # ≥ 3.0 (small, low HBD)
+        """
+        ...
+
     # -- pKa and ADMET -------------------------------------------------------
 
     def pka(self) -> dict[str, Optional[float]]:
@@ -658,6 +703,57 @@ class Mol:
 
     def logp_per_atom(self) -> list[float]:
         """Per-atom Crippen LogP contributions — one float per heavy atom, in atom order."""
+        ...
+
+    def tpsa_per_atom(self) -> list[float]:
+        """Per-atom TPSA contributions (Ertl 2000) — one float per heavy atom, in atom order.
+
+        Only N, O, S, P atoms have non-zero contributions. ``sum(mol.tpsa_per_atom()) == mol.tpsa``.
+
+        Example::
+
+            aspirin = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+            ta = aspirin.tpsa_per_atom()
+            assert len(ta) == aspirin.heavy_atoms
+        """
+        ...
+
+    def logp_map_svg(self) -> str:
+        """2D SVG with atoms coloured by their Crippen LogP contribution.
+
+        Positive (lipophilic) atoms → blue; negative (hydrophilic) atoms → red;
+        zero-contribution atoms → white (no tint).
+
+        Example::
+
+            svg = mol.logp_map_svg()
+            with open("logp_map.svg", "w") as f:
+                f.write(svg)
+        """
+        ...
+
+    def tpsa_map_svg(self) -> str:
+        """2D SVG with atoms coloured by their TPSA contribution.
+
+        TPSA-contributing atoms (N, O, S, P) → blue; carbon and halogens → white.
+
+        Example::
+
+            svg = mol.tpsa_map_svg()
+        """
+        ...
+
+    def similarity_map_svg(self, weights: list[float]) -> str:
+        """2D SVG with atoms coloured by custom per-atom weights.
+
+        ``weights``: one float per heavy atom. Positive → blue, negative → red, zero → white.
+        Weights are normalised to the maximum absolute value before colour mapping.
+
+        Example::
+
+            weights = mol.logp_per_atom()
+            svg = mol.similarity_map_svg(weights)
+        """
         ...
 
     def isotope_distribution(self) -> list[tuple[float, float]]:
@@ -2258,6 +2354,49 @@ def reaction_svg(reaction_smiles: str) -> str:
     Example::
 
         svg = chematic.reaction_svg("CC(=O)Cl.[NH3]>>CC(=O)N.HCl")
+    """
+    ...
+
+def rgroup_decompose(
+    scaffold_smarts: str, mols: list[Mol]
+) -> list[dict[str, object] | None]:
+    """R-group decomposition — split molecules into a scaffold core and R-group substituents.
+
+    ``scaffold_smarts``: SMARTS pattern defining the common scaffold.
+    ``mols``: list of :class:`Mol` objects to decompose.
+
+    Returns a list parallel to ``mols``.  Each element is either:
+    - A dict with keys ``mol_idx`` (int), ``core`` (str, scaffold SMILES with ``[*]``
+      at attachment points), and ``R1``, ``R2``, … (str, R-group SMILES).
+    - ``None`` if the scaffold did not match that molecule.
+
+    R-group numbering is 1-based and determined by ascending core-atom index.
+
+    Raises:
+        ValueError: if ``scaffold_smarts`` is an invalid SMARTS pattern.
+
+    Example::
+
+        mols = [chematic.from_smiles(s) for s in ["CCc1ccccc1", "CCCc1ccccc1", "Nc1ccccc1"]]
+        results = chematic.rgroup_decompose("c1ccccc1", mols)
+        for r in results:
+            if r is not None:
+                print(r["R1"])  # e.g. "[*]CC", "[*]CCC", "[*]N"
+    """
+    ...
+
+def similarity_map_svg(mol: Mol, weights: list[float]) -> str:
+    """Render a molecule SVG with atoms coloured by per-atom weights.
+
+    ``mol``: molecule to render.
+    ``weights``: list of floats, one per heavy atom.
+    Positive → blue tint, negative → red tint, zero → white (no tint).
+    Weights are normalised to the maximum absolute value before colour mapping.
+
+    Example::
+
+        weights = mol.logp_per_atom()
+        svg = chematic.similarity_map_svg(mol, weights)
     """
     ...
 
