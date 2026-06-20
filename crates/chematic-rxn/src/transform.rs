@@ -265,11 +265,44 @@ fn build_product(
                     new_atom.hydrogen_count = tmpl_atom.hydrogen_count;
                 }
                 // Apply product-template chirality when explicitly specified (@/@@).
-                // When the template has Chirality::None, the source chirality is
-                // preserved (inherited from the clone above) — this is the common
-                // case for reactions that don't change the stereocentre.
+                // When the template has Chirality::None:
+                //   • If the non-mapped substituents written into the product template
+                //     have a DIFFERENT element composition from what the reactant
+                //     template matched (substituent replacement, e.g. Br→I), the
+                //     neighbour topology changes and the source stereo is invalid.
+                //   • If the substituent element sets are identical (pass-through,
+                //     e.g. [C:1](F)(Cl)Br >> [C:1](F)(Cl)Br)) preserve the source
+                //     chirality — the common case for remote-reaction SMIRKS.
                 if tmpl_atom.chirality != Chirality::None {
                     new_atom.chirality = tmpl_atom.chirality;
+                } else {
+                    // Element multiset of non-mapped atoms in the product template
+                    // adjacent to this core atom.
+                    let mut prod_elems: HashMap<u8, usize> = HashMap::new();
+                    for (nb, _) in product_template.neighbors(AtomIdx(i as u32)) {
+                        if product_template.atom(nb).atom_map.is_none() {
+                            *prod_elems
+                                .entry(product_template.atom(nb).element.atomic_number())
+                                .or_insert(0) += 1;
+                        }
+                    }
+                    if !prod_elems.is_empty() {
+                        // Element multiset of this core atom's neighbours that were
+                        // matched by the reactant template (heavy atoms only).
+                        let mut rxn_elems: HashMap<u8, usize> = HashMap::new();
+                        for (nb, _) in input_mols[mol_idx].neighbors(src_idx) {
+                            if all_template_atoms.contains(&(mol_idx, nb)) {
+                                *rxn_elems
+                                    .entry(
+                                        input_mols[mol_idx].atom(nb).element.atomic_number(),
+                                    )
+                                    .or_insert(0) += 1;
+                            }
+                        }
+                        if prod_elems != rxn_elems {
+                            new_atom.chirality = Chirality::None;
+                        }
+                    }
                 }
                 new_atom.atom_map = None;
                 let idx = builder.add_atom(new_atom);

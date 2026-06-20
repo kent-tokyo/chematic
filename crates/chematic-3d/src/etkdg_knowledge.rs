@@ -406,9 +406,12 @@ pub fn get_torsion_preference(
     // Heteroaromatic biaryl: NAromatic–CAromatic or CAromatic–NAromatic
     // (e.g. phenyl-pyridine, bipyridine, pyrimidine-phenyl).
     // ~45° twist like biphenyl; very soft potential.
+    // NAromatic–NAromatic is intentionally excluded: adjacent aromatic nitrogens
+    // occur as intra-ring bonds (pyrimidine, pyridazine) whose torsion is already
+    // constrained by ring closure; applying a 45° soft preference there conflicts
+    // with satisfy_constraints and can distort ring geometry.
     if (b_type == AtomType::NAromatic && c_type == AtomType::CAromatic)
         || (b_type == AtomType::CAromatic && c_type == AtomType::NAromatic)
-        || (b_type == AtomType::NAromatic && c_type == AtomType::NAromatic)
     {
         return Some(TorsionPreference {
             angle_deg: 45.0,
@@ -471,7 +474,11 @@ pub fn get_torsion_preference(
 
     // Aryl amine Ar–NR2 (aniline-like, single bond to sp3 N): prefer planar (0°)
     // for lone-pair conjugation with ring, slightly softer than aryl amide.
-    if b_type == AtomType::CAromatic && c_type == AtomType::NSp3 {
+    // Both traversal directions are covered so the rule fires regardless of
+    // which end of the Ar–N bond is atom B vs C.
+    if (b_type == AtomType::CAromatic && c_type == AtomType::NSp3)
+        || (b_type == AtomType::NSp3 && c_type == AtomType::CAromatic)
+    {
         return Some(TorsionPreference {
             angle_deg: 0.0,
             penalty_per_degree: 0.07,

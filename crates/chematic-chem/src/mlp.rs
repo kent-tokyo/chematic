@@ -37,6 +37,14 @@ use chematic_fp::ecfp4;
 // Embedded trained weights (compile-time include)
 // ---------------------------------------------------------------------------
 
+// Reject big-endian compilation immediately: the binary weight files are
+// written in little-endian byte order and there is no runtime endian-swap.
+#[cfg(all(feature = "trained-solubility-mlp", not(target_endian = "little")))]
+compile_error!(
+    "trained-solubility-mlp uses little-endian binary weight files; \
+     big-endian compilation targets are not supported"
+);
+
 /// `true` when trained weight files are embedded.
 pub const MLP_SOLUBILITY_TRAINED: bool = cfg!(feature = "trained-solubility-mlp");
 
@@ -46,6 +54,12 @@ pub const MLP_SOLUBILITY_TRAINED: bool = cfg!(feature = "trained-solubility-mlp"
 const W1_BYTES: &[u8] = include_bytes!("../../../../data/mlp_w1.bin");
 #[cfg(feature = "trained-solubility-mlp")]
 const B1_BYTES: &[u8] = include_bytes!("../../../../data/mlp_b1.bin");
+
+// Cache parsed weights so that repeated calls to `mlp_solubility` (e.g. in a
+// virtual-screening loop over 100 k molecules) pay the ~8 KB deserialization
+// cost only once rather than on every invocation.
+#[cfg(feature = "trained-solubility-mlp")]
+static WEIGHTS: std::sync::OnceLock<(Vec<f32>, Vec<f32>)> = std::sync::OnceLock::new();
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -66,8 +80,8 @@ pub fn mlp_solubility(mol: &Molecule) -> f64 {
     #[cfg(feature = "trained-solubility-mlp")]
     {
         let fp = ecfp4(mol);
-        let w = f32_from_bytes(W1_BYTES);
-        let b = f32_from_bytes(B1_BYTES);
+        let (w, b) = WEIGHTS
+            .get_or_init(|| (f32_from_bytes(W1_BYTES), f32_from_bytes(B1_BYTES)));
 
         if w.len() != 2048 || b.is_empty() {
             return crate::esol::esol_solubility(mol);
@@ -91,7 +105,10 @@ pub fn mlp_solubility(mol: &Molecule) -> f64 {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Interpret a `&[u8]` byte slice as a `&[f32]` (little-endian, native alignment).
+/// Interpret a `&[u8]` byte slice as little-endian `f32` values.
+///
+/// Callers on big-endian targets are rejected at compile time via the
+/// `compile_error!` above the feature guard.
 #[cfg(feature = "trained-solubility-mlp")]
 fn f32_from_bytes(bytes: &[u8]) -> Vec<f32> {
     bytes

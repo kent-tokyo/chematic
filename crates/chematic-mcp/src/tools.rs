@@ -8,7 +8,8 @@ use chematic_3d::{generate_and_minimize_dreiding, write_xyz};
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
 use chematic_fp::{BitVec2048, ecfp4, tanimoto_ecfp4};
 use chematic_smarts::{
-    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, find_matches, find_mcs, parse_smarts,
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, McsConfig, find_matches, find_mcs,
+    find_mcs_with_config, parse_smarts,
 };
 use serde_json::{Value, json};
 
@@ -256,8 +257,9 @@ pub fn list_tools() -> Value {
                     "smiles_list": {
                         "type": "array",
                         "items": { "type": "string" },
-                        "description": "List of SMILES strings (minimum 2 molecules required)",
-                        "minItems": 2
+                        "description": "List of SMILES strings (2–20 molecules)",
+                        "minItems": 2,
+                        "maxItems": 20
                     }
                 },
                 "required": ["smiles_list"]
@@ -478,6 +480,9 @@ fn tool_find_mcs(args: &Value) -> Result<Value, String> {
     if smiles_list.len() < 2 {
         return Err("find_mcs requires at least 2 molecules".to_string());
     }
+    if smiles_list.len() > 20 {
+        return Err("find_mcs accepts at most 20 molecules".to_string());
+    }
     let mols: Result<Vec<_>, _> = smiles_list
         .iter()
         .map(|v| {
@@ -487,8 +492,17 @@ fn tool_find_mcs(args: &Value) -> Result<Value, String> {
         })
         .collect();
     let mols = mols?;
+    for mol in &mols {
+        if mol.atom_count() > 200 {
+            return Err("find_mcs: molecule exceeds 200-atom limit".to_string());
+        }
+    }
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
-    let qmol = find_mcs(&mol_refs);
+    let config = McsConfig {
+        timeout_ms: Some(5_000),
+        ..McsConfig::default()
+    };
+    let qmol = find_mcs_with_config(&mol_refs, &config);
     if qmol.atoms.is_empty() {
         return Ok(content(
             &json!({ "mcs": null, "atom_count": 0, "bond_count": 0 }),
@@ -616,24 +630,29 @@ fn tool_lipinski_check(args: &Value) -> Result<Value, String> {
 
 fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
     let name = get_str(args, "name")?;
+    if name.len() > 500 {
+        return Err("compound name too long (max 500 characters)".to_string());
+    }
     // Percent-encode the name for the URL path segment.
-    let encoded: String = name
-        .chars()
-        .flat_map(|c| {
-            if c.is_ascii_alphanumeric() || "-_.~".contains(c) {
-                vec![c]
-            } else if c == ' ' {
-                vec!['%', '2', '0']
-            } else {
-                let b = c as u8;
-                vec![
-                    '%',
-                    char::from_digit((b >> 4) as u32, 16).unwrap_or('0'),
-                    char::from_digit((b & 0xf) as u32, 16).unwrap_or('0'),
-                ]
+    // Iterate over UTF-8 bytes of each char so that multi-byte code points
+    // (e.g. accented letters, CJK) are encoded correctly as %XX%XX sequences
+    // rather than truncated to their low byte via `c as u8`.
+    let mut encoded = String::with_capacity(name.len() * 3);
+    let mut buf = [0u8; 4];
+    for c in name.chars() {
+        if c.is_ascii_alphanumeric() || "-_.~".contains(c) {
+            encoded.push(c);
+        } else if c == ' ' {
+            encoded.push_str("%20");
+        } else {
+            for &byte in c.encode_utf8(&mut buf).as_bytes() {
+                encoded.push('%');
+                encoded.push(char::from_digit((byte >> 4) as u32, 16).unwrap_or('0'));
+                encoded.push(char::from_digit((byte & 0xf) as u32, 16).unwrap_or('0'));
             }
-        })
-        .collect();
+        }
+    }
+    let encoded = encoded;
 
     let url = format!(
         "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{}/property/IsomericSMILES/JSON",

@@ -4664,6 +4664,13 @@ fn depict_grid(mols: Vec<Mol>, cols: usize) -> String {
 ///     # → [[product_mol], ...]
 #[pyfunction]
 fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
+    for mol in &reactants {
+        if mol.inner.atom_count() > 300 {
+            return Err(PyValueError::new_err(
+                "reactant too large for run_smirks (max 300 heavy atoms)",
+            ));
+        }
+    }
     let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
     chematic_rxn::run_reactants(smirks, &refs)
         .map(|sets| {
@@ -4687,6 +4694,13 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
 ///     # → only the mapped N and C atoms; no R-groups attached
 #[pyfunction]
 fn run_smirks_strict(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
+    for mol in &reactants {
+        if mol.inner.atom_count() > 300 {
+            return Err(PyValueError::new_err(
+                "reactant too large for run_smirks_strict (max 300 heavy atoms)",
+            ));
+        }
+    }
     let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
     chematic_rxn::run_reactants_strict(smirks, &refs)
         .map(|sets| {
