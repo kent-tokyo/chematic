@@ -2,6 +2,8 @@
 
 #![forbid(unsafe_code)]
 
+use std::collections::{HashMap, HashSet, VecDeque};
+
 use chematic_3d::{generate_and_minimize_dreiding, write_xyz};
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
 use chematic_fp::{BitVec2048, ecfp4, tanimoto_ecfp4};
@@ -11,9 +13,9 @@ use chematic_smarts::{
 use serde_json::{Value, json};
 
 use chematic_chem::{
-    admet_profile, boiled_egg, brenk_matches, brenk_passes, exact_mass, hba_count, hbd_count,
-    heavy_atom_count, lipinski_passes, logp_crippen, molecular_weight, pains_matches, pains_passes,
-    qed, rotatable_bond_count, sa_score, tpsa,
+    admet_profile, boiled_egg, brenk_matches, brenk_passes, brics_bonds, exact_mass, hba_count,
+    hbd_count, heavy_atom_count, lipinski_passes, logp_crippen, molecular_weight, pains_matches,
+    pains_passes, qed, rotatable_bond_count, sa_score, tpsa,
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -82,6 +84,95 @@ fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Mol
         }
     }
     builder.build()
+}
+
+// ── retrosynthesis helpers ────────────────────────────────────────────────────
+
+/// BFS from `start`, skipping the directed edge (`excl_a` → `excl_b`) in both
+/// directions.  Returns the set of atoms reachable without crossing that bond.
+fn atoms_reachable_excl_bond(
+    mol: &chematic_core::Molecule,
+    start: AtomIdx,
+    excl_a: AtomIdx,
+    excl_b: AtomIdx,
+) -> HashSet<AtomIdx> {
+    let mut visited: HashSet<AtomIdx> = HashSet::new();
+    let mut queue: VecDeque<AtomIdx> = VecDeque::new();
+    queue.push_back(start);
+    visited.insert(start);
+    while let Some(curr) = queue.pop_front() {
+        for (nb, _) in mol.neighbors(curr) {
+            if (curr == excl_a && nb == excl_b) || (curr == excl_b && nb == excl_a) {
+                continue;
+            }
+            if visited.insert(nb) {
+                queue.push_back(nb);
+            }
+        }
+    }
+    visited
+}
+
+/// Build a sub-molecule from a subset of atoms, preserving all internal bonds.
+/// `hydrogen_count` is cleared so implicit Hs are re-derived from standard valence.
+fn build_submol(
+    mol: &chematic_core::Molecule,
+    atom_set: &HashSet<AtomIdx>,
+) -> chematic_core::Molecule {
+    let mut builder = MoleculeBuilder::new();
+    let mut old_to_new: HashMap<AtomIdx, AtomIdx> = HashMap::new();
+
+    let mut sorted: Vec<AtomIdx> = atom_set.iter().cloned().collect();
+    sorted.sort();
+
+    for &old_idx in &sorted {
+        let mut atom = mol.atom(old_idx).clone();
+        // Reset explicit H count so the SMILES writer infers Hs from valence;
+        // otherwise the cut atom would retain a stale bracket-H count.
+        atom.hydrogen_count = None;
+        atom.cip_code = None; // stereo may be invalid after the bond is removed
+        let new_idx = builder.add_atom(atom);
+        old_to_new.insert(old_idx, new_idx);
+    }
+
+    for &old_a in &sorted {
+        for (old_b, bidx) in mol.neighbors(old_a) {
+            if old_a < old_b && atom_set.contains(&old_b) {
+                let bond = mol.bond(bidx);
+                let new_a = old_to_new[&old_a];
+                let new_b = old_to_new[&old_b];
+                let _ = builder.add_bond(new_a, new_b, bond.order);
+            }
+        }
+    }
+
+    builder.build()
+}
+
+/// Return the number of connected components in `mol`.
+fn component_count(mol: &chematic_core::Molecule) -> usize {
+    if mol.atom_count() == 0 {
+        return 0;
+    }
+    let mut visited: HashSet<AtomIdx> = HashSet::new();
+    let mut count = 0;
+    for (start, _) in mol.atoms() {
+        if visited.contains(&start) {
+            continue;
+        }
+        count += 1;
+        let mut queue: VecDeque<AtomIdx> = VecDeque::new();
+        queue.push_back(start);
+        visited.insert(start);
+        while let Some(curr) = queue.pop_front() {
+            for (nb, _) in mol.neighbors(curr) {
+                if visited.insert(nb) {
+                    queue.push_back(nb);
+                }
+            }
+        }
+    }
+    count
 }
 
 // ── tool list schema ──────────────────────────────────────────────────────────
@@ -259,6 +350,17 @@ pub fn list_tools() -> Value {
                 },
                 "required": ["name"]
             }
+        },
+        {
+            "name": "retrosynthesis",
+            "description": "One-step retrosynthetic disconnection via BRICS (Breaking of Retrosynthetically Interesting Chemical Substructures, Dien 2008). Identifies all BRICS-breakable bonds, cuts each one individually, and returns the resulting fragment pairs ranked by their maximum SA Score (1=easy to synthesize, 10=hard). Lower max-SA means both building blocks are easier to make. Useful for identifying practical synthetic disconnections for drug-like molecules.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string of the target molecule" }
+                },
+                "required": ["smiles"]
+            }
         }
     ]})
 }
@@ -282,6 +384,7 @@ pub fn call_tool(name: &str, args: &Value) -> Result<Value, String> {
         "boiled_egg" => tool_boiled_egg(args),
         "lipinski_check" => tool_lipinski_check(args),
         "name_to_smiles" => tool_name_to_smiles(args),
+        "retrosynthesis" => tool_retrosynthesis(args),
         _ => Err(format!("Unknown tool: {name}")),
     }
 }
@@ -558,6 +661,85 @@ fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
     })))
 }
 
+fn tool_retrosynthesis(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let mol = parse_mol(smiles)?;
+
+    // Guard against DoS from very large molecules: BRICS runs find_sssr (O(V³))
+    // and per-bond BFS (O(V)) for each breakable bond.
+    if mol.atom_count() > 500 {
+        return Err(format!(
+            "molecule too large for retrosynthesis ({} atoms; maximum is 500)",
+            mol.atom_count()
+        ));
+    }
+
+    if component_count(&mol) > 1 {
+        return Err(
+            "retrosynthesis requires a single connected molecule; \
+             input appears to be a mixture or salt"
+                .to_string(),
+        );
+    }
+
+    let target_sa = round3(sa_score(&mol));
+    let target_canon = chematic_smiles::canonical_smiles(&mol);
+    let bonds = brics_bonds(&mol);
+
+    if bonds.is_empty() {
+        return Ok(content(&json!({
+            "target": target_canon,
+            "target_sa_score": target_sa,
+            "disconnections": [],
+            "total_brics_bonds": 0,
+            "note": "No BRICS-breakable bonds found. Molecule may already be a simple building block."
+        })));
+    }
+
+    let mut disconnections: Vec<Value> = Vec::new();
+
+    for (a_idx, b_idx) in &bonds {
+        let atoms_a = atoms_reachable_excl_bond(&mol, *a_idx, *a_idx, *b_idx);
+        let atoms_b = atoms_reachable_excl_bond(&mol, *b_idx, *a_idx, *b_idx);
+
+        if atoms_a.len() + atoms_b.len() != mol.atom_count() {
+            continue; // defensive: skip if the split doesn't partition cleanly
+        }
+
+        let frag_a = build_submol(&mol, &atoms_a);
+        let frag_b = build_submol(&mol, &atoms_b);
+
+        let smiles_a = chematic_smiles::canonical_smiles(&frag_a);
+        let smiles_b = chematic_smiles::canonical_smiles(&frag_b);
+        let sa_a = round3(sa_score(&frag_a));
+        let sa_b = round3(sa_score(&frag_b));
+        let max_sa = if sa_a > sa_b { sa_a } else { sa_b };
+
+        disconnections.push(json!({
+            "fragments": [smiles_a, smiles_b],
+            "fragment_sa_scores": [sa_a, sa_b],
+            "max_fragment_sa": round3(max_sa)
+        }));
+    }
+
+    // Rank by max SA score ascending (easiest disconnections first).
+    disconnections.sort_by(|a, b| {
+        a["max_fragment_sa"]
+            .as_f64()
+            .unwrap_or(10.0)
+            .partial_cmp(&b["max_fragment_sa"].as_f64().unwrap_or(10.0))
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    Ok(content(&json!({
+        "target": target_canon,
+        "target_sa_score": target_sa,
+        "disconnections": disconnections,
+        "total_brics_bonds": bonds.len(),
+        "note": "Disconnections ranked by max SA score of fragments (1=easy, 10=hard). Lower = both building blocks easier to synthesize."
+    })))
+}
+
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -695,7 +877,57 @@ mod tests {
     fn test_list_tools_count() {
         let tools = list_tools();
         let count = tools["tools"].as_array().unwrap().len();
-        assert_eq!(count, 15);
+        assert_eq!(count, 16);
+    }
+
+    #[test]
+    fn test_retrosynthesis_aspirin() {
+        // Aspirin has 2 BRICS-breakable bonds (ester C-O, aryl C-O)
+        let result =
+            tool_retrosynthesis(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert!(
+            v["total_brics_bonds"].as_u64().unwrap() >= 1,
+            "aspirin should have ≥1 BRICS bond"
+        );
+        let discos = v["disconnections"].as_array().unwrap();
+        assert!(!discos.is_empty(), "should have at least one disconnection");
+        // First disconnection should have 2 fragments
+        assert_eq!(
+            discos[0]["fragments"].as_array().unwrap().len(),
+            2,
+            "each disconnection yields exactly 2 fragments"
+        );
+        // max_fragment_sa should be a reasonable number
+        let max_sa = discos[0]["max_fragment_sa"].as_f64().unwrap();
+        assert!(
+            (1.0..=10.0).contains(&max_sa),
+            "SA score out of range: {max_sa}"
+        );
+        // Disconnections should be sorted ascending by max_fragment_sa
+        if discos.len() >= 2 {
+            let sa0 = discos[0]["max_fragment_sa"].as_f64().unwrap();
+            let sa1 = discos[1]["max_fragment_sa"].as_f64().unwrap();
+            assert!(sa0 <= sa1, "disconnections not sorted: {sa0} > {sa1}");
+        }
+    }
+
+    #[test]
+    fn test_retrosynthesis_benzene_no_bonds() {
+        // Benzene has no BRICS-breakable bonds
+        let result = tool_retrosynthesis(&args(&[("smiles", "c1ccccc1")])).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(v["total_brics_bonds"], 0);
+        assert_eq!(v["disconnections"].as_array().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_retrosynthesis_disconnected_mol_error() {
+        // Mixture (salt): should return error
+        let result = tool_retrosynthesis(&args(&[("smiles", "CC.OO")]));
+        assert!(result.is_err(), "disconnected molecule should return error");
     }
 
     #[test]
