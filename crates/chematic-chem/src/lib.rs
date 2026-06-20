@@ -18,6 +18,7 @@ pub mod descriptors;
 pub mod diversity;
 pub mod esol;
 pub mod estate;
+pub mod formula;
 pub mod gasteiger;
 pub mod hash;
 pub mod hydrogen;
@@ -45,9 +46,10 @@ pub mod xlogp3;
 pub use cip::{CipAssignment, assign_cip, tetrahedral_stereo_neighbors};
 pub use descriptors::{
     aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, cns_mpo_score, egan_passes,
-    exact_mass, formal_charge_sum, fsp3, ghose_passes, hall_kier_alpha, hba_count, hbd_count,
-    heavy_atom_count, ipc, lead_like_passes, lipinski_passes, logp_crippen, logp_crippen_per_atom,
-    mcf_passes, mmff94_charges, molar_refractivity, molecular_weight, mqn, mr_per_atom,
+    exact_mass, formal_charge_per_atom, formal_charge_sum, fsp3, ghose_passes, hall_kier_alpha,
+    hba_count, hbd_count, heavy_atom_count, hybridization_per_atom, implicit_hcount_per_atom, ipc,
+    lead_like_passes, lipinski_passes, logp_crippen, logp_crippen_per_atom, mcf_passes,
+    mmff94_charges, molar_refractivity, molecular_weight, mqn, mr_per_atom,
     num_aliphatic_heterocycles, num_aliphatic_rings, num_amide_bonds, num_aromatic_heterocycles,
     num_bridgehead_atoms, num_bromines, num_carbons, num_chlorines, num_ester_bonds, num_fluorines,
     num_heteroatoms, num_hydrogens, num_iodines, num_nitrogens, num_oxygens, num_phosphorus,
@@ -72,6 +74,7 @@ pub use condensed::{CondensedError, parse_condensed};
 pub use diversity::{butina_cluster, maxmin_picks};
 pub use esol::esol_solubility;
 pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
+pub use formula::{FormulaParseError, parse_formula};
 pub use gasteiger::gasteiger_charges;
 pub use hash::{are_identical, mol_hash};
 pub use hydrogen::{add_hydrogens, remove_hydrogens};

@@ -1244,6 +1244,35 @@ impl Mol {
         chematic_chem::tpsa_per_atom(&self.inner)
     }
 
+    /// Per-atom hybridization state: 1 = sp, 2 = sp2, 3 = sp3, 0 = other.
+    ///
+    /// Aromatic atoms → 2, triple-bond atoms → 1, double-bond atoms → 2, otherwise 3.
+    /// Useful for scaffold modification (PromptSMILES-style) and atom featurization.
+    ///
+    ///     mol = chematic.from_smiles("CC=O")
+    ///     mol.hybridization_per_atom()  # [3, 2, 2] (CH3=sp3, C=sp2, O=sp2)
+    fn hybridization_per_atom(&self) -> Vec<u8> {
+        chematic_chem::hybridization_per_atom(&self.inner)
+    }
+
+    /// Per-atom formal charge — one ``int`` per heavy atom.
+    ///
+    /// All values are 0 for neutral molecules. Non-zero for charged atoms ([NH4+] etc.).
+    ///
+    ///     mol = chematic.from_smiles("[NH4+]")
+    ///     mol.formal_charge_per_atom()  # [1]   (N has +1)
+    fn formal_charge_per_atom(&self) -> Vec<i8> {
+        chematic_chem::formal_charge_per_atom(&self.inner)
+    }
+
+    /// Per-atom implicit hydrogen count — one ``int`` per heavy atom.
+    ///
+    ///     mol = chematic.from_smiles("CC")
+    ///     mol.implicit_hcount_per_atom()  # [3, 3]
+    fn implicit_hcount_per_atom(&self) -> Vec<u8> {
+        chematic_chem::implicit_hcount_per_atom(&self.inner)
+    }
+
     /// Isotopic distribution — list of ``(mass, relative_intensity)`` pairs.
     ///
     /// The highest-intensity peak is normalised to 1.0.
@@ -3530,6 +3559,36 @@ fn similarity_map_svg(mol: &Mol, weights: Vec<f64>) -> String {
     chematic_depict::similarity_map_svg(&mol.inner, &weights)
 }
 
+/// Parse a Hill-notation molecular formula string into an element count dictionary.
+///
+/// Returns a ``dict[str, int]`` mapping element symbol → atom count.
+/// Mirrors the API of PyPI libraries **chemparse** and **chemformula**.
+///
+/// Supported syntax:
+///   - Simple formulas: ``"H2O"``, ``"C6H12O6"``
+///   - Parentheses with multipliers: ``"Ca(OH)2"`` → ``{"Ca":1,"O":2,"H":2}``
+///   - SMILES-style brackets: ``"[NH4]+"`` → ``{"N":1,"H":4}``
+///   - Trailing charge signs are ignored: ``"NH4+"`` → same as ``"NH4"``
+///
+/// Raises:
+///     ValueError: on empty formula or unbalanced parentheses.
+///
+///     chematic.parse_formula("C6H12O6")  # {"C": 6, "H": 12, "O": 6}
+///     chematic.parse_formula("Ca(OH)2")  # {"Ca": 1, "O": 2, "H": 2}
+///     chematic.parse_formula("[NH4]+")   # {"N": 1, "H": 4}
+#[pyfunction]
+fn parse_formula<'py>(formula: &str, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+    let counts =
+        chematic_chem::parse_formula(formula).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let d = PyDict::new(py);
+    let mut sorted: Vec<(String, u32)> = counts.into_iter().collect();
+    sorted.sort_by(|a, b| a.0.cmp(&b.0));
+    for (elem, cnt) in sorted {
+        d.set_item(elem, cnt)?;
+    }
+    Ok(d)
+}
+
 /// Detect activity cliffs in a set of molecules with known activity values.
 ///
 /// An activity cliff is a structurally similar pair with a large activity difference —
@@ -4680,6 +4739,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rgroup_decompose, m)?)?;
     m.add_function(wrap_pyfunction!(similarity_map_svg, m)?)?;
     m.add_function(wrap_pyfunction!(activity_cliffs, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_formula, m)?)?;
     m.add_function(wrap_pyfunction!(find_reaction_center, m)?)?;
     m.add_function(wrap_pyfunction!(mol_hash, m)?)?;
     m.add_function(wrap_pyfunction!(are_identical, m)?)?;

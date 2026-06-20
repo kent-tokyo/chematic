@@ -1251,6 +1251,78 @@ class Mol:
         """
         ...
 
+    def topological_distance_matrix(self) -> list[list[int]]:
+        """Topological (graph) distance matrix for all heavy atoms.
+
+        Entry ``[i][j]`` is the shortest path length in bonds between heavy atom
+        ``i`` and heavy atom ``j``. Diagonal entries are 0.  Disconnected atoms
+        get ``2147483647`` (``u32::MAX``). Row/column order follows atom-insertion
+        order (same as :meth:`hybridization_per_atom` and other per-atom vectors).
+
+        Useful for scaffold graph analysis (ScaffoldGraph-style topology),
+        molecular topology descriptors, and custom fingerprinting.
+
+        Example::
+
+            propane = chematic.from_smiles("CCC")
+            dm = propane.topological_distance_matrix()
+            # [[0, 1, 2], [1, 0, 1], [2, 1, 0]]
+            assert dm[0][2] == 2   # C1 to C3 = 2 bonds
+        """
+        ...
+
+    def hybridization_per_atom(self) -> list[int]:
+        """Per-atom hybridization state as integers.
+
+        Returns one value per heavy atom (index = atom order):
+        ``1`` = sp, ``2`` = sp2, ``3`` = sp3, ``0`` = other/wildcard.
+
+        Rules:
+        - Aromatic atom → 2 (sp2)
+        - Has triple bond → 1 (sp)
+        - Has double bond → 2 (sp2)
+        - Otherwise → 3 (sp3)
+
+        Useful for scaffold modification (PromptSMILES), fragment building
+        (BuildAMol), and custom QSAR feature generation.
+
+        Example::
+
+            mol = chematic.from_smiles("CC=O")   # ethanol-like, acetaldehyde
+            mol.hybridization_per_atom()  # [3, 2, 2] (CH3=sp3, C=sp2, O=sp2)
+        """
+        ...
+
+    def formal_charge_per_atom(self) -> list[int]:
+        """Per-atom formal charge — one ``int`` per heavy atom.
+
+        All values are 0 for neutral molecules.
+        Charged atoms (e.g. ``[NH4+]``, ``[O-]``) have non-zero entries.
+
+        Example::
+
+            mol = chematic.from_smiles("[NH4+]")
+            mol.formal_charge_per_atom()  # [1, 0, 0, 0, 0]  (N+, 4 H)
+        """
+        ...
+
+    def implicit_hcount_per_atom(self) -> list[int]:
+        """Per-atom implicit hydrogen count — one ``int`` per heavy atom.
+
+        Counts the number of implicit (non-explicit) H atoms attached to each
+        heavy atom. Consistent with ``sum(mol.implicit_hcount_per_atom()) ≈``
+        total implicit H count.
+
+        Useful for building 3D structures, atom-level featurization (BuildAMol),
+        and ML model inputs.
+
+        Example::
+
+            mol = chematic.from_smiles("CC")   # ethane
+            mol.implicit_hcount_per_atom()     # [3, 3]
+        """
+        ...
+
     # -- Sprint 10: element/bond counts, ring topology, ERG vec, canonical ----
 
     @property
@@ -2454,6 +2526,28 @@ def activity_cliffs(
         mols = [chematic.from_smiles(s) for s in ["c1ccccc1", "Cc1ccccc1"]]
         cliffs = chematic.activity_cliffs(mols, [5.0, 8.5], sim_threshold=0.0, cliff_delta=2.0)
         # [{"mol_a_idx": 0, "mol_b_idx": 1, "similarity": 0.xx, "activity_delta": 3.5}]
+    """
+    ...
+
+def parse_formula(formula: str) -> dict[str, int]:
+    """Parse a Hill-notation molecular formula string into an element count dict.
+
+    Mirrors the API of PyPI libraries **chemparse** and **chemformula**.
+
+    Supported syntax:
+      - Simple formulas: ``"H2O"``, ``"C6H12O6"``
+      - Parentheses with multipliers: ``"Ca(OH)2"`` → ``{"Ca":1,"O":2,"H":2}``
+      - SMILES-style brackets: ``"[NH4]+"`` → ``{"N":1,"H":4}``
+      - Trailing charge signs are ignored: ``"NH4+"`` → same as ``"NH4"``
+
+    Raises:
+        ValueError: on empty formula or unbalanced parentheses.
+
+    Example::
+
+        chematic.parse_formula("C6H12O6")  # {"C": 6, "H": 12, "O": 6}
+        chematic.parse_formula("Ca(OH)2")  # {"Ca": 1, "O": 2, "H": 2}
+        chematic.parse_formula("[NH4]+")   # {"N": 1, "H": 4}
     """
     ...
 

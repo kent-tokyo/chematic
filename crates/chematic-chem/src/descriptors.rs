@@ -1381,6 +1381,73 @@ pub fn cns_mpo_score(mol: &Molecule) -> f64 {
 }
 
 // ---------------------------------------------------------------------------
+// Per-atom property vectors
+// ---------------------------------------------------------------------------
+
+/// Per-atom hybridization state.
+///
+/// Returns a `Vec<u8>` of length `mol.atom_count()` with:
+///   `1` = sp, `2` = sp2, `3` = sp3, `0` = other (metals, wildcard, etc.)
+///
+/// Assignment rules:
+/// - Wildcard atom (`*`) → 0
+/// - Aromatic atom → 2
+/// - Has a triple bond → 1
+/// - Has any double bond → 2
+/// - Otherwise → 3 (sp3)
+pub fn hybridization_per_atom(mol: &Molecule) -> Vec<u8> {
+    let n = mol.atom_count();
+    let mut out = vec![3u8; n];
+    for (idx, atom) in mol.atoms() {
+        let i = idx.0 as usize;
+        if atom.wildcard {
+            out[i] = 0;
+            continue;
+        }
+        if atom.aromatic {
+            out[i] = 2;
+            continue;
+        }
+        let mut has_triple = false;
+        let mut has_double = false;
+        for (_, bidx) in mol.neighbors(idx) {
+            match mol.bond(bidx).order {
+                BondOrder::Triple => has_triple = true,
+                BondOrder::Double => has_double = true,
+                _ => {}
+            }
+        }
+        out[i] = if has_triple {
+            1
+        } else if has_double {
+            2
+        } else {
+            3
+        };
+    }
+    out
+}
+
+/// Per-atom formal charge.
+///
+/// Returns a `Vec<i8>` of length `mol.atom_count()` where index `i` is the
+/// formal charge of `AtomIdx(i as u32)`.  Neutral atoms have value `0`.
+pub fn formal_charge_per_atom(mol: &Molecule) -> Vec<i8> {
+    mol.atoms().map(|(_, a)| a.charge).collect()
+}
+
+/// Per-atom implicit hydrogen count.
+///
+/// Returns a `Vec<u8>` of length `mol.atom_count()` where index `i` is the
+/// number of implicit H atoms on `AtomIdx(i as u32)`.
+/// Reuses [`chematic_core::implicit_hcount`] per atom.
+pub fn implicit_hcount_per_atom(mol: &Molecule) -> Vec<u8> {
+    mol.atoms()
+        .map(|(idx, _)| implicit_hcount(mol, idx))
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
 // TPSA per-atom
 // ---------------------------------------------------------------------------
 
@@ -3327,5 +3394,90 @@ mod tests {
         // MW > 500 → fails Lipinski → MCF must fail
         let big = mol("CC(C)c1ccc(cc1)C(=O)NC2CCN(CC2)c3ncnc4c3ccc(c4)OC(F)(F)F");
         assert!(!mcf_passes(&big));
+    }
+
+    // ── per-atom property vectors ────────────────────────────────────────────
+
+    #[test]
+    fn test_hybridization_per_atom_ethane_all_sp3() {
+        let m = mol("CC");
+        let h = hybridization_per_atom(&m);
+        assert_eq!(h.len(), 2);
+        assert!(h.iter().all(|&v| v == 3), "both C in ethane → sp3: {h:?}");
+    }
+
+    #[test]
+    fn test_hybridization_per_atom_benzene_all_sp2() {
+        let m = mol("c1ccccc1");
+        let h = hybridization_per_atom(&m);
+        assert_eq!(h.len(), 6);
+        assert!(h.iter().all(|&v| v == 2), "all C in benzene → sp2: {h:?}");
+    }
+
+    #[test]
+    fn test_hybridization_per_atom_acetylene_sp() {
+        // HC≡CH: both C → sp (triple bond)
+        let m = mol("C#C");
+        let h = hybridization_per_atom(&m);
+        assert_eq!(h.len(), 2);
+        assert!(h.iter().all(|&v| v == 1), "alkyne C → sp: {h:?}");
+    }
+
+    #[test]
+    fn test_hybridization_per_atom_acetaldehyde_mixed() {
+        // CH3-C(=O)-H: C1(CH3)=sp3, C2(=O)=sp2
+        let m = mol("CC=O");
+        let h = hybridization_per_atom(&m);
+        assert_eq!(h.len(), 3); // C, C, O
+        assert_eq!(h[0], 3, "methyl C → sp3");
+        assert_eq!(h[1], 2, "carbonyl C → sp2 (double bond to O)");
+        assert_eq!(h[2], 2, "carbonyl O → sp2 (double bond to C)");
+    }
+
+    #[test]
+    fn test_formal_charge_per_atom_neutral() {
+        let m = mol("CC(=O)O");
+        let fc = formal_charge_per_atom(&m);
+        assert_eq!(fc.len(), m.atom_count());
+        assert!(
+            fc.iter().all(|&c| c == 0),
+            "acetic acid has no formal charges: {fc:?}"
+        );
+    }
+
+    #[test]
+    fn test_formal_charge_per_atom_charged() {
+        // Ammonium ion [NH4]+: N has charge +1
+        let m = mol("[NH4+]");
+        let fc = formal_charge_per_atom(&m);
+        assert_eq!(fc.len(), 1, "only N is heavy");
+        assert_eq!(fc[0], 1, "N has formal charge +1");
+    }
+
+    #[test]
+    fn test_implicit_hcount_per_atom_ethane() {
+        // Ethane CC: each C has 3 implicit H
+        let m = mol("CC");
+        let ih = implicit_hcount_per_atom(&m);
+        assert_eq!(ih.len(), 2);
+        assert!(
+            ih.iter().all(|&h| h == 3),
+            "each CH3 → 3 implicit H: {ih:?}"
+        );
+    }
+
+    #[test]
+    fn test_implicit_hcount_per_atom_sum() {
+        // For any molecule, total implicit H should be consistent.
+        for smi in [
+            "CC(=O)O",
+            "c1ccccc1",
+            "CC(C)C",
+            "Cn1cnc2c1c(=O)n(c(=O)n2C)C",
+        ] {
+            let m = mol(smi);
+            let ih = implicit_hcount_per_atom(&m);
+            assert_eq!(ih.len(), m.atom_count(), "length mismatch for {smi}");
+        }
     }
 }
