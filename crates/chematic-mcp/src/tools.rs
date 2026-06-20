@@ -8,7 +8,7 @@ use chematic_3d::{generate_and_minimize_dreiding, write_xyz};
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
 use chematic_fp::{BitVec2048, ecfp4, tanimoto_ecfp4};
 use chematic_smarts::{
-    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, McsConfig, find_matches, find_mcs,
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, McsConfig, find_matches,
     find_mcs_with_config, parse_smarts,
 };
 use serde_json::{Value, json};

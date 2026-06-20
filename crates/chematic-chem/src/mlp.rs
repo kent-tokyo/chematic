@@ -31,6 +31,7 @@
 //! regression from `crate::esol`.
 
 use chematic_core::Molecule;
+#[cfg(feature = "trained-solubility-mlp")]
 use chematic_fp::ecfp4;
 
 // ---------------------------------------------------------------------------

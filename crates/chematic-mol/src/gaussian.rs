@@ -27,6 +27,10 @@
 
 use chematic_core::{Atom, AtomIdx, Element, Molecule, MoleculeBuilder};
 
+/// Return type shared by the GJF parser and its coordinate helper:
+/// `(Molecule, coords, charge, multiplicity)`.
+type GjfResult = (Molecule, Vec<(f64, f64, f64)>, i32, u32);
+
 // ---------------------------------------------------------------------------
 // Error type
 // ---------------------------------------------------------------------------
@@ -87,7 +91,7 @@ pub struct GaussianLogResult {
 /// Returns `(Molecule, coords, charge, multiplicity)`.
 /// `coords` is a `Vec<(f64, f64, f64)>` in Ångströms.
 /// The `Molecule` has no bonds; use `determine_bonds` to infer connectivity.
-pub fn parse_gjf(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>, i32, u32), GaussianError> {
+pub fn parse_gjf(input: &str) -> Result<GjfResult, GaussianError> {
     // Split into sections at blank lines.
     let sections: Vec<Vec<&str>> = {
         let mut secs: Vec<Vec<&str>> = Vec::new();
@@ -149,7 +153,7 @@ fn parse_atom_coords(
     lines: &[&str],
     charge: i32,
     multiplicity: u32,
-) -> Result<(Molecule, Vec<(f64, f64, f64)>, i32, u32), GaussianError> {
+) -> Result<GjfResult, GaussianError> {
     let mut builder = MoleculeBuilder::new();
     let mut coords: Vec<(f64, f64, f64)> = Vec::new();
 
@@ -290,8 +294,7 @@ pub fn parse_gaussian_log(input: &str) -> Result<GaussianLogResult, GaussianErro
     // Extract last SCF Done energy.
     let scf_energy = lines
         .iter()
-        .filter(|l| l.contains("SCF Done:"))
-        .last()
+        .rfind(|l| l.contains("SCF Done:"))
         .and_then(|l| {
             let after = l[l.find('=')? + 1..].trim();
             after.split_whitespace().next()?.parse::<f64>().ok()
