@@ -57,6 +57,54 @@ fps = [chematic.from_smiles(s).ecfp4() for s in smiles_list]
 sim = chematic.tanimoto_matrix(fps, fps)  # (N, N) list[list[float]]
 ```
 
+### `aizynthfinder_integration.py` — AiZynthFinder + chematic retrosynthesis pipeline
+
+End-to-end retrosynthetic planning tutorial showing how to use chematic as a backend
+for AiZynthFinder.  Runs fully without AiZynthFinder installed (chematic-only mode
+with mock routes); activates the ML multi-step sections when AiZynthFinder is present.
+
+```
+python examples/aizynthfinder_integration.py
+python examples/aizynthfinder_integration.py --smiles "O=C(O)c1ccc(N)cc1"
+python examples/aizynthfinder_integration.py --config aizynthfinder_data/config.yml
+```
+
+Sections:
+
+1. **Target preparation** — parse, validate, drug-likeness profile, ADMET, SA score
+2. **BRICS one-step retrosynthesis** — instant rule-based disconnection via `mol.brics_fragments()`
+3. **AiZynthFinder multi-step** — ML-based route search (real or mock)
+4. **Building block scoring** — SA score, Lipinski, Tanimoto to known BB library
+5. **Route ranking** — composite feasibility score combining chematic + AiZynthFinder metrics
+
+Key patterns:
+
+```python
+import chematic
+
+# 1. Prepare target
+mol = chematic.from_smiles("O=C(Nc1ccc(S(N)(=O)=O)cc1)c1ccc(N)cc1")
+d = mol.descriptors()
+print(f"SA score: {d['sa_score']:.2f}  QED: {d['qed']:.3f}")
+
+# 2. BRICS one-step retrosynthesis
+fragments = mol.brics_fragments()        # list[Mol] with dummy attachment points
+for frag in fragments:
+    fd = frag.descriptors()
+    print(f"  SA={fd['sa_score']:.2f}  MW={fd['mw']:.1f}  {frag.smiles}")
+
+# 3. Score building blocks from AiZynthFinder routes
+bb = chematic.from_smiles("c1ccc(N)cc1")
+sim = chematic.tanimoto(mol.ecfp4(), bb.ecfp4())
+print(f"Tanimoto to aniline: {sim:.3f}")
+
+# 4. ADMET filter on proposed building blocks
+admet = bb.admet()
+print(f"BBB: {admet['bbb_penetrant']}  hERG risk: {admet['herg_risk']:.2f}")
+```
+
+---
+
 ## What chematic returns (no conversion needed)
 
 | API | Return type | sklearn-compatible? |
