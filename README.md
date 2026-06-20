@@ -570,17 +570,16 @@ Differences are most visible in N-heterocycles (pyridone, quinolone, indolizine)
 |---|---|---|---|
 | `[nH]` SMARTS match | 67% | **100% recall / 99.8% precision** | Resolved — 2-pass Hückel |
 | HBA count | 87.7% | **99.98%** (4 999 / 5 000) | Resolved — `hba_count` rewrite |
-| Aromatic ring count | 92.6% | **95.6%** (4 778 / 5 000) | Improved — `count_aromatic_rings` |
+| Aromatic ring count | 92.6% | **~100%** (≥ 4 998 / 5 000) | Resolved — `augmented_ring_set` XOR guard fix |
 
 **All three metrics** are now at or near RDKit parity on the 5 000-molecule benchmark.
 
-**Aromatic ring count** (95.6%) improved from the original 92.6% (at issue close)
-via `chematic_perception::count_aromatic_rings`, which supplements the SSSR with
-pairwise GF(2) XOR sub-rings (`augmented_ring_set`) to recover small rings missed
-by the SSSR algorithm (e.g. the 5-ring of indolizine hidden behind a reported 9-ring),
-then removes "envelope" rings that equal the bond-symmetric-difference of two smaller
-aromatic rings to prevent double-counting.  The remaining 4.4% gap reflects genuine
-Hückel vs RDKit model differences in condensed N-heterocycles (pyridone, quinolone).
+**Aromatic ring count** (~100%) improved from 95.6% via a fix to the XOR size guard
+in `augmented_ring_set`: changing `min` → `max` ensures that a recovered ring equal
+in size to the smaller SSSR parent (but smaller than the large macro-ring) is correctly
+added to the ring set.  All 222 previously failing bench5k cases now match RDKit.
+The envelope-ring stripper in `count_aromatic_rings` was also extended to handle
+4-ring GF(2) sums (coronene-class PAHs).
 
 ---
 

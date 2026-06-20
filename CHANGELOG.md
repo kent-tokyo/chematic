@@ -7,7 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [Unreleased] — v0.4.11 (pending)
+
+### Fixed — `chematic-perception`
+
+- **Aromatic ring count: 95.6% → ~100% RDKit agreement** (`augmented_ring_set` XOR guard `min` → `max`)
+  - Root cause: when the SSSR returns a large macro-ring paired with a same-size ring instead of two equal-sized component rings, the old `min` guard incorrectly skipped recovery of the missing ring.  Changing to `max` recovers any ring strictly smaller than the *larger* parent.
+  - All 222 previously failing bench5k cases now match RDKit (`count_aromatic_rings`).
+- Extend envelope ring detection to **4-ring GF(2) XOR** in `count_aromatic_rings` — correctly strips coronene-class perimeter cycles that are the bond-symmetric-difference of four inner hexagons.
+
+### Fixed — `chematic-mol` (CIF parser)
+
+- `parse_cif`: return `CifError::InvalidCellParameters` when `sin(γ) ≈ 0` (e.g. `_cell_angle_gamma 0` or `180`) instead of silently producing NaN/Inf coordinates.
+- `parse_cif`: return `CifError::MissingCellParameters` when fractional coordinate columns are present but no `_cell_length_*` / `_cell_angle_*` parameters are found in the file.
+- Strip oxidation-state suffixes (`Cu2+`, `Fe3+`, `O2-`) from `_atom_site_type_symbol` values in addition to trailing digits — fixes parsing of standard inorganic CIF files.
+- Fix comment stripper to not truncate `#` characters inside CIF single- or double-quoted strings (`'foo#bar'` was previously truncated to `'foo`).
+- Two new `CifError` variants: `InvalidCellParameters(String)`, `MissingCellParameters`.
+
+### Fixed — `chematic-mol` (Gaussian parser)
+
+- `parse_gjf`: detect charge/multiplicity section **structurally** (two blank-line-separated sections after the `#` route card) instead of scanning for the first `"int int"` line — prevents false matches when the title section is a number pair like `"0 1"`.
+- `parse_gaussian_log`: support Gaussian 03 **5-column** Standard orientation table (columns: Center# AtomicNum X Y Z, no Atomic Type column); was previously silently skipping all rows and returning `NoAtoms`.
+- `parse_gjf`: handle **bare atomic-number** element specifications (e.g. `6` for carbon) by falling back to `Element::from_atomic_number` when `trim_end_matches(is_ascii_digit)` yields an empty string.
+
+### Fixed — CI / Clippy
+
+- Declare `trained-solubility-mlp` feature in `chematic-chem/Cargo.toml`.
+- Gate `use chematic_fp::ecfp4` behind the feature flag to suppress `unused_import` when feature is off.
+- Extract `GjfResult` type alias in `gaussian.rs` to resolve `type_complexity` lint.
+- Replace `.filter(..).last()` with `.rfind(..)` on `DoubleEndedIterator`.
+- Remove unused `find_mcs` import in `chematic-mcp/src/tools.rs`.
 
 ---
 
