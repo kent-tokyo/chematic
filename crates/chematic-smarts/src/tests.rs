@@ -689,4 +689,5 @@ mod integration_tests {
         let q = parse_smarts("[O;D1]").unwrap();
         assert_eq!(q.atoms[0].atom_map, None);
     }
+
 }
