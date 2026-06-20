@@ -28,7 +28,7 @@ serde_json = "1.0"
 chematic-core       = { path = "../chematic-core",       version = "0.4.9" }
 chematic-smiles     = { path = "../chematic-smiles",     version = "0.4.9" }
 chematic-perception = { path = "../chematic-perception", version = "0.4.9" }
-chematic-chem       = { path = "../chematic-chem",       version = "0.4.9" }
+chematic-chem       = { path = "../chematic-chem",       version = "0.4.9", features = ["serde"] }
 chematic-fp         = { path = "../chematic-fp",         version = "0.4.9" }
 chematic-depict     = { path = "../chematic-depict",     version = "0.4.9" }
 chematic-rxn        = { path = "../chematic-rxn",        version = "0.4.9" }

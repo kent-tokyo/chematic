@@ -9,7 +9,6 @@
 use std::collections::{HashMap, VecDeque};
 
 use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder, validate_valence};
-use serde::{Deserialize, Serialize};
 
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
 use chematic_smarts::{MatchConfig, find_matches_with_config, parse_smarts};
@@ -833,7 +832,8 @@ pub fn uncharge(mol: &Molecule) -> Molecule {
 }
 
 /// One transformation stage in the standardization pipeline.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum StandardizationStep {
     /// Select the largest connected component.
     LargestFragment,
@@ -876,7 +876,8 @@ impl StandardizationStep {
 }
 
 /// High-level status for a standardization run.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum PipelineStatus {
     /// Pipeline completed and the output is structurally identical to the input.
     Unchanged,
@@ -887,7 +888,8 @@ pub enum PipelineStatus {
 }
 
 /// Warning emitted during standardization.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StandardizationWarning {
     /// Stable machine-readable warning code.
     pub code: String,
@@ -905,7 +907,8 @@ impl StandardizationWarning {
 }
 
 /// Atom/bond/hash summary before or after a pipeline stage.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MoleculeSnapshot {
     /// Number of atoms in the molecule.
     pub atoms: usize,
@@ -926,7 +929,8 @@ impl MoleculeSnapshot {
 }
 
 /// Per-stage audit entry for a standardization run.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StandardizationStepReport {
     /// Pipeline stage.
     pub step: StandardizationStep,
@@ -941,7 +945,8 @@ pub struct StandardizationStepReport {
 }
 
 /// Full standardization audit result.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StandardizationReport {
     /// Overall status.
     pub status: PipelineStatus,

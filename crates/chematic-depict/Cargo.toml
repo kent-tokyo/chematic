@@ -21,6 +21,5 @@ chematic-perception = { path = "../chematic-perception", version = "0.4.9" }
 chematic-rxn = { path = "../chematic-rxn", version = "0.4.9" }
 chematic-smiles = { path = "../chematic-smiles", version = "0.4.9" }
 tiny-skia = "0.12"
-image = "0.25"
 
 [dev-dependencies]

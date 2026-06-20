@@ -640,13 +640,20 @@ fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
         encoded
     );
 
-    let resp = ureq::get(&url)
-        .timeout(std::time::Duration::from_secs(10))
+    let agent = ureq::config::Config::builder()
+        .timeout_global(Some(std::time::Duration::from_secs(10)))
+        .build()
+        .new_agent();
+    let mut resp = agent
+        .get(&url)
         .call()
         .map_err(|e| format!("PubChem request failed: {e}"))?;
 
-    let body: Value = resp
-        .into_json()
+    let raw = resp
+        .body_mut()
+        .read_to_string()
+        .map_err(|e| format!("PubChem response read error: {e}"))?;
+    let body: Value = serde_json::from_str(&raw)
         .map_err(|e| format!("PubChem response parse error: {e}"))?;
 
     let smiles = body

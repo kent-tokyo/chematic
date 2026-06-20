@@ -25,6 +25,7 @@ pub mod minimize;
 pub mod mol_transforms;
 pub mod pdb;
 pub mod pharmacophore_fp_3d;
+pub(crate) mod prng;
 pub mod sasa;
 pub mod shape_descriptors;
 pub mod stereo3d;

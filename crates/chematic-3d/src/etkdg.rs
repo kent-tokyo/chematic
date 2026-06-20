@@ -11,7 +11,7 @@
 use crate::coords::Coords3D;
 use crate::etkdg_knowledge::{default_torsion_preference, get_torsion_preference};
 use chematic_core::{AtomIdx, Molecule};
-use fastrand;
+use crate::prng::Prng;
 
 /// Generate 3D coordinates using ETKDG with torsion angle preferences.
 ///
@@ -35,7 +35,8 @@ pub fn generate_coords_etkdg_with_noise(mol: &Molecule, noise_sigma_deg: f64) ->
         return coords;
     }
 
-    apply_torsion_preferences_with_noise(mol, &mut coords, noise_sigma_deg);
+    let mut prng = Prng::new();
+    apply_torsion_preferences_with_noise(mol, &mut coords, noise_sigma_deg, &mut prng);
 
     let constraints = super::constraints::build_constraints(mol);
     coords = super::constraints::satisfy_constraints(&coords, mol, &constraints, 3);
@@ -52,6 +53,7 @@ fn apply_torsion_preferences_with_noise(
     mol: &Molecule,
     coords: &mut Coords3D,
     noise_sigma_deg: f64,
+    prng: &mut Prng,
 ) {
     let n = mol.atom_count();
     let mut applied = std::collections::HashSet::new();
@@ -104,7 +106,7 @@ fn apply_torsion_preferences_with_noise(
 
                     // Add uniform noise when generating ensemble conformers.
                     let noise = if noise_sigma_deg > 0.0 {
-                        (fastrand::f64() * 2.0 - 1.0) * noise_sigma_deg
+                        (prng.f64() * 2.0 - 1.0) * noise_sigma_deg
                     } else {
                         0.0
                     };

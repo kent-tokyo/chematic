@@ -94,7 +94,8 @@ pub fn run_md(mol: &Molecule, coords: Coords3D, config: &MDConfig) -> MDTrajecto
     };
 
     // Initialize velocities from Maxwell-Boltzmann distribution
-    let mut velocities = initialize_velocities(&masses, config.temperature_k);
+    let mut prng = crate::prng::Prng::new();
+    let mut velocities = initialize_velocities(&masses, config.temperature_k, &mut prng);
 
     let mut trajectory = MDTrajectory { frames: vec![] };
 
@@ -199,7 +200,7 @@ fn get_atom_masses(mol: &Molecule) -> Vec<f64> {
         .collect()
 }
 
-fn initialize_velocities(masses: &[f64], temp_k: f64) -> Vec<Point3> {
+fn initialize_velocities(masses: &[f64], temp_k: f64, prng: &mut crate::prng::Prng) -> Vec<Point3> {
     // Maxwell-Boltzmann distribution: v_i ~ sqrt(k_B * T / m)
     // Unit conversion: 1 kcal/mol = 0.01038 amu·Ų/fs²
     // sigma = sqrt(k_B * T * 0.01038 / m) [Å/fs]
@@ -212,9 +213,9 @@ fn initialize_velocities(masses: &[f64], temp_k: f64) -> Vec<Point3> {
                 let sigma_sq = K_BOLTZMANN * temp_k * UNIT_CONVERSION / m;
                 let sigma = sigma_sq.sqrt();
                 Point3::new(
-                    gaussian_random() * sigma,
-                    gaussian_random() * sigma,
-                    gaussian_random() * sigma,
+                    gaussian_random(prng) * sigma,
+                    gaussian_random(prng) * sigma,
+                    gaussian_random(prng) * sigma,
                 )
             } else {
                 Point3::zero()
@@ -223,10 +224,10 @@ fn initialize_velocities(masses: &[f64], temp_k: f64) -> Vec<Point3> {
         .collect()
 }
 
-fn gaussian_random() -> f64 {
+fn gaussian_random(prng: &mut crate::prng::Prng) -> f64 {
     use std::f64::consts::PI;
-    let u1: f64 = (fastrand::f64()) + f64::EPSILON; // Avoid log(0)
-    let u2: f64 = fastrand::f64();
+    let u1: f64 = prng.f64() + f64::EPSILON; // Avoid log(0)
+    let u2: f64 = prng.f64();
     (-2.0 * u1.ln()).sqrt() * (2.0 * PI * u2).cos()
 }
 
