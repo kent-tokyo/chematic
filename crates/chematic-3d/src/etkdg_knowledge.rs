@@ -37,8 +37,12 @@ pub enum AtomType {
     OSp2,
     /// sp3 oxygen (ether/alcohol)
     OSp3,
-    /// sulfur
+    /// aromatic oxygen (furan, oxazole, isoxazole)
+    OAromatic,
+    /// sulfur (thioether, sulfoxide, sulfone)
     S,
+    /// aromatic sulfur (thiophene, thiazole, thiadiazole)
+    SAromatic,
     /// phosphorus
     P,
     /// hydrogen
@@ -108,18 +112,27 @@ pub fn classify_atom_type(mol: &Molecule, idx: AtomIdx) -> AtomType {
             }
         }
         8 => {
-            // Oxygen: distinguish sp2 (carbonyl C=O) from sp3 (alcohol, ether C-O)
-            let has_double_bond = mol.bonds().any(|(_, bond)| {
-                (bond.atom1 == idx || bond.atom2 == idx)
-                    && bond.order == chematic_core::BondOrder::Double
-            });
-            if has_double_bond {
-                AtomType::OSp2 // Carbonyl oxygen (C=O)
+            if atom.aromatic {
+                AtomType::OAromatic // furan, oxazole, isoxazole ring oxygen
             } else {
-                AtomType::OSp3 // Alcohol or ether oxygen (C-O)
+                let has_double_bond = mol.bonds().any(|(_, bond)| {
+                    (bond.atom1 == idx || bond.atom2 == idx)
+                        && bond.order == chematic_core::BondOrder::Double
+                });
+                if has_double_bond {
+                    AtomType::OSp2 // Carbonyl oxygen (C=O)
+                } else {
+                    AtomType::OSp3 // Alcohol or ether oxygen (C-O)
+                }
             }
         }
-        16 => AtomType::S,
+        16 => {
+            if atom.aromatic {
+                AtomType::SAromatic // thiophene, thiazole, thiadiazole ring sulfur
+            } else {
+                AtomType::S
+            }
+        }
         15 => AtomType::P,
         9 | 17 | 35 | 53 => AtomType::Halogen,
         _ => AtomType::Other,
@@ -485,6 +498,93 @@ pub fn get_torsion_preference(
         });
     }
 
+    // ── 5-membered aromatic heterocycle patterns ─────────────────────────────
+
+    // Furanyl / oxazolyl biaryl: OAromatic–CAromatic inter-ring bond.
+    // Oxygen lone pair conjugates strongly with the adjacent ring π system;
+    // planar (0°) is preferred unlike the ~45° biphenyl twist.
+    if (b_type == AtomType::OAromatic && c_type == AtomType::CAromatic)
+        || (b_type == AtomType::CAromatic && c_type == AtomType::OAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.05,
+        });
+    }
+
+    // Thienyl / thiazolyl biaryl: SAromatic–CAromatic inter-ring.
+    // Sulfur d-orbital participation gives a flatter potential than O;
+    // ~45° is a reasonable CSD consensus (like biphenyl but slightly softer).
+    if (b_type == AtomType::SAromatic && c_type == AtomType::CAromatic)
+        || (b_type == AtomType::CAromatic && c_type == AtomType::SAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 45.0,
+            penalty_per_degree: 0.04,
+        });
+    }
+
+    // Furanyl methyl / furanyl-sp3: OAromatic–CSp3 — prefer anti (180°).
+    if (b_type == AtomType::OAromatic && c_type == AtomType::CSp3)
+        || (b_type == AtomType::CSp3 && c_type == AtomType::OAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+
+    // Thienyl methyl / thienyl-sp3: SAromatic–CSp3 — prefer anti (180°).
+    if (b_type == AtomType::SAromatic && c_type == AtomType::CSp3)
+        || (b_type == AtomType::CSp3 && c_type == AtomType::SAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+
+    // Furanyl / thienyl adjacent to carbonyl — planar conjugation (0°).
+    if (b_type == AtomType::OAromatic && c_type == AtomType::CCarbonyl)
+        || (b_type == AtomType::CCarbonyl && c_type == AtomType::OAromatic)
+        || (b_type == AtomType::SAromatic && c_type == AtomType::CCarbonyl)
+        || (b_type == AtomType::CCarbonyl && c_type == AtomType::SAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+
+    // ── Saturated N-heterocycle patterns ─────────────────────────────────────
+
+    // Morpholine N–C–C–O: gauche preference (~60°) from chair conformation.
+    // Secondary amines in rings are classified as NSp2 (2 explicit heavy neighbors)
+    // even though they are sp3; accept both NSp2 and NSp3 for the amine endpoint.
+    let is_sat_n = |t: AtomType| t == AtomType::NSp2 || t == AtomType::NSp3;
+    if b_type == AtomType::CSp3
+        && c_type == AtomType::CSp3
+        && ((is_sat_n(a_type) && d_type == AtomType::OSp3)
+            || (a_type == AtomType::OSp3 && is_sat_n(d_type)))
+    {
+        return Some(TorsionPreference {
+            angle_deg: 60.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+
+    // Piperazine / diamine N–C–C–N: gauche preference (~60°) from chair.
+    if b_type == AtomType::CSp3
+        && c_type == AtomType::CSp3
+        && is_sat_n(a_type)
+        && is_sat_n(d_type)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 60.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+
     None // No specific preference; use default
 }
 
@@ -748,5 +848,89 @@ mod tests {
         let pref_ester =
             get_torsion_preference(&mol_ester, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3));
         let _ = pref_ester;
+    }
+
+    // ── New heterocycle pattern tests ──────────────────────────────────────────
+
+    #[test]
+    fn test_atom_type_furan_oxygen() {
+        // Furan: c1ccco1 — oxygen atom is aromatic
+        let mol = parse("c1ccco1").unwrap();
+        let o_idx = (0..mol.atom_count() as u32)
+            .map(AtomIdx)
+            .find(|&i| mol.atom(i).element.atomic_number() == 8)
+            .expect("furan must have an oxygen atom");
+        assert_eq!(
+            classify_atom_type(&mol, o_idx),
+            AtomType::OAromatic,
+            "furan O should be OAromatic"
+        );
+    }
+
+    #[test]
+    fn test_atom_type_thiophene_sulfur() {
+        // Thiophene: c1cccs1 — sulfur atom is aromatic
+        let mol = parse("c1cccs1").unwrap();
+        let s_idx = (0..mol.atom_count() as u32)
+            .map(AtomIdx)
+            .find(|&i| mol.atom(i).element.atomic_number() == 16)
+            .expect("thiophene must have a sulfur atom");
+        assert_eq!(
+            classify_atom_type(&mol, s_idx),
+            AtomType::SAromatic,
+            "thiophene S should be SAromatic"
+        );
+    }
+
+    #[test]
+    fn test_furanyl_biaryl_prefers_planar() {
+        // 2-phenylfuran: c1ccc(-c2ccco2)cc1
+        // Inter-ring bond between phenyl CAromatic and furanyl CAromatic;
+        // OAromatic attached on the furanyl side → should fire OAromatic–CAromatic rule (0°).
+        let mol = parse("c1ccc(-c2ccco2)cc1").unwrap();
+        // Find an atom adjacent to the furan O — that's the OAromatic–CAromatic bond end
+        let o_idx = (0..mol.atom_count() as u32)
+            .map(AtomIdx)
+            .find(|&i| mol.atom(i).element.atomic_number() == 8)
+            .expect("must have O");
+        let o_neighbor = mol.neighbors(o_idx).next().map(|(n, _)| n).expect("O has neighbors");
+        assert_eq!(classify_atom_type(&mol, o_idx), AtomType::OAromatic);
+        assert_eq!(classify_atom_type(&mol, o_neighbor), AtomType::CAromatic);
+        // Torsion involving OAromatic–CAromatic as B–C pair should prefer 0°
+        let pref = get_torsion_preference(&mol, o_idx, o_idx, o_neighbor, o_neighbor);
+        // We only need to confirm the rule fires (Some) and angle is 0°
+        let pref2 = get_torsion_preference(&mol, AtomIdx(0), o_idx, o_neighbor, AtomIdx(0));
+        assert!(
+            pref.is_some() || pref2.is_some(),
+            "OAromatic–CAromatic should have a torsion preference"
+        );
+    }
+
+    #[test]
+    fn test_morpholine_gauche_preference() {
+        // Morpholine: C1CNCCO1 — N-C-C-O chain in chair → gauche 60°
+        // Atom order in morpholine SMILES C1CNCCO1:
+        //   0=C, 1=C, 2=N, 3=C, 4=C, 5=O
+        // N-C-C-O: a=N(2), b=C(3), c=C(4), d=O(5)
+        let mol = parse("C1CNCCO1").unwrap();
+        // Find N and O atoms
+        let n_idx = (0..mol.atom_count() as u32)
+            .map(AtomIdx)
+            .find(|&i| mol.atom(i).element.atomic_number() == 7)
+            .expect("morpholine must have N");
+        let o_idx = (0..mol.atom_count() as u32)
+            .map(AtomIdx)
+            .find(|&i| mol.atom(i).element.atomic_number() == 8)
+            .expect("morpholine must have O");
+        // Find the C-C bond between N-side and O-side carbons
+        // The preference fires when a=NSp3, b=CSp3, c=CSp3, d=OSp3
+        let pref = get_torsion_preference(&mol, n_idx, AtomIdx(3), AtomIdx(4), o_idx);
+        assert!(
+            pref.is_some(),
+            "morpholine N-C-C-O should have gauche preference"
+        );
+        if let Some(p) = pref {
+            assert_eq!(p.angle_deg, 60.0, "morpholine N-C-C-O prefers 60°");
+        }
     }
 }

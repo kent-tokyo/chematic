@@ -9,7 +9,7 @@
 //! 3. Minimize with constraints to preserve ring geometry
 
 use crate::coords::Coords3D;
-use crate::etkdg_knowledge::{default_torsion_preference, get_torsion_preference};
+use crate::etkdg_knowledge::{classify_atom_type, default_torsion_preference, get_torsion_preference, AtomType};
 use chematic_core::{AtomIdx, Molecule};
 use crate::prng::Prng;
 
@@ -104,11 +104,13 @@ fn apply_torsion_preferences_with_noise(
                     let preference = get_torsion_preference(mol, a_idx, b_idx, c_idx, d_idx)
                         .unwrap_or_else(default_torsion_preference);
 
-                    // Add Gaussian noise when generating ensemble conformers.
-                    // N(0, noise_sigma_deg) samples diverse torsion angles while
-                    // concentrating draws near the preferred angle (unlike uniform).
-                    let noise = if noise_sigma_deg > 0.0 {
-                        prng.gaussian_f64() * noise_sigma_deg
+                    // Add Gaussian noise scaled by bond flexibility.
+                    // Rigid bonds (amide, biaryl) receive less noise than freely
+                    // rotatable single bonds, preserving chemically important
+                    // constraints while still exploring diverse conformers.
+                    let scale = bond_flexibility_scale(mol, b_idx, c_idx);
+                    let noise = if noise_sigma_deg > 0.0 && scale > 0.0 {
+                        prng.gaussian_f64() * noise_sigma_deg * scale
                     } else {
                         0.0
                     };
@@ -136,5 +138,49 @@ fn apply_torsion_preferences_with_noise(
                 }
             }
         }
+    }
+}
+
+/// Return a noise scale factor [0, 1] for the B–C central bond of a torsion.
+///
+/// Freely rotatable single bonds receive 1.0 (full sigma); bonds with partial
+/// double-bond character or aromatic conjugation receive a reduced scale to
+/// preserve chemically important geometry.
+fn bond_flexibility_scale(mol: &Molecule, b_idx: AtomIdx, c_idx: AtomIdx) -> f64 {
+    let b = classify_atom_type(mol, b_idx);
+    let c = classify_atom_type(mol, c_idx);
+
+    // Check if the bond itself is a double or triple bond — no torsion noise.
+    if let Some((_, bond)) = mol.bond_between(b_idx, c_idx) {
+        match bond.order {
+            chematic_core::BondOrder::Double
+            | chematic_core::BondOrder::Triple
+            | chematic_core::BondOrder::Aromatic => return 0.0,
+            _ => {}
+        }
+    }
+
+    match (b, c) {
+        // Amide/urea N–C(=O): partial double bond, highly restricted.
+        (AtomType::NSp2, AtomType::CCarbonyl) | (AtomType::CCarbonyl, AtomType::NSp2) => 0.20,
+        // Biaryl / hetaryl–aryl: moderate restriction (biphenyl-like twist).
+        (AtomType::CAromatic, AtomType::CAromatic)
+        | (AtomType::NAromatic, AtomType::CAromatic)
+        | (AtomType::CAromatic, AtomType::NAromatic)
+        | (AtomType::OAromatic, AtomType::CAromatic)
+        | (AtomType::CAromatic, AtomType::OAromatic)
+        | (AtomType::SAromatic, AtomType::CAromatic)
+        | (AtomType::CAromatic, AtomType::SAromatic) => 0.50,
+        // Vinyl/alkene adjacent: semi-rigid conjugation.
+        (AtomType::CSp2Alkene, AtomType::CCarbonyl)
+        | (AtomType::CCarbonyl, AtomType::CSp2Alkene)
+        | (AtomType::CSp2Alkene, AtomType::NSp2)
+        | (AtomType::NSp2, AtomType::CSp2Alkene)
+        | (AtomType::CSp2Alkene, AtomType::CAromatic)
+        | (AtomType::CAromatic, AtomType::CSp2Alkene) => 0.30,
+        // Aryl–sp3: slightly restricted.
+        (AtomType::CAromatic, AtomType::CSp3) | (AtomType::CSp3, AtomType::CAromatic) => 0.70,
+        // All other single bonds: fully flexible.
+        _ => 1.0,
     }
 }
