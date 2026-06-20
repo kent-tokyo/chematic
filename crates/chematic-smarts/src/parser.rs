@@ -209,12 +209,12 @@ impl<'a> Parser<'a> {
         open_rings: &mut HashMap<u8, (usize, Option<BondQuery>)>,
     ) -> Result<Option<usize>, SmartsError> {
         // Parse the first atom of this chain.
-        let first_atom = match self.try_parse_atom()? {
+        let (first_atom, first_map) = match self.try_parse_atom()? {
             Some(a) => a,
             None => return Ok(attach_to),
         };
 
-        let first_idx = mol.add_atom(first_atom);
+        let first_idx = mol.add_atom_with_map(first_atom, first_map);
 
         // Connect to the previous atom if requested.
         if let Some(prev) = attach_to {
@@ -286,8 +286,8 @@ impl<'a> Parser<'a> {
 
                         // Next atom in the chain.
                         _ => match self.try_parse_atom()? {
-                            Some(next_atom) => {
-                                let next_idx = mol.add_atom(next_atom);
+                            Some((next_atom, next_map)) => {
+                                let next_idx = mol.add_atom_with_map(next_atom, next_map);
                                 let bond = pending_bond.unwrap_or(BondQuery::Any);
                                 mol.add_bond(current, next_idx, bond);
                                 current = next_idx;
@@ -479,29 +479,34 @@ impl<'a> Parser<'a> {
     // -- atoms ---------------------------------------------------------------
 
     /// Try to parse one atom (bracket, organic shorthand, or wildcard).
-    fn try_parse_atom(&mut self) -> Result<Option<AtomQuery>, SmartsError> {
+    /// Returns `(AtomQuery, atom_map)` — `atom_map` is `Some(n)` only for
+    /// bracket atoms with an explicit `:N` suffix.
+    fn try_parse_atom(&mut self) -> Result<Option<(AtomQuery, Option<u16>)>, SmartsError> {
         match self.peek() {
-            Some(b'[') => Ok(Some(self.parse_bracket_atom()?)),
+            Some(b'[') => {
+                let (q, map) = self.parse_bracket_atom()?;
+                Ok(Some((q, map)))
+            }
             Some(b'*') => {
                 self.advance();
-                Ok(Some(AtomQuery::Primitive(AtomPrimitive::Wildcard)))
+                Ok(Some((AtomQuery::Primitive(AtomPrimitive::Wildcard), None)))
             }
             // `a` — any aromatic atom (standalone shorthand, equivalent to `[a]`).
             Some(b'a') => {
                 self.advance();
-                Ok(Some(AtomQuery::Primitive(AtomPrimitive::Aromatic(true))))
+                Ok(Some((AtomQuery::Primitive(AtomPrimitive::Aromatic(true)), None)))
             }
             // `A` — any aliphatic atom (standalone shorthand, equivalent to `[A]`).
             Some(b'A') => {
                 self.advance();
-                Ok(Some(AtomQuery::Primitive(AtomPrimitive::Aromatic(false))))
+                Ok(Some((AtomQuery::Primitive(AtomPrimitive::Aromatic(false)), None)))
             }
             // Organic-subset atoms (uppercase aliphatic).
             Some(b'B') | Some(b'C') | Some(b'N') | Some(b'O') | Some(b'P') | Some(b'S')
-            | Some(b'F') | Some(b'I') => Ok(Some(self.parse_organic_atom(false)?)),
+            | Some(b'F') | Some(b'I') => Ok(Some((self.parse_organic_atom(false)?, None))),
             // Aromatic organic-subset atoms (lowercase, includes boron `b`).
             Some(b'b') | Some(b'c') | Some(b'n') | Some(b'o') | Some(b'p') | Some(b's') => {
-                Ok(Some(self.parse_organic_atom(true)?))
+                Ok(Some((self.parse_organic_atom(true)?, None)))
             }
             _ => Ok(None),
         }
@@ -540,12 +545,32 @@ impl<'a> Parser<'a> {
         Ok(AtomQuery::And(Box::new(sym_query), Box::new(arom_query)))
     }
 
-    /// Parse a bracket atom `[expr]`.
-    fn parse_bracket_atom(&mut self) -> Result<AtomQuery, SmartsError> {
+    /// Parse a bracket atom `[expr]`, including an optional `:N` atom map number.
+    /// Returns `(AtomQuery, atom_map)`.
+    fn parse_bracket_atom(&mut self) -> Result<(AtomQuery, Option<u16>), SmartsError> {
         let bracket_pos = self.pos;
         self.advance(); // consume '['
 
         let expr = self.parse_expr()?;
+
+        // Optional atom map number: `[O;D1;H0:3]` → atom_map = Some(3).
+        // The `:` is metadata only and does not affect matching.
+        let atom_map = if self.peek() == Some(b':') {
+            self.advance(); // consume ':'
+            // Parse the following digits as u16.
+            if self.peek().is_some_and(|c| c.is_ascii_digit()) {
+                let mut val: u16 = 0;
+                while let Some(d) = self.peek().filter(|c| c.is_ascii_digit()) {
+                    self.advance();
+                    val = val.saturating_mul(10).saturating_add((d - b'0') as u16);
+                }
+                Some(val)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         match self.peek() {
             Some(b']') => {
@@ -554,7 +579,7 @@ impl<'a> Parser<'a> {
             _ => return Err(SmartsError::UnclosedBracket(bracket_pos)),
         }
 
-        Ok(expr)
+        Ok((expr, atom_map))
     }
 
     // -- expression grammar (inside brackets) --------------------------------

@@ -526,7 +526,6 @@ fn extract_map_numbers_from_section(smarts: &str) -> Vec<u16> {
 }
 
 /// Helper to parse pipe-separated SMARTS patterns.
-/// Removes map numbers (`:123`) from SMARTS before parsing since the parser doesn't support them.
 fn parse_patterns(side: &str) -> Result<Vec<QueryMolecule>, ReactionQueryError> {
     if side.is_empty() {
         return Ok(Vec::new());
@@ -534,36 +533,12 @@ fn parse_patterns(side: &str) -> Result<Vec<QueryMolecule>, ReactionQueryError> 
     side.split('|')
         .filter(|p| !p.is_empty())
         .map(|p| {
-            let smarts_without_maps = strip_map_numbers(p);
-            parse_smarts(&smarts_without_maps).map_err(|e| ReactionQueryError::SmartsParseError {
+            parse_smarts(p).map_err(|e| ReactionQueryError::SmartsParseError {
                 smarts: p.to_string(),
                 source: e.to_string(),
             })
         })
         .collect()
-}
-
-/// Remove atom map numbers (`:123`) from a SMARTS string for parsing.
-/// Preserves all other SMARTS syntax.
-fn strip_map_numbers(smarts: &str) -> String {
-    let mut result = String::new();
-    let bytes = smarts.as_bytes();
-    let mut i = 0;
-
-    while i < bytes.len() {
-        if bytes[i] == b':' && i > 0 && i + 1 < bytes.len() && bytes[i + 1].is_ascii_digit() {
-            // Skip the ':' and all following digits
-            i += 1;
-            while i < bytes.len() && bytes[i].is_ascii_digit() {
-                i += 1;
-            }
-        } else {
-            result.push(bytes[i] as char);
-            i += 1;
-        }
-    }
-
-    result
 }
 
 /// Parse a reaction SMARTS query with reactant and product patterns.

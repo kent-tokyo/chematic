@@ -99,6 +99,9 @@ pub enum BondQuery {
 #[derive(Debug, Clone, PartialEq)]
 pub struct QueryAtom {
     pub query: AtomQuery,
+    /// Atom map number from `:N` syntax (e.g. `[O:3]`).
+    /// Stored as metadata only; never used as a matching criterion.
+    pub atom_map: Option<u16>,
 }
 
 /// An edge in a `QueryMolecule` graph.
@@ -132,7 +135,15 @@ impl QueryMolecule {
     /// Add an atom with the given query condition. Returns the atom index.
     pub fn add_atom(&mut self, query: AtomQuery) -> usize {
         let idx = self.atoms.len();
-        self.atoms.push(QueryAtom { query });
+        self.atoms.push(QueryAtom { query, atom_map: None });
+        self.adj.push(vec![]);
+        idx
+    }
+
+    /// Add an atom with an optional atom map number (`:N` from SMARTS/SMIRKS).
+    pub fn add_atom_with_map(&mut self, query: AtomQuery, atom_map: Option<u16>) -> usize {
+        let idx = self.atoms.len();
+        self.atoms.push(QueryAtom { query, atom_map });
         self.adj.push(vec![]);
         idx
     }

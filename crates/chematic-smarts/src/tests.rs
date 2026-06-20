@@ -647,4 +647,46 @@ mod integration_tests {
         let mol = parse_smarts("[$([C])]");
         assert!(mol.is_ok(), "1-level recursive SMARTS should parse ok");
     }
+
+    // -- atom map number `:N` -------------------------------------------------
+
+    #[test]
+    fn test_atom_map_parses_without_error() {
+        // [O;D1;H0:3] — semicolon-AND, degree, H count, atom map — must not error.
+        let q = parse_smarts("[O;D1;H0:3]").expect("[O;D1;H0:3] should parse");
+        assert_eq!(q.atom_count(), 1);
+        assert_eq!(q.atoms[0].atom_map, Some(3));
+    }
+
+    #[test]
+    fn test_atom_map_matches_correctly() {
+        use chematic_smiles::parse;
+        let q = parse_smarts("[O;D1;H0:3]").unwrap();
+        // Acetic acid: the ester oxygen (D1, H0) should match.
+        let acetic = parse("CC(=O)O").unwrap();
+        let matches = find_matches(&q, &acetic);
+        assert!(!matches.is_empty(), "carbonyl O in acetic acid should match [O;D1;H0:3]");
+    }
+
+    #[test]
+    fn test_atom_map_stored_on_each_atom() {
+        // Multi-atom SMARTS with maps: [C:1][O:2]
+        let q = parse_smarts("[C:1][O:2]").expect("[C:1][O:2] should parse");
+        assert_eq!(q.atom_count(), 2);
+        assert_eq!(q.atoms[0].atom_map, Some(1));
+        assert_eq!(q.atoms[1].atom_map, Some(2));
+    }
+
+    #[test]
+    fn test_atom_map_zero_stored() {
+        // :0 is a valid (if unusual) map number.
+        let q = parse_smarts("[C:0]").expect("[C:0] should parse");
+        assert_eq!(q.atoms[0].atom_map, Some(0));
+    }
+
+    #[test]
+    fn test_no_atom_map_is_none() {
+        let q = parse_smarts("[O;D1]").unwrap();
+        assert_eq!(q.atoms[0].atom_map, None);
+    }
 }
