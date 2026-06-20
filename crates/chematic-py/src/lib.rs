@@ -416,6 +416,47 @@ impl Mol {
         chematic_chem::ring_count(&self.inner)
     }
 
+    /// Number of distinct connected ring systems.
+    ///
+    /// Two SSSR rings form the same system when they share at least one atom
+    /// (fused, bridged, or spiro).  Differs from :attr:`ring_count` which
+    /// counts SSSR rings individually.
+    ///
+    ///     naphthalene = chematic.from_smiles("c1ccc2ccccc2c1")
+    ///     naphthalene.ring_system_count  # 1  (two fused rings = one system)
+    ///     biphenyl = chematic.from_smiles("c1ccc(-c2ccccc2)cc1")
+    ///     biphenyl.ring_system_count     # 2  (two independent ring systems)
+    #[getter]
+    fn ring_system_count(&self) -> usize {
+        chematic_chem::ring_system_count(&self.inner)
+    }
+
+    /// Lipinski (1997) HBA count — total number of N and O heavy atoms.
+    ///
+    /// This is the original Rule-of-Five HBA definition: count all N and O atoms
+    /// regardless of hybridisation.  For the more accurate Ertl (2000) definition
+    /// use :attr:`hba`.
+    ///
+    ///     caffeine = chematic.from_smiles("Cn1cnc2c1c(=O)n(c(=O)n2C)C")
+    ///     caffeine.hba_count_lipinski  # 5  (2 O + 3 N)
+    #[getter]
+    fn hba_count_lipinski(&self) -> usize {
+        chematic_chem::hba_count_lipinski(&self.inner)
+    }
+
+    /// Fraction of heavy atoms that are rotatable bonds (0.0–1.0).
+    ///
+    /// `fraction_rotatable_bonds = rotatable_bond_count / heavy_atom_count`.
+    /// Returns ``0.0`` for acyclic molecules with no rotatable bonds, or when
+    /// the molecule has no heavy atoms.
+    ///
+    ///     benzene = chematic.from_smiles("c1ccccc1")
+    ///     benzene.fraction_rotatable_bonds  # 0.0
+    #[getter]
+    fn fraction_rotatable_bonds(&self) -> f64 {
+        chematic_chem::fraction_rotatable_bonds(&self.inner)
+    }
+
     /// Number of aromatic rings.
     #[getter]
     fn aromatic_ring_count(&self) -> usize {
@@ -625,7 +666,13 @@ impl Mol {
         d.set_item("rotatable_bonds", chematic_chem::rotatable_bond_count(m))?;
         d.set_item("heavy_atoms", chematic_chem::heavy_atom_count(m))?;
         d.set_item("ring_count", chematic_chem::ring_count(m))?;
+        d.set_item("ring_system_count", chematic_chem::ring_system_count(m))?;
         d.set_item("aromatic_ring_count", chematic_chem::aromatic_ring_count(m))?;
+        d.set_item("hba_lipinski", chematic_chem::hba_count_lipinski(m))?;
+        d.set_item(
+            "fraction_rotatable_bonds",
+            chematic_chem::fraction_rotatable_bonds(m),
+        )?;
         d.set_item("num_heteroatoms", chematic_chem::num_heteroatoms(m))?;
         d.set_item("num_stereocenters", chematic_chem::num_stereocenters(m))?;
         d.set_item("num_spiro_atoms", chematic_chem::num_spiro_atoms(m))?;
@@ -3153,6 +3200,20 @@ fn is_valid_smiles(smiles: &str) -> bool {
     chematic_smiles::parse(smiles).is_ok()
 }
 
+/// Return ``True`` if ``smarts`` is a valid SMARTS pattern, ``False`` otherwise.
+///
+/// Mirrors :func:`is_valid_smiles` for SMARTS pattern validation.
+/// Useful for validating user-supplied SMARTS before calling
+/// :func:`smarts_match` or :func:`smarts_find`.
+///
+///     chematic.is_valid_smarts("c1ccccc1")  # True
+///     chematic.is_valid_smarts("[invalid")  # False
+///     chematic.is_valid_smarts("[#6]-[#7]") # True
+#[pyfunction]
+fn is_valid_smarts(smarts: &str) -> bool {
+    chematic_smarts::parse_smarts(smarts).is_ok()
+}
+
 /// Tanimoto similarity between two fingerprint byte arrays.
 ///
 /// Works with any equal-length ``bytes`` objects (ECFP4, ECFP6, MACCS, …)::
@@ -4708,6 +4769,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_pdbqt, m)?)?;
     m.add_function(wrap_pyfunction!(from_inchi, m)?)?;
     m.add_function(wrap_pyfunction!(is_valid_smiles, m)?)?;
+    m.add_function(wrap_pyfunction!(is_valid_smarts, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_erg, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_matrix, m)?)?;

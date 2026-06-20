@@ -320,6 +320,52 @@ class Mol:
         ...
 
     @property
+    def ring_system_count(self) -> int:
+        """Number of distinct connected ring systems.
+
+        Two SSSR rings form the same system when they share at least one atom
+        (fused, bridged, or spiro).  Differs from :attr:`ring_count` which
+        counts SSSR rings individually.
+
+        Example::
+
+            naphthalene = chematic.from_smiles("c1ccc2ccccc2c1")
+            naphthalene.ring_system_count  # 1 (two fused rings = one system)
+            biphenyl = chematic.from_smiles("c1ccc(-c2ccccc2)cc1")
+            biphenyl.ring_system_count     # 2 (two independent benzene rings)
+        """
+        ...
+
+    @property
+    def hba_count_lipinski(self) -> int:
+        """Lipinski (1997) HBA count — total number of N and O heavy atoms.
+
+        The original Rule-of-Five HBA definition: count all N and O atoms
+        regardless of hybridisation or substitution.  For the chemically more
+        accurate Ertl (2000) definition use :attr:`hba`.
+
+        Example::
+
+            caffeine = chematic.from_smiles("Cn1cnc2c1c(=O)n(c(=O)n2C)C")
+            caffeine.hba_count_lipinski  # 5 (2 O + 3 N)
+        """
+        ...
+
+    @property
+    def fraction_rotatable_bonds(self) -> float:
+        """Fraction of heavy atoms that are rotatable bonds (0.0–1.0).
+
+        ``fraction_rotatable_bonds = rotatable_bond_count / heavy_atom_count``.
+        Returns 0.0 for rigid or acyclic molecules with no rotatable bonds.
+
+        Example::
+
+            benzene = chematic.from_smiles("c1ccccc1")
+            benzene.fraction_rotatable_bonds  # 0.0
+        """
+        ...
+
+    @property
     def aromatic_ring_count(self) -> int:
         """Number of aromatic rings."""
         ...
@@ -2023,6 +2069,21 @@ def from_inchi(inchi: str) -> Mol:
 
 def is_valid_smiles(smiles: str) -> bool:
     """Return True if the SMILES can be parsed without error."""
+    ...
+
+def is_valid_smarts(smarts: str) -> bool:
+    """Return ``True`` if ``smarts`` is a valid SMARTS pattern.
+
+    Mirrors :func:`is_valid_smiles` for SMARTS validation.
+    Useful for validating user-supplied patterns before calling
+    :func:`smarts_match` or :func:`smarts_find`.
+
+    Example::
+
+        chematic.is_valid_smarts("c1ccccc1")  # True
+        chematic.is_valid_smarts("[invalid")  # False
+        chematic.is_valid_smarts("[#6]-[#7]") # True
+    """
     ...
 
 def tanimoto(a: bytes, b: bytes) -> float:

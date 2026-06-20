@@ -46,16 +46,17 @@ pub mod xlogp3;
 pub use cip::{CipAssignment, assign_cip, tetrahedral_stereo_neighbors};
 pub use descriptors::{
     aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, cns_mpo_score, egan_passes,
-    exact_mass, formal_charge_per_atom, formal_charge_sum, fsp3, ghose_passes, hall_kier_alpha,
-    hba_count, hbd_count, heavy_atom_count, hybridization_per_atom, implicit_hcount_per_atom, ipc,
-    lead_like_passes, lipinski_passes, logp_crippen, logp_crippen_per_atom, mcf_passes,
-    mmff94_charges, molar_refractivity, molecular_weight, mqn, mr_per_atom,
-    num_aliphatic_heterocycles, num_aliphatic_rings, num_amide_bonds, num_aromatic_heterocycles,
-    num_bridgehead_atoms, num_bromines, num_carbons, num_chlorines, num_ester_bonds, num_fluorines,
-    num_heteroatoms, num_hydrogens, num_iodines, num_nitrogens, num_oxygens, num_phosphorus,
-    num_saturated_heterocycles, num_saturated_rings, num_spiro_atoms, num_stereocenters,
-    num_sulfurs, num_unspecified_stereocenters, pfizer_3_75_passes, reos_passes, ring_count,
-    ro3_passes, rotatable_bond_count, tpsa, tpsa_per_atom, usrcat, veber_passes,
+    exact_mass, formal_charge_per_atom, formal_charge_sum, fraction_rotatable_bonds, fsp3,
+    ghose_passes, hall_kier_alpha, hba_count, hba_count_lipinski, hbd_count, heavy_atom_count,
+    hybridization_per_atom, implicit_hcount_per_atom, ipc, lead_like_passes, lipinski_passes,
+    logp_crippen, logp_crippen_per_atom, mcf_passes, mmff94_charges, molar_refractivity,
+    molecular_weight, mqn, mr_per_atom, num_aliphatic_heterocycles, num_aliphatic_rings,
+    num_amide_bonds, num_aromatic_heterocycles, num_bridgehead_atoms, num_bromines, num_carbons,
+    num_chlorines, num_ester_bonds, num_fluorines, num_heteroatoms, num_hydrogens, num_iodines,
+    num_nitrogens, num_oxygens, num_phosphorus, num_saturated_heterocycles, num_saturated_rings,
+    num_spiro_atoms, num_stereocenters, num_sulfurs, num_unspecified_stereocenters,
+    pfizer_3_75_passes, reos_passes, ring_count, ring_system_count, ro3_passes,
+    rotatable_bond_count, tpsa, tpsa_per_atom, usrcat, veber_passes,
 };
 pub use iupac_stereo::iupac_name_stereo;
 

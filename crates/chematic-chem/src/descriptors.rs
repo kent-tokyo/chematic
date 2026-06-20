@@ -1008,6 +1008,53 @@ pub fn ring_count(mol: &Molecule) -> usize {
     find_sssr(mol).rings().len()
 }
 
+/// Number of distinct connected ring systems.
+///
+/// Two SSSR rings belong to the same ring system when they share at least
+/// one atom (fused, bridged, or spiro connections).  This differs from
+/// [`ring_count`] which counts every SSSR ring individually.
+///
+/// Examples:
+/// - benzene: 1 ring system (simple 6-membered ring)
+/// - naphthalene: 1 ring system (two fused rings → one system)
+/// - biphenyl: 2 ring systems (two independent benzene rings connected by a bond)
+///
+/// Useful for scaffold complexity assessment (ScaffoldGraph, Chemical-Descriptors).
+pub fn ring_system_count(mol: &Molecule) -> usize {
+    use chematic_perception::find_ring_families;
+    let sssr = find_sssr(mol);
+    find_ring_families(mol, &sssr).len()
+}
+
+/// Lipinski (1997) HBA count — total number of N and O heavy atoms.
+///
+/// The original Rule-of-Five definition simply counts all nitrogen and oxygen
+/// atoms regardless of hybridisation or substitution.  For the more
+/// chemically accurate Ertl (2000) definition see [`hba_count`].
+///
+/// Used by Chemical-Descriptors, DOPtools, MolVS, and classic implementations.
+pub fn hba_count_lipinski(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| {
+            let an = a.element.atomic_number();
+            an == 7 || an == 8
+        })
+        .count()
+}
+
+/// Fraction of heavy atoms that participate in a rotatable bond.
+///
+/// `fraction_rotatable_bonds = rotatable_bond_count / heavy_atom_count`.
+/// Returns `0.0` for molecules with zero heavy atoms.
+/// Normalises molecular flexibility for cross-scaffold comparison (DOPtools).
+pub fn fraction_rotatable_bonds(mol: &Molecule) -> f64 {
+    let hac = heavy_atom_count(mol);
+    if hac == 0 {
+        return 0.0;
+    }
+    rotatable_bond_count(mol) as f64 / hac as f64
+}
+
 /// Number of non-aromatic (aliphatic) rings.
 pub fn num_aliphatic_rings(mol: &Molecule) -> usize {
     find_sssr(mol)
@@ -3479,5 +3526,68 @@ mod tests {
             let ih = implicit_hcount_per_atom(&m);
             assert_eq!(ih.len(), m.atom_count(), "length mismatch for {smi}");
         }
+    }
+
+    // ── page 24 descriptors ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_hba_count_lipinski_aspirin() {
+        // Aspirin C9H8O4: 0 N + 4 O = 4
+        assert_eq!(hba_count_lipinski(&mol("CC(=O)Oc1ccccc1C(=O)O")), 4);
+    }
+
+    #[test]
+    fn test_hba_count_lipinski_aniline() {
+        // Aniline C6H7N: 1 N + 0 O = 1
+        assert_eq!(hba_count_lipinski(&mol("Nc1ccccc1")), 1);
+    }
+
+    #[test]
+    fn test_hba_count_lipinski_ge_ertl() {
+        // Lipinski counts more liberally than Ertl (e.g., amide N is excluded by Ertl).
+        // For acetamide CC(=O)N: Ertl HBA = 1 (only C=O), Lipinski = 2 (O + N).
+        let acetamide = mol("CC(=O)N");
+        assert_eq!(hba_count_lipinski(&acetamide), 2); // N + O
+        assert!(hba_count(&acetamide) <= hba_count_lipinski(&acetamide));
+    }
+
+    #[test]
+    fn test_fraction_rotatable_bonds_benzene() {
+        // Benzene has 0 rotatable bonds → fraction = 0.0
+        assert_eq!(fraction_rotatable_bonds(&mol("c1ccccc1")), 0.0);
+    }
+
+    #[test]
+    fn test_fraction_rotatable_bonds_in_range() {
+        for smi in ["CCCCc1ccccc1", "CC(=O)Oc1ccccc1C(=O)O", "CCCC"] {
+            let f = fraction_rotatable_bonds(&mol(smi));
+            assert!(
+                (0.0..=1.0).contains(&f),
+                "fraction out of [0,1] for {smi}: {f}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_ring_system_count_benzene() {
+        assert_eq!(ring_system_count(&mol("c1ccccc1")), 1);
+    }
+
+    #[test]
+    fn test_ring_system_count_naphthalene_one_system() {
+        // Naphthalene: 2 fused rings → 1 ring system
+        assert_eq!(ring_system_count(&mol("c1ccc2ccccc2c1")), 1);
+    }
+
+    #[test]
+    fn test_ring_system_count_biphenyl_two_systems() {
+        // Biphenyl: two benzene rings connected by a single bond → 2 ring systems
+        assert_eq!(ring_system_count(&mol("c1ccc(-c2ccccc2)cc1")), 2);
+    }
+
+    #[test]
+    fn test_ring_system_count_acyclic_zero() {
+        // Propane has no rings → 0 ring systems
+        assert_eq!(ring_system_count(&mol("CCC")), 0);
     }
 }
