@@ -16,6 +16,6 @@ documentation = "https://docs.rs/chematic-rxn"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core   = { path = "../chematic-core",   version = "0.4.11" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.11" }
-chematic-smarts = { path = "../chematic-smarts", version = "0.4.11" }
+chematic-core   = { path = "../chematic-core",   version = "0.4.12" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.12" }
+chematic-smarts = { path = "../chematic-smarts", version = "0.4.12" }

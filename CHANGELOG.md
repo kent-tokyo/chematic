@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.4.12] — 2026-06-21
+
 ### Fixed — `chematic-smarts`
 
 - **Atom map number `:N` now supported in SMARTS patterns** — patterns like
