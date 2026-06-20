@@ -901,6 +901,22 @@ impl Mol {
         chematic_chem::esol_solubility(&self.inner)
     }
 
+    /// Predict aqueous solubility (logS, log mol/L) using an ECFP4-based MLP.
+    ///
+    /// When trained weights are installed (`MLP_SOLUBILITY_TRAINED = true`),
+    /// runs a neural-network forward pass on the molecule's ECFP4 fingerprint.
+    /// Until then, transparently falls back to the Delaney ESOL linear regression.
+    ///
+    /// To install trained weights, run `scripts/train_solubility_mlp.py` and
+    /// follow the instructions printed at the end.
+    ///
+    ///     mol = chematic.from_smiles("c1ccccc1")
+    ///     logs = mol.ml_solubility   # same as .esol until weights are trained
+    #[getter]
+    fn ml_solubility(&self) -> f64 {
+        chematic_chem::mlp_solubility(&self.inner)
+    }
+
     // -----------------------------------------------------------------------
     // Transformations
     // -----------------------------------------------------------------------
