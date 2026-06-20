@@ -18,6 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     matching criterion — `:N` is silently accepted and stored).
   - New `QueryMolecule::add_atom_with_map(query, atom_map)` helper (existing
     `add_atom` unchanged — no public API break).
+- **`[C:]` (bare `:` with no digit) now returns `SmartsError::UnexpectedChar`**
+  instead of silently succeeding with `atom_map: None`.
+- Atom map digit accumulation uses `u32` accumulator clamped at `u16::MAX`,
+  ensuring `parse_smarts` and `extract_map_numbers_from_section` agree on the
+  stored value for any input.
+
+### Fixed — `chematic-rxn`
+
+- **`extract_map_numbers_from_section`**: add bracket-depth tracking so that
+  `:` outside brackets (aromatic bond token before a ring-closure digit,
+  e.g. `c1:c:c:c:c:c:1`) is never mistaken for an atom map number; previously
+  any `:N` anywhere in the string was extracted, causing valid aromatic-ring
+  reaction SMARTS to fail with `MapNumberMismatch`.
+- **`mol_to_query`**: call `add_atom_with_map(q, atom.atom_map)` so atom map
+  numbers from the source `Molecule` are preserved in `QueryAtom`; previously
+  `add_atom(q)` always set `atom_map: None`.
 
 ### Removed — `chematic-rxn`
 
