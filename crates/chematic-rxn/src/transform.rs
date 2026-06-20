@@ -504,9 +504,11 @@ mod tests {
         // causing the right ethyl chain (atoms beyond N) to leak into product2
         // → product2 would have 4 atoms instead of 2.
         let diethylamine = parse("CCNCC").unwrap(); // C-C-N-C-C, 5 heavy atoms
-        let results =
-            run_reactants("[N:1][C:2]>>[N:1].[C:2]", &[&diethylamine]).unwrap();
-        assert!(!results.is_empty(), "should find at least one N-C bond match");
+        let results = run_reactants("[N:1][C:2]>>[N:1].[C:2]", &[&diethylamine]).unwrap();
+        assert!(
+            !results.is_empty(),
+            "should find at least one N-C bond match"
+        );
 
         // Find a result where product2 ([C:2]) has exactly 2 atoms (ethyl fragment)
         // — this is only possible when BFS does NOT leak the other ethyl chain.
