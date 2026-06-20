@@ -206,6 +206,10 @@ fn corpus_smoke_issue_11() {
                     kekule_fail += 1;
                 }
                 Err(chematic_inchi::InchiError::NullOutput) => {
+                    lib_err += 1;
+                    eprintln!("NULL-OUTPUT {smiles:?}");
+                }
+                Err(chematic_inchi::InchiError::InvalidInput(_)) => {
                     // Known: pure-H molecules ([H][H]) have no heavy atoms.
                     kekule_fail += 1;
                 }

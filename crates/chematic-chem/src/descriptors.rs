@@ -218,6 +218,8 @@ pub fn hba_count(mol: &Molecule) -> usize {
                     //   degree >= 3 → N-substituted pyrrole or bridgehead N
                     //                 (e.g. N-methyl pyrrole, indolizine N): lone pair
                     //                 participates in the aromatic π system
+                    // Known limitation: 1/5000 molecules (a merocyanine dye) differs from
+                    // RDKit because N-methyl in push-pull quinonoid rings is ambiguous.
                     h == 0 && mol.degree(*idx) < 3
                 } else {
                     // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
@@ -2660,6 +2662,77 @@ mod tests {
     fn test_aromatic_ring_count_aspirin() {
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
         assert_eq!(aromatic_ring_count(&m), 1);
+    }
+
+    #[test]
+    fn test_aromatic_ring_count_anthracene() {
+        let m = mol("c1ccc2cc3ccccc3cc2c1");
+        assert_eq!(aromatic_ring_count(&m), 3);
+    }
+
+    #[test]
+    fn test_aromatic_ring_count_pyrene() {
+        // 4 fused 6-rings; SSSR may produce envelope cycle requiring 3-ring XOR removal
+        let m = mol("c1ccc2cccc3ccc4cccc1c4c23");
+        assert_eq!(aromatic_ring_count(&m), 4);
+    }
+
+    #[test]
+    fn test_aromatic_ring_count_triphenylene() {
+        let m = mol("c1ccc2ccc3ccccc3c2c1");
+        assert_eq!(aromatic_ring_count(&m), 3);
+    }
+
+    #[test]
+    fn test_aromatic_ring_count_fluoranthene() {
+        // 3 six-membered + 1 five-membered aromatic ring
+        let m = mol("c1ccc2-c3cccc4cccc-3c4c2c1");
+        assert_eq!(aromatic_ring_count(&m), 4);
+    }
+
+    #[test]
+    fn test_aromatic_ring_count_acridine() {
+        let m = mol("c1ccc2nc3ccccc3cc2c1");
+        assert_eq!(aromatic_ring_count(&m), 3);
+    }
+
+    // bench5k regression cases (rd=N, ch=N-1 pattern)
+    #[test]
+    fn test_arc_bench_lactone_benzene() {
+        // rd=1 ch=0: benzene fused with lactone ring
+        let m = mol("CC1(C)CC(=O)c2c(ccc(C(=O)CC(N)CO)c2N)O1");
+        assert_eq!(aromatic_ring_count(&m), 1);
+    }
+
+    #[test]
+    fn test_arc_bench_bridged_benzenes() {
+        // rd=2 ch=1: two aromatic benzenes connected by O and C bridge
+        let m = mol("Cc1c(C)c2c(c(C)c1O)Oc1c(C)c([C@H](C)[C@@H](C)O)c(O)c(O)c1C2");
+        assert_eq!(aromatic_ring_count(&m), 2);
+    }
+
+    #[test]
+    fn test_arc_bench_no_bridge() {
+        // rd=2 ch=1: two benzenes with N/O bridges
+        let m = mol("C[C@]12Nc3ccccc3O[C@@]1(C)Nc1ccccc1O2");
+        assert_eq!(aromatic_ring_count(&m), 2);
+    }
+
+    #[test]
+    fn test_arc_bench_steroid_benzene() {
+        // rd=1 ch=0: complex steroid scaffold with one phenyl ring
+        let m = mol("CC1=C2C[C@@]3(C)C[C@H](O)[C@](C)(C[C@H](O)[C@H](O)[C@@](C)(O)CO)[C@H]3c3ccc(C)c(c32)C1");
+        assert_eq!(aromatic_ring_count(&m), 1);
+    }
+
+    #[test]
+    fn test_hba_metformin() {
+        // Metformin: CN(C)C(=N)NC(=N)N — RDKit CalcNumHBA = 2 (two imine =NH)
+        // Confirmed by tracing current n_adjacent_to_pi_center logic:
+        //   dimethylamino-N, bridging NH, terminal NH₂ → excluded (adjacent to C=N)
+        //   two =NH imine nitrogens → counted (double bond to neighbor, not single-like)
+        let m = mol("CN(C)C(=N)NC(=N)N");
+        assert_eq!(hba_count(&m), 2, "metformin HBA should match RDKit (2)");
     }
 
     // -- formal_charge_sum tests -------------------------------------------

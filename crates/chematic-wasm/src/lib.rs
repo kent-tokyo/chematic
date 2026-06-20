@@ -18,7 +18,9 @@ const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
 #[wasm_bindgen(start)]
 pub fn start() {
-    console_error_panic_hook::set_once();
+    std::panic::set_hook(Box::new(|info| {
+        web_sys::console::error_1(&info.to_string().into());
+    }));
 }
 
 // High-level workflow APIs
@@ -1732,6 +1734,7 @@ pub fn conformer_ensemble_json(mol: &MolHandle, n: u32, rmsd_threshold: f64) -> 
     let config = chematic_3d::ConformerConfig {
         count: n as usize,
         rmsd_threshold,
+        ..chematic_3d::ConformerConfig::default()
     };
     match chematic_3d::generate_conformer_ensemble_with_config(fresh, &config) {
         Ok(ensemble) => {

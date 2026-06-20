@@ -5,8 +5,6 @@
 
 use std::fmt;
 
-use serde::{Deserialize, Serialize};
-
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 use chematic_fp::{atom_pair_fp, ecfp4, maccs};
 use chematic_smarts::{
@@ -113,7 +111,8 @@ impl Default for WorkflowLimits {
 }
 
 /// Scalar descriptors and structural counts for a molecule.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DescriptorSummary {
     pub molecular_weight: f64,
     pub exact_mass: f64,
@@ -139,7 +138,8 @@ pub struct DescriptorSummary {
 }
 
 /// Common oral drug-likeness and structural-alert filter outcomes.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FilterSummary {
     pub lipinski_passes: bool,
     pub veber_passes: bool,
@@ -151,21 +151,24 @@ pub struct FilterSummary {
 }
 
 /// Functional-group label with atom indices.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FunctionalGroupSummary {
     pub name: String,
     pub atom_indices: Vec<usize>,
 }
 
 /// Named group label with atom indices.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NamedGroupSummary {
     pub name: String,
     pub atom_indices: Vec<usize>,
 }
 
 /// Complete single-molecule report for tool-facing integrations.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MoleculeReport {
     pub input_smiles: String,
     pub canonical_smiles: String,
@@ -184,7 +187,8 @@ pub struct ReportOptions {
 }
 
 /// Similarity values for a pair of molecules.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SimilaritySummary {
     pub ecfp4_tanimoto: f64,
     pub maccs_tanimoto: f64,
@@ -192,7 +196,8 @@ pub struct SimilaritySummary {
 }
 
 /// Pairwise comparison entry.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PairwiseComparison {
     pub left_index: usize,
     pub right_index: usize,
@@ -200,7 +205,8 @@ pub struct PairwiseComparison {
 }
 
 /// Descriptor delta between two molecules (`right - left`).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DescriptorDelta {
     pub left_index: usize,
     pub right_index: usize,
@@ -216,7 +222,8 @@ pub struct DescriptorDelta {
 }
 
 /// Multi-molecule comparison report.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MoleculeComparison {
     pub reports: Vec<MoleculeReport>,
     pub pairwise: Vec<PairwiseComparison>,
@@ -244,7 +251,8 @@ impl Default for CompareOptions {
 }
 
 /// Per-record result for batch screening.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ScreeningRecord {
     pub input_index: usize,
     pub input_smiles: String,
@@ -253,7 +261,8 @@ pub struct ScreeningRecord {
 }
 
 /// Batch screening report.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ScreeningReport {
     pub records: Vec<ScreeningRecord>,
     /// Original input indices selected by MaxMin diversity picking.

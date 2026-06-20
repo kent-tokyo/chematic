@@ -33,6 +33,7 @@
 //! | `canonical_smiles` | Canonicalize SMILES |
 //! | `find_mcs` | Maximum common substructure |
 //! | `generate_3d` | 3D coordinates (XYZ) |
+//! | `retrosynthesis` | One-step BRICS disconnection, ranked by SA Score |
 
 #![forbid(unsafe_code)]
 
@@ -145,7 +146,7 @@ mod tests {
         let resp = handle_line(req).unwrap();
         assert!(resp["result"]["tools"].is_array());
         let count = resp["result"]["tools"].as_array().unwrap().len();
-        assert_eq!(count, 15);
+        assert_eq!(count, 16);
     }
 
     #[test]
