@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, BondOrder, Molecule, MoleculeBuilder, validate_valence};
+use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, validate_valence};
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches,
 };
@@ -40,9 +40,36 @@ impl From<RxnError> for TransformError {
 /// product component in the SMIRKS right-hand side.
 ///
 /// Returns `Ok(vec![])` when no match is found.
+///
+/// Unmapped atoms attached to a mapped core atom (substituents) are
+/// automatically carried through to the matching product template.
+/// Use [`run_reactants_strict`] to return only mapped atoms.
 pub fn run_reactants(
     smirks: &str,
     reactants: &[&Molecule],
+) -> Result<Vec<Vec<Molecule>>, TransformError> {
+    run_reactants_impl(smirks, reactants, true)
+}
+
+/// Like [`run_reactants`] but **does not carry through substituents**.
+///
+/// Only atoms that appear explicitly in the product template (via atom maps or
+/// new template atoms) are included in each product.  Unmapped neighbors of
+/// core atoms are **not** collected via BFS.
+///
+/// Useful when the SMIRKS describes a complete molecule transformation and
+/// you do not want R-group carry-through behaviour.
+pub fn run_reactants_strict(
+    smirks: &str,
+    reactants: &[&Molecule],
+) -> Result<Vec<Vec<Molecule>>, TransformError> {
+    run_reactants_impl(smirks, reactants, false)
+}
+
+fn run_reactants_impl(
+    smirks: &str,
+    reactants: &[&Molecule],
+    carry_substituents: bool,
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
     let rxn = parse_reaction(smirks)?;
 
@@ -105,7 +132,9 @@ pub fn run_reactants(
         let products: Vec<Molecule> = rxn
             .products
             .iter()
-            .map(|pt| build_product(pt, &global_map, reactants, &all_template_atoms))
+            .map(|pt| {
+                build_product(pt, &global_map, reactants, &all_template_atoms, carry_substituents)
+            })
             .collect();
 
         // Skip product sets that contain any over-valenced atom.
@@ -200,6 +229,7 @@ fn build_product(
     global_map: &HashMap<u16, (usize, AtomIdx)>,
     input_mols: &[&Molecule],
     all_template_atoms: &HashSet<(usize, AtomIdx)>,
+    carry_substituents: bool,
 ) -> Molecule {
     let mut builder = MoleculeBuilder::new();
 
@@ -234,6 +264,13 @@ fn build_product(
                 if tmpl_atom.hydrogen_count.is_some() {
                     new_atom.hydrogen_count = tmpl_atom.hydrogen_count;
                 }
+                // Apply product-template chirality when explicitly specified (@/@@).
+                // When the template has Chirality::None, the source chirality is
+                // preserved (inherited from the clone above) — this is the common
+                // case for reactions that don't change the stereocentre.
+                if tmpl_atom.chirality != Chirality::None {
+                    new_atom.chirality = tmpl_atom.chirality;
+                }
                 new_atom.atom_map = None;
                 let idx = builder.add_atom(new_atom);
                 src_to_new.insert((mol_idx, src_idx), idx);
@@ -254,23 +291,26 @@ fn build_product(
     }
 
     // --- Step 2: BFS from core atoms to collect substituents ---
+    // Skipped when carry_substituents = false (run_reactants_strict mode).
     // Seed visited with all template atoms so BFS cannot cross into the template region.
     let mut visited: HashSet<(usize, AtomIdx)> = all_template_atoms.clone();
-    let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.iter().cloned().collect();
+    if carry_substituents {
+        let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.iter().cloned().collect();
 
-    while let Some((mol_idx, cur_idx)) = queue.pop_front() {
-        for (nb_idx, _bond_idx) in input_mols[mol_idx].neighbors(cur_idx) {
-            let key = (mol_idx, nb_idx);
-            if visited.contains(&key) {
-                continue;
+        while let Some((mol_idx, cur_idx)) = queue.pop_front() {
+            for (nb_idx, _bond_idx) in input_mols[mol_idx].neighbors(cur_idx) {
+                let key = (mol_idx, nb_idx);
+                if visited.contains(&key) {
+                    continue;
+                }
+                visited.insert(key);
+                let src_atom = input_mols[mol_idx].atom(nb_idx);
+                let mut new_atom = src_atom.clone();
+                new_atom.atom_map = None;
+                let new_idx = builder.add_atom(new_atom);
+                src_to_new.insert(key, new_idx);
+                queue.push_back(key);
             }
-            visited.insert(key);
-            let src_atom = input_mols[mol_idx].atom(nb_idx);
-            let mut new_atom = src_atom.clone();
-            new_atom.atom_map = None;
-            let new_idx = builder.add_atom(new_atom);
-            src_to_new.insert(key, new_idx);
-            queue.push_back(key);
         }
     }
 
@@ -538,6 +578,74 @@ mod tests {
             assert_eq!(ps.len(), 2, "two product templates → two products");
             assert_eq!(ps[0].atom_count(), 1, "each product is a single carbon");
             assert_eq!(ps[1].atom_count(), 1, "each product is a single carbon");
+        }
+    }
+
+    // ── Stereo SMIRKS tests ───────────────────────────────────────────────────
+
+    #[test]
+    fn stereo_preserved_when_template_has_no_spec() {
+        // Product template [C:1] has no chirality → source @@ is preserved via clone.
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        let results = run_reactants("[C@@H:1](F)(Cl)Br>>[C:1](F)(Cl)Br", &[&mol]).unwrap();
+        assert!(!results.is_empty(), "should match and produce a product");
+        let prod = &results[0][0];
+        // The core C atom is first in the builder (index 0).
+        let core_chirality = prod.atom(AtomIdx(0)).chirality;
+        // Template has None → source Clockwise (@@ in SMILES = Clockwise) is preserved.
+        assert_eq!(
+            core_chirality,
+            Chirality::Clockwise,
+            "source @@ chirality must be preserved when template has no stereo spec"
+        );
+    }
+
+    #[test]
+    fn stereo_inverted_by_template() {
+        // Product template [C@H:1] has @ (CounterClockwise) → overrides source @@ (Clockwise).
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        let results = run_reactants("[C@@H:1](F)(Cl)Br>>[C@H:1](F)(Cl)Br", &[&mol]).unwrap();
+        assert!(!results.is_empty(), "should match and produce a product");
+        let prod = &results[0][0];
+        let core_chirality = prod.atom(AtomIdx(0)).chirality;
+        assert_eq!(
+            core_chirality,
+            Chirality::CounterClockwise,
+            "product template @ must override source @@ → CounterClockwise"
+        );
+    }
+
+    // ── run_reactants_strict tests ────────────────────────────────────────────
+
+    #[test]
+    fn strict_mode_excludes_substituents() {
+        // Methylamine (NC): in normal mode [N:1]>>[N:1] carries C through as substituent.
+        // In strict mode only N is returned (no C).
+        let mol = parse("NC").unwrap();
+        let normal = run_reactants("[N:1]>>[N:1]", &[&mol]).unwrap();
+        let strict = run_reactants_strict("[N:1]>>[N:1]", &[&mol]).unwrap();
+        assert!(!normal.is_empty());
+        assert!(!strict.is_empty());
+        let normal_atoms = normal[0][0].atom_count();
+        let strict_atoms = strict[0][0].atom_count();
+        assert!(
+            normal_atoms > strict_atoms,
+            "normal mode carries substituent C (got {normal_atoms}), \
+             strict mode only mapped N (got {strict_atoms})"
+        );
+        assert_eq!(strict_atoms, 1, "strict mode: only the mapped N atom");
+    }
+
+    #[test]
+    fn strict_mode_bond_cleavage() {
+        // Ethane cleavage: strict mode gives 1-atom products, same as normal here
+        // (no unmapped substituents on either C).
+        let ethane = parse("CC").unwrap();
+        let results = run_reactants_strict("[C:1][C:2]>>[C:1].[C:2]", &[&ethane]).unwrap();
+        assert!(!results.is_empty());
+        for ps in &results {
+            assert_eq!(ps[0].atom_count(), 1);
+            assert_eq!(ps[1].atom_count(), 1);
         }
     }
 }

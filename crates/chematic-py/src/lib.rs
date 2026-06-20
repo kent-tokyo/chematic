@@ -4678,6 +4678,29 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Apply a SMIRKS reaction template to a list of reactant molecules (strict mode).
+///
+/// Like :func:`run_smirks` but **does not carry substituents** into products.
+/// Only atoms explicitly mapped in the product template are included.
+///
+///     products = chematic.run_smirks_strict("[N:1][C:2]>>[N:1].[C:2]", [mol])
+///     # → only the mapped N and C atoms; no R-groups attached
+#[pyfunction]
+fn run_smirks_strict(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
+    let refs: Vec<&chematic_core::Molecule> = reactants.iter().map(|m| m.inner.as_ref()).collect();
+    chematic_rxn::run_reactants_strict(smirks, &refs)
+        .map(|sets| {
+            sets.into_iter()
+                .map(|set| {
+                    set.into_iter()
+                        .map(|m| Mol { inner: Arc::new(m) })
+                        .collect()
+                })
+                .collect()
+        })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Find the Maximum Common Substructure (MCS) of a list of molecules.
 ///
 /// Returns the MCS as a Mol, or ``None`` when there is no common substructure.
@@ -4798,6 +4821,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(reaction_svg, m)?)?;
     m.add_function(wrap_pyfunction!(scaffold_network_counts, m)?)?;
     m.add_function(wrap_pyfunction!(run_smirks, m)?)?;
+    m.add_function(wrap_pyfunction!(run_smirks_strict, m)?)?;
     m.add_function(wrap_pyfunction!(find_mcs, m)?)?;
     m.add_function(wrap_pyfunction!(reaction_smarts_match, m)?)?;
     m.add_function(wrap_pyfunction!(query_reaction, m)?)?;
