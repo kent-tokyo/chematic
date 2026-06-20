@@ -18,7 +18,9 @@ const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
 #[wasm_bindgen(start)]
 pub fn start() {
-    console_error_panic_hook::set_once();
+    std::panic::set_hook(Box::new(|info| {
+        web_sys::console::error_1(&info.to_string().into());
+    }));
 }
 
 // High-level workflow APIs
