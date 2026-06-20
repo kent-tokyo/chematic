@@ -502,22 +502,36 @@ fn extract_map_numbers(smarts_str: &str) -> Result<MapNumberInfo, ReactionQueryE
 fn extract_map_numbers_from_section(smarts: &str) -> Vec<u16> {
     let mut map_numbers = Vec::new();
     let bytes = smarts.as_bytes();
+    let mut bracket_depth: u32 = 0;
+    let mut i = 0;
 
-    for i in 0..bytes.len() {
-        if bytes[i] == b':' && i + 1 < bytes.len() {
-            let mut j = i + 1;
-            let mut num_str = String::new();
-
-            // Collect digits
-            while j < bytes.len() && bytes[j].is_ascii_digit() {
-                num_str.push(bytes[j] as char);
-                j += 1;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'[' => {
+                bracket_depth += 1;
+                i += 1;
             }
-
-            if !num_str.is_empty()
-                && let Ok(num) = num_str.parse::<u16>()
-            {
-                map_numbers.push(num);
+            b']' => {
+                bracket_depth = bracket_depth.saturating_sub(1);
+                i += 1;
+            }
+            b':' if bracket_depth > 0 => {
+                // Atom map number: only valid inside a bracket atom `[…:N]`.
+                let mut j = i + 1;
+                let mut num_str = String::new();
+                while j < bytes.len() && bytes[j].is_ascii_digit() {
+                    num_str.push(bytes[j] as char);
+                    j += 1;
+                }
+                if !num_str.is_empty()
+                    && let Ok(num) = num_str.parse::<u16>()
+                {
+                    map_numbers.push(num);
+                }
+                i = j;
+            }
+            _ => {
+                i += 1;
             }
         }
     }

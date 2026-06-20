@@ -183,7 +183,7 @@ fn mol_to_query(mol: &Molecule) -> QueryMolecule {
             );
         }
 
-        qmol.add_atom(q);
+        qmol.add_atom_with_map(q, atom.atom_map);
     }
 
     for (_bidx, bond) in mol.bonds() {

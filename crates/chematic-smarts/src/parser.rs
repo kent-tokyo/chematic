@@ -555,18 +555,20 @@ impl<'a> Parser<'a> {
 
         // Optional atom map number: `[O;D1;H0:3]` → atom_map = Some(3).
         // The `:` is metadata only and does not affect matching.
+        // A bare `:` with no following digit (e.g. `[C:]`) is an error.
         let atom_map = if self.peek() == Some(b':') {
+            let colon_pos = self.pos;
             self.advance(); // consume ':'
-            // Parse the following digits as u16.
             if self.peek().is_some_and(|c| c.is_ascii_digit()) {
-                let mut val: u16 = 0;
+                // Parse digits as u16, clamped at u16::MAX via checked arithmetic.
+                let mut val: u32 = 0;
                 while let Some(d) = self.peek().filter(|c| c.is_ascii_digit()) {
                     self.advance();
-                    val = val.saturating_mul(10).saturating_add((d - b'0') as u16);
+                    val = val.saturating_mul(10).saturating_add((d - b'0') as u32);
                 }
-                Some(val)
+                Some(val.min(u16::MAX as u32) as u16)
             } else {
-                None
+                return Err(SmartsError::UnexpectedChar(':', colon_pos));
             }
         } else {
             None
