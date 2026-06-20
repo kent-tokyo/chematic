@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-smarts`
+
+- **Atom map number `:N` now supported in SMARTS patterns** — patterns like
+  `[O;D1;H0:3]` (SMIRKS-derived SMARTS) previously caused a parse error
+  because the SMARTS parser did not handle the `:N` suffix.
+  - `QueryAtom` gains `atom_map: Option<u16>` (metadata only; never a
+    matching criterion — `:N` is silently accepted and stored).
+  - New `QueryMolecule::add_atom_with_map(query, atom_map)` helper (existing
+    `add_atom` unchanged — no public API break).
+
+### Removed — `chematic-rxn`
+
+- `strip_map_numbers()` workaround in `query.rs` is deleted; the SMARTS
+  parser now natively accepts `:N` so the pre-processing step is unnecessary.
+
 ---
 
 ## [0.4.11] — 2026-06-21

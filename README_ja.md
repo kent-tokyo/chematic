@@ -65,7 +65,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-chem`        | 70+ 記述子、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 99.98% RDKit 一致率**（5,000 分子ベンチマーク） | 496     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 55      |
 | `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：OOP (117件) + Stretch-Bend (282件)；steepest descent + L-BFGS；DREIDING | 98      |
-| `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン) | 87      |
+| `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン)；**SMARTS 内アトムマップ `:N`** (`[O;D1;H0:3]` 形式 — メタデータとして保存、マッチング条件には不使用) | 137     |
 | `chematic-3d`          | 3D 座標生成、ETKDG KB (20+ パターン)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 147     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center`、`run_reactants`（原子価バリデーション） | 30      |
 | `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み | 28 (+14*)   |

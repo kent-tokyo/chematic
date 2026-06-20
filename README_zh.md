@@ -65,7 +65,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-chem`       | 70+ 描述符、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 99.98%**（5,000 分子基准） | 496    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** — Tanimoto/Dice | 55     |
 | `chematic-ff`         | **MMFF94 全 7 能量项**（Halgren 1996）：OOP（117 条）+ STRE-BEN（282 条）；L-BFGS；DREIDING | 98     |
-| `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式） | 87     |
+| `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式）；**SMARTS 原子映射 `:N`**（`[O;D1;H0:3]` — 作为元数据存储，不用于匹配） | 137    |
 | `chematic-3d`         | 3D 坐标生成、ETKDG KB（20+ 模式）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 147    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center`、`run_reactants` | 30     |
 | `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取 | 28 (+14*)   |
