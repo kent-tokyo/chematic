@@ -1395,17 +1395,36 @@ impl Mol {
     /// Args:
     ///     n: Number of conformers to attempt.
     ///     rmsd_threshold: Minimum RMSD (Å) between conformers (default 0.5).
-    #[pyo3(signature = (n, rmsd_threshold = 0.5))]
-    fn conformer_ensemble(&self, n: usize, rmsd_threshold: f64) -> Vec<Vec<Vec<f64>>> {
-        // generate_conformer_ensemble_with_config takes Molecule by value; re-parse from SMILES.
+    /// Generate a conformer ensemble using ETKDG + force-field minimization + RMSD pruning.
+    ///
+    /// Args:
+    ///     n: Number of conformers to attempt.
+    ///     rmsd_threshold: Minimum Kabsch-aligned RMSD (Å) between retained conformers (default 0.5).
+    ///     force_field: ``"dreiding"`` (fast, default) or ``"mmff94"`` (higher accuracy).
+    ///     noise_sigma_deg: Gaussian torsion noise σ in degrees (default 30.0).
+    #[pyo3(signature = (n, rmsd_threshold = 0.5, force_field = "dreiding", noise_sigma_deg = 30.0))]
+    fn conformer_ensemble(
+        &self,
+        n: usize,
+        rmsd_threshold: f64,
+        force_field: &str,
+        noise_sigma_deg: f64,
+    ) -> Vec<Vec<Vec<f64>>> {
         let smiles = chematic_smiles::canonical_smiles(&self.inner);
         let mol = match chematic_smiles::parse(&smiles) {
             Ok(m) => m,
             Err(_) => return Vec::new(),
         };
+        let ff = if force_field.eq_ignore_ascii_case("mmff94") {
+            chematic_3d::ConformerForceField::Mmff94
+        } else {
+            chematic_3d::ConformerForceField::Dreiding
+        };
         let config = chematic_3d::ConformerConfig {
             count: n,
             rmsd_threshold,
+            force_field: ff,
+            noise_sigma_deg,
         };
         match chematic_3d::generate_conformer_ensemble_with_config(mol, &config) {
             Ok(ensemble) => (0..ensemble.conformer_count())

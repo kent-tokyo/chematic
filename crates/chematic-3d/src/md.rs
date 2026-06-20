@@ -225,17 +225,7 @@ fn initialize_velocities(masses: &[f64], temp_k: f64, prng: &mut crate::prng::Pr
 }
 
 fn gaussian_random(prng: &mut crate::prng::Prng) -> f64 {
-    use std::f64::consts::PI;
-    // Box-Muller: u1 must be strictly positive to avoid ln(0) = -∞.
-    // prng.f64() returns 0.0 with probability 2^-53; resample on that rare case.
-    let u1 = loop {
-        let v = prng.f64();
-        if v != 0.0 {
-            break v;
-        }
-    };
-    let u2 = prng.f64();
-    (-2.0 * u1.ln()).sqrt() * (2.0 * PI * u2).cos()
+    prng.gaussian_f64()
 }
 
 fn compute_forces(

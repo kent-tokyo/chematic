@@ -75,22 +75,40 @@ pub use xyz::{XyzError, parse_xyz, write_xyz};
 // Configuration types
 // ---------------------------------------------------------------------------
 
+/// Force field used for geometry minimization during conformer ensemble generation.
+#[derive(Clone, Debug, Default)]
+pub enum ConformerForceField {
+    /// DREIDING: fast, suitable for large-scale screening.
+    #[default]
+    Dreiding,
+    /// MMFF94 (Halgren 1996): higher accuracy for drug-like molecules.
+    /// Slower than DREIDING but produces better geometries.
+    Mmff94,
+}
+
 /// Configuration for conformer ensemble generation.
 ///
-/// - `count`: number of conformers to generate (before pruning)
-/// - `rmsd_threshold`: minimum RMSD (Å) between conformers. Conformers with RMSD below this
-///   threshold to an already-added conformer are discarded. Set to 0.0 to disable pruning.
+/// - `count`: number of conformers to attempt (before RMSD pruning).
+/// - `rmsd_threshold`: minimum Kabsch-aligned RMSD (Å) between retained conformers.
+///   Set to 0.0 to disable pruning.
+/// - `force_field`: minimization engine after ETKDG placement.
+/// - `noise_sigma_deg`: standard deviation of Gaussian torsion noise (degrees).
+///   Default 30°; set to 0.0 for deterministic single-conformer generation.
 #[derive(Clone, Debug)]
 pub struct ConformerConfig {
     pub count: usize,
     pub rmsd_threshold: f64,
+    pub force_field: ConformerForceField,
+    pub noise_sigma_deg: f64,
 }
 
 impl Default for ConformerConfig {
     fn default() -> Self {
         Self {
             count: 1,
-            rmsd_threshold: 0.5, // Default: keep conformers at least 0.5 Å apart
+            rmsd_threshold: 0.5,
+            force_field: ConformerForceField::Dreiding,
+            noise_sigma_deg: 30.0,
         }
     }
 }
@@ -135,21 +153,23 @@ pub fn generate_conformer_ensemble(
     mol: chematic_core::Molecule,
     count: usize,
 ) -> Result<ConformerEnsemble, ConformerError> {
-    let config = ConformerConfig {
+    generate_conformer_ensemble_with_config(mol, &ConformerConfig {
         count,
         rmsd_threshold: 0.0, // No pruning for backward compatibility
-    };
-    generate_conformer_ensemble_with_config(mol, &config)
+        ..ConformerConfig::default()
+    })
 }
 
-/// Generate multiple conformers with RMSD-based pruning.
+/// Generate multiple conformers with force-field minimization and Kabsch-RMSD pruning.
 ///
-/// Generates up to `config.count` conformers via repeated distance geometry + DREIDING minimization.
-/// If `rmsd_threshold > 0`, discards conformers with RMSD below the threshold to an
-/// already-added conformer, effectively filtering out redundant structures.
+/// Pipeline for each attempt (up to `config.count`):
+/// 1. ETKDG placement with Gaussian torsion noise (`config.noise_sigma_deg`).
+/// 2. Energy minimization with the chosen force field (`config.force_field`).
+/// 3. Kabsch-superposition RMSD vs all retained conformers; discard if below
+///    `config.rmsd_threshold`.
 ///
-/// Returns `ConformerEnsemble` with the final set of conformers (may be fewer than `count`
-/// if pruning removes duplicates).
+/// Returns `ConformerEnsemble` with the retained set (may be fewer than `count`
+/// after pruning).
 pub fn generate_conformer_ensemble_with_config(
     mol: chematic_core::Molecule,
     config: &ConformerConfig,
@@ -159,41 +179,49 @@ pub fn generate_conformer_ensemble_with_config(
     }
 
     let mut ensemble = ConformerEnsemble::new(mol);
-    let use_pruning = config.rmsd_threshold > 0.0;
-    // For ensemble > 1, add ±30° torsion noise so each conformer samples a
-    // different region of conformational space (the DG itself is deterministic).
-    let noise_sigma = if config.count > 1 { 30.0_f64 } else { 0.0 };
+    let noise_sigma = if config.count > 1 { config.noise_sigma_deg } else { 0.0 };
 
     for _ in 0..config.count {
         let coords = etkdg::generate_coords_etkdg_with_noise(ensemble.mol(), noise_sigma);
-        let minimized = minimize_dreiding(ensemble.mol(), coords);
+        let minimized = match config.force_field {
+            ConformerForceField::Dreiding => minimize_dreiding(ensemble.mol(), coords),
+            ConformerForceField::Mmff94 => minimize_mmff94(ensemble.mol(), coords),
+        };
 
-        // Apply RMSD pruning if enabled
-        if use_pruning {
-            let mut is_duplicate = false;
-            for i in 0..ensemble.conformer_count() {
-                if let Some(existing) = ensemble.get_conformer(i) {
-                    // Convert Point3 vectors to [f64; 3] arrays for rmsd_no_align
-                    let min_array: Vec<[f64; 3]> =
-                        minimized.points.iter().map(|p| [p.x, p.y, p.z]).collect();
-                    let exist_array: Vec<[f64; 3]> =
-                        existing.points.iter().map(|p| [p.x, p.y, p.z]).collect();
-                    let rmsd = rmsd_no_align(&min_array, &exist_array);
-                    if rmsd < config.rmsd_threshold {
-                        is_duplicate = true;
-                        break;
-                    }
-                }
-            }
-            if is_duplicate {
-                continue; // Skip this conformer
-            }
+        // Kabsch-aligned RMSD pruning: discard near-duplicates.
+        if ensemble.is_duplicate(&minimized, config.rmsd_threshold) {
+            continue;
         }
 
         ensemble.add_conformer(minimized)?;
     }
 
     Ok(ensemble)
+}
+
+/// Generate multiple conformers minimized with MMFF94 (Halgren 1996).
+///
+/// Convenience wrapper around [`generate_conformer_ensemble_with_config`] with
+/// `ConformerForceField::Mmff94`.  Higher accuracy than the default DREIDING
+/// pipeline, at the cost of ~3–5× longer minimization time.
+///
+/// ```rust,ignore
+/// let ensemble = generate_conformer_ensemble_mmff94(mol, 20, 0.5)?;
+/// ```
+pub fn generate_conformer_ensemble_mmff94(
+    mol: chematic_core::Molecule,
+    count: usize,
+    rmsd_threshold: f64,
+) -> Result<ConformerEnsemble, ConformerError> {
+    generate_conformer_ensemble_with_config(
+        mol,
+        &ConformerConfig {
+            count,
+            rmsd_threshold,
+            force_field: ConformerForceField::Mmff94,
+            noise_sigma_deg: 30.0,
+        },
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -208,7 +236,8 @@ mod tests {
     use crate::{
         coords::{Coords3D, Point3},
         dg::generate_coords,
-        generate_conformer_ensemble, generate_conformer_ensemble_with_config,
+        generate_conformer_ensemble, generate_conformer_ensemble_mmff94,
+        generate_conformer_ensemble_with_config,
         pdb::{parse_pdb_atoms, pdb_to_molecule, write_pdb},
         xyz::{XyzError, parse_xyz, write_xyz},
     };
@@ -633,7 +662,8 @@ mod tests {
         let mol = parse("CC").expect("ethane SMILES");
         let config = ConformerConfig {
             count: 2,
-            rmsd_threshold: 0.0, // No pruning
+            rmsd_threshold: 0.0,
+            ..ConformerConfig::default()
         };
         let ensemble = generate_conformer_ensemble_with_config(mol, &config)
             .expect("should generate ensemble");
@@ -647,6 +677,7 @@ mod tests {
         let config = ConformerConfig {
             count: 0,
             rmsd_threshold: 0.0,
+            ..ConformerConfig::default()
         };
         let ensemble = generate_conformer_ensemble_with_config(mol, &config)
             .expect("should create empty ensemble");
@@ -663,7 +694,8 @@ mod tests {
         let mol = parse("C").expect("methane SMILES");
         let config = ConformerConfig {
             count: 5,
-            rmsd_threshold: 1.0, // High threshold to prune most duplicates
+            rmsd_threshold: 1.0,
+            ..ConformerConfig::default()
         };
         let ensemble = generate_conformer_ensemble_with_config(mol, &config)
             .expect("should generate ensemble with pruning");
@@ -683,6 +715,39 @@ mod tests {
             ensemble.conformer_count(),
             2,
             "backward-compatible API should work"
+        );
+    }
+
+    #[test]
+    fn test_conformer_ensemble_mmff94() {
+        // MMFF94 ensemble must produce at least 1 conformer for a drug-like molecule.
+        let mol = parse("c1ccccc1CC(=O)O").expect("phenylacetic acid");
+        let ensemble = generate_conformer_ensemble_mmff94(mol, 5, 0.5)
+            .expect("MMFF94 ensemble should succeed");
+        assert!(
+            ensemble.conformer_count() >= 1,
+            "MMFF94 ensemble must produce at least 1 conformer"
+        );
+    }
+
+    #[test]
+    fn test_conformer_ensemble_gaussian_diversity() {
+        // With Gaussian noise and n>1, we expect diverse conformers for a flexible molecule.
+        let mol = parse("CCCCCC").expect("hexane");
+        use super::{ConformerConfig, ConformerForceField};
+        let config = ConformerConfig {
+            count: 10,
+            rmsd_threshold: 0.3,
+            force_field: ConformerForceField::Dreiding,
+            noise_sigma_deg: 30.0,
+        };
+        let ensemble =
+            generate_conformer_ensemble_with_config(mol, &config).expect("ensemble ok");
+        // Hexane has 3 rotatable bonds; 10 attempts with Gaussian noise should yield ≥2 unique conformers.
+        assert!(
+            ensemble.conformer_count() >= 2,
+            "flexible molecule with Gaussian noise should produce diverse conformers, got {}",
+            ensemble.conformer_count()
         );
     }
 }

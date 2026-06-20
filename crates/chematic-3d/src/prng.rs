@@ -32,4 +32,19 @@ impl Prng {
         // Use the top 53 bits to fill the mantissa.
         (x >> 11) as f64 / (1u64 << 53) as f64
     }
+
+    /// Return a standard-normal sample via Box-Muller transform.
+    ///
+    /// Resamples the rare u1=0 case (probability 2^-53) to avoid ln(0).
+    pub fn gaussian_f64(&mut self) -> f64 {
+        use std::f64::consts::PI;
+        let u1 = loop {
+            let v = self.f64();
+            if v != 0.0 {
+                break v;
+            }
+        };
+        let u2 = self.f64();
+        (-2.0 * u1.ln()).sqrt() * (2.0 * PI * u2).cos()
+    }
 }

@@ -1734,6 +1734,7 @@ pub fn conformer_ensemble_json(mol: &MolHandle, n: u32, rmsd_threshold: f64) -> 
     let config = chematic_3d::ConformerConfig {
         count: n as usize,
         rmsd_threshold,
+        ..chematic_3d::ConformerConfig::default()
     };
     match chematic_3d::generate_conformer_ensemble_with_config(fresh, &config) {
         Ok(ensemble) => {

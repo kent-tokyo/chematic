@@ -104,9 +104,11 @@ fn apply_torsion_preferences_with_noise(
                     let preference = get_torsion_preference(mol, a_idx, b_idx, c_idx, d_idx)
                         .unwrap_or_else(default_torsion_preference);
 
-                    // Add uniform noise when generating ensemble conformers.
+                    // Add Gaussian noise when generating ensemble conformers.
+                    // N(0, noise_sigma_deg) samples diverse torsion angles while
+                    // concentrating draws near the preferred angle (unlike uniform).
                     let noise = if noise_sigma_deg > 0.0 {
-                        (prng.f64() * 2.0 - 1.0) * noise_sigma_deg
+                        prng.gaussian_f64() * noise_sigma_deg
                     } else {
                         0.0
                     };
