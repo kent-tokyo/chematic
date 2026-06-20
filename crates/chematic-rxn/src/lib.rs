@@ -15,6 +15,7 @@ pub mod enumerate;
 pub mod green;
 pub mod query;
 pub mod reaction;
+pub mod retro;
 pub mod transform;
 
 pub use balance::{BalanceResult, balance_check};
@@ -30,4 +31,5 @@ pub use query::{
 pub use reaction::{
     Reaction, ReactionCenter, RxnError, find_reaction_center, parse_reaction, write_reaction,
 };
+pub use retro::{DEFAULT_TEMPLATES, RetroClass, RetroResult, RetroTemplate, retro_disconnect};
 pub use transform::{TransformError, run_reactants, run_reactants_strict};

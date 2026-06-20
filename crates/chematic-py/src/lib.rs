@@ -1055,6 +1055,85 @@ impl Mol {
             .collect()
     }
 
+    /// Template-based retrosynthetic disconnection.
+    ///
+    /// Applies a library of 60 reverse-SMIRKS templates to the molecule and
+    /// returns a ranked list of one-step precursor sets.  Each result dict
+    /// contains the template name, reaction class, precursor SMILES, and SA
+    /// scores (1 = easy, 10 = hard to synthesise).
+    ///
+    /// Parameters
+    /// ----------
+    /// max_results : int, optional
+    ///     Maximum number of disconnections to return (0 = unlimited).
+    ///     Default: 20.
+    /// reaction_class : str, optional
+    ///     Filter to a single reaction class.  Valid values:
+    ///     ``"AmideBond"``, ``"Ester"``, ``"Ether"``, ``"CNBond"``,
+    ///     ``"CCBond"``, ``"CSBond"``, ``"Other"``.  Default: all classes.
+    ///
+    /// Returns
+    /// -------
+    /// list[dict]
+    ///     Each dict has keys:
+    ///     - ``template``       : str   — template name (e.g. ``"amide_secondary"``)
+    ///     - ``reaction_class`` : str   — reaction class (e.g. ``"AmideBond"``)
+    ///     - ``precursors``     : list[str] — canonical SMILES of precursors
+    ///     - ``sa_scores``      : list[float] — SA score per precursor
+    ///     - ``max_sa_score``   : float — max SA score across precursors
+    #[pyo3(signature = (max_results=20, reaction_class=None))]
+    fn retro_disconnect<'py>(
+        &self,
+        py: Python<'py>,
+        max_results: usize,
+        reaction_class: Option<&str>,
+    ) -> PyResult<Vec<Bound<'py, PyDict>>> {
+        use chematic_rxn::retro::{DEFAULT_TEMPLATES, RetroClass, retro_disconnect};
+
+        let filter_class: Option<RetroClass> = match reaction_class {
+            None => None,
+            Some("AmideBond") => Some(RetroClass::AmideBond),
+            Some("Ester")     => Some(RetroClass::Ester),
+            Some("Ether")     => Some(RetroClass::Ether),
+            Some("CNBond")    => Some(RetroClass::CNBond),
+            Some("CCBond")    => Some(RetroClass::CCBond),
+            Some("CSBond")    => Some(RetroClass::CSBond),
+            Some("Other")     => Some(RetroClass::Other),
+            Some(other) => return Err(PyValueError::new_err(
+                format!("unknown reaction_class '{other}'; valid: AmideBond, Ester, Ether, CNBond, CCBond, CSBond, Other")
+            )),
+        };
+
+        // Filter and collect owned templates.
+        let owned: Vec<chematic_rxn::retro::RetroTemplate> = DEFAULT_TEMPLATES.iter()
+            .filter(|t| filter_class.map(|c| c == t.reaction_class).unwrap_or(true))
+            .map(|t| chematic_rxn::retro::RetroTemplate {
+                name: t.name,
+                smirks: t.smirks,
+                reaction_class: t.reaction_class,
+            })
+            .collect();
+
+        let results = retro_disconnect(&self.inner, &owned, max_results);
+
+        results.into_iter().map(|r| {
+            let d = PyDict::new(py);
+            d.set_item("template", &r.template_name)?;
+            d.set_item("reaction_class", r.reaction_class.as_str())?;
+            d.set_item("precursors", &r.precursor_smiles)?;
+
+            // Compute SA scores for each precursor using chematic-chem.
+            let sa_scores: Vec<f64> = r.precursors.iter()
+                .map(chematic_chem::sa_score)
+                .collect();
+            let max_sa = sa_scores.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+            d.set_item("sa_scores", sa_scores)?;
+            d.set_item("max_sa_score", if max_sa.is_finite() { max_sa } else { 0.0 })?;
+
+            Ok(d)
+        }).collect()
+    }
+
     // -----------------------------------------------------------------------
     // B5: Layered fingerprint
     // -----------------------------------------------------------------------
