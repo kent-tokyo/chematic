@@ -404,8 +404,14 @@ pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Ve
                 if xor_bonds.is_empty() {
                     continue;
                 }
-                // Only interesting if the XOR ring is strictly smaller than both parents.
-                if xor_bonds.len() >= rings[i].len().min(rings[j].len()) {
+                // Only interesting if the XOR ring is strictly smaller than the
+                // larger parent. Using max() instead of min() recovers missing
+                // rings when the SSSR chose a large cycle over a same-size one
+                // (e.g. SSSR returns a 10-bond macro ring instead of the 6-bond
+                // benzene twin; the missing benzene equals the XOR of the
+                // 6-bond lactone and the 10-bond macro, and is not strictly
+                // smaller than the lactone but IS strictly smaller than the macro).
+                if xor_bonds.len() >= rings[i].len().max(rings[j].len()) {
                     continue;
                 }
                 if let Some(new_ring) = ring_atoms_from_bond_set(mol, &xor_bonds) {

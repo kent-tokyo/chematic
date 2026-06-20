@@ -2696,6 +2696,35 @@ mod tests {
         assert_eq!(aromatic_ring_count(&m), 3);
     }
 
+    // bench5k regression cases (rd=N, ch=N-1 pattern)
+    #[test]
+    fn test_arc_bench_lactone_benzene() {
+        // rd=1 ch=0: benzene fused with lactone ring
+        let m = mol("CC1(C)CC(=O)c2c(ccc(C(=O)CC(N)CO)c2N)O1");
+        assert_eq!(aromatic_ring_count(&m), 1);
+    }
+
+    #[test]
+    fn test_arc_bench_bridged_benzenes() {
+        // rd=2 ch=1: two aromatic benzenes connected by O and C bridge
+        let m = mol("Cc1c(C)c2c(c(C)c1O)Oc1c(C)c([C@H](C)[C@@H](C)O)c(O)c(O)c1C2");
+        assert_eq!(aromatic_ring_count(&m), 2);
+    }
+
+    #[test]
+    fn test_arc_bench_no_bridge() {
+        // rd=2 ch=1: two benzenes with N/O bridges
+        let m = mol("C[C@]12Nc3ccccc3O[C@@]1(C)Nc1ccccc1O2");
+        assert_eq!(aromatic_ring_count(&m), 2);
+    }
+
+    #[test]
+    fn test_arc_bench_steroid_benzene() {
+        // rd=1 ch=0: complex steroid scaffold with one phenyl ring
+        let m = mol("CC1=C2C[C@@]3(C)C[C@H](O)[C@](C)(C[C@H](O)[C@H](O)[C@@](C)(O)CO)[C@H]3c3ccc(C)c(c32)C1");
+        assert_eq!(aromatic_ring_count(&m), 1);
+    }
+
     #[test]
     fn test_hba_metformin() {
         // Metformin: CN(C)C(=N)NC(=N)N — RDKit CalcNumHBA = 2 (two imine =NH)
