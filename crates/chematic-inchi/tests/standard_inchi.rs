@@ -17,29 +17,29 @@ use chematic_smiles::parse;
 // to verify molecular identity; the InChI strings for symmetric rings use the form
 // produced by our GetStdINCHI call.
 const REFERENCE: &[(&str, &str)] = &[
-    ("C",           "InChI=1S/CH4/h1H4"),
-    ("CC",          "InChI=1S/C2H6/c1-2/h1-2H3"),
-    ("CCO",         "InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3"),
-    ("CC(=O)O",     "InChI=1S/C2H4O2/c1-2(3)4/h1H3,(H,3,4)"),
-    ("OO",          "InChI=1S/H2O2/c1-2/h1-2H"),
-    ("N",           "InChI=1S/H3N/h1H3"),
-    ("O",           "InChI=1S/H2O/h1H2"),
-    ("[NH4+]",      "InChI=1S/H3N/h1H3/p+1"),
+    ("C", "InChI=1S/CH4/h1H4"),
+    ("CC", "InChI=1S/C2H6/c1-2/h1-2H3"),
+    ("CCO", "InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3"),
+    ("CC(=O)O", "InChI=1S/C2H4O2/c1-2(3)4/h1H3,(H,3,4)"),
+    ("OO", "InChI=1S/H2O2/c1-2/h1-2H"),
+    ("N", "InChI=1S/H3N/h1H3"),
+    ("O", "InChI=1S/H2O/h1H2"),
+    ("[NH4+]", "InChI=1S/H3N/h1H3/p+1"),
     ("[Na+].[Cl-]", "InChI=1S/ClH.Na/h1H;/q;+1/p-1"),
-    ("CC(C)C",      "InChI=1S/C4H10/c1-4(2)3/h4H,1-3H3"),
-    ("C#N",         "InChI=1S/CHN/c1-2/h1H"),
-    ("C=C",         "InChI=1S/C2H4/c1-2/h1-2H2"),
+    ("CC(C)C", "InChI=1S/C4H10/c1-4(2)3/h4H,1-3H3"),
+    ("C#N", "InChI=1S/CHN/c1-2/h1H"),
+    ("C=C", "InChI=1S/C2H4/c1-2/h1-2H2"),
     // --- Issue #11 reporter's specific failing examples ---
     // The pure-Rust implementation produced wrong output for all of these;
     // the native InChI C library (1.07.5) fixes all six.
     // Note: [H][H] (all-explicit-H molecule) is excluded — the C library
     // requires at least one non-H atom and returns null for H2-only input.
-    ("N#N",        "InChI=1S/N2/c1-2"),
-    ("O=C=O",      "InChI=1S/CO2/c2-1-3"),
-    ("S=C=S",      "InChI=1S/CS2/c2-1-3"),
-    ("[OH-]",      "InChI=1S/H2O/h1H2/p-1"),
-    ("[C-]#[O+]",  "InChI=1S/CO/c1-2"),
-    ("O=O",        "InChI=1S/O2/c1-2"),
+    ("N#N", "InChI=1S/N2/c1-2"),
+    ("O=C=O", "InChI=1S/CO2/c2-1-3"),
+    ("S=C=S", "InChI=1S/CS2/c2-1-3"),
+    ("[OH-]", "InChI=1S/H2O/h1H2/p-1"),
+    ("[C-]#[O+]", "InChI=1S/CO/c1-2"),
+    ("O=O", "InChI=1S/O2/c1-2"),
 ];
 
 #[test]
@@ -47,8 +47,8 @@ fn standard_inchi_matches_iupac_reference() {
     let mut failures = Vec::new();
     for &(smiles, expected) in REFERENCE {
         let mol = parse(smiles).unwrap_or_else(|e| panic!("parse {smiles:?}: {e}"));
-        let got = standard_inchi(&mol)
-            .unwrap_or_else(|e| panic!("standard_inchi({smiles:?}): {e}"));
+        let got =
+            standard_inchi(&mol).unwrap_or_else(|e| panic!("standard_inchi({smiles:?}): {e}"));
         if got != expected {
             failures.push(format!(
                 "SMILES {smiles:?}\n  got:      {got}\n  expected: {expected}"
@@ -73,17 +73,29 @@ fn standard_inchi_key_format() {
 // InChIKey tests verify molecular identity regardless of connectivity string form.
 // Reference values from PubChem.
 #[test]
-fn inchikey_benzene()     { check_key("c1ccccc1",  "UHOVQNZJYSORNB-UHFFFAOYSA-N"); }
+fn inchikey_benzene() {
+    check_key("c1ccccc1", "UHOVQNZJYSORNB-UHFFFAOYSA-N");
+}
 #[test]
-fn inchikey_cyclohexane() { check_key("C1CCCCC1",  "XDTMQSROBMDMFD-UHFFFAOYSA-N"); }
+fn inchikey_cyclohexane() {
+    check_key("C1CCCCC1", "XDTMQSROBMDMFD-UHFFFAOYSA-N");
+}
 #[test]
-fn inchikey_pyridine()    { check_key("c1ccncc1",  "JUJWROOIHBZHMG-UHFFFAOYSA-N"); }
+fn inchikey_pyridine() {
+    check_key("c1ccncc1", "JUJWROOIHBZHMG-UHFFFAOYSA-N");
+}
 #[test]
-fn inchikey_ethanol()     { check_key("CCO",        "LFQSCWFLJHTTHZ-UHFFFAOYSA-N"); }
+fn inchikey_ethanol() {
+    check_key("CCO", "LFQSCWFLJHTTHZ-UHFFFAOYSA-N");
+}
 #[test]
-fn inchikey_acetic_acid() { check_key("CC(=O)O",   "QTBSBXVTEAMEQO-UHFFFAOYSA-N"); }
+fn inchikey_acetic_acid() {
+    check_key("CC(=O)O", "QTBSBXVTEAMEQO-UHFFFAOYSA-N");
+}
 #[test]
-fn inchikey_aspirin()     { check_key("CC(=O)Oc1ccccc1C(=O)O", "BSYNRYMUTXBXSQ-UHFFFAOYSA-N"); }
+fn inchikey_aspirin() {
+    check_key("CC(=O)Oc1ccccc1C(=O)O", "BSYNRYMUTXBXSQ-UHFFFAOYSA-N");
+}
 // Caffeine (PubChem CID 2519): InChIKey RYYVLZVUVIJVGH-UHFFFAOYSA-N
 #[test]
 fn inchikey_caffeine() {
@@ -117,10 +129,7 @@ fn inchikey_tartaric_acid_ss() {
 // L-Threonine: PubChem CID 6288, 2 chiral centers.
 #[test]
 fn inchikey_l_threonine() {
-    check_key(
-        "C[C@@H](O)[C@H](N)C(=O)O",
-        "AYFVYJQAPQTCCC-GBXIJSLDSA-N",
-    );
+    check_key("C[C@@H](O)[C@H](N)C(=O)O", "AYFVYJQAPQTCCC-GBXIJSLDSA-N");
 }
 
 // L-alanine: PubChem CID 5950, InChIKey QNAYBMKLOCPYGJ-REOHCLBHSA-N
@@ -172,21 +181,27 @@ fn corpus_smoke_issue_11() {
             return;
         }
     };
-    let content = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("cannot read {path}: {e}"));
+    let content =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("cannot read {path}: {e}"));
 
     let mut ok = 0usize;
-    let mut kekule_fail = 0usize;  // pre-existing kekulization limit (complex/unusual rings)
-    let mut lib_err = 0usize;      // C library errors (these would be regressions)
+    let mut kekule_fail = 0usize; // pre-existing kekulization limit (complex/unusual rings)
+    let mut lib_err = 0usize; // C library errors (these would be regressions)
     let mut parse_fail = 0usize;
 
     for line in content.lines().skip(1) {
         let smiles = line.trim();
-        if smiles.is_empty() { continue; }
+        if smiles.is_empty() {
+            continue;
+        }
         match chematic_smiles::parse(smiles) {
-            Err(_) => { parse_fail += 1; }
+            Err(_) => {
+                parse_fail += 1;
+            }
             Ok(mol) => match standard_inchi(&mol) {
-                Ok(_) => { ok += 1; }
+                Ok(_) => {
+                    ok += 1;
+                }
                 Err(chematic_inchi::InchiError::KekulizationFailed(_)) => {
                     kekule_fail += 1;
                 }
@@ -198,7 +213,7 @@ fn corpus_smoke_issue_11() {
                     lib_err += 1;
                     eprintln!("LIB-ERROR {smiles:?}: {e}");
                 }
-            }
+            },
         }
     }
     let total = ok + kekule_fail + lib_err + parse_fail;
@@ -208,5 +223,8 @@ fn corpus_smoke_issue_11() {
     );
     // Kekulization failures for complex/unusual ring systems are a pre-existing
     // limitation unrelated to issue #11. Only C-library errors are regressions.
-    assert_eq!(lib_err, 0, "{lib_err} unexpected C-library errors (see LIB-ERROR lines above)");
+    assert_eq!(
+        lib_err, 0,
+        "{lib_err} unexpected C-library errors (see LIB-ERROR lines above)"
+    );
 }

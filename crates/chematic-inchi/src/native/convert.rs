@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::os::raw::c_char;
 
 use chematic_chem::tetrahedral_stereo_neighbors;
-use chematic_core::{apply_kekule, kekulize, AtomIdx, BondOrder, CipCode, Molecule};
+use chematic_core::{AtomIdx, BondOrder, CipCode, Molecule, apply_kekule, kekulize};
 
 use super::ffi::{InchiAtom, InchiStereo0D, MAXVAL};
 
@@ -91,7 +91,9 @@ pub fn mol_to_inchi_atoms(
             if mol.atom(neigh_idx).element.atomic_number() == 1 {
                 continue;
             }
-            let Some(&ni) = inchi_idx.get(&neigh_idx) else { continue };
+            let Some(&ni) = inchi_idx.get(&neigh_idx) else {
+                continue;
+            };
             if ni >= self_ni || nb as usize >= MAXVAL {
                 continue;
             }
@@ -152,7 +154,9 @@ pub fn mol_to_inchi_atoms(
     let mut stereo: Vec<InchiStereo0D> = Vec::new();
 
     for (center_aidx, code, sorted_nbrs) in &stereo_data {
-        let Some(&center_ni) = inchi_idx.get(center_aidx) else { continue };
+        let Some(&center_ni) = inchi_idx.get(center_aidx) else {
+            continue;
+        };
 
         let mut ok = true;
         let mut arr = [0i16; 4];
@@ -160,16 +164,24 @@ pub fn mol_to_inchi_atoms(
             arr[i] = if nb.0 == u32::MAX {
                 match h_idx_for.get(center_aidx) {
                     Some(&h) => h,
-                    None => { ok = false; break; }
+                    None => {
+                        ok = false;
+                        break;
+                    }
                 }
             } else {
                 match inchi_idx.get(&nb) {
                     Some(&ni) => ni,
-                    None => { ok = false; break; }
+                    None => {
+                        ok = false;
+                        break;
+                    }
                 }
             };
         }
-        if !ok { continue; }
+        if !ok {
+            continue;
+        }
 
         let parity = if *code == CipCode::R { 2i8 } else { 1i8 };
 
@@ -193,11 +205,17 @@ pub fn mol_to_inchi_atoms(
     //   Down bond: atom1 == sub → true (i.e. atom1 != alkene_end)
     let find_stereo_sub = |alkene_end: AtomIdx, other: AtomIdx| -> Option<(i16, bool)> {
         for (nb, _) in mol.neighbors(alkene_end) {
-            if nb == other { continue; }
-            if mol.atom(nb).element.atomic_number() == 1 { continue; }
-            let Some((_, nb_bond)) = mol.bond_between(alkene_end, nb) else { continue };
+            if nb == other {
+                continue;
+            }
+            if mol.atom(nb).element.atomic_number() == 1 {
+                continue;
+            }
+            let Some((_, nb_bond)) = mol.bond_between(alkene_end, nb) else {
+                continue;
+            };
             let is_up = match nb_bond.order {
-                BondOrder::Up   => Some(nb_bond.atom1 == alkene_end),
+                BondOrder::Up => Some(nb_bond.atom1 == alkene_end),
                 BondOrder::Down => Some(nb_bond.atom1 == nb),
                 _ => None,
             };
@@ -209,13 +227,21 @@ pub fn mol_to_inchi_atoms(
     };
 
     for (_, bond) in mol.bonds() {
-        if bond.order != BondOrder::Double { continue; }
+        if bond.order != BondOrder::Double {
+            continue;
+        }
         let a = bond.atom1;
         let b = bond.atom2;
-        let (Some(&a_ni), Some(&b_ni)) = (inchi_idx.get(&a), inchi_idx.get(&b)) else { continue };
+        let (Some(&a_ni), Some(&b_ni)) = (inchi_idx.get(&a), inchi_idx.get(&b)) else {
+            continue;
+        };
 
-        let Some((x_ni, x_up)) = find_stereo_sub(a, b) else { continue };
-        let Some((y_ni, y_up)) = find_stereo_sub(b, a) else { continue };
+        let Some((x_ni, x_up)) = find_stereo_sub(a, b) else {
+            continue;
+        };
+        let Some((y_ni, y_up)) = find_stereo_sub(b, a) else {
+            continue;
+        };
 
         let parity: i8 = if x_up == y_up { 1 } else { 2 };
 

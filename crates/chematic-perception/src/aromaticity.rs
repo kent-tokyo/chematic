@@ -224,9 +224,7 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
         .iter()
         .take(sssr_rings.len()) // only expose SSSR rings in the public API
         .enumerate()
-        .filter_map(|(i, ring)| {
-            classifications[i].map(|(cls, count)| (ring.to_vec(), cls, count))
-        })
+        .filter_map(|(i, ring)| classifications[i].map(|(cls, count)| (ring.to_vec(), cls, count)))
         .collect();
 
     AromaticityModel {
@@ -294,9 +292,18 @@ fn bond_sym_diff(a: &[BondIdx], b: &[BondIdx]) -> Vec<BondIdx> {
     let mut j = 0;
     while i < a.len() && j < b.len() {
         match a[i].cmp(&b[j]) {
-            std::cmp::Ordering::Less => { result.push(a[i]); i += 1; }
-            std::cmp::Ordering::Greater => { result.push(b[j]); j += 1; }
-            std::cmp::Ordering::Equal => { i += 1; j += 1; }
+            std::cmp::Ordering::Less => {
+                result.push(a[i]);
+                i += 1;
+            }
+            std::cmp::Ordering::Greater => {
+                result.push(b[j]);
+                j += 1;
+            }
+            std::cmp::Ordering::Equal => {
+                i += 1;
+                j += 1;
+            }
         }
     }
     result.extend_from_slice(&a[i..]);
@@ -366,7 +373,11 @@ pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Ve
     // Track which atom-sets we already have (as sorted atom lists).
     let mut known: std::collections::HashSet<Vec<AtomIdx>> = sssr_rings
         .iter()
-        .map(|r| { let mut s = r.clone(); s.sort(); s })
+        .map(|r| {
+            let mut s = r.clone();
+            s.sort();
+            s
+        })
         .collect();
 
     // Iterative pairwise XOR until convergence.
@@ -438,10 +449,7 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
     }
 
     // Build sorted bond-index sets for each aromatic ring.
-    let bond_sets: Vec<Vec<BondIdx>> = aromatic
-        .iter()
-        .map(|r| ring_bond_set(mol, r))
-        .collect();
+    let bond_sets: Vec<Vec<BondIdx>> = aromatic.iter().map(|r| ring_bond_set(mol, r)).collect();
 
     // Mark rings that are the XOR of two strictly smaller aromatic rings.
     // Such rings are "envelope" cycles introduced when the SSSR chose a large
@@ -585,7 +593,6 @@ fn ring_pi_electrons(
 
     Some(total_pi)
 }
-
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -757,7 +764,11 @@ mod tests {
     fn test_benzene_is_aromatic() {
         let mol = benzene_kekule();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 6, "all 6 benzene atoms aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "all 6 benzene atoms aromatic"
+        );
         for i in 0..6u32 {
             assert!(model.is_atom_aromatic(AtomIdx(i)));
         }
@@ -795,14 +806,21 @@ mod tests {
     fn test_naphthalene_both_rings_aromatic() {
         let mol = naphthalene_kekule();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 10, "all 10 naphthalene atoms aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            10,
+            "all 10 naphthalene atoms aromatic"
+        );
     }
 
     #[test]
     fn test_bond_aromaticity_benzene() {
         let mol = benzene_kekule();
         let model = assign_aromaticity(&mol);
-        let count = mol.bonds().filter(|(b, _)| model.is_bond_aromatic(*b)).count();
+        let count = mol
+            .bonds()
+            .filter(|(b, _)| model.is_bond_aromatic(*b))
+            .count();
         assert_eq!(count, 6);
     }
 
@@ -840,7 +858,11 @@ mod tests {
     fn test_cyclobutadiene_antiaromatic() {
         let mol = cyclobutadiene_kekule();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 0, "cyclobutadiene not aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            0,
+            "cyclobutadiene not aromatic"
+        );
         assert!(model.has_antiaromaticity(), "cyclobutadiene antiaromatic");
         assert_eq!(model.antiaromatic_rings().len(), 1);
         let classifications = model.ring_classifications();
@@ -954,7 +976,11 @@ mod tests {
         // c1ccccc1 — parsed with BondOrder::Aromatic bonds
         let mol = mol_aromatic("c1ccccc1");
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 6, "benzene from aromatic SMILES");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "benzene from aromatic SMILES"
+        );
     }
 
     #[test]
@@ -972,7 +998,11 @@ mod tests {
     fn test_pyridine_aromatic_smiles() {
         let mol = mol_aromatic("c1ccncc1");
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 6, "pyridine from aromatic SMILES");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "pyridine from aromatic SMILES"
+        );
     }
 
     #[test]
@@ -987,14 +1017,22 @@ mod tests {
         // [nH] bracket atom: hydrogen_count = Some(1)
         let mol = mol_aromatic("c1cc[nH]c1");
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 5, "pyrrole from aromatic SMILES");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            5,
+            "pyrrole from aromatic SMILES"
+        );
     }
 
     #[test]
     fn test_thiophene_aromatic_smiles() {
         let mol = mol_aromatic("c1ccsc1");
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 5, "thiophene from aromatic SMILES");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            5,
+            "thiophene from aromatic SMILES"
+        );
     }
 
     // =========================================================================
@@ -1081,7 +1119,11 @@ mod tests {
     fn test_purine_aromatic_from_aromatic_smiles() {
         let mol = mol_aromatic("c1cnc2[nH]cnc2n1");
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 9, "purine from aromatic SMILES");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            9,
+            "purine from aromatic SMILES"
+        );
     }
 
     #[test]
@@ -1121,7 +1163,11 @@ mod tests {
     fn test_indole_aromatic_smiles() {
         let mol = mol_aromatic("c1ccc2[nH]ccc2c1");
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 9, "indole from aromatic SMILES");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            9,
+            "indole from aromatic SMILES"
+        );
     }
 
     // =========================================================================
@@ -1139,7 +1185,10 @@ mod tests {
         assert_eq!(model.aromatic_atom_count(), 9);
         // The bridgehead N itself must be in the aromatic set.
         // In the SMILES c1ccn2cccc2c1, n is atom index 3.
-        assert!(model.is_atom_aromatic(AtomIdx(3)), "bridgehead N must be aromatic");
+        assert!(
+            model.is_atom_aromatic(AtomIdx(3)),
+            "bridgehead N must be aromatic"
+        );
     }
 
     #[test]
@@ -1172,9 +1221,16 @@ mod tests {
         // Key assertion: all 9 atoms are aromatic (correct overall perception).
         let mol = mol_aromatic("c1ccn2cccc2c1");
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 9, "all 9 indolizine atoms aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            9,
+            "all 9 indolizine atoms aromatic"
+        );
         // The bridgehead N must be aromatic.
-        assert!(model.is_atom_aromatic(AtomIdx(3)), "bridgehead N is aromatic");
+        assert!(
+            model.is_atom_aromatic(AtomIdx(3)),
+            "bridgehead N is aromatic"
+        );
         // The 6-ring (SSSR ring, improved by Pass 2) should be classified Aromatic.
         let aromatic_count = model
             .ring_classifications()
@@ -1262,7 +1318,10 @@ mod tests {
         b.add_bond(c4, c0, BondOrder::Single).unwrap();
         let mol = b.build();
         let model = assign_aromaticity(&mol);
-        assert_eq!(model.aromatic_atom_count(), 0, "cyclopentadiene not aromatic");
+        assert_eq!(
+            model.aromatic_atom_count(),
+            0,
+            "cyclopentadiene not aromatic"
+        );
     }
 }
-

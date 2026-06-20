@@ -1,4 +1,4 @@
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 
 /// Generate InChIKey (27-character identifier) from an InChI string.
 ///
@@ -38,7 +38,7 @@ pub fn inchi_key(inchi_str: &str) -> String {
 
     // Convert to base-26 (A-Z) representation
     let block1 = bytes_to_base26(&hash1_bytes[..12]); // 12 bytes → ~14 chars
-    let block2 = bytes_to_base26(&hash2_bytes[..9]);  // 9 bytes → ~10 chars
+    let block2 = bytes_to_base26(&hash2_bytes[..9]); // 9 bytes → ~10 chars
 
     // Ensure block1 is exactly 14 chars and block2 is exactly 9 chars
     let block1_padded = format!("{:<14}", block1);

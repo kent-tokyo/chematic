@@ -18,7 +18,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    match_vf2::{find_matches_with_config, MatchConfig},
+    match_vf2::{MatchConfig, find_matches_with_config},
     parser::{SmartsError, parse_smarts},
     query::QueryMolecule,
 };
@@ -74,7 +74,11 @@ impl SmartsCache {
         mol: &Molecule,
     ) -> Result<Vec<std::collections::HashMap<usize, AtomIdx>>, SmartsError> {
         let qmol = self.compile(smarts)?.clone();
-        Ok(find_matches_with_config(&qmol, mol, &MatchConfig::default()))
+        Ok(find_matches_with_config(
+            &qmol,
+            mol,
+            &MatchConfig::default(),
+        ))
     }
 
     /// Find all substructure matches with custom `MatchConfig`.
@@ -118,36 +122,38 @@ impl SmartsCache {
 pub fn named_pattern(name: &str) -> Option<&'static str> {
     match name {
         // H-bond donors (NH, OH, SH)
-        "donor"          => Some("[N;!H0;v3,v4&+1]"),
-        "donor_strict"   => Some("[O,N;!H0]"),
+        "donor" => Some("[N;!H0;v3,v4&+1]"),
+        "donor_strict" => Some("[O,N;!H0]"),
         // H-bond acceptors
-        "acceptor"       => Some("[N;H0;v3,v4&+1]"),
-        "acceptor_strict"=> Some("[n;H0;+0,o,s;+0]"),
+        "acceptor" => Some("[N;H0;v3,v4&+1]"),
+        "acceptor_strict" => Some("[n;H0;+0,o,s;+0]"),
         // Aromatic
-        "aromatic"       => Some("[a]"),
-        "aromatic_ring"  => Some("[a]1:[a]:[a]:[a]:[a]:[a]:1"),
+        "aromatic" => Some("[a]"),
+        "aromatic_ring" => Some("[a]1:[a]:[a]:[a]:[a]:[a]:1"),
         // Hydrophobic
-        "hydrophobic"    => Some("[c,s,S&H0&v2,F,Cl,Br,I,#6&!$([#6]~[#7,#8,#15,#16,F,Cl,Br,I])]"),
+        "hydrophobic" => Some("[c,s,S&H0&v2,F,Cl,Br,I,#6&!$([#6]~[#7,#8,#15,#16,F,Cl,Br,I])]"),
         // Positively charged
-        "positive"       => Some("[#7&+,NH2&+0&$(N-[#6]),NH1&+0&$(N(-[#6])-[#6])]"),
+        "positive" => Some("[#7&+,NH2&+0&$(N-[#6]),NH1&+0&$(N(-[#6])-[#6])]"),
         // Negatively charged
-        "negative"       => Some("[C,S](=[O,S,P])-[OH,O-]"),
+        "negative" => Some("[C,S](=[O,S,P])-[OH,O-]"),
         // Functional groups
-        "carboxylic_acid"=> Some("[C;X3;$(C(-O)-O)](=O)"),
-        "aldehyde"       => Some("[CX3H1](=O)[#6]"),
-        "ketone"         => Some("[#6][CX3](=O)[#6]"),
-        "alcohol"        => Some("[OX2H][CX4;!$(C([OX2H])[O,S,#7,#15])]"),
-        "phenol"         => Some("[OX2H][cX3]:[c]"),
-        "amine_primary"  => Some("[NH2;$(N-[#6])]"),
-        "amine_secondary"=> Some("[NH1;$(N(-[#6])-[#6])]"),
+        "carboxylic_acid" => Some("[C;X3;$(C(-O)-O)](=O)"),
+        "aldehyde" => Some("[CX3H1](=O)[#6]"),
+        "ketone" => Some("[#6][CX3](=O)[#6]"),
+        "alcohol" => Some("[OX2H][CX4;!$(C([OX2H])[O,S,#7,#15])]"),
+        "phenol" => Some("[OX2H][cX3]:[c]"),
+        "amine_primary" => Some("[NH2;$(N-[#6])]"),
+        "amine_secondary" => Some("[NH1;$(N(-[#6])-[#6])]"),
         "amine_tertiary" => Some("[NH0;$(N(-[#6])(-[#6])-[#6])]"),
-        "amide"          => Some("[NX3][CX3](=[OX1])[#6]"),
-        "ester"          => Some("[#6][CX3](=O)[OX2H0][#6]"),
-        "ether"          => Some("[OD2]([#6])[#6]"),
-        "halide"         => Some("[F,Cl,Br,I]"),
-        "aromatic_n"     => Some("[n]"),
-        "sulfonamide"    => Some("[$([#16X4](=[OX1])(=[OX1])([#6])[NX3]),$([#16X4+2]([OX1-])([OX1-])([#6])[NX3])]"),
-        _                => None,
+        "amide" => Some("[NX3][CX3](=[OX1])[#6]"),
+        "ester" => Some("[#6][CX3](=O)[OX2H0][#6]"),
+        "ether" => Some("[OD2]([#6])[#6]"),
+        "halide" => Some("[F,Cl,Br,I]"),
+        "aromatic_n" => Some("[n]"),
+        "sulfonamide" => {
+            Some("[$([#16X4](=[OX1])(=[OX1])([#6])[NX3]),$([#16X4+2]([OX1-])([OX1-])([#6])[NX3])]")
+        }
+        _ => None,
     }
 }
 
@@ -191,11 +197,28 @@ mod tests {
     #[test]
     fn named_patterns_all_parse() {
         let mut cache = SmartsCache::new(50);
-        for name in &["donor","acceptor","aromatic","hydrophobic","positive","negative",
-                      "carboxylic_acid","aldehyde","ketone","alcohol","phenol",
-                      "amine_primary","amine_secondary","amide","ester","halide"] {
+        for name in &[
+            "donor",
+            "acceptor",
+            "aromatic",
+            "hydrophobic",
+            "positive",
+            "negative",
+            "carboxylic_acid",
+            "aldehyde",
+            "ketone",
+            "alcohol",
+            "phenol",
+            "amine_primary",
+            "amine_secondary",
+            "amide",
+            "ester",
+            "halide",
+        ] {
             if let Some(pat) = named_pattern(name) {
-                cache.compile(pat).unwrap_or_else(|e| panic!("pattern '{}' failed: {}", name, e));
+                cache
+                    .compile(pat)
+                    .unwrap_or_else(|e| panic!("pattern '{}' failed: {}", name, e));
             }
         }
     }

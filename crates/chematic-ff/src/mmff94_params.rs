@@ -22,22 +22,22 @@ use chematic_core::BondOrder;
 /// Bond stretching parameters: E = 0.5 * kb * (r - r0)²
 #[derive(Debug, Clone, Copy)]
 pub struct BondParams {
-    pub r0: f64,   // Equilibrium distance (Å)
-    pub kb: f64,   // Force constant (kcal/(mol·Ų))
+    pub r0: f64, // Equilibrium distance (Å)
+    pub kb: f64, // Force constant (kcal/(mol·Ų))
 }
 
 /// Angle bending parameters: E = 0.5 * ka * (θ - θ0)²
 #[derive(Debug, Clone, Copy)]
 pub struct AngleParams {
-    pub theta0: f64,   // Equilibrium angle (rad)
-    pub ka: f64,       // Force constant (kcal/(mol·rad²))
+    pub theta0: f64, // Equilibrium angle (rad)
+    pub ka: f64,     // Force constant (kcal/(mol·rad²))
 }
 
 /// Torsion dihedral parameters: E = V/2 * [1 + cos(n*φ - γ)]
 #[derive(Debug, Clone, Copy)]
 pub struct TorsionParams {
-    pub v: f64,    // Barrier height (kcal/mol)
-    pub n: u8,     // Periodicity (1, 2, 3, etc.)
+    pub v: f64,     // Barrier height (kcal/mol)
+    pub n: u8,      // Periodicity (1, 2, 3, etc.)
     pub gamma: f64, // Phase angle (rad)
 }
 
@@ -63,7 +63,7 @@ pub struct ChargeParams {
 /// 1-4 scaling factors reduce electrostatic interaction strength for nearby atoms.
 #[derive(Debug, Clone, Copy)]
 pub struct ElectrostaticScalingParams {
-    pub scale_1_4: f64, // 1-4 scaling (through 3 bonds), typically 0.5-1.0
+    pub scale_1_4: f64,        // 1-4 scaling (through 3 bonds), typically 0.5-1.0
     pub scale_dielectric: f64, // Dielectric constant for this environment
 }
 
@@ -71,7 +71,7 @@ pub struct ElectrostaticScalingParams {
 /// Describes the polarity of a bond based on electronegativity difference.
 #[derive(Debug, Clone, Copy)]
 pub struct BondDipoleParams {
-    pub dipole_moment: f64, // Bond dipole in Debye units
+    pub dipole_moment: f64,          // Bond dipole in Debye units
     pub electronegativity_diff: f64, // Electronegativity difference (I - J)
 }
 
@@ -81,12 +81,15 @@ pub struct BondDipoleParams {
 pub struct MMFF94MoleculeProperties {
     pub charges: Vec<f64>,
     pub bond_dipoles: Vec<(usize, usize, f64)>, // (atom1, atom2, dipole_moment)
-    pub electrostatic_scaling: f64, // Global dielectric constant
+    pub electrostatic_scaling: f64,             // Global dielectric constant
 }
 
 /// Look up electrostatic scaling factors for 1-4 interactions (B5 Phase 3).
 /// 1-4 pairs (separated by 3 bonds) have reduced Coulomb interaction.
-pub fn mmff94_electrostatic_scaling_1_4(t1: MMFF94Type, t2: MMFF94Type) -> ElectrostaticScalingParams {
+pub fn mmff94_electrostatic_scaling_1_4(
+    t1: MMFF94Type,
+    t2: MMFF94Type,
+) -> ElectrostaticScalingParams {
     use MMFF94Type::*;
 
     // MMFF94 default: 1-4 scaling = 0.75 (75% of full Coulomb)
@@ -122,10 +125,15 @@ pub fn mmff94_bond_dipole(t1: MMFF94Type, t2: MMFF94Type, bond_length: f64) -> B
         match t {
             H_Carbon | H_Nitrogen | H_Oxygen | H_Sulfur | H_Halogen | H_Aromatic => 2.10,
             C_sp3 | C_sp2_Alkene | C_sp_Alkyne | C_Aromatic => 2.55,
-            N_sp3_Amine | N_sp3_AmineAromatic | N_sp2_Imine | N_sp2_Aromatic | N_sp2_Carbonyl | N_sp_Nitrile => 3.04,
+            N_sp3_Amine | N_sp3_AmineAromatic | N_sp2_Imine | N_sp2_Aromatic | N_sp2_Carbonyl
+            | N_sp_Nitrile => 3.04,
             N_Amide | N_Carbamate | N_Ester | N_Imide => 3.10,
             N_Aromatic_5ring | N_Aromatic_6ring | N_Aromatic_Pyridine | N_Aromatic_Pyrrole => 3.00,
-            N_Aromatic_Imidazole | N_Aromatic_Triazole | N_Aromatic_Tetrazole | N_Aromatic_Pyrimidine | N_Aromatic_Pyrazine => 3.05,
+            N_Aromatic_Imidazole
+            | N_Aromatic_Triazole
+            | N_Aromatic_Tetrazole
+            | N_Aromatic_Pyrimidine
+            | N_Aromatic_Pyrazine => 3.05,
             O_Alcohol | O_Phenol | O_Ether | O_Carbonyl | O_Carboxylic | O_Carbamate => 3.44,
             O_Ester | O_Amide | O_Imide | O_CarbamideN | O_Sulfoxide | O_Sulfone => 3.40,
             S_Thiol | S_Thioether | S_Disulfide | S_Sulfoxide | S_Sulfone | S_Aromatic => 2.58,
@@ -135,7 +143,8 @@ pub fn mmff94_bond_dipole(t1: MMFF94Type, t2: MMFF94Type, bond_length: f64) -> B
             Cl => 3.16,
             Br => 2.96,
             I => 2.66,
-            C_Carbonyl | C_Carboxylic | C_Carbamate | C_Ester | C_Amide | C_Imide | C_CarbamideN => 2.70,
+            C_Carbonyl | C_Carboxylic | C_Carbamate | C_Ester | C_Amide | C_Imide
+            | C_CarbamideN => 2.70,
             Generic => 2.55,
         }
     };
@@ -256,7 +265,11 @@ pub fn mmff94_bond_params(
 
     use MMFF94Type::*;
 
-    let key = if t1 as u8 <= t2 as u8 { (t1, t2) } else { (t2, t1) };
+    let key = if t1 as u8 <= t2 as u8 {
+        (t1, t2)
+    } else {
+        (t2, t1)
+    };
 
     match key {
         // C-C bonds
@@ -387,11 +400,7 @@ pub fn mmff94_bond_params(
 }
 
 /// Look up angle parameters by atom type triplet.
-pub fn mmff94_angle_params(
-    t1: MMFF94Type,
-    t2: MMFF94Type,
-    t3: MMFF94Type,
-) -> Option<AngleParams> {
+pub fn mmff94_angle_params(t1: MMFF94Type, t2: MMFF94Type, t3: MMFF94Type) -> Option<AngleParams> {
     use MMFF94Type::*;
 
     match (t1, t2, t3) {
@@ -606,12 +615,8 @@ mod tests {
 
     #[test]
     fn test_bond_params_cc() {
-        let params = mmff94_bond_params(
-            MMFF94Type::C_sp3,
-            MMFF94Type::C_sp3,
-            BondOrder::Single,
-        )
-        .expect("C-C bond params");
+        let params = mmff94_bond_params(MMFF94Type::C_sp3, MMFF94Type::C_sp3, BondOrder::Single)
+            .expect("C-C bond params");
         assert!((params.r0 - 1.540).abs() < 0.01);
         assert!(params.kb > 200.0);
     }
@@ -630,9 +635,8 @@ mod tests {
 
     #[test]
     fn test_angle_params_ccc() {
-        let params =
-            mmff94_angle_params(MMFF94Type::C_sp3, MMFF94Type::C_sp3, MMFF94Type::C_sp3)
-                .expect("C-C-C angle params");
+        let params = mmff94_angle_params(MMFF94Type::C_sp3, MMFF94Type::C_sp3, MMFF94Type::C_sp3)
+            .expect("C-C-C angle params");
         assert!((params.theta0 - 1.9111).abs() < 0.01); // ~109.5°
         assert!(params.ka > 50.0);
     }
@@ -678,10 +682,7 @@ mod tests {
 
     #[test]
     fn test_electrostatic_scaling_1_4_default() {
-        let params = mmff94_electrostatic_scaling_1_4(
-            MMFF94Type::C_sp3,
-            MMFF94Type::C_sp3,
-        );
+        let params = mmff94_electrostatic_scaling_1_4(MMFF94Type::C_sp3, MMFF94Type::C_sp3);
         assert_eq!(params.scale_1_4, 0.75);
         assert_eq!(params.scale_dielectric, 4.0);
     }
@@ -689,10 +690,8 @@ mod tests {
     #[test]
     fn test_electrostatic_scaling_hydrogen_bond() {
         // N-H...O should have higher dielectric screening
-        let params = mmff94_electrostatic_scaling_1_4(
-            MMFF94Type::N_sp3_Amine,
-            MMFF94Type::O_Alcohol,
-        );
+        let params =
+            mmff94_electrostatic_scaling_1_4(MMFF94Type::N_sp3_Amine, MMFF94Type::O_Alcohol);
         assert_eq!(params.scale_1_4, 0.75);
         assert!(params.scale_dielectric > 4.0);
     }
@@ -700,11 +699,7 @@ mod tests {
     #[test]
     fn test_bond_dipole_c_h() {
         // C-H bond should have small dipole
-        let params = mmff94_bond_dipole(
-            MMFF94Type::C_sp3,
-            MMFF94Type::H_Carbon,
-            1.09,
-        );
+        let params = mmff94_bond_dipole(MMFF94Type::C_sp3, MMFF94Type::H_Carbon, 1.09);
         assert!(params.dipole_moment > 0.0);
         assert!(params.dipole_moment < 0.5);
     }
@@ -712,11 +707,7 @@ mod tests {
     #[test]
     fn test_bond_dipole_c_o() {
         // C-O bond should have larger dipole (more electronegative)
-        let params = mmff94_bond_dipole(
-            MMFF94Type::C_sp3,
-            MMFF94Type::O_Alcohol,
-            1.43,
-        );
+        let params = mmff94_bond_dipole(MMFF94Type::C_sp3, MMFF94Type::O_Alcohol, 1.43);
         assert!(params.dipole_moment > 0.5);
         assert!(params.dipole_moment < 4.0);
     }
@@ -724,17 +715,9 @@ mod tests {
     #[test]
     fn test_bond_dipole_c_n() {
         // C-N bond dipole
-        let params_cn = mmff94_bond_dipole(
-            MMFF94Type::C_sp3,
-            MMFF94Type::N_sp3_Amine,
-            1.47,
-        );
+        let params_cn = mmff94_bond_dipole(MMFF94Type::C_sp3, MMFF94Type::N_sp3_Amine, 1.47);
         // N-C reversed should have opposite electronegativity diff
-        let params_nc = mmff94_bond_dipole(
-            MMFF94Type::N_sp3_Amine,
-            MMFF94Type::C_sp3,
-            1.47,
-        );
+        let params_nc = mmff94_bond_dipole(MMFF94Type::N_sp3_Amine, MMFF94Type::C_sp3, 1.47);
 
         assert!(params_cn.dipole_moment > 0.0);
         assert!(params_nc.dipole_moment > 0.0);
@@ -758,14 +741,8 @@ mod tests {
     #[test]
     fn test_electrostatic_scaling_symmetric() {
         // Scaling should be symmetric for identical atom types
-        let params1 = mmff94_electrostatic_scaling_1_4(
-            MMFF94Type::C_sp3,
-            MMFF94Type::N_sp3_Amine,
-        );
-        let params2 = mmff94_electrostatic_scaling_1_4(
-            MMFF94Type::N_sp3_Amine,
-            MMFF94Type::C_sp3,
-        );
+        let params1 = mmff94_electrostatic_scaling_1_4(MMFF94Type::C_sp3, MMFF94Type::N_sp3_Amine);
+        let params2 = mmff94_electrostatic_scaling_1_4(MMFF94Type::N_sp3_Amine, MMFF94Type::C_sp3);
 
         // Both orderings should give same scaling for 1-4 interaction
         assert_eq!(params1.scale_1_4, params2.scale_1_4);
@@ -774,21 +751,15 @@ mod tests {
     #[test]
     fn test_bond_dipole_capped() {
         // Very electronegative atoms shouldn't exceed 4 Debye
-        let f_h = mmff94_bond_dipole(
-            MMFF94Type::F,
-            MMFF94Type::H_Halogen,
-            1.0,
-        );
+        let f_h = mmff94_bond_dipole(MMFF94Type::F, MMFF94Type::H_Halogen, 1.0);
         assert!(f_h.dipole_moment <= 4.0);
     }
 
     #[test]
     fn test_electrostatic_scaling_carboxylate() {
         // Carboxylate-ammonium should have higher screening
-        let params = mmff94_electrostatic_scaling_1_4(
-            MMFF94Type::O_Carboxylic,
-            MMFF94Type::N_sp3_Amine,
-        );
+        let params =
+            mmff94_electrostatic_scaling_1_4(MMFF94Type::O_Carboxylic, MMFF94Type::N_sp3_Amine);
         assert!(params.scale_dielectric >= 5.0);
     }
 

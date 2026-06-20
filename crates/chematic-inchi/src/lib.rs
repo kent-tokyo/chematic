@@ -33,18 +33,18 @@
 //! assert_eq!(mol2.atom_count(), 6);
 //! ```
 
-pub mod layers;
 pub mod key;
+pub mod layers;
 pub mod parser;
 
 #[cfg(feature = "native-inchi")]
 pub mod native;
 #[cfg(feature = "native-inchi")]
-pub use native::{standard_inchi, standard_inchi_key, InchiError};
+pub use native::{InchiError, standard_inchi, standard_inchi_key};
 
-use chematic_core::{Molecule, AtomIdx};
+use chematic_core::{AtomIdx, Molecule};
 use chematic_smiles::canonical::canonical_atom_order;
-use layers::{formula, connection, hydrogen, charge, isotope, stereo};
+use layers::{charge, connection, formula, hydrogen, isotope, stereo};
 use std::collections::HashMap;
 
 /// Build a mapping from AtomIdx to InChI 1-indexed atom numbers (excluding H).
@@ -144,7 +144,7 @@ pub fn inchi_key(inchi_str: &str) -> String {
 ///
 /// Supports organic molecules with stereo layers (`/b`, `/t`, `/m`, `/s`),
 /// isotope layers (`/i`), and charge layers (`/q`).
-pub use parser::{parse_inchi, InchiParseError};
+pub use parser::{InchiParseError, parse_inchi};
 
 #[cfg(test)]
 mod tests {
@@ -172,8 +172,14 @@ mod tests {
         eprintln!("Benzene InChI: {}", inchi_str);
         assert!(inchi_str.starts_with("InChI=1S/C6H6"));
         // Benzene should have ring closure: /c1-2-3-4-5-6-1/h1-6H
-        assert!(inchi_str.contains("/c1-2-3-4-5-6-1"), "Benzene should have ring closure in connectivity");
-        assert!(inchi_str.contains("/h1-6H"), "Benzene should have hydrogen layer");
+        assert!(
+            inchi_str.contains("/c1-2-3-4-5-6-1"),
+            "Benzene should have ring closure in connectivity"
+        );
+        assert!(
+            inchi_str.contains("/h1-6H"),
+            "Benzene should have hydrogen layer"
+        );
     }
 
     #[test]
@@ -198,10 +204,19 @@ mod tests {
         let mol = parse("N[C@@H](C)C(=O)O").expect("L-alanine");
         let inchi_str = inchi(&mol);
         eprintln!("L-alanine InChI: {}", inchi_str);
-        assert!(inchi_str.contains("/t"), "L-alanine should have /t layer (R/S)");
-        assert!(inchi_str.contains("/s1"), "L-alanine should have /s1 layer (absolute stereo)");
+        assert!(
+            inchi_str.contains("/t"),
+            "L-alanine should have /t layer (R/S)"
+        );
+        assert!(
+            inchi_str.contains("/s1"),
+            "L-alanine should have /s1 layer (absolute stereo)"
+        );
         // Single stereocenter should NOT have /m layer
-        assert!(!inchi_str.contains("/m"), "Single stereocenter should not have /m layer");
+        assert!(
+            !inchi_str.contains("/m"),
+            "Single stereocenter should not have /m layer"
+        );
     }
 
     #[test]
@@ -210,9 +225,18 @@ mod tests {
         let mol = parse("C[C@H](O)[C@@H](O)C(=O)O").expect("tartaric acid");
         let inchi_str = inchi(&mol);
         eprintln!("Tartaric acid InChI: {}", inchi_str);
-        assert!(inchi_str.contains("/t"), "Tartaric acid should have /t layer");
-        assert!(inchi_str.contains("/m"), "Two stereocenters should have /m layer");
-        assert!(inchi_str.contains("/s1"), "With chirality markers, should have /s1");
+        assert!(
+            inchi_str.contains("/t"),
+            "Tartaric acid should have /t layer"
+        );
+        assert!(
+            inchi_str.contains("/m"),
+            "Two stereocenters should have /m layer"
+        );
+        assert!(
+            inchi_str.contains("/s1"),
+            "With chirality markers, should have /s1"
+        );
     }
 
     #[test]
@@ -222,6 +246,9 @@ mod tests {
         eprintln!("Ethane InChI: {}", inchi_str);
         assert!(!inchi_str.contains("/t"), "Ethane should not have /t layer");
         assert!(!inchi_str.contains("/m"), "Ethane should not have /m layer");
-        assert!(inchi_str.contains("/s3"), "Achiral ethane should have /s3 (racemic)");
+        assert!(
+            inchi_str.contains("/s3"),
+            "Achiral ethane should have /s3 (racemic)"
+        );
     }
 }

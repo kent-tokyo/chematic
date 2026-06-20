@@ -45,7 +45,10 @@ pub fn tetrahedral_stereo_neighbors(
     // Insert virtual H at the SMILES-correct position for bracket-H atoms.
     let has_bracket_h = atom.hydrogen_count.is_some_and(|h| h > 0);
     if has_bracket_h {
-        let has_preceding = neighbors.first().map(|&nb| nb.0 < center.0).unwrap_or(false);
+        let has_preceding = neighbors
+            .first()
+            .map(|&nb| nb.0 < center.0)
+            .unwrap_or(false);
         let h_insert_pos = if has_preceding { 1 } else { 0 };
         neighbors.insert(h_insert_pos, AtomIdx(u32::MAX));
     }

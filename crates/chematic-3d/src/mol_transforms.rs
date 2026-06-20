@@ -105,11 +105,14 @@ pub fn center_on_origin(coords: &Coords3D) -> Coords3D {
     for i in 0..coords.atom_count() {
         let idx = AtomIdx(i as u32);
         let p = coords.get(idx);
-        result.set(idx, Point3 {
-            x: p.x - cx,
-            y: p.y - cy,
-            z: p.z - cz,
-        });
+        result.set(
+            idx,
+            Point3 {
+                x: p.x - cx,
+                y: p.y - cy,
+                z: p.z - cz,
+            },
+        );
     }
     result
 }
@@ -184,11 +187,14 @@ mod tests {
         let mut coords = crate::dg::generate_coords(&mol);
         // Translate first
         let p0 = coords.get(AtomIdx(0));
-        coords.set(AtomIdx(0), Point3 {
-            x: p0.x + 10.0,
-            y: p0.y + 20.0,
-            z: p0.z + 30.0,
-        });
+        coords.set(
+            AtomIdx(0),
+            Point3 {
+                x: p0.x + 10.0,
+                y: p0.y + 20.0,
+                z: p0.z + 30.0,
+            },
+        );
 
         let centered = center_on_origin(&coords);
         let [cx, cy, cz] = compute_centroid(&centered);
@@ -273,9 +279,13 @@ mod tests {
         let new_p3 = result.get(AtomIdx(3));
 
         let dist_change = original_p3.distance(&new_p3);
-        assert!(dist_change > 0.1, "Atom position should change for different dihedral");
+        assert!(
+            dist_change > 0.1,
+            "Atom position should change for different dihedral"
+        );
 
-        let dihedral = get_dihedral(&result, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)).unwrap();
+        let dihedral =
+            get_dihedral(&result, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)).unwrap();
         assert!((dihedral - target).abs() < 1e-8);
     }
 
@@ -286,7 +296,15 @@ mod tests {
 
         // Degenerate case: C and D are too close (not a valid 4-atom chain)
         // Should return coords unchanged or early
-        let result = set_dihedral(&coords, &mol, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(2), 180.0);
+        let result = set_dihedral(
+            &coords,
+            &mol,
+            AtomIdx(0),
+            AtomIdx(1),
+            AtomIdx(2),
+            AtomIdx(2),
+            180.0,
+        );
         let p = result.get(AtomIdx(0));
         let p_orig = coords.get(AtomIdx(0));
 

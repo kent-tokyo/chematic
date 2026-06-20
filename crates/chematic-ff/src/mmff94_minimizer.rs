@@ -20,7 +20,9 @@ use crate::mmff94_energy::{
     mmff94_angle_energy, mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
     mmff94_vdw_combined,
 };
-use crate::mmff94_numeric::{assign_mmff94_numeric_types, mmff94_charges_numeric, NumericTypeError};
+use crate::mmff94_numeric::{
+    NumericTypeError, assign_mmff94_numeric_types, mmff94_charges_numeric,
+};
 
 type CoordVec = Vec<[f64; 3]>;
 type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
@@ -81,10 +83,7 @@ pub struct EnergyBreakdown {
 ///
 /// Includes bond, angle, torsion, vdW, and electrostatic terms.
 /// Does not modify coordinates.
-pub fn mmff94_total_energy(
-    mol: &Molecule,
-    coords: &[[f64; 3]],
-) -> Result<f64, MinimizerError> {
+pub fn mmff94_total_energy(mol: &Molecule, coords: &[[f64; 3]]) -> Result<f64, MinimizerError> {
     let types = assign_mmff94_numeric_types(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     Ok(total_energy(mol, coords, &types, &charges))
@@ -146,22 +145,26 @@ pub fn mmff94_torsion_scan(
             let axis = {
                 let d = [k[0] - j[0], k[1] - j[1], k[2] - j[2]];
                 let len = (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt();
-                if len < 1e-12 { [1.0, 0.0, 0.0] } else { [d[0]/len, d[1]/len, d[2]/len] }
+                if len < 1e-12 {
+                    [1.0, 0.0, 0.0]
+                } else {
+                    [d[0] / len, d[1] / len, d[2] / len]
+                }
             };
             let (sin_a, cos_a) = step_rad.sin_cos();
             for &ai in &moving_atoms {
                 // Rodrigues' rotation about axis through j
                 let p = [work[ai][0] - j[0], work[ai][1] - j[1], work[ai][2] - j[2]];
                 let cross = [
-                    axis[1]*p[2] - axis[2]*p[1],
-                    axis[2]*p[0] - axis[0]*p[2],
-                    axis[0]*p[1] - axis[1]*p[0],
+                    axis[1] * p[2] - axis[2] * p[1],
+                    axis[2] * p[0] - axis[0] * p[2],
+                    axis[0] * p[1] - axis[1] * p[0],
                 ];
-                let dot = axis[0]*p[0] + axis[1]*p[1] + axis[2]*p[2];
+                let dot = axis[0] * p[0] + axis[1] * p[1] + axis[2] * p[2];
                 work[ai] = [
-                    j[0] + cos_a*p[0] + sin_a*cross[0] + (1.0-cos_a)*dot*axis[0],
-                    j[1] + cos_a*p[1] + sin_a*cross[1] + (1.0-cos_a)*dot*axis[1],
-                    j[2] + cos_a*p[2] + sin_a*cross[2] + (1.0-cos_a)*dot*axis[2],
+                    j[0] + cos_a * p[0] + sin_a * cross[0] + (1.0 - cos_a) * dot * axis[0],
+                    j[1] + cos_a * p[1] + sin_a * cross[1] + (1.0 - cos_a) * dot * axis[1],
+                    j[2] + cos_a * p[2] + sin_a * cross[2] + (1.0 - cos_a) * dot * axis[2],
                 ];
                 let _ = (atom_i, atom_l); // suppress unused warnings
             }
@@ -238,7 +241,11 @@ pub fn minimize_mmff94_full(
     for _ in 0..max_iter {
         iters += 1;
         let grad = compute_gradient(mol, coords, &types, &charges, delta);
-        let max_g = grad.iter().flat_map(|v| v.iter()).map(|x| x.abs()).fold(0.0_f64, f64::max);
+        let max_g = grad
+            .iter()
+            .flat_map(|v| v.iter())
+            .map(|x| x.abs())
+            .fold(0.0_f64, f64::max);
 
         if max_g < convergence {
             converged = true;
@@ -289,14 +296,19 @@ pub fn minimize_mmff94_lbfgs(
     coords: &mut [[f64; 3]],
     max_iter: usize,
 ) -> Result<MinimizeResult, MinimizerError> {
-    const M: usize = 5;            // L-BFGS history size
-    const DELTA: f64 = 1e-4;       // finite-difference step (Å)
+    const M: usize = 5; // L-BFGS history size
+    const DELTA: f64 = 1e-4; // finite-difference step (Å)
     const CONVERGENCE: f64 = 1e-4; // max |gradient| threshold
-    const C_ARMIJO: f64 = 1e-4;   // Armijo sufficient-decrease constant
-    const TAU: f64 = 0.5;          // Armijo backtracking factor
+    const C_ARMIJO: f64 = 1e-4; // Armijo sufficient-decrease constant
+    const TAU: f64 = 0.5; // Armijo backtracking factor
 
     if mol.atom_count() <= 1 {
-        return Ok(MinimizeResult { energy: 0.0, rmsd: 0.0, converged: true, iterations: 0 });
+        return Ok(MinimizeResult {
+            energy: 0.0,
+            rmsd: 0.0,
+            converged: true,
+            iterations: 0,
+        });
     }
 
     let types = assign_mmff94_numeric_types(mol)?;
@@ -318,7 +330,11 @@ pub fn minimize_mmff94_lbfgs(
         iters += 1;
 
         // Convergence check
-        let max_g = g.iter().flat_map(|v| v.iter()).map(|x| x.abs()).fold(0.0_f64, f64::max);
+        let max_g = g
+            .iter()
+            .flat_map(|v| v.iter())
+            .map(|x| x.abs())
+            .fold(0.0_f64, f64::max);
         if max_g < CONVERGENCE {
             converged = true;
             break;
@@ -334,7 +350,13 @@ pub fn minimize_mmff94_lbfgs(
             let trial: Vec<[f64; 3]> = coords
                 .iter()
                 .zip(p.iter())
-                .map(|(c, pi)| [c[0] + alpha * pi[0], c[1] + alpha * pi[1], c[2] + alpha * pi[2]])
+                .map(|(c, pi)| {
+                    [
+                        c[0] + alpha * pi[0],
+                        c[1] + alpha * pi[1],
+                        c[2] + alpha * pi[2],
+                    ]
+                })
                 .collect();
             let f_trial = total_energy(mol, &trial, &types, &charges);
             if f_trial <= f0 + C_ARMIJO * alpha * gp {
@@ -347,7 +369,13 @@ pub fn minimize_mmff94_lbfgs(
                 break coords
                     .iter()
                     .zip(g.iter())
-                    .map(|(c, gi)| [c[0] - scale * gi[0], c[1] - scale * gi[1], c[2] - scale * gi[2]])
+                    .map(|(c, gi)| {
+                        [
+                            c[0] - scale * gi[0],
+                            c[1] - scale * gi[1],
+                            c[2] - scale * gi[2],
+                        ]
+                    })
                     .collect();
             }
         };
@@ -387,21 +415,25 @@ pub fn minimize_mmff94_lbfgs(
             .iter()
             .zip(initial.iter())
             .map(|(c, i0)| {
-                let dx = c[0] - i0[0]; let dy = c[1] - i0[1]; let dz = c[2] - i0[2];
+                let dx = c[0] - i0[0];
+                let dy = c[1] - i0[1];
+                let dz = c[2] - i0[2];
                 dx * dx + dy * dy + dz * dz
             })
             .sum();
         (sum / n as f64).sqrt()
     };
 
-    Ok(MinimizeResult { energy: f0, rmsd, converged, iterations: iters })
+    Ok(MinimizeResult {
+        energy: f0,
+        rmsd,
+        converged,
+        iterations: iters,
+    })
 }
 
 /// L-BFGS two-loop recursion: compute search direction p = -H_k × g.
-fn lbfgs_direction(
-    g: &[[f64; 3]],
-    history: &LbfgsHistory,
-) -> Vec<[f64; 3]> {
+fn lbfgs_direction(g: &[[f64; 3]], history: &LbfgsHistory) -> Vec<[f64; 3]> {
     let m = history.len();
 
     if m == 0 {
@@ -419,17 +451,25 @@ fn lbfgs_direction(
         alphas[i] = rho * sq;
         let a = alphas[i];
         for (qi, yi) in q.iter_mut().zip(y.iter()) {
-            qi[0] -= a * yi[0]; qi[1] -= a * yi[1]; qi[2] -= a * yi[2];
+            qi[0] -= a * yi[0];
+            qi[1] -= a * yi[1];
+            qi[2] -= a * yi[2];
         }
     }
 
     // Scale by γ = (s_{m-1}·y_{m-1}) / (y_{m-1}·y_{m-1})
     let (s_last, y_last, _) = &history[m - 1];
-    let sy: f64 = s_last.iter().zip(y_last.iter()).map(|(si, yi)| dot3(*si, *yi)).sum();
+    let sy: f64 = s_last
+        .iter()
+        .zip(y_last.iter())
+        .map(|(si, yi)| dot3(*si, *yi))
+        .sum();
     let yy: f64 = y_last.iter().map(|yi| dot3(*yi, *yi)).sum();
     let gamma = if yy > 1e-20 { sy / yy } else { 1.0 };
     for qi in q.iter_mut() {
-        qi[0] *= gamma; qi[1] *= gamma; qi[2] *= gamma;
+        qi[0] *= gamma;
+        qi[1] *= gamma;
+        qi[2] *= gamma;
     }
 
     // Second loop (forward)
@@ -439,7 +479,9 @@ fn lbfgs_direction(
         let beta = rho * yr;
         let diff = alphas[i] - beta;
         for (qi, si) in q.iter_mut().zip(s.iter()) {
-            qi[0] += diff * si[0]; qi[1] += diff * si[1]; qi[2] += diff * si[2];
+            qi[0] += diff * si[0];
+            qi[1] += diff * si[1];
+            qi[2] += diff * si[2];
         }
     }
 
@@ -473,12 +515,7 @@ fn compute_gradient(
 
 // ─── Energy components ───────────────────────────────────────────────────────
 
-fn total_energy(
-    mol: &Molecule,
-    coords: &[[f64; 3]],
-    types: &[u8],
-    charges: &[f64],
-) -> f64 {
+fn total_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], charges: &[f64]) -> f64 {
     bond_energy(mol, coords, types)
         + angle_energy(mol, coords, types)
         + stretch_bend_energy(mol, coords, types)
@@ -505,19 +542,24 @@ fn stretch_bend_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64
         let at = angle_type_for(types[j_idx]);
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
-                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(at, types[i], types[j_idx], types[k]) {
+                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(at, types[i], types[j_idx], types[k])
+                {
                     // Δr_ij
                     let r_ij = dist(coords[i], coords[j_idx]);
                     let bt_ij = bond_type_for(types[i], types[j_idx]);
                     let dr_ij = if let Some(p) = mmff94_bond_energy(bt_ij, types[i], types[j_idx]) {
                         r_ij - p.r0
-                    } else { 0.0 };
+                    } else {
+                        0.0
+                    };
                     // Δr_kj
                     let r_kj = dist(coords[k], coords[j_idx]);
                     let bt_kj = bond_type_for(types[k], types[j_idx]);
                     let dr_kj = if let Some(p) = mmff94_bond_energy(bt_kj, types[k], types[j_idx]) {
                         r_kj - p.r0
-                    } else { 0.0 };
+                    } else {
+                        0.0
+                    };
                     // Δθ in degrees
                     let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
                     if let Some(ap) = mmff94_angle_energy(at, types[i], types[j_idx], types[k]) {
@@ -539,8 +581,8 @@ fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     // sp2 atom types that can have OOP bending
     const SP2_TYPES: &[u8] = &[
-        2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57,
-        58, 59, 63, 64, 65, 66, 67, 76, 78, 79, 80, 81, 82,
+        2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67,
+        76, 78, 79, 80, 81, 82,
     ];
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
@@ -559,12 +601,12 @@ fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
             let pi = coords[i];
             let pk = coords[k];
             let pl = coords[l];
-            let rji = [pi[0]-pj[0], pi[1]-pj[1], pi[2]-pj[2]];
-            let rjk = [pk[0]-pj[0], pk[1]-pj[1], pk[2]-pj[2]];
-            let rjl = [pl[0]-pj[0], pl[1]-pj[1], pl[2]-pj[2]];
+            let rji = [pi[0] - pj[0], pi[1] - pj[1], pi[2] - pj[2]];
+            let rjk = [pk[0] - pj[0], pk[1] - pj[1], pk[2] - pj[2]];
+            let rjl = [pl[0] - pj[0], pl[1] - pj[1], pl[2] - pj[2]];
             let n = cross(rji, rjk); // normal to ijk plane
-            let n_len = (n[0]*n[0]+n[1]*n[1]+n[2]*n[2]).sqrt();
-            let l_len = (rjl[0]*rjl[0]+rjl[1]*rjl[1]+rjl[2]*rjl[2]).sqrt();
+            let n_len = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
+            let l_len = (rjl[0] * rjl[0] + rjl[1] * rjl[1] + rjl[2] * rjl[2]).sqrt();
             if n_len < 1e-12 || l_len < 1e-12 {
                 continue;
             }
@@ -631,8 +673,14 @@ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     for (_, bond) in mol.bonds() {
         let j = bond.atom1.0 as usize;
         let k = bond.atom2.0 as usize;
-        let nbrs_j: Vec<usize> = mol.neighbors(bond.atom1).map(|(nb, _)| nb.0 as usize).collect();
-        let nbrs_k: Vec<usize> = mol.neighbors(bond.atom2).map(|(nb, _)| nb.0 as usize).collect();
+        let nbrs_j: Vec<usize> = mol
+            .neighbors(bond.atom1)
+            .map(|(nb, _)| nb.0 as usize)
+            .collect();
+        let nbrs_k: Vec<usize> = mol
+            .neighbors(bond.atom2)
+            .map(|(nb, _)| nb.0 as usize)
+            .collect();
         let tt = torsion_type_for(types[j], types[k]);
         for &i in &nbrs_j {
             if i == k {
@@ -685,7 +733,9 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 continue;
             }
             if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j])
-                && r_star > 0.0 && eps > 0.0 && r > 0.01
+                && r_star > 0.0
+                && eps > 0.0
+                && r > 0.01
             {
                 let t = (1.07 * r_star) / (r + 0.07 * r_star);
                 let t7 = t.powi(7);
@@ -743,7 +793,11 @@ fn elec_energy(mol: &Molecule, coords: &[[f64; 3]], charges: &[f64]) -> f64 {
                 continue;
             }
             let r = dist(coords[i], coords[j]);
-            let scale = if one_four.contains(&(i, j)) { 0.75 } else { 1.0 };
+            let scale = if one_four.contains(&(i, j)) {
+                0.75
+            } else {
+                1.0
+            };
             energy += scale * COULOMB * charges[i] * charges[j] / (r + DELTA);
         }
     }
@@ -833,9 +887,9 @@ fn torsion_type_for(tj: u8, tk: u8) -> u8 {
         SP2.binary_search(&tj).is_ok(),
         SP2.binary_search(&tk).is_ok(),
     ) {
-        (false, false) => 0, // sp3-sp3
+        (false, false) => 0,                // sp3-sp3
         (true, false) | (false, true) => 1, // sp3-sp2
-        (true, true) => 2, // sp2-sp2
+        (true, true) => 2,                  // sp2-sp2
     }
 }
 
@@ -1021,8 +1075,12 @@ mod tests {
         let sd = minimize_mmff94_full(&mol, &mut coords_sd, 500).expect("sd");
         let lb = minimize_mmff94_lbfgs(&mol, &mut coords_lbfgs, 500).expect("lbfgs");
         // Both should converge; L-BFGS should need ≤ SD iterations
-        assert!(lb.iterations <= sd.iterations || lb.converged,
-            "L-BFGS iters={} SD iters={}", lb.iterations, sd.iterations);
+        assert!(
+            lb.iterations <= sd.iterations || lb.converged,
+            "L-BFGS iters={} SD iters={}",
+            lb.iterations,
+            sd.iterations
+        );
         assert!(lb.energy.is_finite());
     }
 
@@ -1030,8 +1088,14 @@ mod tests {
     fn energy_breakdown_sums_to_total() {
         let (mol, coords) = methane_mol();
         let bd = mmff94_energy_breakdown(&mol, &coords).expect("breakdown");
-        let sum = bd.bond + bd.angle + bd.stretch_bend + bd.torsion + bd.oop + bd.vdw + bd.electrostatic;
-        assert!((sum - bd.total).abs() < 1e-10, "sum={} total={}", sum, bd.total);
+        let sum =
+            bd.bond + bd.angle + bd.stretch_bend + bd.torsion + bd.oop + bd.vdw + bd.electrostatic;
+        assert!(
+            (sum - bd.total).abs() < 1e-10,
+            "sum={} total={}",
+            sum,
+            bd.total
+        );
         assert!(bd.total.is_finite());
     }
 
@@ -1047,6 +1111,10 @@ mod tests {
             [2.0, -2.0, -2.0],
         ];
         let bd = mmff94_energy_breakdown(&mol, &stretched).expect("breakdown");
-        assert!(bd.bond > 0.0, "stretched bond energy should be positive: {}", bd.bond);
+        assert!(
+            bd.bond > 0.0,
+            "stretched bond energy should be positive: {}",
+            bd.bond
+        );
     }
 }

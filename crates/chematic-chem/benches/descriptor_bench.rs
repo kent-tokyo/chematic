@@ -3,7 +3,7 @@
 //! Run: `cargo bench -p chematic-chem`
 //! HTML report: `target/criterion/descriptor_bench/report/index.html`
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
 use chematic_chem::{
@@ -14,16 +14,16 @@ use chematic_smiles::parse;
 
 /// Same 10-molecule set as chematic-smiles and chematic-fp benchmarks.
 const BENCH_SMILES: &[&str] = &[
-    "c1ccccc1",                             // benzene
-    "Cc1ccccc1",                            // toluene
-    "CC(=O)Oc1ccccc1C(=O)O",               // aspirin
-    "Cn1cnc2c1c(=O)n(c(=O)n2C)C",          // caffeine
-    "CC(C)Cc1ccc(cc1)C(C)C(=O)O",          // ibuprofen
-    "c1ccncc1",                             // pyridine
-    "C1CCNCC1",                             // piperidine
-    "CC(=O)Nc1ccc(O)cc1",                  // paracetamol
-    "NCC(=O)O",                             // glycine (amphoteric)
-    "CN(C)C(=N)NC(=N)N",                   // metformin (multiple basic N)
+    "c1ccccc1",                   // benzene
+    "Cc1ccccc1",                  // toluene
+    "CC(=O)Oc1ccccc1C(=O)O",      // aspirin
+    "Cn1cnc2c1c(=O)n(c(=O)n2C)C", // caffeine
+    "CC(C)Cc1ccc(cc1)C(C)C(=O)O", // ibuprofen
+    "c1ccncc1",                   // pyridine
+    "C1CCNCC1",                   // piperidine
+    "CC(=O)Nc1ccc(O)cc1",         // paracetamol
+    "NCC(=O)O",                   // glycine (amphoteric)
+    "CN(C)C(=N)NC(=N)N",          // metformin (multiple basic N)
 ];
 
 // ── descriptor batch (5 descriptors × 10 molecules) ──────────────────────────

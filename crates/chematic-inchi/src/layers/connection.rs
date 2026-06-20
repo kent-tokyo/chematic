@@ -1,4 +1,4 @@
-use chematic_core::{Molecule, AtomIdx};
+use chematic_core::{AtomIdx, Molecule};
 use chematic_smiles::canonical::canonical_atom_order;
 use std::collections::{HashMap, HashSet};
 
@@ -45,7 +45,15 @@ pub fn connectivity_layer(mol: &Molecule) -> Option<String> {
     let mut visited = HashSet::new();
     let mut tree_edges = HashSet::new();
     let mut result = String::new();
-    dfs_connection(&first_atom, None, mol, &inchi_index, &mut visited, &mut result, &mut tree_edges);
+    dfs_connection(
+        &first_atom,
+        None,
+        mol,
+        &inchi_index,
+        &mut visited,
+        &mut result,
+        &mut tree_edges,
+    );
 
     // Add ring closure bonds (back-edges)
     let mut ring_closures = Vec::new();
@@ -56,7 +64,11 @@ pub fn connectivity_layer(mol: &Molecule) -> Option<String> {
             continue; // Skip bonds with H
         }
         // Check if this is a back-edge (not in tree_edges)
-        let normalized_edge = if atom1 < atom2 { (atom1, atom2) } else { (atom2, atom1) };
+        let normalized_edge = if atom1 < atom2 {
+            (atom1, atom2)
+        } else {
+            (atom2, atom1)
+        };
         if !tree_edges.contains(&normalized_edge) {
             let i1 = inchi_index[&atom1];
             let i2 = inchi_index[&atom2];
@@ -119,17 +131,37 @@ fn dfs_connection(
     for &neighbor in &neighbors {
         if !visited.contains(&neighbor) && parent != Some(neighbor) {
             // Record this as a tree edge (normalize to smaller index first)
-            let normalized_edge = if *atom < neighbor { (*atom, neighbor) } else { (neighbor, *atom) };
+            let normalized_edge = if *atom < neighbor {
+                (*atom, neighbor)
+            } else {
+                (neighbor, *atom)
+            };
             tree_edges.insert(normalized_edge);
 
             if first {
                 first = false;
-                dfs_connection(&neighbor, Some(*atom), mol, inchi_index, visited, result, tree_edges);
+                dfs_connection(
+                    &neighbor,
+                    Some(*atom),
+                    mol,
+                    inchi_index,
+                    visited,
+                    result,
+                    tree_edges,
+                );
             } else {
                 // Branch: wrap in parentheses with branch cursor reset (comma)
                 // The comma resets the cursor to the parent atom after closing the branch
                 let mut branch = String::new();
-                dfs_connection(&neighbor, Some(*atom), mol, inchi_index, visited, &mut branch, tree_edges);
+                dfs_connection(
+                    &neighbor,
+                    Some(*atom),
+                    mol,
+                    inchi_index,
+                    visited,
+                    &mut branch,
+                    tree_edges,
+                );
                 if !branch.is_empty() {
                     result.push('(');
                     result.push_str(&branch);
@@ -173,7 +205,10 @@ mod tests {
         assert!(c_layer.is_some());
         let c_str = c_layer.unwrap();
         // Benzene should have ring closure: 1-2-3-4-5-6-1
-        assert_eq!(c_str, "1-2-3-4-5-6-1", "Benzene should have ring closure bond");
+        assert_eq!(
+            c_str, "1-2-3-4-5-6-1",
+            "Benzene should have ring closure bond"
+        );
     }
 
     // C4 Tests: Branch cursor reset
@@ -186,7 +221,10 @@ mod tests {
         assert!(c_layer.is_some());
         let c_str = c_layer.unwrap();
         // Linear propane should not have trailing commas (no multiple branches)
-        assert!(!c_str.ends_with(','), "Linear propane should not end with comma");
+        assert!(
+            !c_str.ends_with(','),
+            "Linear propane should not end with comma"
+        );
     }
 
     #[test]
@@ -199,7 +237,10 @@ mod tests {
         // Should have branch cursor resets between branches
         // Format: 1-2(3,4) or similar with commas for cursor resets
         assert!(c_str.contains('('), "Should have parentheses for branches");
-        assert!(c_str.contains(','), "Should have cursor resets (commas) between branches");
+        assert!(
+            c_str.contains(','),
+            "Should have cursor resets (commas) between branches"
+        );
     }
 
     #[test]
@@ -210,7 +251,10 @@ mod tests {
         assert!(c_layer.is_some());
         let c_str = c_layer.unwrap();
         // Should have cursor resets between multiple branches
-        assert!(c_str.contains(','), "Multiple branches should have cursor resets");
+        assert!(
+            c_str.contains(','),
+            "Multiple branches should have cursor resets"
+        );
     }
 
     #[test]
@@ -263,7 +307,10 @@ mod tests {
         assert!(c_layer.is_some());
         let c_str = c_layer.unwrap();
         // Linear butane should not have multiple branches
-        assert!(!c_str.ends_with(','), "Linear molecules should not end with trailing comma");
+        assert!(
+            !c_str.ends_with(','),
+            "Linear molecules should not end with trailing comma"
+        );
     }
 
     #[test]
@@ -280,7 +327,10 @@ mod tests {
         // Not: 1-2(3)4 (missing cursor reset)
         let paren_count_open = c_str.matches('(').count();
         let paren_count_close = c_str.matches(')').count();
-        assert_eq!(paren_count_open, paren_count_close, "Parentheses should be balanced");
+        assert_eq!(
+            paren_count_open, paren_count_close,
+            "Parentheses should be balanced"
+        );
     }
 
     #[test]
@@ -295,7 +345,10 @@ mod tests {
         // Isopentane: one branch
         let iso = parse("CC(C)CC").expect("isopentane");
         let iso_c = connectivity_layer(&iso).unwrap();
-        assert!(iso_c.contains('('), "Branched pentane should have parentheses");
+        assert!(
+            iso_c.contains('('),
+            "Branched pentane should have parentheses"
+        );
     }
 
     #[test]
@@ -307,7 +360,13 @@ mod tests {
         let c_str = c_layer.unwrap();
 
         // Verify no trailing comma
-        assert!(!c_str.ends_with(','), "Should not end with comma after single branch");
-        assert!(!c_str.ends_with("),"), "Should not have comma after last closing paren");
+        assert!(
+            !c_str.ends_with(','),
+            "Should not end with comma after single branch"
+        );
+        assert!(
+            !c_str.ends_with("),"),
+            "Should not have comma after last closing paren"
+        );
     }
 }

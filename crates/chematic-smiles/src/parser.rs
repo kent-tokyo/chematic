@@ -12,7 +12,9 @@
 
 use std::collections::HashMap;
 
-use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilder, STEREO_H_SENTINEL};
+use chematic_core::{
+    Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilder, STEREO_H_SENTINEL,
+};
 
 use crate::error::SmilesError;
 
@@ -203,12 +205,7 @@ impl<'a> Parser<'a> {
         let saved_stereo = self.current_stereo.take();
 
         // Begin stereo tracking if the first atom is chiral.
-        Self::begin_stereo_if_chiral(
-            &first_atom,
-            first_idx,
-            attach_to,
-            &mut self.current_stereo,
-        );
+        Self::begin_stereo_if_chiral(&first_atom, first_idx, attach_to, &mut self.current_stereo);
 
         // `current` is the atom we're currently processing.
         // `current_from` is the from-atom for `current` (needed to start stereo for next atoms).
@@ -219,8 +216,7 @@ impl<'a> Parser<'a> {
         loop {
             match self.peek() {
                 Some(b'(') => {
-                    let first_branch_atom =
-                        self.parse_branch(mol, current, None, open_rings)?;
+                    let first_branch_atom = self.parse_branch(mol, current, None, open_rings)?;
                     if let Some(fa) = first_branch_atom {
                         self.stereo_push(current, StereoEntry::Atom(fa));
                     }

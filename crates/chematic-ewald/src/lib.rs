@@ -24,7 +24,10 @@ impl fmt::Display for EwaldError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EwaldError::SingularBoxMatrix => {
-                write!(f, "singular or near-singular box matrix (determinant < 1e-10)")
+                write!(
+                    f,
+                    "singular or near-singular box matrix (determinant < 1e-10)"
+                )
             }
         }
     }

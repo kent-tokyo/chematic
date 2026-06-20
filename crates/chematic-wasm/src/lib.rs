@@ -410,7 +410,8 @@ impl MolHandle {
     /// Returns `[{"ph":0.0,"logd":2.5}, ...]` with `steps` evenly-spaced pH points.
     pub fn logd_profile_json(&self, ph_start: f64, ph_end: f64, steps: usize) -> String {
         let profile = chematic_chem::logd_profile(&self.inner, ph_start, ph_end, steps);
-        let items: Vec<String> = profile.iter()
+        let items: Vec<String> = profile
+            .iter()
             .map(|(ph, ld)| format!(r#"{{"ph":{ph:.2},"logd":{ld:.4}}}"#))
             .collect();
         format!("[{}]", items.join(","))
@@ -422,7 +423,8 @@ impl MolHandle {
     /// `resolution`: m/z bin width in Da (e.g. `0.1` for nominal, `0.01` for high-res).
     pub fn isotope_distribution_json(&self, resolution: f64) -> String {
         let dist = chematic_chem::isotope_distribution(&self.inner, resolution);
-        let items: Vec<String> = dist.iter()
+        let items: Vec<String> = dist
+            .iter()
             .map(|(mass, abund)| format!(r#"{{"mass":{mass:.4},"abundance":{abund:.6}}}"#))
             .collect();
         format!("[{}]", items.join(","))
@@ -456,7 +458,9 @@ impl MolHandle {
         use chematic_chem::assign_cip;
         use chematic_core::CipCode;
         let assignment = assign_cip(&self.inner);
-        let centers: Vec<String> = assignment.assignments.iter()
+        let centers: Vec<String> = assignment
+            .assignments
+            .iter()
             .map(|(idx, code)| {
                 let code_str = match code {
                     CipCode::R => "R",
@@ -739,12 +743,18 @@ pub fn brics_fragment_count(mol: &MolHandle) -> usize {
 #[wasm_bindgen]
 pub fn run_md_json(mol: &MolHandle, steps: usize, temp_k: f64) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     const MIN_TEMP_K: f64 = 1.0;
     const MAX_TEMP_K: f64 = 100_000.0;
     if !temp_k.is_finite() || !(MIN_TEMP_K..=MAX_TEMP_K).contains(&temp_k) {
-        return format!(r#"{{"error":"temperature must be between {} and {} K"}}"#, MIN_TEMP_K, MAX_TEMP_K);
+        return format!(
+            r#"{{"error":"temperature must be between {} and {} K"}}"#,
+            MIN_TEMP_K, MAX_TEMP_K
+        );
     }
     const MAX_MD_STEPS: usize = 10_000;
     let steps = steps.min(MAX_MD_STEPS);
@@ -909,8 +919,9 @@ pub fn enumerate_library_2way(
         max_size: Some(WASM_MAX_BATCH_ITEMS), // Limit enumeration size
     };
 
-    let products = chematic_rxn::enumerate_library_2way(template, scaffolds, building_blocks, &config)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let products =
+        chematic_rxn::enumerate_library_2way(template, scaffolds, building_blocks, &config)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     let smiles_list: Vec<String> = products
         .iter()
@@ -931,7 +942,11 @@ pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsVal
         chematic_smarts::parse_smarts(smarts).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
     const WASM_MAX_SMARTS_VISITS: u64 = 1_000_000;
     let config = chematic_smarts::MatchConfig {
-        max_matches: Some(WASM_MAX_SMARTS_MATCHES), use_chirality: false, use_isotopes: false, uniquify: true, max_visit_budget: Some(WASM_MAX_SMARTS_VISITS),
+        max_matches: Some(WASM_MAX_SMARTS_MATCHES),
+        use_chirality: false,
+        use_isotopes: false,
+        uniquify: true,
+        max_visit_budget: Some(WASM_MAX_SMARTS_VISITS),
     };
     let matches = chematic_smarts::find_matches_with_config(&query, &mol.inner, &config);
     let parts: Vec<String> = matches
@@ -1215,7 +1230,10 @@ pub fn mol_from_v3000_block(block: &str) -> Result<MolHandle, JsValue> {
     let (mol, _meta) =
         chematic_mol::parse_mol_v3000(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
     }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
@@ -1233,7 +1251,10 @@ pub fn mol_from_sdf_block(block: &str) -> Result<MolHandle, JsValue> {
     let (mol, _meta) =
         chematic_mol::parse_mol(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
     }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
@@ -1266,7 +1287,10 @@ pub fn to_mol_block(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn sdf_to_smiles_json(sdf: &str) -> String {
     if sdf.len() > WASM_MAX_INPUT_BYTES {
-        return format!(r#"[{{"error":"SDF input too large ({} bytes)"}}]"#, sdf.len());
+        return format!(
+            r#"[{{"error":"SDF input too large ({} bytes)"}}]"#,
+            sdf.len()
+        );
     }
     let entries: Vec<String> = chematic_mol::SdfReader::new(sdf)
         .take(WASM_MAX_BATCH_ITEMS)
@@ -1382,22 +1406,30 @@ pub fn mmff94_charges_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn mhfp_hashes_json(mol: &MolHandle) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     let fp = chematic_fp::mhfp(&mol.inner);
     let hs: Vec<String> = fp.hashes.iter().map(|h| h.to_string()).collect();
-    format!(r#"{{"num_hashes":{},"hashes":[{}]}}"#, fp.num_hashes, hs.join(","))
+    format!(
+        r#"{{"num_hashes":{},"hashes":[{}]}}"#,
+        fp.num_hashes,
+        hs.join(",")
+    )
 }
 
 /// Tanimoto-like similarity between two SMILES via MHFP (MinHash Jaccard approximation).
 #[wasm_bindgen]
 pub fn tanimoto_mhfp_smiles(smi1: &str, smi2: &str) -> Result<f64, JsValue> {
-    let m1 = chematic_smiles::parse(smi1)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let m2 = chematic_smiles::parse(smi2)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let m1 = chematic_smiles::parse(smi1).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let m2 = chematic_smiles::parse(smi2).map_err(|e| JsValue::from_str(&e.to_string()))?;
     if m1.atom_count() > WASM_MAX_ATOMS || m2.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
     }
     Ok(chematic_fp::tanimoto_mhfp(&m1, &m2))
 }
@@ -1409,11 +1441,18 @@ pub fn tanimoto_mhfp_smiles(smi1: &str, smi2: &str) -> Result<f64, JsValue> {
 #[wasm_bindgen]
 pub fn erg_vec_json(mol: &MolHandle) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     let v = chematic_fp::erg_vec(&mol.inner);
     let vals: Vec<String> = v.iter().map(|x| format!("{x:.6}")).collect();
-    format!(r#"{{"len":{},"values":[{}]}}"#, chematic_fp::ERG_VEC_LEN, vals.join(","))
+    format!(
+        r#"{{"len":{},"values":[{}]}}"#,
+        chematic_fp::ERG_VEC_LEN,
+        vals.join(",")
+    )
 }
 
 /// Compute MMFF94-style atom-typed partial charges (improved over element-pair BCI).
@@ -1423,7 +1462,10 @@ pub fn erg_vec_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn mmff94_charges_typed_json(mol: &MolHandle) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     let q = chematic_chem::mmff94_charges_typed(&mol.inner);
     let vals: Vec<String> = q.iter().map(|x| format!("{x:.6}")).collect();
@@ -1438,12 +1480,18 @@ pub fn mmff94_charges_typed_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn minimize_mmff94_json(mol: &MolHandle, max_iter: u32) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     let conf = chematic_3d::generate_coords(&mol.inner);
     let n = mol.inner.atom_count();
     let mut coords: Vec<[f64; 3]> = (0..n)
-        .map(|i| { let p = conf.get(chematic_core::AtomIdx(i as u32)); [p.x, p.y, p.z] })
+        .map(|i| {
+            let p = conf.get(chematic_core::AtomIdx(i as u32));
+            [p.x, p.y, p.z]
+        })
         .collect();
     match chematic_ff::minimize_mmff94_full(&mol.inner, &mut coords, max_iter as usize) {
         Ok(r) => format!(
@@ -1459,12 +1507,18 @@ pub fn minimize_mmff94_json(mol: &MolHandle, max_iter: u32) -> String {
 #[wasm_bindgen]
 pub fn minimize_mmff94_lbfgs_json(mol: &MolHandle, max_iter: u32) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     let conf = chematic_3d::generate_coords(&mol.inner);
     let n = mol.inner.atom_count();
     let mut coords: Vec<[f64; 3]> = (0..n)
-        .map(|i| { let p = conf.get(chematic_core::AtomIdx(i as u32)); [p.x, p.y, p.z] })
+        .map(|i| {
+            let p = conf.get(chematic_core::AtomIdx(i as u32));
+            [p.x, p.y, p.z]
+        })
         .collect();
     match chematic_ff::minimize_mmff94_lbfgs(&mol.inner, &mut coords, max_iter as usize) {
         Ok(r) => format!(
@@ -1480,12 +1534,18 @@ pub fn minimize_mmff94_lbfgs_json(mol: &MolHandle, max_iter: u32) -> String {
 #[wasm_bindgen]
 pub fn mmff94_energy_breakdown_json(mol: &MolHandle) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     let conf = chematic_3d::generate_coords(&mol.inner);
     let n = mol.inner.atom_count();
     let coords: Vec<[f64; 3]> = (0..n)
-        .map(|i| { let p = conf.get(chematic_core::AtomIdx(i as u32)); [p.x, p.y, p.z] })
+        .map(|i| {
+            let p = conf.get(chematic_core::AtomIdx(i as u32));
+            [p.x, p.y, p.z]
+        })
         .collect();
     match chematic_ff::mmff94_energy_breakdown(&mol.inner, &coords) {
         Ok(bd) => format!(
@@ -1501,7 +1561,10 @@ pub fn mmff94_energy_breakdown_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn torsion_scan_json(mol: &MolHandle, i: u32, j: u32, k: u32, l: u32, steps: u32) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     let n = mol.inner.atom_count();
     if i as usize >= n || j as usize >= n || k as usize >= n || l as usize >= n {
@@ -1509,16 +1572,18 @@ pub fn torsion_scan_json(mol: &MolHandle, i: u32, j: u32, k: u32, l: u32, steps:
     }
     let conf = chematic_3d::generate_coords(&mol.inner);
     let coords: Vec<[f64; 3]> = (0..n)
-        .map(|idx| { let p = conf.get(chematic_core::AtomIdx(idx as u32)); [p.x, p.y, p.z] })
+        .map(|idx| {
+            let p = conf.get(chematic_core::AtomIdx(idx as u32));
+            [p.x, p.y, p.z]
+        })
         .collect();
     let steps = (steps as usize).clamp(4, 360);
     match chematic_ff::mmff94_torsion_scan(
-        &mol.inner, &coords,
-        i as usize, j as usize, k as usize, l as usize,
-        steps,
+        &mol.inner, &coords, i as usize, j as usize, k as usize, l as usize, steps,
     ) {
         Ok(pts) => {
-            let entries: Vec<String> = pts.iter()
+            let entries: Vec<String> = pts
+                .iter()
                 .map(|(a, e)| format!(r#"{{"angle":{:.2},"energy":{:.4}}}"#, a, e))
                 .collect();
             format!("[{}]", entries.join(","))
@@ -1532,7 +1597,10 @@ pub fn torsion_scan_json(mol: &MolHandle, i: u32, j: u32, k: u32, l: u32, steps:
 #[wasm_bindgen]
 pub fn mmff94_partial_charges_json(mol: &MolHandle) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     match chematic_ff::mmff94_charges_numeric(&mol.inner) {
         Ok(q) => {
@@ -1606,6 +1674,86 @@ pub fn autocorr_3d_json(mol: &MolHandle) -> String {
         "[{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4},{:.4}]",
         ac[0], ac[1], ac[2], ac[3], ac[4], ac[5], ac[6], ac[7]
     )
+}
+
+/// XLogP3 partition coefficient (alternative to Crippen LogP).
+/// Returns JSON: `{"xlogp3": float}`.
+#[wasm_bindgen]
+pub fn xlogp3_json(mol: &MolHandle) -> String {
+    let v = chematic_chem::xlogp3(&mol.inner);
+    format!(r#"{{"xlogp3":{v:.4}}}"#)
+}
+
+/// Per-atom XLogP3 contributions.
+/// Returns JSON array of floats (one per heavy atom).
+#[wasm_bindgen]
+pub fn xlogp3_per_atom_json(mol: &MolHandle) -> String {
+    let vals = chematic_chem::xlogp3_per_atom(&mol.inner);
+    let parts: Vec<String> = vals.iter().map(|v| format!("{v:.4}")).collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Generate 3D coordinates as raw JSON array [[x,y,z], ...].
+///
+/// Unlike `generate_3d_pdb`, this returns coordinates that can be passed
+/// to descriptor functions like `whim_descriptors_json` or `shape_descriptors_json`.
+#[wasm_bindgen]
+pub fn generate_3d_coords_json(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_and_minimize_dreiding(&mol.inner);
+    let parts: Vec<String> = coords
+        .points
+        .iter()
+        .map(|p| format!("[{:.4},{:.4},{:.4}]", p.x, p.y, p.z))
+        .collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Generate 3D coordinates using ETKDG as raw JSON array [[x,y,z], ...].
+#[wasm_bindgen]
+pub fn generate_3d_etkdg_coords_json(mol: &MolHandle) -> String {
+    let coords = chematic_3d::generate_coords_etkdg(&mol.inner);
+    let parts: Vec<String> = coords
+        .points
+        .iter()
+        .map(|p| format!("[{:.4},{:.4},{:.4}]", p.x, p.y, p.z))
+        .collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Generate multiple conformers with RMSD-based pruning.
+/// Returns JSON: `{"conformers": [[[x,y,z],...], ...], "count": int}`.
+#[wasm_bindgen]
+pub fn conformer_ensemble_json(mol: &MolHandle, n: u32, rmsd_threshold: f64) -> String {
+    let smiles = chematic_smiles::canonical_smiles(&mol.inner);
+    let fresh = match chematic_smiles::parse(&smiles) {
+        Ok(m) => m,
+        Err(_) => return r#"{"conformers":[],"count":0}"#.to_string(),
+    };
+    let config = chematic_3d::ConformerConfig {
+        count: n as usize,
+        rmsd_threshold,
+    };
+    match chematic_3d::generate_conformer_ensemble_with_config(fresh, &config) {
+        Ok(ensemble) => {
+            let conf_jsons: Vec<String> = (0..ensemble.conformer_count())
+                .filter_map(|i| ensemble.get_conformer(i))
+                .map(|c| {
+                    let pts: Vec<String> = c
+                        .points
+                        .iter()
+                        .map(|p| format!("[{:.4},{:.4},{:.4}]", p.x, p.y, p.z))
+                        .collect();
+                    format!("[{}]", pts.join(","))
+                })
+                .collect();
+            let count = conf_jsons.len();
+            format!(
+                r#"{{"conformers":[{}],"count":{count}}}"#,
+                conf_jsons.join(",")
+            )
+        }
+        Err(_) => r#"{"conformers":[],"count":0}"#.to_string(),
+    }
 }
 
 /// Synthetic Accessibility Score (1 = easy, 10 = hard).
@@ -1978,10 +2126,16 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
     blocked_atom_indices_json: &str,
 ) -> String {
     if blocked_atom_indices_json.len() > WASM_MAX_JSON_STRING_BYTES {
-        return format!(r#"{{"error":"blocked_atom_indices_json too large ({} bytes)"}}"#, blocked_atom_indices_json.len());
+        return format!(
+            r#"{{"error":"blocked_atom_indices_json too large ({} bytes)"}}"#,
+            blocked_atom_indices_json.len()
+        );
     }
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"{{"error":"molecule too large (max {} atoms)"}}"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
     }
     let indices: Vec<u32> = match serde_json::from_str(blocked_atom_indices_json) {
         Ok(v) => v,
@@ -2005,7 +2159,10 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
 #[wasm_bindgen]
 pub fn enumerate_tautomers_json(mol: &MolHandle) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(r#"["{{"error":"molecule too large (max {} atoms)"}}"]"#, WASM_MAX_ATOMS);
+        return format!(
+            r#"["{{"error":"molecule too large (max {} atoms)"}}"]"#,
+            WASM_MAX_ATOMS
+        );
     }
     let tautomers = chematic_chem::enumerate_tautomers(&mol.inner);
     let parts: Vec<String> = tautomers
@@ -2204,22 +2361,22 @@ pub fn admet_profile_json(smiles: &str) -> String {
             "\"gi_absorbed\":{gi},\"bbb_penetrant\":{bbbp}",
             "}}"
         ),
-        bbb  = p.bbb_score,
-        bbp  = p.bbb_passes,
+        bbb = p.bbb_score,
+        bbp = p.bbb_passes,
         caco = p.caco2,
         herg = p.herg_risk,
-        cyp  = p.cyp3a4_risk,
+        cyp = p.cyp3a4_risk,
         acid = acid_str,
         base = base_str,
         esol = p.esol,
         logd = p.logd74,
-        mw   = p.mw,
+        mw = p.mw,
         logp = p.logp,
         tpsa = p.tpsa,
-        hbd  = p.hbd,
-        hba  = p.hba,
-        rb   = p.rotatable_bonds,
-        gi   = egg.gi_absorbed,
+        hbd = p.hbd,
+        hba = p.hba,
+        rb = p.rotatable_bonds,
+        gi = egg.gi_absorbed,
         bbbp = egg.bbb_penetrant,
     )
 }
@@ -2257,7 +2414,10 @@ pub fn boiled_egg_json(smiles: &str) -> String {
 #[wasm_bindgen]
 pub fn sdf_to_records_json(sdf: &str) -> String {
     if sdf.len() > WASM_MAX_INPUT_BYTES {
-        return format!(r#"[{{"error":"SDF input too large ({} bytes)"}}]"#, sdf.len());
+        return format!(
+            r#"[{{"error":"SDF input too large ({} bytes)"}}]"#,
+            sdf.len()
+        );
     }
     let entries: Vec<String> = chematic_mol::SdfRecordReader::new(sdf)
         .take(WASM_MAX_BATCH_ITEMS)
@@ -3148,7 +3308,10 @@ pub fn mol_from_cml(cml: &str) -> Result<MolHandle, JsValue> {
     let (mol, _coords) =
         chematic_mol::parse_cml(cml).map_err(|e| JsValue::from_str(&e.to_string()))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
     }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
@@ -3183,7 +3346,10 @@ pub fn mol_from_cdxml(cdxml: &str) -> Result<MolHandle, JsValue> {
     let (mol, _coords) =
         chematic_mol::parse_cdxml(cdxml).map_err(|e| JsValue::from_str(&e.to_string()))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
     }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
@@ -3758,7 +3924,10 @@ pub fn mol_from_xyz(xyz: &str) -> Result<MolHandle, JsValue> {
     let (mol, _coords) =
         chematic_3d::parse_xyz(xyz).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!("molecule too large (max {} atoms)", WASM_MAX_ATOMS)));
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
     }
     Ok(MolHandle {
         inner: std::rc::Rc::new(mol),
@@ -3779,7 +3948,10 @@ pub fn mol_from_xyz(xyz: &str) -> Result<MolHandle, JsValue> {
 #[wasm_bindgen]
 pub fn determine_bonds_from_xyz_json(xyz_str: &str) -> String {
     if xyz_str.len() > WASM_MAX_JSON_STRING_BYTES {
-        return format!(r#"{{"error":"XYZ input too large ({} bytes)"}}"#, xyz_str.len());
+        return format!(
+            r#"{{"error":"XYZ input too large ({} bytes)"}}"#,
+            xyz_str.len()
+        );
     }
     let (mol_topo, coords) = match chematic_3d::parse_xyz(xyz_str) {
         Ok(r) => r,
@@ -3820,11 +3992,15 @@ pub fn to_xyz(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn mol_from_pdb(pdb: &str) -> MolHandle {
     if pdb.len() > WASM_MAX_JSON_STRING_BYTES {
-        return MolHandle { inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()) };
+        return MolHandle {
+            inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()),
+        };
     }
     let atoms = chematic_3d::parse_pdb_atoms(pdb);
     if atoms.len() > WASM_MAX_ATOMS {
-        return MolHandle { inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()) };
+        return MolHandle {
+            inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()),
+        };
     }
     let (mol, _coords) = chematic_3d::pdb_to_molecule(&atoms);
     MolHandle {
@@ -4255,18 +4431,32 @@ pub fn nearest_neighbors_json(query_smiles: &str, db_smiles_json: &str, k: usize
 #[wasm_bindgen]
 pub fn virtual_screen_ecfp4_json(query_smi: &str, db_smiles_json: &str, k: u32) -> String {
     if let Err(e) = enforce_wasm_input_len("query_smi", query_smi) {
-        return format!("error:{}", e.as_string().unwrap_or_else(|| "input too large".to_string()));
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "input too large".to_string())
+        );
     }
     let query_mol = match chematic_smiles::parse(query_smi) {
         Ok(m) => m,
         Err(e) => return format!("error:query parse failed: {e}"),
     };
     if let Err(e) = enforce_wasm_molecule_size(&query_mol) {
-        return format!("error:{}", e.as_string().unwrap_or_else(|| "molecule too large".to_string()));
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "molecule too large".to_string())
+        );
     }
     let smiles_list = match parse_smiles_json_array(db_smiles_json) {
         Ok(v) => v,
-        Err(e) => return format!("error:{}", e.as_string().unwrap_or_else(|| "db parse failed".to_string())),
+        Err(e) => {
+            return format!(
+                "error:{}",
+                e.as_string()
+                    .unwrap_or_else(|| "db parse failed".to_string())
+            );
+        }
     };
     let mut db_fps = Vec::with_capacity(smiles_list.len());
     for (idx, smi) in smiles_list.iter().enumerate() {
@@ -4275,19 +4465,31 @@ pub fn virtual_screen_ecfp4_json(query_smi: &str, db_smiles_json: &str, k: u32) 
             Err(e) => return format!("error:db parse failed at index {idx}: {e}"),
         };
         if let Err(e) = enforce_wasm_molecule_size(&mol) {
-            return format!("error:db molecule at index {idx}: {}",
-                e.as_string().unwrap_or_else(|| "molecule too large".to_string()));
+            return format!(
+                "error:db molecule at index {idx}: {}",
+                e.as_string()
+                    .unwrap_or_else(|| "molecule too large".to_string())
+            );
         }
         db_fps.push(chematic_fp::ecfp4(&mol));
     }
     let query_fp = chematic_fp::ecfp4(&query_mol);
     let k = (k as usize).min(smiles_list.len());
     let hits = chematic_fp::top_k_similar(&query_fp, &db_fps, k);
-    let entries: Vec<String> = hits.iter().enumerate().map(|(rank, (idx, score))| {
-        let smi_escaped = smiles_list[*idx].replace('\\', "\\\\").replace('"', "\\\"");
-        format!(r#"{{"rank":{},"score":{:.6},"smiles":"{}","idx":{}}}"#,
-            rank + 1, score, smi_escaped, idx)
-    }).collect();
+    let entries: Vec<String> = hits
+        .iter()
+        .enumerate()
+        .map(|(rank, (idx, score))| {
+            let smi_escaped = smiles_list[*idx].replace('\\', "\\\\").replace('"', "\\\"");
+            format!(
+                r#"{{"rank":{},"score":{:.6},"smiles":"{}","idx":{}}}"#,
+                rank + 1,
+                score,
+                smi_escaped,
+                idx
+            )
+        })
+        .collect();
     format!(r#"{{"results":[{}]}}"#, entries.join(","))
 }
 
@@ -4301,18 +4503,32 @@ pub fn virtual_screen_ecfp4_json(query_smi: &str, db_smiles_json: &str, k: u32) 
 #[wasm_bindgen]
 pub fn tanimoto_row_json(query_smi: &str, db_smiles_json: &str) -> String {
     if let Err(e) = enforce_wasm_input_len("query_smi", query_smi) {
-        return format!("error:{}", e.as_string().unwrap_or_else(|| "input too large".to_string()));
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "input too large".to_string())
+        );
     }
     let query_mol = match chematic_smiles::parse(query_smi) {
         Ok(m) => m,
         Err(e) => return format!("error:query parse failed: {e}"),
     };
     if let Err(e) = enforce_wasm_molecule_size(&query_mol) {
-        return format!("error:{}", e.as_string().unwrap_or_else(|| "molecule too large".to_string()));
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "molecule too large".to_string())
+        );
     }
     let smiles_list = match parse_smiles_json_array(db_smiles_json) {
         Ok(v) => v,
-        Err(e) => return format!("error:{}", e.as_string().unwrap_or_else(|| "db parse failed".to_string())),
+        Err(e) => {
+            return format!(
+                "error:{}",
+                e.as_string()
+                    .unwrap_or_else(|| "db parse failed".to_string())
+            );
+        }
     };
     let mut db_fps = Vec::with_capacity(smiles_list.len());
     for (idx, smi) in smiles_list.iter().enumerate() {
@@ -4321,8 +4537,11 @@ pub fn tanimoto_row_json(query_smi: &str, db_smiles_json: &str) -> String {
             Err(e) => return format!("error:db parse failed at index {idx}: {e}"),
         };
         if let Err(e) = enforce_wasm_molecule_size(&mol) {
-            return format!("error:db molecule at index {idx}: {}",
-                e.as_string().unwrap_or_else(|| "molecule too large".to_string()));
+            return format!(
+                "error:db molecule at index {idx}: {}",
+                e.as_string()
+                    .unwrap_or_else(|| "molecule too large".to_string())
+            );
         }
         db_fps.push(chematic_fp::ecfp4(&mol));
     }
@@ -4398,7 +4617,11 @@ pub fn minimize_uff_json(smiles: &str, coords_json: &str, max_iter: u32) -> Stri
         Err(e) => return format!("{{\"error\":\"coords parse error: {e}\"}}"),
     };
     let types = chematic_ff::assign_uff_types(&mol);
-    let iters = if max_iter == 0 { 500 } else { max_iter as usize };
+    let iters = if max_iter == 0 {
+        500
+    } else {
+        max_iter as usize
+    };
     let result = chematic_ff::minimize_uff(&mol, &types, coords_arr, iters);
     let coords_out: Vec<[f64; 3]> = result.coords;
     let coords_str = coords_out
@@ -4449,7 +4672,10 @@ pub fn inchikey_from_smiles(smiles: &str) -> String {
 pub fn invert_stereocenter_at(mol: &MolHandle, atom_idx: u32) -> Result<MolHandle, JsValue> {
     let idx = chematic_core::AtomIdx(atom_idx);
     if atom_idx as usize >= mol.inner.atom_count() {
-        return Err(JsValue::from_str(&format!("atom_idx {} out of range", atom_idx)));
+        return Err(JsValue::from_str(&format!(
+            "atom_idx {} out of range",
+            atom_idx
+        )));
     }
     let new_mol = chematic_chem::invert_stereocenter(&mol.inner, idx);
     Ok(MolHandle {
@@ -4543,7 +4769,14 @@ pub fn get_dihedral_json(smiles: &str, a: u32, b: u32, c: u32, d: u32) -> JsValu
 /// const pdbBlock = set_dihedral_json("CCCC", 0, 1, 2, 3, 120.0);
 /// ```
 #[wasm_bindgen]
-pub fn set_dihedral_json(smiles: &str, a: u32, b: u32, c: u32, d: u32, angle_deg: f64) -> Result<String, String> {
+pub fn set_dihedral_json(
+    smiles: &str,
+    a: u32,
+    b: u32,
+    c: u32,
+    d: u32,
+    angle_deg: f64,
+) -> Result<String, String> {
     if smiles.len() > WASM_MAX_INPUT_BYTES {
         return Err("Input SMILES too long".to_string());
     }
@@ -4561,7 +4794,8 @@ pub fn set_dihedral_json(smiles: &str, a: u32, b: u32, c: u32, d: u32, angle_deg
     let c_idx = chematic_core::AtomIdx(c);
     let d_idx = chematic_core::AtomIdx(d);
     let angle_rad = angle_deg.to_radians();
-    let new_coords = chematic_3d::set_dihedral(&coords, &mol, a_idx, b_idx, c_idx, d_idx, angle_rad);
+    let new_coords =
+        chematic_3d::set_dihedral(&coords, &mol, a_idx, b_idx, c_idx, d_idx, angle_rad);
     // Return PDB block with modified coordinates
     Ok(chematic_3d::write_pdb(&mol, &new_coords))
 }
@@ -4636,10 +4870,15 @@ mod tests {
     fn logd_profile_json_has_ph_fields() {
         let h = parse("c1ccccc1");
         let json = h.logd_profile_json(0.0, 14.0, 15);
-        assert!(json.starts_with('[') && json.ends_with(']'),
-            "should be JSON array: {json}");
+        assert!(
+            json.starts_with('[') && json.ends_with(']'),
+            "should be JSON array: {json}"
+        );
         assert!(json.contains(r#""ph":"#), "should contain ph field: {json}");
-        assert!(json.contains(r#""logd":"#), "should contain logd field: {json}");
+        assert!(
+            json.contains(r#""logd":"#),
+            "should contain logd field: {json}"
+        );
     }
 
     #[test]
@@ -4647,7 +4886,10 @@ mod tests {
         let h = parse("C");
         let json = h.isotope_distribution_json(0.1);
         assert!(json.starts_with('['), "should be JSON array: {json}");
-        assert!(json.contains(r#""mass":"#), "should contain mass entries: {json}");
+        assert!(
+            json.contains(r#""mass":"#),
+            "should contain mass entries: {json}"
+        );
     }
 
     #[test]
@@ -4687,7 +4929,10 @@ mod tests {
     fn iupac_name_unsupported_returns_empty() {
         // Disconnected molecule → unsupported → empty string
         let h = parse("C.C");
-        assert!(h.iupac_name().is_empty(), "disconnected should return empty");
+        assert!(
+            h.iupac_name().is_empty(),
+            "disconnected should return empty"
+        );
     }
 
     // --- assign_cip_json tests ----------------------------------------------
@@ -4703,8 +4948,14 @@ mod tests {
     fn assign_cip_json_chiral_center() {
         // L-alanine SMILES with explicit chirality
         let json = parse("N[C@@H](C)C(=O)O").assign_cip_json();
-        assert!(json.contains("\"code\":"), "should contain code field: {json}");
-        assert!(json.contains("\"atom\":"), "should contain atom field: {json}");
+        assert!(
+            json.contains("\"code\":"),
+            "should contain code field: {json}"
+        );
+        assert!(
+            json.contains("\"atom\":"),
+            "should contain atom field: {json}"
+        );
     }
 
     #[test]
@@ -5316,26 +5567,35 @@ M  END
     fn test_mhfp_hashes_json_format() {
         let h = parse("c1ccccc1");
         let json = mhfp_hashes_json(&h);
-        assert!(json.contains("\"num_hashes\":128"), "should have num_hashes:128");
+        assert!(
+            json.contains("\"num_hashes\":128"),
+            "should have num_hashes:128"
+        );
         assert!(json.contains("\"hashes\":"), "should have hashes key");
     }
 
     #[test]
     fn test_tanimoto_mhfp_smiles_self() {
         let result = tanimoto_mhfp_smiles("c1ccccc1", "c1ccccc1").unwrap();
-        assert!((result - 1.0).abs() < 1e-9, "self-similarity should be 1.0, got {result}");
+        assert!(
+            (result - 1.0).abs() < 1e-9,
+            "self-similarity should be 1.0, got {result}"
+        );
     }
 
     #[test]
     fn test_mhfp_lsh_handle_query() {
         let mut idx = MhfpLshHandle::new(128);
-        idx.add_smiles("c1ccccc1").unwrap();    // benzene → 0
-        idx.add_smiles("Cc1ccccc1").unwrap();   // toluene → 1
-        idx.add_smiles("CC").unwrap();           // ethane  → 2
+        idx.add_smiles("c1ccccc1").unwrap(); // benzene → 0
+        idx.add_smiles("Cc1ccccc1").unwrap(); // toluene → 1
+        idx.add_smiles("CC").unwrap(); // ethane  → 2
 
         let json = idx.query_json("c1ccccc1", 0.99).unwrap();
         // Benzene should find itself at similarity 1.0
-        assert!(json.contains("\"index\":0"), "benzene should find itself: {json}");
+        assert!(
+            json.contains("\"index\":0"),
+            "benzene should find itself: {json}"
+        );
         assert_eq!(idx.len(), 3);
     }
 
@@ -6377,7 +6637,11 @@ M  END
         let result = mcs_smiles_json_with_ring_config(json, true, true).unwrap();
         assert_ne!(result, "null");
         let mol = chematic_smiles::parse(&result).expect("valid SMILES");
-        assert!(mol.atom_count() >= 10, "expected at least the quinoline scaffold (10 atoms), got {}", mol.atom_count());
+        assert!(
+            mol.atom_count() >= 10,
+            "expected at least the quinoline scaffold (10 atoms), got {}",
+            mol.atom_count()
+        );
     }
 
     #[test]
@@ -6387,7 +6651,12 @@ M  END
         let result = mcs_smiles_json_with_ring_config(json, false, true).unwrap();
         assert_ne!(result, "null");
         let mol = chematic_smiles::parse(&result).expect("valid SMILES");
-        assert_eq!(mol.atom_count(), 6, "expected full benzene ring (6 atoms), got {}", mol.atom_count());
+        assert_eq!(
+            mol.atom_count(),
+            6,
+            "expected full benzene ring (6 atoms), got {}",
+            mol.atom_count()
+        );
     }
 
     #[test]
@@ -6528,7 +6797,10 @@ M  END
         let h = parse("CC(=O)O");
         let pka = h.pka_acid_value();
         assert!(pka.is_finite(), "acetic acid pKa should be finite");
-        assert!((pka - 4.0).abs() < 1.0, "acetic acid pKa ~4.0, got {pka:.2}");
+        assert!(
+            (pka - 4.0).abs() < 1.0,
+            "acetic acid pKa ~4.0, got {pka:.2}"
+        );
     }
 
     #[test]
@@ -6536,7 +6808,10 @@ M  END
         let h = parse("Nc1ccccc1");
         let pka = h.pka_base_value();
         assert!(pka.is_finite(), "aniline pKa_base should be finite");
-        assert!((pka - 4.6).abs() < 1.0, "aniline pKa_base ~4.6, got {pka:.2}");
+        assert!(
+            (pka - 4.6).abs() < 1.0,
+            "aniline pKa_base ~4.6, got {pka:.2}"
+        );
     }
 
     #[test]
@@ -6557,34 +6832,49 @@ M  END
     fn test_bbb_score_benzene_positive() {
         let h = parse("c1ccccc1");
         let score = h.bbb_score();
-        assert!(score > -1.0, "benzene should be CNS penetrant (logBB > -1), got {score:.3}");
+        assert!(
+            score > -1.0,
+            "benzene should be CNS penetrant (logBB > -1), got {score:.3}"
+        );
     }
 
     #[test]
     fn test_bbb_passes_benzene() {
         let h = parse("c1ccccc1");
-        assert!(h.bbb_passes(), "benzene (TPSA=0, MW=78) should pass BBB rules");
+        assert!(
+            h.bbb_passes(),
+            "benzene (TPSA=0, MW=78) should pass BBB rules"
+        );
     }
 
     #[test]
     fn test_caco2_hexane_high() {
         let h = parse("CCCCCC");
         let c = h.caco2_permeability();
-        assert!(c > -5.5, "hexane should have high Caco-2 permeability, got {c:.3}");
+        assert!(
+            c > -5.5,
+            "hexane should have high Caco-2 permeability, got {c:.3}"
+        );
     }
 
     #[test]
     fn test_herg_risk_range() {
         let h = parse("c1ccccc1");
         let r = h.herg_risk_score();
-        assert!((0.0..=1.0).contains(&r), "hERG risk must be in [0,1], got {r}");
+        assert!(
+            (0.0..=1.0).contains(&r),
+            "hERG risk must be in [0,1], got {r}"
+        );
     }
 
     #[test]
     fn test_cyp3a4_risk_range() {
         let h = parse("c1ccccc1");
         let r = h.cyp3a4_inhibition_risk();
-        assert!((0.0..=1.0).contains(&r), "CYP3A4 risk must be in [0,1], got {r}");
+        assert!(
+            (0.0..=1.0).contains(&r),
+            "CYP3A4 risk must be in [0,1], got {r}"
+        );
     }
 
     // ── predict_pka_json ─────────────────────────────────────────────────────
@@ -6592,8 +6882,14 @@ M  END
     #[test]
     fn test_predict_pka_json_acetic_acid() {
         let json = predict_pka_json("CC(=O)O");
-        assert!(json.starts_with('[') && json.ends_with(']'), "should be JSON array");
-        assert!(json.contains("\"type\":\"acid\""), "should contain acid site");
+        assert!(
+            json.starts_with('[') && json.ends_with(']'),
+            "should be JSON array"
+        );
+        assert!(
+            json.contains("\"type\":\"acid\""),
+            "should contain acid site"
+        );
         assert!(!json.contains("\"error\""), "should not contain error");
     }
 
@@ -6606,14 +6902,23 @@ M  END
     #[test]
     fn test_predict_pka_json_invalid_smiles() {
         let json = predict_pka_json("C1CC");
-        assert!(json.contains("\"error\""), "invalid SMILES should return error JSON");
+        assert!(
+            json.contains("\"error\""),
+            "invalid SMILES should return error JSON"
+        );
     }
 
     #[test]
     fn test_predict_pka_json_glycine_both() {
         let json = predict_pka_json("NCC(=O)O");
-        assert!(json.contains("\"type\":\"acid\""), "glycine should have acid site");
-        assert!(json.contains("\"type\":\"base\""), "glycine should have base site");
+        assert!(
+            json.contains("\"type\":\"acid\""),
+            "glycine should have acid site"
+        );
+        assert!(
+            json.contains("\"type\":\"base\""),
+            "glycine should have base site"
+        );
     }
 
     // ── admet_profile_json ───────────────────────────────────────────────────
@@ -6621,25 +6926,46 @@ M  END
     #[test]
     fn test_admet_profile_json_aspirin_valid() {
         let json = admet_profile_json("CC(=O)Oc1ccccc1C(=O)O");
-        assert!(!json.contains("\"error\""), "aspirin should parse without error");
-        assert!(json.contains("\"bbb_score\""), "should have bbb_score field");
+        assert!(
+            !json.contains("\"error\""),
+            "aspirin should parse without error"
+        );
+        assert!(
+            json.contains("\"bbb_score\""),
+            "should have bbb_score field"
+        );
         assert!(json.contains("\"caco2\""), "should have caco2 field");
-        assert!(json.contains("\"herg_risk\""), "should have herg_risk field");
+        assert!(
+            json.contains("\"herg_risk\""),
+            "should have herg_risk field"
+        );
         assert!(json.contains("\"pka_acid\""), "should have pka_acid field");
-        assert!(json.contains("\"bbb_passes\":true"), "aspirin should pass BBB");
+        assert!(
+            json.contains("\"bbb_passes\":true"),
+            "aspirin should pass BBB"
+        );
     }
 
     #[test]
     fn test_admet_profile_json_benzene_null_pka() {
         let json = admet_profile_json("c1ccccc1");
-        assert!(json.contains("\"pka_acid\":null"), "benzene pka_acid should be null");
-        assert!(json.contains("\"pka_base\":null"), "benzene pka_base should be null");
+        assert!(
+            json.contains("\"pka_acid\":null"),
+            "benzene pka_acid should be null"
+        );
+        assert!(
+            json.contains("\"pka_base\":null"),
+            "benzene pka_base should be null"
+        );
     }
 
     #[test]
     fn test_admet_profile_json_invalid_smiles() {
         let json = admet_profile_json("C1CC");
-        assert!(json.contains("\"error\""), "invalid SMILES should return error JSON");
+        assert!(
+            json.contains("\"error\""),
+            "invalid SMILES should return error JSON"
+        );
     }
 
     // ── get_descriptors_json ADMET extension ─────────────────────────────────
@@ -6651,7 +6977,10 @@ M  END
         assert!(json.contains("\"bbbScore\""), "should have bbbScore field");
         assert!(json.contains("\"caco2\""), "should have caco2 field");
         assert!(json.contains("\"hergRisk\""), "should have hergRisk field");
-        assert!(json.contains("\"cyp3a4Risk\""), "should have cyp3a4Risk field");
+        assert!(
+            json.contains("\"cyp3a4Risk\""),
+            "should have cyp3a4Risk field"
+        );
         assert!(json.contains("\"pkaAcid\""), "should have pkaAcid field");
         assert!(json.contains("\"pkaBase\""), "should have pkaBase field");
     }
@@ -6660,8 +6989,14 @@ M  END
     fn test_get_descriptors_json_benzene_null_pka() {
         let h = parse("c1ccccc1");
         let json = get_descriptors_json(&h);
-        assert!(json.contains("\"pkaAcid\":null"), "benzene pkaAcid should be null");
-        assert!(json.contains("\"pkaBase\":null"), "benzene pkaBase should be null");
+        assert!(
+            json.contains("\"pkaAcid\":null"),
+            "benzene pkaAcid should be null"
+        );
+        assert!(
+            json.contains("\"pkaBase\":null"),
+            "benzene pkaBase should be null"
+        );
     }
 }
 
@@ -6673,7 +7008,7 @@ M  END
 /// Returns an array of ring families with their atoms, ring indices, and topology kind.
 #[wasm_bindgen]
 pub fn ring_families_json(mol: &MolHandle) -> Result<String, JsValue> {
-    use chematic_perception::{find_sssr, find_ring_families, RingSystemKind};
+    use chematic_perception::{RingSystemKind, find_ring_families, find_sssr};
 
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
@@ -6706,8 +7041,7 @@ pub fn ring_families_json(mol: &MolHandle) -> Result<String, JsValue> {
         })
         .collect();
 
-    serde_json::to_string(&json_families)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+    serde_json::to_string(&json_families).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 // ---------------------------------------------------------------------------
@@ -6742,8 +7076,7 @@ impl MhfpLshHandle {
 
     /// Add a molecule by SMILES; returns its 0-based index in the index.
     pub fn add_smiles(&mut self, smiles: &str) -> Result<usize, JsValue> {
-        let mol = chematic_smiles::parse(smiles)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let mol = chematic_smiles::parse(smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
         let fp = chematic_fp::mhfp(&mol);
         Ok(self.inner.add(fp))
     }
@@ -6753,8 +7086,8 @@ impl MhfpLshHandle {
     /// Returns a JSON array `[{"index":N,"similarity":0.xxx},...]` sorted by
     /// descending similarity.  Empty array `[]` when nothing qualifies.
     pub fn query_json(&self, query_smiles: &str, threshold: f64) -> Result<String, JsValue> {
-        let mol = chematic_smiles::parse(query_smiles)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let mol =
+            chematic_smiles::parse(query_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
         let fp = chematic_fp::mhfp(&mol);
         let results = self.inner.query(&fp, threshold);
         let items: Vec<String> = results

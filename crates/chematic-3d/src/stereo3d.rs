@@ -41,9 +41,7 @@ impl StereoAssignment3D {
 /// Uses full multi-sphere BFS CIP from chematic_perception.
 fn rank4(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx; 4]) -> Option<[u8; 4]> {
     let mut order: [usize; 4] = [0, 1, 2, 3];
-    order.sort_by(|&i, &j| {
-        cip_priority::compare_branches(mol, center, subs[i], subs[j]).reverse()
-    });
+    order.sort_by(|&i, &j| cip_priority::compare_branches(mol, center, subs[i], subs[j]).reverse());
 
     // Check for ties.
     for k in 0..3 {

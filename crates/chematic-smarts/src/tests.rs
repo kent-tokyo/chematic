@@ -587,7 +587,10 @@ mod integration_tests {
     fn test_bond_or_double_or_aromatic_in_ethylene() {
         // Ethylene C=C: 1 match (with uniquify=true, one unique atom set mapping)
         let c = match_count("[#6]=,:[#6]", "C=C");
-        assert_eq!(c, 1, "=,: should match the double bond in ethylene (deduplicated)");
+        assert_eq!(
+            c, 1,
+            "=,: should match the double bond in ethylene (deduplicated)"
+        );
     }
 
     /// `C=!@C` matches a non-ring double bond (e.g. ethylene) but NOT cyclohexene ring double bond.

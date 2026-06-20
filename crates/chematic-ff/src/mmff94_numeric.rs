@@ -38,105 +38,105 @@ impl std::fmt::Display for NumericTypeError {
 // Source: RDKit Code/ForceField/MMFF/Params.cpp — defaultMMFFPBCI
 // 99 entries, one per MMFF94 atom type.
 static MMFF94_PBCI: &[(u8, f64, f64)] = &[
-    (1,  0.000,  0.000),  // CR       alkyl carbon
-    (2,  -0.135, 0.000),  // C=C      vinylic carbon
-    (3,  -0.095, 0.000),  // C=O      carbonyl carbon
-    (4,  -0.200, 0.000),  // CSP      acetylenic carbon
-    (5,  -0.023, 0.000),  // HC       H on carbon
-    (6,  -0.243, 0.000),  // OR       single-bond oxygen (ether/alcohol)
-    (7,  -0.687, 0.000),  // O=C      carbonyl oxygen
-    (8,  -0.253, 0.000),  // NR       sp3 amine nitrogen
-    (9,  -0.306, 0.000),  // N=C      imine nitrogen
-    (10, -0.244, 0.000),  // NC=O     amide nitrogen
-    (11, -0.317, 0.000),  // F
-    (12, -0.304, 0.000),  // CL
-    (13, -0.238, 0.000),  // BR
-    (14, -0.208, 0.000),  // I
-    (15, -0.236, 0.000),  // S        thiol/sulfide
-    (16, -0.475, 0.000),  // S=C      S doubly bonded to C
-    (17, -0.191, 0.000),  // SO       sulfoxide S
-    (18, -0.118, 0.000),  // SO2      sulfone S
-    (19,  0.094, 0.000),  // SI       silicon
-    (20, -0.019, 0.000),  // P        phosphorus
-    (21,  0.157, 0.000),  // =P       phosphorus =P
-    (22, -0.095, 0.000),  // P=O      phosphoryl P
-    (23,  0.193, 0.000),  // HNR      H on amine N
-    (24,  0.257, 0.000),  // HOCO     H on O in acid/alcohol
-    (25,  0.012, 0.000),  // PO4      phosphate P
-    (26, -0.142, 0.000),  // P=S      P=S
-    (27,  0.094, 0.000),  // HN=C     H on imine N
-    (28,  0.058, 0.000),  // HNCO     H on amide N
-    (29,  0.207, 0.000),  // HOCO     H on O in ester
-    (30, -0.166, 0.000),  // N2OX     N-oxide N
-    (31,  0.161, 0.000),  // HOH      H in water
-    (32, -0.732, 0.500),  // NR+      protonated amine N (fcadj=0.5)
-    (33,  0.257, 0.000),  // HOX      H on O in N-oxide
-    (34, -0.491, 0.000),  // O-       anionic O (carboxylate/phenoxide)
-    (35, -0.456, 0.500),  // OM       oxide oxygen (fcadj=0.5)
-    (36, -0.031, 0.000),  // HNR+     H on protonated N
-    (37, -0.127, 0.000),  // C5A      aromatic C in 5-ring alpha to N
-    (38, -0.437, 0.000),  // C5B      aromatic C in 5-ring
-    (39, -0.104, 0.000),  // C5       generic 5-ring aromatic C
-    (40, -0.264, 0.000),  // N5A      aromatic N in 5-ring (NH type)
-    (41,  0.052, 0.000),  // N5B      aromatic N in 5-ring (sp2 type)
-    (42, -0.757, 0.000),  // N5+      protonated aromatic N
-    (43, -0.326, 0.000),  // O5       aromatic O (furan)
-    (44, -0.237, 0.000),  // S5       aromatic S (thiophene)
-    (45, -0.260, 0.000),  // N5       generic 5-ring aromatic N
-    (46, -0.429, 0.000),  // NO2      nitro N
-    (47, -0.418, 0.000),  // NO3      nitrate N
-    (48, -0.525, 0.000),  // O2NO     nitro O
-    (49, -0.283, 0.000),  // O3NO     nitrate O
-    (50,  0.284, 0.000),  // OP       phosphate O
-    (51, -1.046, 0.000),  // O2P      phosphonate =O
-    (52, -0.546, 0.000),  // O3P      bridging phosphate O
-    (53, -0.048, 0.000),  // O4P      phosphate anion O
-    (54, -0.424, 0.000),  // O4CL     perchlorate O
-    (55, -0.476, 0.000),  // CLO4     perchlorate Cl
-    (56, -0.438, 0.000),  // C=ON     C in amide (alternative)
-    (57, -0.105, 0.000),  // CORR     corrected aromatic C
-    (58, -0.488, 0.000),  // N5A+     aromatic N in 5-ring (N=C side)
-    (59, -0.337, 0.000),  // N5B+     aromatic N in 5-ring
-    (60, -0.635, 0.000),  // NC=O2    urea N
-    (61, -0.265, 0.000),  // NC=O3    carbamate N
-    (62, -0.125, 0.250),  // NM       anionic N (fcadj=0.25)
-    (63, -0.180, 0.000),  // CB       aromatic C in 6-ring (benzene)
-    (64, -0.181, 0.000),  // C_6ring  aromatic C in 6-ring (variant)
-    (65, -0.475, 0.000),  // N5       aromatic 5-ring N (pyrrole NH)
-    (66, -0.467, 0.000),  // N5+      aromatic 5-ring N (imidazole N=C)
-    (67, -0.099, 0.000),  // N6A      aromatic 6-ring N (pyridine)
-    (68, -0.135, 0.000),  // N6B      aromatic 6-ring N (pyrimidine)
-    (69, -0.099, 0.000),  // NPYD     pyridinium N
-    (70, -0.269, 0.000),  // NPYR     pyridyl N
-    (71, -0.071, 0.000),  // HS       H on sulfur
-    (72, -0.580, 0.500),  // SO4      sulfonate/sulfate O (fcadj=0.5)
-    (73, -0.200, 0.000),  // S2CM     thiocarboxylate
-    (74, -0.301, 0.000),  // SCN      thiocyanate S
-    (75, -0.255, 0.000),  // NSO2     sulfonamide N
-    (76, -0.568, 0.250),  // =N-      anionic N=C (fcadj=0.25)
-    (77, -0.282, 0.000),  // NC=S     thioamide N
-    (78, -0.168, 0.000),  // NRNH     N=N-H nitrogen
-    (79, -0.471, 0.000),  // OXN      N-oxide O (alternative)
-    (80, -0.144, 0.000),  // C6+      cationic aromatic C
-    (81, -0.514, 0.000),  // N6+      pyridinium N+ (protonated pyridine)
-    (82, -0.099, 0.000),  // CB6      benzimidazole bridging C
-    (83,  0.000, 0.000),  // OXO      placeholder
-    (84,  0.000, 0.000),  // placeholder
-    (85,  0.000, 0.000),  // placeholder
-    (86,  0.000, 0.000),  // placeholder
-    (87,  2.000, 0.000),  // NA+2     doubly protonated N (q=+2)
-    (88,  3.000, 0.000),  // FE+3     tripositive iron
-    (89, -1.000, 0.000),  // F-       fluoride anion
-    (90, -1.000, 0.000),  // CL-      chloride anion
-    (91, -1.000, 0.000),  // BR-      bromide anion
-    (92,  1.000, 0.000),  // LI+      lithium cation
-    (93,  1.000, 0.000),  // NA+      sodium cation
-    (94,  1.000, 0.000),  // K+       potassium cation
-    (95,  2.000, 0.000),  // CA2+     calcium dication
-    (96,  2.000, 0.000),  // MG2+     magnesium dication
-    (97,  1.000, 0.000),  // ZN2+     zinc dication (formal +1 per ligand)
-    (98,  2.000, 0.000),  // ZN+2     zinc dication
-    (99,  2.000, 0.000),  // CU+2     copper dication
+    (1, 0.000, 0.000),   // CR       alkyl carbon
+    (2, -0.135, 0.000),  // C=C      vinylic carbon
+    (3, -0.095, 0.000),  // C=O      carbonyl carbon
+    (4, -0.200, 0.000),  // CSP      acetylenic carbon
+    (5, -0.023, 0.000),  // HC       H on carbon
+    (6, -0.243, 0.000),  // OR       single-bond oxygen (ether/alcohol)
+    (7, -0.687, 0.000),  // O=C      carbonyl oxygen
+    (8, -0.253, 0.000),  // NR       sp3 amine nitrogen
+    (9, -0.306, 0.000),  // N=C      imine nitrogen
+    (10, -0.244, 0.000), // NC=O     amide nitrogen
+    (11, -0.317, 0.000), // F
+    (12, -0.304, 0.000), // CL
+    (13, -0.238, 0.000), // BR
+    (14, -0.208, 0.000), // I
+    (15, -0.236, 0.000), // S        thiol/sulfide
+    (16, -0.475, 0.000), // S=C      S doubly bonded to C
+    (17, -0.191, 0.000), // SO       sulfoxide S
+    (18, -0.118, 0.000), // SO2      sulfone S
+    (19, 0.094, 0.000),  // SI       silicon
+    (20, -0.019, 0.000), // P        phosphorus
+    (21, 0.157, 0.000),  // =P       phosphorus =P
+    (22, -0.095, 0.000), // P=O      phosphoryl P
+    (23, 0.193, 0.000),  // HNR      H on amine N
+    (24, 0.257, 0.000),  // HOCO     H on O in acid/alcohol
+    (25, 0.012, 0.000),  // PO4      phosphate P
+    (26, -0.142, 0.000), // P=S      P=S
+    (27, 0.094, 0.000),  // HN=C     H on imine N
+    (28, 0.058, 0.000),  // HNCO     H on amide N
+    (29, 0.207, 0.000),  // HOCO     H on O in ester
+    (30, -0.166, 0.000), // N2OX     N-oxide N
+    (31, 0.161, 0.000),  // HOH      H in water
+    (32, -0.732, 0.500), // NR+      protonated amine N (fcadj=0.5)
+    (33, 0.257, 0.000),  // HOX      H on O in N-oxide
+    (34, -0.491, 0.000), // O-       anionic O (carboxylate/phenoxide)
+    (35, -0.456, 0.500), // OM       oxide oxygen (fcadj=0.5)
+    (36, -0.031, 0.000), // HNR+     H on protonated N
+    (37, -0.127, 0.000), // C5A      aromatic C in 5-ring alpha to N
+    (38, -0.437, 0.000), // C5B      aromatic C in 5-ring
+    (39, -0.104, 0.000), // C5       generic 5-ring aromatic C
+    (40, -0.264, 0.000), // N5A      aromatic N in 5-ring (NH type)
+    (41, 0.052, 0.000),  // N5B      aromatic N in 5-ring (sp2 type)
+    (42, -0.757, 0.000), // N5+      protonated aromatic N
+    (43, -0.326, 0.000), // O5       aromatic O (furan)
+    (44, -0.237, 0.000), // S5       aromatic S (thiophene)
+    (45, -0.260, 0.000), // N5       generic 5-ring aromatic N
+    (46, -0.429, 0.000), // NO2      nitro N
+    (47, -0.418, 0.000), // NO3      nitrate N
+    (48, -0.525, 0.000), // O2NO     nitro O
+    (49, -0.283, 0.000), // O3NO     nitrate O
+    (50, 0.284, 0.000),  // OP       phosphate O
+    (51, -1.046, 0.000), // O2P      phosphonate =O
+    (52, -0.546, 0.000), // O3P      bridging phosphate O
+    (53, -0.048, 0.000), // O4P      phosphate anion O
+    (54, -0.424, 0.000), // O4CL     perchlorate O
+    (55, -0.476, 0.000), // CLO4     perchlorate Cl
+    (56, -0.438, 0.000), // C=ON     C in amide (alternative)
+    (57, -0.105, 0.000), // CORR     corrected aromatic C
+    (58, -0.488, 0.000), // N5A+     aromatic N in 5-ring (N=C side)
+    (59, -0.337, 0.000), // N5B+     aromatic N in 5-ring
+    (60, -0.635, 0.000), // NC=O2    urea N
+    (61, -0.265, 0.000), // NC=O3    carbamate N
+    (62, -0.125, 0.250), // NM       anionic N (fcadj=0.25)
+    (63, -0.180, 0.000), // CB       aromatic C in 6-ring (benzene)
+    (64, -0.181, 0.000), // C_6ring  aromatic C in 6-ring (variant)
+    (65, -0.475, 0.000), // N5       aromatic 5-ring N (pyrrole NH)
+    (66, -0.467, 0.000), // N5+      aromatic 5-ring N (imidazole N=C)
+    (67, -0.099, 0.000), // N6A      aromatic 6-ring N (pyridine)
+    (68, -0.135, 0.000), // N6B      aromatic 6-ring N (pyrimidine)
+    (69, -0.099, 0.000), // NPYD     pyridinium N
+    (70, -0.269, 0.000), // NPYR     pyridyl N
+    (71, -0.071, 0.000), // HS       H on sulfur
+    (72, -0.580, 0.500), // SO4      sulfonate/sulfate O (fcadj=0.5)
+    (73, -0.200, 0.000), // S2CM     thiocarboxylate
+    (74, -0.301, 0.000), // SCN      thiocyanate S
+    (75, -0.255, 0.000), // NSO2     sulfonamide N
+    (76, -0.568, 0.250), // =N-      anionic N=C (fcadj=0.25)
+    (77, -0.282, 0.000), // NC=S     thioamide N
+    (78, -0.168, 0.000), // NRNH     N=N-H nitrogen
+    (79, -0.471, 0.000), // OXN      N-oxide O (alternative)
+    (80, -0.144, 0.000), // C6+      cationic aromatic C
+    (81, -0.514, 0.000), // N6+      pyridinium N+ (protonated pyridine)
+    (82, -0.099, 0.000), // CB6      benzimidazole bridging C
+    (83, 0.000, 0.000),  // OXO      placeholder
+    (84, 0.000, 0.000),  // placeholder
+    (85, 0.000, 0.000),  // placeholder
+    (86, 0.000, 0.000),  // placeholder
+    (87, 2.000, 0.000),  // NA+2     doubly protonated N (q=+2)
+    (88, 3.000, 0.000),  // FE+3     tripositive iron
+    (89, -1.000, 0.000), // F-       fluoride anion
+    (90, -1.000, 0.000), // CL-      chloride anion
+    (91, -1.000, 0.000), // BR-      bromide anion
+    (92, 1.000, 0.000),  // LI+      lithium cation
+    (93, 1.000, 0.000),  // NA+      sodium cation
+    (94, 1.000, 0.000),  // K+       potassium cation
+    (95, 2.000, 0.000),  // CA2+     calcium dication
+    (96, 2.000, 0.000),  // MG2+     magnesium dication
+    (97, 1.000, 0.000),  // ZN2+     zinc dication (formal +1 per ligand)
+    (98, 2.000, 0.000),  // ZN+2     zinc dication
+    (99, 2.000, 0.000),  // CU+2     copper dication
 ];
 
 // ── CHG table: (bond_type, a, b, bci) ────────────────────────────────────────
@@ -665,13 +665,13 @@ fn lookup_chg_contribution(bond_type: u8, type_i: u8, type_j: u8) -> Option<f64>
     // Try type_i as b (second) — entry is (bt, type_j, type_i, bci)
     for &(bt, a, b, bci) in MMFF94_CHG {
         if bt == bond_type && a == type_j && b == type_i {
-            return Some(bci);  // type_i is the recipient
+            return Some(bci); // type_i is the recipient
         }
     }
     // Try type_i as a (first) — entry is (bt, type_i, type_j, bci), negate
     for &(bt, a, b, bci) in MMFF94_CHG {
         if bt == bond_type && a == type_i && b == type_j {
-            return Some(-bci);  // type_i is the donor, negate
+            return Some(-bci); // type_i is the donor, negate
         }
     }
     None
@@ -701,20 +701,23 @@ pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTyp
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
         let t = match atom.element {
-            Element::C  => assign_c_type(mol, idx)?,
-            Element::N  => assign_n_type(mol, idx)?,
-            Element::O  => assign_o_type(mol, idx)?,
-            Element::S  => assign_s_type(mol, idx)?,
-            Element::P  => assign_p_type(mol, idx)?,
+            Element::C => assign_c_type(mol, idx)?,
+            Element::N => assign_n_type(mol, idx)?,
+            Element::O => assign_o_type(mol, idx)?,
+            Element::S => assign_s_type(mol, idx)?,
+            Element::P => assign_p_type(mol, idx)?,
             Element::SI => 19,
-            Element::F  => 11,
+            Element::F => 11,
             Element::CL => 12,
             Element::BR => 13,
-            Element::I  => 14,
-            Element::H  => assign_h_type(mol, idx)?,
-            _ => return Err(NumericTypeError(format!(
-                "unsupported element {:?} at atom {i}", atom.element
-            ))),
+            Element::I => 14,
+            Element::H => assign_h_type(mol, idx)?,
+            _ => {
+                return Err(NumericTypeError(format!(
+                    "unsupported element {:?} at atom {i}",
+                    atom.element
+                )));
+            }
         };
         *ty = t;
     }
@@ -732,9 +735,15 @@ fn bonds_of(mol: &Molecule, idx: AtomIdx) -> Vec<BondInfo> {
     mol.bonds()
         .filter_map(|(_, b)| {
             if b.atom1 == idx {
-                Some(BondInfo { neighbor: b.atom2, order: b.order })
+                Some(BondInfo {
+                    neighbor: b.atom2,
+                    order: b.order,
+                })
             } else if b.atom2 == idx {
-                Some(BondInfo { neighbor: b.atom1, order: b.order })
+                Some(BondInfo {
+                    neighbor: b.atom1,
+                    order: b.order,
+                })
             } else {
                 None
             }
@@ -743,15 +752,23 @@ fn bonds_of(mol: &Molecule, idx: AtomIdx) -> Vec<BondInfo> {
 }
 
 fn count_bond_order(mol: &Molecule, idx: AtomIdx, order: BondOrder) -> usize {
-    bonds_of(mol, idx).iter().filter(|b| b.order == order).count()
+    bonds_of(mol, idx)
+        .iter()
+        .filter(|b| b.order == order)
+        .count()
 }
 
 fn neighbor_elements(mol: &Molecule, idx: AtomIdx) -> Vec<Element> {
-    bonds_of(mol, idx).iter().map(|b| mol.atom(b.neighbor).element).collect()
+    bonds_of(mol, idx)
+        .iter()
+        .map(|b| mol.atom(b.neighbor).element)
+        .collect()
 }
 
 fn is_bonded_to(mol: &Molecule, idx: AtomIdx, elem: Element, order: BondOrder) -> bool {
-    bonds_of(mol, idx).iter().any(|b| mol.atom(b.neighbor).element == elem && b.order == order)
+    bonds_of(mol, idx)
+        .iter()
+        .any(|b| mol.atom(b.neighbor).element == elem && b.order == order)
 }
 
 /// True if atom `idx` is bonded by any bond type to atom of `elem`.
@@ -774,7 +791,7 @@ fn assign_c_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 
     // sp carbon (triple bond or allene)
     if triple_bonds > 0 {
-        return Ok(4);  // CSP
+        return Ok(4); // CSP
     }
 
     // sp2 carbon
@@ -783,14 +800,14 @@ fn assign_c_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
         if is_bonded_to(mol, idx, Element::O, BondOrder::Double)
             || is_bonded_to(mol, idx, Element::S, BondOrder::Double)
         {
-            return Ok(3);  // C=O (general carbonyl)
+            return Ok(3); // C=O (general carbonyl)
         }
         // C=N or C=C → type 2
-        return Ok(2);  // C=C vinylic
+        return Ok(2); // C=C vinylic
     }
 
     // sp3
-    Ok(1)  // CR alkyl carbon
+    Ok(1) // CR alkyl carbon
 }
 
 fn aromatic_c_type(mol: &Molecule, idx: AtomIdx) -> u8 {
@@ -800,7 +817,7 @@ fn aromatic_c_type(mol: &Molecule, idx: AtomIdx) -> u8 {
     let in_5 = ring_sizes.contains(&5);
 
     if in_6 && !in_5 {
-        return 63;  // CB: benzene/pyridine ring carbon
+        return 63; // CB: benzene/pyridine ring carbon
     }
 
     // 5-membered ring: alpha (37) vs beta (38) vs generic (39)
@@ -810,13 +827,13 @@ fn aromatic_c_type(mol: &Molecule, idx: AtomIdx) -> u8 {
             .into_iter()
             .any(|e| matches!(e, Element::N | Element::O | Element::S));
         if has_hetero_neighbor {
-            return 37;  // C5A
+            return 37; // C5A
         }
-        return 38;  // C5B
+        return 38; // C5B
     }
 
     // Fused ring (in both 5 and 6): use 63 for bridging positions
-    64  // C_6ring (variant bridging position)
+    64 // C_6ring (variant bridging position)
 }
 
 // ── N type assignment ────────────────────────────────────────────────────────
@@ -835,17 +852,17 @@ fn assign_n_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 
     // Formal charge: quaternary ammonium / protonated N
     if atom.charge > 0 {
-        return Ok(32);  // NR+
+        return Ok(32); // NR+
     }
 
     // Nitrile / isocyanide (N≡C)
     if triple_bonds > 0 {
-        return Ok(9);  // N=C (close approximation for nitrile)
+        return Ok(9); // N=C (close approximation for nitrile)
     }
 
     // N=C or N=N (imine, hydrazone, etc.)
     if double_bonds > 0 {
-        return Ok(9);  // N=C imine
+        return Ok(9); // N=C imine
     }
 
     // sp3 N — check if amide (bonded to carbonyl C)
@@ -853,14 +870,14 @@ fn assign_n_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
         let nbr = mol.atom(b.neighbor);
         nbr.element == Element::C && {
             // Check if that C has a C=O double bond
-            bonds_of(mol, b.neighbor)
-                .iter()
-                .any(|bb| bb.order == BondOrder::Double && mol.atom(bb.neighbor).element == Element::O)
+            bonds_of(mol, b.neighbor).iter().any(|bb| {
+                bb.order == BondOrder::Double && mol.atom(bb.neighbor).element == Element::O
+            })
         }
     });
 
     if is_amide {
-        return Ok(10);  // NC=O amide nitrogen
+        return Ok(10); // NC=O amide nitrogen
     }
 
     // Nitro group (N with two =O bonds): check for N(=O)=O pattern
@@ -869,10 +886,10 @@ fn assign_n_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
         .filter(|b| b.order == BondOrder::Double && mol.atom(b.neighbor).element == Element::O)
         .count();
     if double_o >= 2 {
-        return Ok(46);  // NO2 nitro N
+        return Ok(46); // NO2 nitro N
     }
 
-    Ok(8)  // NR plain amine
+    Ok(8) // NR plain amine
 }
 
 fn aromatic_n_type(mol: &Molecule, idx: AtomIdx) -> u8 {
@@ -884,13 +901,13 @@ fn aromatic_n_type(mol: &Molecule, idx: AtomIdx) -> u8 {
 
     if in_5 {
         if has_h {
-            return 40;  // N5A: pyrrole-type NH (5-ring)
+            return 40; // N5A: pyrrole-type NH (5-ring)
         }
-        return 58;  // N5+: imidazole-type N= (5-ring)
+        return 58; // N5+: imidazole-type N= (5-ring)
     }
 
     // 6-ring aromatic N (pyridine-type)
-    67  // N6A pyridine N
+    67 // N6A pyridine N
 }
 
 // ── O type assignment ────────────────────────────────────────────────────────
@@ -898,16 +915,16 @@ fn aromatic_n_type(mol: &Molecule, idx: AtomIdx) -> u8 {
 fn assign_o_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     // Double bond to C or N → carbonyl/similar oxygen (type 7)
     if count_bond_order(mol, idx, BondOrder::Double) > 0 {
-        return Ok(7);  // O=C
+        return Ok(7); // O=C
     }
 
     // Anionic O (formal charge -1): carboxylate/phenoxide
     if mol.atom(idx).charge < 0 {
-        return Ok(34);  // O- anionic oxygen
+        return Ok(34); // O- anionic oxygen
     }
 
     // Single-bond O (ether, alcohol, ester, amide O)
-    Ok(6)  // OR
+    Ok(6) // OR
 }
 
 // ── S type assignment ────────────────────────────────────────────────────────
@@ -915,7 +932,7 @@ fn assign_o_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 fn assign_s_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     let atom = mol.atom(idx);
     if atom.aromatic {
-        return Ok(44);  // S5 aromatic sulfur (thiophene)
+        return Ok(44); // S5 aromatic sulfur (thiophene)
     }
 
     let double_o = bonds_of(mol, idx)
@@ -924,14 +941,14 @@ fn assign_s_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
         .count();
 
     match double_o {
-        2.. => Ok(18),  // SO2 sulfone
-        1   => Ok(17),  // S=O sulfoxide
-        0   => {
+        2.. => Ok(18), // SO2 sulfone
+        1 => Ok(17),   // S=O sulfoxide
+        0 => {
             // Check double bond to C
             if count_bond_order(mol, idx, BondOrder::Double) > 0 {
-                return Ok(16);  // S=C
+                return Ok(16); // S=C
             }
-            Ok(15)  // S thiol/sulfide
+            Ok(15) // S thiol/sulfide
         }
     }
 }
@@ -941,9 +958,9 @@ fn assign_s_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 fn assign_p_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     // P with =O → phosphoryl (type 25)
     if is_bonded_to(mol, idx, Element::O, BondOrder::Double) {
-        return Ok(25);  // PO4
+        return Ok(25); // PO4
     }
-    Ok(20)  // P generic sp3
+    Ok(20) // P generic sp3
 }
 
 // ── H type assignment ────────────────────────────────────────────────────────
@@ -951,34 +968,34 @@ fn assign_p_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     let nbrs = bonds_of(mol, idx);
     if nbrs.is_empty() {
-        return Ok(5);  // H_C fallback
+        return Ok(5); // H_C fallback
     }
     let nbr_atom = mol.atom(nbrs[0].neighbor);
 
     Ok(match nbr_atom.element {
-        Element::C => 5,   // HC  H on carbon
-        Element::O => 24,  // HOCO H on O in acid/alcohol
-        Element::S => 71,  // HS  H on sulfur
+        Element::C => 5,  // HC  H on carbon
+        Element::O => 24, // HOCO H on O in acid/alcohol
+        Element::S => 71, // HS  H on sulfur
         Element::N => {
             // Distinguish: amide NH (type 28) vs amine NH (type 23) vs imine=NH (type 27)
             let n_idx = nbrs[0].neighbor;
             let n_atom = mol.atom(n_idx);
             if n_atom.aromatic {
-                return Ok(23);  // treat as HNR for aromatic NH
+                return Ok(23); // treat as HNR for aromatic NH
             }
             let n_is_amide = bonds_of(mol, n_idx).iter().any(|b| {
-                b.order == BondOrder::Single && mol.atom(b.neighbor).element == Element::C
+                b.order == BondOrder::Single
+                    && mol.atom(b.neighbor).element == Element::C
                     && bonds_of(mol, b.neighbor).iter().any(|bb| {
-                        bb.order == BondOrder::Double
-                            && mol.atom(bb.neighbor).element == Element::O
+                        bb.order == BondOrder::Double && mol.atom(bb.neighbor).element == Element::O
                     })
             });
             if n_is_amide {
-                28  // HNCO H on amide N
+                28 // HNCO H on amide N
             } else if count_bond_order(mol, n_idx, BondOrder::Double) > 0 {
-                27  // HN=C H on imine N
+                27 // HN=C H on imine N
             } else {
-                23  // HNR  H on amine N
+                23 // HNR  H on amine N
             }
         }
         _ => 5,
@@ -994,9 +1011,7 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 ///   q_i = Σ_{j bonded} bci(j→i)
 ///
 /// Returns per-atom partial charges in units of elementary charge.
-pub fn mmff94_charges_numeric(
-    mol: &Molecule,
-) -> Result<Vec<f64>, NumericTypeError> {
+pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeError> {
     let types = assign_mmff94_numeric_types(mol)?;
     let n = mol.atom_count();
     let mut charges = vec![0.0f64; n];
@@ -1022,12 +1037,12 @@ pub fn mmff94_charges_numeric(
         let bt = bond_type_for(bond.order);
 
         // Contribution to atom i
-        let ci = lookup_chg_contribution(bt, ti, tj)
-            .unwrap_or_else(|| pbci_for(ti).0 - pbci_for(tj).0);
+        let ci =
+            lookup_chg_contribution(bt, ti, tj).unwrap_or_else(|| pbci_for(ti).0 - pbci_for(tj).0);
 
         // Contribution to atom j
-        let cj = lookup_chg_contribution(bt, tj, ti)
-            .unwrap_or_else(|| pbci_for(tj).0 - pbci_for(ti).0);
+        let cj =
+            lookup_chg_contribution(bt, tj, ti).unwrap_or_else(|| pbci_for(tj).0 - pbci_for(ti).0);
 
         charges[i] += ci;
         charges[j] += cj;
@@ -1098,13 +1113,33 @@ mod tests {
         }
 
         // Amine N → type 8
-        assert!(n_types.iter().all(|&t| t == 8), "N should be type 8 (NR), got {:?}", n_types);
+        assert!(
+            n_types.iter().all(|&t| t == 8),
+            "N should be type 8 (NR), got {:?}",
+            n_types
+        );
         // Should have sp3 C (type 1) and carbonyl C (type 3)
-        assert!(c_types.contains(&1), "should have sp3 C (type 1), got {:?}", c_types);
-        assert!(c_types.contains(&3), "should have carbonyl C (type 3), got {:?}", c_types);
+        assert!(
+            c_types.contains(&1),
+            "should have sp3 C (type 1), got {:?}",
+            c_types
+        );
+        assert!(
+            c_types.contains(&3),
+            "should have carbonyl C (type 3), got {:?}",
+            c_types
+        );
         // O=C (type 7) and O-H (type 6)
-        assert!(o_types.contains(&6), "should have OR oxygen (type 6), got {:?}", o_types);
-        assert!(o_types.contains(&7), "should have O=C oxygen (type 7), got {:?}", o_types);
+        assert!(
+            o_types.contains(&6),
+            "should have OR oxygen (type 6), got {:?}",
+            o_types
+        );
+        assert!(
+            o_types.contains(&7),
+            "should have O=C oxygen (type 7), got {:?}",
+            o_types
+        );
     }
 
     #[test]
@@ -1138,8 +1173,8 @@ mod tests {
         for i in 0..m.atom_count() {
             let a = m.atom(AtomIdx(i as u32));
             match a.element {
-                Element::F  => assert_eq!(types[i], 11),
-                Element::C  => assert_eq!(types[i], 1),
+                Element::F => assert_eq!(types[i], 11),
+                Element::C => assert_eq!(types[i], 1),
                 _ => {}
             }
         }
@@ -1167,7 +1202,7 @@ mod tests {
 
     #[test]
     fn sulfoxide_is_type_17_sulfone_is_type_18() {
-        let m_so = mol("CS(=O)C");    // DMSO
+        let m_so = mol("CS(=O)C"); // DMSO
         let types_so = assign_mmff94_numeric_types(&m_so).unwrap();
         let m_s2 = mol("CS(=O)(=O)C"); // DMSO2
         let types_s2 = assign_mmff94_numeric_types(&m_s2).unwrap();
@@ -1208,11 +1243,12 @@ mod tests {
         let m = mol("CC(=O)C");
         let types = assign_mmff94_numeric_types(&m).unwrap();
         let q = mmff94_charges_numeric(&m).unwrap();
-        let (o_idx, _) = m.atoms()
-            .find(|(_, a)| a.element == Element::O)
-            .unwrap();
+        let (o_idx, _) = m.atoms().find(|(_, a)| a.element == Element::O).unwrap();
         let o_charge = q[o_idx.0 as usize];
-        assert!(o_charge < -0.3, "ketone O charge = {o_charge:.3}, expected < -0.3");
+        assert!(
+            o_charge < -0.3,
+            "ketone O charge = {o_charge:.3}, expected < -0.3"
+        );
         // Also verify O is type 7
         assert_eq!(types[o_idx.0 as usize], 7, "ketone O should be type 7");
     }
@@ -1221,11 +1257,15 @@ mod tests {
     fn amine_n_is_negative() {
         let m = mol("CCN");
         let q = mmff94_charges_numeric(&m).unwrap();
-        let n_charge = m.atoms()
+        let n_charge = m
+            .atoms()
             .find(|(_, a)| a.element == Element::N)
             .map(|(i, _)| q[i.0 as usize])
             .unwrap();
-        assert!(n_charge < -0.1, "amine N charge = {n_charge:.3}, expected negative");
+        assert!(
+            n_charge < -0.1,
+            "amine N charge = {n_charge:.3}, expected negative"
+        );
     }
 
     #[test]
@@ -1235,17 +1275,22 @@ mod tests {
         let q = mmff94_charges_numeric(&m).unwrap();
         let types = assign_mmff94_numeric_types(&m).unwrap();
         // Find H atoms bonded to N (type 23)
-        let h_charges: Vec<f64> = m.atoms()
+        let h_charges: Vec<f64> = m
+            .atoms()
             .filter(|(i, a)| a.element == Element::H && types[i.0 as usize] == 23)
             .map(|(i, _)| q[i.0 as usize])
             .collect();
         if h_charges.is_empty() {
             // If no explicit H-N atoms, just verify N is negative
-            let n_charge = m.atoms()
+            let n_charge = m
+                .atoms()
                 .find(|(_, a)| a.element == Element::N)
                 .map(|(i, _)| q[i.0 as usize])
                 .unwrap();
-            assert!(n_charge < 0.0, "amine N charge = {n_charge:.3}, expected negative");
+            assert!(
+                n_charge < 0.0,
+                "amine N charge = {n_charge:.3}, expected negative"
+            );
         } else {
             for &hq in &h_charges {
                 assert!(hq > 0.05, "H-N charge = {hq:.3}, expected positive");
@@ -1288,7 +1333,7 @@ mod tests {
         // Note: current assign_o_type returns 6 for aromatic O (neutral single bond)
         // This test documents the expected behavior (may need update when furan aromatic O
         // detection is refined)
-        let m = mol("o1cccc1");  // furan
+        let m = mol("o1cccc1"); // furan
         let types_result = assign_mmff94_numeric_types(&m);
         // Furan might fail to parse if aromatic O valence isn't handled;
         // if it succeeds, verify the oxygen type

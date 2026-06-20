@@ -110,7 +110,11 @@ mod tests {
         let m2 = mol("CC");
         let fp1 = pattern_fp(&m1);
         let fp2 = pattern_fp(&m2);
-        assert_eq!(fp1.tanimoto(&fp2), 1.0, "identical molecules should have tanimoto=1.0");
+        assert_eq!(
+            fp1.tanimoto(&fp2),
+            1.0,
+            "identical molecules should have tanimoto=1.0"
+        );
     }
 
     #[test]

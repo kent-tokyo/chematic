@@ -288,14 +288,13 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 3,
     },
-
     // 1,5-H shift rules (path_len=5)
     // 21. 1,5-O→O: β-diketone (acetylacetone)
     //     Pattern: O-C(-)-C(-)-C(=O) → O=C(-)-C(-)-C(-O)
     TautomerRule {
         name: "1,5-O-to-O-beta-diketone",
         donor_elem: 8,
-        bridge_elem: Some(6),  // Central carbon in pattern (b2)
+        bridge_elem: Some(6), // Central carbon in pattern (b2)
         acceptor_elem: 8,
         donor_bridge_order: BondOrderMatch::Single,
         bridge_acceptor_order: BondOrderMatch::Double,
@@ -639,9 +638,9 @@ fn tautomer_score(mol: &Molecule) -> i32 {
         let h_count = atom.hydrogen_count.unwrap_or(0) as i32;
         if h_count > 0 {
             match atom.element.atomic_number() {
-                8 => score += h_count * 100,  // O-H: highest priority
-                7 => score += h_count * 50,   // N-H: medium priority
-                16 => score += h_count * 25,  // S-H: low priority
+                8 => score += h_count * 100, // O-H: highest priority
+                7 => score += h_count * 50,  // N-H: medium priority
+                16 => score += h_count * 25, // S-H: low priority
                 _ => {}
             }
         }
@@ -714,9 +713,10 @@ fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, A
                     }
                     // b2 can be any type (relaxed)
                     if let Some(br_elem) = rule.bridge_elem
-                        && mol.atom(b2).element.atomic_number() != br_elem {
-                            continue;
-                        }
+                        && mol.atom(b2).element.atomic_number() != br_elem
+                    {
+                        continue;
+                    }
 
                     for (b3, _) in mol.neighbors(b2) {
                         if b3 == b1 {
@@ -800,7 +800,8 @@ fn transfer_hydrogen(
     blocked_atoms: &HashSet<AtomIdx>,
     blocked_bonds: &HashSet<BondIdx>,
 ) -> Option<Molecule> {
-    if blocked_atoms.contains(&donor) || blocked_atoms.contains(&bridge)
+    if blocked_atoms.contains(&donor)
+        || blocked_atoms.contains(&bridge)
         || blocked_atoms.contains(&acceptor)
     {
         return None;
@@ -842,17 +843,27 @@ fn transfer_hydrogen(
 }
 
 /// Apply the first matching transformation for `rule`; return the new molecule.
-fn apply_first_match(mol: &Molecule, rule: &TautomerRule, config: &TautomerConfig) -> Option<Molecule> {
-    find_matches(mol, rule)
-        .into_iter()
-        .find_map(|(d, b, a)| transfer_hydrogen(mol, d, b, a, &config.blocked_atoms, &config.blocked_bonds))
+fn apply_first_match(
+    mol: &Molecule,
+    rule: &TautomerRule,
+    config: &TautomerConfig,
+) -> Option<Molecule> {
+    find_matches(mol, rule).into_iter().find_map(|(d, b, a)| {
+        transfer_hydrogen(mol, d, b, a, &config.blocked_atoms, &config.blocked_bonds)
+    })
 }
 
 /// Apply every matching transformation for `rule`; return all resulting molecules.
-fn apply_all_matches(mol: &Molecule, rule: &TautomerRule, config: &TautomerConfig) -> Vec<Molecule> {
+fn apply_all_matches(
+    mol: &Molecule,
+    rule: &TautomerRule,
+    config: &TautomerConfig,
+) -> Vec<Molecule> {
     find_matches(mol, rule)
         .into_iter()
-        .filter_map(|(d, b, a)| transfer_hydrogen(mol, d, b, a, &config.blocked_atoms, &config.blocked_bonds))
+        .filter_map(|(d, b, a)| {
+            transfer_hydrogen(mol, d, b, a, &config.blocked_atoms, &config.blocked_bonds)
+        })
         .collect()
 }
 
@@ -1175,7 +1186,6 @@ mod tests {
 
     #[test]
     fn test_canonical_pyrazole_normalization() {
-
         let n1h = parse("c1cc[nH]n1").unwrap();
         let tautomers = enumerate_tautomers(&n1h);
         let n2h = tautomers
@@ -1193,7 +1203,6 @@ mod tests {
 
     #[test]
     fn test_config_default_same_as_no_config() {
-
         // canonical_tautomer and canonical_tautomer_with_config(default) must agree.
         let mol = parse("OC=C").unwrap(); // enol
         let a = canonical_tautomer(&mol);
@@ -1245,7 +1254,6 @@ mod tests {
 
     #[test]
     fn test_config_empty_enabled_rules_equals_all() {
-
         let mol = parse("OC=C").unwrap();
         let all = canonical_tautomer_with_config(&mol, &TautomerConfig::default());
         let explicit_empty = canonical_tautomer_with_config(
@@ -1278,7 +1286,10 @@ mod tests {
         let mol = parse("CC(=O)CC(=O)C").unwrap();
         let tautomers = enumerate_tautomers(&mol);
         // Should find enol form via 1,5-shift
-        assert!(tautomers.len() >= 2, "Expected >= 2 tautomers for β-diketone");
+        assert!(
+            tautomers.len() >= 2,
+            "Expected >= 2 tautomers for β-diketone"
+        );
     }
 
     #[test]
@@ -1389,14 +1400,12 @@ mod tests {
 
     /// Helper: canonical SMILES of the canonical tautomer.
     fn canonical_smi(smi: &str) -> String {
-
         let mol = parse(smi).unwrap();
         canonical_smiles(&canonical_tautomer(&mol))
     }
 
     /// Helper: canonical SMILES of the canonical tautomer with blocked atoms.
     fn blocked_smi(smi: &str, blocked: &[u32]) -> String {
-
         let mol = parse(smi).unwrap();
         let config = TautomerConfig {
             blocked_atoms: blocked.iter().map(|&i| AtomIdx(i)).collect(),
@@ -1441,7 +1450,7 @@ mod tests {
                 ..TautomerConfig::default()
             };
             let explicit_empty = canonical_tautomer_with_config(&mol, &empty_config);
-    
+
             assert_eq!(
                 canonical_smiles(&default),
                 canonical_smiles(&explicit_empty),
@@ -1463,7 +1472,9 @@ mod tests {
         let blocked = enumerate_tautomers_with_config(&mol, &config);
         assert!(
             blocked.len() <= all.len(),
-            "blocking must not increase tautomer count: {} > {}", blocked.len(), all.len()
+            "blocking must not increase tautomer count: {} > {}",
+            blocked.len(),
+            all.len()
         );
     }
 
@@ -1495,7 +1506,11 @@ mod tests {
             ..TautomerConfig::default()
         };
         let tautomers = enumerate_tautomers_with_config(&mol, &config);
-        assert_eq!(tautomers.len(), 1, "all atoms blocked → only the original is returned");
+        assert_eq!(
+            tautomers.len(),
+            1,
+            "all atoms blocked → only the original is returned"
+        );
     }
 
     #[test]
@@ -1519,18 +1534,21 @@ mod tests {
     /// chematic must NOT have this bug — chirality fields are preserved via clone().
     #[test]
     fn test_remote_stereo_preserved_keto_enol() {
-
-
         // C[C@H](O)CC(=O)C: keto-enol fires at the C(=O) end.
         // The [C@H] stereocenter (index 1) is remote — must be preserved.
         let mol = parse("C[C@H](O)CC(=O)C").unwrap();
         let before_chirality = mol.atom(AtomIdx(1)).chirality;
-        assert_ne!(before_chirality, Chirality::None, "test setup: atom 1 must be chiral");
+        assert_ne!(
+            before_chirality,
+            Chirality::None,
+            "test setup: atom 1 must be chiral"
+        );
 
         let t = canonical_tautomer(&mol);
         let after_chirality = t.atom(AtomIdx(1)).chirality;
         assert_ne!(
-            after_chirality, Chirality::None,
+            after_chirality,
+            Chirality::None,
             "Remote [C@H] chirality erased by canonical_tautomer (RDKit #7969 regression)"
         );
 
@@ -1538,24 +1556,27 @@ mod tests {
         let smi = canonical_smiles(&t);
         assert!(
             smi.contains('@'),
-            "Canonical SMILES lost chirality marker: '{}'", smi
+            "Canonical SMILES lost chirality marker: '{}'",
+            smi
         );
     }
 
     #[test]
     fn test_alanine_stereo_trivially_preserved() {
-
         // [C@@H](N)(C(=O)O)C — no tautomer rule fires; stereo must be unchanged.
         let mol = parse("[C@@H](N)(C(=O)O)C").unwrap();
         let before = mol.atom(AtomIdx(0)).chirality;
         let t = canonical_tautomer(&mol);
         let after = t.atom(AtomIdx(0)).chirality;
-        assert_eq!(before, after, "Alanine chirality changed; was {:?}, got {:?}", before, after);
+        assert_eq!(
+            before, after,
+            "Alanine chirality changed; was {:?}, got {:?}",
+            before, after
+        );
     }
 
     #[test]
     fn test_glucose_all_stereocenters_preserved() {
-
         let mol = parse("OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O").unwrap();
         let before: Vec<Chirality> = mol.atoms().map(|(_, a)| a.chirality).collect();
 
@@ -1570,18 +1591,21 @@ mod tests {
 
     #[test]
     fn test_pyrazole_no_phantom_chirality() {
-
         // c1cc[nH]n1: N-H tautomers possible, no stereocenters → must stay chiral-free
         let mol = parse("c1cc[nH]n1").unwrap();
         let t = canonical_tautomer(&mol);
-        let chiral_count = t.atoms().filter(|(_, a)| a.chirality != Chirality::None).count();
-        assert_eq!(chiral_count, 0, "Phantom chirality introduced by pyrazole tautomerism");
+        let chiral_count = t
+            .atoms()
+            .filter(|(_, a)| a.chirality != Chirality::None)
+            .count();
+        assert_eq!(
+            chiral_count, 0,
+            "Phantom chirality introduced by pyrazole tautomerism"
+        );
     }
 
     #[test]
     fn test_stereo_at_donor_does_not_panic() {
-
-
         // [C@@H](O)(C)C(=O)O — lactic acid: O (donor) is adjacent to stereocentre.
         // The tautomer may legitimately change chirality; we just verify no panic.
         let mol = parse("[C@@H](O)(C)C(=O)O").unwrap();
@@ -1593,7 +1617,6 @@ mod tests {
 
     #[test]
     fn test_enumerate_tautomers_remote_stereo_preserved() {
-
         // C[C@H](O)CC(=O)C: enumerate all tautomers.
         // Every produced tautomer must preserve chirality at atom 1 (remote centre).
         let mol = parse("C[C@H](O)CC(=O)C").unwrap();
@@ -1605,7 +1628,8 @@ mod tests {
                 let ch = t.atom(AtomIdx(1)).chirality;
                 assert_eq!(
                     ch, original_chirality,
-                    "Tautomer #{}: chirality at atom 1 changed ({:?} → {:?})", i, original_chirality, ch
+                    "Tautomer #{}: chirality at atom 1 changed ({:?} → {:?})",
+                    i, original_chirality, ch
                 );
             }
         }
@@ -1613,7 +1637,6 @@ mod tests {
 
     #[test]
     fn test_blocked_stereo_preserved_with_zone_blocking() {
-
         // O[C@@H](F)C(=O)C: block O (index 0) to suppress keto-enol.
         // Stereocentre [C@@H] (index 1) must be preserved.
         let mol = parse("O[C@@H](F)C(=O)C").unwrap();
@@ -1624,7 +1647,8 @@ mod tests {
         let t = canonical_tautomer_with_config(&mol, &config);
         let chirality_after = t.atom(AtomIdx(1)).chirality;
         assert_ne!(
-            chirality_after, Chirality::None,
+            chirality_after,
+            Chirality::None,
             "Chirality erased from blocked stereocentre"
         );
     }

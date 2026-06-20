@@ -2,8 +2,8 @@
 //!
 //! Generates virtual libraries by combining reaction templates with scaffolds and building blocks.
 
-use chematic_core::Molecule;
 use crate::transform::run_reactants;
+use chematic_core::Molecule;
 
 /// Configuration for library enumeration.
 #[derive(Clone, Debug)]
@@ -58,15 +58,13 @@ pub fn enumerate_library(
     }
 
     // Check max size feasibility
-    let total_combos: usize = fragment_sets
-        .iter()
-        .map(|set| set.len())
-        .product();
+    let total_combos: usize = fragment_sets.iter().map(|set| set.len()).product();
 
     if let Some(max) = config.max_size
-        && total_combos > max {
-            return Err(LibraryError::EnumerationTooLarge(total_combos, max));
-        }
+        && total_combos > max
+    {
+        return Err(LibraryError::EnumerationTooLarge(total_combos, max));
+    }
 
     let mut products: Vec<Molecule> = Vec::new();
     let mut indices = vec![0usize; fragment_sets.len()];
@@ -95,9 +93,10 @@ pub fn enumerate_library(
 
         // Check product count (actual size, not just iteration count)
         if let Some(max) = config.max_size
-            && products.len() >= max {
-                return Err(LibraryError::EnumerationLimitExceeded);
-            }
+            && products.len() >= max
+        {
+            return Err(LibraryError::EnumerationLimitExceeded);
+        }
 
         // Increment indices (counter-like behavior)
         let mut carry = 1usize;
@@ -193,7 +192,11 @@ mod tests {
         match result {
             Ok(products) => {
                 // Should have at most 2×2=4 products
-                assert!(products.len() <= 4, "expected <= 4 products, got {}", products.len());
+                assert!(
+                    products.len() <= 4,
+                    "expected <= 4 products, got {}",
+                    products.len()
+                );
             }
             Err(_) => {
                 // If template fails, that's OK for this test (focus on enumeration logic)

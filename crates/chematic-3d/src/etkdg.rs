@@ -8,9 +8,9 @@
 //! 2. Apply preferred torsion angles for common patterns (carbonyl, aromatic, etc.)
 //! 3. Minimize with constraints to preserve ring geometry
 
-use chematic_core::{Molecule, AtomIdx};
 use crate::coords::Coords3D;
-use crate::etkdg_knowledge::{get_torsion_preference, default_torsion_preference};
+use crate::etkdg_knowledge::{default_torsion_preference, get_torsion_preference};
+use chematic_core::{AtomIdx, Molecule};
 
 /// Generate 3D coordinates using ETKDG with torsion angle preferences.
 ///
@@ -59,12 +59,14 @@ fn apply_torsion_preferences(mol: &Molecule, coords: &mut Coords3D) {
             }
 
             // Find neighbors of B (excluding C) and C (excluding B)
-            let b_neighbors: Vec<usize> = mol.neighbors(b_idx)
+            let b_neighbors: Vec<usize> = mol
+                .neighbors(b_idx)
                 .filter(|(nb, _)| nb.0 as usize != c)
                 .map(|(nb, _)| nb.0 as usize)
                 .collect();
 
-            let c_neighbors: Vec<usize> = mol.neighbors(c_idx)
+            let c_neighbors: Vec<usize> = mol
+                .neighbors(c_idx)
                 .filter(|(nb, _)| nb.0 as usize != b)
                 .map(|(nb, _)| nb.0 as usize)
                 .collect();
@@ -81,13 +83,8 @@ fn apply_torsion_preferences(mol: &Molecule, coords: &mut Coords3D) {
                     let d_idx = AtomIdx(d as u32);
 
                     // Get current dihedral
-                    let current = super::mol_transforms::get_dihedral(
-                        coords,
-                        a_idx,
-                        b_idx,
-                        c_idx,
-                        d_idx,
-                    );
+                    let current =
+                        super::mol_transforms::get_dihedral(coords, a_idx, b_idx, c_idx, d_idx);
 
                     if current.is_none() {
                         continue;
@@ -105,13 +102,7 @@ fn apply_torsion_preferences(mol: &Molecule, coords: &mut Coords3D) {
                     if (current_deg - target_deg).abs() > 20.0 {
                         let target_rad = target_deg * std::f64::consts::PI / 180.0;
                         *coords = super::mol_transforms::set_dihedral(
-                            coords,
-                            mol,
-                            a_idx,
-                            b_idx,
-                            c_idx,
-                            d_idx,
-                            target_rad,
+                            coords, mol, a_idx, b_idx, c_idx, d_idx, target_rad,
                         );
                         applied.insert(key);
                     }

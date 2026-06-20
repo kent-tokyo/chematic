@@ -96,30 +96,31 @@ pub fn assign_atropisomer_chirality(mol: &Molecule) -> Molecule {
 
         // Check if this bond is atropisomeric and apply stereochemistry
         if let Some((_, _)) = atropisomers.iter().find(|(b, _)| b == &bidx)
-            && bond.order == BondOrder::Single {
-                let a1_neighbors: Vec<_> = mol.neighbors(bond.atom1).collect();
-                let a2_neighbors: Vec<_> = mol.neighbors(bond.atom2).collect();
+            && bond.order == BondOrder::Single
+        {
+            let a1_neighbors: Vec<_> = mol.neighbors(bond.atom1).collect();
+            let a2_neighbors: Vec<_> = mol.neighbors(bond.atom2).collect();
 
-                let a1_max_an = a1_neighbors
-                    .iter()
-                    .filter(|(n, _)| n != &bond.atom2)
-                    .map(|(n, _)| mol.atom(*n).element.atomic_number())
-                    .max()
-                    .unwrap_or(0);
+            let a1_max_an = a1_neighbors
+                .iter()
+                .filter(|(n, _)| n != &bond.atom2)
+                .map(|(n, _)| mol.atom(*n).element.atomic_number())
+                .max()
+                .unwrap_or(0);
 
-                let a2_max_an = a2_neighbors
-                    .iter()
-                    .filter(|(n, _)| n != &bond.atom1)
-                    .map(|(n, _)| mol.atom(*n).element.atomic_number())
-                    .max()
-                    .unwrap_or(0);
+            let a2_max_an = a2_neighbors
+                .iter()
+                .filter(|(n, _)| n != &bond.atom1)
+                .map(|(n, _)| mol.atom(*n).element.atomic_number())
+                .max()
+                .unwrap_or(0);
 
-                if a1_max_an > a2_max_an {
-                    new_bond_order = BondOrder::Up;
-                } else if a2_max_an > a1_max_an {
-                    new_bond_order = BondOrder::Down;
-                }
+            if a1_max_an > a2_max_an {
+                new_bond_order = BondOrder::Up;
+            } else if a2_max_an > a1_max_an {
+                new_bond_order = BondOrder::Down;
             }
+        }
 
         if let (Some(&a), Some(&b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
             let _ = builder.add_bond(a, b, new_bond_order);
@@ -144,7 +145,10 @@ mod tests {
         let m = mol("c1ccccc1c2ccccc2");
         let atrops = detect_atropisomers(&m);
         // Function should not panic and return results
-        assert!(atrops.is_empty(), "biphenyl without ortho subs should have no atropisomers");
+        assert!(
+            atrops.is_empty(),
+            "biphenyl without ortho subs should have no atropisomers"
+        );
     }
 
     #[test]
@@ -159,13 +163,21 @@ mod tests {
     fn assign_atropisomer_chirality_preserves_atoms() {
         let m = mol("c1ccccc1c2ccccc2");
         let result = assign_atropisomer_chirality(&m);
-        assert_eq!(result.atom_count(), m.atom_count(), "atom count should match");
+        assert_eq!(
+            result.atom_count(),
+            m.atom_count(),
+            "atom count should match"
+        );
     }
 
     #[test]
     fn assign_atropisomer_chirality_preserves_bonds() {
         let m = mol("c1ccccc1c2ccccc2");
         let result = assign_atropisomer_chirality(&m);
-        assert_eq!(result.bond_count(), m.bond_count(), "bond count should match");
+        assert_eq!(
+            result.bond_count(),
+            m.bond_count(),
+            "bond count should match"
+        );
     }
 }

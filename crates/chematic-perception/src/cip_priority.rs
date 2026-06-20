@@ -4,9 +4,9 @@
 //! phantom atoms for double bonds, and atomic mass tiebreaking.
 //! This replaces the simplified 1-sphere CIP in stereo2d.rs / stereo3d.rs.
 
+use chematic_core::{AtomIdx, BondOrder, Molecule};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, VecDeque};
-use chematic_core::{AtomIdx, BondOrder, Molecule};
 
 /// A single "sphere layer" in a CIP branch expansion.
 /// Each tuple: (atomic_number, isotope, atomic_mass) sorted descending by CIP priority.
@@ -182,12 +182,15 @@ mod tests {
         // Atomic numbers differ: C=6, N=7 → immediately different priority
         let mol = parse("C(C)N").unwrap();
         let center = AtomIdx(0);
-        let methyl = AtomIdx(1);  // C neighbor
-        let amine = AtomIdx(2);   // N neighbor
+        let methyl = AtomIdx(1); // C neighbor
+        let amine = AtomIdx(2); // N neighbor
 
         let order = compare_branches(&mol, center, methyl, amine);
         // N (atomic number 7) has higher priority than C (atomic number 6)
-        assert!(order == Ordering::Less, "C should have lower priority than N");
+        assert!(
+            order == Ordering::Less,
+            "C should have lower priority than N"
+        );
     }
 
     #[test]
@@ -201,7 +204,10 @@ mod tests {
 
         let order_a = compare_branches(&mol, center, branch1, branch2);
         // Both branches are identical methyls, should compare equal
-        assert!(order_a == Ordering::Equal, "identical methyl branches should compare equal");
+        assert!(
+            order_a == Ordering::Equal,
+            "identical methyl branches should compare equal"
+        );
     }
 
     #[test]
@@ -214,6 +220,10 @@ mod tests {
 
         let order = compare_branches(&mol, center, c_normal, c_normal2);
         // Two identical normal carbons should compare equal
-        assert_eq!(order, Ordering::Equal, "identical normal carbons should be equal");
+        assert_eq!(
+            order,
+            Ordering::Equal,
+            "identical normal carbons should be equal"
+        );
     }
 }

@@ -140,14 +140,20 @@ pub fn parse_mol_with_coords(
     if natoms > MAX_ATOMS {
         return Err(MolParseError::InvalidCountLine {
             line: counts_lineno,
-            detail: format!("atom count {} exceeds maximum allowed {}", natoms, MAX_ATOMS),
+            detail: format!(
+                "atom count {} exceeds maximum allowed {}",
+                natoms, MAX_ATOMS
+            ),
         });
     }
 
     if nbonds > MAX_BONDS {
         return Err(MolParseError::InvalidCountLine {
             line: counts_lineno,
-            detail: format!("bond count {} exceeds maximum allowed {}", nbonds, MAX_BONDS),
+            detail: format!(
+                "bond count {} exceeds maximum allowed {}",
+                nbonds, MAX_BONDS
+            ),
         });
     }
 

@@ -10,7 +10,6 @@
 
 pub mod dreiding;
 pub mod mmff94;
-pub mod uff;
 pub mod mmff94_advanced;
 pub mod mmff94_bci;
 pub mod mmff94_energy;
@@ -18,30 +17,29 @@ pub mod mmff94_minimizer;
 pub mod mmff94_numeric;
 pub mod mmff94_params;
 pub mod params;
+pub mod uff;
 
 pub use dreiding::{DREIDINGType, assign_dreiding_types};
-pub use mmff94::{MMFF94Type, assign_mmff94_types, AssignError, mmff94_charges_3d};
+pub use mmff94::{AssignError, MMFF94Type, assign_mmff94_types, mmff94_charges_3d};
+pub use mmff94_advanced::{ElectrostaticMatrix, MMFF94BatchProperties};
 pub use mmff94_bci::{bci, mmff94_charges_bci, mmff94_formal_charge};
-pub use mmff94_advanced::{
-    ElectrostaticMatrix, MMFF94BatchProperties,
-};
-pub use mmff94_params::{
-    mmff94_angle_params, mmff94_bond_dipole, mmff94_bond_params, mmff94_charge_params,
-    mmff94_electrostatic_scaling_1_4, mmff94_torsion_params, mmff94_vdw_params,
-    AngleParams, BondDipoleParams, BondParams, ChargeParams, ElectrostaticScalingParams,
-    MMFF94MoleculeProperties, TorsionParams, VdWParams,
-};
 pub use mmff94_energy::{
-    mmff94_angle_energy, mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
-    mmff94_vdw_combined, mmff94_vdw_energy, AngleEnergyParams, BondEnergyParams,
-    TorsionEnergyParams, VdwEnergyParams,
+    AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, VdwEnergyParams, mmff94_angle_energy,
+    mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_torsion_energy, mmff94_vdw_combined,
+    mmff94_vdw_energy,
 };
 pub use mmff94_minimizer::{
-    minimize_mmff94_full, minimize_mmff94_lbfgs, mmff94_energy_breakdown, mmff94_torsion_scan,
-    mmff94_total_energy, EnergyBreakdown, MinimizeResult, MinimizerError,
+    EnergyBreakdown, MinimizeResult, MinimizerError, minimize_mmff94_full, minimize_mmff94_lbfgs,
+    mmff94_energy_breakdown, mmff94_torsion_scan, mmff94_total_energy,
 };
 pub use mmff94_numeric::{
-    assign_mmff94_numeric_types, mmff94_charges_numeric, pbci_for, NumericTypeError,
+    NumericTypeError, assign_mmff94_numeric_types, mmff94_charges_numeric, pbci_for,
+};
+pub use mmff94_params::{
+    AngleParams, BondDipoleParams, BondParams, ChargeParams, ElectrostaticScalingParams,
+    MMFF94MoleculeProperties, TorsionParams, VdWParams, mmff94_angle_params, mmff94_bond_dipole,
+    mmff94_bond_params, mmff94_charge_params, mmff94_electrostatic_scaling_1_4,
+    mmff94_torsion_params, mmff94_vdw_params,
 };
 pub use params::{dreiding_angle, dreiding_bond_len, dreiding_torsion_barrier, dreiding_vdw};
-pub use uff::{UffType, assign_uff_types, uff_total_energy, minimize_uff, UffMinimizeResult};
+pub use uff::{UffMinimizeResult, UffType, assign_uff_types, minimize_uff, uff_total_energy};

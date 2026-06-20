@@ -17,9 +17,9 @@
 //! a single-bond O with remaining valence 1). With H, oxygen in ethanol has degree 2
 //! (C-O + O-H) → remaining 0 → correctly stays Single.
 
+use crate::coords::Point3;
 use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 use chematic_perception::apply_aromaticity;
-use crate::coords::Point3;
 
 /// Maximum number of atoms accepted by [`determine_bonds`].
 ///
@@ -182,10 +182,10 @@ mod tests {
     fn test_methane_all_single() {
         // Tetrahedral CH4: C at origin + 4 H at ~1.09 Å
         let atoms = vec![
-            (Element::C, Point3::new(0.000,  0.000,  0.000)),
-            (Element::H, Point3::new(0.629,  0.629,  0.629)),
-            (Element::H, Point3::new(-0.629, -0.629,  0.629)),
-            (Element::H, Point3::new(-0.629,  0.629, -0.629)),
+            (Element::C, Point3::new(0.000, 0.000, 0.000)),
+            (Element::H, Point3::new(0.629, 0.629, 0.629)),
+            (Element::H, Point3::new(-0.629, -0.629, 0.629)),
+            (Element::H, Point3::new(-0.629, 0.629, -0.629)),
             (Element::H, Point3::new(0.629, -0.629, -0.629)),
         ];
         let mol = determine_bonds(&atoms, 0.40).unwrap();
@@ -201,20 +201,24 @@ mod tests {
         // CCO with explicit H: no spurious double bonds from C or O.
         // Approximate geometry: C-C=1.54Å, C-O=1.43Å, O-H=0.96Å
         let atoms = vec![
-            (Element::C, Point3::new(0.000,  0.000,  0.000)), // CH3
-            (Element::C, Point3::new(1.540,  0.000,  0.000)), // CH2
-            (Element::O, Point3::new(2.060,  1.200,  0.000)), // OH
-            (Element::H, Point3::new(-0.380,  1.030,  0.000)),
-            (Element::H, Point3::new(-0.380, -0.515,  0.890)),
+            (Element::C, Point3::new(0.000, 0.000, 0.000)), // CH3
+            (Element::C, Point3::new(1.540, 0.000, 0.000)), // CH2
+            (Element::O, Point3::new(2.060, 1.200, 0.000)), // OH
+            (Element::H, Point3::new(-0.380, 1.030, 0.000)),
+            (Element::H, Point3::new(-0.380, -0.515, 0.890)),
             (Element::H, Point3::new(-0.380, -0.515, -0.890)),
-            (Element::H, Point3::new(1.920, -0.515,  0.890)),
+            (Element::H, Point3::new(1.920, -0.515, 0.890)),
             (Element::H, Point3::new(1.920, -0.515, -0.890)),
-            (Element::H, Point3::new(2.940,  1.170,  0.000)), // H on O
+            (Element::H, Point3::new(2.940, 1.170, 0.000)), // H on O
         ];
         let mol = determine_bonds(&atoms, 0.40).unwrap();
         assert_eq!(mol.atom_count(), 9);
         for (_, bond) in mol.bonds() {
-            assert_eq!(bond.order, BondOrder::Single, "ethanol has only single bonds");
+            assert_eq!(
+                bond.order,
+                BondOrder::Single,
+                "ethanol has only single bonds"
+            );
         }
     }
 
@@ -225,11 +229,17 @@ mod tests {
         let mut atoms: Vec<(Element, Point3)> = Vec::new();
         for i in 0..6 {
             let angle = i as f64 * PI / 3.0;
-            atoms.push((Element::C, Point3::new(1.40 * angle.cos(), 1.40 * angle.sin(), 0.0)));
+            atoms.push((
+                Element::C,
+                Point3::new(1.40 * angle.cos(), 1.40 * angle.sin(), 0.0),
+            ));
         }
         for i in 0..6 {
             let angle = i as f64 * PI / 3.0;
-            atoms.push((Element::H, Point3::new(2.49 * angle.cos(), 2.49 * angle.sin(), 0.0)));
+            atoms.push((
+                Element::H,
+                Point3::new(2.49 * angle.cos(), 2.49 * angle.sin(), 0.0),
+            ));
         }
         let mol = determine_bonds(&atoms, 0.40).unwrap();
         assert_eq!(mol.atom_count(), 12);
@@ -252,16 +262,16 @@ mod tests {
         // The =O (no H) should be assigned Double; the O-H gets Single.
         // N-C-C(=O)-O with approximate geometry:
         let atoms = vec![
-            (Element::N,  Point3::new(-1.600, 0.000, 0.000)), // NH2
-            (Element::C,  Point3::new(-0.500, 0.600, 0.000)), // alpha-C
-            (Element::C,  Point3::new( 0.800, 0.000, 0.000)), // carboxyl C
-            (Element::O,  Point3::new( 0.900,-1.200, 0.000)), // =O (no H)
-            (Element::O,  Point3::new( 1.800, 0.800, 0.000)), // -OH
-            (Element::H,  Point3::new( 2.700, 0.400, 0.000)), // H on -OH
-            (Element::H,  Point3::new(-2.000, 0.600, 0.000)), // H on N
-            (Element::H,  Point3::new(-2.000,-0.600, 0.000)), // H on N
-            (Element::H,  Point3::new(-0.600, 1.200, 0.890)), // H on alpha-C
-            (Element::H,  Point3::new(-0.600, 1.200,-0.890)), // H on alpha-C
+            (Element::N, Point3::new(-1.600, 0.000, 0.000)), // NH2
+            (Element::C, Point3::new(-0.500, 0.600, 0.000)), // alpha-C
+            (Element::C, Point3::new(0.800, 0.000, 0.000)),  // carboxyl C
+            (Element::O, Point3::new(0.900, -1.200, 0.000)), // =O (no H)
+            (Element::O, Point3::new(1.800, 0.800, 0.000)),  // -OH
+            (Element::H, Point3::new(2.700, 0.400, 0.000)),  // H on -OH
+            (Element::H, Point3::new(-2.000, 0.600, 0.000)), // H on N
+            (Element::H, Point3::new(-2.000, -0.600, 0.000)), // H on N
+            (Element::H, Point3::new(-0.600, 1.200, 0.890)), // H on alpha-C
+            (Element::H, Point3::new(-0.600, 1.200, -0.890)), // H on alpha-C
         ];
         let mol = determine_bonds(&atoms, 0.40).unwrap();
 
@@ -275,11 +285,13 @@ mod tests {
 
         assert!(
             o_bond_orders.contains(&BondOrder::Double),
-            "carboxyl C=O must be Double; got {:?}", o_bond_orders
+            "carboxyl C=O must be Double; got {:?}",
+            o_bond_orders
         );
         assert!(
             o_bond_orders.contains(&BondOrder::Single),
-            "carboxyl C-OH must be Single; got {:?}", o_bond_orders
+            "carboxyl C-OH must be Single; got {:?}",
+            o_bond_orders
         );
     }
 
@@ -321,8 +333,8 @@ mod tests {
         //    misleading for C≡N where N remaining=2 would allow Triple).
         // With H: C degree=3 (2×H + 1×O), remaining=1; O degree=1, remaining=1 → upgrades to Double (correct)
         let atoms = vec![
-            (Element::C, Point3::new(0.000,  0.000, 0.000)),
-            (Element::O, Point3::new(0.000,  1.200, 0.000)),
+            (Element::C, Point3::new(0.000, 0.000, 0.000)),
+            (Element::O, Point3::new(0.000, 1.200, 0.000)),
             (Element::H, Point3::new(0.940, -0.540, 0.000)),
             (Element::H, Point3::new(-0.940, -0.540, 0.000)),
         ];

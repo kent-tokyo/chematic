@@ -1,4 +1,4 @@
-use chematic_core::{Molecule, AtomIdx};
+use chematic_core::{AtomIdx, Molecule};
 
 /// Generate charge layer (/q) for InChI.
 /// Returns None if net formal charge is zero.

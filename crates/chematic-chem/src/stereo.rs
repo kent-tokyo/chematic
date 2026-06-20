@@ -6,8 +6,8 @@
 
 use std::collections::HashMap;
 
-use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder};
 use crate::atropisomer;
+use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder};
 
 /// Invert the stereochemistry of a tetrahedral stereocenter.
 ///

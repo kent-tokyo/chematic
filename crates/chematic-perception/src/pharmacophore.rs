@@ -4,7 +4,7 @@
 //! for drug binding. This module detects: donors, acceptors, aromatic, hydrophobic,
 //! positive, and negative features.
 
-use chematic_core::{Molecule, AtomIdx};
+use chematic_core::{AtomIdx, Molecule};
 
 /// Pharmacophore feature types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -176,9 +176,7 @@ fn collect_aromatic_ring(mol: &Molecule, start: AtomIdx) -> Vec<AtomIdx> {
                 continue;
             }
 
-            if mol.bond_between(current, neighbor).is_some()
-                && mol.atom(neighbor).aromatic
-            {
+            if mol.bond_between(current, neighbor).is_some() && mol.atom(neighbor).aromatic {
                 visited.insert(neighbor);
                 queue.push_back(neighbor);
                 ring.push(neighbor);

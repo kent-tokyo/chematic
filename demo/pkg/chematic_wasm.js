@@ -1468,6 +1468,28 @@ export function compare_molecules_json(smiles1, smiles2) {
 }
 
 /**
+ * Generate multiple conformers with RMSD-based pruning.
+ * Returns JSON: `{"conformers": [[[x,y,z],...], ...], "count": int}`.
+ * @param {MolHandle} mol
+ * @param {number} n
+ * @param {number} rmsd_threshold
+ * @returns {string}
+ */
+export function conformer_ensemble_json(mol, n, rmsd_threshold) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.conformer_ensemble_json(mol.__wbg_ptr, n, rmsd_threshold);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Compute direct Coulomb energy for a molecule with Gasteiger partial charges.
  *
  * Returns JSON object: `{ "coulomb_energy": E, "unit": "kcal/mol" }`
@@ -2047,6 +2069,47 @@ export function gasteiger_charges_json(mol) {
     try {
         _assertClass(mol, MolHandle);
         const ret = wasm.gasteiger_charges_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Generate 3D coordinates as raw JSON array [[x,y,z], ...].
+ *
+ * Unlike `generate_3d_pdb`, this returns coordinates that can be passed
+ * to descriptor functions like `whim_descriptors_json` or `shape_descriptors_json`.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function generate_3d_coords_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.generate_3d_coords_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Generate 3D coordinates using ETKDG as raw JSON array [[x,y,z], ...].
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function generate_3d_etkdg_coords_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.generate_3d_etkdg_coords_json(mol.__wbg_ptr);
         deferred1_0 = ret[0];
         deferred1_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -2777,6 +2840,36 @@ export function minimize_mmff94_lbfgs_json(mol, max_iter) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Minimise a molecule's geometry using the Universal Force Field (UFF).
+ *
+ * `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
+ * `max_iter` — maximum iterations (0 = default 500).
+ *
+ * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool}`
+ * or `{"error":"<msg>"}` on failure.
+ * @param {string} smiles
+ * @param {string} coords_json
+ * @param {number} max_iter
+ * @returns {string}
+ */
+export function minimize_uff_json(smiles, coords_json, max_iter) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.minimize_uff_json(ptr0, len0, ptr1, len1, max_iter);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -4125,6 +4218,41 @@ export function smiles_to_mol2(smiles) {
 }
 
 /**
+ * Write a molecule to AutoDock PDBQT format.
+ *
+ * `coords_json` — JSON array of `[x,y,z]` arrays (Å). Pass `"[]"` for zero coords.
+ * `charges_json` — JSON array of partial charges. Pass `"[]"` to write zeros.
+ * `name` — ligand name for the REMARK header.
+ *
+ * Returns the PDBQT string, or `"error:<msg>"` on failure.
+ * @param {string} smiles
+ * @param {string} coords_json
+ * @param {string} charges_json
+ * @param {string} name
+ * @returns {string}
+ */
+export function smiles_to_pdbqt(smiles, coords_json, charges_json, name) {
+    let deferred5_0;
+    let deferred5_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(charges_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.smiles_to_pdbqt(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        deferred5_0 = ret[0];
+        deferred5_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
+}
+
+/**
  * Render a highlighted SVG from a SMILES string in one call.
  *
  * `atoms` — 0-based atom indices to highlight (Uint32Array in JS).
@@ -4639,6 +4767,46 @@ export function write_smiles(mol) {
     try {
         _assertClass(mol, MolHandle);
         const ret = wasm.write_smiles(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * XLogP3 partition coefficient (alternative to Crippen LogP).
+ * Returns JSON: `{"xlogp3": float}`.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function xlogp3_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.xlogp3_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Per-atom XLogP3 contributions.
+ * Returns JSON array of floats (one per heavy atom).
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function xlogp3_per_atom_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.xlogp3_per_atom_json(mol.__wbg_ptr);
         deferred1_0 = ret[0];
         deferred1_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);

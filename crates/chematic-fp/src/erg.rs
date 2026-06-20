@@ -16,10 +16,10 @@
 //!            Sheridan 1996 J.Chem.Inf.Comput.Sci. 36:128–136
 //!            Ertl 2017 J.Cheminf. 9:36
 
-use std::collections::{HashSet, VecDeque};
-use chematic_core::{Atom, AtomIdx, BondOrder, Molecule, implicit_hcount};
 use crate::bitvec::BitVec2048;
 use crate::ecfp::fnv1a;
+use chematic_core::{Atom, AtomIdx, BondOrder, Molecule, implicit_hcount};
+use std::collections::{HashSet, VecDeque};
 
 /// Functional group identification for ERG reduced graph construction.
 ///
@@ -70,7 +70,8 @@ fn identify_functional_groups(mol: &Molecule) -> Vec<Vec<usize>> {
         if mol.atom(AtomIdx(ci as u32)).element.atomic_number() != 6 {
             continue;
         }
-        let hetero_nbs: Vec<usize> = mol.neighbors(AtomIdx(ci as u32))
+        let hetero_nbs: Vec<usize> = mol
+            .neighbors(AtomIdx(ci as u32))
             .filter(|(nb, _)| is_hetero[nb.0 as usize])
             .map(|(nb, _)| nb.0 as usize)
             .collect();
@@ -89,22 +90,25 @@ fn identify_functional_groups(mol: &Molecule) -> Vec<Vec<usize>> {
         cluster_map.entry(root).or_default().push(hi);
     }
 
-    cluster_map.into_values().map(|mut atoms| {
-        let hetero_set: std::collections::HashSet<usize> = atoms.iter().copied().collect();
-        let snapshot = atoms.clone();
-        for &ai in &snapshot {
-            for (nb, _) in mol.neighbors(AtomIdx(ai as u32)) {
-                let nbi = nb.0 as usize;
-                let nb_an = mol.atom(nb).element.atomic_number();
-                if nb_an == 6 && !hetero_set.contains(&nbi) {
-                    atoms.push(nbi);
+    cluster_map
+        .into_values()
+        .map(|mut atoms| {
+            let hetero_set: std::collections::HashSet<usize> = atoms.iter().copied().collect();
+            let snapshot = atoms.clone();
+            for &ai in &snapshot {
+                for (nb, _) in mol.neighbors(AtomIdx(ai as u32)) {
+                    let nbi = nb.0 as usize;
+                    let nb_an = mol.atom(nb).element.atomic_number();
+                    if nb_an == 6 && !hetero_set.contains(&nbi) {
+                        atoms.push(nbi);
+                    }
                 }
             }
-        }
-        atoms.sort_unstable();
-        atoms.dedup();
-        atoms
-    }).collect()
+            atoms.sort_unstable();
+            atoms.dedup();
+            atoms
+        })
+        .collect()
 }
 
 fn uf_find(parent: &mut [usize], mut x: usize) -> usize {
@@ -147,7 +151,6 @@ impl Default for ErgNodeType {
 }
 
 impl ErgNodeType {
-
     pub fn with_aromatic(mut self) -> Self {
         self.0 |= Self::AROMATIC;
         self
@@ -241,7 +244,8 @@ fn assign_pharmacophore_features(mol: &Molecule, atom_indices: &[usize]) -> ErgN
         }
 
         // Count H attached to this atom (explicit H neighbors)
-        let explicit_h: usize = mol.neighbors(idx)
+        let explicit_h: usize = mol
+            .neighbors(idx)
             .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
             .count();
         let impl_h = implicit_hcount(mol, idx) as usize;
@@ -250,7 +254,8 @@ fn assign_pharmacophore_features(mol: &Molecule, atom_indices: &[usize]) -> ErgN
         // H-bond donor:
         //   - O-H and S-H: always donors when H present
         //   - N-H: donor ONLY when NOT in amide/sulfonamide context
-        if total_h > 0 && ((an == 8 || an == 16) || (an == 7 && !is_amide_like_nitrogen(mol, idx))) {
+        if total_h > 0 && ((an == 8 || an == 16) || (an == 7 && !is_amide_like_nitrogen(mol, idx)))
+        {
             ntype = ntype.with_donor();
         }
 
@@ -266,8 +271,12 @@ fn assign_pharmacophore_features(mol: &Molecule, atom_indices: &[usize]) -> ErgN
         }
 
         // Formal charge
-        if atom.charge > 0 { ntype = ntype.with_positive(); }
-        if atom.charge < 0 { ntype = ntype.with_negative(); }
+        if atom.charge > 0 {
+            ntype = ntype.with_positive();
+        }
+        if atom.charge < 0 {
+            ntype = ntype.with_negative();
+        }
     }
 
     // Hydrophobic: all atoms are C or H and no other pharmacophore bit set
@@ -292,7 +301,10 @@ fn build_reduced_graph(mol: &Molecule) -> (Vec<ErgNode>, Vec<ErgEdge>) {
         .into_iter()
         .map(|atom_indices| {
             let ntype = assign_pharmacophore_features(mol, &atom_indices);
-            ErgNode { ntype, atom_indices }
+            ErgNode {
+                ntype,
+                atom_indices,
+            }
         })
         .collect();
 
@@ -300,7 +312,10 @@ fn build_reduced_graph(mol: &Molecule) -> (Vec<ErgNode>, Vec<ErgEdge>) {
     if nodes.is_empty() {
         let all_atoms: Vec<usize> = (0..mol.atom_count()).collect();
         let ntype = assign_pharmacophore_features(mol, &all_atoms);
-        nodes.push(ErgNode { ntype, atom_indices: all_atoms });
+        nodes.push(ErgNode {
+            ntype,
+            atom_indices: all_atoms,
+        });
     }
 
     // Cap node count to prevent O(k²·n) blow-up on pathological all-heteroatom inputs.
@@ -479,10 +494,7 @@ pub fn erg(mol: &chematic_core::Molecule) -> ErgFingerprint {
 }
 
 /// Generate ERG fingerprint with custom configuration.
-pub fn erg_with_config(
-    mol: &chematic_core::Molecule,
-    config: &ErgConfig,
-) -> ErgFingerprint {
+pub fn erg_with_config(mol: &chematic_core::Molecule, config: &ErgConfig) -> ErgFingerprint {
     let mut bits = BitVec2048::new();
     let mut atom_counts = [0u32; 7];
     let mut bond_counts = [0u32; 4];
@@ -629,11 +641,11 @@ const FUZZ: f64 = 0.3;
 ///   4 = NEGATIVE (bit 32 = 1<<5)
 ///   5 = HYDROPHOBIC (bit 8 = 1<<3)
 const FEATURE_BITS: [(u8, usize); N_FEAT] = [
-    (ErgNodeType::AROMATIC,    0),
-    (ErgNodeType::DONOR,       1),
-    (ErgNodeType::ACCEPTOR,    2),
-    (ErgNodeType::POSITIVE,    3),
-    (ErgNodeType::NEGATIVE,    4),
+    (ErgNodeType::AROMATIC, 0),
+    (ErgNodeType::DONOR, 1),
+    (ErgNodeType::ACCEPTOR, 2),
+    (ErgNodeType::POSITIVE, 3),
+    (ErgNodeType::NEGATIVE, 4),
     (ErgNodeType::HYDROPHOBIC, 5),
 ];
 
@@ -651,8 +663,12 @@ fn pair_idx(a: usize, b: usize) -> usize {
 #[inline]
 fn fuzz_add(vec: &mut [f64; ERG_VEC_LEN], base: usize, d: usize, weight: f64) {
     vec[base + d] += weight;
-    if d > 0            { vec[base + d - 1] += weight * FUZZ; }
-    if d + 1 < N_BINS   { vec[base + d + 1] += weight * FUZZ; }
+    if d > 0 {
+        vec[base + d - 1] += weight * FUZZ;
+    }
+    if d + 1 < N_BINS {
+        vec[base + d + 1] += weight * FUZZ;
+    }
 }
 
 /// Generate an ERG-style 315-element float histogram.
@@ -676,7 +692,9 @@ pub fn erg_vec(mol: &Molecule) -> [f64; ERG_VEC_LEN] {
     for node in &nodes {
         let ntype = node.ntype.0;
         for &(bit, fi) in &FEATURE_BITS {
-            if ntype & bit == 0 { continue; }
+            if ntype & bit == 0 {
+                continue;
+            }
             let base = pair_idx(fi, fi) * N_BINS;
             fuzz_add(&mut vec, base, 0, 1.0);
         }
@@ -693,9 +711,13 @@ pub fn erg_vec(mol: &Molecule) -> [f64; ERG_VEC_LEN] {
         let ntype_b = nodes[edge.node_b].ntype.0;
 
         for &(bit_a, fi) in &FEATURE_BITS {
-            if ntype_a & bit_a == 0 { continue; }
+            if ntype_a & bit_a == 0 {
+                continue;
+            }
             for &(bit_b, fj) in &FEATURE_BITS {
-                if ntype_b & bit_b == 0 { continue; }
+                if ntype_b & bit_b == 0 {
+                    continue;
+                }
                 let base = pair_idx(fi, fj) * N_BINS;
                 fuzz_add(&mut vec, base, bin, 1.0);
             }
@@ -710,7 +732,9 @@ pub fn cosine_erg_vec(v1: &[f64; ERG_VEC_LEN], v2: &[f64; ERG_VEC_LEN]) -> f64 {
     let dot: f64 = v1.iter().zip(v2.iter()).map(|(a, b)| a * b).sum();
     let n1: f64 = v1.iter().map(|x| x * x).sum::<f64>().sqrt();
     let n2: f64 = v2.iter().map(|x| x * x).sum::<f64>().sqrt();
-    if n1 < 1e-12 || n2 < 1e-12 { return 0.0; }
+    if n1 < 1e-12 || n2 < 1e-12 {
+        return 0.0;
+    }
     (dot / (n1 * n2)).min(1.0)
 }
 
@@ -720,7 +744,9 @@ pub fn tanimoto_erg_vec(v1: &[f64; ERG_VEC_LEN], v2: &[f64; ERG_VEC_LEN]) -> f64
     let n1: f64 = v1.iter().map(|x| x * x).sum();
     let n2: f64 = v2.iter().map(|x| x * x).sum();
     let denom = n1 + n2 - dot;
-    if denom < 1e-12 { return 1.0; }
+    if denom < 1e-12 {
+        return 1.0;
+    }
     (dot / denom).clamp(0.0, 1.0)
 }
 
@@ -829,8 +855,14 @@ mod tests {
         let fp_aromatic = erg(&aromatic);
 
         // Aromatic bit (256) should be set for benzene, not for alkane
-        assert!(!fp_aliphatic.bits.get(256), "aliphatic should not have aromatic bit");
-        assert!(fp_aromatic.bits.get(256), "aromatic should have aromatic bit");
+        assert!(
+            !fp_aliphatic.bits.get(256),
+            "aliphatic should not have aromatic bit"
+        );
+        assert!(
+            fp_aromatic.bits.get(256),
+            "aromatic should have aromatic bit"
+        );
     }
 
     #[test]
@@ -845,9 +877,18 @@ mod tests {
 
         // Bit 257: set when any pharmacophore feature is present.
         // With pharmacophore assignment, HYDROPHOBIC is set for alkane too.
-        assert!(fp_alkane.bits.get(257), "alkane gets HYDROPHOBIC → bit 257 set");
-        assert!(fp_alcohol.bits.get(257), "alcohol gets ACCEPTOR/DONOR → bit 257 set");
-        assert!(fp_amine.bits.get(257), "amine gets ACCEPTOR/DONOR → bit 257 set");
+        assert!(
+            fp_alkane.bits.get(257),
+            "alkane gets HYDROPHOBIC → bit 257 set"
+        );
+        assert!(
+            fp_alcohol.bits.get(257),
+            "alcohol gets ACCEPTOR/DONOR → bit 257 set"
+        );
+        assert!(
+            fp_amine.bits.get(257),
+            "amine gets ACCEPTOR/DONOR → bit 257 set"
+        );
 
         // Alcohol and amine should differ from alkane in topology bits (259+)
         let topo_alkane: usize = (259..2048).filter(|&b| fp_alkane.bits.get(b)).count();
@@ -857,8 +898,14 @@ mod tests {
         let _ = (topo_alkane, topo_alcohol, topo_amine);
 
         // Alkane FP should differ from alcohol and amine FPs
-        assert!(fp_alkane.tanimoto(&fp_alcohol) < 1.0, "alkane vs alcohol should differ");
-        assert!(fp_alkane.tanimoto(&fp_amine) < 1.0, "alkane vs amine should differ");
+        assert!(
+            fp_alkane.tanimoto(&fp_alcohol) < 1.0,
+            "alkane vs alcohol should differ"
+        );
+        assert!(
+            fp_alkane.tanimoto(&fp_amine) < 1.0,
+            "alkane vs amine should differ"
+        );
     }
 
     #[test]
@@ -888,20 +935,24 @@ mod tests {
         // erg_vec (315-dim float histogram) encodes distances in distinct bins,
         // so the vectors must differ. The bespoke 2048-bit erg() uses FNV hashing
         // which can have bin collisions for this specific pair — use erg_vec instead.
-        let short = parse("NCC(=O)O").unwrap();   // 1 linker C
-        let long  = parse("NCCCCCC(=O)O").unwrap(); // 5 linker Cs
+        let short = parse("NCC(=O)O").unwrap(); // 1 linker C
+        let long = parse("NCCCCCC(=O)O").unwrap(); // 5 linker Cs
 
         let v_short = erg_vec(&short);
-        let v_long  = erg_vec(&long);
+        let v_long = erg_vec(&long);
 
         // Vectors must not be identical (different linker bin → different histogram).
-        assert_ne!(v_short, v_long,
-            "different linker lengths must produce different erg_vec entries");
+        assert_ne!(
+            v_short, v_long,
+            "different linker lengths must produce different erg_vec entries"
+        );
 
         // Similarity must be strictly < 1.0.
         let sim = tanimoto_erg_vec(&v_short, &v_long);
-        assert!(sim < 1.0,
-            "different linker lengths should give Tanimoto < 1.0, got {sim:.4}");
+        assert!(
+            sim < 1.0,
+            "different linker lengths should give Tanimoto < 1.0, got {sim:.4}"
+        );
     }
 
     // ---- New pharmacophore feature tests ----
@@ -914,7 +965,10 @@ mod tests {
         // Should differ from benzene (no N)
         let benzene = parse("c1ccccc1").unwrap();
         let fp_benz = erg(&benzene);
-        assert!(fp.tanimoto(&fp_benz) < 1.0, "aniline should differ from benzene");
+        assert!(
+            fp.tanimoto(&fp_benz) < 1.0,
+            "aniline should differ from benzene"
+        );
         assert!(fp.bits.popcount() > 0);
     }
 
@@ -926,8 +980,10 @@ mod tests {
         let fp_acetone = erg(&acetone);
         let fp_propane = erg(&propane);
         // Acetone (has O acceptor) should differ from propane (pure hydrocarbon)
-        assert!(fp_acetone.tanimoto(&fp_propane) < 1.0,
-            "acetone vs propane should differ due to acceptor O");
+        assert!(
+            fp_acetone.tanimoto(&fp_propane) < 1.0,
+            "acetone vs propane should differ due to acceptor O"
+        );
     }
 
     #[test]
@@ -941,7 +997,8 @@ mod tests {
         let ntype = assign_pharmacophore_features(&acetate, &groups[0]);
         assert!(
             ntype.0 & ErgNodeType::NEGATIVE != 0,
-            "acetate O- should produce NEGATIVE pharmacophore feature, got ntype={}", ntype.0
+            "acetate O- should produce NEGATIVE pharmacophore feature, got ntype={}",
+            ntype.0
         );
 
         // Acetic acid CC(=O)O: no negative charge → DONOR (O-H) instead
@@ -950,7 +1007,8 @@ mod tests {
         assert!(!acid_groups.is_empty());
         let acid_ntype = assign_pharmacophore_features(&acid, &acid_groups[0]);
         assert_eq!(
-            acid_ntype.0 & ErgNodeType::NEGATIVE, 0,
+            acid_ntype.0 & ErgNodeType::NEGATIVE,
+            0,
             "acetic acid should NOT have NEGATIVE feature"
         );
         assert!(
@@ -965,7 +1023,10 @@ mod tests {
         let hexane = parse("CCCCCC").unwrap();
         let fp = erg(&hexane);
         // Hydrophobic molecules should have bit 257 set (any feature including HYDROPHOBIC)
-        assert!(fp.bits.get(257), "hexane should have a pharmacophore feature (HYDROPHOBIC)");
+        assert!(
+            fp.bits.get(257),
+            "hexane should have a pharmacophore feature (HYDROPHOBIC)"
+        );
         // No aromatic (bit 256)
         assert!(!fp.bits.get(256), "hexane should not have aromatic bit");
     }
@@ -979,8 +1040,10 @@ mod tests {
         let fp_pyr = erg(&pyridine);
         let fp_rol = erg(&pyrrole);
         // They should have different fingerprints (one is acceptor, other is donor)
-        assert!(fp_pyr.tanimoto(&fp_rol) < 1.0,
-            "pyridine (N acceptor) vs pyrrole (N-H donor) should differ");
+        assert!(
+            fp_pyr.tanimoto(&fp_rol) < 1.0,
+            "pyridine (N acceptor) vs pyrrole (N-H donor) should differ"
+        );
     }
 
     #[test]
@@ -988,14 +1051,16 @@ mod tests {
         // Two functional groups with 0 linker atoms (directly bonded): bin=0.
         // OCCO: O and O separated by 2 C linker atoms → bin=1 (short).
         // ON: O and N directly bonded → linker_len should be small.
-        let direct = parse("NO").unwrap();   // N-O: effectively adjacent FGs
+        let direct = parse("NO").unwrap(); // N-O: effectively adjacent FGs
         let indirect = parse("NCCCO").unwrap(); // N-CCC-O: 3-linker
 
-        let fp_direct   = erg(&direct);
+        let fp_direct = erg(&direct);
         let fp_indirect = erg(&indirect);
 
-        assert!(fp_direct.tanimoto(&fp_indirect) < 1.0,
-            "adjacent vs. 3-linker groups should differ");
+        assert!(
+            fp_direct.tanimoto(&fp_indirect) < 1.0,
+            "adjacent vs. 3-linker groups should differ"
+        );
     }
 
     /// Amide N: ACCEPTOR only, NOT donor (lone pair delocalized into C=O).
@@ -1007,19 +1072,29 @@ mod tests {
         let groups = identify_functional_groups(&acetamide);
 
         // Find the group containing N (atomic number 7)
-        let n_group = groups.iter().find(|g| {
-            g.iter().any(|&i| acetamide.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
-        }).expect("should find N-containing group");
+        let n_group = groups
+            .iter()
+            .find(|g| {
+                g.iter()
+                    .any(|&i| acetamide.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
+            })
+            .expect("should find N-containing group");
 
         let ntype = assign_pharmacophore_features(&acetamide, n_group);
 
         // Amide N should be ACCEPTOR (bit 4 set)
-        assert!(ntype.0 & ErgNodeType::ACCEPTOR != 0,
-            "amide N should be ACCEPTOR (bits={:#010b})", ntype.0);
+        assert!(
+            ntype.0 & ErgNodeType::ACCEPTOR != 0,
+            "amide N should be ACCEPTOR (bits={:#010b})",
+            ntype.0
+        );
 
         // Amide N should NOT be DONOR (bit 2) — lone pair delocalized into C=O
-        assert!(ntype.0 & ErgNodeType::DONOR == 0,
-            "amide N should NOT be DONOR (bits={:#010b})", ntype.0);
+        assert!(
+            ntype.0 & ErgNodeType::DONOR == 0,
+            "amide N should NOT be DONOR (bits={:#010b})",
+            ntype.0
+        );
     }
 
     /// Ethylamine N: both DONOR and ACCEPTOR (free lone pair + N-H).
@@ -1030,17 +1105,27 @@ mod tests {
         let ethylamine = parse("CCN").unwrap(); // CH3CH2-NH2
         let groups = identify_functional_groups(&ethylamine);
 
-        let n_group = groups.iter().find(|g| {
-            g.iter().any(|&i| ethylamine.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
-        }).expect("should find N-containing group");
+        let n_group = groups
+            .iter()
+            .find(|g| {
+                g.iter()
+                    .any(|&i| ethylamine.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
+            })
+            .expect("should find N-containing group");
 
         let ntype = assign_pharmacophore_features(&ethylamine, n_group);
 
         // Amine N should be both DONOR and ACCEPTOR
-        assert!(ntype.0 & ErgNodeType::DONOR != 0,
-            "amine N should be DONOR (bits={:#010b})", ntype.0);
-        assert!(ntype.0 & ErgNodeType::ACCEPTOR != 0,
-            "amine N should be ACCEPTOR (bits={:#010b})", ntype.0);
+        assert!(
+            ntype.0 & ErgNodeType::DONOR != 0,
+            "amine N should be DONOR (bits={:#010b})",
+            ntype.0
+        );
+        assert!(
+            ntype.0 & ErgNodeType::ACCEPTOR != 0,
+            "amine N should be ACCEPTOR (bits={:#010b})",
+            ntype.0
+        );
     }
 
     // ── erg_vec (315-dim float histogram) tests ──────────────────────────────
@@ -1049,7 +1134,11 @@ mod tests {
     fn test_erg_vec_length() {
         let mol = parse("CC").unwrap();
         let v = erg_vec(&mol);
-        assert_eq!(v.len(), ERG_VEC_LEN, "erg_vec must return exactly 315 floats");
+        assert_eq!(
+            v.len(),
+            ERG_VEC_LEN,
+            "erg_vec must return exactly 315 floats"
+        );
     }
 
     #[test]
@@ -1076,7 +1165,10 @@ mod tests {
         let mol = parse("c1ccccc1").unwrap();
         let v = erg_vec(&mol);
         let sim = tanimoto_erg_vec(&v, &v);
-        assert!((sim - 1.0).abs() < 1e-9, "self-similarity must be 1.0 (got {sim})");
+        assert!(
+            (sim - 1.0).abs() < 1e-9,
+            "self-similarity must be 1.0 (got {sim})"
+        );
     }
 
     #[test]
@@ -1086,7 +1178,10 @@ mod tests {
         let v1 = erg_vec(&mol1);
         let v2 = erg_vec(&mol2);
         let sim = tanimoto_erg_vec(&v1, &v2);
-        assert!((0.0..=1.0).contains(&sim), "Tanimoto must be in [0,1] (got {sim})");
+        assert!(
+            (0.0..=1.0).contains(&sim),
+            "Tanimoto must be in [0,1] (got {sim})"
+        );
         assert!(sim < 1.0, "ethane vs aniline must not be identical");
     }
 
@@ -1095,13 +1190,15 @@ mod tests {
         // GABA (H2N-CH2-CH2-CH2-COOH): donor (NH2) and acceptor (C=O, OH) with 3 linker Cs
         // Glycine (H2N-CH2-COOH): 1 linker C
         // The DA pair at different distance bins must give different vectors.
-        let gaba    = parse("NCCCC(=O)O").unwrap();
+        let gaba = parse("NCCCC(=O)O").unwrap();
         let glycine = parse("NCC(=O)O").unwrap();
-        let v_gaba    = erg_vec(&gaba);
+        let v_gaba = erg_vec(&gaba);
         let v_glycine = erg_vec(&glycine);
         let sim = tanimoto_erg_vec(&v_gaba, &v_glycine);
-        assert!(sim < 1.0,
-            "GABA vs glycine differ only in linker length — Tanimoto must be < 1 (got {sim:.3})");
+        assert!(
+            sim < 1.0,
+            "GABA vs glycine differ only in linker length — Tanimoto must be < 1 (got {sim:.3})"
+        );
     }
 
     #[test]
@@ -1112,7 +1209,10 @@ mod tests {
         // Some bin must be > 0 in the Donor–Acceptor (fi=1, fj=2) pair region
         let da_pair = pair_idx(1, 2) * N_BINS;
         let sum: f64 = v[da_pair..da_pair + N_BINS].iter().sum();
-        assert!(sum > 0.0, "Donor–Acceptor bins must be non-zero for glycine analogue");
+        assert!(
+            sum > 0.0,
+            "Donor–Acceptor bins must be non-zero for glycine analogue"
+        );
     }
 
     #[test]
@@ -1122,7 +1222,10 @@ mod tests {
             for b in a..N_FEAT {
                 let idx = pair_idx(a, b);
                 assert!(idx < 21, "pair_idx({a},{b}) = {idx} out of range");
-                assert!(seen.insert(idx), "pair_idx({a},{b}) = {idx} duplicates earlier pair");
+                assert!(
+                    seen.insert(idx),
+                    "pair_idx({a},{b}) = {idx} duplicates earlier pair"
+                );
             }
         }
         assert_eq!(seen.len(), 21);
@@ -1136,15 +1239,25 @@ mod tests {
         let sulfonamide = parse("CS(=O)(=O)N").unwrap(); // methanesulfonamide
         let groups = identify_functional_groups(&sulfonamide);
 
-        let n_group = groups.iter().find(|g| {
-            g.iter().any(|&i| sulfonamide.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
-        }).expect("should find N-containing group");
+        let n_group = groups
+            .iter()
+            .find(|g| {
+                g.iter()
+                    .any(|&i| sulfonamide.atom(AtomIdx(i as u32)).element.atomic_number() == 7)
+            })
+            .expect("should find N-containing group");
 
         let ntype = assign_pharmacophore_features(&sulfonamide, n_group);
 
-        assert!(ntype.0 & ErgNodeType::ACCEPTOR != 0,
-            "sulfonamide N should be ACCEPTOR (bits={:#010b})", ntype.0);
-        assert!(ntype.0 & ErgNodeType::DONOR == 0,
-            "sulfonamide N should NOT be DONOR (bits={:#010b})", ntype.0);
+        assert!(
+            ntype.0 & ErgNodeType::ACCEPTOR != 0,
+            "sulfonamide N should be ACCEPTOR (bits={:#010b})",
+            ntype.0
+        );
+        assert!(
+            ntype.0 & ErgNodeType::DONOR == 0,
+            "sulfonamide N should NOT be DONOR (bits={:#010b})",
+            ntype.0
+        );
     }
 }

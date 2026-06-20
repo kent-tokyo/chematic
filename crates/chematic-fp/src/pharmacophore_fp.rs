@@ -6,9 +6,9 @@
 //!
 //! **2D Pharmacophore FP**: Feature types + feature-feature distances (2D topological)
 
-use chematic_core::Molecule;
-use chematic_perception::{detect_features, FeatureType};
 use crate::bitvec::BitVec2048;
+use chematic_core::Molecule;
+use chematic_perception::{FeatureType, detect_features};
 
 /// Generate a 2D pharmacophore fingerprint from molecular features.
 ///
@@ -108,7 +108,11 @@ fn distance_to_bin_2d(dist: usize) -> usize {
 }
 
 // Helper: compute topological distance between two atoms via BFS
-fn topological_distance(mol: &Molecule, a: chematic_core::AtomIdx, b: chematic_core::AtomIdx) -> usize {
+fn topological_distance(
+    mol: &Molecule,
+    a: chematic_core::AtomIdx,
+    b: chematic_core::AtomIdx,
+) -> usize {
     if a == b {
         return 0;
     }
@@ -138,11 +142,12 @@ fn topological_distance(mol: &Molecule, a: chematic_core::AtomIdx, b: chematic_c
             };
 
             if let Some(next_idx) = next
-                && !visited[next_idx.0 as usize] {
-                    visited[next_idx.0 as usize] = true;
-                    dist[next_idx.0 as usize] = dist[curr.0 as usize] + 1;
-                    queue.push_back(next_idx);
-                }
+                && !visited[next_idx.0 as usize]
+            {
+                visited[next_idx.0 as usize] = true;
+                dist[next_idx.0 as usize] = dist[curr.0 as usize] + 1;
+                queue.push_back(next_idx);
+            }
         }
     }
 
@@ -159,7 +164,10 @@ mod tests {
         let mol = parse("c1ccccc1").unwrap();
         let fp = pharmacophore_fp_2d(&mol);
         assert!(fp.popcount() > 0, "benzene should have aromatic features");
-        assert!(fp.get(feature_type_to_index(FeatureType::Aromatic)), "aromatic bit should be set");
+        assert!(
+            fp.get(feature_type_to_index(FeatureType::Aromatic)),
+            "aromatic bit should be set"
+        );
     }
 
     #[test]
@@ -184,6 +192,9 @@ mod tests {
         let mol = parse("c1ccccc1").unwrap();
         let fp = pharmacophore_fp_2d(&mol);
         let sim = tanimoto_pharmacophore_2d(&fp, &fp);
-        assert!((sim - 1.0).abs() < 1e-6, "identical fingerprints should have similarity 1.0");
+        assert!(
+            (sim - 1.0).abs() < 1e-6,
+            "identical fingerprints should have similarity 1.0"
+        );
     }
 }

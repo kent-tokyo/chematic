@@ -35,25 +35,57 @@ use chematic_core::{AtomIdx, BondOrder, Molecule};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UffType {
     // Carbon
-    C_3, C_2, C_1, C_R,
+    C_3,
+    C_2,
+    C_1,
+    C_R,
     // Nitrogen
-    N_3, N_2, N_1, N_R,
+    N_3,
+    N_2,
+    N_1,
+    N_R,
     // Oxygen
-    O_3, O_2, O_1, O_R,
+    O_3,
+    O_2,
+    O_1,
+    O_R,
     // Sulfur
-    S_3, S_2, S_R,
+    S_3,
+    S_2,
+    S_R,
     // Phosphorus
-    P_3, P_R,
+    P_3,
+    P_R,
     // Hydrogen
     H_,
     // Halogens
-    F_, Cl, Br, I_,
+    F_,
+    Cl,
+    Br,
+    I_,
     // Common metals (s/d-block)
-    Li, Na, K, Ca, Mg,
-    Fe, Co, Ni, Cu, Zn,
-    Mn, Cr, V_, Mo, W_,
-    Pd, Pt, Au, Ag, Hg,
-    Al, Si,
+    Li,
+    Na,
+    K,
+    Ca,
+    Mg,
+    Fe,
+    Co,
+    Ni,
+    Cu,
+    Zn,
+    Mn,
+    Cr,
+    V_,
+    Mo,
+    W_,
+    Pd,
+    Pt,
+    Au,
+    Ag,
+    Hg,
+    Al,
+    Si,
     // Generic fallback
     Unknown,
 }
@@ -62,19 +94,50 @@ impl UffType {
     /// UFF parameter: single-bond radius r1 (Å).
     pub fn r1(self) -> f64 {
         match self {
-            Self::C_3 => 0.757, Self::C_2 => 0.732, Self::C_1 => 0.706, Self::C_R => 0.729,
-            Self::N_3 => 0.700, Self::N_2 => 0.685, Self::N_1 => 0.656, Self::N_R => 0.699,
-            Self::O_3 => 0.658, Self::O_2 => 0.634, Self::O_1 => 0.639, Self::O_R => 0.680,
-            Self::S_3 => 1.020, Self::S_2 => 0.940, Self::S_R => 1.000,
-            Self::P_3 => 1.101, Self::P_R => 1.060,
-            Self::H_  => 0.354,
-            Self::F_  => 0.668, Self::Cl => 1.022, Self::Br => 1.172, Self::I_ => 1.394,
-            Self::Li  => 1.336, Self::Na => 1.539, Self::K  => 1.953, Self::Ca => 1.761,
-            Self::Mg  => 1.535, Self::Fe => 1.285, Self::Co => 1.241, Self::Ni => 1.164,
-            Self::Cu  => 1.302, Self::Zn => 1.193, Self::Mn => 1.362, Self::Cr => 1.370,
-            Self::V_  => 1.359, Self::Mo => 1.458, Self::W_ => 1.526,
-            Self::Pd  => 1.375, Self::Pt => 1.387, Self::Au => 1.340, Self::Ag => 1.420,
-            Self::Hg  => 1.490, Self::Al => 1.244, Self::Si => 1.117,
+            Self::C_3 => 0.757,
+            Self::C_2 => 0.732,
+            Self::C_1 => 0.706,
+            Self::C_R => 0.729,
+            Self::N_3 => 0.700,
+            Self::N_2 => 0.685,
+            Self::N_1 => 0.656,
+            Self::N_R => 0.699,
+            Self::O_3 => 0.658,
+            Self::O_2 => 0.634,
+            Self::O_1 => 0.639,
+            Self::O_R => 0.680,
+            Self::S_3 => 1.020,
+            Self::S_2 => 0.940,
+            Self::S_R => 1.000,
+            Self::P_3 => 1.101,
+            Self::P_R => 1.060,
+            Self::H_ => 0.354,
+            Self::F_ => 0.668,
+            Self::Cl => 1.022,
+            Self::Br => 1.172,
+            Self::I_ => 1.394,
+            Self::Li => 1.336,
+            Self::Na => 1.539,
+            Self::K => 1.953,
+            Self::Ca => 1.761,
+            Self::Mg => 1.535,
+            Self::Fe => 1.285,
+            Self::Co => 1.241,
+            Self::Ni => 1.164,
+            Self::Cu => 1.302,
+            Self::Zn => 1.193,
+            Self::Mn => 1.362,
+            Self::Cr => 1.370,
+            Self::V_ => 1.359,
+            Self::Mo => 1.458,
+            Self::W_ => 1.526,
+            Self::Pd => 1.375,
+            Self::Pt => 1.387,
+            Self::Au => 1.340,
+            Self::Ag => 1.420,
+            Self::Hg => 1.490,
+            Self::Al => 1.244,
+            Self::Si => 1.117,
             Self::Unknown => 1.5,
         }
     }
@@ -82,13 +145,28 @@ impl UffType {
     /// UFF parameter: natural valence angle θ₀ (degrees).
     pub fn theta0(self) -> f64 {
         match self {
-            Self::C_3 => 109.47, Self::C_2 => 120.0, Self::C_1 => 180.0, Self::C_R => 120.0,
-            Self::N_3 => 106.70, Self::N_2 => 111.2, Self::N_1 => 180.0, Self::N_R => 120.0,
-            Self::O_3 => 104.51, Self::O_2 => 120.0, Self::O_1 => 180.0, Self::O_R => 110.0,
-            Self::S_3 => 92.10,  Self::S_2 => 120.0, Self::S_R => 100.0,
-            Self::P_3 => 93.80,  Self::P_R => 120.0,
-            Self::H_  => 180.0,
-            Self::F_  => 180.0, Self::Cl => 180.0, Self::Br => 180.0, Self::I_ => 180.0,
+            Self::C_3 => 109.47,
+            Self::C_2 => 120.0,
+            Self::C_1 => 180.0,
+            Self::C_R => 120.0,
+            Self::N_3 => 106.70,
+            Self::N_2 => 111.2,
+            Self::N_1 => 180.0,
+            Self::N_R => 120.0,
+            Self::O_3 => 104.51,
+            Self::O_2 => 120.0,
+            Self::O_1 => 180.0,
+            Self::O_R => 110.0,
+            Self::S_3 => 92.10,
+            Self::S_2 => 120.0,
+            Self::S_R => 100.0,
+            Self::P_3 => 93.80,
+            Self::P_R => 120.0,
+            Self::H_ => 180.0,
+            Self::F_ => 180.0,
+            Self::Cl => 180.0,
+            Self::Br => 180.0,
+            Self::I_ => 180.0,
             _ => 109.47, // default sp3
         }
     }
@@ -96,21 +174,42 @@ impl UffType {
     /// UFF parameter: nonbonded distance x₁ (Å).
     pub fn x1(self) -> f64 {
         match self {
-            Self::H_  => 2.886,
-            Self::C_3 => 3.851, Self::C_2 => 3.851, Self::C_1 => 3.851, Self::C_R => 3.851,
-            Self::N_3 => 3.660, Self::N_2 => 3.660, Self::N_1 => 3.660, Self::N_R => 3.660,
-            Self::O_3 => 3.500, Self::O_2 => 3.500, Self::O_1 => 3.500, Self::O_R => 3.500,
-            Self::F_  => 3.364,
-            Self::Cl  => 3.947,
-            Self::Br  => 4.153,
-            Self::I_  => 4.590,
-            Self::S_3 => 4.035, Self::S_2 => 4.035, Self::S_R => 4.035,
-            Self::P_3 => 4.147, Self::P_R => 4.147,
-            Self::Si  => 4.295, Self::Al => 4.499,
-            Self::Fe  => 4.054, Self::Co => 3.898, Self::Ni => 3.782,
-            Self::Cu  => 3.495, Self::Zn => 3.445, Self::Mg => 3.021,
-            Self::Ca  => 3.753, Self::Mn => 4.013, Self::Cr => 3.894,
-            Self::V_  => 3.804, Self::Na => 3.144, Self::K  => 3.812,
+            Self::H_ => 2.886,
+            Self::C_3 => 3.851,
+            Self::C_2 => 3.851,
+            Self::C_1 => 3.851,
+            Self::C_R => 3.851,
+            Self::N_3 => 3.660,
+            Self::N_2 => 3.660,
+            Self::N_1 => 3.660,
+            Self::N_R => 3.660,
+            Self::O_3 => 3.500,
+            Self::O_2 => 3.500,
+            Self::O_1 => 3.500,
+            Self::O_R => 3.500,
+            Self::F_ => 3.364,
+            Self::Cl => 3.947,
+            Self::Br => 4.153,
+            Self::I_ => 4.590,
+            Self::S_3 => 4.035,
+            Self::S_2 => 4.035,
+            Self::S_R => 4.035,
+            Self::P_3 => 4.147,
+            Self::P_R => 4.147,
+            Self::Si => 4.295,
+            Self::Al => 4.499,
+            Self::Fe => 4.054,
+            Self::Co => 3.898,
+            Self::Ni => 3.782,
+            Self::Cu => 3.495,
+            Self::Zn => 3.445,
+            Self::Mg => 3.021,
+            Self::Ca => 3.753,
+            Self::Mn => 4.013,
+            Self::Cr => 3.894,
+            Self::V_ => 3.804,
+            Self::Na => 3.144,
+            Self::K => 3.812,
             _ => 3.800,
         }
     }
@@ -118,19 +217,36 @@ impl UffType {
     /// UFF parameter: nonbonded well depth D₁ (kcal/mol).
     pub fn d1(self) -> f64 {
         match self {
-            Self::H_  => 0.044,
-            Self::C_3 => 0.105, Self::C_2 => 0.105, Self::C_1 => 0.105, Self::C_R => 0.105,
-            Self::N_3 => 0.069, Self::N_2 => 0.069, Self::N_1 => 0.069, Self::N_R => 0.069,
-            Self::O_3 => 0.060, Self::O_2 => 0.060, Self::O_1 => 0.060, Self::O_R => 0.060,
-            Self::F_  => 0.050,
-            Self::Cl  => 0.227,
-            Self::Br  => 0.251,
-            Self::I_  => 0.339,
-            Self::S_3 => 0.274, Self::S_2 => 0.274, Self::S_R => 0.274,
-            Self::P_3 => 0.305, Self::P_R => 0.305,
-            Self::Si  => 0.402, Self::Al => 0.505,
-            Self::Fe  => 0.013, Self::Co => 0.014, Self::Ni => 0.015,
-            Self::Cu  => 0.005, Self::Zn => 0.124, Self::Mg => 0.111,
+            Self::H_ => 0.044,
+            Self::C_3 => 0.105,
+            Self::C_2 => 0.105,
+            Self::C_1 => 0.105,
+            Self::C_R => 0.105,
+            Self::N_3 => 0.069,
+            Self::N_2 => 0.069,
+            Self::N_1 => 0.069,
+            Self::N_R => 0.069,
+            Self::O_3 => 0.060,
+            Self::O_2 => 0.060,
+            Self::O_1 => 0.060,
+            Self::O_R => 0.060,
+            Self::F_ => 0.050,
+            Self::Cl => 0.227,
+            Self::Br => 0.251,
+            Self::I_ => 0.339,
+            Self::S_3 => 0.274,
+            Self::S_2 => 0.274,
+            Self::S_R => 0.274,
+            Self::P_3 => 0.305,
+            Self::P_R => 0.305,
+            Self::Si => 0.402,
+            Self::Al => 0.505,
+            Self::Fe => 0.013,
+            Self::Co => 0.014,
+            Self::Ni => 0.015,
+            Self::Cu => 0.005,
+            Self::Zn => 0.124,
+            Self::Mg => 0.111,
             _ => 0.100,
         }
     }
@@ -148,50 +264,91 @@ pub fn assign_uff_types(mol: &Molecule) -> Vec<(AtomIdx, UffType)> {
             let an = atom.element.atomic_number();
             let degree = mol.neighbors(idx).count();
             let aromatic = atom.aromatic;
-            let has_double = mol.neighbors(idx).any(|(_, bidx)| {
-                mol.bond(bidx).order == BondOrder::Double
-            });
-            let has_triple = mol.neighbors(idx).any(|(_, bidx)| {
-                mol.bond(bidx).order == BondOrder::Triple
-            });
+            let has_double = mol
+                .neighbors(idx)
+                .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Double);
+            let has_triple = mol
+                .neighbors(idx)
+                .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Triple);
 
             let uff = match an {
-                1  => UffType::H_,
-                6  => {
-                    if aromatic { UffType::C_R }
-                    else if has_triple { UffType::C_1 }
-                    else if has_double { UffType::C_2 }
-                    else { UffType::C_3 }
+                1 => UffType::H_,
+                6 => {
+                    if aromatic {
+                        UffType::C_R
+                    } else if has_triple {
+                        UffType::C_1
+                    } else if has_double {
+                        UffType::C_2
+                    } else {
+                        UffType::C_3
+                    }
                 }
-                7  => {
-                    if aromatic { UffType::N_R }
-                    else if has_triple { UffType::N_1 }
-                    else if has_double { UffType::N_2 }
-                    else { UffType::N_3 }
+                7 => {
+                    if aromatic {
+                        UffType::N_R
+                    } else if has_triple {
+                        UffType::N_1
+                    } else if has_double {
+                        UffType::N_2
+                    } else {
+                        UffType::N_3
+                    }
                 }
-                8  => {
-                    if aromatic { UffType::O_R }
-                    else if has_double { UffType::O_2 }
-                    else if degree == 1 { UffType::O_1 }
-                    else { UffType::O_3 }
+                8 => {
+                    if aromatic {
+                        UffType::O_R
+                    } else if has_double {
+                        UffType::O_2
+                    } else if degree == 1 {
+                        UffType::O_1
+                    } else {
+                        UffType::O_3
+                    }
                 }
-                9  => UffType::F_,
+                9 => UffType::F_,
                 14 => UffType::Si,
-                15 => if aromatic { UffType::P_R } else { UffType::P_3 },
-                16 => if aromatic { UffType::S_R } else if has_double { UffType::S_2 } else { UffType::S_3 },
+                15 => {
+                    if aromatic {
+                        UffType::P_R
+                    } else {
+                        UffType::P_3
+                    }
+                }
+                16 => {
+                    if aromatic {
+                        UffType::S_R
+                    } else if has_double {
+                        UffType::S_2
+                    } else {
+                        UffType::S_3
+                    }
+                }
                 17 => UffType::Cl,
                 35 => UffType::Br,
                 53 => UffType::I_,
                 13 => UffType::Al,
-                3  => UffType::Li, 11 => UffType::Na, 19 => UffType::K,
-                20 => UffType::Ca, 12 => UffType::Mg,
-                26 => UffType::Fe, 27 => UffType::Co, 28 => UffType::Ni,
-                29 => UffType::Cu, 30 => UffType::Zn,
-                25 => UffType::Mn, 24 => UffType::Cr, 23 => UffType::V_,
-                42 => UffType::Mo, 74 => UffType::W_,
-                46 => UffType::Pd, 78 => UffType::Pt,
-                79 => UffType::Au, 47 => UffType::Ag, 80 => UffType::Hg,
-                _  => UffType::Unknown,
+                3 => UffType::Li,
+                11 => UffType::Na,
+                19 => UffType::K,
+                20 => UffType::Ca,
+                12 => UffType::Mg,
+                26 => UffType::Fe,
+                27 => UffType::Co,
+                28 => UffType::Ni,
+                29 => UffType::Cu,
+                30 => UffType::Zn,
+                25 => UffType::Mn,
+                24 => UffType::Cr,
+                23 => UffType::V_,
+                42 => UffType::Mo,
+                74 => UffType::W_,
+                46 => UffType::Pd,
+                78 => UffType::Pt,
+                79 => UffType::Au,
+                47 => UffType::Ag,
+                80 => UffType::Hg,
+                _ => UffType::Unknown,
             };
             (idx, uff)
         })
@@ -231,22 +388,20 @@ fn dist(a: [f64; 3], b: [f64; 3]) -> f64 {
 }
 
 fn cos_angle(a: [f64; 3], b: [f64; 3], c: [f64; 3]) -> f64 {
-    let ba = [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
-    let bc = [c[0]-b[0], c[1]-b[1], c[2]-b[2]];
-    let dot = ba[0]*bc[0] + ba[1]*bc[1] + ba[2]*bc[2];
-    let len_ba = (ba[0]*ba[0]+ba[1]*ba[1]+ba[2]*ba[2]).sqrt();
-    let len_bc = (bc[0]*bc[0]+bc[1]*bc[1]+bc[2]*bc[2]).sqrt();
+    let ba = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    let bc = [c[0] - b[0], c[1] - b[1], c[2] - b[2]];
+    let dot = ba[0] * bc[0] + ba[1] * bc[1] + ba[2] * bc[2];
+    let len_ba = (ba[0] * ba[0] + ba[1] * ba[1] + ba[2] * ba[2]).sqrt();
+    let len_bc = (bc[0] * bc[0] + bc[1] * bc[1] + bc[2] * bc[2]).sqrt();
     let denom = len_ba * len_bc;
-    if denom < 1e-10 { return 1.0; }
+    if denom < 1e-10 {
+        return 1.0;
+    }
     (dot / denom).clamp(-1.0, 1.0)
 }
 
 /// Compute UFF total energy (bond + angle + vdW) in kcal/mol.
-pub fn uff_total_energy(
-    mol: &Molecule,
-    types: &[(AtomIdx, UffType)],
-    coords: &[[f64; 3]],
-) -> f64 {
+pub fn uff_total_energy(mol: &Molecule, types: &[(AtomIdx, UffType)], coords: &[[f64; 3]]) -> f64 {
     let type_map: std::collections::HashMap<AtomIdx, UffType> =
         types.iter().map(|&(a, t)| (a, t)).collect();
     let get_type = |idx: AtomIdx| type_map.get(&idx).copied().unwrap_or(UffType::Unknown);
@@ -277,8 +432,12 @@ pub fn uff_total_energy(
 
         let neighbors: Vec<AtomIdx> = mol.neighbors(*center_idx).map(|(nb, _)| nb).collect();
         for i in 0..neighbors.len() {
-            for j in (i+1)..neighbors.len() {
-                let cos_theta = cos_angle(get_coord(neighbors[i]), get_coord(*center_idx), get_coord(neighbors[j]));
+            for j in (i + 1)..neighbors.len() {
+                let cos_theta = cos_angle(
+                    get_coord(neighbors[i]),
+                    get_coord(*center_idx),
+                    get_coord(neighbors[j]),
+                );
                 // Fourier: E = k/n^2 * C0 + C1*cos + C2*cos(2θ)
                 // Simplified harmonic in cos space:
                 let delta = cos_theta - cos0;
@@ -293,11 +452,13 @@ pub fn uff_total_energy(
     let atom_indices: Vec<AtomIdx> = mol.atoms().map(|(idx, _)| idx).collect();
     let n = atom_indices.len();
     for i in 0..n {
-        for j in (i+2)..n {
+        for j in (i + 2)..n {
             let ai = atom_indices[i];
             let aj = atom_indices[j];
             // Skip 1-2 bonded pairs
-            if mol.bond_between(ai, aj).is_some() { continue; }
+            if mol.bond_between(ai, aj).is_some() {
+                continue;
+            }
 
             let ti = get_type(ai);
             let tj = get_type(aj);
@@ -380,7 +541,12 @@ pub fn minimize_uff(
         };
 
         if rms < 0.01 {
-            return UffMinimizeResult { coords, energy, iterations: iter, converged: true };
+            return UffMinimizeResult {
+                coords,
+                energy,
+                iterations: iter,
+                converged: true,
+            };
         }
 
         // Line search: accept step only if energy decreases
@@ -393,18 +559,30 @@ pub fn minimize_uff(
         let new_energy = uff_total_energy(mol, types, &new_coords);
         if new_energy < energy {
             coords = new_coords;
-            if energy - new_energy < prev_energy * 1e-7 { step *= 1.2; }
+            if energy - new_energy < prev_energy * 1e-7 {
+                step *= 1.2;
+            }
             prev_energy = energy;
         } else {
             step *= 0.5;
             if step < 1e-8 {
-                return UffMinimizeResult { coords, energy, iterations: iter, converged: false };
+                return UffMinimizeResult {
+                    coords,
+                    energy,
+                    iterations: iter,
+                    converged: false,
+                };
             }
         }
     }
 
     let energy = uff_total_energy(mol, types, &coords);
-    UffMinimizeResult { coords, energy, iterations: max_iter, converged: false }
+    UffMinimizeResult {
+        coords,
+        energy,
+        iterations: max_iter,
+        converged: false,
+    }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -422,9 +600,15 @@ mod tests {
         // C sp3 → C_3, O sp3 → O_3
         let type_map: std::collections::HashMap<_, _> = types.into_iter().collect();
         for (_, atom) in mol.atoms() {
-            let idx = mol.atoms().find(|(_, a)| a.element == atom.element).map(|(i, _)| i);
+            let idx = mol
+                .atoms()
+                .find(|(_, a)| a.element == atom.element)
+                .map(|(i, _)| i);
             if atom.element.atomic_number() == 6 {
-                assert!(matches!(type_map[&idx.unwrap()], UffType::C_3 | UffType::C_2));
+                assert!(matches!(
+                    type_map[&idx.unwrap()],
+                    UffType::C_3 | UffType::C_2
+                ));
             }
         }
     }
@@ -443,11 +627,7 @@ mod tests {
     fn energy_finite() {
         let mol = parse("CCO").unwrap();
         let types = assign_uff_types(&mol);
-        let coords: Vec<[f64; 3]> = vec![
-            [0.0, 0.0, 0.0],
-            [1.54, 0.0, 0.0],
-            [2.5, 1.2, 0.0],
-        ];
+        let coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [1.54, 0.0, 0.0], [2.5, 1.2, 0.0]];
         let e = uff_total_energy(&mol, &types, &coords);
         assert!(e.is_finite(), "energy should be finite: {e}");
     }
@@ -463,13 +643,17 @@ mod tests {
         ];
         let e0 = uff_total_energy(&mol, &types, &coords);
         let result = minimize_uff(&mol, &types, coords, 200);
-        assert!(result.energy < e0, "minimisation should reduce energy: {e0} → {}", result.energy);
+        assert!(
+            result.energy < e0,
+            "minimisation should reduce energy: {e0} → {}",
+            result.energy
+        );
     }
 
     #[test]
     fn uff_handles_zinc_complex() {
         // Zinc as a metal centre — UFF should assign Zn type
-        use chematic_core::{Atom, Element, MoleculeBuilder, BondOrder};
+        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
         let mut b = MoleculeBuilder::new();
         let zn = b.add_atom(Atom::new(Element::ZN));
         let n1 = b.add_atom(Atom::new(Element::N));

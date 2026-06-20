@@ -116,14 +116,8 @@ pub fn shrake_rupley_sasa(
         let pos_i = coords.get(idx);
 
         // Generate sphere points around atom i
-        let exposed_count = count_exposed_points(
-            mol,
-            coords,
-            pos_i,
-            idx,
-            probe_radius,
-            sphere_points,
-        );
+        let exposed_count =
+            count_exposed_points(mol, coords, pos_i, idx, probe_radius, sphere_points);
 
         // Surface area proportional to exposed fraction of sphere
         let sphere_area = 4.0 * std::f64::consts::PI * radius_i * radius_i;
@@ -152,14 +146,8 @@ pub fn sasa_per_atom(
         let radius_i = vdw_i + probe_radius;
         let pos_i = coords.get(idx);
 
-        let exposed_count = count_exposed_points(
-            mol,
-            coords,
-            pos_i,
-            idx,
-            probe_radius,
-            sphere_points,
-        );
+        let exposed_count =
+            count_exposed_points(mol, coords, pos_i, idx, probe_radius, sphere_points);
 
         let sphere_area = 4.0 * std::f64::consts::PI * radius_i * radius_i;
         sasa_values[i] = (exposed_count as f64 / sphere_points as f64) * sphere_area;
@@ -232,7 +220,7 @@ fn count_exposed_points(
 /// The Fibonacci sphere algorithm is fast and produces uniform coverage.
 fn generate_sphere_points(center: Point3, radius: f64, num_points: usize) -> Vec<Point3> {
     if num_points < 2 {
-        return vec![center];  // Avoid division by zero when num_points < 2
+        return vec![center]; // Avoid division by zero when num_points < 2
     }
 
     let mut points = Vec::with_capacity(num_points);
@@ -278,11 +266,7 @@ impl SasaDescriptor {
         let mean = if n > 0.0 { total / n } else { 0.0 };
 
         let variance = if n > 0.0 {
-            per_atom
-                .iter()
-                .map(|&x| (x - mean).powi(2))
-                .sum::<f64>()
-                / n
+            per_atom.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / n
         } else {
             0.0
         };
@@ -399,7 +383,10 @@ mod tests {
         let sum: f64 = per_atom.iter().sum();
         let total = shrake_rupley_sasa(&mol, &coords, 1.4, 100);
         // Sum of per-atom SASA should equal total
-        assert!((sum - total).abs() < 1e-6, "per-atom sum should match total");
+        assert!(
+            (sum - total).abs() < 1e-6,
+            "per-atom sum should match total"
+        );
     }
 
     #[test]
@@ -451,7 +438,11 @@ mod tests {
         // Single carbon should have SASA around 4πr² where r = vdW + probe
         // Carbon vdW = 1.70 Å, probe = 1.4 Å, so r = 3.1 Å
         // Expected SASA ≈ 4π(3.1)² ≈ 121 Ų
-        assert!(sasa > 80.0 && sasa < 160.0, "methane SASA out of expected range: {}", sasa);
+        assert!(
+            sasa > 80.0 && sasa < 160.0,
+            "methane SASA out of expected range: {}",
+            sasa
+        );
     }
 
     #[test]
@@ -498,7 +489,10 @@ mod tests {
         let sum: f64 = per_atom.iter().sum();
 
         // With atoms far apart, total should approximately equal sum
-        assert!((total - sum).abs() < 1.0, "far atoms should have additive SASA");
+        assert!(
+            (total - sum).abs() < 1.0,
+            "far atoms should have additive SASA"
+        );
     }
 
     #[test]
@@ -519,7 +513,10 @@ mod tests {
         let sasa_close = sasa(&mol, &coords_close);
 
         // Close atoms should have lower total SASA due to occlusion
-        assert!(sasa_close < sasa_far, "close atoms should have lower SASA due to occlusion");
+        assert!(
+            sasa_close < sasa_far,
+            "close atoms should have lower SASA due to occlusion"
+        );
     }
 
     #[test]
@@ -531,7 +528,10 @@ mod tests {
         let sasa_small = shrake_rupley_sasa(&mol, &coords, 1.0, 100);
         let sasa_large = shrake_rupley_sasa(&mol, &coords, 2.0, 100);
 
-        assert!(sasa_large > sasa_small, "larger probe radius should increase SASA");
+        assert!(
+            sasa_large > sasa_small,
+            "larger probe radius should increase SASA"
+        );
     }
 
     #[test]
@@ -547,8 +547,10 @@ mod tests {
 
         // Results should be similar but 500 points may give slightly different value
         // Due to better sampling
-        assert!((sasa_100 - sasa_500).abs() < sasa_100 * 0.2,
-                "different sphere points should give similar results");
+        assert!(
+            (sasa_100 - sasa_500).abs() < sasa_100 * 0.2,
+            "different sphere points should give similar results"
+        );
     }
 
     #[test]

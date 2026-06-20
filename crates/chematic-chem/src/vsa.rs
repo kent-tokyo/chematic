@@ -29,7 +29,9 @@ const PEOE_CUTS: &[f64] = &[
 
 /// EState_VSA bin boundaries (10 cuts → 11 bins).
 /// Source: RDKit MolSurf.py _estate_VSA_bins
-const ESTATE_CUTS: &[f64] = &[-0.48, -0.27, -0.16, -0.04, 0.04, 0.12, 0.27, 0.46, 0.59, 0.98];
+const ESTATE_CUTS: &[f64] = &[
+    -0.48, -0.27, -0.16, -0.04, 0.04, 0.12, 0.27, 0.46, 0.59, 0.98,
+];
 
 fn bin_idx(value: f64, cuts: &[f64]) -> usize {
     cuts.partition_point(|&c| value >= c)

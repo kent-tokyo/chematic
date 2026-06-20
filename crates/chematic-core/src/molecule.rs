@@ -79,7 +79,11 @@ impl Molecule {
     pub fn atom(&self, idx: AtomIdx) -> &Atom {
         let i = idx.0 as usize;
         if i >= self.atoms.len() {
-            panic!("atom index {} out of range (molecule has {} atoms)", idx.0, self.atoms.len());
+            panic!(
+                "atom index {} out of range (molecule has {} atoms)",
+                idx.0,
+                self.atoms.len()
+            );
         }
         &self.atoms[i]
     }
@@ -103,7 +107,11 @@ impl Molecule {
     pub fn bond(&self, idx: BondIdx) -> &BondEntry {
         let i = idx.0 as usize;
         if i >= self.bonds.len() {
-            panic!("bond index {} out of range (molecule has {} bonds)", idx.0, self.bonds.len());
+            panic!(
+                "bond index {} out of range (molecule has {} bonds)",
+                idx.0,
+                self.bonds.len()
+            );
         }
         &self.bonds[i]
     }
@@ -143,7 +151,11 @@ impl Molecule {
     pub fn neighbors(&self, idx: AtomIdx) -> impl Iterator<Item = (AtomIdx, BondIdx)> + '_ {
         let i = idx.0 as usize;
         if i >= self.adjacency.len() {
-            panic!("atom index {} out of range (molecule has {} atoms)", idx.0, self.adjacency.len());
+            panic!(
+                "atom index {} out of range (molecule has {} atoms)",
+                idx.0,
+                self.adjacency.len()
+            );
         }
         self.adjacency[i].iter().copied()
     }
@@ -167,7 +179,11 @@ impl Molecule {
     pub fn degree(&self, idx: AtomIdx) -> usize {
         let i = idx.0 as usize;
         if i >= self.adjacency.len() {
-            panic!("atom index {} out of range (molecule has {} atoms)", idx.0, self.adjacency.len());
+            panic!(
+                "atom index {} out of range (molecule has {} atoms)",
+                idx.0,
+                self.adjacency.len()
+            );
         }
         self.adjacency[i].len()
     }
@@ -680,9 +696,7 @@ impl Molecule {
     /// The slice contains neighbor atom indices in SMILES text order;
     /// [`STEREO_H_SENTINEL`] (`u32::MAX`) marks the implicit bracket-H slot.
     pub fn stereo_neighbor_order(&self, idx: AtomIdx) -> Option<&[u32]> {
-        self.stereo_neighbor_order
-            .get(&idx.0)
-            .map(|v| v.as_slice())
+        self.stereo_neighbor_order.get(&idx.0).map(|v| v.as_slice())
     }
 
     /// Set the SMILES stereo neighbor order for atom `idx`.

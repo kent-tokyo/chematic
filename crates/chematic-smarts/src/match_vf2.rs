@@ -44,9 +44,7 @@ impl<'a> EvalCtx<'a> {
             mol,
             rings: find_sssr(mol),
             config,
-            visit_budget: std::cell::Cell::new(
-                config.max_visit_budget.unwrap_or(u64::MAX),
-            ),
+            visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         }
     }
 }
@@ -159,9 +157,7 @@ pub fn find_matches_with_config(
 
 /// Returns the index of the smallest unmapped query atom.
 fn next_unmapped(mapping: &HashMap<usize, AtomIdx>, query_len: usize) -> usize {
-    (0..query_len)
-        .find(|i| !mapping.contains_key(i))
-        .unwrap() // safe: caller guarantees mapping.len() < query_len
+    (0..query_len).find(|i| !mapping.contains_key(i)).unwrap() // safe: caller guarantees mapping.len() < query_len
 }
 
 fn match_recursive(
@@ -293,7 +289,12 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             ctx.mol.neighbors(idx).count() as u8 + implicit_hcount(ctx.mol, idx) == *x
         }
         AtomPrimitive::RingCount(n) => {
-            ctx.rings.rings().iter().filter(|r| r.contains(&idx)).count() as u8 == *n
+            ctx.rings
+                .rings()
+                .iter()
+                .filter(|r| r.contains(&idx))
+                .count() as u8
+                == *n
         }
         AtomPrimitive::Hybridization(h) => eval_hybridization(idx, ctx, *h),
         AtomPrimitive::Isotope(mass) => {
@@ -348,12 +349,21 @@ fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
         let mut has_double = false;
         for (_, bid) in ctx.mol.neighbors(idx) {
             match ctx.mol.bond(bid).order {
-                BondOrder::Triple => { has_triple = true; break; }
+                BondOrder::Triple => {
+                    has_triple = true;
+                    break;
+                }
                 BondOrder::Double => has_double = true,
                 _ => {}
             }
         }
-        if has_triple { 1 } else if has_double { 2 } else { 3 }
+        if has_triple {
+            1
+        } else if has_double {
+            2
+        } else {
+            3
+        }
     };
     hyb == h
 }
@@ -641,7 +651,7 @@ mod tests {
         // D-alanine [C@H] should positively match [C@H] query when use_chirality=true.
         // This complements test_chirality_enforced_when_enabled which only tested negative on L-ala.
         let mol = parse("N[C@H](C)C(=O)O").unwrap(); // D-alanine (@, kind 1)
-        let q_cw = parse_smarts("[C@H]").unwrap();   // CW (@), kind 1
+        let q_cw = parse_smarts("[C@H]").unwrap(); // CW (@), kind 1
         let config = MatchConfig {
             use_chirality: true,
             ..MatchConfig::default()

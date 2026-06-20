@@ -15,7 +15,10 @@ pub mod stereo_validation;
 
 pub mod stereo2d;
 
-pub use aromaticity::{AromaticityModel, RingAromaticity, apply_aromaticity, assign_aromaticity, augmented_ring_set, count_aromatic_rings};
+pub use aromaticity::{
+    AromaticityModel, RingAromaticity, apply_aromaticity, assign_aromaticity, augmented_ring_set,
+    count_aromatic_rings,
+};
 pub use chematic_core::{ValenceError, validate_valence};
 pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitvec};
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families};
@@ -115,7 +118,11 @@ mod tests {
         let membership = ring_membership(&m);
         assert_eq!(membership.len(), 6);
         for atom_membership in membership.iter().take(6) {
-            assert_eq!(atom_membership.len(), 1, "each benzene atom in exactly 1 ring");
+            assert_eq!(
+                atom_membership.len(),
+                1,
+                "each benzene atom in exactly 1 ring"
+            );
             assert_eq!(atom_membership[0], 0, "all in ring index 0");
         }
     }
@@ -128,7 +135,10 @@ mod tests {
         // In naphthalene SSSR, some atoms appear in 2 rings depending on the ring decomposition
         // Just verify all atoms are in at least 1 ring
         for mem in &membership {
-            assert!(!mem.is_empty(), "all naphthalene atoms should be in at least 1 ring");
+            assert!(
+                !mem.is_empty(),
+                "all naphthalene atoms should be in at least 1 ring"
+            );
         }
     }
 
@@ -174,14 +184,20 @@ mod tests {
     #[test]
     fn test_is_fused_ring_benzene() {
         let m = mol("c1ccccc1");
-        assert!(!is_fused_ring_system(&m), "single benzene ring is not fused");
+        assert!(
+            !is_fused_ring_system(&m),
+            "single benzene ring is not fused"
+        );
     }
 
     #[test]
     fn test_is_fused_ring_spiro() {
         // Spiro[4.4]nonane has two rings sharing only 1 atom
         let m = mol("C1CCC2(C1)CCCC2");
-        assert!(!is_fused_ring_system(&m), "spiro compound shares only 1 atom, not fused");
+        assert!(
+            !is_fused_ring_system(&m),
+            "spiro compound shares only 1 atom, not fused"
+        );
     }
 
     #[test]

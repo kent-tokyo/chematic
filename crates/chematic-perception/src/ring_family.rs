@@ -109,7 +109,11 @@ pub fn find_ring_families(mol: &Molecule, sssr: &RingSet) -> Vec<RingFamily> {
 }
 
 /// Classify the topology of a ring system given its constituent SSSR rings.
-fn classify_ring_system(mol: &Molecule, ring_indices: &[usize], rings: &[Vec<AtomIdx>]) -> RingSystemKind {
+fn classify_ring_system(
+    mol: &Molecule,
+    ring_indices: &[usize],
+    rings: &[Vec<AtomIdx>],
+) -> RingSystemKind {
     // Single ring is always Simple
     if ring_indices.len() == 1 {
         return RingSystemKind::Simple;

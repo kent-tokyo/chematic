@@ -16,8 +16,8 @@
 
 use std::cmp::Ordering;
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Molecule};
 use crate::cip_priority;
+use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Molecule};
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -192,9 +192,7 @@ fn highest_ez_priority(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx]) -> Opt
         return Some(subs[0]);
     }
     let mut sorted = subs.to_vec();
-    sorted.sort_by(|&a, &b| {
-        cip_priority::compare_branches(mol, center, a, b).reverse()
-    });
+    sorted.sort_by(|&a, &b| cip_priority::compare_branches(mol, center, a, b).reverse());
     if cip_priority::compare_branches(mol, center, sorted[0], sorted[1]) == Ordering::Equal {
         return None; // tied top priorities → E/Z not determinable
     }
@@ -295,9 +293,7 @@ fn wedge_z(mol: &Molecule, center: AtomIdx, neighbor: AtomIdx) -> f64 {
 
 fn rank4(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx; 4]) -> Option<[u8; 4]> {
     let mut order: [usize; 4] = [0, 1, 2, 3];
-    order.sort_by(|&i, &j| {
-        cip_priority::compare_branches(mol, center, subs[i], subs[j]).reverse()
-    });
+    order.sort_by(|&i, &j| cip_priority::compare_branches(mol, center, subs[i], subs[j]).reverse());
     for k in 0..3 {
         if cip_priority::compare_branches(mol, center, subs[order[k]], subs[order[k + 1]])
             == Ordering::Equal

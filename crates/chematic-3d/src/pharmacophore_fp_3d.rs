@@ -3,10 +3,10 @@
 //! Complements `chematic_fp::pharmacophore_fp_2d` by using 3D Euclidean distances
 //! instead of topological distances for feature-pair encoding.
 
-use chematic_core::Molecule;
-use chematic_perception::{detect_features, FeatureType};
-use chematic_fp::BitVec2048;
 use crate::coords::Coords3D;
+use chematic_core::Molecule;
+use chematic_fp::BitVec2048;
+use chematic_perception::{FeatureType, detect_features};
 
 /// Generate a 3D pharmacophore fingerprint from molecular features and 3D coordinates.
 ///
@@ -91,15 +91,18 @@ fn distance_to_bin_3d(dist: f64) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::parse;
     use crate::dg::generate_coords;
+    use chematic_smiles::parse;
 
     #[test]
     fn test_pharmacophore_fp_3d_benzene() {
         let mol = parse("c1ccccc1").unwrap();
         let coords = generate_coords(&mol);
         let fp = pharmacophore_fp_3d(&mol, &coords);
-        assert!(fp.popcount() > 0, "benzene should have aromatic features in 3D");
+        assert!(
+            fp.popcount() > 0,
+            "benzene should have aromatic features in 3D"
+        );
     }
 
     #[test]
@@ -108,7 +111,10 @@ mod tests {
         let coords = generate_coords(&mol);
         let fp = pharmacophore_fp_3d(&mol, &coords);
         // Ethanol has O atom: should have Donor and Acceptor
-        assert!(fp.get(0) || fp.get(1), "ethanol should have donor/acceptor in 3D");
+        assert!(
+            fp.get(0) || fp.get(1),
+            "ethanol should have donor/acceptor in 3D"
+        );
     }
 
     #[test]
@@ -117,6 +123,9 @@ mod tests {
         let coords = generate_coords(&mol);
         let fp = pharmacophore_fp_3d(&mol, &coords);
         let sim = tanimoto_pharmacophore_3d(&fp, &fp);
-        assert!((sim - 1.0).abs() < 1e-6, "identical fingerprints should have similarity 1.0");
+        assert!(
+            (sim - 1.0).abs() < 1e-6,
+            "identical fingerprints should have similarity 1.0"
+        );
     }
 }

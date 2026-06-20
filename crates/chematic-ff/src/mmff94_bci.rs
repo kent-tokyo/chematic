@@ -26,69 +26,69 @@ pub fn bci(from: MMFF94Type, to: MMFF94Type) -> f64 {
         // ------------------------------------------------------------------
         // C(sp3) — X bonds
         // ------------------------------------------------------------------
-        (C_sp3, O_Alcohol)     => -0.2959,  // O gains from C in alcohol
-        (C_sp3, O_Ether)       => -0.2488,  // ether O
-        (C_sp3, O_Phenol)      => -0.2959,  // phenol O (same as alcohol)
-        (C_sp3, N_sp3_Amine)   => -0.2088,  // amine N
-        (C_sp3, S_Thiol)       => -0.1278,  // thiol S
-        (C_sp3, S_Thioether)   => -0.1148,  // thioether S
-        (C_sp3, H_Carbon)      =>  0.0240,  // H loses slightly to C
-        (C_sp3, C_sp3)         =>  0.0,     // no polarization between identical types
-        (C_sp3, C_sp2_Alkene)  => -0.0500,  // sp2 C gains from sp3
-        (C_sp3, C_Aromatic)    => -0.0380,  // aromatic C gains from sp3
-        (C_sp3, F)             => -0.4578,  // F strongly gains from C
-        (C_sp3, Cl)            => -0.2523,  // Cl gains
-        (C_sp3, Br)            => -0.1754,  // Br gains
-        (C_sp3, I)             => -0.0906,  // I gains (least electronegative halogen)
+        (C_sp3, O_Alcohol) => -0.2959,    // O gains from C in alcohol
+        (C_sp3, O_Ether) => -0.2488,      // ether O
+        (C_sp3, O_Phenol) => -0.2959,     // phenol O (same as alcohol)
+        (C_sp3, N_sp3_Amine) => -0.2088,  // amine N
+        (C_sp3, S_Thiol) => -0.1278,      // thiol S
+        (C_sp3, S_Thioether) => -0.1148,  // thioether S
+        (C_sp3, H_Carbon) => 0.0240,      // H loses slightly to C
+        (C_sp3, C_sp3) => 0.0,            // no polarization between identical types
+        (C_sp3, C_sp2_Alkene) => -0.0500, // sp2 C gains from sp3
+        (C_sp3, C_Aromatic) => -0.0380,   // aromatic C gains from sp3
+        (C_sp3, F) => -0.4578,            // F strongly gains from C
+        (C_sp3, Cl) => -0.2523,           // Cl gains
+        (C_sp3, Br) => -0.1754,           // Br gains
+        (C_sp3, I) => -0.0906,            // I gains (least electronegative halogen)
 
         // ------------------------------------------------------------------
         // C(sp2 alkene) — X bonds
         // ------------------------------------------------------------------
         (C_sp2_Alkene, C_sp2_Alkene) => 0.0,
-        (C_sp2_Alkene, H_Carbon)     => 0.0380,  // vinyl H loses to C
-        (C_sp2_Alkene, C_sp3)        => 0.0500,  // sp3 C loses to sp2
+        (C_sp2_Alkene, H_Carbon) => 0.0380, // vinyl H loses to C
+        (C_sp2_Alkene, C_sp3) => 0.0500,    // sp3 C loses to sp2
 
         // ------------------------------------------------------------------
         // C(aromatic) — X bonds
         // ------------------------------------------------------------------
-        (C_Aromatic, H_Aromatic) =>  0.0780,  // aryl H loses to C
-        (C_Aromatic, C_Aromatic) =>  0.0,
+        (C_Aromatic, H_Aromatic) => 0.0780, // aryl H loses to C
+        (C_Aromatic, C_Aromatic) => 0.0,
         (C_Aromatic, N_Aromatic_6ring | N_Aromatic_Pyridine) => -0.1500, // ring N gains
 
         // ------------------------------------------------------------------
         // C(carbonyl) — X bonds
         // ------------------------------------------------------------------
-        (C_Carbonyl, O_Carbonyl)   => -0.4500,  // =O gains strongly
-        (C_Carbonyl, C_sp3)        =>  0.1000,  // flanking C loses a bit
-        (C_Carbonyl, H_Carbon)     =>  0.0500,  // aldehyde H
+        (C_Carbonyl, O_Carbonyl) => -0.4500, // =O gains strongly
+        (C_Carbonyl, C_sp3) => 0.1000,       // flanking C loses a bit
+        (C_Carbonyl, H_Carbon) => 0.0500,    // aldehyde H
 
         // ------------------------------------------------------------------
         // Carboxylic acid and ester variants
         // ------------------------------------------------------------------
-        (C_Carboxylic, O_Carbonyl)  => -0.4400,
+        (C_Carboxylic, O_Carbonyl) => -0.4400,
         (C_Carboxylic, O_Carboxylic) => -0.3600, // –OH in acid
-        (C_Ester, O_Carbonyl)       => -0.4300,
-        (C_Ester, O_Ester)          => -0.3200,
-        (C_Amide, O_Amide)          => -0.4200,
-        (C_Amide, N_Amide)          => -0.2800,
+        (C_Ester, O_Carbonyl) => -0.4300,
+        (C_Ester, O_Ester) => -0.3200,
+        (C_Amide, O_Amide) => -0.4200,
+        (C_Amide, N_Amide) => -0.2800,
 
         // ------------------------------------------------------------------
         // O — H bonds
         // ------------------------------------------------------------------
-        (O_Alcohol, H_Oxygen)  =>  0.1806,  // H loses to O in alcohol
-        (O_Phenol,  H_Oxygen)  =>  0.2106,  // phenol O-H (stronger)
+        (O_Alcohol, H_Oxygen) => 0.1806, // H loses to O in alcohol
+        (O_Phenol, H_Oxygen) => 0.2106,  // phenol O-H (stronger)
         (O_Carboxylic, H_Oxygen) => 0.2500, // acid O-H
 
         // ------------------------------------------------------------------
         // N — H bonds
         // ------------------------------------------------------------------
-        (N_sp3_Amine, H_Nitrogen) =>  0.1760,  // H loses to N in amine
-        (N_Amide,     H_Nitrogen) =>  0.1900,  // amide N-H
+        (N_sp3_Amine, H_Nitrogen) => 0.1760, // H loses to N in amine
+        (N_Amide, H_Nitrogen) => 0.1900,     // amide N-H
 
         // ------------------------------------------------------------------
         // S — H bonds
         // ------------------------------------------------------------------
-        (S_Thiol, H_Sulfur) =>  0.1000,  // H loses to S in thiol
+        (S_Thiol, H_Sulfur) => 0.1000, // H loses to S in thiol
 
         // ------------------------------------------------------------------
         // Antisymmetric reversal for all defined pairs
@@ -101,41 +101,41 @@ pub fn bci(from: MMFF94Type, to: MMFF94Type) -> f64 {
 fn bci_lookup(from: MMFF94Type, to: MMFF94Type) -> f64 {
     use MMFF94Type::*;
     match (from, to) {
-        (C_sp3, O_Alcohol)     => -0.2959,
-        (C_sp3, O_Ether)       => -0.2488,
-        (C_sp3, O_Phenol)      => -0.2959,
-        (C_sp3, N_sp3_Amine)   => -0.2088,
-        (C_sp3, S_Thiol)       => -0.1278,
-        (C_sp3, S_Thioether)   => -0.1148,
-        (C_sp3, H_Carbon)      =>  0.0240,
-        (C_sp3, C_sp3)         =>  0.0,
-        (C_sp3, C_sp2_Alkene)  => -0.0500,
-        (C_sp3, C_Aromatic)    => -0.0380,
-        (C_sp3, F)             => -0.4578,
-        (C_sp3, Cl)            => -0.2523,
-        (C_sp3, Br)            => -0.1754,
-        (C_sp3, I)             => -0.0906,
+        (C_sp3, O_Alcohol) => -0.2959,
+        (C_sp3, O_Ether) => -0.2488,
+        (C_sp3, O_Phenol) => -0.2959,
+        (C_sp3, N_sp3_Amine) => -0.2088,
+        (C_sp3, S_Thiol) => -0.1278,
+        (C_sp3, S_Thioether) => -0.1148,
+        (C_sp3, H_Carbon) => 0.0240,
+        (C_sp3, C_sp3) => 0.0,
+        (C_sp3, C_sp2_Alkene) => -0.0500,
+        (C_sp3, C_Aromatic) => -0.0380,
+        (C_sp3, F) => -0.4578,
+        (C_sp3, Cl) => -0.2523,
+        (C_sp3, Br) => -0.1754,
+        (C_sp3, I) => -0.0906,
         (C_sp2_Alkene, C_sp2_Alkene) => 0.0,
-        (C_sp2_Alkene, H_Carbon)     => 0.0380,
-        (C_sp2_Alkene, C_sp3)        => 0.0500,
-        (C_Aromatic, H_Aromatic) =>  0.0780,
-        (C_Aromatic, C_Aromatic) =>  0.0,
+        (C_sp2_Alkene, H_Carbon) => 0.0380,
+        (C_sp2_Alkene, C_sp3) => 0.0500,
+        (C_Aromatic, H_Aromatic) => 0.0780,
+        (C_Aromatic, C_Aromatic) => 0.0,
         (C_Aromatic, N_Aromatic_6ring | N_Aromatic_Pyridine) => -0.1500,
-        (C_Carbonyl, O_Carbonyl)   => -0.4500,
-        (C_Carbonyl, C_sp3)        =>  0.1000,
-        (C_Carbonyl, H_Carbon)     =>  0.0500,
-        (C_Carboxylic, O_Carbonyl)  => -0.4400,
+        (C_Carbonyl, O_Carbonyl) => -0.4500,
+        (C_Carbonyl, C_sp3) => 0.1000,
+        (C_Carbonyl, H_Carbon) => 0.0500,
+        (C_Carboxylic, O_Carbonyl) => -0.4400,
         (C_Carboxylic, O_Carboxylic) => -0.3600,
-        (C_Ester, O_Carbonyl)       => -0.4300,
-        (C_Ester, O_Ester)          => -0.3200,
-        (C_Amide, O_Amide)          => -0.4200,
-        (C_Amide, N_Amide)          => -0.2800,
-        (O_Alcohol, H_Oxygen)  =>  0.1806,
-        (O_Phenol,  H_Oxygen)  =>  0.2106,
+        (C_Ester, O_Carbonyl) => -0.4300,
+        (C_Ester, O_Ester) => -0.3200,
+        (C_Amide, O_Amide) => -0.4200,
+        (C_Amide, N_Amide) => -0.2800,
+        (O_Alcohol, H_Oxygen) => 0.1806,
+        (O_Phenol, H_Oxygen) => 0.2106,
         (O_Carboxylic, H_Oxygen) => 0.2500,
-        (N_sp3_Amine, H_Nitrogen) =>  0.1760,
-        (N_Amide,     H_Nitrogen) =>  0.1900,
-        (S_Thiol, H_Sulfur) =>  0.1000,
+        (N_sp3_Amine, H_Nitrogen) => 0.1760,
+        (N_Amide, H_Nitrogen) => 0.1900,
+        (S_Thiol, H_Sulfur) => 0.1000,
         _ => 0.0,
     }
 }
@@ -185,7 +185,9 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
 
-    fn mol(s: &str) -> chematic_core::Molecule { parse(s).unwrap() }
+    fn mol(s: &str) -> chematic_core::Molecule {
+        parse(s).unwrap()
+    }
 
     #[test]
     fn test_bci_antisymmetry() {
@@ -204,7 +206,12 @@ mod tests {
             assert!(
                 (forward + reverse).abs() < 1e-10,
                 "bci({:?},{:?}) = {:.4} but bci({:?},{:?}) = {:.4} (should be negatives)",
-                a, b, forward, b, a, reverse
+                a,
+                b,
+                forward,
+                b,
+                a,
+                reverse
             );
         }
     }
@@ -228,27 +235,38 @@ mod tests {
         let m = mol("CO");
         let charges = mmff94_charges_bci(&m).unwrap();
         // Find O atom (atomic number 8)
-        let o_idx = m.atoms()
+        let o_idx = m
+            .atoms()
             .find(|(_, a)| a.element.atomic_number() == 8)
             .map(|(i, _)| i.0 as usize)
             .unwrap();
         // O should be significantly negative
-        assert!(charges[o_idx] < -0.20,
-            "methanol O charge = {:.3}, expected < -0.20", charges[o_idx]);
-        assert!(charges[o_idx] > -0.60,
-            "methanol O charge = {:.3}, expected > -0.60", charges[o_idx]);
+        assert!(
+            charges[o_idx] < -0.20,
+            "methanol O charge = {:.3}, expected < -0.20",
+            charges[o_idx]
+        );
+        assert!(
+            charges[o_idx] > -0.60,
+            "methanol O charge = {:.3}, expected > -0.60",
+            charges[o_idx]
+        );
     }
 
     #[test]
     fn test_bci_qualitative_amine() {
         let m = mol("CCN");
         let charges = mmff94_charges_bci(&m).unwrap();
-        let n_idx = m.atoms()
+        let n_idx = m
+            .atoms()
             .find(|(_, a)| a.element.atomic_number() == 7)
             .map(|(i, _)| i.0 as usize)
             .unwrap();
-        assert!(charges[n_idx] < -0.10,
-            "amine N = {:.3}, expected negative", charges[n_idx]);
+        assert!(
+            charges[n_idx] < -0.10,
+            "amine N = {:.3}, expected negative",
+            charges[n_idx]
+        );
     }
 
     #[test]
@@ -259,31 +277,43 @@ mod tests {
         let cbr = mol("CBr");
 
         let f_charge = |m: &chematic_core::Molecule| {
-            mmff94_charges_bci(m).unwrap().into_iter()
+            mmff94_charges_bci(m)
+                .unwrap()
+                .into_iter()
                 .zip(m.atoms())
                 .find(|(_, (_, a))| matches!(a.element.atomic_number(), 9 | 17 | 35))
                 .map(|(q, _)| q)
                 .unwrap()
         };
 
-        let qf  = f_charge(&cf);
+        let qf = f_charge(&cf);
         let qcl = f_charge(&ccl);
         let qbr = f_charge(&cbr);
 
-        assert!(qf < qcl, "F ({qf:.3}) should be more negative than Cl ({qcl:.3})");
-        assert!(qcl < qbr, "Cl ({qcl:.3}) should be more negative than Br ({qbr:.3})");
+        assert!(
+            qf < qcl,
+            "F ({qf:.3}) should be more negative than Cl ({qcl:.3})"
+        );
+        assert!(
+            qcl < qbr,
+            "Cl ({qcl:.3}) should be more negative than Br ({qbr:.3})"
+        );
     }
 
     #[test]
     fn test_bci_ketone_oxygen() {
         let m = mol("CC(=O)C"); // acetone
         let charges = mmff94_charges_bci(&m).unwrap();
-        let o_idx = m.atoms()
+        let o_idx = m
+            .atoms()
             .find(|(_, a)| a.element.atomic_number() == 8)
             .map(|(i, _)| i.0 as usize)
             .unwrap();
         // Ketone O should be strongly negative
-        assert!(charges[o_idx] < -0.30,
-            "ketone O = {:.3}, expected < -0.30", charges[o_idx]);
+        assert!(
+            charges[o_idx] < -0.30,
+            "ketone O = {:.3}, expected < -0.30",
+            charges[o_idx]
+        );
     }
 }

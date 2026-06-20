@@ -1,5 +1,5 @@
-use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
 
 // ---------------------------------------------------------------------------
 // SimilarityIndex — MinHash LSH index for fast similarity search
@@ -68,8 +68,8 @@ impl PySimilarityIndex {
     ///     i = idx.add("c1ccccc1")   # → 0
     ///     j = idx.add("CCO")         # → 1
     fn add(&mut self, smiles: String) -> PyResult<usize> {
-        let mol = chematic_smiles::parse(&smiles)
-            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let mol =
+            chematic_smiles::parse(&smiles).map_err(|e| PyValueError::new_err(e.to_string()))?;
         let fp = chematic_fp::mhfp_128(&mol);
         let idx = self.inner.add(fp);
         self.smiles.push(smiles);
@@ -89,14 +89,9 @@ impl PySimilarityIndex {
     ///     hits = idx.search("c1ccccc1N", threshold=0.5)
     ///     top_smiles = [smiles_db[i] for i, _ in hits]
     #[pyo3(signature = (query, threshold = 0.7, k = None))]
-    fn search(
-        &self,
-        query: &str,
-        threshold: f64,
-        k: Option<usize>,
-    ) -> PyResult<Vec<(usize, f64)>> {
-        let mol = chematic_smiles::parse(query)
-            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    fn search(&self, query: &str, threshold: f64, k: Option<usize>) -> PyResult<Vec<(usize, f64)>> {
+        let mol =
+            chematic_smiles::parse(query).map_err(|e| PyValueError::new_err(e.to_string()))?;
         let fp = chematic_fp::mhfp_128(&mol);
         let mut results = self.inner.query(&fp, threshold);
         if let Some(max_k) = k {
@@ -107,7 +102,8 @@ impl PySimilarityIndex {
 
     /// Return the SMILES of a molecule by its index in the database.
     fn get_smiles(&self, index: usize) -> PyResult<&str> {
-        self.smiles.get(index)
+        self.smiles
+            .get(index)
             .map(|s| s.as_str())
             .ok_or_else(|| PyValueError::new_err(format!("index {index} out of range")))
     }

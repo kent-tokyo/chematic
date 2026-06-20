@@ -28,7 +28,12 @@ fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u64 {
     let idx = AtomIdx(i as u32);
     let mut neighbor_info: Vec<(u8, u64)> = mol
         .neighbors(idx)
-        .map(|(nb_idx, bond_idx)| (bond_type_int(mol.bond(bond_idx).order), ids[nb_idx.0 as usize]))
+        .map(|(nb_idx, bond_idx)| {
+            (
+                bond_type_int(mol.bond(bond_idx).order),
+                ids[nb_idx.0 as usize],
+            )
+        })
         .collect();
     neighbor_info.sort_unstable();
 
@@ -245,7 +250,13 @@ pub fn ecfp4(mol: &Molecule) -> BitVec2048 {
 
 /// ECFP6 fingerprint (radius = 3, 2048 bits).
 pub fn ecfp6(mol: &Molecule) -> BitVec2048 {
-    ecfp(mol, &EcfpConfig { radius: 3, ..EcfpConfig::default() })
+    ecfp(
+        mol,
+        &EcfpConfig {
+            radius: 3,
+            ..EcfpConfig::default()
+        },
+    )
 }
 
 /// Tanimoto similarity between two molecules using ECFP4.
@@ -507,6 +518,9 @@ mod tests {
             use_double_fold: false,
         };
         let fp = ecfp(&mol, &config);
-        assert!(fp.popcount() > 0, "Benzene should generate non-empty ECFP4 with use_chirality=true");
+        assert!(
+            fp.popcount() > 0,
+            "Benzene should generate non-empty ECFP4 with use_chirality=true"
+        );
     }
 }

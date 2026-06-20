@@ -12,7 +12,8 @@ use crate::Mol;
 // ---------------------------------------------------------------------------
 
 fn parse_parallel(smiles: &[String]) -> Vec<Option<chematic_core::Molecule>> {
-    smiles.par_iter()
+    smiles
+        .par_iter()
         .map(|s| chematic_smiles::parse(s).ok())
         .collect()
 }
@@ -36,7 +37,11 @@ fn bitvec2048_to_bits(fp: &chematic_fp::bitvec::BitVec2048) -> Vec<u8> {
 pub fn parse(smiles: Vec<String>) -> Vec<Option<Mol>> {
     parse_parallel(&smiles)
         .into_iter()
-        .map(|opt| opt.map(|mol| Mol { inner: Arc::new(mol) }))
+        .map(|opt| {
+            opt.map(|mol| Mol {
+                inner: Arc::new(mol),
+            })
+        })
         .collect()
 }
 
@@ -57,7 +62,8 @@ pub fn parse(smiles: Vec<String>) -> Vec<Option<Mol>> {
 ///     coords = pca.fit_transform(fps.astype(float))
 #[pyfunction]
 pub fn ecfp4<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<u8>> {
-    let bits: Vec<Vec<u8>> = smiles.par_iter()
+    let bits: Vec<Vec<u8>> = smiles
+        .par_iter()
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| bitvec2048_to_bits(&chematic_fp::ecfp4(&mol)))
         .collect();
@@ -81,7 +87,8 @@ pub fn ecfp4<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<u
 /// Returns a numpy array of shape ``(N, 166)`` with ``dtype=uint8`` (0/1).
 #[pyfunction]
 pub fn maccs<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<u8>> {
-    let bits: Vec<Vec<u8>> = smiles.par_iter()
+    let bits: Vec<Vec<u8>> = smiles
+        .par_iter()
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| {
             let fp = chematic_fp::maccs(&mol);
@@ -117,21 +124,66 @@ pub fn maccs<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<u
 pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bound<'py, PyDict>>> {
     // Phase 1: parallel computation (no GIL)
     struct Desc {
-        mw: f64, exact_mass: f64, tpsa: f64, logp: f64, mr: f64,
-        hbd: usize, hba: usize, rb: usize, hac: usize, rc: usize,
-        arc: usize, nh: usize, nsc: usize, nsp: usize, nbh: usize,
-        fsp3: f64, qed: f64, sa: f64, fc: i32, asa: f64, bertz: f64, wi: f64,
-        k1: f64, k2: f64, k3: f64,
-        c0: f64, c1: f64, c2: f64, c3: f64, c4: f64,
-        c0v: f64, c1v: f64, c2v: f64, c3v: f64, c4v: f64,
-        n_ah: usize, n_alh: usize, n_sr: usize, n_ar: usize, n_usc: usize,
-        sum_e: f64, max_e: f64, min_e: f64,
-        lip: bool, veb: bool, egan: bool, ghose: bool, reos: bool, pains: bool,
-        bbb: f64, bbp: bool, caco: f64, herg: f64, cyp: f64,
-        pka_acid: Option<f64>, pka_base: Option<f64>,
+        mw: f64,
+        exact_mass: f64,
+        tpsa: f64,
+        logp: f64,
+        mr: f64,
+        hbd: usize,
+        hba: usize,
+        rb: usize,
+        hac: usize,
+        rc: usize,
+        arc: usize,
+        nh: usize,
+        nsc: usize,
+        nsp: usize,
+        nbh: usize,
+        fsp3: f64,
+        qed: f64,
+        sa: f64,
+        fc: i32,
+        asa: f64,
+        bertz: f64,
+        wi: f64,
+        k1: f64,
+        k2: f64,
+        k3: f64,
+        c0: f64,
+        c1: f64,
+        c2: f64,
+        c3: f64,
+        c4: f64,
+        c0v: f64,
+        c1v: f64,
+        c2v: f64,
+        c3v: f64,
+        c4v: f64,
+        n_ah: usize,
+        n_alh: usize,
+        n_sr: usize,
+        n_ar: usize,
+        n_usc: usize,
+        sum_e: f64,
+        max_e: f64,
+        min_e: f64,
+        lip: bool,
+        veb: bool,
+        egan: bool,
+        ghose: bool,
+        reos: bool,
+        pains: bool,
+        bbb: f64,
+        bbp: bool,
+        caco: f64,
+        herg: f64,
+        cyp: f64,
+        pka_acid: Option<f64>,
+        pka_base: Option<f64>,
     }
 
-    let descs: Vec<Desc> = smiles.par_iter()
+    let descs: Vec<Desc> = smiles
+        .par_iter()
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| {
             let m = &mol;
@@ -197,72 +249,75 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
         .collect();
 
     // Phase 2: convert to Python dicts (sequential, GIL held)
-    descs.into_iter().map(|d| {
-        let dict = PyDict::new(py);
-        dict.set_item("mw", d.mw)?;
-        dict.set_item("exact_mass", d.exact_mass)?;
-        dict.set_item("tpsa", d.tpsa)?;
-        dict.set_item("logp", d.logp)?;
-        dict.set_item("molar_refractivity", d.mr)?;
-        dict.set_item("hbd", d.hbd)?;
-        dict.set_item("hba", d.hba)?;
-        dict.set_item("rotatable_bonds", d.rb)?;
-        dict.set_item("heavy_atoms", d.hac)?;
-        dict.set_item("ring_count", d.rc)?;
-        dict.set_item("aromatic_ring_count", d.arc)?;
-        dict.set_item("num_heteroatoms", d.nh)?;
-        dict.set_item("num_stereocenters", d.nsc)?;
-        dict.set_item("num_spiro_atoms", d.nsp)?;
-        dict.set_item("num_bridgehead_atoms", d.nbh)?;
-        dict.set_item("fsp3", d.fsp3)?;
-        dict.set_item("qed", d.qed)?;
-        dict.set_item("sa_score", d.sa)?;
-        dict.set_item("formal_charge", d.fc)?;
-        dict.set_item("labute_asa", d.asa)?;
-        dict.set_item("bertz_ct", d.bertz)?;
-        dict.set_item("wiener_index", d.wi)?;
-        dict.set_item("kappa1", d.k1)?;
-        dict.set_item("kappa2", d.k2)?;
-        dict.set_item("kappa3", d.k3)?;
-        dict.set_item("chi0", d.c0)?;
-        dict.set_item("chi1", d.c1)?;
-        dict.set_item("chi2", d.c2)?;
-        dict.set_item("chi3", d.c3)?;
-        dict.set_item("chi4", d.c4)?;
-        dict.set_item("chi0v", d.c0v)?;
-        dict.set_item("chi1v", d.c1v)?;
-        dict.set_item("chi2v", d.c2v)?;
-        dict.set_item("chi3v", d.c3v)?;
-        dict.set_item("chi4v", d.c4v)?;
-        dict.set_item("num_aromatic_heterocycles", d.n_ah)?;
-        dict.set_item("num_aliphatic_heterocycles", d.n_alh)?;
-        dict.set_item("num_saturated_rings", d.n_sr)?;
-        dict.set_item("num_aliphatic_rings", d.n_ar)?;
-        dict.set_item("num_unspecified_stereocenters", d.n_usc)?;
-        dict.set_item("sum_estate", d.sum_e)?;
-        dict.set_item("max_estate", d.max_e)?;
-        dict.set_item("min_estate", d.min_e)?;
-        dict.set_item("lipinski_passes", d.lip)?;
-        dict.set_item("veber_passes", d.veb)?;
-        dict.set_item("egan_passes", d.egan)?;
-        dict.set_item("ghose_passes", d.ghose)?;
-        dict.set_item("reos_passes", d.reos)?;
-        dict.set_item("pains_passes", d.pains)?;
-        dict.set_item("bbb_score", d.bbb)?;
-        dict.set_item("bbb_passes", d.bbp)?;
-        dict.set_item("caco2", d.caco)?;
-        dict.set_item("herg_risk", d.herg)?;
-        dict.set_item("cyp3a4_risk", d.cyp)?;
-        match d.pka_acid {
-            Some(v) => dict.set_item("pka_acid", v)?,
-            None => dict.set_item("pka_acid", py.None())?,
-        }
-        match d.pka_base {
-            Some(v) => dict.set_item("pka_base", v)?,
-            None => dict.set_item("pka_base", py.None())?,
-        }
-        Ok(dict)
-    }).collect()
+    descs
+        .into_iter()
+        .map(|d| {
+            let dict = PyDict::new(py);
+            dict.set_item("mw", d.mw)?;
+            dict.set_item("exact_mass", d.exact_mass)?;
+            dict.set_item("tpsa", d.tpsa)?;
+            dict.set_item("logp", d.logp)?;
+            dict.set_item("molar_refractivity", d.mr)?;
+            dict.set_item("hbd", d.hbd)?;
+            dict.set_item("hba", d.hba)?;
+            dict.set_item("rotatable_bonds", d.rb)?;
+            dict.set_item("heavy_atoms", d.hac)?;
+            dict.set_item("ring_count", d.rc)?;
+            dict.set_item("aromatic_ring_count", d.arc)?;
+            dict.set_item("num_heteroatoms", d.nh)?;
+            dict.set_item("num_stereocenters", d.nsc)?;
+            dict.set_item("num_spiro_atoms", d.nsp)?;
+            dict.set_item("num_bridgehead_atoms", d.nbh)?;
+            dict.set_item("fsp3", d.fsp3)?;
+            dict.set_item("qed", d.qed)?;
+            dict.set_item("sa_score", d.sa)?;
+            dict.set_item("formal_charge", d.fc)?;
+            dict.set_item("labute_asa", d.asa)?;
+            dict.set_item("bertz_ct", d.bertz)?;
+            dict.set_item("wiener_index", d.wi)?;
+            dict.set_item("kappa1", d.k1)?;
+            dict.set_item("kappa2", d.k2)?;
+            dict.set_item("kappa3", d.k3)?;
+            dict.set_item("chi0", d.c0)?;
+            dict.set_item("chi1", d.c1)?;
+            dict.set_item("chi2", d.c2)?;
+            dict.set_item("chi3", d.c3)?;
+            dict.set_item("chi4", d.c4)?;
+            dict.set_item("chi0v", d.c0v)?;
+            dict.set_item("chi1v", d.c1v)?;
+            dict.set_item("chi2v", d.c2v)?;
+            dict.set_item("chi3v", d.c3v)?;
+            dict.set_item("chi4v", d.c4v)?;
+            dict.set_item("num_aromatic_heterocycles", d.n_ah)?;
+            dict.set_item("num_aliphatic_heterocycles", d.n_alh)?;
+            dict.set_item("num_saturated_rings", d.n_sr)?;
+            dict.set_item("num_aliphatic_rings", d.n_ar)?;
+            dict.set_item("num_unspecified_stereocenters", d.n_usc)?;
+            dict.set_item("sum_estate", d.sum_e)?;
+            dict.set_item("max_estate", d.max_e)?;
+            dict.set_item("min_estate", d.min_e)?;
+            dict.set_item("lipinski_passes", d.lip)?;
+            dict.set_item("veber_passes", d.veb)?;
+            dict.set_item("egan_passes", d.egan)?;
+            dict.set_item("ghose_passes", d.ghose)?;
+            dict.set_item("reos_passes", d.reos)?;
+            dict.set_item("pains_passes", d.pains)?;
+            dict.set_item("bbb_score", d.bbb)?;
+            dict.set_item("bbb_passes", d.bbp)?;
+            dict.set_item("caco2", d.caco)?;
+            dict.set_item("herg_risk", d.herg)?;
+            dict.set_item("cyp3a4_risk", d.cyp)?;
+            match d.pka_acid {
+                Some(v) => dict.set_item("pka_acid", v)?,
+                None => dict.set_item("pka_acid", py.None())?,
+            }
+            match d.pka_base {
+                Some(v) => dict.set_item("pka_base", v)?,
+                None => dict.set_item("pka_base", py.None())?,
+            }
+            Ok(dict)
+        })
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -292,12 +347,14 @@ pub fn tanimoto<'py>(
     smiles_a: Vec<String>,
     smiles_b: Vec<String>,
 ) -> Bound<'py, PyArray2<f32>> {
-    let fps_a: Vec<chematic_fp::bitvec::BitVec2048> = smiles_a.par_iter()
+    let fps_a: Vec<chematic_fp::bitvec::BitVec2048> = smiles_a
+        .par_iter()
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| chematic_fp::ecfp4(&mol))
         .collect();
 
-    let fps_b: Vec<chematic_fp::bitvec::BitVec2048> = smiles_b.par_iter()
+    let fps_b: Vec<chematic_fp::bitvec::BitVec2048> = smiles_b
+        .par_iter()
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| chematic_fp::ecfp4(&mol))
         .collect();
@@ -336,7 +393,8 @@ pub fn tanimoto_search<'py>(
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
     let query_fp = chematic_fp::ecfp4(&query_mol);
 
-    let db_fps: Vec<chematic_fp::bitvec::BitVec2048> = smiles.par_iter()
+    let db_fps: Vec<chematic_fp::bitvec::BitVec2048> = smiles
+        .par_iter()
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| chematic_fp::ecfp4(&mol))
         .collect();
@@ -350,6 +408,35 @@ pub fn tanimoto_search<'py>(
 }
 
 // ---------------------------------------------------------------------------
+// bulk.map4 — batch MAP4 fingerprints as numpy (N, 1024) uint32
+// ---------------------------------------------------------------------------
+
+/// Compute MAP4 fingerprints for a list of SMILES in parallel.
+///
+/// Returns a numpy array of shape ``(N, 1024)`` with ``dtype=uint32``.
+/// Use :func:`chematic.tanimoto_map4` (not :func:`chematic.tanimoto`) for similarity.
+/// Invalid SMILES are silently skipped.
+///
+///     fps = chematic.bulk.map4(smiles_list)  # shape (N, 1024), dtype uint32
+#[pyfunction]
+pub fn map4<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<u32>> {
+    let fps: Vec<Vec<u32>> = smiles
+        .par_iter()
+        .filter_map(|s| chematic_smiles::parse(s).ok())
+        .map(|mol| chematic_fp::map4_default(&mol))
+        .collect();
+
+    let n = fps.len();
+    if n == 0 {
+        return Array2::<u32>::zeros((0, 1024)).into_pyarray(py);
+    }
+    let flat: Vec<u32> = fps.into_iter().flatten().collect();
+    Array2::from_shape_vec((n, 1024), flat)
+        .expect("shape mismatch")
+        .into_pyarray(py)
+}
+
+// ---------------------------------------------------------------------------
 // Register the bulk submodule
 // ---------------------------------------------------------------------------
 
@@ -357,6 +444,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     m.add_function(wrap_pyfunction!(ecfp4, m)?)?;
     m.add_function(wrap_pyfunction!(maccs, m)?)?;
+    m.add_function(wrap_pyfunction!(map4, m)?)?;
     m.add_function(wrap_pyfunction!(descriptors, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_search, m)?)?;

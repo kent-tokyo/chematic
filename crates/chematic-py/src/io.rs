@@ -87,12 +87,16 @@ fn parse_to_iter(content: &str) -> SdfIter {
     let records: Vec<PySdfRecord> = chematic_mol::SdfRecordReader::new(content)
         .filter_map(|r| r.ok())
         .map(|rec| PySdfRecord {
-            mol: Mol { inner: Arc::new(rec.mol) },
+            mol: Mol {
+                inner: Arc::new(rec.mol),
+            },
             name: rec.meta.name,
             props: rec.properties,
         })
         .collect();
-    SdfIter { records: records.into_iter() }
+    SdfIter {
+        records: records.into_iter(),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -114,9 +118,7 @@ fn parse_to_iter(content: &str) -> SdfIter {
 #[pyfunction]
 pub fn iter_sdf(path: &str) -> PyResult<SdfIter> {
     let content = std::fs::read_to_string(path)
-        .map_err(|e| pyo3::exceptions::PyIOError::new_err(
-            format!("{path}: {e}")
-        ))?;
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
     Ok(parse_to_iter(&content))
 }
 

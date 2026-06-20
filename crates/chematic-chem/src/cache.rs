@@ -7,8 +7,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 /// Descriptor cache entry: stores computed descriptor values.
-#[derive(Clone, Debug, PartialEq)]
-#[derive(Default)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct DescriptorEntry {
     /// Molecular weight (Ø = computed on demand)
     pub mw: Option<f64>,
@@ -23,7 +22,6 @@ pub struct DescriptorEntry {
     /// Rotatable bond count (Ø)
     pub rotb: Option<usize>,
 }
-
 
 /// Thread-safe descriptor cache with max_size limit.
 #[derive(Clone, Debug)]
@@ -43,10 +41,7 @@ impl DescriptorCache {
 
     /// Get cached entry for molecule (keyed by canonical SMILES).
     pub fn get(&self, smiles: &str) -> Option<DescriptorEntry> {
-        self.cache
-            .lock()
-            .ok()
-            .and_then(|c| c.get(smiles).cloned())
+        self.cache.lock().ok().and_then(|c| c.get(smiles).cloned())
     }
 
     /// Store/update cached entry.

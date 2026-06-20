@@ -14,17 +14,17 @@ pub mod align;
 pub mod conformer;
 pub mod constraints;
 pub mod coords;
+pub mod descriptors_3d;
 pub mod determine_bonds;
 pub mod dg;
 pub mod dg_fft;
-pub mod descriptors_3d;
 pub mod etkdg;
 pub mod etkdg_knowledge;
 pub mod md;
 pub mod minimize;
 pub mod mol_transforms;
-pub mod pharmacophore_fp_3d;
 pub mod pdb;
+pub mod pharmacophore_fp_3d;
 pub mod sasa;
 pub mod shape_descriptors;
 pub mod stereo3d;
@@ -32,14 +32,18 @@ pub mod usr;
 pub mod xyz;
 
 pub use align::{AlignResult, align_coords, apply_alignment, rmsd_no_align};
-pub use determine_bonds::{DetermineError, MAX_ATOMS as DETERMINE_BONDS_MAX_ATOMS, determine_bonds};
 pub use conformer::{ConformerEnsemble, ConformerError};
 pub use constraints::{
     AngleConstraint, BondConstraint, ConstraintSet, build_constraints, satisfy_constraints,
 };
+pub use determine_bonds::{
+    DetermineError, MAX_ATOMS as DETERMINE_BONDS_MAX_ATOMS, determine_bonds,
+};
 // Note: ConformerConfig is defined in lib.rs and exported here
 pub use coords::{Coords3D, Point3};
-pub use descriptors_3d::{autocorr_3d, getaway_descriptors, whim_descriptors, whim_getaway_combined};
+pub use descriptors_3d::{
+    autocorr_3d, getaway_descriptors, whim_descriptors, whim_getaway_combined,
+};
 pub use dg::generate_coords;
 pub use etkdg::generate_coords_etkdg;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
@@ -51,19 +55,19 @@ pub use mol_transforms::{
     center_on_origin, compute_centroid, get_bond_angle, get_bond_angle_deg, get_bond_length,
     get_dihedral, get_dihedral_deg, set_dihedral, transform_conformer,
 };
-pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
+pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use sasa::{
-    sasa, sasa_per_atom, shrake_rupley_sasa, sasa_descriptor, sasa_per_element,
-    sasa_from_dg, sasa_per_atom_from_dg, sasa_descriptor_from_dg, sasa_per_element_from_dg,
-    calc_mol_sasa, calc_mol_sasa_with_probe, SasaDescriptor, PerElementSasa,
+    PerElementSasa, SasaDescriptor, calc_mol_sasa, calc_mol_sasa_with_probe, sasa, sasa_descriptor,
+    sasa_descriptor_from_dg, sasa_from_dg, sasa_per_atom, sasa_per_atom_from_dg, sasa_per_element,
+    sasa_per_element_from_dg, shrake_rupley_sasa,
 };
 pub use shape_descriptors::{
     asphericity, eccentricity, npr1, npr2, plane_of_best_fit, pmi, pmi1, pmi2, pmi3,
     radius_of_gyration,
 };
 pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
-pub use usr::{usr_descriptors, usr_similarity, usr_from_dg, shape_screen};
+pub use usr::{shape_screen, usr_descriptors, usr_from_dg, usr_similarity};
 pub use xyz::{XyzError, parse_xyz, write_xyz};
 
 // ---------------------------------------------------------------------------
@@ -85,7 +89,7 @@ impl Default for ConformerConfig {
     fn default() -> Self {
         Self {
             count: 1,
-            rmsd_threshold: 0.5,  // Default: keep conformers at least 0.5 Å apart
+            rmsd_threshold: 0.5, // Default: keep conformers at least 0.5 Å apart
         }
     }
 }
@@ -132,7 +136,7 @@ pub fn generate_conformer_ensemble(
 ) -> Result<ConformerEnsemble, ConformerError> {
     let config = ConformerConfig {
         count,
-        rmsd_threshold: 0.0,  // No pruning for backward compatibility
+        rmsd_threshold: 0.0, // No pruning for backward compatibility
     };
     generate_conformer_ensemble_with_config(mol, &config)
 }
@@ -166,12 +170,10 @@ pub fn generate_conformer_ensemble_with_config(
             for i in 0..ensemble.conformer_count() {
                 if let Some(existing) = ensemble.get_conformer(i) {
                     // Convert Point3 vectors to [f64; 3] arrays for rmsd_no_align
-                    let min_array: Vec<[f64; 3]> = minimized.points.iter()
-                        .map(|p| [p.x, p.y, p.z])
-                        .collect();
-                    let exist_array: Vec<[f64; 3]> = existing.points.iter()
-                        .map(|p| [p.x, p.y, p.z])
-                        .collect();
+                    let min_array: Vec<[f64; 3]> =
+                        minimized.points.iter().map(|p| [p.x, p.y, p.z]).collect();
+                    let exist_array: Vec<[f64; 3]> =
+                        existing.points.iter().map(|p| [p.x, p.y, p.z]).collect();
                     let rmsd = rmsd_no_align(&min_array, &exist_array);
                     if rmsd < config.rmsd_threshold {
                         is_duplicate = true;
@@ -180,7 +182,7 @@ pub fn generate_conformer_ensemble_with_config(
                 }
             }
             if is_duplicate {
-                continue;  // Skip this conformer
+                continue; // Skip this conformer
             }
         }
 
@@ -497,7 +499,11 @@ mod tests {
     fn test_point3_dot() {
         let p1 = Point3::new(1.0, 0.0, 0.0);
         let p2 = Point3::new(0.0, 1.0, 0.0);
-        assert_eq!(p1.dot(&p2), 0.0, "perpendicular vectors have zero dot product");
+        assert_eq!(
+            p1.dot(&p2),
+            0.0,
+            "perpendicular vectors have zero dot product"
+        );
 
         let p3 = Point3::new(1.0, 2.0, 3.0);
         let p4 = Point3::new(1.0, 2.0, 3.0);
@@ -587,7 +593,8 @@ mod tests {
     #[test]
     fn test_pdb_atom_record_parsed() {
         // ATOM record (not only HETATM)
-        let pdb = "ATOM      1  C   ALA A   1       0.000   0.000   0.000  1.00  0.00           C\nEND\n";
+        let pdb =
+            "ATOM      1  C   ALA A   1       0.000   0.000   0.000  1.00  0.00           C\nEND\n";
         let atoms = parse_pdb_atoms(pdb);
         assert_eq!(atoms.len(), 1);
         assert_eq!(atoms[0].element, "C");
@@ -622,7 +629,7 @@ mod tests {
         let mol = parse("CC").expect("ethane SMILES");
         let config = ConformerConfig {
             count: 2,
-            rmsd_threshold: 0.0,  // No pruning
+            rmsd_threshold: 0.0, // No pruning
         };
         let ensemble = generate_conformer_ensemble_with_config(mol, &config)
             .expect("should generate ensemble");
@@ -639,7 +646,11 @@ mod tests {
         };
         let ensemble = generate_conformer_ensemble_with_config(mol, &config)
             .expect("should create empty ensemble");
-        assert_eq!(ensemble.conformer_count(), 0, "empty config should yield no conformers");
+        assert_eq!(
+            ensemble.conformer_count(),
+            0,
+            "empty config should yield no conformers"
+        );
     }
 
     #[test]
@@ -648,7 +659,7 @@ mod tests {
         let mol = parse("C").expect("methane SMILES");
         let config = ConformerConfig {
             count: 5,
-            rmsd_threshold: 1.0,  // High threshold to prune most duplicates
+            rmsd_threshold: 1.0, // High threshold to prune most duplicates
         };
         let ensemble = generate_conformer_ensemble_with_config(mol, &config)
             .expect("should generate ensemble with pruning");
@@ -663,8 +674,11 @@ mod tests {
     #[test]
     fn test_conformer_backward_compatibility() {
         let mol = parse("CC").expect("ethane SMILES");
-        let ensemble = generate_conformer_ensemble(mol, 2)
-            .expect("should generate ensemble");
-        assert_eq!(ensemble.conformer_count(), 2, "backward-compatible API should work");
+        let ensemble = generate_conformer_ensemble(mol, 2).expect("should generate ensemble");
+        assert_eq!(
+            ensemble.conformer_count(),
+            2,
+            "backward-compatible API should work"
+        );
     }
 }

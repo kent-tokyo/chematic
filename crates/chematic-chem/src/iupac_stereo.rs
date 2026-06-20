@@ -58,7 +58,10 @@ mod tests {
     fn achiral_butane_no_prefix() {
         let mol = parse("CCCC").unwrap();
         let name = iupac_name_stereo(&mol).unwrap();
-        assert!(!name.starts_with('('), "achiral molecule: no stereo prefix, got {name}");
+        assert!(
+            !name.starts_with('('),
+            "achiral molecule: no stereo prefix, got {name}"
+        );
     }
 
     #[test]
@@ -80,6 +83,9 @@ mod tests {
     fn achiral_cyclohexane_no_prefix() {
         let mol = parse("C1CCCCC1").unwrap();
         let name = iupac_name_stereo(&mol).unwrap();
-        assert!(!name.starts_with('('), "achiral cyclohexane: no prefix, got {name}");
+        assert!(
+            !name.starts_with('('),
+            "achiral cyclohexane: no prefix, got {name}"
+        );
     }
 }

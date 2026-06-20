@@ -1,6 +1,6 @@
 //! Reaction SMARTS querying for chemical reaction matching.
 
-use chematic_smarts::{find_matches, parse_smarts, QueryMolecule};
+use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
 use std::collections::HashSet;
 
 use crate::reaction::Reaction;
@@ -61,7 +61,9 @@ pub struct ReactantMatches {
 impl ReactantMatches {
     /// Get all molecules that matched a specific reactant pattern.
     pub fn get_pattern_matches(&self, pattern_index: usize) -> Option<&[MoleculeMatch]> {
-        self.pattern_matches.get(pattern_index).map(|v| v.as_slice())
+        self.pattern_matches
+            .get(pattern_index)
+            .map(|v| v.as_slice())
     }
 
     /// Check if a specific reactant pattern matched any molecule.
@@ -82,7 +84,9 @@ pub struct ProductMatches {
 impl ProductMatches {
     /// Get all molecules that matched a specific product pattern.
     pub fn get_pattern_matches(&self, pattern_index: usize) -> Option<&[MoleculeMatch]> {
-        self.pattern_matches.get(pattern_index).map(|v| v.as_slice())
+        self.pattern_matches
+            .get(pattern_index)
+            .map(|v| v.as_slice())
     }
 
     /// Check if a specific product pattern matched any molecule.
@@ -107,12 +111,18 @@ pub struct ReactionSmartsMatch {
 impl ReactionSmartsMatch {
     /// Check if all reactant patterns matched.
     pub fn all_reactants_matched(&self) -> bool {
-        self.reactant_matches.pattern_matches.iter().all(|m| !m.is_empty())
+        self.reactant_matches
+            .pattern_matches
+            .iter()
+            .all(|m| !m.is_empty())
     }
 
     /// Check if all product patterns matched.
     pub fn all_products_matched(&self) -> bool {
-        self.product_matches.pattern_matches.iter().all(|m| !m.is_empty())
+        self.product_matches
+            .pattern_matches
+            .iter()
+            .all(|m| !m.is_empty())
     }
 }
 
@@ -120,7 +130,8 @@ impl MapNumberInfo {
     /// Check if all map numbers are consistent across reactants and products.
     pub fn validate(&self) -> Result<(), String> {
         // All map numbers in reactants must appear in products
-        let missing_in_products: Vec<u16> = self.reactant_maps
+        let missing_in_products: Vec<u16> = self
+            .reactant_maps
             .iter()
             .filter(|&m| !self.product_maps.contains(m))
             .copied()
@@ -134,7 +145,8 @@ impl MapNumberInfo {
         }
 
         // All map numbers in products should be in reactants
-        let undefined_in_reactants: Vec<u16> = self.product_maps
+        let undefined_in_reactants: Vec<u16> = self
+            .product_maps
             .iter()
             .filter(|&m| !self.reactant_maps.contains(m))
             .copied()
@@ -214,7 +226,9 @@ pub mod rdkit_compat {
     /// Returns a `RDKitCompatReport` with compatibility status and any warnings.
     /// Both chematic and RDKit support the same reaction SMARTS format, but
     /// there may be subtle differences in pattern matching behavior.
-    pub fn check_rdkit_compatibility(smarts: &str) -> Result<RDKitCompatReport, ReactionQueryError> {
+    pub fn check_rdkit_compatibility(
+        smarts: &str,
+    ) -> Result<RDKitCompatReport, ReactionQueryError> {
         let mut warnings = Vec::new();
 
         // Detect format
@@ -248,7 +262,8 @@ pub mod rdkit_compat {
         let section_count = smarts.matches('>').count();
         let has_or_patterns = smarts.contains('|');
         if has_or_patterns && section_count == 0 {
-            warnings.push("pipe-separated patterns (|) require at least one > delimiter".to_string());
+            warnings
+                .push("pipe-separated patterns (|) require at least one > delimiter".to_string());
         }
 
         Ok(RDKitCompatReport {
@@ -315,7 +330,10 @@ pub mod rdkit_compat {
             .match_indices(':')
             .filter_map(|(i, _)| {
                 let remainder = &smarts[i + 1..];
-                let digits: String = remainder.chars().take_while(|c| c.is_ascii_digit()).collect();
+                let digits: String = remainder
+                    .chars()
+                    .take_while(|c| c.is_ascii_digit())
+                    .collect();
                 if !digits.is_empty() {
                     digits.parse().ok()
                 } else {
@@ -326,7 +344,10 @@ pub mod rdkit_compat {
 
         for map_num in map_nums {
             if map_num == 0 || map_num > 999 {
-                return Err(format!("map number :{} outside RDKit range [1-999]", map_num));
+                return Err(format!(
+                    "map number :{} outside RDKit range [1-999]",
+                    map_num
+                ));
             }
         }
 
@@ -349,7 +370,9 @@ pub mod rdkit_compat {
 /// // Legacy format
 /// let pattern = parse_reaction_smarts("[C:1][C:2]>>[C:2][C:1]").unwrap();
 /// ```
-pub fn parse_reaction_smarts(smarts_str: &str) -> Result<ReactionSmartsPattern, ReactionQueryError> {
+pub fn parse_reaction_smarts(
+    smarts_str: &str,
+) -> Result<ReactionSmartsPattern, ReactionQueryError> {
     // Detect format by looking for ">>" or ">"
     let has_double_arrow = smarts_str.contains(">>");
 
@@ -409,12 +432,14 @@ fn extract_map_numbers(smarts_str: &str) -> Result<MapNumberInfo, ReactionQueryE
     } else {
         let arrow_positions: Vec<_> = smarts_str.match_indices('>').collect();
         match arrow_positions.len() {
-            0 => return Ok(MapNumberInfo {
-                all_map_numbers,
-                reactant_maps,
-                agent_maps,
-                product_maps,
-            }),
+            0 => {
+                return Ok(MapNumberInfo {
+                    all_map_numbers,
+                    reactant_maps,
+                    agent_maps,
+                    product_maps,
+                });
+            }
             1 => {
                 let idx = arrow_positions[0].0;
                 (idx, idx + 1, idx + 1, idx + 1)
@@ -490,9 +515,10 @@ fn extract_map_numbers_from_section(smarts: &str) -> Vec<u16> {
             }
 
             if !num_str.is_empty()
-                && let Ok(num) = num_str.parse::<u16>() {
-                    map_numbers.push(num);
-                }
+                && let Ok(num) = num_str.parse::<u16>()
+            {
+                map_numbers.push(num);
+            }
         }
     }
 
@@ -608,10 +634,7 @@ pub fn has_reaction_substructure_match(rxn: &Reaction, query: &ReactionQuery) ->
 /// - Overall match status
 ///
 /// This is useful for understanding *how* a reaction matches, not just *whether* it matches.
-pub fn get_reaction_smarts_matches(
-    rxn: &Reaction,
-    query: &ReactionQuery,
-) -> ReactionSmartsMatch {
+pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> ReactionSmartsMatch {
     // Collect all reactant pattern matches
     let mut reactant_pattern_matches = Vec::new();
     for (pattern_idx, pattern) in query.reactant_patterns.iter().enumerate() {
@@ -1183,11 +1206,19 @@ mod tests {
 
         // Reactant has one molecule matching the pattern
         assert_eq!(matches.reactant_matches.pattern_matches[0].len(), 1);
-        assert!(!matches.reactant_matches.pattern_matches[0][0].atom_indices.is_empty());
+        assert!(
+            !matches.reactant_matches.pattern_matches[0][0]
+                .atom_indices
+                .is_empty()
+        );
 
         // Product has one molecule matching the pattern
         assert_eq!(matches.product_matches.pattern_matches[0].len(), 1);
-        assert!(!matches.product_matches.pattern_matches[0][0].atom_indices.is_empty());
+        assert!(
+            !matches.product_matches.pattern_matches[0][0]
+                .atom_indices
+                .is_empty()
+        );
     }
 
     // ===== Phase 3: RDKit Compatibility Tooling =====
@@ -1455,18 +1486,9 @@ mod tests {
     fn test_reaction_pattern_library_multiple_patterns() {
         let mut library = ReactionPatternLibrary::new();
 
-        let _ = library.add_pattern_from_smarts(
-            "reaction1".to_string(),
-            "[C:1]>>[C:1]",
-        );
-        let _ = library.add_pattern_from_smarts(
-            "reaction2".to_string(),
-            "[N:1]>>[N:1]",
-        );
-        let _ = library.add_pattern_from_smarts(
-            "reaction3".to_string(),
-            "[O:1]>>[O:1]",
-        );
+        let _ = library.add_pattern_from_smarts("reaction1".to_string(), "[C:1]>>[C:1]");
+        let _ = library.add_pattern_from_smarts("reaction2".to_string(), "[N:1]>>[N:1]");
+        let _ = library.add_pattern_from_smarts("reaction3".to_string(), "[O:1]>>[O:1]");
 
         assert_eq!(library.len(), 3);
 
@@ -1478,10 +1500,7 @@ mod tests {
     #[test]
     fn test_batch_query_with_library() {
         let mut library = ReactionPatternLibrary::new();
-        let _ = library.add_pattern_from_smarts(
-            "carbon_only".to_string(),
-            "[C:1]>>[C:1]",
-        );
+        let _ = library.add_pattern_from_smarts("carbon_only".to_string(), "[C:1]>>[C:1]");
 
         let rxn1 = parse_reaction("C>>C").unwrap();
         let rxn2 = parse_reaction("CC>>C").unwrap();

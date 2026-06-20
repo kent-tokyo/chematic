@@ -10,13 +10,11 @@
 mod convert;
 pub(crate) mod ffi;
 
+use chematic_core::Molecule;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use chematic_core::Molecule;
-
 
 use convert::ConvertError;
-
 
 use ffi::{FreeStdINCHI, GetStdINCHI, GetStdINCHIKeyFromStdINCHI, InchiInput, InchiOutput};
 
@@ -104,7 +102,11 @@ pub fn standard_inchi(mol: &Molecule) -> Result<String, InchiError> {
         let msg = if output.sz_message.is_null() {
             String::from("unknown error")
         } else {
-            unsafe { CStr::from_ptr(output.sz_message).to_string_lossy().into_owned() }
+            unsafe {
+                CStr::from_ptr(output.sz_message)
+                    .to_string_lossy()
+                    .into_owned()
+            }
         };
         unsafe { FreeStdINCHI(&mut output) };
         return Err(InchiError::LibError(msg));
@@ -115,15 +117,18 @@ pub fn standard_inchi(mol: &Molecule) -> Result<String, InchiError> {
         return Err(InchiError::NullOutput);
     }
 
-    let inchi = unsafe { CStr::from_ptr(output.sz_inchi).to_string_lossy().into_owned() };
+    let inchi = unsafe {
+        CStr::from_ptr(output.sz_inchi)
+            .to_string_lossy()
+            .into_owned()
+    };
     unsafe { FreeStdINCHI(&mut output) };
     Ok(inchi)
 }
 
 /// Compute the standard 27-character InChIKey from a standard InChI string.
 pub fn standard_inchi_key(inchi_str: &str) -> Result<String, InchiError> {
-    let c_inchi = CString::new(inchi_str)
-        .map_err(|e| InchiError::InvalidInput(e.to_string()))?;
+    let c_inchi = CString::new(inchi_str).map_err(|e| InchiError::InvalidInput(e.to_string()))?;
 
     // 27 characters + null terminator = 28 bytes.
     let mut key_buf = vec![0 as c_char; 28];

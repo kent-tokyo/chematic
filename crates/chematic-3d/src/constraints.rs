@@ -677,7 +677,10 @@ mod tests {
         let result = satisfy_constraints(&coords, &mol, &constraints, 20);
 
         let dist = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
-        assert!((dist - target_dist).abs() < 0.1, "Bond constraint should converge to target distance");
+        assert!(
+            (dist - target_dist).abs() < 0.1,
+            "Bond constraint should converge to target distance"
+        );
     }
 
     #[test]

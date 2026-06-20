@@ -234,25 +234,31 @@ mod tests {
 
     #[test]
     fn test_usr_from_dg_different_molecules() {
-        let benzene  = chematic_smiles::parse("c1ccccc1").unwrap();
-        let ethanol  = chematic_smiles::parse("CCO").unwrap();
-        let d_benz   = usr_from_dg(&benzene);
-        let d_eth    = usr_from_dg(&ethanol);
+        let benzene = chematic_smiles::parse("c1ccccc1").unwrap();
+        let ethanol = chematic_smiles::parse("CCO").unwrap();
+        let d_benz = usr_from_dg(&benzene);
+        let d_eth = usr_from_dg(&ethanol);
         let sim = usr_similarity(&d_benz, &d_eth);
-        assert!(sim < 1.0, "benzene and ethanol should not have identical shape");
+        assert!(
+            sim < 1.0,
+            "benzene and ethanol should not have identical shape"
+        );
         assert!(sim >= 0.0, "similarity must be non-negative");
     }
 
     #[test]
     fn test_shape_screen_returns_sorted() {
-        let query   = chematic_smiles::parse("c1ccccc1").unwrap();
+        let query = chematic_smiles::parse("c1ccccc1").unwrap();
         let toluene = chematic_smiles::parse("Cc1ccccc1").unwrap();
         let ethanol = chematic_smiles::parse("CCO").unwrap();
         let library = vec![&ethanol as &chematic_core::Molecule, &toluene];
         let results = shape_screen(&query, &library);
         assert_eq!(results.len(), 2);
         // Results should be sorted descending
-        assert!(results[0].1 >= results[1].1, "results should be sorted by decreasing similarity");
+        assert!(
+            results[0].1 >= results[1].1,
+            "results should be sorted by decreasing similarity"
+        );
         // Toluene (index 1) should score higher than ethanol (index 0) vs benzene
         let toluene_hit = results.iter().find(|(i, _)| *i == 1);
         assert!(toluene_hit.is_some());

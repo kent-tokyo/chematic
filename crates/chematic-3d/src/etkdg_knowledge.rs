@@ -52,9 +52,7 @@ pub enum AtomType {
 /// Count bonds of a given order incident to an atom.
 fn count_incident_bonds(mol: &Molecule, idx: AtomIdx, order: chematic_core::BondOrder) -> usize {
     mol.bonds()
-        .filter(|(_, bond)| {
-            (bond.atom1 == idx || bond.atom2 == idx) && bond.order == order
-        })
+        .filter(|(_, bond)| (bond.atom1 == idx || bond.atom2 == idx) && bond.order == order)
         .count()
 }
 
@@ -111,15 +109,14 @@ pub fn classify_atom_type(mol: &Molecule, idx: AtomIdx) -> AtomType {
         }
         8 => {
             // Oxygen: distinguish sp2 (carbonyl C=O) from sp3 (alcohol, ether C-O)
-            let has_double_bond = mol
-                .bonds()
-                .any(|(_, bond)| {
-                    (bond.atom1 == idx || bond.atom2 == idx) && bond.order == chematic_core::BondOrder::Double
-                });
+            let has_double_bond = mol.bonds().any(|(_, bond)| {
+                (bond.atom1 == idx || bond.atom2 == idx)
+                    && bond.order == chematic_core::BondOrder::Double
+            });
             if has_double_bond {
-                AtomType::OSp2  // Carbonyl oxygen (C=O)
+                AtomType::OSp2 // Carbonyl oxygen (C=O)
             } else {
-                AtomType::OSp3  // Alcohol or ether oxygen (C-O)
+                AtomType::OSp3 // Alcohol or ether oxygen (C-O)
             }
         }
         16 => AtomType::S,
@@ -152,7 +149,7 @@ pub fn get_torsion_preference(
     {
         return Some(TorsionPreference {
             angle_deg: 180.0,
-            penalty_per_degree: 0.15,  // ~3 kcal/mol for 20° deviation
+            penalty_per_degree: 0.15, // ~3 kcal/mol for 20° deviation
         });
     }
 
@@ -164,7 +161,7 @@ pub fn get_torsion_preference(
     {
         return Some(TorsionPreference {
             angle_deg: 180.0,
-            penalty_per_degree: 0.08,  // Softer constraint
+            penalty_per_degree: 0.08, // Softer constraint
         });
     }
 
@@ -173,7 +170,7 @@ pub fn get_torsion_preference(
     if b_type == AtomType::NSp2 && c_type == AtomType::CCarbonyl {
         return Some(TorsionPreference {
             angle_deg: 180.0,
-            penalty_per_degree: 0.20,  // Moderate restriction
+            penalty_per_degree: 0.20, // Moderate restriction
         });
     }
 
@@ -189,7 +186,7 @@ pub fn get_torsion_preference(
     if b_type == AtomType::CAromatic && c_type == AtomType::CAromatic {
         return Some(TorsionPreference {
             angle_deg: 45.0,
-            penalty_per_degree: 0.03,  // Very soft — flat potential
+            penalty_per_degree: 0.03, // Very soft — flat potential
         });
     }
 
@@ -272,9 +269,7 @@ pub fn get_torsion_preference(
     }
 
     // Alcohol C-C-O-H / ether C-C-O-C: gauche/anti mixture, use 180° as default
-    if (b_type == AtomType::CSp3 || b_type == AtomType::CSp2Alkene)
-        && c_type == AtomType::OSp3
-    {
+    if (b_type == AtomType::CSp3 || b_type == AtomType::CSp2Alkene) && c_type == AtomType::OSp3 {
         return Some(TorsionPreference {
             angle_deg: 180.0,
             penalty_per_degree: 0.07,
@@ -284,9 +279,7 @@ pub fn get_torsion_preference(
     // Amine C-C-N-C (secondary/tertiary): prefer 180°
     // NSp2 covers N with 2 explicit bonds (secondary amine in SMILES);
     // NSp3 covers N with 3+ explicit bonds (tertiary amine).
-    if b_type == AtomType::CSp3
-        && (c_type == AtomType::NSp3 || c_type == AtomType::NSp2)
-    {
+    if b_type == AtomType::CSp3 && (c_type == AtomType::NSp3 || c_type == AtomType::NSp2) {
         return Some(TorsionPreference {
             angle_deg: 180.0,
             penalty_per_degree: 0.08,
@@ -310,10 +303,11 @@ pub fn get_torsion_preference(
     }
 
     // Urea N-C(=O)-N: planar, prefer 0° (both N lone pairs overlap with C=O)
-    if b_type == AtomType::NSp2 && c_type == AtomType::NSp2
-        && mol.neighbors(b_idx).any(|(n, _)| {
-            classify_atom_type(mol, n) == AtomType::CCarbonyl
-        })
+    if b_type == AtomType::NSp2
+        && c_type == AtomType::NSp2
+        && mol
+            .neighbors(b_idx)
+            .any(|(n, _)| classify_atom_type(mol, n) == AtomType::CCarbonyl)
     {
         return Some(TorsionPreference {
             angle_deg: 0.0,
@@ -379,10 +373,11 @@ pub fn get_torsion_preference(
     }
 
     // Imide N-C(=O)-C(=O): prefer 0° (both carbonyls on same side for conjugation)
-    if b_type == AtomType::NSp2 && c_type == AtomType::CCarbonyl
-        && mol.neighbors(c_idx).any(|(n, _)| {
-            classify_atom_type(mol, n) == AtomType::CCarbonyl
-        })
+    if b_type == AtomType::NSp2
+        && c_type == AtomType::CCarbonyl
+        && mol
+            .neighbors(c_idx)
+            .any(|(n, _)| classify_atom_type(mol, n) == AtomType::CCarbonyl)
     {
         return Some(TorsionPreference {
             angle_deg: 0.0,
@@ -406,13 +401,13 @@ pub fn get_torsion_preference(
         });
     }
 
-    None  // No specific preference; use default
+    None // No specific preference; use default
 }
 
 /// Default torsion preferences for general C-C-C-C patterns.
 pub fn default_torsion_preference() -> TorsionPreference {
     TorsionPreference {
-        angle_deg: 180.0,  // Prefer anti/staggered
+        angle_deg: 180.0, // Prefer anti/staggered
         penalty_per_degree: 0.10,
     }
 }
@@ -495,7 +490,10 @@ mod tests {
             penalty_per_degree: 0.1,
         };
         let score = score_torsion(160.0, &pref);
-        assert!((score - 2.0).abs() < 1e-6, "20° deviation should yield 2.0 penalty");
+        assert!(
+            (score - 2.0).abs() < 1e-6,
+            "20° deviation should yield 2.0 penalty"
+        );
     }
 
     #[test]
@@ -507,7 +505,10 @@ mod tests {
         // 180° and -180° are the same angle
         let score1 = score_torsion(180.0, &pref);
         let score2 = score_torsion(-180.0, &pref);
-        assert!((score1 - score2).abs() < 1e-6, "periodic angles should score the same");
+        assert!(
+            (score1 - score2).abs() < 1e-6,
+            "periodic angles should score the same"
+        );
     }
 
     #[test]
@@ -519,7 +520,7 @@ mod tests {
 
     #[test]
     fn test_alkane_torsion_preference() {
-        let mol = parse("CCCC").unwrap();  // butane
+        let mol = parse("CCCC").unwrap(); // butane
         if mol.atom_count() >= 4 {
             let pref = get_torsion_preference(&mol, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3));
             assert!(pref.is_some(), "butane C-C-C-C should have preference");
@@ -531,10 +532,13 @@ mod tests {
 
     #[test]
     fn test_biphenyl_torsion_preference() {
-        let mol = parse("c1ccccc1-c1ccccc1").unwrap();  // biphenyl
+        let mol = parse("c1ccccc1-c1ccccc1").unwrap(); // biphenyl
         // Atoms: 0-5 ring1, 6-11 ring2; bond between 0 and 6
         let pref = get_torsion_preference(&mol, AtomIdx(1), AtomIdx(0), AtomIdx(6), AtomIdx(7));
-        assert!(pref.is_some(), "biphenyl Ar-Ar should have a torsion preference");
+        assert!(
+            pref.is_some(),
+            "biphenyl Ar-Ar should have a torsion preference"
+        );
         if let Some(p) = pref {
             assert_eq!(p.angle_deg, 45.0, "biphenyl prefers ~45° twist");
         }
@@ -554,7 +558,7 @@ mod tests {
 
     #[test]
     fn test_disulfide_torsion_preference() {
-        let mol = parse("CSSC").unwrap();  // dimethyl disulfide
+        let mol = parse("CSSC").unwrap(); // dimethyl disulfide
         // bond S(1)-S(2): b_type=S, c_type=S
         let b_type = classify_atom_type(&mol, AtomIdx(1));
         let c_type = classify_atom_type(&mol, AtomIdx(2));
@@ -569,7 +573,7 @@ mod tests {
 
     #[test]
     fn test_nitrile_torsion_preference() {
-        let mol = parse("CCC#N").unwrap();  // propionitrile
+        let mol = parse("CCC#N").unwrap(); // propionitrile
         // N is atom 3, atom type NSp
         let n_type = classify_atom_type(&mol, AtomIdx(3));
         assert_eq!(n_type, AtomType::NSp, "nitrile N should be NSp");
@@ -582,7 +586,7 @@ mod tests {
 
     #[test]
     fn test_amine_torsion_preference() {
-        let mol = parse("CCNC").unwrap();  // ethyl methyl amine
+        let mol = parse("CCNC").unwrap(); // ethyl methyl amine
         // bond C(1)-N(2): b=CSp3, c=NSp2 (secondary amine: 2 explicit bonds)
         let pref = get_torsion_preference(&mol, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3));
         assert!(pref.is_some(), "amine C-C-N-C should have preference");
@@ -593,18 +597,24 @@ mod tests {
 
     #[test]
     fn test_phenyl_ketone_torsion_preference() {
-        let mol = parse("c1ccccc1C(=O)C").unwrap();  // acetophenone
+        let mol = parse("c1ccccc1C(=O)C").unwrap(); // acetophenone
         // The C(=O) carbon is CCarbonyl, connected to CAromatic
         // Find the carbonyl carbon
         let c_carbonyl_idx = (0..mol.atom_count() as u32)
             .map(AtomIdx)
             .find(|&i| classify_atom_type(&mol, i) == AtomType::CCarbonyl);
-        assert!(c_carbonyl_idx.is_some(), "acetophenone should have a carbonyl C");
+        assert!(
+            c_carbonyl_idx.is_some(),
+            "acetophenone should have a carbonyl C"
+        );
     }
 
     #[test]
     fn test_score_torsion_disulfide_at_90() {
-        let pref = TorsionPreference { angle_deg: 90.0, penalty_per_degree: 0.1 };
+        let pref = TorsionPreference {
+            angle_deg: 90.0,
+            penalty_per_degree: 0.1,
+        };
         let score = score_torsion(90.0, &pref);
         assert!(score.abs() < 1e-6, "at preferred angle score should be 0");
         let score_off = score_torsion(90.0 + 20.0, &pref);
@@ -624,11 +634,23 @@ mod tests {
         let mol_amine = parse("CCNC").unwrap();
 
         let cases = [
-            (&mol_alkane,   AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)),
-            (&mol_biphenyl, AtomIdx(1), AtomIdx(0), AtomIdx(6), AtomIdx(7)),
-            (&mol_disulfide, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)),
-            (&mol_nitrile,  AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)),
-            (&mol_amine,    AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)),
+            (&mol_alkane, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)),
+            (
+                &mol_biphenyl,
+                AtomIdx(1),
+                AtomIdx(0),
+                AtomIdx(6),
+                AtomIdx(7),
+            ),
+            (
+                &mol_disulfide,
+                AtomIdx(0),
+                AtomIdx(1),
+                AtomIdx(2),
+                AtomIdx(3),
+            ),
+            (&mol_nitrile, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)),
+            (&mol_amine, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)),
         ];
         for (mol, a, b, c, d) in &cases {
             let pref = get_torsion_preference(mol, *a, *b, *c, *d);
@@ -636,9 +658,11 @@ mod tests {
             let _ = pref; // just ensuring no panic
         }
         // The amide and ester patterns
-        let pref_amide = get_torsion_preference(&mol_amide, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(2));
+        let pref_amide =
+            get_torsion_preference(&mol_amide, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(2));
         let _ = pref_amide;
-        let pref_ester = get_torsion_preference(&mol_ester, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3));
+        let pref_ester =
+            get_torsion_preference(&mol_ester, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3));
         let _ = pref_ester;
     }
 }

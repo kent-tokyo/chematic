@@ -1188,9 +1188,15 @@ mod tests {
         let svg = render_dative_bond(p1, p2, "black");
 
         // Should contain line SVG element
-        assert!(svg.contains("<line"), "dative bond should include line element");
+        assert!(
+            svg.contains("<line"),
+            "dative bond should include line element"
+        );
         // Should contain polygon for arrowhead
-        assert!(svg.contains("<polygon"), "dative bond should include arrowhead polygon");
+        assert!(
+            svg.contains("<polygon"),
+            "dative bond should include arrowhead polygon"
+        );
     }
 
     #[test]
@@ -1201,10 +1207,19 @@ mod tests {
         let svg = render_query_any_bond(p1, p2, "black");
 
         // Should contain dashed line
-        assert!(svg.contains("stroke-dasharray"), "query_any should have dashed line");
+        assert!(
+            svg.contains("stroke-dasharray"),
+            "query_any should have dashed line"
+        );
         // Should contain asterisk marker
-        assert!(svg.contains("*"), "query_any should include asterisk marker");
-        assert!(svg.contains("<text"), "query_any should include text for asterisk");
+        assert!(
+            svg.contains("*"),
+            "query_any should include asterisk marker"
+        );
+        assert!(
+            svg.contains("<text"),
+            "query_any should include text for asterisk"
+        );
     }
 
     #[test]
@@ -1214,7 +1229,10 @@ mod tests {
         let p2 = Point::new(10.0, 0.0);
         let svg = render_query_dashed_bond(p1, p2, "black", "2,2");
 
-        assert!(svg.contains("stroke-dasharray=\"2,2\""), "should have correct dash pattern");
+        assert!(
+            svg.contains("stroke-dasharray=\"2,2\""),
+            "should have correct dash pattern"
+        );
     }
 
     #[test]
@@ -1224,7 +1242,10 @@ mod tests {
         let p2 = Point::new(10.0, 0.0);
         let svg = render_query_dashed_bond(p1, p2, "black", "4,2");
 
-        assert!(svg.contains("stroke-dasharray=\"4,2\""), "should have correct dash pattern");
+        assert!(
+            svg.contains("stroke-dasharray=\"4,2\""),
+            "should have correct dash pattern"
+        );
     }
 
     #[test]
@@ -1234,7 +1255,10 @@ mod tests {
         let p2 = Point::new(10.0, 0.0);
         let svg = render_query_dashed_bond(p1, p2, "black", "3,3");
 
-        assert!(svg.contains("stroke-dasharray=\"3,3\""), "should have correct dash pattern");
+        assert!(
+            svg.contains("stroke-dasharray=\"3,3\""),
+            "should have correct dash pattern"
+        );
     }
 
     #[test]
@@ -1259,8 +1283,16 @@ mod tests {
 
         for (bond_order, name) in positions {
             let svg = render_bond_c(bond_order, p1, p2, "black");
-            assert!(!svg.is_empty(), "{} bond should produce non-empty SVG", name);
-            assert!(svg.contains("<"), "{} bond should contain SVG elements", name);
+            assert!(
+                !svg.is_empty(),
+                "{} bond should produce non-empty SVG",
+                name
+            );
+            assert!(
+                svg.contains("<"),
+                "{} bond should contain SVG elements",
+                name
+            );
         }
     }
 
@@ -1271,7 +1303,10 @@ mod tests {
         let p2 = Point::new(10.0, 0.0);
         let svg = render_dative_bond(p1, p2, "#FF0000");
 
-        assert!(svg.contains("#FF0000"), "dative bond should use specified color");
+        assert!(
+            svg.contains("#FF0000"),
+            "dative bond should use specified color"
+        );
     }
 
     #[test]
@@ -1282,7 +1317,10 @@ mod tests {
         let svg = render_query_any_bond(p1, p2, "black");
 
         // Should have text element with coordinates near midpoint (10.0, 0.0)
-        assert!(svg.contains("x=\"10.00\""), "asterisk should be near midpoint");
+        assert!(
+            svg.contains("x=\"10.00\""),
+            "asterisk should be near midpoint"
+        );
     }
 
     #[test]

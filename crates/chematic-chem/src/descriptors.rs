@@ -6,7 +6,9 @@
 
 use std::collections::HashSet;
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount};
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount,
+};
 use chematic_perception::find_sssr;
 use chematic_smarts::{find_matches, parse_smarts};
 
@@ -27,7 +29,6 @@ fn count_double_bonds_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> usize {
         })
         .count()
 }
-
 
 // --- Element Detection Helpers ---
 // Consolidate atomic number matching to eliminate 50+ hardcoded checks throughout the file.
@@ -222,7 +223,9 @@ pub fn hba_count(mol: &Molecule) -> usize {
                     // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
                     // this excludes radical N (C[N]C, valence 2) and unusual species.
                     let bov = bond_order_sum(mol, *idx) as usize + h as usize;
-                    if bov != 3 { return false; }
+                    if bov != 3 {
+                        return false;
+                    }
                     // Exclude N with single bond to any atom that itself has a
                     // NON-RING pi bond to O/N/P/S: amide, sulfonamide, phosphonamide,
                     // thioamide, etc.  Ring pi bonds (e.g. ring C=N in guanidinium)
@@ -230,11 +233,16 @@ pub fn hba_count(mol: &Molecule) -> usize {
                     !n_adjacent_to_pi_center(mol, *idx, &ring_bonds)
                 }
             } else if is_oxygen(an) {
-                if atom.charge > 0 { return false; } // O+ (oxonium) never HBA
-                if atom.charge < 0 { return true; }  // [O-] (carboxylate etc.) always HBA
+                if atom.charge > 0 {
+                    return false;
+                } // O+ (oxonium) never HBA
+                if atom.charge < 0 {
+                    return true;
+                } // [O-] (carboxylate etc.) always HBA
                 // Total H = implicit + explicit isotopic H (e.g. [2H]O[2H] = D2O)
                 let impl_h = implicit_hcount(mol, *idx);
-                let expl_h = mol.neighbors(*idx)
+                let expl_h = mol
+                    .neighbors(*idx)
                     .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                     .count() as u8;
                 match impl_h + expl_h {
@@ -246,21 +254,28 @@ pub fn hba_count(mol: &Molecule) -> usize {
                     _ => false,
                 }
             } else if is_sulfur(an) {
-                if atom.charge < 0 { return true; }  // [S-] always HBA
-                if atom.charge != 0 { return false; } // S+/S2+ etc. never HBA
+                if atom.charge < 0 {
+                    return true;
+                } // [S-] always HBA
+                if atom.charge != 0 {
+                    return false;
+                } // S+/S2+ etc. never HBA
                 if atom.aromatic {
                     // Aromatic s (thiophene-type): lone pair available
                     true
                 } else {
                     // Total H = implicit + explicit isotopic H (handles [2H]S[2H] = D2S)
                     let impl_h = implicit_hcount(mol, *idx);
-                    let expl_h = mol.neighbors(*idx)
+                    let expl_h = mol
+                        .neighbors(*idx)
                         .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                         .count() as u8;
                     let total_h = impl_h + expl_h;
                     // Formal valence = bond-order sum + implicit H (handles S=C case)
                     let bos = bond_order_sum(mol, *idx) as usize + impl_h as usize;
-                    if bos != 2 { return false; } // not divalent (sulfoxide/sulfone etc.)
+                    if bos != 2 {
+                        return false;
+                    } // not divalent (sulfoxide/sulfone etc.)
                     match total_h {
                         // SH: thiol — exclude if neighbor has =O/=N/=P/=S (thio-acid)
                         1 => !neighbor_has_pi_bond_to_onps(mol, *idx),
@@ -319,8 +334,10 @@ fn has_nonring_double_bond_to(
 fn n_adjacent_to_pi_center(mol: &Molecule, idx: AtomIdx, ring_bonds: &HashSet<BondIdx>) -> bool {
     mol.neighbors(idx).any(|(nb_idx, bidx)| {
         // Accept single, E/Z stereo, and aromatic bonds as "single-like"
-        matches!(mol.bond(bidx).order, BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic)
-            && (has_nonring_double_bond_to(mol, nb_idx, 8, ring_bonds)   // *=O
+        matches!(
+            mol.bond(bidx).order,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Aromatic
+        ) && (has_nonring_double_bond_to(mol, nb_idx, 8, ring_bonds)   // *=O
                 || has_nonring_double_bond_to(mol, nb_idx, 7, ring_bonds)  // *=N
                 || has_nonring_double_bond_to(mol, nb_idx, 16, ring_bonds) // *=S
                 || has_nonring_double_bond_to(mol, nb_idx, 15, ring_bonds)) // *=P
@@ -554,123 +571,135 @@ pub fn tpsa(mol: &Molecule) -> f64 {
 /// Patterns that fail to parse are silently skipped.
 static CRIPPEN_SMARTS: &[(&str, f64, f64)] = &[
     // --- Carbon (C1-C27 + CS fallback) ---
-    ("[CH4]",                                                       0.1441,  2.503),
-    ("[CH3]C",                                                      0.1441,  2.503),
-    ("[CH2](C)C",                                                   0.1441,  2.503),
-    ("[CH](C)(C)C",                                                 0.0000,  2.433),
-    ("[C](C)(C)(C)C",                                               0.0000,  2.433),
-    ("[CH3][N,O,P,S,F,Cl,Br,I]",                                  -0.2035,  2.753),
-    ("[CH2X4]([N,O,P,S,F,Cl,Br,I])[A;!#1]",                      -0.2035,  2.753),
-    ("[CH1X4]([N,O,P,S,F,Cl,Br,I])([A;!#1])[A;!#1]",             -0.2051,  2.731),
-    ("[CH0X4]([N,O,P,S,F,Cl,Br,I])([A;!#1])([A;!#1])[A;!#1]",   -0.2051,  2.731),
-    ("[C]=[!C;A;!#1]",                                             -0.2783,  5.007),
-    ("[CH2]=C",                                                     0.1551,  3.513),
-    ("[CH1](=C)[A;!#1]",                                           0.1551,  3.513),
-    ("[CH0](=C)([A;!#1])[A;!#1]",                                  0.1551,  3.513),
-    ("[C](=C)=C",                                                   0.1551,  3.513),
-    ("[CX2]#[A;!#1]",                                              0.0017,  3.888),
-    ("[CH3]c",                                                     0.08452,  2.464),
-    ("[CH3]a",                                                     -0.1444,  2.412),
-    ("[CH2X4]a",                                                   -0.0516,  2.488),
-    ("[CHX4]a",                                                     0.1193,  2.582),
-    ("[CH0X4]a",                                                   -0.0967,  2.576),
-    ("[cH0]-[A;!C;!N;!O;!S;!F;!Cl;!Br;!I;!#1]",                 -0.5443,  4.041),
-    ("[c][#9]",                                                     0.0000,  3.257),
-    ("[c][#17]",                                                    0.2450,  3.564),
-    ("[c][#35]",                                                    0.1980,  3.180),
-    ("[c][#53]",                                                    0.0000,  3.104),
-    ("[cH]",                                                        0.1581,  3.350),
-    ("[c](:a)(:a):a",                                              0.2955,  4.346),
-    ("[c](:a)(:a)-a",                                              0.2713,  3.904),
-    ("[c](:a)(:a)-C",                                              0.1360,  3.509),
-    ("[c](:a)(:a)-N",                                              0.4619,  4.067),
-    ("[c](:a)(:a)-O",                                              0.5437,  3.853),
-    ("[c](:a)(:a)-S",                                              0.1893,  2.673),
-    ("[c](:a)(:a)=[C,N,O]",                                       -0.8186,  3.135),
-    ("[C](=C)(a)[A;!#1]",                                          0.2640,  4.305),
-    ("[C](=C)(c)a",                                                0.2640,  4.305),
-    ("[CH1](=C)a",                                                 0.2640,  4.305),
-    ("[C]=c",                                                       0.2640,  4.305),
-    ("[CX4][A;!C;!N;!O;!P;!S;!F;!Cl;!Br;!I;!#1]",               0.2148,  2.693),
-    ("[#6]",                                                       0.08129,  3.243),  // CS fallback
+    ("[CH4]", 0.1441, 2.503),
+    ("[CH3]C", 0.1441, 2.503),
+    ("[CH2](C)C", 0.1441, 2.503),
+    ("[CH](C)(C)C", 0.0000, 2.433),
+    ("[C](C)(C)(C)C", 0.0000, 2.433),
+    ("[CH3][N,O,P,S,F,Cl,Br,I]", -0.2035, 2.753),
+    ("[CH2X4]([N,O,P,S,F,Cl,Br,I])[A;!#1]", -0.2035, 2.753),
+    (
+        "[CH1X4]([N,O,P,S,F,Cl,Br,I])([A;!#1])[A;!#1]",
+        -0.2051,
+        2.731,
+    ),
+    (
+        "[CH0X4]([N,O,P,S,F,Cl,Br,I])([A;!#1])([A;!#1])[A;!#1]",
+        -0.2051,
+        2.731,
+    ),
+    ("[C]=[!C;A;!#1]", -0.2783, 5.007),
+    ("[CH2]=C", 0.1551, 3.513),
+    ("[CH1](=C)[A;!#1]", 0.1551, 3.513),
+    ("[CH0](=C)([A;!#1])[A;!#1]", 0.1551, 3.513),
+    ("[C](=C)=C", 0.1551, 3.513),
+    ("[CX2]#[A;!#1]", 0.0017, 3.888),
+    ("[CH3]c", 0.08452, 2.464),
+    ("[CH3]a", -0.1444, 2.412),
+    ("[CH2X4]a", -0.0516, 2.488),
+    ("[CHX4]a", 0.1193, 2.582),
+    ("[CH0X4]a", -0.0967, 2.576),
+    ("[cH0]-[A;!C;!N;!O;!S;!F;!Cl;!Br;!I;!#1]", -0.5443, 4.041),
+    ("[c][#9]", 0.0000, 3.257),
+    ("[c][#17]", 0.2450, 3.564),
+    ("[c][#35]", 0.1980, 3.180),
+    ("[c][#53]", 0.0000, 3.104),
+    ("[cH]", 0.1581, 3.350),
+    ("[c](:a)(:a):a", 0.2955, 4.346),
+    ("[c](:a)(:a)-a", 0.2713, 3.904),
+    ("[c](:a)(:a)-C", 0.1360, 3.509),
+    ("[c](:a)(:a)-N", 0.4619, 4.067),
+    ("[c](:a)(:a)-O", 0.5437, 3.853),
+    ("[c](:a)(:a)-S", 0.1893, 2.673),
+    ("[c](:a)(:a)=[C,N,O]", -0.8186, 3.135),
+    ("[C](=C)(a)[A;!#1]", 0.2640, 4.305),
+    ("[C](=C)(c)a", 0.2640, 4.305),
+    ("[CH1](=C)a", 0.2640, 4.305),
+    ("[C]=c", 0.2640, 4.305),
+    ("[CX4][A;!C;!N;!O;!P;!S;!F;!Cl;!Br;!I;!#1]", 0.2148, 2.693),
+    ("[#6]", 0.08129, 3.243), // CS fallback
     // --- Hydrogen (H1-H4 + HS fallback) ---
-    ("[#1][#6,#1]",                                                0.1230,  1.057),
-    ("[#1]O[CX4,c]",                                              -0.2677,  1.395),
-    ("[#1]O[!C;!N;!O;!S]",                                        -0.2677,  1.395),
-    ("[#1][!C;!N;!O]",                                            -0.2677,  1.395),
-    ("[#1][#7]",                                                    0.2142,  0.9627),
-    ("[#1]O[#7]",                                                   0.2142,  0.9627),
-    ("[#1]OC=[#6,#7,O,S]",                                         0.2980,  1.805),
-    ("[#1]O[O,S]",                                                  0.2980,  1.805),
-    ("[#1]",                                                        0.1125,  1.112),  // HS fallback
+    ("[#1][#6,#1]", 0.1230, 1.057),
+    ("[#1]O[CX4,c]", -0.2677, 1.395),
+    ("[#1]O[!C;!N;!O;!S]", -0.2677, 1.395),
+    ("[#1][!C;!N;!O]", -0.2677, 1.395),
+    ("[#1][#7]", 0.2142, 0.9627),
+    ("[#1]O[#7]", 0.2142, 0.9627),
+    ("[#1]OC=[#6,#7,O,S]", 0.2980, 1.805),
+    ("[#1]O[O,S]", 0.2980, 1.805),
+    ("[#1]", 0.1125, 1.112), // HS fallback
     // --- Nitrogen (N1-N14 + NS fallback) ---
-    ("[NH2+0][A;!#1]",                                            -1.0190,  2.262),
-    ("[NH+0]([A;!#1])[A;!#1]",                                    -0.7096,  2.173),
-    ("[NH2+0]a",                                                   -1.0270,  2.827),
-    ("[NH1+0]([!#1;A,a])a",                                        -0.5188,  3.000),
-    ("[NH+0]=[!#1;A,a]",                                           0.08387, 1.757),
-    ("[N+0](=[!#1;A,a])[!#1;A,a]",                                 0.1836,  2.428),
-    ("[N+0]([A;!#1])([A;!#1])[A;!#1]",                            -0.3187,  1.839),
-    ("[N+0](a)([!#1;A,a])[A;!#1]",                                -0.4458,  2.819),
-    ("[N+0](a)(a)a",                                               -0.4458,  2.819),
-    ("[N+0]#[A;!#1]",                                              0.01508,  1.725),
-    ("[NH3,NH2,NH;+,+2,+3]",                                      -1.9500,  0.000),
-    ("[n+0]",                                                      -0.3239,  2.202),
-    ("[n;+,+2,+3]",                                               -1.1190,  0.000),
-    ("[NH0;+,+2,+3]([A;!#1])([A;!#1])([A;!#1])[A;!#1]",         -0.3396,  0.2604),
-    ("[NH0;+,+2,+3](=[A;!#1])([A;!#1])[!#1;A,a]",               -0.3396,  0.2604),
-    ("[NH0;+,+2,+3](=[#6])=[#7]",                                 -0.3396,  0.2604),
-    ("[N;+,+2,+3]#[A;!#1]",                                        0.2887,  3.359),
-    ("[N;-,-2,-3]",                                                0.2887,  3.359),
-    ("[N;+,+2,+3](=[N;-,-2,-3])=N",                               0.2887,  3.359),
-    ("[#7]",                                                       -0.4806,  2.134),  // NS fallback
+    ("[NH2+0][A;!#1]", -1.0190, 2.262),
+    ("[NH+0]([A;!#1])[A;!#1]", -0.7096, 2.173),
+    ("[NH2+0]a", -1.0270, 2.827),
+    ("[NH1+0]([!#1;A,a])a", -0.5188, 3.000),
+    ("[NH+0]=[!#1;A,a]", 0.08387, 1.757),
+    ("[N+0](=[!#1;A,a])[!#1;A,a]", 0.1836, 2.428),
+    ("[N+0]([A;!#1])([A;!#1])[A;!#1]", -0.3187, 1.839),
+    ("[N+0](a)([!#1;A,a])[A;!#1]", -0.4458, 2.819),
+    ("[N+0](a)(a)a", -0.4458, 2.819),
+    ("[N+0]#[A;!#1]", 0.01508, 1.725),
+    ("[NH3,NH2,NH;+,+2,+3]", -1.9500, 0.000),
+    ("[n+0]", -0.3239, 2.202),
+    ("[n;+,+2,+3]", -1.1190, 0.000),
+    (
+        "[NH0;+,+2,+3]([A;!#1])([A;!#1])([A;!#1])[A;!#1]",
+        -0.3396,
+        0.2604,
+    ),
+    ("[NH0;+,+2,+3](=[A;!#1])([A;!#1])[!#1;A,a]", -0.3396, 0.2604),
+    ("[NH0;+,+2,+3](=[#6])=[#7]", -0.3396, 0.2604),
+    ("[N;+,+2,+3]#[A;!#1]", 0.2887, 3.359),
+    ("[N;-,-2,-3]", 0.2887, 3.359),
+    ("[N;+,+2,+3](=[N;-,-2,-3])=N", 0.2887, 3.359),
+    ("[#7]", -0.4806, 2.134), // NS fallback
     // --- Oxygen (O1-O12 + OS fallback) ---
-    ("[o]",                                                         0.1552,  1.080),
-    ("[OH,OH2]",                                                   -0.2893,  0.8238),
-    ("[O]([A;!#1])[A;!#1]",                                        -0.0684,  1.085),
-    ("[O](a)[!#1;A,a]",                                            -0.4195,  1.182),
-    ("[O]=[#7,#8]",                                                 0.0335,  3.367),
-    ("[OX1;-,-2,-3][#7]",                                          0.0335,  3.367),
-    ("[OX1;-,-2,-2][#16]",                                        -0.3339,  0.7774),
-    ("[O;-0]=[#16;-0]",                                           -0.3339,  0.7774),
-    ("[O-]C(=O)",                                                  -1.3260,  0.000),
-    ("[OX1;-,-2,-3][!#1;!N;!S]",                                  -1.1890,  0.000),
-    ("[O]=c",                                                       0.1788,  3.135),
-    ("[O]=[CH]C",                                                  -0.1526,  0.000),
-    ("[O]=C(C)([A;!#1])",                                          -0.1526,  0.000),
-    ("[O]=[CH][N,O]",                                              -0.1526,  0.000),
-    ("[O]=[CH2]",                                                  -0.1526,  0.000),
-    ("[O]=[CX2]=O",                                                -0.1526,  0.000),
-    ("[O]=[CH]c",                                                   0.1129,  0.2215),
-    ("[O]=C([C,c])[a;!#1]",                                        0.1129,  0.2215),
-    ("[O]=C(c)[A;!#1]",                                            0.1129,  0.2215),
-    ("[O]=C([!#1;!#6])[!#1;!#6]",                                  0.4833,  0.3890),
-    ("[#8]",                                                       -0.1188,  0.6865),  // OS fallback
+    ("[o]", 0.1552, 1.080),
+    ("[OH,OH2]", -0.2893, 0.8238),
+    ("[O]([A;!#1])[A;!#1]", -0.0684, 1.085),
+    ("[O](a)[!#1;A,a]", -0.4195, 1.182),
+    ("[O]=[#7,#8]", 0.0335, 3.367),
+    ("[OX1;-,-2,-3][#7]", 0.0335, 3.367),
+    ("[OX1;-,-2,-2][#16]", -0.3339, 0.7774),
+    ("[O;-0]=[#16;-0]", -0.3339, 0.7774),
+    ("[O-]C(=O)", -1.3260, 0.000),
+    ("[OX1;-,-2,-3][!#1;!N;!S]", -1.1890, 0.000),
+    ("[O]=c", 0.1788, 3.135),
+    ("[O]=[CH]C", -0.1526, 0.000),
+    ("[O]=C(C)([A;!#1])", -0.1526, 0.000),
+    ("[O]=[CH][N,O]", -0.1526, 0.000),
+    ("[O]=[CH2]", -0.1526, 0.000),
+    ("[O]=[CX2]=O", -0.1526, 0.000),
+    ("[O]=[CH]c", 0.1129, 0.2215),
+    ("[O]=C([C,c])[a;!#1]", 0.1129, 0.2215),
+    ("[O]=C(c)[A;!#1]", 0.1129, 0.2215),
+    ("[O]=C([!#1;!#6])[!#1;!#6]", 0.4833, 0.3890),
+    ("[#8]", -0.1188, 0.6865), // OS fallback
     // --- Sulfur (S1-S3) ---
-    ("[S;-,-2,-3,-4,+1,+2,+3,+5,+6]",                            -0.0024,  7.365),
-    ("[S;-0]=[N,O,P,S]",                                          -0.0024,  7.365),
-    ("[S;A]",                                                       0.6482,  7.591),
-    ("[s;a]",                                                       0.6237,  6.691),
+    ("[S;-,-2,-3,-4,+1,+2,+3,+5,+6]", -0.0024, 7.365),
+    ("[S;-0]=[N,O,P,S]", -0.0024, 7.365),
+    ("[S;A]", 0.6482, 7.591),
+    ("[s;a]", 0.6237, 6.691),
     // --- Phosphorus ---
-    ("[#15]",                                                       0.8612,  6.920),
+    ("[#15]", 0.8612, 6.920),
     // --- Halogens ---
-    ("[#9;-0]",                                                     0.4202,  1.108),
-    ("[#17;-0]",                                                    0.6895,  5.853),
-    ("[#35;-0]",                                                    0.8456,  8.927),
-    ("[#53;-0]",                                                    0.8857, 14.020),
-    ("[#9,#17,#35,#53;-]",                                        -2.9960,  0.000),
-    ("[#53;+,+2,+3]",                                             -2.9960,  0.000),
-    ("[+;#3,#11,#19,#37,#55]",                                    -2.9960,  0.000),
+    ("[#9;-0]", 0.4202, 1.108),
+    ("[#17;-0]", 0.6895, 5.853),
+    ("[#35;-0]", 0.8456, 8.927),
+    ("[#53;-0]", 0.8857, 14.020),
+    ("[#9,#17,#35,#53;-]", -2.9960, 0.000),
+    ("[#53;+,+2,+3]", -2.9960, 0.000),
+    ("[+;#3,#11,#19,#37,#55]", -2.9960, 0.000),
     // --- Metals ---
-    ("[#3,#11,#19,#37,#55]",                                      -0.3808,  5.754),
-    ("[#4,#12,#20,#38,#56]",                                      -0.3808,  5.754),
-    ("[#5,#13,#31,#49,#81]",                                      -0.3808,  5.754),
-    ("[#14,#32,#50,#82]",                                         -0.3808,  5.754),
-    ("[#33,#51,#83]",                                             -0.3808,  5.754),
-    ("[#34,#52,#84]",                                             -0.3808,  5.754),
-    ("[#21,#22,#23,#24,#25,#26,#27,#28,#29,#30]",                -0.0025,  0.000),
-    ("[#39,#40,#41,#42,#43,#44,#45,#46,#47,#48]",                -0.0025,  0.000),
-    ("[#72,#73,#74,#75,#76,#77,#78,#79,#80]",                    -0.0025,  0.000),
+    ("[#3,#11,#19,#37,#55]", -0.3808, 5.754),
+    ("[#4,#12,#20,#38,#56]", -0.3808, 5.754),
+    ("[#5,#13,#31,#49,#81]", -0.3808, 5.754),
+    ("[#14,#32,#50,#82]", -0.3808, 5.754),
+    ("[#33,#51,#83]", -0.3808, 5.754),
+    ("[#34,#52,#84]", -0.3808, 5.754),
+    ("[#21,#22,#23,#24,#25,#26,#27,#28,#29,#30]", -0.0025, 0.000),
+    ("[#39,#40,#41,#42,#43,#44,#45,#46,#47,#48]", -0.0025, 0.000),
+    ("[#72,#73,#74,#75,#76,#77,#78,#79,#80]", -0.0025, 0.000),
 ];
 
 /// Return the LogP contribution for a single atom `anchor` using the first
@@ -734,8 +763,13 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
-                h_logp_for_parent(mol, idx, atom.element.atomic_number(), atom.aromatic, h_fallback)
-                    * h_count as f64
+                h_logp_for_parent(
+                    mol,
+                    idx,
+                    atom.element.atomic_number(),
+                    atom.aromatic,
+                    h_fallback,
+                ) * h_count as f64
             };
             heavy + h_contrib
         })
@@ -761,12 +795,15 @@ fn h_logp_for_parent(
     // Since we can't easily run SMARTS with a virtual H atom, we use the
     // original hand-coded H dispatch which is already accurate:
     match parent_an {
-        6 => 0.1230,   // H1: H on C
-        7 => 0.2142,   // H3: H on N
+        6 => 0.1230, // H1: H on C
+        7 => 0.2142, // H3: H on N
         8 => {
             if parent_aromatic {
                 fallback // aromatic O (furan-type) — HS fallback
-            } else if mol.neighbors(parent_idx).any(|(nb, _)| has_double_bond_to(mol, nb, 8)) {
+            } else if mol
+                .neighbors(parent_idx)
+                .any(|(nb, _)| has_double_bond_to(mol, nb, 8))
+            {
                 // H4: H on O where a neighbour C carries C=O (carboxylic/ester type)
                 0.2980
             } else {
@@ -785,7 +822,6 @@ fn h_logp_for_parent(
 pub fn logp_crippen(mol: &Molecule) -> f64 {
     logp_crippen_per_atom(mol).iter().sum()
 }
-
 
 // ---------------------------------------------------------------------------
 // 9. Lipinski Rule of Five
@@ -887,12 +923,15 @@ fn h_mr_for_parent(
     fallback: f64,
 ) -> f64 {
     match parent_an {
-        6 => 1.057,   // H1: H on C
-        7 => 0.9627,  // H3: H on N
+        6 => 1.057,  // H1: H on C
+        7 => 0.9627, // H3: H on N
         8 => {
             if parent_aromatic {
                 fallback // aromatic O — HS fallback
-            } else if mol.neighbors(parent_idx).any(|(nb, _)| has_double_bond_to(mol, nb, 8)) {
+            } else if mol
+                .neighbors(parent_idx)
+                .any(|(nb, _)| has_double_bond_to(mol, nb, 8))
+            {
                 1.805 // H4: carboxylic/ester OH
             } else {
                 1.395 // H2: aliphatic or phenolic OH
@@ -929,8 +968,13 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
-                h_mr_for_parent(mol, idx, atom.element.atomic_number(), atom.aromatic, h_fallback)
-                    * h_count as f64
+                h_mr_for_parent(
+                    mol,
+                    idx,
+                    atom.element.atomic_number(),
+                    atom.aromatic,
+                    h_fallback,
+                ) * h_count as f64
             };
             heavy + h_contrib
         })
@@ -1299,8 +1343,16 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
 fn mqn_atom_counts(mol: &Molecule, m: &mut [u8]) {
     for (_, atom) in mol.atoms() {
         let slot = match atom.element.atomic_number() {
-            6 => 0, 7 => 1, 8 => 2, 9 => 3, 14 => 4,
-            15 => 5, 16 => 6, 17 => 7, 35 => 8, 53 => 9,
+            6 => 0,
+            7 => 1,
+            8 => 2,
+            9 => 3,
+            14 => 4,
+            15 => 5,
+            16 => 6,
+            17 => 7,
+            35 => 8,
+            53 => 9,
             _ => continue,
         };
         m[slot] = m[slot].saturating_add(1);
@@ -1321,19 +1373,22 @@ fn mqn_bond_counts(mol: &Molecule, m: &mut [u8]) {
             _ => single = single.saturating_add(1),
         }
     }
-    m[10] = single; m[11] = double; m[12] = triple; m[13] = aromatic;
+    m[10] = single;
+    m[11] = double;
+    m[12] = triple;
+    m[13] = aromatic;
 }
 
 fn ring_is_saturated(mol: &Molecule, ring: &[AtomIdx]) -> bool {
     ring.iter().all(|&idx| {
-        mol.neighbors(idx).all(|(_, bidx)| {
-            !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
-        })
+        mol.neighbors(idx)
+            .all(|(_, bidx)| !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple))
     })
 }
 
 fn ring_has_heteroatom(mol: &Molecule, ring: &[AtomIdx]) -> bool {
-    ring.iter().any(|&idx| matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16))
+    ring.iter()
+        .any(|&idx| matches!(mol.atom(idx).element.atomic_number(), 7 | 8 | 16))
 }
 
 fn mqn_ring_stats(mol: &Molecule, rings: &[Vec<AtomIdx>], m: &mut [u8]) {
@@ -1377,7 +1432,10 @@ fn mqn_h_counts(mol: &Molecule, m: &mut [u8]) {
     for (idx, atom) in mol.atoms() {
         let h = implicit_hcount(mol, idx) as usize;
         let slot = match atom.element.atomic_number() {
-            6 => 23, 7 => 24, 8 => 25, _ => continue,
+            6 => 23,
+            7 => 24,
+            8 => 25,
+            _ => continue,
         };
         m[slot] = (m[slot] as usize + h).min(255) as u8;
     }
@@ -1414,7 +1472,8 @@ fn mqn_topology_stats(
             a.element.atomic_number() == 6
                 && mol.degree(*idx) + implicit_hcount(mol, *idx) as usize == 4
         })
-        .count().min(255) as u8;
+        .count()
+        .min(255) as u8;
 
     // 39: fused ring pairs (rings sharing > 1 atom)
     let mut fused = 0u8;
@@ -1431,13 +1490,16 @@ fn mqn_topology_stats(
     m[40] = mol
         .atoms()
         .filter(|(idx, _)| ring_sets.iter().filter(|r| r.contains(idx)).count() >= 2)
-        .count().min(255) as u8;
+        .count()
+        .min(255) as u8;
 
     // 41: spiro atoms
     let mut spiro = 0u8;
     for (idx, _) in mol.atoms() {
         if rings.iter().filter(|r| r.contains(&idx)).count() >= 2
-            && mol.neighbors(idx).all(|(nb, _)| rings.iter().any(|r| r.contains(&nb)))
+            && mol
+                .neighbors(idx)
+                .all(|(nb, _)| rings.iter().any(|r| r.contains(&nb)))
         {
             spiro = spiro.saturating_add(1);
         }
@@ -1696,31 +1758,49 @@ fn count_element(mol: &Molecule, atomic_num: u8) -> usize {
 }
 
 /// Count carbons (C atoms, including aromatic).
-pub fn num_carbons(mol: &Molecule) -> usize { count_element(mol, 6) }
+pub fn num_carbons(mol: &Molecule) -> usize {
+    count_element(mol, 6)
+}
 
 /// Count nitrogens (N atoms, including aromatic).
-pub fn num_nitrogens(mol: &Molecule) -> usize { count_element(mol, 7) }
+pub fn num_nitrogens(mol: &Molecule) -> usize {
+    count_element(mol, 7)
+}
 
 /// Count oxygens (O atoms).
-pub fn num_oxygens(mol: &Molecule) -> usize { count_element(mol, 8) }
+pub fn num_oxygens(mol: &Molecule) -> usize {
+    count_element(mol, 8)
+}
 
 /// Count fluorines (F atoms).
-pub fn num_fluorines(mol: &Molecule) -> usize { count_element(mol, 9) }
+pub fn num_fluorines(mol: &Molecule) -> usize {
+    count_element(mol, 9)
+}
 
 /// Count chlorines (Cl atoms).
-pub fn num_chlorines(mol: &Molecule) -> usize { count_element(mol, 17) }
+pub fn num_chlorines(mol: &Molecule) -> usize {
+    count_element(mol, 17)
+}
 
 /// Count bromines (Br atoms).
-pub fn num_bromines(mol: &Molecule) -> usize { count_element(mol, 35) }
+pub fn num_bromines(mol: &Molecule) -> usize {
+    count_element(mol, 35)
+}
 
 /// Count iodines (I atoms).
-pub fn num_iodines(mol: &Molecule) -> usize { count_element(mol, 53) }
+pub fn num_iodines(mol: &Molecule) -> usize {
+    count_element(mol, 53)
+}
 
 /// Count sulfurs (S atoms).
-pub fn num_sulfurs(mol: &Molecule) -> usize { count_element(mol, 16) }
+pub fn num_sulfurs(mol: &Molecule) -> usize {
+    count_element(mol, 16)
+}
 
 /// Count phosphorus (P atoms).
-pub fn num_phosphorus(mol: &Molecule) -> usize { count_element(mol, 15) }
+pub fn num_phosphorus(mol: &Molecule) -> usize {
+    count_element(mol, 15)
+}
 
 /// Total hydrogen count (explicit + implicit).
 ///
@@ -1752,7 +1832,10 @@ pub fn num_amide_bonds(mol: &Molecule) -> usize {
         if !has_double_bond_to(mol, idx, 8) {
             continue;
         }
-        if mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).element.atomic_number() == 7) {
+        if mol
+            .neighbors(idx)
+            .any(|(nb, _)| mol.atom(nb).element.atomic_number() == 7)
+        {
             count += 1;
         }
     }
@@ -2032,13 +2115,25 @@ mod tests {
     fn test_rot_alkyne_adjacent_excluded() {
         // Propyne CH3-C≡CH: C-C adjacent to triple bond is NOT rotatable (C≡ atom excluded).
         let m = mol("CC#C");
-        assert_eq!(rotatable_bond_count(&m), 0, "propyne: C-C adj to triple bond excluded");
+        assert_eq!(
+            rotatable_bond_count(&m),
+            0,
+            "propyne: C-C adj to triple bond excluded"
+        );
         // But-1-yne CH3-CH2-C≡CH: C3 has triple bond → C2-C3 excluded; C1 terminal → C1-C2 excluded.
         let m2 = mol("CCC#C");
-        assert_eq!(rotatable_bond_count(&m2), 0, "but-1-yne: both bonds excluded");
+        assert_eq!(
+            rotatable_bond_count(&m2),
+            0,
+            "but-1-yne: both bonds excluded"
+        );
         // Pent-1-yne CH3-CH2-CH2-C≡CH: C2-C3 is rotatable; C3-C4 excluded (C4 in triple).
         let m3 = mol("CCCC#C");
-        assert_eq!(rotatable_bond_count(&m3), 1, "pent-1-yne: CH2-CH2 bond is rotatable");
+        assert_eq!(
+            rotatable_bond_count(&m3),
+            1,
+            "pent-1-yne: CH2-CH2 bond is rotatable"
+        );
     }
 
     // -- Test: allene cumulated double bonds excluded ------------------------
@@ -2839,8 +2934,14 @@ mod tests {
         let m = mol("CC=C");
         let lp = logp_crippen(&m);
         let eth = logp_crippen(&mol("C=C"));
-        assert!(lp > eth, "propene logp ({lp}) should exceed ethylene ({eth})");
-        assert!(lp > 0.5 && lp < 2.0, "propene logp = {lp} out of expected range");
+        assert!(
+            lp > eth,
+            "propene logp ({lp}) should exceed ethylene ({eth})"
+        );
+        assert!(
+            lp > 0.5 && lp < 2.0,
+            "propene logp = {lp} out of expected range"
+        );
     }
 
     #[test]
@@ -2927,7 +3028,7 @@ mod tests {
         // Enone vinyl C (0.1302) is less hydrophobic than plain internal alkene (0.2274)
         // MVK (C=C-C=O) vs 1-butene (C=C-CC)
         let enone = logp_crippen(&mol("C=CC(=O)C")); // MVK
-        let alkene = logp_crippen(&mol("C=CCC"));    // 1-butene
+        let alkene = logp_crippen(&mol("C=CCC")); // 1-butene
         assert!(
             enone < alkene,
             "MVK ({enone:.4}) should be < 1-butene ({alkene:.4}): enone is less hydrophobic"

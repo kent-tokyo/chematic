@@ -23,7 +23,6 @@ use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder
 
 use crate::coords::{Coords3D, Point3};
 
-
 // ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
@@ -141,7 +140,8 @@ pub fn pdb_to_molecule(atoms: &[PdbAtom]) -> (Molecule, Coords3D) {
     let n = points.len();
     for i in 0..n {
         for j in (i + 1)..n {
-            let threshold = 1.3 * (elements[i].covalent_radius() as f64 + elements[j].covalent_radius() as f64);
+            let threshold =
+                1.3 * (elements[i].covalent_radius() as f64 + elements[j].covalent_radius() as f64);
             if points[i].distance(&points[j]) < threshold {
                 // Ignore duplicate-bond errors (shouldn't occur for distinct pairs).
                 let _ = builder.add_bond(AtomIdx(i as u32), AtomIdx(j as u32), BondOrder::Single);

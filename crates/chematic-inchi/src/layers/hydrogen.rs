@@ -1,4 +1,4 @@
-use chematic_core::{Molecule, AtomIdx};
+use chematic_core::{AtomIdx, Molecule};
 use chematic_smiles::canonical::canonical_atom_order;
 use std::collections::HashMap;
 

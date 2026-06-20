@@ -22,7 +22,9 @@ pub fn layered_fp(mol: &Molecule) -> BitVec2048 {
     // Compute all 7 layers and merge via bitwise OR
     // (each layer uses disjoint bit ranges, so OR is lossless)
     let layers = layered_fp_by_layer(mol);
-    layers.iter().fold(BitVec2048::new(), |acc, layer| acc.or(layer))
+    layers
+        .iter()
+        .fold(BitVec2048::new(), |acc, layer| acc.or(layer))
 }
 
 /// Layer-by-layer fingerprint computation with per-layer bitsets.
@@ -45,7 +47,7 @@ pub fn layered_fp_by_layer(mol: &Molecule) -> [BitVec2048; 7] {
         let atom = mol.atom(AtomIdx(i as u32));
         let elem_code = atom.element.atomic_number() as usize;
         let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
-        let charge = ((atom.charge.clamp(-8, 7) + 8) & 0xF) as usize;  // Clamp to [-8, 7] for safe encoding
+        let charge = ((atom.charge.clamp(-8, 7) + 8) & 0xF) as usize; // Clamp to [-8, 7] for safe encoding
         let hash = (i * 7919 + elem_code * 199 + h_count * 73 + charge * 11) % 292;
         layers[0].set(hash);
     }
@@ -53,7 +55,10 @@ pub fn layered_fp_by_layer(mol: &Molecule) -> [BitVec2048; 7] {
     // Layer 1: Heteroatom presence
     for i in 0..mol.atom_count() {
         let atom = mol.atom(AtomIdx(i as u32));
-        let is_heteroatom = matches!(atom.element.atomic_number(), 7 | 8 | 16 | 15 | 9 | 17 | 35 | 53);
+        let is_heteroatom = matches!(
+            atom.element.atomic_number(),
+            7 | 8 | 16 | 15 | 9 | 17 | 35 | 53
+        );
         if is_heteroatom {
             let elem = atom.element.atomic_number() as usize;
             let hash = (292 + i * 3571 + elem * 43) % 148;
@@ -136,7 +141,10 @@ mod tests {
     fn test_layered_fp_benzene_aromatic() {
         let mol = parse("c1ccccc1").unwrap();
         let aromatic_layer = layered_fp_by_layer(&mol)[2].clone();
-        assert!(aromatic_layer.popcount() > 0, "benzene aromatic layer should be non-zero");
+        assert!(
+            aromatic_layer.popcount() > 0,
+            "benzene aromatic layer should be non-zero"
+        );
     }
 
     #[test]
@@ -158,20 +166,26 @@ mod tests {
 
     #[test]
     fn test_layered_fp_heteroatom_layer() {
-        let mol = parse("CC").unwrap();  // no heteroatoms
+        let mol = parse("CC").unwrap(); // no heteroatoms
         let layers = layered_fp_by_layer(&mol);
         assert_eq!(layers[1].popcount(), 0, "ethane has no heteroatoms");
 
-        let mol2 = parse("CCO").unwrap();  // contains O
+        let mol2 = parse("CCO").unwrap(); // contains O
         let layers2 = layered_fp_by_layer(&mol2);
-        assert!(layers2[1].popcount() > 0, "ethanol heteroatom layer should be non-zero");
+        assert!(
+            layers2[1].popcount() > 0,
+            "ethanol heteroatom layer should be non-zero"
+        );
     }
 
     #[test]
     fn test_layered_fp_charged_molecule() {
-        let mol = parse("[O-]C(=O)c1ccccc1").unwrap();  // benzoate anion
+        let mol = parse("[O-]C(=O)c1ccccc1").unwrap(); // benzoate anion
         let layers = layered_fp_by_layer(&mol);
-        assert!(layers[4].popcount() > 0, "charged molecule should have bits in charge layer");
+        assert!(
+            layers[4].popcount() > 0,
+            "charged molecule should have bits in charge layer"
+        );
     }
 
     #[test]
@@ -193,9 +207,12 @@ mod tests {
 
     #[test]
     fn test_layered_fp_hydrogen_count_layer() {
-        let mol = parse("C").unwrap();  // methane: C with 4 H
+        let mol = parse("C").unwrap(); // methane: C with 4 H
         let layers = layered_fp_by_layer(&mol);
-        assert!(layers[5].popcount() > 0, "methane hydrogen layer should be non-zero");
+        assert!(
+            layers[5].popcount() > 0,
+            "methane hydrogen layer should be non-zero"
+        );
     }
 
     #[test]
@@ -205,6 +222,10 @@ mod tests {
         let fp1 = layered_fp(&mol1);
         let fp2 = layered_fp(&mol2);
         let sim = tanimoto_layered(&fp1, &fp2);
-        assert!((0.0..=1.0).contains(&sim), "tanimoto must be between 0 and 1, got {}", sim);
+        assert!(
+            (0.0..=1.0).contains(&sim),
+            "tanimoto must be between 0 and 1, got {}",
+            sim
+        );
     }
 }

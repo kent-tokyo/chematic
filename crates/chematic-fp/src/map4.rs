@@ -33,7 +33,10 @@ pub struct Map4Config {
 
 impl Default for Map4Config {
     fn default() -> Self {
-        Self { max_radius: 2, n_permutations: 1024 }
+        Self {
+            max_radius: 2,
+            n_permutations: 1024,
+        }
     }
 }
 
@@ -86,7 +89,11 @@ fn collect_shingles(mol: &Molecule, max_radius: usize) -> Vec<u64> {
                     let env_a = circular_env_hash(mol, a, r_a, &dist);
                     let env_b = circular_env_hash(mol, b, r_b, &dist);
                     // Canonical: sort envs so order of (a,b) doesn't matter
-                    let (ea, eb) = if env_a <= env_b { (env_a, env_b) } else { (env_b, env_a) };
+                    let (ea, eb) = if env_a <= env_b {
+                        (env_a, env_b)
+                    } else {
+                        (env_b, env_a)
+                    };
                     // Encode: hash(env_a || env_b || distance)
                     let mut h = fnv1a(ea.to_le_bytes().as_ref());
                     h = fnv1a_extend(h, eb.to_le_bytes().as_ref());
@@ -218,23 +225,29 @@ mod tests {
 
     #[test]
     fn map4_similar_molecules_higher_than_dissimilar() {
-        let benzene  = parse("c1ccccc1").expect("benzene");
-        let toluene  = parse("Cc1ccccc1").expect("toluene");
-        let methane  = parse("C").expect("methane");
-        let fp_benz  = map4_default(&benzene);
-        let fp_tol   = map4_default(&toluene);
-        let fp_meth  = map4_default(&methane);
+        let benzene = parse("c1ccccc1").expect("benzene");
+        let toluene = parse("Cc1ccccc1").expect("toluene");
+        let methane = parse("C").expect("methane");
+        let fp_benz = map4_default(&benzene);
+        let fp_tol = map4_default(&toluene);
+        let fp_meth = map4_default(&methane);
         let sim_close = tanimoto_map4(&fp_benz, &fp_tol);
-        let sim_far   = tanimoto_map4(&fp_benz, &fp_meth);
-        assert!(sim_close > sim_far,
+        let sim_far = tanimoto_map4(&fp_benz, &fp_meth);
+        assert!(
+            sim_close > sim_far,
             "benzene-toluene ({:.3}) should be > benzene-methane ({:.3})",
-            sim_close, sim_far);
+            sim_close,
+            sim_far
+        );
     }
 
     #[test]
     fn map4_length_equals_n_permutations() {
         let mol = parse("CCO").expect("parse");
-        let cfg = Map4Config { max_radius: 1, n_permutations: 512 };
+        let cfg = Map4Config {
+            max_radius: 1,
+            n_permutations: 512,
+        };
         let fp = map4(&mol, &cfg);
         assert_eq!(fp.len(), 512);
     }

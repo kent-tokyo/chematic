@@ -108,7 +108,10 @@ pub fn implicit_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
     0
 }
 
-#[deprecated(since = "0.1.95", note = "use `implicit_hcount` directly — the two functions are identical")]
+#[deprecated(
+    since = "0.1.95",
+    note = "use `implicit_hcount` directly — the two functions are identical"
+)]
 /// Alias for [`implicit_hcount`]; kept for API compatibility.
 pub fn total_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
     implicit_hcount(mol, idx)

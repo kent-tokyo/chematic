@@ -79,9 +79,13 @@ impl MhfpLshIndex {
     pub fn add(&mut self, fp: MhfpFingerprint) -> usize {
         let expected = self.bands * self.rows;
         assert_eq!(
-            fp.hashes.len(), expected,
+            fp.hashes.len(),
+            expected,
             "fingerprint has {} hashes but index expects {} (bands={}, rows={})",
-            fp.hashes.len(), expected, self.bands, self.rows
+            fp.hashes.len(),
+            expected,
+            self.bands,
+            self.rows
         );
 
         let idx = self.fps.len();
@@ -143,8 +147,8 @@ impl MhfpLshIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mhfp::{MhfpConfig, mhfp};
     use chematic_smiles::parse;
-    use crate::mhfp::{mhfp, MhfpConfig};
 
     fn fp(smiles: &str) -> MhfpFingerprint {
         let mol = parse(smiles).unwrap();
@@ -169,7 +173,10 @@ mod tests {
         let benzene = fp("c1ccccc1");
         index.add(benzene.clone());
         let results = index.query(&benzene, 0.99);
-        assert!(!results.is_empty(), "self should be found at threshold 0.99");
+        assert!(
+            !results.is_empty(),
+            "self should be found at threshold 0.99"
+        );
         assert_eq!(results[0].0, 0, "self should be index 0");
         assert!(
             (results[0].1 - 1.0).abs() < 1e-9,
@@ -191,7 +198,11 @@ mod tests {
         let high_threshold = sim_benz_eth + 0.1; // above ethane similarity
         let results = index.query(&benzene_fp, high_threshold);
         for (_, sim) in &results {
-            assert!(*sim >= high_threshold, "all results must meet threshold, got {}", sim);
+            assert!(
+                *sim >= high_threshold,
+                "all results must meet threshold, got {}",
+                sim
+            );
         }
     }
 
@@ -204,8 +215,8 @@ mod tests {
         let toluene = fp("Cc1ccccc1");
         let ethane = fp("CC");
 
-        index.add(ethane);    // idx 0
-        index.add(toluene);   // idx 1
+        index.add(ethane); // idx 0
+        index.add(toluene); // idx 1
         index.add(benzene.clone()); // idx 2
 
         // Self-query at very high threshold must find itself
@@ -230,7 +241,8 @@ mod tests {
             assert!(
                 w[0].1 >= w[1].1,
                 "results should be sorted descending: {} >= {}",
-                w[0].1, w[1].1
+                w[0].1,
+                w[1].1
             );
         }
     }
@@ -238,7 +250,11 @@ mod tests {
     #[test]
     fn test_lsh_custom_bands() {
         // with_bands(32, 4) works for num_hashes=128
-        let cfg = MhfpConfig { num_hashes: 128, seed: 0, radius: 2 };
+        let cfg = MhfpConfig {
+            num_hashes: 128,
+            seed: 0,
+            radius: 2,
+        };
         let mut index = MhfpLshIndex::with_bands(32, 4);
         let benzene = fp_cfg("c1ccccc1", &cfg);
         index.add(benzene.clone());

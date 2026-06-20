@@ -112,10 +112,7 @@ impl FragAccum {
         self.atom_ids.is_empty() && self.bond_bs.is_empty()
     }
 
-    fn flush(
-        &mut self,
-        results: &mut Vec<(Molecule, Vec<(f64, f64)>)>,
-    ) -> Result<(), CdxmlError> {
+    fn flush(&mut self, results: &mut Vec<(Molecule, Vec<(f64, f64)>)>) -> Result<(), CdxmlError> {
         if self.is_empty() {
             return Ok(());
         }

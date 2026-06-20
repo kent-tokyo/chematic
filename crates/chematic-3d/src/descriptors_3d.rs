@@ -103,8 +103,20 @@ pub fn getaway_descriptors(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
     // Autocorrelation at different lags
     if !distances.is_empty() {
         g1 = distances.iter().take(n as usize).copied().sum::<f64>() / n.max(1.0);
-        g2 = distances.iter().skip(n as usize / 2).take(n as usize).copied().sum::<f64>() / n.max(1.0);
-        g3 = distances.iter().rev().take(n as usize).copied().sum::<f64>() / n.max(1.0);
+        g2 = distances
+            .iter()
+            .skip(n as usize / 2)
+            .take(n as usize)
+            .copied()
+            .sum::<f64>()
+            / n.max(1.0);
+        g3 = distances
+            .iter()
+            .rev()
+            .take(n as usize)
+            .copied()
+            .sum::<f64>()
+            / n.max(1.0);
     }
 
     // Topologic distances (simplified: bond distances)
@@ -215,8 +227,8 @@ pub fn autocorr_3d(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::parse;
     use crate::dg::generate_coords;
+    use chematic_smiles::parse;
 
     #[test]
     fn test_whim_benzene() {
@@ -224,7 +236,10 @@ mod tests {
         let coords = generate_coords(&mol);
         let desc = whim_descriptors(&mol, &coords);
         assert_eq!(desc.len(), 10);
-        assert!(desc.iter().all(|&d| d.is_finite()), "all WHIM descriptors should be finite");
+        assert!(
+            desc.iter().all(|&d| d.is_finite()),
+            "all WHIM descriptors should be finite"
+        );
     }
 
     #[test]
@@ -233,7 +248,10 @@ mod tests {
         let coords = generate_coords(&mol);
         let desc = getaway_descriptors(&mol, &coords);
         assert_eq!(desc.len(), 9);
-        assert!(desc.iter().all(|&d| d.is_finite()), "all GETAWAY descriptors should be finite");
+        assert!(
+            desc.iter().all(|&d| d.is_finite()),
+            "all GETAWAY descriptors should be finite"
+        );
     }
 
     #[test]
@@ -242,7 +260,10 @@ mod tests {
         let coords = generate_coords(&mol);
         let desc = whim_getaway_combined(&mol, &coords);
         assert_eq!(desc.len(), 19);
-        assert!(desc.iter().all(|&d| d.is_finite()), "all combined descriptors should be finite");
+        assert!(
+            desc.iter().all(|&d| d.is_finite()),
+            "all combined descriptors should be finite"
+        );
     }
 
     #[test]
@@ -276,8 +297,14 @@ mod tests {
         let ac = autocorr_3d(&mol, &coords);
         assert_eq!(ac.len(), 8);
         // Should have non-zero values in appropriate distance bins
-        assert!(ac.iter().any(|&x| x > 0.0), "should have non-zero autocorr values");
-        assert!(ac.iter().all(|&x| x.is_finite()), "all values should be finite");
+        assert!(
+            ac.iter().any(|&x| x > 0.0),
+            "should have non-zero autocorr values"
+        );
+        assert!(
+            ac.iter().all(|&x| x.is_finite()),
+            "all values should be finite"
+        );
     }
 
     #[test]
@@ -287,7 +314,13 @@ mod tests {
         let ac = autocorr_3d(&mol, &coords);
         assert_eq!(ac.len(), 8);
         // Benzene: ring structure with various distances
-        assert!(ac.iter().any(|&x| x > 0.0), "benzene should have non-zero autocorr");
-        assert!(ac.iter().all(|&x| x.is_finite()), "all values should be finite");
+        assert!(
+            ac.iter().any(|&x| x > 0.0),
+            "benzene should have non-zero autocorr"
+        );
+        assert!(
+            ac.iter().all(|&x| x.is_finite()),
+            "all values should be finite"
+        );
     }
 }

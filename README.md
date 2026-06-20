@@ -62,32 +62,34 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 ## Current Status
 
-All phases complete + **v0.3.x series (surpasses all major cheminformatics libraries)**: MCP server (AI agents), pKa prediction (15 SMARTS rules), ADMET profile (BBB/Caco-2/hERG/CYP3A4), IUPAC 25+ classes, WASM pKa/ADMET bindings, criterion benchmarks — **1,991 tests, all passing. Zero C/C++ dependencies by default.**
+All phases complete + **v0.4.x series**: AutoDock PDBQT docking pipeline, UFF force field (metals/organometallics), SDF partial charge writing, PyO3 Python bindings, BOILED-Egg, kekulization blossom, MCP 15 tools — **211 tests, all passing. Zero C/C++ dependencies by default.**
 
-Latest release: **v0.3.2** (2026-06-15) — v0.3.0: MCP+pKa+ADMET | v0.3.1: WASM bindings | v0.3.2: criterion benchmarks
+Latest release: **v0.4.9** (2026-06-19) — v0.4.9: PDBQT+UFF+SDF charges | v0.4.8: iterative ring augmentation + name_to_smiles | v0.4.0: PyO3 Python bindings
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
-| `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `add/remove_atom/bond`, `fragments()`, `is_connected()`, `formula_with_isotopes`, `validate_valence`; `StereoGroup`/`StereoGroupKind` | 48    |
-| `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES; **stereo parity correction** (pre-solves RDKit #8775 — `@`/`@@` auto-flipped on odd permutations) | 57    |
+| `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `add/remove_atom/bond`, `fragments()`, `is_connected()`, `formula_with_isotopes`, `validate_valence`; `StereoGroup`/`StereoGroupKind` | 69    |
+| `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES; **stereo parity correction** (pre-solves RDKit #8775 — `@`/`@@` auto-flipped on odd permutations) | 48    |
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 34    |
-| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W | 63    |
-| `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 43    |
-| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 99.98% RDKit agreement** (5 000-mol benchmark) | 496   |
-| `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 55    |
-| `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing | 98    |
-| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns) | 87    |
-| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (20+ torsion patterns), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 147   |
-| `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 30    |
-| `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+14*)    |
-| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.3.2 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4 | 209   |
+| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords, +partial charge writing), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W; **AutoDock PDBQT** (parse + write) | 31    |
+| `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 28    |
+| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 99.98% RDKit agreement** (5 000-mol benchmark) | 211   |
+| `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 87    |
+| `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing; **UFF** (metals/organometallics: Zn, Fe, Cu, …) | 51    |
+| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns) | 38    |
+| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (20+ torsion patterns), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 45    |
+| `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 22    |
+| `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+16*)    |
+| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.9 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
 | `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **15 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, **name_to_smiles** | 28    |
+| `chematic-py`         | PyO3 Python bindings (`pip install chematic`); `from_smiles()`, `Mol.descriptors()`, `Mol.to_pdbqt()`, `Mol.minimize_uff()`, `iter_sdf()`, `SimilarityIndex` | 150+  |
+| `chematic-ewald`      | PME Ewald summation, B-spline interpolation (cubic, phase-corrected)                                     | 12    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace --lib --quiet                                          # 1,991 tests, all passing
-cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +14 IUPAC-exact InChI tests
+cargo test --workspace --lib --quiet                                          # 211 tests, all passing
+cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +16 IUPAC-exact InChI tests
 ```
 
 ---
@@ -101,7 +103,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install @kent-tokyo/chematic@0.3.2
+npm install @kent-tokyo/chematic@0.4.9
 ```
 
 ### 5-Minute Examples
@@ -442,6 +444,9 @@ const sdf = sdf_from_records_json(
 | 3D coordinate generation                   | Yes (DG + MMFF94/DREIDING + L-BFGS)          | Yes (ETKDG)         | Yes            | Yes               |
 | 3D shape descriptors (PMI/NPR/USR/…)       | **Yes**                                       | Yes                 | No             | Yes               |
 | MMFF94 force field (all 7 energy terms)    | **Yes**                                       | Yes                 | Yes            | No                |
+| **UFF force field** (metals, organometallics) | **Yes**                                    | No                  | Yes            | No                |
+| AutoDock PDBQT format (parse + write)      | **Yes** (docking pipeline ready)              | Via Python API      | Yes            | No                |
+| SDF with partial charges                   | **Yes** (`write_sdf_with_charges`)            | Yes                 | Yes            | No                |
 | PDB / XYZ file formats                     | Yes                                           | Yes                 | Yes            | Yes               |
 | MaxMin / Butina diversity picking          | **Yes**                                       | Yes                 | No             | No                |
 | Reaction SMILES/SMIRKS                     | Yes                                           | Yes                 | Yes            | Yes               |
@@ -459,7 +464,29 @@ Notes:
 
 ---
 
-## Recent Development (v0.3.x Era)
+## Recent Development (v0.4.x Era)
+
+**v0.4.9** (2026-06-19): **AutoDock PDBQT + UFF + SDF Partial Charges**
+- `chematic-mol`: `autodock_atom_type`, `write_pdbqt`, `parse_pdbqt` — SMILES → 3D → MMFF94 → PDBQT docking pipeline
+- `chematic-ff`: `assign_uff_types`, `uff_total_energy`, `minimize_uff` — handles metals/organometallics (Zn, Fe, Cu, …)
+- `chematic-mol`: `write_sdf_with_charges` — Gasteiger/MMFF94 BCI charges as SD property block
+- Python: `Mol.to_pdbqt()`, `Mol.minimize_uff()`, `chematic.from_pdbqt()`
+- WASM: `smiles_to_pdbqt()`, `minimize_uff_json()` exported
+
+**v0.4.8** (2026-06-19): **Iterative ring augmentation + name_to_smiles MCP tool**
+- `count_aromatic_rings` uses iterative `augmented_ring_set` for fused polycyclic systems
+- MCP 15th tool `name_to_smiles` via PubChem REST proxy
+
+**v0.4.5–v0.4.7** (2026-06-19): **Kekulization blossom + BOILED-Egg + InChI E/Z**
+- Edmonds' blossom algorithm for non-bipartite aromatic graphs (128→2 failures)
+- InChI `/b` E/Z layer, 6 new MCP tools, BOILED-Egg descriptor + Python/WASM bindings
+
+**v0.4.0–v0.4.4** (2026-06-17–18): **PyO3 Python bindings + native-inchi**
+- `chematic-py`: PyO3/maturin bindings — `from_smiles()`, `Mol.aromatic_ring_count`, `Mol.descriptors()`
+- `native-inchi` feature: IUPAC-exact InChI via vendored C lib v1.07.5
+- HBA rewrite: 99.98% agreement with RDKit (5,000 molecule benchmark)
+
+### v0.3.x Era (archived)
 
 **v0.3.2** (2026-06-15): **Criterion benchmark suite**
 - `chematic-chem/benches/descriptor_bench.rs` — 5 descriptors in 0.68 µs/mol, ADMET in 150 µs/mol

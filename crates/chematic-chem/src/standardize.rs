@@ -12,7 +12,7 @@ use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder, valida
 use serde::{Deserialize, Serialize};
 
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
-use chematic_smarts::{parse_smarts, find_matches_with_config, MatchConfig};
+use chematic_smarts::{MatchConfig, find_matches_with_config, parse_smarts};
 
 /// Salt removal catalog: common salt patterns (counterions and solvates).
 ///
@@ -38,17 +38,34 @@ impl SaltCatalog {
                 // Organic salts (carboxylates, sulfonates, etc.)
                 ("acetate", "[#6](-[#1])(-[#1])-[#6](=[#8])[O-]"),
                 ("formate", "[#6](=[#8])[O-]"),
-                ("propionate", "[#6](-[#1])(-[#1])-[#6](-[#1])-[#6](=[#8])[O-]"),
+                (
+                    "propionate",
+                    "[#6](-[#1])(-[#1])-[#6](-[#1])-[#6](=[#8])[O-]",
+                ),
                 ("benzoate", "c1ccccc1-[#6](=[#8])[O-]"),
-                ("trifluoroacetate", "[#9]-[#6](-[#9])(-[#9])-[#6](=[#8])[O-]"),
-                ("mesylate", "[#16](=[#8])(=[#8])-[#8]-[#6](-[#1])(-[#1])-[#1]"),
+                (
+                    "trifluoroacetate",
+                    "[#9]-[#6](-[#9])(-[#9])-[#6](=[#8])[O-]",
+                ),
+                (
+                    "mesylate",
+                    "[#16](=[#8])(=[#8])-[#8]-[#6](-[#1])(-[#1])-[#1]",
+                ),
                 ("tosylate", "c1ccc(cc1)-[#16](=[#8])(=[#8])-[#8]"),
-                ("nosylate", "[#8]-[#6](-[#1])(-[#1])-[#8]-[#16](=[#8])(=[#8])-c1ccc([N+](=O)[O-])cc1"),
+                (
+                    "nosylate",
+                    "[#8]-[#6](-[#1])(-[#1])-[#8]-[#16](=[#8])(=[#8])-c1ccc([N+](=O)[O-])cc1",
+                ),
                 ("sulfate", "[#16](=[#8])(=[#8])(-[#8])-[#8]"),
                 ("phosphate", "[#15](=[#8])(-[#8])(-[#8])-[#8]"),
-                ("citrate", "[#6](-[#6](=[#8])[O-])(-[#6](=[#8])[O-])-[#6](-[#8])-[#6](=[#8])[O-]"),
-                ("tartrate", "[#6](-[#8])(-[#6](-[#8])-[#6](=[#8])[O-])-[#6](=[#8])[O-]"),
-
+                (
+                    "citrate",
+                    "[#6](-[#6](=[#8])[O-])(-[#6](=[#8])[O-])-[#6](-[#8])-[#6](=[#8])[O-]",
+                ),
+                (
+                    "tartrate",
+                    "[#6](-[#8])(-[#6](-[#8])-[#6](=[#8])[O-])-[#6](=[#8])[O-]",
+                ),
                 // Inorganic salts (single atoms/small molecules)
                 ("sodium_cation", "[Na+]"),
                 ("potassium_cation", "[K+]"),
@@ -62,14 +79,18 @@ impl SaltCatalog {
                 ("oxide_anion", "[O-2]"),
                 ("sulfate_anion", "[#16](=[#8])(=[#8])(-[#8])-[#8-]"),
                 ("phosphate_anion", "[#15](=[#8])(-[#8])(-[#8-])-[#8]"),
-
                 // Solvates and additives
                 ("water", "[#8](-[#1])-[#1]"),
-                ("dmso", "[#16](=[#8])(-[#6](-[#1])(-[#1])-[#1])-[#6](-[#1])(-[#1])-[#1]"),
+                (
+                    "dmso",
+                    "[#16](=[#8])(-[#6](-[#1])(-[#1])-[#1])-[#6](-[#1])(-[#1])-[#1]",
+                ),
                 ("methanol", "[#6](-[#1])(-[#1])-[#8]-[#1]"),
                 ("ethanol", "[#6](-[#1])(-[#1])-[#6](-[#1])(-[#1])-[#8]-[#1]"),
-                ("isopropanol", "[#6](-[#1])(-[#1])-[#6](-[#8]-[#1])(-[#1])-[#6](-[#1])(-[#1])-[#1]"),
-
+                (
+                    "isopropanol",
+                    "[#6](-[#1])(-[#1])-[#6](-[#8]-[#1])(-[#1])-[#6](-[#1])(-[#1])-[#1]",
+                ),
                 // Rare but important salts
                 ("borate", "[#5](-[#8])(-[#8])-[#8]"),
                 ("ammonium", "[#7+;H0,H1,H2,H3]"),
@@ -84,12 +105,16 @@ impl SaltCatalog {
 
     /// Check if a molecule fragment matches any salt pattern.
     pub fn is_salt(&self, frag: &Molecule) -> bool {
-        let config = MatchConfig { max_visit_budget: Some(1_000_000), ..Default::default() };
+        let config = MatchConfig {
+            max_visit_budget: Some(1_000_000),
+            ..Default::default()
+        };
         for (_, smarts_str) in &self.patterns {
             if let Ok(query) = parse_smarts(smarts_str)
-                && !find_matches_with_config(&query, frag, &config).is_empty() {
-                    return true;
-                }
+                && !find_matches_with_config(&query, frag, &config).is_empty()
+            {
+                return true;
+            }
         }
         false
     }
@@ -150,7 +175,7 @@ fn is_salt_fragment(frag: &Molecule) -> bool {
             atom.element.atomic_number(),
             11 | 19 | 37 | 55 |  // Na, K, Rb, Cs (alkali metals)
             17 | 35 | 53 |       // Cl, Br, I (halogens)
-            8                    // O (oxide)
+            8 // O (oxide)
         );
     }
 
@@ -162,8 +187,8 @@ fn is_salt_fragment(frag: &Molecule) -> bool {
 
         // Ionic pair (no bond between them) — cation + anion
         if bond_count == 0 {
-            let metals = [11, 19, 37, 55];     // Na, K, Rb, Cs
-            let nonmetals = [17, 35, 53, 8];   // Cl, Br, I, O
+            let metals = [11, 19, 37, 55]; // Na, K, Rb, Cs
+            let nonmetals = [17, 35, 53, 8]; // Cl, Br, I, O
             return (metals.contains(&a0) && nonmetals.contains(&a1))
                 || (metals.contains(&a1) && nonmetals.contains(&a0));
         }
@@ -310,8 +335,14 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
             let a1_is_o = mol.atom(bond.atom1).element.atomic_number() == 8;
             let a2_is_n = mol.atom(bond.atom2).element.atomic_number() == 7;
 
-            if (a1_is_n && a2_is_o && bond.order == chematic_core::BondOrder::Single && mol.atom(bond.atom2).charge == -1)
-                || (a1_is_o && a2_is_n && bond.order == chematic_core::BondOrder::Single && mol.atom(bond.atom1).charge == -1)
+            if (a1_is_n
+                && a2_is_o
+                && bond.order == chematic_core::BondOrder::Single
+                && mol.atom(bond.atom2).charge == -1)
+                || (a1_is_o
+                    && a2_is_n
+                    && bond.order == chematic_core::BondOrder::Single
+                    && mol.atom(bond.atom1).charge == -1)
             {
                 new_order = chematic_core::BondOrder::Double;
             }
@@ -380,10 +411,7 @@ fn detect_nitro(
     } else if let Some((o_idx, bid)) = o_nbrs.first() {
         let o = mol.atom(*o_idx);
         let b = mol.bond(*bid);
-        if atom.aromatic
-            && b.order == chematic_core::BondOrder::Single
-            && o.charge == -1
-        {
+        if atom.aromatic && b.order == chematic_core::BondOrder::Single && o.charge == -1 {
             nitro_atoms.insert(idx);
             oxide_atoms.insert(*o_idx);
         }
@@ -406,7 +434,9 @@ fn detect_azide(
         let b = mol.bond(*bid);
         if b.order == chematic_core::BondOrder::Triple && n.charge == 0 {
             for (other_idx, other_bid) in n_nbrs.iter() {
-                if other_idx == n_idx { continue; }
+                if other_idx == n_idx {
+                    continue;
+                }
                 let other = mol.atom(*other_idx);
                 let other_b = mol.bond(*other_bid);
                 if other_b.order == chematic_core::BondOrder::Single && other.charge == -1 {
@@ -495,10 +525,11 @@ pub fn normalize_zwitterion(mol: &Molecule) -> Molecule {
 
         for &pos_idx in &positive_atoms {
             if let Some(dist) = bfs_distance(mol, neg_idx, pos_idx)
-                && dist < closest_distance {
-                    closest_distance = dist;
-                    closest_pos_idx = pos_idx;
-                }
+                && dist < closest_distance
+            {
+                closest_distance = dist;
+                closest_pos_idx = pos_idx;
+            }
         }
 
         // Transfer proton: N+ loses H, O- gains H
@@ -726,26 +757,21 @@ pub fn reionize(mol: &Molecule) -> Molecule {
         // Check for carboxylic acid or phenol: C=O with O-H or Ar-O-H
         if an == 8 {
             // Oxygen: check if it's OH bonded to C
-            if let Some((c_idx, _)) = mol
-                .neighbors(idx)
-                .find(|(neighbor, bond_idx)| {
-                    mol.bond(*bond_idx).order == chematic_core::BondOrder::Single
-                        && mol.atom(*neighbor).element.atomic_number() == 6
-                })
-            {
+            if let Some((c_idx, _)) = mol.neighbors(idx).find(|(neighbor, bond_idx)| {
+                mol.bond(*bond_idx).order == chematic_core::BondOrder::Single
+                    && mol.atom(*neighbor).element.atomic_number() == 6
+            }) {
                 // Check if C is aromatic (phenol) or has a double-bonded O (carboxylic acid)
                 let is_aromatic = mol.atom(c_idx).aromatic;
-                let has_double_bonded_o = mol
-                    .neighbors(c_idx)
-                    .any(|(other, bond_idx)| {
-                        mol.bond(bond_idx).order == chematic_core::BondOrder::Double
-                            && mol.atom(other).element.atomic_number() == 8
-                            && other != idx
-                    });
+                let has_double_bonded_o = mol.neighbors(c_idx).any(|(other, bond_idx)| {
+                    mol.bond(bond_idx).order == chematic_core::BondOrder::Double
+                        && mol.atom(other).element.atomic_number() == 8
+                        && other != idx
+                });
 
                 // Only deprotonate if it's a phenol or carboxylic acid, not aliphatic OH
                 if (is_aromatic || has_double_bonded_o) && atom.charge >= 0 {
-                    atom.charge -= 1;  // Deprotonate: OH → O-
+                    atom.charge -= 1; // Deprotonate: OH → O-
                 }
             }
         }
@@ -753,25 +779,21 @@ pub fn reionize(mol: &Molecule) -> Molecule {
         // Check for primary/secondary amines (but NOT amides)
         if an == 7 {
             // Check if this N is NOT part of an amide (C(=O)-N)
-            let is_amide = mol
-                .neighbors(idx)
-                .any(|(neighbor, bond_idx)| {
-                    mol.bond(bond_idx).order == chematic_core::BondOrder::Single
-                        && mol.atom(neighbor).element.atomic_number() == 6
-                        && mol
-                            .neighbors(neighbor)
-                            .any(|(o_neighbor, o_bond)| {
-                                mol.bond(o_bond).order == chematic_core::BondOrder::Double
-                                    && (mol.atom(o_neighbor).element.atomic_number() == 8
-                                        || mol.atom(o_neighbor).element.atomic_number() == 16)
-                            })
-                });
+            let is_amide = mol.neighbors(idx).any(|(neighbor, bond_idx)| {
+                mol.bond(bond_idx).order == chematic_core::BondOrder::Single
+                    && mol.atom(neighbor).element.atomic_number() == 6
+                    && mol.neighbors(neighbor).any(|(o_neighbor, o_bond)| {
+                        mol.bond(o_bond).order == chematic_core::BondOrder::Double
+                            && (mol.atom(o_neighbor).element.atomic_number() == 8
+                                || mol.atom(o_neighbor).element.atomic_number() == 16)
+                    })
+            });
 
             if !is_amide {
                 let h_count = chematic_core::implicit_hcount(mol, idx);
                 // Protonate free amines only (not amides)
                 if (h_count == 2 || h_count == 1) && atom.charge <= 0 {
-                    atom.charge += 1;  // Protonate: NH2 → NH3+
+                    atom.charge += 1; // Protonate: NH2 → NH3+
                 }
             }
         }
@@ -801,7 +823,7 @@ pub fn uncharge(mol: &Molecule) -> Molecule {
     for i in 0..mol.atom_count() {
         let idx = AtomIdx(i as u32);
         let mut atom = mol.atom(idx).clone();
-        atom.charge = 0;  // Force neutral
+        atom.charge = 0; // Force neutral
         let new_idx = builder.add_atom(atom);
         remap.insert(idx, new_idx);
     }
@@ -941,8 +963,7 @@ impl StandardizationReport {
 }
 
 /// Handling strategy for zwitterions (internal salts).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum ZwitterionHandling {
     /// Keep zwitterionic form as-is.
     Keep,
@@ -950,7 +971,6 @@ pub enum ZwitterionHandling {
     #[default]
     Normalize,
 }
-
 
 /// Options for molecular standardization.
 ///
@@ -1540,7 +1560,11 @@ mod tests {
         let mol = parse("C.C.C").unwrap();
         let result = prefer_organic(&mol);
         // Should keep the largest organic fragment (any one of them, but all are size 1)
-        assert_eq!(result.atom_count(), 1, "falls back to largest fragment (one C)");
+        assert_eq!(
+            result.atom_count(),
+            1,
+            "falls back to largest fragment (one C)"
+        );
     }
 
     #[test]
@@ -1590,10 +1614,7 @@ mod tests {
             .atoms()
             .any(|(_, a)| a.element.atomic_number() == 7 && a.charge > 0);
 
-        assert!(
-            has_positive_nitrogen,
-            "reionize should protonate amines"
-        );
+        assert!(has_positive_nitrogen, "reionize should protonate amines");
     }
 
     #[test]
@@ -1643,9 +1664,7 @@ mod tests {
         let result = normalize_groups(&mol);
 
         // All atoms should be neutral after normalization
-        let all_neutral = result
-            .atoms()
-            .all(|(_, a)| a.charge == 0);
+        let all_neutral = result.atoms().all(|(_, a)| a.charge == 0);
         assert!(all_neutral, "nitro group should be neutralized");
 
         // N-O bonds should be double
@@ -1655,9 +1674,10 @@ mod tests {
             let a2 = result.atom(bond.atom2);
             if ((a1.element.atomic_number() == 7 && a2.element.atomic_number() == 8)
                 || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 7))
-                && bond.order == chematic_core::BondOrder::Double {
-                    has_double_bond = true;
-                }
+                && bond.order == chematic_core::BondOrder::Double
+            {
+                has_double_bond = true;
+            }
         }
         assert!(has_double_bond, "nitro should have N=O double bond");
     }
@@ -1669,9 +1689,7 @@ mod tests {
         let result = normalize_groups(&mol);
 
         // All atoms should be neutral
-        let all_neutral = result
-            .atoms()
-            .all(|(_, a)| a.charge == 0);
+        let all_neutral = result.atoms().all(|(_, a)| a.charge == 0);
         assert!(all_neutral, "azide should be neutralized");
 
         // Check for N=N bonds (converted from single)
@@ -1679,12 +1697,17 @@ mod tests {
         for (_, bond) in result.bonds() {
             let a1 = result.atom(bond.atom1);
             let a2 = result.atom(bond.atom2);
-            if a1.element.atomic_number() == 7 && a2.element.atomic_number() == 7
-                && bond.order == chematic_core::BondOrder::Double {
-                    has_double_bond_count += 1;
-                }
+            if a1.element.atomic_number() == 7
+                && a2.element.atomic_number() == 7
+                && bond.order == chematic_core::BondOrder::Double
+            {
+                has_double_bond_count += 1;
+            }
         }
-        assert!(has_double_bond_count > 0, "azide should have N=N double bonds after normalization");
+        assert!(
+            has_double_bond_count > 0,
+            "azide should have N=N double bonds after normalization"
+        );
     }
 
     #[test]
@@ -1700,9 +1723,10 @@ mod tests {
             let a2 = result.atom(bond.atom2);
             if ((a1.element.atomic_number() == 16 && a2.element.atomic_number() == 8)
                 || (a1.element.atomic_number() == 8 && a2.element.atomic_number() == 16))
-                && bond.order == chematic_core::BondOrder::Double {
-                    has_s_double_o = true;
-                }
+                && bond.order == chematic_core::BondOrder::Double
+            {
+                has_s_double_o = true;
+            }
         }
         assert!(has_s_double_o, "sulfoxide should have S=O double bond");
     }
@@ -1714,9 +1738,7 @@ mod tests {
         let result = normalize_groups(&mol);
 
         // All atoms should be neutral
-        let all_neutral = result
-            .atoms()
-            .all(|(_, a)| a.charge == 0);
+        let all_neutral = result.atoms().all(|(_, a)| a.charge == 0);
         assert!(all_neutral, "both nitro and azide should be neutralized");
     }
 }

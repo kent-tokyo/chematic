@@ -81,9 +81,7 @@ pub fn top_k_similar(query: &BitVec2048, db: &[BitVec2048], k: usize) -> Vec<(us
         b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
     });
     indexed.truncate(k);
-    indexed.sort_unstable_by(|a, b| {
-        b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
-    });
+    indexed.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     indexed
 }
 
@@ -106,7 +104,9 @@ mod tests {
             let single = q.tanimoto(bv) as f32;
             assert!(
                 (bulk[i] - single).abs() < 1e-5,
-                "slice[{i}] = {:.6} ≠ single {:.6}", bulk[i], single
+                "slice[{i}] = {:.6} ≠ single {:.6}",
+                bulk[i],
+                single
             );
         }
     }
@@ -173,7 +173,9 @@ mod tests {
         for w in hits.windows(2) {
             assert!(
                 w[0].1 >= w[1].1,
-                "not sorted: {:.4} < {:.4}", w[0].1, w[1].1
+                "not sorted: {:.4} < {:.4}",
+                w[0].1,
+                w[1].1
             );
         }
     }
@@ -181,19 +183,30 @@ mod tests {
     #[test]
     fn test_top_k_similar_matches_sorted_slice() {
         let query = fp("c1ccccc1");
-        let db = vec![fp("CC"), fp("c1ccccc1"), fp("CCO"), fp("c1ccccc1N"), fp("CCCC")];
+        let db = vec![
+            fp("CC"),
+            fp("c1ccccc1"),
+            fp("CCO"),
+            fp("c1ccccc1N"),
+            fp("CCCC"),
+        ];
         let k = 3;
         let hits = top_k_similar(&query, &db, k);
 
         // Independent reference: sort the full slice
         let mut all: Vec<(usize, f32)> = tanimoto_slice(&query, &db)
-            .into_iter().enumerate().collect();
+            .into_iter()
+            .enumerate()
+            .collect();
         all.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         all.truncate(k);
 
         for (i, (hit_idx, hit_score)) in hits.iter().enumerate() {
             assert_eq!(*hit_idx, all[i].0, "index mismatch at rank {i}");
-            assert!((hit_score - all[i].1).abs() < 1e-6, "score mismatch at rank {i}");
+            assert!(
+                (hit_score - all[i].1).abs() < 1e-6,
+                "score mismatch at rank {i}"
+            );
         }
     }
 
@@ -224,6 +237,9 @@ mod tests {
         let db = vec![fp("c1ccccc1N")];
         let hits = top_k_similar(&query, &db, 1);
         assert_eq!(hits.len(), 1);
-        assert!((hits[0].1 - 1.0).abs() < 1e-6, "self-similarity must be 1.0");
+        assert!(
+            (hits[0].1 - 1.0).abs() < 1e-6,
+            "self-similarity must be 1.0"
+        );
     }
 }

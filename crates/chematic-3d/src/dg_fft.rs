@@ -203,7 +203,14 @@ pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
 
     if n == 1 {
         let mut coords = Coords3D::new_zeroed(1);
-        coords.set(AtomIdx(0), Point3 { x: 0.0, y: 0.0, z: 0.0 });
+        coords.set(
+            AtomIdx(0),
+            Point3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
         return coords;
     }
 
@@ -229,7 +236,11 @@ pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
             if i == j {
                 dist_matrix[i][j] = 0.0;
             } else {
-                let u = if upper[i][j].is_finite() { upper[i][j] } else { fallback };
+                let u = if upper[i][j].is_finite() {
+                    upper[i][j]
+                } else {
+                    fallback
+                };
                 dist_matrix[i][j] = (lower[i][j] + u) / 2.0;
             }
         }
@@ -247,22 +258,29 @@ pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
     // Collect the 3 largest *positive* eigenvalues, sorted descending.
     // Negative eigenvalues are excluded; if fewer than 3 positive values exist
     // the remaining coordinate axes are left at zero.
-    let mut pos_evals: Vec<usize> = (0..n)
-        .filter(|&i| eigenvalues[i] > 1e-10)
-        .collect();
+    let mut pos_evals: Vec<usize> = (0..n).filter(|&i| eigenvalues[i] > 1e-10).collect();
     pos_evals.sort_by(|&a, &b| {
-        eigenvalues[b].partial_cmp(&eigenvalues[a]).unwrap_or(std::cmp::Ordering::Equal)
+        eigenvalues[b]
+            .partial_cmp(&eigenvalues[a])
+            .unwrap_or(std::cmp::Ordering::Equal)
     });
     let use_indices: Vec<usize> = pos_evals.into_iter().take(3).collect();
 
     // Set coordinates using only positive eigenvalues (no .abs() hack).
     for i in 0..n {
         let coord = |dim: usize| -> f64 {
-            use_indices.get(dim).map_or(0.0, |&idx| {
-                eigenvalues[idx].sqrt() * eigenvectors[i][idx]
-            })
+            use_indices
+                .get(dim)
+                .map_or(0.0, |&idx| eigenvalues[idx].sqrt() * eigenvectors[i][idx])
         };
-        coords.set(AtomIdx(i as u32), Point3 { x: coord(0), y: coord(1), z: coord(2) });
+        coords.set(
+            AtomIdx(i as u32),
+            Point3 {
+                x: coord(0),
+                y: coord(1),
+                z: coord(2),
+            },
+        );
     }
 
     // Step 6: Center molecule
@@ -283,12 +301,7 @@ pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
 /// both atoms half the violation along their connecting axis. After enough
 /// iterations every pair converges inside its bounds. Classical MDS is used
 /// only as the initial placement; this step enforces the geometry.
-fn refine_coords(
-    coords: &mut Coords3D,
-    lower: &[Vec<f64>],
-    upper: &[Vec<f64>],
-    n_iter: usize,
-) {
+fn refine_coords(coords: &mut Coords3D, lower: &[Vec<f64>], upper: &[Vec<f64>], n_iter: usize) {
     let n = coords.atom_count();
     for _ in 0..n_iter {
         for i in 0..n {
@@ -320,16 +333,22 @@ fn refine_coords(
                 let uz = dz / d;
 
                 // i moves away from j when target > d (stretch), toward j when compress
-                coords.set(AtomIdx(i as u32), Point3 {
-                    x: pi.x - half * ux,
-                    y: pi.y - half * uy,
-                    z: pi.z - half * uz,
-                });
-                coords.set(AtomIdx(j as u32), Point3 {
-                    x: pj.x + half * ux,
-                    y: pj.y + half * uy,
-                    z: pj.z + half * uz,
-                });
+                coords.set(
+                    AtomIdx(i as u32),
+                    Point3 {
+                        x: pi.x - half * ux,
+                        y: pi.y - half * uy,
+                        z: pi.z - half * uz,
+                    },
+                );
+                coords.set(
+                    AtomIdx(j as u32),
+                    Point3 {
+                        x: pj.x + half * ux,
+                        y: pj.y + half * uy,
+                        z: pj.z + half * uz,
+                    },
+                );
             }
         }
     }
@@ -349,9 +368,13 @@ fn smooth_bounds(lower: &mut [Vec<f64>], upper: &mut [Vec<f64>]) {
     let n = lower.len();
     for k in 0..n {
         for i in 0..n {
-            if upper[i][k].is_infinite() { continue; }
+            if upper[i][k].is_infinite() {
+                continue;
+            }
             for j in 0..n {
-                if i == j { continue; }
+                if i == j {
+                    continue;
+                }
                 // Tighten upper bound via k
                 let via_k_upper = upper[i][k] + upper[k][j];
                 if via_k_upper < upper[i][j] {
@@ -379,7 +402,9 @@ fn smooth_bounds(lower: &mut [Vec<f64>], upper: &mut [Vec<f64>]) {
 /// anchoring at atom 0.
 fn distance_to_gram_matrix(dist: &[Vec<f64>]) -> Vec<Vec<f64>> {
     let n = dist.len();
-    if n == 0 { return vec![]; }
+    if n == 0 {
+        return vec![];
+    }
 
     // D² row means
     let row_means: Vec<f64> = dist
@@ -503,11 +528,14 @@ fn center_coordinates(coords: &mut Coords3D) {
 
     for i in 0..n {
         let p = coords.get(AtomIdx(i as u32));
-        coords.set(AtomIdx(i as u32), Point3 {
-            x: p.x - cx,
-            y: p.y - cy,
-            z: p.z - cz,
-        });
+        coords.set(
+            AtomIdx(i as u32),
+            Point3 {
+                x: p.x - cx,
+                y: p.y - cy,
+                z: p.z - cz,
+            },
+        );
     }
 }
 
@@ -715,8 +743,14 @@ mod tests {
         // All coords must be finite.
         for i in 0..4 {
             let p = coords.get(AtomIdx(i as u32));
-            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
-                "butane atom {} has non-finite coords ({}, {}, {})", i, p.x, p.y, p.z);
+            assert!(
+                p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
+                "butane atom {} has non-finite coords ({}, {}, {})",
+                i,
+                p.x,
+                p.y,
+                p.z
+            );
         }
 
         // Bond distances should be within ±0.3 Å of the ideal 1.54 Å target.
@@ -743,8 +777,14 @@ mod tests {
 
         for i in 0..6 {
             let p = coords.get(AtomIdx(i as u32));
-            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
-                "hexane atom {} non-finite: ({}, {}, {})", i, p.x, p.y, p.z);
+            assert!(
+                p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
+                "hexane atom {} non-finite: ({}, {}, {})",
+                i,
+                p.x,
+                p.y,
+                p.z
+            );
         }
 
         // All five C-C bonds should be reasonable.
@@ -752,8 +792,7 @@ mod tests {
             let pa = coords.get(AtomIdx(i));
             let pb = coords.get(AtomIdx(i + 1));
             let d = pa.distance(&pb);
-            assert!(d > 1.2 && d < 1.9,
-                "hexane C{i}-C{} bond = {d:.3} Å", i + 1);
+            assert!(d > 1.2 && d < 1.9, "hexane C{i}-C{} bond = {d:.3} Å", i + 1);
         }
     }
 
@@ -766,8 +805,10 @@ mod tests {
 
         for i in 0..mol.atom_count() {
             let p = coords.get(AtomIdx(i as u32));
-            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
-                "toluene atom {i} non-finite");
+            assert!(
+                p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
+                "toluene atom {i} non-finite"
+            );
         }
 
         // Check that BONDED atom pairs have distances within 1.0–2.0 Å.
@@ -777,8 +818,12 @@ mod tests {
             let pa = coords.get(bond.atom1);
             let pb = coords.get(bond.atom2);
             let d = pa.distance(&pb);
-            assert!(d > 1.0 && d < 2.0,
-                "toluene bond {}-{} = {d:.3} Å", bond.atom1.0, bond.atom2.0);
+            assert!(
+                d > 1.0 && d < 2.0,
+                "toluene bond {}-{} = {d:.3} Å",
+                bond.atom1.0,
+                bond.atom2.0
+            );
         }
     }
 

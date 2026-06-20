@@ -1,5 +1,5 @@
 use chematic_chem::assign_cip;
-use chematic_core::{CipCode, Molecule, AtomIdx, BondOrder, Chirality};
+use chematic_core::{AtomIdx, BondOrder, Chirality, CipCode, Molecule};
 use std::collections::HashMap;
 
 /// Generate /m layer (relative stereo parity) from stereogenic centers.
@@ -11,8 +11,16 @@ pub fn relative_stereo_parity_layer(
     _inchi_index: &HashMap<AtomIdx, usize>,
 ) -> Option<String> {
     let cip = assign_cip(mol);
-    let r_count = cip.assignments.iter().filter(|(_, c)| *c == CipCode::R).count();
-    let s_count = cip.assignments.iter().filter(|(_, c)| *c == CipCode::S).count();
+    let r_count = cip
+        .assignments
+        .iter()
+        .filter(|(_, c)| *c == CipCode::R)
+        .count();
+    let s_count = cip
+        .assignments
+        .iter()
+        .filter(|(_, c)| *c == CipCode::S)
+        .count();
 
     let total_stereo = r_count + s_count;
     if total_stereo < 2 {
@@ -20,7 +28,11 @@ pub fn relative_stereo_parity_layer(
     }
 
     // Parity: 0 if total R/S centers is even, 1 if odd
-    let parity = if (r_count + s_count) % 2 == 0 { "0" } else { "1" };
+    let parity = if (r_count + s_count) % 2 == 0 {
+        "0"
+    } else {
+        "1"
+    };
     Some(parity.to_string())
 }
 
@@ -48,7 +60,9 @@ pub fn stereo_type_layer(mol: &Molecule) -> Option<String> {
 
     // Check if molecule has any assigned stereo (R/S codes)
     let cip = assign_cip(mol);
-    let has_assigned_stereo = cip.assignments.iter()
+    let has_assigned_stereo = cip
+        .assignments
+        .iter()
         .any(|(_, code)| *code == CipCode::R || *code == CipCode::S);
 
     if has_assigned_stereo {
@@ -86,20 +100,14 @@ pub fn tetrahedral_stereo_layer(
     }
 
     t_list.sort_by_key(|(n, _)| *n);
-    let parts: Vec<String> = t_list
-        .iter()
-        .map(|(n, s)| format!("{}{}", n, s))
-        .collect();
+    let parts: Vec<String> = t_list.iter().map(|(n, s)| format!("{}{}", n, s)).collect();
     Some(parts.join(","))
 }
 
 /// Generate /b layer (E/Z double bond stereo) from CIP assignment.
 ///
 /// Returns `atom1-atom2+/-` pairs, e.g., "2-3+,5-6-"
-pub fn ez_stereo_layer(
-    mol: &Molecule,
-    inchi_index: &HashMap<AtomIdx, usize>,
-) -> Option<String> {
+pub fn ez_stereo_layer(mol: &Molecule, inchi_index: &HashMap<AtomIdx, usize>) -> Option<String> {
     let cip = assign_cip(mol);
     let mut b_list: Vec<String> = vec![];
 
@@ -114,14 +122,13 @@ pub fn ez_stereo_layer(
         for (_bond_idx, bond) in mol.bonds() {
             if (bond.atom1 == *atom_idx || bond.atom2 == *atom_idx)
                 && bond.order == BondOrder::Double
-                && let (Some(&i1), Some(&i2)) = (
-                    inchi_index.get(&bond.atom1),
-                    inchi_index.get(&bond.atom2),
-                ) {
-                    let (lo, hi) = if i1 < i2 { (i1, i2) } else { (i2, i1) };
-                    b_list.push(format!("{}-{}{}", lo, hi, sign));
-                    break;
-                }
+                && let (Some(&i1), Some(&i2)) =
+                    (inchi_index.get(&bond.atom1), inchi_index.get(&bond.atom2))
+            {
+                let (lo, hi) = if i1 < i2 { (i1, i2) } else { (i2, i1) };
+                b_list.push(format!("{}-{}{}", lo, hi, sign));
+                break;
+            }
         }
     }
 
@@ -137,8 +144,8 @@ pub fn ez_stereo_layer(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::parse;
     use chematic_smiles::canonical::canonical_atom_order;
+    use chematic_smiles::parse;
 
     fn build_inchi_index(mol: &Molecule) -> HashMap<AtomIdx, usize> {
         let canonical_order = canonical_atom_order(mol);
@@ -163,7 +170,10 @@ mod tests {
         let t = tetrahedral_stereo_layer(&mol, &idx);
         assert!(t.is_some());
         let t_str = t.unwrap();
-        assert!(t_str.contains('-'), "L-alanine (S) should have minus parity");
+        assert!(
+            t_str.contains('-'),
+            "L-alanine (S) should have minus parity"
+        );
     }
 
     #[test]
@@ -216,18 +226,31 @@ mod tests {
         let mol = parse("C[C@H](O)[C@@H](O)C(=O)O").expect("tartaric acid");
         let idx = build_inchi_index(&mol);
         let parity = relative_stereo_parity_layer(&mol, &idx);
-        assert!(parity.is_some(), "Multiple stereocenters should generate /m layer");
+        assert!(
+            parity.is_some(),
+            "Multiple stereocenters should generate /m layer"
+        );
         // Parity is computed from total R+S count; verify it's 0 or 1
         let parity_val = parity.unwrap();
-        assert!(parity_val == "0" || parity_val == "1", "Parity should be 0 or 1");
+        assert!(
+            parity_val == "0" || parity_val == "1",
+            "Parity should be 0 or 1"
+        );
     }
 
     #[test]
     fn test_stereo_type_absolute_with_chirality_marker() {
         let mol = parse("N[C@@H](C)C(=O)O").expect("L-alanine");
         let s_type = stereo_type_layer(&mol);
-        assert!(s_type.is_some(), "Molecule with chirality marker should have /s layer");
-        assert_eq!(s_type.unwrap(), "1", "Chirality marker indicates absolute stereo");
+        assert!(
+            s_type.is_some(),
+            "Molecule with chirality marker should have /s layer"
+        );
+        assert_eq!(
+            s_type.unwrap(),
+            "1",
+            "Chirality marker indicates absolute stereo"
+        );
     }
 
     #[test]
@@ -235,6 +258,10 @@ mod tests {
         let mol = parse("CC").expect("ethane");
         let s_type = stereo_type_layer(&mol);
         assert!(s_type.is_some());
-        assert_eq!(s_type.unwrap(), "3", "Achiral molecule should have racemic type");
+        assert_eq!(
+            s_type.unwrap(),
+            "3",
+            "Achiral molecule should have racemic type"
+        );
     }
 }

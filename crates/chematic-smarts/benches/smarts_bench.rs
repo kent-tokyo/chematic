@@ -6,7 +6,7 @@
 //! The SmartsCache benchmark demonstrates the 5–20× speedup from caching
 //! compiled SMARTS patterns compared to re-parsing on every call.
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
 use chematic_smarts::{SmartsCache, find_matches, parse_smarts};
@@ -79,7 +79,7 @@ fn bench_smarts_cache_hit(c: &mut Criterion) {
 
 fn bench_smarts_complex(c: &mut Criterion) {
     let mols: Vec<_> = BENCH_SMILES.iter().map(|s| parse(s).unwrap()).collect();
-    let query = parse_smarts("[NH;$(NC=O)]").unwrap();  // amide N-H
+    let query = parse_smarts("[NH;$(NC=O)]").unwrap(); // amide N-H
     c.bench_function("smarts_recursive_10mol", |b| {
         b.iter(|| {
             for mol in &mols {

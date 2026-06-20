@@ -36,10 +36,7 @@ pub fn rdkit_path_fp(mol: &Molecule) -> BitVec2048 {
 }
 
 /// RDKit path fingerprint with custom config.
-pub fn rdkit_path_fp_with_config(
-    mol: &Molecule,
-    config: &RdkitPathConfig,
-) -> BitVec2048 {
+pub fn rdkit_path_fp_with_config(mol: &Molecule, config: &RdkitPathConfig) -> BitVec2048 {
     let mut fp = BitVec2048::new();
 
     if mol.atom_count() == 0 {
@@ -168,7 +165,11 @@ mod tests {
         let m2 = mol("CC");
         let fp1 = rdkit_path_fp(&m1);
         let fp2 = rdkit_path_fp(&m2);
-        assert_eq!(fp1.tanimoto(&fp2), 1.0, "identical molecules should have tanimoto=1.0");
+        assert_eq!(
+            fp1.tanimoto(&fp2),
+            1.0,
+            "identical molecules should have tanimoto=1.0"
+        );
     }
 
     #[test]

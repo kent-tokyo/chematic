@@ -9,6 +9,465 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.20 gap-analysis bindings (Sprint 26)
+
+**2D stereochemistry perception (vs RDKit `Chem.AssignStereochemistry`):**
+- `Mol.stereo_from_2d_coords(coords_2d)` → list[dict] — perceives R/S and E/Z from 2D layout coordinates (pairs with `stereo_from_coords` for 3D)
+
+**Multi-record SDF with 2D coordinates (vs RDKit `SDMolSupplier`):**
+- `chematic.parse_sdf_with_coords(text)` → list[tuple[Mol, str, list[list[float]]]] — batch SDF parse preserving 2D layout; batch equivalent of `from_mol_block_with_coords`
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.19 gap-analysis bindings (Sprint 25)
+
+**MDL RXN file I/O (vs RDKit `AllChem.ReactionFromRxnFile`):**
+- `chematic.from_rxn_file(text)` → str — parse MDL RXN V2000 file to reaction SMILES
+- `chematic.to_rxn_file(reaction_smiles)` → str — convert reaction SMILES to MDL RXN V2000
+
+**CML writer (vs RDKit `Chem.MolToCMLBlock`):**
+- `Mol.to_cml(coords_2d=None)` → str — serialize to Chemical Markup Language XML; optional 2D layout coordinates
+
+**V3000 round-trip (completes V3000 suite):**
+- `chematic.from_mol_v3000_with_coords(block)` → `(Mol, name, coords_2d)` — V3000 parse preserving 2D layout (pairs with `mol.to_mol_v3000`)
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.18 gap-analysis bindings (Sprint 24)
+
+**CXSMILES parsing (vs RDKit CX block support):**
+- `chematic.from_cxsmiles(s)` → `(Mol, dict)` — parses CXSMILES and returns molecule + CX metadata (`atom_labels`, `atom_props`, `atom_radicals`)
+
+**MDL MOL V3000 writer (vs RDKit `MolToV3KMolBlock`):**
+- `Mol.to_mol_v3000(coords_2d, name=None)` → str — V3000 format supporting >999 atoms; same 2D coord convention as `to_mol_block_2d`
+
+**Custom-radius MHFP (vs chemfp, datamol):**
+- `Mol.mhfp_config(radius=2, num_hashes=128, seed=0)` → list[int] — MHFP with configurable radius/length; extends the default `mhfp()` method
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.17 gap-analysis bindings (Sprint 23)
+
+**DREIDING force field minimization:**
+- `Mol.minimize_dreiding(coords)` → list[list[float]] — third FF option alongside `minimize_mmff94` and `minimize_uff`
+
+**MDL MOL V2000 2D coordinate round-trip:**
+- `chematic.from_mol_block_with_coords(block)` → `(Mol, name, coords_2d)` — parse MOL block preserving 2D layout
+- `Mol.to_mol_block_2d(coords_2d, name=None)` → str — write MOL block back with preserved 2D coordinates
+
+**Per-atom SASA with explicit 3D coordinates:**
+- `Mol.sasa_per_atom_3d(coords)` → list[float] — per-atom SASA from user-provided coords (vs `sasa_per_atom()` which uses DG internally)
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.16 gap-analysis bindings (Sprint 22)
+
+**3D stereochemistry perception (vs RDKit `AssignStereochemistryFrom3D`):**
+- `Mol.stereo_from_coords(coords)` → list[dict] — perceives R/S and E/Z from 3D coordinates; returns `[{'atom_idx': int, 'code': 'R'|'S'|'E'|'Z'}]` (note: requires 4 heavy-atom neighbours at chiral centre)
+
+**Layer-by-layer fingerprint (vs RDKit `LayeredFingerprint(layerFlags=0x7F)`):**
+- `Mol.layered_fp_layers()` → list[bytes] — 7 individual layers (atom types → bond orders → aromaticity → ring membership → ring-bond → stereo → combined); each 256 bytes, compatible with `chematic.tanimoto` etc.
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.15 gap-analysis bindings (Sprint 21)
+
+**2-way/3-way combinatorial library enumeration (vs RDKit VirtualLibraries, chemfp):**
+- `chematic.enumerate_library_2way(smirks, scaffolds, building_blocks)` → list[str] — scaffold × building block
+- `chematic.enumerate_library_3way(smirks, scaffolds, r1_set, r2_set)` → list[str] — scaffold × R1 × R2
+
+**Ring system topology classification (vs chemgraph, ring-analysis):**
+- `Mol.ring_families()` → list[dict] — classifies each ring system as `"simple"` | `"fused"` | `"spiro"` | `"bridged"`, with `atom_indices` and `ring_count`
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.14 gap-analysis bindings (Sprint 20)
+
+**ERG molecule-to-molecule similarity:**
+- `chematic.tanimoto_erg(mol1, mol2)` → float — direct mol comparison without intermediate `erg_vec()` step
+
+**M×N Tanimoto similarity matrix (vs chemfp `sim_matrix`, RDKit `BulkTanimotoSimilarity`):**
+- `chematic.tanimoto_matrix(fps_a, fps_b)` → list[list[float]] — computes all pairwise scores in one call
+
+**Pre-computed fingerprint k-NN (vs chemfp high-speed search):**
+- `chematic.nearest_neighbors_from_fp(query_fp, db_fps, k=10)` → list[(idx, score)] — efficient for repeated queries against the same database; fingerprints computed once
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.13 gap-analysis bindings (Sprint 19)
+
+**MDL MOL V2000 writer (vs RDKit `MolToMolBlock`):**
+- `Mol.to_mol_block()` → str — completes the MOL format round-trip (`from_mol_block` ↔ `to_mol_block`)
+
+**ADMET numeric score direct properties (vs ADMET-AI, pkCSM):**
+- `Mol.bbb_score` → float (0–1) — blood-brain barrier penetration
+- `Mol.caco2` → float (nm/s) — Caco-2 intestinal permeability
+- `Mol.herg_risk` → float (0–1) — hERG cardiac toxicity risk
+- `Mol.cyp3a4_risk` → float (0–1) — CYP3A4 inhibition risk
+  All consistent with `mol.admet()` dict values.
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.12 gap-analysis bindings (Sprint 18)
+
+**Bulk Tanimoto (vs chemfp `sim_matrix` / RDKit `BulkTanimotoSimilarity`):**
+- `chematic.tanimoto_slice(query_fp, db_fps)` → list[float] — vectorized 1-vs-N Tanimoto for virtual screening
+
+**Count-based Morgan FP (vs RDKit `GetMorganFingerprint`):**
+- `Mol.morgan_fp_counts(radius=2)` → dict[int, int] — hash→count map (more informative than bit FP for ML)
+
+**Pharmacophore feature counts:**
+- `Mol.pharmacophore_feature_counts()` → list[int] (6 values) — [donor, acceptor, aromatic, hydrophobic, positive, negative]
+
+**Reaction fingerprint similarity:**
+- `chematic.tanimoto_reaction_fp(rxn1, rxn2)` → float — Tanimoto between two reaction SMILES
+
+**Atom-type BCI MMFF94 charges:**
+- `Mol.mmff94_charges_typed()` → list[float] — atom-type pair BCI model (alternative to `mmff94_charges()`)
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.11 gap-analysis bindings (Sprint 17)
+
+**Ames mutagenicity alert names (vs RDKit `FilterCatalog`):**
+- `Mol.ames_alerts()` → list[str] — specific SMARTS alert names (e.g. `"primary_aromatic_amine"`); complements existing `ames_passes()` / `ames_risk()`
+
+**Hepatic clearance raw score:**
+- `Mol.clearance_score` → float (0.0–1.0) — continuous score for ML pipelines; complements `Mol.clearance_class` (categorical)
+
+**Per-atom molar refractivity:**
+- `Mol.mr_per_atom()` → list[float] — per-atom MR contributions; `sum() ≈ molar_refractivity`
+
+**3D-aware MMFF94 partial charges:**
+- `Mol.mmff94_charges_3d(coords)` → list[float] — MMFF94 charges incorporating 3D polarization; more accurate than `mmff94_charges()` (2D topology only) for polar molecules
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.10 gap-analysis bindings (Sprint 16)
+
+**Halogen & phosphorus direct properties (completing element count API, vs RDKit/mordred):**
+- `Mol.num_fluorines`, `Mol.num_chlorines`, `Mol.num_bromines`, `Mol.num_iodines`, `Mol.num_phosphorus`
+
+**Named SMARTS pattern lookup (vs RDKit `FilterCatalog`):**
+- `chematic.named_pattern(name)` → str | None — look up built-in SMARTS by name
+  (e.g. `"donor"`, `"acceptor"`, `"hydrophobic"`, `"positive"`, `"negative"`, `"aromatic"`)
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.9 gap-analysis bindings (Sprint 15)
+
+**Random SMILES enumeration (vs RDKit `MolToSmiles(rootedAtAtom=...)`, ML augmentation):**
+- `Mol.random_smiles(seed)` → str — non-canonical SMILES with deterministic seed
+- `Mol.random_smiles_n(n, seed=0)` → list[str] — up to n unique random SMILES
+
+**SMI file batch I/O (vs RDKit `SmilesMolSupplier` / `SmilesWriter`):**
+- `chematic.parse_smi_file(content)` → list[(Mol, name)] — parse SMILES+name file; invalid lines skipped
+- `chematic.write_smi_file(records)` → str — write [(Mol, name)] to .smi format
+
+**Element color utilities (vs RDKit `DrawingOptions`):**
+- `chematic.atom_color(atomic_num)` → str — CPK CSS color (e.g. `"#FF0D0D"` for O)
+- `chematic.atom_color_rgb(atomic_num)` → (R, G, B) tuple
+
+**Atom equivalence predicate:**
+- `Mol.are_atoms_equivalent(a, b)` → bool — True if atoms have the same Morgan canonical rank
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.8 gap-analysis bindings (Sprint 14)
+
+**Reaction SMARTS queries (vs RDKit `AllChem.ReactionFromSmarts`):**
+- `chematic.query_reaction(rxn_smiles, smarts)` → bool — single reaction pattern match
+- `chematic.batch_query_reactions(rxn_list, smarts)` → `{total, matching, match_pct, matches}` — batch hit rate
+
+**MMFF94 force field energy & types (vs RDKit `MMFFGetMoleculeForceField`):**
+- `Mol.mmff94_total_energy(coords)` → float (kcal/mol) — single-call energy without breakdown
+- `Mol.mmff94_atom_types()` → list[str] — per-atom MMFF94 type names (e.g. `"C_sp3"`, `"O_Alcohol"`)
+
+**3D pharmacophore Tanimoto (vs RDKit EmbedLib):**
+- `chematic.tanimoto_pharmacophore_3d(fp1, fp2)` → float — direct Tanimoto between `pharmacophore_fp_3d()` outputs
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.7 gap-analysis bindings (Sprint 13)
+
+**IUPAC stereo naming (vs RDKit `MolToIUPACName` + CIP prefix):**
+- `Mol.iupac_name_stereo()` → str — prepends `(R)-`/`(S)-`/`(1R,2S)-` to IUPAC name
+
+**Reaction SVG depiction (vs RDKit `Draw.ReactionToImage`):**
+- `chematic.reaction_svg(rxn_smiles)` → SVG string — renders reaction arrow diagram
+
+**Format I/O expansion (vs RDKit, Open Babel):**
+- `chematic.from_cml(cml_str)` → Mol — Chemical Markup Language parser
+- `chematic.from_cdxml(cdxml_str)` → Mol — ChemDraw XML parser
+- `chematic.from_mol_v3000(block)` → Mol — MDL MOL V3000 parser
+
+**RECAP fragmentation count:**
+- `Mol.recap_breakable_bond_count` → int — number of RECAP-breakable C–N/C–O/C–S single bonds
+
+**Scaffold network statistics (vs RDKit `ScaffoldNetwork`):**
+- `chematic.scaffold_network_counts(smiles_list)` → `{scaffolds, counts, parents}` — frequency of each scaffold across a library
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.6 gap-analysis bindings (Sprint 12)
+
+**Ring saturation:**
+- `Mol.num_saturated_rings` → int (direct property, vs RDKit `CalcNumSaturatedRings`)
+
+**Zwitterion & salt utilities (vs RDKit MolStandardize):**
+- `Mol.has_zwitterion()` → bool — simultaneous positive/negative formal charges
+- `Mol.normalize_zwitterion()` → Mol — proton transfer to neutral form
+- `Mol.remove_salts()` → Mol — catalog-based salt fragment removal (distinct from `largest_fragment`)
+
+**Stereo inversion:**
+- `Mol.invert_stereocenter(atom_idx)` → Mol — flip Up/Down wedge bonds to generate enantiomer at specific center
+
+**Multi-fingerprint k-NN search (vs RDKit `BulkTanimotoSimilarity`):**
+- `chematic.top_k_similar_fp(query, smiles, k, fp)` — k-NN with selectable FP: `ecfp4` (default), `ecfp6`, `ecfp4_chiral`, `fcfp4`, `maccs`, `topo_path`
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.5 gap-analysis bindings (Sprint 11)
+
+**Topological descriptor direct properties (15 getters, vs mordred/RDKit):**
+- Hall-Kier shape: `Mol.kappa1`, `kappa2`, `kappa3`
+- Path connectivity: `Mol.chi0`, `chi1`, `chi2`, `chi3`, `chi4`
+- Valence connectivity: `Mol.chi0v`, `chi1v`, `chi2v`, `chi3v`, `chi4v`
+- `Mol.wiener_index` (sum of topological distances), `Mol.bertz_ct` (graph complexity)
+
+**Ring perception utilities (vs RDKit SSSR):**
+- `Mol.ring_membership()` → per-atom list of SSSR ring indices
+- `Mol.ring_sizes_for_atom(i)` → ring sizes containing atom i
+- `Mol.is_fused_ring_system()` → bool (True if rings share an edge, not just spiro)
+
+**Stereo validation (vs RDKit `FindPotentialStereo`):**
+- `Mol.validate_stereo()` → `[{atom_idx, kind}]` — ImpossibleCenter / ConflictingWedges / RedundantStereo
+- `Mol.stereo_completeness()` → `{specified, unspecified, total_centers}`
+
+**Pharmacophore feature detection (vs RDKit Chem.Pharm2D):**
+- `Mol.pharmacophore_features()` → `[{type, atom_idx, neighbor_indices}]` — Donor/Acceptor/Aromatic/Hydrophobic/Positive/Negative
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.4 gap-analysis bindings (Sprint 10)
+
+Closing final Rust→Python exposure gaps for direct-access properties vs RDKit/mordred/chemfp:
+
+**Element & bond count direct properties (vs RDKit `CalcNumXxx`):**
+- `Mol.num_heteroatoms`, `num_carbons`, `num_nitrogens`, `num_oxygens`, `num_sulfurs`, `num_hydrogens`
+- `Mol.num_amide_bonds`, `Mol.num_ester_bonds`
+
+**Ring topology direct properties (vs RDKit `CalcNumSpiroAtoms` etc.):**
+- `Mol.num_spiro_atoms`, `num_bridgehead_atoms`
+- `Mol.num_aromatic_heterocycles`, `num_aliphatic_heterocycles`, `num_saturated_heterocycles`, `num_aliphatic_rings`
+
+**ERG continuous vector similarity (vs chemfp ERG):**
+- `Mol.erg_vec()` → `list[float]` of length 315
+- `chematic.cosine_erg_vec(v1, v2)` → float
+- `chematic.tanimoto_erg_vec(v1, v2)` → float
+
+**SMILES canonical utilities (vs RDKit `CanonicalRankAtoms`):**
+- `Mol.morgan_ranks()` → Morgan extended-connectivity ranks per heavy atom
+- `Mol.canonical_atom_order()` → canonical permutation vector
+- `Mol.equivalent_atom_classes()` → symmetry-equivalent atom class IDs
+
+### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.3 gap-analysis bindings (Sprint 9)
+
+Closing remaining Rust→Python exposure gaps vs RDKit, mordred, and chempy:
+
+**Per-atom E-state indices (vs RDKit `EState.EStateIndices`):**
+- `Mol.estate_indices()` → `list[float]` — electrotopological state per heavy atom
+
+**Condensed formula parser (vs chempy):**
+- `chematic.from_condensed("CH3OH")` → `Mol | None` — dictionary-based condensed formula → structure
+
+**MMFF94 3D minimization (completes force-field coverage):**
+- `Mol.minimize_mmff94(coords)` → `[[x,y,z],...]` — MMFF94 geometry optimization
+
+**Unspecified stereocenters count (vs RDKit `CalcNumUnspecifiedAtomStereoCenters`):**
+- `Mol.num_unspecified_stereocenters` → `int` — stereocenters with unknown configuration
+
+**Combined WHIM+GETAWAY descriptor (vs mordred pipeline):**
+- `Mol.whim_getaway(coords)` → `list[float]` — single-call 3D featurisation combining both descriptors
+
+### Added — `chematic-py`: PyPI Chemistry p.2 gap-analysis bindings (Sprint 8)
+
+Closing final gaps vs RDKit, chempy, and pure-Rust competitors:
+
+**Deduplication utilities (vs RDKit `rdMolHash`):**
+- `chematic.mol_hash(mol)` → u64 — fast structural hash for O(1) duplicate detection
+- `chematic.are_identical(mol1, mol2)` → bool — exact graph isomorphism check
+
+**BRICS bond positions (vs RDKit `BRICS.FindBRICSBonds`):**
+- `Mol.brics_bonds()` → `[(atom_i, atom_j)]` — which bonds BRICS would break
+
+**Full pKa prediction (all sites):**
+- `Mol.predict_pka()` → `[{atom_idx, pka, site_type, group_name}]` — all ionizable sites
+
+**Reaction serialization (completes parse/write symmetry):**
+- `chematic.write_reaction(rxn_smiles)` → canonical reaction SMILES string
+
+**Chemical abbreviations (vs chempy):**
+- `chematic.abbreviations()` → `{symbol: SMILES}` dict — 32 abbreviations (Boc, Ph, OMe, …)
+- `chematic.expand_abbreviation(symbol)` → `Mol | None`
+
+**Topological distance matrix (vs RDKit `GetDistanceMatrix`):**
+- `Mol.topological_distance_matrix()` → N×N list of graph shortest-path distances
+
+### Added — `chematic-wasm` + tests: Sprint 7 — WASM gap-closure & test coverage
+
+**New WASM exports (Sprint 1-6 features now available to JS/web users):**
+- `xlogp3_json(mol)` → `{"xlogp3": float}`
+- `xlogp3_per_atom_json(mol)` → JSON array of per-atom values
+- `generate_3d_coords_json(mol)` → `[[x,y,z],...]` raw coords (vs PDB string only before)
+- `generate_3d_etkdg_coords_json(mol)` → ETKDG raw coords JSON
+- `conformer_ensemble_json(mol, n, rmsd_threshold)` → `{"conformers":[...], "count": int}`
+
+**New pytest tests (`tests/test_sprint16.py`, 45 tests, all passing):**
+Covering Sprint 1-6 features: logd, mqn, xlogp3, cip_stereo, generate_3d, gasteiger/mmff94 charges, named_functional_groups, pmi/npr/asphericity, dihedral manipulation, ETKDG, atom_economy, balance_check, molecule_report, screen_smiles, find_mmp, find_reaction_center, prefer_organic, uncharge, sasa_descriptor, randic_index, fcfp6, pattern_fp, mmff94_charges, balaban_j, zagreb_m1, labute_asa_per_atom, top_k_similar, center_on_origin, dice_similarity, butina_cluster.
+
+Test count: 108 → **153 passing** Python tests.
+
+**demo/pkg rebuilt** to include all new WASM exports.
+
+### Added — `chematic-py`: PyPI Chemistry category gap-analysis bindings (Sprint 6, final)
+
+Completing the remaining Rust→Python API surface vs RDKit, mordred, and chemfp:
+
+**MMFF94 charges (vs RDKit `GetMMFF94PartialCharges`):**
+- `Mol.mmff94_charges()` → per-atom MMFF94 BCI partial charges (more accurate than Gasteiger)
+
+**Top-K similarity search (vs chemfp):**
+- `chematic.top_k_similar(query, smiles_list, k)` → `[(index, score)]` top-K ECFP4 Tanimoto hits
+
+**Topological descriptors (vs mordred completion):**
+- `Mol.balaban_j` → Balaban J complexity index
+- `Mol.ipc` → Information-theoretic connectivity index
+- `Mol.zagreb_m1` → Zagreb M1 (sum of squared vertex degrees)
+- `Mol.labute_asa_per_atom()` → per-atom Labute ASA contributions
+
+**SASA statistics (vs RDKit / OpenBabel):**
+- `Mol.sasa_descriptor(coords)` → `{total, mean, std_dev, per_atom}` dict
+
+**Coordinate utilities (vs RDKit `AllChem`):**
+- `chematic.center_on_origin(coords)` → translate centroid to origin
+- `chematic.transform_conformer(coords, matrix_4x4)` → affine transformation
+
+### Added — `chematic-py`: PyPI Chemistry category gap-analysis bindings (Sprint 5)
+
+Completing the API surface vs MolVS, ADMETlab, and rxnSMILES4AtomEco:
+
+**Green chemistry (complete ACS 12-principles set):**
+- `chematic.e_factor(waste_mass, product_mass)` → E-factor (waste-to-product ratio)
+- `chematic.pmi_rxn(all_masses, product_mass)` → Process Mass Intensity
+- `chematic.reaction_mass_efficiency(reactant_masses, product_mass)` → RME [0–1]
+
+**Standardization steps (vs MolVS / RDKit MolStandardize):**
+- `Mol.normalize_groups()` → normalize nitro/azide/diazo/sulfoxide groups
+- `Mol.prefer_organic()` → keep largest organic fragment, remove counterions
+- `Mol.reionize()` → re-apply ionization rules based on pKa
+- `Mol.uncharge()` → remove all formal charges
+
+**ADMET extension:**
+- `Mol.clearance_class` → `"Low"` / `"Medium"` / `"High"` hepatic clearance
+
+**SASA extension (vs OpenBabel / RDKit):**
+- `Mol.sasa_with_probe(coords, probe_radius=1.4)` → SASA with custom probe radius
+- `Mol.sasa_per_element(coords)` → SASA breakdown by element symbol dict
+
+**Additional fingerprints + topology:**
+- `Mol.fcfp6()` → FCFP6 fingerprint (256 bytes)
+- `Mol.pattern_fp()` → SMARTS pattern fingerprint (256 bytes)
+- `Mol.randic_index` → Randić connectivity index (molecular branching)
+
+### Added — `chematic-py`: PyPI Chemistry category gap-analysis bindings (Sprint 4)
+
+Closing remaining gaps vs RDKit, Schrödinger Canvas, and rxnmapper:
+
+**Workflow API (unique differentiator — no RDKit equivalent):**
+- `chematic.molecule_report(smiles)` → complete single-molecule dict (descriptors, filters, functional groups, scaffold)
+- `chematic.screen_smiles(smiles_list)` → batch screening with per-molecule reports + MaxMin picks + Butina clusters
+- `chematic.compare_molecules(smiles_list)` → pairwise similarity + descriptor deltas + MCS
+
+**MMP Analysis (vs RDKit rdMMPA / Schrödinger Canvas):**
+- `chematic.find_mmp(smiles_list)` → `[{mol_a, mol_b, core, fragment_a, fragment_b}]` Matched Molecular Pairs
+
+**Reaction Analysis (vs RDKit / rxnmapper):**
+- `chematic.find_reaction_center(rxn_smiles)` → `{broken_bonds, formed_bonds, changed_atoms}`
+
+**Additional fingerprints:**
+- `Mol.path_fp()` → RDKit-compatible Daylight path fingerprint (256 bytes)
+- `Mol.topo_path_fp()` → topological path fingerprint (256 bytes)
+- `Mol.pharmacophore_fp_3d(coords)` → 3D pharmacophore fingerprint (complement to 2D `pharmacophore_fp`)
+- `Mol.reaction_fp(rxn_smiles)` → `{reactant_fp, product_fp, combined_fp}` dicts (each 256 bytes)
+
+### Added — `chematic-py`: PyPI Chemistry category gap-analysis bindings (Sprint 3)
+
+Closing gaps vs rxnSMILES4AtomEco, Gypsum-DL, PIKAChU, and MolVS:
+
+**Charges (docking pipeline now complete):**
+- `Mol.gasteiger_charges()` → per-atom Gasteiger–Marsili partial charges for PDBQT writing
+
+**Reaction chemistry (vs rxnSMILES4AtomEco / RDKit):**
+- `chematic.atom_economy(rxn_smiles)` → float (green chemistry metric)
+- `chematic.balance_check(rxn_smiles)` → `{balanced, diff}` atom balance report
+- `chematic.enumerate_library(smirks, fragment_sets)` → combinatorial product SMILES
+
+**Structure analysis (vs PIKAChU / RDKit):**
+- `Mol.cip_stereo()` → per-atom/bond CIP R/S/E/Z assignments
+- `Mol.pains_alerts()` → list of matched PAINS alert names (not just bool)
+- `Mol.brenk_alerts()` → list of matched Brenk alert names
+- `Mol.named_functional_groups()` → list of detected group names (carboxyl, ester, …)
+
+**3D shape descriptors (vs mordred / OpenEye):**
+- `Mol.pmi(coords)` → `[PMI1, PMI2, PMI3]` principal moments of inertia
+- `Mol.npr(coords)` → `[NPR1, NPR2]` normalised principal moments (for Rod/Disc/Sphere plot)
+- `Mol.asphericity(coords)`, `Mol.eccentricity(coords)`, `Mol.radius_of_gyration(coords)`
+- `Mol.plane_of_best_fit(coords)` → PBF deviation
+
+**Conformer editing (vs Gypsum-DL / RDKit):**
+- `Mol.generate_3d_etkdg()` → higher-quality ETKDG 3D coordinates
+- `Mol.get_dihedral(coords, i,j,k,l)` → dihedral angle in degrees
+- `Mol.set_dihedral(coords, i,j,k,l, angle_deg)` → new coords with rotated fragment
+- `Mol.get_bond_length(coords, i, j)` → bond length (Å)
+- `Mol.get_bond_angle(coords, i, j, k)` → bond angle (deg)
+
+### Added — `chematic-py`: PyPI Chemistry category gap-analysis bindings (Sprint 2)
+
+Closing remaining gaps vs RDKit 2026, mordred, chemfp 5.1, and ChemAxon:
+
+**Similarity metrics (new — RDKit has 8, chematic now has 3):**
+- `chematic.dice_similarity(fp1, fp2)` → Dice coefficient (= 2|A∩B|/(|A|+|B|))
+- `chematic.tversky_similarity(fp1, fp2, alpha, beta)` → Tversky index (generalises Dice/Tanimoto)
+- `chematic.tanimoto_mhfp(fp1, fp2)` → MHFP similarity (position-wise)
+
+**Descriptors (Rust→Python, mordred/RDKit parity):**
+- `Mol.xlogp3` / `Mol.xlogp3_per_atom()` — alternative logP (Wang 2000)
+- `Mol.autocorr_2d()` — 2D autocorrelation (mordred-compatible)
+- `Mol.hall_kier_alpha` — correction term for κ shape indices
+- `Mol.peoe_vsa()`, `Mol.slogp_vsa()`, `Mol.smr_vsa()`, `Mol.estate_vsa()` — 4 VSA descriptor vectors
+- `Mol.usrcat()` — 42-element topological shape/pharmacophore descriptor
+
+**File output:**
+- `Mol.to_sdf_with_charges(coords, charges)` — 3D SDF with `> <PARTIAL_CHARGES>` property (Rust implemented in v0.4.9, now in Python)
+
+**Fingerprints:**
+- `Mol.pharmacophore_fp()` → 2048-bit pharmacophore 2D fingerprint (HBD/HBA/hydrophobic/aromatic)
+- `Mol.mhfp()` → 128 u64 MinHash hash values
+
+**3D alignment:**
+- `chematic.align_coords(probe, reference)` → `(aligned_coords, rmsd)` (Kabsch algorithm)
+- `chematic.rmsd(coords_a, coords_b)` → RMSD without alignment
+
+### Added — `chematic-py`: PyPI gap-analysis bindings (Sprint 1)
+
+Exposed 20 Rust-implemented features to Python for the first time, closing gaps identified
+by comparison with chemfp, mordred, datamol, and scikit-mol:
+
+**Fingerprints:**
+- `Mol.map4()` → `list[int]` (1024 u32 MinHash hashes) + `Mol.map4_numpy()` → `ndarray(1024, uint32)`
+- `Mol.erg()` → `bytes` (2048-bit Extended Reduced Graph fingerprint)
+- `chematic.tanimoto_map4(a, b)` → similarity for MAP4 fingerprints (position-wise, not bitwise)
+- `chematic.bulk.map4(smiles)` → `ndarray(N, 1024, uint32)` — parallel MAP4 batch
+
+**Descriptors:**
+- `Mol.logd(ph=7.4)` → `float` — pH-adjusted LogD (pKa-weighted, key ADMET descriptor)
+- `Mol.logd_profile()` → pH 0–14 curve (28 points)
+- `Mol.mqn()` → `list[int]` — 42 Molecular Quantum Numbers (Ertl 2009)
+- `Mol.logp_per_atom()` → per-atom Crippen LogP contributions
+- `Mol.isotope_distribution()` → `list[(mass, intensity)]` natural isotopic envelope
+
+**Chemical analysis:**
+- `Mol.functional_groups()` → list of `{atom_indices, atom_types}` dicts (Ertl 2017)
+- `Mol.scaffold_network()` → Schuffenhauer ring-stripping hierarchy
+
+**3D generation & descriptors:**
+- `Mol.generate_3d()` → `list[[x,y,z]]` (DG + DREIDING minimization)
+- `Mol.conformer_ensemble(n, rmsd_threshold)` → list of conformer coordinate arrays
+- `Mol.whim(coords)` → WHIM 3D shape/symmetry descriptors
+- `Mol.getaway(coords)` → GETAWAY 3D descriptors
+- `Mol.autocorr_3d(coords)` → 3D autocorrelation
+
+**File I/O:**
+- `Mol.to_pdb(coords)` / `Mol.to_xyz(coords)` — write 3D to PDB/XYZ
+- `chematic.from_pdb(pdb_str)` / `chematic.from_xyz(xyz_str)` → `(Mol, coords)`
+
+**Force field analysis:**
+- `Mol.mmff94_energy_breakdown(coords)` → per-term energy dict (bond/angle/torsion/oop/vdW/elec/total)
+- `Mol.mmff94_torsion_scan(coords, i,j,k,l, steps)` → `list[(angle_deg, energy)]`
+
+**Diversity selection:**
+- `chematic.butina_cluster(smiles, cutoff)` → Butina clusters (ECFP4 similarity)
+- `chematic.maxmin_picks(smiles, n)` → MaxMin diversity indices
+
 ---
 
 ## [0.4.9] — 2026-06-19
@@ -53,6 +512,10 @@ Python (`chematic-py`):
 WASM (`chematic-wasm`):
 - `smiles_to_pdbqt(smiles, coords_json, charges_json, name)` → PDBQT string
 - `minimize_uff_json(smiles, coords_json, max_iter)` → JSON result
+
+### Other
+
+- `demo/pkg` rebuilt to v0.4.9 (`smiles_to_pdbqt` and `minimize_uff_json` now in WASM bundle)
 
 ---
 

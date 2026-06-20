@@ -146,14 +146,14 @@ static PKA_RULES: &[(&str, &str, f64, PkaSiteType)] = &[
         PkaSiteType::Base,
     ),
     // Aromatic amine Ar-NH2 or Ar-NH- (match the nitrogen)
-    ("aromatic_amine", "[NX3;!$(NC=O);$(N-c)]", 4.6, PkaSiteType::Base),
-    // Pyridine-like N (6-membered ring aromatic N, no H)
     (
-        "pyridine",
-        "[nX2H0;r6]",
-        5.2,
+        "aromatic_amine",
+        "[NX3;!$(NC=O);$(N-c)]",
+        4.6,
         PkaSiteType::Base,
     ),
+    // Pyridine-like N (6-membered ring aromatic N, no H)
+    ("pyridine", "[nX2H0;r6]", 5.2, PkaSiteType::Base),
 ];
 
 // ── compiled patterns (lazy, thread-safe) ────────────────────────────────────
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_aniline_pka() {
-        let m = mol("Nc1ccccc1");  // aniline
+        let m = mol("Nc1ccccc1"); // aniline
         let base = pka_base(&m);
         assert!(base.is_some(), "aniline should have basic site");
         assert!(
@@ -295,39 +295,39 @@ mod tests {
 
     #[test]
     fn test_pyridine_pka() {
-        let m = mol("c1ccncc1");  // pyridine
+        let m = mol("c1ccncc1"); // pyridine
         let base = pka_base(&m);
         assert!(base.is_some(), "pyridine should have basic N");
         let pka = base.unwrap();
-        assert!(
-            (pka - 5.2).abs() < 0.5,
-            "pyridine pKa ~5.2, got {pka:.2}"
-        );
+        assert!((pka - 5.2).abs() < 0.5, "pyridine pKa ~5.2, got {pka:.2}");
     }
 
     #[test]
     fn test_primary_amine_pka() {
-        let m = mol("CCN");  // ethylamine
+        let m = mol("CCN"); // ethylamine
         let base = pka_base(&m);
         assert!(base.is_some(), "ethylamine should have basic site");
         let pka = base.unwrap();
-        assert!(pka > 9.0 && pka < 12.0, "aliphatic amine pKa 9–12, got {pka:.2}");
+        assert!(
+            pka > 9.0 && pka < 12.0,
+            "aliphatic amine pKa 9–12, got {pka:.2}"
+        );
     }
 
     #[test]
     fn test_piperidine_pka() {
-        let m = mol("C1CCNCC1");  // piperidine
+        let m = mol("C1CCNCC1"); // piperidine
         let sites = predict_pka(&m);
         let pip = sites.iter().find(|s| s.group_name == "piperidine");
         // piperidine may be detected as piperidine or secondary amine — both are valid
         if let Some(p) = pip {
-            assert!(
-                (p.pka - 11.2).abs() < 0.5,
-                "piperidine pKa ~11.2"
-            );
+            assert!((p.pka - 11.2).abs() < 0.5, "piperidine pKa ~11.2");
         } else {
             let base = pka_base(&m);
-            assert!(base.is_some(), "piperidine should have at least one basic site");
+            assert!(
+                base.is_some(),
+                "piperidine should have at least one basic site"
+            );
         }
     }
 
@@ -342,7 +342,7 @@ mod tests {
 
     #[test]
     fn test_aspirin_has_acid() {
-        let m = mol("CC(=O)Oc1ccccc1C(=O)O");  // aspirin
+        let m = mol("CC(=O)Oc1ccccc1C(=O)O"); // aspirin
         let acid = pka_acid(&m);
         assert!(acid.is_some(), "aspirin has a carboxylic acid");
         assert!(acid.unwrap() < 5.0, "carboxylic acid pKa < 5");
@@ -350,17 +350,20 @@ mod tests {
 
     #[test]
     fn test_amphoteric_glycine() {
-        let m = mol("NCC(=O)O");  // glycine
+        let m = mol("NCC(=O)O"); // glycine
         let acid = pka_acid(&m);
         let base = pka_base(&m);
         assert!(acid.is_some(), "glycine has acid site (COOH)");
         assert!(base.is_some(), "glycine has base site (NH2)");
-        assert!(acid.unwrap() < base.unwrap(), "pKa_acid < pKa_base for amino acid");
+        assert!(
+            acid.unwrap() < base.unwrap(),
+            "pKa_acid < pKa_base for amino acid"
+        );
     }
 
     #[test]
     fn test_site_type_classification() {
-        let m = mol("CC(=O)O");  // acetic acid
+        let m = mol("CC(=O)O"); // acetic acid
         let sites = predict_pka(&m);
         assert!(!sites.is_empty());
         assert_eq!(sites[0].site_type, PkaSiteType::Acid);
@@ -371,8 +374,14 @@ mod tests {
         // p-hydroxybenzoic acid has BOTH carboxylic acid AND phenol
         let m = mol("OC(=O)c1ccc(O)cc1");
         let sites = predict_pka(&m);
-        let acid_sites: Vec<_> = sites.iter().filter(|s| s.site_type == PkaSiteType::Acid).collect();
-        assert!(acid_sites.len() >= 2, "p-hydroxybenzoic acid has carboxylic acid + phenol");
+        let acid_sites: Vec<_> = sites
+            .iter()
+            .filter(|s| s.site_type == PkaSiteType::Acid)
+            .collect();
+        assert!(
+            acid_sites.len() >= 2,
+            "p-hydroxybenzoic acid has carboxylic acid + phenol"
+        );
         // carboxylic acid should have lower pKa than phenol
         let pkas: Vec<f64> = acid_sites.iter().map(|s| s.pka).collect();
         assert!(pkas.iter().any(|&p| p < 5.0), "carboxylic acid pKa < 5");

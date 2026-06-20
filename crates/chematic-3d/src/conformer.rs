@@ -219,7 +219,11 @@ impl ConformerEnsemble {
                 count += 1;
             }
         }
-        if count == 0 { 0.0 } else { total / count as f64 }
+        if count == 0 {
+            0.0
+        } else {
+            total / count as f64
+        }
     }
 }
 
@@ -528,7 +532,10 @@ mod tests {
         let mut ens = ConformerEnsemble::with_conformer(mol, base).unwrap();
         ens.add_conformer(rotated).unwrap();
         let rmsd = ens.conformer_rmsd(0, 1).unwrap();
-        assert!(rmsd < 1e-6, "pure-rotation Kabsch RMSD should be ~0, got {rmsd}");
+        assert!(
+            rmsd < 1e-6,
+            "pure-rotation Kabsch RMSD should be ~0, got {rmsd}"
+        );
     }
 
     #[test]
@@ -570,7 +577,10 @@ mod tests {
         let ens = make_ensemble();
         let d = ens.conformer_usr_descriptors(0);
         assert!(d.is_some(), "valid index must return Some");
-        assert!(d.unwrap().iter().all(|v| v.is_finite()), "all USR values finite");
+        assert!(
+            d.unwrap().iter().all(|v| v.is_finite()),
+            "all USR values finite"
+        );
     }
 
     #[test]
@@ -582,14 +592,17 @@ mod tests {
     #[test]
     fn diversity_usr_single_conformer_is_zero() {
         let ens = make_ensemble();
-        assert_eq!(ens.conformer_diversity_usr(), 0.0,
-            "single conformer → diversity 0");
+        assert_eq!(
+            ens.conformer_diversity_usr(),
+            0.0,
+            "single conformer → diversity 0"
+        );
     }
 
     #[test]
     fn diversity_usr_identical_conformers_is_zero() {
-        use chematic_core::{Atom, Element, MoleculeBuilder};
         use crate::coords::Point3;
+        use chematic_core::{Atom, Element, MoleculeBuilder};
 
         let mut b = MoleculeBuilder::new();
         let a0 = b.add_atom(Atom::new(Element::C));
@@ -604,7 +617,10 @@ mod tests {
         ens.add_conformer(c).unwrap();
 
         let div = ens.conformer_diversity_usr();
-        assert!(div.abs() < 1e-9, "identical conformers → diversity ~0, got {div}");
+        assert!(
+            div.abs() < 1e-9,
+            "identical conformers → diversity ~0, got {div}"
+        );
     }
 
     #[test]
@@ -633,7 +649,10 @@ mod tests {
         ens.add_conformer(c2).unwrap();
 
         let div = ens.conformer_diversity_usr();
-        assert!(div > 0.0 && div <= 1.0, "diverse ensemble → diversity in (0,1], got {div}");
+        assert!(
+            div > 0.0 && div <= 1.0,
+            "diverse ensemble → diversity in (0,1], got {div}"
+        );
     }
 
     // --- cluster_conformers_by_rms ------------------------------------------
@@ -679,7 +698,11 @@ mod tests {
         ens.add_conformer(c.clone()).unwrap();
         ens.add_conformer(c).unwrap();
         let kept = ens.cluster_conformers_by_rms(0.01);
-        assert_eq!(kept, vec![0], "three identical conformers → keep only first");
+        assert_eq!(
+            kept,
+            vec![0],
+            "three identical conformers → keep only first"
+        );
     }
 
     #[test]
@@ -690,8 +713,22 @@ mod tests {
         let mut ca = Coords3D::new_zeroed(n);
         let mut cb = Coords3D::new_zeroed(n);
         for i in 0..n {
-            ca.set(chematic_core::AtomIdx(i as u32), Point3 { x: i as f64, y: 0.0, z: 0.0 });
-            cb.set(chematic_core::AtomIdx(i as u32), Point3 { x: 0.0, y: i as f64 * 100.0, z: 0.0 });
+            ca.set(
+                chematic_core::AtomIdx(i as u32),
+                Point3 {
+                    x: i as f64,
+                    y: 0.0,
+                    z: 0.0,
+                },
+            );
+            cb.set(
+                chematic_core::AtomIdx(i as u32),
+                Point3 {
+                    x: 0.0,
+                    y: i as f64 * 100.0,
+                    z: 0.0,
+                },
+            );
         }
         let mut ens = ConformerEnsemble::with_conformer(mol, ca).unwrap();
         ens.add_conformer(cb).unwrap();
@@ -709,7 +746,14 @@ mod tests {
         let n = ens.mol().atom_count();
         let mut far = Coords3D::new_zeroed(n);
         for i in 0..n {
-            far.set(chematic_core::AtomIdx(i as u32), Point3 { x: 0.0, y: i as f64 * 100.0, z: 0.0 });
+            far.set(
+                chematic_core::AtomIdx(i as u32),
+                Point3 {
+                    x: 0.0,
+                    y: i as f64 * 100.0,
+                    z: 0.0,
+                },
+            );
         }
         ens.add_conformer(far).unwrap(); // distinct → new cluster
         let kept = ens.cluster_conformers_by_rms(0.1);

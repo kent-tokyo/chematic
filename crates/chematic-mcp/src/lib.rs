@@ -45,9 +45,8 @@ use serde_json::{Value, json};
 /// Returns `Some(response)` when a reply must be written to the client.
 /// Returns `None` for notifications (no `id` field) — no reply is sent.
 pub fn handle_line(line: &str) -> Option<Value> {
-    let req: Value = serde_json::from_str(line).unwrap_or_else(|e| {
-        json!({ "_parse_error": e.to_string() })
-    });
+    let req: Value =
+        serde_json::from_str(line).unwrap_or_else(|e| json!({ "_parse_error": e.to_string() }));
 
     // JSON parse failure → -32700
     if let Some(err) = req.get("_parse_error") {
@@ -107,7 +106,7 @@ fn dispatch(method: &str, req: &Value) -> (Value, bool) {
                     return (
                         json!({ "code": -32602, "message": "Missing tool name in params" }),
                         true,
-                    )
+                    );
                 }
             };
             let arguments = params.get("arguments").unwrap_or(&Value::Null);
@@ -174,7 +173,10 @@ mod tests {
     fn test_notification_no_response() {
         let req = r#"{"jsonrpc":"2.0","method":"initialized","params":{}}"#;
         let resp = handle_line(req);
-        assert!(resp.is_none(), "notifications should not produce a response");
+        assert!(
+            resp.is_none(),
+            "notifications should not produce a response"
+        );
     }
 
     #[test]

@@ -2,17 +2,17 @@
 
 #![forbid(unsafe_code)]
 
-use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
-use chematic_fp::{ecfp4, tanimoto_ecfp4, BitVec2048};
-use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, find_matches, find_mcs, parse_smarts};
 use chematic_3d::{generate_and_minimize_dreiding, write_xyz};
+use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
+use chematic_fp::{BitVec2048, ecfp4, tanimoto_ecfp4};
+use chematic_smarts::{
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, find_matches, find_mcs, parse_smarts,
+};
 use serde_json::{Value, json};
 
 use chematic_chem::{
-    admet_profile, boiled_egg,
-    brenk_passes, brenk_matches,
-    exact_mass, hba_count, hbd_count, heavy_atom_count, lipinski_passes, logp_crippen,
-    molecular_weight, pains_passes, pains_matches,
+    admet_profile, boiled_egg, brenk_matches, brenk_passes, exact_mass, hba_count, hbd_count,
+    heavy_atom_count, lipinski_passes, logp_crippen, molecular_weight, pains_matches, pains_passes,
     qed, rotatable_bond_count, sa_score, tpsa,
 };
 
@@ -73,7 +73,11 @@ fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Mol
                     BondQuery::Primitive(BondPrimitive::Aromatic) => BondOrder::Aromatic,
                     _ => BondOrder::Single,
                 };
-                let _ = builder.add_bond(AtomIdx(atom_idx as u32), AtomIdx(*neighbor_idx as u32), order);
+                let _ = builder.add_bond(
+                    AtomIdx(atom_idx as u32),
+                    AtomIdx(*neighbor_idx as u32),
+                    order,
+                );
             }
         }
     }
@@ -343,8 +347,7 @@ fn tool_smarts_match(args: &Value) -> Result<Value, String> {
     let atom_maps: Vec<Vec<u32>> = matches
         .iter()
         .map(|m| {
-            let mut atoms: Vec<(usize, u32)> =
-                m.iter().map(|(&q, &a)| (q, a.0)).collect();
+            let mut atoms: Vec<(usize, u32)> = m.iter().map(|(&q, &a)| (q, a.0)).collect();
             atoms.sort_by_key(|(q, _)| *q);
             atoms.into_iter().map(|(_, a)| a).collect()
         })
@@ -359,7 +362,9 @@ fn tool_smarts_match(args: &Value) -> Result<Value, String> {
 fn tool_canonical_smiles(args: &Value) -> Result<Value, String> {
     let smiles = get_str(args, "smiles")?;
     let mol = parse_mol(smiles)?;
-    Ok(content(&json!({ "canonical": chematic_smiles::canonical_smiles(&mol) })))
+    Ok(content(
+        &json!({ "canonical": chematic_smiles::canonical_smiles(&mol) }),
+    ))
 }
 
 fn tool_find_mcs(args: &Value) -> Result<Value, String> {
@@ -382,7 +387,9 @@ fn tool_find_mcs(args: &Value) -> Result<Value, String> {
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let qmol = find_mcs(&mol_refs);
     if qmol.atoms.is_empty() {
-        return Ok(content(&json!({ "mcs": null, "atom_count": 0, "bond_count": 0 })));
+        return Ok(content(
+            &json!({ "mcs": null, "atom_count": 0, "bond_count": 0 }),
+        ));
     }
     let mol = qmol_to_molecule(&qmol);
     Ok(content(&json!({
@@ -516,8 +523,11 @@ fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
                 vec!['%', '2', '0']
             } else {
                 let b = c as u8;
-                vec!['%', char::from_digit((b >> 4) as u32, 16).unwrap_or('0'),
-                          char::from_digit((b & 0xf) as u32, 16).unwrap_or('0')]
+                vec![
+                    '%',
+                    char::from_digit((b >> 4) as u32, 16).unwrap_or('0'),
+                    char::from_digit((b & 0xf) as u32, 16).unwrap_or('0'),
+                ]
             }
         })
         .collect();
@@ -532,7 +542,8 @@ fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
         .call()
         .map_err(|e| format!("PubChem request failed: {e}"))?;
 
-    let body: Value = resp.into_json()
+    let body: Value = resp
+        .into_json()
         .map_err(|e| format!("PubChem response parse error: {e}"))?;
 
     let smiles = body
@@ -599,7 +610,10 @@ mod tests {
         let text = result["content"][0]["text"].as_str().unwrap();
         let v: Value = serde_json::from_str(text).unwrap();
         let sim = v["similarity"].as_f64().unwrap();
-        assert!((sim - 1.0).abs() < 1e-9, "self-similarity must be 1.0, got {sim}");
+        assert!(
+            (sim - 1.0).abs() < 1e-9,
+            "self-similarity must be 1.0, got {sim}"
+        );
     }
 
     #[test]
@@ -687,7 +701,8 @@ mod tests {
     #[test]
     fn test_pains_check_clean() {
         let result = tool_pains_check(&args(&[("smiles", "CCO")])).unwrap();
-        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
         assert_eq!(v["passes"], true);
         assert_eq!(v["alert_count"], 0);
     }
@@ -695,29 +710,36 @@ mod tests {
     #[test]
     fn test_brenk_check_clean() {
         let result = tool_brenk_check(&args(&[("smiles", "CCO")])).unwrap();
-        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
         assert_eq!(v["passes"], true);
     }
 
     #[test]
     fn test_sa_score_ethanol() {
         let result = tool_sa_score(&args(&[("smiles", "CCO")])).unwrap();
-        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
         let score = v["sa_score"].as_f64().unwrap();
-        assert!((1.0..=10.0).contains(&score), "SA score out of range: {score}");
+        assert!(
+            (1.0..=10.0).contains(&score),
+            "SA score out of range: {score}"
+        );
     }
 
     #[test]
     fn test_sa_score_aspirin_easy() {
         let result = tool_sa_score(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
-        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
         assert_eq!(v["easy_to_synthesize"], true);
     }
 
     #[test]
     fn test_admet_profile_benzene() {
         let result = tool_admet_profile(&args(&[("smiles", "c1ccccc1")])).unwrap();
-        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
         assert!(v.get("bbb_passes").is_some());
         assert!(v.get("clearance_class").is_some());
     }
@@ -725,14 +747,16 @@ mod tests {
     #[test]
     fn test_boiled_egg_aspirin() {
         let result = tool_boiled_egg(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
-        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
         assert_eq!(v["gi_absorbed"], true);
     }
 
     #[test]
     fn test_lipinski_check_ethanol() {
         let result = tool_lipinski_check(&args(&[("smiles", "CCO")])).unwrap();
-        let v: Value = serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v: Value =
+            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
         assert_eq!(v["passes"], true);
         assert!(v["mw"].as_f64().unwrap() < 500.0);
     }

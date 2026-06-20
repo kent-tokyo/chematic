@@ -24,9 +24,8 @@ fn check_canonical_stable(smi: &str) -> Result<(), String> {
     if c1.is_empty() {
         return Err(format!("EMPTY_CANONICAL '{}'", smi));
     }
-    let mol2 = parse(&c1).map_err(|e| {
-        format!("RE_PARSE_FAIL '{}' (canonical='{}'): {}", smi, c1, e)
-    })?;
+    let mol2 =
+        parse(&c1).map_err(|e| format!("RE_PARSE_FAIL '{}' (canonical='{}'): {}", smi, c1, e))?;
     let c2 = canonical_smiles(&mol2);
     if c1 != c2 {
         return Err(format!("UNSTABLE '{}': '{}' → '{}'", smi, c1, c2));
@@ -41,10 +40,7 @@ fn check_same_canonical(a: &str, b: &str) -> Result<(), String> {
     let ca = canonical_smiles(&mol_a);
     let cb = canonical_smiles(&mol_b);
     if ca != cb {
-        Err(format!(
-            "DIFFERENT '{}' vs '{}': '{}' ≠ '{}'",
-            a, b, ca, cb
-        ))
+        Err(format!("DIFFERENT '{}' vs '{}': '{}' ≠ '{}'", a, b, ca, cb))
     } else {
         Ok(())
     }
@@ -58,7 +54,11 @@ fn assert_all_stable(cases: &[&str]) {
         .iter()
         .filter_map(|s| check_canonical_stable(s).err())
         .collect();
-    assert!(failures.is_empty(), "stability failures:\n{}", failures.join("\n"));
+    assert!(
+        failures.is_empty(),
+        "stability failures:\n{}",
+        failures.join("\n")
+    );
 }
 
 // ── Test 1: Roundtrip stability ──────────────────────────────────────────────
@@ -68,8 +68,8 @@ fn assert_all_stable(cases: &[&str]) {
 #[test]
 fn stability_bridged_bicyclics() {
     let cases = [
-        "C1CC2CCC1CC2",       // bicyclo[2.2.2]octane
-        "C1CC2CCCC2C1",       // bicyclo[3.2.1]octane variant
+        "C1CC2CCC1CC2",         // bicyclo[2.2.2]octane
+        "C1CC2CCCC2C1",         // bicyclo[3.2.1]octane variant
         "C1CCC2CC3CCCCC3CC2C1", // polycycle
     ];
     assert_all_stable(&cases);
@@ -78,8 +78,8 @@ fn stability_bridged_bicyclics() {
 #[test]
 fn stability_spiro() {
     let cases = [
-        "C1CCC2(CC1)CCCC2",   // spiro[4.5]decane
-        "C1CC2(CCC1)CCC2",    // spiro[4.4]nonane
+        "C1CCC2(CC1)CCCC2", // spiro[4.5]decane
+        "C1CC2(CCC1)CCC2",  // spiro[4.4]nonane
     ];
     assert_all_stable(&cases);
 }
@@ -97,8 +97,8 @@ fn stability_ring_stereocenters() {
 #[test]
 fn stability_fused_ring_stereo() {
     let cases = [
-        "[C@@H]1(CC[C@H]2CCCC[C@@H]12)O",  // trans-decalin-OH
-        "[C@H]1(CC[C@H]2CCCC[C@@H]12)O",   // cis-decalin-OH
+        "[C@@H]1(CC[C@H]2CCCC[C@@H]12)O", // trans-decalin-OH
+        "[C@H]1(CC[C@H]2CCCC[C@@H]12)O",  // cis-decalin-OH
     ];
     assert_all_stable(&cases);
 }
@@ -106,9 +106,9 @@ fn stability_fused_ring_stereo() {
 #[test]
 fn stability_ez_bonds() {
     let cases = [
-        "C/C=C/C",   // trans-but-2-ene
-        "C/C=C\\C",  // cis-but-2-ene
-        "F/C=C/Cl",  // E-1-chloro-2-fluoroethylene
+        "C/C=C/C",  // trans-but-2-ene
+        "C/C=C\\C", // cis-but-2-ene
+        "F/C=C/Cl", // E-1-chloro-2-fluoroethylene
     ];
     assert_all_stable(&cases);
 }
@@ -124,9 +124,9 @@ fn stability_complex_sugars() {
 #[test]
 fn stability_fused_aromatics() {
     let cases = [
-        "C1=CC2=CC=CC=C2C=C1",    // azulene
-        "c1ccc2ccccc2c1",          // naphthalene
-        "c1ccc2[nH]ccc2c1",        // indole
+        "C1=CC2=CC=CC=C2C=C1", // azulene
+        "c1ccc2ccccc2c1",      // naphthalene
+        "c1ccc2[nH]ccc2c1",    // indole
     ];
     assert_all_stable(&cases);
 }
@@ -135,8 +135,8 @@ fn stability_fused_aromatics() {
 fn stability_amino_acids() {
     // Each of these as a single SMILES string (not compared to another form) must be stable.
     let cases = [
-        "N[C@@H](C)C(=O)O",    // L-alanine
-        "N[C@H](C)C(=O)O",     // D-alanine
+        "N[C@@H](C)C(=O)O",         // L-alanine
+        "N[C@H](C)C(=O)O",          // D-alanine
         "N[C@@H](Cc1ccccc1)C(=O)O", // L-phenylalanine
     ];
     assert_all_stable(&cases);
@@ -158,7 +158,11 @@ fn platform_independence_topology() {
         .iter()
         .filter_map(|(a, b)| check_same_canonical(a, b).err())
         .collect();
-    assert!(failures.is_empty(), "platform-independence failures:\n{}", failures.join("\n"));
+    assert!(
+        failures.is_empty(),
+        "platform-independence failures:\n{}",
+        failures.join("\n")
+    );
 }
 
 /// DOCUMENTED GAP: bridged bicyclics with multiple valid ring-closure orderings
@@ -167,9 +171,7 @@ fn platform_independence_topology() {
 /// The test documents and tracks this without panicking.
 #[test]
 fn bridged_bicyclic_canonical_gap_documentation() {
-    let cases: &[(&str, &str, &str)] = &[
-        ("C1CC2CCC1CC2", "C1CCC2CC1CC2", "bicyclo[2.2.2]octane"),
-    ];
+    let cases: &[(&str, &str, &str)] = &[("C1CC2CCC1CC2", "C1CCC2CC1CC2", "bicyclo[2.2.2]octane")];
     for &(a, b, label) in cases {
         match check_same_canonical(a, b) {
             Err(e) => eprintln!("ℹ KNOWN GAP ({}): {}", label, e),
@@ -221,8 +223,8 @@ fn stereo_parity_gap_documentation() {
 #[test]
 fn charged_aromatics_parse_and_stable() {
     let cases = [
-        "c1cc[n+](C)cc1",  // N-methylpyridinium
-        "c1cc[nH]cc1",     // should not parse (wrong valence) — verify graceful error
+        "c1cc[n+](C)cc1", // N-methylpyridinium
+        "c1cc[nH]cc1",    // should not parse (wrong valence) — verify graceful error
     ];
     for smi in &cases {
         match check_canonical_stable(smi) {

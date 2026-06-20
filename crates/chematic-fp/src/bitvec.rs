@@ -91,7 +91,9 @@ impl BitVec2048 {
     /// the per-pair allocation of `self.and(other).popcount()`.
     #[inline]
     pub fn intersection_popcount(&self, other: &Self) -> u32 {
-        self.words.iter().zip(other.words.iter())
+        self.words
+            .iter()
+            .zip(other.words.iter())
             .map(|(a, b)| (a & b).count_ones())
             .sum()
     }
@@ -106,7 +108,12 @@ impl BitVec2048 {
     ///
     /// Returns `1.0` when union is zero (both all-zero convention).
     #[inline]
-    pub fn tanimoto_with_counts(&self, other: &Self, self_popcount: u32, other_popcount: u32) -> f32 {
+    pub fn tanimoto_with_counts(
+        &self,
+        other: &Self,
+        self_popcount: u32,
+        other_popcount: u32,
+    ) -> f32 {
         let inter = self.intersection_popcount(other) as f32;
         let union = self_popcount as f32 + other_popcount as f32 - inter;
         if union == 0.0 { 1.0 } else { inter / union }

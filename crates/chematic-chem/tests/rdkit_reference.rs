@@ -8,13 +8,13 @@
 //!   HAC:  ±0         (exact integer)
 //!   HBD:  ±0         (exact integer)
 
+use chematic_chem::brics_fragments;
 use chematic_chem::descriptors::{
     aromatic_ring_count, exact_mass, formal_charge_sum, fsp3, hba_count, hbd_count,
     heavy_atom_count, lipinski_passes, logp_crippen, molar_refractivity, molecular_weight, mqn,
     num_aliphatic_heterocycles, num_aromatic_heterocycles, num_bridgehead_atoms,
     num_saturated_heterocycles, num_spiro_atoms, rotatable_bond_count, tpsa,
 };
-use chematic_chem::brics_fragments;
 use chematic_smiles::parse;
 
 fn mol(smi: &str) -> chematic_core::molecule::Molecule {
@@ -871,23 +871,13 @@ fn exact_mass_aspirin() {
 #[test]
 fn fsp3_benzene() {
     // All sp2 carbons → fsp3 = 0.0
-    assert_approx(
-        "fsp3 benzene",
-        fsp3(&mol("c1ccccc1")),
-        0.0,
-        0.01,
-    );
+    assert_approx("fsp3 benzene", fsp3(&mol("c1ccccc1")), 0.0, 0.01);
 }
 
 #[test]
 fn fsp3_cyclohexane() {
     // All sp3 carbons → fsp3 = 1.0
-    assert_approx(
-        "fsp3 cyclohexane",
-        fsp3(&mol("C1CCCCC1")),
-        1.0,
-        0.01,
-    );
+    assert_approx("fsp3 cyclohexane", fsp3(&mol("C1CCCCC1")), 1.0, 0.01);
 }
 
 #[test]
@@ -1018,11 +1008,7 @@ fn brics_fragments_aspirin() {
     );
     // Check all fragments are nonzero size
     for (i, frag) in frags.iter().enumerate() {
-        assert!(
-            frag.atom_count() > 0,
-            "fragment {} has zero atoms",
-            i
-        );
+        assert!(frag.atom_count() > 0, "fragment {} has zero atoms", i);
     }
 }
 

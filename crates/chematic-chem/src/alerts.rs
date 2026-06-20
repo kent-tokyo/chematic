@@ -1961,7 +1961,6 @@ const BRENK_SMARTS: &[(&str, &str)] = &[
     ("primary_amine", "[#6]-[#7](-[#1])-[#1]"),
     ("ether_phenol", "c1c([#8])cc([#8])cc1"),
     ("anthracene", "c1ccc2cc3ccccc3cc2c1"),
-
     // Additional Brenk patterns (previously missing)
     ("epoxide", "C1OC1"),
     ("epoxide_aromatic", "c1ccc(C2OC2)cc1"),
@@ -1977,7 +1976,10 @@ const BRENK_SMARTS: &[(&str, &str)] = &[
     ("sulfinic_acid", "[#16](=[#8])(=[#8])-[#8]"),
     ("N_halo", "[#7]-[#9,#17,#35,#53]"),
     ("N_halo_aromatic", "c1ccccc1[#7]-[#9,#17,#35,#53]"),
-    ("alpha_haloamide", "[#6](-[#9,#17,#35,#53])-[#6](=[#8])-[#7]"),
+    (
+        "alpha_haloamide",
+        "[#6](-[#9,#17,#35,#53])-[#6](=[#8])-[#7]",
+    ),
     ("active_methylene", "[#6](-[#6](=[#8]))-[#6](=[#8])"),
     ("thiocyanate", "[#6]-[#16]#[#7]"),
     ("isothiocyanate_aliphatic", "[#6](-[#6])-[#7]=[#6]=[#16]"),
@@ -2012,14 +2014,20 @@ const BRENK_SMARTS: &[(&str, &str)] = &[
     ("allene_unsubstituted", "[#6]=[#6]=[#6]"),
     ("ynol_yne_ether", "[#6]#[#6]-[#8]-[#6]"),
     ("active_ester", "[#6](=[#8])-[#8]-c1ccccc1"),
-    ("trifluoromethyl_ketone", "[#6](=[#8])-[#6](-[#9])(-[#9])-[#9]"),
+    (
+        "trifluoromethyl_ketone",
+        "[#6](=[#8])-[#6](-[#9])(-[#9])-[#9]",
+    ),
     ("oxirane_carboxylic", "[#6]1OC1[#6](=[#8])"),
     ("acetal_ketal", "[#8][#6]([#8])-[#6]"),
     ("amidine", "[#6](=[#7])-[#7]"),
     ("enamine", "[#6]=[#6]-[#7]"),
     ("amine_oxide", "[#7+](-[#6])-[#8-]"),
     ("N_oxide", "c1cc[nH+]([#8-])cc1"),
-    ("triphosphate", "[#15](=[#8])(-[#8])-[#8]-[#15](=[#8])(-[#8])-[#8]"),
+    (
+        "triphosphate",
+        "[#15](=[#8])(-[#8])-[#8]-[#15](=[#8])(-[#8])-[#8]",
+    ),
     ("cyclopropane_fused", "C1CC1C"),
     ("tropylium_cation", "c1ccc2ccccc2c1[CH3+]"),
     ("acyl_nitrile", "[#6](=[#8])-[#6]#[#7]"),

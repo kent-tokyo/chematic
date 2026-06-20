@@ -28,12 +28,15 @@ pub enum PdbqtError {
 impl core::fmt::Display for PdbqtError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::InvalidAtomLine { line, detail } =>
-                write!(f, "PDBQT: invalid ATOM line {line}: {detail}"),
-            Self::InvalidCharge { line, raw } =>
-                write!(f, "PDBQT: invalid charge '{raw}' at line {line}"),
-            Self::UnknownElement { symbol, line } =>
-                write!(f, "PDBQT: unknown element '{symbol}' at line {line}"),
+            Self::InvalidAtomLine { line, detail } => {
+                write!(f, "PDBQT: invalid ATOM line {line}: {detail}")
+            }
+            Self::InvalidCharge { line, raw } => {
+                write!(f, "PDBQT: invalid charge '{raw}' at line {line}")
+            }
+            Self::UnknownElement { symbol, line } => {
+                write!(f, "PDBQT: unknown element '{symbol}' at line {line}")
+            }
         }
     }
 }
@@ -66,7 +69,9 @@ pub fn autodock_atom_type(mol: &Molecule, idx: AtomIdx) -> &'static str {
         }
         7 => {
             // NA if N can accept H-bonds (no explicit H, no positive charge)
-            let has_h = mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).element.atomic_number() == 1);
+            let has_h = mol
+                .neighbors(idx)
+                .any(|(nb, _)| mol.atom(nb).element.atomic_number() == 1);
             if !has_h && atom.charge <= 0 {
                 "NA"
             } else {
@@ -76,11 +81,7 @@ pub fn autodock_atom_type(mol: &Molecule, idx: AtomIdx) -> &'static str {
         8 => "OA", // all O treated as acceptor (most common case)
         16 => {
             // SA if S has lone pair (not positively charged)
-            if atom.charge >= 0 {
-                "SA"
-            } else {
-                "S"
-            }
+            if atom.charge >= 0 { "SA" } else { "S" }
         }
         1 => {
             // HD if bonded to N or O (hydrogen bond donor)
@@ -169,9 +170,7 @@ pub fn write_pdbqt(
 /// Only `ATOM` and `HETATM` records are read; `REMARK`, `ROOT`, `ENDROOT`,
 /// `BRANCH`, `ENDBRANCH`, and `TORSDOF` lines are silently skipped.
 #[allow(clippy::type_complexity)]
-pub fn parse_pdbqt(
-    s: &str,
-) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>), PdbqtError> {
+pub fn parse_pdbqt(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>), PdbqtError> {
     use chematic_core::MoleculeBuilder;
 
     let mut builder = MoleculeBuilder::new();
@@ -216,10 +215,12 @@ pub fn parse_pdbqt(
 
         // Coordinates: cols 31-38, 39-46, 47-54 (0-indexed 30-37, 38-45, 46-53)
         let parse_f = |s: &str, col: &str| -> Result<f64, PdbqtError> {
-            s.trim().parse::<f64>().map_err(|_| PdbqtError::InvalidAtomLine {
-                line: lineno + 1,
-                detail: format!("cannot parse {col} coordinate: '{}'", s.trim()),
-            })
+            s.trim()
+                .parse::<f64>()
+                .map_err(|_| PdbqtError::InvalidAtomLine {
+                    line: lineno + 1,
+                    detail: format!("cannot parse {col} coordinate: '{}'", s.trim()),
+                })
         };
         let x = parse_f(&line[30..38], "x")?;
         let y = parse_f(&line[38..46], "y")?;
@@ -227,14 +228,17 @@ pub fn parse_pdbqt(
         coords.push((x, y, z));
 
         // Partial charge: cols 67-76 (0-indexed 66-75), or fallback 71-76
-        let q_raw = line.get(66..76)
+        let q_raw = line
+            .get(66..76)
             .or_else(|| line.get(71..76))
             .map(str::trim)
             .unwrap_or("0.0");
-        let q = q_raw.parse::<f64>().map_err(|_| PdbqtError::InvalidCharge {
-            line: lineno + 1,
-            raw: q_raw.to_string(),
-        })?;
+        let q = q_raw
+            .parse::<f64>()
+            .map_err(|_| PdbqtError::InvalidCharge {
+                line: lineno + 1,
+                raw: q_raw.to_string(),
+            })?;
         charges.push(q);
     }
 

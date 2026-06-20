@@ -150,8 +150,14 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
             for &bidx in &aromatic_bonds {
                 let bond = mol.bond(bidx);
                 if must_match_nb.contains(&bond.atom1) && must_match_nb.contains(&bond.atom2) {
-                    adj_nb.entry(bond.atom1).or_default().push((bond.atom2, bidx));
-                    adj_nb.entry(bond.atom2).or_default().push((bond.atom1, bidx));
+                    adj_nb
+                        .entry(bond.atom1)
+                        .or_default()
+                        .push((bond.atom2, bidx));
+                    adj_nb
+                        .entry(bond.atom2)
+                        .or_default()
+                        .push((bond.atom1, bidx));
                 }
             }
 
@@ -160,7 +166,10 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
 
             matching.clear();
             run_matching_pass(&sorted_nb, &adj_nb, &mut matching);
-            if must_match_nb.iter().any(|&idx| !matching.contains_key(&idx)) {
+            if must_match_nb
+                .iter()
+                .any(|&idx| !matching.contains_key(&idx))
+            {
                 matching.clear();
                 let rev_nb: Vec<AtomIdx> = sorted_nb.iter().copied().rev().collect();
                 run_matching_pass(&rev_nb, &adj_nb, &mut matching);
@@ -233,7 +242,9 @@ fn build_kekule_result(
 ) -> KekuleResult {
     let mut double_bonds: HashSet<BondIdx> = HashSet::new();
     for (&atom, &partner) in matching {
-        if atom >= partner { continue; }
+        if atom >= partner {
+            continue;
+        }
         if let Some((bidx, _)) = mol.bond_between(atom, partner)
             && mol.bond(bidx).order == BondOrder::Aromatic
         {
@@ -395,14 +406,38 @@ fn blossom_augment(root: usize, n: usize, adj: &[Vec<usize>], mate: &mut [usize]
 
     'bfs: while let Some(v) = queue.pop_front() {
         for &w in &adj[v] {
-            if base[v] == base[w] { continue; } // same blossom
-            if mate[v] == w { continue; }         // already-matched edge, skip
+            if base[v] == base[w] {
+                continue;
+            } // same blossom
+            if mate[v] == w {
+                continue;
+            } // already-matched edge, skip
 
             if is_outer[w] {
                 // Both v and w are outer → odd cycle (blossom).
                 let b = blossom_lca(v, w, &base, &parent, mate, n);
-                blossom_mark_path(v, b, w, &mut base, &mut parent, &mut is_outer, &mut queue, mate, n);
-                blossom_mark_path(w, b, v, &mut base, &mut parent, &mut is_outer, &mut queue, mate, n);
+                blossom_mark_path(
+                    v,
+                    b,
+                    w,
+                    &mut base,
+                    &mut parent,
+                    &mut is_outer,
+                    &mut queue,
+                    mate,
+                    n,
+                );
+                blossom_mark_path(
+                    w,
+                    b,
+                    v,
+                    &mut base,
+                    &mut parent,
+                    &mut is_outer,
+                    &mut queue,
+                    mate,
+                    n,
+                );
             } else if parent[w] == NONE {
                 // w is unlabeled.
                 parent[w] = v;
@@ -447,12 +482,16 @@ fn blossom_lca(
     loop {
         a = base[a];
         visited[a] = true;
-        if mate[a] == NONE { break; }    // reached a free vertex (root or its base)
-        a = parent[mate[a]];             // hop: outer→matched inner→outer parent
+        if mate[a] == NONE {
+            break;
+        } // reached a free vertex (root or its base)
+        a = parent[mate[a]]; // hop: outer→matched inner→outer parent
     }
     loop {
         b = base[b];
-        if visited[b] { return b; }      // first vertex seen by both traces
+        if visited[b] {
+            return b;
+        } // first vertex seen by both traces
         b = parent[mate[b]];
     }
 }
@@ -530,7 +569,10 @@ fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
         7 if atom.charge == 0
             && mol
                 .neighbors(idx)
-                .any(|(_, bidx)| mol.bond(bidx).order != BondOrder::Aromatic) => false,
+                .any(|(_, bidx)| mol.bond(bidx).order != BondOrder::Aromatic) =>
+        {
+            false
+        }
         // Bare aromatic N with only aromatic bonds (pyridine-type): must be matched.
         7 => true,
         // Any anionic aromatic atom (e.g. cyclopentadienyl [cH-]) donates its lone pair.
@@ -542,7 +584,10 @@ fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
         _ if mol.neighbors(idx).any(|(_, bidx)| {
             let o = mol.bond(bidx).order;
             o == BondOrder::Double || o == BondOrder::Triple
-        }) => false,
+        }) =>
+        {
+            false
+        }
         // All other atoms must appear in the matching.
         _ => true,
     }
@@ -739,7 +784,8 @@ mod tests {
             .collect();
         // 5-ring: 0-1-2-3-4-0
         for i in 0..5 {
-            b.add_bond(a[i], a[(i + 1) % 5], BondOrder::Aromatic).unwrap();
+            b.add_bond(a[i], a[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
         }
         // 7-ring extras (shares bond 0-4): 4-5-6-7-8-9-0
         for (x, y) in [(4usize, 5usize), (5, 6), (6, 7), (7, 8), (8, 9), (9, 0)] {
@@ -764,15 +810,15 @@ mod tests {
             .map(|_| b.add_atom(Atom::aromatic(Element::C)))
             .collect();
         // Naphthalene ring 1: 0-1-2-3-4-9-0
-        for (x, y) in [(0,1),(1,2),(2,3),(3,4),(4,9),(9,0)] {
+        for (x, y) in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 9), (9, 0)] {
             b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
         }
         // Naphthalene ring 2: 4-5-6-7-8-9 (4-9 shared)
-        for (x, y) in [(4,5),(5,6),(6,7),(7,8),(8,9)] {
+        for (x, y) in [(4, 5), (5, 6), (6, 7), (7, 8), (8, 9)] {
             b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
         }
         // Bridge: 0-11-10-1
-        for (x, y) in [(0,11),(11,10),(10,1)] {
+        for (x, y) in [(0, 11), (11, 10), (10, 1)] {
             b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
         }
         let mol = b.build();
@@ -796,11 +842,13 @@ mod tests {
             .collect();
         // Ring A (6): 0-1-2-3-4-5-0
         for i in 0..6 {
-            b.add_bond(a[i], a[(i + 1) % 6], BondOrder::Aromatic).unwrap();
+            b.add_bond(a[i], a[(i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
         }
         // Ring B (6): 6-7-8-9-10-11-6
         for i in 0..6 {
-            b.add_bond(a[6 + i], a[6 + (i + 1) % 6], BondOrder::Aromatic).unwrap();
+            b.add_bond(a[6 + i], a[6 + (i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
         }
         // 4-membered bridge: closes ring 0-5-6-11-0
         b.add_bond(a[5], a[6], BondOrder::Aromatic).unwrap();
@@ -817,14 +865,15 @@ mod tests {
             .collect();
         // Ring A: 0-1-2-3-4-5-0
         for i in 0..6 {
-            b.add_bond(a[i], a[(i + 1) % 6], BondOrder::Aromatic).unwrap();
+            b.add_bond(a[i], a[(i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
         }
         // Ring B: 5-4-9-8-7-6-5 (shares bond 4-5 with Ring A)
-        for (x, y) in [(4,9),(9,8),(8,7),(7,6),(6,5)] {
+        for (x, y) in [(4, 9), (9, 8), (8, 7), (7, 6), (6, 5)] {
             b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
         }
         // Ring C: 6-7-13-12-11-10-6 (shares bond 6-7 with Ring B)
-        for (x, y) in [(7,13),(13,12),(12,11),(11,10),(10,6)] {
+        for (x, y) in [(7, 13), (13, 12), (12, 11), (11, 10), (10, 6)] {
             b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
         }
         b.build()
@@ -869,24 +918,30 @@ mod tests {
                 .map(|_| b.add_atom(Atom::aromatic(Element::C)))
                 .collect();
             // Ring 0-1-2-3-4-5
-            for i in 0..6 { b.add_bond(a[i], a[(i+1)%6], BondOrder::Aromatic).unwrap(); }
+            for i in 0..6 {
+                b.add_bond(a[i], a[(i + 1) % 6], BondOrder::Aromatic)
+                    .unwrap();
+            }
             // Ring 5-4-9-8-7-6
-            for (x,y) in [(4,9),(9,8),(8,7),(7,6),(6,5)] {
+            for (x, y) in [(4, 9), (9, 8), (8, 7), (7, 6), (6, 5)] {
                 b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
             }
             // Ring 1-2-11-10-13-12
-            for (x,y) in [(2,11),(11,10),(10,13),(13,12),(12,1)] {
+            for (x, y) in [(2, 11), (11, 10), (10, 13), (13, 12), (12, 1)] {
                 b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
             }
             // Ring 6-7-15-14-11-2 (closed)
-            for (x,y) in [(7,15),(15,14),(14,11)] {
+            for (x, y) in [(7, 15), (15, 14), (14, 11)] {
                 b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
             }
             b.build()
         };
         let result = kekulize(&mol).expect("4-ring PAH kekulization should succeed");
         let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
-        assert!(doubles >= 6, "4-ring PAH needs at least 6 double bonds, got {doubles}");
+        assert!(
+            doubles >= 6,
+            "4-ring PAH needs at least 6 double bonds, got {doubles}"
+        );
     }
 
     #[test]
@@ -919,21 +974,24 @@ mod tests {
             .map(|_| b.add_atom(Atom::aromatic(Element::C)))
             .collect();
         // Ring A (6-ring): 0-1-2-3-4-5-0
-        for i in 0..6 { b.add_bond(a[i], a[(i+1)%6], BondOrder::Aromatic).unwrap(); }
+        for i in 0..6 {
+            b.add_bond(a[i], a[(i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
+        }
         // Ring B (6-ring): 0-5-6-7-8-9-0
-        for (x,y) in [(5,6),(6,7),(7,8),(8,9),(9,0)] {
+        for (x, y) in [(5, 6), (6, 7), (7, 8), (8, 9), (9, 0)] {
             if mol_has_no_bond_yet(&b, a[x], a[y]) {
                 b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
             }
         }
         // Ring C (6-ring): 1-2-10-11-12-13-1
-        for (x,y) in [(2,10),(10,11),(11,12),(12,13),(13,1)] {
+        for (x, y) in [(2, 10), (10, 11), (11, 12), (12, 13), (13, 1)] {
             if mol_has_no_bond_yet(&b, a[x], a[y]) {
                 b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
             }
         }
         // Ring D (5-ring): 9-8-14-15-13-9
-        for (x,y) in [(8,14),(14,15),(15,13),(13,9)] {
+        for (x, y) in [(8, 14), (14, 15), (15, 13), (13, 9)] {
             if mol_has_no_bond_yet(&b, a[x], a[y]) {
                 b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
             }
@@ -941,7 +999,10 @@ mod tests {
         let mol = b.build();
         let result = kekulize(&mol).expect("fluoranthene-like kekulization failed");
         let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
-        assert_eq!(doubles, 8, "fluoranthene-like structure needs 8 double bonds");
+        assert_eq!(
+            doubles, 8,
+            "fluoranthene-like structure needs 8 double bonds"
+        );
     }
 
     /// Indolizine (`c1ccn2cccc2c1`) — bridgehead N at C9a (aromatic degree 3).
@@ -952,16 +1013,40 @@ mod tests {
         // Bonds: 6-ring (0-1-2-3-7-8-0) ∪ 5-ring (3-4-5-6-7-3), fused at edge 3-7.
         let mut b = MoleculeBuilder::new();
         let c: Vec<_> = (0..9)
-            .map(|i| if i == 3 { b.add_atom(Atom::aromatic(Element::N)) }
-                     else       { b.add_atom(Atom::aromatic(Element::C)) })
+            .map(|i| {
+                if i == 3 {
+                    b.add_atom(Atom::aromatic(Element::N))
+                } else {
+                    b.add_atom(Atom::aromatic(Element::C))
+                }
+            })
             .collect();
-        for (x, y) in [(0,1),(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,3),(7,8),(8,0)] {
+        for (x, y) in [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 3),
+            (7, 8),
+            (8, 0),
+        ] {
             b.add_bond(c[x], c[y], BondOrder::Aromatic).unwrap();
         }
         let mol = b.build();
         let result = kekulize(&mol);
-        assert!(result.is_ok(), "indolizine kekulization failed: {:?}", result.err());
-        let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
+        assert!(
+            result.is_ok(),
+            "indolizine kekulization failed: {:?}",
+            result.err()
+        );
+        let doubles = result
+            .unwrap()
+            .values()
+            .filter(|&&o| o == BondOrder::Double)
+            .count();
         assert_eq!(doubles, 4, "indolizine: 4 double bonds (N lone-pair donor)");
     }
 
@@ -972,16 +1057,41 @@ mod tests {
         // 6-ring A: 0-1-2-3-8-9-0  6-ring B: 3-4-5-6-7-8-3  fused at edge 3-8.
         let mut b = MoleculeBuilder::new();
         let c: Vec<_> = (0..10)
-            .map(|i| if i == 3 { b.add_atom(Atom::aromatic(Element::N)) }
-                     else       { b.add_atom(Atom::aromatic(Element::C)) })
+            .map(|i| {
+                if i == 3 {
+                    b.add_atom(Atom::aromatic(Element::N))
+                } else {
+                    b.add_atom(Atom::aromatic(Element::C))
+                }
+            })
             .collect();
-        for (x, y) in [(0,1),(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,3),(8,9),(9,0)] {
+        for (x, y) in [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 8),
+            (8, 3),
+            (8, 9),
+            (9, 0),
+        ] {
             b.add_bond(c[x], c[y], BondOrder::Aromatic).unwrap();
         }
         let mol = b.build();
         let result = kekulize(&mol);
-        assert!(result.is_ok(), "quinolizine kekulization failed: {:?}", result.err());
-        let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
+        assert!(
+            result.is_ok(),
+            "quinolizine kekulization failed: {:?}",
+            result.err()
+        );
+        let doubles = result
+            .unwrap()
+            .values()
+            .filter(|&&o| o == BondOrder::Double)
+            .count();
         assert_eq!(doubles, 5, "quinolizine: 5 double bonds");
     }
 
@@ -996,24 +1106,60 @@ mod tests {
         // Outer 5 "cap" pairs: (5,15),(6,15),(7,16),(8,16),(9,17),(10,17),(11,18),(12,18),(13,19),(14,19)
         // 20 vertices, 25 edges, 10 double bonds expected.
         let mut b = MoleculeBuilder::new();
-        let a: Vec<_> = (0..20).map(|_| b.add_atom(Atom::aromatic(Element::C))).collect();
-        let edges: &[(usize,usize)] = &[
+        let a: Vec<_> = (0..20)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        let edges: &[(usize, usize)] = &[
             // inner 5-ring
-            (0,1),(1,2),(2,3),(3,4),(4,0),
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 0),
             // spokes
-            (0,5),(1,7),(2,9),(3,11),(4,13),
+            (0, 5),
+            (1, 7),
+            (2, 9),
+            (3, 11),
+            (4, 13),
             // outer 10-ring
-            (5,6),(6,7),(7,8),(8,9),(9,10),(10,11),(11,12),(12,13),(13,14),(14,5),
+            (5, 6),
+            (6, 7),
+            (7, 8),
+            (8, 9),
+            (9, 10),
+            (10, 11),
+            (11, 12),
+            (12, 13),
+            (13, 14),
+            (14, 5),
             // outer "cap" bonds
-            (5,15),(6,15),(7,16),(8,16),(9,17),(10,17),(11,18),(12,18),(13,19),(14,19),
+            (5, 15),
+            (6, 15),
+            (7, 16),
+            (8, 16),
+            (9, 17),
+            (10, 17),
+            (11, 18),
+            (12, 18),
+            (13, 19),
+            (14, 19),
         ];
         for &(x, y) in edges {
             b.add_bond(a[x], a[y], BondOrder::Aromatic).unwrap();
         }
         let mol = b.build();
         let result = kekulize(&mol);
-        assert!(result.is_ok(), "corannulene kekulization failed: {:?}", result.err());
-        let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
+        assert!(
+            result.is_ok(),
+            "corannulene kekulization failed: {:?}",
+            result.err()
+        );
+        let doubles = result
+            .unwrap()
+            .values()
+            .filter(|&&o| o == BondOrder::Double)
+            .count();
         assert_eq!(doubles, 10, "corannulene: 10 double bonds");
     }
 
@@ -1025,18 +1171,33 @@ mod tests {
         // 6-ring: B(0)-C(1)-C(2)-C(3)-C(4)-N(5)-B(0)
         // Valid Kekulé: B=C, C=C, C=N  (3 double bonds)
         let mut b = MoleculeBuilder::new();
-        let atoms: Vec<_> = (0..6).map(|i| {
-            if i == 0 { b.add_atom(Atom::aromatic(Element::B)) }
-            else if i == 5 { b.add_atom(Atom::aromatic(Element::N)) }
-            else { b.add_atom(Atom::aromatic(Element::C)) }
-        }).collect();
+        let atoms: Vec<_> = (0..6)
+            .map(|i| {
+                if i == 0 {
+                    b.add_atom(Atom::aromatic(Element::B))
+                } else if i == 5 {
+                    b.add_atom(Atom::aromatic(Element::N))
+                } else {
+                    b.add_atom(Atom::aromatic(Element::C))
+                }
+            })
+            .collect();
         for i in 0..6 {
-            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic).unwrap();
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
         }
         let mol = b.build();
         let result = kekulize(&mol);
-        assert!(result.is_ok(), "b1ccccn1 kekulization failed: {:?}", result.err());
-        let doubles = result.unwrap().values().filter(|&&o| o == BondOrder::Double).count();
+        assert!(
+            result.is_ok(),
+            "b1ccccn1 kekulization failed: {:?}",
+            result.err()
+        );
+        let doubles = result
+            .unwrap()
+            .values()
+            .filter(|&&o| o == BondOrder::Double)
+            .count();
         assert_eq!(doubles, 3, "b1ccccn1: 3 double bonds");
     }
 }

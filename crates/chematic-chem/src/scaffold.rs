@@ -255,7 +255,11 @@ fn schuffenhauer_remove_ring(
             .filter(|&&a| mol.atom(a).element.atomic_number() == 7)
             .count()
     };
-    let min_nitrogen = candidates.iter().map(|&ri| count_heteroatoms(ri)).min().unwrap();
+    let min_nitrogen = candidates
+        .iter()
+        .map(|&ri| count_heteroatoms(ri))
+        .min()
+        .unwrap();
     candidates.retain(|&ri| count_heteroatoms(ri) == min_nitrogen);
 
     // Rule 5: prefer rings with fewer heavy-atom substituents (linker attachments).
@@ -270,7 +274,11 @@ fn schuffenhauer_remove_ring(
             })
             .count()
     };
-    let min_subs = candidates.iter().map(|&ri| count_substituents(ri)).min().unwrap();
+    let min_subs = candidates
+        .iter()
+        .map(|&ri| count_substituents(ri))
+        .min()
+        .unwrap();
     candidates.retain(|&ri| count_substituents(ri) == min_subs);
 
     // Rule 6: prefer 5-membered rings over larger rings (5-ring priority).
@@ -295,7 +303,11 @@ fn schuffenhauer_remove_ring(
             })
             .count()
     };
-    let min_linker = candidates.iter().map(|&ri| count_linker_bonds(ri)).min().unwrap();
+    let min_linker = candidates
+        .iter()
+        .map(|&ri| count_linker_bonds(ri))
+        .min()
+        .unwrap();
     candidates.retain(|&ri| count_linker_bonds(ri) == min_linker);
 
     // Rule 8: tie-break by smallest atom index in the ring.
@@ -347,7 +359,7 @@ pub fn scaffold_network_with_counts(mols: &[Molecule]) -> ScaffoldNetwork {
     // Collect scaffolds and metadata: SMILES → (count, parent_smiles_opt)
     let mut smi_counts: HashMap<String, usize> = HashMap::new();
     let mut smi_parents: HashMap<String, Option<String>> = HashMap::new();
-    let mut scaffolds_list: Vec<(String, Molecule)> = Vec::new();  // Ordered by first encounter
+    let mut scaffolds_list: Vec<(String, Molecule)> = Vec::new(); // Ordered by first encounter
     let mut seen_smiles: HashSet<String> = HashSet::new();
 
     for mol in mols {
@@ -356,12 +368,17 @@ pub fn scaffold_network_with_counts(mols: &[Molecule]) -> ScaffoldNetwork {
             let smiles = canonical_smiles(scaffold);
 
             // Track count
-            smi_counts.entry(smiles.clone()).and_modify(|c| *c += 1).or_insert(1);
+            smi_counts
+                .entry(smiles.clone())
+                .and_modify(|c| *c += 1)
+                .or_insert(1);
 
             // Track parent (by computing SMILES of network[i-1])
             if i > 0 {
                 let parent_smiles = canonical_smiles(&network[i - 1]);
-                smi_parents.entry(smiles.clone()).or_insert(Some(parent_smiles));
+                smi_parents
+                    .entry(smiles.clone())
+                    .or_insert(Some(parent_smiles));
             } else {
                 smi_parents.entry(smiles.clone()).or_insert(None);
             }

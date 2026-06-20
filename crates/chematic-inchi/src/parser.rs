@@ -1221,8 +1221,8 @@ mod tests {
         use chematic_core::{Atom, Element, MoleculeBuilder};
 
         // Build the atom_idx_map manually and call parse_connectivity
-        use std::collections::HashMap;
         use chematic_core::AtomIdx;
+        use std::collections::HashMap;
 
         let mut builder = MoleculeBuilder::new();
         let a1 = builder.add_atom(Atom::new(Element::C));
@@ -1249,14 +1249,18 @@ mod tests {
     #[test]
     fn test_parse_connectivity_nested_branch() {
         // Neopentane-like: "1-5(2)(3)4"  (atom 5 has 4 branches: 1,2,3,4)
+        use chematic_core::AtomIdx;
         use chematic_core::{Atom, Element, MoleculeBuilder};
         use std::collections::HashMap;
-        use chematic_core::AtomIdx;
 
         let mut builder = MoleculeBuilder::new();
-        let atoms: Vec<AtomIdx> = (0..5).map(|_| builder.add_atom(Atom::new(Element::C))).collect();
+        let atoms: Vec<AtomIdx> = (0..5)
+            .map(|_| builder.add_atom(Atom::new(Element::C)))
+            .collect();
         let mut map: HashMap<usize, AtomIdx> = HashMap::new();
-        for (i, &a) in atoms.iter().enumerate() { map.insert(i + 1, a); }
+        for (i, &a) in atoms.iter().enumerate() {
+            map.insert(i + 1, a);
+        }
 
         super::parse_connectivity("1-5(2)(3)4", &map, &mut builder).expect("neopentane /c parse");
         let mol = builder.build();

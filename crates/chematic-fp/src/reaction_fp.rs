@@ -32,9 +32,7 @@ pub struct ReactionFpConfig {
 
 impl Default for ReactionFpConfig {
     fn default() -> Self {
-        ReactionFpConfig {
-            use_xor: true,
-        }
+        ReactionFpConfig { use_xor: true }
     }
 }
 
@@ -111,18 +109,18 @@ pub fn reaction_fp_with_config(
     rxn: &chematic_rxn::Reaction,
     config: &ReactionFpConfig,
 ) -> ReactionFingerprint {
-    let reactant_fp = combine_fps_or(
-        &rxn.reactants.iter().map(ecfp4).collect::<Vec<_>>(),
-    );
-    let product_fp = combine_fps_or(
-        &rxn.products.iter().map(ecfp4).collect::<Vec<_>>(),
-    );
+    let reactant_fp = combine_fps_or(&rxn.reactants.iter().map(ecfp4).collect::<Vec<_>>());
+    let product_fp = combine_fps_or(&rxn.products.iter().map(ecfp4).collect::<Vec<_>>());
     let combined_fp = if config.use_xor {
         compute_structural_difference(&reactant_fp, &product_fp)
     } else {
         reactant_fp.or(&product_fp)
     };
-    ReactionFingerprint { reactant_fp, product_fp, combined_fp }
+    ReactionFingerprint {
+        reactant_fp,
+        product_fp,
+        combined_fp,
+    }
 }
 
 /// Reaction fingerprint using ECFP4.
@@ -232,9 +230,7 @@ mod tests {
     #[test]
     fn test_reaction_fp_config() {
         let rxn = create_test_reaction("CC>>C");
-        let config = ReactionFpConfig {
-            use_xor: true,
-        };
+        let config = ReactionFpConfig { use_xor: true };
 
         let fp = reaction_fp_with_config(&rxn, &config);
         assert!(fp.combined_fp.popcount() > 0);

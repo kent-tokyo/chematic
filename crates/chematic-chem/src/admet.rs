@@ -26,7 +26,7 @@ use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
 
 use crate::descriptors::{
     hba_count, hbd_count, heavy_atom_count, logp_crippen, molecular_weight,
-    rotatable_bond_count, tpsa, num_aromatic_heterocycles,
+    num_aromatic_heterocycles, rotatable_bond_count, tpsa,
 };
 use crate::esol::esol_solubility;
 use crate::logd::logd_simple;
@@ -86,7 +86,7 @@ pub fn herg_risk_score(mol: &Molecule) -> f64 {
     let mut score = 0.0_f64;
 
     if has_basic_n {
-        score += 0.40;  // basic N is the strongest hERG predictor
+        score += 0.40; // basic N is the strongest hERG predictor
     }
     if logp > 4.0 {
         score += 0.30;
@@ -150,18 +150,18 @@ pub fn cyp3a4_inhibition_risk(mol: &Molecule) -> f64 {
 ///
 /// Each tuple is `(name, SMARTS)`.
 static AMES_SMARTS: &[(&str, &str)] = &[
-    ("aromatic_nitro",       "[c,n][N+](=O)[O-]"),
-    ("primary_aromatic_amine","[NH2][c,n]"),
-    ("epoxide",              "[C;!a]1O[C;!a]1"),
-    ("n_nitroso",            "[#7]-N=O"),
-    ("aromatic_azo",         "c-N=N-c"),
-    ("hydrazine",            "[NH]-[NH2]"),
-    ("aliphatic_azo",        "[#6;!a]-[#7]=[#7]-[#6;!a]"),
-    ("diazonium",            "[#6][N+]#N"),
-    ("nitrosamine",          "[#7](-[#6])-N=O"),
-    ("aromatic_amine_n_oxide","[c,n][NH][OH]"),
-    ("alpha_beta_unsaturated_aldehyde","[CH]=[CH]-C=O"),
-    ("alkyl_epoxide",        "[C;!R;!a]-1-O-[C;!R;!a]-1"),
+    ("aromatic_nitro", "[c,n][N+](=O)[O-]"),
+    ("primary_aromatic_amine", "[NH2][c,n]"),
+    ("epoxide", "[C;!a]1O[C;!a]1"),
+    ("n_nitroso", "[#7]-N=O"),
+    ("aromatic_azo", "c-N=N-c"),
+    ("hydrazine", "[NH]-[NH2]"),
+    ("aliphatic_azo", "[#6;!a]-[#7]=[#7]-[#6;!a]"),
+    ("diazonium", "[#6][N+]#N"),
+    ("nitrosamine", "[#7](-[#6])-N=O"),
+    ("aromatic_amine_n_oxide", "[c,n][NH][OH]"),
+    ("alpha_beta_unsaturated_aldehyde", "[CH]=[CH]-C=O"),
+    ("alkyl_epoxide", "[C;!R;!a]-1-O-[C;!R;!a]-1"),
 ];
 
 fn ames_patterns() -> &'static [(QueryMolecule, &'static str)] {
@@ -169,9 +169,7 @@ fn ames_patterns() -> &'static [(QueryMolecule, &'static str)] {
     CACHE.get_or_init(|| {
         AMES_SMARTS
             .iter()
-            .filter_map(|(name, smarts)| {
-                parse_smarts(smarts).ok().map(|q| (q, *name))
-            })
+            .filter_map(|(name, smarts)| parse_smarts(smarts).ok().map(|q| (q, *name)))
             .collect()
     })
 }
@@ -234,7 +232,7 @@ pub enum ClearanceClass {
 /// High logP increases PPB (slower free-drug clearance); high MW slows CYP access.
 pub fn clearance_score(mol: &Molecule) -> f64 {
     let logp = logp_crippen(mol);
-    let mw   = molecular_weight(mol);
+    let mw = molecular_weight(mol);
     let n_heavy = heavy_atom_count(mol) as f64;
     // Nitrogen/oxygen density as a proxy for metabolic handle density
     let het_density = (hba_count(mol) as f64 + hbd_count(mol) as f64) / n_heavy.max(1.0);
@@ -247,7 +245,7 @@ pub fn clearance_class(mol: &Molecule) -> ClearanceClass {
     match clearance_score(mol) {
         s if s < 0.35 => ClearanceClass::Low,
         s if s < 0.65 => ClearanceClass::Medium,
-        _             => ClearanceClass::High,
+        _ => ClearanceClass::High,
     }
 }
 
@@ -374,15 +372,21 @@ mod tests {
     fn test_bbb_aspirin_passes() {
         // Aspirin: TPSA~63, MW=180, HBD=1 → passes
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
-        assert!(bbb_passes(&m), "aspirin should pass BBB rules (MW=180, TPSA~63)");
+        assert!(
+            bbb_passes(&m),
+            "aspirin should pass BBB rules (MW=180, TPSA~63)"
+        );
     }
 
     #[test]
     fn test_bbb_score_high_tpsa_fails() {
         // Metformin: TPSA~88, very polar → low logBB
-        let m = mol("CN(C)C(=N)NC(=N)N");  // metformin
+        let m = mol("CN(C)C(=N)NC(=N)N"); // metformin
         let score = bbb_score(&m);
-        assert!(score < 0.0, "high-TPSA molecule should have logBB < 0, got {score:.3}");
+        assert!(
+            score < 0.0,
+            "high-TPSA molecule should have logBB < 0, got {score:.3}"
+        );
     }
 
     #[test]
@@ -401,9 +405,12 @@ mod tests {
     #[test]
     fn test_caco2_nonpolar_high() {
         // Nonpolar molecule: high LogP, low TPSA → high Caco-2 permeability
-        let m = mol("CCCCCC");  // hexane
+        let m = mol("CCCCCC"); // hexane
         let perm = caco2_permeability(&m);
-        assert!(perm > -5.5, "hexane should have high Caco-2 (logPCaco2 > -5.5), got {perm:.3}");
+        assert!(
+            perm > -5.5,
+            "hexane should have high Caco-2 (logPCaco2 > -5.5), got {perm:.3}"
+        );
     }
 
     #[test]
@@ -411,7 +418,10 @@ mod tests {
         // Glucose: high TPSA (~110), low LogP → low Caco-2
         let m = mol("OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O");
         let perm = caco2_permeability(&m);
-        assert!(perm < -5.5, "glucose should have low Caco-2 (logPCaco2 < -5.5), got {perm:.3}");
+        assert!(
+            perm < -5.5,
+            "glucose should have low Caco-2 (logPCaco2 < -5.5), got {perm:.3}"
+        );
     }
 
     #[test]
@@ -419,7 +429,10 @@ mod tests {
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
         let perm = caco2_permeability(&m);
         // Aspirin: TPSA~63, logP~1.19 → model gives ~-8.6 (conservative estimate)
-        assert!(perm > -10.0 && perm < -5.0, "aspirin Caco-2 in range, got {perm:.3}");
+        assert!(
+            perm > -10.0 && perm < -5.0,
+            "aspirin Caco-2 in range, got {perm:.3}"
+        );
     }
 
     // ── hERG ─────────────────────────────────────────────────────────────────
@@ -430,7 +443,10 @@ mod tests {
         // Using a simpler analog: haloperidol-like structure
         let m = mol("c1cc(ccc1C(=O)CCCCN2CCC(CC2)c3ccc(cc3)Cl)F");
         let risk = herg_risk_score(&m);
-        assert!(risk > 0.5, "basic + lipophilic molecule should have high hERG risk, got {risk:.3}");
+        assert!(
+            risk > 0.5,
+            "basic + lipophilic molecule should have high hERG risk, got {risk:.3}"
+        );
     }
 
     #[test]
@@ -442,9 +458,12 @@ mod tests {
 
     #[test]
     fn test_herg_score_range() {
-        let m = mol("CN1CCCCC1");  // N-methylpiperidine
+        let m = mol("CN1CCCCC1"); // N-methylpiperidine
         let risk = herg_risk_score(&m);
-        assert!((0.0..=1.0).contains(&risk), "hERG score must be in [0,1], got {risk}");
+        assert!(
+            (0.0..=1.0).contains(&risk),
+            "hERG score must be in [0,1], got {risk}"
+        );
     }
 
     // ── CYP3A4 ───────────────────────────────────────────────────────────────
@@ -460,7 +479,7 @@ mod tests {
     fn test_cyp3a4_large_het_ar_high() {
         // Ketoconazole: large, contains imidazole + triazole → high CYP3A4
         // Use a simpler large heterocyclic compound
-        let m = mol("c1cnc(nc1)-c1nc2ccccc2n1");  // 2-phenylimidazo[1,2-a]pyridine-like
+        let m = mol("c1cnc(nc1)-c1nc2ccccc2n1"); // 2-phenylimidazo[1,2-a]pyridine-like
         let risk = cyp3a4_inhibition_risk(&m);
         assert!(risk > 0.0, "aromatic heterocycles have some CYP3A4 risk");
     }
@@ -469,7 +488,10 @@ mod tests {
     fn test_cyp3a4_score_range() {
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
         let risk = cyp3a4_inhibition_risk(&m);
-        assert!((0.0..=1.0).contains(&risk), "CYP3A4 score in [0,1], got {risk}");
+        assert!(
+            (0.0..=1.0).contains(&risk),
+            "CYP3A4 score in [0,1], got {risk}"
+        );
     }
 
     // ── AdmetProfile ─────────────────────────────────────────────────────────
@@ -510,27 +532,33 @@ mod tests {
 
     #[test]
     fn test_ames_clean_molecule() {
-        let m = mol("CC(=O)Oc1ccccc1C(=O)O");  // aspirin
+        let m = mol("CC(=O)Oc1ccccc1C(=O)O"); // aspirin
         assert!(ames_passes(&m), "aspirin should have no Ames alerts");
         assert_eq!(ames_risk_score(&m), 0.0);
     }
 
     #[test]
     fn test_ames_nitro_aromatic() {
-        let m = mol("c1ccc([N+](=O)[O-])cc1");  // nitrobenzene
-        assert!(!ames_passes(&m), "nitrobenzene should trigger aromatic_nitro alert");
+        let m = mol("c1ccc([N+](=O)[O-])cc1"); // nitrobenzene
+        assert!(
+            !ames_passes(&m),
+            "nitrobenzene should trigger aromatic_nitro alert"
+        );
         assert!(ames_risk_score(&m) > 0.0);
     }
 
     #[test]
     fn test_ames_primary_aromatic_amine() {
-        let m = mol("Nc1ccccc1");  // aniline
-        assert!(!ames_passes(&m), "aniline should trigger primary_aromatic_amine alert");
+        let m = mol("Nc1ccccc1"); // aniline
+        assert!(
+            !ames_passes(&m),
+            "aniline should trigger primary_aromatic_amine alert"
+        );
     }
 
     #[test]
     fn test_ames_n_nitroso() {
-        let m = mol("CN(C)N=O");  // N-nitrosodimethylamine
+        let m = mol("CN(C)N=O"); // N-nitrosodimethylamine
         assert!(!ames_passes(&m), "N-nitroso compound should trigger alert");
     }
 
@@ -538,14 +566,17 @@ mod tests {
 
     #[test]
     fn test_ppb_lipophilic_molecule() {
-        let m = mol("c1ccc2ccccc2c1");  // naphthalene, LogP~3.4
+        let m = mol("c1ccc2ccccc2c1"); // naphthalene, LogP~3.4
         let ppb = ppb_percent(&m);
-        assert!(ppb > 80.0, "naphthalene should have high PPB, got {ppb:.1}%");
+        assert!(
+            ppb > 80.0,
+            "naphthalene should have high PPB, got {ppb:.1}%"
+        );
     }
 
     #[test]
     fn test_ppb_hydrophilic_molecule() {
-        let m = mol("OCC1OC(O)C(O)C(O)C1O");  // glucose, LogP~-3
+        let m = mol("OCC1OC(O)C(O)C(O)C1O"); // glucose, LogP~-3
         let ppb = ppb_percent(&m);
         assert!(ppb < 30.0, "glucose should have low PPB, got {ppb:.1}%");
     }
@@ -555,7 +586,10 @@ mod tests {
         for smi in &["C", "CCO", "c1ccccc1", "CCCCCCCC"] {
             let m = mol(smi);
             let ppb = ppb_percent(&m);
-            assert!((1.0..=99.0).contains(&ppb), "PPB out of range for {smi}: {ppb}");
+            assert!(
+                (1.0..=99.0).contains(&ppb),
+                "PPB out of range for {smi}: {ppb}"
+            );
         }
     }
 
@@ -565,7 +599,10 @@ mod tests {
     fn test_clearance_returns_valid_class() {
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
         let cls = clearance_class(&m);
-        assert!(matches!(cls, ClearanceClass::Low | ClearanceClass::Medium | ClearanceClass::High));
+        assert!(matches!(
+            cls,
+            ClearanceClass::Low | ClearanceClass::Medium | ClearanceClass::High
+        ));
     }
 
     #[test]
@@ -573,7 +610,10 @@ mod tests {
         for smi in &["C", "CCO", "c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O"] {
             let m = mol(smi);
             let s = clearance_score(&m);
-            assert!((0.0..=1.0).contains(&s), "clearance_score out of range for {smi}: {s}");
+            assert!(
+                (0.0..=1.0).contains(&s),
+                "clearance_score out of range for {smi}: {s}"
+            );
         }
     }
 
@@ -603,6 +643,9 @@ mod tests {
         let p = admet_profile(&m);
         assert!((0.0..=1.0).contains(&p.ames_risk));
         assert!((1.0..=99.0).contains(&p.ppb));
-        assert!(matches!(p.clearance, ClearanceClass::Low | ClearanceClass::Medium | ClearanceClass::High));
+        assert!(matches!(
+            p.clearance,
+            ClearanceClass::Low | ClearanceClass::Medium | ClearanceClass::High
+        ));
     }
 }

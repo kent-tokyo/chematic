@@ -35,8 +35,7 @@ const VDW_CUTOFF: f64 = 8.0;
 // ---------------------------------------------------------------------------
 
 /// Force field selection for minimization.
-#[derive(Debug, Clone, Copy)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum ForceField {
     /// UFF-derived force field (default, fast).
     UFF,
@@ -46,7 +45,6 @@ pub enum ForceField {
     /// MMFF94 force field (Merck Molecular Force Field 94, industry standard).
     MMFF94,
 }
-
 
 /// Configuration for the minimization algorithm.
 pub struct MinimizeConfig {
@@ -414,7 +412,11 @@ pub fn minimize_with_config(mol: &Molecule, coords: Coords3D, config: &MinimizeC
     }
 }
 
-fn minimize_generic_with_config(mol: &Molecule, coords: Coords3D, config: &MinimizeConfig) -> Coords3D {
+fn minimize_generic_with_config(
+    mol: &Molecule,
+    coords: Coords3D,
+    config: &MinimizeConfig,
+) -> Coords3D {
     minimize_gradient_descent(mol, coords, config, |c| total_energy(mol, c))
 }
 
@@ -1214,8 +1216,10 @@ mod tests {
         assert_eq!(result.atom_count(), mol.atom_count());
         for i in 0..mol.atom_count() {
             let p = result.get(chematic_core::AtomIdx(i as u32));
-            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
-                   "aspirin atom {i} has invalid coords");
+            assert!(
+                p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
+                "aspirin atom {i} has invalid coords"
+            );
         }
     }
 
@@ -1258,7 +1262,11 @@ mod tests {
         // Should still minimize correctly with electrostatic term
         assert_eq!(result.atom_count(), 2);
         let d = result.get(AtomIdx(0)).distance(&result.get(AtomIdx(1)));
-        assert!(d > 1.4 && d < 1.7, "ethane C-C should be ~1.54 Å with electrostatic, got {:.3}", d);
+        assert!(
+            d > 1.4 && d < 1.7,
+            "ethane C-C should be ~1.54 Å with electrostatic, got {:.3}",
+            d
+        );
     }
 
     #[test]
@@ -1274,8 +1282,10 @@ mod tests {
         assert_eq!(result.atom_count(), 3);
         for i in 0..3 {
             let p = result.get(AtomIdx(i as u32));
-            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
-                   "atom {i} has invalid coordinate after minimization");
+            assert!(
+                p.x.is_finite() && p.y.is_finite() && p.z.is_finite(),
+                "atom {i} has invalid coordinate after minimization"
+            );
         }
 
         // Verify atoms are reasonably separated (no clashes)
@@ -1318,7 +1328,11 @@ mod tests {
         let electrostatic_e = electrostatic_energy_mmff94(&mol, &c, &mmff94_types).unwrap_or(0.0);
         let expected = bond_e + angle_e + vdw_e + electrostatic_e;
 
-        assert!((total_e - expected).abs() < 1e-6,
-                "total energy mismatch: got {}, expected {}", total_e, expected);
+        assert!(
+            (total_e - expected).abs() < 1e-6,
+            "total energy mismatch: got {}, expected {}",
+            total_e,
+            expected
+        );
     }
 }

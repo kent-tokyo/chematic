@@ -616,6 +616,12 @@ export function compare_molecules_batch_json(smiles_batch: string, delimiter: st
 export function compare_molecules_json(smiles1: string, smiles2: string): string;
 
 /**
+ * Generate multiple conformers with RMSD-based pruning.
+ * Returns JSON: `{"conformers": [[[x,y,z],...], ...], "count": int}`.
+ */
+export function conformer_ensemble_json(mol: MolHandle, n: number, rmsd_threshold: number): string;
+
+/**
  * Compute direct Coulomb energy for a molecule with Gasteiger partial charges.
  *
  * Returns JSON object: `{ "coulomb_energy": E, "unit": "kcal/mol" }`
@@ -854,6 +860,19 @@ export function find_reaction_center_json(reaction_smiles: string): string;
  * Gasteiger-Marsili PEOE partial charges as a JSON array of f64.
  */
 export function gasteiger_charges_json(mol: MolHandle): string;
+
+/**
+ * Generate 3D coordinates as raw JSON array [[x,y,z], ...].
+ *
+ * Unlike `generate_3d_pdb`, this returns coordinates that can be passed
+ * to descriptor functions like `whim_descriptors_json` or `shape_descriptors_json`.
+ */
+export function generate_3d_coords_json(mol: MolHandle): string;
+
+/**
+ * Generate 3D coordinates using ETKDG as raw JSON array [[x,y,z], ...].
+ */
+export function generate_3d_etkdg_coords_json(mol: MolHandle): string;
 
 /**
  * Generate 3D coordinates using ETKDG and minimize with DREIDING force field.
@@ -1130,6 +1149,17 @@ export function minimize_mmff94_json(mol: MolHandle, max_iter: number): string;
  * Returns JSON: {"energy":E,"rmsd":R,"converged":true,"iterations":N} or {"error":"..."}.
  */
 export function minimize_mmff94_lbfgs_json(mol: MolHandle, max_iter: number): string;
+
+/**
+ * Minimise a molecule's geometry using the Universal Force Field (UFF).
+ *
+ * `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
+ * `max_iter` — maximum iterations (0 = default 500).
+ *
+ * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool}`
+ * or `{"error":"<msg>"}` on failure.
+ */
+export function minimize_uff_json(smiles: string, coords_json: string, max_iter: number): string;
 
 /**
  * MMFF94 partial charges (BCI table, ±0.1e accuracy) as a JSON array of f64.
@@ -1621,6 +1651,17 @@ export function smiles_array_to_sdf(smiles_json: string): string;
 export function smiles_to_mol2(smiles: string): string;
 
 /**
+ * Write a molecule to AutoDock PDBQT format.
+ *
+ * `coords_json` — JSON array of `[x,y,z]` arrays (Å). Pass `"[]"` for zero coords.
+ * `charges_json` — JSON array of partial charges. Pass `"[]"` to write zeros.
+ * `name` — ligand name for the REMARK header.
+ *
+ * Returns the PDBQT string, or `"error:<msg>"` on failure.
+ */
+export function smiles_to_pdbqt(smiles: string, coords_json: string, charges_json: string, name: string): string;
+
+/**
  * Render a highlighted SVG from a SMILES string in one call.
  *
  * `atoms` — 0-based atom indices to highlight (Uint32Array in JS).
@@ -1797,6 +1838,18 @@ export function whim_getaway_combined_json(mol: MolHandle): string;
  */
 export function write_smiles(mol: MolHandle): string;
 
+/**
+ * XLogP3 partition coefficient (alternative to Crippen LogP).
+ * Returns JSON: `{"xlogp3": float}`.
+ */
+export function xlogp3_json(mol: MolHandle): string;
+
+/**
+ * Per-atom XLogP3 contributions.
+ * Returns JSON array of floats (one per heavy atom).
+ */
+export function xlogp3_per_atom_json(mol: MolHandle): string;
+
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
@@ -1819,6 +1872,7 @@ export interface InitOutput {
     readonly canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
     readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly cip_assignments_json: (a: number) => [number, number];
+    readonly conformer_ensemble_json: (a: number, b: number, c: number) => [number, number];
     readonly conformerhandle_add_generated_conformer: (a: number) => number;
     readonly conformerhandle_add_minimized_conformer: (a: number) => number;
     readonly conformerhandle_cluster_conformers_json: (a: number, b: number) => [number, number];
@@ -1868,6 +1922,8 @@ export interface InitOutput {
     readonly fcfp6_bitvec: (a: number) => [number, number];
     readonly find_reaction_center_json: (a: number, b: number) => [number, number];
     readonly gasteiger_charges_json: (a: number) => [number, number];
+    readonly generate_3d_coords_json: (a: number) => [number, number];
+    readonly generate_3d_etkdg_coords_json: (a: number) => [number, number];
     readonly generate_3d_etkdg_minimized_pdb: (a: number) => [number, number];
     readonly generate_3d_etkdg_pdb: (a: number) => [number, number];
     readonly generate_3d_minimized_pdb: (a: number) => [number, number];
@@ -1902,6 +1958,7 @@ export interface InitOutput {
     readonly minimize_dreiding_json: (a: number) => [number, number];
     readonly minimize_mmff94_json: (a: number, b: number) => [number, number];
     readonly minimize_mmff94_lbfgs_json: (a: number, b: number) => [number, number];
+    readonly minimize_uff_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly mmff94_charges_json: (a: number) => [number, number];
     readonly mmff94_charges_typed_json: (a: number) => [number, number];
     readonly mmff94_energy_breakdown_json: (a: number) => [number, number];
@@ -2028,6 +2085,7 @@ export interface InitOutput {
     readonly smarts_match_atoms_with_chirality: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly smiles_array_to_sdf: (a: number, b: number) => [number, number, number, number];
     readonly smiles_to_mol2: (a: number, b: number) => [number, number];
+    readonly smiles_to_pdbqt: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
     readonly smiles_to_svg_highlighted: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
     readonly smr_vsa_json: (a: number) => [number, number];
     readonly sssr_rings_json: (a: number) => [number, number];
@@ -2054,6 +2112,8 @@ export interface InitOutput {
     readonly whim_descriptors_json: (a: number) => [number, number];
     readonly whim_getaway_combined_json: (a: number) => [number, number];
     readonly write_smiles: (a: number) => [number, number];
+    readonly xlogp3_json: (a: number) => [number, number];
+    readonly xlogp3_per_atom_json: (a: number) => [number, number];
     readonly start: () => void;
     readonly molhandle_atom_count: (a: number) => number;
     readonly compare_molecules_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
