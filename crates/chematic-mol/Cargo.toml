@@ -16,8 +16,8 @@ documentation = "https://docs.rs/chematic-mol"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.4.9" }
-chematic-rxn  = { path = "../chematic-rxn",  version = "0.4.9" }
+chematic-core = { path = "../chematic-core", version = "0.4.11" }
+chematic-rxn  = { path = "../chematic-rxn",  version = "0.4.11" }
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.9" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.11" }
