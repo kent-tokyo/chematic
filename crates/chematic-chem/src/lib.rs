@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod abbreviations;
+pub mod activity_cliff;
 pub mod admet;
 pub mod alerts;
 pub mod atropisomer;
@@ -46,7 +47,7 @@ pub use descriptors::{
     aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, cns_mpo_score, egan_passes,
     exact_mass, formal_charge_sum, fsp3, ghose_passes, hall_kier_alpha, hba_count, hbd_count,
     heavy_atom_count, ipc, lead_like_passes, lipinski_passes, logp_crippen, logp_crippen_per_atom,
-    mmff94_charges, molar_refractivity, molecular_weight, mqn, mr_per_atom,
+    mcf_passes, mmff94_charges, molar_refractivity, molecular_weight, mqn, mr_per_atom,
     num_aliphatic_heterocycles, num_aliphatic_rings, num_amide_bonds, num_aromatic_heterocycles,
     num_bridgehead_atoms, num_bromines, num_carbons, num_chlorines, num_ester_bonds, num_fluorines,
     num_heteroatoms, num_hydrogens, num_iodines, num_nitrogens, num_oxygens, num_phosphorus,
@@ -57,6 +58,7 @@ pub use descriptors::{
 pub use iupac_stereo::iupac_name_stereo;
 
 pub use abbreviations::{abbreviations, expand_abbreviation};
+pub use activity_cliff::{ActivityCliff, activity_cliffs};
 pub use admet::{
     AdmetProfile, BoiledEggProfile, ClearanceClass, admet_profile, ames_alerts, ames_passes,
     ames_risk_score, bbb_passes, bbb_score, boiled_egg, caco2_permeability, clearance_class,
@@ -103,7 +105,7 @@ pub use tautomer::{
 pub use topo_descriptors::{
     bertz_ct, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v, kappa1, kappa2,
     kappa3, labute_asa, labute_asa_per_atom, randic_index, topological_distance_matrix,
-    wiener_index, zagreb_index_m1,
+    wiener_index, zagreb_index_m1, zagreb_index_m2,
 };
 pub use vsa::{estate_vsa, peoe_vsa, slogp_vsa, smr_vsa};
 pub use workflow::{

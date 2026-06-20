@@ -549,6 +549,44 @@ pub fn zagreb_index_m1(mol: &Molecule) -> u32 {
         .sum()
 }
 
+/// Zagreb index M2 (second Zagreb index).
+///
+/// M2 = Σ (deg(a) × deg(b)) for each heavy-atom bond (a, b).
+///
+/// Complements [`zagreb_index_m1`] (Σ deg(v)²); both quantify molecular branching.
+/// Higher M2 indicates more branching or denser connectivity.
+pub fn zagreb_index_m2(mol: &Molecule) -> u32 {
+    let heavy_set: HashSet<usize> = (0..mol.atom_count())
+        .filter(|&i| {
+            mol.atom(chematic_core::AtomIdx(i as u32))
+                .element
+                .atomic_number()
+                != 1
+        })
+        .collect();
+
+    let mut sum = 0u32;
+    for bidx in 0..mol.bond_count() {
+        let bond = mol.bond(chematic_core::BondIdx(bidx as u32));
+        let a = bond.atom1.0 as usize;
+        let b = bond.atom2.0 as usize;
+        // Only count bonds between two heavy atoms.
+        if !heavy_set.contains(&a) || !heavy_set.contains(&b) {
+            continue;
+        }
+        let deg_a = mol
+            .neighbors(bond.atom1)
+            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+            .count() as u32;
+        let deg_b = mol
+            .neighbors(bond.atom2)
+            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+            .count() as u32;
+        sum += deg_a * deg_b;
+    }
+    sum
+}
+
 /// Topological distance matrix for heavy atoms.
 ///
 /// Entry `[i][j]` is the length of the shortest path (in bonds) between
@@ -803,6 +841,38 @@ mod tests {
         // Ethane: 2 atoms each with degree 1 → Σ d² = 1+1 = 2
         let m = mol("CC");
         assert_eq!(zagreb_index_m1(&m), 2);
+    }
+
+    // ── Zagreb M2 ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn zagreb_m2_ethane() {
+        // Ethane C-C: one bond, deg(C)=1, deg(C)=1 → M2 = 1*1 = 1
+        assert_eq!(zagreb_index_m2(&mol("CC")), 1);
+    }
+
+    #[test]
+    fn zagreb_m2_propane() {
+        // Propane C-C-C: bonds (C1-C2) and (C2-C3)
+        // deg: C1=1, C2=2, C3=1
+        // M2 = 1*2 + 2*1 = 4
+        assert_eq!(zagreb_index_m2(&mol("CCC")), 4);
+    }
+
+    #[test]
+    fn zagreb_m2_benzene() {
+        // Benzene: 6 bonds, each between degree-2 atoms → M2 = 6 * (2*2) = 24
+        assert_eq!(zagreb_index_m2(&mol("c1ccccc1")), 24);
+    }
+
+    #[test]
+    fn zagreb_m2_ge_m1_for_branched() {
+        // For any graph, M2 captures edge-based branching; M1 is vertex-based.
+        // Both should be positive for any non-trivial molecule.
+        for smi in ["CC(C)C", "CC(=O)O", "c1ccccc1"] {
+            let m = mol(smi);
+            assert!(zagreb_index_m2(&m) > 0, "M2 should be > 0 for {smi}");
+        }
     }
 
     #[test]

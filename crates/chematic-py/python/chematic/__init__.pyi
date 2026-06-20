@@ -366,6 +366,20 @@ class Mol:
         """True if no Brenk structural alerts are present."""
         ...
 
+    def mcf_passes(self) -> bool:
+        """Med-Chem Friendly (MCF) composite filter.
+
+        Returns ``True`` when all of the following hold:
+        no PAINS alerts, no Brenk alerts, Lipinski Ro5, and Veber oral bioavailability.
+        Mirrors the "MCF" concept in the medchemfilters Python library.
+
+        Example::
+
+            caffeine = chematic.from_smiles("Cn1cnc2c1c(=O)n(c(=O)n2C)C")
+            caffeine.mcf_passes  # True
+        """
+        ...
+
     def ro3_passes(self) -> bool:
         """True if Rule of Three criteria pass (Congreve 2003).
 
@@ -950,6 +964,22 @@ class Mol:
     @property
     def hall_kier_alpha(self) -> float:
         """Hall-Kier alpha — correction term for kappa shape indices."""
+        ...
+
+    @property
+    def zagreb_m2(self) -> int:
+        """Second Zagreb index M2 — Σ(deg(a) × deg(b)) over all heavy-atom bonds.
+
+        Complements :attr:`zagreb_m1` (Σ deg(v)²). Both measure molecular branching;
+        M2 is edge-based while M1 is vertex-based.
+
+        Example::
+
+            ethane = chematic.from_smiles("CC")
+            ethane.zagreb_m2  # 1 (one bond, degree-1 × degree-1)
+            benzene = chematic.from_smiles("c1ccccc1")
+            benzene.zagreb_m2  # 24 (6 bonds × (2×2))
+        """
         ...
 
     def peoe_vsa(self) -> list[float]:
@@ -2397,6 +2427,33 @@ def similarity_map_svg(mol: Mol, weights: list[float]) -> str:
 
         weights = mol.logp_per_atom()
         svg = chematic.similarity_map_svg(mol, weights)
+    """
+    ...
+
+def activity_cliffs(
+    mols: list[Mol],
+    activities: list[float],
+    sim_threshold: float = 0.65,
+    cliff_delta: float = 2.0,
+) -> list[dict[str, object]]:
+    """Detect activity cliffs in a set of molecules with known activity values.
+
+    An activity cliff is a structurally similar pair with a large activity gap —
+    a classic signal of SAR sensitivity, as used in MolScore and mol-eval.
+
+    ``mols``: list of :class:`Mol` objects.
+    ``activities``: list of floats (one per mol, e.g. pIC50 values).
+    ``sim_threshold``: minimum ECFP4 Tanimoto similarity (default 0.65).
+    ``cliff_delta``: minimum ``|activity_i − activity_j|`` to be a cliff (default 2.0).
+
+    Returns a list of dicts sorted by ``similarity`` descending:
+      ``mol_a_idx`` (int), ``mol_b_idx`` (int), ``similarity`` (float), ``activity_delta`` (float).
+
+    Example::
+
+        mols = [chematic.from_smiles(s) for s in ["c1ccccc1", "Cc1ccccc1"]]
+        cliffs = chematic.activity_cliffs(mols, [5.0, 8.5], sim_threshold=0.0, cliff_delta=2.0)
+        # [{"mol_a_idx": 0, "mol_b_idx": 1, "similarity": 0.xx, "activity_delta": 3.5}]
     """
     ...
 

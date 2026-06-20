@@ -474,6 +474,19 @@ impl Mol {
         chematic_chem::brenk_passes(&self.inner)
     }
 
+    /// Med-Chem Friendly (MCF) composite filter.
+    ///
+    /// Returns ``True`` when all of the following hold:
+    /// no PAINS alerts, no Brenk alerts, Lipinski Ro5, and Veber oral bioavailability.
+    /// Mirrors the "MCF" concept in the `medchemfilters` Python library.
+    ///
+    ///     caffeine = chematic.from_smiles("Cn1cnc2c1c(=O)n(c(=O)n2C)C")
+    ///     caffeine.mcf_passes  # True
+    #[getter]
+    fn mcf_passes(&self) -> bool {
+        chematic_chem::mcf_passes(&self.inner)
+    }
+
     /// True if Rule of Three criteria pass (fragment-based drug discovery, Congreve 2003).
     ///
     /// Passes when MW ≤ 300, LogP ≤ 3, HBD ≤ 3, HBA ≤ 3, RotBonds ≤ 3.
@@ -627,6 +640,7 @@ impl Mol {
         d.set_item("labute_asa", chematic_chem::labute_asa(m))?;
         d.set_item("bertz_ct", chematic_chem::bertz_ct(m))?;
         d.set_item("wiener_index", chematic_chem::wiener_index(m))?;
+        d.set_item("zagreb_m2", chematic_chem::zagreb_index_m2(m))?;
         d.set_item("kappa1", chematic_chem::kappa1(m))?;
         d.set_item("kappa2", chematic_chem::kappa2(m))?;
         d.set_item("kappa3", chematic_chem::kappa3(m))?;
@@ -667,6 +681,7 @@ impl Mol {
         d.set_item("lead_like_passes", chematic_chem::lead_like_passes(m))?;
         d.set_item("pfizer_3_75_passes", chematic_chem::pfizer_3_75_passes(m))?;
         d.set_item("cns_mpo_score", chematic_chem::cns_mpo_score(m))?;
+        d.set_item("mcf_passes", chematic_chem::mcf_passes(m))?;
         d.set_item("bbb_score", chematic_chem::bbb_score(m))?;
         d.set_item("bbb_passes", chematic_chem::bbb_passes(m))?;
         d.set_item("caco2", chematic_chem::caco2_permeability(m))?;
@@ -1947,6 +1962,17 @@ impl Mol {
     #[getter]
     fn zagreb_m1(&self) -> u32 {
         chematic_chem::zagreb_index_m1(&self.inner)
+    }
+
+    /// Second Zagreb index M2 — Σ(deg(a) × deg(b)) over all heavy-atom bonds.
+    ///
+    /// Complements :attr:`zagreb_m1` (Σ deg(v)²); both quantify molecular branching.
+    ///
+    ///     ethane = chematic.from_smiles("CC")
+    ///     ethane.zagreb_m2  # 1 (one bond between degree-1 atoms)
+    #[getter]
+    fn zagreb_m2(&self) -> u32 {
+        chematic_chem::zagreb_index_m2(&self.inner)
     }
 
     /// Per-atom Labute approximate surface area contributions.
@@ -3504,6 +3530,46 @@ fn similarity_map_svg(mol: &Mol, weights: Vec<f64>) -> String {
     chematic_depict::similarity_map_svg(&mol.inner, &weights)
 }
 
+/// Detect activity cliffs in a set of molecules with known activity values.
+///
+/// An activity cliff is a structurally similar pair with a large activity difference —
+/// a classic signal of SAR sensitivity. Common in MolScore and mol-eval type analyses.
+///
+/// ``mols``: list of :class:`Mol` objects.
+/// ``activities``: list of floats (one per mol), e.g. pIC50 values.
+/// ``sim_threshold``: minimum ECFP4 Tanimoto similarity to consider a pair (default 0.65).
+/// ``cliff_delta``: minimum ``|activity_i − activity_j|`` to be a cliff (default 2.0).
+///
+/// Returns a list of dicts sorted by similarity descending, each containing:
+///   ``mol_a_idx`` (int), ``mol_b_idx`` (int), ``similarity`` (float), ``activity_delta`` (float).
+///
+///     mols = [chematic.from_smiles(s) for s in ["c1ccccc1", "Cc1ccccc1"]]
+///     cliffs = chematic.activity_cliffs(mols, [5.0, 8.5], sim_threshold=0.0, cliff_delta=2.0)
+///     # [{"mol_a_idx": 0, "mol_b_idx": 1, "similarity": 0.xx, "activity_delta": 3.5}]
+#[pyfunction]
+#[pyo3(signature = (mols, activities, sim_threshold = 0.65, cliff_delta = 2.0))]
+fn activity_cliffs<'py>(
+    mols: Vec<Mol>,
+    activities: Vec<f64>,
+    sim_threshold: f32,
+    cliff_delta: f64,
+    py: Python<'py>,
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+    let cliffs = chematic_chem::activity_cliffs(&refs, &activities, sim_threshold, cliff_delta);
+    cliffs
+        .into_iter()
+        .map(|c| {
+            let d = PyDict::new(py);
+            d.set_item("mol_a_idx", c.mol_a_idx)?;
+            d.set_item("mol_b_idx", c.mol_b_idx)?;
+            d.set_item("similarity", c.similarity)?;
+            d.set_item("activity_delta", c.activity_delta)?;
+            Ok(d)
+        })
+        .collect()
+}
+
 /// Identify the reaction center: bonds broken/formed and atoms changed.
 ///
 /// Returns a dict with keys:
@@ -4613,6 +4679,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(find_mmp, m)?)?;
     m.add_function(wrap_pyfunction!(rgroup_decompose, m)?)?;
     m.add_function(wrap_pyfunction!(similarity_map_svg, m)?)?;
+    m.add_function(wrap_pyfunction!(activity_cliffs, m)?)?;
     m.add_function(wrap_pyfunction!(find_reaction_center, m)?)?;
     m.add_function(wrap_pyfunction!(mol_hash, m)?)?;
     m.add_function(wrap_pyfunction!(are_identical, m)?)?;
