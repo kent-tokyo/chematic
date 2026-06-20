@@ -209,7 +209,18 @@ fn build_product(
     let mut src_to_new: HashMap<(usize, AtomIdx), AtomIdx> = HashMap::new();
 
     // --- Step 1: add product template atoms ---
-    let core_keys: HashSet<(usize, AtomIdx)> = global_map.values().cloned().collect();
+    // core_keys: only source atoms that are mapped by THIS product template.
+    // Using global_map.values() (all matched atoms across all templates) would
+    // seed the BFS in Step 2 from atoms belonging to *other* product templates,
+    // causing their substituents to leak into this product (issue #13).
+    let product_maps: HashSet<u16> = (0..product_template.atom_count())
+        .filter_map(|i| product_template.atom(AtomIdx(i as u32)).atom_map)
+        .collect();
+    let core_keys: HashSet<(usize, AtomIdx)> = global_map
+        .iter()
+        .filter(|(am, _)| product_maps.contains(am))
+        .map(|(_, &src)| src)
+        .collect();
 
     for (i, slot) in template_idx_to_new.iter_mut().enumerate() {
         let tmpl_atom = product_template.atom(AtomIdx(i as u32));
@@ -480,5 +491,51 @@ mod tests {
             "N-methylacetamide has 5 heavy atoms, got {}",
             prod.atom_count()
         );
+    }
+
+    #[test]
+    fn bfs_no_leakage_into_other_product_template_atoms() {
+        // Issue #13: in diethylamine (CCNCC), the SMIRKS [N:1][C:2]>>[N:1].[C:2]
+        // should cleave the N-C bond and produce:
+        //   product1 [N:1] = N + right ethyl chain  (3 atoms: N, C, C)
+        //   product2 [C:2] = left ethyl fragment     (2 atoms: C, C)
+        //
+        // Before the #13 fix, the BFS for product2 was seeded from BOTH N and C:2,
+        // causing the right ethyl chain (atoms beyond N) to leak into product2
+        // → product2 would have 4 atoms instead of 2.
+        let diethylamine = parse("CCNCC").unwrap(); // C-C-N-C-C, 5 heavy atoms
+        let results =
+            run_reactants("[N:1][C:2]>>[N:1].[C:2]", &[&diethylamine]).unwrap();
+        assert!(!results.is_empty(), "should find at least one N-C bond match");
+
+        // Find a result where product2 ([C:2]) has exactly 2 atoms (ethyl fragment)
+        // — this is only possible when BFS does NOT leak the other ethyl chain.
+        let clean_cleavage = results.iter().find(|ps| {
+            ps.len() == 2
+                && ((ps[0].atom_count() == 3 && ps[1].atom_count() == 2)
+                    || (ps[0].atom_count() == 2 && ps[1].atom_count() == 3))
+        });
+        assert!(
+            clean_cleavage.is_some(),
+            "expected at least one product set with sizes {{3, 2}} (N+ethyl, ethyl); \
+             all sets: {:?}",
+            results
+                .iter()
+                .map(|ps| ps.iter().map(|p| p.atom_count()).collect::<Vec<_>>())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn single_product_no_leakage_from_other_template_core() {
+        // Ethane cleavage: each product should be a single carbon atom.
+        let ethane = parse("CC").unwrap();
+        let results = run_reactants("[C:1][C:2]>>[C:1].[C:2]", &[&ethane]).unwrap();
+        assert!(!results.is_empty());
+        for ps in &results {
+            assert_eq!(ps.len(), 2, "two product templates → two products");
+            assert_eq!(ps[0].atom_count(), 1, "each product is a single carbon");
+            assert_eq!(ps[1].atom_count(), 1, "each product is a single carbon");
+        }
     }
 }

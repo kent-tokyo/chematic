@@ -572,6 +572,37 @@ class Mol:
         """Return the largest covalently connected fragment."""
         ...
 
+    def connected_components(self) -> list[Mol]:
+        """Split this molecule into its connected components (fragments).
+
+        Returns one :class:`Mol` per connected component.
+        A fully connected molecule returns a single-element list.
+
+        Equivalent to RDKit ``Chem.GetMolFrags(mol, asMols=True)``.
+
+        Example::
+
+            mol = chematic.from_smiles("CC.[NH3]")
+            parts = mol.connected_components()   # [Mol("CC"), Mol("N")]
+            assert len(parts) == 2
+        """
+        ...
+
+    def is_same_as(self, other: Mol) -> bool:
+        """Return True if this molecule and other represent the same chemical structure.
+
+        Uses canonical SMILES comparison (reliable after fix for issue #14).
+        Equivalent to :func:`chematic.are_identical`.
+
+        Example::
+
+            m1 = chematic.from_smiles("CC(=O)O")
+            m2 = chematic.from_smiles("OC(C)=O")
+            assert m1.is_same_as(m2)    # True — same acetic acid
+            assert not m1.is_same_as(chematic.from_smiles("CCO"))
+        """
+        ...
+
     def neutralize(self) -> Mol:
         """Return a charge-neutralized copy."""
         ...

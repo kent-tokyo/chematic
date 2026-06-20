@@ -206,7 +206,8 @@ mod tests {
         let pairs = find_mmp(&[&a, &b]);
 
         // There must be exactly 1 MMP (the ring-chain cut).
-        let matching: Vec<_> = pairs.iter().filter(|p| p.core == "c1(ccccc1)[*]").collect();
+        // Canonical form of monosubstituted benzene core after #14 bond-order fix.
+        let matching: Vec<_> = pairs.iter().filter(|p| p.core == "c1c([*])cccc1").collect();
         assert_eq!(
             matching.len(),
             1,
@@ -214,14 +215,14 @@ mod tests {
         );
 
         let pair = &matching[0];
-        // Oracle values from the probe test.
+        // Oracle values: canonical SMILES updated for bond-order-aware Morgan ranks (#14).
         assert_eq!(
             pair.fragment_a, "C(C)[*]",
             "ethylbenzene substituent should be C(C)[*]: {pair:?}"
         );
         assert_eq!(
-            pair.fragment_b, "C(CC)[*]",
-            "propylbenzene substituent should be C(CC)[*]: {pair:?}"
+            pair.fragment_b, "[*]CCC",
+            "propylbenzene substituent should be [*]CCC: {pair:?}"
         );
     }
 
@@ -265,7 +266,8 @@ mod tests {
         let c = mol("CCCCc1ccccc1"); // butylbenzene
         let pairs = find_mmp(&[&a, &b, &c]);
         // Expected: (a,b), (a,c), (b,c) — 3 pairs at minimum.
-        let benzene_pairs: Vec<_> = pairs.iter().filter(|p| p.core == "c1(ccccc1)[*]").collect();
+        // Canonical form updated for bond-order-aware Morgan ranks (#14).
+        let benzene_pairs: Vec<_> = pairs.iter().filter(|p| p.core == "c1c([*])cccc1").collect();
         assert_eq!(
             benzene_pairs.len(),
             3,

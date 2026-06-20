@@ -5882,7 +5882,8 @@ M  END
             "should have core key: {result}"
         );
         assert!(
-            result.contains("c1(ccccc1)[*]"),
+            // Canonical form updated after bond-order-aware Morgan fix (#14).
+            result.contains("c1c([*])cccc1") || result.contains("c1(ccccc1)[*]"),
             "core should be benzene: {result}"
         );
         assert!(

@@ -107,12 +107,19 @@ pub fn morgan_ranks(mol: &Molecule) -> Vec<u64> {
         let new_ranks: Vec<u64> = (0..n)
             .map(|i| {
                 let idx = AtomIdx(i as u32);
-                let mut neighbor_ranks: Vec<u64> = mol
+                // Include bond order in the neighbor contribution so that atoms
+                // bonded via different bond types (e.g. O= vs O-H in acetic acid)
+                // receive distinct Morgan ranks even when neighbor atom ranks are
+                // otherwise identical.
+                let mut neighbor_contributions: Vec<u64> = mol
                     .neighbors(idx)
-                    .map(|(nb, _)| ranks[nb.0 as usize])
+                    .map(|(nb, bidx)| {
+                        let bond_val = bond_order_value(mol.bond(bidx).order);
+                        fnv_hash_sequence(ranks[nb.0 as usize], &[bond_val])
+                    })
                     .collect();
-                neighbor_ranks.sort_unstable();
-                fnv_hash_sequence(ranks[i], &neighbor_ranks)
+                neighbor_contributions.sort_unstable();
+                fnv_hash_sequence(ranks[i], &neighbor_contributions)
             })
             .collect();
 
@@ -143,6 +150,18 @@ fn initial_invariant(mol: &Molecule, idx: AtomIdx) -> u64 {
     let h_flag = atom.hydrogen_count.map(|h| h as u64 + 1).unwrap_or(0);
 
     (an << 56) | (degree << 48) | (charge << 40) | (iso << 24) | (h_flag << 16) | (arom << 8)
+}
+
+/// Map a BondOrder to a stable integer for use in Morgan rank hashing.
+fn bond_order_value(order: BondOrder) -> u64 {
+    match order {
+        BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
+        BondOrder::Double => 2,
+        BondOrder::Triple => 3,
+        BondOrder::Aromatic => 4,
+        BondOrder::Quadruple => 5,
+        _ => 0,
+    }
 }
 
 fn fnv_hash_sequence(base: u64, values: &[u64]) -> u64 {
@@ -825,5 +844,41 @@ mod tests {
         // Cross-check: the enantiomer gives a different canonical form.
         let c3 = canonical_smiles(&parse("F[C@H](Cl)Br").unwrap());
         assert_ne!(c1, c3, "enantiomers must differ");
+    }
+
+    // ── Bond-order canonicality tests (#14 fix) ──────────────────────────
+
+    #[test]
+    fn test_acetic_acid_canonical_same_from_different_starts() {
+        // Bug #14: both oxygens in acetic acid had the same Morgan rank because
+        // the refinement loop omitted bond orders.  After the fix, O= (double)
+        // and O-H (single) get distinct ranks regardless of atom insertion order.
+        assert!(same_canonical("CC(=O)O", "OC(C)=O"));
+        assert!(same_canonical("CC(=O)O", "O=C(O)C"));
+        assert!(same_canonical("CC(=O)O", "C(C)(=O)O"));
+    }
+
+    #[test]
+    fn test_oxygens_in_acetic_acid_not_equivalent() {
+        // The two oxygens (O= vs O-H) are chemically distinct and must receive
+        // different Morgan symmetry classes.
+        let mol = parse("CC(=O)O").unwrap();
+        let classes = equivalent_atom_classes(&mol);
+        let o_classes: Vec<usize> = mol
+            .atoms()
+            .filter(|(_, a)| a.element.atomic_number() == 8)
+            .map(|(i, _)| classes[i.0 as usize])
+            .collect();
+        assert_eq!(o_classes.len(), 2);
+        assert_ne!(
+            o_classes[0], o_classes[1],
+            "O= and O-H must be in different symmetry classes"
+        );
+    }
+
+    #[test]
+    fn test_formic_acid_canonical_consistent() {
+        // OC=O and O=CO — same formic acid, should canonicalize identically.
+        assert!(same_canonical("OC=O", "O=CO"));
     }
 }

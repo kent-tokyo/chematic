@@ -857,6 +857,37 @@ impl Mol {
         }
     }
 
+    /// Split this molecule into its connected components (fragments).
+    ///
+    /// Returns a list of :class:`Mol` objects, one per connected component.
+    /// A fully connected molecule returns a single-element list.
+    /// Useful after :func:`run_reactants` to obtain clean individual products.
+    ///
+    /// Equivalent to RDKit's ``Chem.GetMolFrags(mol, asMols=True)``.
+    ///
+    ///     mol = chematic.from_smiles("CC.[NH3]")  # disconnected salt
+    ///     parts = mol.connected_components()
+    ///     # [Mol("CC"), Mol("N")]
+    fn connected_components(&self) -> Vec<Mol> {
+        self.inner
+            .fragments()
+            .into_iter()
+            .map(|m| Mol { inner: Arc::new(m) })
+            .collect()
+    }
+
+    /// Return ``True`` if this molecule and ``other`` represent the same chemical structure.
+    ///
+    /// Uses canonical SMILES comparison — reliable after v0.4.11 (Morgan bond-order fix, #14).
+    /// Equivalent to :func:`chematic.are_identical`.
+    ///
+    ///     m1 = chematic.from_smiles("CC(=O)O")
+    ///     m2 = chematic.from_smiles("OC(C)=O")
+    ///     assert m1.is_same_as(m2)   # True — same acetic acid
+    fn is_same_as(&self, other: &Mol) -> bool {
+        chematic_chem::are_identical(&self.inner, &other.inner)
+    }
+
     /// Return a charge-neutralized copy.
     fn neutralize(&self) -> Mol {
         Mol {
