@@ -196,8 +196,10 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::Ether,
     },
     RetroTemplate {
+        // Mitsunobu ether: inverted secondary alcohol (sp3 C) + phenol/alcohol.
+        // Restricted to sp3 C to avoid matching every O-C bond.
         name: "mitsunobu_ether",
-        smirks: "[O:1][C:2]>>[OH:1].[OH][C:2]",
+        smirks: "[O:1][CX4:2]>>[OH:1].[OH][C:2]",
         reaction_class: RetroClass::Ether,
     },
     RetroTemplate {
@@ -218,8 +220,10 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
 
     // ── C–N bond ─────────────────────────────────────────────────────────────
     RetroTemplate {
+        // sp3 C–N only; amide N excluded by requiring non-carbonyl neighbour.
+        // [CX4] = 4-connected (sp3) C; [NX3] = trivalent N (not amide carbonyl).
         name: "reductive_amination",
-        smirks: "[C:1][N:2]>>[C:1]=O.[N:2]",
+        smirks: "[CX4:1][NX3:2]>>[C:1]=O.[N:2]",
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
@@ -238,13 +242,15 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
+        // sp3 C halide alkylation of amine; excludes amide-like sp2 C.
         name: "n_alkylation",
-        smirks: "[C:1][N:2]>>[C:1]Br.[NH:2]",
+        smirks: "[CX4:1][N:2]>>[C:1]Br.[NH:2]",
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
+        // Mitsunobu N: inverted secondary alcohol + amine; N must not be amide.
         name: "mitsunobu_n",
-        smirks: "[N:1][C:2]>>[NH:1].[OH][C:2]",
+        smirks: "[NH:1][CX4:2]>>[N:1].[OH][C:2]",
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
@@ -295,8 +301,10 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
+        // Negishi coupling — aryl + primary/secondary alkyl zinc.
+        // sp3 C only to avoid matching biaryl bonds (covered by Suzuki).
         name: "negishi",
-        smirks: "[c:1][C:2]>>[c:1]Br.[C:2][Zn]Cl",
+        smirks: "[c:1][CX4:2]>>[c:1]Br.[C:2][Zn]Cl",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
@@ -305,13 +313,15 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
+        // Alpha carbon must bear at least one H (enolisable position).
         name: "aldol",
-        smirks: "[C:1][C:2](=[O:3])>>[C:1].[C:2](=[O:3])",
+        smirks: "[CH1,CH2,CH3:1][C:2](=[O:3])>>[C:1].[C:2](=[O:3])",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
+        // Michael addition: beta carbon must be sp3 with at least one H.
         name: "michael_addition",
-        smirks: "[C:1][C:2][C:3](=[O:4])>>[C:1].[C:2]=[C:3]",
+        smirks: "[CX4;H1,H2:1][CX4:2][C:3](=[O:4])>>[C:1].[C:2]=[C:3]",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
@@ -330,18 +340,16 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
+        // Friedel-Crafts alkylation — restrict to benzylic CH2 to avoid
+        // matching every aryl–alkyl bond in the molecule.
         name: "friedel_crafts_alkyl",
-        smirks: "[c:1][C:2]>>[c:1].[C:2]Cl",
+        smirks: "[c:1][CH2;X4:2]>>[c:1].[CH2:2]Cl",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
-        name: "sp3_cc_bond",
-        smirks: "[C:1][C:2]>>[C:1]Br.[C:2]Br",
-        reaction_class: RetroClass::CCBond,
-    },
-    RetroTemplate {
+        // Mannich: alpha-aminomethylation — alpha CH2 with enolisable H.
         name: "mannich",
-        smirks: "[C:1][C:2][N:3]>>[C:1]=O.[C:2].[N:3]",
+        smirks: "[CH2:1][CX4:2][N:3]>>[C:1]=O.[C:2].[N:3]",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
