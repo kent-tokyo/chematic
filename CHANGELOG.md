@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.4.10] — 2026-06-20
+
 ### Added — `chematic-py` + `.pyi`: PyPI Chemistry p.20 gap-analysis bindings (Sprint 26)
 
 **2D stereochemistry perception (vs RDKit `Chem.AssignStereochemistry`):**
