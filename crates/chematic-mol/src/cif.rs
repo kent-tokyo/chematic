@@ -108,6 +108,12 @@ pub enum CifError {
     UnknownElement(String),
     /// A coordinate value could not be parsed as a float.
     InvalidCoordinate(String),
+    /// The unit cell has degenerate angles (e.g. γ = 0° or 180°) that make
+    /// the fractional → Cartesian transformation undefined.
+    InvalidCellParameters(String),
+    /// The atom site loop uses fractional coordinates but the CIF contains no
+    /// `_cell_length_*` / `_cell_angle_*` parameters to convert them.
+    MissingCellParameters,
 }
 
 impl core::fmt::Display for CifError {
@@ -117,6 +123,8 @@ impl core::fmt::Display for CifError {
             Self::MissingCoordinateColumns => write!(f, "atom_site loop missing fract_x/y/z columns"),
             Self::UnknownElement(s) => write!(f, "unknown element '{s}' in CIF"),
             Self::InvalidCoordinate(s) => write!(f, "invalid coordinate '{s}' in CIF"),
+            Self::InvalidCellParameters(s) => write!(f, "invalid cell parameters: {s}"),
+            Self::MissingCellParameters => write!(f, "fractional coordinates present but no _cell_length_*/_cell_angle_* parameters found"),
         }
     }
 }
@@ -132,11 +140,25 @@ impl std::error::Error for CifError {}
 /// Only the first `data_` block is parsed.  Symmetry expansion is **not**
 /// performed; returned atoms are exactly those listed in the `_atom_site_*`
 /// loop.
+/// Strip a CIF comment from one line, respecting single- and double-quoted
+/// strings (a `#` inside quotes is not a comment delimiter).
+fn strip_cif_comment(line: &str) -> &str {
+    let mut in_single = false;
+    let mut in_double = false;
+    for (i, c) in line.char_indices() {
+        match c {
+            '\'' if !in_double => in_single = !in_single,
+            '"' if !in_single => in_double = !in_double,
+            '#' if !in_single && !in_double => return &line[..i],
+            _ => {}
+        }
+    }
+    line
+}
+
 pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
-    // Strip CIF comments (# to end of line).
-    let clean: String = input.lines().map(|l| {
-        l.find('#').map(|pos| &l[..pos]).unwrap_or(l)
-    }).collect::<Vec<_>>().join("\n");
+    // Strip CIF comments (# to end of line), but not '#' inside quoted strings.
+    let clean: String = input.lines().map(strip_cif_comment).collect::<Vec<_>>().join("\n");
 
     let tokens = tokenize_cif(&clean);
 
@@ -202,6 +224,26 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
         _ => return Err(CifError::MissingCoordinateColumns),
     };
 
+    // Validate that fractional→Cartesian conversion is well-defined.
+    if !use_cartesian {
+        if !has_cell {
+            return Err(CifError::MissingCellParameters);
+        }
+        let sg = cell.gamma.to_radians().sin();
+        if sg.abs() < 1e-10 {
+            return Err(CifError::InvalidCellParameters(
+                format!("_cell_angle_gamma = {} makes sin(γ) ≈ 0, transformation undefined", cell.gamma)
+            ));
+        }
+        // Also guard against a non-physical cell volume (≤ 0 or NaN).
+        let vol = cell.volume();
+        if !vol.is_finite() || vol <= 0.0 {
+            return Err(CifError::InvalidCellParameters(
+                format!("unit cell volume is non-positive ({vol:.6} Å³); check _cell_angle_* values")
+            ));
+        }
+    }
+
     let mut builder = MoleculeBuilder::new();
     let mut coords: Vec<(f64, f64, f64)> = Vec::new();
     let data_tokens = &tokens[data_start..];
@@ -220,8 +262,9 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
         let elem_raw: &str = col_type.and_then(|c| tok.get(c)).map(|s| s.as_str()).or_else(|| {
             col_label.and_then(|c| tok.get(c)).map(|s| s.as_str())
         }).unwrap_or("X");
-        // Strip trailing digits from labels like "Na1".
-        let elem_str = elem_raw.trim_end_matches(|c: char| c.is_ascii_digit());
+        // Strip trailing digits and oxidation-state signs from labels like
+        // "Na1", "Cu2+", "Fe3+", "O2-".
+        let elem_str = elem_raw.trim_end_matches(|c: char| c.is_ascii_digit() || c == '+' || c == '-');
         let elem = Element::from_symbol(elem_str)
             .ok_or_else(|| CifError::UnknownElement(elem_str.to_string()))?;
 

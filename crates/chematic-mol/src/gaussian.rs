@@ -109,16 +109,25 @@ pub fn parse_gjf(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>, i32, u3
         secs
     };
 
-    // Find charge/multiplicity section: first section whose first line is "int int".
-    let cm_idx = sections
+    // GJF structure: [%directives +] #route [blank] title [blank] charge/mult coords...
+    // Find the route section (a section containing a line that starts with '#'),
+    // then the charge/multiplicity section is two sections later.
+    // This avoids falsely matching a title line that happens to be "0 1".
+    let route_idx = sections
         .iter()
-        .position(|sec| {
-            let parts: Vec<&str> = sec[0].split_whitespace().collect();
-            parts.len() == 2
-                && parts[0].parse::<i32>().is_ok()
-                && parts[1].parse::<u32>().is_ok()
-        })
+        .position(|sec| sec.iter().any(|l| l.starts_with('#')))
         .ok_or(GaussianError::MissingChargeMultiplicity)?;
+    let cm_idx = route_idx + 2;
+    if cm_idx >= sections.len() {
+        return Err(GaussianError::MissingChargeMultiplicity);
+    }
+    // Verify the section looks like a charge/multiplicity line.
+    {
+        let parts: Vec<&str> = sections[cm_idx][0].split_whitespace().collect();
+        if parts.len() < 2 || parts[0].parse::<i32>().is_err() || parts[1].parse::<u32>().is_err() {
+            return Err(GaussianError::MissingChargeMultiplicity);
+        }
+    }
 
     let parts: Vec<&str> = sections[cm_idx][0].split_whitespace().collect();
     let charge: i32 = parts[0].parse().unwrap();
@@ -157,8 +166,16 @@ fn parse_atom_coords(
             continue;
         }
         let raw_sym = parts[0].trim_end_matches(|c: char| c.is_ascii_digit());
-        let elem = Element::from_symbol(raw_sym)
-            .ok_or_else(|| GaussianError::UnknownElement(raw_sym.to_string()))?;
+        let elem = if raw_sym.is_empty() {
+            // Bare atomic number (e.g. "6" for carbon — valid Gaussian input).
+            let atomic_num: u8 = parts[0].parse()
+                .map_err(|_| GaussianError::UnknownElement(parts[0].to_string()))?;
+            Element::from_atomic_number(atomic_num)
+                .ok_or_else(|| GaussianError::UnknownElement(parts[0].to_string()))?
+        } else {
+            Element::from_symbol(raw_sym)
+                .ok_or_else(|| GaussianError::UnknownElement(raw_sym.to_string()))?
+        };
 
         let x: f64 = parts[1].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[1].to_string()))?;
         let y: f64 = parts[2].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[2].to_string()))?;
@@ -245,19 +262,22 @@ pub fn parse_gaussian_log(input: &str) -> Result<GaussianLogResult, GaussianErro
         if !in_table {
             continue;
         }
-        // Row: Center_Num  Atomic_Num  Atomic_Type  X  Y  Z
+        // Gaussian 09/16: Center_Num Atomic_Num Atomic_Type X Y Z  (6 cols)
+        // Gaussian 03:    Center_Num Atomic_Num X Y Z             (5 cols)
         let parts: Vec<&str> = trimmed.split_whitespace().collect();
-        if parts.len() < 6 {
-            continue;
-        }
-        let atomic_num: u8 = parts[1]
+        let (an_col, x_col) = match parts.len() {
+            n if n >= 6 => (1, 3), // standard 6-column format
+            5           => (1, 2), // Gaussian 03 5-column format (no Atomic_Type)
+            _           => continue,
+        };
+        let atomic_num: u8 = parts[an_col]
             .parse()
-            .map_err(|_| GaussianError::UnknownElement(parts[1].to_string()))?;
+            .map_err(|_| GaussianError::UnknownElement(parts[an_col].to_string()))?;
         let elem = Element::from_atomic_number(atomic_num)
-            .ok_or_else(|| GaussianError::UnknownElement(parts[1].to_string()))?;
-        let x: f64 = parts[3].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[3].to_string()))?;
-        let y: f64 = parts[4].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[4].to_string()))?;
-        let z: f64 = parts[5].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[5].to_string()))?;
+            .ok_or_else(|| GaussianError::UnknownElement(parts[an_col].to_string()))?;
+        let x: f64 = parts[x_col].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[x_col].to_string()))?;
+        let y: f64 = parts[x_col+1].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[x_col+1].to_string()))?;
+        let z: f64 = parts[x_col+2].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[x_col+2].to_string()))?;
 
         builder.add_atom(Atom::new(elem));
         coords.push((x, y, z));
