@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.4.13] — 2026-06-21
+
 ### Added — `chematic-rxn`
 
 - **Template-based retrosynthesis `retro_disconnect()`** — 60 retro-SMIRKS templates across 6 reaction classes:
