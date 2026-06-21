@@ -743,6 +743,30 @@ fn tpsa_trimethyl_phosphate() {
 }
 
 #[test]
+fn tpsa_nitrobenzene() {
+    // c1ccc([N+](=O)[O-])cc1 — RDKit (includeSandP=True): 43.14 Å²
+    // Nitro N(+) contributes 43.14; both O atoms (O= on N, O- on N+) contribute 0.0
+    assert_approx(
+        "TPSA nitrobenzene",
+        tpsa(&mol("c1ccc([N+](=O)[O-])cc1")),
+        43.14,
+        0.1,
+    );
+}
+
+#[test]
+fn tpsa_4_nitrophenol() {
+    // Oc1ccc([N+](=O)[O-])cc1 — from rdkit_ref_properties.tsv: 63.37 Å²
+    // OH (20.23) + nitro N (43.14) = 63.37
+    assert_approx(
+        "TPSA 4-nitrophenol",
+        tpsa(&mol("Oc1ccc([N+](=O)[O-])cc1")),
+        63.37,
+        0.1,
+    );
+}
+
+#[test]
 fn logp_trimethyl_phosphate() {
     // COP(=O)(OC)OC — RDKit: 1.0337
     // Tests phosphate ester P(=O) LogP contribution (+0.7933)

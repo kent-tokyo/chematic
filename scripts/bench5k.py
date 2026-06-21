@@ -25,7 +25,7 @@ def main():
     # --- load libraries ---
     try:
         from rdkit import Chem
-        from rdkit.Chem import rdMolDescriptors
+        from rdkit.Chem import rdMolDescriptors, Crippen
         from rdkit.Chem import AllChem
     except ImportError:
         sys.exit("rdkit not installed. pip install rdkit")
@@ -67,6 +67,18 @@ def main():
     nh_fp = 0  # chematic yes, rdkit no
     nh_fn = 0  # chematic no, rdkit yes
 
+    # tpsa (tolerance ±0.1 Å²)
+    tpsa_match = 0
+    tpsa_over = 0   # chematic > rdkit
+    tpsa_under = 0  # chematic < rdkit
+    tpsa_detail_count = 0
+
+    # logp (tolerance ±0.01)
+    logp_match = 0
+    logp_over = 0
+    logp_under = 0
+    logp_detail_count = 0
+
     # [nH] SMARTS query objects
     rd_nh_query = Chem.MolFromSmarts("[nH]")
 
@@ -86,6 +98,8 @@ def main():
             if all(rd_mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring)
         )
         rd_has_nh = rd_mol.HasSubstructMatch(rd_nh_query)
+        rd_tpsa = rdMolDescriptors.CalcTPSA(rd_mol, includeSandP=True)
+        rd_logp = Crippen.MolLogP(rd_mol)
 
         # --- chematic ---
         try:
@@ -97,6 +111,8 @@ def main():
         ch_hba = ch_mol.hba
         ch_arc = ch_mol.aromatic_ring_count
         ch_has_nh = chematic.smarts_match("[nH]", ch_mol)
+        ch_tpsa = ch_mol.tpsa
+        ch_logp = ch_mol.logp
 
         total += 1
 
@@ -128,6 +144,34 @@ def main():
         else:
             nh_fn += 1
 
+        tpsa_delta = ch_tpsa - rd_tpsa
+        if abs(tpsa_delta) <= 0.1:
+            tpsa_match += 1
+        elif tpsa_delta > 0:
+            tpsa_over += 1
+            if args.detail and (args.limit is None or tpsa_detail_count < args.limit):
+                print(f"TPSA +{tpsa_delta:.2f}  rd={rd_tpsa:.2f} ch={ch_tpsa:.2f}  {smi}", file=sys.stderr)
+                tpsa_detail_count += 1
+        else:
+            tpsa_under += 1
+            if args.detail and (args.limit is None or tpsa_detail_count < args.limit):
+                print(f"TPSA {tpsa_delta:.2f}  rd={rd_tpsa:.2f} ch={ch_tpsa:.2f}  {smi}", file=sys.stderr)
+                tpsa_detail_count += 1
+
+        logp_delta = ch_logp - rd_logp
+        if abs(logp_delta) <= 0.01:
+            logp_match += 1
+        elif logp_delta > 0:
+            logp_over += 1
+            if args.detail and (args.limit is None or logp_detail_count < args.limit):
+                print(f"LogP +{logp_delta:.4f}  rd={rd_logp:.4f} ch={ch_logp:.4f}  {smi}", file=sys.stderr)
+                logp_detail_count += 1
+        else:
+            logp_under += 1
+            if args.detail and (args.limit is None or logp_detail_count < args.limit):
+                print(f"LogP {logp_delta:.4f}  rd={rd_logp:.4f} ch={ch_logp:.4f}  {smi}", file=sys.stderr)
+                logp_detail_count += 1
+
     # --- report ---
     print(f"\n{'='*55}")
     print(f"  Molecules evaluated:   {total:>6}")
@@ -147,6 +191,14 @@ def main():
     print(f"    precision (no false positives): {nh_prec:.1f}%")
     print(f"    recall    (no false negatives): {nh_rec:.1f}%")
     print(f"    TP={nh_tp}  TN={nh_tn}  FP={nh_fp}  FN={nh_fn}")
+    tpsa_miss = total - tpsa_match
+    print(f"  TPSA (±0.1 Å²):        {tpsa_match/total*100:6.1f}%  ({tpsa_match}/{total})")
+    print(f"    over  (ch>rd):       {tpsa_over:>6}  ({tpsa_over/total*100:.1f}%)")
+    print(f"    under (ch<rd):       {tpsa_under:>6}  ({tpsa_under/total*100:.1f}%)")
+    logp_miss = total - logp_match
+    print(f"  LogP (±0.01):          {logp_match/total*100:6.1f}%  ({logp_match}/{total})")
+    print(f"    over  (ch>rd):       {logp_over:>6}  ({logp_over/total*100:.1f}%)")
+    print(f"    under (ch<rd):       {logp_under:>6}  ({logp_under/total*100:.1f}%)")
     print(f"{'='*55}")
 
 if __name__ == "__main__":

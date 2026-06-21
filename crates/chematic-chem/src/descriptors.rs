@@ -454,7 +454,7 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
                             om || (is_o && nb_atom.charge == -1),
                         )
                     });
-            if has_oxo && has_o_minus { 41.44 } else { 3.24 }
+            if has_oxo && has_o_minus { 43.14 } else { 3.24 }
         } else if h >= 2 {
             26.02
         } else if h == 1 {
