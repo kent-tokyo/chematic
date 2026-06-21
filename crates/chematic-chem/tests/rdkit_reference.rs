@@ -1155,3 +1155,96 @@ fn logp_all_tsv_reference() {
         failures.join("\n")
     );
 }
+
+// ── Bulk TSV: MW / HAC / HBD ─────────────────────────────────────────────────
+
+fn read_tsv() -> String {
+    let tsv = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("scripts/rdkit_ref_properties.tsv");
+    std::fs::read_to_string(&tsv)
+        .unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e))
+}
+
+#[test]
+fn mw_all_tsv_reference() {
+    const TOL: f64 = 0.02;
+    let mut failures: Vec<String> = Vec::new();
+    for line in read_tsv().lines().skip(1) {
+        let cols: Vec<&str> = line.split('\t').collect();
+        if cols.len() < 3 { continue; }
+        let (name, smi, expected_str) = (cols[0], cols[1], cols[2]);
+        let expected: f64 = expected_str.parse().unwrap_or(f64::NAN);
+        let m = match parse(smi) {
+            Ok(m) => m,
+            Err(_) => { failures.push(format!("  {name}: parse failed")); continue; }
+        };
+        let got = molecular_weight(&m);
+        if (got - expected).abs() > TOL {
+            failures.push(format!(
+                "  {name}: expected={expected:.4} got={got:.4} delta={:+.4}  {smi}",
+                got - expected
+            ));
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "mw_all_tsv_reference: {} failure(s) (tol ±{TOL} Da):\n{}",
+        failures.len(), failures.join("\n")
+    );
+}
+
+#[test]
+fn hac_all_tsv_reference() {
+    let mut failures: Vec<String> = Vec::new();
+    for line in read_tsv().lines().skip(1) {
+        let cols: Vec<&str> = line.split('\t').collect();
+        if cols.len() < 6 { continue; }
+        let (name, smi, expected_str) = (cols[0], cols[1], cols[5]);
+        let expected: usize = expected_str.parse().unwrap_or(0);
+        let m = match parse(smi) {
+            Ok(m) => m,
+            Err(_) => { failures.push(format!("  {name}: parse failed")); continue; }
+        };
+        let got = heavy_atom_count(&m);
+        if got != expected {
+            failures.push(format!(
+                "  {name}: expected={expected} got={got}  {smi}"
+            ));
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "hac_all_tsv_reference: {} failure(s):\n{}",
+        failures.len(), failures.join("\n")
+    );
+}
+
+#[test]
+fn hbd_all_tsv_reference() {
+    let mut failures: Vec<String> = Vec::new();
+    for line in read_tsv().lines().skip(1) {
+        let cols: Vec<&str> = line.split('\t').collect();
+        if cols.len() < 7 { continue; }
+        let (name, smi, expected_str) = (cols[0], cols[1], cols[6]);
+        let expected: usize = expected_str.parse().unwrap_or(0);
+        let m = match parse(smi) {
+            Ok(m) => m,
+            Err(_) => { failures.push(format!("  {name}: parse failed")); continue; }
+        };
+        let got = hbd_count(&m);
+        if got != expected {
+            failures.push(format!(
+                "  {name}: expected={expected} got={got}  {smi}"
+            ));
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "hbd_all_tsv_reference: {} failure(s):\n{}",
+        failures.len(), failures.join("\n")
+    );
+}

@@ -203,7 +203,7 @@ pub fn hbd_count(mol: &Molecule) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
-            (is_nitrogen(an) || is_oxygen(an)) && implicit_hcount(mol, *idx) > 0
+            (is_nitrogen(an) || is_oxygen(an) || an == 16) && implicit_hcount(mol, *idx) > 0
         })
         .count()
 }
