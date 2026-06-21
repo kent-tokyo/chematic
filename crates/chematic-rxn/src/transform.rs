@@ -105,6 +105,11 @@ fn run_reactants_impl(
     let has_stereo = rxn.reactants.iter().any(|r| {
         r.atoms().any(|(_, a)| a.chirality != Chirality::None)
     });
+    // Similarly, E/Z double-bond stereo (/ and \) is NOT encoded into the VF2
+    // query; it is checked post-VF2 via smirks_ez_stereo_ok.
+    let has_ez_stereo = rxn.reactants.iter().any(|r| {
+        r.bonds().any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
+    });
 
     // VF2 match: for each (template_query, input_mol) pair.
     let all_match_sets: Vec<Vec<HashMap<usize, AtomIdx>>> = queries
@@ -147,6 +152,15 @@ fn run_reactants_impl(
         if has_stereo {
             let ok = (0..rxn.reactants.len()).all(|ri| {
                 smirks_chirality_ok(&rxn.reactants[ri], reactants[ri], &combo[ri])
+            });
+            if !ok {
+                continue;
+            }
+        }
+        // E/Z double-bond stereo post-check.  Runs only when the SMIRKS has /\.
+        if has_ez_stereo {
+            let ok = (0..rxn.reactants.len()).all(|ri| {
+                smirks_ez_stereo_ok(&rxn.reactants[ri], reactants[ri], &combo[ri])
             });
             if !ok {
                 continue;
@@ -274,6 +288,113 @@ fn smirks_chirality_ok(
         // Check: even parity → flags must agree; odd parity → flags must differ.
         let same_flag = tmpl_atom.chirality == react_atom.chirality;
         if same_flag != even_parity {
+            return false;
+        }
+    }
+    true
+}
+
+// ---------------------------------------------------------------------------
+// SMIRKS E/Z double-bond stereo post-check
+// ---------------------------------------------------------------------------
+
+/// Returns the "outward" stereo-bond direction from `atom` (one endpoint of a
+/// double bond) toward its Up/Down-annotated substituent, or `None` if no
+/// such bond exists.
+///
+/// E/Z stereo is encoded on the *substituent* bonds adjacent to a C=C, not on
+/// the double bond itself.  Whether the stored bond goes *into* or *out of*
+/// `atom` determines how to read its direction:
+/// - Outgoing (`atom` is `bond.atom1`): direction is as stored.
+/// - Incoming (`atom` is `bond.atom2`): direction is flipped (Up ↔ Down).
+///
+/// The `other` parameter is the opposite endpoint of the double bond; that
+/// bond is skipped so we look only at substituents.
+fn ez_stereo_outward(mol: &Molecule, atom: AtomIdx, other: AtomIdx) -> Option<BondOrder> {
+    for (nb, bidx) in mol.neighbors(atom) {
+        if nb == other {
+            continue; // skip the double bond itself
+        }
+        let bond = mol.bond(bidx);
+        match bond.order {
+            BondOrder::Up | BondOrder::Down => {
+                let outward = if bond.atom1 == atom {
+                    // bond goes FROM atom outward → direction as stored
+                    bond.order
+                } else {
+                    // bond comes INTO atom → flip to get outward direction
+                    match bond.order {
+                        BondOrder::Up => BondOrder::Down,
+                        _ => BondOrder::Up,
+                    }
+                };
+                return Some(outward);
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+/// E/Z stereo post-check for one (template, reactant, mapping) triple.
+///
+/// For each double bond in `tmpl` that has Up/Down substituent bonds on **both**
+/// sides, verify that the corresponding double bond in `reactant` (found via
+/// the VF2 `match_map`) encodes the same E/Z parity.
+///
+/// Parity is determined by comparing the "outward direction" from each end of
+/// the double bond (see [`ez_stereo_outward`]).  Two outward directions that are
+/// equal → same-side (Z/cis); directions that differ → opposite-side (E/trans).
+///
+/// If only one side of a template double bond has a stereo bond (or the
+/// reactant doesn't annotate stereo at all), the constraint is skipped — this
+/// matches the behaviour of SMIRKS templates extracted from rdchiral where a
+/// single-sided annotation is common.
+///
+/// Returns `true` if all constrained double bonds are consistent.
+fn smirks_ez_stereo_ok(
+    tmpl: &Molecule,
+    reactant: &Molecule,
+    match_map: &HashMap<usize, AtomIdx>,
+) -> bool {
+    for (_, bond) in tmpl.bonds() {
+        if bond.order != BondOrder::Double {
+            continue;
+        }
+        let ta = bond.atom1;
+        let tb = bond.atom2;
+
+        // Outward directions from each end of the template double bond.
+        let sa = ez_stereo_outward(tmpl, ta, tb);
+        let sb = ez_stereo_outward(tmpl, tb, ta);
+
+        // Both sides must be specified to establish an E/Z constraint.
+        let (sa, sb) = match (sa, sb) {
+            (Some(a), Some(b)) => (a, b),
+            _ => continue, // no constraint on this double bond
+        };
+
+        // Map template atoms to reactant atoms.
+        let Some(&ra) = match_map.get(&(ta.0 as usize)) else {
+            continue;
+        };
+        let Some(&rb) = match_map.get(&(tb.0 as usize)) else {
+            continue;
+        };
+
+        // Outward directions from the corresponding reactant double bond ends.
+        let ma = ez_stereo_outward(reactant, ra, rb);
+        let mb = ez_stereo_outward(reactant, rb, ra);
+
+        // If the reactant doesn't encode stereo on either end, skip (don't reject).
+        let (ma, mb) = match (ma, mb) {
+            (Some(a), Some(b)) => (a, b),
+            _ => continue,
+        };
+
+        // Compare E/Z parity: same outward direction = Z, different = E.
+        // If template and reactant disagree, reject this mapping.
+        if (sa == sb) != (ma == mb) {
             return false;
         }
     }
@@ -999,5 +1120,85 @@ mod tests {
             .flat_map(|p| p.bonds())
             .any(|(_, b)| b.order == BondOrder::Up || b.order == BondOrder::Down);
         assert!(has_stereo_bond, "stereo bonds adjacent to retained double bond must be preserved");
+    }
+
+    // -----------------------------------------------------------------------
+    // E/Z double-bond stereo filtering (issue #21)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn ez_stereo_e_template_matches_e_alkene() {
+        // Template specifies E: [C:1]/[C:2]=[C:3]/[C:4]
+        // E-2-butene (C/C=C/C) should produce 1 result.
+        let e_alkene = parse("C/C=C/C").unwrap();
+        let smirks = "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1][C:2][C:3][C:4]";
+        let results = run_reactants(smirks, &[&e_alkene]).unwrap();
+        assert!(!results.is_empty(), "E-template must match E-alkene");
+    }
+
+    #[test]
+    fn ez_stereo_e_template_rejects_z_alkene() {
+        // Template specifies E: [C:1]/[C:2]=[C:3]/[C:4]
+        // Z-2-butene (C/C=C\C) should produce 0 results.
+        let z_alkene = parse("C/C=C\\C").unwrap();
+        let smirks = "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1][C:2][C:3][C:4]";
+        let results = run_reactants(smirks, &[&z_alkene]).unwrap();
+        assert!(results.is_empty(), "E-template must reject Z-alkene");
+    }
+
+    #[test]
+    fn ez_stereo_neutral_template_matches_both_geometries() {
+        // Template without stereo: [C:1][C:2]=[C:3][C:4]>>[C:1]
+        // Both E and Z alkenes should match.
+        let e_alkene = parse("C/C=C/C").unwrap();
+        let z_alkene = parse("C/C=C\\C").unwrap();
+        let smirks = "[C:1][C:2]=[C:3][C:4]>>[C:1]";
+        assert!(!run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
+            "neutral template must match E-alkene");
+        assert!(!run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
+            "neutral template must match Z-alkene");
+    }
+
+    #[test]
+    fn ez_stereo_one_sided_template_matches_both_geometries() {
+        // Single-sided stereo bond in template: [C:1]/[C:2]=[C:3][C:4]
+        // Without both sides specified, E/Z is ambiguous → no filtering.
+        let e_alkene = parse("C/C=C/C").unwrap();
+        let z_alkene = parse("C/C=C\\C").unwrap();
+        let smirks = "[C:1]/[C:2]=[C:3][C:4]>>[C:1]";
+        assert!(!run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
+            "one-sided template must match E-alkene");
+        assert!(!run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
+            "one-sided template must match Z-alkene");
+    }
+
+    #[test]
+    fn ez_stereo_retro_wittig_z_matches_z_hexene() {
+        // Retro-Wittig (Z-alkene → two carbonyls).
+        // SMIRKS: [C:1]/[C:2]=[C:3]\[C:4]>>[C:1][C:2]=O.[O:3]=[C:4]
+        //   reads: C:2 and C:3 on OPPOSITE sides (E/trans for those two)
+        //   but the substituents C:1 and C:4 are on the SAME side (Z-selectivity)
+        //
+        // Z-3-hexene (CC/C=C\CC) should match; E-3-hexene (CC/C=C/CC) should not.
+        let z_hexene = parse("CC/C=C\\CC").unwrap();
+        let e_hexene = parse("CC/C=C/CC").unwrap();
+        let smirks = "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1][C:2]=O.[O:3]=[C:4]";
+        assert!(!run_reactants(smirks, &[&z_hexene]).unwrap().is_empty(),
+            "Z-template must match Z-3-hexene");
+        assert!(run_reactants(smirks, &[&e_hexene]).unwrap().is_empty(),
+            "Z-template must reject E-3-hexene");
+    }
+
+    #[test]
+    fn ez_stereo_z_template_matches_z_alkene() {
+        // Template specifies Z: [C:1]/[C:2]=[C:3]\[C:4]
+        // Z-2-butene (C/C=C\C) should match.
+        let z_alkene = parse("C/C=C\\C").unwrap();
+        let e_alkene = parse("C/C=C/C").unwrap();
+        let smirks = "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1][C:2][C:3][C:4]";
+        assert!(!run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
+            "Z-template must match Z-alkene");
+        assert!(run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
+            "Z-template must reject E-alkene");
     }
 }
