@@ -43,7 +43,15 @@ pub struct StereoGroup {
 
 impl StereoGroup {
     /// Construct a new stereo group.
+    ///
+    /// Duplicate atom indices are silently removed (RDKit PR #9258: duplicate
+    /// indices in StereoGroups caused heap-use-after-free during removeHs).
     pub fn new(kind: StereoGroupKind, atom_indices: Vec<AtomIdx>) -> Self {
+        let mut seen = std::collections::HashSet::new();
+        let atom_indices: Vec<AtomIdx> = atom_indices
+            .into_iter()
+            .filter(|idx| seen.insert(*idx))
+            .collect();
         StereoGroup { kind, atom_indices }
     }
 }

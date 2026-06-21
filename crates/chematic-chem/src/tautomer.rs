@@ -1652,4 +1652,42 @@ mod tests {
             "Chirality erased from blocked stereocentre"
         );
     }
+
+    // ── RDKit PR #9128: E/Z stereo on exocyclic double bonds (hydrazones/imines) ──
+
+    #[test]
+    #[ignore = "known: canonical_tautomer loses E/Z stereo on hydrazones/imines (RDKit PR #9128). \
+                mol_fingerprint() does not include Up/Down bond orders so both E and Z forms hash \
+                identically; the canonical tautomer selection then returns the same SMILES for both. \
+                Fix requires either including stereo in mol_fingerprint or re-applying input E/Z stereo \
+                to the canonical tautomer output after selection."]
+    fn test_hydrazone_ez_stereo_preserved_in_canonical_tautomer() {
+        // E-hydrazone and Z-hydrazone are DIFFERENT compounds.
+        // mol_fingerprint() does not encode Up/Down bond orders, so both map to
+        // the same structural hash. canonical_tautomer incorrectly merges them.
+        let e_hydrazone = parse("C/C=N/N").expect("E-hydrazone");
+        let z_hydrazone = parse("C/C=N\\N").expect("Z-hydrazone");
+        let e_can = canonical_tautomer(&e_hydrazone);
+        let z_can = canonical_tautomer(&z_hydrazone);
+        let e_smi = canonical_smiles(&e_can);
+        let z_smi = canonical_smiles(&z_can);
+        assert_ne!(
+            e_smi, z_smi,
+            "E and Z hydrazone must remain distinct after canonical_tautomer (RDKit PR #9128): \
+             E={e_smi} Z={z_smi}"
+        );
+    }
+
+    #[test]
+    fn test_imine_ez_stereo_preserved_in_tautomer_enumeration() {
+        // Enumerate tautomers of E-imine C/C=N/C — all resulting tautomers must
+        // produce valid canonical SMILES (no empty string, no panic).
+        let e_imine = parse("C/C=N/C").expect("E-imine");
+        let tautomers = enumerate_tautomers(&e_imine);
+        assert!(!tautomers.is_empty(), "E-imine must enumerate at least one tautomer");
+        for (i, t) in tautomers.iter().enumerate() {
+            let smi = canonical_smiles(t);
+            assert!(!smi.is_empty(), "tautomer {i} must produce valid canonical SMILES");
+        }
+    }
 }

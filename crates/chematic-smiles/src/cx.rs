@@ -189,8 +189,20 @@ fn split_cx_fields(cx: &str) -> Vec<String> {
     let mut fields = Vec::new();
     let mut current = String::new();
     let mut in_labels = false;
+    let mut escaped = false;
     for ch in cx.chars() {
+        if escaped {
+            // Inside an escape sequence: emit the character verbatim and never
+            // treat it as a field separator, even if it is a comma.
+            current.push(ch);
+            escaped = false;
+            continue;
+        }
         match ch {
+            '\\' => {
+                escaped = true;
+                current.push(ch);
+            }
             '$' => {
                 in_labels = !in_labels;
                 current.push(ch);
@@ -219,13 +231,16 @@ fn parse_labels(labels: &str, out: &mut CxSmiles) {
 }
 
 fn parse_atom_props(props: &str, out: &mut CxSmiles) {
-    for prop in props.split(':') {
-        let mut parts = prop.splitn(3, '.');
-        let Some(atom_raw) = parts.next() else {
+    // Split on unescaped ':' (entry separator) and unescaped '.' (field separator).
+    // A naive split(':') or split('.') would break on escaped '\:' or '\.' in keys/values.
+    for prop in split_unescaped(props, ':') {
+        let parts = splitn_unescaped(prop, '.', 3);
+        if parts.len() < 3 {
             continue;
-        };
-        let Some(key) = parts.next() else { continue };
-        let Some(value) = parts.next() else { continue };
+        }
+        let atom_raw = parts[0];
+        let key = parts[1];
+        let value = parts[2];
         let Ok(atom) = atom_raw.parse::<u32>() else {
             continue;
         };
@@ -282,12 +297,68 @@ fn parse_radicals(rest: &str, out: &mut CxSmiles) {
     }
 }
 
+/// Split `s` at each unescaped occurrence of `delim`.
+/// A `\X` sequence is treated as an escaped character; the backslash prevents
+/// splitting at `X` regardless of whether `X` matches `delim`.
+fn split_unescaped(s: &str, delim: char) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0;
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'\\' {
+            i += 2; // skip escaped character
+        } else if bytes[i] as char == delim {
+            parts.push(&s[start..i]);
+            i += delim.len_utf8();
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+    parts.push(&s[start..]);
+    parts
+}
+
+/// Split `s` at unescaped `delim` into at most `n` parts.
+/// The last part contains the remainder unsplit (same semantics as `str::splitn`).
+fn splitn_unescaped(s: &str, delim: char, n: usize) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0;
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() && parts.len() + 1 < n {
+        if bytes[i] == b'\\' {
+            i += 2;
+        } else if bytes[i] as char == delim {
+            parts.push(&s[start..i]);
+            i += delim.len_utf8();
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+    parts.push(&s[start..]);
+    parts
+}
+
 fn escape_cx_value(value: &str) -> String {
+    // Escape characters that act as delimiters in the CXSMILES CX block:
+    //   '\'  — escape character itself
+    //   ';'  — atom separator in the $label$ field
+    //   ','  — CX field separator
+    //   '|'  — CX block delimiter
+    //   '.'  — part separator within atomProp:idx.key.value  (RDKit PR #9273)
+    //   ':'  — entry separator between atomProp triples       (RDKit PR #9273)
+    // Without escaping '.' and ':', keys/values containing these characters
+    // cause data corruption on round-trip (parser mis-splits the field).
     value
         .replace('\\', "\\\\")
         .replace(';', "\\;")
         .replace(',', "\\,")
         .replace('|', "\\|")
+        .replace('.', "\\.")
+        .replace(':', "\\:")
 }
 
 fn unescape_cx_value(value: &str) -> String {
@@ -443,5 +514,78 @@ mod tests {
         assert_eq!(cx.wavy_bonds, vec![BondIdx(1)]);
         let out = write_cxsmiles(&cx);
         assert!(out.contains("w:1"), "wavy bond preserved with other fields: {out}");
+    }
+
+    // ── RDKit PR #9273: CXSMILES atom prop escaping for '.' and ':' ──────────
+
+    #[test]
+    fn atomprops_with_colon_in_value_round_trip() {
+        // A property value containing ':' was split as a new entry, corrupting data.
+        let mut cx = parse_cxsmiles("CO").unwrap();
+        cx.atom_props.push(CxAtomProp {
+            atom: AtomIdx(0),
+            key: "Prop1".to_string(),
+            value: "a:b".to_string(), // colon must be escaped in output
+        });
+        let out = write_cxsmiles(&cx);
+        let cx2 = parse_cxsmiles(&out).unwrap();
+        assert_eq!(cx2.atom_props.len(), 1, "should have exactly one prop, got: {out}");
+        assert_eq!(cx2.atom_props[0].key, "Prop1");
+        assert_eq!(cx2.atom_props[0].value, "a:b", "colon in value must round-trip: {out}");
+    }
+
+    #[test]
+    fn atomprops_with_dot_in_key_round_trip() {
+        // A property key containing '.' was split as an additional field separator.
+        let mut cx = parse_cxsmiles("CO").unwrap();
+        cx.atom_props.push(CxAtomProp {
+            atom: AtomIdx(0),
+            key: "k.ey".to_string(),  // dot in key must be escaped
+            value: "val".to_string(),
+        });
+        let out = write_cxsmiles(&cx);
+        let cx2 = parse_cxsmiles(&out).unwrap();
+        assert_eq!(cx2.atom_props.len(), 1, "should have exactly one prop, got: {out}");
+        assert_eq!(cx2.atom_props[0].key, "k.ey", "dot in key must round-trip: {out}");
+        assert_eq!(cx2.atom_props[0].value, "val");
+    }
+
+    #[test]
+    fn atomprops_with_colon_and_dot_combined_round_trip() {
+        // Both '.' and ':' in key and value simultaneously.
+        let mut cx = parse_cxsmiles("CO").unwrap();
+        cx.atom_props.push(CxAtomProp {
+            atom: AtomIdx(0),
+            key: "k.ey".to_string(),
+            value: "v:al".to_string(),
+        });
+        let out = write_cxsmiles(&cx);
+        let cx2 = parse_cxsmiles(&out).unwrap();
+        assert_eq!(cx2.atom_props.len(), 1, "should have exactly one prop, got: {out}");
+        assert_eq!(cx2.atom_props[0].key, "k.ey");
+        assert_eq!(cx2.atom_props[0].value, "v:al");
+    }
+
+    #[test]
+    fn atomprops_with_multiple_colon_values_round_trip() {
+        // Multiple properties, including one with colon — each must survive.
+        let mut cx = parse_cxsmiles("CO").unwrap();
+        cx.atom_props.push(CxAtomProp {
+            atom: AtomIdx(0),
+            key: "Prop1".to_string(),
+            value: "1,2".to_string(), // comma (was already escaped before PR #9273)
+        });
+        cx.atom_props.push(CxAtomProp {
+            atom: AtomIdx(1),
+            key: "Prop2".to_string(),
+            value: "0".to_string(),
+        });
+        let out = write_cxsmiles(&cx);
+        let cx2 = parse_cxsmiles(&out).unwrap();
+        assert_eq!(cx2.atom_props.len(), 2, "both props must survive: {out}");
+        let prop0 = cx2.atom_props.iter().find(|p| p.atom == AtomIdx(0)).unwrap();
+        let prop1 = cx2.atom_props.iter().find(|p| p.atom == AtomIdx(1)).unwrap();
+        assert_eq!(prop0.value, "1,2");
+        assert_eq!(prop1.value, "0");
     }
 }

@@ -499,11 +499,17 @@ fn parse_stereo_group_line(payload: &str, atom_idx_map: &[(u32, AtomIdx)]) -> Op
     // First number is the count; the rest are 1-based V3000 atom indices.
     let mut nums = inner.split_whitespace();
     let _count: usize = nums.next()?.parse().ok()?;
+    // Collect and deduplicate atom indices.
+    // A malformed V3000 file may list the same atom twice in one group.
+    // Deduplication here mirrors the defensive check in StereoGroup::new()
+    // and makes the intent explicit at the parser level (RDKit PR #9258).
+    let mut seen = std::collections::HashSet::new();
     let atom_indices: Vec<AtomIdx> = nums
         .filter_map(|s| {
             let v3k: u32 = s.parse().ok()?;
             resolve_atom_idx(v3k, atom_idx_map)
         })
+        .filter(|idx| seen.insert(*idx))
         .collect();
 
     if atom_indices.is_empty() {
@@ -1113,5 +1119,42 @@ mod write_tests {
             .find(|g| g.kind == StereoGroupKind::Or(1))
             .expect("Or(1) group should exist");
         assert_eq!(or_group.atom_indices, vec![AtomIdx(1), AtomIdx(2)]);
+    }
+
+    #[test]
+    fn test_stereo_group_duplicate_atoms_deduplicated() {
+        // RDKit PR #9258: duplicate atom indices in a StereoGroup must be silently
+        // removed. In RDKit this caused heap-use-after-free; in chematic the
+        // duplicate indices produce incorrect stereo group membership.
+        //
+        // Craft a minimal V3000 MOL block with STEABS ATOMS=(3 1 1 2)
+        // — atom 1 appears twice, which should be collapsed to [AtomIdx(0)].
+        let v3k = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\n\
+M  V30 COUNTS 3 2 0 0 0\nM  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0 CFG=2\n\
+M  V30 2 C 1 0 0 0 CFG=2\n\
+M  V30 3 C 2 0 0 0\n\
+M  V30 END ATOM\nM  V30 BEGIN BOND\n\
+M  V30 1 1 1 2\n\
+M  V30 2 1 2 3\n\
+M  V30 END BOND\nM  V30 BEGIN COLLECTION\n\
+M  V30 MDLV30/STEABS ATOMS=(3 1 1 2)\n\
+M  V30 END COLLECTION\nM  V30 END CTAB\nM  END\n";
+
+        let (mol, _) = parse_mol_v3000(v3k).expect("should parse despite duplicate atom");
+        assert_eq!(mol.stereo_groups().len(), 1);
+        let group = &mol.stereo_groups()[0];
+        assert_eq!(
+            group.kind,
+            StereoGroupKind::Absolute,
+            "group kind must be Absolute"
+        );
+        // Atom 1 should appear only ONCE (deduplicated), plus atom 2.
+        assert_eq!(
+            group.atom_indices.len(), 2,
+            "duplicate atom index must be removed: got {:?}", group.atom_indices
+        );
+        assert!(group.atom_indices.contains(&AtomIdx(0)), "atom 0 must be in group");
+        assert!(group.atom_indices.contains(&AtomIdx(1)), "atom 1 must be in group");
     }
 }
