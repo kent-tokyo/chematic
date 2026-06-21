@@ -689,6 +689,39 @@ pub fn remove_stereo(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
+/// Remove atoms from stereo groups that are no longer chiral, and drop empty groups.
+///
+/// Analog of RDKit PR #9051 ("cleanup of stereogroups and wedges for non-chiral sites").
+/// When molecular operations (fragment removal, chirality clearing, …) leave atoms
+/// without chirality flags, their stereo group membership becomes invalid.  This
+/// function filters each [`StereoGroup`]'s atom list to only those atoms where
+/// `atom.chirality != Chirality::None`, and discards any group that becomes empty.
+pub fn clean_stereo_groups(mol: &Molecule) -> Molecule {
+    use chematic_core::{Chirality, StereoGroup};
+
+    let cleaned: Vec<StereoGroup> = mol
+        .stereo_groups()
+        .iter()
+        .filter_map(|g| {
+            let chiral_atoms: Vec<AtomIdx> = g
+                .atom_indices
+                .iter()
+                .copied()
+                .filter(|&idx| mol.atom(idx).chirality != Chirality::None)
+                .collect();
+            if chiral_atoms.is_empty() {
+                None
+            } else {
+                Some(StereoGroup::new(g.kind.clone(), chiral_atoms))
+            }
+        })
+        .collect();
+
+    let mut out = MoleculeBuilder::from_molecule(mol).build();
+    out.set_stereo_groups(cleaned);
+    out
+}
+
 /// Keep only the largest organic (carbon-containing) fragment.
 ///
 /// Removes all inorganic fragments (those without carbon atoms).
@@ -1734,6 +1767,65 @@ mod tests {
             }
         }
         assert!(has_s_double_o, "sulfoxide should have S=O double bond");
+    }
+
+    // ── RDKit PR #9051: StereoGroup cleanup for non-chiral atoms ────────────
+
+    #[test]
+    fn remove_stereo_clears_stereo_groups() {
+        // remove_stereo must produce a molecule with no stereo groups (RDKit PR #9051).
+        // It rebuilds via MoleculeBuilder::new() so groups are already empty; this
+        // test guards against regressions where from_molecule() is accidentally used.
+        use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
+        let mut mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        mol.add_stereo_group(StereoGroup::new(StereoGroupKind::Absolute, vec![AtomIdx(0)]));
+        assert_eq!(mol.stereo_groups().len(), 1, "precondition: group was added");
+        let stripped = remove_stereo(&mol);
+        assert_eq!(
+            stripped.stereo_groups().len(),
+            0,
+            "remove_stereo must clear stereo groups"
+        );
+    }
+
+    #[test]
+    fn clean_stereo_groups_drops_non_chiral_atoms() {
+        // clean_stereo_groups filters out atoms with Chirality::None (RDKit PR #9051).
+        use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
+        // atom 0 = CH3 (not chiral), atom 1 = @@ chiral center
+        let mut mol = parse("C[C@@H](F)Cl").unwrap();
+        mol.add_stereo_group(StereoGroup::new(
+            StereoGroupKind::Absolute,
+            vec![AtomIdx(0), AtomIdx(1)], // atom 0 is NOT chiral
+        ));
+        let cleaned = clean_stereo_groups(&mol);
+        assert_eq!(cleaned.stereo_groups().len(), 1, "group must survive with 1 atom");
+        assert_eq!(
+            cleaned.stereo_groups()[0].atom_indices,
+            vec![AtomIdx(1)],
+            "only chiral atom must remain in group"
+        );
+    }
+
+    #[test]
+    fn clean_stereo_groups_drops_empty_groups() {
+        // A group with no chiral atoms at all must be removed entirely.
+        use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
+        let mut mol = parse("CC").unwrap(); // no chiral atoms
+        mol.add_stereo_group(StereoGroup::new(StereoGroupKind::Absolute, vec![AtomIdx(0)]));
+        let cleaned = clean_stereo_groups(&mol);
+        assert_eq!(cleaned.stereo_groups().len(), 0, "empty group must be removed");
+    }
+
+    #[test]
+    fn clean_stereo_groups_preserves_valid_groups() {
+        // A group whose atoms are all chiral must be kept intact.
+        use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
+        let mut mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        mol.add_stereo_group(StereoGroup::new(StereoGroupKind::Absolute, vec![AtomIdx(0)]));
+        let cleaned = clean_stereo_groups(&mol);
+        assert_eq!(cleaned.stereo_groups().len(), 1, "valid group must be preserved");
+        assert_eq!(cleaned.stereo_groups()[0].atom_indices, vec![AtomIdx(0)]);
     }
 
     #[test]

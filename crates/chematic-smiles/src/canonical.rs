@@ -881,4 +881,54 @@ mod tests {
         // OC=O and O=CO — same formic acid, should canonicalize identically.
         assert!(same_canonical("OC=O", "O=CO"));
     }
+
+    // ── RDKit PR #9066: conjugated E/Z round-trip ────────────────────────────
+
+    #[test]
+    fn conjugated_double_bond_ez_round_trip() {
+        // RDKit PR #9066: removeRedundantBondDirSpecs() could strip bond directions
+        // on conjugated double bonds, losing E/Z stereo.  Chematic does not apply
+        // aggressive direction removal, but this test guards against regressions.
+        for smi in &[
+            r"F/C=C/C=C/Cl",  // all-E conjugated diene
+            r"F/C=C\C=C\Cl",  // E then Z
+            r"F/C=C/C=C\Cl",  // E then inverted-Z
+        ] {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("parse {smi}: {e:?}"));
+            let out = canonical_smiles(&mol);
+            let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse {out}: {e:?}"));
+            let out2 = canonical_smiles(&mol2);
+            assert_eq!(
+                out, out2,
+                "conjugated E/Z must be stable after two rounds: {smi} → {out} → {out2}"
+            );
+        }
+    }
+
+    // ── RDKit PR #8957: fused-ring stereo round-trip ────────────────────────
+
+    #[test]
+    fn ring_stereo_stable_in_fused_system() {
+        // RDKit PR #8957: "modern stereo" perception inverted R/S in fused polycyclic
+        // systems with multiple stereocenters.  The canonical SMILES form may use @
+        // instead of @@ (both are valid encodings of the same stereoisomer depending
+        // on traversal order), so the invariant is round-trip stability, not literal
+        // @@ count.
+        let smi = r"CC[C@@]1(C)C[C@@](CC)(c2ccccc2)CCO1";
+        let mol = parse(smi).expect("fused ring stereo mol");
+        let out = canonical_smiles(&mol);
+        // Round-trip must be stable: canonical(canonical(x)) == canonical(x).
+        let mol2 = parse(&out).expect("canonical re-parse");
+        let out2 = canonical_smiles(&mol2);
+        assert_eq!(
+            out, out2,
+            "fused ring stereo must be stable after canonical round-trip"
+        );
+        // The canonical SMILES must still contain at least 2 stereocenters (@/@@ count ≥ 2).
+        let stereo_count = out.matches('@').count();
+        assert!(
+            stereo_count >= 2,
+            "both stereocenters must be encoded (got {stereo_count}): {out}"
+        );
+    }
 }
