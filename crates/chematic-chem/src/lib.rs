@@ -46,8 +46,9 @@ pub mod xlogp3;
 
 pub use cip::{CipAssignment, assign_cip, tetrahedral_stereo_neighbors};
 pub use descriptors::{
-    aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, cns_mpo_score, egan_passes,
-    geary_autocorr, moran_autocorr,
+    Bcut2D, CarbonTypes, InformationContent,
+    aromatic_ring_count, autocorr_2d, balaban_j, bcut2d, calc_mol_formula, carbon_types,
+    cns_mpo_score, egan_passes, geary_autocorr, information_content, mde_carbon, moran_autocorr,
     exact_mass, formal_charge_per_atom, formal_charge_sum, fraction_rotatable_bonds, fsp3,
     ghose_passes, hall_kier_alpha, hba_count, hba_count_lipinski, hbd_count, heavy_atom_count,
     hybridization_per_atom, implicit_hcount_per_atom, ipc, lead_like_passes, lipinski_passes,

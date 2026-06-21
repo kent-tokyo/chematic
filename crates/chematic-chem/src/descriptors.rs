@@ -2380,6 +2380,333 @@ pub fn calc_mol_formula(mol: &Molecule) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// Carbon hybridisation types (Mordred CarbonTypes)
+// ---------------------------------------------------------------------------
+
+/// Carbon atom counts grouped by hybridisation and heavy-atom degree.
+///
+/// Mirrors the Mordred `CarbonTypes` descriptor family: C*x*SP*y* where
+/// *x* = number of non-hydrogen (heavy-atom) bonds and *y* = hybridisation
+/// (1 = sp, 2 = sp², 3 = sp³).
+///
+/// Uses `hybridization_per_atom()` internally (1=sp, 2=sp², 3=sp³).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct CarbonTypes {
+    /// sp with 1 heavy-atom bond (terminal alkyne carbon)
+    pub c1sp1: u32,
+    /// sp with 2 heavy-atom bonds (internal alkyne carbon)
+    pub c2sp1: u32,
+    /// sp² with 1 heavy-atom bond (terminal alkene =CH₂)
+    pub c1sp2: u32,
+    /// sp² with 2 heavy-atom bonds (alkene =CH–)
+    pub c2sp2: u32,
+    /// sp² with 3 heavy-atom bonds (aromatic C or trisubstituted alkene)
+    pub c3sp2: u32,
+    /// sp³ with 1 heavy-atom bond (methyl group –CH₃)
+    pub c1sp3: u32,
+    /// sp³ with 2 heavy-atom bonds (methylene –CH₂–)
+    pub c2sp3: u32,
+    /// sp³ with 3 heavy-atom bonds (methine –CH<)
+    pub c3sp3: u32,
+}
+
+/// Count carbon atoms by hybridisation × heavy-atom degree (Mordred CarbonTypes).
+pub fn carbon_types(mol: &Molecule) -> CarbonTypes {
+    let hyb = hybridization_per_atom(mol);
+    let mut ct = CarbonTypes::default();
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() != 6 {
+            continue; // only carbon
+        }
+        let h = hyb[idx.0 as usize];
+        let deg: u32 = mol
+            .neighbors(idx)
+            .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() != 1)
+            .count() as u32;
+        match (h, deg) {
+            (1, 1) => ct.c1sp1 += 1,
+            (1, 2) => ct.c2sp1 += 1,
+            (2, 1) => ct.c1sp2 += 1,
+            (2, 2) => ct.c2sp2 += 1,
+            (2, 3) => ct.c3sp2 += 1,
+            (3, 1) => ct.c1sp3 += 1,
+            (3, 2) => ct.c2sp3 += 1,
+            (3, 3) => ct.c3sp3 += 1,
+            _ => {}
+        }
+    }
+    ct
+}
+
+// ---------------------------------------------------------------------------
+// Information Content descriptors (Mordred IC family)
+// ---------------------------------------------------------------------------
+
+/// Shannon-entropy-based information content descriptors.
+///
+/// Based on the vertex equivalence class partition of the molecular graph:
+/// atoms are grouped by `(element, heavy_degree)` as their Morgan-0 invariant.
+///
+/// - **IC**  = Shannon entropy of the partition (bits)
+/// - **TIC** = N × IC  (total information content)
+/// - **SIC** = IC / log₂(N)  (structural information content; 0 for fully symmetric)
+/// - **BIC** = IC × (N-1) / N  (bond information content)
+/// - **CIC** = log₂(N) − IC  (complementary information content)
+///
+/// All values are 0 for a single-atom molecule.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct InformationContent {
+    pub ic: f64,
+    pub tic: f64,
+    pub sic: f64,
+    pub bic: f64,
+    pub cic: f64,
+}
+
+/// Compute the Information Content descriptor family (IC, TIC, SIC, BIC, CIC).
+pub fn information_content(mol: &Molecule) -> InformationContent {
+    use std::collections::HashMap;
+    let heavy: Vec<_> = mol
+        .atoms()
+        .filter(|(_, a)| a.element.atomic_number() != 1)
+        .collect();
+    let n = heavy.len();
+    if n < 2 {
+        return InformationContent::default();
+    }
+    // Vertex invariant: (atomic_number, heavy_degree)
+    let mut counts: HashMap<(u8, u32), usize> = HashMap::new();
+    for (idx, atom) in &heavy {
+        let deg = mol
+            .neighbors(*idx)
+            .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() != 1)
+            .count() as u32;
+        *counts.entry((atom.element.atomic_number(), deg)).or_insert(0) += 1;
+    }
+    let n_f = n as f64;
+    let ic: f64 = counts
+        .values()
+        .map(|&c| {
+            let p = c as f64 / n_f;
+            -p * p.log2()
+        })
+        .sum();
+    let log_n = n_f.log2();
+    InformationContent {
+        ic,
+        tic: n_f * ic,
+        sic: if log_n > 0.0 { ic / log_n } else { 0.0 },
+        bic: ic * (n_f - 1.0) / n_f,
+        cic: (log_n - ic).max(0.0),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Molecular Distance Edge (MDE) descriptors
+// ---------------------------------------------------------------------------
+
+/// Molecular Distance Edge Carbon descriptor (MDEC-*xy*).
+///
+/// Σ 1/√d(i,j) over all ordered pairs (i,j) where *i* is a carbon with
+/// *x* carbon neighbours and *j* is a carbon with *y* carbon neighbours.
+/// Here *x,y* ∈ {1,2,3,4} (primary, secondary, tertiary, quaternary C).
+///
+/// Returns 10 values in the order:
+/// MDEC11, MDEC12, MDEC13, MDEC14, MDEC22, MDEC23, MDEC24, MDEC33, MDEC34, MDEC44.
+pub fn mde_carbon(mol: &Molecule) -> [f64; 10] {
+    let heavy: Vec<_> = mol
+        .atoms()
+        .filter(|(_, a)| a.element.atomic_number() != 1)
+        .map(|(idx, _)| idx)
+        .collect();
+    let heavy_count = heavy.len();
+    if heavy_count == 0 {
+        return [0.0; 10];
+    }
+    // Build carbon-neighbor-count for each heavy atom index.
+    let mut c_neighbors: Vec<Option<u8>> = vec![None; mol.atom_count()];
+    for &idx in &heavy {
+        if mol.atom(idx).element.atomic_number() == 6 {
+            let cn = mol
+                .neighbors(idx)
+                .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
+                .count()
+                .min(4) as u8;
+            c_neighbors[idx.0 as usize] = Some(cn);
+        }
+    }
+    let dist = crate::topo_descriptors::topological_distance_matrix(mol);
+    // Map original AtomIdx → row in distance matrix (heavy-atom order).
+    let heavy_pos: std::collections::HashMap<u32, usize> = heavy
+        .iter()
+        .enumerate()
+        .map(|(p, &idx)| (idx.0, p))
+        .collect();
+    let mut out = [0.0f64; 10];
+    let n = heavy.len();
+    for pi in 0..n {
+        let ai = heavy[pi];
+        let xi = match c_neighbors[ai.0 as usize] {
+            Some(v) if v >= 1 => v,
+            _ => continue,
+        };
+        for pj in (pi + 1)..n {
+            let aj = heavy[pj];
+            let xj = match c_neighbors[aj.0 as usize] {
+                Some(v) if v >= 1 => v,
+                _ => continue,
+            };
+            let d = dist[pi][pj];
+            if d == 0 || d == u32::MAX {
+                continue;
+            }
+            let contrib = 1.0 / (d as f64).sqrt();
+            let (lo, hi) = if xi <= xj { (xi, xj) } else { (xj, xi) };
+            // Map (lo, hi) from (1,1)..(4,4) to index 0..9
+            let slot = match (lo, hi) {
+                (1, 1) => 0,
+                (1, 2) => 1,
+                (1, 3) => 2,
+                (1, 4) => 3,
+                (2, 2) => 4,
+                (2, 3) => 5,
+                (2, 4) => 6,
+                (3, 3) => 7,
+                (3, 4) => 8,
+                (4, 4) => 9,
+                _ => continue,
+            };
+            out[slot] += contrib;
+        }
+    }
+    let _ = heavy_pos; // used indirectly via dist which was built from heavy-atom ordering
+    out
+}
+
+// ---------------------------------------------------------------------------
+// BCUT2D — Burden Connectivity Matrix eigenvalue descriptors
+// ---------------------------------------------------------------------------
+
+/// BCUT2D descriptors: largest and smallest eigenvalues of the Burden
+/// connectivity matrix weighted by four atomic properties.
+///
+/// The Burden matrix B (n×n, n = heavy atoms) is defined as:
+/// - `B[i,i]` = per-atom property value
+/// - `B[i,j]` = √(Z_i × Z_j) × bond_weight / 8  for bonded pairs
+/// - `B[i,j]` = 0.001  for non-bonded pairs
+///
+/// Four atomic properties are used, each giving a HI/LO eigenvalue pair:
+/// - **CHG** formal charge per atom
+/// - **LOGP** Crippen LogP atomic contribution
+/// - **MR** molar refractivity atomic contribution
+/// - **MW** atomic mass
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Bcut2D {
+    pub chghi: f64,
+    pub chglo: f64,
+    pub logphi: f64,
+    pub logplo: f64,
+    pub mrhi: f64,
+    pub mrlo: f64,
+    pub mwhi: f64,
+    pub mwlo: f64,
+}
+
+/// Compute BCUT2D descriptors (8 values: 4 properties × HI/LO eigenvalue).
+pub fn bcut2d(mol: &Molecule) -> Bcut2D {
+    let heavy: Vec<AtomIdx> = mol
+        .atoms()
+        .filter(|(_, a)| a.element.atomic_number() != 1)
+        .map(|(idx, _)| idx)
+        .collect();
+    let n = heavy.len();
+    if n == 0 {
+        return Bcut2D::default();
+    }
+    // Per-atom properties.
+    let logp_v = logp_crippen_per_atom(mol);
+    let mr_v = mr_per_atom(mol);
+    let charge_v: Vec<f64> = mol.atoms().map(|(_, a)| a.charge as f64).collect();
+    let mw_v: Vec<f64> = mol.atoms().map(|(_, a)| a.element.atomic_mass()).collect();
+    let props: [Vec<f64>; 4] = [
+        heavy.iter().map(|&i| charge_v[i.0 as usize]).collect(),
+        heavy.iter().map(|&i| logp_v[i.0 as usize]).collect(),
+        heavy.iter().map(|&i| mr_v[i.0 as usize]).collect(),
+        heavy.iter().map(|&i| mw_v[i.0 as usize]).collect(),
+    ];
+    // Connectivity (bonded) lookup.
+    let mut bonded = vec![vec![0.0f64; n]; n];
+    for (pi, &ai) in heavy.iter().enumerate() {
+        for (pj, &aj) in heavy.iter().enumerate().skip(pi + 1) {
+            if let Some((bidx, _)) = mol.bond_between(ai, aj) {
+                let bo = match mol.bond(bidx).order {
+                    chematic_core::BondOrder::Single => 1.0,
+                    chematic_core::BondOrder::Double => 2.0,
+                    chematic_core::BondOrder::Triple => 3.0,
+                    chematic_core::BondOrder::Aromatic => 1.5,
+                    chematic_core::BondOrder::Up | chematic_core::BondOrder::Down => 1.0,
+                    _ => 1.0,
+                };
+                let zi = mol.atom(ai).element.atomic_number() as f64;
+                let zj = mol.atom(aj).element.atomic_number() as f64;
+                let w = (zi * zj).sqrt() * bo / 8.0;
+                bonded[pi][pj] = w;
+                bonded[pj][pi] = w;
+            }
+        }
+    }
+    let compute = |prop: &[f64]| -> (f64, f64) {
+        let mut mat = vec![vec![0.001f64; n]; n];
+        for i in 0..n {
+            mat[i][i] = prop[i];
+            for j in (i + 1)..n {
+                if bonded[i][j] > 0.0 {
+                    mat[i][j] = bonded[i][j];
+                    mat[j][i] = bonded[i][j];
+                }
+            }
+        }
+        let hi = burden_max_eigenvalue(&mat);
+        let lo = burden_min_eigenvalue(&mat);
+        (hi, lo)
+    };
+    let (chghi, chglo) = compute(&props[0]);
+    let (logphi, logplo) = compute(&props[1]);
+    let (mrhi, mrlo) = compute(&props[2]);
+    let (mwhi, mwlo) = compute(&props[3]);
+    Bcut2D { chghi, chglo, logphi, logplo, mrhi, mrlo, mwhi, mwlo }
+}
+
+/// Power iteration → largest eigenvalue of symmetric matrix.
+fn burden_max_eigenvalue(mat: &[Vec<f64>]) -> f64 {
+    let n = mat.len();
+    if n == 0 { return 0.0; }
+    let mut v = vec![1.0_f64 / (n as f64).sqrt(); n];
+    for _ in 0..150 {
+        let mut av: Vec<f64> = vec![0.0; n];
+        for i in 0..n {
+            for j in 0..n {
+                av[i] += mat[i][j] * v[j];
+            }
+        }
+        let norm: f64 = av.iter().map(|&x| x * x).sum::<f64>().sqrt();
+        if norm < 1e-14 { return 0.0; }
+        for i in 0..n { v[i] = av[i] / norm; }
+    }
+    // Rayleigh quotient
+    (0..n)
+        .map(|i| v[i] * (0..n).map(|j| mat[i][j] * v[j]).sum::<f64>())
+        .sum()
+}
+
+/// Smallest eigenvalue via max eigenvalue of negated matrix.
+/// Valid for symmetric real matrices: min_eig(A) = −max_eig(−A).
+fn burden_min_eigenvalue(mat: &[Vec<f64>]) -> f64 {
+    let neg: Vec<Vec<f64>> = mat.iter().map(|row| row.iter().map(|&x| -x).collect()).collect();
+    -burden_max_eigenvalue(&neg)
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -3875,5 +4202,112 @@ mod tests {
     fn moran_finite_for_mixed_molecule() {
         let v = moran_autocorr(&mol("CCO"));
         assert!(v.iter().all(|x| x.is_finite()), "all Moran values must be finite: {v:?}");
+    }
+
+    // ── CarbonTypes ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn carbon_types_methane() {
+        // methane C: sp3 with 0 heavy neighbors — none of the CxSPy bins (deg must be ≥1)
+        let ct = carbon_types(&mol("C"));
+        assert_eq!(ct.c1sp3 + ct.c2sp3 + ct.c3sp3, 0, "isolated methane C has deg=0, not counted");
+    }
+
+    #[test]
+    fn carbon_types_ethane() {
+        // ethane CC: each C is sp3 with 1 heavy neighbor → C1SP3×2
+        let ct = carbon_types(&mol("CC"));
+        assert_eq!(ct.c1sp3, 2, "ethane: 2×C1SP3");
+        assert_eq!(ct.c2sp3, 0);
+    }
+
+    #[test]
+    fn carbon_types_propane() {
+        // propane CCC: 2×C1SP3 (terminals) + 1×C2SP3 (middle)
+        let ct = carbon_types(&mol("CCC"));
+        assert_eq!(ct.c1sp3, 2, "propane: 2 terminal sp3 C");
+        assert_eq!(ct.c2sp3, 1, "propane: 1 internal sp3 C");
+    }
+
+    #[test]
+    fn carbon_types_benzene() {
+        // benzene: 6 aromatic C → hybridization=2, heavy deg=2 → C2SP2×6
+        let ct = carbon_types(&mol("c1ccccc1"));
+        assert_eq!(ct.c2sp2, 6, "benzene: 6×C2SP2 (aromatic)");
+    }
+
+    #[test]
+    fn carbon_types_acetylene() {
+        // acetylene HC≡CH: 2 sp C with 1 heavy neighbor each → C1SP1×2
+        let ct = carbon_types(&mol("C#C"));
+        assert_eq!(ct.c1sp1, 2, "acetylene: 2×C1SP1");
+    }
+
+    // ── Information Content ───────────────────────────────────────────────────
+
+    #[test]
+    fn information_content_benzene_zero_ic() {
+        // All 6 C in benzene are equivalent (same element + same degree) → IC=0
+        let ic = information_content(&mol("c1ccccc1"));
+        assert!(ic.ic.abs() < 1e-9, "benzene: IC must be 0 (fully symmetric), got {}", ic.ic);
+        assert!(ic.sic.abs() < 1e-9, "benzene: SIC must be 0");
+    }
+
+    #[test]
+    fn information_content_propane_nonzero() {
+        let ic = information_content(&mol("CCC"));
+        assert!(ic.ic > 0.5, "propane: IC must be > 0 (two symmetry classes)");
+        assert!(ic.tic > 0.0);
+        assert!(ic.ic.is_finite() && ic.tic.is_finite());
+    }
+
+    #[test]
+    fn information_content_single_atom() {
+        // Single heavy atom → all fields = 0
+        let ic = information_content(&mol("[Na+]"));
+        assert_eq!(ic.ic, 0.0);
+        assert_eq!(ic.tic, 0.0);
+    }
+
+    // ── MDE ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn mde_carbon_propane_mdec11() {
+        // Propane CCC: 2 primary C (deg=1 C-neighbor) + 1 secondary C (deg=2)
+        // MDEC11 = 1/sqrt(2) between the two primary C (distance 2 bonds)
+        let v = mde_carbon(&mol("CCC"));
+        let expected = 1.0 / (2.0_f64).sqrt();
+        assert!((v[0] - expected).abs() < 1e-6, "MDEC11 for propane: expected {expected:.4}, got {:.4}", v[0]);
+    }
+
+    #[test]
+    fn mde_carbon_all_finite() {
+        let v = mde_carbon(&mol("CC(CC)C(=O)O"));
+        assert!(v.iter().all(|&x| x.is_finite()), "all MDEC must be finite");
+    }
+
+    // ── BCUT2D ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn bcut2d_hi_ge_lo() {
+        // HI eigenvalue must be ≥ LO for all properties
+        let b = bcut2d(&mol("c1ccccc1"));
+        assert!(b.mwhi >= b.mwlo, "BCUT2D-MWHI must be ≥ BCUT2D-MWLO");
+        assert!(b.logphi >= b.logplo, "BCUT2D-LOGPHI ≥ BCUT2D-LOGPLO");
+        assert!(b.mrhi >= b.mrlo, "BCUT2D-MRHI ≥ BCUT2D-MRLO");
+    }
+
+    #[test]
+    fn bcut2d_all_finite() {
+        let b = bcut2d(&mol("CC(=O)Nc1ccccc1C(=O)O")); // 4-aminobenzoic acid derivative
+        let vals = [b.chghi, b.chglo, b.logphi, b.logplo, b.mrhi, b.mrlo, b.mwhi, b.mwlo];
+        assert!(vals.iter().all(|v| v.is_finite()), "all BCUT2D values must be finite: {vals:?}");
+    }
+
+    #[test]
+    fn bcut2d_single_atom_zero() {
+        // H-only molecule → no heavy atoms → default struct
+        let b = bcut2d(&mol("[H][H]"));
+        assert_eq!(b.mwhi, 0.0);
     }
 }
