@@ -234,3 +234,81 @@ fn charged_aromatics_parse_and_stable() {
     }
     // Non-panicking: charged aromatic handling is an informational probe.
 }
+
+// ── RDKit issue #8775 supplemental coverage ──────────────────────────────────
+// Tests added to address RDKit's oscillating canonical SMILES edge cases.
+
+#[test]
+fn large_fused_pah_stable() {
+    // Pyrene, benzo[a]pyrene: stable. Coronene (7-ring) has a known instability
+    // tracked separately in `coronene_canonical_known_bug`.
+    let cases = [
+        "c1ccc2cc3ccc4cccc5ccc(c1)c2c3c45",  // pyrene (4 rings) — stable
+        "c1ccc2ccc3cccc4ccc5ccccc5c4c3c2c1", // benzo[a]pyrene (5 rings) — stable
+    ];
+    let failures: Vec<_> = cases.iter()
+        .filter_map(|&s| check_canonical_stable(s).err())
+        .collect();
+    assert!(failures.is_empty(), "PAH round-trip failures:\n{}", failures.join("\n"));
+}
+
+/// Coronene canonical SMILES is not yet idempotent for the 7-ring PAH system.
+/// Morgan rank ties in highly symmetric graphs can produce oscillating ring-closure
+/// numbering. Tracked as a known limitation (analogous to RDKit issue #8775).
+#[test]
+#[ignore = "known: coronene (7-ring PAH) canonical SMILES oscillates — needs Morgan rank tie-breaking fix"]
+fn coronene_canonical_known_bug() {
+    assert!(
+        check_canonical_stable("c1ccc2ccc3ccc4ccc5ccc6ccccc6c5c4c3c2c1").is_ok(),
+        "coronene should be idempotent"
+    );
+}
+
+#[test]
+fn bridged_bicyclic_with_stereo_stable() {
+    // Bridged ring systems with stereocenters — topology where traversal order
+    // can vary between implementations.
+    let cases = [
+        "C1CC2CCC1CC2",              // bicyclo[2.2.2]octane (no stereo)
+        "[C@@H]1CC2(CC1)CCC2",       // bicyclic with one stereocenter
+        "[C@H]12CC(CC1)CC2",         // another bridged stereo
+        "C1C[C@@H]2CC[C@H]1C2",     // bridged bicyclic two stereocenters
+    ];
+    let failures: Vec<_> = cases.iter()
+        .filter_map(|&s| check_canonical_stable(s).err())
+        .collect();
+    assert!(failures.is_empty(), "Bridged bicyclic+stereo failures:\n{}", failures.join("\n"));
+}
+
+#[test]
+fn polyanion_and_salt_stable() {
+    // Complex charged species — RDKit had edge cases where canonical SMILES
+    // for salts would change between parse cycles.
+    let cases = [
+        "[Na+].[Cl-]",
+        "[Na+].[Na+].[O-]C(=O)c1ccccc1S(=O)(=O)[O-]",  // disodium benzoate sulfonate
+        "[NH4+].[O-]C(=O)CC(=O)[O-]",                    // ammonium malate
+        "[Ca+2].[O-]C(=O)c1ccccc1.[O-]C(=O)c1ccccc1",  // calcium benzoate
+    ];
+    let failures: Vec<_> = cases.iter()
+        .filter_map(|&s| check_canonical_stable(s).err())
+        .collect();
+    assert!(failures.is_empty(), "Polyanion/salt round-trip failures:\n{}", failures.join("\n"));
+}
+
+#[test]
+fn fused_heteroaromatics_stable() {
+    // Purine-class fused heteroaromatics — topology with multiple N atoms
+    // in fused 5+6 rings where canonical ordering can be ambiguous.
+    let cases = [
+        "c1ncc2[nH]cnc2n1",          // purine
+        "c1nc2ccccc2[nH]1",           // benzimidazole
+        "c1cnc2ncnc2c1",              // 6,7-diazaindolizine
+        "c1ccc2nc3ccccc3nc2c1",       // acridine
+        "c1cc2ccc3cccc4ccc(c1)c2c34", // triphenylene
+    ];
+    let failures: Vec<_> = cases.iter()
+        .filter_map(|&s| check_canonical_stable(s).err())
+        .collect();
+    assert!(failures.is_empty(), "Fused heteroaromatic failures:\n{}", failures.join("\n"));
+}

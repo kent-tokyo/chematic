@@ -41,6 +41,10 @@ pub fn generate_coords_etkdg_with_noise(mol: &Molecule, noise_sigma_deg: f64) ->
     let constraints = super::constraints::build_constraints(mol);
     coords = super::constraints::satisfy_constraints(&coords, mol, &constraints, 3);
 
+    // Hard-snap amide omega angles to 0° or 180° after constraint satisfaction.
+    // Addresses RDKit issue #9266: ETKDGv3 generates twisted tertiary amides.
+    snap_amide_torsions(mol, &mut coords);
+
     coords
 }
 
@@ -135,6 +139,60 @@ fn apply_torsion_preferences_with_noise(
                         );
                         applied.insert(key);
                     }
+                }
+            }
+        }
+    }
+}
+
+/// Snap all amide omega angles (A–N–C(=O)–D) to the nearest 0° or 180°.
+///
+/// Addresses RDKit issue #9266: ETKDGv3 can leave tertiary amides in a twisted
+/// gauche (~60° / ~120°) geometry because soft torsion penalties are insufficient
+/// when constraint satisfaction later distorts the amide bond. This post-processing
+/// step enforces planarity (|ω| ≤ 30° or |ω − 180°| ≤ 30°) for all amide bonds.
+fn snap_amide_torsions(mol: &Molecule, coords: &mut super::coords::Coords3D) {
+    use super::mol_transforms::{get_dihedral, set_dihedral};
+    let n = mol.atom_count();
+
+    for b in 0..n {
+        let b_idx = AtomIdx(b as u32);
+        if classify_atom_type(mol, b_idx) != AtomType::NSp2 {
+            continue;
+        }
+        // Find a C(=O) neighbor of this NSp2 N.
+        let c_idx = mol
+            .neighbors(b_idx)
+            .find(|(nb, _)| classify_atom_type(mol, *nb) == AtomType::CCarbonyl)
+            .map(|(nb, _)| nb);
+        let Some(c_idx) = c_idx else { continue };
+
+        let b_neighbors: Vec<AtomIdx> = mol
+            .neighbors(b_idx)
+            .filter(|(nb, _)| *nb != c_idx)
+            .map(|(nb, _)| nb)
+            .collect();
+        let c_neighbors: Vec<AtomIdx> = mol
+            .neighbors(c_idx)
+            .filter(|(nb, _)| *nb != b_idx)
+            .map(|(nb, _)| nb)
+            .collect();
+
+        for &a_idx in &b_neighbors {
+            for &d_idx in &c_neighbors {
+                let Some(omega_rad) = get_dihedral(coords, a_idx, b_idx, c_idx, d_idx) else {
+                    continue;
+                };
+                let omega_deg = omega_rad.to_degrees();
+                // Distance to nearest planar angle (0° or ±180°).
+                let to_0 = omega_deg.abs();
+                let to_180 = (omega_deg.abs() - 180.0).abs();
+                let min_dist = to_0.min(to_180);
+                if min_dist > 30.0 {
+                    // Snap to nearest of 0° or 180°.
+                    let target_deg = if to_0 < to_180 { 0.0_f64 } else { 180.0_f64 };
+                    let target_rad = target_deg.to_radians();
+                    *coords = set_dihedral(coords, mol, a_idx, b_idx, c_idx, d_idx, target_rad);
                 }
             }
         }

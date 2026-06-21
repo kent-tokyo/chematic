@@ -19,12 +19,14 @@
 //!   supported.
 //! - Write support is **not** implemented (CDXML is a proprietary format;
 //!   writing files that ChemDraw will accept requires undocumented attributes).
-//! - Stereochemistry attributes are ignored.
+//! - Wedge/hash bond stereo (tetrahedral) is derived from `Display` attribute.
+//! - E/Z double-bond stereo is derived from 2D coordinates via `assign_ez_from_2d`.
 //! - Presentation-only nodes (text boxes, arrows, etc.) are silently skipped.
 
 use std::collections::HashMap;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_perception::assign_ez_from_2d;
 
 use crate::cml::parse_xml_attrs;
 
@@ -150,7 +152,10 @@ impl FragAccum {
             })?;
         }
 
-        results.push((builder.build(), coords));
+        let mut mol = builder.build();
+        // Derive E/Z stereo from 2D atom positions (RDKit issue #9356: CDXML loses E/Z).
+        assign_ez_from_2d(&mut mol, &coords);
+        results.push((mol, coords));
         *self = FragAccum::default();
         Ok(())
     }
