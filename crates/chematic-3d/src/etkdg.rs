@@ -157,10 +157,14 @@ fn snap_amide_torsions(mol: &Molecule, coords: &mut super::coords::Coords3D) {
 
     for b in 0..n {
         let b_idx = AtomIdx(b as u32);
-        if classify_atom_type(mol, b_idx) != AtomType::NSp2 {
+        let b_atom = mol.atom(b_idx);
+        // Match any non-aromatic nitrogen — catches both secondary (NSp2) and
+        // tertiary (NSp3) amide N. classify_atom_type returns NSp3 for degree-3 N,
+        // which would silently skip all tertiary amides if checked against NSp2 only.
+        if b_atom.element.atomic_number() != 7 || b_atom.aromatic {
             continue;
         }
-        // Find a C(=O) neighbor of this NSp2 N.
+        // Require a C(=O) neighbor — the defining feature of amide N.
         let c_idx = mol
             .neighbors(b_idx)
             .find(|(nb, _)| classify_atom_type(mol, *nb) == AtomType::CCarbonyl)
@@ -178,7 +182,10 @@ fn snap_amide_torsions(mol: &Molecule, coords: &mut super::coords::Coords3D) {
             .map(|(nb, _)| nb)
             .collect();
 
-        for &a_idx in &b_neighbors {
+        // Snap using ONE (a, d) pair per N-C(=O) bond. All torsions around the
+        // same bond are rotated identically by set_dihedral, so snapping additional
+        // pairs after the first would read stale coords and may overcorrect.
+        'snap: for &a_idx in &b_neighbors {
             for &d_idx in &c_neighbors {
                 let Some(omega_rad) = get_dihedral(coords, a_idx, b_idx, c_idx, d_idx) else {
                     continue;
@@ -189,11 +196,15 @@ fn snap_amide_torsions(mol: &Molecule, coords: &mut super::coords::Coords3D) {
                 let to_180 = (omega_deg.abs() - 180.0).abs();
                 let min_dist = to_0.min(to_180);
                 if min_dist > 30.0 {
-                    // Snap to nearest of 0° or 180°.
                     let target_deg = if to_0 < to_180 { 0.0_f64 } else { 180.0_f64 };
-                    let target_rad = target_deg.to_radians();
-                    *coords = set_dihedral(coords, mol, a_idx, b_idx, c_idx, d_idx, target_rad);
+                    *coords = set_dihedral(
+                        coords, mol, a_idx, b_idx, c_idx, d_idx,
+                        target_deg.to_radians(),
+                    );
                 }
+                // One snap per bond is sufficient — subsequent (a, d) pairs would
+                // read already-modified coords and risk double-correction.
+                break 'snap;
             }
         }
     }

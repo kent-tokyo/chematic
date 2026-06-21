@@ -20,29 +20,64 @@ fn has_double_bond_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> bool {
     })
 }
 
-/// Returns true if `idx` is in a ring (BFS: can its two neighbors reach each other without `idx`?).
+/// Returns true if `idx` is in a ring.
+///
+/// For degree-2 atoms one BFS suffices. For degree-3 atoms (e.g. N with two ring
+/// bonds + one exocyclic substituent) the first neighbor may be exocyclic — a dead
+/// end that makes the single-pair BFS return false even though `idx` is in a ring.
+/// This version tries each neighbor as the BFS start and returns true as soon as
+/// any other neighbor is found reachable without going through `idx`.
 fn is_atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
     let nbs: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
     if nbs.len() < 2 {
         return false;
     }
-    let (start, target) = (nbs[0], nbs[1]);
-    let mut visited = HashSet::new();
-    visited.insert(idx); // exclude idx from the search
-    visited.insert(start);
-    let mut queue = std::collections::VecDeque::new();
-    queue.push_back(start);
-    while let Some(curr) = queue.pop_front() {
-        if curr == target {
-            return true;
-        }
-        for (nb, _) in mol.neighbors(curr) {
-            if visited.insert(nb) {
-                queue.push_back(nb);
+    for start_i in 0..nbs.len() {
+        let start = nbs[start_i];
+        let targets: HashSet<AtomIdx> = nbs.iter().enumerate()
+            .filter(|(j, _)| *j != start_i)
+            .map(|(_, &nb)| nb)
+            .collect();
+        let mut visited = HashSet::new();
+        visited.insert(idx);
+        visited.insert(start);
+        let mut queue = std::collections::VecDeque::new();
+        queue.push_back(start);
+        while let Some(curr) = queue.pop_front() {
+            if targets.contains(&curr) {
+                return true;
+            }
+            for (nb, _) in mol.neighbors(curr) {
+                if visited.insert(nb) {
+                    queue.push_back(nb);
+                }
             }
         }
     }
     false
+}
+
+/// True if `idx` (O atom) is an aromatic oxide bridge: in a ring, bonded to an
+/// aromatic C AND to a sp2 C via a single bond (C=C elsewhere, not C=O).
+/// RDKit perceives such O as aromatic ([o] type). Used for TPSA and LogP.
+fn is_aromatic_oxide_bridge(mol: &Molecule, idx: AtomIdx) -> bool {
+    let has_aromatic_c_nb = mol.neighbors(idx).any(|(nb, _)| {
+        let a = mol.atom(nb);
+        a.aromatic && a.element.atomic_number() == 6
+    });
+    if !has_aromatic_c_nb {
+        return false;
+    }
+    let has_vinyl_c_nb = mol.neighbors(idx).any(|(nb, bidx)| {
+        mol.bond(bidx).order != BondOrder::Double
+            && mol.atom(nb).element.atomic_number() == 6
+            && mol.neighbors(nb).any(|(nb2, b2)| {
+                nb2 != idx
+                    && mol.bond(b2).order == BondOrder::Double
+                    && mol.atom(nb2).element.atomic_number() == 6
+            })
+    });
+    has_vinyl_c_nb && is_atom_in_ring(mol, idx)
 }
 
 /// Count double bonds from `idx` to neighbors whose atomic number equals `target_an`.
@@ -491,14 +526,6 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
         } else {
             if has_double_bond_to(mol, idx, 6) {
                 12.89
-            } else if mol.degree(idx) >= 3
-                && mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).aromatic)
-                && is_atom_in_ring(mol, idx)
-            {
-                // Kekulé-form aromatic ring N (e.g., indomethacin indolyl N):
-                // uppercase N in a ring fused to an aromatic ring, degree≥3.
-                // RDKit perceives this as aromatic → Ertl 2000 type 4.93 Å².
-                4.93
             } else {
                 3.24
             }
@@ -533,27 +560,7 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
                 Some(6) => 17.07,
                 Some(_) => 0.0,
                 None => {
-                    // Aromatic oxide bridge (e.g., morphine's 4,5-epoxy ring):
-                    // O in a ring, bonded to an aromatic C AND a sp2 C (C=C via single bond).
-                    // RDKit perceives such O as aromatic (13.14); plain ether → 9.23.
-                    let has_aromatic_c_nb = mol.neighbors(idx).any(|(nb, _)| {
-                        let a = mol.atom(nb);
-                        a.aromatic && a.element.atomic_number() == 6
-                    });
-                    let has_vinyl_c_nb = mol.neighbors(idx).any(|(nb, bidx)| {
-                        mol.bond(bidx).order != BondOrder::Double
-                            && mol.atom(nb).element.atomic_number() == 6
-                            && mol.neighbors(nb).any(|(nb2, b2)| {
-                                nb2 != idx
-                                    && mol.bond(b2).order == BondOrder::Double
-                                    && mol.atom(nb2).element.atomic_number() == 6
-                            })
-                    });
-                    if has_aromatic_c_nb && has_vinyl_c_nb && is_atom_in_ring(mol, idx) {
-                        13.14
-                    } else {
-                        9.23
-                    }
+                    if is_aromatic_oxide_bridge(mol, idx) { 13.14 } else { 9.23 }
                 }
             }
         }
@@ -593,6 +600,12 @@ fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx) -> f64 {
 /// `Descriptors.TPSA(mol)` excludes S and P; results will differ for molecules
 /// containing these elements.
 pub fn tpsa(mol: &Molecule) -> f64 {
+    // Always apply Hückel aromaticity so that Kekulé-form and mixed-case input
+    // (e.g. indomethacin's indolyl N written uppercase) are correctly typed.
+    // apply_aromaticity is idempotent for fully-aromatic molecules.
+    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol: &Molecule = &mol_arom;
+
     let mut psa = 0.0f64;
     for (idx, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
@@ -767,31 +780,16 @@ fn crippen_logp_for_atom(
     anchor: AtomIdx,
     queries: &[(Option<chematic_smarts::QueryMolecule>, f64, f64)],
 ) -> f64 {
-    // Aromatic oxide bridge (e.g., morphine/codeine 4,5-epoxy ring):
-    // O in a ring bonded to aromatic C AND sp2 C (C=C). RDKit perceives this as
-    // aromatic O ([o] type, logp=0.1552). Plain SMARTS matching reaches [O](a) (-0.4195).
+    // Aromatic oxide bridge: O in a ring bonded to aromatic C AND sp2 C (C=C).
+    // RDKit perceives this as [o] type (logp=0.1552); plain SMARTS gives [O](a) (-0.4195).
     let atom = mol.atom(anchor);
     if atom.element.atomic_number() == 8
         && !atom.aromatic
         && implicit_hcount(mol, anchor) == 0
         && atom.charge == 0
+        && is_aromatic_oxide_bridge(mol, anchor)
     {
-        let has_aromatic_c_nb = mol.neighbors(anchor).any(|(nb, _)| {
-            let a = mol.atom(nb);
-            a.aromatic && a.element.atomic_number() == 6
-        });
-        let has_vinyl_c_nb = mol.neighbors(anchor).any(|(nb, bidx)| {
-            mol.bond(bidx).order != BondOrder::Double
-                && mol.atom(nb).element.atomic_number() == 6
-                && mol.neighbors(nb).any(|(nb2, b2)| {
-                    nb2 != anchor
-                        && mol.bond(b2).order == BondOrder::Double
-                        && mol.atom(nb2).element.atomic_number() == 6
-                })
-        });
-        if has_aromatic_c_nb && has_vinyl_c_nb && is_atom_in_ring(mol, anchor) {
-            return 0.1552; // [o] aromatic O LogP contribution
-        }
+        return 0.1552;
     }
 
     for (q_opt, logp, _) in queries {
