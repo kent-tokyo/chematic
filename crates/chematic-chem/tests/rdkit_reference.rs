@@ -709,12 +709,12 @@ fn logp_thiophenol() {
 #[test]
 fn tpsa_metformin() {
     // CN(C)C(=N)NC(=N)N — RDKit: 88.99 Å²
-    // Tests terminal imine C=N-H (h=1, sp2) → 23.79 Å² (not 12.03 like sp3 NH)
+    // Two imine =NH (h=1, N=C): 23.85 each (calibrated from RDKit, not 23.79)
     assert_approx(
         "TPSA metformin",
         tpsa(&mol("CN(C)C(=N)NC(=N)N")),
         88.99,
-        0.5,
+        0.1,
     );
 }
 
@@ -726,7 +726,79 @@ fn tpsa_arginine() {
         "TPSA arginine",
         tpsa(&mol("N[C@@H](CCCNC(=N)N)C(=O)O")),
         125.22,
-        0.5,
+        0.1,
+    );
+}
+
+#[test]
+fn tpsa_diazepam() {
+    // CN1C(=O)CN=C(c2ccccc2)c3cc(Cl)ccc13 — RDKit: 32.67 Å²
+    // Ring imine N=C (h=0): 12.36 (not 12.89) — benzodiazepine calibration
+    assert_approx(
+        "TPSA diazepam",
+        tpsa(&mol("CN1C(=O)CN=C(c2ccccc2)c3cc(Cl)ccc13")),
+        32.67,
+        0.1,
+    );
+}
+
+#[test]
+fn tpsa_clonazepam() {
+    // O=C1CN=C(c2ccccc2Cl)c3cc([N+](=O)[O-])ccc13 — RDKit: 72.57 Å²
+    // Ring imine N=C (h=0, 12.36) + nitro group (43.14 total) + carbonyl O (17.07)
+    assert_approx(
+        "TPSA clonazepam",
+        tpsa(&mol("O=C1CN=C(c2ccccc2Cl)c3cc([N+](=O)[O-])ccc13")),
+        72.57,
+        0.1,
+    );
+}
+
+#[test]
+fn tpsa_nitrile() {
+    // N#Cc1ccccc1 — RDKit: 23.79 Å²
+    // Nitrile N (h=0, N≡C triple bond): 23.79
+    assert_approx(
+        "TPSA benzonitrile",
+        tpsa(&mol("N#Cc1ccccc1")),
+        23.79,
+        0.1,
+    );
+}
+
+#[test]
+fn tpsa_carboxylate_anion() {
+    // CC(=O)[O-] — RDKit: 40.13 Å² (O= 17.07 + O- 23.06)
+    // O- that is NOT a nitro O- gets 23.06 (not 9.23)
+    assert_approx(
+        "TPSA acetate ion",
+        tpsa(&mol("CC(=O)[O-]")),
+        40.13,
+        0.1,
+    );
+}
+
+#[test]
+fn tpsa_ring_junction_n() {
+    // c1ccc2nccn2c1 — RDKit: 17.30 Å² (bridgehead N: 4.41, pyridine N: 12.89)
+    // imidazo[1,2-a]pyridine: N at ring junction (all aromatic bonds) → 4.41
+    assert_approx(
+        "TPSA imidazo[1,2-a]pyridine",
+        tpsa(&mol("c1ccc2nccn2c1")),
+        17.30,
+        0.1,
+    );
+}
+
+#[test]
+fn tpsa_n_substituted_aromatic_n() {
+    // Cn1cnc2c1c(=O)n(C)c(=O)n2C — RDKit: 61.82 Å²
+    // Caffeine: N-methyl aromatic N (has non-aromatic bond to CH3) → 4.93
+    assert_approx(
+        "TPSA caffeine",
+        tpsa(&mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C")),
+        61.82,
+        0.1,
     );
 }
 
@@ -1075,7 +1147,7 @@ fn tpsa_all_tsv_reference() {
     let content = std::fs::read_to_string(&tsv)
         .unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e));
 
-    const TOL: f64 = 1.0;
+    const TOL: f64 = 0.1;
     let mut failures: Vec<String> = Vec::new();
 
     for line in content.lines().skip(1) {

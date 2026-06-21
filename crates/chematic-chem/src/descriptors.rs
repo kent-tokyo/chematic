@@ -498,7 +498,18 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
         if h > 0 {
             15.79
         } else if degree >= 3 {
-            if charge > 0 { 3.88 } else { 4.93 }
+            // Distinguish true ring-junction N (all bonds Aromatic, e.g. bridgehead in
+            // imidazo[1,2-a]pyridine or phthalazinone) from N-substituted (has at least
+            // one non-Aromatic bond — methyl, phenyl via explicit single, etc.).
+            // Ring-junction: 4.41 (neutral) / 4.10 (cationic).
+            // N-substituted:  4.93 (neutral) / 3.88 (cationic). — calibrated from RDKit.
+            let is_ring_junction = mol.neighbors(idx)
+                .all(|(_, bidx)| mol.bond(bidx).order == BondOrder::Aromatic);
+            if charge > 0 {
+                if is_ring_junction { 4.10 } else { 3.88 }
+            } else {
+                if is_ring_junction { 4.41 } else { 4.93 }
+            }
         } else {
             12.89
         }
@@ -519,13 +530,21 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
             26.02
         } else if h == 1 {
             if has_double_bond_to(mol, idx, 6) {
-                23.79
+                // Imine =NH (N=C with H): 23.85 (RDKit calibrated value, not 23.79)
+                23.85
             } else {
                 12.03
             }
         } else {
-            if has_double_bond_to(mol, idx, 6) {
-                12.89
+            // h == 0: distinguish nitrile (N≡C → 23.79), imine (N=C → 12.36), amine (→ 3.24)
+            let has_triple_to_c = mol.neighbors(idx).any(|(nb, bidx)| {
+                mol.bond(bidx).order == BondOrder::Triple
+                    && mol.atom(nb).element.atomic_number() == 6
+            });
+            if has_triple_to_c {
+                23.79 // nitrile N≡C
+            } else if has_double_bond_to(mol, idx, 6) {
+                12.36 // imine N=C (RDKit calibrated value, not 12.89)
             } else {
                 3.24
             }
@@ -545,23 +564,22 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             20.23
         }
     } else {
-        let is_nitro_o_minus = charge == -1
-            && mol.neighbors(idx).any(|(nb, _)| {
+        // O with charge == -1: nitro O- (next to N+) → 0.0; all other O- → 23.06
+        if charge == -1 {
+            let is_nitro_o_minus = mol.neighbors(idx).any(|(nb, _)| {
                 mol.atom(nb).element.atomic_number() == 7 && mol.atom(nb).charge == 1
             });
-        if is_nitro_o_minus {
-            0.0
-        } else {
-            let dbl_neighbor_an = mol
-                .neighbors(idx)
-                .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
-                .map(|(nei, _)| mol.atom(nei).element.atomic_number());
-            match dbl_neighbor_an {
-                Some(6) => 17.07,
-                Some(_) => 0.0,
-                None => {
-                    if is_aromatic_oxide_bridge(mol, idx) { 13.14 } else { 9.23 }
-                }
+            return if is_nitro_o_minus { 0.0 } else { 23.06 };
+        }
+        let dbl_neighbor_an = mol
+            .neighbors(idx)
+            .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
+            .map(|(nei, _)| mol.atom(nei).element.atomic_number());
+        match dbl_neighbor_an {
+            Some(6) => 17.07,
+            Some(_) => 0.0,
+            None => {
+                if is_aromatic_oxide_bridge(mol, idx) { 13.14 } else { 9.23 }
             }
         }
     }
@@ -1588,6 +1606,9 @@ pub fn implicit_hcount_per_atom(mol: &Molecule) -> Vec<u8> {
 ///
 /// Mirrors the pattern of [`logp_crippen_per_atom`].
 pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
+    // Apply aromaticity for consistent results with tpsa() (Kekulé-form parity).
+    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mol = &mol_arom;
     let n = mol.atom_count();
     let mut out = vec![0.0f64; n];
     for (idx, atom) in mol.atoms() {
