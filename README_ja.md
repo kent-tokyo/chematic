@@ -53,7 +53,7 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 全フェーズ完了 + **v0.4.x シリーズ**: PyO3 Python バインディング、MCP 15 ツール、MMFF94/UFF 力場、逆合成 `retro_disconnect()` (60 retro-SMIRKS)、記述子精度改善（TPSA ±1.0 Å²/LogP ±0.3/HBD 100%）— **211 テスト、全パス。C/C++ 依存ゼロ（デフォルトビルド）。**
 
-最新リリース: **v0.4.13**（2026-06-21）— v0.4.13: `retro_disconnect()` 60 retro-SMIRKS、ETKDG 40 トーション、TPSA/LogP/HBD 精度修正 | v0.4.12: SMARTS アトムマップ `:N` | v0.4.11: 芳香環カウント ~100% RDKit 一致 | v0.4.10: Python バインディング 50+
+最新リリース: **v0.4.14**（2026-06-21）— v0.4.13: `retro_disconnect()` 60 retro-SMIRKS、ETKDG 40 トーション、TPSA/LogP/HBD 精度修正 | v0.4.12: SMARTS アトムマップ `:N` | v0.4.11: 芳香環カウント ~100% RDKit 一致 | v0.4.10: Python バインディング 50+
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -285,7 +285,7 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 - `chematic-perception`: `count_aromatic_rings()` が Kekulé 形式に対応（RDKit #9271）；`is_atom_in_ring` 多起点 BFS 修正
 - `chematic-chem`: `tpsa()` 常時 aromaticity 適用；`is_aromatic_oxide_bridge()` 共有ヘルパーに抽出
 
-**v0.4.13**（2026-06-21）: **記述子精度改善 + テンプレート逆合成**
+**v0.4.14**（2026-06-21）: **記述子精度改善 + テンプレート逆合成**
 - `chematic-rxn`: `retro_disconnect()` — 60 retro-SMIRKS テンプレート（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）；SA Score ランク付き；Python `mol.retro_disconnect(reaction_class=...)`
 - `chematic-3d`: ETKDG トーション KB 28 → 40 パターン；adaptive noise（結合柔軟性スケーリング）
 - `chematic-chem`: `hbd_count()` が S-H（チオール）をカウント；TPSA nitro-N (41.44→43.14 Å²)、芳香族オキシドブリッジ、Kekulé-N 修正；LogP オキシドブリッジ O 修正

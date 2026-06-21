@@ -64,7 +64,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 All phases complete + **v0.4.x series**: AutoDock PDBQT docking pipeline, UFF force field (metals/organometallics), SDF partial charge writing, PyO3 Python bindings, BOILED-Egg, kekulization blossom, MCP 15 tools — **211 tests, all passing. Zero C/C++ dependencies by default.**
 
-Latest release: **v0.4.13** (2026-06-21) — v0.4.13: `retro_disconnect()` 60 retro-SMIRKS, ETKDG 40 torsion patterns, TPSA/LogP/HBD accuracy fixes (thiol HBD, nitro-N, oxide-bridge, Kekulé-N) | v0.4.12: SMARTS atom map `:N` | v0.4.11: aromatic ring count ~100% RDKit parity | v0.4.10: 50+ new Python bindings | v0.4.0: PyO3 Python bindings
+Latest release: **v0.4.14** (2026-06-21) — v0.4.14: parity-aware SMIRKS `@`/`@@` stereo, PBF heavy-only (RDKit #9238), aromatic ring Kekulé (#9271), ETKDG amide planarity, CDXML E/Z, 4 correctness bug fixes | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS, TPSA/LogP/HBD fixes | v0.4.12: SMARTS atom map `:N` | v0.4.11: aromatic ring count ~100% | v0.4.0: PyO3 Python bindings
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -80,7 +80,7 @@ Latest release: **v0.4.13** (2026-06-21) — v0.4.13: `retro_disconnect()` 60 re
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (40 torsion patterns, adaptive noise), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 45    |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering** | 25    |
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+16*)    |
-| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.13 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
+| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.14 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
 | `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **15 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, **name_to_smiles** | 28    |
 | `chematic-py`         | PyO3 Python bindings (`pip install chematic`); 300+ API endpoints: `from_smiles()`, `Mol.descriptors()`, `Mol.minimize_dreiding()`, `from_cxsmiles()`, `from_rxn_file()`/`to_rxn_file()`, `parse_sdf_with_coords()`, `Mol.ring_families()`, `tanimoto_matrix()`, `iter_sdf()`, `SimilarityIndex`; Sprint 18–26 coverage | 300+  |
