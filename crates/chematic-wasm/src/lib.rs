@@ -1058,10 +1058,15 @@ pub fn whim_descriptors_json(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
-/// Compute GETAWAY descriptors (GEometric, Topologic And wAveleT descriptors) from 3D coordinates.
-/// Returns JSON array of 9 values: [G1, G2, G3, D1, D2, D3, T, V, A]
-/// where G* = geometric autocorrelations (lag-1,2,3), D* = topologic distances,
-/// T = total pairwise distance, V = bounding-box volume, A = anisotropy ratio.
+/// Compute GETAWAY descriptors (GEometry, Topology and Atom-Weights AssemblY) from 3D coords.
+///
+/// Returns a JSON array of **19** values:
+/// - `[0..7]`  H[1..8]  — leverage autocorrelation at topological lags 1–8
+/// - `[8..15]` R[1..8]  — H[k] normalised by pair count W_k
+/// - `[16]` Hmax, `[17]` Hmean, `[18]` Htot — per-atom leverage statistics
+///
+/// Note: requires 3D coordinates (non-planar); for flat/2D structures the hat matrix
+/// is degenerate and descriptors reflect squared centroid distances, not true leverage.
 #[wasm_bindgen]
 pub fn getaway_descriptors_json(mol: &MolHandle) -> String {
     let coords = chematic_3d::generate_coords(&mol.inner);
@@ -1070,7 +1075,9 @@ pub fn getaway_descriptors_json(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
-/// Compute combined WHIM + GETAWAY descriptors (19 values total) as JSON array.
+/// Compute combined WHIM + GETAWAY descriptors (**29** values total) as JSON array.
+///
+/// Returns WHIM[0..9] (10 values) followed by GETAWAY[0..18] (19 values) = 29 total.
 /// Useful for ML pipelines requiring both shape and topologic features.
 #[wasm_bindgen]
 pub fn whim_getaway_combined_json(mol: &MolHandle) -> String {

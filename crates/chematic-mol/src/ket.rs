@@ -104,11 +104,28 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
         .and_then(|a| a.as_array())
         .ok_or(KetError::MissingField("atoms"))?;
 
+    // Guard against memory-DoS from enormous KET payloads.
+    const MAX_ATOMS: usize = 10_000;
+    const MAX_BONDS: usize = 20_000;
+    if atoms_json.len() > MAX_ATOMS {
+        return Err(KetError::InvalidJson(format!(
+            "KET file exceeds atom limit ({} > {MAX_ATOMS})",
+            atoms_json.len()
+        )));
+    }
+
     let empty_bonds = vec![];
     let bonds_json = mol_node
         .get("bonds")
         .and_then(|b| b.as_array())
         .unwrap_or(&empty_bonds);  // bonds is optional (single-atom molecules)
+
+    if bonds_json.len() > MAX_BONDS {
+        return Err(KetError::InvalidJson(format!(
+            "KET file exceeds bond limit ({} > {MAX_BONDS})",
+            bonds_json.len()
+        )));
+    }
 
     // ── Atoms ─────────────────────────────────────────────────────────────────
     let mut builder = MoleculeBuilder::new();
@@ -120,9 +137,19 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
             .and_then(|l| l.as_str())
             .ok_or(KetError::MissingField("atom.label"))?;
 
-        // Handle special labels: "*" = wildcard, "R#" = R-group, etc.
-        let element = if label == "*" || label.starts_with('R') {
-            Element::from_symbol("C").unwrap() // fallback wildcard
+        // Handle special labels:
+        // "*" = any-atom wildcard
+        // "R", "R#", "R1"–"R9"… = R-group placeholders (Ketcher uses "R#" or "R1" etc.)
+        // NOTE: must NOT catch real elements that start with 'R' (Ru, Rh, Re, Rn, Ra, Rb, Rf, Rg).
+        let is_rgroup = label == "*"
+            || label == "R"
+            || (label.starts_with('R')
+                && label
+                    .chars()
+                    .nth(1)
+                    .is_some_and(|c| c.is_ascii_digit() || c == '#'));
+        let element = if is_rgroup {
+            Element::from_symbol("C").unwrap() // fallback wildcard → carbon placeholder
         } else {
             Element::from_symbol(label)
                 .ok_or_else(|| KetError::UnknownElement(label.to_string()))?
@@ -136,7 +163,7 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
         let isotope = atom_v
             .get("isotope")
             .and_then(|i| i.as_u64())
-            .filter(|&i| i != 0)
+            .filter(|&i| i != 0 && i <= u16::MAX as u64) // guard against silent u64→u16 truncation
             .map(|i| i as u16);
 
         let explicit_h = atom_v

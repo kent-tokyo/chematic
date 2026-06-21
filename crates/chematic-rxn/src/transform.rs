@@ -392,8 +392,13 @@ fn clear_orphaned_stereo_bonds(mol: Molecule) -> Molecule {
         };
         let _ = builder.add_bond(bond.atom1, bond.atom2, order);
     }
+    // copy_stereo_from copies stereo_neighbor_order but NOT stereo_groups.
+    // Preserve both by applying each separately.
     builder.copy_stereo_from(&mol);
-    builder.build()
+    let mut result = builder.build();
+    // Restore enhanced stereo groups (ABS/OR/AND) that copy_stereo_from omits.
+    result.set_stereo_groups(mol.stereo_groups().to_vec());
+    result
 }
 
 /// Build one product molecule applying full SMIRKS semantics.

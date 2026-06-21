@@ -688,6 +688,12 @@ pub fn hosoya_index(mol: &Molecule) -> u64 {
     if n == 0 {
         return 1; // empty graph has one matching (the empty one)
     }
+    // The Hosoya index grows as the Fibonacci sequence for path graphs (Fib(n+1)).
+    // Fib(50) ≈ 1.3×10¹⁰ calls — this already takes seconds on modern hardware.
+    // Cap at 40 heavy atoms to avoid unbounded CPU spin on large/pathological inputs.
+    if n > 40 {
+        return 0; // sentinel: too large to compute efficiently
+    }
     let pos_of: std::collections::HashMap<usize, usize> =
         heavy.iter().enumerate().map(|(i, &h)| (h, i)).collect();
     let mut adj = vec![vec![false; n]; n];

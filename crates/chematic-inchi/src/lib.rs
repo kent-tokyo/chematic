@@ -187,10 +187,11 @@ pub fn reaction_inchi(rxn: &chematic_rxn::Reaction) -> String {
         out.push_str(&r_parts.join("!"));
         out.push_str("/d+");
     }
-    out.push('!');
-    if p_parts.is_empty() {
-        out.push_str("d-");
-    } else {
+    // Only emit the product block when products are non-empty.
+    // An unconditional '!' before an empty product block would produce the
+    // malformed token `!d-` that looks like a second reactant named "d-".
+    if !p_parts.is_empty() {
+        out.push('!');
         out.push_str(&p_parts.join("!"));
         out.push_str("/d-");
     }
