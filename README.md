@@ -64,7 +64,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 All phases complete + **v0.4.x series**: AutoDock PDBQT docking pipeline, UFF force field (metals/organometallics), SDF partial charge writing, PyO3 Python bindings, BOILED-Egg, kekulization blossom, MCP 15 tools — **211 tests, all passing. Zero C/C++ dependencies by default.**
 
-Latest release: **v0.4.11** (2026-06-21) — v0.4.11: aromatic ring count ~100% RDKit parity + CIF/Gaussian parser safety fixes | v0.4.10: 50+ new Python bindings (Sprint 18–26, PyPI gap analysis) | v0.4.9: PDBQT+UFF+SDF charges | v0.4.0: PyO3 Python bindings
+Latest release: **v0.4.12** (2026-06-21) — v0.4.12: SMARTS atom map `:N`, retro_disconnect() 60 retro-SMIRKS, TPSA/LogP/HBD descriptor accuracy fixes | v0.4.11: aromatic ring count ~100% RDKit parity + CIF/Gaussian parser safety fixes | v0.4.10: 50+ new Python bindings (Sprint 18–26, PyPI gap analysis) | v0.4.9: PDBQT+UFF+SDF charges | v0.4.0: PyO3 Python bindings
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -73,12 +73,12 @@ Latest release: **v0.4.11** (2026-06-21) — v0.4.11: aromatic ring count ~100% 
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 34    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords, +partial charge writing), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W; **AutoDock PDBQT** (parse + write) | 31    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 28    |
-| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 99.98% RDKit agreement** (5 000-mol benchmark) | 211   |
+| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 99.98% RDKit agreement** (5 000-mol benchmark); **TPSA ±1.0 Å² / LogP ±0.3 / HBD 100%** vs RDKit (175-mol bulk regression) | 211   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 87    |
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing; **UFF** (metals/organometallics: Zn, Fe, Cu, …) | 51    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion) | 137   |
-| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (20+ torsion patterns), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 45    |
-| `chematic-rxn`        | Reaction SMILES/SMIRKS, `find_reaction_center` — `run_reactants` with product valence validation        | 22    |
+| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (40 torsion patterns, adaptive noise), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 45    |
+| `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking | 22    |
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+16*)    |
 | `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.11 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
@@ -103,7 +103,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install @kent-tokyo/chematic@0.4.11
+npm install @kent-tokyo/chematic@0.4.12
 ```
 
 ### 5-Minute Examples

@@ -1,0 +1,117 @@
+# chematic — Status & Roadmap
+
+Current version: **v0.4.12** (2026-06-21)
+
+---
+
+## Crate map
+
+| Crate | Role | Tests |
+|-------|------|-------|
+| `chematic-core` | Atom, Bond, Molecule, Element, kekulization (4-pass incl. Edmonds' blossom + boron fix) | 69 |
+| `chematic-smiles` | OpenSMILES parser/writer, canonical SMILES | 48 |
+| `chematic-perception` | SSSR, 2-pass Hückel aromaticity, CIP stereo, `count_aromatic_rings` | 34 |
+| `chematic-smarts` | SMARTS, VF2 subgraph, MCS (McGregor), LRU SMARTS cache; **atom map `:N`** in SMARTS (`[O;D1;H0:3]`) | 137 |
+| `chematic-chem` | 70+ descriptors, ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa, ESOL; **HBD 100% / TPSA ±1.0 Å² / LogP ±0.3** RDKit parity (175-mol bulk) | 211 |
+| `chematic-fp` | ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG, Tanimoto | 87 |
+| `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 51 |
+| `chematic-3d` | ETKDG, MD, SASA, USR shape screen, WHIM | 45 |
+| `chematic-depict` | 2D SVG, grid rendering | 28 |
+| `chematic-rxn` | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`, RECAP/BRICS; **`retro_disconnect()` — 60 retro-SMIRKS** (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking | 22 |
+| `chematic-inchi` | InChI/InChIKey: pure-Rust approx + IUPAC-exact (`native-inchi` feature, v1.07.5) | 28+16* |
+| `chematic-iupac` | IUPAC name generation, 25+ compound classes | 45 |
+| `chematic-mcp` | MCP server, **15 tools** (JSON-RPC 2.0 over stdio, `name_to_smiles` via PubChem) | 28 |
+| `chematic-mol` | SDF/MOL V2000/V3000, CML, CDXML | 31 |
+| `chematic-wasm` | 130+ WASM exports, npm `@kent-tokyo/chematic` | 209 |
+| `chematic-py` | PyO3 Python bindings (`pip install chematic`); Sprint 18–26: 300+ API endpoints | 300+ |
+| `chematic-ewald` | PME Ewald summation, B-spline interpolation | 12 |
+
+`cargo test --workspace --lib --quiet` → **211 tests** (lib only), all passing
+
+---
+
+## MCP tools (chematic-mcp, 15 total)
+
+`parse_smiles` · `canonical_smiles` · `calc_properties` · `lipinski_check` · `sa_score` · `pains_check` · `brenk_check` · `admet_profile` · `boiled_egg` · `ecfp4` · `tanimoto` · `smarts_match` · `find_mcs` · `generate_3d` · `name_to_smiles`
+
+---
+
+## Known limitations
+
+| Item | Status |
+|------|--------|
+| Kekulization failures | **1/5000** — only pure H₂ `[H][H]` (no heavy atoms; IUPAC InChI library constraint, not a kekulization issue) |
+| Aromatic ring count vs RDKit | **~100%** (222/222 bench5k failures fixed in v0.4.11 — `augmented_ring_set` XOR guard `min`→`max`) |
+| HBA agreement vs RDKit | 99.98% (4999/5000) |
+| HBD agreement vs RDKit | **100%** (175/175 TSV bulk test; S-H thiol fix in v0.4.12+) |
+| TPSA accuracy vs RDKit | **±1.0 Å²** (175-mol bulk test; nitro-N, oxide bridge, Kekulé-N fixes) |
+| LogP accuracy vs RDKit | **±0.3** (175-mol bulk test; oxide bridge O fix) |
+| InChI E/Z `/b` layer | done: implemented (v0.4.5) |
+| Kekulization blossom | done: implemented (v0.4.5, 128→2 failures) |
+| Boron aromatic kekulization | done: fixed (v0.4.7, 2→1 failure) |
+| BOILED-Egg | done: implemented (v0.4.5 Rust, v0.4.6 Python, v0.4.7 WASM) |
+
+---
+
+## Out of scope (constraints)
+
+- Kekulization: all corpus failures resolved except pure H₂ (IUPAC InChI library requires at least one heavy atom)
+- Full ETKDG stochastic sampling (requires ML distance geometry)
+- Transition metals / coordination compounds
+- ML-based property prediction
+- HELM / FASTA (peptides/proteins)
+- IBM RXN4Chemistry / commercial APIs
+
+---
+
+## Next candidates
+
+| Priority | Item |
+|----------|------|
+| done: | Name→SMILES via PubChem REST proxy — `name_to_smiles` tool added (v0.4.8) |
+| done: | AutoDock PDBQT format (parse_pdbqt / write_pdbqt / autodock_atom_type) — chematic-mol v0.4.9 |
+| done: | UFF force field (assign_uff_types / uff_total_energy / minimize_uff) — chematic-ff v0.4.9 |
+| done: | SDF partial charge writing (write_sdf_with_charges) — chematic-mol v0.4.9 |
+| done: | Sprint 18–26: 50+ new Python API endpoints (PyPI gap analysis) — tanimoto_matrix, ring_families, stereo_from_coords/2d_coords, from_cxsmiles, from_rxn_file/to_rxn_file, parse_sdf_with_coords, etc. |
+| done: | MAP4 Python binding (mol.map4, bulk.map4, tanimoto_map4) — Python gap vs chemfp/mordred |
+| done: | LogD(pH) Python binding (mol.logd, mol.logd_profile) — ADMET key descriptor |
+| done: | MQN descriptors Python binding (mol.mqn) — 42-element Ertl 2009 |
+| done: | Butina clustering + MaxMin diversity Python binding — closes gap vs chemfp |
+| done: | generate_3d / conformer_ensemble / WHIM / GETAWAY / PDB-XYZ I/O Python bindings |
+| done: | mmff94_energy_breakdown + mmff94_torsion_scan Python bindings |
+| done: | functional_groups + scaffold_network Python bindings |
+| Medium | **JOSS paper** (Journal of Open Source Software) — 提出目標: **2026-11-20**。必要: `paper.md`, `CITATION.cff`, `LICENSE-MIT`/`LICENSE-APACHE` テキストファイル, `CODE_OF_CONDUCT.md`, Zenodo DOI |
+| done: | Aromatic ring count improvement — `augmented_ring_set` XOR guard `min`→`max` fix (v0.4.11); 95.6% → ~100% RDKit agreement (222件全修正) |
+| done: | MMFF94 BCI precision — already at ±0.05e (better than ±0.1e target); no action needed |
+| done: | LogP alkenyl C — already implemented (terminal 0.1551, aryl-adjacent 0.2640); no action needed |
+| done: | `retro_disconnect()` — 60 retro-SMIRKS templates (6 reaction classes) + SA Score ranking; Python `mol.retro_disconnect(reaction_class=...)` |
+| done: | TPSA/LogP/HBD descriptor accuracy: nitro-N fix, oxide bridge fix, Kekulé-N fix, S-H HBD fix; 175-mol bulk regression tests (±1.0 Å² / ±0.3 / exact) |
+| done: | bench5k.py extended with TPSA, LogP, HBD comparison vs RDKit |
+
+---
+
+## Version history (recent)
+
+| Version | Date | Highlights |
+|---------|------|-----------|
+| v0.4.12+ | 2026-06-21 | (Unreleased) HBD S-H fix; TPSA nitro-N / oxide bridge / Kekulé-N fixes; LogP oxide bridge fix; `retro_disconnect()` 60 retro-SMIRKS; ETKDG 40 torsion patterns; bulk TPSA ±1.0/LogP ±0.3/HBD 100% |
+| v0.4.12 | 2026-06-21 | SMARTS atom map `:N` support (`[O;D1;H0:3]`); fix aromatic-bond false MapNumberMismatch; fix `[C:]` parse error; propagate atom_map in mol_to_query |
+| v0.4.11 | 2026-06-21 | Aromatic ring count ~100% RDKit parity (222 bench5k fixes); CIF/Gaussian parser 8 safety fixes; clippy CI fixes |
+| v0.4.10 | 2026-06-20 | Sprint 18–26: 50+ new Python bindings (PyPI gap analysis p.12–p.20): tanimoto_matrix, ring_families, stereo_from_coords, CXSMILES, RXN file I/O, 2D stereo, SDF batch coords, DREIDING minimize, etc. |
+| v0.4.9 | 2026-06-19 | AutoDock PDBQT format, UFF force field, SDF partial charge writing; Python+WASM bindings |
+| v0.4.8 | 2026-06-19 | Iterative `augmented_ring_set`, `name_to_smiles` MCP tool (PubChem proxy) |
+| v0.4.7 | 2026-06-19 | Boron aromatic kekulization fix (2→1 failure), WASM `admet_profile_json` + BOILED-Egg |
+| v0.4.6 | 2026-06-19 | `boiled_egg()` Python binding, `admet()` extended, WASM `boiled_egg_json()`, stubs updated |
+| v0.4.5 | 2026-06-19 | Kekulization blossom (128→2), InChI E/Z `/b` layer, 6 new MCP tools, BOILED-Egg |
+| v0.4.4 | 2026-06-18 | (skipped tags v0.4.2–v0.4.3) |
+| v0.4.1 | 2026-06-18 | `aromatic_ring_count` fix + HBA rewrite — closes issue #12 |
+| v0.4.0 | 2026-06-17 | native-inchi (IUPAC C lib 1.07.5), Python PyO3 bindings |
+| v0.3.2 | 2026-06-15 | criterion benchmarks |
+| v0.3.1 | 2026-06-15 | WASM pKa/ADMET bindings |
+| v0.3.0 | 2026-06-15 | MCP server (8 tools), pKa, ADMET |
+| v0.2.11 | 2026-06-14 | MMFF94 OOP+STRE-BEN, MAP4, SMARTS cache |
+| v0.2.10 | 2026-06-14 | L-BFGS, MMFF94 energy breakdown, torsion scan |
+| v0.2.9 | 2026-06-14 | MMFF94 full minimizer (bond/angle/torsion/vdW/elec) |
+| v0.2.7-8 | 2026-06-14 | MMFF94 charges + energy parameters complete |
+
+For detailed sprint history see `git log --oneline`.

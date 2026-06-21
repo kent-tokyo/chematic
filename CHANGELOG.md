@@ -9,6 +9,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-rxn`
+
+- **Template-based retrosynthesis `retro_disconnect()`** — 60 retro-SMIRKS templates across 6 reaction classes:
+  - `AmideBond` (10): secondary/tertiary amide, sulfonamide, carbamate, urea, hydrazide, imide
+  - `Ester` (6): ester, thioester, carbonate, anhydride, acetal, lactone
+  - `Ether` (8): aryl ether (SNAr/Ullmann), Williamson, benzyl, Mitsunobu, silyl
+  - `CNBond` (11): reductive amination, SNAr-CN, Buchwald, N-alkylation, Mitsunobu-N, imine reduction
+  - `CCBond` (14): Suzuki, Heck, Sonogashira, Negishi, Grignard, aldol, Michael, Wittig, Diels-Alder
+  - `CSBond` (10): thioether, disulfide, borylation, halogenation, phosphonate
+  - Python API: `mol.retro_disconnect(max_results=20, reaction_class="AmideBond")` → `list[dict]`
+  - Returns `{template, reaction_class, precursors, sa_scores, max_sa_score}` ranked by SA Score
+- Retro-SMIRKS templates tightened: sp3 constraints added to `reductive_amination`, `n_alkylation`,
+  `mitsunobu_n`, `negishi`; enolisable H required for `aldol`, `michael_addition`; `sp3_cc_bond`
+  template removed (too broad); `friedel_crafts_alkyl` restricted to benzylic CH2
+
+### Added — `chematic-3d`
+
+- **ETKDG torsion knowledge base expanded** — 28 → 40 patterns:
+  - New `OAromatic` / `SAromatic` atom types for furan/thiophene 5-membered heterocycles
+  - `NMorpholine` / `NPiperazine` atom types for saturated N-heterocycle torsion preferences
+  - Adaptive noise: bond-flexibility scaling (amide 0.2×, biaryl 0.5×, single bond 1.0×)
+
+### Added — `examples/`
+
+- `examples/aizynthfinder_integration.py` — AiZynthFinder + chematic integration tutorial:
+  molecule preparation, BRICS 1-step retrosynthesis, scoring, route ranking (works without AiZynthFinder installed)
+
+### Fixed — `chematic-chem`
+
+- **`hbd_count()` now counts S-H (thiol)** — `hbd_count` previously only counted N-H and O-H donors.
+  Adding sulfur (atomic number 16) aligns with `rdMolDescriptors.CalcNumHBD`. Affected: cysteine (2→3),
+  thiophenol (0→1).
+- **TPSA nitro-N contribution corrected** — `tpsa_nitrogen()`: `N+(=O)[O-]` (nitro group) was returning
+  41.44 Å² instead of the correct Ertl 2000 value of 43.14 Å². Fixed: 4-nitrophenol now 63.37 (was 61.67).
+- **TPSA aromatic oxide bridge** — `tpsa_oxygen()`: bridging O in a ring bonded to aromatic C and a vinyl
+  C=C (e.g., morphine's 4,5-epoxy ring) was returning 9.23 Å² (aliphatic ether) instead of 13.14 Å²
+  (furanoid). Added BFS ring-check + aromatic-C + vinyl-C detection.
+- **TPSA Kekulé-form aromatic N** — `tpsa_nitrogen()`: N written in Kekulé SMILES (uppercase) that is
+  embedded in an aromatic ring (degree ≥ 3, aromatic neighbour, in ring) was getting 3.24 Å² (tertiary
+  amine) instead of 4.93 Å² (aromatic N). Fixes indomethacin (delta −1.69 Å² resolved).
+- **LogP Crippen O7 SMARTS typo** — `[OX1;-,-2,-2][#16]` corrected to `[OX1;-,-2,-3][#16]`
+  (Wildman-Crippen 1999 Table 1; the duplicated `−2` entry would miss O³⁻ on S).
+- **LogP aromatic oxide bridge** — `crippen_logp_for_atom()`: same oxide-bridge O now returns `[o]`-type
+  LogP (0.1552) before the SMARTS loop reaches `[O](a)` (−0.4195). Fixes morphine/codeine LogP delta.
+
+### Added — `scripts/bench5k.py`
+
+- TPSA comparison: `rdMolDescriptors.CalcTPSA(includeSandP=True)` vs `ch_mol.tpsa` (±0.1 Å² match)
+- LogP comparison: `Crippen.MolLogP` vs `ch_mol.logp` (±0.01 match)
+- HBD comparison: `rdMolDescriptors.CalcNumHBD` vs `ch_mol.hbd`
+
+### Added — `crates/chematic-chem/tests/rdkit_reference.rs`
+
+- `tpsa_all_tsv_reference()` — all 175 reference molecules within ±1.0 Å²
+- `logp_all_tsv_reference()` — all 175 reference molecules within ±0.3
+- `mw_all_tsv_reference()` — exact MW match (±0.02 Da) for all 175 molecules
+- `hac_all_tsv_reference()` — exact HAC match for all 175 molecules
+- `hbd_all_tsv_reference()` — exact HBD match for all 175 molecules
+- `tpsa_nitrobenzene()`, `tpsa_4_nitrophenol()` — nitro-group TPSA regression
+
 ---
 
 ## [0.4.12] — 2026-06-21
