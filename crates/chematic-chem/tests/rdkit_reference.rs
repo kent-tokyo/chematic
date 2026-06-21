@@ -1075,7 +1075,7 @@ fn tpsa_all_tsv_reference() {
     let content = std::fs::read_to_string(&tsv)
         .unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e));
 
-    const TOL: f64 = 2.0;
+    const TOL: f64 = 1.0;
     let mut failures: Vec<String> = Vec::new();
 
     for line in content.lines().skip(1) {
@@ -1122,7 +1122,7 @@ fn logp_all_tsv_reference() {
     let content = std::fs::read_to_string(&tsv)
         .unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e));
 
-    const TOL: f64 = 0.5;
+    const TOL: f64 = 0.3;
     let mut failures: Vec<String> = Vec::new();
 
     for line in content.lines().skip(1) {

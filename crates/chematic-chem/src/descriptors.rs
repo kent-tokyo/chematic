@@ -491,6 +491,14 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
         } else {
             if has_double_bond_to(mol, idx, 6) {
                 12.89
+            } else if mol.degree(idx) >= 3
+                && mol.neighbors(idx).any(|(nb, _)| mol.atom(nb).aromatic)
+                && is_atom_in_ring(mol, idx)
+            {
+                // Kekulé-form aromatic ring N (e.g., indomethacin indolyl N):
+                // uppercase N in a ring fused to an aromatic ring, degree≥3.
+                // RDKit perceives this as aromatic → Ertl 2000 type 4.93 Å².
+                4.93
             } else {
                 3.24
             }
@@ -759,6 +767,33 @@ fn crippen_logp_for_atom(
     anchor: AtomIdx,
     queries: &[(Option<chematic_smarts::QueryMolecule>, f64, f64)],
 ) -> f64 {
+    // Aromatic oxide bridge (e.g., morphine/codeine 4,5-epoxy ring):
+    // O in a ring bonded to aromatic C AND sp2 C (C=C). RDKit perceives this as
+    // aromatic O ([o] type, logp=0.1552). Plain SMARTS matching reaches [O](a) (-0.4195).
+    let atom = mol.atom(anchor);
+    if atom.element.atomic_number() == 8
+        && !atom.aromatic
+        && implicit_hcount(mol, anchor) == 0
+        && atom.charge == 0
+    {
+        let has_aromatic_c_nb = mol.neighbors(anchor).any(|(nb, _)| {
+            let a = mol.atom(nb);
+            a.aromatic && a.element.atomic_number() == 6
+        });
+        let has_vinyl_c_nb = mol.neighbors(anchor).any(|(nb, bidx)| {
+            mol.bond(bidx).order != BondOrder::Double
+                && mol.atom(nb).element.atomic_number() == 6
+                && mol.neighbors(nb).any(|(nb2, b2)| {
+                    nb2 != anchor
+                        && mol.bond(b2).order == BondOrder::Double
+                        && mol.atom(nb2).element.atomic_number() == 6
+                })
+        });
+        if has_aromatic_c_nb && has_vinyl_c_nb && is_atom_in_ring(mol, anchor) {
+            return 0.1552; // [o] aromatic O LogP contribution
+        }
+    }
+
     for (q_opt, logp, _) in queries {
         let Some(q) = q_opt else { continue };
         // find_matches returns Vec<HashMap<query_idx → mol_idx>>.
