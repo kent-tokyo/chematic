@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use chematic_core::{
-    AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL, validate_valence,
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL,
+    validate_valence,
 };
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches,
@@ -352,6 +353,49 @@ fn mol_to_query(mol: &Molecule) -> QueryMolecule {
     qmol
 }
 
+/// Clear Up/Down stereo markers from bonds that have no adjacent double bond.
+///
+/// After a SMIRKS reaction, C=C → C=O conversions can leave stale Up/Down
+/// markers (E/Z direction indicators) on single bonds that are no longer
+/// adjacent to any double bond.  Such orphaned markers produce invalid SMILES
+/// (`/C=O` is nonsensical) and must be demoted to plain Single bonds (RDKit #9339).
+fn clear_orphaned_stereo_bonds(mol: Molecule) -> Molecule {
+    let orphaned: Vec<BondIdx> = mol
+        .bonds()
+        .filter_map(|(bidx, bond)| {
+            if bond.order != BondOrder::Up && bond.order != BondOrder::Down {
+                return None;
+            }
+            // Up/Down is valid only when at least one endpoint has an adjacent
+            // double bond (the one that the Up/Down bond specifies direction for).
+            let has_double = [bond.atom1, bond.atom2].iter().any(|&a| {
+                mol.neighbors(a)
+                    .any(|(_, nb_bidx)| mol.bond(nb_bidx).order == BondOrder::Double)
+            });
+            if has_double { None } else { Some(bidx) }
+        })
+        .collect();
+
+    if orphaned.is_empty() {
+        return mol;
+    }
+
+    let mut builder = chematic_core::MoleculeBuilder::new();
+    for (_, atom) in mol.atoms() {
+        builder.add_atom(atom.clone());
+    }
+    for (bidx, bond) in mol.bonds() {
+        let order = if orphaned.contains(&bidx) {
+            BondOrder::Single
+        } else {
+            bond.order
+        };
+        let _ = builder.add_bond(bond.atom1, bond.atom2, order);
+    }
+    builder.copy_stereo_from(&mol);
+    builder.build()
+}
+
 /// Build one product molecule applying full SMIRKS semantics.
 ///
 /// 1. Atom-mapped product atoms: copy source atom + override aromatic/charge/H from template.
@@ -519,7 +563,9 @@ fn build_product(
         }
     }
 
-    builder.build()
+    // Clear any Up/Down stereo markers left on bonds that are no longer adjacent
+    // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
+    clear_orphaned_stereo_bonds(builder.build())
 }
 
 /// Standard Cartesian product: given `sets[0], sets[1], …`, return all
@@ -906,5 +952,47 @@ mod tests {
             "L-alanine form B (C-first @, same absolute config) must also match \
              — parity-aware comparison required");
         assert!(r_d.is_empty(), "D-alanine must still be rejected");
+    }
+
+    // ── RDKit #9339: orphaned stereo bonds cleared from products ─────────────
+
+    #[test]
+    fn smirks_reaction_clears_orphaned_stereo_bonds() {
+        // (E)-2-butene C/C=C/C has Up/Down bonds adjacent to the C=C double bond.
+        // After SMIRKS [C:1]=[C:2]>>[C:1][C:2] the double bond is reduced to a
+        // single bond.  The Up/Down single bonds on C0-C1 and C2-C3 are no longer
+        // adjacent to ANY double bond → orphaned → must be cleared (RDKit PR #9339).
+        let mol = parse("C/C=C/C").unwrap(); // (E)-2-butene
+        let results = run_reactants("[C:1]=[C:2]>>[C:1][C:2]", &[&mol]).unwrap();
+        assert!(!results.is_empty(), "should produce at least one product");
+        for prod_set in &results {
+            for prod in prod_set {
+                for (_, bond) in prod.bonds() {
+                    assert_ne!(
+                        bond.order, BondOrder::Up,
+                        "stray Up bond in product after C=C→C-C (RDKit #9339)"
+                    );
+                    assert_ne!(
+                        bond.order, BondOrder::Down,
+                        "stray Down bond in product after C=C→C-C (RDKit #9339)"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn smirks_preserves_stereo_bonds_adjacent_to_remaining_double() {
+        // If the double bond is kept unchanged, Up/Down must be preserved.
+        // [C:1]=[C:2]>>[C:1]=[C:2] is the identity transformation for alkenes.
+        let mol = parse("C/C=C/C").unwrap(); // (E)-2-butene
+        let results = run_reactants("[C:1]=[C:2]>>[C:1]=[C:2]", &[&mol]).unwrap();
+        assert!(!results.is_empty());
+        // At least one Up or Down bond must remain (E/Z stereo preserved).
+        let has_stereo_bond = results[0]
+            .iter()
+            .flat_map(|p| p.bonds())
+            .any(|(_, b)| b.order == BondOrder::Up || b.order == BondOrder::Down);
+        assert!(has_stereo_bond, "stereo bonds adjacent to retained double bond must be preserved");
     }
 }

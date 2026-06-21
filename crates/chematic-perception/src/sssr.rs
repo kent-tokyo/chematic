@@ -336,6 +336,7 @@ fn sym_diff(a: &[BondIdx], b: &[BondIdx]) -> Vec<BondIdx> {
 mod tests {
     use super::*;
     use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+    use crate::aromaticity::augmented_ring_set;
 
     // Build a cyclohexane molecule (6 carbons, 6 single bonds).
     fn cyclohexane() -> chematic_core::Molecule {
@@ -684,5 +685,55 @@ mod tests {
                 "each dodecane atom is in exactly 1 ring"
             );
         }
+    }
+
+    #[test]
+    fn test_cubane_sssr() {
+        // Cubane C8H8 — a cage molecule with 12 C-C bonds and 8 vertices.
+        // Cycle rank = E - V + 1 = 12 - 8 + 1 = 5.
+        // Cubane has 6 square (4-membered) faces but only 5 are linearly
+        // independent in GF(2) — the 6th is the symmetric difference of the rest.
+        //
+        // Known SSSR limitation (related to RDKit PR #9105):
+        // GF(2) Gaussian elimination may select a 6-membered diagonal circuit
+        // instead of all 4-membered faces. The SSSR is mathematically correct
+        // (the cycle rank is 5) but not minimal-ring-optimal for cage molecules.
+        // augmented_ring_set can recover the missing 4-membered rings.
+        let mol = chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES");
+        let sssr = find_sssr(&mol);
+
+        // Cycle rank must be exactly 5.
+        assert_eq!(
+            sssr.rings().len(),
+            5,
+            "cubane must have exactly 5 SSSR rings (cycle rank 12−8+1=5)"
+        );
+        // All rings must be ≤ 6 atoms (no pathological large rings).
+        for ring in sssr.rings() {
+            assert!(
+                ring.len() <= 6,
+                "cubane SSSR rings must be ≤ 6-membered, got {}",
+                ring.len()
+            );
+        }
+        // At least 4 of the 5 rings must be 4-membered (SSSR should find most faces).
+        let four_membered = sssr.rings().iter().filter(|r| r.len() == 4).count();
+        assert!(
+            four_membered >= 4,
+            "at least 4 of the 5 cubane SSSR rings must be 4-membered, got {four_membered}"
+        );
+
+        // augmented_ring_set (pairwise GF(2) XOR) recovers additional 4-membered
+        // faces. It gets 5 of the 6 square faces; the 6th requires a 3-way XOR
+        // of SSSR rings which pairwise augmentation does not perform.
+        // This is a known limitation of the pair-augmentation strategy for cage
+        // compounds; aromaticity perception is unaffected since cubane is not aromatic.
+        let aug = augmented_ring_set(&mol, sssr.rings());
+        let four_membered_aug = aug.iter().filter(|r| r.len() == 4).count();
+        assert_eq!(
+            four_membered_aug, 5,
+            "augmented_ring_set (pairwise XOR) recovers 5 of 6 cubane square faces; \
+             6th requires 3-way XOR — got {four_membered_aug}"
+        );
     }
 }

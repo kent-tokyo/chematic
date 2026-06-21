@@ -30,6 +30,12 @@ pub struct CxSmiles {
     pub atom_props: Vec<CxAtomProp>,
     /// Optional radical class indexed by atom order.
     pub atom_radicals: Vec<Option<u8>>,
+    /// Bond indices (0-based) marked as "wavy" (STEREOANY / unknown E/Z stereo).
+    ///
+    /// Corresponds to the `|w:N,...|` field in CXSMILES (RDKit PR #9316).
+    /// A wavy bond means the double bond has unspecified or unknown E/Z geometry
+    /// (drawn as a wavy line in 2D depictions rather than a cis/trans wedge).
+    pub wavy_bonds: Vec<BondIdx>,
 }
 
 impl CxSmiles {
@@ -40,6 +46,7 @@ impl CxSmiles {
             atom_labels: vec![None; n],
             atom_props: Vec::new(),
             atom_radicals: vec![None; n],
+            wavy_bonds: Vec::new(),
         }
     }
 }
@@ -113,6 +120,16 @@ pub fn write_cxsmiles(cx: &CxSmiles) -> String {
         fields.push(format!("Z:{}", zero_bonds.join(",")));
     }
 
+    if !cx.wavy_bonds.is_empty() {
+        let indices = cx
+            .wavy_bonds
+            .iter()
+            .map(|bidx| bidx.0.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        fields.push(format!("w:{indices}"));
+    }
+
     if !fields.is_empty() {
         base.push_str(" |");
         base.push_str(&fields.join(","));
@@ -133,15 +150,37 @@ fn split_cx(input: &str) -> (&str, Option<&str>) {
 }
 
 fn parse_cx_block(cx: &str, out: &mut CxSmiles) {
+    // Track the "active" multi-value prefix so that bare numeric tokens produced
+    // when split_cx_fields splits `w:0,2` → `["w:0", "2"]` are attributed to the
+    // correct handler (wavy bonds or zero bonds).
+    let mut last_mv: Option<char> = None;
+
     for field in split_cx_fields(cx) {
         if field.starts_with('$') && field.ends_with('$') {
             parse_labels(&field[1..field.len() - 1], out);
+            last_mv = None;
         } else if let Some(rest) = field.strip_prefix("atomProp:") {
             parse_atom_props(rest, out);
+            last_mv = None;
         } else if let Some(rest) = field.strip_prefix('Z').and_then(|s| s.strip_prefix(':')) {
             parse_zero_bonds(rest, out);
+            last_mv = Some('Z');
+        } else if let Some(rest) = field.strip_prefix('w').and_then(|s| s.strip_prefix(':')) {
+            parse_wavy_bonds(rest, out);
+            last_mv = Some('w');
         } else if let Some(rest) = field.strip_prefix('^') {
             parse_radicals(rest, out);
+            last_mv = None;
+        } else if !field.is_empty() && field.trim().chars().all(|c| c.is_ascii_digit()) {
+            // Bare digit token — continuation of a split multi-value field.
+            // split_cx_fields splits `w:0,2` at the comma, yielding `["w:0","2"]`.
+            match last_mv {
+                Some('w') => parse_wavy_bonds(field.trim(), out),
+                Some('Z') => parse_zero_bonds(field.trim(), out),
+                _ => last_mv = None,
+            }
+        } else {
+            last_mv = None;
         }
     }
 }
@@ -212,6 +251,18 @@ fn parse_zero_bonds(rest: &str, out: &mut CxSmiles) {
         }
     }
     out.mol = mol;
+}
+
+/// Parse `|w:N,M,...|` — bond indices of wavy (STEREOANY) double bonds.
+fn parse_wavy_bonds(rest: &str, out: &mut CxSmiles) {
+    for item in rest.split(',') {
+        let Ok(idx) = item.trim().parse::<u32>() else {
+            continue;
+        };
+        if (idx as usize) < out.mol.bond_count() {
+            out.wavy_bonds.push(BondIdx(idx));
+        }
+    }
 }
 
 fn parse_radicals(rest: &str, out: &mut CxSmiles) {
@@ -338,5 +389,59 @@ mod tests {
             Some("label,end\\"),
             "Escaped comma and trailing backslash should both be preserved"
         );
+    }
+
+    // ── RDKit PR #9316: CXSMILES STEREOANY / wavy bonds ─────────────────────
+
+    #[test]
+    fn parse_cxsmiles_wavy_bond_single() {
+        // |w:1| marks bond index 1 as a wavy (STEREOANY) double bond.
+        let cx = parse_cxsmiles("CC=CC |w:1|").unwrap();
+        assert_eq!(cx.wavy_bonds.len(), 1, "should find one wavy bond");
+        assert_eq!(cx.wavy_bonds[0], BondIdx(1), "wavy bond index must be 1");
+    }
+
+    #[test]
+    fn parse_cxsmiles_wavy_bond_multiple() {
+        // |w:0,2| marks two bonds as wavy.
+        let cx = parse_cxsmiles("C/C=C/C=CC |w:0,2|").unwrap();
+        assert_eq!(cx.wavy_bonds.len(), 2);
+        assert!(cx.wavy_bonds.contains(&BondIdx(0)));
+        assert!(cx.wavy_bonds.contains(&BondIdx(2)));
+    }
+
+    #[test]
+    fn cxsmiles_wavy_bond_round_trip() {
+        // Parsing |w:1| and writing back must preserve the marker.
+        let input = "CC=CC |w:1|";
+        let cx = parse_cxsmiles(input).unwrap();
+        let out = write_cxsmiles(&cx);
+        assert!(out.contains("w:1"), "wavy bond marker must round-trip: {out}");
+    }
+
+    #[test]
+    fn cxsmiles_no_wavy_bond_no_w_field() {
+        // If no wavy bonds are present, |w:| must not appear in output.
+        let cx = parse_cxsmiles("CC=CC").unwrap();
+        let out = write_cxsmiles(&cx);
+        assert!(!out.contains("w:"), "no wavy bonds → no |w:| in output: {out}");
+    }
+
+    #[test]
+    fn parse_cxsmiles_wavy_bond_out_of_range_ignored() {
+        // Bond index beyond bond count must be silently ignored.
+        let cx = parse_cxsmiles("CO |w:99|").unwrap();
+        assert!(cx.wavy_bonds.is_empty(), "out-of-range bond index must be ignored");
+    }
+
+    #[test]
+    fn cxsmiles_wavy_bond_combined_with_other_fields() {
+        // Wavy bonds should coexist with atom labels and other CX fields.
+        let input = "CC=CC |$a;b;c;d$,w:1|";
+        let cx = parse_cxsmiles(input).unwrap();
+        assert_eq!(cx.atom_labels[0].as_deref(), Some("a"));
+        assert_eq!(cx.wavy_bonds, vec![BondIdx(1)]);
+        let out = write_cxsmiles(&cx);
+        assert!(out.contains("w:1"), "wavy bond preserved with other fields: {out}");
     }
 }
