@@ -64,20 +64,20 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 All phases complete + **v0.4.x series**: AutoDock PDBQT docking pipeline, UFF force field (metals/organometallics), SDF partial charge writing, PyO3 Python bindings, BOILED-Egg, kekulization blossom, MCP 15 tools — **211 tests, all passing. Zero C/C++ dependencies by default.**
 
-Latest release: **v0.4.14** (2026-06-21) — v0.4.14: parity-aware SMIRKS `@`/`@@` stereo, PBF heavy-only (RDKit #9238), aromatic ring Kekulé (#9271), ETKDG amide planarity, CDXML E/Z, 4 correctness bug fixes | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS, TPSA/LogP/HBD fixes | v0.4.12: SMARTS atom map `:N` | v0.4.11: aromatic ring count ~100% | v0.4.0: PyO3 Python bindings
+Latest release: **v0.4.14** (2026-06-21) — v0.4.14: parity-aware SMIRKS `@`/`@@` stereo, PBF heavy-only (RDKit #9238), aromatic ring Kekulé (#9271), ETKDG amide planarity, CDXML E/Z, 4 correctness bug fixes; topological descriptors (`petitjean_index`, `graph_diameter/radius`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); GETAWAY HATS-matrix 19-dim; allene `@`/`@@` stereo; `[kN]` SMARTS; VF2 early-exit; SSSR zero-bond filter | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS, TPSA/LogP/HBD fixes | v0.4.12: SMARTS atom map `:N` | v0.4.11: aromatic ring count ~100% | v0.4.0: PyO3 Python bindings
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
 | `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `add/remove_atom/bond`, `fragments()`, `is_connected()`, `formula_with_isotopes`, `validate_valence`; `StereoGroup`/`StereoGroupKind` | 69    |
-| `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES; **stereo parity correction** (pre-solves RDKit #8775 — `@`/`@@` auto-flipped on odd permutations) | 48    |
-| `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor` | 34    |
+| `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES; **stereo parity correction** (pre-solves RDKit #8775 — `@`/`@@` auto-flipped on odd permutations); **allene cumulated double bond stereo** (`C=C=C` `@`/`@@`, round-trip stable) | 48    |
+| `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor`; **zero-order/dative bonds excluded from ring perception** | 34    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords, +partial charge writing), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W; **AutoDock PDBQT** (parse + write) | 31    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 28    |
-| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 99.98% RDKit agreement** (5 000-mol benchmark); **TPSA ±1.0 Å² / LogP ±0.3 / HBD 100%** vs RDKit (175-mol bulk regression) | 211   |
+| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 99.98% RDKit agreement** (5 000-mol benchmark); **TPSA ±1.0 Å² / LogP ±0.3 / HBD 100%** vs RDKit (175-mol bulk regression); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); `clean_stereo_groups()` in standardize | 211   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 87    |
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing; **UFF** (metals/organometallics: Zn, Fe, Cu, …) | 51    |
-| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion) | 137   |
-| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (40 torsion patterns, adaptive noise), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 45    |
+| `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion); **`[kN]` ring-size primitive**; **VF2 early-exit** when query > target atom count | 137   |
+| `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (40 torsion patterns, adaptive noise), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; **GETAWAY HATS-matrix** (full 19-dim implementation); **`whim_getaway_combined()`** now 29-dim | 45    |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering** | 25    |
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+16*)    |
 | `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.14 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
@@ -103,7 +103,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install @kent-tokyo/chematic@0.4.13
+npm install @kent-tokyo/chematic@0.4.14
 ```
 
 ### 5-Minute Examples
@@ -277,6 +277,27 @@ println!("QED:      {:.3}", qed(&aspirin));              // drug-likeness score
 println!("Lipinski: {}", lipinski_passes(&aspirin));     // true
 ```
 
+### Topological descriptors (new in v0.4.14)
+
+```rust
+use chematic_smiles::parse;
+use chematic_chem::{
+    petitjean_index, graph_diameter, graph_radius, graph_eccentricities,
+    eccentric_connectivity_index, hosoya_index, moran_autocorr, geary_autocorr,
+};
+
+let mol = parse("c1ccccc1").unwrap(); // benzene
+println!("Petitjean index:             {:.3}", petitjean_index(&mol));
+println!("Graph diameter:              {}", graph_diameter(&mol));
+println!("Graph radius:                {}", graph_radius(&mol));
+println!("Eccentric connectivity idx:  {}", eccentric_connectivity_index(&mol));
+println!("Hosoya index (Z):            {}", hosoya_index(&mol));
+
+let eccentricities = graph_eccentricities(&mol);  // Vec<u32>, one per heavy atom
+let moran  = moran_autocorr(&mol);                // Vec<f64>, lag 1..=8
+let geary  = geary_autocorr(&mol);                // Vec<f64>, lag 1..=8
+```
+
 ---
 
 ## BRICS fragmentation
@@ -435,14 +456,17 @@ const sdf = sdf_from_records_json(
 | AtomPair / Torsion / MACCS FP              | Yes                                           | Yes                 | Yes            | Yes               |
 | **MAP4 fingerprint**                       | **Yes** (Minervini 2020)                      | No (external pkg)   | No             | No                |
 | Molecular descriptors                      | **70+ (incl. BOILED-Egg, QED, SA Score)**     | ~30                 | ~20            | ~30               |
+| **Topological descriptors**                | **Yes** (Petitjean, Hosoya Z, ECI, Moran, Geary) | Partial          | Partial        | No                |
 | BRICS / RECAP fragmentation                | Yes                                           | Yes                 | No             | Yes               |
 | Murcko scaffold                            | Yes                                           | Yes                 | No             | Yes               |
 | Tautomer normalisation                     | Yes                                           | Yes                 | No             | Yes               |
 | MCS                                        | Yes                                           | Yes                 | No             | Yes               |
 | Stereoisomer enumeration                   | **Yes**                                       | Yes                 | No             | Yes               |
 | CIP stereo (R/S, E/Z) detail               | **Yes (per-atom JSON)**                       | Yes                 | Yes            | Yes               |
+| Allene cumulated stereo (`C=C=C`)          | **Yes** (`@`/`@@`, round-trip stable)         | Yes                 | Partial        | No                |
 | 3D coordinate generation                   | Yes (DG + MMFF94/DREIDING + L-BFGS)          | Yes (ETKDG)         | Yes            | Yes               |
 | 3D shape descriptors (PMI/NPR/USR/…)       | **Yes**                                       | Yes                 | No             | Yes               |
+| **3D GETAWAY descriptors (HATS-matrix)**   | **Yes** (19-dim; `whim_getaway_combined` 29-dim) | Yes              | No             | No                |
 | MMFF94 force field (all 7 energy terms)    | **Yes**                                       | Yes                 | Yes            | No                |
 | **UFF force field** (metals, organometallics) | **Yes**                                    | No                  | Yes            | No                |
 | AutoDock PDBQT format (parse + write)      | **Yes** (docking pipeline ready)              | Via Python API      | Yes            | No                |
@@ -466,7 +490,13 @@ Notes:
 
 ## Recent Development (v0.4.x Era)
 
-**[Unreleased]** (2026-06-21): **Correctness bug fixes + parity-aware stereo**
+**v0.4.14** (2026-06-21): **Topological descriptors + stereo + substructure correctness**
+- `chematic-chem`: **8 new topological descriptors** — `petitjean_index()`, `graph_eccentricities()`, `graph_diameter()`, `graph_radius()`, `eccentric_connectivity_index()`, `hosoya_index()`, `moran_autocorr()`, `geary_autocorr()`
+- `chematic-3d`: **GETAWAY HATS-matrix** full 19-dim implementation; `whim_getaway_combined()` is now 29-dim (WHIM 10 + GETAWAY 19)
+- `chematic-smiles`: **Allene cumulated double bond stereo** — `@`/`@@` in C=C=C correctly assigned and round-trip stable
+- `chematic-chem`: `clean_stereo_groups()` added to `standardize.rs` — removes orphaned and duplicate stereo group entries
+- `chematic-smarts`: **`[kN]` SMARTS primitive** (ring-size match, e.g. `[k6]` for 6-membered ring atoms); **VF2 early-exit** when query atom count exceeds target
+- `chematic-perception`: **zero-order/dative bonds excluded from ring perception** (SSSR zero-bond filter)
 - `chematic-rxn`: **parity-aware SMIRKS `@`/`@@` stereo filtering** — `smirks_chirality_ok()` correctly accepts the same absolute configuration regardless of SMILES write order (fixes write-order-dependent false positives/negatives in raw flag comparison); product bracket notation cleaned up (issue #18: `[O:1]` → `O`)
 - `chematic-3d`: ETKDG amide planarity (`snap_amide_torsions` tertiary amide fix + double-correction guard); PBF now excludes H atoms (RDKit #9238)
 - `chematic-mol`: CDXML E/Z stereo auto-derived from 2D coordinates
@@ -611,7 +641,7 @@ The envelope-ring stripper in `count_aromatic_rings` was also extended to handle
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.4.5)
+├── Cargo.toml                    workspace root (v0.4.14)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -622,7 +652,7 @@ chematic/
 │   │                             PAINS/Brenk filters, scaffold, standardization, BRICS/RECAP
 │   ├── chematic-fp/              ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG
 │   ├── chematic-ff/              MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer
-│   ├── chematic-3d/              ETKDG, MD, SASA, USR shape screen, WHIM, XYZ/PDB I/O
+│   ├── chematic-3d/              ETKDG, MD, SASA, USR shape screen, WHIM, GETAWAY, XYZ/PDB I/O
 │   ├── chematic-depict/          2D SVG rendering, grid layout, CPK colors, highlighting
 │   ├── chematic-rxn/             Reaction SMILES/SMIRKS, RunReactants, RECAP/BRICS
 │   ├── chematic-mol/             SDF/MOL V2000+V3000, CML, CDXML parser/writer

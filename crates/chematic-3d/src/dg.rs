@@ -291,7 +291,24 @@ fn place_rings(
             // else keep ring_cx/ring_cy (floating ring, shouldn't happen in SSSR)
         }
 
-        // Place each ring atom on the circle.
+        // Place each ring atom on the circle (or 3D crown for large rings).
+        //
+        // For standalone macrocycles (ring_size ≥ 8, no atoms shared with a
+        // previously-placed ring) a flat regular polygon is a poor starting
+        // geometry.  A "crown" / alternating-up-down arrangement breaks
+        // planarity and gives the force field a better starting conformation.
+        //
+        // Fused ring systems (naphthalene, steroids, …) are left flat because
+        // their envelope ring in the SSSR would be ≥ 10-membered but shares
+        // atoms with the smaller rings already placed.
+        let is_fused = ring.iter().any(|a| placed[a.0 as usize]);
+        let macrocycle_z_half = if ring_size >= 8 && !is_fused {
+            // Scale crown height with ring size: 0.3–0.7 Å
+            0.3 + 0.04 * (ring_size as f64 - 8.0).min(10.0)
+        } else {
+            0.0
+        };
+
         for (k, &atom_idx) in ring.iter().enumerate() {
             if placed[atom_idx.0 as usize] {
                 continue; // shared atom already placed by a previous ring
@@ -299,7 +316,9 @@ fn place_rings(
             let angle = 2.0 * PI * k as f64 / ring_size as f64;
             let x = ring_cx + r * angle.cos();
             let y = ring_cy + r * angle.sin();
-            coords.set(atom_idx, Point3::new(x, y, 0.0));
+            // Crown conformation: alternate atoms above/below the XY plane.
+            let z = if k % 2 == 0 { macrocycle_z_half } else { -macrocycle_z_half };
+            coords.set(atom_idx, Point3::new(x, y, z));
             placed[atom_idx.0 as usize] = true;
         }
     }
@@ -477,6 +496,45 @@ mod tests {
             6,
             "benzene still has 6 carbons after minimization"
         );
+    }
+
+    // ── Macrocycle 3D (crown conformation) ──────────────────────────────────
+
+    #[test]
+    fn macrocycle_ring_is_non_planar() {
+        // Cyclooctane (8-membered ring) should have non-zero Z spread after
+        // crown conformation placement.
+        let mol = parse("C1CCCCCCC1").unwrap(); // cyclooctane
+        let coords = generate_coords(&mol);
+        let z_vals: Vec<f64> = (0..mol.atom_count())
+            .map(|i| coords.get(AtomIdx(i as u32)).z)
+            .collect();
+        let z_spread = z_vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max)
+            - z_vals.iter().cloned().fold(f64::INFINITY, f64::min);
+        assert!(z_spread > 0.1, "8-ring should have non-planar initial geometry, z_spread={z_spread}");
+    }
+
+    #[test]
+    fn cyclohexane_remains_planar() {
+        // 6-membered ring should still be placed flat (crown only for >=8).
+        let mol = parse("C1CCCCC1").unwrap();
+        let coords = generate_coords(&mol);
+        let z_spread = (0..mol.atom_count())
+            .map(|i| coords.get(AtomIdx(i as u32)).z.abs())
+            .fold(0.0f64, f64::max);
+        assert!(z_spread < 1e-9, "6-ring should remain planar, z_spread={z_spread}");
+    }
+
+    #[test]
+    fn macrocycle_all_atoms_placed() {
+        // Cyclododecane (12-membered ring) — verify all 12 atoms have coords.
+        let mol = parse("C1CCCCCCCCCCC1").unwrap(); // cycloundecane 11-ring actually
+        let coords = generate_coords(&mol);
+        assert_eq!(coords.atom_count(), mol.atom_count());
+        for i in 0..mol.atom_count() {
+            let p = coords.get(AtomIdx(i as u32));
+            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite());
+        }
     }
 
     #[test]

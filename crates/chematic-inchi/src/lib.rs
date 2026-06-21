@@ -146,9 +146,74 @@ pub fn inchi_key(inchi_str: &str) -> String {
 /// isotope layers (`/i`), and charge layers (`/q`).
 pub use parser::{InchiParseError, parse_inchi};
 
+// ─── Reaction InChI ──────────────────────────────────────────────────────────
+
+/// Simplified Reaction InChI (not IUPAC-standard, WASM-compatible).
+///
+/// Generates a unique reaction identifier by combining InChI strings for
+/// reactants, products, and agents.  Components within each role are sorted
+/// for canonicality.
+///
+/// **Format** (pseudo-IUPAC, not bit-identical to the official IUPAC RInChI library):
+///
+/// ```text
+/// RInChI=1.00.1S/<R1>!<R2>/d+!<P1>!<P2>/d-[!<A1>/d=]
+/// ```
+///
+/// where `<Rx>` is an InChI string without the `"InChI=1S/"` prefix,
+/// `d+` marks the reactant block, `d-` the product block, and `d=` the agent block.
+///
+/// For standard-compliant RInChI, use the separate IUPAC RInChI C library.
+pub fn reaction_inchi(rxn: &chematic_rxn::Reaction) -> String {
+    fn strip(s: &str) -> String {
+        s.strip_prefix("InChI=1S/")
+            .or_else(|| s.strip_prefix("InChI=1/"))
+            .unwrap_or(s)
+            .to_owned()
+    }
+
+    let mut r_parts: Vec<String> = rxn.reactants.iter().map(|m| strip(&inchi(m))).collect();
+    let mut p_parts: Vec<String> = rxn.products.iter().map(|m| strip(&inchi(m))).collect();
+    let mut a_parts: Vec<String> = rxn.agents.iter().map(|m| strip(&inchi(m))).collect();
+
+    r_parts.sort();
+    p_parts.sort();
+    a_parts.sort();
+
+    let mut out = "RInChI=1.00.1S/".to_string();
+    if r_parts.is_empty() {
+        out.push_str("d+");
+    } else {
+        out.push_str(&r_parts.join("!"));
+        out.push_str("/d+");
+    }
+    out.push('!');
+    if p_parts.is_empty() {
+        out.push_str("d-");
+    } else {
+        out.push_str(&p_parts.join("!"));
+        out.push_str("/d-");
+    }
+    if !a_parts.is_empty() {
+        out.push('!');
+        out.push_str(&a_parts.join("!"));
+        out.push_str("/d=");
+    }
+    out
+}
+
+/// Compute an RInChIKey from a `reaction_inchi()` string.
+///
+/// Uses the same SHA-256-based hashing as `inchi_key()`.  Not identical to the
+/// IUPAC-standard RInChIKey.
+pub fn reaction_inchi_key(rinchi: &str) -> String {
+    key::inchi_key(rinchi)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chematic_rxn::parse_reaction;
     use chematic_smiles::parse;
 
     #[test]
@@ -237,6 +302,46 @@ mod tests {
             inchi_str.contains("/s1"),
             "With chirality markers, should have /s1"
         );
+    }
+
+    // ── RInChI ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn rinchi_starts_with_prefix() {
+        let rxn = parse_reaction("CC>>CCO").unwrap();
+        let ri = reaction_inchi(&rxn);
+        assert!(ri.starts_with("RInChI=1.00.1S/"), "got: {ri}");
+    }
+
+    #[test]
+    fn rinchi_contains_d_plus_and_d_minus() {
+        let rxn = parse_reaction("CC>>CCO").unwrap();
+        let ri = reaction_inchi(&rxn);
+        assert!(ri.contains("d+"), "missing d+ in: {ri}");
+        assert!(ri.contains("d-"), "missing d- in: {ri}");
+    }
+
+    #[test]
+    fn rinchi_two_reactions_differ() {
+        let r1 = reaction_inchi(&parse_reaction("CC>>CCO").unwrap());
+        let r2 = reaction_inchi(&parse_reaction("c1ccccc1>>c1ccccc1O").unwrap());
+        assert_ne!(r1, r2, "different reactions must produce different RInChI");
+    }
+
+    #[test]
+    fn rinchi_reactant_order_canonical() {
+        // Reactant order should not matter.
+        let r1 = reaction_inchi(&parse_reaction("CC.c1ccccc1>>CCc1ccccc1").unwrap());
+        let r2 = reaction_inchi(&parse_reaction("c1ccccc1.CC>>CCc1ccccc1").unwrap());
+        assert_eq!(r1, r2, "reactant order must not affect RInChI");
+    }
+
+    #[test]
+    fn rinchi_key_is_non_empty() {
+        let rxn = parse_reaction("CC>>CCO").unwrap();
+        let ri = reaction_inchi(&rxn);
+        let rk = reaction_inchi_key(&ri);
+        assert!(!rk.is_empty());
     }
 
     #[test]
