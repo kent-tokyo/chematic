@@ -544,6 +544,37 @@ fn h_assignment(mol: &Molecule) -> Vec<Option<u32>> {
         .collect()
 }
 
+/// Enumerate all forms reachable from `start` by chained direct aromatic 1,2-shifts.
+///
+/// Returns every distinct form found via BFS (excluding `start` itself).
+/// This covers the full ring orbit for systems like tetrazole where one H can
+/// reach any of the N positions in a 5-membered ring through a chain of shifts.
+fn enumerate_direct_aromatic_forms(
+    start: &Molecule,
+    blocked: &HashSet<AtomIdx>,
+    max: usize,
+) -> Vec<Molecule> {
+    let mut result = Vec::new();
+    let mut seen: HashSet<Vec<Option<u32>>> = HashSet::new();
+    seen.insert(h_assignment(start));
+    let mut frontier = vec![clone_mol(start)];
+
+    while !frontier.is_empty() && result.len() < max {
+        let current = frontier.remove(0);
+        for (d, a) in find_direct_aromatic_matches(&current) {
+            if let Some(next) = transfer_hydrogen_aromatic(&current, d, a, blocked) {
+                let ha = h_assignment(&next);
+                if !seen.contains(&ha) {
+                    seen.insert(ha);
+                    frontier.push(clone_mol(&next));
+                    result.push(next);
+                }
+            }
+        }
+    }
+    result
+}
+
 /// Find adjacent pairs of aromatic N atoms where the first (donor) carries an explicit H.
 ///
 /// Returns (donor, acceptor) pairs for direct 1,2-shift (no bridge atom).
@@ -591,7 +622,9 @@ fn transfer_hydrogen_aromatic(
         let idx = AtomIdx(i as u32);
         let mut atom = mol.atom(idx).clone();
         if idx == donor {
-            atom.hydrogen_count = Some(donor_h - 1);
+            // Use None (implicit valence) rather than Some(0) when the donor
+            // reaches 0 H; this keeps the canonical SMILES clean (n, not [n]).
+            atom.hydrogen_count = donor_h.checked_sub(1).filter(|&h| h > 0);
         } else if idx == acceptor {
             atom.hydrogen_count = Some(acceptor_h.saturating_add(1));
         }
@@ -997,18 +1030,22 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
     }
 
     // Among direct aromatic 1,2-shift tautomers, pick by tautomer score
-    // (O-H > N-H > S-H, aromatic rings), with H-assignment as tiebreaker.
+    // (O-H > N-H > S-H, aromatic rings), with canonical SMILES as tiebreaker.
+    //
+    // BFS via enumerate_direct_aromatic_forms ensures all ring positions are
+    // explored (e.g. tetrazole has 4 N atoms; a single step would miss N1↔N3).
+    // The canonical SMILES tiebreaker makes selection independent of input
+    // SMILES write order (the previous h_assignment tiebreaker was not).
     let mut candidates: Vec<Molecule> = vec![clone_mol(&current)];
-    for (d, a) in find_direct_aromatic_matches(&current) {
-        if let Some(t) = transfer_hydrogen_aromatic(&current, d, a, &config.blocked_atoms) {
-            candidates.push(t);
-        }
-    }
+    candidates.extend(enumerate_direct_aromatic_forms(&current, &config.blocked_atoms, 16));
     if candidates.len() > 1 {
         candidates.sort_by(|a, b| {
             tautomer_score(b)
                 .cmp(&tautomer_score(a))
-                .then_with(|| h_assignment(a).cmp(&h_assignment(b)))
+                .then_with(|| {
+                    chematic_smiles::canonical_smiles(a)
+                        .cmp(&chematic_smiles::canonical_smiles(b))
+                })
         });
         current = candidates.into_iter().next().unwrap();
     }
@@ -1678,8 +1715,65 @@ mod tests {
         );
     }
 
+    // ── Tetrazole 1H ↔ 2H tautomers (OpenBabel PR #2975 pattern) ────────────
+    //
+    // Tetrazole has two stable tautomers:
+    //   1H-tetrazole: H on N1 (directly adjacent to C)
+    //   2H-tetrazole: H on N2 (one position further around the ring from C)
+    // Both are aromatic and interconvert via a direct aromatic 1,2-shift.
+    // The `find_direct_aromatic_matches` path handles this case.
+
     #[test]
-    fn test_imine_ez_stereo_preserved_in_tautomer_enumeration() {
+    fn test_tetrazole_1h_enumerates_two_forms() {
+        // c1nnn[nH]1 = 1H-tetrazole.  enumerate_tautomers must find at least
+        // 2 forms (1H and 2H) via the direct aromatic 1,2-shift.
+        let mol = parse("c1nnn[nH]1").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        assert!(
+            tautomers.len() >= 2,
+            "Expected >= 2 tautomers for 1H-tetrazole, got {}",
+            tautomers.len()
+        );
+    }
+
+    #[test]
+    fn test_tetrazole_2h_enumerates_two_forms() {
+        // c1n[nH]nn1 = 2H-tetrazole (H on N two positions from C).
+        // enumerate_tautomers must find at least 2 forms (1H and 2H).
+        let mol = parse("c1n[nH]nn1").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        assert!(
+            tautomers.len() >= 2,
+            "Expected >= 2 tautomers for 2H-tetrazole, got {}",
+            tautomers.len()
+        );
+    }
+
+    #[test]
+    fn test_tetrazole_canonical_from_1h_and_2h_agrees() {
+        // canonical_tautomer must produce the same canonical form regardless of
+        // whether the input is 1H or 2H tetrazole.
+        let mol_1h = parse("c1nnn[nH]1").unwrap();
+        let mol_2h = parse("c1n[nH]nn1").unwrap();
+        let can_1h = canonical_smiles(&canonical_tautomer(&mol_1h));
+        let can_2h = canonical_smiles(&canonical_tautomer(&mol_2h));
+        assert_eq!(
+            can_1h, can_2h,
+            "canonical_tautomer must agree for 1H ({can_1h}) and 2H ({can_2h}) tetrazole"
+        );
+    }
+
+    #[test]
+    fn test_tetrazole_canonical_preserves_aromaticity() {
+        // After canonical_tautomer the ring must remain fully aromatic.
+        let mol = parse("c1nnn[nH]1").unwrap();
+        let t = canonical_tautomer(&mol);
+        let all_aromatic = t.atoms().all(|(_, a)| a.aromatic);
+        assert!(all_aromatic, "all atoms in canonical tetrazole must be aromatic");
+    }
+
+    #[test]
+    fn imine_ez_stereo_preserved_in_tautomer_enumeration() {
         // Enumerate tautomers of E-imine C/C=N/C — all resulting tautomers must
         // produce valid canonical SMILES (no empty string, no panic).
         let e_imine = parse("C/C=N/C").expect("E-imine");
