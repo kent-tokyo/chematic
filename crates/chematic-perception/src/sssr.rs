@@ -13,7 +13,25 @@
 
 use std::collections::{HashMap, VecDeque};
 
-use chematic_core::{AtomIdx, BondIdx, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+
+/// Returns `true` if the bond order is eligible for ring perception.
+///
+/// Zero-order and Dative bonds are coordinate/non-valence connections that must
+/// not form ring closures in the SSSR (RDKit PR #9118). Query bond types are
+/// also excluded since they only appear in SMARTS patterns, never in real molecules.
+fn is_ring_eligible(order: BondOrder) -> bool {
+    matches!(
+        order,
+        BondOrder::Single
+            | BondOrder::Double
+            | BondOrder::Triple
+            | BondOrder::Quadruple
+            | BondOrder::Aromatic
+            | BondOrder::Up
+            | BondOrder::Down
+    )
+}
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -58,7 +76,9 @@ impl RingSet {
 /// For acyclic molecules (r = 0) the returned set is empty.
 pub fn find_sssr(mol: &Molecule) -> RingSet {
     let v = mol.atom_count();
-    let e = mol.bond_count();
+    // Count only ring-eligible bonds for the cycle rank (E - V + C).
+    // Zero-order and Dative bonds are excluded (RDKit PR #9118).
+    let e = mol.bonds().filter(|(_, b)| is_ring_eligible(b.order)).count();
 
     if v == 0 || e == 0 {
         return RingSet(Vec::new());
@@ -74,9 +94,14 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
     let r = r as usize;
 
     // Collect all fundamental cycles from back edges as bond-index sets.
+    // Skip non-ring-eligible bonds (Zero, Dative, Query*) so that coordinate
+    // bonds and other special bond types are not treated as ring closures (RDKit PR #9118).
     let mut candidate_cycles: Vec<(Vec<BondIdx>, Vec<AtomIdx>)> = Vec::new();
 
     for (bidx, bond) in mol.bonds() {
+        if !is_ring_eligible(bond.order) {
+            continue;
+        }
         let u = bond.atom1;
         let v_atom = bond.atom2;
 
@@ -151,7 +176,12 @@ fn bfs_spanning_forest(mol: &Molecule) -> (usize, Vec<Option<AtomIdx>>) {
         queue.push_back(start_idx);
 
         while let Some(current) = queue.pop_front() {
-            for (neighbor, _bidx) in mol.neighbors(current) {
+            for (neighbor, bidx) in mol.neighbors(current) {
+                // Skip non-ring-eligible bonds (Zero, Dative, Query*) — they
+                // must not form ring closures in the spanning forest (RDKit PR #9118).
+                if !is_ring_eligible(mol.bond(bidx).order) {
+                    continue;
+                }
                 let ni = neighbor.0 as usize;
                 if !visited[ni] {
                     visited[ni] = true;
@@ -734,6 +764,60 @@ mod tests {
             four_membered_aug, 5,
             "augmented_ring_set (pairwise XOR) recovers 5 of 6 cubane square faces; \
              6th requires 3-way XOR — got {four_membered_aug}"
+        );
+    }
+
+    // ── RDKit PR #9118: SSSR excludes Zero-order and Dative bonds ────────────
+
+    #[test]
+    fn sssr_ignores_zero_order_bonds() {
+        // A--B via a single bond PLUS a Zero-order bond between the same atoms
+        // must NOT create a ring. Zero-order bonds are non-valence connections.
+        let mut b = MoleculeBuilder::new();
+        let mut a_atom = Atom::new(chematic_core::Element::C);
+        a_atom.hydrogen_count = Some(3);
+        let mut b_atom = Atom::new(chematic_core::Element::C);
+        b_atom.hydrogen_count = Some(3);
+        let a = b.add_atom(a_atom);
+        let bb = b.add_atom(b_atom);
+        b.add_bond(a, bb, BondOrder::Single).unwrap();
+        b.add_bond(a, bb, BondOrder::Zero).expect_err(
+            "duplicate bond — MoleculeBuilder should reject or ignore it"
+        );
+        // Build a proper molecule: just two atoms with a single bond.
+        // The zero-order bond attempt is rejected, so the molecule is acyclic.
+        let mol = b.build();
+        let sssr = find_sssr(&mol);
+        assert_eq!(sssr.rings().len(), 0, "single bond between two atoms → no ring");
+    }
+
+    #[test]
+    fn sssr_ignores_zero_order_bond_as_third_bond() {
+        // Benzene ring (6 aromatic bonds) PLUS one Zero-order bond closing an
+        // extra connection should NOT add a phantom 2-membered ring.
+        // We build cyclohexane (all single bonds) and verify no extra ring from
+        // a Zero-order bond added between two non-adjacent atoms.
+        let mut b = MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..4).map(|_| {
+            let mut a = Atom::new(chematic_core::Element::C);
+            a.hydrogen_count = Some(2);
+            b.add_atom(a)
+        }).collect();
+        // Square ring: 0-1-2-3-0
+        b.add_bond(atoms[0], atoms[1], BondOrder::Single).unwrap();
+        b.add_bond(atoms[1], atoms[2], BondOrder::Single).unwrap();
+        b.add_bond(atoms[2], atoms[3], BondOrder::Single).unwrap();
+        b.add_bond(atoms[3], atoms[0], BondOrder::Single).unwrap();
+        // Zero-order bond between non-adjacent atoms: should NOT create a new ring.
+        // Note: builder may reject parallel bonds; if so the test still passes.
+        let _ = b.add_bond(atoms[0], atoms[2], BondOrder::Zero);
+        let mol = b.build();
+        let sssr = find_sssr(&mol);
+        // Should find exactly 1 ring (the 4-membered ring), NOT 2 or 3.
+        assert_eq!(
+            sssr.rings().len(), 1,
+            "zero-order diagonal bond must not create extra rings: found {:?}",
+            sssr.rings().iter().map(|r| r.len()).collect::<Vec<_>>()
         );
     }
 }

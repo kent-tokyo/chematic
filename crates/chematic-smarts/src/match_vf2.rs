@@ -131,6 +131,10 @@ pub fn find_matches_with_config(
     if query.atoms.is_empty() {
         return vec![];
     }
+    // A query with more heavy atoms than the target can never match (RDKit PR #9201).
+    if query.atoms.len() > mol.atom_count() {
+        return vec![];
+    }
 
     let ctx = EvalCtx::new(mol, config);
     let mut mapping: HashMap<usize, AtomIdx> = HashMap::new();
@@ -400,6 +404,9 @@ fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
 /// with query atom 0 forced to map to `anchor`.
 fn has_match_anchored(query: &QueryMolecule, anchor: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
     if query.atoms.is_empty() {
+        return false;
+    }
+    if query.atoms.len() > ctx.mol.atom_count() {
         return false;
     }
     // Quick check: anchor must satisfy the first query atom.
@@ -707,5 +714,26 @@ mod tests {
         // With zero budget the search returns immediately — may or may not find a match.
         // Just verify it does not panic.
         let _ = m;
+    }
+
+    // ── RDKit PR #9201: query > target early exit ─────────────────────────────
+
+    #[test]
+    fn query_larger_than_target_returns_no_matches() {
+        // A 6-atom query (benzene) cannot match a 4-atom target. The early exit
+        // must fire immediately without entering VF2 recursion (RDKit PR #9201).
+        let mol = parse("CCCC").unwrap(); // 4 heavy atoms
+        let q = parse_smarts("c1ccccc1").unwrap(); // 6 query atoms
+        let m = find_matches(&q, &mol);
+        assert!(m.is_empty(), "6-atom query must not match 4-atom target");
+    }
+
+    #[test]
+    fn query_same_size_as_target_allowed() {
+        // Equal atom counts must still attempt the search (no false fast-fail).
+        let mol = parse("CCCCCC").unwrap(); // 6 atoms
+        let q = parse_smarts("CCCCCC").unwrap(); // 6 atoms
+        let m = find_matches(&q, &mol);
+        assert!(!m.is_empty(), "same-size query must be attempted");
     }
 }

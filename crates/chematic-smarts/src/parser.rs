@@ -21,7 +21,8 @@
 //!               | '+' DIGITS? | '-' DIGITS?      // charge
 //!               | 'H' DIGIT?                     // H count (no digit = H1)
 //!               | 'D' DIGIT                      // degree
-//!               | 'r' DIGIT                      // ring size
+//!               | 'r' DIGIT                      // ring size (exact in chematic)
+//!               | 'k' DIGIT                      // exact ring size (RDKit [kN] compat — alias for [rN])
 //!               | 'R'                            // in a ring
 //!               | '*'                            // wildcard
 //!               | element_symbol                 // 'C', 'Cl', 'n', …
@@ -655,6 +656,8 @@ impl<'a> Parser<'a> {
             Some(b'D') => true,
             Some(b'r') => true,
             Some(b'R') => true,
+            // Exact ring size `[kN]` (RDKit PR #9172 compat — alias for [rN] in chematic).
+            Some(b'k') => true,
             Some(b'*') => true,
             // Recursive SMARTS `$(...)`.
             Some(b'$') => true,
@@ -829,8 +832,20 @@ impl<'a> Parser<'a> {
             }
 
             // Ring size `rN` — must be checked BEFORE element parsing.
+            // In chematic `[rN]` means "atom is in a ring of EXACTLY N members".
             Some(b'r') => {
                 self.advance(); // consume 'r'
+                let n = self
+                    .parse_single_digit()
+                    .ok_or(SmartsError::UnexpectedEnd)?;
+                Ok(AtomQuery::Primitive(AtomPrimitive::RingSize(n)))
+            }
+
+            // Exact ring size `[kN]` — RDKit PR #9172 compatibility alias.
+            // RDKit added `[kN]` for "atom in a ring of exactly N members", which is the
+            // same semantics chematic already implements for `[rN]`. Accept both.
+            Some(b'k') => {
+                self.advance(); // consume 'k'
                 let n = self
                     .parse_single_digit()
                     .ok_or(SmartsError::UnexpectedEnd)?;
@@ -1075,6 +1090,44 @@ mod tests {
         assert_eq!(
             mol.atoms[0].query,
             AtomQuery::Primitive(AtomPrimitive::RingSize(5))
+        );
+    }
+
+    #[test]
+    fn test_parse_k_exact_ring_size() {
+        // RDKit PR #9172: `[kN]` is an alias for exact ring size (same as chematic's [rN]).
+        let q_k = parse_smarts("[k6]").expect("[k6] must parse");
+        let q_r = parse_smarts("[r6]").expect("[r6] must parse");
+        // Both should produce the same primitive.
+        assert_eq!(
+            q_k.atoms[0].query, q_r.atoms[0].query,
+            "[k6] and [r6] must produce identical AtomQuery"
+        );
+    }
+
+    #[test]
+    fn test_k_primitive_matches_benzene() {
+        // [k6] must match all 6 benzene atoms (all in 6-membered ring).
+        use crate::{find_matches, parse_smarts};
+        use chematic_smiles::parse;
+        let benzene = parse("c1ccccc1").unwrap();
+        let q = parse_smarts("[k6]").unwrap();
+        let m = find_matches(&q, &benzene);
+        assert_eq!(m.len(), 6, "[k6] must match all 6 benzene carbons");
+    }
+
+    #[test]
+    fn test_k_vs_r_equivalent_for_cyclopentane() {
+        // [k5] and [r5] must give identical match counts in chematic.
+        use crate::{find_matches, parse_smarts};
+        use chematic_smiles::parse;
+        let mol = parse("C1CCCC1").unwrap(); // cyclopentane
+        let q_k = parse_smarts("[k5]").unwrap();
+        let q_r = parse_smarts("[r5]").unwrap();
+        assert_eq!(
+            find_matches(&q_k, &mol).len(),
+            find_matches(&q_r, &mol).len(),
+            "[k5] and [r5] must be equivalent in chematic"
         );
     }
 
