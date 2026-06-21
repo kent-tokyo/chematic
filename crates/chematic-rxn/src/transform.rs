@@ -2,7 +2,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, validate_valence};
 use chematic_smarts::{
-    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches,
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, QueryMolecule,
+    find_matches_with_config,
 };
 
 use crate::reaction::{RxnError, parse_reaction};
@@ -94,11 +95,22 @@ fn run_reactants_impl(
         })
         .collect();
 
+    // Enable chirality-aware matching when any reactant template has @/@@ atoms.
+    // Non-stereo SMIRKS use the default (use_chirality=false) for backward compat.
+    let has_stereo = rxn.reactants.iter().any(|r| {
+        (0..r.atom_count()).any(|i| r.atom(AtomIdx(i as u32)).chirality != Chirality::None)
+    });
+    let match_config = if has_stereo {
+        MatchConfig { use_chirality: true, ..MatchConfig::default() }
+    } else {
+        MatchConfig::default()
+    };
+
     // VF2 match: for each (template_query, input_mol) pair.
     let all_match_sets: Vec<Vec<HashMap<usize, AtomIdx>>> = queries
         .iter()
         .zip(reactants.iter())
-        .map(|(q, mol)| find_matches(q, mol))
+        .map(|(q, mol)| find_matches_with_config(q, mol, &match_config))
         .collect();
 
     // No products when any template has no match.
@@ -183,6 +195,18 @@ fn mol_to_query(mol: &Molecule) -> QueryMolecule {
             );
         }
 
+        if atom.chirality != Chirality::None {
+            let kind: u8 = match atom.chirality {
+                Chirality::CounterClockwise => 1,
+                Chirality::Clockwise => 2,
+                Chirality::None => unreachable!(),
+            };
+            q = AtomQuery::And(
+                Box::new(q),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Chirality(kind))),
+            );
+        }
+
         qmol.add_atom_with_map(q, atom.atom_map);
     }
 
@@ -261,9 +285,11 @@ fn build_product(
                 let mut new_atom = src_atom.clone();
                 new_atom.aromatic = tmpl_atom.aromatic;
                 new_atom.charge = tmpl_atom.charge;
-                if tmpl_atom.hydrogen_count.is_some() {
-                    new_atom.hydrogen_count = tmpl_atom.hydrogen_count;
-                }
+                // Copy H count only when template specifies > 0 (e.g. [NH2:1]).
+                // A bare bracket atom ([O:1], [N:1]) has hydrogen_count=Some(0) which
+                // means "unspecified" in a product context — clear it so implicit
+                // valence rules determine H count (fixes issue #18).
+                new_atom.hydrogen_count = tmpl_atom.hydrogen_count.filter(|&h| h > 0);
                 // Apply product-template chirality when explicitly specified (@/@@).
                 // When the template has Chirality::None:
                 //   • If the non-mapped substituents written into the product template
@@ -680,5 +706,68 @@ mod tests {
             assert_eq!(ps[0].atom_count(), 1);
             assert_eq!(ps[1].atom_count(), 1);
         }
+    }
+
+    // ── Issue #18: product bracket notation cleanup ───────────────────────────
+
+    #[test]
+    fn product_removes_bracket_from_bare_bracket_atoms() {
+        // Issue #18: [O:1] in product template (hydrogen_count=Some(0)) must produce
+        // clean `O` SMILES, not `[O]`.
+        use chematic_smiles::canonical_smiles;
+        let mol = parse("OCC").unwrap();
+        let results = run_reactants("[OH:1]>>[O:1]", &[&mol]).unwrap();
+        assert!(!results.is_empty(), "should match hydroxyl");
+        let prod_smi = canonical_smiles(&results[0][0]);
+        assert!(
+            !prod_smi.contains("[O]"),
+            "bare [O:1] product must write as O, not [O], got: {prod_smi}"
+        );
+    }
+
+    #[test]
+    fn product_preserves_explicit_h_from_template() {
+        // [NH2:1] in product template specifies 2H explicitly — must be kept.
+        use chematic_smiles::canonical_smiles;
+        let mol = parse("NC").unwrap();
+        let results = run_reactants("[N:1]>>[NH2:1]", &[&mol]).unwrap();
+        assert!(!results.is_empty(), "should match amine N");
+        let smi = canonical_smiles(&results[0][0]);
+        // With explicit H2, the N must be in brackets.
+        assert!(
+            smi.contains("[NH2]"),
+            "explicit [NH2:1] in product must keep [NH2], got: {smi}"
+        );
+    }
+
+    // ── Issue #20: SMIRKS stereo filtering ───────────────────────────────────
+
+    #[test]
+    fn stereo_filter_rejects_wrong_enantiomer() {
+        // Issue #20: SMIRKS with @@ reactant template must match @@ but NOT @ reactant.
+        let l_ala = parse("N[C@@H](C)C(=O)O").unwrap(); // L-alanine (@@)
+        let d_ala = parse("N[C@H](C)C(=O)O").unwrap(); // D-alanine (@)
+
+        let smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O";
+        let results_l = run_reactants(smirks, &[&l_ala]).unwrap();
+        let results_d = run_reactants(smirks, &[&d_ala]).unwrap();
+
+        assert!(!results_l.is_empty(), "L-alanine (@@) must match @@ template");
+        assert!(
+            results_d.is_empty(),
+            "D-alanine (@) must NOT match @@ template (stereo filter, issue #20)"
+        );
+    }
+
+    #[test]
+    fn stereo_neutral_smirks_matches_both_enantiomers() {
+        // SMIRKS without @/@@ must still match both enantiomers (backward compat).
+        let l_ala = parse("N[C@@H](C)C(=O)O").unwrap();
+        let d_ala = parse("N[C@H](C)C(=O)O").unwrap();
+        let smirks = "[N:1][CH:2](C)C(=O)O>>[N:1][CH:2](C)C(=O)O";
+        let r_l = run_reactants(smirks, &[&l_ala]).unwrap();
+        let r_d = run_reactants(smirks, &[&d_ala]).unwrap();
+        assert!(!r_l.is_empty(), "L-alanine must match non-stereo template");
+        assert!(!r_d.is_empty(), "D-alanine must match non-stereo template");
     }
 }
