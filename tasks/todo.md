@@ -1,6 +1,6 @@
 # chematic — Status & Roadmap
 
-Current version: **v0.4.12** (2026-06-21)
+Current version: **v0.4.13** (2026-06-21)
 
 ---
 
@@ -94,7 +94,7 @@ Current version: **v0.4.12** (2026-06-21)
 
 | Version | Date | Highlights |
 |---------|------|-----------|
-| v0.4.12+ | 2026-06-21 | (Unreleased) HBD S-H fix; TPSA nitro-N / oxide bridge / Kekulé-N fixes; LogP oxide bridge fix; `retro_disconnect()` 60 retro-SMIRKS; ETKDG 40 torsion patterns; bulk TPSA ±1.0/LogP ±0.3/HBD 100% |
+| v0.4.13 | 2026-06-21 | HBD S-H fix; TPSA nitro-N / oxide bridge / Kekulé-N fixes; LogP oxide bridge fix; `retro_disconnect()` 60 retro-SMIRKS; ETKDG 40 torsion patterns; bulk TPSA ±1.0/LogP ±0.3/HBD 100% |
 | v0.4.12 | 2026-06-21 | SMARTS atom map `:N` support (`[O;D1;H0:3]`); fix aromatic-bond false MapNumberMismatch; fix `[C:]` parse error; propagate atom_map in mol_to_query |
 | v0.4.11 | 2026-06-21 | Aromatic ring count ~100% RDKit parity (222 bench5k fixes); CIF/Gaussian parser 8 safety fixes; clippy CI fixes |
 | v0.4.10 | 2026-06-20 | Sprint 18–26: 50+ new Python bindings (PyPI gap analysis p.12–p.20): tanimoto_matrix, ring_families, stereo_from_coords, CXSMILES, RXN file I/O, 2D stereo, SDF batch coords, DREIDING minimize, etc. |

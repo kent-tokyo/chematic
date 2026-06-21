@@ -64,7 +64,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 All phases complete + **v0.4.x series**: AutoDock PDBQT docking pipeline, UFF force field (metals/organometallics), SDF partial charge writing, PyO3 Python bindings, BOILED-Egg, kekulization blossom, MCP 15 tools — **211 tests, all passing. Zero C/C++ dependencies by default.**
 
-Latest release: **v0.4.12** (2026-06-21) — v0.4.12: SMARTS atom map `:N`, retro_disconnect() 60 retro-SMIRKS, TPSA/LogP/HBD descriptor accuracy fixes | v0.4.11: aromatic ring count ~100% RDKit parity + CIF/Gaussian parser safety fixes | v0.4.10: 50+ new Python bindings (Sprint 18–26, PyPI gap analysis) | v0.4.9: PDBQT+UFF+SDF charges | v0.4.0: PyO3 Python bindings
+Latest release: **v0.4.13** (2026-06-21) — v0.4.13: `retro_disconnect()` 60 retro-SMIRKS, ETKDG 40 torsion patterns, TPSA/LogP/HBD accuracy fixes (thiol HBD, nitro-N, oxide-bridge, Kekulé-N) | v0.4.12: SMARTS atom map `:N` | v0.4.11: aromatic ring count ~100% RDKit parity | v0.4.10: 50+ new Python bindings | v0.4.0: PyO3 Python bindings
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|
@@ -80,7 +80,7 @@ Latest release: **v0.4.12** (2026-06-21) — v0.4.12: SMARTS atom map `:N`, retr
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (40 torsion patterns, adaptive noise), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 45    |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking | 22    |
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+16*)    |
-| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.11 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
+| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.13 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
 | `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **15 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, **name_to_smiles** | 28    |
 | `chematic-py`         | PyO3 Python bindings (`pip install chematic`); 300+ API endpoints: `from_smiles()`, `Mol.descriptors()`, `Mol.minimize_dreiding()`, `from_cxsmiles()`, `from_rxn_file()`/`to_rxn_file()`, `parse_sdf_with_coords()`, `Mol.ring_families()`, `tanimoto_matrix()`, `iter_sdf()`, `SimilarityIndex`; Sprint 18–26 coverage | 300+  |
@@ -103,7 +103,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install @kent-tokyo/chematic@0.4.12
+npm install @kent-tokyo/chematic@0.4.13
 ```
 
 ### 5-Minute Examples
@@ -465,6 +465,23 @@ Notes:
 ---
 
 ## Recent Development (v0.4.x Era)
+
+**v0.4.13** (2026-06-21): **Descriptor accuracy improvements + template retrosynthesis**
+- `chematic-rxn`: `retro_disconnect()` — 60 retro-SMIRKS templates across 6 reaction classes (AmideBond / Ester / Ether / CNBond / CCBond / CSBond); SA Score ranking; Python `mol.retro_disconnect(reaction_class=...)`
+- `chematic-3d`: ETKDG torsion KB expanded 28 → 40 patterns; adaptive bond-flexibility noise scaling
+- `chematic-chem`: `hbd_count()` now includes S-H (thiol) — aligns with `CalcNumHBD`; TPSA nitro-N (41.44→43.14 Å²), aromatic oxide bridge (9.23→13.14 Å²), Kekulé-form aromatic N (3.24→4.93 Å²) corrections; LogP oxide-bridge O and Crippen O7 SMARTS typo fixed
+- `bench5k.py` extended: TPSA / LogP / HBD comparison vs RDKit; 175-molecule bulk regression (TPSA ±1.0 Å², LogP ±0.3, HBD exact)
+- `examples/aizynthfinder_integration.py`: end-to-end AiZynthFinder + chematic tutorial
+
+**v0.4.12** (2026-06-21): **SMARTS atom-map `:N` + retro-SMIRKS foundation**
+- SMARTS parser accepts `[O;D1;H0:3]`-style atom map numbers (`:N` suffix stored as metadata, never a match criterion)
+- `[C:]` bare colon now returns `SmartsError::UnexpectedChar` (was silently accepted)
+- `mol_to_query` propagates `atom_map` to `QueryAtom`; aromatic-bond `:` no longer mistaken for map number
+
+**v0.4.11** (2026-06-21): **Aromatic ring count ~100% + parser safety**
+- `augmented_ring_set` XOR guard `min`→`max` fixes 222/222 bench5k aromatic ring failures
+- CIF parser: 4 safety fixes (sin(γ)=0 division, oxidation suffix, missing cell params, quoted `#`)
+- Gaussian parser: structural charge/multiplicity detection, 5-column LOG format, bare atomic number
 
 **v0.4.9** (2026-06-19): **AutoDock PDBQT + UFF + SDF Partial Charges**
 - `chematic-mol`: `autodock_atom_type`, `write_pdbqt`, `parse_pdbqt` — SMILES → 3D → MMFF94 → PDBQT docking pipeline
