@@ -278,6 +278,13 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 
 ## 最近の開発（v0.4.x）
 
+**[Unreleased]**（2026-06-21）: **正確性バグ修正 + パリティ対応ステレオ**
+- `chematic-rxn`: **パリティ対応 SMIRKS `@`/`@@` ステレオフィルタリング** — `smirks_chirality_ok()` が SMILES 書き順に依存せず絶対配置を正確に比較（書き順依存の偽陰性/偽陽性バグを修正）；product bracket 記法クリーン（issue #18: `[O:1]` → `O`）
+- `chematic-3d`: ETKDG アミド平面性（三級アミド修正）；PBF 重原子のみで計算（RDKit #9238）
+- `chematic-mol`: CDXML E/Z 立体を 2D 座標から自動導出
+- `chematic-perception`: `count_aromatic_rings()` が Kekulé 形式に対応（RDKit #9271）；`is_atom_in_ring` 多起点 BFS 修正
+- `chematic-chem`: `tpsa()` 常時 aromaticity 適用；`is_aromatic_oxide_bridge()` 共有ヘルパーに抽出
+
 **v0.4.13**（2026-06-21）: **記述子精度改善 + テンプレート逆合成**
 - `chematic-rxn`: `retro_disconnect()` — 60 retro-SMIRKS テンプレート（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）；SA Score ランク付き；Python `mol.retro_disconnect(reaction_class=...)`
 - `chematic-3d`: ETKDG トーション KB 28 → 40 パターン；adaptive noise（結合柔軟性スケーリング）

@@ -273,6 +273,12 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 
 ## 近期开发（v0.4.x）
 
+**[Unreleased]**（2026-06-21）：**正确性错误修复 + 奇偶校验立体化学**
+- `chematic-rxn`：**奇偶校验感知的 SMIRKS `@`/`@@` 立体过滤** — `smirks_chirality_ok()` 正确比较绝对构型，与 SMILES 书写顺序无关（修复写入顺序相关的假阳性/假阴性）；产物括号符号清理（issue #18）
+- `chematic-3d`：ETKDG 酰胺平面性修复；PBF 现仅使用重原子（RDKit #9238）
+- `chematic-mol`：CDXML E/Z 立体化学从 2D 坐标自动推导
+- `chematic-perception`：`count_aromatic_rings()` 支持 Kekulé 形式输入（RDKit #9271）
+
 **v0.4.13**（2026-06-21）：**描述符精度提升 + 模板逆合成**
 - `chematic-rxn`：`retro_disconnect()` — 60 个 retro-SMIRKS 模板（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）；SA 分数排序；Python `mol.retro_disconnect(reaction_class=...)`
 - `chematic-3d`：ETKDG 扭转知识库 28 → 40 种模式；自适应噪声（键柔性缩放）

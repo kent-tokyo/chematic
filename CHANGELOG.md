@@ -9,6 +9,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-rxn`
+
+- **Parity-aware SMIRKS chirality matching** — `run_reactants` previously used a raw `@`/`@@` flag
+  comparison in VF2 (`eval_chirality`), which is SMILES write-order-dependent: the same absolute
+  configuration written with a different neighbor order stores an opposite chirality flag, causing
+  both false positives and false negatives. The fix adds a post-match check (`smirks_chirality_ok`)
+  that maps the SMIRKS template's `stereo_neighbor_order` through the VF2 mapping, computes the
+  parity of the resulting permutation vs. the reactant's `stereo_neighbor_order`, and accepts a
+  match iff `even_parity == (template_flag == reactant_flag)`. New test:
+  `stereo_filter_same_config_different_write_order` verifies that L-alanine as both
+  `N[C@@H](C)C(=O)O` and `C[C@H](N)C(=O)O` match the same `@@` template while D-alanine is rejected.
+- **Product bracket-atom cleanup (issue #18)** — `build_product` was copying `hydrogen_count = Some(0)`
+  from bare bracket template atoms (`[O:1]`, `[N:1]`) into product atoms, forcing bracket notation
+  (`[O]`, `[N]`) in the SMILES output. Fixed by using `.filter(|&h| h > 0)` so `Some(0)` clears to
+  `None` and implicit valence rules apply. `[NH2:1]`-style explicit-H templates continue to produce
+  `[NH2]` as expected.
+- **`snap_amide_torsions` tertiary amide fix** — previously filtered by `classify_atom_type ==
+  NSp2`, silently skipping all degree-3 (tertiary) amide nitrogens; now matches any non-aromatic N
+  with a `C(=O)` neighbour. Also fixed a double-correction bug: multiple `set_dihedral` calls on
+  the same bond read stale coordinates after the first rotation; limited to one snap per bond with
+  `break 'snap`.
+- **`is_atom_in_ring` multi-start BFS** — single-pair BFS (`nbs[0]` → `nbs[1]`) returned false for
+  degree-≥3 atoms when `nbs[0]` is an exocyclic substituent. Replaced with a multi-start BFS that
+  tries every neighbour as the starting point.
+- **`tpsa()` always applies aromaticity** — mixed-case input (e.g. indomethacin's Kekulé indolyl N
+  written uppercase) was misclassified; `apply_aromaticity` is now called unconditionally so all
+  input forms are correctly typed.
+- **`is_aromatic_oxide_bridge()` helper extracted** — oxide-bridge detection logic was duplicated in
+  `tpsa_oxygen()` and `crippen_logp_for_atom()`; consolidated into one shared helper.
+
+### Fixed — `chematic-3d`
+
+- **ETKDG amide planarity (RDKit #9266)** — `snap_amide_torsions` post-processing step added:
+  after constraint satisfaction, tertiary amide `ω` angles outside ±30° of 0° or 180° are snapped
+  to the nearer planar value.
+- **PBF (Plane of Best Fit) uses heavy atoms only (RDKit #9238)** — `plane_of_best_fit()` now
+  excludes hydrogen atoms, matching the published definition and RDKit convention. Including H
+  artificially reduces PBF for flat aromatic rings.
+
+### Fixed — `chematic-mol`
+
+- **CDXML E/Z stereo** — `flush()` now calls `assign_ez_from_2d()` after parsing, deriving E/Z
+  descriptors from 2D coordinates for double bonds in CDXML input.
+
+### Fixed — `chematic-perception`
+
+- **`count_aromatic_rings()` handles Kekulé input (RDKit #9271)** — bracket atoms without aromatic
+  flags (uppercase SMILES) returned 0 aromatic rings. Fixed by applying Hückel aromaticity
+  perception (`apply_aromaticity`) internally when no aromatic flags are set, so fluorescein
+  dianion and rhodamine-type zwitterions are correctly classified.
+
+### Added — tests
+
+- `transform::tests::stereo_filter_same_config_different_write_order` — verifies parity-aware
+  chirality matching across different SMILES write orders
+- `transform::tests::product_removes_bracket_from_bare_bracket_atoms` — issue #18 regression
+- `shape_descriptors::tests::pbf_uses_heavy_atoms_only` — PBF H-exclusion regression
+- `aromaticity::tests::test_fluorescein_dianion_aromatic` — Kekulé aromatic ring count regression
+- `aromaticity::tests::test_rhodamine_zwitterion_parses` — zwitterion parse regression
+- Canonical SMILES PAH round-trip tests for pyrene and benzo[a]pyrene (14 new cases)
+
+### Changed — documentation
+
+- `eval_chirality` in `chematic-smarts`: doc comment added explaining the raw-flag limitation and
+  directing SMIRKS users to `smirks_chirality_ok` instead
+- `run_smirks` / `run_smirks_strict` Python docstrings: stereo filtering behaviour documented
+
 ---
 
 ## [0.4.13] — 2026-06-21

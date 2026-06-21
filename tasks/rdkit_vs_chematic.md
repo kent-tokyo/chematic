@@ -1,7 +1,7 @@
 # RDKit vs chematic — 性能・機能比較レポート
 
-作成日: 2026-06-20 / 最終更新: 2026-06-21（セッション 7 完了）  
-chematic バージョン: v0.4.12
+作成日: 2026-06-20 / 最終更新: 2026-06-21（セッション 8 完了）  
+chematic バージョン: v0.4.13（Unreleased 修正含む）
 
 ---
 
@@ -106,7 +106,7 @@ WASM のサイズ差はブラウザ・エッジ用途で決定的。pip 一発�
 | 逆合成ツール（MCP） | BRICS+SA Score ランク付き（`retrosynthesis` MCP） | なし | chematic のみ |
 | **テンプレートベース逆合成** | **`retro_disconnect()` — 60 件 retro-SMIRKS**（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）; Python `Mol.retro_disconnect(reaction_class=...)` | 外部ライブラリ（AiZynthFinder） | chematic 組み込み（ML不要） |
 | **AiZynthFinder 連携** | `examples/aizynthfinder_integration.py` — 分子準備・BRICS・スコアリング・ルートランキングのチュートリアル | 連携方法の公式ドキュメントなし | chematic 側でチュートリアル提供 |
-| 立体化学 SMIRKS | `@`/`@@` で反転・保持・消去が可能（`run_reactants` / `run_reactants_strict`） | あり（同等） | 同等 |
+| 立体化学 SMIRKS | `@`/`@@` で反転・保持・消去が可能（`run_reactants` / `run_reactants_strict`）；**パリティ対応ステレオフィルタリング** — SMILES 書き順に依存しない正確な絶対配置マッチング（`smirks_chirality_ok` + `permutation_parity`） | あり（raw フラグ比較のみ） | chematic が正確 |
 | SMIRKS strict モード | `run_reactants_strict` — 非マップ原子を産物に含めない厳密モード | なし | chematic のみ |
 | MLP 溶解度モデル | ECFP4 → Ridge regression（`mlp_solubility`）、`trained-solubility-mlp` feature | 外部ライブラリ連携 | chematic のみ（組み込み） |
 
@@ -427,4 +427,5 @@ RDKit との差は「sklearn/PyTorch 連携のサンプルコード・チュー�
 *セッション 4: SMARTS atom map `:N` サポート・コードレビュー 4 件修正（reaction SMARTS 誤拒否・`[C:]` 誤受理・overflow 不一致・mol_to_query atom_map 伝播）（v0.4.12、全 211 テスト通過）*  
 *セッション 5: ETKDG トーション角 28→40 パターン（5員環ヘテロ環・morpholine/piperazine・adaptive noise）・`retro_disconnect()` 60 件 retro-SMIRKS・AiZynthFinder 連携チュートリアル（全テスト通過）*  
 *セッション 6: TPSA 硝酸基 N 修正（41.44→43.14）・TPSA 芳香族オキシドブリッジ修正（morphine/codeine +3.91 解消）・LogP O7 タイポ修正・bench5k TPSA/LogP 拡張・TSV 全量回帰テスト 175 分子（113 テスト全通過）*  
-*セッション 7: HBD S-H 修正（cysteine/thiophenol）・TPSA Kekulé-N 修正（indomethacin +1.69 解消）・LogP oxide bridge O 修正（morphine/codeine -0.47 解消）・TPSA ±1.0/LogP ±0.3 に tolerance 引き締め・MW/HAC/HBD バルクテスト追加（113 テスト全通過）*
+*セッション 7: HBD S-H 修正（cysteine/thiophenol）・TPSA Kekulé-N 修正（indomethacin +1.69 解消）・LogP oxide bridge O 修正（morphine/codeine -0.47 解消）・TPSA ±1.0/LogP ±0.3 に tolerance 引き締め・MW/HAC/HBD バルクテスト追加（113 テスト全通過）*  
+*セッション 8: ETKDG アミド平面性 snap_amide_torsions（三級アミド修正・二重補正ガード）・CDXML E/Z 立体・PBF 重原子のみ（RDKit #9238）・count_aromatic_rings Kekulé 形式対応（RDKit #9271）・is_atom_in_ring 多起点 BFS 修正（degree≥3 偽陰性）・tpsa() 常時 apply_aromaticity・GitHub issues #18/#20 修正（product bracket 記法クリーン・SMIRKS 立体フィルタリング）・**SMIRKS @/@@ パリティ対応ステレオ（SMILES 書き順依存バグ修正、smirks_chirality_ok + permutation_parity）**（全 211 テスト通過）*

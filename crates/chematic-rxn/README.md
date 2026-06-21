@@ -8,6 +8,9 @@ Reaction SMILES and SMIRKS parser for Rust. Parses chemical transformations (rea
 - **SMIRKS parsing**: transform patterns for reaction template matching (`run_reactants`, `run_reactants_strict`)
 - **Atom mapping**: track which atoms in reactants map to which atoms in products
 - **Reaction properties**: count reactants, products, and agents
+- **Stereo-selective SMIRKS**: `@`/`@@` in reactant templates filter by absolute configuration using
+  permutation-parity comparison (write-order independent — the same enantiomer is matched regardless
+  of how the reactant SMILES was written)
 - **Template-based retrosynthesis** (`retro_disconnect`): 60 retro-SMIRKS templates across 6 classes:
   - `AmideBond` — amide, sulfonamide, carbamate, urea, hydrazide, imide
   - `Ester` — ester, thioester, carbonate, anhydride, acetal, lactone

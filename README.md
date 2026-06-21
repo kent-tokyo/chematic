@@ -78,7 +78,7 @@ Latest release: **v0.4.13** (2026-06-21) — v0.4.13: `retro_disconnect()` 60 re
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing; **UFF** (metals/organometallics: Zn, Fe, Cu, …) | 51    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion) | 137   |
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (40 torsion patterns, adaptive noise), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ | 45    |
-| `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking | 22    |
+| `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering** | 25    |
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+16*)    |
 | `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.13 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
@@ -465,6 +465,13 @@ Notes:
 ---
 
 ## Recent Development (v0.4.x Era)
+
+**[Unreleased]** (2026-06-21): **Correctness bug fixes + parity-aware stereo**
+- `chematic-rxn`: **parity-aware SMIRKS `@`/`@@` stereo filtering** — `smirks_chirality_ok()` correctly accepts the same absolute configuration regardless of SMILES write order (fixes write-order-dependent false positives/negatives in raw flag comparison); product bracket notation cleaned up (issue #18: `[O:1]` → `O`)
+- `chematic-3d`: ETKDG amide planarity (`snap_amide_torsions` tertiary amide fix + double-correction guard); PBF now excludes H atoms (RDKit #9238)
+- `chematic-mol`: CDXML E/Z stereo auto-derived from 2D coordinates
+- `chematic-perception`: `count_aromatic_rings()` handles Kekulé-form input (RDKit #9271); `is_atom_in_ring` multi-start BFS (degree-≥3 false-negative fix)
+- `chematic-chem`: `tpsa()` always applies aromaticity; `is_aromatic_oxide_bridge()` shared helper
 
 **v0.4.13** (2026-06-21): **Descriptor accuracy improvements + template retrosynthesis**
 - `chematic-rxn`: `retro_disconnect()` — 60 retro-SMIRKS templates across 6 reaction classes (AmideBond / Ester / Ether / CNBond / CCBond / CSBond); SA Score ranking; Python `mol.retro_disconnect(reaction_class=...)`

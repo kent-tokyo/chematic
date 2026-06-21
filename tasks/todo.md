@@ -17,7 +17,7 @@ Current version: **v0.4.13** (2026-06-21)
 | `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 51 |
 | `chematic-3d` | ETKDG, MD, SASA, USR shape screen, WHIM | 45 |
 | `chematic-depict` | 2D SVG, grid rendering | 28 |
-| `chematic-rxn` | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`, RECAP/BRICS; **`retro_disconnect()` — 60 retro-SMIRKS** (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking | 22 |
+| `chematic-rxn` | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`, RECAP/BRICS; **`retro_disconnect()` — 60 retro-SMIRKS** (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering** | 25 |
 | `chematic-inchi` | InChI/InChIKey: pure-Rust approx + IUPAC-exact (`native-inchi` feature, v1.07.5) | 28+16* |
 | `chematic-iupac` | IUPAC name generation, 25+ compound classes | 45 |
 | `chematic-mcp` | MCP server, **15 tools** (JSON-RPC 2.0 over stdio, `name_to_smiles` via PubChem) | 28 |
@@ -94,6 +94,7 @@ Current version: **v0.4.13** (2026-06-21)
 
 | Version | Date | Highlights |
 |---------|------|-----------|
+| [Unreleased] | 2026-06-21 | Parity-aware SMIRKS @/@@ stereo (write-order independent); product bracket cleanup (#18); PBF heavy-only (RDKit #9238); count_aromatic_rings Kekulé (#9271); ETKDG amide planarity; CDXML E/Z stereo; is_atom_in_ring multi-start BFS; 4 code-review bug fixes |
 | v0.4.13 | 2026-06-21 | HBD S-H fix; TPSA nitro-N / oxide bridge / Kekulé-N fixes; LogP oxide bridge fix; `retro_disconnect()` 60 retro-SMIRKS; ETKDG 40 torsion patterns; bulk TPSA ±1.0/LogP ±0.3/HBD 100% |
 | v0.4.12 | 2026-06-21 | SMARTS atom map `:N` support (`[O;D1;H0:3]`); fix aromatic-bond false MapNumberMismatch; fix `[C:]` parse error; propagate atom_map in mol_to_query |
 | v0.4.11 | 2026-06-21 | Aromatic ring count ~100% RDKit parity (222 bench5k fixes); CIF/Gaussian parser 8 safety fixes; clippy CI fixes |
