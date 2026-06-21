@@ -369,6 +369,16 @@ fn eval_hybridization(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
 }
 
 /// Chirality primitive: ignored when use_chirality is false.
+///
+/// **Limitation**: this is a raw flag comparison. `@`/`@@` in SMILES/SMARTS
+/// encodes chirality *relative to the SMILES atom write order*, not as an
+/// absolute spatial property. Two SMILES strings that represent the same
+/// absolute configuration but are written with neighbors in a different order
+/// will store opposite `Chirality` flags, making the raw comparison incorrect.
+///
+/// For SMARTS queries this is acceptable when the query and target share the same
+/// write-order convention. For SMIRKS reaction templates, use the parity-aware
+/// `smirks_chirality_ok` post-check in `chematic-rxn::transform` instead.
 fn eval_chirality(idx: AtomIdx, ctx: &EvalCtx<'_>, kind: u8) -> bool {
     if !ctx.config.use_chirality {
         return true;

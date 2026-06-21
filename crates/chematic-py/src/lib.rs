@@ -4858,8 +4858,16 @@ fn depict_grid(mols: Vec<Mol>, cols: usize) -> String {
 /// Returns a list of product sets; each set is a list of Mol.
 /// Raises ``ValueError`` on SMIRKS parse failure or reactant count mismatch.
 ///
+/// **Stereochemistry**: when the reactant template contains ``@``/``@@`` stereo
+/// descriptors, only reactant molecules whose chiral centres match the template
+/// configuration are accepted (parity-aware comparison, SMILES write-order
+/// independent). Templates without stereo descriptors match both enantiomers.
+///
 ///     products = chematic.run_smirks("[OH:1]>>[O-:1]", [mol])
 ///     # → [[product_mol], ...]
+///
+///     # Stereo-selective: only L-amino acids match this template
+///     l_products = chematic.run_smirks("[N:1][C@@H:2](C)C(=O)O>>[N:1].[C@@H:2](C)C(=O)O", [mol])
 #[pyfunction]
 fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
     for mol in &reactants {
@@ -4887,6 +4895,7 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
 ///
 /// Like :func:`run_smirks` but **does not carry substituents** into products.
 /// Only atoms explicitly mapped in the product template are included.
+/// Stereo filtering behaviour is identical to :func:`run_smirks`.
 ///
 ///     products = chematic.run_smirks_strict("[N:1][C:2]>>[N:1].[C:2]", [mol])
 ///     # → only the mapped N and C atoms; no R-groups attached

@@ -1,9 +1,10 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, validate_valence};
+use chematic_core::{
+    AtomIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL, validate_valence,
+};
 use chematic_smarts::{
-    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, QueryMolecule,
-    find_matches_with_config,
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches,
 };
 
 use crate::reaction::{RxnError, parse_reaction};
@@ -95,22 +96,20 @@ fn run_reactants_impl(
         })
         .collect();
 
-    // Enable chirality-aware matching when any reactant template has @/@@ atoms.
-    // Non-stereo SMIRKS use the default (use_chirality=false) for backward compat.
+    // Detect whether any reactant template carries @/@@ stereo, so we can apply
+    // the parity-aware post-check after VF2 completes.  Chirality is NOT encoded
+    // into the VF2 query because the raw flag comparison in eval_chirality is
+    // SMILES-write-order-dependent; the correct check requires the full mapping
+    // (see smirks_chirality_ok below).
     let has_stereo = rxn.reactants.iter().any(|r| {
-        (0..r.atom_count()).any(|i| r.atom(AtomIdx(i as u32)).chirality != Chirality::None)
+        r.atoms().any(|(_, a)| a.chirality != Chirality::None)
     });
-    let match_config = if has_stereo {
-        MatchConfig { use_chirality: true, ..MatchConfig::default() }
-    } else {
-        MatchConfig::default()
-    };
 
     // VF2 match: for each (template_query, input_mol) pair.
     let all_match_sets: Vec<Vec<HashMap<usize, AtomIdx>>> = queries
         .iter()
         .zip(reactants.iter())
-        .map(|(q, mol)| find_matches_with_config(q, mol, &match_config))
+        .map(|(q, mol)| find_matches(q, mol))
         .collect();
 
     // No products when any template has no match.
@@ -141,6 +140,18 @@ fn run_reactants_impl(
             }
         }
 
+        // Parity-aware chirality post-check.  Runs only when the SMIRKS has @/@@.
+        // This must happen after the complete VF2 mapping is known, because
+        // correct chirality comparison requires the full neighbor permutation.
+        if has_stereo {
+            let ok = (0..rxn.reactants.len()).all(|ri| {
+                smirks_chirality_ok(&rxn.reactants[ri], reactants[ri], &combo[ri])
+            });
+            if !ok {
+                continue;
+            }
+        }
+
         let products: Vec<Molecule> = rxn
             .products
             .iter()
@@ -158,6 +169,116 @@ fn run_reactants_impl(
     Ok(results)
 }
 
+// ---------------------------------------------------------------------------
+// SMIRKS chirality post-check (parity-aware)
+// ---------------------------------------------------------------------------
+
+/// Returns the parity of the permutation P that maps `from_seq` to `to_seq`:
+/// `Some(true)` = even (same chirality sense), `Some(false)` = odd (inverted).
+/// Returns `None` when the sequences differ in length or contain elements that
+/// cannot be aligned (e.g. an unmapped neighbour).
+fn permutation_parity(from_seq: &[u32], to_seq: &[u32]) -> Option<bool> {
+    let n = from_seq.len();
+    if n != to_seq.len() {
+        return None;
+    }
+    // Build perm[j] = index i in from_seq where from_seq[i] == to_seq[j].
+    let mut perm = Vec::with_capacity(n);
+    for &t in to_seq {
+        let pos = from_seq.iter().position(|&f| f == t)?;
+        perm.push(pos);
+    }
+    // Count inversions to determine parity.
+    let mut inv = 0usize;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            if perm[i] > perm[j] {
+                inv += 1;
+            }
+        }
+    }
+    Some(inv.is_multiple_of(2)) // true = even = chirality flags must agree for same config
+}
+
+/// Parity-aware stereo check for one (template, reactant, mapping) triple.
+///
+/// For each chiral atom in `tmpl`, maps the template's recorded SMILES stereo
+/// neighbor order through the VF2 `match_map` into the reactant atom-index space,
+/// then computes the parity of the permutation relative to the reactant's recorded
+/// SMILES stereo neighbor order.
+///
+/// - Even parity → chirality flags must agree for same absolute configuration.
+/// - Odd parity  → chirality flags must differ for same absolute configuration.
+///
+/// Returns `true` if all chiral centres are consistent, `false` if any mismatch.
+fn smirks_chirality_ok(
+    tmpl: &Molecule,
+    reactant: &Molecule,
+    match_map: &HashMap<usize, AtomIdx>,
+) -> bool {
+    for i in 0..tmpl.atom_count() {
+        let tmpl_atom = tmpl.atom(AtomIdx(i as u32));
+        if tmpl_atom.chirality == Chirality::None {
+            continue;
+        }
+
+        // Template atom's SMILES stereo neighbour order (template atom indices).
+        let Some(tmpl_order) = tmpl.stereo_neighbor_order(AtomIdx(i as u32)) else {
+            continue; // No recorded order — skip this centre.
+        };
+
+        // Corresponding matched reactant atom.
+        let Some(&react_idx) = match_map.get(&i) else {
+            continue; // Template atom not in mapping (shouldn't happen for complete match).
+        };
+
+        let react_atom = reactant.atom(react_idx);
+        if react_atom.chirality == Chirality::None {
+            return false; // Template requires stereo; reactant atom has none.
+        }
+
+        // Map each template stereo-neighbour index to the corresponding reactant atom index.
+        let mut mapped: Vec<u32> = Vec::with_capacity(tmpl_order.len());
+        let mut all_mapped = true;
+        for &t in tmpl_order {
+            if t == STEREO_H_SENTINEL {
+                mapped.push(STEREO_H_SENTINEL);
+            } else {
+                match match_map.get(&(t as usize)) {
+                    Some(ri) => mapped.push(ri.0),
+                    None => {
+                        all_mapped = false;
+                        break;
+                    }
+                }
+            }
+        }
+        if !all_mapped {
+            continue; // Partial substructure match — cannot verify chirality.
+        }
+
+        // Reactant atom's SMILES stereo neighbour order (reactant atom indices).
+        let Some(react_order) = reactant.stereo_neighbor_order(react_idx) else {
+            // No recorded order in reactant — fall back to raw flag comparison.
+            if react_atom.chirality != tmpl_atom.chirality {
+                return false;
+            }
+            continue;
+        };
+
+        let Some(even_parity) = permutation_parity(&mapped, react_order) else {
+            continue; // Alignment failed — skip.
+        };
+
+        // Check: even parity → flags must agree; odd parity → flags must differ.
+        let same_flag = tmpl_atom.chirality == react_atom.chirality;
+        if same_flag != even_parity {
+            return false;
+        }
+    }
+    true
+}
+
 /// Convert a SMIRKS reactant-template `Molecule` to a `QueryMolecule` for VF2.
 ///
 /// Constraints included:
@@ -166,12 +287,15 @@ fn run_reactants_impl(
 /// - `HCount` when a bracket atom specifies H > 0 (e.g. `[NH2:1]`)
 ///   Zero-H bracket atoms (`[N:1]`) are treated as "any H count" because
 ///   the parser returns 0 for both unspecified and explicit-zero H.
+///
+/// Chirality (`@`/`@@`) is NOT encoded into the query here; it is checked after
+/// VF2 matching via `smirks_chirality_ok`, which uses a permutation-parity
+/// comparison so that the same absolute configuration is recognised regardless
+/// of how the reactant molecule was written as SMILES.
 fn mol_to_query(mol: &Molecule) -> QueryMolecule {
     let mut qmol = QueryMolecule::new();
 
-    for i in 0..mol.atom_count() {
-        let atom = mol.atom(AtomIdx(i as u32));
-
+    for (_, atom) in mol.atoms() {
         let mut q = AtomQuery::And(
             Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(
                 atom.element.atomic_number(),
@@ -192,18 +316,6 @@ fn mol_to_query(mol: &Molecule) -> QueryMolecule {
             q = AtomQuery::And(
                 Box::new(q),
                 Box::new(AtomQuery::Primitive(AtomPrimitive::HCount(h))),
-            );
-        }
-
-        if atom.chirality != Chirality::None {
-            let kind: u8 = match atom.chirality {
-                Chirality::CounterClockwise => 1,
-                Chirality::Clockwise => 2,
-                Chirality::None => unreachable!(),
-            };
-            q = AtomQuery::And(
-                Box::new(q),
-                Box::new(AtomQuery::Primitive(AtomPrimitive::Chirality(kind))),
             );
         }
 
@@ -769,5 +881,30 @@ mod tests {
         let r_d = run_reactants(smirks, &[&d_ala]).unwrap();
         assert!(!r_l.is_empty(), "L-alanine must match non-stereo template");
         assert!(!r_d.is_empty(), "D-alanine must match non-stereo template");
+    }
+
+    #[test]
+    fn stereo_filter_same_config_different_write_order() {
+        // Parity-aware matching must accept the same absolute configuration
+        // regardless of SMILES atom write order (the confirmed bug in raw flag
+        // comparison). Both molecules ARE L-alanine.
+        //   Form A: N[C@@H](C)C(=O)O  — N written first, stored as Clockwise
+        //   Form B: C[C@H](N)C(=O)O   — C_methyl first, stored as CounterClockwise
+        // A raw flag comparison would reject Form B against an @@ template.
+        let l_form_a = parse("N[C@@H](C)C(=O)O").unwrap();
+        let l_form_b = parse("C[C@H](N)C(=O)O").unwrap(); // same absolute config, diff write order
+        let d_form   = parse("N[C@H](C)C(=O)O").unwrap(); // D-alanine (opposite config)
+
+        let smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O";
+
+        let r_a = run_reactants(smirks, &[&l_form_a]).unwrap();
+        let r_b = run_reactants(smirks, &[&l_form_b]).unwrap();
+        let r_d = run_reactants(smirks, &[&d_form]).unwrap();
+
+        assert!(!r_a.is_empty(), "L-alanine form A (N-first @@) must match");
+        assert!(!r_b.is_empty(),
+            "L-alanine form B (C-first @, same absolute config) must also match \
+             — parity-aware comparison required");
+        assert!(r_d.is_empty(), "D-alanine must still be rejected");
     }
 }
