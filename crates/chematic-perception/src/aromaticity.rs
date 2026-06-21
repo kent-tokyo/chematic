@@ -441,6 +441,16 @@ pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Ve
 /// ring — one that equals the bond-symmetric-difference of two smaller aromatic
 /// rings — is excluded, preventing double-counting.
 pub fn count_aromatic_rings(mol: &Molecule) -> usize {
+    // For Kekulé-form input (uppercase atoms, no aromatic flags yet), run Hückel
+    // perception first so ring detection works correctly (RDKit #9271).
+    let mol_with_arom;
+    let mol = if mol.atoms().any(|(_, a)| a.aromatic) {
+        mol // aromatic SMILES — flags already set during parsing
+    } else {
+        mol_with_arom = apply_aromaticity(mol);
+        &mol_with_arom
+    };
+
     let sssr = crate::sssr::find_sssr(mol);
     let aug = augmented_ring_set(mol, sssr.rings());
 
@@ -1362,6 +1372,39 @@ mod tests {
             model.aromatic_atom_count(),
             0,
             "keto pyridinone is not Hückel aromatic (7π ≠ 4n+2)"
+        );
+    }
+
+    // ── RDKit #9271: charged / zwitterionic aromatic systems ─────────────────
+
+    #[test]
+    fn test_fluorescein_dianion_aromatic() {
+        // Fluorescein dianion: RDKit #9271 incorrectly marked xanthene bonds as
+        // single instead of aromatic. Verify chematic parses and identifies
+        // aromatic atoms correctly (two benzene rings + xanthene O-bridge ring).
+        // Kekulé-form SMILES: all atoms uppercase.
+        let smi = "C1=CC=C(C(=C1)C2=C3C=CC(=O)C=C3OC4=C2C=CC(=C4)[O-])C(=O)[O-]";
+        let mol = chematic_smiles::parse(smi).expect("fluorescein dianion should parse");
+        // The molecule should parse without panic. Verify aromatic ring count:
+        // fluorescein has 3 aromatic rings (2 benzene + xanthene core).
+        let arc = count_aromatic_rings(&mol);
+        assert!(
+            arc >= 2,
+            "fluorescein dianion: expected ≥2 aromatic rings, got {arc} \
+             (RDKit #9271: charged aromatics may be misclassified)"
+        );
+    }
+
+    #[test]
+    fn test_rhodamine_zwitterion_parses() {
+        // Rhodamine-type zwitterion with N+ and bridging O (RDKit #9271).
+        // Must parse cleanly and produce a valid aromatic ring count.
+        let smi = "CCN(CC)c1ccc2c(-c3ccccc3C(=O)O)c3ccc(=[N+](CC)CC)cc-3oc2c1";
+        let mol = chematic_smiles::parse(smi).expect("rhodamine zwitterion should parse");
+        let arc = count_aromatic_rings(&mol);
+        assert!(
+            arc >= 3,
+            "rhodamine: expected ≥3 aromatic rings, got {arc}"
         );
     }
 

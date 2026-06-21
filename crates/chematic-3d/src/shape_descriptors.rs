@@ -252,7 +252,14 @@ pub fn eccentricity(mol: &Molecule, coords: &Coords3D) -> f64 {
 /// 3D shape (e.g., steroids, cyclohexane).  Uses unweighted geometry centroid
 /// to match the RDKit convention.
 pub fn plane_of_best_fit(mol: &Molecule, coords: &Coords3D) -> f64 {
-    let n = mol.atom_count();
+    // Heavy atoms only (H excluded) — matches the published definition and RDKit convention.
+    // RDKit issue #9238: including H artificially reduces PBF vs. the reference paper values.
+    let heavy: Vec<AtomIdx> = mol
+        .atoms()
+        .filter(|(_, a)| a.element.atomic_number() != 1)
+        .map(|(idx, _)| idx)
+        .collect();
+    let n = heavy.len();
     if n < 3 {
         return 0.0;
     }
@@ -261,8 +268,8 @@ pub fn plane_of_best_fit(mol: &Molecule, coords: &Coords3D) -> f64 {
     let mut cx = 0.0_f64;
     let mut cy = 0.0_f64;
     let mut cz = 0.0_f64;
-    for i in 0..n {
-        let p = coords.get(AtomIdx(i as u32));
+    for &idx in &heavy {
+        let p = coords.get(idx);
         cx += p.x;
         cy += p.y;
         cz += p.z;
@@ -273,8 +280,8 @@ pub fn plane_of_best_fit(mol: &Molecule, coords: &Coords3D) -> f64 {
 
     // Covariance matrix of coordinates about the centroid.
     let mut cov = [[0.0_f64; 3]; 3];
-    for i in 0..n {
-        let p = coords.get(AtomIdx(i as u32));
+    for &idx in &heavy {
+        let p = coords.get(idx);
         let x = p.x - cx;
         let y = p.y - cy;
         let z = p.z - cz;
@@ -297,8 +304,8 @@ pub fn plane_of_best_fit(mol: &Molecule, coords: &Coords3D) -> f64 {
 
     // RMS distance from the plane.
     let mut sum_sq = 0.0_f64;
-    for i in 0..n {
-        let p = coords.get(AtomIdx(i as u32));
+    for &idx in &heavy {
+        let p = coords.get(idx);
         let d = (p.x - cx) * nx + (p.y - cy) * ny + (p.z - cz) * nz;
         sum_sq += d * d;
     }
@@ -469,5 +476,27 @@ mod tests {
             pbf > 0.1,
             "non-coplanar atoms should have PBF > 0, got {pbf:.4}"
         );
+    }
+
+    #[test]
+    fn pbf_uses_heavy_atoms_only() {
+        // RDKit issue #9238: PBF must exclude hydrogen atoms.
+        // A flat aromatic ring should have PBF ≈ 0 regardless of H positions.
+        // With H included (bug), PBF is artificially inflated if H coords deviate
+        // from the plane; with heavy atoms only (correct), benzene = ~0.
+        let m = mol("c1ccccc1"); // benzene — all heavy atoms lie in a plane
+        let c = generate_coords(&m);
+        let pbf = plane_of_best_fit(&m, &c);
+        assert!(
+            pbf < 0.05,
+            "benzene PBF (heavy-atoms-only) should be ~0, got {pbf:.4}; \
+             if > 0.05, H atoms are being incorrectly included (RDKit #9238)"
+        );
+
+        // Naphthalene: also flat, should have PBF ≈ 0 with heavy-only.
+        let m2 = mol("c1ccc2ccccc2c1");
+        let c2 = generate_coords(&m2);
+        let pbf2 = plane_of_best_fit(&m2, &c2);
+        assert!(pbf2 < 0.05, "naphthalene PBF should be ~0, got {pbf2:.4}");
     }
 }
