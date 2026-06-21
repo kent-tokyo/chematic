@@ -1059,3 +1059,99 @@ fn brics_fragments_ibuprofen() {
         frags.len()
     );
 }
+
+// ── Bulk TSV regression (all 175 reference molecules) ────────────────────────
+
+#[test]
+fn tpsa_all_tsv_reference() {
+    use std::path::Path;
+    let tsv = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("scripts/rdkit_ref_properties.tsv");
+
+    let content = std::fs::read_to_string(&tsv)
+        .unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e));
+
+    const TOL: f64 = 2.0;
+    let mut failures: Vec<String> = Vec::new();
+
+    for line in content.lines().skip(1) {
+        let cols: Vec<&str> = line.split('\t').collect();
+        if cols.len() < 5 {
+            continue;
+        }
+        let (name, smi, expected_str) = (cols[0], cols[1], cols[4]);
+        let expected: f64 = expected_str.parse().unwrap_or(f64::NAN);
+        let m = match parse(smi) {
+            Ok(m) => m,
+            Err(_) => {
+                failures.push(format!("  {name}: SMILES parse failed ({smi})"));
+                continue;
+            }
+        };
+        let got = tpsa(&m);
+        if (got - expected).abs() > TOL {
+            failures.push(format!(
+                "  {name}: expected={expected:.2} got={got:.2} delta={:+.2}  {smi}",
+                got - expected
+            ));
+        }
+    }
+
+    assert!(
+        failures.is_empty(),
+        "tpsa_all_tsv_reference: {} failure(s) (tol ±{TOL} Å²):\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
+#[test]
+fn logp_all_tsv_reference() {
+    use std::path::Path;
+    let tsv = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("scripts/rdkit_ref_properties.tsv");
+
+    let content = std::fs::read_to_string(&tsv)
+        .unwrap_or_else(|e| panic!("cannot read {}: {}", tsv.display(), e));
+
+    const TOL: f64 = 0.5;
+    let mut failures: Vec<String> = Vec::new();
+
+    for line in content.lines().skip(1) {
+        let cols: Vec<&str> = line.split('\t').collect();
+        if cols.len() < 4 {
+            continue;
+        }
+        let (name, smi, expected_str) = (cols[0], cols[1], cols[3]);
+        let expected: f64 = expected_str.parse().unwrap_or(f64::NAN);
+        let m = match parse(smi) {
+            Ok(m) => m,
+            Err(_) => {
+                failures.push(format!("  {name}: SMILES parse failed ({smi})"));
+                continue;
+            }
+        };
+        let got = logp_crippen(&m);
+        if (got - expected).abs() > TOL {
+            failures.push(format!(
+                "  {name}: expected={expected:.4} got={got:.4} delta={:+.4}  {smi}",
+                got - expected
+            ));
+        }
+    }
+
+    assert!(
+        failures.is_empty(),
+        "logp_all_tsv_reference: {} failure(s) (tol ±{TOL}):\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}

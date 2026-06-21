@@ -20,6 +20,31 @@ fn has_double_bond_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> bool {
     })
 }
 
+/// Returns true if `idx` is in a ring (BFS: can its two neighbors reach each other without `idx`?).
+fn is_atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
+    let nbs: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
+    if nbs.len() < 2 {
+        return false;
+    }
+    let (start, target) = (nbs[0], nbs[1]);
+    let mut visited = HashSet::new();
+    visited.insert(idx); // exclude idx from the search
+    visited.insert(start);
+    let mut queue = std::collections::VecDeque::new();
+    queue.push_back(start);
+    while let Some(curr) = queue.pop_front() {
+        if curr == target {
+            return true;
+        }
+        for (nb, _) in mol.neighbors(curr) {
+            if visited.insert(nb) {
+                queue.push_back(nb);
+            }
+        }
+    }
+    false
+}
+
 /// Count double bonds from `idx` to neighbors whose atomic number equals `target_an`.
 fn count_double_bonds_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> usize {
     mol.neighbors(idx)
@@ -499,7 +524,29 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             match dbl_neighbor_an {
                 Some(6) => 17.07,
                 Some(_) => 0.0,
-                None => 9.23,
+                None => {
+                    // Aromatic oxide bridge (e.g., morphine's 4,5-epoxy ring):
+                    // O in a ring, bonded to an aromatic C AND a sp2 C (C=C via single bond).
+                    // RDKit perceives such O as aromatic (13.14); plain ether → 9.23.
+                    let has_aromatic_c_nb = mol.neighbors(idx).any(|(nb, _)| {
+                        let a = mol.atom(nb);
+                        a.aromatic && a.element.atomic_number() == 6
+                    });
+                    let has_vinyl_c_nb = mol.neighbors(idx).any(|(nb, bidx)| {
+                        mol.bond(bidx).order != BondOrder::Double
+                            && mol.atom(nb).element.atomic_number() == 6
+                            && mol.neighbors(nb).any(|(nb2, b2)| {
+                                nb2 != idx
+                                    && mol.bond(b2).order == BondOrder::Double
+                                    && mol.atom(nb2).element.atomic_number() == 6
+                            })
+                    });
+                    if has_aromatic_c_nb && has_vinyl_c_nb && is_atom_in_ring(mol, idx) {
+                        13.14
+                    } else {
+                        9.23
+                    }
+                }
             }
         }
     }
@@ -662,7 +709,7 @@ static CRIPPEN_SMARTS: &[(&str, f64, f64)] = &[
     ("[O](a)[!#1;A,a]", -0.4195, 1.182),
     ("[O]=[#7,#8]", 0.0335, 3.367),
     ("[OX1;-,-2,-3][#7]", 0.0335, 3.367),
-    ("[OX1;-,-2,-2][#16]", -0.3339, 0.7774),
+    ("[OX1;-,-2,-3][#16]", -0.3339, 0.7774),
     ("[O;-0]=[#16;-0]", -0.3339, 0.7774),
     ("[O-]C(=O)", -1.3260, 0.000),
     ("[OX1;-,-2,-3][!#1;!N;!S]", -1.1890, 0.000),
