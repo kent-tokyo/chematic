@@ -4,11 +4,11 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
-| v0.1.89 | Yes | Current release — active support |
-| v0.1.88 | Limited | Security fixes only (limited) |
-| < v0.1.87 | No | Unsupported |
+| v0.4.14 | Yes | Current release — active support |
+| v0.4.13 | Limited | Security fixes only (limited) |
+| < v0.4.13 | No | Unsupported |
 
-**Active Support**: Latest release (v0.1.89) receives all security updates.  
+**Active Support**: Latest release (v0.4.14) receives all security updates.  
 **Limited Support**: Previous release receives critical security fixes only.  
 **End of Life**: Older versions receive no support.
 
@@ -117,6 +117,35 @@ Subscribe to GitHub notifications for this repository to receive alerts about se
 
 ---
 
+## Security Fix History
+
+### v0.4.14 (2026-06-21)
+
+Seven security-relevant fixes shipped in this release:
+
+1. **KET parser: R-element silently mapped to carbon** — `starts_with('R')` was matching real elements (Ru, Rh, Re, Rn) and silently treating them as carbon. Fixed to only match actual R-group labels (R, R#, R1–R9), ensuring legitimate elements are parsed correctly.
+
+2. **KET parser: no atom/bond count limit (Memory-DoS)** — A crafted large KET file could allocate unbounded memory. Fixed with hard guards: `MAX_ATOMS = 10,000` and `MAX_BONDS = 20,000`; inputs exceeding these limits are rejected with an error.
+
+3. **KET parser: isotope u64→u16 silent truncation** — Isotope values larger than 65,535 were silently truncated to incorrect values. Fixed with an explicit bounds check that returns a parse error for out-of-range isotopes.
+
+4. **RInChI: malformed separator for empty products** — When a reaction had no products, the `!d-` separator token appeared as a second reactant, producing an incorrect InChI string. Fixed by only emitting the product block when it is non-empty.
+
+5. **SMIRKS transform: stereo_groups dropped** — `clear_orphaned_stereo_bonds` discarded ABS/OR/AND stereo groups on the transformed molecule. Fixed by restoring stereo groups via `set_stereo_groups()` after the orphan-bond sweep.
+
+6. **WASM docs: wrong GETAWAY vector size** — Public API documentation claimed 9 values for the GETAWAY descriptor (actual: 19) and 19 for the combined vector (actual: 29). Corrected docstrings prevent callers from allocating undersized buffers.
+
+7. **Hosoya index: exponential recursion (CPU-DoS)** — No guard on molecule size allowed the public API to hang on large inputs due to exponential recursive matching. Fixed with an `n > 40` sentinel that returns early, bounding computation.
+
+### Prior Releases
+
+- **Prng fixed seed (Weyl counter)** — PRNG seeding used a fixed Weyl counter, reducing entropy. Fixed to use a properly varied seed source.
+- **MCP DoS** — `find_mcs` lacked a timeout and atom-count limit, and `name_to_smiles` did not URL-encode user input. Both fixed with appropriate guards and encoding.
+- **CIF parser safety** — Division-by-zero and missing unit-cell parameter checks in the CIF parser could panic on malformed crystallographic files. Fixed with explicit validation.
+- **SMARTS atom map fixes** — Atom-map handling in SMARTS patterns produced incorrect match results in edge cases. Fixed to correctly propagate atom maps through the VF2 isomorphism engine.
+
+---
+
 ## Acknowledgments
 
 Security researchers who responsibly disclose vulnerabilities help keep chematic safe for everyone. We appreciate their efforts and will credit them publicly (unless they prefer anonymity).
@@ -135,5 +164,5 @@ This repository has the following GitHub security features enabled:
 
 ---
 
-**Last Updated**: 2026-06-12  
+**Last Updated**: 2026-06-21  
 **Security Contact**: 36805997+kent-tokyo@users.noreply.github.com
