@@ -249,6 +249,10 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
             let base: BondOrder = match attrs.get("Order").map(String::as_str) {
                 Some("2") => BondOrder::Double,
                 Some("3") => BondOrder::Triple,
+                // "1.5" is used by some CDXML writers (e.g. OpenBabel) for
+                // aromatic bonds.  Store as Aromatic so that aromaticity
+                // perception is not required to recover the correct bond type.
+                Some("1.5") => BondOrder::Aromatic,
                 _ => BondOrder::Single,
             };
             let order = if base == BondOrder::Single {
@@ -457,5 +461,48 @@ mod tests {
         let cdxml = r#"<?xml version="1.0"?><CDXML></CDXML>"#;
         let mols = parse_cdxml_all(cdxml).unwrap();
         assert!(mols.is_empty(), "empty CDXML → empty Vec");
+    }
+
+    // -----------------------------------------------------------------------
+    // Order="1.5" aromatic bond (OpenBabel / some CDXML writers)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn parse_cdxml_aromatic_bond_order_1_5() {
+        // Some CDXML producers (e.g. tools derived from OpenBabel) write
+        // aromatic bonds as Order="1.5".  These must be stored as
+        // BondOrder::Aromatic rather than falling through to Single.
+        let cdxml = r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1.5"/>
+</fragment></CDXML>"#;
+        let (mol, _) = parse_cdxml(cdxml).unwrap();
+        let bond = mol.bond(chematic_core::BondIdx(0));
+        assert_eq!(bond.order, BondOrder::Aromatic, "Order=1.5 → Aromatic");
+    }
+
+    #[test]
+    fn parse_cdxml_benzene_all_aromatic_bonds() {
+        // Benzene written with all Order="1.5" bonds.
+        let cdxml = r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<n id="3" Element="6" p="20 0"/>
+<n id="4" Element="6" p="30 0"/>
+<n id="5" Element="6" p="20 10"/>
+<n id="6" Element="6" p="10 10"/>
+<b B="1" E="2" Order="1.5"/>
+<b B="2" E="3" Order="1.5"/>
+<b B="3" E="4" Order="1.5"/>
+<b B="4" E="5" Order="1.5"/>
+<b B="5" E="6" Order="1.5"/>
+<b B="6" E="1" Order="1.5"/>
+</fragment></CDXML>"#;
+        let (mol, _) = parse_cdxml(cdxml).unwrap();
+        assert_eq!(mol.atom_count(), 6, "benzene has 6 atoms");
+        assert_eq!(mol.bond_count(), 6, "benzene has 6 bonds");
+        let all_aromatic = mol.bonds().all(|(_, b)| b.order == BondOrder::Aromatic);
+        assert!(all_aromatic, "all bonds must be Aromatic");
     }
 }

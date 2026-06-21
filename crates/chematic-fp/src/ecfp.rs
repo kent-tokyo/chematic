@@ -523,4 +523,61 @@ mod tests {
             "Benzene should generate non-empty ECFP4 with use_chirality=true"
         );
     }
+
+    // -----------------------------------------------------------------------
+    // Implicit vs. explicit hydrogen representation (CDK issue #1084 pattern)
+    // -----------------------------------------------------------------------
+    //
+    // chematic's molecule model stores only heavy atoms; implicit H counts are
+    // computed on demand via `implicit_hcount()`.  When a SMILES contains
+    // explicit H atoms (e.g. `[H]O` or `[OH2]`), those atoms ARE stored in
+    // the molecular graph and WILL change the ECFP invariant for the heavy
+    // atom they're bonded to (its degree increases and its implicit_hcount
+    // decreases).  This is the expected behaviour for a graph-based fingerprint
+    // and mirrors CDK / RDKit behaviour.  These tests document it explicitly.
+
+    #[test]
+    fn ecfp4_implicit_h_water_vs_no_atoms() {
+        // "O" has 1 heavy atom (O) with 2 implicit H.
+        // "[OH2]" is the same molecule: O with explicit H count = 2 but still
+        // only 1 heavy atom (implicit H also = 0 because OH2 bracket sets it).
+        // Both should produce the same fingerprint.
+        let implicit = parse("O").unwrap();
+        let bracketed = parse("[OH2]").unwrap();
+        assert_eq!(
+            ecfp4(&implicit),
+            ecfp4(&bracketed),
+            "[OH2] and O should give the same ECFP4 (same heavy-atom graph)"
+        );
+    }
+
+    #[test]
+    fn ecfp4_explicit_h_atom_changes_fingerprint() {
+        // "[H]O[H]" parses as 3 atoms: H-O-H.  The O atom now has degree=2
+        // and implicit_hcount=0, so its Morgan invariant differs from the
+        // single-atom "O" (degree=0, implicit_hcount=2).  The fingerprint
+        // must differ — this documents the expected behaviour when explicit
+        // H atoms are present in the molecular graph.
+        let implicit = parse("O").unwrap();
+        let explicit_h = parse("[H]O[H]").unwrap();
+        assert_ne!(
+            ecfp4(&implicit),
+            ecfp4(&explicit_h),
+            "explicit H atoms in the graph change the ECFP4"
+        );
+    }
+
+    #[test]
+    fn ecfp4_implicit_vs_explicit_h_in_organic_molecule() {
+        // Methanol "CO" vs "C([H])([H])([H])O" — the second form has 3
+        // explicit H atoms on C, which changes C's degree and implicit_hcount.
+        // These are different molecular graphs → different ECFP4.
+        let implicit = parse("CO").unwrap();
+        let explicit_h = parse("C([H])([H])([H])O").unwrap();
+        assert_ne!(
+            ecfp4(&implicit),
+            ecfp4(&explicit_h),
+            "methanol with explicit H atoms has a different heavy-atom neighbourhood"
+        );
+    }
 }
