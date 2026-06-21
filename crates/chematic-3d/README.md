@@ -5,11 +5,15 @@ Pure Rust 3D coordinate generation, geometry optimization, shape analysis — **
 ## Features
 
 ### 3D Coordinate Generation
+- **ETKDG** (Experimental-Torsion Knowledge Distance Geometry): CSD-derived torsion preferences
+  - **40 torsion patterns** (expanded from 28): sp3/sp2/aromatic atom types, 5-membered heterocycles (furan/thiophene), saturated N-heterocycles (morpholine/piperazine)
+  - **Adaptive noise**: bond-flexibility-weighted coordinate perturbation (amide 0.2×, biaryl 0.5×, single bond 1.0×)
+  - Stochastic ensemble sampling with RMSD pruning (ConformerEnsemble)
 - **Distance Geometry (DG)**: Rule-based 3D placement from molecular topology
   - Ideal bond lengths (van der Waals radii)
   - Ideal valence angles (tetrahedral, trigonal, etc.)
   - Handles rings, chains, fragments independently
-- **Constraint Satisfaction** (NEW in v0.1.32):
+- **Constraint Satisfaction**:
   - Iterative constraint projection (O(n²) per iteration)
   - Bond distance enforcement (±0.05 Å tolerance)
   - Angle enforcement (±5° tolerance)

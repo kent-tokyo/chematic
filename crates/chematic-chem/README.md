@@ -5,9 +5,9 @@ Pure Rust chemical intelligence library — **descriptors, drug-likeness rules, 
 ## Features
 
 ### Molecular Descriptors (40+)
-- **Physicochemical**: MW, LogP (XLogP), TPSA, PSA, MOLAR_REFR, VdW volume
+- **Physicochemical**: MW, LogP (Crippen, ±0.3 vs RDKit on 175 mol), TPSA (±1.0 Å² vs RDKit on 175 mol), PSA, MOLAR_REFR, VdW volume
 - **Lipophilicity**: LogP (multiple models), MolLogP  
-- **Hydrogen Bonding**: HBA (99.98% RDKit agreement on 5 000 molecules), HBD, HBA_LIPINSKI, HBD_LIPINSKI
+- **Hydrogen Bonding**: HBA (99.98% RDKit agreement on 5 000 molecules), HBD (100% agreement, including S-H thiols), HBA_LIPINSKI, HBD_LIPINSKI
 - **Flexibility**: Rotatable bonds, ring count, scaffold RMSD
 - **Complexity**: Topological Polar Surface Area, QED, SA Score
 - **Molecular Properties**: Atom/bond counts, isotopes, fragments

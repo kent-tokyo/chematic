@@ -5,9 +5,16 @@ Reaction SMILES and SMIRKS parser for Rust. Parses chemical transformations (rea
 ## Features
 
 - **Reaction SMILES parsing**: parse reaction equations (e.g., `CC(C)C>>CC(C)[O]`)
-- **SMIRKS parsing**: transform patterns for reaction template matching
+- **SMIRKS parsing**: transform patterns for reaction template matching (`run_reactants`, `run_reactants_strict`)
 - **Atom mapping**: track which atoms in reactants map to which atoms in products
 - **Reaction properties**: count reactants, products, and agents
+- **Template-based retrosynthesis** (`retro_disconnect`): 60 retro-SMIRKS templates across 6 classes:
+  - `AmideBond` — amide, sulfonamide, carbamate, urea, hydrazide, imide
+  - `Ester` — ester, thioester, carbonate, anhydride, acetal, lactone
+  - `Ether` — aryl ether (SNAr/Ullmann), Williamson, benzyl, Mitsunobu, silyl
+  - `CNBond` — reductive amination, SNAr, Buchwald, N-alkylation, imine reduction
+  - `CCBond` — Suzuki, Heck, Sonogashira, Negishi, Grignard, aldol, Michael, Wittig
+  - `CSBond` — thioether, disulfide, borylation, halogenation, phosphonate
 - **RDKit compatibility**: parses RDKit reaction SMILES, produces identical results
 - **WASM-compatible**: zero C/C++ dependencies
 
@@ -35,6 +42,24 @@ for mol in rxn.reactants() {
 
 - `parse_reaction(rxn_smiles: &str) -> Result<Reaction, ParseError>` — parse reaction SMILES
 - `parse_smirks(pattern: &str) -> Result<ReactionPattern, ParseError>` — parse SMIRKS pattern
+
+### Retrosynthesis
+
+- `retro_disconnect(mol, templates, max_results) -> Vec<RetroResult>` — apply retro-SMIRKS templates
+- `DEFAULT_TEMPLATES` — 60 built-in retro-SMIRKS templates (6 reaction classes)
+- `RetroResult` — `{template_name, reaction_class, precursors, precursor_smiles, max_sa_score}`
+
+```rust
+use chematic_rxn::{retro_disconnect, DEFAULT_TEMPLATES};
+use chematic_smiles::parse;
+
+let mol = parse("CC(=O)Nc1ccccc1")?;  // acetanilide
+let results = retro_disconnect(&mol, DEFAULT_TEMPLATES, 10);
+for r in &results {
+    println!("{}: {:?}", r.template_name, r.precursor_smiles);
+}
+// amide_secondary: ["CC(=O)O", "Nc1ccccc1"]
+```
 
 ### Reaction Structure
 

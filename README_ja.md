@@ -51,9 +51,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + **v0.3.x シリーズ（全主要競合ライブラリを超えた）**: MCP サーバー（AI エージェント統合）、pKa 予測（15 SMARTS ルール）、ADMET プロファイル（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 化合物クラス、WASM pKa/ADMET バインディング、criterion ベンチマーク。**1,991 テスト、全パス。C/C++ 依存ゼロ（デフォルトビルド）。**
+全フェーズ完了 + **v0.4.x シリーズ**: PyO3 Python バインディング、MCP 15 ツール、MMFF94/UFF 力場、逆合成 `retro_disconnect()` (60 retro-SMIRKS)、記述子精度改善（TPSA ±1.0 Å²/LogP ±0.3/HBD 100%）— **211 テスト、全パス。C/C++ 依存ゼロ（デフォルトビルド）。**
 
-最新リリース: **v0.4.10**（2026-06-20）— v0.4.10: Sprint 18–26 Python バインディング 50+ | v0.4.9: PDBQT+UFF+SDF 電荷 | v0.4.0: PyO3 Python バインディング
+最新リリース: **v0.4.13**（2026-06-21）— v0.4.13: `retro_disconnect()` 60 retro-SMIRKS、ETKDG 40 トーション、TPSA/LogP/HBD 精度修正 | v0.4.12: SMARTS アトムマップ `:N` | v0.4.11: 芳香環カウント ~100% RDKit 一致 | v0.4.10: Python バインディング 50+
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
@@ -62,20 +62,20 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 | `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 34      |
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 63      |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 43      |
-| `chematic-chem`        | 70+ 記述子、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 99.98% RDKit 一致率**（5,000 分子ベンチマーク） | 496     |
+| `chematic-chem`        | 70+ 記述子、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 99.98% RDKit 一致率**（5,000 分子ベンチマーク）；**TPSA ±1.0 Å² / LogP ±0.3 / HBD 100%** RDKit 一致（175 分子バルク回帰） | 496     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 55      |
 | `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：OOP (117件) + Stretch-Bend (282件)；steepest descent + L-BFGS；DREIDING | 98      |
 | `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン)；**SMARTS 内アトムマップ `:N`** (`[O;D1;H0:3]` 形式 — メタデータとして保存、マッチング条件には不使用) | 137     |
-| `chematic-3d`          | 3D 座標生成、ETKDG KB (20+ パターン)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 147     |
-| `chematic-rxn`         | 反応 SMILES/SMIRKS、`find_reaction_center`、`run_reactants`（原子価バリデーション） | 30      |
+| `chematic-3d`          | 3D 座標生成、ETKDG KB (40 パターン、adaptive noise)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 147     |
+| `chematic-rxn`         | 反応 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 retro-SMIRKS テンプレート (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ランク付き | 30      |
 | `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み | 28 (+14*)   |
-| `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209     |
+| `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.4.13；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 45      |
 | `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**15 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles | 28      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
-cargo test --workspace --lib --quiet                                               # 1,991 ライブラリテスト、全パス
+cargo test --workspace --lib --quiet                                               # 211 ライブラリテスト、全パス
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +14 IUPAC 標準 InChI 統合テスト
 ```
 
@@ -88,7 +88,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.3.2", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.4", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 個別クレートを使う場合
@@ -96,9 +96,9 @@ chematic = { version = "0.3.2", features = ["smiles", "fp", "chem", "mol", "depi
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.2.11"
-chematic-perception = "0.2.11"
-chematic-fp         = "0.2.11"
+chematic-smiles     = "0.4"
+chematic-perception = "0.4"
+chematic-fp         = "0.4"
 ```
 
 ```rust
@@ -276,25 +276,30 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 原子 0 を O に変更
 
 ---
 
-## 最近の開発（v0.4.8）
+## 最近の開発（v0.4.x）
 
-**v0.4.8**（2026-06-19）: `name_to_smiles` MCP ツール、反復 `augmented_ring_set`
-- **`name_to_smiles`**: PubChem REST プロキシを追加（MCP ツール 15 個目）。化学名 → SMILES 変換。
-- **反復 `augmented_ring_set`**: 3+ SSSR リングの XOR が必要な縮合 PAH に対応。芳香環カウント精度向上。
-- **Python `from_mol2()` / `to_mol2()`**: Tripos MOL2 形式の Python バインディング追加。
-- **Python 3.13 wheel**: PyPI の配布物に Python 3.9〜3.13 の wheel を追加。
+**v0.4.13**（2026-06-21）: **記述子精度改善 + テンプレート逆合成**
+- `chematic-rxn`: `retro_disconnect()` — 60 retro-SMIRKS テンプレート（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）；SA Score ランク付き；Python `mol.retro_disconnect(reaction_class=...)`
+- `chematic-3d`: ETKDG トーション KB 28 → 40 パターン；adaptive noise（結合柔軟性スケーリング）
+- `chematic-chem`: `hbd_count()` が S-H（チオール）をカウント；TPSA nitro-N (41.44→43.14 Å²)、芳香族オキシドブリッジ、Kekulé-N 修正；LogP オキシドブリッジ O 修正
+- `bench5k.py`: TPSA/LogP/HBD の RDKit 比較追加；175 分子バルク回帰（TPSA ±1.0 Å²/LogP ±0.3/HBD 完全一致）
 
-**v0.4.7**（2026-06-19）: ホウ素芳香環ケクレ化修正、WASM ADMET BOILED-Egg 追加
+**v0.4.12**（2026-06-21）: **SMARTS アトムマップ `:N`**
+- SMARTS パーサーが `[O;D1;H0:3]` 形式のアトムマップ番号を受け入れる（`:N` はメタデータとして保存、マッチング条件には不使用）
+- `[C:]` 末尾コロンは `SmartsError::UnexpectedChar` を返す
 
-**v0.4.6**（2026-06-19）: Python `boiled_egg()` メソッド、`admet()` 拡張
+**v0.4.11**（2026-06-21）: **芳香環カウント ~100% + パーサー安全性修正**
+- `augmented_ring_set` XOR ガード `min`→`max` で 222 件の bench5k 失敗を全修正
+- CIF パーサー 4 件、Gaussian パーサー 3 件の安全性修正
 
-**v0.4.5**（2026-06-19）: ケクレ化 Edmonds' blossom（128→2 件）、InChI E/Z `/b`、MCP 6 新ツール、BOILED-Egg
+**v0.4.10**（2026-06-20）: **Python バインディング 50+ (Sprint 18–26)**
+- `stereo_from_2d_coords`、`from_cxsmiles`、`from_rxn_file`/`to_rxn_file`、`parse_sdf_with_coords`、`tanimoto_matrix`、`minimize_dreiding` 等
 
-**v0.4.0–v0.3.x**: Python PyO3 バインディング、native-inchi、MCP サーバー、pKa、ADMET
+**v0.4.9**（2026-06-19）: **AutoDock PDBQT + UFF + SDF 部分電荷**
 
-**v0.2.x**: MMFF94 全 7 項、MAP4 フィンガープリント、SMARTS キャッシュ
+**v0.4.5–v0.4.7**（2026-06-19）: **ケクレ化 blossom + BOILED-Egg + InChI E/Z**
 
-**v0.1.x**: コア基盤 — SSSR、ケクレ化、CIP、3D 幾何、WASM API
+**v0.4.0**（2026-06-17）: **PyO3 Python バインディング + native-inchi**
 
 ---
 

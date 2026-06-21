@@ -51,9 +51,9 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + **v0.3.x 系列（超越所有主要竞争库）**：MCP 服务器（AI 代理集成）、pKa 预测（15 条 SMARTS 规则）、ADMET 概况（BBB/Caco-2/hERG/CYP3A4）、IUPAC 25+ 类、WASM pKa/ADMET 绑定、criterion 性能基准测试。**1,991 个测试，全部通过。零 C/C++ 依赖（默认构建）。**
+所有阶段已完成 + **v0.4.x 系列**：PyO3 Python 绑定、MCP 15 工具、MMFF94/UFF 力场、逆合成 `retro_disconnect()`（60 个 retro-SMIRKS）、描述符精度提升（TPSA ±1.0 Å²/LogP ±0.3/HBD 100%）— **211 个测试，全部通过。零 C/C++ 依赖（默认构建）。**
 
-最新版本：**v0.4.10**（2026-06-20）— v0.4.10: Sprint 18–26 Python 绑定 50+ | v0.4.9: PDBQT+UFF+SDF 电荷 | v0.4.0: PyO3 Python 绑定
+最新版本：**v0.4.13**（2026-06-21）— v0.4.13: `retro_disconnect()` 60 retro-SMIRKS、ETKDG 40 扭转模式、TPSA/LogP/HBD 精度修复 | v0.4.12: SMARTS 原子映射 `:N` | v0.4.11: 芳香环计数 ~100% RDKit 一致性 | v0.4.10: Python 绑定 50+
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
@@ -62,20 +62,20 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 | `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 34     |
 | `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 63     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 43     |
-| `chematic-chem`       | 70+ 描述符、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 99.98%**（5,000 分子基准） | 496    |
+| `chematic-chem`       | 70+ 描述符、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 99.98%**（5,000 分子基准）；**TPSA ±1.0 Å² / LogP ±0.3 / HBD 100%**（175 分子批量回归） | 496    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** — Tanimoto/Dice | 55     |
 | `chematic-ff`         | **MMFF94 全 7 能量项**（Halgren 1996）：OOP（117 条）+ STRE-BEN（282 条）；L-BFGS；DREIDING | 98     |
 | `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式）；**SMARTS 原子映射 `:N`**（`[O;D1;H0:3]` — 作为元数据存储，不用于匹配） | 137    |
-| `chematic-3d`         | 3D 坐标生成、ETKDG KB（20+ 模式）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 147    |
-| `chematic-rxn`        | 反应 SMILES/SMIRKS、`find_reaction_center`、`run_reactants` | 30     |
+| `chematic-3d`         | 3D 坐标生成、ETKDG KB（40 种模式，自适应噪声）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 147    |
+| `chematic-rxn`        | 反应 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 个 retro-SMIRKS 模板（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）+ SA 分数排序 | 30     |
 | `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取 | 28 (+14*)   |
-| `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.3.2；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209    |
+| `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.4.13；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 209    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 45     |
 | `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**15 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles | 28     |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
-cargo test --workspace --lib --quiet                                               # 1,991 个库测试，全部通过
+cargo test --workspace --lib --quiet                                               # 211 个库测试，全部通过
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +14 IUPAC 标准 InChI 集成测试
 ```
 
@@ -88,7 +88,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "0.2.11", features = ["smiles", "fp", "chem", "mol", "depict"] }
+chematic = { version = "0.4", features = ["smiles", "fp", "chem", "mol", "depict"] }
 ```
 
 ### 使用单独 crate
@@ -96,9 +96,9 @@ chematic = { version = "0.2.11", features = ["smiles", "fp", "chem", "mol", "dep
 ```toml
 # Cargo.toml
 [dependencies]
-chematic-smiles     = "0.2.11"
-chematic-perception = "0.2.11"
-chematic-fp         = "0.2.11"
+chematic-smiles     = "0.4"
+chematic-perception = "0.4"
+chematic-fp         = "0.4"
 ```
 
 ```rust
@@ -271,29 +271,27 @@ const mol4 = mol_with_atom_element(mol, 0, 'O'); // 将原子 0 的元素改为 
 
 ---
 
-## 近期更新
+## 近期开发（v0.4.x）
 
-**v0.4.8**（2026-06-19）：`name_to_smiles` MCP 工具、迭代 `augmented_ring_set`
-- **`name_to_smiles`**：通过 PubChem REST 代理，化学名称 → SMILES（MCP 第 15 个工具）。
-- **迭代 `augmented_ring_set`**：支持需要 3+ 个 SSSR 环 XOR 的稠合 PAH，提升芳香环计数精度。
-- **Python `from_mol2()` / `to_mol2()`**：Tripos MOL2 格式 Python 绑定。
-- **Python 3.13 wheel**：PyPI 发行版新增 Python 3.9〜3.13 的 wheel。
+**v0.4.13**（2026-06-21）：**描述符精度提升 + 模板逆合成**
+- `chematic-rxn`：`retro_disconnect()` — 60 个 retro-SMIRKS 模板（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）；SA 分数排序；Python `mol.retro_disconnect(reaction_class=...)`
+- `chematic-3d`：ETKDG 扭转知识库 28 → 40 种模式；自适应噪声（键柔性缩放）
+- `chematic-chem`：`hbd_count()` 现包含 S-H（硫醇）；TPSA 硝基-N 修复（41.44→43.14 Å²）、芳香氧桥修复、Kekulé-N 修复；LogP 氧桥修复
+- `bench5k.py`：新增 TPSA/LogP/HBD 对比 RDKit；175 分子批量回归（TPSA ±1.0 Å²/LogP ±0.3/HBD 完全一致）
 
-**v0.4.7**（2026-06-19）：硼芳香环 Kekulization 修复（2→1 个失败）
+**v0.4.12**（2026-06-21）：**SMARTS 原子映射 `:N`**
+- SMARTS 解析器支持 `[O;D1;H0:3]` 格式的原子映射编号（`:N` 作为元数据存储，不用于匹配条件）
 
-**v0.4.6**（2026-06-19）：Python `boiled_egg()` 方法、`admet()` 扩展
+**v0.4.11**（2026-06-21）：**芳香环计数 ~100% + 解析器安全性**
+- `augmented_ring_set` XOR 保护 `min`→`max` 修复 222 个 bench5k 失败案例
 
-**v0.4.5**（2026-06-19）：Edmonds' blossom（128→2 个失败）、InChI E/Z、MCP 6 新工具、BOILED-Egg
+**v0.4.10**（2026-06-20）：**Python 绑定 50+（Sprint 18–26）**
 
-**v0.4.0–v0.3.x**：Python PyO3 绑定、native-inchi、MCP 服务器、pKa、ADMET
+**v0.4.9**（2026-06-19）：**AutoDock PDBQT + UFF + SDF 部分电荷**
 
-**v0.2.x**：MMFF94 全 7 项、MAP4 指纹、SMARTS 缓存
+**v0.4.5–v0.4.7**（2026-06-19）：**Kekulization Blossom + BOILED-Egg + InChI E/Z**
 
-**v0.3.2–v0.3.0**：criterion 基准测试、WASM pKa/ADMET 绑定、MCP 服务器 + pKa + ADMET
-
-**v0.2.x**：MMFF94 全 7 项、MAP4 指纹、SMARTS 缓存
-
-**v0.1.x**：核心基础 — SSSR、Kekulization、CIP、3D 几何、WASM API
+**v0.4.0**（2026-06-17）：**PyO3 Python 绑定 + native-inchi**
 
 ---
 
