@@ -1902,6 +1902,92 @@ pub fn autocorr_2d(mol: &Molecule) -> Vec<f64> {
 }
 
 // ---------------------------------------------------------------------------
+// Moran / Geary spatial autocorrelation
+// ---------------------------------------------------------------------------
+
+/// Moran's I topological autocorrelation for lags 1–7.
+///
+/// I_k = (N / W_k) × [Σ_{d(i,j)=k} (x_i−x̄)(x_j−x̄)] / [Σ_i (x_i−x̄)²]
+///
+/// where N = heavy-atom count, W_k = number of atom pairs at topological distance k,
+/// and x_i = atomic valence of atom i (degree + implicit H count).
+///
+/// Returns a 7-element vector.  Values near 0 indicate spatial randomness;
+/// positive = similar neighbours, negative = dissimilar neighbours.
+pub fn moran_autocorr(mol: &Molecule) -> Vec<f64> {
+    if mol.atom_count() < 2 {
+        return vec![0.0; 7];
+    }
+    let dist = topo_dist_usize(mol);
+    let n = mol.atom_count();
+    let vals: Vec<f64> = (0..n)
+        .map(|i| atomic_valence(mol, AtomIdx(i as u32)))
+        .collect();
+    let mean = vals.iter().sum::<f64>() / n as f64;
+    let denom: f64 = vals.iter().map(|&v| (v - mean).powi(2)).sum();
+    if denom == 0.0 {
+        return vec![0.0; 7];
+    }
+    (1..=7usize)
+        .map(|lag| {
+            let mut numer = 0.0;
+            let mut w = 0usize;
+            for i in 0..n {
+                for j in (i + 1)..n {
+                    if dist[i][j] == lag {
+                        numer += (vals[i] - mean) * (vals[j] - mean);
+                        w += 1;
+                    }
+                }
+            }
+            if w == 0 { 0.0 } else { (n as f64 / w as f64) * numer / denom }
+        })
+        .collect()
+}
+
+/// Geary's C topological autocorrelation for lags 1–7.
+///
+/// C_k = [(N−1) / (2W_k)] × [Σ_{d(i,j)=k} (x_i−x_j)²] / [Σ_i (x_i−x̄)²]
+///
+/// Values: C=1 (no autocorrelation), C<1 (positive autocorrelation / similar neighbours),
+/// C>1 (negative autocorrelation / dissimilar neighbours).  Returns 1.0 when
+/// all atoms have identical valence (denominator is 0).
+pub fn geary_autocorr(mol: &Molecule) -> Vec<f64> {
+    if mol.atom_count() < 2 {
+        return vec![1.0; 7];
+    }
+    let dist = topo_dist_usize(mol);
+    let n = mol.atom_count();
+    let vals: Vec<f64> = (0..n)
+        .map(|i| atomic_valence(mol, AtomIdx(i as u32)))
+        .collect();
+    let mean = vals.iter().sum::<f64>() / n as f64;
+    let denom: f64 = vals.iter().map(|&v| (v - mean).powi(2)).sum();
+    if denom == 0.0 {
+        return vec![1.0; 7]; // C=1 means no spatial autocorrelation
+    }
+    (1..=7usize)
+        .map(|lag| {
+            let mut numer = 0.0;
+            let mut w = 0usize;
+            for i in 0..n {
+                for j in (i + 1)..n {
+                    if dist[i][j] == lag {
+                        numer += (vals[i] - vals[j]).powi(2);
+                        w += 1;
+                    }
+                }
+            }
+            if w == 0 {
+                1.0
+            } else {
+                ((n - 1) as f64 / (2.0 * w as f64)) * numer / denom
+            }
+        })
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
 // BalabanJ — graph connectivity descriptor
 // ---------------------------------------------------------------------------
 
@@ -3742,5 +3828,52 @@ mod tests {
     fn test_ring_system_count_acyclic_zero() {
         // Propane has no rings → 0 ring systems
         assert_eq!(ring_system_count(&mol("CCC")), 0);
+    }
+
+    // ── Moran / Geary autocorrelation ─────────────────────────────────────────
+
+    #[test]
+    fn moran_len_is_7() {
+        assert_eq!(moran_autocorr(&mol("c1ccccc1")).len(), 7);
+    }
+
+    #[test]
+    fn geary_len_is_7() {
+        assert_eq!(geary_autocorr(&mol("c1ccccc1")).len(), 7);
+    }
+
+    #[test]
+    fn moran_single_atom_returns_zeros() {
+        let v = moran_autocorr(&mol("C"));
+        assert_eq!(v, vec![0.0; 7]);
+    }
+
+    #[test]
+    fn geary_single_atom_returns_ones() {
+        // denom = 0 → all-identical property → no autocorrelation → C = 1
+        let v = geary_autocorr(&mol("C"));
+        assert_eq!(v, vec![1.0; 7]);
+    }
+
+    #[test]
+    fn moran_uniform_valence_is_zero() {
+        // Benzene: all C have the same valence (aromatic) → mean = valence, denom = 0 → I = 0
+        let v = moran_autocorr(&mol("c1ccccc1"));
+        for &x in &v {
+            assert!(x.abs() < 1e-9, "expected 0 for uniform valence, got {x}");
+        }
+    }
+
+    #[test]
+    fn geary_finite_for_mixed_molecule() {
+        // Ethanol CCO has mixed valence atoms — all values must be finite
+        let v = geary_autocorr(&mol("CCO"));
+        assert!(v.iter().all(|x| x.is_finite()), "all Geary values must be finite: {v:?}");
+    }
+
+    #[test]
+    fn moran_finite_for_mixed_molecule() {
+        let v = moran_autocorr(&mol("CCO"));
+        assert!(v.iter().all(|x| x.is_finite()), "all Moran values must be finite: {v:?}");
     }
 }

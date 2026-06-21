@@ -491,7 +491,8 @@ impl<'a> CanonicalWriter<'a> {
             || atom.charge != 0
             || atom.hydrogen_count.is_some()
             || !atom.element.is_organic_subset()
-            || atom.atom_map.is_some();
+            || atom.atom_map.is_some()
+            || chirality != Chirality::None;
 
         if needs_bracket {
             self.out.push('[');
@@ -902,6 +903,29 @@ mod tests {
                 out, out2,
                 "conjugated E/Z must be stable after two rounds: {smi} → {out} → {out2}"
             );
+        }
+    }
+
+    // ── Allene cumulated double bond stereo ──────────────────────────────────
+
+    #[test]
+    fn allene_stereo_two_enantiomers_differ() {
+        // F[C@@H]=[C]=[C@H]Cl and F[C@H]=[C]=[C@@H]Cl must produce different canonical SMILES.
+        let mol_r = parse("F[C@@H]=[C]=[C@H]Cl").unwrap();
+        let mol_s = parse("F[C@H]=[C]=[C@@H]Cl").unwrap();
+        let smi_r = canonical_smiles(&mol_r);
+        let smi_s = canonical_smiles(&mol_s);
+        assert_ne!(smi_r, smi_s, "allene enantiomers must produce different canonical SMILES: {smi_r}");
+    }
+
+    #[test]
+    fn allene_stereo_round_trip_stable() {
+        for smi in &["F[C@@H]=[C]=[C@H]Cl", "F[C@H]=[C]=[C@@H]Cl"] {
+            let mol = parse(smi).unwrap();
+            let out = canonical_smiles(&mol);
+            let mol2 = parse(&out).unwrap();
+            let out2 = canonical_smiles(&mol2);
+            assert_eq!(out, out2, "allene stereo must be stable: {smi} -> {out} -> {out2}");
         }
     }
 

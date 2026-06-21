@@ -47,6 +47,7 @@ pub mod xlogp3;
 pub use cip::{CipAssignment, assign_cip, tetrahedral_stereo_neighbors};
 pub use descriptors::{
     aromatic_ring_count, autocorr_2d, balaban_j, calc_mol_formula, cns_mpo_score, egan_passes,
+    geary_autocorr, moran_autocorr,
     exact_mass, formal_charge_per_atom, formal_charge_sum, fraction_rotatable_bonds, fsp3,
     ghose_passes, hall_kier_alpha, hba_count, hba_count_lipinski, hbd_count, heavy_atom_count,
     hybridization_per_atom, implicit_hcount_per_atom, ipc, lead_like_passes, lipinski_passes,
@@ -109,9 +110,10 @@ pub use tautomer::{
     enumerate_tautomers_with_config,
 };
 pub use topo_descriptors::{
-    bertz_ct, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v, kappa1, kappa2,
-    kappa3, labute_asa, labute_asa_per_atom, randic_index, topological_distance_matrix,
-    wiener_index, zagreb_index_m1, zagreb_index_m2,
+    bertz_ct, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v,
+    eccentric_connectivity_index, graph_diameter, graph_eccentricities, graph_radius,
+    hosoya_index, kappa1, kappa2, kappa3, labute_asa, labute_asa_per_atom, petitjean_index,
+    randic_index, topological_distance_matrix, wiener_index, zagreb_index_m1, zagreb_index_m2,
 };
 pub use vsa::{estate_vsa, peoe_vsa, slogp_vsa, smr_vsa};
 pub use workflow::{

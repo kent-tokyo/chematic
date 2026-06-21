@@ -71,105 +71,185 @@ pub fn whim_descriptors(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
     vec![l1, l2, l3, p1, p2, p3, alpha, beta, gamma, delta]
 }
 
-/// Compute GETAWAY descriptors: geometric autocorrelation descriptors.
-/// Returns: [G1, G2, G3, D1, D2, D3, T, V, A]
-/// where G* = geometric autocorrelations, D* = topologic distances,
-/// T = total distance, V = volume proxy, A = anisotropy ratio.
+/// GETAWAY (GEometry, Topology and Atom-Weights AssemblY) descriptors.
+///
+/// Returns a 19-element vector:
+/// - `H[1..8]` — leverage autocorrelation at topological lags 1–8:
+///   `H[k] = Σ_{d(i,j)=k} √(h_i · h_j)` (sum over heavy-atom pairs)
+/// - `R[1..8]` — normalised: `H[k] / W_k` (W_k = number of pairs at lag k)
+/// - `Hmax`, `Hmean`, `Htot` — leverage statistics
+///
+/// The per-atom *leverage* h_i is the diagonal of the hat matrix
+/// `H = X(X^T X)^{-1} X^T`, where X is the centred 3D coordinate matrix
+/// of heavy atoms.  Leverage measures each atom's geometric influence.
 pub fn getaway_descriptors(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
-    if mol.atom_count() < 2 {
-        return vec![0.0; 9];
+    // Collect heavy-atom indices (exclude H).
+    let heavy: Vec<usize> = (0..mol.atom_count())
+        .filter(|&i| {
+            mol.atom(chematic_core::AtomIdx(i as u32))
+                .element
+                .atomic_number()
+                != 1
+        })
+        .collect();
+    let hn = heavy.len();
+    if hn < 2 {
+        return vec![0.0; 19];
     }
 
-    let n = mol.atom_count() as f64;
+    // ── Step 1: centred coordinate matrix X (hn×3) ──────────────────────────
+    let mut cx = 0.0f64;
+    let mut cy = 0.0f64;
+    let mut cz = 0.0f64;
+    for &h in &heavy {
+        let p = coords.get(chematic_core::AtomIdx(h as u32));
+        cx += p.x;
+        cy += p.y;
+        cz += p.z;
+    }
+    let hn_f = hn as f64;
+    cx /= hn_f;
+    cy /= hn_f;
+    cz /= hn_f;
 
-    // Geometric autocorrelations (lag-1, lag-2, lag-3)
-    let mut g1 = 0.0;
-    let mut g2 = 0.0;
-    let mut g3 = 0.0;
-    let mut total_dist = 0.0;
+    let xs: Vec<[f64; 3]> = heavy
+        .iter()
+        .map(|&h| {
+            let p = coords.get(chematic_core::AtomIdx(h as u32));
+            [p.x - cx, p.y - cy, p.z - cz]
+        })
+        .collect();
 
-    // Pairwise distances
-    let mut distances = Vec::new();
-    for i in 0..mol.atom_count() {
-        let ai = chematic_core::AtomIdx(i as u32);
-        for j in (i + 1)..mol.atom_count() {
-            let aj = chematic_core::AtomIdx(j as u32);
-            let d = coords.get(ai).distance(&coords.get(aj));
-            distances.push(d);
-            total_dist += d;
+    // ── Step 2: X^T X (3×3) ──────────────────────────────────────────────────
+    let mut xtx = [[0.0f64; 3]; 3];
+    for row in &xs {
+        for a in 0..3 {
+            for b in 0..3 {
+                xtx[a][b] += row[a] * row[b];
+            }
         }
     }
 
-    // Autocorrelation at different lags
-    if !distances.is_empty() {
-        g1 = distances.iter().take(n as usize).copied().sum::<f64>() / n.max(1.0);
-        g2 = distances
-            .iter()
-            .skip(n as usize / 2)
-            .take(n as usize)
-            .copied()
-            .sum::<f64>()
-            / n.max(1.0);
-        g3 = distances
-            .iter()
-            .rev()
-            .take(n as usize)
-            .copied()
-            .sum::<f64>()
-            / n.max(1.0);
-    }
+    // ── Step 3: (X^T X)^{-1} — analytical 3×3 inverse ───────────────────────
+    let inv = mat3_inv(&xtx);
 
-    // Topologic distances (simplified: bond distances)
-    let mut d1 = 0.0;
-    let mut d2 = 0.0;
-    let mut d3 = 0.0;
+    // ── Step 4: leverage h_i = X_i^T (X^T X)^{-1} X_i ───────────────────────
+    let leverage: Vec<f64> = xs
+        .iter()
+        .map(|xi| {
+            let mut h = 0.0f64;
+            for a in 0..3 {
+                for b in 0..3 {
+                    h += xi[a] * inv[a][b] * xi[b];
+                }
+            }
+            h.max(0.0) // numerical safety against tiny negatives
+        })
+        .collect();
 
-    for (_, bond) in mol.bonds() {
-        let ai = bond.atom1;
-        let aj = bond.atom2;
-        let d = coords.get(ai).distance(&coords.get(aj));
-        d1 += d;
-        if d > 1.5 {
-            d2 += d;
+    // ── Step 5: topological distance matrix (BFS) ────────────────────────────
+    let topo = heavy_topo_dist_local(mol, &heavy);
+
+    // ── Step 6: GETAWAY H and R descriptors ─────────────────────────────────
+    const MAX_LAG: usize = 8;
+    let mut h_lags = vec![0.0f64; MAX_LAG];
+    let mut w_lags = [0usize; MAX_LAG];
+
+    for i in 0..hn {
+        for j in (i + 1)..hn {
+            let d = topo[i][j];
+            if d == 0 || d as usize > MAX_LAG {
+                continue;
+            }
+            let k = (d - 1) as usize;
+            h_lags[k] += (leverage[i] * leverage[j]).sqrt();
+            w_lags[k] += 1;
         }
-        if d > 2.0 {
-            d3 += d;
+    }
+
+    let r_lags: Vec<f64> = h_lags
+        .iter()
+        .zip(w_lags.iter())
+        .map(|(&h, &w)| if w == 0 { 0.0 } else { h / w as f64 })
+        .collect();
+
+    // ── Step 7: leverage statistics ─────────────────────────────────────────
+    let hmax = leverage.iter().cloned().fold(0.0f64, f64::max);
+    let hmean = leverage.iter().sum::<f64>() / hn_f;
+    let htot = leverage.iter().sum::<f64>();
+
+    let mut out = h_lags;
+    out.extend(r_lags);
+    out.extend([hmax, hmean, htot]);
+    out // 8 + 8 + 3 = 19 elements
+}
+
+/// Inverse of a 3×3 matrix.  Returns the identity when the determinant is
+/// near-zero (degenerate / planar coordinate set).
+fn mat3_inv(m: &[[f64; 3]; 3]) -> [[f64; 3]; 3] {
+    let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+        - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+        + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    if det.abs() < 1e-10 {
+        return [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+    }
+    let d = 1.0 / det;
+    [
+        [
+            (m[1][1] * m[2][2] - m[1][2] * m[2][1]) * d,
+            (m[0][2] * m[2][1] - m[0][1] * m[2][2]) * d,
+            (m[0][1] * m[1][2] - m[0][2] * m[1][1]) * d,
+        ],
+        [
+            (m[1][2] * m[2][0] - m[1][0] * m[2][2]) * d,
+            (m[0][0] * m[2][2] - m[0][2] * m[2][0]) * d,
+            (m[0][2] * m[1][0] - m[0][0] * m[1][2]) * d,
+        ],
+        [
+            (m[1][0] * m[2][1] - m[1][1] * m[2][0]) * d,
+            (m[0][1] * m[2][0] - m[0][0] * m[2][1]) * d,
+            (m[0][0] * m[1][1] - m[0][1] * m[1][0]) * d,
+        ],
+    ]
+}
+
+/// BFS topological distance matrix for a subset of atoms.
+/// Avoids a cross-crate dependency on chematic-chem.
+fn heavy_topo_dist_local(mol: &Molecule, heavy: &[usize]) -> Vec<Vec<u32>> {
+    use std::collections::{HashSet, VecDeque};
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let hn = heavy.len();
+    let mut matrix = vec![vec![u32::MAX; hn]; hn];
+    for (p, &start) in heavy.iter().enumerate() {
+        matrix[p][p] = 0;
+        let n_atoms = mol.atom_count();
+        let mut dist = vec![usize::MAX; n_atoms];
+        dist[start] = 0;
+        let mut queue = VecDeque::new();
+        queue.push_back(start);
+        while let Some(cur) = queue.pop_front() {
+            let d = dist[cur];
+            for (nb, _) in mol.neighbors(chematic_core::AtomIdx(cur as u32)) {
+                let ni = nb.0 as usize;
+                if heavy_set.contains(&ni) && dist[ni] == usize::MAX {
+                    dist[ni] = d + 1;
+                    queue.push_back(ni);
+                }
+            }
+        }
+        for (q, &h) in heavy.iter().enumerate() {
+            let d = dist[h];
+            if d != usize::MAX {
+                matrix[p][q] = d as u32;
+            }
         }
     }
-
-    let bond_count = mol.bond_count() as f64;
-    if bond_count > 0.0 {
-        d1 /= bond_count;
-        d2 /= bond_count;
-        d3 /= bond_count;
-    }
-
-    // Volume proxy: bounding box
-    let mut min_x = f64::INFINITY;
-    let mut max_x = f64::NEG_INFINITY;
-    let mut min_y = f64::INFINITY;
-    let mut max_y = f64::NEG_INFINITY;
-    let mut min_z = f64::INFINITY;
-    let mut max_z = f64::NEG_INFINITY;
-
-    for i in 0..mol.atom_count() {
-        let p = coords.get(chematic_core::AtomIdx(i as u32));
-        min_x = min_x.min(p.x);
-        max_x = max_x.max(p.x);
-        min_y = min_y.min(p.y);
-        max_y = max_y.max(p.y);
-        min_z = min_z.min(p.z);
-        max_z = max_z.max(p.z);
-    }
-
-    let v = (max_x - min_x) * (max_y - min_y) * (max_z - min_z);
-    let a = (max_x - min_x) / (max_z - min_z).max(0.1); // Anisotropy
-
-    vec![g1, g2, g3, d1, d2, d3, total_dist, v, a]
+    matrix
 }
 
 /// Combined WHIM + GETAWAY descriptor vector for ML.
-/// Returns 19-element feature vector.
+///
+/// Returns a 29-element feature vector: WHIM (10) followed by GETAWAY (19).
 pub fn whim_getaway_combined(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
     let mut result = whim_descriptors(mol, coords);
     result.extend(getaway_descriptors(mol, coords));
@@ -247,7 +327,8 @@ mod tests {
         let mol = parse("CCC").unwrap();
         let coords = generate_coords(&mol);
         let desc = getaway_descriptors(&mol, &coords);
-        assert_eq!(desc.len(), 9);
+        // HATs-based GETAWAY: 8(H) + 8(R) + 3(Hmax/Hmean/Htot) = 19
+        assert_eq!(desc.len(), 19);
         assert!(
             desc.iter().all(|&d| d.is_finite()),
             "all GETAWAY descriptors should be finite"
@@ -255,11 +336,33 @@ mod tests {
     }
 
     #[test]
+    fn test_getaway_single_atom() {
+        // Molecule with fewer than 2 heavy atoms → zero vector of length 19
+        let mol = parse("[H]").unwrap();
+        let coords = generate_coords(&mol);
+        let desc = getaway_descriptors(&mol, &coords);
+        assert_eq!(desc.len(), 19);
+        assert!(desc.iter().all(|&d| d == 0.0));
+    }
+
+    #[test]
+    fn test_getaway_leverage_nonnegative() {
+        // Htot (index 18) should be non-negative (sum of leverages)
+        let mol = parse("CCO").unwrap();
+        let coords = generate_coords(&mol);
+        let desc = getaway_descriptors(&mol, &coords);
+        assert!(desc[18] >= 0.0, "Htot must be non-negative: {}", desc[18]);
+        assert!(desc[17] >= 0.0, "Hmean must be non-negative");
+        assert!(desc[16] >= 0.0, "Hmax must be non-negative");
+    }
+
+    #[test]
     fn test_combined_aspirin() {
         let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
         let coords = generate_coords(&mol);
         let desc = whim_getaway_combined(&mol, &coords);
-        assert_eq!(desc.len(), 19);
+        // WHIM (10) + GETAWAY (19) = 29
+        assert_eq!(desc.len(), 29);
         assert!(
             desc.iter().all(|&d| d.is_finite()),
             "all combined descriptors should be finite"

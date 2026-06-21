@@ -587,6 +587,148 @@ pub fn zagreb_index_m2(mol: &Molecule) -> u32 {
     sum
 }
 
+// ─── Eccentricity-based descriptors ─────────────────────────────────────────
+
+/// Eccentricity of each heavy atom: max shortest-path distance to any other heavy atom.
+///
+/// Returns a vector of length `n_heavy`.  For a disconnected molecule the eccentricity
+/// of isolated atoms is 0.
+pub fn graph_eccentricities(mol: &Molecule) -> Vec<u32> {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    heavy
+        .iter()
+        .map(|&h| {
+            let row = bfs_from(mol, h, &heavy_set);
+            heavy
+                .iter()
+                .filter_map(|&h2| {
+                    let d = row[h2];
+                    if d == usize::MAX { None } else { Some(d as u32) }
+                })
+                .max()
+                .unwrap_or(0)
+        })
+        .collect()
+}
+
+/// Graph diameter: maximum eccentricity over all heavy atoms.
+///
+/// Equals the longest shortest path in the heavy-atom graph.
+pub fn graph_diameter(mol: &Molecule) -> u32 {
+    graph_eccentricities(mol).into_iter().max().unwrap_or(0)
+}
+
+/// Graph radius: minimum eccentricity over all heavy atoms.
+pub fn graph_radius(mol: &Molecule) -> u32 {
+    graph_eccentricities(mol).into_iter().min().unwrap_or(0)
+}
+
+/// Petitjean topological index: `(diameter - radius) / diameter`.
+///
+/// Ranges from 0 (perfectly symmetric / linear chain) to 1 (highly asymmetric).
+/// Returns 0 for single-atom molecules or when the diameter is 0.
+pub fn petitjean_index(mol: &Molecule) -> f64 {
+    let ecc = graph_eccentricities(mol);
+    if ecc.is_empty() {
+        return 0.0;
+    }
+    let d = ecc.iter().copied().max().unwrap_or(0);
+    let r = ecc.iter().copied().min().unwrap_or(0);
+    if d == 0 { 0.0 } else { (d - r) as f64 / d as f64 }
+}
+
+/// Eccentric Connectivity Index: Σ_v [deg(v) × ecc(v)] over heavy atoms.
+///
+/// Introduced by Sharma et al. (1997).  Higher values indicate more
+/// branched or elongated structures.
+pub fn eccentric_connectivity_index(mol: &Molecule) -> u64 {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let ecc: Vec<u32> = heavy
+        .iter()
+        .map(|&h| {
+            let row = bfs_from(mol, h, &heavy_set);
+            heavy
+                .iter()
+                .filter_map(|&h2| {
+                    let d = row[h2];
+                    if d == usize::MAX { None } else { Some(d as u32) }
+                })
+                .max()
+                .unwrap_or(0)
+        })
+        .collect();
+    heavy
+        .iter()
+        .zip(ecc.iter())
+        .map(|(&h, &e)| {
+            let deg = mol
+                .neighbors(AtomIdx(h as u32))
+                .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+                .count() as u64;
+            deg * e as u64
+        })
+        .sum()
+}
+
+// ─── Hosoya Index ────────────────────────────────────────────────────────────
+
+/// Hosoya topological index Z: total number of matchings (including the empty matching).
+///
+/// Z(G) = Σ_k p(G, k) where p(G, k) is the number of k-matchings.
+/// Computed via the vertex-removal recurrence: Z(G) = Z(G−v) + Σ_{u∈N(v)} Z(G−v−u).
+///
+/// Practical for drug-like molecules (< 60 heavy atoms).  For larger graphs
+/// the exponential worst-case may be slow.
+pub fn hosoya_index(mol: &Molecule) -> u64 {
+    let heavy = heavy_indices(mol);
+    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let n = heavy.len();
+    if n == 0 {
+        return 1; // empty graph has one matching (the empty one)
+    }
+    let pos_of: std::collections::HashMap<usize, usize> =
+        heavy.iter().enumerate().map(|(i, &h)| (h, i)).collect();
+    let mut adj = vec![vec![false; n]; n];
+    for (_, bond) in mol.bonds() {
+        let a = bond.atom1.0 as usize;
+        let b = bond.atom2.0 as usize;
+        if let (Some(&pa), Some(&pb)) = (pos_of.get(&a), pos_of.get(&b))
+            && heavy_set.contains(&a)
+            && heavy_set.contains(&b)
+        {
+            adj[pa][pb] = true;
+            adj[pb][pa] = true;
+        }
+    }
+    let mut available = vec![true; n];
+    count_matchings_hosoya(&adj, &mut available, n)
+}
+
+fn count_matchings_hosoya(adj: &[Vec<bool>], available: &mut Vec<bool>, n: usize) -> u64 {
+    // Find first available vertex.
+    let v = match available.iter().position(|&a| a) {
+        Some(v) => v,
+        None => return 1, // empty graph → exactly one matching (the empty matching)
+    };
+    // Case 1: v is left unmatched.
+    available[v] = false;
+    let mut z = count_matchings_hosoya(adj, available, n);
+    // Case 2: v is matched to each available neighbor u.
+    for u in 0..n {
+        if adj[v][u] && available[u] {
+            available[u] = false;
+            z += count_matchings_hosoya(adj, available, n);
+            available[u] = true;
+        }
+    }
+    available[v] = true;
+    z
+}
+
+// ─── Topological distance matrix ─────────────────────────────────────────────
+
 /// Topological distance matrix for heavy atoms.
 ///
 /// Entry `[i][j]` is the length of the shortest path (in bonds) between
@@ -873,6 +1015,86 @@ mod tests {
             let m = mol(smi);
             assert!(zagreb_index_m2(&m) > 0, "M2 should be > 0 for {smi}");
         }
+    }
+
+    // ── Eccentricity / Petitjean / ECI ───────────────────────────────────────
+
+    #[test]
+    fn eccentricities_propane() {
+        // CCC: terminal Cs have ecc=2, middle C has ecc=1
+        let m = mol("CCC");
+        let ecc = graph_eccentricities(&m);
+        assert_eq!(ecc.len(), 3);
+        assert_eq!(*ecc.iter().max().unwrap(), 2);
+        assert_eq!(*ecc.iter().min().unwrap(), 1);
+    }
+
+    #[test]
+    fn graph_diameter_propane() {
+        assert_eq!(graph_diameter(&mol("CCC")), 2);
+    }
+
+    #[test]
+    fn graph_radius_propane() {
+        assert_eq!(graph_radius(&mol("CCC")), 1);
+    }
+
+    #[test]
+    fn petitjean_propane() {
+        // (2 - 1) / 2 = 0.5
+        let v = petitjean_index(&mol("CCC"));
+        assert!((v - 0.5).abs() < 1e-9, "expected 0.5 got {v}");
+    }
+
+    #[test]
+    fn petitjean_benzene() {
+        // c1ccccc1: 6-cycle — all atoms have eccentricity 3, so diameter=radius=3 → Petitjean=0
+        let v = petitjean_index(&mol("c1ccccc1"));
+        assert!((v - 0.0).abs() < 1e-9, "expected 0.0 (symmetric ring) got {v}");
+    }
+
+    #[test]
+    fn petitjean_single_atom() {
+        assert_eq!(petitjean_index(&mol("C")), 0.0);
+    }
+
+    #[test]
+    fn eci_propane() {
+        // CCC: middle C deg=2 ecc=1 → 2; each terminal C deg=1 ecc=2 → 2 each → total 6
+        assert_eq!(eccentric_connectivity_index(&mol("CCC")), 6);
+    }
+
+    // ── Hosoya Index ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn hosoya_methane() {
+        // Single atom: 0 edges → Z = 1 (empty matching only)
+        assert_eq!(hosoya_index(&mol("C")), 1);
+    }
+
+    #[test]
+    fn hosoya_ethane() {
+        // CC: 1 edge → Z = 2 (empty + {e1})
+        assert_eq!(hosoya_index(&mol("CC")), 2);
+    }
+
+    #[test]
+    fn hosoya_propane() {
+        // CCC: 2 edges, no two share a vertex → Z = 1 + 2 = 3
+        assert_eq!(hosoya_index(&mol("CCC")), 3);
+    }
+
+    #[test]
+    fn hosoya_butane() {
+        // CCCC: 3 edges; matchings: empty(1) + each edge(3) + {e1,e3}(1) = 5
+        assert_eq!(hosoya_index(&mol("CCCC")), 5);
+    }
+
+    #[test]
+    fn hosoya_benzene() {
+        // c1ccccc1: C6 cycle — Z(C6) = M0+M1+M2+M3 = 1+6+9+2 = 18
+        // M2 = C(6,2) - 6 adjacent pairs = 15 - 6 = 9; M3 = 2 perfect matchings
+        assert_eq!(hosoya_index(&mol("c1ccccc1")), 18);
     }
 
     #[test]
