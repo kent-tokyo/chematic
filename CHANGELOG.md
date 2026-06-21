@@ -11,6 +11,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.15] — 2026-06-21
+
+### Fixed — `chematic-chem`
+
+- **TPSA atom-type calibration** — six systematic divergences from RDKit corrected by
+  comparing per-atom `_CalcTPSAContribs` values:
+  - Imine N=C (h=0): 12.89 → **12.36 Å²**
+  - Imine =NH (h=1): 23.79 → **23.85 Å²**
+  - Nitrile N≡C (h=0): 3.24 → **23.79 Å²** (new case, triple-bond check)
+  - O⁻ (non-nitro, e.g. carboxylate/phenolate/sulfonate): 9.23 → **23.06 Å²**
+  - Ring-junction aromatic N — all bonds `BondOrder::Aromatic` (bridgehead, neutral): 4.93 → **4.41 Å²**
+  - Ring-junction aromatic N (bridgehead, cationic): 3.88 → **4.10 Å²**
+  - `tpsa_per_atom()` now applies `apply_aromaticity` for Kekulé-form consistency with `tpsa()`
+  - `tpsa_all_tsv_reference` bulk-regression tolerance tightened: ±1.0 → **±0.1 Å²** (175 molecules)
+- **Bench5k results after calibration** (4 999-molecule ChEMBL-like corpus):
+  - HBA: 99.98% → **100%** (4 999 / 4 999)
+  - HBD: 99.8% → **100%** (4 999 / 4 999)
+  - Aromatic ring count: 98.5% → **100%** (4 999 / 4 999)
+  - TPSA (±0.1 Å²): 86.7% → **93.3%** (drug-like 175-mol set: **100%**)
+
+### Fixed — `chematic-rxn`
+
+- **E/Z double-bond stereo filtering in `run_reactants` (issue #21)** — SMIRKS templates with
+  `/`/`\` bond-direction descriptors on **both** sides of a double bond now correctly filter
+  reactants whose geometry does not match. Mirrors the tetrahedral `smirks_chirality_ok` approach:
+  - `ez_stereo_outward(mol, atom, other)` — computes the "outward" Up/Down direction from a
+    double-bond endpoint, flipping incoming bonds so direction is always relative to the sp2 atom.
+  - `smirks_ez_stereo_ok(tmpl, reactant, match_map)` — post-VF2 parity check: derives E/Z sense
+    (same outward direction = Z, different = E) from both template and reactant, rejects mappings
+    where the senses disagree.
+  - Single-sided or unspecified stereo is not filtered (ambiguous → permissive).
+
+### Added — tests
+
+- 6 new E/Z stereo tests in `chematic-rxn::transform`:
+  `ez_stereo_e_template_matches_e_alkene`, `ez_stereo_e_template_rejects_z_alkene`,
+  `ez_stereo_neutral_template_matches_both_geometries`, `ez_stereo_one_sided_template_matches_both_geometries`,
+  `ez_stereo_retro_wittig_z_matches_z_hexene`, `ez_stereo_z_template_matches_z_alkene`
+- 6 new TPSA calibration regression tests in `chematic-chem::rdkit_reference`:
+  `tpsa_diazepam`, `tpsa_clonazepam`, `tpsa_metformin` (tightened ±0.5→±0.1), `tpsa_arginine`
+  (tightened), `tpsa_nitrile`, `tpsa_carboxylate_anion`, `tpsa_ring_junction_n`, `tpsa_n_substituted_aromatic_n`
+
+---
+
 ## [0.4.14] — 2026-06-21
 
 ### Fixed — `chematic-rxn`
