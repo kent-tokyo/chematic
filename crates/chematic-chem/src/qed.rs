@@ -17,7 +17,10 @@
 use std::sync::OnceLock;
 
 use chematic_core::Molecule;
-use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
+use chematic_perception::{RingSet, find_sssr};
+use chematic_smarts::{
+    MatchConfig, QueryMolecule, find_matches_with_rings_and_config, parse_smarts,
+};
 
 use crate::descriptors::{
     RingBundle, hbd_count, logp_crippen, molecular_weight, ring_bundle, tpsa,
@@ -247,10 +250,14 @@ fn alert_queries() -> &'static [QueryMolecule] {
     })
 }
 
-fn structural_alert_count(mol: &Molecule) -> usize {
+fn structural_alert_count_with_rings(mol: &Molecule, rings: &RingSet) -> usize {
+    let config = MatchConfig {
+        max_matches: Some(1),
+        ..Default::default()
+    };
     alert_queries()
         .iter()
-        .filter(|q| !find_matches(q, mol).is_empty())
+        .filter(|q| !find_matches_with_rings_and_config(q, mol, rings, &config).is_empty())
         .count()
 }
 
@@ -283,8 +290,10 @@ pub fn qed(mol: &Molecule) -> f64 {
     qed_with_bundle(mol, &ring_bundle(mol))
 }
 
-/// QED with pre-computed ring values from [`ring_bundle`] — avoids 3 redundant `find_sssr` calls.
+/// QED with pre-computed ring values from [`ring_bundle`] — avoids redundant `find_sssr` calls.
 pub fn qed_with_bundle(mol: &Molecule, rb: &RingBundle) -> f64 {
+    // Compute SSSR once; share it across the 113 structural-alert patterns.
+    let rings = find_sssr(mol);
     qed_compute([
         molecular_weight(mol),
         logp_crippen(mol),
@@ -293,7 +302,7 @@ pub fn qed_with_bundle(mol: &Molecule, rb: &RingBundle) -> f64 {
         tpsa(mol),
         rb.rotatable_bond_count as f64,
         rb.aromatic_ring_count as f64,
-        structural_alert_count(mol) as f64,
+        structural_alert_count_with_rings(mol, &rings) as f64,
     ])
 }
 
@@ -382,7 +391,8 @@ mod tests {
         // Aspirin has structural alerts: phenyl ester (c1ccccc1OC(=O)[#6])
         // and generic ester ([#6,#8,#16][#6](=O)O[#6]) — consistent with RDKit.
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
-        let n = structural_alert_count(&m);
+        let rings = find_sssr(&m);
+        let n = structural_alert_count_with_rings(&m, &rings);
         assert!(n >= 1, "aspirin should have >= 1 structural alert, got {n}");
     }
 
@@ -390,7 +400,8 @@ mod tests {
     fn test_structural_alert_nitro_compound() {
         // Nitrobenzene: [N+](=O)[O-] matches pattern 30
         let m = mol("c1ccc([N+](=O)[O-])cc1");
-        let n = structural_alert_count(&m);
+        let rings = find_sssr(&m);
+        let n = structural_alert_count_with_rings(&m, &rings);
         assert!(n >= 1, "nitrobenzene should have >= 1 alert, got {n}");
     }
 

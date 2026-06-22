@@ -87,50 +87,43 @@ fn extract_subgraph(mol: &Molecule, atom_set: &[AtomIdx]) -> Molecule {
     builder.build()
 }
 
-/// Compute an MHFP shingle by generating canonical SMILES of the circular
-/// subgraph at (center, radius).  This is the Lowe & Sayle 2013 approach.
-fn circular_smiles_shingle(mol: &Molecule, center: AtomIdx, radius: u32) -> u64 {
-    let atoms = atoms_within_radius(mol, center, radius);
-    let subgraph = extract_subgraph(mol, &atoms);
-    let smiles = chematic_smiles::canonical_smiles(&subgraph);
-    fnv1a_hash(smiles.as_bytes())
-}
+/// Compute all MHFP shingles for a molecule (one per center × radius level).
+///
+/// Uses incremental BFS expansion so each center atom's neighborhood is expanded
+/// once (radius 0 → 1 → 2 → …) rather than re-running BFS from scratch for every
+/// radius level.  For a 50-atom molecule at radius=2 this reduces BFS work from
+/// 3×50 full traversals to 50 incremental expansions.
+fn extract_fragment_hashes(mol: &Molecule, radius: u32) -> Vec<u64> {
+    let mut hashes = Vec::with_capacity(mol.atom_count() * (radius as usize + 1));
 
-/// Collect all atoms within a given radius from a center atom (BFS).
-/// Returns atoms in BFS-discovery order (deterministic across process invocations).
-fn atoms_within_radius(mol: &Molecule, center: AtomIdx, radius: u32) -> Vec<AtomIdx> {
-    let mut visited = FxHashSet::default();
-    let mut discovered = vec![center];
-    visited.insert(center);
-    let mut frontier_start = 0;
+    for i in 0..mol.atom_count() {
+        let center = AtomIdx(i as u32);
+        let mut visited: FxHashSet<AtomIdx> = FxHashSet::default();
+        let mut discovered: Vec<AtomIdx> = vec![center];
+        visited.insert(center);
+        let mut frontier_start = 0;
 
-    for _ in 0..radius {
-        let frontier_end = discovered.len();
-        for i in frontier_start..frontier_end {
-            for (nb, _) in mol.neighbors(discovered[i]) {
-                if visited.insert(nb) {
-                    discovered.push(nb);
+        // Emit shingle for the current atom set, then expand one shell at a time.
+        for r in 0..=radius {
+            let subgraph = extract_subgraph(mol, &discovered);
+            let smiles = chematic_smiles::canonical_smiles(&subgraph);
+            hashes.push(fnv1a_hash(smiles.as_bytes()));
+
+            if r < radius {
+                let frontier_end = discovered.len();
+                for j in frontier_start..frontier_end {
+                    for (nb, _) in mol.neighbors(discovered[j]) {
+                        if visited.insert(nb) {
+                            discovered.push(nb);
+                        }
+                    }
                 }
+                frontier_start = frontier_end;
             }
-        }
-        frontier_start = frontier_end;
-        if frontier_start == discovered.len() {
-            break;
         }
     }
 
-    discovered
-}
-
-/// Compute all MHFP shingles for a molecule (one per center × radius).
-/// Uses canonical circular SMILES as shingles (Lowe & Sayle 2013).
-fn extract_fragment_hashes(mol: &Molecule, radius: u32) -> Vec<u64> {
-    (0..mol.atom_count())
-        .flat_map(|i| {
-            let center = AtomIdx(i as u32);
-            (0..=radius).map(move |r| circular_smiles_shingle(mol, center, r))
-        })
-        .collect()
+    hashes
 }
 
 /// Generate MinHash fingerprint from a molecule.
@@ -227,13 +220,11 @@ mod tests {
     }
 
     #[test]
-    fn test_atoms_within_radius() {
+    fn test_fragment_hashes_count() {
+        // For a 4-atom chain at radius=2, we should get 4 atoms × 3 radii = 12 hashes.
         let mol = parse("CCCC").unwrap();
-        let center = AtomIdx(1);
-        let r0 = atoms_within_radius(&mol, center, 0);
-        assert_eq!(r0.len(), 1);
-        let r1 = atoms_within_radius(&mol, center, 1);
-        assert!(r1.len() >= 2);
+        let hashes = extract_fragment_hashes(&mol, 2);
+        assert_eq!(hashes.len(), 4 * 3, "expected 4 centers × 3 radius levels");
     }
 
     #[test]

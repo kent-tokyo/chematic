@@ -187,6 +187,7 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| {
             let m = &mol;
+            let (pka_a, pka_b) = chematic_chem::pka_both(m);
             Desc {
                 mw: chematic_chem::molecular_weight(m),
                 exact_mass: chematic_chem::exact_mass(m),
@@ -242,8 +243,8 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
                 caco: chematic_chem::caco2_permeability(m),
                 herg: chematic_chem::herg_risk_score(m),
                 cyp: chematic_chem::cyp3a4_inhibition_risk(m),
-                pka_acid: chematic_chem::pka_acid(m),
-                pka_base: chematic_chem::pka_base(m),
+                pka_acid: pka_a,
+                pka_base: pka_b,
             }
         })
         .collect();

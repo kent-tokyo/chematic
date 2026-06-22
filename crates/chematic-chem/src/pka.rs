@@ -29,7 +29,10 @@
 use std::sync::OnceLock;
 
 use chematic_core::{AtomIdx, Molecule};
-use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
+use chematic_perception::find_sssr;
+use chematic_smarts::{
+    MatchConfig, QueryMolecule, find_matches_with_rings_and_config, parse_smarts,
+};
 
 // ── site type ────────────────────────────────────────────────────────────────
 
@@ -194,11 +197,13 @@ fn compiled_rules() -> &'static [CompiledRule] {
 /// Molecules with no ionizable groups return an empty Vec.
 pub fn predict_pka(mol: &Molecule) -> Vec<PkaSite> {
     let rules = compiled_rules();
+    let rings = find_sssr(mol);
+    let config = MatchConfig::default();
     let mut seen: std::collections::HashSet<u32> = std::collections::HashSet::new();
     let mut sites: Vec<PkaSite> = Vec::new();
 
     for rule in rules {
-        let matches = find_matches(&rule.query, mol);
+        let matches = find_matches_with_rings_and_config(&rule.query, mol, &rings, &config);
         for atom_map in &matches {
             // The matching atom for the ionizable center is the first query atom (index 0).
             if let Some(&atom_idx) = atom_map.get(&0)
@@ -235,6 +240,24 @@ pub fn pka_base(mol: &Molecule) -> Option<f64> {
         .filter(|s| s.site_type == PkaSiteType::Base)
         .map(|s| s.pka)
         .reduce(f64::max)
+}
+
+/// Return `(pka_acid, pka_base)` in a single `predict_pka` call.
+///
+/// Use when both values are needed to avoid running the 42-rule SMARTS scan twice.
+pub fn pka_both(mol: &Molecule) -> (Option<f64>, Option<f64>) {
+    let sites = predict_pka(mol);
+    let acid = sites
+        .iter()
+        .filter(|s| s.site_type == PkaSiteType::Acid)
+        .map(|s| s.pka)
+        .reduce(f64::min);
+    let base = sites
+        .iter()
+        .filter(|s| s.site_type == PkaSiteType::Base)
+        .map(|s| s.pka)
+        .reduce(f64::max);
+    (acid, base)
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────

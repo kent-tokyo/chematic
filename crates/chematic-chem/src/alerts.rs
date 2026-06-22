@@ -2120,6 +2120,40 @@ pub fn brenk_passes(mol: &Molecule) -> bool {
         .all(|(_, q)| find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
 }
 
+/// Returns `(passes, alert_names)` in a single explicit-H + SSSR + pattern pass.
+///
+/// Equivalent to calling `pains_passes(mol)` and `pains_matches(mol)` separately,
+/// but avoids duplicating the expensive explicit-H conversion and 480-pattern scan.
+pub fn pains_passes_and_matches(mol: &Molecule) -> (bool, Vec<&'static str>) {
+    let mol_h = add_explicit_hs(mol);
+    let rings = find_sssr(&mol_h);
+    let config = MatchConfig::default();
+    let names: Vec<&'static str> = compiled_pains_patterns()
+        .iter()
+        .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
+        .map(|(name, _)| *name)
+        .collect();
+    let passes = names.is_empty();
+    (passes, names)
+}
+
+/// Returns `(passes, alert_names)` in a single explicit-H + SSSR + pattern pass.
+///
+/// Equivalent to calling `brenk_passes(mol)` and `brenk_matches(mol)` separately,
+/// but avoids duplicating the expensive explicit-H conversion and ~300-pattern scan.
+pub fn brenk_passes_and_matches(mol: &Molecule) -> (bool, Vec<&'static str>) {
+    let mol_h = add_explicit_hs(mol);
+    let rings = find_sssr(&mol_h);
+    let config = MatchConfig::default();
+    let names: Vec<&'static str> = compiled_brenk_patterns()
+        .iter()
+        .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
+        .map(|(name, _)| *name)
+        .collect();
+    let passes = names.is_empty();
+    (passes, names)
+}
+
 // ---------------------------------------------------------------------------
 // Detailed alert matches — returns atom indices for highlighting
 // ---------------------------------------------------------------------------

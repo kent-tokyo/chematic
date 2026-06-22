@@ -15,9 +15,9 @@ use chematic_smarts::{
 use crate::{
     bertz_ct, detect_named_functional_groups, exact_mass, formal_charge_sum, fsp3, ghose_passes,
     hbd_count, heavy_atom_count, identify_functional_groups, labute_asa, logp_and_mr,
-    molecular_weight, murcko_scaffold, num_heteroatoms, num_stereocenters, pains_matches,
-    pains_passes, qed_with_bundle, reos_passes, ring_bundle, sa_score_with_bundle, tpsa,
-    wiener_index,
+    molecular_weight, murcko_scaffold, num_heteroatoms, num_stereocenters,
+    pains_passes_and_matches, qed_with_bundle, reos_passes, ring_bundle, sa_score_with_bundle,
+    tpsa, wiener_index,
 };
 
 /// Error type for high-level workflow APIs.
@@ -475,6 +475,8 @@ fn report_for_molecule(input_smiles: &str, mol: &Molecule) -> MoleculeReport {
     // Compute LogP and MR together to share the 117-pattern Crippen SMARTS pass.
     let (logp, mr) = logp_and_mr(mol);
     let tpsa_val = tpsa(mol);
+    // Single explicit-H + SSSR + 480-pattern pass for both PAINS flag and alert names.
+    let (pains_ok, pains_alert_names) = pains_passes_and_matches(mol);
 
     MoleculeReport {
         input_smiles: input_smiles.to_string(),
@@ -515,8 +517,8 @@ fn report_for_molecule(input_smiles: &str, mol: &Molecule) -> MoleculeReport {
             egan_passes: tpsa_val <= 131.6 && logp <= 5.88,
             ghose_passes: ghose_passes(mol),
             reos_passes: reos_passes(mol),
-            pains_passes: pains_passes(mol),
-            pains_alerts: pains_matches(mol).into_iter().map(str::to_string).collect(),
+            pains_passes: pains_ok,
+            pains_alerts: pains_alert_names.into_iter().map(str::to_string).collect(),
         },
         functional_groups: identify_functional_groups(mol)
             .into_iter()

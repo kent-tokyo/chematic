@@ -75,8 +75,8 @@ pub use admet::{
     ppb_percent,
 };
 pub use alerts::{
-    brenk_matches, brenk_matches_detailed, brenk_passes, pains_matches, pains_matches_detailed,
-    pains_passes,
+    brenk_matches, brenk_matches_detailed, brenk_passes, brenk_passes_and_matches, pains_matches,
+    pains_matches_detailed, pains_passes, pains_passes_and_matches,
 };
 pub use atropisomer::{AtropisomerType, assign_atropisomer_chirality, detect_atropisomers};
 pub use brics::{BricsConfig, brics_bonds, brics_fragments, brics_fragments_with_config};
@@ -98,7 +98,7 @@ pub use mlp::{MLP_SOLUBILITY_TRAINED, mlp_solubility};
 pub use mmff94_bci::{MmffType, assign_mmff94_type, mmff94_charges_bci, mmff94_charges_typed};
 pub use mmp::{MmpPair, MmsMember, MmsSeries, find_mmp, find_mms};
 pub use named_groups::{NamedGroup, detect_named_functional_groups};
-pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, predict_pka};
+pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, pka_both, predict_pka};
 pub use qed::{qed, qed_with_bundle};
 pub use recap::{recap_breakable_bond_count, recap_fragment};
 pub use rgroup::{RGroupError, RGroupResult, rgroup_decompose};
