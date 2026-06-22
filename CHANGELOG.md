@@ -11,6 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.17] — 2026-06-23
+
+### Performance — `chematic-chem`
+
+- **PAINS/Brenk dedup** — `pains_passes_and_matches(mol) -> (bool, Vec<&str>)` and
+  `brenk_passes_and_matches` perform a single explicit-H conversion + SSSR + pattern scan
+  returning both the pass flag and alert names; `workflow.rs` now uses the combined function
+  instead of calling `pains_passes` and `pains_matches` separately (2× → 1× 480-pattern scan).
+- **QED structural alerts: 113 SSSR → 1** — `structural_alert_count_with_rings` uses
+  `find_matches_with_rings_and_config`; `qed_with_bundle` computes `find_sssr` once and
+  shares it across all 113 QED structural-alert patterns.
+- **pKa SSSR sharing** — `predict_pka` now calls `find_sssr` once and shares the `RingSet`
+  across all 42 ionizable-group SMARTS rules (was one SSSR per rule).
+- **`pka_both(mol) -> (Option<f64>, Option<f64>)`** — new public function returning acid and
+  base pKa from a single `predict_pka` call; `bulk.rs` uses it to avoid the double scan.
+
+### Performance — `chematic-fp`
+
+- **MHFP incremental BFS** — `extract_fragment_hashes` expands each center atom's neighborhood
+  shell-by-shell instead of restarting BFS from scratch per radius level; reduces BFS from 3N
+  to N per molecule at radius=2 (50-atom molecule: 150 → 50 BFS operations).
+
+---
+
 ## [0.4.16] — 2026-06-22
 
 ### Performance — `chematic-smarts`

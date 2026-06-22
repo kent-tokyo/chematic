@@ -53,7 +53,7 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 所有阶段已完成 + **v0.4.x 系列**：PyO3 Python 绑定、MCP 15 工具、MMFF94/UFF 力场、逆合成 `retro_disconnect()`（60 个 retro-SMIRKS）、描述符精度提升（TPSA ±0.1 Å²/LogP ±0.3/HBD 100%）— **2275 个测试，全部通过。零 C/C++ 依赖（默认构建）。**
 
-最新版本：**v0.4.16**（2026-06-22）— perf: SMARTS 匹配 SSSR 共享（Crippen 117→1、PAINS ~480→1）; `logp_and_mr()` / `logd_from_logp()` / `find_matches_with_rings` 新 API | v0.4.15: 四唑互变异构 1H/2H 规范化 | v0.4.14: TPSA ±0.1 Å²、HBA/HBD/芳香环 5k-mol 100%、E/Z 立体 SMIRKS | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS
+最新版本：**v0.4.17**（2026-06-23）— perf: SMARTS 匹配 SSSR 共享（Crippen 117→1、PAINS ~480→1）; `logp_and_mr()` / `logd_from_logp()` / `find_matches_with_rings` 新 API | v0.4.15: 四唑互变异构 1H/2H 规范化 | v0.4.14: TPSA ±0.1 Å²、HBA/HBD/芳香环 5k-mol 100%、E/Z 立体 SMIRKS | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
