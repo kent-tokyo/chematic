@@ -144,18 +144,19 @@ fn atoms_on_side(mol: &Molecule, from: AtomIdx, not_via: AtomIdx) -> HashSet<Ato
     visited
 }
 
-/// Build a sub-molecule from `side` atoms and add a `[*]` atom bonded to `attach`,
-/// then return its canonical SMILES.
-fn fragment_smiles(mol: &Molecule, side: &HashSet<AtomIdx>, attach: AtomIdx) -> String {
+/// Build a fragment molecule from `side` atoms with a wildcard `[*]` attachment.
+fn build_fragment_mol(
+    mol: &Molecule,
+    side: &HashSet<AtomIdx>,
+    attach: AtomIdx,
+) -> chematic_core::Molecule {
     let mut builder = MoleculeBuilder::new();
     let mut idx_map: HashMap<AtomIdx, AtomIdx> = HashMap::new();
 
-    // Wildcard attachment marker.
     let mut wc = Atom::new(chematic_core::Element::C);
     wc.wildcard = true;
     let wc_idx = builder.add_atom(wc);
 
-    // Side atoms.
     for &orig in side {
         let atom = mol.atom(orig);
         let mut a = Atom::new(atom.element);
@@ -169,10 +170,8 @@ fn fragment_smiles(mol: &Molecule, side: &HashSet<AtomIdx>, attach: AtomIdx) -> 
         idx_map.insert(orig, new_idx);
     }
 
-    // Bond: wildcard → attachment atom.
     let _ = builder.add_bond(wc_idx, *idx_map.get(&attach).unwrap(), BondOrder::Single);
 
-    // Intra-side bonds.
     for (_, bond) in mol.bonds() {
         if side.contains(&bond.atom1)
             && side.contains(&bond.atom2)
@@ -182,7 +181,122 @@ fn fragment_smiles(mol: &Molecule, side: &HashSet<AtomIdx>, attach: AtomIdx) -> 
         }
     }
 
-    canonical_smiles(&builder.build())
+    builder.build()
+}
+
+/// Build a sub-molecule from `side` atoms and return its canonical SMILES.
+fn fragment_smiles(mol: &Molecule, side: &HashSet<AtomIdx>, attach: AtomIdx) -> String {
+    canonical_smiles(&build_fragment_mol(mol, side, attach))
+}
+
+// ---------------------------------------------------------------------------
+// Matched Molecular Series (MMS)
+// ---------------------------------------------------------------------------
+
+/// One member of a matched molecular series.
+#[derive(Debug, Clone)]
+pub struct MmsMember {
+    /// Canonical SMILES of the molecule.
+    pub smiles: String,
+    /// Substituent fragment SMILES (contains `[*]`).
+    pub fragment: String,
+    /// Molecular weight of the substituent fragment (Da), used as sort key.
+    pub mw: f64,
+}
+
+/// A matched molecular series — a set of ≥ 3 molecules sharing a common core.
+#[derive(Debug, Clone)]
+pub struct MmsSeries {
+    /// Canonical SMILES of the common core (contains `[*]`).
+    pub core: String,
+    /// Series members sorted ascending by substituent molecular weight.
+    pub members: Vec<MmsMember>,
+}
+
+/// Find all matched molecular series in `mols`.
+///
+/// A series groups ≥ 3 molecules that share the same structural core at a single
+/// BRICS cut point, differing only in the substituent at that position.
+/// Members are sorted by ascending substituent molecular weight.
+pub fn find_mms(mols: &[&Molecule]) -> Vec<MmsSeries> {
+    let mol_smiles: Vec<String> = mols.iter().map(|m| canonical_smiles(m)).collect();
+
+    // Build core → Vec<(mol_idx, sub_smiles, sub_mw)>
+    let mut index: HashMap<String, Vec<(usize, String, f64)>> = HashMap::new();
+
+    for (mol_idx, mol) in mols.iter().enumerate() {
+        // Deduplicate (core, sub) pairs within a single molecule
+        let mut seen: HashSet<(String, String)> = HashSet::new();
+        for (core_smi, sub_smi, sub_mw) in all_cuts_with_mw(mol) {
+            if seen.insert((core_smi.clone(), sub_smi.clone())) {
+                index
+                    .entry(core_smi)
+                    .or_default()
+                    .push((mol_idx, sub_smi, sub_mw));
+            }
+        }
+    }
+
+    let mut series_list: Vec<MmsSeries> = Vec::new();
+
+    for (core_smi, entries) in &index {
+        // Require ≥ 3 distinct molecules
+        let distinct_mols: HashSet<usize> = entries.iter().map(|(i, _, _)| *i).collect();
+        if distinct_mols.len() < 3 {
+            continue;
+        }
+
+        // Per-molecule dedup in the index-building loop already guarantees
+        // unique (mol_idx, sub_smi) pairs per core, so no second dedup needed.
+        let mut members: Vec<MmsMember> = entries
+            .iter()
+            .map(|(mol_idx, sub_smi, sub_mw)| MmsMember {
+                smiles: mol_smiles[*mol_idx].clone(),
+                fragment: sub_smi.clone(),
+                mw: *sub_mw,
+            })
+            .collect();
+
+        members.sort_by(|a, b| a.mw.partial_cmp(&b.mw).unwrap_or(std::cmp::Ordering::Equal));
+
+        series_list.push(MmsSeries {
+            core: core_smi.clone(),
+            members,
+        });
+    }
+
+    series_list.sort_by(|a, b| a.core.cmp(&b.core));
+    series_list
+}
+
+/// Build all (core_smiles, sub_smiles, sub_mw) triples from every BRICS cut of `mol`.
+fn all_cuts_with_mw(mol: &Molecule) -> Vec<(String, String, f64)> {
+    let mut result = Vec::new();
+    for (a1, a2) in brics_bonds(mol) {
+        let side1 = atoms_on_side(mol, a1, a2);
+        let side2 = atoms_on_side(mol, a2, a1);
+        let (sub, core, at_sub, at_core) = if side1.len() <= side2.len() {
+            (side1, side2, a1, a2)
+        } else {
+            (side2, side1, a2, a1)
+        };
+        let core_smi = fragment_smiles(mol, &core, at_core);
+        let (sub_smi, sub_mw) = fragment_smiles_with_mw(mol, &sub, at_sub);
+        result.push((core_smi, sub_smi, sub_mw));
+    }
+    result
+}
+
+/// Build a fragment molecule and return (canonical_smiles, molecular_weight).
+fn fragment_smiles_with_mw(
+    mol: &Molecule,
+    side: &HashSet<AtomIdx>,
+    attach: AtomIdx,
+) -> (String, f64) {
+    let frag_mol = build_fragment_mol(mol, side, attach);
+    let mw = crate::descriptors::molecular_weight(&frag_mol);
+    let smi = canonical_smiles(&frag_mol);
+    (smi, mw)
 }
 
 // ---------------------------------------------------------------------------
@@ -272,6 +386,61 @@ mod tests {
             benzene_pairs.len(),
             3,
             "3 molecules → 3 benzene-core MMP pairs: {pairs:?}"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // MMS tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn mms_three_alkylbenzenes_one_series() {
+        // ethyl-, propyl-, butylbenzene share a benzene core → one MmsSeries
+        let a = mol("CCc1ccccc1");
+        let b = mol("CCCc1ccccc1");
+        let c = mol("CCCCc1ccccc1");
+        let series = find_mms(&[&a, &b, &c]);
+        let benzene_series: Vec<_> = series
+            .iter()
+            .filter(|s| s.core == "c1c([*])cccc1")
+            .collect();
+        assert_eq!(
+            benzene_series.len(),
+            1,
+            "expected 1 MMS series with benzene core: {series:?}"
+        );
+        let s = &benzene_series[0];
+        assert_eq!(s.members.len(), 3, "series should have 3 members");
+        // Members sorted by ascending substituent MW
+        let mws: Vec<f64> = s.members.iter().map(|m| m.mw).collect();
+        assert!(
+            mws.windows(2).all(|w| w[0] <= w[1] + 1e-6),
+            "members not sorted by MW: {mws:?}"
+        );
+    }
+
+    #[test]
+    fn mms_two_molecules_no_series() {
+        // Only 2 molecules → never enough for a series (need ≥3)
+        let a = mol("CCc1ccccc1");
+        let b = mol("CCCc1ccccc1");
+        let series = find_mms(&[&a, &b]);
+        assert!(
+            series.is_empty(),
+            "2 molecules cannot form a MMS (need ≥3): {series:?}"
+        );
+    }
+
+    #[test]
+    fn mms_no_brics_bonds_no_series() {
+        // Benzene has no BRICS bonds → no cuts → no series
+        let a = mol("c1ccccc1");
+        let b = mol("c1ccncc1");
+        let c = mol("c1cccnc1");
+        let series = find_mms(&[&a, &b, &c]);
+        assert!(
+            series.is_empty(),
+            "aromatic rings without BRICS bonds → no series: {series:?}"
         );
     }
 }

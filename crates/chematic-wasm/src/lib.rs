@@ -1047,9 +1047,8 @@ pub fn generate_3d_etkdg_minimized_pdb(mol: &MolHandle) -> String {
 }
 
 /// Compute WHIM descriptors (Weighted Holistic Invariant Molecular) from 3D coordinates.
-/// Returns JSON array of 10 values: [L1, L2, L3, P1, P2, P3, ALPHA, BETA, GAMMA, DELTA]
-/// where L* = inertia tensor eigenvalues, P* = principal moments, ALPHA = sum of moments,
-/// BETA = average pairwise interaction, GAMMA = geometric mean, DELTA = anisotropy.
+/// Returns JSON array of 22 values: 11 unit-weight descriptors followed by 11 mass-weight
+/// descriptors. Each 11-element block is [λ₁, λ₂, λ₃, ν₁, ν₂, ν₃, T, A, V, K, D].
 #[wasm_bindgen]
 pub fn whim_descriptors_json(mol: &MolHandle) -> String {
     let coords = chematic_3d::generate_coords(&mol.inner);
@@ -1075,9 +1074,9 @@ pub fn getaway_descriptors_json(mol: &MolHandle) -> String {
     format!("[{}]", parts.join(","))
 }
 
-/// Compute combined WHIM + GETAWAY descriptors (**29** values total) as JSON array.
+/// Compute combined WHIM + GETAWAY descriptors (**41** values total) as JSON array.
 ///
-/// Returns WHIM[0..9] (10 values) followed by GETAWAY[0..18] (19 values) = 29 total.
+/// Returns WHIM[0..21] (22 values) followed by GETAWAY[0..18] (19 values) = 41 total.
 /// Useful for ML pipelines requiring both shape and topologic features.
 #[wasm_bindgen]
 pub fn whim_getaway_combined_json(mol: &MolHandle) -> String {
@@ -3588,7 +3587,7 @@ pub fn mmp_pairs_json(smiles_json: &str) -> Result<String, JsValue> {
 pub fn rgroup_decompose_json(smiles_json: &str, core_smarts: &str) -> Result<String, JsValue> {
     use chematic_core::AtomIdx;
     use chematic_smarts::{AtomPrimitive, AtomQuery};
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashSet;
 
     let query = chematic_smarts::parse_smarts(core_smarts)
         .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
@@ -3629,7 +3628,7 @@ pub fn rgroup_decompose_json(smiles_json: &str, core_smarts: &str) -> Result<Str
         }
 
         // Use first match.
-        let mapping: &HashMap<usize, AtomIdx> = &matches[0];
+        let mapping = &matches[0];
 
         // Core atoms = molecule atoms matched by non-wildcard query atoms.
         let core_atoms: HashSet<AtomIdx> = mapping

@@ -19,7 +19,8 @@
 use crate::bitvec::BitVec2048;
 use crate::ecfp::fnv1a;
 use chematic_core::{Atom, AtomIdx, BondOrder, Molecule, implicit_hcount};
-use std::collections::{HashSet, VecDeque};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::VecDeque;
 
 /// Functional group identification for ERG reduced graph construction.
 ///
@@ -83,8 +84,7 @@ fn identify_functional_groups(mol: &Molecule) -> Vec<Vec<usize>> {
     }
 
     // --- Phase 3: collect clusters and expand with bonded C atoms ---
-    let mut cluster_map: std::collections::HashMap<usize, Vec<usize>> =
-        std::collections::HashMap::new();
+    let mut cluster_map: FxHashMap<usize, Vec<usize>> = FxHashMap::default();
     for &hi in &hetero_idxs {
         let root = uf_find(&mut parent, hi);
         cluster_map.entry(root).or_default().push(hi);
@@ -93,7 +93,7 @@ fn identify_functional_groups(mol: &Molecule) -> Vec<Vec<usize>> {
     cluster_map
         .into_values()
         .map(|mut atoms| {
-            let hetero_set: std::collections::HashSet<usize> = atoms.iter().copied().collect();
+            let hetero_set: FxHashSet<usize> = atoms.iter().copied().collect();
             let snapshot = atoms.clone();
             for &ai in &snapshot {
                 for (nb, _) in mol.neighbors(AtomIdx(ai as u32)) {
@@ -326,7 +326,7 @@ fn build_reduced_graph(mol: &Molecule) -> (Vec<ErgNode>, Vec<ErgEdge>) {
 
     // Create edges: find shortest paths between node pairs
     let mut edges = Vec::new();
-    let fg_set: HashSet<usize> = nodes.iter().flat_map(|n| n.atom_indices.clone()).collect();
+    let fg_set: FxHashSet<usize> = nodes.iter().flat_map(|n| n.atom_indices.clone()).collect();
 
     for i in 0..nodes.len() {
         for j in (i + 1)..nodes.len() {
@@ -347,7 +347,7 @@ fn shortest_path_linker(
     mol: &Molecule,
     node_a: &ErgNode,
     node_b: &ErgNode,
-    fg_set: &HashSet<usize>,
+    fg_set: &FxHashSet<usize>,
 ) -> u32 {
     let mut dist = vec![u32::MAX; mol.atom_count()];
 
@@ -1217,7 +1217,7 @@ mod tests {
 
     #[test]
     fn test_pair_idx_all_21() {
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = FxHashSet::default();
         for a in 0..N_FEAT {
             for b in a..N_FEAT {
                 let idx = pair_idx(a, b);

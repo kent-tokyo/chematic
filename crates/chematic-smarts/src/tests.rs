@@ -665,7 +665,10 @@ mod integration_tests {
         // Acetic acid: the ester oxygen (D1, H0) should match.
         let acetic = parse("CC(=O)O").unwrap();
         let matches = find_matches(&q, &acetic);
-        assert!(!matches.is_empty(), "carbonyl O in acetic acid should match [O;D1;H0:3]");
+        assert!(
+            !matches.is_empty(),
+            "carbonyl O in acetic acid should match [O;D1;H0:3]"
+        );
     }
 
     #[test]
@@ -689,5 +692,4 @@ mod integration_tests {
         let q = parse_smarts("[O;D1]").unwrap();
         assert_eq!(q.atoms[0].atom_map, None);
     }
-
 }

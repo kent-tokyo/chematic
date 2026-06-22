@@ -364,6 +364,21 @@ impl Mol {
         chematic_chem::qed(&self.inner)
     }
 
+    /// DrugScore — composite drug-likeness score [0, 1].
+    ///
+    /// Product of four sigmoidal factors:
+    /// - **cLogP**: optimal 0–5
+    /// - **logS** (ESOL): optimal > −5 log mol/L
+    /// - **MW**: optimal < 500 Da
+    /// - **Toxicity**: 0.5× per PAINS alert, 0.75× per Brenk alert
+    ///
+    /// Analogous to OCL DrugScore.  Use alongside :attr:`qed` for a second
+    /// opinion on drug-likeness.
+    #[getter]
+    fn drug_score(&self) -> f64 {
+        chematic_chem::drug_score(&self.inner)
+    }
+
     /// Hydrogen bond donors.
     #[getter]
     fn hbd(&self) -> usize {
@@ -656,33 +671,33 @@ impl Mol {
     fn descriptors<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let d = PyDict::new(py);
         let m = &self.inner;
-        d.set_item("mw", chematic_chem::molecular_weight(m))?;
+        // Pre-compute all ring-derived values with a single find_sssr call.
+        let rb = chematic_chem::ring_bundle(m);
+        let mw = chematic_chem::molecular_weight(m);
+        let logp = chematic_chem::logp_crippen(m);
+        let tpsa = chematic_chem::tpsa(m);
+        d.set_item("mw", mw)?;
         d.set_item("exact_mass", chematic_chem::exact_mass(m))?;
-        d.set_item("tpsa", chematic_chem::tpsa(m))?;
-        d.set_item("logp", chematic_chem::logp_crippen(m))?;
+        d.set_item("tpsa", tpsa)?;
+        d.set_item("logp", logp)?;
         d.set_item("molar_refractivity", chematic_chem::molar_refractivity(m))?;
-        d.set_item("hbd", chematic_chem::hbd_count(m))?;
-        d.set_item("hba", chematic_chem::hba_count(m))?;
-        d.set_item("rotatable_bonds", chematic_chem::rotatable_bond_count(m))?;
+        let hbd = chematic_chem::hbd_count(m);
+        d.set_item("hbd", hbd)?;
+        d.set_item("hba", rb.hba_count)?;
+        d.set_item("rotatable_bonds", rb.rotatable_bond_count)?;
         d.set_item("heavy_atoms", chematic_chem::heavy_atom_count(m))?;
-        d.set_item("ring_count", chematic_chem::ring_count(m))?;
-        d.set_item("ring_system_count", chematic_chem::ring_system_count(m))?;
-        d.set_item("aromatic_ring_count", chematic_chem::aromatic_ring_count(m))?;
+        d.set_item("ring_count", rb.ring_count)?;
+        d.set_item("ring_system_count", rb.ring_system_count)?;
+        d.set_item("aromatic_ring_count", rb.aromatic_ring_count)?;
         d.set_item("hba_lipinski", chematic_chem::hba_count_lipinski(m))?;
-        d.set_item(
-            "fraction_rotatable_bonds",
-            chematic_chem::fraction_rotatable_bonds(m),
-        )?;
+        d.set_item("fraction_rotatable_bonds", rb.fraction_rotatable_bonds)?;
         d.set_item("num_heteroatoms", chematic_chem::num_heteroatoms(m))?;
         d.set_item("num_stereocenters", chematic_chem::num_stereocenters(m))?;
-        d.set_item("num_spiro_atoms", chematic_chem::num_spiro_atoms(m))?;
-        d.set_item(
-            "num_bridgehead_atoms",
-            chematic_chem::num_bridgehead_atoms(m),
-        )?;
+        d.set_item("num_spiro_atoms", rb.num_spiro_atoms)?;
+        d.set_item("num_bridgehead_atoms", rb.num_bridgehead_atoms)?;
         d.set_item("fsp3", chematic_chem::fsp3(m))?;
-        d.set_item("qed", chematic_chem::qed(m))?;
-        d.set_item("sa_score", chematic_chem::sa_score(m))?;
+        d.set_item("qed", chematic_chem::qed_with_bundle(m, &rb))?;
+        d.set_item("sa_score", chematic_chem::sa_score_with_bundle(m, &rb))?;
         d.set_item("formal_charge", chematic_chem::formal_charge_sum(m))?;
         d.set_item("labute_asa", chematic_chem::labute_asa(m))?;
         d.set_item("bertz_ct", chematic_chem::bertz_ct(m))?;
@@ -701,16 +716,10 @@ impl Mol {
         d.set_item("chi2v", chematic_chem::chi2v(m))?;
         d.set_item("chi3v", chematic_chem::chi3v(m))?;
         d.set_item("chi4v", chematic_chem::chi4v(m))?;
-        d.set_item(
-            "num_aromatic_heterocycles",
-            chematic_chem::num_aromatic_heterocycles(m),
-        )?;
-        d.set_item(
-            "num_aliphatic_heterocycles",
-            chematic_chem::num_aliphatic_heterocycles(m),
-        )?;
-        d.set_item("num_saturated_rings", chematic_chem::num_saturated_rings(m))?;
-        d.set_item("num_aliphatic_rings", chematic_chem::num_aliphatic_rings(m))?;
+        d.set_item("num_aromatic_heterocycles", rb.num_aromatic_heterocycles)?;
+        d.set_item("num_aliphatic_heterocycles", rb.num_aliphatic_heterocycles)?;
+        d.set_item("num_saturated_rings", rb.num_saturated_rings)?;
+        d.set_item("num_aliphatic_rings", rb.num_aliphatic_rings)?;
         d.set_item(
             "num_unspecified_stereocenters",
             chematic_chem::num_unspecified_stereocenters(m),
@@ -718,9 +727,16 @@ impl Mol {
         d.set_item("sum_estate", chematic_chem::sum_estate(m))?;
         d.set_item("max_estate", chematic_chem::max_estate(m))?;
         d.set_item("min_estate", chematic_chem::min_estate(m))?;
-        d.set_item("lipinski_passes", chematic_chem::lipinski_passes(m))?;
-        d.set_item("veber_passes", chematic_chem::veber_passes(m))?;
-        d.set_item("egan_passes", chematic_chem::egan_passes(m))?;
+        // Inline only filters that use rotatable_bond_count or hba_count (→ find_sssr).
+        d.set_item(
+            "lipinski_passes",
+            mw <= 500.0 && hbd <= 5 && rb.hba_count <= 10 && logp <= 5.0,
+        )?;
+        d.set_item(
+            "veber_passes",
+            rb.rotatable_bond_count <= 10 && tpsa <= 140.0,
+        )?;
+        d.set_item("egan_passes", tpsa <= 131.6 && logp <= 5.88)?;
         d.set_item("ghose_passes", chematic_chem::ghose_passes(m))?;
         d.set_item("reos_passes", chematic_chem::reos_passes(m))?;
         d.set_item("pains_passes", chematic_chem::pains_passes(m))?;
@@ -729,12 +745,18 @@ impl Mol {
         d.set_item("pfizer_3_75_passes", chematic_chem::pfizer_3_75_passes(m))?;
         d.set_item("cns_mpo_score", chematic_chem::cns_mpo_score(m))?;
         d.set_item("mcf_passes", chematic_chem::mcf_passes(m))?;
-        d.set_item("bbb_score", chematic_chem::bbb_score(m))?;
-        d.set_item("bbb_passes", chematic_chem::bbb_passes(m))?;
-        d.set_item("caco2", chematic_chem::caco2_permeability(m))?;
-        d.set_item("herg_risk", chematic_chem::herg_risk_score(m))?;
-        d.set_item("cyp3a4_risk", chematic_chem::cyp3a4_inhibition_risk(m))?;
-        let egg = chematic_chem::boiled_egg(m);
+        d.set_item("bbb_score", chematic_chem::bbb_score_from_parts(tpsa, logp))?;
+        d.set_item("bbb_passes", tpsa < 90.0 && mw < 400.0 && hbd <= 3)?;
+        d.set_item("caco2", chematic_chem::caco2_precomputed(tpsa, logp))?;
+        d.set_item(
+            "herg_risk",
+            chematic_chem::herg_risk_precomputed(m, logp, mw),
+        )?;
+        d.set_item(
+            "cyp3a4_risk",
+            chematic_chem::cyp3a4_precomputed(mw, logp, rb.num_aromatic_heterocycles, rb.hba_count),
+        )?;
+        let egg = chematic_chem::boiled_egg_from(logp, tpsa);
         d.set_item("gi_absorbed", egg.gi_absorbed)?;
         d.set_item("bbb_penetrant", egg.bbb_penetrant)?;
         match chematic_chem::pka_acid(m) {
@@ -944,6 +966,38 @@ impl Mol {
         }
     }
 
+    /// Return the canonical SMILES under the given canonicalization mode.
+    ///
+    /// ``mode`` is one of:
+    ///
+    /// - ``"normal"`` — standard canonical SMILES (stereo, charges, isotopes preserved)
+    /// - ``"nostereo"`` — stereo information stripped
+    /// - ``"backbone"`` — charges, isotopes, and stereo stripped (element + topology only)
+    /// - ``"tautomer"`` — canonical tautomer, then canonical SMILES
+    /// - ``"nostereo_tautomer"`` — tautomer normalization + stereo removal
+    ///
+    /// Analogous to OCL's IDcode five-mode canonicalization, but outputs SMILES.
+    ///
+    ///     mol = chematic.from_smiles("[C@@H](N)(C)C(=O)O")  # L-alanine
+    ///     mol.canonical_smiles_mode("nostereo")  # → "CC(N)C(=O)O"
+    ///     mol.canonical_smiles_mode("backbone")  # → "CC(N)C(=O)O"
+    fn canonical_smiles_mode(&self, mode: &str) -> PyResult<String> {
+        let m = match mode {
+            "normal" => chematic_chem::CanonicalMode::Normal,
+            "nostereo" => chematic_chem::CanonicalMode::NoStereo,
+            "backbone" => chematic_chem::CanonicalMode::Backbone,
+            "tautomer" => chematic_chem::CanonicalMode::Tautomer,
+            "nostereo_tautomer" => chematic_chem::CanonicalMode::NoStereoTautomer,
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown canonical mode '{other}'; expected one of: \
+                     normal, nostereo, backbone, tautomer, nostereo_tautomer"
+                )));
+            }
+        };
+        Ok(chematic_chem::canonical_smiles_mode(&self.inner, m))
+    }
+
     /// Return all tautomers as a list of Mol objects.
     fn enumerate_tautomers(&self) -> Vec<Mol> {
         chematic_chem::enumerate_tautomers(&self.inner)
@@ -1093,19 +1147,22 @@ impl Mol {
         let filter_class: Option<RetroClass> = match reaction_class {
             None => None,
             Some("AmideBond") => Some(RetroClass::AmideBond),
-            Some("Ester")     => Some(RetroClass::Ester),
-            Some("Ether")     => Some(RetroClass::Ether),
-            Some("CNBond")    => Some(RetroClass::CNBond),
-            Some("CCBond")    => Some(RetroClass::CCBond),
-            Some("CSBond")    => Some(RetroClass::CSBond),
-            Some("Other")     => Some(RetroClass::Other),
-            Some(other) => return Err(PyValueError::new_err(
-                format!("unknown reaction_class '{other}'; valid: AmideBond, Ester, Ether, CNBond, CCBond, CSBond, Other")
-            )),
+            Some("Ester") => Some(RetroClass::Ester),
+            Some("Ether") => Some(RetroClass::Ether),
+            Some("CNBond") => Some(RetroClass::CNBond),
+            Some("CCBond") => Some(RetroClass::CCBond),
+            Some("CSBond") => Some(RetroClass::CSBond),
+            Some("Other") => Some(RetroClass::Other),
+            Some(other) => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown reaction_class '{other}'; valid: AmideBond, Ester, Ether, CNBond, CCBond, CSBond, Other"
+                )));
+            }
         };
 
         // Filter and collect owned templates.
-        let owned: Vec<chematic_rxn::retro::RetroTemplate> = DEFAULT_TEMPLATES.iter()
+        let owned: Vec<chematic_rxn::retro::RetroTemplate> = DEFAULT_TEMPLATES
+            .iter()
             .filter(|t| filter_class.map(|c| c == t.reaction_class).unwrap_or(true))
             .map(|t| chematic_rxn::retro::RetroTemplate {
                 name: t.name,
@@ -1116,22 +1173,27 @@ impl Mol {
 
         let results = retro_disconnect(&self.inner, &owned, max_results);
 
-        results.into_iter().map(|r| {
-            let d = PyDict::new(py);
-            d.set_item("template", &r.template_name)?;
-            d.set_item("reaction_class", r.reaction_class.as_str())?;
-            d.set_item("precursors", &r.precursor_smiles)?;
+        results
+            .into_iter()
+            .map(|r| {
+                let d = PyDict::new(py);
+                d.set_item("template", &r.template_name)?;
+                d.set_item("reaction_class", r.reaction_class.as_str())?;
+                d.set_item("precursors", &r.precursor_smiles)?;
 
-            // Compute SA scores for each precursor using chematic-chem.
-            let sa_scores: Vec<f64> = r.precursors.iter()
-                .map(chematic_chem::sa_score)
-                .collect();
-            let max_sa = sa_scores.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
-            d.set_item("sa_scores", sa_scores)?;
-            d.set_item("max_sa_score", if max_sa.is_finite() { max_sa } else { 0.0 })?;
+                // Compute SA scores for each precursor using chematic-chem.
+                let sa_scores: Vec<f64> =
+                    r.precursors.iter().map(chematic_chem::sa_score).collect();
+                let max_sa = sa_scores.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+                d.set_item("sa_scores", sa_scores)?;
+                d.set_item(
+                    "max_sa_score",
+                    if max_sa.is_finite() { max_sa } else { 0.0 },
+                )?;
 
-            Ok(d)
-        }).collect()
+                Ok(d)
+            })
+            .collect()
     }
 
     // -----------------------------------------------------------------------
@@ -1822,6 +1884,74 @@ impl Mol {
             .collect()
     }
 
+    /// PAINS alerts with matched heavy-atom indices for substructure highlighting.
+    ///
+    /// Returns ``list[tuple[str, list[int]]]``: each entry is
+    /// ``(alert_name, [atom_idx, ...])`` where the atom indices refer to
+    /// heavy atoms in this molecule.  Use the indices with the ``highlight``
+    /// parameter of :meth:`svg` or pass directly to
+    /// ``chematic.depict.render_svg_highlighted``.
+    ///
+    ///     for name, atoms in mol.pains_alerts_detailed():
+    ///         print(f"{name}: atoms {atoms}")
+    fn pains_alerts_detailed(&self) -> Vec<(String, Vec<usize>)> {
+        chematic_chem::pains_matches_detailed(&self.inner)
+            .into_iter()
+            .map(|(name, idxs)| {
+                (
+                    name.to_string(),
+                    idxs.into_iter().map(|a| a.0 as usize).collect(),
+                )
+            })
+            .collect()
+    }
+
+    /// Brenk structural alerts with matched heavy-atom indices for highlighting.
+    ///
+    /// Returns ``list[tuple[str, list[int]]]`` — same format as
+    /// :meth:`pains_alerts_detailed`.
+    ///
+    ///     for name, atoms in mol.brenk_alerts_detailed():
+    ///         print(f"{name}: atoms {atoms}")
+    fn brenk_alerts_detailed(&self) -> Vec<(String, Vec<usize>)> {
+        chematic_chem::brenk_matches_detailed(&self.inner)
+            .into_iter()
+            .map(|(name, idxs)| {
+                (
+                    name.to_string(),
+                    idxs.into_iter().map(|a| a.0 as usize).collect(),
+                )
+            })
+            .collect()
+    }
+
+    /// SVG depiction with structural alert atoms highlighted in red.
+    ///
+    /// Combines PAINS and Brenk alerts.  Atoms belonging to flagged
+    /// substructures are coloured red; all others use the standard
+    /// CPK colour scheme.
+    ///
+    ///     svg_str = mol.svg_with_alerts()
+    ///     svg_str = mol.svg_with_alerts(width=600, height=400)
+    #[pyo3(signature = (width = None, height = None))]
+    fn svg_with_alerts(&self, width: Option<u32>, height: Option<u32>) -> String {
+        use chematic_core::AtomIdx;
+
+        let pains = chematic_chem::pains_matches_detailed(&self.inner);
+        let brenk = chematic_chem::brenk_matches_detailed(&self.inner);
+
+        let mut opts = chematic_depict::RenderOptions {
+            width,
+            height,
+            highlight_color: "#FF4444".to_string(),
+            ..Default::default()
+        };
+        for atom in pains.into_iter().chain(brenk).flat_map(|(_, atoms)| atoms) {
+            opts.highlight_atoms.insert(AtomIdx(atom.0));
+        }
+        chematic_depict::depict_svg_opts(&self.inner, &opts)
+    }
+
     /// Named functional groups detected in this molecule — list of group names.
     ///
     /// Names include: hydroxyl, carbonyl, carboxyl, aldehyde, ketone, amine,
@@ -2328,7 +2458,7 @@ impl Mol {
     /// Useful for single-call 3D featurisation pipelines (mordred compatible).
     ///
     ///     coords = mol.generate_3d()
-    ///     vec = mol.whim_getaway(coords)   # len 387
+    ///     vec = mol.whim_getaway(coords)   # len 41
     fn whim_getaway(&self, coords: Vec<[f64; 3]>) -> Vec<f64> {
         let c3d = flat_to_coords3d(&coords);
         chematic_3d::whim_getaway_combined(&self.inner, &c3d)
@@ -2625,6 +2755,16 @@ impl Mol {
     #[getter]
     fn wiener_index(&self) -> f64 {
         chematic_chem::wiener_index(&self.inner)
+    }
+
+    /// Padmakar-Ivan (PI) topological index (Khadikar et al. 2001).
+    ///
+    /// For each bond e = (u, v): PI += n_u(e) + n_v(e), where n_u(e) is the
+    /// number of heavy atoms strictly closer to u than to v.
+    /// Reference: ethane = 2, propane = 6, butane = 12, benzene = 36.
+    #[getter]
+    fn padmakar_ivan_index(&self) -> u64 {
+        chematic_chem::padmakar_ivan_index(&self.inner)
     }
 
     /// Bertz complexity index — information-theoretic graph complexity.
@@ -3319,7 +3459,9 @@ fn from_pdbqt(pdbqt_str: &str) -> PyResult<Mol> {
 #[pyfunction]
 fn from_gjf(gjf_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_gjf(gjf_str)
-        .map(|(mol, _coords, _charge, _mult)| Mol { inner: Arc::new(mol) })
+        .map(|(mol, _coords, _charge, _mult)| Mol {
+            inner: Arc::new(mol),
+        })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
@@ -3332,11 +3474,20 @@ fn from_gjf(gjf_str: &str) -> PyResult<Mol> {
 /// Raises:
 ///     ValueError: when no `Standard orientation:` block is found.
 #[pyfunction]
-fn parse_gaussian_log<'py>(py: Python<'py>, log_str: &str) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
+fn parse_gaussian_log<'py>(
+    py: Python<'py>,
+    log_str: &str,
+) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
     let result = chematic_mol::parse_gaussian_log(log_str)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let mol = Mol { inner: Arc::new(result.mol) };
-    let coords: Vec<Vec<f64>> = result.coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
+    let mol = Mol {
+        inner: Arc::new(result.mol),
+    };
+    let coords: Vec<Vec<f64>> = result
+        .coords
+        .iter()
+        .map(|&(x, y, z)| vec![x, y, z])
+        .collect();
     let d = pyo3::types::PyDict::new(py);
     d.set_item("mol", mol)?;
     d.set_item("coords", coords)?;
@@ -3386,10 +3537,16 @@ fn write_gjf(
 ///     coords = result["coords"]
 #[pyfunction]
 fn parse_cif<'py>(py: Python<'py>, cif_str: &str) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
-    let result = chematic_mol::parse_cif(cif_str)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let mol = Mol { inner: Arc::new(result.mol) };
-    let coords: Vec<Vec<f64>> = result.coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
+    let result =
+        chematic_mol::parse_cif(cif_str).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let mol = Mol {
+        inner: Arc::new(result.mol),
+    };
+    let coords: Vec<Vec<f64>> = result
+        .coords
+        .iter()
+        .map(|&(x, y, z)| vec![x, y, z])
+        .collect();
     let d = pyo3::types::PyDict::new(py);
     d.set_item("mol", mol)?;
     d.set_item("coords", coords)?;

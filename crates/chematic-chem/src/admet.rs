@@ -26,11 +26,93 @@ use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
 
 use crate::descriptors::{
     hba_count, hbd_count, heavy_atom_count, logp_crippen, molecular_weight,
-    num_aromatic_heterocycles, rotatable_bond_count, tpsa,
+    num_aromatic_heterocycles, ring_bundle, tpsa,
 };
 use crate::esol::esol_solubility;
 use crate::logd::logd_simple;
 use crate::pka::{pka_acid, pka_base};
+
+// ── Pre-computation helpers (private) ────────────────────────────────────────
+// These accept already-computed descriptor values to avoid redundant calls.
+// They are the single source of truth; public functions delegate to them.
+
+#[inline]
+fn bbb_score_from(tpsa: f64, logp: f64) -> f64 {
+    -0.0148 * tpsa + 0.152 * logp + 0.139
+}
+
+#[inline]
+fn caco2_from(tpsa: f64, logp: f64) -> f64 {
+    -0.1416 * tpsa + 0.6585 * logp - 0.5046
+}
+
+fn herg_risk_from(logp: f64, mw: f64, has_basic_n: bool) -> f64 {
+    let mut score = 0.0_f64;
+    if has_basic_n {
+        score += 0.40;
+    }
+    if logp > 4.0 {
+        score += 0.30;
+    } else if logp > 2.0 {
+        score += 0.15;
+    }
+    if mw > 400.0 {
+        score += 0.20;
+    } else if mw > 300.0 {
+        score += 0.10;
+    }
+    score.min(1.0)
+}
+
+fn cyp3a4_from(mw: f64, logp: f64, het_ar: usize, hba: usize) -> f64 {
+    let mut score = 0.0_f64;
+    if mw > 500.0 {
+        score += 0.25;
+    } else if mw > 400.0 {
+        score += 0.15;
+    }
+    if logp > 4.0 {
+        score += 0.25;
+    } else if logp > 3.0 {
+        score += 0.15;
+    }
+    if het_ar >= 2 {
+        score += 0.30;
+    } else if het_ar == 1 {
+        score += 0.15;
+    }
+    if hba >= 6 {
+        score += 0.20;
+    } else if hba >= 4 {
+        score += 0.10;
+    }
+    score.min(1.0)
+}
+
+#[inline]
+fn ppb_from(logp: f64) -> f64 {
+    (100.0 / (1.0 + (-1.2 * (logp - 1.0)).exp())).clamp(1.0, 99.0)
+}
+
+fn clearance_score_from(logp: f64, mw: f64, hba: usize, hbd: usize, n_heavy: usize) -> f64 {
+    let het_density = (hba as f64 + hbd as f64) / (n_heavy as f64).max(1.0);
+    let x = -0.4 * logp + 0.004 * mw - 0.8 + 1.5 * het_density;
+    1.0 / (1.0 + (-x).exp())
+}
+
+fn clearance_class_from(
+    logp: f64,
+    mw: f64,
+    hba: usize,
+    hbd: usize,
+    n_heavy: usize,
+) -> ClearanceClass {
+    match clearance_score_from(logp, mw, hba, hbd, n_heavy) {
+        s if s < 0.35 => ClearanceClass::Low,
+        s if s < 0.65 => ClearanceClass::Medium,
+        _ => ClearanceClass::High,
+    }
+}
 
 // ── BBB ───────────────────────────────────────────────────────────────────────
 
@@ -41,7 +123,7 @@ use crate::pka::{pka_acid, pka_base};
 /// Interpretation: logBB > −1.0 → likely CNS penetrant;
 /// logBB < −1.0 → likely excluded from CNS.
 pub fn bbb_score(mol: &Molecule) -> f64 {
-    -0.0148 * tpsa(mol) + 0.152 * logp_crippen(mol) + 0.139
+    bbb_score_from(tpsa(mol), logp_crippen(mol))
 }
 
 /// Rule-based BBB penetration filter.
@@ -65,7 +147,22 @@ pub fn bbb_passes(mol: &Molecule) -> bool {
 /// - −5.5 to −6.5 → medium
 /// - < −6.5 → low permeability (poor oral absorption)
 pub fn caco2_permeability(mol: &Molecule) -> f64 {
-    -0.1416 * tpsa(mol) + 0.6585 * logp_crippen(mol) - 0.5046
+    caco2_from(tpsa(mol), logp_crippen(mol))
+}
+
+/// BBB score with pre-computed `tpsa` and `logp` — avoids redundant descriptor calls.
+pub fn bbb_score_from_parts(tpsa: f64, logp: f64) -> f64 {
+    bbb_score_from(tpsa, logp)
+}
+
+/// Caco-2 permeability with pre-computed `tpsa` and `logp` — avoids redundant descriptor calls.
+pub fn caco2_precomputed(tpsa: f64, logp: f64) -> f64 {
+    caco2_from(tpsa, logp)
+}
+
+/// CYP3A4 risk with pre-computed values — avoids redundant descriptor calls.
+pub fn cyp3a4_precomputed(mw: f64, logp: f64, het_ar: usize, hba: usize) -> f64 {
+    cyp3a4_from(mw, logp, het_ar, hba)
 }
 
 // ── hERG ──────────────────────────────────────────────────────────────────────
@@ -82,24 +179,13 @@ pub fn herg_risk_score(mol: &Molecule) -> f64 {
     let logp = logp_crippen(mol);
     let mw = molecular_weight(mol);
     let has_basic_n = pka_base(mol).map(|p| p > 7.0).unwrap_or(false);
+    herg_risk_from(logp, mw, has_basic_n)
+}
 
-    let mut score = 0.0_f64;
-
-    if has_basic_n {
-        score += 0.40; // basic N is the strongest hERG predictor
-    }
-    if logp > 4.0 {
-        score += 0.30;
-    } else if logp > 2.0 {
-        score += 0.15;
-    }
-    if mw > 400.0 {
-        score += 0.20;
-    } else if mw > 300.0 {
-        score += 0.10;
-    }
-
-    score.min(1.0)
+/// hERG risk with pre-computed `logp` and `mw` — avoids redundant descriptor calls.
+pub fn herg_risk_precomputed(mol: &Molecule, logp: f64, mw: f64) -> f64 {
+    let has_basic_n = pka_base(mol).map(|p| p > 7.0).unwrap_or(false);
+    herg_risk_from(logp, mw, has_basic_n)
 }
 
 // ── CYP3A4 ───────────────────────────────────────────────────────────────────
@@ -113,35 +199,12 @@ pub fn herg_risk_score(mol: &Molecule) -> f64 {
 /// - Aromatic heterocycles (imidazole, pyridine, triazole)
 /// - High HBA count (≥ 4)
 pub fn cyp3a4_inhibition_risk(mol: &Molecule) -> f64 {
-    let mw = molecular_weight(mol);
-    let logp = logp_crippen(mol);
-    let het_ar = num_aromatic_heterocycles(mol);
-    let hba = hba_count(mol);
-
-    let mut score = 0.0_f64;
-
-    if mw > 500.0 {
-        score += 0.25;
-    } else if mw > 400.0 {
-        score += 0.15;
-    }
-    if logp > 4.0 {
-        score += 0.25;
-    } else if logp > 3.0 {
-        score += 0.15;
-    }
-    if het_ar >= 2 {
-        score += 0.30;
-    } else if het_ar == 1 {
-        score += 0.15;
-    }
-    if hba >= 6 {
-        score += 0.20;
-    } else if hba >= 4 {
-        score += 0.10;
-    }
-
-    score.min(1.0)
+    cyp3a4_from(
+        molecular_weight(mol),
+        logp_crippen(mol),
+        num_aromatic_heterocycles(mol),
+        hba_count(mol),
+    )
 }
 
 // ── Ames mutagenicity ─────────────────────────────────────────────────────────
@@ -207,9 +270,7 @@ pub fn ames_passes(mol: &Molecule) -> bool {
 /// High LogP molecules tend to be highly protein-bound.
 /// Interpretation: > 90% = highly bound, < 20% = low binding.
 pub fn ppb_percent(mol: &Molecule) -> f64 {
-    let logp = logp_crippen(mol);
-    let ppb = 100.0 / (1.0 + (-1.2 * (logp - 1.0)).exp());
-    ppb.clamp(1.0, 99.0)
+    ppb_from(logp_crippen(mol))
 }
 
 // ── Hepatic clearance ─────────────────────────────────────────────────────────
@@ -231,22 +292,24 @@ pub enum ClearanceClass {
 /// `score = sigmoid(−0.4·logP + 0.004·MW − 0.6)`
 /// High logP increases PPB (slower free-drug clearance); high MW slows CYP access.
 pub fn clearance_score(mol: &Molecule) -> f64 {
-    let logp = logp_crippen(mol);
-    let mw = molecular_weight(mol);
-    let n_heavy = heavy_atom_count(mol) as f64;
-    // Nitrogen/oxygen density as a proxy for metabolic handle density
-    let het_density = (hba_count(mol) as f64 + hbd_count(mol) as f64) / n_heavy.max(1.0);
-    let x = -0.4 * logp + 0.004 * mw - 0.8 + 1.5 * het_density;
-    1.0 / (1.0 + (-x).exp())
+    clearance_score_from(
+        logp_crippen(mol),
+        molecular_weight(mol),
+        hba_count(mol),
+        hbd_count(mol),
+        heavy_atom_count(mol),
+    )
 }
 
 /// Predict hepatic clearance class (Low / Medium / High).
 pub fn clearance_class(mol: &Molecule) -> ClearanceClass {
-    match clearance_score(mol) {
-        s if s < 0.35 => ClearanceClass::Low,
-        s if s < 0.65 => ClearanceClass::Medium,
-        _ => ClearanceClass::High,
-    }
+    clearance_class_from(
+        logp_crippen(mol),
+        molecular_weight(mol),
+        hba_count(mol),
+        hbd_count(mol),
+        heavy_atom_count(mol),
+    )
 }
 
 // ── AdmetProfile ─────────────────────────────────────────────────────────────
@@ -293,26 +356,39 @@ pub struct AdmetProfile {
 }
 
 /// Compute a full ADMET profile in one call.
+///
+/// Internally pre-computes `logp`, `tpsa`, `mw`, and ring descriptors (via [`ring_bundle`])
+/// exactly once, eliminating 7× redundant `logp_crippen` calls and 3× redundant `find_sssr`
+/// calls that the individual sub-functions would otherwise make.
 pub fn admet_profile(mol: &Molecule) -> AdmetProfile {
+    let logp = logp_crippen(mol);
+    let tpsa_val = tpsa(mol);
+    let mw = molecular_weight(mol);
+    let hbd = hbd_count(mol);
+    let rb = ring_bundle(mol);
+    let base_pka = pka_base(mol);
+    let has_basic_n = base_pka.map(|p| p > 7.0).unwrap_or(false);
+    let n_heavy = heavy_atom_count(mol);
+
     AdmetProfile {
-        bbb_score: bbb_score(mol),
-        bbb_passes: bbb_passes(mol),
-        caco2: caco2_permeability(mol),
-        herg_risk: herg_risk_score(mol),
-        cyp3a4_risk: cyp3a4_inhibition_risk(mol),
+        bbb_score: bbb_score_from(tpsa_val, logp),
+        bbb_passes: tpsa_val < 90.0 && mw < 400.0 && hbd <= 3,
+        caco2: caco2_from(tpsa_val, logp),
+        herg_risk: herg_risk_from(logp, mw, has_basic_n),
+        cyp3a4_risk: cyp3a4_from(mw, logp, rb.num_aromatic_heterocycles, rb.hba_count),
         pka_acid: pka_acid(mol),
-        pka_base: pka_base(mol),
+        pka_base: base_pka,
         esol: esol_solubility(mol),
         logd74: logd_simple(mol, 7.4),
-        mw: molecular_weight(mol),
-        logp: logp_crippen(mol),
-        tpsa: tpsa(mol),
-        hbd: hbd_count(mol),
-        hba: hba_count(mol),
-        rotatable_bonds: rotatable_bond_count(mol),
+        mw,
+        logp,
+        tpsa: tpsa_val,
+        hbd,
+        hba: rb.hba_count,
+        rotatable_bonds: rb.rotatable_bond_count,
         ames_risk: ames_risk_score(mol),
-        ppb: ppb_percent(mol),
-        clearance: clearance_class(mol),
+        ppb: ppb_from(logp),
+        clearance: clearance_class_from(logp, mw, rb.hba_count, hbd, n_heavy),
     }
 }
 
@@ -337,13 +413,16 @@ pub struct BoiledEggProfile {
 ///
 /// Reference: Daina A, Zoete V. *ChemMedChem* 2016, **11**(11), 1117-1121.
 pub fn boiled_egg(mol: &Molecule) -> BoiledEggProfile {
-    let logp = logp_crippen(mol);
-    let tpsa_val = tpsa(mol);
+    boiled_egg_from(logp_crippen(mol), tpsa(mol))
+}
+
+/// BOILED-Egg with pre-computed `logp` and `tpsa` — avoids redundant descriptor calls.
+pub fn boiled_egg_from(logp: f64, tpsa: f64) -> BoiledEggProfile {
     BoiledEggProfile {
-        gi_absorbed: logp <= 5.88 && tpsa_val <= 131.6,
-        bbb_penetrant: (-0.3..=6.1).contains(&logp) && tpsa_val <= 71.1,
+        gi_absorbed: logp <= 5.88 && tpsa <= 131.6,
+        bbb_penetrant: (-0.3..=6.1).contains(&logp) && tpsa <= 71.1,
         logp,
-        tpsa: tpsa_val,
+        tpsa,
     }
 }
 

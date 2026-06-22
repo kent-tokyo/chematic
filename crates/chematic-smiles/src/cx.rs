@@ -487,7 +487,10 @@ mod tests {
         let input = "CC=CC |w:1|";
         let cx = parse_cxsmiles(input).unwrap();
         let out = write_cxsmiles(&cx);
-        assert!(out.contains("w:1"), "wavy bond marker must round-trip: {out}");
+        assert!(
+            out.contains("w:1"),
+            "wavy bond marker must round-trip: {out}"
+        );
     }
 
     #[test]
@@ -495,14 +498,20 @@ mod tests {
         // If no wavy bonds are present, |w:| must not appear in output.
         let cx = parse_cxsmiles("CC=CC").unwrap();
         let out = write_cxsmiles(&cx);
-        assert!(!out.contains("w:"), "no wavy bonds → no |w:| in output: {out}");
+        assert!(
+            !out.contains("w:"),
+            "no wavy bonds → no |w:| in output: {out}"
+        );
     }
 
     #[test]
     fn parse_cxsmiles_wavy_bond_out_of_range_ignored() {
         // Bond index beyond bond count must be silently ignored.
         let cx = parse_cxsmiles("CO |w:99|").unwrap();
-        assert!(cx.wavy_bonds.is_empty(), "out-of-range bond index must be ignored");
+        assert!(
+            cx.wavy_bonds.is_empty(),
+            "out-of-range bond index must be ignored"
+        );
     }
 
     #[test]
@@ -513,7 +522,10 @@ mod tests {
         assert_eq!(cx.atom_labels[0].as_deref(), Some("a"));
         assert_eq!(cx.wavy_bonds, vec![BondIdx(1)]);
         let out = write_cxsmiles(&cx);
-        assert!(out.contains("w:1"), "wavy bond preserved with other fields: {out}");
+        assert!(
+            out.contains("w:1"),
+            "wavy bond preserved with other fields: {out}"
+        );
     }
 
     // ── RDKit PR #9273: CXSMILES atom prop escaping for '.' and ':' ──────────
@@ -529,9 +541,16 @@ mod tests {
         });
         let out = write_cxsmiles(&cx);
         let cx2 = parse_cxsmiles(&out).unwrap();
-        assert_eq!(cx2.atom_props.len(), 1, "should have exactly one prop, got: {out}");
+        assert_eq!(
+            cx2.atom_props.len(),
+            1,
+            "should have exactly one prop, got: {out}"
+        );
         assert_eq!(cx2.atom_props[0].key, "Prop1");
-        assert_eq!(cx2.atom_props[0].value, "a:b", "colon in value must round-trip: {out}");
+        assert_eq!(
+            cx2.atom_props[0].value, "a:b",
+            "colon in value must round-trip: {out}"
+        );
     }
 
     #[test]
@@ -540,13 +559,20 @@ mod tests {
         let mut cx = parse_cxsmiles("CO").unwrap();
         cx.atom_props.push(CxAtomProp {
             atom: AtomIdx(0),
-            key: "k.ey".to_string(),  // dot in key must be escaped
+            key: "k.ey".to_string(), // dot in key must be escaped
             value: "val".to_string(),
         });
         let out = write_cxsmiles(&cx);
         let cx2 = parse_cxsmiles(&out).unwrap();
-        assert_eq!(cx2.atom_props.len(), 1, "should have exactly one prop, got: {out}");
-        assert_eq!(cx2.atom_props[0].key, "k.ey", "dot in key must round-trip: {out}");
+        assert_eq!(
+            cx2.atom_props.len(),
+            1,
+            "should have exactly one prop, got: {out}"
+        );
+        assert_eq!(
+            cx2.atom_props[0].key, "k.ey",
+            "dot in key must round-trip: {out}"
+        );
         assert_eq!(cx2.atom_props[0].value, "val");
     }
 
@@ -561,7 +587,11 @@ mod tests {
         });
         let out = write_cxsmiles(&cx);
         let cx2 = parse_cxsmiles(&out).unwrap();
-        assert_eq!(cx2.atom_props.len(), 1, "should have exactly one prop, got: {out}");
+        assert_eq!(
+            cx2.atom_props.len(),
+            1,
+            "should have exactly one prop, got: {out}"
+        );
         assert_eq!(cx2.atom_props[0].key, "k.ey");
         assert_eq!(cx2.atom_props[0].value, "v:al");
     }
@@ -583,8 +613,16 @@ mod tests {
         let out = write_cxsmiles(&cx);
         let cx2 = parse_cxsmiles(&out).unwrap();
         assert_eq!(cx2.atom_props.len(), 2, "both props must survive: {out}");
-        let prop0 = cx2.atom_props.iter().find(|p| p.atom == AtomIdx(0)).unwrap();
-        let prop1 = cx2.atom_props.iter().find(|p| p.atom == AtomIdx(1)).unwrap();
+        let prop0 = cx2
+            .atom_props
+            .iter()
+            .find(|p| p.atom == AtomIdx(0))
+            .unwrap();
+        let prop1 = cx2
+            .atom_props
+            .iter()
+            .find(|p| p.atom == AtomIdx(1))
+            .unwrap();
         assert_eq!(prop0.value, "1,2");
         assert_eq!(prop1.value, "0");
     }

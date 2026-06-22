@@ -672,8 +672,8 @@ fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
         .body_mut()
         .read_to_string()
         .map_err(|e| format!("PubChem response read error: {e}"))?;
-    let body: Value = serde_json::from_str(&raw)
-        .map_err(|e| format!("PubChem response parse error: {e}"))?;
+    let body: Value =
+        serde_json::from_str(&raw).map_err(|e| format!("PubChem response parse error: {e}"))?;
 
     let smiles = body
         .pointer("/PropertyTable/Properties/0/IsomericSMILES")
@@ -701,11 +701,9 @@ fn tool_retrosynthesis(args: &Value) -> Result<Value, String> {
     }
 
     if component_count(&mol) > 1 {
-        return Err(
-            "retrosynthesis requires a single connected molecule; \
+        return Err("retrosynthesis requires a single connected molecule; \
              input appears to be a mixture or salt"
-                .to_string(),
-        );
+            .to_string());
     }
 
     let target_sa = round3(sa_score(&mol));
@@ -909,8 +907,7 @@ mod tests {
     #[test]
     fn test_retrosynthesis_aspirin() {
         // Aspirin has 2 BRICS-breakable bonds (ester C-O, aryl C-O)
-        let result =
-            tool_retrosynthesis(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
+        let result = tool_retrosynthesis(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
         let v: Value =
             serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
         assert!(

@@ -4,6 +4,8 @@
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 use chematic_perception::find_sssr;
+use rustc_hash::FxHashMap;
+use smallvec::SmallVec;
 
 use crate::bitvec::BitVec2048;
 
@@ -26,7 +28,8 @@ pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
 /// Neighbours are sorted before hashing to make the result order-independent.
 fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u64 {
     let idx = AtomIdx(i as u32);
-    let mut neighbor_info: Vec<(u8, u64)> = mol
+    // SmallVec<6>: typical atoms have ≤4 heavy neighbors; avoids heap alloc for ~95% of calls.
+    let mut neighbor_info: SmallVec<[(u8, u64); 6]> = mol
         .neighbors(idx)
         .map(|(nb_idx, bond_idx)| {
             (
@@ -37,7 +40,8 @@ fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u64 {
         .collect();
     neighbor_info.sort_unstable();
 
-    let mut bytes: Vec<u8> = Vec::with_capacity(1 + 8 + neighbor_info.len() * 9);
+    // 1 (radius) + 8 (self id) + up to 6 × 9 (bond_type + nb_id) = 63 bytes max on stack.
+    let mut bytes: SmallVec<[u8; 64]> = SmallVec::new();
     bytes.push(r as u8);
     bytes.extend_from_slice(&ids[i].to_le_bytes());
     for (btype, nb_id) in &neighbor_info {
@@ -205,14 +209,12 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
 ///
 /// This corresponds to `GetMorganFingerprint(mol, radius,
 /// useFeatures=False, includeRedundantEnvironments=True)` in RDKit.
-pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> std::collections::HashMap<u64, u32> {
-    use std::collections::HashMap;
-
+pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> FxHashMap<u64, u32> {
     const MAX_RADIUS: u32 = 20;
     let radius = radius.min(MAX_RADIUS);
 
     let n = mol.atom_count();
-    let mut counts: HashMap<u64, u32> = HashMap::new();
+    let mut counts: FxHashMap<u64, u32> = FxHashMap::default();
 
     if n == 0 {
         return counts;

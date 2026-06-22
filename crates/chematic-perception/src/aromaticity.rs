@@ -22,7 +22,7 @@
 //!    - Other: non-aromatic
 //! 5. Record all aromatic atoms, bonds, and antiaromatic rings in an `AromaticityModel`.
 
-use std::collections::HashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, implicit_hcount};
 
@@ -50,8 +50,8 @@ pub enum RingAromaticity {
 /// Also tracks antiaromatic rings (4n electrons) for chemical accuracy.
 #[derive(Debug, Clone)]
 pub struct AromaticityModel {
-    aromatic_atoms: HashSet<AtomIdx>,
-    aromatic_bonds: HashSet<BondIdx>,
+    aromatic_atoms: FxHashSet<AtomIdx>,
+    aromatic_bonds: FxHashSet<BondIdx>,
     antiaromatic_rings: Vec<Vec<AtomIdx>>,
     ring_classifications: Vec<(Vec<AtomIdx>, RingAromaticity, u32)>,
 }
@@ -111,8 +111,8 @@ fn classify_ring_aromaticity(pi_electrons: u32) -> (RingAromaticity, u32) {
 fn mark_ring_aromatic(
     mol: &Molecule,
     ring: &[AtomIdx],
-    aromatic_atoms: &mut HashSet<AtomIdx>,
-    aromatic_bonds: &mut HashSet<BondIdx>,
+    aromatic_atoms: &mut FxHashSet<AtomIdx>,
+    aromatic_bonds: &mut FxHashSet<BondIdx>,
 ) {
     for &atom in ring {
         aromatic_atoms.insert(atom);
@@ -145,8 +145,8 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
     // instead of its smaller GF(2)-reduced equivalent (e.g. the 5-ring of indolizine).
     let rings: Vec<Vec<AtomIdx>> = augmented_ring_set(mol, sssr_rings);
 
-    let mut aromatic_atoms: HashSet<AtomIdx> = HashSet::new();
-    let mut aromatic_bonds: HashSet<BondIdx> = HashSet::new();
+    let mut aromatic_atoms: FxHashSet<AtomIdx> = FxHashSet::default();
+    let mut aromatic_bonds: FxHashSet<BondIdx> = FxHashSet::default();
     let mut antiaromatic_rings: Vec<Vec<AtomIdx>> = Vec::new();
 
     // Per-ring classification: None means "not yet evaluated / indeterminate".
@@ -157,7 +157,7 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
     let mut pass2_candidates: Vec<usize> = Vec::new();
 
     // ----- Pass 1: independent Hückel per ring -----
-    let empty_context = HashSet::new();
+    let empty_context = FxHashSet::default();
     for (ring_idx, ring) in rings.iter().enumerate() {
         match ring_pi_electrons(mol, ring, &empty_context) {
             Some(pi) => {
@@ -317,8 +317,7 @@ fn ring_atoms_from_bond_set(mol: &Molecule, bonds: &[BondIdx]) -> Option<Vec<Ato
     if bonds.is_empty() {
         return None;
     }
-    let mut adj: std::collections::HashMap<AtomIdx, [Option<AtomIdx>; 2]> =
-        std::collections::HashMap::new();
+    let mut adj: FxHashMap<AtomIdx, [Option<AtomIdx>; 2]> = FxHashMap::default();
     for &bidx in bonds {
         let bond = mol.bond(bidx);
         for (a, b) in [(bond.atom1, bond.atom2), (bond.atom2, bond.atom1)] {
@@ -371,7 +370,7 @@ pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Ve
     let mut rings: Vec<Vec<AtomIdx>> = sssr_rings.to_vec();
 
     // Track which atom-sets we already have (as sorted atom lists).
-    let mut known: std::collections::HashSet<Vec<AtomIdx>> = sssr_rings
+    let mut known: FxHashSet<Vec<AtomIdx>> = sssr_rings
         .iter()
         .map(|r| {
             let mut s = r.clone();
@@ -527,15 +526,23 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
         // four inner hexagons.
         if !is_envelope[i] {
             'jklm: for j in 0..n {
-                if j == i || aromatic[j].len() >= si { continue; }
+                if j == i || aromatic[j].len() >= si {
+                    continue;
+                }
                 for k in (j + 1)..n {
-                    if k == i || aromatic[k].len() >= si { continue; }
+                    if k == i || aromatic[k].len() >= si {
+                        continue;
+                    }
                     let xor_jk = bond_sym_diff(&bond_sets[j], &bond_sets[k]);
                     for l in (k + 1)..n {
-                        if l == i || aromatic[l].len() >= si { continue; }
+                        if l == i || aromatic[l].len() >= si {
+                            continue;
+                        }
                         let xor_jkl = bond_sym_diff(&xor_jk, &bond_sets[l]);
                         for m in (l + 1)..n {
-                            if m == i || aromatic[m].len() >= si { continue; }
+                            if m == i || aromatic[m].len() >= si {
+                                continue;
+                            }
                             let xor_jklm = bond_sym_diff(&xor_jkl, &bond_sets[m]);
                             if xor_jklm == bond_sets[i] {
                                 is_envelope[i] = true;
@@ -578,9 +585,9 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
 fn ring_pi_electrons(
     mol: &Molecule,
     ring: &[AtomIdx],
-    aromatic_context: &HashSet<AtomIdx>,
+    aromatic_context: &FxHashSet<AtomIdx>,
 ) -> Option<u32> {
-    let ring_atom_set: HashSet<AtomIdx> = ring.iter().copied().collect();
+    let ring_atom_set: FxHashSet<AtomIdx> = ring.iter().copied().collect();
     let mut total_pi: u32 = 0;
 
     for &atom_idx in ring {
@@ -1402,10 +1409,7 @@ mod tests {
         let smi = "CCN(CC)c1ccc2c(-c3ccccc3C(=O)O)c3ccc(=[N+](CC)CC)cc-3oc2c1";
         let mol = chematic_smiles::parse(smi).expect("rhodamine zwitterion should parse");
         let arc = count_aromatic_rings(&mol);
-        assert!(
-            arc >= 3,
-            "rhodamine: expected ≥3 aromatic rings, got {arc}"
-        );
+        assert!(arc >= 3, "rhodamine: expected ≥3 aromatic rings, got {arc}");
     }
 
     #[test]

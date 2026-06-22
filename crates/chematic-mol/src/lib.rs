@@ -18,10 +18,10 @@
 
 pub mod cdxml;
 pub mod cif;
-pub mod ket;
 pub mod cml;
 pub mod error;
 pub mod gaussian;
+pub mod ket;
 pub mod mol2000;
 pub mod mol2_tripos;
 pub mod mol3000;
@@ -35,9 +35,9 @@ pub use error::MolParseError;
 pub use cdxml::{CdxmlError, parse_cdxml, parse_cdxml_all};
 pub use cif::{CifError, CifResult, UnitCell, parse_cif, write_cif};
 pub use cml::{CmlError, parse_cml, write_cml};
+pub use error::MolParseError as MolError;
 pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_gjf, write_gjf};
 pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
-pub use error::MolParseError as MolError;
 pub use mol2_tripos::{Mol2Error, parse_mol2, write_mol2};
 pub use mol2000::{
     MolMetadata, parse_mol, parse_mol_with_coords, parse_sdf_with_coords, write_mol,

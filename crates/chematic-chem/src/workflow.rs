@@ -13,11 +13,10 @@ use chematic_smarts::{
 };
 
 use crate::{
-    bertz_ct, detect_named_functional_groups, egan_passes, exact_mass, formal_charge_sum, fsp3,
-    ghose_passes, hba_count, hbd_count, heavy_atom_count, identify_functional_groups, labute_asa,
-    lipinski_passes, logp_crippen, molar_refractivity, molecular_weight, murcko_scaffold,
-    num_bridgehead_atoms, num_heteroatoms, num_spiro_atoms, num_stereocenters, pains_matches,
-    pains_passes, qed, reos_passes, ring_count, rotatable_bond_count, sa_score, tpsa, veber_passes,
+    bertz_ct, detect_named_functional_groups, exact_mass, formal_charge_sum, fsp3, ghose_passes,
+    hbd_count, heavy_atom_count, identify_functional_groups, labute_asa, logp_and_mr,
+    molecular_weight, murcko_scaffold, num_heteroatoms, num_stereocenters, pains_matches,
+    pains_passes, qed_with_bundle, reos_passes, ring_bundle, sa_score_with_bundle, tpsa,
     wiener_index,
 };
 
@@ -470,38 +469,50 @@ fn report_for_molecule(input_smiles: &str, mol: &Molecule) -> MoleculeReport {
         Some(chematic_smiles::canonical_smiles(&scaffold))
     };
 
+    // Compute all ring-derived descriptors with a single find_sssr call.
+    let rb = ring_bundle(mol);
+    let mw = molecular_weight(mol);
+    // Compute LogP and MR together to share the 117-pattern Crippen SMARTS pass.
+    let (logp, mr) = logp_and_mr(mol);
+    let tpsa_val = tpsa(mol);
+
     MoleculeReport {
         input_smiles: input_smiles.to_string(),
         canonical_smiles: chematic_smiles::canonical_smiles(mol),
         formula: mol.total_formula(),
         murcko_scaffold_smiles,
         descriptors: DescriptorSummary {
-            molecular_weight: molecular_weight(mol),
+            molecular_weight: mw,
             exact_mass: exact_mass(mol),
-            tpsa: tpsa(mol),
-            logp: logp_crippen(mol),
-            molar_refractivity: molar_refractivity(mol),
+            tpsa: tpsa_val,
+            logp,
+            molar_refractivity: mr,
             hbd: hbd_count(mol),
-            hba: hba_count(mol),
-            rotatable_bonds: rotatable_bond_count(mol),
+            hba: rb.hba_count,
+            rotatable_bonds: rb.rotatable_bond_count,
             heavy_atom_count: heavy_atom_count(mol),
-            ring_count: ring_count(mol),
+            ring_count: rb.ring_count,
             num_heteroatoms: num_heteroatoms(mol),
             num_stereocenters: num_stereocenters(mol),
-            num_spiro_atoms: num_spiro_atoms(mol),
-            num_bridgehead_atoms: num_bridgehead_atoms(mol),
+            num_spiro_atoms: rb.num_spiro_atoms,
+            num_bridgehead_atoms: rb.num_bridgehead_atoms,
             fsp3: fsp3(mol),
-            qed: qed(mol),
-            sa_score: sa_score(mol),
+            qed: qed_with_bundle(mol, &rb),
+            sa_score: sa_score_with_bundle(mol, &rb),
             formal_charge_sum: formal_charge_sum(mol),
             labute_asa: labute_asa(mol),
             bertz_ct: bertz_ct(mol),
             wiener_index: wiener_index(mol),
         },
         filters: FilterSummary {
-            lipinski_passes: lipinski_passes(mol),
-            veber_passes: veber_passes(mol),
-            egan_passes: egan_passes(mol),
+            // Inline only the filters that call rotatable_bond_count or hba_count (→ find_sssr).
+            // Other filters (egan, ghose, reos) don't use ring data — call them directly.
+            lipinski_passes: mw <= 500.0
+                && hbd_count(mol) <= 5
+                && rb.hba_count <= 10
+                && logp <= 5.0,
+            veber_passes: rb.rotatable_bond_count <= 10 && tpsa_val <= 140.0,
+            egan_passes: tpsa_val <= 131.6 && logp <= 5.88,
             ghose_passes: ghose_passes(mol),
             reos_passes: reos_passes(mol),
             pains_passes: pains_passes(mol),

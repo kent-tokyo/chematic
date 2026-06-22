@@ -891,9 +891,9 @@ mod tests {
         // on conjugated double bonds, losing E/Z stereo.  Chematic does not apply
         // aggressive direction removal, but this test guards against regressions.
         for smi in &[
-            r"F/C=C/C=C/Cl",  // all-E conjugated diene
-            r"F/C=C\C=C\Cl",  // E then Z
-            r"F/C=C/C=C\Cl",  // E then inverted-Z
+            r"F/C=C/C=C/Cl", // all-E conjugated diene
+            r"F/C=C\C=C\Cl", // E then Z
+            r"F/C=C/C=C\Cl", // E then inverted-Z
         ] {
             let mol = parse(smi).unwrap_or_else(|e| panic!("parse {smi}: {e:?}"));
             let out = canonical_smiles(&mol);
@@ -915,7 +915,10 @@ mod tests {
         let mol_s = parse("F[C@H]=[C]=[C@@H]Cl").unwrap();
         let smi_r = canonical_smiles(&mol_r);
         let smi_s = canonical_smiles(&mol_s);
-        assert_ne!(smi_r, smi_s, "allene enantiomers must produce different canonical SMILES: {smi_r}");
+        assert_ne!(
+            smi_r, smi_s,
+            "allene enantiomers must produce different canonical SMILES: {smi_r}"
+        );
     }
 
     #[test]
@@ -925,7 +928,10 @@ mod tests {
             let out = canonical_smiles(&mol);
             let mol2 = parse(&out).unwrap();
             let out2 = canonical_smiles(&mol2);
-            assert_eq!(out, out2, "allene stereo must be stable: {smi} -> {out} -> {out2}");
+            assert_eq!(
+                out, out2,
+                "allene stereo must be stable: {smi} -> {out} -> {out2}"
+            );
         }
     }
 

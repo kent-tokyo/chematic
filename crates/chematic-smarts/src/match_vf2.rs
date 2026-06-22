@@ -12,7 +12,7 @@
 //!    target molecule, and that bond must satisfy the query bond's `BondQuery`
 //!    expression.
 
-use std::collections::HashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 use chematic_perception::RingSet;
@@ -26,27 +26,16 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 
 /// Per-call evaluation context: the target molecule, precomputed ring set, and match config.
 ///
-/// Computing the SSSR is expensive; this struct ensures it is done once per
-/// `find_matches` call, not once per atom evaluation.
+/// `rings` is borrowed so callers can compute SSSR once and reuse it across many
+/// pattern matches (e.g. the 117 Crippen patterns or 480 PAINS patterns).
 struct EvalCtx<'a> {
     mol: &'a Molecule,
-    rings: RingSet,
+    rings: &'a RingSet,
     config: &'a MatchConfig,
     /// Remaining visit budget shared across all recursive calls (including nested
     /// recursive-SMARTS `$(...)`).  Decremented on every `match_recursive` /
     /// `has_match_recursive` entry.  `u64::MAX` when no limit is configured.
     visit_budget: std::cell::Cell<u64>,
-}
-
-impl<'a> EvalCtx<'a> {
-    fn new(mol: &'a Molecule, config: &'a MatchConfig) -> Self {
-        Self {
-            mol,
-            rings: find_sssr(mol),
-            config,
-            visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -116,7 +105,7 @@ impl Default for MatchConfig {
 /// `AtomIdx`.  Each individual mapping is injective (no two query atoms map to
 /// the same target atom), but the same target atom may appear in different
 /// mappings.
-pub fn find_matches(query: &QueryMolecule, mol: &Molecule) -> Vec<HashMap<usize, AtomIdx>> {
+pub fn find_matches(query: &QueryMolecule, mol: &Molecule) -> Vec<FxHashMap<usize, AtomIdx>> {
     find_matches_with_config(query, mol, &MatchConfig::default())
 }
 
@@ -127,7 +116,45 @@ pub fn find_matches_with_config(
     query: &QueryMolecule,
     mol: &Molecule,
     config: &MatchConfig,
-) -> Vec<HashMap<usize, AtomIdx>> {
+) -> Vec<FxHashMap<usize, AtomIdx>> {
+    // Early-exit before the expensive SSSR computation.
+    if query.atoms.is_empty() {
+        return vec![];
+    }
+    if query.atoms.len() > mol.atom_count() {
+        return vec![];
+    }
+    let rings = find_sssr(mol);
+    find_matches_with_rings_and_config(query, mol, &rings, config)
+}
+
+/// Like [`find_matches`] but reuses a pre-computed [`RingSet`].
+///
+/// Use this when matching many patterns against the same molecule to avoid
+/// recomputing the SSSR for each pattern:
+///
+/// ```ignore
+/// use chematic_perception::find_sssr;
+/// let rings = find_sssr(&mol);
+/// for query in &queries {
+///     let hits = find_matches_with_rings(query, &mol, &rings);
+/// }
+/// ```
+pub fn find_matches_with_rings(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    rings: &RingSet,
+) -> Vec<FxHashMap<usize, AtomIdx>> {
+    find_matches_with_rings_and_config(query, mol, rings, &MatchConfig::default())
+}
+
+/// Like [`find_matches_with_config`] but reuses a pre-computed [`RingSet`].
+pub fn find_matches_with_rings_and_config(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    rings: &RingSet,
+    config: &MatchConfig,
+) -> Vec<FxHashMap<usize, AtomIdx>> {
     if query.atoms.is_empty() {
         return vec![];
     }
@@ -136,15 +163,20 @@ pub fn find_matches_with_config(
         return vec![];
     }
 
-    let ctx = EvalCtx::new(mol, config);
-    let mut mapping: HashMap<usize, AtomIdx> = HashMap::new();
-    let mut results: Vec<HashMap<usize, AtomIdx>> = Vec::new();
+    let ctx = EvalCtx {
+        mol,
+        rings,
+        config,
+        visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
+    };
+    let mut mapping: FxHashMap<usize, AtomIdx> = FxHashMap::default();
+    let mut results: Vec<FxHashMap<usize, AtomIdx>> = Vec::new();
 
     match_recursive(query, &ctx, &mut mapping, &mut results, config.max_matches);
 
     // Deduplicate matches: keep only one mapping per unique set of target atoms.
     if config.uniquify {
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = FxHashSet::default();
         results.retain(|m| {
             let mut key: Vec<u32> = m.values().map(|idx| idx.0).collect();
             key.sort_unstable();
@@ -160,15 +192,15 @@ pub fn find_matches_with_config(
 // ---------------------------------------------------------------------------
 
 /// Returns the index of the smallest unmapped query atom.
-fn next_unmapped(mapping: &HashMap<usize, AtomIdx>, query_len: usize) -> usize {
+fn next_unmapped(mapping: &FxHashMap<usize, AtomIdx>, query_len: usize) -> usize {
     (0..query_len).find(|i| !mapping.contains_key(i)).unwrap() // safe: caller guarantees mapping.len() < query_len
 }
 
 fn match_recursive(
     query: &QueryMolecule,
     ctx: &EvalCtx<'_>,
-    mapping: &mut HashMap<usize, AtomIdx>,
-    results: &mut Vec<HashMap<usize, AtomIdx>>,
+    mapping: &mut FxHashMap<usize, AtomIdx>,
+    results: &mut Vec<FxHashMap<usize, AtomIdx>>,
     max: Option<usize>,
 ) {
     // Early exit if the result cap has been reached.
@@ -194,7 +226,7 @@ fn match_recursive(
 
     // Collect the set of target atoms already used in this mapping so we can
     // enforce injectivity.
-    let used_targets: std::collections::HashSet<AtomIdx> = mapping.values().copied().collect();
+    let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
 
     // Try each target atom as a candidate for q_next.
     for t in 0..ctx.mol.atom_count() {
@@ -234,7 +266,7 @@ fn match_recursive(
 fn bonds_compatible(
     q: usize,
     t: AtomIdx,
-    mapping: &HashMap<usize, AtomIdx>,
+    mapping: &FxHashMap<usize, AtomIdx>,
     query: &QueryMolecule,
     ctx: &EvalCtx<'_>,
 ) -> bool {
@@ -414,7 +446,7 @@ fn has_match_anchored(query: &QueryMolecule, anchor: AtomIdx, ctx: &EvalCtx<'_>)
         return false;
     }
     // Seed the mapping with query atom 0 → anchor.
-    let mut mapping = HashMap::new();
+    let mut mapping = FxHashMap::default();
     mapping.insert(0usize, anchor);
     // Single-atom query — the anchor already satisfies it.
     if query.atoms.len() == 1 {
@@ -428,7 +460,7 @@ fn has_match_anchored(query: &QueryMolecule, anchor: AtomIdx, ctx: &EvalCtx<'_>)
 fn has_match_recursive(
     query: &QueryMolecule,
     ctx: &EvalCtx<'_>,
-    mapping: &mut HashMap<usize, AtomIdx>,
+    mapping: &mut FxHashMap<usize, AtomIdx>,
 ) -> bool {
     // Decrement shared visit budget; stop if exhausted (may produce false negatives
     // — only enabled when max_visit_budget is explicitly set).
@@ -446,7 +478,7 @@ fn has_match_recursive(
     // Pick the next unmapped query atom.
     let q_next = next_unmapped(mapping, query.atoms.len());
 
-    let used_targets: std::collections::HashSet<AtomIdx> = mapping.values().copied().collect();
+    let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
 
     for t in 0..ctx.mol.atom_count() {
         let t_idx = AtomIdx(t as u32);

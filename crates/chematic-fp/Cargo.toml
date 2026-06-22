@@ -17,6 +17,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.4.14" }
+rustc-hash = "2"
+smallvec = "1"
 chematic-perception = { path = "../chematic-perception", version = "0.4.14" }
 chematic-rxn = { path = "../chematic-rxn", version = "0.4.14" }
 chematic-smarts = { path = "../chematic-smarts", version = "0.4.14" }

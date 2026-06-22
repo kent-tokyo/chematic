@@ -135,7 +135,10 @@ impl QueryMolecule {
     /// Add an atom with the given query condition. Returns the atom index.
     pub fn add_atom(&mut self, query: AtomQuery) -> usize {
         let idx = self.atoms.len();
-        self.atoms.push(QueryAtom { query, atom_map: None });
+        self.atoms.push(QueryAtom {
+            query,
+            atom_map: None,
+        });
         self.adj.push(vec![]);
         idx
     }

@@ -107,6 +107,19 @@ fn hh_correction(logp: f64, ph: f64, pka: f64, is_acid: bool) -> f64 {
 /// Returns LogD (dimensionless, same scale as LogP).
 pub fn logd_simple(mol: &Molecule, ph: f64) -> f64 {
     let logp = logp_crippen(mol);
+    logd_from_logp(logp, mol, ph)
+}
+
+/// Like [`logd_simple`] but accepts a pre-computed LogP value.
+///
+/// Use this when LogP has already been computed to avoid recomputing the
+/// 117-pattern Crippen SMARTS matching a second time:
+///
+/// ```ignore
+/// let logp = logp_crippen(&mol);
+/// let logd = logd_from_logp(logp, &mol, 7.4);
+/// ```
+pub fn logd_from_logp(logp: f64, mol: &Molecule, ph: f64) -> f64 {
     let (is_acid_legacy, is_base_legacy) = ionisation_class(mol);
 
     // Use pKa module values when available; fall back to legacy constants.

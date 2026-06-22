@@ -1,74 +1,148 @@
 //! 3D molecular descriptors for ML pipelines.
 //!
-//! Implements simplified WHIM and GETAWAY-like descriptors:
-//! - WHIM: weighted holistic invariant descriptors based on mass distribution
-//! - GETAWAY: geometric/topologic descriptors with wavelet autocorrelation
-//!
-//! Full implementations require expensive computations; this module provides
-//! practical approximations suitable for ML feature vectors.
+//! Implements WHIM, GETAWAY, RDF, and AutoCorr 3D descriptors:
+//! - WHIM (22 dims): Weighted Holistic Invariant Molecular descriptors, two weight schemes
+//! - GETAWAY (19 dims): leverage-based geometric/topologic descriptors
+//! - RDF (20 dims): Radial Distribution Function descriptors
+//! - AutoCorr3D (8 dims): Moreau-Broto self-correlation at Euclidean distance lags
 
-use crate::coords::{Coords3D, Point3};
+use crate::coords::Coords3D;
+use crate::shape_descriptors::jacobi3;
 use chematic_core::Molecule;
 
-/// Compute WHIM descriptors: mass-weighted shape descriptors.
-/// Returns: [L1, L2, L3, P1, P2, P3, ALPHA, BETA, GAMMA, DELTA]
-/// where L* = eigenvalues of inertia tensor, P* = principal moments,
-/// and ALPHA/BETA/GAMMA/DELTA are derived shape metrics.
+// ---------------------------------------------------------------------------
+// WHIM internals
+// ---------------------------------------------------------------------------
+
+/// Compute 11 WHIM descriptors for one weight scheme.
+///
+/// Returns `[λ₁, λ₂, λ₃, ν₁, ν₂, ν₃, T, A, V, K, D]` where:
+/// - λₖ: eigenvalues of the weighted covariance matrix (descending)
+/// - νₖ: skewness of projection onto k-th principal axis
+/// - T = Σλ, A = Σᵢ<ⱼ λᵢλⱼ, V = λ₁λ₂λ₃, K = Σᵢ<ⱼ(λᵢ−λⱼ)²/T², D = T/3
+fn whim_11(xs: &[[f64; 3]], weights: &[f64]) -> [f64; 11] {
+    let n = xs.len();
+    let total_w: f64 = weights.iter().sum();
+    if total_w < 1e-10 {
+        return [0.0; 11];
+    }
+
+    // Weighted centroid
+    let mut com = [0.0f64; 3];
+    for i in 0..n {
+        for d in 0..3 {
+            com[d] += weights[i] * xs[i][d];
+        }
+    }
+    for d in 0..3 {
+        com[d] /= total_w;
+    }
+
+    // Weighted covariance matrix (normalised by total weight)
+    let mut cov = [[0.0f64; 3]; 3];
+    for i in 0..n {
+        let dx = [xs[i][0] - com[0], xs[i][1] - com[1], xs[i][2] - com[2]];
+        for a in 0..3 {
+            for b in 0..3 {
+                cov[a][b] += weights[i] * dx[a] * dx[b];
+            }
+        }
+    }
+    for a in 0..3 {
+        for b in 0..3 {
+            cov[a][b] /= total_w;
+        }
+    }
+
+    // Eigendecompose — jacobi3 returns ascending eigenvalues
+    // evecs[row][col] = row-th component of the col-th eigenvector
+    let (evals_asc, evecs) = jacobi3(cov);
+
+    // Reorder to descending: λ₁ ≥ λ₂ ≥ λ₃
+    // ascending index 2 → largest; 1 → middle; 0 → smallest
+    let lam = [
+        evals_asc[2].max(0.0),
+        evals_asc[1].max(0.0),
+        evals_asc[0].max(0.0),
+    ];
+    // Skewness-based symmetry coefficients νₖ
+    // Both numerator (weighted 3rd moment) and denominator (λ^(3/2)) must use
+    // the same weighting scheme; dividing by total_w matches the covariance.
+    let mut nu = [0.0f64; 3];
+    for k in 0..3 {
+        let lambda = lam[k];
+        if lambda < 1e-10 {
+            continue;
+        }
+        let col = 2 - k; // ascending index 0→smallest, 2→largest; descend by inverting
+        let mut sum_cube = 0.0f64;
+        for i in 0..n {
+            let proj = (xs[i][0] - com[0]) * evecs[0][col]
+                + (xs[i][1] - com[1]) * evecs[1][col]
+                + (xs[i][2] - com[2]) * evecs[2][col];
+            sum_cube += weights[i] * proj.powi(3);
+        }
+        nu[k] = (sum_cube / total_w) / lambda.powf(1.5);
+    }
+
+    // Global 3D indices
+    let (l1, l2, l3) = (lam[0], lam[1], lam[2]);
+    let t = l1 + l2 + l3;
+    let a = l1 * l2 + l1 * l3 + l2 * l3;
+    let v = l1 * l2 * l3;
+    let k = if t > 1e-10 {
+        ((l1 - l2).powi(2) + (l1 - l3).powi(2) + (l2 - l3).powi(2)) / t.powi(2)
+    } else {
+        0.0
+    };
+    let d = t / 3.0;
+
+    [l1, l2, l3, nu[0], nu[1], nu[2], t, a, v, k, d]
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/// Compute WHIM (Weighted Holistic Invariant Molecular) 3D descriptors.
+///
+/// Returns a 22-element vector: 11 descriptors for unit weights followed by
+/// 11 descriptors for atomic-mass weights.
+///
+/// Each 11-element block is `[λ₁, λ₂, λ₃, ν₁, ν₂, ν₃, T, A, V, K, D]`:
+/// - `λ₁ ≥ λ₂ ≥ λ₃`: eigenvalues of the weighted covariance matrix (Å²)
+/// - `ν₁, ν₂, ν₃`: skewness-based symmetry coefficients for each principal axis
+/// - `T = λ₁+λ₂+λ₃`, `A = Σᵢ<ⱼ λᵢλⱼ`, `V = λ₁λ₂λ₃`: global extent indices
+/// - `K = Σᵢ<ⱼ(λᵢ−λⱼ)²/T²`: anisotropy index (0 = sphere, 1 = rod/disk)
+/// - `D = T/3`: average spread
 pub fn whim_descriptors(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
-    if mol.atom_count() < 2 {
-        return vec![0.0; 10];
+    let n = mol.atom_count();
+    if n < 2 {
+        return vec![0.0; 22];
     }
 
-    // Compute center of mass
-    let mut total_mass = 0.0;
-    let mut com = Point3::zero();
+    let xs: Vec<[f64; 3]> = (0..n)
+        .map(|i| {
+            let p = coords.get(chematic_core::AtomIdx(i as u32));
+            [p.x, p.y, p.z]
+        })
+        .collect();
 
-    for i in 0..mol.atom_count() {
-        let atom = mol.atom(chematic_core::AtomIdx(i as u32));
-        let mass = atom.element.atomic_mass();
-        total_mass += mass;
-        let p = coords.get(chematic_core::AtomIdx(i as u32));
-        com = com.add(&p.scale(mass));
-    }
+    // W1: unit weights
+    let w1 = vec![1.0f64; n];
+    // W2: atomic-mass weights
+    let w2: Vec<f64> = (0..n)
+        .map(|i| {
+            mol.atom(chematic_core::AtomIdx(i as u32))
+                .element
+                .atomic_mass()
+        })
+        .collect();
 
-    if total_mass == 0.0 {
-        return vec![0.0; 10];
-    }
-
-    com = com.scale(1.0 / total_mass);
-
-    // Compute inertia tensor
-    let mut ixx = 0.0;
-    let mut iyy = 0.0;
-    let mut izz = 0.0;
-
-    for i in 0..mol.atom_count() {
-        let atom = mol.atom(chematic_core::AtomIdx(i as u32));
-        let mass = atom.element.atomic_mass();
-        let p = coords.get(chematic_core::AtomIdx(i as u32));
-        let r = p.sub(&com);
-
-        ixx += mass * (r.y * r.y + r.z * r.z);
-        iyy += mass * (r.x * r.x + r.z * r.z);
-        izz += mass * (r.x * r.x + r.y * r.y);
-    }
-
-    // Approximate eigenvalues (simplified: use diagonal dominance)
-    let l1 = ixx;
-    let l2 = iyy;
-    let l3 = izz;
-
-    let p1 = (l1 / total_mass).sqrt();
-    let p2 = (l2 / total_mass).sqrt();
-    let p3 = (l3 / total_mass).sqrt();
-
-    // Shape metrics
-    let alpha = p1 + p2 + p3; // Total reach
-    let beta = (p1 * p2 + p2 * p3 + p3 * p1) / 3.0; // Average interaction
-    let gamma = (p1 * p2 * p3).cbrt(); // Geometric mean
-    let delta = p1 - p3; // Anisotropy
-
-    vec![l1, l2, l3, p1, p2, p3, alpha, beta, gamma, delta]
+    let mut result = Vec::with_capacity(22);
+    result.extend_from_slice(&whim_11(&xs, &w1));
+    result.extend_from_slice(&whim_11(&xs, &w2));
+    result
 }
 
 /// GETAWAY (GEometry, Topology and Atom-Weights AssemblY) descriptors.
@@ -249,11 +323,53 @@ fn heavy_topo_dist_local(mol: &Molecule, heavy: &[usize]) -> Vec<Vec<u32>> {
 
 /// Combined WHIM + GETAWAY descriptor vector for ML.
 ///
-/// Returns a 29-element feature vector: WHIM (10) followed by GETAWAY (19).
+/// Returns a 41-element feature vector: WHIM (22) followed by GETAWAY (19).
 pub fn whim_getaway_combined(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
     let mut result = whim_descriptors(mol, coords);
     result.extend(getaway_descriptors(mol, coords));
     result
+}
+
+/// RDF (Radial Distribution Function) 3D descriptors.
+///
+/// Computes 20 mass-weighted RDF values at shells r_k = 0.5, 1.0, ..., 10.0 Å:
+///
+/// `g(r_k) = Σᵢ Σⱼ>ᵢ mᵢmⱼ · exp(−β·(r_k − rᵢⱼ)²)`
+///
+/// with β = 100 and mᵢ = atomic mass.  Returns a 20-element vector.
+pub fn rdf_descriptors(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
+    const N_SHELLS: usize = 20;
+    const BETA: f64 = 100.0;
+
+    let n = mol.atom_count();
+    if n < 2 {
+        return vec![0.0; N_SHELLS];
+    }
+
+    let mut g = vec![0.0f64; N_SHELLS];
+
+    for i in 0..n {
+        let idx_i = chematic_core::AtomIdx(i as u32);
+        let mi = mol.atom(idx_i).element.atomic_mass();
+        let pi = coords.get(idx_i);
+
+        for j in (i + 1)..n {
+            let idx_j = chematic_core::AtomIdx(j as u32);
+            let mj = mol.atom(idx_j).element.atomic_mass();
+            let pj = coords.get(idx_j);
+
+            let rij = pi.distance(&pj);
+            let weight = mi * mj;
+
+            for k in 0..N_SHELLS {
+                let r_k = (k as f64 + 1.0) * 0.5; // 0.5, 1.0, ..., 10.0
+                let diff = r_k - rij;
+                g[k] += weight * (-BETA * diff * diff).exp();
+            }
+        }
+    }
+
+    g
 }
 
 /// AutoCorr3D: Moreau-Broto Self-Correlation (Euclidean Distance).
@@ -315,10 +431,28 @@ mod tests {
         let mol = parse("c1ccccc1").unwrap();
         let coords = generate_coords(&mol);
         let desc = whim_descriptors(&mol, &coords);
-        assert_eq!(desc.len(), 10);
+        assert_eq!(desc.len(), 22, "WHIM should be 22 elements (11×W1 + 11×W2)");
         assert!(
             desc.iter().all(|&d| d.is_finite()),
             "all WHIM descriptors should be finite"
+        );
+        // λ₁ (W1 block[0]) should be non-negative
+        assert!(desc[0] >= 0.0, "λ₁(W1) should be ≥ 0: {}", desc[0]);
+    }
+
+    #[test]
+    fn test_whim_heteroatom_w1_w2_differ() {
+        // Ethanol has C, C, O → mass-weight scheme gives more weight to O
+        // → centroid shifts → W1 ≠ W2
+        let mol = parse("CCO").unwrap();
+        let coords = generate_coords(&mol);
+        let desc = whim_descriptors(&mol, &coords);
+        assert_eq!(desc.len(), 22);
+        let w1 = &desc[..11];
+        let w2 = &desc[11..];
+        assert!(
+            w1.iter().zip(w2.iter()).any(|(a, b)| (a - b).abs() > 1e-6),
+            "W1 and W2 blocks should differ for a heteroatom molecule"
         );
     }
 
@@ -361,8 +495,8 @@ mod tests {
         let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
         let coords = generate_coords(&mol);
         let desc = whim_getaway_combined(&mol, &coords);
-        // WHIM (10) + GETAWAY (19) = 29
-        assert_eq!(desc.len(), 29);
+        // WHIM (22) + GETAWAY (19) = 41
+        assert_eq!(desc.len(), 41);
         assert!(
             desc.iter().all(|&d| d.is_finite()),
             "all combined descriptors should be finite"
@@ -425,5 +559,80 @@ mod tests {
             ac.iter().all(|&x| x.is_finite()),
             "all values should be finite"
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // RDF descriptor tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_rdf_length_benzene() {
+        let mol = parse("c1ccccc1").unwrap();
+        let coords = generate_coords(&mol);
+        let rdf = rdf_descriptors(&mol, &coords);
+        assert_eq!(rdf.len(), 20, "RDF should have 20 shells");
+        assert!(rdf.iter().all(|&v| v.is_finite()), "all RDF values finite");
+        assert!(
+            rdf.iter().any(|&v| v > 0.0),
+            "RDF should be non-zero for benzene"
+        );
+    }
+
+    #[test]
+    fn test_rdf_single_atom_zeros() {
+        let mol = parse("C").unwrap();
+        let coords = generate_coords(&mol);
+        let rdf = rdf_descriptors(&mol, &coords);
+        assert_eq!(rdf.len(), 20);
+        assert!(rdf.iter().all(|&v| v == 0.0), "single atom → all zero RDF");
+    }
+
+    #[test]
+    fn test_rdf_ethane_nonzero_near_bond() {
+        // C-C distance ≈ 1.54 Å → peak near shell 3 (r=1.5) or 4 (r=2.0)
+        let mol = parse("CC").unwrap();
+        let coords = generate_coords(&mol);
+        let rdf = rdf_descriptors(&mol, &coords);
+        assert_eq!(rdf.len(), 20);
+        // At least one of shells 2-4 (r=1.0..2.0 Å) should be non-negligible
+        assert!(
+            rdf[2] + rdf[3] > 1e-5,
+            "RDF near C-C bond length should be non-zero"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // WHIM property tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_whim_single_atom_zeros() {
+        let mol = parse("C").unwrap();
+        let coords = generate_coords(&mol);
+        let desc = whim_descriptors(&mol, &coords);
+        assert_eq!(desc.len(), 22);
+        // Single atom: covariance is zero → all descriptors zero
+        assert!(
+            desc.iter().all(|&v| v == 0.0),
+            "single atom WHIM should be all zeros"
+        );
+    }
+
+    #[test]
+    fn test_whim_eigenvalues_nonneg() {
+        let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
+        let coords = generate_coords(&mol);
+        let desc = whim_descriptors(&mol, &coords);
+        // λ₁ ≥ λ₂ ≥ λ₃ ≥ 0 in both W1 and W2 blocks
+        for block_start in [0, 11] {
+            let (l1, l2, l3) = (
+                desc[block_start],
+                desc[block_start + 1],
+                desc[block_start + 2],
+            );
+            assert!(l1 >= l2 - 1e-9, "W block {block_start}: λ₁ ≥ λ₂");
+            assert!(l2 >= l3 - 1e-9, "W block {block_start}: λ₂ ≥ λ₃");
+            assert!(l3 >= -1e-9, "W block {block_start}: λ₃ ≥ 0");
+        }
     }
 }

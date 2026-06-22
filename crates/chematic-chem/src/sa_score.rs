@@ -17,7 +17,7 @@
 //! Score encoding: i16 = (log10(fragment_frequency) × 1000) as i16.
 //! Fragments not in the table receive DEFAULT_LOG_FREQ = log10(1e-5) = -5.0.
 
-use crate::descriptors::{num_bridgehead_atoms, num_spiro_atoms, num_stereocenters, ring_count};
+use crate::descriptors::{RingBundle, num_stereocenters, ring_bundle};
 use chematic_core::{AtomIdx, Molecule};
 use chematic_fp::morgan_fp_counts;
 use std::collections::HashMap;
@@ -1468,18 +1468,23 @@ fn lookup_score(hash: u64) -> f64 {
 // Complexity corrections
 // ---------------------------------------------------------------------------
 
-fn complexity_penalty(mol: &Molecule) -> f64 {
+fn complexity_penalty_with(mol: &Molecule, rb: &RingBundle) -> f64 {
     let n = mol.atom_count() as f64;
     if n == 0.0 {
         return 0.0;
     }
 
-    let spiro = num_spiro_atoms(mol) as f64;
-    let bridge = num_bridgehead_atoms(mol) as f64;
-    let rings = ring_count(mol) as f64;
+    let spiro = rb.num_spiro_atoms as f64;
+    let bridge = rb.num_bridgehead_atoms as f64;
+    let rings = rb.ring_count as f64;
     let stereo = num_stereocenters(mol) as f64;
 
-    let macro_count = count_macrorings(mol) as f64;
+    // count_macrorings inlined using rb.ring_count to avoid a second find_sssr call.
+    let macro_count = if rb.ring_count > 0 && n / rings > 8.0 {
+        1.0
+    } else {
+        0.0
+    };
 
     let bond_n = mol.bond_count() as f64;
     let ring_bond_frac = if bond_n > 0.0 {
@@ -1498,16 +1503,6 @@ fn complexity_penalty(mol: &Molecule) -> f64 {
     let size_penalty = (n / 10.0 - 1.0).max(0.0) * 0.05;
 
     penalty + size_penalty
-}
-
-fn count_macrorings(mol: &Molecule) -> usize {
-    let n = mol.atom_count();
-    let rings = ring_count(mol);
-    if rings == 0 {
-        return 0;
-    }
-    let avg_ring_size = n as f64 / rings as f64;
-    if avg_ring_size > 8.0 { 1 } else { 0 }
 }
 
 fn ring_bond_count(mol: &Molecule) -> usize {
@@ -1571,32 +1566,31 @@ fn ring_bond_count(mol: &Molecule) -> usize {
 /// (`chematic_fp::morgan_fp_counts`), so the fragment table is directly
 /// compatible with ECFP4 lookups.
 pub fn sa_score(mol: &Molecule) -> f64 {
+    sa_score_with_bundle(mol, &ring_bundle(mol))
+}
+
+/// SA Score with pre-computed ring values from [`ring_bundle`] — avoids 4 redundant `find_sssr` calls.
+pub fn sa_score_with_bundle(mol: &Molecule, rb: &RingBundle) -> f64 {
     let n = mol.atom_count();
     if n == 0 {
         return 10.0;
     }
 
-    // Collect all circular environments at radii 0–2 with their occurrence counts.
     let counts = morgan_fp_counts(mol, 2);
     let total_frags: u32 = counts.values().sum();
     if total_frags == 0 {
         return 10.0;
     }
 
-    // Fragment score = mean of log10(frequency) over all environment instances.
-    // Environments not in the table use DEFAULT_LOG_FREQ (very rare).
     let total_score: f64 = counts
         .iter()
         .map(|(&hash, &count)| lookup_score(hash) * count as f64)
         .sum();
     let fscore = total_score / total_frags as f64;
 
-    let cscore = complexity_penalty(mol);
+    let cscore = complexity_penalty_with(mol, rb);
 
-    // Raw score: higher fscore (common fragments) → easier; higher cscore → harder.
     let raw = fscore * 2.0 - cscore * 4.5;
-
-    // Map raw ∈ (−∞, 0] → sa ∈ [1, 10].
     let sa = 1.0 + (-raw).max(0.0);
     sa.clamp(1.0, 10.0)
 }

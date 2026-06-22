@@ -3,12 +3,16 @@
 //! 480 SMARTS patterns from Baell & Holloway 2010 (J. Med. Chem. 53, 2719–2740)
 //! as distributed in the RDKit FilterCatalog (pains_a/b/c.in).
 
+use rustc_hash::FxHashMap;
 use std::sync::OnceLock;
 
 use chematic_core::{
     Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount,
 };
-use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
+use chematic_perception::find_sssr;
+use chematic_smarts::{
+    MatchConfig, QueryMolecule, find_matches_with_rings_and_config, parse_smarts,
+};
 
 /// Return a copy of `mol` with all implicit H atoms materialized as explicit
 /// graph nodes.  PAINS patterns (and many RDKit SMARTS) are written for
@@ -2064,9 +2068,11 @@ fn compiled_brenk_patterns() -> &'static [(&'static str, QueryMolecule)] {
 /// PAINS SMARTS patterns reference explicit hydrogen atoms (`[#1]`).
 pub fn pains_matches(mol: &Molecule) -> Vec<&'static str> {
     let mol_h = add_explicit_hs(mol);
+    let rings = find_sssr(&mol_h);
+    let config = MatchConfig::default();
     compiled_pains_patterns()
         .iter()
-        .filter(|(_, q)| !find_matches(q, &mol_h).is_empty())
+        .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
         .map(|(name, _)| *name)
         .collect()
 }
@@ -2074,9 +2080,14 @@ pub fn pains_matches(mol: &Molecule) -> Vec<&'static str> {
 /// Returns `true` when no PAINS alerts are triggered.
 pub fn pains_passes(mol: &Molecule) -> bool {
     let mol_h = add_explicit_hs(mol);
+    let rings = find_sssr(&mol_h);
+    let config = MatchConfig {
+        max_matches: Some(1),
+        ..Default::default()
+    };
     compiled_pains_patterns()
         .iter()
-        .all(|(_, q)| find_matches(q, &mol_h).is_empty())
+        .all(|(_, q)| find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
 }
 
 /// Returns the names of all Brenk structural alerts that match `mol`.
@@ -2087,9 +2098,11 @@ pub fn pains_passes(mol: &Molecule) -> bool {
 /// These patterns identify problematic functional groups and structural features.
 pub fn brenk_matches(mol: &Molecule) -> Vec<&'static str> {
     let mol_h = add_explicit_hs(mol);
+    let rings = find_sssr(&mol_h);
+    let config = MatchConfig::default();
     compiled_brenk_patterns()
         .iter()
-        .filter(|(_, q)| !find_matches(q, &mol_h).is_empty())
+        .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
         .map(|(name, _)| *name)
         .collect()
 }
@@ -2097,9 +2110,73 @@ pub fn brenk_matches(mol: &Molecule) -> Vec<&'static str> {
 /// Returns `true` when no Brenk structural alerts are triggered.
 pub fn brenk_passes(mol: &Molecule) -> bool {
     let mol_h = add_explicit_hs(mol);
+    let rings = find_sssr(&mol_h);
+    let config = MatchConfig {
+        max_matches: Some(1),
+        ..Default::default()
+    };
     compiled_brenk_patterns()
         .iter()
-        .all(|(_, q)| find_matches(q, &mol_h).is_empty())
+        .all(|(_, q)| find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
+}
+
+// ---------------------------------------------------------------------------
+// Detailed alert matches — returns atom indices for highlighting
+// ---------------------------------------------------------------------------
+
+/// Extract unique sorted heavy-atom indices from a set of SMARTS match mappings.
+fn heavy_atoms_from_matches(
+    matches: &[FxHashMap<usize, AtomIdx>],
+    mol_h: &Molecule,
+) -> Vec<AtomIdx> {
+    use std::collections::BTreeSet;
+    let mut set = BTreeSet::new();
+    for mapping in matches {
+        for &atom_idx in mapping.values() {
+            if mol_h.atom(atom_idx).element.atomic_number() != 1 {
+                set.insert(atom_idx);
+            }
+        }
+    }
+    set.into_iter().collect()
+}
+
+/// Shared implementation: scan `patterns` against `mol` and return matching
+/// alert names with their heavy-atom indices.
+fn matches_detailed_impl(
+    mol: &Molecule,
+    patterns: &'static [(&'static str, QueryMolecule)],
+) -> Vec<(&'static str, Vec<AtomIdx>)> {
+    let mol_h = add_explicit_hs(mol);
+    let rings = find_sssr(&mol_h);
+    let config = MatchConfig::default();
+    patterns
+        .iter()
+        .filter_map(|(name, q)| {
+            let ms = find_matches_with_rings_and_config(q, &mol_h, &rings, &config);
+            if ms.is_empty() {
+                return None;
+            }
+            Some((*name, heavy_atoms_from_matches(&ms, &mol_h)))
+        })
+        .collect()
+}
+
+/// Like [`pains_matches`] but also returns the matched heavy-atom indices.
+///
+/// Returns `Vec<(name, atom_indices)>` — one entry per triggered alert.
+/// The `atom_indices` identify the heavy atoms in `mol` that are part of the
+/// problematic substructure, suitable for use with
+/// `chematic_depict::render_svg_highlighted`.
+pub fn pains_matches_detailed(mol: &Molecule) -> Vec<(&'static str, Vec<AtomIdx>)> {
+    matches_detailed_impl(mol, compiled_pains_patterns())
+}
+
+/// Like [`brenk_matches`] but also returns the matched heavy-atom indices.
+///
+/// Returns `Vec<(name, atom_indices)>` — one entry per triggered alert.
+pub fn brenk_matches_detailed(mol: &Molecule) -> Vec<(&'static str, Vec<AtomIdx>)> {
+    matches_detailed_impl(mol, compiled_brenk_patterns())
 }
 
 #[cfg(test)]

@@ -15,6 +15,7 @@
 //! Repeated SMARTS matching with a warm cache is 5–20× faster than calling
 //! `parse_smarts()` + `find_matches()` each time.
 
+use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 
 use crate::{
@@ -30,6 +31,8 @@ use chematic_core::{AtomIdx, Molecule};
 /// When the cache reaches `capacity`, the least-recently-used entry is evicted.
 pub struct SmartsCache {
     capacity: usize,
+    // std HashMap (SipHash) intentionally — keys are user-supplied SMARTS strings;
+    // FxHash has no random seed and is vulnerable to HashDoS with adversarial input.
     store: HashMap<String, QueryMolecule>,
     order: Vec<String>, // LRU order (front = oldest, back = newest)
 }
@@ -72,7 +75,7 @@ impl SmartsCache {
         &mut self,
         smarts: &str,
         mol: &Molecule,
-    ) -> Result<Vec<std::collections::HashMap<usize, AtomIdx>>, SmartsError> {
+    ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
         let qmol = self.compile(smarts)?.clone();
         Ok(find_matches_with_config(
             &qmol,
@@ -87,7 +90,7 @@ impl SmartsCache {
         smarts: &str,
         mol: &Molecule,
         config: &MatchConfig,
-    ) -> Result<Vec<std::collections::HashMap<usize, AtomIdx>>, SmartsError> {
+    ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
         let qmol = self.compile(smarts)?.clone();
         Ok(find_matches_with_config(&qmol, mol, config))
     }

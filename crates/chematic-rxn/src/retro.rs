@@ -51,12 +51,12 @@ impl RetroClass {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::AmideBond => "AmideBond",
-            Self::Ester     => "Ester",
-            Self::Ether     => "Ether",
-            Self::CNBond    => "CNBond",
-            Self::CCBond    => "CCBond",
-            Self::CSBond    => "CSBond",
-            Self::Other     => "Other",
+            Self::Ester => "Ester",
+            Self::Ether => "Ether",
+            Self::CNBond => "CNBond",
+            Self::CCBond => "CCBond",
+            Self::CSBond => "CSBond",
+            Self::Other => "Other",
         }
     }
 }
@@ -141,7 +141,6 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         smirks: "[C:1](=[S:2])[N:3]>>[C:1](=[O])O.[N:3]",
         reaction_class: RetroClass::AmideBond,
     },
-
     // ── Ester / carbonate / anhydride ────────────────────────────────────────
     RetroTemplate {
         name: "ester",
@@ -173,7 +172,6 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         smirks: "[C:1](=[O:2])[O:3][C:4][C:5]>>[C:1](=[O:2])O.[OH:3][C:4][C:5]",
         reaction_class: RetroClass::Ester,
     },
-
     // ── Ether ────────────────────────────────────────────────────────────────
     RetroTemplate {
         name: "aryl_ether_snar",
@@ -217,7 +215,6 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         smirks: "[c:1]([OCH2:2])ccc(OC)cc1>>[c:1][OH].[c]([CH2:2]Br)ccc(OC)cc1",
         reaction_class: RetroClass::Ether,
     },
-
     // ── C–N bond ─────────────────────────────────────────────────────────────
     RetroTemplate {
         // sp3 C–N only; amide N excluded by requiring non-carbonyl neighbour.
@@ -278,7 +275,6 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         smirks: "[N:1][C:2]=[N:3]>>[C:2]#[N:3].[N:1]",
         reaction_class: RetroClass::CNBond,
     },
-
     // ── C–C bond ─────────────────────────────────────────────────────────────
     RetroTemplate {
         name: "suzuki_biaryl",
@@ -357,7 +353,6 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         smirks: "[C:1](=[O:2])[C:3]>>[C:1](=[O:2])Br.[C:3](=O)",
         reaction_class: RetroClass::CCBond,
     },
-
     // ── C–S / C–X bond ───────────────────────────────────────────────────────
     RetroTemplate {
         name: "aryl_thioether",
@@ -453,10 +448,7 @@ pub fn retro_disconnect(
             }
 
             // Compute canonical SMILES for each precursor.
-            let smiles: Vec<String> = precursor_set
-                .iter()
-                .map(canonical_smiles)
-                .collect();
+            let smiles: Vec<String> = precursor_set.iter().map(canonical_smiles).collect();
 
             // Dedup key: sorted canonical SMILES joined.
             let mut sorted = smiles.clone();
@@ -504,20 +496,30 @@ mod tests {
         // acetanilide: amide_secondary should give acetic acid + aniline
         let m = mol("CC(=O)Nc1ccccc1");
         let results = retro_disconnect(&m, DEFAULT_TEMPLATES, 0);
-        assert!(!results.is_empty(), "should find disconnections in acetanilide");
+        assert!(
+            !results.is_empty(),
+            "should find disconnections in acetanilide"
+        );
 
-        let amide_hits: Vec<_> = results.iter()
+        let amide_hits: Vec<_> = results
+            .iter()
             .filter(|r| r.template_name.starts_with("amide"))
             .collect();
-        assert!(!amide_hits.is_empty(), "at least one amide template should match");
+        assert!(
+            !amide_hits.is_empty(),
+            "at least one amide template should match"
+        );
 
         // Check that both precursors are present
-        let all_smiles: Vec<&str> = results.iter()
+        let all_smiles: Vec<&str> = results
+            .iter()
             .flat_map(|r| r.precursor_smiles.iter().map(|s| s.as_str()))
             .collect();
         // At least one result should contain an acid or amine fragment
         assert!(
-            all_smiles.iter().any(|s| s.contains("C(=O)O") || s.contains("N")),
+            all_smiles
+                .iter()
+                .any(|s| s.contains("C(=O)O") || s.contains("N")),
             "precursors should include acid or amine fragments"
         );
     }
@@ -527,10 +529,14 @@ mod tests {
         // methyl acetate: ester template should give acetic acid + methanol
         let m = mol("CC(=O)OC");
         let results = retro_disconnect(&m, DEFAULT_TEMPLATES, 0);
-        let ester_hits: Vec<_> = results.iter()
+        let ester_hits: Vec<_> = results
+            .iter()
             .filter(|r| r.reaction_class == RetroClass::Ester)
             .collect();
-        assert!(!ester_hits.is_empty(), "ester template should match methyl acetate");
+        assert!(
+            !ester_hits.is_empty(),
+            "ester template should match methyl acetate"
+        );
     }
 
     #[test]
@@ -544,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_retro_max_results() {
-        let m = mol("CC(=O)Nc1ccc(S(N)(=O)=O)cc1");  // sulfanilamide
+        let m = mol("CC(=O)Nc1ccc(S(N)(=O)=O)cc1"); // sulfanilamide
         let results = retro_disconnect(&m, DEFAULT_TEMPLATES, 3);
         assert!(results.len() <= 3, "max_results=3 should be respected");
     }
@@ -554,11 +560,14 @@ mod tests {
         // Two templates may produce the same precursor set — check dedup works
         let m = mol("CC(=O)Nc1ccccc1");
         let results = retro_disconnect(&m, DEFAULT_TEMPLATES, 0);
-        let mut keys: Vec<String> = results.iter().map(|r| {
-            let mut s = r.precursor_smiles.clone();
-            s.sort();
-            s.join(".")
-        }).collect();
+        let mut keys: Vec<String> = results
+            .iter()
+            .map(|r| {
+                let mut s = r.precursor_smiles.clone();
+                s.sort();
+                s.join(".")
+            })
+            .collect();
         let before = keys.len();
         keys.dedup();
         assert_eq!(before, keys.len(), "no duplicate precursor sets");
@@ -569,26 +578,42 @@ mod tests {
         // anisole: aryl_ether_snar or aryl_ether_ullmann should match c-O-C
         let m = mol("COc1ccccc1");
         let results = retro_disconnect(&m, DEFAULT_TEMPLATES, 0);
-        let ether_hits: Vec<_> = results.iter()
+        let ether_hits: Vec<_> = results
+            .iter()
             .filter(|r| r.reaction_class == RetroClass::Ether)
             .collect();
-        assert!(!ether_hits.is_empty(), "ether templates should match anisole");
+        assert!(
+            !ether_hits.is_empty(),
+            "ether templates should match anisole"
+        );
     }
 
     #[test]
     fn test_retro_class_filter() {
         // filter to only amide templates
-        let collected: Vec<RetroTemplate> = DEFAULT_TEMPLATES.iter()
+        let collected: Vec<RetroTemplate> = DEFAULT_TEMPLATES
+            .iter()
             .filter(|t| t.reaction_class == RetroClass::AmideBond)
-            .map(|t| RetroTemplate { name: t.name, smirks: t.smirks, reaction_class: t.reaction_class })
+            .map(|t| RetroTemplate {
+                name: t.name,
+                smirks: t.smirks,
+                reaction_class: t.reaction_class,
+            })
             .collect();
         let m = mol("CC(=O)Nc1ccccc1");
         let results = retro_disconnect(&m, &collected, 0);
-        assert!(results.iter().all(|r| r.reaction_class == RetroClass::AmideBond));
+        assert!(
+            results
+                .iter()
+                .all(|r| r.reaction_class == RetroClass::AmideBond)
+        );
     }
 
     #[test]
     fn test_default_template_count() {
-        assert!(DEFAULT_TEMPLATES.len() >= 50, "library should have at least 50 templates");
+        assert!(
+            DEFAULT_TEMPLATES.len() >= 50,
+            "library should have at least 50 templates"
+        );
     }
 }

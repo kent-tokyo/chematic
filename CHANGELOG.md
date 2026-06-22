@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance — `chematic-smarts`
+
+- **Shared SSSR across multi-pattern matching** — `EvalCtx` now borrows `&RingSet` instead of
+  owning it, enabling callers to compute the ring set once and reuse it across many queries.
+  Two new public functions:
+  - `find_matches_with_rings(query, mol, rings)` — match with a pre-computed `RingSet`
+  - `find_matches_with_rings_and_config(query, mol, rings, config)` — same with explicit config
+
+### Performance — `chematic-chem`
+
+- **Crippen SMARTS: 117 SSSR → 1 per `logp_crippen` call** — `crippen_anchor_sets()` now calls
+  `find_matches_with_rings_and_config` sharing a single `find_sssr()` result across all 117
+  Wildman-Crippen patterns (was one SSSR computation per pattern).
+- **PAINS/Brenk: ~480/~300 SSSR → 1 per call** — `pains_passes`, `pains_matches`,
+  `brenk_passes`, `brenk_matches`, and `matches_detailed_impl` each compute `find_sssr` once
+  on the explicit-H molecule and share it across all compiled patterns. `pains_passes` and
+  `brenk_passes` also set `max_matches: Some(1)` for early-exit boolean queries.
+- **`logp_and_mr(mol) -> (f64, f64)`** — new public function that returns both Crippen LogP and
+  MR from a single `crippen_anchor_sets` pass (~2× faster when both are needed). Exact numerical
+  agreement with `logp_crippen(mol)` + `molar_refractivity(mol)` verified by regression test.
+- **`logd_from_logp(logp, mol, ph) -> f64`** — new public function accepting a pre-computed LogP
+  value; avoids the duplicate Crippen pass inside `logd_simple`.
+- **`cns_mpo_score` logP dedup** — computes `logp_crippen` once and passes the result to
+  `logd_from_logp`, eliminating a redundant 117-pattern SMARTS pass.
+- **`workflow.rs` LogP+MR** — `molecule_report` now uses `logp_and_mr` instead of separate
+  `logp_crippen` + `molar_refractivity` calls (saves one full Crippen pass per report).
+- **`eccentric_connectivity_index` reuses `graph_eccentricities`** — eliminated a duplicate
+  O(n_heavy²) BFS traversal; now delegates to the shared eccentricity vector.
+- **Degree pre-computation in topological descriptors** — new `heavy_degrees(mol) -> Vec<u32>`
+  helper computes all heavy-atom degrees in one pass; `randic_index`, `zagreb_index_m1`, and
+  `zagreb_index_m2` now look up pre-computed values instead of iterating neighbors per bond.
+
+### CI
+
+- Bump `actions/setup-python` v5 → v6 (pages.yml, publish-pypi.yml)
+- Bump `actions/upload-artifact` v4 → v7 (publish-pypi.yml)
+
 ---
 
 ## [0.4.15] — 2026-06-21

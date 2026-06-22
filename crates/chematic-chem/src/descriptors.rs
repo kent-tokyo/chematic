@@ -4,13 +4,16 @@
 //! (SMILES lowercase notation) are kekulized internally where hydrogen counts
 //! are required; the caller's molecule is never mutated.
 
-use std::collections::HashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::sync::OnceLock;
 
 use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount,
 };
-use chematic_perception::find_sssr;
-use chematic_smarts::{find_matches, parse_smarts};
+use chematic_perception::{
+    RingSet, apply_aromaticity, augmented_ring_set, find_ring_families, find_sssr,
+};
+use chematic_smarts::{MatchConfig, find_matches_with_rings_and_config, parse_smarts};
 
 /// True if `idx` has a double bond to any neighbor whose atomic number equals `target_an`.
 fn has_double_bond_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> bool {
@@ -34,11 +37,13 @@ fn is_atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
     }
     for start_i in 0..nbs.len() {
         let start = nbs[start_i];
-        let targets: HashSet<AtomIdx> = nbs.iter().enumerate()
+        let targets: FxHashSet<AtomIdx> = nbs
+            .iter()
+            .enumerate()
             .filter(|(j, _)| *j != start_i)
             .map(|(_, &nb)| nb)
             .collect();
-        let mut visited = HashSet::new();
+        let mut visited = FxHashSet::default();
         visited.insert(idx);
         visited.insert(start);
         let mut queue = std::collections::VecDeque::new();
@@ -181,6 +186,9 @@ fn mono_mass(element: Element) -> f64 {
 pub fn molecular_weight(mol: &Molecule) -> f64 {
     let mut mw = 0.0f64;
     for (idx, atom) in mol.atoms() {
+        if atom.wildcard {
+            continue;
+        }
         mw += avg_mass(atom.element);
         let h = implicit_hcount(mol, idx);
         mw += h as f64 * 1.008;
@@ -200,6 +208,9 @@ pub fn molecular_weight(mol: &Molecule) -> f64 {
 pub fn exact_mass(mol: &Molecule) -> f64 {
     let mut mass = 0.0f64;
     for (idx, atom) in mol.atoms() {
+        if atom.wildcard {
+            continue;
+        }
         let m = match atom.isotope {
             Some(iso) => iso as f64,
             None => mono_mass(atom.element),
@@ -256,12 +267,7 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 /// - O with H bonded to a C=O carbon (carboxylic/ester OH).
 /// - O with H bonded to oxidized S with S=O (sulfonic/sulfonamide acid OH).
 /// - Oxidized S (degree > 2 or has S=O bonds): lone pair engaged in S=O resonance.
-pub fn hba_count(mol: &Molecule) -> usize {
-    // Pre-compute ring bond set once: used by n_adjacent_to_pi_center to apply
-    // the SMARTS !@ (non-ring) constraint — cyclic amidine/guanidine C=N bonds
-    // are ring bonds and must NOT trigger the N-exclusion rule.
-    let ring_bonds = ring_bond_indices(mol);
-
+fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
@@ -292,7 +298,7 @@ pub fn hba_count(mol: &Molecule) -> usize {
                     // NON-RING pi bond to O/N/P/S: amide, sulfonamide, phosphonamide,
                     // thioamide, etc.  Ring pi bonds (e.g. ring C=N in guanidinium)
                     // do NOT trigger the exclusion — matching SMARTS !@ semantics.
-                    !n_adjacent_to_pi_center(mol, *idx, &ring_bonds)
+                    !n_adjacent_to_pi_center(mol, *idx, ring_bonds)
                 }
             } else if is_oxygen(an) {
                 if atom.charge > 0 {
@@ -354,6 +360,10 @@ pub fn hba_count(mol: &Molecule) -> usize {
         .count()
 }
 
+pub fn hba_count(mol: &Molecule) -> usize {
+    hba_count_from_set(mol, &ring_bond_indices(mol))
+}
+
 /// True if any heavy-atom neighbor of `idx` itself carries a double bond to
 /// N, O, P, or S.  Used to exclude OH/SH groups from the HBA count when the
 /// attached heavy atom has such a π-bond (e.g. C=O, C=N, As=O, P=O, S=O).
@@ -375,7 +385,7 @@ fn has_nonring_double_bond_to(
     mol: &Molecule,
     nb_idx: AtomIdx,
     target_an: u8,
-    ring_bonds: &HashSet<BondIdx>,
+    ring_bonds: &FxHashSet<BondIdx>,
 ) -> bool {
     mol.neighbors(nb_idx).any(|(far, bidx)| {
         mol.bond(bidx).order == BondOrder::Double
@@ -393,7 +403,7 @@ fn has_nonring_double_bond_to(
 ///   P (phosphonamide), N (nitroso-adjacent), etc.
 /// - `-` includes stereo-direction bonds (`/`, `\` → `Up`/`Down`)
 /// - `=!@` means double bond that is NOT a ring bond
-fn n_adjacent_to_pi_center(mol: &Molecule, idx: AtomIdx, ring_bonds: &HashSet<BondIdx>) -> bool {
+fn n_adjacent_to_pi_center(mol: &Molecule, idx: AtomIdx, ring_bonds: &FxHashSet<BondIdx>) -> bool {
     mol.neighbors(idx).any(|(nb_idx, bidx)| {
         // Accept single, E/Z stereo, and aromatic bonds as "single-like"
         matches!(
@@ -419,12 +429,9 @@ fn n_adjacent_to_pi_center(mol: &Molecule, idx: AtomIdx, ring_bonds: &HashSet<Bo
 /// - It is not an amide bond (C–N where C has a C=O).
 /// - Neither endpoint carries a triple bond (excludes propargylic C–C in alkynes).
 /// - Neither endpoint is a cumulated-double-bond centre (excludes allene C=C=C bonds).
-pub fn rotatable_bond_count(mol: &Molecule) -> usize {
-    let ring_bond_set = ring_bond_indices(mol);
-
+fn rotatable_bond_count_from_set(mol: &Molecule, ring_bond_set: &FxHashSet<BondIdx>) -> usize {
     mol.bonds()
         .filter(|(bidx, bond)| {
-            // Stereo bonds Up/Down are also single.
             let is_single = matches!(
                 bond.order,
                 BondOrder::Single | BondOrder::Up | BondOrder::Down
@@ -442,6 +449,10 @@ pub fn rotatable_bond_count(mol: &Molecule) -> usize {
         .count()
 }
 
+pub fn rotatable_bond_count(mol: &Molecule) -> usize {
+    rotatable_bond_count_from_set(mol, &ring_bond_indices(mol))
+}
+
 /// True if atom `idx` has at least one triple bond.
 fn has_triple_bond(mol: &Molecule, idx: AtomIdx) -> bool {
     mol.neighbors(idx)
@@ -457,10 +468,10 @@ fn is_cumulated_double(mol: &Molecule, idx: AtomIdx) -> bool {
         >= 2
 }
 
-/// Indices of all bonds participating in at least one SSSR ring.
-fn ring_bond_indices(mol: &Molecule) -> HashSet<BondIdx> {
-    let mut set = HashSet::new();
-    for ring in find_sssr(mol).rings() {
+/// Build the ring-bond set from a pre-computed rings slice.
+fn ring_bond_indices_from_rings(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> FxHashSet<BondIdx> {
+    let mut set = FxHashSet::default();
+    for ring in rings {
         for i in 0..ring.len() {
             let a = ring[i];
             let b = ring[(i + 1) % ring.len()];
@@ -470,6 +481,11 @@ fn ring_bond_indices(mol: &Molecule) -> HashSet<BondIdx> {
         }
     }
     set
+}
+
+/// Indices of all bonds participating in at least one SSSR ring.
+fn ring_bond_indices(mol: &Molecule) -> FxHashSet<BondIdx> {
+    ring_bond_indices_from_rings(mol, find_sssr(mol).rings())
 }
 
 /// True if the bond between `a` and `b` is an amide-like C-N bond
@@ -503,7 +519,8 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
             // one non-Aromatic bond — methyl, phenyl via explicit single, etc.).
             // Ring-junction: 4.41 (neutral) / 4.10 (cationic).
             // N-substituted:  4.93 (neutral) / 3.88 (cationic). — calibrated from RDKit.
-            let is_ring_junction = mol.neighbors(idx)
+            let is_ring_junction = mol
+                .neighbors(idx)
                 .all(|(_, bidx)| mol.bond(bidx).order == BondOrder::Aromatic);
             if charge > 0 {
                 if is_ring_junction { 4.10 } else { 3.88 }
@@ -579,7 +596,11 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             Some(6) => 17.07,
             Some(_) => 0.0,
             None => {
-                if is_aromatic_oxide_bridge(mol, idx) { 13.14 } else { 9.23 }
+                if is_aromatic_oxide_bridge(mol, idx) {
+                    13.14
+                } else {
+                    9.23
+                }
             }
         }
     }
@@ -790,38 +811,36 @@ static CRIPPEN_SMARTS: &[(&str, f64, f64)] = &[
     ("[#72,#73,#74,#75,#76,#77,#78,#79,#80]", -0.0025, 0.000),
 ];
 
-/// Return the LogP contribution for a single atom `anchor` using the first
-/// matching entry in `CRIPPEN_SMARTS`. `queries` are pre-compiled patterns
-/// paired with their (logp, mr) values; `None` entries failed to parse.
-fn crippen_logp_for_atom(
-    mol: &Molecule,
-    anchor: AtomIdx,
-    queries: &[(Option<chematic_smarts::QueryMolecule>, f64, f64)],
-) -> f64 {
-    // Aromatic oxide bridge: O in a ring bonded to aromatic C AND sp2 C (C=C).
-    // RDKit perceives this as [o] type (logp=0.1552); plain SMARTS gives [O](a) (-0.4195).
-    let atom = mol.atom(anchor);
-    if atom.element.atomic_number() == 8
-        && !atom.aromatic
-        && implicit_hcount(mol, anchor) == 0
-        && atom.charge == 0
-        && is_aromatic_oxide_bridge(mol, anchor)
-    {
-        return 0.1552;
-    }
+type CrippenQueries = Vec<(Option<chematic_smarts::QueryMolecule>, f64, f64)>;
+static CRIPPEN_QUERIES: OnceLock<CrippenQueries> = OnceLock::new();
 
-    for (q_opt, logp, _) in queries {
-        let Some(q) = q_opt else { continue };
-        // find_matches returns Vec<HashMap<query_idx → mol_idx>>.
-        // We need the match where query atom 0 is assigned to `anchor`.
-        let matched = find_matches(q, mol)
-            .into_iter()
-            .any(|m| m.get(&0) == Some(&anchor));
-        if matched {
-            return *logp;
-        }
-    }
-    0.0
+fn get_crippen_queries() -> &'static CrippenQueries {
+    CRIPPEN_QUERIES.get_or_init(|| {
+        CRIPPEN_SMARTS
+            .iter()
+            .map(|&(sma, lp, mr)| (parse_smarts(sma).ok(), lp, mr))
+            .collect()
+    })
+}
+
+/// Pre-compute for each SMARTS pattern which target atoms satisfy query-atom-0.
+/// Amortizes VF2 cost from O(n_atoms × n_patterns) → O(n_patterns) per molecule.
+/// SSSR is computed once and shared across all 117 Crippen patterns.
+fn crippen_anchor_sets(mol: &Molecule, queries: &CrippenQueries) -> Vec<FxHashSet<AtomIdx>> {
+    let rings = find_sssr(mol);
+    let config = MatchConfig::default();
+    queries
+        .iter()
+        .map(|(q_opt, _, _)| {
+            let Some(q) = q_opt else {
+                return FxHashSet::default();
+            };
+            find_matches_with_rings_and_config(q, mol, &rings, &config)
+                .into_iter()
+                .filter_map(|m| m.get(&0).copied())
+                .collect()
+        })
+        .collect()
 }
 
 /// Wildman-Crippen LogP per-atom contributions (RDKit-compatible SMARTS dispatch).
@@ -832,15 +851,10 @@ fn crippen_logp_for_atom(
 /// handled together as in the original Wildman-Crippen definition.
 /// Index matches mol.atoms().
 pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
-    // Build explicit-H molecule so that [#1] patterns can match implicit H atoms.
-    // We compute H contributions by matching on the keyed atom and counting its
-    // implicit H atoms, then adding H-type logp × count, rather than expanding.
-    // This avoids building a new molecule and stays consistent with the rest of the
-    // descriptor code.
-    let queries: Vec<(Option<chematic_smarts::QueryMolecule>, f64, f64)> = CRIPPEN_SMARTS
-        .iter()
-        .map(|&(sma, lp, mr)| (parse_smarts(sma).ok(), lp, mr))
-        .collect();
+    let queries = get_crippen_queries();
+    // Pre-compute once per molecule: for each pattern, which atoms satisfy query-atom-0?
+    // Previously O(n_atoms × n_patterns × VF2); now O(n_patterns × VF2 + n_atoms × n_patterns).
+    let anchor_sets = crippen_anchor_sets(mol, queries);
 
     let h_fallback = CRIPPEN_SMARTS
         .iter()
@@ -851,15 +865,27 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
     mol.atoms()
         .map(|(idx, atom)| {
             if atom.element.atomic_number() == 1 {
-                return 0.0; // explicit H atoms in the graph are handled via implicit-H paths
+                return 0.0;
             }
-            // Heavy-atom contribution
-            let heavy = crippen_logp_for_atom(mol, idx, &queries);
-            // Implicit-H contribution: find H logp type by checking [#1] patterns
-            // against a synthetic single-H molecule... or use the same atom context.
-            // RDKit evaluates H patterns on the H atom itself; we approximate by
-            // looking up which H pattern would apply given the parent heavy atom's context.
+            // Compute once; reused both in the oxide-bridge check and the H contribution.
             let h_count = implicit_hcount(mol, idx);
+            // Aromatic oxide bridge: O in a ring bonded to aromatic C AND sp2 C (C=C).
+            // RDKit perceives this as [o] type (logp=0.1552); plain SMARTS gives [O](a) (-0.4195).
+            let heavy = if atom.element.atomic_number() == 8
+                && !atom.aromatic
+                && h_count == 0
+                && atom.charge == 0
+                && is_aromatic_oxide_bridge(mol, idx)
+            {
+                0.1552
+            } else {
+                anchor_sets
+                    .iter()
+                    .zip(queries.iter())
+                    .find(|(set, _)| set.contains(&idx))
+                    .map(|(_, (_, logp, _))| *logp)
+                    .unwrap_or(0.0)
+            };
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
@@ -995,24 +1021,6 @@ pub fn formal_charge_sum(mol: &Molecule) -> i32 {
 
 // ---------------------------------------------------------------------------
 // 12. Molar Refractivity (Wildman-Crippen additive model)
-//
-/// Return the MR contribution for a single heavy atom using the Crippen SMARTS table.
-fn crippen_mr_for_atom(
-    mol: &Molecule,
-    anchor: AtomIdx,
-    queries: &[(Option<chematic_smarts::QueryMolecule>, f64, f64)],
-) -> f64 {
-    for (q_opt, _, mr) in queries {
-        let Some(q) = q_opt else { continue };
-        if find_matches(q, mol)
-            .into_iter()
-            .any(|m| m.get(&0) == Some(&anchor))
-        {
-            return *mr;
-        }
-    }
-    0.0
-}
 
 /// Return the MR contribution per implicit-H attached to `parent_idx`.
 fn h_mr_for_parent(
@@ -1047,10 +1055,8 @@ fn h_mr_for_parent(
 /// reads the MR column. Results match RDKit `Crippen.MolMR()` for common molecules.
 /// H contributions are folded into the attached heavy atom. Index matches mol.atoms().
 pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
-    let queries: Vec<(Option<chematic_smarts::QueryMolecule>, f64, f64)> = CRIPPEN_SMARTS
-        .iter()
-        .map(|&(sma, lp, mr)| (parse_smarts(sma).ok(), lp, mr))
-        .collect();
+    let queries = get_crippen_queries();
+    let anchor_sets = crippen_anchor_sets(mol, queries);
 
     let h_fallback = CRIPPEN_SMARTS
         .iter()
@@ -1063,7 +1069,12 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
             if atom.element.atomic_number() == 1 {
                 return 0.0;
             }
-            let heavy = crippen_mr_for_atom(mol, idx, &queries);
+            let heavy = anchor_sets
+                .iter()
+                .zip(queries.iter())
+                .find(|(set, _)| set.contains(&idx))
+                .map(|(_, (_, _, mr))| *mr)
+                .unwrap_or(0.0);
             let h_count = implicit_hcount(mol, idx);
             let h_contrib = if h_count == 0 {
                 0.0
@@ -1087,6 +1098,84 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
 /// from Wildman & Crippen 1999 (J. Chem. Inf. Comput. Sci. 39, 868-873).
 pub fn molar_refractivity(mol: &Molecule) -> f64 {
     mr_per_atom(mol).iter().sum()
+}
+
+/// Compute both LogP and MR from a single Crippen anchor-set pass.
+///
+/// Equivalent to calling `logp_crippen(mol)` and `molar_refractivity(mol)` in
+/// sequence but shares the 117-pattern SMARTS matching (including the single SSSR
+/// computation), making it roughly 2× faster when both values are needed.
+pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
+    let queries = get_crippen_queries();
+    let anchor_sets = crippen_anchor_sets(mol, queries);
+
+    let h_logp_fallback = CRIPPEN_SMARTS
+        .iter()
+        .find(|(sma, _, _)| *sma == "[#1]")
+        .map(|e| e.1)
+        .unwrap_or(0.1125);
+    let h_mr_fallback = CRIPPEN_SMARTS
+        .iter()
+        .find(|(sma, _, _)| *sma == "[#1]")
+        .map(|e| e.2)
+        .unwrap_or(1.112);
+
+    let mut logp_sum = 0.0f64;
+    let mut mr_sum = 0.0f64;
+
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() == 1 {
+            continue;
+        }
+        let h_count = implicit_hcount(mol, idx);
+
+        // LogP heavy-atom contribution
+        let logp_heavy = if atom.element.atomic_number() == 8
+            && !atom.aromatic
+            && h_count == 0
+            && atom.charge == 0
+            && is_aromatic_oxide_bridge(mol, idx)
+        {
+            0.1552
+        } else {
+            anchor_sets
+                .iter()
+                .zip(queries.iter())
+                .find(|(set, _)| set.contains(&idx))
+                .map(|(_, (_, lp, _))| *lp)
+                .unwrap_or(0.0)
+        };
+
+        // MR heavy-atom contribution
+        let mr_heavy = anchor_sets
+            .iter()
+            .zip(queries.iter())
+            .find(|(set, _)| set.contains(&idx))
+            .map(|(_, (_, _, mr))| *mr)
+            .unwrap_or(0.0);
+
+        logp_sum += logp_heavy;
+        mr_sum += mr_heavy;
+
+        if h_count > 0 {
+            logp_sum += h_logp_for_parent(
+                mol,
+                idx,
+                atom.element.atomic_number(),
+                atom.aromatic,
+                h_logp_fallback,
+            ) * h_count as f64;
+            mr_sum += h_mr_for_parent(
+                mol,
+                idx,
+                atom.element.atomic_number(),
+                atom.aromatic,
+                h_mr_fallback,
+            ) * h_count as f64;
+        }
+    }
+
+    (logp_sum, mr_sum)
 }
 
 // ---------------------------------------------------------------------------
@@ -1248,19 +1337,20 @@ pub fn num_saturated_heterocycles(mol: &Molecule) -> usize {
 ///
 /// A spiro atom belongs to exactly 2 rings and is the sole shared atom between them.
 /// Example: spiro[4.5]decane (`C1CCCCC11CCCC1`) has 1 spiro atom.
-pub fn num_spiro_atoms(mol: &Molecule) -> usize {
-    let sssr = find_sssr(mol);
-    let rings = sssr.rings();
+fn num_spiro_atoms_from(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
     mol.atoms()
         .filter(|(idx, _)| {
             let member: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
             if member.len() != 2 {
                 return false;
             }
-            // Spiro: the two rings share exactly this one atom (no shared bond = not fused).
             member[0].iter().filter(|a| member[1].contains(a)).count() == 1
         })
         .count()
+}
+
+pub fn num_spiro_atoms(mol: &Molecule) -> usize {
+    num_spiro_atoms_from(mol, find_sssr(mol).rings())
 }
 
 /// Number of bridgehead atoms.
@@ -1272,8 +1362,7 @@ pub fn num_spiro_atoms(mol: &Molecule) -> usize {
 /// Example: norbornane (`C1CC2CCC1C2`) has 2 bridgehead atoms.
 /// Naphthalene has 0 (the junction atoms are fused — directly bonded to each other).
 /// Spiro[4.5]decane has 0 (the spiro center is not bridged).
-pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
-    let sssr = find_sssr(mol);
+fn num_bridgehead_atoms_from(mol: &Molecule, sssr: &RingSet) -> usize {
     let rings = sssr.rings();
     mol.atoms()
         .filter(|(idx, _)| {
@@ -1288,7 +1377,7 @@ pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
                 return false;
             }
             let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
-            let ring_sets: Vec<HashSet<AtomIdx>> = member_rings
+            let ring_sets: Vec<FxHashSet<AtomIdx>> = member_rings
                 .iter()
                 .map(|r| r.iter().copied().collect())
                 .collect();
@@ -1314,6 +1403,135 @@ pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
             false
         })
         .count()
+}
+
+pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
+    num_bridgehead_atoms_from(mol, &find_sssr(mol))
+}
+
+// ---------------------------------------------------------------------------
+// Ring descriptor bundle — find_sssr called exactly once
+// ---------------------------------------------------------------------------
+
+/// All ring-derived descriptor values for a molecule, computed with a single `find_sssr` call.
+///
+/// Use [`ring_bundle`] to obtain this struct. Individual descriptor functions remain
+/// available for single-value use but each re-invoke `find_sssr` independently.
+#[derive(Debug, Clone)]
+pub struct RingBundle {
+    pub ring_count: usize,
+    pub ring_system_count: usize,
+    pub aromatic_ring_count: usize,
+    pub num_aliphatic_rings: usize,
+    pub num_saturated_rings: usize,
+    pub num_aromatic_heterocycles: usize,
+    pub num_aliphatic_heterocycles: usize,
+    pub num_saturated_heterocycles: usize,
+    pub num_spiro_atoms: usize,
+    pub num_bridgehead_atoms: usize,
+    pub rotatable_bond_count: usize,
+    pub hba_count: usize,
+    pub fraction_rotatable_bonds: f64,
+}
+
+/// Compute all ring-derived descriptors with a single `find_sssr` call.
+///
+/// When `mol.descriptors()` or `molecule_report()` needs multiple ring values,
+/// call this once and read fields — saves ~10-15 redundant SSSR computations per molecule.
+pub fn ring_bundle(mol: &Molecule) -> RingBundle {
+    let sssr = find_sssr(mol);
+    let rings = sssr.rings();
+
+    let ring_bonds = ring_bond_indices_from_rings(mol, rings);
+
+    // Aromatic ring count: for Kekulé input, perceive aromaticity (same topology as sssr).
+    let aromatic_ring_count = {
+        let mol_arom;
+        let mol_a = if mol.atoms().any(|(_, a)| a.aromatic) {
+            mol
+        } else {
+            mol_arom = apply_aromaticity(mol);
+            &mol_arom
+        };
+        // augmented_ring_set takes &[Vec<AtomIdx>] — topology is unchanged by apply_aromaticity.
+        let aug = augmented_ring_set(mol_a, rings);
+        aug.iter()
+            .filter(|r| r.iter().all(|&i| mol_a.atom(i).aromatic))
+            .count()
+    };
+
+    let rotatable_bond_count = rotatable_bond_count_from_set(mol, &ring_bonds);
+    let hba_count = hba_count_from_set(mol, &ring_bonds);
+    let hac = heavy_atom_count(mol);
+    let fraction_rotatable_bonds = if hac == 0 {
+        0.0
+    } else {
+        rotatable_bond_count as f64 / hac as f64
+    };
+
+    RingBundle {
+        ring_count: rings.len(),
+        ring_system_count: find_ring_families(mol, &sssr).len(),
+        aromatic_ring_count,
+        num_aliphatic_rings: rings
+            .iter()
+            .filter(|r| r.iter().any(|&i| !mol.atom(i).aromatic))
+            .count(),
+        num_saturated_rings: rings
+            .iter()
+            .filter(|r| {
+                r.iter().all(|&i| {
+                    mol.neighbors(i).all(|(_, b)| {
+                        !matches!(
+                            mol.bond(b).order,
+                            BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic
+                        )
+                    })
+                })
+            })
+            .count(),
+        num_aromatic_heterocycles: rings
+            .iter()
+            .filter(|r| {
+                r.iter().all(|&i| mol.atom(i).aromatic)
+                    && r.iter().any(|&i| {
+                        let an = mol.atom(i).element.atomic_number();
+                        an != 6 && an != 1
+                    })
+            })
+            .count(),
+        num_aliphatic_heterocycles: rings
+            .iter()
+            .filter(|r| {
+                r.iter().any(|&i| !mol.atom(i).aromatic)
+                    && r.iter().any(|&i| {
+                        let an = mol.atom(i).element.atomic_number();
+                        an != 6 && an != 1
+                    })
+            })
+            .count(),
+        num_saturated_heterocycles: rings
+            .iter()
+            .filter(|r| {
+                r.iter().all(|&i| {
+                    mol.neighbors(i).all(|(_, b)| {
+                        !matches!(
+                            mol.bond(b).order,
+                            BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic
+                        )
+                    })
+                }) && r.iter().any(|&i| {
+                    let an = mol.atom(i).element.atomic_number();
+                    an != 6 && an != 1
+                })
+            })
+            .count(),
+        num_spiro_atoms: num_spiro_atoms_from(mol, rings),
+        num_bridgehead_atoms: num_bridgehead_atoms_from(mol, &sssr),
+        rotatable_bond_count,
+        hba_count,
+        fraction_rotatable_bonds,
+    }
 }
 
 /// Number of assigned stereocenters (tetrahedral R/S from CIP assignment).
@@ -1495,11 +1713,12 @@ pub fn cns_mpo_score(mol: &Molecule) -> f64 {
         }
     }
 
-    // cLogP: optimal ≤ 3, zero ≥ 5
-    let d_logp = linear_desirability(logp_crippen(mol), 3.0, 5.0);
+    // Compute LogP once; reuse it for LogD to avoid double Crippen matching.
+    let logp = logp_crippen(mol);
+    let d_logp = linear_desirability(logp, 3.0, 5.0);
 
     // cLogD pH 7.4: optimal ≤ 2, zero ≥ 4
-    let d_logd = linear_desirability(crate::logd::logd_simple(mol, 7.4), 2.0, 4.0);
+    let d_logd = linear_desirability(crate::logd::logd_from_logp(logp, mol, 7.4), 2.0, 4.0);
 
     // MW: optimal ≤ 360, zero ≥ 500
     let d_mw = linear_desirability(molecular_weight(mol), 360.0, 500.0);
@@ -1686,7 +1905,7 @@ pub fn mqn(mol: &Molecule) -> Vec<u8> {
     mqn_bond_counts(mol, &mut m);
     let ring_set = find_sssr(mol);
     let rings = ring_set.rings();
-    let ring_sets: Vec<HashSet<AtomIdx>> =
+    let ring_sets: Vec<FxHashSet<AtomIdx>> =
         rings.iter().map(|r| r.iter().copied().collect()).collect();
     mqn_ring_stats(mol, rings, &mut m);
     mqn_degree_stats(mol, &mut m);
@@ -1825,7 +2044,7 @@ fn mqn_heteroatom_stats(mol: &Molecule, m: &mut [u8]) {
 fn mqn_topology_stats(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
-    ring_sets: &[HashSet<AtomIdx>],
+    ring_sets: &[FxHashSet<AtomIdx>],
     m: &mut [u8],
 ) {
     // 38: sp3 carbons
@@ -1961,7 +2180,11 @@ pub fn moran_autocorr(mol: &Molecule) -> Vec<f64> {
                     }
                 }
             }
-            if w == 0 { 0.0 } else { (n as f64 / w as f64) * numer / denom }
+            if w == 0 {
+                0.0
+            } else {
+                (n as f64 / w as f64) * numer / denom
+            }
         })
         .collect()
 }
@@ -2486,7 +2709,6 @@ pub struct InformationContent {
 
 /// Compute the Information Content descriptor family (IC, TIC, SIC, BIC, CIC).
 pub fn information_content(mol: &Molecule) -> InformationContent {
-    use std::collections::HashMap;
     let heavy: Vec<_> = mol
         .atoms()
         .filter(|(_, a)| a.element.atomic_number() != 1)
@@ -2496,13 +2718,15 @@ pub fn information_content(mol: &Molecule) -> InformationContent {
         return InformationContent::default();
     }
     // Vertex invariant: (atomic_number, heavy_degree)
-    let mut counts: HashMap<(u8, u32), usize> = HashMap::new();
+    let mut counts: FxHashMap<(u8, u32), usize> = FxHashMap::default();
     for (idx, atom) in &heavy {
         let deg = mol
             .neighbors(*idx)
             .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() != 1)
             .count() as u32;
-        *counts.entry((atom.element.atomic_number(), deg)).or_insert(0) += 1;
+        *counts
+            .entry((atom.element.atomic_number(), deg))
+            .or_insert(0) += 1;
     }
     let n_f = n as f64;
     let ic: f64 = counts
@@ -2558,7 +2782,7 @@ pub fn mde_carbon(mol: &Molecule) -> [f64; 10] {
     }
     let dist = crate::topo_descriptors::topological_distance_matrix(mol);
     // Map original AtomIdx → row in distance matrix (heavy-atom order).
-    let heavy_pos: std::collections::HashMap<u32, usize> = heavy
+    let heavy_pos: FxHashMap<u32, usize> = heavy
         .iter()
         .enumerate()
         .map(|(p, &idx)| (idx.0, p))
@@ -2695,13 +2919,24 @@ pub fn bcut2d(mol: &Molecule) -> Bcut2D {
     let (logphi, logplo) = compute(&props[1]);
     let (mrhi, mrlo) = compute(&props[2]);
     let (mwhi, mwlo) = compute(&props[3]);
-    Bcut2D { chghi, chglo, logphi, logplo, mrhi, mrlo, mwhi, mwlo }
+    Bcut2D {
+        chghi,
+        chglo,
+        logphi,
+        logplo,
+        mrhi,
+        mrlo,
+        mwhi,
+        mwlo,
+    }
 }
 
 /// Power iteration → largest eigenvalue of symmetric matrix.
 fn burden_max_eigenvalue(mat: &[Vec<f64>]) -> f64 {
     let n = mat.len();
-    if n == 0 { return 0.0; }
+    if n == 0 {
+        return 0.0;
+    }
     let mut v = vec![1.0_f64 / (n as f64).sqrt(); n];
     for _ in 0..150 {
         let mut av: Vec<f64> = vec![0.0; n];
@@ -2711,8 +2946,12 @@ fn burden_max_eigenvalue(mat: &[Vec<f64>]) -> f64 {
             }
         }
         let norm: f64 = av.iter().map(|&x| x * x).sum::<f64>().sqrt();
-        if norm < 1e-14 { return 0.0; }
-        for i in 0..n { v[i] = av[i] / norm; }
+        if norm < 1e-14 {
+            return 0.0;
+        }
+        for i in 0..n {
+            v[i] = av[i] / norm;
+        }
     }
     // Rayleigh quotient
     (0..n)
@@ -2723,7 +2962,10 @@ fn burden_max_eigenvalue(mat: &[Vec<f64>]) -> f64 {
 /// Smallest eigenvalue via max eigenvalue of negated matrix.
 /// Valid for symmetric real matrices: min_eig(A) = −max_eig(−A).
 fn burden_min_eigenvalue(mat: &[Vec<f64>]) -> f64 {
-    let neg: Vec<Vec<f64>> = mat.iter().map(|row| row.iter().map(|&x| -x).collect()).collect();
+    let neg: Vec<Vec<f64>> = mat
+        .iter()
+        .map(|row| row.iter().map(|&x| -x).collect())
+        .collect();
     -burden_max_eigenvalue(&neg)
 }
 
@@ -3235,7 +3477,9 @@ mod tests {
     #[test]
     fn test_arc_bench_steroid_benzene() {
         // rd=1 ch=0: complex steroid scaffold with one phenyl ring
-        let m = mol("CC1=C2C[C@@]3(C)C[C@H](O)[C@](C)(C[C@H](O)[C@H](O)[C@@](C)(O)CO)[C@H]3c3ccc(C)c(c32)C1");
+        let m = mol(
+            "CC1=C2C[C@@]3(C)C[C@H](O)[C@](C)(C[C@H](O)[C@H](O)[C@@](C)(O)CO)[C@H]3c3ccc(C)c(c32)C1",
+        );
         assert_eq!(aromatic_ring_count(&m), 1);
     }
 
@@ -4216,13 +4460,19 @@ mod tests {
     fn geary_finite_for_mixed_molecule() {
         // Ethanol CCO has mixed valence atoms — all values must be finite
         let v = geary_autocorr(&mol("CCO"));
-        assert!(v.iter().all(|x| x.is_finite()), "all Geary values must be finite: {v:?}");
+        assert!(
+            v.iter().all(|x| x.is_finite()),
+            "all Geary values must be finite: {v:?}"
+        );
     }
 
     #[test]
     fn moran_finite_for_mixed_molecule() {
         let v = moran_autocorr(&mol("CCO"));
-        assert!(v.iter().all(|x| x.is_finite()), "all Moran values must be finite: {v:?}");
+        assert!(
+            v.iter().all(|x| x.is_finite()),
+            "all Moran values must be finite: {v:?}"
+        );
     }
 
     // ── CarbonTypes ──────────────────────────────────────────────────────────
@@ -4231,7 +4481,11 @@ mod tests {
     fn carbon_types_methane() {
         // methane C: sp3 with 0 heavy neighbors — none of the CxSPy bins (deg must be ≥1)
         let ct = carbon_types(&mol("C"));
-        assert_eq!(ct.c1sp3 + ct.c2sp3 + ct.c3sp3, 0, "isolated methane C has deg=0, not counted");
+        assert_eq!(
+            ct.c1sp3 + ct.c2sp3 + ct.c3sp3,
+            0,
+            "isolated methane C has deg=0, not counted"
+        );
     }
 
     #[test]
@@ -4270,14 +4524,21 @@ mod tests {
     fn information_content_benzene_zero_ic() {
         // All 6 C in benzene are equivalent (same element + same degree) → IC=0
         let ic = information_content(&mol("c1ccccc1"));
-        assert!(ic.ic.abs() < 1e-9, "benzene: IC must be 0 (fully symmetric), got {}", ic.ic);
+        assert!(
+            ic.ic.abs() < 1e-9,
+            "benzene: IC must be 0 (fully symmetric), got {}",
+            ic.ic
+        );
         assert!(ic.sic.abs() < 1e-9, "benzene: SIC must be 0");
     }
 
     #[test]
     fn information_content_propane_nonzero() {
         let ic = information_content(&mol("CCC"));
-        assert!(ic.ic > 0.5, "propane: IC must be > 0 (two symmetry classes)");
+        assert!(
+            ic.ic > 0.5,
+            "propane: IC must be > 0 (two symmetry classes)"
+        );
         assert!(ic.tic > 0.0);
         assert!(ic.ic.is_finite() && ic.tic.is_finite());
     }
@@ -4298,7 +4559,11 @@ mod tests {
         // MDEC11 = 1/sqrt(2) between the two primary C (distance 2 bonds)
         let v = mde_carbon(&mol("CCC"));
         let expected = 1.0 / (2.0_f64).sqrt();
-        assert!((v[0] - expected).abs() < 1e-6, "MDEC11 for propane: expected {expected:.4}, got {:.4}", v[0]);
+        assert!(
+            (v[0] - expected).abs() < 1e-6,
+            "MDEC11 for propane: expected {expected:.4}, got {:.4}",
+            v[0]
+        );
     }
 
     #[test]
@@ -4321,8 +4586,13 @@ mod tests {
     #[test]
     fn bcut2d_all_finite() {
         let b = bcut2d(&mol("CC(=O)Nc1ccccc1C(=O)O")); // 4-aminobenzoic acid derivative
-        let vals = [b.chghi, b.chglo, b.logphi, b.logplo, b.mrhi, b.mrlo, b.mwhi, b.mwlo];
-        assert!(vals.iter().all(|v| v.is_finite()), "all BCUT2D values must be finite: {vals:?}");
+        let vals = [
+            b.chghi, b.chglo, b.logphi, b.logplo, b.mrhi, b.mrlo, b.mwhi, b.mwlo,
+        ];
+        assert!(
+            vals.iter().all(|v| v.is_finite()),
+            "all BCUT2D values must be finite: {vals:?}"
+        );
     }
 
     #[test]
@@ -4330,5 +4600,35 @@ mod tests {
         // H-only molecule → no heavy atoms → default struct
         let b = bcut2d(&mol("[H][H]"));
         assert_eq!(b.mwhi, 0.0);
+    }
+
+    #[test]
+    fn logp_and_mr_matches_individual_functions() {
+        // Verify logp_and_mr() returns identical values to logp_crippen() + molar_refractivity()
+        // on a diverse set of molecules.
+        let smiles = [
+            "C",                                // methane
+            "c1ccccc1",                         // benzene
+            "CC(=O)Oc1ccccc1C(=O)O",            // aspirin
+            "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",     // caffeine
+            "c1ccc2c(c1)cc1ccc3cccc4ccc2c1c34", // pyrene (PAH)
+            "O=C(O)c1ccccc1O",                  // salicylic acid
+            "CCO",                              // ethanol
+            "CC(N)Cc1ccccc1",                   // phenylalanine
+        ];
+        for smi in smiles {
+            let m = mol(smi);
+            let expected_logp = logp_crippen(&m);
+            let expected_mr = molar_refractivity(&m);
+            let (got_logp, got_mr) = logp_and_mr(&m);
+            assert!(
+                (expected_logp - got_logp).abs() < 1e-9,
+                "{smi}: logp_crippen={expected_logp:.6} vs logp_and_mr.0={got_logp:.6}"
+            );
+            assert!(
+                (expected_mr - got_mr).abs() < 1e-9,
+                "{smi}: molar_refractivity={expected_mr:.6} vs logp_and_mr.1={got_mr:.6}"
+            );
+        }
     }
 }

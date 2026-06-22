@@ -1151,10 +1151,18 @@ M  V30 END COLLECTION\nM  V30 END CTAB\nM  END\n";
         );
         // Atom 1 should appear only ONCE (deduplicated), plus atom 2.
         assert_eq!(
-            group.atom_indices.len(), 2,
-            "duplicate atom index must be removed: got {:?}", group.atom_indices
+            group.atom_indices.len(),
+            2,
+            "duplicate atom index must be removed: got {:?}",
+            group.atom_indices
         );
-        assert!(group.atom_indices.contains(&AtomIdx(0)), "atom 0 must be in group");
-        assert!(group.atom_indices.contains(&AtomIdx(1)), "atom 1 must be in group");
+        assert!(
+            group.atom_indices.contains(&AtomIdx(0)),
+            "atom 0 must be in group"
+        );
+        assert!(
+            group.atom_indices.contains(&AtomIdx(1)),
+            "atom 1 must be in group"
+        );
     }
 }

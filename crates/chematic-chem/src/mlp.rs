@@ -81,8 +81,7 @@ pub fn mlp_solubility(mol: &Molecule) -> f64 {
     #[cfg(feature = "trained-solubility-mlp")]
     {
         let fp = ecfp4(mol);
-        let (w, b) = WEIGHTS
-            .get_or_init(|| (f32_from_bytes(W1_BYTES), f32_from_bytes(B1_BYTES)));
+        let (w, b) = WEIGHTS.get_or_init(|| (f32_from_bytes(W1_BYTES), f32_from_bytes(B1_BYTES)));
 
         if w.len() != 2048 || b.is_empty() {
             return crate::esol::esol_solubility(mol);
@@ -136,7 +135,10 @@ mod tests {
         for smi in ["c1ccccc1", "CCO", "CC(=O)Oc1ccccc1C(=O)O", "CCCCCCCC"] {
             let s = logs(smi);
             assert!(s.is_finite(), "logS must be finite for {smi}");
-            assert!(s > -15.0 && s < 5.0, "logS={s:.2} out of plausible range for {smi}");
+            assert!(
+                s > -15.0 && s < 5.0,
+                "logS={s:.2} out of plausible range for {smi}"
+            );
         }
     }
 

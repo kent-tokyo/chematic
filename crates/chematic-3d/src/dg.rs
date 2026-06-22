@@ -317,7 +317,11 @@ fn place_rings(
             let x = ring_cx + r * angle.cos();
             let y = ring_cy + r * angle.sin();
             // Crown conformation: alternate atoms above/below the XY plane.
-            let z = if k % 2 == 0 { macrocycle_z_half } else { -macrocycle_z_half };
+            let z = if k % 2 == 0 {
+                macrocycle_z_half
+            } else {
+                -macrocycle_z_half
+            };
             coords.set(atom_idx, Point3::new(x, y, z));
             placed[atom_idx.0 as usize] = true;
         }
@@ -511,7 +515,10 @@ mod tests {
             .collect();
         let z_spread = z_vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max)
             - z_vals.iter().cloned().fold(f64::INFINITY, f64::min);
-        assert!(z_spread > 0.1, "8-ring should have non-planar initial geometry, z_spread={z_spread}");
+        assert!(
+            z_spread > 0.1,
+            "8-ring should have non-planar initial geometry, z_spread={z_spread}"
+        );
     }
 
     #[test]
@@ -522,7 +529,10 @@ mod tests {
         let z_spread = (0..mol.atom_count())
             .map(|i| coords.get(AtomIdx(i as u32)).z.abs())
             .fold(0.0f64, f64::max);
-        assert!(z_spread < 1e-9, "6-ring should remain planar, z_spread={z_spread}");
+        assert!(
+            z_spread < 1e-9,
+            "6-ring should remain planar, z_spread={z_spread}"
+        );
     }
 
     #[test]

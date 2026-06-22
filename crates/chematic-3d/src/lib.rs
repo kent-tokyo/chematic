@@ -43,7 +43,7 @@ pub use determine_bonds::{
 // Note: ConformerConfig is defined in lib.rs and exported here
 pub use coords::{Coords3D, Point3};
 pub use descriptors_3d::{
-    autocorr_3d, getaway_descriptors, whim_descriptors, whim_getaway_combined,
+    autocorr_3d, getaway_descriptors, rdf_descriptors, whim_descriptors, whim_getaway_combined,
 };
 pub use dg::generate_coords;
 pub use etkdg::generate_coords_etkdg;
@@ -153,11 +153,14 @@ pub fn generate_conformer_ensemble(
     mol: chematic_core::Molecule,
     count: usize,
 ) -> Result<ConformerEnsemble, ConformerError> {
-    generate_conformer_ensemble_with_config(mol, &ConformerConfig {
-        count,
-        rmsd_threshold: 0.0, // No pruning for backward compatibility
-        ..ConformerConfig::default()
-    })
+    generate_conformer_ensemble_with_config(
+        mol,
+        &ConformerConfig {
+            count,
+            rmsd_threshold: 0.0, // No pruning for backward compatibility
+            ..ConformerConfig::default()
+        },
+    )
 }
 
 /// Generate multiple conformers with force-field minimization and Kabsch-RMSD pruning.
@@ -179,7 +182,11 @@ pub fn generate_conformer_ensemble_with_config(
     }
 
     let mut ensemble = ConformerEnsemble::new(mol);
-    let noise_sigma = if config.count > 1 { config.noise_sigma_deg } else { 0.0 };
+    let noise_sigma = if config.count > 1 {
+        config.noise_sigma_deg
+    } else {
+        0.0
+    };
 
     for _ in 0..config.count {
         let coords = etkdg::generate_coords_etkdg_with_noise(ensemble.mol(), noise_sigma);
@@ -741,8 +748,7 @@ mod tests {
             force_field: ConformerForceField::Dreiding,
             noise_sigma_deg: 30.0,
         };
-        let ensemble =
-            generate_conformer_ensemble_with_config(mol, &config).expect("ensemble ok");
+        let ensemble = generate_conformer_ensemble_with_config(mol, &config).expect("ensemble ok");
         // Hexane has 3 rotatable bonds; 10 attempts with Gaussian noise should yield ≥2 unique conformers.
         assert!(
             ensemble.conformer_count() >= 2,

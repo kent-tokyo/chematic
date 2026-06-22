@@ -495,12 +495,18 @@ impl<'a> Parser<'a> {
             // `a` — any aromatic atom (standalone shorthand, equivalent to `[a]`).
             Some(b'a') => {
                 self.advance();
-                Ok(Some((AtomQuery::Primitive(AtomPrimitive::Aromatic(true)), None)))
+                Ok(Some((
+                    AtomQuery::Primitive(AtomPrimitive::Aromatic(true)),
+                    None,
+                )))
             }
             // `A` — any aliphatic atom (standalone shorthand, equivalent to `[A]`).
             Some(b'A') => {
                 self.advance();
-                Ok(Some((AtomQuery::Primitive(AtomPrimitive::Aromatic(false)), None)))
+                Ok(Some((
+                    AtomQuery::Primitive(AtomPrimitive::Aromatic(false)),
+                    None,
+                )))
             }
             // Organic-subset atoms (uppercase aliphatic).
             Some(b'B') | Some(b'C') | Some(b'N') | Some(b'O') | Some(b'P') | Some(b'S')

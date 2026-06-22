@@ -20,8 +20,7 @@ use chematic_core::Molecule;
 use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
 
 use crate::descriptors::{
-    aromatic_ring_count, hba_count, hbd_count, logp_crippen, molecular_weight,
-    rotatable_bond_count, tpsa,
+    RingBundle, hbd_count, logp_crippen, molecular_weight, ring_bundle, tpsa,
 };
 
 /// ADS (Asymmetric Double Sigmoidal) desirability function from Bickerton 2012.
@@ -255,6 +254,17 @@ fn structural_alert_count(mol: &Molecule) -> usize {
         .count()
 }
 
+fn qed_compute(props: [f64; 8]) -> f64 {
+    let mut t = 0.0_f64;
+    for (i, &pi) in props.iter().enumerate() {
+        let (a, b, c, d, e, f, dmax) = ADS_PARAMS[i];
+        let d_i = ads(pi, a, b, c, d, e, f, dmax).max(1e-10);
+        t += WEIGHTS_MEAN[i] * d_i.ln();
+    }
+    let w_sum: f64 = WEIGHTS_MEAN.iter().sum();
+    (t / w_sum).exp()
+}
+
 /// Compute the QED (Quantitative Estimate of Druglikeness) score.
 ///
 /// Returns a value in `[0, 1]` where higher is more drug-like.
@@ -270,25 +280,21 @@ fn structural_alert_count(mol: &Molecule) -> usize {
 /// assert!(score > 0.4 && score < 0.7, "aspirin QED={score:.3}");
 /// ```
 pub fn qed(mol: &Molecule) -> f64 {
-    let props: [f64; 8] = [
+    qed_with_bundle(mol, &ring_bundle(mol))
+}
+
+/// QED with pre-computed ring values from [`ring_bundle`] — avoids 3 redundant `find_sssr` calls.
+pub fn qed_with_bundle(mol: &Molecule, rb: &RingBundle) -> f64 {
+    qed_compute([
         molecular_weight(mol),
         logp_crippen(mol),
-        hba_count(mol) as f64,
+        rb.hba_count as f64,
         hbd_count(mol) as f64,
         tpsa(mol),
-        rotatable_bond_count(mol) as f64,
-        aromatic_ring_count(mol) as f64,
+        rb.rotatable_bond_count as f64,
+        rb.aromatic_ring_count as f64,
         structural_alert_count(mol) as f64,
-    ];
-
-    let mut t = 0.0_f64;
-    for (i, &pi) in props.iter().enumerate() {
-        let (a, b, c, d, e, f, dmax) = ADS_PARAMS[i];
-        let d_i = ads(pi, a, b, c, d, e, f, dmax).max(1e-10);
-        t += WEIGHTS_MEAN[i] * d_i.ln();
-    }
-    let w_sum: f64 = WEIGHTS_MEAN.iter().sum();
-    (t / w_sum).exp()
+    ])
 }
 
 #[cfg(test)]

@@ -172,7 +172,8 @@ fn parse_atom_coords(
         let raw_sym = parts[0].trim_end_matches(|c: char| c.is_ascii_digit());
         let elem = if raw_sym.is_empty() {
             // Bare atomic number (e.g. "6" for carbon — valid Gaussian input).
-            let atomic_num: u8 = parts[0].parse()
+            let atomic_num: u8 = parts[0]
+                .parse()
                 .map_err(|_| GaussianError::UnknownElement(parts[0].to_string()))?;
             Element::from_atomic_number(atomic_num)
                 .ok_or_else(|| GaussianError::UnknownElement(parts[0].to_string()))?
@@ -181,9 +182,15 @@ fn parse_atom_coords(
                 .ok_or_else(|| GaussianError::UnknownElement(raw_sym.to_string()))?
         };
 
-        let x: f64 = parts[1].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[1].to_string()))?;
-        let y: f64 = parts[2].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[2].to_string()))?;
-        let z: f64 = parts[3].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[3].to_string()))?;
+        let x: f64 = parts[1]
+            .parse()
+            .map_err(|_| GaussianError::InvalidCoordinate(parts[1].to_string()))?;
+        let y: f64 = parts[2]
+            .parse()
+            .map_err(|_| GaussianError::InvalidCoordinate(parts[2].to_string()))?;
+        let z: f64 = parts[3]
+            .parse()
+            .map_err(|_| GaussianError::InvalidCoordinate(parts[3].to_string()))?;
 
         builder.add_atom(Atom::new(elem));
         coords.push((x, y, z));
@@ -212,7 +219,11 @@ pub fn write_gjf(
     method: &str,
     title: &str,
 ) -> String {
-    let method = if method.is_empty() { "B3LYP/6-31G* opt" } else { method };
+    let method = if method.is_empty() {
+        "B3LYP/6-31G* opt"
+    } else {
+        method
+    };
     let title = if title.is_empty() { "chematic" } else { title };
 
     let mut out = format!("# {method}\n\n{title}\n\n{charge} {multiplicity}\n");
@@ -271,17 +282,23 @@ pub fn parse_gaussian_log(input: &str) -> Result<GaussianLogResult, GaussianErro
         let parts: Vec<&str> = trimmed.split_whitespace().collect();
         let (an_col, x_col) = match parts.len() {
             n if n >= 6 => (1, 3), // standard 6-column format
-            5           => (1, 2), // Gaussian 03 5-column format (no Atomic_Type)
-            _           => continue,
+            5 => (1, 2),           // Gaussian 03 5-column format (no Atomic_Type)
+            _ => continue,
         };
         let atomic_num: u8 = parts[an_col]
             .parse()
             .map_err(|_| GaussianError::UnknownElement(parts[an_col].to_string()))?;
         let elem = Element::from_atomic_number(atomic_num)
             .ok_or_else(|| GaussianError::UnknownElement(parts[an_col].to_string()))?;
-        let x: f64 = parts[x_col].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[x_col].to_string()))?;
-        let y: f64 = parts[x_col+1].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[x_col+1].to_string()))?;
-        let z: f64 = parts[x_col+2].parse().map_err(|_| GaussianError::InvalidCoordinate(parts[x_col+2].to_string()))?;
+        let x: f64 = parts[x_col]
+            .parse()
+            .map_err(|_| GaussianError::InvalidCoordinate(parts[x_col].to_string()))?;
+        let y: f64 = parts[x_col + 1]
+            .parse()
+            .map_err(|_| GaussianError::InvalidCoordinate(parts[x_col + 1].to_string()))?;
+        let z: f64 = parts[x_col + 2]
+            .parse()
+            .map_err(|_| GaussianError::InvalidCoordinate(parts[x_col + 2].to_string()))?;
 
         builder.add_atom(Atom::new(elem));
         coords.push((x, y, z));
@@ -374,7 +391,8 @@ H   2.028000   1.604000   0.886000
 
     #[test]
     fn parse_gjf_charged_molecule() {
-        let gjf = "# HF/STO-3G\n\nwater cation\n\n1 2\nO 0.0 0.0 0.0\nH 0.96 0.0 0.0\nH -0.24 0.93 0.0\n";
+        let gjf =
+            "# HF/STO-3G\n\nwater cation\n\n1 2\nO 0.0 0.0 0.0\nH 0.96 0.0 0.0\nH -0.24 0.93 0.0\n";
         let (mol, _, charge, mult) = parse_gjf(gjf).unwrap();
         assert_eq!(mol.atom_count(), 3);
         assert_eq!(charge, 1);

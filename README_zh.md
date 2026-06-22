@@ -51,9 +51,9 @@ WASM 层提供 100 余个函数，涵盖描述符、指纹、骨架分析、立�
 
 ## 当前状态
 
-所有阶段已完成 + **v0.4.x 系列**：PyO3 Python 绑定、MCP 15 工具、MMFF94/UFF 力场、逆合成 `retro_disconnect()`（60 个 retro-SMIRKS）、描述符精度提升（TPSA ±1.0 Å²/LogP ±0.3/HBD 100%）— **211 个测试，全部通过。零 C/C++ 依赖（默认构建）。**
+所有阶段已完成 + **v0.4.x 系列**：PyO3 Python 绑定、MCP 15 工具、MMFF94/UFF 力场、逆合成 `retro_disconnect()`（60 个 retro-SMIRKS）、描述符精度提升（TPSA ±0.1 Å²/LogP ±0.3/HBD 100%）— **2275 个测试，全部通过。零 C/C++ 依赖（默认构建）。**
 
-最新版本：**v0.4.14**（2026-06-21）— v0.4.13: `retro_disconnect()` 60 retro-SMIRKS、ETKDG 40 扭转模式、TPSA/LogP/HBD 精度修复 | v0.4.12: SMARTS 原子映射 `:N` | v0.4.11: 芳香环计数 ~100% RDKit 一致性 | v0.4.10: Python 绑定 50+
+最新版本：**v0.4.15**（2026-06-21）— **[Unreleased]**: SMARTS 匹配 SSSR 共享（Crippen 117→1、PAINS ~480→1）; `logp_and_mr()` / `logd_from_logp()` / `find_matches_with_rings` 新 API | v0.4.14: TPSA ±0.1 Å²、HBA/HBD/芳香环 5k-mol 100%、E/Z 立体 SMIRKS | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS | v0.4.12: SMARTS 原子映射 `:N` | v0.4.11: 芳香环计数 ~100% RDKit 一致性
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|

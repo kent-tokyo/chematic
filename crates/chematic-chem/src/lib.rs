@@ -12,13 +12,14 @@ pub mod alerts;
 pub mod atropisomer;
 pub mod brics;
 pub mod cache;
+pub mod canonical;
 pub mod cip;
 pub mod condensed;
 pub mod descriptors;
 pub mod diversity;
+pub mod drug_score;
 pub mod esol;
 pub mod estate;
-pub mod mlp;
 pub mod formula;
 pub mod gasteiger;
 pub mod hash;
@@ -27,6 +28,7 @@ pub mod ifg;
 pub mod isotope_distribution;
 pub mod iupac_stereo;
 pub mod logd;
+pub mod mlp;
 pub mod mmff94_bci;
 pub mod mmp;
 pub mod named_groups;
@@ -46,20 +48,20 @@ pub mod xlogp3;
 
 pub use cip::{CipAssignment, assign_cip, tetrahedral_stereo_neighbors};
 pub use descriptors::{
-    Bcut2D, CarbonTypes, InformationContent,
-    aromatic_ring_count, autocorr_2d, balaban_j, bcut2d, calc_mol_formula, carbon_types,
-    cns_mpo_score, egan_passes, geary_autocorr, information_content, mde_carbon, moran_autocorr,
-    exact_mass, formal_charge_per_atom, formal_charge_sum, fraction_rotatable_bonds, fsp3,
+    Bcut2D, CarbonTypes, InformationContent, RingBundle, aromatic_ring_count, autocorr_2d,
+    balaban_j, bcut2d, calc_mol_formula, carbon_types, cns_mpo_score, egan_passes, exact_mass,
+    formal_charge_per_atom, formal_charge_sum, fraction_rotatable_bonds, fsp3, geary_autocorr,
     ghose_passes, hall_kier_alpha, hba_count, hba_count_lipinski, hbd_count, heavy_atom_count,
-    hybridization_per_atom, implicit_hcount_per_atom, ipc, lead_like_passes, lipinski_passes,
-    logp_crippen, logp_crippen_per_atom, mcf_passes, mmff94_charges, molar_refractivity,
-    molecular_weight, mqn, mr_per_atom, num_aliphatic_heterocycles, num_aliphatic_rings,
-    num_amide_bonds, num_aromatic_heterocycles, num_bridgehead_atoms, num_bromines, num_carbons,
-    num_chlorines, num_ester_bonds, num_fluorines, num_heteroatoms, num_hydrogens, num_iodines,
-    num_nitrogens, num_oxygens, num_phosphorus, num_saturated_heterocycles, num_saturated_rings,
-    num_spiro_atoms, num_stereocenters, num_sulfurs, num_unspecified_stereocenters,
-    pfizer_3_75_passes, reos_passes, ring_count, ring_system_count, ro3_passes,
-    rotatable_bond_count, tpsa, tpsa_per_atom, usrcat, veber_passes,
+    hybridization_per_atom, implicit_hcount_per_atom, information_content, ipc, lead_like_passes,
+    lipinski_passes, logp_and_mr, logp_crippen, logp_crippen_per_atom, mcf_passes, mde_carbon,
+    mmff94_charges, molar_refractivity, molecular_weight, moran_autocorr, mqn, mr_per_atom,
+    num_aliphatic_heterocycles, num_aliphatic_rings, num_amide_bonds, num_aromatic_heterocycles,
+    num_bridgehead_atoms, num_bromines, num_carbons, num_chlorines, num_ester_bonds, num_fluorines,
+    num_heteroatoms, num_hydrogens, num_iodines, num_nitrogens, num_oxygens, num_phosphorus,
+    num_saturated_heterocycles, num_saturated_rings, num_spiro_atoms, num_stereocenters,
+    num_sulfurs, num_unspecified_stereocenters, pfizer_3_75_passes, reos_passes, ring_bundle,
+    ring_count, ring_system_count, ro3_passes, rotatable_bond_count, tpsa, tpsa_per_atom, usrcat,
+    veber_passes,
 };
 pub use iupac_stereo::iupac_name_stereo;
 
@@ -67,17 +69,23 @@ pub use abbreviations::{abbreviations, expand_abbreviation};
 pub use activity_cliff::{ActivityCliff, activity_cliffs};
 pub use admet::{
     AdmetProfile, BoiledEggProfile, ClearanceClass, admet_profile, ames_alerts, ames_passes,
-    ames_risk_score, bbb_passes, bbb_score, boiled_egg, caco2_permeability, clearance_class,
-    clearance_score, cyp3a4_inhibition_risk, herg_risk_score, ppb_percent,
+    ames_risk_score, bbb_passes, bbb_score, bbb_score_from_parts, boiled_egg, boiled_egg_from,
+    caco2_permeability, caco2_precomputed, clearance_class, clearance_score,
+    cyp3a4_inhibition_risk, cyp3a4_precomputed, herg_risk_precomputed, herg_risk_score,
+    ppb_percent,
 };
-pub use alerts::{brenk_matches, brenk_passes, pains_matches, pains_passes};
+pub use alerts::{
+    brenk_matches, brenk_matches_detailed, brenk_passes, pains_matches, pains_matches_detailed,
+    pains_passes,
+};
 pub use atropisomer::{AtropisomerType, assign_atropisomer_chirality, detect_atropisomers};
 pub use brics::{BricsConfig, brics_bonds, brics_fragments, brics_fragments_with_config};
 pub use cache::{DescriptorCache, DescriptorEntry};
+pub use canonical::{CanonicalMode, canonical_smiles_mode};
 pub use condensed::{CondensedError, parse_condensed};
 pub use diversity::{butina_cluster, maxmin_picks};
+pub use drug_score::drug_score;
 pub use esol::esol_solubility;
-pub use mlp::{MLP_SOLUBILITY_TRAINED, mlp_solubility};
 pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
 pub use formula::{FormulaParseError, parse_formula};
 pub use gasteiger::gasteiger_charges;
@@ -85,15 +93,16 @@ pub use hash::{are_identical, mol_hash};
 pub use hydrogen::{add_hydrogens, remove_hydrogens};
 pub use ifg::{FunctionalGroup, identify_functional_groups};
 pub use isotope_distribution::isotope_distribution;
-pub use logd::{logd_profile, logd_simple};
+pub use logd::{logd_from_logp, logd_profile, logd_simple};
+pub use mlp::{MLP_SOLUBILITY_TRAINED, mlp_solubility};
 pub use mmff94_bci::{MmffType, assign_mmff94_type, mmff94_charges_bci, mmff94_charges_typed};
-pub use mmp::{MmpPair, find_mmp};
+pub use mmp::{MmpPair, MmsMember, MmsSeries, find_mmp, find_mms};
 pub use named_groups::{NamedGroup, detect_named_functional_groups};
 pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, predict_pka};
-pub use qed::qed;
+pub use qed::{qed, qed_with_bundle};
 pub use recap::{recap_breakable_bond_count, recap_fragment};
 pub use rgroup::{RGroupError, RGroupResult, rgroup_decompose};
-pub use sa_score::sa_score;
+pub use sa_score::{sa_score, sa_score_with_bundle};
 pub use scaffold::{
     ScaffoldNetwork, generic_murcko_scaffold, murcko_scaffold, scaffold_network,
     scaffold_network_with_counts, schuffenhauer_parents,
@@ -112,8 +121,8 @@ pub use tautomer::{
 };
 pub use topo_descriptors::{
     bertz_ct, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v,
-    eccentric_connectivity_index, graph_diameter, graph_eccentricities, graph_radius,
-    hosoya_index, kappa1, kappa2, kappa3, labute_asa, labute_asa_per_atom, petitjean_index,
+    eccentric_connectivity_index, graph_diameter, graph_eccentricities, graph_radius, hosoya_index,
+    kappa1, kappa2, kappa3, labute_asa, labute_asa_per_atom, padmakar_ivan_index, petitjean_index,
     randic_index, topological_distance_matrix, wiener_index, zagreb_index_m1, zagreb_index_m2,
 };
 pub use vsa::{estate_vsa, peoe_vsa, slogp_vsa, smr_vsa};

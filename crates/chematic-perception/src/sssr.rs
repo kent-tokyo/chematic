@@ -11,7 +11,8 @@
 //!    preferring shorter cycles.
 //! 6. Convert the chosen bond-sets back to ordered atom sequences for the public API.
 
-use std::collections::{HashMap, VecDeque};
+use rustc_hash::FxHashMap;
+use std::collections::VecDeque;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 
@@ -78,7 +79,10 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
     let v = mol.atom_count();
     // Count only ring-eligible bonds for the cycle rank (E - V + C).
     // Zero-order and Dative bonds are excluded (RDKit PR #9118).
-    let e = mol.bonds().filter(|(_, b)| is_ring_eligible(b.order)).count();
+    let e = mol
+        .bonds()
+        .filter(|(_, b)| is_ring_eligible(b.order))
+        .count();
 
     if v == 0 || e == 0 {
         return RingSet(Vec::new());
@@ -125,7 +129,7 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
 
     // Gaussian elimination over GF(2) to select r linearly independent cycles.
     // The basis maps a pivot BondIdx to the full bond-set of that basis row.
-    let mut basis: HashMap<BondIdx, Vec<BondIdx>> = HashMap::new();
+    let mut basis: FxHashMap<BondIdx, Vec<BondIdx>> = FxHashMap::default();
     let mut selected_atoms: Vec<Vec<AtomIdx>> = Vec::new();
 
     for (bond_set, atom_seq) in candidate_cycles {
@@ -271,7 +275,7 @@ fn paths_to_lca(
     let ancestors_u = ancestors(u, parent);
     let ancestors_v = ancestors(v, parent);
 
-    let set_u: HashMap<AtomIdx, usize> = ancestors_u
+    let set_u: FxHashMap<AtomIdx, usize> = ancestors_u
         .iter()
         .enumerate()
         .map(|(i, &a)| (a, i))
@@ -319,7 +323,7 @@ fn ancestors(start: AtomIdx, parent: &[Option<AtomIdx>]) -> Vec<AtomIdx> {
 /// to the full row (sorted Vec<BondIdx>).
 ///
 /// Returns the reduced cycle (empty if dependent on existing basis).
-fn gf2_reduce(cycle: &[BondIdx], basis: &HashMap<BondIdx, Vec<BondIdx>>) -> Vec<BondIdx> {
+fn gf2_reduce(cycle: &[BondIdx], basis: &FxHashMap<BondIdx, Vec<BondIdx>>) -> Vec<BondIdx> {
     let mut current: Vec<BondIdx> = cycle.to_vec();
     while let Some(&pivot) = current.iter().min() {
         match basis.get(&pivot) {
@@ -365,8 +369,8 @@ fn sym_diff(a: &[BondIdx], b: &[BondIdx]) -> Vec<BondIdx> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
     use crate::aromaticity::augmented_ring_set;
+    use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
 
     // Build a cyclohexane molecule (6 carbons, 6 single bonds).
     fn cyclohexane() -> chematic_core::Molecule {
@@ -781,14 +785,17 @@ mod tests {
         let a = b.add_atom(a_atom);
         let bb = b.add_atom(b_atom);
         b.add_bond(a, bb, BondOrder::Single).unwrap();
-        b.add_bond(a, bb, BondOrder::Zero).expect_err(
-            "duplicate bond — MoleculeBuilder should reject or ignore it"
-        );
+        b.add_bond(a, bb, BondOrder::Zero)
+            .expect_err("duplicate bond — MoleculeBuilder should reject or ignore it");
         // Build a proper molecule: just two atoms with a single bond.
         // The zero-order bond attempt is rejected, so the molecule is acyclic.
         let mol = b.build();
         let sssr = find_sssr(&mol);
-        assert_eq!(sssr.rings().len(), 0, "single bond between two atoms → no ring");
+        assert_eq!(
+            sssr.rings().len(),
+            0,
+            "single bond between two atoms → no ring"
+        );
     }
 
     #[test]
@@ -798,11 +805,13 @@ mod tests {
         // We build cyclohexane (all single bonds) and verify no extra ring from
         // a Zero-order bond added between two non-adjacent atoms.
         let mut b = MoleculeBuilder::new();
-        let atoms: Vec<_> = (0..4).map(|_| {
-            let mut a = Atom::new(chematic_core::Element::C);
-            a.hydrogen_count = Some(2);
-            b.add_atom(a)
-        }).collect();
+        let atoms: Vec<_> = (0..4)
+            .map(|_| {
+                let mut a = Atom::new(chematic_core::Element::C);
+                a.hydrogen_count = Some(2);
+                b.add_atom(a)
+            })
+            .collect();
         // Square ring: 0-1-2-3-0
         b.add_bond(atoms[0], atoms[1], BondOrder::Single).unwrap();
         b.add_bond(atoms[1], atoms[2], BondOrder::Single).unwrap();
@@ -815,7 +824,8 @@ mod tests {
         let sssr = find_sssr(&mol);
         // Should find exactly 1 ring (the 4-membered ring), NOT 2 or 3.
         assert_eq!(
-            sssr.rings().len(), 1,
+            sssr.rings().len(),
+            1,
             "zero-order diagonal bond must not create extra rings: found {:?}",
             sssr.rings().iter().map(|r| r.len()).collect::<Vec<_>>()
         );

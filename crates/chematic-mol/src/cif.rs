@@ -61,7 +61,7 @@ impl UnitCell {
             self.beta.to_radians().cos(),
             self.gamma.to_radians().cos(),
         );
-        self.a * self.b * self.c * (1.0 - ca*ca - cb*cb - cg*cg + 2.0*ca*cb*cg).sqrt()
+        self.a * self.b * self.c * (1.0 - ca * ca - cb * cb - cg * cg + 2.0 * ca * cb * cg).sqrt()
     }
 
     /// Convert fractional coordinates to orthogonal Å.
@@ -79,7 +79,14 @@ impl UnitCell {
 
 impl Default for UnitCell {
     fn default() -> Self {
-        Self { a: 1.0, b: 1.0, c: 1.0, alpha: 90.0, beta: 90.0, gamma: 90.0 }
+        Self {
+            a: 1.0,
+            b: 1.0,
+            c: 1.0,
+            alpha: 90.0,
+            beta: 90.0,
+            gamma: 90.0,
+        }
     }
 }
 
@@ -120,11 +127,16 @@ impl core::fmt::Display for CifError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::NoAtomSiteLoop => write!(f, "no _atom_site_* loop found in CIF"),
-            Self::MissingCoordinateColumns => write!(f, "atom_site loop missing fract_x/y/z columns"),
+            Self::MissingCoordinateColumns => {
+                write!(f, "atom_site loop missing fract_x/y/z columns")
+            }
             Self::UnknownElement(s) => write!(f, "unknown element '{s}' in CIF"),
             Self::InvalidCoordinate(s) => write!(f, "invalid coordinate '{s}' in CIF"),
             Self::InvalidCellParameters(s) => write!(f, "invalid cell parameters: {s}"),
-            Self::MissingCellParameters => write!(f, "fractional coordinates present but no _cell_length_*/_cell_angle_* parameters found"),
+            Self::MissingCellParameters => write!(
+                f,
+                "fractional coordinates present but no _cell_length_*/_cell_angle_* parameters found"
+            ),
         }
     }
 }
@@ -158,7 +170,11 @@ fn strip_cif_comment(line: &str) -> &str {
 
 pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
     // Strip CIF comments (# to end of line), but not '#' inside quoted strings.
-    let clean: String = input.lines().map(strip_cif_comment).collect::<Vec<_>>().join("\n");
+    let clean: String = input
+        .lines()
+        .map(strip_cif_comment)
+        .collect::<Vec<_>>()
+        .join("\n");
 
     let tokens = tokenize_cif(&clean);
 
@@ -168,12 +184,25 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
     let mut i = 0;
     while i + 1 < tokens.len() {
         match tokens[i].to_ascii_lowercase().as_str() {
-            "_cell_length_a"    => { cell.a     = parse_esd(&tokens[i+1]).unwrap_or(cell.a);     has_cell = true; }
-            "_cell_length_b"    => { cell.b     = parse_esd(&tokens[i+1]).unwrap_or(cell.b); }
-            "_cell_length_c"    => { cell.c     = parse_esd(&tokens[i+1]).unwrap_or(cell.c); }
-            "_cell_angle_alpha" => { cell.alpha = parse_esd(&tokens[i+1]).unwrap_or(cell.alpha); }
-            "_cell_angle_beta"  => { cell.beta  = parse_esd(&tokens[i+1]).unwrap_or(cell.beta); }
-            "_cell_angle_gamma" => { cell.gamma = parse_esd(&tokens[i+1]).unwrap_or(cell.gamma); }
+            "_cell_length_a" => {
+                cell.a = parse_esd(&tokens[i + 1]).unwrap_or(cell.a);
+                has_cell = true;
+            }
+            "_cell_length_b" => {
+                cell.b = parse_esd(&tokens[i + 1]).unwrap_or(cell.b);
+            }
+            "_cell_length_c" => {
+                cell.c = parse_esd(&tokens[i + 1]).unwrap_or(cell.c);
+            }
+            "_cell_angle_alpha" => {
+                cell.alpha = parse_esd(&tokens[i + 1]).unwrap_or(cell.alpha);
+            }
+            "_cell_angle_beta" => {
+                cell.beta = parse_esd(&tokens[i + 1]).unwrap_or(cell.beta);
+            }
+            "_cell_angle_gamma" => {
+                cell.gamma = parse_esd(&tokens[i + 1]).unwrap_or(cell.gamma);
+            }
             _ => {}
         }
         i += 1;
@@ -211,7 +240,7 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
 
     let col = |name: &str| -> Option<usize> { col_headers.iter().position(|h| h.as_str() == name) };
 
-    let col_type  = col("_atom_site_type_symbol");
+    let col_type = col("_atom_site_type_symbol");
     let col_label = col("_atom_site_label");
     // Prefer fractional; fall back to Cartesian.
     let use_cartesian = col("_atom_site_fract_x").is_none();
@@ -231,16 +260,17 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
         }
         let sg = cell.gamma.to_radians().sin();
         if sg.abs() < 1e-10 {
-            return Err(CifError::InvalidCellParameters(
-                format!("_cell_angle_gamma = {} makes sin(γ) ≈ 0, transformation undefined", cell.gamma)
-            ));
+            return Err(CifError::InvalidCellParameters(format!(
+                "_cell_angle_gamma = {} makes sin(γ) ≈ 0, transformation undefined",
+                cell.gamma
+            )));
         }
         // Also guard against a non-physical cell volume (≤ 0 or NaN).
         let vol = cell.volume();
         if !vol.is_finite() || vol <= 0.0 {
-            return Err(CifError::InvalidCellParameters(
-                format!("unit cell volume is non-positive ({vol:.6} Å³); check _cell_angle_* values")
-            ));
+            return Err(CifError::InvalidCellParameters(format!(
+                "unit cell volume is non-positive ({vol:.6} Å³); check _cell_angle_* values"
+            )));
         }
     }
 
@@ -259,23 +289,32 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
         }
 
         // Resolve element.
-        let elem_raw: &str = col_type.and_then(|c| tok.get(c)).map(|s| s.as_str()).or_else(|| {
-            col_label.and_then(|c| tok.get(c)).map(|s| s.as_str())
-        }).unwrap_or("X");
+        let elem_raw: &str = col_type
+            .and_then(|c| tok.get(c))
+            .map(|s| s.as_str())
+            .or_else(|| col_label.and_then(|c| tok.get(c)).map(|s| s.as_str()))
+            .unwrap_or("X");
         // Strip trailing digits and oxidation-state signs from labels like
         // "Na1", "Cu2+", "Fe3+", "O2-".
-        let elem_str = elem_raw.trim_end_matches(|c: char| c.is_ascii_digit() || c == '+' || c == '-');
+        let elem_str =
+            elem_raw.trim_end_matches(|c: char| c.is_ascii_digit() || c == '+' || c == '-');
         let elem = Element::from_symbol(elem_str)
             .ok_or_else(|| CifError::UnknownElement(elem_str.to_string()))?;
 
         let parse_coord = |s: &str| -> Result<f64, CifError> {
-            strip_esd(s).parse::<f64>().map_err(|_| CifError::InvalidCoordinate(s.to_string()))
+            strip_esd(s)
+                .parse::<f64>()
+                .map_err(|_| CifError::InvalidCoordinate(s.to_string()))
         };
         let fx = parse_coord(&tok[col_x])?;
         let fy = parse_coord(&tok[col_y])?;
         let fz = parse_coord(&tok[col_z])?;
 
-        let (x, y, z) = if use_cartesian { (fx, fy, fz) } else { cell.frac_to_cart(fx, fy, fz) };
+        let (x, y, z) = if use_cartesian {
+            (fx, fy, fz)
+        } else {
+            cell.frac_to_cart(fx, fy, fz)
+        };
 
         builder.add_atom(Atom::new(elem));
         coords.push((x, y, z));
@@ -334,7 +373,10 @@ pub fn write_cif(mol: &Molecule, coords: &[(f64, f64, f64)], cell: Option<&UnitC
         let sym = mol.atom(idx).element.symbol();
         let (x, y, z) = coords.get(i).copied().unwrap_or((0.0, 0.0, 0.0));
         let (fx, fy, fz) = cart_to_frac(cell_ref, x, y, z);
-        out.push_str(&format!("{sym}{} {sym}  {fx:.5}  {fy:.5}  {fz:.5}\n", i + 1));
+        out.push_str(&format!(
+            "{sym}{} {sym}  {fx:.5}  {fy:.5}  {fz:.5}\n",
+            i + 1
+        ));
     }
     out
 }
@@ -364,7 +406,10 @@ fn tokenize_cif(input: &str) -> Vec<String> {
     while i < len {
         let ch = chars[i];
         // Skip whitespace.
-        if ch.is_whitespace() { i += 1; continue; }
+        if ch.is_whitespace() {
+            i += 1;
+            continue;
+        }
 
         // Semicolon text block (starts at column 0 on a new line).
         if ch == ';' && (i == 0 || chars[i - 1] == '\n') {
@@ -386,9 +431,13 @@ fn tokenize_cif(input: &str) -> Vec<String> {
         if ch == '\'' {
             i += 1;
             let start = i;
-            while i < len && chars[i] != '\'' { i += 1; }
+            while i < len && chars[i] != '\'' {
+                i += 1;
+            }
             tokens.push(chars[start..i].iter().collect());
-            if i < len { i += 1; }
+            if i < len {
+                i += 1;
+            }
             continue;
         }
 
@@ -396,15 +445,21 @@ fn tokenize_cif(input: &str) -> Vec<String> {
         if ch == '"' {
             i += 1;
             let start = i;
-            while i < len && chars[i] != '"' { i += 1; }
+            while i < len && chars[i] != '"' {
+                i += 1;
+            }
             tokens.push(chars[start..i].iter().collect());
-            if i < len { i += 1; }
+            if i < len {
+                i += 1;
+            }
             continue;
         }
 
         // Regular token.
         let start = i;
-        while i < len && !chars[i].is_whitespace() { i += 1; }
+        while i < len && !chars[i].is_whitespace() {
+            i += 1;
+        }
         tokens.push(chars[start..i].iter().collect());
     }
     tokens
@@ -463,8 +518,10 @@ Cl1  Cl  0.50000  0.50000  0.50000
     fn parse_nacl_na_at_origin() {
         let r = parse_cif(NACL_CIF).unwrap();
         let (x, y, z) = r.coords[0];
-        assert!(x.abs() < 1e-6 && y.abs() < 1e-6 && z.abs() < 1e-6,
-                "Na at origin: got ({x}, {y}, {z})");
+        assert!(
+            x.abs() < 1e-6 && y.abs() < 1e-6 && z.abs() < 1e-6,
+            "Na at origin: got ({x}, {y}, {z})"
+        );
     }
 
     #[test]
@@ -479,7 +536,14 @@ Cl1  Cl  0.50000  0.50000  0.50000
 
     #[test]
     fn unit_cell_volume_cubic() {
-        let cell = UnitCell { a: 5.0, b: 5.0, c: 5.0, alpha: 90.0, beta: 90.0, gamma: 90.0 };
+        let cell = UnitCell {
+            a: 5.0,
+            b: 5.0,
+            c: 5.0,
+            alpha: 90.0,
+            beta: 90.0,
+            gamma: 90.0,
+        };
         assert!((cell.volume() - 125.0).abs() < 1e-6);
     }
 
@@ -504,7 +568,14 @@ Cl1  Cl  0.50000  0.50000  0.50000
 
     #[test]
     fn frac_to_cart_cubic_roundtrip() {
-        let cell = UnitCell { a: 5.0, b: 5.0, c: 5.0, alpha: 90.0, beta: 90.0, gamma: 90.0 };
+        let cell = UnitCell {
+            a: 5.0,
+            b: 5.0,
+            c: 5.0,
+            alpha: 90.0,
+            beta: 90.0,
+            gamma: 90.0,
+        };
         let (x, y, z) = cell.frac_to_cart(0.3, 0.4, 0.5);
         let (fx, fy, fz) = cart_to_frac(&cell, x, y, z);
         assert!((fx - 0.3).abs() < 1e-10);

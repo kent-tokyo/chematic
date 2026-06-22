@@ -12,7 +12,7 @@
 //! SMILES, closing the ±5% accuracy gap vs RDKit's MHFP implementation.
 
 use chematic_core::{AtomIdx, Molecule, MoleculeBuilder};
-use std::collections::HashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::ecfp::fnv1a as fnv1a_hash;
 
@@ -70,8 +70,8 @@ impl MhfpFingerprint {
 /// Extract the induced subgraph on `atom_set` as a new Molecule.
 fn extract_subgraph(mol: &Molecule, atom_set: &[AtomIdx]) -> Molecule {
     let mut builder = MoleculeBuilder::new();
-    let mut old_to_new: std::collections::HashMap<AtomIdx, AtomIdx> =
-        std::collections::HashMap::with_capacity(atom_set.len());
+    let mut old_to_new: FxHashMap<AtomIdx, AtomIdx> =
+        FxHashMap::with_capacity_and_hasher(atom_set.len(), Default::default());
 
     for &idx in atom_set {
         let new_idx = builder.add_atom(mol.atom(idx).clone());
@@ -99,7 +99,7 @@ fn circular_smiles_shingle(mol: &Molecule, center: AtomIdx, radius: u32) -> u64 
 /// Collect all atoms within a given radius from a center atom (BFS).
 /// Returns atoms in BFS-discovery order (deterministic across process invocations).
 fn atoms_within_radius(mol: &Molecule, center: AtomIdx, radius: u32) -> Vec<AtomIdx> {
-    let mut visited = HashSet::new();
+    let mut visited = FxHashSet::default();
     let mut discovered = vec![center];
     visited.insert(center);
     let mut frontier_start = 0;

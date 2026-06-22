@@ -1,6 +1,6 @@
 # chematic — Status & Roadmap
 
-Current version: **v0.4.13** (2026-06-21)
+Current version: **v0.4.15** (2026-06-21) — perf branch in progress
 
 ---
 
@@ -11,8 +11,8 @@ Current version: **v0.4.13** (2026-06-21)
 | `chematic-core` | Atom, Bond, Molecule, Element, kekulization (4-pass incl. Edmonds' blossom + boron fix) | 69 |
 | `chematic-smiles` | OpenSMILES parser/writer, canonical SMILES | 48 |
 | `chematic-perception` | SSSR, 2-pass Hückel aromaticity, CIP stereo, `count_aromatic_rings` | 34 |
-| `chematic-smarts` | SMARTS, VF2 subgraph, MCS (McGregor), LRU SMARTS cache; **atom map `:N`** in SMARTS (`[O;D1;H0:3]`) | 137 |
-| `chematic-chem` | 70+ descriptors, ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa, ESOL; **HBD 100% / TPSA ±1.0 Å² / LogP ±0.3** RDKit parity (175-mol bulk) | 211 |
+| `chematic-smarts` | SMARTS, VF2 subgraph, MCS (McGregor), LRU SMARTS cache; **atom map `:N`** in SMARTS (`[O;D1;H0:3]`); **`find_matches_with_rings`** — shared SSSR across multi-pattern batches | 142 |
+| `chematic-chem` | 70+ descriptors, ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa, ESOL; **HBD 100% / TPSA ±0.1 Å² / LogP ±0.3** RDKit parity (175-mol bulk); **`logp_and_mr`** + **`logd_from_logp`** perf APIs | 639 |
 | `chematic-fp` | ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG, Tanimoto | 87 |
 | `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 51 |
 | `chematic-3d` | ETKDG, MD, SASA, USR shape screen, WHIM | 45 |
@@ -26,7 +26,7 @@ Current version: **v0.4.13** (2026-06-21)
 | `chematic-py` | PyO3 Python bindings (`pip install chematic`); Sprint 18–26: 300+ API endpoints | 300+ |
 | `chematic-ewald` | PME Ewald summation, B-spline interpolation | 12 |
 
-`cargo test --workspace --lib --quiet` → **211 tests** (lib only), all passing
+`cargo test --workspace --lib --quiet` → **2275 tests** (lib only), all passing
 
 ---
 
@@ -94,7 +94,8 @@ Current version: **v0.4.13** (2026-06-21)
 
 | Version | Date | Highlights |
 |---------|------|-----------|
-| [Unreleased] | 2026-06-21 | Parity-aware SMIRKS @/@@ stereo (write-order independent); product bracket cleanup (#18); PBF heavy-only (RDKit #9238); count_aromatic_rings Kekulé (#9271); ETKDG amide planarity; CDXML E/Z stereo; is_atom_in_ring multi-start BFS; 4 code-review bug fixes |
+| [Unreleased] | 2026-06-22 | **Perf**: shared SSSR in SMARTS matching (117→1 per Crippen, ~480→1 per PAINS, ~300→1 per BRENK); `logp_and_mr()` combined Crippen pass; `logd_from_logp()` helper; `cns_mpo_score` logP dedup; `eccentric_connectivity_index` reuses `graph_eccentricities`; `heavy_degrees()` pre-comp in randic/zagreb. New public API: `find_matches_with_rings`, `find_matches_with_rings_and_config`, `logp_and_mr`, `logd_from_logp`. CI: setup-python v6, upload-artifact v7 |
+| v0.4.15 | 2026-06-21 | Tautomer tetrazole 1H/2H normalization — BFS 1,2-shift + canonical SMILES tiebreaker; CDXML Order=1.5→Aromatic |
 | v0.4.13 | 2026-06-21 | HBD S-H fix; TPSA nitro-N / oxide bridge / Kekulé-N fixes; LogP oxide bridge fix; `retro_disconnect()` 60 retro-SMIRKS; ETKDG 40 torsion patterns; bulk TPSA ±1.0/LogP ±0.3/HBD 100% |
 | v0.4.12 | 2026-06-21 | SMARTS atom map `:N` support (`[O;D1;H0:3]`); fix aromatic-bond false MapNumberMismatch; fix `[C:]` parse error; propagate atom_map in mol_to_query |
 | v0.4.11 | 2026-06-21 | Aromatic ring count ~100% RDKit parity (222 bench5k fixes); CIF/Gaussian parser 8 safety fixes; clippy CI fixes |

@@ -7,7 +7,8 @@
 //! All descriptors except LabuteASA operate on the heavy-atom subgraph
 //! (hydrogen atoms excluded from path/distance calculations).
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::VecDeque;
 use std::f64::consts::PI;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
@@ -22,9 +23,29 @@ fn heavy_indices(mol: &Molecule) -> Vec<usize> {
         .collect()
 }
 
+/// Heavy-atom degree for each atom index (0 for H atoms).
+///
+/// Avoids repeating the neighbor-filter loop inside bond-level loops.
+fn heavy_degrees(mol: &Molecule) -> Vec<u32> {
+    let n = mol.atom_count();
+    let is_heavy: Vec<bool> = (0..n)
+        .map(|i| mol.atom(AtomIdx(i as u32)).element.atomic_number() != 1)
+        .collect();
+    (0..n)
+        .map(|i| {
+            if !is_heavy[i] {
+                return 0;
+            }
+            mol.neighbors(AtomIdx(i as u32))
+                .filter(|(nb, _)| is_heavy[nb.0 as usize])
+                .count() as u32
+        })
+        .collect()
+}
+
 /// BFS shortest-path distances from `start` in the heavy-atom subgraph.
 /// Returns `usize::MAX` for disconnected pairs or hydrogen atoms.
-fn bfs_from(mol: &Molecule, start: usize, heavy_set: &HashSet<usize>) -> Vec<usize> {
+fn bfs_from(mol: &Molecule, start: usize, heavy_set: &FxHashSet<usize>) -> Vec<usize> {
     let n = mol.atom_count();
     let mut dist = vec![usize::MAX; n];
     dist[start] = 0;
@@ -44,7 +65,7 @@ fn bfs_from(mol: &Molecule, start: usize, heavy_set: &HashSet<usize>) -> Vec<usi
 }
 
 /// Connectivity delta (degree in heavy-atom graph) for atom `idx`.
-fn delta(mol: &Molecule, idx: AtomIdx, heavy_set: &HashSet<usize>) -> f64 {
+fn delta(mol: &Molecule, idx: AtomIdx, heavy_set: &FxHashSet<usize>) -> f64 {
     mol.neighbors(idx)
         .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
         .count() as f64
@@ -100,7 +121,7 @@ fn chi_dfs(
     cur_len: usize,
     running_product: f64,
     visited: &mut Vec<bool>,
-    heavy_set: &HashSet<usize>,
+    heavy_set: &FxHashSet<usize>,
     use_valence: bool,
 ) -> f64 {
     if cur_len == target_len {
@@ -137,7 +158,7 @@ fn chi_dfs(
 /// Count simple paths of exactly `length` bonds in the heavy-atom subgraph.
 /// Returns undirected path count (each path counted once).
 fn count_paths(mol: &Molecule, heavy: &[usize], length: usize) -> usize {
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     let mut total = 0usize;
     for &start in heavy {
         let mut visited = vec![false; mol.atom_count()];
@@ -153,7 +174,7 @@ fn count_paths_dfs(
     target_len: usize,
     cur_len: usize,
     visited: &mut Vec<bool>,
-    heavy_set: &HashSet<usize>,
+    heavy_set: &FxHashSet<usize>,
 ) -> usize {
     if cur_len == target_len {
         return 1;
@@ -174,7 +195,7 @@ fn count_paths_dfs(
 /// Each undirected path is counted once (sum divided by 2).
 fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
     let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     let mut total = 0.0f64;
     for &start in &heavy {
         let d_start = if use_valence {
@@ -209,7 +230,7 @@ fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
 /// Computed on the hydrogen-depleted graph.
 pub fn wiener_index(mol: &Molecule) -> f64 {
     let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     let mut sum = 0u64;
     for i in 0..heavy.len() {
         let row = bfs_from(mol, heavy[i], &heavy_set);
@@ -221,6 +242,75 @@ pub fn wiener_index(mol: &Molecule) -> f64 {
         }
     }
     sum as f64
+}
+
+// ─── Padmakar-Ivan (PI) Index ────────────────────────────────────────────────
+
+/// Padmakar-Ivan (PI) topological index (Khadikar et al. 2001).
+///
+/// For each bond e = (u, v) in the heavy-atom graph, let:
+/// - n_u(e) = number of heavy atoms strictly closer to u than to v
+/// - n_v(e) = number of heavy atoms strictly closer to v than to u
+///
+/// PI = Σ_e [n_u(e) + n_v(e)]
+///
+/// Reference values: ethane = 2, propane = 6, butane = 12, benzene = 36.
+pub fn padmakar_ivan_index(mol: &Molecule) -> u64 {
+    let heavy = heavy_indices(mol);
+    let n = heavy.len();
+    if n < 2 {
+        return 0;
+    }
+    // Guard: O(n²) distance matrix would OOM for large molecules (same pattern as hosoya_index).
+    if n > 1000 {
+        return u64::MAX;
+    }
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+
+    // Map original atom index → compressed heavy-atom position 0..n
+    let mut pos: FxHashMap<usize, usize> =
+        FxHashMap::with_capacity_and_hasher(n, Default::default());
+    for (p, &h) in heavy.iter().enumerate() {
+        pos.insert(h, p);
+    }
+
+    // Full BFS distance matrix for heavy atoms: dist[p][q] = d(heavy[p], heavy[q])
+    let mut dist = vec![vec![usize::MAX; n]; n];
+    for p in 0..n {
+        dist[p][p] = 0;
+        let row = bfs_from(mol, heavy[p], &heavy_set);
+        for q in 0..n {
+            let d = row[heavy[q]];
+            if d != usize::MAX {
+                dist[p][q] = d;
+            }
+        }
+    }
+
+    // Sum n_u + n_v over each heavy-atom bond
+    let mut pi_val = 0u64;
+    for (_, bond) in mol.bonds() {
+        let u = bond.atom1.0 as usize;
+        let v = bond.atom2.0 as usize;
+        if !heavy_set.contains(&u) || !heavy_set.contains(&v) {
+            continue;
+        }
+        let pu = pos[&u];
+        let pv = pos[&v];
+
+        let mut n_u = 0u64;
+        let mut n_v = 0u64;
+        for (du, dv) in dist[pu].iter().zip(dist[pv].iter()) {
+            if du < dv {
+                n_u += 1;
+            } else if dv < du {
+                n_v += 1;
+            }
+            // equidistant vertices contribute 0
+        }
+        pi_val += n_u + n_v;
+    }
+    pi_val
 }
 
 // ─── Kappa Shape Indices ─────────────────────────────────────────────────────
@@ -293,7 +383,7 @@ pub fn kappa3(mol: &Molecule) -> f64 {
 /// Atoms with δ = 0 contribute 0.
 pub fn chi0(mol: &Molecule) -> f64 {
     let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     heavy
         .iter()
         .map(|&i| {
@@ -506,24 +596,12 @@ pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
 ///
 /// Measures branching: lower values = more branched.
 pub fn randic_index(mol: &Molecule) -> f64 {
-    let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let deg = heavy_degrees(mol);
     let mut sum = 0.0f64;
     for i in 0..mol.bond_count() {
         let bond = mol.bond(chematic_core::BondIdx(i as u32));
-        let a = bond.atom1.0 as usize;
-        let b = bond.atom2.0 as usize;
-        if !heavy_set.contains(&a) || !heavy_set.contains(&b) {
-            continue; // skip H-containing bonds
-        }
-        let da = mol
-            .neighbors(bond.atom1)
-            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
-            .count() as f64;
-        let db = mol
-            .neighbors(bond.atom2)
-            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
-            .count() as f64;
+        let da = deg[bond.atom1.0 as usize] as f64;
+        let db = deg[bond.atom2.0 as usize] as f64;
         if da > 0.0 && db > 0.0 {
             sum += 1.0 / (da * db).sqrt();
         }
@@ -535,18 +613,7 @@ pub fn randic_index(mol: &Molecule) -> f64 {
 ///
 /// M1 = Σ_{atoms} deg(v)²  (heavy-atom graph only).
 pub fn zagreb_index_m1(mol: &Molecule) -> u32 {
-    let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
-    heavy
-        .iter()
-        .map(|&i| {
-            let deg = mol
-                .neighbors(chematic_core::AtomIdx(i as u32))
-                .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
-                .count() as u32;
-            deg * deg
-        })
-        .sum()
+    heavy_degrees(mol).iter().map(|&d| d * d).sum()
 }
 
 /// Zagreb index M2 (second Zagreb index).
@@ -556,33 +623,16 @@ pub fn zagreb_index_m1(mol: &Molecule) -> u32 {
 /// Complements [`zagreb_index_m1`] (Σ deg(v)²); both quantify molecular branching.
 /// Higher M2 indicates more branching or denser connectivity.
 pub fn zagreb_index_m2(mol: &Molecule) -> u32 {
-    let heavy_set: HashSet<usize> = (0..mol.atom_count())
-        .filter(|&i| {
-            mol.atom(chematic_core::AtomIdx(i as u32))
-                .element
-                .atomic_number()
-                != 1
-        })
-        .collect();
-
+    let deg = heavy_degrees(mol);
     let mut sum = 0u32;
     for bidx in 0..mol.bond_count() {
         let bond = mol.bond(chematic_core::BondIdx(bidx as u32));
-        let a = bond.atom1.0 as usize;
-        let b = bond.atom2.0 as usize;
-        // Only count bonds between two heavy atoms.
-        if !heavy_set.contains(&a) || !heavy_set.contains(&b) {
-            continue;
+        let da = deg[bond.atom1.0 as usize];
+        let db = deg[bond.atom2.0 as usize];
+        // Skip bonds involving H atoms (degree == 0).
+        if da > 0 && db > 0 {
+            sum += da * db;
         }
-        let deg_a = mol
-            .neighbors(bond.atom1)
-            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
-            .count() as u32;
-        let deg_b = mol
-            .neighbors(bond.atom2)
-            .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
-            .count() as u32;
-        sum += deg_a * deg_b;
     }
     sum
 }
@@ -595,7 +645,7 @@ pub fn zagreb_index_m2(mol: &Molecule) -> u32 {
 /// of isolated atoms is 0.
 pub fn graph_eccentricities(mol: &Molecule) -> Vec<u32> {
     let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     heavy
         .iter()
         .map(|&h| {
@@ -604,7 +654,11 @@ pub fn graph_eccentricities(mol: &Molecule) -> Vec<u32> {
                 .iter()
                 .filter_map(|&h2| {
                     let d = row[h2];
-                    if d == usize::MAX { None } else { Some(d as u32) }
+                    if d == usize::MAX {
+                        None
+                    } else {
+                        Some(d as u32)
+                    }
                 })
                 .max()
                 .unwrap_or(0)
@@ -635,7 +689,11 @@ pub fn petitjean_index(mol: &Molecule) -> f64 {
     }
     let d = ecc.iter().copied().max().unwrap_or(0);
     let r = ecc.iter().copied().min().unwrap_or(0);
-    if d == 0 { 0.0 } else { (d - r) as f64 / d as f64 }
+    if d == 0 {
+        0.0
+    } else {
+        (d - r) as f64 / d as f64
+    }
 }
 
 /// Eccentric Connectivity Index: Σ_v [deg(v) × ecc(v)] over heavy atoms.
@@ -644,21 +702,9 @@ pub fn petitjean_index(mol: &Molecule) -> f64 {
 /// branched or elongated structures.
 pub fn eccentric_connectivity_index(mol: &Molecule) -> u64 {
     let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
-    let ecc: Vec<u32> = heavy
-        .iter()
-        .map(|&h| {
-            let row = bfs_from(mol, h, &heavy_set);
-            heavy
-                .iter()
-                .filter_map(|&h2| {
-                    let d = row[h2];
-                    if d == usize::MAX { None } else { Some(d as u32) }
-                })
-                .max()
-                .unwrap_or(0)
-        })
-        .collect();
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    // Reuse graph_eccentricities to avoid a separate O(n²) BFS pass.
+    let ecc = graph_eccentricities(mol);
     heavy
         .iter()
         .zip(ecc.iter())
@@ -683,7 +729,7 @@ pub fn eccentric_connectivity_index(mol: &Molecule) -> u64 {
 /// the exponential worst-case may be slow.
 pub fn hosoya_index(mol: &Molecule) -> u64 {
     let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     let n = heavy.len();
     if n == 0 {
         return 1; // empty graph has one matching (the empty one)
@@ -694,8 +740,7 @@ pub fn hosoya_index(mol: &Molecule) -> u64 {
     if n > 40 {
         return 0; // sentinel: too large to compute efficiently
     }
-    let pos_of: std::collections::HashMap<usize, usize> =
-        heavy.iter().enumerate().map(|(i, &h)| (h, i)).collect();
+    let pos_of: FxHashMap<usize, usize> = heavy.iter().enumerate().map(|(i, &h)| (h, i)).collect();
     let mut adj = vec![vec![false; n]; n];
     for (_, bond) in mol.bonds() {
         let a = bond.atom1.0 as usize;
@@ -745,10 +790,10 @@ fn count_matchings_hosoya(adj: &[Vec<bool>], available: &mut Vec<bool>, n: usize
 /// (atoms sorted by their original `AtomIdx`).
 pub fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<u32>> {
     let heavy = heavy_indices(mol);
-    let heavy_set: HashSet<usize> = heavy.iter().copied().collect();
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
     let n = heavy.len();
     // Map original index → heavy-atom position.
-    let mut pos_of: HashMap<usize, usize> = HashMap::new();
+    let mut pos_of: FxHashMap<usize, usize> = FxHashMap::default();
     for (p, &h) in heavy.iter().enumerate() {
         pos_of.insert(h, p);
     }
@@ -1056,7 +1101,10 @@ mod tests {
     fn petitjean_benzene() {
         // c1ccccc1: 6-cycle — all atoms have eccentricity 3, so diameter=radius=3 → Petitjean=0
         let v = petitjean_index(&mol("c1ccccc1"));
-        assert!((v - 0.0).abs() < 1e-9, "expected 0.0 (symmetric ring) got {v}");
+        assert!(
+            (v - 0.0).abs() < 1e-9,
+            "expected 0.0 (symmetric ring) got {v}"
+        );
     }
 
     #[test]
@@ -1121,5 +1169,46 @@ mod tests {
         let dm = topological_distance_matrix(&m);
         assert_eq!(dm[0][2], 2);
         assert_eq!(dm[1][2], 1);
+    }
+
+    // ── Padmakar-Ivan (PI) Index ─────────────────────────────────────────────
+
+    #[test]
+    fn pi_single_atom() {
+        assert_eq!(padmakar_ivan_index(&mol("C")), 0);
+    }
+
+    #[test]
+    fn pi_ethane() {
+        // CC: 1 bond, n_u=1 (C1), n_v=1 (C2) → PI = 2
+        assert_eq!(padmakar_ivan_index(&mol("CC")), 2);
+    }
+
+    #[test]
+    fn pi_propane() {
+        // CCC: edge(1-2) → n_u=1, n_v=2 → 3; edge(2-3) → n_u=2, n_v=1 → 3; PI = 6
+        assert_eq!(padmakar_ivan_index(&mol("CCC")), 6);
+    }
+
+    #[test]
+    fn pi_butane() {
+        // CCCC: each of 3 edges contributes 4 → PI = 12
+        assert_eq!(padmakar_ivan_index(&mol("CCCC")), 12);
+    }
+
+    #[test]
+    fn pi_benzene() {
+        // c1ccccc1: 6-ring, each of 6 edges contributes 6 → PI = 36
+        assert_eq!(padmakar_ivan_index(&mol("c1ccccc1")), 36);
+    }
+
+    #[test]
+    fn pi_linear_chain_formula() {
+        // For a linear chain of n heavy atoms: PI = n(n-1)
+        for n in 2..=6 {
+            let smiles = "C".repeat(n);
+            let expected = (n as u64) * (n as u64 - 1);
+            assert_eq!(padmakar_ivan_index(&mol(&smiles)), expected, "chain n={n}");
+        }
     }
 }

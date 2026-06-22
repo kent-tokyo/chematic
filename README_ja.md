@@ -51,9 +51,9 @@ WASM レイヤーは記述子・フィンガープリント・スキャフォル
 
 ## 現在のステータス
 
-全フェーズ完了 + **v0.4.x シリーズ**: PyO3 Python バインディング、MCP 15 ツール、MMFF94/UFF 力場、逆合成 `retro_disconnect()` (60 retro-SMIRKS)、記述子精度改善（TPSA ±1.0 Å²/LogP ±0.3/HBD 100%）— **211 テスト、全パス。C/C++ 依存ゼロ（デフォルトビルド）。**
+全フェーズ完了 + **v0.4.x シリーズ**: PyO3 Python バインディング、MCP 15 ツール、MMFF94/UFF 力場、逆合成 `retro_disconnect()` (60 retro-SMIRKS)、記述子精度改善（TPSA ±0.1 Å²/LogP ±0.3/HBD 100%）— **2275 テスト、全パス。C/C++ 依存ゼロ（デフォルトビルド）。**
 
-最新リリース: **v0.4.14**（2026-06-21）— v0.4.13: `retro_disconnect()` 60 retro-SMIRKS、ETKDG 40 トーション、TPSA/LogP/HBD 精度修正 | v0.4.12: SMARTS アトムマップ `:N` | v0.4.11: 芳香環カウント ~100% RDKit 一致 | v0.4.10: Python バインディング 50+
+最新リリース: **v0.4.15**（2026-06-21）— **[Unreleased]**: SMARTS マッチング SSSR 共有（Crippen 117→1、PAINS ~480→1）; `logp_and_mr()` / `logd_from_logp()` / `find_matches_with_rings` 新 API | v0.4.14: TPSA ±0.1 Å²、HBA/HBD/芳香環 5k-mol 100%、E/Z 立体 SMIRKS | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS | v0.4.12: SMARTS アトムマップ `:N` | v0.4.11: 芳香環カウント ~100% RDKit 一致
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|

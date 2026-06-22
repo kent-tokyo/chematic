@@ -1778,8 +1778,15 @@ mod tests {
         // test guards against regressions where from_molecule() is accidentally used.
         use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
         let mut mol = parse("[C@@H](F)(Cl)Br").unwrap();
-        mol.add_stereo_group(StereoGroup::new(StereoGroupKind::Absolute, vec![AtomIdx(0)]));
-        assert_eq!(mol.stereo_groups().len(), 1, "precondition: group was added");
+        mol.add_stereo_group(StereoGroup::new(
+            StereoGroupKind::Absolute,
+            vec![AtomIdx(0)],
+        ));
+        assert_eq!(
+            mol.stereo_groups().len(),
+            1,
+            "precondition: group was added"
+        );
         let stripped = remove_stereo(&mol);
         assert_eq!(
             stripped.stereo_groups().len(),
@@ -1799,7 +1806,11 @@ mod tests {
             vec![AtomIdx(0), AtomIdx(1)], // atom 0 is NOT chiral
         ));
         let cleaned = clean_stereo_groups(&mol);
-        assert_eq!(cleaned.stereo_groups().len(), 1, "group must survive with 1 atom");
+        assert_eq!(
+            cleaned.stereo_groups().len(),
+            1,
+            "group must survive with 1 atom"
+        );
         assert_eq!(
             cleaned.stereo_groups()[0].atom_indices,
             vec![AtomIdx(1)],
@@ -1812,9 +1823,16 @@ mod tests {
         // A group with no chiral atoms at all must be removed entirely.
         use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
         let mut mol = parse("CC").unwrap(); // no chiral atoms
-        mol.add_stereo_group(StereoGroup::new(StereoGroupKind::Absolute, vec![AtomIdx(0)]));
+        mol.add_stereo_group(StereoGroup::new(
+            StereoGroupKind::Absolute,
+            vec![AtomIdx(0)],
+        ));
         let cleaned = clean_stereo_groups(&mol);
-        assert_eq!(cleaned.stereo_groups().len(), 0, "empty group must be removed");
+        assert_eq!(
+            cleaned.stereo_groups().len(),
+            0,
+            "empty group must be removed"
+        );
     }
 
     #[test]
@@ -1822,9 +1840,16 @@ mod tests {
         // A group whose atoms are all chiral must be kept intact.
         use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
         let mut mol = parse("[C@@H](F)(Cl)Br").unwrap();
-        mol.add_stereo_group(StereoGroup::new(StereoGroupKind::Absolute, vec![AtomIdx(0)]));
+        mol.add_stereo_group(StereoGroup::new(
+            StereoGroupKind::Absolute,
+            vec![AtomIdx(0)],
+        ));
         let cleaned = clean_stereo_groups(&mol);
-        assert_eq!(cleaned.stereo_groups().len(), 1, "valid group must be preserved");
+        assert_eq!(
+            cleaned.stereo_groups().len(),
+            1,
+            "valid group must be preserved"
+        );
         assert_eq!(cleaned.stereo_groups()[0].atom_indices, vec![AtomIdx(0)]);
     }
 

@@ -16,7 +16,10 @@ pub mod query;
 
 pub use cache::{SmartsCache, named_pattern};
 pub use cx::{CxQueryAtomProp, CxSmarts, parse_cxsmarts};
-pub use match_vf2::{MatchConfig, find_matches, find_matches_with_config};
+pub use match_vf2::{
+    MatchConfig, find_matches, find_matches_with_config, find_matches_with_rings,
+    find_matches_with_rings_and_config,
+};
 pub use mcs::{AtomCompare, BondCompare, McsConfig, find_mcs, find_mcs_with_config};
 pub use parser::{SmartsError, parse_smarts};
 pub use query::{

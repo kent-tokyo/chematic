@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::VecDeque;
 
 use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL,
@@ -102,17 +103,19 @@ fn run_reactants_impl(
     // into the VF2 query because the raw flag comparison in eval_chirality is
     // SMILES-write-order-dependent; the correct check requires the full mapping
     // (see smirks_chirality_ok below).
-    let has_stereo = rxn.reactants.iter().any(|r| {
-        r.atoms().any(|(_, a)| a.chirality != Chirality::None)
-    });
+    let has_stereo = rxn
+        .reactants
+        .iter()
+        .any(|r| r.atoms().any(|(_, a)| a.chirality != Chirality::None));
     // Similarly, E/Z double-bond stereo (/ and \) is NOT encoded into the VF2
     // query; it is checked post-VF2 via smirks_ez_stereo_ok.
     let has_ez_stereo = rxn.reactants.iter().any(|r| {
-        r.bonds().any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
+        r.bonds()
+            .any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
     });
 
     // VF2 match: for each (template_query, input_mol) pair.
-    let all_match_sets: Vec<Vec<HashMap<usize, AtomIdx>>> = queries
+    let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = queries
         .iter()
         .zip(reactants.iter())
         .map(|(q, mol)| find_matches(q, mol))
@@ -127,7 +130,7 @@ fn run_reactants_impl(
 
     for combo in cartesian_product(&all_match_sets) {
         // global_map: atom_map_number → (reactant_mol_idx, matched_AtomIdx)
-        let mut global_map: HashMap<u16, (usize, AtomIdx)> = HashMap::new();
+        let mut global_map: FxHashMap<u16, (usize, AtomIdx)> = FxHashMap::default();
         for (ri, match_map) in combo.iter().enumerate() {
             for (&qi, &t_idx) in match_map {
                 if let Some(am) = template_atom_maps[ri][qi] {
@@ -139,7 +142,7 @@ fn run_reactants_impl(
         // all_template_atoms: every (mol_idx, AtomIdx) matched by any reactant template atom.
         // Used as BFS walls to prevent substituent collection from crossing into the
         // template region, and to identify bonds that the product template replaces.
-        let mut all_template_atoms: HashSet<(usize, AtomIdx)> = HashSet::new();
+        let mut all_template_atoms: FxHashSet<(usize, AtomIdx)> = FxHashSet::default();
         for (ri, match_map) in combo.iter().enumerate() {
             for &t_idx in match_map.values() {
                 all_template_atoms.insert((ri, t_idx));
@@ -150,18 +153,16 @@ fn run_reactants_impl(
         // This must happen after the complete VF2 mapping is known, because
         // correct chirality comparison requires the full neighbor permutation.
         if has_stereo {
-            let ok = (0..rxn.reactants.len()).all(|ri| {
-                smirks_chirality_ok(&rxn.reactants[ri], reactants[ri], &combo[ri])
-            });
+            let ok = (0..rxn.reactants.len())
+                .all(|ri| smirks_chirality_ok(&rxn.reactants[ri], reactants[ri], &combo[ri]));
             if !ok {
                 continue;
             }
         }
         // E/Z double-bond stereo post-check.  Runs only when the SMIRKS has /\.
         if has_ez_stereo {
-            let ok = (0..rxn.reactants.len()).all(|ri| {
-                smirks_ez_stereo_ok(&rxn.reactants[ri], reactants[ri], &combo[ri])
-            });
+            let ok = (0..rxn.reactants.len())
+                .all(|ri| smirks_ez_stereo_ok(&rxn.reactants[ri], reactants[ri], &combo[ri]));
             if !ok {
                 continue;
             }
@@ -171,7 +172,13 @@ fn run_reactants_impl(
             .products
             .iter()
             .map(|pt| {
-                build_product(pt, &global_map, reactants, &all_template_atoms, carry_substituents)
+                build_product(
+                    pt,
+                    &global_map,
+                    reactants,
+                    &all_template_atoms,
+                    carry_substituents,
+                )
             })
             .collect();
 
@@ -229,7 +236,7 @@ fn permutation_parity(from_seq: &[u32], to_seq: &[u32]) -> Option<bool> {
 fn smirks_chirality_ok(
     tmpl: &Molecule,
     reactant: &Molecule,
-    match_map: &HashMap<usize, AtomIdx>,
+    match_map: &FxHashMap<usize, AtomIdx>,
 ) -> bool {
     for i in 0..tmpl.atom_count() {
         let tmpl_atom = tmpl.atom(AtomIdx(i as u32));
@@ -355,7 +362,7 @@ fn ez_stereo_outward(mol: &Molecule, atom: AtomIdx, other: AtomIdx) -> Option<Bo
 fn smirks_ez_stereo_ok(
     tmpl: &Molecule,
     reactant: &Molecule,
-    match_map: &HashMap<usize, AtomIdx>,
+    match_map: &FxHashMap<usize, AtomIdx>,
 ) -> bool {
     for (_, bond) in tmpl.bonds() {
         if bond.order != BondOrder::Double {
@@ -532,9 +539,9 @@ fn clear_orphaned_stereo_bonds(mol: Molecule) -> Molecule {
 /// 5. Carry through bonds from source molecules where at least one endpoint is a substituent.
 fn build_product(
     product_template: &Molecule,
-    global_map: &HashMap<u16, (usize, AtomIdx)>,
+    global_map: &FxHashMap<u16, (usize, AtomIdx)>,
     input_mols: &[&Molecule],
-    all_template_atoms: &HashSet<(usize, AtomIdx)>,
+    all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
     carry_substituents: bool,
 ) -> Molecule {
     let mut builder = MoleculeBuilder::new();
@@ -542,17 +549,17 @@ fn build_product(
     // template_idx_to_new[i]: new AtomIdx for product template atom i.
     let mut template_idx_to_new: Vec<Option<AtomIdx>> = vec![None; product_template.atom_count()];
     // src_to_new: (mol_idx, src_AtomIdx) → new AtomIdx in the product.
-    let mut src_to_new: HashMap<(usize, AtomIdx), AtomIdx> = HashMap::new();
+    let mut src_to_new: FxHashMap<(usize, AtomIdx), AtomIdx> = FxHashMap::default();
 
     // --- Step 1: add product template atoms ---
     // core_keys: only source atoms that are mapped by THIS product template.
     // Using global_map.values() (all matched atoms across all templates) would
     // seed the BFS in Step 2 from atoms belonging to *other* product templates,
     // causing their substituents to leak into this product (issue #13).
-    let product_maps: HashSet<u16> = (0..product_template.atom_count())
+    let product_maps: FxHashSet<u16> = (0..product_template.atom_count())
         .filter_map(|i| product_template.atom(AtomIdx(i as u32)).atom_map)
         .collect();
-    let core_keys: HashSet<(usize, AtomIdx)> = global_map
+    let core_keys: FxHashSet<(usize, AtomIdx)> = global_map
         .iter()
         .filter(|(am, _)| product_maps.contains(am))
         .map(|(_, &src)| src)
@@ -586,7 +593,7 @@ fn build_product(
                 } else {
                     // Element multiset of non-mapped atoms in the product template
                     // adjacent to this core atom.
-                    let mut prod_elems: HashMap<u8, usize> = HashMap::new();
+                    let mut prod_elems: FxHashMap<u8, usize> = FxHashMap::default();
                     for (nb, _) in product_template.neighbors(AtomIdx(i as u32)) {
                         if product_template.atom(nb).atom_map.is_none() {
                             *prod_elems
@@ -597,13 +604,11 @@ fn build_product(
                     if !prod_elems.is_empty() {
                         // Element multiset of this core atom's neighbours that were
                         // matched by the reactant template (heavy atoms only).
-                        let mut rxn_elems: HashMap<u8, usize> = HashMap::new();
+                        let mut rxn_elems: FxHashMap<u8, usize> = FxHashMap::default();
                         for (nb, _) in input_mols[mol_idx].neighbors(src_idx) {
                             if all_template_atoms.contains(&(mol_idx, nb)) {
                                 *rxn_elems
-                                    .entry(
-                                        input_mols[mol_idx].atom(nb).element.atomic_number(),
-                                    )
+                                    .entry(input_mols[mol_idx].atom(nb).element.atomic_number())
                                     .or_insert(0) += 1;
                             }
                         }
@@ -634,7 +639,7 @@ fn build_product(
     // --- Step 2: BFS from core atoms to collect substituents ---
     // Skipped when carry_substituents = false (run_reactants_strict mode).
     // Seed visited with all template atoms so BFS cannot cross into the template region.
-    let mut visited: HashSet<(usize, AtomIdx)> = all_template_atoms.clone();
+    let mut visited: FxHashSet<(usize, AtomIdx)> = all_template_atoms.clone();
     if carry_substituents {
         let mut queue: VecDeque<(usize, AtomIdx)> = core_keys.iter().cloned().collect();
 
@@ -656,7 +661,7 @@ fn build_product(
     }
 
     // --- Step 3: add product template bonds ---
-    let mut added_bond_pairs: HashSet<(AtomIdx, AtomIdx)> = HashSet::new();
+    let mut added_bond_pairs: FxHashSet<(AtomIdx, AtomIdx)> = FxHashSet::default();
 
     for (_bidx, bond) in product_template.bonds() {
         let a_new = template_idx_to_new[bond.atom1.0 as usize].unwrap();
@@ -1036,7 +1041,10 @@ mod tests {
         let results_l = run_reactants(smirks, &[&l_ala]).unwrap();
         let results_d = run_reactants(smirks, &[&d_ala]).unwrap();
 
-        assert!(!results_l.is_empty(), "L-alanine (@@) must match @@ template");
+        assert!(
+            !results_l.is_empty(),
+            "L-alanine (@@) must match @@ template"
+        );
         assert!(
             results_d.is_empty(),
             "D-alanine (@) must NOT match @@ template (stereo filter, issue #20)"
@@ -1065,7 +1073,7 @@ mod tests {
         // A raw flag comparison would reject Form B against an @@ template.
         let l_form_a = parse("N[C@@H](C)C(=O)O").unwrap();
         let l_form_b = parse("C[C@H](N)C(=O)O").unwrap(); // same absolute config, diff write order
-        let d_form   = parse("N[C@H](C)C(=O)O").unwrap(); // D-alanine (opposite config)
+        let d_form = parse("N[C@H](C)C(=O)O").unwrap(); // D-alanine (opposite config)
 
         let smirks = "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O";
 
@@ -1074,9 +1082,11 @@ mod tests {
         let r_d = run_reactants(smirks, &[&d_form]).unwrap();
 
         assert!(!r_a.is_empty(), "L-alanine form A (N-first @@) must match");
-        assert!(!r_b.is_empty(),
+        assert!(
+            !r_b.is_empty(),
             "L-alanine form B (C-first @, same absolute config) must also match \
-             — parity-aware comparison required");
+             — parity-aware comparison required"
+        );
         assert!(r_d.is_empty(), "D-alanine must still be rejected");
     }
 
@@ -1095,11 +1105,13 @@ mod tests {
             for prod in prod_set {
                 for (_, bond) in prod.bonds() {
                     assert_ne!(
-                        bond.order, BondOrder::Up,
+                        bond.order,
+                        BondOrder::Up,
                         "stray Up bond in product after C=C→C-C (RDKit #9339)"
                     );
                     assert_ne!(
-                        bond.order, BondOrder::Down,
+                        bond.order,
+                        BondOrder::Down,
                         "stray Down bond in product after C=C→C-C (RDKit #9339)"
                     );
                 }
@@ -1119,7 +1131,10 @@ mod tests {
             .iter()
             .flat_map(|p| p.bonds())
             .any(|(_, b)| b.order == BondOrder::Up || b.order == BondOrder::Down);
-        assert!(has_stereo_bond, "stereo bonds adjacent to retained double bond must be preserved");
+        assert!(
+            has_stereo_bond,
+            "stereo bonds adjacent to retained double bond must be preserved"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -1153,10 +1168,14 @@ mod tests {
         let e_alkene = parse("C/C=C/C").unwrap();
         let z_alkene = parse("C/C=C\\C").unwrap();
         let smirks = "[C:1][C:2]=[C:3][C:4]>>[C:1]";
-        assert!(!run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
-            "neutral template must match E-alkene");
-        assert!(!run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
-            "neutral template must match Z-alkene");
+        assert!(
+            !run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
+            "neutral template must match E-alkene"
+        );
+        assert!(
+            !run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
+            "neutral template must match Z-alkene"
+        );
     }
 
     #[test]
@@ -1166,10 +1185,14 @@ mod tests {
         let e_alkene = parse("C/C=C/C").unwrap();
         let z_alkene = parse("C/C=C\\C").unwrap();
         let smirks = "[C:1]/[C:2]=[C:3][C:4]>>[C:1]";
-        assert!(!run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
-            "one-sided template must match E-alkene");
-        assert!(!run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
-            "one-sided template must match Z-alkene");
+        assert!(
+            !run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
+            "one-sided template must match E-alkene"
+        );
+        assert!(
+            !run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
+            "one-sided template must match Z-alkene"
+        );
     }
 
     #[test]
@@ -1183,10 +1206,14 @@ mod tests {
         let z_hexene = parse("CC/C=C\\CC").unwrap();
         let e_hexene = parse("CC/C=C/CC").unwrap();
         let smirks = "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1][C:2]=O.[O:3]=[C:4]";
-        assert!(!run_reactants(smirks, &[&z_hexene]).unwrap().is_empty(),
-            "Z-template must match Z-3-hexene");
-        assert!(run_reactants(smirks, &[&e_hexene]).unwrap().is_empty(),
-            "Z-template must reject E-3-hexene");
+        assert!(
+            !run_reactants(smirks, &[&z_hexene]).unwrap().is_empty(),
+            "Z-template must match Z-3-hexene"
+        );
+        assert!(
+            run_reactants(smirks, &[&e_hexene]).unwrap().is_empty(),
+            "Z-template must reject E-3-hexene"
+        );
     }
 
     #[test]
@@ -1196,9 +1223,13 @@ mod tests {
         let z_alkene = parse("C/C=C\\C").unwrap();
         let e_alkene = parse("C/C=C/C").unwrap();
         let smirks = "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1][C:2][C:3][C:4]";
-        assert!(!run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
-            "Z-template must match Z-alkene");
-        assert!(run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
-            "Z-template must reject E-alkene");
+        assert!(
+            !run_reactants(smirks, &[&z_alkene]).unwrap().is_empty(),
+            "Z-template must match Z-alkene"
+        );
+        assert!(
+            run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
+            "Z-template must reject E-alkene"
+        );
     }
 }

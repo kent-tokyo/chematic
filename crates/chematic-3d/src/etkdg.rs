@@ -9,9 +9,11 @@
 //! 3. Minimize with constraints to preserve ring geometry
 
 use crate::coords::Coords3D;
-use crate::etkdg_knowledge::{classify_atom_type, default_torsion_preference, get_torsion_preference, AtomType};
-use chematic_core::{AtomIdx, Molecule};
+use crate::etkdg_knowledge::{
+    AtomType, classify_atom_type, default_torsion_preference, get_torsion_preference,
+};
 use crate::prng::Prng;
+use chematic_core::{AtomIdx, Molecule};
 
 /// Generate 3D coordinates using ETKDG with torsion angle preferences.
 ///
@@ -198,7 +200,12 @@ fn snap_amide_torsions(mol: &Molecule, coords: &mut super::coords::Coords3D) {
                 if min_dist > 30.0 {
                     let target_deg = if to_0 < to_180 { 0.0_f64 } else { 180.0_f64 };
                     *coords = set_dihedral(
-                        coords, mol, a_idx, b_idx, c_idx, d_idx,
+                        coords,
+                        mol,
+                        a_idx,
+                        b_idx,
+                        c_idx,
+                        d_idx,
                         target_deg.to_radians(),
                     );
                 }

@@ -16,9 +16,8 @@ static PRNG_COUNTER: std::sync::atomic::AtomicU64 =
 impl Prng {
     /// Create a new PRNG with a unique seed derived from a shared counter.
     pub fn new() -> Self {
-        let seed = PRNG_COUNTER
-            .fetch_add(0x9e37_79b9_7f4a_7c15, std::sync::atomic::Ordering::Relaxed)
-            | 1; // low-bit set ensures seed is always non-zero (xorshift64 absorbs at 0)
+        let seed =
+            PRNG_COUNTER.fetch_add(0x9e37_79b9_7f4a_7c15, std::sync::atomic::Ordering::Relaxed) | 1; // low-bit set ensures seed is always non-zero (xorshift64 absorbs at 0)
         Self(seed)
     }
 

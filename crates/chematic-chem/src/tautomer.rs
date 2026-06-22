@@ -1037,15 +1037,16 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
     // The canonical SMILES tiebreaker makes selection independent of input
     // SMILES write order (the previous h_assignment tiebreaker was not).
     let mut candidates: Vec<Molecule> = vec![clone_mol(&current)];
-    candidates.extend(enumerate_direct_aromatic_forms(&current, &config.blocked_atoms, 16));
+    candidates.extend(enumerate_direct_aromatic_forms(
+        &current,
+        &config.blocked_atoms,
+        16,
+    ));
     if candidates.len() > 1 {
         candidates.sort_by(|a, b| {
-            tautomer_score(b)
-                .cmp(&tautomer_score(a))
-                .then_with(|| {
-                    chematic_smiles::canonical_smiles(a)
-                        .cmp(&chematic_smiles::canonical_smiles(b))
-                })
+            tautomer_score(b).cmp(&tautomer_score(a)).then_with(|| {
+                chematic_smiles::canonical_smiles(a).cmp(&chematic_smiles::canonical_smiles(b))
+            })
         });
         current = candidates.into_iter().next().unwrap();
     }
@@ -1769,7 +1770,10 @@ mod tests {
         let mol = parse("c1nnn[nH]1").unwrap();
         let t = canonical_tautomer(&mol);
         let all_aromatic = t.atoms().all(|(_, a)| a.aromatic);
-        assert!(all_aromatic, "all atoms in canonical tetrazole must be aromatic");
+        assert!(
+            all_aromatic,
+            "all atoms in canonical tetrazole must be aromatic"
+        );
     }
 
     #[test]
@@ -1778,10 +1782,16 @@ mod tests {
         // produce valid canonical SMILES (no empty string, no panic).
         let e_imine = parse("C/C=N/C").expect("E-imine");
         let tautomers = enumerate_tautomers(&e_imine);
-        assert!(!tautomers.is_empty(), "E-imine must enumerate at least one tautomer");
+        assert!(
+            !tautomers.is_empty(),
+            "E-imine must enumerate at least one tautomer"
+        );
         for (i, t) in tautomers.iter().enumerate() {
             let smi = canonical_smiles(t);
-            assert!(!smi.is_empty(), "tautomer {i} must produce valid canonical SMILES");
+            assert!(
+                !smi.is_empty(),
+                "tautomer {i} must produce valid canonical SMILES"
+            );
         }
     }
 }

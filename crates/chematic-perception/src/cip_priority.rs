@@ -5,8 +5,9 @@
 //! This replaces the simplified 1-sphere CIP in stereo2d.rs / stereo3d.rs.
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
 
 /// A single "sphere layer" in a CIP branch expansion.
 /// Each tuple: (atomic_number, isotope, atomic_mass) sorted descending by CIP priority.
@@ -53,7 +54,7 @@ struct ExpandState {
     node: AtomIdx,
     parent: AtomIdx,
     depth: usize,
-    visited: HashSet<AtomIdx>,
+    visited: FxHashSet<AtomIdx>,
 }
 
 /// BFS-based CIP sphere expansion for the branch starting at `start`,
@@ -65,7 +66,7 @@ struct ExpandState {
 /// 2. **Ring revisit phantom**: if an already-visited atom is encountered,
 ///    add a phantom for it but don't expand further.
 fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<SphereLayer> {
-    let mut layers: HashMap<usize, Vec<(u8, Option<u16>, f64)>> = HashMap::new();
+    let mut layers: FxHashMap<usize, Vec<(u8, Option<u16>, f64)>> = FxHashMap::default();
     let max_depth = 8usize;
 
     // The start atom itself is at depth 1.
@@ -74,7 +75,7 @@ fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<Sp
 
     let mut expand_queue: VecDeque<ExpandState> = VecDeque::new();
     {
-        let mut v = HashSet::new();
+        let mut v = FxHashSet::default();
         v.insert(center);
         v.insert(start);
         expand_queue.push_back(ExpandState {

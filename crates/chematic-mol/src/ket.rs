@@ -43,7 +43,11 @@ use chematic_core::{Atom, BondOrder, Element, Molecule, MoleculeBuilder};
 pub enum KetError {
     InvalidJson(String),
     UnknownElement(String),
-    InvalidAtomIndex { bond_idx: usize, atom_idx: usize, natoms: usize },
+    InvalidAtomIndex {
+        bond_idx: usize,
+        atom_idx: usize,
+        natoms: usize,
+    },
     MissingField(&'static str),
 }
 
@@ -52,8 +56,14 @@ impl std::fmt::Display for KetError {
         match self {
             KetError::InvalidJson(s) => write!(f, "KET: invalid JSON: {s}"),
             KetError::UnknownElement(sym) => write!(f, "KET: unknown element '{sym}'"),
-            KetError::InvalidAtomIndex { bond_idx, atom_idx, natoms } =>
-                write!(f, "KET: bond {bond_idx} references atom {atom_idx} (only {natoms} atoms)"),
+            KetError::InvalidAtomIndex {
+                bond_idx,
+                atom_idx,
+                natoms,
+            } => write!(
+                f,
+                "KET: bond {bond_idx} references atom {atom_idx} (only {natoms} atoms)"
+            ),
             KetError::MissingField(fld) => write!(f, "KET: missing required field '{fld}'"),
         }
     }
@@ -76,8 +86,8 @@ pub fn parse_ket(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), KetError> {
 /// Parse a KET string and return 3D coordinates `(x, y, z)`.
 #[allow(clippy::type_complexity)]
 pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), KetError> {
-    let v: serde_json::Value = serde_json::from_str(input)
-        .map_err(|e| KetError::InvalidJson(e.to_string()))?;
+    let v: serde_json::Value =
+        serde_json::from_str(input).map_err(|e| KetError::InvalidJson(e.to_string()))?;
 
     // Locate the molecule node.  Two supported layouts:
     // 1. Flat:   { "atoms": [...], "bonds": [...] }
@@ -118,7 +128,7 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
     let bonds_json = mol_node
         .get("bonds")
         .and_then(|b| b.as_array())
-        .unwrap_or(&empty_bonds);  // bonds is optional (single-atom molecules)
+        .unwrap_or(&empty_bonds); // bonds is optional (single-atom molecules)
 
     if bonds_json.len() > MAX_BONDS {
         return Err(KetError::InvalidJson(format!(
@@ -155,10 +165,7 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
                 .ok_or_else(|| KetError::UnknownElement(label.to_string()))?
         };
 
-        let charge = atom_v
-            .get("charge")
-            .and_then(|c| c.as_i64())
-            .unwrap_or(0) as i8;
+        let charge = atom_v.get("charge").and_then(|c| c.as_i64()).unwrap_or(0) as i8;
 
         let isotope = atom_v
             .get("isotope")
@@ -197,26 +204,35 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
 
     // ── Bonds ─────────────────────────────────────────────────────────────────
     for (bidx, bond_v) in bonds_json.iter().enumerate() {
-        let bond_type = bond_v
-            .get("type")
-            .and_then(|t| t.as_u64())
-            .unwrap_or(1) as u8;
+        let bond_type = bond_v.get("type").and_then(|t| t.as_u64()).unwrap_or(1) as u8;
 
         let atom_refs = bond_v
             .get("atoms")
             .and_then(|a| a.as_array())
             .ok_or(KetError::MissingField("bond.atoms"))?;
 
-        let a = atom_refs.first().and_then(|v| v.as_u64())
+        let a = atom_refs
+            .first()
+            .and_then(|v| v.as_u64())
             .ok_or(KetError::MissingField("bond.atoms[0]"))? as usize;
-        let b = atom_refs.get(1).and_then(|v| v.as_u64())
+        let b = atom_refs
+            .get(1)
+            .and_then(|v| v.as_u64())
             .ok_or(KetError::MissingField("bond.atoms[1]"))? as usize;
 
         if a >= natoms {
-            return Err(KetError::InvalidAtomIndex { bond_idx: bidx, atom_idx: a, natoms });
+            return Err(KetError::InvalidAtomIndex {
+                bond_idx: bidx,
+                atom_idx: a,
+                natoms,
+            });
         }
         if b >= natoms {
-            return Err(KetError::InvalidAtomIndex { bond_idx: bidx, atom_idx: b, natoms });
+            return Err(KetError::InvalidAtomIndex {
+                bond_idx: bidx,
+                atom_idx: b,
+                natoms,
+            });
         }
 
         // Stereo from bond.stereo field (optional)
@@ -253,7 +269,7 @@ pub fn write_ket(mol: &Molecule, coords: &[(f64, f64)]) -> String {
 
 /// Write a molecule to KET format with 3D coordinates.
 pub fn write_ket_3d(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     let atoms: Vec<Value> = (0..mol.atom_count())
         .map(|i| {
@@ -279,13 +295,13 @@ pub fn write_ket_3d(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
             use chematic_core::BondIdx;
             let bond = mol.bond(BondIdx(i as u32));
             let (bond_type, stereo) = match bond.order {
-                BondOrder::Single   => (1u8, 0u8),
-                BondOrder::Up       => (1, 1),
-                BondOrder::Down     => (1, 6),
-                BondOrder::Double   => (2, 0),
-                BondOrder::Triple   => (3, 0),
+                BondOrder::Single => (1u8, 0u8),
+                BondOrder::Up => (1, 1),
+                BondOrder::Down => (1, 6),
+                BondOrder::Double => (2, 0),
+                BondOrder::Triple => (3, 0),
                 BondOrder::Aromatic => (4, 0),
-                _                   => (1, 0),
+                _ => (1, 0),
             };
             let mut b = json!({
                 "type": bond_type,
@@ -374,7 +390,10 @@ mod tests {
         assert_eq!(mol.bond_count(), 6);
         // All bonds should be aromatic
         for i in 0..mol.bond_count() {
-            assert_eq!(mol.bond(chematic_core::BondIdx(i as u32)).order, BondOrder::Aromatic);
+            assert_eq!(
+                mol.bond(chematic_core::BondIdx(i as u32)).order,
+                BondOrder::Aromatic
+            );
         }
     }
 
@@ -435,7 +454,11 @@ mod tests {
 
     #[test]
     fn parse_ket_bad_bond_index_errors() {
-        let ket = r#"{"atoms":[{"label":"C","location":[0,0,0]}],"bonds":[{"type":1,"atoms":[0,99]}]}"#;
-        assert!(matches!(parse_ket(ket), Err(KetError::InvalidAtomIndex { .. })));
+        let ket =
+            r#"{"atoms":[{"label":"C","location":[0,0,0]}],"bonds":[{"type":1,"atoms":[0,99]}]}"#;
+        assert!(matches!(
+            parse_ket(ket),
+            Err(KetError::InvalidAtomIndex { .. })
+        ));
     }
 }

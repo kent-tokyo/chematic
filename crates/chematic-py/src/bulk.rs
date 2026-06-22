@@ -437,6 +437,36 @@ pub fn map4<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<u3
 }
 
 // ---------------------------------------------------------------------------
+// bulk.substructure_search — parallel SMARTS screen
+// ---------------------------------------------------------------------------
+
+/// Screen a list of SMILES against a SMARTS pattern in parallel.
+///
+/// Returns a ``list[bool]`` of length N (same order as ``smiles``).
+/// ``True`` if the molecule matches; ``False`` if it does not match or if the
+/// SMILES is invalid.  The SMARTS is compiled once and shared across threads.
+///
+///     hits = chematic.bulk.substructure_search("[nH]", smiles_list)
+///     actives = [s for s, h in zip(smiles_list, hits) if h]
+#[pyfunction]
+#[pyo3(signature = (smarts, smiles))]
+pub fn substructure_search(smarts: &str, smiles: Vec<String>) -> PyResult<Vec<bool>> {
+    let query = chematic_smarts::parse_smarts(smarts)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+
+    let results: Vec<bool> = smiles
+        .par_iter()
+        .map(|smi| {
+            chematic_smiles::parse(smi)
+                .map(|mol| !chematic_smarts::find_matches(&query, &mol).is_empty())
+                .unwrap_or(false)
+        })
+        .collect();
+
+    Ok(results)
+}
+
+// ---------------------------------------------------------------------------
 // Register the bulk submodule
 // ---------------------------------------------------------------------------
 
@@ -448,5 +478,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(descriptors, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_search, m)?)?;
+    m.add_function(wrap_pyfunction!(substructure_search, m)?)?;
     Ok(())
 }

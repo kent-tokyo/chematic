@@ -574,10 +574,7 @@ pub fn get_torsion_preference(
     }
 
     // Piperazine / diamine N–C–C–N: gauche preference (~60°) from chair.
-    if b_type == AtomType::CSp3
-        && c_type == AtomType::CSp3
-        && is_sat_n(a_type)
-        && is_sat_n(d_type)
+    if b_type == AtomType::CSp3 && c_type == AtomType::CSp3 && is_sat_n(a_type) && is_sat_n(d_type)
     {
         return Some(TorsionPreference {
             angle_deg: 60.0,
@@ -893,7 +890,11 @@ mod tests {
             .map(AtomIdx)
             .find(|&i| mol.atom(i).element.atomic_number() == 8)
             .expect("must have O");
-        let o_neighbor = mol.neighbors(o_idx).next().map(|(n, _)| n).expect("O has neighbors");
+        let o_neighbor = mol
+            .neighbors(o_idx)
+            .next()
+            .map(|(n, _)| n)
+            .expect("O has neighbors");
         assert_eq!(classify_atom_type(&mol, o_idx), AtomType::OAromatic);
         assert_eq!(classify_atom_type(&mol, o_neighbor), AtomType::CAromatic);
         // Torsion involving OAromatic–CAromatic as B–C pair should prefer 0°
