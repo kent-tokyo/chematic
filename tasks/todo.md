@@ -1,6 +1,6 @@
 # chematic — Status & Roadmap
 
-Current version: **v0.4.15** (2026-06-21) — perf branch in progress
+Current version: **v0.4.16** (2026-06-22)
 
 ---
 
@@ -94,7 +94,8 @@ Current version: **v0.4.15** (2026-06-21) — perf branch in progress
 
 | Version | Date | Highlights |
 |---------|------|-----------|
-| [Unreleased] | 2026-06-22 | **Perf**: shared SSSR in SMARTS matching (117→1 per Crippen, ~480→1 per PAINS, ~300→1 per BRENK); `logp_and_mr()` combined Crippen pass; `logd_from_logp()` helper; `cns_mpo_score` logP dedup; `eccentric_connectivity_index` reuses `graph_eccentricities`; `heavy_degrees()` pre-comp in randic/zagreb. New public API: `find_matches_with_rings`, `find_matches_with_rings_and_config`, `logp_and_mr`, `logd_from_logp`. CI: setup-python v6, upload-artifact v7 |
+| [Unreleased] | — | — |
+| v0.4.16 | 2026-06-22 | **Perf**: shared SSSR in SMARTS matching (117→1 per Crippen, ~480→1 per PAINS, ~300→1 per BRENK); `logp_and_mr()` combined Crippen pass; `logd_from_logp()` helper; `cns_mpo_score` logP dedup; `eccentric_connectivity_index` reuses `graph_eccentricities`; `heavy_degrees()` pre-comp in randic/zagreb. New public API: `find_matches_with_rings`, `find_matches_with_rings_and_config`, `logp_and_mr`, `logd_from_logp`. CI: setup-python v6, upload-artifact v7 |
 | v0.4.15 | 2026-06-21 | Tautomer tetrazole 1H/2H normalization — BFS 1,2-shift + canonical SMILES tiebreaker; CDXML Order=1.5→Aromatic |
 | v0.4.13 | 2026-06-21 | HBD S-H fix; TPSA nitro-N / oxide bridge / Kekulé-N fixes; LogP oxide bridge fix; `retro_disconnect()` 60 retro-SMIRKS; ETKDG 40 torsion patterns; bulk TPSA ±1.0/LogP ±0.3/HBD 100% |
 | v0.4.12 | 2026-06-21 | SMARTS atom map `:N` support (`[O;D1;H0:3]`); fix aromatic-bond false MapNumberMismatch; fix `[C:]` parse error; propagate atom_map in mol_to_query |
