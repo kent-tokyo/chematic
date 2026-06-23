@@ -28,6 +28,7 @@ pub mod pharmacophore_fp_3d;
 pub(crate) mod prng;
 pub mod sasa;
 pub mod shape_descriptors;
+pub mod spectrophores;
 pub mod stereo3d;
 pub mod usr;
 pub mod xyz;
@@ -66,6 +67,9 @@ pub use sasa::{
 pub use shape_descriptors::{
     asphericity, eccentricity, npr1, npr2, plane_of_best_fit, pmi, pmi1, pmi2, pmi3,
     radius_of_gyration,
+};
+pub use spectrophores::{
+    SpectrophoresConfig, SpectrophoresNorm, spectrophores, tanimoto_spectrophores,
 };
 pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
 pub use usr::{shape_screen, usr_descriptors, usr_from_dg, usr_similarity};

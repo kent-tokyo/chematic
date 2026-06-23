@@ -1659,6 +1659,39 @@ impl Mol {
         chematic_3d::autocorr_3d(&self.inner, &c3d)
     }
 
+    /// Spectrophores 3D fingerprint — 48-element vector.
+    ///
+    /// Encodes the electrostatic, lipophilic, aromatic, and H-bond character
+    /// of the molecule's 3D surface into a fixed-size numerical vector suitable
+    /// for 3D QSAR, shape-based screening, and virtual screening.
+    ///
+    /// Requires 3D coordinates (one ``[x, y, z]`` per heavy atom, in Å).
+    /// Use :meth:`generate_3d` to obtain coordinates.
+    ///
+    /// Returns a list of 48 floats organised as four blocks of 12 probe values:
+    /// electrostatic, lipophilic, aromatic, H-bond (in that order).
+    ///
+    /// Reference: Silicos-it Spectrophores (patent expired 2024).
+    ///
+    ///     coords = mol.generate_3d()
+    ///     fp = mol.spectrophores(coords)          # len == 48
+    ///     fp_z = mol.spectrophores(coords, normalize="zscore")
+    ///     sim = chematic.tanimoto_spectrophores(fp1, fp2)
+    #[pyo3(signature = (coords, normalize = "none"))]
+    fn spectrophores(&self, coords: Vec<[f64; 3]>, normalize: &str) -> Vec<f64> {
+        let c3d = flat_to_coords3d(&coords);
+        let norm = match normalize.to_lowercase().as_str() {
+            "zscore" | "z-score" => chematic_3d::SpectrophoresNorm::ZScore,
+            "l2" => chematic_3d::SpectrophoresNorm::L2,
+            _ => chematic_3d::SpectrophoresNorm::None,
+        };
+        let config = chematic_3d::SpectrophoresConfig {
+            normalize: norm,
+            ..Default::default()
+        };
+        chematic_3d::spectrophores(&self.inner, &c3d, &config)
+    }
+
     // -----------------------------------------------------------------------
     // 3D file I/O
     // -----------------------------------------------------------------------
@@ -3801,6 +3834,21 @@ fn tanimoto_map4(a: Vec<u32>, b: Vec<u32>) -> f64 {
     chematic_fp::tanimoto_map4(&a, &b)
 }
 
+/// Tanimoto-like similarity between two Spectrophores fingerprints.
+///
+/// Uses the USR formula ``S = 1 / (1 + mean|a − b|)``, returning values in (0, 1].
+/// Both vectors must have the same length (typically 48).
+///
+///     coords1 = mol1.generate_3d()
+///     coords2 = mol2.generate_3d()
+///     fp1 = mol1.spectrophores(coords1)
+///     fp2 = mol2.spectrophores(coords2)
+///     sim = chematic.tanimoto_spectrophores(fp1, fp2)
+#[pyfunction]
+fn tanimoto_spectrophores(a: Vec<f64>, b: Vec<f64>) -> f64 {
+    chematic_3d::tanimoto_spectrophores(&a, &b)
+}
+
 /// Butina clustering — group molecules by ECFP4 Tanimoto similarity.
 ///
 /// Returns a list of clusters; each cluster is a list of SMILES indices (centroid first).
@@ -5267,6 +5315,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_xyz, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_map4, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_mhfp, m)?)?;
+    m.add_function(wrap_pyfunction!(tanimoto_spectrophores, m)?)?;
     m.add_function(wrap_pyfunction!(butina_cluster, m)?)?;
     m.add_function(wrap_pyfunction!(maxmin_picks, m)?)?;
     m.add_function(wrap_pyfunction!(molecule_report, m)?)?;
