@@ -385,6 +385,54 @@ pub fn kappa3(mol: &Molecule) -> f64 {
     factor * (n_f - 3.0).powi(2) / p3.powi(2)
 }
 
+/// Compute κ1, κ2, κ3 in a single `heavy_indices` pass.
+///
+/// Returns `(κ1, κ2, κ3)`. Use when all three are needed to avoid
+/// three redundant `heavy_indices` computations.
+pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
+    let heavy = heavy_indices(mol);
+    let n = heavy.len();
+
+    let k1 = if n >= 2 {
+        let p1 = count_paths(mol, &heavy, 1);
+        if p1 == 0 {
+            0.0
+        } else {
+            let nf = n as f64;
+            nf * (nf - 1.0).powi(2) / (p1 as f64).powi(2)
+        }
+    } else {
+        0.0
+    };
+
+    let k2 = if n >= 3 {
+        let p2 = count_paths(mol, &heavy, 2);
+        if p2 == 0 {
+            0.0
+        } else {
+            let nf = n as f64;
+            (nf - 1.0) * (nf - 2.0).powi(2) / (p2 as f64).powi(2)
+        }
+    } else {
+        0.0
+    };
+
+    let k3 = if n >= 4 {
+        let p3 = count_paths(mol, &heavy, 3);
+        if p3 == 0 {
+            0.0
+        } else {
+            let nf = n as f64;
+            let factor = if n % 2 == 1 { nf - 1.0 } else { nf - 2.0 };
+            factor * (nf - 3.0).powi(2) / (p3 as f64).powi(2)
+        }
+    } else {
+        0.0
+    };
+
+    (k1, k2, k3)
+}
+
 // ─── Chi Connectivity Indices ────────────────────────────────────────────────
 
 /// Kier-Hall χ0 connectivity index.
@@ -951,6 +999,17 @@ mod tests {
     #[test]
     fn kappa1_single_atom_zero() {
         assert_eq!(kappa1(&mol("C")), 0.0);
+    }
+
+    #[test]
+    fn kappa_all_matches_individual() {
+        for smi in ["CC", "CCC", "CCCC", "c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O"] {
+            let m = mol(smi);
+            let (k1, k2, k3) = kappa_all(&m);
+            assert!((k1 - kappa1(&m)).abs() < 1e-10, "{smi}: kappa1 mismatch");
+            assert!((k2 - kappa2(&m)).abs() < 1e-10, "{smi}: kappa2 mismatch");
+            assert!((k3 - kappa3(&m)).abs() < 1e-10, "{smi}: kappa3 mismatch");
+        }
     }
 
     // ── Chi Connectivity ─────────────────────────────────────────────────────

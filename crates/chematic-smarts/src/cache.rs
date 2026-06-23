@@ -16,7 +16,7 @@
 //! `parse_smarts()` + `find_matches()` each time.
 
 use rustc_hash::FxHashMap;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use crate::{
     match_vf2::{MatchConfig, find_matches_with_config},
@@ -34,7 +34,7 @@ pub struct SmartsCache {
     // std HashMap (SipHash) intentionally — keys are user-supplied SMARTS strings;
     // FxHash has no random seed and is vulnerable to HashDoS with adversarial input.
     store: HashMap<String, QueryMolecule>,
-    order: Vec<String>, // LRU order (front = oldest, back = newest)
+    order: VecDeque<String>, // LRU order (front = oldest, back = newest)
 }
 
 impl SmartsCache {
@@ -43,7 +43,7 @@ impl SmartsCache {
         Self {
             capacity: capacity.max(1),
             store: HashMap::new(),
-            order: Vec::new(),
+            order: VecDeque::new(),
         }
     }
 
@@ -52,19 +52,18 @@ impl SmartsCache {
         if !self.store.contains_key(smarts) {
             let qmol = parse_smarts(smarts)?;
             if self.store.len() >= self.capacity {
-                // Evict LRU
-                if let Some(oldest) = self.order.first().cloned() {
+                // Evict LRU: pop_front is O(1) with VecDeque
+                if let Some(oldest) = self.order.pop_front() {
                     self.store.remove(&oldest);
-                    self.order.remove(0);
                 }
             }
             self.store.insert(smarts.to_string(), qmol);
-            self.order.push(smarts.to_string());
+            self.order.push_back(smarts.to_string());
         } else {
             // Move to back (most recently used)
             if let Some(pos) = self.order.iter().position(|s| s == smarts) {
-                let key = self.order.remove(pos);
-                self.order.push(key);
+                let key = self.order.remove(pos).unwrap();
+                self.order.push_back(key);
             }
         }
         Ok(self.store.get(smarts).unwrap())

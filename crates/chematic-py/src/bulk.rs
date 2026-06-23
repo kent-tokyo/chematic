@@ -189,6 +189,8 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
             let m = &mol;
             let (pka_a, pka_b) = chematic_chem::pka_both(m);
             let (logp_val, mr_val) = chematic_chem::logp_and_mr(m);
+            let (k1, k2, k3) = chematic_chem::kappa_all(m);
+            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = chematic_chem::chi_all(m);
             Desc {
                 mw: chematic_chem::molecular_weight(m),
                 exact_mass: chematic_chem::exact_mass(m),
@@ -212,19 +214,19 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
                 asa: chematic_chem::labute_asa(m),
                 bertz: chematic_chem::bertz_ct(m),
                 wi: chematic_chem::wiener_index(m),
-                k1: chematic_chem::kappa1(m),
-                k2: chematic_chem::kappa2(m),
-                k3: chematic_chem::kappa3(m),
-                c0: chematic_chem::chi0(m),
-                c1: chematic_chem::chi1(m),
-                c2: chematic_chem::chi2(m),
-                c3: chematic_chem::chi3(m),
-                c4: chematic_chem::chi4(m),
-                c0v: chematic_chem::chi0v(m),
-                c1v: chematic_chem::chi1v(m),
-                c2v: chematic_chem::chi2v(m),
-                c3v: chematic_chem::chi3v(m),
-                c4v: chematic_chem::chi4v(m),
+                k1,
+                k2,
+                k3,
+                c0,
+                c1,
+                c2,
+                c3,
+                c4,
+                c0v,
+                c1v,
+                c2v,
+                c3v,
+                c4v,
                 n_ah: chematic_chem::num_aromatic_heterocycles(m),
                 n_alh: chematic_chem::num_aliphatic_heterocycles(m),
                 n_sr: chematic_chem::num_saturated_rings(m),

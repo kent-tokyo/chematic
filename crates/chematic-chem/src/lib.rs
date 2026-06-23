@@ -122,8 +122,9 @@ pub use tautomer::{
 pub use topo_descriptors::{
     bertz_ct, chi_all, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v,
     eccentric_connectivity_index, graph_diameter, graph_eccentricities, graph_radius, hosoya_index,
-    kappa1, kappa2, kappa3, labute_asa, labute_asa_per_atom, padmakar_ivan_index, petitjean_index,
-    randic_index, topological_distance_matrix, wiener_index, zagreb_index_m1, zagreb_index_m2,
+    kappa_all, kappa1, kappa2, kappa3, labute_asa, labute_asa_per_atom, padmakar_ivan_index,
+    petitjean_index, randic_index, topological_distance_matrix, wiener_index, zagreb_index_m1,
+    zagreb_index_m2,
 };
 pub use vsa::{estate_vsa, peoe_vsa, slogp_vsa, smr_vsa};
 pub use workflow::{
