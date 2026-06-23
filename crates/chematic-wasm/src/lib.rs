@@ -207,11 +207,12 @@ impl MolHandle {
         chematic_depict::depict_svg_opts(&self.inner, &opts.to_render_options())
     }
 
-    /// 2D PNG depiction (rasterized from SVG).
-    /// Returns PNG data as base64-encoded string for embedding in HTML/JS.
+    /// 2D PNG depiction — not available in the WASM build (PNG stack disabled to reduce bundle size).
+    /// Use `depict_svg()` in browser contexts; rasterize client-side if needed.
     pub fn depict_png(&self) -> Vec<u8> {
-        let layout = chematic_depict::compute_layout(&self.inner);
-        chematic_depict::render_png(&self.inner, &layout)
+        // tiny-skia is excluded from the WASM build to save ~200 KB.
+        // Browsers can display SVG directly; client-side rasterization via Canvas API is preferred.
+        Vec::new()
     }
 
     // -----------------------------------------------------------------------
@@ -737,80 +738,8 @@ pub fn brics_fragment_count(mol: &MolHandle) -> usize {
     chematic_chem::brics_fragments(&mol.inner).len()
 }
 
-/// Run molecular dynamics simulation and return trajectory as JSON.
-///
-/// Returns JSON object with trajectory frames: `{ "frames": [{ "step": N, "potential": E, "kinetic": K, "temp": T }, …] }`
-/// Uses NVT ensemble (Berendsen thermostat) at 300 K by default.
-/// Note: Limited to molecules with ~50 atoms or fewer for practical WASM performance.
-#[wasm_bindgen]
-pub fn run_md_json(mol: &MolHandle, steps: usize, temp_k: f64) -> String {
-    if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(
-            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
-            WASM_MAX_ATOMS
-        );
-    }
-    const MIN_TEMP_K: f64 = 1.0;
-    const MAX_TEMP_K: f64 = 100_000.0;
-    if !temp_k.is_finite() || !(MIN_TEMP_K..=MAX_TEMP_K).contains(&temp_k) {
-        return format!(
-            r#"{{"error":"temperature must be between {} and {} K"}}"#,
-            MIN_TEMP_K, MAX_TEMP_K
-        );
-    }
-    const MAX_MD_STEPS: usize = 10_000;
-    let steps = steps.min(MAX_MD_STEPS);
-    let coords = chematic_3d::generate_coords(&mol.inner);
-    let config = chematic_3d::MDConfig {
-        timestep_fs: 1.0,
-        steps,
-        temperature_k: temp_k,
-        thermostat: chematic_3d::Thermostat::Berendsen { tau_fs: 100.0 },
-        save_every: (steps / 20).max(1),
-        coulomb: true,
-    };
-    let traj = chematic_3d::run_md(&mol.inner, coords, &config);
-
-    // Serialize trajectory to JSON
-    let mut frames_json = Vec::new();
-    for frame in &traj.frames {
-        frames_json.push(format!(
-            r#"{{"step": {}, "potential": {:.4}, "kinetic": {:.4}, "temp": {:.2}}}"#,
-            frame.step, frame.potential_energy, frame.kinetic_energy, frame.temperature_k
-        ));
-    }
-
-    format!(r#"{{"frames": [{}]}}"#, frames_json.join(", "))
-}
-
-/// Compute direct Coulomb energy for a molecule with Gasteiger partial charges.
-///
-/// Returns JSON object: `{ "coulomb_energy": E, "unit": "kcal/mol" }`
-///
-/// # Arguments
-/// * `mol` - Molecule to evaluate
-///
-/// # Example (JavaScript)
-/// ```js
-/// const mol = parse_smiles("CCO");
-/// const result = coulomb_energy_json(mol);
-/// // { "coulomb_energy": -12.34, "unit": "kcal/mol" }
-/// ```
-#[wasm_bindgen]
-pub fn coulomb_energy_json(mol: &MolHandle) -> String {
-    let coords = chematic_3d::generate_coords(&mol.inner);
-    let charges = chematic_chem::gasteiger_charges(&mol.inner);
-    let energy = chematic_ewald::direct_coulomb(
-        &(0..coords.atom_count())
-            .map(|i| {
-                let p = coords.get(chematic_core::AtomIdx(i as u32));
-                [p.x, p.y, p.z]
-            })
-            .collect::<Vec<_>>(),
-        &charges,
-    );
-    format!(r#"{{"coulomb_energy": {:.4}, "unit": "kcal/mol"}}"#, energy)
-}
+// run_md_json and coulomb_energy_json removed to reduce WASM bundle size.
+// MD simulation is impractical in browser; Coulomb energy was the only user of chematic-ewald.
 
 /// Optimize molecular geometry using DREIDING force field.
 ///
@@ -1564,41 +1493,7 @@ pub fn mmff94_energy_breakdown_json(mol: &MolHandle) -> String {
     }
 }
 
-/// Scan a torsion dihedral i-j-k-l from 0° to 360° in `steps` increments.
-/// Returns JSON array: [{"angle":0.0,"energy":E},...] or {"error":"..."}.
-#[wasm_bindgen]
-pub fn torsion_scan_json(mol: &MolHandle, i: u32, j: u32, k: u32, l: u32, steps: u32) -> String {
-    if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(
-            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
-            WASM_MAX_ATOMS
-        );
-    }
-    let n = mol.inner.atom_count();
-    if i as usize >= n || j as usize >= n || k as usize >= n || l as usize >= n {
-        return r#"{"error":"atom index out of range"}"#.to_string();
-    }
-    let conf = chematic_3d::generate_coords(&mol.inner);
-    let coords: Vec<[f64; 3]> = (0..n)
-        .map(|idx| {
-            let p = conf.get(chematic_core::AtomIdx(idx as u32));
-            [p.x, p.y, p.z]
-        })
-        .collect();
-    let steps = (steps as usize).clamp(4, 360);
-    match chematic_ff::mmff94_torsion_scan(
-        &mol.inner, &coords, i as usize, j as usize, k as usize, l as usize, steps,
-    ) {
-        Ok(pts) => {
-            let entries: Vec<String> = pts
-                .iter()
-                .map(|(a, e)| format!(r#"{{"angle":{:.2},"energy":{:.4}}}"#, a, e))
-                .collect();
-            format!("[{}]", entries.join(","))
-        }
-        Err(e) => format!(r#"{{"error":"{}"}}"#, e),
-    }
-}
+// torsion_scan_json removed to reduce WASM bundle size (force-field loop; rarely used in browser).
 
 /// Compute MMFF94 partial charges using numeric atom types (Halgren 1996 eq. 15).
 /// Returns JSON: {"charges":[-0.28,0.15,...]} or {"error":"..."}.
@@ -3951,39 +3846,7 @@ pub fn mol_from_xyz(xyz: &str) -> Result<MolHandle, JsValue> {
 /// Returns JSON on success: `{"smiles":"CCO","atom_count":3,"bond_count":2}`.
 /// `atom_count` and `bond_count` refer to the heavy-atom skeleton (H removed).
 ///
-/// Returns JSON on error: `{"error":"molecule has 450 atoms; maximum is 300"}`.
-///
-/// Safe: never freezes. All internal loops are O(n²). Capped at 300 atoms.
-#[wasm_bindgen]
-pub fn determine_bonds_from_xyz_json(xyz_str: &str) -> String {
-    if xyz_str.len() > WASM_MAX_JSON_STRING_BYTES {
-        return format!(
-            r#"{{"error":"XYZ input too large ({} bytes)"}}"#,
-            xyz_str.len()
-        );
-    }
-    let (mol_topo, coords) = match chematic_3d::parse_xyz(xyz_str) {
-        Ok(r) => r,
-        Err(e) => return format!(r#"{{"error":"{}"}}"#, format!("{e:?}").replace('"', "\\\"")),
-    };
-    let atom_pairs: Vec<(chematic_core::Element, chematic_3d::Point3)> = mol_topo
-        .atoms()
-        .map(|(idx, atom)| (atom.element, coords.get(idx)))
-        .collect();
-    let mol_bonded = match chematic_3d::determine_bonds(&atom_pairs, 0.40) {
-        Ok(m) => m,
-        Err(e) => return format!(r#"{{"error":"{}"}}"#, e),
-    };
-    let mol_heavy = chematic_chem::remove_hydrogens(&mol_bonded);
-    let smiles = chematic_smiles::canonical_smiles(&mol_heavy);
-    let smiles_escaped = smiles.replace('\\', "\\\\").replace('"', "\\\"");
-    format!(
-        r#"{{"smiles":"{}","atom_count":{},"bond_count":{}}}"#,
-        smiles_escaped,
-        mol_heavy.atom_count(),
-        mol_heavy.bond_count(),
-    )
-}
+// determine_bonds_from_xyz_json removed to reduce WASM bundle size.
 
 /// Serialize a molecule to XYZ format.
 ///

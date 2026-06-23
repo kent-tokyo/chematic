@@ -4,18 +4,22 @@
 
 #![forbid(unsafe_code)]
 
+pub mod eps;
 pub mod grid;
 pub mod layout;
+#[cfg(feature = "png")]
 pub mod png;
 pub mod similarity_map;
 pub mod svg;
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule};
 
+pub use eps::{render_eps, render_eps_opts};
 pub use grid::{depict_svg_grid, depict_svg_grid_with_opts};
 pub use layout::{
     BOND_LEN, Layout, Point, compute_layout, detect_crossings, suggest_bond_direction,
 };
+#[cfg(feature = "png")]
 pub use png::{render_png, render_png_opts};
 pub use reaction_svg::{depict_reaction_svg, depict_reaction_svg_opts};
 pub use svg::{
@@ -152,6 +156,55 @@ fn depict_data_from_layout(mol: &Molecule, layout: &Layout) -> DepictData {
         .collect();
 
     DepictData { atoms, bonds }
+}
+
+// ---------------------------------------------------------------------------
+// PDF output (optional feature)
+// ---------------------------------------------------------------------------
+
+/// Render a molecule as a PDF document (bytes).
+///
+/// Requires the `pdf` Cargo feature.
+/// Equivalent to `depict_svg` but converts the SVG to a PDF byte vector.
+#[cfg(feature = "pdf")]
+pub fn depict_pdf(mol: &Molecule) -> Vec<u8> {
+    let svg = depict_svg(mol);
+    svg_bytes_to_pdf(&svg)
+}
+
+/// Render a molecule as a PDF document (bytes) with full style control.
+///
+/// Requires the `pdf` Cargo feature.
+#[cfg(feature = "pdf")]
+pub fn depict_pdf_opts(mol: &Molecule, opts: &RenderOptions) -> Vec<u8> {
+    let svg = depict_svg_opts(mol, opts);
+    svg_bytes_to_pdf(&svg)
+}
+
+#[cfg(feature = "pdf")]
+fn svg_bytes_to_pdf(svg: &str) -> Vec<u8> {
+    let mut options = svg2pdf::usvg::Options::default();
+    options.fontdb_mut().load_system_fonts();
+    let tree = svg2pdf::usvg::Tree::from_str(svg, &options)
+        .expect("generated SVG should parse");
+    svg2pdf::to_pdf(&tree, svg2pdf::ConversionOptions::default(), svg2pdf::PageOptions::default())
+        .expect("PDF conversion should not fail for valid SVG")
+}
+
+/// Compute a 2D layout and render it as an EPS string.
+///
+/// Generates a self-contained PostScript EPS document from the molecule's
+/// 2D structure without any external dependencies.
+/// Suitable for publication-quality vector graphics in LaTeX, Adobe Illustrator, etc.
+pub fn depict_eps(mol: &Molecule) -> String {
+    let layout = compute_layout(mol);
+    render_eps(mol, &layout)
+}
+
+/// Compute a 2D layout and render it as EPS with full style control.
+pub fn depict_eps_opts(mol: &Molecule, opts: &RenderOptions) -> String {
+    let layout = compute_layout(mol);
+    render_eps_opts(mol, &layout, opts)
 }
 
 /// Compute a 2D layout and render it as an SVG string.

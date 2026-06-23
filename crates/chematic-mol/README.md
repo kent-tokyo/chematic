@@ -33,6 +33,11 @@ Pure Rust molecular file format reader/writer — **SDF, MOL V2000/V3000, CML, C
 - **Parse/Write**: Reaction SMILES/SMIRKS via RXN format
 - **Validation**: Product valence checking
 
+### ChemicalJSON (.cjson)
+- **Parse**: `parse_cjson(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), CjsonError>` — returns molecule + 3D coordinates
+- **Write**: `write_cjson(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String`
+- Used by Avogadro 2 and the MolSSI Open Chemistry toolkit
+
 ### Error Handling (NEW in v0.1.32)
 - **Display trait**: All error types implement `std::fmt::Display`
 - **Error trait**: CmlError, CdxmlError, Mol2Error, RxnParseError now implement `std::error::Error`
@@ -87,6 +92,19 @@ let (mol, metadata, coords) = parse_mol_v3000_with_coords(v3000_str)?;
 // Now V3000 coordinates are available for 2D layout!
 ```
 
+### ChemicalJSON round-trip
+
+```rust
+use chematic_mol::{parse_cjson, write_cjson};
+
+let cjson_str = "..."; // Avogadro 2 / Open Chemistry JSON
+let (mol, coords_3d) = parse_cjson(cjson_str)?;
+// coords_3d: Vec<(f64, f64, f64)>
+
+// Write back
+let output = write_cjson(&mol, &coords_3d);
+```
+
 ### Handle Y-coordinate systems
 
 ```rust
@@ -124,6 +142,7 @@ println!("{}", mol_str);  // V2000 format
 | CML | ✅ | ✅ | ✅ | Y-up convention (documented) |
 | CDXML | ✅ | — | ✅ | Y-down convention (documented) |
 | MDL RXN | ✅ | ✅ | — | V2000 reactants/products |
+| ChemicalJSON (.cjson) | ✅ | ✅ | ✅ (3D) | Avogadro 2, MolSSI Open Chemistry |
 
 ## Coordinate System Handling
 

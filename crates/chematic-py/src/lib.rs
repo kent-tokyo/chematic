@@ -703,6 +703,10 @@ impl Mol {
         d.set_item("labute_asa", chematic_chem::labute_asa(m))?;
         d.set_item("bertz_ct", chematic_chem::bertz_ct(m))?;
         d.set_item("wiener_index", chematic_chem::wiener_index(m))?;
+        d.set_item("schultz_mti", chematic_chem::schultz_mti(m))?;
+        d.set_item("gutman_mti", chematic_chem::gutman_mti(m))?;
+        d.set_item("vabc", chematic_chem::vabc(m))?;
+        d.set_item("gravitational_index", chematic_chem::gravitational_index(m))?;
         d.set_item("zagreb_m2", chematic_chem::zagreb_index_m2(m))?;
         d.set_item("kappa1", chematic_chem::kappa1(m))?;
         d.set_item("kappa2", chematic_chem::kappa2(m))?;
@@ -871,6 +875,51 @@ impl Mol {
     ///     SVG(mol.svg())
     fn svg(&self) -> String {
         chematic_depict::depict_svg(&self.inner)
+    }
+
+    /// Export the 2D structure as an EPS string.
+    ///
+    /// Generates a self-contained PostScript EPS document.
+    /// Suitable for publication-quality vector graphics in LaTeX, Illustrator, etc.
+    ///
+    ///     eps_str = mol.to_eps()
+    ///     open("molecule.eps", "w").write(eps_str)
+    fn to_eps(&self) -> String {
+        chematic_depict::depict_eps(&self.inner)
+    }
+
+    /// Export as ChemicalJSON (.cjson) string.
+    ///
+    /// ``coords``: optional ``[[x,y,z], ...]`` list (Å), one per heavy atom.
+    /// Pass an empty list (default) to export topology only (no coordinates).
+    ///
+    ///     coords = mol.generate_3d()
+    ///     cjson_str = mol.to_cjson(coords)
+    ///     open("mol.cjson", "w").write(cjson_str)
+    ///
+    ///     # Topology-only (no 3D):
+    ///     cjson_str = mol.to_cjson()
+    #[pyo3(signature = (coords = vec![]))]
+    fn to_cjson(&self, coords: Vec<Vec<f64>>) -> String {
+        let c3d: Vec<(f64, f64, f64)> = coords
+            .iter()
+            .map(|c| {
+                (
+                    c.first().copied().unwrap_or(0.0),
+                    c.get(1).copied().unwrap_or(0.0),
+                    c.get(2).copied().unwrap_or(0.0),
+                )
+            })
+            .collect();
+        chematic_mol::write_cjson(&self.inner, &c3d)
+    }
+
+    /// Export the 2D structure as a PDF document (bytes).
+    ///
+    ///     pdf_bytes = mol.to_pdf()
+    ///     open("molecule.pdf", "wb").write(pdf_bytes)
+    fn to_pdf(&self) -> Vec<u8> {
+        chematic_depict::depict_pdf(&self.inner)
     }
 
     /// Jupyter Notebook / JupyterLab の自動描画フック。
@@ -2853,6 +2902,42 @@ impl Mol {
         chematic_chem::padmakar_ivan_index(&self.inner)
     }
 
+    /// Schultz molecular topological index (MTI).
+    ///
+    /// MTI = Σ_{i<j} (δᵢ + δⱼ) × dᵢⱼ, where δᵢ is heavy-atom degree.
+    /// Ref: Schultz, *J. Chem. Inf. Comput. Sci.* **1989**, 29, 227.
+    #[getter]
+    fn schultz_mti(&self) -> u64 {
+        chematic_chem::schultz_mti(&self.inner)
+    }
+
+    /// Gutman molecular topological index (MTI*).
+    ///
+    /// MTI* = Σ_{i<j} δᵢ × δⱼ × dᵢⱼ, where δᵢ is heavy-atom degree.
+    /// Ref: Gutman, *J. Serb. Chem. Soc.* **1994**, 59, 619.
+    #[getter]
+    fn gutman_mti(&self) -> u64 {
+        chematic_chem::gutman_mti(&self.inner)
+    }
+
+    /// VABC van der Waals volume approximation (Å³).
+    ///
+    /// Estimated from Bondi radii with spherical-cap overlap corrections for bonds.
+    /// Does not require 3D coordinates.
+    /// Ref: Zhao et al., *J. Org. Chem.* **2003**, 68, 7368.
+    #[getter]
+    fn vabc(&self) -> f64 {
+        chematic_chem::vabc(&self.inner)
+    }
+
+    /// Gravitational topological index.
+    ///
+    /// G = Σ_{i<j} mᵢ × mⱼ / dᵢⱼ², where mᵢ is average atomic mass.
+    #[getter]
+    fn gravitational_index(&self) -> f64 {
+        chematic_chem::gravitational_index(&self.inner)
+    }
+
     /// Bertz complexity index — information-theoretic graph complexity.
     #[getter]
     fn bertz_ct(&self) -> f64 {
@@ -3436,6 +3521,29 @@ fn from_cml(cml_str: &str) -> PyResult<Mol> {
             inner: Arc::new(mol),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Parse a ChemicalJSON (.cjson) string.
+///
+/// Returns ``(mol, coords)`` where ``coords`` is a list of ``[x, y, z]``
+/// coordinate triples (Å), one per heavy atom.  ``coords`` is empty when
+/// the file has no ``atoms.coords.3d`` field.
+///
+/// ChemicalJSON is the native format of Avogadro 2 and the MolSSI
+/// Open Chemistry toolkit.
+///
+/// Raises ``ValueError`` on parse failure.
+///
+///     mol, coords = chematic.from_cjson(open("mol.cjson").read())
+///     print(mol.smiles)
+///     # Round-trip:
+///     open("out.cjson", "w").write(mol.to_cjson(coords))
+#[pyfunction]
+fn from_cjson(cjson_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
+    let (mol, coords) = chematic_mol::parse_cjson(cjson_str)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let py_coords = coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
+    Ok((Mol { inner: Arc::new(mol) }, py_coords))
 }
 
 /// Parse a ChemDraw XML (CDXML) string into a ``Mol`` object.
@@ -5276,6 +5384,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(atom_color, m)?)?;
     m.add_function(wrap_pyfunction!(atom_color_rgb, m)?)?;
     m.add_function(wrap_pyfunction!(from_cml, m)?)?;
+    m.add_function(wrap_pyfunction!(from_cjson, m)?)?;
     m.add_function(wrap_pyfunction!(from_cdxml, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000, m)?)?;
     m.add_function(wrap_pyfunction!(from_condensed, m)?)?;

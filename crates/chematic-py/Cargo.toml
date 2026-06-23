@@ -30,7 +30,7 @@ chematic-smiles     = { path = "../chematic-smiles",     version = "0.4.14" }
 chematic-perception = { path = "../chematic-perception", version = "0.4.14" }
 chematic-chem       = { path = "../chematic-chem",       version = "0.4.14" }
 chematic-fp         = { path = "../chematic-fp",         version = "0.4.14" }
-chematic-depict     = { path = "../chematic-depict",     version = "0.4.14" }
+chematic-depict     = { path = "../chematic-depict",     version = "0.4.14", features = ["pdf"] }
 chematic-mol        = { path = "../chematic-mol",        version = "0.4.14" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.14" }
 chematic-inchi      = { path = "../chematic-inchi",      version = "0.4.14" }

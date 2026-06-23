@@ -1,6 +1,6 @@
 # chematic — Status & Roadmap
 
-Current version: **v0.4.18** (2026-06-22)
+Current version: **v0.4.18** (2026-06-22) — Unreleased work in progress on main
 
 ---
 
@@ -16,14 +16,14 @@ Current version: **v0.4.18** (2026-06-22)
 | `chematic-fp` | ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG, Tanimoto | 87 |
 | `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 51 |
 | `chematic-3d` | ETKDG, MD, SASA, USR shape screen, WHIM | 45 |
-| `chematic-depict` | 2D SVG, grid rendering | 28 |
+| `chematic-depict` | 2D SVG, grid rendering, **PDF (`pdf` feature)**, **EPS (pure Rust)** | 34 |
 | `chematic-rxn` | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`, RECAP/BRICS; **`retro_disconnect()` — 60 retro-SMIRKS** (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering** | 25 |
-| `chematic-inchi` | InChI/InChIKey: pure-Rust approx + IUPAC-exact (`native-inchi` feature, v1.07.5) | 28+16* |
+| `chematic-inchi` | InChI/InChIKey: pure-Rust approx (inline SHA-256, no sha2 dep) + IUPAC-exact (`native-inchi` feature, v1.07.5) | 28+16* |
 | `chematic-iupac` | IUPAC name generation, 25+ compound classes | 45 |
 | `chematic-mcp` | MCP server, **15 tools** (JSON-RPC 2.0 over stdio, `name_to_smiles` via PubChem) | 28 |
-| `chematic-mol` | SDF/MOL V2000/V3000, CML, CDXML | 31 |
-| `chematic-wasm` | 130+ WASM exports, npm `@kent-tokyo/chematic` | 209 |
-| `chematic-py` | PyO3 Python bindings (`pip install chematic`); Sprint 18–26: 300+ API endpoints | 300+ |
+| `chematic-mol` | SDF/MOL V2000/V3000, CML, CDXML, **ChemicalJSON (.cjson)** | 40 |
+| `chematic-wasm` | 160 WASM exports, npm `@kent-tokyo/chematic` (**504 KB gzip**, -38.5%) | 209 |
+| `chematic-py` | PyO3 Python bindings (`pip install chematic`); Sprint 18–26+: 300+ API endpoints | 300+ |
 | `chematic-ewald` | PME Ewald summation, B-spline interpolation | 12 |
 
 `cargo test --workspace --lib --quiet` → **2275 tests** (lib only), all passing
@@ -64,6 +64,27 @@ Current version: **v0.4.18** (2026-06-22)
 
 ---
 
+## WASM バンドルサイズ削減メモ (2026-06-23計測)
+
+**最終結果 (2026-06-23): 2156 KB raw / 819 KB gzip → 1309 KB raw / 510 KB gzip (−38%)**
+
+| 対策 | 効果 | 状況 |
+|------|------|------|
+| `tiny_skia` を optional `png` feature に移動、WASM で無効化 | −220 KB raw / −80 KB gzip | ✅ done |
+| `sha2` クレートをインライン SHA-256 (60行) に差し替え | ~−15 KB gzip | ✅ done |
+| `[profile.release] opt-level="z" lto=true codegen-units=1` | −541 KB raw / **−172 KB gzip** (最大効果) | ✅ done |
+| `wasm-opt -O3` を CI (pages.yml) に統合 | ~−5 KB gzip | ✅ done |
+| `run_md_json` / `coulomb_energy_json` / `torsion_scan_json` / `determine_bonds_from_xyz_json` 除去 + `chematic-ewald` 依存削除 | −5 KB gzip | ✅ done |
+| PAINS/Brenk SMARTS 圧縮 | **逆効果** (raw −26 KB だが gzip +4 KB) — 差し戻し | ❌ not worth it |
+
+**現状**: 819 KB → **504 KB gzip** (−38.5%)
+
+**次フェーズ候補**: 504 → ~450 KB gzip
+- コード削減: 使われていない WASM export の体系的な分析
+- IUPAC 命名モジュール削除オプション（ブラウザ用 lite ビルド）
+
+---
+
 ## Next candidates
 
 | Priority | Item |
@@ -94,7 +115,7 @@ Current version: **v0.4.18** (2026-06-22)
 
 | Version | Date | Highlights |
 |---------|------|-----------|
-| [Unreleased] | — | — |
+| [Unreleased] | 2026-06-23 | PDF/EPS 出力、ChemicalJSON、Schultz/Gutman MTI・VABC・Gravitational index、bulk.substructure_match、WASM 819→504 KB gzip (-38.5%) |
 | v0.4.16 | 2026-06-22 | **Perf**: shared SSSR in SMARTS matching (117→1 per Crippen, ~480→1 per PAINS, ~300→1 per BRENK); `logp_and_mr()` combined Crippen pass; `logd_from_logp()` helper; `cns_mpo_score` logP dedup; `eccentric_connectivity_index` reuses `graph_eccentricities`; `heavy_degrees()` pre-comp in randic/zagreb. New public API: `find_matches_with_rings`, `find_matches_with_rings_and_config`, `logp_and_mr`, `logd_from_logp`. CI: setup-python v6, upload-artifact v7 |
 | v0.4.15 | 2026-06-21 | Tautomer tetrazole 1H/2H normalization — BFS 1,2-shift + canonical SMILES tiebreaker; CDXML Order=1.5→Aromatic |
 | v0.4.13 | 2026-06-21 | HBD S-H fix; TPSA nitro-N / oxide bridge / Kekulé-N fixes; LogP oxide bridge fix; `retro_disconnect()` 60 retro-SMIRKS; ETKDG 40 torsion patterns; bulk TPSA ±1.0/LogP ±0.3/HBD 100% |

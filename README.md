@@ -16,7 +16,7 @@ A pure-Rust cheminformatics library targeting RDKit feature parity — **zero C/
 > **Why does zero C/C++ matter?**
 > RDKit.js, Indigo WASM, and OpenBabel all ship C++ code compiled via Emscripten.
 > That means **30–50 MB WASM binaries**, complex build toolchains, and platform-specific build failures.
-> chematic compiles to a **~550 KB WASM bundle** with a single `wasm-pack build` — no `cmake`, no `clang`,
+> chematic compiles to a **~500 KB WASM bundle** with a single `wasm-pack build` — no `cmake`, no `clang`,
 > no `-sys` crates, no `build.rs` C compilation anywhere in the dependency tree.
 > *(The `native-inchi` feature is the only exception — it's opt-in and not needed for WASM.)*
 
@@ -41,7 +41,7 @@ Rust. The entire default dependency tree is verified FFI-free and WASM-compatibl
 
 **WASM-compatible and lightweight**
 All crates compile to `wasm32-unknown-unknown` without modification. The npm package
-`@kent-tokyo/chematic` is **~550 KB** versus 30–50 MB for C++ FFI alternatives.
+`@kent-tokyo/chematic` is **~500 KB** (504 KB gzip) versus 30–50 MB for C++ FFI alternatives.
 No `cmake`, no `emcc`, no Emscripten toolchain required.
 
 **80+ WebAssembly API endpoints**
@@ -71,19 +71,19 @@ Latest release: **v0.4.18** (2026-06-23) — perf: shared SSSR in SMARTS matchin
 | `chematic-core`       | Atom, Bond, Molecule, Element, kekulization (no deps); mutable `add/remove_atom/bond`, `fragments()`, `is_connected()`, `formula_with_isotopes`, `validate_valence`; `StereoGroup`/`StereoGroupKind` | 69    |
 | `chematic-smiles`     | OpenSMILES parser, writer, canonical SMILES; **stereo parity correction** (pre-solves RDKit #8775 — `@`/`@@` auto-flipped on odd permutations); **allene cumulated double bond stereo** (`C=C=C` `@`/`@@`, round-trip stable) | 48    |
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor`; **zero-order/dative bonds excluded from ring perception** | 34    |
-| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords, +partial charge writing), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W; **AutoDock PDBQT** (parse + write) | 31    |
-| `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; Y-coordinate system documented | 28    |
-| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 100% RDKit agreement** (4 999 / 4 999 mol benchmark); **TPSA ±0.1 Å² / LogP ±0.3 / HBD 100%** vs RDKit (175-mol bulk regression); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); `clean_stereo_groups()` in standardize | 211   |
+| `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords, +partial charge writing), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W; **AutoDock PDBQT** (parse + write); **ChemicalJSON** (`parse_cjson`/`write_cjson`, Avogadro/MolSSI format) | 31    |
+| `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; **PDF output** (`depict_pdf`/`depict_pdf_opts` via svg2pdf); **EPS output** (`depict_eps`/`depict_eps_opts`, pure Rust); `tiny_skia` PNG is optional `png` feature (default on, disabled for WASM) | 28    |
+| `chematic-chem`       | 70+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 100% RDKit agreement** (4 999 / 4 999 mol benchmark); **TPSA ±0.1 Å² / LogP ±0.3 / HBD 100%** vs RDKit (175-mol bulk regression); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); **`schultz_mti`, `gutman_mti`, `vabc` (Bondi radii vdW volume), `gravitational_index`**; `clean_stereo_groups()` in standardize | 211   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 87    |
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing; **UFF** (metals/organometallics: Zn, Fe, Cu, …) | 51    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion); **`[kN]` ring-size primitive**; **VF2 early-exit** when query > target atom count; **`find_matches_with_rings`** — share SSSR across multi-pattern batches | 142   |
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (40 torsion patterns, adaptive noise), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; **GETAWAY HATS-matrix** (full 19-dim implementation); **`whim_getaway_combined()`** now 29-dim | 45    |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering**; **E/Z double-bond stereo filtering** in `run_reactants` (`ez_stereo_outward`, `smirks_ez_stereo_ok`) | 25    |
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader | 28 (+16*)    |
-| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.14 (~550 KB); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
+| `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` v0.4.18 (~500 KB, 504 KB gzip); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 209   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 45    |
 | `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **15 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, **name_to_smiles** | 28    |
-| `chematic-py`         | PyO3 Python bindings (`pip install chematic`); 300+ API endpoints: `from_smiles()`, `Mol.descriptors()`, `Mol.minimize_dreiding()`, `from_cxsmiles()`, `from_rxn_file()`/`to_rxn_file()`, `parse_sdf_with_coords()`, `Mol.ring_families()`, `tanimoto_matrix()`, `iter_sdf()`, `SimilarityIndex`; Sprint 18–26 coverage | 300+  |
+| `chematic-py`         | PyO3 Python bindings (`pip install chematic`); 300+ API endpoints: `from_smiles()`, `Mol.descriptors()`, `Mol.minimize_dreiding()`, `from_cxsmiles()`, `from_rxn_file()`/`to_rxn_file()`, `parse_sdf_with_coords()`, `Mol.ring_families()`, `tanimoto_matrix()`, `iter_sdf()`, `SimilarityIndex`; **`mol.to_pdf()`/`mol.to_eps()`** (depict); **`from_cjson()`/`mol.to_cjson()`** (ChemicalJSON); **`mol.schultz_mti`, `mol.gutman_mti`, `mol.vabc`, `mol.gravitational_index`**; **`bulk.substructure_match(smarts, mols)`** (parallel VF2 on pre-parsed Mol objects); Sprint 18–27 coverage | 300+  |
 | `chematic-ewald`      | PME Ewald summation, B-spline interpolation (cubic, phase-corrected)                                     | 12    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
@@ -387,7 +387,7 @@ let svg = depict_svg_highlighted(&mol, &HashSet::from([n_idx]), &HashSet::new())
 
 ## JavaScript / TypeScript (WebAssembly)
 
-> **~550 KB, zero C/C++ dependencies.** Drop-in for browser or Node.js.
+> **~500 KB (504 KB gzip), zero C/C++ dependencies.** Drop-in for browser or Node.js.
 > Compare with RDKit.js at ~30 MB built via Emscripten.
 
 ```sh
@@ -470,7 +470,7 @@ const sdf = sdf_from_records_json(
 | Feature                                    | **chematic**                                  | RDKit (rdkit-sys)   | OpenBabel FFI  | RDKit.js (WASM)   |
 |--------------------------------------------|-----------------------------------------------|---------------------|----------------|-------------------|
 | **C/C++ dependencies**                     | **None (default)**†                           | Extensive C++       | Extensive C++  | C++ via Emscripten |
-| **WASM binary size**                       | **~550 KB**                                   | N/A (no WASM)       | N/A (no WASM)  | ~30 MB            |
+| **WASM binary size**                       | **~500 KB** (504 KB gzip)                     | N/A (no WASM)       | N/A (no WASM)  | ~30 MB            |
 | **Build requirement**                      | `cargo build` only                            | cmake + clang       | cmake + clang  | Emscripten SDK    |
 | **WASM target support**                    | **Full (native)**                             | No                  | No             | Yes (Emscripten)  |
 | **Python bindings**                        | **Yes** (`pip install chematic`, PyO3/maturin)| Yes (rdkit-sys)     | Yes            | No                |
@@ -481,7 +481,7 @@ const sdf = sdf_from_records_json(
 | Ring perception (SSSR)                     | Yes + iterative augmentation                  | Yes                 | Yes            | Yes               |
 | SDF/MOL V2000+V3000 + SD fields            | Yes                                           | Yes                 | Yes            | Yes               |
 | Tripos MOL2 format                         | **Yes** (parser + writer)                     | Yes                 | Yes            | No                |
-| 2D depiction (SVG, CPK colors)             | Yes                                           | Yes                 | Yes            | Yes               |
+| 2D depiction (SVG, CPK colors, **PDF, EPS**) | Yes                                         | Yes                 | Yes            | Yes               |
 | ECFP/FCFP fingerprints (2/4/6)             | **All variants + bitvec**                     | Yes                 | Yes            | Yes               |
 | AtomPair / Torsion / MACCS FP              | Yes                                           | Yes                 | Yes            | Yes               |
 | **MAP4 fingerprint**                       | **Yes** (Minervini 2020)                      | No (external pkg)   | No             | No                |
@@ -594,7 +594,7 @@ Notes:
 - **MMFF94 7-term force field complete** (Halgren 1996): Out-of-Plane bending (OOP, 117 entries) + Stretch-Bend coupling (STRE-BEN, 282 entries)
 - **MAP4 fingerprint** (Minervini 2020): Circular SMILES shingles — not in RDKit, superior to traditional circular FPs
 - **SMARTS engine optimization**: LRU cache (5–20× speedup) + named functional group library (20 patterns)
-- **1,941 tests, zero C/C++ dependencies (default)** — pure Rust, fully WASM-compatible (~550 KB bundle); optional `native-inchi` feature adds IUPAC-exact InChI via vendored C lib
+- **1,941 tests, zero C/C++ dependencies (default)** — pure Rust, fully WASM-compatible; optional `native-inchi` feature adds IUPAC-exact InChI via vendored C lib
 
 **v0.2.9–v0.2.10**: MMFF94 full stack + L-BFGS optimizer + WASM bindings
 - **MMFF94 complete 5-term stack** (Bond/Angle/Torsion/vdW/Electrostatic) + Halgren Tables IV-VII parameter tables

@@ -9,6 +9,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-chem`
+
+- **`schultz_mti(mol) -> f64`** — Schultz Molecular Topological Index (MTI): weighted sum of adjacency × distance matrix entries.
+- **`gutman_mti(mol) -> f64`** — Gutman MTI variant: degree-weighted distance sum.
+- **`vabc(mol) -> f64`** — van der Waals volume from Bondi atomic radii (no 3D coordinates required); complements TPSA for bulk/lipophilicity estimation.
+- **`gravitational_index(mol) -> f64`** — graph-theoretic gravitational index: Σ (mᵢ·mⱼ / d²ᵢⱼ) over all heavy-atom pairs weighted by atomic mass and topological distance squared.
+
+### Added — `chematic-depict`
+
+- **`depict_pdf(mol)` / `depict_pdf_opts(mol, opts)`** — PDF output via `svg2pdf`; no external dependencies beyond the crate.
+- **`depict_eps(mol)` / `depict_eps_opts(mol, opts)`** — EPS (Encapsulated PostScript) output; pure-Rust implementation, no additional dependencies.
+- **`png` feature** — `tiny_skia` (raster PNG rendering) moved to an optional `png` feature (default = on for non-WASM builds); WASM builds disable it automatically, reducing bundle size.
+
+### Added — `chematic-mol`
+
+- **ChemicalJSON (`.cjson`) format** — `parse_cjson(s)` and `write_cjson(mol, coords)` support the Avogadro/MolSSI ChemicalJSON format for interoperability with Avogadro2 and MolSSI Cookiecutter projects.
+
+### Added — `chematic-py`
+
+- **`mol.to_pdf()`** — render 2D depiction to PDF bytes.
+- **`mol.to_eps()`** — render 2D depiction to EPS string.
+- **`mol.to_cjson(coords=[])`** — serialize to ChemicalJSON; optional 3D coordinate list.
+- **`chematic.from_cjson(s)`** — parse ChemicalJSON string to `Mol`.
+- **`mol.schultz_mti`** — Schultz MTI property.
+- **`mol.gutman_mti`** — Gutman MTI property.
+- **`mol.vabc`** — van der Waals volume (Bondi radii) property.
+- **`mol.gravitational_index`** — gravitational index property.
+- **`bulk.substructure_match(smarts, mols)`** — parallel substructure search accepting pre-parsed `Mol` objects; runs VF2 matching in parallel across the list, returning a `list[bool]`.
+
+### Added — `chematic-inchi`
+
+- **Inline SHA-256** — replaced the `sha2` crate dependency with a self-contained 60-line SHA-256 implementation; saves ~15 KB in the WASM bundle.
+- **`sha256_abc` and `sha256_empty` tests** — RFC 4634 test vectors verify the inline implementation.
+
+### Fixed
+
+- **WASM TypeScript docstrings** — `whim_descriptors_json` updated to document 22 values (was 10); `whim_getaway_combined_json` updated to document 41 values (was 19).
+- **`mms_member_mw_excludes_wildcard`** — regression test confirming MMS member MW correctly excludes wildcard atoms.
+
+### Performance — WASM bundle size (819 → 504 KB gzip, −38.5%)
+
+- `tiny_skia` made optional (`png` feature) in `chematic-depict`; WASM builds opt out automatically.
+- `sha2` replaced with inline SHA-256 in `chematic-inchi`.
+- `[profile.release] opt-level="z" lto=true codegen-units=1` added to workspace `Cargo.toml`.
+- Removed `run_md_json`, `coulomb_energy_json`, `torsion_scan_json`, `determine_bonds_from_xyz_json` from WASM exports.
+- Removed `chematic-ewald` from `chematic-wasm` dependencies.
+- Added `wasm-opt -O3` step to `.github/workflows/pages.yml` CI.
+
 ---
 
 ## [0.4.18] — 2026-06-23

@@ -15,11 +15,18 @@ documentation = "https://docs.rs/chematic-depict"
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+default = ["png"]
+# PNG rasterization via tiny-skia. Disable for WASM to save ~200 KB.
+png = ["dep:tiny-skia"]
+pdf = ["dep:svg2pdf"]
+
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.4.14" }
 chematic-perception = { path = "../chematic-perception", version = "0.4.14" }
 chematic-rxn = { path = "../chematic-rxn", version = "0.4.14" }
 chematic-smiles = { path = "../chematic-smiles", version = "0.4.14" }
-tiny-skia = "0.12"
+tiny-skia = { version = "0.12", optional = true }
+svg2pdf = { version = "0.13", optional = true }
 
 [dev-dependencies]

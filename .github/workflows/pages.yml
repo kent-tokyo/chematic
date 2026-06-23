@@ -44,9 +44,18 @@ jobs:
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.13.1 --locked
 
+      - name: Install binaryen (wasm-opt)
+        run: |
+          wget -q https://github.com/WebAssembly/binaryen/releases/download/version_119/binaryen-version_119-x86_64-linux.tar.gz
+          tar xzf binaryen-version_119-x86_64-linux.tar.gz
+          echo "$PWD/binaryen-version_119/bin" >> "$GITHUB_PATH"
+
       - name: Build WASM (--target web)
         working-directory: crates/chematic-wasm
         run: wasm-pack build --target web --release -d ../../demo/pkg/
+
+      - name: Optimize WASM with wasm-opt
+        run: wasm-opt -O3 -o demo/pkg/chematic_wasm_bg.wasm demo/pkg/chematic_wasm_bg.wasm
 
       - name: Set up Python
         uses: actions/setup-python@v6

@@ -432,6 +432,33 @@ mod tests {
     }
 
     #[test]
+    fn mms_member_mw_excludes_wildcard() {
+        // Fragment C(C)[*] (ethyl substituent) = C2H5 = 29.06 Da.
+        // If the wildcard atom (Element::C, wildcard=true) were included by MW,
+        // the result would be ~41 Da (+12 Da bug).
+        let a = mol("CCc1ccccc1");
+        let b = mol("CCCc1ccccc1");
+        let c = mol("CCCCc1ccccc1");
+        let series = find_mms(&[&a, &b, &c]);
+        let s = series
+            .iter()
+            .find(|s| s.core == "c1c([*])cccc1")
+            .expect("benzene-core series");
+        // Members sorted ascending by MW: ethyl < propyl < butyl
+        let ethyl_mw = s.members[0].mw;
+        // C2H5 = 2×12.011 + 5×1.008 = 29.062; +12 bug → ~41
+        assert!(
+            (ethyl_mw - 29.06).abs() < 0.5,
+            "ethyl MW should be ~29.06, got {ethyl_mw} (wildcard atom leaked?)"
+        );
+        // Confirm propyl is larger but not by an extra +12
+        let propyl_mw = s.members[1].mw;
+        assert!(propyl_mw > ethyl_mw);
+        // Propyl C3H7 = 43.09; butyl C4H9 = 57.12 — all < 70
+        assert!(s.members[2].mw < 70.0, "butyl MW should be < 70");
+    }
+
+    #[test]
     fn mms_no_brics_bonds_no_series() {
         // Benzene has no BRICS bonds → no cuts → no series
         let a = mol("c1ccccc1");

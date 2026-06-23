@@ -22,7 +22,6 @@ chematic-core = { version = "0.4.14", path = "../chematic-core" }
 chematic-smiles = { version = "0.4.14", path = "../chematic-smiles" }
 chematic-chem = { version = "0.4.14", path = "../chematic-chem" }
 chematic-rxn = { version = "0.4.14", path = "../chematic-rxn" }
-sha2 = { version = "0.11", default-features = false }
 
 [build-dependencies]
 cc = { version = "1", optional = true }

@@ -5,13 +5,16 @@
 ## Features
 
 - **SVG output**: vector graphics suitable for web and print
+- **PDF output**: `depict_pdf(mol)` / `depict_pdf_opts(mol, opts)` — via `svg2pdf`; enabled by default (`pdf` feature), excluded from WASM
+- **EPS output**: `depict_eps(mol)` / `depict_eps_opts(mol, opts)` — pure Rust PostScript, no extra deps, always available
 - **Ring templates**: pre-drawn benzene and other common rings for cleaner depiction
 - **Stereo bonds**: wedge (Up) and dash (Down) for 3D stereochemistry
 - **CPK coloring**: element-specific color scheme (C gray, H white, O red, N blue, etc.)
 - **Automatic 2D layout**: uses distance geometry and spring forces for readable coordinates
 - **Atom/bond highlighting**: highlight arbitrary atoms or bonds with color overlays
 - **Label customization**: hide/show atom symbols, hydrogens, or atom indices
-- **WASM-compatible**: zero C/C++ dependencies
+- **PNG rasterization**: optional `png` feature (default=enabled) via `tiny_skia`; excluded from WASM — use SVG there
+- **WASM-compatible**: zero C/C++ dependencies (SVG + EPS always available)
 
 ## Quick Start
 
@@ -36,6 +39,10 @@ println!("{}", svg);  // Print SVG to stdout or write to file
 - `depict_smiles(smiles: &str, options: &DepictOptions) -> Result<String, DepictError>` — SVG from SMILES
 - `depict_molecule(mol: &Molecule, options: &DepictOptions) -> String` — SVG from Molecule
 - `depict_reaction(rxn_smiles: &str, options: &RenderOptions) -> Result<String, RenderError>` — reaction scheme SVG
+- `depict_pdf(mol: &Molecule) -> Vec<u8>` — PDF bytes (`pdf` feature; default on, excluded from WASM)
+- `depict_pdf_opts(mol: &Molecule, opts: &DepictOptions) -> Vec<u8>` — PDF with options
+- `depict_eps(mol: &Molecule) -> String` — EPS output (always available, pure Rust)
+- `depict_eps_opts(mol: &Molecule, opts: &DepictOptions) -> String` — EPS with options
 
 ### Configuration
 

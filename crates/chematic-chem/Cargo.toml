@@ -24,10 +24,14 @@ chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.14" }
 chematic-fp         = { path = "../chematic-fp",         version = "0.4.14" }
 chematic-iupac      = { path = "../chematic-iupac",      version = "0.4.14" }
 serde               = { version = "1.0", features = ["derive"], optional = true }
+miniz_oxide         = { version = "0.8", optional = true, default-features = false, features = ["with-alloc"] }
 
 [features]
 serde = ["dep:serde"]
 trained-solubility-mlp = []
+# Compress PAINS/Brenk SMARTS patterns in binary; inflate at first use.
+# Saves ~41 KB binary size. Enable in WASM builds.
+compress-patterns = ["dep:miniz_oxide"]
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

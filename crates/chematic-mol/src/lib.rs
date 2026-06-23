@@ -18,6 +18,7 @@
 
 pub mod cdxml;
 pub mod cif;
+pub mod cjson;
 pub mod cml;
 pub mod error;
 pub mod gaussian;
@@ -34,6 +35,7 @@ pub use error::MolParseError;
 // Re-export MolParseError under the alias MolError as specified by the public API.
 pub use cdxml::{CdxmlError, parse_cdxml, parse_cdxml_all};
 pub use cif::{CifError, CifResult, UnitCell, parse_cif, write_cif};
+pub use cjson::{CjsonError, parse_cjson, write_cjson};
 pub use cml::{CmlError, parse_cml, write_cml};
 pub use error::MolParseError as MolError;
 pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_gjf, write_gjf};

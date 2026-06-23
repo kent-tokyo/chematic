@@ -910,6 +910,222 @@ pub fn labute_asa(mol: &Molecule) -> f64 {
     labute_asa_per_atom(mol).iter().sum()
 }
 
+// ─── VABC — van der Waals atomic bonded-contribution volume ──────────────────
+
+/// Bondi van der Waals radius (Å).
+fn r_vdw_bondi(z: u8) -> f64 {
+    match z {
+        1 => 1.20,
+        5 => 1.80,
+        6 => 1.70,
+        7 => 1.55,
+        8 => 1.52,
+        9 => 1.47,
+        14 => 2.10,
+        15 => 1.80,
+        16 => 1.80,
+        17 => 1.75,
+        33 => 1.85,
+        34 => 1.90,
+        35 => 1.85,
+        53 => 1.98,
+        _ => 2.00,
+    }
+}
+
+/// Intersection volume of two spheres with radii r1, r2 and center distance d (Å³).
+fn sphere_intersection(r1: f64, r2: f64, d: f64) -> f64 {
+    if d <= 0.0 || d >= r1 + r2 {
+        return 0.0;
+    }
+    if d <= (r1 - r2).abs() {
+        let r_min = r1.min(r2);
+        return 4.0 / 3.0 * PI * r_min * r_min * r_min;
+    }
+    let h1 = r1 - (d * d + r1 * r1 - r2 * r2) / (2.0 * d);
+    let h2 = r2 - (d * d + r2 * r2 - r1 * r1) / (2.0 * d);
+    let cap = |r: f64, h: f64| {
+        if h <= 0.0 {
+            0.0
+        } else {
+            PI / 3.0 * h * h * (3.0 * r - h)
+        }
+    };
+    cap(r1, h1) + cap(r2, h2)
+}
+
+/// VABC — van der Waals atomic bonded-contribution volume approximation (Å³).
+///
+/// Estimates the molecular van der Waals volume using Bondi radii for each atom
+/// and subtracting spherical-cap overlap volumes for each bond (heavy–heavy and
+/// heavy–implicit-H).  Bond lengths are estimated from covalent (Rb0) radii.
+/// Does not require 3D coordinates.
+///
+/// Ref: Zhao, Y. H. et al., *J. Org. Chem.* **2003**, *68*, 7368–7373.
+pub fn vabc(mol: &Molecule) -> f64 {
+    let n = mol.atom_count();
+    if n == 0 {
+        return 0.0;
+    }
+    const R_H_VDW: f64 = 1.20;
+    const R_H_COV: f64 = 0.33;
+    let sphere = |r: f64| 4.0 / 3.0 * PI * r * r * r;
+
+    let mut v = 0.0f64;
+
+    for (idx, atom) in mol.atoms() {
+        let z = atom.element.atomic_number();
+        v += sphere(r_vdw_bondi(z));
+        let nh = implicit_hcount(mol, idx) as usize;
+        v += nh as f64 * sphere(R_H_VDW);
+    }
+
+    for (_, bond) in mol.bonds() {
+        let z1 = mol.atom(bond.atom1).element.atomic_number();
+        let z2 = mol.atom(bond.atom2).element.atomic_number();
+        let rb1 = rb0(z1);
+        let rb2 = rb0(z2);
+        if rb1 > 1e-10 && rb2 > 1e-10 {
+            v -= sphere_intersection(r_vdw_bondi(z1), r_vdw_bondi(z2), rb1 + rb2);
+        }
+    }
+
+    for (idx, atom) in mol.atoms() {
+        let z = atom.element.atomic_number();
+        let rb_heavy = rb0(z);
+        if rb_heavy < 1e-10 {
+            continue;
+        }
+        let ov = sphere_intersection(r_vdw_bondi(z), R_H_VDW, rb_heavy + R_H_COV);
+        let nh = implicit_hcount(mol, idx) as usize;
+        v -= nh as f64 * ov;
+    }
+
+    v.max(0.0)
+}
+
+// ─── Gravitational index ─────────────────────────────────────────────────────
+
+fn avg_mass_for_grav(z: u8) -> f64 {
+    match z {
+        1 => 1.008,
+        6 => 12.011,
+        7 => 14.007,
+        8 => 15.999,
+        9 => 18.998,
+        14 => 28.086,
+        15 => 30.974,
+        16 => 32.065,
+        17 => 35.453,
+        35 => 79.904,
+        53 => 126.904,
+        n => n as f64,
+    }
+}
+
+/// Gravitational topological index.
+///
+/// G = Σ_{i<j} mᵢ × mⱼ / dᵢⱼ²
+///
+/// where mᵢ is the average atomic mass and dᵢⱼ is the topological (bond-graph)
+/// distance between heavy atoms i and j.
+///
+/// Ref: Karelson, M. *Molecular Descriptors in QSAR/QSPR*; Wiley, 2000.
+pub fn gravitational_index(mol: &Molecule) -> f64 {
+    let heavy = heavy_indices(mol);
+    let n = heavy.len();
+    if n == 0 {
+        return 0.0;
+    }
+    let masses: Vec<f64> = heavy
+        .iter()
+        .map(|&a| avg_mass_for_grav(mol.atom(AtomIdx(a as u32)).element.atomic_number()))
+        .collect();
+    let dist = topological_distance_matrix(mol);
+    let mut g = 0.0f64;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let d = dist[i][j];
+            if d != u32::MAX && d > 0 {
+                g += masses[i] * masses[j] / (d as f64 * d as f64);
+            }
+        }
+    }
+    g
+}
+
+// ─── Schultz & Gutman MTI ────────────────────────────────────────────────────
+
+/// Schultz molecular topological index (MTI).
+///
+/// MTI = Σ_{i<j} (δᵢ + δⱼ) × dᵢⱼ
+///
+/// where δᵢ is the heavy-atom degree of atom i and dᵢⱼ is the topological distance.
+///
+/// Ref: Schultz, H. P. *J. Chem. Inf. Comput. Sci.* **1989**, *29*, 227–228.
+pub fn schultz_mti(mol: &Molecule) -> u64 {
+    let heavy = heavy_indices(mol);
+    let n = heavy.len();
+    if n == 0 {
+        return 0;
+    }
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    let deg: Vec<u64> = heavy
+        .iter()
+        .map(|&a| {
+            mol.neighbors(AtomIdx(a as u32))
+                .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+                .count() as u64
+        })
+        .collect();
+    let dist = topological_distance_matrix(mol);
+    let mut s = 0u64;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let d = dist[i][j];
+            if d < u32::MAX {
+                s += (deg[i] + deg[j]) * d as u64;
+            }
+        }
+    }
+    s
+}
+
+/// Gutman molecular topological index (MTI*).
+///
+/// MTI* = Σ_{i<j} δᵢ × δⱼ × dᵢⱼ
+///
+/// where δᵢ is the heavy-atom degree and dᵢⱼ is the topological distance.
+///
+/// Ref: Gutman, I. *J. Serb. Chem. Soc.* **1994**, *59*, 619–626.
+pub fn gutman_mti(mol: &Molecule) -> u64 {
+    let heavy = heavy_indices(mol);
+    let n = heavy.len();
+    if n == 0 {
+        return 0;
+    }
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    let deg: Vec<u64> = heavy
+        .iter()
+        .map(|&a| {
+            mol.neighbors(AtomIdx(a as u32))
+                .filter(|(nb, _)| heavy_set.contains(&(nb.0 as usize)))
+                .count() as u64
+        })
+        .collect();
+    let dist = topological_distance_matrix(mol);
+    let mut s = 0u64;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let d = dist[i][j];
+            if d < u32::MAX {
+                s += deg[i] * deg[j] * d as u64;
+            }
+        }
+    }
+    s
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -1316,6 +1532,89 @@ mod tests {
             let expected = (n as u64) * (n as u64 - 1);
             assert_eq!(padmakar_ivan_index(&mol(&smiles)), expected, "chain n={n}");
         }
+    }
+
+    // ── Schultz / Gutman MTI ─────────────────────────────────────────────────
+
+    #[test]
+    fn schultz_mti_ethane() {
+        // CC: 2 atoms, deg=[1,1], d=1 → MTI = (1+1)*1 = 2
+        assert_eq!(schultz_mti(&mol("CC")), 2);
+    }
+
+    #[test]
+    fn gutman_mti_ethane() {
+        // CC: 2 atoms, deg=[1,1], d=1 → MTI* = 1*1*1 = 1
+        assert_eq!(gutman_mti(&mol("CC")), 1);
+    }
+
+    #[test]
+    fn schultz_mti_propane() {
+        // CCC: atoms 0,1,2 with deg=[1,2,1], distances: d(0,1)=1, d(0,2)=2, d(1,2)=1
+        // (1+2)*1 + (1+1)*2 + (2+1)*1 = 3 + 4 + 3 = 10
+        assert_eq!(schultz_mti(&mol("CCC")), 10);
+    }
+
+    #[test]
+    fn gutman_mti_propane() {
+        // CCC: atoms 0,1,2 with deg=[1,2,1], distances: d(0,1)=1, d(0,2)=2, d(1,2)=1
+        // 1*2*1 + 1*1*2 + 2*1*1 = 2 + 2 + 2 = 6
+        assert_eq!(gutman_mti(&mol("CCC")), 6);
+    }
+
+    #[test]
+    fn schultz_mti_empty() {
+        // edge case: single atom
+        let m = chematic_smiles::parse("[C]").unwrap();
+        assert_eq!(schultz_mti(&m), 0);
+    }
+
+    // ── VABC ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn vabc_methane() {
+        // Single carbon + 4 implicit H — result should be positive and roughly 30–50 Å³
+        let v = vabc(&mol("C"));
+        assert!(v > 10.0, "VABC(methane) should be > 10 Å³, got {v}");
+        assert!(v < 100.0, "VABC(methane) should be < 100 Å³, got {v}");
+    }
+
+    #[test]
+    fn vabc_water() {
+        let v = vabc(&mol("O"));
+        assert!(v > 5.0, "VABC(water) should be > 5 Å³, got {v}");
+        assert!(v < 50.0, "VABC(water) should be < 50 Å³, got {v}");
+    }
+
+    #[test]
+    fn vabc_increases_with_size() {
+        // Larger molecule should have larger VABC
+        let v_ethane = vabc(&mol("CC"));
+        let v_propane = vabc(&mol("CCC"));
+        let v_butane = vabc(&mol("CCCC"));
+        assert!(v_propane > v_ethane, "propane > ethane");
+        assert!(v_butane > v_propane, "butane > propane");
+    }
+
+    // ── Gravitational index ──────────────────────────────────────────────────
+
+    #[test]
+    fn gravitational_index_single_atom() {
+        let m = chematic_smiles::parse("[C]").unwrap();
+        assert_eq!(gravitational_index(&m), 0.0);
+    }
+
+    #[test]
+    fn gravitational_index_ethane() {
+        // CC: 2 C, mass=12.011 each, d=1 → G = 12.011*12.011/1 ≈ 144.26
+        let g = gravitational_index(&mol("CC"));
+        assert!((g - 12.011_f64 * 12.011).abs() < 0.01, "got {g}");
+    }
+
+    #[test]
+    fn gravitational_index_positive() {
+        let g = gravitational_index(&mol("c1ccccc1"));
+        assert!(g > 0.0, "benzene gravitational index should be positive");
     }
 
     #[test]

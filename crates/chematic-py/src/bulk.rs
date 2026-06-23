@@ -180,6 +180,10 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
         cyp: f64,
         pka_acid: Option<f64>,
         pka_base: Option<f64>,
+        schultz: u64,
+        gutman: u64,
+        vabc: f64,
+        grav: f64,
     }
 
     let descs: Vec<Desc> = smiles
@@ -252,6 +256,10 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
                 cyp: chematic_chem::cyp3a4_inhibition_risk(m),
                 pka_acid: pka_a,
                 pka_base: pka_b,
+                schultz: chematic_chem::schultz_mti(m),
+                gutman: chematic_chem::gutman_mti(m),
+                vabc: chematic_chem::vabc(m),
+                grav: chematic_chem::gravitational_index(m),
             }
         })
         .collect();
@@ -323,6 +331,10 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
                 Some(v) => dict.set_item("pka_base", v)?,
                 None => dict.set_item("pka_base", py.None())?,
             }
+            dict.set_item("schultz_mti", d.schultz)?;
+            dict.set_item("gutman_mti", d.gutman)?;
+            dict.set_item("vabc", d.vabc)?;
+            dict.set_item("gravitational_index", d.grav)?;
             Ok(dict)
         })
         .collect()
@@ -475,6 +487,42 @@ pub fn substructure_search(smarts: &str, smiles: Vec<String>) -> PyResult<Vec<bo
 }
 
 // ---------------------------------------------------------------------------
+// bulk.substructure_match — parallel SMARTS screen over pre-parsed Mol objects
+// ---------------------------------------------------------------------------
+
+/// Screen a list of pre-parsed :class:`Mol` objects against a SMARTS pattern in parallel.
+///
+/// Unlike :func:`bulk.substructure_search` (which re-parses SMILES on every call),
+/// this function accepts already-parsed molecules — avoiding re-parsing overhead
+/// when screening the same collection multiple times.
+///
+/// Returns the **indices** of matching molecules in the input list.
+///
+///     mols = [m for m in chematic.bulk.parse(smiles_list) if m is not None]
+///     hits = chematic.bulk.substructure_match("[OH]", mols)
+///     # hits = [2, 5, 11, ...]  — indices into mols
+#[pyfunction]
+#[pyo3(signature = (smarts, mols))]
+pub fn substructure_match(smarts: &str, mols: Vec<Mol>) -> PyResult<Vec<usize>> {
+    let query = chematic_smarts::parse_smarts(smarts)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+
+    let indices: Vec<usize> = mols
+        .par_iter()
+        .enumerate()
+        .filter_map(|(i, m)| {
+            if !chematic_smarts::find_matches(&query, &m.inner).is_empty() {
+                Some(i)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    Ok(indices)
+}
+
+// ---------------------------------------------------------------------------
 // Register the bulk submodule
 // ---------------------------------------------------------------------------
 
@@ -487,5 +535,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_search, m)?)?;
     m.add_function(wrap_pyfunction!(substructure_search, m)?)?;
+    m.add_function(wrap_pyfunction!(substructure_match, m)?)?;
     Ok(())
 }

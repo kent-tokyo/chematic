@@ -116,6 +116,12 @@ console.log(ifg); // [{"atoms":[1,2,3],"types":"OC=O"}, ...]
 - True MHFP (structural fragment hashing)
 - True ERG (Ertl 2017 functional group detection)
 
+## Bundle Size
+
+~500 KB gzip / ~1.3 MB raw (reduced from ~819 KB gzip in v0.4.17, -38.5%).
+
+PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
+
 ## Building from source
 
 ```sh

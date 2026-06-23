@@ -30,11 +30,10 @@ chematic-smiles     = { path = "../chematic-smiles",     version = "0.4.14" }
 chematic-perception = { path = "../chematic-perception", version = "0.4.14" }
 chematic-chem       = { path = "../chematic-chem",       version = "0.4.14", features = ["serde"] }
 chematic-fp         = { path = "../chematic-fp",         version = "0.4.14" }
-chematic-depict     = { path = "../chematic-depict",     version = "0.4.14" }
+chematic-depict     = { path = "../chematic-depict",     version = "0.4.14", default-features = false, features = [] }
 chematic-rxn        = { path = "../chematic-rxn",        version = "0.4.14" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.14" }
 chematic-3d         = { path = "../chematic-3d",         version = "0.4.14" }
-chematic-ewald      = { path = "../chematic-ewald",      version = "0.4.14" }
 chematic-mol        = { path = "../chematic-mol",        version = "0.4.14" }
 chematic-inchi      = { path = "../chematic-inchi",      version = "0.4.14" }
 chematic-iupac      = { path = "../chematic-iupac",      version = "0.4.14" }

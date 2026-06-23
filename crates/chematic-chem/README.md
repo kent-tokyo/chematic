@@ -6,10 +6,15 @@ Pure Rust chemical intelligence library — **descriptors, drug-likeness rules, 
 
 ### Molecular Descriptors (40+)
 - **Physicochemical**: MW, LogP (Crippen, ±0.3 vs RDKit on 175 mol), TPSA (±1.0 Å² vs RDKit on 175 mol), PSA, MOLAR_REFR, VdW volume
+- **Van der Waals volume**: `vabc(mol) -> f64` — Bondi radii + spherical-cap overlaps, no 3D coordinates required
 - **Lipophilicity**: LogP (multiple models), MolLogP  
 - **Hydrogen Bonding**: HBA (99.98% RDKit agreement on 5 000 molecules), HBD (100% agreement, including S-H thiols), HBA_LIPINSKI, HBD_LIPINSKI
 - **Flexibility**: Rotatable bonds, ring count, scaffold RMSD
 - **Complexity**: Topological Polar Surface Area, QED, SA Score
+- **Topological indices**:
+  - `schultz_mti(mol) -> u64` — Schultz Molecular Topological Index: Σ_{i<j}(δᵢ+δⱼ)×dᵢⱼ
+  - `gutman_mti(mol) -> u64` — Gutman MTI*: Σ_{i<j}δᵢ×δⱼ×dᵢⱼ
+  - `gravitational_index(mol) -> f64` — Σ_{i<j}mᵢmⱼ/dᵢⱼ² (atomic masses, graph distance)
 - **Molecular Properties**: Atom/bond counts, isotopes, fragments
 - **Fingerprint Similarity**: Tanimoto, Dice (ECFP, MACCS)
 
@@ -101,8 +106,12 @@ println!("Selected {} diverse molecules", picks.len());
 | `molecular_weight(mol)` | Average isotope mass |
 | `logp(mol)` | XLogP model |
 | `tpsa(mol)` | Topological Polar Surface Area |
+| `vabc(mol)` | Van der Waals volume (Bondi radii, no 3D needed) |
 | `qed(mol)` | Drug-likeness (0-1) |
 | `sa_score(mol)` | Synthetic accessibility (1-10) |
+| `schultz_mti(mol)` | Schultz Molecular Topological Index |
+| `gutman_mti(mol)` | Gutman MTI* |
+| `gravitational_index(mol)` | Gravitational index (Σ mᵢmⱼ/dᵢⱼ²) |
 | `lipinski_descriptor_pass(mol)` | Lipinski's Rule of Five |
 | `compare_molecules(smiles_list)` | Multi-mol similarity |
 | `screen_smiles(smiles_list)` | Batch descriptor + filtering |
