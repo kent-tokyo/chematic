@@ -187,10 +187,14 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| {
             let m = &mol;
+            // Pre-compute shared data: ring_bundle (1 SSSR), logp+MR (1 Crippen pass),
+            // kappa (1 heavy_indices), chi (1 heavy_indices), estate (1 BFS pass), pKa (1 scan).
+            let rb_data = chematic_chem::ring_bundle(m);
             let (pka_a, pka_b) = chematic_chem::pka_both(m);
             let (logp_val, mr_val) = chematic_chem::logp_and_mr(m);
             let (k1, k2, k3) = chematic_chem::kappa_all(m);
             let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = chematic_chem::chi_all(m);
+            let (sum_e, max_e, min_e) = chematic_chem::estate_all(m);
             Desc {
                 mw: chematic_chem::molecular_weight(m),
                 exact_mass: chematic_chem::exact_mass(m),
@@ -198,15 +202,15 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
                 logp: logp_val,
                 mr: mr_val,
                 hbd: chematic_chem::hbd_count(m),
-                hba: chematic_chem::hba_count(m),
-                rb: chematic_chem::rotatable_bond_count(m),
+                hba: rb_data.hba_count,
+                rb: rb_data.rotatable_bond_count,
                 hac: chematic_chem::heavy_atom_count(m),
-                rc: chematic_chem::ring_count(m),
-                arc: chematic_chem::aromatic_ring_count(m),
+                rc: rb_data.ring_count,
+                arc: rb_data.aromatic_ring_count,
                 nh: chematic_chem::num_heteroatoms(m),
                 nsc: chematic_chem::num_stereocenters(m),
-                nsp: chematic_chem::num_spiro_atoms(m),
-                nbh: chematic_chem::num_bridgehead_atoms(m),
+                nsp: rb_data.num_spiro_atoms,
+                nbh: rb_data.num_bridgehead_atoms,
                 fsp3: chematic_chem::fsp3(m),
                 qed: chematic_chem::qed(m),
                 sa: chematic_chem::sa_score(m),
@@ -227,14 +231,14 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
                 c2v,
                 c3v,
                 c4v,
-                n_ah: chematic_chem::num_aromatic_heterocycles(m),
-                n_alh: chematic_chem::num_aliphatic_heterocycles(m),
-                n_sr: chematic_chem::num_saturated_rings(m),
-                n_ar: chematic_chem::num_aliphatic_rings(m),
+                n_ah: rb_data.num_aromatic_heterocycles,
+                n_alh: rb_data.num_aliphatic_heterocycles,
+                n_sr: rb_data.num_saturated_rings,
+                n_ar: rb_data.num_aliphatic_rings,
                 n_usc: chematic_chem::num_unspecified_stereocenters(m),
-                sum_e: chematic_chem::sum_estate(m),
-                max_e: chematic_chem::max_estate(m),
-                min_e: chematic_chem::min_estate(m),
+                sum_e,
+                max_e,
+                min_e,
                 lip: chematic_chem::lipinski_passes(m),
                 veb: chematic_chem::veber_passes(m),
                 egan: chematic_chem::egan_passes(m),

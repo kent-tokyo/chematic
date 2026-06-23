@@ -149,6 +149,26 @@ pub fn sum_estate(mol: &Molecule) -> f64 {
     estate_indices(mol).into_iter().sum()
 }
 
+/// Compute sum, max, and min EState in a single `estate_indices` pass.
+///
+/// Use when all three values are needed to avoid three redundant computations.
+/// Returns `(sum, max, min)`.  `max` and `min` ignore zero-valued atoms.
+pub fn estate_all(mol: &Molecule) -> (f64, f64, f64) {
+    let indices = estate_indices(mol);
+    let sum = indices.iter().copied().sum();
+    let max = indices
+        .iter()
+        .copied()
+        .filter(|v| *v != 0.0)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let min = indices
+        .iter()
+        .copied()
+        .filter(|v| *v != 0.0)
+        .fold(f64::INFINITY, f64::min);
+    (sum, max, min)
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -235,5 +255,16 @@ mod tests {
     fn estate_indices_length_matches_atom_count() {
         let mol = parse("c1ccccc1").unwrap();
         assert_eq!(estate_indices(&mol).len(), mol.atom_count());
+    }
+
+    #[test]
+    fn estate_all_matches_individual() {
+        for smi in ["CC", "CC(=O)O", "c1ccccc1", "CN1C=NC2=C1C(=O)N(C)C(=O)N2C"] {
+            let mol = parse(smi).unwrap();
+            let (s, mx, mn) = estate_all(&mol);
+            assert!((s - sum_estate(&mol)).abs() < 1e-10, "{smi}: sum mismatch");
+            assert!((mx - max_estate(&mol)).abs() < 1e-10, "{smi}: max mismatch");
+            assert!((mn - min_estate(&mol)).abs() < 1e-10, "{smi}: min mismatch");
+        }
     }
 }

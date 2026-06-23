@@ -86,7 +86,7 @@ pub use condensed::{CondensedError, parse_condensed};
 pub use diversity::{butina_cluster, maxmin_picks};
 pub use drug_score::drug_score;
 pub use esol::esol_solubility;
-pub use estate::{estate_indices, max_estate, min_estate, sum_estate};
+pub use estate::{estate_all, estate_indices, max_estate, min_estate, sum_estate};
 pub use formula::{FormulaParseError, parse_formula};
 pub use gasteiger::gasteiger_charges;
 pub use hash::{are_identical, mol_hash};

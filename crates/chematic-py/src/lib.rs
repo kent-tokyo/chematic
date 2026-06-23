@@ -727,9 +727,10 @@ impl Mol {
             "num_unspecified_stereocenters",
             chematic_chem::num_unspecified_stereocenters(m),
         )?;
-        d.set_item("sum_estate", chematic_chem::sum_estate(m))?;
-        d.set_item("max_estate", chematic_chem::max_estate(m))?;
-        d.set_item("min_estate", chematic_chem::min_estate(m))?;
+        let (sum_e, max_e, min_e) = chematic_chem::estate_all(m);
+        d.set_item("sum_estate", sum_e)?;
+        d.set_item("max_estate", max_e)?;
+        d.set_item("min_estate", min_e)?;
         // Inline only filters that use rotatable_bond_count or hba_count (→ find_sssr).
         d.set_item(
             "lipinski_passes",
