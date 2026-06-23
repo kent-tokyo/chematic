@@ -99,14 +99,44 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 ### Installation
 
 ```bash
+# Python — no C/C++ compiler required
+pip install chematic
+
 # Rust
-cargo add chematic --git https://github.com/kent-tokyo/chematic --features "smiles,perception,chem,3d,fp"
+cargo add chematic --features "smiles,perception,chem,3d,fp"
 
 # JavaScript/TypeScript
-npm install @kent-tokyo/chematic@0.4.14
+npm install @kent-tokyo/chematic
 ```
 
 ### 5-Minute Examples
+
+#### Python — compute descriptors and visualize in Jupyter
+
+```python
+import chematic
+
+# Parse a molecule
+mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
+
+# In Jupyter, just type `mol` in a cell — 2D structure renders automatically
+mol
+
+# Access 70+ descriptors as properties
+print(mol.mw, mol.logp, mol.tpsa)           # 180.16  1.31  63.6
+print(mol.lipinski_passes, mol.pains_passes) # True   True
+
+# Substructure search as a method
+mol.has_substructure("[OH]")   # True
+mol.find_matches("[CX3](=O)O") # → [[1, 2, 3], [7, 8, 9]]
+
+# Batch processing — parallel, numpy-ready
+fps = chematic.bulk.ecfp4(["CCO", "c1ccccc1", "CC(=O)O"])  # (3, 2048) uint8
+
+# One-liner DataFrame
+df = chematic.descriptors_df(["CCO", "c1ccccc1", "CC(=O)O"])
+df[["mw", "logp", "tpsa", "qed"]]
+```
 
 #### Parse SMILES & check drug-likeness
 

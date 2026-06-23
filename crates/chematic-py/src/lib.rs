@@ -872,6 +872,50 @@ impl Mol {
         chematic_depict::depict_svg(&self.inner)
     }
 
+    /// Jupyter Notebook / JupyterLab の自動描画フック。
+    ///
+    /// セルに ``mol`` と書くだけで 2D 構造が表示される。手動で
+    /// ``IPython.display.SVG(mol.svg())`` と書く必要はない。
+    fn _repr_svg_(&self) -> String {
+        chematic_depict::depict_svg(&self.inner)
+    }
+
+    /// Return ``True`` if this molecule matches the given SMARTS pattern.
+    ///
+    /// Equivalent to ``chematic.smarts_match(smarts, mol)`` but as a method::
+    ///
+    ///     if mol.has_substructure("[OH]"):
+    ///         print("has hydroxyl")
+    ///
+    /// Raises ``ValueError`` for invalid SMARTS.
+    fn has_substructure(&self, smarts: &str) -> PyResult<bool> {
+        let query = chematic_smarts::parse_smarts(smarts)
+            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        Ok(!chematic_smarts::find_matches(&query, &self.inner).is_empty())
+    }
+
+    /// Return atom-index lists for all SMARTS matches in this molecule.
+    ///
+    /// Equivalent to ``chematic.smarts_find(smarts, mol)`` but as a method::
+    ///
+    ///     for match_atoms in mol.find_matches("[CX3](=O)[OH]"):
+    ///         print("carboxyl atoms:", match_atoms)
+    ///
+    /// Returns an empty list when there are no matches.
+    /// Raises ``ValueError`` for invalid SMARTS.
+    fn find_matches(&self, smarts: &str) -> PyResult<Vec<Vec<usize>>> {
+        let query = chematic_smarts::parse_smarts(smarts)
+            .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
+        Ok(chematic_smarts::find_matches(&query, &self.inner)
+            .into_iter()
+            .map(|m| {
+                let mut v: Vec<usize> = m.values().map(|idx| idx.0 as usize).collect();
+                v.sort_unstable();
+                v
+            })
+            .collect())
+    }
+
     /// 2D SVG depiction with highlighted atoms.
     ///
     /// ``atom_indices``: zero-based atom indices to highlight.

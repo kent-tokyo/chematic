@@ -14,7 +14,7 @@ Quick start::
 
 from __future__ import annotations
 
-from typing import Iterator, Optional
+from typing import Any, Iterable, Iterator, Optional
 
 import numpy as np
 from numpy import ndarray
@@ -601,10 +601,45 @@ class Mol:
     def svg(self) -> str:
         """2D SVG depiction as a string.
 
-        In Jupyter notebooks::
+        In Jupyter notebooks, use :meth:`_repr_svg_` (automatic) or::
 
             from IPython.display import SVG
             SVG(mol.svg())
+        """
+        ...
+
+    def _repr_svg_(self) -> str:
+        """Jupyter auto-display hook — renders the molecule automatically in a cell.
+
+        Just write ``mol`` in a Jupyter cell and the 2D structure appears.
+        No ``IPython.display.SVG(...)`` wrapper needed.
+        """
+        ...
+
+    def has_substructure(self, smarts: str) -> bool:
+        """Return True if this molecule matches the SMARTS pattern.
+
+        Raises ``ValueError`` for invalid SMARTS.
+
+        Example::
+
+            mol = chematic.from_smiles("CC(=O)O")
+            mol.has_substructure("[OH]")   # True
+        """
+        ...
+
+    def find_matches(self, smarts: str) -> list[list[int]]:
+        """Return atom-index lists for all SMARTS matches in this molecule.
+
+        Each inner list contains sorted atom indices for one match.
+        Returns an empty list when there are no matches.
+        Raises ``ValueError`` for invalid SMARTS.
+
+        Example::
+
+            mol = chematic.from_smiles("OCC(=O)O")
+            mol.find_matches("[OH]")          # [[0], [4]]
+            mol.find_matches("[CX3](=O)[OH]") # [[1, 2, 4]]
         """
         ...
 
@@ -2840,3 +2875,51 @@ class bulk:
             numpy array of shape ``(N,)``, dtype ``float32``.
         """
         ...
+
+# ---------------------------------------------------------------------------
+# Convenience functions (pure Python layer)
+# ---------------------------------------------------------------------------
+
+def from_smiles_list(
+    smiles: Iterable[str],
+    /,
+    *,
+    skip_invalid: bool = True,
+) -> list[Mol]:
+    """Parse a list of SMILES strings into Mol objects.
+
+    Runs in parallel (Rayon). Invalid SMILES are silently dropped by default.
+
+    Args:
+        smiles: Iterable of SMILES strings.
+        skip_invalid: If True (default), drop invalid entries.
+                      If False, keep ``None`` for invalid entries.
+
+    Returns:
+        List of :class:`Mol` objects.
+
+    Example::
+
+        mols = chematic.from_smiles_list(["CCO", "c1ccccc1", "INVALID"])
+        # → [<Mol CCO>, <Mol c1ccccc1>]
+    """
+    ...
+
+def descriptors_df(smiles: Iterable[str]) -> Any:
+    """Compute 55+ descriptors for a list of SMILES and return a DataFrame.
+
+    Requires pandas (``pip install pandas``). Runs in parallel via Rayon.
+
+    Args:
+        smiles: Iterable of SMILES strings. Invalid entries are skipped.
+
+    Returns:
+        ``pd.DataFrame`` with one row per valid molecule and 55+ descriptor
+        columns (mw, logp, tpsa, hbd, hba, qed, sa_score, pains_passes, …).
+
+    Example::
+
+        df = chematic.descriptors_df(["CCO", "c1ccccc1", "CC(=O)O"])
+        df[["mw", "logp", "tpsa"]].head()
+    """
+    ...

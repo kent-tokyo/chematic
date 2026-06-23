@@ -83,7 +83,40 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## クイックスタート
 
-### アンブレラクレート（統合クレート）を使う場合
+### Python
+
+```bash
+pip install chematic  # C/C++ コンパイラ不要
+```
+
+```python
+import chematic
+
+# 分子を解析
+mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # アスピリン
+
+# Jupyter では mol とセルに書くだけで 2D 構造が自動表示される
+mol
+
+# 70+ 記述子をプロパティで取得
+print(mol.mw, mol.logp, mol.tpsa)            # 180.16  1.31  63.6
+print(mol.lipinski_passes, mol.pains_passes)  # True   True
+
+# サブ構造検索（メソッドとして）
+mol.has_substructure("[OH]")    # True
+mol.find_matches("[CX3](=O)O")  # → [[1, 2, 3], [7, 8, 9]]
+
+# バッチ処理（並列、numpy 対応）
+fps = chematic.bulk.ecfp4(["CCO", "c1ccccc1"])  # (2, 2048) uint8
+
+# ワンライナーで DataFrame
+df = chematic.descriptors_df(["CCO", "c1ccccc1", "CC(=O)O"])
+df[["mw", "logp", "tpsa", "qed"]]
+```
+
+---
+
+### Rust — アンブレラクレート（統合クレート）を使う場合
 
 ```toml
 # Cargo.toml
