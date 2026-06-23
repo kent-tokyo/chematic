@@ -7,7 +7,10 @@
 use std::sync::OnceLock;
 
 use chematic_core::{AtomIdx, Molecule};
-use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
+use chematic_perception::find_sssr;
+use chematic_smarts::{
+    MatchConfig, QueryMolecule, find_matches_with_rings_and_config, parse_smarts,
+};
 
 /// A single detected functional group with its name and matched atom indices.
 pub struct NamedGroup {
@@ -54,10 +57,12 @@ fn parsed_patterns() -> &'static [(&'static str, QueryMolecule)] {
 /// carboxylic acid is detected as both "carboxyl" and "hydroxyl") are returned
 /// as separate entries.
 pub fn detect_named_functional_groups(mol: &Molecule) -> Vec<NamedGroup> {
+    let rings = find_sssr(mol);
+    let config = MatchConfig::default();
     let patterns = parsed_patterns();
     let mut result = Vec::new();
     for (name, query) in patterns {
-        for m in find_matches(query, mol) {
+        for m in find_matches_with_rings_and_config(query, mol, &rings, &config) {
             let mut atoms: Vec<AtomIdx> = m.values().copied().collect();
             atoms.sort_unstable();
             result.push(NamedGroup { name, atoms });

@@ -674,13 +674,14 @@ impl Mol {
         // Pre-compute all ring-derived values with a single find_sssr call.
         let rb = chematic_chem::ring_bundle(m);
         let mw = chematic_chem::molecular_weight(m);
-        let logp = chematic_chem::logp_crippen(m);
+        // Share the 117-pattern Crippen SMARTS pass between logp and molar_refractivity.
+        let (logp, mr) = chematic_chem::logp_and_mr(m);
         let tpsa = chematic_chem::tpsa(m);
         d.set_item("mw", mw)?;
         d.set_item("exact_mass", chematic_chem::exact_mass(m))?;
         d.set_item("tpsa", tpsa)?;
         d.set_item("logp", logp)?;
-        d.set_item("molar_refractivity", chematic_chem::molar_refractivity(m))?;
+        d.set_item("molar_refractivity", mr)?;
         let hbd = chematic_chem::hbd_count(m);
         d.set_item("hbd", hbd)?;
         d.set_item("hba", rb.hba_count)?;
@@ -706,16 +707,18 @@ impl Mol {
         d.set_item("kappa1", chematic_chem::kappa1(m))?;
         d.set_item("kappa2", chematic_chem::kappa2(m))?;
         d.set_item("kappa3", chematic_chem::kappa3(m))?;
-        d.set_item("chi0", chematic_chem::chi0(m))?;
-        d.set_item("chi1", chematic_chem::chi1(m))?;
-        d.set_item("chi2", chematic_chem::chi2(m))?;
-        d.set_item("chi3", chematic_chem::chi3(m))?;
-        d.set_item("chi4", chematic_chem::chi4(m))?;
-        d.set_item("chi0v", chematic_chem::chi0v(m))?;
-        d.set_item("chi1v", chematic_chem::chi1v(m))?;
-        d.set_item("chi2v", chematic_chem::chi2v(m))?;
-        d.set_item("chi3v", chematic_chem::chi3v(m))?;
-        d.set_item("chi4v", chematic_chem::chi4v(m))?;
+        // Compute all 10 chi indices in a single heavy_indices pass.
+        let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = chematic_chem::chi_all(m);
+        d.set_item("chi0", c0)?;
+        d.set_item("chi1", c1)?;
+        d.set_item("chi2", c2)?;
+        d.set_item("chi3", c3)?;
+        d.set_item("chi4", c4)?;
+        d.set_item("chi0v", c0v)?;
+        d.set_item("chi1v", c1v)?;
+        d.set_item("chi2v", c2v)?;
+        d.set_item("chi3v", c3v)?;
+        d.set_item("chi4v", c4v)?;
         d.set_item("num_aromatic_heterocycles", rb.num_aromatic_heterocycles)?;
         d.set_item("num_aliphatic_heterocycles", rb.num_aliphatic_heterocycles)?;
         d.set_item("num_saturated_rings", rb.num_saturated_rings)?;
@@ -743,7 +746,12 @@ impl Mol {
         d.set_item("ro3_passes", chematic_chem::ro3_passes(m))?;
         d.set_item("lead_like_passes", chematic_chem::lead_like_passes(m))?;
         d.set_item("pfizer_3_75_passes", chematic_chem::pfizer_3_75_passes(m))?;
-        d.set_item("cns_mpo_score", chematic_chem::cns_mpo_score(m))?;
+        // Reuse pre-computed logp/tpsa/mw/hbd; only pka_base is a new computation.
+        let pka_b = chematic_chem::pka_base(m).unwrap_or(0.0);
+        d.set_item(
+            "cns_mpo_score",
+            chematic_chem::cns_mpo_from_parts(m, logp, tpsa, mw, hbd, pka_b),
+        )?;
         d.set_item("mcf_passes", chematic_chem::mcf_passes(m))?;
         d.set_item("bbb_score", chematic_chem::bbb_score_from_parts(tpsa, logp))?;
         d.set_item("bbb_passes", tpsa < 90.0 && mw < 400.0 && hbd <= 3)?;

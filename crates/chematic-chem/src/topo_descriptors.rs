@@ -193,15 +193,19 @@ fn count_paths_dfs(
 
 /// Compute chi sum for paths of exactly `n` bonds (n ≥ 1).
 /// Each undirected path is counted once (sum divided by 2).
-fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
-    let heavy = heavy_indices(mol);
-    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+fn chi_n_with(
+    mol: &Molecule,
+    heavy: &[usize],
+    heavy_set: &FxHashSet<usize>,
+    n: usize,
+    use_valence: bool,
+) -> f64 {
     let mut total = 0.0f64;
-    for &start in &heavy {
+    for &start in heavy {
         let d_start = if use_valence {
             delta_v(mol, AtomIdx(start as u32))
         } else {
-            delta(mol, AtomIdx(start as u32), &heavy_set)
+            delta(mol, AtomIdx(start as u32), heavy_set)
         };
         if d_start <= 0.0 {
             continue;
@@ -215,11 +219,17 @@ fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
             0,
             d_start,
             &mut visited,
-            &heavy_set,
+            heavy_set,
             use_valence,
         );
     }
     total / 2.0
+}
+
+fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
+    let heavy = heavy_indices(mol);
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    chi_n_with(mol, &heavy, &heavy_set, n, use_valence)
 }
 
 // ─── Wiener Index ────────────────────────────────────────────────────────────
@@ -445,6 +455,43 @@ pub fn chi3v(mol: &Molecule) -> f64 {
 /// Valence-corrected χ4v connectivity index.
 pub fn chi4v(mol: &Molecule) -> f64 {
     chi_n(mol, 4, true)
+}
+
+/// Compute all 10 Hall-Kier connectivity indices in a single pass.
+///
+/// Returns `(χ0, χ1, χ2, χ3, χ4, χ0v, χ1v, χ2v, χ3v, χ4v)`.
+/// Use when all indices are needed to avoid 10 redundant `heavy_indices` computations.
+pub fn chi_all(mol: &Molecule) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
+    let heavy = heavy_indices(mol);
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+
+    let c0 = heavy
+        .iter()
+        .map(|&i| {
+            let d = delta(mol, AtomIdx(i as u32), &heavy_set);
+            if d > 0.0 { d.powf(-0.5) } else { 0.0 }
+        })
+        .sum();
+    let c0v = heavy
+        .iter()
+        .map(|&i| {
+            let d = delta_v(mol, AtomIdx(i as u32));
+            if d > 0.0 { d.powf(-0.5) } else { 0.0 }
+        })
+        .sum();
+
+    (
+        c0,
+        chi_n_with(mol, &heavy, &heavy_set, 1, false),
+        chi_n_with(mol, &heavy, &heavy_set, 2, false),
+        chi_n_with(mol, &heavy, &heavy_set, 3, false),
+        chi_n_with(mol, &heavy, &heavy_set, 4, false),
+        c0v,
+        chi_n_with(mol, &heavy, &heavy_set, 1, true),
+        chi_n_with(mol, &heavy, &heavy_set, 2, true),
+        chi_n_with(mol, &heavy, &heavy_set, 3, true),
+        chi_n_with(mol, &heavy, &heavy_set, 4, true),
+    )
 }
 
 // ─── Bertz Complexity ────────────────────────────────────────────────────────
@@ -1209,6 +1256,31 @@ mod tests {
             let smiles = "C".repeat(n);
             let expected = (n as u64) * (n as u64 - 1);
             assert_eq!(padmakar_ivan_index(&mol(&smiles)), expected, "chain n={n}");
+        }
+    }
+
+    #[test]
+    fn chi_all_matches_individual() {
+        // Verify chi_all returns identical values to individual chi0-chi4/v functions.
+        for smi in [
+            "CC",
+            "CCC",
+            "c1ccccc1",
+            "CC(=O)Oc1ccccc1C(=O)O",
+            "CN1C=NC2=C1C(=O)N(C)C(=O)N2C",
+        ] {
+            let m = mol(smi);
+            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = chi_all(&m);
+            assert!((c0 - chi0(&m)).abs() < 1e-10, "{smi}: chi0 mismatch");
+            assert!((c1 - chi1(&m)).abs() < 1e-10, "{smi}: chi1 mismatch");
+            assert!((c2 - chi2(&m)).abs() < 1e-10, "{smi}: chi2 mismatch");
+            assert!((c3 - chi3(&m)).abs() < 1e-10, "{smi}: chi3 mismatch");
+            assert!((c4 - chi4(&m)).abs() < 1e-10, "{smi}: chi4 mismatch");
+            assert!((c0v - chi0v(&m)).abs() < 1e-10, "{smi}: chi0v mismatch");
+            assert!((c1v - chi1v(&m)).abs() < 1e-10, "{smi}: chi1v mismatch");
+            assert!((c2v - chi2v(&m)).abs() < 1e-10, "{smi}: chi2v mismatch");
+            assert!((c3v - chi3v(&m)).abs() < 1e-10, "{smi}: chi3v mismatch");
+            assert!((c4v - chi4v(&m)).abs() < 1e-10, "{smi}: chi4v mismatch");
         }
     }
 }

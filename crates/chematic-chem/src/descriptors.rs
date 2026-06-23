@@ -1700,6 +1700,52 @@ pub fn pfizer_3_75_passes(mol: &Molecule) -> bool {
 /// - HBD: 1.0 if 0; 0.0 if ≥ 2; linear between 0–2
 /// - pKa (most basic site): 1.0 if ≤ 8; 0.0 if ≥ 10; linear between 8–10
 ///
+/// CNS MPO score accepting pre-computed descriptor values.
+///
+/// Equivalent to [`cns_mpo_score`] but reuses `logp`, `tpsa`, `mw`, `hbd`, and
+/// `pka_b` that the caller has already computed, saving a full Crippen SMARTS pass
+/// and a pKa scan.  `mol` is still needed for LogD (ionisation class).
+///
+/// - `logp`: Crippen LogP (from `logp_crippen` or `logp_and_mr`)
+/// - `tpsa`: topological polar surface area
+/// - `mw`: molecular weight
+/// - `hbd`: H-bond donor count
+/// - `pka_b`: most basic pKa (`pka_base(mol).unwrap_or(0.0)`)
+pub fn cns_mpo_from_parts(
+    mol: &Molecule,
+    logp: f64,
+    tpsa: f64,
+    mw: f64,
+    hbd: usize,
+    pka_b: f64,
+) -> f64 {
+    #[inline]
+    fn ld(val: f64, lo: f64, hi: f64) -> f64 {
+        if val <= lo {
+            1.0
+        } else if val >= hi {
+            0.0
+        } else {
+            (hi - val) / (hi - lo)
+        }
+    }
+    let d_tpsa = if !(0.0..=120.0).contains(&tpsa) {
+        0.0
+    } else if tpsa <= 40.0 {
+        tpsa / 40.0
+    } else if tpsa <= 90.0 {
+        1.0
+    } else {
+        (120.0 - tpsa) / 30.0
+    };
+    ld(logp, 3.0, 5.0)
+        + ld(crate::logd::logd_from_logp(logp, mol, 7.4), 2.0, 4.0)
+        + ld(mw, 360.0, 500.0)
+        + d_tpsa
+        + (1.0 - hbd as f64 / 2.0).clamp(0.0, 1.0)
+        + ld(pka_b, 8.0, 10.0)
+}
+
 /// Reference: Wager T.T. et al., ACS Chem. Neurosci. 2010, 1, 435–449.
 pub fn cns_mpo_score(mol: &Molecule) -> f64 {
     #[inline]

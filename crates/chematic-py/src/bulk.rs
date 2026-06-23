@@ -188,12 +188,13 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
         .map(|mol| {
             let m = &mol;
             let (pka_a, pka_b) = chematic_chem::pka_both(m);
+            let (logp_val, mr_val) = chematic_chem::logp_and_mr(m);
             Desc {
                 mw: chematic_chem::molecular_weight(m),
                 exact_mass: chematic_chem::exact_mass(m),
                 tpsa: chematic_chem::tpsa(m),
-                logp: chematic_chem::logp_crippen(m),
-                mr: chematic_chem::molar_refractivity(m),
+                logp: logp_val,
+                mr: mr_val,
                 hbd: chematic_chem::hbd_count(m),
                 hba: chematic_chem::hba_count(m),
                 rb: chematic_chem::rotatable_bond_count(m),
