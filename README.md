@@ -64,7 +64,7 @@ input, the same bits are always produced. No RNG, no platform-specific behavior.
 
 All phases complete + **v0.4.x series**: AutoDock PDBQT docking pipeline, UFF force field (metals/organometallics), SDF partial charge writing, PyO3 Python bindings, BOILED-Egg, kekulization blossom, MCP 15 tools — **2275 tests, all passing. Zero C/C++ dependencies by default.**
 
-Latest release: **v0.4.17** (2026-06-23) — perf: shared SSSR in SMARTS matching (117→1 per Crippen, ~480→1 per PAINS/Brenk); `logp_and_mr()` combined Crippen pass; `logd_from_logp()`; `find_matches_with_rings` public API; `heavy_degrees()` pre-computation | v0.4.15: tautomer tetrazole 1H/2H normalization, CDXML Order=1.5→Aromatic | v0.4.14: TPSA calibration ±0.1 Å², HBA/HBD/ARC all 100% on 5k-mol, E/Z stereo in `run_reactants` | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS | v0.4.0: PyO3 Python bindings
+Latest release: **v0.4.18** (2026-06-23) — perf: shared SSSR in SMARTS matching (117→1 per Crippen, ~480→1 per PAINS/Brenk); `logp_and_mr()` combined Crippen pass; `logd_from_logp()`; `find_matches_with_rings` public API; `heavy_degrees()` pre-computation | v0.4.15: tautomer tetrazole 1H/2H normalization, CDXML Order=1.5→Aromatic | v0.4.14: TPSA calibration ±0.1 Å², HBA/HBD/ARC all 100% on 5k-mol, E/Z stereo in `run_reactants` | v0.4.13: `retro_disconnect()` 60 retro-SMIRKS | v0.4.0: PyO3 Python bindings
 
 | Crate                 | Description                                                                                              | Tests |
 |-----------------------|----------------------------------------------------------------------------------------------------------|-------|

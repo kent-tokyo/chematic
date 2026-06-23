@@ -1,6 +1,6 @@
 # chematic — Status & Roadmap
 
-Current version: **v0.4.17** (2026-06-22)
+Current version: **v0.4.18** (2026-06-22)
 
 ---
 

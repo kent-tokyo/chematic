@@ -11,6 +11,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.18] — 2026-06-23
+
+### Added — `chematic-py`
+
+- **`Mol._repr_svg_()`** — Jupyter/JupyterLab auto-display hook; writing `mol` in a
+  cell renders the 2D structure automatically without `IPython.display.SVG(...)`.
+- **`Mol.has_substructure(smarts)`** — method-level SMARTS match returning `bool`
+  (equivalent to `chematic.smarts_match(smarts, mol)` with a cleaner call site).
+- **`Mol.find_matches(smarts)`** — method-level SMARTS match returning atom-index lists
+  (equivalent to `chematic.smarts_find(smarts, mol)`).
+- **`chematic.from_smiles_list(smiles, *, skip_invalid=True)`** — pure-Python convenience
+  function; batch-parses SMILES via `bulk.parse`, filtering `None` by default.
+- **`chematic.descriptors_df(smiles)`** — one-liner SMILES → `pd.DataFrame` wrapper
+  around `bulk.descriptors`; raises `ImportError` when pandas is not installed.
+
+### Added — `chematic-chem`
+
+- **`cns_mpo_from_parts(mol, logp, tpsa, mw, hbd, pka_b)`** — CNS MPO score from
+  pre-computed values; avoids redundant Crippen SMARTS pass when descriptors are
+  already available in the caller.
+- **`chi_all(mol) -> (χ0, χ1, …, χ4v)`** — compute all 10 Hall-Kier connectivity
+  indices in a single `heavy_indices` pass (was 10 independent calls).
+- **`pains_passes_and_matches(mol) -> (bool, Vec<&str>)`** and
+  **`brenk_passes_and_matches(mol)`** — single explicit-H + SSSR + pattern scan
+  returning both the pass flag and alert names.
+
+### Performance — `chematic-chem` / `chematic-py`
+
+- `named_groups.rs`: `detect_named_functional_groups` shares one `find_sssr()` across
+  all 19 patterns (was 19 independent SSSR computations).
+- Python `Mol.descriptors()`: uses `logp_and_mr()` (1 Crippen pass for logP + MR),
+  `chi_all()` (1 heavy_indices pass for 10 chi indices), and `cns_mpo_from_parts()`.
+- `bulk.descriptors()`: uses `logp_and_mr()` and `pka_both()`.
+
+### Docs
+
+- **`docs/benchmark.md`** — new benchmark page: ECFP4 speed (5–14× vs RDKit),
+  descriptor accuracy (100% on 5,000-mol corpus), install/WASM comparison, feature table.
+- README Docs badge now links to site root `https://kent-tokyo.github.io/chematic/`.
+
+---
+
 ## [0.4.17] — 2026-06-23
 
 ### Performance — `chematic-chem`
