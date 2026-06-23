@@ -154,8 +154,7 @@ pub fn parse_cjson(
 
     // ── Build atoms ──────────────────────────────────────────────────────────
     let mut builder = MoleculeBuilder::new();
-    for i in 0..n_atoms {
-        let an = numbers[i];
+    for (i, &an) in numbers.iter().enumerate() {
         let element = Element::from_atomic_number(an as u8)
             .ok_or(CjsonError::UnknownAtomicNumber(an))?;
         let mut atom = Atom::new(element);
@@ -175,7 +174,7 @@ pub fn parse_cjson(
             .map(|v| v.as_u64().unwrap_or(0))
             .collect();
 
-        if index.len() % 2 != 0 {
+        if !index.len().is_multiple_of(2) {
             return Err(CjsonError::OddBondIndexList);
         }
 

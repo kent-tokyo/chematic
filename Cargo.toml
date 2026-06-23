@@ -28,7 +28,7 @@ lto = true           # whole-program link-time optimization
 codegen-units = 1    # required for LTO; also enables more cross-crate inlining
 
 [workspace.package]
-version = "0.4.18"
+version = "0.4.19"
 edition = "2024"
 rust-version = "1.85"
 authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]

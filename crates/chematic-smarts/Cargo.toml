@@ -16,8 +16,8 @@ documentation = "https://docs.rs/chematic-smarts"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.4.14" }
-chematic-perception = { path = "../chematic-perception", version = "0.4.14" }
+chematic-core = { path = "../chematic-core", version = "0.4.19" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.19" }
 rustc-hash = "2"
 
 [dev-dependencies]

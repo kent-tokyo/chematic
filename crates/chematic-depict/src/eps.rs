@@ -333,14 +333,14 @@ fn set_color(out: &mut String, (r, g, b): (f64, f64, f64)) {
 
 fn parse_color_or(s: &str, fallback: (f64, f64, f64)) -> (f64, f64, f64) {
     let s = s.trim().trim_start_matches('#');
-    if s.len() == 6 {
-        if let (Ok(r), Ok(g), Ok(b)) = (
+    if s.len() == 6
+        && let (Ok(r), Ok(g), Ok(b)) = (
             u8::from_str_radix(&s[0..2], 16),
             u8::from_str_radix(&s[2..4], 16),
             u8::from_str_radix(&s[4..6], 16),
-        ) {
-            return (r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0);
-        }
+        )
+    {
+        return (r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0);
     }
     // Named colors
     match s.to_ascii_lowercase().as_str() {

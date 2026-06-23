@@ -3838,14 +3838,6 @@ pub fn mol_from_xyz(xyz: &str) -> Result<MolHandle, JsValue> {
     })
 }
 
-/// Infer bond connectivity and bond orders from an XYZ-format string.
-///
-/// Explicit hydrogen atoms must be present in the XYZ for reliable bond-order
-/// assignment (without H, carbonyl C=O cannot be distinguished from C-O).
-///
-/// Returns JSON on success: `{"smiles":"CCO","atom_count":3,"bond_count":2}`.
-/// `atom_count` and `bond_count` refer to the heavy-atom skeleton (H removed).
-///
 // determine_bonds_from_xyz_json removed to reduce WASM bundle size.
 
 /// Serialize a molecule to XYZ format.
