@@ -50,6 +50,7 @@ Requires Python ≥ 3.8. No conda, no RDKit, no C compiler needed.
 
 ## Quick links
 
+- [Benchmark](benchmark.md) — performance vs RDKit, descriptor accuracy
 - [Cookbook](cookbook.md) — 20 copy-paste-ready tasks
 - [RDKit migration guide](rdkit_cheatsheet.md) — side-by-side API comparison
 - [API Reference](api/chematic.md) — full Python API
