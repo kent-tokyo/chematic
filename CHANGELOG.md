@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`mol.vabc`** — van der Waals volume (Bondi radii) property.
 - **`mol.gravitational_index`** — gravitational index property.
 - **`bulk.substructure_match(smarts, mols)`** — parallel substructure search accepting pre-parsed `Mol` objects; runs VF2 matching in parallel across the list, returning a `list[bool]`.
+- **`bulk.generate_3d(smiles, *, method="etkdg")`** — parallel 3D coordinate generation; returns `list[list[[x,y,z]] | None]`. `method="etkdg"` (default) uses the ETKDG knowledge base with chair/envelope ring conformations and 80 torsion rules; `method="dreiding"` is faster.
+- **`bulk.tanimoto_matrix(smiles)`** — all-pairs ECFP4 Tanimoto similarity; returns numpy `(N, N)` float32.
+- **`bulk.standardize(mols)`** — batch molecule standardization (largest fragment, neutralize, canonical tautomer); returns `list[Mol]`.
 
 ### Added — `chematic-inchi`
 

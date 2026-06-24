@@ -523,6 +523,128 @@ pub fn substructure_match(smarts: &str, mols: Vec<Mol>) -> PyResult<Vec<usize>> 
 }
 
 // ---------------------------------------------------------------------------
+// bulk.generate_3d — parallel 3D coordinate generation
+// ---------------------------------------------------------------------------
+
+/// Generate 3D coordinates for a list of SMILES strings in parallel.
+///
+/// Returns a list of coordinate arrays ``[[x, y, z], ...]``, one per heavy
+/// atom.  Invalid SMILES or molecules that fail 3D generation return ``None``.
+///
+/// Parameters
+/// ----------
+/// smiles : list[str]
+///     Input SMILES strings.
+/// method : {"etkdg", "dreiding"}
+///     Force-field / algorithm used.  ``"etkdg"`` (default) applies the
+///     ETKDG knowledge base (chair/envelope rings, 80 torsion rules).
+///     ``"dreiding"`` is faster and uses the DREIDING force field only.
+///
+/// Examples
+/// --------
+///     coords = chematic.bulk.generate_3d(["CCO", "c1ccccc1"])
+///     # coords[0] = [[x0,y0,z0], [x1,y1,z1], ...]  (one row per heavy atom)
+#[pyfunction]
+#[pyo3(signature = (smiles, *, method = "etkdg"))]
+pub fn generate_3d(smiles: Vec<String>, method: &str) -> Vec<Option<Vec<[f64; 3]>>> {
+    let use_etkdg = method != "dreiding";
+    smiles
+        .par_iter()
+        .map(|s| {
+            let mol = chematic_smiles::parse(s).ok()?;
+            let coords = if use_etkdg {
+                chematic_3d::generate_coords_etkdg(&mol)
+            } else {
+                chematic_3d::generate_and_minimize_dreiding(&mol)
+            };
+            let pts: Vec<[f64; 3]> = (0..mol.atom_count() as u32)
+                .map(|i| {
+                    let p = coords.get(chematic_core::AtomIdx(i));
+                    [p.x, p.y, p.z]
+                })
+                .collect();
+            Some(pts)
+        })
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
+// bulk.tanimoto_matrix — all-pairs Tanimoto similarity matrix
+// ---------------------------------------------------------------------------
+
+/// Compute the all-pairs ECFP4 Tanimoto similarity matrix for a list of SMILES.
+///
+/// Returns a numpy array of shape ``(N, N)`` with ``dtype=float32``.
+/// Molecules that fail to parse are silently excluded; the matrix rows/columns
+/// correspond only to successfully parsed molecules.
+///
+/// Parameters
+/// ----------
+/// smiles : list[str]
+///     Input SMILES strings.
+///
+/// Examples
+/// --------
+///     mat = chematic.bulk.tanimoto_matrix(["CCO", "c1ccccc1", "CC(=O)O"])
+///     # mat.shape == (3, 3);  mat[i, j] == Tanimoto(smiles[i], smiles[j])
+#[pyfunction]
+pub fn tanimoto_matrix<'py>(
+    py: Python<'py>,
+    smiles: Vec<String>,
+) -> Bound<'py, PyArray2<f32>> {
+    let fps: Vec<chematic_fp::bitvec::BitVec2048> = smiles
+        .par_iter()
+        .filter_map(|s| chematic_smiles::parse(s).ok())
+        .map(|mol| chematic_fp::ecfp4(&mol))
+        .collect();
+
+    let n = fps.len();
+    if n == 0 {
+        return Array2::<f32>::zeros((0, 0)).into_pyarray(py);
+    }
+
+    let flat = chematic_fp::bulk::tanimoto_matrix(&fps, &fps);
+    Array2::from_shape_vec((n, n), flat)
+        .expect("shape mismatch in tanimoto_matrix")
+        .into_pyarray(py)
+}
+
+// ---------------------------------------------------------------------------
+// bulk.standardize — batch molecule standardization
+// ---------------------------------------------------------------------------
+
+/// Standardize a list of :class:`Mol` objects in parallel.
+///
+/// Applies the default standardization pipeline to each molecule:
+/// largest-fragment selection, charge neutralization, and canonical tautomer.
+/// All molecules succeed (standardization never fails); the output list has
+/// the same length as the input.
+///
+/// Parameters
+/// ----------
+/// mols : list[Mol]
+///     Pre-parsed molecules (e.g. from :func:`bulk.parse`).
+///
+/// Examples
+/// --------
+///     mols = chematic.bulk.parse(["CC(=O)[O-].[Na+]", "Oc1ccccc1"])
+///     valid = [m for m in mols if m is not None]
+///     std = chematic.bulk.standardize(valid)
+///     # Na+ salt → neutral acid; phenol → canonical tautomer
+#[pyfunction]
+pub fn standardize(mols: Vec<Mol>) -> Vec<Mol> {
+    let opts = chematic_chem::StandardizeOptions::default();
+    mols.par_iter()
+        .map(|m| {
+            let s = chematic_chem::standardize(&m.inner, &opts);
+            Mol {
+                inner: Arc::new(s),
+            }
+        })
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
 // Register the bulk submodule
 // ---------------------------------------------------------------------------
 
@@ -536,5 +658,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(tanimoto_search, m)?)?;
     m.add_function(wrap_pyfunction!(substructure_search, m)?)?;
     m.add_function(wrap_pyfunction!(substructure_match, m)?)?;
+    m.add_function(wrap_pyfunction!(generate_3d, m)?)?;
+    m.add_function(wrap_pyfunction!(tanimoto_matrix, m)?)?;
+    m.add_function(wrap_pyfunction!(standardize, m)?)?;
     Ok(())
 }
