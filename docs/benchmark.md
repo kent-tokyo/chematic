@@ -1,6 +1,6 @@
 # Benchmark
 
-Measured environment: Python 3.12, Apple M-series, chematic v0.4.17, RDKit 2024.09.
+Measured environment: Python 3.12, Apple M-series, chematic v0.4.19, RDKit 2024.09.
 
 ---
 
@@ -8,15 +8,77 @@ Measured environment: Python 3.12, Apple M-series, chematic v0.4.17, RDKit 2024.
 
 | Metric | chematic | RDKit |
 |--------|----------|-------|
-| ECFP4 batch — 10,000 mol | **36 ms** | ~500 ms |
+| Import time | **~35 ms** | ~400 ms (11×) |
+| SMILES parse — 5,000 mol | **~5 ms** | ~50 ms (10×) |
+| ECFP4 batch — 10,000 mol | **36 ms** | ~500 ms (14×) |
 | Descriptor accuracy vs RDKit | **100%** on 5,000-mol corpus | baseline |
 | Install | `pip install chematic` | conda or cmake |
 | C/C++ dependencies | **Zero** | Required |
-| WASM binary size | **~550 KB** | ~30 MB |
+| WASM binary size | **504 KB** | ~30 MB |
 
 ---
 
-## 1. Speed — ECFP4 Fingerprint Generation (batch)
+## 1. Startup Time (import latency)
+
+Cold-process import time measured by spawning a fresh Python subprocess per sample
+(5 samples, median reported).  No module-cache warm-up.
+
+| | chematic | RDKit |
+|---|---|---|
+| `import` only | **~35 ms** | ~400 ms |
+| `import` + first parse | **~38 ms** | ~430 ms |
+| **Speedup** | **~11×** | baseline |
+
+**chematic**
+
+```bash
+python scripts/bench_startup.py --runs 5
+```
+
+**Why chematic is faster**: chematic is a single PyO3 extension module with no
+transitive Python dependencies. RDKit initialises multiple C++ modules, reads
+SMARTS definition files, and triggers Boost data-structure setup on first import.
+
+---
+
+## 2. SMILES Parse Throughput
+
+Timed on the built-in 20-molecule diverse corpus repeated to 5,000 total parses.
+Warm-up pass excluded.
+
+| N | chematic | RDKit | Speedup |
+|---|---|---|---|
+| 1,000 | ~1 ms | ~10 ms | ~10× |
+| 5,000 | **~5 ms** | **~50 ms** | **~10×** |
+| 10,000 | ~10 ms | ~100 ms | ~10× |
+
+Per-molecule: **~1 µs/mol** (chematic) vs ~10 µs/mol (RDKit).
+
+**chematic**
+
+```python
+import chematic
+mols = [chematic.from_smiles(s) for s in smiles_list]
+# or batch:
+mols = chematic.from_smiles_list(smiles_list)
+```
+
+**RDKit**
+
+```python
+from rdkit import Chem
+mols = [Chem.MolFromSmiles(s) for s in smiles_list]
+```
+
+### How to reproduce
+
+```bash
+python scripts/bench_smiles_parse.py --n 5000 --rdkit
+```
+
+---
+
+## 3. Speed — ECFP4 Fingerprint Generation (batch)
 
 Rayon parallelism across all CPU cores; speedup grows with batch size.
 
@@ -53,7 +115,7 @@ python scripts/benchmark_vs_rdkit.py --rdkit
 
 ---
 
-## 2. Descriptor Accuracy vs RDKit
+## 4. Descriptor Accuracy vs RDKit
 
 Tested on a 5,000-molecule ChEMBL-like SMILES corpus (`scripts/bench5k.py`).
 
@@ -78,7 +140,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 
 ---
 
-## 3. Installation & Deployment
+## 5. Installation & Deployment
 
 | | chematic | RDKit |
 |---|----------|-------|
@@ -91,7 +153,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 
 ---
 
-## 4. Feature Comparison
+## 6. Feature Comparison
 
 | Feature | chematic | RDKit |
 |---------|----------|-------|
@@ -110,7 +172,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 
 ---
 
-## 5. Batch Descriptor Computation
+## 7. Batch Descriptor Computation
 
 `chematic.bulk.descriptors` returns 55+ descriptors per molecule including ADMET and pKa — all in parallel.
 

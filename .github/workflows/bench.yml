@@ -1,0 +1,73 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'   # weekly, Monday 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  # ── Rust: Criterion benchmarks ─────────────────────────────────────────────
+  rust-bench:
+    name: Rust (Criterion)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Run Criterion benchmarks (bencher format)
+        run: |
+          cargo bench --workspace -- --output-format bencher \
+            2>/dev/null | tee bench_criterion.txt
+
+      - name: Store / compare benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Rust Criterion
+          tool: cargo
+          output-file-path: bench_criterion.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: ${{ github.ref == 'refs/heads/main' }}
+          benchmark-data-dir-path: docs/benchmarks
+          comment-on-alert: true
+          alert-threshold: '115%'
+          fail-on-alert: false
+
+  # ── Python: startup time + SMILES parse throughput ─────────────────────────
+  python-bench:
+    name: Python (startup + parse)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install chematic
+        run: pip install chematic --quiet
+
+      - name: Startup time benchmark
+        run: python scripts/bench_startup.py --runs 5 --json | tee bench_startup.json
+
+      - name: SMILES parse throughput benchmark
+        run: python scripts/bench_smiles_parse.py --n 5000 --json | tee bench_parse.json
+
+      - name: Show results
+        run: |
+          echo "=== startup ===" && cat bench_startup.json
+          echo "=== parse ===" && cat bench_parse.json
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-benchmarks
+          path: |
+            bench_startup.json
+            bench_parse.json
+          retention-days: 90
