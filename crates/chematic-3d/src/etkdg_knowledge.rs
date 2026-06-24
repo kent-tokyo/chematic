@@ -584,6 +584,286 @@ pub fn get_torsion_preference(
         });
     }
 
+    // ── Styrene / aryl-vinyl conjugation ────────────────────────────────────────
+
+    // Aryl-vinyl bond (styrene-like): extended π-conjugation → coplanar (0°).
+    // Applies to Ar-C=C and Ar-C=C reverse traversal.
+    if b_type == AtomType::CAromatic && c_type == AtomType::CSp2Alkene {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.07,
+        });
+    }
+    if b_type == AtomType::CSp2Alkene && c_type == AtomType::CAromatic {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.07,
+        });
+    }
+
+    // ── Vinyl thioether C=C-S: S lone pair conjugates with alkene π system ────
+
+    if b_type == AtomType::CSp2Alkene && c_type == AtomType::S {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.07,
+        });
+    }
+    if b_type == AtomType::S && c_type == AtomType::CSp2Alkene {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.07,
+        });
+    }
+
+    // ── Allylic amine C=C-N (sp3): N lone pair partial conjugation with alkene ─
+
+    if b_type == AtomType::CSp2Alkene && c_type == AtomType::NSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+    if b_type == AtomType::NSp3 && c_type == AtomType::CSp2Alkene {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+
+    // ── Ketone/aldehyde C(sp3)-C(=O): H eclipses C=O in preferred conformation ─
+    // Barrier is low; the small penalty still nudges DG toward better geometry.
+
+    if b_type == AtomType::CSp3 && c_type == AtomType::CCarbonyl {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.04,
+        });
+    }
+    if b_type == AtomType::CCarbonyl && c_type == AtomType::CSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.04,
+        });
+    }
+
+    // ── Heteroaromatic N to thioether/thioaryl (NAr-S) ───────────────────────
+    // S lone pair gauche to aromatic N; ~90° from tetrahedral S geometry.
+
+    if b_type == AtomType::NAromatic && c_type == AtomType::S {
+        return Some(TorsionPreference {
+            angle_deg: 90.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+    if b_type == AtomType::S && c_type == AtomType::NAromatic {
+        return Some(TorsionPreference {
+            angle_deg: 90.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+
+    // ── Heteroaromatic N to ether oxygen (NAr-O) ─────────────────────────────
+    // O lone pair conjugates with N lone pair through the linking C;
+    // coplanar (0°) minimises lone-pair/lone-pair repulsion via σ*-donation.
+
+    if b_type == AtomType::NAromatic && c_type == AtomType::OSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.08,
+        });
+    }
+    if b_type == AtomType::OSp3 && c_type == AtomType::NAromatic {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.08,
+        });
+    }
+
+    // ── 5-membered aromatic heterocycle (S or O) to N-heteroaryl ─────────────
+    // Thienyl-pyridine, furanyl-pyridine biaryl bonds: ~45° (like biphenyl).
+
+    if (b_type == AtomType::SAromatic && c_type == AtomType::NAromatic)
+        || (b_type == AtomType::NAromatic && c_type == AtomType::SAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 45.0,
+            penalty_per_degree: 0.03,
+        });
+    }
+
+    if (b_type == AtomType::OAromatic && c_type == AtomType::NAromatic)
+        || (b_type == AtomType::NAromatic && c_type == AtomType::OAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 45.0,
+            penalty_per_degree: 0.04,
+        });
+    }
+
+    // ── Aromatic carbonyl to sp3 carbon ──────────────────────────────────────
+    // Ar-C(=O)-CR3: the carbonyl-to-alkyl bond; prefer 0° (carbonyl O in plane
+    // with the aryl ring; alkyl group anti to O).
+
+    if b_type == AtomType::CCarbonyl && c_type == AtomType::CSp2Alkene {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+
+    // ── Sp-hybridised nitrile / alkyne terminus ───────────────────────────────
+    // X-C≡C-Y and X-C≡N: sp atoms are linear; penalise deviation from 180°.
+
+    if b_type == AtomType::CSp3 && c_type == AtomType::NSp {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.15,
+        });
+    }
+
+    // ── Amide/carbamate reverse: CCarbonyl-N traversal ───────────────────────
+    // The A-B-C-D enumeration also visits bonds in reverse; ensure the
+    // CCarbonyl→N direction returns the same preference as the N→CCarbonyl rules.
+
+    if b_type == AtomType::CCarbonyl && c_type == AtomType::NSp2 {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.20,
+        });
+    }
+    if b_type == AtomType::CCarbonyl && c_type == AtomType::NSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+
+    // ── Isocyanate / carbodiimide N=C=O: linear sp centre ────────────────────
+
+    if b_type == AtomType::NSp && c_type == AtomType::CCarbonyl {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.18,
+        });
+    }
+    if b_type == AtomType::CCarbonyl && c_type == AtomType::NSp {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.18,
+        });
+    }
+
+    // ── Ar-N=C=O (aryl isocyanate) / Ar-N=S: prefer coplanar (0°) ───────────
+
+    if b_type == AtomType::CAromatic && c_type == AtomType::NSp {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+    if b_type == AtomType::NSp && c_type == AtomType::CAromatic {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+
+    // ── Thioamide: NSp2-C(=S) — prefer trans (180°) like regular amide ───────
+    // C(=S) is classified CSp2Alkene (double bond to S, not O).
+    // The rule fires for N-C(=S) when the C is NOT a CCarbonyl.
+
+    if b_type == AtomType::NSp2 && c_type == AtomType::CSp2Alkene {
+        // Check if C has a S=C double bond (thioamide context)
+        let has_thio = mol.neighbors(c_idx).any(|(n, _)| {
+            mol.atom(n).element.atomic_number() == 16
+                && mol
+                    .bond_between(c_idx, n)
+                    .map(|(_, b)| b.order == chematic_core::BondOrder::Double)
+                    .unwrap_or(false)
+        });
+        if has_thio {
+            return Some(TorsionPreference {
+                angle_deg: 180.0,
+                penalty_per_degree: 0.15,
+            });
+        }
+    }
+
+    // ── Anomeric / vicinal-O gauche effect ────────────────────────────────────
+    // O-C-C-O chain (1,2-diol, glycol ether): gauche (~60°) is preferred due to
+    // anomeric / electrostatic stabilisation.  Weaker than ring-based gauche rules.
+
+    if b_type == AtomType::CSp3
+        && c_type == AtomType::CSp3
+        && (a_type == AtomType::OSp3 || a_type == AtomType::OAromatic)
+        && (d_type == AtomType::OSp3 || d_type == AtomType::OAromatic)
+    {
+        return Some(TorsionPreference {
+            angle_deg: 60.0,
+            penalty_per_degree: 0.08,
+        });
+    }
+
+    // ── OSp3 to CCarbonyl (reverse ester direction) ──────────────────────────
+    // O-C(=O) ester oxygen facing the other side: prefer 0° for conjugation.
+
+    if b_type == AtomType::OSp3 && c_type == AtomType::CCarbonyl {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+
+    // ── Conjugated diene C=C-C=C: prefer s-trans (180°) ─────────────────────
+    // Open-chain 1,3-dienes exist predominantly in the s-trans conformation
+    // (~95%).  Cyclic dienes are constrained; apply only when both ends are
+    // CSp2Alkene (not aromatic).
+
+    if b_type == AtomType::CSp2Alkene && c_type == AtomType::CSp2Alkene {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.08,
+        });
+    }
+
+    // ── 1,2-Dicarbonyl C(=O)-C(=O): syn-periplanar (0°) for lone-pair overlap ─
+
+    if b_type == AtomType::CCarbonyl && c_type == AtomType::CCarbonyl {
+        return Some(TorsionPreference {
+            angle_deg: 0.0,
+            penalty_per_degree: 0.10,
+        });
+    }
+
+    // ── Halogen adjacent to sp2 centre ───────────────────────────────────────
+    // Ar-Cl, Ar-Br, Ar-F: the halogen lone pair has no rotational preference
+    // but the aryl-halogen bond is effectively rigid.  A very soft anti preference
+    // biases the flanking chain away from the halogen σ* orbital.
+
+    if b_type == AtomType::CAromatic && c_type == AtomType::Halogen {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.03,
+        });
+    }
+
+    // ── Phosphorus ester / phosphonate P-O ───────────────────────────────────
+    // P-O-C chain in phosphates / phosphonates: prefer anti (180°).
+
+    if b_type == AtomType::P && c_type == AtomType::OSp3 {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+    if b_type == AtomType::OSp3 && c_type == AtomType::P {
+        return Some(TorsionPreference {
+            angle_deg: 180.0,
+            penalty_per_degree: 0.06,
+        });
+    }
+
     None // No specific preference; use default
 }
 
