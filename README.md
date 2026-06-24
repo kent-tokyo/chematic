@@ -24,7 +24,28 @@ Pure Rust · Zero C/C++ · Python · WebAssembly · [Live Demo](https://kent-tok
 | **Memory safety** | compiler-enforced (Rust) | C++ | C++ |
 | **Build from source** | `cargo build` only | cmake + clang + Boost | Emscripten SDK |
 
-All numbers are reproducible — see [benchmark details](https://kent-tokyo.github.io/chematic/benchmark/).
+All numbers are reproducible — see [benchmark details](https://kent-tokyo.github.io/chematic/benchmark/).  
+WASM sizes: chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
+
+---
+
+## When to use chematic
+
+**Use chematic if:**
+
+- You want chemistry in the browser (WASM, 504 KB, no server required)
+- You need a pure Rust stack with no C++ toolchain dependencies
+- You deploy to environments where `pip install rdkit` is impractical (Cloudflare Workers, Lambda, embedded)
+- You build AI agents and want native MCP tool integration
+- You process molecules in batch at high throughput (ECFP4: 5–14× faster than RDKit)
+- You want `pip install chematic` to just work — anywhere, no compiler needed
+
+**Use RDKit if:**
+
+- You need maximum ecosystem compatibility and 20+ years of production validation
+- You require ML-assisted conformer generation (RDKit's ETKDGv3 produces better 3D geometries)
+- You need bit-exact standard InChI without enabling the `native-inchi` feature
+- You depend on community plugins written against the RDKit Python API
 
 ---
 
@@ -124,26 +145,6 @@ safety at every call site.
 Pure Rust compiles to `wasm32-unknown-unknown` natively — no Emscripten, no `cmake`,
 no `clang`. The npm package `@kent-tokyo/chematic` is **504 KB gzip** — 60× smaller
 than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
-
----
-
-## When to use chematic
-
-**Use chematic if:**
-
-- You want chemistry in the browser (WASM, 504 KB, no server required)
-- You need a pure Rust stack with no C++ toolchain dependencies
-- You deploy to environments where `pip install rdkit` is impractical (Cloudflare Workers, Lambda, embedded)
-- You build AI agents and want native MCP tool integration
-- You process molecules in batch at high throughput (ECFP4: 5–14× faster than RDKit)
-- You want `pip install chematic` to just work — anywhere, no compiler needed
-
-**Avoid chematic if:**
-
-- You need full RDKit API compatibility (chematic covers ~80% of common use cases)
-- You require ML-assisted conformer generation (RDKit's ETKDGv3 produces better 3D geometries)
-- You need bit-exact standard InChI without enabling the `native-inchi` feature
-- You depend on community plugins written against the RDKit Python API
 
 ---
 

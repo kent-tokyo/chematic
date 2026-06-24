@@ -24,7 +24,28 @@
 | **内存安全性** | 编译器保证（Rust） | C++ | C++ |
 | **源码构建** | 仅需 `cargo build` | cmake + clang + Boost | Emscripten SDK |
 
-所有数据均可复现 — 参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。
+所有数据均可复现 — 参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。  
+WASM 包体积对比：chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
+
+---
+
+## 何时使用 chematic
+
+**适合使用 chematic 的场景：**
+
+- 需要在浏览器中运行化学计算（WASM，504 KB，无需服务器）
+- 需要纯 Rust 技术栈，不依赖 C++ 工具链
+- 部署到 `pip install rdkit` 不可行的环境（Cloudflare Workers、Lambda、嵌入式设备）
+- 构建 AI 代理并需要原生 MCP 工具集成
+- 需要批量高吞吐量处理分子（ECFP4：比 RDKit 快 5–14 倍）
+- 希望 `pip install chematic` 在任何环境都能直接使用，无需编译器
+
+**适合使用 RDKit 的场景：**
+
+- 需要最大的生态兼容性和 20 年以上的生产验证
+- 需要 ML 辅助的构象生成（RDKit 的 ETKDGv3 生成更优质的 3D 几何结构）
+- 需要在不启用 `native-inchi` feature 的情况下获得逐位精确的标准 InChI
+- 依赖基于 RDKit Python API 编写的社区插件
 
 ---
 
@@ -87,16 +108,8 @@ chematic 是首个内置 **MCP（模型上下文协议）服务器**的化学信
 | `pains_check` / `brenk_check` | 筛查检测干扰或活性基团 |
 | `generate_3d` | 3D 坐标生成（ETKDG + MMFF94） |
 | `find_mcs` | 最大公共子结构 |
-
-<details>
-<summary>完整功能对比（30+ 项）</summary>
-
-| 功能 | **chematic** | RDKit (rdkit-sys) | OpenBabel FFI | RDKit.js (WASM) |
-|---|---|---|---|---|
 | 其余 9 个 | `ecfp4`、`tanimoto`、`canonical_smiles`、`admet_profile`、`boiled_egg`、`sa_score`、`lipinski_check`… |
 
-
-</details>
 ---
 
 ## 为什么选择纯 Rust？
@@ -121,26 +134,6 @@ RDKit Python API 快 5–14×。无 GIL，无解释器开销，无 `_sys` crate 
 纯 Rust 无需 Emscripten、`cmake`、`clang` 即可原生编译至 `wasm32-unknown-unknown`。
 npm 包 `@kent-tokyo/chematic` 为 **504 KB gzip** — 比 RDKit.js 小 60 倍。
 一套代码库在 Linux、macOS、Windows 及任意浏览器中运行。
-
----
-
-## 何时使用 chematic
-
-**适合使用 chematic 的场景：**
-
-- 需要在浏览器中运行化学计算（WASM，504 KB，无需服务器）
-- 需要纯 Rust 技术栈，不依赖 C++ 工具链
-- 部署到 `pip install rdkit` 不可行的环境（Cloudflare Workers、Lambda、嵌入式设备）
-- 构建 AI 代理并需要原生 MCP 工具集成
-- 需要批量高吞吐量处理分子（ECFP4：比 RDKit 快 5–14 倍）
-- 希望 `pip install chematic` 在任何环境都能直接使用，无需编译器
-
-**不适合使用 chematic 的场景：**
-
-- 需要完整的 RDKit API 兼容性（chematic 覆盖约 80% 的常用功能）
-- 需要 ML 辅助的构象生成（RDKit 的 ETKDGv3 生成更优质的 3D 几何结构）
-- 需要在不启用 `native-inchi` feature 的情况下获得逐位精确的标准 InChI
-- 依赖基于 RDKit Python API 编写的社区插件
 
 ---
 

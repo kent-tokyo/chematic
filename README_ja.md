@@ -24,7 +24,28 @@ Pure Rust · C/C++ ゼロ · Python · WebAssembly · [ライブデモ](https://
 | **メモリ安全性** | コンパイラが保証（Rust） | C++ | C++ |
 | **ソースビルド** | `cargo build` のみ | cmake + clang + Boost | Emscripten SDK |
 
-すべての数値は再現可能です — [ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。
+すべての数値は再現可能です — [ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。  
+WASM サイズ: chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
+
+---
+
+## chematic を使うべき場面
+
+**chematic が適している場合：**
+
+- ブラウザで化学計算を動かしたい（WASM、504 KB、サーバー不要）
+- C++ ツールチェーンなしの Pure Rust スタックが必要
+- `pip install rdkit` が困難な環境（Cloudflare Workers、Lambda、組み込み）にデプロイする
+- AI エージェントを構築し、ネイティブな MCP ツール統合が必要
+- バッチ処理で高スループットが必要（ECFP4: RDKit の 5〜14 倍高速）
+- `pip install chematic` がどこでも動くシンプルさを求めている
+
+**RDKit が適している場合：**
+
+- 20 年以上の実績と最大のエコシステム互換性が必要
+- ML 補助のコンフォーマー生成が必要（RDKit の ETKDGv3 の方が 3D 品質が高い）
+- `native-inchi` feature を有効にせずビット完全な標準 InChI が必要
+- RDKit Python API 向けのコミュニティプラグインに依存している
 
 ---
 
@@ -115,26 +136,6 @@ C++ のヒープ破壊なし。不正な SMILES 入力によるセグメンテ�
 Pure Rust は Emscripten・`cmake`・`clang` なしで `wasm32-unknown-unknown` にネイティブでコンパイルされます。
 npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 60 分の 1。
 1 つのコードベースが Linux・macOS・Windows・あらゆるブラウザで動作します。
-
----
-
-## chematic を使うべき場面
-
-**chematic が適している場合：**
-
-- ブラウザで化学計算を動かしたい（WASM、504 KB、サーバー不要）
-- C++ ツールチェーンなしの Pure Rust スタックが必要
-- `pip install rdkit` が困難な環境（Cloudflare Workers、Lambda、組み込み）にデプロイする
-- AI エージェントを構築し、ネイティブな MCP ツール統合が必要
-- バッチ処理で高スループットが必要（ECFP4: RDKit の 5〜14 倍高速）
-- `pip install chematic` がどこでも動くシンプルさを求めている
-
-**避けるべき場合：**
-
-- RDKit API との完全な互換性が必要（chematic は一般的なユースケースの約 80% をカバー）
-- ML 補助のコンフォーマー生成が必要（RDKit の ETKDGv3 の方が 3D ジオメトリの品質が高い）
-- `native-inchi` feature を有効にせずビット完全な標準 InChI が必要
-- RDKit Python API 向けのコミュニティプラグインに依存している
 
 ---
 
