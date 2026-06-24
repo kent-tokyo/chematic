@@ -8,8 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  deployments: write
+  contents: read
 
 jobs:
   # ── Rust: Criterion benchmarks ─────────────────────────────────────────────
@@ -20,23 +19,17 @@ jobs:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Run Criterion benchmarks (bencher format)
+      - name: Run Criterion benchmarks
         run: |
           cargo bench --workspace -- --output-format bencher \
-            2>/dev/null | tee bench_criterion.txt
+            | tee bench_criterion.txt
 
-      - name: Store / compare benchmark results
-        uses: benchmark-action/github-action-benchmark@v1
+      - name: Upload Criterion results
+        uses: actions/upload-artifact@v7
         with:
-          name: Rust Criterion
-          tool: cargo
-          output-file-path: bench_criterion.txt
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: ${{ github.ref == 'refs/heads/main' }}
-          benchmark-data-dir-path: docs/benchmarks
-          comment-on-alert: true
-          alert-threshold: '115%'
-          fail-on-alert: false
+          name: rust-benchmarks
+          path: bench_criterion.txt
+          retention-days: 90
 
   # ── Python: startup time + SMILES parse throughput ─────────────────────────
   python-bench:
