@@ -24,6 +24,8 @@ Pure Rust · Zero C/C++ · Python · WebAssembly · [Live Demo](https://kent-tok
 | **Memory safety** | compiler-enforced (Rust) | C++ | C++ |
 | **Build from source** | `cargo build` only | cmake + clang + Boost | Emscripten SDK |
 
+All numbers are reproducible — see [benchmark details](https://kent-tokyo.github.io/chematic/benchmark/).
+
 ---
 
 ## Quick Start

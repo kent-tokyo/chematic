@@ -24,6 +24,8 @@
 | **内存安全性** | 编译器保证（Rust） | C++ | C++ |
 | **源码构建** | 仅需 `cargo build` | cmake + clang + Boost | Emscripten SDK |
 
+所有数据均可复现 — 参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。
+
 ---
 
 ## 快速开始

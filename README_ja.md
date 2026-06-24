@@ -24,6 +24,8 @@ Pure Rust · C/C++ ゼロ · Python · WebAssembly · [ライブデモ](https://
 | **メモリ安全性** | コンパイラが保証（Rust） | C++ | C++ |
 | **ソースビルド** | `cargo build` のみ | cmake + clang + Boost | Emscripten SDK |
 
+すべての数値は再現可能です — [ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。
+
 ---
 
 ## クイックスタート
