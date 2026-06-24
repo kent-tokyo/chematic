@@ -118,6 +118,26 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 
 ---
 
+## chematic を使うべき場面
+
+**chematic が適している場合：**
+
+- ブラウザで化学計算を動かしたい（WASM、504 KB、サーバー不要）
+- C++ ツールチェーンなしの Pure Rust スタックが必要
+- `pip install rdkit` が困難な環境（Cloudflare Workers、Lambda、組み込み）にデプロイする
+- AI エージェントを構築し、ネイティブな MCP ツール統合が必要
+- バッチ処理で高スループットが必要（ECFP4: RDKit の 5〜14 倍高速）
+- `pip install chematic` がどこでも動くシンプルさを求めている
+
+**避けるべき場合：**
+
+- RDKit API との完全な互換性が必要（chematic は一般的なユースケースの約 80% をカバー）
+- ML 補助のコンフォーマー生成が必要（RDKit の ETKDGv3 の方が 3D ジオメトリの品質が高い）
+- `native-inchi` feature を有効にせずビット完全な標準 InChI が必要
+- RDKit Python API 向けのコミュニティプラグインに依存している
+
+---
+
 ## 他のケモインフォマティクスライブラリとの比較
 
 | 観点                                        | **chematic**                               | RDKit (rdkit-sys)  | OpenBabel FFI | RDKit.js (WASM)  |

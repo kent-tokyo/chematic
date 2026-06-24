@@ -124,6 +124,26 @@ npm 包 `@kent-tokyo/chematic` 为 **504 KB gzip** — 比 RDKit.js 小 60 倍�
 
 ---
 
+## 何时使用 chematic
+
+**适合使用 chematic 的场景：**
+
+- 需要在浏览器中运行化学计算（WASM，504 KB，无需服务器）
+- 需要纯 Rust 技术栈，不依赖 C++ 工具链
+- 部署到 `pip install rdkit` 不可行的环境（Cloudflare Workers、Lambda、嵌入式设备）
+- 构建 AI 代理并需要原生 MCP 工具集成
+- 需要批量高吞吐量处理分子（ECFP4：比 RDKit 快 5–14 倍）
+- 希望 `pip install chematic` 在任何环境都能直接使用，无需编译器
+
+**不适合使用 chematic 的场景：**
+
+- 需要完整的 RDKit API 兼容性（chematic 覆盖约 80% 的常用功能）
+- 需要 ML 辅助的构象生成（RDKit 的 ETKDGv3 生成更优质的 3D 几何结构）
+- 需要在不启用 `native-inchi` feature 的情况下获得逐位精确的标准 InChI
+- 依赖基于 RDKit Python API 编写的社区插件
+
+---
+
 ## 与其他化学信息学库的比较
 
 | 功能                                         | **chematic**                                 | RDKit (rdkit-sys)  | OpenBabel FFI | RDKit.js (WASM)   |

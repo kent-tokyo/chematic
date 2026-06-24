@@ -127,6 +127,26 @@ than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
 
 ---
 
+## When to use chematic
+
+**Use chematic if:**
+
+- You want chemistry in the browser (WASM, 504 KB, no server required)
+- You need a pure Rust stack with no C++ toolchain dependencies
+- You deploy to environments where `pip install rdkit` is impractical (Cloudflare Workers, Lambda, embedded)
+- You build AI agents and want native MCP tool integration
+- You process molecules in batch at high throughput (ECFP4: 5–14× faster than RDKit)
+- You want `pip install chematic` to just work — anywhere, no compiler needed
+
+**Avoid chematic if:**
+
+- You need full RDKit API compatibility (chematic covers ~80% of common use cases)
+- You require ML-assisted conformer generation (RDKit's ETKDGv3 produces better 3D geometries)
+- You need bit-exact standard InChI without enabling the `native-inchi` feature
+- You depend on community plugins written against the RDKit Python API
+
+---
+
 ## Comparison with Other Cheminformatics Libraries
 
 | Feature                 | **chematic**                              | RDKit (rdkit-sys)  | OpenBabel FFI  | RDKit.js (WASM)    |
