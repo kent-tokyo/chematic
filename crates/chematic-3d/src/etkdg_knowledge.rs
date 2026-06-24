@@ -1,6 +1,8 @@
 //! ETKDG Torsion Knowledge Base — experimental torsion angle preferences from CSD.
 
 use chematic_core::{AtomIdx, Molecule};
+use chematic_smarts::{find_matches, parse_smarts};
+use std::collections::HashMap;
 
 /// Torsion angle preference with penalty scoring.
 #[derive(Clone, Debug)]
@@ -585,6 +587,127 @@ pub fn get_torsion_preference(
     None // No specific preference; use default
 }
 
+// ---------------------------------------------------------------------------
+// SMARTS-based torsion rules (higher precision than atom-type rules)
+// ---------------------------------------------------------------------------
+
+/// A SMARTS-based torsion rule for a specific B-C bond context.
+///
+/// The SMARTS pattern may contain more than 2 atoms to express chemical
+/// context (e.g. `[NH2][C;!a](=O)` for primary amide).  The B and C atoms
+/// of the rotatable bond correspond to query positions `b_qi` and `c_qi`.
+pub struct SmartsTorsionRule {
+    pub smarts: &'static str,
+    /// Index in the SMARTS match corresponding to atom B.
+    pub b_qi: usize,
+    /// Index in the SMARTS match corresponding to atom C.
+    pub c_qi: usize,
+    pub angle_deg: f64,
+    pub penalty_per_degree: f64,
+}
+
+/// SMARTS-based torsion rules.  Checked before atom-type fallback rules;
+/// first matching rule wins for a given B-C bond.
+///
+/// Rules are ordered from most specific to least specific.
+static SMARTS_TORSION_RULES: &[SmartsTorsionRule] = &[
+    // Hindered biaryl: both ring-C are fully substituted (H0, X3 = 3 heavy bonds).
+    // Steric clash pushes the preferred dihedral from ~45° (unhindered) toward ~90°.
+    SmartsTorsionRule {
+        smarts: "[c;H0;X3][c;H0;X3]",
+        b_qi: 0, c_qi: 1,
+        angle_deg: 90.0,
+        penalty_per_degree: 0.04,
+    },
+    // Primary amide N-C(=O): H2N group prefers 0° (both H eclipsed with C=O oxygen).
+    // More constrained than the generic NSp2+CCarbonyl→180° rule.
+    SmartsTorsionRule {
+        smarts: "[NH2][C;!a](=O)",
+        b_qi: 0, c_qi: 1,
+        angle_deg: 0.0,
+        penalty_per_degree: 0.18,
+    },
+    // Tertiary amide (N with no H, 3 heavy neighbors): N-methyl/dialkyl → trans (180°).
+    SmartsTorsionRule {
+        smarts: "[N;H0;X3][C;!a](=O)",
+        b_qi: 0, c_qi: 1,
+        angle_deg: 180.0,
+        penalty_per_degree: 0.18,
+    },
+    // Heteroaromatic N (ring N, lone-pair donor) adjacent to carbonyl: prefer 0°
+    // (lone pair conjugates with carbonyl π system).
+    SmartsTorsionRule {
+        smarts: "[n][C;!a](=O)",
+        b_qi: 0, c_qi: 1,
+        angle_deg: 0.0,
+        penalty_per_degree: 0.14,
+    },
+    // Aryl ester: Ar-O-C(=O) — the O-C(=O) bond prefers 0° (oxygen lone pair
+    // conjugates with both the aromatic ring and carbonyl).
+    SmartsTorsionRule {
+        smarts: "[c][O;H0][C;!a](=O)",
+        b_qi: 1, c_qi: 2,
+        angle_deg: 0.0,
+        penalty_per_degree: 0.12,
+    },
+    // Carbamate: N-C(=O)-O — the N-C(=O) bond prefers 0° (both N and O lone
+    // pairs donate into the same carbonyl π system → syn-periplanar geometry).
+    SmartsTorsionRule {
+        smarts: "[N;!a][C;!a](=O)[O;!a]",
+        b_qi: 0, c_qi: 1,
+        angle_deg: 0.0,
+        penalty_per_degree: 0.12,
+    },
+];
+
+/// Build a bond-keyed map of SMARTS-derived torsion preferences for `mol`.
+///
+/// The map is keyed by `(b_idx.0, c_idx.0)` for the rotatable bond B-C.
+/// Both directions `(b, c)` and `(c, b)` are inserted (first matching rule
+/// wins; subsequent rules do not overwrite).
+///
+/// Ring bonds are excluded: their torsion angles are constrained by ring
+/// closure geometry and applying an additional preference would conflict with
+/// the subsequent constraint-satisfaction pass.
+pub fn build_smarts_torsion_map(
+    mol: &Molecule,
+    ring_bond_set: &std::collections::HashSet<(u32, u32)>,
+) -> HashMap<(u32, u32), TorsionPreference> {
+    let mut map: HashMap<(u32, u32), TorsionPreference> = HashMap::new();
+
+    for rule in SMARTS_TORSION_RULES {
+        let Ok(query) = parse_smarts(rule.smarts) else {
+            continue;
+        };
+        for m in find_matches(&query, mol) {
+            let (Some(b_atom), Some(c_atom)) = (m.get(&rule.b_qi), m.get(&rule.c_qi)) else {
+                continue;
+            };
+            let b = b_atom.0;
+            let c = c_atom.0;
+            // Skip ring bonds (their geometry is constrained by ring closure).
+            let key_fwd = (b, c);
+            let key_rev = (c, b);
+            if ring_bond_set.contains(&key_fwd) {
+                continue;
+            }
+            // Verify the bond actually exists (rule might match atoms not bonded).
+            if mol.bond_between(AtomIdx(b), AtomIdx(c)).is_none() {
+                continue;
+            }
+            let pref = TorsionPreference {
+                angle_deg: rule.angle_deg,
+                penalty_per_degree: rule.penalty_per_degree,
+            };
+            // First matching rule wins — do not overwrite existing entries.
+            map.entry(key_fwd).or_insert_with(|| pref.clone());
+            map.entry(key_rev).or_insert(pref);
+        }
+    }
+
+    map
+}
+
 /// Default torsion preferences for general C-C-C-C patterns.
 pub fn default_torsion_preference() -> TorsionPreference {
     TorsionPreference {
@@ -845,6 +968,42 @@ mod tests {
         let pref_ester =
             get_torsion_preference(&mol_ester, AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3));
         let _ = pref_ester;
+    }
+
+    // ── SMARTS torsion map tests ───────────────────────────────────────────────
+
+    #[test]
+    fn test_smarts_map_hindered_biaryl() {
+        // 2,2'-dimethylbiphenyl: both inter-ring C are H0,X3 → hindered → 90°
+        let mol = parse("Cc1ccccc1-c1ccccc1C").unwrap();
+        let ring_set = chematic_perception::find_sssr(&mol);
+        let ring_bonds: std::collections::HashSet<(u32, u32)> = ring_set
+            .rings()
+            .iter()
+            .flat_map(|r| {
+                let n = r.len();
+                (0..n).flat_map(move |i| {
+                    let a = r[i].0;
+                    let b = r[(i + 1) % n].0;
+                    [(a, b), (b, a)]
+                })
+            })
+            .collect();
+        let map = build_smarts_torsion_map(&mol, &ring_bonds);
+        // At least one biaryl bond entry should be at 90°
+        let has_90 = map.values().any(|p| (p.angle_deg - 90.0).abs() < 1.0);
+        assert!(has_90, "hindered biaryl should get 90° preference in SMARTS map");
+    }
+
+    #[test]
+    fn test_smarts_map_primary_amide() {
+        // Acetamide: CC(=O)N — primary amide → 0°
+        let mol = parse("CC(=O)N").unwrap();
+        let ring_bonds = std::collections::HashSet::new();
+        let map = build_smarts_torsion_map(&mol, &ring_bonds);
+        // Should have an entry for the N-C(=O) bond at 0°
+        let has_0 = map.values().any(|p| p.angle_deg.abs() < 1.0);
+        assert!(has_0, "primary amide N-C bond should get 0° preference");
     }
 
     // ── New heterocycle pattern tests ──────────────────────────────────────────

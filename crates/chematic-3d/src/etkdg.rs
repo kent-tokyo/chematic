@@ -10,7 +10,8 @@
 
 use crate::coords::Coords3D;
 use crate::etkdg_knowledge::{
-    AtomType, classify_atom_type, default_torsion_preference, get_torsion_preference,
+    AtomType, build_smarts_torsion_map, classify_atom_type, default_torsion_preference,
+    get_torsion_preference,
 };
 use crate::prng::Prng;
 use chematic_core::{AtomIdx, Molecule};
@@ -64,6 +65,25 @@ fn apply_torsion_preferences_with_noise(
     let n = mol.atom_count();
     let mut applied = std::collections::HashSet::new();
 
+    // Build a set of ring bonds so SMARTS rules can skip them.
+    let ring_set = chematic_perception::find_sssr(mol);
+    let ring_bond_set: std::collections::HashSet<(u32, u32)> = ring_set
+        .rings()
+        .iter()
+        .flat_map(|ring| {
+            let len = ring.len();
+            (0..len).flat_map(move |i| {
+                let a = ring[i].0;
+                let b = ring[(i + 1) % len].0;
+                [(a, b), (b, a)]
+            })
+        })
+        .collect();
+
+    // SMARTS-derived bond preferences (more precise than atom-type rules).
+    // Computed once per molecule and consulted before the atom-type fallback.
+    let smarts_map = build_smarts_torsion_map(mol, &ring_bond_set);
+
     // Scan for 4-atom chains (A-B-C-D torsions)
     for b in 0..n {
         for c in 0..n {
@@ -107,7 +127,12 @@ fn apply_torsion_preferences_with_noise(
 
                     let current_deg = current.unwrap() * 180.0 / std::f64::consts::PI;
 
-                    let preference = get_torsion_preference(mol, a_idx, b_idx, c_idx, d_idx)
+                    // SMARTS map is consulted first (B-C bond context);
+                    // atom-type rules are the fallback.
+                    let preference = smarts_map
+                        .get(&(b as u32, c as u32))
+                        .cloned()
+                        .or_else(|| get_torsion_preference(mol, a_idx, b_idx, c_idx, d_idx))
                         .unwrap_or_else(default_torsion_preference);
 
                     // Add Gaussian noise scaled by bond flexibility.
