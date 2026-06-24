@@ -43,7 +43,7 @@ WASM サイズ: chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 **RDKit が適している場合：**
 
 - 20 年以上の実績と最大のエコシステム互換性が必要
-- ML 補助のコンフォーマー生成が必要（RDKit の ETKDGv3 の方が 3D 品質が高い）
+- ML 補助のトーション補正による出版品質の 3D 構造が必要（RDKit の ETKDGv3）
 - `native-inchi` feature を有効にせずビット完全な標準 InChI が必要
 - RDKit Python API 向けのコミュニティプラグインに依存している
 

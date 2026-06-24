@@ -43,7 +43,7 @@ WASM sizes: chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 **Use RDKit if:**
 
 - You need maximum ecosystem compatibility and 20+ years of production validation
-- You require ML-assisted conformer generation (RDKit's ETKDGv3 produces better 3D geometries)
+- You need publication-quality 3D structures with ML-assisted torsion corrections (RDKit's ETKDGv3)
 - You need bit-exact standard InChI without enabling the `native-inchi` feature
 - You depend on community plugins written against the RDKit Python API
 

@@ -96,7 +96,7 @@ python scripts/bench_smiles_parse.py --n 10000 --rdkit
 
 | Task | RDKit advantage |
 |---|---|
-| 3D conformer quality | ETKDGv3 with ML torsion corrections |
+| Publication-quality 3D structures | ETKDGv3 with ML torsion corrections (chematic: good for screening) |
 | Exotic molecule handling | 20 years of edge-case fixes |
 | Large SDF file streaming | Optimized C++ reader |
 
@@ -122,7 +122,7 @@ python scripts/bench_smiles_parse.py --n 10000 --rdkit
 
 | Feature | RDKit advantage |
 |---|---|
-| 3D conformer quality | ETKDGv3 with ML assistance |
+| Publication-quality 3D conformers | ETKDGv3 with ML torsion corrections; chematic uses chair/envelope + MMFF94 (good for virtual screening) |
 | File format support | 100+ formats (chematic: ~20) |
 | Validated production docking | Years of benchmarking |
 | Community plugins | Large ecosystem |
@@ -162,7 +162,7 @@ Most common operations map directly:
 **Choose RDKit if:**
 
 - You need maximum ecosystem compatibility and 20+ years of production validation
-- You require ML-assisted conformer generation (ETKDGv3)
+- You need publication-quality 3D structures with ML-assisted torsion corrections (ETKDGv3)
 - You rely on community plugins written against the RDKit Python API
 - You need bit-exact standard InChI without an extra feature flag
 - You work with exotic file formats or unusual molecule types

@@ -43,7 +43,7 @@ WASM 包体积对比：chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40
 **适合使用 RDKit 的场景：**
 
 - 需要最大的生态兼容性和 20 年以上的生产验证
-- 需要 ML 辅助的构象生成（RDKit 的 ETKDGv3 生成更优质的 3D 几何结构）
+- 需要带 ML 辅助扭转角修正的出版级 3D 结构（RDKit 的 ETKDGv3）
 - 需要在不启用 `native-inchi` feature 的情况下获得逐位精确的标准 InChI
 - 依赖基于 RDKit Python API 编写的社区插件
 

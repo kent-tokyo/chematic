@@ -291,36 +291,54 @@ fn place_rings(
             // else keep ring_cx/ring_cy (floating ring, shouldn't happen in SSSR)
         }
 
-        // Place each ring atom on the circle (or 3D crown for large rings).
+        // Choose a ring conformation based on size and chemical environment.
         //
-        // For standalone macrocycles (ring_size ≥ 8, no atoms shared with a
-        // previously-placed ring) a flat regular polygon is a poor starting
-        // geometry.  A "crown" / alternating-up-down arrangement breaks
-        // planarity and gives the force field a better starting conformation.
-        //
-        // Fused ring systems (naphthalene, steroids, …) are left flat because
-        // their envelope ring in the SSSR would be ≥ 10-membered but shares
-        // atoms with the smaller rings already placed.
+        // Rules applied only to non-fused, non-aromatic rings:
+        //   6-membered  → chair (r = 1.452 Å, z = ±0.256 Å, derived from
+        //                  109.5° bond angle and 1.54 Å C-C bond length)
+        //   5-membered  → envelope (regular pentagon, one atom ±0.40 Å above
+        //                  the plane of the other four)
+        //   ≥ 8-membered → crown (alternating ±h, h scaling with ring size)
+        //   everything else (aromatic, fused, 3/4/7-membered) → flat polygon
+        let is_aromatic = ring.iter().all(|&a| mol.atom(a).aromatic);
         let is_fused = ring.iter().any(|a| placed[a.0 as usize]);
-        let macrocycle_z_half = if ring_size >= 8 && !is_fused {
-            // Scale crown height with ring size: 0.3–0.7 Å
-            0.3 + 0.04 * (ring_size as f64 - 8.0).min(10.0)
+
+        // Chair uses a geometry-derived xy radius (not the regular-polygon r).
+        // chair_r and chair_h are exact solutions for l=1.54 Å, θ=109.5°.
+        const CHAIR_R: f64 = 1.452;
+        const CHAIR_H: f64 = 0.256;
+        const ENVELOPE_H: f64 = 0.400;
+
+        enum Conf { Flat, Chair, Envelope, Crown(f64) }
+        let conf = if is_aromatic || is_fused {
+            Conf::Flat
         } else {
-            0.0
+            match ring_size {
+                6 => Conf::Chair,
+                5 => Conf::Envelope,
+                n if n >= 8 => Conf::Crown(0.3 + 0.04 * (n as f64 - 8.0).min(10.0)),
+                _ => Conf::Flat,
+            }
         };
+
+        // Chair uses a different circumradius than the regular-polygon formula.
+        let effective_r = if matches!(conf, Conf::Chair) { CHAIR_R } else { r };
 
         for (k, &atom_idx) in ring.iter().enumerate() {
             if placed[atom_idx.0 as usize] {
                 continue; // shared atom already placed by a previous ring
             }
             let angle = 2.0 * PI * k as f64 / ring_size as f64;
-            let x = ring_cx + r * angle.cos();
-            let y = ring_cy + r * angle.sin();
-            // Crown conformation: alternate atoms above/below the XY plane.
-            let z = if k % 2 == 0 {
-                macrocycle_z_half
-            } else {
-                -macrocycle_z_half
+            let x = ring_cx + effective_r * angle.cos();
+            let y = ring_cy + effective_r * angle.sin();
+            let z = match conf {
+                // Chair: alternating ±h (CHAIR_H ≈ 0.256 Å).
+                Conf::Chair => if k % 2 == 0 { CHAIR_H } else { -CHAIR_H },
+                // Envelope: last atom lifted above the mean plane of the other 4.
+                Conf::Envelope => if k == ring_size - 1 { ENVELOPE_H } else { 0.0 },
+                // Crown: alternating ±h, height scales with ring size.
+                Conf::Crown(h) => if k % 2 == 0 { h } else { -h },
+                Conf::Flat => 0.0,
             };
             coords.set(atom_idx, Point3::new(x, y, z));
             placed[atom_idx.0 as usize] = true;
@@ -522,16 +540,54 @@ mod tests {
     }
 
     #[test]
-    fn cyclohexane_remains_planar() {
-        // 6-membered ring should still be placed flat (crown only for >=8).
+    fn cyclohexane_is_chair() {
+        // 6-membered aliphatic ring should use chair conformation.
+        // Chair geometry: r = 1.452 Å, h = ±0.256 Å → z_spread ≈ 0.512 Å.
         let mol = parse("C1CCCCC1").unwrap();
         let coords = generate_coords(&mol);
-        let z_spread = (0..mol.atom_count())
-            .map(|i| coords.get(AtomIdx(i as u32)).z.abs())
-            .fold(0.0f64, f64::max);
+        let z_vals: Vec<f64> = (0..6)
+            .map(|i| coords.get(AtomIdx(i as u32)).z)
+            .collect();
+        let z_max = z_vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+        let z_min = z_vals.iter().cloned().fold(f64::INFINITY, f64::min);
+        let z_spread = z_max - z_min;
         assert!(
-            z_spread < 1e-9,
-            "6-ring should remain planar, z_spread={z_spread}"
+            z_spread > 0.40 && z_spread < 0.65,
+            "cyclohexane should be chair (z_spread ≈ 0.512 Å), got {z_spread}"
+        );
+        // Verify 3 atoms above and 3 atoms below the equatorial plane,
+        // all at approximately ±CHAIR_H (0.256 Å).
+        // (SSSR ring order != atom-index order, so we test by value, not by index.)
+        let up: Vec<f64> = z_vals.iter().cloned().filter(|&z| z > 0.0).collect();
+        let dn: Vec<f64> = z_vals.iter().cloned().filter(|&z| z < 0.0).collect();
+        assert_eq!(up.len(), 3, "chair: 3 atoms above plane, got {:?}", z_vals);
+        assert_eq!(dn.len(), 3, "chair: 3 atoms below plane, got {:?}", z_vals);
+        for z in up.iter().chain(dn.iter()) {
+            assert!(
+                (z.abs() - 0.256).abs() < 0.01,
+                "chair: z magnitude should be ≈ 0.256 Å, got {z:.4}"
+            );
+        }
+    }
+
+    #[test]
+    fn cyclopentane_is_envelope() {
+        // 5-membered aliphatic ring should use envelope conformation.
+        // Last atom lifted by ENVELOPE_H = 0.40 Å; other four remain at z=0.
+        let mol = parse("C1CCCC1").unwrap();
+        let coords = generate_coords(&mol);
+        let z_vals: Vec<f64> = (0..5)
+            .map(|i| coords.get(AtomIdx(i as u32)).z)
+            .collect();
+        // SSSR ring order != atom-index order, so we test by value.
+        let flat: Vec<f64> = z_vals.iter().cloned().filter(|&z| z.abs() < 0.01).collect();
+        let flap: Vec<f64> = z_vals.iter().cloned().filter(|&z| z.abs() > 0.01).collect();
+        assert_eq!(flat.len(), 4, "envelope: 4 atoms flat, got {:?}", z_vals);
+        assert_eq!(flap.len(), 1, "envelope: 1 flap atom, got {:?}", z_vals);
+        assert!(
+            (flap[0].abs() - 0.40).abs() < 0.01,
+            "flap atom should be at |z| ≈ 0.40 Å, got {:.4}",
+            flap[0]
         );
     }
 
