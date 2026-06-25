@@ -13,6 +13,39 @@ mod io;
 // Mol — the main Python-facing molecule wrapper
 // ---------------------------------------------------------------------------
 
+/// A rendered HTML report returned by `chematic.report()` and `chematic.compare()`.
+///
+/// In Jupyter, writing ``report`` in a cell renders the HTML automatically.
+/// Use ``report.save("path.html")`` to write to disk, or ``str(report)`` to get the HTML string.
+///
+///     report = chematic.report(mols, names=["aspirin", "ibuprofen"])
+///     report.save("report.html")   # write to disk
+///     display(report)              # Jupyter: renders inline
+#[pyclass]
+struct Report {
+    html: String,
+}
+
+#[pymethods]
+impl Report {
+    fn _repr_html_(&self) -> &str {
+        &self.html
+    }
+
+    fn save(&self, path: &str) -> PyResult<()> {
+        std::fs::write(path, &self.html)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))
+    }
+
+    fn __str__(&self) -> &str {
+        &self.html
+    }
+
+    fn __repr__(&self) -> String {
+        format!("Report({} bytes)", self.html.len())
+    }
+}
+
 /// A parsed molecule. Create with `chematic.from_smiles()` or `chematic.from_mol_block()`.
 #[pyclass(name = "Mol", from_py_object)]
 #[derive(Clone)]
@@ -5403,7 +5436,7 @@ fn report(
     names: Option<Vec<Option<String>>>,
     title: &str,
     output: Option<&str>,
-) -> PyResult<String> {
+) -> PyResult<Report> {
     use chematic_chem::{
         brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes,
         qed_with_bundle, ring_bundle, tpsa,
@@ -5494,11 +5527,188 @@ h1{{font-size:1.4rem;color:#333;margin-bottom:4px}}
         plural = if n == 1 { "" } else { "s" },
     );
 
+    let rep = Report { html };
     if let Some(path) = output {
-        std::fs::write(path, &html)
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        rep.save(path)?;
     }
-    Ok(html)
+    Ok(rep)
+}
+
+/// Compare two molecules side-by-side and return a self-contained HTML report.
+///
+/// Returns a ``Report`` object. In Jupyter, writing ``report`` renders it inline.
+///
+/// ```python
+/// aspirin   = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+/// ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(CC(C)C(=O)O)cc1")
+/// report = chematic.compare(aspirin, ibuprofen, names=("Aspirin", "Ibuprofen"))
+/// report.save("compare.html")
+/// ```
+#[pyfunction]
+#[pyo3(signature = (mol1, mol2, names=None, title=None))]
+fn compare(
+    mol1: &Mol,
+    mol2: &Mol,
+    names: Option<(String, String)>,
+    title: Option<&str>,
+) -> Report {
+    use chematic_chem::{
+        brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes,
+        qed_with_bundle, ring_bundle, tpsa,
+    };
+
+    let m1 = mol1.inner.as_ref();
+    let m2 = mol2.inner.as_ref();
+
+    let (name1, name2) = names
+        .unwrap_or_else(|| ("Molecule A".into(), "Molecule B".into()));
+
+    let heading = title
+        .map(|t| t.to_string())
+        .unwrap_or_else(|| format!("{name1} vs {name2}"));
+
+    let svg1 = chematic_depict::depict_svg(m1);
+    let svg2 = chematic_depict::depict_svg(m2);
+
+    let mw1 = molecular_weight(m1);
+    let mw2 = molecular_weight(m2);
+    let (logp1, _) = logp_and_mr(m1);
+    let (logp2, _) = logp_and_mr(m2);
+    let tpsa1 = tpsa(m1);
+    let tpsa2 = tpsa(m2);
+    let hbd1 = hbd_count(m1);
+    let hbd2 = hbd_count(m2);
+    let rb1 = ring_bundle(m1);
+    let rb2 = ring_bundle(m2);
+    let qed1 = qed_with_bundle(m1, &rb1);
+    let qed2 = qed_with_bundle(m2, &rb2);
+    let lip1 = mw1 <= 500.0 && hbd1 <= 5 && rb1.hba_count <= 10 && logp1 <= 5.0;
+    let lip2 = mw2 <= 500.0 && hbd2 <= 5 && rb2.hba_count <= 10 && logp2 <= 5.0;
+    let pains1 = pains_passes(m1);
+    let pains2 = pains_passes(m2);
+    let brenk1 = brenk_passes(m1);
+    let brenk2 = brenk_passes(m2);
+
+    // MCS common atoms (reuse diff logic)
+    let config = chematic_smarts::McsConfig::default();
+    let qmol = chematic_smarts::find_mcs_with_config(&[m1, m2], &config);
+    let common = qmol.atoms.len();
+
+    // Delta summary (same logic as Mol::diff)
+    let elem_parts: Vec<String> = {
+        use std::collections::BTreeMap;
+        let mut c1: BTreeMap<&'static str, i32> = BTreeMap::new();
+        let mut c2: BTreeMap<&'static str, i32> = BTreeMap::new();
+        for i in 0..m1.atom_count() {
+            *c1.entry(m1.atom(chematic_core::AtomIdx(i as u32)).element.symbol()).or_insert(0) += 1;
+        }
+        for i in 0..m2.atom_count() {
+            *c2.entry(m2.atom(chematic_core::AtomIdx(i as u32)).element.symbol()).or_insert(0) += 1;
+        }
+        let all: std::collections::BTreeSet<_> = c1.keys().chain(c2.keys()).copied().collect();
+        all.iter()
+            .filter_map(|e| {
+                let d = c2.get(e).copied().unwrap_or(0) - c1.get(e).copied().unwrap_or(0);
+                if d != 0 { Some(if d > 0 { format!("+{d}{e}") } else { format!("{d}{e}") }) } else { None }
+            })
+            .collect()
+    };
+    let elem_str = if elem_parts.is_empty() { "Same elemental composition".into() } else { elem_parts.join(", ") };
+    let summary = format!(
+        "{}. \u{0394}LogP {:+.2}, \u{0394}TPSA {:+.1} \u{00c5}\u{00b2}, \u{0394}MW {:+.1} Da.",
+        elem_str, logp2 - logp1, tpsa2 - tpsa1, mw2 - mw1,
+    );
+
+    fn delta_class(d: f64) -> &'static str {
+        if d > 0.0 { "pos" } else if d < 0.0 { "neg" } else { "" }
+    }
+    fn flag(v: bool, ok: &str, fail: &str) -> String {
+        if v { format!(r#"<span class="pass">{ok}</span>"#) } else { format!(r#"<span class="fail">{fail}</span>"#) }
+    }
+    fn warn_flag(v: bool) -> String {
+        if v { r#"<span class="pass">✓</span>"#.into() } else { r#"<span class="warn">⚠</span>"#.into() }
+    }
+
+    let ver = env!("CARGO_PKG_VERSION");
+    let html = format!(
+        r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{heading}</title>
+<style>
+body{{font-family:system-ui,sans-serif;background:#f8f9fa;padding:24px;margin:0}}
+h1{{font-size:1.4rem;color:#333;margin-bottom:4px}}
+.meta{{font-size:.85rem;color:#666;margin-bottom:6px}}
+.summary{{font-size:.85rem;color:#444;background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:8px 12px;margin-bottom:20px;display:inline-block}}
+table{{border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}}
+th,td{{padding:10px 16px;text-align:left;border-bottom:1px solid #f0f0f0;font-size:.88rem}}
+th{{background:#f8f9fa;font-weight:600;color:#555}}
+td.num{{text-align:right;font-variant-numeric:tabular-nums}}
+td.delta{{text-align:right;font-size:.8rem;font-weight:600}}
+.pos{{color:#0a6640}}
+.neg{{color:#8b1c1c}}
+.pass{{color:#0a6640;font-weight:600}}
+.fail{{color:#8b1c1c;font-weight:600}}
+.warn{{color:#7d5a00;font-weight:600}}
+.svg-cell svg{{width:180px;height:140px}}
+</style>
+</head>
+<body>
+<h1>{heading}</h1>
+<p class="meta">Common scaffold: {common} atoms &middot; generated by chematic v{ver}</p>
+<p class="summary">{summary}</p>
+<table>
+<tr><th>Property</th><th>{name1}</th><th>{name2}</th><th>Delta</th></tr>
+<tr><td>Structure</td>
+    <td class="svg-cell">{svg1}</td>
+    <td class="svg-cell">{svg2}</td>
+    <td></td></tr>
+<tr><td>MW (Da)</td>
+    <td class="num">{mw1:.1}</td><td class="num">{mw2:.1}</td>
+    <td class="delta {dc_mw}">{dmw:+.1}</td></tr>
+<tr><td>LogP</td>
+    <td class="num">{logp1:.2}</td><td class="num">{logp2:.2}</td>
+    <td class="delta {dc_lp}">{dlp:+.2}</td></tr>
+<tr><td>TPSA (Å²)</td>
+    <td class="num">{tpsa1:.1}</td><td class="num">{tpsa2:.1}</td>
+    <td class="delta {dc_tp}">{dtp:+.1}</td></tr>
+<tr><td>HBD</td>
+    <td class="num">{hbd1}</td><td class="num">{hbd2}</td>
+    <td class="delta {dc_hbd}">{dhbd:+}</td></tr>
+<tr><td>HBA</td>
+    <td class="num">{hba1}</td><td class="num">{hba2}</td>
+    <td class="delta {dc_hba}">{dhba:+}</td></tr>
+<tr><td>QED</td>
+    <td class="num">{qed1:.2}</td><td class="num">{qed2:.2}</td>
+    <td class="delta {dc_qed}">{dqed:+.2}</td></tr>
+<tr><td>Lipinski</td>
+    <td>{lip1_s}</td><td>{lip2_s}</td><td></td></tr>
+<tr><td>PAINS</td>
+    <td>{pains1_s}</td><td>{pains2_s}</td><td></td></tr>
+<tr><td>Brenk</td>
+    <td>{brenk1_s}</td><td>{brenk2_s}</td><td></td></tr>
+</table>
+</body>
+</html>"#,
+        dc_mw  = delta_class(mw2 - mw1),   dmw  = mw2 - mw1,
+        dc_lp  = delta_class(logp2-logp1),  dlp  = logp2 - logp1,
+        dc_tp  = delta_class(tpsa2-tpsa1),  dtp  = tpsa2 - tpsa1,
+        dc_hbd = delta_class((hbd2 as f64)-(hbd1 as f64)), dhbd = hbd2 as i32 - hbd1 as i32,
+        dc_hba = delta_class((rb2.hba_count as f64)-(rb1.hba_count as f64)),
+        dhba   = rb2.hba_count as i32 - rb1.hba_count as i32,
+        hba1   = rb1.hba_count,
+        hba2   = rb2.hba_count,
+        dc_qed = delta_class(qed2-qed1),    dqed = qed2 - qed1,
+        lip1_s  = flag(lip1, "✓ Lipinski", "✗ Lipinski"),
+        lip2_s  = flag(lip2, "✓ Lipinski", "✗ Lipinski"),
+        pains1_s = flag(pains1, "✓ PAINS", "✗ PAINS"),
+        pains2_s = flag(pains2, "✓ PAINS", "✗ PAINS"),
+        brenk1_s = warn_flag(brenk1),
+        brenk2_s = warn_flag(brenk2),
+    );
+
+    Report { html }
 }
 
 /// Apply a SMIRKS reaction template to a list of reactant molecules.
@@ -5692,7 +5902,9 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(smarts_match, m)?)?;
     m.add_function(wrap_pyfunction!(smarts_find, m)?)?;
     m.add_function(wrap_pyfunction!(depict_grid, m)?)?;
+    m.add_class::<Report>()?;
     m.add_function(wrap_pyfunction!(report, m)?)?;
+    m.add_function(wrap_pyfunction!(compare, m)?)?;
     m.add_function(wrap_pyfunction!(reaction_svg, m)?)?;
     m.add_function(wrap_pyfunction!(scaffold_network_counts, m)?)?;
     m.add_function(wrap_pyfunction!(run_smirks, m)?)?;

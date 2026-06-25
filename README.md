@@ -44,9 +44,14 @@ Structural alerts: Brenk alert.
 One `pip install`. No RDKit, no conda, no C compiler. Works in Python, Rust, the browser, and AI agents.
 
 ```python
-# HTML report — self-contained, opens in any browser
+# HTML report — self-contained, opens in any browser and renders in Jupyter
 mols = [chematic.from_smiles(s) for s in smiles_list]
-chematic.report(mols, names=compound_names, output="report.html")
+report = chematic.report(mols, names=compound_names)
+report.save("report.html")   # or: display(report) in Jupyter
+
+# Side-by-side comparison
+cmp = chematic.compare(aspirin, ibuprofen, names=("Aspirin", "Ibuprofen"))
+cmp.save("compare.html")
 ```
 
 ---

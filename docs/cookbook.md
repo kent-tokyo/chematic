@@ -285,14 +285,23 @@ mols = [chematic.from_smiles(s) for s in smiles_list]
 names = ["aspirin", "ibuprofen", "caffeine"]
 
 # Returns self-contained HTML string; also writes to file if output= given
-html = chematic.report(mols, names=names, title="My compounds", output="report.html")
-print(f"{len(html)} bytes → report.html")
+report = chematic.report(mols, names=names, title="My compounds")
+report.save("report.html")     # write to disk
+# display(report)              # Jupyter: renders inline automatically
 ```
 
 Each molecule card shows: 2D structure · MW / LogP / TPSA · HBD / HBA / QED · Lipinski / PAINS / Brenk badges.
 Cards are sorted by QED descending. No external CSS or JavaScript — the file opens standalone in any browser.
 
 Full example: [`examples/html_report.py`](../examples/html_report.py)
+
+```python
+# Side-by-side comparison of two molecules
+aspirin   = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(CC(C)C(=O)O)cc1")
+report = chematic.compare(aspirin, ibuprofen, names=("Aspirin", "Ibuprofen"))
+report.save("compare.html")
+```
 
 ---
 
