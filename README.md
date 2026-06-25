@@ -188,6 +188,21 @@ than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
 
 ---
 
+## Benchmarks & Validation
+
+| Metric | Result | Corpus |
+|--------|--------|--------|
+| ECFP4 throughput | **3.6 µs/mol** (5–14× vs RDKit) | 5,000 mol |
+| HBA / HBD / aromatic ring count | **100% RDKit agreement** | 4,999 mol |
+| TPSA | **100%** within ±0.1 Å² | 175-mol drug-like set |
+| TPSA | 93.3% within ±0.1 Å² | 4,999-mol ChEMBL subset |
+| WASM bundle | **504 KB** gzip | — |
+
+All numbers are reproducible with the scripts in this repo.  
+Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](validation/)
+
+---
+
 ## Comparison with Other Cheminformatics Libraries
 
 | Feature                 | **chematic**                              | RDKit (rdkit-sys)  | OpenBabel FFI  | RDKit.js (WASM)    |
@@ -366,6 +381,12 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 
 Full changelog: [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## Built with chematic
+
+Using chematic in a project? [Share it in Discussions](https://github.com/kent-tokyo/chematic/discussions) or open a PR to add it here.
 
 ---
 
