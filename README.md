@@ -43,12 +43,19 @@ Structural alerts: Brenk alert.
 
 One `pip install`. No RDKit, no conda, no C compiler. Works in Python, Rust, the browser, and AI agents.
 
+```python
+# HTML report — self-contained, opens in any browser
+mols = [chematic.from_smiles(s) for s in smiles_list]
+chematic.report(mols, names=compound_names, output="report.html")
+```
+
 ---
 
 ## Common Use Cases
 
 | Scenario | How chematic helps |
 |---|---|
+| **HTML report** | `chematic.report(mols, output="report.html")` — self-contained compound grid, no server needed |
 | **Drug screening** | 70+ descriptors, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
 | **Molecule search** | ECFP4/MACCS fingerprints, Tanimoto, LSH approximate nearest-neighbour |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |

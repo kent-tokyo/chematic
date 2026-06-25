@@ -53,6 +53,16 @@ Wrote 6 molecules → admet_report.csv
   erythromycin     MW= 663.9  LogP= 1.60  QED=0.187  BBB=False  ⚠
 ```
 
+### `html_report.py` — self-contained HTML compound report
+
+Generates a browser-ready HTML file with a grid of molecule cards (2D structure + descriptors + drug-likeness flags). Sorted by QED. No external CSS or JavaScript.
+
+```
+python examples/html_report.py                  # demo set → report.html
+python examples/html_report.py smiles.txt        # one SMILES per line
+python examples/html_report.py smiles.txt out.html
+```
+
 ### `ai_agent_demo.py` — LLM / AI agent context builder
 
 Demonstrates `mol.describe()` and `mol.diff()` as building blocks for LLM prompts. Prints a ready-to-paste comparison prompt for Claude / GPT-4.

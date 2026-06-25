@@ -271,6 +271,31 @@ print(df[["mw", "logp", "tpsa", "qed", "lipinski_passes", "pains_passes"]].round
 
 ---
 
+## Bonus: HTML grid report
+
+```python
+import chematic
+
+smiles_list = [
+    "CC(=O)Oc1ccccc1C(=O)O",   # aspirin
+    "CC(C)Cc1ccc(CC(C)C(=O)O)cc1",  # ibuprofen
+    "Cn1cnc2c1c(=O)n(C)c(=O)n2C",   # caffeine
+]
+mols = [chematic.from_smiles(s) for s in smiles_list]
+names = ["aspirin", "ibuprofen", "caffeine"]
+
+# Returns self-contained HTML string; also writes to file if output= given
+html = chematic.report(mols, names=names, title="My compounds", output="report.html")
+print(f"{len(html)} bytes → report.html")
+```
+
+Each molecule card shows: 2D structure · MW / LogP / TPSA · HBD / HBA / QED · Lipinski / PAINS / Brenk badges.
+Cards are sorted by QED descending. No external CSS or JavaScript — the file opens standalone in any browser.
+
+Full example: [`examples/html_report.py`](../examples/html_report.py)
+
+---
+
 ## Bonus: Natural-language summary and structural diff
 
 ```python
