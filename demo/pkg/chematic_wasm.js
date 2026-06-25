@@ -264,17 +264,6 @@ export class DepictOptions {
 }
 if (Symbol.dispose) DepictOptions.prototype[Symbol.dispose] = DepictOptions.prototype.free;
 
-/**
- * MinHash LSH index: insert MHFP fingerprints and query by approximate similarity.
- *
- * ```js
- * const idx = new MhfpLshHandle(128);
- * const i0 = idx.add_smiles("c1ccccc1");    // benzene → index 0
- * const i1 = idx.add_smiles("Cc1ccccc1");   // toluene → index 1
- * const hits = JSON.parse(idx.query_json("c1ccccc1", 0.5));
- * // hits: [{index:0,similarity:1.0}, {index:1,similarity:0.xxx}]
- * ```
- */
 export class MhfpLshHandle {
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
@@ -562,8 +551,8 @@ export class MolHandle {
         return ret;
     }
     /**
-     * 2D PNG depiction (rasterized from SVG).
-     * Returns PNG data as base64-encoded string for embedding in HTML/JS.
+     * 2D PNG depiction — not available in the WASM build (PNG stack disabled to reduce bundle size).
+     * Use `depict_svg()` in browser contexts; rasterize client-side if needed.
      * @returns {Uint8Array}
      */
     depict_png() {
@@ -1204,6 +1193,44 @@ export function balance_check_json(reaction_smiles) {
 }
 
 /**
+ * MinHash LSH index: insert MHFP fingerprints and query by approximate similarity.
+ *
+ * ```js
+ * const idx = new MhfpLshHandle(128);
+ * const i0 = idx.add_smiles("c1ccccc1");    // benzene → index 0
+ * const i1 = idx.add_smiles("Cc1ccccc1");   // toluene → index 1
+ * const hits = JSON.parse(idx.query_json("c1ccccc1", 0.5));
+ * // hits: [{index:0,similarity:1.0}, {index:1,similarity:0.xxx}]
+ * ```
+ * Generate a self-contained HTML report for a newline-separated list of SMILES.
+ *
+ * Empty lines and invalid SMILES are silently skipped.
+ * Returns the same card-grid HTML as Python's `chematic.report()`.
+ *
+ * ```js
+ * const html = mod.batch_report_html("CCO\nc1ccccc1\nCC(=O)O");
+ * const blob = new Blob([html], {type:'text/html'});
+ * const url  = URL.createObjectURL(blob);
+ * ```
+ * @param {string} smiles_lines
+ * @returns {string}
+ */
+export function batch_report_html(smiles_lines) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_lines, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.batch_report_html(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Predict GI absorption and BBB penetration using the BOILED-Egg method
  * (Daina & Zoete 2016).
  *
@@ -1490,37 +1517,6 @@ export function conformer_ensemble_json(mol, n, rmsd_threshold) {
 }
 
 /**
- * Compute direct Coulomb energy for a molecule with Gasteiger partial charges.
- *
- * Returns JSON object: `{ "coulomb_energy": E, "unit": "kcal/mol" }`
- *
- * # Arguments
- * * `mol` - Molecule to evaluate
- *
- * # Example (JavaScript)
- * ```js
- * const mol = parse_smiles("CCO");
- * const result = coulomb_energy_json(mol);
- * // { "coulomb_energy": -12.34, "unit": "kcal/mol" }
- * ```
- * @param {MolHandle} mol
- * @returns {string}
- */
-export function coulomb_energy_json(mol) {
-    let deferred1_0;
-    let deferred1_1;
-    try {
-        _assertClass(mol, MolHandle);
-        const ret = wasm.coulomb_energy_json(mol.__wbg_ptr);
-        deferred1_0 = ret[0];
-        deferred1_1 = ret[1];
-        return getStringFromWasm0(ret[0], ret[1]);
-    } finally {
-        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-    }
-}
-
-/**
  * Return the CPK color (CSS hex string) for the given element symbol.
  *
  * Returns `"#000000"` (black) for carbon and unknown elements.
@@ -1711,36 +1707,6 @@ export function detect_functional_groups(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-    }
-}
-
-/**
- * Infer bond connectivity and bond orders from an XYZ-format string.
- *
- * Explicit hydrogen atoms must be present in the XYZ for reliable bond-order
- * assignment (without H, carbonyl C=O cannot be distinguished from C-O).
- *
- * Returns JSON on success: `{"smiles":"CCO","atom_count":3,"bond_count":2}`.
- * `atom_count` and `bond_count` refer to the heavy-atom skeleton (H removed).
- *
- * Returns JSON on error: `{"error":"molecule has 450 atoms; maximum is 300"}`.
- *
- * Safe: never freezes. All internal loops are O(n²). Capped at 300 atoms.
- * @param {string} xyz_str
- * @returns {string}
- */
-export function determine_bonds_from_xyz_json(xyz_str) {
-    let deferred2_0;
-    let deferred2_1;
-    try {
-        const ptr0 = passStringToWasm0(xyz_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.determine_bonds_from_xyz_json(ptr0, len0);
-        deferred2_0 = ret[0];
-        deferred2_1 = ret[1];
-        return getStringFromWasm0(ret[0], ret[1]);
-    } finally {
-        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
 }
 
@@ -2438,10 +2404,15 @@ export function get_dihedral_json(smiles, a, b, c, d) {
 }
 
 /**
- * Compute GETAWAY descriptors (GEometric, Topologic And wAveleT descriptors) from 3D coordinates.
- * Returns JSON array of 9 values: [G1, G2, G3, D1, D2, D3, T, V, A]
- * where G* = geometric autocorrelations (lag-1,2,3), D* = topologic distances,
- * T = total pairwise distance, V = bounding-box volume, A = anisotropy ratio.
+ * Compute GETAWAY descriptors (GEometry, Topology and Atom-Weights AssemblY) from 3D coords.
+ *
+ * Returns a JSON array of **19** values:
+ * - `[0..7]`  H[1..8]  — leverage autocorrelation at topological lags 1–8
+ * - `[8..15]` R[1..8]  — H[k] normalised by pair count W_k
+ * - `[16]` Hmax, `[17]` Hmean, `[18]` Htot — per-atom leverage statistics
+ *
+ * Note: requires 3D coordinates (non-planar); for flat/2D structures the hat matrix
+ * is degenerate and descriptors reflect squared centroid distances, not true leverage.
  * @param {MolHandle} mol
  * @returns {string}
  */
@@ -3818,31 +3789,6 @@ export function ring_families_json(mol) {
 }
 
 /**
- * Run molecular dynamics simulation and return trajectory as JSON.
- *
- * Returns JSON object with trajectory frames: `{ "frames": [{ "step": N, "potential": E, "kinetic": K, "temp": T }, …] }`
- * Uses NVT ensemble (Berendsen thermostat) at 300 K by default.
- * Note: Limited to molecules with ~50 atoms or fewer for practical WASM performance.
- * @param {MolHandle} mol
- * @param {number} steps
- * @param {number} temp_k
- * @returns {string}
- */
-export function run_md_json(mol, steps, temp_k) {
-    let deferred1_0;
-    let deferred1_1;
-    try {
-        _assertClass(mol, MolHandle);
-        const ret = wasm.run_md_json(mol.__wbg_ptr, steps, temp_k);
-        deferred1_0 = ret[0];
-        deferred1_1 = ret[1];
-        return getStringFromWasm0(ret[0], ret[1]);
-    } finally {
-        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-    }
-}
-
-/**
  * Apply a SMIRKS reaction template and return product SMILES as a JSON string.
  *
  * `reactants_smiles`: pipe-separated SMILES, one per reactant slot in the SMIRKS.
@@ -4656,31 +4602,6 @@ export function torsion_bitvec(mol) {
 }
 
 /**
- * Scan a torsion dihedral i-j-k-l from 0° to 360° in `steps` increments.
- * Returns JSON array: [{"angle":0.0,"energy":E},...] or {"error":"..."}.
- * @param {MolHandle} mol
- * @param {number} i
- * @param {number} j
- * @param {number} k
- * @param {number} l
- * @param {number} steps
- * @returns {string}
- */
-export function torsion_scan_json(mol, i, j, k, l, steps) {
-    let deferred1_0;
-    let deferred1_1;
-    try {
-        _assertClass(mol, MolHandle);
-        const ret = wasm.torsion_scan_json(mol.__wbg_ptr, i, j, k, l, steps);
-        deferred1_0 = ret[0];
-        deferred1_1 = ret[1];
-        return getStringFromWasm0(ret[0], ret[1]);
-    } finally {
-        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-    }
-}
-
-/**
  * Virtual screen a query SMILES against a database of SMILES using ECFP4 Tanimoto.
  *
  * `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).
@@ -4712,9 +4633,8 @@ export function virtual_screen_ecfp4_json(query_smi, db_smiles_json, k) {
 
 /**
  * Compute WHIM descriptors (Weighted Holistic Invariant Molecular) from 3D coordinates.
- * Returns JSON array of 10 values: [L1, L2, L3, P1, P2, P3, ALPHA, BETA, GAMMA, DELTA]
- * where L* = inertia tensor eigenvalues, P* = principal moments, ALPHA = sum of moments,
- * BETA = average pairwise interaction, GAMMA = geometric mean, DELTA = anisotropy.
+ * Returns JSON array of 22 values: 11 unit-weight descriptors followed by 11 mass-weight
+ * descriptors. Each 11-element block is [λ₁, λ₂, λ₃, ν₁, ν₂, ν₃, T, A, V, K, D].
  * @param {MolHandle} mol
  * @returns {string}
  */
@@ -4733,7 +4653,9 @@ export function whim_descriptors_json(mol) {
 }
 
 /**
- * Compute combined WHIM + GETAWAY descriptors (19 values total) as JSON array.
+ * Compute combined WHIM + GETAWAY descriptors (**41** values total) as JSON array.
+ *
+ * Returns WHIM[0..21] (22 values) followed by GETAWAY[0..18] (19 values) = 41 total.
  * Useful for ML pipelines requiring both shape and topologic features.
  * @param {MolHandle} mol
  * @returns {string}
@@ -4817,7 +4739,7 @@ export function xlogp3_per_atom_json(mol) {
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg___wbindgen_string_get_72bdf95d3ae505b1: function(arg0, arg1) {
+        __wbg___wbindgen_string_get_71bb4348194e31f0: function(arg0, arg1) {
             const obj = arg1;
             const ret = typeof(obj) === 'string' ? obj : undefined;
             var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -4825,33 +4747,11 @@ function __wbg_get_imports() {
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
-        __wbg___wbindgen_throw_1506f2235d1bdba0: function(arg0, arg1) {
+        __wbg___wbindgen_throw_ea4887a5f8f9a9db: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
-        __wbg_error_a6fa202b58aa1cd3: function(arg0, arg1) {
-            let deferred0_0;
-            let deferred0_1;
-            try {
-                deferred0_0 = arg0;
-                deferred0_1 = arg1;
-                console.error(getStringFromWasm0(arg0, arg1));
-            } finally {
-                wasm.__wbindgen_free(deferred0_0, deferred0_1, 1);
-            }
-        },
-        __wbg_getRandomValues_3f44b700395062e5: function() { return handleError(function (arg0, arg1) {
-            globalThis.crypto.getRandomValues(getArrayU8FromWasm0(arg0, arg1));
-        }, arguments); },
-        __wbg_new_227d7c05414eb861: function() {
-            const ret = new Error();
-            return ret;
-        },
-        __wbg_stack_3b0d974bbf31e44f: function(arg0, arg1) {
-            const ret = arg1.stack;
-            const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len1 = WASM_VECTOR_LEN;
-            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
-            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+        __wbg_error_933f449d72fef598: function(arg0) {
+            console.error(arg0);
         },
         __wbindgen_cast_0000000000000001: function(arg0) {
             // Cast intrinsic for `F64 -> Externref`.
@@ -4892,12 +4792,6 @@ const MolHandleFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_molhandle_free(ptr, 1));
 
-function addToExternrefTable0(obj) {
-    const idx = wasm.__externref_table_alloc();
-    wasm.__wbindgen_externrefs.set(idx, obj);
-    return idx;
-}
-
 function _assertClass(instance, klass) {
     if (!(instance instanceof klass)) {
         throw new Error(`expected instance of ${klass.name}`);
@@ -4935,15 +4829,6 @@ function getUint8ArrayMemory0() {
         cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
     }
     return cachedUint8ArrayMemory0;
-}
-
-function handleError(f, args) {
-    try {
-        return f.apply(this, args);
-    } catch (e) {
-        const idx = addToExternrefTable0(e);
-        wasm.__wbindgen_exn_store(idx);
-    }
 }
 
 function isLikeNone(x) {

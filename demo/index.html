@@ -866,6 +866,25 @@ footer {
         <div class="rules-grid" id="report-filters-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"></div>
       </div>
     </section>
+
+    <!-- Batch HTML Report -->
+    <section id="section-batch-report" style="margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--border)">
+      <h2 style="font-size:1.1rem;margin-bottom:.5rem;color:var(--text)">Batch Report</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">One SMILES per line → download a self-contained HTML report (same as Python <code>chematic.report()</code>)</p>
+      <textarea id="batch-report-smiles" rows="6"
+        placeholder="CC(=O)Oc1ccccc1C(=O)O&#10;CC(C)Cc1ccc(CC(C)C(=O)O)cc1&#10;Cn1cnc2c1c(=O)n(C)c(=O)n2C"
+        style="width:100%;font-family:monospace;font-size:.9rem;padding:.6rem;
+               background:var(--surface);color:var(--text);border:1px solid var(--border);
+               border-radius:6px;resize:vertical;box-sizing:border-box"
+        spellcheck="false"></textarea>
+      <div style="margin-top:.75rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+        <button id="btn-batch-report" class="btn" style="min-width:160px">Generate Report</button>
+        <a id="batch-report-download" style="display:none" download="chematic-report.html">
+          <button class="btn" style="background:var(--pass);color:#0a3622;min-width:160px">⬇ Download Report</button>
+        </a>
+      </div>
+      <div id="error-batch-report" class="error-banner hidden"></div>
+    </section>
   </div><!-- /tab-report -->
 
   <!-- Tab: Reaction -->
@@ -3152,6 +3171,26 @@ function runRgroup() {
       document.getElementById('report-output').style.display = 'block';
     } catch (e) {
       showError('error-report', 'Report generation failed: ' + String(e));
+    }
+  });
+
+  // Batch Report: generate downloadable HTML from multiple SMILES
+  document.getElementById('btn-batch-report').addEventListener('click', () => {
+    clearError('error-batch-report');
+    const raw = document.getElementById('batch-report-smiles').value.trim();
+    if (!raw) { showError('error-batch-report', 'Enter at least one SMILES'); return; }
+    if (!wasmReady || typeof window.chemWasm.batch_report_html !== 'function') {
+      showError('error-batch-report', 'batch_report_html not available'); return;
+    }
+    try {
+      const html = window.chemWasm.batch_report_html(raw);
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.getElementById('batch-report-download');
+      a.href = url;
+      a.style.display = '';
+    } catch (e) {
+      showError('error-batch-report', 'Report generation failed: ' + String(e));
     }
   });
 
