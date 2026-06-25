@@ -1,14 +1,66 @@
 # chematic — Python Examples
 
-Runnable Python scripts showing chematic in common ML/cheminformatics workflows.
+Runnable Python scripts. Each script works standalone with `pip install chematic`.
 
 ## Setup
 
 ```bash
-pip install chematic scikit-learn pandas numpy
+pip install chematic                          # required for all scripts
+pip install chematic scikit-learn pandas numpy  # for ML examples
 ```
 
 ## Scripts
+
+### `quick_properties.py` — SMILES → human-readable property report
+
+The simplest way to see what chematic gives you. Calls `mol.describe()` on one or more SMILES strings.
+
+```
+python examples/quick_properties.py
+python examples/quick_properties.py "CC(=O)Oc1ccccc1C(=O)O"
+```
+
+Output:
+```
+=== aspirin ===
+SMILES: OC(=O)c1ccccc1OC(=O)C
+Molecular weight 180.2 Da, formula C9H8O4.
+LogP 1.31 (mildly lipophilic), TPSA 63.6 Å².
+HBD 1, HBA 3, 3 rotatable bond(s), 1 aromatic ring(s).
+Drug-likeness: no Lipinski rule-of-5 violations. likely orally bioavailable (passes Veber criteria).
+QED 0.56 (0 = non-drug-like, 1 = ideal).
+Structural alerts: Brenk alert.
+```
+
+### `admet_report.py` — compound library → ADMET CSV
+
+Reads a SMILES list (built-in demo set or a text file), computes ADMET properties, and writes `admet_report.csv`.
+
+```
+python examples/admet_report.py
+python examples/admet_report.py smiles.txt
+python examples/admet_report.py smiles.txt out.csv
+```
+
+Output:
+```
+Wrote 6 molecules → admet_report.csv
+  aspirin          MW= 180.2  LogP= 1.31  QED=0.563  BBB=True
+  ibuprofen        MW= 220.3  LogP= 3.15  QED=0.813  BBB=True
+  caffeine         MW= 194.2  LogP=-1.03  QED=0.538  BBB=False
+  paracetamol      MW= 151.2  LogP= 1.35  QED=0.595  BBB=True
+  verapamil        MW= 454.6  LogP= 5.09  QED=0.420  BBB=True  ⚠
+  erythromycin     MW= 663.9  LogP= 1.60  QED=0.187  BBB=False  ⚠
+```
+
+### `ai_agent_demo.py` — LLM / AI agent context builder
+
+Demonstrates `mol.describe()` and `mol.diff()` as building blocks for LLM prompts. Prints a ready-to-paste comparison prompt for Claude / GPT-4.
+
+```
+python examples/ai_agent_demo.py
+python examples/ai_agent_demo.py "CC(=O)Oc1ccccc1C(=O)O" "CC(C)Cc1ccc(CC(C)C(=O)O)cc1"
+```
 
 ### `qsar_sklearn.py` — QSAR with scikit-learn
 

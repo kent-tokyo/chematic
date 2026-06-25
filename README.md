@@ -29,6 +29,38 @@ WASM sizes: chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
 ---
 
+## What you get
+
+```
+$ python -c "import chematic; print(chematic.from_smiles('CC(=O)Oc1ccccc1C(=O)O').describe())"
+Molecular weight 180.2 Da, formula C9H8O4.
+LogP 1.31 (mildly lipophilic), TPSA 63.6 Å².
+HBD 1, HBA 3, 3 rotatable bond(s), 1 aromatic ring(s).
+Drug-likeness: no Lipinski rule-of-5 violations. likely orally bioavailable (passes Veber criteria).
+QED 0.56 (0 = non-drug-like, 1 = ideal).
+Structural alerts: Brenk alert.
+```
+
+One `pip install`. No RDKit, no conda, no C compiler. Works in Python, Rust, the browser, and AI agents.
+
+---
+
+## Common Use Cases
+
+| Scenario | How chematic helps |
+|---|---|
+| **Drug screening** | 70+ descriptors, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
+| **Molecule search** | ECFP4/MACCS fingerprints, Tanimoto, LSH approximate nearest-neighbour |
+| **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
+| **Browser app** | 504 KB WASM bundle, zero backend required, React/Vue/Svelte ready |
+| **Jupyter notebook** | `mol` renders SVG inline; `descriptors_df()` returns a pandas DataFrame |
+| **Batch analysis** | Rayon-parallel descriptor/fingerprint/3D pipelines; SDF/CSV in, CSV out |
+| **Rust server** | Pure-Rust crates with no C/C++ toolchain; Axum/Actix compatible |
+
+Full worked examples → [Use cases](https://kent-tokyo.github.io/chematic/use-cases/)
+
+---
+
 ## When to use chematic
 
 **Use chematic if:**
