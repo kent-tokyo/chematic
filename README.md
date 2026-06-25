@@ -126,9 +126,12 @@ print(mol.lipinski_passes, mol.pains_passes) # True   True
 mol.has_substructure("[OH]")   # True
 mol.find_matches("[CX3](=O)O") # → [[1, 2, 3], [7, 8, 9]]
 
-# Natural-language summary (for LLM / MCP agents)
+# Natural-language summary (one paragraph)
 print(mol.describe())
-# → "Molecular weight 180.2 Da, formula C9H8O4. LogP 1.31 (mildly lipophilic)..."
+
+# Structured Markdown report — paste into LLM, Jupyter, or save as .md
+print(mol.review())
+# → # Molecular Review\n## Structure\n## Physical Properties\n## Drug-likeness\n## ADMET...
 
 # Structural diff between two molecules
 ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(CC(C)C(=O)O)cc1")
