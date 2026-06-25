@@ -486,6 +486,22 @@ cargo clippy --workspace -- -D warnings                                   # lint
 
 ---
 
+## Citation
+
+If you use chematic in academic or research work, please cite:
+
+```bibtex
+@software{chematic,
+  author    = {Tanabe, Kent},
+  title     = {chematic: A pure-Rust cheminformatics toolkit},
+  url       = {https://github.com/kent-tokyo/chematic},
+  version   = {0.4.21},
+  year      = {2026},
+}
+```
+
+---
+
 ## License
 
 Licensed under either of Apache License 2.0 or MIT License, at your option.

@@ -5295,6 +5295,46 @@ fn named_pattern(name: &str) -> Option<&'static str> {
     chematic_smarts::named_pattern(name)
 }
 
+/// Print a version and accuracy summary — useful for debugging and reporting.
+///
+/// ```python
+/// chematic.doctor()
+/// # chematic v0.4.21
+/// # Python 3.13  |  darwin arm64
+/// # ...
+/// ```
+#[pyfunction]
+fn doctor(py: Python<'_>) {
+    let ver = env!("CARGO_PKG_VERSION");
+    let vi = py.version_info();
+    let py_ver = format!("{}.{}.{}", vi.major, vi.minor, vi.patch);
+
+    let platform = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+
+    println!("chematic v{ver}");
+    println!("Python {py_ver}  |  {platform} {arch}");
+    println!();
+    println!("Descriptor accuracy (benchmark 2026-06, v0.4.20 vs RDKit 2026.03.3):");
+    println!("  MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)");
+    println!("  TPSA                  93.3%  (4,999-mol) · 100% on 175-mol drug-like set");
+    println!("  LogP (Crippen)        ~99%   (175-mol, tolerance ±0.3)");
+    println!("  ECFP4 throughput      3.6 µs/mol  (5–14× faster than RDKit)");
+    println!("  WASM bundle           504 KB gzip");
+    println!();
+    println!("Feature stability:");
+    println!("  Stable      SMILES · MW/HBA/HBD/TPSA/LogP · ECFP4/MACCS · SDF/MOL · SMARTS");
+    println!("  Stable      Tanimoto · PAINS/Brenk · 2D SVG · QED");
+    println!("  Experimental   3D conformer (not RDKit ETKDGv3 equivalent)");
+    println!("  Rule-based     pKa · ADMET (screening use only, not clinical)");
+    println!("  Partial        IUPAC name generation · pure-Rust InChI (approx.)");
+    println!();
+    println!("Docs:       https://kent-tokyo.github.io/chematic/");
+    println!("Validation: https://github.com/kent-tokyo/chematic/tree/main/validation/");
+    println!("Benchmarks: https://github.com/kent-tokyo/chematic/tree/main/benchmarks/");
+}
+
+
 /// Parse a ``.smi`` file (tab/space-separated SMILES + name) into (Mol, name) pairs.
 ///
 /// Each line is ``SMILES[<tab>name]``. Lines with invalid SMILES are silently skipped.
@@ -5976,6 +6016,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(from_cxsmiles, m)?)?;
     m.add_function(wrap_pyfunction!(named_pattern, m)?)?;
+    m.add_function(wrap_pyfunction!(doctor, m)?)?;
     m.add_function(wrap_pyfunction!(parse_smi_file, m)?)?;
     m.add_function(wrap_pyfunction!(write_smi_file, m)?)?;
     m.add_function(wrap_pyfunction!(atom_color, m)?)?;

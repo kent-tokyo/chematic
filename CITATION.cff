@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: chematic
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: Tanabe
+    given-names: Kent
+    alias: kent-tokyo
+repository-code: https://github.com/kent-tokyo/chematic
+url: https://kent-tokyo.github.io/chematic/
+abstract: >-
+  A pure-Rust cheminformatics toolkit with Python, WebAssembly, and MCP
+  interfaces. Provides SMILES parsing, molecular descriptors, fingerprints,
+  substructure search, 3D coordinate generation, and AI agent integration
+  — without C/C++ dependencies.
+keywords:
+  - cheminformatics
+  - rust
+  - python
+  - wasm
+  - chemistry
+  - machine-learning
+  - drug-discovery
+license:
+  - MIT
+  - Apache-2.0
+version: 0.4.21
+date-released: "2026-06-26"
