@@ -405,6 +405,32 @@ Using chematic in a project? [Share it in Discussions](https://github.com/kent-t
 
 ---
 
+## Reliability by Feature
+
+Not all features have the same validation depth. This table tells you what to trust.
+
+| Feature | Status | Validation |
+|---|---|---|
+| SMILES parse / write | **Stable** | 5,000-mol RDKit comparison; OpenSMILES corpus |
+| MW / HBA / HBD | **Stable** | 100% RDKit agreement on 4,999 mol |
+| TPSA | **Stable** | 100% on 175-mol drug-like set; 93.3% on 4,999-mol ChEMBL subset |
+| LogP (Crippen) | **Stable** | ~99% on 175-mol drug-like set (±0.3) |
+| ECFP4 / MACCS fingerprints | **Stable** | RDKit comparison + benchmark |
+| Tanimoto similarity | **Stable** | RDKit comparison |
+| SDF / MOL V2000/V3000 I/O | **Stable** | round-trip tests |
+| Substructure search (SMARTS / VF2) | **Stable** | internal test suite |
+| PAINS / Brenk filters | **Stable** | rule-based; matches public SMARTS databases |
+| 2D SVG depiction | **Stable** | visual spot-checks; not publication-quality |
+| 3D conformer (DG + MMFF94) | **Experimental** | reasonable geometry; not equivalent to RDKit ETKDGv3 quality |
+| pKa prediction | **Rule-based screening** | 15 SMARTS rules; early triage only, not clinical |
+| ADMET (BBB / Caco-2 / hERG / CYP3A4) | **Rule-based screening** | empirical models; directional, not validated on clinical endpoints |
+| IUPAC name generation | **Partial** | common compound classes; complex structures may fail |
+| Pure-Rust InChI | **Approximate** | enable `native-inchi` feature for bit-exact IUPAC InChI |
+
+Full benchmark methodology → [validation/](validation/) · History → [benchmarks/](benchmarks/)
+
+---
+
 ## Known Limitations
 
 - **Kekulization**: 2 of 5,000 tested molecules fail — a boron aromatic ring (`b1ccccn1`) and bare `[H][H]`. `KekuleError` is returned explicitly; no silent wrong output is produced.
@@ -416,7 +442,7 @@ Using chematic in a project? [Share it in Discussions](https://github.com/kent-t
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.4.19)
+├── Cargo.toml                    workspace root (v0.4.21)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
