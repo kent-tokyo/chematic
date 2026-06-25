@@ -39,6 +39,8 @@ print(mol.admet())                   # BBB, Caco-2, hERG, CYP3A4 in one call
 - **Visualisation**: 2D SVG with CPK colours, atom highlighting, grid depiction
 - **Bulk / parallel**: Rayon-powered batch descriptors, fingerprint matrices, similarity search
 - **LSH index**: approximate nearest-neighbour search for large libraries
+- **`mol.describe()`**: natural-language property summary for LLM / MCP agents
+- **`mol.diff(other)`**: element-level and descriptor-level structural diff
 
 ## Installation
 
@@ -50,8 +52,9 @@ Requires Python ≥ 3.8. No conda, no RDKit, no C compiler needed.
 
 ## Quick links
 
-- [Benchmark](benchmark.md) — performance vs RDKit, descriptor accuracy
 - [Cookbook](cookbook.md) — 20 copy-paste-ready tasks
+- [Use cases](use-cases/) — AI agent workflows, notebooks, browser apps, Rust servers, batch analysis
+- [Benchmark](benchmark.md) — performance vs RDKit, descriptor accuracy
 - [RDKit migration guide](rdkit_cheatsheet.md) — side-by-side API comparison
 - [API Reference](api/chematic.md) — full Python API
 - [GitHub](https://github.com/kent-tokyo/chematic)

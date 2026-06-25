@@ -783,6 +783,174 @@ impl Mol {
         Ok(d)
     }
 
+    /// Human-readable summary of key properties — suitable for LLM prompts or MCP responses.
+    ///
+    /// ```python
+    /// mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+    /// print(mol.describe())
+    /// ```
+    fn describe(&self) -> String {
+        let m = &self.inner;
+        let rb = chematic_chem::ring_bundle(m);
+        let mw = chematic_chem::molecular_weight(m);
+        let (logp, _) = chematic_chem::logp_and_mr(m);
+        let tpsa = chematic_chem::tpsa(m);
+        let hbd = chematic_chem::hbd_count(m);
+        let hba = rb.hba_count;
+        let hba_lipinski = chematic_chem::hba_count_lipinski(m);
+        let rot = rb.rotatable_bond_count;
+        let arom = rb.aromatic_ring_count;
+        let qed = chematic_chem::qed_with_bundle(m, &rb);
+        let pains_ok = chematic_chem::pains_passes(m);
+        let brenk_ok = chematic_chem::brenk_passes(m);
+
+        // Lipinski rule-of-5 (original paper uses N+O count for HBA)
+        let lipinski_violations: u8 = [(mw > 500.0) as u8, (hbd > 5) as u8, (hba_lipinski > 10) as u8, (logp > 5.0) as u8].iter().sum();
+
+        // Lipopolicity characterisation
+        let lipophilicity = if logp < 0.0 {
+            "hydrophilic"
+        } else if logp < 2.0 {
+            "mildly lipophilic"
+        } else if logp < 4.0 {
+            "moderately lipophilic"
+        } else {
+            "highly lipophilic"
+        };
+
+        // Oral absorption proxy (Veber)
+        let oral_absorption = if tpsa <= 140.0 && rot <= 10 {
+            "Likely orally bioavailable (passes Veber criteria)"
+        } else {
+            "Oral bioavailability may be limited (fails Veber criteria)"
+        };
+
+        // Drug-likeness description
+        let drug_like = if lipinski_violations == 0 {
+            "no Lipinski rule-of-5 violations"
+        } else if lipinski_violations == 1 {
+            "1 Lipinski violation (borderline drug-like)"
+        } else {
+            "multiple Lipinski violations (likely not orally drug-like)"
+        };
+
+        let mut lines = Vec::new();
+        lines.push(format!(
+            "Molecular weight {mw:.1} Da, formula {}.",
+            chematic_chem::calc_mol_formula(m)
+        ));
+        lines.push(format!(
+            "LogP {logp:.2} ({lipophilicity}), TPSA {tpsa:.1} Å²."
+        ));
+        lines.push(format!(
+            "HBD {hbd}, HBA {hba}, {rot} rotatable bond(s), {arom} aromatic ring(s)."
+        ));
+        lines.push(format!("Drug-likeness: {drug_like}. {oral_absorption}."));
+        lines.push(format!("QED {qed:.2} (0 = non-drug-like, 1 = ideal)."));
+
+        let mut alerts = Vec::new();
+        if !pains_ok { alerts.push("PAINS alert"); }
+        if !brenk_ok { alerts.push("Brenk alert"); }
+        if alerts.is_empty() {
+            lines.push("No structural alerts (PAINS / Brenk clean).".to_string());
+        } else {
+            lines.push(format!("Structural alerts: {}.", alerts.join(", ")));
+        }
+
+        lines.join("\n")
+    }
+
+    /// Compare this molecule to another and return element-level and descriptor-level differences.
+    ///
+    /// The diff is directional: `mol1.diff(mol2)` reports changes going *from* mol1 *to* mol2.
+    /// Positive delta values mean mol2 has more; negative values mean mol1 has more.
+    ///
+    /// ```python
+    /// aspirin = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+    /// ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(CC(C)C(=O)O)cc1")
+    /// d = aspirin.diff(ibuprofen)
+    /// print(d["summary"])
+    /// # "+C7, -O2. ΔLogP +2.75, ΔTPSA -26.3 Å², ΔMW +66.1 Da."
+    /// ```
+    fn diff<'py>(&self, py: Python<'py>, other: &Mol) -> PyResult<Bound<'py, PyDict>> {
+        use std::collections::BTreeMap;
+        let mol1 = self.inner.as_ref();
+        let mol2 = other.inner.as_ref();
+
+        // MCS size as common-core reference
+        let config = chematic_smarts::McsConfig::default();
+        let qmol = chematic_smarts::find_mcs_with_config(&[mol1, mol2], &config);
+        let common_atoms = qmol.atoms.len();
+
+        // Count heavy-atom elements in each molecule
+        let mut counts1: BTreeMap<&'static str, i32> = BTreeMap::new();
+        for i in 0..mol1.atom_count() {
+            let sym = mol1.atom(chematic_core::AtomIdx(i as u32)).element.symbol();
+            *counts1.entry(sym).or_insert(0) += 1;
+        }
+        let mut counts2: BTreeMap<&'static str, i32> = BTreeMap::new();
+        for i in 0..mol2.atom_count() {
+            let sym = mol2.atom(chematic_core::AtomIdx(i as u32)).element.symbol();
+            *counts2.entry(sym).or_insert(0) += 1;
+        }
+
+        // Element-level delta (mol2 - mol1); zero-delta elements are omitted
+        let all_elems: std::collections::BTreeSet<_> =
+            counts1.keys().chain(counts2.keys()).copied().collect();
+        let mut delta_elements: BTreeMap<&'static str, i32> = BTreeMap::new();
+        for elem in &all_elems {
+            let d = counts2.get(elem).copied().unwrap_or(0)
+                - counts1.get(elem).copied().unwrap_or(0);
+            if d != 0 {
+                delta_elements.insert(elem, d);
+            }
+        }
+
+        // Descriptor deltas
+        let rb1 = chematic_chem::ring_bundle(mol1);
+        let rb2 = chematic_chem::ring_bundle(mol2);
+        let (logp1, _) = chematic_chem::logp_and_mr(mol1);
+        let (logp2, _) = chematic_chem::logp_and_mr(mol2);
+        let tpsa1 = chematic_chem::tpsa(mol1);
+        let tpsa2 = chematic_chem::tpsa(mol2);
+        let mw1 = chematic_chem::molecular_weight(mol1);
+        let mw2 = chematic_chem::molecular_weight(mol2);
+        let hbd1 = chematic_chem::hbd_count(mol1) as i32;
+        let hbd2 = chematic_chem::hbd_count(mol2) as i32;
+
+        // Human-readable element summary
+        let elem_parts: Vec<String> = delta_elements.iter().map(|(e, d)| {
+            if *d > 0 { format!("+{d}{e}") } else { format!("{d}{e}") }
+        }).collect();
+        let elem_str = if elem_parts.is_empty() {
+            "Same elemental composition".to_string()
+        } else {
+            elem_parts.join(", ")
+        };
+        let summary = format!(
+            "{}. \u{0394}LogP {:+.2}, \u{0394}TPSA {:+.1} \u{00c5}\u{00b2}, \u{0394}MW {:+.1} Da.",
+            elem_str,
+            logp2 - logp1,
+            tpsa2 - tpsa1,
+            mw2 - mw1,
+        );
+
+        let d = PyDict::new(py);
+        d.set_item("common_atoms", common_atoms)?;
+        d.set_item("delta_mw", mw2 - mw1)?;
+        d.set_item("delta_logp", logp2 - logp1)?;
+        d.set_item("delta_tpsa", tpsa2 - tpsa1)?;
+        d.set_item("delta_hbd", hbd2 - hbd1)?;
+        d.set_item("delta_hba", rb2.hba_count as i32 - rb1.hba_count as i32)?;
+        let elem_dict = PyDict::new(py);
+        for (elem, delta) in &delta_elements {
+            elem_dict.set_item(elem.to_string(), delta)?;
+        }
+        d.set_item("delta_elements", elem_dict)?;
+        d.set_item("summary", summary)?;
+        Ok(d)
+    }
+
     // -----------------------------------------------------------------------
     // Fingerprints
     // -----------------------------------------------------------------------

@@ -40,6 +40,13 @@ fp = mol.ecfp4()
 mol2 = chematic.from_smiles("c1ccccc1")
 sim = chematic.tanimoto(mol.ecfp4(), mol2.ecfp4())
 
+# Natural-language property summary (for LLM / MCP agents)
+print(mol.describe())
+
+# Structural diff between two molecules
+ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(CC(C)C(=O)O)cc1")
+d = mol.diff(ibuprofen)  # {"summary": "...", "delta_mw": 66.1, "delta_logp": 2.75, ...}
+
 # SVG / PDF / EPS depiction
 svg = mol.to_svg()
 pdf_bytes = mol.to_pdf()   # bytes; requires pdf feature

@@ -73,6 +73,14 @@ print(mol.lipinski_passes, mol.pains_passes) # True   True
 mol.has_substructure("[OH]")   # True
 mol.find_matches("[CX3](=O)O") # → [[1, 2, 3], [7, 8, 9]]
 
+# 自然语言摘要（适用于 LLM / MCP 代理）
+print(mol.describe())
+# → "Molecular weight 180.2 Da, formula C9H8O4. LogP 1.31 (mildly lipophilic)..."
+
+# 两分子结构差异
+ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(CC(C)C(=O)O)cc1")
+d = mol.diff(ibuprofen)  # {"summary": "+C7, -O2. ΔLogP +2.75 ...", "delta_mw": 66.1, ...}
+
 # 批量处理（并行，支持 numpy）
 fps = chematic.bulk.ecfp4(["CCO", "c1ccccc1"])  # (2, 2048) uint8
 

@@ -271,6 +271,31 @@ print(df[["mw", "logp", "tpsa", "qed", "lipinski_passes", "pains_passes"]].round
 
 ---
 
+## Bonus: Natural-language summary and structural diff
+
+```python
+mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
+
+# Human-readable summary — suitable for LLM prompts or MCP responses
+print(mol.describe())
+# Molecular weight 180.2 Da, formula C9H8O4.
+# LogP 1.31 (mildly lipophilic), TPSA 63.6 Å².
+# HBD 1, HBA 3, 2 rotatable bond(s), 1 aromatic ring(s).
+# Drug-likeness: no Lipinski rule-of-5 violations. Likely orally bioavailable (passes Veber criteria).
+# QED 0.55 (0 = non-drug-like, 1 = ideal).
+# No structural alerts (PAINS / Brenk clean).
+
+# Directional structural diff (aspirin → ibuprofen)
+ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(CC(C)C(=O)O)cc1")
+d = mol.diff(ibuprofen)
+print(d["summary"])  # "+C7, -O2. ΔLogP +2.75, ΔTPSA -26.3 Å², ΔMW +66.1 Da."
+print(d["common_atoms"])   # MCS size
+print(d["delta_logp"])     # 2.75
+print(d["delta_elements"]) # {"C": 7, "O": -2}
+```
+
+---
+
 ## Bonus: InChI / InChIKey
 
 ```python
