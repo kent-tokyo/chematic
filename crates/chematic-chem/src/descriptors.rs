@@ -958,6 +958,11 @@ fn h_logp_for_parent(
             }) {
                 // H4: H on O adjacent to C=X (X = C, N, O, S)
                 0.2980
+            } else if mol.neighbors(parent_idx).any(|(nb, _)| {
+                mol.atom(nb).element.atomic_number() == 7 // O bonded to N
+            }) {
+                // [#1]O[#7]: H on O attached to N — oxime / hydroxamic acid
+                0.2142
             } else {
                 // H2: [#1]O[CX4,c] — aliphatic and phenolic OH both use -0.2677
                 -0.2677

@@ -16,7 +16,7 @@ Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
 | H-bond acceptors (HBA) | 100% | exact | |
 | Aromatic ring count | 100% | exact | |
 | TPSA | 98.1% | ±0.1 Å² | fixes: sulfoxide zwitterion, N-oxide, nitroso, thioxo, aromaticity |
-| LogP (Crippen) | 95.6% | ±0.01 | 4,999-mol; ~99% at ±0.3 on 175-mol set |
+| LogP (Crippen) | 96.5% | ±0.01 | 4,999-mol; ~99% at ±0.3 on 175-mol set |
 
 All 100% metrics match `rdkit.Chem.Descriptors` exactly. TPSA divergence is due to chematic's Hückel aromaticity model vs RDKit's fused-ring electron delocalization (see Known Limitations).
 
