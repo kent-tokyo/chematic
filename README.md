@@ -429,7 +429,7 @@ Not all features have the same validation depth. This table tells you what to tr
 | SMILES parse / write | **Stable** | 5,000-mol RDKit comparison; OpenSMILES corpus |
 | MW / HBA / HBD | **Stable** | 100% RDKit agreement on 4,999 mol |
 | TPSA | **Stable** | 100% on 175-mol drug-like set; 93.3% on 4,999-mol ChEMBL subset |
-| LogP (Crippen) | **Stable** | ~99% on 175-mol drug-like set (±0.3) |
+| LogP (Crippen) | **Stable** | 95.6% on 4,999-mol corpus (±0.01); ~99% on 175-mol drug-like set (±0.3) |
 | ECFP4 / MACCS fingerprints | **Stable** | RDKit comparison + benchmark |
 | Tanimoto similarity | **Stable** | RDKit comparison |
 | SDF / MOL V2000/V3000 I/O | **Stable** | round-trip tests |
