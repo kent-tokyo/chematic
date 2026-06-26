@@ -26,6 +26,10 @@ No C compiler, no Python, no external tools required for the core crates.
 
 **Easiest entry point**: `chematic-core` has zero external dependencies (no `[dependencies]` in `Cargo.toml`) and is pure safe Rust. Adding a helper to `molecule.rs` or a new descriptor to `chematic-chem/src/descriptors.rs` is a great first contribution.
 
+## Branch naming
+
+`feat/*` new feature · `fix/*` bug fix · `docs/*` docs only · `release/*` version bump + CHANGELOG + tag
+
 ## Development workflow
 
 ```bash

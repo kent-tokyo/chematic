@@ -1,6 +1,6 @@
 # chematic — Status & Roadmap
 
-Current version: **v0.4.18** (2026-06-22) — Unreleased work in progress on main
+Current version: **v0.4.23** (2026-06-26)
 
 ---
 
@@ -12,10 +12,10 @@ Current version: **v0.4.18** (2026-06-22) — Unreleased work in progress on mai
 | `chematic-smiles` | OpenSMILES parser/writer, canonical SMILES | 48 |
 | `chematic-perception` | SSSR, 2-pass Hückel aromaticity, CIP stereo, `count_aromatic_rings` | 34 |
 | `chematic-smarts` | SMARTS, VF2 subgraph, MCS (McGregor), LRU SMARTS cache; **atom map `:N`** in SMARTS (`[O;D1;H0:3]`); **`find_matches_with_rings`** — shared SSSR across multi-pattern batches | 142 |
-| `chematic-chem` | 70+ descriptors, ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa, ESOL; **HBD 100% / TPSA ±0.1 Å² / LogP ±0.3** RDKit parity (175-mol bulk); **`logp_and_mr`** + **`logd_from_logp`** perf APIs | 639 |
+| `chematic-chem` | **190+ descriptors**, ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa, ESOL; Schultz/Gutman MTI, VABC, Gravitational index; **HBD 100% / TPSA ±0.1 Å² / LogP ±0.3** RDKit parity; **`logp_and_mr`** + `chi_all` + `pains_passes_and_matches` perf APIs | 639 |
 | `chematic-fp` | ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG, Tanimoto | 87 |
 | `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 51 |
-| `chematic-3d` | ETKDG, MD, SASA, USR shape screen, WHIM | 45 |
+| `chematic-3d` | ETKDG (80 torsion rules, chair/envelope ring conf), WHIM (22-dim), GETAWAY (19-dim), RDF (20-dim), SASA, USR shape screen | 45 |
 | `chematic-depict` | 2D SVG, grid rendering, **PDF (`pdf` feature)**, **EPS (pure Rust)** | 34 |
 | `chematic-rxn` | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`, RECAP/BRICS; **`retro_disconnect()` — 60 retro-SMIRKS** (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering** | 25 |
 | `chematic-inchi` | InChI/InChIKey: pure-Rust approx (inline SHA-256, no sha2 dep) + IUPAC-exact (`native-inchi` feature, v1.07.5) | 28+16* |
@@ -26,7 +26,7 @@ Current version: **v0.4.18** (2026-06-22) — Unreleased work in progress on mai
 | `chematic-py` | PyO3 Python bindings (`pip install chematic`); Sprint 18–26+: 300+ API endpoints | 300+ |
 | `chematic-ewald` | PME Ewald summation, B-spline interpolation | 12 |
 
-`cargo test --workspace --lib --quiet` → **2275 tests** (lib only), all passing
+`cargo test --workspace --lib --quiet` → **2319 tests** (lib only), all passing
 
 ---
 
@@ -108,6 +108,7 @@ Current version: **v0.4.18** (2026-06-22) — Unreleased work in progress on mai
 | done: | `retro_disconnect()` — 60 retro-SMIRKS templates (6 reaction classes) + SA Score ranking; Python `mol.retro_disconnect(reaction_class=...)` |
 | done: | TPSA/LogP/HBD descriptor accuracy: nitro-N fix, oxide bridge fix, Kekulé-N fix, S-H HBD fix; 175-mol bulk regression tests (±1.0 Å² / ±0.3 / exact) |
 | done: | bench5k.py extended with TPSA, LogP, HBD comparison vs RDKit |
+| done: | OSS credibility sprint (2026-06-27): README 3-row badges, SECURITY.md v→v0.4.23, pyproject.toml 190+ descriptors + Python 3.13, security.yml hardened (no continue-on-error, dtolnay, cargo-deny job), deny.toml, codeql.yml (deleted — conflicts with Default setup), scripts/check.sh, scripts/bump_version.py, CLAUDE.md release flow |
 
 ---
 
@@ -115,7 +116,10 @@ Current version: **v0.4.18** (2026-06-22) — Unreleased work in progress on mai
 
 | Version | Date | Highlights |
 |---------|------|-----------|
-| [Unreleased] | 2026-06-23 | PDF/EPS 出力、ChemicalJSON、Schultz/Gutman MTI・VABC・Gravitational index、bulk.substructure_match、WASM 819→504 KB gzip (-38.5%) |
+| v0.4.23 | 2026-06-26 | LogP 96.5% → 99.7% (symmetric triple bond VF2 dedup fix); OSS sprint: badges, CI hardening, cargo-deny, check.sh, bump_version.py |
+| v0.4.19 | 2026-06-23 | PDF/EPS 出力、ChemicalJSON、Schultz/Gutman MTI・VABC・Gravitational index、bulk.substructure_match、bulk.generate_3d、bulk.tanimoto_matrix、bulk.standardize、inline SHA-256 (sha2 dep 除去)、WASM 819→504 KB gzip (-38.5%) |
+| v0.4.18 | 2026-06-23 | Jupyter `_repr_svg_`、`from_smiles_list`、`descriptors_df`、`chi_all`、`pains_passes_and_matches`、CNS MPO perf |
+| v0.4.17 | 2026-06-23 | PAINS/Brenk dedup perf sprint |
 | v0.4.16 | 2026-06-22 | **Perf**: shared SSSR in SMARTS matching (117→1 per Crippen, ~480→1 per PAINS, ~300→1 per BRENK); `logp_and_mr()` combined Crippen pass; `logd_from_logp()` helper; `cns_mpo_score` logP dedup; `eccentric_connectivity_index` reuses `graph_eccentricities`; `heavy_degrees()` pre-comp in randic/zagreb. New public API: `find_matches_with_rings`, `find_matches_with_rings_and_config`, `logp_and_mr`, `logd_from_logp`. CI: setup-python v6, upload-artifact v7 |
 | v0.4.15 | 2026-06-21 | Tautomer tetrazole 1H/2H normalization — BFS 1,2-shift + canonical SMILES tiebreaker; CDXML Order=1.5→Aromatic |
 | v0.4.13 | 2026-06-21 | HBD S-H fix; TPSA nitro-N / oxide bridge / Kekulé-N fixes; LogP oxide bridge fix; `retro_disconnect()` 60 retro-SMIRKS; ETKDG 40 torsion patterns; bulk TPSA ±1.0/LogP ±0.3/HBD 100% |
