@@ -91,6 +91,21 @@ df[["mw", "logp", "tpsa", "qed"]]
 
 Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tokyo.github.io/chematic/) を参照してください。
 
+### 動作確認
+
+```python
+import chematic
+chematic.doctor()
+# chematic v0.4.22
+# Python 3.12.x  |  darwin arm64
+#
+# Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3):
+#   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
+#   TPSA                  93.3%
+#   LogP (Crippen)        ~99%
+# ...
+```
+
 ---
 
 ## AI / LLM 開発者向け

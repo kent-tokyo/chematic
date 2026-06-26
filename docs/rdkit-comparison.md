@@ -45,7 +45,7 @@ chematic compiles to `wasm32-unknown-unknown` natively — no Emscripten, no cma
 
 ## 2. Performance
 
-All measurements: Python 3.12, Apple M-series, chematic v0.4.19, RDKit 2024.09.
+All measurements: Python 3.12, Apple M-series, chematic v0.4.22, RDKit 2024.09.
 
 ### Import time (cold process)
 
@@ -197,5 +197,5 @@ RDKit users while adding batch-first and browser-native capabilities.
 
 ---
 
-*Benchmark data: Apple M-series, Python 3.12, chematic v0.4.19, RDKit 2024.09.*  
+*Benchmark data: Apple M-series, Python 3.12, chematic v0.4.22, RDKit 2024.09.*  
 *Reproduce all benchmarks: see [benchmark details](benchmark.md).*
