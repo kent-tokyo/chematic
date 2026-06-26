@@ -645,7 +645,23 @@ fn ring_pi_electrons(
                     // Bridgehead N (e.g. indolizine): no H, no explicit double bond,
                     // and all three σ-bonds exactly fill the N valence (3).
                     // The lone pair occupies the p orbital → 2π (pyrrole-analogue).
-                    2
+                    //
+                    // Guard: the exocyclic bond must lead to an sp2/aromatic neighbour
+                    // (another fused ring atom). This prevents imide N (phthalimide)
+                    // from triggering here — phthalimide N's exocyclic bond goes to an
+                    // alkyl chain with no double/aromatic bonds.
+                    let has_sp2_exocyclic = mol
+                        .neighbors(atom_idx)
+                        .filter(|(nb, _)| !ring_atom_set.contains(nb))
+                        .any(|(nb, _)| {
+                            mol.neighbors(nb).any(|(_, b2)| {
+                                matches!(
+                                    mol.bond(b2).order,
+                                    BondOrder::Double | BondOrder::Aromatic
+                                )
+                            })
+                        });
+                    if has_sp2_exocyclic { 2 } else { return None; }
                 } else if has_aromatic_in_ring {
                     // N in an aromatic ring (pre-kekulization input) without an
                     // explicit double bond and not a bridgehead → pyridine-like → 1π.
@@ -659,6 +675,15 @@ fn ring_pi_electrons(
             // Oxygen / sulfur: lone-pair donor, must be 2-connected in the ring.
             8 | 16 => {
                 if ring_degree != 2 {
+                    return None;
+                }
+                // Sulfoxide/sulfone: exocyclic S=O ties up the lone pair; cannot donate 2π
+                if an == 16
+                    && mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                        !ring_atom_set.contains(&nb)
+                            && mol.bond(bidx).order == BondOrder::Double
+                    })
+                {
                     return None;
                 }
                 2

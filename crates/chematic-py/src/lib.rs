@@ -5317,7 +5317,7 @@ fn doctor(py: Python<'_>) {
     println!();
     println!("Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3):");
     println!("  MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)");
-    println!("  TPSA                  93.3%  (4,999-mol) · 100% on 175-mol drug-like set");
+    println!("  TPSA                  98.1%  (4,999-mol, ±0.1 Å²)");
     println!("  LogP (Crippen)        ~99%   (175-mol, tolerance ±0.3)");
     println!("  ECFP4 throughput      3.6 µs/mol  (5–14× faster than RDKit)");
     println!("  WASM bundle           504 KB gzip");

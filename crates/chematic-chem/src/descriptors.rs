@@ -553,7 +553,7 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
                 12.03
             }
         } else {
-            // h == 0: distinguish nitrile (N≡C → 23.79), imine (N=C → 12.36), amine (→ 3.24)
+            // h == 0: distinguish nitrile (N≡C → 23.79), imine / nitroso / azo (N=X → 12.36), amine (→ 3.24)
             let has_triple_to_c = mol.neighbors(idx).any(|(nb, bidx)| {
                 mol.bond(bidx).order == BondOrder::Triple
                     && mol.atom(nb).element.atomic_number() == 6
@@ -561,7 +561,11 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
             if has_triple_to_c {
                 23.79 // nitrile N≡C
             } else if has_double_bond_to(mol, idx, 6) {
-                12.36 // imine N=C (RDKit calibrated value, not 12.89)
+                12.36 // imine N=C
+            } else if has_double_bond_to(mol, idx, 8) {
+                12.36 // nitroso N=O (same class as imine in Ertl table)
+            } else if has_double_bond_to(mol, idx, 7) {
+                12.36 // azo N=N (same class as imine in Ertl table)
             } else {
                 3.24
             }
@@ -581,19 +585,28 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             20.23
         }
     } else {
-        // O with charge == -1: nitro O- (next to N+) → 0.0; all other O- → 23.06
+        // O with charge == -1: true nitro O- (N+ that also has =O) → 0.0; N-oxide/other O- → 23.06
         if charge == -1 {
             let is_nitro_o_minus = mol.neighbors(idx).any(|(nb, _)| {
-                mol.atom(nb).element.atomic_number() == 7 && mol.atom(nb).charge == 1
+                let n = mol.atom(nb);
+                n.element.atomic_number() == 7
+                    && n.charge == 1
+                    && mol.neighbors(nb).any(|(nb2, bidx2)| {
+                        mol.atom(nb2).element.atomic_number() == 8
+                            && mol.bond(bidx2).order == BondOrder::Double
+                    })
             });
             return if is_nitro_o_minus { 0.0 } else { 23.06 };
         }
-        let dbl_neighbor_an = mol
+        let dbl_nb = mol
             .neighbors(idx)
             .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
-            .map(|(nei, _)| mol.atom(nei).element.atomic_number());
-        match dbl_neighbor_an {
-            Some(6) => 17.07,
+            .map(|(nei, _)| (mol.atom(nei).element.atomic_number(), mol.atom(nei).charge));
+        match dbl_nb {
+            Some((6, _)) => 17.07,
+            // nitroso N=O: neutral N → 17.07; nitro [N+](=O)[O-]: charged N → 0.0
+            Some((7, 0)) => 17.07,
+            Some((7, _)) => 0.0,
             Some(_) => 0.0,
             None => {
                 if is_aromatic_oxide_bridge(mol, idx) {
@@ -606,14 +619,21 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
     }
 }
 
-fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8) -> f64 {
+fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i8) -> f64 {
+    // [S+][O-] zwitterionic sulfoxide: RDKit assigns 0 to S+, 23.06 to O-
+    if charge > 0 {
+        return 0.0;
+    }
     if is_aromatic {
         28.24
     } else if h > 0 {
         38.80
     } else {
         match count_double_bonds_to(mol, idx, 8) {
-            0 => 25.30,
+            0 => {
+                // thioxo S (C=S, thioketone/thioamide/thiourea) → 32.09; thioether → 25.30
+                if has_double_bond_to(mol, idx, 6) { 32.09 } else { 25.30 }
+            }
             1 => 36.28,
             _ => 42.52,
         }
@@ -653,7 +673,7 @@ pub fn tpsa(mol: &Molecule) -> f64 {
         let contribution = match an {
             7 => tpsa_nitrogen(mol, idx, is_aromatic, h, atom.charge),
             8 => tpsa_oxygen(mol, idx, is_aromatic, h, atom.charge),
-            16 => tpsa_sulfur(mol, idx, is_aromatic, h),
+            16 => tpsa_sulfur(mol, idx, is_aromatic, h, atom.charge),
             15 if !is_aromatic => tpsa_phosphorus(mol, idx),
             _ => 0.0,
         };
@@ -1882,7 +1902,7 @@ pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
         out[idx.0 as usize] = match an {
             7 => tpsa_nitrogen(mol, idx, atom.aromatic, h, atom.charge),
             8 => tpsa_oxygen(mol, idx, atom.aromatic, h, atom.charge),
-            16 => tpsa_sulfur(mol, idx, atom.aromatic, h),
+            16 => tpsa_sulfur(mol, idx, atom.aromatic, h, atom.charge),
             15 if !atom.aromatic => tpsa_phosphorus(mol, idx),
             _ => 0.0,
         };
