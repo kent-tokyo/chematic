@@ -61,7 +61,7 @@ cmp.save("compare.html")
 | Scenario | How chematic helps |
 |---|---|
 | **HTML report** | `chematic.report(mols, output="report.html")` — self-contained compound grid, no server needed |
-| **Drug screening** | 150+ descriptors, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
+| **Drug screening** | 190+ descriptors, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
 | **Molecule search** | ECFP4/MACCS fingerprints, Tanimoto, LSH approximate nearest-neighbour |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
 | **Browser app** | 504 KB WASM bundle, zero backend required, React/Vue/Svelte ready |
@@ -118,7 +118,7 @@ mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
 # In Jupyter, type `mol` in a cell — 2D structure renders automatically
 mol
 
-# Access 150+ descriptors as properties
+# Access 190+ descriptors as properties
 print(mol.mw, mol.logp, mol.tpsa)           # 180.16  1.31  63.6
 print(mol.lipinski_passes, mol.pains_passes) # True   True
 
@@ -259,7 +259,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 | ECFP/FCFP fingerprints (2/4/6)               | **All variants + bitvec**                        | Yes                 | Yes            | Yes               |
 | AtomPair / Torsion / MACCS FP                | Yes                                              | Yes                 | Yes            | Yes               |
 | **MAP4 fingerprint**                         | **Yes** (Minervini 2020)                         | No (external pkg)   | No             | No                |
-| Molecular descriptors                        | **150+ (incl. ESOL, LogD, XLogP3, BCUT2D, BOILED-Egg, QED)** | ~30     | ~20            | ~30               |
+| Molecular descriptors                        | **190+ (incl. MQN×42, BCUT2D, ESOL, LogD, XLogP3, BOILED-Egg)** | ~30  | ~20            | ~30               |
 | **Topological descriptors**                  | **Yes** (Petitjean, Hosoya Z, ECI, Moran, Geary) | Partial            | Partial        | No                |
 | BRICS / RECAP fragmentation                  | Yes                                              | Yes                 | No             | Yes               |
 | Murcko scaffold                              | Yes                                              | Yes                 | No             | Yes               |
@@ -335,7 +335,7 @@ See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for al
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor`; **zero-order/dative bonds excluded from ring perception** | 34    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords, +partial charge writing), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W; **AutoDock PDBQT** (parse + write); **ChemicalJSON** (`parse_cjson`/`write_cjson`, Avogadro/MolSSI format) | 31    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; **PDF output** (`depict_pdf`/`depict_pdf_opts` via svg2pdf); **EPS output** (`depict_eps`/`depict_eps_opts`, pure Rust); `tiny_skia` PNG is optional `png` feature (default on, disabled for WASM) | 28    |
-| `chematic-chem`       | 150+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 100% RDKit agreement** (4 999 / 4 999 mol benchmark); **TPSA ±0.1 Å² / LogP ±0.3 / HBD 100%** vs RDKit (175-mol bulk regression); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); **`schultz_mti`, `gutman_mti`, `vabc` (Bondi radii vdW volume), `gravitational_index`**; `clean_stereo_groups()` in standardize | 211   |
+| `chematic-chem`       | 190+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 100% RDKit agreement** (4 999 / 4 999 mol benchmark); **TPSA ±0.1 Å² / LogP ±0.3 / HBD 100%** vs RDKit (175-mol bulk regression); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); **`schultz_mti`, `gutman_mti`, `vabc` (Bondi radii vdW volume), `gravitational_index`**; `clean_stereo_groups()` in standardize | 211   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 87    |
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing; **UFF** (metals/organometallics: Zn, Fe, Cu, …) | 51    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion); **`[kN]` ring-size primitive**; **VF2 early-exit** when query > target atom count; **`find_matches_with_rings`** — share SSSR across multi-pattern batches | 142   |
@@ -464,7 +464,7 @@ chematic/
 │   ├── chematic-smiles/          OpenSMILES parser/writer, canonical SMILES
 │   ├── chematic-perception/      SSSR, 2-pass Hückel aromaticity, CIP stereo
 │   ├── chematic-smarts/          SMARTS parser, VF2 subgraph isomorphism, MCS, LRU cache
-│   ├── chematic-chem/            150+ descriptors, pKa, ADMET, BOILED-Egg, QED, SA Score,
+│   ├── chematic-chem/            190+ descriptors, pKa, ADMET, BOILED-Egg, QED, SA Score,
 │   │                             PAINS/Brenk filters, scaffold, standardization, BRICS/RECAP
 │   ├── chematic-fp/              ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG
 │   ├── chematic-ff/              MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer

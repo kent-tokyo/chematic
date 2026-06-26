@@ -867,6 +867,10 @@ impl Mol {
         d.set_item("logd_7_4", chematic_chem::logd_simple(m, 7.4))?;
         d.set_item("xlogp3", chematic_chem::xlogp3(m))?;
         d.set_item("drug_score", chematic_chem::drug_score(m))?;
+        // MQN (Molecular Quantum Numbers): 42 integer descriptors (Ertl 2010)
+        for (i, &v) in chematic_chem::mqn(m).iter().enumerate() {
+            d.set_item(format!("MQN{}", i + 1), u32::from(v))?;
+        }
         Ok(d)
     }
 
