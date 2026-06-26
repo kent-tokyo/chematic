@@ -73,8 +73,23 @@ static PKA_RULES: &[(&str, &str, f64, PkaSiteType)] = &[
         4.0,
         PkaSiteType::Acid,
     ),
+    // Tetrazole N-H (bioisostere for COOH): match the N-H in the tetrazole ring
+    // 1H-tetrazole pKa ~4.9, 5-substituted ~5.0–6.5
+    (
+        "tetrazole_nh",
+        "[nH;r5;$(n1nnnc1)]",
+        4.9,
+        PkaSiteType::Acid,
+    ),
     // Thiol C-SH  (match the sulfur)
     ("thiol", "[SX2H1]", 8.3, PkaSiteType::Acid),
+    // Hydroxamic acid O-H: RC(=O)NHOH → match the O-H (~8.7)
+    (
+        "hydroxamic_acid",
+        "[OX2H1][NX3][CX3](=O)",
+        8.7,
+        PkaSiteType::Acid,
+    ),
     // Sulfonamide -S(=O)(=O)-NH  (match the nitrogen)
     (
         "sulfonamide_nh",
@@ -92,18 +107,41 @@ static PKA_RULES: &[(&str, &str, f64, PkaSiteType)] = &[
         12.5,
         PkaSiteType::Base,
     ),
-    // Aliphatic cyclic N-H in 6-membered ring (piperidine ~11.2, morpholine ~8.3 average ~10)
-    (
-        "cyclic_amine_6",
-        "[NX3H1;r6;!$(N-c);!$(NC=O)]",
-        11.0,
-        PkaSiteType::Base,
-    ),
     // Aliphatic cyclic N-H in 5-membered ring (pyrrolidine ~11.3)
     (
         "cyclic_amine_5",
         "[NX3H1;r5;!$(N-c);!$(NC=O)]",
         11.3,
+        PkaSiteType::Base,
+    ),
+    // Piperazine-type N-H: 6-ring containing a second N (pKa ~9.8, lower than piperidine)
+    // Must come before generic cyclic_amine_6 (11.0).
+    (
+        "piperazine_nh",
+        "[NX3H1;r6;$(N1CCNCC1);!$(N-c);!$(NC=O)]",
+        9.8,
+        PkaSiteType::Base,
+    ),
+    // Morpholine-type N-H: 6-ring containing O (pKa ~8.3, lower than piperidine)
+    // Must come before generic cyclic_amine_6 (11.0).
+    (
+        "morpholine_nh",
+        "[NX3H1;r6;$(N1CCOCC1);!$(NC=O)]",
+        8.3,
+        PkaSiteType::Base,
+    ),
+    // Thiomorpholine-type N-H: 6-ring containing S (pKa ~7.0)
+    (
+        "thiomorpholine_nh",
+        "[NX3H1;r6;$(N1CCSCC1);!$(NC=O)]",
+        7.0,
+        PkaSiteType::Base,
+    ),
+    // Aliphatic cyclic N-H in 6-membered ring (piperidine ~11.2)
+    (
+        "cyclic_amine_6",
+        "[NX3H1;r6;!$(N-c);!$(NC=O)]",
+        11.0,
         PkaSiteType::Base,
     ),
     // Aliphatic 2° amine (non-ring)
@@ -118,6 +156,27 @@ static PKA_RULES: &[(&str, &str, f64, PkaSiteType)] = &[
         "amine_primary",
         "[NX3H2;!R;!$(N-c);!$(NC=O)]",
         10.6,
+        PkaSiteType::Base,
+    ),
+    // N-substituted piperazine (H0): 6-ring with second N, ~8.7
+    (
+        "piperazine_tertiary",
+        "[NX3H0;r6;$(N1CCNCC1);!$(N-c);!$(NC=O)]",
+        8.7,
+        PkaSiteType::Base,
+    ),
+    // N-substituted morpholine (H0): 6-ring with O, ~7.4
+    (
+        "morpholine_tertiary",
+        "[NX3H0;r6;$(N1CCOCC1);!$(NC=O)]",
+        7.4,
+        PkaSiteType::Base,
+    ),
+    // N-substituted thiomorpholine (H0): 6-ring with S, ~6.5
+    (
+        "thiomorpholine_tertiary",
+        "[NX3H0;r6;$(N1CCSCC1);!$(NC=O)]",
+        6.5,
         PkaSiteType::Base,
     ),
     // Cyclic 3° amine in 6-membered ring (N-substituted piperidine, ~9.5)
@@ -390,6 +449,41 @@ mod tests {
         let sites = predict_pka(&m);
         assert!(!sites.is_empty());
         assert_eq!(sites[0].site_type, PkaSiteType::Acid);
+    }
+
+    #[test]
+    fn test_morpholine_lower_than_piperidine() {
+        let morpholine = mol("C1CNCCO1");
+        let piperidine = mol("C1CCNCC1");
+        let mp = pka_base(&morpholine).unwrap();
+        let pp = pka_base(&piperidine).unwrap();
+        assert!(mp < pp, "morpholine ({mp:.1}) should be less basic than piperidine ({pp:.1})");
+        assert!((mp - 8.3).abs() < 0.5, "morpholine pKa ~8.3, got {mp:.1}");
+    }
+
+    #[test]
+    fn test_piperazine_nh_pka() {
+        let m = mol("C1CNCCN1"); // piperazine
+        let pka = pka_base(&m).unwrap();
+        assert!((pka - 9.8).abs() < 0.5, "piperazine pKa ~9.8, got {pka:.1}");
+    }
+
+    #[test]
+    fn test_tetrazole_is_acidic() {
+        let m = mol("c1nnn[nH]1"); // 1H-tetrazole
+        let acid = pka_acid(&m);
+        assert!(acid.is_some(), "tetrazole should have acidic N-H");
+        let pka = acid.unwrap();
+        assert!(pka < 6.0, "tetrazole pKa < 6, got {pka:.1}");
+    }
+
+    #[test]
+    fn test_hydroxamic_acid_pka() {
+        let m = mol("CC(=O)NO"); // acetohydroxamic acid
+        let acid = pka_acid(&m);
+        assert!(acid.is_some(), "hydroxamic acid should have acid site");
+        let pka = acid.unwrap();
+        assert!((pka - 8.7).abs() < 0.5, "hydroxamic acid pKa ~8.7, got {pka:.1}");
     }
 
     #[test]
