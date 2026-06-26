@@ -947,11 +947,16 @@ fn h_logp_for_parent(
             if parent_aromatic {
                 fallback // aromatic O (furan-type) — HS fallback
             } else if mol.neighbors(parent_idx).any(|(nb, _)| {
-                // H4 applies only when the neighbour is C with C=O (not P=O, S=O, N=O)
+                // H4: O bonded to C, and that C has a double bond to C/N/O/S
+                // Matches RDKit [#1]OC=[#6,#7,O,S]: covers carboxylic, enol, vinylogous OH
                 mol.atom(nb).element.atomic_number() == 6
-                    && has_double_bond_to(mol, nb, 8)
+                    && mol.neighbors(nb).any(|(nb2, bidx2)| {
+                        nb2 != parent_idx
+                            && mol.bond(bidx2).order == BondOrder::Double
+                            && matches!(mol.atom(nb2).element.atomic_number(), 6 | 7 | 8 | 16)
+                    })
             }) {
-                // H4: H on O adjacent to C=O (carboxylic / ester / amide type)
+                // H4: H on O adjacent to C=X (X = C, N, O, S)
                 0.2980
             } else {
                 // H2: [#1]O[CX4,c] — aliphatic and phenolic OH both use -0.2677
