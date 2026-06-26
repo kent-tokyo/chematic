@@ -828,6 +828,40 @@ impl Mol {
         }
         d.set_item("num_valence_electrons", chematic_chem::num_valence_electrons(m))?;
         d.set_item("hall_kier_alpha", chematic_chem::hall_kier_alpha(m))?;
+        // BCUT2D descriptors (8 eigenvalue-based values)
+        let bc = chematic_chem::bcut2d(m);
+        d.set_item("bcut2d_chghi", bc.chghi)?;
+        d.set_item("bcut2d_chglo", bc.chglo)?;
+        d.set_item("bcut2d_logphi", bc.logphi)?;
+        d.set_item("bcut2d_logplo", bc.logplo)?;
+        d.set_item("bcut2d_mrhi", bc.mrhi)?;
+        d.set_item("bcut2d_mrlo", bc.mrlo)?;
+        d.set_item("bcut2d_mwhi", bc.mwhi)?;
+        d.set_item("bcut2d_mwlo", bc.mwlo)?;
+        // Carbon type breakdown (hybridisation × degree)
+        let ct = chematic_chem::carbon_types(m);
+        d.set_item("c1sp1", ct.c1sp1)?;
+        d.set_item("c2sp1", ct.c2sp1)?;
+        d.set_item("c1sp2", ct.c1sp2)?;
+        d.set_item("c2sp2", ct.c2sp2)?;
+        d.set_item("c3sp2", ct.c3sp2)?;
+        d.set_item("c1sp3", ct.c1sp3)?;
+        d.set_item("c2sp3", ct.c2sp3)?;
+        d.set_item("c3sp3", ct.c3sp3)?;
+        // Connectivity index + bond type counts
+        d.set_item("balaban_j", chematic_chem::balaban_j(m))?;
+        d.set_item("num_amide_bonds", chematic_chem::num_amide_bonds(m))?;
+        d.set_item("num_ester_bonds", chematic_chem::num_ester_bonds(m))?;
+        // Element-wise heavy atom counts
+        d.set_item("num_carbons", chematic_chem::num_carbons(m))?;
+        d.set_item("num_nitrogens", chematic_chem::num_nitrogens(m))?;
+        d.set_item("num_oxygens", chematic_chem::num_oxygens(m))?;
+        d.set_item("num_sulfurs", chematic_chem::num_sulfurs(m))?;
+        d.set_item("num_phosphorus", chematic_chem::num_phosphorus(m))?;
+        d.set_item("num_fluorines", chematic_chem::num_fluorines(m))?;
+        d.set_item("num_chlorines", chematic_chem::num_chlorines(m))?;
+        d.set_item("num_bromines", chematic_chem::num_bromines(m))?;
+        d.set_item("num_iodines", chematic_chem::num_iodines(m))?;
         Ok(d)
     }
 
