@@ -3,9 +3,7 @@ title: chematic
 message: "If you use this software, please cite it as below."
 type: software
 authors:
-  - family-names: Tanabe
-    given-names: Kent
-    alias: kent-tokyo
+  - name: kent-tokyo
 repository-code: https://github.com/kent-tokyo/chematic
 url: https://kent-tokyo.github.io/chematic/
 abstract: >-

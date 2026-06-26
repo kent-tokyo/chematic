@@ -507,10 +507,10 @@ If you use chematic in academic or research work, please cite:
 
 ```bibtex
 @software{chematic,
-  author    = {Tanabe, Kent},
+  author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.4.21},
+  version   = {0.4.22},
   year      = {2026},
 }
 ```
