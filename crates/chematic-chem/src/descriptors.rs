@@ -946,11 +946,12 @@ fn h_logp_for_parent(
         8 => {
             if parent_aromatic {
                 fallback // aromatic O (furan-type) — HS fallback
-            } else if mol
-                .neighbors(parent_idx)
-                .any(|(nb, _)| has_double_bond_to(mol, nb, 8))
-            {
-                // H4: H on O where a neighbour C carries C=O (carboxylic/ester type)
+            } else if mol.neighbors(parent_idx).any(|(nb, _)| {
+                // H4 applies only when the neighbour is C with C=O (not P=O, S=O, N=O)
+                mol.atom(nb).element.atomic_number() == 6
+                    && has_double_bond_to(mol, nb, 8)
+            }) {
+                // H4: H on O adjacent to C=O (carboxylic / ester / amide type)
                 0.2980
             } else {
                 // H2: [#1]O[CX4,c] — aliphatic and phenolic OH both use -0.2677
