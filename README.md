@@ -152,13 +152,13 @@ For Rust and JavaScript/TypeScript examples, see the [documentation](https://ken
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.4.22
+# chematic v0.4.23
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-06, v0.4.23 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
-#   TPSA                  93.3%
-#   LogP (Crippen)        ~99%
+#   TPSA                  98.1%
+#   LogP (Crippen)        99.7%
 # ...
 ```
 
@@ -457,7 +457,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.4.22)
+├── Cargo.toml                    workspace root (v0.4.23)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -510,7 +510,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.4.22},
+  version   = {0.4.23},
   year      = {2026},
 }
 ```

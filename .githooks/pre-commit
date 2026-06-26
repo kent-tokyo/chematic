@@ -1,0 +1,21 @@
+#!/bin/sh
+# Run clippy on changed crates before commit to catch CI failures early.
+# Only checks crates with staged .rs files; skips if none are modified.
+
+changed_crates=$(git diff --cached --name-only | grep '\.rs$' | sed 's|crates/\([^/]*\)/.*|\1|' | sort -u)
+
+if [ -z "$changed_crates" ]; then
+    exit 0
+fi
+
+echo "Running clippy on modified crates..."
+for crate in $changed_crates; do
+    if [ -d "crates/$crate" ]; then
+        cargo clippy -p "$crate" -- -D warnings 2>&1
+        if [ $? -ne 0 ]; then
+            echo "Clippy failed for $crate — fix warnings before committing."
+            exit 1
+        fi
+    fi
+done
+echo "Clippy OK."

@@ -62,6 +62,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.23] — 2026-06-26
+
+### Fixed — `chematic-chem`
+
+- **LogP 96.5% → 99.7%**: `crippen_anchor_sets` now uses `uniquify: false` so that symmetric triple bonds (internal alkynes, R–C≡C–R) yield both orientations from VF2 matching. Previously, deduplication collapsed `{0:Cₐ, 1:Cᵦ}` and `{0:Cᵦ, 1:Cₐ}` into one, leaving one alkyne carbon unmatched and falling back to the generic `[#6]` value (+0.0796 error per atom).
+
+---
+
 ## [0.4.18] — 2026-06-23
 
 ### Added — `chematic-py`

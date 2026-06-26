@@ -542,7 +542,13 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
                             om || (is_o && nb_atom.charge == -1),
                         )
                     });
-            if has_oxo && has_o_minus { 43.14 } else { 3.24 }
+            if has_oxo && has_o_minus {
+                43.14 // nitro/N-oxide: N+(=O)[O-]
+            } else if has_double_bond_to(mol, idx, 7) {
+                14.10 // azide central N+: R-N=[N+]=[N-]
+            } else {
+                3.24 // quaternary ammonium
+            }
         } else if h >= 2 {
             26.02
         } else if h == 1 {
@@ -552,20 +558,23 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
             } else {
                 12.03
             }
+        } else if charge < 0 {
+            // N- anion: azide terminal R-N=[N+]=[N-] → 22.30; others use azo/amine fallback
+            if has_double_bond_to(mol, idx, 7) { 22.30 } else { 12.36 }
         } else {
-            // h == 0: distinguish nitrile (N≡C → 23.79), imine / nitroso / azo (N=X → 12.36), amine (→ 3.24)
+            // h == 0, charge 0: nitrile, imine/nitroso/azo/P=N, amine
             let has_triple_to_c = mol.neighbors(idx).any(|(nb, bidx)| {
                 mol.bond(bidx).order == BondOrder::Triple
                     && mol.atom(nb).element.atomic_number() == 6
             });
             if has_triple_to_c {
                 23.79 // nitrile N≡C
-            } else if has_double_bond_to(mol, idx, 6) {
-                12.36 // imine N=C
-            } else if has_double_bond_to(mol, idx, 8) {
-                12.36 // nitroso N=O (same class as imine in Ertl table)
-            } else if has_double_bond_to(mol, idx, 7) {
-                12.36 // azo N=N (same class as imine in Ertl table)
+            } else if has_double_bond_to(mol, idx, 6)
+                || has_double_bond_to(mol, idx, 8)
+                || has_double_bond_to(mol, idx, 7)
+                || has_double_bond_to(mol, idx, 15)
+            {
+                12.36 // imine N=C, nitroso N=O, azo N=N, phosphazene P=N
             } else {
                 3.24
             }
@@ -607,12 +616,21 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             // nitroso N=O: neutral N → 17.07; nitro [N+](=O)[O-]: charged N → 0.0
             Some((7, 0)) => 17.07,
             Some((7, _)) => 0.0,
+            // Se=O oxygens (seleninic/selenious acid) carry same contribution as C=O
+            Some((34, _)) => 17.07,
             Some(_) => 0.0,
             None => {
                 if is_aromatic_oxide_bridge(mol, idx) {
                     13.14
                 } else {
-                    9.23
+                    // Epoxide O (3-membered ring) → 12.53; ether/ring O → 9.23
+                    let nbs: Vec<AtomIdx> =
+                        mol.neighbors(idx).map(|(nb, _)| nb).collect();
+                    if nbs.len() == 2 && mol.bond_between(nbs[0], nbs[1]).is_some() {
+                        12.53
+                    } else {
+                        9.23
+                    }
                 }
             }
         }
@@ -642,7 +660,9 @@ fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
 
 fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx) -> f64 {
     if has_double_bond_to(mol, idx, 8) {
-        26.88
+        26.88 // phosphate/phosphonate: P=O
+    } else if has_double_bond_to(mol, idx, 7) {
+        9.81 // phosphazene: P=N (cyclic or linear)
     } else {
         34.14
     }
@@ -848,7 +868,9 @@ fn get_crippen_queries() -> &'static CrippenQueries {
 /// SSSR is computed once and shared across all 117 Crippen patterns.
 fn crippen_anchor_sets(mol: &Molecule, queries: &CrippenQueries) -> Vec<FxHashSet<AtomIdx>> {
     let rings = find_sssr(mol);
-    let config = MatchConfig::default();
+    // uniquify=false: symmetric bonds (e.g. internal C≡C) must yield both orientations
+    // so that each endpoint can appear as query-atom-0 and receive its Crippen contribution.
+    let config = MatchConfig { uniquify: false, ..MatchConfig::default() };
     queries
         .iter()
         .map(|(q_opt, _, _)| {
