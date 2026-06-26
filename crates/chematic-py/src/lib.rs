@@ -862,6 +862,11 @@ impl Mol {
         d.set_item("num_chlorines", chematic_chem::num_chlorines(m))?;
         d.set_item("num_bromines", chematic_chem::num_bromines(m))?;
         d.set_item("num_iodines", chematic_chem::num_iodines(m))?;
+        // ADME / solubility / alternative LogP (not in RDKit standard)
+        d.set_item("esol", chematic_chem::esol_solubility(m))?;
+        d.set_item("logd_7_4", chematic_chem::logd_simple(m, 7.4))?;
+        d.set_item("xlogp3", chematic_chem::xlogp3(m))?;
+        d.set_item("drug_score", chematic_chem::drug_score(m))?;
         Ok(d)
     }
 

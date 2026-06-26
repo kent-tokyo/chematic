@@ -65,7 +65,7 @@ mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # アスピリン
 # Jupyter では mol とセルに書くだけで 2D 構造が自動表示される
 mol
 
-# 120+ 記述子をプロパティで取得
+# 150+ 記述子をプロパティで取得
 print(mol.mw, mol.logp, mol.tpsa)            # 180.16  1.31  63.6
 print(mol.lipinski_passes, mol.pains_passes)  # True   True
 
@@ -180,7 +180,7 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 |---|---|---|---|---|
 | SDF/MOL V2000+V3000                         | あり                                       | あり               | あり          | あり             |
 | Tripos MOL2 形式                            | **あり**（読み書き + Python）              | あり               | あり          | なし             |
-| 分子記述子                                  | **120+（BOILED-Egg、QED、SA Score、WHIM、GETAWAY 含む）**  | 〜30               | 〜20          | 〜30             |
+| 分子記述子                                  | **150+（ESOL、LogD、XLogP3、BCUT2D、BOILED-Egg、QED 含む）**  | 〜30               | 〜20          | 〜30             |
 | **MAP4 フィンガープリント**                 | **あり**（Minervini 2020）                 | なし（外部pkg）    | なし          | なし             |
 | MMFF94 全 7 エネルギー項                    | **あり**                                   | あり               | あり          | なし             |
 | 3D 座標生成                                 | あり（DG + MMFF94/DREIDING + L-BFGS）      | あり（ETKDG）      | あり          | あり             |
@@ -238,7 +238,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 34      |
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 63      |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 43      |
-| `chematic-chem`        | 120+ 記述子、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 99.98% RDKit 一致率**（5,000 分子ベンチマーク）；**TPSA ±1.0 Å² / LogP ±0.3 / HBD 100%** RDKit 一致（175 分子バルク回帰） | 496     |
+| `chematic-chem`        | 150+ 記述子、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 99.98% RDKit 一致率**（5,000 分子ベンチマーク）；**TPSA ±1.0 Å² / LogP ±0.3 / HBD 100%** RDKit 一致（175 分子バルク回帰） | 496     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 55      |
 | `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：OOP (117件) + Stretch-Bend (282件)；steepest descent + L-BFGS；DREIDING | 98      |
 | `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン)；**SMARTS 内アトムマップ `:N`** (`[O;D1;H0:3]` 形式 — メタデータとして保存、マッチング条件には不使用) | 137     |
