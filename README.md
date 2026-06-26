@@ -6,6 +6,7 @@
 [![Docs & Demo](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml)
 
 [![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
+[![Downloads](https://img.shields.io/crates/d/chematic?logo=rust)](https://crates.io/crates/chematic)
 [![docs.rs](https://docs.rs/chematic/badge.svg)](https://docs.rs/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic?logo=npm)](https://www.npmjs.com/package/@kent-tokyo/chematic)
