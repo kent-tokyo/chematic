@@ -2,7 +2,7 @@
 
 Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
 
-**Environment:** Python 3.12, Apple M-series, chematic v0.4.22, RDKit 2026.03.3
+**Environment:** Python 3.12, Apple M-series, chematic v0.4.23, RDKit 2026.03.3
 
 ---
 

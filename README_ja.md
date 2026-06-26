@@ -104,10 +104,10 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.4.22
+# chematic v0.4.23
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-06, v0.4.23 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  98.1%
 #   LogP (Crippen)        ~99%

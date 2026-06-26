@@ -14,6 +14,12 @@ bash scripts/check.sh
 
 CI に新しいチェックを追加した場合は、まずこのスクリプトがローカルでパスすることを確認してからコミットすること。
 
+### バージョン更新（リリース時）
+
+1. `Cargo.toml` の `workspace.package.version` を新バージョンに編集
+2. `python scripts/bump_version.py` を実行（README / docs / CITATION.cff / SECURITY.md を一括同期）
+3. `bash scripts/check.sh` でバージョン整合を確認してからコミット
+
 ### Build & Check
 ```bash
 cargo build --workspace
