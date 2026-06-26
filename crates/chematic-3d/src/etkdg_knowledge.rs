@@ -895,7 +895,8 @@ static SMARTS_TORSION_RULES: &[SmartsTorsionRule] = &[
     // Steric clash pushes the preferred dihedral from ~45° (unhindered) toward ~90°.
     SmartsTorsionRule {
         smarts: "[c;H0;X3][c;H0;X3]",
-        b_qi: 0, c_qi: 1,
+        b_qi: 0,
+        c_qi: 1,
         angle_deg: 90.0,
         penalty_per_degree: 0.04,
     },
@@ -903,14 +904,16 @@ static SMARTS_TORSION_RULES: &[SmartsTorsionRule] = &[
     // More constrained than the generic NSp2+CCarbonyl→180° rule.
     SmartsTorsionRule {
         smarts: "[NH2][C;!a](=O)",
-        b_qi: 0, c_qi: 1,
+        b_qi: 0,
+        c_qi: 1,
         angle_deg: 0.0,
         penalty_per_degree: 0.18,
     },
     // Tertiary amide (N with no H, 3 heavy neighbors): N-methyl/dialkyl → trans (180°).
     SmartsTorsionRule {
         smarts: "[N;H0;X3][C;!a](=O)",
-        b_qi: 0, c_qi: 1,
+        b_qi: 0,
+        c_qi: 1,
         angle_deg: 180.0,
         penalty_per_degree: 0.18,
     },
@@ -918,7 +921,8 @@ static SMARTS_TORSION_RULES: &[SmartsTorsionRule] = &[
     // (lone pair conjugates with carbonyl π system).
     SmartsTorsionRule {
         smarts: "[n][C;!a](=O)",
-        b_qi: 0, c_qi: 1,
+        b_qi: 0,
+        c_qi: 1,
         angle_deg: 0.0,
         penalty_per_degree: 0.14,
     },
@@ -926,7 +930,8 @@ static SMARTS_TORSION_RULES: &[SmartsTorsionRule] = &[
     // conjugates with both the aromatic ring and carbonyl).
     SmartsTorsionRule {
         smarts: "[c][O;H0][C;!a](=O)",
-        b_qi: 1, c_qi: 2,
+        b_qi: 1,
+        c_qi: 2,
         angle_deg: 0.0,
         penalty_per_degree: 0.12,
     },
@@ -934,7 +939,8 @@ static SMARTS_TORSION_RULES: &[SmartsTorsionRule] = &[
     // pairs donate into the same carbonyl π system → syn-periplanar geometry).
     SmartsTorsionRule {
         smarts: "[N;!a][C;!a](=O)[O;!a]",
-        b_qi: 0, c_qi: 1,
+        b_qi: 0,
+        c_qi: 1,
         angle_deg: 0.0,
         penalty_per_degree: 0.12,
     },
@@ -1272,7 +1278,10 @@ mod tests {
         let map = build_smarts_torsion_map(&mol, &ring_bonds);
         // At least one biaryl bond entry should be at 90°
         let has_90 = map.values().any(|p| (p.angle_deg - 90.0).abs() < 1.0);
-        assert!(has_90, "hindered biaryl should get 90° preference in SMARTS map");
+        assert!(
+            has_90,
+            "hindered biaryl should get 90° preference in SMARTS map"
+        );
     }
 
     #[test]

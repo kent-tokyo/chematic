@@ -75,12 +75,7 @@ static PKA_RULES: &[(&str, &str, f64, PkaSiteType)] = &[
     ),
     // Tetrazole N-H (bioisostere for COOH): match the N-H in the tetrazole ring
     // 1H-tetrazole pKa ~4.9, 5-substituted ~5.0–6.5
-    (
-        "tetrazole_nh",
-        "[nH;r5;$(n1nnnc1)]",
-        4.9,
-        PkaSiteType::Acid,
-    ),
+    ("tetrazole_nh", "[nH;r5;$(n1nnnc1)]", 4.9, PkaSiteType::Acid),
     // Thiol C-SH  (match the sulfur)
     ("thiol", "[SX2H1]", 8.3, PkaSiteType::Acid),
     // Hydroxamic acid O-H: RC(=O)NHOH → match the O-H (~8.7)
@@ -457,7 +452,10 @@ mod tests {
         let piperidine = mol("C1CCNCC1");
         let mp = pka_base(&morpholine).unwrap();
         let pp = pka_base(&piperidine).unwrap();
-        assert!(mp < pp, "morpholine ({mp:.1}) should be less basic than piperidine ({pp:.1})");
+        assert!(
+            mp < pp,
+            "morpholine ({mp:.1}) should be less basic than piperidine ({pp:.1})"
+        );
         assert!((mp - 8.3).abs() < 0.5, "morpholine pKa ~8.3, got {mp:.1}");
     }
 
@@ -483,7 +481,10 @@ mod tests {
         let acid = pka_acid(&m);
         assert!(acid.is_some(), "hydroxamic acid should have acid site");
         let pka = acid.unwrap();
-        assert!((pka - 8.7).abs() < 0.5, "hydroxamic acid pKa ~8.7, got {pka:.1}");
+        assert!(
+            (pka - 8.7).abs() < 0.5,
+            "hydroxamic acid pKa ~8.7, got {pka:.1}"
+        );
     }
 
     #[test]

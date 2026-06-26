@@ -6935,8 +6935,8 @@ pub fn ring_families_json(mol: &MolHandle) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn batch_report_html(smiles_lines: &str) -> String {
     use chematic_chem::{
-        brenk_passes, hba_count_lipinski, hbd_count, logp_and_mr, molecular_weight,
-        pains_passes, qed_with_bundle, ring_bundle, tpsa,
+        brenk_passes, hba_count_lipinski, hbd_count, logp_and_mr, molecular_weight, pains_passes,
+        qed_with_bundle, ring_bundle, tpsa,
     };
 
     let mut cards: Vec<(f64, String)> = smiles_lines
@@ -6976,7 +6976,10 @@ pub fn batch_report_html(smiles_lines: &str) -> String {
 
     cards.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     let cards_html: String = cards.into_iter().map(|(_, c)| c).collect();
-    let n = smiles_lines.lines().filter(|l| !l.trim().is_empty()).count();
+    let n = smiles_lines
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .count();
     let ver = env!("CARGO_PKG_VERSION");
 
     format!(

@@ -826,7 +826,10 @@ impl Mol {
         for (i, v) in chematic_chem::estate_vsa(m).into_iter().enumerate() {
             d.set_item(format!("EState_VSA{}", i + 1), v)?;
         }
-        d.set_item("num_valence_electrons", chematic_chem::num_valence_electrons(m))?;
+        d.set_item(
+            "num_valence_electrons",
+            chematic_chem::num_valence_electrons(m),
+        )?;
         d.set_item("hall_kier_alpha", chematic_chem::hall_kier_alpha(m))?;
         // BCUT2D descriptors (8 eigenvalue-based values)
         let bc = chematic_chem::bcut2d(m);
@@ -896,7 +899,14 @@ impl Mol {
         let brenk_ok = chematic_chem::brenk_passes(m);
 
         // Lipinski rule-of-5 (original paper uses N+O count for HBA)
-        let lipinski_violations: u8 = [(mw > 500.0) as u8, (hbd > 5) as u8, (hba_lipinski > 10) as u8, (logp > 5.0) as u8].iter().sum();
+        let lipinski_violations: u8 = [
+            (mw > 500.0) as u8,
+            (hbd > 5) as u8,
+            (hba_lipinski > 10) as u8,
+            (logp > 5.0) as u8,
+        ]
+        .iter()
+        .sum();
 
         // Lipopolicity characterisation
         let lipophilicity = if logp < 0.0 {
@@ -940,8 +950,12 @@ impl Mol {
         lines.push(format!("QED {qed:.2} (0 = non-drug-like, 1 = ideal)."));
 
         let mut alerts = Vec::new();
-        if !pains_ok { alerts.push("PAINS alert"); }
-        if !brenk_ok { alerts.push("Brenk alert"); }
+        if !pains_ok {
+            alerts.push("PAINS alert");
+        }
+        if !brenk_ok {
+            alerts.push("Brenk alert");
+        }
         if alerts.is_empty() {
             lines.push("No structural alerts (PAINS / Brenk clean).".to_string());
         } else {
@@ -997,24 +1011,49 @@ impl Mol {
             _ => "✗ Fail (multiple violations)",
         };
         let veber_ok = tpsa_val <= 140.0 && rb.rotatable_bond_count <= 10;
-        let veber_result = if veber_ok { "✓ Likely (TPSA ≤ 140, rot ≤ 10)" } else { "✗ Unlikely" };
+        let veber_result = if veber_ok {
+            "✓ Likely (TPSA ≤ 140, rot ≤ 10)"
+        } else {
+            "✗ Unlikely"
+        };
 
-        let lipophilicity = if logp < 0.0 { "hydrophilic" }
-            else if logp < 2.0 { "mildly lipophilic" }
-            else if logp < 4.0 { "moderately lipophilic" }
-            else { "highly lipophilic" };
+        let lipophilicity = if logp < 0.0 {
+            "hydrophilic"
+        } else if logp < 2.0 {
+            "mildly lipophilic"
+        } else if logp < 4.0 {
+            "moderately lipophilic"
+        } else {
+            "highly lipophilic"
+        };
 
         // ADMET labels
-        let bbb = if admet.bbb_passes { "✓ CNS penetrant" } else { "✗ CNS non-penetrant" };
-        let caco2 = if admet.caco2 > -5.5 { "High (well absorbed)" }
-            else if admet.caco2 > -7.0 { "Moderate" }
-            else { "Low (poor absorption)" };
-        let herg = if admet.herg_risk < 0.3 { "Low" }
-            else if admet.herg_risk < 0.6 { "Moderate" }
-            else { "High ⚠" };
-        let cyp = if admet.cyp3a4_risk < 0.3 { "Low" }
-            else if admet.cyp3a4_risk < 0.6 { "Moderate" }
-            else { "High ⚠" };
+        let bbb = if admet.bbb_passes {
+            "✓ CNS penetrant"
+        } else {
+            "✗ CNS non-penetrant"
+        };
+        let caco2 = if admet.caco2 > -5.5 {
+            "High (well absorbed)"
+        } else if admet.caco2 > -7.0 {
+            "Moderate"
+        } else {
+            "Low (poor absorption)"
+        };
+        let herg = if admet.herg_risk < 0.3 {
+            "Low"
+        } else if admet.herg_risk < 0.6 {
+            "Moderate"
+        } else {
+            "High ⚠"
+        };
+        let cyp = if admet.cyp3a4_risk < 0.3 {
+            "Low"
+        } else if admet.cyp3a4_risk < 0.6 {
+            "Moderate"
+        } else {
+            "High ⚠"
+        };
 
         format!(
             "# Molecular Review\n\n\
@@ -1051,8 +1090,16 @@ impl Mol {
             hba = rb.hba_count,
             rot = rb.rotatable_bond_count,
             arom = rb.aromatic_ring_count,
-            pains_s = if pains_ok { "✓ Clean" } else { "✗ Alert detected" },
-            brenk_s = if brenk_ok { "✓ Clean" } else { "⚠ Alert detected" },
+            pains_s = if pains_ok {
+                "✓ Clean"
+            } else {
+                "✗ Alert detected"
+            },
+            brenk_s = if brenk_ok {
+                "✓ Clean"
+            } else {
+                "⚠ Alert detected"
+            },
         )
     }
 
@@ -1095,8 +1142,8 @@ impl Mol {
             counts1.keys().chain(counts2.keys()).copied().collect();
         let mut delta_elements: BTreeMap<&'static str, i32> = BTreeMap::new();
         for elem in &all_elems {
-            let d = counts2.get(elem).copied().unwrap_or(0)
-                - counts1.get(elem).copied().unwrap_or(0);
+            let d =
+                counts2.get(elem).copied().unwrap_or(0) - counts1.get(elem).copied().unwrap_or(0);
             if d != 0 {
                 delta_elements.insert(elem, d);
             }
@@ -1115,9 +1162,16 @@ impl Mol {
         let hbd2 = chematic_chem::hbd_count(mol2) as i32;
 
         // Human-readable element summary
-        let elem_parts: Vec<String> = delta_elements.iter().map(|(e, d)| {
-            if *d > 0 { format!("+{d}{e}") } else { format!("{d}{e}") }
-        }).collect();
+        let elem_parts: Vec<String> = delta_elements
+            .iter()
+            .map(|(e, d)| {
+                if *d > 0 {
+                    format!("+{d}{e}")
+                } else {
+                    format!("{d}{e}")
+                }
+            })
+            .collect();
         let elem_str = if elem_parts.is_empty() {
             "Same elemental composition".to_string()
         } else {
@@ -3904,10 +3958,15 @@ fn from_cml(cml_str: &str) -> PyResult<Mol> {
 ///     open("out.cjson", "w").write(mol.to_cjson(coords))
 #[pyfunction]
 fn from_cjson(cjson_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
-    let (mol, coords) = chematic_mol::parse_cjson(cjson_str)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let (mol, coords) =
+        chematic_mol::parse_cjson(cjson_str).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let py_coords = coords.iter().map(|&(x, y, z)| vec![x, y, z]).collect();
-    Ok((Mol { inner: Arc::new(mol) }, py_coords))
+    Ok((
+        Mol {
+            inner: Arc::new(mol),
+        },
+        py_coords,
+    ))
 }
 
 /// Parse a ChemDraw XML (CDXML) string into a ``Mol`` object.
@@ -5392,7 +5451,6 @@ fn doctor(py: Python<'_>) {
     println!("Benchmarks: https://github.com/kent-tokyo/chematic/tree/main/benchmarks/");
 }
 
-
 /// Parse a ``.smi`` file (tab/space-separated SMILES + name) into (Mol, name) pairs.
 ///
 /// Each line is ``SMILES[<tab>name]``. Lines with invalid SMILES are silently skipped.
@@ -5641,8 +5699,8 @@ fn report(
     output: Option<&str>,
 ) -> PyResult<Report> {
     use chematic_chem::{
-        brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes,
-        qed_with_bundle, ring_bundle, tpsa,
+        brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes, qed_with_bundle,
+        ring_bundle, tpsa,
     };
 
     // Build (qed, card_html) pairs so we can sort by QED
@@ -5749,22 +5807,16 @@ h1{{font-size:1.4rem;color:#333;margin-bottom:4px}}
 /// ```
 #[pyfunction]
 #[pyo3(signature = (mol1, mol2, names=None, title=None))]
-fn compare(
-    mol1: &Mol,
-    mol2: &Mol,
-    names: Option<(String, String)>,
-    title: Option<&str>,
-) -> Report {
+fn compare(mol1: &Mol, mol2: &Mol, names: Option<(String, String)>, title: Option<&str>) -> Report {
     use chematic_chem::{
-        brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes,
-        qed_with_bundle, ring_bundle, tpsa,
+        brenk_passes, hbd_count, logp_and_mr, molecular_weight, pains_passes, qed_with_bundle,
+        ring_bundle, tpsa,
     };
 
     let m1 = mol1.inner.as_ref();
     let m2 = mol2.inner.as_ref();
 
-    let (name1, name2) = names
-        .unwrap_or_else(|| ("Molecule A".into(), "Molecule B".into()));
+    let (name1, name2) = names.unwrap_or_else(|| ("Molecule A".into(), "Molecule B".into()));
 
     let heading = title
         .map(|t| t.to_string())
@@ -5803,33 +5855,64 @@ fn compare(
         let mut c1: BTreeMap<&'static str, i32> = BTreeMap::new();
         let mut c2: BTreeMap<&'static str, i32> = BTreeMap::new();
         for i in 0..m1.atom_count() {
-            *c1.entry(m1.atom(chematic_core::AtomIdx(i as u32)).element.symbol()).or_insert(0) += 1;
+            *c1.entry(m1.atom(chematic_core::AtomIdx(i as u32)).element.symbol())
+                .or_insert(0) += 1;
         }
         for i in 0..m2.atom_count() {
-            *c2.entry(m2.atom(chematic_core::AtomIdx(i as u32)).element.symbol()).or_insert(0) += 1;
+            *c2.entry(m2.atom(chematic_core::AtomIdx(i as u32)).element.symbol())
+                .or_insert(0) += 1;
         }
         let all: std::collections::BTreeSet<_> = c1.keys().chain(c2.keys()).copied().collect();
         all.iter()
             .filter_map(|e| {
                 let d = c2.get(e).copied().unwrap_or(0) - c1.get(e).copied().unwrap_or(0);
-                if d != 0 { Some(if d > 0 { format!("+{d}{e}") } else { format!("{d}{e}") }) } else { None }
+                if d != 0 {
+                    Some(if d > 0 {
+                        format!("+{d}{e}")
+                    } else {
+                        format!("{d}{e}")
+                    })
+                } else {
+                    None
+                }
             })
             .collect()
     };
-    let elem_str = if elem_parts.is_empty() { "Same elemental composition".into() } else { elem_parts.join(", ") };
+    let elem_str = if elem_parts.is_empty() {
+        "Same elemental composition".into()
+    } else {
+        elem_parts.join(", ")
+    };
     let summary = format!(
         "{}. \u{0394}LogP {:+.2}, \u{0394}TPSA {:+.1} \u{00c5}\u{00b2}, \u{0394}MW {:+.1} Da.",
-        elem_str, logp2 - logp1, tpsa2 - tpsa1, mw2 - mw1,
+        elem_str,
+        logp2 - logp1,
+        tpsa2 - tpsa1,
+        mw2 - mw1,
     );
 
     fn delta_class(d: f64) -> &'static str {
-        if d > 0.0 { "pos" } else if d < 0.0 { "neg" } else { "" }
+        if d > 0.0 {
+            "pos"
+        } else if d < 0.0 {
+            "neg"
+        } else {
+            ""
+        }
     }
     fn flag(v: bool, ok: &str, fail: &str) -> String {
-        if v { format!(r#"<span class="pass">{ok}</span>"#) } else { format!(r#"<span class="fail">{fail}</span>"#) }
+        if v {
+            format!(r#"<span class="pass">{ok}</span>"#)
+        } else {
+            format!(r#"<span class="fail">{fail}</span>"#)
+        }
     }
     fn warn_flag(v: bool) -> String {
-        if v { r#"<span class="pass">✓</span>"#.into() } else { r#"<span class="warn">⚠</span>"#.into() }
+        if v {
+            r#"<span class="pass">✓</span>"#.into()
+        } else {
+            r#"<span class="warn">⚠</span>"#.into()
+        }
     }
 
     let ver = env!("CARGO_PKG_VERSION");
@@ -5894,17 +5977,22 @@ td.delta{{text-align:right;font-size:.8rem;font-weight:600}}
 </table>
 </body>
 </html>"#,
-        dc_mw  = delta_class(mw2 - mw1),   dmw  = mw2 - mw1,
-        dc_lp  = delta_class(logp2-logp1),  dlp  = logp2 - logp1,
-        dc_tp  = delta_class(tpsa2-tpsa1),  dtp  = tpsa2 - tpsa1,
-        dc_hbd = delta_class((hbd2 as f64)-(hbd1 as f64)), dhbd = hbd2 as i32 - hbd1 as i32,
-        dc_hba = delta_class((rb2.hba_count as f64)-(rb1.hba_count as f64)),
-        dhba   = rb2.hba_count as i32 - rb1.hba_count as i32,
-        hba1   = rb1.hba_count,
-        hba2   = rb2.hba_count,
-        dc_qed = delta_class(qed2-qed1),    dqed = qed2 - qed1,
-        lip1_s  = flag(lip1, "✓ Lipinski", "✗ Lipinski"),
-        lip2_s  = flag(lip2, "✓ Lipinski", "✗ Lipinski"),
+        dc_mw = delta_class(mw2 - mw1),
+        dmw = mw2 - mw1,
+        dc_lp = delta_class(logp2 - logp1),
+        dlp = logp2 - logp1,
+        dc_tp = delta_class(tpsa2 - tpsa1),
+        dtp = tpsa2 - tpsa1,
+        dc_hbd = delta_class((hbd2 as f64) - (hbd1 as f64)),
+        dhbd = hbd2 as i32 - hbd1 as i32,
+        dc_hba = delta_class((rb2.hba_count as f64) - (rb1.hba_count as f64)),
+        dhba = rb2.hba_count as i32 - rb1.hba_count as i32,
+        hba1 = rb1.hba_count,
+        hba2 = rb2.hba_count,
+        dc_qed = delta_class(qed2 - qed1),
+        dqed = qed2 - qed1,
+        lip1_s = flag(lip1, "✓ Lipinski", "✗ Lipinski"),
+        lip2_s = flag(lip2, "✓ Lipinski", "✗ Lipinski"),
         pains1_s = flag(pains1, "✓ PAINS", "✗ PAINS"),
         pains2_s = flag(pains2, "✓ PAINS", "✗ PAINS"),
         brenk1_s = warn_flag(brenk1),

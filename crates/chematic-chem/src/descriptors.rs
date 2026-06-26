@@ -560,7 +560,11 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
             }
         } else if charge < 0 {
             // N- anion: azide terminal R-N=[N+]=[N-] → 22.30; others use azo/amine fallback
-            if has_double_bond_to(mol, idx, 7) { 22.30 } else { 12.36 }
+            if has_double_bond_to(mol, idx, 7) {
+                22.30
+            } else {
+                12.36
+            }
         } else {
             // h == 0, charge 0: nitrile, imine/nitroso/azo/P=N, amine
             let has_triple_to_c = mol.neighbors(idx).any(|(nb, bidx)| {
@@ -624,8 +628,7 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
                     13.14
                 } else {
                     // Epoxide O (3-membered ring) → 12.53; ether/ring O → 9.23
-                    let nbs: Vec<AtomIdx> =
-                        mol.neighbors(idx).map(|(nb, _)| nb).collect();
+                    let nbs: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
                     if nbs.len() == 2 && mol.bond_between(nbs[0], nbs[1]).is_some() {
                         12.53
                     } else {
@@ -650,7 +653,11 @@ fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
         match count_double_bonds_to(mol, idx, 8) {
             0 => {
                 // thioxo S (C=S, thioketone/thioamide/thiourea) → 32.09; thioether → 25.30
-                if has_double_bond_to(mol, idx, 6) { 32.09 } else { 25.30 }
+                if has_double_bond_to(mol, idx, 6) {
+                    32.09
+                } else {
+                    25.30
+                }
             }
             1 => 36.28,
             _ => 42.52,
@@ -870,7 +877,10 @@ fn crippen_anchor_sets(mol: &Molecule, queries: &CrippenQueries) -> Vec<FxHashSe
     let rings = find_sssr(mol);
     // uniquify=false: symmetric bonds (e.g. internal C≡C) must yield both orientations
     // so that each endpoint can appear as query-atom-0 and receive its Crippen contribution.
-    let config = MatchConfig { uniquify: false, ..MatchConfig::default() };
+    let config = MatchConfig {
+        uniquify: false,
+        ..MatchConfig::default()
+    };
     queries
         .iter()
         .map(|(q_opt, _, _)| {

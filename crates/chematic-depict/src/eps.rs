@@ -39,7 +39,11 @@ pub fn render_eps_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
     let w = opts.width.unwrap_or(view_w.round() as u32) as f64;
     let h = opts.height.unwrap_or(view_h.round() as u32) as f64;
 
-    let bond_color = if opts.dark { (1.0, 1.0, 1.0) } else { (0.0, 0.0, 0.0) };
+    let bond_color = if opts.dark {
+        (1.0, 1.0, 1.0)
+    } else {
+        (0.0, 0.0, 0.0)
+    };
     let bg_color: Option<(f64, f64, f64)> = if opts.background == "transparent" {
         None
     } else {
@@ -50,7 +54,11 @@ pub fn render_eps_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
 
     // EPS header
     out.push_str("%!PS-Adobe-3.0 EPSF-3.0\n");
-    out.push_str(&format!("%%BoundingBox: 0 0 {} {}\n", w.ceil() as u32, h.ceil() as u32));
+    out.push_str(&format!(
+        "%%BoundingBox: 0 0 {} {}\n",
+        w.ceil() as u32,
+        h.ceil() as u32
+    ));
     out.push_str("%%EndComments\n");
     out.push_str("/Helvetica findfont 12 scalefont setfont\n");
     out.push_str("1 setlinecap\n1 setlinejoin\n");
@@ -161,7 +169,14 @@ pub fn render_eps_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
 // Bond rendering helpers
 // ---------------------------------------------------------------------------
 
-fn render_bond_eps(out: &mut String, order: BondOrder, p1: Point, p2: Point, color: (f64, f64, f64), base_w: f64) {
+fn render_bond_eps(
+    out: &mut String,
+    order: BondOrder,
+    p1: Point,
+    p2: Point,
+    color: (f64, f64, f64),
+    base_w: f64,
+) {
     match order {
         BondOrder::Single => eps_line(out, p1, p2, base_w, color),
         BondOrder::Up => eps_wedge(out, p1, p2, color),
@@ -398,7 +413,10 @@ mod tests {
         let m = mol("c1ccccc1");
         let layout = compute_layout(&m);
         let eps = render_eps(&m, &layout);
-        assert!(eps.starts_with("%!PS-Adobe-3.0 EPSF-3.0"), "missing EPS header");
+        assert!(
+            eps.starts_with("%!PS-Adobe-3.0 EPSF-3.0"),
+            "missing EPS header"
+        );
         assert!(eps.contains("%%BoundingBox:"), "missing BoundingBox");
         assert!(eps.contains("lineto"), "missing bond lines");
         assert!(eps.ends_with("showpage\n%%EOF\n"), "missing EPS footer");
@@ -426,7 +444,10 @@ mod tests {
         let layout = compute_layout(&m);
         let eps = render_eps(&m, &layout);
         let lineto_count = eps.matches("lineto").count();
-        assert!(lineto_count >= 2, "C=C should have >= 2 lineto, got {lineto_count}");
+        assert!(
+            lineto_count >= 2,
+            "C=C should have >= 2 lineto, got {lineto_count}"
+        );
     }
 
     #[test]

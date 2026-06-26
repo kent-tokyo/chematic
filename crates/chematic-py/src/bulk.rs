@@ -588,10 +588,7 @@ pub fn generate_3d(smiles: Vec<String>, method: &str) -> Vec<Option<Vec<[f64; 3]
 ///     mat = chematic.bulk.tanimoto_matrix(["CCO", "c1ccccc1", "CC(=O)O"])
 ///     # mat.shape == (3, 3);  mat[i, j] == Tanimoto(smiles[i], smiles[j])
 #[pyfunction]
-pub fn tanimoto_matrix<'py>(
-    py: Python<'py>,
-    smiles: Vec<String>,
-) -> Bound<'py, PyArray2<f32>> {
+pub fn tanimoto_matrix<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<f32>> {
     let fps: Vec<chematic_fp::bitvec::BitVec2048> = smiles
         .par_iter()
         .filter_map(|s| chematic_smiles::parse(s).ok())
@@ -637,9 +634,7 @@ pub fn standardize(mols: Vec<Mol>) -> Vec<Mol> {
     mols.par_iter()
         .map(|m| {
             let s = chematic_chem::standardize(&m.inner, &opts);
-            Mol {
-                inner: Arc::new(s),
-            }
+            Mol { inner: Arc::new(s) }
         })
         .collect()
 }

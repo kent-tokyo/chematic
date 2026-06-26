@@ -661,7 +661,11 @@ fn ring_pi_electrons(
                                 )
                             })
                         });
-                    if has_sp2_exocyclic { 2 } else { return None; }
+                    if has_sp2_exocyclic {
+                        2
+                    } else {
+                        return None;
+                    }
                 } else if has_aromatic_in_ring {
                     // N in an aromatic ring (pre-kekulization input) without an
                     // explicit double bond and not a bridgehead → pyridine-like → 1π.
@@ -680,8 +684,7 @@ fn ring_pi_electrons(
                 // Sulfoxide/sulfone: exocyclic S=O ties up the lone pair; cannot donate 2π
                 if an == 16
                     && mol.neighbors(atom_idx).any(|(nb, bidx)| {
-                        !ring_atom_set.contains(&nb)
-                            && mol.bond(bidx).order == BondOrder::Double
+                        !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
                     })
                 {
                     return None;

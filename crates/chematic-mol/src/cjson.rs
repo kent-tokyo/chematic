@@ -58,7 +58,11 @@ impl std::fmt::Display for CjsonError {
             CjsonError::UnknownAtomicNumber(n) => {
                 write!(f, "CJSON: unknown atomic number {n}")
             }
-            CjsonError::InvalidBondIndex { pair, atom_idx, n_atoms } => write!(
+            CjsonError::InvalidBondIndex {
+                pair,
+                atom_idx,
+                n_atoms,
+            } => write!(
                 f,
                 "CJSON: bond pair {pair} references atom {atom_idx} (only {n_atoms} atoms)"
             ),
@@ -66,7 +70,10 @@ impl std::fmt::Display for CjsonError {
                 write!(f, "CJSON: missing required field '{fld}'")
             }
             CjsonError::OddBondIndexList => {
-                write!(f, "CJSON: bonds.connections.index must have an even length (pairs)")
+                write!(
+                    f,
+                    "CJSON: bonds.connections.index must have an even length (pairs)"
+                )
             }
             CjsonError::InvalidCoordCount { expected, got } => write!(
                 f,
@@ -86,15 +93,11 @@ impl std::error::Error for CjsonError {}
 /// Returns `(molecule, coords)` where `coords` is a `Vec<(x, y, z)>` in Å.
 /// `coords` is empty when the file has no `atoms.coords.3d` field.
 #[allow(clippy::type_complexity)]
-pub fn parse_cjson(
-    input: &str,
-) -> Result<(Molecule, Vec<(f64, f64, f64)>), CjsonError> {
+pub fn parse_cjson(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), CjsonError> {
     let v: serde_json::Value =
         serde_json::from_str(input).map_err(|e| CjsonError::InvalidJson(e.to_string()))?;
 
-    let atoms_obj = v
-        .get("atoms")
-        .ok_or(CjsonError::MissingField("atoms"))?;
+    let atoms_obj = v.get("atoms").ok_or(CjsonError::MissingField("atoms"))?;
 
     // ── Atomic numbers ───────────────────────────────────────────────────────
     let numbers: Vec<u64> = atoms_obj
@@ -145,9 +148,7 @@ pub fn parse_cjson(
                         got: flat.len(),
                     });
                 }
-                flat.chunks_exact(3)
-                    .map(|c| (c[0], c[1], c[2]))
-                    .collect()
+                flat.chunks_exact(3).map(|c| (c[0], c[1], c[2])).collect()
             }
         }
     };
@@ -155,8 +156,8 @@ pub fn parse_cjson(
     // ── Build atoms ──────────────────────────────────────────────────────────
     let mut builder = MoleculeBuilder::new();
     for (i, &an) in numbers.iter().enumerate() {
-        let element = Element::from_atomic_number(an as u8)
-            .ok_or(CjsonError::UnknownAtomicNumber(an))?;
+        let element =
+            Element::from_atomic_number(an as u8).ok_or(CjsonError::UnknownAtomicNumber(an))?;
         let mut atom = Atom::new(element);
         atom.charge = *formal_charges.get(i).unwrap_or(&0);
         atom.isotope = isotopes.get(i).copied().flatten();
@@ -239,7 +240,13 @@ pub fn write_cjson(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
 
     // Atomic numbers
     let numbers: Vec<Value> = (0..n)
-        .map(|i| json!(mol.atom(chematic_core::AtomIdx(i as u32)).element.atomic_number()))
+        .map(|i| {
+            json!(
+                mol.atom(chematic_core::AtomIdx(i as u32))
+                    .element
+                    .atomic_number()
+            )
+        })
         .collect();
 
     // Formal charges (omit section if all zero)
@@ -260,16 +267,12 @@ pub fn write_cjson(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
     });
 
     if !coords.is_empty() && coords.len() == n {
-        let flat: Vec<f64> = coords
-            .iter()
-            .flat_map(|&(x, y, z)| [x, y, z])
-            .collect();
+        let flat: Vec<f64> = coords.iter().flat_map(|&(x, y, z)| [x, y, z]).collect();
         atoms_obj["coords"] = json!({ "3d": flat });
     }
 
     if has_charges {
-        atoms_obj["formalCharges"] =
-            json!(charges.iter().map(|&c| c as i64).collect::<Vec<_>>());
+        atoms_obj["formalCharges"] = json!(charges.iter().map(|&c| c as i64).collect::<Vec<_>>());
     }
 
     if has_isotopes {

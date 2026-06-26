@@ -185,10 +185,13 @@ pub fn depict_pdf_opts(mol: &Molecule, opts: &RenderOptions) -> Vec<u8> {
 fn svg_bytes_to_pdf(svg: &str) -> Vec<u8> {
     let mut options = svg2pdf::usvg::Options::default();
     options.fontdb_mut().load_system_fonts();
-    let tree = svg2pdf::usvg::Tree::from_str(svg, &options)
-        .expect("generated SVG should parse");
-    svg2pdf::to_pdf(&tree, svg2pdf::ConversionOptions::default(), svg2pdf::PageOptions::default())
-        .expect("PDF conversion should not fail for valid SVG")
+    let tree = svg2pdf::usvg::Tree::from_str(svg, &options).expect("generated SVG should parse");
+    svg2pdf::to_pdf(
+        &tree,
+        svg2pdf::ConversionOptions::default(),
+        svg2pdf::PageOptions::default(),
+    )
+    .expect("PDF conversion should not fail for valid SVG")
 }
 
 /// Compute a 2D layout and render it as an EPS string.

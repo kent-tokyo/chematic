@@ -250,7 +250,7 @@ mod tests {
         scaffold: &str,
         smiles: impl IntoIterator<Item = &'a str>,
     ) -> Vec<Option<RGroupResult>> {
-        let mols: Vec<Molecule> = smiles.into_iter().map(|s| mol(s)).collect();
+        let mols: Vec<Molecule> = smiles.into_iter().map(mol).collect();
         let refs: Vec<&Molecule> = mols.iter().collect();
         rgroup_decompose(scaffold, &refs).expect("decompose failed")
     }

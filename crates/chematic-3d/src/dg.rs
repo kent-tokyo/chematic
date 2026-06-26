@@ -309,7 +309,12 @@ fn place_rings(
         const CHAIR_H: f64 = 0.256;
         const ENVELOPE_H: f64 = 0.400;
 
-        enum Conf { Flat, Chair, Envelope, Crown(f64) }
+        enum Conf {
+            Flat,
+            Chair,
+            Envelope,
+            Crown(f64),
+        }
         let conf = if is_aromatic || is_fused {
             Conf::Flat
         } else {
@@ -322,7 +327,11 @@ fn place_rings(
         };
 
         // Chair uses a different circumradius than the regular-polygon formula.
-        let effective_r = if matches!(conf, Conf::Chair) { CHAIR_R } else { r };
+        let effective_r = if matches!(conf, Conf::Chair) {
+            CHAIR_R
+        } else {
+            r
+        };
 
         for (k, &atom_idx) in ring.iter().enumerate() {
             if placed[atom_idx.0 as usize] {
@@ -333,11 +342,29 @@ fn place_rings(
             let y = ring_cy + effective_r * angle.sin();
             let z = match conf {
                 // Chair: alternating ±h (CHAIR_H ≈ 0.256 Å).
-                Conf::Chair => if k % 2 == 0 { CHAIR_H } else { -CHAIR_H },
+                Conf::Chair => {
+                    if k % 2 == 0 {
+                        CHAIR_H
+                    } else {
+                        -CHAIR_H
+                    }
+                }
                 // Envelope: last atom lifted above the mean plane of the other 4.
-                Conf::Envelope => if k == ring_size - 1 { ENVELOPE_H } else { 0.0 },
+                Conf::Envelope => {
+                    if k == ring_size - 1 {
+                        ENVELOPE_H
+                    } else {
+                        0.0
+                    }
+                }
                 // Crown: alternating ±h, height scales with ring size.
-                Conf::Crown(h) => if k % 2 == 0 { h } else { -h },
+                Conf::Crown(h) => {
+                    if k % 2 == 0 {
+                        h
+                    } else {
+                        -h
+                    }
+                }
                 Conf::Flat => 0.0,
             };
             coords.set(atom_idx, Point3::new(x, y, z));
@@ -545,9 +572,7 @@ mod tests {
         // Chair geometry: r = 1.452 Å, h = ±0.256 Å → z_spread ≈ 0.512 Å.
         let mol = parse("C1CCCCC1").unwrap();
         let coords = generate_coords(&mol);
-        let z_vals: Vec<f64> = (0..6)
-            .map(|i| coords.get(AtomIdx(i as u32)).z)
-            .collect();
+        let z_vals: Vec<f64> = (0..6).map(|i| coords.get(AtomIdx(i as u32)).z).collect();
         let z_max = z_vals.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
         let z_min = z_vals.iter().cloned().fold(f64::INFINITY, f64::min);
         let z_spread = z_max - z_min;
@@ -576,9 +601,7 @@ mod tests {
         // Last atom lifted by ENVELOPE_H = 0.40 Å; other four remain at z=0.
         let mol = parse("C1CCCC1").unwrap();
         let coords = generate_coords(&mol);
-        let z_vals: Vec<f64> = (0..5)
-            .map(|i| coords.get(AtomIdx(i as u32)).z)
-            .collect();
+        let z_vals: Vec<f64> = (0..5).map(|i| coords.get(AtomIdx(i as u32)).z).collect();
         // SSSR ring order != atom-index order, so we test by value.
         let flat: Vec<f64> = z_vals.iter().cloned().filter(|&z| z.abs() < 0.01).collect();
         let flap: Vec<f64> = z_vals.iter().cloned().filter(|&z| z.abs() > 0.01).collect();
