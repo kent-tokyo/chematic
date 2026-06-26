@@ -1,11 +1,19 @@
 # chematic
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/chematic.svg)](https://crates.io/crates/chematic)
-[![PyPI](https://img.shields.io/pypi/v/chematic.svg)](https://pypi.org/project/chematic/)
-[![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic.svg)](https://www.npmjs.com/package/@kent-tokyo/chematic)
-[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
-[![Docs](https://img.shields.io/badge/docs-site-blue)](https://kent-tokyo.github.io/chematic/)
+[![Security](https://github.com/kent-tokyo/chematic/actions/workflows/security.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/security.yml)
+[![Benchmarks](https://github.com/kent-tokyo/chematic/actions/workflows/bench.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/bench.yml)
+[![Docs & Demo](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml)
+
+[![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
+[![docs.rs](https://docs.rs/chematic/badge.svg)](https://docs.rs/chematic)
+[![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
+[![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic?logo=npm)](https://www.npmjs.com/package/@kent-tokyo/chematic)
+
+![Pure Rust](https://img.shields.io/badge/Pure%20Rust-zero%20C%2B%2B-orange?logo=rust)
+![WASM](https://img.shields.io/badge/WASM-504%20KB-blueviolet?logo=webassembly)
+![MCP](https://img.shields.io/badge/MCP-agent%20ready-purple)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://kent-tokyo.github.io/chematic/playground/)
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kent-tokyo/chematic/blob/main/notebooks/quickstart.ipynb)
 

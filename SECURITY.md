@@ -4,11 +4,11 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
-| v0.4.14 | Yes | Current release — active support |
-| v0.4.13 | Limited | Security fixes only (limited) |
-| < v0.4.13 | No | Unsupported |
+| v0.4.23 | Yes | Current release — active support |
+| v0.4.22 | Limited | Security fixes only (limited) |
+| < v0.4.22 | No | Unsupported |
 
-**Active Support**: Latest release (v0.4.14) receives all security updates.  
+**Active Support**: Latest release (v0.4.23) receives all security updates.  
 **Limited Support**: Previous release receives critical security fixes only.  
 **End of Life**: Older versions receive no support.
 
@@ -164,5 +164,5 @@ This repository has the following GitHub security features enabled:
 
 ---
 
-**Last Updated**: 2026-06-21  
+**Last Updated**: 2026-06-27  
 **Security Contact**: 36805997+kent-tokyo@users.noreply.github.com
