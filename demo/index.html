@@ -81,6 +81,15 @@ header {
   font-size: .75rem; font-family: var(--font-mono);
 }
 .tagline { color: var(--muted); font-size: .9rem; flex: 1; min-width: 180px; }
+.value-strip { font-size: .78rem; color: var(--muted); margin: 0 0 .55rem; letter-spacing: .01em; }
+.exp-badge {
+  font-size: .58rem; font-weight: 700; letter-spacing: .04em;
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+  color: var(--warn); border-radius: 999px;
+  padding: 1px 5px; vertical-align: middle;
+  margin-left: .3rem; text-transform: uppercase;
+}
 .lang-switcher {
   display: flex; gap: .4rem; margin-left: auto;
 }
@@ -660,8 +669,8 @@ footer {
 <header>
   <div class="header-inner">
     <span class="logo">chematic</span>
-    <a href="v0189-showcase.html" style="margin-left: 0.5rem;">
-      <span class="version" style="background: linear-gradient(135deg, #34d399, #4f8ef7); color: white; border-color: #34d399; cursor: pointer;">v0.4.21</span>
+    <a href="https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md" target="_blank" rel="noopener" style="margin-left: 0.5rem;">
+      <span class="version" style="background: linear-gradient(135deg, #34d399, #4f8ef7); color: white; border-color: #34d399; cursor: pointer;">v0.4.23</span>
     </a>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
@@ -682,7 +691,7 @@ footer {
     <button class="tab-btn"        data-tab="tab-sar"    id="tb-sar"     role="tab"></button>
     <button class="tab-btn"        data-tab="tab-3d"     id="tb-3d"      role="tab"></button>
     <button class="tab-btn"        data-tab="tab-gallery" id="tb-gallery" role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-dynamics" id="tb-dynamics" role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-dynamics" id="tb-dynamics" role="tab"><span class="exp-badge">exp</span></button>
   </div>
 </nav>
 
@@ -694,6 +703,7 @@ footer {
     <!-- Descriptor Calculator -->
     <section id="section-descriptor">
       <h2 id="h-desc-title"></h2>
+      <p class="value-strip">Pure Rust &middot; WASM 504 KB &middot; 99.7% RDKit-accurate LogP &mdash; change the SMILES below or pick an example&nbsp;&darr;&nbsp;&nbsp;<a href="https://pypi.org/project/chematic/" target="_blank" rel="noopener" style="color:var(--accent)">pip install chematic</a></p>
       <div class="input-row">
         <input id="smiles-input" class="smiles-input" type="text"
                spellcheck="false" autocomplete="off">
@@ -742,6 +752,18 @@ footer {
           </thead>
           <tbody id="desc-tbody"></tbody>
         </table>
+      </div>
+      <p id="rdkit-note" style="display:none;font-size:.72rem;color:var(--muted);margin:.35rem 0 0">
+        &#10003; LogP <span style="color:var(--pass)">99.7%</span> &middot;
+        TPSA <span style="color:var(--pass)">98.9%</span>
+        agreement with RDKit on 4,999-molecule benchmark
+      </p>
+      <div id="code-wrap" style="display:none;margin:.9rem 0 0">
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <button id="btn-copy-py" class="btn-outline" style="font-size:.8rem;padding:.3rem .75rem">Copy Python</button>
+          <button id="btn-copy-js" class="btn-outline" style="font-size:.8rem;padding:.3rem .75rem">Copy JS</button>
+          <span id="copy-ok" style="font-size:.78rem;color:var(--pass);opacity:0;transition:opacity .4s"></span>
+        </div>
       </div>
     </section>
 
@@ -1034,6 +1056,9 @@ footer {
   <div class="tab-panel" id="tab-dynamics" role="tabpanel">
     <section id="section-dynamics">
       <h2 id="h-dyn-title">Molecular Dynamics &amp; Electrostatics</h2>
+      <div style="background:color-mix(in srgb,var(--warn) 10%,transparent);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);border-radius:6px;padding:.55rem .9rem;font-size:.82rem;color:color-mix(in srgb,var(--warn) 85%,var(--text));margin-bottom:.9rem">
+        &#x2697; MD simulation and Coulomb energy are experimental &mdash; suitable for screening, not publication-grade accuracy.
+      </div>
 
       <div class="panel">
         <h3 id="h-dyn-coulomb">Coulomb Energy</h3>
@@ -1304,7 +1329,7 @@ const T = {
     'tab.sar':          'SAR Analysis',
     'tab.3d':           '3D Viewer',
     'tab.gallery':      'Gallery',
-    'tab.dynamics':     'Dynamics',
+    'tab.dynamics':     'Advanced',
     'stereo.title':     'Stereoisomer Enumeration',
     'stereo.hint':      'Enumerates all possible stereoisomers for unspecified stereocenters (up to 6 centers / 64 isomers).',
     'stereo.btn':       'Show Stereoisomers',
@@ -1498,7 +1523,7 @@ const T = {
     'tab.sar':          'SAR 解析',
     'tab.3d':           '3D ビューア',
     'tab.gallery':      'ギャラリー',
-    'tab.dynamics':     'ダイナミクス',
+    'tab.dynamics':     '高度な計算',
     'stereo.title':     '立体異性体列挙',
     'stereo.hint':      '未指定の不斉中心に対して全ての立体異性体を列挙します（最大 6 中心 / 64 異性体）。',
     'stereo.btn':       '立体異性体を表示',
@@ -1692,7 +1717,7 @@ const T = {
     'tab.sar':          'SAR 分析',
     'tab.3d':           '3D 查看器',
     'tab.gallery':      '图库',
-    'tab.dynamics':     '动力学',
+    'tab.dynamics':     '高级计算',
     'stereo.title':     '立体异构体枚举',
     'stereo.hint':      '对未指定的立体中心枚举所有可能的立体异构体（最多 6 个中心 / 64 种）。',
     'stereo.btn':       '显示立体异构体',
@@ -2309,6 +2334,26 @@ function renderDescriptors(mol) {
     tr.appendChild(tdVal);
     tbody.appendChild(tr);
   }
+  const note = document.getElementById('rdkit-note');
+  if (note) note.style.display = '';
+}
+
+function updateCodeSnippets(smiles) {
+  const wrap = document.getElementById('code-wrap');
+  if (!wrap) return;
+  const s = smiles.replace(/"/g, '\\"');
+  wrap._pySnippet = `import chematic\n\nmol = chematic.from_smiles("${s}")\nprint(f"MW: {mol.mw:.2f}  LogP: {mol.logp:.3f}  TPSA: {mol.tpsa:.2f}")\nprint(mol.descriptors())`;
+  wrap._jsSnippet = `import init, { parse_smiles } from '@kent-tokyo/chematic';\n\nawait init();\nconst mol = parse_smiles("${s}");\nconsole.log('MW:', mol.molecular_weight().toFixed(2));\nconsole.log('LogP:', mol.logp_crippen().toFixed(3));`;
+  wrap.style.display = '';
+}
+
+function flashCopy(text) {
+  navigator.clipboard.writeText(text).catch(() => {});
+  const el = document.getElementById('copy-ok');
+  if (!el) return;
+  el.textContent = 'Copied!';
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 2000);
 }
 
 const NAMED_GROUP_COLORS = {
@@ -2878,6 +2923,7 @@ function calculate() {
   renderSvg(mol);
   renderRadar(mol);
   renderDescriptors(mol);
+  updateCodeSnippets(smiles);
 
   // Secondary: rule cards + functional groups are visually below the fold;
   // defer to keep the main-thread responsive after each keystroke.
@@ -3788,6 +3834,14 @@ function runRgroup() {
     } catch (e) {
       showError('error-report', `Error: ${e.message}`);
     }
+  });
+
+  // ── Copy code buttons ────────────────────────────────────────────────────
+  document.getElementById('btn-copy-py').addEventListener('click', () => {
+    flashCopy(document.getElementById('code-wrap')._pySnippet || '');
+  });
+  document.getElementById('btn-copy-js').addEventListener('click', () => {
+    flashCopy(document.getElementById('code-wrap')._jsSnippet || '');
   });
 
   function populateReportDescriptors(descriptors) {
