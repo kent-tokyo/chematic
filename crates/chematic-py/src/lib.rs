@@ -813,6 +813,21 @@ impl Mol {
             Some(v) => d.set_item("pka_base", v)?,
             None => d.set_item("pka_base", py.None())?,
         }
+        // VSA descriptors (47 values: SlogP_VSA1-12, SMR_VSA1-10, PEOE_VSA1-14, EState_VSA1-11)
+        for (i, v) in chematic_chem::slogp_vsa(m).into_iter().enumerate() {
+            d.set_item(format!("SlogP_VSA{}", i + 1), v)?;
+        }
+        for (i, v) in chematic_chem::smr_vsa(m).into_iter().enumerate() {
+            d.set_item(format!("SMR_VSA{}", i + 1), v)?;
+        }
+        for (i, v) in chematic_chem::peoe_vsa(m).into_iter().enumerate() {
+            d.set_item(format!("PEOE_VSA{}", i + 1), v)?;
+        }
+        for (i, v) in chematic_chem::estate_vsa(m).into_iter().enumerate() {
+            d.set_item(format!("EState_VSA{}", i + 1), v)?;
+        }
+        d.set_item("num_valence_electrons", chematic_chem::num_valence_electrons(m))?;
+        d.set_item("hall_kier_alpha", chematic_chem::hall_kier_alpha(m))?;
         Ok(d)
     }
 

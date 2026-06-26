@@ -1126,6 +1126,20 @@ pub fn gutman_mti(mol: &Molecule) -> u64 {
     s
 }
 
+/// Total number of valence electrons (heavy atoms + implicit H).
+///
+/// Equivalent to RDKit `NumValenceElectrons`.
+pub fn num_valence_electrons(mol: &Molecule) -> u32 {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() > 1)
+        .map(|(idx, a)| {
+            let heavy = u32::from(valence_electrons(a.element.atomic_number()));
+            let h = u32::from(implicit_hcount(mol, idx));
+            heavy + h // H contributes 1 valence electron each
+        })
+        .sum()
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
