@@ -30,6 +30,14 @@ No C compiler, no Python, no external tools required for the core crates.
 
 `feat/*` new feature · `fix/*` bug fix · `docs/*` docs only · `release/*` version bump + CHANGELOG + tag
 
+## Main branch protection (recommended settings)
+
+GitHub → Settings → Branches → Add rule for `main`:
+
+- [x] Require a pull request before merging
+- [x] Require status checks: `Test`, `Clippy`, `Format Check`, `Build Check`
+- [x] Do not allow bypassing the above settings
+
 ## Development workflow
 
 ```bash

@@ -50,6 +50,11 @@ def main() -> None:
     print("--- Preview ---")
     print(notes)
 
+    if "--notes-file" in sys.argv:
+        idx = sys.argv.index("--notes-file")
+        Path(sys.argv[idx + 1]).write_text(notes)
+        return
+
     if "--create" in sys.argv:
         subprocess.run(
             ["gh", "release", "create", tag, "--title", tag, "--notes-file", str(notes_file)],
