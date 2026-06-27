@@ -1,5 +1,5 @@
 site_name: chematic
-site_description: Pure-Rust cheminformatics for Python — SMILES, fingerprints, 70+ descriptors, pKa, ADMET
+site_description: Pure-Rust cheminformatics for Python — SMILES, fingerprints, 190+ descriptors, pKa, ADMET
 site_url: https://kent-tokyo.github.io/chematic/
 repo_url: https://github.com/kent-tokyo/chematic
 repo_name: kent-tokyo/chematic
@@ -51,18 +51,22 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Use Cases:
-    - AI Drug Discovery (MCP): use-cases/ai-drug-discovery.md
-    - Batch Analysis: use-cases/batch-analysis.md
-    - Browser App (WASM): use-cases/browser-app.md
-    - Python Notebook: use-cases/python-notebook.md
-    - Rust Server: use-cases/rust-server.md
   - Getting Started:
     - Installation: getting_started/installation.md
     - Quick Start: getting_started/quickstart.md
+  - Use Cases:
+    - Python Notebook: use-cases/python-notebook.md
+    - Batch Analysis: use-cases/batch-analysis.md
+    - Browser App (WASM): use-cases/browser-app.md
+    - AI-Assisted Molecular Analysis (MCP): use-cases/ai-drug-discovery.md
+    - Rust Server: use-cases/rust-server.md
   - Cookbook (EN): cookbook.md
   - Cookbook (日本語): cookbook_ja.md
   - Benchmark: benchmark.md
+  - Reliability:
+    - Validation vs RDKit: validation.md
+    - Detailed RDKit Comparison: rdkit-comparison.md
+    - RDKit Issue Lessons: rdkit_issue_lessons.md
   - RDKit Migration Guide: rdkit_cheatsheet.md
   - API Reference:
     - chematic: api/chematic.md

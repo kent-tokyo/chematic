@@ -53,7 +53,7 @@ df = pd.DataFrame({
 print(f"Loaded {len(df)} molecules")
 ```
 
-## 2. Compute 70+ descriptors in parallel
+## 2. Compute 190+ descriptors in parallel
 
 ```python
 desc_df = pd.DataFrame(chematic.bulk.descriptors(df["smiles"].tolist()))

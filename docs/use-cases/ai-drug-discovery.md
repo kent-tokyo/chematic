@@ -1,4 +1,4 @@
-# Use case: AI-assisted drug discovery with Claude Desktop + MCP
+# Use case: AI-assisted molecular analysis with MCP
 
 ## Problem
 
