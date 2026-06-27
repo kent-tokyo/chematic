@@ -1,0 +1,8 @@
+# RDKit #9338: TautomerEnumerator.Canonicalize() raises bad bond stereo pre-condition
+# violation on atropisomer-like structures. Expected behavior: if bond stereo cannot be
+# preserved through tautomerization/standardization, it must be silently cleared, never panic.
+# Expected behavior: drop_with_warning
+Cc1cccc(-c2cccc(C)n2)n1                  2,6-dimethyl-bipyridyl
+Cc1ccc(-c2ccc(C)cc2Cl)cc1Cl              2-chloro-BINAP-analog
+c1ccc(-c2cccc(-c3cccc(-c4cccc(c5ccccn5)n4)n3)n2)n1  poly-atropisomer
+[C@H](c1ccccc1)(c1ccccc1)c1ccccc1       triphenylmethyl_stereo

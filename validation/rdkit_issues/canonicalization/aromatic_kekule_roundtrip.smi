@@ -1,0 +1,13 @@
+# RDKit #8759 related: aromatic / Kekulé form roundtrip must be stable.
+# Kekulé input -> canonical aromatic SMILES must equal aromatic input canonical.
+# Expected behavior: idempotent
+c1ccccc1                   benzene_aromatic
+C1=CC=CC=C1                benzene_kekule
+c1ccncc1                   pyridine
+c1ccoc1                    furan
+c1ccsc1                    thiophene
+c1cc[nH]c1                 pyrrole
+c1ccc2ccccc2c1             naphthalene
+c1ccc2[nH]ccc2c1           indole
+c1cc2cccc3cccc1c23         acridine_analog
+c1cnc2[nH]cnc2n1           adenine_scaffold

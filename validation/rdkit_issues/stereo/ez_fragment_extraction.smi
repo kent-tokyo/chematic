@@ -1,0 +1,9 @@
+# RDKit #9368: MolFragmentToSmiles raises pre-condition violation when the
+# fragment cut is directly adjacent to an E/Z double bond.
+# chematic must extract fragments without panicking; stereo may be dropped.
+# Expected behavior: never_panic
+C(/C=C/C(=O)O)c1ccccc1       ez_adjacent_to_ester
+C(/C=C/C)Oc1ccccc1           ez_adjacent_to_aryl_ether
+CC(/C=C/c1ccccc1)=O          chalcone_ez
+C(=C/c1ccccc1)\C(=O)O        cinnamate_z
+CC(/C=C/CC)CC                 ez_alkyl_chain

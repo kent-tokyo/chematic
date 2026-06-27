@@ -1,0 +1,10 @@
+# RDKit #8759 related: charged heteroaromatic canonical stability.
+# N+, O-, S+, formal charges near aromatic systems can destabilize canonicalization.
+# Expected behavior: idempotent
+[n+]1ccccc1               pyridinium
+[nH+]1cccc1               pyrrole_protonated
+c1cc[n+](C)cc1            N-methyl-pyridinium
+c1cc[n+]([O-])cc1         pyridine_N-oxide
+[O-]c1ccccc1              phenolate
+c1ccc(cc1)[NH3+]          aniline_protonated
+c1ccc(cc1)[N+](=O)[O-]    nitrobenzene

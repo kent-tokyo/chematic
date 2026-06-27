@@ -326,3 +326,77 @@ def fragment_text(mol, method: str = "brics", fmt: str = "markdown") -> str:
         f"- **Connection points**: {conn}\n"
         f"- **Fragment count**: {len(frags)}"
     )
+
+
+class ParseReport:
+    """Result of parse_smiles_report(): mol + warnings instead of raising."""
+
+    __slots__ = ("mol", "ok", "warnings", "error")
+
+    def __init__(self, mol, warnings, error):
+        self.mol = mol
+        self.ok = mol is not None
+        self.warnings: list = warnings
+        self.error: str | None = error
+
+    def __repr__(self):
+        return f"ParseReport(ok={self.ok}, warnings={self.warnings}, error={self.error!r})"
+
+
+def parse_smiles_report(smiles: str, *, strict: bool = False) -> "ParseReport":
+    """Parse SMILES and return a ParseReport instead of raising on failure.
+
+    Returns (mol, warnings) so batch pipelines can handle errors without
+    try/except at every call site. Useful for WASM, MCP, and AI agent pipelines.
+
+    Args:
+        smiles: SMILES string to parse
+        strict: if True, treat any warning as an error (mol=None)
+
+    Returns:
+        ParseReport with .ok, .mol, .warnings, .error
+
+    Example::
+
+        report = chematic.parse_smiles_report("C/C=C/C")
+        if report.ok:
+            print(report.mol.mw)
+        for w in report.warnings:
+            print(w)
+
+        # batch
+        reports = [chematic.parse_smiles_report(s) for s in smiles_list]
+        mols = [r.mol for r in reports if r.ok]
+    """
+    warnings = []
+    try:
+        mol = from_smiles(smiles)
+    except Exception as exc:
+        return ParseReport(None, [], f"W003_PARSE_FAILED: {exc}")
+
+    # Empty molecule (lenient parser swallowed the input without atoms)
+    if mol.heavy_atoms == 0 and smiles.strip():
+        return ParseReport(None, [], f"W003_PARSE_FAILED: no atoms parsed from {smiles!r}")
+
+    # W002_DROPPED_STEREO — stereo specified but not fully resolved
+    sc = mol.stereo_completeness
+    if isinstance(sc, dict):
+        specified = sc.get("specified", 0)
+        unspecified = sc.get("unspecified", 0)
+        if specified == 0 and unspecified > 0 and ("@" in smiles or "/" in smiles):
+            warnings.append(f"W002_DROPPED_STEREO: {unspecified} stereocenters unresolved")
+    elif ("@" in smiles or "/" in smiles) and sc == 0.0:
+        warnings.append("W002_DROPPED_STEREO: stereo notation present but none resolved")
+
+    # W001_UNUSUAL_VALENCE — atom with valence outside normal range
+    try:
+        per_atom = mol.implicit_hcount_per_atom()
+        if any(h < 0 for h in per_atom):
+            warnings.append("W001_UNUSUAL_VALENCE: one or more atoms have unusual valence")
+    except Exception:
+        pass
+
+    if strict and warnings:
+        return ParseReport(None, warnings, warnings[0])
+
+    return ParseReport(mol, warnings, None)
