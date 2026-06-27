@@ -1,15 +1,10 @@
 # chematic
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
-[![Security](https://github.com/kent-tokyo/chematic/actions/workflows/security.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/security.yml)
-[![Benchmarks](https://github.com/kent-tokyo/chematic/actions/workflows/bench.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/bench.yml)
-[![Docs & Demo](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/pages.yml)
-
-[![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
-[![Downloads](https://img.shields.io/crates/d/chematic?logo=rust)](https://crates.io/crates/chematic)
-[![docs.rs](https://docs.rs/chematic/badge.svg)](https://docs.rs/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
+[![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
 [![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic?logo=npm)](https://www.npmjs.com/package/@kent-tokyo/chematic)
+[![docs.rs](https://docs.rs/chematic/badge.svg)](https://docs.rs/chematic)
 
 ![Pure Rust](https://img.shields.io/badge/Pure%20Rust-zero%20C%2B%2B-orange?logo=rust)
 ![WASM](https://img.shields.io/badge/WASM-504%20KB-blueviolet?logo=webassembly)
