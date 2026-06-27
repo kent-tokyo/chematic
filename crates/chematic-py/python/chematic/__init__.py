@@ -328,6 +328,7 @@ def fragment_text(mol, method: str = "brics", fmt: str = "markdown") -> str:
     )
 
 
+
 class ParseReport:
     """Result of parse_smiles_report(): mol + warnings instead of raising."""
 
@@ -400,3 +401,4 @@ def parse_smiles_report(smiles: str, *, strict: bool = False) -> "ParseReport":
         return ParseReport(None, warnings, warnings[0])
 
     return ParseReport(mol, warnings, None)
+
