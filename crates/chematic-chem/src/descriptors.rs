@@ -440,7 +440,8 @@ fn rotatable_bond_count_from_set(mol: &Molecule, ring_bond_set: &FxHashSet<BondI
                 && !ring_bond_set.contains(bidx)
                 && mol.degree(bond.atom1) > 1
                 && mol.degree(bond.atom2) > 1
-                && !is_amide_bond(mol, bond.atom1, bond.atom2)
+                && !is_carbonyl_hetero_bond(mol, bond.atom1, bond.atom2)
+                && !is_neopentyl_like(mol, bond.atom1, bond.atom2)
                 && !has_triple_bond(mol, bond.atom1)
                 && !has_triple_bond(mol, bond.atom2)
                 && !is_cumulated_double(mol, bond.atom1)
@@ -461,11 +462,15 @@ fn has_triple_bond(mol: &Molecule, idx: AtomIdx) -> bool {
 
 /// True if atom `idx` is the centre of a cumulated double-bond system (≥2 double bonds),
 /// as found in allenes (C=C=C) and ketenes (C=C=O).
+/// Restricted to carbon: sulfone S(=O)(=O) and phosphate P(=O) are not allene-like
+/// and their bonds must not be excluded from the rotatable-bond count.
 fn is_cumulated_double(mol: &Molecule, idx: AtomIdx) -> bool {
-    mol.neighbors(idx)
-        .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
-        .count()
-        >= 2
+    mol.atom(idx).element.atomic_number() == 6
+        && mol
+            .neighbors(idx)
+            .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
+            .count()
+            >= 2
 }
 
 /// Build the ring-bond set from a pre-computed rings slice.
@@ -490,15 +495,50 @@ fn ring_bond_indices(mol: &Molecule) -> FxHashSet<BondIdx> {
 
 /// True if the bond between `a` and `b` is an amide-like C-N bond
 /// (one atom is N, the other is C with a double bond to O).
-fn is_amide_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
+/// RDKit strict: exclude bond A-B when A is a quaternary C (degree 4, no H) whose only
+/// non-terminal heavy-atom neighbor is B.  Covers tert-butyl (CC(C)(C)-X), neopentyl, Boc groups.
+fn is_neopentyl_like(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
+    is_neopentyl_center(mol, a, b) || is_neopentyl_center(mol, b, a)
+}
+
+fn is_neopentyl_center(mol: &Molecule, center: AtomIdx, other: AtomIdx) -> bool {
+    if mol.atom(center).element.atomic_number() != 6 {
+        return false;
+    }
+    if mol.degree(center) != 4 {
+        return false;
+    }
+    let others: Vec<AtomIdx> = mol
+        .neighbors(center)
+        .filter(|(nb, _)| *nb != other)
+        .map(|(nb, _)| nb)
+        .collect();
+    // All 3 non-target neighbors must be terminal (degree 1)
+    if !others.iter().all(|&nb| mol.degree(nb) == 1) {
+        return false;
+    }
+    // All must share the same atomic number (e.g. all CH3, or all F)
+    // This prevents false positives for C(CH3)(OH)(CH3)-X cases.
+    let an0 = mol.atom(others[0]).element.atomic_number();
+    others
+        .iter()
+        .all(|&nb| mol.atom(nb).element.atomic_number() == an0)
+}
+
+/// RDKit strict definition excludes C–N/O single bonds when C carries a pi-bond to
+/// O, N, or S.  Covers amide C(=O)–N, ester C(=O)–O, guanidine/amidine C(=N)–N,
+/// thioamide/thiourea C(=S)–N.  Ketone C(=O)–C bonds are NOT excluded.
+fn is_carbonyl_hetero_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
     let an_a = mol.atom(a).element.atomic_number();
     let an_b = mol.atom(b).element.atomic_number();
     let c_idx = match (an_a, an_b) {
-        (6, 7) => a,
-        (7, 6) => b,
+        (6, 7) | (6, 8) => a, // C–N or C–O
+        (7, 6) | (8, 6) => b, // N–C or O–C
         _ => return false,
     };
-    has_double_bond_to(mol, c_idx, 8)
+    has_double_bond_to(mol, c_idx, 8)   // C=O  (amide / ester)
+        || has_double_bond_to(mol, c_idx, 7)  // C=N  (guanidine / amidine)
+        || has_double_bond_to(mol, c_idx, 16) // C=S  (thioamide / thiourea)
 }
 
 // ---------------------------------------------------------------------------
@@ -595,17 +635,22 @@ fn tpsa_nitrogen(
             } else {
                 // Aziridine (3-membered ring) N bonded to external P or S → 3.01.
                 // Larger ring N bonded to external P, or acyclic N → 3.24.
-                let ring_nbs: Vec<_> = mol.neighbors(idx)
+                let ring_nbs: Vec<_> = mol
+                    .neighbors(idx)
                     .filter(|(_, b)| ring_bonds.contains(b))
                     .map(|(nb, _)| nb)
                     .collect();
-                let in_3ring = ring_nbs.len() == 2
-                    && mol.bond_between(ring_nbs[0], ring_nbs[1]).is_some();
+                let in_3ring =
+                    ring_nbs.len() == 2 && mol.bond_between(ring_nbs[0], ring_nbs[1]).is_some();
                 let has_external_ps = mol.neighbors(idx).any(|(nb, bidx)| {
                     let an = mol.atom(nb).element.atomic_number();
                     (an == 15 || an == 16) && !ring_bonds.contains(&bidx)
                 });
-                if in_3ring && has_external_ps { 3.01 } else { 3.24 }
+                if in_3ring && has_external_ps {
+                    3.01
+                } else {
+                    3.24
+                }
             }
         }
     }
@@ -651,7 +696,11 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             // S=O: if S also has N=S double bond (sulfonimidyl) → 17.07; else S handles it → 0.0
             Some((16, _)) => {
                 let s_idx = dbl_nb_pair.unwrap().0;
-                if has_double_bond_to(mol, s_idx, 7) { 17.07 } else { 0.0 }
+                if has_double_bond_to(mol, s_idx, 7) {
+                    17.07
+                } else {
+                    0.0
+                }
             }
             Some(_) => 0.0,
             None => {
@@ -693,7 +742,11 @@ fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             }
             1 => {
                 // sulfonimidyl N=S(=O): treated as sulfonyl-like by RDKit → 8.38
-                if has_double_bond_to(mol, idx, 7) { 8.38 } else { 36.28 }
+                if has_double_bond_to(mol, idx, 7) {
+                    8.38
+                } else {
+                    36.28
+                }
             }
             _ => 42.52,
         }
@@ -1376,25 +1429,35 @@ pub fn num_aliphatic_rings(mol: &Molecule) -> usize {
         .count()
 }
 
-/// Number of saturated (all sp3) rings.
+/// Number of saturated rings.
 ///
-/// A ring is saturated when every atom has no double or triple bonds to
-/// neighbors (regardless of aromaticity flag).
+/// A ring is saturated when every *ring bond* is a single bond (no double, triple,
+/// or aromatic bonds within the ring).  Exocyclic double bonds (e.g. the C=O in
+/// piperidinone) are ignored — matching RDKit `CalcNumSaturatedRings`.
 pub fn num_saturated_rings(mol: &Molecule) -> usize {
-    find_sssr(mol)
-        .rings()
+    let sssr = find_sssr(mol);
+    let rings = sssr.rings();
+    rings
         .iter()
-        .filter(|ring| {
-            ring.iter().all(|&idx| {
-                mol.neighbors(idx).all(|(_, bidx)| {
-                    !matches!(
-                        mol.bond(bidx).order,
-                        BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic
-                    )
-                })
-            })
-        })
+        .filter(|ring| is_ring_saturated(mol, ring))
         .count()
+}
+
+/// Returns true if all bonds *within* the ring are single bonds (non-aromatic, non-double).
+fn is_ring_saturated(mol: &Molecule, ring: &[AtomIdx]) -> bool {
+    let n = ring.len();
+    (0..n).all(|i| {
+        let a = ring[i];
+        let b = ring[(i + 1) % n];
+        mol.bond_between(a, b)
+            .map(|(bidx, _)| {
+                !matches!(
+                    mol.bond(bidx).order,
+                    BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic
+                )
+            })
+            .unwrap_or(true)
+    })
 }
 
 /// Number of aromatic rings containing at least one heteroatom (N, O, S, P, …).
@@ -1432,26 +1495,21 @@ pub fn num_aliphatic_heterocycles(mol: &Molecule) -> usize {
         .count()
 }
 
-/// Number of fully saturated rings (no unsaturated bonds) containing at least one heteroatom.
+/// Number of saturated rings (all ring bonds single) containing at least one heteroatom.
 ///
-/// Examples: piperidine (1), oxetane (1), azetidine (1).
-/// A ring with any double, triple, or aromatic bond is not saturated.
+/// Exocyclic double bonds are ignored — matching RDKit `CalcNumSaturatedHeterocycles`.
+/// Examples: piperidine (1), oxetane (1), piperidinone (1, because ring bonds are all single).
 pub fn num_saturated_heterocycles(mol: &Molecule) -> usize {
-    find_sssr(mol)
-        .rings()
+    let sssr = find_sssr(mol);
+    let rings = sssr.rings();
+    rings
         .iter()
         .filter(|ring| {
-            ring.iter().all(|&idx| {
-                mol.neighbors(idx).all(|(_, bidx)| {
-                    !matches!(
-                        mol.bond(bidx).order,
-                        BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic
-                    )
+            is_ring_saturated(mol, ring)
+                && ring.iter().any(|&idx| {
+                    let an = mol.atom(idx).element.atomic_number();
+                    an != 6 && an != 1
                 })
-            }) && ring.iter().any(|&idx| {
-                let an = mol.atom(idx).element.atomic_number();
-                an != 6 && an != 1
-            })
         })
         .count()
 }
@@ -2665,23 +2723,30 @@ pub fn num_hydrogens(mol: &Molecule) -> usize {
 ///
 /// Identifies carbonyl carbons (C=O) connected to nitrogen atoms.
 /// Counts C(=O)-N linkages (primary amides, secondary amides, etc.).
+/// Count amide bonds: individual N–C(=O) single bonds where N is non-aromatic.
+///
+/// Counts per bond (not per C=O carbon), so urea N–C(=O)–N contributes 2.
+/// Aromatic N (e.g. in uracil rings) is excluded — matching RDKit `CalcNumAmideBonds`.
 pub fn num_amide_bonds(mol: &Molecule) -> usize {
-    let mut count = 0;
-    for (idx, atom) in mol.atoms() {
-        if atom.element.atomic_number() != 6 {
-            continue;
-        }
-        if !has_double_bond_to(mol, idx, 8) {
-            continue;
-        }
-        if mol
-            .neighbors(idx)
-            .any(|(nb, _)| mol.atom(nb).element.atomic_number() == 7)
-        {
-            count += 1;
-        }
-    }
-    count
+    mol.bonds()
+        .filter(|(_, bond)| {
+            let is_single = matches!(
+                bond.order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down
+            );
+            if !is_single {
+                return false;
+            }
+            let an_a = mol.atom(bond.atom1).element.atomic_number();
+            let an_b = mol.atom(bond.atom2).element.atomic_number();
+            let (c_idx, n_idx) = match (an_a, an_b) {
+                (6, 7) => (bond.atom1, bond.atom2),
+                (7, 6) => (bond.atom2, bond.atom1),
+                _ => return false,
+            };
+            !mol.atom(n_idx).aromatic && has_double_bond_to(mol, c_idx, 8)
+        })
+        .count()
 }
 
 /// Count ester C(=O)-O bonds in the molecule.
@@ -3291,11 +3356,10 @@ mod tests {
     #[test]
     fn test_rot_aspirin() {
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
-        // Rotatable: CH3-C(=O), C(=O)-O (ester oxygen), O-aryl-C
-        // Non-rotatable: ring bonds, C=O double bonds, terminal CH3 (degree 1)
-        // Expected: 3
+        // RDKit strict=True (default): ester C(=O)–O bond is excluded (carbonyl hetero bond).
+        // Counted: O–Ar, Ar–C(=O)COOH (2 bonds).  CH3 terminal, carboxyl OH terminal, ring bonds excluded.
         let r = rotatable_bond_count(&m);
-        assert_eq!(r, 3, "aspirin rotatable bonds = {r}");
+        assert_eq!(r, 2, "aspirin rotatable bonds = {r}");
     }
 
     // -- Test: alkyne adjacent bond excluded ---------------------------------
@@ -4155,9 +4219,9 @@ mod tests {
 
     #[test]
     fn test_num_amide_bonds_urea() {
-        // N-C(=O)-N: one amide bond (C=O-N)
+        // N-C(=O)-N: two N–C(=O) bonds (RDKit counts per bond, not per C=O carbon)
         let m = mol("NC(=O)N");
-        assert_eq!(num_amide_bonds(&m), 1);
+        assert_eq!(num_amide_bonds(&m), 2);
     }
 
     #[test]
