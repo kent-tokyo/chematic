@@ -1,0 +1,11 @@
+# RDKit #9368: BRICS / retrosynthetic fragment extraction near E/Z bonds must
+# never panic. Stereo preservation is best-effort.
+# Expected behavior: never_panic
+CC(=O)O/C=C/c1ccccc1     cinnamyl_acetate_E
+CC(=O)O/C=C\c1ccccc1     cinnamyl_acetate_Z
+O=C(/C=C/c1ccccc1)O      trans_cinnamic_acid
+O=C(/C=C\c1ccccc1)O      cis_cinnamic_acid
+C(/C=C/C(=O)O)Oc1ccccc1  ez_ether_acid
+CC(/C=C/c1ccccc1)OC(=O)C  ez_ester
+c1ccc(/C=C/C(=O)c2ccccc2)cc1  chalcone_E
+c1ccc(/C=C\C(=O)c2ccccc2)cc1  chalcone_Z

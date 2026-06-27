@@ -1,0 +1,14 @@
+# RDKit #8759: canonical SMILES oscillation — same molecule gives different canonical strings
+# on successive applications of MolToSmiles(). chematic must be idempotent.
+# Expected behavior: idempotent
+[C@@H]1(F)CCCC1  (R)-fluorocyclopentane
+[C@H]1(F)CCCC1   (S)-fluorocyclopentane
+[C@@H]1(O)CCCO1  (R)-tetrahydrofurfuryl-alcohol
+[C@@H]1([C@@H](O)CO)CCCO1  bicyclic_stereo_1
+[C@H]1([C@@H](O)CO)CCCO1   bicyclic_stereo_2
+C(/C=C/C)=C/C    (E,E)-hexa-2,4-diene
+C(/C=C\C)=C/C    (E,Z)-hexa-2,4-diene
+F/C=C(/F)Cl      Z-1-chloro-1,2-difluoroethylene
+[C@@H]1(CC[C@H]2CCCC[C@@H]12)O  trans-decalin-ol
+[C@H]1(CC[C@H]2CCCC[C@@H]12)O   cis-decalin-ol
+OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O  D-glucose
