@@ -401,6 +401,20 @@ pub fn list_tools() -> Value {
                 },
                 "required": ["smiles"]
             }
+        },
+        {
+            "name": "molecule_context_pack",
+            "description": "Assemble a rich molecular context for LLM/RAG use. Returns identifiers, physicochemical properties, drug-likeness flags, ADMET profile, structural alerts, and MolJSON representation in a single JSON object.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string" },
+                    "format": { "type": "string",
+                                "enum": ["json", "markdown", "prompt"],
+                                "description": "Output format: json (default), markdown (for LLM prompts), prompt (compact one-liner)" }
+                },
+                "required": ["smiles"]
+            }
         }
     ]})
 }
@@ -428,6 +442,7 @@ pub fn call_tool(name: &str, args: &Value) -> Result<Value, String> {
         "smiles_to_moljson" => tool_smiles_to_moljson(args),
         "moljson_to_smiles" => tool_moljson_to_smiles(args),
         "representation_router" => tool_representation_router(args),
+        "molecule_context_pack" => tool_molecule_context_pack(args),
         _ => Err(format!("Unknown tool: {name}")),
     }
 }
@@ -841,6 +856,104 @@ fn tool_representation_router(args: &Value) -> Result<Value, String> {
     })))
 }
 
+fn tool_molecule_context_pack(args: &Value) -> Result<Value, String> {
+    use chematic_chem::{
+        brenk_matches, brenk_passes, exact_mass, hba_count, hbd_count, heavy_atom_count,
+        lipinski_passes, pains_matches, pains_passes, qed, rotatable_bond_count, sa_score,
+    };
+
+    let smiles = get_str(args, "smiles")?;
+    let format = args
+        .get("format")
+        .and_then(|v| v.as_str())
+        .unwrap_or("json");
+    let mol = parse_mol(smiles)?;
+    let mw = round2(molecular_weight(&mol));
+    let logp = round2(logp_crippen(&mol));
+    let tp = round2(tpsa(&mol));
+    let hbd = hbd_count(&mol);
+    let hba = hba_count(&mol);
+    let rb = rotatable_bond_count(&mol);
+    let hac = heavy_atom_count(&mol);
+    let q = round3(qed(&mol));
+    let sa = round2(sa_score(&mol));
+    let em = round3(exact_mass(&mol) as f64);
+    let lip = lipinski_passes(&mol);
+    let pains_ok = pains_passes(&mol);
+    let brenk_ok = brenk_passes(&mol);
+    let pains_list = pains_matches(&mol);
+    let brenk_list = brenk_matches(&mol);
+    let inchi_str = inchi(&mol);
+    let moljson_str = write_moljson(&mol);
+    let canonical = chematic_smiles::canonical_smiles(&mol);
+
+    match format {
+        "markdown" => {
+            let alert_str = if pains_list.is_empty() && brenk_list.is_empty() {
+                "none".to_owned()
+            } else {
+                let mut parts = Vec::new();
+                if !pains_list.is_empty() {
+                    parts.push(format!("PAINS: {}", pains_list.join(", ")));
+                }
+                if !brenk_list.is_empty() {
+                    parts.push(format!("Brenk: {}", brenk_list.join(", ")));
+                }
+                parts.join("; ")
+            };
+            let admet = admet_profile(&mol);
+            let md = format!(
+                "## Molecule\n- **SMILES**: {canonical}\n- **MW**: {mw} Da  ExactMass: {em}\n\
+                 ## Properties\n- LogP: {logp}, TPSA: {tp} Å², HBD: {hbd}, HBA: {hba}\n\
+                 - RotBonds: {rb}, HAC: {hac}, QED: {q}, SA: {sa}\n\
+                 ## Drug-Likeness\n- Lipinski: {lip}, PAINS: {pains_ok}, Brenk: {brenk_ok}\n\
+                 - Alerts: {alert_str}\n\
+                 ## ADMET\n- BBB passes: {bbb}, Caco-2: {caco2:.2}, CYP3A4 risk: {cyp:.2}\n\
+                 ## MolJSON\n```json\n{moljson_str}\n```",
+                bbb = admet.bbb_passes,
+                caco2 = admet.caco2,
+                cyp = admet.cyp3a4_risk,
+            );
+            Ok(content(&json!({ "format": "markdown", "context": md })))
+        }
+        "prompt" => {
+            let flags = if lip { "Lipinski✓" } else { "Lipinski✗" };
+            let prompt = format!(
+                "{canonical} | MW={mw} | LogP={logp} | TPSA={tp} | HBD={hbd} HBA={hba} | QED={q} | {flags}"
+            );
+            Ok(content(&json!({ "format": "prompt", "context": prompt })))
+        }
+        _ => {
+            // json (default)
+            Ok(content(&json!({
+                "identifiers": {
+                    "smiles": canonical,
+                    "inchi": inchi_str,
+                    "mw": mw,
+                    "exact_mass": em,
+                },
+                "properties": {
+                    "logp": logp, "tpsa": tp,
+                    "hbd": hbd, "hba": hba,
+                    "rotatable_bonds": rb, "heavy_atoms": hac,
+                    "qed": q, "sa_score": sa,
+                },
+                "drug_likeness": {
+                    "lipinski_passes": lip,
+                    "pains_passes": pains_ok,
+                    "brenk_passes": brenk_ok,
+                    "pains_alerts": pains_list,
+                    "brenk_alerts": brenk_list,
+                },
+                "representations": {
+                    "canonical_smiles": canonical,
+                    "moljson": moljson_str,
+                }
+            })))
+        }
+    }
+}
+
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -978,7 +1091,7 @@ mod tests {
     fn test_list_tools_count() {
         let tools = list_tools();
         let count = tools["tools"].as_array().unwrap().len();
-        assert_eq!(count, 19);
+        assert_eq!(count, 20);
     }
 
     #[test]
