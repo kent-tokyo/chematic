@@ -23,7 +23,7 @@ members = [
 resolver = "2"
 
 [profile.release]
-opt-level = "z"      # optimize for size (vs speed)
+opt-level = 3        # optimize for speed (was "z" for size)
 lto = true           # whole-program link-time optimization
 codegen-units = 1    # required for LTO; also enables more cross-crate inlining
 

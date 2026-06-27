@@ -550,11 +550,15 @@ fn tpsa_nitrogen(
                         )
                     });
             if has_oxo && has_o_minus {
-                43.14 // nitro/N-oxide: N+(=O)[O-]
+                43.14 // nitro: N+(=O)[O-]
             } else if has_double_bond_to(mol, idx, 7) {
                 14.10 // azide central N+: R-N=[N+]=[N-]
+            } else if has_double_bond_to(mol, idx, 6) {
+                3.01 // nitrone: C=N+(R)-O- (exocyclic double bond to C)
             } else {
-                3.01 // quaternary ammonium / nitrone N+ (RDKit-calibrated)
+                // Quaternary ammonium N+ (no lone pair) and ionic N-oxide [N+][O-]
+                // have no polar surface contribution (Ertl 2000).
+                0.00
             }
         } else if h >= 2 {
             26.02
@@ -3385,6 +3389,34 @@ mod tests {
         let m = mol("CC(=O)Oc1ccccc1C(=O)O");
         let t = tpsa(&m);
         assert!(t > 0.0, "aspirin TPSA = {t}");
+    }
+
+    // Quaternary ammonium N+ has no lone pair → TPSA contribution = 0
+    #[test]
+    fn test_tpsa_quaternary_n_zero() {
+        // Trimethylphenylammonium: N+ with no lone pair → 0.00
+        let m = mol("c1csc([N+]2(C3CCCCC3)CCCCC2)c1");
+        let t = tpsa(&m);
+        // N+ contributes 0; thiophene S contributes ~38.8 → total ~38.8
+        assert!(t < 50.0, "N+ quaternary TPSA should be small, got {t}");
+        // Specifically, N+ should NOT add 3.01 on top
+        let m2 = mol("c1ccsc1");
+        let t_base = tpsa(&m2); // thiophene TPSA without N+
+        assert!(
+            (t - t_base).abs() < 1.0,
+            "N+ adds ~0 to TPSA, got delta {}",
+            t - t_base
+        );
+    }
+
+    // Ionic N-oxide [N+]-[O-] ring: O- accounts for TPSA, N+ contributes 0
+    #[test]
+    fn test_tpsa_n_oxide_ionic() {
+        // [N+]1([O-])CCOCC1 — morpholine N-oxide
+        // O- and ring O contribute; N+ should be 0
+        let m = mol("O=C1CC[N+]2([O-])CCCC[C@@H]12"); // representative N-oxide ring
+        let t = tpsa(&m);
+        assert!(t > 0.0 && t < 150.0, "N-oxide TPSA in range, got {t}");
     }
 
     // -- Fsp3 tests --------------------------------------------------------
