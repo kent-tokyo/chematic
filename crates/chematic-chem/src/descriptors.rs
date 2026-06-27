@@ -508,7 +508,14 @@ fn is_amide_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
 /// Compute the topological polar surface area (Å²) using the Ertl (2000) table.
 ///
 /// Reference: P. Ertl, B. Rohde, P. Selzer, J. Med. Chem. 2000, 43, 3714-3717.
-fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i8) -> f64 {
+fn tpsa_nitrogen(
+    mol: &Molecule,
+    idx: AtomIdx,
+    is_aromatic: bool,
+    h: u8,
+    charge: i8,
+    ring_bonds: &FxHashSet<BondIdx>,
+) -> f64 {
     if is_aromatic {
         let degree = mol.degree(idx);
         if h > 0 {
@@ -547,7 +554,7 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
             } else if has_double_bond_to(mol, idx, 7) {
                 14.10 // azide central N+: R-N=[N+]=[N-]
             } else {
-                3.24 // quaternary ammonium
+                3.01 // quaternary ammonium / nitrone N+ (RDKit-calibrated)
             }
         } else if h >= 2 {
             26.02
@@ -580,7 +587,17 @@ fn tpsa_nitrogen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge:
             {
                 12.36 // imine N=C, nitroso N=O, azo N=N, phosphazene P=N
             } else {
-                3.24
+                // Ring N bonded to P via a non-ring bond → 3.01 (RDKit-calibrated).
+                // Acyclic N bonded to P, or N with P in same ring → 3.24.
+                let n_in_ring = mol.neighbors(idx).any(|(_, b)| ring_bonds.contains(&b));
+                let has_external_p = mol.neighbors(idx).any(|(nb, bidx)| {
+                    mol.atom(nb).element.atomic_number() == 15 && !ring_bonds.contains(&bidx)
+                });
+                if n_in_ring && has_external_p {
+                    3.01
+                } else {
+                    3.24
+                }
             }
         }
     }
@@ -665,13 +682,15 @@ fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
     }
 }
 
-fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx) -> f64 {
+fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
     if has_double_bond_to(mol, idx, 8) {
         26.88 // phosphate/phosphonate: P=O
     } else if has_double_bond_to(mol, idx, 7) {
         9.81 // phosphazene: P=N (cyclic or linear)
+    } else if h > 0 {
+        34.14 // phosphine P-H (secondary/primary phosphine)
     } else {
-        34.14
+        13.59 // phosphite/trivalent P, no H (RDKit-calibrated)
     }
 }
 
@@ -691,6 +710,7 @@ pub fn tpsa(mol: &Molecule) -> f64 {
     // apply_aromaticity is idempotent for fully-aromatic molecules.
     let mol_arom = chematic_perception::apply_aromaticity(mol);
     let mol: &Molecule = &mol_arom;
+    let ring_bonds = ring_bond_indices(mol);
 
     let mut psa = 0.0f64;
     for (idx, atom) in mol.atoms() {
@@ -698,10 +718,10 @@ pub fn tpsa(mol: &Molecule) -> f64 {
         let is_aromatic = atom.aromatic;
         let h = implicit_hcount(mol, idx);
         let contribution = match an {
-            7 => tpsa_nitrogen(mol, idx, is_aromatic, h, atom.charge),
+            7 => tpsa_nitrogen(mol, idx, is_aromatic, h, atom.charge, &ring_bonds),
             8 => tpsa_oxygen(mol, idx, is_aromatic, h, atom.charge),
             16 => tpsa_sulfur(mol, idx, is_aromatic, h, atom.charge),
-            15 if !is_aromatic => tpsa_phosphorus(mol, idx),
+            15 if !is_aromatic => tpsa_phosphorus(mol, idx, h),
             _ => 0.0,
         };
         psa += contribution;
@@ -1937,16 +1957,17 @@ pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
     // Apply aromaticity for consistent results with tpsa() (Kekulé-form parity).
     let mol_arom = chematic_perception::apply_aromaticity(mol);
     let mol = &mol_arom;
+    let ring_bonds = ring_bond_indices(mol);
     let n = mol.atom_count();
     let mut out = vec![0.0f64; n];
     for (idx, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
         let h = implicit_hcount(mol, idx);
         out[idx.0 as usize] = match an {
-            7 => tpsa_nitrogen(mol, idx, atom.aromatic, h, atom.charge),
+            7 => tpsa_nitrogen(mol, idx, atom.aromatic, h, atom.charge, &ring_bonds),
             8 => tpsa_oxygen(mol, idx, atom.aromatic, h, atom.charge),
             16 => tpsa_sulfur(mol, idx, atom.aromatic, h, atom.charge),
-            15 if !atom.aromatic => tpsa_phosphorus(mol, idx),
+            15 if !atom.aromatic => tpsa_phosphorus(mol, idx, h),
             _ => 0.0,
         };
     }
