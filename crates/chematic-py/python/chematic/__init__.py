@@ -16,6 +16,45 @@ from .chematic import (
 )
 
 
+# Task → representation mapping (arXiv 2026: CML/MolJSON outperform SMILES on structural tasks)
+_TASK_REPR = {
+    "structural_reasoning": "moljson",
+    "shortest_path":        "moljson",
+    "graph_reasoning":      "moljson",
+    "identification":       "inchi",
+    "exact_match":          "inchi",
+    "property_prediction":  "canonical_smiles",
+    "generation":           "canonical_smiles",
+    "editing":              "cml",
+    "default":              "canonical_smiles",
+}
+
+
+def best_representation(task: str = "default") -> str:
+    """Return the recommended molecular text format for an LLM task.
+
+    Based on arXiv 2026 "Rethinking Molecular Text Representations for LLMs":
+    CML and MolJSON outperform SMILES on structural reasoning tasks; InChI is
+    best for exact identification.
+
+    Args:
+        task: one of ``structural_reasoning``, ``shortest_path``,
+              ``graph_reasoning``, ``identification``, ``exact_match``,
+              ``property_prediction``, ``generation``, ``editing``,
+              ``default``
+
+    Returns:
+        format string — pass directly to ``mol.to_llm_text(format)``
+
+    Example::
+
+        fmt = chematic.best_representation("structural_reasoning")
+        # → "moljson"
+        text = mol.to_llm_text(fmt)
+    """
+    return _TASK_REPR.get(task, "canonical_smiles")
+
+
 def from_smiles_list(smiles, /, *, skip_invalid=True):
     """Parse a list of SMILES strings into Mol objects.
 
