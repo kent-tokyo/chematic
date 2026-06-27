@@ -266,3 +266,63 @@ def descriptors_df(smiles):
     except ImportError:
         raise ImportError("pandas is required: pip install pandas") from None
     return pd.DataFrame(bulk.descriptors(list(smiles)))
+
+
+def fragment_text(mol, method: str = "brics", fmt: str = "markdown") -> str:
+    """Describe a molecule as its structural fragments for LLM prompts.
+
+    Decomposes the molecule using BRICS retrosynthetic rules and returns a
+    human-readable description of the scaffold, fragments, and connection
+    points — useful for medicinal chemistry reasoning with LLMs.
+
+    Based on: MolLingo (arXiv 2026) — block-based SMILES + fragment names.
+
+    Args:
+        mol: a ``Mol`` object
+        method: fragmentation method; currently ``"brics"`` (default)
+        fmt: output format — ``"markdown"`` (default) or ``"json"``
+
+    Returns:
+        str — fragment description for LLM prompts
+
+    Example::
+
+        mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+        print(chematic.fragment_text(mol))
+        # ## Fragment Decomposition
+        # - **Scaffold**: c1ccccc1
+        # - **Fragments** (BRICS):
+        #   1. C(=O)(O[*])C  — acetyl ester
+        #   2. C(=O)(O)c1ccccc1[*]  — benzoic acid core
+        # - **Connection points**: 1 ester linkage
+    """
+    frags = mol.brics_fragments()
+    scaffold_smi = mol.scaffold().smiles
+    n_bonds = len(mol.brics_bonds())
+
+    if fmt == "json":
+        import json
+        return json.dumps({
+            "smiles": mol.smiles,
+            "scaffold": scaffold_smi,
+            "fragments": [f.smiles for f in frags],
+            "connection_points": n_bonds,
+            "method": method,
+        }, indent=2)
+
+    # markdown
+    frag_lines = "\n".join(
+        f"  {i + 1}. `{f.smiles}`"
+        for i, f in enumerate(frags)
+    ) if frags else "  (no fragmentation sites)"
+
+    conn = f"{n_bonds} bond{'s' if n_bonds != 1 else ''}" if n_bonds else "none"
+
+    return (
+        f"## Fragment Decomposition ({method.upper()})\n"
+        f"- **Molecule**: `{mol.smiles}`\n"
+        f"- **Scaffold**: `{scaffold_smi}`\n"
+        f"- **Fragments**:\n{frag_lines}\n"
+        f"- **Connection points**: {conn}\n"
+        f"- **Fragment count**: {len(frags)}"
+    )

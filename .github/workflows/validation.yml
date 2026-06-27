@@ -1,0 +1,62 @@
+name: Validation Dashboard
+
+on:
+  workflow_dispatch:
+    inputs:
+      corpus_url:
+        description: "URL to SMILES CSV corpus (column: smiles)"
+        required: false
+        default: ""
+  schedule:
+    # Weekly on Tuesday 04:00 UTC
+    - cron: '0 4 * * 2'
+
+jobs:
+  rdkit-parity:
+    name: RDKit Parity Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install chematic + RDKit
+        run: pip install chematic rdkit-pypi
+
+      - name: Download SMILES corpus
+        env:
+          CORPUS_URL: ${{ github.event.inputs.corpus_url }}
+        run: |
+          if [ -n "$CORPUS_URL" ]; then
+            curl -fL "$CORPUS_URL" -o bench_corpus.csv || touch bench_corpus.csv
+          else
+            echo "No corpus_url provided — skipping benchmark (trigger with corpus_url input)"
+            touch bench_corpus.csv
+          fi
+
+      - name: Run benchmark
+        run: |
+          if [ -s bench_corpus.csv ]; then
+            mkdir -p validation/results
+            python3 scripts/bench5k.py bench_corpus.csv \
+              --json validation/results/latest.json
+          else
+            echo "No corpus available, skipping benchmark"
+          fi
+
+      - name: Generate validation.md
+        if: hashFiles('validation/results/latest.json') != ''
+        run: python3 scripts/gen_validation_report.py validation/results/latest.json
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results
+          path: |
+            validation/results/latest.json
+            docs/validation.md
+          retention-days: 90
