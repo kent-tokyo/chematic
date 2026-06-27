@@ -3238,6 +3238,36 @@ pub fn to_cml(mol: &MolHandle) -> String {
     chematic_mol::write_cml(&mol.inner, Some(&coords))
 }
 
+/// Parse a MolJSON string into a `MolHandle`.
+///
+/// MolJSON is a JSON-based molecular representation designed for LLM
+/// (large language model) compatibility.  Returns a JS error on invalid input.
+#[wasm_bindgen]
+pub fn mol_from_moljson(json: &str) -> Result<MolHandle, JsValue> {
+    if json.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("MolJSON input too large"));
+    }
+    let mol = chematic_mol::parse_moljson(json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
+}
+
+/// Serialise a `MolHandle` to a MolJSON string (pretty-printed).
+///
+/// Atom IDs are assigned as `"a1"`, `"a2"`, … in molecule atom order.
+/// The `hydrogens` field reflects computed implicit H count.
+#[wasm_bindgen]
+pub fn to_moljson(mol: &MolHandle) -> String {
+    chematic_mol::write_moljson(&mol.inner)
+}
+
 /// Parse a ChemDraw XML (CDXML) string into a `MolHandle`.
 ///
 /// Only the first molecular fragment in the document is returned.
