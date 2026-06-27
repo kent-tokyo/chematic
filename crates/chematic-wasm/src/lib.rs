@@ -3270,6 +3270,22 @@ pub fn to_moljson(mol: &MolHandle) -> String {
 
 /// Parse a ChemDraw XML (CDXML) string into a `MolHandle`.
 ///
+/// Compute an HDF fingerprint and return it as a JSON array of float32 values.
+///
+/// Returns a unit-norm vector of length `dim` as a JSON number array.
+/// Use cosine dot product for similarity: `a · b = sum(a[i]*b[i])`.
+///
+/// ```js
+/// const fp = JSON.parse(hdf_json(mol));        // float[] of length 1024
+/// const sim = fp.reduce((s, v, i) => s + v * fp2[i], 0);  // cosine similarity
+/// ```
+#[wasm_bindgen]
+pub fn hdf_json(mol: &MolHandle, dim: usize, radius: usize, seed: u64) -> String {
+    let config = chematic_fp::HdfConfig { dim, radius, seed };
+    let fp = chematic_fp::hdf(&mol.inner, &config);
+    serde_json::to_string(&fp.0).unwrap_or_default()
+}
+
 /// Only the first molecular fragment in the document is returned.
 /// Returns a JS error if the document cannot be parsed.
 #[wasm_bindgen]

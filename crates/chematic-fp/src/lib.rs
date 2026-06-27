@@ -19,6 +19,7 @@ pub mod bulk;
 pub mod ecfp;
 pub mod erg;
 pub mod fcfp;
+pub mod hdf;
 pub mod layered;
 pub mod lsh;
 pub mod maccs;
@@ -40,6 +41,7 @@ pub use erg::{
     erg_extended, erg_vec, erg_with_config, tanimoto_erg, tanimoto_erg_vec,
 };
 pub use fcfp::{fcfp, fcfp4, fcfp6, tanimoto_fcfp4};
+pub use hdf::{HdfConfig, HdfFp, cosine_hdf, hdf, hdf_default};
 pub use layered::{layered_fp, layered_fp_by_layer, tanimoto_layered};
 pub use lsh::MhfpLshIndex;
 pub use maccs::maccs;
