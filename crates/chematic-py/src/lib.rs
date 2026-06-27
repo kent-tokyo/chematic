@@ -1345,6 +1345,49 @@ impl Mol {
         chematic_mol::write_moljson(&self.inner)
     }
 
+    /// Return the molecule in a text format suited for LLM prompts.
+    ///
+    /// Based on arXiv 2026 "Rethinking Molecular Text Representations for LLMs":
+    /// CML and MolJSON outperform SMILES on structural reasoning tasks.
+    ///
+    /// Args:
+    ///     format: one of ``"canonical_smiles"``, ``"smiles"``, ``"inchi"``,
+    ///             ``"inchikey"``, ``"moljson"``, ``"cml"``, ``"markdown"``
+    ///
+    ///     # Task-aware: use chematic.best_representation(task) to pick format
+    ///     fmt = chematic.best_representation("structural_reasoning")  # → "moljson"
+    ///     text = mol.to_llm_text(fmt)
+    ///
+    ///     # Direct format selection:
+    ///     mol.to_llm_text("moljson")
+    ///     mol.to_llm_text("inchi")
+    ///     mol.to_llm_text("markdown")   # multi-field summary
+    fn to_llm_text(&self, format: &str) -> PyResult<String> {
+        match format {
+            "canonical_smiles" | "smiles" => Ok(chematic_smiles::canonical_smiles(&self.inner)),
+            "inchi" => Ok(chematic_inchi::inchi(&self.inner)),
+            "inchikey" => {
+                let i = chematic_inchi::inchi(&self.inner);
+                Ok(chematic_inchi::inchi_key(&i))
+            }
+            "moljson" => Ok(chematic_mol::write_moljson(&self.inner)),
+            "cml" => Ok(chematic_mol::write_cml(&self.inner, None)),
+            "markdown" => {
+                let smi = chematic_smiles::canonical_smiles(&self.inner);
+                let inchi = chematic_inchi::inchi(&self.inner);
+                let mw = chematic_chem::molecular_weight(&self.inner);
+                let hac = chematic_chem::heavy_atom_count(&self.inner);
+                Ok(format!(
+                    "**SMILES**: {smi}\n**InChI**: {inchi}\n**MW**: {mw:.2} Da\n**Heavy atoms**: {hac}\n**MolJSON**:\n{}",
+                    chematic_mol::write_moljson(&self.inner)
+                ))
+            }
+            _ => Err(PyValueError::new_err(format!(
+                "Unknown format '{format}'. Choose: canonical_smiles, inchi, inchikey, moljson, cml, markdown"
+            ))),
+        }
+    }
+
     /// Export the 2D structure as a PDF document (bytes).
     ///
     ///     pdf_bytes = mol.to_pdf()

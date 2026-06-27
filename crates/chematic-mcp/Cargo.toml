@@ -23,5 +23,6 @@ chematic-chem       = { path = "../chematic-chem",       version = "0.4.19", fea
 chematic-fp         = { path = "../chematic-fp",         version = "0.4.19" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.19" }
 chematic-3d         = { path = "../chematic-3d",         version = "0.4.19" }
+chematic-inchi      = { path = "../chematic-inchi",      version = "0.4.19" }
 chematic-mol        = { path = "../chematic-mol",        version = "0.4.19" }
 chematic-perception = { path = "../chematic-perception", version = "0.4.19" }

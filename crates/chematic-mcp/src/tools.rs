@@ -7,7 +7,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use chematic_3d::{generate_and_minimize_dreiding, write_xyz};
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
 use chematic_fp::{BitVec2048, ecfp4, tanimoto_ecfp4};
-use chematic_mol::{parse_moljson, write_moljson};
+use chematic_inchi::inchi;
+use chematic_mol::{parse_moljson, write_cml, write_moljson};
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, McsConfig, find_matches,
     find_mcs_with_config, parse_smarts,
@@ -386,6 +387,20 @@ pub fn list_tools() -> Value {
                 },
                 "required": ["json"]
             }
+        },
+        {
+            "name": "representation_router",
+            "description": "Convert SMILES to the best molecular text representation for an LLM task. Based on arXiv 2026: CML/MolJSON outperform SMILES on structural reasoning; InChI is best for identification.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string" },
+                    "task":   { "type": "string",
+                                "enum": ["structural_reasoning","shortest_path","identification","property_prediction","generation","editing","default"],
+                                "description": "LLM task type — omit to use default (canonical_smiles)" }
+                },
+                "required": ["smiles"]
+            }
         }
     ]})
 }
@@ -412,6 +427,7 @@ pub fn call_tool(name: &str, args: &Value) -> Result<Value, String> {
         "retrosynthesis" => tool_retrosynthesis(args),
         "smiles_to_moljson" => tool_smiles_to_moljson(args),
         "moljson_to_smiles" => tool_moljson_to_smiles(args),
+        "representation_router" => tool_representation_router(args),
         _ => Err(format!("Unknown tool: {name}")),
     }
 }
@@ -803,6 +819,28 @@ fn tool_moljson_to_smiles(args: &Value) -> Result<Value, String> {
     ))
 }
 
+fn tool_representation_router(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let task = args
+        .get("task")
+        .and_then(|v| v.as_str())
+        .unwrap_or("default");
+    let mol = parse_mol(smiles)?;
+    let (format, repr) = match task {
+        "structural_reasoning" | "shortest_path" | "graph_reasoning" => {
+            ("moljson", write_moljson(&mol))
+        }
+        "identification" | "exact_match" => ("inchi", inchi(&mol)),
+        "editing" => ("cml", write_cml(&mol, None)),
+        _ => ("canonical_smiles", chematic_smiles::canonical_smiles(&mol)),
+    };
+    Ok(content(&json!({
+        "task": task,
+        "format": format,
+        "representation": repr
+    })))
+}
+
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -940,7 +978,7 @@ mod tests {
     fn test_list_tools_count() {
         let tools = list_tools();
         let count = tools["tools"].as_array().unwrap().len();
-        assert_eq!(count, 18);
+        assert_eq!(count, 19);
     }
 
     #[test]
