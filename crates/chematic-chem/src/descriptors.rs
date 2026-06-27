@@ -518,6 +518,7 @@ fn tpsa_nitrogen(
 ) -> f64 {
     if is_aromatic {
         let degree = mol.degree(idx);
+
         if h > 0 {
             15.79
         } else if degree >= 3 {
@@ -588,20 +589,23 @@ fn tpsa_nitrogen(
                 || has_double_bond_to(mol, idx, 8)
                 || has_double_bond_to(mol, idx, 7)
                 || has_double_bond_to(mol, idx, 15)
+                || has_double_bond_to(mol, idx, 16)
             {
-                12.36 // imine N=C, nitroso N=O, azo N=N, phosphazene P=N
+                12.36 // imine N=C, nitroso N=O, azo N=N, phosphazene P=N, sulfonimidyl N=S
             } else {
-                // Ring N bonded to P via a non-ring bond → 3.01 (RDKit-calibrated).
-                // Acyclic N bonded to P, or N with P in same ring → 3.24.
-                let n_in_ring = mol.neighbors(idx).any(|(_, b)| ring_bonds.contains(&b));
-                let has_external_p = mol.neighbors(idx).any(|(nb, bidx)| {
-                    mol.atom(nb).element.atomic_number() == 15 && !ring_bonds.contains(&bidx)
+                // Aziridine (3-membered ring) N bonded to external P or S → 3.01.
+                // Larger ring N bonded to external P, or acyclic N → 3.24.
+                let ring_nbs: Vec<_> = mol.neighbors(idx)
+                    .filter(|(_, b)| ring_bonds.contains(b))
+                    .map(|(nb, _)| nb)
+                    .collect();
+                let in_3ring = ring_nbs.len() == 2
+                    && mol.bond_between(ring_nbs[0], ring_nbs[1]).is_some();
+                let has_external_ps = mol.neighbors(idx).any(|(nb, bidx)| {
+                    let an = mol.atom(nb).element.atomic_number();
+                    (an == 15 || an == 16) && !ring_bonds.contains(&bidx)
                 });
-                if n_in_ring && has_external_p {
-                    3.01
-                } else {
-                    3.24
-                }
+                if in_3ring && has_external_ps { 3.01 } else { 3.24 }
             }
         }
     }
@@ -632,9 +636,10 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             });
             return if is_nitro_o_minus { 0.0 } else { 23.06 };
         }
-        let dbl_nb = mol
+        let dbl_nb_pair = mol
             .neighbors(idx)
-            .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double)
+            .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double);
+        let dbl_nb = dbl_nb_pair
             .map(|(nei, _)| (mol.atom(nei).element.atomic_number(), mol.atom(nei).charge));
         match dbl_nb {
             Some((6, _)) => 17.07,
@@ -643,6 +648,11 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             Some((7, _)) => 0.0,
             // Se=O oxygens (seleninic/selenious acid) carry same contribution as C=O
             Some((34, _)) => 17.07,
+            // S=O: if S also has N=S double bond (sulfonimidyl) → 17.07; else S handles it → 0.0
+            Some((16, _)) => {
+                let s_idx = dbl_nb_pair.unwrap().0;
+                if has_double_bond_to(mol, s_idx, 7) { 17.07 } else { 0.0 }
+            }
             Some(_) => 0.0,
             None => {
                 if is_aromatic_oxide_bridge(mol, idx) {
@@ -673,14 +683,18 @@ fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
     } else {
         match count_double_bonds_to(mol, idx, 8) {
             0 => {
-                // thioxo S (C=S, thioketone/thioamide/thiourea) → 32.09; thioether → 25.30
                 if has_double_bond_to(mol, idx, 6) {
-                    32.09
+                    32.09 // thioxo C=S
+                } else if has_double_bond_to(mol, idx, 7) && is_atom_in_ring(mol, idx) {
+                    19.21 // cyclic sulfamidate N=S (sulfoxide-like contribution)
                 } else {
-                    25.30
+                    25.30 // thioether
                 }
             }
-            1 => 36.28,
+            1 => {
+                // sulfonimidyl N=S(=O): treated as sulfonyl-like by RDKit → 8.38
+                if has_double_bond_to(mol, idx, 7) { 8.38 } else { 36.28 }
+            }
             _ => 42.52,
         }
     }
@@ -709,23 +723,33 @@ fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
 /// `Descriptors.TPSA(mol)` excludes S and P; results will differ for molecules
 /// containing these elements.
 pub fn tpsa(mol: &Molecule) -> f64 {
-    // Always apply Hückel aromaticity so that Kekulé-form and mixed-case input
-    // (e.g. indomethacin's indolyl N written uppercase) are correctly typed.
-    // apply_aromaticity is idempotent for fully-aromatic molecules.
+    // Apply aromaticity for Kekulé-form input. For TPSA, nitrogen aromaticity uses
+    // the ORIGINAL mol's flag: apply_aromaticity can false-promote phthalimide N
+    // (making it give 12.89 instead of 12.03). Other elements use mol_arom.
     let mol_arom = chematic_perception::apply_aromaticity(mol);
-    let mol: &Molecule = &mol_arom;
-    let ring_bonds = ring_bond_indices(mol);
+    let ring_bonds = ring_bond_indices(&mol_arom);
 
     let mut psa = 0.0f64;
-    for (idx, atom) in mol.atoms() {
-        let an = atom.element.atomic_number();
-        let is_aromatic = atom.aromatic;
-        let h = implicit_hcount(mol, idx);
+    for (idx, atom_arom) in mol_arom.atoms() {
+        let orig_atom = mol.atom(idx);
+        let an = orig_atom.element.atomic_number();
+        // N: prefer SMILES aromatic flag; other elements: use mol_arom flag.
+        let is_aromatic = if an == 7 {
+            orig_atom.aromatic
+        } else {
+            atom_arom.aromatic
+        };
+        // H count: for N use original mol (before apply_aromaticity changed valence).
+        let h = if an == 7 {
+            implicit_hcount(mol, idx)
+        } else {
+            implicit_hcount(&mol_arom, idx)
+        };
         let contribution = match an {
-            7 => tpsa_nitrogen(mol, idx, is_aromatic, h, atom.charge, &ring_bonds),
-            8 => tpsa_oxygen(mol, idx, is_aromatic, h, atom.charge),
-            16 => tpsa_sulfur(mol, idx, is_aromatic, h, atom.charge),
-            15 if !is_aromatic => tpsa_phosphorus(mol, idx, h),
+            7 => tpsa_nitrogen(mol, idx, is_aromatic, h, orig_atom.charge, &ring_bonds),
+            8 => tpsa_oxygen(&mol_arom, idx, is_aromatic, h, atom_arom.charge),
+            16 => tpsa_sulfur(&mol_arom, idx, is_aromatic, h, atom_arom.charge),
+            15 if !is_aromatic => tpsa_phosphorus(&mol_arom, idx, h),
             _ => 0.0,
         };
         psa += contribution;
@@ -943,8 +967,15 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
             if atom.element.atomic_number() == 1 {
                 return 0.0;
             }
-            // Compute once; reused both in the oxide-bridge check and the H contribution.
-            let h_count = implicit_hcount(mol, idx);
+            // Implicit H from valence rules + explicit H neighbors (e.g. [H], [2H], [3H]).
+            // Explicit isotopic H in the graph contribute 0.0 themselves but their LogP
+            // must be counted via their parent heavy atom (same as regular implicit H).
+            let h_count_impl = implicit_hcount(mol, idx);
+            let h_count_expl = mol
+                .neighbors(idx)
+                .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
+                .count() as u8;
+            let h_count = h_count_impl + h_count_expl;
             // Aromatic oxide bridge: O in a ring bonded to aromatic C AND sp2 C (C=C).
             // RDKit perceives this as [o] type (logp=0.1552); plain SMARTS gives [O](a) (-0.4195).
             let heavy = if atom.element.atomic_number() == 8
@@ -1019,6 +1050,11 @@ fn h_logp_for_parent(
             }) {
                 // [#1]O[#7]: H on O attached to N — oxime / hydroxamic acid
                 0.2142
+            } else if mol.neighbors(parent_idx).any(|(nb, _)| {
+                let an = mol.atom(nb).element.atomic_number();
+                an == 8 || an == 16 // [#1]O[O,S]: peroxide / sulfonic / sulfuric acid OH
+            }) {
+                0.2980
             } else {
                 // H2: [#1]O[CX4,c] — aliphatic and phenolic OH both use -0.2677
                 -0.2677

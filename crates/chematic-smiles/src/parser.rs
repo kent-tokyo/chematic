@@ -271,8 +271,20 @@ impl<'a> Parser<'a> {
                                     });
                                 }
                                 let next_idx = mol.add_atom(next_atom.clone());
-                                let bond = pending_bond
-                                    .unwrap_or_else(|| implicit_bond(mol, current, next_idx));
+                                // `/` and `\` between two aromatic atoms specify geometry of an
+                                // adjacent double bond, not a stereo single bond. Aromatic atoms
+                                // must remain connected by Aromatic bonds so SMARTS `:a` queries
+                                // match correctly (e.g. Crippen `[c](:a)(:a)=[C,N,O]`).
+                                let bond = match pending_bond {
+                                    Some(BondOrder::Up | BondOrder::Down)
+                                        if mol.atom_at(current).aromatic
+                                            && mol.atom_at(next_idx).aromatic =>
+                                    {
+                                        BondOrder::Aromatic
+                                    }
+                                    Some(bo) => bo,
+                                    None => implicit_bond(mol, current, next_idx),
+                                };
                                 mol.add_bond(current, next_idx, bond).map_err(|_| {
                                     SmilesError::InvalidBracketAtom {
                                         detail: "duplicate bond".to_string(),
@@ -927,6 +939,28 @@ mod tests {
             parse("C=1CC-1"),
             Err(SmilesError::ConflictingRingBond { ring_num: 1, .. })
         ));
+    }
+
+    #[test]
+    fn test_stereo_marker_between_aromatic_atoms_stays_aromatic() {
+        // SMILES like `c1\c(O)c(O)\c1=N` use `/`/`\` to specify geometry of an
+        // exocyclic double bond; the ring bonds themselves must remain Aromatic.
+        // Regression: previously these were stored as Down/Up, breaking SMARTS (:a).
+        use chematic_core::BondOrder;
+        let mol = parse(r"N=c1\c(O)c(O)\c1=N").unwrap();
+        let aromatic_ring_bonds: Vec<_> = mol
+            .bonds()
+            .filter(|(_, bond)| {
+                mol.atom(bond.atom1).aromatic
+                    && mol.atom(bond.atom2).aromatic
+                    && bond.order == BondOrder::Aromatic
+            })
+            .collect();
+        assert_eq!(
+            aromatic_ring_bonds.len(),
+            4,
+            "all 4 ring bonds should be Aromatic"
+        );
     }
 
     #[test]

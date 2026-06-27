@@ -31,6 +31,16 @@ Pure Rust · Zero C/C++ · Python · WebAssembly · [Live Demo](https://kent-tok
 All numbers are reproducible — see [benchmark details](https://kent-tokyo.github.io/chematic/benchmark/).  
 WASM sizes: chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
+**Feature maturity at a glance:**
+
+| Feature | Status |
+|---|---|
+| SMILES / SMARTS / fingerprints / descriptors | Stable |
+| 3D conformer generation (DG + MMFF94) | Experimental |
+| pKa / ADMET | Rule-based screening (not for clinical use) |
+| IUPAC name generation | Partial (25+ classes) |
+| Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
+
 ---
 
 ## What you get
@@ -161,8 +171,8 @@ chematic.doctor()
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.23 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
-#   TPSA                  98.1%
-#   LogP (Crippen)        99.7%
+#   TPSA                  99.7%
+#   LogP (Crippen)        100%
 # ...
 ```
 
@@ -226,10 +236,10 @@ than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
 
 | Metric | Result | Corpus |
 |--------|--------|--------|
-| ECFP4 throughput | **3.6 µs/mol** (5–14× vs RDKit) | 5,000 mol |
-| HBA / HBD / aromatic ring count | **100% RDKit agreement** | 4,999 mol |
+| ECFP4 throughput | **3.6 µs/mol** (5–14× vs RDKit) | 4,999-mol ChEMBL subset |
+| HBA / HBD / aromatic ring count | **100% RDKit agreement** | 4,999-mol ChEMBL subset |
 | TPSA | **100%** within ±0.1 Å² | 175-mol drug-like set |
-| TPSA | 93.3% within ±0.1 Å² | 4,999-mol ChEMBL subset |
+| TPSA | **99.7%** within ±0.1 Å² | 4,999-mol ChEMBL subset |
 | WASM bundle | **504 KB** gzip | — |
 
 All numbers are reproducible with the scripts in this repo.  
@@ -263,7 +273,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 | ECFP/FCFP fingerprints (2/4/6)               | **All variants + bitvec**                        | Yes                 | Yes            | Yes               |
 | AtomPair / Torsion / MACCS FP                | Yes                                              | Yes                 | Yes            | Yes               |
 | **MAP4 fingerprint**                         | **Yes** (Minervini 2020)                         | No (external pkg)   | No             | No                |
-| Molecular descriptors                        | **190+ (incl. MQN×42, BCUT2D, ESOL, LogD, XLogP3, BOILED-Egg)** | ~30  | ~20            | ~30               |
+| Molecular descriptors                        | **190+ descriptor values** (71 functions; MQN×42, BCUT2D, autocorr2d return multi-value arrays) | ~30  | ~20            | ~30               |
 | **Topological descriptors**                  | **Yes** (Petitjean, Hosoya Z, ECI, Moran, Geary) | Partial            | Partial        | No                |
 | BRICS / RECAP fragmentation                  | Yes                                              | Yes                 | No             | Yes               |
 | Murcko scaffold                              | Yes                                              | Yes                 | No             | Yes               |
@@ -373,7 +383,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 **v0.4.18** (2026-06-23): **Python API expansion + benchmark docs**
 - `chematic-py`: **Jupyter auto-display** — writing `mol` in a cell renders 2D structure via `_repr_svg_()`; `mol.has_substructure(smarts)`, `mol.find_matches(smarts)`; `from_smiles_list()`, `descriptors_df()`
 - `chematic-chem`: `chi_all()` — all 10 Hall-Kier connectivity indices in a single pass; `cns_mpo_from_parts()`; `pains_passes_and_matches()` / `brenk_passes_and_matches()` — combined pass/match in one scan
-- Docs: benchmark page added (ECFP4 5–14× vs RDKit, 100% descriptor accuracy on 5 000-mol corpus)
+- Docs: benchmark page added (ECFP4 5–14× vs RDKit, 100% descriptor accuracy on 4,999-mol ChEMBL corpus)
 
 **v0.4.16–v0.4.17** (2026-06-22–23): **SSSR sharing performance sprint**
 - `chematic-smarts`: `find_matches_with_rings()` — share a pre-computed `RingSet` across all patterns in a batch
@@ -381,7 +391,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 - `chematic-fp`: MHFP incremental BFS — 3N → N BFS operations per molecule at radius=2
 
 **v0.4.15** (2026-06-21): **TPSA calibration + E/Z stereo in reactions**
-- `chematic-chem`: TPSA ±0.1 Å² calibration sprint — **HBA 100%, HBD 100%, aromatic ring count 100%** on 5 000-mol corpus; TPSA 86.7% → 93.3% (5 000-mol), 100% on 175-mol drug-like set
+- `chematic-chem`: TPSA ±0.1 Å² calibration sprint — **HBA 100%, HBD 100%, aromatic ring count 100%** on 4,999-mol ChEMBL subset; TPSA 86.7% → 93.3% (4,999-mol), 100% on 175-mol drug-like set
 - `chematic-rxn`: E/Z double-bond stereo filtering in `run_reactants` — SMIRKS `/`/`\` geometry matching via `smirks_ez_stereo_ok()` / `ez_stereo_outward()`
 
 **v0.4.14** (2026-06-21): **Topological descriptors + stereo correctness**
@@ -411,7 +421,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 **v0.4.0–v0.4.4** (2026-06-17–18): **PyO3 Python bindings + native-inchi**
 - `chematic-py`: PyO3/maturin bindings — `from_smiles()`, `Mol.aromatic_ring_count`, `Mol.descriptors()`
 - `native-inchi` feature: IUPAC-exact InChI via vendored C lib v1.07.5
-- HBA rewrite: 99.98% agreement with RDKit (5,000 molecule benchmark)
+- HBA rewrite: 99.98% agreement with RDKit (4,999-mol ChEMBL benchmark)
 
 
 Full changelog: [CHANGELOG.md](CHANGELOG.md)
@@ -430,10 +440,10 @@ Not all features have the same validation depth. This table tells you what to tr
 
 | Feature | Status | Validation |
 |---|---|---|
-| SMILES parse / write | **Stable** | 5,000-mol RDKit comparison; OpenSMILES corpus |
+| SMILES parse / write | **Stable** | 4,999-mol ChEMBL comparison; OpenSMILES corpus |
 | MW / HBA / HBD | **Stable** | 100% RDKit agreement on 4,999 mol |
-| TPSA | **Stable** | 100% on 175-mol drug-like set; 93.3% on 4,999-mol ChEMBL subset |
-| LogP (Crippen) | **Stable** | 96.5% on 4,999-mol corpus (±0.01); ~99% on 175-mol drug-like set (±0.3) |
+| TPSA | **Stable** | 100% on 175-mol drug-like set; **99.7%** on 4,999-mol ChEMBL subset (±0.1 Å²) |
+| LogP (Crippen) | **Stable** | **100%** on 4,999-mol corpus (±0.01); ~99% on 175-mol drug-like set (±0.3) |
 | ECFP4 / MACCS fingerprints | **Stable** | RDKit comparison + benchmark |
 | Tanimoto similarity | **Stable** | RDKit comparison |
 | SDF / MOL V2000/V3000 I/O | **Stable** | round-trip tests |
@@ -452,8 +462,8 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ## Known Limitations
 
-- **Aromaticity model**: chematic applies Hückel 4n+2 per SSSR ring independently; RDKit uses fused-ring electron delocalization. Visible differences in N-heterocycles (pyridone, quinolone, indolizine). Current benchmark on 5,000-molecule corpus: HBA/HBD/aromatic ring count **100%**; TPSA **98.1%** (±0.1 Å²).
-- **TPSA edge cases**: remaining 1.9% discrepancy concentrated in azide groups, macrolide lactones, and exotic phosphazene chemistry.
+- **Aromaticity model**: chematic applies Hückel 4n+2 per SSSR ring independently; RDKit uses fused-ring electron delocalization. Visible differences in N-heterocycles (pyridone, quinolone, indolizine). Current benchmark on 4,999-mol ChEMBL subset: HBA/HBD/aromatic ring count **100%**; TPSA **99.7%** (±0.1 Å²); LogP **100%** (±0.01).
+- **TPSA edge cases**: remaining 0.3% discrepancy (16 of 4,999 molecules) concentrated in exotic phosphazene ring-N calibration and cyclic sulfurimide/S=N=P chemistry — not relevant for drug-like molecules.
 
 ---
 
