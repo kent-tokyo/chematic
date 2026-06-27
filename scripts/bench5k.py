@@ -20,6 +20,8 @@ def main():
                         help="Print every mismatching molecule to stderr")
     parser.add_argument("--limit", type=int, default=None,
                         help="Only show first N mismatches per category in --detail mode")
+    parser.add_argument("--json", metavar="PATH",
+                        help="Write results as JSON to PATH (for validation dashboard)")
     args = parser.parse_args()
 
     # --- load libraries ---
@@ -223,6 +225,34 @@ def main():
     print(f"    over  (ch>rd):       {logp_over:>6}  ({logp_over/total*100:.1f}%)")
     print(f"    under (ch<rd):       {logp_under:>6}  ({logp_under/total*100:.1f}%)")
     print(f"{'='*55}")
+
+    if args.json:
+        import json, datetime, subprocess
+        try:
+            ver = subprocess.check_output(
+                ["python3", "-c", "import chematic; print(chematic.__version__)"],
+                text=True
+            ).strip()
+        except Exception:
+            ver = "unknown"
+        results = {
+            "generated_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "chematic_version": ver,
+            "corpus": {"total": total, "rdkit_parse_failures": parse_fail_rd,
+                       "chematic_parse_failures": parse_fail_ch},
+            "metrics": {
+                "hba":  {"agreement_pct": round(hba_match/total*100, 2),  "match": hba_match,  "over": hba_over,  "under": hba_under,  "tolerance": "exact"},
+                "hbd":  {"agreement_pct": round(hbd_match/total*100, 2),  "match": hbd_match,  "over": hbd_over,  "under": hbd_under,  "tolerance": "exact"},
+                "arc":  {"agreement_pct": round(arc_match/total*100, 2),  "match": arc_match,  "tolerance": "exact"},
+                "nh_smarts": {"agreement_pct": round(nh_agree, 2), "precision_pct": round(nh_prec, 2),
+                              "recall_pct": round(nh_rec, 2), "tp": nh_tp, "tn": nh_tn, "fp": nh_fp, "fn": nh_fn},
+                "tpsa": {"agreement_pct": round(tpsa_match/total*100, 2), "match": tpsa_match, "over": tpsa_over, "under": tpsa_under, "tolerance": "±0.1 Å²"},
+                "logp": {"agreement_pct": round(logp_match/total*100, 2), "match": logp_match, "over": logp_over, "under": logp_under, "tolerance": "±0.01"},
+            },
+        }
+        with open(args.json, "w") as f:
+            json.dump(results, f, indent=2)
+        print(f"\nJSON results written to {args.json}")
 
 if __name__ == "__main__":
     main()
