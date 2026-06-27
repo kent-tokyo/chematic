@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use chematic_3d::{generate_and_minimize_dreiding, write_xyz};
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
 use chematic_fp::{BitVec2048, ecfp4, tanimoto_ecfp4};
+use chematic_mol::{parse_moljson, write_moljson};
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, McsConfig, find_matches,
     find_mcs_with_config, parse_smarts,
@@ -363,6 +364,28 @@ pub fn list_tools() -> Value {
                 },
                 "required": ["smiles"]
             }
+        },
+        {
+            "name": "smiles_to_moljson",
+            "description": "Convert a SMILES string to MolJSON — a JSON-based molecular representation designed for LLM compatibility. MolJSON makes atoms, bonds, and connectivity explicit without domain-specific parsing rules.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "smiles": { "type": "string", "description": "SMILES string to convert" }
+                },
+                "required": ["smiles"]
+            }
+        },
+        {
+            "name": "moljson_to_smiles",
+            "description": "Convert a MolJSON string to canonical SMILES.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "json": { "type": "string", "description": "MolJSON string to convert" }
+                },
+                "required": ["json"]
+            }
         }
     ]})
 }
@@ -387,6 +410,8 @@ pub fn call_tool(name: &str, args: &Value) -> Result<Value, String> {
         "lipinski_check" => tool_lipinski_check(args),
         "name_to_smiles" => tool_name_to_smiles(args),
         "retrosynthesis" => tool_retrosynthesis(args),
+        "smiles_to_moljson" => tool_smiles_to_moljson(args),
+        "moljson_to_smiles" => tool_moljson_to_smiles(args),
         _ => Err(format!("Unknown tool: {name}")),
     }
 }
@@ -764,6 +789,20 @@ fn tool_retrosynthesis(args: &Value) -> Result<Value, String> {
     })))
 }
 
+fn tool_smiles_to_moljson(args: &Value) -> Result<Value, String> {
+    let smiles = get_str(args, "smiles")?;
+    let mol = parse_mol(smiles)?;
+    Ok(content(&serde_json::Value::String(write_moljson(&mol))))
+}
+
+fn tool_moljson_to_smiles(args: &Value) -> Result<Value, String> {
+    let json_str = get_str(args, "json")?;
+    let mol = parse_moljson(json_str).map_err(|e| e.to_string())?;
+    Ok(content(
+        &json!({ "canonical_smiles": chematic_smiles::canonical_smiles(&mol) }),
+    ))
+}
+
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -901,7 +940,7 @@ mod tests {
     fn test_list_tools_count() {
         let tools = list_tools();
         let count = tools["tools"].as_array().unwrap().len();
-        assert_eq!(count, 16);
+        assert_eq!(count, 18);
     }
 
     #[test]

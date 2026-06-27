@@ -26,6 +26,7 @@ pub mod ket;
 pub mod mol2000;
 pub mod mol2_tripos;
 pub mod mol3000;
+pub mod moljson;
 pub mod pdbqt;
 pub mod rxn;
 pub mod sdf;
@@ -46,6 +47,7 @@ pub use mol2000::{
     write_mol_with_coords, write_sdf, write_sdf_with_charges,
 };
 pub use mol3000::{parse_mol_v3000, parse_mol_v3000_with_coords, write_mol_v3000};
+pub use moljson::{MolJsonError, parse_moljson, write_moljson};
 pub use pdbqt::{PdbqtError, autodock_atom_type, parse_pdbqt, write_pdbqt};
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
 pub use sdf::{SdfReader, SdfRecord, SdfRecordReader};

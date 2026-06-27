@@ -1332,6 +1332,19 @@ impl Mol {
         chematic_mol::write_cjson(&self.inner, &c3d)
     }
 
+    /// Serialize the molecule to a MolJSON string (pretty-printed).
+    ///
+    /// MolJSON is a JSON-based molecular representation designed for LLM
+    /// (large language model) compatibility.  Unlike SMILES, it makes atoms,
+    /// bonds, and connectivity explicit without requiring domain-specific
+    /// parsing rules.
+    ///
+    ///     json_str = mol.to_moljson()
+    ///     mol2 = chematic.from_moljson(json_str)
+    fn to_moljson(&self) -> String {
+        chematic_mol::write_moljson(&self.inner)
+    }
+
     /// Export the 2D structure as a PDF document (bytes).
     ///
     ///     pdf_bytes = mol.to_pdf()
@@ -3969,6 +3982,26 @@ fn from_cjson(cjson_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     ))
 }
 
+/// Parse a MolJSON string into a ``Mol`` object.
+///
+/// MolJSON is a JSON-based molecular representation designed for LLM
+/// (large language model) compatibility.
+///
+/// Raises ``ValueError`` on parse failure.
+///
+///     mol = chematic.from_moljson(open("mol.json").read())
+///     # Round-trip:
+///     json_str = mol.to_moljson()
+///     mol2 = chematic.from_moljson(json_str)
+#[pyfunction]
+fn from_moljson(json_str: &str) -> PyResult<Mol> {
+    chematic_mol::parse_moljson(json_str)
+        .map(|mol| Mol {
+            inner: Arc::new(mol),
+        })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Parse a ChemDraw XML (CDXML) string into a ``Mol`` object.
 ///
 /// Raises ``ValueError`` on parse failure.
@@ -6169,6 +6202,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(atom_color_rgb, m)?)?;
     m.add_function(wrap_pyfunction!(from_cml, m)?)?;
     m.add_function(wrap_pyfunction!(from_cjson, m)?)?;
+    m.add_function(wrap_pyfunction!(from_moljson, m)?)?;
     m.add_function(wrap_pyfunction!(from_cdxml, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000, m)?)?;
     m.add_function(wrap_pyfunction!(from_condensed, m)?)?;
