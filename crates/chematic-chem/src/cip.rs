@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Molecule};
+use chematic_core::{implicit_hcount, AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Molecule};
 
 /// The result of a CIP stereochemistry assignment run.
 #[derive(Debug)]
@@ -286,7 +286,7 @@ fn compare_branches(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> 
 /// Returns `None` if any two substituents have equal priority (tie).
 /// Otherwise returns `Vec<u8>` of the same length, where `result[i]` is the
 /// rank of `subs[i]` (1 = lowest CIP priority, N = highest).
-fn rank_substituents(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx]) -> Option<Vec<u8>> {
+pub(crate) fn rank_substituents(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx]) -> Option<Vec<u8>> {
     let n = subs.len();
     if n == 0 {
         return Some(vec![]);
@@ -551,6 +551,43 @@ fn highest_stereo_sub(mol: &Molecule, alkene_end: AtomIdx, subs: &[AtomIdx]) -> 
     sorted
         .into_iter()
         .find(|&sub| substituent_is_up(mol, alkene_end, sub).is_some())
+}
+
+/// Return true if `idx` is a potential tetrahedral stereocenter (specified or not).
+///
+/// A potential stereocenter is a non-aromatic atom with exactly 4 substituents
+/// (including implicit H) whose CIP priorities are all distinct.  This matches
+/// RDKit's `CalcNumAtomStereoCenters`, which counts both @/@@ specified and
+/// unspecified stereocenters.
+pub(crate) fn is_potential_stereocenter(mol: &Molecule, idx: AtomIdx) -> bool {
+    let atom = mol.atom(idx);
+    if atom.aromatic {
+        return false;
+    }
+    // Only consider the common stereogenic elements: C, N, S, P
+    match atom.element.atomic_number() {
+        6 | 7 | 15 | 16 => {}
+        _ => return false,
+    }
+    let mut neighbors: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
+    let h = implicit_hcount(mol, idx);
+    if h > 1 {
+        return false; // 2+ identical H → priorities can't all be distinct
+    }
+    for _ in 0..h {
+        neighbors.push(AtomIdx(u32::MAX)); // virtual H sentinel
+    }
+    if neighbors.len() != 4 {
+        return false;
+    }
+    // All four CIP priorities must be distinct.
+    rank_substituents(mol, idx, &neighbors)
+        .map(|ranks| {
+            let mut r = ranks;
+            r.sort_unstable();
+            r.windows(2).all(|w| w[0] != w[1])
+        })
+        .unwrap_or(false)
 }
 
 #[cfg(test)]

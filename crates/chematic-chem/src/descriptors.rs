@@ -11,7 +11,8 @@ use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount,
 };
 use chematic_perception::{
-    RingSet, apply_aromaticity, augmented_ring_set, find_ring_families, find_sssr,
+    RingSet, apply_aromaticity, aromatic_ring_list, augmented_ring_set, find_ring_families,
+    find_sssr,
 };
 use chematic_smarts::{MatchConfig, find_matches_with_rings_and_config, parse_smarts};
 
@@ -1212,16 +1213,17 @@ fn h_mr_for_parent(
         8 => {
             if parent_aromatic {
                 fallback // aromatic O — HS fallback
-            } else if mol
-                .neighbors(parent_idx)
-                .any(|(nb, _)| has_double_bond_to(mol, nb, 8))
-            {
-                1.805 // H4: carboxylic/ester OH
+            } else if mol.neighbors(parent_idx).any(|(nb, _)| {
+                // H4: OC=O (ester/acid) or O[O,S] (peroxide/sulfonic)
+                let an = mol.atom(nb).element.atomic_number();
+                (an == 6 && has_double_bond_to(mol, nb, 8)) || an == 8 || an == 16
+            }) {
+                1.805
             } else {
-                1.395 // H2: aliphatic or phenolic OH
+                1.395 // H2: aliphatic, phenolic, or phosphate OH
             }
         }
-        _ => fallback, // HS: H on other heteroatom (S, P, …) — MR HS fallback (1.112)
+        _ => 1.395, // [#1][!C;!N;!O] → 1.395 (SH, PH, etc.)
     }
 }
 
@@ -1251,7 +1253,12 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
                 .find(|(set, _)| set.contains(&idx))
                 .map(|(_, (_, _, mr))| *mr)
                 .unwrap_or(0.0);
-            let h_count = implicit_hcount(mol, idx);
+            let h_count_impl = implicit_hcount(mol, idx);
+            let h_count_expl = mol
+                .neighbors(idx)
+                .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
+                .count() as u8;
+            let h_count = h_count_impl + h_count_expl;
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
@@ -1464,15 +1471,15 @@ fn is_ring_saturated(mol: &Molecule, ring: &[AtomIdx]) -> bool {
 ///
 /// Examples: pyridine (1), furan (1), imidazole (1), benzene (0).
 pub fn num_aromatic_heterocycles(mol: &Molecule) -> usize {
-    find_sssr(mol)
-        .rings()
+    // Use aromatic_ring_list (augmented SSSR + envelope stripping) to avoid
+    // double-counting fused heterocycles like dibenzofuran (SSSR artefact).
+    aromatic_ring_list(mol)
         .iter()
         .filter(|ring| {
-            ring.iter().all(|&idx| mol.atom(idx).aromatic)
-                && ring.iter().any(|&idx| {
-                    let an = mol.atom(idx).element.atomic_number();
-                    an != 6 && an != 1
-                })
+            ring.iter().any(|&idx| {
+                let an = mol.atom(idx).element.atomic_number();
+                an != 6 && an != 1
+            })
         })
         .count()
 }
@@ -1715,15 +1722,14 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
     }
 }
 
-/// Number of assigned stereocenters (tetrahedral R/S from CIP assignment).
+/// Number of potential tetrahedral stereocenters (specified + unspecified).
 ///
-/// Runs `assign_cip` internally. Returns 0 for molecules with no stereo.
+/// Matches RDKit `CalcNumAtomStereoCenters`: counts all atoms whose CIP priorities
+/// for their four substituents are all distinct, regardless of whether @/@@ is
+/// specified in the input SMILES.
 pub fn num_stereocenters(mol: &Molecule) -> usize {
-    use chematic_core::CipCode;
-    crate::cip::assign_cip(mol)
-        .assignments
-        .iter()
-        .filter(|(_, c)| matches!(c, CipCode::R | CipCode::S))
+    mol.atoms()
+        .filter(|(idx, _)| crate::cip::is_potential_stereocenter(mol, *idx))
         .count()
 }
 
