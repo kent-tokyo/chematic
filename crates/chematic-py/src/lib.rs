@@ -1982,6 +1982,33 @@ impl Mol {
         Array1::from_vec(fp).into_pyarray(py)
     }
 
+    /// Hyper-Dimensional Fingerprint (HDF) as a numpy float32 array of shape ``(dim,)``.
+    ///
+    /// HDF encodes a molecule as a unit-norm float32 vector using Hyperdimensional
+    /// Computing (HDC).  Unlike hash-based fingerprints (ECFP), there is no hash
+    /// collision: every distinct atom environment maps to a unique HD vector.
+    /// Cosine similarity between two normalized HDF vectors gives molecular similarity.
+    ///
+    /// Based on: "Hyper-Dimensional Fingerprints as Molecular Representations" (arXiv 2026).
+    ///
+    ///     fp = mol.hdf()              # shape (1024,), dtype float32, unit norm
+    ///     fp = mol.hdf(dim=512)       # smaller vector
+    ///     fp = mol.hdf(dim=2048, radius=3)
+    ///
+    ///     sim = float(np.dot(mol1.hdf(), mol2.hdf()))  # cosine similarity
+    #[pyo3(signature = (dim = 1024, radius = 2, seed = 42))]
+    fn hdf<'py>(
+        &self,
+        py: Python<'py>,
+        dim: usize,
+        radius: usize,
+        seed: u64,
+    ) -> Bound<'py, PyArray1<f32>> {
+        let config = chematic_fp::HdfConfig { dim, radius, seed };
+        let fp = chematic_fp::hdf(&self.inner, &config);
+        Array1::from_vec(fp.0).into_pyarray(py)
+    }
+
     /// Extended Reduced Graph (ERG) fingerprint as bytes (256 bytes = 2048 bits).
     fn erg(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::erg(&self.inner).bits)

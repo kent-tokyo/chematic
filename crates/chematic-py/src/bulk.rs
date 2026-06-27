@@ -457,6 +457,52 @@ pub fn map4<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, PyArray2<u3
 }
 
 // ---------------------------------------------------------------------------
+// bulk.hdf — parallel Hyper-Dimensional Fingerprints
+// ---------------------------------------------------------------------------
+
+/// Compute HDF fingerprints for a list of SMILES in parallel.
+///
+/// Returns a numpy array of shape ``(N, dim)`` with ``dtype=float32`` where
+/// each row is a unit-norm HD vector.  Invalid SMILES produce all-zero rows.
+///
+/// Args:
+///     smiles: list of SMILES strings
+///     dim: vector dimension (default 1024)
+///     radius: neighborhood radius (default 2)
+///     seed: reproducibility seed (default 42)
+///
+///     fps = chematic.bulk.hdf(["CCO", "c1ccccc1"], dim=512)
+///     sims = fps @ fps.T          # cosine similarity matrix (N×N)
+#[pyfunction]
+#[pyo3(signature = (smiles, dim = 1024, radius = 2, seed = 42))]
+pub fn hdf<'py>(
+    py: Python<'py>,
+    smiles: Vec<String>,
+    dim: usize,
+    radius: usize,
+    seed: u64,
+) -> Bound<'py, PyArray2<f32>> {
+    let config = chematic_fp::HdfConfig { dim, radius, seed };
+    let fps: Vec<Vec<f32>> = smiles
+        .par_iter()
+        .map(|s| {
+            chematic_smiles::parse(s)
+                .map(|mol| chematic_fp::hdf(&mol, &config).0)
+                .unwrap_or_else(|_| vec![0.0f32; dim])
+        })
+        .collect();
+
+    let n = fps.len();
+    if n == 0 {
+        return Array2::<f32>::zeros((0, dim)).into_pyarray(py);
+    }
+    let flat: Vec<f32> = fps.into_iter().flatten().collect();
+    Array2::from_shape_vec((n, dim), flat)
+        .expect("shape mismatch")
+        .into_pyarray(py)
+}
+
+// ---------------------------------------------------------------------------
 // bulk.substructure_search — parallel SMARTS screen
 // ---------------------------------------------------------------------------
 
@@ -648,6 +694,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ecfp4, m)?)?;
     m.add_function(wrap_pyfunction!(maccs, m)?)?;
     m.add_function(wrap_pyfunction!(map4, m)?)?;
+    m.add_function(wrap_pyfunction!(hdf, m)?)?;
     m.add_function(wrap_pyfunction!(descriptors, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_search, m)?)?;
