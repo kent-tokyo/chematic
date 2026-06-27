@@ -1,6 +1,6 @@
 # Benchmark
 
-Measured environment: Python 3.12, Apple M-series, chematic v0.4.23, RDKit 2024.09.
+Measured environment: Python 3.12, Apple M-series, chematic v0.4.23, RDKit 2026.03.3.
 
 ---
 
@@ -11,7 +11,7 @@ Measured environment: Python 3.12, Apple M-series, chematic v0.4.23, RDKit 2024.
 | Import time | **~35 ms** | ~400 ms (11×) |
 | SMILES parse — 5,000 mol | **~5 ms** | ~50 ms (10×) |
 | ECFP4 batch — 10,000 mol | **36 ms** | ~500 ms (14×) |
-| Descriptor accuracy vs RDKit | **100%** on 5,000-mol corpus | baseline |
+| Descriptor accuracy vs RDKit | MW/HBA/HBD **100%** · TPSA **98.1%** · LogP **96.5%** (4,999-mol) | baseline |
 | Install | `pip install chematic` | conda or cmake |
 | C/C++ dependencies | **Zero** | Required |
 | WASM binary size | **504 KB** | ~30 MB |
@@ -117,7 +117,7 @@ python scripts/benchmark_vs_rdkit.py --rdkit
 
 ## 4. Descriptor Accuracy vs RDKit
 
-Tested on a 5,000-molecule ChEMBL-like SMILES corpus (`scripts/bench5k.py`).
+Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). See [Validation](validation.md) for full per-metric breakdown and known limitations.
 
 | Descriptor | Agreement | Tolerance |
 |-----------|-----------|-----------|
@@ -125,11 +125,12 @@ Tested on a 5,000-molecule ChEMBL-like SMILES corpus (`scripts/bench5k.py`).
 | Heavy atom count | 100% | exact |
 | H-bond donors (HBD) | 100% | exact |
 | H-bond acceptors (HBA) | 100% | exact |
-| TPSA | 100% | ±0.1 Å² |
-| LogP (Crippen) | 100% | ±0.3 |
+| TPSA | 98.1% | ±0.1 Å² |
+| LogP (Crippen) | 96.5% | ±0.3 |
 | Aromatic ring count | 100% | exact |
 
-All metrics reached 100% agreement with `rdkit.Chem.Descriptors` on the 5,000-molecule corpus as of v0.4.14.
+MW, HBA, HBD, and ARC reach 100% agreement on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
+TPSA and LogP gaps are documented in [Known Limitations](validation.md).
 
 ### How to reproduce
 
@@ -148,7 +149,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 | C/C++ compiler | Not required | Required (Boost) |
 | Docker image size delta | ~4 MB | ~200 MB+ |
 | GitHub Actions | Single pip line | Separate conda setup step |
-| JavaScript / WASM | `npm install @kent-tokyo/chematic` (~550 KB) | No official package |
+| JavaScript / WASM | `npm install @kent-tokyo/chematic` (504 KB) | No official package |
 | Browser deployment | Yes | No |
 
 ---
@@ -162,7 +163,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 | MCP server (AI agent integration) | 15 tools | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
 | IUPAC name generation | Built-in (offline) | Not available |
-| Browser / WASM deployment | Yes (~550 KB) | No |
+| Browser / WASM deployment | Yes (504 KB) | No |
 | ECFP4 batch speed | 5–14× faster | Baseline |
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |

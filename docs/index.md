@@ -1,6 +1,6 @@
 # chematic
 
-**Pure-Rust cheminformatics for Python** — no C/C++ dependencies, WASM-native, 70+ descriptors.
+**Pure-Rust cheminformatics for Python** — no C/C++ dependencies, WASM-native, 190+ descriptors.
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions)
 [![PyPI](https://img.shields.io/pypi/v/chematic)](https://pypi.org/project/chematic/)
@@ -21,7 +21,7 @@ print(mol.admet())                   # BBB, Caco-2, hERG, CYP3A4 in one call
 |---|---|---|
 | Install | `pip install chematic` | conda or complex build |
 | C/C++ deps | **Zero** | Required |
-| WASM | **Yes** (~550 KB) | No (30–50 MB) |
+| WASM | **Yes** (504 KB) | No (30–50 MB) |
 | pKa prediction | **Built-in** | External tool |
 | ADMET profile | **Built-in** | External tool |
 | Pure Python wheel | **Yes** | No |
@@ -29,7 +29,7 @@ print(mol.admet())                   # BBB, Caco-2, hERG, CYP3A4 in one call
 ## Features
 
 - **SMILES / SDF / MOL / InChI** parsing and writing
-- **70+ molecular descriptors** (MW, LogP, TPSA, QED, SA Score, pKa, ADMET …)
+- **190+ molecular descriptors** (MW, LogP, TPSA, QED, SA Score, pKa, ADMET …)
 - **Fingerprints**: ECFP4/6, FCFP4/6, MACCS, AtomPair, Torsion, Layered
 - **SMARTS** substructure search with full recursive SMARTS support
 - **Reactions**: SMIRKS application, reaction SMARTS matching, MDL RXN I/O
