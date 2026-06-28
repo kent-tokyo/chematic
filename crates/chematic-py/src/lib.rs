@@ -71,10 +71,10 @@ impl Mol {
         chematic_chem::calc_mol_formula(&self.inner)
     }
 
-    /// Number of heavy atoms (explicit atoms; does not count implicit H).
+    /// Number of heavy atoms (non-hydrogen atoms, including isotopic H like [3H]).
     #[getter]
     fn heavy_atoms(&self) -> usize {
-        self.inner.atom_count()
+        chematic_chem::heavy_atom_count(&self.inner)
     }
 
     /// Non-standard InChI string (pure-Rust approximation, not IUPAC-compliant).
