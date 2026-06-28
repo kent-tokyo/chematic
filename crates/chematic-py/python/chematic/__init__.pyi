@@ -2966,3 +2966,32 @@ def descriptors_df(smiles: Iterable[str]) -> Any:
         df[["mw", "logp", "tpsa"]].head()
     """
     ...
+
+
+def screen(
+    smiles: Union[str, list[str]],
+    profile: str = "druglike",
+    filters: Optional[list[str]] = None,
+) -> list[dict]:
+    """Screen compounds against a preset or custom filter profile.
+
+    Args:
+        smiles: One or more SMILES strings.
+        profile: Preset profile — "druglike" (default), "fragment", or "leadlike".
+            Ignored when *filters* is provided.
+        filters: Explicit filter list (overrides *profile*). Supported values:
+            "lipinski", "veber", "pains", "brenk", "egan", "ghose", "ro3",
+            "lead_like", "reos", "mcf", "ames", "pfizer_3_75", "qed", "sa_score".
+
+    Returns:
+        One dict per SMILES with fields ``smiles``, ``valid``, ``mw``, ``logp``,
+        ``tpsa``, ``hbd``, ``hba``, ``qed``, ``sa_score``, one ``<filter>_pass``
+        bool per requested filter, and ``overall_pass``.
+
+    Example::
+
+        results = chematic.screen(smiles_list, profile="druglike")
+        df = pd.DataFrame(results)
+        passing = df[df.overall_pass]
+    """
+    ...
