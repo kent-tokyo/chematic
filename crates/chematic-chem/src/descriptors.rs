@@ -1611,70 +1611,69 @@ pub fn num_spiro_atoms(mol: &Molecule) -> usize {
 
 /// Number of bridgehead atoms.
 ///
-/// A bridgehead atom belongs to 2 or more rings and has 3 or more bonds to other
-/// ring atoms, where the rings it belongs to share at least one pair of atoms that
-/// are NOT directly bonded (distinguishing bridged from fused or spiro systems).
+/// An atom is a bridgehead if it lies at the junction of a bridged ring system:
+/// for some pair of rings that share ≥ 2 bonds, the atom is incident to exactly
+/// one of those shared bonds.
 ///
 /// Example: norbornane (`C1CC2CCC1C2`) has 2 bridgehead atoms.
-/// Naphthalene has 0 (the junction atoms are fused — directly bonded to each other).
-/// Spiro[4.5]decane has 0 (the spiro center is not bridged).
+/// Naphthalene has 0 (junction atoms share exactly 1 bond — fused, not bridged).
+/// Spiro[4.5]decane has 0 (no shared bonds between the two rings).
 fn num_bridgehead_atoms_from(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
-    let ring_atom_set: FxHashSet<AtomIdx> = rings.iter().flat_map(|r| r.iter().copied()).collect();
-    mol.atoms()
-        .filter(|(idx, _)| {
-            let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
-            if member_rings.len() < 2 {
-                return false;
-            }
-            // Spiro atoms are not bridgehead atoms: if any pair of member rings
-            // shares ONLY this atom, the atom is a spiro centre, not a bridgehead.
-            // (The augmented ring set can introduce XOR rings that would otherwise
-            // make spiro centres satisfy the bridgehead criterion spuriously.)
-            let is_spiro = (0..member_rings.len()).any(|i| {
-                (i + 1..member_rings.len()).any(|j| {
-                    member_rings[i]
-                        .iter()
-                        .filter(|a| member_rings[j].contains(a))
-                        .count()
-                        == 1
+    // Pre-compute sorted bond-index list for each ring (sorted so intersection is a merge).
+    let bond_lists: Vec<Vec<BondIdx>> = rings
+        .iter()
+        .map(|r| {
+            let mut bonds: Vec<BondIdx> = (0..r.len())
+                .filter_map(|i| {
+                    let a = r[i];
+                    let b = r[(i + 1) % r.len()];
+                    mol.bond_between(a, b).map(|(bidx, _)| bidx)
                 })
-            });
-            if is_spiro {
-                return false;
-            }
-            let ring_bonds = mol
-                .neighbors(*idx)
-                .filter(|(nb, _)| ring_atom_set.contains(nb))
-                .count();
-            if ring_bonds < 3 {
-                return false;
-            }
-            let ring_sets: Vec<FxHashSet<AtomIdx>> = member_rings
-                .iter()
-                .map(|r| r.iter().copied().collect())
                 .collect();
-            for i in 0..ring_sets.len() {
-                for j in (i + 1)..ring_sets.len() {
-                    let shared: Vec<AtomIdx> =
-                        ring_sets[i].intersection(&ring_sets[j]).copied().collect();
-                    if shared.len() < 2 {
-                        continue;
+            bonds.sort_unstable_by_key(|b| b.0);
+            bonds
+        })
+        .collect();
+
+    let mut bridgehead_set: FxHashSet<AtomIdx> = FxHashSet::default();
+
+    for i in 0..rings.len() {
+        for j in (i + 1)..rings.len() {
+            // Intersect sorted bond lists.
+            let mut shared_bonds: Vec<BondIdx> = Vec::new();
+            let (mut ai, mut bi) = (0usize, 0usize);
+            while ai < bond_lists[i].len() && bi < bond_lists[j].len() {
+                match bond_lists[i][ai].0.cmp(&bond_lists[j][bi].0) {
+                    std::cmp::Ordering::Equal => {
+                        shared_bonds.push(bond_lists[i][ai]);
+                        ai += 1;
+                        bi += 1;
                     }
-                    if shared.len() == ring_sets[i].len() || shared.len() == ring_sets[j].len() {
-                        continue;
-                    }
-                    for a in 0..shared.len() {
-                        for b in (a + 1)..shared.len() {
-                            if mol.bond_between(shared[a], shared[b]).is_none() {
-                                return true;
-                            }
-                        }
-                    }
+                    std::cmp::Ordering::Less => ai += 1,
+                    std::cmp::Ordering::Greater => bi += 1,
                 }
             }
-            false
-        })
-        .count()
+            if shared_bonds.len() < 2 {
+                continue; // fused (1 shared bond) or disjoint (0)
+            }
+
+            let ring_j_set: FxHashSet<AtomIdx> = rings[j].iter().copied().collect();
+            for &atom in rings[i].iter().filter(|a| ring_j_set.contains(a)) {
+                let incident = shared_bonds
+                    .iter()
+                    .filter(|&&b| {
+                        let bond = mol.bond(b);
+                        bond.atom1 == atom || bond.atom2 == atom
+                    })
+                    .count();
+                if incident == 1 {
+                    bridgehead_set.insert(atom);
+                }
+            }
+        }
+    }
+
+    bridgehead_set.len()
 }
 
 pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
