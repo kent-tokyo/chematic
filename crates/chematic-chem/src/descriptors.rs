@@ -1584,16 +1584,24 @@ pub fn num_saturated_heterocycles(mol: &Molecule) -> usize {
 
 /// Number of spiro atoms.
 ///
-/// A spiro atom belongs to exactly 2 rings and is the sole shared atom between them.
+/// A spiro atom is in ≥ 2 rings and is the sole shared atom between at least one pair
+/// of those rings.  The "exactly 2 rings" shortcut is wrong for molecules where the
+/// augmented ring set contains an XOR ring that also passes through the spiro centre
+/// (e.g. tropane bridge, peroxide cages).
 /// Example: spiro[4.5]decane (`C1CCCCC11CCCC1`) has 1 spiro atom.
 fn num_spiro_atoms_from(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
     mol.atoms()
         .filter(|(idx, _)| {
             let member: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
-            if member.len() != 2 {
+            if member.len() < 2 {
                 return false;
             }
-            member[0].iter().filter(|a| member[1].contains(a)).count() == 1
+            // Spiro: exists any pair of rings that shares ONLY this one atom.
+            (0..member.len()).any(|i| {
+                (i + 1..member.len()).any(|j| {
+                    member[i].iter().filter(|a| member[j].contains(a)).count() == 1
+                })
+            })
         })
         .count()
 }
