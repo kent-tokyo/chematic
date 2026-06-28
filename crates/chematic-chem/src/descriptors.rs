@@ -11,8 +11,7 @@ use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount,
 };
 use chematic_perception::{
-    RingSet, apply_aromaticity, aromatic_ring_list, augmented_ring_set, find_ring_families,
-    find_sssr,
+    all_ring_list, aromatic_ring_list, find_ring_families, find_sssr,
 };
 use chematic_smarts::{MatchConfig, find_matches_with_rings_and_config, parse_smarts};
 
@@ -1429,8 +1428,7 @@ pub fn fraction_rotatable_bonds(mol: &Molecule) -> f64 {
 
 /// Number of non-aromatic (aliphatic) rings.
 pub fn num_aliphatic_rings(mol: &Molecule) -> usize {
-    find_sssr(mol)
-        .rings()
+    all_ring_list(mol)
         .iter()
         .filter(|ring| ring.iter().any(|&idx| !mol.atom(idx).aromatic))
         .count()
@@ -1442,9 +1440,7 @@ pub fn num_aliphatic_rings(mol: &Molecule) -> usize {
 /// or aromatic bonds within the ring).  Exocyclic double bonds (e.g. the C=O in
 /// piperidinone) are ignored — matching RDKit `CalcNumSaturatedRings`.
 pub fn num_saturated_rings(mol: &Molecule) -> usize {
-    let sssr = find_sssr(mol);
-    let rings = sssr.rings();
-    rings
+    all_ring_list(mol)
         .iter()
         .filter(|ring| is_ring_saturated(mol, ring))
         .count()
@@ -1489,8 +1485,7 @@ pub fn num_aromatic_heterocycles(mol: &Molecule) -> usize {
 /// A ring is aliphatic when at least one of its atoms is not aromatic.
 /// Examples: piperidine (1), morpholine (1), tetrahydrofuran (1).
 pub fn num_aliphatic_heterocycles(mol: &Molecule) -> usize {
-    find_sssr(mol)
-        .rings()
+    all_ring_list(mol)
         .iter()
         .filter(|ring| {
             ring.iter().any(|&idx| !mol.atom(idx).aromatic)
@@ -1507,9 +1502,7 @@ pub fn num_aliphatic_heterocycles(mol: &Molecule) -> usize {
 /// Exocyclic double bonds are ignored — matching RDKit `CalcNumSaturatedHeterocycles`.
 /// Examples: piperidine (1), oxetane (1), piperidinone (1, because ring bonds are all single).
 pub fn num_saturated_heterocycles(mol: &Molecule) -> usize {
-    let sssr = find_sssr(mol);
-    let rings = sssr.rings();
-    rings
+    all_ring_list(mol)
         .iter()
         .filter(|ring| {
             is_ring_saturated(mol, ring)
@@ -1538,7 +1531,7 @@ fn num_spiro_atoms_from(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
 }
 
 pub fn num_spiro_atoms(mol: &Molecule) -> usize {
-    num_spiro_atoms_from(mol, find_sssr(mol).rings())
+    num_spiro_atoms_from(mol, &all_ring_list(mol))
 }
 
 /// Number of bridgehead atoms.
@@ -1550,21 +1543,22 @@ pub fn num_spiro_atoms(mol: &Molecule) -> usize {
 /// Example: norbornane (`C1CC2CCC1C2`) has 2 bridgehead atoms.
 /// Naphthalene has 0 (the junction atoms are fused — directly bonded to each other).
 /// Spiro[4.5]decane has 0 (the spiro center is not bridged).
-fn num_bridgehead_atoms_from(mol: &Molecule, sssr: &RingSet) -> usize {
-    let rings = sssr.rings();
+fn num_bridgehead_atoms_from(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
+    let ring_atom_set: FxHashSet<AtomIdx> =
+        rings.iter().flat_map(|r| r.iter().copied()).collect();
     mol.atoms()
         .filter(|(idx, _)| {
-            if sssr.atoms_in_ring_count(*idx) < 2 {
+            let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
+            if member_rings.len() < 2 {
                 return false;
             }
             let ring_bonds = mol
                 .neighbors(*idx)
-                .filter(|(nb, _)| sssr.contains_atom(*nb))
+                .filter(|(nb, _)| ring_atom_set.contains(nb))
                 .count();
             if ring_bonds < 3 {
                 return false;
             }
-            let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
             let ring_sets: Vec<FxHashSet<AtomIdx>> = member_rings
                 .iter()
                 .map(|r| r.iter().copied().collect())
@@ -1594,7 +1588,7 @@ fn num_bridgehead_atoms_from(mol: &Molecule, sssr: &RingSet) -> usize {
 }
 
 pub fn num_bridgehead_atoms(mol: &Molecule) -> usize {
-    num_bridgehead_atoms_from(mol, &find_sssr(mol))
+    num_bridgehead_atoms_from(mol, &all_ring_list(mol))
 }
 
 // ---------------------------------------------------------------------------
@@ -1629,24 +1623,13 @@ pub struct RingBundle {
 pub fn ring_bundle(mol: &Molecule) -> RingBundle {
     let sssr = find_sssr(mol);
     let rings = sssr.rings();
+    let all_rings = all_ring_list(mol);
 
+    // ring_bonds from raw SSSR — rotatable bonds and HBA must not change.
     let ring_bonds = ring_bond_indices_from_rings(mol, rings);
 
-    // Aromatic ring count: for Kekulé input, perceive aromaticity (same topology as sssr).
-    let aromatic_ring_count = {
-        let mol_arom;
-        let mol_a = if mol.atoms().any(|(_, a)| a.aromatic) {
-            mol
-        } else {
-            mol_arom = apply_aromaticity(mol);
-            &mol_arom
-        };
-        // augmented_ring_set takes &[Vec<AtomIdx>] — topology is unchanged by apply_aromaticity.
-        let aug = augmented_ring_set(mol_a, rings);
-        aug.iter()
-            .filter(|r| r.iter().all(|&i| mol_a.atom(i).aromatic))
-            .count()
-    };
+    // Aromatic ring count: use aromatic_ring_list (augmented + envelope-stripped).
+    let aromatic_ring_count = aromatic_ring_list(mol).len();
 
     let rotatable_bond_count = rotatable_bond_count_from_set(mol, &ring_bonds);
     let hba_count = hba_count_from_set(mol, &ring_bonds);
@@ -1661,24 +1644,15 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
         ring_count: rings.len(),
         ring_system_count: find_ring_families(mol, &sssr).len(),
         aromatic_ring_count,
-        num_aliphatic_rings: rings
+        num_aliphatic_rings: all_rings
             .iter()
             .filter(|r| r.iter().any(|&i| !mol.atom(i).aromatic))
             .count(),
-        num_saturated_rings: rings
+        num_saturated_rings: all_rings
             .iter()
-            .filter(|r| {
-                r.iter().all(|&i| {
-                    mol.neighbors(i).all(|(_, b)| {
-                        !matches!(
-                            mol.bond(b).order,
-                            BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic
-                        )
-                    })
-                })
-            })
+            .filter(|r| is_ring_saturated(mol, r))
             .count(),
-        num_aromatic_heterocycles: rings
+        num_aromatic_heterocycles: all_rings
             .iter()
             .filter(|r| {
                 r.iter().all(|&i| mol.atom(i).aromatic)
@@ -1688,7 +1662,7 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
                     })
             })
             .count(),
-        num_aliphatic_heterocycles: rings
+        num_aliphatic_heterocycles: all_rings
             .iter()
             .filter(|r| {
                 r.iter().any(|&i| !mol.atom(i).aromatic)
@@ -1698,24 +1672,18 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
                     })
             })
             .count(),
-        num_saturated_heterocycles: rings
+        num_saturated_heterocycles: all_rings
             .iter()
             .filter(|r| {
-                r.iter().all(|&i| {
-                    mol.neighbors(i).all(|(_, b)| {
-                        !matches!(
-                            mol.bond(b).order,
-                            BondOrder::Double | BondOrder::Triple | BondOrder::Aromatic
-                        )
+                is_ring_saturated(mol, r)
+                    && r.iter().any(|&i| {
+                        let an = mol.atom(i).element.atomic_number();
+                        an != 6 && an != 1
                     })
-                }) && r.iter().any(|&i| {
-                    let an = mol.atom(i).element.atomic_number();
-                    an != 6 && an != 1
-                })
             })
             .count(),
-        num_spiro_atoms: num_spiro_atoms_from(mol, rings),
-        num_bridgehead_atoms: num_bridgehead_atoms_from(mol, &sssr),
+        num_spiro_atoms: num_spiro_atoms_from(mol, &all_rings),
+        num_bridgehead_atoms: num_bridgehead_atoms_from(mol, &all_rings),
         rotatable_bond_count,
         hba_count,
         fraction_rotatable_bonds,

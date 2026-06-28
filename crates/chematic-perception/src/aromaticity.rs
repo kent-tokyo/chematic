@@ -432,18 +432,34 @@ pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Ve
     rings
 }
 
-/// Count aromatic rings in `mol`.
+/// Shared inner: SSSR → augmented_ring_set → strip_envelope_rings, no aromaticity filter.
+fn all_ring_list_inner(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
+    let sssr = crate::sssr::find_sssr(mol);
+    let aug = augmented_ring_set(mol, sssr.rings());
+    if aug.len() <= 1 {
+        return aug;
+    }
+    let bond_sets: Vec<Vec<BondIdx>> = aug.iter().map(|r| ring_bond_set(mol, r)).collect();
+    let mut is_envelope = vec![false; aug.len()];
+    strip_envelope_rings(&aug, &bond_sets, &mut is_envelope);
+    aug.into_iter()
+        .zip(is_envelope)
+        .filter(|(_, e)| !e)
+        .map(|(r, _)| r)
+        .collect()
+}
+
+/// Return all rings after augmented-ring-set expansion and envelope stripping.
 ///
-/// Uses the augmented ring set so that fused systems where the SSSR stores a
-/// large fundamental cycle (e.g. a 9-ring for indolizine) still report the
-/// correct small-ring count.  After building the augmented set, any "envelope"
-/// ring — one that equals the bond-symmetric-difference of two smaller aromatic
-/// rings — is excluded, preventing double-counting.
+/// Same pipeline as [`aromatic_ring_list`] but with no aromaticity filter — useful
+/// for aliphatic/saturated ring counting and bridgehead detection where SSSR
+/// envelope rings cause over-counting.
+pub fn all_ring_list(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
+    all_ring_list_inner(mol)
+}
+
 /// Return the de-duplicated list of aromatic rings after augmented-ring-set expansion
-/// and envelope stripping.  Same logic as [`count_aromatic_rings`] but returns the
-/// ring atom lists instead of just the count.
-///
-/// Useful for filtering (e.g. counting only aromatic heterocycles).
+/// and envelope stripping.  Useful for filtering (e.g. counting only aromatic heterocycles).
 pub fn aromatic_ring_list(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
     let mol_with_arom;
     let mol = if mol.atoms().any(|(_, a)| a.aromatic) {
@@ -452,24 +468,9 @@ pub fn aromatic_ring_list(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
         mol_with_arom = apply_aromaticity(mol);
         &mol_with_arom
     };
-    let sssr = crate::sssr::find_sssr(mol);
-    let aug = augmented_ring_set(mol, sssr.rings());
-    let aromatic: Vec<Vec<AtomIdx>> = aug
+    all_ring_list_inner(mol)
         .into_iter()
         .filter(|ring| ring.iter().all(|&idx| mol.atom(idx).aromatic))
-        .collect();
-    if aromatic.len() <= 1 {
-        return aromatic;
-    }
-    let bond_sets: Vec<Vec<BondIdx>> = aromatic.iter().map(|r| ring_bond_set(mol, r)).collect();
-    let n = aromatic.len();
-    let mut is_envelope = vec![false; n];
-    strip_envelope_rings(&aromatic, &bond_sets, &mut is_envelope);
-    aromatic
-        .into_iter()
-        .zip(is_envelope)
-        .filter(|(_, e)| !e)
-        .map(|(r, _)| r)
         .collect()
 }
 
