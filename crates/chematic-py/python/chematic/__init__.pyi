@@ -2888,6 +2888,36 @@ class bulk:
         ...
 
     @staticmethod
+    def descriptors_array(
+        smiles: list[str],
+        columns: list[str],
+    ) -> dict[str, ndarray]:
+        """Compute descriptors and return selected columns as numpy arrays.
+
+        Faster than ``descriptors()`` + ``pd.DataFrame()`` for column-oriented access
+        because it avoids per-molecule Python dict allocation.
+
+        Args:
+            smiles: List of SMILES strings. Invalid entries are silently skipped.
+            columns: Descriptor column names to return (e.g. ``["mw", "logp", "tpsa"]``).
+                Float columns use ``float64``; bool columns use ``bool``; optional float
+                columns (``"pka_acid"``, ``"pka_base"``) use ``float64`` with ``NaN`` for None.
+
+        Returns:
+            Dict mapping column name to 1-D numpy array.
+
+        Raises:
+            ValueError: If any column name is unknown.
+
+        Example::
+
+            result = chematic.bulk.descriptors_array(smiles, ["mw", "logp", "tpsa"])
+            df = pd.DataFrame(result)          # fast, no per-molecule dict
+            mw = result["mw"]                  # numpy.ndarray, dtype float64
+        """
+        ...
+
+    @staticmethod
     def tanimoto(smiles_a: list[str], smiles_b: list[str]) -> ndarray:
         """Compute pairwise ECFP4 Tanimoto similarity matrix.
 
