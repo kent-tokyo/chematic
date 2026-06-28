@@ -568,9 +568,9 @@ pub(crate) fn is_potential_stereocenter(mol: &Molecule, idx: AtomIdx) -> bool {
     if atom.aromatic {
         return false;
     }
-    // Only consider the common stereogenic elements: C, N, S, P
+    // Only consider the common stereogenic elements: C, N, S, Se, P
     match atom.element.atomic_number() {
-        6 | 7 | 15 | 16 => {}
+        6 | 7 | 15 | 16 | 34 => {}
         _ => return false,
     }
     let mut neighbors: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
@@ -580,6 +580,11 @@ pub(crate) fn is_potential_stereocenter(mol: &Molecule, idx: AtomIdx) -> bool {
     }
     for _ in 0..h {
         neighbors.push(AtomIdx(u32::MAX)); // virtual H sentinel
+    }
+    // S / Se / P with 3 bonds + 0 implicit H: lone pair is the 4th CIP substituent.
+    // Covers sulfoxides [S+][O-] / S(=O), selenoxides Se(=O), and phosphines.
+    if neighbors.len() == 3 && h == 0 && matches!(atom.element.atomic_number(), 15 | 16 | 34) {
+        neighbors.push(AtomIdx(u32::MAX));
     }
     if neighbors.len() != 4 {
         return false;
