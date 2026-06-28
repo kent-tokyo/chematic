@@ -439,6 +439,7 @@ fn rotatable_bond_count_from_set(mol: &Molecule, ring_bond_set: &FxHashSet<BondI
                 && mol.degree(bond.atom1) > 1
                 && mol.degree(bond.atom2) > 1
                 && !is_carbonyl_hetero_bond(mol, bond.atom1, bond.atom2)
+                && !is_diacyl_cc_bond(mol, bond.atom1, bond.atom2)
                 && !is_neopentyl_like(mol, bond.atom1, bond.atom2)
                 && !has_triple_bond(mol, bond.atom1)
                 && !has_triple_bond(mol, bond.atom2)
@@ -523,18 +524,56 @@ fn is_neopentyl_center(mol: &Molecule, center: AtomIdx, other: AtomIdx) -> bool 
         .all(|&nb| mol.atom(nb).element.atomic_number() == an0)
 }
 
-/// RDKit strict definition excludes C–N/O single bonds when C carries a pi-bond to
-/// O, N, or S.  Covers amide C(=O)–N, ester C(=O)–O, guanidine/amidine C(=N)–N,
-/// thioamide/thiourea C(=S)–N.  Ketone C(=O)–C bonds are NOT excluded.
+/// True for C–C bonds between two "acyl" carbons (each has C=O AND a single bond to
+/// N/O/S), e.g. ester–amide, acid–amide, amide–amide alpha-diketo pairs.
+/// Ketone carbons (C=O but only C–C single bonds) are not acyl and are not excluded.
+fn is_diacyl_cc_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
+    if mol.atom(a).element.atomic_number() != 6 || mol.atom(b).element.atomic_number() != 6 {
+        return false;
+    }
+    let is_acyl = |idx: AtomIdx| {
+        has_double_bond_to(mol, idx, 8)
+            && mol.neighbors(idx).any(|(nb, bidx)| {
+                mol.bond(bidx).order == BondOrder::Single
+                    && matches!(mol.atom(nb).element.atomic_number(), 7 | 8 | 16)
+            })
+    };
+    is_acyl(a) && is_acyl(b)
+}
+
+/// RDKit strict definition excludes C–N/O/S single bonds when C carries a pi-bond to
+/// O, N, or S.  Covers amide C(=O)–N, ester C(=O)–O, thioester C(=O)–S,
+/// guanidine/amidine C(=N)–N, thioamide/thiourea C(=S)–N.
+/// Also excludes N–N bonds when either N is adjacent to C=O (hydrazide/semicarbazide).
+/// Formyl exemption: C(=O) with degree 2 (N–CHO, O–CHO) is rotatable per RDKit.
 fn is_carbonyl_hetero_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
     let an_a = mol.atom(a).element.atomic_number();
     let an_b = mol.atom(b).element.atomic_number();
+
+    // N–N bond: exclude only when BOTH N are adjacent to C=O (hydrazide/diacylhydrazine).
+    // If only one N is adjacent (phenylhydrazine, hydrazone, N-nitroso), the bond is rotatable.
+    if an_a == 7 && an_b == 7 {
+        let adj_carbonyl = |n: AtomIdx| {
+            mol.neighbors(n).any(|(nb, _)| {
+                mol.atom(nb).element.atomic_number() == 6 && has_double_bond_to(mol, nb, 8)
+            })
+        };
+        return adj_carbonyl(a) && adj_carbonyl(b);
+    }
+
     let c_idx = match (an_a, an_b) {
-        (6, 7) | (6, 8) => a, // C–N or C–O
-        (7, 6) | (8, 6) => b, // N–C or O–C
+        (6, 7) | (6, 8) | (6, 16) => a, // C–N, C–O, or C–S
+        (7, 6) | (8, 6) | (16, 6) => b, // N–C, O–C, or S–C
         _ => return false,
     };
-    has_double_bond_to(mol, c_idx, 8)   // C=O  (amide / ester)
+
+    // Formyl exemption: C has only 2 heavy-atom neighbors (the heteroatom + =O/=N/=S),
+    // so there is no real substituent — RDKit counts this bond as rotatable.
+    if mol.degree(c_idx) <= 2 {
+        return false;
+    }
+
+    has_double_bond_to(mol, c_idx, 8)   // C=O  (amide / ester / thioester)
         || has_double_bond_to(mol, c_idx, 7)  // C=N  (guanidine / amidine)
         || has_double_bond_to(mol, c_idx, 16) // C=S  (thioamide / thiourea)
 }
