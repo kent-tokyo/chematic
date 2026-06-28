@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{implicit_hcount, AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Molecule, implicit_hcount};
 
 /// The result of a CIP stereochemistry assignment run.
 #[derive(Debug)]
@@ -286,7 +286,11 @@ fn compare_branches(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> 
 /// Returns `None` if any two substituents have equal priority (tie).
 /// Otherwise returns `Vec<u8>` of the same length, where `result[i]` is the
 /// rank of `subs[i]` (1 = lowest CIP priority, N = highest).
-pub(crate) fn rank_substituents(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx]) -> Option<Vec<u8>> {
+pub(crate) fn rank_substituents(
+    mol: &Molecule,
+    center: AtomIdx,
+    subs: &[AtomIdx],
+) -> Option<Vec<u8>> {
     let n = subs.len();
     if n == 0 {
         return Some(vec![]);

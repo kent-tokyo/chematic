@@ -10,9 +10,7 @@ use std::sync::OnceLock;
 use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount,
 };
-use chematic_perception::{
-    all_ring_list, aromatic_ring_list, find_ring_families, find_sssr,
-};
+use chematic_perception::{all_ring_list, aromatic_ring_list, find_ring_families, find_sssr};
 use chematic_smarts::{MatchConfig, find_matches_with_rings_and_config, parse_smarts};
 
 /// True if `idx` has a double bond to any neighbor whose atomic number equals `target_an`.
@@ -1213,13 +1211,25 @@ fn h_mr_for_parent(
             if parent_aromatic {
                 fallback // aromatic O — HS fallback
             } else if mol.neighbors(parent_idx).any(|(nb, _)| {
-                // H4: OC=O (ester/acid) or O[O,S] (peroxide/sulfonic)
+                // [#1]O[#7]: N-O-H (hydroxamate, oxime) → same MR as H on N
+                mol.atom(nb).element.atomic_number() == 7
+            }) {
+                0.9627
+            } else if mol.neighbors(parent_idx).any(|(nb, _)| {
+                // [#1]OC=[#6,#7,O,S]: enol, carboxylic acid, or O[O,S]
                 let an = mol.atom(nb).element.atomic_number();
-                (an == 6 && has_double_bond_to(mol, nb, 8)) || an == 8 || an == 16
+                (an == 6
+                    && mol.neighbors(nb).any(|(nb2, bidx2)| {
+                        nb2 != parent_idx
+                            && mol.bond(bidx2).order == BondOrder::Double
+                            && matches!(mol.atom(nb2).element.atomic_number(), 6 | 7 | 8 | 16)
+                    }))
+                    || an == 8
+                    || an == 16
             }) {
                 1.805
             } else {
-                1.395 // H2: aliphatic, phenolic, or phosphate OH
+                1.395 // H2: aliphatic or phenolic OH
             }
         }
         _ => 1.395, // [#1][!C;!N;!O] → 1.395 (SH, PH, etc.)
@@ -1246,18 +1256,27 @@ pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
             if atom.element.atomic_number() == 1 {
                 return 0.0;
             }
-            let heavy = anchor_sets
-                .iter()
-                .zip(queries.iter())
-                .find(|(set, _)| set.contains(&idx))
-                .map(|(_, (_, _, mr))| *mr)
-                .unwrap_or(0.0);
             let h_count_impl = implicit_hcount(mol, idx);
             let h_count_expl = mol
                 .neighbors(idx)
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             let h_count = h_count_impl + h_count_expl;
+            let heavy = if atom.element.atomic_number() == 8
+                && !atom.aromatic
+                && h_count == 0
+                && atom.charge == 0
+                && is_aromatic_oxide_bridge(mol, idx)
+            {
+                1.080 // Crippen MR for [o] (aromatic oxide bridge)
+            } else {
+                anchor_sets
+                    .iter()
+                    .zip(queries.iter())
+                    .find(|(set, _)| set.contains(&idx))
+                    .map(|(_, (_, _, mr))| *mr)
+                    .unwrap_or(0.0)
+            };
             let h_contrib = if h_count == 0 {
                 0.0
             } else {
@@ -1544,8 +1563,7 @@ pub fn num_spiro_atoms(mol: &Molecule) -> usize {
 /// Naphthalene has 0 (the junction atoms are fused — directly bonded to each other).
 /// Spiro[4.5]decane has 0 (the spiro center is not bridged).
 fn num_bridgehead_atoms_from(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
-    let ring_atom_set: FxHashSet<AtomIdx> =
-        rings.iter().flat_map(|r| r.iter().copied()).collect();
+    let ring_atom_set: FxHashSet<AtomIdx> = rings.iter().flat_map(|r| r.iter().copied()).collect();
     mol.atoms()
         .filter(|(idx, _)| {
             let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();

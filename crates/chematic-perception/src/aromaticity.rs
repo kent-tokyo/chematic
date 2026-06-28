@@ -424,6 +424,42 @@ pub fn augmented_ring_set(mol: &Molecule, sssr_rings: &[Vec<AtomIdx>]) -> Vec<Ve
             }
         }
 
+        // 3-ring XOR: catches small rings that require XOR of 3 SSSR rings
+        // when no intermediate 2-ring XOR produces a valid smaller ring.
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let shares_ij = rings[i].iter().any(|a| rings[j].contains(a));
+                if !shares_ij {
+                    continue;
+                }
+                let xor_ij = bond_sym_diff(&bond_sets[i], &bond_sets[j]);
+                if xor_ij.is_empty() {
+                    continue;
+                }
+                for k in (j + 1)..n {
+                    let shares_k = rings[k]
+                        .iter()
+                        .any(|a| rings[i].contains(a) || rings[j].contains(a));
+                    if !shares_k {
+                        continue;
+                    }
+                    let xor_ijk = bond_sym_diff(&xor_ij, &bond_sets[k]);
+                    let max_size = rings[i].len().max(rings[j].len()).max(rings[k].len());
+                    if xor_ijk.is_empty() || xor_ijk.len() >= max_size {
+                        continue;
+                    }
+                    if let Some(new_ring) = ring_atoms_from_bond_set(mol, &xor_ijk) {
+                        let mut key = new_ring.clone();
+                        key.sort();
+                        if known.insert(key) {
+                            rings.push(new_ring);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
         if !changed {
             break;
         }
@@ -484,9 +520,13 @@ fn strip_envelope_rings(
     for i in 0..n {
         let si = aromatic[i].len();
         'jk: for j in 0..n {
-            if j == i || aromatic[j].len() >= si { continue; }
+            if j == i || aromatic[j].len() >= si {
+                continue;
+            }
             for k in (j + 1)..n {
-                if k == i || aromatic[k].len() >= si { continue; }
+                if k == i || aromatic[k].len() >= si {
+                    continue;
+                }
                 if bond_sym_diff(&bond_sets[j], &bond_sets[k]) == bond_sets[i] {
                     is_envelope[i] = true;
                     break 'jk;
@@ -495,12 +535,18 @@ fn strip_envelope_rings(
         }
         if !is_envelope[i] {
             'jkl: for j in 0..n {
-                if j == i || aromatic[j].len() >= si { continue; }
+                if j == i || aromatic[j].len() >= si {
+                    continue;
+                }
                 for k in (j + 1)..n {
-                    if k == i || aromatic[k].len() >= si { continue; }
+                    if k == i || aromatic[k].len() >= si {
+                        continue;
+                    }
                     let xor_jk = bond_sym_diff(&bond_sets[j], &bond_sets[k]);
                     for l in (k + 1)..n {
-                        if l == i || aromatic[l].len() >= si { continue; }
+                        if l == i || aromatic[l].len() >= si {
+                            continue;
+                        }
                         if bond_sym_diff(&xor_jk, &bond_sets[l]) == bond_sets[i] {
                             is_envelope[i] = true;
                             break 'jkl;
@@ -511,15 +557,23 @@ fn strip_envelope_rings(
         }
         if !is_envelope[i] {
             'jklm: for j in 0..n {
-                if j == i || aromatic[j].len() >= si { continue; }
+                if j == i || aromatic[j].len() >= si {
+                    continue;
+                }
                 for k in (j + 1)..n {
-                    if k == i || aromatic[k].len() >= si { continue; }
+                    if k == i || aromatic[k].len() >= si {
+                        continue;
+                    }
                     let xor_jk = bond_sym_diff(&bond_sets[j], &bond_sets[k]);
                     for l in (k + 1)..n {
-                        if l == i || aromatic[l].len() >= si { continue; }
+                        if l == i || aromatic[l].len() >= si {
+                            continue;
+                        }
                         let xor_jkl = bond_sym_diff(&xor_jk, &bond_sets[l]);
                         for m in (l + 1)..n {
-                            if m == i || aromatic[m].len() >= si { continue; }
+                            if m == i || aromatic[m].len() >= si {
+                                continue;
+                            }
                             if bond_sym_diff(&xor_jkl, &bond_sets[m]) == bond_sets[i] {
                                 is_envelope[i] = true;
                                 break 'jklm;
