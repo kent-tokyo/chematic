@@ -10,7 +10,9 @@ use std::sync::OnceLock;
 use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Element, Molecule, bond_order_sum, implicit_hcount,
 };
-use chematic_perception::{all_ring_list, aromatic_ring_list, find_ring_families, find_sssr};
+use chematic_perception::{
+    all_ring_list, aromatic_ring_list, find_ring_families, find_sssr, ring_bonds_all_aromatic,
+};
 use chematic_smarts::{MatchConfig, find_matches_with_rings_and_config, parse_smarts};
 
 /// True if `idx` has a double bond to any neighbor whose atomic number equals `target_an`.
@@ -1484,11 +1486,18 @@ pub fn fraction_rotatable_bonds(mol: &Molecule) -> f64 {
     rotatable_bond_count(mol) as f64 / hac as f64
 }
 
+/// Returns true when the ring has at least one non-aromatic atom OR any ring bond is
+/// a BondOrder::Single between two aromatic atoms (explicit `-` in aromatic SMILES).
+/// The latter catches pseudo-aromatic rings like xanthine keto form (`nc-2` pattern).
+fn is_aliphatic_ring(mol: &Molecule, ring: &[AtomIdx]) -> bool {
+    ring.iter().any(|&idx| !mol.atom(idx).aromatic) || !ring_bonds_all_aromatic(mol, ring)
+}
+
 /// Number of non-aromatic (aliphatic) rings.
 pub fn num_aliphatic_rings(mol: &Molecule) -> usize {
     all_ring_list(mol)
         .iter()
-        .filter(|ring| ring.iter().any(|&idx| !mol.atom(idx).aromatic))
+        .filter(|ring| is_aliphatic_ring(mol, ring))
         .count()
 }
 
@@ -1540,13 +1549,14 @@ pub fn num_aromatic_heterocycles(mol: &Molecule) -> usize {
 
 /// Number of non-aromatic rings containing at least one heteroatom.
 ///
-/// A ring is aliphatic when at least one of its atoms is not aromatic.
+/// A ring is aliphatic when at least one of its atoms is not aromatic,
+/// or any ring bond is a single bond between two aromatic atoms.
 /// Examples: piperidine (1), morpholine (1), tetrahydrofuran (1).
 pub fn num_aliphatic_heterocycles(mol: &Molecule) -> usize {
     all_ring_list(mol)
         .iter()
         .filter(|ring| {
-            ring.iter().any(|&idx| !mol.atom(idx).aromatic)
+            is_aliphatic_ring(mol, ring)
                 && ring.iter().any(|&idx| {
                     let an = mol.atom(idx).element.atomic_number();
                     an != 6 && an != 1

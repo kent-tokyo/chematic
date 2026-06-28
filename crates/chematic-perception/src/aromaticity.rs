@@ -494,6 +494,24 @@ pub fn all_ring_list(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
     all_ring_list_inner(mol)
 }
 
+/// True when all ring bonds between ring atoms are `BondOrder::Aromatic`.
+///
+/// Rings written with aromatic-SMILES notation but containing an explicit single
+/// bond (`c-n`, `nc-2`, etc.) are NOT truly aromatic.  RDKit canonicalises such
+/// SMILES with lowercase atoms and a `-` bond, which the parser stores as
+/// `BondOrder::Single` between two aromatic-flagged atoms.  Returning `false`
+/// here lets callers exclude them from the aromatic ring count.
+pub fn ring_bonds_all_aromatic(mol: &Molecule, ring: &[AtomIdx]) -> bool {
+    let n = ring.len();
+    (0..n).all(|i| {
+        let a = ring[i];
+        let b = ring[(i + 1) % n];
+        mol.bond_between(a, b)
+            .map(|(bidx, _)| mol.bond(bidx).order == BondOrder::Aromatic)
+            .unwrap_or(true)
+    })
+}
+
 /// Return the de-duplicated list of aromatic rings after augmented-ring-set expansion
 /// and envelope stripping.  Useful for filtering (e.g. counting only aromatic heterocycles).
 pub fn aromatic_ring_list(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
@@ -506,7 +524,9 @@ pub fn aromatic_ring_list(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
     };
     all_ring_list_inner(mol)
         .into_iter()
-        .filter(|ring| ring.iter().all(|&idx| mol.atom(idx).aromatic))
+        .filter(|ring| {
+            ring.iter().all(|&idx| mol.atom(idx).aromatic) && ring_bonds_all_aromatic(mol, ring)
+        })
         .collect()
 }
 
