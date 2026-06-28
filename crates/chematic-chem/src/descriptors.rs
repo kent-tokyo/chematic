@@ -1598,9 +1598,8 @@ fn num_spiro_atoms_from(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
             }
             // Spiro: exists any pair of rings that shares ONLY this one atom.
             (0..member.len()).any(|i| {
-                (i + 1..member.len()).any(|j| {
-                    member[i].iter().filter(|a| member[j].contains(a)).count() == 1
-                })
+                (i + 1..member.len())
+                    .any(|j| member[i].iter().filter(|a| member[j].contains(a)).count() == 1)
             })
         })
         .count()
@@ -1625,6 +1624,22 @@ fn num_bridgehead_atoms_from(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
         .filter(|(idx, _)| {
             let member_rings: Vec<_> = rings.iter().filter(|r| r.contains(idx)).collect();
             if member_rings.len() < 2 {
+                return false;
+            }
+            // Spiro atoms are not bridgehead atoms: if any pair of member rings
+            // shares ONLY this atom, the atom is a spiro centre, not a bridgehead.
+            // (The augmented ring set can introduce XOR rings that would otherwise
+            // make spiro centres satisfy the bridgehead criterion spuriously.)
+            let is_spiro = (0..member_rings.len()).any(|i| {
+                (i + 1..member_rings.len()).any(|j| {
+                    member_rings[i]
+                        .iter()
+                        .filter(|a| member_rings[j].contains(a))
+                        .count()
+                        == 1
+                })
+            });
+            if is_spiro {
                 return false;
             }
             let ring_bonds = mol
