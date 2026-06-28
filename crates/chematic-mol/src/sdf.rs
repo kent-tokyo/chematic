@@ -246,6 +246,95 @@ fn parse_sd_field_header(line: &str) -> Option<String> {
 }
 
 // ---------------------------------------------------------------------------
+// SdfFileReader — streaming reader for file-backed SDF
+// ---------------------------------------------------------------------------
+
+/// Streaming SDF iterator over any [`std::io::BufRead`] source.
+///
+/// Unlike [`SdfRecordReader`] (which requires the entire file in memory as a
+/// `&str`), `SdfFileReader` reads one MOL block at a time, suitable for large
+/// SDF files.  IO errors are surfaced as [`MolParseError::Io`]; molecule parse
+/// errors are returned as `Err` items so the caller can decide to skip or stop.
+pub struct SdfFileReader<R: std::io::BufRead> {
+    reader: R,
+    done: bool,
+}
+
+impl<R: std::io::BufRead> SdfFileReader<R> {
+    /// Wrap any `BufRead` source (e.g. `BufReader<File>`).
+    pub fn new(reader: R) -> Self {
+        Self {
+            reader,
+            done: false,
+        }
+    }
+}
+
+impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
+    type Item = Result<SdfRecord, MolParseError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        let mut block = String::with_capacity(2048);
+        let mut line = String::new();
+
+        loop {
+            line.clear();
+            match self.reader.read_line(&mut line) {
+                Err(e) => {
+                    self.done = true;
+                    return Some(Err(MolParseError::Io(e.to_string())));
+                }
+                Ok(0) => {
+                    // EOF
+                    self.done = true;
+                    if block.trim().is_empty() {
+                        return None;
+                    }
+                    // Trailing block without $$$$ delimiter — parse it.
+                    break;
+                }
+                Ok(_) => {
+                    let trimmed = line.trim_end_matches(['\r', '\n']);
+                    if trimmed == "$$$$" {
+                        break;
+                    }
+                    block.push_str(&line);
+                }
+            }
+        }
+
+        if block.trim().is_empty() {
+            // Empty block (e.g. two consecutive $$$$) — advance to next.
+            return self.next();
+        }
+
+        // Reuse the same parse path as SdfRecordReader.
+        let (mol, meta, coords) = match parse_mol_with_coords(&block) {
+            Ok(triple) => triple,
+            Err(e) => return Some(Err(e)),
+        };
+
+        let data_part = block
+            .find("M  END")
+            .map(|pos| &block[pos + 6..])
+            .unwrap_or("");
+        let properties: std::collections::HashMap<String, String> =
+            parse_sd_fields(data_part).into_iter().collect();
+
+        Some(Ok(SdfRecord {
+            mol,
+            meta,
+            coords,
+            properties,
+        }))
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -363,5 +452,30 @@ $$$$
             parse_sdf(bad_sdf),
             Err(MolParseError::UnexpectedEnd)
         ));
+    }
+
+    #[test]
+    fn test_sdf_file_reader_streaming() {
+        // Use Cursor<Vec<u8>> as an in-memory BufRead to avoid touching the filesystem.
+        use std::io::{BufReader, Cursor};
+        let sdf = two_mol_sdf();
+        let cursor = Cursor::new(sdf.into_bytes());
+        let records: Vec<_> = SdfFileReader::new(BufReader::new(cursor))
+            .filter_map(|r| r.ok())
+            .collect();
+        assert_eq!(records.len(), 2);
+        assert_eq!(records[0].mol.atom_count(), 2); // mol_a: 2 C atoms
+        assert_eq!(records[1].mol.atom_count(), 3); // mol_b: C, N, O
+    }
+
+    #[test]
+    fn test_sdf_file_reader_skips_empty_block() {
+        use std::io::{BufReader, Cursor};
+        let sdf = format!("$$$$\n{MOL_A}$$$$\n");
+        let cursor = Cursor::new(sdf.into_bytes());
+        let records: Vec<_> = SdfFileReader::new(BufReader::new(cursor))
+            .filter_map(|r| r.ok())
+            .collect();
+        assert_eq!(records.len(), 1);
     }
 }
