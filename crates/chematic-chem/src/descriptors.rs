@@ -4001,6 +4001,48 @@ mod tests {
         assert_eq!(num_stereocenters(&mol("CC(=O)O")), 0);
     }
 
+    #[test]
+    fn test_num_stereocenters_bridgehead_quaternary() {
+        // [C@@]12: one centre is ring-adjacent (CIP tie); we count 1 (RDKit: 2).
+        // Known limitation: full CIP like/unlike rule needed for ring-adjacent tie-breaking.
+        assert_eq!(
+            num_stereocenters(&mol("NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2")),
+            1
+        );
+    }
+
+    #[test]
+    fn test_num_stereocenters_ring_adjacent() {
+        // 2 of 3 ring-adjacent stereocenters resolved (CIP tie on third); we count 2 (RDKit: 3).
+        // Known limitation: full CIP like/unlike rule needed for ring-adjacent tie-breaking.
+        assert_eq!(
+            num_stereocenters(&mol(
+                "CCCCc1cn([C@H]2[C@H](C)CCC[C@@H]2C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1"
+            )),
+            2
+        );
+    }
+
+    #[test]
+    #[ignore = "requires CIP Rule 5 like/unlike; see validation/rdkit_issues/stereo/cip_rule5_adjacent_ties.smi"]
+    fn test_cip_rule5_bridgehead_future() {
+        assert_eq!(
+            num_stereocenters(&mol("NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2")),
+            2 // RDKit target; chematic currently returns 1
+        );
+    }
+
+    #[test]
+    #[ignore = "requires CIP Rule 5 like/unlike; see validation/rdkit_issues/stereo/cip_rule5_adjacent_ties.smi"]
+    fn test_cip_rule5_ring_adjacent_future() {
+        assert_eq!(
+            num_stereocenters(&mol(
+                "CCCCc1cn([C@H]2[C@H](C)CCC[C@@H]2C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1"
+            )),
+            3 // RDKit target; chematic currently returns 2
+        );
+    }
+
     // -- BalabanJ tests -------------------------------------------------
 
     #[test]

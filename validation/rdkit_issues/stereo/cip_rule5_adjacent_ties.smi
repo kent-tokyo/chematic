@@ -1,0 +1,13 @@
+# CIP Rule 5 "like/unlike" tie-breaking failures
+# chematic counts fewer stereocenters than RDKit in these cases.
+# Root cause: is_potential_stereocenter() → rank_substituents() returns None for
+# ring-adjacent atoms where all 4 substituents cannot be distinguished without
+# knowing the R/S of neighbouring stereocenters (CIP Rule 5).
+# Fix requires multi-pass CIP with resolved_centers propagation; deferred.
+# Regression tests: descriptors.rs::test_cip_rule5_*_future (#[ignore])
+
+# bridgehead bicyclic: chematic=1, RDKit=2
+NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2
+
+# ring-adjacent cyclohexyl: chematic=2, RDKit=3
+CCCCc1cn([C@H]2[C@H](C)CCC[C@@H]2C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1

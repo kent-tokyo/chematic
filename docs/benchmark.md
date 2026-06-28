@@ -126,7 +126,7 @@ Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). 
 | H-bond donors (HBD) | **100%** | exact |
 | H-bond acceptors (HBA) | **100%** | exact |
 | TPSA | **100%** | ±0.1 Å² |
-| LogP (Crippen) | **100%** | ±0.01 |
+| LogP (Crippen) | **100%** | exact* |
 | MR (molar refractivity) | **100%** | ±0.01 |
 | Fsp3 | **100%** | ±0.001 |
 | Aromatic ring count | **100%** | exact |
