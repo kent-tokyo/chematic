@@ -5535,10 +5535,11 @@ fn doctor(py: Python<'_>) {
     println!("chematic v{ver}");
     println!("Python {py_ver}  |  {platform} {arch}");
     println!();
-    println!("Descriptor accuracy (benchmark 2026-06, v0.4.23 vs RDKit 2026.03.3):");
-    println!("  MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)");
-    println!("  TPSA                  98.1%  (4,999-mol, ±0.1 Å²)");
-    println!("  LogP (Crippen)        99.7%  (4,999-mol, ±0.01)");
+    println!("Descriptor accuracy (benchmark 2026-06, v0.4.24 vs RDKit 2026.03.3):");
+    println!("  MW / HBA / HBD / ARC  100.0% (4,999-mol ChEMBL subset)");
+    println!("  TPSA                  100.0% (4,999-mol, ±0.1 Å²)");
+    println!("  LogP (Crippen)        100.0% (4,999-mol, max Δ = 1.1×10⁻¹³)");
+    println!("  Stereocenters         99.98% legacy / 98.7% new CIP (4,999-mol)");
     println!("  ECFP4 throughput      3.6 µs/mol  (5–14× faster than RDKit)");
     println!("  WASM bundle           504 KB gzip");
     println!();

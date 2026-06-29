@@ -42,6 +42,7 @@ Current version: **v0.4.23** (2026-06-26)
 |------|--------|
 | Kekulization failures | **1/5000** — only pure H₂ `[H][H]` (no heavy atoms; IUPAC InChI library constraint, not a kekulization issue) |
 | Aromatic ring count vs RDKit | **~100%** (222/222 bench5k failures fixed in v0.4.11 — `augmented_ring_set` XOR guard `min`→`max`) |
+| Bridgehead atoms vs RDKit | **100%** (4999/4999 — bond-intersection algorithm, 2026-06-28) |
 | HBA agreement vs RDKit | 99.98% (4999/5000) |
 | HBD agreement vs RDKit | **100%** (175/175 TSV bulk test; S-H thiol fix in v0.4.12+) |
 | TPSA accuracy vs RDKit | **±1.0 Å²** (175-mol bulk test; nitro-N, oxide bridge, Kekulé-N fixes) |
@@ -109,6 +110,12 @@ Current version: **v0.4.23** (2026-06-26)
 | done: | TPSA/LogP/HBD descriptor accuracy: nitro-N fix, oxide bridge fix, Kekulé-N fix, S-H HBD fix; 175-mol bulk regression tests (±1.0 Å² / ±0.3 / exact) |
 | done: | bench5k.py extended with TPSA, LogP, HBD comparison vs RDKit |
 | done: | OSS credibility sprint (2026-06-27): README 3-row badges, SECURITY.md v→v0.4.23, pyproject.toml 190+ descriptors + Python 3.13, security.yml hardened (no continue-on-error, dtolnay, cargo-deny job), deny.toml, codeql.yml (deleted — conflicts with Default setup), scripts/check.sh, scripts/bump_version.py, CLAUDE.md release flow |
+| done: | Bridgehead atoms 98.5% → **100%** (2026-06-28): bond-intersection algorithm — an atom is bridgehead iff some ring pair shares ≥ 2 bonds and the atom is incident to exactly 1; fixes both over-count (peroxide cages) and under-count (spiro+bridgehead co-occurrence) |
+| done: | `chematic.screen(smiles, profile="druglike")` — bundles lipinski/veber/pains/brenk/qed/sa_score into one call; profiles: druglike/fragment/leadlike; returns list[dict] with per-filter _pass flags and overall_pass |
+| done: | `scripts/analyze_logp_mismatches.py` — compare chematic vs RDKit Crippen LogP, output buckets + TSV; confirmed 0 mismatches (100% at ±0.01 on 5k corpus) |
+| done: | SDF true streaming: `SdfFileReader<R: BufRead>` + Python `iter_sdf(path)` → lazy streaming, `iter_sdf_batched(path, batch_size=1000)` new; `iter_sdf_str()` unchanged; `MolParseError::Io` added |
+| done: | `bulk.descriptors_array(smiles, columns)` — columnar numpy output, ~25% faster than `descriptors()+DataFrame()`; float64/bool/NaN for optional |
+| done: | Stereocenters 99.8% → 99.98% (legacy) / 98.7% (new CIP) — CIP Rule 5 tie-breaking via provisional R/S + equality-based signature comparison; cage false-positives correctly avoided |
 
 ---
 
@@ -116,6 +123,7 @@ Current version: **v0.4.23** (2026-06-26)
 
 | Version | Date | Highlights |
 |---------|------|-----------|
+| v0.4.23 | 2026-06-28 | `screen()`+LogP analyzer+SDF streaming+`descriptors_array()`; bridgehead/spiro/rotatable 100% |
 | v0.4.23 | 2026-06-26 | LogP 96.5% → 99.7% (symmetric triple bond VF2 dedup fix); OSS sprint: badges, CI hardening, cargo-deny, check.sh, bump_version.py |
 | v0.4.19 | 2026-06-23 | PDF/EPS 出力、ChemicalJSON、Schultz/Gutman MTI・VABC・Gravitational index、bulk.substructure_match、bulk.generate_3d、bulk.tanimoto_matrix、bulk.standardize、inline SHA-256 (sha2 dep 除去)、WASM 819→504 KB gzip (-38.5%) |
 | v0.4.18 | 2026-06-23 | Jupyter `_repr_svg_`、`from_smiles_list`、`descriptors_df`、`chi_all`、`pains_passes_and_matches`、CNS MPO perf |
