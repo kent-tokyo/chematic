@@ -52,6 +52,45 @@ def test_canonical_idempotent(smi):
 
 
 # ---------------------------------------------------------------------------
+# Aromaticity round-trip consistency (chematic-internal; Sprint 9 diagnostic)
+#
+# The residual ~1.6% canonical idempotency failures on large fused polycyclics
+# are caused by aromaticity perception disagreeing between a molecule and the
+# re-parse of its own canonical SMILES (e.g. 16 vs 17 aromatic bonds), which
+# shifts Morgan ranks and the emitted atom order. This guards the property on
+# fused aromatics that DO round-trip consistently; it can be extended once the
+# aromaticity/parser-core fix lands (see docs/rdkit_compat.md).
+# ---------------------------------------------------------------------------
+
+AROMATIC_ROUNDTRIP_CORPUS = [
+    "c1ccccc1", "c1ccncc1", "c1ccoc1", "c1ccsc1",
+    "c1ccc2ccccc2c1",          # naphthalene
+    "c1ccc2ncccc2c1",          # quinoline
+    "c1ccc2c(c1)cc[nH]2",      # indole
+    "c1ccc2cc3ccccc3cc2c1",    # anthracene
+    "c1ccc2[nH]c3ccccc3c2c1",  # carbazole
+    "c1ccc2c(c1)oc1ccccc12",   # dibenzofuran
+]
+
+
+def _arom_counts(smi):
+    m = chematic.from_smiles(smi)
+    return (sum(1 for a in m.atom_table if a[3]),
+            sum(1 for b in m.bond_table if b[3]))
+
+
+@pytest.mark.parametrize("smi", AROMATIC_ROUNDTRIP_CORPUS)
+def test_aromaticity_roundtrip_consistent(smi):
+    before = _arom_counts(smi)
+    canon = chematic.from_smiles(smi).smiles
+    after = _arom_counts(canon)
+    assert before == after, (
+        f"aromatic (atoms, bonds) changed across canonical round-trip for {smi}: "
+        f"{before} -> {after}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Round-trip semantic equivalence vs RDKit
 # ---------------------------------------------------------------------------
 

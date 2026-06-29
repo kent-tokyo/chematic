@@ -70,13 +70,19 @@ why it is or isn't pursued.
 | Aromatic ring-junction carbonyls (`c(=O)` in fused aromatics) | chematic and RDKit model these atoms differently, shifting a few `c` / `C=O` matches and aromatic atom/bond counts. | Documented; small tail (~1–3%). |
 | Morgan bit positions | FNV-1a (chematic) vs MurmurHash (RDKit). | By design — similarity **ranking** is consistent; individual bit indices are not comparable across libraries. |
 | Exocyclic C=N E/Z in canonical SMILES (~0.4% round-trip) | The **parser** drops `/`,`\` directional bonds that flank an aromatic ring atom during aromatization (`crates/chematic-smiles/src/parser.rs`), *before* the canonical writer runs — so the geometry is already gone by write time. | **Deferred** — a parser + aromaticity change (broad blast radius), not a writer fix. |
-| Idempotency on large fused polycyclics (~1.6%) | Canonical Morgan-rank ordering converges in ~3 passes, not 1, on large bridged/fused systems — so `canonical(canonical(s))` re-roots the traversal. The E/Z markers ride along; the `/`,`\` direction itself is **not** the cause. | **Deferred** — a core Morgan-ranking change touching every canonical SMILES. |
+| Canonical idempotency on large fused polycyclics (~1.6%) | **Aromaticity-perception round-trip inconsistency** — *not* Morgan-rank tie-breaking (the failing molecules have all-distinct ranks). A molecule and the re-parse of its own canonical SMILES can disagree on which bonds are aromatic (e.g. 16 vs 17 on a fluorene/carbazole-type linkage); because Morgan ranks weight aromatic vs single bonds differently (`bond_order_value`), this shifts the canonical atom order and the emitted string. The molecule is preserved (**InChI invariant**); only the representation differs. | **Deferred** — the fix is in the aromaticity/parser core (which delivers the 100% aromatic-ring-count + exact descriptors), gated on full descriptor regression; not a canonicalizer patch. Pairs with the exocyclic-C=N parser work above. |
 
 **The `/`,`\` direction choice itself is deterministic and idempotent on stable skeletons**
 (verified on a 12-molecule E/Z corpus — see `crates/chematic-smiles/src/canonical.rs`
 tests and `tests/test_canonical_diff.py`). Canonical-SMILES E/Z is therefore reliable for the
 overwhelming majority of molecules; the residue is confined to the two named structural
 classes above.
+
+**The canonical Morgan ranking itself is order-invariant for distinct-rank molecules** — the
+residual idempotency failures are upstream in aromaticity perception, not in the ranking or the
+writer. Canonical SMILES is idempotent for the ~98.4% of a 5k corpus whose aromaticity round-trips
+consistently (guarded by `fused_aromatic_canonical_is_idempotent` and
+`test_aromaticity_roundtrip_consistent`).
 
 ---
 

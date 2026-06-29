@@ -1049,4 +1049,31 @@ mod tests {
             );
         }
     }
+
+    // ── Fused-aromatic canonical idempotency (Sprint 9) ─────────────────────
+    //
+    // Lock in the fused aromatics that DO round-trip consistently. The residual
+    // ~1.6% canonical idempotency failures on large fused polycyclics are caused
+    // by aromaticity-perception round-trip inconsistency (a molecule vs the
+    // re-parse of its own canonical SMILES can disagree on which bonds are
+    // aromatic — e.g. 16 vs 17 on a fluorene-type linkage — which shifts Morgan
+    // ranks). That is an aromaticity/parser-core issue, not a canonical-ranking
+    // bug; see docs/rdkit_compat.md. These cases are stable and guarded here.
+
+    #[test]
+    fn fused_aromatic_canonical_is_idempotent() {
+        for s in [
+            "c1ccc2ccccc2c1",         // naphthalene
+            "c1ccc2ncccc2c1",         // quinoline
+            "c1ccc2c(c1)cc[nH]2",     // indole
+            "c1ccc2cc3ccccc3cc2c1",   // anthracene
+            "c1ccc2[nH]c3ccccc3c2c1", // carbazole
+            "c1ccc2c(c1)oc1ccccc12",  // dibenzofuran
+        ] {
+            assert!(
+                is_stable(s),
+                "fused-aromatic canonical SMILES must be idempotent for {s}"
+            );
+        }
+    }
 }
