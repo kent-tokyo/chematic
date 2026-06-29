@@ -74,6 +74,11 @@ def main():
     nhet  = make_int_counter()   # num heteroatoms
     nsc     = make_int_counter()   # num stereocenters (legacy CalcNumAtomStereoCenters)
     nsc_new = make_int_counter()   # num stereocenters (new RDKit CIP / FindPotentialStereo)
+    nsc_consensus = make_int_counter()  # where legacy == new CIP == chematic
+    logp_max_delta = 0.0
+    nsc_oracle_disagree = 0        # molecules where legacy != new CIP
+    nsc_oracle_legacy_under = 0    # legacy < new CIP
+    nsc_oracle_new_over = 0        # new CIP > legacy (same as above, broken out)
     nahe  = make_int_counter()   # num aromatic heterocycles
     nalhe = make_int_counter()   # num aliphatic heterocycles
     nsat  = make_int_counter()   # num saturated heterocycles
@@ -192,6 +197,7 @@ def main():
         check_int(arc,    rd_arc,   ch_arc,   "ARC",    smi)
         check_float(tpsa, rd_tpsa,  ch_tpsa,  0.1,  "TPSA",  smi, ".2f")
         check_float(logp, rd_logp,  ch_logp,  0.01, "LogP",  smi, ".4f")
+        logp_max_delta = max(logp_max_delta, abs(ch_logp - rd_logp))
         check_float(mr,   rd_mr,    ch_mr,    0.01, "MR",    smi, ".2f")
         check_float(fsp3, rd_fsp3,  ch_fsp3,  0.001,"Fsp3",  smi, ".4f")
         check_int(rb,     rd_rb,    ch_rb,    "RotB",  smi)
@@ -199,6 +205,18 @@ def main():
         check_int(nhet,   rd_nhet,  ch_nhet,  "NHet",  smi)
         check_int(nsc,     rd_nsc,     ch_nsc, "NSC",     smi)
         check_int(nsc_new, rd_nsc_new, ch_nsc, "NSC_new", smi)
+        if rd_nsc == rd_nsc_new == ch_nsc:
+            nsc_consensus["match"] += 1
+        elif ch_nsc > max(rd_nsc, rd_nsc_new):
+            nsc_consensus["over"] += 1
+        else:
+            nsc_consensus["under"] += 1
+        if rd_nsc != rd_nsc_new:
+            nsc_oracle_disagree += 1
+            if rd_nsc < rd_nsc_new:
+                nsc_oracle_legacy_under += 1
+            else:
+                nsc_oracle_new_over += 1
         check_int(nahe,   rd_nahe,  ch_nahe,  "NAHet", smi)
         check_int(nalhe,  rd_nalhe, ch_nalhe, "NALHet",smi)
         check_int(nsat,   rd_nsat,  ch_nsat,  "NSatHet",smi)
@@ -262,13 +280,10 @@ def main():
     print(sep)
 
     if args.json:
-        import json, datetime, subprocess
+        import json, datetime
         try:
-            ver = subprocess.check_output(
-                ["python3", "-c", "import chematic; print(chematic.__version__)"],
-                text=True
-            ).strip()
-        except Exception:
+            ver = chematic.__version__
+        except AttributeError:
             ver = "unknown"
         def metric_dict(c, tol=None):
             d = {"agreement_pct": round(pct(c), 2), "match": c["match"],
@@ -281,6 +296,11 @@ def main():
             "chematic_version": ver,
             "corpus": {"total": total, "rdkit_parse_failures": parse_fail_rd,
                        "chematic_parse_failures": parse_fail_ch},
+            "stereocenters": {
+                "oracle_disagreements": nsc_oracle_disagree,
+                "oracle_disagree_legacy_under": nsc_oracle_legacy_under,
+                "oracle_disagree_new_cip_over": nsc_oracle_new_over,
+            },
             "metrics": {
                 "hba":   metric_dict(hba,  "exact"),
                 "hbd":   metric_dict(hbd,  "exact"),
@@ -290,14 +310,15 @@ def main():
                               "recall_pct": round(nh_rec, 2),
                               "tp": nh_tp, "tn": nh_tn, "fp": nh_fp, "fn": nh_fn},
                 "tpsa":  metric_dict(tpsa, "±0.1 Å²"),
-                "logp":  metric_dict(logp, "±0.01"),
+                "logp":  {**metric_dict(logp, "±0.01"), "max_delta": logp_max_delta},
                 "mr":    metric_dict(mr,   "±0.01"),
                 "fsp3":  metric_dict(fsp3, "±0.001"),
-                "rotatable_bonds":          metric_dict(rb,     "exact"),
-                "heavy_atom_count":         metric_dict(hac,    "exact"),
-                "num_heteroatoms":          metric_dict(nhet,   "exact"),
-                "num_stereocenters":         metric_dict(nsc,     "exact"),
-                "num_stereocenters_new_cip": metric_dict(nsc_new, "exact"),
+                "rotatable_bonds":           metric_dict(rb,            "exact"),
+                "heavy_atom_count":          metric_dict(hac,           "exact"),
+                "num_heteroatoms":           metric_dict(nhet,          "exact"),
+                "num_stereocenters":         metric_dict(nsc,           "exact"),
+                "num_stereocenters_new_cip": metric_dict(nsc_new,       "exact"),
+                "num_stereocenters_consensus": metric_dict(nsc_consensus, "exact"),
                 "num_aromatic_heterocycles":metric_dict(nahe,   "exact"),
                 "num_aliphatic_heterocycles":metric_dict(nalhe, "exact"),
                 "num_saturated_heterocycles":metric_dict(nsat,  "exact"),

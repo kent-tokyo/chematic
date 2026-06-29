@@ -1,0 +1,173 @@
+{
+  "generated_at": "2026-06-29T01:12:47Z",
+  "chematic_version": "0.4.24",
+  "corpus": {
+    "total": 4999,
+    "rdkit_parse_failures": 0,
+    "chematic_parse_failures": 0
+  },
+  "stereocenters": {
+    "oracle_disagreements": 68,
+    "oracle_disagree_legacy_under": 68,
+    "oracle_disagree_new_cip_over": 0
+  },
+  "metrics": {
+    "hba": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "hbd": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "arc": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "nh_smarts": {
+      "agreement_pct": 100.0,
+      "precision_pct": 100.0,
+      "recall_pct": 100.0,
+      "tp": 467,
+      "tn": 4532,
+      "fp": 0,
+      "fn": 0
+    },
+    "tpsa": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "\u00b10.1 \u00c5\u00b2"
+    },
+    "logp": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "\u00b10.01",
+      "max_delta": 1.1013412404281553e-13
+    },
+    "mr": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "\u00b10.01"
+    },
+    "fsp3": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "\u00b10.001"
+    },
+    "rotatable_bonds": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "heavy_atom_count": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_heteroatoms": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_stereocenters": {
+      "agreement_pct": 99.98,
+      "match": 4998,
+      "over": 1,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_stereocenters_new_cip": {
+      "agreement_pct": 98.66,
+      "match": 4932,
+      "over": 0,
+      "under": 67,
+      "tolerance": "exact"
+    },
+    "num_stereocenters_consensus": {
+      "agreement_pct": 98.64,
+      "match": 4931,
+      "over": 0,
+      "under": 68,
+      "tolerance": "exact"
+    },
+    "num_aromatic_heterocycles": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_aliphatic_heterocycles": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_saturated_heterocycles": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_aliphatic_rings": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_saturated_rings": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_spiro_atoms": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_bridgehead_atoms": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    },
+    "num_amide_bonds": {
+      "agreement_pct": 100.0,
+      "match": 4999,
+      "over": 0,
+      "under": 0,
+      "tolerance": "exact"
+    }
+  }
+}
