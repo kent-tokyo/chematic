@@ -44,7 +44,7 @@ jobs:
         run: cargo audit --json > audit-results.json
 
       - name: Upload audit results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: cargo-audit-results
