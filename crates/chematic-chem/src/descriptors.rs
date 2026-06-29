@@ -1785,8 +1785,19 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
 /// for their four substituents are all distinct, regardless of whether @/@@ is
 /// specified in the input SMILES.
 pub fn num_stereocenters(mol: &Molecule) -> usize {
+    use chematic_core::CipCode;
+    use std::collections::HashMap;
+
+    // Pass 1: graph-only provisional R/S assignments.
+    let provisional: HashMap<_, CipCode> = crate::cip::assign_cip(mol)
+        .assignments
+        .into_iter()
+        .filter(|(_, c)| matches!(c, CipCode::R | CipCode::S))
+        .collect();
+
+    // Pass 2: count with Rule 5 tie-breaking for graph-tied atoms.
     mol.atoms()
-        .filter(|(idx, _)| crate::cip::is_potential_stereocenter(mol, *idx))
+        .filter(|(idx, _)| crate::cip::is_potential_stereocenter_rule5(mol, *idx, &provisional))
         .count()
 }
 
@@ -4003,43 +4014,21 @@ mod tests {
 
     #[test]
     fn test_num_stereocenters_bridgehead_quaternary() {
-        // [C@@]12: one centre is ring-adjacent (CIP tie); we count 1 (RDKit: 2).
-        // Known limitation: full CIP like/unlike rule needed for ring-adjacent tie-breaking.
+        // Bicyclic bridgehead: ring-adjacent tie resolved via CIP Rule 5 provisional R/S.
         assert_eq!(
             num_stereocenters(&mol("NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2")),
-            1
-        );
-    }
-
-    #[test]
-    fn test_num_stereocenters_ring_adjacent() {
-        // 2 of 3 ring-adjacent stereocenters resolved (CIP tie on third); we count 2 (RDKit: 3).
-        // Known limitation: full CIP like/unlike rule needed for ring-adjacent tie-breaking.
-        assert_eq!(
-            num_stereocenters(&mol(
-                "CCCCc1cn([C@H]2[C@H](C)CCC[C@@H]2C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1"
-            )),
             2
         );
     }
 
     #[test]
-    #[ignore = "requires CIP Rule 5 like/unlike; see validation/rdkit_issues/stereo/cip_rule5_adjacent_ties.smi"]
-    fn test_cip_rule5_bridgehead_future() {
-        assert_eq!(
-            num_stereocenters(&mol("NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2")),
-            2 // RDKit target; chematic currently returns 1
-        );
-    }
-
-    #[test]
-    #[ignore = "requires CIP Rule 5 like/unlike; see validation/rdkit_issues/stereo/cip_rule5_adjacent_ties.smi"]
-    fn test_cip_rule5_ring_adjacent_future() {
+    fn test_num_stereocenters_ring_adjacent() {
+        // 3 ring-adjacent stereocenters in a cyclohexyl side chain.
         assert_eq!(
             num_stereocenters(&mol(
                 "CCCCc1cn([C@H]2[C@H](C)CCC[C@@H]2C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1"
             )),
-            3 // RDKit target; chematic currently returns 2
+            3
         );
     }
 

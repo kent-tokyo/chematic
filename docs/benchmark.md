@@ -138,11 +138,13 @@ Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). 
 | Num bridgehead atoms | **100%** | exact |
 | Num amide bonds | **100%** | exact |
 | Aromatic/aliphatic heterocycles | **100%** | exact |
-| Num stereocenters | 99.8% | exact |
+| Num stereocenters | **99.98%** | exact |
 | [nH] SMARTS match | **100%** | precision/recall |
 
-18 of 19 metrics reach 100% on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
-Stereocenters (99.8%, 10 under-counts) involve CIP tie-breaking in ring-adjacent chiral centres.
+19 of 19 metrics reach ≥99.98% on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
+Stereocenters: 4998/4999 vs `CalcNumAtomStereoCenters` (legacy RDKit CIP); the 1 discrepancy
+is a highly-symmetric polyester where chematic and RDKit's new CIP agree on 4 stereocenters
+while the legacy function returns 2 (under-count in legacy).
 
 ### How to reproduce
 

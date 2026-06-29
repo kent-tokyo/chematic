@@ -173,7 +173,7 @@ chematic.doctor()
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  100%   within ±0.1 Å²
 #   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)
-#   Num stereocenters     99.8%  (CIP Rule 5 limitation)
+#   Num stereocenters     99.98% (4998/4999; 1 mol matches new RDKit CIP)
 # ...
 ```
 
@@ -241,10 +241,11 @@ than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
 | HBA / HBD / aromatic ring count | **100% RDKit agreement** | 4,999-mol ChEMBL subset |
 | TPSA | **100% RDKit agreement** within ±0.1 Å² | 4,999-mol ChEMBL subset |
 | LogP (Crippen) | **100% RDKit agreement**\* | 4,999-mol ChEMBL subset |
-| Num stereocenters | **99.8%** (CIP Rule 5 limitation) | 4,999-mol ChEMBL subset |
+| Num stereocenters | **99.98%**† | 4,999-mol ChEMBL subset |
 | WASM bundle | **504 KB** gzip | — |
 
-\*LogP max Δ = 1.1×10⁻¹³ across 4,999 molecules — within float64 rounding error.
+\*LogP max Δ = 1.1×10⁻¹³ across 4,999 molecules — within float64 rounding error.  
+†Stereocenters: 4998/4999 vs `CalcNumAtomStereoCenters` (legacy RDKit); the 1 molecule matches RDKit's newer CIP algorithm.
 
 All numbers are reproducible with the scripts in this repo.  
 Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](validation/)
@@ -353,7 +354,7 @@ See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for al
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor`; **zero-order/dative bonds excluded from ring perception** | 34    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords, +partial charge writing), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W; **AutoDock PDBQT** (parse + write); **ChemicalJSON** (`parse_cjson`/`write_cjson`, Avogadro/MolSSI format) | 31    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; **PDF output** (`depict_pdf`/`depict_pdf_opts` via svg2pdf); **EPS output** (`depict_eps`/`depict_eps_opts`, pure Rust); `tiny_skia` PNG is optional `png` feature (default on, disabled for WASM) | 28    |
-| `chematic-chem`       | 190+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 100% RDKit agreement** (4 999 / 4 999 mol benchmark); **TPSA 100% ±0.1 Å² / LogP 100%\* / HBD 100% / stereocenters 99.8%** vs RDKit (4,999-mol ChEMBL); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); **`schultz_mti`, `gutman_mti`, `vabc` (Bondi radii vdW volume), `gravitational_index`**; `clean_stereo_groups()` in standardize | 211   |
+| `chematic-chem`       | 190+ descriptors, tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 100% RDKit agreement** (4 999 / 4 999 mol benchmark); **TPSA 100% ±0.1 Å² / LogP 100%\* / HBD 100% / stereocenters 99.98%** vs RDKit (4,999-mol ChEMBL); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); **`schultz_mti`, `gutman_mti`, `vabc` (Bondi radii vdW volume), `gravitational_index`**; `clean_stereo_groups()` in standardize | 211   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 87    |
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing; **UFF** (metals/organometallics: Zn, Fe, Cu, …) | 51    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion); **`[kN]` ring-size primitive**; **VF2 early-exit** when query > target atom count; **`find_matches_with_rings`** — share SSSR across multi-pattern batches | 142   |

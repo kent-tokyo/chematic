@@ -281,6 +281,181 @@ fn compare_branches(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> 
     Equal
 }
 
+// ---------------------------------------------------------------------------
+// CIP Rule 5: stereo-descriptor tie-breaking
+// ---------------------------------------------------------------------------
+
+/// Map a provisional CIP code to a u8 token for Rule 5 comparison.
+/// Only R/S matter; E/Z and unresolved centres collapse to 0.
+fn stereo_token(code: Option<CipCode>) -> u8 {
+    match code {
+        Some(CipCode::R) => 2,
+        Some(CipCode::S) => 1,
+        _ => 0,
+    }
+}
+
+/// Like [`cip_branch_spheres`] but collects stereo-descriptor tokens instead of
+/// atom keys.  Follows identical BFS structure, phantom rules, and max depth so
+/// that per-layer multisets are comparable as tiebreakers to the graph spheres.
+fn cip_branch_stereo_spheres(
+    mol: &Molecule,
+    center: AtomIdx,
+    start: AtomIdx,
+    provisional: &HashMap<AtomIdx, CipCode>,
+) -> Vec<Vec<u8>> {
+    let mut layers: HashMap<usize, Vec<u8>> = HashMap::new();
+    let max_depth = 8usize;
+
+    layers
+        .entry(1)
+        .or_default()
+        .push(stereo_token(provisional.get(&start).copied()));
+
+    let mut expand_queue: VecDeque<ExpandState> = VecDeque::new();
+    {
+        let mut v = HashSet::new();
+        v.insert(center);
+        v.insert(start);
+        expand_queue.push_back(ExpandState {
+            node: start,
+            parent: center,
+            depth: 1,
+            visited: v,
+        });
+    }
+
+    while let Some(state) = expand_queue.pop_front() {
+        if state.depth >= max_depth {
+            continue;
+        }
+        let child_depth = state.depth + 1;
+
+        // Double-bond phantom: emit token 0 (phantoms are non-stereogenic duplicates).
+        if let Some((_, bond_to_parent)) = mol.bond_between(state.node, state.parent)
+            && bond_to_parent.order == BondOrder::Double
+        {
+            layers.entry(child_depth).or_default().push(0u8);
+        }
+
+        for (nb, _) in mol.neighbors(state.node) {
+            if nb == state.parent || nb == center {
+                continue;
+            }
+            let token = stereo_token(provisional.get(&nb).copied());
+            let layer = layers.entry(child_depth).or_default();
+
+            if state.visited.contains(&nb) {
+                // Ring revisit phantom: emit token but don't expand.
+                layer.push(token);
+            } else {
+                layer.push(token);
+                let mut child_visited = state.visited.clone();
+                child_visited.insert(nb);
+                expand_queue.push_back(ExpandState {
+                    node: nb,
+                    parent: state.node,
+                    depth: child_depth,
+                    visited: child_visited,
+                });
+            }
+        }
+    }
+
+    let max_layer = layers.keys().copied().max().unwrap_or(0);
+    let mut result = Vec::new();
+    for d in 1..=max_layer {
+        let mut layer = layers.remove(&d).unwrap_or_default();
+        layer.sort_unstable_by(|a, b| b.cmp(a)); // descending
+        result.push(layer);
+    }
+    result
+}
+
+/// True if `idx` is a potential tetrahedral stereocenter, using CIP Rule 5
+/// to break graph ties via `provisional` R/S assignments from a first pass.
+///
+/// Falls back to the pure-graph result when `provisional` is empty or when
+/// the tie persists even after adding stereo tokens.
+pub(crate) fn is_potential_stereocenter_rule5(
+    mol: &Molecule,
+    idx: AtomIdx,
+    provisional: &HashMap<AtomIdx, CipCode>,
+) -> bool {
+    let atom = mol.atom(idx);
+    if atom.aromatic {
+        return false;
+    }
+    match atom.element.atomic_number() {
+        6 | 7 | 15 | 16 | 34 => {}
+        _ => return false,
+    }
+    let mut neighbors: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
+    let h = implicit_hcount(mol, idx);
+    if h > 1 {
+        return false;
+    }
+    for _ in 0..h {
+        neighbors.push(AtomIdx(u32::MAX));
+    }
+    if neighbors.len() == 3 && h == 0 && matches!(atom.element.atomic_number(), 15 | 16 | 34) {
+        neighbors.push(AtomIdx(u32::MAX));
+    }
+    if neighbors.len() != 4 {
+        return false;
+    }
+
+    // Step 1: pure-graph ranking.
+    if let Some(ranks) = rank_substituents(mol, idx, &neighbors) {
+        let mut r = ranks;
+        r.sort_unstable();
+        return r.windows(2).all(|w| w[0] != w[1]);
+    }
+
+    // Step 2: graph tie — try Rule 5 with stereo tokens.
+    if provisional.is_empty() {
+        return false;
+    }
+
+    // Build a signature per substituent: (atom_key, graph_spheres, stereo_spheres).
+    // Two substituents are indistinct iff their signatures are equal.
+    // PartialEq on (u8, Option<u16>, f64) is safe: f64 values come from
+    // Element::atomic_mass(), a const table with no NaN.
+    //
+    // AtomIdx(u32::MAX) is the virtual H sentinel (bracket-H or lone pair).
+    // It is always unique (h>1 is filtered above) so we skip sphere expansion
+    // for it — atom_key alone distinguishes it from all heavy-atom substituents.
+    let sigs: Vec<_> = neighbors
+        .iter()
+        .map(|&nb| {
+            let is_sentinel = nb.0 == u32::MAX;
+            (
+                atom_key(mol, nb),
+                if is_sentinel {
+                    vec![]
+                } else {
+                    cip_branch_spheres(mol, idx, nb)
+                },
+                if is_sentinel {
+                    vec![]
+                } else {
+                    cip_branch_stereo_spheres(mol, idx, nb, provisional)
+                },
+            )
+        })
+        .collect();
+
+    // All 6 pairwise pairs must be unequal for 4 distinct substituents.
+    for i in 0..4 {
+        for j in (i + 1)..4 {
+            if sigs[i] == sigs[j] {
+                return false;
+            }
+        }
+    }
+    true
+}
+
 /// Assign CIP priority ranks to `subs` (substituents of `center`).
 ///
 /// Returns `None` if any two substituents have equal priority (tie).
@@ -555,48 +730,6 @@ fn highest_stereo_sub(mol: &Molecule, alkene_end: AtomIdx, subs: &[AtomIdx]) -> 
     sorted
         .into_iter()
         .find(|&sub| substituent_is_up(mol, alkene_end, sub).is_some())
-}
-
-/// Return true if `idx` is a potential tetrahedral stereocenter (specified or not).
-///
-/// A potential stereocenter is a non-aromatic atom with exactly 4 substituents
-/// (including implicit H) whose CIP priorities are all distinct.  This matches
-/// RDKit's `CalcNumAtomStereoCenters`, which counts both @/@@ specified and
-/// unspecified stereocenters.
-pub(crate) fn is_potential_stereocenter(mol: &Molecule, idx: AtomIdx) -> bool {
-    let atom = mol.atom(idx);
-    if atom.aromatic {
-        return false;
-    }
-    // Only consider the common stereogenic elements: C, N, S, Se, P
-    match atom.element.atomic_number() {
-        6 | 7 | 15 | 16 | 34 => {}
-        _ => return false,
-    }
-    let mut neighbors: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
-    let h = implicit_hcount(mol, idx);
-    if h > 1 {
-        return false; // 2+ identical H → priorities can't all be distinct
-    }
-    for _ in 0..h {
-        neighbors.push(AtomIdx(u32::MAX)); // virtual H sentinel
-    }
-    // S / Se / P with 3 bonds + 0 implicit H: lone pair is the 4th CIP substituent.
-    // Covers sulfoxides [S+][O-] / S(=O), selenoxides Se(=O), and phosphines.
-    if neighbors.len() == 3 && h == 0 && matches!(atom.element.atomic_number(), 15 | 16 | 34) {
-        neighbors.push(AtomIdx(u32::MAX));
-    }
-    if neighbors.len() != 4 {
-        return false;
-    }
-    // All four CIP priorities must be distinct.
-    rank_substituents(mol, idx, &neighbors)
-        .map(|ranks| {
-            let mut r = ranks;
-            r.sort_unstable();
-            r.windows(2).all(|w| w[0] != w[1])
-        })
-        .unwrap_or(false)
 }
 
 #[cfg(test)]
