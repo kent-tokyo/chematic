@@ -24,8 +24,8 @@ Known differences vs RDKit:
   bit patterns differ from RDKit's due to different hash implementations.
 - ``SanitizeMol`` / ``Kekulize`` are no-ops — chematic sanitizes on parse.
 - ``SDMolSupplier.__len__`` performs an O(n) scan; avoid in hot loops.
-- Atom/bond object access (``GetAtomWithIdx``, ``GetBonds``, ``GetPropNames``)
-  is not supported in this compatibility layer.
+- Atom/bond objects (``GetAtomWithIdx``, ``GetBonds``) are read-only;
+  structure editing (``RWMol``) is not supported.
 - ``MolFromSmarts`` returns a lightweight query object; SMARTS pattern
   matching is delegated to ``chematic.smarts_match``.
 """
@@ -33,7 +33,8 @@ Known differences vs RDKit:
 from __future__ import annotations
 
 __all__ = [
-    "Mol",
+    "Mol", "Atom", "Bond", "BondType", "RingInfo",
+    "ExplicitBitVect",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts",
@@ -46,16 +47,251 @@ import chematic as _ch
 
 
 # ---------------------------------------------------------------------------
+# ExplicitBitVect — RDKit-compatible bit vector
+# ---------------------------------------------------------------------------
+
+class ExplicitBitVect:
+    """RDKit-compatible bit vector backed by a bytearray (LSB-first)."""
+
+    __slots__ = ("_nbits", "_bits")
+
+    def __init__(self, nBits: int) -> None:
+        self._nbits = nBits
+        self._bits = bytearray((nBits + 7) // 8)
+
+    def GetNumBits(self) -> int:
+        return self._nbits
+
+    def GetBit(self, i: int) -> bool:
+        if i < 0 or i >= self._nbits:
+            raise IndexError(i)
+        return bool(self._bits[i >> 3] & (1 << (i & 7)))
+
+    def SetBit(self, i: int) -> None:
+        if i < 0 or i >= self._nbits:
+            raise IndexError(i)
+        self._bits[i >> 3] |= 1 << (i & 7)
+
+    def GetOnBits(self) -> list:
+        return [i for i in range(self._nbits) if self.GetBit(i)]
+
+    def ToBitString(self) -> str:
+        return "".join("1" if self.GetBit(i) else "0" for i in range(self._nbits))
+
+    def _to_bytes(self) -> bytes:
+        return bytes(self._bits)
+
+    @classmethod
+    def _from_bytes(cls, data: bytes, nBits: int) -> "ExplicitBitVect":
+        bv = cls(nBits)
+        n = min(len(data), len(bv._bits))
+        bv._bits[:n] = data[:n]
+        return bv
+
+    def __repr__(self) -> str:
+        return f"ExplicitBitVect({self._nbits})"
+
+
+def _fp_bytes(fp) -> bytes:
+    return fp._to_bytes() if isinstance(fp, ExplicitBitVect) else fp
+
+
+# ---------------------------------------------------------------------------
+# BondType constants
+# ---------------------------------------------------------------------------
+
+class BondType:
+    """RDKit-compatible bond type constants."""
+    SINGLE   = "SINGLE"
+    DOUBLE   = "DOUBLE"
+    TRIPLE   = "TRIPLE"
+    AROMATIC = "AROMATIC"
+    OTHER    = "OTHER"
+
+
+# ---------------------------------------------------------------------------
+# Atom wrapper
+# ---------------------------------------------------------------------------
+
+class Atom:
+    """Read-only wrapper around a chematic atom (RDKit-compatible)."""
+
+    __slots__ = ("_mol", "_idx")
+
+    def __init__(self, mol: "Mol", idx: int) -> None:
+        self._mol = mol
+        self._idx = idx
+
+    def _d(self):
+        # (symbol, atomic_num, formal_charge, is_aromatic, implicit_h, degree, is_in_ring)
+        return self._mol._get_atom_cache()[self._idx]
+
+    def GetIdx(self) -> int:           return self._idx
+    def GetSymbol(self) -> str:        return self._d()[0]
+    def GetAtomicNum(self) -> int:     return self._d()[1]
+    def GetFormalCharge(self) -> int:  return self._d()[2]
+    def GetIsAromatic(self) -> bool:   return self._d()[3]
+    def GetTotalNumHs(self) -> int:    return self._d()[4]
+    def GetDegree(self) -> int:        return self._d()[5]
+    def GetTotalDegree(self) -> int:   return self._d()[5] + self._d()[4]
+    def IsInRing(self) -> bool:        return self._d()[6]
+
+    def IsInRingSize(self, n: int) -> bool:
+        ri = self._mol._get_ring_info()
+        return any(len(r) == n and self._idx in r for r in ri.AtomRings())
+
+    def __repr__(self) -> str:
+        return f"Atom({self._idx}, {self._d()[0]})"
+
+
+# ---------------------------------------------------------------------------
+# Bond wrapper
+# ---------------------------------------------------------------------------
+
+_BOND_TYPE_TO_DOUBLE = {"SINGLE": 1.0, "DOUBLE": 2.0, "TRIPLE": 3.0, "AROMATIC": 1.5}
+
+
+class Bond:
+    """Read-only wrapper around a chematic bond (RDKit-compatible)."""
+
+    __slots__ = ("_mol", "_idx")
+
+    def __init__(self, mol: "Mol", idx: int) -> None:
+        self._mol = mol
+        self._idx = idx
+
+    def _d(self):
+        # (atom1_idx, atom2_idx, bond_type_str, is_aromatic)
+        return self._mol._get_bond_cache()[self._idx]
+
+    def GetIdx(self) -> int:           return self._idx
+    def GetBeginAtomIdx(self) -> int:  return self._d()[0]
+    def GetEndAtomIdx(self) -> int:    return self._d()[1]
+    def GetBeginAtom(self) -> Atom:    return Atom(self._mol, self._d()[0])
+    def GetEndAtom(self) -> Atom:      return Atom(self._mol, self._d()[1])
+    def GetBondType(self) -> str:      return self._d()[2]
+    def GetIsAromatic(self) -> bool:   return self._d()[3]
+
+    def GetBondTypeAsDouble(self) -> float:
+        return _BOND_TYPE_TO_DOUBLE.get(self._d()[2], 0.0)
+
+    def GetOtherAtomIdx(self, idx: int) -> int:
+        a1, a2 = self._d()[0], self._d()[1]
+        if idx == a1: return a2
+        if idx == a2: return a1
+        raise ValueError(f"Atom {idx} is not an endpoint of bond {self._idx}")
+
+    def IsInRing(self) -> bool:
+        return self._mol._get_ring_info().NumBondRings(self._idx) > 0
+
+    def __repr__(self) -> str:
+        d = self._d()
+        return f"Bond({d[0]}-{d[1]}, {d[2]})"
+
+
+# ---------------------------------------------------------------------------
+# RingInfo wrapper
+# ---------------------------------------------------------------------------
+
+class RingInfo:
+    """RDKit-compatible ring information wrapper.
+
+    .. note::
+       Uses SSSR. Fused-ring SSSR decomposition may differ from RDKit's
+       in degenerate cases (e.g. indolizine).
+    """
+
+    __slots__ = ("_atom_rings", "_bond_rings", "_atom_rc", "_bond_rc")
+
+    def __init__(self, mol: "Mol") -> None:
+        atom_rings_raw = mol._mol.sssr_atom_rings
+        self._atom_rings = tuple(tuple(r) for r in atom_rings_raw)
+
+        bond_cache = mol._get_bond_cache()
+        bond_lookup = {
+            (min(b[0], b[1]), max(b[0], b[1])): i
+            for i, b in enumerate(bond_cache)
+        }
+
+        bond_rings = []
+        for ring in atom_rings_raw:
+            n = len(ring)
+            br = []
+            for i in range(n):
+                key = (min(ring[i], ring[(i + 1) % n]), max(ring[i], ring[(i + 1) % n]))
+                if key in bond_lookup:
+                    br.append(bond_lookup[key])
+            bond_rings.append(tuple(br))
+        self._bond_rings = tuple(bond_rings)
+
+        n_atoms = len(mol._get_atom_cache())
+        ac = [0] * n_atoms
+        for ring in self._atom_rings:
+            for a in ring:
+                ac[a] += 1
+        self._atom_rc = tuple(ac)
+
+        n_bonds = len(bond_cache)
+        bc = [0] * n_bonds
+        for ring in self._bond_rings:
+            for b in ring:
+                bc[b] += 1
+        self._bond_rc = tuple(bc)
+
+    def NumRings(self) -> int:
+        return len(self._atom_rings)
+
+    def AtomRings(self):
+        return self._atom_rings
+
+    def BondRings(self):
+        return self._bond_rings
+
+    def NumAtomRings(self, i: int) -> int:
+        if i < 0 or i >= len(self._atom_rc):
+            raise IndexError(i)
+        return self._atom_rc[i]
+
+    def NumBondRings(self, i: int) -> int:
+        if i < 0 or i >= len(self._bond_rc):
+            raise IndexError(i)
+        return self._bond_rc[i]
+
+
+# ---------------------------------------------------------------------------
 # Mol wrapper
 # ---------------------------------------------------------------------------
 
 class Mol:
     """Thin wrapper around ``chematic.Mol`` with RDKit-compatible methods."""
 
-    __slots__ = ("_mol",)
+    __slots__ = ("_mol", "_atom_cache", "_bond_cache", "_ring_info_cache")
 
     def __init__(self, mol: _ch.Mol) -> None:
         self._mol = mol
+        self._atom_cache = None
+        self._bond_cache = None
+        self._ring_info_cache = None
+
+    # -- lazy caches for atom/bond tables ------------------------------------
+
+    def _get_atom_cache(self):
+        if self._atom_cache is None:
+            self._atom_cache = self._mol.atom_table
+        return self._atom_cache
+
+    def _get_bond_cache(self):
+        if self._bond_cache is None:
+            self._bond_cache = self._mol.bond_table
+        return self._bond_cache
+
+    def _get_ring_info(self) -> "RingInfo":
+        if self._ring_info_cache is None:
+            self._ring_info_cache = RingInfo(self)
+        return self._ring_info_cache
+
+    def GetRingInfo(self) -> "RingInfo":
+        return self._get_ring_info()
 
     # -- atom / bond counts --------------------------------------------------
 
@@ -65,6 +301,29 @@ class Mol:
 
     def GetNumHeavyAtoms(self) -> int:
         return self._mol.heavy_atoms
+
+    def GetNumBonds(self) -> int:
+        return len(self._get_bond_cache())
+
+    # -- atom / bond iteration -----------------------------------------------
+
+    def GetAtoms(self):
+        """Iterate over all heavy atoms as ``Atom`` objects."""
+        return (Atom(self, i) for i in range(self.GetNumAtoms()))
+
+    def GetBonds(self):
+        """Iterate over all bonds as ``Bond`` objects."""
+        return (Bond(self, i) for i in range(self.GetNumBonds()))
+
+    def GetAtomWithIdx(self, i: int) -> "Atom":
+        if i < 0 or i >= self.GetNumAtoms():
+            raise IndexError(i)
+        return Atom(self, i)
+
+    def GetBondWithIdx(self, i: int) -> "Bond":
+        if i < 0 or i >= self.GetNumBonds():
+            raise IndexError(i)
+        return Bond(self, i)
 
     # -- SMILES / InChI ------------------------------------------------------
 
@@ -96,6 +355,35 @@ class Mol:
 
     def ToMolBlock(self) -> str:
         return self._mol.to_mol_block()
+
+    # -- SD properties (RDKit-compatible) ------------------------------------
+
+    def GetProp(self, key: str) -> str:
+        return self._mol.GetProp(key)
+
+    def SetProp(self, key: str, val: str) -> None:
+        self._mol.SetProp(key, val)
+
+    def HasProp(self, key: str) -> bool:
+        return self._mol.HasProp(key)
+
+    def GetPropsAsDict(self) -> dict:
+        return self._mol.GetPropsAsDict()
+
+    def GetPropNames(self) -> list:
+        return self._mol.GetPropNames()
+
+    def ClearProp(self, key: str) -> None:
+        self._mol.ClearProp(key)
+
+    def SetIntProp(self, key: str, val: int) -> None:
+        self._mol.SetIntProp(key, val)
+
+    def SetDoubleProp(self, key: str, val: float) -> None:
+        self._mol.SetDoubleProp(key, val)
+
+    def SetBoolProp(self, key: str, val: bool) -> None:
+        self._mol.SetBoolProp(key, val)
 
     # -- repr ----------------------------------------------------------------
 
@@ -197,6 +485,9 @@ def RemoveHs(mol: Mol) -> Mol:
 class SDMolSupplier:
     """Iterate over molecules in an SDF file, yielding ``Mol | None``.
 
+    SD properties are attached to each molecule and accessible via
+    ``GetProp`` / ``GetPropsAsDict``.
+
     .. note::
        ``__len__`` performs an O(n) file scan. Avoid in hot loops.
     """
@@ -208,13 +499,19 @@ class SDMolSupplier:
         removeHs: bool = True,
     ) -> None:
         self._filename = filename
+        self._sanitize = sanitize
+        self._removeHs = removeHs
 
     def __iter__(self):
-        for rec in _ch.iter_sdf(self._filename):
-            if rec.mol is not None:
-                yield Mol(rec.mol)
-            else:
-                yield None
+        # Use chematic.SDMolSupplier which propagates SD props onto mol.props
+        sup = _ch.SDMolSupplier(
+            self._filename,
+            sanitize=self._sanitize,
+            removeHs=self._removeHs,
+            strictParsing=False,
+        )
+        for mol in sup:
+            yield Mol(mol) if mol is not None else None
 
     def __len__(self) -> int:
         # ponytail: O(n) scan; document limitation
@@ -228,6 +525,9 @@ class SDMolSupplier:
 class SDWriter:
     """Write molecules to an SDF file, one record at a time.
 
+    SD properties set on the molecule are written as SD data fields.
+    Use ``SetProps`` to restrict which fields are written.
+
     Supports context-manager protocol::
 
         with SDWriter("out.sdf") as w:
@@ -235,21 +535,29 @@ class SDWriter:
     """
 
     def __init__(self, filename: str) -> None:
-        self._f = open(filename, "w")
+        self._writer = _ch.SDWriter(filename)
 
     def write(self, mol: Mol, confId: int = -1) -> None:
-        """Append *mol* as an SDF record (MOL block + ``$$$$``)."""
-        block = mol._mol.to_mol_block()
-        self._f.write(block)
-        if not block.endswith("\n"):
-            self._f.write("\n")
-        self._f.write("$$$$\n")
+        """Append *mol* as an SDF record including its SD properties."""
+        self._writer.write(mol._mol)
+
+    def SetProps(self, props) -> None:
+        """Restrict which SD properties are written (list of key names)."""
+        self._writer.SetProps(list(props))
+
+    def SetKekulize(self, val: bool) -> None:
+        """No-op: chematic does not need explicit kekulization."""
+        self._writer.SetKekulize(val)
+
+    def SetForceV3000(self, val: bool) -> None:
+        """No-op: V3000 output is not yet supported."""
+        self._writer.SetForceV3000(val)
 
     def flush(self) -> None:
-        self._f.flush()
+        self._writer.flush()
 
     def close(self) -> None:
-        self._f.close()
+        self._writer.close()
 
     def __enter__(self) -> "SDWriter":
         return self
@@ -375,19 +683,43 @@ class rdMolDescriptors:
         radius: int,
         nBits: int = 2048,
         useChirality: bool = False,
-    ) -> bytes:
-        """Return ECFP fingerprint as bytes.
+        useFeatures: bool = False,
+        useBondTypes: bool = True,
+        bitInfo=None,
+        **kwargs,
+    ) -> "ExplicitBitVect":
+        """Return ECFP fingerprint as ExplicitBitVect.
 
         .. note::
            Bit patterns differ from RDKit's Morgan fingerprints due to
            different hash implementations. Use for similarity ranking, not
            for cross-library bit-level comparison.
         """
-        # ponytail: radius→ECFP variant; nBits other than 2048 not supported
-        if radius <= 2:
-            return mol._mol.ecfp4()
+        if useFeatures:
+            raise NotImplementedError("useFeatures=True is not supported")
+        if not useBondTypes:
+            raise NotImplementedError("useBondTypes=False is not supported")
+        if kwargs:
+            raise TypeError(f"Unsupported keyword arguments: {sorted(kwargs)}")
+        if bitInfo is not None:
+            raise NotImplementedError(
+                "bitInfo requires Rust-side atom+radius tracking; not yet implemented"
+            )
+        if nBits != 2048:
+            raise NotImplementedError(
+                f"nBits={nBits} is not supported; only 2048-bit fingerprints are available"
+            )
+        if useChirality:
+            if radius > 2:
+                raise NotImplementedError(
+                    "useChirality=True is only supported for radius≤2 (ECFP4)"
+                )
+            raw = mol._mol.ecfp4_chiral()
+        elif radius <= 2:
+            raw = mol._mol.ecfp4()
         else:
-            return mol._mol.ecfp6()
+            raw = mol._mol.ecfp6()
+        return ExplicitBitVect._from_bytes(bytes(raw), 2048)
 
 
 # ---------------------------------------------------------------------------
@@ -398,9 +730,15 @@ class DataStructs:
     """Mirrors ``rdkit.DataStructs``."""
 
     @staticmethod
-    def TanimotoSimilarity(fp1: bytes, fp2: bytes) -> float:
-        return _ch.tanimoto(fp1, fp2)
+    def TanimotoSimilarity(fp1, fp2) -> float:
+        return _ch.tanimoto(_fp_bytes(fp1), _fp_bytes(fp2))
 
     @staticmethod
-    def DiceSimilarity(fp1: bytes, fp2: bytes) -> float:
-        return _ch.dice_similarity(fp1, fp2)
+    def DiceSimilarity(fp1, fp2) -> float:
+        return _ch.dice_similarity(_fp_bytes(fp1), _fp_bytes(fp2))
+
+    @staticmethod
+    def BulkTanimotoSimilarity(fp, fps) -> list:
+        """Return Tanimoto similarity of *fp* against each fingerprint in *fps*."""
+        b = _fp_bytes(fp)
+        return [_ch.tanimoto(b, _fp_bytes(f)) for f in fps]

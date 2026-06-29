@@ -2126,6 +2126,76 @@ impl Mol {
         chematic_chem::implicit_hcount_per_atom(&self.inner)
     }
 
+    /// Per-atom structural data for RDKit-compat wrappers.
+    ///
+    /// Returns one tuple per heavy atom:
+    /// ``(symbol, atomic_num, formal_charge, is_aromatic, implicit_h, heavy_degree, is_in_ring)``
+    #[getter]
+    fn atom_table(&self) -> Vec<(String, u8, i8, bool, u8, usize, bool)> {
+        use chematic_core::AtomIdx;
+        use chematic_perception::find_sssr;
+        use std::collections::HashSet;
+        let mol = &self.inner;
+        let ring_atoms: HashSet<AtomIdx> = find_sssr(mol)
+            .rings()
+            .iter()
+            .flat_map(|r| r.iter().copied())
+            .collect();
+        (0..mol.atom_count())
+            .map(|i| {
+                let idx = AtomIdx(i as u32);
+                let atom = mol.atom(idx);
+                (
+                    atom.element.symbol().to_string(),
+                    atom.element.atomic_number(),
+                    atom.charge,
+                    atom.aromatic,
+                    chematic_core::implicit_hcount(mol, idx),
+                    mol.degree(idx),
+                    ring_atoms.contains(&idx),
+                )
+            })
+            .collect()
+    }
+
+    /// Per-bond structural data for RDKit-compat wrappers.
+    ///
+    /// Returns one tuple per bond:
+    /// ``(atom1_idx, atom2_idx, bond_type_str, is_aromatic)``
+    #[getter]
+    fn bond_table(&self) -> Vec<(usize, usize, &'static str, bool)> {
+        use chematic_core::BondOrder;
+        let mol = &self.inner;
+        mol.bonds()
+            .map(|(_, b)| {
+                let (type_str, is_aromatic) = match b.order {
+                    BondOrder::Single | BondOrder::Up | BondOrder::Down => ("SINGLE", false),
+                    BondOrder::Double => ("DOUBLE", false),
+                    BondOrder::Triple => ("TRIPLE", false),
+                    BondOrder::Aromatic => ("AROMATIC", true),
+                    _ => ("OTHER", false),
+                };
+                (
+                    b.atom1.0 as usize,
+                    b.atom2.0 as usize,
+                    type_str,
+                    is_aromatic,
+                )
+            })
+            .collect()
+    }
+
+    /// SSSR rings as lists of atom indices. Used by the Python RingInfo wrapper.
+    #[getter]
+    fn sssr_atom_rings(&self) -> Vec<Vec<usize>> {
+        use chematic_perception::find_sssr;
+        find_sssr(&self.inner)
+            .rings()
+            .iter()
+            .map(|r| r.iter().map(|idx| idx.0 as usize).collect())
+            .collect()
+    }
+
     /// Isotopic distribution — list of ``(mass, relative_intensity)`` pairs.
     ///
     /// The highest-intensity peak is normalised to 1.0.
@@ -3806,6 +3876,37 @@ impl Mol {
             d.set_item(k, v).ok();
         }
         d
+    }
+
+    /// Return a list of all property names.
+    #[pyo3(name = "GetPropNames")]
+    fn get_prop_names(&self) -> Vec<String> {
+        self.props.keys().cloned().collect()
+    }
+
+    /// Remove a property by name (no-op if not present).
+    #[pyo3(name = "ClearProp")]
+    fn clear_prop(&mut self, key: &str) {
+        self.props.remove(key);
+    }
+
+    /// Set an integer property (stored as its string representation).
+    #[pyo3(name = "SetIntProp")]
+    fn set_int_prop(&mut self, key: String, val: i64) {
+        self.props.insert(key, val.to_string());
+    }
+
+    /// Set a float property (stored as its string representation).
+    #[pyo3(name = "SetDoubleProp")]
+    fn set_double_prop(&mut self, key: String, val: f64) {
+        self.props.insert(key, val.to_string());
+    }
+
+    /// Set a boolean property (stored as ``"1"`` / ``"0"``).
+    #[pyo3(name = "SetBoolProp")]
+    fn set_bool_prop(&mut self, key: String, val: bool) {
+        self.props
+            .insert(key, if val { "1" } else { "0" }.to_string());
     }
 
     // -----------------------------------------------------------------------

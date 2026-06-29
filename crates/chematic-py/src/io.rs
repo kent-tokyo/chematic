@@ -353,6 +353,7 @@ impl SdMolSupplier {
 #[pyclass(name = "SDWriter")]
 pub struct SdWriter {
     writer: Option<std::io::BufWriter<std::fs::File>>,
+    props_filter: Option<Vec<String>>,
 }
 
 #[pymethods]
@@ -363,6 +364,7 @@ impl SdWriter {
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
         Ok(SdWriter {
             writer: Some(std::io::BufWriter::new(file)),
+            props_filter: None,
         })
     }
 
@@ -379,9 +381,40 @@ impl SdWriter {
             name,
             comment: String::new(),
         };
-        let record = chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, &mol.props);
+        let props = match &self.props_filter {
+            None => mol.props.clone(),
+            Some(keys) => keys
+                .iter()
+                .filter_map(|k| mol.props.get(k).map(|v| (k.clone(), v.clone())))
+                .collect(),
+        };
+        let record = chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, &props);
         w.write_all(record.as_bytes())
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))
+    }
+
+    /// Restrict which SD properties are written. Pass ``None`` to reset (write all).
+    #[pyo3(name = "SetProps")]
+    fn set_props(&mut self, props: Vec<String>) {
+        self.props_filter = Some(props);
+    }
+
+    /// No-op: chematic always writes aromatic SMILES internally.
+    #[pyo3(name = "SetKekulize")]
+    fn set_kekulize(&mut self, _val: bool) {}
+
+    /// No-op: V3000 output is not yet supported.
+    #[pyo3(name = "SetForceV3000")]
+    fn set_force_v3000(&mut self, _val: bool) {}
+
+    /// Flush buffered data to disk.
+    fn flush(&mut self) -> PyResult<()> {
+        use std::io::Write as _;
+        if let Some(w) = self.writer.as_mut() {
+            w.flush()
+                .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        }
+        Ok(())
     }
 
     fn close(&mut self) {
