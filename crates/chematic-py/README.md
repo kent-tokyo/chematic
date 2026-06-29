@@ -158,7 +158,9 @@ match counts, SDF round-trips, and Morgan self-similarity, writing an explainabl
 diff to `validation/results/rdkit_diff.jsonl`.
 
 `chematic.rdkit_compat` is **not a full RDKit clone** — it is a lightweight
-RDKit-compatible subset for common 2D cheminformatics workflows.
+RDKit-compatible subset for common 2D cheminformatics workflows. See the full
+[RDKit compatibility guide](https://github.com/kent-tokyo/chematic/blob/main/docs/rdkit_compat.md)
+(compatibility matrix, differential-validation results, known divergences, and runnable examples).
 
 ## License
 
