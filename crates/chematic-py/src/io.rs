@@ -89,6 +89,7 @@ fn parse_to_iter(content: &str) -> SdfIter {
         .map(|rec| PySdfRecord {
             mol: Mol {
                 inner: Arc::new(rec.mol),
+                props: Default::default(),
             },
             name: rec.meta.name,
             props: rec.properties,
@@ -191,6 +192,7 @@ impl SdfFileIter {
                     return Ok(Some(PySdfRecord {
                         mol: Mol {
                             inner: Arc::new(rec.mol),
+                            props: Default::default(),
                         },
                         name: rec.meta.name,
                         props: rec.properties,
@@ -243,6 +245,7 @@ impl SdfBatchIter {
                     batch.push(PySdfRecord {
                         mol: Mol {
                             inner: Arc::new(rec.mol),
+                            props: Default::default(),
                         },
                         name: rec.meta.name,
                         props: rec.properties,
@@ -263,6 +266,178 @@ impl SdfBatchIter {
 }
 
 // ---------------------------------------------------------------------------
+// SDMolSupplier — RDKit-compatible streaming SDF reader
+// ---------------------------------------------------------------------------
+
+/// Streaming SDF reader that yields ``Mol`` objects with SD properties attached.
+///
+/// RDKit-compatible API:
+///
+///     sup = chematic.SDMolSupplier("compounds.sdf")
+///     for mol in sup:
+///         if mol is None:
+///             continue          # malformed record (strict_parsing=False only)
+///         print(mol.smiles, mol.GetProp("Activity"))
+///
+/// ``sanitize`` and ``remove_hs`` are accepted for API compatibility but are no-ops:
+/// chematic's parser already applies default aromaticity perception and stores
+/// only heavy atoms.
+#[pyclass(name = "SDMolSupplier")]
+pub struct SdMolSupplier {
+    inner: chematic_mol::SdfFileReader<std::io::BufReader<std::fs::File>>,
+    strict_parsing: bool,
+}
+
+#[pymethods]
+impl SdMolSupplier {
+    #[new]
+    #[allow(non_snake_case)]
+    #[pyo3(signature = (path, sanitize=true, removeHs=true, strictParsing=true))]
+    fn new(path: &str, sanitize: bool, removeHs: bool, strictParsing: bool) -> PyResult<Self> {
+        let _ = (sanitize, removeHs); // accepted, no-op
+        let file = std::fs::File::open(path)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        Ok(SdMolSupplier {
+            inner: chematic_mol::SdfFileReader::new(std::io::BufReader::new(file)),
+            strict_parsing: strictParsing,
+        })
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<pyo3::Py<pyo3::PyAny>>> {
+        match self.inner.next() {
+            None => Ok(None),
+            Some(Ok(rec)) => {
+                let mut props = rec.properties;
+                if !rec.meta.name.is_empty() {
+                    props.insert("_Name".to_string(), rec.meta.name);
+                }
+                let mol = Mol {
+                    inner: std::sync::Arc::new(rec.mol),
+                    props,
+                };
+                Ok(Some(pyo3::Py::new(py, mol)?.into_any()))
+            }
+            Some(Err(chematic_mol::MolParseError::Io(msg))) => {
+                Err(pyo3::exceptions::PyIOError::new_err(msg))
+            }
+            Some(Err(_)) => {
+                if self.strict_parsing {
+                    return Err(pyo3::exceptions::PyValueError::new_err(
+                        "malformed SDF record",
+                    ));
+                }
+                Ok(Some(py.None()))
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SDWriter — RDKit-compatible SDF writer
+// ---------------------------------------------------------------------------
+
+/// Streaming SDF writer that writes ``Mol`` objects with their SD properties.
+///
+///     with chematic.SDWriter("output.sdf") as w:
+///         mol = chematic.from_smiles("c1ccccc1")
+///         mol.SetProp("Activity", "7.2")
+///         w.write(mol)
+///
+/// 2D coordinates are computed automatically. The ``_Name`` property, if set,
+/// is written into the MOL header line; other ``_``-prefixed properties are
+/// omitted from the SD block.
+#[pyclass(name = "SDWriter")]
+pub struct SdWriter {
+    writer: Option<std::io::BufWriter<std::fs::File>>,
+    props_filter: Option<Vec<String>>,
+}
+
+#[pymethods]
+impl SdWriter {
+    #[new]
+    fn new(path: &str) -> PyResult<Self> {
+        let file = std::fs::File::create(path)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        Ok(SdWriter {
+            writer: Some(std::io::BufWriter::new(file)),
+            props_filter: None,
+        })
+    }
+
+    fn write(&mut self, mol: &Mol) -> PyResult<()> {
+        use std::io::Write as _;
+        let w = self
+            .writer
+            .as_mut()
+            .ok_or_else(|| pyo3::exceptions::PyValueError::new_err("SDWriter is already closed"))?;
+        let layout = chematic_depict::compute_layout(&mol.inner);
+        let coords: Vec<(f64, f64)> = layout.coords.iter().map(|p| (p.x, p.y)).collect();
+        let name = mol.props.get("_Name").cloned().unwrap_or_default();
+        let meta = chematic_mol::MolMetadata {
+            name,
+            comment: String::new(),
+        };
+        let props = match &self.props_filter {
+            None => mol.props.clone(),
+            Some(keys) => keys
+                .iter()
+                .filter_map(|k| mol.props.get(k).map(|v| (k.clone(), v.clone())))
+                .collect(),
+        };
+        let record = chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, &props);
+        w.write_all(record.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))
+    }
+
+    /// Restrict which SD properties are written. Pass ``None`` to reset (write all).
+    #[pyo3(name = "SetProps")]
+    fn set_props(&mut self, props: Vec<String>) {
+        self.props_filter = Some(props);
+    }
+
+    /// No-op: chematic always writes aromatic SMILES internally.
+    #[pyo3(name = "SetKekulize")]
+    fn set_kekulize(&mut self, _val: bool) {}
+
+    /// No-op: V3000 output is not yet supported.
+    #[pyo3(name = "SetForceV3000")]
+    fn set_force_v3000(&mut self, _val: bool) {}
+
+    /// Flush buffered data to disk.
+    fn flush(&mut self) -> PyResult<()> {
+        use std::io::Write as _;
+        if let Some(w) = self.writer.as_mut() {
+            w.flush()
+                .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    fn close(&mut self) {
+        self.writer.take();
+    }
+
+    fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    #[allow(unused_variables)]
+    fn __exit__(
+        &mut self,
+        exc_type: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+        exc_val: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+        exc_tb: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+    ) -> bool {
+        self.close();
+        false
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
 
@@ -271,6 +446,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SdfIter>()?;
     m.add_class::<SdfFileIter>()?;
     m.add_class::<SdfBatchIter>()?;
+    m.add_class::<SdMolSupplier>()?;
+    m.add_class::<SdWriter>()?;
     m.add_function(wrap_pyfunction!(iter_sdf, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_str, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_batched, m)?)?;

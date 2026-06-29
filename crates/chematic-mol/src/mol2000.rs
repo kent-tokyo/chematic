@@ -465,6 +465,27 @@ pub fn write_sdf_with_charges(
     out
 }
 
+/// Serialise a single molecule to one SDF record with arbitrary SD data fields.
+///
+/// Keys starting with `_` are treated as internal/computed properties and are
+/// omitted from the SD block (e.g. `_Name` is written into the MOL header, not
+/// as an SD field).  The record is terminated with `$$$$`.
+pub fn write_sdf_record(
+    mol: &Molecule,
+    meta: &MolMetadata,
+    coords: &[(f64, f64)],
+    props: &std::collections::HashMap<String, String>,
+) -> String {
+    let mut out = write_mol_with_coords(mol, meta, coords);
+    for (k, v) in props {
+        if !k.starts_with('_') {
+            out.push_str(&format!("> <{k}>\n{v}\n\n"));
+        }
+    }
+    out.push_str("$$$$\n");
+    out
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -741,5 +762,46 @@ many_bonds
     0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
 ";
         assert!(matches!(parse_mol(bad), Err(MolParseError::UnexpectedEnd)));
+    }
+
+    #[test]
+    fn test_write_sdf_record_props_roundtrip() {
+        use crate::sdf::SdfRecordReader;
+        use std::collections::HashMap;
+
+        let (mol, meta) = parse_mol(ETHANOL_MOL).expect("parse");
+        let coords = vec![(0.0, 0.0), (1.5, 0.0), (3.0, 0.0)];
+        let mut props = HashMap::new();
+        props.insert("Activity".to_string(), "7.2".to_string());
+        props.insert("Source".to_string(), "test".to_string());
+        props.insert("_Name".to_string(), "ethanol".to_string()); // internal, should be omitted
+
+        let sdf = write_sdf_record(&mol, &meta, &coords, &props);
+
+        // _Name must NOT appear as an SD field
+        assert!(
+            !sdf.contains("> <_Name>"),
+            "internal prop leaked to SD block"
+        );
+        // Other props must appear
+        assert!(sdf.contains("> <Activity>\n7.2"), "Activity missing");
+        assert!(sdf.contains("> <Source>\ntest"), "Source missing");
+        assert!(sdf.ends_with("$$$$\n"), "missing delimiter");
+
+        // Parse back and verify
+        let rec = SdfRecordReader::new(&sdf)
+            .next()
+            .expect("should have record")
+            .expect("should parse");
+        assert_eq!(rec.mol.atom_count(), mol.atom_count());
+        assert_eq!(
+            rec.properties.get("Activity").map(|s| s.as_str()),
+            Some("7.2")
+        );
+        assert_eq!(
+            rec.properties.get("Source").map(|s| s.as_str()),
+            Some("test")
+        );
+        assert!(!rec.properties.contains_key("_Name"));
     }
 }

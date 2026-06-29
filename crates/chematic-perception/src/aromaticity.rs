@@ -22,6 +22,27 @@
 //!    - Other: non-aromatic
 //! 5. Record all aromatic atoms, bonds, and antiaromatic rings in an `AromaticityModel`.
 
+// ---------------------------------------------------------------------------
+// Algorithm selector
+// ---------------------------------------------------------------------------
+
+/// Algorithm used to classify ring aromaticity.
+///
+/// Passed to [`assign_aromaticity_ex`] and [`apply_aromaticity_ex`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum AromaticityAlgorithm {
+    /// Strict Hückel 4n+2 rule (default). Supports C, N, O, S.
+    #[default]
+    Huckel,
+    /// RDKit-compatible extension. Adds Se (34) and Te (52) as chalcogen lone-pair
+    /// donors (2π), matching the RDKit DEFAULT aromaticity model for common
+    /// organic and chalcogen heteroaromatics.
+    ///
+    /// P-containing aromatic rings are NOT supported in this mode (separate sprint).
+    /// Keto-lactam aromaticity is NOT included (TautomerMode, separate sprint).
+    RdkitLike,
+}
+
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, implicit_hcount};
@@ -136,7 +157,19 @@ fn mark_ring_aromatic(
 ///
 /// For kekulized input from aromatic SMILES, call `chematic_core::kekulize`
 /// then `chematic_core::apply_kekule` first.
+///
+/// Uses [`AromaticityAlgorithm::Huckel`] (default). See [`assign_aromaticity_ex`]
+/// for the RdkitLike variant.
 pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
+    assign_aromaticity_ex(mol, AromaticityAlgorithm::Huckel)
+}
+
+/// Assign aromaticity using the specified algorithm.
+///
+/// The default ([`assign_aromaticity`]) uses [`AromaticityAlgorithm::Huckel`].
+/// Pass [`AromaticityAlgorithm::RdkitLike`] to additionally recognise Se/Te
+/// as lone-pair donors in aromatic rings.
+pub fn assign_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> AromaticityModel {
     let ring_set = find_sssr(mol);
     let sssr_rings = ring_set.rings();
 
@@ -159,7 +192,7 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
     // ----- Pass 1: independent Hückel per ring -----
     let empty_context = FxHashSet::default();
     for (ring_idx, ring) in rings.iter().enumerate() {
-        match ring_pi_electrons(mol, ring, &empty_context) {
+        match ring_pi_electrons(mol, ring, &empty_context, algo) {
             Some(pi) => {
                 let (cls, count) = classify_ring_aromaticity(pi);
                 classifications[ring_idx] = Some((cls, count));
@@ -197,7 +230,7 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
                 still_pending.push(ring_idx);
                 continue;
             }
-            match ring_pi_electrons(mol, ring, &aromatic_atoms) {
+            match ring_pi_electrons(mol, ring, &aromatic_atoms, algo) {
                 Some(pi) => {
                     let (cls, count) = classify_ring_aromaticity(pi);
                     classifications[ring_idx] = Some((cls, count));
@@ -243,10 +276,20 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
 ///
 /// The input may be kekulized (no `Aromatic` bond orders) or may retain
 /// aromatic bond orders from the SMILES parser.
+///
+/// Uses [`AromaticityAlgorithm::Huckel`] (default). See [`apply_aromaticity_ex`]
+/// for the RdkitLike variant.
 pub fn apply_aromaticity(mol: &Molecule) -> Molecule {
+    apply_aromaticity_ex(mol, AromaticityAlgorithm::Huckel)
+}
+
+/// Apply aromaticity using the specified algorithm.
+///
+/// Returns a new [`Molecule`] with aromatic flags set according to `algo`.
+pub fn apply_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Molecule {
     use chematic_core::{BondOrder, MoleculeBuilder};
 
-    let model = assign_aromaticity(mol);
+    let model = assign_aromaticity_ex(mol, algo);
     let mut builder = MoleculeBuilder::new();
 
     for (idx, atom) in mol.atoms() {
@@ -672,11 +715,13 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
 ///   5. Already in `aromatic_context` → 1π.
 ///   6. Otherwise → None.
 /// - **O/S**: ring_degree must be 2; contributes 2π (lone pair).
+/// - **Se (34) / Te (52)**: analogous to S; only in [`AromaticityAlgorithm::RdkitLike`] mode.
 /// - **Other elements**: None (unsupported).
 fn ring_pi_electrons(
     mol: &Molecule,
     ring: &[AtomIdx],
     aromatic_context: &FxHashSet<AtomIdx>,
+    algo: AromaticityAlgorithm,
 ) -> Option<u32> {
     let ring_atom_set: FxHashSet<AtomIdx> = ring.iter().copied().collect();
     let mut total_pi: u32 = 0;
@@ -778,6 +823,24 @@ fn ring_pi_electrons(
                         !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
                     })
                 {
+                    return None;
+                }
+                2
+            }
+
+            // Se (34) / Te (52): chalcogen lone-pair donors (2π), analogous to S.
+            // Only recognised in RdkitLike mode.
+            34 | 52 => {
+                if algo != AromaticityAlgorithm::RdkitLike {
+                    return None;
+                }
+                if ring_degree != 2 {
+                    return None;
+                }
+                // Exocyclic Se=O / Te=O ties up the lone pair.
+                if mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                    !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
+                }) {
                     return None;
                 }
                 2
@@ -1551,6 +1614,80 @@ mod tests {
             model.aromatic_atom_count(),
             0,
             "cyclopentadiene not aromatic"
+        );
+    }
+
+    // =========================================================================
+    // RdkitLike mode: Se/Te chalcogen heteroaromatics
+    // =========================================================================
+
+    #[test]
+    fn test_selenophene_huckel_not_aromatic() {
+        // c1cc[se]c1 — in strict Hückel mode, Se is unsupported → 0 aromatic atoms
+        // (assign_aromaticity_ex re-derives from scratch, ignoring parser's aromatic flags)
+        let mol = mol_aromatic("c1cc[se]c1");
+        let m = assign_aromaticity(&mol); // default Hückel
+        assert_eq!(
+            m.aromatic_atom_count(),
+            0,
+            "selenophene: Se not aromatic in Hückel mode"
+        );
+    }
+
+    #[test]
+    fn test_selenophene_rdkit_aromatic() {
+        // c1cc[se]c1 — in RdkitLike mode, Se donates 2π → 6π total → aromatic
+        let mol = mol_aromatic("c1cc[se]c1");
+        let m = assign_aromaticity_ex(&mol, AromaticityAlgorithm::RdkitLike);
+        assert_eq!(
+            m.aromatic_atom_count(),
+            5,
+            "selenophene: all 5 atoms aromatic in RdkitLike"
+        );
+    }
+
+    #[test]
+    fn test_tellurophene_rdkit_aromatic() {
+        // c1cc[te]c1 — Te analogous to Se (2π donor)
+        let mol = mol_aromatic("c1cc[te]c1");
+        let m = assign_aromaticity_ex(&mol, AromaticityAlgorithm::RdkitLike);
+        assert_eq!(
+            m.aromatic_atom_count(),
+            5,
+            "tellurophene: all 5 atoms aromatic in RdkitLike"
+        );
+    }
+
+    #[test]
+    fn test_benzoselenophene_rdkit() {
+        // Fused benzene + selenophene
+        let mol = mol_aromatic("c1ccc2[se]ccc2c1");
+        let m = assign_aromaticity_ex(&mol, AromaticityAlgorithm::RdkitLike);
+        assert_eq!(
+            m.aromatic_atom_count(),
+            9,
+            "benzoselenophene: 9 atoms aromatic"
+        );
+    }
+
+    #[test]
+    fn test_rdkit_mode_does_not_break_benzene() {
+        // Benzene must give same result in both modes
+        let mol = mol_aromatic("c1ccccc1");
+        let m_h = assign_aromaticity(&mol);
+        let m_r = assign_aromaticity_ex(&mol, AromaticityAlgorithm::RdkitLike);
+        assert_eq!(m_h.aromatic_atom_count(), m_r.aromatic_atom_count());
+    }
+
+    #[test]
+    fn test_rdkit_mode_does_not_break_thiophene() {
+        let mol = mol_aromatic("c1ccsc1");
+        let m_h = assign_aromaticity(&mol);
+        let m_r = assign_aromaticity_ex(&mol, AromaticityAlgorithm::RdkitLike);
+        assert_eq!(
+            m_h.aromatic_atom_count(),
+            m_r.aromatic_atom_count(),
+            "thiophene same in both modes"
         );
     }
 }
