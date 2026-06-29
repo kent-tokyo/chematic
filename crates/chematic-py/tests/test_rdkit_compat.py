@@ -353,18 +353,6 @@ def test_morgan_unknown_kwarg_raises():
         rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, unknownParam=True)
 
 
-def test_morgan_bit_info_raises():
-    mol = Chem.MolFromSmiles("c1ccccc1")
-    with pytest.raises(NotImplementedError):
-        rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, bitInfo={})
-
-
-def test_morgan_nbits_not_2048_raises():
-    mol = Chem.MolFromSmiles("c1ccccc1")
-    with pytest.raises(NotImplementedError):
-        rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024)
-
-
 # ---------------------------------------------------------------------------
 # Mol / Atom / Bond read-only surface
 # ---------------------------------------------------------------------------
@@ -598,3 +586,166 @@ def test_atom_is_in_ring_size_benzene():
     atom = mol.GetAtomWithIdx(0)
     assert atom.IsInRingSize(6) is True
     assert atom.IsInRingSize(5) is False
+
+
+# ---------------------------------------------------------------------------
+# Morgan FP nBits folding
+# ---------------------------------------------------------------------------
+
+def test_morgan_nbits_1024():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024)
+    assert fp.GetNumBits() == 1024
+    assert len(fp.ToBitString()) == 1024
+
+
+def test_morgan_nbits_4096():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=4096)
+    assert fp.GetNumBits() == 4096
+
+
+def test_morgan_nbits_tanimoto():
+    mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024)
+    assert DataStructs.TanimotoSimilarity(fp, fp) == 1.0
+
+
+def test_morgan_nbits_zero_raises():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    with pytest.raises(ValueError):
+        rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=0)
+
+
+# ---------------------------------------------------------------------------
+# ConvertToNumpyArray
+# ---------------------------------------------------------------------------
+
+def test_convert_to_numpy():
+    import numpy as np
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2)
+    arr = DataStructs.ConvertToNumpyArray(fp)
+    assert arr.shape == (2048,)
+    on = fp.GetOnBits()
+    assert all(arr[i] == 1 for i in on)
+    assert int(arr.sum()) == len(on)
+
+
+def test_convert_to_numpy_dest():
+    import numpy as np
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2)
+    dest = np.zeros(2048, dtype=np.int8)
+    DataStructs.ConvertToNumpyArray(fp, dest)
+    assert int(dest.sum()) == len(fp.GetOnBits())
+
+
+# ---------------------------------------------------------------------------
+# GetSubstructMatch / GetSubstructMatches RDKit shape
+# ---------------------------------------------------------------------------
+
+def test_get_substruct_match():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    m = mol.GetSubstructMatch("c1ccccc1")
+    assert isinstance(m, tuple)
+    assert len(m) == 6
+
+
+def test_get_substruct_match_none():
+    mol = Chem.MolFromSmiles("CCO")
+    assert mol.GetSubstructMatch("c1ccccc1") == ()
+
+
+def test_get_substruct_matches_tuple():
+    mol = Chem.MolFromSmiles("c1ccccc1O")
+    matches = mol.GetSubstructMatches("c")
+    assert isinstance(matches, tuple)
+    assert all(isinstance(m, tuple) for m in matches)
+    assert len(matches) == 6  # six aromatic carbons
+
+
+def test_get_substruct_matches_uniquify():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    # Without uniquify a symmetric pattern yields more matches than with it
+    uniq = mol.GetSubstructMatches("c1ccccc1", uniquify=True)
+    full = mol.GetSubstructMatches("c1ccccc1", uniquify=False)
+    assert len(uniq) <= len(full)
+    assert len(uniq) == 1  # single ring, one atom set
+
+
+# ---------------------------------------------------------------------------
+# Morgan bitInfo
+# ---------------------------------------------------------------------------
+
+def test_morgan_bitinfo_populated():
+    mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    bitInfo = {}
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, bitInfo=bitInfo)
+    assert len(bitInfo) > 0
+    assert len(bitInfo) == len(fp.GetOnBits())
+
+
+def test_morgan_bitinfo_shape():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    bitInfo = {}
+    rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, bitInfo=bitInfo)
+    for bit, envs in bitInfo.items():
+        assert isinstance(envs, tuple)
+        for env in envs:
+            assert isinstance(env, tuple)
+            assert len(env) == 2  # (atom_idx, radius)
+
+
+def test_morgan_bitinfo_keys_are_onbits():
+    mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    bitInfo = {}
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, bitInfo=bitInfo)
+    for bit in bitInfo:
+        assert fp.GetBit(bit) is True
+
+
+def test_morgan_bitinfo_radius_range():
+    mol = Chem.MolFromSmiles("c1ccncc1")
+    bitInfo = {}
+    rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, bitInfo=bitInfo)
+    for envs in bitInfo.values():
+        for atom_idx, radius in envs:
+            assert 0 <= radius <= 2
+
+
+def test_morgan_bitinfo_atom_range():
+    mol = Chem.MolFromSmiles("c1ccncc1")
+    n = mol.GetNumAtoms()
+    bitInfo = {}
+    rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, bitInfo=bitInfo)
+    for envs in bitInfo.values():
+        for atom_idx, radius in envs:
+            assert 0 <= atom_idx < n
+
+
+def test_morgan_bitinfo_none_noop():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    # bitInfo=None must work without a dict (default path)
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2)
+    assert fp.GetNumBits() == 2048
+
+
+def test_morgan_bitinfo_folded():
+    mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    bitInfo = {}
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(
+        mol, 2, nBits=1024, bitInfo=bitInfo
+    )
+    assert fp.GetNumBits() == 1024
+    assert all(bit < 1024 for bit in bitInfo)
+    for bit in bitInfo:
+        assert fp.GetBit(bit) is True
+
+
+def test_morgan_bitinfo_chirality_raises():
+    mol = Chem.MolFromSmiles("C[C@H](N)C(=O)O")
+    with pytest.raises(NotImplementedError):
+        rdMolDescriptors.GetMorganFingerprintAsBitVect(
+            mol, 2, useChirality=True, bitInfo={}
+        )

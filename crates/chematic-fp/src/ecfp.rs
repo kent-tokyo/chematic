@@ -200,6 +200,92 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     fp
 }
 
+/// Like [`ecfp`] but also returns, for each set bit, the list of
+/// `(atom_idx, radius)` environments that produced it — the data behind
+/// RDKit's `bitInfo` map.
+///
+/// The fingerprint bits are identical to [`ecfp`] with the same config
+/// (same hash, same fold), so the recorded environments are the true origin
+/// of each bit. Bit positions still differ from RDKit (FNV-1a vs MurmurHash),
+/// so this is shape-compatible and internally consistent, not bit-identical.
+pub fn ecfp_with_bitinfo(
+    mol: &Molecule,
+    config: &EcfpConfig,
+) -> (BitVec2048, FxHashMap<usize, Vec<(u32, u32)>>) {
+    let n = mol.atom_count();
+    let nbits = config.nbits;
+    let config = &EcfpConfig {
+        radius: config.radius.min(MAX_ECFP_RADIUS),
+        ..*config
+    };
+    let mut fp = BitVec2048::new();
+    let mut info: FxHashMap<usize, Vec<(u32, u32)>> = FxHashMap::default();
+
+    if n == 0 {
+        return (fp, info);
+    }
+
+    let ring_set = find_sssr(mol);
+
+    // Iteration 0: initial atom identifiers.
+    let mut ids: Vec<u64> = Vec::with_capacity(n);
+    for i in 0..n {
+        let idx = AtomIdx(i as u32);
+        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality);
+        record_bit(
+            &mut fp,
+            &mut info,
+            id,
+            i as u32,
+            0,
+            nbits,
+            config.use_double_fold,
+        );
+        ids.push(id);
+    }
+
+    // Iterations 1..=radius: expansion.
+    let mut new_ids: Vec<u64> = vec![0u64; n];
+    for r in 1..=config.radius {
+        for (i, slot) in new_ids.iter_mut().enumerate() {
+            let new_id = expand_atom_id(mol, i, r, &ids);
+            *slot = new_id;
+            record_bit(
+                &mut fp,
+                &mut info,
+                new_id,
+                i as u32,
+                r,
+                nbits,
+                config.use_double_fold,
+            );
+        }
+        core::mem::swap(&mut ids, &mut new_ids);
+    }
+
+    (fp, info)
+}
+
+/// Set the bit(s) for hash `id` and record the `(atom, radius)` origin.
+fn record_bit(
+    fp: &mut BitVec2048,
+    info: &mut FxHashMap<usize, Vec<(u32, u32)>>,
+    id: u64,
+    atom: u32,
+    radius: u32,
+    nbits: usize,
+    use_double_fold: bool,
+) {
+    let bit = (id % nbits as u64) as usize;
+    fp.set(bit);
+    info.entry(bit).or_default().push((atom, radius));
+    if use_double_fold {
+        let bit2 = ((id >> 11) % nbits as u64) as usize;
+        fp.set(bit2);
+        info.entry(bit2).or_default().push((atom, radius));
+    }
+}
+
 /// Count-based Morgan fingerprint: returns a map of `hash → count` for all
 /// atom environments up to `radius` iterations.
 ///
@@ -319,6 +405,29 @@ mod tests {
     fn benzene_vs_benzene_tanimoto_eq1() {
         let t = tanimoto_ecfp4(&benzene(), &benzene());
         assert_eq!(t, 1.0, "identical molecules must have tanimoto == 1.0");
+    }
+
+    #[test]
+    fn bitinfo_fp_matches_ecfp4() {
+        // The fp returned alongside bitInfo must equal the plain ecfp4 output.
+        let mol = aspirin();
+        let (fp, _info) = ecfp_with_bitinfo(&mol, &EcfpConfig::default());
+        assert_eq!(fp, ecfp4(&mol), "bitInfo fp must match ecfp4");
+    }
+
+    #[test]
+    fn bitinfo_keys_are_set_bits_and_valid() {
+        let mol = aspirin();
+        let n = mol.atom_count() as u32;
+        let (fp, info) = ecfp_with_bitinfo(&mol, &EcfpConfig::default());
+        assert!(!info.is_empty());
+        for (&bit, envs) in &info {
+            assert!(fp.get(bit), "every bitInfo key must be a set bit");
+            for &(atom, radius) in envs {
+                assert!(atom < n, "atom idx in range");
+                assert!(radius <= 2, "radius within ECFP4 (<=2)");
+            }
+        }
     }
 
     #[test]

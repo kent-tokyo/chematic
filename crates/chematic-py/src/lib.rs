@@ -5,6 +5,12 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+/// `(fingerprint bytes, {bit: [(atom_idx, radius), ...]})` for RDKit bitInfo.
+type EcfpBitInfo = (
+    Vec<u8>,
+    std::collections::HashMap<usize, Vec<(usize, usize)>>,
+);
+
 mod bulk;
 mod index;
 mod io;
@@ -1253,6 +1259,32 @@ impl Mol {
     /// ECFP6 fingerprint as bytes (256 bytes = 2048 bits, LSB-first).
     fn ecfp6(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::ecfp6(&self.inner))
+    }
+
+    /// ECFP fingerprint with bitInfo for RDKit-style ``bitInfo`` maps.
+    ///
+    /// Returns ``(bytes, {bit: [(atom_idx, radius), ...]})``. The fingerprint
+    /// bits are identical to ``ecfp4()`` (radius 2) / ``ecfp6()`` (radius 3),
+    /// so each recorded ``(atom_idx, radius)`` is the true origin of its bit.
+    fn ecfp_bitinfo(&self, radius: u32) -> EcfpBitInfo {
+        let cfg = chematic_fp::EcfpConfig {
+            radius,
+            ..Default::default()
+        };
+        let (fp, info) = chematic_fp::ecfp_with_bitinfo(&self.inner, &cfg);
+        let bytes = bitvec2048_to_bytes(&fp);
+        let dict = info
+            .into_iter()
+            .map(|(bit, v)| {
+                (
+                    bit,
+                    v.into_iter()
+                        .map(|(a, r)| (a as usize, r as usize))
+                        .collect(),
+                )
+            })
+            .collect();
+        (bytes, dict)
     }
 
     /// FCFP4 (functional-class ECFP4) fingerprint as bytes (256 bytes = 2048 bits, LSB-first).
