@@ -103,10 +103,11 @@ fn parse_to_iter(content: &str) -> SdfIter {
 // Public functions
 // ---------------------------------------------------------------------------
 
-/// Iterate over molecules in an SDF file by file path.
+/// Iterate over molecules in an SDF file by file path (streaming).
 ///
-/// Reads the file, parses all valid records, and returns an iterator.
-/// Invalid records are silently skipped.
+/// Reads one MOL block at a time — suitable for large SDF files where loading
+/// the entire content into memory is undesirable.  Invalid records are silently
+/// skipped.  IO errors raise ``IOError``.
 ///
 ///     for rec in chematic.iter_sdf("chembl.sdf"):
 ///         print(rec.smiles, rec.get("pChEMBL Value"))
@@ -115,11 +116,37 @@ fn parse_to_iter(content: &str) -> SdfIter {
 ///     import pandas as pd
 ///     rows = [{"smiles": r.smiles, **r.properties()} for r in chematic.iter_sdf("data.sdf")]
 ///     df = pd.DataFrame(rows)
+///
+/// .. note::
+///     Unlike previous versions, this iterator does not support ``len()``
+///     because the total record count is not known until the file is fully read.
+///     Use ``iter_sdf_str`` if you need ``len()`` on an in-memory string.
 #[pyfunction]
-pub fn iter_sdf(path: &str) -> PyResult<SdfIter> {
-    let content = std::fs::read_to_string(path)
+pub fn iter_sdf(path: &str) -> PyResult<SdfFileIter> {
+    let file = std::fs::File::open(path)
         .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
-    Ok(parse_to_iter(&content))
+    Ok(SdfFileIter {
+        inner: chematic_mol::SdfFileReader::new(std::io::BufReader::new(file)),
+    })
+}
+
+/// Iterate over batches of SDF records from a file (streaming).
+///
+/// Yields lists of up to ``batch_size`` SDF records.  Suitable for pipelining
+/// SDF parsing with bulk computations:
+///
+///     for batch in chematic.iter_sdf_batched("large.sdf", batch_size=1000):
+///         smiles = [r.smiles for r in batch]
+///         descs = chematic.bulk.descriptors(smiles)
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=1000))]
+pub fn iter_sdf_batched(path: &str, batch_size: usize) -> PyResult<SdfBatchIter> {
+    let file = std::fs::File::open(path)
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+    Ok(SdfBatchIter {
+        inner: chematic_mol::SdfFileReader::new(std::io::BufReader::new(file)),
+        batch_size,
+    })
 }
 
 /// Iterate over molecules in an SDF string.
@@ -133,13 +160,119 @@ pub fn iter_sdf_str(content: &str) -> SdfIter {
 }
 
 // ---------------------------------------------------------------------------
+// SdfFileIter — true streaming iterator backed by a file
+// ---------------------------------------------------------------------------
+
+/// Streaming SDF iterator that reads one record at a time from disk.
+///
+/// Unlike ``SdfIter`` (which loads the entire file into memory), this iterator
+/// reads one MOL block at a time and is suitable for large SDF files.
+/// Invalid records are silently skipped.  IO errors are raised as Python
+/// ``IOError``.
+///
+/// Does **not** support ``len()`` because the total record count is unknown
+/// until the file is fully read.
+#[pyclass]
+pub struct SdfFileIter {
+    inner: chematic_mol::SdfFileReader<std::io::BufReader<std::fs::File>>,
+}
+
+#[pymethods]
+impl SdfFileIter {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(&mut self) -> PyResult<Option<PySdfRecord>> {
+        loop {
+            match self.inner.next() {
+                None => return Ok(None),
+                Some(Ok(rec)) => {
+                    return Ok(Some(PySdfRecord {
+                        mol: Mol {
+                            inner: Arc::new(rec.mol),
+                        },
+                        name: rec.meta.name,
+                        props: rec.properties,
+                    }));
+                }
+                Some(Err(chematic_mol::MolParseError::Io(msg))) => {
+                    return Err(pyo3::exceptions::PyIOError::new_err(msg));
+                }
+                Some(Err(_)) => {
+                    // Parse error → skip malformed record, continue
+                    continue;
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SdfBatchIter — streaming batch iterator
+// ---------------------------------------------------------------------------
+
+/// Streaming SDF iterator that yields batches (lists) of SDF records.
+///
+/// Useful for pipelining SDF parsing with bulk descriptor computation:
+///
+///     for batch in chematic.iter_sdf_batched("large.sdf", batch_size=1000):
+///         smiles = [r.smiles for r in batch]
+///         descs = chematic.bulk.descriptors(smiles)
+#[pyclass]
+pub struct SdfBatchIter {
+    inner: chematic_mol::SdfFileReader<std::io::BufReader<std::fs::File>>,
+    batch_size: usize,
+}
+
+#[pymethods]
+impl SdfBatchIter {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(&mut self) -> PyResult<Option<Vec<PySdfRecord>>> {
+        let mut batch = Vec::with_capacity(self.batch_size);
+        loop {
+            if batch.len() >= self.batch_size {
+                break;
+            }
+            match self.inner.next() {
+                None => break,
+                Some(Ok(rec)) => {
+                    batch.push(PySdfRecord {
+                        mol: Mol {
+                            inner: Arc::new(rec.mol),
+                        },
+                        name: rec.meta.name,
+                        props: rec.properties,
+                    });
+                }
+                Some(Err(chematic_mol::MolParseError::Io(msg))) => {
+                    return Err(pyo3::exceptions::PyIOError::new_err(msg));
+                }
+                Some(Err(_)) => continue, // skip malformed
+            }
+        }
+        if batch.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(batch))
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySdfRecord>()?;
     m.add_class::<SdfIter>()?;
+    m.add_class::<SdfFileIter>()?;
+    m.add_class::<SdfBatchIter>()?;
     m.add_function(wrap_pyfunction!(iter_sdf, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_str, m)?)?;
+    m.add_function(wrap_pyfunction!(iter_sdf_batched, m)?)?;
     Ok(())
 }

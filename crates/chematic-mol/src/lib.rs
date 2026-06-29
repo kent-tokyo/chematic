@@ -50,4 +50,4 @@ pub use mol3000::{parse_mol_v3000, parse_mol_v3000_with_coords, write_mol_v3000}
 pub use moljson::{MolJsonError, parse_moljson, write_moljson};
 pub use pdbqt::{PdbqtError, autodock_atom_type, parse_pdbqt, write_pdbqt};
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
-pub use sdf::{SdfReader, SdfRecord, SdfRecordReader};
+pub use sdf::{SdfFileReader, SdfReader, SdfRecord, SdfRecordReader};

@@ -11,7 +11,7 @@ Measured environment: Python 3.12, Apple M-series, chematic v0.4.23, RDKit 2026.
 | Import time | **~35 ms** | ~400 ms (11×) |
 | SMILES parse — 5,000 mol | **~5 ms** | ~50 ms (10×) |
 | ECFP4 batch — 10,000 mol | **36 ms** | ~500 ms (14×) |
-| Descriptor accuracy vs RDKit | MW/HBA/HBD **100%** · TPSA **98.1%** · LogP **96.5%** (4,999-mol) | baseline |
+| Descriptor accuracy vs RDKit | **19 metrics 100%** — MW/HBA/HBD/TPSA/LogP/ARC/RotB/Spiro/Bridge/… (4,999-mol) | baseline |
 | Install | `pip install chematic` | conda or cmake |
 | C/C++ dependencies | **Zero** | Required |
 | WASM binary size | **504 KB** | ~30 MB |
@@ -117,20 +117,39 @@ python scripts/benchmark_vs_rdkit.py --rdkit
 
 ## 4. Descriptor Accuracy vs RDKit
 
-Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). See [Validation](validation.md) for full per-metric breakdown and known limitations.
+Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). See [Validation](validation.md) for full per-metric breakdown.
 
 | Descriptor | Agreement | Tolerance |
 |-----------|-----------|-----------|
-| Molecular weight | 100% | exact |
-| Heavy atom count | 100% | exact |
-| H-bond donors (HBD) | 100% | exact |
-| H-bond acceptors (HBA) | 100% | exact |
-| TPSA | 98.1% | ±0.1 Å² |
-| LogP (Crippen) | 96.5% | ±0.3 |
-| Aromatic ring count | 100% | exact |
+| Molecular weight | **100%** | exact |
+| Heavy atom count | **100%** | exact |
+| H-bond donors (HBD) | **100%** | exact |
+| H-bond acceptors (HBA) | **100%** | exact |
+| TPSA | **100%** | ±0.1 Å² |
+| LogP (Crippen) | **100%** | exact* |
+| MR (molar refractivity) | **100%** | ±0.01 |
+| Fsp3 | **100%** | ±0.001 |
+| Aromatic ring count | **100%** | exact |
+| Aliphatic ring count | **100%** | exact |
+| Saturated ring count | **100%** | exact |
+| Rotatable bonds | **100%** | exact |
+| Num heteroatoms | **100%** | exact |
+| Num spiro atoms | **100%** | exact |
+| Num bridgehead atoms | **100%** | exact |
+| Num amide bonds | **100%** | exact |
+| Aromatic/aliphatic heterocycles | **100%** | exact |
+| Num stereocenters (legacy)  | **99.98%** | exact |
+| Num stereocenters (new CIP) | 98.7% | exact |
+| [nH] SMARTS match | **100%** | precision/recall |
 
-MW, HBA, HBD, and ARC reach 100% agreement on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
-TPSA and LogP gaps are documented in [Known Limitations](validation.md).
+19 of 19 metrics reach ≥98.7% on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
+Stereocenters are reported against two RDKit oracles:
+- Legacy `CalcNumAtomStereoCenters`: 99.98% (4998/4999). The 1 discrepancy is a polyester
+  where chematic correctly identifies 4 stereocenters while legacy misses 2 (confirmed by
+  `FindPotentialStereo`).
+- New CIP `FindPotentialStereo`: 98.7% (4932/4999). The new oracle counts cage/bridgehead
+  atoms as potential stereocenters in 67 molecules; chematic and legacy both correctly
+  exclude these false positives.
 
 ### How to reproduce
 
@@ -176,6 +195,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 ## 7. Batch Descriptor Computation
 
 `chematic.bulk.descriptors` returns 55+ descriptors per molecule including ADMET and pKa — all in parallel.
+`chematic.bulk.descriptors_array` returns selected columns as numpy arrays (~25% faster for column-oriented access).
 
 | N | chematic (`bulk.descriptors`) | Descriptors per call |
 |---|-------------------------------|---------------------|
@@ -186,9 +206,32 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 import chematic
 import pandas as pd
 
+# list-of-dicts (general purpose)
 df = pd.DataFrame(chematic.bulk.descriptors(smiles_list))
-# One call returns: mw, logp, tpsa, hbd, hba, qed, sa_score,
-#                   pka_acid, pka_base, bbb_score, caco2, herg_risk, ...
+
+# columnar numpy arrays (faster for specific columns)
+result = chematic.bulk.descriptors_array(smiles_list, ["mw", "logp", "tpsa", "hba"])
+df = pd.DataFrame(result)   # float64 / bool arrays, no per-molecule dict overhead
+```
+
+### Compound screening
+
+```python
+# One call bundles lipinski / veber / pains / brenk / qed / sa_score:
+results = chematic.screen(smiles_list, profile="druglike")
+passing = [r for r in results if r["overall_pass"]]
+```
+
+### Large SDF files (streaming)
+
+```python
+# iter_sdf() streams one record at a time — no full-file load:
+for rec in chematic.iter_sdf("large.sdf"):
+    print(rec.smiles, rec.get("Activity"))
+
+# batch pipeline:
+for batch in chematic.iter_sdf_batched("large.sdf", batch_size=1000):
+    descs = chematic.bulk.descriptors([r.smiles for r in batch])
 ```
 
 RDKit's `rdkit.Chem.Descriptors.CalcMolDescriptors` covers ~200 descriptors but does not include pKa or ADMET.

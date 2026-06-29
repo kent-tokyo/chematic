@@ -17,6 +17,8 @@ pub enum MolParseError {
     UnexpectedEnd,
     /// A V3000 (Extended Ctab) structural error.
     V3000ParseError { line: usize, msg: String },
+    /// An IO error occurred while reading the input stream.
+    Io(String),
 }
 
 impl std::fmt::Display for MolParseError {
@@ -43,6 +45,7 @@ impl std::fmt::Display for MolParseError {
             Self::V3000ParseError { line, msg } => {
                 write!(f, "V3000 parse error at line {line}: {msg}")
             }
+            Self::Io(msg) => write!(f, "IO error: {msg}"),
         }
     }
 }

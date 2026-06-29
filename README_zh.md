@@ -31,6 +31,16 @@
 所有数据均可复现 — 参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。  
 WASM 包体积对比：chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
+**功能成熟度一览：**
+
+| 功能 | 状态 |
+|---|---|
+| SMILES / SMARTS / 指纹 / 描述符 | 稳定 |
+| 3D 构象生成（DG + MMFF94） | 实验性 |
+| pKa / ADMET | 基于规则的筛选（不适用于临床） |
+| IUPAC 命名生成 | 部分实现（25+ 类别） |
+| 纯 Rust InChI | 近似值（精确值需启用 `native-inchi` feature） |
+
 ---
 
 ## 何时使用 chematic
@@ -69,7 +79,7 @@ mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # 阿司匹林
 # 在 Jupyter 中直接写 mol 即可自动渲染 2D 结构
 mol
 
-# 访问 70+ 描述符属性
+# 访问 190+ 描述符值（属性形式）
 print(mol.mw, mol.logp, mol.tpsa)           # 180.16  1.31  63.6
 print(mol.lipinski_passes, mol.pains_passes) # True   True
 
@@ -161,7 +171,7 @@ npm 包 `@kent-tokyo/chematic` 为 **504 KB gzip** — 比 RDKit.js 小 60 倍�
 | Kekulization                                 | **4-pass（含 Edmonds' blossom）**            | 有                 | 有            | 有                |
 | SDF/MOL V2000+V3000                          | 有                                           | 有                 | 有            | 有                |
 | Tripos MOL2 格式                             | **有**（读写 + Python）                      | 有                 | 有            | 无                |
-| 分子描述符                                   | **70+（含 BOILED-Egg、QED、SA Score）**      | 〜30               | 〜20          | 〜30              |
+| 分子描述符                                   | **190+ 描述符值**（71 个函数；MQN×42、BCUT2D、autocorr2d 返回多值数组） | 〜30               | 〜20          | 〜30              |
 | **MAP4 指纹**                                | **有**（Minervini 2020）                     | 无（外部包）       | 无            | 无                |
 | MMFF94 全 7 能量项                           | **有**                                       | 有                 | 有            | 无                |
 | 3D 坐标生成                                  | 有（DG + MMFF94/DREIDING + L-BFGS）          | 有（ETKDG）        | 有            | 有                |
@@ -217,7 +227,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 34     |
 | `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 63     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 43     |
-| `chematic-chem`       | 70+ 描述符、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 99.98%**（5,000 分子基准）；**TPSA ±1.0 Å² / LogP ±0.3 / HBD 100%**（175 分子批量回归） | 496    |
+| `chematic-chem`       | 190+ 描述符值（71 个函数）、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 99.98%**（4,999 分子 ChEMBL 基准）；**TPSA ±0.1 Å² 98.1% / LogP ±0.01 96.5% / HBD 100%** | 496    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** — Tanimoto/Dice | 55     |
 | `chematic-ff`         | **MMFF94 全 7 能量项**（Halgren 1996）：OOP（117 条）+ STRE-BEN（282 条）；L-BFGS；DREIDING | 98     |
 | `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式）；**SMARTS 原子映射 `:N`**（`[O;D1;H0:3]` — 作为元数据存储，不用于匹配） | 137    |
@@ -249,7 +259,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 **v0.4.18**（2026-06-23）：**Python API 扩展 + 基准文档**
 - `chematic-py`：**Jupyter 自动显示** — 在单元格中写 `mol` 即可渲染 2D 结构（`_repr_svg_()` 钩子）；`mol.has_substructure(smarts)`, `mol.find_matches(smarts)`；`from_smiles_list()`, `descriptors_df()`
 - `chematic-chem`：`chi_all()` — 单次遍历计算全部 10 个 Hall-Kier 连接性指数；`cns_mpo_from_parts()`；`pains_passes_and_matches()` / `brenk_passes_and_matches()` — 单次扫描同时返回标志和名称
-- 文档：新增基准页面（ECFP4 比 RDKit 快 5–14×，5 000 分子语料库描述符 100% 准确）
+- 文档：新增基准页面（ECFP4 比 RDKit 快 5–14×，4,999 分子 ChEMBL 语料库描述符 100% 准确）
 
 **v0.4.16–v0.4.17**（2026-06-22–23）：**SSSR 共享性能冲刺**
 - `chematic-smarts`：`find_matches_with_rings()` — 批量模式下共享一次预计算的 `RingSet`
@@ -257,7 +267,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - `chematic-fp`：MHFP 增量 BFS — 每分子 3N → N 次 BFS（radius=2 时）
 
 **v0.4.15**（2026-06-21）：**TPSA 校准 + 反应 E/Z 立体**
-- `chematic-chem`：TPSA ±0.1 Å² 校准冲刺 — **HBA 100%、HBD 100%、芳香环计数 100%**（5 000 分子语料库）；TPSA 86.7% → 93.3%（5 000 分子），175 分子药物样集 100%
+- `chematic-chem`：TPSA ±0.1 Å² 校准冲刺 — **HBA 100%、HBD 100%、芳香环计数 100%**（4,999 分子 ChEMBL 语料库）；TPSA 86.7% → 93.3%（4,999 分子），175 分子药物样集 100%
 - `chematic-rxn`：`run_reactants` 新增 E/Z 几何过滤 — 通过 `smirks_ez_stereo_ok()` / `ez_stereo_outward()` 进行 SMIRKS `/`/`\` 几何匹配
 
 **v0.4.14**（2026-06-21）：**拓扑描述符 + 立体正确性**
@@ -285,14 +295,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 **v0.4.0–v0.4.4**（2026-06-17–18）：**PyO3 Python 绑定 + native-inchi**
 - `chematic-py`：PyO3/maturin 绑定 — `from_smiles()`, `Mol.aromatic_ring_count`, `Mol.descriptors()`
 - `native-inchi` feature：IUPAC 标准 InChI（vendored C 库 v1.07.5）
-- HBA 重写：与 RDKit 一致率 99.98%（5,000 分子基准）
+- HBA 重写：与 RDKit 一致率 99.98%（4,999 分子 ChEMBL 基准）
 
 ---
 
 ## 已知限制
 
-- **Kekulization**：5,000 分子中仅 2 个失败 — 硼芳香环（`b1ccccn1`）和 `[H][H]`。明确返回 `KekuleError`，不产生无声错误输出。
-- **芳香性模型**：Hückel 4n+2 规则独立应用于每个 SSSR 环（RDKit 使用稠合环电子离域模型）。N-杂环中存在差异。5,000 分子语料库当前状态：HBA/HBD/芳香环计数 **100%**，TPSA **93.3%**（±0.1 Å²）。
+- **Kekulization**：4,999 分子中仅 2 个失败 — 硼芳香环（`b1ccccn1`）和 `[H][H]`。明确返回 `KekuleError`，不产生无声错误输出。
+- **芳香性模型**：Hückel 4n+2 规则独立应用于每个 SSSR 环（RDKit 使用稠合环电子离域模型）。N-杂环中存在差异。4,999 分子 ChEMBL 语料库当前状态：HBA/HBD/芳香环计数 **100%**，TPSA **98.1%**（±0.1 Å²）。
 
 ---
 

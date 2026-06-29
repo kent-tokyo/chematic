@@ -328,6 +328,7 @@ def fragment_text(mol, method: str = "brics", fmt: str = "markdown") -> str:
     )
 
 
+
 class ParseReport:
     """Result of parse_smiles_report(): mol + warnings instead of raising."""
 
@@ -400,3 +401,89 @@ def parse_smiles_report(smiles: str, *, strict: bool = False) -> "ParseReport":
         return ParseReport(None, warnings, warnings[0])
 
     return ParseReport(mol, warnings, None)
+
+
+# ---------------------------------------------------------------------------
+# Compound screening
+# ---------------------------------------------------------------------------
+
+_SCREEN_PROFILES = {
+    "druglike":  ["lipinski", "veber", "pains", "brenk", "qed", "sa_score"],
+    "fragment":  ["ro3", "pains", "brenk"],
+    "leadlike":  ["lead_like", "pains", "brenk", "qed"],
+}
+
+
+def screen(smiles, profile: str = "druglike", filters=None) -> list:
+    """Screen compounds against a preset or custom filter profile.
+
+    Parameters
+    ----------
+    smiles : list[str] or str
+        One or more SMILES strings.
+    profile : str
+        Preset profile: "druglike" (default), "fragment", or "leadlike".
+        Ignored when *filters* is provided.
+    filters : list[str] or None
+        Explicit list of filters to apply (overrides *profile*).
+        Supported: "lipinski", "veber", "pains", "brenk", "egan",
+        "ghose", "ro3", "lead_like", "reos", "mcf", "ames",
+        "pfizer_3_75", "qed" (>= 0.5), "sa_score" (<= 3.5).
+
+    Returns
+    -------
+    list[dict]
+        One dict per input SMILES with fields:
+        - smiles, valid, mw, logp, tpsa, hbd, hba, qed, sa_score
+        - one ``<name>_pass`` bool per requested filter
+        - overall_pass (True only when all filter passes are True)
+    """
+    if isinstance(smiles, str):
+        smiles = [smiles]
+
+    active = filters if filters is not None else _SCREEN_PROFILES.get(profile, _SCREEN_PROFILES["druglike"])
+
+    _FILTER_ATTR = {
+        "lipinski":   "lipinski_passes",
+        "veber":      "veber_passes",
+        "pains":      "pains_passes",
+        "brenk":      "brenk_passes",
+        "egan":       "egan_passes",
+        "ghose":      "ghose_passes",
+        "ro3":        "ro3_passes",
+        "lead_like":  "lead_like_passes",
+        "reos":       "reos_passes",
+        "mcf":        "mcf_passes",
+        "ames":       "ames_passes",
+        "pfizer_3_75": "pfizer_3_75_passes",
+    }
+
+    mols = bulk.parse(smiles)
+    results = []
+    for smi, mol in zip(smiles, mols):
+        if mol is None:
+            results.append({"smiles": smi, "valid": False, "overall_pass": False})
+            continue
+        d = mol.descriptors()
+        row = {
+            "smiles":   smi,
+            "valid":    True,
+            "mw":       d.get("mw"),
+            "logp":     d.get("logp"),
+            "tpsa":     d.get("tpsa"),
+            "hbd":      d.get("hbd"),
+            "hba":      d.get("hba"),
+            "qed":      d.get("qed"),
+            "sa_score": d.get("sa_score"),
+        }
+        for f in active:
+            if f in _FILTER_ATTR:
+                row[f + "_pass"] = bool(getattr(mol, _FILTER_ATTR[f]))
+            elif f == "qed":
+                row["qed_pass"] = (d.get("qed") or 0.0) >= 0.5
+            elif f == "sa_score":
+                row["sa_score_pass"] = (d.get("sa_score") or 999.0) <= 3.5
+        row["overall_pass"] = all(v for k, v in row.items() if k.endswith("_pass"))
+        results.append(row)
+    return results
+

@@ -2888,6 +2888,36 @@ class bulk:
         ...
 
     @staticmethod
+    def descriptors_array(
+        smiles: list[str],
+        columns: list[str],
+    ) -> dict[str, ndarray]:
+        """Compute descriptors and return selected columns as numpy arrays.
+
+        Faster than ``descriptors()`` + ``pd.DataFrame()`` for column-oriented access
+        because it avoids per-molecule Python dict allocation.
+
+        Args:
+            smiles: List of SMILES strings. Invalid entries are silently skipped.
+            columns: Descriptor column names to return (e.g. ``["mw", "logp", "tpsa"]``).
+                Float columns use ``float64``; bool columns use ``bool``; optional float
+                columns (``"pka_acid"``, ``"pka_base"``) use ``float64`` with ``NaN`` for None.
+
+        Returns:
+            Dict mapping column name to 1-D numpy array.
+
+        Raises:
+            ValueError: If any column name is unknown.
+
+        Example::
+
+            result = chematic.bulk.descriptors_array(smiles, ["mw", "logp", "tpsa"])
+            df = pd.DataFrame(result)          # fast, no per-molecule dict
+            mw = result["mw"]                  # numpy.ndarray, dtype float64
+        """
+        ...
+
+    @staticmethod
     def tanimoto(smiles_a: list[str], smiles_b: list[str]) -> ndarray:
         """Compute pairwise ECFP4 Tanimoto similarity matrix.
 
@@ -2964,5 +2994,34 @@ def descriptors_df(smiles: Iterable[str]) -> Any:
 
         df = chematic.descriptors_df(["CCO", "c1ccccc1", "CC(=O)O"])
         df[["mw", "logp", "tpsa"]].head()
+    """
+    ...
+
+
+def screen(
+    smiles: Union[str, list[str]],
+    profile: str = "druglike",
+    filters: Optional[list[str]] = None,
+) -> list[dict]:
+    """Screen compounds against a preset or custom filter profile.
+
+    Args:
+        smiles: One or more SMILES strings.
+        profile: Preset profile — "druglike" (default), "fragment", or "leadlike".
+            Ignored when *filters* is provided.
+        filters: Explicit filter list (overrides *profile*). Supported values:
+            "lipinski", "veber", "pains", "brenk", "egan", "ghose", "ro3",
+            "lead_like", "reos", "mcf", "ames", "pfizer_3_75", "qed", "sa_score".
+
+    Returns:
+        One dict per SMILES with fields ``smiles``, ``valid``, ``mw``, ``logp``,
+        ``tpsa``, ``hbd``, ``hba``, ``qed``, ``sa_score``, one ``<filter>_pass``
+        bool per requested filter, and ``overall_pass``.
+
+    Example::
+
+        results = chematic.screen(smiles_list, profile="druglike")
+        df = pd.DataFrame(results)
+        passing = df[df.overall_pass]
     """
     ...

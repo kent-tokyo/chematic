@@ -341,6 +341,337 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
 }
 
 // ---------------------------------------------------------------------------
+// bulk.descriptors_array — columnar numpy output
+// ---------------------------------------------------------------------------
+
+/// Compute descriptors and return selected columns as numpy arrays.
+///
+/// Returns a dict mapping each requested column name to a 1-D numpy array.
+/// Float columns use ``float64``; bool columns use ``bool``; optional float
+/// columns (``pka_acid``, ``pka_base``) use ``float64`` with ``NaN`` for None.
+///
+/// Raises ``ValueError`` for unknown column names.
+///
+///     result = chematic.bulk.descriptors_array(smiles, ["mw", "logp", "tpsa"])
+///     df = pd.DataFrame(result)      # fast, no per-molecule dict allocation
+///     mw = result["mw"]              # numpy.ndarray, dtype float64
+#[pyfunction]
+pub fn descriptors_array<'py>(
+    py: Python<'py>,
+    smiles: Vec<String>,
+    columns: Vec<String>,
+) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
+    use pyo3::types::PyDict;
+    use rayon::iter::ParallelIterator;
+
+    const VALID: &[&str] = &[
+        "mw",
+        "exact_mass",
+        "tpsa",
+        "logp",
+        "molar_refractivity",
+        "hbd",
+        "hba",
+        "rotatable_bonds",
+        "heavy_atoms",
+        "ring_count",
+        "aromatic_ring_count",
+        "num_heteroatoms",
+        "num_stereocenters",
+        "num_spiro_atoms",
+        "num_bridgehead_atoms",
+        "fsp3",
+        "qed",
+        "sa_score",
+        "formal_charge",
+        "labute_asa",
+        "bertz_ct",
+        "wiener_index",
+        "kappa1",
+        "kappa2",
+        "kappa3",
+        "chi0",
+        "chi1",
+        "chi2",
+        "chi3",
+        "chi4",
+        "chi0v",
+        "chi1v",
+        "chi2v",
+        "chi3v",
+        "chi4v",
+        "num_aromatic_heterocycles",
+        "num_aliphatic_heterocycles",
+        "num_saturated_rings",
+        "num_aliphatic_rings",
+        "num_unspecified_stereocenters",
+        "sum_estate",
+        "max_estate",
+        "min_estate",
+        "lipinski_passes",
+        "veber_passes",
+        "egan_passes",
+        "ghose_passes",
+        "reos_passes",
+        "pains_passes",
+        "bbb_passes",
+        "bbb_score",
+        "caco2",
+        "herg_risk",
+        "cyp3a4_risk",
+        "pka_acid",
+        "pka_base",
+        "schultz_mti",
+        "gutman_mti",
+        "vabc",
+        "gravitational_index",
+    ];
+    for col in &columns {
+        if !VALID.contains(&col.as_str()) {
+            return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "unknown column: {col:?}"
+            )));
+        }
+    }
+
+    struct Row {
+        // floats (int fields cast to f64 for uniform storage)
+        mw: f64,
+        exact_mass: f64,
+        tpsa: f64,
+        logp: f64,
+        mr: f64,
+        hbd: f64,
+        hba: f64,
+        rb: f64,
+        hac: f64,
+        rc: f64,
+        arc: f64,
+        nh: f64,
+        nsc: f64,
+        nsp: f64,
+        nbh: f64,
+        fsp3: f64,
+        qed: f64,
+        sa: f64,
+        fc: f64,
+        asa: f64,
+        bertz: f64,
+        wi: f64,
+        k1: f64,
+        k2: f64,
+        k3: f64,
+        c0: f64,
+        c1: f64,
+        c2: f64,
+        c3: f64,
+        c4: f64,
+        c0v: f64,
+        c1v: f64,
+        c2v: f64,
+        c3v: f64,
+        c4v: f64,
+        n_ah: f64,
+        n_alh: f64,
+        n_sr: f64,
+        n_ar: f64,
+        n_usc: f64,
+        sum_e: f64,
+        max_e: f64,
+        min_e: f64,
+        bbb: f64,
+        caco: f64,
+        herg: f64,
+        cyp: f64,
+        schultz: f64,
+        gutman: f64,
+        vabc: f64,
+        grav: f64,
+        // booleans
+        lip: bool,
+        veb: bool,
+        egan: bool,
+        ghose: bool,
+        reos: bool,
+        pains: bool,
+        bbp: bool,
+        // optional floats
+        pka_acid: Option<f64>,
+        pka_base: Option<f64>,
+    }
+
+    let rows: Vec<Row> = smiles
+        .par_iter()
+        .filter_map(|s| chematic_smiles::parse(s).ok())
+        .map(|mol| {
+            let m = &mol;
+            let rb_data = chematic_chem::ring_bundle(m);
+            let (pka_a, pka_b) = chematic_chem::pka_both(m);
+            let (logp_val, mr_val) = chematic_chem::logp_and_mr(m);
+            let (k1, k2, k3) = chematic_chem::kappa_all(m);
+            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = chematic_chem::chi_all(m);
+            let (sum_e, max_e, min_e) = chematic_chem::estate_all(m);
+            Row {
+                mw: chematic_chem::molecular_weight(m),
+                exact_mass: chematic_chem::exact_mass(m),
+                tpsa: chematic_chem::tpsa(m),
+                logp: logp_val,
+                mr: mr_val,
+                hbd: chematic_chem::hbd_count(m) as f64,
+                hba: rb_data.hba_count as f64,
+                rb: rb_data.rotatable_bond_count as f64,
+                hac: chematic_chem::heavy_atom_count(m) as f64,
+                rc: rb_data.ring_count as f64,
+                arc: rb_data.aromatic_ring_count as f64,
+                nh: chematic_chem::num_heteroatoms(m) as f64,
+                nsc: chematic_chem::num_stereocenters(m) as f64,
+                nsp: rb_data.num_spiro_atoms as f64,
+                nbh: rb_data.num_bridgehead_atoms as f64,
+                fsp3: chematic_chem::fsp3(m),
+                qed: chematic_chem::qed(m),
+                sa: chematic_chem::sa_score(m),
+                fc: chematic_chem::formal_charge_sum(m) as f64,
+                asa: chematic_chem::labute_asa(m),
+                bertz: chematic_chem::bertz_ct(m),
+                wi: chematic_chem::wiener_index(m) as f64,
+                k1,
+                k2,
+                k3,
+                c0,
+                c1,
+                c2,
+                c3,
+                c4,
+                c0v,
+                c1v,
+                c2v,
+                c3v,
+                c4v,
+                n_ah: rb_data.num_aromatic_heterocycles as f64,
+                n_alh: rb_data.num_aliphatic_heterocycles as f64,
+                n_sr: rb_data.num_saturated_rings as f64,
+                n_ar: rb_data.num_aliphatic_rings as f64,
+                n_usc: chematic_chem::num_unspecified_stereocenters(m) as f64,
+                sum_e,
+                max_e,
+                min_e,
+                bbb: chematic_chem::bbb_score(m),
+                caco: chematic_chem::caco2_permeability(m),
+                herg: chematic_chem::herg_risk_score(m),
+                cyp: chematic_chem::cyp3a4_inhibition_risk(m),
+                schultz: chematic_chem::schultz_mti(m) as f64,
+                gutman: chematic_chem::gutman_mti(m) as f64,
+                vabc: chematic_chem::vabc(m),
+                grav: chematic_chem::gravitational_index(m),
+                lip: chematic_chem::lipinski_passes(m),
+                veb: chematic_chem::veber_passes(m),
+                egan: chematic_chem::egan_passes(m),
+                ghose: chematic_chem::ghose_passes(m),
+                reos: chematic_chem::reos_passes(m),
+                pains: chematic_chem::pains_passes(m),
+                bbp: chematic_chem::bbb_passes(m),
+                pka_acid: pka_a,
+                pka_base: pka_b,
+            }
+        })
+        .collect();
+
+    let out = PyDict::new(py);
+
+    macro_rules! fcol {
+        ($name:literal, $field:ident) => {
+            if columns.contains(&$name.to_string()) {
+                let arr = Array1::from(rows.iter().map(|r| r.$field).collect::<Vec<f64>>());
+                out.set_item($name, arr.into_pyarray(py))?;
+            }
+        };
+    }
+    macro_rules! bcol {
+        ($name:literal, $field:ident) => {
+            if columns.contains(&$name.to_string()) {
+                let arr = Array1::from(rows.iter().map(|r| r.$field).collect::<Vec<bool>>());
+                out.set_item($name, arr.into_pyarray(py))?;
+            }
+        };
+    }
+    macro_rules! ocol {
+        ($name:literal, $field:ident) => {
+            if columns.contains(&$name.to_string()) {
+                let arr = Array1::from(
+                    rows.iter()
+                        .map(|r| r.$field.unwrap_or(f64::NAN))
+                        .collect::<Vec<f64>>(),
+                );
+                out.set_item($name, arr.into_pyarray(py))?;
+            }
+        };
+    }
+
+    fcol!("mw", mw);
+    fcol!("exact_mass", exact_mass);
+    fcol!("tpsa", tpsa);
+    fcol!("logp", logp);
+    fcol!("molar_refractivity", mr);
+    fcol!("hbd", hbd);
+    fcol!("hba", hba);
+    fcol!("rotatable_bonds", rb);
+    fcol!("heavy_atoms", hac);
+    fcol!("ring_count", rc);
+    fcol!("aromatic_ring_count", arc);
+    fcol!("num_heteroatoms", nh);
+    fcol!("num_stereocenters", nsc);
+    fcol!("num_spiro_atoms", nsp);
+    fcol!("num_bridgehead_atoms", nbh);
+    fcol!("fsp3", fsp3);
+    fcol!("qed", qed);
+    fcol!("sa_score", sa);
+    fcol!("formal_charge", fc);
+    fcol!("labute_asa", asa);
+    fcol!("bertz_ct", bertz);
+    fcol!("wiener_index", wi);
+    fcol!("kappa1", k1);
+    fcol!("kappa2", k2);
+    fcol!("kappa3", k3);
+    fcol!("chi0", c0);
+    fcol!("chi1", c1);
+    fcol!("chi2", c2);
+    fcol!("chi3", c3);
+    fcol!("chi4", c4);
+    fcol!("chi0v", c0v);
+    fcol!("chi1v", c1v);
+    fcol!("chi2v", c2v);
+    fcol!("chi3v", c3v);
+    fcol!("chi4v", c4v);
+    fcol!("num_aromatic_heterocycles", n_ah);
+    fcol!("num_aliphatic_heterocycles", n_alh);
+    fcol!("num_saturated_rings", n_sr);
+    fcol!("num_aliphatic_rings", n_ar);
+    fcol!("num_unspecified_stereocenters", n_usc);
+    fcol!("sum_estate", sum_e);
+    fcol!("max_estate", max_e);
+    fcol!("min_estate", min_e);
+    fcol!("bbb_score", bbb);
+    fcol!("caco2", caco);
+    fcol!("herg_risk", herg);
+    fcol!("cyp3a4_risk", cyp);
+    fcol!("schultz_mti", schultz);
+    fcol!("gutman_mti", gutman);
+    fcol!("vabc", vabc);
+    fcol!("gravitational_index", grav);
+    bcol!("lipinski_passes", lip);
+    bcol!("veber_passes", veb);
+    bcol!("egan_passes", egan);
+    bcol!("ghose_passes", ghose);
+    bcol!("reos_passes", reos);
+    bcol!("pains_passes", pains);
+    bcol!("bbb_passes", bbp);
+    ocol!("pka_acid", pka_acid);
+    ocol!("pka_base", pka_base);
+
+    Ok(out)
+}
+
+// ---------------------------------------------------------------------------
 // bulk.tanimoto — pairwise Tanimoto similarity matrix
 // ---------------------------------------------------------------------------
 
@@ -696,6 +1027,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(map4, m)?)?;
     m.add_function(wrap_pyfunction!(hdf, m)?)?;
     m.add_function(wrap_pyfunction!(descriptors, m)?)?;
+    m.add_function(wrap_pyfunction!(descriptors_array, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_search, m)?)?;
     m.add_function(wrap_pyfunction!(substructure_search, m)?)?;

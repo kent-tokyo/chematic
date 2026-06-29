@@ -757,17 +757,14 @@ mod tests {
             "at least 4 of the 5 cubane SSSR rings must be 4-membered, got {four_membered}"
         );
 
-        // augmented_ring_set (pairwise GF(2) XOR) recovers additional 4-membered
-        // faces. It gets 5 of the 6 square faces; the 6th requires a 3-way XOR
-        // of SSSR rings which pairwise augmentation does not perform.
-        // This is a known limitation of the pair-augmentation strategy for cage
-        // compounds; aromaticity perception is unaffected since cubane is not aromatic.
+        // augmented_ring_set (pairwise GF(2) XOR) must recover all 6 square faces.
+        // Since the fix allowing same-size XOR rings (>= → >), two-way XOR of
+        // same-size 4-membered rings is permitted and all 6 faces are found.
         let aug = augmented_ring_set(&mol, sssr.rings());
         let four_membered_aug = aug.iter().filter(|r| r.len() == 4).count();
         assert_eq!(
-            four_membered_aug, 5,
-            "augmented_ring_set (pairwise XOR) recovers 5 of 6 cubane square faces; \
-             6th requires 3-way XOR — got {four_membered_aug}"
+            four_membered_aug, 6,
+            "augmented_ring_set must find all 6 cubane square faces — got {four_membered_aug}"
         );
     }
 

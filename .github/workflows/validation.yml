@@ -15,6 +15,7 @@ jobs:
   rdkit-parity:
     name: RDKit Parity Benchmark
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
     steps:
