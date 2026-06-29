@@ -102,6 +102,41 @@ def test_run_smirks_invalid_smirks():
         chematic.run_smirks("NOT_A_SMIRKS", [chematic.from_smiles("C")])
 
 
+# E/Z stereo transfer & creation in products (issue #50)
+
+def _product_ez(smirks, smis):
+    mols = [chematic.from_smiles(s) for s in smis]
+    prod = chematic.run_smirks(smirks, mols)[0][0]
+    labels = [d["descriptor"] for d in prod.cip_stereo()]
+    return prod.smiles, labels
+
+
+def test_run_smirks_transfer_preserves_E():
+    smi, labels = _product_ez("[C:1]=[C:2]>>[C:1]=[C:2]", ["C/C=C/C"])
+    assert smi == "C/C=C/C"
+    assert "E" in labels
+
+
+def test_run_smirks_transfer_preserves_Z():
+    smi, labels = _product_ez("[C:1]=[C:2]>>[C:1]=[C:2]", ["C/C=C\\C"])
+    assert smi == "C/C=C\\C"
+    assert "Z" in labels
+
+
+def test_run_smirks_create_E_from_template():
+    smi, labels = _product_ez(
+        "[C:1][C:2][C:3][C:4]>>[C:1]/[C:2]=[C:3]/[C:4]", ["CCCC"]
+    )
+    assert "E" in labels
+
+
+def test_run_smirks_create_Z_from_template():
+    smi, labels = _product_ez(
+        "[C:1][C:2][C:3][C:4]>>[C:1]/[C:2]=[C:3]\\[C:4]", ["CCCC"]
+    )
+    assert "Z" in labels
+
+
 # ---------------------------------------------------------------------------
 # find_mcs
 # ---------------------------------------------------------------------------
