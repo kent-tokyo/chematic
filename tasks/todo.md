@@ -1,6 +1,6 @@
 # chematic — Status & Roadmap
 
-Current version: **v0.4.23** (2026-06-26)
+Current version: **v0.4.24** (2026-06-29)
 
 ---
 
@@ -113,6 +113,9 @@ Current version: **v0.4.23** (2026-06-26)
 | done: | Bridgehead atoms 98.5% → **100%** (2026-06-28): bond-intersection algorithm — an atom is bridgehead iff some ring pair shares ≥ 2 bonds and the atom is incident to exactly 1; fixes both over-count (peroxide cages) and under-count (spiro+bridgehead co-occurrence) |
 | done: | `chematic.screen(smiles, profile="druglike")` — bundles lipinski/veber/pains/brenk/qed/sa_score into one call; profiles: druglike/fragment/leadlike; returns list[dict] with per-filter _pass flags and overall_pass |
 | done: | `scripts/analyze_logp_mismatches.py` — compare chematic vs RDKit Crippen LogP, output buckets + TSV; confirmed 0 mismatches (100% at ±0.01 on 5k corpus) |
+| done: | `chematic.rdkit_compat` Sprint 2 (v0.4.24): `ExplicitBitVect` (GetNumBits/GetBit/SetBit/GetOnBits/ToBitString/IndexError); `DataStructs.BulkTanimotoSimilarity`; `GetMorganFingerprintAsBitVect` returns `ExplicitBitVect`; unsupported opts fail loudly (useFeatures/bitInfo/nBits≠2048/unknown kwargs) |
+| done: | `chematic.rdkit_compat` Sprint 3 (v0.4.24): Rust `atom_table`+`bond_table` getters; `BondType` constants; `Atom` wrapper (GetIdx/Symbol/AtomicNum/FormalCharge/IsAromatic/Degree/TotalDegree/TotalNumHs/IsInRing/IsInRingSize); `Bond` wrapper (GetIdx/BeginAtomIdx/EndAtomIdx/BeginAtom/EndAtom/BondType/BondTypeAsDouble/IsAromatic/OtherAtomIdx); `Mol` GetNumBonds/GetAtoms/GetBonds/GetAtomWithIdx/GetBondWithIdx |
+| done: | `chematic.rdkit_compat` Sprint 4 (v0.4.24): Rust `sssr_atom_rings` getter; `RingInfo` (NumRings/AtomRings/BondRings/NumAtomRings/NumBondRings); `Mol.GetRingInfo()` with lazy cache; `Bond.IsInRing()` implemented; `Atom.IsInRingSize(n)` uses ring info cache |
 | done: | SDF true streaming: `SdfFileReader<R: BufRead>` + Python `iter_sdf(path)` → lazy streaming, `iter_sdf_batched(path, batch_size=1000)` new; `iter_sdf_str()` unchanged; `MolParseError::Io` added |
 | done: | `bulk.descriptors_array(smiles, columns)` — columnar numpy output, ~25% faster than `descriptors()+DataFrame()`; float64/bool/NaN for optional |
 | done: | Stereocenters 99.8% → 99.98% (legacy) / 98.7% (new CIP) — CIP Rule 5 tie-breaking via provisional R/S + equality-based signature comparison; cage false-positives correctly avoided |
@@ -123,6 +126,7 @@ Current version: **v0.4.23** (2026-06-26)
 
 | Version | Date | Highlights |
 |---------|------|-----------|
+| v0.4.24 | 2026-06-29 | `chematic.rdkit_compat` Sprints 2-4: ExplicitBitVect, DataStructs, BulkTanimoto, Mol/Atom/Bond surface, RingInfo; RDKit-compatible SDF I/O (SDMolSupplier/SDWriter + property roundtrip) |
 | v0.4.23 | 2026-06-28 | `screen()`+LogP analyzer+SDF streaming+`descriptors_array()`; bridgehead/spiro/rotatable 100% |
 | v0.4.23 | 2026-06-26 | LogP 96.5% → 99.7% (symmetric triple bond VF2 dedup fix); OSS sprint: badges, CI hardening, cargo-deny, check.sh, bump_version.py |
 | v0.4.19 | 2026-06-23 | PDF/EPS 出力、ChemicalJSON、Schultz/Gutman MTI・VABC・Gravitational index、bulk.substructure_match、bulk.generate_3d、bulk.tanimoto_matrix、bulk.standardize、inline SHA-256 (sha2 dep 除去)、WASM 819→504 KB gzip (-38.5%) |

@@ -89,6 +89,48 @@ df = pd.DataFrame([chematic.from_smiles(s).descriptors() for s in smiles])
 - **SVG / PDF / EPS depiction**: `mol.to_svg()`, `mol.to_pdf()`, `mol.to_eps()`
 - **ChemicalJSON**: `mol.to_cjson(coords=[])`, `chematic.from_cjson(s)` — Avogadro 2 / MolSSI compatible
 
+## RDKit compatibility
+
+`chematic.rdkit_compat` provides a lightweight RDKit-compatible subset for environments where RDKit is unavailable (WASM, serverless, conda-free CI):
+
+```python
+from chematic import rdkit_compat as Chem
+from chematic.rdkit_compat import Descriptors, rdMolDescriptors, DataStructs
+
+mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+
+# Descriptors
+Descriptors.MolWt(mol)          # 180.16
+rdMolDescriptors.CalcTPSA(mol)  # 63.6
+
+# Fingerprint (ExplicitBitVect)
+fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2)
+fp.GetNumBits()                         # 2048
+DataStructs.TanimotoSimilarity(fp, fp)  # 1.0
+DataStructs.BulkTanimotoSimilarity(fp, [fp])  # [1.0]
+
+# Atom / Bond traversal
+for atom in mol.GetAtoms():
+    atom.GetSymbol(), atom.GetAtomicNum(), atom.IsInRing()
+for bond in mol.GetBonds():
+    bond.GetBondType(), bond.GetBondTypeAsDouble(), bond.IsInRing()
+
+# Ring information
+ri = mol.GetRingInfo()
+ri.NumRings()       # 1
+ri.AtomRings()      # tuple of tuples of atom indices
+ri.NumAtomRings(0)  # rings containing atom 0
+
+# SDF I/O with SD properties
+with Chem.SDWriter("out.sdf") as w:
+    mol.SetProp("ID", "aspirin")
+    w.write(mol)
+for m in Chem.SDMolSupplier("out.sdf"):
+    print(m.GetProp("ID"))
+```
+
+Unsupported options raise `NotImplementedError` or `TypeError` — they are never silently ignored.
+
 ## License
 
 MIT OR Apache-2.0
