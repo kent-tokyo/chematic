@@ -24,7 +24,7 @@ chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.19" }
 chematic-fp         = { path = "../chematic-fp",         version = "0.4.19" }
 chematic-iupac      = { path = "../chematic-iupac",      version = "0.4.19" }
 serde               = { version = "1.0", features = ["derive"], optional = true }
-miniz_oxide         = { version = "0.8", optional = true, default-features = false, features = ["with-alloc"] }
+miniz_oxide         = { version = "0.9", optional = true, default-features = false, features = ["with-alloc"] }
 
 [features]
 serde = ["dep:serde"]
