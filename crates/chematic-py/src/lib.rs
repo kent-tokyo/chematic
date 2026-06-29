@@ -511,6 +511,35 @@ impl Mol {
         chematic_chem::aromatic_ring_count(&self.inner)
     }
 
+    /// Apply aromaticity perception and return a new Mol.
+    ///
+    /// Args:
+    ///     mode: ``"huckel"`` (default) or ``"rdkit"``. The ``"rdkit"`` mode
+    ///           additionally recognises Se and Te as lone-pair donors in aromatic rings.
+    ///
+    /// Returns:
+    ///     A new :class:`Mol` with aromatic flags set.
+    ///
+    ///     mol2 = mol.apply_aromaticity(mode="rdkit")
+    #[pyo3(signature = (mode = "huckel"))]
+    fn apply_aromaticity(&self, mode: &str) -> PyResult<Mol> {
+        let algo = match mode {
+            "huckel" | "hückel" | "" => chematic_perception::AromaticityAlgorithm::Huckel,
+            "rdkit" | "rdkit_like" | "rdkit-like" => {
+                chematic_perception::AromaticityAlgorithm::RdkitLike
+            }
+            other => {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Unknown aromaticity mode {other:?}. Choose 'huckel' or 'rdkit'."
+                )));
+            }
+        };
+        let new_mol = chematic_perception::apply_aromaticity_ex(&self.inner, algo);
+        Ok(Mol {
+            inner: Arc::new(new_mol),
+        })
+    }
+
     /// Number of assigned stereocenters (R/S).
     #[getter]
     fn num_stereocenters(&self) -> usize {

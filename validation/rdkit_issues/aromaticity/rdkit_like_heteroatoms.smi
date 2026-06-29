@@ -1,0 +1,8 @@
+# Chalcogen heteroaromatics for RdkitLike aromaticity mode.
+# These compounds are aromatic in RDKit's default model but NOT in Hückel 4n+2.
+# chematic: Hückel mode → not aromatic; RdkitLike mode → aromatic (expected).
+
+c1cc[se]c1    selenophene
+c1cc[te]c1    tellurophene
+c1ccc2[se]ccc2c1    benzoselenophene
+c1ccc2[te]ccc2c1    benzotellurophene
