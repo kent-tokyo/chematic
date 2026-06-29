@@ -51,6 +51,16 @@ impl Report {
 #[derive(Clone)]
 struct Mol {
     inner: Arc<chematic_core::Molecule>,
+    props: std::collections::HashMap<String, String>,
+}
+
+impl Mol {
+    fn bare(mol: chematic_core::Molecule) -> Self {
+        Mol {
+            inner: Arc::new(mol),
+            props: Default::default(),
+        }
+    }
 }
 
 #[pymethods]
@@ -537,6 +547,7 @@ impl Mol {
         let new_mol = chematic_perception::apply_aromaticity_ex(&self.inner, algo);
         Ok(Mol {
             inner: Arc::new(new_mol),
+            props: Default::default(),
         })
     }
 
@@ -1554,6 +1565,7 @@ impl Mol {
         let opts = chematic_chem::StandardizeOptions::default();
         Mol {
             inner: Arc::new(chematic_chem::standardize(&self.inner, &opts)),
+            props: Default::default(),
         }
     }
 
@@ -1561,6 +1573,7 @@ impl Mol {
     fn scaffold(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::murcko_scaffold(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1568,6 +1581,7 @@ impl Mol {
     fn canonical_tautomer(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::canonical_tautomer(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1607,7 +1621,7 @@ impl Mol {
     fn enumerate_tautomers(&self) -> Vec<Mol> {
         chematic_chem::enumerate_tautomers(&self.inner)
             .into_iter()
-            .map(|m| Mol { inner: Arc::new(m) })
+            .map(Mol::bare)
             .collect()
     }
 
@@ -1619,7 +1633,7 @@ impl Mol {
     fn enumerate_stereoisomers(&self) -> Vec<Mol> {
         chematic_chem::enumerate_stereoisomers(&self.inner)
             .into_iter()
-            .map(|m| Mol { inner: Arc::new(m) })
+            .map(Mol::bare)
             .collect()
     }
 
@@ -1627,6 +1641,7 @@ impl Mol {
     fn add_hydrogens(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::add_hydrogens(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1634,6 +1649,7 @@ impl Mol {
     fn remove_hydrogens(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::remove_hydrogens(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1641,6 +1657,7 @@ impl Mol {
     fn remove_stereo(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::remove_stereo(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1648,6 +1665,7 @@ impl Mol {
     fn remove_isotopes(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::remove_isotopes(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1655,6 +1673,7 @@ impl Mol {
     fn largest_fragment(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::largest_fragment(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1670,11 +1689,7 @@ impl Mol {
     ///     parts = mol.connected_components()
     ///     # [Mol("CC"), Mol("N")]
     fn connected_components(&self) -> Vec<Mol> {
-        self.inner
-            .fragments()
-            .into_iter()
-            .map(|m| Mol { inner: Arc::new(m) })
-            .collect()
+        self.inner.fragments().into_iter().map(Mol::bare).collect()
     }
 
     /// Return ``True`` if this molecule and ``other`` represent the same chemical structure.
@@ -1693,6 +1708,7 @@ impl Mol {
     fn neutralize(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::neutralize_charges(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1700,6 +1716,7 @@ impl Mol {
     fn generic_scaffold(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::generic_murcko_scaffold(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -1710,7 +1727,7 @@ impl Mol {
     fn brics_fragments(&self) -> Vec<Mol> {
         chematic_chem::brics_fragments(&self.inner)
             .into_iter()
-            .map(|m| Mol { inner: Arc::new(m) })
+            .map(Mol::bare)
             .collect()
     }
 
@@ -2814,6 +2831,7 @@ impl Mol {
     fn normalize_groups(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::normalize_groups(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -2823,6 +2841,7 @@ impl Mol {
     fn prefer_organic(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::prefer_organic(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -2832,6 +2851,7 @@ impl Mol {
     fn reionize(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::reionize(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -2839,6 +2859,7 @@ impl Mol {
     fn uncharge(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::uncharge(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -3365,6 +3386,7 @@ impl Mol {
     fn normalize_zwitterion(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::normalize_zwitterion(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -3377,6 +3399,7 @@ impl Mol {
     fn remove_salts(&self) -> Mol {
         Mol {
             inner: Arc::new(chematic_chem::standardize::remove_salts(&self.inner)),
+            props: Default::default(),
         }
     }
 
@@ -3391,6 +3414,7 @@ impl Mol {
         let idx = chematic_core::AtomIdx(atom_idx as u32);
         Mol {
             inner: Arc::new(chematic_chem::invert_stereocenter(&self.inner, idx)),
+            props: Default::default(),
         }
     }
 
@@ -3750,6 +3774,41 @@ impl Mol {
     }
 
     // -----------------------------------------------------------------------
+    // SD properties (RDKit-compatible)
+    // -----------------------------------------------------------------------
+
+    /// Get an SD property by name. Raises ``KeyError`` if not present.
+    #[pyo3(name = "GetProp")]
+    fn get_prop(&self, key: &str) -> PyResult<String> {
+        self.props
+            .get(key)
+            .cloned()
+            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err(format!("'{key}' not found")))
+    }
+
+    /// Set an SD property.
+    #[pyo3(name = "SetProp")]
+    fn set_prop(&mut self, key: String, value: String) {
+        self.props.insert(key, value);
+    }
+
+    /// Return ``True`` if the property exists.
+    #[pyo3(name = "HasProp")]
+    fn has_prop(&self, key: &str) -> bool {
+        self.props.contains_key(key)
+    }
+
+    /// Return all SD properties as a Python dict.
+    #[pyo3(name = "GetPropsAsDict")]
+    fn get_props_as_dict<'py>(&self, py: Python<'py>) -> Bound<'py, PyDict> {
+        let d = PyDict::new(py);
+        for (k, v) in &self.props {
+            d.set_item(k, v).ok();
+        }
+        d
+    }
+
+    // -----------------------------------------------------------------------
     // Dunder methods
     // -----------------------------------------------------------------------
 
@@ -3877,6 +3936,7 @@ fn from_smiles(smiles: &str) -> PyResult<Mol> {
     chematic_smiles::parse(smiles)
         .map(|mol| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -3920,6 +3980,7 @@ fn from_cxsmiles<'py>(py: Python<'py>, s: &str) -> PyResult<(Mol, Bound<'py, PyD
     Ok((
         Mol {
             inner: Arc::new(cx.mol),
+            props: Default::default(),
         },
         d,
     ))
@@ -3944,6 +4005,7 @@ fn from_cxsmiles<'py>(py: Python<'py>, s: &str) -> PyResult<(Mol, Bound<'py, PyD
 fn from_condensed(formula: &str) -> Option<Mol> {
     chematic_chem::parse_condensed(formula).ok().map(|mol| Mol {
         inner: Arc::new(mol),
+        props: Default::default(),
     })
 }
 
@@ -3953,6 +4015,7 @@ fn from_mol_block(block: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol(block)
         .map(|(mol, _meta)| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -3981,6 +4044,7 @@ fn from_mol_block_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64
             (
                 Mol {
                     inner: Arc::new(mol),
+                    props: Default::default(),
                 },
                 meta.name,
                 py_coords,
@@ -4024,6 +4088,7 @@ fn parse_sdf_with_coords(text: &str) -> Vec<(Mol, String, Vec<Vec<f64>>)> {
                 results.push((
                     Mol {
                         inner: Arc::new(mol),
+                        props: Default::default(),
                     },
                     meta.name,
                     py_coords,
@@ -4049,6 +4114,7 @@ fn from_cml(cml_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_cml(cml_str)
         .map(|(mol, _coords)| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -4076,6 +4142,7 @@ fn from_cjson(cjson_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     Ok((
         Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         },
         py_coords,
     ))
@@ -4097,6 +4164,7 @@ fn from_moljson(json_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_moljson(json_str)
         .map(|mol| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -4112,6 +4180,7 @@ fn from_cdxml(cdxml_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_cdxml(cdxml_str)
         .map(|(mol, _coords)| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -4127,6 +4196,7 @@ fn from_mol_v3000(block: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol_v3000(block)
         .map(|(mol, _meta)| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -4148,6 +4218,7 @@ fn from_mol_v3000_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64
             (
                 Mol {
                     inner: Arc::new(mol),
+                    props: Default::default(),
                 },
                 meta.name,
                 py_coords,
@@ -4170,6 +4241,7 @@ fn from_mol2(mol2_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_mol2(mol2_str)
         .map(|(mol, _coords)| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -4193,6 +4265,7 @@ fn from_pdbqt(pdbqt_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_pdbqt(pdbqt_str)
         .map(|(mol, _coords, _charges)| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -4210,6 +4283,7 @@ fn from_gjf(gjf_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_gjf(gjf_str)
         .map(|(mol, _coords, _charge, _mult)| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -4231,6 +4305,7 @@ fn parse_gaussian_log<'py>(
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     let mol = Mol {
         inner: Arc::new(result.mol),
+        props: Default::default(),
     };
     let coords: Vec<Vec<f64>> = result
         .coords
@@ -4290,6 +4365,7 @@ fn parse_cif<'py>(py: Python<'py>, cif_str: &str) -> PyResult<Bound<'py, pyo3::t
         chematic_mol::parse_cif(cif_str).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let mol = Mol {
         inner: Arc::new(result.mol),
+        props: Default::default(),
     };
     let coords: Vec<Vec<f64>> = result
         .coords
@@ -4407,6 +4483,7 @@ fn from_inchi(inchi: &str) -> PyResult<Mol> {
     chematic_inchi::parse_inchi(inchi)
         .map(|mol| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -4463,6 +4540,7 @@ fn from_pdb(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     Ok((
         Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         },
         coords,
     ))
@@ -4481,6 +4559,7 @@ fn from_xyz(xyz_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     Ok((
         Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
         },
         coords,
     ))
@@ -4937,6 +5016,7 @@ fn abbreviations<'py>(py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyDic
 fn expand_abbreviation(symbol: &str) -> Option<Mol> {
     chematic_chem::expand_abbreviation(symbol).map(|mol| Mol {
         inner: Arc::new(mol),
+        props: Default::default(),
     })
 }
 
@@ -5602,6 +5682,7 @@ fn parse_smi_file(content: &str) -> Vec<(Mol, String)> {
             (
                 Mol {
                     inner: Arc::new(mol),
+                    props: Default::default(),
                 },
                 name,
             )
@@ -6163,11 +6244,7 @@ fn run_smirks(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>>> {
     chematic_rxn::run_reactants(smirks, &refs)
         .map(|sets| {
             sets.into_iter()
-                .map(|set| {
-                    set.into_iter()
-                        .map(|m| Mol { inner: Arc::new(m) })
-                        .collect()
-                })
+                .map(|set| set.into_iter().map(Mol::bare).collect())
                 .collect()
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
@@ -6194,11 +6271,7 @@ fn run_smirks_strict(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>
     chematic_rxn::run_reactants_strict(smirks, &refs)
         .map(|sets| {
             sets.into_iter()
-                .map(|set| {
-                    set.into_iter()
-                        .map(|m| Mol { inner: Arc::new(m) })
-                        .collect()
-                })
+                .map(|set| set.into_iter().map(Mol::bare).collect())
                 .collect()
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
@@ -6269,6 +6342,7 @@ fn find_mcs(
     }
     Some(Mol {
         inner: Arc::new(builder.build()),
+        props: Default::default(),
     })
 }
 

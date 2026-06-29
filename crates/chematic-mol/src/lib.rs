@@ -44,7 +44,7 @@ pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
 pub use mol2_tripos::{Mol2Error, parse_mol2, write_mol2};
 pub use mol2000::{
     MolMetadata, parse_mol, parse_mol_with_coords, parse_sdf_with_coords, write_mol,
-    write_mol_with_coords, write_sdf, write_sdf_with_charges,
+    write_mol_with_coords, write_sdf, write_sdf_record, write_sdf_with_charges,
 };
 pub use mol3000::{parse_mol_v3000, parse_mol_v3000_with_coords, write_mol_v3000};
 pub use moljson::{MolJsonError, parse_moljson, write_moljson};

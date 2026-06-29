@@ -40,6 +40,7 @@ pub fn parse(smiles: Vec<String>) -> Vec<Option<Mol>> {
         .map(|opt| {
             opt.map(|mol| Mol {
                 inner: Arc::new(mol),
+                props: Default::default(),
             })
         })
         .collect()
@@ -1011,7 +1012,7 @@ pub fn standardize(mols: Vec<Mol>) -> Vec<Mol> {
     mols.par_iter()
         .map(|m| {
             let s = chematic_chem::standardize(&m.inner, &opts);
-            Mol { inner: Arc::new(s) }
+            Mol::bare(s)
         })
         .collect()
 }

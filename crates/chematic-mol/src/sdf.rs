@@ -478,4 +478,24 @@ $$$$
             .collect();
         assert_eq!(records.len(), 1);
     }
+
+    #[test]
+    fn test_sdf_file_reader_malformed_record_yields_err() {
+        use std::io::{BufReader, Cursor};
+
+        // 3-record SDF: valid, malformed (bad atom count line), valid
+        let malformed = "broken\n  prog\n\n  NOTNUM  0  0 V2000\nM  END\n";
+        let sdf = format!("{MOL_A}$$$$\n{malformed}$$$$\n{MOL_B}$$$$\n");
+        let cursor = Cursor::new(sdf.into_bytes());
+        let results: Vec<_> = SdfFileReader::new(BufReader::new(cursor)).collect();
+
+        // Three items: Ok, Err, Ok
+        assert_eq!(results.len(), 3);
+        assert!(results[0].is_ok(), "first record should be ok");
+        assert!(
+            results[1].is_err(),
+            "second record should be err (malformed)"
+        );
+        assert!(results[2].is_ok(), "third record should be ok");
+    }
 }
