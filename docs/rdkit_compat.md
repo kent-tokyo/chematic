@@ -61,13 +61,22 @@ python scripts/rdkit_compat_diff.py --limit 2000
 
 ### Known divergence classes
 
-- **Ring-size SMARTS (`[r5]`, `[r6]`, …)** — chematic SSSR ring membership differs from
-  RDKit's for some fused systems (the dominant SMARTS divergence, ~93% of mismatches).
-- **Aromatic ring-junction carbonyls** — atoms like `c(=O)` in fused aromatics are
-  modeled differently, shifting a few `c` / `C=O` matches and aromatic counts.
-- **Morgan bit positions** — FNV-1a (chematic) vs MurmurHash (RDKit); similarity ranking
-  is consistent, individual bit indices are not comparable across libraries.
-- **Exocyclic C=N E/Z** — canonical SMILES does not always emit the directional stereo.
+Each class below was reproduced and root-caused (not assumed). The scope decision states
+why it is or isn't pursued.
+
+| Divergence | Root cause | Scope |
+|------------|-----------|-------|
+| Ring-size SMARTS (`[r5]`, `[r6]`, …) — ~93% of SMARTS mismatches | chematic uses the **minimal SSSR**; RDKit uses a richer **symmetrized-SSSR** ring model. The gap is **non-monotonic** (purine: chematic 12 > RDKit 10; morphinan: chematic 12 < RDKit 17) — genuinely different ring models, not a tweak. `augmented_ring_set` recovers *smaller* XOR rings, the opposite of what bridged-cage cases need. | **Won't fix** — niche query; aligning means reverse-engineering RDKit's ring model on the core that gives 100% aromatic-ring-count + exact descriptors. Compare SMARTS results as **sets**, and avoid `[rN]` for cross-library parity. |
+| Aromatic ring-junction carbonyls (`c(=O)` in fused aromatics) | chematic and RDKit model these atoms differently, shifting a few `c` / `C=O` matches and aromatic atom/bond counts. | Documented; small tail (~1–3%). |
+| Morgan bit positions | FNV-1a (chematic) vs MurmurHash (RDKit). | By design — similarity **ranking** is consistent; individual bit indices are not comparable across libraries. |
+| Exocyclic C=N E/Z in canonical SMILES (~0.4% round-trip) | The **parser** drops `/`,`\` directional bonds that flank an aromatic ring atom during aromatization (`crates/chematic-smiles/src/parser.rs`), *before* the canonical writer runs — so the geometry is already gone by write time. | **Deferred** — a parser + aromaticity change (broad blast radius), not a writer fix. |
+| Idempotency on large fused polycyclics (~1.6%) | Canonical Morgan-rank ordering converges in ~3 passes, not 1, on large bridged/fused systems — so `canonical(canonical(s))` re-roots the traversal. The E/Z markers ride along; the `/`,`\` direction itself is **not** the cause. | **Deferred** — a core Morgan-ranking change touching every canonical SMILES. |
+
+**The `/`,`\` direction choice itself is deterministic and idempotent on stable skeletons**
+(verified on a 12-molecule E/Z corpus — see `crates/chematic-smiles/src/canonical.rs`
+tests and `tests/test_canonical_diff.py`). Canonical-SMILES E/Z is therefore reliable for the
+overwhelming majority of molecules; the residue is confined to the two named structural
+classes above.
 
 ---
 

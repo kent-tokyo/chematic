@@ -25,7 +25,10 @@ CLEAN_CORPUS = [
     "Cn1cnc2c1c(=O)n(C)c(=O)n2C", "c1ccc2ccccc2c1", "OCC(O)CO",
     "CC(C)Cc1ccc(C(C)C(=O)O)cc1", "C1CCCCC1", "CCN(CC)CC", "c1ccc(O)cc1",
     "C[C@H](N)C(=O)O", "ClC(Cl)Cl", "Nc1ccccc1", "CC#N", "CCOCC",
-    "c1ccoc1", "O=C(O)c1ccccc1", "C/C=C/C", "F/C=C\\F",
+    "c1ccoc1", "O=C(O)c1ccccc1",
+    # E/Z stable skeletons — direction choice is deterministic & idempotent
+    "C/C=C/C", "C/C=C\\C", "F/C=C/F", "F/C=C\\F", "CC/C=C/CC", "CC/C=C\\CC",
+    "C/C=C/C=C/C", "Cl/C=C/Br", "C/C=C/c1ccccc1",
     "c1ccc2cc3ccccc3cc2c1",        # anthracene
     "c1ccc2ncccc2c1",              # quinoline
     "c1ccc2c(c1)cc[nH]2",          # indole

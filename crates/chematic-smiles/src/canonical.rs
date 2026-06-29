@@ -961,4 +961,92 @@ mod tests {
             "both stereocenters must be encoded (got {stereo_count}): {out}"
         );
     }
+
+    // ── E/Z directional-bond canonical stability (issue: Sprint 8) ──────────
+    //
+    // The canonical writer emits `/`,`\` directional bonds with traversal-direction
+    // correction but no separate "normalization" pass. These tests lock in that the
+    // direction choice is already deterministic and idempotent for stable skeletons,
+    // so a future writer change cannot silently regress E/Z output. (The residual
+    // canonical_diff idempotency failures are large fused-polycyclic atom-ranking
+    // non-convergence, not a `/`,`\` direction bug — see docs/rdkit_compat.md.)
+
+    /// E/Z parity of the first C=C/C=N double bond: `Some(true)` = E (opposite
+    /// outward directions), `Some(false)` = Z, `None` = no specified geometry.
+    fn double_bond_is_e(smiles: &str) -> Option<bool> {
+        let mol = parse(smiles).unwrap();
+        let (a1, a2) = mol
+            .bonds()
+            .find(|(_, b)| b.order == BondOrder::Double)
+            .map(|(_, b)| (b.atom1, b.atom2))?;
+        let outward = |end: AtomIdx, other: AtomIdx| -> Option<bool> {
+            for (nb, bidx) in mol.neighbors(end) {
+                if nb == other {
+                    continue;
+                }
+                let b = mol.bond(bidx);
+                match b.order {
+                    // `Up` means "up" along atom1→atom2; flip when `end` is atom2.
+                    BondOrder::Up => return Some(b.atom1 == end),
+                    BondOrder::Down => return Some(b.atom1 != end),
+                    _ => {}
+                }
+            }
+            None
+        };
+        let sa = outward(a1, a2)?;
+        let sb = outward(a2, a1)?;
+        Some(sa != sb)
+    }
+
+    const EZ_STABLE_CORPUS: &[&str] = &[
+        "C/C=C/C",     // (E)-2-butene
+        "C/C=C\\C",    // (Z)-2-butene
+        "F/C=C/F",     // (E)-1,2-difluoroethene
+        "F/C=C\\F",    // (Z)
+        "CC/C=C/CC",   // (E)-3-hexene
+        "CC/C=C\\CC",  // (Z)-3-hexene
+        "C/C=C/C=C/C", // (2E,4E)-hexadiene
+        "Cl/C=C/Br",
+        "C/C=C/c1ccccc1", // (E)-propenylbenzene
+        "C/C(F)=C(\\F)C",
+    ];
+
+    #[test]
+    fn ez_canonical_smiles_is_idempotent() {
+        for s in EZ_STABLE_CORPUS {
+            assert!(
+                is_stable(s),
+                "E/Z canonical SMILES must be idempotent for {s}"
+            );
+        }
+    }
+
+    #[test]
+    fn ez_geometry_preserved_through_canonicalization() {
+        for s in EZ_STABLE_CORPUS {
+            let want = double_bond_is_e(s)
+                .unwrap_or_else(|| panic!("input {s} must have specified geometry"));
+            let canon = canonical_smiles(&parse(s).unwrap());
+            let got = double_bond_is_e(&canon)
+                .unwrap_or_else(|| panic!("canonical {canon} dropped geometry from {s}"));
+            assert_eq!(got, want, "E/Z geometry changed: {s} -> {canon}");
+        }
+    }
+
+    #[test]
+    fn ez_e_and_z_differ_for_each_skeleton() {
+        // Each E form must canonicalize differently from its Z form.
+        for (e, z) in [
+            ("C/C=C/C", "C/C=C\\C"),
+            ("F/C=C/F", "F/C=C\\F"),
+            ("CC/C=C/CC", "CC/C=C\\CC"),
+        ] {
+            assert_ne!(
+                canonical_smiles(&parse(e).unwrap()),
+                canonical_smiles(&parse(z).unwrap()),
+                "E and Z must produce different canonical SMILES ({e} vs {z})"
+            );
+        }
+    }
 }
