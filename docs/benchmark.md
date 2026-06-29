@@ -138,13 +138,18 @@ Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). 
 | Num bridgehead atoms | **100%** | exact |
 | Num amide bonds | **100%** | exact |
 | Aromatic/aliphatic heterocycles | **100%** | exact |
-| Num stereocenters | **99.98%** | exact |
+| Num stereocenters (legacy)  | **99.98%** | exact |
+| Num stereocenters (new CIP) | 98.7% | exact |
 | [nH] SMARTS match | **100%** | precision/recall |
 
-19 of 19 metrics reach ≥99.98% on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
-Stereocenters: 4998/4999 vs `CalcNumAtomStereoCenters` (legacy RDKit CIP); the 1 discrepancy
-is a highly-symmetric polyester where chematic and RDKit's new CIP agree on 4 stereocenters
-while the legacy function returns 2 (under-count in legacy).
+19 of 19 metrics reach ≥98.7% on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
+Stereocenters are reported against two RDKit oracles:
+- Legacy `CalcNumAtomStereoCenters`: 99.98% (4998/4999). The 1 discrepancy is a polyester
+  where chematic correctly identifies 4 stereocenters while legacy misses 2 (confirmed by
+  `FindPotentialStereo`).
+- New CIP `FindPotentialStereo`: 98.7% (4932/4999). The new oracle counts cage/bridgehead
+  atoms as potential stereocenters in 67 molecules; chematic and legacy both correctly
+  exclude these false positives.
 
 ### How to reproduce
 

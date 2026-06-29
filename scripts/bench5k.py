@@ -32,6 +32,9 @@ def main():
     except ImportError:
         sys.exit("rdkit not installed. pip install rdkit")
 
+    # FindPotentialStereo (new CIP perception) — available RDKit 2022+.
+    _find_stereo = getattr(Chem, "FindPotentialStereo", None)
+
     try:
         import chematic
     except ImportError:
@@ -69,7 +72,8 @@ def main():
     rb    = make_int_counter()   # rotatable bonds
     hac   = make_int_counter()   # heavy atom count
     nhet  = make_int_counter()   # num heteroatoms
-    nsc   = make_int_counter()   # num stereocenters
+    nsc     = make_int_counter()   # num stereocenters (legacy CalcNumAtomStereoCenters)
+    nsc_new = make_int_counter()   # num stereocenters (new RDKit CIP / FindPotentialStereo)
     nahe  = make_int_counter()   # num aromatic heterocycles
     nalhe = make_int_counter()   # num aliphatic heterocycles
     nsat  = make_int_counter()   # num saturated heterocycles
@@ -110,6 +114,13 @@ def main():
         rd_hac  = rd_mol.GetNumHeavyAtoms()
         rd_nhet = Lipinski.NumHeteroatoms(rd_mol)
         rd_nsc  = rdMolDescriptors.CalcNumAtomStereoCenters(rd_mol)
+        if _find_stereo is not None:
+            rd_nsc_new = sum(
+                1 for s in _find_stereo(rd_mol)
+                if str(s.type).endswith("Atom_Tetrahedral")
+            )
+        else:
+            rd_nsc_new = rd_nsc  # fallback for older RDKit
         rd_nahe = rdMolDescriptors.CalcNumAromaticHeterocycles(rd_mol)
         rd_nalhe= rdMolDescriptors.CalcNumAliphaticHeterocycles(rd_mol)
         rd_nsat = rdMolDescriptors.CalcNumSaturatedHeterocycles(rd_mol)
@@ -186,7 +197,8 @@ def main():
         check_int(rb,     rd_rb,    ch_rb,    "RotB",  smi)
         check_int(hac,    rd_hac,   ch_hac,   "HAC",   smi)
         check_int(nhet,   rd_nhet,  ch_nhet,  "NHet",  smi)
-        check_int(nsc,    rd_nsc,   ch_nsc,   "NSC",   smi)
+        check_int(nsc,     rd_nsc,     ch_nsc, "NSC",     smi)
+        check_int(nsc_new, rd_nsc_new, ch_nsc, "NSC_new", smi)
         check_int(nahe,   rd_nahe,  ch_nahe,  "NAHet", smi)
         check_int(nalhe,  rd_nalhe, ch_nalhe, "NALHet",smi)
         check_int(nsat,   rd_nsat,  ch_nsat,  "NSatHet",smi)
@@ -236,7 +248,8 @@ def main():
     print(fmt_int("Rotatable bonds:", rb))
     print(fmt_int("Heavy atom count:", hac))
     print(fmt_int("Num heteroatoms:", nhet))
-    print(fmt_int("Num stereocenters:", nsc))
+    print(fmt_int("Num stereocenters (legacy):", nsc))
+    print(fmt_int("Num stereocenters (new CIP):", nsc_new))
     print(fmt_int("Num arom heterocycles:", nahe))
     print(fmt_int("Num aliph heterocycles:", nalhe))
     print(fmt_int("Num sat  heterocycles:", nsat))
@@ -283,7 +296,8 @@ def main():
                 "rotatable_bonds":          metric_dict(rb,     "exact"),
                 "heavy_atom_count":         metric_dict(hac,    "exact"),
                 "num_heteroatoms":          metric_dict(nhet,   "exact"),
-                "num_stereocenters":        metric_dict(nsc,    "exact"),
+                "num_stereocenters":         metric_dict(nsc,     "exact"),
+                "num_stereocenters_new_cip": metric_dict(nsc_new, "exact"),
                 "num_aromatic_heterocycles":metric_dict(nahe,   "exact"),
                 "num_aliphatic_heterocycles":metric_dict(nalhe, "exact"),
                 "num_saturated_heterocycles":metric_dict(nsat,  "exact"),
