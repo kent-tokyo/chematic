@@ -161,6 +161,24 @@ df[["mw", "logp", "tpsa", "qed"]]
 
 For Rust and JavaScript/TypeScript examples, see the [documentation](https://kent-tokyo.github.io/chematic/).
 
+### Migrating from RDKit
+
+`chematic.rdkit_compat` provides a lightweight RDKit-compatible subset so existing scripts port with minimal changes:
+
+```python
+from chematic import rdkit_compat as Chem
+from chematic.rdkit_compat import Descriptors, rdMolDescriptors, DataStructs
+
+mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+Descriptors.MolWt(mol)                       # 180.16
+fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
+DataStructs.TanimotoSimilarity(fp, fp)       # 1.0
+```
+
+It is **not a full RDKit clone**, and unsupported options fail loudly. See the
+[RDKit compatibility guide](docs/rdkit_compat.md) for the compatibility matrix,
+differential-validation results vs RDKit, and runnable examples.
+
 ### Diagnostics
 
 ```python

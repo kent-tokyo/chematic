@@ -38,7 +38,7 @@ __all__ = [
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts",
-    "SDMolSupplier", "SDWriter",
+    "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
     "Descriptors", "rdMolDescriptors", "DataStructs",
 ]
 
@@ -553,6 +553,24 @@ class SDMolSupplier:
         # ponytail: O(n) scan; document limitation
         return sum(1 for _ in _ch.iter_sdf(self._filename))
 
+    def __getitem__(self, i: int):
+        """Random access by record index (RDKit-compatible).
+
+        .. note:: O(i) — iterates from the start. Avoid in tight loops.
+        """
+        if i < 0:
+            raise IndexError(i)
+        for j, mol in enumerate(self):
+            if j == i:
+                return mol
+        raise IndexError(i)
+
+    def __enter__(self) -> "SDMolSupplier":
+        return self
+
+    def __exit__(self, *args) -> None:
+        pass
+
 
 # ---------------------------------------------------------------------------
 # SDWriter — streaming SDF writer
@@ -596,6 +614,142 @@ class SDWriter:
         self._writer.close()
 
     def __enter__(self) -> "SDWriter":
+        return self
+
+    def __exit__(self, *args) -> None:
+        self.close()
+
+
+# ---------------------------------------------------------------------------
+# SmilesMolSupplier — read molecules from a SMILES file
+# ---------------------------------------------------------------------------
+
+class SmilesMolSupplier:
+    """Read molecules from a SMILES file, one record per line (RDKit-compatible).
+
+    Each line is split on *delimiter*; ``smilesColumn`` is parsed as the SMILES
+    and ``nameColumn`` (when present) is stored as the ``_Name`` property.
+    Yields ``Mol | None`` (``None`` on a parse failure), like RDKit.
+    """
+
+    def __init__(
+        self,
+        filename: str,
+        delimiter: str = " \t",
+        smilesColumn: int = 0,
+        nameColumn: int = 1,
+        titleLine: bool = True,
+        sanitize: bool = True,
+    ) -> None:
+        self._filename = filename
+        self._delimiter = delimiter
+        self._smiles_col = smilesColumn
+        self._name_col = nameColumn
+        self._title_line = titleLine
+        self._sanitize = sanitize
+
+    def _split(self, line: str) -> list:
+        # RDKit treats `delimiter` as a set of separator characters.
+        if len(self._delimiter) == 1:
+            return line.split(self._delimiter)
+        import re
+        return re.split("[" + re.escape(self._delimiter) + "]+", line.strip())
+
+    def _header_and_records(self):
+        with open(self._filename) as f:
+            lines = [ln.rstrip("\n") for ln in f if ln.strip()]
+        header = None
+        if self._title_line and lines:
+            header = self._split(lines[0])
+            lines = lines[1:]
+        return header, lines
+
+    def __iter__(self):
+        header, records = self._header_and_records()
+        for line in records:
+            fields = self._split(line)
+            if len(fields) <= self._smiles_col:
+                yield None
+                continue
+            mol = MolFromSmiles(fields[self._smiles_col], sanitize=self._sanitize)
+            if mol is not None:
+                if self._name_col is not None and len(fields) > self._name_col:
+                    mol.SetProp("_Name", fields[self._name_col])
+                # Extra columns become properties, named by the title line when present.
+                for col, value in enumerate(fields):
+                    if col == self._smiles_col or col == self._name_col:
+                        continue
+                    key = header[col] if header and col < len(header) else f"col_{col}"
+                    mol.SetProp(key, value)
+            yield mol
+
+    def __len__(self) -> int:
+        return len(self._header_and_records()[1])
+
+    def __getitem__(self, i: int):
+        if i < 0:
+            raise IndexError(i)
+        for j, mol in enumerate(self):
+            if j == i:
+                return mol
+        raise IndexError(i)
+
+
+# ---------------------------------------------------------------------------
+# SmilesWriter — write molecules as a SMILES/CSV file
+# ---------------------------------------------------------------------------
+
+class SmilesWriter:
+    """Write molecules as a delimited SMILES file with optional property columns.
+
+    Columns: ``SMILES`` + name + any properties set via ``SetProps``.
+    Supports the context-manager protocol.
+    """
+
+    def __init__(
+        self,
+        filename: str,
+        delimiter: str = " ",
+        nameHeader: str = "Name",
+        includeHeader: bool = True,
+        kekuleSmiles: bool = False,
+    ) -> None:
+        self._fh = open(filename, "w")
+        self._delimiter = delimiter
+        self._name_header = nameHeader
+        self._include_header = includeHeader
+        self._props = None
+        self._wrote_header = False
+
+    def SetProps(self, props) -> None:
+        """Restrict which properties are written as extra columns."""
+        self._props = list(props)
+
+    def _header(self, mol: Mol) -> list:
+        cols = ["SMILES", self._name_header]
+        if self._props is not None:
+            cols += self._props
+        return cols
+
+    def write(self, mol: Mol) -> None:
+        if self._include_header and not self._wrote_header:
+            self._fh.write(self._delimiter.join(self._header(mol)) + "\n")
+            self._wrote_header = True
+        name = mol.GetProp("_Name") if mol.HasProp("_Name") else ""
+        row = [mol._mol.smiles, name]
+        if self._props is not None:
+            for key in self._props:
+                row.append(mol.GetProp(key) if mol.HasProp(key) else "")
+        self._fh.write(self._delimiter.join(row) + "\n")
+
+    def flush(self) -> None:
+        self._fh.flush()
+
+    def close(self) -> None:
+        if not self._fh.closed:
+            self._fh.close()
+
+    def __enter__(self) -> "SmilesWriter":
         return self
 
     def __exit__(self, *args) -> None:

@@ -136,3 +136,56 @@ def test_diff_morgan_self_tanimoto():
         sim = DataStructs.TanimotoSimilarity(fp, fp)
         _record(smi, "morgan_self_tanimoto", sim, 1.0, sim == 1.0)
         assert sim == 1.0
+
+
+# ---------------------------------------------------------------------------
+# SMARTS substructure match sets vs RDKit
+#
+# Match sets are compared order-invariantly (set of frozensets). Ring-size
+# queries ([rN]) and aromatic-carbonyl edge cases diverge due to SSSR / aromatic
+# perception differences (see scripts/rdkit_compat_diff.py for the full corpus
+# breakdown) and are intentionally excluded from this regression guard.
+# ---------------------------------------------------------------------------
+
+# Queries that agree with RDKit on the clean corpus (no [rN] ring-size queries).
+CLEAN_SMARTS = [
+    "[OH]", "[#7]", "[CX4]", "c", "C=O", "[F,Cl,Br,I]",
+    "[OX2H]", "[#16]", "[nH]", "[!#6;!#1]",
+]
+
+
+def _match_set(matches):
+    return frozenset(frozenset(m) for m in matches)
+
+
+@pytest.mark.parametrize("smarts", CLEAN_SMARTS)
+def test_diff_smarts_match_sets(smarts):
+    rq = RDChem.MolFromSmarts(smarts)
+    for smi in CORPUS:
+        cm = Chem.MolFromSmiles(smi)
+        rm = RDChem.MolFromSmiles(smi)
+        cm_set = _match_set(cm.GetSubstructMatches(smarts))
+        rd_set = _match_set(rm.GetSubstructMatches(rq, uniquify=True))
+        ok = cm_set == rd_set
+        _record(smi, f"smarts_set:{smarts}", len(cm_set), len(rd_set), ok)
+        assert ok, f"SMARTS {smarts} on {smi}: {sorted(map(sorted, cm_set))} vs {sorted(map(sorted, rd_set))}"
+
+
+@pytest.mark.parametrize("smi", CORPUS)
+def test_diff_aromatic_atom_count(smi):
+    cm = Chem.MolFromSmiles(smi)
+    rm = RDChem.MolFromSmiles(smi)
+    cm_n = sum(1 for a in cm._mol.atom_table if a[3])
+    rd_n = sum(1 for a in rm.GetAtoms() if a.GetIsAromatic())
+    _record(smi, "aromatic_atoms", cm_n, rd_n, cm_n == rd_n, cm_n - rd_n)
+    assert cm_n == rd_n, f"aromatic atom count {smi}: {cm_n} vs {rd_n}"
+
+
+@pytest.mark.parametrize("smi", CORPUS)
+def test_diff_aromatic_bond_count(smi):
+    cm = Chem.MolFromSmiles(smi)
+    rm = RDChem.MolFromSmiles(smi)
+    cm_n = sum(1 for b in cm._mol.bond_table if b[3])
+    rd_n = sum(1 for b in rm.GetBonds() if b.GetIsAromatic())
+    _record(smi, "aromatic_bonds", cm_n, rd_n, cm_n == rd_n, cm_n - rd_n)
+    assert cm_n == rd_n, f"aromatic bond count {smi}: {cm_n} vs {rd_n}"

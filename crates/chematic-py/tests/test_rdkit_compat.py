@@ -749,3 +749,72 @@ def test_morgan_bitinfo_chirality_raises():
         rdMolDescriptors.GetMorganFingerprintAsBitVect(
             mol, 2, useChirality=True, bitInfo={}
         )
+
+
+# ---------------------------------------------------------------------------
+# SmilesMolSupplier / SmilesWriter
+# ---------------------------------------------------------------------------
+
+def test_smiles_writer_supplier_roundtrip(tmp_path):
+    out = tmp_path / "mols.smi"
+    with Chem.SmilesWriter(str(out), delimiter="\t") as w:
+        w.SetProps(["activity"])
+        for smi, name, act in [("CCO", "ethanol", "1.2"), ("c1ccccc1", "benzene", "3.4")]:
+            m = Chem.MolFromSmiles(smi)
+            m.SetProp("_Name", name)
+            m.SetProp("activity", act)
+            w.write(m)
+
+    sup = Chem.SmilesMolSupplier(str(out), delimiter="\t")
+    assert len(sup) == 2
+    mols = list(sup)
+    assert mols[0].GetProp("_Name") == "ethanol"
+    assert mols[0].GetProp("activity") == "1.2"
+    assert mols[1].GetProp("_Name") == "benzene"
+
+
+def test_smiles_supplier_random_access(tmp_path):
+    out = tmp_path / "mols.smi"
+    with Chem.SmilesWriter(str(out)) as w:
+        for smi, name in [("CCO", "a"), ("CCC", "b"), ("CCCC", "c")]:
+            m = Chem.MolFromSmiles(smi)
+            m.SetProp("_Name", name)
+            w.write(m)
+    sup = Chem.SmilesMolSupplier(str(out))
+    assert sup[2].GetProp("_Name") == "c"
+    with pytest.raises(IndexError):
+        _ = sup[99]
+
+
+def test_smiles_supplier_no_title_line(tmp_path):
+    out = tmp_path / "raw.smi"
+    out.write_text("CCO ethanol\nc1ccccc1 benzene\n")
+    sup = Chem.SmilesMolSupplier(str(out), delimiter=" ", titleLine=False)
+    mols = list(sup)
+    assert len(mols) == 2
+    assert mols[0].GetProp("_Name") == "ethanol"
+
+
+def test_smiles_supplier_bad_line_yields_none(tmp_path):
+    out = tmp_path / "bad.smi"
+    out.write_text("SMILES Name\nC1CC unclosed_ring\nCCO ethanol\n")
+    mols = list(Chem.SmilesMolSupplier(str(out)))
+    assert mols[0] is None      # C1CC has an unclosed ring bond
+    assert mols[1] is not None
+
+
+# ---------------------------------------------------------------------------
+# SDMolSupplier random access + context manager
+# ---------------------------------------------------------------------------
+
+def test_sdmolsupplier_random_access(tmp_path):
+    out = tmp_path / "x.sdf"
+    with Chem.SDWriter(str(out)) as w:
+        for smi in ["CCO", "c1ccccc1", "CC(=O)O"]:
+            w.write(Chem.MolFromSmiles(smi))
+    with Chem.SDMolSupplier(str(out)) as sup:
+        assert len(sup) == 3
+        assert sup[0] is not None
+        assert sup[2] is not None
+        with pytest.raises(IndexError):
+            _ = sup[99]
