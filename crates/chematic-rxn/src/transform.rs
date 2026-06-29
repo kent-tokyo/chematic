@@ -689,8 +689,16 @@ fn build_product(
                 continue;
             }
             added_bond_pairs.insert(pair);
-            let bond_order = input_mols[mol_idx].bond(bond_idx).order;
-            let _ = builder.add_bond(a_new, b_new, bond_order);
+            let ob = input_mols[mol_idx].bond(bond_idx);
+            // Preserve the original atom1→atom2 orientation. Up/Down (E/Z)
+            // bond semantics are direction-dependent, so adding the bond with
+            // endpoints swapped relative to the source would flip the geometry.
+            let (a, b) = if ob.atom1 == src_idx {
+                (a_new, b_new)
+            } else {
+                (b_new, a_new)
+            };
+            let _ = builder.add_bond(a, b, ob.order);
         }
     }
 
@@ -1121,20 +1129,22 @@ mod tests {
 
     #[test]
     fn smirks_preserves_stereo_bonds_adjacent_to_remaining_double() {
-        // If the double bond is kept unchanged, Up/Down must be preserved.
-        // [C:1]=[C:2]>>[C:1]=[C:2] is the identity transformation for alkenes.
-        let mol = parse("C/C=C/C").unwrap(); // (E)-2-butene
-        let results = run_reactants("[C:1]=[C:2]>>[C:1]=[C:2]", &[&mol]).unwrap();
-        assert!(!results.is_empty());
-        // At least one Up or Down bond must remain (E/Z stereo preserved).
-        let has_stereo_bond = results[0]
-            .iter()
-            .flat_map(|p| p.bonds())
-            .any(|(_, b)| b.order == BondOrder::Up || b.order == BondOrder::Down);
-        assert!(
-            has_stereo_bond,
-            "stereo bonds adjacent to retained double bond must be preserved"
-        );
+        // If the double bond is kept unchanged, the *exact* E/Z geometry must be
+        // preserved — not merely "some Up/Down bond survives" (which passed even
+        // while the geometry was flipping E↔Z, issue #50). Verify by comparing the
+        // product's canonical SMILES to the canonical SMILES of the known input.
+        use chematic_smiles::canonical_smiles;
+        for input in ["C/C=C/C", "C/C=C\\C"] {
+            let mol = parse(input).unwrap();
+            let results = run_reactants("[C:1]=[C:2]>>[C:1]=[C:2]", &[&mol]).unwrap();
+            assert!(!results.is_empty());
+            let expected = canonical_smiles(&mol);
+            let got = canonical_smiles(&results[0][0]);
+            assert_eq!(
+                got, expected,
+                "identity SMIRKS must preserve exact E/Z geometry for {input}"
+            );
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -1231,5 +1241,112 @@ mod tests {
             run_reactants(smirks, &[&e_alkene]).unwrap().is_empty(),
             "Z-template must reject E-alkene"
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // E/Z stereo transfer & creation in products (issue #50)
+    //
+    // Geometry is verified by comparing the product's canonical SMILES to the
+    // canonical SMILES of a reference molecule of known E/Z — exact, not "some
+    // Up/Down survives". (CipCode-based verification lives in the Python tests;
+    // chematic-rxn cannot depend on chematic-chem without a dependency cycle.)
+    // -----------------------------------------------------------------------
+
+    /// Canonical SMILES of the single product of `smirks` applied to `inputs`.
+    fn product_canon(smirks: &str, inputs: &[&str]) -> String {
+        use chematic_smiles::canonical_smiles;
+        let mols: Vec<Molecule> = inputs.iter().map(|s| parse(s).unwrap()).collect();
+        let refs: Vec<&Molecule> = mols.iter().collect();
+        let results = run_reactants(smirks, &refs).unwrap();
+        assert!(!results.is_empty(), "no product for {smirks} on {inputs:?}");
+        canonical_smiles(&results[0][0])
+    }
+
+    fn canon(smiles: &str) -> String {
+        chematic_smiles::canonical_smiles(&parse(smiles).unwrap())
+    }
+
+    /// Writer-invariant E/Z of the first C=C double bond: `Some(true)` = E,
+    /// `Some(false)` = Z, `None` = no specified geometry. Reuses the crate's
+    /// own `ez_stereo_outward` (same convention as the #21 filter): equal
+    /// outward directions → Z, opposite → E.
+    fn double_bond_is_e(smiles: &str) -> Option<bool> {
+        let mol = parse(smiles).unwrap();
+        let (a1, a2) = mol
+            .bonds()
+            .find(|(_, b)| b.order == BondOrder::Double)
+            .map(|(_, b)| (b.atom1, b.atom2))?;
+        let sa = ez_stereo_outward(&mol, a1, a2)?;
+        let sb = ez_stereo_outward(&mol, a2, a1)?;
+        Some(sa != sb)
+    }
+
+    #[test]
+    fn issue50_transfer_identity_preserves_e() {
+        // Identity SMIRKS on E-2-butene must yield an E product (was Z before Fix A).
+        assert_eq!(
+            product_canon("[C:1]=[C:2]>>[C:1]=[C:2]", &["C/C=C/C"]),
+            canon("C/C=C/C"),
+        );
+    }
+
+    #[test]
+    fn issue50_transfer_identity_preserves_z() {
+        assert_eq!(
+            product_canon("[C:1]=[C:2]>>[C:1]=[C:2]", &["C/C=C\\C"]),
+            canon("C/C=C\\C"),
+        );
+    }
+
+    #[test]
+    fn issue50_create_e_from_template() {
+        // Product template introduces an E double bond from a saturated chain.
+        assert_eq!(
+            product_canon("[C:1][C:2][C:3][C:4]>>[C:1]/[C:2]=[C:3]/[C:4]", &["CCCC"]),
+            canon("C/C=C/C"),
+        );
+    }
+
+    #[test]
+    fn issue50_create_z_from_template() {
+        assert_eq!(
+            product_canon("[C:1][C:2][C:3][C:4]>>[C:1]/[C:2]=[C:3]\\[C:4]", &["CCCC"]),
+            canon("C/C=C\\C"),
+        );
+    }
+
+    #[test]
+    fn issue50_transfer_remote_reaction_keeps_e() {
+        // Reaction at a remote site (aldehyde→alcohol) must not disturb the
+        // E geometry of a carried-through alkene. The canonical writer may pick
+        // `/C=C/` or `\C=C\` (both E) depending on traversal, so assert geometry
+        // directly rather than the exact string.
+        let got = product_canon("[CH:1]=O>>[C:1]O", &["CC/C=C/CC=O"]);
+        assert_eq!(
+            double_bond_is_e(&got),
+            Some(true),
+            "E geometry must survive a remote edit"
+        );
+        // And a Z input stays Z.
+        let got_z = product_canon("[CH:1]=O>>[C:1]O", &["CC/C=C\\CC=O"]);
+        assert_eq!(
+            double_bond_is_e(&got_z),
+            Some(false),
+            "Z geometry must survive a remote edit"
+        );
+    }
+
+    #[test]
+    fn issue50_geometry_is_deterministic() {
+        // The pre-fix bug was nondeterministic (FxHashMap iteration order).
+        // The same transform must give the same geometry on every run.
+        let first = product_canon("[C:1]=[C:2]>>[C:1]=[C:2]", &["CC/C=C/CC"]);
+        for _ in 0..6 {
+            assert_eq!(
+                product_canon("[C:1]=[C:2]>>[C:1]=[C:2]", &["CC/C=C/CC"]),
+                first,
+                "product geometry must be deterministic across runs"
+            );
+        }
     }
 }
