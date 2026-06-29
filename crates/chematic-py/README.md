@@ -103,11 +103,16 @@ mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
 Descriptors.MolWt(mol)          # 180.16
 rdMolDescriptors.CalcTPSA(mol)  # 63.6
 
-# Fingerprint (ExplicitBitVect)
-fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2)
+# Fingerprint (ExplicitBitVect) with bitInfo
+bitInfo = {}
+fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048, bitInfo=bitInfo)
 fp.GetNumBits()                         # 2048
+bitInfo                                 # {bit: ((atom_idx, radius), ...)}
 DataStructs.TanimotoSimilarity(fp, fp)  # 1.0
 DataStructs.BulkTanimotoSimilarity(fp, [fp])  # [1.0]
+
+import numpy as np
+arr = DataStructs.ConvertToNumpyArray(fp)  # (2048,) int8 for sklearn / PyTorch
 
 # Atom / Bond traversal
 for atom in mol.GetAtoms():
@@ -130,6 +135,30 @@ for m in Chem.SDMolSupplier("out.sdf"):
 ```
 
 Unsupported options raise `NotImplementedError` or `TypeError` — they are never silently ignored.
+
+### Compatibility matrix
+
+| Area | Status | Notes |
+|------|--------|-------|
+| SMILES I/O | ✅ Supported | `MolFromSmiles` (aromaticity perceived when `sanitize=True`) / `MolToSmiles` |
+| SDF I/O | ✅ Supported | `SDMolSupplier` / `SDWriter` + SD properties |
+| Mol properties | ✅ Supported | `Get`/`Set`/`Has`/`Clear`Prop, typed setters, `GetPropsAsDict` |
+| Mol / Atom / Bond | ✅ Supported | read-only traversal (`GetAtoms`/`GetBonds`/`GetAtomWithIdx`/…) |
+| RingInfo | ✅ Supported | SSSR-based; `NumRings`/`AtomRings`/`BondRings`/`NumAtomRings`/`NumBondRings` |
+| Substructure | 🟡 Partial | SMARTS via chematic; match **order** may differ from RDKit (use set comparison) |
+| Descriptors | ✅ Supported | MW/HBA/HBD exact, TPSA ±1.0, LogP ±0.5 vs RDKit (differential-tested) |
+| Morgan fingerprint | 🟡 Partial | `nBits` folding + `bitInfo` shape-/origin-consistent, **not RDKit bit-identical** (FNV-1a vs MurmurHash) |
+| DataStructs | ✅ Supported | `TanimotoSimilarity`/`DiceSimilarity`/`BulkTanimotoSimilarity`/`ConvertToNumpyArray` |
+| RWMol / editing | ❌ Unsupported | read-only layer |
+| `useFeatures`, `useBondTypes=False` | 🔊 Fails loudly | raise `NotImplementedError` instead of silently ignoring |
+
+A live differential suite (`tests/test_rdkit_diff.py`, auto-skipped when RDKit is
+absent) compares chematic against RDKit across descriptors, ring counts, SMARTS
+match counts, SDF round-trips, and Morgan self-similarity, writing an explainable
+diff to `validation/results/rdkit_diff.jsonl`.
+
+`chematic.rdkit_compat` is **not a full RDKit clone** — it is a lightweight
+RDKit-compatible subset for common 2D cheminformatics workflows.
 
 ## License
 

@@ -96,6 +96,15 @@ def _fp_bytes(fp) -> bytes:
     return fp._to_bytes() if isinstance(fp, ExplicitBitVect) else fp
 
 
+def _fold_bits(raw: bytes, nbits: int) -> "ExplicitBitVect":
+    """Fold a 2048-bit fingerprint to *nbits* via modulo (RDKit-style nBits)."""
+    src = ExplicitBitVect._from_bytes(raw, 2048)
+    bv = ExplicitBitVect(nbits)
+    for i in src.GetOnBits():
+        bv.SetBit(i % nbits)
+    return bv
+
+
 # ---------------------------------------------------------------------------
 # BondType constants
 # ---------------------------------------------------------------------------
@@ -342,7 +351,7 @@ class Mol:
             return _ch.smarts_match(query, self._mol)
         return False
 
-    def GetSubstructMatches(self, query) -> list:
+    def _smarts_find(self, query) -> list:
         if isinstance(query, _SmartsQuery):
             return _ch.smarts_find(query._pattern, self._mol)
         if isinstance(query, Mol):
@@ -350,6 +359,25 @@ class Mol:
         if isinstance(query, str):
             return _ch.smarts_find(query, self._mol)
         return []
+
+    def GetSubstructMatch(self, query) -> tuple:
+        """First substructure match as a tuple of atom indices (``()`` if none)."""
+        matches = self._smarts_find(query)
+        return tuple(matches[0]) if matches else ()
+
+    def GetSubstructMatches(self, query, uniquify: bool = True) -> tuple:
+        """All substructure matches as a tuple of atom-index tuples."""
+        matches = self._smarts_find(query)
+        if uniquify:
+            seen = set()
+            unique = []
+            for m in matches:
+                key = frozenset(m)
+                if key not in seen:
+                    seen.add(key)
+                    unique.append(tuple(m))
+            return tuple(unique)
+        return tuple(tuple(m) for m in matches)
 
     # -- MOL block -----------------------------------------------------------
 
@@ -404,9 +432,17 @@ class _SmartsQuery:
 # ---------------------------------------------------------------------------
 
 def MolFromSmiles(smi: str, sanitize: bool = True) -> Mol | None:
-    """Parse SMILES, return ``Mol`` or ``None`` on failure."""
+    """Parse SMILES, return ``Mol`` or ``None`` on failure.
+
+    With ``sanitize=True`` (RDKit default), aromaticity is perceived so that
+    Kekulé input (e.g. ``C1=CC2=CC=CC=C2C=C1``) matches aromatic SMARTS like
+    ``c`` and round-trips to aromatic canonical SMILES, as in RDKit.
+    """
     try:
-        return Mol(_ch.from_smiles(smi))
+        mol = _ch.from_smiles(smi)
+        if sanitize:
+            mol = mol.apply_aromaticity("rdkit_like")
+        return Mol(mol)
     except Exception:
         return None
 
@@ -693,7 +729,11 @@ class rdMolDescriptors:
         .. note::
            Bit patterns differ from RDKit's Morgan fingerprints due to
            different hash implementations. Use for similarity ranking, not
-           for cross-library bit-level comparison.
+           for cross-library bit-level comparison. ``nBits`` other than 2048
+           is produced by modulo folding the internal 2048-bit fingerprint
+           and is likewise not RDKit bit-exact. When ``bitInfo`` is a dict it
+           is filled with ``{bit: ((atom_idx, radius), ...)}`` — shape- and
+           origin-consistent with chematic's own bits, but not RDKit-identical.
         """
         if useFeatures:
             raise NotImplementedError("useFeatures=True is not supported")
@@ -701,14 +741,24 @@ class rdMolDescriptors:
             raise NotImplementedError("useBondTypes=False is not supported")
         if kwargs:
             raise TypeError(f"Unsupported keyword arguments: {sorted(kwargs)}")
+        if nBits <= 0:
+            raise ValueError(f"nBits must be positive, got {nBits}")
         if bitInfo is not None:
-            raise NotImplementedError(
-                "bitInfo requires Rust-side atom+radius tracking; not yet implemented"
-            )
-        if nBits != 2048:
-            raise NotImplementedError(
-                f"nBits={nBits} is not supported; only 2048-bit fingerprints are available"
-            )
+            if useChirality:
+                raise NotImplementedError(
+                    "bitInfo with useChirality is not supported"
+                )
+            raw, info = mol._mol.ecfp_bitinfo(radius)  # 2048-bit fp + dict
+            bitInfo.clear()
+            if nBits == 2048:
+                for bit, pairs in info.items():
+                    bitInfo[bit] = tuple(tuple(p) for p in pairs)
+                return ExplicitBitVect._from_bytes(bytes(raw), 2048)
+            # Fold both fp and bitInfo keys with the same modulo.
+            for bit, pairs in info.items():
+                fb = bit % nBits
+                bitInfo[fb] = bitInfo.get(fb, ()) + tuple(tuple(p) for p in pairs)
+            return _fold_bits(bytes(raw), nBits)
         if useChirality:
             if radius > 2:
                 raise NotImplementedError(
@@ -719,7 +769,11 @@ class rdMolDescriptors:
             raw = mol._mol.ecfp4()
         else:
             raw = mol._mol.ecfp6()
-        return ExplicitBitVect._from_bytes(bytes(raw), 2048)
+        raw = bytes(raw)
+        if nBits == 2048:
+            return ExplicitBitVect._from_bytes(raw, 2048)
+        # ponytail: modulo fold of the internal 2048-bit fp; not RDKit bit-exact
+        return _fold_bits(raw, nBits)
 
 
 # ---------------------------------------------------------------------------
@@ -742,3 +796,20 @@ class DataStructs:
         """Return Tanimoto similarity of *fp* against each fingerprint in *fps*."""
         b = _fp_bytes(fp)
         return [_ch.tanimoto(b, _fp_bytes(f)) for f in fps]
+
+    @staticmethod
+    def ConvertToNumpyArray(fp, dest=None):
+        """Fill *dest* (or a new int8 array) with the bits of *fp*.
+
+        Unlike RDKit's in-place-only signature, *dest* is optional; when
+        omitted a new ``numpy.int8`` array of length ``fp.GetNumBits()`` is
+        returned.
+        """
+        import numpy as np
+
+        n = fp.GetNumBits()
+        if dest is None:
+            dest = np.zeros(n, dtype=np.int8)
+        for i in fp.GetOnBits():
+            dest[i] = 1
+        return dest
