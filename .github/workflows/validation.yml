@@ -27,7 +27,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install chematic + RDKit
-        run: pip install chematic rdkit-pypi
+        run: pip install chematic rdkit
 
       - name: Download SMILES corpus
         env:
