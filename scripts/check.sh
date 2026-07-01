@@ -16,5 +16,11 @@ grep -q "chematic v$VER" README.md    || { echo "MISMATCH: README.md (expect che
 grep -q "chematic v$VER" README_ja.md || { echo "MISMATCH: README_ja.md (expect chematic v$VER)"; fail=1; }
 grep -q "version: $VER"  CITATION.cff || { echo "MISMATCH: CITATION.cff (expect version: $VER)"; fail=1; }
 grep -q "v$VER | Yes"    SECURITY.md  || { echo "MISMATCH: SECURITY.md (expect v$VER | Yes)"; fail=1; }
+grep -q "\"version\": \"$VER\"" demo/pkg/package.json || { echo "MISMATCH: demo/pkg/package.json (expect version $VER)"; fail=1; }
+for f in crates/*/Cargo.toml; do
+    if grep -q 'path = "\.\./chematic-' "$f" && ! grep -q "version = \"$VER\"" "$f"; then
+        echo "MISMATCH: $f (path-dependency versions not bumped to $VER)"; fail=1
+    fi
+done
 [ $fail -eq 0 ] && echo "Version consistent: $VER" || { echo "Run: python scripts/bump_version.py"; exit 1; }
 echo "All checks passed."

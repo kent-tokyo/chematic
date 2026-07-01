@@ -1,0 +1,67 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build WASM + publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-wasm-
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.13.1 --locked
+
+      - name: Install binaryen (wasm-opt)
+        run: |
+          wget -q https://github.com/WebAssembly/binaryen/releases/download/version_119/binaryen-version_119-x86_64-linux.tar.gz
+          tar xzf binaryen-version_119-x86_64-linux.tar.gz
+          echo "$PWD/binaryen-version_119/bin" >> "$GITHUB_PATH"
+
+      - name: Build WASM (--target web)
+        working-directory: crates/chematic-wasm
+        run: wasm-pack build --target web --scope kent-tokyo --release -d pkg
+
+      - name: Optimize WASM with wasm-opt
+        run: wasm-opt -O3 -o crates/chematic-wasm/pkg/chematic_wasm_bg.wasm crates/chematic-wasm/pkg/chematic_wasm_bg.wasm
+
+      - name: Rename package to published npm name (@kent-tokyo/chematic)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'crates/chematic-wasm/pkg/package.json';
+            const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+            pkg.name = '@kent-tokyo/chematic';
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish to npm
+        working-directory: crates/chematic-wasm/pkg
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

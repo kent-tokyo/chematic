@@ -1,6 +1,6 @@
 # chematic — Status & Roadmap
 
-Current version: **v0.4.24** (2026-06-29)
+Current version: **v0.4.26** (2026-06-29)
 
 ---
 
@@ -8,31 +8,31 @@ Current version: **v0.4.24** (2026-06-29)
 
 | Crate | Role | Tests |
 |-------|------|-------|
-| `chematic-core` | Atom, Bond, Molecule, Element, kekulization (4-pass incl. Edmonds' blossom + boron fix) | 69 |
-| `chematic-smiles` | OpenSMILES parser/writer, canonical SMILES | 48 |
-| `chematic-perception` | SSSR, 2-pass Hückel aromaticity, CIP stereo, `count_aromatic_rings` | 34 |
+| `chematic-core` | Atom, Bond, Molecule, Element, kekulization (4-pass incl. Edmonds' blossom + boron fix) | 71 |
+| `chematic-smiles` | OpenSMILES parser/writer, canonical SMILES | 109 |
+| `chematic-perception` | SSSR, 2-pass Hückel aromaticity, CIP stereo, `count_aromatic_rings` | 101 |
 | `chematic-smarts` | SMARTS, VF2 subgraph, MCS (McGregor), LRU SMARTS cache; **atom map `:N`** in SMARTS (`[O;D1;H0:3]`); **`find_matches_with_rings`** — shared SSSR across multi-pattern batches | 142 |
-| `chematic-chem` | **190+ descriptors**, ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa, ESOL; Schultz/Gutman MTI, VABC, Gravitational index; **HBD 100% / TPSA ±0.1 Å² / LogP ±0.3** RDKit parity; **`logp_and_mr`** + `chi_all` + `pains_passes_and_matches` perf APIs | 639 |
-| `chematic-fp` | ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG, Tanimoto | 87 |
-| `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 51 |
-| `chematic-3d` | ETKDG (80 torsion rules, chair/envelope ring conf), WHIM (22-dim), GETAWAY (19-dim), RDF (20-dim), SASA, USR shape screen | 45 |
-| `chematic-depict` | 2D SVG, grid rendering, **PDF (`pdf` feature)**, **EPS (pure Rust)** | 34 |
-| `chematic-rxn` | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`, RECAP/BRICS; **`retro_disconnect()` — 60 retro-SMIRKS** (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering** | 25 |
-| `chematic-inchi` | InChI/InChIKey: pure-Rust approx (inline SHA-256, no sha2 dep) + IUPAC-exact (`native-inchi` feature, v1.07.5) | 28+16* |
-| `chematic-iupac` | IUPAC name generation, 25+ compound classes | 45 |
-| `chematic-mcp` | MCP server, **15 tools** (JSON-RPC 2.0 over stdio, `name_to_smiles` via PubChem) | 28 |
-| `chematic-mol` | SDF/MOL V2000/V3000, CML, CDXML, **ChemicalJSON (.cjson)** | 40 |
-| `chematic-wasm` | 160 WASM exports, npm `@kent-tokyo/chematic` (**504 KB gzip**, -38.5%) | 209 |
+| `chematic-chem` | **190+ descriptor values (71 functions)**, ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa, ESOL; Schultz/Gutman MTI, VABC, Gravitational index; **HBD 100% / TPSA ±0.1 Å² / LogP ±0.3** RDKit parity; **`logp_and_mr`** + `chi_all` + `pains_passes_and_matches` perf APIs | 662 |
+| `chematic-fp` | ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG, Tanimoto | 185 |
+| `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 98 |
+| `chematic-3d` | ETKDG (80 torsion rules, chair/envelope ring conf), WHIM (22-dim), GETAWAY (19-dim), RDF (20-dim), SASA, USR shape screen | 265 |
+| `chematic-depict` | 2D SVG, grid rendering, **PDF (`pdf` feature)**, **EPS (pure Rust)** | 64 |
+| `chematic-rxn` | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`, RECAP/BRICS; **`retro_disconnect()` — 60 retro-SMIRKS** (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering** | 137 |
+| `chematic-inchi` | InChI/InChIKey: pure-Rust approx (inline SHA-256, no sha2 dep) + IUPAC-exact (`native-inchi` feature, v1.07.5) | 96+16* |
+| `chematic-iupac` | IUPAC name generation, 25+ compound classes | 47 |
+| `chematic-mcp` | MCP server, **20 tools** (JSON-RPC 2.0 over stdio, `name_to_smiles` via PubChem) | 31 |
+| `chematic-mol` | SDF/MOL V2000/V3000, CML, CDXML, **ChemicalJSON (.cjson)** | 130 |
+| `chematic-wasm` | 160 WASM exports, npm `@kent-tokyo/chematic` (**504 KB gzip**, -38.5%) | 211 |
 | `chematic-py` | PyO3 Python bindings (`pip install chematic`); Sprint 18–26+: 300+ API endpoints | 300+ |
-| `chematic-ewald` | PME Ewald summation, B-spline interpolation | 12 |
+| `chematic-ewald` | PME Ewald summation, B-spline interpolation | 16 |
 
-`cargo test --workspace --lib --quiet` → **2319 tests** (lib only), all passing
+`cargo test --workspace --lib --quiet` → **2,366 tests** (lib only), all passing
 
 ---
 
-## MCP tools (chematic-mcp, 15 total)
+## MCP tools (chematic-mcp, 20 total)
 
-`parse_smiles` · `canonical_smiles` · `calc_properties` · `lipinski_check` · `sa_score` · `pains_check` · `brenk_check` · `admet_profile` · `boiled_egg` · `ecfp4` · `tanimoto` · `smarts_match` · `find_mcs` · `generate_3d` · `name_to_smiles`
+`parse_smiles` · `canonical_smiles` · `calc_properties` · `lipinski_check` · `sa_score` · `pains_check` · `brenk_check` · `admet_profile` · `boiled_egg` · `ecfp4` · `tanimoto` · `smarts_match` · `find_mcs` · `generate_3d` · `name_to_smiles` · `retrosynthesis` · `smiles_to_moljson` · `moljson_to_smiles` · `representation_router` · `molecule_context_pack`
 
 ---
 
@@ -40,6 +40,7 @@ Current version: **v0.4.24** (2026-06-29)
 
 | Item | Status |
 |------|--------|
+| PyPI/npm publish lag behind crates.io | **Known gap**: git tags `v0.4.23`–`v0.4.26` were never created/pushed to origin (only the release commits exist), so `publish-pypi.yml` / `publish-npm.yml` / `release.yml` never fired for them. crates.io stays current via a separate manual `cargo publish`. Fix: push the missing tags (`git tag vX.Y.Z && git push origin vX.Y.Z`) when ready to catch PyPI/npm/GitHub Releases up — this is a real external-publish action, done deliberately by a maintainer, not automatically. |
 | Kekulization failures | **1/5000** — only pure H₂ `[H][H]` (no heavy atoms; IUPAC InChI library constraint, not a kekulization issue) |
 | Aromatic ring count vs RDKit | **~100%** (222/222 bench5k failures fixed in v0.4.11 — `augmented_ring_set` XOR guard `min`→`max`) |
 | Bridgehead atoms vs RDKit | **100%** (4999/4999 — bond-intersection algorithm, 2026-06-28) |
