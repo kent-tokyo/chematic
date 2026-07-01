@@ -62,6 +62,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.26] — 2026-06-29
+
+### Fixed — `chematic-rxn`
+
+- **E/Z stereo transfer/creation in `run_reactants`** (#50) — reaction products now preserve `/`/`\` double-bond geometry from reactants instead of losing stereo on transformation.
+
+### Added — validation
+
+- **Sprint 6**: canonical SMILES differential validation vs RDKit.
+- **rdkit_compat Sprint 7**: SMARTS/aromaticity differential tests, I/O compatibility, docs, examples.
+- Canonical-idempotency and E/Z canonical-stability regression tests documenting the root causes of remaining RDKit divergence (aromaticity round-trip, not Morgan ranks).
+
+### CI
+
+- `rdkit-pypi` → `rdkit` in the validation workflow (the `rdkit-pypi` package is deprecated and no longer published on PyPI).
+
+---
+
+## [0.4.25] — 2026-06-29
+
+### Added — `chematic-py`
+
+- **`chematic.rdkit_compat`** — RDKit API compatibility layer, Sprints 1–5: Morgan `bitInfo`, fingerprint/Mol/Atom/Bond/RingInfo compatibility surface, differential tests against RDKit.
+- **`SDMolSupplier` / `SDWriter` / `Mol.GetProp`** — streaming SDF I/O and SD-file properties in the RDKit-compat style.
+
+### Added — `chematic-perception`
+
+- **`AromaticityAlgorithm::RdkitLike`** — Se/Te chalcogen aromaticity handling matching RDKit's model.
+
+### Dependencies
+
+- Bump `miniz_oxide` 0.8 → 0.9; `actions/checkout` 4 → 7; `actions/cache` 4 → 6; `actions/upload-artifact` 4 → 7 (Dependabot).
+
+---
+
+## [0.4.24] — 2026-06-29
+
+### Added — `chematic-chem`
+
+- **CIP Rule 5 stereo tie-breaking** — stereocenter agreement 99.8% → 99.98% vs RDKit.
+- Dual-oracle stereocenter benchmark (legacy detector + `FindPotentialStereo`).
+
+### Fixed — `chematic-chem`
+
+- **Bridgehead detection 98.5% → 100.0%** on the 5,000-molecule corpus.
+- **Rotatable bonds 99.1% → 100.0%** on the 5,000-molecule corpus.
+- **TPSA 100%** agreement with RDKit on the 4,999-molecule corpus.
+- **Molar refractivity (MR) 97.5% → 100%** via 3-ring XOR augmentation.
+- Spiro/bridgehead atom detection for bridged and cage ring systems.
+- Sulfoxide / selenoxide lone pair now counted as the 4th CIP substituent.
+- `heavy_atom_count` now excludes explicit H (including isotopic `[3H]`).
+
+### Fixed — `chematic-perception`
+
+- `augmented_ring_set` finds same-size XOR rings (bridged bicyclics); aliphatic/aromatic ring counts via aromatic-single-bond detection.
+
+### Added — `chematic-py`
+
+- **`bulk.descriptors_array()`** — columnar numpy descriptor output.
+- **SDF true streaming** — `SdfFileReader<R: BufRead>` + `iter_sdf_batched`.
+- **`screen()`** compound-filter workflow + LogP mismatch analyzer.
+- **`fragment_text()`** for LLM prompts + RDKit validation dashboard.
+
+### Added — LLM/RAG integration
+
+- **Representation router** (`to_llm_text`, `best_representation`, MCP tool `representation_router`).
+- **Molecule context pack** for LLM/RAG pipelines (MCP tool `molecule_context_pack`).
+- **Hyper-Dimensional Fingerprints (HDF)** — training-free dense molecular vectors.
+
+---
+
 ## [0.4.23] — 2026-06-26
 
 ### Fixed — `chematic-chem`

@@ -9,30 +9,30 @@ Pure-Rust cheminformatics library. Zero C/C++ dependencies; **504 KB WASM bundle
 
 ---
 
-## Current State (v0.4.23)
+## Current State (v0.4.26)
 
 | Crate | Purpose | Tests |
 |-------|---------|-------|
-| `chematic-core` | Atom, Bond, Molecule, Element, kekulization (blossom) | 69 |
-| `chematic-smiles` | OpenSMILES parser/writer, canonical SMILES | 48 |
-| `chematic-perception` | SSSR, 2-pass Hückel aromaticity, CIP stereo, `count_aromatic_rings` | 34 |
+| `chematic-core` | Atom, Bond, Molecule, Element, kekulization (blossom) | 71 |
+| `chematic-smiles` | OpenSMILES parser/writer, canonical SMILES | 109 |
+| `chematic-perception` | SSSR, 2-pass Hückel aromaticity, CIP stereo, `count_aromatic_rings` | 101 |
 | `chematic-smarts` | SMARTS, VF2 subgraph, MCS (McGregor), LRU SMARTS cache | 142 |
-| `chematic-chem` | 190+ descriptors, ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa | 659 |
-| `chematic-fp` | ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG, Tanimoto | 87 |
-| `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 51 |
-| `chematic-3d` | ETKDG (80 torsion rules), WHIM (22-dim), GETAWAY (19-dim), RDF (20-dim), SASA | 45 |
-| `chematic-mol` | SDF/MOL V2000+V3000, CML, CDXML, **MolJSON**, PDBQT, CIF, RXN, KET, etc. | 126 |
-| `chematic-depict` | 2D SVG, PDF, EPS output | 34 |
-| `chematic-rxn` | Reaction SMILES/SMIRKS, RECAP/BRICS, retrosynthesis (60 retro-SMIRKS) | 25 |
-| `chematic-inchi` | InChI/InChIKey (pure-Rust + native-inchi feature) | 28 |
-| `chematic-iupac` | IUPAC naming (25+ compound classes) | 45 |
-| `chematic-mcp` | MCP server — **18 tools** for AI agents | 31 |
-| `chematic-ewald` | PME Ewald summation, B-spline interpolation | 12 |
+| `chematic-chem` | 190+ descriptor values (71 functions), ADMET, BOILED-Egg, QED, SA Score, PAINS/Brenk, pKa | 662 |
+| `chematic-fp` | ECFP/FCFP, MACCS, MAP4, AtomPair, Torsion, MHFP, ERG, Tanimoto | 185 |
+| `chematic-ff` | MMFF94 full stack (7 terms), DREIDING, L-BFGS minimizer | 98 |
+| `chematic-3d` | ETKDG (80 torsion rules), WHIM (22-dim), GETAWAY (19-dim), RDF (20-dim), SASA | 265 |
+| `chematic-mol` | SDF/MOL V2000+V3000, CML, CDXML, **MolJSON**, PDBQT, CIF, RXN, KET, etc. | 130 |
+| `chematic-depict` | 2D SVG, PDF, EPS output | 64 |
+| `chematic-rxn` | Reaction SMILES/SMIRKS, RECAP/BRICS, retrosynthesis (60 retro-SMIRKS) | 137 |
+| `chematic-inchi` | InChI/InChIKey (pure-Rust + native-inchi feature) | 96 (+16*) |
+| `chematic-iupac` | IUPAC naming (25+ compound classes) | 47 |
+| `chematic-mcp` | MCP server — **20 tools** for AI agents | 31 |
+| `chematic-ewald` | PME Ewald summation, B-spline interpolation | 16 |
 | `chematic-wasm` | **160 WASM exports** → npm `@kent-tokyo/chematic` (504 KB gzip) | 211 |
 | `chematic-py` | PyO3 Python bindings (`pip install chematic`) | — |
-| `chematic` | Umbrella crate (feature-gated re-exports) | — |
+| `chematic` | Umbrella crate (feature-gated re-exports) | 1 |
 
-**Total: ~2,319 tests (lib only), all passing.**
+**Total: 2,366 tests (lib only), all passing.** (*+16 IUPAC-exact InChI tests require `--features native-inchi`)
 
 ---
 
@@ -62,6 +62,10 @@ cargo fmt --all -- --check
 python3 scripts/bump_version.py
 # 3. Verify:
 bash scripts/check.sh
+# 4. Commit, then tag and push the tag — this is what triggers
+#    publish-pypi.yml / publish-npm.yml / release.yml. Do not skip it.
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 ### Branch strategy
@@ -119,7 +123,7 @@ crates/
 │   ├── ecfp.rs          ecfp4(), ecfp6(); FCFP
 │   └── map4.rs          MAP4 fingerprint
 ├── chematic-mcp/src/
-│   └── tools.rs         18 MCP tools (smiles_to_moljson, moljson_to_smiles, …)
+│   └── tools.rs         20 MCP tools (smiles_to_moljson, moljson_to_smiles, …)
 └── chematic-wasm/src/
     └── lib.rs           MolHandle + 160 #[wasm_bindgen] exports
 ```
@@ -176,13 +180,14 @@ Note: `hydrogens` is informational; bracket-H notation ([nH]) may differ after r
 
 ---
 
-## MCP Tools (18 total)
+## MCP Tools (20 total)
 
 `parse_smiles` · `canonical_smiles` · `calc_properties` · `lipinski_check`  
 `sa_score` · `pains_check` · `brenk_check` · `admet_profile` · `boiled_egg`  
 `ecfp4` · `tanimoto` · `smarts_match` · `find_mcs` · `generate_3d`  
 `name_to_smiles` · `retrosynthesis`  
-**`smiles_to_moljson`** · **`moljson_to_smiles`**
+`smiles_to_moljson` · `moljson_to_smiles`  
+**`representation_router`** · **`molecule_context_pack`**
 
 ---
 

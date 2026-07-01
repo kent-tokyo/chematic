@@ -96,7 +96,17 @@ def main() -> None:
             # "Latest release (vX.Y.Z)" prose line
             re.compile(r"Latest release \(v" + re.escape(old) + r"\)"),
         ]),
+        (ROOT / "demo" / "pkg" / "package.json", [
+            re.compile(r'"version":\s*"' + re.escape(old) + r'"'),
+        ]),
     ]
+
+    # Intra-workspace path-dependency version pins, e.g.
+    #   chematic-core = { path = "../chematic-core", version = "0.4.19" }
+    for cargo_toml in sorted((ROOT / "crates").glob("*/Cargo.toml")):
+        targets.append((cargo_toml, [
+            re.compile(r'path\s*=\s*"[^"]+",\s*version\s*=\s*"' + re.escape(old) + r'"'),
+        ]))
 
     updated = []
     for path, patterns in targets:

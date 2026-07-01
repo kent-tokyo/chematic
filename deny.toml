@@ -1,7 +1,13 @@
 [advisories]
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-ignore = []
+ignore = [
+    # ttf-parser: unmaintained, pulled in transitively via chematic-depict ->
+    # svg2pdf -> fontdb/usvg. No safe upgrade available (advisory's own
+    # recommendation is to migrate to `skrifa`, which is an upstream change
+    # in fontdb/usvg/svg2pdf, not something chematic controls directly).
+    "RUSTSEC-2026-0192",
+]
 
 [licenses]
 allow = [
