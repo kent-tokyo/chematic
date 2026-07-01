@@ -15,6 +15,8 @@ This page gives a direct comparison between chematic and RDKit for teams evaluat
 | **AI agent integration** | MCP server built-in | None |
 | **Ecosystem maturity** | Growing (2024–) | Established (2006–) |
 
+**Descriptor accuracy caveat**: `Mol.descriptors()` returns 194 values, but bulk (4,999-molecule) RDKit-agreement testing currently covers a subset — the physicochemical core (MW/HBA/HBD/TPSA/LogP/MR/Fsp3/ring & stereocenter counts/etc.) is a verified 100% (or near-100%) match. A larger set of descriptors that are *named* to match RDKit 1:1 (Kappa/HallKierAlpha/BertzCT/BalabanJ/BCUT2D/VSA descriptor families/MQN/SA Score) were found to diverge substantially once measured at corpus scale. See [`tasks/descriptor_validation_coverage.md`](../tasks/descriptor_validation_coverage.md) for the full per-descriptor breakdown.
+
 ---
 
 ## 1. Infrastructure
@@ -109,7 +111,7 @@ python scripts/bench_smiles_parse.py --n 10000 --rdkit
 | Feature | chematic | RDKit |
 |---|---|---|
 | Native WASM (no Emscripten) | Yes | No |
-| MCP server (AI agent API) | 15 tools | None |
+| MCP server (AI agent API) | 20 tools | None |
 | pKa prediction (built-in) | 15 SMARTS rules | External tool required |
 | ADMET profile (built-in) | BBB / Caco-2 / hERG / CYP3A4 | External tool required |
 | MAP4 fingerprint | Yes (Minervini 2020) | No (external package) |

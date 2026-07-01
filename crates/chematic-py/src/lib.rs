@@ -804,6 +804,7 @@ impl Mol {
         d.set_item("chi4v", c4v)?;
         d.set_item("num_aromatic_heterocycles", rb.num_aromatic_heterocycles)?;
         d.set_item("num_aliphatic_heterocycles", rb.num_aliphatic_heterocycles)?;
+        d.set_item("num_saturated_heterocycles", rb.num_saturated_heterocycles)?;
         d.set_item("num_saturated_rings", rb.num_saturated_rings)?;
         d.set_item("num_aliphatic_rings", rb.num_aliphatic_rings)?;
         d.set_item(
