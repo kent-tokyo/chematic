@@ -63,19 +63,24 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi --qui
 ```
 chematic-core          (no deps)                   Atom, Bond, Molecule, Element, kekulization
 chematic-smiles        → core                      SMILES parser/writer, canonical SMILES
-chematic-perception    → core                      SSSR, Hückel aromaticity, CIP stereo
-chematic-smarts        → core, perception          SMARTS, VF2 isomorphism, MCS
-chematic-chem          → core, perception,         70+ descriptors, ADMET
+chematic-perception    → core, smiles              SSSR, Hückel aromaticity, CIP stereo
+chematic-smarts        → core, perception, smiles  SMARTS, VF2 isomorphism, MCS
+chematic-rxn           → core, smiles, smarts      Reaction SMILES/SMIRKS
+chematic-fp            → core, perception, rxn,    ECFP/FCFP, MACCS, MAP4, Tanimoto
+                          smarts, smiles
+chematic-mol           → core, rxn, perception,     SDF/MOL/CML/CDXML/MolJSON/PDBQT I/O
+                          smiles
+chematic-chem          → core, perception,         190+ descriptor values (71 functions), ADMET
                           smiles, smarts, fp, iupac
-chematic-fp            → core, smarts              ECFP/FCFP, MACCS, MAP4, Tanimoto
 chematic-ff            → core, perception          MMFF94 / DREIDING atom typing
 chematic-3d            → core, perception,         ETKDG, MD, SASA, WHIM
                           ff, chem, fp, smarts
+chematic-ewald         → core, 3d                  PME Ewald summation, B-spline interpolation
 chematic-depict        → core, perception,         2D SVG
                           rxn, smiles
-chematic-rxn           → core, smiles, smarts      Reaction SMILES/SMIRKS
-chematic-inchi         → core, smiles, chem        InChI/InChIKey
+chematic-inchi         → core, smiles, chem, rxn   InChI/InChIKey
 chematic-iupac         → core, perception          IUPAC naming
+chematic-mcp           → nearly all                MCP server (20 AI-callable tools)
 chematic-py            → nearly all                PyO3 Python bindings
 chematic-wasm          → nearly all                wasm-bindgen JS bindings
 chematic               (umbrella, feature-gated re-exports)
@@ -116,7 +121,7 @@ import chematic
 mol = chematic.from_smiles("c1ccccc1")  # returns Mol (not Molecule)
 mol.mw                          # property, not method
 mol.aromatic_ring_count         # property
-mol.descriptors()               # → dict of 70+ keys
+mol.descriptors()               # → dict of 190+ keys
 chematic.smarts_match("[nH]", mol)  # module-level function
 ```
 
