@@ -2597,30 +2597,48 @@ pub fn ipc(mol: &Molecule) -> f64 {
 // HallKierAlpha — valence state descriptor
 // ---------------------------------------------------------------------------
 
-/// Hall-Kier Alpha: valence-based branching descriptor.
+/// Covalent radius (Å) of `atomic_number`, adjusted for hybridization state,
+/// per Kier & Hall (1986) / standard tabulated covalent radii. `hyb` uses
+/// [`hybridization_per_atom`]'s encoding (1=sp, 2=sp2, other=sp3).
+fn hall_kier_radius(atomic_number: u8, hyb: u8) -> f64 {
+    match (atomic_number, hyb) {
+        (6, 1) => 0.60,  // C, sp
+        (6, 2) => 0.67,  // C, sp2
+        (6, _) => 0.77,  // C, sp3 (reference radius)
+        (7, 1) => 0.55,  // N, sp
+        (7, 2) => 0.62,  // N, sp2
+        (7, _) => 0.70,  // N, sp3
+        (8, 2) => 0.60,  // O, sp2 (e.g. carbonyl)
+        (8, _) => 0.66,  // O, sp3
+        (9, _) => 0.64,  // F
+        (14, _) => 1.11, // Si
+        (15, _) => 1.07, // P
+        (16, _) => 1.04, // S
+        (17, _) => 0.99, // Cl
+        (35, _) => 1.14, // Br
+        (53, _) => 1.33, // I
+        _ => 0.77,       // unhandled elements: fall back to sp3-carbon-like radius
+    }
+}
+
+/// Hall-Kier Alpha: valence state correction term for the Kappa shape indices
+/// (Kier & Hall, 1986).
 ///
-/// Measures molecular shape via σ-bonded hydrogen counts and valence.
-/// Returns value >= 0.0 indicating branching.
+/// `alpha = Σ (r_i / r_C,sp3 - 1)` over heavy atoms, where `r_i` is the
+/// hybridization-adjusted covalent radius of atom `i`. All-sp3-carbon
+/// molecules (e.g. alkanes) give `alpha = 0`; atoms smaller than sp3 carbon
+/// (aromatic/sp2/sp carbons, N, O, F) contribute negatively.
 pub fn hall_kier_alpha(mol: &Molecule) -> f64 {
-    let n = mol.atom_count() as f64;
-    if n < 1.0 {
-        return 0.0;
-    }
-
+    const R_C_SP3: f64 = 0.77;
+    let hyb = hybridization_per_atom(mol);
     let mut alpha_sum = 0.0;
-
-    for i in 0..mol.atom_count() {
-        let atom = mol.atom(AtomIdx(i as u32));
-        let degree = mol.degree(AtomIdx(i as u32)) as f64;
-
-        // Covalent radius from the periodic table (Ångströms).
-        let r_cov = atom.element.covalent_radius() as f64;
-
-        // Hall-Kier alpha value proportional to radius and degree
-        let alpha_i = (r_cov - degree * 0.1).max(0.0);
-        alpha_sum += alpha_i;
+    for (idx, atom) in mol.atoms() {
+        if atom.element.atomic_number() == 1 {
+            continue; // heavy atoms only
+        }
+        let r_i = hall_kier_radius(atom.element.atomic_number(), hyb[idx.0 as usize]);
+        alpha_sum += r_i / R_C_SP3 - 1.0;
     }
-
     alpha_sum
 }
 
@@ -3220,8 +3238,9 @@ pub fn bcut2d(mol: &Molecule) -> Bcut2D {
                 }
             }
         }
-        let hi = burden_max_eigenvalue(&mat);
-        let lo = burden_min_eigenvalue(&mat);
+        let eigs = jacobi_eigenvalues(&mat);
+        let hi = eigs.iter().copied().fold(f64::MIN, f64::max);
+        let lo = eigs.iter().copied().fold(f64::MAX, f64::min);
         (hi, lo)
     };
     let (chghi, chglo) = compute(&props[0]);
@@ -3240,42 +3259,62 @@ pub fn bcut2d(mol: &Molecule) -> Bcut2D {
     }
 }
 
-/// Power iteration → largest eigenvalue of symmetric matrix.
-fn burden_max_eigenvalue(mat: &[Vec<f64>]) -> f64 {
+/// Jacobi eigenvalue algorithm: all eigenvalues of a real symmetric matrix.
+///
+/// Same classical rotation technique as `chematic_3d::shape_descriptors::jacobi3`
+/// (3×3-specific, and not importable here since `chematic-chem` is a dependency
+/// *of* `chematic-3d`, not the reverse), generalized to arbitrary N. Burden
+/// matrices here are small (heavy-atom count, typically well under 100), so a
+/// full eigendecomposition is simple and avoids power iteration's convergence
+/// pitfall: unshifted power iteration converges to the eigenvalue of largest
+/// *magnitude*, not the algebraic max — which made an earlier min/max split
+/// via `min_eig(A) = -max_eig(-A)` always return the same value for both.
+#[allow(clippy::needless_range_loop)] // direct (i, j) indexing matches the textbook algorithm
+fn jacobi_eigenvalues(mat: &[Vec<f64>]) -> Vec<f64> {
     let n = mat.len();
     if n == 0 {
-        return 0.0;
+        return Vec::new();
     }
-    let mut v = vec![1.0_f64 / (n as f64).sqrt(); n];
-    for _ in 0..150 {
-        let mut av: Vec<f64> = vec![0.0; n];
+    let mut a: Vec<Vec<f64>> = mat.to_vec();
+    for _ in 0..100 {
+        // Find the largest-magnitude off-diagonal element.
+        let (mut p, mut q, mut max_val) = (0, 1, 0.0f64);
         for i in 0..n {
-            for j in 0..n {
-                av[i] += mat[i][j] * v[j];
+            for j in (i + 1)..n {
+                if a[i][j].abs() > max_val {
+                    max_val = a[i][j].abs();
+                    p = i;
+                    q = j;
+                }
             }
         }
-        let norm: f64 = av.iter().map(|&x| x * x).sum::<f64>().sqrt();
-        if norm < 1e-14 {
-            return 0.0;
+        if max_val < 1e-12 {
+            break;
         }
+        let (app, aqq, apq) = (a[p][p], a[q][q], a[p][q]);
+        let tau = (aqq - app) / (2.0 * apq);
+        let t = if tau >= 0.0 {
+            1.0 / (tau + (1.0 + tau * tau).sqrt())
+        } else {
+            -1.0 / (-tau + (1.0 + tau * tau).sqrt())
+        };
+        let c = 1.0 / (1.0 + t * t).sqrt();
+        let s = t * c;
+        a[p][p] = app - t * apq;
+        a[q][q] = aqq + t * apq;
+        a[p][q] = 0.0;
+        a[q][p] = 0.0;
         for i in 0..n {
-            v[i] = av[i] / norm;
+            if i != p && i != q {
+                let (aip, aiq) = (a[i][p], a[i][q]);
+                a[i][p] = c * aip - s * aiq;
+                a[p][i] = a[i][p];
+                a[i][q] = s * aip + c * aiq;
+                a[q][i] = a[i][q];
+            }
         }
     }
-    // Rayleigh quotient
-    (0..n)
-        .map(|i| v[i] * (0..n).map(|j| mat[i][j] * v[j]).sum::<f64>())
-        .sum()
-}
-
-/// Smallest eigenvalue via max eigenvalue of negated matrix.
-/// Valid for symmetric real matrices: min_eig(A) = −max_eig(−A).
-fn burden_min_eigenvalue(mat: &[Vec<f64>]) -> f64 {
-    let neg: Vec<Vec<f64>> = mat
-        .iter()
-        .map(|row| row.iter().map(|&x| -x).collect())
-        .collect();
-    -burden_max_eigenvalue(&neg)
+    (0..n).map(|i| a[i][i]).collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -4081,24 +4120,34 @@ mod tests {
     // -- HallKierAlpha tests -----------------------------------------------
 
     #[test]
-    fn test_hall_kier_alpha_ethane() {
-        let m = mol("CC");
-        let hka = hall_kier_alpha(&m);
-        assert!(hka > 0.0, "ethane should have positive HallKierAlpha");
+    fn test_hall_kier_alpha_methane() {
+        // Single sp3 carbon = the reference radius itself → alpha is exactly 0.
+        let m = mol("C");
+        assert!(
+            (hall_kier_alpha(&m) - 0.0).abs() < 1e-9,
+            "methane HallKierAlpha should be exactly 0 (sp3 C is the reference atom)"
+        );
     }
 
     #[test]
-    fn test_hall_kier_alpha_methane() {
-        let m = mol("C");
-        let hka = hall_kier_alpha(&m);
-        assert!(hka > 0.0, "methane should have positive HallKierAlpha");
+    fn test_hall_kier_alpha_ethane() {
+        // All-sp3-carbon molecules stay at the reference radius → alpha = 0.
+        let m = mol("CC");
+        assert!(
+            (hall_kier_alpha(&m) - 0.0).abs() < 1e-9,
+            "ethane (all sp3 C) HallKierAlpha should be exactly 0"
+        );
     }
 
     #[test]
     fn test_hall_kier_alpha_benzene() {
+        // 6 aromatic (sp2) carbons, each smaller than the sp3 reference → negative.
         let m = mol("c1ccccc1");
         let hka = hall_kier_alpha(&m);
-        assert!(hka > 0.0, "benzene should have positive HallKierAlpha");
+        assert!(
+            hka < 0.0,
+            "benzene HallKierAlpha should be negative, got {hka}"
+        );
     }
 
     // -- USRCAT tests -------------------------------------------------------
@@ -4937,6 +4986,41 @@ mod tests {
         assert!(b.mwhi >= b.mwlo, "BCUT2D-MWHI must be ≥ BCUT2D-MWLO");
         assert!(b.logphi >= b.logplo, "BCUT2D-LOGPHI ≥ BCUT2D-LOGPLO");
         assert!(b.mrhi >= b.mrlo, "BCUT2D-MRHI ≥ BCUT2D-MRLO");
+    }
+
+    #[test]
+    fn bcut2d_hi_strictly_greater_than_lo() {
+        // Regression test for a min/max-eigenvalue bug where hi == lo for
+        // every input (unshifted power iteration converges to the largest
+        // *magnitude* eigenvalue regardless of sign, making -max(-A) collapse
+        // to the same value as max(A)). Aspirin has heterogeneous atomic
+        // properties (C/O with distinct MW/LogP/MR), so a correct eigenvalue
+        // spread must be non-degenerate.
+        let b = bcut2d(&mol("CC(=O)Oc1ccccc1C(=O)O"));
+        assert!(
+            b.mwhi > b.mwlo,
+            "MW hi/lo must differ: {} vs {}",
+            b.mwhi,
+            b.mwlo
+        );
+        assert!(
+            b.logphi > b.logplo,
+            "LogP hi/lo must differ: {} vs {}",
+            b.logphi,
+            b.logplo
+        );
+        assert!(
+            b.mrhi > b.mrlo,
+            "MR hi/lo must differ: {} vs {}",
+            b.mrhi,
+            b.mrlo
+        );
+        assert!(
+            b.chghi > b.chglo,
+            "Charge hi/lo must differ: {} vs {}",
+            b.chghi,
+            b.chglo
+        );
     }
 
     #[test]
