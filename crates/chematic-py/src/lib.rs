@@ -12,6 +12,7 @@ mod misc;
 mod mol_methods;
 mod reactions;
 mod reports;
+mod rwmol;
 mod similarity;
 
 mod bulk;
@@ -55,6 +56,7 @@ impl Mol {
 #[pymodule]
 fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Mol>()?;
+    m.add_class::<rwmol::RWMol>()?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
 
     // bulk submodule

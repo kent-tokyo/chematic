@@ -169,6 +169,19 @@ fn depict_grid(mols: Vec<Mol>, cols: usize) -> String {
     chematic_depict::depict_svg_grid(&refs, cols)
 }
 
+/// Look up an element's atomic number by symbol (e.g. ``"O"`` → 8).
+///
+/// Raises ``ValueError`` for an unrecognized symbol. Used by
+/// ``rdkit_compat.RWMol.AddAtom`` to accept element symbols.
+///
+///     chematic.element_atomic_number("O")  # 8
+#[pyfunction]
+fn element_atomic_number(symbol: &str) -> PyResult<u8> {
+    chematic_core::Element::from_symbol(symbol)
+        .map(|e| e.atomic_number())
+        .ok_or_else(|| PyValueError::new_err(format!("unknown element symbol: {symbol:?}")))
+}
+
 // ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
@@ -185,5 +198,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(atom_color, m)?)?;
     m.add_function(wrap_pyfunction!(atom_color_rgb, m)?)?;
     m.add_function(wrap_pyfunction!(depict_grid, m)?)?;
+    m.add_function(wrap_pyfunction!(element_atomic_number, m)?)?;
     Ok(())
 }

@@ -1238,6 +1238,32 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::fcfp4(&self.inner))
     }
 
+    /// FCFP fingerprint with bitInfo for RDKit-style ``useFeatures=True, bitInfo`` maps.
+    ///
+    /// Returns ``(bytes, {bit: [(atom_idx, radius), ...]})``, mirroring
+    /// [`Mol::ecfp_bitinfo`] but using pharmacophore feature-class atom
+    /// invariants instead of plain atomic properties.
+    fn fcfp_bitinfo(&self, radius: u32) -> EcfpBitInfo {
+        let cfg = chematic_fp::EcfpConfig {
+            radius,
+            ..Default::default()
+        };
+        let (fp, info) = chematic_fp::fcfp_with_bitinfo(&self.inner, &cfg);
+        let bytes = bitvec2048_to_bytes(&fp);
+        let dict = info
+            .into_iter()
+            .map(|(bit, v)| {
+                (
+                    bit,
+                    v.into_iter()
+                        .map(|(a, r)| (a as usize, r as usize))
+                        .collect(),
+                )
+            })
+            .collect();
+        (bytes, dict)
+    }
+
     /// Atom-pair fingerprint as bytes (256 bytes = 2048 bits, LSB-first).
     fn atom_pair_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::atom_pair_fp(&self.inner))

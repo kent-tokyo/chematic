@@ -4,7 +4,7 @@ import chematic
 from chematic import rdkit_compat as Chem
 from chematic.rdkit_compat import (
     Descriptors, rdMolDescriptors, DataStructs, ExplicitBitVect,
-    Atom, Bond, BondType, RingInfo,
+    Atom, Bond, BondType, RingInfo, RWMol,
 )
 
 
@@ -341,16 +341,57 @@ def test_bulk_tanimoto_different_mols():
 # Unsupported options fail loudly
 # ---------------------------------------------------------------------------
 
-def test_morgan_use_features_raises():
-    mol = Chem.MolFromSmiles("c1ccccc1")
-    with pytest.raises(NotImplementedError):
-        rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, useFeatures=True)
-
-
 def test_morgan_unknown_kwarg_raises():
     mol = Chem.MolFromSmiles("c1ccccc1")
     with pytest.raises(TypeError):
         rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, unknownParam=True)
+
+
+def test_morgan_use_features_and_chirality_raises():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    with pytest.raises(NotImplementedError):
+        rdMolDescriptors.GetMorganFingerprintAsBitVect(
+            mol, 2, useFeatures=True, useChirality=True
+        )
+
+
+# ---------------------------------------------------------------------------
+# useFeatures=True (FCFP)
+# ---------------------------------------------------------------------------
+
+def test_morgan_use_features_nonempty():
+    mol = Chem.MolFromSmiles("CCO")
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, useFeatures=True)
+    assert isinstance(fp, ExplicitBitVect)
+    assert len(fp.GetOnBits()) > 0
+
+
+def test_morgan_use_features_bioisostere_closer():
+    # Benzene vs pyridine: FCFP similarity should be >= plain ECFP similarity
+    # because aromatic-N and aromatic-C map to a shared feature class.
+    benzene = Chem.MolFromSmiles("c1ccccc1")
+    pyridine = Chem.MolFromSmiles("c1ccncc1")
+    fcfp_sim = DataStructs.TanimotoSimilarity(
+        rdMolDescriptors.GetMorganFingerprintAsBitVect(benzene, 2, useFeatures=True),
+        rdMolDescriptors.GetMorganFingerprintAsBitVect(pyridine, 2, useFeatures=True),
+    )
+    ecfp_sim = DataStructs.TanimotoSimilarity(
+        rdMolDescriptors.GetMorganFingerprintAsBitVect(benzene, 2),
+        rdMolDescriptors.GetMorganFingerprintAsBitVect(pyridine, 2),
+    )
+    assert fcfp_sim >= ecfp_sim
+
+
+def test_morgan_use_features_bitinfo_populated():
+    mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    info = {}
+    fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(
+        mol, 2, useFeatures=True, bitInfo=info
+    )
+    assert info
+    for bit in fp.GetOnBits():
+        assert bit in info
+        assert all(len(pair) == 2 for pair in info[bit])
 
 
 # ---------------------------------------------------------------------------
@@ -818,3 +859,87 @@ def test_sdmolsupplier_random_access(tmp_path):
         assert sup[2] is not None
         with pytest.raises(IndexError):
             _ = sup[99]
+
+
+# ---------------------------------------------------------------------------
+# RWMol — editable molecule
+# ---------------------------------------------------------------------------
+
+def _canonical(mol):
+    return mol.GetSmiles()
+
+
+def test_rwmol_build_from_scratch_matches_smiles():
+    # C-C-O, mirroring MolFromSmiles("CCO")
+    rw = RWMol()
+    c1 = rw.AddAtom("C")
+    c2 = rw.AddAtom(6)
+    o1 = rw.AddAtom("O")
+    rw.AddBond(c1, c2, BondType.SINGLE)
+    rw.AddBond(c2, o1, BondType.SINGLE)
+    built = rw.GetMol()
+    ref = Chem.MolFromSmiles("CCO")
+    assert _canonical(built) == _canonical(ref)
+
+
+def test_rwmol_add_atom_accepts_atomlike():
+    mol = Chem.MolFromSmiles("CCO")
+    oxygen = next(a for a in mol.GetAtoms() if a.GetSymbol() == "O")
+    rw = RWMol()
+    idx = rw.AddAtom(oxygen)  # duck-typed via GetAtomicNum()
+    assert rw.GetNumAtoms() == 1
+    assert idx == 0
+
+
+def test_rwmol_add_atom_unknown_symbol_raises():
+    rw = RWMol()
+    with pytest.raises(ValueError):
+        rw.AddAtom("Zz")
+
+
+def test_rwmol_add_bond_returns_bond_count():
+    rw = RWMol()
+    a = rw.AddAtom("C")
+    b = rw.AddAtom("C")
+    assert rw.AddBond(a, b, BondType.SINGLE) == 1
+
+
+def test_rwmol_copy_construct_is_independent():
+    aspirin = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    before = aspirin.GetNumAtoms()
+    rw = RWMol(aspirin)
+    rw.AddAtom("N")
+    assert aspirin.GetNumAtoms() == before, "original Mol must not be mutated"
+    assert rw.GetNumAtoms() == before + 1
+
+
+def test_rwmol_remove_atom_and_bond():
+    rw = RWMol()
+    a = rw.AddAtom("C")
+    b = rw.AddAtom("C")
+    rw.AddBond(a, b, BondType.SINGLE)
+    rw.RemoveBond(a, b)
+    assert rw.GetNumBonds() == 0
+    rw.RemoveAtom(a)
+    assert rw.GetNumAtoms() == 1
+
+
+def test_rwmol_remove_atom_out_of_range_raises():
+    rw = RWMol()
+    rw.AddAtom("C")
+    with pytest.raises(IndexError):
+        rw.RemoveAtom(99)
+
+
+def test_rwmol_remove_nonexistent_bond_is_noop():
+    rw = RWMol()
+    a = rw.AddAtom("C")
+    b = rw.AddAtom("C")
+    rw.RemoveBond(a, b)  # no bond exists yet — should not raise
+    assert rw.GetNumBonds() == 0
+
+
+def test_rwmol_repr():
+    rw = RWMol()
+    rw.AddAtom("C")
+    assert "1" in repr(rw)
