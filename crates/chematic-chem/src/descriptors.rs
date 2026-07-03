@@ -2537,29 +2537,81 @@ pub fn geary_autocorr(mol: &Molecule) -> Vec<f64> {
 // BalabanJ — graph connectivity descriptor
 // ---------------------------------------------------------------------------
 
-/// Balaban J index: m / sqrt(∑ √(d_i)) where m = num bonds, d_i = degree.
+/// Balaban J index (Balaban, *Chem. Phys. Lett.* **89**, 399–404, 1982).
 ///
-/// Measures graph complexity via bond count normalized by vertex degree distribution.
-/// Returns 0.0 if fewer than 2 atoms.
+/// J = (m / (μ+1)) · Σ_{bonds (i,j)} 1/√(Sᵢ·Sⱼ)
+///
+/// where m = bond count, μ = m − n + 1 (cyclomatic number), and Sᵢ = Σⱼ d(i,j)
+/// is the row sum of the bond-order-weighted shortest-path distance matrix
+/// (edge weight = 1/bond_order; aromatic bonds use order 1.5). This matches
+/// RDKit's `Chem.GetDistanceMatrix(mol, useBO=1)` convention used by
+/// `Descriptors.BalabanJ`.
+///
+/// Returns 0.0 if fewer than 2 atoms, or for molecules larger than 1000 atoms
+/// (the O(n³) all-pairs weighted shortest path is impractical at that scale).
 pub fn balaban_j(mol: &Molecule) -> f64 {
     let n = mol.atom_count();
-    if n < 2 {
+    if !(2..=1000).contains(&n) {
+        return 0.0;
+    }
+    let m = mol.bond_count() as f64;
+    let mu = m - n as f64 + 1.0;
+    if mu + 1.0 == 0.0 {
         return 0.0;
     }
 
-    let m = mol.bond_count() as f64;
-    let sum_sqrt_d: f64 = (0..n)
-        .map(|i| {
-            let degree = mol.degree(AtomIdx(i as u32)) as f64;
-            degree.sqrt()
-        })
-        .sum();
-
-    if sum_sqrt_d <= 0.0 {
-        0.0
-    } else {
-        m / sum_sqrt_d
+    let mut adj: Vec<Vec<(usize, f64)>> = vec![Vec::new(); n];
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        let order = bond.order.order_value().map(|v| v as f64).unwrap_or(1.5);
+        let w = 1.0 / order;
+        adj[i].push((j, w));
+        adj[j].push((i, w));
     }
+
+    let s: Vec<f64> = (0..n).map(|i| balaban_distance_sum(&adj, i, n)).collect();
+
+    let mut total = 0.0;
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        if s[i] > 0.0 && s[j] > 0.0 {
+            total += 1.0 / (s[i] * s[j]).sqrt();
+        }
+    }
+
+    (m / (mu + 1.0)) * total
+}
+
+/// Sum of shortest-path distances from `start` to every other atom in a
+/// bond-order-weighted graph (plain O(n²) Dijkstra, no heap — molecules are
+/// small enough that this is faster than the bookkeeping a heap needs).
+fn balaban_distance_sum(adj: &[Vec<(usize, f64)>], start: usize, n: usize) -> f64 {
+    let mut dist = vec![f64::INFINITY; n];
+    let mut visited = vec![false; n];
+    dist[start] = 0.0;
+    for _ in 0..n {
+        let mut u = usize::MAX;
+        let mut best = f64::INFINITY;
+        for v in 0..n {
+            if !visited[v] && dist[v] < best {
+                best = dist[v];
+                u = v;
+            }
+        }
+        if u == usize::MAX {
+            break;
+        }
+        visited[u] = true;
+        for &(v, w) in &adj[u] {
+            let nd = dist[u] + w;
+            if nd < dist[v] {
+                dist[v] = nd;
+            }
+        }
+    }
+    dist.iter().filter(|d| d.is_finite()).sum()
 }
 
 // ---------------------------------------------------------------------------
@@ -4092,6 +4144,31 @@ mod tests {
         let m = mol("C");
         let bj = balaban_j(&m);
         assert_eq!(bj, 0.0, "single atom should have BalabanJ = 0");
+    }
+
+    #[test]
+    fn test_balaban_j_matches_rdkit() {
+        // RDKit Descriptors.BalabanJ verified values. Benzene vs cyclohexane
+        // is the key discriminator: same topology (hexagon), but aromatic
+        // bonds (1/1.5 edge weight) vs single bonds (1/1.0) give different
+        // weighted distance sums, so J must differ (3.0 vs 2.0) even though
+        // a purely-topological (unweighted) formula would give 2.0 for both.
+        assert!(
+            (balaban_j(&mol("c1ccccc1")) - 3.0).abs() < 1e-6,
+            "benzene BalabanJ"
+        );
+        assert!(
+            (balaban_j(&mol("C1CCCCC1")) - 2.0).abs() < 1e-6,
+            "cyclohexane BalabanJ"
+        );
+        assert!(
+            (balaban_j(&mol("CCCCCC")) - 2.3391).abs() < 0.001,
+            "hexane BalabanJ"
+        );
+        assert!(
+            (balaban_j(&mol("CCO")) - 1.6330).abs() < 0.001,
+            "ethanol BalabanJ"
+        );
     }
 
     // -- Ipc tests -------------------------------------------------------
