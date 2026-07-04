@@ -101,11 +101,15 @@ def main() -> None:
         ]),
     ]
 
-    # Intra-workspace path-dependency version pins, e.g.
+    # Intra-workspace path-dependency version pins — key order varies between
+    # crates ("path, version" in most, "version, path" in chematic-inchi), so
+    # match both:
     #   chematic-core = { path = "../chematic-core", version = "0.4.19" }
+    #   chematic-core = { version = "0.4.19", path = "../chematic-core" }
     for cargo_toml in sorted((ROOT / "crates").glob("*/Cargo.toml")):
         targets.append((cargo_toml, [
             re.compile(r'path\s*=\s*"[^"]+",\s*version\s*=\s*"' + re.escape(old) + r'"'),
+            re.compile(r'version\s*=\s*"' + re.escape(old) + r'",\s*path\s*=\s*"[^"]+"'),
         ]))
 
     updated = []

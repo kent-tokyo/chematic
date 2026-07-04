@@ -16,8 +16,8 @@ documentation = "https://docs.rs/chematic-ff"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.4.26" }
-chematic-perception = { path = "../chematic-perception", version = "0.4.26" }
+chematic-core       = { path = "../chematic-core",       version = "0.4.27" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.27" }
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.26" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.27" }
