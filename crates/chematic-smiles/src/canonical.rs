@@ -337,8 +337,14 @@ impl<'a> CanonicalWriter<'a> {
                 let rn = self.next_ring;
                 self.next_ring += 1;
                 let bond = self.mol.bond(bidx);
+                // A ring bond forced to Aromatic (e.g. adjacent to an
+                // exocyclic C=N) may carry its true E/Z direction stashed
+                // separately rather than in `order` itself — consult that
+                // first so the direction still reaches the writer.
+                let stashed_direction = self.mol.bond_direction(bidx);
+                let effective_order = stashed_direction.unwrap_or(bond.order);
                 // Direction seen from `neighbor` (the open atom) going toward `atom`.
-                let order_at_open = match bond.order {
+                let order_at_open = match effective_order {
                     BondOrder::Up => {
                         if bond.atom1 == neighbor {
                             BondOrder::Up
@@ -355,9 +361,18 @@ impl<'a> CanonicalWriter<'a> {
                     }
                     other => other,
                 };
-                // Suppress stereo at the close atom to avoid conflicting ring-closure chars.
-                let order_at_close = match bond.order {
-                    BondOrder::Up | BondOrder::Down => BondOrder::Single,
+                // Suppress stereo at the close atom to avoid conflicting ring-closure
+                // chars, falling back to the bond's real order — Aromatic for a
+                // stashed direction (implicit ring bond, no char), Single for a
+                // genuine directional single bond (existing behavior).
+                let order_at_close = match effective_order {
+                    BondOrder::Up | BondOrder::Down => {
+                        if stashed_direction.is_some() {
+                            bond.order
+                        } else {
+                            BondOrder::Single
+                        }
+                    }
                     other => other,
                 };
                 self.atom_ring_nums
@@ -427,8 +442,12 @@ impl<'a> CanonicalWriter<'a> {
             })
             .map(|(nb, bidx)| {
                 let bond = self.mol.bond(bidx);
+                // See the ring-closure site above: a stashed direction takes
+                // priority over `order` itself (e.g. an aromatic ring bond
+                // that flanks an exocyclic C=N).
+                let effective_order = self.mol.bond_direction(bidx).unwrap_or(bond.order);
                 // Direction seen from `atom` going toward `nb`.
-                let order = match bond.order {
+                let order = match effective_order {
                     BondOrder::Up => {
                         if bond.atom1 == atom {
                             BondOrder::Up

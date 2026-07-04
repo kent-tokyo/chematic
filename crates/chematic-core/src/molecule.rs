@@ -57,6 +57,13 @@ pub struct Molecule {
     /// implicit bracket H.  Populated by the SMILES parser; absent for atoms
     /// not parsed from SMILES or without recorded stereo.
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
+    /// Directional (`/`, `\`) bond marker, stashed for bonds whose `order` was
+    /// overwritten to `Aromatic` (e.g. an exocyclic C=N adjacent to an
+    /// aromatic ring atom — `order` must stay `Aromatic` for SMARTS `:a`
+    /// matching, but the E/Z direction would otherwise be lost). Keyed by
+    /// bond index; value is `BondOrder::Up` or `BondOrder::Down`. Absent for
+    /// bonds whose direction is already carried directly by `order`.
+    bond_directions: std::collections::HashMap<u32, BondOrder>,
 }
 
 impl Molecule {
@@ -305,6 +312,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_bond_directions_from(self);
         builder.build()
     }
 
@@ -329,6 +337,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_bond_directions_from(self);
         // Chirality was cleared for the changed atom; remove its stereo order too.
         builder.clear_stereo_neighbor_order(idx);
         builder.build()
@@ -482,6 +491,7 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
         builder.copy_stereo_from(self);
+        builder.copy_bond_directions_from(self);
         builder.build()
     }
 
@@ -496,12 +506,17 @@ impl Molecule {
             let _ = builder.add_bond(bond.atom1, bond.atom2, o);
         }
         builder.copy_stereo_from(self);
+        builder.copy_bond_directions_from(self);
         builder.build()
     }
 
     /// Return a new `Molecule` with bond `idx` removed.
     ///
-    /// Atom indices are unchanged.  Bond indices of survivors shift down.
+    /// Atom indices are unchanged.  Bond indices of survivors shift down, so
+    /// `bond_directions` (keyed by bond index) is remapped bond-by-bond
+    /// rather than copied wholesale — `copy_bond_directions_from` would
+    /// misattribute directions to the wrong bond for every survivor after
+    /// the removed one.
     pub fn with_bond_removed(&self, idx: BondIdx) -> Molecule {
         let mut builder = MoleculeBuilder::new();
         for (_, atom) in self.atoms() {
@@ -511,7 +526,11 @@ impl Molecule {
             if bidx == idx {
                 continue;
             }
-            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+            if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, bond.order)
+                && let Some(direction) = self.bond_direction(bidx)
+            {
+                builder.set_bond_direction(new_bidx, direction);
+            }
         }
         builder.copy_stereo_from(self);
         builder.build()
@@ -552,15 +571,20 @@ impl Molecule {
 
         self.atoms.remove(removed);
 
-        // Keep only bonds not involving the removed atom; remap endpoints.
+        // Keep only bonds not involving the removed atom; remap endpoints and
+        // track each surviving bond's new index so `bond_directions` (keyed
+        // by bond index) can be remapped the same way as `stereo_neighbor_order`
+        // is remapped by atom index below.
         let mut new_bonds: Vec<BondEntry> = Vec::new();
-        for bond in &self.bonds {
+        let mut bond_remap: Vec<Option<u32>> = vec![None; self.bonds.len()];
+        for (old_bidx, bond) in self.bonds.iter().enumerate() {
             if bond.atom1 == idx || bond.atom2 == idx {
                 continue;
             }
             if let (Some(a1), Some(a2)) =
                 (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize])
             {
+                bond_remap[old_bidx] = Some(new_bonds.len() as u32);
                 new_bonds.push(BondEntry {
                     atom1: a1,
                     atom2: a2,
@@ -569,6 +593,14 @@ impl Molecule {
             }
         }
         self.bonds = new_bonds;
+
+        // Remap bond directions in-place, same shift as bond_remap above.
+        let old_bond_directions = std::mem::take(&mut self.bond_directions);
+        for (old_key, direction) in old_bond_directions {
+            if let Some(Some(new_key)) = bond_remap.get(old_key as usize) {
+                self.bond_directions.insert(*new_key, direction);
+            }
+        }
 
         // Rebuild adjacency from scratch.
         let new_n = self.atoms.len();
@@ -703,6 +735,18 @@ impl Molecule {
     pub fn set_stereo_neighbor_order(&mut self, idx: AtomIdx, order: Vec<u32>) {
         self.stereo_neighbor_order.insert(idx.0, order);
     }
+
+    /// Directional (`/`, `\`) marker stashed for bond `idx`, if its `order`
+    /// was overwritten to `Aromatic` while it still carried E/Z direction.
+    /// Returns `BondOrder::Up` or `BondOrder::Down` when present.
+    pub fn bond_direction(&self, idx: BondIdx) -> Option<BondOrder> {
+        self.bond_directions.get(&idx.0).copied()
+    }
+
+    /// Stash a directional marker for bond `idx` (see [`Self::bond_direction`]).
+    pub fn set_bond_direction(&mut self, idx: BondIdx, direction: BondOrder) {
+        self.bond_directions.insert(idx.0, direction);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -798,6 +842,7 @@ pub struct MoleculeBuilder {
     adjacency: Vec<Vec<(AtomIdx, BondIdx)>>,
     stereo_groups: Vec<StereoGroup>,
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
+    bond_directions: std::collections::HashMap<u32, BondOrder>,
 }
 
 impl MoleculeBuilder {
@@ -819,6 +864,7 @@ impl MoleculeBuilder {
         }
         b.stereo_groups = mol.stereo_groups.clone();
         b.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
+        b.bond_directions = mol.bond_directions.clone();
         b
     }
 
@@ -837,9 +883,34 @@ impl MoleculeBuilder {
         self.stereo_groups.push(group);
     }
 
+    /// Copy all enhanced stereo groups from `mol` into this builder verbatim.
+    ///
+    /// Only valid when atom indices are unchanged from `mol` (atoms re-added
+    /// in the same order, none removed) — same caveat as
+    /// [`Self::copy_bond_directions_from`].
+    pub fn copy_stereo_groups_from(&mut self, mol: &Molecule) {
+        self.stereo_groups = mol.stereo_groups.clone();
+    }
+
     /// Copy all stereo neighbor order entries from `mol` into this builder.
     pub fn copy_stereo_from(&mut self, mol: &Molecule) {
         self.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
+    }
+
+    /// Stash a directional marker for bond `idx` (see [`Molecule::bond_direction`]).
+    pub fn set_bond_direction(&mut self, idx: BondIdx, direction: BondOrder) {
+        self.bond_directions.insert(idx.0, direction);
+    }
+
+    /// Copy all bond-direction entries from `mol` into this builder verbatim.
+    ///
+    /// Only valid when bond indices are unchanged from `mol` (atoms/bonds
+    /// re-added in the same order, none skipped) — e.g. a rebuild that only
+    /// touches atom fields or promotes bond order to `Aromatic`. A rebuild
+    /// that removes or reorders bonds must remap directions bond-by-bond
+    /// instead (see `Molecule::with_bond_removed`).
+    pub fn copy_bond_directions_from(&mut self, mol: &Molecule) {
+        self.bond_directions = mol.bond_directions.clone();
     }
 
     /// Read-only reference to an atom already added to the builder.
@@ -917,6 +988,7 @@ impl MoleculeBuilder {
             adjacency: self.adjacency,
             stereo_groups: self.stereo_groups,
             stereo_neighbor_order: self.stereo_neighbor_order,
+            bond_directions: self.bond_directions,
         }
     }
 }
