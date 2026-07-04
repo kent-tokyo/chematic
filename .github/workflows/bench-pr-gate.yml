@@ -109,32 +109,45 @@ jobs:
 
       # Thresholds are starting points (ms), not tuned promises — expect to
       # widen/narrow them once real PR noise is observed.
+      # An empty JSONL (no usable pairs — e.g. main predates *_ms_samples)
+      # makes veridict itself error with exit 3 ("input contains no
+      # records"), not a graceful inconclusive — so check record count
+      # before invoking it, rather than relying on veridict to degrade
+      # gracefully on a zero-record file.
       - name: Regression gate — startup time
         run: |
-          set +e
-          veridict compare startup_import.jsonl --metric mean-diff --confidence 0.95 \
-            --pass-above 0 --fail-below=-20 --report-json startup_report.json
-          code=$?
-          set -e
-          cat startup_report.json
-          echo "verdict exit: $code"
-          if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
-            echo "::error::startup import time regression gate failed (exit $code)"
-            exit 1
+          if [ ! -s startup_import.jsonl ]; then
+            echo "No usable startup samples to compare (no baseline yet?) — skipping gate."
+          else
+            set +e
+            veridict compare startup_import.jsonl --metric mean-diff --confidence 0.95 \
+              --pass-above 0 --fail-below=-20 --report-json startup_report.json
+            code=$?
+            set -e
+            cat startup_report.json
+            echo "verdict exit: $code"
+            if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
+              echo "::error::startup import time regression gate failed (exit $code)"
+              exit 1
+            fi
           fi
 
       - name: Regression gate — SMILES parse throughput
         run: |
-          set +e
-          veridict compare parse_import.jsonl --metric mean-diff --confidence 0.95 \
-            --pass-above 0 --fail-below=-5 --report-json parse_report.json
-          code=$?
-          set -e
-          cat parse_report.json
-          echo "verdict exit: $code"
-          if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
-            echo "::error::SMILES parse throughput regression gate failed (exit $code)"
-            exit 1
+          if [ ! -s parse_import.jsonl ]; then
+            echo "No usable parse samples to compare (no baseline yet?) — skipping gate."
+          else
+            set +e
+            veridict compare parse_import.jsonl --metric mean-diff --confidence 0.95 \
+              --pass-above 0 --fail-below=-5 --report-json parse_report.json
+            code=$?
+            set -e
+            cat parse_report.json
+            echo "verdict exit: $code"
+            if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
+              echo "::error::SMILES parse throughput regression gate failed (exit $code)"
+              exit 1
+            fi
           fi
 
   criterion-gate:
@@ -211,6 +224,11 @@ jobs:
               | map({id: (. | tostring), baseline: (-($bt[.] / $bi[.])), candidate: (-($ct[.] / $ci[.]))})
               | .[]
             ' > "${name}_import.jsonl"
+
+            if [ ! -s "${name}_import.jsonl" ]; then
+              echo "::warning::$name: no usable paired samples, skipping"
+              continue
+            fi
 
             veridict compare "${name}_import.jsonl" --metric sign-test --confidence 0.95 \
               --min-effect 0.2 --report-json "${name}_report.json"
