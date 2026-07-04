@@ -305,8 +305,24 @@ pub fn apply_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Molec
         } else {
             bond.order
         };
-        let _ = builder.add_bond(bond.atom1, bond.atom2, order);
+        if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, order)
+            && order == BondOrder::Aromatic
+            && matches!(bond.order, BondOrder::Up | BondOrder::Down)
+        {
+            // Kekule input promoted to Aromatic here loses its E/Z direction
+            // the same way the SMILES parser's aromatic-aromatic coercion
+            // does — stash it so an exocyclic double bond anchored on this
+            // ring bond still round-trips through the canonical writer.
+            builder.set_bond_direction(new_bidx, bond.order);
+        }
     }
+    // Atoms/bonds above are re-added in `mol`'s own enumeration order with
+    // none skipped, so indices line up 1:1 — safe to copy side-channel
+    // metadata wholesale. (This rebuild previously dropped stereo_groups and
+    // stereo_neighbor_order silently; closing that here too.)
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
     builder.build()
 }
 

@@ -274,23 +274,32 @@ impl<'a> Parser<'a> {
                                 // `/` and `\` between two aromatic atoms specify geometry of an
                                 // adjacent double bond, not a stereo single bond. Aromatic atoms
                                 // must remain connected by Aromatic bonds so SMARTS `:a` queries
-                                // match correctly (e.g. Crippen `[c](:a)(:a)=[C,N,O]`).
+                                // match correctly (e.g. Crippen `[c](:a)(:a)=[C,N,O]`). The
+                                // original direction is stashed on the side (`bond_directions`)
+                                // so an exocyclic E/Z double bond anchored on this ring bond
+                                // survives into the canonical writer instead of being lost.
+                                let mut stashed_direction = None;
                                 let bond = match pending_bond {
-                                    Some(BondOrder::Up | BondOrder::Down)
+                                    Some(dir @ (BondOrder::Up | BondOrder::Down))
                                         if mol.atom_at(current).aromatic
                                             && mol.atom_at(next_idx).aromatic =>
                                     {
+                                        stashed_direction = Some(dir);
                                         BondOrder::Aromatic
                                     }
                                     Some(bo) => bo,
                                     None => implicit_bond(mol, current, next_idx),
                                 };
-                                mol.add_bond(current, next_idx, bond).map_err(|_| {
-                                    SmilesError::InvalidBracketAtom {
-                                        detail: "duplicate bond".to_string(),
-                                        pos: self.pos,
-                                    }
-                                })?;
+                                let new_bond_idx =
+                                    mol.add_bond(current, next_idx, bond).map_err(|_| {
+                                        SmilesError::InvalidBracketAtom {
+                                            detail: "duplicate bond".to_string(),
+                                            pos: self.pos,
+                                        }
+                                    })?;
+                                if let Some(dir) = stashed_direction {
+                                    mol.set_bond_direction(new_bond_idx, dir);
+                                }
                                 // next_idx is the last stereo entry for `current`.
                                 self.stereo_push(current, StereoEntry::Atom(next_idx));
                                 // Finalise stereo for `current` before advancing.

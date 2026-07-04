@@ -5,13 +5,17 @@ different *strings*. What must hold is **semantic round-trip equivalence**:
 chematic's canonical SMILES, re-parsed by RDKit, canonicalizes to the same
 molecule as RDKit's native canonicalization of the original input.
 
-Full-corpus measurement lives in ``scripts/canonical_diff.py`` (5,000-mol run:
-100% RDKit-parseable, 99.62% round-trip equivalent, the 19 mismatches all from
-exocyclic C=N E/Z stereo). This file is a portable regression guard on a small
-curated corpus; the RDKit-dependent parts auto-skip when RDKit is absent.
+Full-corpus measurement lives in ``scripts/canonical_diff.py`` (5,000-mol run;
+see docs/rdkit_compat.md for the current agreement rate). This file is a
+portable regression guard on a small curated corpus; the RDKit-dependent
+parts auto-skip when RDKit is absent.
 
-Known divergence (documented, not yet fixed): chematic drops directional
-(`/`,`\\`) E/Z stereo on **exocyclic C=N** bonds when writing canonical SMILES.
+Formerly-known divergence, now fixed: chematic used to drop directional
+(`/`,`\\`) E/Z stereo on **exocyclic C=N** bonds adjacent to an aromatic ring
+atom, because the bond's order had to be forced to `Aromatic` (for SMARTS
+`:a` matching) with no room left to also record direction. The direction is
+now stashed on the side (`bond_directions`, see chematic-core) and consulted
+independently by the canonical writer.
 """
 import pytest
 
@@ -36,8 +40,15 @@ CLEAN_CORPUS = [
     "O=C1CCC(=O)N1", "c1ccsc1", "CN1CCC[C@H]1c1cccnc1",  # nicotine
 ]
 
-# Known E/Z exocyclic-C=N divergence: chematic loses the directional stereo.
-EZ_EXOCYCLIC_KNOWN = "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O"
+# Exocyclic C=N E/Z adjacent to an aromatic ring atom — formerly a known
+# divergence (direction dropped because the ring bond order must stay
+# Aromatic); now preserved via the bond_directions side channel (see
+# test_exocyclic_cn_stereo_preserved below). Kept out of CLEAN_CORPUS: this
+# molecule also happens to hit the separate, pre-existing aromaticity-
+# perception round-trip idempotency issue (docs/rdkit_compat.md) — its
+# canonical form is not idempotent even with connectivity alone (`/`,`\\`
+# stripped), which is unrelated to stereo preservation.
+EZ_EXOCYCLIC_FIXED = "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O"
 
 
 # ---------------------------------------------------------------------------
@@ -119,18 +130,17 @@ def test_roundtrip_equivalence(smi, rdkit_mod):
         f"round-trip mismatch for {smi}: rdkit_native={rd_native!r} rdkit(chematic)={rd_of_cm!r}"
 
 
-def test_ez_exocyclic_is_known_divergence(rdkit_mod):
-    """Document the one known round-trip divergence class.
+def test_exocyclic_cn_stereo_preserved(rdkit_mod):
+    """Exocyclic C=N E/Z direction now survives canonical round-trip.
 
-    chematic still emits valid, RDKit-parseable SMILES — only the exocyclic
-    C=N E/Z stereo is dropped. If chematic ever fixes this, the round-trip
-    will match and this test should be promoted into CLEAN_CORPUS.
+    Not part of CLEAN_CORPUS (see EZ_EXOCYCLIC_FIXED comment) because this
+    molecule separately triggers the pre-existing aromaticity round-trip
+    idempotency issue — unrelated to stereo, out of scope here.
     """
-    cm = chematic.from_smiles(EZ_EXOCYCLIC_KNOWN).smiles
-    assert rdkit_mod.MolFromSmiles(cm) is not None, "must still be valid SMILES"
-    rd_native = rdkit_mod.MolToSmiles(rdkit_mod.MolFromSmiles(EZ_EXOCYCLIC_KNOWN))
+    cm = chematic.from_smiles(EZ_EXOCYCLIC_FIXED).smiles
+    assert rdkit_mod.MolFromSmiles(cm) is not None, "must be valid SMILES"
+    assert "/" in cm or "\\" in cm, "E/Z direction should be written, not dropped"
+    rd_native = rdkit_mod.MolToSmiles(rdkit_mod.MolFromSmiles(EZ_EXOCYCLIC_FIXED))
     rd_of_cm = rdkit_mod.MolToSmiles(rdkit_mod.MolFromSmiles(cm))
-    # Connectivity (ignoring stereo) must still match.
-    strip = lambda s: s.replace("/", "").replace("\\", "")
-    assert strip(rd_native) == strip(rd_of_cm), \
-        "exocyclic-C=N divergence must be stereo-only, not connectivity"
+    assert rd_native == rd_of_cm, \
+        f"round-trip mismatch: rdkit_native={rd_native!r} rdkit(chematic)={rd_of_cm!r}"
