@@ -27,7 +27,7 @@ SNIPPETS = {
 }
 
 
-def time_snippet(snippet: str, runs: int) -> float | None:
+def time_snippet(snippet: str, runs: int) -> tuple[float | None, list[float]]:
     times = []
     for _ in range(runs):
         t0 = time.perf_counter()
@@ -37,9 +37,9 @@ def time_snippet(snippet: str, runs: int) -> float | None:
         if r.returncode == 0:
             times.append(elapsed * 1000)
     if not times:
-        return None
-    times.sort()
-    return times[len(times) // 2]   # median
+        return None, times
+    sorted_times = sorted(times)
+    return sorted_times[len(sorted_times) // 2], times   # median, raw samples
 
 
 def main() -> None:
@@ -58,8 +58,9 @@ def main() -> None:
     rows: list[tuple[str, str]] = []
 
     for key in keys:
-        t = time_snippet(SNIPPETS[key], args.runs)
+        t, samples = time_snippet(SNIPPETS[key], args.runs)
         results[key + "_ms"] = round(t, 1) if t is not None else None
+        results[key + "_ms_samples"] = [round(s, 1) for s in samples]
         label = SNIPPETS[key][:55].ljust(55)
         val   = f"{t:>6.0f} ms" if t is not None else "  not found"
         rows.append((label, val))

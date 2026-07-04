@@ -1,0 +1,226 @@
+name: Bench PR Gate
+
+# Statistical regression gate for chematic's Python startup/parse benchmarks
+# and Rust Criterion benchmarks. Builds both main and the PR branch in the
+# SAME job/runner instance and benchmarks them back-to-back, then compares
+# with veridict. Measuring both sides on the same runner avoids the
+# cross-machine timing variance that would otherwise swamp the signal
+# (GitHub-hosted runners vary run-to-run by tens of percent). Only a `fail`
+# verdict blocks the PR — `inconclusive` (still possible from same-job noise)
+# is allowed through.
+#
+# Criterion's own new/base baseline comparison isn't usable here: it compares
+# consecutive runs within one persistent checkout, which CI's throwaway
+# runners don't have — main and the PR still have to be built and benchmarked
+# side by side in the same job either way.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  bench-gate:
+    name: Python bench regression gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          path: pr
+
+      - name: Checkout main branch
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: main
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Cache cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            pr/target
+            main/target
+          key: ${{ runner.os }}-cargo-bench-gate-${{ hashFiles('pr/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-bench-gate-
+
+      - name: Install veridict
+        run: cargo install --git https://github.com/kent-tokyo/veridict --locked --quiet
+
+      - name: Build & benchmark main (baseline)
+        working-directory: main
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install maturin --quiet
+          .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
+          .venv/bin/python scripts/bench_startup.py --runs 5 --json > ../baseline_startup.json
+          for i in 1 2 3 4 5; do
+            .venv/bin/python scripts/bench_smiles_parse.py --n 5000 --json | jq -c .
+          done > ../baseline_parse.jsonl
+
+      - name: Build & benchmark PR branch (candidate)
+        working-directory: pr
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install maturin --quiet
+          .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
+          .venv/bin/python scripts/bench_startup.py --runs 5 --json > ../candidate_startup.json
+          for i in 1 2 3 4 5; do
+            .venv/bin/python scripts/bench_smiles_parse.py --n 5000 --json | jq -c .
+          done > ../candidate_parse.jsonl
+
+      - name: Pair baseline vs candidate samples
+        run: |
+          # Negate latency (ms) on both sides: veridict's mean-diff treats a
+          # larger `candidate - baseline` as an improvement, but for latency
+          # lower is better — negating makes "faster" register as positive.
+          # main may predate `*_ms_samples` if this is the PR that introduces
+          # it — drop unpaired/null samples rather than feed nulls to
+          # veridict, so that case degrades to "inconclusive" (0 usable
+          # trials) instead of "invalid" (exit 3) failing the gate on itself.
+          jq -c -n --slurpfile b baseline_startup.json --slurpfile c candidate_startup.json '
+            [$b[0].chematic_import_ms_samples, $c[0].chematic_import_ms_samples]
+            | transpose
+            | map(select(.[0] != null and .[1] != null))
+            | to_entries[]
+            | {id: (.key | tostring), baseline: (.value[0] | -.), candidate: (.value[1] | -.)}
+          ' > startup_import.jsonl
+
+          jq -c -n \
+            --argjson b "$(jq -s '[.[].chematic.total_ms]' baseline_parse.jsonl)" \
+            --argjson c "$(jq -s '[.[].chematic.total_ms]' candidate_parse.jsonl)" '
+            [$b, $c]
+            | transpose
+            | to_entries[]
+            | {id: (.key | tostring), baseline: (.value[0] | -.), candidate: (.value[1] | -.)}
+          ' > parse_import.jsonl
+
+      # Thresholds are starting points (ms), not tuned promises — expect to
+      # widen/narrow them once real PR noise is observed.
+      - name: Regression gate — startup time
+        run: |
+          set +e
+          veridict compare startup_import.jsonl --metric mean-diff --confidence 0.95 \
+            --pass-above 0 --fail-below=-20 --report-json startup_report.json
+          code=$?
+          set -e
+          cat startup_report.json
+          echo "verdict exit: $code"
+          if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
+            echo "::error::startup import time regression gate failed (exit $code)"
+            exit 1
+          fi
+
+      - name: Regression gate — SMILES parse throughput
+        run: |
+          set +e
+          veridict compare parse_import.jsonl --metric mean-diff --confidence 0.95 \
+            --pass-above 0 --fail-below=-5 --report-json parse_report.json
+          code=$?
+          set -e
+          cat parse_report.json
+          echo "verdict exit: $code"
+          if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
+            echo "::error::SMILES parse throughput regression gate failed (exit $code)"
+            exit 1
+          fi
+
+  criterion-gate:
+    name: Rust Criterion regression gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          path: pr
+
+      - name: Checkout main branch
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: main
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            pr/target
+            main/target
+          key: ${{ runner.os }}-cargo-criterion-gate-${{ hashFiles('pr/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-criterion-gate-
+
+      - name: Install veridict
+        run: cargo install --git https://github.com/kent-tokyo/veridict --locked --quiet
+
+      - name: Run Criterion benchmarks — main (baseline)
+        working-directory: main
+        run: cargo bench --workspace
+
+      - name: Run Criterion benchmarks — PR branch (candidate)
+        working-directory: pr
+        run: cargo bench --workspace
+
+      # Criterion (0.8, no csv_output feature enabled) writes raw per-sample
+      # batch measurements to target/criterion/<bench>/new/sample.json as
+      # {iters: [...], times: [...]} (nanoseconds per batch, not per
+      # iteration) — times[i]/iters[i] gives the per-iteration time.
+      # sign-test (not mean-diff) is used because its effect is a
+      # scale-invariant win-rate centered on 0: one --min-effect threshold
+      # applies uniformly across benchmarks that differ by orders of
+      # magnitude in absolute time, without per-benchmark tuning.
+      - name: Pair & gate Criterion benchmarks
+        run: |
+          set +e
+          any_fail=0
+          for name in \
+            smarts_compile_5pat smarts_match_nocache_10mol smarts_match_cached_10mol smarts_recursive_10mol \
+            parse_smiles_10mol canonical_smiles_10mol \
+            ecfp4_10mol tanimoto_ecfp4_pairs \
+            descriptors_5x10mol qed_10mol pka_predict_10mol pka_acid_base_10mol admet_profile_10mol
+          do
+            b="main/target/criterion/$name/new/sample.json"
+            c="pr/target/criterion/$name/new/sample.json"
+            if [ ! -f "$b" ] || [ ! -f "$c" ]; then
+              echo "::warning::$name: sample.json missing on one side, skipping"
+              continue
+            fi
+
+            jq -c -n --slurpfile b "$b" --slurpfile c "$c" '
+              ($b[0].times) as $bt | ($b[0].iters) as $bi |
+              ($c[0].times) as $ct | ($c[0].iters) as $ci |
+              [range(0; ($bt | length))]
+              | map(select($bt[.] != null and $bi[.] != null and $ct[.] != null and $ci[.] != null))
+              | map({id: (. | tostring), baseline: (-($bt[.] / $bi[.])), candidate: (-($ct[.] / $ci[.]))})
+              | .[]
+            ' > "${name}_import.jsonl"
+
+            veridict compare "${name}_import.jsonl" --metric sign-test --confidence 0.95 \
+              --min-effect 0.2 --report-json "${name}_report.json"
+            code=$?
+            echo "=== $name: exit $code ==="
+            cat "${name}_report.json"
+            if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
+              echo "::error::$name regressed (exit $code)"
+              any_fail=1
+            fi
+          done
+          set -e
+          [ "$any_fail" -eq 0 ]

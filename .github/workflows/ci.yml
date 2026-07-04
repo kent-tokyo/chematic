@@ -16,7 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --workspace --lib --quiet
+      - name: Unit tests
+        run: cargo test --workspace --lib --quiet
+      - name: Integration tests
+        run: cargo test --workspace --tests --quiet
 
   test-native-inchi:
     name: Test (native-inchi)

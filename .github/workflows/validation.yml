@@ -18,6 +18,7 @@ jobs:
 
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v7
 
@@ -28,6 +29,32 @@ jobs:
 
       - name: Install chematic + RDKit
         run: pip install chematic rdkit
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install veridict
+        run: cargo install --git https://github.com/kent-tokyo/veridict --locked --quiet
+
+      - name: Fetch previous run's results (for drift comparison)
+        id: fetch_previous
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p previous_results
+          RUN_ID=$(gh run list --repo "${{ github.repository }}" \
+            --workflow=validation.yml --status=success \
+            --limit=1 --json databaseId --jq '.[0].databaseId')
+          if [ -n "$RUN_ID" ]; then
+            gh run download "$RUN_ID" --repo "${{ github.repository }}" \
+              -n validation-results -D previous_results || echo "No previous artifact, starting fresh."
+          else
+            echo "No previous successful run found, starting fresh."
+          fi
+          # upload-artifact's on-disk layout for a multi-path artifact isn't
+          # something to assume — locate the file wherever it landed instead.
+          found=$(find previous_results -name latest.json | head -1)
+          echo "path=${found:-previous_results/latest.json}" >> "$GITHUB_OUTPUT"
 
       - name: Download SMILES corpus
         env:
@@ -53,6 +80,12 @@ jobs:
       - name: Generate validation.md
         if: hashFiles('validation/results/latest.json') != ''
         run: python3 scripts/gen_validation_report.py validation/results/latest.json
+
+      - name: Append accuracy drift report (veridict)
+        if: hashFiles('validation/results/latest.json') != ''
+        run: |
+          python3 scripts/veridict_accuracy_report.py \
+            "${{ steps.fetch_previous.outputs.path }}" validation/results/latest.json
 
       - name: Upload results artifact
         if: always()
