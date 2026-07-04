@@ -183,13 +183,57 @@ jobs:
       - name: Install veridict
         run: cargo install --git https://github.com/kent-tokyo/veridict --locked --quiet
 
-      - name: Run Criterion benchmarks — main (baseline)
-        working-directory: main
-        run: cargo bench --workspace
+      # Compile both sides fully before any timing-sensitive run, so on-demand
+      # compilation (which happens before Criterion's clock starts, and so
+      # never lands in sample.json) can't stretch the wall-clock gap between
+      # a benchmark's main and PR measurement.
+      - name: Build Criterion benchmarks (no run)
+        run: |
+          (cd main && cargo bench --workspace --no-run)
+          (cd pr && cargo bench --workspace --no-run)
 
-      - name: Run Criterion benchmarks — PR branch (candidate)
-        working-directory: pr
-        run: cargo bench --workspace
+      # Measure main and PR back-to-back per benchmark (not "all of main's 13
+      # benchmarks, then all of PR's 13") and alternate which side goes
+      # first. Running the full suite for one side, then the other, leaves
+      # ~15 minutes between a benchmark's two measurements — enough for
+      # runner thermal/frequency drift to move the *average* level of
+      # whichever side happens to run second. Confirmed empirically: a
+      # version/docs-only PR with byte-identical Rust source (kent-tokyo/
+      # chematic#58) still showed 10/13 benchmarks "regressed" under the old
+      # main-then-PR-in-full ordering. Interleaving per-benchmark shrinks
+      # that gap to seconds; alternating which side leads spreads any
+      # residual same-gap bias across both sides instead of always
+      # penalizing the PR.
+      - name: Run Criterion benchmarks (interleaved, alternating order)
+        run: |
+          BENCHES=(
+            "smarts_compile_5pat:chematic-smarts:smarts_bench"
+            "smarts_match_nocache_10mol:chematic-smarts:smarts_bench"
+            "smarts_match_cached_10mol:chematic-smarts:smarts_bench"
+            "smarts_recursive_10mol:chematic-smarts:smarts_bench"
+            "parse_smiles_10mol:chematic-smiles:parse_bench"
+            "canonical_smiles_10mol:chematic-smiles:parse_bench"
+            "ecfp4_10mol:chematic-fp:ecfp_bench"
+            "tanimoto_ecfp4_pairs:chematic-fp:ecfp_bench"
+            "descriptors_5x10mol:chematic-chem:descriptor_bench"
+            "qed_10mol:chematic-chem:descriptor_bench"
+            "pka_predict_10mol:chematic-chem:descriptor_bench"
+            "pka_acid_base_10mol:chematic-chem:descriptor_bench"
+            "admet_profile_10mol:chematic-chem:descriptor_bench"
+          )
+          idx=0
+          for entry in "${BENCHES[@]}"; do
+            IFS=':' read -r name crate benchfile <<< "$entry"
+            if [ $((idx % 2)) -eq 0 ]; then
+              sides=(main pr)
+            else
+              sides=(pr main)
+            fi
+            for side in "${sides[@]}"; do
+              (cd "$side" && cargo bench -p "$crate" --bench "$benchfile" -- "^${name}$")
+            done
+            idx=$((idx + 1))
+          done
 
       # Criterion (0.8, no csv_output feature enabled) writes raw per-sample
       # batch measurements to target/criterion/<bench>/new/sample.json as
