@@ -4,6 +4,7 @@ set -e
 echo "=== fmt ===" && cargo fmt --all -- --check
 echo "=== clippy ===" && cargo clippy --workspace --all-targets -- -D warnings
 echo "=== test ===" && cargo test --workspace --lib --quiet
+echo "=== test (integration) ===" && cargo test --workspace --tests --quiet
 if command -v cargo-deny &>/dev/null || cargo deny --version &>/dev/null 2>&1; then
     echo "=== deny ===" && cargo deny check --all-features
 else

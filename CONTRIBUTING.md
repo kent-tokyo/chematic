@@ -53,9 +53,10 @@ cargo test -p chematic-inchi --features native-inchi --lib --quiet
 
 ## Code style
 
-- **No unsafe code** — `#![forbid(unsafe_code)]` is enforced in all crates.
+- **No unsafe code** — `#![forbid(unsafe_code)]` is enforced in all crates, except the `native-inchi` feature's C FFI boundary (`crates/chematic-inchi/src/native/`).
 - **No external C/C++ deps** by default (the `native-inchi` feature is the only exception).
 - **WASM-compatible** — core crates must not use `std::fs`, threads, or OS-specific APIs.
+- **Justify unsafe/unwrap/expect/panic!** outside `#[cfg(test)]` with a `// safe: ...` comment explaining why it cannot fail (e.g. `// safe: index bounds-checked above`).
 - Format: `cargo fmt --workspace` before committing.
 - Lints: `cargo clippy --workspace -- -D warnings` must pass (zero warnings).
 

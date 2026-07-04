@@ -70,6 +70,12 @@ def main():
     parse_fail_ch = 0
     parse_fail_rd = 0
 
+    # per-molecule signed deltas (ch - rd), keyed by SMILES, for drift
+    # tracking across runs (see scripts/veridict_accuracy_report.py) —
+    # separate from the match/over/under aggregate counters above.
+    tpsa_deltas = {}
+    logp_deltas = {}
+
     def make_int_counter():
         return {"match": 0, "over": 0, "under": 0, "detail_count": 0}
 
@@ -302,6 +308,8 @@ def main():
         check_float(tpsa, rd_tpsa,  ch_tpsa,  0.1,  "TPSA",  smi, ".2f")
         check_float(logp, rd_logp,  ch_logp,  0.01, "LogP",  smi, ".4f")
         logp_max_delta = max(logp_max_delta, abs(ch_logp - rd_logp))
+        tpsa_deltas[smi] = ch_tpsa - rd_tpsa
+        logp_deltas[smi] = ch_logp - rd_logp
         check_float(mr,   rd_mr,    ch_mr,    0.01, "MR",    smi, ".2f")
         check_float(fsp3, rd_fsp3,  ch_fsp3,  0.001,"Fsp3",  smi, ".4f")
         check_int(rb,     rd_rb,    ch_rb,    "RotB",  smi)
@@ -580,6 +588,10 @@ def main():
                 "smr_vsa":    family_dict(smr_vsa),
                 "peoe_vsa":   family_dict(peoe_vsa),
                 "estate_vsa": family_dict(estate_vsa),
+            },
+            "deltas": {
+                "tpsa": tpsa_deltas,
+                "logp": logp_deltas,
             },
         }
         with open(args.json, "w") as f:

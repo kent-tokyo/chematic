@@ -24,8 +24,10 @@ Known differences vs RDKit:
   bit patterns differ from RDKit's due to different hash implementations.
 - ``SanitizeMol`` / ``Kekulize`` are no-ops — chematic sanitizes on parse.
 - ``SDMolSupplier.__len__`` performs an O(n) scan; avoid in hot loops.
-- Atom/bond objects (``GetAtomWithIdx``, ``GetBonds``) are read-only;
-  structure editing (``RWMol``) is not supported.
+- ``Mol``'s atom/bond objects (``GetAtomWithIdx``, ``GetBonds``) are
+  read-only; use ``RWMol`` for structure editing (``AddAtom``/``AddBond``/
+  ``RemoveAtom``/``RemoveBond``/``GetMol``) — a smaller subset than RDKit's
+  ``RWMol`` (no mid-edit atom/bond iteration; call ``GetMol()`` first).
 - ``MolFromSmarts`` returns a lightweight query object; SMARTS pattern
   matching is delegated to ``chematic.smarts_match``.
 """
@@ -33,7 +35,7 @@ Known differences vs RDKit:
 from __future__ import annotations
 
 __all__ = [
-    "Mol", "Atom", "Bond", "BondType", "RingInfo",
+    "Mol", "Atom", "Bond", "BondType", "RingInfo", "RWMol",
     "ExplicitBitVect",
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
@@ -417,6 +419,65 @@ class Mol:
 
     def __repr__(self) -> str:
         return f"Mol({self._mol.smiles!r})"
+
+
+# ---------------------------------------------------------------------------
+# RWMol — editable molecule
+# ---------------------------------------------------------------------------
+
+
+class RWMol:
+    """RDKit-compatible editable molecule (``AddAtom``/``AddBond``/``RemoveAtom``/``RemoveBond``).
+
+    .. note::
+       Supports only the most common ``RWMol`` operations. Unlike RDKit,
+       atom/bond iteration and queries (``GetAtoms``, ``GetAtomWithIdx``, …)
+       are not available mid-edit — call :meth:`GetMol` first to get a
+       read-only :class:`Mol` for those.
+    """
+
+    __slots__ = ("_rw",)
+
+    def __init__(self, mol: "Mol | None" = None) -> None:
+        self._rw = _ch.RWMol(mol._mol if mol is not None else None)
+
+    def AddAtom(self, atom) -> int:
+        """Add an atom given an atomic number (``int``), element symbol
+        (``str``), or any object with ``GetAtomicNum()`` (e.g. an existing
+        ``Atom`` from another ``Mol``). Returns the new atom's index."""
+        if isinstance(atom, bool):
+            raise TypeError(f"invalid atom spec: {atom!r}")
+        if isinstance(atom, int):
+            atomic_num = atom
+        elif isinstance(atom, str):
+            atomic_num = _ch.element_atomic_number(atom)
+        else:
+            atomic_num = atom.GetAtomicNum()
+        return self._rw.AddAtom(atomic_num)
+
+    def AddBond(self, beginAtomIdx: int, endAtomIdx: int, order: str = BondType.SINGLE) -> int:
+        """Add a bond; returns the molecule's bond count after adding
+        (RDKit's convention — not the new bond's own index)."""
+        return self._rw.AddBond(beginAtomIdx, endAtomIdx, order)
+
+    def RemoveAtom(self, idx: int) -> None:
+        self._rw.RemoveAtom(idx)
+
+    def RemoveBond(self, beginAtomIdx: int, endAtomIdx: int) -> None:
+        self._rw.RemoveBond(beginAtomIdx, endAtomIdx)
+
+    def GetNumAtoms(self) -> int:
+        return self._rw.GetNumAtoms()
+
+    def GetNumBonds(self) -> int:
+        return self._rw.GetNumBonds()
+
+    def GetMol(self) -> "Mol":
+        """Snapshot the current state into an independent, read-only ``Mol``."""
+        return Mol(self._rw.GetMol())
+
+    def __repr__(self) -> str:
+        return f"RWMol({self.GetNumAtoms()} atoms, {self.GetNumBonds()} bonds)"
 
 
 class _SmartsQuery:
@@ -878,7 +939,7 @@ class rdMolDescriptors:
         bitInfo=None,
         **kwargs,
     ) -> "ExplicitBitVect":
-        """Return ECFP fingerprint as ExplicitBitVect.
+        """Return ECFP (or FCFP, with ``useFeatures=True``) fingerprint as ExplicitBitVect.
 
         .. note::
            Bit patterns differ from RDKit's Morgan fingerprints due to
@@ -888,9 +949,15 @@ class rdMolDescriptors:
            and is likewise not RDKit bit-exact. When ``bitInfo`` is a dict it
            is filled with ``{bit: ((atom_idx, radius), ...)}`` — shape- and
            origin-consistent with chematic's own bits, but not RDKit-identical.
+           ``useFeatures=True`` uses chematic's pharmacophore feature-class
+           (FCFP) invariants instead of plain atomic properties; it does not
+           support ``useChirality=True`` (chirality is not tracked in the
+           feature-class atom invariant).
         """
-        if useFeatures:
-            raise NotImplementedError("useFeatures=True is not supported")
+        if useFeatures and useChirality:
+            raise NotImplementedError(
+                "useFeatures=True with useChirality=True is not supported"
+            )
         if not useBondTypes:
             raise NotImplementedError("useBondTypes=False is not supported")
         if kwargs:
@@ -902,7 +969,10 @@ class rdMolDescriptors:
                 raise NotImplementedError(
                     "bitInfo with useChirality is not supported"
                 )
-            raw, info = mol._mol.ecfp_bitinfo(radius)  # 2048-bit fp + dict
+            if useFeatures:
+                raw, info = mol._mol.fcfp_bitinfo(radius)  # 2048-bit fp + dict
+            else:
+                raw, info = mol._mol.ecfp_bitinfo(radius)  # 2048-bit fp + dict
             bitInfo.clear()
             if nBits == 2048:
                 for bit, pairs in info.items():
@@ -919,6 +989,8 @@ class rdMolDescriptors:
                     "useChirality=True is only supported for radius≤2 (ECFP4)"
                 )
             raw = mol._mol.ecfp4_chiral()
+        elif useFeatures:
+            raw = mol._mol.fcfp4() if radius <= 2 else mol._mol.fcfp6()
         elif radius <= 2:
             raw = mol._mol.ecfp4()
         else:

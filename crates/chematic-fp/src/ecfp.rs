@@ -267,7 +267,10 @@ pub fn ecfp_with_bitinfo(
 }
 
 /// Set the bit(s) for hash `id` and record the `(atom, radius)` origin.
-fn record_bit(
+///
+/// Shared by [`ecfp_with_bitinfo`] and [`crate::fcfp::fcfp_with_bitinfo`] — the
+/// bit-recording step is identical regardless of how `id` was derived.
+pub(crate) fn record_bit(
     fp: &mut BitVec2048,
     info: &mut FxHashMap<usize, Vec<(u32, u32)>>,
     id: u64,

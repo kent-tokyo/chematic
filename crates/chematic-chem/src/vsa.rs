@@ -108,39 +108,46 @@ mod tests {
         assert_eq!(peoe_vsa(&mol("CC(=O)O")).len(), 14);
     }
 
+    /// The four VSA families bin `labute_asa_per_atom`, which excludes the
+    /// pooled implicit-hydrogen term (see `topo_descriptors::labute_asa_parts`
+    /// doc comment) — so their sum is `labute_asa` *minus* that pooled term,
+    /// not the full `labute_asa` total. This matches RDKit, whose VSA bins
+    /// likewise use `_CalcLabuteASAContribs`'s `ats` and drop its `hs`.
+    fn expected_vsa_sum(mol: &Molecule) -> f64 {
+        use crate::topo_descriptors::{labute_asa, labute_h_pool_area};
+        labute_asa(mol) - labute_h_pool_area(mol)
+    }
+
     #[test]
-    fn slogp_vsa_sum_equals_labute_asa() {
-        use crate::topo_descriptors::labute_asa;
+    fn slogp_vsa_sum_equals_labute_asa_minus_h_pool() {
         let mol = mol("c1ccccc1");
         let total: f64 = slogp_vsa(&mol).iter().sum();
-        let expected = labute_asa(&mol);
+        let expected = expected_vsa_sum(&mol);
         assert!(
             (total - expected).abs() < 1e-6,
-            "SlogP_VSA sum {total:.4} != LabuteASA {expected:.4}"
+            "SlogP_VSA sum {total:.4} != LabuteASA-hPool {expected:.4}"
         );
     }
 
     #[test]
-    fn smr_vsa_sum_equals_labute_asa() {
-        use crate::topo_descriptors::labute_asa;
+    fn smr_vsa_sum_equals_labute_asa_minus_h_pool() {
         let mol = mol("CC(=O)Oc1ccccc1C(=O)O");
         let total: f64 = smr_vsa(&mol).iter().sum();
-        let expected = labute_asa(&mol);
+        let expected = expected_vsa_sum(&mol);
         assert!(
             (total - expected).abs() < 1e-6,
-            "SMR_VSA sum {total:.4} != LabuteASA {expected:.4}"
+            "SMR_VSA sum {total:.4} != LabuteASA-hPool {expected:.4}"
         );
     }
 
     #[test]
-    fn peoe_vsa_sum_equals_labute_asa() {
-        use crate::topo_descriptors::labute_asa;
+    fn peoe_vsa_sum_equals_labute_asa_minus_h_pool() {
         let mol = mol("c1ccccc1");
         let total: f64 = peoe_vsa(&mol).iter().sum();
-        let expected = labute_asa(&mol);
+        let expected = expected_vsa_sum(&mol);
         assert!(
             (total - expected).abs() < 1e-6,
-            "PEOE_VSA sum {total:.4} != LabuteASA {expected:.4}"
+            "PEOE_VSA sum {total:.4} != LabuteASA-hPool {expected:.4}"
         );
     }
 
@@ -159,14 +166,13 @@ mod tests {
     }
 
     #[test]
-    fn estate_vsa_sum_equals_labute_asa() {
-        use crate::topo_descriptors::labute_asa;
+    fn estate_vsa_sum_equals_labute_asa_minus_h_pool() {
         let mol = mol("c1ccccc1");
         let total: f64 = estate_vsa(&mol).iter().sum();
-        let expected = labute_asa(&mol);
+        let expected = expected_vsa_sum(&mol);
         assert!(
             (total - expected).abs() < 1e-6,
-            "EState_VSA sum {total:.4} != LabuteASA {expected:.4}"
+            "EState_VSA sum {total:.4} != LabuteASA-hPool {expected:.4}"
         );
     }
 

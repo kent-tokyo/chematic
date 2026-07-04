@@ -325,9 +325,10 @@ pub fn padmakar_ivan_index(mol: &Molecule) -> u64 {
 
 // ─── Kappa Shape Indices ─────────────────────────────────────────────────────
 
-/// Hall-Kier κ1 shape index.
+/// Hall-Kier κ1 shape index (alpha-corrected, matches RDKit `CalcKappa1`).
 ///
-/// κ1 = n·(n−1)² / p1²  where n = heavy atom count, p1 = bond count.
+/// κ1 = (A+α)·(A+α−1)² / (P1+α)²  where A = heavy atom count, P1 = bond
+/// count, α = [`hall_kier_alpha`](crate::descriptors::hall_kier_alpha).
 /// A larger value indicates a more linear graph.
 pub fn kappa1(mol: &Molecule) -> f64 {
     let heavy = heavy_indices(mol);
@@ -339,14 +340,15 @@ pub fn kappa1(mol: &Molecule) -> f64 {
     if p1 == 0 {
         return 0.0;
     }
-    let n = n as f64;
-    let p1 = p1 as f64;
-    n * (n - 1.0).powi(2) / p1.powi(2)
+    let alpha = crate::descriptors::hall_kier_alpha(mol);
+    let a = n as f64 + alpha;
+    let p1 = p1 as f64 + alpha;
+    a * (a - 1.0).powi(2) / p1.powi(2)
 }
 
-/// Hall-Kier κ2 shape index.
+/// Hall-Kier κ2 shape index (alpha-corrected, matches RDKit `CalcKappa2`).
 ///
-/// κ2 = (n−1)·(n−2)² / p2²  where p2 = count of 2-bond paths.
+/// κ2 = (A+α−1)·(A+α−2)² / (P2+α)²  where P2 = count of 2-bond paths.
 pub fn kappa2(mol: &Molecule) -> f64 {
     let heavy = heavy_indices(mol);
     let n = heavy.len();
@@ -357,16 +359,17 @@ pub fn kappa2(mol: &Molecule) -> f64 {
     if p2 == 0 {
         return 0.0;
     }
-    let n = n as f64;
-    let p2 = p2 as f64;
-    (n - 1.0) * (n - 2.0).powi(2) / p2.powi(2)
+    let alpha = crate::descriptors::hall_kier_alpha(mol);
+    let a = n as f64 + alpha;
+    let p2 = p2 as f64 + alpha;
+    (a - 1.0) * (a - 2.0).powi(2) / p2.powi(2)
 }
 
-/// Hall-Kier κ3 shape index.
+/// Hall-Kier κ3 shape index (alpha-corrected, matches RDKit `CalcKappa3`).
 ///
 /// Formula depends on parity of heavy-atom count:
-/// - odd n:  κ3 = (n−1)·(n−3)² / p3²
-/// - even n: κ3 = (n−2)·(n−3)² / p3²
+/// - odd n:  κ3 = (A+α−1)·(A+α−3)² / (P3+α)²
+/// - even n: κ3 = (A+α−2)·(A+α−3)² / (P3+α)²
 ///
 /// Returns 0.0 when fewer than 4 heavy atoms or no 3-bond paths exist.
 pub fn kappa3(mol: &Molecule) -> f64 {
@@ -379,10 +382,11 @@ pub fn kappa3(mol: &Molecule) -> f64 {
     if p3 == 0 {
         return 0.0;
     }
-    let n_f = n as f64;
-    let p3 = p3 as f64;
-    let factor = if n % 2 == 1 { n_f - 1.0 } else { n_f - 2.0 };
-    factor * (n_f - 3.0).powi(2) / p3.powi(2)
+    let alpha = crate::descriptors::hall_kier_alpha(mol);
+    let a = n as f64 + alpha;
+    let p3 = p3 as f64 + alpha;
+    let factor = if n % 2 == 1 { a - 1.0 } else { a - 2.0 };
+    factor * (a - 3.0).powi(2) / p3.powi(2)
 }
 
 /// Compute κ1, κ2, κ3 in a single `heavy_indices` pass.
@@ -392,14 +396,16 @@ pub fn kappa3(mol: &Molecule) -> f64 {
 pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
     let heavy = heavy_indices(mol);
     let n = heavy.len();
+    let alpha = crate::descriptors::hall_kier_alpha(mol);
+    let a = n as f64 + alpha;
 
     let k1 = if n >= 2 {
         let p1 = count_paths(mol, &heavy, 1);
         if p1 == 0 {
             0.0
         } else {
-            let nf = n as f64;
-            nf * (nf - 1.0).powi(2) / (p1 as f64).powi(2)
+            let p1 = p1 as f64 + alpha;
+            a * (a - 1.0).powi(2) / p1.powi(2)
         }
     } else {
         0.0
@@ -410,8 +416,8 @@ pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
         if p2 == 0 {
             0.0
         } else {
-            let nf = n as f64;
-            (nf - 1.0) * (nf - 2.0).powi(2) / (p2 as f64).powi(2)
+            let p2 = p2 as f64 + alpha;
+            (a - 1.0) * (a - 2.0).powi(2) / p2.powi(2)
         }
     } else {
         0.0
@@ -422,9 +428,9 @@ pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
         if p3 == 0 {
             0.0
         } else {
-            let nf = n as f64;
-            let factor = if n % 2 == 1 { nf - 1.0 } else { nf - 2.0 };
-            factor * (nf - 3.0).powi(2) / (p3 as f64).powi(2)
+            let p3 = p3 as f64 + alpha;
+            let factor = if n % 2 == 1 { a - 1.0 } else { a - 2.0 };
+            factor * (a - 3.0).powi(2) / p3.powi(2)
         }
     } else {
         0.0
@@ -611,17 +617,25 @@ fn bond_scale(order: BondOrder) -> f64 {
     }
 }
 
-/// Per-atom Labute approximate surface area contributions (Å²).
-/// H sphere areas are folded into the heavy atom they are attached to.
-/// Implements: P. Labute, 2000, *J. Mol. Graph. Mod.* **18**, 464–477.
-pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
+/// Per-atom Labute approximate surface area contributions (Å²) plus the
+/// pooled implicit-hydrogen area term, computed together in one pass.
+///
+/// Implements: P. Labute, 2000, *J. Mol. Graph. Mod.* **18**, 464–477, matching
+/// RDKit's `_CalcLabuteASAContribs`: implicit hydrogens are **not** counted
+/// per atom. Instead each heavy atom contributes exactly once (regardless of
+/// its actual implicit H count) to a single molecule-wide pooled hydrogen
+/// term, which is excluded from the per-atom values (RDKit's `ats`) and only
+/// added into the whole-molecule total ([`labute_asa`]). This is a faithful,
+/// numerically-verified port of RDKit's behavior, not a simplification.
+fn labute_asa_parts(mol: &Molecule) -> (Vec<f64>, f64) {
     let n = mol.atom_count();
     if n == 0 {
-        return Vec::new();
+        return (Vec::new(), 0.0);
     }
 
     const R_H: f64 = 0.33;
     let mut v: Vec<f64> = vec![0.0; n];
+    let mut h_pool = 0.0f64;
     let radii: Vec<f64> = (0..n)
         .map(|i| rb0(mol.atom(AtomIdx(i as u32)).element.atomic_number()))
         .collect();
@@ -637,14 +651,8 @@ pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
         let scale = bond_scale(bond.order);
         let bij = ri + rj - scale;
         let dij = (ri - rj).abs().max(bij).min(ri + rj);
-        let vi = (rj * rj - (ri - dij) * (ri - dij)) / dij;
-        let vj = (ri * ri - (rj - dij) * (rj - dij)) / dij;
-        if vi > 0.0 {
-            v[i] += vi;
-        }
-        if vj > 0.0 {
-            v[j] += vj;
-        }
+        v[i] += rj * rj - (ri - dij) * (ri - dij) / dij;
+        v[j] += ri * ri - (rj - dij) * (rj - dij) / dij;
     }
 
     for i in 0..n {
@@ -652,24 +660,41 @@ pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
         if ri < 1e-10 {
             continue;
         }
-        let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
-        for _ in 0..h_count {
-            let dij = ri + R_H;
-            let vi = (R_H * R_H - (ri - dij) * (ri - dij)) / dij;
-            if vi > 0.0 {
-                v[i] += vi;
-            }
-        }
+        // Runs once per heavy atom regardless of its actual implicit H
+        // count — see doc comment above.
+        let dij = ri + R_H;
+        v[i] += R_H * R_H - (ri - dij) * (ri - dij) / dij;
+        h_pool += ri * ri - (R_H - dij) * (R_H - dij) / dij;
     }
 
-    (0..n)
+    let per_atom = (0..n)
         .map(|i| {
             let ri = radii[i];
-            let h_count = implicit_hcount(mol, AtomIdx(i as u32)) as usize;
-            let heavy_area = (4.0 * PI * ri * ri - PI * ri * v[i]).max(0.0);
-            heavy_area + h_count as f64 * 4.0 * PI * R_H * R_H
+            if ri < 1e-10 {
+                return 0.0;
+            }
+            (4.0 * PI * ri * ri - PI * ri * v[i]).max(0.0)
         })
-        .collect()
+        .collect();
+    let h_pool_area = (4.0 * PI * R_H * R_H - PI * R_H * h_pool).max(0.0);
+
+    (per_atom, h_pool_area)
+}
+
+/// Per-atom Labute approximate surface area contributions (Å²), excluding
+/// the pooled implicit-hydrogen term (see [`labute_asa_parts`]). This is the
+/// per-atom weight used by the VSA descriptor families
+/// ([`crate::vsa`]), matching RDKit's `ats` output.
+pub fn labute_asa_per_atom(mol: &Molecule) -> Vec<f64> {
+    labute_asa_parts(mol).0
+}
+
+/// Pooled implicit-hydrogen area term (Å²) excluded from
+/// [`labute_asa_per_atom`] but included in [`labute_asa`]'s total.
+/// Only used by `vsa.rs` tests that check the VSA-sum-vs-total invariant.
+#[cfg(test)]
+pub(crate) fn labute_h_pool_area(mol: &Molecule) -> f64 {
+    labute_asa_parts(mol).1
 }
 
 /// Labute approximate surface area (Å²).
@@ -907,7 +932,8 @@ pub fn topological_distance_matrix(mol: &Molecule) -> Vec<Vec<u32>> {
 }
 
 pub fn labute_asa(mol: &Molecule) -> f64 {
-    labute_asa_per_atom(mol).iter().sum()
+    let (per_atom, h_pool_area) = labute_asa_parts(mol);
+    per_atom.iter().sum::<f64>() + h_pool_area
 }
 
 // ─── VABC — van der Waals atomic bonded-contribution volume ──────────────────
@@ -1198,8 +1224,9 @@ mod tests {
 
     #[test]
     fn kappa1_benzene() {
-        // n=6, p1=6: κ1 = 6·25/36 ≈ 4.167
-        assert!(close(kappa1(&mol("c1ccccc1")), 4.167, 0.01));
+        // Aromatic C: alpha = 6·(0.67/0.77 - 1) = -0.78 ≠ 0 (RDKit CalcKappa1
+        // verified: 3.4116), unlike sp3-only alkanes where alpha = 0.
+        assert!(close(kappa1(&mol("c1ccccc1")), 3.4116, 0.001));
     }
 
     #[test]
@@ -1210,8 +1237,8 @@ mod tests {
 
     #[test]
     fn kappa2_benzene() {
-        // n=6, p2=6: κ2 = 5·16/36 ≈ 2.222
-        assert!(close(kappa2(&mol("c1ccccc1")), 2.222, 0.01));
+        // RDKit CalcKappa2(benzene) verified: 1.6058 (alpha-corrected).
+        assert!(close(kappa2(&mol("c1ccccc1")), 1.6058, 0.001));
     }
 
     #[test]
@@ -1222,13 +1249,30 @@ mod tests {
 
     #[test]
     fn kappa3_benzene() {
-        // n=6 (even), p3=6: κ3 = 4·9/36 = 1.0
-        assert!(close(kappa3(&mol("c1ccccc1")), 1.0, 0.01));
+        // RDKit CalcKappa3(benzene) verified: 0.5824 (alpha-corrected).
+        assert!(close(kappa3(&mol("c1ccccc1")), 0.5824, 0.001));
     }
 
     #[test]
     fn kappa1_single_atom_zero() {
         assert_eq!(kappa1(&mol("C")), 0.0);
+    }
+
+    #[test]
+    fn kappa_alpha_corrected_matches_rdkit_aspirin() {
+        // RDKit CalcKappa1/2/3("CC(=O)Oc1ccccc1C(=O)O") verified: 9.2496 /
+        // 3.7093 / 2.2974. Aspirin mixes sp3/sp2 C, O, and aromatic C, so a
+        // nonzero Hall-Kier alpha correction is exercised on all three.
+        // Tolerance is 0.1 (not 0.001 like the benzene/aspirin-free cases)
+        // because `hall_kier_alpha`'s covalent-radius table has its own
+        // separately-tracked precision gap for O (chematic's alpha for
+        // aspirin is -1.766 vs RDKit's -1.840) — see
+        // tasks/descriptor_validation_coverage.md. This test only guards the
+        // kappa formula's alpha-wiring, not that residual table precision.
+        let m = mol("CC(=O)Oc1ccccc1C(=O)O");
+        assert!(close(kappa1(&m), 9.2496, 0.1), "kappa1 = {}", kappa1(&m));
+        assert!(close(kappa2(&m), 3.7093, 0.1), "kappa2 = {}", kappa2(&m));
+        assert!(close(kappa3(&m), 2.2974, 0.1), "kappa3 = {}", kappa3(&m));
     }
 
     #[test]
@@ -1327,14 +1371,37 @@ mod tests {
 
     #[test]
     fn labute_asa_single_oxygen() {
-        // [OH2]: O (atomic radius 0.66) + 2 implicit H (single-bond, Vi=0).
-        // A_O = 4π*0.66² = 5.47 Å²; 2H = 2*4π*0.33² = 2.74 Å²; total ≈ 8.21 Å²
+        // RDKit CalcLabuteASA("O") verified: 6.8492. The implicit-H
+        // contribution is a single pooled term per heavy atom (not scaled by
+        // the atom's actual H count) — see `labute_asa_parts` doc comment.
         let asa = labute_asa(&mol("O"));
-        let expected = 4.0 * PI * 0.66_f64.powi(2) + 2.0 * 4.0 * PI * 0.33_f64.powi(2);
         assert!(
-            (asa - expected).abs() < 0.01,
-            "water ASA {asa:.4} ≠ expected {expected:.4}"
+            (asa - 6.8492).abs() < 0.001,
+            "water ASA {asa:.4} != RDKit 6.8492"
         );
+    }
+
+    #[test]
+    fn labute_asa_matches_rdkit_aspirin() {
+        // RDKit CalcLabuteASA("CC(=O)Oc1ccccc1C(=O)O") verified: 74.7571.
+        let asa = labute_asa(&mol("CC(=O)Oc1ccccc1C(=O)O"));
+        assert!((asa - 74.7571).abs() < 0.001, "aspirin ASA {asa:.4}");
+    }
+
+    #[test]
+    fn labute_asa_per_atom_excludes_pooled_h_term() {
+        // Quaternary carbon (CC(C)(C)C) has an atom with zero implicit H —
+        // RDKit still runs the pooled-H pass once for it (see
+        // `labute_asa_parts`). RDKit `_CalcLabuteASAContribs` ats verified:
+        // [6.9237, 5.4150, 6.9237, 6.9237, 6.9237], hs=1.0891.
+        let m = mol("CC(C)(C)C");
+        let per_atom = labute_asa_per_atom(&m);
+        let expected = [6.9237, 5.4150, 6.9237, 6.9237, 6.9237];
+        for (got, want) in per_atom.iter().zip(expected.iter()) {
+            assert!((got - want).abs() < 0.001, "{per_atom:?} vs {expected:?}");
+        }
+        let total = labute_asa(&m);
+        assert!((total - (expected.iter().sum::<f64>() + 1.0891)).abs() < 0.001);
     }
 
     #[test]

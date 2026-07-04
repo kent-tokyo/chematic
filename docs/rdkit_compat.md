@@ -32,11 +32,11 @@ DataStructs.TanimotoSimilarity(fp, fp)       # 1.0
 | Descriptors | ✅ Supported | MW/HBA/HBD **exact**, TPSA ±1.0, LogP ±0.5 vs RDKit (differential-tested) |
 | Aromaticity | ✅ Supported | aromatic atom/bond counts match RDKit on 99.0% / 98.3% of a 5k corpus; ring-junction carbonyls differ |
 | Substructure (SMARTS) | 🟡 Partial | match **sets** agree 96.9% on a 5k corpus; ring-size `[rN]` queries differ (SSSR vs RDKit ring perception). Match **order** may differ — compare as sets |
-| Morgan fingerprint | 🟡 Partial | `radius`, `nBits` (modulo folding), `bitInfo` shape-/origin-consistent — **not RDKit bit-identical** (FNV-1a vs MurmurHash) |
+| Morgan fingerprint | 🟡 Partial | `radius`, `nBits` (modulo folding), `bitInfo`, `useFeatures=True` (FCFP) — shape-/origin-consistent, **not RDKit bit-identical** (FNV-1a vs MurmurHash) |
 | DataStructs | ✅ Supported | `TanimotoSimilarity`/`DiceSimilarity`/`BulkTanimotoSimilarity`/`ConvertToNumpyArray` |
 | Canonical SMILES | 🟡 Partial | 99.62% semantic round-trip vs RDKit (5k corpus); exocyclic C=N E/Z stereo not always emitted |
-| RWMol / structure editing | ❌ Unsupported | read-only layer |
-| `useFeatures=True`, `useBondTypes=False`, `nBits<=0`, `bitInfo+useChirality` | 🔊 Fails loudly | raise instead of silently ignoring |
+| RWMol / structure editing | 🟡 Partial | `AddAtom`/`AddBond`/`RemoveAtom`/`RemoveBond`/`GetMol` supported; no mid-edit atom/bond iteration (call `GetMol()` first) |
+| `useBondTypes=False`, `nBits<=0`, `bitInfo+useChirality`, `useFeatures+useChirality` | 🔊 Fails loudly | raise instead of silently ignoring |
 
 ---
 

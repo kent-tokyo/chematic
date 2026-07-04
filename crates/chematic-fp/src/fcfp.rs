@@ -18,9 +18,10 @@
 //! | 5   | NegIonizable| O with charge ≤ 0 |
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
+use rustc_hash::FxHashMap;
 
 use crate::bitvec::BitVec2048;
-use crate::ecfp::{EcfpConfig, bond_type_int, fnv1a};
+use crate::ecfp::{EcfpConfig, bond_type_int, fnv1a, record_bit};
 
 // Feature class bit positions
 const DONOR: u8 = 1 << 0;
@@ -160,6 +161,71 @@ pub fn fcfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     fp
 }
 
+/// Like [`fcfp`] but also returns, for each set bit, the list of
+/// `(atom_idx, radius)` environments that produced it — the data behind
+/// RDKit's `bitInfo` map for `useFeatures=True`.
+pub fn fcfp_with_bitinfo(
+    mol: &Molecule,
+    config: &EcfpConfig,
+) -> (BitVec2048, FxHashMap<usize, Vec<(u32, u32)>>) {
+    let n = mol.atom_count();
+    let nbits = config.nbits;
+    let mut fp = BitVec2048::new();
+    let mut info: FxHashMap<usize, Vec<(u32, u32)>> = FxHashMap::default();
+
+    if n == 0 {
+        return (fp, info);
+    }
+
+    // --- Step 1: initial atom identifiers from feature classes ---
+    let mut ids: Vec<u64> = Vec::with_capacity(n);
+
+    for i in 0..n {
+        let idx = AtomIdx(i as u32);
+        let cls = feature_class(mol, idx);
+        let id = fnv1a(&[cls]);
+        record_bit(&mut fp, &mut info, id, i as u32, 0, nbits, false);
+        ids.push(id);
+    }
+
+    // --- Step 2: iterative Morgan expansion ---
+    let mut new_ids: Vec<u64> = vec![0u64; n];
+
+    for r in 1..=config.radius {
+        for i in 0..n {
+            let idx = AtomIdx(i as u32);
+
+            let mut neighbor_info: Vec<(u8, u64)> = mol
+                .neighbors(idx)
+                .map(|(nb_idx, bond_idx)| {
+                    let bond = mol.bond(bond_idx);
+                    let btype = bond_type_int(bond.order);
+                    let nb_id = ids[nb_idx.0 as usize];
+                    (btype, nb_id)
+                })
+                .collect();
+
+            neighbor_info.sort_unstable();
+
+            let mut bytes: Vec<u8> = Vec::with_capacity(1 + 8 + neighbor_info.len() * 9);
+            bytes.push(r as u8);
+            bytes.extend_from_slice(&ids[i].to_le_bytes());
+            for (btype, nb_id) in &neighbor_info {
+                bytes.push(*btype);
+                bytes.extend_from_slice(&nb_id.to_le_bytes());
+            }
+
+            let new_id = fnv1a(&bytes);
+            new_ids[i] = new_id;
+            record_bit(&mut fp, &mut info, new_id, i as u32, r, nbits, false);
+        }
+
+        core::mem::swap(&mut ids, &mut new_ids);
+    }
+
+    (fp, info)
+}
+
 /// FCFP4 fingerprint (radius = 2, 2048 bits).
 pub fn fcfp4(mol: &Molecule) -> BitVec2048 {
     fcfp(mol, &EcfpConfig::default())
@@ -233,5 +299,29 @@ mod tests {
     fn test_fcfp4_nonempty() {
         let fp = fcfp4(&mol("CCO"));
         assert!(fp.popcount() > 0, "FCFP4 should set at least one bit");
+    }
+
+    #[test]
+    fn test_fcfp_with_bitinfo_matches_fcfp() {
+        let m = mol("CC(=O)Oc1ccccc1C(=O)O");
+        let config = EcfpConfig::default();
+        let (fp, info) = fcfp_with_bitinfo(&m, &config);
+        assert_eq!(
+            fp,
+            fcfp(&m, &config),
+            "bitinfo variant must set the same bits as fcfp"
+        );
+        for (&bit, origins) in &info {
+            assert!(fp.get(bit), "every recorded bit must actually be set");
+            assert!(!origins.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_fcfp_with_bitinfo_empty_molecule() {
+        let empty = chematic_core::MoleculeBuilder::new().build();
+        let (fp, info) = fcfp_with_bitinfo(&empty, &EcfpConfig::default());
+        assert_eq!(fp.popcount(), 0);
+        assert!(info.is_empty());
     }
 }

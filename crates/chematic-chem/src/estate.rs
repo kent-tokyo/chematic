@@ -109,6 +109,8 @@ pub fn estate_indices(mol: &Molecule) -> Vec<f64> {
 
     // ── EState perturbation ──────────────────────────────────────────────────
     // S_i = I_i + Σ_{j≠i} (I_i − I_j) / r_ij²
+    // r_ij = topological distance + 1 (Kier & Hall, 1991) — the "+1" is not
+    // an off-by-one, it's part of the definition (adjacent atoms get r_ij=2).
     let mut estate = intrinsic.clone();
     for &i in &heavy {
         let dists = bfs_heavy(mol, i, &heavy_set);
@@ -120,7 +122,7 @@ pub fn estate_indices(mol: &Molecule) -> Vec<f64> {
             if r == usize::MAX {
                 continue;
             }
-            let rij = r as f64;
+            let rij = (r + 1) as f64;
             estate[i] += (intrinsic[i] - intrinsic[j]) / (rij * rij);
         }
     }
@@ -255,6 +257,19 @@ mod tests {
     fn estate_indices_length_matches_atom_count() {
         let mol = parse("c1ccccc1").unwrap();
         assert_eq!(estate_indices(&mol).len(), mol.atom_count());
+    }
+
+    #[test]
+    fn estate_indices_match_rdkit_ethanol() {
+        // RDKit EState.EStateIndices("CCO") verified: [1.6806, 0.25, 7.5694].
+        // r_ij must be (topological distance + 1), not the raw distance —
+        // that's the specific bug this test guards against.
+        let mol = parse("CCO").unwrap();
+        let es = estate_indices(&mol);
+        let expected = [1.6806, 0.25, 7.5694];
+        for (got, want) in es.iter().zip(expected.iter()) {
+            assert!((got - want).abs() < 0.001, "{es:?} vs {expected:?}");
+        }
     }
 
     #[test]
