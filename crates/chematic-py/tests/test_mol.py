@@ -107,7 +107,7 @@ def test_hbd_aspirin(aspirin):
 
 
 def test_hba_aspirin(aspirin):
-    assert aspirin.hba == 4  # 4 oxygens
+    assert aspirin.hba == 3  # RDKit CalcNumHBA agrees: 3, not one per oxygen
 
 
 def test_rotatable_bonds_aspirin(aspirin):
@@ -280,7 +280,7 @@ def test_remove_stereo():
 
 
 def test_remove_isotopes():
-    mol = chematic.from_smiles("[13C]H4")
+    mol = chematic.from_smiles("[13CH4]")
     no_iso = mol.remove_isotopes()
     assert isinstance(no_iso, chematic.Mol)
 
