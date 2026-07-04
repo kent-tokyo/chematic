@@ -16,10 +16,10 @@ documentation = "https://docs.rs/chematic-mol"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core        = { path = "../chematic-core",        version = "0.4.26" }
-chematic-rxn         = { path = "../chematic-rxn",         version = "0.4.26" }
-chematic-perception  = { path = "../chematic-perception",  version = "0.4.26" }
+chematic-core        = { path = "../chematic-core",        version = "0.4.27" }
+chematic-rxn         = { path = "../chematic-rxn",         version = "0.4.27" }
+chematic-perception  = { path = "../chematic-perception",  version = "0.4.27" }
 serde_json           = "1.0"
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.26" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.27" }
