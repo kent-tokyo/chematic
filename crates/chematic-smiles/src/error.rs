@@ -21,6 +21,9 @@ pub enum SmilesError {
     EmptyInput,
     /// Branch nesting exceeded the safe recursion limit.
     NestingTooDeep { pos: usize },
+    /// Trailing input after a structurally complete SMILES chain could not be
+    /// parsed (e.g. an unrecognised atom symbol or stray punctuation).
+    UnexpectedCharacter { pos: usize },
 }
 
 impl fmt::Display for SmilesError {
@@ -45,6 +48,9 @@ impl fmt::Display for SmilesError {
             ),
             Self::EmptyInput => write!(f, "SMILES input is empty"),
             Self::NestingTooDeep { pos } => write!(f, "branch nesting too deep at position {pos}"),
+            Self::UnexpectedCharacter { pos } => {
+                write!(f, "unexpected character at position {pos}")
+            }
         }
     }
 }

@@ -28,16 +28,14 @@ def test_from_smiles_constructor():
 
 
 def test_search_returns_results(index):
-    query = chematic.from_smiles("c1ccccc1")
-    results = index.search(query, threshold=0.3)
+    results = index.search("c1ccccc1", threshold=0.3)
     assert isinstance(results, list)
     assert len(results) >= 1
 
 
 def test_search_self_similar(index):
     # Benzene should find itself as most similar
-    query = chematic.from_smiles("c1ccccc1")
-    results = index.search(query, threshold=0.5)
+    results = index.search("c1ccccc1", threshold=0.5)
     assert len(results) >= 1
     idx_found, sim = results[0]
     assert isinstance(idx_found, int)
@@ -46,8 +44,7 @@ def test_search_self_similar(index):
 
 
 def test_search_with_k(index):
-    query = chematic.from_smiles("c1ccccc1")
-    results = index.search(query, threshold=0.0, k=3)
+    results = index.search("c1ccccc1", threshold=0.0, k=3)
     assert len(results) <= 3
 
 
@@ -58,13 +55,14 @@ def test_get_smiles(index):
 
 
 def test_get_smiles_out_of_bounds(index):
-    result = index.get_smiles(9999)
-    assert result is None
+    # Consistent with add()/search()/from_smiles(), which all raise ValueError
+    # on invalid input rather than returning a sentinel.
+    with pytest.raises(ValueError):
+        index.get_smiles(9999)
 
 
 def test_add_and_search():
     idx = chematic.SimilarityIndex()
     idx.add("c1ccccc1")
-    query = chematic.from_smiles("c1ccccc1")
-    results = idx.search(query, threshold=0.0)
+    results = idx.search("c1ccccc1", threshold=0.0)
     assert len(results) == 1

@@ -29,13 +29,13 @@ def test_bulk_parse_with_invalid():
 
 def test_bulk_ecfp4_matrix():
     import numpy as np
-    matrix = chematic.bulk.ecfp4_matrix(SMILES_LIST)
+    matrix = chematic.bulk.ecfp4(SMILES_LIST)
     assert matrix.shape == (4, 2048)
     assert matrix.dtype == np.uint8
 
 
 def test_bulk_descriptors_rows():
-    rows = chematic.bulk.descriptors_rows(SMILES_LIST)
+    rows = chematic.bulk.descriptors(SMILES_LIST)
     assert len(rows) == 4
     for row in rows:
         assert isinstance(row, dict)
@@ -49,7 +49,7 @@ def test_bulk_tanimoto_matrix():
     sim_matrix = chematic.bulk.tanimoto_matrix(SMILES_LIST)
     n = len(SMILES_LIST)
     assert sim_matrix.shape == (n, n)
-    assert sim_matrix.dtype == pytest.approx  # float64 or float32
+    assert sim_matrix.dtype in (np.float32, np.float64)
     # Diagonal should be 1.0 (self-similarity)
     for i in range(n):
         assert sim_matrix[i][i] == pytest.approx(1.0, abs=0.01)

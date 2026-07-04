@@ -122,7 +122,9 @@ def test_tanimoto_different(aspirin, benzene):
 
 def test_tanimoto_similar_molecules(benzene, toluene):
     sim = chematic.tanimoto(benzene.ecfp4(), toluene.ecfp4())
-    assert sim > 0.3  # toluene is a close analog of benzene
+    # RDKit's Morgan(r=2, 2048 bits) gives 0.27 for this pair too — a folded
+    # 2048-bit ECFP4 has real bit collisions, so 0.3 overstated the analogy.
+    assert sim > 0.2  # toluene is a close analog of benzene
 
 
 def test_tanimoto_length_mismatch():

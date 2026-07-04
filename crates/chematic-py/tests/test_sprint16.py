@@ -41,10 +41,10 @@ def test_autocorr_2d_length():
     assert len(m.autocorr_2d()) == 7
 
 
-def test_hall_kier_alpha_positive():
-    """Hall-Kier alpha is positive for molecules with heteroatoms."""
+def test_hall_kier_alpha_acetic_acid():
+    """Hall-Kier alpha for acetic acid matches RDKit's HallKierAlpha (-0.53) closely."""
     mol = chematic.from_smiles("CC(=O)O")
-    assert mol.hall_kier_alpha > 0
+    assert mol.hall_kier_alpha == pytest.approx(-0.53, abs=0.05)
 
 
 def test_peoe_vsa_bins():
@@ -226,7 +226,7 @@ def test_find_mmp_returns_pairs():
 
 def test_find_reaction_center_structure():
     """find_reaction_center should return a dict with the expected keys."""
-    rc = chematic.find_reaction_center("CC(=O)Cl.[NH3]>>CC(=O)N.HCl")
+    rc = chematic.find_reaction_center("CC(=O)Cl.[NH3]>>CC(=O)N.Cl")
     assert "broken_bonds" in rc
     assert "formed_bonds" in rc
     assert "changed_atoms" in rc

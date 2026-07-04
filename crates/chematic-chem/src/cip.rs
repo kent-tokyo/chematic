@@ -903,8 +903,9 @@ mod tests {
 
     #[test]
     fn test_ez_terminal_no_crash() {
-        // /C=C/F — terminal on one side; should not crash
-        let mol = parse("/C=C/F").unwrap();
+        // C=C/F — one alkene carbon is terminal (only implicit H's, no
+        // stereo bond); should not crash.
+        let mol = parse("C=C/F").unwrap();
         let _ = assign_cip(&mol);
     }
 

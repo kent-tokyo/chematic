@@ -22,7 +22,8 @@ pub use chematic_core::Molecule;
 
 /// Parse an OpenSMILES string into a [`Molecule`].
 pub fn parse(input: &str) -> Result<Molecule, SmilesError> {
-    if input.trim().is_empty() {
+    let input = input.trim();
+    if input.is_empty() {
         return Err(SmilesError::EmptyInput);
     }
     let bytes = input.as_bytes();
@@ -134,6 +135,13 @@ impl<'a> Parser<'a> {
                 ring_num: num,
                 pos: self.pos,
             });
+        }
+
+        // Anything left unconsumed is not valid SMILES (e.g. an unrecognised
+        // atom symbol) — `parse_chain` treats an unparseable token as "end of
+        // chain" rather than an error, so the check has to happen here.
+        if self.pos < self.src.len() {
+            return Err(SmilesError::UnexpectedCharacter { pos: self.pos });
         }
 
         // Finalise any active stereo record (shouldn't normally be needed).
