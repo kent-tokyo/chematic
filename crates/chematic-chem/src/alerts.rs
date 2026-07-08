@@ -2069,7 +2069,13 @@ fn compiled_brenk_patterns() -> &'static [(&'static str, QueryMolecule)] {
 pub fn pains_matches(mol: &Molecule) -> Vec<&'static str> {
     let mol_h = add_explicit_hs(mol);
     let rings = find_sssr(&mol_h);
-    let config = MatchConfig::default();
+    // Each pattern only needs an existence check — only the name is kept,
+    // never the match maps — so stop at the first embedding per pattern.
+    let config = MatchConfig {
+        max_matches: Some(1),
+        uniquify: false,
+        ..Default::default()
+    };
     compiled_pains_patterns()
         .iter()
         .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
@@ -2099,7 +2105,13 @@ pub fn pains_passes(mol: &Molecule) -> bool {
 pub fn brenk_matches(mol: &Molecule) -> Vec<&'static str> {
     let mol_h = add_explicit_hs(mol);
     let rings = find_sssr(&mol_h);
-    let config = MatchConfig::default();
+    // Each pattern only needs an existence check — only the name is kept,
+    // never the match maps — so stop at the first embedding per pattern.
+    let config = MatchConfig {
+        max_matches: Some(1),
+        uniquify: false,
+        ..Default::default()
+    };
     compiled_brenk_patterns()
         .iter()
         .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
@@ -2127,7 +2139,13 @@ pub fn brenk_passes(mol: &Molecule) -> bool {
 pub fn pains_passes_and_matches(mol: &Molecule) -> (bool, Vec<&'static str>) {
     let mol_h = add_explicit_hs(mol);
     let rings = find_sssr(&mol_h);
-    let config = MatchConfig::default();
+    // Each pattern only needs an existence check — only the name is kept,
+    // never the match maps — so stop at the first embedding per pattern.
+    let config = MatchConfig {
+        max_matches: Some(1),
+        uniquify: false,
+        ..Default::default()
+    };
     let names: Vec<&'static str> = compiled_pains_patterns()
         .iter()
         .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
@@ -2144,7 +2162,13 @@ pub fn pains_passes_and_matches(mol: &Molecule) -> (bool, Vec<&'static str>) {
 pub fn brenk_passes_and_matches(mol: &Molecule) -> (bool, Vec<&'static str>) {
     let mol_h = add_explicit_hs(mol);
     let rings = find_sssr(&mol_h);
-    let config = MatchConfig::default();
+    // Each pattern only needs an existence check — only the name is kept,
+    // never the match maps — so stop at the first embedding per pattern.
+    let config = MatchConfig {
+        max_matches: Some(1),
+        uniquify: false,
+        ..Default::default()
+    };
     let names: Vec<&'static str> = compiled_brenk_patterns()
         .iter()
         .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())

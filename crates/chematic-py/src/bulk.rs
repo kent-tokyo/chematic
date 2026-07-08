@@ -851,12 +851,21 @@ pub fn hdf<'py>(
 pub fn substructure_search(smarts: &str, smiles: Vec<String>) -> PyResult<Vec<bool>> {
     let query = chematic_smarts::parse_smarts(smarts)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+    // Stop at the first embedding per molecule instead of enumerating every
+    // match — this is an existence screen, not a match-collection call.
+    let config = chematic_smarts::MatchConfig {
+        max_matches: Some(1),
+        uniquify: false,
+        ..chematic_smarts::MatchConfig::default()
+    };
 
     let results: Vec<bool> = smiles
         .par_iter()
         .map(|smi| {
             chematic_smiles::parse(smi)
-                .map(|mol| !chematic_smarts::find_matches(&query, &mol).is_empty())
+                .map(|mol| {
+                    !chematic_smarts::find_matches_with_config(&query, &mol, &config).is_empty()
+                })
                 .unwrap_or(false)
         })
         .collect();
@@ -884,12 +893,19 @@ pub fn substructure_search(smarts: &str, smiles: Vec<String>) -> PyResult<Vec<bo
 pub fn substructure_match(smarts: &str, mols: Vec<Mol>) -> PyResult<Vec<usize>> {
     let query = chematic_smarts::parse_smarts(smarts)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+    // Stop at the first embedding per molecule instead of enumerating every
+    // match — this is an existence screen, not a match-collection call.
+    let config = chematic_smarts::MatchConfig {
+        max_matches: Some(1),
+        uniquify: false,
+        ..chematic_smarts::MatchConfig::default()
+    };
 
     let indices: Vec<usize> = mols
         .par_iter()
         .enumerate()
         .filter_map(|(i, m)| {
-            if !chematic_smarts::find_matches(&query, &m.inner).is_empty() {
+            if !chematic_smarts::find_matches_with_config(&query, &m.inner, &config).is_empty() {
                 Some(i)
             } else {
                 None

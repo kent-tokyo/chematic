@@ -1459,7 +1459,14 @@ impl Mol {
     fn has_substructure(&self, smarts: &str) -> PyResult<bool> {
         let query = chematic_smarts::parse_smarts(smarts)
             .map_err(|e| PyValueError::new_err(format!("invalid SMARTS '{smarts}': {e}")))?;
-        Ok(!chematic_smarts::find_matches(&query, &self.inner).is_empty())
+        // Stop at the first embedding instead of enumerating every match — an
+        // existence check doesn't need the full match set or the dedup pass.
+        let config = chematic_smarts::MatchConfig {
+            max_matches: Some(1),
+            uniquify: false,
+            ..chematic_smarts::MatchConfig::default()
+        };
+        Ok(!chematic_smarts::find_matches_with_config(&query, &self.inner, &config).is_empty())
     }
 
     /// Return atom-index lists for all SMARTS matches in this molecule.

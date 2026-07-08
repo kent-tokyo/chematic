@@ -104,8 +104,13 @@ impl SaltCatalog {
 
     /// Check if a molecule fragment matches any salt pattern.
     pub fn is_salt(&self, frag: &Molecule) -> bool {
+        // max_matches: Some(1) stops each pattern's VF2 search at the first
+        // embedding instead of enumerating every match — this loop only
+        // needs to know whether a match exists, not how many.
         let config = MatchConfig {
             max_visit_budget: Some(1_000_000),
+            max_matches: Some(1),
+            uniquify: false,
             ..Default::default()
         };
         for (_, smarts_str) in &self.patterns {
