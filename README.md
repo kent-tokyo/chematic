@@ -184,10 +184,10 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.4.27
+# chematic v0.4.28
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-06, v0.4.27 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-06, v0.4.28 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  100%   within ±0.1 Å²
 #   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)

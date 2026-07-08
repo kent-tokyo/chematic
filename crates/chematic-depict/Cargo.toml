@@ -22,10 +22,10 @@ png = ["dep:tiny-skia"]
 pdf = ["dep:svg2pdf"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.4.27" }
-chematic-perception = { path = "../chematic-perception", version = "0.4.27" }
-chematic-rxn = { path = "../chematic-rxn", version = "0.4.27" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.27" }
+chematic-core = { path = "../chematic-core", version = "0.4.28" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.28" }
+chematic-rxn = { path = "../chematic-rxn", version = "0.4.28" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.28" }
 tiny-skia = { version = "0.12", optional = true }
 svg2pdf = { version = "0.13", optional = true }
 
