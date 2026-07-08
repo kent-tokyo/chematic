@@ -95,8 +95,17 @@ impl SmartsCache {
     }
 
     /// Check whether `smarts` matches at least once in `mol`.
+    ///
+    /// Stops the VF2 search at the first embedding (`max_matches: Some(1)`,
+    /// `uniquify: false`) instead of enumerating every match and checking
+    /// emptiness — existence doesn't need the full match set or dedup pass.
     pub fn has_match(&mut self, smarts: &str, mol: &Molecule) -> Result<bool, SmartsError> {
-        let matches = self.find_matches(smarts, mol)?;
+        let config = MatchConfig {
+            max_matches: Some(1),
+            uniquify: false,
+            ..MatchConfig::default()
+        };
+        let matches = self.find_matches_with_config(smarts, mol, &config)?;
         Ok(!matches.is_empty())
     }
 

@@ -14,7 +14,14 @@ use std::sync::Arc;
 fn smarts_match(smarts: &str, mol: &Mol) -> PyResult<bool> {
     let query =
         chematic_smarts::parse_smarts(smarts).map_err(|e| PyValueError::new_err(e.to_string()))?;
-    Ok(!chematic_smarts::find_matches(&query, &mol.inner).is_empty())
+    // Stop at the first embedding instead of enumerating every match — an
+    // existence check doesn't need the full match set or the dedup pass.
+    let config = chematic_smarts::MatchConfig {
+        max_matches: Some(1),
+        uniquify: false,
+        ..chematic_smarts::MatchConfig::default()
+    };
+    Ok(!chematic_smarts::find_matches_with_config(&query, &mol.inner, &config).is_empty())
 }
 
 /// Return all substructure matches of a SMARTS pattern in a molecule.
