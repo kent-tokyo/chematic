@@ -58,6 +58,7 @@ pub use mol_transforms::{
     center_on_origin, compute_centroid, get_bond_angle, get_bond_angle_deg, get_bond_length,
     get_dihedral, get_dihedral_deg, set_dihedral, transform_conformer,
 };
+pub use o3a::{O3AError, O3AResult, o3a_align};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
 pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use sasa::{

@@ -440,6 +440,36 @@ fn tanimoto_pharmacophore_3d(a: &[u8], b: &[u8]) -> PyResult<f64> {
     Ok(and_bits as f64 / or_bits as f64)
 }
 
+/// `(pairs, aligned_coords2, rmsd, score)` — see [`o3a_align`].
+type O3AAlignReturn = (Vec<(usize, usize)>, Vec<Vec<f64>>, f64, f64);
+
+/// Find an atom correspondence between two molecules (O3A-style) and
+/// superpose ``mol2`` onto ``mol1`` using it — unlike :func:`align_coords`,
+/// this does not require the atom pairs to already be known.
+///
+/// Returns ``(pairs, aligned_coords2, rmsd, score)``:
+///
+/// - ``pairs``: list of ``(mol1_atom_idx, mol2_atom_idx)`` tuples
+/// - ``aligned_coords2``: all of ``coords2`` superposed onto ``mol1``'s frame
+/// - ``rmsd``: fit RMSD (Å), over the paired atoms only
+/// - ``score``: Gaussian overlap score of the paired atoms after alignment
+///   (higher means a tighter, more extensive overlap)
+///
+///     pairs, aligned, rmsd, score = chematic.o3a_align(mol1, coords1, mol2, coords2)
+#[pyfunction]
+fn o3a_align(
+    mol1: &Mol,
+    coords1: Vec<[f64; 3]>,
+    mol2: &Mol,
+    coords2: Vec<[f64; 3]>,
+) -> PyResult<O3AAlignReturn> {
+    let result = chematic_3d::o3a_align(&mol1.inner, &coords1, &mol2.inner, &coords2)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let aligned = chematic_3d::apply_alignment(&coords2, &result.alignment);
+    let py_coords: Vec<Vec<f64>> = aligned.iter().map(|c| vec![c[0], c[1], c[2]]).collect();
+    Ok((result.pairs, py_coords, result.alignment.rmsd, result.score))
+}
+
 // ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
@@ -464,5 +494,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(tanimoto_matrix, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_slice, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_pharmacophore_3d, m)?)?;
+    m.add_function(wrap_pyfunction!(o3a_align, m)?)?;
     Ok(())
 }
