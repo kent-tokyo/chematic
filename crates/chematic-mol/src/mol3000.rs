@@ -483,11 +483,10 @@ fn parse_stereo_group_line(payload: &str, atom_idx_map: &[(u32, AtomIdx)]) -> Op
     } else if let Some(n_str) = first_tok.strip_prefix("MDLV30/STEOR") {
         let n: u32 = n_str.parse().ok()?;
         StereoGroupKind::Or(n)
-    } else if let Some(n_str) = first_tok.strip_prefix("MDLV30/STEAND") {
+    } else {
+        let n_str = first_tok.strip_prefix("MDLV30/STEAND")?;
         let n: u32 = n_str.parse().ok()?;
         StereoGroupKind::And(n)
-    } else {
-        return None; // not a stereo group line
     };
 
     // Extract the ATOMS=(...) value from the remainder of the payload.
