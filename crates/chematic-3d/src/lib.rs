@@ -23,6 +23,7 @@ pub mod etkdg_knowledge;
 pub mod md;
 pub mod minimize;
 pub mod mol_transforms;
+pub mod o3a;
 pub mod pdb;
 pub mod pharmacophore_fp_3d;
 pub(crate) mod prng;
