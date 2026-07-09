@@ -1,12 +1,10 @@
-//! Open3DAlign (O3A)-style atom correspondence search for 3D molecular alignment.
+//! Open3DAlign (O3A)-style atom correspondence search and alignment for 3D
+//! molecules.
 //!
 //! Unlike simple RMSD superposition ([`crate::align::align_coords`]), which
 //! requires atom pairs to already be known, O3A finds the atom correspondence
-//! itself. This module implements only the correspondence-search primitive —
-//! the riskier, genuinely novel piece — as an isolated, directly-testable
-//! unit. The full `o3a_align` pipeline (which feeds this correspondence into
-//! the already-tested [`crate::align::align_coords`]) is a separate, thin
-//! wrapper built on top of this.
+//! itself ([`correspondence_search`]) and then feeds it into that
+//! already-tested Kabsch alignment ([`o3a_align`]).
 //!
 //! # Algorithm
 //! 1. Assign MMFF94 atom types to both molecules; two atoms are considered
@@ -23,11 +21,6 @@
 //!    "re-pair against the newly rotated coordinates" until the overlap
 //!    score stops improving.
 //! 4. Return the correspondence from whichever seed reached the best score.
-//!
-//! ponytail: `correspondence_search` and its helpers are only exercised by
-//! this module's tests until the PR2 `o3a_align` wrapper lands and wires
-//! them into the public API — hence the blanket dead_code allow below.
-#![allow(dead_code)]
 
 use chematic_core::Molecule;
 use chematic_ff::MMFF94Type;
@@ -154,16 +147,23 @@ fn apply_rotation_translation(
 // Correspondence search
 // ---------------------------------------------------------------------------
 
-fn overlap_score(pairs: &[(usize, usize)], coords1: &[[f64; 3]], coords2: &[[f64; 3]]) -> f64 {
-    pairs
-        .iter()
-        .map(|&(i, j)| {
-            let d2: f64 = (0..3)
-                .map(|k| (coords1[i][k] - coords2[j][k]).powi(2))
-                .sum();
+/// Gaussian overlap score (`Σ exp(-d²/2σ²)`) between two equal-length,
+/// already-paired coordinate lists — higher means a tighter, more extensive
+/// overlap.
+fn overlap_score_paired(a: &[[f64; 3]], b: &[[f64; 3]]) -> f64 {
+    a.iter()
+        .zip(b)
+        .map(|(p, q)| {
+            let d2: f64 = (0..3).map(|k| (p[k] - q[k]).powi(2)).sum();
             (-d2 / (2.0 * SCORE_SIGMA * SCORE_SIGMA)).exp()
         })
         .sum()
+}
+
+fn overlap_score(pairs: &[(usize, usize)], coords1: &[[f64; 3]], coords2: &[[f64; 3]]) -> f64 {
+    let a: Vec<[f64; 3]> = pairs.iter().map(|&(i, _)| coords1[i]).collect();
+    let b: Vec<[f64; 3]> = pairs.iter().map(|&(_, j)| coords2[j]).collect();
+    overlap_score_paired(&a, &b)
 }
 
 /// Greedily pair each mol1 atom (farthest-from-centroid first) with its
@@ -306,6 +306,51 @@ pub(crate) fn correspondence_search(
     }
 
     Ok(best_pairs)
+}
+
+// ---------------------------------------------------------------------------
+// Full alignment
+// ---------------------------------------------------------------------------
+
+/// Result of a full O3A alignment: the atom correspondence found by
+/// [`correspondence_search`], its post-alignment Gaussian overlap score, and
+/// the Kabsch superposition (via [`crate::align::align_coords`]) of `mol2`
+/// onto `mol1`, fit on that correspondence only.
+#[derive(Debug, Clone)]
+pub struct O3AResult {
+    /// `(mol1_atom_idx, mol2_atom_idx)` pairs used for the fit.
+    pub pairs: Vec<(usize, usize)>,
+    /// Gaussian overlap score of the paired atoms after alignment — higher
+    /// means a tighter, more extensive overlap.
+    pub score: f64,
+    /// Kabsch superposition of `mol2` onto `mol1`, fit on `pairs` only.
+    pub alignment: crate::align::AlignResult,
+}
+
+/// Find an atom correspondence between `mol1` and `mol2` (via
+/// [`correspondence_search`]) and superpose `mol2` onto `mol1` using it.
+///
+/// A thin wrapper: all algorithmic complexity lives in `correspondence_search`
+/// and the already-tested Kabsch alignment in [`crate::align`]. To move all
+/// of `mol2`'s coordinates (not just the paired subset) into `mol1`'s frame,
+/// apply [`apply_alignment`] to the full `coords2` using `result.alignment`.
+pub fn o3a_align(
+    mol1: &Molecule,
+    coords1: &[[f64; 3]],
+    mol2: &Molecule,
+    coords2: &[[f64; 3]],
+) -> Result<O3AResult, O3AError> {
+    let pairs = correspondence_search(mol1, coords1, mol2, coords2)?;
+    let sub1: Vec<[f64; 3]> = pairs.iter().map(|&(i, _)| coords1[i]).collect();
+    let sub2: Vec<[f64; 3]> = pairs.iter().map(|&(_, j)| coords2[j]).collect();
+    let alignment = align_coords(&sub1, &sub2);
+    let aligned_sub2 = apply_alignment(&sub2, &alignment);
+    let score = overlap_score_paired(&sub1, &aligned_sub2);
+    Ok(O3AResult {
+        pairs,
+        score,
+        alignment,
+    })
 }
 
 #[cfg(test)]
@@ -466,5 +511,107 @@ mod tests {
             assert!(i < n1);
             assert!(j < n2);
         }
+    }
+
+    fn coords3d_to_vec(coords: &crate::coords::Coords3D, n: usize) -> Vec<[f64; 3]> {
+        (0..n)
+            .map(|i| {
+                let p = coords.get(chematic_core::AtomIdx(i as u32));
+                [p.x, p.y, p.z]
+            })
+            .collect()
+    }
+
+    #[test]
+    fn o3a_align_self_rotation_recovers_zero_rmsd() {
+        let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
+        let n = mol.atom_count();
+        let coords1 = coords3d_to_vec(&crate::dg::generate_coords(&mol), n);
+        let coords2 = rotate_translate(&coords1);
+
+        let result = o3a_align(&mol, &coords1, &mol, &coords2).unwrap();
+        assert_eq!(
+            result.pairs.len(),
+            n,
+            "every atom should find its rotated self"
+        );
+        for (i, j) in &result.pairs {
+            assert_eq!(i, j, "self-alignment must recover the identity mapping");
+        }
+        assert!(
+            result.alignment.rmsd < 1e-6,
+            "rmsd={} should be ~0",
+            result.alignment.rmsd
+        );
+    }
+
+    #[test]
+    fn o3a_align_rmsd_matches_direct_align_coords_for_known_correspondence() {
+        // Methanol's C/O have distinct MMFF94 types, so correspondence_search
+        // is guaranteed to recover the identity pairing — giving a known
+        // correspondence to compare against a direct align_coords call.
+        let mol = parse("CO").unwrap();
+        let coords1: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [1.4, 0.0, 0.0]];
+        let coords2 = rotate_translate(&coords1);
+
+        let result = o3a_align(&mol, &coords1, &mol, &coords2).unwrap();
+        let direct = align_coords(&coords1, &coords2);
+        assert!(
+            (result.alignment.rmsd - direct.rmsd).abs() < 1e-9,
+            "o3a_align rmsd {} should match direct align_coords rmsd {} for the same correspondence",
+            result.alignment.rmsd,
+            direct.rmsd
+        );
+    }
+
+    #[test]
+    fn o3a_align_scaffold_shared_pair_scores_higher_than_unrelated() {
+        // Toluene shares benzene's exact aromatic ring (same atom types, same
+        // flat hexagon geometry). Cyclohexane is a genuine negative control:
+        // saturated sp3 carbons (a different MMFF94 type entirely) in a
+        // puckered, non-planar ring — not just a substituent swap on the same
+        // scaffold. (Aspirin would be a *bad* negative control here since it
+        // contains benzene's own aromatic ring as a substructure.)
+        let benzene = parse("c1ccccc1").unwrap();
+        let toluene = parse("Cc1ccccc1").unwrap();
+        let cyclohexane = parse("C1CCCCC1").unwrap();
+
+        let bc = coords3d_to_vec(&crate::dg::generate_coords(&benzene), benzene.atom_count());
+        let tc = coords3d_to_vec(&crate::dg::generate_coords(&toluene), toluene.atom_count());
+        let cc = coords3d_to_vec(
+            &crate::dg::generate_coords(&cyclohexane),
+            cyclohexane.atom_count(),
+        );
+
+        let related = o3a_align(&benzene, &bc, &toluene, &tc).unwrap();
+        let unrelated = o3a_align(&benzene, &bc, &cyclohexane, &cc).unwrap();
+
+        assert!(
+            related.score > unrelated.score,
+            "benzene/toluene (shared aromatic ring) score {} should exceed benzene/cyclohexane score {}",
+            related.score,
+            unrelated.score
+        );
+    }
+
+    #[test]
+    fn o3a_align_pairs_are_injective() {
+        let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
+        let n = mol.atom_count();
+        let coords1: Vec<[f64; 3]> = (0..n)
+            .map(|i| {
+                let t = i as f64;
+                [t * 1.3, (t * 0.7).sin() * 2.0, (t * 0.3).cos() * 1.5]
+            })
+            .collect();
+        let coords2 = rotate_translate(&coords1);
+
+        let result = o3a_align(&mol, &coords1, &mol, &coords2).unwrap();
+        let js: HashSet<usize> = result.pairs.iter().map(|&(_, j)| j).collect();
+        assert_eq!(
+            js.len(),
+            result.pairs.len(),
+            "no mol2 atom should be used twice"
+        );
     }
 }
