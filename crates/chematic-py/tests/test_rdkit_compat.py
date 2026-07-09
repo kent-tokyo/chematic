@@ -4,7 +4,7 @@ import chematic
 from chematic import rdkit_compat as Chem
 from chematic.rdkit_compat import (
     Descriptors, rdMolDescriptors, DataStructs, ExplicitBitVect,
-    Atom, Bond, BondType, RingInfo, RWMol,
+    Atom, Bond, BondType, RingInfo, RWMol, pyAvalonTools,
 )
 
 
@@ -191,17 +191,28 @@ def test_flush_and_close_idempotent(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# SetKekulize / SetForceV3000 are no-ops (must not crash)
+# SetKekulize is a no-op (must not crash); SetForceV3000 actually switches
+# the writer to MOL V3000 output.
 # ---------------------------------------------------------------------------
 
 def test_noop_writer_flags(tmp_path):
     out = tmp_path / "out.sdf"
     w = Chem.SDWriter(str(out))
     w.SetKekulize(False)
-    w.SetForceV3000(True)
     w.write(Chem.MolFromSmiles("c1ccccc1"))
     w.close()
     assert out.exists()
+
+
+def test_force_v3000_writes_v3000_block(tmp_path):
+    out = tmp_path / "out_v3000.sdf"
+    w = Chem.SDWriter(str(out))
+    w.SetForceV3000(True)
+    w.write(Chem.MolFromSmiles("c1ccccc1"))
+    w.close()
+    text = out.read_text()
+    assert "V3000" in text
+    assert "$$$$" in text
 
 
 # ---------------------------------------------------------------------------
@@ -656,6 +667,46 @@ def test_morgan_nbits_zero_raises():
     mol = Chem.MolFromSmiles("c1ccccc1")
     with pytest.raises(ValueError):
         rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2, nBits=0)
+
+
+# ---------------------------------------------------------------------------
+# pyAvalonTools.GetAvalonFP
+# ---------------------------------------------------------------------------
+
+def test_avalon_fp_default_nbits():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    fp = pyAvalonTools.GetAvalonFP(mol)
+    assert fp.GetNumBits() == 512
+
+
+def test_avalon_fp_nbits_2048():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    fp = pyAvalonTools.GetAvalonFP(mol, nBits=2048)
+    assert fp.GetNumBits() == 2048
+
+
+def test_avalon_fp_nbits_folded():
+    mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    fp = pyAvalonTools.GetAvalonFP(mol, nBits=1024)
+    assert fp.GetNumBits() == 1024
+
+
+def test_avalon_fp_self_tanimoto():
+    mol = Chem.MolFromSmiles("CC(=O)Oc1ccccc1C(=O)O")
+    fp = pyAvalonTools.GetAvalonFP(mol)
+    assert DataStructs.TanimotoSimilarity(fp, fp) == 1.0
+
+
+def test_avalon_fp_nbits_zero_raises():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    with pytest.raises(ValueError):
+        pyAvalonTools.GetAvalonFP(mol, nBits=0)
+
+
+def test_avalon_fp_unknown_kwarg_raises():
+    mol = Chem.MolFromSmiles("c1ccccc1")
+    with pytest.raises(TypeError):
+        pyAvalonTools.GetAvalonFP(mol, bogus=True)
 
 
 # ---------------------------------------------------------------------------

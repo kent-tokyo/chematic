@@ -263,6 +263,27 @@ impl Mol {
         chematic_mol::write_cml(&self.inner, coords_2d.as_deref())
     }
 
+    /// Serialize this molecule to ChemDraw XML (CDXML).
+    ///
+    /// ``coords``: optional list of ``[x, y]`` pairs — one per heavy atom,
+    /// in ChemDraw's Y-down convention. If omitted, atoms are written at
+    /// ``(0, 0)``.
+    ///
+    /// Targets self-round-trip correctness (``chematic.from_cdxml`` can read
+    /// what this writes), not full ChemDraw-application compatibility.
+    ///
+    ///     cdxml = mol.to_cdxml()
+    ///     cdxml_with_layout = mol.to_cdxml(coords_2d)
+    #[pyo3(signature = (coords = None))]
+    fn to_cdxml(&self, coords: Option<Vec<[f64; 2]>>) -> String {
+        let coords_2d: Vec<(f64, f64)> = coords
+            .unwrap_or_default()
+            .iter()
+            .map(|xy| (xy[0], xy[1]))
+            .collect();
+        chematic_mol::write_cdxml(&self.inner, &coords_2d)
+    }
+
     /// Write this molecule to AutoDock PDBQT format.
     ///
     /// Args:
@@ -2865,6 +2886,16 @@ impl Mol {
             &self.inner,
             &chematic_fp::TopoPathConfig::default(),
         ))
+    }
+
+    /// Avalon-style structural fingerprint as bytes (256 bytes = 2048 bits).
+    ///
+    /// A broad mix of atom, bond, ring, and path features, loosely modelled
+    /// on RDKit's Avalon fingerprint (``rdkit.Avalon.pyAvalonTools.GetAvalonFP``).
+    /// Bit positions are not RDKit-identical (see :mod:`chematic.rdkit_compat`
+    /// notes on Morgan fingerprints for the same caveat).
+    fn avalon_fp(&self) -> Vec<u8> {
+        bitvec2048_to_bytes(&chematic_fp::avalon_fp(&self.inner))
     }
 
     /// 3D pharmacophore fingerprint as bytes (256 bytes = 2048 bits).

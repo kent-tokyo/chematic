@@ -14,6 +14,7 @@
 #![forbid(unsafe_code)]
 
 pub mod atom_pair;
+pub mod avalon;
 pub mod bitvec;
 pub mod bulk;
 pub mod ecfp;
@@ -33,6 +34,7 @@ pub mod search;
 pub mod topo_path;
 
 pub use atom_pair::{atom_pair_fp, torsion_fp};
+pub use avalon::{AvalonConfig, avalon_fp, avalon_fp_with_config, tanimoto_avalon};
 pub use bitvec::{BitVec2048, BitVecN};
 pub use bulk::{tanimoto_matrix, tanimoto_slice, top_k_similar};
 pub use ecfp::{

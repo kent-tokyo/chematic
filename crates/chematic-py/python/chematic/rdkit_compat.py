@@ -41,7 +41,7 @@ __all__ = [
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
-    "Descriptors", "rdMolDescriptors", "DataStructs",
+    "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools",
 ]
 
 
@@ -996,6 +996,34 @@ class rdMolDescriptors:
         else:
             raw = mol._mol.ecfp6()
         raw = bytes(raw)
+        if nBits == 2048:
+            return ExplicitBitVect._from_bytes(raw, 2048)
+        # ponytail: modulo fold of the internal 2048-bit fp; not RDKit bit-exact
+        return _fold_bits(raw, nBits)
+
+
+# ---------------------------------------------------------------------------
+# pyAvalonTools namespace (mirrors rdkit.Avalon.pyAvalonTools import path)
+# ---------------------------------------------------------------------------
+
+class pyAvalonTools:
+    """Mirrors ``rdkit.Avalon.pyAvalonTools``."""
+
+    @staticmethod
+    def GetAvalonFP(mol: Mol, nBits: int = 512, **kwargs) -> "ExplicitBitVect":
+        """Return an Avalon-style structural fingerprint as ExplicitBitVect.
+
+        .. note::
+           Bit patterns differ from RDKit's Avalon fingerprint (chematic uses
+           a broad atom/bond/ring/path feature mix hashed with FNV-1a; RDKit
+           uses its own C++ Avalon toolkit implementation). Use for
+           similarity ranking, not cross-library bit-level comparison.
+        """
+        if kwargs:
+            raise TypeError(f"Unsupported keyword arguments: {sorted(kwargs)}")
+        if nBits <= 0:
+            raise ValueError(f"nBits must be positive, got {nBits}")
+        raw = bytes(mol._mol.avalon_fp())
         if nBits == 2048:
             return ExplicitBitVect._from_bytes(raw, 2048)
         # ponytail: modulo fold of the internal 2048-bit fp; not RDKit bit-exact
