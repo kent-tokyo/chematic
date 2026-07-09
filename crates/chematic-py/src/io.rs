@@ -354,6 +354,7 @@ impl SdMolSupplier {
 pub struct SdWriter {
     writer: Option<std::io::BufWriter<std::fs::File>>,
     props_filter: Option<Vec<String>>,
+    force_v3000: bool,
 }
 
 #[pymethods]
@@ -365,6 +366,7 @@ impl SdWriter {
         Ok(SdWriter {
             writer: Some(std::io::BufWriter::new(file)),
             props_filter: None,
+            force_v3000: false,
         })
     }
 
@@ -388,7 +390,11 @@ impl SdWriter {
                 .filter_map(|k| mol.props.get(k).map(|v| (k.clone(), v.clone())))
                 .collect(),
         };
-        let record = chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, &props);
+        let record = if self.force_v3000 {
+            chematic_mol::write_sdf_record_v3000(&mol.inner, &meta, &coords, &props)
+        } else {
+            chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, &props)
+        };
         w.write_all(record.as_bytes())
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))
     }
@@ -403,9 +409,13 @@ impl SdWriter {
     #[pyo3(name = "SetKekulize")]
     fn set_kekulize(&mut self, _val: bool) {}
 
-    /// No-op: V3000 output is not yet supported.
+    /// When ``True``, subsequent ``write()`` calls emit MOL V3000 (Extended
+    /// Ctab) blocks instead of V2000 — required for molecules with more
+    /// than 999 atoms or bonds.
     #[pyo3(name = "SetForceV3000")]
-    fn set_force_v3000(&mut self, _val: bool) {}
+    fn set_force_v3000(&mut self, val: bool) {
+        self.force_v3000 = val;
+    }
 
     /// Flush buffered data to disk.
     fn flush(&mut self) -> PyResult<()> {

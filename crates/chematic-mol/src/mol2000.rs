@@ -486,6 +486,25 @@ pub fn write_sdf_record(
     out
 }
 
+/// Like [`write_sdf_record`] but emits a MOL V3000 (Extended Ctab) block
+/// instead of V2000 — required for molecules with more than 999 atoms or
+/// bonds, which don't fit V2000's fixed-width count fields.
+pub fn write_sdf_record_v3000(
+    mol: &Molecule,
+    meta: &MolMetadata,
+    coords: &[(f64, f64)],
+    props: &std::collections::HashMap<String, String>,
+) -> String {
+    let mut out = crate::mol3000::write_mol_v3000(mol, meta, coords);
+    for (k, v) in props {
+        if !k.starts_with('_') {
+            out.push_str(&format!("> <{k}>\n{v}\n\n"));
+        }
+    }
+    out.push_str("$$$$\n");
+    out
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------

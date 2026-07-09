@@ -1,8 +1,8 @@
-//! ChemDraw XML (CDXML) parser — **read-only**.
+//! ChemDraw XML (CDXML) parser and writer.
 //!
 //! CDXML is a proprietary XML format produced by ChemDraw (PerkinElmer /
-//! Revvity).  This parser handles the minimal subset needed to extract
-//! molecular structure from a CDXML document.
+//! Revvity).  This module handles the minimal subset needed to read and
+//! write molecular structure through a CDXML document.
 //!
 //! # Supported elements / attributes
 //!
@@ -17,8 +17,10 @@
 //! - Only the first `<fragment>` in the document is returned as a single
 //!   molecule.  Multi-molecule documents (multiple fragments) are not yet
 //!   supported.
-//! - Write support is **not** implemented (CDXML is a proprietary format;
-//!   writing files that ChemDraw will accept requires undocumented attributes).
+//! - [`write_cdxml`] targets **self-round-trip** correctness (this parser
+//!   can read what this writer produces), not full ChemDraw-application
+//!   compatibility — CDXML is a proprietary format and writing files
+//!   ChemDraw itself will accept requires undocumented attributes.
 //! - Wedge/hash bond stereo (tetrahedral) is derived from `Display` attribute.
 //! - E/Z double-bond stereo is derived from 2D coordinates via `assign_ez_from_2d`.
 //! - Presentation-only nodes (text boxes, arrows, etc.) are silently skipped.
@@ -294,6 +296,68 @@ fn is_b_tag(line: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------
+// Writer
+// ---------------------------------------------------------------------------
+
+/// Serialise `mol` to a minimal CDXML document that [`parse_cdxml`] can read
+/// back. See the module docs for the self-round-trip scope of this writer.
+///
+/// `coords[i]` is the `(x, y)` position for atom `i`, in the same
+/// **ChemDraw Y-down convention** `parse_cdxml` produces. Atoms beyond
+/// `coords.len()` receive `(0.0, 0.0)`.
+pub fn write_cdxml(mol: &Molecule, coords: &[(f64, f64)]) -> String {
+    let mut out =
+        String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n");
+
+    for (i, (idx, atom)) in mol.atoms().enumerate() {
+        let id = idx.0 + 1;
+        let (x, y) = coords.get(i).copied().unwrap_or((0.0, 0.0));
+        let mut parts = vec![
+            format!("id=\"{id}\""),
+            format!("p=\"{x} {y}\""),
+            format!("Element=\"{}\"", atom.element.atomic_number()),
+        ];
+        if let Some(h) = atom.hydrogen_count {
+            parts.push(format!("NumHydrogens=\"{h}\""));
+        }
+        if atom.charge != 0 {
+            parts.push(format!("Charge=\"{}\"", atom.charge));
+        }
+        if let Some(iso) = atom.isotope {
+            parts.push(format!("Isotope=\"{iso}\""));
+        }
+        out.push_str(&format!("<n {}/>\n", parts.join(" ")));
+    }
+
+    for (_, bond) in mol.bonds() {
+        let b = bond.atom1.0 + 1;
+        let e = bond.atom2.0 + 1;
+        // Wedge/hash stereo is Single order + Display attribute (mirrors the
+        // parser's decoding at is_b_tag handling above); other orders map
+        // straight to the Order attribute and ignore Display.
+        let (order_attr, display_attr) = match bond.order {
+            BondOrder::Double => ("2", None),
+            BondOrder::Triple => ("3", None),
+            BondOrder::Aromatic => ("1.5", None),
+            BondOrder::Up => ("1", Some("WedgeBegin")),
+            BondOrder::Down => ("1", Some("Hash")),
+            _ => ("1", None),
+        };
+        match display_attr {
+            Some(d) => out.push_str(&format!(
+                "<b B=\"{b}\" E=\"{e}\" Order=\"{order_attr}\" Display=\"{d}\"/>\n"
+            )),
+            None => out.push_str(&format!(
+                "<b B=\"{b}\" E=\"{e}\" Order=\"{order_attr}\"/>\n"
+            )),
+        }
+    }
+
+    out.push_str("</fragment>\n</page>\n</CDXML>\n");
+    out
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -504,5 +568,69 @@ mod tests {
         assert_eq!(mol.bond_count(), 6, "benzene has 6 bonds");
         let all_aromatic = mol.bonds().all(|(_, b)| b.order == BondOrder::Aromatic);
         assert!(all_aromatic, "all bonds must be Aromatic");
+    }
+
+    // -----------------------------------------------------------------------
+    // write_cdxml round-trip
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn write_cdxml_roundtrip_ethanol() {
+        let (mol, coords) = parse_cdxml(ETHANOL_CDXML).unwrap();
+        let written = write_cdxml(&mol, &coords);
+        let (mol2, coords2) = parse_cdxml(&written).unwrap();
+
+        assert_eq!(mol2.atom_count(), mol.atom_count());
+        assert_eq!(mol2.bond_count(), mol.bond_count());
+        let elems: Vec<&str> = mol.atoms().map(|(_, a)| a.element.symbol()).collect();
+        let elems2: Vec<&str> = mol2.atoms().map(|(_, a)| a.element.symbol()).collect();
+        assert_eq!(elems, elems2);
+        for (c1, c2) in coords.iter().zip(coords2.iter()) {
+            assert!((c1.0 - c2.0).abs() < 0.01);
+            assert!((c1.1 - c2.1).abs() < 0.01);
+        }
+    }
+
+    #[test]
+    fn write_cdxml_roundtrip_double_bond() {
+        let cdxml = r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="8" p="10 0"/>
+<b B="1" E="2" Order="2"/>
+</fragment></CDXML>"#;
+        let (mol, coords) = parse_cdxml(cdxml).unwrap();
+        let written = write_cdxml(&mol, &coords);
+        let (mol2, _) = parse_cdxml(&written).unwrap();
+        let bond2 = mol2.bond(chematic_core::BondIdx(0));
+        assert_eq!(bond2.order, BondOrder::Double);
+    }
+
+    #[test]
+    fn write_cdxml_roundtrip_wedge_bond() {
+        let cdxml = r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1" Display="WedgeBegin"/>
+</fragment></CDXML>"#;
+        let (mol, coords) = parse_cdxml(cdxml).unwrap();
+        let written = write_cdxml(&mol, &coords);
+        assert!(written.contains("Display=\"WedgeBegin\""));
+        let (mol2, _) = parse_cdxml(&written).unwrap();
+        let bond2 = mol2.bond(chematic_core::BondIdx(0));
+        assert_eq!(bond2.order, BondOrder::Up);
+    }
+
+    #[test]
+    fn write_cdxml_roundtrip_charge_isotope_hcount() {
+        let cdxml = r#"<CDXML><fragment>
+<n id="1" Element="7" Charge="1" Isotope="15" NumHydrogens="2" p="0 0"/>
+</fragment></CDXML>"#;
+        let (mol, coords) = parse_cdxml(cdxml).unwrap();
+        let written = write_cdxml(&mol, &coords);
+        let (mol2, _) = parse_cdxml(&written).unwrap();
+        let atom2 = mol2.atom(chematic_core::AtomIdx(0));
+        assert_eq!(atom2.charge, 1);
+        assert_eq!(atom2.isotope, Some(15));
+        assert_eq!(atom2.hydrogen_count, Some(2));
     }
 }

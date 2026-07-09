@@ -570,12 +570,9 @@ fn assign_tetrahedral(mol: &Molecule, idx: AtomIdx) -> Option<CipCode> {
         let mut swaps = 0usize;
         for i in 0..3 {
             if r[i] != target[i] {
-                if let Some(j_rel) = r[i + 1..].iter().position(|&x| x == target[i]) {
-                    r.swap(i, j_rel + i + 1);
-                    swaps += 1;
-                } else {
-                    return None; // invalid ranks (should not happen)
-                }
+                let j_rel = r[i + 1..].iter().position(|&x| x == target[i])?;
+                r.swap(i, j_rel + i + 1);
+                swaps += 1;
             }
         }
         swaps % 2 == 1

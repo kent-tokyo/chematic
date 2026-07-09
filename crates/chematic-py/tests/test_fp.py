@@ -144,3 +144,27 @@ def test_layered_fp_vs_ecfp4(aspirin):
 def test_layered_fp_tanimoto(benzene, toluene):
     sim = chematic.tanimoto(benzene.layered_fp(), toluene.layered_fp())
     assert 0.0 <= sim <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# Avalon fingerprint
+# ---------------------------------------------------------------------------
+
+def test_avalon_fp_length(aspirin):
+    fp = aspirin.avalon_fp()
+    assert isinstance(fp, bytes)
+    assert len(fp) == 256
+
+
+def test_avalon_fp_deterministic(aspirin):
+    assert aspirin.avalon_fp() == aspirin.avalon_fp()
+
+
+def test_avalon_fp_different_mols(aspirin, benzene):
+    assert aspirin.avalon_fp() != benzene.avalon_fp()
+
+
+def test_avalon_fp_tanimoto_similarity_ordering(benzene, toluene, aspirin):
+    sim_toluene = chematic.tanimoto(benzene.avalon_fp(), toluene.avalon_fp())
+    sim_aspirin = chematic.tanimoto(benzene.avalon_fp(), aspirin.avalon_fp())
+    assert sim_toluene > sim_aspirin
