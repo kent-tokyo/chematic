@@ -131,18 +131,19 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
         }
     }
 
-    // R = V * U^T.
+    // R = U * V^T (maximises trace(H^T R), the Kabsch objective).
     let mut rot = [[0.0f64; 3]; 3];
     let mut v_final = v;
     for r in 0..3 {
         for c in 0..3 {
             for k in 0..3 {
-                rot[r][c] += v_final[r][k] * u[c][k];
+                rot[r][c] += u[r][k] * v_final[c][k];
             }
         }
     }
 
-    // Reflection correction.
+    // Reflection correction: flip the column of V paired with the smallest
+    // singular value (index 0, ascending order) when det(R) < 0.
     let det = det3(rot);
     if det < 0.0 {
         for r in 0..3 {
@@ -152,7 +153,7 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
         for r in 0..3 {
             for c in 0..3 {
                 for k in 0..3 {
-                    rot[r][c] += v_final[r][k] * u[c][k];
+                    rot[r][c] += u[r][k] * v_final[c][k];
                 }
             }
         }
@@ -307,6 +308,83 @@ mod tests {
         assert!(
             approx_eq(rmsd_after, result.rmsd, 1e-6),
             "apply_alignment should match reported RMSD"
+        );
+    }
+
+    /// Regression test for a rotation-direction bug: `align_coords` once
+    /// returned the reference→mobile rotation instead of mobile→reference,
+    /// which is invisible under pure translation (H is symmetric there, so
+    /// U == V and the two directions coincide) but produces a large bogus
+    /// RMSD once an actual rotation is involved.
+    #[test]
+    fn test_align_pure_rotation_recovers_zero_rmsd() {
+        let reference = vec![
+            [0.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0],
+            [0.0, 3.0, 0.0],
+            [1.0, 1.0, 4.0],
+        ];
+        // 90° rotation about z (x,y,z) -> (-y,x,z), plus a translation.
+        let mobile: Vec<[f64; 3]> = reference
+            .iter()
+            .map(|p| [-p[1] + 5.0, p[0] - 3.0, p[2] + 2.0])
+            .collect();
+        let result = align_coords(&reference, &mobile);
+        assert!(
+            approx_eq(result.rmsd, 0.0, 1e-6),
+            "pure rotation + translation → RMSD ~0 after Kabsch, got {}",
+            result.rmsd
+        );
+    }
+
+    #[test]
+    fn test_apply_alignment_under_rotation_matches_reference_pointwise() {
+        let reference = vec![
+            [0.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0],
+            [0.0, 3.0, 0.0],
+            [1.0, 1.0, 4.0],
+        ];
+        let mobile: Vec<[f64; 3]> = reference
+            .iter()
+            .map(|p| [-p[1] + 5.0, p[0] - 3.0, p[2] + 2.0])
+            .collect();
+        let result = align_coords(&reference, &mobile);
+        let aligned = apply_alignment(&mobile, &result);
+        for (r, a) in reference.iter().zip(aligned.iter()) {
+            for k in 0..3 {
+                assert!(
+                    approx_eq(r[k], a[k], 1e-6),
+                    "aligned point {a:?} should match reference point {r:?}"
+                );
+            }
+        }
+    }
+
+    /// Forces the det<0 reflection-correction branch: a mirror image of a
+    /// genuinely non-planar (chiral) point set cannot be superposed by any
+    /// proper rotation, so the corrected result must still have det(R) = +1
+    /// and a nonzero residual RMSD (never a silent improper "rotation").
+    #[test]
+    fn test_align_mirror_image_forces_reflection_correction() {
+        let reference = vec![
+            [0.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0],
+            [0.0, 3.0, 0.0],
+            [1.0, 1.0, 4.0],
+        ];
+        // Reflect through the xy-plane (z -> -z): improper for a non-planar set.
+        let mobile: Vec<[f64; 3]> = reference.iter().map(|p| [p[0], p[1], -p[2]]).collect();
+        let result = align_coords(&reference, &mobile);
+        assert!(
+            approx_eq(det3(result.rotation), 1.0, 1e-6),
+            "corrected rotation must be proper (det=+1), got det={}",
+            det3(result.rotation)
+        );
+        assert!(
+            result.rmsd > 0.5,
+            "a chiral point set can't be superposed onto its mirror image by any rotation, rmsd={}",
+            result.rmsd
         );
     }
 }
