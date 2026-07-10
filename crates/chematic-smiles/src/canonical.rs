@@ -80,26 +80,58 @@ pub fn are_atoms_equivalent(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
 ///
 /// For molecules with no atoms, returns an empty string.
 /// Disconnected fragments (multiple components) are joined with `.`.
+///
+/// Atom ordering is fully discretized before writing (individualize-refine,
+/// see `enumerate_discrete_ranks`): when the plain Morgan refinement in
+/// [`morgan_ranks`] plateaus with genuine (non-automorphism) ties still
+/// present, every possible resolution is tried and the lexicographically
+/// smallest resulting string is returned. This makes the output invariant to
+/// which input atom ordering/spelling the molecule was parsed from, not just
+/// idempotent under repeated self-canonicalization.
 pub fn canonical_smiles(mol: &Molecule) -> String {
     if mol.atom_count() == 0 {
         return String::new();
     }
 
-    let ranks = morgan_ranks(mol);
-    CanonicalWriter::new(mol, &ranks).write_all()
+    let plateaued = morgan_ranks(mol);
+    let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
+    let branches = enumerate_discrete_ranks(mol, plateaued, &mut budget);
+
+    branches
+        .into_iter()
+        .map(|ranks| CanonicalWriter::new(mol, &ranks).write_all())
+        .min()
+        .unwrap_or_default()
 }
 
 /// Compute Morgan (extended connectivity) ranks for all atoms.
 ///
 /// Returns a vector of normalised ordinal ranks (0-based, gap-free)
-/// indexed by atom position (same order as `mol.atoms()`).
+/// indexed by atom position (same order as `mol.atoms()`). This is pure
+/// neighbor-hash refinement to a fixpoint -- it does NOT individualize
+/// remaining ties, so atoms in the same non-trivial automorphism orbit (or
+/// in a refinement cell that merely *contains* an orbit) keep equal ranks.
+/// That is the correct, useful notion of "rank" for topological-symmetry
+/// queries (see [`equivalent_atom_classes`], [`are_atoms_equivalent`]).
+///
+/// [`canonical_smiles`] does NOT use this directly for atom ordering when
+/// ties remain -- see `enumerate_discrete_ranks` for the individualize-refine
+/// step that resolves ties before writing.
 pub fn morgan_ranks(mol: &Molecule) -> Vec<u64> {
     let n = mol.atom_count();
-
-    let mut ranks: Vec<u64> = (0..n)
+    let initial: Vec<u64> = (0..n)
         .map(|i| initial_invariant(mol, AtomIdx(i as u32)))
         .collect();
+    refine_ranks(mol, initial)
+}
 
+/// Refine `ranks` (any starting coloring, not necessarily the initial
+/// invariant) via neighbor-hash iteration until the number of distinct
+/// classes stops increasing. Used both for the plain (tie-preserving) ranks
+/// in [`morgan_ranks`] and, with a perturbed starting coloring, as the
+/// "refine" half of individualize-refine in `enumerate_discrete_ranks`.
+fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
+    let n = ranks.len();
     let max_iter = n + 2;
     for _ in 0..max_iter {
         let old_distinct = count_distinct(&ranks);
@@ -132,6 +164,84 @@ pub fn morgan_ranks(mol: &Molecule) -> Vec<u64> {
     }
 
     normalize_ranks(&ranks)
+}
+
+/// Safety cap on the number of discrete rank assignments
+/// `enumerate_discrete_ranks` will explore. Refinement cells in drug-like
+/// molecules are small (e.g. a CF3 group's three fluorines, a handful of
+/// symmetric ring-fusion pairs), so this is never hit in practice; it exists
+/// to guarantee termination on pathologically symmetric inputs (fullerene
+/// fragments, deep dendrimers) where the principled fix is automorphism-aware
+/// branch pruning (nauty-style), not attempted here. Once exhausted, the
+/// remaining ties in that branch fall back to `canonical_cmp`'s finite
+/// tie-break chain (deterministic, but not guaranteed order-independent).
+const MAX_INDIVIDUALIZE_BRANCHES: usize = 10_000;
+
+/// Individualize atom `atom_idx` within its current rank class: insert a new
+/// rank strictly between its class and the next-higher class, so a
+/// subsequent refinement pass can propagate the distinction through the rest
+/// of the graph. `ranks` must be gap-free ordinals (as produced by
+/// `refine_ranks`/`normalize_ranks`).
+fn individualize(ranks: &[u64], atom_idx: usize) -> Vec<u64> {
+    let v = ranks[atom_idx];
+    ranks
+        .iter()
+        .enumerate()
+        .map(|(i, &r)| {
+            if i == atom_idx {
+                v + 1
+            } else if r > v {
+                r + 1
+            } else {
+                r
+            }
+        })
+        .collect()
+}
+
+/// Enumerate every discrete (all-singleton) rank assignment reachable from
+/// `ranks` (already refined to a fixpoint) via individualize-refine
+/// branching.
+///
+/// Refinement cells are always unions of automorphism orbits (a standard
+/// 1-WL / equitable-partition fact: refinement can never split an orbit).
+/// So: if a cell IS an orbit, every choice of which atom to individualize
+/// yields an automorphic result -- the resulting SMILES strings are
+/// identical, so exploring all of them is correct but redundant. If a cell
+/// properly CONTAINS an orbit, no order-independent rule can select a single
+/// representative (if one existed, refinement would already have used it as
+/// an invariant and the cell would not be tied) -- the only order-independent
+/// resolution is to try every atom in the cell and let the caller take the
+/// lexicographically smallest resulting string. Cell SELECTION (which
+/// non-singleton class to branch on next) is itself order-independent:
+/// always the lowest-ranked non-singleton cell.
+fn enumerate_discrete_ranks(mol: &Molecule, ranks: Vec<u64>, budget: &mut usize) -> Vec<Vec<u64>> {
+    let mut by_rank: Vec<Vec<usize>> = Vec::new();
+    for (i, &r) in ranks.iter().enumerate() {
+        let r = r as usize;
+        if by_rank.len() <= r {
+            by_rank.resize(r + 1, Vec::new());
+        }
+        by_rank[r].push(i);
+    }
+
+    // `by_rank` is indexed by ordinal rank value, so the first multi-member
+    // entry found is the lowest-ranked non-singleton cell.
+    let Some(members) = by_rank.iter().find(|m| m.len() > 1) else {
+        return vec![ranks];
+    };
+
+    let mut results = Vec::new();
+    for &atom_idx in members {
+        if *budget == 0 {
+            break;
+        }
+        *budget -= 1;
+        let individualized = individualize(&ranks, atom_idx);
+        let re_refined = refine_ranks(mol, individualized);
+        results.extend(enumerate_discrete_ranks(mol, re_refined, budget));
+    }
+    results
 }
 
 /// Initial per-atom invariant packed into a u64.
@@ -673,6 +783,112 @@ fn permutation_is_odd(original: &[u32], canonical: &[u32]) -> bool {
 mod tests {
     use super::*;
     use crate::parser::parse;
+
+    /// Build a copy of `mol` with atoms reordered by `perm` (perm[new_idx] = old_idx).
+    /// Bonds are remapped to the new indices; stereo/direction metadata is
+    /// intentionally dropped since this helper only exists to test whether the
+    /// *skeleton* rank partition is invariant under atom relabeling.
+    fn permute_molecule(mol: &Molecule, perm: &[usize]) -> Molecule {
+        let mut old_to_new = vec![0u32; perm.len()];
+        for (new_idx, &old_idx) in perm.iter().enumerate() {
+            old_to_new[old_idx] = new_idx as u32;
+        }
+        let mut builder = chematic_core::MoleculeBuilder::new();
+        for &old_idx in perm {
+            builder.add_atom(mol.atom(AtomIdx(old_idx as u32)).clone());
+        }
+        for (_, bond) in mol.bonds() {
+            let a = AtomIdx(old_to_new[bond.atom1.0 as usize]);
+            let b = AtomIdx(old_to_new[bond.atom2.0 as usize]);
+            let _ = builder.add_bond(a, b, bond.order);
+        }
+        builder.build()
+    }
+
+    /// Relabel a rank vector into "first-seen order" group ids, so partitions
+    /// can be compared structurally (which atoms are grouped together)
+    /// independent of the actual numeric rank values assigned.
+    fn partition_key(ranks: &[u64]) -> Vec<usize> {
+        let mut seen: Vec<u64> = Vec::new();
+        ranks
+            .iter()
+            .map(|&r| match seen.iter().position(|&s| s == r) {
+                Some(pos) => pos,
+                None => {
+                    seen.push(r);
+                    seen.len() - 1
+                }
+            })
+            .collect()
+    }
+
+    /// Sanity check demanded before any individualize-refine rewrite: the
+    /// refinement-to-plateau partition (which atoms share a rank, not the raw
+    /// numeric values) must be invariant under input atom permutation. If this
+    /// fails, the root cause is a non-invariant initial invariant / refinement
+    /// step itself (over-splitting orbits), not a missing individualize step
+    /// (under-splitting ties) -- a completely different bug to fix.
+    #[test]
+    fn morgan_ranks_partition_is_permutation_invariant() {
+        let corpus = [
+            "O=C(NCc1cccnc1)NC[C@H]1CCC[C@H](OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)[C@@H]1c1ccccc1",
+            "c1ccccc1",
+            "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+            "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+            "O=C1CCC(=O)N1",
+            "c1ccc2ccc3ccccc3c2c1",
+            "O=C(NCc1cccnc1)NCC1CCCC(OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)C1c1ccccc1",
+        ];
+
+        for smi in corpus {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e}"));
+            let n = mol.atom_count();
+            let part_orig = partition_key(&morgan_ranks(&mol));
+
+            // A few deterministic, non-identity permutations (no RNG dependency).
+            let perms: Vec<Vec<usize>> = vec![
+                (0..n).rev().collect(),
+                {
+                    let mut p: Vec<usize> = (0..n).collect();
+                    if n > 2 {
+                        p.rotate_left(n / 3 + 1);
+                    }
+                    p
+                },
+                {
+                    let mut p: Vec<usize> = (0..n).rev().collect();
+                    if n > 3 {
+                        p.swap(1, n - 2);
+                        p.rotate_right(2);
+                    }
+                    p
+                },
+            ];
+
+            for perm in perms {
+                let permuted = permute_molecule(&mol, &perm);
+                let part_perm = partition_key(&morgan_ranks(&permuted));
+
+                // inverse: where did old atom `old_idx` land in the permuted molecule?
+                let mut new_of_old = vec![0usize; n];
+                for (new_idx, &old_idx) in perm.iter().enumerate() {
+                    new_of_old[old_idx] = new_idx;
+                }
+
+                for i in 0..n {
+                    for j in (i + 1)..n {
+                        let same_orig = part_orig[i] == part_orig[j];
+                        let same_perm = part_perm[new_of_old[i]] == part_perm[new_of_old[j]];
+                        assert_eq!(
+                            same_orig, same_perm,
+                            "partition not permutation-invariant for '{smi}': \
+                             atoms {i},{j} (perm {perm:?})"
+                        );
+                    }
+                }
+            }
+        }
+    }
 
     /// Canonical SMILES must be stable: applying it twice gives the same result.
     fn is_stable(smiles: &str) -> bool {
