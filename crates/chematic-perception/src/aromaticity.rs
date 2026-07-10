@@ -720,13 +720,21 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
 /// without requiring an explicit double bond.
 ///
 /// Rules:
-/// - **C**: `has_double_any` (Double or Aromatic bond anywhere) → 1π, else None.
-///   If already in `aromatic_context` → 1π (confirmed sp2).
+/// - **C**: if already in `aromatic_context` → 1π (confirmed sp2).
+///   1. No double bond anywhere: carbanion (`charge == -1`) → 2π (lone pair,
+///      e.g. cyclopentadienyl anion); otherwise sp3 → None.
+///   2. Has a double bond, but only exocyclic and to a more electronegative
+///      atom (O/N/S) → 0π (its p-orbital electrons are in the exocyclic π
+///      bond, e.g. the carbonyl carbon in tropone/pyridone/pyranone).
+///   3. Otherwise (has an endocyclic Double/Aromatic bond) → 1π.
 /// - **N**:
 ///   1. Has H → 2π (pyrrole-type lone pair).
 ///   2. Has an explicit `Double` bond → 1π (pyridine-type).
-///   3. Bridgehead N: total_degree == 3 AND ring_degree < total_degree AND no
-///      explicit double bond → 2π (lone pair in p orbital, like indolizine N).
+///   3. total_degree == 3 AND ring_degree < total_degree AND no explicit
+///      double bond → 2π (lone pair in p orbital): covers both a bridgehead
+///      N shared by two fused rings (indolizine) and a substituted
+///      pyrrole-type N (N-methylpyrrole, N-glycosylated purine); the overall
+///      4n+2 sum, not the substituent, decides ring aromaticity.
 ///   4. Has in-ring `Aromatic` bond → 1π (pyridine-like aromatic N).
 ///   5. Already in `aromatic_context` → 1π.
 ///   6. Otherwise → None.
@@ -780,9 +788,32 @@ fn ring_pi_electrons(
             // Carbon: must be sp2 (has a double or aromatic bond somewhere).
             6 => {
                 if !has_double_any {
-                    return None; // sp3 carbon — ring cannot be aromatic
+                    // No double bond: a ring carbanion still donates its lone
+                    // pair (e.g. cyclopentadienyl anion), otherwise sp3.
+                    if atom.charge == -1 {
+                        2
+                    } else {
+                        return None; // sp3 carbon — ring cannot be aromatic
+                    }
+                } else if has_explicit_double
+                    && !has_aromatic_in_ring
+                    && !mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                        ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
+                    })
+                    && mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                        !ring_atom_set.contains(&nb)
+                            && mol.bond(bidx).order == BondOrder::Double
+                            && matches!(mol.atom(nb).element.atomic_number(), 7 | 8 | 16)
+                    })
+                {
+                    // Only double bond is exocyclic, to a more electronegative
+                    // atom (O/N/S): p-orbital electrons sit in that exocyclic π
+                    // bond, contributing 0π to the ring (e.g. carbonyl carbon
+                    // in tropone/pyridone/pyranone).
+                    0
+                } else {
+                    1
                 }
-                1
             }
 
             // Nitrogen
@@ -794,30 +825,18 @@ fn ring_pi_electrons(
                     // Pyridine-type N with explicit double bond → 1π.
                     1
                 } else if total_degree == 3 && ring_degree < total_degree {
-                    // Bridgehead N (e.g. indolizine): no H, no explicit double bond,
-                    // and all three σ-bonds exactly fill the N valence (3).
-                    // The lone pair occupies the p orbital → 2π (pyrrole-analogue).
-                    //
-                    // Guard: the exocyclic bond must lead to an sp2/aromatic neighbour
-                    // (another fused ring atom). This prevents imide N (phthalimide)
-                    // from triggering here — phthalimide N's exocyclic bond goes to an
-                    // alkyl chain with no double/aromatic bonds.
-                    let has_sp2_exocyclic = mol
-                        .neighbors(atom_idx)
-                        .filter(|(nb, _)| !ring_atom_set.contains(nb))
-                        .any(|(nb, _)| {
-                            mol.neighbors(nb).any(|(_, b2)| {
-                                matches!(
-                                    mol.bond(b2).order,
-                                    BondOrder::Double | BondOrder::Aromatic
-                                )
-                            })
-                        });
-                    if has_sp2_exocyclic {
-                        2
-                    } else {
-                        return None;
-                    }
+                    // N with no H, no explicit double bond, and all three σ-bonds
+                    // exactly filling its valence (3): a bridgehead N shared by two
+                    // fused rings (e.g. indolizine) and a substituted pyrrole-type N
+                    // (e.g. N-methylpyrrole, N-glycosylated purine/pyrimidine) have
+                    // the identical local shape — the lone pair occupies the p
+                    // orbital → 2π either way. Whether the ring this atom sits in is
+                    // actually aromatic is decided by the overall 4n+2 sum below, not
+                    // by inspecting the substituent: an imide N (phthalimide) still
+                    // correctly comes out non-aromatic because its ring's carbonyl
+                    // carbons contribute 0π each (exocyclic C=O rule above), giving
+                    // 4π total, not 4n+2.
+                    2
                 } else if has_aromatic_in_ring {
                     // N in an aromatic ring (pre-kekulization input) without an
                     // explicit double bond and not a bridgehead → pyridine-like → 1π.
@@ -1564,19 +1583,173 @@ mod tests {
     }
 
     #[test]
-    fn test_keto_pyridinone_not_huckel_aromatic() {
+    fn test_keto_pyridinone_aromatic() {
         // O=C1NC=CC=C1 — 2-pyridinone keto form with N-H.
-        // π count: C(=O)(1π) + N-H(2π) + 3×C(1π each) + C6(1π) = 7π → not 4n+2.
-        // This is a known scope boundary: keto pyridinone has partial aromatic
-        // character by resonance but is NOT Hückel 4n+2 aromatic.
-        // RDKit classifies it aromatic using an extended model; our strict Hückel
-        // implementation correctly returns 0 aromatic atoms.
+        // π count: C(=O)(0π, exocyclic-only double bond to O) + N-H(2π) +
+        // 4×C in 2 ring C=C (1π each) = 6π → aromatic. Matches RDKit, which
+        // marks all 6 ring atoms aromatic (exocyclic O stays non-aromatic).
         let mol = mol_kekulized("O=C1NC=CC=C1");
         let model = assign_aromaticity(&mol);
         assert_eq!(
             model.aromatic_atom_count(),
-            0,
-            "keto pyridinone is not Hückel aromatic (7π ≠ 4n+2)"
+            6,
+            "keto pyridinone ring is Hückel aromatic (6π = 4n+2)"
+        );
+    }
+
+    #[test]
+    fn test_tropone_aromatic() {
+        // O=C1C=CC=CC=C1 — tropone (cycloheptatrienone), Kekulized input.
+        // Carbonyl C contributes 0π (exocyclic-only double bond to O); the
+        // other 6 ring carbons contribute 1π each from 3 endocyclic C=C.
+        // Total 6π → aromatic, matching RDKit (all 7 ring atoms aromatic).
+        let mol = mol_kekulized("O=C1C=CC=CC=C1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            7,
+            "all 7 tropone ring atoms aromatic"
+        );
+    }
+
+    #[test]
+    fn test_4_pyridone_aromatic() {
+        // O=C1C=CNC=C1 — 4-pyridone, Kekulized input. Same 6π accounting as
+        // 2-pyridone, just with N para to the carbonyl. Matches RDKit.
+        let mol = mol_kekulized("O=C1C=CNC=C1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "all 6 4-pyridone ring atoms aromatic"
+        );
+    }
+
+    #[test]
+    fn test_pyranone_aromatic() {
+        // O=C1C=COC=C1 — 4H-pyran-4-one, Kekulized input. Ring O contributes
+        // 2π (lone pair), carbonyl C contributes 0π, remaining 4 ring carbons
+        // contribute 1π each from 2 endocyclic C=C. Total 6π. Matches RDKit.
+        let mol = mol_kekulized("O=C1C=COC=C1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "all 6 pyranone ring atoms aromatic"
+        );
+    }
+
+    #[test]
+    fn test_cyclopentadienyl_anion_aromatic() {
+        // [CH-]1C=CC=C1 — cyclopentadienyl anion. The carbanion carbon has no
+        // double bond but contributes 2π (lone pair); the other 4 carbons
+        // contribute 1π each from 2 endocyclic C=C. Total 6π. Matches RDKit
+        // (all 5 atoms aromatic).
+        let mol = mol_kekulized("[CH-]1C=CC=C1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            5,
+            "all 5 cyclopentadienyl anion atoms aromatic"
+        );
+    }
+
+    // ── N-substituted pyrrole-type N: bridgehead-branch guard removal ────────
+    //
+    // The bridgehead-N branch used to require the exocyclic substituent to be
+    // sp2, to defensively block imide N (phthalimide). That guard also
+    // blocked the much more common case of a plain alkyl/aryl/sugar
+    // substituent on an otherwise-aromatic pyrrole-type N. It was removed;
+    // these tests cover both the newly-fixed cases and the phthalimide
+    // regression it was guarding against (which stays correct via the
+    // overall 4n+2 sum, not the substituent).
+
+    #[test]
+    fn test_n_methylpyrrole_aromatic() {
+        let mol = mol_kekulized("CN1C=CC=C1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            5,
+            "all 5 N-methylpyrrole ring atoms aromatic"
+        );
+    }
+
+    #[test]
+    fn test_n_methylimidazole_aromatic() {
+        let mol = mol_kekulized("CN1C=CN=C1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            5,
+            "all 5 N-methylimidazole ring atoms aromatic"
+        );
+    }
+
+    #[test]
+    fn test_n_methylindole_aromatic() {
+        let mol = mol_kekulized("CN1C=CC2=CC=CC=C21");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            9,
+            "all 9 N-methylindole ring atoms aromatic"
+        );
+    }
+
+    #[test]
+    fn test_9_methylpurine_aromatic() {
+        let mol = mol_kekulized("CN1C=NC2=NC=NC=C21");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            9,
+            "all 9 9-methylpurine ring atoms aromatic"
+        );
+    }
+
+    #[test]
+    fn test_phthalimide_5ring_not_aromatic() {
+        // O=C1NC(=O)c2ccccc21 — only the fused benzo ring is aromatic (6
+        // atoms); the imide 5-ring (2 carbonyl C + N) is not: carbonyl
+        // carbons contribute 0π each (exocyclic C=O rule), N contributes 2π,
+        // the two ring-fusion carbons contribute 1π each — 4π total, not
+        // 4n+2. Regression guard for the bridgehead-N guard removal above.
+        let mol = mol_kekulized("O=C1NC(=O)c2ccccc21");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "only the 6 benzo atoms of phthalimide are aromatic"
+        );
+    }
+
+    #[test]
+    fn test_n_methylphthalimide_5ring_not_aromatic() {
+        // O=C1N(C)C(=O)c2ccccc21 — same as phthalimide but N-methylated;
+        // same accounting applies (N still contributes 2π regardless of
+        // substituent), 5-ring still non-aromatic.
+        let mol = mol_kekulized("O=C1N(C)C(=O)c2ccccc21");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "only the 6 benzo atoms of N-methylphthalimide are aromatic"
+        );
+    }
+
+    #[test]
+    fn test_azulene_kekulized_aromatic() {
+        // C1=CC2=CC=CC=CC2=C1 — non-alternant fused bicyclic, all 10 atoms
+        // aromatic per RDKit. Regression coverage: this was previously
+        // (incorrectly) believed to need a ring-system rewrite, based on a
+        // test that never called apply_aromaticity() on Kekulized input.
+        let mol = mol_kekulized("C1=CC2=CC=CC=CC2=C1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            10,
+            "all 10 azulene atoms aromatic"
         );
     }
 
@@ -1705,5 +1878,179 @@ mod tests {
             m_r.aromatic_atom_count(),
             "thiophene same in both modes"
         );
+    }
+
+    // ── Known regressions from fix #2 (bridgehead-N guard removal) ──────────
+    //
+    // PROVISIONAL: measured pre-SSSR-fix. find_sssr is itself non-deterministic
+    // and non-minimal for ~50% of sampled molecules (single spanning-tree
+    // fundamental-cycle basis with zero candidate redundancy -- see project
+    // plan). These counts are only valid for the current find_sssr; expect
+    // them to change once ring perception is fixed, independent of anything
+    // below being "resolved."
+    //
+    // These 32 molecules share one root cause: a "fake bridgehead" N (same
+    // local shape as a genuine bridgehead or N-substituted azole) feeds a
+    // central ring that only closes via the `aromatic_context` bypass reusing
+    // an unrelated ring's atoms. Fixing this requires removing the bypass in
+    // favor of proper ring-system candidate enumeration (see project plan/
+    // issue tracker). Pinned here as *known-wrong* so the eventual fix is
+    // measurable by how many of these flip from this assertion to correct,
+    // not just by an aggregate corpus percentage.
+    #[test]
+    fn test_known_regressions_from_bridgehead_n_fix() {
+        // (kekulized SMILES, current chematic aromatic_atom_count(), RDKit's correct count)
+        let cases: &[(&str, usize, usize)] = &[
+            ("C[Si](C)(C)C1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
+            (
+                "C1=C(C2=CC=C(CCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
+                22,
+                18,
+            ),
+            ("ClC1=CC=C(OCC2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
+            ("N[C@@H](CC1=CC=CC=C1)C1=CC2=CC=CC=C2C2=NCCCN12", 16, 12),
+            (
+                "CC(C)(C)C1=CC=C(C2=C(CC3=CC=CC=C3)C3=CC=CC=C3C3=NCCCN32)C=C1",
+                22,
+                18,
+            ),
+            (
+                "C[Si](C)(C)C1=CC=C(C2=C(CC3=CC=CC=C3)C3=CC=CC=C3C3=NCCCN32)C=C1",
+                22,
+                18,
+            ),
+            (
+                "C1=C(C2=CC=C(C3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
+                22,
+                18,
+            ),
+            (
+                "C1=C(C2=CC=C(OCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
+                22,
+                18,
+            ),
+            ("COC1=C(OC)C(OC)=CC(C2=CC3=CC=CC=C3C3=NCCCN23)=C1", 16, 12),
+            ("CC1=CC2=CC=CC=C2C2=NCCCN12", 10, 6),
+            (
+                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)NC4CCCCC4)C=C3)C3=NCCCN23)C=C1",
+                16,
+                12,
+            ),
+            (
+                "C1=CC=C(CCC2=CC=C(C3=C(CC4=CC=CC=C4)C4=CC=CC=C4C4=NCCCN43)C=C2)C=C1",
+                28,
+                24,
+            ),
+            (
+                "CCCCC1=C(C2=CC=C(CCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
+                22,
+                18,
+            ),
+            (
+                "CCCCC1=C(C2=CC=C(C(C)(C)C)C=C2)N2CCCN=C2C2=CC=CC=C12",
+                16,
+                12,
+            ),
+            ("CCCCCCC1=CC2=CC=CC=C2C2=NCCCN12", 10, 6),
+            (
+                "CCOC1=CC=C(CC2=C(CCCC3=CC=CC4=CC=CC=C34)N3CCCN=C3C3=CC=CC=C23)C=C1",
+                26,
+                22,
+            ),
+            (
+                "CCOC1=CC=C(CC2=C(C3=CC=C(CCC4=CC=CC=C4)C=C3)N3CCCN=C3C3=CC=CC=C23)C=C1",
+                28,
+                24,
+            ),
+            (
+                "CN(C)CCC1=C(C2=CC=C(C(C)(C)C)C=C2)N2CCCN=C2C2=CC=CC=C12",
+                16,
+                12,
+            ),
+            (
+                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N/C(S)=N/C4CCCCC4)C=C3)C3=NCCCN23)C=C1",
+                16,
+                12,
+            ),
+            ("C1=C(/C=C/C2=CC=CC=C2)N2CCCN=C2C2=CC=CC=C12", 16, 12),
+            ("CC(C)(C)C1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
+            (
+                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)CC4=CC=CC=N4)C=C3)C3=NCCCN23)C=C1",
+                22,
+                18,
+            ),
+            (
+                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)NC4=C(Cl)C=C(Cl)C=C4)C=C3)C3=NCCCN23)C=C1",
+                22,
+                18,
+            ),
+            ("C1=C(CC2=CC=CC=C2)C2=CC=CC=C2C2=NCCCN12", 16, 12),
+            ("ClC1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
+            ("C1=C(C2=CC=CC=C2)N2CCCN=C2C2=CC=CC=C12", 16, 12),
+            (
+                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N(CC4=CC=CC=C4)CC4=CC=CC=C4)C=C3)C3=NCCCN23)C=C1",
+                28,
+                24,
+            ),
+            (
+                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N)C=C3)C3=NCCCN23)C=C1",
+                16,
+                12,
+            ),
+            ("CC1=C2C(=NC=C1)N(C1CC1)C1=NC=CC=C1C(=O)N2C", 15, 12),
+            ("CC(=O)N1C2=NC=CC=C2C(=O)N(C)C2=CC=CN=C21", 15, 12),
+            ("CN1C(=O)C2=CC=CN=C2N(C(C)(C)C)C2=NC=CC=C21", 15, 12),
+            ("CCCN1C2=NC=CC=C2C(=O)N(C)C2=CC=CN=C21", 15, 12),
+        ];
+        for (smi, expected_wrong, rdkit_correct) in cases {
+            let mol = mol_kekulized(smi);
+            let model = assign_aromaticity(&mol);
+            assert_eq!(
+                model.aromatic_atom_count(),
+                *expected_wrong,
+                "{smi}: expected current (wrong) count {expected_wrong} (RDKit correct: {rdkit_correct})"
+            );
+        }
+    }
+
+    // ── Known order-dependence: same molecule, different Kekulized traversal ─
+    //
+    // PROVISIONAL: measured pre-SSSR-fix (see note above).
+    //
+    // These 3 molecules pass with RDKit's canonical Kekulized SMILES but fail
+    // with at least one other valid Kekulized ordering of the identical
+    // structure -- confirmed via atom-map-number alignment (no substructure
+    // matching). Root cause is NOT Pass 1/Pass 2 (verified order-invariant by
+    // construction: Pass 1 evaluates each ring independently, Pass 2 loops to
+    // a fixed point) -- it's `find_sssr` itself, which builds a single BFS
+    // spanning tree rooted at the lowest atom index and generates exactly one
+    // fundamental cycle per non-tree edge (zero candidate redundancy), so it
+    // can return a non-minimal ring (e.g. a 10-membered ring in place of two
+    // 6-membered ones) depending on traversal order. Each entry below is one
+    // concrete failing traversal, pinned as a fixed regression.
+    #[test]
+    fn test_known_order_dependent_regressions() {
+        let cases: &[(&str, usize, usize)] = &[
+            (
+                "N1=C2C(N(CC(O)=O)C(=O)N=C2N(C2C=C(C(F)(F)F)C=C(C=2)C(F)(F)F)C2C1=CC=CC=2)=O",
+                16,
+                20,
+            ),
+            (
+                "[C@H]12N(C([C@H](NC(=O)[C@H]([C@H](OC(=O)[C@@H](N(C)C(CN(C)C1=O)=O)C(C)C)C)NC(=O)C1C=C(OC)C(C)=C3OC4=C(C)C(=O)C(=C(C4=NC=13)C(=O)N[C@H]1C(=O)N[C@@H](C(C)C)C(N3[C@H](C(=O)N(CC(N([C@H](C(C)C)C(O[C@H]1C)=O)C)=O)C)CCC3)=O)N)C(C)C)=O)CCC2",
+                6,
+                14,
+            ),
+            ("C12N(C3C=CC=CC=3)C3=NC(=O)N(C)C(C3=NC1=CC=CC=2)=O", 16, 20),
+        ];
+        for (smi, expected_wrong, rdkit_correct) in cases {
+            let mol = mol_kekulized(smi);
+            let model = assign_aromaticity(&mol);
+            assert_eq!(
+                model.aromatic_atom_count(),
+                *expected_wrong,
+                "{smi}: expected current (wrong) count {expected_wrong} (RDKit correct: {rdkit_correct})"
+            );
+        }
     }
 }
