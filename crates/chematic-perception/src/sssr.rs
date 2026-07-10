@@ -139,11 +139,7 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
     // independent) tie-break so ring *selection* doesn't depend on how the
     // molecule happened to be numbered by the parser.
     let ranks = canonical_atom_ranks(mol);
-    candidates.sort_by(|a, b| {
-        a.0.len()
-            .cmp(&b.0.len())
-            .then_with(|| canonical_cycle_key(&a.1, &ranks).cmp(&canonical_cycle_key(&b.1, &ranks)))
-    });
+    candidates.sort_by_cached_key(|c| (c.0.len(), canonical_cycle_key(&c.1, &ranks)));
     // The same geometric cycle can be generated from multiple roots; collapse
     // duplicates (bond_set is already sorted, so identical cycles are equal).
     candidates.dedup_by(|a, b| a.0 == b.0);
