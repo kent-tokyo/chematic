@@ -279,7 +279,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 | **Build requirement**   | `cargo build` only                        | cmake + clang      | cmake + clang  | Emscripten SDK     |
 | **WASM target support** | **Full (native)**                         | No                 | No             | Yes (Emscripten)   |
 | **Python bindings**     | **Yes** (`pip install chematic`, PyO3)    | Yes (rdkit-sys)    | Yes            | No                 |
-| **Unsafe Rust**         | **None**                                  | Extensive          | Extensive      | N/A                |
+| **Unsafe Rust**         | **None (default)**†                       | Extensive          | Extensive      | N/A                |
 
 <details>
 <summary>Full feature comparison (30+ capabilities)</summary>
@@ -324,7 +324,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 
 </details>
 
-† Default build only. The optional `native-inchi` feature adds a C-compiler dependency for the vendored IUPAC InChI C library (v1.07.5). All other crates remain FFI-free.
+† Default build only. The optional `native-inchi` feature adds a C-compiler dependency (and ~6 `unsafe` blocks, all confined to its FFI layer — see "Safe" above) for the vendored IUPAC InChI C library (v1.07.5). All other crates remain FFI-free and unsafe-free.
 
 ---
 

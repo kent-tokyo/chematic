@@ -184,7 +184,7 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 | **WASM バイナリサイズ**                     | **〜550 KB**                               | N/A（WASM 非対応） | N/A           | 〜30 MB          |
 | **ビルド要件**                              | `cargo build` のみ                         | cmake + clang      | cmake + clang | Emscripten SDK   |
 | **Python バインディング**                   | **あり** (`pip install chematic`, PyO3)    | あり（rdkit-sys）  | あり          | なし             |
-| unsafe Rust                                 | **なし**                                   | 大規模             | 大規模        | N/A              |
+| unsafe Rust                                 | **なし（デフォルト）**†                    | 大規模             | 大規模        | N/A              |
 | ケクレ化                                    | **4-pass（Edmonds' blossom 含む）**        | あり               | あり          | あり             |
 
 <details>
@@ -206,7 +206,7 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 | IUPAC 名生成                                | **あり（25+ 化合物クラス）**               | なし               | なし          | 一部             |
 | メンテナンス（2026）                        | アクティブ                                 | アクティブ         | 最小限        | アクティブ       |
 
-† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要。他の全クレートは FFI フリー。
+† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラと約6個の`unsafe`ブロック（そのFFI層に限定、上記「安全」参照）が必要。他の全クレートは FFI フリー・unsafeフリー。
 
 
 </details>
