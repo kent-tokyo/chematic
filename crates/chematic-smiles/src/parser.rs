@@ -41,8 +41,13 @@ const MAX_ATOMS: usize = 100_000;
 enum StereoEntry {
     Atom(AtomIdx),
     ImplicitH,
-    /// Ring opened at the chiral atom; will be resolved to `Atom` when the ring closes.
-    PendingRing(u8),
+    /// Ring opened at the chiral atom; will be resolved to `Atom` when the ring
+    /// closes. Keyed by a unique per-occurrence slot id (see `next_ring_slot`),
+    /// NOT the raw ring digit -- ring digits are reused within a single SMILES
+    /// (closed, then reused for an unrelated ring later), and resolving by
+    /// digit let a later, unrelated reuse of the same digit silently
+    /// overwrite/steal an earlier occurrence's still-pending resolution.
+    PendingRing(u32),
 }
 
 struct Parser<'a> {
@@ -53,10 +58,14 @@ struct Parser<'a> {
     stereo_records: Vec<(AtomIdx, Vec<StereoEntry>)>,
     /// Stereo record being built for the current chiral atom.
     current_stereo: Option<(AtomIdx, Vec<StereoEntry>)>,
-    /// ring_num → index in `stereo_records` for records with an unresolved `PendingRing(n)`.
-    pending_ring_stereo: HashMap<u8, usize>,
-    /// ring_num → close_atom, populated when rings close, for final resolution.
-    ring_close_partners: HashMap<u8, AtomIdx>,
+    /// Next fresh id to hand out for a ring-opening occurrence (see
+    /// `PendingRing`). Monotonically increasing, never reused, so it uniquely
+    /// identifies one specific open/close pair regardless of ring-digit reuse.
+    next_ring_slot: u32,
+    /// slot id → index in `stereo_records` for records with an unresolved `PendingRing(slot)`.
+    pending_ring_stereo: HashMap<u32, usize>,
+    /// slot id → close_atom, populated when rings close, for final resolution.
+    ring_close_partners: HashMap<u32, AtomIdx>,
 }
 
 impl<'a> Parser<'a> {
@@ -67,6 +76,7 @@ impl<'a> Parser<'a> {
             depth: 0,
             stereo_records: Vec::new(),
             current_stereo: None,
+            next_ring_slot: 0,
             pending_ring_stereo: HashMap::new(),
             ring_close_partners: HashMap::new(),
         }
@@ -87,10 +97,10 @@ impl<'a> Parser<'a> {
         if let Some((atom_idx, entries)) = self.current_stereo.take() {
             let record_idx = self.stereo_records.len();
             for e in &entries {
-                if let StereoEntry::PendingRing(rn) = e {
-                    // Last-writer-wins for reused ring numbers (safe: ring must be closed
-                    // before the same number can be reused).
-                    self.pending_ring_stereo.insert(*rn, record_idx);
+                if let StereoEntry::PendingRing(slot) = e {
+                    // Safe now: each slot id is unique to one open/close pair
+                    // (see `next_ring_slot`), so there is no reuse to race.
+                    self.pending_ring_stereo.insert(*slot, record_idx);
                 }
             }
             self.stereo_records.push((atom_idx, entries));
@@ -118,7 +128,7 @@ impl<'a> Parser<'a> {
 
     fn parse_smiles(&mut self) -> Result<Molecule, SmilesError> {
         let mut mol = MoleculeBuilder::new();
-        let mut open_rings: HashMap<u8, (AtomIdx, Option<BondOrder>)> = HashMap::new();
+        let mut open_rings: HashMap<u8, (AtomIdx, Option<BondOrder>, u32)> = HashMap::new();
 
         // Parse the first fragment
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
@@ -182,7 +192,7 @@ impl<'a> Parser<'a> {
         mol: &mut MoleculeBuilder,
         attach_to: Option<AtomIdx>,
         attach_bond: Option<BondOrder>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>)>,
+        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>, u32)>,
     ) -> Result<Option<AtomIdx>, SmilesError> {
         // Parse the first atom of this chain
         let first_atom = match self.try_parse_atom()? {
@@ -374,7 +384,7 @@ impl<'a> Parser<'a> {
         mol: &mut MoleculeBuilder,
         attach_to: AtomIdx,
         explicit_bond: Option<BondOrder>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>)>,
+        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>, u32)>,
     ) -> Result<Option<AtomIdx>, SmilesError> {
         if self.depth >= MAX_BRANCH_DEPTH {
             return Err(SmilesError::NestingTooDeep { pos: self.pos });
@@ -400,16 +410,16 @@ impl<'a> Parser<'a> {
     /// Handle ring closure: close an existing open ring, or register a new one.
     /// Returns the stereo entry to push for the current atom's stereo sequence:
     /// - `Atom(open_atom)` when the ring is closed (partner = open_atom)
-    /// - `PendingRing(ring_num)` when the ring is opened (partner unknown until close)
+    /// - `PendingRing(slot)` when the ring is opened (partner unknown until close)
     fn close_or_open_ring(
         &mut self,
         mol: &mut MoleculeBuilder,
         current: AtomIdx,
         ring_num: u8,
         ring_bond: Option<BondOrder>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>)>,
+        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>, u32)>,
     ) -> Result<StereoEntry, SmilesError> {
-        if let Some((open_atom, open_bond)) = open_rings.remove(&ring_num) {
+        if let Some((open_atom, open_bond, slot)) = open_rings.remove(&ring_num) {
             // A directional marker (`/`, `\`) is read "toward" the ring digit
             // from wherever it's written. At the OPENING occurrence (e.g.
             // "C/1..."), that's already the open->close direction, matching
@@ -438,14 +448,23 @@ impl<'a> Parser<'a> {
                     pos: self.pos,
                 }
             })?;
-            // Record the close partner for final PendingRing resolution.
-            self.ring_close_partners.insert(ring_num, current);
-            // Also resolve any PendingRing(ring_num) in already-finalized stereo records.
-            if let Some(rec_idx) = self.pending_ring_stereo.remove(&ring_num)
+            // Record the close partner for final PendingRing resolution, keyed
+            // by this occurrence's unique slot -- NOT the ring digit, which
+            // may be reused by an unrelated ring later in the same SMILES.
+            self.ring_close_partners.insert(slot, current);
+            // Also resolve PendingRing(slot) if the opener's stereo record was
+            // already finalized (e.g. the closer is NOT nested inside the
+            // opener's own branch). If the opener's record is still open (the
+            // closer sits inside the opener's branch subtree, as in
+            // `[C@]1(...[closes 1 here]...)`), this is a no-op here and the
+            // entry is instead patched by the final resolution pass in
+            // `parse_smiles`, which is safe now that `slot` can never collide
+            // with a later, unrelated reuse of the same ring digit.
+            if let Some(rec_idx) = self.pending_ring_stereo.remove(&slot)
                 && let Some((_, entries)) = self.stereo_records.get_mut(rec_idx)
             {
                 for entry in entries.iter_mut() {
-                    if matches!(entry, StereoEntry::PendingRing(n) if *n == ring_num) {
+                    if matches!(entry, StereoEntry::PendingRing(s) if *s == slot) {
                         *entry = StereoEntry::Atom(current);
                         break;
                     }
@@ -454,9 +473,11 @@ impl<'a> Parser<'a> {
             // Return: the stereo entry for `current` is the open atom.
             Ok(StereoEntry::Atom(open_atom))
         } else {
-            open_rings.insert(ring_num, (current, ring_bond));
+            let slot = self.next_ring_slot;
+            self.next_ring_slot += 1;
+            open_rings.insert(ring_num, (current, ring_bond, slot));
             // Return: we opened a ring; partner not yet known.
-            Ok(StereoEntry::PendingRing(ring_num))
+            Ok(StereoEntry::PendingRing(slot))
         }
     }
 

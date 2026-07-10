@@ -985,6 +985,62 @@ mod tests {
         ));
     }
 
+    // ── Round 10: ring-digit reuse racing PendingRing resolution ─────────────
+    //
+    // A stereocenter that OPENS a ring whose partner closes INSIDE the
+    // stereocenter's own branch subtree (e.g. `[C@]1(...[C@H]1...)`) has its
+    // own stereo record still unfinalized at the moment of that first
+    // closure -- the immediate-resolution fast path in `close_or_open_ring`
+    // only patches already-finalized records, so this case falls through to
+    // the end-of-parse fallback. Before the fix, that fallback resolved by
+    // raw ring DIGIT via `ring_close_partners: HashMap<u8, AtomIdx>` -- if the
+    // same digit was reused later for an unrelated ring (e.g. a trailing
+    // phenyl `c1ccccc1`), the later reuse's closer silently overwrote the
+    // earlier, still-pending resolution, corrupting the stereocenter's
+    // neighbor order with a foreign atom index (confirmed: the wrong index
+    // pointed at an aromatic carbon in the unrelated trailing ring, not
+    // anywhere near the stereocenter). Fixed by keying resolution on a
+    // per-occurrence slot id (`next_ring_slot`) that is never reused,
+    // regardless of how many times the same ring digit is.
+
+    #[test]
+    fn ring_digit_reuse_inside_stereocenter_branch_real_world_repro() {
+        // Real molecule found via corpus sweep. `variant` is an RDKit
+        // doRandom=True re-spelling of the exact same molecule as `orig`,
+        // where the stereocenter's ring-1 partner closes inside its own
+        // branch AND ring digit 1 is reused later for a trailing phenyl.
+        let orig = r"COc1ccc2c3c1OC1[C@H](O)[C@](CO)(CCCCCc4ccccc4)CC4C(C2)N(C)CCC341";
+        let variant = r"C([C@@]1(CC2C34CCN(C2Cc2ccc(c(c24)OC3[C@@H]1O)OC)C)CO)CCCCc1ccccc1";
+        assert!(
+            same_canonical(orig, variant),
+            "ring-digit reuse must not corrupt a stereocenter whose own ring \
+             partner closes inside its branch"
+        );
+    }
+
+    #[test]
+    fn ring_digit_reuse_inside_stereocenter_branch_minimal() {
+        // Minimal case matching the real repro's precondition exactly:
+        // `[C@H]1` opens ring 1 and its partner closes INSIDE its own first
+        // branch `(CC1)` -- i.e. before the parser ever advances to a new
+        // *chain* atom for atom0, so atom0's stereo record is still
+        // unfinalized at the moment of that closure (the immediate-resolution
+        // fast path in `close_or_open_ring` cannot catch it; only the
+        // end-of-parse fallback does). Ring digit 1 is then reused by an
+        // unrelated, disconnected fragment. Before the fix, the fallback
+        // resolved by raw digit and the benzene's ring closure silently
+        // stole atom0's still-pending resolution.
+        let smi = r"[C@H]1(CC1)Cl.c1ccccc1";
+        let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e:?}"));
+        let out = canonical_smiles(&mol);
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse {out}: {e:?}"));
+        assert_eq!(
+            canonical_smiles(&mol2),
+            out,
+            "stereocenter with in-branch ring closure + later digit reuse must be stable"
+        );
+    }
+
     // ── Allene cumulated double bond stereo ──────────────────────────────────
 
     #[test]
