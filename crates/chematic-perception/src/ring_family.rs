@@ -167,10 +167,72 @@ fn is_fused_ring(mol: &Molecule, atoms: &[AtomIdx]) -> bool {
         return mol.bond_between(atoms[0], atoms[1]).is_some();
     }
 
-    // For 3+ atoms: check if they form a cycle (fused) or path (bridged)
-    // If the last atom is bonded back to the first, it's a cycle (fused ring junction)
-    // Otherwise it's a path (bridged ring junction)
-    mol.bond_between(atoms[atoms.len() - 1], atoms[0]).is_some()
+    // For 3+ atoms: `atoms` is in whatever order the caller's filter happened
+    // to preserve (e.g. one SSSR ring's own atom order) — not necessarily an
+    // order where consecutive elements are bonded. Testing first/last of that
+    // arbitrary order is unsound: for a bridge where the shared atoms are
+    // {bridgehead, interior, bridgehead} it can spuriously find *some* bond
+    // between the wrong pair (e.g. bridgehead-interior) and misreport a
+    // genuine bridge as fused. Reorder by true bond-adjacency among the
+    // shared atoms first, then check whether that real path's two endpoints
+    // close a cycle.
+    let ordered = order_by_adjacency(mol, atoms);
+    let Some(path) = ordered else {
+        // Not a simple path (e.g. a branching/cyclic induced subgraph) —
+        // fall back to the previous (order-sensitive) heuristic rather than
+        // guessing further.
+        return mol.bond_between(atoms[atoms.len() - 1], atoms[0]).is_some();
+    };
+    mol.bond_between(path[path.len() - 1], path[0]).is_some()
+}
+
+/// Reorder `atoms` into a genuine bond-adjacency path, if the induced
+/// subgraph (edges of `mol` between pairs of `atoms`) forms a simple path
+/// (every atom degree ≤ 2 within the induced subgraph, exactly two atoms of
+/// degree 1 as the path's endpoints, and the path visits every atom).
+/// Returns `None` if the induced subgraph isn't a simple path (e.g. it's
+/// disconnected, branches, or is itself a closed cycle).
+fn order_by_adjacency(mol: &Molecule, atoms: &[AtomIdx]) -> Option<Vec<AtomIdx>> {
+    let set: std::collections::HashSet<AtomIdx> = atoms.iter().copied().collect();
+    let neighbors_in_set = |a: AtomIdx| -> Vec<AtomIdx> {
+        mol.neighbors(a)
+            .filter(|(nb, _)| set.contains(nb))
+            .map(|(nb, _)| nb)
+            .collect()
+    };
+
+    let degrees: Vec<(AtomIdx, usize)> = atoms
+        .iter()
+        .map(|&a| (a, neighbors_in_set(a).len()))
+        .collect();
+    if degrees.iter().any(|&(_, d)| d > 2) {
+        return None; // branching — not a simple path
+    }
+    let endpoints: Vec<AtomIdx> = degrees
+        .iter()
+        .filter(|&&(_, d)| d == 1)
+        .map(|&(a, _)| a)
+        .collect();
+    if endpoints.len() != 2 {
+        return None; // closed cycle (0 endpoints) or disconnected (>2)
+    }
+
+    let mut path = vec![endpoints[0]];
+    let mut prev = None;
+    let mut current = endpoints[0];
+    while path.len() < atoms.len() {
+        let next = neighbors_in_set(current)
+            .into_iter()
+            .find(|&nb| Some(nb) != prev)?;
+        path.push(next);
+        prev = Some(current);
+        current = next;
+    }
+    if path.len() == atoms.len() && *path.last().unwrap() == endpoints[1] {
+        Some(path)
+    } else {
+        None // walk didn't cover every shared atom exactly once — not a simple path
+    }
 }
 
 /// Return the "worst" (most complex) ring system classification.

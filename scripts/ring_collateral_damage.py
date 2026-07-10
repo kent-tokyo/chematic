@@ -54,7 +54,11 @@ def compute(mol):
         "num_aliphatic_rings": mol.num_aliphatic_rings,
         "logp": round(mol.logp, 4),
         "mr": round(mol.molar_refractivity, 4),
-        "scaffold": mol.scaffold(),
+        # mol.scaffold() returns a Mol; PyO3's Mol has no value-based
+        # __eq__/__hash__ (identity only), so storing it directly in a set()
+        # always saw N distinct objects regardless of chemical identity --
+        # compare canonical SMILES instead.
+        "scaffold": mol.scaffold().smiles,
         "r5_matches": len(mol.find_matches("[r5]")),
         "r6_matches": len(mol.find_matches("[r6]")),
     }

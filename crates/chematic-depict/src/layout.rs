@@ -404,9 +404,15 @@ fn place_ring_anchored(
     // Apothem: distance from midpoint of an edge to the center of a regular n-gon.
     let apothem = radius * (std::f64::consts::PI / n as f64).cos();
 
-    // Centroid of already-placed atoms in this ring (from the old ring system).
+    // Centroid of the *entire* already-placed structure so far (not just this
+    // ring's own anchor atoms). Using only this ring's placed atoms is wrong:
+    // before this ring is placed, its only placed members are the two shared
+    // anchor atoms, whose centroid is always exactly `mid` (the edge
+    // midpoint) — equidistant from both `cand1`/`cand2` by construction, so
+    // that comparison degenerates into an arbitrary tie instead of actually
+    // picking the side away from the existing ring system.
     let existing_center = {
-        let pts: Vec<Point> = ring.iter().filter_map(|&a| placed[a.0 as usize]).collect();
+        let pts: Vec<Point> = placed.iter().filter_map(|p| *p).collect();
         if pts.is_empty() {
             // No placed atoms to compare against: use the midpoint as fallback.
             mid
