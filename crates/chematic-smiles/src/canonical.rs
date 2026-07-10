@@ -321,10 +321,18 @@ struct CanonicalWriter<'a> {
     ranks: &'a [u64],
     written: Vec<bool>,
     ring_bonds: HashSet<BondIdx>,
-    /// (ring_num, bond_order, ring_partner_atom)
-    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, BondOrder, AtomIdx)>>,
+    /// (ring_num, bond_order, ring_partner_atom, physical_bond)
+    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, BondOrder, AtomIdx, BondIdx)>>,
     next_ring: u32,
     out: String,
+    /// Union-find groups of directional (`/`/`\`) bonds that jointly encode
+    /// one connected E/Z system — flipping every member preserves geometry,
+    /// flipping a subset does not. Keyed/rooted by `BondIdx`.
+    ez_group: HashMap<BondIdx, BondIdx>,
+    /// Groups whose first-encountered bond (in write order) came out `Down`;
+    /// every remaining bond in the group is flipped so the first directional
+    /// bond of each system is always `/`, regardless of input spelling.
+    ez_flip: HashMap<BondIdx, bool>,
 }
 
 impl<'a> CanonicalWriter<'a> {
@@ -338,10 +346,101 @@ impl<'a> CanonicalWriter<'a> {
             atom_ring_nums: HashMap::new(),
             next_ring: 1,
             out: String::new(),
+            ez_group: HashMap::new(),
+            ez_flip: HashMap::new(),
+        }
+    }
+
+    /// Union all directional single bonds flanking each stereo double bond
+    /// into one group per connected E/Z system (order-independent — depends
+    /// only on molecule topology, not on canonical ranks or write order).
+    fn build_ez_groups(&mut self) {
+        fn is_directional(mol: &Molecule, bidx: BondIdx, order: BondOrder) -> bool {
+            matches!(order, BondOrder::Up | BondOrder::Down) || mol.bond_direction(bidx).is_some()
+        }
+
+        fn find(group: &mut HashMap<BondIdx, BondIdx>, x: BondIdx) -> BondIdx {
+            let parent = *group.get(&x).unwrap_or(&x);
+            if parent == x {
+                x
+            } else {
+                let root = find(group, parent);
+                group.insert(x, root);
+                root
+            }
+        }
+
+        fn union(group: &mut HashMap<BondIdx, BondIdx>, a: BondIdx, b: BondIdx) {
+            let ra = find(group, a);
+            let rb = find(group, b);
+            if ra != rb {
+                group.insert(ra, rb);
+            }
+        }
+
+        for bidx in 0..self.mol.bond_count() {
+            let bidx = BondIdx(bidx as u32);
+            let bond = self.mol.bond(bidx);
+            if bond.order != BondOrder::Double {
+                continue;
+            }
+            let mut side_bonds = Vec::new();
+            for endpoint in [bond.atom1, bond.atom2] {
+                for (_, nb_bidx) in self.mol.neighbors(endpoint) {
+                    if nb_bidx == bidx {
+                        continue;
+                    }
+                    let nb_order = self.mol.bond(nb_bidx).order;
+                    if is_directional(self.mol, nb_bidx, nb_order) {
+                        side_bonds.push(nb_bidx);
+                    }
+                }
+            }
+            let Some(&first) = side_bonds.first() else {
+                continue;
+            };
+            self.ez_group.entry(first).or_insert(first);
+            for &b in &side_bonds[1..] {
+                self.ez_group.entry(b).or_insert(b);
+                union(&mut self.ez_group, first, b);
+            }
+        }
+    }
+
+    /// Normalize a directional bond order so the first occurrence of each
+    /// E/Z system in canonical write order is always `Up` (`/`); every other
+    /// bond in the system is flipped consistently to preserve geometry.
+    fn normalize_ez(&mut self, bidx: BondIdx, order: BondOrder) -> BondOrder {
+        if !matches!(order, BondOrder::Up | BondOrder::Down) {
+            return order;
+        }
+        let root = {
+            let mut x = *self.ez_group.get(&bidx).unwrap_or(&bidx);
+            while let Some(&p) = self.ez_group.get(&x) {
+                if p == x {
+                    break;
+                }
+                x = p;
+            }
+            x
+        };
+        let flip = *self.ez_flip.entry(root).or_insert(order == BondOrder::Down);
+        if flip {
+            match order {
+                BondOrder::Up => BondOrder::Down,
+                BondOrder::Down => BondOrder::Up,
+                other => other,
+            }
+        } else {
+            order
         }
     }
 
     fn write_all(mut self) -> String {
+        // Phase 0: group directional bonds into connected E/Z systems
+        // (topology-only, independent of canonical order).
+        self.build_ez_groups();
+
         // Phase 1: discover ring-closure back-edges using the SAME canonical DFS
         // order that the writer will use. This ensures ring-closure numbers are
         // stable across re-parses.
@@ -485,14 +584,18 @@ impl<'a> CanonicalWriter<'a> {
                     }
                     other => other,
                 };
-                self.atom_ring_nums
-                    .entry(neighbor)
-                    .or_default()
-                    .push((rn, order_at_open, atom)); // partner = close atom
-                self.atom_ring_nums
-                    .entry(atom)
-                    .or_default()
-                    .push((rn, order_at_close, neighbor)); // partner = open atom
+                self.atom_ring_nums.entry(neighbor).or_default().push((
+                    rn,
+                    order_at_open,
+                    atom,
+                    bidx,
+                )); // partner = close atom
+                self.atom_ring_nums.entry(atom).or_default().push((
+                    rn,
+                    order_at_close,
+                    neighbor,
+                    bidx,
+                )); // partner = open atom
             }
         }
 
@@ -517,7 +620,8 @@ impl<'a> CanonicalWriter<'a> {
 
         // Ring-closure digits.
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
-            for (rn, bond_order, _partner) in rings {
+            for (rn, bond_order, _partner, bidx) in rings {
+                let bond_order = self.normalize_ez(bidx, bond_order);
                 let atom_arom = self.mol.atom(atom).aromatic;
                 if !(bond_order == BondOrder::Aromatic && atom_arom)
                     && bond_order != BondOrder::Single
@@ -542,7 +646,7 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         // Tree-edge children, sorted canonically.
-        let mut children: Vec<(AtomIdx, BondOrder)> = self
+        let mut children: Vec<(AtomIdx, BondIdx, BondOrder)> = self
             .mol
             .neighbors(atom)
             .filter(|(nb, bidx)| {
@@ -574,15 +678,20 @@ impl<'a> CanonicalWriter<'a> {
                     }
                     other => other,
                 };
-                (nb, order)
+                (nb, bidx, order)
             })
             .collect();
 
         // Sort children by canonical rank (ascending → highest rank = main chain).
-        children.sort_by(|&(a, _), &(b, _)| self.canonical_cmp(a, b));
+        children.sort_by(|&(a, ..), &(b, ..)| self.canonical_cmp(a, b));
 
         let n = children.len();
-        for (i, (child, bond_order)) in children.into_iter().enumerate() {
+        for (i, (child, bidx, bond_order)) in children.into_iter().enumerate() {
+            // Normalized here (not in the map above) so the flip decision is
+            // made in true left-to-right write order: this atom's earlier
+            // (lower-rank) children have already fully recursed by the time
+            // a later sibling's direction is decided.
+            let bond_order = self.normalize_ez(bidx, bond_order);
             let is_last = i == n - 1;
             let parent_arom = self.mol.atom(atom).aromatic;
             let child_arom = self.mol.atom(child).aromatic;
@@ -711,7 +820,7 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         if let Some(rings) = self.atom_ring_nums.get(&atom) {
-            for &(_, _, partner) in rings {
+            for &(_, _, partner, _) in rings {
                 canonical.push(partner.0);
             }
         }
@@ -1426,5 +1535,30 @@ mod tests {
                 "fused-aromatic canonical SMILES must be idempotent for {s}"
             );
         }
+    }
+
+    // ── Round 12: simple E/Z direction normalization ────────────────────────
+    //
+    // `/N=N/` and `\N=N\` are two equally valid SMILES spellings of the same
+    // geometry (flipping every directional bond of one connected E/Z system
+    // preserves meaning). Before this fix, the writer just propagated
+    // whichever direction the parser happened to read, so two spellings of
+    // the same molecule could canonicalize to two different strings. The fix
+    // normalizes each connected E/Z system so its first directional bond (in
+    // canonical write order) is always `/`.
+
+    #[test]
+    fn ez_simple_bond_direction_normalized_azo() {
+        assert!(
+            same_canonical("CN(C)/N=N/c1ccccc1", r"CN(C)\N=N\c1ccccc1",),
+            "isolated E/Z double bond must canonicalize identically regardless \
+             of which of the two equally-valid slash spellings was parsed"
+        );
+    }
+
+    #[test]
+    fn ez_simple_bond_direction_normalized_symmetric() {
+        assert!(same_canonical("F/C=C/F", r"F\C=C\F"));
+        assert!(same_canonical("C(/F)=C/F", r"C(\F)=C\F"));
     }
 }
