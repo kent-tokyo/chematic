@@ -410,6 +410,16 @@ impl<'a> Parser<'a> {
         open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>)>,
     ) -> Result<StereoEntry, SmilesError> {
         if let Some((open_atom, open_bond)) = open_rings.remove(&ring_num) {
+            // A directional marker (`/`, `\`) is read "toward" the ring digit
+            // from wherever it's written. At the OPENING occurrence (e.g.
+            // "C/1..."), that's already the open->close direction, matching
+            // the `mol.add_bond(open_atom, current, ..)` convention below. At
+            // the CLOSING occurrence (e.g. "...C/1"), the marker instead reads
+            // close->open (from the current atom back to its ring partner) --
+            // the opposite traversal direction over the same bond -- so it
+            // must be flipped before it can be compared against `open_bond` or
+            // stored as the open->close direction.
+            let ring_bond = flip_direction(ring_bond);
             // Resolve the bond type (both ends may specify one; they must agree)
             let bond = match (open_bond, ring_bond) {
                 (Some(a), Some(b)) if a == b => a,
@@ -738,6 +748,19 @@ impl<'a> Parser<'a> {
         }
         Some(val)
     }
+}
+
+/// Flip a directional bond marker (`/` <-> `\`) to reverse its reading
+/// direction; other bond orders pass through unchanged. Used to normalize a
+/// ring-closure bond symbol captured at the closing occurrence (read
+/// close->open) into the open->close sense used for storage and for
+/// agreement-checking against the opening occurrence's symbol.
+fn flip_direction(order: Option<BondOrder>) -> Option<BondOrder> {
+    order.map(|o| match o {
+        BondOrder::Up => BondOrder::Down,
+        BondOrder::Down => BondOrder::Up,
+        other => other,
+    })
 }
 
 /// Determine the implicit bond between two adjacent atoms already in the builder.

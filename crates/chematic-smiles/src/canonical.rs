@@ -925,6 +925,66 @@ mod tests {
         }
     }
 
+    // ── Round 10: ring-closure directional bond flip ─────────────────────────
+    //
+    // A directional marker (`/`, `\`) is read "toward" the ring digit from
+    // wherever it's written. At the ring-OPENING occurrence that's already
+    // the open->close direction; at the CLOSING occurrence it's close->open
+    // (the opposite traversal direction over the same physical bond) and must
+    // be flipped before use (parser.rs `close_or_open_ring`). Before the fix,
+    // the closing-side marker was stored raw/unflipped, which silently
+    // produced a *different stereoisomer* whenever a random SMILES spelling
+    // routed a conjugated system's connecting single bond through a
+    // ring-closure digit instead of a plain adjacent chain bond -- confirmed
+    // via a corpus-wide worst-of-10 sweep (RDKit-checked structural
+    // correctness, not just self-stability/idempotency, which this bug class
+    // passed trivially since it was deterministic-but-wrong on each input).
+
+    #[test]
+    fn ring_closure_direction_flip_real_world_repro() {
+        // Real molecule found via corpus sweep. `variant` is an RDKit
+        // doRandom=True re-spelling of the exact same molecule as `orig`,
+        // routing the diene's connecting single bond through ring-closure
+        // digit "1" instead of a plain chain bond. Before the parser fix,
+        // chematic silently emitted a different (RDKit-confirmed
+        // non-equivalent) stereoisomer for `variant`.
+        let orig = r"CC1CCOC(=O)/C=C/C=C\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)C(=O)C[C@]4(COC(=O)C1O)[C@]2(C)C31CO1";
+        let variant = r"C1=C\C(=O)O[C@@H]2C[C@H]3O[C@H]4[C@@]([C@@]2(C32OC2)C)(CC(=O)[C@H](C)C4)COC(=O)C(O)C(C)CCOC(=O)/C=C/1";
+        assert!(
+            same_canonical(orig, variant),
+            "ring-closure-routed diene must canonicalize identically to the \
+             chain-form spelling of the same molecule"
+        );
+    }
+
+    #[test]
+    fn ring_closure_direction_minimal_ez_agreement() {
+        // Minimal case isolating the same mechanism: a ring-closure bond
+        // (distinct from the exocyclic C=C double bond itself) whose
+        // directional markers are specified at BOTH the opening and closing
+        // occurrences of the ring digit. Per the flip rule, opposite raw
+        // symbols (one `/`, one `\`) describe one consistent bond and must
+        // parse successfully; same-symbol at both ends is the conflicting
+        // case (unchanged by this fix -- only Up/Down are flipped, so a
+        // same-vs-different Double/Single conflict, e.g. "C=1CC-1", is
+        // unaffected).
+        let mol = parse(r"F/C=C/1CCCC\1").unwrap_or_else(|e| panic!("{e:?}"));
+        let out = canonical_smiles(&mol);
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse {out}: {e:?}"));
+        assert_eq!(
+            canonical_smiles(&mol2),
+            out,
+            "ring-closure E/Z with opposite-symbol agreement must round-trip stably"
+        );
+
+        // Same-symbol at both ends of a ring-closure directional bond is now
+        // (correctly) the conflicting combination.
+        assert!(matches!(
+            parse(r"F/C=C/1CCCC/1"),
+            Err(crate::error::SmilesError::ConflictingRingBond { ring_num: 1, .. })
+        ));
+    }
+
     // ── Allene cumulated double bond stereo ──────────────────────────────────
 
     #[test]
