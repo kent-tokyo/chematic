@@ -326,7 +326,8 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 既知の制限事項
 
-- **芳香族性モデル**: Hückel 4n+2 則を各 SSSR 環に独立適用（RDKit は縮合環電子非局在化モデルを使用）。N-ヘテロ環で差異あり。4,999 分子 ChEMBL コーパスの現状: HBA/HBD/芳香環数 **100%**、TPSA **98.1%**（±0.1 Å²）。
+- **環知覚（SSSR）が非決定的・非最小**（修正作業中）: `find_sssr` は単一の全域木から非木辺ごとに基本閉路を1つずつ生成するため、木の形によっては最小でない環（例: ナフタレン `c1ccc2ccccc2c1` が決定的に `[6,10]`を返す。正しくは`[6,6]`）を返すことがあります。5,000分子ChEMBLサブセットで測定: 単一パースでのRDKitとの環サイズ一致率は**72.4%**、同一分子の異なる10表現間では**50.6%**が走査順によって結果が変わります。環の**個数**は影響を受けません（トポロジー不変量のため100%正しい）。**Murckoスキャフォールド抽出は現状使用不可**（100%不安定、scaffold hopping/SAR解析に使用しないでください）。環サイズSMARTS（`[r5]`/`[r6]`、PAINS/Brenkの一部ルールが依存）も29〜55%不安定です。MW/TPSA/HBA/HBD/LogP/MR/RingCountは影響を受けないことを確認済みです。詳細: `scripts/ringinfo_parity.py`、`scripts/ring_collateral_damage.py`。
+- **芳香族性モデル**: Hückel 4n+2 則を各 SSSR 環に独立適用（RDKit は縮合環電子非局在化モデルを使用）。N-ヘテロ環で差異あり。4,999 分子 ChEMBL コーパスの現状: HBA/HBD/芳香環数 **100%**、TPSA **98.1%**（±0.1 Å²）。Kekulized入力でのworst-of-10芳香族性パリティ: **96.3%**（`scripts/aromaticity_atom_parity.py`）。上記SSSRの問題と根本原因を共有しており、併せて対応中です。
 - **TPSA 残差**: 1.9% はアジド基・マクロライドラクトン・ホスファゼン等の特殊化学構造に集中。
 
 ---

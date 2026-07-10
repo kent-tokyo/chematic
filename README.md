@@ -471,7 +471,9 @@ Not all features have the same validation depth. This table tells you what to tr
 | Tanimoto similarity | **Stable** | RDKit comparison |
 | SDF / MOL V2000/V3000 I/O | **Stable** | round-trip tests |
 | Substructure search (SMARTS / VF2) | **Stable** | internal test suite |
-| PAINS / Brenk filters | **Stable** | rule-based; matches public SMARTS databases |
+| PAINS / Brenk filters | **Partially reliable** | rule matching itself is stable, but rules using ring-size SMARTS (`[r5]`/`[r6]`) inherit the SSSR issue below (~29–55% instability measured) |
+| Ring perception (SSSR) | ⚠️ **Known issue** | non-deterministic and non-minimal for a large fraction of molecules — see Known Limitations below; fix in progress |
+| Murcko scaffold | ❌ **Broken — do not use** | 100% traversal-order instability measured (800-mol sample × 10 scan orders); do not use for scaffold hopping / SAR clustering until fixed |
 | 2D SVG depiction | **Stable** | visual spot-checks; not publication-quality |
 | 3D conformer (DG + MMFF94) | **Experimental** | reasonable geometry; not equivalent to RDKit ETKDGv3 quality |
 | pKa prediction | **Rule-based screening** | 15 SMARTS rules; early triage only, not clinical |
@@ -485,7 +487,8 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ## Known Limitations
 
-- **Aromaticity model**: chematic applies Hückel 4n+2 per SSSR ring independently; RDKit uses fused-ring electron delocalization. Visible differences in N-heterocycles (pyridone, quinolone, indolizine). Current benchmark on 4,999-mol ChEMBL subset: HBA/HBD/aromatic ring count **100%**; TPSA **99.7%** (±0.1 Å²); LogP **100%** (±0.01).
+- **Ring perception (SSSR) is non-deterministic and non-minimal** (actively being fixed): `find_sssr` builds a single spanning tree and takes one fundamental cycle per non-tree edge, with no redundancy to recover a smaller ring when the tree's shape makes one unnecessarily large. Concretely, naphthalene (`c1ccc2ccccc2c1`) deterministically returns ring sizes `[6, 10]` instead of `[6, 6]`. Measured on a 5,000-mol ChEMBL subset: ring-size agreement with RDKit on a single parse is **72.4%**; across 10 independently-traversed valid representations of the same molecule, **50.6%** give a different ring-size result depending on which representation is used. Ring *count* is unaffected (100% correct — it's a topological invariant), and this rarely changes final aromaticity flags (Pass 1/Pass 2 propagation tends to compensate), but anything reading ring *membership* or *size* directly is at risk. Measured impact on specific features: **Murcko scaffold extraction is currently unreliable (100% instability) — do not use for scaffold hopping or SAR clustering.** Ring-size SMARTS (`[r5]`, `[r6]`) are substantially unreliable (29–55% instability), which flows into any PAINS/Brenk rule using them. `NumAromaticRings` picks up a smaller ~4% instability, consistent with the aromaticity-model gap below. MW, TPSA, HBA/HBD, LogP, MR, and RingCount are confirmed unaffected. Full methodology and numbers: `scripts/ringinfo_parity.py`, `scripts/ring_collateral_damage.py`.
+- **Aromaticity model**: chematic applies Hückel 4n+2 per SSSR ring independently; RDKit uses fused-ring electron delocalization. Visible differences in N-heterocycles (pyridone, quinolone, indolizine). Current benchmark on 4,999-mol ChEMBL subset: HBA/HBD/aromatic ring count **100%**; TPSA **99.7%** (±0.1 Å²); LogP **100%** (±0.01). Aromaticity-flag parity on Kekulized input measured worst-of-10-representations: **96.3%** (`scripts/aromaticity_atom_parity.py`) — this and the SSSR issue above share a common root cause and are being addressed together.
 - **TPSA edge cases**: remaining 0.3% discrepancy (16 of 4,999 molecules) concentrated in exotic phosphazene ring-N calibration and cyclic sulfurimide/S=N=P chemistry — not relevant for drug-like molecules.
 
 ---
