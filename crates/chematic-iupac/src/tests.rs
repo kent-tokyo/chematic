@@ -184,6 +184,15 @@ fn test_disubstituted_benzene() {
 }
 
 #[test]
+fn test_disubstituted_benzene_two_principal_groups() {
+    // -OH and -NH2 are both principal-eligible (phenol/aniline); IUPAC seniority
+    // (alcohol > amine) must pick phenol as the root regardless of which atom the
+    // SMILES happens to list first (attach-point scan order used to decide this).
+    assert_eq!(name(&mol("Nc1ccc(O)cc1")).unwrap(), "4-aminophenol");
+    assert_eq!(name(&mol("Oc1ccc(N)cc1")).unwrap(), "4-aminophenol");
+}
+
+#[test]
 fn test_methylcycloalkane() {
     assert_eq!(name(&mol("CC1CCCCC1")).unwrap(), "methylcyclohexane");
     assert_eq!(name(&mol("CC1CCCC1")).unwrap(), "methylcyclopentane");
