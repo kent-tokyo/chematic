@@ -25,15 +25,37 @@ use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_S
 /// The returned `Vec<usize>` lists atom positions (0-based) in the order they
 /// would be encountered during a canonical DFS write.  Atoms with higher
 /// Morgan rank appear earlier.  This is the same ordering `canonical_smiles`
-/// uses internally.
+/// uses internally: raw `morgan_ranks` ties are resolved via the same
+/// individualize-refine + lexicographically-smallest-string selection, not
+/// left as an input-order-dependent plateau.
 ///
 /// Useful for normalizing atom-indexed property arrays to a canonical order.
 pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
-    let ranks = morgan_ranks(mol);
-    let mut order: Vec<usize> = (0..mol.atom_count()).collect();
+    let n = mol.atom_count();
+    if n == 0 {
+        return Vec::new();
+    }
+    let ranks = winning_individualized_ranks(mol);
+    let mut order: Vec<usize> = (0..n).collect();
     // Sort descending by rank (highest rank first, as in canonical DFS).
     order.sort_unstable_by(|&a, &b| ranks[b].cmp(&ranks[a]));
     order
+}
+
+/// Resolve `morgan_ranks` ties via individualize-refine and return the fully
+/// discrete per-atom ranks of whichever branch produces the
+/// lexicographically smallest canonical SMILES -- shared by
+/// `canonical_smiles` and `canonical_atom_order` so both use the identical
+/// tie-break, instead of `canonical_atom_order` silently falling back to raw
+/// (tie-break-free) `morgan_ranks`.
+fn winning_individualized_ranks(mol: &Molecule) -> Vec<u64> {
+    let plateaued = morgan_ranks(mol);
+    let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
+    let branches = enumerate_discrete_ranks(mol, plateaued, &mut budget);
+    branches
+        .into_iter()
+        .min_by_key(|ranks| CanonicalWriter::new(mol, ranks).write_all())
+        .unwrap_or_default()
 }
 
 /// Return `true` if atoms `a` and `b` are topologically equivalent (symmetric).
@@ -93,15 +115,8 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
         return String::new();
     }
 
-    let plateaued = morgan_ranks(mol);
-    let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
-    let branches = enumerate_discrete_ranks(mol, plateaued, &mut budget);
-
-    branches
-        .into_iter()
-        .map(|ranks| CanonicalWriter::new(mol, &ranks).write_all())
-        .min()
-        .unwrap_or_default()
+    let ranks = winning_individualized_ranks(mol);
+    CanonicalWriter::new(mol, &ranks).write_all()
 }
 
 /// Compute Morgan (extended connectivity) ranks for all atoms.
@@ -997,6 +1012,149 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// `canonical_atom_order` must be permutation-invariant: relabeling the
+    /// same molecule's atoms (different parse order) must not change WHICH
+    /// symmetry class of atom appears 1st, 2nd, 3rd, ... in the returned
+    /// order. Unlike `canonical_smiles`, `canonical_atom_order` does not run
+    /// individualize-refine -- it sorts raw `morgan_ranks` with no tie-break,
+    /// so this is expected to fail on any molecule with a genuine
+    /// (non-singleton) rank tie. This is a diagnostic probe for that gap, not
+    /// an already-passing invariant.
+    #[test]
+    fn canonical_atom_order_permutation_invariance_probe() {
+        let corpus = [
+            "O=C(NCc1cccnc1)NC[C@H]1CCC[C@H](OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)[C@@H]1c1ccccc1",
+            "c1ccccc1",
+            "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+            "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+            "O=C1CCC(=O)N1",
+            "c1ccc2ccc3ccccc3c2c1",
+            "O=C(NCc1cccnc1)NCC1CCCC(OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)C1c1ccccc1",
+        ];
+
+        let mut bad = 0;
+        let mut total = 0;
+        for smi in corpus {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e}"));
+            let n = mol.atom_count();
+            // Ground-truth atom-class labels, in the ORIGINAL molecule's index
+            // space only -- never relabeled independently for the permuted
+            // copy, or two arbitrary first-seen-order numberings would be
+            // compared against each other and any mismatch would be a
+            // methodology artifact, not a real instability (see the
+            // project's canonicalization-tie-break-theory / measurement-
+            // harness-controls lessons).
+            let part_orig = partition_key(&morgan_ranks(&mol));
+            let order_orig = canonical_atom_order(&mol);
+            let profile_orig: Vec<usize> = order_orig.iter().map(|&i| part_orig[i]).collect();
+
+            let perms: Vec<Vec<usize>> = vec![(0..n).rev().collect(), {
+                let mut p: Vec<usize> = (0..n).collect();
+                if n > 2 {
+                    p.rotate_left(n / 3 + 1);
+                }
+                p
+            }];
+
+            for perm in perms {
+                total += 1;
+                // perm[new_idx] = old_idx (see permute_molecule's contract).
+                let permuted = permute_molecule(&mol, &perm);
+                let order_perm = canonical_atom_order(&permuted);
+                // Map each returned NEW index back to the class of the
+                // corresponding OLD atom, via `part_orig` -- the same
+                // ground-truth labeling used for profile_orig.
+                let profile_perm: Vec<usize> = order_perm
+                    .iter()
+                    .map(|&new_i| part_orig[perm[new_i]])
+                    .collect();
+
+                if profile_orig != profile_perm {
+                    bad += 1;
+                    eprintln!(
+                        "canonical_atom_order NOT permutation-invariant for '{smi}' (perm {perm:?}): \
+                         {profile_orig:?} != {profile_perm:?}"
+                    );
+                }
+            }
+        }
+        eprintln!("canonical_atom_order instability: {bad}/{total} permutation trials");
+        assert_eq!(
+            bad, 0,
+            "{bad}/{total} permutation trials were unstable -- see stderr"
+        );
+    }
+
+    /// Direct probe (no permutation needed): does `canonical_atom_order`'s
+    /// naive `morgan_ranks`-only sort ever disagree with the FULLY
+    /// individualized/resolved rank order that `canonical_smiles` actually
+    /// verified-correct output is built from? Comparing against
+    /// same-partition-class labels (as the permutation probe above does) is
+    /// blind to intra-class reordering among genuinely symmetric
+    /// (automorphism-equivalent) atoms, where any order is harmless -- this
+    /// test instead reconstructs the winning individualized branch directly,
+    /// so it also catches disagreement WITHIN a Morgan-rank tie that is not
+    /// a true automorphism (exactly the class of bug individualize-refine
+    /// was built to fix for `canonical_smiles`, see Round 10-12 history).
+    #[test]
+    fn canonical_atom_order_matches_individualized_ranks_probe() {
+        let corpus = [
+            "O=C(NCc1cccnc1)NC[C@H]1CCC[C@H](OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)[C@@H]1c1ccccc1",
+            "c1ccccc1",
+            "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+            "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+            "O=C1CCC(=O)N1",
+            "c1ccc2ccc3ccccc3c2c1",
+            "O=C(NCc1cccnc1)NCC1CCCC(OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)C1c1ccccc1",
+            // Extra cases picked for symmetry that Weisfeiler-Leman-style
+            // refinement is known to struggle with (fused/bridged systems).
+            "C1CC2CCC1CC2",
+            "C1CC2CC1CC2",
+            "c1ccc(-c2ccccc2)cc1",
+            "OC1CCC(O)CC1",
+            "C12CC3CC(CC(C3)C1)C2",
+        ];
+
+        let mut needed_individualization = 0;
+        let mut mismatched = 0;
+        for smi in corpus {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e}"));
+            let plateaued = morgan_ranks(&mol);
+            let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
+            let branches = enumerate_discrete_ranks(&mol, plateaued, &mut budget);
+            if branches.len() > 1 {
+                needed_individualization += 1;
+            }
+            let winning_ranks = branches
+                .into_iter()
+                .min_by_key(|ranks| CanonicalWriter::new(&mol, ranks).write_all())
+                .expect("at least one branch");
+
+            let n = mol.atom_count();
+            let mut winning_order: Vec<usize> = (0..n).collect();
+            winning_order.sort_by(|&a, &b| winning_ranks[b].cmp(&winning_ranks[a]));
+
+            let naive_order = canonical_atom_order(&mol);
+            if naive_order != winning_order {
+                mismatched += 1;
+                eprintln!(
+                    "canonical_atom_order disagrees with resolved canonical order for '{smi}': \
+                     naive={naive_order:?} resolved={winning_order:?}"
+                );
+            }
+        }
+        eprintln!(
+            "{needed_individualization}/{} molecules needed individualization; \
+             {mismatched}/{} disagreed with canonical_atom_order",
+            corpus.len(),
+            corpus.len()
+        );
+        assert_eq!(
+            mismatched, 0,
+            "canonical_atom_order must match the individualized/resolved order -- see stderr"
+        );
     }
 
     /// Canonical SMILES must be stable: applying it twice gives the same result.
