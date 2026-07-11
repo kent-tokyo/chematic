@@ -290,12 +290,26 @@ struct McsState<'a> {
 // Core search: grow
 // ---------------------------------------------------------------------------
 
+/// Canonical key for tie-breaking equal-size(-and-bond-count) mappings: the
+/// mols[0]-side atom indices in query-discovery order. Comparing this key
+/// (rather than "whichever was found first") makes the winner a pure
+/// function of the mapping's content, so it doesn't depend on which order
+/// branch-and-bound happens to visit tied candidates in.
+fn mcs_tiebreak_key(mapping: &PartialMapping) -> Vec<u32> {
+    mapping.query_to_mol.iter().map(|row| row[0].0).collect()
+}
+
 fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
-    // Update best if this mapping is larger, or same size but more bonds (if enabled).
+    // Update best if this mapping is larger, or same size but more bonds (if enabled),
+    // or a same-size-and-bond-count tie broken by a canonical key (not "first found in
+    // DFS order", which depends on mols[0]'s atom insertion order -- the same bug shape
+    // as scaffold.rs Rule 8 / is_fused_ring found elsewhere in this project).
     let is_better = mapping.size > state.best.size
-        || (state.config.maximize_bonds
-            && mapping.size == state.best.size
-            && mapping.bond_count > state.best.bond_count);
+        || (mapping.size == state.best.size
+            && ((state.config.maximize_bonds && mapping.bond_count > state.best.bond_count)
+                || ((!state.config.maximize_bonds
+                    || mapping.bond_count == state.best.bond_count)
+                    && mcs_tiebreak_key(mapping) < mcs_tiebreak_key(&state.best))));
     if is_better {
         state.best = mapping.clone();
     }
