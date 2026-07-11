@@ -47,13 +47,16 @@ pub fn pharmacophore_fp_2d(mol: &Molecule) -> BitVec2048 {
         for j in (i + 1)..n {
             let ti = feature_type_to_index(features[i].ftype);
             let tj = feature_type_to_index(features[j].ftype);
+            // Sort the pair so the bit depends on the pair of feature TYPES, not on
+            // which atom happens to appear first in `features` (detection/parse order).
+            let (t_lo, t_hi) = if ti <= tj { (ti, tj) } else { (tj, ti) };
 
             // Simple distance metric: atom graph distance (BFS)
             let dist = topological_distance(mol, features[i].atom, features[j].atom);
             let bin = distance_to_bin_2d(dist);
 
-            // Pair-specific bit: 6 + (ti * 6 + tj) * 341 + bin
-            let pair_idx = ti * 6 + tj;
+            // Pair-specific bit: 6 + (t_lo * 6 + t_hi) * 341 + bin
+            let pair_idx = t_lo * 6 + t_hi;
             let bit_pos = 6 + pair_idx * 341 + bin;
             if bit_pos < 2048 {
                 fp.set(bit_pos);
@@ -158,6 +161,20 @@ fn topological_distance(
 mod tests {
     use super::*;
     use chematic_smiles::parse;
+
+    #[test]
+    fn test_pharmacophore_fp_2d_pair_bit_order_independent() {
+        // Ether O (acceptor, no H) and amine N (donor) are different feature
+        // types at a fixed topological distance -- real tie material for the
+        // pair_idx computation, since which one is "features[i]" vs
+        // "features[j]" flips between these two (same-molecule) spellings.
+        let a = pharmacophore_fp_2d(&parse("COCCCCN").unwrap());
+        let b = pharmacophore_fp_2d(&parse("NCCCCOC").unwrap());
+        assert_eq!(
+            a, b,
+            "pharmacophore_fp_2d must not depend on which atom is detected first"
+        );
+    }
 
     #[test]
     fn test_pharmacophore_fp_2d_benzene() {
