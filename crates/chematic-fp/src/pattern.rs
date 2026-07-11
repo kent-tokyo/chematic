@@ -42,25 +42,30 @@ fn compute_pattern_hash(mol: &Molecule, idx: AtomIdx) -> usize {
     hash = hash.wrapping_mul(fnv_prime);
 
     // Hash neighbor information
-    let neighbors: Vec<_> = mol.neighbors(idx).collect();
-    let degree = neighbors.len();
+    let mut neighbor_info: Vec<(usize, usize)> = mol
+        .neighbors(idx)
+        .map(|(neighbor_idx, bond_idx)| {
+            let neighbor_an = mol.atom(neighbor_idx).element.atomic_number() as usize;
+            let bond_order = match mol.bond(bond_idx).order {
+                BondOrder::Single => 1,
+                BondOrder::Double => 2,
+                BondOrder::Triple => 3,
+                BondOrder::Aromatic => 4,
+                _ => 1,
+            };
+            (neighbor_an, bond_order)
+        })
+        .collect();
+    // Sort so the hash depends only on the multiset of neighbor
+    // (atomic_number, bond_order) pairs, not on `mol.neighbors`' iteration
+    // order (which reflects parse/insertion order, not anything canonical).
+    neighbor_info.sort_unstable();
+    let degree = neighbor_info.len();
 
     hash ^= degree;
     hash = hash.wrapping_mul(fnv_prime);
 
-    // Hash neighbor atomic numbers and bond types
-    for (neighbor_idx, bond_idx) in neighbors {
-        let neighbor = mol.atom(neighbor_idx);
-        let neighbor_an = neighbor.element.atomic_number() as usize;
-        let bond = mol.bond(bond_idx);
-        let bond_order = match bond.order {
-            BondOrder::Single => 1,
-            BondOrder::Double => 2,
-            BondOrder::Triple => 3,
-            BondOrder::Aromatic => 4,
-            _ => 1,
-        };
-
+    for (neighbor_an, bond_order) in neighbor_info {
         hash ^= neighbor_an;
         hash = hash.wrapping_mul(fnv_prime);
         hash ^= bond_order;
@@ -95,6 +100,20 @@ mod tests {
         let m = mol("CC");
         let fp = pattern_fp(&m);
         assert!(fp.popcount() > 0, "ethane should have non-zero bits");
+    }
+
+    #[test]
+    fn test_pattern_fp_order_independent() {
+        // Acetamide's carbonyl carbon has 3 chemically distinct neighbors
+        // (=O, -N, -C) -- their traversal order differs between these two
+        // spellings (which neighbor gets bonded to the carbonyl carbon
+        // first during parsing differs), so this is real tie material for
+        // compute_pattern_hash's neighbor fold, not a harmless symmetric
+        // case. Same molecule must give the same fingerprint regardless of
+        // input spelling.
+        let a = pattern_fp(&mol("CC(=O)N"));
+        let b = pattern_fp(&mol("NC(=O)C"));
+        assert_eq!(a, b, "pattern_fp must not depend on SMILES atom order");
     }
 
     #[test]
