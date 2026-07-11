@@ -5,6 +5,29 @@ fn mol(s: &str) -> Molecule {
     parse(s).unwrap()
 }
 
+/// Rebuild `mol` with atoms relabeled by `perm` (perm[new_idx] = old_idx),
+/// preserving the same graph/bonds but a different atom insertion order --
+/// used to test that naming does not depend on which atom the underlying
+/// storage happens to visit first (e.g. `find_longest_c_chain`'s BFS
+/// tie-break).
+fn permute(mol: &Molecule, perm: &[usize]) -> Molecule {
+    use chematic_core::{AtomIdx, MoleculeBuilder};
+    let mut old_to_new = vec![0u32; perm.len()];
+    for (new_idx, &old_idx) in perm.iter().enumerate() {
+        old_to_new[old_idx] = new_idx as u32;
+    }
+    let mut builder = MoleculeBuilder::new();
+    for &old_idx in perm {
+        builder.add_atom(mol.atom(AtomIdx(old_idx as u32)).clone());
+    }
+    for (_, bond) in mol.bonds() {
+        let a = AtomIdx(old_to_new[bond.atom1.0 as usize]);
+        let b = AtomIdx(old_to_new[bond.atom2.0 as usize]);
+        let _ = builder.add_bond(a, b, bond.order);
+    }
+    builder.build()
+}
+
 // --- Existing tests (must remain green) ---------------------------------
 
 #[test]
@@ -127,6 +150,32 @@ fn test_branched_alkanes() {
     assert_eq!(name(&mol("CC(C)CC")).unwrap(), "2-methylbutane");
     assert_eq!(name(&mol("CC(C)(C)C")).unwrap(), "2,2-dimethylpropane");
     assert_eq!(name(&mol("CCCC(C)CC")).unwrap(), "3-methylhexane");
+}
+
+#[test]
+fn test_branched_alkane_symmetric_tie_atom_order_invariant() {
+    // 3-ethylpentane: the central carbon has three chemically-identical
+    // 2-carbon arms (a genuine BFS-depth tie in find_longest_c_chain, not
+    // just a symmetric-automorphism non-issue -- whichever arm's terminus
+    // wins "farthest" determines which two arms form the reported main
+    // chain). Naming must not depend on the underlying atom insertion order.
+    let base = mol("CCC(CC)CC");
+    assert_eq!(name(&base).unwrap(), "3-ethylpentane");
+
+    let n = base.atom_count();
+    let perms: Vec<Vec<usize>> = vec![(0..n).rev().collect(), {
+        let mut p: Vec<usize> = (0..n).collect();
+        p.rotate_left(3);
+        p
+    }];
+    for perm in perms {
+        let permuted = permute(&base, &perm);
+        assert_eq!(
+            name(&permuted).unwrap(),
+            "3-ethylpentane",
+            "naming changed under atom permutation {perm:?}"
+        );
+    }
 }
 
 #[test]

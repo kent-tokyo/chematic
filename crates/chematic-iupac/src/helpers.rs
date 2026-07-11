@@ -44,20 +44,31 @@ pub(crate) fn find_longest_c_chain(mol: &Molecule, carbons: &[AtomIdx]) -> Vec<A
     let bfs_far = |start: AtomIdx| -> (AtomIdx, std::collections::HashMap<AtomIdx, AtomIdx>) {
         let mut parent: std::collections::HashMap<AtomIdx, AtomIdx> =
             std::collections::HashMap::new();
+        let mut depth: std::collections::HashMap<AtomIdx, usize> = std::collections::HashMap::new();
         let mut visited: std::collections::HashSet<AtomIdx> = std::collections::HashSet::new();
         let mut queue = VecDeque::new();
-        let mut farthest = start;
         visited.insert(start);
+        depth.insert(start, 0);
         queue.push_back(start);
         while let Some(cur) = queue.pop_front() {
-            farthest = cur;
             for (nb, _) in mol.neighbors(cur) {
                 if c_set.contains(&nb) && visited.insert(nb) {
                     parent.insert(nb, cur);
+                    depth.insert(nb, depth[&cur] + 1);
                     queue.push_back(nb);
                 }
             }
         }
+        // Tie-break deterministically on length ties: neighbor iteration order (and thus
+        // "last dequeued") is parse-order dependent, so pick the smallest AtomIdx among
+        // the nodes at maximum BFS depth instead.
+        let max_depth = *depth.values().max().unwrap_or(&0);
+        let farthest = depth
+            .iter()
+            .filter(|&(_, &d)| d == max_depth)
+            .map(|(&a, _)| a)
+            .min()
+            .unwrap_or(start);
         (farthest, parent)
     };
 
