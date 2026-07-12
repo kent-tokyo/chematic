@@ -867,6 +867,72 @@ mod tests {
         );
     }
 
+    /// Rebuild `mol` with atoms relabeled by `perm` (perm[new_idx] = old_idx),
+    /// preserving the same graph but a different atom insertion order.
+    fn permute_molecule(mol: &chematic_core::Molecule, perm: &[usize]) -> chematic_core::Molecule {
+        let mut old_to_new = vec![0u32; perm.len()];
+        for (new_idx, &old_idx) in perm.iter().enumerate() {
+            old_to_new[old_idx] = new_idx as u32;
+        }
+        let mut builder = MoleculeBuilder::new();
+        for &old_idx in perm {
+            builder.add_atom(mol.atom(AtomIdx(old_idx as u32)).clone());
+        }
+        for (_, bond) in mol.bonds() {
+            let a = AtomIdx(old_to_new[bond.atom1.0 as usize]);
+            let b = AtomIdx(old_to_new[bond.atom2.0 as usize]);
+            let _ = builder.add_bond(a, b, bond.order);
+        }
+        builder.build()
+    }
+
+    /// find_sssr's ring-size multiset must not depend on atom insertion order.
+    /// Probes the fused/bridged/cage systems this project has already
+    /// identified as the hard cases for canonical_atom_ranks' 3-round
+    /// (not-fixpoint) Weisfeiler-Leman tie-break -- unlike
+    /// `canonical_atom_order` (chematic-smiles), this function's doc comment
+    /// does not claim full canonical-labeling power, and find_sssr's
+    /// self-stability was already measured at 0% on a 5000-molecule corpus
+    /// during the Horton rewrite (698ba3f); this is a permanent regression
+    /// guard for that claim, not a first-time probe.
+    #[test]
+    fn find_sssr_ring_size_multiset_is_permutation_invariant() {
+        let cases: Vec<(&str, chematic_core::Molecule)> = vec![
+            ("naphthalene", naphthalene()),
+            ("norbornane", norbornane()),
+            ("spiro_nonane", spiro_nonane()),
+            ("adamantane", adamantane()),
+            (
+                "cubane",
+                chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES"),
+            ),
+        ];
+
+        for (name, mol) in cases {
+            let n = mol.atom_count();
+            let mut orig_sizes: Vec<usize> = find_sssr(&mol).rings().iter().map(Vec::len).collect();
+            orig_sizes.sort_unstable();
+
+            let perms: Vec<Vec<usize>> = vec![(0..n).rev().collect(), {
+                let mut p: Vec<usize> = (0..n).collect();
+                if n > 2 {
+                    p.rotate_left(n / 3 + 1);
+                }
+                p
+            }];
+            for perm in perms {
+                let permuted = permute_molecule(&mol, &perm);
+                let mut perm_sizes: Vec<usize> =
+                    find_sssr(&permuted).rings().iter().map(Vec::len).collect();
+                perm_sizes.sort_unstable();
+                assert_eq!(
+                    orig_sizes, perm_sizes,
+                    "{name}: SSSR ring-size multiset changed under atom permutation {perm:?}"
+                );
+            }
+        }
+    }
+
     // ── RDKit PR #9118: SSSR excludes Zero-order and Dative bonds ────────────
 
     #[test]
