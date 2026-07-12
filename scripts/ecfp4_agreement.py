@@ -3,6 +3,31 @@
 ECFP4 vs RDKit agreement -- the "Round 1" migration-decision metric, never
 measured before this script existed.
 
+Headline result (5,000-mol ChEMBL corpus): chematic's ECFP4 is NOT the
+standard Rogers-Hahn/RDKit ECFP definition -- its radius-0 invariant
+includes atom.aromatic, which RDKit's default invariant set omits
+(source-confirmed, crates/chematic-fp/src/ecfp.rs:initial_atom_id). This is
+a legitimate design choice (cf. FCFP), not a hash-folding artifact, and it
+is why only ~77% of molecules produce an identical invariant-equivalence
+structure to RDKit's (tier 2) and pairwise similarity correlates at r=0.94,
+not ~1.0 (tier 3). Practical consequence: bit vectors are not
+RDKit-compatible (expected -- different hash), and similarity is *close but
+not identical* to RDKit's -- RDKit-trained thresholds/models should not be
+assumed to transfer without re-validation.
+
+Separately, tier 5 found a real, previously-unknown self-consistency defect:
+because atom.aromatic is not auto-perceived for Kekule-written SMILES
+(chematic requires an explicit apply_aromaticity() call), ecfp4() gives a
+DIFFERENT fingerprint for two equally valid spellings of the identical
+molecule in 92% of cases if the caller skips that call (a footgun, but
+arguably working as documented -- see CLAUDE.md/README on the
+aromaticity-perception contract). More seriously, ~13% of molecules STILL
+mismatch even *after* calling apply_aromaticity() as documented -- of
+those, roughly a third also show disagreeing aromatic_ring_count (consistent
+with, though not proven identical to, the pre-existing aromatic_context
+perception bug) and about two-thirds have identical aromatic_ring_count yet
+still a different fingerprint -- an unattributed, separate, real defect.
+
 Raw bit-vector equality is NOT a meaningful cross-implementation metric here
 and is intentionally NOT the headline number: chematic hashes atom
 environments with FNV-1a (see crates/chematic-fp/src/ecfp.rs, whose own
@@ -16,26 +41,59 @@ look misleadingly HIGH, not low. It is printed once (tier 0) purely so the
 number exists on the record and nobody re-derives the same false alarm in a
 future round.
 
-Three real tiers, all hash-independent, all built on introspection that
-already existed on both sides before this script (chematic's
-Mol.ecfp_bitinfo/morgan_fp_counts/bond_table, RDKit's bitInfo):
+Tiers, all hash-independent, all built on introspection that already existed
+on both sides before this script (chematic's
+Mol.ecfp_bitinfo/morgan_fp_counts/bond_table, RDKit's bitInfo /
+GetSparseCountFingerprint):
 
   1. Coverage parity   -- does chematic generate an environment at every
-                           (atom, radius) RDKit does, full corpus.
-  2. Neighborhood identity -- for a sample, does the bond-radius atom-set
-                           neighborhood at each radius match atom-for-atom
-                           (same SMILES parsed by both, unpermuted -> same
-                           atom indices on both sides). This is the real
-                           "did we implement the same ECFP chemistry" check.
+                           (atom, radius) RDKit does, full corpus. Tests
+                           *emission slots*, not what each slot encodes.
+  2. Invariant partition agreement -- the real chemistry check, and the one
+                           that actually found a difference. Within each
+                           implementation, group that molecule's raw
+                           (unfolded) environment hashes by equality -- two
+                           environments landing on the same raw hash means
+                           THAT implementation considers them chemically
+                           identical. Compare the resulting partition SHAPE
+                           (sorted multiset of group sizes) between chematic
+                           and RDKit -- hash-*value*-independent, so this
+                           isolates genuine invariant-encoding disagreement.
+                           Result: chematic's radius-0 invariant includes
+                           `atom.aromatic` (crates/chematic-fp/src/ecfp.rs:
+                           initial_atom_id); RDKit's default invariant does
+                           not. Root-caused, not assumed -- see tier 5 for
+                           the practical consequence this has.
   3. Similarity-structure preservation -- for a sample of molecule pairs,
                            does chematic's Tanimoto(A,B) correlate with
                            RDKit's Tanimoto(A,B)? This is the practical
                            "is it a valid drop-in for similarity search /
-                           clustering / QSAR" answer.
+                           clustering / QSAR" answer. The residual gap here
+                           is explained by tier 2's invariant difference,
+                           not purely by hash-fold collisions.
+  4. Connectivity sanity check (auxiliary, NOT a fingerprint test) -- does
+                           independently-run BFS adjacency agree between the
+                           two libraries' parsed graphs? This only checks
+                           that both parsers agree on which atoms are bonded
+                           to which; it never touches fingerprint code and
+                           cannot by itself detect an invariant-encoding
+                           difference (that's tier 2's job). Kept because a
+                           parser-level disagreement would invalidate every
+                           other tier's atom-index correspondence.
+  5. Aromaticity representation-dependence -- the practical consequence of
+                           tier 2's finding: because `atom.aromatic` feeds
+                           the invariant and is NOT auto-perceived for
+                           Kekule-written SMILES (chematic requires an
+                           explicit apply_aromaticity() call), ecfp4() can
+                           give a DIFFERENT fingerprint for two equally
+                           valid spellings of the identical molecule. This
+                           is chematic-internal self-consistency, not an
+                           RDKit comparison, and confirms whether
+                           apply_aromaticity() is a complete fix at scale.
 
 Usage:
     .venv/bin/python scripts/ecfp4_agreement.py [SMILES.csv] [--limit N]
-        [--neighborhood-sample N] [--pairs-sample N] [--json out.json]
+        [--partition-sample N] [--pairs-sample N] [--json out.json]
 """
 import argparse
 import json
@@ -136,7 +194,132 @@ def tier1_coverage_parity(smis, chematic, Chem, rdFingerprintGenerator, limit):
     }
 
 
-def tier2_neighborhood_identity(smis, chematic, Chem, sample_n, seed):
+def tier2_invariant_partition_agreement(smis, chematic, Chem, rdFingerprintGenerator, limit):
+    # Same fairness fix as tier 1: RDKit's default prunes "redundant"
+    # environments, which would make its partition trivially different from
+    # chematic's for reasons unrelated to invariant correctness.
+    gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, includeRedundantEnvironments=True)
+
+    sample = smis[:limit] if limit else smis
+
+    n_mol = 0
+    n_exact_profile_match = 0
+    examples = []
+    for smi in sample:
+        rd = Chem.MolFromSmiles(smi)
+        if rd is None:
+            continue
+        try:
+            cm = chematic.from_smiles(smi)
+        except Exception:
+            continue
+        n_mol += 1
+
+        chem_profile = sorted(cm.morgan_fp_counts(2).values())
+
+        rd_sparse = gen.GetSparseCountFingerprint(rd)
+        rd_profile = sorted(rd_sparse.GetNonzeroElements().values())
+
+        if chem_profile == rd_profile:
+            n_exact_profile_match += 1
+        elif len(examples) < 10:
+            examples.append(
+                {
+                    "smiles": smi,
+                    "chematic_n_groups": len(chem_profile),
+                    "chematic_total_envs": sum(chem_profile),
+                    "rdkit_n_groups": len(rd_profile),
+                    "rdkit_total_envs": sum(rd_profile),
+                }
+            )
+    return {
+        "n_molecules": n_mol,
+        "exact_profile_match": n_exact_profile_match,
+        "agreement_pct": round(100.0 * n_exact_profile_match / n_mol, 2) if n_mol else None,
+        "examples": examples,
+    }
+
+
+def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, seed):
+    # Root-caused via crates/chematic-fp/src/ecfp.rs:initial_atom_id -- the
+    # radius-0 invariant explicitly includes `atom.aromatic as u8`. Since
+    # `atom.aromatic` is not auto-perceived for Kekule-written SMILES
+    # (chematic requires an explicit apply_aromaticity() call, unlike
+    # RDKit's default sanitize-on-parse), ecfp4() is representation-
+    # dependent for any caller who fingerprints Kekule-spelled input without
+    # perceiving aromaticity first -- the same molecule gets a different
+    # fingerprint depending on which valid SMILES spelling was used. This
+    # tier quantifies how often that actually triggers on a real corpus, and
+    # confirms apply_aromaticity() is a complete fix (not just for benzene).
+    rng = random.Random(seed)
+    sample = smis if len(smis) <= sample_n else rng.sample(smis, sample_n)
+
+    n_checked = 0
+    n_naive_mismatch = 0
+    n_perceived_still_mismatch = 0
+    # Of the still-mismatching cases: does aromatic_ring_count (an
+    # order-independent, ring-level summary -- comparable across the two
+    # spellings despite their atom indices differing) also disagree? If
+    # yes, this is consistent with the known aromatic_context
+    # perception bug (azulene/purine-class fused heterocycles). If the
+    # ring-level summary agrees but the fingerprint still doesn't, ring
+    # PERCEPTION is not the cause -- a separate, unattributed defect.
+    n_perception_disagrees = 0
+    n_perception_agrees_but_fp_differs = 0
+    examples_perception = []
+    examples_unattributed = []
+    for smi in sample:
+        rd = Chem.MolFromSmiles(smi)
+        if rd is None:
+            continue
+        rd_kek = Chem.MolFromSmiles(smi)
+        try:
+            Chem.Kekulize(rd_kek, clearAromaticFlags=True)
+        except Exception:
+            continue
+        kek_smi = Chem.MolToSmiles(rd_kek, kekuleSmiles=True, canonical=False)
+        try:
+            cm_arom = chematic.from_smiles(smi)
+            cm_kek_naive = chematic.from_smiles(kek_smi)
+        except Exception:
+            continue
+        n_checked += 1
+
+        naive_mismatch = cm_arom.ecfp4() != cm_kek_naive.ecfp4()
+        if naive_mismatch:
+            n_naive_mismatch += 1
+
+        cm_kek_perceived = cm_kek_naive.apply_aromaticity()
+        if cm_arom.ecfp4() != cm_kek_perceived.ecfp4():
+            n_perceived_still_mismatch += 1
+            if cm_arom.aromatic_ring_count != cm_kek_perceived.aromatic_ring_count:
+                n_perception_disagrees += 1
+                if len(examples_perception) < 5:
+                    examples_perception.append(
+                        {
+                            "smiles": smi,
+                            "aromatic_ring_count_orig": cm_arom.aromatic_ring_count,
+                            "aromatic_ring_count_kekule_reperceived": cm_kek_perceived.aromatic_ring_count,
+                        }
+                    )
+            else:
+                n_perception_agrees_but_fp_differs += 1
+                if len(examples_unattributed) < 5:
+                    examples_unattributed.append({"smiles": smi, "kekule_smiles": kek_smi})
+
+    return {
+        "n_molecules": n_checked,
+        "naive_mismatch": n_naive_mismatch,
+        "naive_mismatch_pct": round(100.0 * n_naive_mismatch / n_checked, 2) if n_checked else None,
+        "apply_aromaticity_mitigated_mismatch": n_perceived_still_mismatch,
+        "residual_ring_perception_disagrees": n_perception_disagrees,
+        "residual_ring_perception_agrees_but_fp_differs": n_perception_agrees_but_fp_differs,
+        "examples_perception_disagrees": examples_perception,
+        "examples_unattributed": examples_unattributed,
+    }
+
+
+def tier4_connectivity_sanity_check(smis, chematic, Chem, sample_n, seed):
     rng = random.Random(seed)
     sample = smis if len(smis) <= sample_n else rng.sample(smis, sample_n)
 
@@ -263,10 +446,11 @@ def tier0_raw_bit_equality(smis, chematic, Chem, AllChem, sample_n, seed):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("smiles_csv", nargs="?", default="~/Downloads/SMILES.csv")
-    parser.add_argument("--limit", type=int, default=None, help="Cap corpus size (tier 1)")
-    parser.add_argument("--neighborhood-sample", type=int, default=300, help="Molecules for tier 2")
-    parser.add_argument("--pairs-sample", type=int, default=300, help="Molecules for tier 3 (pairwise)")
+    parser.add_argument("--limit", type=int, default=None, help="Cap corpus size (tiers 1/2, cheap)")
     parser.add_argument("--bit-sample", type=int, default=300, help="Molecules for tier 0")
+    parser.add_argument("--pairs-sample", type=int, default=300, help="Molecules for tier 3 (pairwise, O(n^2))")
+    parser.add_argument("--connectivity-sample", type=int, default=300, help="Molecules for tier 4")
+    parser.add_argument("--aromaticity-sample", type=int, default=300, help="Molecules for tier 5")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--json", default=None)
     args = parser.parse_args()
@@ -304,10 +488,11 @@ def main():
         print(f"  example mismatch: {t1['examples'][0]}")
     print()
 
-    print("Tier 2 -- neighborhood identity (bond-radius atom-set agreement)...")
-    t2 = tier2_neighborhood_identity(smis, chematic, Chem, args.neighborhood_sample, args.seed)
-    print(f"  {t2['n_match']}/{t2['n_atom_radius_checks']} atom-radius checks match "
-          f"({t2['agreement_pct']}%) across {t2['n_molecules']} molecules")
+    print("Tier 2 -- invariant partition agreement (the real chemistry check: do the two "
+          "implementations group environments into identical-size equivalence classes)...")
+    t2 = tier2_invariant_partition_agreement(smis, chematic, Chem, rdFingerprintGenerator, args.limit)
+    print(f"  {t2['exact_profile_match']}/{t2['n_molecules']} molecules "
+          f"({t2['agreement_pct']}%) have an identical invariant-equivalence-class profile")
     if t2["examples"]:
         print(f"  example mismatch: {t2['examples'][0]}")
     print()
@@ -319,8 +504,34 @@ def main():
           f"({t3['n_molecules']} molecules)")
     print()
 
+    print("Tier 4 -- connectivity sanity check (auxiliary; parser agreement, NOT a fingerprint test)...")
+    t4 = tier4_connectivity_sanity_check(smis, chematic, Chem, args.connectivity_sample, args.seed)
+    print(f"  {t4['n_match']}/{t4['n_atom_radius_checks']} atom-radius checks match "
+          f"({t4['agreement_pct']}%) across {t4['n_molecules']} molecules")
+    if t4["examples"]:
+        print(f"  example mismatch: {t4['examples'][0]}")
+    print()
+
+    print("Tier 5 -- aromaticity representation-dependence (chematic self-consistency, "
+          "practical consequence of tier 2)...")
+    t5 = tier5_aromaticity_representation_dependence(smis, chematic, Chem, args.aromaticity_sample, args.seed)
+    print(f"  naive (no apply_aromaticity): {t5['naive_mismatch']}/{t5['n_molecules']} "
+          f"({t5['naive_mismatch_pct']}%) molecules get a DIFFERENT ecfp4() for the Kekule "
+          f"spelling vs. the aromatic spelling of the same molecule")
+    print(f"  after apply_aromaticity(): {t5['apply_aromaticity_mitigated_mismatch']}/"
+          f"{t5['n_molecules']} still mismatching, of which:")
+    print(f"    {t5['residual_ring_perception_disagrees']} also disagree on aromatic_ring_count "
+          f"(consistent with the known aromatic_context perception bug)")
+    print(f"    {t5['residual_ring_perception_agrees_but_fp_differs']} have IDENTICAL "
+          f"aromatic_ring_count but still a different fingerprint (unattributed, separate defect)")
+    if t5["examples_unattributed"]:
+        print(f"  unattributed example: {t5['examples_unattributed'][0]}")
+    print()
+
     result = {"tier0_raw_bit_equality": t0, "tier1_coverage_parity": t1,
-              "tier2_neighborhood_identity": t2, "tier3_similarity_correlation": t3}
+              "tier2_invariant_partition_agreement": t2, "tier3_similarity_correlation": t3,
+              "tier4_connectivity_sanity_check": t4,
+              "tier5_aromaticity_representation_dependence": t5}
     if args.json:
         with open(args.json, "w") as f:
             json.dump(result, f, indent=2)

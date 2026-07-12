@@ -34,7 +34,7 @@ are found by scanning for blank cells, not by accident.
 | InChI (native, IUPAC C lib) | **UNMEASURED** at scale (spot tests only) | **UNMEASURED** | InChI /m /s (enantiomer/isotope) layers not yet measured post-canonicalization fix | — |
 | Aromaticity perception (Hückel per-SSSR-ring) | **PARTIAL** — 96.3% atom-flag parity on Kekulized input, worst-of-10 | **UNMEASURED** directly (implied stable via downstream ring counts) | azulene, purine regressed by SSSR fix; root cause (`aromatic_context` bypass) identified, not fixed | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | SSSR / ring perception | **MEASURED** — 98.9% ring-size agreement vs `GetSymmSSSR`, 5000-mol; residual is RDKit over-symmetrization, not a chematic bug | **MEASURED** — 100% self-stability (was 50.6%); permanent regression test added | Full Vismara relevant-cycle symmetrization not implemented (not required for correctness) | `sssr_horton_and_canonical_smiles_gap` |
-| **ECFP4 fingerprint** | **MEASURED** (this round) — see [worked example](#ecfp4-vs-rdkit--worked-example) below | **MEASURED** (this round) — chemistry-level: 100% | Similarity correlation ~0.94 vs. default-config RDKit, explained by differing hash-fold collisions (not a chemistry gap) | `scripts/ecfp4_agreement.py`, this round |
+| **ECFP4 fingerprint** | **MEASURED** (this round) — see [worked example](#ecfp4-vs-rdkit--worked-example) below. Not the standard Rogers-Hahn/RDKit invariant set (includes aromaticity); ~77% invariant-partition match, r=0.94 similarity correlation | **MEASURED** (this round) — self-consistency bug found: 92% of molecules get a different `ecfp4()` for Kekulé vs. aromatic spelling unless `apply_aromaticity()` is called first; ~13% still differ even after calling it | **KNOWN GAP** — 92% naive mismatch is a documented-contract footgun (call `apply_aromaticity()` first); the post-mitigation ~13% residual splits into ~1/3 consistent with the known `aromatic_context` perception bug and ~2/3 **unattributed, new defect** (identical `aromatic_ring_count`, still a different fingerprint) | `scripts/ecfp4_agreement.py`, this round |
 | FCFP / ECFP6 / other Morgan-basis fingerprints | **UNMEASURED** directly — share ECFP4's underlying Morgan-rank basis and neighbor-sort fix, no dedicated comparison run | **PARTIAL** — neighbor-sort order-independence fixed Round 14 (`86e0d24`), not re-verified at scale | — | `first_zero_order_dependence_audit` |
 | Pattern fingerprint | **UNMEASURED** vs RDKit | **MEASURED** — order-independence fixed and tested (Round 14) | — | `first_zero_order_dependence_audit` |
 | Pharmacophore fingerprint (2D/3D) | **UNMEASURED** vs RDKit | **MEASURED** — pair-bit symmetry fixed and tested (Round 14) | — | `first_zero_order_dependence_audit` |
@@ -88,13 +88,29 @@ Ranked by how load-bearing the gap is for a migration decision, highest first:
    bug feeding InChI was fixed this round-series, but InChI's own output was never
    re-measured against a real InChI corpus afterward.
 
+## New defect found this round (not a blank cell — a confirmed bug)
+
+Measuring ECFP4 surfaced a real, previously-unknown, unfixed correctness issue, not just
+a coverage gap: **`ecfp4()` is representation-dependent for ~13% of molecules even after
+following the documented `apply_aromaticity()` contract** (see the worked example below).
+Of that residual, roughly a third correlates with the already-known `aromatic_context`
+perception bug, but roughly two-thirds do **not** — identical `aromatic_ring_count`
+before and after, yet a different fingerprint. That two-thirds is a new, unattributed
+defect with no existing tracking. Not fixed this round (scope was measurement, not
+remediation) — flagged here so it doesn't get lost.
+
 ---
 
 ## ECFP4 vs RDKit — worked example
 
 The "Round 1" migration-decision metric, measured for the first time this round
 (`scripts/ecfp4_agreement.py`, 5,000-mol ChEMBL corpus, environment: Python 3.13,
-chematic v0.4.29, RDKit 2026.03.3).
+chematic v0.4.29, RDKit 2026.03.3). An earlier pass at this measurement wrongly reported
+"100% chemistry-level agreement" based on two checks that didn't actually test what they
+claimed to (see [[ecfp4_agreement_methodology]] for the full self-correction — a
+connectivity-only BFS check that couldn't detect an invariant difference by construction,
+and an unverified assumption about what caused the Tanimoto correlation gap). This
+section reflects the corrected, source-verified result.
 
 **Why raw bit-vector equality isn't the headline number:** chematic hashes atom
 environments with FNV-1a (`crates/chematic-fp/src/ecfp.rs`); its own doc comment already
@@ -105,20 +121,48 @@ manufacture a misleading number regardless of correctness (and because both fing
 are sparse, it's actually biased *high*, not low: measured 95.36% per-position agreement
 on a 1,000-mol sample, dominated by 0/0 non-matches, not a signal of anything).
 
-**What was actually measured, three ways:**
+**Finding A — chematic's ECFP4 is a related-but-different fingerprint, not the standard
+one.** Its radius-0 invariant explicitly includes `atom.aromatic`
+(`crates/chematic-fp/src/ecfp.rs:initial_atom_id`, source-read, not inferred); RDKit's
+default Morgan invariant (atomic number, degree, H-count, charge, isotope delta, ring
+membership) does not. This is a legitimate design choice — closer in spirit to FCFP than
+to standard ECFP — not a bug, but it means chematic's ECFP4 is **not bit-compatible with
+RDKit's by design**, not merely by hash-function accident:
 
 | Tier | What it measures | Result |
 |---|---|---|
-| Coverage parity | Does chematic generate an environment at every `(atom, radius)` RDKit does, radius ∈ {0,1,2}? (RDKit run with `includeRedundantEnvironments=True` — its default silently prunes some real environments, confirmed via RDKit's own unfolded fingerprint; disabling that pruning is required for a fair chemistry-only comparison.) | **5000/5000 (100%)** exact match |
-| Neighborhood identity | Independent BFS in both libraries: does the bond-radius atom-set neighborhood match, atom-for-atom, at radius 1 and 2? (Same SMILES parsed unpermuted by both, so atom index *i* is the same physical atom on both sides; chematic side built from `Mol.bond_table`, no new library code.) | **55,630/55,630 (100%)** across 1,000 molecules |
-| Similarity-structure preservation | Pearson correlation between chematic's and RDKit's pairwise Tanimoto similarity (default RDKit config, matching real-world usage), 499,500 pairs from 1,000 molecules | **r = 0.9385**, mean \|Δ Tanimoto\| = 0.0163 |
+| Coverage parity | Does chematic generate an environment at every `(atom, radius)` RDKit does, radius ∈ {0,1,2}? (RDKit run with `includeRedundantEnvironments=True` to disable its default silent pruning, for a fair comparison.) | **5000/5000 (100%)** exact match — same emission slots |
+| Invariant partition agreement | Within each implementation, do environments that hash identically (i.e. "this implementation considers these chemically identical") form the same grouping structure on both sides? Hash-*value*-independent — isolates genuine invariant-encoding disagreement. | **3849/5000 (76.98%)** exact match. Root cause: the aromaticity-in-invariant difference above |
+| Similarity-structure preservation | Pearson correlation between chematic's and RDKit's pairwise Tanimoto similarity (default RDKit config, matching real-world usage), 499,500 pairs from 1,000 molecules | **r = 0.9385**, mean \|Δ Tanimoto\| = 0.0163 — primarily consistent with (not fully decomposed to) the invariant difference above |
+| Connectivity sanity check (auxiliary) | Independently-run BFS in both libraries: does the bond-radius atom-set neighborhood match, atom-for-atom? This checks *parser* agreement only — it never touches fingerprint invariant code and cannot by itself detect an invariant-encoding difference. | **55,630/55,630 (100%)** across 1,000 molecules — parsers agree; not evidence the fingerprints agree |
 
-**Conclusion:** chematic's ECFP4 implements the *same chemistry* as RDKit's Morgan
-fingerprint — confirmed two independent, hash-independent ways at 100%. The Tanimoto
-correlation of 0.94 (not ~1.0) is fully explained by the two implementations using
-different hash functions to fold the same environments into 2048 bits, producing
-different (but equally valid) bit-collision patterns — not a chemistry disagreement.
-This is a strong, positive, previously-never-measured answer to the original migration
-question.
+**Migration-decision answer:** not bit-compatible with RDKit (expected — different hash),
+**not the standard ECFP4 definition** (aromaticity-augmented invariant, a deliberate
+deviation), similarity correlates strongly but not perfectly (r≈0.94) — **RDKit-trained
+similarity thresholds or ML models should not be assumed to transfer without
+re-validation.**
+
+**Finding B — a real self-consistency defect, found by testing whether chematic agrees
+with *itself* across two spellings of the same molecule** (not an RDKit comparison):
+because `atom.aromatic` feeds the invariant (Finding A) and is not auto-perceived for
+Kekulé-written SMILES (chematic requires an explicit `apply_aromaticity()` call, unlike
+RDKit's auto-sanitize-on-parse), the same molecule can get two different fingerprints
+depending on which valid spelling was used to construct it:
+
+| Check | Result |
+|---|---|
+| Naive (no `apply_aromaticity()`) — aromatic vs. Kekulé spelling of the same molecule, 1,000-mol sample | **922/1000 (92.2%)** get a different `ecfp4()` |
+| After calling `apply_aromaticity()` as documented | **130/1000 (13.0%)** *still* mismatch |
+| Of that residual: `aromatic_ring_count` also disagrees between the two spellings | **41/130 (~32%)** — consistent with the known `aromatic_context` perception bug |
+| Of that residual: `aromatic_ring_count` is identical, fingerprint still differs | **89/130 (~68%)** — **unattributed, new, separate defect** |
+
+The 92.2% naive case is arguably working as documented — CLAUDE.md/README already state
+Kekulé input needs `apply_aromaticity()` first, and this is the first time that contract
+has been checked specifically against fingerprint output. The 13.0% residual is not
+excused by that contract: a caller following the documented procedure still gets a
+different fingerprint for the same molecule. About a third of that residual matches an
+already-known, already-deferred limitation; about two-thirds does not and has no existing
+tracking — see [New defect found this round](#new-defect-found-this-round-not-a-blank-cell--a-confirmed-bug)
+above.
 
 Reproduce: `.venv/bin/python scripts/ecfp4_agreement.py ~/Downloads/SMILES.csv`
