@@ -23,10 +23,28 @@ molecule in 92% of cases if the caller skips that call (a footgun, but
 arguably working as documented -- see CLAUDE.md/README on the
 aromaticity-perception contract). More seriously, ~13% of molecules STILL
 mismatch even *after* calling apply_aromaticity() as documented -- of
-those, roughly a third also show disagreeing aromatic_ring_count (consistent
-with, though not proven identical to, the pre-existing aromatic_context
-perception bug) and about two-thirds have identical aromatic_ring_count yet
-still a different fingerprint -- an unattributed, separate, real defect.
+those, roughly a third (41/130) also disagree on the full aromatic-atom/bond
+assignment multiset (same class of bug as the known aromatic_context
+perception issue, literal-same-code-path unverified) and two-thirds (89/130)
+have an IDENTICAL assignment multiset yet still a different fingerprint --
+an unattributed, real defect.
+
+Tier 6 is the follow-up to that residual: is it ECFP4-specific, and is it
+really about aromaticity? Answer to both: no, and not entirely. The 130
+residual molecules are the SAME ones canonical_smiles() and InChI diverge on
+(100% overlap each way) -- one shared, systemic root cause across at least
+three core output functions, not an ECFP4 quirk. SSSR ring-size
+decomposition is identical for all 130 (rules out ring-finding as the
+cause). And a discriminating control that varies ONLY atom traversal order
+(never touching Kekule/aromatic origin) shows ECFP4 barely moves (0.0%),
+ruling out plain order-dependence as ECFP4's explanation and pointing back
+at the Kekule-vs-aromatic origin itself as the operative variable --
+though canonical_smiles DOES carry its own separate, smaller
+order-sensitivity (3.8%) on the same control, worth tracking independently.
+The exact mechanism (what specifically differs between the two origins,
+given flags/rings/order are all ruled out) is NOT yet identified -- would
+require reading apply_aromaticity()'s and canonical.rs's bond-order handling
+directly, out of scope for this measurement-only script.
 
 Raw bit-vector equality is NOT a meaningful cross-implementation metric here
 and is intentionally NOT the headline number: chematic hashes atom
@@ -90,6 +108,17 @@ GetSparseCountFingerprint):
                            is chematic-internal self-consistency, not an
                            RDKit comparison, and confirms whether
                            apply_aromaticity() is a complete fix at scale.
+  6. Layer 2 shared-mechanism check -- is tier 5's post-apply_aromaticity()
+                           residual ECFP4-specific, or does it hit
+                           canonical_smiles()/InChI on the SAME molecules?
+                           Cross-consumer overlap, SSSR ring-size multiset
+                           (rules out ring decomposition), and an
+                           order-only control that isolates plain
+                           atom-order-dependence from Kekule-vs-aromatic
+                           origin -- a confound present in tier 5's own
+                           naive/residual comparison (RDKit's non-canonical
+                           Kekule respelling changes atom order too, not
+                           just origin).
 
 Usage:
     .venv/bin/python scripts/ecfp4_agreement.py [SMILES.csv] [--limit N]
@@ -241,6 +270,23 @@ def tier2_invariant_partition_agreement(smis, chematic, Chem, rdFingerprintGener
     }
 
 
+def _atom_multiset(mol):
+    return Counter((row[1], row[3], row[5]) for row in mol.atom_table)
+
+
+def _bond_multiset(mol):
+    at = mol.atom_table
+    ms = Counter()
+    for a1, a2, btype, _arom in mol.bond_table:
+        e1, e2 = at[a1][1], at[a2][1]
+        ms[(min(e1, e2), max(e1, e2), btype)] += 1
+    return ms
+
+
+def _ring_size_multiset(mol):
+    return Counter(len(r) for r in mol.sssr_atom_rings)
+
+
 def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, seed):
     # Root-caused via crates/chematic-fp/src/ecfp.rs:initial_atom_id -- the
     # radius-0 invariant explicitly includes `atom.aromatic as u8`. Since
@@ -290,17 +336,6 @@ def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, 
     examples_perception = []
     examples_unattributed = []
 
-    def atom_multiset(mol):
-        return Counter((row[1], row[3], row[5]) for row in mol.atom_table)
-
-    def bond_multiset(mol):
-        at = mol.atom_table
-        ms = Counter()
-        for a1, a2, btype, _arom in mol.bond_table:
-            e1, e2 = at[a1][1], at[a2][1]
-            ms[(min(e1, e2), max(e1, e2), btype)] += 1
-        return ms
-
     for smi in sample:
         rd = Chem.MolFromSmiles(smi)
         if rd is None:
@@ -327,8 +362,8 @@ def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, 
             n_perceived_still_mismatch += 1
 
             same_assignment = (
-                atom_multiset(cm_arom) == atom_multiset(cm_kek_perceived)
-                and bond_multiset(cm_arom) == bond_multiset(cm_kek_perceived)
+                _atom_multiset(cm_arom) == _atom_multiset(cm_kek_perceived)
+                and _bond_multiset(cm_arom) == _bond_multiset(cm_kek_perceived)
             )
             if not same_assignment:
                 n_perception_disagrees += 1
@@ -348,6 +383,153 @@ def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, 
         "residual_assignment_multiset_agrees_but_fp_differs": n_perception_agrees_but_fp_differs,
         "examples_perception_disagrees": examples_perception,
         "examples_unattributed": examples_unattributed,
+    }
+
+
+def tier6_layer2_shared_mechanism(smis, chematic, Chem, sample_n, seed):
+    # Follow-up to tier 5's ~13% post-apply_aromaticity residual: is that
+    # residual an ECFP4-specific defect (as an earlier round's writeup
+    # assumed), or does it hit other apply_aromaticity()-consuming functions
+    # on the SAME molecules -- i.e. one shared root cause, not three
+    # coincidentally-similar ones? Uses the SAME (seed, sample_n) draw as
+    # tier 5 so the residual-mismatch sets are directly comparable.
+    #
+    # Two sub-checks against the ECFP4-residual set:
+    #   (a) cross-consumer overlap with canonical_smiles/InChI's own
+    #       post-apply_aromaticity residual.
+    #   (b) SSSR ring-size multiset -- does the residual correspond to a
+    #       DIFFERENT ring decomposition, or an identical one (ruling out
+    #       ring-finding as the mechanism)?
+    #
+    # Plus one discriminating check that is NOT restricted to the residual
+    # set, because it targets a confound in tier 5's own naive/residual
+    # comparison: RDKit's non-canonical Kekule respelling
+    # (MolToSmiles(canonical=False)) changes BOTH the aromaticity origin
+    # AND the atom traversal order at once. Holding origin fixed (both
+    # spellings aromatic-written, neither ever Kekulized) and varying ONLY
+    # atom order via RDKit's doRandom respelling isolates plain
+    # atom-order-dependence from a Kekule-vs-aromatic-origin-specific
+    # effect. If order-only mismatch is near the residual rate, the
+    # "aromaticity" framing is likely a red herring for at least part of
+    # the residual; if it's near zero, order-dependence is ruled out as an
+    # explanation and the residual really does track Kekule-vs-aromatic
+    # origin specifically.
+    rng = random.Random(seed)
+    sample = smis if len(smis) <= sample_n else rng.sample(smis, sample_n)
+
+    n_checked = 0
+    ecfp4_residual = set()
+    csmi_residual = set()
+    inchi_residual = set()
+    ring_multiset_differs = 0
+    ring_multiset_same = 0
+
+    for smi in sample:
+        rd = Chem.MolFromSmiles(smi)
+        if rd is None:
+            continue
+        rd_kek = Chem.MolFromSmiles(smi)
+        try:
+            Chem.Kekulize(rd_kek, clearAromaticFlags=True)
+        except Exception:
+            continue
+        kek_smi = Chem.MolToSmiles(rd_kek, kekuleSmiles=True, canonical=False)
+        try:
+            cm_arom = chematic.from_smiles(smi)
+            cm_kek_perceived = chematic.from_smiles(kek_smi).apply_aromaticity()
+        except Exception:
+            continue
+        n_checked += 1
+
+        if cm_arom.ecfp4() != cm_kek_perceived.ecfp4():
+            ecfp4_residual.add(smi)
+            if _ring_size_multiset(cm_arom) != _ring_size_multiset(cm_kek_perceived):
+                ring_multiset_differs += 1
+            else:
+                ring_multiset_same += 1
+        if cm_arom.canonical_smiles_mode("normal") != cm_kek_perceived.canonical_smiles_mode("normal"):
+            csmi_residual.add(smi)
+        try:
+            if cm_arom.inchi != cm_kek_perceived.inchi:
+                inchi_residual.add(smi)
+        except Exception:
+            pass
+
+    both_csmi = ecfp4_residual & csmi_residual
+    both_inchi = ecfp4_residual & inchi_residual
+
+    # Order-only discriminator, seeded (MolToRandomSmilesVect's randomSeed, not
+    # MolToSmiles(doRandom=True) which has no Python-exposed seed) so the
+    # reported rates are exactly reproducible, not "usually around this".
+    # Also tracks *which* molecules mismatch (not just counts) so we can check
+    # whether a consumer's order-sensitive set is disjoint from or a subset of
+    # its own apply_aromaticity residual set -- "3.8% order-only" only means
+    # "a separate, additive defect" if those molecules are mostly NOT already
+    # in the residual set. Assuming disjointness without checking is exactly
+    # the kind of unverified-independence claim this project's whole
+    # measurement discipline exists to catch.
+    n_order_checked = 0
+    order_mismatch_ecfp4 = set()
+    order_mismatch_csmi = set()
+    order_mismatch_inchi = set()
+    for smi in sample:
+        rd = Chem.MolFromSmiles(smi)
+        if rd is None:
+            continue
+        try:
+            respelled = Chem.MolToRandomSmilesVect(rd, 1, randomSeed=seed)[0]
+            cm_a = chematic.from_smiles(smi)
+            cm_b = chematic.from_smiles(respelled)
+        except Exception:
+            continue
+        n_order_checked += 1
+        if cm_a.ecfp4() != cm_b.ecfp4():
+            order_mismatch_ecfp4.add(smi)
+        if cm_a.canonical_smiles_mode("normal") != cm_b.canonical_smiles_mode("normal"):
+            order_mismatch_csmi.add(smi)
+        try:
+            if cm_a.inchi != cm_b.inchi:
+                order_mismatch_inchi.add(smi)
+        except Exception:
+            pass
+
+    csmi_order_inside_residual = order_mismatch_csmi & csmi_residual
+    csmi_order_outside_residual = order_mismatch_csmi - csmi_residual
+    inchi_order_inside_residual = order_mismatch_inchi & inchi_residual
+    inchi_order_outside_residual = order_mismatch_inchi - inchi_residual
+
+    return {
+        "n_molecules": n_checked,
+        "ecfp4_residual_count": len(ecfp4_residual),
+        "canonical_smiles_residual_count": len(csmi_residual),
+        "inchi_residual_count": len(inchi_residual),
+        "ecfp4_and_canonical_smiles_overlap": len(both_csmi),
+        "ecfp4_and_canonical_smiles_overlap_pct_of_ecfp4": (
+            round(100.0 * len(both_csmi) / len(ecfp4_residual), 1) if ecfp4_residual else None
+        ),
+        "ecfp4_and_inchi_overlap": len(both_inchi),
+        "ecfp4_and_inchi_overlap_pct_of_ecfp4": (
+            round(100.0 * len(both_inchi) / len(ecfp4_residual), 1) if ecfp4_residual else None
+        ),
+        "ring_size_multiset_differs_in_ecfp4_residual": ring_multiset_differs,
+        "ring_size_multiset_same_in_ecfp4_residual": ring_multiset_same,
+        "order_only_n_molecules": n_order_checked,
+        "order_only_ecfp4_mismatch": len(order_mismatch_ecfp4),
+        "order_only_ecfp4_mismatch_pct": (
+            round(100.0 * len(order_mismatch_ecfp4) / n_order_checked, 2) if n_order_checked else None
+        ),
+        "order_only_canonical_smiles_mismatch": len(order_mismatch_csmi),
+        "order_only_canonical_smiles_mismatch_pct": (
+            round(100.0 * len(order_mismatch_csmi) / n_order_checked, 2) if n_order_checked else None
+        ),
+        "order_only_inchi_mismatch": len(order_mismatch_inchi),
+        "order_only_inchi_mismatch_pct": (
+            round(100.0 * len(order_mismatch_inchi) / n_order_checked, 2) if n_order_checked else None
+        ),
+        "canonical_smiles_order_mismatch_inside_its_own_residual": len(csmi_order_inside_residual),
+        "canonical_smiles_order_mismatch_outside_its_own_residual": len(csmi_order_outside_residual),
+        "inchi_order_mismatch_inside_its_own_residual": len(inchi_order_inside_residual),
+        "inchi_order_mismatch_outside_its_own_residual": len(inchi_order_outside_residual),
     }
 
 
@@ -483,6 +665,9 @@ def main():
     parser.add_argument("--pairs-sample", type=int, default=300, help="Molecules for tier 3 (pairwise, O(n^2))")
     parser.add_argument("--connectivity-sample", type=int, default=300, help="Molecules for tier 4")
     parser.add_argument("--aromaticity-sample", type=int, default=300, help="Molecules for tier 5")
+    parser.add_argument("--layer2-sample", type=int, default=300,
+                         help="Molecules for tier 6 (uses the same seed as tier 5, so pass the "
+                              "same value as --aromaticity-sample to compare identical residual sets)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--json", default=None)
     args = parser.parse_args()
@@ -563,10 +748,47 @@ def main():
         print(f"  unattributed example: {t5['examples_unattributed'][0]}")
     print()
 
+    print("Tier 6 -- Layer 2 shared-mechanism check (is tier 5's residual ECFP4-specific, "
+          "or does it hit canonical_smiles/InChI on the SAME molecules)...")
+    t6 = tier6_layer2_shared_mechanism(smis, chematic, Chem, args.layer2_sample, args.seed)
+    print(f"  residual counts (n={t6['n_molecules']}): ecfp4={t6['ecfp4_residual_count']}, "
+          f"canonical_smiles={t6['canonical_smiles_residual_count']}, "
+          f"inchi={t6['inchi_residual_count']}")
+    print(f"  ecfp4 ∩ canonical_smiles residual = {t6['ecfp4_and_canonical_smiles_overlap']} "
+          f"({t6['ecfp4_and_canonical_smiles_overlap_pct_of_ecfp4']}% of ecfp4's residual set)")
+    print(f"  ecfp4 ∩ inchi residual = {t6['ecfp4_and_inchi_overlap']} "
+          f"({t6['ecfp4_and_inchi_overlap_pct_of_ecfp4']}% of ecfp4's residual set)")
+    print(f"  SSSR ring-size multiset, within ecfp4's residual set: "
+          f"{t6['ring_size_multiset_differs_in_ecfp4_residual']} differ, "
+          f"{t6['ring_size_multiset_same_in_ecfp4_residual']} identical "
+          f"(identical yet ecfp4() still differs -- rules out ring decomposition)")
+    print(f"  order-only discriminator (two aromatic-preserving respellings, no Kekule "
+          f"involved, seeded, n={t6['order_only_n_molecules']}):")
+    print(f"    ecfp4 mismatch: {t6['order_only_ecfp4_mismatch']} "
+          f"({t6['order_only_ecfp4_mismatch_pct']}%)")
+    print(f"    canonical_smiles mismatch: {t6['order_only_canonical_smiles_mismatch']} "
+          f"({t6['order_only_canonical_smiles_mismatch_pct']}%)")
+    print(f"    inchi mismatch: {t6['order_only_inchi_mismatch']} "
+          f"({t6['order_only_inchi_mismatch_pct']}%)")
+    print(f"  of canonical_smiles's order-only mismatches, "
+          f"{t6['canonical_smiles_order_mismatch_inside_its_own_residual']} fall INSIDE its "
+          f"own apply_aromaticity residual set and "
+          f"{t6['canonical_smiles_order_mismatch_outside_its_own_residual']} fall OUTSIDE it "
+          f"-- tests whether order-sensitivity is a separate defect (mostly outside) or "
+          f"entangled with the shared residual (mostly inside)")
+    print(f"  of inchi's order-only mismatches, "
+          f"{t6['inchi_order_mismatch_inside_its_own_residual']} fall INSIDE its own "
+          f"apply_aromaticity residual set and "
+          f"{t6['inchi_order_mismatch_outside_its_own_residual']} fall OUTSIDE it -- same "
+          f"question for inchi, whose order-only rate (13.4%) happened to numerically "
+          f"match its residual rate, which could be coincidence or the same set")
+    print()
+
     result = {"tier0_raw_bit_equality": t0, "tier1_coverage_parity": t1,
               "tier2_invariant_partition_agreement": t2, "tier3_similarity_correlation": t3,
               "tier4_connectivity_sanity_check": t4,
-              "tier5_aromaticity_representation_dependence": t5}
+              "tier5_aromaticity_representation_dependence": t5,
+              "tier6_layer2_shared_mechanism": t6}
     if args.json:
         with open(args.json, "w") as f:
             json.dump(result, f, indent=2)
