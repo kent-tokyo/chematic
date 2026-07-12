@@ -35,8 +35,8 @@ are found by scanning for blank cells, not by accident.
 | Aromaticity perception (Hückel per-SSSR-ring) | **PARTIAL** — 96.3% atom-flag parity on Kekulized input, worst-of-10 | **UNMEASURED** directly (implied stable via downstream ring counts) | azulene, purine regressed by SSSR fix; root cause (`aromatic_context` bypass) identified, not fixed | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | SSSR / ring perception | **MEASURED** — 98.9% ring-size agreement vs `GetSymmSSSR`, 5000-mol; residual is RDKit over-symmetrization, not a chematic bug | **MEASURED** — 100% self-stability (was 50.6%); permanent regression test added | Full Vismara relevant-cycle symmetrization not implemented (not required for correctness) | `sssr_horton_and_canonical_smiles_gap` |
 | **ECFP4 fingerprint** — Layer 1 (definition difference, not a bug): chematic's invariant includes aromaticity, RDKit's default doesn't; structural ceiling, not fixable without an RDKit-compat mode | **MEASURED** (this round) — see [worked example](#ecfp4-vs-rdkit--worked-example) below. ~77% invariant-partition match, r=0.94 similarity correlation — cannot reach ~100% regardless of any future fix, the definitions differ | n/a — single-representation input, ~98.8% unaffected by Layer 2 (1.18% overlap measured, see worked example) | **N/A — design choice**, not a defect. RDKit-compat mode is a feature request, not a fix | `scripts/ecfp4_agreement.py`, this round |
-| **ECFP4 fingerprint** — Layer 2 (real bug, independent of Layer 1): representation-dependence | n/a — this is a self-consistency question, not an RDKit comparison | **MEASURED** (this round) — 92% of molecules get a different `ecfp4()` for Kekulé vs. aromatic spelling unless `apply_aromaticity()` is called first (likely the same apply_aromaticity-bypass pattern as Round 8–12's canonical-SMILES/InChI bugs — see worked example); ~13% still differ even after calling it as documented | **KNOWN GAP, corrected scope this round**: the ~13% residual is **not ECFP4-specific** — `canonical_smiles()` (13.2%) and InChI (13.4%) diverge on the *same* molecules (100% overlap with ECFP4's residual set both ways, n=1000), so this is one shared, systemic defect touching ≥3 core output functions, not three coincidentally-similar ones. Mechanism is **unidentified**: not aromatic-atom/bond flag assignment for 89/130 (identical multiset, still differs), not SSSR ring decomposition for any of the 130 (identical ring-size multiset), and — for ECFP4 specifically — not plain atom-order-dependence (0.0% mismatch on an order-only control, vs. 13.0% residual). `canonical_smiles` (3.8%) and, more substantially, InChI (13.4%) each carry their *own separate* order-sensitivity defect — confirmed via molecule-set intersection, not assumed from magnitude alone, to be mostly disjoint from this shared residual (37/38 and 122/134 outside, respectively). InChI's is large enough to be its own new, unattributed finding — see InChI row above and worked example | `scripts/ecfp4_agreement.py` (tier 6), this round |
-| FCFP4 / ECFP6 (share `initial_atom_id` with ECFP4) | **UNMEASURED** vs RDKit directly, but almost certainly inherit ECFP4's aromaticity-invariant deviation — same seed function, same `atom.aromatic` byte | **PARTIAL** — this round's 300-mol spot check confirms they inherit ECFP4's Layer-2 representation-dependence defect (ECFP6 94.0%, FCFP4 94.0% naive Kekulé-vs-aromatic mismatch). But that's a *different axis* from Round 14's neighbor-sort order-independence fix (`86e0d24`, originally applied to ECFP4/pattern-fp) — **no dedicated Rust test confirms FCFP4/ECFP6 inherited that fix too**; the only FCFP/ECFP6-specific test found (`ecfp6_vs_ecfp4_benzene_differ`) checks bit-count difference, not order-independence. "MEASURED — order-independence fixed and tested" was too strong for this axis; downgraded to PARTIAL | **KNOWN GAP** (Layer-2 representation-dependence) — same root cause and same remediation (`apply_aromaticity()`) as ECFP4, post-mitigation residual not separately measured; **UNMEASURED** (Round-14 neighbor-sort inheritance) — plausible but unverified | `scripts/ecfp4_agreement.py`, this round; `first_zero_order_dependence_audit` |
+| **ECFP4 fingerprint** — Layer 2 (real bug, independent of Layer 1): representation-dependence | n/a — this is a self-consistency question, not an RDKit comparison | **MEASURED, 89/130 FIXED this round** — naive Kekulé-vs-aromatic mismatch (92%) drops to **41/1000 (4.1%)** post-`apply_aromaticity()`, down from 130/1000 (13.0%). Root cause: `implicit_hcount()`'s aromatic-path heuristic can't distinguish pyrrole-type from pyridine-type heteroatoms once `apply_aromaticity_ex()` normalizes bond order — fixed by freezing the pre-normalization H count for atoms where it would otherwise change (`crates/chematic-perception/src/aromaticity.rs`). Verified causally: `canonical_smiles`/InChI residuals dropped the *same* 89 molecules simultaneously (130→41, 132→43, 134→45), and the fixed H-counts match RDKit's `GetTotalNumHs`/`MolWt` exactly, not just each other. Remaining 41/1000 is the pre-existing, distinct `aromatic_context`-class flag-assignment defect (untouched, out of scope) — see [defect writeup](#defect-found-and-fixed-this-round-implicit-h-count-lost-across-the-kekuléaromatic-boundary) | **KNOWN GAP (41/1000 remaining)** — genuine aromatic-atom/bond flag-assignment disagreement, same class as `aromatic_context` (azulene, purine), same-code-path attribution still unverified. `canonical_smiles` (3.8%) and InChI (13.4%) each separately carry their own order-sensitivity defect, confirmed disjoint from this mechanism by molecule-set intersection — untouched by this fix, still open | `scripts/ecfp4_agreement.py` (tier 6), `scripts/aromaticity_mechanism_probe.py` (new), this round |
+| FCFP4 / ECFP6 (share `initial_atom_id` with ECFP4) | **UNMEASURED** vs RDKit directly, but almost certainly inherit ECFP4's aromaticity-invariant deviation — same seed function, same `atom.aromatic` byte | **PARTIAL, 89/130 FIXED this round (verified independently, not assumed)** — this round's spot check confirms both inherit ECFP4's Layer-2 representation-dependence defect (naive Kekulé-vs-aromatic mismatch) AND independently confirms both inherited the `implicit_h` fix: post-`apply_aromaticity()` residual dropped from ECFP6 94.0%/FCFP4 94.0% (naive) to **41/1000 (4.1%) for both**, matching ECFP4's own post-fix number exactly (checked directly via `ecfp6()`/`fcfp4()` calls, not inferred from ECFP4's result). Round-14 neighbor-sort order-independence inheritance (`86e0d24`) is a *different axis*, still **no dedicated Rust test** confirming it for FCFP4/ECFP6 specifically — remains PARTIAL for that reason | **KNOWN GAP** (Layer-2 representation-dependence) — same root cause and same remediation as ECFP4, remaining 41/1000 shared with the still-open `aromatic_context`-class defect; **UNMEASURED** (Round-14 neighbor-sort inheritance) — plausible but unverified | `scripts/ecfp4_agreement.py`, `scripts/aromaticity_mechanism_probe.py`, this round; `first_zero_order_dependence_audit` |
 | MACCS / Pattern / other Morgan-adjacent fingerprints not sharing `initial_atom_id` | **UNMEASURED** — no dedicated comparison run; not confirmed to share or avoid the aromaticity-representation-dependence defect | **UNMEASURED** | — | `first_zero_order_dependence_audit` (neighbor-sort fix only, Round 14) |
 | Pattern fingerprint | **UNMEASURED** vs RDKit | **MEASURED** — order-independence fixed and tested (Round 14) | — | `first_zero_order_dependence_audit` |
 | Pharmacophore fingerprint (2D/3D) | **UNMEASURED** vs RDKit | **MEASURED** — pair-bit symmetry fixed and tested (Round 14) | — | `first_zero_order_dependence_audit` |
@@ -130,81 +130,103 @@ Ranked by how load-bearing the gap is for a migration decision, highest first:
    counts, and stereocenters have RDKit-agreement numbers but zero worst-of-N
    self-stability evidence, unlike the other 13 of `bench5k.py`'s 19 descriptors.
 
-## New defect found this round (not a blank cell — a confirmed bug)
+## Defect found and FIXED this round: implicit-H count lost across the Kekulé→aromatic boundary
 
-Measuring ECFP4 surfaced a real, previously-unknown, unfixed correctness issue — this is
-**Layer 2 only** (see the worked example below for the full Layer 1/Layer 2 split; Layer
-1, chematic's ECFP4 including aromaticity in its invariant, is a design choice, not a
-bug, and is unrelated to what follows): **`ecfp4()` (and `ecfp6()`/`fcfp4()`, which share
-the same invariant seed function) is representation-dependent for ~13% of molecules even
-after following the documented `apply_aromaticity()` contract**.
+Measuring ECFP4 surfaced a real correctness issue that took two rounds to fully
+root-cause and fix — this is **Layer 2 only** (see the worked example below for the full
+Layer 1/Layer 2 split; Layer 1, chematic's ECFP4 including aromaticity in its invariant,
+is a design choice, not a bug, and is unrelated to what follows).
 
-**Corrected this round: this is not an ECFP4-specific defect.** A follow-up
-cross-consumer check (`scripts/ecfp4_agreement.py` tier 6) found `canonical_smiles()`
-and InChI diverge on the *same* molecules ECFP4 does, post-`apply_aromaticity()`, at
-near-identical rates (n=1000: ECFP4 130, canonical_smiles 132, InChI 134 residual
-mismatches; 100% of ECFP4's residual set is contained in both of the others'). The
-earlier framing of "89/130 confirmed new, unattributed ECFP4 defect" undersold what this
-actually is — a single shared root cause affecting at least three independent core
-output functions identically, not a fingerprint-specific quirk.
+**Round 1 (measurement)**: `ecfp4()` (and `ecfp6()`/`fcfp4()`, which share the same
+invariant seed function) was representation-dependent for ~13% of molecules even after
+following the documented `apply_aromaticity()` contract. A cross-consumer check
+(`scripts/ecfp4_agreement.py` tier 6) found `canonical_smiles()` and InChI diverging on
+the *exact same* molecules, post-`apply_aromaticity()` (n=1000: 130/132/134 residual
+mismatches, 100% overlap both ways) — a single shared root cause across ≥3 core output
+functions, not an ECFP4-specific quirk. Of that residual, 41/130 was attributable to a
+genuine aromatic-atom/bond flag-assignment disagreement (same *class* as the pre-existing
+`aromatic_context` limitation, not confirmed the same code path). The other 89/130 had an
+**identical** flag-assignment multiset yet still diverged, with SSSR ring decomposition
+and (for ECFP4) atom-order-dependence both ruled out as explanations — mechanism left
+unidentified, two unranked candidates.
 
-Of the residual, roughly a third (41/130) still shows an aromatic-atom/bond
-flag-assignment disagreement between the two spellings — the same *class* of bug as the
-known `aromatic_context` regression (azulene, purine), though whether it's literally the
-same code path is **unverified**: `aromatic_context` was previously characterized via
-only 2 molecules, and a rate this much higher (≈4% of the whole corpus, not 2 isolated
-cases) suggests this may be a broader flag-perception issue than what was previously
-scoped, not confirmed either way this round. The other two-thirds (89/130) has an
-**identical** aromatic-atom/bond assignment multiset yet still diverges — verified three
-independent ways at increasing granularity (ring count, then atom/bond counts, then the
-full order-independent assignment multiset), all converging on the same 89.
+**Round 2 (root cause + fix, `scripts/aromaticity_mechanism_probe.py`, new)**: built a
+genuine per-*physical*-atom/bond correspondence between the two representations using
+RDKit's canonical atom ranking as an independent oracle (chematic parses a given SMILES
+string in the same atom order RDKit does — verified directly, not assumed — so rank-based
+correspondence gives a true physical-atom mapping, unlike raw index comparison, which is
+meaningless across differently-ordered respellings). **Positive control** (run first, per
+this project's standing discipline): the correspondence tool correctly detected a
+difference on 10/10 molecules from the already-known 41-set before any result on the
+89-set was trusted. Result on the 89: **0 atom-flag diffs, 0 bond diffs, 0 SSSR-membership
+diffs under true correspondence** — both candidates from Round 1 were false leads.
 
-This round additionally ruled out two more candidate mechanisms for the full 130-molecule
-residual: **SSSR ring decomposition** (0/130 differ in ring-size multiset between the two
-spellings — the rings found are identical, so this isn't a ring-finding bug) and, for
-ECFP4 specifically, **plain atom-order-dependence** (two aromatic-preserving, non-Kekulized
-respellings of the same molecule — differing only in traversal order, not origin — mismatch
-in ECFP4 0.0% of the time, vs. the 13.0% residual; this rules out "it's just an order
-artifact of the Kekulé round-trip" as ECFP4's explanation and supports that the divergence
-tracks Kekulé-vs-aromatic *origin* specifically).
+The actual divergence, found via a full 7-field `atom_table` correspondence diff: **the
+`implicit_h` count** (not `aromatic`, not `bond.order`) differed for a specific
+ring atom in **89/89** cases — 100% explained, no residual "mystery" cases. Root cause,
+confirmed by reading `crates/chematic-perception/src/aromaticity.rs` and
+`crates/chematic-core/src/valence.rs`:
 
-**A second, previously-unknown defect surfaced while checking this, and is reported
-separately rather than folded into the number above**: `canonical_smiles` and InChI each
-carry their own independent order-sensitivity, confirmed (not assumed) disjoint from the
-shared 13% residual by intersecting the actual molecule sets rather than just comparing
-percentages. `canonical_smiles`'s is small (3.8%, 37/38 outside its own residual set).
-InChI's is **large — 13.4%, coincidentally the same magnitude as InChI's residual count,
-but confirmed to be a mostly different set of molecules (only 12/134 overlap)**. A first
-draft of this section nearly reported the `canonical_smiles` case as "self-evidently
-separate" purely from the 3.8 << 13.2 arithmetic, without checking set membership — that
-would have missed the far more consequential InChI case, where the matching magnitude
-(134 = 134) would have supported the wrong conclusion ("InChI's residual is just
-order-dependence") if the sets had gone unchecked. **InChI's 13.4% order-sensitivity is a
-new, real, unattributed defect in its own right** — logged as a new blank cell in the
-InChI row above, not yet root-caused; a plausible but unverified hypothesis is that it
-inherits and amplifies `canonical_smiles`'s ordering sensitivity through InChI's
-additional numbering/stereo-layer steps on chematic's shared canonical-atom-order code
-path.
+- `apply_aromaticity_ex()` normalizes every aromatic-model ring bond to
+  `BondOrder::Aromatic` uniformly, discarding the original Kekulé Single/Double pattern
+  (confirmed by source read, not inferred).
+- `implicit_hcount()`'s aromatic-path heuristic (`floor(n_aromatic_bonds × 1.5)`) is
+  *correct* for its documented input — direct aromatic-written SMILES, where a
+  lone-pair-donating "pyrrole-type" heteroatom is always written with an explicit bracket
+  H (`[nH]`) and a "pyridine-type" one never is (OpenSMILES convention). But once
+  `apply_aromaticity_ex()` erases the Single/Double pattern, a pyrrole-type N (2 ring
+  single bonds pre-normalization, needs 1 H) and a pyridine-type N (1 single + 1 double,
+  needs 0 H) become **byte-identical** post-normalization (aromatic, 2 aromatic-order ring
+  bonds, no bracket H, neutral) — there is no local signal left to tell them apart, so the
+  heuristic silently returns 0 for both. An atom reached via direct aromatic-written
+  SMILES gets the right answer for free (its bracket H count is read directly, bypassing
+  the heuristic entirely); the identical atom reached via Kekulé-then-perceive does not.
 
-**Net: the shared residual's mechanism remains unidentified.** Per-atom flag assignment,
-per-bond *type* assignment (the multiset keys on bond type, not just element pair), and
-SSSR ring topology are all ruled out as order-independent-multiset-level explanations for
-the 89/130 majority; order-dependence is ruled out for ECFP4's share of the whole 130.
-Two candidates remain, **not distinguished this round, and not ranked** — a one-molecule
-spot check attempted to localize the divergence (via `morgan_fp_counts` hash-set diff,
-folded to a bit index, resolved to specific atom indices) but atom-table indices don't
-correspond 1:1 between the two spellings (the Kekulé-origin respelling has a different
-internal atom order), so per-index atom comparison couldn't distinguish the candidates
-without a real atom-correspondence step (e.g. a substructure match), which wasn't
-attempted: (a) a *positional* bond-structure difference below the multiset's resolution
-(same type counts, different placement), or (b) a symmetric aromaticity-flag swap between
-two atoms of identical `(atomic_number, degree)` — the multiset's own documented blind
-spot, which would point back at aromaticity perception rather than bond order. Do not
-treat either as confirmed. Not fixed this round (scope was measurement/characterization,
-not remediation) —
-flagged here so it doesn't get lost, with
-the corrected (broader, shared) scope so it isn't mistaken for an ECFP4-only issue in a
-future round.
+**Fix** (`crates/chematic-perception/src/aromaticity.rs`, `apply_aromaticity_ex`):
+capture `implicit_hcount()`'s value on each non-bracket atom **before** bond-order
+normalization (while the Kekulé pattern is still intact and the heuristic still gives the
+correct answer), then compare it against what the heuristic would compute *after*
+normalization; only atoms where the two disagree get an explicit `hydrogen_count` frozen
+onto the output atom. This is fully surgical: atoms where pre- and post-normalization
+already agree (ordinary aromatic CH, pyridine-type N) are untouched — no spurious bracket
+notation introduced anywhere. Verified by two new Rust unit tests
+(`test_apply_aromaticity_preserves_pyrrole_nh_implicit_hydrogen`,
+`test_apply_aromaticity_does_not_add_h_to_pyridine_type_n`) plus the full existing
+`cargo test --workspace` suite (all pre-existing tests, 671+, still pass unchanged —
+notably the *existing* `pyrrole_kekule()` test fixture never caught this because it
+manually set `hydrogen_count` on construction, sidestepping the exact gap between
+synthetic test fixtures and real SMILES-parser output that let this slip through 15
+rounds).
+
+**Causal verification, not just correlation** (the standard this round's plan explicitly
+required): re-running `scripts/ecfp4_agreement.py` post-fix shows the residual drop from
+130/132/134 to **41/43/45 simultaneously across all three consumers** — each losing
+*exactly* the 89 molecules that had matching flags/bonds/rings, leaving the
+pre-existing, distinct 41-set (real flag-assignment disagreement, untouched by this fix)
+exactly where it was. `scripts/aromaticity_mechanism_probe.py`'s 89-set is now empty
+(0/1000), while its positive control still correctly detects all 10/10 of the remaining
+41-set. Fixing one root cause zeroed the identical 89 molecules in three independent
+output functions at once — the intervention-based proof that this was genuinely one
+shared defect, not three coincidentally-similar ones.
+
+**Ground-truth verified, not just internally consistent** (agreement between the two
+chematic representations alone would not rule out "both now agree on the same wrong
+answer"): spot-checked against RDKit's `GetTotalNumHs()` and `Descriptors.MolWt()` for
+the affected atoms/molecules — matches exactly (e.g. one example molecule: MW 414.462 on
+both representations post-fix, RDKit MW 414.462). **Severity was larger than the
+fingerprint/canonicalization framing suggested**: `implicit_hcount()` feeds molecular
+weight and formula directly, so both were silently wrong (short ~1.008 Da) for any
+pyrrole-type NH heterocycle (imidazole, indole, pyrrole, purine substructures) reached via
+the extremely common "parse Kekulé SDF/MOL input → `apply_aromaticity()` → compute
+descriptors" pipeline — a core-property correctness bug, not merely a
+fingerprint/canonicalization quirk.
+
+**Remaining, explicitly out of scope for this fix**: the 41-molecule genuine
+flag-assignment disagreement (same class as `aromatic_context`, azulene/purine) is
+unchanged and still open. `canonical_smiles`'s (3.8%) and InChI's (13.4%, confirmed
+disjoint via molecule-set intersection, not assumed) own separate order-sensitivity
+defects are also unchanged — neither was ever part of this mechanism, both remain
+unattributed blank cells for a future round.
 
 ---
 
@@ -297,9 +319,9 @@ called for those cases and they still mismatch:
 | Check | Result |
 |---|---|
 | Naive (no `apply_aromaticity()`) — aromatic vs. Kekulé spelling of the same molecule, 1,000-mol sample | **922/1000 (92.2%)** get a different `ecfp4()` |
-| After calling `apply_aromaticity()` as documented | **130/1000 (13.0%)** *still* mismatch |
-| Of that residual: still explained by aromaticity-perception disagreement between the two spellings | **41/130 (~32%)** — same *class* of bug as the known `aromatic_context` regression; literal same-code-path attribution unverified (see below) |
-| Of that residual: **not** explained by aromaticity perception at any granularity checked | **89/130 (~68%)** — confirmed via 3 independent checks, mechanism still unidentified (see tier 6) |
+| After calling `apply_aromaticity()` as documented (**pre-fix, historical**) | **130/1000 (13.0%)** *still* mismatch — now **41/1000 (4.1%)** post-fix, see below |
+| Of that residual: still explained by aromaticity-perception disagreement between the two spellings | **41/130 (~32%)** — same *class* of bug as the known `aromatic_context` regression; literal same-code-path attribution unverified (see below); **still open, unaffected by this round's fix** |
+| Of that residual: **not** explained by aromaticity perception at any granularity checked | **89/130 (~68%)** — confirmed via 3 independent checks; root cause found and **FIXED** a follow-up round (`implicit_h` count, not perception — see the mechanism note below) |
 
 The 41/89 split was re-derived three times at increasing granularity — ring count, then
 aromatic-atom/bond *counts*, then the full order-independent aromatic-atom
@@ -364,26 +386,24 @@ Four findings from this table, each independently load-bearing:
    path — consistent with, not confirmed by, [[feedback_canonicalization_theory]]'s
    tie-break concerns.
 
-**Mechanism of the shared residual: still unidentified.** Per-atom aromatic-flag
-assignment, per-bond *type* assignment, and SSSR ring topology are all ruled out for
-89/130 (the multiset keys on bond type, not just element pair — it rules out more than a
-loose "counts matched" reading would suggest); atom-order-dependence is ruled out for
-ECFP4's share of all 130. A one-molecule spot check (`morgan_fp_counts` hash-set diff,
-folded to a bit index, resolved to atom indices via `ecfp_bitinfo`) attempted to localize
-the divergence further but stalled on atom-index correspondence — the Kekulé-origin
+**Mechanism of the shared residual — RESOLVED in a follow-up round, see the
+["Defect found and FIXED"](#defect-found-and-fixed-this-round-implicit-h-count-lost-across-the-kekuléaromatic-boundary)
+section above for the full writeup.** At the time this worked example was first written,
+per-atom aromatic-flag assignment, per-bond *type* assignment, and SSSR ring topology were
+all ruled out for 89/130, atom-order-dependence was ruled out for ECFP4's share of all
+130, and a one-molecule spot check stalled on atom-index correspondence (the Kekulé-origin
 respelling has a different internal atom order, so raw per-index atom-table comparison
-isn't meaningful without a real correspondence step (e.g. a substructure match), which
-wasn't attempted this round. **Two candidates remain, deliberately left unranked**: (a) a
-*positional* bond-structure difference below the multiset's resolution (same type counts,
-different placement — would require reading `crates/chematic-perception`'s
-`apply_aromaticity()` and `crates/chematic-smiles/src/canonical.rs`'s bond-order handling
-directly), or (b) a symmetric aromaticity-flag swap between two atoms of identical
-`(atomic_number, degree)` — the multiset's own documented blind spot, which would point
-back at aromaticity perception, not bond order. An earlier draft of this section named (a)
-as "the leading candidate" with no evidence distinguishing it from (b) — corrected here;
-neither is confirmed. InChI's own 13.4% order-sensitivity defect (finding 4) is a
-**separate, untouched blank cell**, not part
-of this mechanism question.
+isn't meaningful without a real correspondence step). The two candidates floated at the
+time — (a) a positional bond-structure difference below the multiset's resolution, (b) a
+symmetric aromaticity-flag swap — were **both wrong**: building the missing
+correspondence step (RDKit canonical-rank-based atom mapping,
+`scripts/aromaticity_mechanism_probe.py`) found 0 flag/bond/ring-membership diffs for all
+89, and a full 7-field `atom_table` diff under that same correspondence found the actual
+answer: **`implicit_h` count**, differing in 89/89 cases — a variable neither candidate
+nor the original multiset check had ever compared. Now fixed; the shared residual is
+41/1000 (the pre-existing, distinct `aromatic_context`-class defect only). InChI's own
+13.4% order-sensitivity defect remains a **separate, untouched blank cell**, not part of
+this mechanism and not affected by this fix.
 
 **Blast radius beyond ECFP4**: `initial_atom_id` (the invariant seed carrying the
 aromaticity byte) is shared by ECFP6 and FCFP4, and a 300-mol spot check confirms both
@@ -393,13 +413,14 @@ measured post-`apply_aromaticity()` for ECFP6/FCFP4.
 
 The 92.2% naive case is arguably working as documented — CLAUDE.md/README already state
 Kekulé input needs `apply_aromaticity()` first, and this is the first time that contract
-has been checked specifically against fingerprint output. The 13.0% residual is not
-excused by that contract: a caller following the documented procedure still gets a
+has been checked specifically against fingerprint output. The (pre-fix) 13.0% residual was
+not excused by that contract: a caller following the documented procedure still got a
 different fingerprint for the same molecule — and, per the tier 6 findings above, the same
-molecule also canonicalizes and InChI-generates differently. About a third of that residual
-matches the same *class* of bug as an already-known, already-deferred limitation; about
-two-thirds does not and has no existing tracking, mechanism unidentified — see
-[New defect found this round](#new-defect-found-this-round-not-a-blank-cell--a-confirmed-bug)
+molecule also canonicalized and InChI-generated differently. About a third of that residual
+matches the same *class* of bug as an already-known, already-deferred limitation (still
+open); about two-thirds was the `implicit_h`-loss bug, now fixed — see
+[Defect found and FIXED this round](#defect-found-and-fixed-this-round-implicit-h-count-lost-across-the-kekuléaromatic-boundary)
 above.
 
 Reproduce: `.venv/bin/python scripts/ecfp4_agreement.py ~/Downloads/SMILES.csv --aromaticity-sample 1000 --layer2-sample 1000`
+and `.venv/bin/python scripts/aromaticity_mechanism_probe.py ~/Downloads/SMILES.csv --sample-n 1000`

@@ -287,11 +287,36 @@ pub fn apply_aromaticity(mol: &Molecule) -> Molecule {
 ///
 /// Returns a new [`Molecule`] with aromatic flags set according to `algo`.
 pub fn apply_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Molecule {
-    use chematic_core::{BondOrder, MoleculeBuilder};
+    use chematic_core::{BondOrder, MoleculeBuilder, implicit_hcount};
 
     let model = assign_aromaticity_ex(mol, algo);
-    let mut builder = MoleculeBuilder::new();
 
+    // Implicit-H counts computed BEFORE bond orders are normalized below, for
+    // organic-subset atoms without an explicit bracket H count. Needed because
+    // normalizing every aromatic-model bond to `BondOrder::Aromatic` (below)
+    // discards the Kekule Single/Double pattern that distinguishes a
+    // lone-pair-donating "pyrrole-type" heteroatom (2 ring single bonds pre-
+    // normalization, needs 1 implicit H) from a "pyridine-type" one (1 ring
+    // single + 1 ring double, needs 0) -- post-normalization both look
+    // identical (aromatic, 2 aromatic-order ring bonds, no substituent), so
+    // `implicit_hcount`'s aromatic-path heuristic (correct for SMILES that
+    // was aromatic-written from the start, per OpenSMILES convention: bare
+    // aromatic `n` is pyridine-type, pyrrole-type is always `[nH]`) silently
+    // returns the wrong value for atoms that reach this function via
+    // Kekule-then-perceive instead. This under-counts molecular weight and
+    // formula, not just fingerprints/canonical SMILES.
+    let pre_h: Vec<Option<u8>> = mol
+        .atoms()
+        .map(|(idx, atom)| {
+            if atom.hydrogen_count.is_some() {
+                None // already explicit; nothing to preserve
+            } else {
+                Some(implicit_hcount(mol, idx))
+            }
+        })
+        .collect();
+
+    let mut builder = MoleculeBuilder::new();
     for (idx, atom) in mol.atoms() {
         let mut a = atom.clone();
         if model.is_atom_aromatic(idx) {
@@ -323,7 +348,41 @@ pub fn apply_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Molec
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
-    builder.build()
+    let normalized = builder.build();
+
+    // Compare the pre-normalization implicit H against what the same
+    // (already-tested, unmodified) `implicit_hcount` computes on the
+    // normalized bonds; only atoms where normalization actually changed the
+    // answer get an explicit H frozen in. Benzene CH and pyridine-type N
+    // (heuristic already agrees) are left untouched -- no spurious bracket
+    // notation for atoms that didn't need it.
+    let needs_patch: Vec<(chematic_core::AtomIdx, u8)> = normalized
+        .atoms()
+        .filter_map(|(idx, _)| {
+            let pre = pre_h[idx.0 as usize]?;
+            let post = implicit_hcount(&normalized, idx);
+            (pre != post).then_some((idx, pre))
+        })
+        .collect();
+    if needs_patch.is_empty() {
+        return normalized;
+    }
+
+    let mut patched = MoleculeBuilder::new();
+    for (idx, atom) in normalized.atoms() {
+        let mut a = atom.clone();
+        if let Some(&(_, h)) = needs_patch.iter().find(|(pidx, _)| *pidx == idx) {
+            a.hydrogen_count = Some(h);
+        }
+        patched.add_atom(a);
+    }
+    for (_bond_idx, bond) in normalized.bonds() {
+        let _ = patched.add_bond(bond.atom1, bond.atom2, bond.order);
+    }
+    patched.copy_stereo_groups_from(&normalized);
+    patched.copy_stereo_from(&normalized);
+    patched.copy_bond_directions_from(&normalized);
+    patched.build()
 }
 
 // ---------------------------------------------------------------------------
@@ -980,6 +1039,28 @@ mod tests {
         b.build()
     }
 
+    /// Same ring as `pyrrole_kekule()`, but the N has NO explicit
+    /// `hydrogen_count` — matching how the SMILES parser actually builds a
+    /// bare, non-bracket `N` (e.g. from `Chem.Kekulize` + non-canonical
+    /// `MolToSmiles(kekuleSmiles=True)` round-tripping an `[nH]`-written
+    /// pyrrole/imidazole/purine nitrogen). `pyrrole_kekule()` above sidesteps
+    /// the bug this reproduces by setting `hydrogen_count` manually.
+    fn pyrrole_kekule_implicit_h() -> chematic_core::Molecule {
+        let mut b = MoleculeBuilder::new();
+        let n = b.add_atom(Atom::new(Element::N));
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let c3 = b.add_atom(Atom::new(Element::C));
+        let c4 = b.add_atom(Atom::new(Element::C));
+        let ring = [n, c1, c2, c3, c4];
+        b.add_bond(ring[0], ring[1], BondOrder::Single).unwrap();
+        b.add_bond(ring[1], ring[2], BondOrder::Double).unwrap();
+        b.add_bond(ring[2], ring[3], BondOrder::Single).unwrap();
+        b.add_bond(ring[3], ring[4], BondOrder::Double).unwrap();
+        b.add_bond(ring[4], ring[0], BondOrder::Single).unwrap();
+        b.build()
+    }
+
     fn naphthalene_kekule() -> chematic_core::Molecule {
         let mut b = MoleculeBuilder::new();
         let atoms: Vec<_> = (0..10).map(|_| b.add_atom(Atom::new(Element::C))).collect();
@@ -1097,6 +1178,57 @@ mod tests {
         let mol = pyrrole_kekule();
         let model = assign_aromaticity(&mol);
         assert_eq!(model.aromatic_atom_count(), 5);
+    }
+
+    #[test]
+    fn test_apply_aromaticity_preserves_pyrrole_nh_implicit_hydrogen() {
+        // Regression test: apply_aromaticity_ex() normalizes all aromatic-
+        // model ring bonds to BondOrder::Aromatic, which discards the
+        // Kekule Single/Double pattern that distinguishes a pyrrole-type N
+        // (needs 1 implicit H) from a pyridine-type N (needs 0) once both
+        // have exactly 2 aromatic-order ring bonds and no explicit bracket
+        // H count. Without preserving the pre-normalization value,
+        // implicit_hcount() on the perceived molecule silently returns 0
+        // instead of 1 for the unsubstituted pyrrole N -- wrong molecular
+        // formula/weight, and a representation-dependent divergence from
+        // the same molecule parsed directly from aromatic-written SMILES
+        // (where `[nH]`'s bracket H count is correct by construction).
+        let mol = pyrrole_kekule_implicit_h();
+        let n_idx = AtomIdx(0);
+        assert_eq!(
+            implicit_hcount(&mol, n_idx),
+            1,
+            "pre-normalization: bare N with 2 single ring bonds must show 1 implicit H"
+        );
+
+        let perceived = apply_aromaticity(&mol);
+        assert!(perceived.atom(n_idx).aromatic, "ring N must be aromatic");
+        assert_eq!(
+            implicit_hcount(&perceived, n_idx),
+            1,
+            "post-apply_aromaticity: pyrrole N must still show 1 implicit H, not 0"
+        );
+    }
+
+    #[test]
+    fn test_apply_aromaticity_does_not_add_h_to_pyridine_type_n() {
+        // Sibling check to the pyrrole regression above: a pyridine-type
+        // ring N (1 ring single + 1 ring double pre-normalization, no H)
+        // must NOT gain a spurious implicit H from the preservation logic --
+        // its pre- and post-normalization implicit_hcount already agree
+        // (both 0), so it must be left untouched.
+        let mol = pyridine_kekule();
+        let n_idx = AtomIdx(0);
+        assert_eq!(implicit_hcount(&mol, n_idx), 0);
+
+        let perceived = apply_aromaticity(&mol);
+        assert!(perceived.atom(n_idx).aromatic);
+        assert_eq!(implicit_hcount(&perceived, n_idx), 0);
+        assert_eq!(
+            perceived.atom(n_idx).hydrogen_count,
+            None,
+            "pyridine N must not gain an explicit hydrogen_count -- would force spurious bracket notation"
+        );
     }
 
     #[test]
