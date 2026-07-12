@@ -30,7 +30,7 @@ are found by scanning for blank cells, not by accident.
 |---|---|---|---|---|
 | Canonical SMILES | **MEASURED** — 0/5000 ChEMBL + 0/33 acyclic-polyene structural corruption, worst-of-10/30 | **MEASURED** — 0/5000, 0/33; E/Z direction 5.50% residual (cosmetic, non-corrupting) | E/Z simple-bond spelling not fully normalized (~1 in 18 stereo molecules) | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | Canonical atom ordering (`canonical_atom_order`, feeds InChI) | **PARTIAL** — fixed Round 14 (`c219ee7`), no dedicated post-fix corpus run | **PARTIAL** — only a 14-case hand-built permutation probe + individualized-branch match probe exists; no full-ChEMBL-scale worst-of-N run of its own. Shares the same individualize-refine code path as `canonical_smiles` (which does have full-corpus worst-of-10/30 coverage — `c219ee7` extracted a shared `winning_individualized_ranks` helper both functions call), so this is *partially*, not *fully*, uncovered — but that inheritance argument itself was never independently verified at scale for this specific function, same "verify analogous fixes independently" gap as the o3a.rs incident | — | `first_zero_order_dependence_audit` |
-| InChI / InChIKey (pure-Rust) | **UNMEASURED** for the InChI *string* vs. standard InChI (numbering/`/h`-layer/`/m`-layer remain structurally non-standard, documented, unchanged this round). **MEASURED** for the underlying R/S it encodes, newly this round: `assign_cip()` vs RDKit's per-atom CIP oracle, 4163 stereocenters, 5000-mol corpus — 96.83% (was 76.22% before this round's fix; see "Defect found and FIXED" section below) | **MEASURED, FIXED this round** — order-only mismatch 13.4%→3.5% (n=1000); InChI-*specific* excess over `canonical_smiles`'s own baseline order-sensitivity: 74%→**0%** (residual 3.5% fully explained by shared ordering-layer churn, no separate InChI-specific mechanism detected at this sample size) | Approximate, not standard-compliant (documented) — use `native-inchi` for real InChI; **plus** 132/4163 stereocenters (3.2%) still wrong vs RDKit, now precisely characterized as a missing Mancude/aromatic-ring CIP duplication rule (`cip_branch_spheres` only duplicates across `BondOrder::Double`, not `Aromatic`) — not attempted this round | `validation.md` Known Limitations, `scripts/ecfp4_agreement.py` (tier 6), "Defect found and FIXED this round: `assign_cip()`" section below |
+| InChI / InChIKey (pure-Rust) | **UNMEASURED** for the InChI *string* vs. standard InChI (numbering/`/h`-layer/`/m`-layer remain structurally non-standard, documented, unchanged this round). **MEASURED** for the underlying R/S it encodes, newly this round: `assign_cip()` vs RDKit's per-atom CIP oracle, 4163 stereocenters, 5000-mol corpus — 96.83% (was 76.22% before this round's fix; see "Defect found and FIXED" section below) | **MEASURED, FIXED this round** — order-only mismatch 13.4%→3.5% (n=1000); InChI-*specific* excess over `canonical_smiles`'s own baseline order-sensitivity: 74%→**0%** (residual 3.5% fully explained by shared ordering-layer churn, no separate InChI-specific mechanism detected at this sample size) | Approximate, not standard-compliant (documented) — use `native-inchi` for real InChI; **plus** ~132-155/4163-4186 stereocenters (3.2-3.7%, oracle-dependent) still wrong vs RDKit — attempted and reverted (not just deferred): the residual is at least 4 distinct mechanisms, and a follow-up fix for one (triple-bond duplication) went net negative, revealing the comparator itself (`cip_branch_spheres`, shell-multiset pooling, not true recursive CIP) is the real limiter, not a missing per-bond-type rule — see "Remaining, explicitly out of scope" below | `validation.md` Known Limitations, `scripts/ecfp4_agreement.py` (tier 6), "Defect found and FIXED this round: `assign_cip()`" section below |
 | InChI (native, IUPAC C lib) | **UNMEASURED** at scale (spot tests only) for the InChI string itself. Its stereo *input* is fixed this round: `crates/chematic-inchi/src/native/convert.rs` calls `tetrahedral_stereo_neighbors()` directly, the same function fixed above, so native-inchi's R/S input inherits the same 76.22%→96.83% correctness improvement — not independently re-measured against the C library's own output, only inferred from the shared code path | **UNMEASURED** | InChI /m /s (enantiomer/isotope) layers not yet measured post-canonicalization fix | — |
 | Aromaticity perception (Hückel per-SSSR-ring) | **PARTIAL** — 96.3% atom-flag parity on Kekulized input, worst-of-10 | **UNMEASURED** directly (implied stable via downstream ring counts) | azulene, purine regressed by SSSR fix; root cause (`aromatic_context` bypass) identified, not fixed | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | SSSR / ring perception | **MEASURED** — 98.9% ring-size agreement vs `GetSymmSSSR`, 5000-mol; residual is RDKit over-symmetrization, not a chematic bug | **MEASURED** — 100% self-stability (was 50.6%); permanent regression test added | Full Vismara relevant-cycle symmetrization not implemented (not required for correctness) | `sssr_horton_and_canonical_smiles_gap` |
@@ -146,8 +146,14 @@ future fix's causal signal is never contaminated by mixing with another:**
        76.22%が(順序に関係なく、初回パースの時点で)誤っていた。
        独立した2バグ: (1) 環開き結合の隣接順序ずれ、
        (2) CIP球展開の二重結合重複原子が片側にしか追加されていなかった。
-       RDKit正解率 76.22%→96.83%(4163中132残、原因: 芳香環のCIP重複が
-       未実装、別件として特性解明済み・未着手)。
+       RDKit正解率 76.22%→96.83%(4163中132残)。残り132は着手・撤回済み:
+       三重結合にも同型の重複ルールを拡張したところ正味で悪化(16件新規誤り
+       vs 1件修正)、原因はルール不足ではなく比較器自体(cip_branch_spheres
+       がBFS深さごとに多重集合でプールする近似比較で、真の再帰的CIP有向
+       グラフ比較ではない)と判明、コミットせずrevert。芳香環(96件、最大
+       グループ)は未着手、三重結合(10件)・P中心(6件)・その他(20件)も
+       未着手。legacy版RDKitとrdCIPLabeler(現行)は43件で不一致があり、
+       現行オラクル基準では 96.30%(155/4186残)がより正確な数値。
        InChI固有の順序超過は 74%→0% に解消(残り3.5%は canonical_smiles
        と共有の既知ベースライン順序依存で説明可能)。詳細は下記セクション。
 ```
@@ -355,17 +361,36 @@ crates), `native-inchi` feature tests, and `bash scripts/check.sh` all pass; 2 n
 regression tests added (`test_tetrahedral_stable_when_ring_bond_opens_before_other_neighbors`,
 `test_tetrahedral_double_bond_duplicates_into_own_sphere`, both in `crates/chematic-chem/src/cip.rs`).
 
-**Remaining, explicitly out of scope for this fix**: 132/4163 stereocenters (3.2%) still
-disagree with RDKit's CIP oracle. All 9 directly-traced regressions, and almost certainly
-most of the other 123, share one identified mechanism: `cip_branch_spheres()`'s
-double-bond-duplication fix above only checks `BondOrder::Double` — an aromatic ring
-substituent bonded to a stereocenter (`BondOrder::Aromatic`) gets no duplication at all,
-under- or mis-counting its substituent sphere relative to correct Mancude-ring CIP
-treatment (which requires either an explicit Kekulé structure or an averaged-atomic-number
-duplicate, a materially harder rule than the clean single-bond-type case just fixed). Not
-attempted this round — logged as a new, characterized (not just "unmeasured") blank cell
-for a future round. The pre-existing `aromatic_context` 41/1000 flag-assignment defect is
-unrelated and also still open.
+**Remaining, explicitly out of scope for this fix**: 132/4163 stereocenters (3.2% vs. the
+legacy RDKit oracle; ~155/4186, 3.7%, vs. the more authoritative `rdCIPLabeler` modern
+oracle — see below) still disagree. **Attempted and reverted, not merely deferred**: a
+follow-up round categorized the residual as (at least) four distinct mechanisms — 96
+aromatic-ring-adjacent, 10 triple-bond-containing, 6 phosphorus stereocenters, 20
+uncharacterized — and extended the double-bond duplication fix above to
+`BondOrder::Triple` (2 phantom duplicates per side instead of 1) as the cleanest
+mechanical analog. Result: **net negative**, 16 newly-wrong stereocenters vs. 1 newly-fixed
+(traced by hand; a stereocenter directly bonded to an alkyne outranked a structurally
+richer ring branch purely because triple-bond duplication concentrates 3 atoms into one
+BFS shell while the ring's richness is spread across deeper shells). Root cause:
+`cip_branch_spheres`/`compare_branches` pools *all* atoms at each BFS depth into one
+sorted multiset and compares shell-by-shell — not the true CIP hierarchical-digraph
+algorithm, which recursively compares branch-by-branch, following the highest-priority
+sub-branch first. Adding a locally-correct duplication rule to this approximate comparator
+is whack-a-mole: the double-bond fix above netted positive by (this corpus's) luck of
+distribution, the triple-bond attempt netted negative — neither outcome validates the
+comparator itself. **Reverted, not committed.** Properly closing the residual requires
+replacing the shell-multiset comparator with a true recursive branch-by-branch traversal —
+a materially larger undertaking (RDKit's own `CIPLabeler` is thousands of lines), not a
+rule addition, and a scope decision for a future round. The aromatic bucket (96, largest)
+carries an *additional* risk on top of the comparator issue: `kekulize()`'s matching is
+atom-order-dependent, so Kekulize-then-duplicate could reintroduce the exact order-sensitivity
+the fix above just closed for heteroaromatic rings — not gated/traced this round. Also
+found while re-checking the oracle: legacy `Chem.AssignStereochemistry`/`_CIPCode` and
+modern `rdCIPLabeler.AssignCIPLabels` disagree on 43 atom-cases in this corpus (the legacy
+oracle has its own non-trivial error floor) — of the residual, 123 are wrong under *both*
+oracles (solid floor of real chematic bugs), 9 were legacy-oracle errors (chematic was
+actually right), 32 are new-only-under-the-modern-oracle. The pre-existing
+`aromatic_context` 41/1000 flag-assignment defect is unrelated and also still open.
 
 Reproduce: `.venv/bin/python scripts/cip_ground_truth.py ~/Downloads/SMILES.csv` (RDKit CIP
 oracle comparison, new this round); `.venv/bin/python scripts/ecfp4_agreement.py
