@@ -235,13 +235,17 @@ FFI call overhead hidden inside a `_sys` crate.
 
 ### Safe
 
-The entire default dependency tree contains **~6 `unsafe` blocks** across 15,000+ lines
-of Rust. No C++ heap corruptions. No segfaults from malformed SMILES input. No
-platform-specific build failures from `-sys` crates. The compiler enforces memory
-safety at every call site.
+chematic's own ~15,000 lines of Rust contain **~6 `unsafe` blocks**, all confined to the
+optional `native-inchi` FFI layer (below). No C++ heap corruptions. No segfaults from
+malformed SMILES input. No platform-specific build failures from `-sys` crates. The
+compiler enforces memory safety at every call site chematic itself wrote.
 
 > The `native-inchi` feature is the single opt-in exception — it vendors the IUPAC InChI
-> C library (v1.07.5) for bit-exact standard InChI. All other crates stay FFI-free.
+> C library (v1.07.5) for bit-exact standard InChI. All other chematic crates stay
+> FFI-free and unsafe-free. This count is chematic's own source only, not its
+> dependency tree — the optional `depict` feature (SVG/PDF/EPS rendering) pulls in a
+> font/image-rendering stack (resvg/usvg/rustybuzz/tiny-skia/zune-jpeg) that is **not**
+> unsafe-free; see the comparison table footnote below for a measured count.
 
 ### Anywhere
 
@@ -279,7 +283,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 | **Build requirement**   | `cargo build` only                        | cmake + clang      | cmake + clang  | Emscripten SDK     |
 | **WASM target support** | **Full (native)**                         | No                 | No             | Yes (Emscripten)   |
 | **Python bindings**     | **Yes** (`pip install chematic`, PyO3)    | Yes (rdkit-sys)    | Yes            | No                 |
-| **Unsafe Rust**         | **None (default)**†                       | Extensive          | Extensive      | N/A                |
+| **Unsafe Rust**         | **None in own crates**‡                   | Extensive          | Extensive      | N/A                |
 
 <details>
 <summary>Full feature comparison (30+ capabilities)</summary>
@@ -324,7 +328,9 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 
 </details>
 
-† Default build only. The optional `native-inchi` feature adds a C-compiler dependency (and ~6 `unsafe` blocks, all confined to its FFI layer — see "Safe" above) for the vendored IUPAC InChI C library (v1.07.5). All other crates remain FFI-free and unsafe-free.
+† Default build only. The optional `native-inchi` feature adds a C-compiler dependency for the vendored IUPAC InChI C library (v1.07.5). This is about C/C++ FFI specifically — the `depict` feature below pulls in pure-Rust rendering crates, so it doesn't add a C compiler dependency even though it isn't unsafe-free (see ‡).
+
+‡ chematic's own ~15,000 lines of Rust: unsafe-free outside `native-inchi`'s ~6 FFI blocks (see "Safe" above) — a real, verifiable claim about code chematic wrote, and categorically different from RDKit/OpenBabel's *C++ FFI* unsafe (uncheckable by any compiler at that boundary) even where the raw count is comparable. It is **not** true of the full dependency tree: the optional `depict` feature (SVG/PDF/EPS rendering) pulls in resvg/usvg/rustybuzz/tiny-skia/zune-jpeg, pure-Rust crates that are themselves not unsafe-free — measured directly (`unsafe fn`/`impl`/`trait`/`{` openings): tiny-skia 151, zune-jpeg 79, rustybuzz 14, image 8, fontdb 3, tiny-skia-path 3 (258 total in this set alone). `chematic-py` (`pip install chematic`) and the npm package both depend on `chematic-depict` directly, so this applies to both real-world install paths, not just an edge case.
 
 ---
 

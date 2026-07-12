@@ -160,13 +160,18 @@ RDKit Python API の 5〜14× 高速。GIL なし、インタープリタオー�
 
 ### 安全
 
-デフォルトの依存ツリー全体で、15,000 行以上の Rust コードに **`unsafe` ブロックは約 6 個**のみ。
+chematic 自身の約 15,000 行の Rust コードには **`unsafe` ブロックが約 6 個**のみで、
+すべて opt-in の `native-inchi` FFI 層に限定されています(下記参照)。
 C++ のヒープ破壊なし。不正な SMILES 入力によるセグメンテーション違反なし。
 `-sys` クレートによるプラットフォーム固有のビルド失敗なし。
-コンパイラがすべての呼び出し箇所でメモリ安全性を保証します。
+コンパイラが chematic 自身が書いたすべての呼び出し箇所でメモリ安全性を保証します。
 
 > `native-inchi` feature は唯一の opt-in 例外 — ビット完全一致の標準 InChI 用に
-> IUPAC InChI C ライブラリ (v1.07.5) を vendored でリンクします。他の全クレートは FFI フリーのまま。
+> IUPAC InChI C ライブラリ (v1.07.5) を vendored でリンクします。他の全クレートは
+> FFI フリー・unsafe フリーのまま。この数値は chematic 自身のソースのみを指し、
+> 依存ツリー全体ではありません — `depict` feature(SVG/PDF/EPS 描画)はフォント・
+> 画像レンダリングスタック(resvg/usvg/rustybuzz/tiny-skia/zune-jpeg)を引き込み、
+> これらは unsafe フリーでは**ありません**。実測値は下記の比較表脚注を参照。
 
 ### どこでも動く
 
@@ -184,7 +189,7 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 | **WASM バイナリサイズ**                     | **〜550 KB**                               | N/A（WASM 非対応） | N/A           | 〜30 MB          |
 | **ビルド要件**                              | `cargo build` のみ                         | cmake + clang      | cmake + clang | Emscripten SDK   |
 | **Python バインディング**                   | **あり** (`pip install chematic`, PyO3)    | あり（rdkit-sys）  | あり          | なし             |
-| unsafe Rust                                 | **なし（デフォルト）**†                    | 大規模             | 大規模        | N/A              |
+| unsafe Rust                                 | **自クレートはなし**‡                      | 大規模             | 大規模        | N/A              |
 | ケクレ化                                    | **4-pass（Edmonds' blossom 含む）**        | あり               | あり          | あり             |
 
 <details>
@@ -206,7 +211,9 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 | IUPAC 名生成                                | **あり（25+ 化合物クラス）**               | なし               | なし          | 一部             |
 | メンテナンス（2026）                        | アクティブ                                 | アクティブ         | 最小限        | アクティブ       |
 
-† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラと約6個の`unsafe`ブロック（そのFFI層に限定、上記「安全」参照）が必要。他の全クレートは FFI フリー・unsafeフリー。
+† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要（IUPAC InChI C ライブラリ v1.07.5 の vendoring）。これは C/C++ FFI 固有の話 — 下記の `depict` feature は純 Rust の描画クレートを引き込むため、unsafe フリーではなくても C コンパイラ依存は追加しません（‡参照）。
+
+‡ chematic 自身の約 15,000 行の Rust コード: `native-inchi` の約6個の FFI ブロックを除き unsafe フリー（上記「安全」参照）— chematic 自身が書いたコードについての実測済みの主張であり、コンパイラによるチェックが一切効かない RDKit/OpenBabel の C++ FFI unsafe とは、たとえ個数が同程度でも種類が根本的に異なります。**依存ツリー全体については成り立ちません**: opt-in の `depict` feature（SVG/PDF/EPS 描画）は resvg/usvg/rustybuzz/tiny-skia/zune-jpeg を引き込み、これらは純 Rust ですが unsafe フリーではありません — 実測（`unsafe fn`/`impl`/`trait`/`{` の出現数）: tiny-skia 151、zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-path 3(この範囲だけで合計 258)。`chematic-py`（`pip install chematic`）と npm パッケージはどちらも `chematic-depict` に直接依存するため、これは実際の2つのインストール経路の両方に当てはまります。
 
 
 </details>
