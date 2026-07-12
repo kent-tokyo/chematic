@@ -295,6 +295,17 @@ struct McsState<'a> {
 /// (rather than "whichever was found first") makes the winner a pure
 /// function of the mapping's content, so it doesn't depend on which order
 /// branch-and-bound happens to visit tied candidates in.
+///
+/// Does NOT achieve full spelling-invariance: mols[0]'s AtomIdx numbering
+/// IS its parse order, so a differently-spelled-but-equivalent mols[0] can
+/// still produce a different winner on a genuine (non-automorphic,
+/// element-different) tie -- confirmed empirically (see
+/// scratch_element_different_tie_probe / commit history), same residual
+/// tier as chematic-chem/standardize.rs's #9/#10 and the reverted #4 iupac
+/// tie-break this round. This key still removes real internal
+/// nondeterminism (DFS-visit-order dependence for a FIXED mols[0]
+/// labeling) and is kept for that reason, not because it solves the
+/// general problem.
 fn mcs_tiebreak_key(mapping: &PartialMapping) -> Vec<u32> {
     mapping.query_to_mol.iter().map(|row| row[0].0).collect()
 }
@@ -1223,6 +1234,44 @@ mod tests {
             result.atom_count(),
             r_ala1.atom_count(),
             "match_chiral_tag=true should still match molecules with same stereochemistry"
+        );
+    }
+
+    #[test]
+    fn test_element_different_tie_is_spelling_dependent_known_gap() {
+        // Two disconnected 3-atom fragments differing only in the
+        // heteroatom (N vs O): both are size-3/bond-count-2 candidates of
+        // equal quality, a genuine (non-automorphic, element-different) tie
+        // -- unlike most ties elsewhere in this crate's tests, the choice
+        // here IS externally observable (AtomicNum(7) vs AtomicNum(8) in
+        // the returned QueryMolecule), because AtomCompare::Elements records
+        // atomic number per atom.
+        //
+        // Spot-checked per user request after the #4 (iupac) tie-break
+        // fix turned out to be a net-negative regression: confirmed via a
+        // temporary revert that mcs_tiebreak_key's choice here is IDENTICAL
+        // to the pre-#8-fix (first-found-in-DFS-wins) behavior -- this is
+        // not a regression introduced by #8, it's a pre-existing gap that
+        // #8's tie-break doesn't resolve (see mcs_tiebreak_key's doc
+        // comment: no full spelling-invariance is claimed for it).
+        let n_first = find_mcs(&[&parse("NCC.OCC").unwrap(), &parse("NCC.OCC").unwrap()]);
+        let o_first = find_mcs(&[&parse("OCC.NCC").unwrap(), &parse("OCC.NCC").unwrap()]);
+
+        assert_eq!(n_first.atom_count(), 3);
+        assert_eq!(o_first.atom_count(), 3);
+        assert_eq!(
+            n_first.atoms[0].query,
+            AtomQuery::And(
+                Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(7))),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(false)))
+            )
+        );
+        assert_eq!(
+            o_first.atoms[0].query,
+            AtomQuery::And(
+                Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(8))),
+                Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(false)))
+            )
         );
     }
 }
