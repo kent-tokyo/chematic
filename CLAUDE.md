@@ -129,4 +129,4 @@ chematic.smarts_match("[nH]", mol)  # module-level function
 
 ### Benchmark / RDKit Reference
 
-`scripts/bench5k.py` compares chematic vs RDKit on 5,000 molecules for HBA, aromatic ring count, and `[nH]` SMARTS. Current agreement: HBA 100%, aromatic ring count ~95.6%. `scripts/rdkit_benchmark.py` and `scripts/gen_rdkit_reference.py` generate the reference TSV files in `scripts/`.
+`scripts/bench5k.py` compares chematic vs RDKit on 5,000 molecules for HBA, aromatic ring count, and `[nH]` SMARTS. Current agreement: HBA 100%, aromatic ring count 100% (see `docs/validation.md` for the full 19-descriptor breakdown; regenerate via `scripts/gen_validation_report.py`). `scripts/rdkit_benchmark.py` and `scripts/gen_rdkit_reference.py` generate the reference TSV files in `scripts/`.
