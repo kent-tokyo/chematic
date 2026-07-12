@@ -2,8 +2,8 @@
 //! (sulfide/thiol) compound naming.
 
 use crate::helpers::{
-    alkane_base, alkane_stem, alkane_suffix, alkyl_prefix, chain_from_anchor, count_c_chain,
-    find_longest_c_chain, format_substituents,
+    alkane_base, alkane_stem, alkane_suffix, alkyl_prefix, anchor_chain_and_substituents,
+    count_c_chain, find_longest_c_chain, format_substituents,
 };
 use crate::{IupacError, Namer};
 use chematic_core::{AtomIdx, BondOrder, implicit_hcount};
@@ -47,31 +47,16 @@ impl<'a> Namer<'a> {
             return Err(IupacError::NotSupported);
         }
 
-        // Amide chain from carbonyl_c (handles branched structures).
+        // Amide chain from carbonyl_c (handles branched structures), picking
+        // among tied-longest candidates by substituent count (IUPAC P-44.3).
         let c_set: HashSet<AtomIdx> = mol
             .atoms()
             .filter(|(_, a)| a.element.atomic_number() == 6)
             .map(|(i, _)| i)
             .collect();
-        let chain = chain_from_anchor(mol, &c_set, carbonyl_c);
+        let (chain, subs) = anchor_chain_and_substituents(mol, &c_set, carbonyl_c)
+            .ok_or(IupacError::NotSupported)?;
         let n = chain.len();
-        let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
-        let mut subs: Vec<(usize, usize)> = Vec::new();
-        for (pos0, &chain_c) in chain.iter().enumerate() {
-            if pos0 == 0 {
-                continue;
-            }
-            let position = pos0 + 1;
-            for (nb, _) in mol.neighbors(chain_c) {
-                if c_set.contains(&nb) && !chain_set.contains(&nb) {
-                    let sub_len = count_c_chain(mol, nb, chain_c);
-                    if sub_len > 4 {
-                        return Err(IupacError::NotSupported);
-                    }
-                    subs.push((position, sub_len));
-                }
-            }
-        }
         let prefix = if subs.is_empty() {
             String::new()
         } else {

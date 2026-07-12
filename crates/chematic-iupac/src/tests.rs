@@ -6,6 +6,54 @@ fn mol(s: &str) -> Molecule {
 }
 
 #[test]
+fn test_aldehyde_non_automorphic_arm_tie() {
+    // Aldehyde anchored at the carbonyl carbon; the alpha carbon (one atom
+    // out) has an ethyl arm AND an isopropyl arm, both terminating at the
+    // SAME BFS depth from the anchor -- the exact same non-automorphic-tie
+    // shape that broke find_longest_c_chain, but for chain_from_anchor's
+    // functional-group-anchored chains, which an earlier investigation
+    // (during this same round) assessed as "not reachable in practice" --
+    // wrong, per the same "couldn't find a counterexample != safe" lesson.
+    // Both spellings are the SAME molecule (alpha C bonded to CHO, ethyl,
+    // and isopropyl), just starting the SMILES from a different arm; before
+    // the fix, "O=CC(CC)C(C)C" gave "2-ethyl-3-methylbutanal" (correct) while
+    // "CC(C)C(CC)C=O" gave "2-propylbutanal" (wrong chain choice, plus the
+    // same branched-isopropyl-mislabeled-as-linear-propyl bug seen in #4).
+    assert_eq!(
+        name(&mol("O=CC(CC)C(C)C")).unwrap(),
+        "2-ethyl-3-methylbutanal"
+    );
+    assert_eq!(
+        name(&mol("CC(C)C(CC)C=O")).unwrap(),
+        "2-ethyl-3-methylbutanal"
+    );
+}
+
+#[test]
+fn test_acid_and_amide_non_automorphic_arm_tie() {
+    // Same non-automorphic-tie shape (ethyl arm + isopropyl arm at equal
+    // depth from the anchor) as test_aldehyde_non_automorphic_arm_tie, for
+    // the other two anchor_chain_and_substituents callers: the carboxylic
+    // acid and amide paths.
+    assert_eq!(
+        name(&mol("O=C(O)C(CC)C(C)C")).unwrap(),
+        "2-ethyl-3-methylbutanoic acid"
+    );
+    assert_eq!(
+        name(&mol("CC(C)C(CC)C(=O)O")).unwrap(),
+        "2-ethyl-3-methylbutanoic acid"
+    );
+    assert_eq!(
+        name(&mol("O=C(N)C(CC)C(C)C")).unwrap(),
+        "2-ethyl-3-methylbutanamide"
+    );
+    assert_eq!(
+        name(&mol("CC(C)C(CC)C(=O)N")).unwrap(),
+        "2-ethyl-3-methylbutanamide"
+    );
+}
+
+#[test]
 fn test_branched_alkane_non_automorphic_arm_tie() {
     // Tertiary carbon with two ethyl arms + one isopropyl arm: all three
     // arms reach BFS-depth 2, but ethyl-vs-ethyl is automorphic (harmless)
