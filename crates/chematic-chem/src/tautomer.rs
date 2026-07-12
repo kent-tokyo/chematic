@@ -922,6 +922,19 @@ fn apply_all_matches(
 #[derive(Debug, Clone)]
 pub struct TautomerConfig {
     /// Maximum iterations in [`canonical_tautomer_with_config`] (default 16).
+    ///
+    /// Each outer iteration applies at most one transformation (the first
+    /// match found, in atom-index order, for the first rule that has an
+    /// unseen match). If a molecule has MORE independent, non-automorphic,
+    /// same-rule tautomerizable sites than `max_iter` allows, the final
+    /// result depends on input atom order (parse/spelling order): which
+    /// subset of sites got converted before the budget ran out differs.
+    /// Confirmed reachable (not just theoretical) for a "comb" molecule
+    /// with >16 independent enol arms, but no known real-molecule instance
+    /// hits this in practice -- see
+    /// `test_max_iter_default_diverges_on_many_independent_sites` (an
+    /// `#[ignore]`d regression pin, not a passing guarantee) for the exact
+    /// mechanism and why it's not fixed by simply raising this constant.
     pub max_iter: usize,
     /// Maximum tautomers returned by [`enumerate_tautomers_with_config`] (default 32).
     pub max_tautomers: usize,
@@ -1118,6 +1131,155 @@ mod tests {
     use super::*;
     use chematic_core::{AtomIdx, Chirality};
     use chematic_smiles::{canonical_smiles, parse};
+
+    /// "Comb" molecule for the max_iter-exhaustion tests below: an
+    /// asymmetric backbone (an extra methyl end-cap on backbone[0] breaks
+    /// reversal symmetry, so which SUBSET of arms converts is externally
+    /// observable, not automorphism-hidden) with `n` independent enol arms
+    /// hanging off it (`keto=false`) or the equivalent already-converted
+    /// ketone arms (`keto=true`, used as a `canonical_smiles`-only control).
+    /// `reverse_arms` builds the identical graph with arms attached in the
+    /// opposite backbone-position order, to probe atom-insertion-order
+    /// sensitivity.
+    fn build_comb(n: usize, reverse_arms: bool, keto: bool) -> Molecule {
+        use chematic_core::{Atom, Element};
+        let mut builder = MoleculeBuilder::new();
+        let cap = builder.add_atom(Atom::new(Element::C));
+        let mut backbone = Vec::new();
+        for _ in 0..n {
+            backbone.push(builder.add_atom(Atom::new(Element::C)));
+        }
+        builder
+            .add_bond(cap, backbone[0], BondOrder::Single)
+            .unwrap();
+        for i in 0..n - 1 {
+            builder
+                .add_bond(backbone[i], backbone[i + 1], BondOrder::Single)
+                .unwrap();
+        }
+        let arm_order: Vec<usize> = if reverse_arms {
+            (0..n).rev().collect()
+        } else {
+            (0..n).collect()
+        };
+        for &i in &arm_order {
+            if keto {
+                // Already-keto arm, matching a fully-converted enol arm's
+                // exact topology: backbone-C(=O)-CH3 (NOT backbone-CH2-C(=O)-CH3,
+                // which is one carbon longer and not a valid control for it).
+                let carbonyl = builder.add_atom(Atom::new(Element::C));
+                let mut o = Atom::new(Element::O);
+                o.hydrogen_count = Some(0);
+                let oxy = builder.add_atom(o);
+                let methyl = builder.add_atom(Atom::new(Element::C));
+                builder
+                    .add_bond(backbone[i], carbonyl, BondOrder::Single)
+                    .unwrap();
+                builder.add_bond(carbonyl, oxy, BondOrder::Double).unwrap();
+                builder
+                    .add_bond(carbonyl, methyl, BondOrder::Single)
+                    .unwrap();
+            } else {
+                // Enol arm: backbone-CH=CH-OH (donor=O, bridge=C, acceptor=C).
+                let bridge = builder.add_atom(Atom::new(Element::C));
+                let acceptor = builder.add_atom(Atom::new(Element::C));
+                let mut o = Atom::new(Element::O);
+                o.hydrogen_count = Some(1);
+                let donor = builder.add_atom(o);
+                builder
+                    .add_bond(backbone[i], bridge, BondOrder::Single)
+                    .unwrap();
+                builder
+                    .add_bond(bridge, acceptor, BondOrder::Double)
+                    .unwrap();
+                builder.add_bond(bridge, donor, BondOrder::Single).unwrap();
+            }
+        }
+        builder.build()
+    }
+
+    #[test]
+    #[ignore = "confirmed real, root-caused, and deliberately not fixed this \
+                round: canonical_tautomer_with_config's greedy loop applies \
+                one transform per outer iteration via apply_first_match \
+                (atom-index order, see find_matches), bounded by \
+                config.max_iter (default 16). A molecule with MORE \
+                independent same-rule tautomerizable sites than max_iter \
+                allows has its FINAL result depend on atom insertion order: \
+                which subset of sites got converted before the budget ran \
+                out differs. Verified NOT a deeper tie-break flaw -- with \
+                max_iter=1000 (room to fully process all 25 sites) both \
+                atom orderings converge to the byte-identical correct \
+                answer (see test_max_iter_1000_resolves_the_divergence); \
+                verified NOT a canonical_smiles bug either (see \
+                test_canonical_smiles_alone_is_order_independent_on_comb). \
+                The trigger (>16 independent, same-rule, non-automorphic \
+                tautomerizable sites in one molecule) is an extreme edge \
+                case with no known real-molecule instance -- a proper fix \
+                needs batching all of a rule's non-conflicting matches per \
+                iteration instead of raising the constant, an architectural \
+                change with its own conflict-resolution complexity, \
+                correctly left out of scope for this round rather than \
+                rushed. See TautomerConfig::max_iter's doc comment."]
+    fn test_max_iter_default_diverges_on_many_independent_sites() {
+        let forward = build_comb(25, false, false);
+        let reversed = build_comb(25, true, false);
+        assert_eq!(
+            canonical_smiles(&forward),
+            canonical_smiles(&reversed),
+            "sanity check: build_comb(reverse_arms) must build the SAME molecule"
+        );
+        assert_eq!(
+            canonical_smiles(&canonical_tautomer(&forward)),
+            canonical_smiles(&canonical_tautomer(&reversed)),
+        );
+    }
+
+    #[test]
+    fn test_max_iter_1000_resolves_the_divergence() {
+        // Companion to the #[ignore]d test above: proves the divergence
+        // there is PURELY max_iter exhaustion, not a deeper algorithmic
+        // flaw -- with enough budget to process all 25 independent sites,
+        // atom insertion order no longer matters.
+        let forward = build_comb(25, false, false);
+        let reversed = build_comb(25, true, false);
+        let big_config = TautomerConfig {
+            max_iter: 1000,
+            ..TautomerConfig::default()
+        };
+        let ta = canonical_tautomer_with_config(&forward, &big_config);
+        let tb = canonical_tautomer_with_config(&reversed, &big_config);
+        assert_eq!(canonical_smiles(&ta), canonical_smiles(&tb));
+        // Every site should have converted (no leftover [OH] enol form).
+        assert!(!canonical_smiles(&ta).contains("[OH]"));
+    }
+
+    #[test]
+    fn test_canonical_smiles_alone_is_order_independent_on_comb() {
+        // Second companion: proves the SAME divergence is not a
+        // canonical_smiles bug either -- an already-fully-keto comb (no
+        // tautomer.rs involved at all) is order-independent on this exact,
+        // pathologically-symmetric (25 near-identical arms) topology.
+        let forward = build_comb(25, false, true);
+        let reversed = build_comb(25, true, true);
+        assert_eq!(canonical_smiles(&forward), canonical_smiles(&reversed));
+    }
+
+    #[test]
+    fn test_bis_enol_independent_sites_order_independent() {
+        // Two independent, non-overlapping, ASYMMETRIC enol sites (no shared
+        // atoms) separated by a CH2 bridge: donor=O0-bridge=C1=C2 on one end,
+        // donor=O6-bridge=C5=C4 on the other, with a methyl (C7) breaking the
+        // symmetry -- an ordinary (well within max_iter) two-site case,
+        // confirming canonical_tautomer is safe for the common case.
+        let a = parse("OC=CCC=C(O)C").unwrap();
+        // Same molecule, respelled from the other end (methyl-bearing enol first).
+        let b = parse("CC(O)=CCC=CO").unwrap();
+        assert_eq!(
+            canonical_smiles(&canonical_tautomer(&a)),
+            canonical_smiles(&canonical_tautomer(&b)),
+        );
+    }
 
     #[test]
     fn test_canonical_no_tautomers() {
