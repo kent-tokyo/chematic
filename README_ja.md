@@ -280,6 +280,48 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 最近の開発（v0.4.x）
 
+**v0.4.29**（2026-07-10）: **Kabsch回転バグ修正 + SDF V3000/CDXML書き込み、Avalon FP、O3A**
+- `chematic-3d`: `align_coords` のKabsch回転が逆方向に計算されるバグを修正（純粋な並進以外のアライメントでRMSDが大きく水増しされていた。v0.4.28からcrates.io/PyPI/npmで公開されていた）；O3A原子対応のための `correspondence_search`
+- `chematic-mol`: SDF V3000書き込み配線；CDXML書き込み
+- `chematic-fp`: Avalonフィンガープリント
+
+**v0.4.28**（2026-07-09）: **SMARTS性能改善、レジストリ再同期**
+- `chematic-smarts`: 存在チェックの早期終了 — `bulk.substructure_search` がRDKitより2.2倍高速に
+- v0.4.23〜v0.4.27はgitタグが未pushでcrates.ioのみ最新（PyPI/npm/GitHub Releasesが遅れていた）だったため、この版で3レジストリを再同期
+
+**v0.4.27**（2026-07-04）: **記述子修正、RWMol/FCFP、veridict CIゲート**
+- `chematic-chem`: `kappa1-3`、`balaban_j`、`labute_asa`、`bcut2d`、`hall_kier_alpha` 記述子修正
+- `chematic-fp`: `useFeatures=True` FCFP
+- `chematic-mol`: RWMol インプレース編集
+- CI: veridictベースの性能/Criterion/精度ドリフト回帰ゲート；統合テストのCIカバレッジギャップ修正
+
+**v0.4.26**（2026-06-29）: **反応でのE/Zステレオ転写 + 検証Sprint 6/7**
+- `chematic-rxn`: `run_reactants()` で反応物の `/`/`\` 二重結合幾何が生成物に保持されるように（従来は変換で失われていた）
+- 検証: RDKitに対するカノニカルSMILES差分検証（Sprint 6）；SMARTS/芳香族性差分テスト + I/O互換性（rdkit_compat Sprint 7）；残存するRDKit差異の根本原因をMorganランクではなく芳香族性ラウンドトリップと特定
+
+**v0.4.25**（2026-06-29）: **`chematic.rdkit_compat` レイヤー**
+- `chematic-py`: RDKit API互換レイヤー（Sprint 1〜5）— Morgan `bitInfo`、Fingerprint/Mol/Atom/Bond/RingInfo互換性、RDKitとの差分テスト；ストリーミング `SDMolSupplier`/`SDWriter`/`Mol.GetProp`
+- `chematic-perception`: `AromaticityAlgorithm::RdkitLike` — Se/TeカルコゲンをRDKitのモデルに合わせて処理
+
+**v0.4.24**（2026-06-29）: **CIP Rule 5、架橋頭部/回転可能結合/TPSA/MRを100%に、HDFフィンガープリント**
+- `chematic-chem`: CIP Rule 5立体タイブレーク（ステレオセンター一致率 99.8% → 99.98%）；架橋頭部検出 98.5% → 100%；回転可能結合 99.1% → 100%；TPSA 100%；モル屈折率 97.5% → 100%（3環XOR拡張）— いずれも5,000分子ChEMBLコーパス
+- `chematic-py`: `bulk.descriptors_array()` 列指向numpy出力；真のストリーミングSDF（`SdfFileReader`/`iter_sdf_batched`）；`screen()` 化合物フィルタワークフロー
+- LLM/RAG: 表現ルーター（`to_llm_text`, `best_representation`）、分子コンテキストパック、**Hyper-Dimensional Fingerprints（HDF）** — 学習不要の密な分子ベクトル
+
+**v0.4.23**（2026-06-26）: **LogP 96.5% → 99.7%**
+- `chematic-chem`: `crippen_anchor_sets` を `uniquify: false` に修正し、対称な三重結合（内部アルキン）がVF2マッチで両方向とも得られるように（従来は片方が汎用 `[#6]` 値にフォールバックしていた）
+
+**v0.4.22**（2026-06-26）: **CITATION.cff + `chematic.doctor()`**
+- `chematic-py`: `doctor()` 自己診断機能；README に信頼性マトリクスを追加
+
+**v0.4.21**（2026-06-25）: **LLM/Jupyter向けHTML/Markdownレポート**
+- `chematic-py`: `chematic.report()` 自己完結型HTML化合物グリッド、`chematic.compare()`、`mol.review()` Markdown解析
+- ドキュメント: `benchmarks/`/`validation/` 再現可能な精度履歴
+
+**v0.4.20**（2026-06-25）: **ETKDGトーションKB 44 → 80パターン、`mol.describe()`/`diff()`**
+- `chematic-3d`: 6員環/5員環脂肪族環の椅子形/封筒形コンフォメーション；SMARTSベースのトーションルールを高精度事前チェック層として追加
+- `chematic-py`: LLM/MCPエージェント向け `mol.describe()`/`mol.diff(other)`；`bulk.generate_3d`/`tanimoto_matrix`/`standardize`
+
 **v0.4.19**（2026-06-23）: **PDF/EPS 出力、ChemicalJSON、新記述子、WASM −38.5%**
 - `chematic-depict`: `depict_pdf()` / `depict_eps()` — PDF・EPS 出力（Pure Rust、外部ツール不要）
 - `chematic-mol`: **ChemicalJSON** — `parse_cjson()` / `write_cjson()` で Avogadro2 / MolSSI 相互運用
@@ -309,25 +351,9 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - `chematic-smarts`: `[kN]` 環サイズプリミティブ；VF2 クエリ原子数 > 対象時の早期終了
 - `chematic-rxn`: パリティ対応 SMIRKS キラリティマッチ；product bracket クリーンアップ
 
-**v0.4.13**（2026-06-21）: **テンプレート逆合成 + 記述子修正**
-- `chematic-rxn`: `retro_disconnect()` — 60 retro-SMIRKS テンプレート（AmideBond / Ester / Ether / CNBond / CCBond / CSBond）、SA Score ランク付き；Python `mol.retro_disconnect(reaction_class=...)`
-- `chematic-3d`: ETKDG トーション KB 28 → 40 パターン；adaptive noise
-- `chematic-chem`: `hbd_count()` に S-H（チオール）追加；TPSA nitro-N / 芳香族オキシドブリッジ / Kekulé-N 修正
-
-**v0.4.9–v0.4.12**（2026-06-19–21）: **AutoDock、UFF、SMARTS アトムマップ、環認識**
-- `chematic-mol`: AutoDock PDBQT 読み書き；`write_sdf_with_charges`（部分電荷）
-- `chematic-ff`: 金属・有機金属向け UFF 力場（Zn、Fe、Cu…）
-- `chematic-smarts`: SMARTS アトムマップ `:N`（`[O;D1;H0:3]` 形式、メタデータとして保存）
-- `chematic-perception`: 多縮合芳香環の `augmented_ring_set` 反復更新（bench5k 222 件全修正）
-- MCP: 15 番目のツール `name_to_smiles`（PubChem REST プロキシ）
-
-**v0.4.5–v0.4.7**（2026-06-19）: **ケクレ化 blossom + BOILED-Egg + InChI E/Z**
-- Edmonds' blossom アルゴリズム導入（128 → 2 失敗）；InChI `/b` E/Z レイヤー；BOILED-Egg + Python/WASM バインディング
-
-**v0.4.0–v0.4.4**（2026-06-17–18）: **PyO3 Python バインディング + native-inchi**
-- `chematic-py`: PyO3/maturin バインディング — `from_smiles()`, `Mol.aromatic_ring_count`, `Mol.descriptors()`
-- `native-inchi` feature: IUPAC 標準 InChI（vendored C lib v1.07.5）
-- HBA 書き直し: RDKit と 99.98% 一致（4,999 分子 ChEMBL ベンチマーク）
+それ以前の v0.4.x の開発（テンプレート逆合成、AutoDock/UFF、ケクレ化 blossom
+アルゴリズム、PyO3 バインディング、native-inchi）と v0.1〜v0.3 の全履歴:
+[CHANGELOG.md](CHANGELOG.md)
 
 ---
 

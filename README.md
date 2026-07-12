@@ -401,6 +401,48 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development (v0.4.x Era)
 
+**v0.4.29** (2026-07-10): **Kabsch rotation bug fix + SDF V3000/CDXML write, Avalon FP, O3A**
+- `chematic-3d`: fixed `align_coords`'s Kabsch rotation computed in the wrong direction — was giving grossly inflated RMSD for any non-pure-translation alignment (live on v0.4.28 across crates.io/PyPI/npm before this patch); `correspondence_search` for O3A atom correspondence
+- `chematic-mol`: SDF V3000 write wiring; CDXML write
+- `chematic-fp`: Avalon fingerprint
+
+**v0.4.28** (2026-07-09): **SMARTS perf, registry re-sync**
+- `chematic-smarts`: existence-check short-circuit — `bulk.substructure_search` 2.2× faster than RDKit
+- No git tag had been pushed for v0.4.23–v0.4.27 (crates.io stayed current via manual `cargo publish`, but PyPI/npm/GitHub Releases fell behind) — this release re-syncs all three registries
+
+**v0.4.27** (2026-07-04): **Descriptor fixes, RWMol/FCFP, veridict CI gates**
+- `chematic-chem`: `kappa1-3`, `balaban_j`, `labute_asa`, `bcut2d`, `hall_kier_alpha` descriptor fixes
+- `chematic-fp`: `useFeatures=True` FCFP
+- `chematic-mol`: RWMol in-place editing
+- CI: veridict-based performance/Criterion/accuracy-drift regression gates; integration-test CI coverage gap fix
+
+**v0.4.26** (2026-06-29): **E/Z stereo transfer in reactions + validation Sprint 6/7**
+- `chematic-rxn`: reaction products now preserve `/`/`\` double-bond geometry from reactants in `run_reactants()` (previously lost on transformation)
+- Validation: canonical SMILES differential validation vs RDKit (Sprint 6); SMARTS/aromaticity differential tests + I/O compatibility (rdkit_compat Sprint 7); root-caused remaining RDKit canonical divergence to aromaticity round-trip, not Morgan ranks
+
+**v0.4.25** (2026-06-29): **`chematic.rdkit_compat` layer**
+- `chematic-py`: RDKit API compatibility surface (Sprints 1–5) — Morgan `bitInfo`, Fingerprint/Mol/Atom/Bond/RingInfo compatibility, differential tests against RDKit; streaming `SDMolSupplier`/`SDWriter`/`Mol.GetProp`
+- `chematic-perception`: `AromaticityAlgorithm::RdkitLike` — Se/Te chalcogen aromaticity matching RDKit's model
+
+**v0.4.24** (2026-06-29): **CIP Rule 5, bridgehead/rotatable-bonds/TPSA/MR to 100%, HDF fingerprints**
+- `chematic-chem`: CIP Rule 5 stereo tie-breaking (stereocenters 99.8% → 99.98% vs RDKit); bridgehead detection 98.5% → 100%; rotatable bonds 99.1% → 100%; TPSA 100%; molar refractivity 97.5% → 100% (3-ring XOR augmentation) — all on the 5,000-mol ChEMBL corpus
+- `chematic-py`: `bulk.descriptors_array()` columnar numpy output; true-streaming SDF (`SdfFileReader`/`iter_sdf_batched`); `screen()` compound-filter workflow
+- LLM/RAG: representation router (`to_llm_text`, `best_representation`), molecule context pack, **Hyper-Dimensional Fingerprints (HDF)** — training-free dense molecular vectors
+
+**v0.4.23** (2026-06-26): **LogP 96.5% → 99.7%**
+- `chematic-chem`: `crippen_anchor_sets` fixed to use `uniquify: false`, so symmetric triple bonds (internal alkynes) yield both VF2 match orientations instead of one falling back to the generic `[#6]` value
+
+**v0.4.22** (2026-06-26): **CITATION.cff + `chematic.doctor()`**
+- `chematic-py`: `doctor()` self-diagnostic; Reliability-by-Feature matrix added to README
+
+**v0.4.21** (2026-06-25): **HTML/Markdown reporting for LLM/Jupyter**
+- `chematic-py`: `chematic.report()` self-contained HTML compound grid, `chematic.compare()`, `mol.review()` Markdown analysis
+- Docs: `benchmarks/`/`validation/` reproducible accuracy history
+
+**v0.4.20** (2026-06-25): **ETKDG torsion KB 44 → 80 rules, `mol.describe()`/`diff()`**
+- `chematic-3d`: chair/envelope ring conformations for 6/5-membered aliphatic rings; SMARTS-based torsion rules as a high-precision pre-check layer
+- `chematic-py`: `mol.describe()`/`mol.diff(other)` for LLM/MCP agents; `bulk.generate_3d`/`tanimoto_matrix`/`standardize`
+
 **v0.4.19** (2026-06-23): **PDF/EPS output, ChemicalJSON, new descriptors, WASM −38.5%**
 - `chematic-depict`: `depict_pdf()` / `depict_eps()` — PDF and EPS output; pure Rust, no external tools
 - `chematic-mol`: **ChemicalJSON** — `parse_cjson()` / `write_cjson()` for Avogadro2 / MolSSI interop
@@ -431,29 +473,9 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 - `chematic-rxn`: parity-aware SMIRKS chirality matching; product bracket cleanup (`[O:1]` → `O`)
 - `chematic-perception`: zero-order/dative bonds excluded from SSSR; `count_aromatic_rings()` handles Kekulé input
 
-**v0.4.13** (2026-06-21): **Template retrosynthesis + descriptor fixes**
-- `chematic-rxn`: `retro_disconnect()` — 60 retro-SMIRKS templates (AmideBond / Ester / Ether / CNBond / CCBond / CSBond) with SA Score ranking; Python `mol.retro_disconnect(reaction_class=...)`
-- `chematic-3d`: ETKDG torsion KB 28 → 40 patterns; adaptive bond-flexibility noise scaling
-- `chematic-chem`: `hbd_count()` now includes S-H (thiol); TPSA nitro-N / aromatic oxide bridge / Kekulé-N corrections
-
-**v0.4.9–v0.4.12** (2026-06-19–21): **AutoDock, UFF, SMARTS atom-map, ring augmentation**
-- `chematic-mol`: AutoDock PDBQT parse/write; `write_sdf_with_charges`
-- `chematic-ff`: UFF force field for metals/organometallics (Zn, Fe, Cu, …)
-- `chematic-smarts`: atom map `:N` in SMARTS (`[O;D1;H0:3]` — stored as metadata)
-- `chematic-perception`: iterative `augmented_ring_set` for fused polycyclic aromatic ring counting (222/222 bench5k fixes)
-- MCP: 15th tool `name_to_smiles` via PubChem REST proxy
-
-**v0.4.5–v0.4.7** (2026-06-19): **Kekulization blossom + BOILED-Egg + InChI E/Z**
-- Edmonds' blossom algorithm for non-bipartite aromatic graphs (128→2 failures)
-- InChI `/b` E/Z layer, 6 new MCP tools, BOILED-Egg descriptor + Python/WASM bindings
-
-**v0.4.0–v0.4.4** (2026-06-17–18): **PyO3 Python bindings + native-inchi**
-- `chematic-py`: PyO3/maturin bindings — `from_smiles()`, `Mol.aromatic_ring_count`, `Mol.descriptors()`
-- `native-inchi` feature: IUPAC-exact InChI via vendored C lib v1.07.5
-- HBA rewrite: 99.98% agreement with RDKit (4,999-mol ChEMBL benchmark)
-
-
-Full changelog: [CHANGELOG.md](CHANGELOG.md)
+Earlier v0.4.x work (template retrosynthesis, AutoDock/UFF, Kekulization blossom
+algorithm, PyO3 bindings, native-inchi) and the full v0.1–v0.3 history:
+[CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -507,7 +529,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.4.26)
+├── Cargo.toml                    workspace root (v0.4.29)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -560,7 +582,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.4.26},
+  version   = {0.4.29},
   year      = {2026},
 }
 ```
