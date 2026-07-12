@@ -30,7 +30,7 @@ are found by scanning for blank cells, not by accident.
 |---|---|---|---|---|
 | Canonical SMILES | **MEASURED** — 0/5000 ChEMBL + 0/33 acyclic-polyene structural corruption, worst-of-10/30 | **MEASURED** — 0/5000, 0/33; E/Z direction 5.50% residual (cosmetic, non-corrupting) | E/Z simple-bond spelling not fully normalized (~1 in 18 stereo molecules) | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | Canonical atom ordering (`canonical_atom_order`, feeds InChI) | **PARTIAL** — fixed Round 14 (`c219ee7`), no dedicated post-fix corpus run | **PARTIAL** — only a 14-case hand-built permutation probe + individualized-branch match probe exists; no full-ChEMBL-scale worst-of-N run of its own. Shares the same individualize-refine code path as `canonical_smiles` (which does have full-corpus worst-of-10/30 coverage — `c219ee7` extracted a shared `winning_individualized_ranks` helper both functions call), so this is *partially*, not *fully*, uncovered — but that inheritance argument itself was never independently verified at scale for this specific function, same "verify analogous fixes independently" gap as the o3a.rs incident | — | `first_zero_order_dependence_audit` |
-| InChI / InChIKey (pure-Rust) | **UNMEASURED** for the InChI *string* vs. standard InChI (numbering/`/h`-layer/`/m`-layer remain structurally non-standard, documented, unchanged this round). **MEASURED** for the underlying R/S it encodes, newly this round: `assign_cip()` vs RDKit's per-atom CIP oracle, 4163 stereocenters, 5000-mol corpus — 96.83% (was 76.22% before this round's fix; see "Defect found and FIXED" section below) | **MEASURED, FIXED this round** — order-only mismatch 13.4%→3.5% (n=1000); InChI-*specific* excess over `canonical_smiles`'s own baseline order-sensitivity: 74%→**0%** (residual 3.5% fully explained by shared ordering-layer churn, no separate InChI-specific mechanism detected at this sample size) | Approximate, not standard-compliant (documented) — use `native-inchi` for real InChI; **plus** ~132-155/4163-4186 stereocenters (3.2-3.7%, oracle-dependent) still wrong vs RDKit — attempted and reverted (not just deferred): the residual is at least 4 distinct mechanisms, and a follow-up fix for one (triple-bond duplication) went net negative, revealing the comparator itself (`cip_branch_spheres`, shell-multiset pooling, not true recursive CIP) is the real limiter, not a missing per-bond-type rule — see "Remaining, explicitly out of scope" below | `validation.md` Known Limitations, `scripts/ecfp4_agreement.py` (tier 6), "Defect found and FIXED this round: `assign_cip()`" section below |
+| InChI / InChIKey (pure-Rust) | **UNMEASURED** for the InChI *string* vs. standard InChI (numbering/`/h`-layer/`/m`-layer remain structurally non-standard, documented, unchanged this round). **MEASURED** for the underlying R/S it encodes, newly this round: `assign_cip()` vs RDKit's per-atom CIP oracle, 4163 stereocenters, 5000-mol corpus — 96.83% (was 76.22% before this round's fix; see "Defect found and FIXED" section below) | **MEASURED, FIXED this round** — order-only mismatch 13.4%→3.5% (n=1000); InChI-*specific* excess over `canonical_smiles`'s own baseline order-sensitivity: 74%→**0%** (residual 3.5% fully explained by shared ordering-layer churn, no separate InChI-specific mechanism detected at this sample size) | Approximate, not standard-compliant (documented) — use `native-inchi` for real InChI; **plus** ~132-155/4163-4186 stereocenters (3.2-3.7%, oracle-dependent) still wrong vs RDKit — attempted and reverted (not just deferred): the residual is at least 4 distinct mechanisms, and a follow-up fix for one (triple-bond duplication) went net negative, revealing the comparator itself (`cip_branch_spheres`, shell-multiset pooling, not true recursive CIP) is the real limiter, not a missing per-bond-type rule — design RFC for the proper fix at `docs/cip_accurate_rfc.md`, frozen 155-case corpus at `validation/cip_label_corpus.jsonl`, see "Remaining, explicitly out of scope" below | `validation.md` Known Limitations, `scripts/ecfp4_agreement.py` (tier 6), "Defect found and FIXED this round: `assign_cip()`" section below, `docs/cip_accurate_rfc.md` |
 | InChI (native, IUPAC C lib) | **UNMEASURED** at scale (spot tests only) for the InChI string itself. Its stereo *input* is fixed this round: `crates/chematic-inchi/src/native/convert.rs` calls `tetrahedral_stereo_neighbors()` directly, the same function fixed above, so native-inchi's R/S input inherits the same 76.22%→96.83% correctness improvement — not independently re-measured against the C library's own output, only inferred from the shared code path | **UNMEASURED** | InChI /m /s (enantiomer/isotope) layers not yet measured post-canonicalization fix | — |
 | Aromaticity perception (Hückel per-SSSR-ring) | **PARTIAL** — 96.3% atom-flag parity on Kekulized input, worst-of-10 | **UNMEASURED** directly (implied stable via downstream ring counts) | azulene, purine regressed by SSSR fix; root cause (`aromatic_context` bypass) identified, not fixed | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | SSSR / ring perception | **MEASURED** — 98.9% ring-size agreement vs `GetSymmSSSR`, 5000-mol; residual is RDKit over-symmetrization, not a chematic bug | **MEASURED** — 100% self-stability (was 50.6%); permanent regression test added | Full Vismara relevant-cycle symmetrization not implemented (not required for correctness) | `sssr_horton_and_canonical_smiles_gap` |
@@ -151,11 +151,16 @@ future fix's causal signal is never contaminated by mixing with another:**
        vs 1件修正)、原因はルール不足ではなく比較器自体(cip_branch_spheres
        がBFS深さごとに多重集合でプールする近似比較で、真の再帰的CIP有向
        グラフ比較ではない)と判明、コミットせずrevert。芳香環(96件、最大
-       グループ)は未着手、三重結合(10件)・P中心(6件)・その他(20件)も
-       未着手。legacy版RDKitとrdCIPLabeler(現行)は43件で不一致があり、
+       グループ)は未着手、P中心(15件)・三重結合(1件)・その他(43件)も
+       未着手(件数は凍結コーパス`validation/cip_label_corpus.jsonl`基準、
+       current oracle準拠 — legacy oracle基準の暫定値「三重結合10件・P6件」
+       は上書き)。legacy版RDKitとrdCIPLabeler(現行)は43件で不一致があり、
        現行オラクル基準では 96.30%(155/4186残)がより正確な数値。
-       InChI固有の順序超過は 74%→0% に解消(残り3.5%は canonical_smiles
-       と共有の既知ベースライン順序依存で説明可能)。詳細は下記セクション。
+       設計RFC `docs/cip_accurate_rfc.md`(実装コードなし、chematic-cip
+       クレート新設・真の再帰的digraph比較器・4マイルストーン計画)を
+       この回で追加。InChI固有の順序超過は 74%→0% に解消(残り3.5%は
+       canonical_smiles と共有の既知ベースライン順序依存で説明可能)。
+       詳細は下記セクション。
 ```
 
 Measuring ECFP4 surfaced a real correctness issue that took two rounds to fully
@@ -365,8 +370,11 @@ regression tests added (`test_tetrahedral_stable_when_ring_bond_opens_before_oth
 legacy RDKit oracle; ~155/4186, 3.7%, vs. the more authoritative `rdCIPLabeler` modern
 oracle — see below) still disagree. **Attempted and reverted, not merely deferred**: a
 follow-up round categorized the residual as (at least) four distinct mechanisms — 96
-aromatic-ring-adjacent, 10 triple-bond-containing, 6 phosphorus stereocenters, 20
-uncharacterized — and extended the double-bond duplication fix above to
+aromatic-ring-adjacent, 15 phosphorus stereocenters, 1 triple-bond-adjacent, 43
+uncharacterized (counts per the frozen `validation/cip_label_corpus.jsonl` corpus,
+measured against the modern oracle; an earlier same-round estimate against the legacy
+oracle had said "10 triple-bond, 6 phosphorus" — superseded by the frozen, oracle-pinned
+numbers here) — and extended the double-bond duplication fix above to
 `BondOrder::Triple` (2 phantom duplicates per side instead of 1) as the cleanest
 mechanical analog. Result: **net negative**, 16 newly-wrong stereocenters vs. 1 newly-fixed
 (traced by hand; a stereocenter directly bonded to an alkyne outranked a structurally
@@ -392,8 +400,17 @@ oracles (solid floor of real chematic bugs), 9 were legacy-oracle errors (chemat
 actually right), 32 are new-only-under-the-modern-oracle. The pre-existing
 `aromatic_context` 41/1000 flag-assignment defect is unrelated and also still open.
 
-Reproduce: `.venv/bin/python scripts/cip_ground_truth.py ~/Downloads/SMILES.csv` (RDKit CIP
-oracle comparison, new this round); `.venv/bin/python scripts/ecfp4_agreement.py
+**Design RFC for a proper fix, this round**: `docs/cip_accurate_rfc.md` — a design-only
+(no engine code) proposal for a separate "Accurate CIP" engine (new `chematic-cip` crate,
+true recursive branch-by-branch hierarchical-digraph comparator, dual-mode API alongside
+the existing fast/approximate engine, 4 milestones gated at 98%/99%/99.5% modern-oracle
+agreement). The 155-case residual is frozen, reproducible, and oracle-pinned at
+`validation/cip_label_corpus.jsonl` (manifest line records RDKit/chematic versions;
+regenerate via `scripts/cip_ground_truth.py --freeze`) so future milestone PRs have a
+fixed baseline to diff their engine's output against.
+
+Reproduce: `.venv/bin/python scripts/cip_ground_truth.py ~/Downloads/SMILES.csv --freeze`
+(RDKit CIP oracle comparison + frozen corpus, new this round); `.venv/bin/python scripts/ecfp4_agreement.py
 ~/Downloads/SMILES.csv --layer2-sample 1000` (InChI order-only / InChI-specific-excess
 numbers, tier 6).
 

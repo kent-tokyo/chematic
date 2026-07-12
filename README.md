@@ -191,7 +191,8 @@ chematic.doctor()
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  100%   within ±0.1 Å²
 #   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)
-#   Num stereocenters     99.98% (legacy) / 98.7% (new CIP FindPotentialStereo)
+#   Stereocenter count    99.98% (legacy) / 98.7% (new CIP FindPotentialStereo)
+#   CIP R/S label         96.30% vs modern rdCIPLabeler (96.83% vs legacy)
 # ...
 ```
 
@@ -263,11 +264,13 @@ than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
 | HBA / HBD / aromatic ring count | **100% RDKit agreement** | 4,999-mol ChEMBL subset |
 | TPSA | **100% RDKit agreement** within ±0.1 Å² | 4,999-mol ChEMBL subset |
 | LogP (Crippen) | **100% RDKit agreement**\* | 4,999-mol ChEMBL subset |
-| Num stereocenters | **99.98%** vs legacy†; 98.7% vs new CIP | 4,999-mol ChEMBL subset |
+| Stereocenter count | **99.98%** vs legacy†; 98.7% vs new CIP | 4,999-mol ChEMBL subset |
+| CIP R/S label agreement | **96.30%** vs modern `rdCIPLabeler`‡; 96.83% vs legacy | 5,000-mol ChEMBL subset |
 | WASM bundle | **504 KB** gzip | — |
 
 \*LogP max Δ = 1.1×10⁻¹³ across 4,999 molecules — within float64 rounding error.  
-†Stereocenters: 99.98% vs legacy `CalcNumAtomStereoCenters` (1 molecule where chematic matches `FindPotentialStereo`=4 and legacy under-counts at 2); 98.7% vs new-CIP `FindPotentialStereo` (67 cage/bridgehead molecules where both chematic and legacy correctly return fewer than the new oracle). chematic is calibrated between both extremes.
+†Stereocenter count: 99.98% vs legacy `CalcNumAtomStereoCenters` (1 molecule where chematic matches `FindPotentialStereo`=4 and legacy under-counts at 2); 98.7% vs new-CIP `FindPotentialStereo` (67 cage/bridgehead molecules where both chematic and legacy correctly return fewer than the new oracle). chematic is calibrated between both extremes. This measures whether an atom is *flagged* as a stereocenter, not whether its R/S label is correct — see the next row.  
+‡CIP R/S label agreement measures, for atoms both oracles agree are stereocenters, whether the assigned R/S descriptor matches — a stricter, separate check from stereocenter count agreement above. See [`docs/cip_accurate_rfc.md`](docs/cip_accurate_rfc.md) for the residual's root cause and remediation plan.
 
 All numbers are reproducible with the scripts in this repo.  
 Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](validation/)
@@ -378,7 +381,7 @@ See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for al
 | `chematic-perception` | SSSR, Hückel aromaticity + antiaromaticity (4n+2 rule), `apply_aromaticity`, `aromatize`/`kekulize_inplace`, `assign_stereo_from_2d`, `assign_ez_from_2d`, `cip_ez_descriptor`; **zero-order/dative bonds excluded from ring perception** | 101    |
 | `chematic-mol`        | MOL/SDF V2000+V3000 (R/W with 2D coords, +partial charge writing), CML (R/W), CDXML (R); `SdfRecord` with coords+props; MDL RXN R/W; V3000 stereo-group COLLECTION R/W; **AutoDock PDBQT** (parse + write); **ChemicalJSON** (`parse_cjson`/`write_cjson`, Avogadro/MolSSI format) | 130    |
 | `chematic-depict`     | 2D SVG (CPK colors, highlighting, grid), DepictData, `detect_crossings`, `render_svg_with_metadata`, reaction SVG; **PDF output** (`depict_pdf`/`depict_pdf_opts` via svg2pdf); **EPS output** (`depict_eps`/`depict_eps_opts`, pure Rust); `tiny_skia` PNG is optional `png` feature (default on, disabled for WASM) | 64    |
-| `chematic-chem`       | 190+ descriptor values (71 functions), tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 100% RDKit agreement** (4 999 / 4 999 mol benchmark); **TPSA 100% ±0.1 Å² / LogP 100%\* / HBD 100% / stereocenters 99.98% (legacy) / 98.7% (new CIP)** vs RDKit (4,999-mol ChEMBL); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); **`schultz_mti`, `gutman_mti`, `vabc` (Bondi radii vdW volume), `gravitational_index`**; `clean_stereo_groups()` in standardize | 662   |
+| `chematic-chem`       | 190+ descriptor values (71 functions), tautomers, scaffold, BRICS, QED, standardize, CIP; **pKa prediction** (15 SMARTS rules); **ADMET profile** (BBB/Caco-2/hERG/CYP3A4); **HBA 100% RDKit agreement** (4 999 / 4 999 mol benchmark); **TPSA 100% ±0.1 Å² / LogP 100%\* / HBD 100% / stereocenter count 99.98% (legacy) / 98.7% (new CIP)** vs RDKit (4,999-mol ChEMBL); **CIP R/S label agreement 96.30% vs modern `rdCIPLabeler`** (5,000-mol ChEMBL, see `docs/cip_accurate_rfc.md`); **topological descriptors** (`petitjean_index`, `graph_diameter`, `graph_radius`, `graph_eccentricities`, `eccentric_connectivity_index`, `hosoya_index`, `moran_autocorr`, `geary_autocorr`); **`schultz_mti`, `gutman_mti`, `vabc` (Bondi radii vdW volume), `gravitational_index`**; `clean_stereo_groups()` in standardize | 662   |
 | `chematic-fp`         | ECFP2/4/6, FCFP4/6, MACCS, TopoPF, AtomPair, Torsion, Layered, Pattern, Pharmacophore, Reaction, **MAP4** (Minervini 2020, not in RDKit) — Tanimoto/Dice; bulk similarity | 185    |
 | `chematic-ff`         | **MMFF94 all 7 terms** (Halgren 1996): Bond/Angle/Torsion/vdW/Elec + **OOP** (117 entries) + **Stretch-Bend** (282 entries); steepest-descent + L-BFGS optimizer, torsion scan, energy breakdown; DREIDING typing; **UFF** (metals/organometallics: Zn, Fe, Cu, …) | 98    |
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion); **`[kN]` ring-size primitive**; **VF2 early-exit** when query > target atom count; **`find_matches_with_rings`** — share SSSR across multi-pattern batches | 142   |
