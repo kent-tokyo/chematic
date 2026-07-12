@@ -29,14 +29,14 @@ are found by scanning for blank cells, not by accident.
 | Output type | RDKit/oracle agreement | Permutation / repeat invariance | Known unfixed defects | Source |
 |---|---|---|---|---|
 | Canonical SMILES | **MEASURED** — 0/5000 ChEMBL + 0/33 acyclic-polyene structural corruption, worst-of-10/30 | **MEASURED** — 0/5000, 0/33; E/Z direction 5.50% residual (cosmetic, non-corrupting) | E/Z simple-bond spelling not fully normalized (~1 in 18 stereo molecules) | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
-| Canonical atom ordering (`canonical_atom_order`, feeds InChI) | **PARTIAL** — fixed Round 14 (`c219ee7`), no dedicated post-fix corpus run | **MEASURED** — 0/14 permutation probe + individualized-branch match probe | — | `first_zero_order_dependence_audit` |
+| Canonical atom ordering (`canonical_atom_order`, feeds InChI) | **PARTIAL** — fixed Round 14 (`c219ee7`), no dedicated post-fix corpus run | **PARTIAL** — only a 14-case hand-built permutation probe + individualized-branch match probe exists; no full-ChEMBL-scale worst-of-N run of its own. Shares the same individualize-refine code path as `canonical_smiles` (which does have full-corpus worst-of-10/30 coverage — `c219ee7` extracted a shared `winning_individualized_ranks` helper both functions call), so this is *partially*, not *fully*, uncovered — but that inheritance argument itself was never independently verified at scale for this specific function, same "verify analogous fixes independently" gap as the o3a.rs incident | — | `first_zero_order_dependence_audit` |
 | InChI / InChIKey (pure-Rust) | **UNMEASURED** — no corpus comparison vs. standard InChI found | **UNMEASURED** | Approximate, not standard-compliant (documented) — use `native-inchi` for real InChI | `validation.md` Known Limitations |
 | InChI (native, IUPAC C lib) | **UNMEASURED** at scale (spot tests only) | **UNMEASURED** | InChI /m /s (enantiomer/isotope) layers not yet measured post-canonicalization fix | — |
 | Aromaticity perception (Hückel per-SSSR-ring) | **PARTIAL** — 96.3% atom-flag parity on Kekulized input, worst-of-10 | **UNMEASURED** directly (implied stable via downstream ring counts) | azulene, purine regressed by SSSR fix; root cause (`aromatic_context` bypass) identified, not fixed | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | SSSR / ring perception | **MEASURED** — 98.9% ring-size agreement vs `GetSymmSSSR`, 5000-mol; residual is RDKit over-symmetrization, not a chematic bug | **MEASURED** — 100% self-stability (was 50.6%); permanent regression test added | Full Vismara relevant-cycle symmetrization not implemented (not required for correctness) | `sssr_horton_and_canonical_smiles_gap` |
 | **ECFP4 fingerprint** — Layer 1 (definition difference, not a bug): chematic's invariant includes aromaticity, RDKit's default doesn't; structural ceiling, not fixable without an RDKit-compat mode | **MEASURED** (this round) — see [worked example](#ecfp4-vs-rdkit--worked-example) below. ~77% invariant-partition match, r=0.94 similarity correlation — cannot reach ~100% regardless of any future fix, the definitions differ | n/a — single-representation input, ~98.8% unaffected by Layer 2 (1.18% overlap measured, see worked example) | **N/A — design choice**, not a defect. RDKit-compat mode is a feature request, not a fix | `scripts/ecfp4_agreement.py`, this round |
 | **ECFP4 fingerprint** — Layer 2 (real bug, independent of Layer 1): representation-dependence | n/a — this is a self-consistency question, not an RDKit comparison | **MEASURED** (this round) — 92% of molecules get a different `ecfp4()` for Kekulé vs. aromatic spelling unless `apply_aromaticity()` is called first (likely the same apply_aromaticity-bypass pattern as Round 8–12's canonical-SMILES/InChI bugs — see worked example); ~13% still differ even after calling it as documented | **KNOWN GAP** — 92% naive case likely closes with the same fix class as Round 8–12 (not yet applied); the post-mitigation ~13% residual splits into ~1/3 consistent with the known `aromatic_context` perception bug and ~2/3 **confirmed new defect**, unrelated to Layer 1 (identical aromatic-atom/bond assignment multiset — not just counts — yet still a different fingerprint, verified via 3 independent checks) | `scripts/ecfp4_agreement.py`, this round |
-| FCFP4 / ECFP6 (share `initial_atom_id` with ECFP4) | **UNMEASURED** vs RDKit directly, but almost certainly inherit ECFP4's aromaticity-invariant deviation — same seed function, same `atom.aromatic` byte | **MEASURED** (this round, 300-mol spot check) — inherit the SAME self-consistency defect: ECFP6 94.0% and FCFP4 94.0% naive Kekulé-vs-aromatic mismatch (vs. ECFP4's 92.2%) — not ECFP4-specific, a shared-seed-function issue | **KNOWN GAP** — same root cause and same remediation (`apply_aromaticity()`) as ECFP4; post-mitigation residual not separately measured for these two | `scripts/ecfp4_agreement.py`, this round |
+| FCFP4 / ECFP6 (share `initial_atom_id` with ECFP4) | **UNMEASURED** vs RDKit directly, but almost certainly inherit ECFP4's aromaticity-invariant deviation — same seed function, same `atom.aromatic` byte | **PARTIAL** — this round's 300-mol spot check confirms they inherit ECFP4's Layer-2 representation-dependence defect (ECFP6 94.0%, FCFP4 94.0% naive Kekulé-vs-aromatic mismatch). But that's a *different axis* from Round 14's neighbor-sort order-independence fix (`86e0d24`, originally applied to ECFP4/pattern-fp) — **no dedicated Rust test confirms FCFP4/ECFP6 inherited that fix too**; the only FCFP/ECFP6-specific test found (`ecfp6_vs_ecfp4_benzene_differ`) checks bit-count difference, not order-independence. "MEASURED — order-independence fixed and tested" was too strong for this axis; downgraded to PARTIAL | **KNOWN GAP** (Layer-2 representation-dependence) — same root cause and same remediation (`apply_aromaticity()`) as ECFP4, post-mitigation residual not separately measured; **UNMEASURED** (Round-14 neighbor-sort inheritance) — plausible but unverified | `scripts/ecfp4_agreement.py`, this round; `first_zero_order_dependence_audit` |
 | MACCS / Pattern / other Morgan-adjacent fingerprints not sharing `initial_atom_id` | **UNMEASURED** — no dedicated comparison run; not confirmed to share or avoid the aromaticity-representation-dependence defect | **UNMEASURED** | — | `first_zero_order_dependence_audit` (neighbor-sort fix only, Round 14) |
 | Pattern fingerprint | **UNMEASURED** vs RDKit | **MEASURED** — order-independence fixed and tested (Round 14) | — | `first_zero_order_dependence_audit` |
 | Pharmacophore fingerprint (2D/3D) | **UNMEASURED** vs RDKit | **MEASURED** — pair-bit symmetry fixed and tested (Round 14) | — | `first_zero_order_dependence_audit` |
@@ -47,7 +47,7 @@ are found by scanning for blank cells, not by accident.
 | IUPAC naming | **UNMEASURED** at scale — no corpus run against an oracle (e.g. OPSIN); only hand-built tie-break regression cases exist | **PARTIAL** — several real tie-break bugs found and fixed via constructed non-automorphic cases (seniority, chain selection) | Coverage is intentionally partial (linear/simple polycyclic only); `IupacError` for unsupported structures | `first_zero_order_dependence_audit` |
 | Standardization (salts, charges, zwitterions, tautomer canonicalization) | **UNMEASURED** vs RDKit's standardizer at scale | **PARTIAL** — deterministic-per-input confirmed (no HashMap/random); spelling-dependent tie-break left as documented non-fix | Tautomer `max_iter=16` default: confirmed real order-dependence on >16-independent-site molecules (no known real-molecule trigger) — **KNOWN GAP**, pinned `#[ignore]`d test | `first_zero_order_dependence_audit` |
 | 2D depiction / layout | **UNMEASURED** vs RDKit layout (no accepted oracle — layout isn't a correctness question in the same sense) | **MEASURED** — process-random HashMap-iteration bug found and fixed (Round 14, `916ffab`); positive-controlled | — | `first_zero_order_dependence_audit` |
-| Descriptors (MW/HBA/HBD/TPSA/LogP/MR/Fsp3/ring counts/rotatable bonds/spiro/bridgehead/stereocenters/[nH] SMARTS, 19 tested) | **MEASURED** — 100% or near-100% on 4,999-mol ChEMBL, see `validation.md` for exact per-descriptor numbers | **MEASURED** (subset) — `ring_collateral_damage.py`/`ringinfo_parity.py` self-stability sweeps | Stereocenters 98.7–99.98% depending on oracle (calibration doc in `validation.md`) | `validation.md` |
+| Descriptors (MW/HBA/HBD/TPSA/LogP/MR/Fsp3/ring counts/rotatable bonds/spiro/bridgehead/stereocenters/[nH] SMARTS, 19 tested) | **MEASURED** — 100% or near-100% on 4,999-mol ChEMBL, see `validation.md` for exact per-descriptor numbers. **Single-representation only** — `bench5k.py` parses each corpus SMILES once (no `doRandom`/worst-of-N in the RDKit-agreement comparison itself; confirmed by reading the file) | **PARTIAL** (9/19, not all) — `ring_collateral_damage.py`/`ringinfo_parity.py` worst-of-10 self-stability sweeps cover mol_wt/tpsa/hba/hbd/ring_count/num_aromatic_rings/num_saturated_rings/num_aliphatic_rings/logp/mr/scaffold; **zero self-stability coverage despite being perception-sensitive**: num spiro atoms, num bridgehead atoms, num amide bonds, aromatic/aliphatic heterocycle counts, stereocenters | Stereocenters 98.7–99.98% depending on oracle (calibration doc in `validation.md`); the 6 zero-coverage descriptors above are a real, unaudited gap, not a known-and-accepted one | `validation.md`, `scripts/bench5k.py`, `scripts/ring_collateral_damage.py` |
 | Remaining 170+ descriptor functions (Wiener/Zagreb/Randic/Balaban/kappa/chi/BCUT2D/MQN/VSA families/WHIM-2D/RDF-2D/autocorrelation/etc.) | **UNMEASURED** — not in `bench5k.py`'s 19-metric set | **UNMEASURED** | — | — |
 | pKa prediction | **UNMEASURED** — no oracle comparison found | **UNMEASURED** | — | — |
 | ADMET assembled profiles (BBB/Caco-2/CYP3A4/hERG/PPB/boiled-egg/Ames/CNS MPO) | **UNMEASURED** as assembled predictions (component descriptors they're built from are separately measured) | **UNMEASURED** | — | — |
@@ -65,6 +65,42 @@ are found by scanning for blank cells, not by accident.
 | File I/O: SDF/MOL V2000/V3000 | **PARTIAL** — throughput-benchmarked (`bench_sdf.py`) against RDKit's egfr.sdf; round-trip *correctness* (does re-read reproduce the same molecule) not separately confirmed | **UNMEASURED** | — | — |
 | File I/O: CML/CDXML/MOL2/PDBQT/KET/CIF/RXN/Gaussian/MolJSON | **UNMEASURED** — zero round-trip correctness evidence found for any of these formats | **UNMEASURED** | — | — |
 | CIP stereo assignment (R/S, E/Z, M/P atropisomer) | **PARTIAL** — atropisomer 100% on its own test corpus; stereocenter count 98.7–99.98% (oracle-dependent) | **UNMEASURED** directly | 10/4999 stereocenters under/over-counted depending on oracle — ring-adjacent like/unlike CIP tie-break edge cases | `validation.md` |
+
+## MEASURED-column audit (2026-07-12 continuation)
+
+Round 15's ECFP4 measurement went through four rounds of self-correction (a tautological
+check, then two successively-too-coarse residual classifiers) before its "MEASURED"
+claim was actually earned. That raised an obvious question: do *other* rows' MEASURED
+labels — especially ones set in early rounds, before this project's positive-control
+discipline existed — hold up to the same scrutiny? Three parallel research passes
+audited the matrix's MEASURED/PARTIAL rows against the actual scripts, tests, and git
+history behind each claim.
+
+**A meta-finding worth stating plainly**: several proposed corrections from that research
+were themselves wrong, caught only by directly re-checking README.md's own prose and the
+repo (not by trusting the research's summary). Canonical SMILES, Murcko scaffold, and
+Aromaticity perception were each flagged as under-evidenced; all three turned out to have
+solid, already-documented positive controls or dedicated scripts the research had missed
+(a pre-fix-vs-post-fix historical comparison for canonical SMILES; a caught-and-fixed
+measurement-harness bug for Murcko scaffold; a dedicated `aromaticity_atom_parity.py` for
+aromaticity) — this is the exact discipline the audit itself exists to apply, applied one
+level up, to the audit's own output.
+
+**Confirmed solid, no change**: Canonical SMILES, Murcko scaffold, Aromaticity
+perception, SSSR/ring perception, Pattern FP, Pharmacophore FP, 2D depiction/layout, USR,
+Standardization (common case), IUPAC naming, MCS, InChI (both variants) — existing labels
+already reflect the real evidence (genuine non-automorphic test cases, git-verified
+red-before-green, or accurately UNMEASURED/thin where the evidence really is thin).
+
+**Genuine gaps found and corrected in the matrix rows above**: the Descriptors row
+implied uniform worst-of-N coverage across all 19 `bench5k.py` metrics — the RDKit
+comparison itself is single-representation only, and the self-stability companion
+scripts cover 9 of 19, leaving 6 perception-sensitive descriptors (spiro/bridgehead
+atoms, amide bonds, aromatic/aliphatic heterocycles, stereocenters) with zero
+self-stability evidence despite being exactly the kind of descriptor most likely to be
+representation-sensitive. Canonical atom ordering and FCFP4/ECFP6 were both downgraded
+from overstated MEASURED/PARTIAL claims to precisely-scoped PARTIAL, each for a distinct
+reason (see their rows above).
 
 ## Blank-cell priority (the actual output of this audit)
 
@@ -89,6 +125,10 @@ Ranked by how load-bearing the gap is for a migration decision, highest first:
 7. **InChI /m /s layers** and **native-InChI at ChEMBL scale** — the canonicalization
    bug feeding InChI was fixed this round-series, but InChI's own output was never
    re-measured against a real InChI corpus afterward.
+8. **Self-stability for 6 perception-sensitive descriptors** (found this audit pass) —
+   num spiro atoms, num bridgehead atoms, num amide bonds, aromatic/aliphatic heterocycle
+   counts, and stereocenters have RDKit-agreement numbers but zero worst-of-N
+   self-stability evidence, unlike the other 13 of `bench5k.py`'s 19 descriptors.
 
 ## New defect found this round (not a blank cell — a confirmed bug)
 
