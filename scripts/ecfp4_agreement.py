@@ -274,12 +274,17 @@ def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, 
     # spellings (kek_smi is a different string, so atom order can differ).
     # If either multiset differs, the residual is still explained by
     # aromaticity perception (folds into the known aromatic_context bug or
-    # an extension of it). Only if BOTH multisets are identical AND the
-    # fingerprint still differs is this provably not an
-    # aromaticity-perception issue -- a genuine, separate defect. (Verified:
-    # this reproduces the identical split as the two coarser checks on this
-    # corpus -- the coarser checks' answer was right, but only this one
-    # actually proves it.)
+    # an extension of it). If BOTH multisets are identical AND the
+    # fingerprint still differs, this is very likely NOT an
+    # aromaticity-perception issue -- a genuine, separate defect. NOTE: the
+    # multiset is not a per-atom-correspondence proof -- it's blind to a
+    # symmetric swap between two atoms of identical (atomic_number, degree)
+    # that trade aromaticity flags between spellings (same multiset, but a
+    # genuine per-atom perception difference). This reproduces the identical
+    # split as the two coarser checks tried before it, so treat the 41/89
+    # split as a strong convergent estimate from three independent checks,
+    # not an airtight proof -- a rare symmetric swap would land in the
+    # perception bucket, slightly deflating the "genuine defect" count.
     n_perception_disagrees = 0
     n_perception_agrees_but_fp_differs = 0
     examples_perception = []
@@ -551,8 +556,9 @@ def main():
           f"aromatic-atom/bond assignment (still aromaticity perception -- known "
           f"aromatic_context bug or an extension)")
     print(f"    {t5['residual_assignment_multiset_agrees_but_fp_differs']} have an IDENTICAL "
-          f"aromatic-atom/bond assignment but still a different fingerprint (provably not "
-          f"perception -- genuine separate defect)")
+          f"aromatic-atom/bond assignment but still a different fingerprint (very likely not "
+          f"perception -- genuine separate defect; see tier 5's code comment on the multiset's "
+          f"one known blind spot)")
     if t5["examples_unattributed"]:
         print(f"  unattributed example: {t5['examples_unattributed'][0]}")
     print()
