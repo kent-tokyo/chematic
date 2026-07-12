@@ -34,7 +34,8 @@ are found by scanning for blank cells, not by accident.
 | InChI (native, IUPAC C lib) | **UNMEASURED** at scale (spot tests only) | **UNMEASURED** | InChI /m /s (enantiomer/isotope) layers not yet measured post-canonicalization fix | — |
 | Aromaticity perception (Hückel per-SSSR-ring) | **PARTIAL** — 96.3% atom-flag parity on Kekulized input, worst-of-10 | **UNMEASURED** directly (implied stable via downstream ring counts) | azulene, purine regressed by SSSR fix; root cause (`aromatic_context` bypass) identified, not fixed | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | SSSR / ring perception | **MEASURED** — 98.9% ring-size agreement vs `GetSymmSSSR`, 5000-mol; residual is RDKit over-symmetrization, not a chematic bug | **MEASURED** — 100% self-stability (was 50.6%); permanent regression test added | Full Vismara relevant-cycle symmetrization not implemented (not required for correctness) | `sssr_horton_and_canonical_smiles_gap` |
-| **ECFP4 fingerprint** | **MEASURED** (this round) — see [worked example](#ecfp4-vs-rdkit--worked-example) below. Not the standard Rogers-Hahn/RDKit invariant set (includes aromaticity); ~77% invariant-partition match, r=0.94 similarity correlation | **MEASURED** (this round) — self-consistency bug found: 92% of molecules get a different `ecfp4()` for Kekulé vs. aromatic spelling unless `apply_aromaticity()` is called first; ~13% still differ even after calling it | **KNOWN GAP** — 92% naive mismatch is a documented-contract footgun (call `apply_aromaticity()` first); the post-mitigation ~13% residual splits into ~1/3 consistent with the known `aromatic_context` perception bug and ~2/3 **confirmed new defect** (identical aromatic-atom/bond assignment multiset — not just counts — yet still a different fingerprint, verified via 3 independent checks) | `scripts/ecfp4_agreement.py`, this round |
+| **ECFP4 fingerprint** — Layer 1 (definition difference, not a bug): chematic's invariant includes aromaticity, RDKit's default doesn't; structural ceiling, not fixable without an RDKit-compat mode | **MEASURED** (this round) — see [worked example](#ecfp4-vs-rdkit--worked-example) below. ~77% invariant-partition match, r=0.94 similarity correlation — cannot reach ~100% regardless of any future fix, the definitions differ | n/a — single-representation input, ~98.8% unaffected by Layer 2 (1.18% overlap measured, see worked example) | **N/A — design choice**, not a defect. RDKit-compat mode is a feature request, not a fix | `scripts/ecfp4_agreement.py`, this round |
+| **ECFP4 fingerprint** — Layer 2 (real bug, independent of Layer 1): representation-dependence | n/a — this is a self-consistency question, not an RDKit comparison | **MEASURED** (this round) — 92% of molecules get a different `ecfp4()` for Kekulé vs. aromatic spelling unless `apply_aromaticity()` is called first (likely the same apply_aromaticity-bypass pattern as Round 8–12's canonical-SMILES/InChI bugs — see worked example); ~13% still differ even after calling it as documented | **KNOWN GAP** — 92% naive case likely closes with the same fix class as Round 8–12 (not yet applied); the post-mitigation ~13% residual splits into ~1/3 consistent with the known `aromatic_context` perception bug and ~2/3 **confirmed new defect**, unrelated to Layer 1 (identical aromatic-atom/bond assignment multiset — not just counts — yet still a different fingerprint, verified via 3 independent checks) | `scripts/ecfp4_agreement.py`, this round |
 | FCFP4 / ECFP6 (share `initial_atom_id` with ECFP4) | **UNMEASURED** vs RDKit directly, but almost certainly inherit ECFP4's aromaticity-invariant deviation — same seed function, same `atom.aromatic` byte | **MEASURED** (this round, 300-mol spot check) — inherit the SAME self-consistency defect: ECFP6 94.0% and FCFP4 94.0% naive Kekulé-vs-aromatic mismatch (vs. ECFP4's 92.2%) — not ECFP4-specific, a shared-seed-function issue | **KNOWN GAP** — same root cause and same remediation (`apply_aromaticity()`) as ECFP4; post-mitigation residual not separately measured for these two | `scripts/ecfp4_agreement.py`, this round |
 | MACCS / Pattern / other Morgan-adjacent fingerprints not sharing `initial_atom_id` | **UNMEASURED** — no dedicated comparison run; not confirmed to share or avoid the aromaticity-representation-dependence defect | **UNMEASURED** | — | `first_zero_order_dependence_audit` (neighbor-sort fix only, Round 14) |
 | Pattern fingerprint | **UNMEASURED** vs RDKit | **MEASURED** — order-independence fixed and tested (Round 14) | — | `first_zero_order_dependence_audit` |
@@ -91,17 +92,19 @@ Ranked by how load-bearing the gap is for a migration decision, highest first:
 
 ## New defect found this round (not a blank cell — a confirmed bug)
 
-Measuring ECFP4 surfaced a real, previously-unknown, unfixed correctness issue, not just
-a coverage gap: **`ecfp4()` (and `ecfp6()`/`fcfp4()`, which share the same invariant seed
-function) is representation-dependent for ~13% of molecules even after following the
-documented `apply_aromaticity()` contract** (see the worked example below). Of that
-residual, roughly a third (41/130) is still explained by an aromaticity-perception
-disagreement between the two spellings (consistent with the known `aromatic_context`
-bug). The other two-thirds (89/130) is **not** — verified three independent ways at
-increasing granularity (ring count, then atom/bond counts, then the full
-order-independent atom/bond assignment multiset), all converging on the same 89 — a
-confirmed, new, unattributed defect with no existing tracking. Not fixed this round
-(scope was measurement, not remediation) — flagged here so it doesn't get lost.
+Measuring ECFP4 surfaced a real, previously-unknown, unfixed correctness issue — this is
+**Layer 2 only** (see the worked example below for the full Layer 1/Layer 2 split; Layer
+1, chematic's ECFP4 including aromaticity in its invariant, is a design choice, not a
+bug, and is unrelated to what follows): **`ecfp4()` (and `ecfp6()`/`fcfp4()`, which share
+the same invariant seed function) is representation-dependent for ~13% of molecules even
+after following the documented `apply_aromaticity()` contract**. Of that residual,
+roughly a third (41/130) is still explained by an aromaticity-perception disagreement
+between the two spellings (consistent with the known `aromatic_context` bug). The other
+two-thirds (89/130) is **not** — verified three independent ways at increasing
+granularity (ring count, then atom/bond counts, then the full order-independent
+atom/bond assignment multiset), all converging on the same 89 — a confirmed, new,
+unattributed defect with no existing tracking. Not fixed this round (scope was
+measurement, not remediation) — flagged here so it doesn't get lost.
 
 ---
 
@@ -116,6 +119,32 @@ connectivity-only BFS check that couldn't detect an invariant difference by cons
 and an unverified assumption about what caused the Tanimoto correlation gap). This
 section reflects the corrected, source-verified result.
 
+**Correcting the premise, not just the number.** Round 1's original instruction — "measure
+ECFP4-vs-RDKit bit-agreement; that number is the migration-decision signal" — assumed
+chematic's ECFP4 shared RDKit's exact invariant definition. That assumption was never
+checked before being issued, and it was wrong (see Layer 1 below). The two things this
+round actually found need to be reported as **two independent layers, not one blended
+number** — conflating them (as the first draft of this section did) makes a design choice
+look like a bug backlog, and hides a real bug behind a design choice:
+
+- **Layer 1 (definition difference — not a bug)**: chematic's ECFP4 deliberately includes
+  aromaticity in its invariant; RDKit's default doesn't. Different definitions, so
+  RDKit-parity was never structurally reachable — no future fix moves Tier 1/2/3's numbers
+  toward 100%, only a new RDKit-compatible mode would (a feature request, not a bug fix).
+- **Layer 2 (real bug — representation-dependence)**: `ecfp4()` gives a different value for
+  the Kekulé vs. aromatic spelling of the identical molecule. Independent of Layer 1, and a
+  genuine fingerprint-contract violation regardless of which invariant definition is used.
+
+**These two layers are ~98.8% cleanly separated by construction, confirmed empirically, not
+assumed**: Tier 1/2/3 below use one fixed representation per molecule (the corpus's raw,
+as-given SMILES) and never vary it — Layer 2's mechanism (Kekulé input skipping
+`apply_aromaticity()`) requires *two* representations to manifest, so it should barely touch
+Tier 1/2/3's numbers if the corpus is already aromaticity-perceived on parse. Checked
+directly: forcing `apply_aromaticity()` on the raw corpus input changes `ecfp4()` output for
+only **59/5000 molecules (1.18%)**. Tier 1/2/3's 76.98%/r=0.94 numbers are therefore
+**~98.8% purely Layer 1** — the small remainder is a negligible overlap, not evidence the
+two layers were conflated in the measurement itself, only in how the first draft described it.
+
 **Why raw bit-vector equality isn't the headline number:** chematic hashes atom
 environments with FNV-1a (`crates/chematic-fp/src/ecfp.rs`); its own doc comment already
 states bit positions aren't meant to match RDKit's (RDKit uses a different hash). Two
@@ -125,7 +154,7 @@ manufacture a misleading number regardless of correctness (and because both fing
 are sparse, it's actually biased *high*, not low: measured 95.36% per-position agreement
 on a 1,000-mol sample, dominated by 0/0 non-matches, not a signal of anything).
 
-**Finding A — chematic's ECFP4 is a related-but-different fingerprint, not the standard
+**Layer 1 — chematic's ECFP4 is a related-but-different fingerprint, not the standard
 one.** Its radius-0 invariant explicitly includes `atom.aromatic`
 (`crates/chematic-fp/src/ecfp.rs:initial_atom_id`, source-read, not inferred); RDKit's
 default Morgan invariant (atomic number, degree, H-count, charge, isotope delta, ring
@@ -146,12 +175,24 @@ deviation), similarity correlates strongly but not perfectly (r≈0.94) — **RD
 similarity thresholds or ML models should not be assumed to transfer without
 re-validation.**
 
-**Finding B — a real self-consistency defect, found by testing whether chematic agrees
-with *itself* across two spellings of the same molecule** (not an RDKit comparison):
-because `atom.aromatic` feeds the invariant (Finding A) and is not auto-perceived for
-Kekulé-written SMILES (chematic requires an explicit `apply_aromaticity()` call, unlike
-RDKit's auto-sanitize-on-parse), the same molecule can get two different fingerprints
-depending on which valid spelling was used to construct it:
+**Layer 2 — a real self-consistency defect, found by testing whether chematic agrees
+with *itself* across two spellings of the same molecule** (not an RDKit comparison, and
+independent of Layer 1's invariant-definition question): because `atom.aromatic` feeds the
+invariant and is not auto-perceived for Kekulé-written SMILES (chematic requires an
+explicit `apply_aromaticity()` call, unlike RDKit's auto-sanitize-on-parse), the same
+molecule can get two different fingerprints depending on which valid spelling was used to
+construct it:
+
+**Likely the same root cause as Round 8–12's canonical-SMILES/InChI bugs, for the naive
+92% case specifically.** Those historical bugs were code paths that didn't route through
+`apply_aromaticity()` normalization before comparison/canonicalization. The naive-mismatch
+number here (92.2%, before any mitigation) drops to 13.0% once `apply_aromaticity()` is
+called first — a 79-point reduction directly consistent with "most of this is the exact
+same normalization-bypass pattern, recurring in a new code path (`ecfp4()`) instead of a
+new mechanism." Not yet verified beyond this consistency check (no direct code-path
+comparison against the Round 8–12 fix was done this round) — the 13.0% residual is
+explicitly **not** covered by this hypothesis, since `apply_aromaticity()` was already
+called for those cases and they still mismatch:
 
 | Check | Result |
 |---|---|
