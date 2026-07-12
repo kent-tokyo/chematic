@@ -168,6 +168,27 @@ fn overlap_score(pairs: &[(usize, usize)], coords1: &[[f64; 3]], coords2: &[[f64
 
 /// Greedily pair each mol1 atom (farthest-from-centroid first) with its
 /// nearest not-yet-used, type-compatible mol2 atom within `DIST_CUTOFF`.
+///
+/// Both tie-breaks below (processing order on an exact centroid-distance
+/// tie; candidate choice on an exact nearest-neighbor-distance tie) break
+/// on the tied atoms' own coordinates (content), not on their array index
+/// -- an index-based tie-break would still vary with input order, since
+/// swapping two tied atoms' array positions is exactly the operation that
+/// changes which one occupies the "winning" index (see the analogous fix
+/// and its doc comment in `usr.rs::extreme_idx`, which found this the hard
+/// way empirically).
+///
+/// This does NOT make `greedy_correspondence` fully order-independent,
+/// only its tie-breaking: the algorithm is inherently greedy
+/// (first-processed mol1 atom claims its nearest mol2 atom, removing it
+/// from the pool for every atom processed after), so even with canonical
+/// tie-breaks, two mol1 atoms that are NOT tied but are both plausible
+/// matches for the same mol2 atom can still get different pairings
+/// depending on which one the (now-deterministic, but still a specific
+/// choice) processing order visits first. That is a property of the greedy
+/// matching strategy itself, not a bug -- a genuinely order-independent
+/// correspondence would need a global assignment algorithm (e.g. Hungarian
+/// matching), out of scope for this round.
 fn greedy_correspondence(
     coords1: &[[f64; 3]],
     types1: &[MMFF94Type],
@@ -179,7 +200,13 @@ fn greedy_correspondence(
     order.sort_by(|&a, &b| {
         let da: f64 = (0..3).map(|k| (coords1[a][k] - c1[k]).powi(2)).sum();
         let db: f64 = (0..3).map(|k| (coords1[b][k] - c1[k]).powi(2)).sum();
-        db.partial_cmp(&da).unwrap_or(std::cmp::Ordering::Equal)
+        db.partial_cmp(&da)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| {
+                coords1[a]
+                    .partial_cmp(&coords1[b])
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     });
 
     let mut used = vec![false; coords2.len()];
@@ -194,7 +221,9 @@ fn greedy_correspondence(
             let d2: f64 = (0..3)
                 .map(|k| (coords1[i][k] - coords2[j][k]).powi(2))
                 .sum();
-            if d2 < best_d2 {
+            let better = d2 < best_d2
+                || (d2 == best_d2 && best_j.is_some_and(|bj| coords2[j] < coords2[bj]));
+            if better {
                 best_d2 = d2;
                 best_j = Some(j);
             }
@@ -358,6 +387,64 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
     use std::collections::HashSet;
+
+    #[test]
+    fn greedy_correspondence_tie_break_is_content_based() {
+        // mol1 has two same-typed atoms (indices 1, 2) confirmed exactly
+        // tied for farthest from centroid (500/9 each, by construction).
+        // Honest caveat, unlike usr.rs's equivalent test: this specific
+        // 3-point configuration passes BOTH before and after the fix (the
+        // greedy algorithm still converges to the same final pairing here
+        // even when the tied atom is processed in a different order, since
+        // there's no actual competition between mol1 atoms for the same
+        // mol2 atom in this small a case) -- so this test does not serve as
+        // a red-before-green repro the way usr.rs's does. Kept as a
+        // regression guard and to document the intent of the fix, not as
+        // proof the pre-fix code was reachably wrong.
+        let t = MMFF94Type::C_sp3;
+        let coords1 = vec![[0.0, 0.0, 0.0], [10.0, 0.0, 0.0], [0.0, 10.0, 0.0]];
+        let types1 = vec![t, t, t];
+        let coords2 = vec![[0.1, 0.0, 0.0], [10.0, 0.1, 0.0], [0.1, 10.0, 0.0]];
+        let types2 = vec![t, t, t];
+
+        let pairs_a = greedy_correspondence(&coords1, &types1, &coords2, &types2);
+
+        let mut coords1_swapped = coords1.clone();
+        coords1_swapped.swap(1, 2);
+        let mut types1_swapped = types1.clone();
+        types1_swapped.swap(1, 2);
+        let mut coords2_swapped = coords2.clone();
+        coords2_swapped.swap(1, 2);
+        let mut types2_swapped = types2.clone();
+        types2_swapped.swap(1, 2);
+        let pairs_b = greedy_correspondence(
+            &coords1_swapped,
+            &types1_swapped,
+            &coords2_swapped,
+            &types2_swapped,
+        );
+
+        // Map indices back through the swap so both results describe pairings
+        // in terms of the ORIGINAL (pre-swap) coordinate identities.
+        let unswap = |idx: usize| -> usize {
+            match idx {
+                1 => 2,
+                2 => 1,
+                other => other,
+            }
+        };
+        let mut normalized_b: Vec<(usize, usize)> = pairs_b
+            .iter()
+            .map(|&(i, j)| (unswap(i), unswap(j)))
+            .collect();
+        let mut normalized_a = pairs_a.clone();
+        normalized_a.sort_unstable();
+        normalized_b.sort_unstable();
+        assert_eq!(
+            normalized_a, normalized_b,
+            "greedy_correspondence's pairing (by coordinate identity) must not depend on array order"
+        );
+    }
 
     /// Rotate `coords` by a fixed, non-trivial rotation and translate.
     fn rotate_translate(coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
