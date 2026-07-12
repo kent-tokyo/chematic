@@ -132,6 +132,17 @@ Ranked by how load-bearing the gap is for a migration decision, highest first:
 
 ## Defect found and FIXED this round: implicit-H count lost across the Kekulé→aromatic boundary
 
+**Aromaticity-derived output contamination — three distinct items, kept separate so a
+future fix's causal signal is never contaminated by mixing with another:**
+
+```
+芳香族性由来の出力汚染:
+  ✅ implicit_h(ピロール/ピリジンN の型損失): 修正済み(8d0b992/9c50c08)
+     — ECFP4/canonical/InChI の 89分子を同時に解消、因果を介入で確認
+  ⬜ aromatic_context 系: 41/1000 未解決、既知、次スコープ
+  ⬜ InChI 固有 13.4% 順序依存: 別件(#7 家系)、未着手
+```
+
 Measuring ECFP4 surfaced a real correctness issue that took two rounds to fully
 root-cause and fix — this is **Layer 2 only** (see the worked example below for the full
 Layer 1/Layer 2 split; Layer 1, chematic's ECFP4 including aromaticity in its invariant,
