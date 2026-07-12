@@ -182,14 +182,32 @@ fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
 }
 
 /// Safety cap on the number of discrete rank assignments
-/// `enumerate_discrete_ranks` will explore. Refinement cells in drug-like
-/// molecules are small (e.g. a CF3 group's three fluorines, a handful of
-/// symmetric ring-fusion pairs), so this is never hit in practice; it exists
-/// to guarantee termination on pathologically symmetric inputs (fullerene
-/// fragments, deep dendrimers) where the principled fix is automorphism-aware
-/// branch pruning (nauty-style), not attempted here. Once exhausted, the
+/// `enumerate_discrete_ranks` will explore. It exists to guarantee
+/// termination on pathologically symmetric inputs (fullerene fragments,
+/// deep dendrimers) where the principled fix is automorphism-aware branch
+/// pruning (nauty-style), not attempted here. Once exhausted, the
 /// remaining ties in that branch fall back to `canonical_cmp`'s finite
 /// tie-break chain (deterministic, but not guaranteed order-independent).
+///
+/// This IS hit in practice, corrected 2026-07-12 after a claim of "never
+/// hit" here went unverified: measured on 5,000 real ChEMBL-derived
+/// molecules, 3 (0.06%) exceeded this cap, needing up to 168,219 branches
+/// (16.8x). All three are real drug-synthesis intermediates with multiple
+/// Boc/pivaloyl tert-butyl protecting groups, each an independent 3-way
+/// symmetric orbit that multiplies combinatorially across the molecule.
+/// For all three, truncation at 10,000 was confirmed (against an
+/// unbounded run, and separately against 32 independent re-spellings) to
+/// still find the correct lexicographically-smallest winner -- the
+/// exhausted cells in these cases are true automorphism orbits (every
+/// individualization within the cell writes the same string, so the
+/// blowup is redundant duplicates, not competing candidates). This is not
+/// a guarantee for the general case: the failure mode this cap is meant
+/// to bound is a cell that merely *contains* an orbit (genuinely different
+/// candidates truncated away), which no real molecule in this corpus
+/// happened to exercise. Raising the constant is not a principled fix (the
+/// observed distribution has a cliff -- p99.9 is ~4,922, but the 3
+/// offenders need 74k-168k -- so no fixed multiple closes the gap); the
+/// real fix is the orbit-aware pruning mentioned above.
 const MAX_INDIVIDUALIZE_BRANCHES: usize = 10_000;
 
 /// Individualize atom `atom_idx` within its current rank class: insert a new
