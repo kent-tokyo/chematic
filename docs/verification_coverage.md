@@ -93,11 +93,14 @@ Ranked by how load-bearing the gap is for a migration decision, highest first:
 Measuring ECFP4 surfaced a real, previously-unknown, unfixed correctness issue, not just
 a coverage gap: **`ecfp4()` is representation-dependent for ~13% of molecules even after
 following the documented `apply_aromaticity()` contract** (see the worked example below).
-Of that residual, roughly a third correlates with the already-known `aromatic_context`
-perception bug, but roughly two-thirds do **not** — identical `aromatic_ring_count`
-before and after, yet a different fingerprint. That two-thirds is a new, unattributed
-defect with no existing tracking. Not fixed this round (scope was measurement, not
-remediation) — flagged here so it doesn't get lost.
+Of that residual, roughly a third (41/130) has a *different* aromatic-atom or
+aromatic-bond count between the two spellings — still explained by aromaticity
+perception (consistent with the known `aromatic_context` bug or an extension of it).
+The other two-thirds (89/130) has **identical** aromatic-atom and aromatic-bond counts
+(the only aromaticity-derived quantities that feed the invariant) yet still produces a
+different fingerprint — provably not an aromaticity-perception issue, and a new,
+unattributed defect with no existing tracking. Not fixed this round (scope was
+measurement, not remediation) — flagged here so it doesn't get lost.
 
 ---
 
@@ -132,7 +135,7 @@ RDKit's by design**, not merely by hash-function accident:
 | Tier | What it measures | Result |
 |---|---|---|
 | Coverage parity | Does chematic generate an environment at every `(atom, radius)` RDKit does, radius ∈ {0,1,2}? (RDKit run with `includeRedundantEnvironments=True` to disable its default silent pruning, for a fair comparison.) | **5000/5000 (100%)** exact match — same emission slots |
-| Invariant partition agreement | Within each implementation, do environments that hash identically (i.e. "this implementation considers these chemically identical") form the same grouping structure on both sides? Hash-*value*-independent — isolates genuine invariant-encoding disagreement. | **3849/5000 (76.98%)** exact match. Root cause: the aromaticity-in-invariant difference above |
+| Invariant partition agreement | Within each implementation, do environments that hash identically (i.e. "this implementation considers these chemically identical") form the same grouping structure on both sides? Hash-*value*-independent — isolates genuine invariant-encoding disagreement. | **3849/5000 (76.98%)** exact match. Root cause confirmed, not just correlated: aromatic-ring-free molecules match **100%** (363/363); molecules with ≥1 aromatic ring match **75.18%** (3486/4637) — the aromaticity-in-invariant difference fully accounts for the gap, no residual mismatch exists outside it |
 | Similarity-structure preservation | Pearson correlation between chematic's and RDKit's pairwise Tanimoto similarity (default RDKit config, matching real-world usage), 499,500 pairs from 1,000 molecules | **r = 0.9385**, mean \|Δ Tanimoto\| = 0.0163 — primarily consistent with (not fully decomposed to) the invariant difference above |
 | Connectivity sanity check (auxiliary) | Independently-run BFS in both libraries: does the bond-radius atom-set neighborhood match, atom-for-atom? This checks *parser* agreement only — it never touches fingerprint invariant code and cannot by itself detect an invariant-encoding difference. | **55,630/55,630 (100%)** across 1,000 molecules — parsers agree; not evidence the fingerprints agree |
 
@@ -153,8 +156,8 @@ depending on which valid spelling was used to construct it:
 |---|---|
 | Naive (no `apply_aromaticity()`) — aromatic vs. Kekulé spelling of the same molecule, 1,000-mol sample | **922/1000 (92.2%)** get a different `ecfp4()` |
 | After calling `apply_aromaticity()` as documented | **130/1000 (13.0%)** *still* mismatch |
-| Of that residual: `aromatic_ring_count` also disagrees between the two spellings | **41/130 (~32%)** — consistent with the known `aromatic_context` perception bug |
-| Of that residual: `aromatic_ring_count` is identical, fingerprint still differs | **89/130 (~68%)** — **unattributed, new, separate defect** |
+| Of that residual: aromatic-atom count or aromatic-bond count also disagrees between the two spellings (`atom_table`/`bond_table` — finer-grained than ring count, and the only aromaticity-derived quantities that feed the invariant; ring-count alone was checked first and rejected as too coarse to prove a real defect, since same ring count can still hide a different set of perceived-aromatic atoms in fused systems) | **41/130 (~32%)** — still aromaticity perception; consistent with the known `aromatic_context` bug or an extension of it |
+| Of that residual: aromatic-atom AND aromatic-bond counts are both identical, fingerprint still differs | **89/130 (~68%)** — **provably not an aromaticity-perception issue** (those counts are the only aromaticity inputs to the invariant) — **new, unattributed, separate defect** |
 
 The 92.2% naive case is arguably working as documented — CLAUDE.md/README already state
 Kekulé input needs `apply_aromaticity()` first, and this is the first time that contract

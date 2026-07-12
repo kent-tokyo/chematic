@@ -257,13 +257,20 @@ def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, 
     n_checked = 0
     n_naive_mismatch = 0
     n_perceived_still_mismatch = 0
-    # Of the still-mismatching cases: does aromatic_ring_count (an
-    # order-independent, ring-level summary -- comparable across the two
-    # spellings despite their atom indices differing) also disagree? If
-    # yes, this is consistent with the known aromatic_context
-    # perception bug (azulene/purine-class fused heterocycles). If the
-    # ring-level summary agrees but the fingerprint still doesn't, ring
-    # PERCEPTION is not the cause -- a separate, unattributed defect.
+    # Of the still-mismatching cases: do the two spellings agree on
+    # aromatic-atom count AND aromatic-bond count (from atom_table/
+    # bond_table)? These counts are the ONLY aromaticity-derived quantities
+    # that feed the invariant (ecfp.rs:74's `atom.aromatic`, plus bond type
+    # in the radius>0 update) -- they're finer-grained than
+    # aromatic_ring_count (same ring count can still hide a different SET of
+    # perceived-aromatic atoms/bonds in fused systems) but don't require
+    # atom-index correspondence between the two spellings (counts only, not
+    # per-atom identity -- the two parses can have different internal atom
+    # ordering since kek_smi is a different string). If counts differ, the
+    # residual is still explained by aromaticity perception (folds into the
+    # known aromatic_context bug or an extension of it). Only if BOTH counts
+    # are identical AND the fingerprint still differs is this provably not
+    # an aromaticity-perception issue -- a genuine, separate defect.
     n_perception_disagrees = 0
     n_perception_agrees_but_fp_differs = 0
     examples_perception = []
@@ -292,14 +299,20 @@ def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, 
         cm_kek_perceived = cm_kek_naive.apply_aromaticity()
         if cm_arom.ecfp4() != cm_kek_perceived.ecfp4():
             n_perceived_still_mismatch += 1
-            if cm_arom.aromatic_ring_count != cm_kek_perceived.aromatic_ring_count:
+
+            n_arom_atoms_a = sum(1 for row in cm_arom.atom_table if row[3])
+            n_arom_atoms_k = sum(1 for row in cm_kek_perceived.atom_table if row[3])
+            n_arom_bonds_a = sum(1 for _a1, _a2, _bt, arom in cm_arom.bond_table if arom)
+            n_arom_bonds_k = sum(1 for _a1, _a2, _bt, arom in cm_kek_perceived.bond_table if arom)
+
+            if (n_arom_atoms_a, n_arom_bonds_a) != (n_arom_atoms_k, n_arom_bonds_k):
                 n_perception_disagrees += 1
                 if len(examples_perception) < 5:
                     examples_perception.append(
                         {
                             "smiles": smi,
-                            "aromatic_ring_count_orig": cm_arom.aromatic_ring_count,
-                            "aromatic_ring_count_kekule_reperceived": cm_kek_perceived.aromatic_ring_count,
+                            "aromatic_atoms_bonds_orig": (n_arom_atoms_a, n_arom_bonds_a),
+                            "aromatic_atoms_bonds_kekule_reperceived": (n_arom_atoms_k, n_arom_bonds_k),
                         }
                     )
             else:
@@ -312,8 +325,8 @@ def tier5_aromaticity_representation_dependence(smis, chematic, Chem, sample_n, 
         "naive_mismatch": n_naive_mismatch,
         "naive_mismatch_pct": round(100.0 * n_naive_mismatch / n_checked, 2) if n_checked else None,
         "apply_aromaticity_mitigated_mismatch": n_perceived_still_mismatch,
-        "residual_ring_perception_disagrees": n_perception_disagrees,
-        "residual_ring_perception_agrees_but_fp_differs": n_perception_agrees_but_fp_differs,
+        "residual_perception_count_disagrees": n_perception_disagrees,
+        "residual_perception_counts_agree_but_fp_differs": n_perception_agrees_but_fp_differs,
         "examples_perception_disagrees": examples_perception,
         "examples_unattributed": examples_unattributed,
     }
@@ -520,10 +533,11 @@ def main():
           f"spelling vs. the aromatic spelling of the same molecule")
     print(f"  after apply_aromaticity(): {t5['apply_aromaticity_mitigated_mismatch']}/"
           f"{t5['n_molecules']} still mismatching, of which:")
-    print(f"    {t5['residual_ring_perception_disagrees']} also disagree on aromatic_ring_count "
-          f"(consistent with the known aromatic_context perception bug)")
-    print(f"    {t5['residual_ring_perception_agrees_but_fp_differs']} have IDENTICAL "
-          f"aromatic_ring_count but still a different fingerprint (unattributed, separate defect)")
+    print(f"    {t5['residual_perception_count_disagrees']} also disagree on aromatic-atom/bond "
+          f"counts (still aromaticity perception -- known aromatic_context bug or an extension)")
+    print(f"    {t5['residual_perception_counts_agree_but_fp_differs']} have IDENTICAL aromatic-atom "
+          f"AND aromatic-bond counts but still a different fingerprint (provably not perception -- "
+          f"genuine separate defect)")
     if t5["examples_unattributed"]:
         print(f"  unattributed example: {t5['examples_unattributed'][0]}")
     print()
