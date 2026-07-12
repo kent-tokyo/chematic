@@ -11,29 +11,32 @@ fn test_branched_alkane_non_automorphic_arm_tie() {
     // arms reach BFS-depth 2, but ethyl-vs-ethyl is automorphic (harmless)
     // while ethyl-vs-isopropyl is NOT: the ethyl+ethyl chain has 1
     // substituent (isopropyl) and the ethyl+isopropyl-arm chain has 2
-    // (ethyl+methyl) -- real IUPAC prefers the chain with MORE
+    // (ethyl+methyl) -- real IUPAC rule P-44.3 prefers the chain with MORE
     // substituents when lengths tie, i.e. "3-ethyl-2-methylpentane".
     //
-    // Regression guard for a Round 14 near-miss: a since-reverted
-    // find_longest_c_chain tie-break "fix" (smallest-AtomIdx among
-    // max-BFS-depth nodes, replacing the original last-dequeued-wins) made
-    // THIS exact molecule regress to the wrong chain choice ("3-propylpentane",
-    // also mislabeling the branched isopropyl substituent as linear
-    // "propyl") for this one parse order, while agreeing with the correct
-    // answer under every permutation tested -- i.e. it looked like a pure
-    // determinism improvement but was a net-negative behavior change,
-    // caught only because this case was checked before shipping.
-    //
-    // Caveat this test does NOT resolve: find_longest_c_chain's two-pass
-    // BFS diameter search finds *a* longest chain, not necessarily the
-    // IUPAC-preferred one whenever several maximum-length chains exist
-    // (real rule: prefer more substituents) -- neither tie-break policy
-    // implements that rule in general; this molecule's correct result here
-    // is not proof the algorithm is right for every such tie, only that
-    // this specific case (and the permutations checked) are not currently
-    // broken.
+    // History: a since-reverted find_longest_c_chain tie-break "fix"
+    // (smallest-AtomIdx among max-BFS-depth nodes) made THIS exact molecule
+    // regress to the wrong chain choice ("3-propylpentane", also
+    // mislabeling the branched isopropyl substituent as linear "propyl")
+    // for one parse order, while agreeing with the correct answer under
+    // every permutation tested -- looked like a pure determinism
+    // improvement but was a net-negative change, caught only because this
+    // case was checked before shipping. Root-caused and properly fixed via
+    // find_longest_c_chain_candidates + a substituent-count comparison in
+    // name_branched_alkane (see their doc comments) -- this is no longer a
+    // coincidental pass, the algorithm now implements the actual IUPAC rule
+    // that decides this case.
     assert_eq!(
         name(&mol("CCC(CC)C(C)C")).unwrap(),
+        "3-ethyl-2-methylpentane"
+    );
+    // Same molecule, respelled starting from the isopropyl arm instead of an
+    // ethyl arm -- the winning chain (2 substituents: ethyl + methyl, routing
+    // through one isopropyl-derived methyl as chain extension) must still beat
+    // the ethyl+ethyl chain (only 1 substituent: the whole isopropyl group),
+    // regardless of which arm the SMILES happens to list first.
+    assert_eq!(
+        name(&mol("CC(C)C(CC)CC")).unwrap(),
         "3-ethyl-2-methylpentane"
     );
 }

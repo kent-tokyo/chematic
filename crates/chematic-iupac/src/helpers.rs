@@ -83,6 +83,114 @@ pub(crate) fn find_longest_c_chain(mol: &Molecule, carbons: &[AtomIdx]) -> Vec<A
     reconstruct(end2, end1, &parents)
 }
 
+/// Maximum number of tied-longest-chain candidates
+/// [`find_longest_c_chain_candidates`] will return. Guards against
+/// pathological blowup on highly symmetric/branched trees (same style as
+/// `find_bridge_sizes`'s cap); real molecules with more than a handful of
+/// chemically distinct equal-length arms off one branch point are not a
+/// case this project has seen in practice.
+const MAX_CHAIN_CANDIDATES: usize = 8;
+
+/// Find every longest carbon chain tied for maximum length, not just one.
+///
+/// [`find_longest_c_chain`]'s two-pass BFS only ever returns a single
+/// diameter path -- when a branch point has multiple arms of equal length
+/// that are NOT graph-automorphic (chemically distinguishable, e.g. two
+/// ethyl arms + one isopropyl arm, all reaching the same BFS depth), IUPAC
+/// rule P-44.3 requires picking the chain with the most substituents among
+/// those tied for length, which needs the full candidate set, not just one
+/// arbitrary pick.
+///
+/// Finds one endpoint `A` via a single BFS pass from `carbons[0]` (valid
+/// for any starting vertex in a tree: the farthest node from any vertex is
+/// guaranteed to be an endpoint of *some* longest path), then does a full
+/// BFS from `A` and returns the reconstructed path to every node tied for
+/// maximum depth. This is deliberately NOT an exhaustive enumeration of
+/// every longest path in the tree (a longest path not touching `A` at all
+/// is possible in principle) -- it covers the realistic branch-point-tie
+/// shape this rule exists for, bounded by [`MAX_CHAIN_CANDIDATES`].
+///
+/// Only used by [`crate::acyclic::Namer::name_branched_alkane`] --
+/// [`find_longest_c_chain`] itself is untouched and still used by every
+/// other caller (functional-group naming, where chain choice is
+/// constrained by the functional group's position, a different problem).
+pub(crate) fn find_longest_c_chain_candidates(
+    mol: &Molecule,
+    carbons: &[AtomIdx],
+) -> Vec<Vec<AtomIdx>> {
+    if carbons.is_empty() {
+        return Vec::new();
+    }
+    if carbons.len() == 1 {
+        return vec![vec![carbons[0]]];
+    }
+
+    let c_set: std::collections::HashSet<AtomIdx> = carbons.iter().copied().collect();
+
+    let bfs_far = |start: AtomIdx| -> AtomIdx {
+        let mut visited: std::collections::HashSet<AtomIdx> = std::collections::HashSet::new();
+        let mut queue = VecDeque::new();
+        let mut farthest = start;
+        visited.insert(start);
+        queue.push_back(start);
+        while let Some(cur) = queue.pop_front() {
+            farthest = cur;
+            for (nb, _) in mol.neighbors(cur) {
+                if c_set.contains(&nb) && visited.insert(nb) {
+                    queue.push_back(nb);
+                }
+            }
+        }
+        farthest
+    };
+
+    // Pass 1: any endpoint of some longest chain.
+    let anchor = bfs_far(carbons[0]);
+
+    // Pass 2: full BFS from anchor, tracking depth + parent for every node.
+    let mut parent: std::collections::HashMap<AtomIdx, AtomIdx> = std::collections::HashMap::new();
+    let mut depth: std::collections::HashMap<AtomIdx, usize> = std::collections::HashMap::new();
+    let mut visited: std::collections::HashSet<AtomIdx> = std::collections::HashSet::new();
+    let mut queue = VecDeque::new();
+    visited.insert(anchor);
+    depth.insert(anchor, 0);
+    queue.push_back(anchor);
+    while let Some(cur) = queue.pop_front() {
+        for (nb, _) in mol.neighbors(cur) {
+            if c_set.contains(&nb) && visited.insert(nb) {
+                parent.insert(nb, cur);
+                depth.insert(nb, depth[&cur] + 1);
+                queue.push_back(nb);
+            }
+        }
+    }
+
+    let max_depth = *depth.values().max().unwrap_or(&0);
+    let mut endpoints: Vec<AtomIdx> = depth
+        .iter()
+        .filter(|&(_, &d)| d == max_depth)
+        .map(|(&a, _)| a)
+        .collect();
+    // Deterministic order (not spelling-invariant -- see MAX_CHAIN_CANDIDATES
+    // doc comment and the caller's own further tie-break for the residual gap).
+    endpoints.sort_unstable();
+    endpoints.truncate(MAX_CHAIN_CANDIDATES);
+
+    endpoints
+        .into_iter()
+        .map(|end| {
+            let mut path = vec![end];
+            let mut cur = end;
+            while cur != anchor {
+                cur = parent[&cur];
+                path.push(cur);
+            }
+            path.reverse();
+            path
+        })
+        .collect()
+}
+
 /// Format substituents as an IUPAC prefix string ("2-methyl", "2,2-dimethyl", etc.).
 pub(crate) fn format_substituents(subs: &[(usize, usize)]) -> String {
     // Group by alkyl name; sort alphabetically.
