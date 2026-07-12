@@ -497,6 +497,10 @@ def tier6_layer2_shared_mechanism(smis, chematic, Chem, sample_n, seed):
     csmi_order_outside_residual = order_mismatch_csmi - csmi_residual
     inchi_order_inside_residual = order_mismatch_inchi & inchi_residual
     inchi_order_outside_residual = order_mismatch_inchi - inchi_residual
+    # InChI-specific excess: order-only mismatches InChI has that canonical_smiles
+    # doesn't, on the same molecules -- isolates a defect unique to InChI's own code
+    # path from ordering-layer churn already known/accounted for via canonical_smiles.
+    inchi_specific_excess = order_mismatch_inchi - order_mismatch_csmi
 
     return {
         "n_molecules": n_checked,
@@ -530,6 +534,12 @@ def tier6_layer2_shared_mechanism(smis, chematic, Chem, sample_n, seed):
         "canonical_smiles_order_mismatch_outside_its_own_residual": len(csmi_order_outside_residual),
         "inchi_order_mismatch_inside_its_own_residual": len(inchi_order_inside_residual),
         "inchi_order_mismatch_outside_its_own_residual": len(inchi_order_outside_residual),
+        "inchi_specific_excess_over_canonical_smiles": len(inchi_specific_excess),
+        "inchi_specific_excess_pct_of_inchi_order_mismatch": (
+            round(100.0 * len(inchi_specific_excess) / len(order_mismatch_inchi), 1)
+            if order_mismatch_inchi
+            else None
+        ),
     }
 
 
@@ -779,9 +789,13 @@ def main():
     print(f"  of inchi's order-only mismatches, "
           f"{t6['inchi_order_mismatch_inside_its_own_residual']} fall INSIDE its own "
           f"apply_aromaticity residual set and "
-          f"{t6['inchi_order_mismatch_outside_its_own_residual']} fall OUTSIDE it -- same "
-          f"question for inchi, whose order-only rate (13.4%) happened to numerically "
-          f"match its residual rate, which could be coincidence or the same set")
+          f"{t6['inchi_order_mismatch_outside_its_own_residual']} fall OUTSIDE it")
+    print(f"  inchi-specific excess (order-only mismatches inchi has that "
+          f"canonical_smiles doesn't, same molecules): "
+          f"{t6['inchi_specific_excess_over_canonical_smiles']} "
+          f"({t6['inchi_specific_excess_pct_of_inchi_order_mismatch']}% of inchi's own "
+          f"order-only mismatch set) -- isolates a defect unique to inchi's code path "
+          f"from ordering-layer churn already shared with canonical_smiles")
     print()
 
     result = {"tier0_raw_bit_equality": t0, "tier1_coverage_parity": t1,

@@ -30,8 +30,8 @@ are found by scanning for blank cells, not by accident.
 |---|---|---|---|---|
 | Canonical SMILES | **MEASURED** — 0/5000 ChEMBL + 0/33 acyclic-polyene structural corruption, worst-of-10/30 | **MEASURED** — 0/5000, 0/33; E/Z direction 5.50% residual (cosmetic, non-corrupting) | E/Z simple-bond spelling not fully normalized (~1 in 18 stereo molecules) | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | Canonical atom ordering (`canonical_atom_order`, feeds InChI) | **PARTIAL** — fixed Round 14 (`c219ee7`), no dedicated post-fix corpus run | **PARTIAL** — only a 14-case hand-built permutation probe + individualized-branch match probe exists; no full-ChEMBL-scale worst-of-N run of its own. Shares the same individualize-refine code path as `canonical_smiles` (which does have full-corpus worst-of-10/30 coverage — `c219ee7` extracted a shared `winning_individualized_ranks` helper both functions call), so this is *partially*, not *fully*, uncovered — but that inheritance argument itself was never independently verified at scale for this specific function, same "verify analogous fixes independently" gap as the o3a.rs incident | — | `first_zero_order_dependence_audit` |
-| InChI / InChIKey (pure-Rust) | **UNMEASURED** — no corpus comparison vs. standard InChI found; **scope question surfaced this round, not resolved** — a spot check against RDKit's standard InChI (`Chem.MolToInchi`, order-independent, confirmed) for one order-unstable molecule shows chematic's `/c` connectivity numbering, `/h` layer convention (explicit `H0` per atom vs. standard InChI's omission of zero-H atoms), and stereo layer (`/t8` vs. standard's `/t15/m1`, no `/m` layer at all in chematic's output) are **all structurally different**, not just numerically offset — comparing chematic's parity sign directly against RDKit's is not a like-for-like diff without first reconciling the numbering schemes, a much larger undertaking than a parity-sign fix. **KNOWN GAP, refined this round** — the order-sensitivity below is real and now precisely localized, but whether the *stable* value is even chemically correct is unverified (self-consistency was checked; correctness against an external oracle was not, until this round's partial spot check raised the scope question above) | **KNOWN GAP** (this round) — 13.4% mismatch on a pure atom-order-only control (seeded, same aromatic origin, no Kekulization). Partitioned against `canonical_smiles`'s own 3.8% order-only instability (same control, same molecules): only 35/134 overlap: 99/134 (74%) is InChI-*specific* excess instability, confirmed **100% (99/99) exclusive to stereo-marker-containing molecules** (`@`/`@@` in the SMILES) — non-stereo molecules show zero InChI-specific excess. Localized further via one-example dissection: the `/c` connectivity layer is byte-identical between the two order-only respellings; only the `/t` layer's parity sign flips (`t8+/s1` vs. `t8-/s1`) — an order-dependent tetrahedral-parity *computation*, not a numbering-instability side effect | Approximate, not standard-compliant (documented, and directly re-confirmed this round via the RDKit spot check above) — use `native-inchi` for real InChI; **plus** the order-sensitivity defect above, whose fix is blocked on a scope decision (narrow parity-canonicalization fix vs. standard-InChI-stereo-compliance as a larger, separate project) | `validation.md` Known Limitations, `scripts/ecfp4_agreement.py` (tier 6), this round |
-| InChI (native, IUPAC C lib) | **UNMEASURED** at scale (spot tests only) | **UNMEASURED** | InChI /m /s (enantiomer/isotope) layers not yet measured post-canonicalization fix | — |
+| InChI / InChIKey (pure-Rust) | **UNMEASURED** for the InChI *string* vs. standard InChI (numbering/`/h`-layer/`/m`-layer remain structurally non-standard, documented, unchanged this round). **MEASURED** for the underlying R/S it encodes, newly this round: `assign_cip()` vs RDKit's per-atom CIP oracle, 4163 stereocenters, 5000-mol corpus — 96.83% (was 76.22% before this round's fix; see "Defect found and FIXED" section below) | **MEASURED, FIXED this round** — order-only mismatch 13.4%→3.5% (n=1000); InChI-*specific* excess over `canonical_smiles`'s own baseline order-sensitivity: 74%→**0%** (residual 3.5% fully explained by shared ordering-layer churn, no separate InChI-specific mechanism detected at this sample size) | Approximate, not standard-compliant (documented) — use `native-inchi` for real InChI; **plus** 132/4163 stereocenters (3.2%) still wrong vs RDKit, now precisely characterized as a missing Mancude/aromatic-ring CIP duplication rule (`cip_branch_spheres` only duplicates across `BondOrder::Double`, not `Aromatic`) — not attempted this round | `validation.md` Known Limitations, `scripts/ecfp4_agreement.py` (tier 6), "Defect found and FIXED this round: `assign_cip()`" section below |
+| InChI (native, IUPAC C lib) | **UNMEASURED** at scale (spot tests only) for the InChI string itself. Its stereo *input* is fixed this round: `crates/chematic-inchi/src/native/convert.rs` calls `tetrahedral_stereo_neighbors()` directly, the same function fixed above, so native-inchi's R/S input inherits the same 76.22%→96.83% correctness improvement — not independently re-measured against the C library's own output, only inferred from the shared code path | **UNMEASURED** | InChI /m /s (enantiomer/isotope) layers not yet measured post-canonicalization fix | — |
 | Aromaticity perception (Hückel per-SSSR-ring) | **PARTIAL** — 96.3% atom-flag parity on Kekulized input, worst-of-10 | **UNMEASURED** directly (implied stable via downstream ring counts) | azulene, purine regressed by SSSR fix; root cause (`aromatic_context` bypass) identified, not fixed | `sssr_horton_and_canonical_smiles_gap`, `validation.md` |
 | SSSR / ring perception | **MEASURED** — 98.9% ring-size agreement vs `GetSymmSSSR`, 5000-mol; residual is RDKit over-symmetrization, not a chematic bug | **MEASURED** — 100% self-stability (was 50.6%); permanent regression test added | Full Vismara relevant-cycle symmetrization not implemented (not required for correctness) | `sssr_horton_and_canonical_smiles_gap` |
 | **ECFP4 fingerprint** — Layer 1 (definition difference, not a bug): chematic's invariant includes aromaticity, RDKit's default doesn't; structural ceiling, not fixable without an RDKit-compat mode | **MEASURED** (this round) — see [worked example](#ecfp4-vs-rdkit--worked-example) below. ~77% invariant-partition match, r=0.94 similarity correlation — cannot reach ~100% regardless of any future fix, the definitions differ | n/a — single-representation input, ~98.8% unaffected by Layer 2 (1.18% overlap measured, see worked example) | **N/A — design choice**, not a defect. RDKit-compat mode is a feature request, not a fix | `scripts/ecfp4_agreement.py`, this round |
@@ -140,13 +140,16 @@ future fix's causal signal is never contaminated by mixing with another:**
   ✅ implicit_h(ピロール/ピリジンN の型損失): 修正済み(8d0b992/9c50c08)
      — ECFP4/canonical/InChI の 89分子を同時に解消、因果を介入で確認
   ⬜ aromatic_context 系: 41/1000 未解決、既知、次スコープ
-  ⬜ InChI 固有 13.4% 順序依存: 別件(#7 家系)、特性解明済み・未修正
-     — 99/134(74%)が canonical_smiles とは無関係な InChI 固有の超過分、
-       その 100%(99/99)が立体マーカー(@/@@)を含む分子に限定。
-       /c 層は安定、/t 層の parity 符号だけが反転(例: t8+/s1 → t8-/s1)。
-       RDKit標準InChIとの突合せで判明: chematicのInChIはナンバリング/H層/
-       立体層とも標準と構造的に異なる(既知の非準拠) — parity の「安定値」
-       が化学的に正しいかは未検証、範囲(スコープ)判断待ち
+  ✅ InChI 固有 13.4% 順序依存 → assign_cip() 自体の正誤バグと判明、修正済み
+     — 「自己一貫性のみ」の予定だったが根本原因は自己一貫性の問題ですら
+       なかった: RDKit の per-atom CIP と比較したところ全立体中心の
+       76.22%が(順序に関係なく、初回パースの時点で)誤っていた。
+       独立した2バグ: (1) 環開き結合の隣接順序ずれ、
+       (2) CIP球展開の二重結合重複原子が片側にしか追加されていなかった。
+       RDKit正解率 76.22%→96.83%(4163中132残、原因: 芳香環のCIP重複が
+       未実装、別件として特性解明済み・未着手)。
+       InChI固有の順序超過は 74%→0% に解消(残り3.5%は canonical_smiles
+       と共有の既知ベースライン順序依存で説明可能)。詳細は下記セクション。
 ```
 
 Measuring ECFP4 surfaced a real correctness issue that took two rounds to fully
@@ -253,6 +256,121 @@ unchanged and still open. `canonical_smiles`'s (3.8%) and InChI's (13.4%, confir
 disjoint via molecule-set intersection, not assumed) own separate order-sensitivity
 defects are also unchanged — neither was ever part of this mechanism, both remain
 unattributed blank cells for a future round.
+
+---
+
+## Defect found and FIXED this round: `assign_cip()` R/S was wrong on ~24% of stereocenters, not just order-unstable
+
+**Scope changed mid-investigation, and the change is the finding.** The plan going in was
+narrow and explicitly bounded by the user: fix InChI's own 13.4% order-sensitivity
+(previous round), self-consistency only, not full RDKit/standard-InChI compliance —
+because chematic's InChI numbering was already known to be non-standard, so "does the
+`/t`-layer parity sign stay the *same* across two respellings of the same molecule" was
+treated as the only tractable, well-scoped target. Root-causing that instability
+(`crates/chematic-chem/src/cip.rs::assign_tetrahedral`) found it wasn't a self-consistency
+problem at all: `assign_cip()`'s R/S codes are absolute (unlike InChI's numbering, there is
+no legitimate "chematic's own convention" for CIP R/S), and measuring them against RDKit's
+per-atom `_CIPCode` oracle (`Chem.AssignStereochemistry(cleanIt=True, force=True)`) — for
+the very first time this project has done so — showed **76.22% correct (3173/4163
+stereocenters)** even on first-parse, non-respelled SMILES from the 5,000-molecule corpus.
+The instability chasing InChI specifically was a symptom; the disease was upstream and
+touched every consumer of `assign_cip`/`tetrahedral_stereo_neighbors`: pure-Rust InChI,
+**`native-inchi`'s C-library conversion path** (`crates/chematic-inchi/src/native/convert.rs`
+calls `tetrahedral_stereo_neighbors` directly — the exact "use `native-inchi` for real
+InChI" escape hatch documented elsewhere in this file was *also* silently affected), and
+any other R/S consumer. `canonical_smiles`'s own stereo output was unaffected — it reads
+chirality through a separate, already-correct code path
+(`crates/chematic-smiles/src/canonical.rs`, see below).
+
+**Root cause 1 — wrong SMILES-encounter order, discarding an existing correct mechanism.**
+`assign_tetrahedral()` rebuilt a chiral atom's 4 substituents from raw
+`Molecule::neighbors()` adjacency order plus a hand-rolled heuristic to place the bracket-H
+slot. That heuristic assumed adjacency order always matches SMILES textual order, which is
+false for exactly one case: a stereocenter that **opens** a ring before its other
+substituents (`[C@@H]1N...`, ring digit written before the continuation atom). A
+ring-*opening* bond's partner is unknown until the matching closing digit is reached later
+in the string, so `Molecule::neighbors()` only materializes it then — by which point a
+branch/continuation atom that appears later in the text, but has nothing to wait on, has
+already been added. The result: the neighbor meant to occupy SMILES position 2 (by
+written position) silently lands at position 3 and vice versa, flipping the parity
+computed from it. Ring-*closing* bonds are unaffected (both endpoints already known,
+materialized immediately) — this is why the bug is intermittent, not universal, and why it
+surfaced as "order sensitivity" rather than a flat wrong-every-time bug: which respelling
+of a given molecule happens to put a stereocenter's ring bond on the opening side is itself
+representation-dependent.
+
+The fix did not need to invent new machinery: the SMILES parser already builds the correct
+sequence at parse time — `Molecule::stereo_neighbor_order` (`crates/chematic-core/src/molecule.rs`),
+populated via a dedicated slot-based mechanism (`StereoEntry::PendingRing` in
+`crates/chematic-smiles/src/parser.rs`) that resolves each ring-closure entry to its real
+partner *without* disturbing its textual position in the sequence. `chematic-smiles`'s own
+canonical-SMILES writer already reads this field
+(`crates/chematic-smiles/src/canonical.rs:827`) to re-derive `@`/`@@` correctly for a new
+output order — which is exactly why `canonical_smiles`'s stereo output was never affected by
+this bug. `crates/chematic-chem/src/cip.rs` simply never read it. Fix: extracted a shared
+`stereo_neighbors()` helper that prefers `Molecule::stereo_neighbor_order` (falling back to
+the old adjacency-order heuristic only for molecules with no parse-time stereo data, e.g.
+built directly via `MoleculeBuilder`), and pointed both `assign_tetrahedral()` and the
+public `tetrahedral_stereo_neighbors()` (previously an independent duplicate of the same
+buggy logic) at it.
+
+**Root cause 2 — unmasked by fix 1, not caused by it: incomplete CIP double-bond
+duplication.** Fixing the neighbor order alone, verified against the RDKit oracle, produced
+824 newly-correct stereocenters but **15 new wrong ones** that had been correct before —
+concerning enough to stop and re-verify rather than declare victory (per this project's
+standing "verify at full-corpus scale, not spot checks" discipline). Direct trace of the
+smallest example (`C=C(C)[C@@H]1CN[C@@H](C(=O)O)[C@@H]1CC(=O)O`, atom 3) showed the *new*
+(correct) neighbor order was being combined with a rank order that was itself wrong: CIP
+rule requires a double bond `A=B` to duplicate its partner into **both** atoms' own
+substituent spheres (a phantom "B" in A's list *and* a phantom "A" in B's list), but
+`cip_branch_spheres()` (`crates/chematic-chem/src/cip.rs`) only added the "arrival" side
+(B's own sphere gets a phantom-A when B is *expanded*, having been reached via the double
+bond) — never the "departure" side (A's own sphere, populated while iterating A's
+neighbors, never got a second phantom entry for B). A vinyl/methyl-substituted stereocenter
+neighbor (`C(=CH2)(CH3)-`) therefore scored a substituent set of `(C,C)` instead of the
+correct `(C,C,C)`, silently losing a length-based tie-break it should have won. This half of
+the duplication rule had been missing since the sphere-expansion code was first written; it
+had simply never been exercised by a case where getting it right vs. wrong changed the
+final R/S — until fix 1 stopped accidentally cancelling it out. Fix: add the missing
+departure-side phantom (`is_double` check inside the neighbor-iteration loop, pushing an
+extra copy of the child key into the same layer) — 5 lines, `BondOrder::Double` only
+(aromatic/Mancude-ring duplication is a separate, harder problem, deliberately not
+attempted here — see below).
+
+**Causal verification.** The double-bond fix, applied on top of the order fix, introduced
+**zero** new regressions relative to the order-fix-alone state (`post2 - post1` = ∅) and
+resolved 6/15 of the order-fix's regressions outright (the other 9 all involve an aromatic
+ring directly bonded to the stereocenter — the deliberately out-of-scope Mancude case, see
+below). Net, full-corpus, both fixes together: **990 → 132 mismatches against RDKit's
+per-atom CIP oracle (76.22% → 96.83%, 4163 stereocenters)**; **9 residual regressions
+remain** relative to the original 990-mismatch baseline, all attributable to the
+now-precisely-characterized Mancude gap, none to either fix newly introduced. Cross-checked
+against the metric this investigation started from: InChI's own order-only mismatch rate
+dropped from 13.4% to 3.5% (`scripts/ecfp4_agreement.py` tier 6, n=1000), and its
+InChI-*specific* excess over `canonical_smiles`'s own baseline order-sensitivity —
+previously 74% (99/134) — is now **0%**: the residual 3.5% is fully explained by the same
+shared ordering-layer churn `canonical_smiles` already has, no separate InChI-specific
+mechanism detected at this sample size. Full workspace test suite (673+ tests across 18
+crates), `native-inchi` feature tests, and `bash scripts/check.sh` all pass; 2 new
+regression tests added (`test_tetrahedral_stable_when_ring_bond_opens_before_other_neighbors`,
+`test_tetrahedral_double_bond_duplicates_into_own_sphere`, both in `crates/chematic-chem/src/cip.rs`).
+
+**Remaining, explicitly out of scope for this fix**: 132/4163 stereocenters (3.2%) still
+disagree with RDKit's CIP oracle. All 9 directly-traced regressions, and almost certainly
+most of the other 123, share one identified mechanism: `cip_branch_spheres()`'s
+double-bond-duplication fix above only checks `BondOrder::Double` — an aromatic ring
+substituent bonded to a stereocenter (`BondOrder::Aromatic`) gets no duplication at all,
+under- or mis-counting its substituent sphere relative to correct Mancude-ring CIP
+treatment (which requires either an explicit Kekulé structure or an averaged-atomic-number
+duplicate, a materially harder rule than the clean single-bond-type case just fixed). Not
+attempted this round — logged as a new, characterized (not just "unmeasured") blank cell
+for a future round. The pre-existing `aromatic_context` 41/1000 flag-assignment defect is
+unrelated and also still open.
+
+Reproduce: `.venv/bin/python scripts/cip_ground_truth.py ~/Downloads/SMILES.csv` (RDKit CIP
+oracle comparison, new this round); `.venv/bin/python scripts/ecfp4_agreement.py
+~/Downloads/SMILES.csv --layer2-sample 1000` (InChI order-only / InChI-specific-excess
+numbers, tier 6).
 
 ---
 
@@ -428,8 +546,11 @@ correspondence step (RDKit canonical-rank-based atom mapping,
 answer: **`implicit_h` count**, differing in 89/89 cases — a variable neither candidate
 nor the original multiset check had ever compared. Now fixed; the shared residual is
 41/1000 (the pre-existing, distinct `aromatic_context`-class defect only). InChI's own
-13.4% order-sensitivity defect remains a **separate, untouched blank cell**, not part of
-this mechanism and not affected by this fix.
+13.4% order-sensitivity defect was a **separate, untouched blank cell** at the time this
+paragraph was written — since fixed (13.4%→3.5%, InChI-specific excess 74%→0%) in a later
+round, not part of this mechanism; see
+["`assign_cip()` was wrong on ~24% of stereocenters"](#defect-found-and-fixed-this-round-assign_cip-was-wrong-on-24-of-stereocenters-not-just-order-unstable)
+below.
 
 **Blast radius beyond ECFP4**: `initial_atom_id` (the invariant seed carrying the
 aromaticity byte) is shared by ECFP6 and FCFP4, and a 300-mol spot check confirms both
