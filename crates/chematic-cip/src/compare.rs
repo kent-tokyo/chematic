@@ -41,20 +41,50 @@
 //! ligand-vs-ligand comparison has, because it's ordering one node's own children
 //! against each other, not advancing two whole subtrees in lockstep.
 //!
-//! # Rule 1b, scoped
+//! # Rule 1b: investigated in Milestone 3A, implemented, then reverted (not a defect)
 //!
-//! Strict IUPAC 2013 Rule 1b is a *duplicate-vs-duplicate* tiebreak (which of two
-//! same-element ring-closure duplicates is closer, along the digraph, to the real atom
-//! it duplicates). This module does not implement that -- it's a ring-closure-specific
-//! concern, deferred to the ring/aromatic milestone. What Milestone 2 *does* give
-//! duplicate nodes "for free" is atomic-number-based comparison via their effective
-//! element ([`node_key`]): a duplicate is a childless leaf, so once its atomic number
-//! ties with a real atom's, the real atom's (usually non-empty) child list outranks the
-//! duplicate's (always empty) one during the recursive children comparison -- no
-//! separate "real beats duplicate" rule needed. Worked example: an aldehyde carbon
-//! (`C=O`) vs. a hydroxymethyl carbon (`C-OH`) both present a real oxygen at rank 1
-//! (tied); at rank 2 the aldehyde side has an oxygen *duplicate* (atomic number 8)
-//! against the alcohol side's hydrogen (atomic number 1) -- Rule 1a alone decides it.
+//! Rule 1b applies **only** to [`CipNodeKind::RingDuplicate`] nodes -- never
+//! `MultipleBondDuplicate` (verified against RDKit's actual `Rule1b::compare`, which
+//! checks `isSet(Node::RING_DUPLICATE)` specifically). Most real-vs-duplicate and
+//! duplicate-vs-duplicate distinctions are already free under Rule 1a alone, since a
+//! duplicate is a childless leaf: once its atomic number ties with a real atom's, the
+//! real atom's non-empty child list outranks the duplicate's empty one one sphere deeper
+//! (worked example: an aldehyde carbon `C=O` vs. a hydroxymethyl carbon `C-OH` both
+//! present a real oxygen at rank 1 -- tied; at rank 2 the aldehyde side has an oxygen
+//! *duplicate* against the alcohol side's hydrogen -- Rule 1a alone decides it, no Rule
+//! 1b needed).
+//!
+//! Milestone 3A implemented Rule 1b as a second `compare_by_level` pass (per RDKit's
+//! `Rule1b.{h,cpp}`/`Node.cpp`: a ring duplicate outranks a non-duplicate
+//! *unconditionally*, and between two duplicates the one whose real atom is closer to
+//! the root wins) and verified it against RDKit source and oracle-checked molecules --
+//! the implementation itself was correct. But on the frozen corpus's 24
+//! `uncharacterized`-bucket tied cases it changed **zero** outputs: instrumenting the
+//! Rule 1b comparator across all 8 non-pseudoasymmetric tied cases (the other 16 are
+//! pseudoasymmetric, Rule 5 territory) found 4056 real invocations, none of which ever
+//! compared a duplicate against a same-element non-duplicate, or two duplicates at
+//! different depths -- Rule 1a's own child-count check (the paragraph above) had already
+//! resolved every such position one sphere earlier. Deliberate synthetic constructions
+//! (spiro, fused, bridged, decalin-like branches) reproduced the same pattern, and
+//! re-deriving RDKit's own `SequenceRule::recursiveCompare` (`Sort.cpp`/
+//! `SequenceRule.cpp`) shows this isn't a chematic-specific accident: RDKit's duplicate
+//! nodes are *also* unconditionally childless leaves (`EXPANDED` is set at construction
+//! for any `DUPLICATE` node, so `getEdges()` never expands one), so RDKit's own Rule 1a
+//! hits the identical empty-vs-nonempty child-count difference before its Rule 1b ever
+//! runs. Rule 1b is architecturally shadowed by Rule 1a in both engines whenever every
+//! rule runs as an unconditional full pass over the whole comparison.
+//!
+//! Given a correct-but-inert implementation doubles `compare_ligands`'s cost for zero
+//! behavior change on this corpus, the Rule 1b pass was reverted rather than shipped --
+//! see `docs/cip_accurate_rfc.md`'s Milestone 3A entry for the finding in full. The
+//! `compare_by_level<K>` generic walk stays (this paragraph's `K`-parameterization is
+//! exactly what let Rule 1b be tried, measured, and cleanly removed without touching the
+//! Rule 1a/2 path). **Design note for Milestone 4's Rule 3/4/5**: don't repeat the
+//! "unconditional full pass per rule" scheduling that made Rule 1b's cost symmetric with
+//! its (absent) benefit here -- run each rule only over the equivalence classes the
+//! *previous* rule left tied (`rank_by_rule_1a` -> `refine_tied_groups(_, rule_1b)` ->
+//! `refine_tied_groups(_, rule_2)` -> ...), so a comparison Rule 1a already decided never
+//! pays for a later rule's pass.
 //!
 //! # Rule 2, scoped
 //!
@@ -206,7 +236,7 @@ fn node_key(mol: &Molecule, kind: CipNodeKind) -> (u8, Option<u16>) {
 
 /// Rule 1a (atomic number) then Rule 2 (isotope: `Some` beats `None`, higher isotope
 /// number beats lower).
-fn cmp_key(a: (u8, Option<u16>), b: (u8, Option<u16>)) -> Ordering {
+fn cmp_key(a: &(u8, Option<u16>), b: &(u8, Option<u16>)) -> Ordering {
     match a.0.cmp(&b.0) {
         Ordering::Equal => {}
         other => return other,
@@ -248,7 +278,7 @@ enum LevelSlot {
     Phantom,
 }
 
-fn slot_key(graph: &CipDigraph, slot: LevelSlot) -> (u8, Option<u16>) {
+fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (u8, Option<u16>) {
     match slot {
         LevelSlot::Node(n) => node_key(graph.molecule(), graph.node(n).kind),
         LevelSlot::Phantom => (0, None),
@@ -256,7 +286,7 @@ fn slot_key(graph: &CipDigraph, slot: LevelSlot) -> (u8, Option<u16>) {
 }
 
 /// A real node's own ranked children, as plain `NodeId`s (a phantom slot's "children"
-/// are always empty -- it never gets here since [`compare_ligands`] only calls this for
+/// are always empty -- it never gets here since [`compare_by_level`] only calls this for
 /// `LevelSlot::Node`).
 fn ranked_child_ids(
     graph: &mut CipDigraph,
@@ -272,25 +302,39 @@ fn ranked_child_ids(
         .collect())
 }
 
-/// Compare two ligand branches sphere by sphere: own key first (Rules 1a/2), then --
-/// only if that ties -- ranked children, one whole level at a time. See module docs
-/// ("Sphere-by-sphere...") for why this must be level-order rather than resolving one
-/// position's subtree to completion before checking its siblings.
-pub fn compare_ligands(
+/// The result of one key-parameterized sphere-by-sphere walk (see [`compare_by_level`]):
+/// either a definite winner (with the two keys that decided it, for tracing), or a full
+/// tie -- every live position, at every sphere, matched exactly under this pass's key,
+/// all the way to simultaneous exhaustion.
+enum LevelOutcome<K> {
+    Decided(BranchComparison, K, K),
+    FullyTied,
+}
+
+/// Walk two ligand branches sphere by sphere under a single comparison rule, given as
+/// `key_fn` (what to compare at each position) and `cmp_fn` (how to compare two keys --
+/// kept separate from `K: Ord` so a rule whose priority order isn't a plain
+/// ascending/descending sort on its own key type doesn't need a newtype wrapper).
+/// Compares a whole level's keys, position by position, *before* descending into any
+/// position's children -- a shallow difference at position 1 must win even if position 0
+/// would only differ several spheres further down (see module docs, "Sphere-by-sphere").
+/// Generic so a future sequence rule (Milestone 4's Rule 3/4/5) can reuse this walk
+/// without duplicating the phantom-padding/level-advance machinery -- see module docs'
+/// "Rule 1b" section for why a naive "run every rule as an unconditional second pass"
+/// scheduling was tried and reverted (correct but ~2x cost for zero behavior change on
+/// the current corpus).
+fn compare_by_level<K>(
     graph: &mut CipDigraph,
     left: NodeId,
     right: NodeId,
     ctx: &mut CompareContext,
-) -> Result<BranchComparison, CipCompareError> {
-    let left_kind = graph.node(left).kind;
-    let right_kind = graph.node(right).kind;
-    let depth = graph.node(left).depth;
-
+    key_fn: impl Fn(&CipDigraph, LevelSlot) -> K + Copy,
+    cmp_fn: impl Fn(&K, &K) -> Ordering + Copy,
+) -> Result<LevelOutcome<K>, CipCompareError> {
     let mut left_level = vec![LevelSlot::Node(left)];
     let mut right_level = vec![LevelSlot::Node(right)];
-    let mut rule = "1a/2";
 
-    let outcome = loop {
+    loop {
         ctx.recursive_calls += 1;
         if ctx.recursive_calls > ctx.max_recursive_calls {
             return Err(CipCompareError::BudgetExceeded {
@@ -306,42 +350,35 @@ pub fn compare_ligands(
         debug_assert_eq!(left_level.len(), right_level.len());
         let n = left_level.len();
 
-        // Compare this whole level's own keys, position by position, *before*
-        // descending into any position's children -- a shallow difference at position
-        // 1 must win even if position 0 would only differ several spheres further down.
-        // A Phantom's key (0, None) loses to any real atom, so a substituent-count
-        // mismatch decides here too, via the same mechanism as an atomic-number
-        // difference.
         let mut decided = None;
         for i in 0..n {
-            let lk = slot_key(graph, left_level[i]);
-            let rk = slot_key(graph, right_level[i]);
-            match cmp_key(lk, rk) {
+            let lk = key_fn(graph, left_level[i]);
+            let rk = key_fn(graph, right_level[i]);
+            match cmp_fn(&lk, &rk) {
                 Ordering::Greater => {
-                    decided = Some(BranchComparison::Higher);
+                    decided = Some((BranchComparison::Higher, lk, rk));
                     break;
                 }
                 Ordering::Less => {
-                    decided = Some(BranchComparison::Lower);
+                    decided = Some((BranchComparison::Lower, lk, rk));
                     break;
                 }
                 Ordering::Equal => {}
             }
         }
-        if let Some(outcome) = decided {
-            break outcome;
+        if let Some((outcome, lk, rk)) = decided {
+            return Ok(LevelOutcome::Decided(outcome, lk, rk));
         }
         if n == 0 {
-            rule = "leaf";
-            break BranchComparison::Equal;
+            return Ok(LevelOutcome::FullyTied);
         }
 
-        // Whole level tied on own keys: expand to the next sphere. Each position's
-        // children are ranked *within that one parent* (a separate, locally-scoped
-        // comparison -- see module docs) before being placed into the next level;
-        // per-position padding (not a global flatten) keeps "position i" well-defined
-        // on both sides even when a tied pair's substituent counts differ.
-        rule = "children";
+        // Whole level tied on this pass's key: expand to the next sphere. Each
+        // position's children are ranked *within that one parent* (a separate,
+        // locally-scoped comparison using the *full* two-pass comparator -- see
+        // `rank_children` and module docs) before being placed into the next level;
+        // per-position padding (not a global flatten) keeps "position i" well-defined on
+        // both sides even when a tied pair's substituent counts differ.
         let mut next_left = Vec::new();
         let mut next_right = Vec::new();
         for i in 0..n {
@@ -371,7 +408,35 @@ pub fn compare_ligands(
         }
         left_level = next_left;
         right_level = next_right;
-    };
+    }
+}
+
+/// Compare two ligand branches under Rule 1a/2 (see module docs for why Rule 1b is not
+/// wired in as a second pass here despite being correctly implementable -- it was tried
+/// in Milestone 3A and found to change zero outputs at ~2x cost, since Rule 1a's own
+/// child-count check always resolves a duplicate-vs-real-atom position first).
+pub fn compare_ligands(
+    graph: &mut CipDigraph,
+    left: NodeId,
+    right: NodeId,
+    ctx: &mut CompareContext,
+) -> Result<BranchComparison, CipCompareError> {
+    let left_kind = graph.node(left).kind;
+    let right_kind = graph.node(right).kind;
+    let depth = graph.node(left).depth;
+
+    let (outcome, rule) =
+        match compare_by_level(graph, left, right, ctx, rule1a2_slot_key, cmp_key)? {
+            LevelOutcome::Decided(c, lk, rk) => {
+                let rule = if ctx.trace.is_some() {
+                    format!("1a/2 ({lk:?} vs {rk:?})")
+                } else {
+                    String::new()
+                };
+                (c, rule)
+            }
+            LevelOutcome::FullyTied => (BranchComparison::Equal, "leaf".to_string()),
+        };
 
     let ranking_parent = ctx.ranking_parent;
     if let Some(trace) = ctx.trace.as_deref_mut() {

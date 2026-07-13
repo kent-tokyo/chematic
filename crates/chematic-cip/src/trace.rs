@@ -29,9 +29,11 @@ pub struct DecisionStep {
     pub left_kind: String,
     pub right_kind: String,
     pub outcome: BranchComparison,
-    /// Which rule decided this step: `"1a/2"` (own-key comparison), `"leaf"` (both
-    /// sides childless), or `"children"` (recursed into ranked children).
-    pub rule: &'static str,
+    /// Which rule decided this step, and the specific keys compared: `"1a/2 (<left key>
+    /// vs <right key>)"`, or `"leaf"` (both sides fully tied under Rule 1a/2 -- would
+    /// need Rule 1b/3+ to go further; see `compare.rs`'s module docs for why Rule 1b
+    /// isn't wired in as an automatic second pass).
+    pub rule: String,
     /// The node whose children `left`/`right` are siblings under, i.e. whose
     /// `rank_children` call this step belongs to. `None` only if the digraph root itself
     /// somehow appears as a comparison operand (not expected in practice -- every

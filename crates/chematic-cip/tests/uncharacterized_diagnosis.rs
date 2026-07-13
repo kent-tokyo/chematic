@@ -9,14 +9,21 @@
 //!
 //! Two mechanisms account for all 26 cases (2 wrong + 24 tied) as of Milestone 2.5:
 //!
-//! - **`RingDuplicateDistance`** (all 24 tied cases): every member of the tied group,
+//! - **`NeedsLaterSequenceRule`** (all 24 tied cases): every member of the tied group,
 //!   when fully expanded, contains at least one `RingDuplicate` node -- confirming the
 //!   tie genuinely stems from two branches that are structurally indistinguishable under
-//!   Rules 1a/1b/2 alone and only diverge via *which* ring-closure duplicate they
-//!   eventually reach and how far away it is. That is exactly the strict IUPAC 2013
-//!   Rule 1b root-distance duplicate tiebreak `compare.rs`'s own module docs already
-//!   document as deferred to the ring/aromatic milestone -- these ties are the expected,
-//!   correct behavior of a Rules-1a/1b/2-only comparator, not a defect.
+//!   Rules 1a/2 alone and only diverge via ring-closure duplicates. Milestone 2.5 guessed
+//!   this meant Rule 1b's root-distance duplicate tiebreak would resolve most of these;
+//!   Milestone 3A implemented Rule 1b and found it resolves **0/24** -- confirmed both
+//!   empirically (zero decisive Rule 1b comparisons across all 8 non-pseudoasymmetric
+//!   cases) and structurally (Rule 1a's own child-count check shadows Rule 1b in both
+//!   chematic and RDKit; see `compare.rs`'s module docs). Of the 24: 16 have a lowercase
+//!   `modern` expected value (pseudoasymmetric centers -- Rule 5, structurally
+//!   unrepresentable by this crate's uppercase-only `CipCode` today) and 8 have an
+//!   uppercase expected value but remain tied after Rule 1b -- their actual deciding
+//!   mechanism (likely Rule 3 and/or Rule 4's auxiliary-descriptor comparison, both
+//!   requiring cross-stereocenter information this crate doesn't compute yet) is
+//!   unconfirmed and out of scope for this diagnosis.
 //! - **`BucketMisclassified`** (both wrong cases): both stereocenters have, among their
 //!   substituent branches, an aromatic ring atom that is fully substituted (3 real
 //!   neighbors: 2 ring bonds + 1 exocyclic bond, no hydrogen) yet has only 2 digraph
@@ -50,7 +57,7 @@ fn code_str(code: CipCode) -> &'static str {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Diagnosis {
-    RingDuplicateDistance,
+    NeedsLaterSequenceRule,
     BucketMisclassified,
 }
 
@@ -123,7 +130,7 @@ fn diagnose_tied(graph: &mut CipDigraph, groups: &[Vec<NodeId>]) -> Option<Diagn
             subtree_has_ring_duplicate(graph, n, &mut budget)
         });
         if all_ring_duplicated {
-            return Some(Diagnosis::RingDuplicateDistance);
+            return Some(Diagnosis::NeedsLaterSequenceRule);
         }
     }
     None
@@ -207,7 +214,7 @@ fn all_uncharacterized_cases_are_diagnosed() {
         match diagnosis {
             Some(tag) => {
                 let label = match tag {
-                    Diagnosis::RingDuplicateDistance => "RingDuplicateDistance",
+                    Diagnosis::NeedsLaterSequenceRule => "NeedsLaterSequenceRule",
                     Diagnosis::BucketMisclassified => "BucketMisclassified",
                 };
                 *tally.entry(label).or_default() += 1;

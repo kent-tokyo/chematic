@@ -221,7 +221,36 @@ concrete regression case each was found on. Gate: not an accuracy number — com
 assignment trustworthiness (zero regressions, zero unexplained residual cases, triple-bond
 still 1/1) judged together with the honest full-corpus number.
 
-**Milestone 3 — Ring/aromatic adjacency.** The frozen corpus's largest bucket (96 cases).
+**Milestone 3A — Rule 1b (ring-duplicate root-distance tiebreak).** Milestone 2.5 traced
+all 24 `uncharacterized`-bucket ties to "the already-known-deferred Rule 1b" — this round
+implemented it (a second `compare_by_level` pass, per RDKit's `Rule1b.{h,cpp}`/`Node.cpp`:
+ring duplicate unconditionally outranks non-duplicate; between two duplicates, closer
+real-atom wins) and verified the implementation against RDKit source and oracle-checked
+molecules. Result: **0/24 resolved**, not "most" as the tracing suggested. Root cause,
+confirmed both empirically (4056 instrumented comparator invocations across the 8
+non-pseudoasymmetric tied cases, zero of which ever reached a duplicate-vs-same-element-
+real-atom or different-depth duplicate-vs-duplicate position) and structurally (re-derived
+RDKit's own `SequenceRule::recursiveCompare`): Rule 1a's own child-count check — a
+duplicate is always a childless leaf, so it loses to any same-element real atom one sphere
+later — resolves every case Rule 1b could otherwise decide, in *both* chematic and RDKit,
+whenever every rule runs as an unconditional full pass. This is architecturally inert, not
+a chematic-specific defect. Of the 24: 16 are pseudoasymmetric (`modern` column lowercase
+`r`/`s`, Rule 5, structurally unrepresentable by today's uppercase-only `CipCode`); the
+remaining 8's actual deciding mechanism (likely Rule 3/4, both requiring cross-stereocenter
+information not yet computed) is unconfirmed. Decision: reverted the Rule 1b second pass
+(zero behavior change at ~2x cost is not worth shipping) but kept the generic
+`compare_by_level<K>` walk it was built on, since that's exactly the scaffolding Milestone
+4's Rule 3/4/5 need. Design note carried forward: don't repeat "unconditional full pass per
+rule" scheduling — run each later rule only over the equivalence classes the previous rule
+left tied, so a comparison Rule 1a already decided never pays a later rule's cost. See
+`compare.rs`'s module docs ("Rule 1b: investigated in Milestone 3A...") for the full
+finding and `tests/uncharacterized_diagnosis.rs` (tag renamed `RingDuplicateDistance` →
+`NeedsLaterSequenceRule`, since Rule 1b is confirmed not to be the mechanism). Full-corpus
+number unchanged at 4055/4186 (96.87%); this round's gate was comparator correctness and
+honest reporting, not a residual-count target, and both held: zero regressions,
+triple-bond still 1/1.
+
+**Milestone 3B — Ring/aromatic adjacency.** The frozen corpus's largest bucket (96 cases).
 This is the real test of the new digraph approach — Mancude-ring CIP duplication
 (explicit Kekulé structure or IUPAC's mean-atomic-number treatment; the RFC does not
 pre-decide which) only works if the comparator underneath it is sound. Target: ≥99%
