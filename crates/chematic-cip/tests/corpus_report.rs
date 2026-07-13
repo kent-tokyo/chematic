@@ -52,6 +52,8 @@ struct BucketStats {
 fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
     let mut buckets: BTreeMap<String, BucketStats> = BTreeMap::new();
     let mut checked = 0usize;
+    let mut total_stereocenters: Option<u64> = None;
+    let mut mismatches: Option<u64> = None;
 
     for line in CORPUS.lines() {
         let line = line.trim();
@@ -61,7 +63,13 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
         let value: serde_json::Value = serde_json::from_str(line)
             .unwrap_or_else(|e| panic!("malformed JSONL line: {e}\n{line}"));
         let Some(smiles) = value.get("smiles").and_then(|v| v.as_str()) else {
-            continue; // manifest line
+            // Manifest line -- carries the full-corpus denominator this residual set was
+            // drawn from, needed below to report corpus-wide agreement, not just
+            // residual-set recovery (see module docs on why the two must never be
+            // conflated into one bare percentage).
+            total_stereocenters = value.get("total_stereocenters").and_then(|v| v.as_u64());
+            mismatches = value.get("mismatches").and_then(|v| v.as_u64());
+            continue;
         };
         let atom_idx = value.get("atom_idx").and_then(|v| v.as_u64()).unwrap() as u32;
         let modern = value.get("modern").and_then(|v| v.as_str()).unwrap();
@@ -191,4 +199,31 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
     for r in &all_regressions {
         println!("  {r}");
     }
+
+    // Two distinct numbers, printed together and neither presented alone -- reporting
+    // residual-set recovery as if it were corpus-wide accuracy is exactly the
+    // stereocenter-count-vs-CIP-label-agreement conflation `docs/validation.md` was fixed
+    // to stop making; see this module's docs.
+    let total_stereocenters =
+        total_stereocenters.expect("corpus manifest line must carry total_stereocenters");
+    let mismatches = mismatches.expect("corpus manifest line must carry mismatches");
+    let full_corpus_correct = total_stereocenters - mismatches + overall.accurate_match as u64;
+    println!(
+        "\n=== Two distinct numbers -- report both, never one alone ===\n\
+         Frozen-residual recovery:        {}/{} ({:.1}%)  -- share of this 155-case \
+         hard subset AccurateExperimental resolves correctly\n\
+         Full-corpus modern-oracle agreement: {}/{} ({:.2}%)  -- ({total_stereocenters} \
+         total - {mismatches} pre-existing mismatches + {} newly correct), assuming zero \
+         regressions among the {} cases outside this residual set (verified above: \
+         regressions={})",
+        overall.accurate_match,
+        overall.total,
+        100.0 * overall.accurate_match as f64 / overall.total as f64,
+        full_corpus_correct,
+        total_stereocenters,
+        100.0 * full_corpus_correct as f64 / total_stereocenters as f64,
+        overall.accurate_match,
+        total_stereocenters - mismatches,
+        all_regressions.len(),
+    );
 }
