@@ -148,11 +148,17 @@ impl core::fmt::Display for CipCompareError {
 impl std::error::Error for CipCompareError {}
 
 /// Mutable state threaded through a comparison: a recursion-call budget (separate from
-/// the digraph's own node budget) and an optional trace sink.
+/// the digraph's own node budget), an optional trace sink, and the innermost
+/// `rank_children` call currently in progress (see [`DecisionStep::ranking_parent`]).
 pub struct CompareContext<'t> {
     pub recursive_calls: usize,
     pub max_recursive_calls: usize,
     trace: Option<&'t mut ComparisonTrace>,
+    /// Which node's children `rank_children` is currently ordering, if a
+    /// `rank_children` call is on the stack -- set/restored around its pairwise
+    /// `compare_ligands` calls (see `rank_children`'s body) so each recorded
+    /// `DecisionStep` can be tagged with the sibling group it belongs to.
+    ranking_parent: Option<NodeId>,
 }
 
 impl Default for CompareContext<'_> {
@@ -167,6 +173,7 @@ impl<'t> CompareContext<'t> {
             recursive_calls: 0,
             max_recursive_calls: 1_000_000,
             trace: None,
+            ranking_parent: None,
         }
     }
 
@@ -175,6 +182,7 @@ impl<'t> CompareContext<'t> {
             recursive_calls: 0,
             max_recursive_calls: 1_000_000,
             trace: Some(trace),
+            ranking_parent: None,
         }
     }
 }
@@ -365,6 +373,7 @@ pub fn compare_ligands(
         right_level = next_right;
     };
 
+    let ranking_parent = ctx.ranking_parent;
     if let Some(trace) = ctx.trace.as_deref_mut() {
         trace.decisions.push(DecisionStep {
             depth,
@@ -372,6 +381,7 @@ pub fn compare_ligands(
             right_kind: kind_label(right_kind),
             outcome,
             rule,
+            ranking_parent,
         });
     }
 
@@ -399,14 +409,38 @@ pub fn rank_children(
         return Ok(vec![vec![children[0]]]);
     }
 
+    // Every child in `children` is a sibling under the same parent (by construction --
+    // this is always called with one node's own `expand_children` output) -- record it
+    // for the pairwise calls below so their DecisionSteps are tagged with which sibling
+    // group they belong to. Restored right after the pairwise fill (on both the success
+    // and the `?`-propagated error path -- an error here unwinds the entire recursive
+    // call chain via `?`, so no later code in this ctx's lifetime observes a stale value
+    // either way, but restoring promptly keeps that true by inspection, not by relying
+    // on the unwind).
+    let siblings_parent = graph.node(children[0]).parent;
+    let saved_ranking_parent = ctx.ranking_parent;
+    ctx.ranking_parent = siblings_parent;
+
     // Full pairwise matrix, computed once, up front.
     let mut pairwise = vec![vec![BranchComparison::Equal; n]; n];
-    for i in 0..n {
+    let mut fill_err = None;
+    'fill: for i in 0..n {
         for j in (i + 1)..n {
-            let cmp = compare_ligands(graph, children[i], children[j], ctx)?;
-            pairwise[i][j] = cmp;
-            pairwise[j][i] = invert(cmp);
+            match compare_ligands(graph, children[i], children[j], ctx) {
+                Ok(cmp) => {
+                    pairwise[i][j] = cmp;
+                    pairwise[j][i] = invert(cmp);
+                }
+                Err(e) => {
+                    fill_err = Some(e);
+                    break 'fill;
+                }
+            }
         }
+    }
+    ctx.ranking_parent = saved_ranking_parent;
+    if let Some(e) = fill_err {
+        return Err(e);
     }
 
     // Union-find: Equal and Unresolved pairs merge into one equivalence class --
