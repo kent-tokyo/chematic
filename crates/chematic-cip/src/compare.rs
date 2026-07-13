@@ -7,9 +7,39 @@
 //! pools every atom at a given BFS depth into one sorted multiset and compares
 //! shell-by-shell -- discarding exactly the branch/provenance information a correct
 //! comparison needs (proven by a reverted triple-bond fix that went net negative on
-//! that engine, see `docs/cip_accurate_rfc.md`). [`compare_ligands`] instead recurses
-//! branch-by-branch: two nodes are compared by their own key first, then -- only if
-//! that ties -- by their *ranked* children, position by position.
+//! that engine, see `docs/cip_accurate_rfc.md`).
+//!
+//! # Sphere-by-sphere, not one branch to completion before the next
+//!
+//! [`compare_ligands`] compares two ligand roots one *level* (sphere) at a time: level 0
+//! is the two roots' own keys; level 1 is their ranked children's own keys, compared
+//! position by position *without recursing into any position's own children first*.
+//! Only once an entire level ties completely across every position does the comparison
+//! advance to the next level. An earlier version instead resolved each position
+//! *fully* (recursing arbitrarily deep) before checking the next position -- depth-first
+//! when CIP requires breadth-first, and wrong whenever a later, shallow difference
+//! should decide the comparison before an earlier position's much deeper (and
+//! irrelevant) difference is even reached.
+//!
+//! Concretely, this is what the corpus's lone `triple_bond_dup` case exposed: comparing
+//! an ethynyl branch (`-C#CH`, whose own children are three carbons -- the real
+//! terminal carbon plus two triple-bond duplicates) against a carboxymethyl branch
+//! (`-CH2COOH`, whose own children are one carbon and two hydrogens) must be decided at
+//! *that* level -- second child C(6) beats second child H(1) -- without ever descending
+//! into the carboxyl group's oxygens several levels further down the carboxymethyl
+//! branch. The depth-first version dove into those oxygens first (since the *first*
+//! children on both sides tied on atomic number alone) and returned the wrong winner
+//! without ever checking the second children. Fixed by making the recursion genuinely
+//! level-order: each step advances *all* live position-pairs on both sides by exactly
+//! one sphere, together, and only descends past a level once that whole level has tied.
+//!
+//! Ranking children *within* one parent (via [`rank_children`], to establish which
+//! child is "position 0" vs "position 1" for the next level) is a separate,
+//! locally-scoped comparison problem -- ordering priority among a handful of siblings
+//! under a single node -- and legitimately recurses as deep as needed to resolve that;
+//! it lacks the "a shallow sibling difference must win" hazard the top-level
+//! ligand-vs-ligand comparison has, because it's ordering one node's own children
+//! against each other, not advancing two whole subtrees in lockstep.
 //!
 //! # Rule 1b, scoped
 //!
@@ -194,53 +224,145 @@ fn kind_label(kind: CipNodeKind) -> String {
     }
 }
 
-/// Compare two ligand branches recursively: own key first (Rules 1a/2), then --
-/// only if that ties -- ranked children position by position. See module docs for the
-/// full algorithm and its rationale.
+/// One slot in a level being compared: either a real digraph node, or padding for a
+/// position whose counterpart (established as corresponding by the previous level's tie)
+/// has more substituents than this side does at this exact spot. Padding with a
+/// phantom (atomic number 0, always childless) lets a substituent-*count* mismatch at
+/// any one position resolve through the same position-by-position own-key comparison as
+/// everything else, localized to the position it actually occurs at -- rather than
+/// flattening every parent's children into one combined list and comparing raw total
+/// lengths, which shifts every position *after* the mismatch out of alignment (found via
+/// the `aromatic_mancude` corpus bucket regressing hard under an earlier version of this
+/// function that did exactly that).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LevelSlot {
+    Node(NodeId),
+    Phantom,
+}
+
+fn slot_key(graph: &CipDigraph, slot: LevelSlot) -> (u8, Option<u16>) {
+    match slot {
+        LevelSlot::Node(n) => node_key(graph.molecule(), graph.node(n).kind),
+        LevelSlot::Phantom => (0, None),
+    }
+}
+
+/// A real node's own ranked children, as plain `NodeId`s (a phantom slot's "children"
+/// are always empty -- it never gets here since [`compare_ligands`] only calls this for
+/// `LevelSlot::Node`).
+fn ranked_child_ids(
+    graph: &mut CipDigraph,
+    node: NodeId,
+    ctx: &mut CompareContext,
+) -> Result<Vec<NodeId>, CipCompareError> {
+    let children = graph
+        .expand_children(node)
+        .map_err(CipCompareError::Digraph)?;
+    Ok(rank_children(graph, &children, ctx)?
+        .into_iter()
+        .flatten()
+        .collect())
+}
+
+/// Compare two ligand branches sphere by sphere: own key first (Rules 1a/2), then --
+/// only if that ties -- ranked children, one whole level at a time. See module docs
+/// ("Sphere-by-sphere...") for why this must be level-order rather than resolving one
+/// position's subtree to completion before checking its siblings.
 pub fn compare_ligands(
     graph: &mut CipDigraph,
     left: NodeId,
     right: NodeId,
     ctx: &mut CompareContext,
 ) -> Result<BranchComparison, CipCompareError> {
-    ctx.recursive_calls += 1;
-    if ctx.recursive_calls > ctx.max_recursive_calls {
-        return Err(CipCompareError::BudgetExceeded {
-            expanded_nodes: graph.nodes().len(),
-            recursive_calls: ctx.recursive_calls,
-        });
-    }
-
     let left_kind = graph.node(left).kind;
     let right_kind = graph.node(right).kind;
     let depth = graph.node(left).depth;
-    let left_key = node_key(graph.molecule(), left_kind);
-    let right_key = node_key(graph.molecule(), right_kind);
 
-    let key_cmp = cmp_key(left_key, right_key);
-    let (outcome, rule) = if key_cmp != Ordering::Equal {
-        let cmp = if key_cmp == Ordering::Greater {
-            BranchComparison::Higher
-        } else {
-            BranchComparison::Lower
-        };
-        (cmp, "1a/2")
-    } else {
-        let left_children = graph
-            .expand_children(left)
-            .map_err(CipCompareError::Digraph)?;
-        let right_children = graph
-            .expand_children(right)
-            .map_err(CipCompareError::Digraph)?;
+    let mut left_level = vec![LevelSlot::Node(left)];
+    let mut right_level = vec![LevelSlot::Node(right)];
+    let mut rule = "1a/2";
 
-        if left_children.is_empty() && right_children.is_empty() {
-            (BranchComparison::Equal, "leaf")
-        } else {
-            let left_groups = rank_children(graph, &left_children, ctx)?;
-            let right_groups = rank_children(graph, &right_children, ctx)?;
-            let cmp = compare_ranked(graph, &left_groups, &right_groups, ctx)?;
-            (cmp, "children")
+    let outcome = loop {
+        ctx.recursive_calls += 1;
+        if ctx.recursive_calls > ctx.max_recursive_calls {
+            return Err(CipCompareError::BudgetExceeded {
+                expanded_nodes: graph.nodes().len(),
+                recursive_calls: ctx.recursive_calls,
+            });
         }
+
+        // Invariant: left_level.len() == right_level.len() always -- any per-position
+        // substituent-count mismatch is padded with a Phantom slot at the position it
+        // originates (see the next_left/next_right construction below), never left to
+        // shift later positions out of alignment.
+        debug_assert_eq!(left_level.len(), right_level.len());
+        let n = left_level.len();
+
+        // Compare this whole level's own keys, position by position, *before*
+        // descending into any position's children -- a shallow difference at position
+        // 1 must win even if position 0 would only differ several spheres further down.
+        // A Phantom's key (0, None) loses to any real atom, so a substituent-count
+        // mismatch decides here too, via the same mechanism as an atomic-number
+        // difference.
+        let mut decided = None;
+        for i in 0..n {
+            let lk = slot_key(graph, left_level[i]);
+            let rk = slot_key(graph, right_level[i]);
+            match cmp_key(lk, rk) {
+                Ordering::Greater => {
+                    decided = Some(BranchComparison::Higher);
+                    break;
+                }
+                Ordering::Less => {
+                    decided = Some(BranchComparison::Lower);
+                    break;
+                }
+                Ordering::Equal => {}
+            }
+        }
+        if let Some(outcome) = decided {
+            break outcome;
+        }
+        if n == 0 {
+            rule = "leaf";
+            break BranchComparison::Equal;
+        }
+
+        // Whole level tied on own keys: expand to the next sphere. Each position's
+        // children are ranked *within that one parent* (a separate, locally-scoped
+        // comparison -- see module docs) before being placed into the next level;
+        // per-position padding (not a global flatten) keeps "position i" well-defined
+        // on both sides even when a tied pair's substituent counts differ.
+        rule = "children";
+        let mut next_left = Vec::new();
+        let mut next_right = Vec::new();
+        for i in 0..n {
+            let left_children = match left_level[i] {
+                LevelSlot::Node(node) => ranked_child_ids(graph, node, ctx)?,
+                LevelSlot::Phantom => Vec::new(),
+            };
+            let right_children = match right_level[i] {
+                LevelSlot::Node(node) => ranked_child_ids(graph, node, ctx)?,
+                LevelSlot::Phantom => Vec::new(),
+            };
+            let max_len = left_children.len().max(right_children.len());
+            for j in 0..max_len {
+                next_left.push(
+                    left_children
+                        .get(j)
+                        .map(|&n| LevelSlot::Node(n))
+                        .unwrap_or(LevelSlot::Phantom),
+                );
+                next_right.push(
+                    right_children
+                        .get(j)
+                        .map(|&n| LevelSlot::Node(n))
+                        .unwrap_or(LevelSlot::Phantom),
+                );
+            }
+        }
+        left_level = next_left;
+        right_level = next_right;
     };
 
     if let Some(trace) = ctx.trace.as_deref_mut() {
@@ -254,34 +376,6 @@ pub fn compare_ligands(
     }
 
     Ok(outcome)
-}
-
-/// Flatten two sides' ranked groups into priority-ordered sequences and compare
-/// position by position. Safe to pick any representative from a tied group at a given
-/// position: by construction, every member of a group compares `Equal` to every other
-/// member, so the outcome of comparing "some position N" doesn't depend on which
-/// member of its group was chosen to sit there.
-fn compare_ranked(
-    graph: &mut CipDigraph,
-    left_groups: &[Vec<NodeId>],
-    right_groups: &[Vec<NodeId>],
-    ctx: &mut CompareContext,
-) -> Result<BranchComparison, CipCompareError> {
-    let left_flat: Vec<NodeId> = left_groups.iter().flatten().copied().collect();
-    let right_flat: Vec<NodeId> = right_groups.iter().flatten().copied().collect();
-
-    let n = left_flat.len().min(right_flat.len());
-    for i in 0..n {
-        match compare_ligands(graph, left_flat[i], right_flat[i], ctx)? {
-            BranchComparison::Equal | BranchComparison::Unresolved => continue,
-            other => return Ok(other),
-        }
-    }
-    match left_flat.len().cmp(&right_flat.len()) {
-        Ordering::Greater => Ok(BranchComparison::Higher),
-        Ordering::Less => Ok(BranchComparison::Lower),
-        Ordering::Equal => Ok(BranchComparison::Equal),
-    }
 }
 
 /// Rank `children` into priority-ordered groups (highest first; multiple entries in

@@ -256,6 +256,20 @@ fn test_rule_1b_nitrile_duplicate_symmetry() {
 }
 
 #[test]
+fn test_ethynyl_vs_carboxymethyl_decided_at_shallow_sphere() {
+    // The corpus's lone triple_bond_dup case, and the concrete regression that exposed
+    // compare_ligands' original depth-first bug (see compare.rs's module docs): ethynyl
+    // (-C#CH, own children [C,C,C]) vs carboxymethyl (-CH2COOH, own children [C,H,H])
+    // must be decided by the *second* child (C beats H) without ever descending into
+    // the carboxyl group's oxygens under the first (tied, C-vs-C) child. A depth-first
+    // comparator reaches those oxygens first and gets this backwards. Verified against
+    // RDKit's modern rdCIPLabeler: atom 2 is S.
+    let (idx, code) = assign_one("C#C[C@H](CC(=O)O)NC(=O)c1cc2n(n1)CCN(CCC1CCNCC1)C2=O");
+    assert_eq!(idx.0, 2);
+    assert_eq!(code, CipCode::S);
+}
+
+#[test]
 fn test_rule_2_deuterium_beats_hydrogen() {
     // D > H (isotope Some(2) > None). Verified against RDKit: S.
     let (_, code) = assign_one("[C@H]([2H])(C)O");
