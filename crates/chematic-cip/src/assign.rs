@@ -19,8 +19,24 @@
 //! positions from [`crate::compare::rank_children`] -- reusing the exact swap-counting
 //! parity algorithm already correct in `assign_tetrahedral` (mirrored below, not
 //! redesigned), so this module doesn't reintroduce the order bug on its first day.
+//!
+//! # Physical ligands vs. duplicate nodes
+//!
+//! The digraph root's children are not always exactly the stereocenter's 4 physical
+//! neighbors: a multiple bond *at* the stereocenter itself (e.g. a P=N phosphazene
+//! center) adds one or more [`CipNodeKind::MultipleBondDuplicate`] siblings alongside the
+//! real neighbor -- 5 root children for one double bond, not 4. `stereo_neighbor_order`
+//! only ever names the 4 real physical neighbors (never a duplicate), so
+//! [`position_node_ids`] already only ever resolves to real `Atom`/`ImplicitHydrogen`
+//! nodes. What must NOT happen is treating a duplicate as if it were competing for one of
+//! those 4 slots: [`assign_one`] ranks the *entire* root-children set (duplicates
+//! included, since a duplicate's presence is real information for ranking a real
+//! neighbor's own priority), but only ever treats a tie as unresolvable when it's between
+//! two of the 4 *physical* positions -- a duplicate tying with anything doesn't block
+//! assignment. Ranks are then dense-remapped to `1..=4` before the swap-parity step,
+//! since a duplicate can occupy a rank slot between two physical positions.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use chematic_core::{AtomIdx, Chirality, CipCode, Molecule, STEREO_H_SENTINEL};
 
@@ -101,9 +117,6 @@ fn assign_one(
     let mut graph = CipDigraph::new(mol, idx, budget).map_err(map_digraph_err)?;
     let root = graph.root();
     let root_children = graph.expand_children(root).map_err(map_digraph_err)?;
-    if root_children.len() != 4 {
-        return Ok(None);
-    }
 
     let Some(position_nodes) = position_node_ids(&graph, &root_children, stereo_order) else {
         return Ok(None);
@@ -111,19 +124,41 @@ fn assign_one(
 
     let mut ctx = CompareContext::new();
     let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
-    if groups.iter().any(|g| g.len() > 1) {
-        return Err(SkipReason::Tied);
+
+    // A tie only blocks resolution when two of the 4 *physical* positions land in the
+    // same group -- a duplicate node tying with anything (another duplicate, or even a
+    // physical position) doesn't compete for a stereo_neighbor_order slot. See module
+    // docs ("Physical ligands vs. duplicate nodes").
+    let position_set: HashSet<NodeId> = position_nodes.iter().copied().collect();
+    for group in &groups {
+        if group.iter().filter(|n| position_set.contains(n)).count() > 1 {
+            return Err(SkipReason::Tied);
+        }
     }
 
-    // Highest-priority group first (rank_children's own convention) -> rank N down to
-    // rank 1, matching assign_tetrahedral's swap-counting convention below.
+    // Rank every node in every group (not just each group's first member) -- a duplicate
+    // can share a physical position's group, and that position's rank_of lookup below
+    // must still resolve. Highest-priority group first (rank_children's own convention)
+    // -> rank N down to rank 1, matching assign_tetrahedral's swap-counting convention.
     let n = groups.len() as u8;
     let mut rank_of: HashMap<NodeId, u8> = HashMap::new();
     for (group_idx, group) in groups.iter().enumerate() {
-        rank_of.insert(group[0], n - group_idx as u8);
+        for &node in group {
+            rank_of.insert(node, n - group_idx as u8);
+        }
     }
 
-    let ranks: Vec<u8> = position_nodes.iter().map(|node| rank_of[node]).collect();
+    let raw_ranks: Vec<u8> = position_nodes.iter().map(|node| rank_of[node]).collect();
+    // Dense-remap to 1..=4: a duplicate sibling (e.g. from a double bond at the
+    // stereocenter itself) can occupy a rank slot between two physical positions, so
+    // their raw ranks aren't necessarily {1,2,3,4} contiguously.
+    let mut distinct_ranks = raw_ranks.clone();
+    distinct_ranks.sort_unstable();
+    distinct_ranks.dedup();
+    let ranks: Vec<u8> = raw_ranks
+        .iter()
+        .map(|&r| distinct_ranks.iter().position(|&x| x == r).unwrap() as u8 + 1)
+        .collect();
 
     // Mirrors crates/chematic-chem/src/cip.rs::assign_tetrahedral's parity computation
     // verbatim (already correct there, fixed in d0e726b) -- only the source of
