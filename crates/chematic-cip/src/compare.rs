@@ -190,6 +190,26 @@ pub struct CompareContext<'t> {
     /// `compare_ligands` calls (see `rank_children`'s body) so each recorded
     /// `DecisionStep` can be tagged with the sibling group it belongs to.
     ranking_parent: Option<NodeId>,
+    /// Count of Rule-1a/2 key comparisons where at least one side's `AtomicNumberKey` is
+    /// `Rational` -- a pure "path reached" counter (see [`Self::fractional_decisions`] for
+    /// the stricter, load-bearing one). Incremented in the instrumented `cmp_fn` closure
+    /// `compare_ligands` passes to `compare_by_level`, not inside `cmp_key` itself (which
+    /// stays pure and independently unit-tested) or inside `compare_by_level` (which stays
+    /// fully generic over `K`, with no MANCUDE-specific knowledge).
+    pub fractional_comparisons: u64,
+    /// Count of Rule-1a/2 key comparisons where the fraction *itself* decided the
+    /// ordering -- i.e. collapsing the `Rational` side to its integer part would have
+    /// produced a different (or tied) result. Deliberately **not** "non-Equal and either
+    /// side is Rational": that naive definition fires even when an element difference
+    /// alone decides it (e.g. `Rational(6/1)` vs `Integral(8)`, carbon vs oxygen), which
+    /// would misrepresent a fraction as load-bearing when it did nothing. On the frozen
+    /// corpus this is expected to be **0** -- consistent with Milestone 3B-1b's own
+    /// attribution finding (byte-identical output with/without `MancudeContext` attached)
+    /// -- and 0 is the *correct* result here, not a gap to close. A future nonzero value
+    /// is exactly Milestone 3B-2's own resumption condition #1 ("a new corpus exercises a
+    /// case where fractional MANCUDE actually changes a ranking"); see
+    /// `docs/cip_accurate_rfc.md`'s Milestone 3B closeout entry.
+    pub fractional_decisions: u64,
 }
 
 impl Default for CompareContext<'_> {
@@ -205,6 +225,8 @@ impl<'t> CompareContext<'t> {
             max_recursive_calls: 1_000_000,
             trace: None,
             ranking_parent: None,
+            fractional_comparisons: 0,
+            fractional_decisions: 0,
         }
     }
 
@@ -214,6 +236,8 @@ impl<'t> CompareContext<'t> {
             max_recursive_calls: 1_000_000,
             trace: Some(trace),
             ranking_parent: None,
+            fractional_comparisons: 0,
+            fractional_decisions: 0,
         }
     }
 }
@@ -272,6 +296,41 @@ fn cmp_key(a: &(AtomicNumberKey, Option<u16>), b: &(AtomicNumberKey, Option<u16>
         (None, Some(_)) => Ordering::Less,
         (None, None) => Ordering::Equal,
     }
+}
+
+/// `key`, with a `Rational` atomic-number half collapsed to its integer part -- used only
+/// to detect whether a fraction *decided* a comparison (see
+/// `CompareContext::fractional_decisions`), never for a real ranking decision.
+fn collapse_to_integer(key: (AtomicNumberKey, Option<u16>)) -> (AtomicNumberKey, Option<u16>) {
+    let atomic_number = match key.0 {
+        AtomicNumberKey::Integral(n) => AtomicNumberKey::Integral(n),
+        AtomicNumberKey::Rational(r) => {
+            AtomicNumberKey::Integral((r.numerator() / r.denominator()) as u8)
+        }
+    };
+    (atomic_number, key.1)
+}
+
+/// `cmp_key`, instrumented to update [`CompareContext::fractional_comparisons`]/
+/// [`CompareContext::fractional_decisions`] -- kept as a thin wrapper at this one call
+/// site (not inside `cmp_key` itself, which stays pure and independently unit-tested, and
+/// not inside `compare_by_level`, which stays fully generic over `K` with no
+/// MANCUDE-specific knowledge).
+fn cmp_key_instrumented(
+    a: &(AtomicNumberKey, Option<u16>),
+    b: &(AtomicNumberKey, Option<u16>),
+    ctx: &mut CompareContext,
+) -> Ordering {
+    let ordering = cmp_key(a, b);
+    let fractional_involved =
+        matches!(a.0, AtomicNumberKey::Rational(_)) || matches!(b.0, AtomicNumberKey::Rational(_));
+    if fractional_involved {
+        ctx.fractional_comparisons += 1;
+        if cmp_key(&collapse_to_integer(*a), &collapse_to_integer(*b)) != ordering {
+            ctx.fractional_decisions += 1;
+        }
+    }
+    ordering
 }
 
 fn kind_label(kind: CipNodeKind) -> String {
@@ -354,7 +413,7 @@ fn compare_by_level<K>(
     right: NodeId,
     ctx: &mut CompareContext,
     key_fn: impl Fn(&CipDigraph, LevelSlot) -> K + Copy,
-    cmp_fn: impl Fn(&K, &K) -> Ordering + Copy,
+    cmp_fn: impl Fn(&K, &K, &mut CompareContext) -> Ordering + Copy,
 ) -> Result<LevelOutcome<K>, CipCompareError> {
     let mut left_level = vec![LevelSlot::Node(left)];
     let mut right_level = vec![LevelSlot::Node(right)];
@@ -379,7 +438,7 @@ fn compare_by_level<K>(
         for i in 0..n {
             let lk = key_fn(graph, left_level[i]);
             let rk = key_fn(graph, right_level[i]);
-            match cmp_fn(&lk, &rk) {
+            match cmp_fn(&lk, &rk, ctx) {
                 Ordering::Greater => {
                     decided = Some((BranchComparison::Higher, lk, rk));
                     break;
@@ -450,18 +509,24 @@ pub fn compare_ligands(
     let right_kind = graph.node(right).kind;
     let depth = graph.node(left).depth;
 
-    let (outcome, rule) =
-        match compare_by_level(graph, left, right, ctx, rule1a2_slot_key, cmp_key)? {
-            LevelOutcome::Decided(c, lk, rk) => {
-                let rule = if ctx.trace.is_some() {
-                    format!("1a/2 ({lk:?} vs {rk:?})")
-                } else {
-                    String::new()
-                };
-                (c, rule)
-            }
-            LevelOutcome::FullyTied => (BranchComparison::Equal, "leaf".to_string()),
-        };
+    let (outcome, rule) = match compare_by_level(
+        graph,
+        left,
+        right,
+        ctx,
+        rule1a2_slot_key,
+        cmp_key_instrumented,
+    )? {
+        LevelOutcome::Decided(c, lk, rk) => {
+            let rule = if ctx.trace.is_some() {
+                format!("1a/2 ({lk:?} vs {rk:?})")
+            } else {
+                String::new()
+            };
+            (c, rule)
+        }
+        LevelOutcome::FullyTied => (BranchComparison::Equal, "leaf".to_string()),
+    };
 
     let ranking_parent = ctx.ranking_parent;
     if let Some(trace) = ctx.trace.as_deref_mut() {

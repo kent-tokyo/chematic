@@ -19,3 +19,8 @@ chematic-perception = { path = "../chematic-perception", version = "0.4.29" }
 chematic-chem   = { path = "../chematic-chem",   version = "0.4.29" }
 chematic-smiles = { path = "../chematic-smiles", version = "0.4.29" }
 serde_json      = "1.0"
+criterion       = { version = "0.8", features = ["html_reports"] }
+
+[[bench]]
+name = "mancude_overhead"
+harness = false

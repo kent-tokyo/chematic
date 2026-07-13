@@ -67,6 +67,16 @@ pub struct CipDigraph<'m> {
     budget: CipBudget,
     node_count: usize,
     expansion_count: usize,
+    /// Count of constructed `MultipleBondDuplicate` nodes whose `atomic_number` is
+    /// `AtomicNumberKey::Rational` -- i.e. the MANCUDE fractional-atomic-number path was
+    /// actually exercised, not just wired in. A pure "path reached" counter: it says
+    /// nothing about whether the fraction ever *decided* a comparison (see
+    /// `CompareContext::fractional_decisions` for that). Exists because Milestone 3B's
+    /// fractional machinery was kept-but-measured-inert on the available corpus (see
+    /// `docs/cip_accurate_rfc.md`'s Milestone 3B closeout entry) -- "correct and never
+    /// fired" needs a test that can tell the difference from "correct and never even
+    /// reached."
+    fractional_nodes_emitted: u64,
 }
 
 impl<'m> CipDigraph<'m> {
@@ -112,6 +122,7 @@ impl<'m> CipDigraph<'m> {
             budget,
             node_count: 0,
             expansion_count: 0,
+            fractional_nodes_emitted: 0,
         };
         // Root has no incoming edge; the bond order passed here is unused (no edge is
         // created when `parent` is `None`).
@@ -145,6 +156,13 @@ impl<'m> CipDigraph<'m> {
 
     pub fn molecule(&self) -> &'m Molecule {
         self.mol
+    }
+
+    /// How many constructed `MultipleBondDuplicate` nodes carry a real MANCUDE fraction
+    /// (`AtomicNumberKey::Rational`), i.e. exercised the path Milestone 3B-1a/1b added --
+    /// see the field doc for what this does and does not prove.
+    pub fn fractional_nodes_emitted(&self) -> u64 {
+        self.fractional_nodes_emitted
     }
 
     /// Compute (or return the cached) children of `node`. Duplicate and implicit-H
@@ -331,6 +349,9 @@ impl<'m> CipDigraph<'m> {
             edge_id
         });
         let atomic_number = self.atomic_number_for(kind);
+        if matches!(atomic_number, AtomicNumberKey::Rational(_)) {
+            self.fractional_nodes_emitted += 1;
+        }
         self.nodes.push(CipNode {
             id: node_id,
             kind,
@@ -525,5 +546,46 @@ mod tests {
             matches!(duplicate.atomic_number, AtomicNumberKey::Integral(_)),
             "no MancudeContext attached -- must stay the existing plain-integer behavior"
         );
+    }
+
+    /// Firing test for Milestone 3B's kept-but-measured-inert fractional path (see
+    /// `docs/cip_accurate_rfc.md`'s Milestone 3B closeout entry): "correct and never
+    /// fired" needs a test that can tell the difference from "correct and never even
+    /// reached." Uses a curated `aromatic_mancude`-bucket corpus molecule (atom 13 of
+    /// `validation/cip_label_corpus.jsonl`'s first `aromatic_mancude` row) whose
+    /// stereocenter is directly bonded to a MANCUDE-typed phenol ring, run through the
+    /// same live path (`prepare_kekule_form` + `new_with_mancude` + `rank_children`) as
+    /// `assign_cip_accurate_experimental`.
+    #[test]
+    fn live_path_fires_fractional_nodes_and_comparisons_on_curated_corpus_molecule() {
+        use crate::compare::{CompareContext, rank_children};
+
+        let mol =
+            chematic_smiles::parse("C=CCCC[C@H](c1ccc(O)cc1)[C@@](C)(CC)c1ccc(O)cc1").unwrap();
+        let (kekule_mol, mancude) = prepare_kekule_form(&mol).unwrap();
+        let atom13 = AtomIdx(13);
+        let budget = CipBudget::default_budget();
+        let mut graph =
+            CipDigraph::new_with_mancude(&kekule_mol, atom13, budget, &mancude).unwrap();
+        let root = graph.root();
+        let root_children = graph.expand_children(root).unwrap();
+
+        let mut ctx = CompareContext::new();
+        rank_children(&mut graph, &root_children, &mut ctx).unwrap();
+
+        assert!(
+            graph.fractional_nodes_emitted() > 0,
+            "expected at least one MultipleBondDuplicate node with a MANCUDE fraction on \
+             this molecule's phenol ring"
+        );
+        assert!(
+            ctx.fractional_comparisons > 0,
+            "expected at least one Rule-1a/2 comparison to reach a fractional key"
+        );
+        // fractional_decisions is NOT asserted > 0 here: this molecule's phenol rings are
+        // pure-carbon-neighborhood positions (Rational(6/1), denominator 1), so the
+        // fraction never actually decides anything -- 0 is the correct, expected value,
+        // consistent with Milestone 3B-1b's own attribution finding. See
+        // `CompareContext::fractional_decisions`'s doc comment.
     }
 }

@@ -492,7 +492,155 @@ started resolving 2 of those rows correctly. Fixed by adding a new stable refere
 point, `assign_cip_accurate_experimental_without_mancude` (reproduces the
 pre-Milestone-3B-1b digraph shape exactly, on demand, regardless of how the live engine
 changes), and rebasing the scope-determination gate onto it — a corpus row's structural
-classification should never depend on today's engine's current success rate.
+classification should never depend on today's engine's current success rate. Note this
+reference point is stable *relative to MANCUDE* specifically, not frozen forever: it still
+runs through `compare.rs`'s plain-integer ranking path, so an unrelated future ranking
+change (e.g. Milestone 4's later-sequence-rule work) could still move it.
+
+**Milestone 3B closeout.** Four follow-ups the user required before pushing 3B-1b, run
+against the real ~5,000-molecule `SMILES.csv` (not the 155-row residual alone) via two new
+checked-in, reusable tools (formalizing this session's scratchpad verification, since every
+future full-corpus CIP gate needs the same rigor again):
+`crates/chematic-cip/examples/corpus_snapshot.rs` (snapshots either engine mode's output
+per stereocenter, with per-molecule wall-clock timing) and
+`scripts/cip_accurate_full_corpus_report.py` (regenerates fresh RDKit oracle labels and
+prints a full accounting: row counts at every filtering stage, both engines' correctness,
+and two *independently computed* regression counts).
+
+1. **Numeric reconciliation — both prior discrepancies real, now explained, not guessed.**
+   - **4188 vs 4186** is `input_rows` (the raw snapshot-union row count, every candidate
+     stereocenter chematic considers, assigned or skipped) vs `oracle_assigned_rows` (the
+     subset RDKit's `rdCIPLabeler` actually assigns a label to) — `excluded_rows` /
+     `oracle_unassigned_rows` = **2**, confirmed directly by
+     `cip_accurate_full_corpus_report.py`.
+   - **4055 vs 4047**: 4055 is `corpus_report.rs`'s extrapolation
+     (`total_stereocenters − mismatches + accurate_match_on_residual`, i.e. it *assumes*
+     `AccurateExperimental` agrees with `FastApproximate`/modern on every stereocenter
+     outside the 155-row residual — an assumption that test structurally cannot check).
+     4047 is a direct full-set measurement of `..._without_mancude`. The gap is real:
+     a targeted query (baseline-vs-fresh-oracle disagreements outside the 155-row residual)
+     found **exactly 8** — matching the gap exactly, not a coincidence:
+     ```
+     CN(C)[C@@H]1C(=O)C(C(N)=O)=C(O)[C@@]2(O)C(=O)C3C(=O)c4c(O)ccc(Cl)c4[C@@](C)(O)C3CC12  atom 27: baseline=R modern=S
+     CN1CC[C@]23c4c5ccc(O)c4O[C@H]2[C@@H](O)C=C[C@H]3[C@H]1C5                                atom 4:  baseline=R modern=S
+     COc1ccc2c3c1O[C@H]1[C@@H](O)C=C[C@H]4[C@@H](C2)N(C)CC[C@@]341                            atom 21: baseline=R modern=S
+     C[C@H](CCCc1ccccc1)Oc1cc(O)c2c(c1)N[C@@H](C)[C@@H]1CC[C@@H](O)C[C@@H]21                  atom 28: baseline=S modern=R
+     O=C(O)CC/C=C\C[C@@H]1CO[C@H](c2ccccc2Cl)O[C@@H]1c1ccccc1O                                atom 20: baseline=R modern=S
+     Oc1cc(C(F)(F)F)c2cc3c(cc2n1)NC[C@@H]1CCCC[C@H]31                                         atom 22: baseline=R modern=S
+     Oc1cc(C(F)(F)F)c2cc3c(cc2n1)NC[C@@H]1CCC[C@H]31                                          atom 21: baseline=R modern=S
+     Oc1cc(C(F)(F)F)c2cc3c(cc2n1)NC[C@H]1CCCC[C@H]31                                          atom 22: baseline=R modern=S
+     ```
+     All are complex fused polycyclic multi-stereocenter alkaloid-shaped molecules — a
+     pre-existing gap in `AccurateExperimental` (present before Milestone 3B-1b, unrelated
+     to MANCUDE, and unaffected by it either way) that the residual-only extrapolation
+     structurally could not see. Not root-caused or fixed this round (out of this
+     closeout's scope; recorded for Milestone 4 to pick up if it recurs there).
+
+   Final results, reported as three explicit comparisons rather than one bare percentage:
+   ```
+   vs FastApproximate (chematic_chem::assign_cip, cip_ground_truth.py): 4031/4186 (96.30%)
+   vs pre-M3B stable reference (..._without_mancude):    4047/4186 -> 4150/4186 (+103)
+   Full-corpus modern-oracle agreement (candidate):      4150/4186 (99.14%)
+   ```
+   Regressions confirmed **0 by both independently-computed methods**:
+   `regressions_from_diff` (Method A — only the 103 rows where the two snapshots differ
+   textually, each classified via a fresh oracle label: 103 fixes, 0 regressions, 0
+   neutral) and `regressions_from_full_recompute` (Method B — an independent full-set
+   oracle re-derivation over all 4186 rows, not reusing Method A's diff set at all: 0).
+   `corpus_sha256=1c47371d…`, `rdkit_version=2026.03.3`.
+
+2. **Firing diagnostics — "correct and never fired" now has a test that can tell the
+   difference from "correct and never even reached."** Added `CipDigraph::
+   fractional_nodes_emitted` (count of constructed `MultipleBondDuplicate` nodes carrying
+   a real MANCUDE fraction) and `CompareContext::fractional_comparisons`/
+   `fractional_decisions`, the latter **deliberately load-bearing**: it counts a
+   comparison only when the fraction *itself* decides the ordering (collapsing the
+   `Rational` side to its integer part would change the result), not merely "a Rational
+   operand was involved and the comparison wasn't a tie" (that naive definition would fire
+   on e.g. `Rational(6/1)` vs `Integral(8)`, where carbon-vs-oxygen decides it and the
+   fraction does nothing — reporting that as "a fractional decision" would directly
+   contradict the attribution finding above). A curated-corpus test
+   (`digraph.rs::live_path_fires_fractional_nodes_and_comparisons_on_curated_corpus_molecule`,
+   using the live `prepare_kekule_form` + `new_with_mancude` + `rank_children` path on the
+   first `aromatic_mancude`-bucket corpus molecule) confirms `fractional_nodes_emitted > 0`
+   and `fractional_comparisons > 0` — the path is genuinely reached, not dead code. It does
+   **not** assert `fractional_decisions > 0`: 0 is the *correct, expected* value here,
+   consistent with the byte-identical attribution finding above, not a gap to close. A
+   future nonzero `fractional_decisions` on some new corpus is exactly Milestone 3B-2's
+   resumption condition #1 below — this counter doubles as its automated tripwire.
+
+3. **Performance — a real, measured 8-14x-then-4-5x story, not the originally-stated <1%
+   bar.** The first full-corpus timing pass found `assign_cip_accurate_experimental`
+   ~10x slower in total, ~14x slower at p95, than `..._without_mancude`
+   (1676ms vs 162ms total; 537us vs 39us median; 5487us vs 384us p95, over 1286
+   molecules). Decomposing `prepare_kekule_form` on the worst offenders (large
+   multi-aromatic-ring oligopeptides, up to 182 atoms) found the entire cost was
+   `MancudeContext::compute`'s `ring_bond_set` calling `chematic_perception::find_sssr` on
+   the *whole* molecule just to answer a boolean "is this bond in some ring" — 30.7ms on
+   the worst molecule vs 27us for `kekulize` itself, a ~1000x difference. SSSR computes a
+   full minimum cycle basis; this call site only ever needed ring-bond *membership*, a
+   strictly weaker question answerable by bridge-edge (cut-edge) detection — a bond lies on
+   some cycle iff it is not a bridge, a standard graph-theory fact independent of which
+   cycle basis a full ring-perception algorithm would choose. Replaced with a single O(V+E)
+   DFS (`mancude.rs::ring_bond_set`, Tarjan's bridge-finding), verified **byte-identical**
+   output across all 4188 rows both before and after (the full `chematic-cip` test suite,
+   including the 98/98 Kekulé-form and renumbering invariance sweeps and the
+   phenylpyridine/bipyridine 2-separate-components regression guard, stayed green
+   throughout). This dropped the ratio to **~4-5x** (743ms vs 162ms total; 65us vs 39us
+   median — ~1.7x; 1537us vs 384us p95 — ~4.0x).
+
+   That remaining ~4-5x is **not removable without reverting the +103 accuracy gain**: it
+   is the direct cost of `kekulize()` + walking a digraph with real
+   `MultipleBondDuplicate` leaves for every aromatic bond — exactly the structural
+   Kekulé-respelling effect the attribution finding above identifies as the entire source
+   of the improvement. A criterion benchmark
+   (`crates/chematic-cip/benches/mancude_overhead.rs`, 10 unique `aromatic_mancude`-bucket
+   molecules, following the existing `chematic-perception`/`sssr_bench.rs` pattern and its
+   own precedent of a 47x SSSR regression that went undetected for lack of exactly this
+   kind of coverage) reproduces the same ~3.8x ratio on the in-repo corpus and is now a
+   permanent, reviewable part of this crate's own `cargo bench` gate — its
+   regression-detection value (catching a *future* accidental blowup, the same shape as
+   this round's own SSSR finding) is what matters going forward, not a specific latency
+   number: `assign_cip_accurate_experimental` is `publish = false`, a validation harness
+   for measuring accuracy against the corpus, not `chematic_chem::assign_cip()`'s
+   production path — sub-millisecond-per-molecule is fine for that purpose. The
+   lazy-MancudeContext-construction fallback considered as a contingency was **not**
+   built: it can only skip work for the ~18% of stereocenter-bearing molecules with zero
+   aromatic atoms (measured directly: 1055/1286 have ≥1), far short of closing a 4-5x gap
+   that is legitimate accuracy-earning work on the rest.
+
+4. **Fractional MANCUDE machinery: kept, ratified.** Unlike Milestone 3A's Rule 1b
+   (reverted: ~2x cost for zero benefit), fractional MANCUDE has no material efficiency
+   cost of its own (the ~4-5x above is the Kekulé-respelling structural effect, not the
+   fractional values, which the byte-identical decomposition already isolated) and matches
+   RDKit's own real representation — RDKit's `calcFracAtomNums` also stores the fraction on
+   the duplicate/bond-adjacent node, never the real atom, exactly this implementation's
+   `AtomicNumberKey` placement. Kept rather than reverted, ratified by the user with this
+   session's added firing-diagnostics floor (deliverable 2) as the condition for "correct
+   and inert" to remain a defensible claim rather than an unverified one.
+
+**Milestone 3B-2 — deferred, not deleted.** The original goal was resonance-component
+analysis to make fractional MANCUDE numbers actually decide rankings (closing the
+aromatic residual the fractional values were meant to fix). Empirically, on this corpus,
+the *structural* Kekulé-respelling fix alone already clears the ≥98% gate (and the ≥99%
+one) — fractional MANCUDE contributes exactly 0/4188 label changes (the attribution
+finding above), so 3B-2's premise (fractional numbers are needed to resolve the residual)
+is false on the data available to test against. Proceeding to 3B-2 now would add real
+complexity to solve a problem the numbers say doesn't currently exist. Deferred with
+explicit resumption conditions — any one of these reopens it:
+- a new corpus exercises a case where fractional MANCUDE actually changes a ranking
+  (`CompareContext::fractional_decisions > 0` on some real molecule is the automated
+  tripwire for this)
+- a chematic-vs-RDKit disagreement is traced specifically to a missing/wrong fractional Z
+- aromatic/Kekulé ranking invariance breaks on some future case
+- after Milestone 4, a MANCUDE-attributable residual remains a major bucket
+- RDKit's own MANCUDE implementation changes and chematic needs to track it
+
+**Next: Milestone 4 direction (not started this round).** ROI ordering, not resonance
+analysis: **M4A** — reclassify the 8 still-uncharacterized residual rows into Rule 3/4
+territory; **M4B** — Rule 5 (pseudoasymmetry) for the 16 pseudoasymmetric residual cases;
+**M4C** — phosphorus (9 wrong + 2 tied). 99.5% (4166/4186) needs 16 more correct beyond
+the current 4150 — M4A alone (8) plus roughly half of M4B or M4C would clear it.
 
 **Milestone 4 — Stereo-dependent rules + phosphorus.** Rule 5 / pseudoasymmetry
 multi-pass resolution, plus the frozen corpus's 15 phosphorus stereocenters. Kept last

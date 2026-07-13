@@ -22,8 +22,17 @@
 //! two separate aromatic rings joined by one exocyclic single bond (e.g. biphenyl-shaped
 //! molecules) would incorrectly merge into a single resonance part through that connecting
 //! bond. RDKit's own `VisitPart` explicitly skips non-ring bonds
-//! (`if (!mol.isInRing(bond)) continue;`) -- this module does the same, via
-//! `chematic_perception::find_sssr`.
+//! (`if (!mol.isInRing(bond)) continue;`) -- this module does the same, via a local
+//! bridge-edge (cut-edge) detection in `ring_bond_set` (an edge lies on some ring iff it is
+//! not a bridge -- a standard graph-theory fact, independent of which particular cycle
+//! basis a ring-perception algorithm would choose). Originally implemented via
+//! `chematic_perception::find_sssr`, which answers a strictly harder question (an actual
+//! minimum cycle basis, with real ring membership) than this call site needs (a boolean
+//! per bond) -- profiling `prepare_kekule_form` against the full corpus found SSSR
+//! dominating its cost entirely (tens of milliseconds on large multi-ring molecules like
+//! oligopeptides, vs microseconds for `kekulize` itself), 100% new cost relative to the
+//! pre-Milestone-3B-1b engine. Replaced with an O(V+E) DFS bridge search; see the
+//! Milestone 3B closeout entry in `docs/cip_accurate_rfc.md` for the measurement.
 //!
 //! **The owner, not the represented atom, carries the fraction.** A
 //! [`crate::node::CipNodeKind::MultipleBondDuplicate`] node sitting in atom `i`'s own
@@ -92,7 +101,6 @@ use std::collections::HashSet;
 
 use chematic_core::kekulization::{KekuleResult, atom_must_be_matched, build_kekule_result};
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, implicit_hcount};
-use chematic_perception::find_sssr;
 
 use crate::rational::RationalAtomicNumber;
 
@@ -211,20 +219,121 @@ enum SeedType {
     Other,
 }
 
-/// A bond is a ring bond iff some SSSR ring's atom cycle contains both endpoints as
-/// consecutive members. Topology-only (independent of bond order), so it's safe to
-/// compute on either the aromatic or Kekulé-respelled form of the same molecule.
+/// Bond orders SSSR/ring-perception treats as capable of forming a ring at all --
+/// mirrors `chematic_perception::sssr`'s private `is_ring_eligible` (kept in sync by
+/// inspection; duplicated rather than exposed as new public API for one boolean check).
+/// Zero-order/Dative/Query bonds don't participate in ring topology (RDKit PR #9118).
+fn is_ring_eligible(order: BondOrder) -> bool {
+    matches!(
+        order,
+        BondOrder::Single
+            | BondOrder::Double
+            | BondOrder::Triple
+            | BondOrder::Quadruple
+            | BondOrder::Aromatic
+            | BondOrder::Up
+            | BondOrder::Down
+    )
+}
+
+/// A bond is a ring bond iff it lies on some cycle -- equivalently, iff it is *not* a
+/// bridge (cut edge) of the molecular graph, a standard graph-theory fact independent of
+/// which particular cycle basis a full ring-perception algorithm would pick. Computed via
+/// a single O(V+E) DFS (bridge-finding / low-link, Tarjan's algorithm), not
+/// `chematic_perception::find_sssr` (a full minimum cycle basis -- see this module's docs
+/// for why that was a real, measured perf cost this call site never needed). Topology-only
+/// (independent of bond order beyond ring-eligibility), so it's safe to compute on either
+/// the aromatic or Kekulé-respelled form of the same molecule.
 fn ring_bond_set(mol: &Molecule) -> HashSet<(u32, u32)> {
-    let sssr = find_sssr(mol);
-    let mut set = HashSet::new();
-    for ring in sssr.rings() {
-        for i in 0..ring.len() {
-            let a = ring[i].0;
-            let b = ring[(i + 1) % ring.len()].0;
-            set.insert((a.min(b), a.max(b)));
+    let n = mol.atom_count();
+    let mut disc: Vec<Option<u32>> = vec![None; n];
+    let mut low: Vec<u32> = vec![0; n];
+    let mut timer: u32 = 0;
+    let mut ring_bonds: HashSet<(u32, u32)> = HashSet::new();
+
+    // Iterative DFS (avoids recursion-depth concerns on long unbranched chains). Each
+    // frame tracks the atom being visited, the bond it was reached through (skipped when
+    // re-scanning neighbors, so a genuine 2-atom cycle via a *different* bond between the
+    // same pair is still detected), and where to resume its neighbor list.
+    struct Frame {
+        atom: AtomIdx,
+        parent_atom: Option<AtomIdx>,
+        arrival_bond: Option<BondIdx>,
+        neighbors: Vec<(AtomIdx, BondIdx)>,
+        next: usize,
+    }
+
+    for start in 0..n {
+        if disc[start].is_some() {
+            continue;
+        }
+        disc[start] = Some(timer);
+        low[start] = timer;
+        timer += 1;
+        let start_atom = AtomIdx(start as u32);
+        let mut stack = vec![Frame {
+            atom: start_atom,
+            parent_atom: None,
+            arrival_bond: None,
+            neighbors: mol
+                .neighbors(start_atom)
+                .filter(|&(_, bidx)| is_ring_eligible(mol.bond(bidx).order))
+                .collect(),
+            next: 0,
+        }];
+
+        while let Some(frame) = stack.last_mut() {
+            if frame.next >= frame.neighbors.len() {
+                let finished = stack.pop().unwrap();
+                if let Some(parent) = finished.parent_atom {
+                    let pi = parent.0 as usize;
+                    let ui = finished.atom.0 as usize;
+                    low[pi] = low[pi].min(low[ui]);
+                    // Tree edge (parent, finished.atom) is a ring bond iff it is NOT a
+                    // bridge: low[child] <= disc[parent] means the child's subtree can
+                    // reach back to `parent` (or higher), so this edge lies on a cycle.
+                    if low[ui] <= disc[pi].unwrap() {
+                        let a = parent.0.min(finished.atom.0);
+                        let b = parent.0.max(finished.atom.0);
+                        ring_bonds.insert((a, b));
+                    }
+                }
+                continue;
+            }
+            let (v, bidx) = frame.neighbors[frame.next];
+            frame.next += 1;
+            if Some(bidx) == frame.arrival_bond {
+                continue;
+            }
+            let u = frame.atom;
+            let vi = v.0 as usize;
+            if let Some(vdisc) = disc[vi] {
+                // Back edge: undirected-graph DFS has no cross edges, so any already-
+                // discovered neighbor (other than the one we arrived through) is
+                // necessarily an ancestor on the current path -- always a real cycle.
+                let ui = u.0 as usize;
+                low[ui] = low[ui].min(vdisc);
+                let a = u.0.min(v.0);
+                let b = u.0.max(v.0);
+                ring_bonds.insert((a, b));
+            } else {
+                disc[vi] = Some(timer);
+                low[vi] = timer;
+                timer += 1;
+                stack.push(Frame {
+                    atom: v,
+                    parent_atom: Some(u),
+                    arrival_bond: Some(bidx),
+                    neighbors: mol
+                        .neighbors(v)
+                        .filter(|&(_, b)| is_ring_eligible(mol.bond(b).order))
+                        .collect(),
+                    next: 0,
+                });
+            }
         }
     }
-    set
+    ring_bonds
 }
 
 fn is_ring_bond(ring_bonds: &HashSet<(u32, u32)>, a: AtomIdx, b: AtomIdx) -> bool {
