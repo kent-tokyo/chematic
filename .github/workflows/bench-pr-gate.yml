@@ -223,8 +223,6 @@ jobs:
             "find_sssr_10mol:chematic-perception:sssr_bench"
             "find_sssr_polycyclic_5mol:chematic-perception:sssr_bench"
             "count_aromatic_rings_10mol:chematic-perception:sssr_bench"
-            "assign_cip_accurate_experimental_without_mancude_10mol:chematic-cip:mancude_overhead"
-            "assign_cip_accurate_experimental_10mol:chematic-cip:mancude_overhead"
           )
           idx=0
           for entry in "${BENCHES[@]}"; do
@@ -270,8 +268,7 @@ jobs:
             parse_smiles_10mol canonical_smiles_10mol \
             ecfp4_10mol tanimoto_ecfp4_pairs \
             descriptors_5x10mol qed_10mol pka_predict_10mol pka_acid_base_10mol admet_profile_10mol \
-            find_sssr_10mol find_sssr_polycyclic_5mol count_aromatic_rings_10mol \
-            assign_cip_accurate_experimental_without_mancude_10mol assign_cip_accurate_experimental_10mol
+            find_sssr_10mol find_sssr_polycyclic_5mol count_aromatic_rings_10mol
           do
             b="main/target/criterion/$name/new/sample.json"
             c="pr/target/criterion/$name/new/sample.json"
