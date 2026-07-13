@@ -304,8 +304,125 @@ Verified zero production behavior change: `corpus_report.rs` and
 `NeedsLaterSequenceRule=24`/`OK=17`); `chematic-core`'s full kekulization test suite
 (71 tests) is unaffected by widening `atom_must_be_matched`/`build_kekule_result` to
 `pub`. This PR does not touch `CipNodeKind`, `digraph.rs`, or `compare.rs` — Milestone
-3B-1 (wiring `RationalAtomicNumber` into a new `MancudeDuplicate` node kind) is a
-separate future plan, informed by this round's evidence rather than guessed ahead of it.
+3B-1 (wiring `RationalAtomicNumber` into `MultipleBondDuplicate`) is a separate future
+plan, informed by this round's evidence rather than guessed ahead of it.
+
+**Milestone 3B-1a — RDKit-compatible MANCUDE fractional atomic numbers, node
+representation only (comparator wiring deferred to 3B-1b).** PR (2) of the suggested
+order above. Two design corrections surfaced and resolved before/during this round, both
+verified against RDKit's actual `Code/GraphMol/CIPLabeler/Mancude.{h,cpp}` source, not
+paraphrase:
+
+- **`AtomicNumberKey` on `MultipleBondDuplicate`, not a new node kind.** `CipNode` gained
+  `atomic_number: AtomicNumberKey` (`Integral(u8)` or `Rational(RationalAtomicNumber)`),
+  computed once at node-construction time. RDKit's own `calcFracAtomNums` returns one
+  fraction *per atom*, not a separate node type — confirming this was the right call
+  before implementation started.
+- **Go-condition #4 revised: the M3B-0 oracle and RDKit are not the same formula.**
+  RDKit's real `calcFracAtomNums` is a **1-hop mean of an atom's own same-resonance-part
+  ring neighbors**; M3B-0's `enumerate_kekule_matchings`/`effective_atomic_number` is a
+  mean over *every* global Kekulé matching of the whole ring system. Empirically verified
+  (source-ported reimplementation cross-checked against the oracle on 12 fixtures): they
+  agree on every monocyclic, hydrocarbon-only, or heteroatom-never-seeds case
+  (naphthalene, pyridine, imidazole, furan/thiophene/pyrrole-fused benzo rings,
+  phenylpyridine/bipyridine's 2 separate components) and **diverge specifically on fused
+  systems whose connected resonance part spans a ring fusion and includes a heteroatom
+  seed** — quinoline's N-adjacent ring carbon is 13/2 under RDKit vs 19/3 under the oracle;
+  the same pattern repeats in isoquinoline, quinoxaline, quinazoline. Since the corpus's
+  `modern` column is RDKit (`rdCIPLabeler`) itself, production targets RDKit's formula;
+  go-condition #4 ("0 disagreement with the oracle") now applies only to monocyclic/
+  non-fused components, with fused-case disagreement classified rather than required to be
+  zero. The oracle is **not** discredited or removed by this — both are source-verified,
+  valid readings of IUPAC P-92.1.4.4 that happen to coincide on simpler systems; the
+  oracle stays a genuine monocyclic cross-check, a fused-system divergence detector, and a
+  literal-IUPAC reference point for future research, documented as such in `mancude.rs`'s
+  module docs (corrected from an earlier, now-inaccurate "this is the IUPAC mean" framing).
+
+Shipped: `MancudeContext` (`mancude.rs`) — a direct, linear-time port of RDKit's
+`SeedTypes`/`RelaxTypes`/`VisitParts`, computed once per molecule and shared across every
+stereocenter. Two implementation findings, both verified by a full 98-case corpus sweep
+before being trusted (see below), not by the ~10 hand-picked fixtures alone:
+
+- **Ring-bond membership matters in two places, not one.** `SeedTypes` requires ≥1 ring
+  bond to seed (correct in an early draft); `VisitPart`'s flood-fill must **also** follow
+  ring bonds only, never any bond to a typed neighbor — missed in the same early draft,
+  which would have merged two separate rings joined by one exocyclic single bond (e.g.
+  biphenyl-shaped molecules) into a single resonance part. Fixed via
+  `chematic_perception::find_sssr` (promoted from dev- to a real dependency of
+  `chematic-cip`); re-verified on phenylpyridine/bipyridine, which now correctly produce 2
+  distinct components with uncontaminated per-ring fractions.
+- **MANCUDE typing is not gated on the aromatic flag — deliberately, but not yet proven
+  label-correct.** An early draft asserted "every typed atom must be aromatic" as a
+  self-consistency check. The 98-case corpus sweep falsified it: several corpus molecules
+  contain non-aromatic ring double bonds (e.g. a lactone/enone carbon in a fused
+  non-aromatic ring) that match the same bond-order/element/charge pattern and get typed
+  identically — matching RDKit's real `SeedTypes` structurally, which has no aromaticity
+  check either. What this round actually established: the typing is **invariant** (98/98
+  clean on both sweeps below) and **inert** (the comparator doesn't read this field yet).
+  It does *not* establish that the typing is *correct* on these specific non-aromatic
+  cases — that chain has an unverified link (this port faithfully reproducing RDKit's
+  real output on a lactone-carbonyl-in-a-fused-ring, not just RDKit's algorithm shape).
+  The incorrect self-check was removed, not the typing, on the grounds that the typing
+  structurally mirrors RDKit; whether it's *label*-correct is Milestone 3B-1b's
+  corpus-agreement gate to answer, not this round's. Watch specifically for a
+  non-aromatic typed atom with a *heteroatom* same-part neighbor once 3B-1b wires this in
+  — the pure-carbon cases found here are safe (`Rational(6/1)` compares equal to
+  `Integral(6)`, so they're a no-op today), but a hetero-adjacent one would produce a
+  genuinely fractional value where today's engine has a plain integer, and that's exactly
+  where a wrong typing breadth would first show up as a regression or a missed target,
+  not as anything this round's tests could catch.
+
+The **owner, not the represented atom, carries the fraction** — the single easiest detail
+to get backwards. A `MultipleBondDuplicate`'s fractional value must come from
+`source_atom` (the owner whose substituent list the duplicate appears in), never
+`duplicated_atom` (the specific partner one Kekulé form happened to pick). The intuitive
+guard — "cross-form Kekulé-invariance catches the wrong reading" — turned out **not** to
+discriminate the two readings on any fixture tested (both `source_atom`'s and
+`duplicated_atom`'s fractions are independently form-invariant on every fixture in scope,
+since candidate partners happen to share equal fractions there). The actual guard is a
+concrete asserted value: quinoline's N-adjacent duplicate must equal exactly `13/2`, not
+`6/1` (what the represented-atom reading would give) — this is what
+`digraph.rs`'s `new_with_mancude_quinoline_n_adjacent_carbon_duplicate_is_owner_fraction`
+test checks directly on the constructed node, not on `fractional_atomic_number` in
+isolation.
+
+Charged MANCUDE seed types (`Nv4D3Plus`/`Nv2D2Minus`/`Cv3D3Minus`/`Ov3D2Plus` in RDKit's
+naming) and RDKit's secondary charge-relocation fraction pass are **not implemented**:
+checked directly against all 98 in-scope corpus rows, 0 contain a charged aromatic ring
+atom. A charged atom that would otherwise seed simply never types (`component_id = None`),
+falling back to today's existing integer-atomic-number behavior — a visible, safe
+fallback, not a silently wrong average.
+
+**Verification, at the scale the milestone requires** (not just representative fixtures —
+the user's own go-condition named 98/98, and this milestone exists to make
+representation-invariance real, not argued):
+
+- **MANCUDE signature (Kekulé-form) invariance: 98/98.** For every in-scope corpus case,
+  two genuinely different valid Kekulé forms produce identical `fractional_atomic_number`
+  for every atom (`tests/mancude_context.rs::kekule_form_invariance_98_of_98`).
+- **Atom-renumbering invariance: 98/98** (`renumbering_invariance_98_of_98`).
+- `corpus_report.rs`/`uncharacterized_diagnosis.rs` byte-identical to Milestone 3B-0
+  (4055/4186, 24/155, `BucketMisclassified=2`/`NeedsLaterSequenceRule=24`/`OK=17`).
+
+**Scope correction vs. this round's own initial plan, surfaced rather than silently
+absorbed**: the plan called for threading `MancudeContext` through
+`assign_cip_accurate_experimental`'s per-atom loop this round. That was not done, and
+should not be — `CipDigraph::new_with_mancude`/`mancude::prepare_kekule_form` are new,
+fully tested, additive entry points, but `assign_cip_accurate_experimental`'s live call
+site still uses the original `CipDigraph::new` on the aromatic-notation molecule,
+completely untouched. Switching it to a Kekulé-form clone this round — before the
+comparator (`compare.rs`) knows how to weigh the new fractional values — would make
+previously invisible `MultipleBondDuplicate` nodes appear in ordinary Rule 1a/2 ranking
+for *every* aromatic-adjacent stereocenter, not just the 98 MANCUDE-labeled ones: an
+uncontrolled corpus-wide behavior change this round's "byte-identical" gate forbids. Live
+wiring moves to Milestone 3B-1b, bundled with comparator connection as originally planned.
+
+Also recorded for later: the corpus's `AccurateExperimental` label (both in code as
+`assign_cip_accurate_experimental` and in this RFC's design-sketch `CipMode::Accurate`)
+should not be read as "IUPAC-accurate" — it targets RDKit-compatibility specifically, which
+this round confirmed is a distinct, narrower claim than a literal IUPAC-P-92.1.4.4
+enumeration reading would be. No code or type renaming this round; this paragraph is the
+documented distinction so neither name is later misread as a stronger claim than it makes.
 
 **Milestone 4 — Stereo-dependent rules + phosphorus.** Rule 5 / pseudoasymmetry
 multi-pass resolution, plus the frozen corpus's 15 phosphorus stereocenters. Kept last

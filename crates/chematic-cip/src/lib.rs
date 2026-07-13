@@ -41,10 +41,11 @@ pub use compare::{
 pub use digraph::{CipDigraph, DigraphExpander};
 pub use edge::{CipEdge, EdgeId};
 pub use mancude::{
-    MancudeBudget, MancudeError, effective_atomic_number, enumerate_kekule_matchings,
+    MancudeBudget, MancudeComponentId, MancudeContext, MancudeError, effective_atomic_number,
+    enumerate_kekule_matchings, prepare_kekule_form,
 };
 pub use node::{CipNode, CipNodeKind, NodeId};
-pub use rational::RationalAtomicNumber;
+pub use rational::{AtomicNumberKey, RationalAtomicNumber};
 pub use trace::{ComparisonTrace, DecisionStep};
 
 /// Errors from digraph construction/expansion.

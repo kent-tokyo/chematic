@@ -42,13 +42,23 @@ use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 use crate::CipError;
 use crate::budget::CipBudget;
 use crate::edge::{CipEdge, EdgeId};
+use crate::mancude::MancudeContext;
 use crate::node::{CipNode, CipNodeKind, NodeId};
+use crate::rational::AtomicNumberKey;
 
 /// A lazily-expanding hierarchical digraph rooted at one atom (typically a candidate
 /// stereocenter). See the module docs for the two structural rules that make this a
 /// real replacement for shell-multiset pooling.
 pub struct CipDigraph<'m> {
     mol: &'m Molecule,
+    /// `None` for every existing call site (`Self::new`) -- Milestone 3B-1a's MANCUDE
+    /// fractional-atomic-number treatment is only active via [`Self::new_with_mancude`],
+    /// a separate, not-yet-wired-into-`assign_cip_accurate_experimental` entry point (see
+    /// `crate::mancude`'s module docs). Attaching a `MancudeContext` computed for a
+    /// *different* molecule than `mol` would silently misattribute fractional values --
+    /// callers are responsible for computing it from the exact same (Kekulé-form) `mol`
+    /// passed in here.
+    mancude: Option<&'m MancudeContext>,
     nodes: Vec<CipNode>,
     edges: Vec<CipEdge>,
     /// Parallel to `nodes`: `None` until a node's children have been computed once.
@@ -63,9 +73,38 @@ impl<'m> CipDigraph<'m> {
     /// Create a digraph rooted at `root_atom`. Materializes only the root node --
     /// children are computed on first access via [`Self::expand_children`] or the
     /// [`crate::DigraphExpander`] trait.
+    ///
+    /// Every `MultipleBondDuplicate` node's `atomic_number` is a plain integer (the
+    /// represented atom's real atomic number) -- exactly today's existing behavior. Use
+    /// [`Self::new_with_mancude`] to additionally apply MANCUDE fractional atomic numbers.
     pub fn new(mol: &'m Molecule, root_atom: AtomIdx, budget: CipBudget) -> Result<Self, CipError> {
+        Self::new_impl(mol, root_atom, budget, None)
+    }
+
+    /// Like [`Self::new`], but `MultipleBondDuplicate` nodes whose owner atom
+    /// (`source_atom`) has a fractional atomic number in `mancude` get
+    /// `AtomicNumberKey::Rational` instead of the plain integer of `duplicated_atom` --
+    /// see `crate::mancude`'s module docs for why the owner, not the represented atom, is
+    /// the correct key. `mol` **must** be the same (Kekulé-form) molecule `mancude` was
+    /// computed from -- `MancudeContext` indexes by `AtomIdx` into that specific molecule.
+    pub fn new_with_mancude(
+        mol: &'m Molecule,
+        root_atom: AtomIdx,
+        budget: CipBudget,
+        mancude: &'m MancudeContext,
+    ) -> Result<Self, CipError> {
+        Self::new_impl(mol, root_atom, budget, Some(mancude))
+    }
+
+    fn new_impl(
+        mol: &'m Molecule,
+        root_atom: AtomIdx,
+        budget: CipBudget,
+        mancude: Option<&'m MancudeContext>,
+    ) -> Result<Self, CipError> {
         let mut g = Self {
             mol,
+            mancude,
             nodes: Vec::new(),
             edges: Vec::new(),
             children_cache: Vec::new(),
@@ -291,15 +330,50 @@ impl<'m> CipDigraph<'m> {
             });
             edge_id
         });
+        let atomic_number = self.atomic_number_for(kind);
         self.nodes.push(CipNode {
             id: node_id,
             kind,
             parent,
             depth,
             incoming_edge,
+            atomic_number,
         });
         self.children_cache.push(None);
         Ok(node_id)
+    }
+
+    /// The `AtomicNumberKey` a freshly-constructed node of `kind` should carry. Real
+    /// `Atom`, `RingDuplicate`, and `ImplicitHydrogen` nodes are always `Integral` --
+    /// MANCUDE never touches them (see `crate::mancude`'s module docs: applying a
+    /// fractional value to a real atom's own identity, rather than a duplicate that
+    /// represents one of its resonance-averaged partners, would be incoherent). A
+    /// `MultipleBondDuplicate` is `Rational` when its *owner* (`source_atom`) has a
+    /// fractional atomic number in `self.mancude`, else it falls back to today's existing
+    /// plain-integer behavior (the represented atom's real atomic number).
+    fn atomic_number_for(&self, kind: CipNodeKind) -> AtomicNumberKey {
+        match kind {
+            CipNodeKind::Atom { atom_idx } => {
+                AtomicNumberKey::Integral(self.mol.atom(atom_idx).element.atomic_number())
+            }
+            CipNodeKind::MultipleBondDuplicate {
+                source_atom,
+                duplicated_atom,
+                ..
+            } => self
+                .mancude
+                .and_then(|ctx| ctx.fractional_atomic_number(source_atom))
+                .map(AtomicNumberKey::Rational)
+                .unwrap_or_else(|| {
+                    AtomicNumberKey::Integral(
+                        self.mol.atom(duplicated_atom).element.atomic_number(),
+                    )
+                }),
+            CipNodeKind::RingDuplicate { closure_atom, .. } => {
+                AtomicNumberKey::Integral(self.mol.atom(closure_atom).element.atomic_number())
+            }
+            CipNodeKind::ImplicitHydrogen => AtomicNumberKey::Integral(1),
+        }
     }
 
     /// Recursively expand every reachable node from `node` (typically the root),
@@ -377,5 +451,79 @@ pub trait DigraphExpander {
 impl<'m> DigraphExpander for CipDigraph<'m> {
     fn children(&mut self, node: NodeId) -> Result<Vec<NodeId>, CipError> {
         self.expand_children(node)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mancude::prepare_kekule_form;
+    use crate::rational::RationalAtomicNumber;
+
+    /// The concrete-value assertion that guards the owner-vs-represented-atom design
+    /// decision (see `crate::mancude`'s module docs): quinoline's ring carbon directly
+    /// bonded to N must produce a `MultipleBondDuplicate` node valued `Rational(13/2)` --
+    /// the *owner*'s (this carbon's own) fractional atomic number -- never
+    /// `Integral(6)`/`Integral(7)` (the represented atom's real, per-Kekulé-form value)
+    /// or `Rational(19/3)`/`Rational(20/3)` (the oracle's global-Kekulé-enumeration mean,
+    /// a different formula entirely -- see the divergence table in `crate::mancude`'s docs).
+    #[test]
+    fn new_with_mancude_quinoline_n_adjacent_carbon_duplicate_is_owner_fraction() {
+        let mol = chematic_smiles::parse("n1ccc2ccccc2c1").unwrap();
+        let (kekule_mol, mancude) = prepare_kekule_form(&mol).unwrap();
+
+        // atom1 is N-adjacent (per quinoline's atom order, matching mancude.rs's own
+        // divergence-table test). Root the digraph there so its own duplicate (from the
+        // ring double bond touching it, in whichever direction apply_kekule resolved it)
+        // is a *root child*, not requiring deeper expansion to reach.
+        let atom1 = AtomIdx(1);
+        let budget = CipBudget::default_budget();
+        let mut graph = CipDigraph::new_with_mancude(&kekule_mol, atom1, budget, &mancude).unwrap();
+        let root = graph.root();
+        let children = graph.expand_children(root).unwrap();
+
+        let duplicates: Vec<_> = children
+            .iter()
+            .filter_map(|&id| {
+                let node = graph.node(id);
+                matches!(node.kind, CipNodeKind::MultipleBondDuplicate { .. }).then_some(node)
+            })
+            .collect();
+        assert_eq!(
+            duplicates.len(),
+            1,
+            "atom1 has exactly one double bond in any Kekulé form, so exactly 1 duplicate"
+        );
+        let expected = RationalAtomicNumber::mean(&[6, 7]); // 13/2
+        assert_eq!(
+            duplicates[0].atomic_number,
+            AtomicNumberKey::Rational(expected),
+            "must be the OWNER's fraction (13/2), not the represented atom's real value \
+             or the oracle's global-Kekule-enumeration mean"
+        );
+    }
+
+    /// Without a `MancudeContext` (today's existing `CipDigraph::new` path, still what
+    /// `assign_cip_accurate_experimental` calls), the same duplicate stays a plain
+    /// integer -- confirms `new_with_mancude` is strictly additive, not a silent change
+    /// to `new`'s existing behavior.
+    #[test]
+    fn new_without_mancude_keeps_plain_integer_duplicates() {
+        let mol = chematic_smiles::parse("n1ccc2ccccc2c1").unwrap();
+        let (kekule_mol, _mancude) = prepare_kekule_form(&mol).unwrap();
+        let atom1 = AtomIdx(1);
+        let budget = CipBudget::default_budget();
+        let mut graph = CipDigraph::new(&kekule_mol, atom1, budget).unwrap();
+        let root = graph.root();
+        let children = graph.expand_children(root).unwrap();
+        let duplicate = children
+            .iter()
+            .map(|&id| graph.node(id))
+            .find(|node| matches!(node.kind, CipNodeKind::MultipleBondDuplicate { .. }))
+            .unwrap();
+        assert!(
+            matches!(duplicate.atomic_number, AtomicNumberKey::Integral(_)),
+            "no MancudeContext attached -- must stay the existing plain-integer behavior"
+        );
     }
 }

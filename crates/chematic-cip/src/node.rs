@@ -3,6 +3,7 @@
 use chematic_core::AtomIdx;
 
 use crate::edge::EdgeId;
+use crate::rational::AtomicNumberKey;
 
 /// Index of a [`CipNode`] in a [`crate::digraph::CipDigraph`]'s arena.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -55,4 +56,12 @@ pub struct CipNode {
     pub parent: Option<NodeId>,
     pub depth: u32,
     pub incoming_edge: Option<EdgeId>,
+    /// The atomic number this node compares by, computed once at construction time.
+    /// Always `Integral` for `Atom`/`RingDuplicate`/`ImplicitHydrogen` nodes -- MANCUDE
+    /// treatment only ever applies to a `MultipleBondDuplicate` whose *owner*
+    /// (`source_atom`) sits in a resonance component (see `crate::mancude`'s module
+    /// docs for why the owner, not `duplicated_atom`, is the correct key). **Not yet
+    /// read by the comparator** (`crate::compare`) -- Milestone 3B-1a computes and
+    /// tests this field in isolation; wiring it into ranking is Milestone 3B-1b.
+    pub atomic_number: AtomicNumberKey,
 }

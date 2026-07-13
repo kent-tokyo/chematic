@@ -12,10 +12,10 @@ categories = ["science", "science::computational-chemistry::cheminformatics"]
 publish = false
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.4.29" }
+chematic-core       = { path = "../chematic-core",       version = "0.4.29" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.29" }
 
 [dev-dependencies]
-chematic-chem       = { path = "../chematic-chem",       version = "0.4.29" }
-chematic-perception = { path = "../chematic-perception", version = "0.4.29" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "0.4.29" }
-serde_json          = "1.0"
+chematic-chem   = { path = "../chematic-chem",   version = "0.4.29" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.29" }
+serde_json      = "1.0"

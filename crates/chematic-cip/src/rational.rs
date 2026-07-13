@@ -105,6 +105,63 @@ impl core::fmt::Display for RationalAtomicNumber {
     }
 }
 
+/// The atomic number a [`crate::node::CipNode`] compares by: either a plain integer (every
+/// node outside a MANCUDE resonance component, and always for real `Atom` nodes -- MANCUDE
+/// only ever touches `MultipleBondDuplicate` nodes, never real atoms) or a
+/// [`RationalAtomicNumber`] (a `MultipleBondDuplicate` whose *owner* atom sits in a MANCUDE
+/// component -- see `mancude.rs`'s module docs for why the owner's, not the represented
+/// atom's, fraction is the correct value).
+///
+/// `Integral` holds a `u8` to match [`chematic_core::Element::atomic_number`]'s existing
+/// return type, not a wider int -- there is no atomic number this project needs to
+/// represent that doesn't already fit in `u8`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AtomicNumberKey {
+    Integral(u8),
+    Rational(RationalAtomicNumber),
+}
+
+impl AtomicNumberKey {
+    fn as_rational(self) -> RationalAtomicNumber {
+        match self {
+            AtomicNumberKey::Integral(n) => RationalAtomicNumber::integer(u32::from(n)),
+            AtomicNumberKey::Rational(r) => r,
+        }
+    }
+}
+
+/// Compares two keys by promoting an `Integral` to its equivalent `RationalAtomicNumber`
+/// (denominator 1) when either side is `Rational`, then delegating to
+/// [`cmp_atomic_number`]. `Integral` vs `Integral` never leaves plain integer comparison
+/// (the promotion is exact -- `n` and `n/1` compare identically either way).
+pub fn cmp_atomic_number_key(a: AtomicNumberKey, b: AtomicNumberKey) -> Ordering {
+    if let (AtomicNumberKey::Integral(x), AtomicNumberKey::Integral(y)) = (a, b) {
+        return x.cmp(&y);
+    }
+    cmp_atomic_number(a.as_rational(), b.as_rational())
+}
+
+impl Ord for AtomicNumberKey {
+    fn cmp(&self, other: &Self) -> Ordering {
+        cmp_atomic_number_key(*self, *other)
+    }
+}
+
+impl PartialOrd for AtomicNumberKey {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl core::fmt::Display for AtomicNumberKey {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            AtomicNumberKey::Integral(n) => write!(f, "{n}"),
+            AtomicNumberKey::Rational(r) => write!(f, "{r}"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -184,5 +241,81 @@ mod tests {
     fn display_formats_integers_and_fractions() {
         assert_eq!(RationalAtomicNumber::integer(6).to_string(), "6");
         assert_eq!(RationalAtomicNumber::mean(&[6, 7]).to_string(), "13/2");
+    }
+
+    #[test]
+    fn atomic_number_key_integral_vs_integral_matches_plain_u8_ordering() {
+        assert_eq!(
+            cmp_atomic_number_key(AtomicNumberKey::Integral(6), AtomicNumberKey::Integral(7)),
+            Ordering::Less
+        );
+        assert_eq!(
+            cmp_atomic_number_key(AtomicNumberKey::Integral(7), AtomicNumberKey::Integral(6)),
+            Ordering::Greater
+        );
+        assert_eq!(
+            cmp_atomic_number_key(AtomicNumberKey::Integral(6), AtomicNumberKey::Integral(6)),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn atomic_number_key_integral_vs_rational_promotion_at_the_divergence_table_boundaries() {
+        // 6 vs 6.5 (pyridine's N-adjacent carbon fraction) -- integral loses.
+        let six = AtomicNumberKey::Integral(6);
+        let six_and_a_half = AtomicNumberKey::Rational(RationalAtomicNumber::mean(&[6, 7]));
+        assert_eq!(cmp_atomic_number_key(six, six_and_a_half), Ordering::Less);
+        assert_eq!(
+            cmp_atomic_number_key(six_and_a_half, six),
+            Ordering::Greater
+        );
+
+        // 6 vs 6.333 (quinoline's oracle-side value, 19/3) -- integral still loses, and 7
+        // (nitrogen) still beats both.
+        let six_and_a_third = AtomicNumberKey::Rational(RationalAtomicNumber::mean(&[6, 6, 7]));
+        assert_eq!(cmp_atomic_number_key(six, six_and_a_third), Ordering::Less);
+        let seven = AtomicNumberKey::Integral(7);
+        assert_eq!(
+            cmp_atomic_number_key(six_and_a_third, seven),
+            Ordering::Less
+        );
+
+        // Exact-integer rational (denominator 1) must compare equal to the matching
+        // Integral value -- the promotion must be lossless, not just order-preserving.
+        let six_rational = AtomicNumberKey::Rational(RationalAtomicNumber::integer(6));
+        assert_eq!(cmp_atomic_number_key(six, six_rational), Ordering::Equal);
+    }
+
+    #[test]
+    fn atomic_number_key_reflexive_and_antisymmetric() {
+        let values: &[AtomicNumberKey] = &[
+            AtomicNumberKey::Integral(1),
+            AtomicNumberKey::Integral(6),
+            AtomicNumberKey::Integral(7),
+            AtomicNumberKey::Rational(RationalAtomicNumber::integer(6)),
+            AtomicNumberKey::Rational(RationalAtomicNumber::mean(&[6, 7])),
+            AtomicNumberKey::Rational(RationalAtomicNumber::mean(&[6, 6, 7])),
+        ];
+        for &a in values {
+            assert_eq!(
+                cmp_atomic_number_key(a, a),
+                Ordering::Equal,
+                "reflexivity: {a:?}"
+            );
+            for &b in values {
+                let ab = cmp_atomic_number_key(a, b);
+                let ba = cmp_atomic_number_key(b, a);
+                assert_eq!(ab, ba.reverse(), "antisymmetry: {a:?} vs {b:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn atomic_number_key_display() {
+        assert_eq!(AtomicNumberKey::Integral(6).to_string(), "6");
+        assert_eq!(
+            AtomicNumberKey::Rational(RationalAtomicNumber::mean(&[6, 7])).to_string(),
+            "13/2"
+        );
     }
 }
