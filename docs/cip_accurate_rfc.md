@@ -424,6 +424,76 @@ this round confirmed is a distinct, narrower claim than a literal IUPAC-P-92.1.4
 enumeration reading would be. No code or type renaming this round; this paragraph is the
 documented distinction so neither name is later misread as a stronger claim than it makes.
 
+**Milestone 3B-1b — comparator wiring + live engine connection.** PR (3)/(4) of the
+suggested order. `compare.rs::node_key`/`cmp_key` now read `CipNode.atomic_number`
+directly (via `cmp_atomic_number_key`, promoting a plain integer to a
+`RationalAtomicNumber` when compared against a MANCUDE fraction) instead of recomputing
+an integer from `duplicated_atom`; isotope (Rule 2) independently takes the same
+owner-vs-represented branch as atomic number, for the identical Kekulé-invariance reason
+— **unverified against RDKit and corpus-inert** (0 isotope-labeled atoms anywhere in the
+frozen 155-row corpus; the sole isotope label in the ~5,000-molecule verification set is
+on a plain aliphatic ring, never reaching this code path), flagged rather than claimed
+correct, same treatment as Milestone 3B-1a's non-aromatic-typing finding.
+`assign_cip_accurate_experimental` now computes `prepare_kekule_form` once per molecule
+and calls `CipDigraph::new_with_mancude` (falling back to plain `CipDigraph::new` on the
+rare molecule Kekulé form can't be computed for at all) — the live wiring Milestone
+3B-1a deliberately deferred.
+
+**Full-corpus result, verified two independent ways (not the 155-row extrapolation
+alone)**: this switch structurally changes ranking for *every* aromatic-adjacent
+stereocenter (aromatic bonds finally contribute `MultipleBondDuplicate` leaves, whether
+or not any MANCUDE fraction ever applies), so the 155-row residual's own "zero
+regressions" claim can't see anything outside itself. Built a full-corpus before/after
+snapshot of `assign_cip_accurate_experimental`'s own output across all ~5,000 SMILES.csv
+molecules (1,286 with a stereocenter, 4,188 rows), independent of `corpus_report.rs`:
+per-case regression enumeration (any row that matched RDKit's modern label before the
+switch and doesn't after) found **0 regressions**; a direct re-measurement against
+freshly-computed RDKit labels for the whole set (not the extrapolation formula) confirms
+**4047/4186 (96.68%) → 4150/4186 (99.14%)**, net +103 — exceeding the 98% gate
+(≥4103/4186) with the regression count independently confirmed, not assumed.
+(`corpus_report.rs`'s own 155-row-based extrapolation independently landed on the same
+4150/4186 once regressions were confirmed zero — a useful cross-check, not the primary
+evidence.) The 4047 pre-switch baseline differs slightly from Milestone 3B-0's own
+documented 4055/4186 — a methodology difference between this session's quick verification
+harness and the project's canonical corpus-generation script, consistent across both the
+before and after measurement and irrelevant to the regression count; not reconciled
+further (no value in chasing an 8-case discrepancy in a baseline both sides share).
+
+**Attribution, checked rather than assumed — mirrors the Milestone 3A Rule 1b finding.**
+The +103 does *not* come from fractional MANCUDE atomic numbers. A controlled
+decomposition (Kekulé-form digraph construction *without* attaching a `MancudeContext` —
+plain integers on the new duplicate nodes) produced **byte-identical output** to the full
+MANCUDE-aware run across all 4,188 rows. The entire improvement is the *structural* effect
+of Kekulé-respelling itself — aromatic ring bonds finally get real duplicate leaves in the
+digraph, which changes Rule-1a/2 child-count comparisons even when every new leaf's atomic
+number is a plain, unfractional integer. Fractional atomic numbers (the milestone's
+stated purpose, `RationalAtomicNumber`/`AtomicNumberKey::Rational`) are live, fully wired,
+verified RDKit-formula-correct (Milestone 3B-1a's 98/98 invariance sweeps), and change
+**zero** labels on this corpus. This is the same shape as Milestone 3A's Rule 1b finding:
+a correctly implemented, source-verified mechanism that happens to be inert on the
+molecules actually available to test against — not evidence it's wrong, and not
+grounds to revert it (unlike Rule 1b, the fractional machinery cost is not
+duplicated/2x-expensive relative to the integer path, so there's no efficiency argument
+for removing it either). Kept, not reverted, flagged to the user for the same reason Rule
+1b was: an honest "implemented correctly, currently inert" result deserves to be heard as
+such, not folded into a headline number it didn't earn. A future corpus with more fused
+heteroaromatic-and-hetero-adjacent stereocenters (the specific structural shape Milestone
+3B-1a's divergence table identifies as where RDKit's formula and the naive Kekulé-form
+integer both diverge from each other) is where this machinery would first show a nonzero
+effect.
+
+Milestone 3B-1a's own shared test infrastructure (`tests/common/mod.rs::
+is_bucket_misclassified`, used by `mancude_corpus_classification.rs`/
+`mancude_digraph_diff.rs`/`mancude_context.rs`'s 98-case scope) briefly broke as a direct
+side effect of this success: it determined "is this uncharacterized row structurally
+MANCUDE-relevant" by asking whether the *live* `assign_cip_accurate_experimental` still
+got it wrong — which silently shrank the frozen 98-case scope to 96 the moment the engine
+started resolving 2 of those rows correctly. Fixed by adding a new stable reference entry
+point, `assign_cip_accurate_experimental_without_mancude` (reproduces the
+pre-Milestone-3B-1b digraph shape exactly, on demand, regardless of how the live engine
+changes), and rebasing the scope-determination gate onto it — a corpus row's structural
+classification should never depend on today's engine's current success rate.
+
 **Milestone 4 — Stereo-dependent rules + phosphorus.** Rule 5 / pseudoasymmetry
 multi-pass resolution, plus the frozen corpus's 15 phosphorus stereocenters. Kept last
 and separate from Milestone 3 deliberately: phosphorus stereocenters raise valence/

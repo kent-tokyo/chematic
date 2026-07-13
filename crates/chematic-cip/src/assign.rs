@@ -44,6 +44,7 @@ use crate::CipError;
 use crate::budget::CipBudget;
 use crate::compare::{CipCompareError, CompareContext, rank_children};
 use crate::digraph::CipDigraph;
+use crate::mancude::{MancudeContext, prepare_kekule_form};
 use crate::node::{CipNodeKind, NodeId};
 
 /// Why a candidate stereocenter got no assignment -- distinct from "assigned but
@@ -71,9 +72,44 @@ pub struct AccurateCipAssignment {
 
 /// Assign R/S to every tetrahedral stereocenter in `mol` that Rules 1a/1b/2 alone can
 /// resolve. See module docs for scope and the positions-vs-ranks distinction.
+///
+/// Computes `mol`'s Kekulé-form clone and [`MancudeContext`] **once**, before the
+/// per-atom loop, and shares both across every stereocenter's digraph -- never
+/// recomputed per atom or per subtree expansion (a whole-molecule quantity). If Kekulé
+/// form can't be computed at all for `mol` (rare -- e.g. a non-bipartite aromatic system
+/// `chematic_core::kekulization::kekulize` can't resolve), falls back to the plain,
+/// pre-Milestone-3B-1 digraph path (`CipDigraph::new` on the original aromatic-notation
+/// `mol`, no `MancudeContext`) for that molecule rather than failing the whole
+/// assignment -- exactly today's behavior for such a molecule, since it never had a
+/// MANCUDE-fractional path to lose.
 pub fn assign_cip_accurate_experimental(
     mol: &Molecule,
     budget: CipBudget,
+) -> Result<AccurateCipAssignment, CipCompareError> {
+    let kekule = prepare_kekule_form(mol).ok();
+    assign_all(mol, budget, kekule.as_ref())
+}
+
+/// Identical to [`assign_cip_accurate_experimental`], but never attaches a
+/// [`MancudeContext`] -- reproduces exactly the pre-Milestone-3B-1b digraph
+/// construction (plain `CipDigraph::new`, aromatic bonds contribute no
+/// `MultipleBondDuplicate` nodes). Exists as a stable reference point for regression
+/// tooling and tests that need to classify a stereocenter's wrong-vs-tied outcome
+/// independent of whatever the live, MANCUDE-aware engine currently does -- see
+/// `tests/common/mod.rs::is_bucket_misclassified`'s module docs for why that
+/// independence matters (gating a *structural corpus scope* on the live engine's current
+/// correctness makes the scope shrink every time the engine improves).
+pub fn assign_cip_accurate_experimental_without_mancude(
+    mol: &Molecule,
+    budget: CipBudget,
+) -> Result<AccurateCipAssignment, CipCompareError> {
+    assign_all(mol, budget, None)
+}
+
+fn assign_all(
+    mol: &Molecule,
+    budget: CipBudget,
+    kekule: Option<&(Molecule, MancudeContext)>,
 ) -> Result<AccurateCipAssignment, CipCompareError> {
     let mut result = AccurateCipAssignment::default();
 
@@ -93,7 +129,7 @@ pub fn assign_cip_accurate_experimental(
             continue;
         }
 
-        match assign_one(mol, idx, atom.chirality, stereo_order, budget) {
+        match assign_one(mol, idx, atom.chirality, stereo_order, budget, kekule) {
             Ok(Some(code)) => result.assignments.push((idx, code)),
             Ok(None) => result.skipped.push((idx, SkipReason::NotFourSubstituents)),
             Err(SkipReason::Tied) => result.skipped.push((idx, SkipReason::Tied)),
@@ -113,8 +149,17 @@ fn assign_one(
     chirality: Chirality,
     stereo_order: &[u32],
     budget: CipBudget,
+    kekule: Option<&(Molecule, MancudeContext)>,
 ) -> Result<Option<CipCode>, SkipReason> {
-    let mut graph = CipDigraph::new(mol, idx, budget).map_err(map_digraph_err)?;
+    // `apply_kekule` preserves `AtomIdx` values exactly (verified Milestone 3B-0), so
+    // `idx`/`stereo_order` (sourced from the original `mol`, above) name the same
+    // physical atoms in `kekule_mol` -- no remapping needed either way.
+    let mut graph = match kekule {
+        Some((kekule_mol, ctx)) => {
+            CipDigraph::new_with_mancude(kekule_mol, idx, budget, ctx).map_err(map_digraph_err)?
+        }
+        None => CipDigraph::new(mol, idx, budget).map_err(map_digraph_err)?,
+    };
     let root = graph.root();
     let root_children = graph.expand_children(root).map_err(map_digraph_err)?;
 

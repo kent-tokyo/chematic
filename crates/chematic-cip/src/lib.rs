@@ -33,7 +33,10 @@ pub mod trace;
 #[cfg(test)]
 mod tests;
 
-pub use assign::{AccurateCipAssignment, SkipReason, assign_cip_accurate_experimental};
+pub use assign::{
+    AccurateCipAssignment, SkipReason, assign_cip_accurate_experimental,
+    assign_cip_accurate_experimental_without_mancude,
+};
 pub use budget::CipBudget;
 pub use compare::{
     BranchComparison, CipCompareError, CompareContext, compare_ligands, rank_children,

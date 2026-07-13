@@ -114,7 +114,8 @@ use chematic_core::Molecule;
 
 use crate::CipError;
 use crate::digraph::CipDigraph;
-use crate::node::{CipNodeKind, NodeId};
+use crate::node::{CipNode, CipNodeKind, NodeId};
+use crate::rational::{AtomicNumberKey, cmp_atomic_number_key};
 use crate::trace::{ComparisonTrace, DecisionStep};
 
 /// The outcome of comparing two ligand branches under Rules 1a/1b/2.
@@ -217,27 +218,51 @@ impl<'t> CompareContext<'t> {
     }
 }
 
-/// `(atomic_number, isotope)` for a node's *effective* atom: a real `Atom` node looks
-/// itself up; a duplicate node looks up the atom it duplicates (its own atomic number,
-/// per Rule 1a -- see module docs for why no separate real-vs-duplicate rule is
-/// needed); the implicit-hydrogen sentinel is `(1, None)`.
-fn node_key(mol: &Molecule, kind: CipNodeKind) -> (u8, Option<u16>) {
-    let atom_idx = match kind {
-        CipNodeKind::Atom { atom_idx } => atom_idx,
+/// `(atomic_number, isotope)` for a node's *effective* atom, Rule 1a's comparison key.
+/// The atomic-number half is simply `node.atomic_number` -- already computed once at
+/// digraph-construction time (see `crate::digraph`'s `atomic_number_for`), plain integer
+/// for every node except a MANCUDE-affected `MultipleBondDuplicate`, which carries a
+/// `Rational` (see `crate::mancude`'s module docs for why the owner's, not the
+/// represented atom's, fraction is correct here).
+///
+/// The isotope half needs its own atom lookup and, for a MANCUDE-affected duplicate,
+/// its own owner-vs-represented decision: `duplicated_atom` is a *specific* Kekulé-form-
+/// dependent partner (exactly the value `atomic_number` deliberately stops depending on
+/// for this same node), so reading isotope from it *would* reintroduce Kekulé-form
+/// dependence into Rule 2 while Rule 1a stays invariant -- by the same argument that
+/// motivates the atomic-number owner decision. Whenever `atomic_number` is `Rational`,
+/// isotope is read from `source_atom` (the owner) instead. **Unverified against RDKit,
+/// corpus-inert**, not "correct by the same reasoning" -- unlike the atomic-number
+/// decision (checked against a concrete RDKit-reimplemented value), this branch has never
+/// been exercised: 0 isotope-labeled atoms exist anywhere in the frozen 155-row corpus,
+/// and the one isotope label in the full ~5,000-molecule verification corpus
+/// (`[3H]` on a plain aliphatic ring, unrelated to any MANCUDE system) never reaches this
+/// code path. Structurally consistent with the atomic-number decision, not empirically
+/// confirmed by it. An ordinary (non-MANCUDE) duplicate keeps today's existing behavior
+/// unchanged: `duplicated_atom`'s real isotope.
+fn node_key(mol: &Molecule, node: &CipNode) -> (AtomicNumberKey, Option<u16>) {
+    let isotope_atom = match node.kind {
+        CipNodeKind::Atom { atom_idx } => Some(atom_idx),
         CipNodeKind::MultipleBondDuplicate {
-            duplicated_atom, ..
-        } => duplicated_atom,
-        CipNodeKind::RingDuplicate { closure_atom, .. } => closure_atom,
-        CipNodeKind::ImplicitHydrogen => return (1, None),
+            source_atom,
+            duplicated_atom,
+            ..
+        } => Some(match node.atomic_number {
+            AtomicNumberKey::Rational(_) => source_atom,
+            AtomicNumberKey::Integral(_) => duplicated_atom,
+        }),
+        CipNodeKind::RingDuplicate { closure_atom, .. } => Some(closure_atom),
+        CipNodeKind::ImplicitHydrogen => None,
     };
-    let atom = mol.atom(atom_idx);
-    (atom.element.atomic_number(), atom.isotope)
+    let isotope = isotope_atom.and_then(|idx| mol.atom(idx).isotope);
+    (node.atomic_number, isotope)
 }
 
-/// Rule 1a (atomic number) then Rule 2 (isotope: `Some` beats `None`, higher isotope
-/// number beats lower).
-fn cmp_key(a: &(u8, Option<u16>), b: &(u8, Option<u16>)) -> Ordering {
-    match a.0.cmp(&b.0) {
+/// Rule 1a (atomic number, via `cmp_atomic_number_key` -- promotes a plain integer to a
+/// `RationalAtomicNumber` when compared against a MANCUDE fraction) then Rule 2 (isotope:
+/// `Some` beats `None`, higher isotope number beats lower).
+fn cmp_key(a: &(AtomicNumberKey, Option<u16>), b: &(AtomicNumberKey, Option<u16>)) -> Ordering {
+    match cmp_atomic_number_key(a.0, b.0) {
         Ordering::Equal => {}
         other => return other,
     }
@@ -278,10 +303,10 @@ enum LevelSlot {
     Phantom,
 }
 
-fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (u8, Option<u16>) {
+fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (AtomicNumberKey, Option<u16>) {
     match slot {
-        LevelSlot::Node(n) => node_key(graph.molecule(), graph.node(n).kind),
-        LevelSlot::Phantom => (0, None),
+        LevelSlot::Node(n) => node_key(graph.molecule(), graph.node(n)),
+        LevelSlot::Phantom => (AtomicNumberKey::Integral(0), None),
     }
 }
 
