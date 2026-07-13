@@ -268,6 +268,45 @@ modern-oracle agreement ≥98.0% (96.87% as of Milestone 2.5) with zero regressi
 bucket is large enough (96 cases) that hitting the bucket-level ≥99% target above should
 also clear the full-corpus gate, but the full-corpus number is the one that counts.
 
+**Milestone 3B-0 — spec, corpus classification, invariance-test infrastructure (this
+round; zero production behavior change).** PR (1) of the suggested order above. Added,
+all in `chematic-cip`: `rational::RationalAtomicNumber` (an always-reduced integer
+fraction, no `f64`, for IUPAC's "mean atomic number across valid Kekulé placements");
+`mancude::enumerate_kekule_matchings` (a bounded brute-force perfect-matching enumerator
+— `chematic_core::kekulization::kekulize` only ever returns one canonical matching, not
+every valid one — reusing `kekulize()`'s own now-`pub` `atom_must_be_matched`/
+`build_kekule_result` helpers so the two can never silently disagree on what counts as a
+valid placement) plus `effective_atomic_number`; `digraph_diff` (structural diff between
+two `CipDigraph`s built for the same conceptual stereocenter under different
+representations, by per-depth node-kind-count histogram, not full tree isomorphism).
+
+Classified all 98 aromatic/MANCUDE-adjacent corpus cases (96 `aromatic_mancude` bucket +
+2 `uncharacterized` cases Milestone 2.5 found mis-tagged) into multi-label structural
+tags (`cargo test -p chematic-cip --test mancude_corpus_classification`). Headline
+finding: **all 98/98 cases show `aromatic_vs_kekule_digraph_diverges`** — the current
+digraph is representation-dependent on every single case in scope, not most of them,
+confirming the root cause cleanly: `BondOrder::Aromatic.order_int() == 1` contributes
+zero `MultipleBondDuplicate` nodes for ring bonds today, while the same molecule's
+Kekulé-respelled form gains them where its explicit double bonds land. All 98 also show
+`kekulization_succeeds` and `multiple_kekule_forms` (genuinely fractional signatures
+available for all of them, not just a subset) — no precondition gaps for Milestone 3B-1
+to discover mid-implementation. Renumbering alone shows **zero** divergence on any case
+(expected: the bug is about aromatic-vs-Kekulé bond-order notation, not atom indexing).
+SMILES-respelling via `canonical_smiles` (keeps aromatic notation, so no divergence is
+expected there either) could only be checked on 24/98 cases — the atom-relocation
+heuristic (element/charge/aromaticity/degree/chirality-tagged signature) is ambiguous on
+the rest, since this corpus's aromatic-adjacent molecules are almost all
+multi-stereocenter; reported honestly as `skipped`, not guessed.
+
+Verified zero production behavior change: `corpus_report.rs` and
+`uncharacterized_diagnosis.rs` print byte-identical numbers to Milestone 3A
+(4055/4186 full-corpus, 24/155 residual, `BucketMisclassified=2`/
+`NeedsLaterSequenceRule=24`/`OK=17`); `chematic-core`'s full kekulization test suite
+(71 tests) is unaffected by widening `atom_must_be_matched`/`build_kekule_result` to
+`pub`. This PR does not touch `CipNodeKind`, `digraph.rs`, or `compare.rs` — Milestone
+3B-1 (wiring `RationalAtomicNumber` into a new `MancudeDuplicate` node kind) is a
+separate future plan, informed by this round's evidence rather than guessed ahead of it.
+
 **Milestone 4 — Stereo-dependent rules + phosphorus.** Rule 5 / pseudoasymmetry
 multi-pass resolution, plus the frozen corpus's 15 phosphorus stereocenters. Kept last
 and separate from Milestone 3 deliberately: phosphorus stereocenters raise valence/

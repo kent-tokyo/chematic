@@ -23,8 +23,11 @@ pub mod budget;
 pub mod compare;
 pub mod debug;
 pub mod digraph;
+pub mod digraph_diff;
 pub mod edge;
+pub mod mancude;
 pub mod node;
+pub mod rational;
 pub mod trace;
 
 #[cfg(test)]
@@ -37,7 +40,11 @@ pub use compare::{
 };
 pub use digraph::{CipDigraph, DigraphExpander};
 pub use edge::{CipEdge, EdgeId};
+pub use mancude::{
+    MancudeBudget, MancudeError, effective_atomic_number, enumerate_kekule_matchings,
+};
 pub use node::{CipNode, CipNodeKind, NodeId};
+pub use rational::RationalAtomicNumber;
 pub use trace::{ComparisonTrace, DecisionStep};
 
 /// Errors from digraph construction/expansion.
