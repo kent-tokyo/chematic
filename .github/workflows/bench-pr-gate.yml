@@ -233,7 +233,20 @@ jobs:
               sides=(pr main)
             fi
             for side in "${sides[@]}"; do
-              (cd "$side" && cargo bench -p "$crate" --bench "$benchfile" -- "^${name}$")
+              # A bench target (or the crate itself) can legitimately exist on only
+              # one side -- newly added in this PR (no baseline yet) or removed by it
+              # (no candidate). `cargo bench -p <crate> --bench <file>` errors ("no
+              # bench target named ...") in either case, which under this step's
+              # default `set -e` would otherwise abort the whole job on the first
+              # such benchmark, hiding every other benchmark's result behind an
+              # unrelated bootstrap gap (see kent-tokyo/chematic#68's Criterion gate
+              # failure: sssr_bench existed on the PR side but not yet on main).
+              # Tolerated here, not silently: sample.json's absence on the missing
+              # side is exactly what the gate step below uses to classify and report
+              # this case (new/removed benchmark) instead of pairing garbage.
+              if ! (cd "$side" && cargo bench -p "$crate" --bench "$benchfile" -- "^${name}$"); then
+                echo "::warning::$name: no bench target \`$benchfile\` in \`$crate\` on $side (new or removed benchmark?) -- continuing without it"
+              fi
             done
             idx=$((idx + 1))
           done
@@ -259,8 +272,26 @@ jobs:
           do
             b="main/target/criterion/$name/new/sample.json"
             c="pr/target/criterion/$name/new/sample.json"
-            if [ ! -f "$b" ] || [ ! -f "$c" ]; then
-              echo "::warning::$name: sample.json missing on one side, skipping"
+            b_exists=0; [ -f "$b" ] && b_exists=1
+            c_exists=0; [ -f "$c" ] && c_exists=1
+
+            # Three-way classification, not one "missing on either side, skip"
+            # bucket: only "both present" is a real regression signal. A brand-new
+            # benchmark (candidate only) has no baseline to compare against yet --
+            # that's expected on the PR that introduces it, not a gate failure, and
+            # must not block every *other* benchmark's verdict either (previously a
+            # missing bench *target* aborted the whole job before reaching this
+            # step at all -- see the previous step's comment). A benchmark present
+            # only on main (removed by this PR) is flagged for visibility but also
+            # not gated -- intentional removals shouldn't need a perf-gate override.
+            if [ "$b_exists" -eq 0 ] && [ "$c_exists" -eq 0 ]; then
+              echo "::warning::$name: sample.json missing on both sides, skipping"
+              continue
+            elif [ "$b_exists" -eq 0 ] && [ "$c_exists" -eq 1 ]; then
+              echo "::notice::$name: new benchmark, no baseline on main yet -- not gated this run"
+              continue
+            elif [ "$b_exists" -eq 1 ] && [ "$c_exists" -eq 0 ]; then
+              echo "::warning::$name: present on main but missing on the PR branch (removed?) -- not gated, please confirm this removal is intentional"
               continue
             fi
 
