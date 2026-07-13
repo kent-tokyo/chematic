@@ -311,6 +311,17 @@ fn schuffenhauer_remove_ring(
     candidates.retain(|&ri| count_linker_bonds(ri) == min_linker);
 
     // Rule 8: tie-break by smallest atom index in the ring.
+    //
+    // This sorts by raw AtomIdx, which depends on SMILES parse order, not a
+    // canonical rank -- same non-canonical-tie-break shape as the
+    // is_fused_ring bug fixed in chematic-perception's ring_family.rs.
+    // Flagged, not fixed: a direct discriminator (comparing scaffold()
+    // atom counts across disagreeing worst-of-10 traversals, full 5000-mol
+    // corpus) found 0/40 topology-selection mismatches -- every measured
+    // scaffold instability was a canonical-SMILES writer issue, not this
+    // tie-break choosing a different ring. Worth auditing on its own before
+    // changing it; don't assume this is broken just because it's
+    // non-canonical.
     candidates.sort_by_key(|&ri| all_rings[ri].iter().map(|a| a.0).min().unwrap_or(0));
     let chosen_ring = candidates[0];
 

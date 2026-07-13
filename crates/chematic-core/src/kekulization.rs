@@ -235,7 +235,7 @@ pub fn kekulize(mol: &Molecule) -> Result<KekuleResult, KekuleError> {
 }
 
 /// Build the KekuleResult map from the current matching.
-fn build_kekule_result(
+pub fn build_kekule_result(
     aromatic_bonds: &[BondIdx],
     mol: &Molecule,
     matching: &HashMap<AtomIdx, AtomIdx>,
@@ -549,7 +549,7 @@ fn blossom_mark_path(
 ///   bond; no additional ring double bond is needed or possible.
 ///
 /// Everything else (C, N without H like pyridine) must be matched.
-fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
+pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
     let atom = mol.atom(idx);
     match atom.element.atomic_number() {
         // O, S, Se always donate a lone pair → don't need a double bond.

@@ -237,7 +237,29 @@ impl<'a> Namer<'a> {
         let pos2 = ring_dist + 1; // position of the second substituent from first
 
         // Build name: principal group determines root, non-principal is prefix.
-        let (prefix_sub, root_name) = if sub_a.1 {
+        // When both substituents are principal-eligible (e.g. -OH and -NH2), IUPAC
+        // seniority (alcohol > amine) breaks the tie — not attach-point scan order.
+        let principal_seniority = |name: &str| -> u8 {
+            match name {
+                "hydroxy" => 1,
+                "amino" => 0,
+                _ => 0,
+            }
+        };
+        let (prefix_sub, root_name) = if sub_a.1 && sub_b.1 {
+            let (principal, prefix) =
+                if principal_seniority(sub_a.0) >= principal_seniority(sub_b.0) {
+                    (sub_a.0, sub_b.0)
+                } else {
+                    (sub_b.0, sub_a.0)
+                };
+            let root = match principal {
+                "hydroxy" => "phenol",
+                "amino" => "aniline",
+                _ => return Err(IupacError::NotSupported),
+            };
+            (prefix, root)
+        } else if sub_a.1 {
             // sub_a is principal (phenol/aniline): prefix comes from sub_b
             let root = match sub_a.0 {
                 "hydroxy" => "phenol",

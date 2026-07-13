@@ -72,6 +72,10 @@ def main() -> None:
         (ROOT / "README.md", [
             re.compile(r"chematic v" + re.escape(old)),
             re.compile(r"v" + re.escape(old) + r" vs RDKit"),
+            # Repository Structure tree comment: "workspace root (vX.Y.Z)"
+            re.compile(r"workspace root \(v" + re.escape(old) + r"\)"),
+            # BibTeX citation block: "version   = {X.Y.Z},"
+            re.compile(r"version\s*=\s*\{" + re.escape(old) + r"\}"),
         ]),
         (ROOT / "README_ja.md", [
             re.compile(r"chematic v" + re.escape(old)),

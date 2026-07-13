@@ -220,6 +220,9 @@ jobs:
             "pka_predict_10mol:chematic-chem:descriptor_bench"
             "pka_acid_base_10mol:chematic-chem:descriptor_bench"
             "admet_profile_10mol:chematic-chem:descriptor_bench"
+            "find_sssr_10mol:chematic-perception:sssr_bench"
+            "find_sssr_polycyclic_5mol:chematic-perception:sssr_bench"
+            "count_aromatic_rings_10mol:chematic-perception:sssr_bench"
           )
           idx=0
           for entry in "${BENCHES[@]}"; do
@@ -251,7 +254,8 @@ jobs:
             smarts_compile_5pat smarts_match_nocache_10mol smarts_match_cached_10mol smarts_recursive_10mol \
             parse_smiles_10mol canonical_smiles_10mol \
             ecfp4_10mol tanimoto_ecfp4_pairs \
-            descriptors_5x10mol qed_10mol pka_predict_10mol pka_acid_base_10mol admet_profile_10mol
+            descriptors_5x10mol qed_10mol pka_predict_10mol pka_acid_base_10mol admet_profile_10mol \
+            find_sssr_10mol find_sssr_polycyclic_5mol count_aromatic_rings_10mol
           do
             b="main/target/criterion/$name/new/sample.json"
             c="pr/target/criterion/$name/new/sample.json"

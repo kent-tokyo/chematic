@@ -1,0 +1,29 @@
+# PROVISIONAL: measured pre-SSSR-fix. find_sssr is itself non-deterministic
+# and non-minimal for ~50% of sampled molecules (single spanning-tree
+# fundamental-cycle basis, zero candidate redundancy -- see project plan).
+# Expect this list and its root-cause attribution to change once ring
+# perception is fixed.
+#
+# Molecules confirmed (via atom-map-number alignment, not substructure
+# matching) to give a different chematic aromaticity result depending on
+# which valid Kekulized SMILES traversal is used to represent them.
+# Root cause: NOT Pass 1/Pass 2 (verified order-invariant by construction --
+# see plan) but `find_sssr` itself, which can return a non-minimal ring
+# (e.g. a 10-membered ring in place of two 6-membered ones) depending on
+# traversal order, feeding a wrong ring into otherwise order-invariant
+# Huckel evaluation. See project plan for the ring-perception fix.
+#
+# 7 of these were already known-broken (appear in the 32-regression or
+# 110-residual sets even with RDKit's canonical Kekulized form). 3 are new:
+# they PASS with RDKit's canonical form specifically but fail with at least
+# one other valid ordering (marked NEW below).
+C1=C(c2ccccc2)N2CCCN=C2c2ccccc21
+CN1N=C2C3=CC=CC=C3SC3=C2C1=CC=C3
+O=C(O)Cn1c(=O)nc2n(-c3cc(C(F)(F)F)cc(C(F)(F)F)c3)c3ccccc3nc-2c1=O  # NEW
+CCN(CC)CCn1nc2c3c(c(NCCNCCO)ccc31)Sc1c(OC)ccc(OC)c1-2
+O=C(Nc1ccncc1)c1cccc2nc3c(N4CCN(CCc5ccc(F)c(F)c5)CC4)[nH]cnc-3c12
+COc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C  # NEW
+CC(=O)N1c2ncccc2C(=O)N(C)c2cccnc21
+Cn1c(=O)nc2n(-c3ccccc3)c3ccccc3nc-2c1=O  # NEW
+Cc1ccc(C(=O)NCCCN(C)CCCNC(=O)c2ccc(C)c3nc4ccccc4nc23)c2nc3ccccc3nc12
+C1=C(c2ccc(OCc3ccccc3)cc2)N2CCCN=C2c2ccccc21

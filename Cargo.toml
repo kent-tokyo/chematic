@@ -6,6 +6,7 @@ members = [
     "crates/chematic-mol",
     "crates/chematic-depict",
     "crates/chematic-chem",
+    "crates/chematic-cip",
     "crates/chematic-fp",
     "crates/chematic-smarts",
     "crates/chematic-3d",

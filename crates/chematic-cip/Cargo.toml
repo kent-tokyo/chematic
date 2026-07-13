@@ -1,0 +1,26 @@
+[package]
+name = "chematic-cip"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Accurate CIP (Cahn-Ingold-Prelog) digraph foundation for chematic -- design in docs/cip_accurate_rfc.md"
+keywords = ["cheminformatics", "cip", "stereochemistry", "chemistry"]
+categories = ["science", "science::computational-chemistry::cheminformatics"]
+publish = false
+
+[dependencies]
+chematic-core       = { path = "../chematic-core",       version = "0.4.29" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.29" }
+
+[dev-dependencies]
+chematic-chem   = { path = "../chematic-chem",   version = "0.4.29" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.29" }
+serde_json      = "1.0"
+criterion       = { version = "0.8", features = ["html_reports"] }
+
+[[bench]]
+name = "mancude_overhead"
+harness = false

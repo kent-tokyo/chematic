@@ -28,15 +28,31 @@ Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
 | Num amide bonds | **100%** (4999/4999) | exact | |
 | Arom./aliph. heterocycles | **100%** (4999/4999) | exact | |
 | [nH] SMARTS match | **100%** (4999/4999) | precision & recall | TP=467 TN=4532 FP=0 FN=0 |
-| Num stereocenters (legacy)  | **99.98%** (4998/4999) | exact† | vs `CalcNumAtomStereoCenters` |
-| Num stereocenters (new CIP) | 98.7% (4932/4999) | exact† | vs `FindPotentialStereo` |
+| Stereocenter count (legacy)  | **99.98%** (4998/4999) | exact† | *count* agreement only — vs `CalcNumAtomStereoCenters` |
+| Stereocenter count (new CIP) | 98.7% (4932/4999) | exact† | *count* agreement only — vs `FindPotentialStereo` |
+| CIP R/S label agreement | 96.30% (4031/4186 stereocenters) | exact | vs modern `rdCIPLabeler` (primary oracle); 96.83% (4031/4163) vs legacy `_CIPCode`. See `docs/cip_accurate_rfc.md`. |
 
-19 of 19 tested metrics reach ≥98.0% on the 4,999-molecule ChEMBL corpus.
-chematic stereocenters is calibrated between legacy (99.98%) and new-CIP (98.7%) oracles.
+19 of 19 tested metrics reach ≥98.0% on the 4,999-molecule ChEMBL corpus (count-agreement
+metrics only — CIP label agreement is a distinct, stricter check, see below).
+chematic stereocenter *count* is calibrated between legacy (99.98%) and new-CIP (98.7%)
+oracles. This is a different, weaker question than "is the R/S label itself correct" —
+**stereocenter count agreement does not imply label agreement**: an atom can be correctly
+flagged as a stereocenter and still be assigned the wrong R/S. That stricter check is
+measured separately, per-stereocenter (not per-molecule) as "CIP R/S label agreement"
+above — 96.30% against RDKit's modern `rdCIPLabeler` oracle on a 5,000-molecule ChEMBL
+subset (4,186 total stereocenters found across those molecules). See
+`docs/cip_accurate_rfc.md` for the residual's root cause (a structural limitation in the
+CIP comparator, not a series of independently-fixable rule gaps) and the remediation
+plan.
 
 ---
 
 ## Stereocenters — Oracle Calibration
+
+This section is about *count* calibration only — does chematic flag the same atoms as
+stereogenic as RDKit does. It says nothing about whether an agreed-upon stereocenter's
+R/S label is correct; see "CIP R/S label agreement" in the table above and
+`docs/cip_accurate_rfc.md` for that separate, stricter check.
 
 chematic's stereocenter count is calibrated between two RDKit oracles:
 

@@ -168,6 +168,27 @@ fn overlap_score(pairs: &[(usize, usize)], coords1: &[[f64; 3]], coords2: &[[f64
 
 /// Greedily pair each mol1 atom (farthest-from-centroid first) with its
 /// nearest not-yet-used, type-compatible mol2 atom within `DIST_CUTOFF`.
+///
+/// Both tie-breaks below (processing order on an exact centroid-distance
+/// tie; candidate choice on an exact nearest-neighbor-distance tie) break
+/// on the tied atoms' own coordinates (content), not on their array index
+/// -- an index-based tie-break would still vary with input order, since
+/// swapping two tied atoms' array positions is exactly the operation that
+/// changes which one occupies the "winning" index (see the analogous fix
+/// and its doc comment in `usr.rs::extreme_idx`, which found this the hard
+/// way empirically).
+///
+/// This does NOT make `greedy_correspondence` fully order-independent,
+/// only its tie-breaking: the algorithm is inherently greedy
+/// (first-processed mol1 atom claims its nearest mol2 atom, removing it
+/// from the pool for every atom processed after), so even with canonical
+/// tie-breaks, two mol1 atoms that are NOT tied but are both plausible
+/// matches for the same mol2 atom can still get different pairings
+/// depending on which one the (now-deterministic, but still a specific
+/// choice) processing order visits first. That is a property of the greedy
+/// matching strategy itself, not a bug -- a genuinely order-independent
+/// correspondence would need a global assignment algorithm (e.g. Hungarian
+/// matching), out of scope for this round.
 fn greedy_correspondence(
     coords1: &[[f64; 3]],
     types1: &[MMFF94Type],
@@ -179,7 +200,13 @@ fn greedy_correspondence(
     order.sort_by(|&a, &b| {
         let da: f64 = (0..3).map(|k| (coords1[a][k] - c1[k]).powi(2)).sum();
         let db: f64 = (0..3).map(|k| (coords1[b][k] - c1[k]).powi(2)).sum();
-        db.partial_cmp(&da).unwrap_or(std::cmp::Ordering::Equal)
+        db.partial_cmp(&da)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| {
+                coords1[a]
+                    .partial_cmp(&coords1[b])
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     });
 
     let mut used = vec![false; coords2.len()];
@@ -194,7 +221,9 @@ fn greedy_correspondence(
             let d2: f64 = (0..3)
                 .map(|k| (coords1[i][k] - coords2[j][k]).powi(2))
                 .sum();
-            if d2 < best_d2 {
+            let better = d2 < best_d2
+                || (d2 == best_d2 && best_j.is_some_and(|bj| coords2[j] < coords2[bj]));
+            if better {
                 best_d2 = d2;
                 best_j = Some(j);
             }
@@ -358,6 +387,64 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
     use std::collections::HashSet;
+
+    #[test]
+    fn greedy_correspondence_tie_break_is_content_based() {
+        // mol1 has two same-typed atoms (indices 1, 2) confirmed exactly
+        // tied for farthest from centroid (500/9 each, by construction).
+        // Honest caveat, unlike usr.rs's equivalent test: this specific
+        // 3-point configuration passes BOTH before and after the fix (the
+        // greedy algorithm still converges to the same final pairing here
+        // even when the tied atom is processed in a different order, since
+        // there's no actual competition between mol1 atoms for the same
+        // mol2 atom in this small a case) -- so this test does not serve as
+        // a red-before-green repro the way usr.rs's does. Kept as a
+        // regression guard and to document the intent of the fix, not as
+        // proof the pre-fix code was reachably wrong.
+        let t = MMFF94Type::C_sp3;
+        let coords1 = vec![[0.0, 0.0, 0.0], [10.0, 0.0, 0.0], [0.0, 10.0, 0.0]];
+        let types1 = vec![t, t, t];
+        let coords2 = vec![[0.1, 0.0, 0.0], [10.0, 0.1, 0.0], [0.1, 10.0, 0.0]];
+        let types2 = vec![t, t, t];
+
+        let pairs_a = greedy_correspondence(&coords1, &types1, &coords2, &types2);
+
+        let mut coords1_swapped = coords1.clone();
+        coords1_swapped.swap(1, 2);
+        let mut types1_swapped = types1.clone();
+        types1_swapped.swap(1, 2);
+        let mut coords2_swapped = coords2.clone();
+        coords2_swapped.swap(1, 2);
+        let mut types2_swapped = types2.clone();
+        types2_swapped.swap(1, 2);
+        let pairs_b = greedy_correspondence(
+            &coords1_swapped,
+            &types1_swapped,
+            &coords2_swapped,
+            &types2_swapped,
+        );
+
+        // Map indices back through the swap so both results describe pairings
+        // in terms of the ORIGINAL (pre-swap) coordinate identities.
+        let unswap = |idx: usize| -> usize {
+            match idx {
+                1 => 2,
+                2 => 1,
+                other => other,
+            }
+        };
+        let mut normalized_b: Vec<(usize, usize)> = pairs_b
+            .iter()
+            .map(|&(i, j)| (unswap(i), unswap(j)))
+            .collect();
+        let mut normalized_a = pairs_a.clone();
+        normalized_a.sort_unstable();
+        normalized_b.sort_unstable();
+        assert_eq!(
+            normalized_a, normalized_b,
+            "greedy_correspondence's pairing (by coordinate identity) must not depend on array order"
+        );
+    }
 
     /// Rotate `coords` by a fixed, non-trivial rotation and translate.
     fn rotate_translate(coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
@@ -613,5 +700,161 @@ mod tests {
             result.pairs.len(),
             "no mol2 atom should be used twice"
         );
+    }
+
+    /// Rebuild `mol` with atoms relabeled by `perm` (perm[new_idx] = old_idx),
+    /// permuting `coords` identically so each new-index atom keeps its own
+    /// position -- same technique used repeatedly elsewhere this round for
+    /// permutation-invariance probes (see
+    /// [[feedback_permutation_invariance_test_template]]).
+    fn permute_mol_and_coords(
+        mol: &Molecule,
+        coords: &[[f64; 3]],
+        perm: &[usize],
+    ) -> (Molecule, Vec<[f64; 3]>) {
+        use chematic_core::{AtomIdx, MoleculeBuilder};
+        let mut old_to_new = vec![0u32; perm.len()];
+        for (new_idx, &old_idx) in perm.iter().enumerate() {
+            old_to_new[old_idx] = new_idx as u32;
+        }
+        let mut builder = MoleculeBuilder::new();
+        for &old_idx in perm {
+            builder.add_atom(mol.atom(AtomIdx(old_idx as u32)).clone());
+        }
+        for (_, bond) in mol.bonds() {
+            let a = AtomIdx(old_to_new[bond.atom1.0 as usize]);
+            let b = AtomIdx(old_to_new[bond.atom2.0 as usize]);
+            let _ = builder.add_bond(a, b, bond.order);
+        }
+        let permuted_coords: Vec<[f64; 3]> = perm.iter().map(|&old_idx| coords[old_idx]).collect();
+        (builder.build(), permuted_coords)
+    }
+
+    /// Molecules with internal symmetry likely to expose greedy
+    /// order-dependence (`generate_coords` is rule-based, not iteratively
+    /// randomized, so it plausibly places symmetric substituents at exactly
+    /// equidistant positions), plus one asymmetric control.
+    const ORDER_DEPENDENCE_CORPUS: &[&str] = &[
+        "CC(=O)Oc1ccccc1C(=O)O", // asymmetric control
+        "c1ccccc1",
+        "Cc1ccc(C)cc1",
+        "CC(=O)CC(=O)C",
+        "CC(C)(C)C",
+        "CC(C)(C)OC(=O)N",
+        "c1ccc2ccccc2c1",
+        "CC(C)(C)c1ccc(C(C)(C)C)cc1",
+        "O=C1CCC(=O)N1",
+        "CC(C)(C)C(=O)C(C)(C)C",
+    ];
+
+    /// mol1/coords1 (unpermuted) plus mol2/coords2 in both its original and
+    /// atom-order-reversed forms, for `self_align_baseline_vs_reversed`.
+    struct OrderDependenceProbe {
+        mol1: Molecule,
+        coords1: Vec<[f64; 3]>,
+        mol2: Molecule,
+        coords2: Vec<[f64; 3]>,
+        mol2_rev: Molecule,
+        coords2_rev: Vec<[f64; 3]>,
+        /// `correspondence_search(mol1, coords1, mol2, coords2)`, sorted.
+        baseline_pairs: Vec<(usize, usize)>,
+        /// `correspondence_search(mol1, coords1, mol2_rev, coords2_rev)`,
+        /// mapped back to original mol2 atom identities and sorted.
+        reversed_pairs: Vec<(usize, usize)>,
+    }
+
+    /// Self-align mol1 against a rotated+translated mol2, once with mol2's
+    /// atoms in original order and once reversed (coords permuted to match).
+    fn self_align_baseline_vs_reversed(smi: &str) -> OrderDependenceProbe {
+        let mol1 = parse(smi).unwrap();
+        let n = mol1.atom_count();
+        let coords1_map = crate::dg::generate_coords(&mol1);
+        let coords1: Vec<[f64; 3]> = (0..n)
+            .map(|i| {
+                let p = coords1_map.get(chematic_core::AtomIdx(i as u32));
+                [p.x, p.y, p.z]
+            })
+            .collect();
+
+        let mol2 = parse(smi).unwrap();
+        let coords2: Vec<[f64; 3]> = rotate_translate(&coords1);
+        let baseline = correspondence_search(&mol1, &coords1, &mol2, &coords2).unwrap();
+
+        let perm: Vec<usize> = (0..n).rev().collect();
+        let (mol2_rev, coords2_rev) = permute_mol_and_coords(&mol2, &coords2, &perm);
+        let reversed = correspondence_search(&mol1, &coords1, &mol2_rev, &coords2_rev).unwrap();
+        let mut reversed_pairs: Vec<(usize, usize)> =
+            reversed.iter().map(|&(i, j)| (i, perm[j])).collect();
+        let mut baseline_pairs = baseline.clone();
+        baseline_pairs.sort_unstable();
+        reversed_pairs.sort_unstable();
+
+        OrderDependenceProbe {
+            mol1,
+            coords1,
+            mol2,
+            coords2,
+            mol2_rev,
+            coords2_rev,
+            baseline_pairs,
+            reversed_pairs,
+        }
+    }
+
+    #[test]
+    fn correspondence_search_alignment_score_is_order_independent() {
+        // Check 2a (the property that actually matters for O3A's real use
+        // case -- shape/pharmacophore similarity scoring): even when
+        // `.pairs`' specific atom-to-atom identity depends on mol2's atom
+        // order (see the #[ignore]d test below), the resulting ALIGNMENT
+        // SCORE does not, for every molecule in this corpus. This is what
+        // makes the confirmed pairs-identity divergence a harmless
+        // automorphism-equivalent tie rather than a scoring bug.
+        for &smi in ORDER_DEPENDENCE_CORPUS {
+            let p = self_align_baseline_vs_reversed(smi);
+            let base_score = o3a_align(&p.mol1, &p.coords1, &p.mol2, &p.coords2)
+                .unwrap()
+                .score;
+            let rev_score = o3a_align(&p.mol1, &p.coords1, &p.mol2_rev, &p.coords2_rev)
+                .unwrap()
+                .score;
+            assert!(
+                (base_score - rev_score).abs() < 1e-9,
+                "{smi}: alignment score depends on mol2 atom order: {base_score} vs {rev_score}"
+            );
+        }
+    }
+
+    #[test]
+    #[ignore = "confirmed real, reachable, and deliberately not fixed this \
+                round: correspondence_search/o3a_align's `.pairs` (the \
+                specific per-atom identity mapping, as opposed to the \
+                alignment score) depends on mol2's atom insertion order for \
+                symmetric molecules -- reversing mol2's atom order changes \
+                which physical atom each mol1 atom is paired with for \
+                p-xylene, di-tert-butylbenzene, and succinimide in this \
+                corpus (3/10). This is the greedy-algorithm order-sensitivity \
+                greedy_correspondence's doc comment describes as a known, \
+                unaddressed property (separate from the 9d521f7 tie-break \
+                fix, which does not touch this) -- now empirically confirmed \
+                reachable rather than just theoretical. Confirmed harmless \
+                for the practical use case (see \
+                correspondence_search_alignment_score_is_order_independent: \
+                the alignment SCORE is identical in every diverging case \
+                here, consistent with the divergence being an \
+                automorphism-equivalent tie), but `.pairs` itself is a \
+                public field and IS order-dependent for any caller that \
+                inspects specific atom identities rather than just the \
+                score. A real fix needs a global assignment algorithm \
+                (e.g. Hungarian matching), out of scope for this round."]
+    fn correspondence_search_pairs_identity_is_order_independent() {
+        for &smi in ORDER_DEPENDENCE_CORPUS {
+            let p = self_align_baseline_vs_reversed(smi);
+            assert_eq!(
+                p.baseline_pairs, p.reversed_pairs,
+                "{smi}: correspondence_search's pairing (by atom identity) \
+                 changed when mol2's atom order was reversed"
+            );
+        }
     }
 }

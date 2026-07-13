@@ -40,18 +40,7 @@ pub fn tetrahedral_stereo_neighbors(
         return None;
     }
 
-    let mut neighbors: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
-
-    // Insert virtual H at the SMILES-correct position for bracket-H atoms.
-    let has_bracket_h = atom.hydrogen_count.is_some_and(|h| h > 0);
-    if has_bracket_h {
-        let has_preceding = neighbors
-            .first()
-            .map(|&nb| nb.0 < center.0)
-            .unwrap_or(false);
-        let h_insert_pos = if has_preceding { 1 } else { 0 };
-        neighbors.insert(h_insert_pos, AtomIdx(u32::MAX));
-    }
+    let neighbors = stereo_neighbors(mol, center);
     if neighbors.len() != 4 {
         return None;
     }
@@ -168,9 +157,13 @@ struct ExpandState {
 /// comparison.
 ///
 /// Phantom atom rules:
-/// 1. **Double-bond phantom**: when expanding node B (reached via double bond from A),
-///    add a phantom entry for A at the same depth level as B's children.
-/// 2. **Ring revisit phantom**: if an already-visited atom is encountered,
+/// 1. **Double-bond phantom, arrival side**: when expanding node B (reached via double
+///    bond from A), add a phantom entry for A at the same depth level as B's children.
+/// 2. **Double-bond phantom, departure side**: when listing A's own substituents and B
+///    is reached via a double bond, count B twice in A's substituent list (the real B,
+///    continuing the graph, plus a terminal duplicate) -- a double bond duplicates its
+///    partner into *both* atoms' substituent lists, not just the arrival side above.
+/// 3. **Ring revisit phantom**: if an already-visited atom is encountered,
 ///    add a phantom for it but don't expand further.
 fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<SphereLayer> {
     let mut layers: HashMap<usize, Vec<(u8, Option<u16>, f64)>> = HashMap::new();
@@ -213,6 +206,14 @@ fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<Sp
             }
             let child_key = atom_key(mol, nb);
             let layer = layers.entry(child_depth).or_default();
+
+            // Departure-side double-bond phantom (rule 2 above).
+            let is_double = mol
+                .bond_between(state.node, nb)
+                .is_some_and(|(_, b)| b.order == BondOrder::Double);
+            if is_double {
+                layer.push(child_key);
+            }
 
             if state.visited.contains(&nb) {
                 // Ring revisit: phantom only, no expansion.
@@ -493,15 +494,26 @@ pub(crate) fn rank_substituents(
     Some(ranks)
 }
 
-fn assign_tetrahedral(mol: &Molecule, idx: AtomIdx) -> Option<CipCode> {
-    let atom = mol.atom(idx);
-    if atom.chirality == Chirality::None {
-        return None;
+/// Collect a chiral atom's 4 substituents (including a virtual `AtomIdx(u32::MAX)`
+/// slot for bracket H) in SMILES chirality-neighbor order.
+///
+/// Prefers `Molecule::stereo_neighbor_order`, which the SMILES parser populates with
+/// the *true* textual encounter order: ring-closure partners are resolved to their
+/// digit's actual position in the string via a dedicated slot mechanism
+/// (`StereoEntry::PendingRing`), not the order bonds happen to be materialized in the
+/// adjacency list. That distinction matters because a ring-*opening* bond (partner
+/// unknown yet) is only added to `Molecule::neighbors()` once the matching closing
+/// digit is reached, which can be *after* a branch/continuation atom that appears
+/// later in the text but has nothing to wait on — so raw adjacency order silently
+/// reorders the ring partner behind that atom. Falls back to adjacency order (with
+/// the same heuristic H placement as before) for molecules with no parse-time stereo
+/// data, e.g. built directly via `MoleculeBuilder`.
+fn stereo_neighbors(mol: &Molecule, idx: AtomIdx) -> Vec<AtomIdx> {
+    if let Some(order) = mol.stereo_neighbor_order(idx) {
+        return order.iter().map(|&n| AtomIdx(n)).collect();
     }
 
-    // Collect neighbors in adjacency order.  In the SMILES parser, bonds are added
-    // in the order the SMILES string is processed, so adjacency order matches SMILES
-    // encounter order for the non-H substituents.
+    let atom = mol.atom(idx);
     let mut neighbors: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
 
     // For bracket atoms with explicit H (e.g. `[C@@H]`), the H occupies a specific
@@ -526,7 +538,16 @@ fn assign_tetrahedral(mol: &Molecule, idx: AtomIdx) -> Option<CipCode> {
         let h_insert_pos = if has_preceding { 1 } else { 0 };
         neighbors.insert(h_insert_pos, AtomIdx(u32::MAX));
     }
+    neighbors
+}
 
+fn assign_tetrahedral(mol: &Molecule, idx: AtomIdx) -> Option<CipCode> {
+    let atom = mol.atom(idx);
+    if atom.chirality == Chirality::None {
+        return None;
+    }
+
+    let neighbors = stereo_neighbors(mol, idx);
     if neighbors.len() != 4 {
         return None;
     }
@@ -1215,5 +1236,34 @@ mod tests {
         let assignment = assign_cip(&mol);
         // Should complete without panic/crash
         assert!(assignment.assignments.len() <= mol.atom_count());
+    }
+
+    #[test]
+    fn test_tetrahedral_stable_when_ring_bond_opens_before_other_neighbors() {
+        // A stereocenter whose ring-closure digit is written BEFORE its other
+        // substituents (`[C@@H]1...`) used to get the wrong CIP code: raw adjacency
+        // order only materializes a ring-*opening* bond once the matching closing
+        // digit is reached, which is later than a continuation atom that has nothing
+        // to wait on -- so the neighbor meant to come second (by SMILES-textual
+        // position) ended up listed after one that should come third. Verified
+        // against RDKit's CanonicalRankAtoms-based CIP oracle (atom 5 == R here).
+        let smi_a = "CN1CCC[C@@H]1c1cccnc1";
+        let smi_b = "c1ccncc1[C@@H]1N(CCC1)C"; // same molecule, order-only respelling
+        assert_eq!(cip_at(smi_a, 5), Some(CipCode::R));
+        assert_eq!(cip_at(smi_b, 6), Some(CipCode::R));
+    }
+
+    #[test]
+    fn test_tetrahedral_double_bond_duplicates_into_own_sphere() {
+        // A stereocenter substituent reached via a double bond must count as TWO
+        // entries in ITS OWN CIP substituent sphere (the real atom plus a phantom
+        // duplicate), not just contribute a single phantom to the far side of the
+        // double bond. Without the departure-side duplicate, `C(=CH2)(CH3)-` scores
+        // (C,C) instead of (C,C,C) and loses a priority tie-break it should win.
+        // Verified against RDKit (atom 3 == R).
+        assert_eq!(
+            cip_at("C=C(C)[C@@H]1CN[C@@H](C(=O)O)[C@@H]1CC(=O)O", 3),
+            Some(CipCode::R)
+        );
     }
 }

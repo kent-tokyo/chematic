@@ -2,7 +2,7 @@
 //! carboxylic acids, esters.
 
 use crate::helpers::{
-    alkane_base, alkane_stem, alkane_suffix, chain_from_anchor, count_c_chain,
+    alkane_base, alkane_stem, alkane_suffix, anchor_chain_and_substituents, count_c_chain,
     find_longest_c_chain, format_substituents,
 };
 use crate::{IupacError, Namer};
@@ -80,27 +80,12 @@ impl<'a> Namer<'a> {
             .ok_or(IupacError::NotSupported)?;
 
         if implicit_hcount(mol, carbonyl_c) > 0 {
-            // Aldehyde: CHO is position 1; find chain from carbonyl_c.
+            // Aldehyde: CHO is position 1; find chain from carbonyl_c, picking
+            // among tied-longest candidates by substituent count (IUPAC P-44.3).
             let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
-            let chain = chain_from_anchor(mol, &c_set, carbonyl_c);
+            let (chain, subs) = anchor_chain_and_substituents(mol, &c_set, carbonyl_c)
+                .ok_or(IupacError::NotSupported)?;
             let n = chain.len();
-            let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
-            let mut subs: Vec<(usize, usize)> = Vec::new();
-            for (pos0, &chain_c) in chain.iter().enumerate() {
-                if pos0 == 0 {
-                    continue;
-                }
-                let position = pos0 + 1;
-                for (nb, _) in mol.neighbors(chain_c) {
-                    if c_set.contains(&nb) && !chain_set.contains(&nb) {
-                        let sub_len = count_c_chain(mol, nb, chain_c);
-                        if sub_len > 4 {
-                            return Err(IupacError::NotSupported);
-                        }
-                        subs.push((position, sub_len));
-                    }
-                }
-            }
             let prefix = if subs.is_empty() {
                 String::new()
             } else {
@@ -234,26 +219,11 @@ impl<'a> Namer<'a> {
 
         let c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();
         if let Some(alc_c) = alcohol_c {
-            // Ester: find acid chain from carbonyl_c (handles branched acid parts).
-            let chain_acid = chain_from_anchor(mol, &c_set, carbonyl_c);
+            // Ester: find acid chain from carbonyl_c (handles branched acid parts),
+            // picking among tied-longest candidates by substituent count.
+            let (chain_acid, subs) = anchor_chain_and_substituents(mol, &c_set, carbonyl_c)
+                .ok_or(IupacError::NotSupported)?;
             let acid_n = chain_acid.len();
-            let chain_acid_set: HashSet<AtomIdx> = chain_acid.iter().copied().collect();
-            let mut subs: Vec<(usize, usize)> = Vec::new();
-            for (pos0, &chain_c) in chain_acid.iter().enumerate() {
-                if pos0 == 0 {
-                    continue;
-                }
-                let position = pos0 + 1;
-                for (nb, _) in mol.neighbors(chain_c) {
-                    if c_set.contains(&nb) && !chain_acid_set.contains(&nb) {
-                        let sub_len = count_c_chain(mol, nb, chain_c);
-                        if sub_len > 4 {
-                            return Err(IupacError::NotSupported);
-                        }
-                        subs.push((position, sub_len));
-                    }
-                }
-            }
             let alcohol_n = count_c_chain(mol, alc_c, ester_o);
             let acid_part = if subs.is_empty() {
                 format!("{}anoate", alkane_stem(acid_n))
@@ -266,26 +236,11 @@ impl<'a> Namer<'a> {
             };
             Ok(format!("{}yl {}", alkane_stem(alcohol_n), acid_part))
         } else {
-            // Carboxylic acid — find principal chain from carboxyl C (always position 1).
-            let chain = chain_from_anchor(mol, &c_set, carbonyl_c);
+            // Carboxylic acid — find principal chain from carboxyl C (always
+            // position 1), picking among tied-longest candidates by substituent count.
+            let (chain, subs) = anchor_chain_and_substituents(mol, &c_set, carbonyl_c)
+                .ok_or(IupacError::NotSupported)?;
             let n = chain.len();
-            let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
-            let mut subs: Vec<(usize, usize)> = Vec::new();
-            for (pos0, &chain_c) in chain.iter().enumerate() {
-                if pos0 == 0 {
-                    continue;
-                }
-                let position = pos0 + 1;
-                for (nb, _) in mol.neighbors(chain_c) {
-                    if c_set.contains(&nb) && !chain_set.contains(&nb) {
-                        let sub_len = count_c_chain(mol, nb, chain_c);
-                        if sub_len > 4 {
-                            return Err(IupacError::NotSupported);
-                        }
-                        subs.push((position, sub_len));
-                    }
-                }
-            }
             if subs.is_empty() {
                 Ok(format!("{}anoic acid", alkane_stem(n)))
             } else {

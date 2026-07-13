@@ -1035,8 +1035,9 @@ fn mmp_pairs_json_ethylbenzene_propylbenzene() {
         "should have core key: {result}"
     );
     assert!(
-        // Canonical form updated after bond-order-aware Morgan fix (#14).
-        result.contains("c1c([*])cccc1") || result.contains("c1(ccccc1)[*]"),
+        // Canonical form updated for the individualize-refine ranking rewrite
+        // (Round 10) -- same molecule as the prior oracle strings (RDKit-confirmed).
+        result.contains("c1c(cccc1)[*]"),
         "core should be benzene: {result}"
     );
     assert!(

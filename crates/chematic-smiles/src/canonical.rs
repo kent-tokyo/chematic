@@ -25,15 +25,37 @@ use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_S
 /// The returned `Vec<usize>` lists atom positions (0-based) in the order they
 /// would be encountered during a canonical DFS write.  Atoms with higher
 /// Morgan rank appear earlier.  This is the same ordering `canonical_smiles`
-/// uses internally.
+/// uses internally: raw `morgan_ranks` ties are resolved via the same
+/// individualize-refine + lexicographically-smallest-string selection, not
+/// left as an input-order-dependent plateau.
 ///
 /// Useful for normalizing atom-indexed property arrays to a canonical order.
 pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
-    let ranks = morgan_ranks(mol);
-    let mut order: Vec<usize> = (0..mol.atom_count()).collect();
+    let n = mol.atom_count();
+    if n == 0 {
+        return Vec::new();
+    }
+    let ranks = winning_individualized_ranks(mol);
+    let mut order: Vec<usize> = (0..n).collect();
     // Sort descending by rank (highest rank first, as in canonical DFS).
     order.sort_unstable_by(|&a, &b| ranks[b].cmp(&ranks[a]));
     order
+}
+
+/// Resolve `morgan_ranks` ties via individualize-refine and return the fully
+/// discrete per-atom ranks of whichever branch produces the
+/// lexicographically smallest canonical SMILES -- shared by
+/// `canonical_smiles` and `canonical_atom_order` so both use the identical
+/// tie-break, instead of `canonical_atom_order` silently falling back to raw
+/// (tie-break-free) `morgan_ranks`.
+fn winning_individualized_ranks(mol: &Molecule) -> Vec<u64> {
+    let plateaued = morgan_ranks(mol);
+    let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
+    let branches = enumerate_discrete_ranks(mol, plateaued, &mut budget);
+    branches
+        .into_iter()
+        .min_by_key(|ranks| CanonicalWriter::new(mol, ranks).write_all())
+        .unwrap_or_default()
 }
 
 /// Return `true` if atoms `a` and `b` are topologically equivalent (symmetric).
@@ -80,26 +102,51 @@ pub fn are_atoms_equivalent(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
 ///
 /// For molecules with no atoms, returns an empty string.
 /// Disconnected fragments (multiple components) are joined with `.`.
+///
+/// Atom ordering is fully discretized before writing (individualize-refine,
+/// see `enumerate_discrete_ranks`): when the plain Morgan refinement in
+/// [`morgan_ranks`] plateaus with genuine (non-automorphism) ties still
+/// present, every possible resolution is tried and the lexicographically
+/// smallest resulting string is returned. This makes the output invariant to
+/// which input atom ordering/spelling the molecule was parsed from, not just
+/// idempotent under repeated self-canonicalization.
 pub fn canonical_smiles(mol: &Molecule) -> String {
     if mol.atom_count() == 0 {
         return String::new();
     }
 
-    let ranks = morgan_ranks(mol);
+    let ranks = winning_individualized_ranks(mol);
     CanonicalWriter::new(mol, &ranks).write_all()
 }
 
 /// Compute Morgan (extended connectivity) ranks for all atoms.
 ///
 /// Returns a vector of normalised ordinal ranks (0-based, gap-free)
-/// indexed by atom position (same order as `mol.atoms()`).
+/// indexed by atom position (same order as `mol.atoms()`). This is pure
+/// neighbor-hash refinement to a fixpoint -- it does NOT individualize
+/// remaining ties, so atoms in the same non-trivial automorphism orbit (or
+/// in a refinement cell that merely *contains* an orbit) keep equal ranks.
+/// That is the correct, useful notion of "rank" for topological-symmetry
+/// queries (see [`equivalent_atom_classes`], [`are_atoms_equivalent`]).
+///
+/// [`canonical_smiles`] does NOT use this directly for atom ordering when
+/// ties remain -- see `enumerate_discrete_ranks` for the individualize-refine
+/// step that resolves ties before writing.
 pub fn morgan_ranks(mol: &Molecule) -> Vec<u64> {
     let n = mol.atom_count();
-
-    let mut ranks: Vec<u64> = (0..n)
+    let initial: Vec<u64> = (0..n)
         .map(|i| initial_invariant(mol, AtomIdx(i as u32)))
         .collect();
+    refine_ranks(mol, initial)
+}
 
+/// Refine `ranks` (any starting coloring, not necessarily the initial
+/// invariant) via neighbor-hash iteration until the number of distinct
+/// classes stops increasing. Used both for the plain (tie-preserving) ranks
+/// in [`morgan_ranks`] and, with a perturbed starting coloring, as the
+/// "refine" half of individualize-refine in `enumerate_discrete_ranks`.
+fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
+    let n = ranks.len();
     let max_iter = n + 2;
     for _ in 0..max_iter {
         let old_distinct = count_distinct(&ranks);
@@ -132,6 +179,102 @@ pub fn morgan_ranks(mol: &Molecule) -> Vec<u64> {
     }
 
     normalize_ranks(&ranks)
+}
+
+/// Safety cap on the number of discrete rank assignments
+/// `enumerate_discrete_ranks` will explore. It exists to guarantee
+/// termination on pathologically symmetric inputs (fullerene fragments,
+/// deep dendrimers) where the principled fix is automorphism-aware branch
+/// pruning (nauty-style), not attempted here. Once exhausted, the
+/// remaining ties in that branch fall back to `canonical_cmp`'s finite
+/// tie-break chain (deterministic, but not guaranteed order-independent).
+///
+/// This IS hit in practice, corrected 2026-07-12 after a claim of "never
+/// hit" here went unverified: measured on 5,000 real ChEMBL-derived
+/// molecules, 3 (0.06%) exceeded this cap, needing up to 168,219 branches
+/// (16.8x). All three are real drug-synthesis intermediates with multiple
+/// Boc/pivaloyl tert-butyl protecting groups, each an independent 3-way
+/// symmetric orbit that multiplies combinatorially across the molecule.
+/// For all three, truncation at 10,000 was confirmed (against an
+/// unbounded run, and separately against 32 independent re-spellings) to
+/// still find the correct lexicographically-smallest winner -- the
+/// exhausted cells in these cases are true automorphism orbits (every
+/// individualization within the cell writes the same string, so the
+/// blowup is redundant duplicates, not competing candidates). This is not
+/// a guarantee for the general case: the failure mode this cap is meant
+/// to bound is a cell that merely *contains* an orbit (genuinely different
+/// candidates truncated away), which no real molecule in this corpus
+/// happened to exercise. Raising the constant is not a principled fix (the
+/// observed distribution has a cliff -- p99.9 is ~4,922, but the 3
+/// offenders need 74k-168k -- so no fixed multiple closes the gap); the
+/// real fix is the orbit-aware pruning mentioned above.
+const MAX_INDIVIDUALIZE_BRANCHES: usize = 10_000;
+
+/// Individualize atom `atom_idx` within its current rank class: insert a new
+/// rank strictly between its class and the next-higher class, so a
+/// subsequent refinement pass can propagate the distinction through the rest
+/// of the graph. `ranks` must be gap-free ordinals (as produced by
+/// `refine_ranks`/`normalize_ranks`).
+fn individualize(ranks: &[u64], atom_idx: usize) -> Vec<u64> {
+    let v = ranks[atom_idx];
+    ranks
+        .iter()
+        .enumerate()
+        .map(|(i, &r)| {
+            if i == atom_idx {
+                v + 1
+            } else if r > v {
+                r + 1
+            } else {
+                r
+            }
+        })
+        .collect()
+}
+
+/// Enumerate every discrete (all-singleton) rank assignment reachable from
+/// `ranks` (already refined to a fixpoint) via individualize-refine
+/// branching.
+///
+/// Refinement cells are always unions of automorphism orbits (a standard
+/// 1-WL / equitable-partition fact: refinement can never split an orbit).
+/// So: if a cell IS an orbit, every choice of which atom to individualize
+/// yields an automorphic result -- the resulting SMILES strings are
+/// identical, so exploring all of them is correct but redundant. If a cell
+/// properly CONTAINS an orbit, no order-independent rule can select a single
+/// representative (if one existed, refinement would already have used it as
+/// an invariant and the cell would not be tied) -- the only order-independent
+/// resolution is to try every atom in the cell and let the caller take the
+/// lexicographically smallest resulting string. Cell SELECTION (which
+/// non-singleton class to branch on next) is itself order-independent:
+/// always the lowest-ranked non-singleton cell.
+fn enumerate_discrete_ranks(mol: &Molecule, ranks: Vec<u64>, budget: &mut usize) -> Vec<Vec<u64>> {
+    let mut by_rank: Vec<Vec<usize>> = Vec::new();
+    for (i, &r) in ranks.iter().enumerate() {
+        let r = r as usize;
+        if by_rank.len() <= r {
+            by_rank.resize(r + 1, Vec::new());
+        }
+        by_rank[r].push(i);
+    }
+
+    // `by_rank` is indexed by ordinal rank value, so the first multi-member
+    // entry found is the lowest-ranked non-singleton cell.
+    let Some(members) = by_rank.iter().find(|m| m.len() > 1) else {
+        return vec![ranks];
+    };
+
+    let mut results = Vec::new();
+    for &atom_idx in members {
+        if *budget == 0 {
+            break;
+        }
+        *budget -= 1;
+        let individualized = individualize(&ranks, atom_idx);
+        let re_refined = refine_ranks(mol, individualized);
+        results.extend(enumerate_discrete_ranks(mol, re_refined, budget));
+    }
+    results
 }
 
 /// Initial per-atom invariant packed into a u64.
@@ -211,10 +354,18 @@ struct CanonicalWriter<'a> {
     ranks: &'a [u64],
     written: Vec<bool>,
     ring_bonds: HashSet<BondIdx>,
-    /// (ring_num, bond_order, ring_partner_atom)
-    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, BondOrder, AtomIdx)>>,
+    /// (ring_num, bond_order, ring_partner_atom, physical_bond)
+    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, BondOrder, AtomIdx, BondIdx)>>,
     next_ring: u32,
     out: String,
+    /// Union-find groups of directional (`/`/`\`) bonds that jointly encode
+    /// one connected E/Z system — flipping every member preserves geometry,
+    /// flipping a subset does not. Keyed/rooted by `BondIdx`.
+    ez_group: HashMap<BondIdx, BondIdx>,
+    /// Groups whose first-encountered bond (in write order) came out `Down`;
+    /// every remaining bond in the group is flipped so the first directional
+    /// bond of each system is always `/`, regardless of input spelling.
+    ez_flip: HashMap<BondIdx, bool>,
 }
 
 impl<'a> CanonicalWriter<'a> {
@@ -228,10 +379,101 @@ impl<'a> CanonicalWriter<'a> {
             atom_ring_nums: HashMap::new(),
             next_ring: 1,
             out: String::new(),
+            ez_group: HashMap::new(),
+            ez_flip: HashMap::new(),
+        }
+    }
+
+    /// Union all directional single bonds flanking each stereo double bond
+    /// into one group per connected E/Z system (order-independent — depends
+    /// only on molecule topology, not on canonical ranks or write order).
+    fn build_ez_groups(&mut self) {
+        fn is_directional(mol: &Molecule, bidx: BondIdx, order: BondOrder) -> bool {
+            matches!(order, BondOrder::Up | BondOrder::Down) || mol.bond_direction(bidx).is_some()
+        }
+
+        fn find(group: &mut HashMap<BondIdx, BondIdx>, x: BondIdx) -> BondIdx {
+            let parent = *group.get(&x).unwrap_or(&x);
+            if parent == x {
+                x
+            } else {
+                let root = find(group, parent);
+                group.insert(x, root);
+                root
+            }
+        }
+
+        fn union(group: &mut HashMap<BondIdx, BondIdx>, a: BondIdx, b: BondIdx) {
+            let ra = find(group, a);
+            let rb = find(group, b);
+            if ra != rb {
+                group.insert(ra, rb);
+            }
+        }
+
+        for bidx in 0..self.mol.bond_count() {
+            let bidx = BondIdx(bidx as u32);
+            let bond = self.mol.bond(bidx);
+            if bond.order != BondOrder::Double {
+                continue;
+            }
+            let mut side_bonds = Vec::new();
+            for endpoint in [bond.atom1, bond.atom2] {
+                for (_, nb_bidx) in self.mol.neighbors(endpoint) {
+                    if nb_bidx == bidx {
+                        continue;
+                    }
+                    let nb_order = self.mol.bond(nb_bidx).order;
+                    if is_directional(self.mol, nb_bidx, nb_order) {
+                        side_bonds.push(nb_bidx);
+                    }
+                }
+            }
+            let Some(&first) = side_bonds.first() else {
+                continue;
+            };
+            self.ez_group.entry(first).or_insert(first);
+            for &b in &side_bonds[1..] {
+                self.ez_group.entry(b).or_insert(b);
+                union(&mut self.ez_group, first, b);
+            }
+        }
+    }
+
+    /// Normalize a directional bond order so the first occurrence of each
+    /// E/Z system in canonical write order is always `Up` (`/`); every other
+    /// bond in the system is flipped consistently to preserve geometry.
+    fn normalize_ez(&mut self, bidx: BondIdx, order: BondOrder) -> BondOrder {
+        if !matches!(order, BondOrder::Up | BondOrder::Down) {
+            return order;
+        }
+        let root = {
+            let mut x = *self.ez_group.get(&bidx).unwrap_or(&bidx);
+            while let Some(&p) = self.ez_group.get(&x) {
+                if p == x {
+                    break;
+                }
+                x = p;
+            }
+            x
+        };
+        let flip = *self.ez_flip.entry(root).or_insert(order == BondOrder::Down);
+        if flip {
+            match order {
+                BondOrder::Up => BondOrder::Down,
+                BondOrder::Down => BondOrder::Up,
+                other => other,
+            }
+        } else {
+            order
         }
     }
 
     fn write_all(mut self) -> String {
+        // Phase 0: group directional bonds into connected E/Z systems
+        // (topology-only, independent of canonical order).
+        self.build_ez_groups();
+
         // Phase 1: discover ring-closure back-edges using the SAME canonical DFS
         // order that the writer will use. This ensures ring-closure numbers are
         // stable across re-parses.
@@ -375,14 +617,18 @@ impl<'a> CanonicalWriter<'a> {
                     }
                     other => other,
                 };
-                self.atom_ring_nums
-                    .entry(neighbor)
-                    .or_default()
-                    .push((rn, order_at_open, atom)); // partner = close atom
-                self.atom_ring_nums
-                    .entry(atom)
-                    .or_default()
-                    .push((rn, order_at_close, neighbor)); // partner = open atom
+                self.atom_ring_nums.entry(neighbor).or_default().push((
+                    rn,
+                    order_at_open,
+                    atom,
+                    bidx,
+                )); // partner = close atom
+                self.atom_ring_nums.entry(atom).or_default().push((
+                    rn,
+                    order_at_close,
+                    neighbor,
+                    bidx,
+                )); // partner = open atom
             }
         }
 
@@ -407,7 +653,8 @@ impl<'a> CanonicalWriter<'a> {
 
         // Ring-closure digits.
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
-            for (rn, bond_order, _partner) in rings {
+            for (rn, bond_order, _partner, bidx) in rings {
+                let bond_order = self.normalize_ez(bidx, bond_order);
                 let atom_arom = self.mol.atom(atom).aromatic;
                 if !(bond_order == BondOrder::Aromatic && atom_arom)
                     && bond_order != BondOrder::Single
@@ -432,7 +679,7 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         // Tree-edge children, sorted canonically.
-        let mut children: Vec<(AtomIdx, BondOrder)> = self
+        let mut children: Vec<(AtomIdx, BondIdx, BondOrder)> = self
             .mol
             .neighbors(atom)
             .filter(|(nb, bidx)| {
@@ -464,15 +711,20 @@ impl<'a> CanonicalWriter<'a> {
                     }
                     other => other,
                 };
-                (nb, order)
+                (nb, bidx, order)
             })
             .collect();
 
         // Sort children by canonical rank (ascending → highest rank = main chain).
-        children.sort_by(|&(a, _), &(b, _)| self.canonical_cmp(a, b));
+        children.sort_by(|&(a, ..), &(b, ..)| self.canonical_cmp(a, b));
 
         let n = children.len();
-        for (i, (child, bond_order)) in children.into_iter().enumerate() {
+        for (i, (child, bidx, bond_order)) in children.into_iter().enumerate() {
+            // Normalized here (not in the map above) so the flip decision is
+            // made in true left-to-right write order: this atom's earlier
+            // (lower-rank) children have already fully recursed by the time
+            // a later sibling's direction is decided.
+            let bond_order = self.normalize_ez(bidx, bond_order);
             let is_last = i == n - 1;
             let parent_arom = self.mol.atom(atom).aromatic;
             let child_arom = self.mol.atom(child).aromatic;
@@ -601,7 +853,7 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         if let Some(rings) = self.atom_ring_nums.get(&atom) {
-            for &(_, _, partner) in rings {
+            for &(_, _, partner, _) in rings {
                 canonical.push(partner.0);
             }
         }
@@ -673,6 +925,255 @@ fn permutation_is_odd(original: &[u32], canonical: &[u32]) -> bool {
 mod tests {
     use super::*;
     use crate::parser::parse;
+
+    /// Build a copy of `mol` with atoms reordered by `perm` (perm[new_idx] = old_idx).
+    /// Bonds are remapped to the new indices; stereo/direction metadata is
+    /// intentionally dropped since this helper only exists to test whether the
+    /// *skeleton* rank partition is invariant under atom relabeling.
+    fn permute_molecule(mol: &Molecule, perm: &[usize]) -> Molecule {
+        let mut old_to_new = vec![0u32; perm.len()];
+        for (new_idx, &old_idx) in perm.iter().enumerate() {
+            old_to_new[old_idx] = new_idx as u32;
+        }
+        let mut builder = chematic_core::MoleculeBuilder::new();
+        for &old_idx in perm {
+            builder.add_atom(mol.atom(AtomIdx(old_idx as u32)).clone());
+        }
+        for (_, bond) in mol.bonds() {
+            let a = AtomIdx(old_to_new[bond.atom1.0 as usize]);
+            let b = AtomIdx(old_to_new[bond.atom2.0 as usize]);
+            let _ = builder.add_bond(a, b, bond.order);
+        }
+        builder.build()
+    }
+
+    /// Relabel a rank vector into "first-seen order" group ids, so partitions
+    /// can be compared structurally (which atoms are grouped together)
+    /// independent of the actual numeric rank values assigned.
+    fn partition_key(ranks: &[u64]) -> Vec<usize> {
+        let mut seen: Vec<u64> = Vec::new();
+        ranks
+            .iter()
+            .map(|&r| match seen.iter().position(|&s| s == r) {
+                Some(pos) => pos,
+                None => {
+                    seen.push(r);
+                    seen.len() - 1
+                }
+            })
+            .collect()
+    }
+
+    /// Sanity check demanded before any individualize-refine rewrite: the
+    /// refinement-to-plateau partition (which atoms share a rank, not the raw
+    /// numeric values) must be invariant under input atom permutation. If this
+    /// fails, the root cause is a non-invariant initial invariant / refinement
+    /// step itself (over-splitting orbits), not a missing individualize step
+    /// (under-splitting ties) -- a completely different bug to fix.
+    #[test]
+    fn morgan_ranks_partition_is_permutation_invariant() {
+        let corpus = [
+            "O=C(NCc1cccnc1)NC[C@H]1CCC[C@H](OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)[C@@H]1c1ccccc1",
+            "c1ccccc1",
+            "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+            "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+            "O=C1CCC(=O)N1",
+            "c1ccc2ccc3ccccc3c2c1",
+            "O=C(NCc1cccnc1)NCC1CCCC(OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)C1c1ccccc1",
+        ];
+
+        for smi in corpus {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e}"));
+            let n = mol.atom_count();
+            let part_orig = partition_key(&morgan_ranks(&mol));
+
+            // A few deterministic, non-identity permutations (no RNG dependency).
+            let perms: Vec<Vec<usize>> = vec![
+                (0..n).rev().collect(),
+                {
+                    let mut p: Vec<usize> = (0..n).collect();
+                    if n > 2 {
+                        p.rotate_left(n / 3 + 1);
+                    }
+                    p
+                },
+                {
+                    let mut p: Vec<usize> = (0..n).rev().collect();
+                    if n > 3 {
+                        p.swap(1, n - 2);
+                        p.rotate_right(2);
+                    }
+                    p
+                },
+            ];
+
+            for perm in perms {
+                let permuted = permute_molecule(&mol, &perm);
+                let part_perm = partition_key(&morgan_ranks(&permuted));
+
+                // inverse: where did old atom `old_idx` land in the permuted molecule?
+                let mut new_of_old = vec![0usize; n];
+                for (new_idx, &old_idx) in perm.iter().enumerate() {
+                    new_of_old[old_idx] = new_idx;
+                }
+
+                for i in 0..n {
+                    for j in (i + 1)..n {
+                        let same_orig = part_orig[i] == part_orig[j];
+                        let same_perm = part_perm[new_of_old[i]] == part_perm[new_of_old[j]];
+                        assert_eq!(
+                            same_orig, same_perm,
+                            "partition not permutation-invariant for '{smi}': \
+                             atoms {i},{j} (perm {perm:?})"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// `canonical_atom_order` must be permutation-invariant: relabeling the
+    /// same molecule's atoms (different parse order) must not change WHICH
+    /// symmetry class of atom appears 1st, 2nd, 3rd, ... in the returned
+    /// order. Unlike `canonical_smiles`, `canonical_atom_order` does not run
+    /// individualize-refine -- it sorts raw `morgan_ranks` with no tie-break,
+    /// so this is expected to fail on any molecule with a genuine
+    /// (non-singleton) rank tie. This is a diagnostic probe for that gap, not
+    /// an already-passing invariant.
+    #[test]
+    fn canonical_atom_order_permutation_invariance_probe() {
+        let corpus = [
+            "O=C(NCc1cccnc1)NC[C@H]1CCC[C@H](OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)[C@@H]1c1ccccc1",
+            "c1ccccc1",
+            "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+            "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+            "O=C1CCC(=O)N1",
+            "c1ccc2ccc3ccccc3c2c1",
+            "O=C(NCc1cccnc1)NCC1CCCC(OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)C1c1ccccc1",
+        ];
+
+        let mut bad = 0;
+        let mut total = 0;
+        for smi in corpus {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e}"));
+            let n = mol.atom_count();
+            // Ground-truth atom-class labels, in the ORIGINAL molecule's index
+            // space only -- never relabeled independently for the permuted
+            // copy, or two arbitrary first-seen-order numberings would be
+            // compared against each other and any mismatch would be a
+            // methodology artifact, not a real instability (see the
+            // project's canonicalization-tie-break-theory / measurement-
+            // harness-controls lessons).
+            let part_orig = partition_key(&morgan_ranks(&mol));
+            let order_orig = canonical_atom_order(&mol);
+            let profile_orig: Vec<usize> = order_orig.iter().map(|&i| part_orig[i]).collect();
+
+            let perms: Vec<Vec<usize>> = vec![(0..n).rev().collect(), {
+                let mut p: Vec<usize> = (0..n).collect();
+                if n > 2 {
+                    p.rotate_left(n / 3 + 1);
+                }
+                p
+            }];
+
+            for perm in perms {
+                total += 1;
+                // perm[new_idx] = old_idx (see permute_molecule's contract).
+                let permuted = permute_molecule(&mol, &perm);
+                let order_perm = canonical_atom_order(&permuted);
+                // Map each returned NEW index back to the class of the
+                // corresponding OLD atom, via `part_orig` -- the same
+                // ground-truth labeling used for profile_orig.
+                let profile_perm: Vec<usize> = order_perm
+                    .iter()
+                    .map(|&new_i| part_orig[perm[new_i]])
+                    .collect();
+
+                if profile_orig != profile_perm {
+                    bad += 1;
+                    eprintln!(
+                        "canonical_atom_order NOT permutation-invariant for '{smi}' (perm {perm:?}): \
+                         {profile_orig:?} != {profile_perm:?}"
+                    );
+                }
+            }
+        }
+        eprintln!("canonical_atom_order instability: {bad}/{total} permutation trials");
+        assert_eq!(
+            bad, 0,
+            "{bad}/{total} permutation trials were unstable -- see stderr"
+        );
+    }
+
+    /// Direct probe (no permutation needed): does `canonical_atom_order`'s
+    /// naive `morgan_ranks`-only sort ever disagree with the FULLY
+    /// individualized/resolved rank order that `canonical_smiles` actually
+    /// verified-correct output is built from? Comparing against
+    /// same-partition-class labels (as the permutation probe above does) is
+    /// blind to intra-class reordering among genuinely symmetric
+    /// (automorphism-equivalent) atoms, where any order is harmless -- this
+    /// test instead reconstructs the winning individualized branch directly,
+    /// so it also catches disagreement WITHIN a Morgan-rank tie that is not
+    /// a true automorphism (exactly the class of bug individualize-refine
+    /// was built to fix for `canonical_smiles`, see Round 10-12 history).
+    #[test]
+    fn canonical_atom_order_matches_individualized_ranks_probe() {
+        let corpus = [
+            "O=C(NCc1cccnc1)NC[C@H]1CCC[C@H](OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)[C@@H]1c1ccccc1",
+            "c1ccccc1",
+            "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+            "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+            "O=C1CCC(=O)N1",
+            "c1ccc2ccc3ccccc3c2c1",
+            "O=C(NCc1cccnc1)NCC1CCCC(OCc2cc(C(F)(F)F)cc(C(F)(F)F)c2)C1c1ccccc1",
+            // Extra cases picked for symmetry that Weisfeiler-Leman-style
+            // refinement is known to struggle with (fused/bridged systems).
+            "C1CC2CCC1CC2",
+            "C1CC2CC1CC2",
+            "c1ccc(-c2ccccc2)cc1",
+            "OC1CCC(O)CC1",
+            "C12CC3CC(CC(C3)C1)C2",
+        ];
+
+        let mut needed_individualization = 0;
+        let mut mismatched = 0;
+        for smi in corpus {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e}"));
+            let plateaued = morgan_ranks(&mol);
+            let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
+            let branches = enumerate_discrete_ranks(&mol, plateaued, &mut budget);
+            if branches.len() > 1 {
+                needed_individualization += 1;
+            }
+            let winning_ranks = branches
+                .into_iter()
+                .min_by_key(|ranks| CanonicalWriter::new(&mol, ranks).write_all())
+                .expect("at least one branch");
+
+            let n = mol.atom_count();
+            let mut winning_order: Vec<usize> = (0..n).collect();
+            winning_order.sort_by(|&a, &b| winning_ranks[b].cmp(&winning_ranks[a]));
+
+            let naive_order = canonical_atom_order(&mol);
+            if naive_order != winning_order {
+                mismatched += 1;
+                eprintln!(
+                    "canonical_atom_order disagrees with resolved canonical order for '{smi}': \
+                     naive={naive_order:?} resolved={winning_order:?}"
+                );
+            }
+        }
+        eprintln!(
+            "{needed_individualization}/{} molecules needed individualization; \
+             {mismatched}/{} disagreed with canonical_atom_order",
+            corpus.len(),
+            corpus.len()
+        );
+        assert_eq!(
+            mismatched, 0,
+            "canonical_atom_order must match the individualized/resolved order -- see stderr"
+        );
+    }
 
     /// Canonical SMILES must be stable: applying it twice gives the same result.
     fn is_stable(smiles: &str) -> bool {
@@ -925,6 +1426,122 @@ mod tests {
         }
     }
 
+    // ── Round 10: ring-closure directional bond flip ─────────────────────────
+    //
+    // A directional marker (`/`, `\`) is read "toward" the ring digit from
+    // wherever it's written. At the ring-OPENING occurrence that's already
+    // the open->close direction; at the CLOSING occurrence it's close->open
+    // (the opposite traversal direction over the same physical bond) and must
+    // be flipped before use (parser.rs `close_or_open_ring`). Before the fix,
+    // the closing-side marker was stored raw/unflipped, which silently
+    // produced a *different stereoisomer* whenever a random SMILES spelling
+    // routed a conjugated system's connecting single bond through a
+    // ring-closure digit instead of a plain adjacent chain bond -- confirmed
+    // via a corpus-wide worst-of-10 sweep (RDKit-checked structural
+    // correctness, not just self-stability/idempotency, which this bug class
+    // passed trivially since it was deterministic-but-wrong on each input).
+
+    #[test]
+    fn ring_closure_direction_flip_real_world_repro() {
+        // Real molecule found via corpus sweep. `variant` is an RDKit
+        // doRandom=True re-spelling of the exact same molecule as `orig`,
+        // routing the diene's connecting single bond through ring-closure
+        // digit "1" instead of a plain chain bond. Before the parser fix,
+        // chematic silently emitted a different (RDKit-confirmed
+        // non-equivalent) stereoisomer for `variant`.
+        let orig = r"CC1CCOC(=O)/C=C/C=C\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)C(=O)C[C@]4(COC(=O)C1O)[C@]2(C)C31CO1";
+        let variant = r"C1=C\C(=O)O[C@@H]2C[C@H]3O[C@H]4[C@@]([C@@]2(C32OC2)C)(CC(=O)[C@H](C)C4)COC(=O)C(O)C(C)CCOC(=O)/C=C/1";
+        assert!(
+            same_canonical(orig, variant),
+            "ring-closure-routed diene must canonicalize identically to the \
+             chain-form spelling of the same molecule"
+        );
+    }
+
+    #[test]
+    fn ring_closure_direction_minimal_ez_agreement() {
+        // Minimal case isolating the same mechanism: a ring-closure bond
+        // (distinct from the exocyclic C=C double bond itself) whose
+        // directional markers are specified at BOTH the opening and closing
+        // occurrences of the ring digit. Per the flip rule, opposite raw
+        // symbols (one `/`, one `\`) describe one consistent bond and must
+        // parse successfully; same-symbol at both ends is the conflicting
+        // case (unchanged by this fix -- only Up/Down are flipped, so a
+        // same-vs-different Double/Single conflict, e.g. "C=1CC-1", is
+        // unaffected).
+        let mol = parse(r"F/C=C/1CCCC\1").unwrap_or_else(|e| panic!("{e:?}"));
+        let out = canonical_smiles(&mol);
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse {out}: {e:?}"));
+        assert_eq!(
+            canonical_smiles(&mol2),
+            out,
+            "ring-closure E/Z with opposite-symbol agreement must round-trip stably"
+        );
+
+        // Same-symbol at both ends of a ring-closure directional bond is now
+        // (correctly) the conflicting combination.
+        assert!(matches!(
+            parse(r"F/C=C/1CCCC/1"),
+            Err(crate::error::SmilesError::ConflictingRingBond { ring_num: 1, .. })
+        ));
+    }
+
+    // ── Round 10: ring-digit reuse racing PendingRing resolution ─────────────
+    //
+    // A stereocenter that OPENS a ring whose partner closes INSIDE the
+    // stereocenter's own branch subtree (e.g. `[C@]1(...[C@H]1...)`) has its
+    // own stereo record still unfinalized at the moment of that first
+    // closure -- the immediate-resolution fast path in `close_or_open_ring`
+    // only patches already-finalized records, so this case falls through to
+    // the end-of-parse fallback. Before the fix, that fallback resolved by
+    // raw ring DIGIT via `ring_close_partners: HashMap<u8, AtomIdx>` -- if the
+    // same digit was reused later for an unrelated ring (e.g. a trailing
+    // phenyl `c1ccccc1`), the later reuse's closer silently overwrote the
+    // earlier, still-pending resolution, corrupting the stereocenter's
+    // neighbor order with a foreign atom index (confirmed: the wrong index
+    // pointed at an aromatic carbon in the unrelated trailing ring, not
+    // anywhere near the stereocenter). Fixed by keying resolution on a
+    // per-occurrence slot id (`next_ring_slot`) that is never reused,
+    // regardless of how many times the same ring digit is.
+
+    #[test]
+    fn ring_digit_reuse_inside_stereocenter_branch_real_world_repro() {
+        // Real molecule found via corpus sweep. `variant` is an RDKit
+        // doRandom=True re-spelling of the exact same molecule as `orig`,
+        // where the stereocenter's ring-1 partner closes inside its own
+        // branch AND ring digit 1 is reused later for a trailing phenyl.
+        let orig = r"COc1ccc2c3c1OC1[C@H](O)[C@](CO)(CCCCCc4ccccc4)CC4C(C2)N(C)CCC341";
+        let variant = r"C([C@@]1(CC2C34CCN(C2Cc2ccc(c(c24)OC3[C@@H]1O)OC)C)CO)CCCCc1ccccc1";
+        assert!(
+            same_canonical(orig, variant),
+            "ring-digit reuse must not corrupt a stereocenter whose own ring \
+             partner closes inside its branch"
+        );
+    }
+
+    #[test]
+    fn ring_digit_reuse_inside_stereocenter_branch_minimal() {
+        // Minimal case matching the real repro's precondition exactly:
+        // `[C@H]1` opens ring 1 and its partner closes INSIDE its own first
+        // branch `(CC1)` -- i.e. before the parser ever advances to a new
+        // *chain* atom for atom0, so atom0's stereo record is still
+        // unfinalized at the moment of that closure (the immediate-resolution
+        // fast path in `close_or_open_ring` cannot catch it; only the
+        // end-of-parse fallback does). Ring digit 1 is then reused by an
+        // unrelated, disconnected fragment. Before the fix, the fallback
+        // resolved by raw digit and the benzene's ring closure silently
+        // stole atom0's still-pending resolution.
+        let smi = r"[C@H]1(CC1)Cl.c1ccccc1";
+        let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e:?}"));
+        let out = canonical_smiles(&mol);
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse {out}: {e:?}"));
+        assert_eq!(
+            canonical_smiles(&mol2),
+            out,
+            "stereocenter with in-branch ring closure + later digit reuse must be stable"
+        );
+    }
+
     // ── Allene cumulated double bond stereo ──────────────────────────────────
 
     #[test]
@@ -1094,5 +1711,30 @@ mod tests {
                 "fused-aromatic canonical SMILES must be idempotent for {s}"
             );
         }
+    }
+
+    // ── Round 12: simple E/Z direction normalization ────────────────────────
+    //
+    // `/N=N/` and `\N=N\` are two equally valid SMILES spellings of the same
+    // geometry (flipping every directional bond of one connected E/Z system
+    // preserves meaning). Before this fix, the writer just propagated
+    // whichever direction the parser happened to read, so two spellings of
+    // the same molecule could canonicalize to two different strings. The fix
+    // normalizes each connected E/Z system so its first directional bond (in
+    // canonical write order) is always `/`.
+
+    #[test]
+    fn ez_simple_bond_direction_normalized_azo() {
+        assert!(
+            same_canonical("CN(C)/N=N/c1ccccc1", r"CN(C)\N=N\c1ccccc1",),
+            "isolated E/Z double bond must canonicalize identically regardless \
+             of which of the two equally-valid slash spellings was parsed"
+        );
+    }
+
+    #[test]
+    fn ez_simple_bond_direction_normalized_symmetric() {
+        assert!(same_canonical("F/C=C/F", r"F\C=C\F"));
+        assert!(same_canonical("C(/F)=C/F", r"C(\F)=C\F"));
     }
 }

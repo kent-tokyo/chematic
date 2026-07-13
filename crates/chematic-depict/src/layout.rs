@@ -14,7 +14,7 @@
 //! The algorithm prioritizes clarity (minimal crossing) over perfect physics simulation.
 //! Bond angles follow tetrahedral/trigonal rules where possible.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::find_sssr;
@@ -255,7 +255,7 @@ fn group_ring_systems(rings: &[Vec<AtomIdx>]) -> Vec<Vec<Vec<AtomIdx>>> {
     }
 
     // Collect into groups.
-    let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
+    let mut groups: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
     for i in 0..n {
         let root = find(&mut parent, i);
         groups.entry(root).or_default().push(i);
@@ -404,9 +404,15 @@ fn place_ring_anchored(
     // Apothem: distance from midpoint of an edge to the center of a regular n-gon.
     let apothem = radius * (std::f64::consts::PI / n as f64).cos();
 
-    // Centroid of already-placed atoms in this ring (from the old ring system).
+    // Centroid of the *entire* already-placed structure so far (not just this
+    // ring's own anchor atoms). Using only this ring's placed atoms is wrong:
+    // before this ring is placed, its only placed members are the two shared
+    // anchor atoms, whose centroid is always exactly `mid` (the edge
+    // midpoint) — equidistant from both `cand1`/`cand2` by construction, so
+    // that comparison degenerates into an arbitrary tie instead of actually
+    // picking the side away from the existing ring system.
     let existing_center = {
-        let pts: Vec<Point> = ring.iter().filter_map(|&a| placed[a.0 as usize]).collect();
+        let pts: Vec<Point> = placed.iter().filter_map(|p| *p).collect();
         if pts.is_empty() {
             // No placed atoms to compare against: use the midpoint as fallback.
             mid
@@ -499,11 +505,12 @@ fn place_chains(
 ) {
     // Step 1: extend chains from ring attachment points.
     // We process ring atoms that have unplaced neighbors.
-    let ring_atoms: Vec<AtomIdx> = component
+    let mut ring_atoms: Vec<AtomIdx> = component
         .iter()
         .copied()
         .filter(|a| in_ring.contains(a) && placed[a.0 as usize].is_some())
         .collect();
+    ring_atoms.sort_unstable();
 
     for start in &ring_atoms {
         let unplaced_neighbors: Vec<AtomIdx> = mol
@@ -525,11 +532,12 @@ fn place_chains(
 
     // Step 2: handle pure chain components (no ring atoms yet placed).
     // Find a terminal atom (degree 1 or degree 0) as the starting point.
-    let unplaced: Vec<AtomIdx> = component
+    let mut unplaced: Vec<AtomIdx> = component
         .iter()
         .copied()
         .filter(|a| placed[a.0 as usize].is_none())
         .collect();
+    unplaced.sort_unstable();
 
     if unplaced.is_empty() {
         return;
@@ -800,6 +808,34 @@ fn segments_intersect(a: Point, b: Point, c: Point, d: Point) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Positive control for the group_ring_systems/place_chains determinism
+    /// fix: repeated calls in the SAME process on the SAME molecule must
+    /// produce bit-identical coordinates. This is a stricter, different bug
+    /// class than input-order dependence -- `group_ring_systems` (a plain
+    /// `HashMap`) and `place_chains` (iterating a `HashSet` without sorting)
+    /// used Rust's randomly-seeded default hasher, so a fresh `RandomState`
+    /// derived on every `HashMap`/`HashSet` construction could reorder
+    /// output even across calls with IDENTICAL input, within one run of one
+    /// binary -- undetectable by any test that only varies input spelling.
+    #[test]
+    fn compute_layout_is_deterministic_across_repeated_calls() {
+        use chematic_smiles::parse;
+        // Two separate ring systems joined by a chain, so both
+        // group_ring_systems (2 union-find roots) and place_chains (a
+        // multi-atom unplaced chain) have real tie material to shuffle.
+        let mol = parse("c1ccccc1CCCCCc1ccccc1").unwrap();
+
+        let first = compute_layout(&mol);
+        for _ in 0..100 {
+            let repeat = compute_layout(&mol);
+            assert_eq!(
+                repeat.coords, first.coords,
+                "compute_layout produced different coordinates for the same molecule \
+                 across repeated calls in one process"
+            );
+        }
+    }
 
     #[test]
     fn test_ring_radius_hexagon() {

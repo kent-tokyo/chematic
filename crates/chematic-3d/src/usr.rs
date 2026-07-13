@@ -39,35 +39,37 @@ pub fn usr_descriptors(coords: &[[f64; 3]]) -> [f64; 12] {
     let d_ctd: Vec<f64> = coords.iter().map(|p| dist(p, &ctd)).collect();
 
     // 3. Closest atom to ctd (cst).
-    let cst_idx = d_ctd
-        .iter()
-        .enumerate()
-        .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-        .map(|(i, _)| i)
-        .unwrap();
+    let cst_idx = extreme_idx(coords, &d_ctd, Extreme::Min);
     let cst = coords[cst_idx];
 
     // 4. Farthest atom from ctd (fct).
-    let fct_idx = d_ctd
-        .iter()
-        .enumerate()
-        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-        .map(|(i, _)| i)
-        .unwrap();
+    //
+    // The original `min_by`/`max_by` calls had NO tie-break at all
+    // (`max_by` returns the LAST element on an exact tie per its own docs,
+    // `min_by` the FIRST) -- an inconsistent default that made the reference
+    // point (and thus all 12 descriptors) depend on atom input order for
+    // two chemically-different atoms tying on distance (confirmed
+    // empirically: two points placed symmetrically so they tie exactly on
+    // distance from a third, unambiguous reference point -- swapping their
+    // ARRAY POSITIONS changed which one became the reference point).
+    //
+    // An index-based tie-break ("smallest index wins") is NOT sufficient to
+    // fix this: swapping two points' array positions is exactly the
+    // operation that changes which physical point occupies the "smallest
+    // index" -- so an index-based rule stays internally consistent but
+    // still varies with array order. `extreme_idx` tie-breaks on the
+    // coordinate VALUES themselves (content, not position) instead, which
+    // is invariant to which order the SAME set of points was supplied in.
+    let fct_idx = extreme_idx(coords, &d_ctd, Extreme::Max);
     let fct = coords[fct_idx];
 
-    // 5. Farthest atom from fct (ftf).
-    let ftf_idx = coords
-        .iter()
-        .enumerate()
-        .max_by(|a, b| dist(a.1, &fct).partial_cmp(&dist(b.1, &fct)).unwrap())
-        .map(|(i, _)| i)
-        .unwrap();
+    // 5. Farthest atom from fct (ftf). Same content-based tie-break.
+    let d_fct: Vec<f64> = coords.iter().map(|p| dist(p, &fct)).collect();
+    let ftf_idx = extreme_idx(coords, &d_fct, Extreme::Max);
     let ftf = coords[ftf_idx];
 
     // 6. Compute moment triplets for each reference point.
     let d_cst: Vec<f64> = coords.iter().map(|p| dist(p, &cst)).collect();
-    let d_fct: Vec<f64> = coords.iter().map(|p| dist(p, &fct)).collect();
     let d_ftf: Vec<f64> = coords.iter().map(|p| dist(p, &ftf)).collect();
 
     let mut out = [0.0f64; 12];
@@ -162,6 +164,33 @@ fn dist(a: &[f64; 3], b: &[f64; 3]) -> f64 {
     ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt()
 }
 
+enum Extreme {
+    Min,
+    Max,
+}
+
+/// Index of the min/max `values[i]`, tie-breaking on the lexicographic
+/// (x, then y, then z) order of `coords[i]` itself -- content, not array
+/// position, so the result is the same regardless of which order the same
+/// set of points was supplied in. An index-based tie-break (e.g. "smallest
+/// index wins") is NOT sufficient here: swapping two tied points' array
+/// positions is exactly the operation that changes which point occupies
+/// the smallest index, so it would still vary with input order.
+fn extreme_idx(coords: &[[f64; 3]], values: &[f64], which: Extreme) -> usize {
+    let mut best = 0usize;
+    for i in 1..values.len() {
+        let better = match which {
+            Extreme::Min => values[i] < values[best],
+            Extreme::Max => values[i] > values[best],
+        };
+        let tied = values[i] == values[best];
+        if better || (tied && coords[i] < coords[best]) {
+            best = i;
+        }
+    }
+    best
+}
+
 /// First three standardised moments (mean, variance, skewness) of a distance distribution.
 fn moments(ds: &[f64]) -> (f64, f64, f64) {
     let n = ds.len() as f64;
@@ -187,6 +216,40 @@ mod tests {
             [1.0, 1.0, 0.0],
             [0.0, 1.0, 0.0],
         ]
+    }
+
+    #[test]
+    fn test_reference_point_ties_are_order_independent() {
+        // An outlier far enough to be the unambiguous fct (farthest from
+        // centroid, no tie there), plus two points P and Q placed
+        // symmetrically in y so they tie EXACTLY on distance from the
+        // outlier (the ftf pick) -- but a filler F off that mirror plane
+        // (nonzero z) breaks any symmetry of the point set AS A WHOLE, so
+        // swapping P and Q is a genuine non-automorphic tie, not a
+        // harmless one. Before the fix, swapping which of P/Q came first
+        // in the input flipped which one became ftf, changing d_ftf (and
+        // thus 3 of the 12 descriptor values) since P != Q in position.
+        let outlier = [100.0, 0.0, 0.0];
+        let p = [0.0, 5.0, 0.0];
+        let q = [0.0, -5.0, 0.0];
+        let filler = [0.0, 2.0, 3.0];
+        let a = vec![outlier, p, q, filler];
+        let mut b = a.clone();
+        b.swap(1, 2); // same point SET, P and Q swapped in input order
+        let da = usr_descriptors(&a);
+        let db = usr_descriptors(&b);
+        for (x, y) in da.iter().zip(db.iter()) {
+            // Tolerance, not exact equality: summing the same set of floats
+            // in a different order is expected to differ in the last few
+            // bits (IEEE 754 non-associativity) even when the SAME reference
+            // atoms are picked -- this test's job is to catch the previous
+            // bug's ~6-unit divergence from picking a DIFFERENT atom, not to
+            // demand bit-identical floating-point summation order.
+            assert!(
+                (x - y).abs() < 1e-9,
+                "usr_descriptors depends on the input order of tied reference-point candidates: {da:?} vs {db:?}"
+            );
+        }
     }
 
     #[test]

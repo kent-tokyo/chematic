@@ -160,13 +160,18 @@ RDKit Python API の 5〜14× 高速。GIL なし、インタープリタオー�
 
 ### 安全
 
-デフォルトの依存ツリー全体で、15,000 行以上の Rust コードに **`unsafe` ブロックは約 6 個**のみ。
+chematic 自身の約 15,000 行の Rust コードには **`unsafe` ブロックが約 6 個**のみで、
+すべて opt-in の `native-inchi` FFI 層に限定されています(下記参照)。
 C++ のヒープ破壊なし。不正な SMILES 入力によるセグメンテーション違反なし。
 `-sys` クレートによるプラットフォーム固有のビルド失敗なし。
-コンパイラがすべての呼び出し箇所でメモリ安全性を保証します。
+コンパイラが chematic 自身が書いたすべての呼び出し箇所でメモリ安全性を保証します。
 
 > `native-inchi` feature は唯一の opt-in 例外 — ビット完全一致の標準 InChI 用に
-> IUPAC InChI C ライブラリ (v1.07.5) を vendored でリンクします。他の全クレートは FFI フリーのまま。
+> IUPAC InChI C ライブラリ (v1.07.5) を vendored でリンクします。他の全クレートは
+> FFI フリー・unsafe フリーのまま。この数値は chematic 自身のソースのみを指し、
+> 依存ツリー全体ではありません — `depict` feature(SVG/PDF/EPS 描画)はフォント・
+> 画像レンダリングスタック(resvg/usvg/rustybuzz/tiny-skia/zune-jpeg)を引き込み、
+> これらは unsafe フリーでは**ありません**。実測値は下記の比較表脚注を参照。
 
 ### どこでも動く
 
@@ -184,7 +189,7 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 | **WASM バイナリサイズ**                     | **〜550 KB**                               | N/A（WASM 非対応） | N/A           | 〜30 MB          |
 | **ビルド要件**                              | `cargo build` のみ                         | cmake + clang      | cmake + clang | Emscripten SDK   |
 | **Python バインディング**                   | **あり** (`pip install chematic`, PyO3)    | あり（rdkit-sys）  | あり          | なし             |
-| unsafe Rust                                 | **なし**                                   | 大規模             | 大規模        | N/A              |
+| unsafe Rust                                 | **自クレートはなし**‡                      | 大規模             | 大規模        | N/A              |
 | ケクレ化                                    | **4-pass（Edmonds' blossom 含む）**        | あり               | あり          | あり             |
 
 <details>
@@ -206,7 +211,9 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 | IUPAC 名生成                                | **あり（25+ 化合物クラス）**               | なし               | なし          | 一部             |
 | メンテナンス（2026）                        | アクティブ                                 | アクティブ         | 最小限        | アクティブ       |
 
-† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要。他の全クレートは FFI フリー。
+† デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要（IUPAC InChI C ライブラリ v1.07.5 の vendoring）。これは C/C++ FFI 固有の話 — 下記の `depict` feature は純 Rust の描画クレートを引き込むため、unsafe フリーではなくても C コンパイラ依存は追加しません（‡参照）。
+
+‡ chematic 自身の約 15,000 行の Rust コード: `native-inchi` の約6個の FFI ブロックを除き unsafe フリー（上記「安全」参照）— chematic 自身が書いたコードについての実測済みの主張であり、コンパイラによるチェックが一切効かない RDKit/OpenBabel の C++ FFI unsafe とは、たとえ個数が同程度でも種類が根本的に異なります。**依存ツリー全体については成り立ちません**: opt-in の `depict` feature（SVG/PDF/EPS 描画）は resvg/usvg/rustybuzz/tiny-skia/zune-jpeg を引き込み、これらは純 Rust ですが unsafe フリーではありません — 実測（`unsafe fn`/`impl`/`trait`/`{` の出現数）: tiny-skia 151、zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-path 3(この範囲だけで合計 258)。`chematic-py`（`pip install chematic`）と npm パッケージはどちらも `chematic-depict` に直接依存するため、これは実際の2つのインストール経路の両方に当てはまります。
 
 
 </details>
@@ -273,6 +280,48 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 最近の開発（v0.4.x）
 
+**v0.4.29**（2026-07-10）: **Kabsch回転バグ修正 + SDF V3000/CDXML書き込み、Avalon FP、O3A**
+- `chematic-3d`: `align_coords` のKabsch回転が逆方向に計算されるバグを修正（純粋な並進以外のアライメントでRMSDが大きく水増しされていた。v0.4.28からcrates.io/PyPI/npmで公開されていた）；O3A原子対応のための `correspondence_search`
+- `chematic-mol`: SDF V3000書き込み配線；CDXML書き込み
+- `chematic-fp`: Avalonフィンガープリント
+
+**v0.4.28**（2026-07-09）: **SMARTS性能改善、レジストリ再同期**
+- `chematic-smarts`: 存在チェックの早期終了 — `bulk.substructure_search` がRDKitより2.2倍高速に
+- v0.4.23〜v0.4.27はgitタグが未pushでcrates.ioのみ最新（PyPI/npm/GitHub Releasesが遅れていた）だったため、この版で3レジストリを再同期
+
+**v0.4.27**（2026-07-04）: **記述子修正、RWMol/FCFP、veridict CIゲート**
+- `chematic-chem`: `kappa1-3`、`balaban_j`、`labute_asa`、`bcut2d`、`hall_kier_alpha` 記述子修正
+- `chematic-fp`: `useFeatures=True` FCFP
+- `chematic-mol`: RWMol インプレース編集
+- CI: veridictベースの性能/Criterion/精度ドリフト回帰ゲート；統合テストのCIカバレッジギャップ修正
+
+**v0.4.26**（2026-06-29）: **反応でのE/Zステレオ転写 + 検証Sprint 6/7**
+- `chematic-rxn`: `run_reactants()` で反応物の `/`/`\` 二重結合幾何が生成物に保持されるように（従来は変換で失われていた）
+- 検証: RDKitに対するカノニカルSMILES差分検証（Sprint 6）；SMARTS/芳香族性差分テスト + I/O互換性（rdkit_compat Sprint 7）；残存するRDKit差異の根本原因をMorganランクではなく芳香族性ラウンドトリップと特定
+
+**v0.4.25**（2026-06-29）: **`chematic.rdkit_compat` レイヤー**
+- `chematic-py`: RDKit API互換レイヤー（Sprint 1〜5）— Morgan `bitInfo`、Fingerprint/Mol/Atom/Bond/RingInfo互換性、RDKitとの差分テスト；ストリーミング `SDMolSupplier`/`SDWriter`/`Mol.GetProp`
+- `chematic-perception`: `AromaticityAlgorithm::RdkitLike` — Se/TeカルコゲンをRDKitのモデルに合わせて処理
+
+**v0.4.24**（2026-06-29）: **CIP Rule 5、架橋頭部/回転可能結合/TPSA/MRを100%に、HDFフィンガープリント**
+- `chematic-chem`: CIP Rule 5立体タイブレーク（ステレオセンター一致率 99.8% → 99.98%）；架橋頭部検出 98.5% → 100%；回転可能結合 99.1% → 100%；TPSA 100%；モル屈折率 97.5% → 100%（3環XOR拡張）— いずれも5,000分子ChEMBLコーパス
+- `chematic-py`: `bulk.descriptors_array()` 列指向numpy出力；真のストリーミングSDF（`SdfFileReader`/`iter_sdf_batched`）；`screen()` 化合物フィルタワークフロー
+- LLM/RAG: 表現ルーター（`to_llm_text`, `best_representation`）、分子コンテキストパック、**Hyper-Dimensional Fingerprints（HDF）** — 学習不要の密な分子ベクトル
+
+**v0.4.23**（2026-06-26）: **LogP 96.5% → 99.7%**
+- `chematic-chem`: `crippen_anchor_sets` を `uniquify: false` に修正し、対称な三重結合（内部アルキン）がVF2マッチで両方向とも得られるように（従来は片方が汎用 `[#6]` 値にフォールバックしていた）
+
+**v0.4.22**（2026-06-26）: **CITATION.cff + `chematic.doctor()`**
+- `chematic-py`: `doctor()` 自己診断機能；README に信頼性マトリクスを追加
+
+**v0.4.21**（2026-06-25）: **LLM/Jupyter向けHTML/Markdownレポート**
+- `chematic-py`: `chematic.report()` 自己完結型HTML化合物グリッド、`chematic.compare()`、`mol.review()` Markdown解析
+- ドキュメント: `benchmarks/`/`validation/` 再現可能な精度履歴
+
+**v0.4.20**（2026-06-25）: **ETKDGトーションKB 44 → 80パターン、`mol.describe()`/`diff()`**
+- `chematic-3d`: 6員環/5員環脂肪族環の椅子形/封筒形コンフォメーション；SMARTSベースのトーションルールを高精度事前チェック層として追加
+- `chematic-py`: LLM/MCPエージェント向け `mol.describe()`/`mol.diff(other)`；`bulk.generate_3d`/`tanimoto_matrix`/`standardize`
+
 **v0.4.19**（2026-06-23）: **PDF/EPS 出力、ChemicalJSON、新記述子、WASM −38.5%**
 - `chematic-depict`: `depict_pdf()` / `depict_eps()` — PDF・EPS 出力（Pure Rust、外部ツール不要）
 - `chematic-mol`: **ChemicalJSON** — `parse_cjson()` / `write_cjson()` で Avogadro2 / MolSSI 相互運用
@@ -302,31 +351,19 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - `chematic-smarts`: `[kN]` 環サイズプリミティブ；VF2 クエリ原子数 > 対象時の早期終了
 - `chematic-rxn`: パリティ対応 SMIRKS キラリティマッチ；product bracket クリーンアップ
 
-**v0.4.13**（2026-06-21）: **テンプレート逆合成 + 記述子修正**
-- `chematic-rxn`: `retro_disconnect()` — 60 retro-SMIRKS テンプレート（AmideBond / Ester / Ether / CNBond / CCBond / CSBond）、SA Score ランク付き；Python `mol.retro_disconnect(reaction_class=...)`
-- `chematic-3d`: ETKDG トーション KB 28 → 40 パターン；adaptive noise
-- `chematic-chem`: `hbd_count()` に S-H（チオール）追加；TPSA nitro-N / 芳香族オキシドブリッジ / Kekulé-N 修正
-
-**v0.4.9–v0.4.12**（2026-06-19–21）: **AutoDock、UFF、SMARTS アトムマップ、環認識**
-- `chematic-mol`: AutoDock PDBQT 読み書き；`write_sdf_with_charges`（部分電荷）
-- `chematic-ff`: 金属・有機金属向け UFF 力場（Zn、Fe、Cu…）
-- `chematic-smarts`: SMARTS アトムマップ `:N`（`[O;D1;H0:3]` 形式、メタデータとして保存）
-- `chematic-perception`: 多縮合芳香環の `augmented_ring_set` 反復更新（bench5k 222 件全修正）
-- MCP: 15 番目のツール `name_to_smiles`（PubChem REST プロキシ）
-
-**v0.4.5–v0.4.7**（2026-06-19）: **ケクレ化 blossom + BOILED-Egg + InChI E/Z**
-- Edmonds' blossom アルゴリズム導入（128 → 2 失敗）；InChI `/b` E/Z レイヤー；BOILED-Egg + Python/WASM バインディング
-
-**v0.4.0–v0.4.4**（2026-06-17–18）: **PyO3 Python バインディング + native-inchi**
-- `chematic-py`: PyO3/maturin バインディング — `from_smiles()`, `Mol.aromatic_ring_count`, `Mol.descriptors()`
-- `native-inchi` feature: IUPAC 標準 InChI（vendored C lib v1.07.5）
-- HBA 書き直し: RDKit と 99.98% 一致（4,999 分子 ChEMBL ベンチマーク）
+それ以前の v0.4.x の開発（テンプレート逆合成、AutoDock/UFF、ケクレ化 blossom
+アルゴリズム、PyO3 バインディング、native-inchi）と v0.1〜v0.3 の全履歴:
+[CHANGELOG.md](CHANGELOG.md)
 
 ---
 
 ## 既知の制限事項
 
-- **芳香族性モデル**: Hückel 4n+2 則を各 SSSR 環に独立適用（RDKit は縮合環電子非局在化モデルを使用）。N-ヘテロ環で差異あり。4,999 分子 ChEMBL コーパスの現状: HBA/HBD/芳香環数 **100%**、TPSA **98.1%**（±0.1 Å²）。
+- **`canonical_smiles()` はE/Zステレオ化学に対して部分的に正規化されました — それでも重複排除やキャッシュキーとしてはまだ安全ではありません**: 孤立した単純なE/Z二重結合には `/N=N/` と `\N=N\` のような2通りの等価な正しい記法があり、ライターは従来どちらを出力するか正規化していませんでした。一般ケースを修正済み: ある二重結合と、それに幾何学的に連動する全ての方向性結合(共役鎖全体を含む)からなる「連結E/Z系」ごとに、カノニカル書き込み順で最初に現れる方向性結合が常に `/` になるよう正規化するようにしました(入力の綴りに依存しません)。5,000分子ChEMBLコーパス・worst-of-10で測定: E/Z限定の自己不安定性(四面体ステレオを除去)は**9.76%→5.50%**に改善(275/5000が依然不安定)。この変更による構造的正しさへの影響はなし(ChEMBL **0/5000**、非環式ポリエンコーパス **0/33** を再検証済み)。残る275件は**100%が見た目上の問題のみ**(RDKit的にはどの変異体も同一分子で、破損はゼロ)と確認済みですが、原因は**根本解明しきれていない混在プール**です: 約半数は特定のモチーフ(2つ以上の環外二重結合を持つ小員環、例えば交差共役した環状ジイミン)に一致し、そこでは「1つの系」とみなすべき物理結合の集合が入力の綴りに対して不変になっていません。残り半数は未特定です。これが完全に解消するまでは、ステレオを持つ分子の約18分子に1つ(旧: 約10分子に1つ)が、同一分子に対して2通りの、それぞれ単独では正しい `canonical_smiles()` 文字列を生成しうるため、現時点では重複排除やキャッシュキーとして使わないでください。この点が重要な用途では、当面 `apply_aromaticity()` で正規化した文字列を独自の重複排除キーとして使ってください。
+- **カノニカルSMILESの構造的破損 — 修正済み**: 修正前は `canonical_smiles(parse(x))` が `x` の入力走査順によっては(単に綴りが異なるだけの等価な文字列ではなく)別の立体異性体を静かに出力することがありました。5,000分子ChEMBLサブセット・worst-of-10走査・RDKit検証済みの構造正しさで測定: **4.28%（214/5000）** の分子で、少なくとも1つの変異体が誤った分子として読み戻されていました。根本原因は独立した2件のパーサーバグで(当初疑われていた「共役二重結合のマーカーは結合をまたいで幾何学的に連動している」という診断は誤りであったことが判明— 下記参照)、いずれも実在する分子と最小構成の回帰テストで確認済みです: (1) 環closure(`/`/`\`) の方向マーカーを閉環側の出現位置で読み取る際、開環→閉環方向へのフリップをせず生の値のまま保存しており、共役E/Z鎖の連結結合がたまたま環closureを経由する場合に破損していた。(2) 自身の分岐の中で環closureの相手が閉じるステレオ中心は、再利用可能な環番号ではなく出現ごとに一意なIDで隣接原子順序の解決を行うべきところ、番号ベースで解決していたため、SMILES文字列の後方で同じ番号が無関係な環に再利用された際に、ステレオ中心の隣接原子順序が静かに乗っ取られ破損していました。**両修正後: ChEMBLコーパスで構造正しさは100%（0/5000）** — これは、rankingという第3の無関係な修正の有無を含む独立した3通りの再構成手順で3重に確認済みです。両方の根本原因が環closure固有のものである一方、レチノイド・カロテノイド・プロスタグランジン・ロイコトリエン・ポリエン系マクロライドは長い共役系を**非環式**の鎖として持っており、ChEMBLのランダムサンプリングにはほぼ含まれないため、これら5クラスの実在化合物33種からなる専用コーパス(トレチノイン、β-カロテン、リコペン、アンフォテリシンB、ロイコトリエンB4など、`scripts/polyene_corpus.csv`)でも独立に再検証しました: **worst-of-30で0/33（0.00%）**。同一コーパスの未修正コードでは12/33（36.36%）の破損を陽性対照として確認済みです(12件全てが環closureを多く含む構造で、完全非環式のリコペンを含め純粋な非環式の例は未修正コードでも一度も破損しませんでした)。これにより当初の「共役系全般が原因」という診断が誤りであったことが直接確定し、残存する破損クラスは見つかっていません。骨格限定・四面体限定の自己**安定性**もいずれも0%に到達(旧: 0.16%、4.36%)。全ステレオを含めた生の自己安定性は**86.02%→90.28%**（不安定率13.98%→9.72%）に改善 — 残差は全て上記の非破損な方向正規化ギャップによるもので、破損の残存ではありません。往復不変性（`canonical(parse(canonical(m))) == canonical(m)`）はわずかに改善（**98.26%→98.32%**）— この指標はそもそも破損クラスを直接測定していなかったためです。
+- **環知覚（SSSR）は非決定的・非最小だったが修正済み**: 旧 `find_sssr` は単一の全域木から非木辺ごとに基本閉路を1つずつ生成していたため、木の形によっては最小でない環（例: ナフタレン `c1ccc2ccccc2c1` が決定的に `[6,10]` を返す。正しくは `[6,6]`）を返していました。現在の `find_sssr` は Horton アルゴリズム（全頂点×全辺の最短路木から候補閉路を生成、O(V·E) 候補、決定性のためのカノニカルランクによるタイブレーク）を用いており、真に最小重み・決定的な基底を返します。5,000分子ChEMBLサブセット・worst-of-10走査で測定: 自己安定性 **100%**（旧: 50.6%）、単一パースでのRDKitとの環サイズ一致率 **98.9%**（旧: 72.4%）— 残る約1.1%の差はRDKit自身の `GetSymmSSSR` が対称縮合環系（例: キュバン、μ=5に対しRDKitは6環を返す）でトポロジー的最小数より多い環を正当に返すことによるもので、chematic側のバグではありません（完全な対称化＝Vismara relevant cyclesは将来課題）。下流への効果（同コーパス）: 環サイズSMARTS `[r5]`/`[r6]` **0%不安定**（旧: 29〜55%）、`NumAromaticRings` **0%**（旧: 約4%）、`RingCount`/MW/TPSA/HBA/HBD/LogP/MRは元々0%のまま。旧SSSRのバグが偶然、別の未解決な芳香族性バグを覆い隠していた2件については下記の芳香族性モデルの項を参照してください。詳細: `scripts/ringinfo_parity.py`。
+- **Murckoスキャフォールド: 環トポロジーと正規化文字列出力はいずれも完全に安定**: 以前報告した「100%不安定」自体が測定ハーネスのバグでした（`Mol` オブジェクトをPythonの同一性で比較しており、実際の結果に関わらず常に「不安定」と判定していた）。このスクリプトバグは修正済みです（`scripts/ring_collateral_damage.py`）。上記のカノニカルSMILES破損修正後に5,000分子・worst-of-10で再測定した結果、正規化後（`apply_aromaticity().canonical_smiles_mode("nostereo")`）の自己安定性は**100%（0/5000が不安定）**に到達しました（旧: 0.8%残差）— この残差が上記と同じカノニカルSMILESの構造的破損であったことが確認され、今回で完全に解消しました。正規化なしの生の同位体的 `scaffold().smiles` 文字列比較は**79.30%**安定（不安定率20.70%、旧: 約45%。上記のE/Z部分正規化修正による変化はほぼなし — スキャフォールドはその修正が効く側鎖モチーフの大半を除去してしまうため）— 残りはMurcko固有の問題ではなく、上記の部分的に未解決な `/`/`\` 方向正規化ギャップ（別問題）によるものです。`scaffold()` は正しい環系を確実に抽出します。走査順が異なる入力間で文字列として比較したい場合は、生の `.smiles` ではなく `mol.apply_aromaticity().canonical_smiles_mode("nostereo")` を使ってください。
+- **芳香族性モデル**: Hückel 4n+2 則を各 SSSR 環に独立適用（RDKit は縮合環電子非局在化モデルを使用）。N-ヘテロ環で差異あり。4,999 分子 ChEMBL コーパスの現状: HBA/HBD/芳香環数 **100%**、TPSA **98.1%**（±0.1 Å²）。Kekulized入力でのworst-of-10芳香族性パリティ: **96.3%**（`scripts/aromaticity_atom_parity.py`）— 上記SSSR修正後も数値はビット単位で不変（SSSRのバグと芳香族性のギャップが独立していたことを確認）。芳香族性ギャップの根本原因は別途 `aromatic_context` バイパス機構にあり、未修正です。SSSR修正により2分子（アズレン、プリン）が明確に退行したことが判明しています — 旧来の壊れたSSSRが、これら非交互環系・架橋頭部を多く含む構造に対して `aromatic_context` のバグを偶然覆い隠していたためです。この2分子は5,000分子の測定コーパスに**そもそも含まれていません**（直接検索で確認済み — ChEMBL由来の薬様コーパスには裸のアズレン・プリンは含まれない）。したがって96.3%という数値が不変なのはこの2分子を「見ていない」からであり、「影響がゼロ」だからではありません。両分子は根本原因をコード内に記載した上で `chematic-perception` のテストスイートに `#[ignore]` 付き既知回帰として記録済みで、`aromatic_context` 修正を待っています。
 - **TPSA 残差**: 1.9% はアジド基・マクロライドラクトン・ホスファゼン等の特殊化学構造に集中。
 
 ---

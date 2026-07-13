@@ -320,8 +320,11 @@ mod tests {
         let pairs = find_mmp(&[&a, &b]);
 
         // There must be exactly 1 MMP (the ring-chain cut).
-        // Canonical form of monosubstituted benzene core after #14 bond-order fix.
-        let matching: Vec<_> = pairs.iter().filter(|p| p.core == "c1c([*])cccc1").collect();
+        // Canonical form of monosubstituted benzene core after the canonical-ranking
+        // individualize-refine rewrite (Round 10) -- same molecule as the prior
+        // "c1c([*])cccc1" oracle (RDKit-confirmed), wildcard now written last since
+        // its fixed low invariant places it last in rank-descending DFS order.
+        let matching: Vec<_> = pairs.iter().filter(|p| p.core == "c1c(cccc1)[*]").collect();
         assert_eq!(
             matching.len(),
             1,
@@ -380,8 +383,8 @@ mod tests {
         let c = mol("CCCCc1ccccc1"); // butylbenzene
         let pairs = find_mmp(&[&a, &b, &c]);
         // Expected: (a,b), (a,c), (b,c) — 3 pairs at minimum.
-        // Canonical form updated for bond-order-aware Morgan ranks (#14).
-        let benzene_pairs: Vec<_> = pairs.iter().filter(|p| p.core == "c1c([*])cccc1").collect();
+        // Canonical form updated for the individualize-refine ranking rewrite (Round 10).
+        let benzene_pairs: Vec<_> = pairs.iter().filter(|p| p.core == "c1c(cccc1)[*]").collect();
         assert_eq!(
             benzene_pairs.len(),
             3,
@@ -402,7 +405,7 @@ mod tests {
         let series = find_mms(&[&a, &b, &c]);
         let benzene_series: Vec<_> = series
             .iter()
-            .filter(|s| s.core == "c1c([*])cccc1")
+            .filter(|s| s.core == "c1c(cccc1)[*]")
             .collect();
         assert_eq!(
             benzene_series.len(),
@@ -442,7 +445,7 @@ mod tests {
         let series = find_mms(&[&a, &b, &c]);
         let s = series
             .iter()
-            .find(|s| s.core == "c1c([*])cccc1")
+            .find(|s| s.core == "c1c(cccc1)[*]")
             .expect("benzene-core series");
         // Members sorted ascending by MW: ethyl < propyl < butyl
         let ethyl_mw = s.members[0].mw;
