@@ -15,5 +15,6 @@ publish = false
 chematic-core = { path = "../chematic-core", version = "0.4.29" }
 
 [dev-dependencies]
+chematic-chem   = { path = "../chematic-chem",   version = "0.4.29" }
 chematic-smiles = { path = "../chematic-smiles", version = "0.4.29" }
 serde_json       = "1.0"

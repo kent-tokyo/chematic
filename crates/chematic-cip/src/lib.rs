@@ -18,19 +18,27 @@
 //! explicit, provenance-carrying nodes instead.
 #![forbid(unsafe_code)]
 
+pub mod assign;
 pub mod budget;
+pub mod compare;
 pub mod debug;
 pub mod digraph;
 pub mod edge;
 pub mod node;
+pub mod trace;
 
 #[cfg(test)]
 mod tests;
 
+pub use assign::{AccurateCipAssignment, SkipReason, assign_cip_accurate_experimental};
 pub use budget::CipBudget;
+pub use compare::{
+    BranchComparison, CipCompareError, CompareContext, compare_ligands, rank_children,
+};
 pub use digraph::{CipDigraph, DigraphExpander};
 pub use edge::{CipEdge, EdgeId};
 pub use node::{CipNode, CipNodeKind, NodeId};
+pub use trace::{ComparisonTrace, DecisionStep};
 
 /// Errors from digraph construction/expansion.
 #[derive(Debug, Clone, PartialEq, Eq)]
