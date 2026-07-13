@@ -191,12 +191,53 @@ an explicit go/no-go: if the triple-bond case doesn't clear here, stop and revis
 digraph/comparator design before continuing to Milestone 3 — don't proceed on a soft
 target.
 
+**Milestone 2.5 — Comparator/assignment hardening (retroactively inserted).** Milestone
+2 shipped a recursive comparator that turned out to be depth-first when CIP requires
+sphere-by-sphere (breadth-first) comparison — found via the triple-bond go/no-go case
+itself failing after a closer look, fixed by making `compare_ligands` advance ranked
+sibling positions one whole level at a time instead of resolving one position's subtree
+to completion before checking the next. That fix corrected the triple-bond case (0/1 →
+1/1) but *dropped* the residual-recovery count (68/155 → 20/155), because the old
+depth-first comparator had been landing on the right answer in the `aromatic_mancude`
+bucket by accident, not by correct reasoning. Before proceeding to Milestone 3, this
+follow-up round: (1) split reporting into full-corpus modern-oracle agreement (4055/4186,
+96.87%) vs. frozen-residual recovery (24/155, 15.5%) — never report the latter as if it
+were the former; (2) fixed a related assignment-layer bug where a multiple bond *at* the
+stereocenter itself (e.g. P=N phosphazene centers) added a duplicate root child, tripping
+an exact "4 substituents" guard and producing `no_assign` for every phosphorus corpus
+case regardless of resolvability — separating physical ligand count from digraph
+duplicate-node count unblocked all 15 (4 correct, 9 wrong, 2 tied — architecture fix, not
+phosphorus support, which stays Milestone 4's scope); (3) tagged `ComparisonTrace`
+entries with which node's children each step belongs to, since diagnosing the sphere-order
+bug required manually disentangling interleaved sibling-ranking sub-calls by hand; (4)
+root-caused all 26 `uncharacterized`-bucket wrong/tied cases via automated structural
+checks (`tests/uncharacterized_diagnosis.rs`) rather than leaving any unexplained: 24 ties
+trace to the already-known-deferred Rule 1b ring-duplicate root-distance tiebreak, and
+both wrong cases trace to an aromatic ipso carbon missing its mancude-ring duplicate
+child — i.e. both are Milestone 3's scope, mis-tagged by the corpus's own
+`classify_bucket()` heuristic; (5) added parameterized property tests generalizing both
+fixes (shallow-dominance-regardless-of-depth, phantom-padding-locality) beyond the single
+concrete regression case each was found on. Gate: not an accuracy number — comparator/
+assignment trustworthiness (zero regressions, zero unexplained residual cases, triple-bond
+still 1/1) judged together with the honest full-corpus number.
+
 **Milestone 3 — Ring/aromatic adjacency.** The frozen corpus's largest bucket (96 cases).
 This is the real test of the new digraph approach — Mancude-ring CIP duplication
 (explicit Kekulé structure or IUPAC's mean-atomic-number treatment; the RFC does not
 pre-decide which) only works if the comparator underneath it is sound. Target: ≥99%
 modern-oracle agreement on this bucket. No molecule-specific special-casing permitted as
 a way to hit the number.
+
+Direction confirmed post-Milestone-2.5: the acceptance bar for the *first* PR in this
+milestone is Kekulé-representation-independence — the same chemical system fed via
+different Kekulé input must produce an isomorphic CIP digraph — established *before* any
+aromatic-specific comparison/priority logic is added, not "add a priority correction for
+aromatic rings" as the opening move. Suggested PR order: (1) aromatic/mancude corpus +
+Kekulé-invariance tests, (2) resonance-invariant duplicate representation, (3) comparator
+wiring, (4) modern-oracle report. Overall go/no-go for this milestone: full-corpus
+modern-oracle agreement ≥98.0% (96.87% as of Milestone 2.5) with zero regressions — this
+bucket is large enough (96 cases) that hitting the bucket-level ≥99% target above should
+also clear the full-corpus gate, but the full-corpus number is the one that counts.
 
 **Milestone 4 — Stereo-dependent rules + phosphorus.** Rule 5 / pseudoasymmetry
 multi-pass resolution, plus the frozen corpus's 15 phosphorus stereocenters. Kept last
