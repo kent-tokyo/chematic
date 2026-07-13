@@ -402,3 +402,83 @@ fn test_no_forced_resolution_on_symmetric_substituents() {
         result.skipped
     );
 }
+
+/// Compare the two real (non-hydrogen) children of a "hub" atom -- `smi`'s atom 0 must
+/// have exactly 2 heavy-atom substituents (plus implicit hydrogens, which are filtered
+/// out here since these tests care only about the two named branches).
+fn compare_hub_branches(smi: &str) -> BranchComparison {
+    let mol = parse(smi).unwrap();
+    let mut g = CipDigraph::new(&mol, AtomIdx(0), CipBudget::default_budget()).unwrap();
+    let root_children = g.expand_children(g.root()).unwrap();
+    let real: Vec<_> = root_children
+        .iter()
+        .copied()
+        .filter(|&n| matches!(g.node(n).kind, CipNodeKind::Atom { .. }))
+        .collect();
+    assert_eq!(
+        real.len(),
+        2,
+        "{smi}: expected exactly 2 real (non-hydrogen) hub substituents, got {}",
+        real.len()
+    );
+    let mut ctx = CompareContext::new();
+    compare_ligands(&mut g, real[0], real[1], &mut ctx).unwrap()
+}
+
+#[test]
+fn test_shallow_dominance_regardless_of_chain_depth() {
+    // Generalizes the ethynyl-vs-carboxymethyl regression (see compare.rs's module
+    // docs and the triple_bond_dup corpus case): a shallow difference must decide a
+    // comparison even when an much deeper, otherwise-decisive difference sits under an
+    // earlier-ranked sibling branch. Parameterized over chain length so this isn't
+    // pinned to one specific depth.
+    //
+    // LEFT's first atom carries an extra methyl (ranks it above a plain chain
+    // continuation at depth 2, since a branch with a real substituent beats one with
+    // just hydrogens); RIGHT's first atom has no such branch. That depth-2 difference
+    // must decide LEFT > RIGHT regardless of how long the remaining chain is, even
+    // though RIGHT's chain ends in Br (which *would* outrank LEFT's terminal Cl if the
+    // comparison ever reached that deep -- it must not).
+    for chain_len in [1usize, 3, 5] {
+        let chain = "C".repeat(chain_len);
+        let left = format!("C(C){chain}Cl");
+        let right = format!("C{chain}Br");
+        let smi = format!("C({left})({right})");
+        assert_eq!(
+            compare_hub_branches(&smi),
+            BranchComparison::Higher,
+            "chain_len={chain_len}: {smi} -- shallow branch-vs-no-branch difference must \
+             decide this regardless of the deeper Cl-vs-Br difference at the chain ends"
+        );
+    }
+}
+
+#[test]
+fn test_phantom_padding_is_local_to_its_own_position() {
+    // Regression test for a hazard the sphere-by-sphere fix introduced alongside its
+    // own fix (see compare.rs's LevelSlot::Phantom docs): naively flattening multiple
+    // ranked sibling positions into one combined list and comparing raw total lengths
+    // corrupts *later* positions once an *earlier* position's substituent count
+    // mismatches, because the later position's data silently shifts to fill the gap.
+    //
+    // X = hub(isopropyl, methyl), Y = hub(phenyl, ethyl). Isopropyl/phenyl both rank
+    // above methyl/ethyl on their respective sides (a branch with 2 real substituents
+    // beats one with fewer), so isopropyl-vs-phenyl is compared *first*. Phenyl (an
+    // aromatic ipso carbon, fully substituted) has only 2 digraph children where
+    // isopropyl has 3 (2 branches + H) -- exactly the child-count mismatch that needs
+    // local phantom padding, not a global length fallback -- and correctly decides the
+    // whole comparison in X's favor (a real hydrogen beats a phantom) *before* the
+    // methyl-vs-ethyl position (which would favor Y, ethyl > methyl) is ever reached.
+    //
+    // A naive global-flatten-then-compare-total-length implementation gets this
+    // backwards: it would misalign isopropyl's own trailing H against ethyl's leading
+    // carbon (Y's phenyl only contributes 2 slots to the flattened list, so position 2
+    // already belongs to Y's *second* branch), reporting C > H and picking Y.
+    let smi = "C(C(C(C)C)C)(C(c1ccccc1)CC)";
+    assert_eq!(
+        compare_hub_branches(smi),
+        BranchComparison::Higher,
+        "{smi} -- isopropyl-vs-phenyl's local padding must decide this in X's favor \
+         without being corrupted by (or itself corrupting) the methyl-vs-ethyl position"
+    );
+}
