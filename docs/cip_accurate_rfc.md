@@ -847,6 +847,46 @@ Zero production impact from this phase either: `cargo test --workspace --lib --q
 passes workspace-wide; the new digraph constructor is additive and unused by
 `assign_cip_accurate_experimental`.
 
+**Milestone 4B-1, phase 2 — depth-2 pair sequence, 8/8 matches the oracle.** Per the
+user's direction (continue rather than pause), `examples/rule4b_pair_sequence.rs`
+extends phase 1's single-reference check into a genuine ordered *sequence* of paired
+auxiliary descriptors per branch: at each step, continue past the previously-found
+embedded reference (via its own forward children in the outer stereocenter's digraph)
+to find the *next* nearest embedded stereocenter, and compute *its* auxiliary sign with
+a fresh `new_with_artificial_ancestor` root. For the quinic family, position 1 of this
+sequence reaches the *other* tied atom itself — via two different arrival directions
+per branch, exactly as anticipated in phase 1's write-up above.
+
+**Result**: every one of the 8 rows' two branches tie at sequence position 0 (matching
+phase 1's finding) and differ at position 1 — and taking the first differing position
+as the decider, **8/8 predictions match the oracle (`S`)**, 0 mismatches, 0
+inconclusive. One empirical correction along the way: the first attempt used "R
+precedes S" at the deciding position (`assign::assign_one_with_rule5`'s own Rule 5
+convention) and got a uniform 8/8 *wrong-direction* mismatch (predicted `R` for every
+row that should be `S`) — flipping to "S precedes R" at this specific comparison
+(deciding position within a nested pair sequence, not Rule 5's direct single-position
+comparison) turned all 8 correct. Recorded as an empirical finding, not derived from
+IUPAC source text (unavailable locally, same standing limitation noted throughout this
+RFC) — the orientation is validated against the oracle, not assumed correct from
+either convention by analogy.
+
+**Reading**: this is now real, oracle-validated evidence that a genuine
+`DescriptorPairList`-shaped Rule 4b (ordered auxiliary-descriptor sequence per branch,
+first-differing-position decides) is both sufficient and correct for this residual
+family, not just plausible. Still diagnostic/validation code only — no production
+wiring. The next step, Milestone 4B-2, is implementing this for real inside
+`assign.rs`: a `DescriptorPairList`-shaped structure (not a simple ordinal `key()`, per
+the user's original architectural instruction) plus a `refine_by_rule4b` pass that only
+refines the equivalence classes Rules 1a/2 already left tied, following the same
+"refine an already-tied group" template `assign_one_with_rule5` established for Rule 5.
+Needs its own scoping/design pass before implementation, in a separate PR per the
+user's original guidance — this milestone's job was proving the mechanism works, not
+building the production version.
+
+Zero production impact from this phase too: no `crates/chematic-cip/src/` file changed
+beyond phase 1's additive `new_with_artificial_ancestor`; `cargo test --workspace --lib
+--quiet` passes workspace-wide.
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same
