@@ -512,3 +512,102 @@ fn rule5_resolves_the_two_verified_milestone_4a_target_rows() {
         );
     }
 }
+
+#[test]
+fn diagnose_m4a0_quinic_residual_constitutional_identity() {
+    // M4A-0: for each quinic/gallic-ester residual molecule, check whether the two
+    // tied physical branches at the tied atom are genuinely constitutionally
+    // isomorphic (branch_signature equal) -- if so, the tie is a real
+    // stereo-dependent case (Rule 4/5 territory, not a comparator bug); if the
+    // signatures differ, Rule 1a/1b *should* have broken the tie and didn't, which
+    // is a bug, not a missing-rule situation. See advisor's caution in this
+    // session: "skip:tied only means the current comparator returned Equal" is not
+    // by itself proof of genuine constitutional identity.
+    use crate::budget::CipBudget;
+    use crate::compare::{CompareContext, rank_children};
+    use crate::digraph::CipDigraph;
+    use chematic_core::{AtomIdx, Chirality, STEREO_H_SENTINEL};
+    use std::collections::HashSet;
+
+    let cases: &[(&str, u32)] = &[
+        (
+            "O=C(O[C@H]1[C@H](O)C[C@](O)(C(=O)O)C[C@H]1O)c1cc(O)c(O)c(O)c1",
+            3,
+        ),
+        (
+            "O=C(O[C@H]1[C@H](O)C[C@](OC(=O)c2cc(O)c(O)c(O)c2)(C(=O)O)C[C@H]1O)c1cc(O)c(O)c(O)c1",
+            3,
+        ),
+        (
+            "O=C(O[C@@H]1C[C@](OC(=O)c2cc(O)c(O)c(O)c2)(C(=O)O)C[C@@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H]1OC(=O)c1cc(O)c(O)c(O)c1)c1cc(O)c(O)c(O)c1",
+            5,
+        ),
+        (
+            "O=C(Oc1c(O)cc(C(=O)O[C@H]2[C@H](OC(=O)c3cc(O)c(O)c(O)c3)C[C@](O)(C(=O)O)C[C@H]2OC(=O)c2cc(O)c(O)c(O)c2)cc1O)c1cc(O)c(O)c(O)c1",
+            11,
+        ),
+    ];
+
+    for (smi, atom_idx) in cases {
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let idx = AtomIdx(*atom_idx);
+        let atom = mol.atom(idx);
+        assert_ne!(atom.chirality, Chirality::None);
+        let stereo_order = mol.stereo_neighbor_order(idx).expect("4 substituents");
+        assert_eq!(stereo_order.len(), 4);
+
+        let mut graph = CipDigraph::new(&mol, idx, CipBudget::default_budget()).unwrap();
+        let root = graph.root();
+        let root_children = graph.expand_children(root).unwrap();
+
+        let position_nodes: Vec<_> = stereo_order
+            .iter()
+            .map(|&pos_val| {
+                if pos_val == STEREO_H_SENTINEL {
+                    root_children
+                        .iter()
+                        .copied()
+                        .find(|&id| {
+                            matches!(
+                                graph.node(id).kind,
+                                crate::node::CipNodeKind::ImplicitHydrogen
+                            )
+                        })
+                        .unwrap()
+                } else {
+                    let a = AtomIdx(pos_val);
+                    root_children
+                        .iter()
+                        .copied()
+                        .find(|&id| {
+                            matches!(graph.node(id).kind, crate::node::CipNodeKind::Atom { atom_idx } if atom_idx == a)
+                        })
+                        .unwrap()
+                }
+            })
+            .collect();
+        let position_set: HashSet<_> = position_nodes.iter().copied().collect();
+
+        let mut ctx = CompareContext::new();
+        let groups = rank_children(&mut graph, &root_children, &mut ctx).unwrap();
+
+        let tied: Vec<_> = groups
+            .iter()
+            .find(|g| g.iter().filter(|n| position_set.contains(n)).count() > 1)
+            .map(|g| {
+                g.iter()
+                    .copied()
+                    .filter(|n| position_set.contains(n))
+                    .collect::<Vec<_>>()
+            })
+            .expect("this atom is tied");
+        assert_eq!(tied.len(), 2, "expected exactly a 2-way physical tie");
+
+        let sig_a = graph.branch_signature(tied[0]).unwrap();
+        let sig_b = graph.branch_signature(tied[1]).unwrap();
+        println!(
+            "{smi} atom {atom_idx}: branch_signature a={sig_a:#x} b={sig_b:#x} equal={}",
+            sig_a == sig_b
+        );
+    }
+}
