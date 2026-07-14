@@ -482,3 +482,33 @@ fn test_phantom_padding_is_local_to_its_own_position() {
          without being corrupted by (or itself corrupting) the methyl-vs-ethyl position"
     );
 }
+
+#[test]
+fn rule5_resolves_the_two_verified_milestone_4a_target_rows() {
+    use chematic_core::CipCode;
+
+    let cases: &[(&str, u32)] = &[
+        ("N[C@]1(C(=O)O)C[C@H](C(=O)O)[C@H](C(=O)O)C1", 1),
+        (
+            "CCCCc1cn([C@H]2[C@H](C)CCC[C@@H]2C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+            7,
+        ),
+    ];
+
+    for (smiles, atom_idx) in cases {
+        let mol = chematic_smiles::parse(smiles).expect("valid SMILES");
+        let assignment =
+            crate::assign_cip_accurate_experimental(&mol, crate::CipBudget::default_budget())
+                .expect("assignment succeeds");
+        let code = assignment
+            .assignments
+            .iter()
+            .find(|(idx, _)| idx.0 == *atom_idx)
+            .map(|(_, code)| *code);
+        assert_eq!(
+            code,
+            Some(CipCode::LowerR),
+            "{smiles} atom {atom_idx}: expected lowercase r (RDKit oracle), got {code:?}"
+        );
+    }
+}

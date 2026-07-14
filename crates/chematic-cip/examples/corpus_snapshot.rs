@@ -39,6 +39,8 @@ fn code_str(c: CipCode) -> &'static str {
         CipCode::S => "S",
         CipCode::E => "E",
         CipCode::Z => "Z",
+        CipCode::LowerR => "r",
+        CipCode::LowerS => "s",
     }
 }
 

@@ -28,6 +28,12 @@ pub enum CipCode {
     E,
     /// Double-bond *zusammen* (together, cis) geometry.
     Z,
+    /// Pseudoasymmetric center, *rectus*-like (Rule 5, lowercase `r`). Emitted only by
+    /// `chematic_cip::assign_cip_accurate_experimental`'s Rule 5 pass; the default
+    /// `chematic_chem::assign_cip` never produces this variant.
+    LowerR,
+    /// Pseudoasymmetric center, *sinister*-like (Rule 5, lowercase `s`). See [`Self::LowerR`].
+    LowerS,
 }
 
 /// A single atom in a molecular graph.
