@@ -641,14 +641,14 @@ analysis: reclassify the 8 still-uncharacterized residual rows into Rule 3/4 ter
 Rule 5 (pseudoasymmetry) for the 16 pseudoasymmetric residual cases; phosphorus (9 wrong
 + 2 tied). 99.5% (4166/4186) needs 16 more correct beyond the current 4150.
 
-*Naming note (added at Milestone 4A closeout, below): this paragraph's original A/B/C
-letters (reclassification=A, Rule 5=B, phosphorus=C) were superseded before any of them
-shipped. The post-M3B residual reclassification ran separately and un-labeled
-(findings: 17 pseudoasymmetric / 11 phosphorus / 8 unclassified — supersedes the 16/9+2/8
-counts above), and this conversation settled on **Milestone 4A = Rule 5** going forward
-(matching the closeout entry immediately below), not the reclassification task. Treat
-"M4A" everywhere after this point as Rule 5; a future phosphorus milestone would be 4B
-(unnumbered as of this closeout).*
+*Naming note (added at Milestone 4A closeout, updated again at Milestone 4A-0's own
+closeout further below — that entry is the current, authoritative letter mapping, this
+one is kept for history): this paragraph's original A/B/C letters
+(reclassification=A, Rule 5=B, phosphorus=C) were superseded before any of them shipped.
+The post-M3B residual reclassification ran separately and un-labeled (findings: 17
+pseudoasymmetric / 11 phosphorus / 8 unclassified — supersedes the 16/9+2/8 counts
+above), and this conversation settled on **Milestone 4A = Rule 5** going forward
+(matching the closeout entry immediately below), not the reclassification task.*
 
 **Milestone 4 — Stereo-dependent rules + phosphorus.** Rule 5 / pseudoasymmetry
 multi-pass resolution, plus the frozen corpus's 15 phosphorus stereocenters. Kept last
@@ -699,6 +699,64 @@ symmetry/automorphism-aware joint-resolution architecture is designed and its ow
 correctness argued/verified first — a provisional-map two-pass refinement cannot resolve
 this family by construction (no seed), so this is not a parameter tweak on the current
 code, it needs a different mechanism.
+
+**Milestone 4A-0 — post-Milestone-4A residual refresh, frozen at `992d18c`.** Per the
+user's explicit instruction not to carry the pre-4A bucket estimates forward (Milestone
+4A's own +2 fix could have shifted which rows remain), the residual was re-derived from
+scratch: full 4186-row re-evaluation against a fresh `rdCIPLabeler` oracle run —
+**4152/4186 correct (99.19%), 34 residual** (36 minus Milestone 4A's +2) — then every one
+of the 34 rows mechanically reclassified, **100% explained, 0 unexplained**:
+
+| bucket | rows | mechanical signal |
+|---|---|---|
+| Rule 5 / pseudoasymmetry | 15 | RDKit modern label lowercase (`r`/`s`) — exactly Milestone 4A-2's already-deferred cage family, unchanged (never touched by Milestone 4A) |
+| Rule 4 candidate | 8 | uppercase modern label (rules out Rule 5) + no stereogenic double bond in the tied branches (rules out Rule 3) + `branch_signature` (structural-identity hash) confirms the two tied branches are genuinely constitutionally isomorphic (rules out a Rule 1a/1b comparator bug) — positively confirmed, not inferred by elimination alone |
+| Phosphorus | 11 | P atom present; splits further into **9 "wrong"** (comparator fully resolves the ranking but to an incorrect order — a Rule 1a/2 correctness bug in P=N digraph representation, not a missing-rule situation, confirmed directly in the decision trace: no tied group at all) and **2 "tied"** (genuine rule-insufficiency, not yet characterized) |
+| Rule 3 candidate | 0 | no residual row's tied branches contain a stereogenic double bond |
+| assignment not resolved (`skip:not4`/`skip:budget`) | 0 | every residual row is either a definite-but-wrong value or `skip:tied` |
+| unexplained | 0 | — |
+
+**9 + 15 + 8 = 34.** The phosphorus wrong-vs-tied split and the 8/15 pseudoasymmetric-vs-other
+split independently reproduce the pre-Milestone-4A estimates (9+2 phosphorus, 15 remaining
+cage rows) almost exactly — confirming Milestone 4A was cleanly disjoint from this
+residual, not a coincidence carried over uncritically.
+
+Tooling added for this milestone (all real, reusable, not one-off): `examples/
+residual_report.rs` (FastApproximate/AccurateExperimental/oracle side by side for a
+fixed row set), `examples/trace_report.rs` (dumps a full `ComparisonTrace` — the
+Rules-1a/1b/2 decision path — for one stereocenter), `tests.rs::
+diagnose_m4a0_quinic_residual_constitutional_identity` (the `branch_signature` check
+above, kept as a permanent regression guard), `validation/cip_m4a0_residual.jsonl`
+(the frozen, classified 34-row dataset with per-row evidence), `validation/
+cip_m4a0_traces/` (one representative trace per bucket, using each bucket's shortest
+residual row as the minimal reproducible case rather than a constructed one).
+
+**No sequence rule implemented this milestone** — freeze and classify only, per explicit
+scope.
+
+**Milestone naming, reconciled**: this session's earlier work shipped as "Milestone 4A"
+(Rule 5, the 2-row scope, already merged) and named the deferred cage family "Milestone
+4A-2" — both labels are already published (PR titles, commit messages) and not renamed
+here. Going forward, to avoid colliding with that: **Milestone 4B = Rule 4** (the 8
+quinic/gallic rows, confirmed above), **Milestone 4C = phosphorus** (the 11 rows,
+splitting further into a comparator-bug fix for the 9 "wrong" rows and rule
+characterization for the 2 "tied" rows), and Milestone 4A-2 remains the label for the
+15-row cage family (needs symmetry/automorphism detection, unchanged from its original
+deferral).
+
+**Milestone 4's formal gate** (all three required, not accuracy alone):
+- Full-corpus modern-oracle agreement ≥ 99.5% (≥ 4166/4186).
+- Regressions = 0 (verified two independent ways, same discipline as every milestone
+  since Milestone 3B).
+- Unexplained residuals = 0 (Milestone 4A-0's own 34/34-explained freeze is the current
+  baseline this must not regress below as further milestones change which rows remain).
+
+**ROI note, not yet acted on**: the 99.5% gate needs 4166/4186 (16 more correct than
+4150, i.e. 14 more than Milestone 4A's current 4152). Milestone 4B (8) plus fixing just
+the 9 phosphorus "wrong" rows (Milestone 4C's comparator-bug half) would total 17 — enough
+to clear the gate without touching Milestone 4A-2's harder symmetry-detection work or the
+2 remaining phosphorus "tied" rows. This is an observation about ROI ordering, not a
+scope commitment — implementation order is decided per-milestone as each is planned.
 
 ## Required property tests (starting Milestone 1)
 
