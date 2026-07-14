@@ -192,20 +192,64 @@ jobs:
           (cd main && cargo bench --workspace --no-run)
           (cd pr && cargo bench --workspace --no-run)
 
-      # Measure main and PR back-to-back per benchmark (not "all of main's 13
-      # benchmarks, then all of PR's 13") and alternate which side goes
-      # first. Running the full suite for one side, then the other, leaves
-      # ~15 minutes between a benchmark's two measurements — enough for
-      # runner thermal/frequency drift to move the *average* level of
-      # whichever side happens to run second. Confirmed empirically: a
-      # version/docs-only PR with byte-identical Rust source (kent-tokyo/
-      # chematic#58) still showed 10/13 benchmarks "regressed" under the old
-      # main-then-PR-in-full ordering. Interleaving per-benchmark shrinks
-      # that gap to seconds; alternating which side leads spreads any
-      # residual same-gap bias across both sides instead of always
-      # penalizing the PR.
-      - name: Run Criterion benchmarks (interleaved, alternating order)
+      # Process-level redesign (issue #70): the old approach paired one
+      # Criterion process's ~100 internal batch samples as if they were 100
+      # independent A/B trials. They are not -- they all share one process's
+      # runner-environment state, so a single environment difference (CPU
+      # frequency scaling, VM steal time, scheduler contention) gets
+      # amplified into an extreme-looking uniform win rate (see issue #70:
+      # a version/docs-only PR with byte-identical Rust source showed nearly
+      # every benchmark, including ones in untouched crates, with
+      # baseline_count 96-100/100).
+      #
+      # scripts/criterion_gate.sh takes one Criterion *process run* as a
+      # single observation (median per-iteration time) and assembles N
+      # independent {baseline, candidate} records from N "ABBA" blocks
+      # (order A,B,B,A or B,A,A,B; geometric mean of each side's 2 runs
+      # within a block cancels slow thermal/frequency drift) -- locally
+      # validated (same-binary null control comes out "inconclusive", a
+      # genuinely large synthetic difference comes out "fail" once enough
+      # blocks accumulate).
+      #
+      # Two-stage screening keeps CI time bounded: Stage 1 is a cheap,
+      # coarse screen (3 blocks); only a Stage-1 "fail" triggers Stage 2 (10
+      # blocks, reversed A/B order, longer measurement) as an independent
+      # confirmation. The final gate only fails a benchmark if BOTH stages
+      # independently say fail -- reproduction-under-reversed-order is this
+      # design's multiple-testing correction (simpler than a Bonferroni/Holm
+      # family correction across 16 benchmarks, per issue #70's own
+      # suggested alternative).
+      #
+      # A same-binary null control (main vs itself, run through the exact
+      # same pipeline) runs once per stage. If IT shows a biased verdict,
+      # the whole run's environment is suspect -- every real "fail" that
+      # stage is downgraded to `environment-inconclusive` and never blocks,
+      # rather than trusting any individual benchmark's verdict.
+      - name: "Run process-level Criterion gate (issue #70 redesign)"
         run: |
+          set +e
+          chmod +x pr/scripts/criterion_gate.sh
+
+          bin_path() { pr/scripts/criterion_gate.sh bin-path "$1" "$2" "$3"; }
+
+          # Same-binary null control: main's own binary on both sides, run
+          # through the identical pipeline, once per stage. `parse_smiles_10mol`
+          # is the fastest benchmark in the suite -- cheap to run repeatedly as
+          # a canary.
+          null_control_bin=$(bin_path main chematic-smiles parse_bench)
+          run_null_control() {
+            local n_blocks="$1" order="$2" out="$3"
+            if [ -z "$null_control_bin" ]; then
+              echo "::warning::null control: parse_bench missing on main, skipping contamination check this stage" >&2
+              return 1
+            fi
+            pr/scripts/criterion_gate.sh run-blocks \
+              "$null_control_bin" "$null_control_bin" "parse_smiles_10mol" \
+              "$n_blocks" 0.5 1 15 "$order" "$out"
+            veridict compare "$out" --metric sign-test --confidence 0.95 --min-effect 0.2 \
+              --report-json "${out%.jsonl}_report.json"
+          }
+
           BENCHES=(
             "smarts_compile_5pat:chematic-smarts:smarts_bench"
             "smarts_match_nocache_10mol:chematic-smarts:smarts_bench"
@@ -224,100 +268,92 @@ jobs:
             "find_sssr_polycyclic_5mol:chematic-perception:sssr_bench"
             "count_aromatic_rings_10mol:chematic-perception:sssr_bench"
           )
-          idx=0
+
+          mkdir -p artifacts
+          any_fail=0
+          stage1_fail_count=0
+
+          # Stage 1: cheap screen across every benchmark first, so the (rare)
+          # same-binary null-control fail check below reflects this run's
+          # actual environment during the bulk of the work, not a check done
+          # in isolation before/after.
+          declare -a stage1_fail_names=()
           for entry in "${BENCHES[@]}"; do
             IFS=':' read -r name crate benchfile <<< "$entry"
-            if [ $((idx % 2)) -eq 0 ]; then
-              sides=(main pr)
-            else
-              sides=(pr main)
-            fi
-            for side in "${sides[@]}"; do
-              # A bench target (or the crate itself) can legitimately exist on only
-              # one side -- newly added in this PR (no baseline yet) or removed by it
-              # (no candidate). `cargo bench -p <crate> --bench <file>` errors ("no
-              # bench target named ...") in either case, which under this step's
-              # default `set -e` would otherwise abort the whole job on the first
-              # such benchmark, hiding every other benchmark's result behind an
-              # unrelated bootstrap gap (see kent-tokyo/chematic#68's Criterion gate
-              # failure: sssr_bench existed on the PR side but not yet on main).
-              # Tolerated here, not silently: sample.json's absence on the missing
-              # side is exactly what the gate step below uses to classify and report
-              # this case (new/removed benchmark) instead of pairing garbage.
-              if ! (cd "$side" && cargo bench -p "$crate" --bench "$benchfile" -- "^${name}$"); then
-                echo "::warning::$name: no bench target \`$benchfile\` in \`$crate\` on $side (new or removed benchmark?) -- continuing without it"
-              fi
-            done
-            idx=$((idx + 1))
-          done
+            main_bin=$(bin_path main "$crate" "$benchfile")
+            pr_bin=$(bin_path pr "$crate" "$benchfile")
 
-      # Criterion (0.8, no csv_output feature enabled) writes raw per-sample
-      # batch measurements to target/criterion/<bench>/new/sample.json as
-      # {iters: [...], times: [...]} (nanoseconds per batch, not per
-      # iteration) — times[i]/iters[i] gives the per-iteration time.
-      # sign-test (not mean-diff) is used because its effect is a
-      # scale-invariant win-rate centered on 0: one --min-effect threshold
-      # applies uniformly across benchmarks that differ by orders of
-      # magnitude in absolute time, without per-benchmark tuning.
-      - name: Pair & gate Criterion benchmarks
-        run: |
-          set +e
-          any_fail=0
-          for name in \
-            smarts_compile_5pat smarts_match_nocache_10mol smarts_match_cached_10mol smarts_recursive_10mol \
-            parse_smiles_10mol canonical_smiles_10mol \
-            ecfp4_10mol tanimoto_ecfp4_pairs \
-            descriptors_5x10mol qed_10mol pka_predict_10mol pka_acid_base_10mol admet_profile_10mol \
-            find_sssr_10mol find_sssr_polycyclic_5mol count_aromatic_rings_10mol
-          do
-            b="main/target/criterion/$name/new/sample.json"
-            c="pr/target/criterion/$name/new/sample.json"
-            b_exists=0; [ -f "$b" ] && b_exists=1
-            c_exists=0; [ -f "$c" ] && c_exists=1
-
-            # Three-way classification, not one "missing on either side, skip"
-            # bucket: only "both present" is a real regression signal. A brand-new
-            # benchmark (candidate only) has no baseline to compare against yet --
-            # that's expected on the PR that introduces it, not a gate failure, and
-            # must not block every *other* benchmark's verdict either (previously a
-            # missing bench *target* aborted the whole job before reaching this
-            # step at all -- see the previous step's comment). A benchmark present
-            # only on main (removed by this PR) is flagged for visibility but also
-            # not gated -- intentional removals shouldn't need a perf-gate override.
-            if [ "$b_exists" -eq 0 ] && [ "$c_exists" -eq 0 ]; then
-              echo "::warning::$name: sample.json missing on both sides, skipping"
+            # A bench target (or the crate itself) can legitimately exist on
+            # only one side -- newly added in this PR (no baseline yet) or
+            # removed by it (no candidate). Three-way classification: only
+            # "both present" is a real regression signal.
+            if [ -z "$main_bin" ] && [ -z "$pr_bin" ]; then
+              echo "::warning::$name: missing on both sides, skipping"
               continue
-            elif [ "$b_exists" -eq 0 ] && [ "$c_exists" -eq 1 ]; then
+            elif [ -z "$main_bin" ]; then
               echo "::notice::$name: new benchmark, no baseline on main yet -- not gated this run"
               continue
-            elif [ "$b_exists" -eq 1 ] && [ "$c_exists" -eq 0 ]; then
+            elif [ -z "$pr_bin" ]; then
               echo "::warning::$name: present on main but missing on the PR branch (removed?) -- not gated, please confirm this removal is intentional"
               continue
             fi
 
-            jq -c -n --slurpfile b "$b" --slurpfile c "$c" '
-              ($b[0].times) as $bt | ($b[0].iters) as $bi |
-              ($c[0].times) as $ct | ($c[0].iters) as $ci |
-              [range(0; ($bt | length))]
-              | map(select($bt[.] != null and $bi[.] != null and $ct[.] != null and $ci[.] != null))
-              | map({id: (. | tostring), baseline: (-($bt[.] / $bi[.])), candidate: (-($ct[.] / $ci[.]))})
-              | .[]
-            ' > "${name}_import.jsonl"
-
-            if [ ! -s "${name}_import.jsonl" ]; then
-              echo "::warning::$name: no usable paired samples, skipping"
-              continue
-            fi
-
-            veridict compare "${name}_import.jsonl" --metric sign-test --confidence 0.95 \
-              --min-effect 0.2 --report-json "${name}_report.json"
+            out="artifacts/${name}_stage1.jsonl"
+            pr/scripts/criterion_gate.sh run-blocks "$main_bin" "$pr_bin" "$name" 3 0.5 1 15 abba "$out"
+            veridict compare "$out" --metric sign-test --confidence 0.95 --min-effect 0.2 \
+              --report-json "artifacts/${name}_stage1_report.json"
             code=$?
-            echo "=== $name: exit $code ==="
-            cat "${name}_report.json"
+            echo "=== $name stage1: exit $code ==="
+            cat "artifacts/${name}_stage1_report.json"
             if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
-              echo "::error::$name regressed (exit $code)"
-              any_fail=1
+              stage1_fail_count=$((stage1_fail_count + 1))
+              stage1_fail_names+=("${name}:${crate}:${benchfile}")
             fi
           done
+
+          # Null control, this run's actual environment.
+          run_null_control 7 abba artifacts/null_control.jsonl
+          null_code=$?
+          echo "=== null control: exit $null_code ==="
+          environment_contaminated=0
+          if [ "$null_code" -eq 1 ] || [ "$null_code" -eq 3 ]; then
+            echo "::error::null control (main vs itself) shows a biased verdict -- this run's environment is contaminated. No individual benchmark fail is trustworthy this run."
+            environment_contaminated=1
+          fi
+
+          # Stage 2: confirmation only for Stage-1 fail candidates, reversed
+          # order, more blocks.
+          for entry in "${stage1_fail_names[@]}"; do
+            IFS=':' read -r name crate benchfile <<< "$entry"
+            main_bin=$(bin_path main "$crate" "$benchfile")
+            pr_bin=$(bin_path pr "$crate" "$benchfile")
+            out="artifacts/${name}_stage2.jsonl"
+            pr/scripts/criterion_gate.sh run-blocks "$main_bin" "$pr_bin" "$name" 10 1 2 20 baab "$out"
+            veridict compare "$out" --metric sign-test --confidence 0.95 --min-effect 0.2 \
+              --report-json "artifacts/${name}_stage2_report.json"
+            code=$?
+            echo "=== $name stage2 (confirmation, reversed order): exit $code ==="
+            cat "artifacts/${name}_stage2_report.json"
+            if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
+              if [ "$environment_contaminated" -eq 1 ]; then
+                echo "::warning::$name: Stage 1 and Stage 2 both failed, but this run's environment is contaminated (null control failed too) -- reporting environment-inconclusive, not blocking."
+              else
+                echo "::error::$name regressed -- reproduced independently in Stage 2 (reversed order, 10 blocks)"
+                any_fail=1
+              fi
+            else
+              echo "::notice::$name: Stage 1 flagged a possible regression but Stage 2 (reversed order) did not reproduce it -- treating as noise, not gating."
+            fi
+          done
+
+          echo "stage1_fail_count=$stage1_fail_count, environment_contaminated=$environment_contaminated, any_fail=$any_fail" >> "$GITHUB_STEP_SUMMARY"
           set -e
           [ "$any_fail" -eq 0 ]
+
+      - name: Upload Criterion gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: criterion-gate-artifacts
+          path: artifacts/
+          retention-days: 30
