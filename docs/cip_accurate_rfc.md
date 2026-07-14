@@ -887,6 +887,46 @@ Zero production impact from this phase too: no `crates/chematic-cip/src/` file c
 beyond phase 1's additive `new_with_artificial_ancestor`; `cargo test --workspace --lib
 --quiet` passes workspace-wide.
 
+**Correction, pre-M4B-2: phase 2's "S precedes R" is an absolute-comparison overfit,
+confirmed and discarded — a faithful reference-relative Like/Unlike does not yet reach
+8/8 either.** Flagged by the user before any production code was written: real Rule 4b
+compares descriptor *families* relative to a chosen reference (Like beats Unlike), never
+raw R/S ordinally. `examples/rule4b_like_unlike_gate.rs` tested this directly, with a
+decisive instrumented check the user specified: reproducing each of the 8 rows'
+*enantiomer* (every `@`/`@@` textually swapped — a purely mechanical transform) and
+checking against its *derived* oracle (mirroring inverts every stereocenter's label,
+always, so the mirrored oracle is `R` for all 8 without needing a fresh RDKit run).
+
+- **"S precedes R" (phase 2's rule): 8/8 on the original set, 0/8 on the mirrored
+  set.** Definitively confirms it is an absolute, non-invariant rule — exactly the
+  overfit the user predicted, now falsified by construction rather than by argument.
+- **A faithful reference-relative Like/Unlike (reference = the shared family at
+  sequence position 0, Like beats Unlike at the first differing position): 4/8 on
+  *both* the original and mirrored sets.** Consistent (invariant) across enantiomers,
+  which is the correct structural property — but still not correct: exactly half the
+  rows are wrong on each set, and hand-tracing why (twice) produced two more wrong
+  conclusions, so a brute-force sweep of the 4 reference/winner sign permutations
+  (`LikeWinsSharedRef` / `UnlikeWinsSharedRef` / `LikeWinsOppositeRef` /
+  `UnlikeWinsOppositeRef`) was run mechanically instead. **All 4 score exactly 4/8 on
+  both sets** — none reaches 8/8. Notably, the two atoms tied within the same molecule
+  (e.g. quinic acid's atom3 and atom7) are on *opposite* sides of the 4/8 split for
+  every convention tried: whichever convention gets atom3's row right gets atom7's row
+  wrong, and vice versa. A single global sign convention cannot fix this — the
+  resolution needs something beyond a reference/winner sign choice at the deciding
+  position.
+
+**Not yet resolved.** The auxiliary-descriptor chain construction itself is verified
+sound (enantiomer-invariant chain values, confirmed by direct inspection — mirroring a
+molecule flips every element of every chain exactly as expected). The remaining gap is
+in how the two branches' chains are compared/reference-selected, not in computing the
+auxiliary descriptors themselves. Candidate directions not yet tried: reference
+selection scoped to something other than "shared value at sequence position 0" (e.g.
+CIP hierarchical-digraph-order across all of the tied stereocenter's ligands, not just
+the 2 tied branches), or a comparison that doesn't reduce to a single deciding position
+at all. Needs either a primary-source check (IUPAC 2013 Rule 4b text, unavailable
+locally) or further instrumented experiments before Milestone 4B-2's production
+implementation proceeds — reported to the user rather than guessed further.
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same
