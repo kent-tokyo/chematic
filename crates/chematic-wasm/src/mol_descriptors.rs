@@ -328,6 +328,8 @@ pub fn cip_assignments_json(mol: &MolHandle) -> String {
                 chematic_core::CipCode::S => "S",
                 chematic_core::CipCode::E => "E",
                 chematic_core::CipCode::Z => "Z",
+                chematic_core::CipCode::LowerR => "r",
+                chematic_core::CipCode::LowerS => "s",
             };
             format!("{{\"atomIdx\":{},\"cipCode\":\"{}\"}}", idx.0, code_str)
         })

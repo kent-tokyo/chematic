@@ -637,16 +637,68 @@ explicit resumption conditions — any one of these reopens it:
 - RDKit's own MANCUDE implementation changes and chematic needs to track it
 
 **Next: Milestone 4 direction (not started this round).** ROI ordering, not resonance
-analysis: **M4A** — reclassify the 8 still-uncharacterized residual rows into Rule 3/4
-territory; **M4B** — Rule 5 (pseudoasymmetry) for the 16 pseudoasymmetric residual cases;
-**M4C** — phosphorus (9 wrong + 2 tied). 99.5% (4166/4186) needs 16 more correct beyond
-the current 4150 — M4A alone (8) plus roughly half of M4B or M4C would clear it.
+analysis: reclassify the 8 still-uncharacterized residual rows into Rule 3/4 territory;
+Rule 5 (pseudoasymmetry) for the 16 pseudoasymmetric residual cases; phosphorus (9 wrong
++ 2 tied). 99.5% (4166/4186) needs 16 more correct beyond the current 4150.
+
+*Naming note (added at Milestone 4A closeout, below): this paragraph's original A/B/C
+letters (reclassification=A, Rule 5=B, phosphorus=C) were superseded before any of them
+shipped. The post-M3B residual reclassification ran separately and un-labeled
+(findings: 17 pseudoasymmetric / 11 phosphorus / 8 unclassified — supersedes the 16/9+2/8
+counts above), and this conversation settled on **Milestone 4A = Rule 5** going forward
+(matching the closeout entry immediately below), not the reclassification task. Treat
+"M4A" everywhere after this point as Rule 5; a future phosphorus milestone would be 4B
+(unnumbered as of this closeout).*
 
 **Milestone 4 — Stereo-dependent rules + phosphorus.** Rule 5 / pseudoasymmetry
 multi-pass resolution, plus the frozen corpus's 15 phosphorus stereocenters. Kept last
 and separate from Milestone 3 deliberately: phosphorus stereocenters raise valence/
 lone-pair representation questions that could otherwise contaminate the ring/aromatic
 gate's signal.
+
+**Milestone 4A closeout — Rule 5, scoped to 2 verified-independent rows (accurate
+engine: 99.14% → 99.19%, 4150/4186 → 4152/4186).** Of the 17 pseudoasymmetric residual
+rows, empirical verification (RDKit sweep + a direct stereo-tag flip test) found they
+are **not homogeneous**: 15 of them (5 of 7 distinct molecules) are a three-armed,
+locally-symmetric cage structure (dicyclopentadiene/adamantane-type) where flipping just
+one arm's tag reclassifies *all three* embedded centers at once — proof they're jointly
+determined by whether local symmetry holds, not independently resolvable via pairwise
+branch comparison. A provisional-map two-pass architecture has no seed to refine from
+here (every relevant neighbor is *also* tied), so it cannot handle this family; doing so
+needs symmetry/automorphism perception, a different architecture than what shipped here.
+
+Only 2 of the 17 rows are the textbook, single-embedded-neighbor pseudoasymmetric shape:
+both molecules' embedded reference stereocenters are already independently resolved to
+distinct uppercase codes by Pass 1 (no ring-duplicate/phantom-atom complication), so
+using the atom's own molecular R/S as the Rule 5 auxiliary descriptor is verified — not
+assumed — correct for this narrow scope (real CIP Rule 4c/5 compares an *auxiliary*
+descriptor computed within the outer stereocenter's own digraph, which need not equal
+the atom's independently-computed molecular descriptor in general).
+
+Shipped: `CipCode::LowerR`/`LowerS` (`chematic-core`); a Pass-2 refinement
+(`assign.rs::apply_rule5_pass`) that retries only atoms Pass 1 left `SkipReason::Tied`,
+detects a tie between exactly 2 physical positions whose branches' *nearest* embedded,
+already-resolved stereocenter differ (R vs S), and breaks it (R precedes S). "Nearest,"
+not "the branch's only one": in a monocyclic ring, both ring-direction branches
+eventually wrap around and reach *every* embedded stereocenter, just in opposite order —
+an early version of this check used "exactly one in the whole subtree" and wrongly
+disqualified both target rows before this was caught and fixed. Verified: exact match on
+both target rows, 0 regressions two independent ways (`corpus_snapshot.rs` diff +
+`cip_accurate_full_corpus_report.py` full recompute), and an explicit no-op diff
+confirming the only 2 changed rows across the full 4188-row corpus are the intended
+targets.
+
+**Both target rows resolve to lowercase `r`** — there is no `s`-producing row in this
+milestone's own verification corpus. `LowerS` is implemented symmetrically (the tiebreak
+logic doesn't special-case which side is which) but its correctness is not empirically
+exercised by this milestone; treat it as unverified until a real corpus row exercises it.
+
+**Milestone 4A-2 — deferred, not deleted: the 15-row three-armed cage family.** Same
+molecules described above, atoms not covered by the 2-row scope. Resumption condition: a
+symmetry/automorphism-aware joint-resolution architecture is designed and its own
+correctness argued/verified first — a provisional-map two-pass refinement cannot resolve
+this family by construction (no seed), so this is not a parameter tweak on the current
+code, it needs a different mechanism.
 
 ## Required property tests (starting Milestone 1)
 

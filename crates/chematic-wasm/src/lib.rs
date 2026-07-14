@@ -488,6 +488,8 @@ impl MolHandle {
                     CipCode::S => "S",
                     CipCode::E => "E",
                     CipCode::Z => "Z",
+                    CipCode::LowerR => "r",
+                    CipCode::LowerS => "s",
                 };
                 format!(r#"{{"atom":{},"code":"{}"}}"#, idx.0, code_str)
             })

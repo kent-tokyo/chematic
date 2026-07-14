@@ -13,6 +13,8 @@ pub fn code_str(code: CipCode) -> &'static str {
         CipCode::S => "S",
         CipCode::E => "E",
         CipCode::Z => "Z",
+        CipCode::LowerR => "r",
+        CipCode::LowerS => "s",
     }
 }
 

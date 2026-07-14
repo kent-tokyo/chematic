@@ -2643,6 +2643,8 @@ impl Mol {
                     CipCode::S => "S",
                     CipCode::E => "E",
                     CipCode::Z => "Z",
+                    CipCode::LowerR => "r",
+                    CipCode::LowerS => "s",
                 };
                 d.set_item("descriptor", label)?;
                 Ok(d)
@@ -3814,6 +3816,8 @@ impl Mol {
                     CipCode::S => "S",
                     CipCode::E => "E",
                     CipCode::Z => "Z",
+                    CipCode::LowerR => "r",
+                    CipCode::LowerS => "s",
                 };
                 d.set_item("code", code_str).unwrap();
                 d
@@ -3853,6 +3857,8 @@ impl Mol {
                     CipCode::S => "S",
                     CipCode::E => "E",
                     CipCode::Z => "Z",
+                    CipCode::LowerR => "r",
+                    CipCode::LowerS => "s",
                 };
                 d.set_item("code", code_str).unwrap();
                 d
