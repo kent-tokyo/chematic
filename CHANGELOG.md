@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-cip` (new crate, experimental)
+
+- **Hierarchical-digraph CIP (Cahn-Ingold-Prelog) engine** — `assign_cip_accurate_experimental`, a from-scratch, provenance-carrying digraph replacement for the existing shell-pooling comparator in `chematic-chem`. Not yet wired into `chematic_chem::assign_cip()`; a separate, non-default, `publish = false` crate for now. See `docs/cip_accurate_rfc.md` for the full design and milestone history.
+- Rules 1a (atomic number) / 1b (ring-duplicate handling) / 2 (isotope) comparator, genuinely sphere-by-sphere (breadth-first, not depth-first) — fixes a class of bug the old shell-pooling comparator couldn't (a shallow sibling difference must decide a comparison before a much deeper, irrelevant one is reached).
+- **MANCUDE (maximum non-cumulated double bonds) fractional atomic numbers** — `AtomicNumberKey`/`RationalAtomicNumber` give aromatic ring atoms (e.g. pyridine's N-adjacent carbons) a Kekulé-invariant fractional value instead of one arbitrary Kekulé form's integer, matching RDKit's own `calcFracAtomNums` formula (verified against RDKit source, not paraphrase).
+- **Full-corpus accuracy on this experimental engine: 96.68% → 99.14%** (4047/4186 → 4150/4186 vs modern RDKit `rdCIPLabeler`, net +103, 0 regressions confirmed by two independently-computed methods). The entire gain is attributable to Kekulé-respelling structurally (aromatic bonds finally contributing real digraph duplicate nodes) — the fractional MANCUDE values themselves are implemented and RDKit-formula-verified but measured inert (0/4188 rows) on the available corpus, kept rather than reverted since there's no efficiency cost.
+- Post-milestone reclassification of the remaining 36/4186 residual: 17 pseudoasymmetric (Rule 5, confirmed via RDKit's own lowercase r/s label), 11 phosphorus, 8 unclassified — Milestone 4A (Rule 5) is next.
+
 ### Added — `chematic-chem`
 
 - **`schultz_mti(mol) -> f64`** — Schultz Molecular Topological Index (MTI): weighted sum of adjacency × distance matrix entries.
@@ -58,6 +66,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `[profile.release] opt-level="z" lto=true codegen-units=1` added to workspace `Cargo.toml`.
 - Removed `run_md_json`, `coulomb_energy_json`, `torsion_scan_json`, `determine_bonds_from_xyz_json` from WASM exports.
 - Removed `chematic-ewald` from `chematic-wasm` dependencies.
+
+### Performance — `chematic-cip` MANCUDE ring-bond check (30ms → microseconds on large fused-ring molecules)
+
+- `mancude.rs::ring_bond_set` was calling `chematic_perception::find_sssr` (a full minimum cycle basis) on the whole molecule just to answer a boolean "is this bond in some ring" question — replaced with a direct O(V+E) bridge-edge (cut-edge) DFS, since ring-bond membership is exactly the complement of the bridge set. Verified byte-identical output across the full corpus before/after.
+
+### CI
+
+- **Criterion regression gate bootstrap fix** (`bench-pr-gate.yml`) — a new or removed Criterion benchmark target used to abort the whole gate job (`cargo bench --bench <missing>` erroring under `set -e`), hiding every other benchmark's verdict. Now tolerated per-side with a three-way classification: both sides present gates normally; candidate-only is a new benchmark with no baseline yet (not gated); baseline-only is a possibly-removed benchmark (warned, not gated).
+- **Criterion gate reliability finding** — the gate currently treats one Criterion process's ~100 internal samples as 100 independent A/B trials; they aren't (all share one process's runner state), so a single environment difference can be amplified into an extreme-looking win rate for every benchmark at once. Confirmed empirically (a run showed unrelated benchmarks all failing with near-identical effect sizes). The gate stays non-required and its `fail` verdicts are not currently reliable evidence of a real regression — process-level redesign tracked in [#70](https://github.com/kent-tokyo/chematic/issues/70).
 - Added `wasm-opt -O3` step to `.github/workflows/pages.yml` CI.
 
 ---
