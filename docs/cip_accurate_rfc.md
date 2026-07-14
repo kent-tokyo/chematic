@@ -802,6 +802,51 @@ Zero production impact: `cargo test --workspace --lib --quiet` and the existing
 4152/4186 full-corpus number are both unaffected (no files under
 `crates/chematic-cip/src/` touched).
 
+**Milestone 4B-1, phase 1 — artificial-ancestor construct built and gated against
+oracle; simplest combination candidate insufficient (0/8, no wrong answers).** Added
+`CipDigraph::new_with_artificial_ancestor` (`crates/chematic-cip/src/digraph.rs`): roots
+fresh at an embedded atom with one specific neighbor pre-seeded as an already-visited
+ancestor, so that neighbor terminates as a `RingDuplicate` leaf immediately instead of
+expanding as a real subtree — the missing piece Milestone 4B-0 flagged for computing an
+embedded stereocenter's true *auxiliary* R/S sign (as seen from one specific branch of
+the outer, still-tied stereocenter), as opposed to its ordinary independent *molecular*
+sign. Additive only: `new`/`new_with_mancude` pass `None` and are unchanged (verified by
+a new test, `new_without_artificial_ancestor_keeps_ordinary_neighbor_expansion`,
+mirroring the existing `new_without_mancude_keeps_plain_integer_duplicates` precedent); a
+second new test confirms the seeded neighbor really does terminate as a childless
+`RingDuplicate`.
+
+A new example, `examples/rule4b_aux_sign.rs`, used this construct to compute, for each of
+the 8 `rule4_candidate` rows, the true auxiliary sign of each branch's nearest embedded
+reference (the atom `rule4_diagnose.rs` already found ranks tie-free locally), then
+tried the simplest Rule-4b-shaped combination — R precedes S on the two branches'
+auxiliary references, mirroring Rule 5's own tie-break convention in
+`assign::assign_one_with_rule5` — against the oracle. Result: **0/8 matched, 0/8
+mismatched, 8/8 inconclusive** — in every row, both branches' nearest-reference auxiliary
+signs are identical to each other (both R or both S), so this single-comparison
+tie-break has no discriminating power at all. Notably the construct is mechanically
+sound throughout (no cycles, no budget errors, a real sign computed for all 16
+branches), and in several rows the auxiliary sign differs from that same atom's ordinary
+global (Pass-1) code (e.g. quinic-a's branch A: auxiliary S vs. global R) — confirming
+the auxiliary-vs-molecular distinction is genuinely load-bearing here, not just a
+theoretical caveat.
+
+**Reading**: this is a real, informative negative result, not a failed experiment. It
+means Rule 4b for this family cannot be a single-level "compare the first reference"
+rule — consistent with the user's original architectural concern that Rule 4b needs a
+genuine ordered *sequence* of paired descriptors (a `DescriptorPairList`-shaped
+comparison), not a simple key. The natural next check (not yet done) is one level
+deeper: each branch's *second* nearest embedded reference beyond the first — for the
+quinic family this reaches the *other* tied atom itself, via two different arrival
+directions per branch, which is exactly the case this milestone's construct exists to
+disambiguate. Left as the next Milestone 4B-1 step pending direction from the user,
+since extending the pairing depth is where this starts to become the separate,
+larger-architecture PR the user's original M4B message called for.
+
+Zero production impact from this phase either: `cargo test --workspace --lib --quiet`
+passes workspace-wide; the new digraph constructor is additive and unused by
+`assign_cip_accurate_experimental`.
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same
