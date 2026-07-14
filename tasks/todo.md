@@ -120,6 +120,10 @@ Current version: **v0.4.26** (2026-06-29)
 | done: | SDF true streaming: `SdfFileReader<R: BufRead>` + Python `iter_sdf(path)` → lazy streaming, `iter_sdf_batched(path, batch_size=1000)` new; `iter_sdf_str()` unchanged; `MolParseError::Io` added |
 | done: | `bulk.descriptors_array(smiles, columns)` — columnar numpy output, ~25% faster than `descriptors()+DataFrame()`; float64/bool/NaN for optional |
 | done: | Stereocenters 99.8% → 99.98% (legacy) / 98.7% (new CIP) — CIP Rule 5 tie-breaking via provisional R/S + equality-based signature comparison; cage false-positives correctly avoided |
+| done: | `chematic-cip` new crate, Milestone 1 → 3B closeout: hierarchical-digraph CIP engine (`assign_cip_accurate_experimental`), sphere-by-sphere Rules 1a/1b/2 comparator, RDKit-compatible MANCUDE fractional atomic numbers; full-corpus accuracy on this experimental engine 96.68% → 99.14% (4047/4186 → 4150/4186), 0 regressions; not yet wired into `chematic_chem::assign_cip()` — see `docs/cip_accurate_rfc.md` |
+| done: | `chematic-cip` perf fix: `ring_bond_set` was calling full `find_sssr` for a boolean ring-bond check (30ms vs 27us on a 182-atom molecule, ~1000x); replaced with an O(V+E) bridge-edge DFS, byte-identical output verified |
+| done: | CI: Criterion regression gate bootstrap fix (PR #69) — a new/removed bench target no longer aborts the whole gate job |
+| found, not yet fixed: | Criterion regression gate pseudo-replication — ~100 samples/side from one process aren't independent trials, single-run environment differences amplify into false-looking uniform failures across unrelated benchmarks; gate is non-required and its fail verdicts aren't currently trusted; redesign tracked in issue #70 |
 
 ---
 

@@ -270,7 +270,7 @@ than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
 
 \*LogP max Δ = 1.1×10⁻¹³ across 4,999 molecules — within float64 rounding error.  
 †Stereocenter count: 99.98% vs legacy `CalcNumAtomStereoCenters` (1 molecule where chematic matches `FindPotentialStereo`=4 and legacy under-counts at 2); 98.7% vs new-CIP `FindPotentialStereo` (67 cage/bridgehead molecules where both chematic and legacy correctly return fewer than the new oracle). chematic is calibrated between both extremes. This measures whether an atom is *flagged* as a stereocenter, not whether its R/S label is correct — see the next row.  
-‡CIP R/S label agreement measures, for atoms both oracles agree are stereocenters, whether the assigned R/S descriptor matches — a stricter, separate check from stereocenter count agreement above. See [`docs/cip_accurate_rfc.md`](docs/cip_accurate_rfc.md) for the residual's root cause and remediation plan.
+‡CIP R/S label agreement measures, for atoms both oracles agree are stereocenters, whether the assigned R/S descriptor matches — a stricter, separate check from stereocenter count agreement above. See [`docs/cip_accurate_rfc.md`](docs/cip_accurate_rfc.md) for the residual's root cause and remediation plan — now underway in the new, separate `chematic-cip` experimental engine (99.14% on its own full-corpus metric; not yet `chematic_chem::assign_cip()`'s default path, so this row's 96.30% is unaffected).
 
 All numbers are reproducible with the scripts in this repo.  
 Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](validation/)
@@ -403,6 +403,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 ---
 
 ## Recent Development (v0.4.x Era)
+
+**Unreleased** (in progress): **`chematic-cip` — new experimental hierarchical-digraph CIP engine**
+- New crate, not yet wired into `chematic_chem::assign_cip()`: a provenance-carrying, sphere-by-sphere digraph comparator (Rules 1a/1b/2) plus RDKit-compatible MANCUDE fractional atomic numbers for aromatic ring stereocenters
+- Full-corpus accuracy on this experimental engine 96.68% → 99.14% vs modern RDKit `rdCIPLabeler` (4047/4186 → 4150/4186, 0 regressions) — see `docs/cip_accurate_rfc.md` for the milestone history and honest attribution (the gain is the Kekulé-respelling structural effect, not the fractional values, which are correct but currently inert on this corpus)
+- Found and fixed a real ~10-14x perf regression (SSSR misused for a boolean ring-bond check, replaced with an O(V+E) bridge-edge DFS); CI Criterion-gate bootstrap fix; a Criterion-gate reliability finding (pseudo-replication, [#70](https://github.com/kent-tokyo/chematic/issues/70))
 
 **v0.4.29** (2026-07-10): **Kabsch rotation bug fix + SDF V3000/CDXML write, Avalon FP, O3A**
 - `chematic-3d`: fixed `align_coords`'s Kabsch rotation computed in the wrong direction — was giving grossly inflated RMSD for any non-pure-translation alignment (live on v0.4.28 across crates.io/PyPI/npm before this patch); `correspondence_search` for O3A atom correspondence
