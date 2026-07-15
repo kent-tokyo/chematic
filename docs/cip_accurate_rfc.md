@@ -1041,9 +1041,14 @@ bottom-up across the whole digraph, since an auxiliary center can itself require
 diagnostic step ahead of it — reported to the user rather than building further
 without confirming the revised scope.
 
-**Milestone 4B-2 — the bottom-up, in-place engine, built and validated
-(`examples/rule4b_bottom_up.rs`).** Per the user's explicit "続けて" (continue), the
-engine described above was implemented for real:
+**Milestone 4B-2 — validated reference engine (`examples/rule4b_bottom_up.rs`);
+production wiring pending.** Per the user's explicit "続けて" (continue), the engine
+described above was implemented for real as a diagnostic reference implementation —
+**not yet connected to any production path** (`crates/chematic-cip/src/` is untouched
+this round; `chematic_chem::assign_cip` and `chematic_cip::assign_cip_accurate_experimental`
+are both unaffected). This section documents the reference engine's design and
+validation results only; the production port is scoped as a separate, later PR (see
+"Next: mechanical production port" below).
 
 - `resolve_chirality(graph, mol, node_id, ...)`: a plain memoized recursion over the
   *existing* nodes of one digraph rooted at the true outer stereocenter
@@ -1113,6 +1118,55 @@ ties (out of scope, would return `None` rather than guess); wiring into
 `chematic_chem::assign_cip` or `chematic_cip::assign_cip_accurate_experimental`
 production paths (this remains diagnostic-only, `examples/` — no `src/` changes this
 round).
+
+**Next: mechanical production port (separate PR, not this one).** Per the user's
+explicit direction after reviewing this milestone's PR: PR #77 (this milestone) is
+diagnostic/validation/docs only and merges as-is once required CI is green — no scope
+expansion (no Figure 8, no production wiring) inside it. The follow-on PR is scoped as
+a **mechanical port, not a rewrite**:
+
+- New `crates/chematic-cip/src/` modules (`auxiliary.rs`, `rule4b.rs`, `resolver.rs`
+  or similar split) porting `resolve_chirality` from `examples/rule4b_bottom_up.rs`
+  into the library, unchanged in algorithm: one true-root digraph, bottom-up memoized
+  recursion, back-to-root Rule 1a handling as-is.
+- Rule 4b is invoked **only** on groups Rules 1a/2 already left tied — never an
+  unconditional pass (standing project discipline, see Milestone 3A's Rule 1b
+  precedent).
+- Wired into `chematic_cip::assign_cip_accurate_experimental` **only** — the legacy
+  shell-pooling engine (`chematic_chem::assign_cip`) is not touched.
+- **No** refactor, performance optimization, or Figure 8 both-references support
+  bundled into this same PR — keep a window where the validated `examples/` reference
+  output and the production port's output can be compared byte-for-byte per case.
+- **Multiple reference candidates must fail loudly, not silently guess.** Since 72/72
+  was reached with every real case in this milestone's corpora having exactly one
+  reference candidate (no case has yet exercised the tied-count/majority-family branch
+  of reference selection), the production port must not implicitly pick one candidate
+  when 2+ exist:
+  ```rust
+  match reference_candidates.len() {
+      1 => apply_single_reference_rule4b(...),
+      _ => Err(CipUnresolved::NeedsBothReferencesMax),
+  }
+  ```
+  Report a `rule4b_multi_reference_deferred` count in the full-corpus run. Resume work
+  on Figure 8's both-references-max procedure only when: (a) a real full-corpus case
+  actually hits this path; (b) an RDKit residual is attributable to it; and (c) an
+  additional Hanson/Figure-8-shaped oracle is available to validate against — not
+  proactively, since ROI is low while the single-reference operator already accounts
+  for every observed case.
+
+**Production PR's gate:**
+
+- 72/72 reference-engine parity preserved (no regression vs. this milestone's
+  validated `examples/` result).
+- The 8-row `rule4_candidate` residual fully recovered: expected full corpus
+  4152/4186 + 8 = **4160/4186 (99.38%)**.
+- Zero regressions elsewhere in the corpus.
+- Mirror invariance: 100% (every corpus case's enantiomer, mechanically re-derived,
+  also passes).
+- Zero pair-antisymmetry defects (the bug this milestone fixed must not resurface).
+- Multiple-reference-candidate cases surface as `Unresolved`/deferred, never a silent
+  potentially-wrong label.
 
 ## Required property tests (starting Milestone 1)
 
