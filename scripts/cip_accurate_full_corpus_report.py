@@ -21,12 +21,20 @@ where the two snapshots differ textually (a pure diff, classified via the oracle
 independently re-derives an oracle label for *every* row and counts baseline-correct/
 candidate-incorrect from scratch, without assuming or reusing Method A's diff set at all.
 
+Optionally accepts a 4th argument, a path to an oracle-instability corpus (schema:
+`docs/cip_accurate_rfc.md` Milestone 4C-0 -- `validation/cip_oracle_instability.jsonl`
+is the current one). Rows there with `oracle_status: representation_unstable` are
+excluded from both the correct and incorrect side of a second, "oracle-stable"
+agreement figure -- the raw figure above is never altered or hidden, both are printed
+side by side per the Milestone 4C-0/4 gate decision.
+
 Usage:
     .venv/bin/python scripts/cip_accurate_full_corpus_report.py \\
-        <baseline.tsv> <candidate.tsv> [SMILES.csv]
+        <baseline.tsv> <candidate.tsv> [SMILES.csv] [oracle_instability.jsonl]
 """
 
 import hashlib
+import json
 import sys
 from collections import defaultdict
 
@@ -50,6 +58,18 @@ def load_snapshot(path):
     return rows
 
 
+def load_unstable_keys(path):
+    keys = set()
+    with open(path) as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("_manifest"):
+                continue
+            if row.get("oracle_status") == "representation_unstable":
+                keys.add((row["smiles"], row["atom_idx"]))
+    return keys
+
+
 def main():
     args = sys.argv[1:]
     if len(args) < 2:
@@ -57,6 +77,7 @@ def main():
         sys.exit(1)
     baseline_path, candidate_path = args[0], args[1]
     csv_path = args[2] if len(args) > 2 else f"{sys.argv[0]}/../../SMILES.csv"
+    unstable_path = args[3] if len(args) > 3 else None
 
     baseline = load_snapshot(baseline_path)
     candidate = load_snapshot(candidate_path)
@@ -135,6 +156,13 @@ def main():
         else:
             neutral_from_diff += 1
 
+    unstable_keys = load_unstable_keys(unstable_path) if unstable_path else set()
+    unstable_in_corpus = unstable_keys & {k for k in all_keys if oracle_by_smiles.get(k[0])}
+    candidate_correct_stable = candidate_correct - sum(
+        1 for k in unstable_in_corpus if candidate.get(k) == oracle_by_smiles[k[0]].get(k[1])
+    )
+    oracle_assigned_rows_stable = oracle_assigned_rows - len(unstable_in_corpus)
+
     corpus_sha256 = None
     try:
         with open(csv_path, "rb") as f:
@@ -165,6 +193,15 @@ def main():
     print(f"rdkit_version:                       {Chem.rdBase.rdkitVersion}")
     print(f"baseline_engine_mode:                {BASELINE_ENGINE_MODE}")
     print(f"candidate_engine_mode:               {CANDIDATE_ENGINE_MODE}")
+
+    if unstable_path:
+        print()
+        print("=== oracle-stable breakdown (candidate engine) ===")
+        print(f"Modern RDKit raw agreement:          {candidate_correct}/{oracle_assigned_rows} "
+              f"= {100 * candidate_correct / oracle_assigned_rows:.2f}%")
+        print(f"Agreement on oracle-stable cases:    {candidate_correct_stable}/{oracle_assigned_rows_stable} "
+              f"= {100 * candidate_correct_stable / oracle_assigned_rows_stable:.2f}%")
+        print(f"Oracle-unstable cases excluded:      {len(unstable_in_corpus)}/{oracle_assigned_rows}")
 
 
 if __name__ == "__main__":

@@ -739,24 +739,44 @@ scope.
 4A-2" — both labels are already published (PR titles, commit messages) and not renamed
 here. Going forward, to avoid colliding with that: **Milestone 4B = Rule 4** (the 8
 quinic/gallic rows, confirmed above), **Milestone 4C = phosphorus** (the 11 rows,
-splitting further into a comparator-bug fix for the 9 "wrong" rows and rule
-characterization for the 2 "tied" rows), and Milestone 4A-2 remains the label for the
-15-row cage family (needs symmetry/automorphism detection, unchanged from its original
-deferral).
+originally expected to split into a comparator-bug fix for the 9 "wrong" rows and rule
+characterization for the 2 "tied" rows — Milestone 4C-0 found the 9 are not a
+comparator bug at all, see below; the 2 "tied" rows are Milestone 4C-1, not yet run),
+and Milestone 4A-2 remains the label for the 15-row cage family (needs
+symmetry/automorphism detection, unchanged from its original deferral).
 
-**Milestone 4's formal gate** (all three required, not accuracy alone):
-- Full-corpus modern-oracle agreement ≥ 99.5% (≥ 4166/4186).
+**Milestone 4's formal gate, redefined post-Milestone-4C-0** (superseding the original
+accuracy-alone framing below the line; all five required):
+- Agreement ≥ 99.5% on **representation-stable** modern-oracle cases (excludes rows an
+  oracle-instability check, `validation/cip_oracle_instability.jsonl`, has flagged
+  `representation_unstable` — currently the 9 cyclophosphazene rows from Milestone
+  4C-0; a case only qualifies for this exclusion by passing that check, not by
+  assertion).
+- Raw modern-RDKit agreement (no exclusions) reported alongside the stable figure,
+  always — never replaced or hidden by it. `scripts/cip_accurate_full_corpus_report.py`
+  prints both when given the oracle-instability file as its 4th argument.
+- Oracle-unstable cases fully enumerated, not just counted — every excluded
+  `(smiles, atom_idx)` has a row in `validation/cip_oracle_instability.jsonl` with its
+  own reproduction evidence (see Milestone 4C-0's table).
 - Regressions = 0 (verified two independent ways, same discipline as every milestone
   since Milestone 3B).
-- Unexplained residuals = 0 (Milestone 4A-0's own 34/34-explained freeze is the current
-  baseline this must not regress below as further milestones change which rows remain).
+- Unexplained residuals = 0 — this is **coupled to the 2 remaining phosphorus
+  `skip:tied` rows** (Milestone 4C-1, not yet run): the gate cannot be declared met
+  while those 2 rows are unclassified, regardless of what the stable-subset percentage
+  reads.
 
-**ROI note, not yet acted on**: the 99.5% gate needs 4166/4186 (16 more correct than
-4150, i.e. 14 more than Milestone 4A's current 4152). Milestone 4B (8) plus fixing just
-the 9 phosphorus "wrong" rows (Milestone 4C's comparator-bug half) would total 17 — enough
-to clear the gate without touching Milestone 4A-2's harder symmetry-detection work or the
-2 remaining phosphorus "tied" rows. This is an observation about ROI ordering, not a
-scope commitment — implementation order is decided per-milestone as each is planned.
+**Original framing (superseded, kept for history):** "Full-corpus modern-oracle
+agreement ≥ 99.5% (≥ 4166/4186)" — this assumed the raw score itself would clear 99.5%
+by fixing enough rows. Milestone 4C-0 found that assumption doesn't hold for the 9
+cyclophosphazene rows (no fix target exists, the oracle itself is unreliable there), so
+the gate now targets the representation-stable subset instead, per the decision in
+Milestone 4C-0 below.
+
+**Current state against the redefined gate** (`cip_oracle_instability.jsonl` +
+extended `cip_accurate_full_corpus_report.py`, post-Milestone-4B-2):
+raw 4160/4186 (99.38%), oracle-stable 4160/4177 (**99.59%, clears the 99.5% line**),
+9 oracle-unstable enumerated, 0 regressions — the last open item is Milestone 4C-1
+(the 2 tied rows) before the gate can be formally declared met.
 
 **Milestone 4B-0 — Rule 4 subtype diagnosis, diagnosis only (no crate changes).** Before
 implementing anything, the 8 Milestone-4B `rule4_candidate` rows were mechanically
