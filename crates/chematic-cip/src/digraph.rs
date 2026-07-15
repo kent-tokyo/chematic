@@ -59,6 +59,17 @@ pub struct CipDigraph<'m> {
     /// callers are responsible for computing it from the exact same (Kekulé-form) `mol`
     /// passed in here.
     mancude: Option<&'m MancudeContext>,
+    /// `None` for every existing call site (`Self::new`/`Self::new_with_mancude`) --
+    /// [`Self::new_with_artificial_ancestor`] is a separate, Milestone 4B-1 entry point
+    /// that pre-seeds the root's own ancestor set with one extra atom, so a neighbor
+    /// equal to it terminates as a [`CipNodeKind::RingDuplicate`] leaf immediately
+    /// instead of expanding as a real subtree. See that constructor's doc comment for
+    /// why: it is what makes an *embedded* stereocenter's true auxiliary descriptor
+    /// (as seen from one specific branch of an outer, still-unresolved stereocenter)
+    /// computable at all -- rooting fresh at that embedded atom with no artificial
+    /// ancestor reproduces its ordinary *global/molecular* digraph instead, which is a
+    /// different (and, for a Rule-4-tied atom, differently ambiguous) computation.
+    artificial_ancestor: Option<AtomIdx>,
     nodes: Vec<CipNode>,
     edges: Vec<CipEdge>,
     /// Parallel to `nodes`: `None` until a node's children have been computed once.
@@ -88,7 +99,38 @@ impl<'m> CipDigraph<'m> {
     /// represented atom's real atomic number) -- exactly today's existing behavior. Use
     /// [`Self::new_with_mancude`] to additionally apply MANCUDE fractional atomic numbers.
     pub fn new(mol: &'m Molecule, root_atom: AtomIdx, budget: CipBudget) -> Result<Self, CipError> {
-        Self::new_impl(mol, root_atom, budget, None)
+        Self::new_impl(mol, root_atom, budget, None, None)
+    }
+
+    /// Like [`Self::new`], but `artificial_ancestor` is treated as already visited from
+    /// the start -- a neighbor of any node in this digraph equal to `artificial_ancestor`
+    /// becomes a [`CipNodeKind::RingDuplicate`] leaf immediately, instead of a real,
+    /// re-expanded subtree (exactly the ordinary ring-closure rule in the module docs,
+    /// just pre-seeded rather than discovered by walking up the tree).
+    ///
+    /// **Milestone 4B-1.** Motivation: when an outer stereocenter's two branches tie
+    /// under Rules 1a/2 (Rule 4 territory), resolving the tie needs each branch's
+    /// *auxiliary* descriptor for whatever embedded stereocenter it reaches -- not that
+    /// atom's ordinary *molecular* descriptor. Rooting a fresh, independent digraph at
+    /// the embedded atom (`Self::new`, no artificial ancestor) computes the *molecular*
+    /// descriptor: all of that atom's real neighbors compete as ordinary children,
+    /// including the one leading back toward the outer stereocenter -- which, for a
+    /// constitutionally symmetric branch pair, is typically itself ambiguous (that
+    /// neighbor's own subtree mirrors the embedded atom's other ring-continuation
+    /// child). Pre-seeding that one specific neighbor as an artificial ancestor instead
+    /// terminates it as a childless duplicate leaf immediately, matching what CIP's
+    /// auxiliary-descriptor procedure actually asks for: this atom's local priority
+    /// order *as seen from one specific incoming direction*, not its independent
+    /// global ranking. `root_atom` is the embedded stereocenter; `artificial_ancestor`
+    /// is the real neighbor the branch was reached through (i.e. the atom immediately
+    /// preceding `root_atom` on the outer stereocenter's own root-to-`root_atom` path).
+    pub fn new_with_artificial_ancestor(
+        mol: &'m Molecule,
+        root_atom: AtomIdx,
+        artificial_ancestor: AtomIdx,
+        budget: CipBudget,
+    ) -> Result<Self, CipError> {
+        Self::new_impl(mol, root_atom, budget, None, Some(artificial_ancestor))
     }
 
     /// Like [`Self::new`], but `MultipleBondDuplicate` nodes whose owner atom
@@ -103,7 +145,7 @@ impl<'m> CipDigraph<'m> {
         budget: CipBudget,
         mancude: &'m MancudeContext,
     ) -> Result<Self, CipError> {
-        Self::new_impl(mol, root_atom, budget, Some(mancude))
+        Self::new_impl(mol, root_atom, budget, Some(mancude), None)
     }
 
     fn new_impl(
@@ -111,10 +153,12 @@ impl<'m> CipDigraph<'m> {
         root_atom: AtomIdx,
         budget: CipBudget,
         mancude: Option<&'m MancudeContext>,
+        artificial_ancestor: Option<AtomIdx>,
     ) -> Result<Self, CipError> {
         let mut g = Self {
             mol,
             mancude,
+            artificial_ancestor,
             nodes: Vec::new(),
             edges: Vec::new(),
             children_cache: Vec::new(),
@@ -302,10 +346,16 @@ impl<'m> CipDigraph<'m> {
     }
 
     /// The set of atoms on the root-to-`node` path, including `node`'s own atom (if
-    /// it's an `Atom` node). Duplicate/implicit-H nodes never appear as ancestors --
-    /// they're leaves and can't have descendants to be an ancestor of.
+    /// it's an `Atom` node), plus [`Self::artificial_ancestor`] if one was seeded at
+    /// construction (see [`Self::new_with_artificial_ancestor`]) -- unioned in
+    /// unconditionally since it must terminate a matching neighbor at *any* depth in
+    /// this digraph, not just at the root. Duplicate/implicit-H nodes never appear as
+    /// ancestors -- they're leaves and can't have descendants to be an ancestor of.
     fn ancestor_atoms(&self, node_id: NodeId) -> HashSet<AtomIdx> {
         let mut set = HashSet::new();
+        if let Some(seed) = self.artificial_ancestor {
+            set.insert(seed);
+        }
         let mut current = Some(node_id);
         while let Some(id) = current {
             let node = &self.nodes[id.0 as usize];
@@ -587,5 +637,78 @@ mod tests {
         // fraction never actually decides anything -- 0 is the correct, expected value,
         // consistent with Milestone 3B-1b's own attribution finding. See
         // `CompareContext::fractional_decisions`'s doc comment.
+    }
+
+    /// [`CipDigraph::new_with_artificial_ancestor`]'s whole point: the seeded atom must
+    /// terminate as a childless [`CipNodeKind::RingDuplicate`] leaf the moment it's
+    /// reached as a neighbor, not expand as a real subtree -- checked concretely on one
+    /// of Milestone 4B-0's own quinic-acid residual rows (atom4 is a ring neighbor of
+    /// atom3; rooting at atom4 with atom3 as the artificial ancestor must produce a
+    /// `RingDuplicate{closure_atom: atom3}` child, never an `Atom{atom_idx: atom3}` one).
+    #[test]
+    fn new_with_artificial_ancestor_terminates_seeded_neighbor_immediately() {
+        let mol =
+            chematic_smiles::parse("O=C(O[C@H]1[C@H](O)C[C@](O)(C(=O)O)C[C@H]1O)c1cc(O)c(O)c(O)c1")
+                .unwrap();
+        let root_atom = AtomIdx(4);
+        let artificial_ancestor = AtomIdx(3);
+        let budget = CipBudget::default_budget();
+        let mut graph =
+            CipDigraph::new_with_artificial_ancestor(&mol, root_atom, artificial_ancestor, budget)
+                .unwrap();
+        let root = graph.root();
+        let children = graph.expand_children(root).unwrap();
+
+        let seeded_child = children
+            .iter()
+            .find(|&&id| match graph.node(id).kind {
+                CipNodeKind::Atom { atom_idx } => atom_idx == artificial_ancestor,
+                CipNodeKind::RingDuplicate { closure_atom, .. } => {
+                    closure_atom == artificial_ancestor
+                }
+                _ => false,
+            })
+            .copied()
+            .expect("artificial_ancestor atom must appear among root's children");
+
+        assert!(
+            matches!(
+                graph.node(seeded_child).kind,
+                CipNodeKind::RingDuplicate { .. }
+            ),
+            "artificial_ancestor must terminate as a RingDuplicate leaf immediately, not \
+             expand as a real Atom subtree"
+        );
+        assert_eq!(
+            graph.expand_children(seeded_child).unwrap(),
+            Vec::new(),
+            "a RingDuplicate node is always childless"
+        );
+    }
+
+    /// `new`'s existing behavior (no artificial ancestor) is unaffected: the same root
+    /// atom's real neighbor set is unchanged when `new_with_artificial_ancestor` is not
+    /// used -- confirms the new field is strictly additive, mirroring the
+    /// `new_without_mancude_keeps_plain_integer_duplicates` precedent above.
+    #[test]
+    fn new_without_artificial_ancestor_keeps_ordinary_neighbor_expansion() {
+        let mol =
+            chematic_smiles::parse("O=C(O[C@H]1[C@H](O)C[C@](O)(C(=O)O)C[C@H]1O)c1cc(O)c(O)c(O)c1")
+                .unwrap();
+        let root_atom = AtomIdx(4);
+        let budget = CipBudget::default_budget();
+        let mut graph = CipDigraph::new(&mol, root_atom, budget).unwrap();
+        let root = graph.root();
+        let children = graph.expand_children(root).unwrap();
+
+        let atom3_child = children
+            .iter()
+            .find(|&&id| matches!(graph.node(id).kind, CipNodeKind::Atom { atom_idx } if atom_idx == AtomIdx(3)))
+            .copied();
+        assert!(
+            atom3_child.is_some(),
+            "without an artificial ancestor, atom3 must appear as an ordinary real Atom \
+             child, exactly today's existing behavior"
+        );
     }
 }

@@ -802,6 +802,131 @@ Zero production impact: `cargo test --workspace --lib --quiet` and the existing
 4152/4186 full-corpus number are both unaffected (no files under
 `crates/chematic-cip/src/` touched).
 
+**Milestone 4B-1, phase 1 — artificial-ancestor construct built and gated against
+oracle; simplest combination candidate insufficient (0/8, no wrong answers).** Added
+`CipDigraph::new_with_artificial_ancestor` (`crates/chematic-cip/src/digraph.rs`): roots
+fresh at an embedded atom with one specific neighbor pre-seeded as an already-visited
+ancestor, so that neighbor terminates as a `RingDuplicate` leaf immediately instead of
+expanding as a real subtree — the missing piece Milestone 4B-0 flagged for computing an
+embedded stereocenter's true *auxiliary* R/S sign (as seen from one specific branch of
+the outer, still-tied stereocenter), as opposed to its ordinary independent *molecular*
+sign. Additive only: `new`/`new_with_mancude` pass `None` and are unchanged (verified by
+a new test, `new_without_artificial_ancestor_keeps_ordinary_neighbor_expansion`,
+mirroring the existing `new_without_mancude_keeps_plain_integer_duplicates` precedent); a
+second new test confirms the seeded neighbor really does terminate as a childless
+`RingDuplicate`.
+
+A new example, `examples/rule4b_aux_sign.rs`, used this construct to compute, for each of
+the 8 `rule4_candidate` rows, the true auxiliary sign of each branch's nearest embedded
+reference (the atom `rule4_diagnose.rs` already found ranks tie-free locally), then
+tried the simplest Rule-4b-shaped combination — R precedes S on the two branches'
+auxiliary references, mirroring Rule 5's own tie-break convention in
+`assign::assign_one_with_rule5` — against the oracle. Result: **0/8 matched, 0/8
+mismatched, 8/8 inconclusive** — in every row, both branches' nearest-reference auxiliary
+signs are identical to each other (both R or both S), so this single-comparison
+tie-break has no discriminating power at all. Notably the construct is mechanically
+sound throughout (no cycles, no budget errors, a real sign computed for all 16
+branches), and in several rows the auxiliary sign differs from that same atom's ordinary
+global (Pass-1) code (e.g. quinic-a's branch A: auxiliary S vs. global R) — confirming
+the auxiliary-vs-molecular distinction is genuinely load-bearing here, not just a
+theoretical caveat.
+
+**Reading**: this is a real, informative negative result, not a failed experiment. It
+means Rule 4b for this family cannot be a single-level "compare the first reference"
+rule — consistent with the user's original architectural concern that Rule 4b needs a
+genuine ordered *sequence* of paired descriptors (a `DescriptorPairList`-shaped
+comparison), not a simple key. The natural next check (not yet done) is one level
+deeper: each branch's *second* nearest embedded reference beyond the first — for the
+quinic family this reaches the *other* tied atom itself, via two different arrival
+directions per branch, which is exactly the case this milestone's construct exists to
+disambiguate. Left as the next Milestone 4B-1 step pending direction from the user,
+since extending the pairing depth is where this starts to become the separate,
+larger-architecture PR the user's original M4B message called for.
+
+Zero production impact from this phase either: `cargo test --workspace --lib --quiet`
+passes workspace-wide; the new digraph constructor is additive and unused by
+`assign_cip_accurate_experimental`.
+
+**Milestone 4B-1, phase 2 — depth-2 pair sequence, 8/8 matches the oracle.** Per the
+user's direction (continue rather than pause), `examples/rule4b_pair_sequence.rs`
+extends phase 1's single-reference check into a genuine ordered *sequence* of paired
+auxiliary descriptors per branch: at each step, continue past the previously-found
+embedded reference (via its own forward children in the outer stereocenter's digraph)
+to find the *next* nearest embedded stereocenter, and compute *its* auxiliary sign with
+a fresh `new_with_artificial_ancestor` root. For the quinic family, position 1 of this
+sequence reaches the *other* tied atom itself — via two different arrival directions
+per branch, exactly as anticipated in phase 1's write-up above.
+
+**Result**: every one of the 8 rows' two branches tie at sequence position 0 (matching
+phase 1's finding) and differ at position 1 — and taking the first differing position
+as the decider, **8/8 predictions match the oracle (`S`)**, 0 mismatches, 0
+inconclusive. One empirical correction along the way: the first attempt used "R
+precedes S" at the deciding position (`assign::assign_one_with_rule5`'s own Rule 5
+convention) and got a uniform 8/8 *wrong-direction* mismatch (predicted `R` for every
+row that should be `S`) — flipping to "S precedes R" at this specific comparison
+(deciding position within a nested pair sequence, not Rule 5's direct single-position
+comparison) turned all 8 correct. Recorded as an empirical finding, not derived from
+IUPAC source text (unavailable locally, same standing limitation noted throughout this
+RFC) — the orientation is validated against the oracle, not assumed correct from
+either convention by analogy.
+
+**Reading**: this is now real, oracle-validated evidence that a genuine
+`DescriptorPairList`-shaped Rule 4b (ordered auxiliary-descriptor sequence per branch,
+first-differing-position decides) is both sufficient and correct for this residual
+family, not just plausible. Still diagnostic/validation code only — no production
+wiring. The next step, Milestone 4B-2, is implementing this for real inside
+`assign.rs`: a `DescriptorPairList`-shaped structure (not a simple ordinal `key()`, per
+the user's original architectural instruction) plus a `refine_by_rule4b` pass that only
+refines the equivalence classes Rules 1a/2 already left tied, following the same
+"refine an already-tied group" template `assign_one_with_rule5` established for Rule 5.
+Needs its own scoping/design pass before implementation, in a separate PR per the
+user's original guidance — this milestone's job was proving the mechanism works, not
+building the production version.
+
+Zero production impact from this phase too: no `crates/chematic-cip/src/` file changed
+beyond phase 1's additive `new_with_artificial_ancestor`; `cargo test --workspace --lib
+--quiet` passes workspace-wide.
+
+**Correction, pre-M4B-2: phase 2's "S precedes R" is an absolute-comparison overfit,
+confirmed and discarded — a faithful reference-relative Like/Unlike does not yet reach
+8/8 either.** Flagged by the user before any production code was written: real Rule 4b
+compares descriptor *families* relative to a chosen reference (Like beats Unlike), never
+raw R/S ordinally. `examples/rule4b_like_unlike_gate.rs` tested this directly, with a
+decisive instrumented check the user specified: reproducing each of the 8 rows'
+*enantiomer* (every `@`/`@@` textually swapped — a purely mechanical transform) and
+checking against its *derived* oracle (mirroring inverts every stereocenter's label,
+always, so the mirrored oracle is `R` for all 8 without needing a fresh RDKit run).
+
+- **"S precedes R" (phase 2's rule): 8/8 on the original set, 0/8 on the mirrored
+  set.** Definitively confirms it is an absolute, non-invariant rule — exactly the
+  overfit the user predicted, now falsified by construction rather than by argument.
+- **A faithful reference-relative Like/Unlike (reference = the shared family at
+  sequence position 0, Like beats Unlike at the first differing position): 4/8 on
+  *both* the original and mirrored sets.** Consistent (invariant) across enantiomers,
+  which is the correct structural property — but still not correct: exactly half the
+  rows are wrong on each set, and hand-tracing why (twice) produced two more wrong
+  conclusions, so a brute-force sweep of the 4 reference/winner sign permutations
+  (`LikeWinsSharedRef` / `UnlikeWinsSharedRef` / `LikeWinsOppositeRef` /
+  `UnlikeWinsOppositeRef`) was run mechanically instead. **All 4 score exactly 4/8 on
+  both sets** — none reaches 8/8. Notably, the two atoms tied within the same molecule
+  (e.g. quinic acid's atom3 and atom7) are on *opposite* sides of the 4/8 split for
+  every convention tried: whichever convention gets atom3's row right gets atom7's row
+  wrong, and vice versa. A single global sign convention cannot fix this — the
+  resolution needs something beyond a reference/winner sign choice at the deciding
+  position.
+
+**Not yet resolved.** The auxiliary-descriptor chain construction itself is verified
+sound (enantiomer-invariant chain values, confirmed by direct inspection — mirroring a
+molecule flips every element of every chain exactly as expected). The remaining gap is
+in how the two branches' chains are compared/reference-selected, not in computing the
+auxiliary descriptors themselves. Candidate directions not yet tried: reference
+selection scoped to something other than "shared value at sequence position 0" (e.g.
+CIP hierarchical-digraph-order across all of the tied stereocenter's ligands, not just
+the 2 tied branches), or a comparison that doesn't reduce to a single deciding position
+at all. Needs either a primary-source check (IUPAC 2013 Rule 4b text, unavailable
+locally) or further instrumented experiments before Milestone 4B-2's production
+implementation proceeds — reported to the user rather than guessed further.
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same
