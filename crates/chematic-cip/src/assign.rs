@@ -125,7 +125,12 @@ pub fn assign_cip_accurate_experimental(
 ) -> Result<AccurateCipAssignment, CipCompareError> {
     let kekule = prepare_kekule_form(mol).ok();
     let pass1 = assign_all(mol, budget, kekule.as_ref())?;
-    Ok(apply_rule5_pass(mol, budget, kekule.as_ref(), pass1))
+    // Rule 4b (Milestone 4B-2) must run before Rule 5 -- CIP rule order. Rule 5's own
+    // `provisional` map (built inside `apply_rule5_pass` from whatever
+    // `AccurateCipAssignment` it's handed) sees Rule 4b's newly-resolved atoms for
+    // free; `apply_rule5_pass` needs no changes for this. See `crate::resolver`.
+    let pass2 = crate::resolver::apply_rule4b_pass(mol, budget, kekule.as_ref(), pass1);
+    Ok(apply_rule5_pass(mol, budget, kekule.as_ref(), pass2))
 }
 
 /// Identical to [`assign_cip_accurate_experimental`], but never attaches a
@@ -261,7 +266,7 @@ fn assign_one_with_rule5(
     let root = graph.root();
     let root_children = graph.expand_children(root).map_err(map_digraph_err)?;
 
-    let Some(position_nodes) = position_node_ids(&graph, &root_children, stereo_order) else {
+    let Some(position_nodes) = position_node_ids(&graph, stereo_order, &root_children) else {
         return Ok(None);
     };
 
@@ -417,7 +422,7 @@ fn assign_one(
     let root = graph.root();
     let root_children = graph.expand_children(root).map_err(map_digraph_err)?;
 
-    let Some(position_nodes) = position_node_ids(&graph, &root_children, stereo_order) else {
+    let Some(position_nodes) = position_node_ids(&graph, stereo_order, &root_children) else {
         return Ok(None);
     };
 
@@ -444,10 +449,11 @@ fn assign_one(
 /// Given a fully-ranked group partition (highest-priority group first, matching
 /// [`rank_children`]'s convention) and the 4 physical positions in `stereo_order`
 /// order, compute whether the center is *rectus* (R). Shared by [`assign_one`] (Rules
-/// 1a/1b/2 only) and [`assign_one_with_rule5`] (which passes a `groups` partition with
-/// one tied group already split by a Rule 5 tiebreak) -- the swap-counting parity math
-/// itself doesn't know or care which rule produced the ordering.
-fn resolve_is_r_from_groups(
+/// 1a/1b/2 only), [`assign_one_with_rule5`] (which passes a `groups` partition with
+/// one tied group already split by a Rule 5 tiebreak), and (Milestone 4B-2)
+/// `crate::resolver::assign_one_with_rule4b`/`resolve_chirality` -- the swap-counting
+/// parity math itself doesn't know or care which rule produced the ordering.
+pub(crate) fn resolve_is_r_from_groups(
     groups: &[Vec<NodeId>],
     position_nodes: &[NodeId],
     chirality: Chirality,
@@ -493,12 +499,12 @@ fn resolve_is_r_from_groups(
     Some(cw_from_lowest ^ remaining_swaps_odd)
 }
 
-fn map_digraph_err(e: CipError) -> SkipReason {
+pub(crate) fn map_digraph_err(e: CipError) -> SkipReason {
     let CipError::BudgetExceeded { .. } = e;
     SkipReason::BudgetExceeded
 }
 
-fn map_compare_err(e: CipCompareError) -> SkipReason {
+pub(crate) fn map_compare_err(e: CipCompareError) -> SkipReason {
     match e {
         CipCompareError::BudgetExceeded { .. } | CipCompareError::Digraph(_) => {
             SkipReason::BudgetExceeded
@@ -507,27 +513,41 @@ fn map_compare_err(e: CipCompareError) -> SkipReason {
     }
 }
 
-/// Map each `stereo_neighbor_order` position to the digraph node representing it. A
-/// tetrahedral stereocenter's own substituents are always single-bonded (a `@`/`@@`
-/// marker only appears on genuinely tetrahedral centers), so the root's direct
-/// children are always `Atom`/`ImplicitHydrogen` kinds here -- never a duplicate.
-fn position_node_ids(
+/// Map each `stereo_neighbor_order` position to the digraph node representing it.
+///
+/// For a tetrahedral stereocenter's own root children (the only case before Milestone
+/// 4B-2), substituents are always single-bonded, so `candidates` only ever contains
+/// `Atom`/`ImplicitHydrogen` kinds -- never a duplicate. Milestone 4B-2's Rule 4b
+/// resolver additionally calls this for an *embedded* stereocenter's own 4 positions
+/// (its forward children plus the back-to-root parent node,
+/// `crate::resolver::resolve_chirality`), where a physical position can be a
+/// `RingDuplicate` (the stereo_neighbor_order-named atom is reached via a ring
+/// closure at that embedded position, not as a fresh real node) -- hence the
+/// additional match arm below. Provably inert for every pre-existing caller
+/// ([`assign_one`]/[`assign_one_with_rule5`]), which only ever pass a root's own
+/// direct children.
+pub(crate) fn position_node_ids(
     graph: &CipDigraph,
-    root_children: &[NodeId],
     stereo_order: &[u32],
+    candidates: &[NodeId],
 ) -> Option<Vec<NodeId>> {
     let mut result = Vec::with_capacity(stereo_order.len());
     for &pos_val in stereo_order {
         let node_id = if pos_val == STEREO_H_SENTINEL {
-            root_children
+            candidates
                 .iter()
                 .copied()
                 .find(|&id| matches!(graph.node(id).kind, CipNodeKind::ImplicitHydrogen))?
         } else {
             let atom_idx = AtomIdx(pos_val);
-            root_children.iter().copied().find(|&id| {
-                matches!(graph.node(id).kind, CipNodeKind::Atom { atom_idx: a } if a == atom_idx)
-            })?
+            candidates
+                .iter()
+                .copied()
+                .find(|&id| match graph.node(id).kind {
+                    CipNodeKind::Atom { atom_idx: a } => a == atom_idx,
+                    CipNodeKind::RingDuplicate { closure_atom, .. } => closure_atom == atom_idx,
+                    _ => false,
+                })?
         };
         result.push(node_id);
     }

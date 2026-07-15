@@ -19,6 +19,7 @@
 #![forbid(unsafe_code)]
 
 pub mod assign;
+mod auxiliary;
 pub mod budget;
 pub mod compare;
 pub mod debug;
@@ -28,6 +29,8 @@ pub mod edge;
 pub mod mancude;
 pub mod node;
 pub mod rational;
+mod resolver;
+mod rule4b;
 pub mod trace;
 
 #[cfg(test)]

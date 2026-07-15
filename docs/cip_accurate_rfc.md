@@ -1168,6 +1168,75 @@ a **mechanical port, not a rewrite**:
 - Multiple-reference-candidate cases surface as `Unresolved`/deferred, never a silent
   potentially-wrong label.
 
+**Milestone 4B-2 shipped — mechanical production port, all gates met.** Per the
+user's detailed follow-up spec (module names, non-goals, independent parity gate,
+full-corpus targets), the validated reference engine was ported into
+`crates/chematic-cip/src/{auxiliary,rule4b,resolver}.rs` and wired into
+`assign_cip_accurate_experimental` only, as a new pass between `assign_all` (Rules
+1a/1b/2) and the existing `apply_rule5_pass` (Rule 4b precedes Rule 5 in CIP order).
+
+Planned via an independent Plan-agent critique before implementation (not just the
+user's own sketch) — the critique caught one wording ambiguity worth recording:
+`assign_one_with_rule4b`'s tie-detection loop had to mirror the reference engine's
+`resolve_outer_root` (loop over *every* group, attempt Rule 4b on each clean 2-way
+tie) rather than `assign_one_with_rule5`'s narrower "exactly one tied group, bail on
+a second" restriction — a restriction that was never part of what got validated
+72/72. It also flagged that the 72/72 validation ran entirely through plain
+`CipDigraph::new`, with zero MANCUDE/aromatic coverage anywhere in the reference
+example — resolved by noting (and testing directly,
+`aromatic_content_present_in_rows_original`) that the existing `ROWS_ORIGINAL`
+corpus (galloyl/quinic esters) already contains aromatic gallic-acid rings, so
+re-running it through the real `assign_cip_accurate_experimental` entry point (which
+always attempts `CipDigraph::new_with_mancude` when Kekulé form is available)
+exercises that path for free — no separate synthetic molecule needed.
+
+`position_node_ids` (`assign.rs`) was generalized in place (renamed `root_children`
+→ `candidates`, added a `RingDuplicate` match arm) rather than duplicated, since the
+addition is provably inert for the two pre-existing callers. No new `SkipReason`
+variant was added — multiple-reference-candidate and 3+-way-tie cases already fall
+through to the existing `SkipReason::Tied` via `nearest_embedded`'s pre-existing
+ambiguity check, exactly the "fail loudly, don't guess" behavior required, with zero
+API surface change.
+
+**Verification, all four gates independently confirmed:**
+
+- **72/72 production-path parity** (`tests/rule4b_production_parity.rs`): the same 4
+  oracle corpora + mirrors the reference engine validated, rerun through
+  `assign_cip_accurate_experimental` itself (not a hand-built digraph) — 9/9 tests
+  pass.
+- **Full-corpus gate**, `assign_cip_accurate_experimental` on `main` (pre-port,
+  baseline) vs. this branch (candidate), both `--candidate`-mode snapshots via
+  `corpus_snapshot.rs` (an isolated `git worktree` built the `main` baseline so the
+  working tree was never disturbed), diffed with
+  `cip_accurate_full_corpus_report.py` against a fresh RDKit oracle:
+  `baseline_correct=4152/4186 (99.19%)`, `candidate_correct=4160/4186 (99.38%)`,
+  `newly_correct=8` (exactly the `rule4_candidate` residual, no unexplained extras),
+  `regressions_from_full_recompute=0` (Method B, independent full-set recompute),
+  `regressions_from_diff=0` (Method A, 8 changed rows: 8 fixes, 0 regressions, 0
+  neutral) — an exact match to the plan's target on every field.
+- **Rule 5 non-regression**: rather than a separate hardcoded 2-row test (the exact
+  target molecules aren't named anywhere convenient in the repo), relied on two
+  things that already cover it more thoroughly — the existing
+  `tests.rs::rule5_resolves_the_two_verified_milestone_4a_target_rows` test passing
+  unchanged, and the full-corpus gate's Method B (which independently re-checks
+  *every* row, so a Rule-4b pass wrongly stealing a genuine Rule-5 pseudoasymmetric
+  case would show up as a regression, not just a wrong new label).
+- `cargo test --workspace --lib --quiet`, `cargo test -p chematic-cip --release`
+  (all existing suites, unchanged), `cargo clippy --workspace --all-targets -- -D
+  warnings`, `bash scripts/check.sh` all clean.
+
+`chematic_chem::assign_cip()` (legacy) and `assign_cip_accurate_experimental_without_mancude`
+(the frozen MANCUDE-independent reference point) are both untouched, matching Rule
+5's own choice to leave that entry point alone.
+
+**Not done, explicitly out of scope this PR** (per the user's own list): Figure 8's
+both-references-max scoring; 3-way-or-more ties; Rule 5 cage family; phosphorus;
+performance optimization; removing `new_with_artificial_ancestor`; making the
+accurate engine the default path.
+
+**Next**: re-freeze the residual corpus (expected ~26 remaining: ~15 Rule 5 cage
+family, ~11 phosphorus, 0 Rule 4) before scoping M4C (phosphorus) — not started.
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same
