@@ -1,0 +1,28 @@
+Cl[C@H]1[C@H]([C@H]([C@@H]([C@@H]([C@H]1Cl)Cl)Cl)Cl)Cl	VS196	2R 3S 4S 5R 6S 7R	P-93.5.1.1.2	TH	4b
+Cl[C@H]1[C@@H]([C@H]([C@@H]([C@@H]([C@H]1Cl)Cl)Cl)Cl)Cl	VS197	2R 3R 4R 5R 6S 7S	P-92.5.2.2	TH	4b
+C[C@@H]([C@H](C([C@@H](C([C@@H]([C@@H](C)Cl)C)([C@H](C)[C@@H](C)Cl)[C@@H](C)[C@@H](C)Cl)O)([C@H](C)[C@H](C)Cl)[C@@H](C)[C@@H](C)Cl)C)Cl	VS198	2S 3S 5R 7S 8R 12S 14R 17R 19R 23S 25S 28R 30R	P-92.5.2.2	TH	1a,4b
+O=C([C@H]([C@H]([C@@H]([C@@H]([C@H](C(O)=O)Cl)Cl)Cl)Cl)Cl)O	VS199	3R 4R 5R 6R 7S	P-92.5.2.2	TH	1a,4b
+Cl[C@H](C(O)=O)[C@@H]([C@@H]([C@@H]([C@@H](C(O)=O)Cl)Cl)Cl)Cl	VS200	2R 6S 7S 8R 9R		TH	1a,4b
+O=C([C@H]([C@H]([C@@H]([C@H]([C@@H](C(O)=O)Cl)Cl)Cl)Cl)Cl)O	VS201	3R 4R 5R 6S 7R	P-92.5.2.2, P-93.4.1.2	TH	1a,4b
+O=C([C@@H](N([C@@H](C)O)[C@@H](C)O)N([C@@H](C)O)[C@H](C)O)O	VS202	3R 5R 8R 12R 15S	P-92.5.2.2	TH	1a,4b
+C[C@H]([C@H](ON([C@@H](N(C[C@@H]([C@H](C)O)O)O[C@H]([C@H](C)O)O)Cl)C[C@H]([C@H](C)O)O)O)O	VS203	2R 3S 6R 9S 10S 15R 16S 22R 23S	P-92.5.2.2	TH	1a,4b
+C[C@@H]([C@@H](ON([C@@H](N(O[C@@H]([C@@H](C)O)O)C[C@H]([C@H](C)O)O)Cl)C[C@@H]([C@H](C)O)O)O)O	VS204	2S 3R 6S 9S 10R 15R 16S 22S 23S		TH	1a,4b
+CO[C@@H]1[C@@H]([C@@H]([C@H]1OC)OC)OC	VS252	3S 4s 5R 6r		TH	4b,5
+Cl[C@@H]1[C@@H]([C@@H]([C@H]([C@H]([C@H]1Cl)Cl)Cl)Cl)Cl	VS253	2R 3s 4S 5S 6s 7R	P-93.5.1.1.2, P-93.5.1.3.2	TH	4b,5
+Cl[C@H]1[C@@H]([C@H]([C@H]([C@@H]([C@H]1Cl)Cl)Cl)Cl)Cl	VS254	2S 3r 4R 5S 6r 7R	P-93.5.1.1.2	TH	4b,5
+Cl[C@H]1[C@H]([C@H]([C@H]([C@@H]([C@H]1Cl)Cl)Cl)Cl)Cl	VS255	2R 3s 4S 5S 6r 7R	P-93.5.1.1.2	TH	4b,5
+O1[C@@]2([C@]3([C@]4([C@]25CO5)CO4)CO3)C1	VS256	2S 3s 4R 5r	P-93.5.3.2	TH	4b,5
+Cl[C@H]([C@@H]1CC[C@H](CC1)C)C	VS257	2S 3r 6S		TH	1a,4b,5
+Cl[C@@H]([C@@H]1CC[C@H](CC1)C)C	VS258	2R 3r 6R		TH	1a,4b,5
+C1[C@H](CCC=C1)[C@H]2CC[C@@H](CC2)/C=N/[C@H]3CC[C@@H](CC3)C4=CC=CC=C4	VS259	2S 7r 10S 13E 14E 15r 18S	P-93.5.7.2	CT,TH	1a,4b,5
+C[C@@H]1CC[C@@H](CC1)[C@@H]2CC[C@@H](C[C@@H]2O)C	VS260	2R 5s 8S 11S 13S	P-93.5.7.2	TH	1a,4b,5
+C[C@@H](Cl)[C@H](Cl)[C@@H]([C@H](Cl)[C@@H](Cl)C)C[C@H](C[C@@H]([C@H](Cl)[C@H](Cl)C)[C@@H](Cl)[C@@H](Cl)C)CCC[C@@](CCC[C@H](C[C@H]([C@@H](Cl)[C@H](Cl)C)[C@H](Cl)[C@@H](Cl)C)C[C@H]([C@H](Cl)[C@H](Cl)C)[C@@H](Cl)[C@@H](Cl)C)([C@H](C)Cl)[C@@H](C)Cl	VS261	2R 4R 6r 7S 9S 13S 15s 16S 18R 21R 23S 29s 33S 35s 36R 38R 41S 43S 47r 48S 50R 53R 55S 58S 61R		TH	1a,4b,5
+C[C@@H](Cl)C([C@@H](C)Cl)[C@H](Cl)N(CC[C@H](O)CCN([C@@H](Cl)[C@@H]([C@@H](C)Cl)[C@H](C)Cl)[C@H](Cl)C([C@@H](C)Cl)[C@@H](C)Cl)[C@H](Cl)[C@@H]([C@@H](C)Cl)[C@H](C)Cl	VS262	2R 5R 8S 13R 18S 20r 21R 24S 27R 30R 33R 36R 38r 39R 42S		TH	1a,4b,5
+C[C@@H](Cl)[C@H](Cl)[C@@H]([C@H](Cl)[C@@H](Cl)C)C[C@H](C[C@@H]([C@H](Cl)[C@H](Cl)C)[C@@H](Cl)[C@@H](Cl)C)CCC[C@@](CCC[C@H](C[C@H]([C@@H](Cl)[C@H](Cl)C)[C@H](Cl)[C@@H](Cl)C)C[C@H]([C@H](Cl)[C@H](Cl)C)[C@@H](Cl)[C@@H](Cl)C)([C@H](C)Cl)[C@@H](C)Cl	VS263	2R 4R 6r 7S 9S 13S 15s 16S 18R 21R 23S 29s 33S 35s 36R 38R 41S 43S 47r 48S 50R 53R 55S 58S 61R		TH	1a,4b,5
+C[C@@H](Cl)[C@H](Cl)[C@@H]([C@H](Cl)[C@@H](Cl)C)C[C@H](C[C@@H]([C@H](Cl)[C@H](Cl)C)[C@@H](Cl)[C@@H](Cl)C)CCC[C@@](CCC[C@H](C[C@H]([C@@H](Cl)[C@H](Cl)C)[C@H](Cl)[C@@H](Cl)C)C[C@H]([C@H](Cl)[C@H](Cl)C)[C@@H](Cl)[C@@H](Cl)C)(CC)[C@@H](C)Cl	VS265	2R 4R 6r 7S 9S 13S 15s 16S 18R 21R 23S 29S 33S 35s 36R 38R 41S 43S 47r 48S 50R 53R 55S 60R		TH	1a,4b,5
+C[C@@H](Cl)[C@H](Cl)[C@@H]([C@H](Cl)[C@H](C)Cl)C[C@@H](CC[C@@](CC[C@H](C[C@@H]([C@@H](Cl)[C@H](C)Cl)[C@H](Cl)[C@@H](C)Cl)C[C@@H]([C@H](Cl)[C@H](C)Cl)[C@@H](Cl)[C@@H](C)Cl)([C@H](F)C)[C@H](C)F)C[C@H]([C@@H](Cl)[C@H](C)Cl)[C@H](Cl)[C@@H](C)Cl	VS268	2R 4R 6r 7S 9S 13S 16S 19R 21r 22R 24S 27S 29R 33s 34S 36S 39R 41R 44R 47S 51s 52R 54S 57S 59R		TH	1a,4b,5
+Cl[C@@H]([C@H]([C@H](Cl)[C@@H]([C@H](Cl)[C@@H]([C@@H](Cl)C)[C@@H](Cl)C)[C@H](Br)C[C@@H](O)C[C@@H](Br)[C@@H]([C@@H](Cl)[C@@H]([C@H](Cl)C)[C@H](Cl)C)[C@H](Cl)[C@H]([C@@H](Cl)C)[C@H](Cl)C)[C@@H](Cl)C)C	VS269	2R 3r 4S 6R 7R 10S 13S 16R 19S 22R 24S 25S 28R 31R 34R 36r 37S 40R 43S		TH	1a,4a,4b,5
+Cl[C@@H]([C@H]([C@H](Cl)[C@@H]([C@H](Cl)[C@@H]([C@@H](Cl)C)[C@@H](Cl)C)[C@@H](Br)C[C@@H](O)C[C@H](Br)[C@@H]([C@@H](Cl)[C@@H]([C@H](Cl)C)[C@H](Cl)C)[C@H](Cl)[C@H]([C@@H](Cl)C)[C@H](Cl)C)[C@@H](Cl)C)C	VS270	2R 3r 4S 6R 7R 10S 13S 16S 19R 22S 24S 25S 28R 31R 34R 36r 37S 40R 43S		TH	1a,4a,4b,5
+C[C@@H]([C@@H]([C@H]([C@@H]([C@H]([C@@H]([C@H](C)O)O)[C@H]([C@H](C)O)O)C)[C@@H]([C@H](O)C)O)O)O	VS271	2S 3R 4r 5S 6S 7S 8S 12R 13S 18S 19R		TH	1a,4a,4b,5
+C[C@H]([C@H]([C@H](\C(=C/1\[C@H](Br)/C(=C(\[C@@H]([C@@H]([C@H](C)Cl)[C@H](C)Cl)Cl)/[C@@H](Cl)[C@@H]([C@H](C)Cl)[C@@H](C)Cl)/[C@@H]1Br)\[C@@H](Cl)[C@@H]([C@H](C)Cl)[C@H](C)Cl)Cl)[C@H](C)Cl)Cl	VS272	2R 3r 4R 5Z 6Z 7R 9Z 10Z 11R 13S 16S 20S 22s 23S 26R 29R 31S 34S 37S 41S		CT,TH	1a,4a,4b,5
+O[C@@H](C[C@H]1CC[C@@H](CC1)C)C[C@@H]2CC[C@@H](CC2)C	VS279	2R 4r 7S 12s 15S	P-93.6	TH	4b,4c,5

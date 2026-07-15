@@ -927,6 +927,130 @@ at all. Needs either a primary-source check (IUPAC 2013 Rule 4b text, unavailabl
 locally) or further instrumented experiments before Milestone 4B-2's production
 implementation proceeds — reported to the user rather than guessed further.
 
+**Milestone 4B-1.5 — reference-relative Rule 4b, faithful implementation, negative
+control, and a primary-source-grounded architecture correction.** Per the user's
+explicit redirect ("見直すべきはLike/Unlikeの優先方向ではなく、referenceの選び方とdescriptor
+列のhierarchical orderです"), this milestone built a *faithful* implementation (no
+inversion, no shared cross-branch reference) and — critically — a **new,
+non-degenerate oracle corpus**, because the original 8-row `rule4_candidate` residual
+turned out to be structurally incapable of validating reference selection at all.
+
+**Step 1: the original 8-row corpus is reference-selection-degenerate (proven, not
+suspected).** `examples/rule4b_reference_dump.rs` (this milestone; superseded by
+`rule4b_reference_relative.rs` below, since it used a global-code proxy rather than the
+true auxiliary chain) found all 16 branch positions across the 8 rows resolve to the
+same family (`Right`/`R`) at the first descriptor sphere — one candidate, no ties,
+uniform across every row. Consequence: any comparator with one free reference-polarity
+bit will fit this data, whatever that bit's value — degrees-of-freedom accounting
+(operator polarity pinned by spec = 1 bit; corpus supplies exactly 1 bit of
+constraint) proves an 8/8 score here is not evidence of correctness. This is why phase
+2's "S precedes R", a later "opposite of global code" reference value, and other
+sign-flip attempts *all* reached 8/8 or close to it on this corpus alone — every one
+of them reduces algebraically to the same single-bit fit, not independent discoveries.
+
+**Step 2: a genuinely discriminating synthetic corpus, RDKit-oracled.**
+`validation/cip_rule4b_discriminating_corpus.jsonl` (16 rows) enumerates stereoisomers
+of a symmetric acyclic scaffold (`CH3-C1-C2-C3-C4(root)-C5-C6-C7-CH3`, all-OH
+substituted; root's two branches are constitutionally identical, forcing Rules 1a/2 to
+tie) via `rdCIPLabeler`, filtered for two properties the original 8 rows cannot
+exercise: `independent_reference` (the two branches' own nearest-chiral-atom family
+differs, e.g. left starts `S..`, right starts `R..`) and
+`same_reference_deep_divergence` (both branches start with the same family but diverge
+only at position 1 or 2). **Negative control, run in the same pass**
+(`examples/rule4b_reference_relative.rs`): the discarded absolute "S precedes R" rule
+scores only 6/16 here (vs. faithful reference-relative Like/Unlike's **16/16**),
+confirming this corpus has real discriminating power — unlike the original 8 rows,
+where the discarded rule also scores a hollow 8/8.
+
+**Step 3: the faithful implementation is a genuine 16/16 win on single-center cases,
+but only 4/8 on the original ring-based corpus — and the failure has a name.** Run
+against `ROWS_ORIGINAL`, the same faithful comparator (independent per-branch
+position-0 reference from the auxiliary chain, Like-wins, no inversion) gets exactly
+4/8, and the 4 misses are not noise: **within every one of the 4 molecules, the two
+mutually-tied atoms receive opposite predictions** (one `R`, one `S`) while the oracle
+says both are `S`. This is pair-antisymmetry, not random error — confirmed directly
+from the printed per-row auxiliary chains (all 4 miss-rows share the exact chain shape
+`[R,S,S]`/`[R,R,S]`; all 4 hit-rows share `[S,R,R]`/`[S,S,R]`).
+
+**Root cause: independent per-atom re-rooting.** `auxiliary_sign()` (built in
+Milestone 4B-1 phase 1) computes each embedded stereocenter's descriptor by building a
+*fresh* digraph re-rooted at that atom (`CipDigraph::new_with_artificial_ancestor`),
+independently for each of the two mutually-tied atoms. For quinic acid's atom3/atom7
+pair, resolving atom3 treats atom7 as a severed artificial ancestor, and resolving
+atom7 (separately) treats atom3 as a severed artificial ancestor — mirror-image
+inputs, fed to a rule that was specifically verified mirror-antisymmetric
+(`rule4b_operator_tests.rs`, 7/7 metamorphic tests including mirror invariance). A
+correct antisymmetric rule necessarily emits opposite labels for mirror-image inputs,
+which is exactly the observed defect. A ring-atom auxiliary-value spot check
+(`atom4`/`atom13` in quinic acid, both non-tied genuine stereocenters, oracle `R`)
+confirmed severing-direction-dependence directly: severing toward the *other* tied
+atom (atom3) gives the wrong sign, severing toward an ordinary ring neighbor gives the
+right one — the per-atom re-rooting is architecturally implicated, not merely a tuning
+issue.
+
+**Step 4: primary-source resolution.** Hanson, Musacchio, Mayfield et al. 2018, *J.
+Chem. Inf. Model.* 58(9), 1755–1765, "Algorithmic Analysis of Cahn–Ingold–Prelog Rules
+of Stereochemistry" (the paper `rdCIPLabeler` itself implements) states directly
+(§"Preliminary Considerations: Auxiliary Descriptors"):
+
+> Generation of auxiliary descriptors must start from the highest sphere, proceeding
+> toward the root. In this way, all auxiliary descriptors in higher spheres than the
+> one being determined are already assigned. This is sufficient, as the descriptor for
+> an auxiliary center does not depend upon any center between it and the root, since
+> the priority of a ligand leading back to the digraph root will always be ranked by
+> Rule 1a, with no need to consider auxiliary centers. This postulate follows from the
+> fact that auxiliary centers are always offset from the root of a digraph, and so the
+> path back to the root is always unique in connectivity and atomic numbers.
+
+This directly contradicts the per-atom re-rooting architecture: auxiliary descriptors
+must be assigned **within one single digraph rooted at the true outer stereocenter**,
+**bottom-up** (deepest sphere first), with the "back to root" ligand ranked by Rule 1a
+alone — never by re-rooting a fresh digraph per embedded atom. The bottom-up ordering
+is precisely what avoids the circularity between mutually-tied centers: resolving
+atom3 while inside atom7's digraph never needs atom7's *own* full resolution (only
+centers further from the root than atom7, which bottom-up ordering guarantees are
+already assigned) — and vice versa. The paper also specifies (§Rule 4b) that ranking
+is a two-stage, both-references process: score each ligand's auxiliary-descriptor
+sequence against *both* an `R` reference and an `S` reference, encode each as a binary
+like/unlike string, and the ligand with the single highest resulting score (across all
+four scores) wins — not a single chosen reference per branch. Figure 8's worked
+example (compound `VS262`) demonstrates this scoring numerically.
+
+**A far better oracle, found as a side effect.** The paper ships its own 300-compound
+validation suite (`cipvalidationsuite.github.io`/`CIPValidationSuite/ValidationSuite`
+on GitHub) with 28 compounds explicitly tagged Rule 4b, frozen here as
+`validation/cip_hanson2018_rule4b_suite.tsv` (SMILES, VS-id, per-atom reference
+descriptor including pseudoasymmetric `r`/`s` and `E`/`Z`, Blue Book section, geometry
+type, applicable rules). Cross-checked against `rdCIPLabeler` directly: `VS262` (44
+atoms, 15 stereocenters, rules `1a,4b,5`) matches the suite's reference labels on
+every one of its 15 stereocenters with a simple 1-indexed-to-0-indexed offset, no
+respelling needed; `VS196` and `VS252` also match exactly. (`VS279` — the same
+compound as the paper's own Figure 2 auxiliary-descriptor example — showed a partial
+mismatch on this spot check, not yet investigated; noted as an open caveat, not
+assumed benign.) This corpus supersedes both the original 8-row residual (proven
+reference-selection-degenerate, Step 1) and this milestone's own synthetic acyclic
+corpus (proven Step-B-inert, single-center only, no coupled pairs) as the primary
+oracle for validating any bottom-up, coupled-center-capable Rule 4b/5 implementation.
+
+**Scope correction.** What began as an "M4B-1.5 diagnostic" has, per the paper's own
+text ("the entire sequence of all rules must be carried out for each auxiliary
+center"), turned out to require the real production auxiliary-descriptor engine: a
+correct implementation needs the full rule cascade (not just Rules 1a/2) applied
+bottom-up across the whole digraph, since an auxiliary center can itself require Rule
+4b/5 on its own sub-branches. This is substantively M4B-2's scope, not a lightweight
+diagnostic step ahead of it — reported to the user rather than building further
+without confirming the revised scope.
+
+**Not yet done:** the bottom-up, single-digraph auxiliary-descriptor engine itself
+(replacing `new_with_artificial_ancestor`-per-atom); the both-references scoring
+procedure from Rule 4b's text; validation against the Hanson 2018 suite's 28 Rule-4b
+compounds (only 3 spot-checked against `rdCIPLabeler` so far, for oracle-trustworthiness,
+not against chematic); the VS279 discrepancy; Step B's reference-dependent-reordering
+synthetic test (deferred — advisor guidance was that it doesn't explain any observed
+failure so far, real but not currently blocking). The 16/16 synthetic single-center
+result and the negative-control methodology stand as validated, regardless of the
+coupled-center architecture question.
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same
