@@ -758,6 +758,50 @@ to clear the gate without touching Milestone 4A-2's harder symmetry-detection wo
 2 remaining phosphorus "tied" rows. This is an observation about ROI ordering, not a
 scope commitment — implementation order is decided per-milestone as each is planned.
 
+**Milestone 4B-0 — Rule 4 subtype diagnosis, diagnosis only (no crate changes).** Before
+implementing anything, the 8 Milestone-4B `rule4_candidate` rows were mechanically
+classified into Rule 4a / 4b / 4c using a new read-only tool,
+`examples/rule4_diagnose.rs` (same footprint as `residual_report.rs`/`trace_report.rs` —
+no changes to `crates/chematic-cip/src/*.rs`):
+
+| subrule | verdict | evidence |
+|---|---|---|
+| Rule 4a (chiral > pseudoasymmetric > nonstereogenic unit ranking) | N/A, structurally | `chematic_core::Chirality` has exactly one non-`None` variant family (tetrahedral `CounterClockwise`/`Clockwise`) — there is no unit-*type* distinction for Rule 4a to compare. This is a fact about the enum, not an artifact of these 8 rows. |
+| Rule 4c (r/s, m/p ordinal comparison on pseudoasymmetric/axial descriptors) | N/A, structurally | Same reasoning: no axial/planar or bond (seqCis/seqTrans) `Chirality` variant exists at all. |
+| Rule 4b (reference-descriptor + like/unlike pairing) | sole remaining candidate, 8/8 | by exhaustion (4a and 4c ruled out) and by direct structural evidence, below |
+
+All 8 rows share one shape: a tied stereocenter's own two ring-branches are
+constitutionally identical (already confirmed via `branch_signature()` in Milestone
+4A-0), and the oracle resolves both members of every tied pair to `S`. For each row, the
+*nearest embedded stereocenter* per branch (BFS search, mirroring
+`assign::nearest_embedded_stereocenter`'s own logic, re-implemented in the example since
+it's private to that module) was found and its own `expand_children` output ranked:
+**16/16 branches across all 8 rows rank tie-free** — Rules 1a/2 alone, with no reference
+to any other tied atom's global/molecular descriptor, already order that embedded atom's
+forward substituents cleanly.
+
+This is direct, code-level acyclicity evidence, not a hand-derived claim: a per-branch
+auxiliary-descriptor computation for Rule 4b does not need a fixed-point solver, because
+resolving one tied atom's embedded reference never depends on the *other* tied atom's own
+still-unresolved global value — only on that embedded atom's own local (already
+tie-free) substituent ranking.
+
+**What this diagnosis does not yet establish**: the embedded stereocenter's actual
+auxiliary R/S *sign*. Getting that right requires representing "the direction back
+toward the tied root" as a proper 4th ligand in a digraph rooted so that direction
+terminates immediately (an artificial-ancestor root) — `CipDigraph` has no such
+constructor today (`CipDigraph::new`/`new_with_mancude` only root at a real atom with no
+pre-seeded ancestors). Closing that gap, and implementing the reference-descriptor +
+like/unlike comparison itself, is Milestone 4B-1's job, not this diagnosis's. Since the
+literal IUPAC 2013 text for Rule 4b's exact reference-selection procedure isn't available
+locally (same "no RDKit C++ source" limitation noted throughout this RFC), Milestone
+4B-1's implementation should be validated empirically against these 8 rows' oracle labels
+(all `S`) rather than assumed correct from the commonly-cited textbook description alone.
+
+Zero production impact: `cargo test --workspace --lib --quiet` and the existing
+4152/4186 full-corpus number are both unaffected (no files under
+`crates/chematic-cip/src/` touched).
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same
