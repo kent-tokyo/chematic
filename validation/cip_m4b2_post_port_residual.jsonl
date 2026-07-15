@@ -1,0 +1,27 @@
+{"_manifest": true, "branch": "cip-m4b2-production-port (CI-green, pre-merge)", "correct": 4160, "generated": "2026-07-16", "rdkit_version": "2026.03.3", "residual": 26, "total": 4186}
+{"atom_idx": 11, "bucket": "phosphorus", "chematic": "R", "modern": "S", "smiles": "C1CCN(P2(N3CCCC3)=N[P@@](N3CCCC3)(N3CC3)=N[P@](N3CCCC3)(N3CC3)=N2)C1"}
+{"atom_idx": 4, "bucket": "phosphorus", "chematic": "S", "modern": "R", "smiles": "C1CCN([P@@]2(N3CC3)=NP(N3CC3)(N3CC3)=N[P@@](N3CCCCC3)(N3CC3)=N2)CC1"}
+{"atom_idx": 22, "bucket": "phosphorus", "chematic": "S", "modern": "R", "smiles": "C1CN(P2(N3CCOCC3)=N[P@](N3CCOCC3)(N3CC3)=N[P@@](N3CCOCC3)(N3CC3)=N2)CCO1"}
+{"atom_idx": 16, "bucket": "phosphorus", "chematic": "S", "modern": "R", "smiles": "C1CN([P@@]2(N3CC3)=NP(N3CC3)(N3CC3)=N[P@@](N3CCOCC3)(N3CC3)=N2)CCO1"}
+{"atom_idx": 31, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1"}
+{"atom_idx": 33, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1"}
+{"atom_idx": 35, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1"}
+{"atom_idx": 16, "bucket": "phosphorus", "chematic": "R", "modern": "S", "smiles": "CN(C)P1(N(C)C)=NP(N(C)C)(N(C)C)=N[P@@](N(C)C)(N2CC2)=N[P@](N(C)C)(N2CC2)=N1"}
+{"atom_idx": 6, "bucket": "phosphorus", "chematic": "skip:tied", "modern": "R", "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1"}
+{"atom_idx": 19, "bucket": "phosphorus", "chematic": "skip:tied", "modern": "S", "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1"}
+{"atom_idx": 6, "bucket": "phosphorus", "chematic": "S", "modern": "R", "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=N[P@](NC)(N2CC2)=N1"}
+{"atom_idx": 2, "bucket": "phosphorus", "chematic": "R", "modern": "S", "smiles": "CN[P@@]1(N)=NP(N2CC2)(N2CC2)=N[P@](N)(NC)=N1"}
+{"atom_idx": 21, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1"}
+{"atom_idx": 23, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1"}
+{"atom_idx": 26, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1"}
+{"atom_idx": 16, "bucket": "phosphorus", "chematic": "S", "modern": "R", "smiles": "Cl[P@@]1(N2CCCC2)=NP(N2CC2)(N2CC2)=N[P@@](Cl)(N2CCCC2)=N1"}
+{"atom_idx": 12, "bucket": "phosphorus", "chematic": "S", "modern": "R", "smiles": "N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1"}
+{"atom_idx": 23, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3"}
+{"atom_idx": 25, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3"}
+{"atom_idx": 28, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3"}
+{"atom_idx": 25, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3"}
+{"atom_idx": 27, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3"}
+{"atom_idx": 30, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3"}
+{"atom_idx": 20, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2"}
+{"atom_idx": 22, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2"}
+{"atom_idx": 24, "bucket": "rule5_pseudoasymmetric", "chematic": "skip:tied", "modern": "s", "smiles": "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2"}
