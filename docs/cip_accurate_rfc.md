@@ -1245,21 +1245,103 @@ oracle, frozen as `validation/cip_m4b2_post_port_residual.jsonl`:
   - **11 `phosphorus`** — splits **9 wrong + 2 tied**, matching the pre-M4B
     classification exactly. All 9 "wrong" rows are phosphazene ring compounds
     (cyclic P=N systems) showing a clean R↔S flip pattern (chematic's own answer is
-    the oracle's exact opposite in every case, not a random miss) — consistent with
-    the standing diagnosis that this is a P=N digraph-representation issue (duplicate
-    arrival/departure side), not a missing sequence rule.
+    the oracle's exact opposite in every case, not a random miss). Milestone 4C-0
+    below found this is *not* a P=N digraph-representation defect in chematic — the
+    oracle itself is representation-unstable on this input class.
   - **0 Rule 4** — the bucket this milestone targeted is empty, confirming the
     production port didn't just move the residual around.
 
-## M4C-0 — phosphorus diagnosis (not started until this point; see below for scope)
+## Milestone 4C-0 — phosphorus diagnosis, diagnosis only, no crate changes
 
-**Next**: M4C-0, mechanically classifying the 9 "wrong" phosphorus rows along the
-axes the user specified (P=N duplicate arrival/departure representation; P-center
-physical-ligand-vs-comparison-duplicate correspondence; valence/formal charge;
-lone-pair representation; root-vs-branch-internal behavior difference; isotope
-Rule-2-path impact) — diagnosis only, no implementation, per the same discipline
-Milestone 4B-0 used for Rule 4. If all 9 are fixed: 4160 + 9 = **4169/4186 (99.59%)**,
-clearing the Milestone 4 gate (99.5%) without touching the harder Rule-5 cage family.
+The post-M4B-2 residual re-freeze above (`validation/cip_m4b2_post_port_residual.jsonl`):
+26 rows, split 15 `rule5_pseudoasymmetric` / 11 `phosphorus` (9 wrong + 2 `skip:tied`) /
+0 Rule 4 — an exact match to the user's prediction. This section diagnoses the 11-row
+phosphorus bucket, per the user's explicit direction to classify mechanically before
+attempting any fix.
+
+All 11 rows share one scaffold: a cyclophosphazene ring (P3N3 6-membered or P4N4
+8-membered, alternating P=N bonds around the ring), never flagged aromatic by either
+RDKit or chematic's own perception (`SP2`/`SP3` hybridization confirmed via RDKit,
+non-mancude per chematic — see below). The initial hand-trace of the simplest wrong
+row (`N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1`, atom 12: chematic `S`, oracle `R`)
+found something that didn't fit a normal "wrong priority" bug: chematic's own
+Rules-1a/1b/2 ranked group order for atom 12's four ligands matched RDKit's internal
+`_CIPRank` order for the same four atoms — yet the final label still disagreed. That
+mismatch-despite-agreement result was the trigger to stop hand-tracing (which had
+already misled this investigation once, in Milestone 4B-1.5) and run a falsification
+test instead, per standing project discipline.
+
+**Test: Kekule-respelling invariance.** A CIP label is a property of the molecule, not
+of a drawing — an implementation that returns a different label for the *identical*
+molecule under an arbitrary, chemically neutral choice of which ring bonds are drawn
+single vs. double is not returning a well-defined label on that input. For each of the
+9 wrong rows, every ring bond was flipped Single<->Double (`Molecule::with_bond_order`,
+folded over the ring's bonds located via `find_sssr` + `bond_between`) and both forms
+were re-run through the real production entry point,
+`assign_cip_accurate_experimental` (`crates/chematic-cip/examples/phosphorus_kekule_diagnosis.rs`).
+Structural identity of each original/respelled pair (i.e. that the flip is a true
+resonance respelling and not an accidental constitutional change) was independently
+confirmed via matching RDKit `MolToInchi` output, including the stereo layer, for
+every row.
+
+Result, all 9 rows:
+
+| Check | Result |
+|---|---|
+| chematic label, original vs. respelled Kekule form | identical, 9/9 |
+| chematic label, with vs. without MANCUDE pass engaged | identical, 9/9 (the MANCUDE gate never fires on these non-aromatic rings) |
+| RDKit modern `rdCIPLabeler`, original vs. respelled | **flips, 9/9** |
+| RDKit legacy `_CIPCode`, original vs. respelled | stable, 9/9, and agrees with chematic's answer on every row |
+| InChI (incl. `/t`/`/m` stereo layer), original vs. respelled | identical, 9/9 (external confirmation the two forms are the same molecule) |
+
+**What this proves:** the modern `rdCIPLabeler` oracle used for full-corpus scoring is
+not returning a well-defined label for this input class — on all 9 rows, its answer is
+an artifact of which arbitrary Kekule structure the input SMILES happened to spell
+out, not a property of the molecule. Comparing chematic's answer against it on these 9
+rows is comparing against an unreliable ground truth. The 2 `skip:tied` rows are a
+different chematic behavior (a declined answer, not a wrong one) and were not covered
+by this test — they remain unresolved for a separate reason (either a genuine 3+-way
+tie or a multi-reference-candidate ambiguity in Rule 4b's deferral path) and are not
+folded into this finding.
+
+**What this does not prove:** that chematic's answer is *correct*. Both the MANCUDE
+pass and Rule 4b are confirmed inert on these rows (with/without-MANCUDE parity above;
+these rows are not in the `rule4_candidate` bucket), so chematic's stability is
+consistent with "genuinely correct" and equally consistent with "the same
+non-MANCUDE-aware treatment applied consistently, and consistently wrong." Legacy
+RDKit agreement is corroborating but not decisive on its own, since legacy CIP is a
+simpler, less rule-complete implementation that could coincidentally agree with
+chematic for unrelated reasons. Establishing which answer is actually correct under
+full CIP rules (including whatever mancude-averaging treatment, if any, applies to a
+formally-conjugated-but-not-Huckel-aromatic ring like this one) is a research question
+this diagnosis-only milestone does not attempt to resolve.
+
+**Decision** (milestone-scope/gate-math, made by the user after reviewing this
+diagnosis): the 9-row phosphorus "wrong" bucket can no longer be scored against modern
+`rdCIPLabeler` as-is, since that oracle is demonstrably unreliable on this input class.
+
+- **Stratify, don't delete or substitute.** The raw modern-RDKit agreement number is
+  never removed from any report. The 9 rows are pulled into a separate, explicitly
+  enumerated `representation_unstable` bucket and excluded from *both* the correct and
+  incorrect side of an "oracle-stable" agreement number reported alongside the raw one.
+  Legacy `_CIPCode` agreement is corroborating evidence in this diagnosis, never a
+  substitute ground truth — these rows are not scored as "correct via legacy," they are
+  scored as unresolved/not-evaluable. See the corpus-schema and report-script work
+  (separate follow-up PR) for the concrete `oracle_status` field and the redefined
+  Milestone 4 gate.
+- **No RDKit upstream report for now — held, not abandoned.** The instability is a
+  genuine, reproducible finding about an independent, competing implementation. Rather
+  than filing now, the reproducibility evidence (RDKit version, minimal repro per row,
+  explicit atom mapping, the InChI same-molecule proof, all-9 reproduction, and the
+  modern/legacy/chematic comparison table above) is being kept as a verification asset
+  in this repo — useful on its own to detect a future RDKit release changing this
+  behavior, and optionally usable later as a compatibility-report writeup if published,
+  framed around the finding itself rather than as promotion. No root-cause speculation
+  or fix suggestion is published anywhere pending that decision.
+- **No chematic fix targeting these 9.** Since the ground truth for this input class
+  isn't established, there is nothing correct to converge chematic toward. The M4C-1
+  label is repurposed for the 2 separate `skip:tied` rows instead (below), not a
+  followup fix for these 9.
 
 ## Required property tests (starting Milestone 1)
 
