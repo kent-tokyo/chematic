@@ -1041,15 +1041,78 @@ bottom-up across the whole digraph, since an auxiliary center can itself require
 diagnostic step ahead of it — reported to the user rather than building further
 without confirming the revised scope.
 
-**Not yet done:** the bottom-up, single-digraph auxiliary-descriptor engine itself
-(replacing `new_with_artificial_ancestor`-per-atom); the both-references scoring
-procedure from Rule 4b's text; validation against the Hanson 2018 suite's 28 Rule-4b
-compounds (only 3 spot-checked against `rdCIPLabeler` so far, for oracle-trustworthiness,
-not against chematic); the VS279 discrepancy; Step B's reference-dependent-reordering
-synthetic test (deferred — advisor guidance was that it doesn't explain any observed
-failure so far, real but not currently blocking). The 16/16 synthetic single-center
-result and the negative-control methodology stand as validated, regardless of the
-coupled-center architecture question.
+**Milestone 4B-2 — the bottom-up, in-place engine, built and validated
+(`examples/rule4b_bottom_up.rs`).** Per the user's explicit "続けて" (continue), the
+engine described above was implemented for real:
+
+- `resolve_chirality(graph, mol, node_id, ...)`: a plain memoized recursion over the
+  *existing* nodes of one digraph rooted at the true outer stereocenter
+  (`CipDigraph::new`, never re-rooted). Memoized by `NodeId` — a unique identity within
+  one digraph, since ring-recurring atoms get duplicate nodes, never a second real
+  node — so no `(atom, arrival)` composite key is needed, matching the paper's
+  postulate that an auxiliary center's descriptor depends only on strictly-deeper
+  nodes.
+- `BackItem`/`expand_back_item`/`compare_rule1a_only`: the "back to root" ligand,
+  implemented as a synthetic frontier walking *up* through the existing parent chain
+  (reusing already-built off-path subtrees via `expand_children`, never rebuilding),
+  compared against a real forward ligand via plain sorted-atomic-number shell
+  comparison — sound specifically because Rule 1a alone is the classical
+  sum/sorted-multiset rule (shell-pooling is only unsound once branch-provenance-aware
+  rules like 1b/4b/5 mix in, which this function never invokes).
+- Rule 4b tiebreak for forward-children ties reuses the already-operator-verified
+  faithful reference-relative Like/Unlike comparator (`rule4b_operator_tests.rs`,
+  7/7), now fed by `resolve_chirality`'s own recursion instead of the old
+  per-atom-re-rooted `auxiliary_sign`.
+
+**Two real bugs found and fixed during validation** (both via mechanical instrumentation,
+not hand-derivation, after two hand-traces of the sphere-by-sphere comparator
+diverged and were explicitly not trusted):
+1. The back-to-root ligand's rank was compared against each existing group's
+   representative's *children* (`rep_children`) instead of the representative *itself*
+   — an off-by-one-sphere bug, caught via a `VS197` uniform 6/6 inversion (the
+   signature of exactly one systematic sign error) and confirmed by re-deriving the
+   comparison by hand sphere-by-sphere against printed trace output.
+2. `embedded_chain`'s BFS (`nearest_embedded`) started its search frontier at the tied
+   group member's own *children*, silently skipping the member itself even though it
+   is itself the intended chain-position-0 embedded stereocenter (the old, working
+   engine's equivalent function started its frontier at the member itself). This was
+   caught not by inspection but by the acyclic-corpus regression fork advisor
+   specified: the old engine's 16/16-passing corpus dropped to 6/16 (with several
+   `None`/inconclusive results) on the new engine, isolating the defect to plumbing
+   before any operator changes were considered — confirmed by printing per-atom
+   intermediate results and finding a missing `resolve_chirality(atom9)` call where
+   one was expected, cross-checked against `rdCIPLabeler`'s own per-atom (not just
+   root) codes for the same molecule.
+
+**Result, all four corpora, both original and mirrored (enantiomer, textual
+`@`/`@@` swap, oracle labels mechanically flipped): 72/72.**
+
+| Corpus | Original | Mirrored |
+|---|---|---|
+| `VS196` (Hanson 2018 suite, tag `4b`, ring) | 6/6 | 6/6 |
+| `VS197` (Hanson 2018 suite, tag `4b`, ring) | 6/6 | 6/6 |
+| `ROWS_ORIGINAL` (8-row residual, all-`S`, ring, previously 4/8 antisymmetric) | 8/8 | 8/8 |
+| `ROWS_DISCRIMINATING` (16-row acyclic, negative-control-validated) | 16/16 | 16/16 |
+
+The `ROWS_ORIGINAL` result is the direct fix of this milestone's opening finding: both
+tied atoms of every one of the 4 molecules are now correctly resolved (previously
+exactly one of each pair was right, antisymmetrically, under the per-atom-re-rooted
+architecture) — with no convention/sign changes to the operator itself, only the
+plumbing-bug fixes above. `VS196`/`VS197` are external, authoritative or the paper's
+own validation suite, not self-constructed — the strongest evidence in this milestone
+that the fix is real rather than another degenerate fit.
+
+**Still not done, explicitly out of scope this round:** the both-references-max
+scoring procedure from Rule 4b's text (the current tiebreak uses the already-verified
+single-reference-per-branch Like/Unlike operator, which reached 72/72 without it —
+worth reconciling with Figure 8's method later, but not blocking); validation against
+the remaining ~25 of the Hanson 2018 suite's 28 Rule-4b compounds (`VS262` and most
+others need Rule 5/pseudoasymmetry support, which this round's `bool` `is_r`
+representation cannot express); the `VS279` discrepancy (still uninvestigated); 3+-way
+ties (out of scope, would return `None` rather than guess); wiring into
+`chematic_chem::assign_cip` or `chematic_cip::assign_cip_accurate_experimental`
+production paths (this remains diagnostic-only, `examples/` — no `src/` changes this
+round).
 
 ## Required property tests (starting Milestone 1)
 
