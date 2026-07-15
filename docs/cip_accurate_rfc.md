@@ -1234,8 +1234,32 @@ both-references-max scoring; 3-way-or-more ties; Rule 5 cage family; phosphorus;
 performance optimization; removing `new_with_artificial_ancestor`; making the
 accurate engine the default path.
 
-**Next**: re-freeze the residual corpus (expected ~26 remaining: ~15 Rule 5 cage
-family, ~11 phosphorus, 0 Rule 4) before scoping M4C (phosphorus) — not started.
+**Post-M4B-2 residual re-freeze — exact match to prediction.** Ran on this same
+branch (CI-green, pre-merge) via `corpus_snapshot.rs --candidate` + a fresh RDKit
+oracle, frozen as `validation/cip_m4b2_post_port_residual.jsonl`:
+
+- **26 residual rows** (4160/4186 correct, 99.38% — matches the full-corpus gate
+  exactly), split:
+  - **15 `rule5_pseudoasymmetric`** (oracle label lowercase `r`/`s`) — the
+    already-known, already-deferred three-armed cage family (Milestone 4A-2).
+  - **11 `phosphorus`** — splits **9 wrong + 2 tied**, matching the pre-M4B
+    classification exactly. All 9 "wrong" rows are phosphazene ring compounds
+    (cyclic P=N systems) showing a clean R↔S flip pattern (chematic's own answer is
+    the oracle's exact opposite in every case, not a random miss) — consistent with
+    the standing diagnosis that this is a P=N digraph-representation issue (duplicate
+    arrival/departure side), not a missing sequence rule.
+  - **0 Rule 4** — the bucket this milestone targeted is empty, confirming the
+    production port didn't just move the residual around.
+
+## M4C-0 — phosphorus diagnosis (not started until this point; see below for scope)
+
+**Next**: M4C-0, mechanically classifying the 9 "wrong" phosphorus rows along the
+axes the user specified (P=N duplicate arrival/departure representation; P-center
+physical-ligand-vs-comparison-duplicate correspondence; valence/formal charge;
+lone-pair representation; root-vs-branch-internal behavior difference; isotope
+Rule-2-path impact) — diagnosis only, no implementation, per the same discipline
+Milestone 4B-0 used for Rule 4. If all 9 are fixed: 4160 + 9 = **4169/4186 (99.59%)**,
+clearing the Milestone 4 gate (99.5%) without touching the harder Rule-5 cage family.
 
 ## Required property tests (starting Milestone 1)
 
