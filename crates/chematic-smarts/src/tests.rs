@@ -99,13 +99,13 @@ mod integration_tests {
         );
     }
 
-    /// `[r5]` → RingSize(5).
+    /// `[r5]` → MinRingSize(5) -- smallest-ring semantics (SMARTS-R1).
     #[test]
     fn test_parser_ring_size() {
         let mol = parse_smarts("[r5]").unwrap();
         assert_eq!(
             mol.atoms[0].query,
-            AtomQuery::Primitive(AtomPrimitive::RingSize(5))
+            AtomQuery::Primitive(AtomPrimitive::MinRingSize(5))
         );
     }
 

@@ -30,8 +30,8 @@ DataStructs.TanimotoSimilarity(fp, fp)       # 1.0
 | Mol / Atom / Bond | ✅ Supported | read-only traversal: `GetAtoms`/`GetBonds`/`GetAtomWithIdx`/`GetBondWithIdx`; atom/bond getters; `BondType` |
 | RingInfo | ✅ Supported | `GetRingInfo()` → `NumRings`/`AtomRings`/`BondRings`/`NumAtomRings`/`NumBondRings` (SSSR-based) |
 | Descriptors | ✅ Supported | MW/HBA/HBD **exact**, TPSA ±1.0, LogP ±0.5 vs RDKit (differential-tested) |
-| Aromaticity | ✅ Supported | aromatic atom/bond counts match RDKit on 99.0% / 98.3% of a 5k corpus; ring-junction carbonyls differ |
-| Substructure (SMARTS) | 🟡 Partial | match **sets** agree 96.9% on a 5k corpus (frozen benchmark — SMARTS-R0 found this figure predates a since-landed SSSR fix, current figure is somewhat higher; not yet regenerated, see below); `[rN]` predicate-semantics bug found recoverable, not a ring-model gap (see "SMARTS-R0" below). Match **order** may differ — compare as sets |
+| Aromaticity | ✅ Supported | aromatic atom/bond counts match RDKit on 99.44% / 98.82% of a 5k corpus; ring-junction carbonyls differ |
+| Substructure (SMARTS) | ✅ Supported | match **sets** agree **99.93%** on a 5k corpus (up from 96.9% — SMARTS-R1 fixed a `[rN]`/`[kN]` predicate-semantics bug that was 94.4% of all mismatches, see "SMARTS-R0"/"SMARTS-R1" below); residual is 100% the already-documented aromatic ring-junction-carbonyl tail. Match **order** may differ — compare as sets |
 | Morgan fingerprint | 🟡 Partial | `radius`, `nBits` (modulo folding), `bitInfo`, `useFeatures=True` (FCFP) — shape-/origin-consistent, **not RDKit bit-identical** (FNV-1a vs MurmurHash) |
 | DataStructs | ✅ Supported | `TanimotoSimilarity`/`DiceSimilarity`/`BulkTanimotoSimilarity`/`ConvertToNumpyArray` |
 | Canonical SMILES | 🟡 Partial | 99.62% semantic round-trip vs RDKit (5k corpus); exocyclic C=N E/Z stereo not always emitted |
@@ -50,7 +50,7 @@ RDKit is unaffected.
 |-------|--------|----------|-------------------|
 | descriptors / ring / SMARTS-count / SDF / Morgan | `crates/chematic-py/tests/test_rdkit_diff.py` | `validation/results/rdkit_diff.jsonl` | MW/HBA/HBD exact; ring count exact |
 | canonical SMILES round-trip + idempotency | `scripts/canonical_diff.py` | `validation/results/canonical_diff.jsonl` | 100% RDKit-parseable, 99.62% round-trip, 98.42% idempotent (5k) |
-| SMARTS match sets + aromaticity counts | `scripts/rdkit_compat_diff.py` | `validation/results/rdkit_compat_diff.jsonl` | 96.9% SMARTS match-set, 99.0%/98.3% aromatic atom/bond counts (5k) |
+| SMARTS match sets + aromaticity counts | `scripts/rdkit_compat_diff.py` | `validation/results/rdkit_compat_diff.jsonl` | 99.93% SMARTS match-set (SMARTS-R1, was 96.9%), 99.44%/98.82% aromatic atom/bond counts (5k) |
 
 Run the standalone differentials (RDKit required):
 
@@ -66,8 +66,9 @@ why it is or isn't pursued.
 
 | Divergence | Root cause | Scope |
 |------------|-----------|-------|
-| Ring-size SMARTS `[rN]` (`[r5]`, `[r6]`, …) — ~94% of SMARTS mismatches | **Corrected 2026-07-16 (SMARTS-R0), supersedes the row below this table previously stated.** NOT a ring-model difference — a scoped predicate-semantics bug. `crates/chematic-smarts/src/parser.rs` maps `[rN]` to the *same* `AtomPrimitive::RingSize(n)` as `[kN]`, and `match_vf2.rs`'s `RingSize` arm matches "any SSSR ring of size N contains this atom." RDKit's real `[rN]` means "this atom's *smallest* ring is exactly size N" — a materially different predicate, confirmed empirically distinct from `[kN]` (RDKit `[k6]` includes a fusion atom on a purine that `[r6]` excludes for the same atom). Chematic's own SSSR is not the driver: ring count and size multiset agree between chematic and RDKit on 98.8% of the previously-mismatched molecules. See "SMARTS-R0" below for the full diagnosis. | **Recoverable without a ring-model change** — measured, not estimated: min-ring-size semantics on chematic's existing SSSR takes agreement from 70.95% to 100.00% on the full 5,000-molecule corpus (two independent measurements). Needs `[rN]` split from `[kN]`'s primitive (they are NOT the same predicate in RDKit) — not attempted this round, diagnosis only. |
-| Aromatic ring-junction carbonyls (`c(=O)` in fused aromatics) | chematic and RDKit model these atoms differently, shifting a few `c` / `C=O` matches and aromatic atom/bond counts. | Documented; small tail (~1–3%). |
+| ~~Ring-size SMARTS `[rN]`~~ — **Fixed 2026-07-16 (SMARTS-R1)**, removed from this table | Was a predicate-semantics bug (`[rN]` wrongly aliased to `[kN]`'s any-ring semantics; RDKit's real `[rN]` is smallest-ring semantics), not a ring-model gap — see "SMARTS-R0"/"SMARTS-R1" below for the full diagnosis and fix. | **Fixed** — `[rN]` now has its own `AtomPrimitive::MinRingSize` primitive, `[kN]` unchanged. Full-corpus SMARTS match-set agreement 96.9% → 99.93%. |
+| `[R1]`/`[R2]` ring-count on bridged/cage systems (~1.7% of such molecules) | Genuine SSSR-*basis*-cardinality disagreement (not a predicate bug) — e.g. an adamantane-type cage where RDKit's SSSR algorithm picks 5 basis rings and chematic's picks 4, both valid bases of the same cycle space. Distinct from the `[rN]` bug above; NOT fixed by SMARTS-R1. | **Deferred (SMARTS-R2)** — would need a richer, RDKit-compatible symmetrized ring model scoped to SMARTS ring-count predicates only; not started. |
+| Aromatic ring-junction carbonyls (`c(=O)` in fused aromatics) | chematic and RDKit model these atoms differently, shifting a few `c` / `C=O` matches and aromatic atom/bond counts. | Documented; now the entire remaining SMARTS residual (56/80,000 comparisons, 5k corpus) — the `[rN]` fix left nothing else. |
 | Morgan bit positions | FNV-1a (chematic) vs MurmurHash (RDKit). | By design — similarity **ranking** is consistent; individual bit indices are not comparable across libraries. |
 | Exocyclic C=N E/Z in canonical SMILES (~0.4% round-trip) | The **parser** drops `/`,`\` directional bonds that flank an aromatic ring atom during aromatization (`crates/chematic-smiles/src/parser.rs`), *before* the canonical writer runs — so the geometry is already gone by write time. | **Deferred** — a parser + aromaticity change (broad blast radius), not a writer fix. |
 | Canonical idempotency on large fused polycyclics (~1.6%) | **Aromaticity-perception round-trip inconsistency** — *not* Morgan-rank tie-breaking (the failing molecules have all-distinct ranks). A molecule and the re-parse of its own canonical SMILES can disagree on which bonds are aromatic (e.g. 16 vs 17 on a fluorene/carbazole-type linkage); because Morgan ranks weight aromatic vs single bonds differently (`bond_order_value`), this shifts the canonical atom order and the emitted string. The molecule is preserved (**InChI invariant**); only the representation differs. | **Deferred** — the fix is in the aromaticity/parser core (which delivers the 100% aromatic-ring-count + exact descriptors), gated on full descriptor regression; not a canonicalizer patch. Pairs with the exocyclic-C=N parser work above. |
@@ -155,6 +156,54 @@ sample measured 97.50%, higher than the frozen figure; the full corpus wasn't
 regenerated this round (a multi-minute run, kept out of scope for a diagnosis-only
 pass) — regenerating it is recommended as part of any future fix work, alongside
 correcting the `[k5]==[r5]`/`[k6]==[r6]` unit tests that currently encode the bug.
+
+### SMARTS-R1 — `[rN]`/`[kN]` predicate split, implemented (2026-07-16)
+
+Implements SMARTS-R0's finding: `[rN]` now has its own `AtomPrimitive::MinRingSize`
+primitive (`crates/chematic-smarts/src/query.rs`), computing "the smallest SSSR ring
+containing this atom" — separate from `[kN]`'s existing `AtomPrimitive::RingSize`
+("any SSSR ring of size N"), which is untouched. `crates/chematic-smarts/src/parser.rs`
+routes `[rN]` to `MinRingSize` and `[kN]` to `RingSize` (previously both routed to
+`RingSize`). No change to ring perception itself (`find_sssr`) or to the descriptor/
+aromaticity ring model, per this doc's original constraint.
+
+**Matching**: `crates/chematic-smarts/src/match_vf2.rs`'s `EvalCtx` gained a lazily-computed,
+per-atom min-ring-size cache (`RefCell<Option<Vec<Option<u8>>>>`), populated on first
+`[rN]` query and reused for the rest of that pattern's match (VF2 backtracking
+re-evaluates atom predicates many times per search) — never recomputed per atom, per
+backtrack step, or for patterns that don't use `[rN]` at all. No new ring-finding: the
+cache aggregates over the same `RingSet` already computed once per molecule and shared
+across every pattern (unchanged from before this milestone).
+
+**Tests**: 4 new (`crates/chematic-smarts/src/parser.rs`) — a fused 5/6-ring bicyclic
+where `[k5]`/`[k6]` both match the fusion atom but `[r6]` does not (`[r5]` does); the
+exact purine discriminating case from SMARTS-R0's diagnosis, pinned against RDKit's
+real atom sets; `[rN]` false on every size for a fully acyclic molecule;
+`[R]`/`[R1]`/`[R2]` unaffected by the split. 2 existing tests that asserted
+`[k5]==[r5]`/`[k6]==[r6]` (encoding the bug) corrected to assert they're distinct
+primitives with distinct semantics.
+
+**Full-corpus verification** (regenerated `validation/results/rdkit_compat_diff.jsonl`,
+same 5,000-molecule corpus, same RDKit version):
+
+| Metric | Before (frozen, stale) | After (SMARTS-R1) |
+|---|---|---|
+| SMARTS match-set agreement | 96.9% | **99.93%** (79,944/80,000) |
+| `[rN]` agreement, isolated check | 70.95% | **100.00%** (4,999/4,999) |
+| `[kN]` agreement, regression check | — | 99.98% (4,998/4,999, 1 pre-existing bridged-cage mismatch confirmed present on `main` before this change too — not a regression) |
+| Aromatic atom count | 99.0% | 99.44% |
+| Aromatic bond count | 98.3% | 98.82% |
+
+Zero regressions: the single remaining `[kN]` mismatch (a bridged bicyclic where
+RDKit's and chematic's SSSR bases disagree in cardinality) was independently confirmed
+present and identical on `main` before this change (stashed the fix, rebuilt, reran).
+The entire remaining 56-row SMARTS residual (of 80,000 comparisons) is the
+already-documented `c`/`[#6]=[#6]` aromatic ring-junction-carbonyl tail — no `[rN]`
+contribution left at all.
+
+**Explicitly not done**: `[R1]`/`[R2]` on bridged/cage systems (SMARTS-R2, a genuine
+SSSR-basis-cardinality gap, not a predicate bug — kept separate per SMARTS-R0's own
+partition, above).
 
 ---
 

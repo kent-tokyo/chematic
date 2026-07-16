@@ -36,6 +36,35 @@ struct EvalCtx<'a> {
     /// recursive-SMARTS `$(...)`).  Decremented on every `match_recursive` /
     /// `has_match_recursive` entry.  `u64::MAX` when no limit is configured.
     visit_budget: std::cell::Cell<u64>,
+    /// Lazily-computed, memoized per atom index: the size of the *smallest* SSSR
+    /// ring containing that atom (`None` if the atom is in no ring). Backs `[rN]`
+    /// (`AtomPrimitive::MinRingSize`) — computed at most once per `find_matches`
+    /// call (not once per atom, not once per VF2 backtrack step, which re-evaluates
+    /// atom predicates many times) and only if a query actually uses `[rN]`, since
+    /// most patterns never do. Distinct from `[kN]` (`AtomPrimitive::RingSize`),
+    /// which needs no such cache -- it's a direct scan of `rings` per query, same as
+    /// before this variant existed.
+    min_ring_size_by_atom: std::cell::RefCell<Option<Vec<Option<u8>>>>,
+}
+
+impl EvalCtx<'_> {
+    /// The smallest SSSR ring size containing `idx`, or `None` if `idx` isn't in any
+    /// ring. Computes and caches the whole per-atom table on first call.
+    fn min_ring_size(&self, idx: AtomIdx) -> Option<u8> {
+        let mut cache = self.min_ring_size_by_atom.borrow_mut();
+        let table = cache.get_or_insert_with(|| {
+            let mut table = vec![None; self.mol.atom_count()];
+            for ring in self.rings.rings() {
+                let size = ring.len() as u8;
+                for &atom in ring {
+                    let slot = &mut table[atom.0 as usize];
+                    *slot = Some(slot.map_or(size, |current: u8| current.min(size)));
+                }
+            }
+            table
+        });
+        table[idx.0 as usize]
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -168,6 +197,7 @@ pub fn find_matches_with_rings_and_config(
         rings,
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
+        min_ring_size_by_atom: std::cell::RefCell::new(None),
     };
     let mut mapping: FxHashMap<usize, AtomIdx> = FxHashMap::default();
     let mut results: Vec<FxHashMap<usize, AtomIdx>> = Vec::new();
@@ -317,6 +347,7 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
             .rings()
             .iter()
             .any(|ring| ring.len() == *n as usize && ring.contains(&idx)),
+        AtomPrimitive::MinRingSize(n) => ctx.min_ring_size(idx) == Some(*n),
         AtomPrimitive::Wildcard => true,
         AtomPrimitive::Recursive(sub_query) => has_match_anchored(sub_query, idx, ctx),
         AtomPrimitive::Valence(v) => eval_valence(idx, ctx, *v),

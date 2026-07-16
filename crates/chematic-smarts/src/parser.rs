@@ -662,7 +662,8 @@ impl<'a> Parser<'a> {
             Some(b'D') => true,
             Some(b'r') => true,
             Some(b'R') => true,
-            // Exact ring size `[kN]` (RDKit PR #9172 compat — alias for [rN] in chematic).
+            // Any-ring size `[kN]` (RDKit PR #9172) — distinct from `[rN]`'s
+            // smallest-ring semantics, see the `[rN]`/`[kN]` split below.
             Some(b'k') => true,
             Some(b'*') => true,
             // Recursive SMARTS `$(...)`.
@@ -837,19 +838,28 @@ impl<'a> Parser<'a> {
                 Ok(AtomQuery::Primitive(AtomPrimitive::Degree(n)))
             }
 
-            // Ring size `rN` — must be checked BEFORE element parsing.
-            // In chematic `[rN]` means "atom is in a ring of EXACTLY N members".
+            // Smallest-ring size `rN` — must be checked BEFORE element parsing.
+            // RDKit's `[rN]` means "the SMALLEST ring containing this atom has exactly
+            // N members" -- NOT "the atom belongs to any N-membered ring" (that's
+            // `[kN]`, below). These are genuinely different predicates: on a fusion
+            // atom shared between a 5-ring and a 6-ring, RDKit's `[k6]` matches but
+            // `[r6]` does not, since that atom's smallest ring is the 5-ring. Verified
+            // against real RDKit and measured recoverable across a full 5,000-molecule
+            // corpus (70.95% -> 100.00%) -- see `docs/rdkit_compat.md`'s
+            // "SMARTS-R0"/"SMARTS-R1" entries. Previously (incorrectly) aliased to the
+            // same `RingSize` primitive as `[kN]`.
             Some(b'r') => {
                 self.advance(); // consume 'r'
                 let n = self
                     .parse_single_digit()
                     .ok_or(SmartsError::UnexpectedEnd)?;
-                Ok(AtomQuery::Primitive(AtomPrimitive::RingSize(n)))
+                Ok(AtomQuery::Primitive(AtomPrimitive::MinRingSize(n)))
             }
 
-            // Exact ring size `[kN]` — RDKit PR #9172 compatibility alias.
-            // RDKit added `[kN]` for "atom in a ring of exactly N members", which is the
-            // same semantics chematic already implements for `[rN]`. Accept both.
+            // Any-ring size `[kN]` — RDKit PR #9172. Means "this atom belongs to *some*
+            // perceived ring of exactly N members" -- unlike `[rN]` above, this is
+            // NOT restricted to the atom's smallest ring. Confirmed empirically
+            // distinct from `[rN]` (see above); do not merge these two primitives.
             Some(b'k') => {
                 self.advance(); // consume 'k'
                 let n = self
@@ -1091,23 +1101,36 @@ mod tests {
 
     #[test]
     fn test_parse_ring_size() {
-        // `[r5]` → RingSize(5)
+        // `[r5]` → MinRingSize(5) -- smallest-ring semantics (SMARTS-R1), not the
+        // `[kN]` any-ring semantics chematic used to (incorrectly) alias it to.
         let mol = parse_smarts("[r5]").unwrap();
         assert_eq!(
             mol.atoms[0].query,
-            AtomQuery::Primitive(AtomPrimitive::RingSize(5))
+            AtomQuery::Primitive(AtomPrimitive::MinRingSize(5))
         );
     }
 
     #[test]
-    fn test_parse_k_exact_ring_size() {
-        // RDKit PR #9172: `[kN]` is an alias for exact ring size (same as chematic's [rN]).
+    fn test_parse_k_not_same_primitive_as_r() {
+        // SMARTS-R1: `[kN]` (any-ring) and `[rN]` (smallest-ring) are DIFFERENT
+        // predicates in RDKit -- confirmed empirically (a fusion atom shared between
+        // a 5-ring and a 6-ring: RDKit's `[k6]` matches, `[r6]` does not). They must
+        // no longer parse to the identical primitive (this test previously asserted
+        // the opposite, which was the bug -- see docs/rdkit_compat.md's
+        // "SMARTS-R0"/"SMARTS-R1" entries).
         let q_k = parse_smarts("[k6]").expect("[k6] must parse");
         let q_r = parse_smarts("[r6]").expect("[r6] must parse");
-        // Both should produce the same primitive.
         assert_eq!(
+            q_k.atoms[0].query,
+            AtomQuery::Primitive(AtomPrimitive::RingSize(6))
+        );
+        assert_eq!(
+            q_r.atoms[0].query,
+            AtomQuery::Primitive(AtomPrimitive::MinRingSize(6))
+        );
+        assert_ne!(
             q_k.atoms[0].query, q_r.atoms[0].query,
-            "[k6] and [r6] must produce identical AtomQuery"
+            "[k6] and [r6] must NOT produce the same primitive"
         );
     }
 
@@ -1124,7 +1147,9 @@ mod tests {
 
     #[test]
     fn test_k_vs_r_equivalent_for_cyclopentane() {
-        // [k5] and [r5] must give identical match counts in chematic.
+        // [k5] and [r5] must give identical match counts on a SINGLE isolated ring
+        // (no fusion) -- here "any ring of size 5" and "smallest ring is size 5"
+        // trivially coincide, since there's only one ring to consider at all.
         use crate::{find_matches, parse_smarts};
         use chematic_smiles::parse;
         let mol = parse("C1CCCC1").unwrap(); // cyclopentane
@@ -1134,6 +1159,144 @@ mod tests {
             find_matches(&q_k, &mol).len(),
             find_matches(&q_r, &mol).len(),
             "[k5] and [r5] must be equivalent in chematic"
+        );
+    }
+
+    #[test]
+    fn test_k_vs_r_diverge_at_5_6_fusion_atom() {
+        // SMARTS-R1: on a fused bicyclic (5-ring + 6-ring sharing one bond), the
+        // fusion atoms belong to BOTH rings -- [kN] (any-ring) must match both [k5]
+        // and [k6] on them, but [rN] (smallest-ring) must match ONLY [r5], since
+        // their smallest ring is the 5-ring. This is the exact property Milestone
+        // SMARTS-R0 found chematic previously got wrong (aliasing [r6] to [k6]'s
+        // semantics would have wrongly matched the fusion atom on [r6] too).
+        use crate::{find_matches, parse_smarts};
+        use chematic_perception::find_sssr;
+        use chematic_smiles::parse;
+
+        let mol = parse("C1CCC2CCCC2C1").unwrap(); // bicyclic: 5-ring fused to 6-ring
+        let sssr = find_sssr(&mol);
+        let rings = sssr.rings();
+        assert_eq!(rings.len(), 2, "expected exactly 2 SSSR rings");
+        let sizes: Vec<usize> = rings.iter().map(|r| r.len()).collect();
+        assert!(
+            sizes.contains(&5) && sizes.contains(&6),
+            "expected one 5-ring and one 6-ring, got sizes {sizes:?}"
+        );
+        let ring5: std::collections::HashSet<_> = rings
+            .iter()
+            .find(|r| r.len() == 5)
+            .unwrap()
+            .iter()
+            .copied()
+            .collect();
+        let ring6: std::collections::HashSet<_> = rings
+            .iter()
+            .find(|r| r.len() == 6)
+            .unwrap()
+            .iter()
+            .copied()
+            .collect();
+        let fusion_atom = *ring5
+            .intersection(&ring6)
+            .next()
+            .expect("rings must share an atom");
+
+        let q_k5 = parse_smarts("[k5]").unwrap();
+        let q_k6 = parse_smarts("[k6]").unwrap();
+        let q_r5 = parse_smarts("[r5]").unwrap();
+        let q_r6 = parse_smarts("[r6]").unwrap();
+
+        let matches = |q| {
+            find_matches(q, &mol)
+                .into_iter()
+                .any(|m| m[&0] == fusion_atom)
+        };
+        assert!(matches(&q_k5), "[k5] must match the fusion atom");
+        assert!(matches(&q_k6), "[k6] must match the fusion atom");
+        assert!(
+            matches(&q_r5),
+            "[r5] must match the fusion atom (its smallest ring is 5)"
+        );
+        assert!(
+            !matches(&q_r6),
+            "[r6] must NOT match the fusion atom (its smallest ring is 5, not 6)"
+        );
+    }
+
+    #[test]
+    fn test_r6_excludes_purine_fusion_atom_matching_rdkit() {
+        // The exact discriminating case from SMARTS-R0's diagnosis: a purine where
+        // RDKit's [k6] includes the ring-fusion nitrogen but [r6] excludes it (its
+        // smallest ring is the 5-membered imidazole ring). Regression-pins the fix
+        // against a concrete, previously-verified-against-real-RDKit example rather
+        // than only a synthetic bicyclic.
+        use crate::{find_matches, parse_smarts};
+        use chematic_smiles::parse;
+        let mol = parse("Nc1nc(N)c2ncn(C3CC(O)C(O)C(CO)O3)c2n1").unwrap();
+        let q_r6 = parse_smarts("[r6]").unwrap();
+        let q_k6 = parse_smarts("[k6]").unwrap();
+        let r6_atoms: std::collections::HashSet<u32> = find_matches(&q_r6, &mol)
+            .into_iter()
+            .map(|m| m[&0].0)
+            .collect();
+        let k6_atoms: std::collections::HashSet<u32> = find_matches(&q_k6, &mol)
+            .into_iter()
+            .map(|m| m[&0].0)
+            .collect();
+        assert_eq!(
+            r6_atoms,
+            std::collections::HashSet::from([1, 2, 3, 9, 10, 11, 13, 15, 18, 20]),
+            "[r6] atom set must match RDKit exactly (see SMARTS-R0 diagnosis)"
+        );
+        assert_eq!(
+            k6_atoms,
+            std::collections::HashSet::from([1, 2, 3, 5, 9, 10, 11, 13, 15, 18, 19, 20]),
+            "[k6] atom set must match RDKit exactly (unchanged by this milestone)"
+        );
+        assert!(!r6_atoms.contains(&19) && k6_atoms.contains(&19));
+    }
+
+    #[test]
+    fn test_min_ring_size_false_for_non_ring_atom() {
+        // A fully acyclic molecule has no atom in any ring -- [rN] must match nothing.
+        use crate::{find_matches, parse_smarts};
+        use chematic_smiles::parse;
+        let mol = parse("CCCC").unwrap();
+        for size in [3, 4, 5, 6] {
+            let q = parse_smarts(&format!("[r{size}]")).unwrap();
+            assert!(
+                find_matches(&q, &mol).is_empty(),
+                "[r{size}] must not match any atom in an acyclic molecule"
+            );
+        }
+    }
+
+    #[test]
+    fn test_ring_membership_and_ring_count_unaffected_by_r_split() {
+        // [R]/[R0]/[R1]/[R2] are a separate primitive (RingMembership/RingCount) from
+        // [rN] (MinRingSize) -- splitting [rN] from [kN] must not change their
+        // behavior at all. Regression check on the same fused bicyclic as above.
+        use crate::{find_matches, parse_smarts};
+        use chematic_smiles::parse;
+        let mol = parse("C1CCC2CCCC2C1").unwrap(); // 9 atoms, 2 fusion atoms
+        let q_r = parse_smarts("[R]").unwrap();
+        assert_eq!(
+            find_matches(&q_r, &mol).len(),
+            9,
+            "[R] must match all 9 ring atoms"
+        );
+        let q_r1 = parse_smarts("[R1]").unwrap();
+        assert_eq!(
+            find_matches(&q_r1, &mol).len(),
+            7,
+            "[R1] must match the 7 non-fusion ring atoms"
+        );
+        let q_r2 = parse_smarts("[R2]").unwrap();
+        assert_eq!(
+            find_matches(&q_r2, &mol).len(),
+            2,
+            "[R2] must match the 2 fusion atoms (each in 2 SSSR rings)"
         );
     }
 
