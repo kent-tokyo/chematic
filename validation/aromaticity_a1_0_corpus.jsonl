@@ -1,0 +1,50 @@
+{"bucket": "false_positive", "smiles": "C[Si](C)(C)C1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-000"}
+{"bucket": "false_positive", "smiles": "C1=C(C2=CC=C(CCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-001"}
+{"bucket": "false_positive", "smiles": "ClC1=CC=C(OCC2=CC3=CC=CC=C3C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-002"}
+{"bucket": "false_positive", "smiles": "N[C@@H](CC1=CC=CC=C1)C1=CC2=CC=CC=C2C2=NCCCN12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-003"}
+{"bucket": "false_positive", "smiles": "CC(C)(C)C1=CC=C(C2=C(CC3=CC=CC=C3)C3=CC=CC=C3C3=NCCCN32)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-004"}
+{"bucket": "false_positive", "smiles": "C[Si](C)(C)C1=CC=C(C2=C(CC3=CC=CC=C3)C3=CC=CC=C3C3=NCCCN32)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-005"}
+{"bucket": "false_positive", "smiles": "C1=C(C2=CC=C(C3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-006"}
+{"bucket": "false_positive", "smiles": "C1=C(C2=CC=C(OCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-007"}
+{"bucket": "false_positive", "smiles": "COC1=C(OC)C(OC)=CC(C2=CC3=CC=CC=C3C3=NCCCN23)=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-008"}
+{"bucket": "false_positive", "smiles": "CC1=CC2=CC=CC=C2C2=NCCCN12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-009"}
+{"bucket": "false_positive", "smiles": "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)NC4CCCCC4)C=C3)C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-010"}
+{"bucket": "false_positive", "smiles": "C1=CC=C(CCC2=CC=C(C3=C(CC4=CC=CC=C4)C4=CC=CC=C4C4=NCCCN43)C=C2)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-011"}
+{"bucket": "false_positive", "smiles": "CCCCC1=C(C2=CC=C(CCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-012"}
+{"bucket": "false_positive", "smiles": "CCCCC1=C(C2=CC=C(C(C)(C)C)C=C2)N2CCCN=C2C2=CC=CC=C12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-013"}
+{"bucket": "false_positive", "smiles": "CCCCCCC1=CC2=CC=CC=C2C2=NCCCN12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-014"}
+{"bucket": "false_positive", "smiles": "CCOC1=CC=C(CC2=C(CCCC3=CC=CC4=CC=CC=C34)N3CCCN=C3C3=CC=CC=C23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-015"}
+{"bucket": "false_positive", "smiles": "CCOC1=CC=C(CC2=C(C3=CC=C(CCC4=CC=CC=C4)C=C3)N3CCCN=C3C3=CC=CC=C23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-016"}
+{"bucket": "false_positive", "smiles": "CN(C)CCC1=C(C2=CC=C(C(C)(C)C)C=C2)N2CCCN=C2C2=CC=CC=C12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-017"}
+{"bucket": "false_positive", "smiles": "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N/C(S)=N/C4CCCCC4)C=C3)C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-018"}
+{"bucket": "false_positive", "smiles": "C1=C(/C=C/C2=CC=CC=C2)N2CCCN=C2C2=CC=CC=C12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-019"}
+{"bucket": "false_positive", "smiles": "CC(C)(C)C1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-020"}
+{"bucket": "false_positive", "smiles": "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)CC4=CC=CC=N4)C=C3)C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-021"}
+{"bucket": "false_positive", "smiles": "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)NC4=C(Cl)C=C(Cl)C=C4)C=C3)C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-022"}
+{"bucket": "false_positive", "smiles": "C1=C(CC2=CC=CC=C2)C2=CC=CC=C2C2=NCCCN12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-023"}
+{"bucket": "false_positive", "smiles": "ClC1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-024"}
+{"bucket": "false_positive", "smiles": "C1=C(C2=CC=CC=C2)N2CCCN=C2C2=CC=CC=C12", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-025"}
+{"bucket": "false_positive", "smiles": "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N(CC4=CC=CC=C4)CC4=CC=CC=C4)C=C3)C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-026"}
+{"bucket": "false_positive", "smiles": "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N)C=C3)C3=NCCCN23)C=C1", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-027"}
+{"bucket": "false_positive", "smiles": "CC1=C2C(=NC=C1)N(C1CC1)C1=NC=CC=C1C(=O)N2C", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-028"}
+{"bucket": "false_positive", "smiles": "CC(=O)N1C2=NC=CC=C2C(=O)N(C)C2=CC=CN=C21", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-029"}
+{"bucket": "false_positive", "smiles": "CN1C(=O)C2=CC=CN=C2N(C(C)(C)C)C2=NC=CC=C21", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-030"}
+{"bucket": "false_positive", "smiles": "CCCN1C2=NC=CC=C2C(=O)N(C)C2=CC=CN=C21", "note": "test_known_regressions_from_bridgehead_n_fix", "case_id": "false_positive-031"}
+{"bucket": "false_positive", "smiles": "C1=Cc2ccccc2C2=NCCCN12", "note": "PR #86 minimal 14-atom bare-core reproducer", "case_id": "false_positive-032"}
+{"bucket": "false_negative", "smiles": "N1=C2C(N(CC(O)=O)C(=O)N=C2N(C2C=C(C(F)(F)F)C=C(C=2)C(F)(F)F)C2C1=CC=CC=2)=O", "note": "test_known_order_dependent_regressions", "case_id": "false_negative-033"}
+{"bucket": "false_negative", "smiles": "[C@H]12N(C([C@H](NC(=O)[C@H]([C@H](OC(=O)[C@@H](N(C)C(CN(C)C1=O)=O)C(C)C)C)NC(=O)C1C=C(OC)C(C)=C3OC4=C(C)C(=O)C(=C(C4=NC=13)C(=O)N[C@H]1C(=O)N[C@@H](C(C)C)C(N3[C@H](C(=O)N(CC(N([C@H](C(C)C)C(O[C@H]1C)=O)C)=O)C)CCC3)=O)N)C(C)C)=O)CCC2", "note": "test_known_order_dependent_regressions", "case_id": "false_negative-034"}
+{"bucket": "false_negative", "smiles": "C12N(C3C=CC=CC=3)C3=NC(=O)N(C)C(C3=NC1=CC=CC=2)=O", "note": "test_known_order_dependent_regressions", "case_id": "false_negative-035"}
+{"bucket": "false_negative", "smiles": "C1=CC2=CC=CC=CC2=C1", "note": "azulene, Kekulized -- #[ignore]d test_azulene_kekulized_aromatic", "case_id": "false_negative-036"}
+{"bucket": "false_negative", "smiles": "c1cnc2[nH]cnc2n1", "note": "purine -- #[ignore]d test_purine_aromatic", "case_id": "false_negative-037"}
+{"bucket": "negative_control", "smiles": "C1=Cc2ccccc2C2=CCCC12", "note": "bridgehead N removed (all-carbon 3rd ring) -- FP mechanism needs both conditions", "case_id": "negative_control-038"}
+{"bucket": "negative_control", "smiles": "C1=Cc2ccccc2C2=CCNC12", "note": "N present but not at the bridgehead -- FP mechanism needs both conditions", "case_id": "negative_control-039"}
+{"bucket": "negative_control", "smiles": "C1Cc2ccccc2C2=NCCCN12", "note": "bridgehead N kept, exocyclic C=C saturated -- FP mechanism needs both conditions", "case_id": "negative_control-040"}
+{"bucket": "negative_control", "smiles": "c1ccc2ccccc2c1", "note": "naphthalene -- plain linear-fused benzenoid, must stay correct", "case_id": "negative_control-041"}
+{"bucket": "negative_control", "smiles": "C1CCc2ccccc2C1", "note": "tetralin -- benzo-fused saturated ring, must stay correct", "case_id": "negative_control-042"}
+{"bucket": "negative_control", "smiles": "c1ccc2[nH]ccc2c1", "note": "indole -- fused 5+6 heteroaromatic, must stay correct", "case_id": "negative_control-043"}
+{"bucket": "negative_control", "smiles": "c1ccc2ncccc2c1", "note": "quinoline -- fused 6+6 heteroaromatic, must stay correct", "case_id": "negative_control-044"}
+{"bucket": "negative_control", "smiles": "c1ccccc1C(C)=O", "note": "acetophenone -- benzene + exocyclic C=O, ruled out as the FP mechanism", "case_id": "negative_control-045"}
+{"bucket": "negative_control", "smiles": "O=C1CCc2ccccc21", "note": "indanone -- fused bicyclic + exocyclic C=O, ruled out as the FP mechanism", "case_id": "negative_control-046"}
+{"bucket": "negative_control", "smiles": "O=C1C=Nc2ccccc21", "note": "heteroaromatic-junction carbonyl, ruled out as the FP mechanism", "case_id": "negative_control-047"}
+{"bucket": "negative_control", "smiles": "C1=CC=CC=C1", "note": "1,3-cyclohexadiene -- non-aromatic conjugated ring, must stay non-aromatic", "case_id": "negative_control-048"}
+{"bucket": "negative_control", "smiles": "C1=CC=CC=CC1", "note": "cycloheptatriene -- non-aromatic (4n) conjugated ring, must stay non-aromatic", "case_id": "negative_control-049"}

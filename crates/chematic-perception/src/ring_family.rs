@@ -40,11 +40,20 @@ pub struct RingFamily {
 /// assert_eq!(families[0].kind, RingSystemKind::Bridged);
 /// ```
 pub fn find_ring_families(mol: &Molecule, sssr: &RingSet) -> Vec<RingFamily> {
-    if sssr.ring_count() == 0 {
+    find_ring_families_over(mol, sssr.rings())
+}
+
+/// Same as [`find_ring_families`], but over an arbitrary ring list instead of
+/// a fresh SSSR. Used to build ring families over
+/// [`crate::aromaticity::augmented_ring_set`]'s output, which is what
+/// aromaticity perception's Pass 1/Pass 2 actually iterate — the augmented
+/// list can contain smaller XOR sub-rings that raw SSSR doesn't (e.g.
+/// indolizine's 5-ring), so families built from raw SSSR alone can miss the
+/// exact ring grouping the aromaticity engine used to reach its verdict.
+pub fn find_ring_families_over(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> Vec<RingFamily> {
+    if rings.is_empty() {
         return vec![];
     }
-
-    let rings = sssr.rings();
 
     // Union-Find: group rings that share at least one atom
     let mut parent: Vec<usize> = (0..rings.len()).collect();

@@ -313,6 +313,11 @@ exclusive with the existing SMARTS-R2 deferral:
 
 No implementation in this round, per SMARTS-A0's scope.
 
+**Follow-up decided**: Option 1 (fix the shared `apply_aromaticity` engine) was chosen
+over Option 2/3 above. See `docs/aromaticity_a1_rfc.md` for the full design, the
+component-level solver this points toward, and "Aromaticity-A1-0" (diagnosis/corpus,
+no behavior change, landed) as the first step.
+
 ---
 
 ## Examples

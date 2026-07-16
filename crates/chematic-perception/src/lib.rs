@@ -16,13 +16,14 @@ pub mod stereo_validation;
 pub mod stereo2d;
 
 pub use aromaticity::{
-    AromaticityAlgorithm, AromaticityModel, RingAromaticity, all_ring_list, apply_aromaticity,
-    apply_aromaticity_ex, aromatic_ring_list, assign_aromaticity, assign_aromaticity_ex,
-    augmented_ring_set, count_aromatic_rings, ring_bonds_all_aromatic,
+    AromaticityAlgorithm, AromaticityModel, AtomElectronTrace, ContributionReason, RingAromaticity,
+    RingElectronTrace, all_ring_list, apply_aromaticity, apply_aromaticity_ex, aromatic_ring_list,
+    assign_aromaticity, assign_aromaticity_ex, augmented_ring_set, count_aromatic_rings,
+    ring_bonds_all_aromatic, trace_ring_pi_electrons,
 };
 pub use chematic_core::{ValenceError, validate_valence};
 pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitvec};
-pub use ring_family::{RingFamily, RingSystemKind, find_ring_families};
+pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_families_over};
 pub use sssr::{RingSet, find_sssr};
 pub use stereo_validation::{
     StereoCompleteness, StereoError, StereoErrorKind, stereo_completeness, validate_stereo,

@@ -951,6 +951,221 @@ fn ring_pi_electrons(
 }
 
 // ---------------------------------------------------------------------------
+// Diagnostic trace (Aromaticity-A1-0) — observational only, no production
+// behavior change. `ring_pi_electrons` above is untouched and remains the
+// single source of truth for `assign_aromaticity_ex`'s actual decisions;
+// this is a parallel, read-only explanation layer for `component/atom/reason`
+// tracing, used by `aromaticity_a1_0_report` and the corpus diagnostics in
+// `validation/aromaticity_a1_0_corpus.jsonl`. See `docs/aromaticity_a1_rfc.md`.
+// ---------------------------------------------------------------------------
+
+/// Reason a ring atom contributes (or fails to contribute) pi electrons,
+/// mirroring `ring_pi_electrons`'s branches one-to-one. Purely diagnostic.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContributionReason {
+    /// Already aromatic from a previous Pass 1/Pass 2 ring: contributes 1π unconditionally.
+    AlreadyAromaticContext,
+    /// Carbon with an endocyclic double/aromatic bond: 1π.
+    CarbonEndocyclicDouble,
+    /// Carbon whose only double bond is exocyclic to O/N/S: 0π (e.g. a carbonyl carbon).
+    CarbonExocyclicHeteroatomDouble,
+    /// Carbanion with no double bond: 2π (lone pair).
+    CarbonCarbanionLonePair,
+    /// sp3 carbon (no double bond, not a carbanion): ineligible.
+    CarbonSp3Ineligible,
+    /// Pyrrole-type N with an H: 2π.
+    NitrogenPyrroleTypeH,
+    /// Pyridine-type N with an explicit double bond: 1π.
+    NitrogenPyridineTypeExplicitDouble,
+    /// Bridgehead N (or N-substituted azole N): all-sigma valence, lone pair in p orbital: 2π.
+    NitrogenBridgeheadOrSubstitutedLonePair,
+    /// N with an in-ring aromatic bond, not a bridgehead: 1π.
+    NitrogenAromaticInRing,
+    /// N matching none of the above rules: ineligible.
+    NitrogenIneligible,
+    /// O/S/Se/Te lone-pair donor, ring-degree 2: 2π.
+    ChalcogenLonePair,
+    /// O/S/Se/Te with the wrong ring degree, an exocyclic X=O, or (Se/Te) non-RdkitLike mode: ineligible.
+    ChalcogenIneligible,
+    /// Element not supported by the model: ineligible.
+    UnsupportedElement,
+}
+
+impl ContributionReason {
+    /// Whether this reason is an eligible contribution (matches
+    /// `ring_pi_electrons` returning `Some`) rather than one that disqualifies
+    /// the whole ring (matches it returning `None`).
+    pub fn is_eligible(self) -> bool {
+        !matches!(
+            self,
+            ContributionReason::CarbonSp3Ineligible
+                | ContributionReason::NitrogenIneligible
+                | ContributionReason::ChalcogenIneligible
+                | ContributionReason::UnsupportedElement
+        )
+    }
+}
+
+/// Per-atom trace entry from [`trace_ring_pi_electrons`].
+#[derive(Debug, Clone, Copy)]
+pub struct AtomElectronTrace {
+    pub atom_idx: AtomIdx,
+    /// `None` iff `reason.is_eligible()` is false.
+    pub contribution: Option<u8>,
+    pub reason: ContributionReason,
+}
+
+/// Full per-atom pi-electron trace for one ring — the diagnostic twin of
+/// [`ring_pi_electrons`]. Unlike `ring_pi_electrons` (which returns `None` at
+/// the first ineligible atom), this always scans every atom so a caller can
+/// see exactly which atom(s) disqualify a ring, not just that one did.
+#[derive(Debug, Clone)]
+pub struct RingElectronTrace {
+    pub atoms: Vec<AtomElectronTrace>,
+    /// `Some(sum)` iff every atom was eligible — must equal
+    /// `ring_pi_electrons(mol, ring, aromatic_context, algo)` for the same
+    /// inputs (checked by `trace_matches_ring_pi_electrons_on_corpus` below).
+    pub total: Option<u32>,
+}
+
+/// Diagnostic twin of [`ring_pi_electrons`]: identical per-atom rules, but
+/// returns a full trace instead of a single early-exiting `Option<u32>`. A
+/// deliberately separate implementation (not a wrapper around
+/// `ring_pi_electrons`) so it can name *why* each atom scored what it did;
+/// `trace_matches_ring_pi_electrons_on_corpus` is the anti-drift guard that
+/// keeps the two in sync. Does not call, wrap, or change
+/// `ring_pi_electrons` — zero effect on `assign_aromaticity_ex`'s behavior.
+pub fn trace_ring_pi_electrons(
+    mol: &Molecule,
+    ring: &[AtomIdx],
+    aromatic_context: &FxHashSet<AtomIdx>,
+    algo: AromaticityAlgorithm,
+) -> RingElectronTrace {
+    let ring_atom_set: FxHashSet<AtomIdx> = ring.iter().copied().collect();
+    let mut atoms = Vec::with_capacity(ring.len());
+    let mut total: Option<u32> = Some(0);
+
+    for &atom_idx in ring {
+        let (contribution, reason) = if aromatic_context.contains(&atom_idx) {
+            (Some(1u8), ContributionReason::AlreadyAromaticContext)
+        } else {
+            trace_atom_contribution(mol, atom_idx, &ring_atom_set, algo)
+        };
+
+        total = match (total, contribution) {
+            (Some(t), Some(c)) => Some(t + c as u32),
+            _ => None,
+        };
+
+        atoms.push(AtomElectronTrace {
+            atom_idx,
+            contribution,
+            reason,
+        });
+    }
+
+    RingElectronTrace { atoms, total }
+}
+
+/// Per-atom contribution logic, mirroring `ring_pi_electrons`'s match arms
+/// condition-for-condition, but returning a reason alongside the
+/// contribution instead of returning early on `None`.
+fn trace_atom_contribution(
+    mol: &Molecule,
+    atom_idx: AtomIdx,
+    ring_atom_set: &FxHashSet<AtomIdx>,
+    algo: AromaticityAlgorithm,
+) -> (Option<u8>, ContributionReason) {
+    let atom = mol.atom(atom_idx);
+    let an = atom.element.atomic_number();
+
+    let ring_degree = mol
+        .neighbors(atom_idx)
+        .filter(|(nb, _)| ring_atom_set.contains(nb))
+        .count();
+    let total_degree = mol.degree(atom_idx);
+
+    let has_explicit_double = mol
+        .neighbors(atom_idx)
+        .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Double);
+    let has_double_any = has_explicit_double
+        || mol
+            .neighbors(atom_idx)
+            .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Aromatic);
+    let has_aromatic_in_ring = mol
+        .neighbors(atom_idx)
+        .filter(|(nb, _)| ring_atom_set.contains(nb))
+        .any(|(_, bidx)| mol.bond(bidx).order == BondOrder::Aromatic);
+
+    match an {
+        6 => {
+            if !has_double_any {
+                if atom.charge == -1 {
+                    (Some(2), ContributionReason::CarbonCarbanionLonePair)
+                } else {
+                    (None, ContributionReason::CarbonSp3Ineligible)
+                }
+            } else if has_explicit_double
+                && !has_aromatic_in_ring
+                && !mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                    ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
+                })
+                && mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                    !ring_atom_set.contains(&nb)
+                        && mol.bond(bidx).order == BondOrder::Double
+                        && matches!(mol.atom(nb).element.atomic_number(), 7 | 8 | 16)
+                })
+            {
+                (Some(0), ContributionReason::CarbonExocyclicHeteroatomDouble)
+            } else {
+                (Some(1), ContributionReason::CarbonEndocyclicDouble)
+            }
+        }
+        7 => {
+            if implicit_hcount(mol, atom_idx) > 0 {
+                (Some(2), ContributionReason::NitrogenPyrroleTypeH)
+            } else if has_explicit_double {
+                (
+                    Some(1),
+                    ContributionReason::NitrogenPyridineTypeExplicitDouble,
+                )
+            } else if total_degree == 3 && ring_degree < total_degree {
+                (
+                    Some(2),
+                    ContributionReason::NitrogenBridgeheadOrSubstitutedLonePair,
+                )
+            } else if has_aromatic_in_ring {
+                (Some(1), ContributionReason::NitrogenAromaticInRing)
+            } else {
+                (None, ContributionReason::NitrogenIneligible)
+            }
+        }
+        8 | 16 => {
+            let exocyclic_double = an == 16
+                && mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                    !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
+                });
+            if ring_degree != 2 || exocyclic_double {
+                (None, ContributionReason::ChalcogenIneligible)
+            } else {
+                (Some(2), ContributionReason::ChalcogenLonePair)
+            }
+        }
+        34 | 52 => {
+            let exocyclic_double = mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
+            });
+            if algo != AromaticityAlgorithm::RdkitLike || ring_degree != 2 || exocyclic_double {
+                (None, ContributionReason::ChalcogenIneligible)
+            } else {
+                (Some(2), ContributionReason::ChalcogenLonePair)
+            }
+        }
+        _ => (None, ContributionReason::UnsupportedElement),
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -2076,112 +2291,117 @@ mod tests {
     // issue tracker). Pinned here as *known-wrong* so the eventual fix is
     // measurable by how many of these flip from this assertion to correct,
     // not just by an aggregate corpus percentage.
+    // (kekulized SMILES, current chematic aromatic_atom_count(), RDKit's correct count).
+    // Named at module level (not a local in the test below) so
+    // Aromaticity-A1-0's corpus tests, further down this module, can reuse
+    // the identical pinned data instead of re-deriving a copy that could
+    // silently drift out of sync with it.
+    const KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES: &[(&str, usize, usize)] = &[
+        ("C[Si](C)(C)C1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
+        (
+            "C1=C(C2=CC=C(CCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
+            22,
+            18,
+        ),
+        ("ClC1=CC=C(OCC2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
+        ("N[C@@H](CC1=CC=CC=C1)C1=CC2=CC=CC=C2C2=NCCCN12", 16, 12),
+        (
+            "CC(C)(C)C1=CC=C(C2=C(CC3=CC=CC=C3)C3=CC=CC=C3C3=NCCCN32)C=C1",
+            22,
+            18,
+        ),
+        (
+            "C[Si](C)(C)C1=CC=C(C2=C(CC3=CC=CC=C3)C3=CC=CC=C3C3=NCCCN32)C=C1",
+            22,
+            18,
+        ),
+        (
+            "C1=C(C2=CC=C(C3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
+            22,
+            18,
+        ),
+        (
+            "C1=C(C2=CC=C(OCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
+            22,
+            18,
+        ),
+        ("COC1=C(OC)C(OC)=CC(C2=CC3=CC=CC=C3C3=NCCCN23)=C1", 16, 12),
+        ("CC1=CC2=CC=CC=C2C2=NCCCN12", 10, 6),
+        (
+            "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)NC4CCCCC4)C=C3)C3=NCCCN23)C=C1",
+            16,
+            12,
+        ),
+        (
+            "C1=CC=C(CCC2=CC=C(C3=C(CC4=CC=CC=C4)C4=CC=CC=C4C4=NCCCN43)C=C2)C=C1",
+            28,
+            24,
+        ),
+        (
+            "CCCCC1=C(C2=CC=C(CCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
+            22,
+            18,
+        ),
+        (
+            "CCCCC1=C(C2=CC=C(C(C)(C)C)C=C2)N2CCCN=C2C2=CC=CC=C12",
+            16,
+            12,
+        ),
+        ("CCCCCCC1=CC2=CC=CC=C2C2=NCCCN12", 10, 6),
+        (
+            "CCOC1=CC=C(CC2=C(CCCC3=CC=CC4=CC=CC=C34)N3CCCN=C3C3=CC=CC=C23)C=C1",
+            26,
+            22,
+        ),
+        (
+            "CCOC1=CC=C(CC2=C(C3=CC=C(CCC4=CC=CC=C4)C=C3)N3CCCN=C3C3=CC=CC=C23)C=C1",
+            28,
+            24,
+        ),
+        (
+            "CN(C)CCC1=C(C2=CC=C(C(C)(C)C)C=C2)N2CCCN=C2C2=CC=CC=C12",
+            16,
+            12,
+        ),
+        (
+            "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N/C(S)=N/C4CCCCC4)C=C3)C3=NCCCN23)C=C1",
+            16,
+            12,
+        ),
+        ("C1=C(/C=C/C2=CC=CC=C2)N2CCCN=C2C2=CC=CC=C12", 16, 12),
+        ("CC(C)(C)C1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
+        (
+            "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)CC4=CC=CC=N4)C=C3)C3=NCCCN23)C=C1",
+            22,
+            18,
+        ),
+        (
+            "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)NC4=C(Cl)C=C(Cl)C=C4)C=C3)C3=NCCCN23)C=C1",
+            22,
+            18,
+        ),
+        ("C1=C(CC2=CC=CC=C2)C2=CC=CC=C2C2=NCCCN12", 16, 12),
+        ("ClC1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
+        ("C1=C(C2=CC=CC=C2)N2CCCN=C2C2=CC=CC=C12", 16, 12),
+        (
+            "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N(CC4=CC=CC=C4)CC4=CC=CC=C4)C=C3)C3=NCCCN23)C=C1",
+            28,
+            24,
+        ),
+        (
+            "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N)C=C3)C3=NCCCN23)C=C1",
+            16,
+            12,
+        ),
+        ("CC1=C2C(=NC=C1)N(C1CC1)C1=NC=CC=C1C(=O)N2C", 15, 12),
+        ("CC(=O)N1C2=NC=CC=C2C(=O)N(C)C2=CC=CN=C21", 15, 12),
+        ("CN1C(=O)C2=CC=CN=C2N(C(C)(C)C)C2=NC=CC=C21", 15, 12),
+        ("CCCN1C2=NC=CC=C2C(=O)N(C)C2=CC=CN=C21", 15, 12),
+    ];
+
     #[test]
     fn test_known_regressions_from_bridgehead_n_fix() {
-        // (kekulized SMILES, current chematic aromatic_atom_count(), RDKit's correct count)
-        let cases: &[(&str, usize, usize)] = &[
-            ("C[Si](C)(C)C1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
-            (
-                "C1=C(C2=CC=C(CCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
-                22,
-                18,
-            ),
-            ("ClC1=CC=C(OCC2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
-            ("N[C@@H](CC1=CC=CC=C1)C1=CC2=CC=CC=C2C2=NCCCN12", 16, 12),
-            (
-                "CC(C)(C)C1=CC=C(C2=C(CC3=CC=CC=C3)C3=CC=CC=C3C3=NCCCN32)C=C1",
-                22,
-                18,
-            ),
-            (
-                "C[Si](C)(C)C1=CC=C(C2=C(CC3=CC=CC=C3)C3=CC=CC=C3C3=NCCCN32)C=C1",
-                22,
-                18,
-            ),
-            (
-                "C1=C(C2=CC=C(C3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
-                22,
-                18,
-            ),
-            (
-                "C1=C(C2=CC=C(OCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
-                22,
-                18,
-            ),
-            ("COC1=C(OC)C(OC)=CC(C2=CC3=CC=CC=C3C3=NCCCN23)=C1", 16, 12),
-            ("CC1=CC2=CC=CC=C2C2=NCCCN12", 10, 6),
-            (
-                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)NC4CCCCC4)C=C3)C3=NCCCN23)C=C1",
-                16,
-                12,
-            ),
-            (
-                "C1=CC=C(CCC2=CC=C(C3=C(CC4=CC=CC=C4)C4=CC=CC=C4C4=NCCCN43)C=C2)C=C1",
-                28,
-                24,
-            ),
-            (
-                "CCCCC1=C(C2=CC=C(CCC3=CC=CC=C3)C=C2)N2CCCN=C2C2=CC=CC=C12",
-                22,
-                18,
-            ),
-            (
-                "CCCCC1=C(C2=CC=C(C(C)(C)C)C=C2)N2CCCN=C2C2=CC=CC=C12",
-                16,
-                12,
-            ),
-            ("CCCCCCC1=CC2=CC=CC=C2C2=NCCCN12", 10, 6),
-            (
-                "CCOC1=CC=C(CC2=C(CCCC3=CC=CC4=CC=CC=C34)N3CCCN=C3C3=CC=CC=C23)C=C1",
-                26,
-                22,
-            ),
-            (
-                "CCOC1=CC=C(CC2=C(C3=CC=C(CCC4=CC=CC=C4)C=C3)N3CCCN=C3C3=CC=CC=C23)C=C1",
-                28,
-                24,
-            ),
-            (
-                "CN(C)CCC1=C(C2=CC=C(C(C)(C)C)C=C2)N2CCCN=C2C2=CC=CC=C12",
-                16,
-                12,
-            ),
-            (
-                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N/C(S)=N/C4CCCCC4)C=C3)C3=NCCCN23)C=C1",
-                16,
-                12,
-            ),
-            ("C1=C(/C=C/C2=CC=CC=C2)N2CCCN=C2C2=CC=CC=C12", 16, 12),
-            ("CC(C)(C)C1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
-            (
-                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)CC4=CC=CC=N4)C=C3)C3=NCCCN23)C=C1",
-                22,
-                18,
-            ),
-            (
-                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(NC(=O)NC4=C(Cl)C=C(Cl)C=C4)C=C3)C3=NCCCN23)C=C1",
-                22,
-                18,
-            ),
-            ("C1=C(CC2=CC=CC=C2)C2=CC=CC=C2C2=NCCCN12", 16, 12),
-            ("ClC1=CC=C(C2=CC3=CC=CC=C3C3=NCCCN23)C=C1", 16, 12),
-            ("C1=C(C2=CC=CC=C2)N2CCCN=C2C2=CC=CC=C12", 16, 12),
-            (
-                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N(CC4=CC=CC=C4)CC4=CC=CC=C4)C=C3)C3=NCCCN23)C=C1",
-                28,
-                24,
-            ),
-            (
-                "CC(C)(C)C1=CC=C(C2=CC3=C(C=C(N)C=C3)C3=NCCCN23)C=C1",
-                16,
-                12,
-            ),
-            ("CC1=C2C(=NC=C1)N(C1CC1)C1=NC=CC=C1C(=O)N2C", 15, 12),
-            ("CC(=O)N1C2=NC=CC=C2C(=O)N(C)C2=CC=CN=C21", 15, 12),
-            ("CN1C(=O)C2=CC=CN=C2N(C(C)(C)C)C2=NC=CC=C21", 15, 12),
-            ("CCCN1C2=NC=CC=C2C(=O)N(C)C2=CC=CN=C21", 15, 12),
-        ];
-        for (smi, expected_wrong, rdkit_correct) in cases {
+        for (smi, expected_wrong, rdkit_correct) in KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES {
             let mol = mol_kekulized(smi);
             let model = assign_aromaticity(&mol);
             assert_eq!(
@@ -2212,28 +2432,141 @@ mod tests {
     // a fresh worst-of-N run against the full corpus would confirm whether
     // order-dependence itself (canonical vs. this pinned variant disagreeing
     // with each other) is now fully gone, separate from RDKit agreement.
+    // Named at module level for the same reason as
+    // `KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES` above -- Aromaticity-A1-0's corpus
+    // tests reuse this exact pinned data instead of a second copy.
+    const KNOWN_ORDER_DEPENDENT_FALSE_NEGATIVES: &[(&str, usize, usize)] = &[
+        (
+            "N1=C2C(N(CC(O)=O)C(=O)N=C2N(C2C=C(C(F)(F)F)C=C(C=2)C(F)(F)F)C2C1=CC=CC=2)=O",
+            16,
+            20,
+        ),
+        (
+            "[C@H]12N(C([C@H](NC(=O)[C@H]([C@H](OC(=O)[C@@H](N(C)C(CN(C)C1=O)=O)C(C)C)C)NC(=O)C1C=C(OC)C(C)=C3OC4=C(C)C(=O)C(=C(C4=NC=13)C(=O)N[C@H]1C(=O)N[C@@H](C(C)C)C(N3[C@H](C(=O)N(CC(N([C@H](C(C)C)C(O[C@H]1C)=O)C)=O)C)CCC3)=O)N)C(C)C)=O)CCC2",
+            6,
+            14,
+        ),
+        ("C12N(C3C=CC=CC=3)C3=NC(=O)N(C)C(C3=NC1=CC=CC=2)=O", 16, 20),
+    ];
+
     #[test]
     fn test_known_order_dependent_regressions() {
-        let cases: &[(&str, usize, usize)] = &[
-            (
-                "N1=C2C(N(CC(O)=O)C(=O)N=C2N(C2C=C(C(F)(F)F)C=C(C=2)C(F)(F)F)C2C1=CC=CC=2)=O",
-                16,
-                20,
-            ),
-            (
-                "[C@H]12N(C([C@H](NC(=O)[C@H]([C@H](OC(=O)[C@@H](N(C)C(CN(C)C1=O)=O)C(C)C)C)NC(=O)C1C=C(OC)C(C)=C3OC4=C(C)C(=O)C(=C(C4=NC=13)C(=O)N[C@H]1C(=O)N[C@@H](C(C)C)C(N3[C@H](C(=O)N(CC(N([C@H](C(C)C)C(O[C@H]1C)=O)C)=O)C)CCC3)=O)N)C(C)C)=O)CCC2",
-                6,
-                14,
-            ),
-            ("C12N(C3C=CC=CC=3)C3=NC(=O)N(C)C(C3=NC1=CC=CC=2)=O", 16, 20),
-        ];
-        for (smi, expected_wrong, rdkit_correct) in cases {
+        for (smi, expected_wrong, rdkit_correct) in KNOWN_ORDER_DEPENDENT_FALSE_NEGATIVES {
             let mol = mol_kekulized(smi);
             let model = assign_aromaticity(&mol);
             assert_eq!(
                 model.aromatic_atom_count(),
                 *expected_wrong,
                 "{smi}: expected current (wrong) count {expected_wrong} (RDKit correct: {rdkit_correct})"
+            );
+        }
+    }
+
+    // ── Aromaticity-A1-0: anti-drift guard for `trace_ring_pi_electrons` ────
+    //
+    // `trace_ring_pi_electrons` is a deliberately separate implementation
+    // from `ring_pi_electrons` (see the doc comment above it) so it can
+    // report *why* each atom scored what it did. That separateness is a
+    // drift risk: nothing stops the two from silently diverging as either
+    // one is edited. This test is the guard -- for every ring in every
+    // molecule of the known false-positive/false-negative/negative-control
+    // corpus (the same molecules `docs/aromaticity_a1_rfc.md`'s diagnostic
+    // corpus uses), both functions must agree exactly, in both an empty
+    // context (Pass-1-equivalent) and the model's final converged context
+    // (an upper-bound Pass-2-equivalent). This does not assert anything
+    // about correctness vs RDKit -- only that the trace and the real engine
+    // never disagree with each other.
+    #[test]
+    fn trace_matches_ring_pi_electrons_on_corpus() {
+        let smiles: Vec<&str> = KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES
+            .iter()
+            .map(|(smi, _, _)| *smi)
+            .chain(
+                KNOWN_ORDER_DEPENDENT_FALSE_NEGATIVES
+                    .iter()
+                    .map(|(smi, _, _)| *smi),
+            )
+            .chain([
+                "C1=CC2=CC=CC=CC2=C1",    // azulene (Kekulized) -- known false negative
+                "c1cnc2[nH]cnc2n1",       // purine -- known false negative
+                "C1=Cc2ccccc2C2=NCCCN12", // PR #86 minimal false-positive reproducer
+                "C1=Cc2ccccc2C2=CCCC12",  // negative control: no bridgehead N
+                "C1=Cc2ccccc2C2=CCNC12",  // negative control: N not at bridgehead
+                "C1Cc2ccccc2C2=NCCCN12",  // negative control: bridgehead N, no exocyclic C=C
+                "c1ccc2[nH]ccc2c1",       // indole -- must stay correct
+                "c1ccc2ncccc2c1",         // quinoline -- must stay correct
+                "c1ccc2ccccc2c1",         // naphthalene -- must stay correct
+            ])
+            .collect();
+
+        for algo in [
+            AromaticityAlgorithm::Huckel,
+            AromaticityAlgorithm::RdkitLike,
+        ] {
+            for smi in &smiles {
+                let mol = mol_kekulized(smi);
+                let model = assign_aromaticity_ex(&mol, algo);
+                let final_context: FxHashSet<AtomIdx> = mol
+                    .atoms()
+                    .map(|(idx, _)| idx)
+                    .filter(|&idx| model.is_atom_aromatic(idx))
+                    .collect();
+
+                let sssr = find_sssr(&mol);
+                let rings = augmented_ring_set(&mol, sssr.rings());
+                let empty_context: FxHashSet<AtomIdx> = FxHashSet::default();
+
+                for ring in &rings {
+                    for ctx in [&empty_context, &final_context] {
+                        let expected = ring_pi_electrons(&mol, ring, ctx, algo);
+                        let traced = trace_ring_pi_electrons(&mol, ring, ctx, algo);
+                        assert_eq!(
+                            traced.total,
+                            expected,
+                            "{smi} (algo={algo:?}, ring={ring:?}, ctx_len={}): \
+                             trace_ring_pi_electrons diverged from ring_pi_electrons",
+                            ctx.len()
+                        );
+                        // Cross-check the per-atom eligibility bookkeeping too.
+                        for a in &traced.atoms {
+                            assert_eq!(
+                                a.contribution.is_some(),
+                                a.reason.is_eligible(),
+                                "{smi}: atom {:?} contribution/reason eligibility mismatch",
+                                a.atom_idx
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Aromaticity-A1-0: false-positive/false-negative polarity sanity ────
+    //
+    // These are cheap, structural sanity checks that the corpus buckets are
+    // labeled the direction they claim -- not a re-measurement of the full
+    // corpus (that's `aromaticity_a1_0_report` + the Python RDKit join, see
+    // `docs/aromaticity_a1_rfc.md`). Catches an accidental swap or a stale
+    // pinned count silently going the other way.
+    #[test]
+    fn false_positive_corpus_over_counts_vs_rdkit() {
+        for (smi, expected_wrong, rdkit_correct) in KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES {
+            assert!(
+                expected_wrong > rdkit_correct,
+                "{smi}: false-positive bucket entry should over-count \
+                 (chematic={expected_wrong} should be > rdkit={rdkit_correct})"
+            );
+        }
+    }
+
+    #[test]
+    fn false_negative_corpus_under_counts_vs_rdkit() {
+        for (smi, expected_wrong, rdkit_correct) in KNOWN_ORDER_DEPENDENT_FALSE_NEGATIVES {
+            assert!(
+                expected_wrong < rdkit_correct,
+                "{smi}: false-negative bucket entry should under-count \
+                 (chematic={expected_wrong} should be < rdkit={rdkit_correct})"
             );
         }
     }
