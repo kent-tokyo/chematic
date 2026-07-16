@@ -30,8 +30,8 @@ DataStructs.TanimotoSimilarity(fp, fp)       # 1.0
 | Mol / Atom / Bond | ✅ Supported | read-only traversal: `GetAtoms`/`GetBonds`/`GetAtomWithIdx`/`GetBondWithIdx`; atom/bond getters; `BondType` |
 | RingInfo | ✅ Supported | `GetRingInfo()` → `NumRings`/`AtomRings`/`BondRings`/`NumAtomRings`/`NumBondRings` (SSSR-based) |
 | Descriptors | ✅ Supported | MW/HBA/HBD **exact**, TPSA ±1.0, LogP ±0.5 vs RDKit (differential-tested) |
-| Aromaticity | ✅ Supported | aromatic atom/bond counts match RDKit on 99.44% / 98.82% of a 5k corpus; ring-junction carbonyls differ |
-| Substructure (SMARTS) | ✅ Supported | match **sets** agree **99.93%** on a 5k corpus (up from 96.9% — SMARTS-R1 fixed a `[rN]`/`[kN]` predicate-semantics bug that was 94.4% of all mismatches, see "SMARTS-R0"/"SMARTS-R1" below); residual is 100% the already-documented aromatic ring-junction-carbonyl tail. Match **order** may differ — compare as sets |
+| Aromaticity | ✅ Supported | aromatic atom/bond counts match RDKit on 99.44% / 98.82% of a 5k corpus; one bridgehead-N fused-ring scaffold over-aromatizes under `apply_aromaticity("rdkit_like")`, see "SMARTS-A0" below |
+| Substructure (SMARTS) | ✅ Supported | match **sets** agree **99.93%** on a 5k corpus (up from 96.9% — SMARTS-R1 fixed a `[rN]`/`[kN]` predicate-semantics bug that was 94.4% of all mismatches, see "SMARTS-R0"/"SMARTS-R1" below); residual is 100% one bridgehead-N ring-fusion aromaticity over-extension scaffold, see "SMARTS-A0" below (previously mislabeled "carbonyl" — it isn't). Match **order** may differ — compare as sets |
 | Morgan fingerprint | 🟡 Partial | `radius`, `nBits` (modulo folding), `bitInfo`, `useFeatures=True` (FCFP) — shape-/origin-consistent, **not RDKit bit-identical** (FNV-1a vs MurmurHash) |
 | DataStructs | ✅ Supported | `TanimotoSimilarity`/`DiceSimilarity`/`BulkTanimotoSimilarity`/`ConvertToNumpyArray` |
 | Canonical SMILES | 🟡 Partial | 99.62% semantic round-trip vs RDKit (5k corpus); exocyclic C=N E/Z stereo not always emitted |
@@ -68,7 +68,7 @@ why it is or isn't pursued.
 |------------|-----------|-------|
 | ~~Ring-size SMARTS `[rN]`~~ — **Fixed 2026-07-16 (SMARTS-R1)**, removed from this table | Was a predicate-semantics bug (`[rN]` wrongly aliased to `[kN]`'s any-ring semantics; RDKit's real `[rN]` is smallest-ring semantics), not a ring-model gap — see "SMARTS-R0"/"SMARTS-R1" below for the full diagnosis and fix. | **Fixed** — `[rN]` now has its own `AtomPrimitive::MinRingSize` primitive, `[kN]` unchanged. Full-corpus SMARTS match-set agreement 96.9% → 99.93%. |
 | `[R1]`/`[R2]` ring-count on bridged/cage systems (~1.7% of such molecules) | Genuine SSSR-*basis*-cardinality disagreement (not a predicate bug) — e.g. an adamantane-type cage where RDKit's SSSR algorithm picks 5 basis rings and chematic's picks 4, both valid bases of the same cycle space. Distinct from the `[rN]` bug above; NOT fixed by SMARTS-R1. | **Deferred (SMARTS-R2)** — would need a richer, RDKit-compatible symmetrized ring model scoped to SMARTS ring-count predicates only; not started. |
-| Aromatic ring-junction carbonyls (`c(=O)` in fused aromatics) | chematic and RDKit model these atoms differently, shifting a few `c` / `C=O` matches and aromatic atom/bond counts. | Documented; now the entire remaining SMARTS residual (56/80,000 comparisons, 5k corpus) — the `[rN]` fix left nothing else. |
+| Bridgehead-N fused-ring aromaticity over-extension (one tricyclic scaffold, 28 substituent variants) | `apply_aromaticity("rdkit_like")` propagates aromaticity from a genuinely aromatic ring, across a bridgehead-N ring fusion, into an adjacent ring that shouldn't qualify — see "SMARTS-A0" below for the full diagnosis. **Not carbonyl-related** — an earlier version of this table mislabeled it as such; the earlier "ring-junction carbonyl" description never had a confirmed minimal reproducer. | Documented (diagnosis only, SMARTS-A0); entire remaining SMARTS residual (56/80,000 comparisons, 5k corpus) — the `[rN]` fix left nothing else. Fix requires a scope decision — see SMARTS-A0's options below. |
 | Morgan bit positions | FNV-1a (chematic) vs MurmurHash (RDKit). | By design — similarity **ranking** is consistent; individual bit indices are not comparable across libraries. |
 | Exocyclic C=N E/Z in canonical SMILES (~0.4% round-trip) | The **parser** drops `/`,`\` directional bonds that flank an aromatic ring atom during aromatization (`crates/chematic-smiles/src/parser.rs`), *before* the canonical writer runs — so the geometry is already gone by write time. | **Deferred** — a parser + aromaticity change (broad blast radius), not a writer fix. |
 | Canonical idempotency on large fused polycyclics (~1.6%) | **Aromaticity-perception round-trip inconsistency** — *not* Morgan-rank tie-breaking (the failing molecules have all-distinct ranks). A molecule and the re-parse of its own canonical SMILES can disagree on which bonds are aromatic (e.g. 16 vs 17 on a fluorene/carbazole-type linkage); because Morgan ranks weight aromatic vs single bonds differently (`bond_order_value`), this shifts the canonical atom order and the emitted string. The molecule is preserved (**InChI invariant**); only the representation differs. | **Deferred** — the fix is in the aromaticity/parser core (which delivers the 100% aromatic-ring-count + exact descriptors), gated on full descriptor regression; not a canonicalizer patch. Pairs with the exocyclic-C=N parser work above. |
@@ -98,7 +98,7 @@ recoverability and cost for a future fix, it does not implement one.
 | Bucket | Pairs | Share |
 |---|---|---|
 | `[r5]`/`[r6]` ring-size queries | 2,370 | 94.4% |
-| Aromatic ring-junction carbonyls (`c`, `C=O`, `[#6]=[#6]` tail) | 140 | 5.6%, already documented above, same ~47-molecule root cause across all three patterns |
+| Aromatic ring-junction tail (`c`, `[#6]=[#6]`) — root cause diagnosed in "SMARTS-A0" below, not carbonyl-related despite the name used here at the time | 140 | 5.6%, same 28-molecule root cause across both patterns |
 | `[R]`/`[R0]`/`[R1]` ring-membership-count | 0 in this corpus | not tested at all by the current 16-pattern list |
 
 By RDKit ring topology of the mismatched molecules (fused/bridged/spiro, computed from
@@ -197,13 +197,121 @@ same 5,000-molecule corpus, same RDKit version):
 Zero regressions: the single remaining `[kN]` mismatch (a bridged bicyclic where
 RDKit's and chematic's SSSR bases disagree in cardinality) was independently confirmed
 present and identical on `main` before this change (stashed the fix, rebuilt, reran).
-The entire remaining 56-row SMARTS residual (of 80,000 comparisons) is the
-already-documented `c`/`[#6]=[#6]` aromatic ring-junction-carbonyl tail — no `[rN]`
+The entire remaining 56-row SMARTS residual (of 80,000 comparisons) is the `c`/`[#6]=[#6]`
+aromatic ring-junction tail diagnosed in full in "SMARTS-A0" below — no `[rN]`
 contribution left at all.
 
 **Explicitly not done**: `[R1]`/`[R2]` on bridged/cage systems (SMARTS-R2, a genuine
 SSSR-basis-cardinality gap, not a predicate bug — kept separate per SMARTS-R0's own
 partition, above).
+
+### SMARTS-A0 — bridgehead-N ring-fusion over-extension diagnosis (2026-07-16, diagnosis only)
+
+Full diagnosis of the 56-row residual SMARTS-R1 left behind (`c` and `[#6]=[#6]`, 28
+rows each). **No production code changed.** Corrects an earlier label in this doc: the
+residual was previously called "ring-junction carbonyl"; that name was never backed by a
+confirmed reproducer. It isn't carbonyl-related at all.
+
+**Reduces to one scaffold.** All 56 rows collapse to exactly 28 unique molecules, all
+sharing one tricyclic core — a 6-6-6 linearly fused ring system (benzo ring + a
+bridgehead-N-fused six-membered ring + a third ring closing back through that same
+bridgehead N), varying only in an aryl/alkyl substituent hung off an exocyclic `C=C`.
+Minimal bare-core reproducer (14 atoms, no substituent needed):
+
+```
+C1=Cc2ccccc2C2=NCCCN12
+```
+
+**Not a parser bug.** `chematic.from_smiles()` raw parsing matches RDKit's aromatic-atom
+set exactly on all 28/28 molecules (0 mismatches). The defect is entirely in the
+re-perception step `mol.apply_aromaticity("rdkit_like")` — what `rdkit_compat.py`'s
+`MolFromSmiles(sanitize=True)` calls. Confirmed with a positive control: skip that call
+and the SMARTS residual disappears.
+
+**Mechanism, in `crates/chematic-perception/src/aromaticity.rs`.** The module's own
+Pass-1/Pass-2 design (doc comment at the top of the file) already names the two
+ingredients that combine here: a "bridgehead N" special case ("fused-ring N atoms whose
+entire valence is satisfied by single σ-bonds, like indolizine's junction nitrogen") and
+Pass 2's `aromatic_context` propagation ("confirmed-aromatic atoms contribute 1π
+unconditionally, allowing fused rings to be recognised bottom-up"). On the reproducer:
+Pass 1 correctly marks the benzo ring (atoms `2..7`) aromatic. Pass 2 then re-evaluates
+the adjacent ring (atoms `0,1,2,7,8,13` — sharing the `2–7` edge with the benzo ring)
+using that context: atoms `2,7` contribute 1π unconditionally per the propagation rule,
+the `0=1` exocyclic-to-benzo double bond contributes 2π, and the bridgehead N at `13`
+(single-bonded only, entering the third ring) is treated as aromaticity-compatible by
+the bridgehead-N rule — enough for the whole adjacent ring to pass Hückel's count and
+get swept into "aromatic," even though RDKit's own perception does not extend
+aromaticity past the benzo ring on this scaffold.
+
+**Isolated to two necessary-and-sufficient conditions**, by direct substitution on the
+bare-core reproducer (all four combinations tested; only both together reproduce the bug):
+
+| Variant | SMILES | Over-aromatizes? |
+|---|---|---|
+| Bridgehead N + exocyclic C=C (actual bug) | `C1=Cc2ccccc2C2=NCCCN12` | **Yes** — 4 extra atoms |
+| All-carbon 3rd ring (N removed) | `C1=Cc2ccccc2C2=CCCC12` | No |
+| N present but not at the bridgehead | `C1=Cc2ccccc2C2=CCNC12` | No |
+| Bridgehead N kept, exocyclic C=C saturated | `C1Cc2ccccc2C2=NCCCN12` | No |
+
+Three carbonyl-based mechanisms from the original taxonomy (benzene + exocyclic C=O,
+fused-bicyclic + exocyclic C=O, heteroaromatic-junction C=O) were also tested directly
+and **do not** reproduce any over-aromatization — ruling out the "exocyclic C=O strips
+aromaticity" category entirely for this residual.
+
+**Representation-stable**, per the acceptance criterion: the fully-Kekulized SMILES of
+the same reproducer molecule (`C1=CC2=CC=CC=C2C2=NCCCN12`, no lowercase atoms at all)
+produces the *identical* wrong result after `apply_aromaticity("rdkit_like")` as the
+mixed aromatic/Kekulé spelling above — same 4 extra atoms. The diagnosis does not depend
+on how the input was spelled.
+
+**Fully quantified across all 28/28 molecules, 0 unclassified** (`scripts/smarts_a0_junction_diagnosis.py`,
+data in `validation/smarts_a0_junction_diagnosis.jsonl`):
+
+- Every molecule gets exactly 4 spurious aromatic atoms: 3 carbon + 1 nitrogen — 100% uniform, no variation.
+- `c` query: chematic over-counts by exactly **+3** on all 28 (the 3 spurious carbons; the
+  spurious nitrogen doesn't count towards `c`, which filters by element).
+- `[#6]=[#6]` query: chematic under-counts by exactly **−1** on all 28 (the ring-fusion
+  `C=C` bond itself gets re-typed `Double → Aromatic` once both endpoints are wrongly
+  marked aromatic, so it no longer satisfies the literal `=` primitive).
+- 28 + 28 = 56/56 rows fully accounted for by this single, uniform mechanism.
+
+**Relation to already-known defects.** This is the same code region and general
+mechanism family as two existing `#[ignore]`d regression tests in `aromaticity.rs`
+(`test_azulene_kekulized_aromatic`, `test_purine_aromatic`, both tagged "fix belongs in
+the `aromatic_context`-removal PR") — but a **different failure direction**. Those two
+are false-*negatives*: a genuinely aromatic ring fails to get recognized because Pass 1
+scores it non-aromatic and Pass 2 never revisits it. This is a false-*positive*: a
+non-aromatic ring gets swept in because Pass 2's propagation rule doesn't check whether
+the *adjacent* ring's own electron count, independent of the borrowed context, actually
+supports delocalization. Same `aromatic_context` mechanism, opposite symptom — not
+previously documented. Referenced design doc `greedy-hopping-crescent.md` (named in
+those tests' comments) is not present in the repository; whatever plan it held did not
+land as a file.
+
+**What a fix would require — not decided here.** The defect lives in the shared
+aromaticity-perception engine (`apply_aromaticity`/`assign_aromaticity_ex`), not in
+`chematic-smarts`. Every consumer of that engine is affected in principle (descriptors,
+canonical SMILES, fingerprints, InChI), even though this particular scaffold currently
+only shows up as a SMARTS mismatch in the 5k corpus. Three options, not mutually
+exclusive with the existing SMARTS-R2 deferral:
+
+1. **Fix `apply_aromaticity`'s Pass-2 propagation** (require the adjacent ring's own
+   non-context electron count to be Hückel-compatible before inheriting `aromatic_context`,
+   or equivalent) — fixes SMARTS, descriptors, canonical SMILES, and fingerprints at
+   once, but is a core-perception change: broad blast radius, needs a full descriptor/
+   canonical/fingerprint regression pass, and likely needs to be resolved together with
+   the azulene/purine `#[ignore]`d cases rather than in isolation, since they share the
+   same propagation rule.
+2. **SMARTS-only aromatic view** (mirroring the `[rN]`/`[kN]` scoped-predicate pattern
+   from SMARTS-R1) — would keep `c`/`a` matching independent of `apply_aromaticity`'s
+   own atom flags for this case. Architecturally heavier than SMARTS-R1's fix: it would
+   make a molecule's SMARTS aromaticity diverge from its own `atom.aromatic` flags,
+   which risks inconsistency in recursive SMARTS and aromatic-bond queries that read
+   those flags directly. Not designed here, only flagged as an option.
+3. **Accept 99.93% and defer** — the standing decision already in place for the
+   `aromatic_context` family (azulene/purine).
+
+No implementation in this round, per SMARTS-A0's scope.
 
 ---
 
