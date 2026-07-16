@@ -165,6 +165,29 @@ admet = bb.admet()
 print(f"BBB: {admet['bbb_penetrant']}  hERG risk: {admet['herg_risk']:.2f}")
 ```
 
+### `accurate_cip_migration.py` — opting into the accurate CIP engine
+
+Shows how to opt into `chematic-cip`'s hierarchical-digraph CIP engine
+(~99.6% oracle-stable R/S agreement, up from legacy's ~96.3%) without changing
+any existing code — `mol.cip_stereo()`'s default behavior is untouched.
+
+```
+python examples/accurate_cip_migration.py
+```
+
+Key patterns:
+
+```python
+import chematic
+
+mol = chematic.from_smiles("C[C@H](N)C(=O)O")
+
+mol.cip_stereo()                    # unchanged: legacy engine, always answers
+mol.cip_stereo(mode="accurate")     # opt in: better R/S, merged with legacy E/Z
+mol.cip_stereo_unresolved()         # atoms accurate mode couldn't resolve --
+                                     # a genuine tie, never a silent guess
+```
+
 ---
 
 ## What chematic returns (no conversion needed)
