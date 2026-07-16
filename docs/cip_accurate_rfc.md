@@ -749,21 +749,18 @@ symmetry/automorphism detection, unchanged from its original deferral).
 accuracy-alone framing below the line; all five required):
 - Agreement ≥ 99.5% on **representation-stable** modern-oracle cases (excludes rows an
   oracle-instability check, `validation/cip_oracle_instability.jsonl`, has flagged
-  `representation_unstable` — currently the 9 cyclophosphazene rows from Milestone
-  4C-0; a case only qualifies for this exclusion by passing that check, not by
-  assertion).
+  `representation_unstable` — all 11 phosphorus rows as of Milestone 4C-1; a case only
+  qualifies for this exclusion by passing that check, not by assertion).
 - Raw modern-RDKit agreement (no exclusions) reported alongside the stable figure,
   always — never replaced or hidden by it. `scripts/cip_accurate_full_corpus_report.py`
   prints both when given the oracle-instability file as its 4th argument.
 - Oracle-unstable cases fully enumerated, not just counted — every excluded
   `(smiles, atom_idx)` has a row in `validation/cip_oracle_instability.jsonl` with its
-  own reproduction evidence (see Milestone 4C-0's table).
+  own reproduction evidence (see Milestone 4C-0's table and Milestone 4C-1 below).
 - Regressions = 0 (verified two independent ways, same discipline as every milestone
   since Milestone 3B).
-- Unexplained residuals = 0 — this is **coupled to the 2 remaining phosphorus
-  `skip:tied` rows** (Milestone 4C-1, not yet run): the gate cannot be declared met
-  while those 2 rows are unclassified, regardless of what the stable-subset percentage
-  reads.
+- Unexplained residuals = 0 — was coupled to the 2 remaining phosphorus `skip:tied`
+  rows (Milestone 4C-1); resolved below (also oracle-unstable, no fix needed).
 
 **Original framing (superseded, kept for history):** "Full-corpus modern-oracle
 agreement ≥ 99.5% (≥ 4166/4186)" — this assumed the raw score itself would clear 99.5%
@@ -772,11 +769,13 @@ cyclophosphazene rows (no fix target exists, the oracle itself is unreliable the
 the gate now targets the representation-stable subset instead, per the decision in
 Milestone 4C-0 below.
 
-**Current state against the redefined gate** (`cip_oracle_instability.jsonl` +
-extended `cip_accurate_full_corpus_report.py`, post-Milestone-4B-2):
-raw 4160/4186 (99.38%), oracle-stable 4160/4177 (**99.59%, clears the 99.5% line**),
-9 oracle-unstable enumerated, 0 regressions — the last open item is Milestone 4C-1
-(the 2 tied rows) before the gate can be formally declared met.
+**Final state against the redefined gate** (`cip_oracle_instability.jsonl`, 11 rows,
++ extended `cip_accurate_full_corpus_report.py`, post-Milestone-4C-1): raw 4160/4186
+(99.38%), oracle-stable **4160/4175 (99.64%, clears the 99.5% line)**, 11
+oracle-unstable rows enumerated, 0 regressions, 0 unexplained residuals (the
+stable-subset's 15 remaining non-correct rows are exactly the already-deferred Rule 5
+cage family, not a new gap) — **gate closed**, see Milestone 4C-1 below for the
+2-tied-row resolution that completed it.
 
 **Milestone 4B-0 — Rule 4 subtype diagnosis, diagnosis only (no crate changes).** Before
 implementing anything, the 8 Milestone-4B `rule4_candidate` rows were mechanically
@@ -1362,6 +1361,74 @@ diagnosis): the 9-row phosphorus "wrong" bucket can no longer be scored against 
   isn't established, there is nothing correct to converge chematic toward. The M4C-1
   label is repurposed for the 2 separate `skip:tied` rows instead (below), not a
   followup fix for these 9.
+
+## Milestone 4C-1 — the 2 remaining phosphorus `skip:tied` rows, diagnosis only
+
+Both rows are the same molecule, `CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1`
+(an 8-membered P4N4 cyclophosphazene, same structural family as Milestone 4C-0's 9
+rows), tied at atoms 6 and 19 — chematic's own two stereocenters, each embedded in the
+other's determination. `assign_cip_accurate_experimental` returns `SkipReason::Tied`
+for both, on both Kekule spellings (`crates/chematic-cip/examples/phosphorus_tied_diagnosis.rs`).
+
+**Oracle stability: unstable, and in a stronger way than Milestone 4C-0's 9 rows.**
+The same Kekule-respell test (every P/N ring bond flipped, InChI-verified identical
+molecule) applied here: modern `rdCIPLabeler` flips (orig `R`/`S` → respelled `S`/`R`
+for atoms 6/19) — expected, consistent with 4C-0. But **legacy `_CIPCode` flips too**
+(same `R`/`S` → `S`/`R`), unlike the 9-row family where legacy was stable throughout.
+Neither RDKit engine has a representation-independent answer for this specific
+molecule. `FindPotentialStereo` confirms both atoms are still flagged genuine
+tetrahedral stereocenters (`specified=Specified`) — this isn't a case of the atoms not
+being real stereocenters, just a case where no available oracle can label them
+consistently.
+
+**Why chematic ties: a chain-length-1 degenerate case for Rule 4b's Like/Unlike
+operator, not a 3+-way tie or a `nearest_embedded` ambiguity.** Traced via a temporary
+crate-internal instrumentation (calling `nearest_embedded`/`embedded_chain`/
+`break_tie_rule4b` directly, removed after use — not left in the tree, per this
+project's practice of not carrying one-shot debug scaffolding forward):
+
+- At root atom6, the tied group is a clean 2-way tie (`{atom5, atom12}`, both plain
+  ring nitrogens) — not 3+-way.
+- `nearest_embedded` on each branch is unambiguous: both branches find *the same*
+  underlying atom, atom19 (chematic's other stereocenter), reached via the ring's two
+  different paths (atom5→atom2→atom25→atom19 one way, atom12→atom13→atom18→atom19 the
+  other) — not a multi-candidate ambiguity either.
+- Both chains therefore have length exactly 1: `chain_a = [atom19-via-path-a]`,
+  `chain_b = [atom19-via-path-b]`. `break_tie_rule4b`'s operator compares "is element
+  *i* like *that branch's own* reference" starting at `i=0` — but element 0 *is* the
+  reference for each branch, so `like_a`/`like_b` at `i=0` are trivially `true`/`true`
+  by construction, regardless of the actual resolved signs. With no `i=1` to reach
+  (both chains length 1), the function always returns `None`.
+- A genuinely striking detail surfaced by the trace, not yet acted on: `resolve_chirality`
+  returns *opposite* local signs for the two arrivals at the same atom19
+  (`Some(true)` via path-a, `Some(false)` via path-b). Whether that divergence is a
+  legitimate, branch-relative auxiliary-descriptor property (the theoretical basis this
+  whole milestone's bottom-up architecture rests on — see Milestone 4B-1.5) or an
+  exploitable signal the current chain-length-1-blind operator simply doesn't use is an
+  open question, not resolved here — flagged for whoever picks up a Rule 4b generalization
+  later, not attempted this round.
+
+**Decision** (per the same user-specified tree as Milestone 4C-0, applied here): since
+neither oracle has a stable answer for this molecule, these 2 rows fold into the same
+`representation_unstable` bucket as the 9 — not a real fix target. There is no
+"stable oracle, chematic-only tie" case to converge chematic toward.
+`validation/cip_oracle_instability.jsonl` now has both rows added (same schema,
+`expected_label: unresolved`, `legacy_stable: false` this time — the one schema field
+that actually differs from the 9-row family; `chematic_stable: true` since the tie
+itself, not an answer, is what's stable across both spellings).
+
+**Milestone 4 gate: closed.** With both phosphorus sub-buckets now classified as
+oracle-unstable (11/11, not 9/11), "unexplained residuals = 0" from the redefined gate
+(see above) is satisfied — the only other residual is the already-deferred 15-row Rule
+5 cage family (Milestone 4A-2), which was never in scope for this gate. Recomputed with
+all 11 rows excluded (`cip_accurate_full_corpus_report.py` against the same full-corpus
+snapshot): raw 4160/4186 (99.38%), oracle-stable **4160/4175 (99.64%, clears the 99.5%
+line)**, 0 regressions — the stable-subset denominator's 15 remaining non-correct rows
+are exactly the 15 already-classified, already-deferred Rule 5 cage-family rows (4175 −
+4160 = 15, an exact match, not an approximation), so "unexplained residuals = 0" holds
+precisely, not just nominally. All
+11 phosphorus rows enumerated with reproduction evidence. No chematic fix was needed to
+reach this — the gate closes on stratification, not remediation.
 
 ## Required property tests (starting Milestone 1)
 
