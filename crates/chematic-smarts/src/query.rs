@@ -23,8 +23,15 @@ pub enum AtomPrimitive {
     Degree(u8),
     /// `[R]` (true) or `[!R]` (false) — ring membership.
     RingMembership(bool),
-    /// `[r5]` — atom is in a ring of exactly N members.
+    /// `[k5]` — atom belongs to *any* perceived ring of exactly N members. This is
+    /// distinct from `[rN]`/[`MinRingSize`] — confirmed against real RDKit: for a
+    /// fusion atom shared between a 5-ring and a 6-ring, RDKit's `[k6]` matches but
+    /// `[r6]` does not (see `docs/rdkit_compat.md`'s "SMARTS-R0"/"SMARTS-R1" entries).
     RingSize(u8),
+    /// `[r5]` — the *smallest* perceived ring containing this atom has exactly N
+    /// members (RDKit's actual `[rN]` semantics — not the same predicate as `[kN]`/
+    /// [`RingSize`], despite chematic previously aliasing them to the same query).
+    MinRingSize(u8),
     /// `*` — wildcard; matches any atom.
     Wildcard,
     /// `$(smarts)` — recursive SMARTS: the atom must be the root of a match for `smarts`.
