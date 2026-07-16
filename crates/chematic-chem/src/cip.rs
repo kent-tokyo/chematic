@@ -94,6 +94,144 @@ pub fn assign_cip(mol: &Molecule) -> CipAssignment {
     CipAssignment { assignments }
 }
 
+/// Which CIP engine [`assign_cip_with_mode`] uses.
+///
+/// [`CipMode::Accurate`] only affects tetrahedral R/S -- [`assign_cip_accurate_experimental`]
+/// (`chematic-cip`) never computes E/Z or allene axial chirality (it iterates atoms
+/// with `chirality != None` and a 4-item `stereo_neighbor_order`; double-bond and
+/// allene stereo aren't represented that way), so `Accurate` mode merges the accurate
+/// engine's tetrahedral answers with [`LegacyFast`](CipMode::LegacyFast)'s E/Z and
+/// allene answers rather than replacing `assign_cip` outright.
+///
+/// [`assign_cip_accurate_experimental`]: chematic_cip::assign_cip_accurate_experimental
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CipMode {
+    /// [`assign_cip`] as-is -- the only mode every existing call site
+    /// (`iupac_name_stereo`, `num_stereocenters`, `Mol.cip_stereo()`, the WASM
+    /// bindings, `chematic-inchi`'s stereo layers) uses today, and continues to use
+    /// unless a caller explicitly opts into `Accurate`. ~96.3% oracle agreement,
+    /// infallible, silent on ties (always produces *an* answer, never "unresolved").
+    LegacyFast,
+    /// Tetrahedral R/S (incl. Rule 5 pseudoasymmetric `r`/`s`) from the hierarchical
+    /// digraph engine (~99.64% oracle-stable agreement, see `docs/cip_accurate_rfc.md`),
+    /// merged with legacy's E/Z and allene answers. Atoms the accurate engine
+    /// explicitly ties on or exceeds its budget on are never silently backfilled with
+    /// legacy's (less rigorous) guess -- they surface via
+    /// [`CipModeAssignment::unresolved`] instead.
+    Accurate,
+}
+
+/// Why [`assign_cip_with_mode`] (in [`CipMode::Accurate`]) couldn't produce a
+/// tetrahedral R/S for an atom -- an explicit "we don't know," never a guess.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CipUnresolvedReason {
+    /// Two or more substituent branches remain indistinguishable after every rule
+    /// this engine implements (1a/1b/2/4b/5) -- a genuine tie, not a missing rule.
+    Tied,
+    /// The digraph/comparator exceeded its size or recursion budget for this atom.
+    BudgetExceeded,
+}
+
+/// Result of [`assign_cip_with_mode`]. Distinct from [`CipAssignment`] -- carries an
+/// explicit `unresolved` channel that infallible, silent `assign_cip` has no
+/// equivalent of.
+#[derive(Debug, Clone, Default)]
+pub struct CipModeAssignment {
+    pub assignments: Vec<(AtomIdx, CipCode)>,
+    pub unresolved: Vec<(AtomIdx, CipUnresolvedReason)>,
+}
+
+impl CipModeAssignment {
+    /// Look up the CIP code for a given atom index.
+    pub fn get(&self, idx: AtomIdx) -> Option<CipCode> {
+        self.assignments
+            .iter()
+            .find(|(i, _)| *i == idx)
+            .map(|(_, c)| *c)
+    }
+}
+
+/// Error from [`assign_cip_with_mode`] -- only reachable via [`CipMode::Accurate`]
+/// ([`CipMode::LegacyFast`] is infallible, matching `assign_cip`'s own contract).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CipModeError {
+    Accurate(chematic_cip::CipCompareError),
+}
+
+impl std::fmt::Display for CipModeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CipModeError::Accurate(e) => write!(f, "accurate CIP engine error: {e}"),
+        }
+    }
+}
+
+impl std::error::Error for CipModeError {}
+
+/// Run CIP assignment on `mol` using the requested engine. See [`CipMode`] for what
+/// each mode covers. `CipMode::LegacyFast` is `assign_cip`'s output unchanged, wrapped
+/// -- every existing caller of `assign_cip` is untouched by this function's existence.
+pub fn assign_cip_with_mode(
+    mol: &Molecule,
+    mode: CipMode,
+) -> Result<CipModeAssignment, CipModeError> {
+    let legacy = assign_cip(mol);
+    match mode {
+        CipMode::LegacyFast => Ok(CipModeAssignment {
+            assignments: legacy.assignments,
+            unresolved: Vec::new(),
+        }),
+        CipMode::Accurate => {
+            let budget = chematic_cip::CipBudget::default_budget();
+            let accurate = chematic_cip::assign_cip_accurate_experimental(mol, budget)
+                .map_err(CipModeError::Accurate)?;
+
+            let unresolved_idx: HashSet<AtomIdx> = accurate
+                .skipped
+                .iter()
+                .filter(|(_, r)| {
+                    matches!(
+                        r,
+                        chematic_cip::SkipReason::Tied | chematic_cip::SkipReason::BudgetExceeded
+                    )
+                })
+                .map(|(idx, _)| *idx)
+                .collect();
+            let accurate_idx: HashSet<AtomIdx> =
+                accurate.assignments.iter().map(|(idx, _)| *idx).collect();
+
+            // Legacy covers E/Z + allene (accurate has neither) and any atom accurate
+            // never touched at all; accurate's own tetrahedral answers override
+            // legacy's wherever both apply; accurate's explicit ties/budget-outs are
+            // dropped from `assignments` entirely (never legacy's guess) and surfaced
+            // via `unresolved` instead.
+            let mut assignments: Vec<(AtomIdx, CipCode)> = legacy
+                .assignments
+                .into_iter()
+                .filter(|(idx, _)| !accurate_idx.contains(idx) && !unresolved_idx.contains(idx))
+                .collect();
+            assignments.extend(accurate.assignments);
+
+            let unresolved = accurate
+                .skipped
+                .into_iter()
+                .filter_map(|(idx, reason)| match reason {
+                    chematic_cip::SkipReason::Tied => Some((idx, CipUnresolvedReason::Tied)),
+                    chematic_cip::SkipReason::BudgetExceeded => {
+                        Some((idx, CipUnresolvedReason::BudgetExceeded))
+                    }
+                    chematic_cip::SkipReason::NotFourSubstituents => None,
+                })
+                .collect();
+
+            Ok(CipModeAssignment {
+                assignments,
+                unresolved,
+            })
+        }
+    }
+}
+
 /// A single "sphere layer" in a CIP branch expansion: a sorted list of
 /// `(atomic_num, isotope, atomic_mass)` tuples (sorted descending for lexicographic comparison).
 type SphereLayer = Vec<(u8, Option<u16>, f64)>;
@@ -1264,6 +1402,86 @@ mod tests {
         assert_eq!(
             cip_at("C=C(C)[C@@H]1CN[C@@H](C(=O)O)[C@@H]1CC(=O)O", 3),
             Some(CipCode::R)
+        );
+    }
+
+    #[test]
+    fn cip_mode_legacy_fast_matches_assign_cip_byte_for_byte() {
+        // CipMode::LegacyFast must be assign_cip()'s output, unchanged -- every
+        // existing caller of assign_cip is untouched by assign_cip_with_mode existing.
+        let smis = [
+            "C[C@H](N)C(=O)O",
+            "C=C(C)[C@@H]1CN[C@@H](C(=O)O)[C@@H]1CC(=O)O",
+            "C1CCN(P2(N3CCCC3)=N[P@@](N3CCCC3)(N3CC3)=N[P@](N3CCCC3)(N3CC3)=N2)C1",
+        ];
+        for smi in smis {
+            let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+            let legacy = assign_cip(&mol);
+            let via_mode = assign_cip_with_mode(&mol, CipMode::LegacyFast).expect("infallible");
+            assert_eq!(legacy.assignments, via_mode.assignments, "smiles={smi}");
+            assert!(via_mode.unresolved.is_empty(), "smiles={smi}");
+        }
+    }
+
+    #[test]
+    fn cip_mode_accurate_surfaces_unresolved_not_a_guess_for_tied_phosphorus() {
+        // Of the 11 oracle-unstable cyclophosphazene rows (docs/cip_accurate_rfc.md
+        // Milestone 4C-0/4C-1), only 2 are genuine chematic ties (SkipReason::Tied) --
+        // those must come back Unresolved in Accurate mode, never a panic. The other 9
+        // (Milestone 4C-0) DO get a stable, confident answer from chematic -- the
+        // oracle is what's unstable there, not chematic -- so they are deliberately
+        // NOT covered by this test; see `cip_mode_accurate_does_not_hide_oracle_unstable_answers`.
+        let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        for atom_idx in [6u32, 19u32] {
+            let idx = AtomIdx(atom_idx);
+            assert!(
+                result.get(idx).is_none(),
+                "atom={atom_idx} should not have a guessed label"
+            );
+            assert!(
+                result.unresolved.iter().any(|(i, _)| *i == idx),
+                "atom={atom_idx} should be in unresolved"
+            );
+        }
+    }
+
+    #[test]
+    fn cip_mode_accurate_does_not_hide_oracle_unstable_answers() {
+        // The 9 M4C-0 rows are chematic's own stable, confident (if oracle-disputed)
+        // answer -- Accurate mode must still report them, not silently drop or
+        // "unresolve" them. Being oracle-unstable is a property of the RDKit oracle
+        // used for scoring, not a property chematic itself detects or reacts to.
+        let mol = chematic_smiles::parse("N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1")
+            .expect("valid SMILES");
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        assert_eq!(result.get(AtomIdx(12)), Some(CipCode::S));
+    }
+
+    #[test]
+    fn cip_mode_accurate_merges_legacy_ez_with_accurate_tetrahedral() {
+        // Accurate mode must still report E/Z (the accurate engine never computes it)
+        // alongside its own tetrahedral R/S for the same molecule.
+        let mol = chematic_smiles::parse("C/C=C/[C@H](N)C(=O)O").expect("valid SMILES");
+        let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        let has_ez = result
+            .assignments
+            .iter()
+            .any(|(_, c)| matches!(c, CipCode::E | CipCode::Z));
+        let has_rs = result
+            .assignments
+            .iter()
+            .any(|(_, c)| matches!(c, CipCode::R | CipCode::S));
+        assert!(
+            has_ez,
+            "expected an E/Z assignment: {:?}",
+            result.assignments
+        );
+        assert!(
+            has_rs,
+            "expected an R/S assignment: {:?}",
+            result.assignments
         );
     }
 }

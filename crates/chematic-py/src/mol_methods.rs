@@ -2628,12 +2628,37 @@ impl Mol {
 
     /// CIP stereochemistry assignments — list of ``{"atom_idx": int, "descriptor": str}`` dicts.
     ///
-    /// ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, or ``"Z"``.
+    /// ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, ``"Z"``, ``"r"``, or ``"s"``.
     /// Only assigned stereocenters / double bonds are returned.
-    fn cip_stereo<'py>(&self, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    ///
+    /// ``mode`` selects the CIP engine:
+    ///
+    /// - ``"legacy"`` (default) — the original fast engine, ~96.3% agreement with
+    ///   RDKit's modern ``rdCIPLabeler`` oracle. Unchanged from every prior release.
+    /// - ``"accurate"`` — a hierarchical-digraph engine for tetrahedral R/S
+    ///   (~99.6% oracle-agreement on the representation-stable subset; see
+    ///   ``docs/cip_accurate_rfc.md``), merged with legacy's E/Z and allene answers
+    ///   (the accurate engine doesn't compute either). Atoms it explicitly can't
+    ///   resolve (a genuine tie, or exceeding its computation budget) are omitted
+    ///   here and reported instead via :meth:`cip_stereo_unresolved` — never a
+    ///   silently-guessed label.
+    #[pyo3(signature = (mode = "legacy"))]
+    fn cip_stereo<'py>(&self, py: Python<'py>, mode: &str) -> PyResult<Vec<Bound<'py, PyDict>>> {
         use chematic_core::CipCode;
-        chematic_chem::assign_cip(&self.inner)
-            .assignments
+        let assignments = match mode {
+            "legacy" => chematic_chem::assign_cip(&self.inner).assignments,
+            "accurate" => {
+                chematic_chem::assign_cip_with_mode(&self.inner, chematic_chem::CipMode::Accurate)
+                    .map_err(|e| PyValueError::new_err(e.to_string()))?
+                    .assignments
+            }
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown CIP mode '{other}' -- expected 'legacy' or 'accurate'"
+                )));
+            }
+        };
+        assignments
             .iter()
             .map(|(idx, code)| {
                 let d = PyDict::new(py);
@@ -2647,6 +2672,30 @@ impl Mol {
                     CipCode::LowerS => "s",
                 };
                 d.set_item("descriptor", label)?;
+                Ok(d)
+            })
+            .collect()
+    }
+
+    /// Atoms :meth:`cip_stereo`\ (``mode="accurate"``) could not resolve a tetrahedral
+    /// R/S for — list of ``{"atom_idx": int, "reason": str}`` dicts, ``reason`` is
+    /// ``"tied"`` (a genuine CIP-rule tie, not a missing rule) or ``"budget_exceeded"``.
+    /// Always empty for ``mode="legacy"`` (that engine never reports "I don't know").
+    fn cip_stereo_unresolved<'py>(&self, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyDict>>> {
+        let result =
+            chematic_chem::assign_cip_with_mode(&self.inner, chematic_chem::CipMode::Accurate)
+                .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        result
+            .unresolved
+            .iter()
+            .map(|(idx, reason)| {
+                let d = PyDict::new(py);
+                d.set_item("atom_idx", idx.0 as usize)?;
+                let label = match reason {
+                    chematic_chem::CipUnresolvedReason::Tied => "tied",
+                    chematic_chem::CipUnresolvedReason::BudgetExceeded => "budget_exceeded",
+                };
+                d.set_item("reason", label)?;
                 Ok(d)
             })
             .collect()
