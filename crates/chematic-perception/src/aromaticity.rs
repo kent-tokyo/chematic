@@ -47,6 +47,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, implicit_hcount};
 
+use crate::ring_family::RingFamily;
 use crate::sssr::find_sssr;
 
 // ---------------------------------------------------------------------------
@@ -1004,6 +1005,101 @@ impl ContributionReason {
                 | ContributionReason::UnsupportedElement
         )
     }
+
+    /// Coarse `PiEligibility` bucket for this fine-grained reason
+    /// (Aromaticity-A1-1a). `AlreadyAromaticContext` has no single fixed
+    /// bucket -- it always carries exactly 1π, so it maps to `OneElectron`.
+    pub fn eligibility(self) -> PiEligibility {
+        use ContributionReason::*;
+        match self {
+            AlreadyAromaticContext
+            | CarbonEndocyclicDouble
+            | NitrogenPyridineTypeExplicitDouble
+            | NitrogenAromaticInRing => PiEligibility::OneElectron,
+            CarbonCarbanionLonePair
+            | NitrogenPyrroleTypeH
+            | NitrogenBridgeheadOrSubstitutedLonePair
+            | ChalcogenLonePair => PiEligibility::LonePairDonor,
+            CarbonExocyclicHeteroatomDouble => PiEligibility::ZeroElectron,
+            CarbonSp3Ineligible | NitrogenIneligible | ChalcogenIneligible | UnsupportedElement => {
+                PiEligibility::Ineligible
+            }
+        }
+    }
+}
+
+/// Coarse per-atom pi-eligibility bucket (Aromaticity-A1-1a). A summary view
+/// over [`ContributionReason`]'s finer-grained rules -- `electrons()` gives
+/// the electron count implied by each bucket.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PiEligibility {
+    /// Contributes exactly 1π (e.g. an endocyclic double/aromatic bond).
+    OneElectron,
+    /// Contributes 2π (a lone pair: pyrrole-type N, chalcogen, bridgehead N, carbanion).
+    LonePairDonor,
+    /// Contributes 0π but is still sp2 (p-orbital spent on an exocyclic multiple bond).
+    ZeroElectron,
+    /// Not eligible to be part of any conjugated system (e.g. sp3).
+    Ineligible,
+}
+
+impl PiEligibility {
+    /// Electron count implied by this bucket, or `None` for `Ineligible`.
+    pub fn electrons(self) -> Option<u8> {
+        match self {
+            PiEligibility::OneElectron => Some(1),
+            PiEligibility::LonePairDonor => Some(2),
+            PiEligibility::ZeroElectron => Some(0),
+            PiEligibility::Ineligible => None,
+        }
+    }
+}
+
+/// A candidate conjugated system: some atoms/bonds evaluated together as one
+/// pi-electron-counting problem (Aromaticity-A1-1a). Two distinct uses:
+/// - a single SSSR/augmented ring, reinterpreted as a trivial one-ring
+///   candidate (what `trace_ring_pi_electrons` builds today);
+/// - a genuine multi-ring fused envelope, built by
+///   [`build_conjugated_components`] as a connected component of the
+///   "conjugation graph" (double/aromatic-bonded atoms, plus lone-pair-donor
+///   atoms bridging across single bonds) -- the azulene-class candidate
+///   `augmented_ring_set`'s own docstring already named as future work
+///   ("candidate rings = SSSR ∪ fused envelopes").
+#[derive(Debug, Clone)]
+pub struct ConjugatedComponent {
+    pub atoms: Vec<AtomIdx>,
+    pub bonds: Vec<BondIdx>,
+    /// Ring indices (into whatever ring list the caller built this from) this
+    /// candidate derives from -- one entry for a plain single-ring candidate,
+    /// 2+ for a fused envelope spanning multiple rings.
+    pub source_rings: Vec<usize>,
+}
+
+impl ConjugatedComponent {
+    /// Build a trivial single-ring candidate from one ring's atom list (no
+    /// bond list needed by [`evaluate_atom_pi_contribution`], which only
+    /// consults `atoms` membership).
+    fn from_ring(ring: &[AtomIdx], ring_idx: usize) -> Self {
+        ConjugatedComponent {
+            atoms: ring.to_vec(),
+            bonds: Vec::new(),
+            source_rings: vec![ring_idx],
+        }
+    }
+}
+
+/// The full per-atom decision from [`evaluate_atom_pi_contribution`]: the
+/// coarse eligibility bucket plus the specific rule that produced it.
+#[derive(Debug, Clone, Copy)]
+pub struct ContributionDecision {
+    pub eligibility: PiEligibility,
+    pub reason: ContributionReason,
+}
+
+impl ContributionDecision {
+    pub fn electrons(&self) -> Option<u8> {
+        self.eligibility.electrons()
+    }
 }
 
 /// Per-atom trace entry from [`trace_ring_pi_electrons`].
@@ -1028,20 +1124,21 @@ pub struct RingElectronTrace {
     pub total: Option<u32>,
 }
 
-/// Diagnostic twin of [`ring_pi_electrons`]: identical per-atom rules, but
-/// returns a full trace instead of a single early-exiting `Option<u32>`. A
-/// deliberately separate implementation (not a wrapper around
-/// `ring_pi_electrons`) so it can name *why* each atom scored what it did;
-/// `trace_matches_ring_pi_electrons_on_corpus` is the anti-drift guard that
-/// keeps the two in sync. Does not call, wrap, or change
-/// `ring_pi_electrons` — zero effect on `assign_aromaticity_ex`'s behavior.
+/// Diagnostic twin of [`ring_pi_electrons`]: identical per-atom rules
+/// (delegating to [`evaluate_atom_pi_contribution`], the single source of
+/// truth for both this trace and any future experimental production path —
+/// see `docs/aromaticity_a1_rfc.md`'s A1-1a section), but returns a full
+/// trace instead of a single early-exiting `Option<u32>`. Does not call,
+/// wrap, or change `ring_pi_electrons` itself — zero effect on
+/// `assign_aromaticity_ex`'s behavior. `trace_matches_ring_pi_electrons_on_corpus`
+/// is the anti-drift guard that keeps this and `ring_pi_electrons` in sync.
 pub fn trace_ring_pi_electrons(
     mol: &Molecule,
     ring: &[AtomIdx],
     aromatic_context: &FxHashSet<AtomIdx>,
     algo: AromaticityAlgorithm,
 ) -> RingElectronTrace {
-    let ring_atom_set: FxHashSet<AtomIdx> = ring.iter().copied().collect();
+    let component = ConjugatedComponent::from_ring(ring, 0);
     let mut atoms = Vec::with_capacity(ring.len());
     let mut total: Option<u32> = Some(0);
 
@@ -1049,7 +1146,8 @@ pub fn trace_ring_pi_electrons(
         let (contribution, reason) = if aromatic_context.contains(&atom_idx) {
             (Some(1u8), ContributionReason::AlreadyAromaticContext)
         } else {
-            trace_atom_contribution(mol, atom_idx, &ring_atom_set, algo)
+            let decision = evaluate_atom_pi_contribution(mol, atom_idx, &component, algo);
+            (decision.electrons(), decision.reason)
         };
 
         total = match (total, contribution) {
@@ -1067,10 +1165,37 @@ pub fn trace_ring_pi_electrons(
     RingElectronTrace { atoms, total }
 }
 
+/// Single source of truth for per-atom pi-electron contribution
+/// (Aromaticity-A1-1a): identical rules to `ring_pi_electrons`'s match arms,
+/// condition-for-condition, parameterized by an arbitrary candidate
+/// [`ConjugatedComponent`] instead of one fixed SSSR ring — the same
+/// function evaluates a plain single-ring candidate (via
+/// `ConjugatedComponent::from_ring`) or a genuine multi-ring fused envelope
+/// (via `build_conjugated_components`) identically. Currently called by
+/// `trace_ring_pi_electrons` only — NOT wired into `ring_pi_electrons` or
+/// `assign_aromaticity_ex` (that wiring, behind a new opt-in
+/// `AromaticityAlgorithm` variant, is Aromaticity-A1-1b, not this round).
+pub fn evaluate_atom_pi_contribution(
+    mol: &Molecule,
+    atom_idx: AtomIdx,
+    component: &ConjugatedComponent,
+    algo: AromaticityAlgorithm,
+) -> ContributionDecision {
+    let component_atoms: FxHashSet<AtomIdx> = component.atoms.iter().copied().collect();
+    let (_electrons, reason) =
+        evaluate_atom_pi_contribution_inner(mol, atom_idx, &component_atoms, algo);
+    // `reason.eligibility().electrons()` is asserted equal to `_electrons`
+    // for every branch by `contribution_decision_electrons_match_inner_on_corpus`.
+    ContributionDecision {
+        eligibility: reason.eligibility(),
+        reason,
+    }
+}
+
 /// Per-atom contribution logic, mirroring `ring_pi_electrons`'s match arms
 /// condition-for-condition, but returning a reason alongside the
 /// contribution instead of returning early on `None`.
-fn trace_atom_contribution(
+fn evaluate_atom_pi_contribution_inner(
     mol: &Molecule,
     atom_idx: AtomIdx,
     ring_atom_set: &FxHashSet<AtomIdx>,
@@ -1163,6 +1288,258 @@ fn trace_atom_contribution(
         }
         _ => (None, ContributionReason::UnsupportedElement),
     }
+}
+
+/// Evaluate an atom's pi contribution using its "home ring" within a
+/// (possibly multi-ring) candidate, instead of the candidate's flattened
+/// atom set directly: tries each of `candidate.source_rings` that actually
+/// contains the atom, evaluating against *that one ring's own* atom set, and
+/// returns the first eligible result found. Falls back to evaluating
+/// directly against the flattened `candidate` if `source_rings` is empty or
+/// none of them contain the atom (shouldn't happen for well-formed
+/// candidates, but keeps this total rather than panicking).
+///
+/// Needed because degree-sensitive rules (the N bridgehead/substituted-azole
+/// rule, `total_degree == 3 && ring_degree < total_degree`) test "does this
+/// atom have a bond that points outside THIS ring" -- a genuine multi-ring
+/// bridgehead's every bond is "in-family" once the evaluation context is the
+/// flattened whole envelope (every neighbor is, by construction, some other
+/// family member), which silently defeats that test and makes a real
+/// bridgehead N (e.g. indolizine's) look `Ineligible`. Evaluating against
+/// one constituent ring at a time preserves the rule's original, correct,
+/// per-ring meaning even when the candidate spans multiple rings. This does
+/// **not** attempt to resolve whether a bridgehead's lone-pair credit is
+/// *legitimately shared* between two rings that are both otherwise valid vs.
+/// wrongly borrowed by one ring from another that's actually broken (e.g.
+/// by an sp3 atom) -- that is a distinct, harder, open question, deliberately
+/// left to Aromaticity-A1-1b (see `docs/aromaticity_a1_rfc.md`).
+fn evaluate_atom_via_home_ring(
+    mol: &Molecule,
+    atom_idx: AtomIdx,
+    candidate: &ConjugatedComponent,
+    rings: &[Vec<AtomIdx>],
+    algo: AromaticityAlgorithm,
+) -> ContributionDecision {
+    let mut last = None;
+    for &ri in &candidate.source_rings {
+        if !rings[ri].contains(&atom_idx) {
+            continue;
+        }
+        let home = ConjugatedComponent::from_ring(&rings[ri], ri);
+        let decision = evaluate_atom_pi_contribution(mol, atom_idx, &home, algo);
+        if decision.electrons().is_some() {
+            return decision;
+        }
+        last = Some(decision);
+    }
+    last.unwrap_or_else(|| evaluate_atom_pi_contribution(mol, atom_idx, candidate, algo))
+}
+
+/// Build genuine multi-ring conjugated-system candidates (Aromaticity-A1-1a):
+/// connected components of the "conjugation graph" over each ring family's
+/// atoms -- nodes are atoms whose eligibility (evaluated per-atom against its
+/// own home ring, via `evaluate_atom_via_home_ring` -- not the flattened
+/// family) is not `Ineligible`; edges are any bond (single, double, or
+/// aromatic) between two independently-eligible family atoms: ordinary
+/// carbon-carbon single-bond conjugation (butadiene's C=C-C=C middle bond,
+/// styrene's vinyl-to-phenyl bond) connects just as directly as a
+/// lone-pair-donor heteroatom bridging a sigma bond.
+///
+/// A pure candidate *generator* -- callers (currently only
+/// `exhaustive_aromaticity_oracle`) still run full 4n+2 electron counting on
+/// each result. Only components spanning 2+ of a family's rings are
+/// returned: a single unfused ring is already covered by
+/// `ConjugatedComponent::from_ring`, so this only adds the fused-envelope
+/// candidates `augmented_ring_set`'s docstring named as future work
+/// ("candidate rings = SSSR ∪ fused envelopes").
+pub fn build_conjugated_components(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    ring_families: &[RingFamily],
+    algo: AromaticityAlgorithm,
+) -> Vec<ConjugatedComponent> {
+    let mut out = Vec::new();
+
+    for family in ring_families {
+        if family.ring_indices.len() < 2 {
+            continue; // single-ring families add nothing beyond from_ring.
+        }
+        let family_component = ConjugatedComponent {
+            atoms: family.atoms.clone(),
+            bonds: Vec::new(),
+            source_rings: family.ring_indices.clone(),
+        };
+
+        // Eligibility per atom, evaluated against its *home* constituent
+        // ring (not the flattened family) -- see `evaluate_atom_via_home_ring`'s
+        // doc comment for why the flattened version breaks degree-sensitive
+        // rules (bridgehead N) for any atom whose every bond happens to be
+        // "in-family" once the family itself is the context.
+        let eligible: FxHashMap<AtomIdx, bool> = family
+            .atoms
+            .iter()
+            .map(|&a| {
+                let decision = evaluate_atom_via_home_ring(mol, a, &family_component, rings, algo);
+                (a, decision.electrons().is_some())
+            })
+            .collect();
+        // Union-find over eligible family atoms, connected by conjugation edges.
+        let atoms: Vec<AtomIdx> = family.atoms.clone();
+        let index_of: FxHashMap<AtomIdx, usize> =
+            atoms.iter().enumerate().map(|(i, &a)| (a, i)).collect();
+        let mut parent: Vec<usize> = (0..atoms.len()).collect();
+        fn find(parent: &mut [usize], x: usize) -> usize {
+            if parent[x] != x {
+                parent[x] = find(parent, parent[x]);
+            }
+            parent[x]
+        }
+        fn union(parent: &mut [usize], x: usize, y: usize) {
+            let (px, py) = (find(parent, x), find(parent, y));
+            if px != py {
+                parent[px] = py;
+            }
+        }
+
+        // Any bond (single, double, or aromatic) between two independently
+        // eligible atoms conjugation-connects them: two sp2 atoms bridge
+        // across a single bond exactly like butadiene's C=C-C=C middle bond
+        // or styrene's vinyl-to-phenyl bond -- ordinary carbon-carbon
+        // conjugation, not just lone-pair-donor bridging. (First version of
+        // this rule only bridged single bonds via a `LonePairDonor`
+        // endpoint, which is too narrow: it left azulene's all-carbon
+        // alternating single/double perimeter as 5 disconnected 2-atom
+        // pairs, never forming the one 10-atom fused-envelope candidate it
+        // needs -- caught by `exhaustive_aromaticity_oracle` returning an
+        // empty set for azulene instead of the whole ring.) The
+        // `is_lone_pair_donor` check is now unused for connectivity, kept
+        // only where a NON-eligible atom's neighbor still needs distinguishing
+        // (none currently) -- eligibility alone (both endpoints not
+        // `Ineligible`) is the connectivity condition; bond order still fully
+        // determines each atom's *electron count* via
+        // `evaluate_atom_pi_contribution`, just not graph connectivity.
+        let family_atom_set: FxHashSet<AtomIdx> = family.atoms.iter().copied().collect();
+        let mut conjugation_bonds: Vec<BondIdx> = Vec::new();
+        for &a in &atoms {
+            if !eligible[&a] {
+                continue;
+            }
+            for (nb, bidx) in mol.neighbors(a) {
+                if !family_atom_set.contains(&nb) || !eligible.get(&nb).copied().unwrap_or(false) {
+                    continue;
+                }
+                // Both endpoints eligible -> connected (see comment above).
+                union(&mut parent, index_of[&a], index_of[&nb]);
+                conjugation_bonds.push(bidx);
+            }
+        }
+
+        let mut groups: FxHashMap<usize, Vec<AtomIdx>> = FxHashMap::default();
+        for &a in &atoms {
+            if !eligible[&a] {
+                continue;
+            }
+            let root = find(&mut parent, index_of[&a]);
+            groups.entry(root).or_default().push(a);
+        }
+
+        for group_atoms in groups.into_values() {
+            let group_set: FxHashSet<AtomIdx> = group_atoms.iter().copied().collect();
+            let source_rings: Vec<usize> = family
+                .ring_indices
+                .iter()
+                .copied()
+                .filter(|&ri| rings[ri].iter().all(|a| group_set.contains(a)))
+                .collect();
+            if source_rings.len() < 2 {
+                continue; // doesn't actually span multiple full rings.
+            }
+            let group_bonds: Vec<BondIdx> = conjugation_bonds
+                .iter()
+                .copied()
+                .filter(|&bidx| {
+                    let b = mol.bond(bidx);
+                    group_set.contains(&b.atom1) && group_set.contains(&b.atom2)
+                })
+                .collect();
+            out.push(ConjugatedComponent {
+                atoms: group_atoms,
+                bonds: group_bonds,
+                source_rings,
+            });
+        }
+    }
+
+    out
+}
+
+/// Test/diagnostic-only exhaustive-candidate reference oracle
+/// (Aromaticity-A1-1a) — **not** used by production or by
+/// `trace_ring_pi_electrons`. Evaluates every SSSR/augmented ring AND every
+/// multi-ring fused-envelope candidate from `build_conjugated_components`,
+/// marking an atom/bond aromatic if ANY candidate containing it
+/// independently satisfies 4n+2 via `evaluate_atom_pi_contribution`'s
+/// per-atom rules — every candidate is evaluated from a clean slate, with NO
+/// `aromatic_context` bootstrapping at all (unlike `assign_aromaticity_ex`'s
+/// production Pass 1/Pass 2). Exists to cross-check hypotheses about which
+/// per-atom rule needs to change, per the MANCUDE-style bounded-enumeration
+/// precedent — see `docs/aromaticity_a1_rfc.md`'s A1-1a section.
+/// Deliberately simple/slow: O(rings + fused envelopes) candidates, no
+/// attempt at Pass-2-style iteration, memoization, or performance tuning.
+pub fn exhaustive_aromaticity_oracle(
+    mol: &Molecule,
+    algo: AromaticityAlgorithm,
+) -> (FxHashSet<AtomIdx>, FxHashSet<BondIdx>) {
+    let sssr = find_sssr(mol);
+    let rings = augmented_ring_set(mol, sssr.rings());
+    let families = crate::ring_family::find_ring_families_over(mol, &rings);
+
+    let mut candidates: Vec<ConjugatedComponent> = rings
+        .iter()
+        .enumerate()
+        .map(|(i, r)| ConjugatedComponent::from_ring(r, i))
+        .collect();
+    candidates.extend(build_conjugated_components(mol, &rings, &families, algo));
+
+    let mut aromatic_atoms: FxHashSet<AtomIdx> = FxHashSet::default();
+    let mut aromatic_bonds: FxHashSet<BondIdx> = FxHashSet::default();
+
+    for candidate in &candidates {
+        let mut total: Option<u32> = Some(0);
+        for &atom_idx in &candidate.atoms {
+            // Multi-ring candidates evaluate each atom against its home ring
+            // (see `evaluate_atom_via_home_ring`'s doc comment); single-ring
+            // candidates fall through to the same code path with exactly one
+            // source ring, unchanged from evaluating against `candidate` directly.
+            let decision = evaluate_atom_via_home_ring(mol, atom_idx, candidate, &rings, algo);
+            total = match (total, decision.electrons()) {
+                (Some(t), Some(e)) => Some(t + e as u32),
+                _ => None,
+            };
+        }
+        let Some(pi) = total else { continue };
+        let (cls, _) = classify_ring_aromaticity(pi);
+        if !matches!(cls, RingAromaticity::Aromatic) {
+            continue;
+        }
+        for &a in &candidate.atoms {
+            aromatic_atoms.insert(a);
+        }
+        for &a in &candidate.atoms {
+            for (nb, bidx) in mol.neighbors(a) {
+                if candidate.atoms.contains(&nb)
+                    && matches!(
+                        mol.bond(bidx).order,
+                        BondOrder::Double | BondOrder::Aromatic
+                    )
+                {
+                    aromatic_bonds.insert(bidx);
+                }
+            }
+        }
+    }
+
+    (aromatic_atoms, aromatic_bonds)
 }
 
 // ---------------------------------------------------------------------------
@@ -2569,5 +2946,112 @@ mod tests {
                  (chematic={expected_wrong} should be < rdkit={rdkit_correct})"
             );
         }
+    }
+
+    // ── Aromaticity-A1-1a: exhaustive_aromaticity_oracle pinned cases ──────
+    //
+    // The oracle is a discovery tool, not a correct-answer generator: its
+    // candidates are built from the SAME per-atom local rules
+    // (`evaluate_atom_pi_contribution`) that are wrong for the false-positive
+    // family, so it can't independently arbitrate that family. This test
+    // pins what the oracle DOES get right (RDKit-atom-index-verified, not
+    // guessed) after two real fixes made during this milestone:
+    //
+    // 1. Connectivity: `build_conjugated_components`'s conjugation graph
+    //    originally only bridged single bonds via a `LonePairDonor` endpoint,
+    //    leaving azulene's all-carbon alternating perimeter as 5 disconnected
+    //    2-atom pairs (oracle returned an empty set). Fixed: any bond between
+    //    two independently-eligible atoms connects (ordinary carbon-carbon
+    //    single-bond conjugation, ordinary organic chemistry).
+    // 2. Home-ring evaluation: evaluating a multi-ring candidate's electron
+    //    sum against its own *flattened* atom set broke the N
+    //    bridgehead/substituted-azole rule for any TRUE bridgehead (every
+    //    bond looks "in-family" once the family itself is the context) --
+    //    indolizine's own bridgehead N came out `Ineligible`, an oracle bug,
+    //    not a chematic bug. Fixed via `evaluate_atom_via_home_ring`.
+    //
+    // Both fixes are confirmed correct AND confirmed NOT to silently
+    // "fix" the false-positive family by accident (still wrong, on purpose,
+    // pinned below) -- an oracle that quietly agreed with the bug would be
+    // worse than no oracle.
+    //
+    // purine is a genuinely OPEN finding, not a regression to chase in this
+    // round: before the home-ring fix, the (buggy, flattened) evaluation
+    // happened to give all 9 atoms aromatic (matching RDKit) BY ACCIDENT --
+    // the SAME flattening bug that broke indolizine happened to produce the
+    // right answer for purine. After the fix, purine's 5-ring fusion carbons
+    // (whose own `#[ignore]`d production test already documents an
+    // antiaromatic-lock issue -- each scores 0π alone, exocyclic-to-N rule)
+    // need cross-ring information neither a single home ring nor the
+    // flattened family alone provides correctly. Pinning the current
+    // (still-wrong) oracle answer here so a future A1-1b design has a
+    // concrete regression check once it actually resolves this, rather than
+    // silently inheriting whichever answer the oracle happens to produce.
+    #[test]
+    fn exhaustive_oracle_pinned_cases() {
+        let algo = AromaticityAlgorithm::RdkitLike;
+
+        // (name, smiles, expected oracle-aromatic atom indices, sorted)
+        let matches_rdkit: &[(&str, &str, &[u32])] = &[
+            (
+                "azulene",
+                "C1=CC2=CC=CC=CC2=C1",
+                &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            ),
+            (
+                "naphthalene",
+                "c1ccc2ccccc2c1",
+                &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            ),
+            (
+                "anthracene",
+                "c1ccc2cc3ccccc3cc2c1",
+                &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+            ),
+            ("indole", "c1ccc2[nH]ccc2c1", &[0, 1, 2, 3, 4, 5, 6, 7, 8]),
+            (
+                "quinoline",
+                "c1ccc2ncccc2c1",
+                &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            ),
+            (
+                "indolizine (bridgehead N, both rings valid)",
+                "c1ccn2ccccc12",
+                &[0, 1, 2, 3, 4, 5, 6, 7, 8],
+            ),
+            ("tropone", "O=c1cccccc1", &[1, 2, 3, 4, 5, 6, 7]),
+            ("2-pyridone", "O=c1cccc[nH]1", &[1, 2, 3, 4, 5, 6]),
+        ];
+        for (name, smi, expected) in matches_rdkit {
+            let mol = mol_kekulized(smi);
+            let (atoms, _bonds) = exhaustive_aromaticity_oracle(&mol, algo);
+            let mut got: Vec<u32> = atoms.iter().map(|a| a.0).collect();
+            got.sort();
+            assert_eq!(&got, expected, "{name} ({smi}): oracle should match RDKit");
+        }
+
+        // Still wrong, on purpose -- the false-positive family isn't fixable
+        // by candidate generation alone (Issue B, deliberately deferred to
+        // A1-1b; see docs/aromaticity_a1_rfc.md).
+        let (fp_atoms, _) =
+            exhaustive_aromaticity_oracle(&mol_kekulized("C1=Cc2ccccc2C2=NCCCN12"), algo);
+        let mut fp_got: Vec<u32> = fp_atoms.iter().map(|a| a.0).collect();
+        fp_got.sort();
+        assert_eq!(
+            fp_got,
+            vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 13],
+            "false-positive reproducer: still over-aromatized by the oracle, as expected"
+        );
+
+        // Open finding, not a regression -- see this test's doc comment.
+        let (purine_atoms, _) =
+            exhaustive_aromaticity_oracle(&mol_kekulized("c1cnc2[nH]cnc2n1"), algo);
+        let mut purine_got: Vec<u32> = purine_atoms.iter().map(|a| a.0).collect();
+        purine_got.sort();
+        assert_eq!(
+            purine_got,
+            vec![0, 1, 2, 3, 7, 8],
+            "purine: oracle still under-counts (RDKit says all 9) -- open A1-1b question, not fixed here"
+        );
     }
 }

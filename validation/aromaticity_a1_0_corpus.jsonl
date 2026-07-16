@@ -48,3 +48,8 @@
 {"bucket": "negative_control", "smiles": "O=C1C=Nc2ccccc21", "note": "heteroaromatic-junction carbonyl, ruled out as the FP mechanism", "case_id": "negative_control-047"}
 {"bucket": "negative_control", "smiles": "C1=CC=CC=C1", "note": "1,3-cyclohexadiene -- non-aromatic conjugated ring, must stay non-aromatic", "case_id": "negative_control-048"}
 {"bucket": "negative_control", "smiles": "C1=CC=CC=CC1", "note": "cycloheptatriene -- non-aromatic (4n) conjugated ring, must stay non-aromatic", "case_id": "negative_control-049"}
+{"bucket": "negative_control", "smiles": "O=c1cccccc1", "note": "tropone -- exocyclic-carbonyl-IN-RING rule, RDKit agrees, must stay aromatic", "case_id": "negative_control-050"}
+{"bucket": "negative_control", "smiles": "O=c1cccc[nH]1", "note": "2-pyridone -- exocyclic-carbonyl-IN-RING rule, RDKit agrees, must stay aromatic", "case_id": "negative_control-051"}
+{"bucket": "negative_control", "smiles": "O=c1ccocc1", "note": "4-pyranone -- exocyclic-carbonyl-IN-RING rule, RDKit agrees, must stay aromatic", "case_id": "negative_control-052"}
+{"bucket": "negative_control", "smiles": "c1ccn2ccccc12", "note": "indolizine -- TRUE bridgehead N shared by two BOTH-valid rings (contrast with the FP scaffold, where the bridgehead N's other ring is sp3-broken)", "case_id": "negative_control-053"}
+{"bucket": "negative_control", "smiles": "c1ccc2cc3ccccc3cc2c1", "note": "anthracene -- 3 linearly fused benzo rings, must stay correct", "case_id": "negative_control-054"}

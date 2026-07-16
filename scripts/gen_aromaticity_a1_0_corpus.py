@@ -95,6 +95,21 @@ NEGATIVE_CONTROL = [
     ("O=C1C=Nc2ccccc21", "heteroaromatic-junction carbonyl, ruled out as the FP mechanism"),
     ("C1=CC=CC=C1", "1,3-cyclohexadiene -- non-aromatic conjugated ring, must stay non-aromatic"),
     ("C1=CC=CC=CC1", "cycloheptatriene -- non-aromatic (4n) conjugated ring, must stay non-aromatic"),
+    # Added for A1-1a: does the atom-8-type exocyclic-carbonyl-in-ring rule
+    # (CarbonExocyclicHeteroatomDouble -> 0pi, the OTHER atom in the false-
+    # positive scaffold's 6pi sum) match RDKit at all, or is it itself the
+    # thing to fix? Advisor-flagged blocking check for A1-1a's fix-route
+    # decision -- confirmed against real RDKit (see docs/aromaticity_a1_rfc.md):
+    # RDKit marks the WHOLE ring (including the carbonyl carbon) aromatic in
+    # all three, so this rule is correct and NOT the fix target.
+    ("O=c1cccccc1", "tropone -- exocyclic-carbonyl-IN-RING rule, RDKit agrees, must stay aromatic"),
+    ("O=c1cccc[nH]1", "2-pyridone -- exocyclic-carbonyl-IN-RING rule, RDKit agrees, must stay aromatic"),
+    ("O=c1ccocc1", "4-pyranone -- exocyclic-carbonyl-IN-RING rule, RDKit agrees, must stay aromatic"),
+    (
+        "c1ccn2ccccc12",
+        "indolizine -- TRUE bridgehead N shared by two BOTH-valid rings (contrast with the FP scaffold, where the bridgehead N's other ring is sp3-broken)",
+    ),
+    ("c1ccc2cc3ccccc3cc2c1", "anthracene -- 3 linearly fused benzo rings, must stay correct"),
 ]
 
 

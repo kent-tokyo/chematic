@@ -36,8 +36,8 @@ use std::fs;
 
 use chematic_core::AtomIdx;
 use chematic_perception::{
-    AromaticityAlgorithm, assign_aromaticity_ex, augmented_ring_set, find_ring_families_over,
-    find_sssr, trace_ring_pi_electrons,
+    AromaticityAlgorithm, assign_aromaticity_ex, augmented_ring_set, exhaustive_aromaticity_oracle,
+    find_ring_families_over, find_sssr, trace_ring_pi_electrons,
 };
 use rustc_hash::FxHashSet;
 use serde_json::{Value, json};
@@ -113,6 +113,10 @@ fn main() {
             .collect();
         let empty_context: FxHashSet<AtomIdx> = FxHashSet::default();
 
+        // Aromaticity-A1-1a: the exhaustive-candidate reference oracle,
+        // computed once per molecule (whole-molecule, not per-ring).
+        let (oracle_atoms, _oracle_bonds) = exhaustive_aromaticity_oracle(&mol, algo);
+
         let sssr = find_sssr(&mol);
         let rings = augmented_ring_set(&mol, sssr.rings());
         let families = find_ring_families_over(&mol, &rings);
@@ -155,6 +159,7 @@ fn main() {
                         "ring_aromatic_intrinsic": ring_aromatic_intrinsic,
                         "ring_aromatic_context": ring_aromatic_context,
                         "current_engine_atom_aromatic": model.is_atom_aromatic(atom_idx),
+                        "oracle_atom_aromatic": oracle_atoms.contains(&atom_idx),
                     });
                     println!("{row}");
                     rows_written += 1;

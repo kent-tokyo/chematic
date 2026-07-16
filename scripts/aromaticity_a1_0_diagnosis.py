@@ -78,6 +78,16 @@ def main():
     agree = sum(1 for r in valid if r["current_engine_atom_aromatic"] == r["rdkit_atom_aromatic"])
     print(f"\ncurrent_engine vs rdkit per-atom-row agreement: {agree}/{len(valid)} ({100*agree/len(valid):.2f}%)")
 
+    # ---- Aromaticity-A1-1a: exhaustive oracle vs rdkit, and vs current_engine ----
+    # The oracle is a discovery tool (candidates built from the SAME per-atom
+    # rules that are wrong for the false-positive family), NOT a corrected
+    # engine -- do not read "oracle agrees with RDKit more often" as "the
+    # oracle is more correct" in general; it's only informative case-by-case.
+    oracle_agree = sum(1 for r in valid if r["oracle_atom_aromatic"] == r["rdkit_atom_aromatic"])
+    print(f"oracle vs rdkit per-atom-row agreement:        {oracle_agree}/{len(valid)} ({100*oracle_agree/len(valid):.2f}%)")
+    oracle_vs_engine = sum(1 for r in valid if r["oracle_atom_aromatic"] == r["current_engine_atom_aromatic"])
+    print(f"oracle vs current_engine per-atom-row agreement: {oracle_vs_engine}/{len(valid)} ({100*oracle_vs_engine/len(valid):.2f}%)")
+
     # ---- polarization check, per molecule (case_id), not per row ----
     by_case = {}
     for r in joined:
@@ -129,6 +139,26 @@ def main():
             print(f"  - {p}")
     else:
         print("\nAll buckets polarized as labeled. 0 problems.")
+
+    # ---- A1-1a spot-check: oracle vs RDKit on the newly-added confirmatory cases ----
+    spot = {
+        "O=c1cccccc1": "tropone",
+        "O=c1cccc[nH]1": "2-pyridone",
+        "O=c1ccocc1": "4-pyranone",
+        "c1ccn2ccccc12": "indolizine",
+        "c1ccc2cc3ccccc3cc2c1": "anthracene",
+        "c1cnc2[nH]cnc2n1": "purine",
+        "C1=CC2=CC=CC=CC2=C1": "azulene",
+    }
+    print("\n--- A1-1a oracle vs RDKit, confirmatory cases ---")
+    for smi, name in spot.items():
+        rows_ = [r for r in by_case.values() if r["smiles"] == smi]
+        if not rows_:
+            continue
+        rows_ = [r for r in rows_[0]["rows"] if r["rdkit_atom_aromatic"] is not None]
+        oracle_match = all(r["oracle_atom_aromatic"] == r["rdkit_atom_aromatic"] for r in rows_)
+        engine_match = all(r["current_engine_atom_aromatic"] == r["rdkit_atom_aromatic"] for r in rows_)
+        print(f"  {name}: oracle matches RDKit={oracle_match}, current_engine matches RDKit={engine_match}")
 
     return 1 if problems else 0
 
