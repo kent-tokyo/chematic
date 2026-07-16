@@ -1533,6 +1533,73 @@ functions) — per the user's own plan, that is a separate, later decision after
 opt-in compatibility period; `rdkit_compat.py` integration (nothing to integrate with
 yet, see above).
 
+## Milestone 5B — Accurate opt-in stabilization, measurement only
+
+Per the user's explicit direction: before any default-promotion decision, establish the
+concrete numbers that decision needs. No behavior changes this milestone — every item
+below is measurement, using a new tool
+(`crates/chematic-cip/examples/mode_stabilization_report.rs`) plus a live
+Python/WASM cross-check, both run against the same 5,000-molecule ChEMBL corpus used
+throughout this RFC.
+
+**1. Legacy vs. Accurate perf/memory.** Wall-clock across all 4,999 molecules:
+`assign_cip()` (legacy) 110–119 ms total (~22–24 µs/molecule); `assign_cip_with_mode(..,
+Accurate)` 1.07–1.20 s total (~214–240 µs/molecule) — **≈10x slower**, consistent with
+the hierarchical digraph's per-atom recursive comparator vs. legacy's shell-pooling
+pass. No memory instrumentation this round (no existing allocator-tracking harness in
+this repo to reuse; flagged as a gap, not measured) — the 10x wall-clock ratio is itself
+the actionable number for the default-promotion decision, since this is a per-molecule
+CPU cost users pay synchronously either way.
+
+**2. Unresolved rate + full cause breakdown** (not just Tied-vs-BudgetExceeded counts
+— every individual tied atom traced back to a known milestone, not left as an
+aggregate): 4,830 atoms resolved, **19 unresolved, all `Tied`, 0 `BudgetExceeded`**
+(0.392% unresolved rate). Broken down by element and traced to source:
+- **17 carbon atoms**, all in `C12C[C@H]3C[C@H](C[C@H](C4)C2)C3`-shaped tricyclic
+  bicyclo/adamantane-like cage SMILES fragments — this is exactly Milestone 4A-2's
+  already-known, already-deferred symmetric-cage family (needs symmetry/automorphism
+  detection, not a new finding).
+- **2 phosphorus atoms** — the exact 2 rows from Milestone 4C-1 (the cyclophosphazene
+  where no RDKit oracle has a stable label either).
+
+Zero unresolved atoms trace to any cause outside these two already-documented,
+already-classified families — a concrete "unexplained unresolved = 0" measurement, not
+an assumption, for the eventual default-promotion gate.
+
+**3. Rust/Python/WASM cross-surface parity**, at a larger scale than Milestone 5A's
+spot check (4 molecules): 300 molecules with legacy stereo, sampled from the same
+corpus, run through Python (`Mol.cip_stereo(mode="accurate")` +
+`Mol.cip_stereo_unresolved()`, live via `maturin develop`) and WASM
+(`cip_assignments_accurate_json`/`cip_unresolved_json`, live via `wasm-pack build
+--target nodejs` + a Node diff script, not a compile-only check) — **0 mismatches across
+both assignments and unresolved sets, 300/300**.
+
+**4. R/S + E/Z coexistence** (the Milestone 5A merge path): **120 of 4,999 molecules**
+have both an Accurate-mode tetrahedral R/S/`r`/`s` and a legacy-sourced E/Z assignment
+in the same result — confirming the merge path is exercised at meaningful volume on
+real-world structures, not just the synthetic test case
+(`cip_mode_accurate_merges_legacy_ez_with_accurate_tetrahedral`).
+
+**5. Migration example**: `examples/accurate_cip_migration.py` (catalogued in
+`examples/README.md`) — opt-in per call, the R/S+E/Z merge, the "ties are reported, not
+guessed, even when legacy has an answer" contract (using one of the exact Milestone
+4C-1 rows), and an explicit, clearly-labeled `cip_stereo_best_effort()` pattern for
+callers who *want* a legacy-fallback blend — opt-in, transparent (`source:
+"accurate"|"legacy_fallback"` on every entry), and built by the caller, not something
+the library does silently internally.
+
+**Default-promotion gate** (per the user's spec, not evaluated as met/unmet this
+milestone — this is the criteria list for a future decision, not a decision):
+- Oracle-stable agreement ≥ 99.64% — currently true, unaffected by this milestone.
+- Full-corpus regressions = 0 — currently true (Milestone 4/5A's own gates).
+- Cross-surface mismatch = 0 — currently true (measurement 3 above, 300/300).
+- Unexplained unresolved = 0 — currently true (measurement 2 above, 19/19 traced).
+- No unacceptable performance regression — **currently unresolved**: ~10x per-molecule
+  cost is a real, unquantified-as-"acceptable-or-not" tradeoff; this is a product
+  decision, not a number this milestone can resolve on its own.
+- Opt-in in production for ≥ 1 release — not yet started; this milestone's numbers are
+  the *starting* baseline for that period, not evidence the period has elapsed.
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same
