@@ -319,8 +319,52 @@ pub fn pains_matches_json(mol: &MolHandle) -> String {
 #[wasm_bindgen]
 pub fn cip_assignments_json(mol: &MolHandle) -> String {
     let assignment = chematic_chem::assign_cip(&mol.inner);
-    let parts: Vec<String> = assignment
-        .assignments
+    cip_code_pairs_to_json(&assignment.assignments)
+}
+
+/// CIP stereo assignments via the accurate hierarchical-digraph engine, as a JSON
+/// array of `{atomIdx, cipCode}` objects -- same shape as [`cip_assignments_json`],
+/// but merges the accurate engine's tetrahedral R/S (~99.6% oracle-stable agreement,
+/// see `docs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
+/// engine computes neither). Atoms it can't resolve are omitted here -- see
+/// [`cip_unresolved_json`] -- never a silently-guessed label. Returns `"null"` on an
+/// internal engine error (budget-independent computations should not normally hit this).
+#[wasm_bindgen]
+pub fn cip_assignments_accurate_json(mol: &MolHandle) -> String {
+    match chematic_chem::assign_cip_with_mode(&mol.inner, chematic_chem::CipMode::Accurate) {
+        Ok(result) => cip_code_pairs_to_json(&result.assignments),
+        Err(_) => "null".to_string(),
+    }
+}
+
+/// Atoms the accurate CIP engine could not resolve a tetrahedral R/S for, as a JSON
+/// array of `{atomIdx, reason}` objects. `reason` is `"tied"` (a genuine CIP-rule tie,
+/// not a missing rule) or `"budgetExceeded"`. Always `[]` for the legacy engine (see
+/// [`cip_assignments_json`]) -- it never reports "I don't know". Returns `"null"` on
+/// an internal engine error.
+#[wasm_bindgen]
+pub fn cip_unresolved_json(mol: &MolHandle) -> String {
+    match chematic_chem::assign_cip_with_mode(&mol.inner, chematic_chem::CipMode::Accurate) {
+        Ok(result) => {
+            let parts: Vec<String> = result
+                .unresolved
+                .iter()
+                .map(|(idx, reason)| {
+                    let reason_str = match reason {
+                        chematic_chem::CipUnresolvedReason::Tied => "tied",
+                        chematic_chem::CipUnresolvedReason::BudgetExceeded => "budgetExceeded",
+                    };
+                    format!("{{\"atomIdx\":{},\"reason\":\"{}\"}}", idx.0, reason_str)
+                })
+                .collect();
+            format!("[{}]", parts.join(","))
+        }
+        Err(_) => "null".to_string(),
+    }
+}
+
+fn cip_code_pairs_to_json(pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)]) -> String {
+    let parts: Vec<String> = pairs
         .iter()
         .map(|(idx, code)| {
             let code_str = match code {

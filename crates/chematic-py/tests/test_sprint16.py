@@ -82,6 +82,46 @@ def test_cip_stereo_achiral():
     assert m.cip_stereo() == []
 
 
+def test_cip_stereo_mode_legacy_is_default():
+    """mode='legacy' (the default) must match calling cip_stereo() with no args."""
+    m = chematic.from_smiles("C[C@H](N)C(=O)O")
+    assert m.cip_stereo() == m.cip_stereo(mode="legacy")
+
+
+def test_cip_stereo_mode_accurate_merges_ez_with_tetrahedral():
+    """Accurate mode must still report E/Z (it doesn't compute that itself) alongside
+    its own tetrahedral R/S for the same molecule."""
+    m = chematic.from_smiles("C/C=C/[C@H](N)C(=O)O")
+    stereo = m.cip_stereo(mode="accurate")
+    descriptors = {d["descriptor"] for d in stereo}
+    assert "E" in descriptors
+    assert "R" in descriptors or "S" in descriptors
+
+
+def test_cip_stereo_mode_invalid_raises():
+    m = chematic.from_smiles("C[C@H](N)C(=O)O")
+    with pytest.raises(ValueError):
+        m.cip_stereo(mode="bogus")
+
+
+def test_cip_stereo_unresolved_empty_for_resolvable_molecule():
+    m = chematic.from_smiles("C[C@H](N)C(=O)O")
+    assert m.cip_stereo_unresolved() == []
+
+
+def test_cip_stereo_unresolved_reports_genuine_ties():
+    """The 2 phosphorus rows found to be genuine chematic ties (not merely
+    oracle-unstable, see docs/cip_accurate_rfc.md Milestone 4C-1) must come back in
+    cip_stereo_unresolved(), never a silently-guessed label in cip_stereo()."""
+    m = chematic.from_smiles(
+        "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1"
+    )
+    unresolved_atoms = {d["atom_idx"] for d in m.cip_stereo_unresolved()}
+    assert unresolved_atoms == {6, 19}
+    resolved_atoms = {d["atom_idx"] for d in m.cip_stereo(mode="accurate")}
+    assert resolved_atoms.isdisjoint(unresolved_atoms)
+
+
 def test_generate_3d_atom_count():
     """generate_3d should produce one coord per heavy atom."""
     m = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")

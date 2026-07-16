@@ -1430,6 +1430,109 @@ precisely, not just nominally. All
 11 phosphorus rows enumerated with reproduction evidence. No chematic fix was needed to
 reach this — the gate closes on stratification, not remediation.
 
+## Milestone 5A — Accurate CIP wired into the public API, opt-in
+
+With Milestone 4's gate closed, the accurate engine was still reachable only from
+inside `chematic-cip` itself (`examples/`, `tests/`) — every public API (Rust, Python,
+WASM) called `chematic_chem::assign_cip()` (the legacy engine) with no way to opt into
+the now-99.64%-oracle-stable engine at all. This milestone connects them, strictly
+additively — no default changes, matching the RFC's original "Dual-mode API" sketch's
+own stated intent, though the concrete types differ from that sketch (see below).
+
+**Coverage gap found before writing the return type** (would have been a silent
+regression otherwise): `assign_cip_accurate_experimental` only ever iterates atoms with
+`chirality != Chirality::None` and a 4-item `stereo_neighbor_order` — it has zero
+double-bond E/Z or allene axial-chirality handling; those are legacy-only passes keyed
+off bond directionality, not atom chirality tags. A naive mode-swap would silently drop
+every E/Z/allene label. `CipMode::Accurate` therefore **merges** the accurate engine's
+tetrahedral R/S (better) with legacy's E/Z and allene answers (which the accurate
+engine simply never touches, so there's no key collision to resolve — verified, not
+assumed, via `cip_mode_accurate_merges_legacy_ez_with_accurate_tetrahedral`).
+
+**Type collisions with the original sketch, resolved by not reusing the names.** The
+RFC's design sketch (`pub fn assign_cip_with_options(mol, CipOptions) -> Result<CipAssignment, CipError>`)
+predates the real types both engines ended up with: `CipAssignment` (legacy,
+`chematic-chem/src/cip.rs`) has no `skipped`/unresolved field and is infallible;
+`CipError` (`chematic-cip/src/lib.rs`) is a single-variant type nested one level inside
+`CipCompareError`, not the accurate engine's actual top-level error. Reusing either
+name for a differently-shaped type would be a silent API trap. `assign_cip_with_mode`
+is a new function with fresh types instead: `CipMode { LegacyFast, Accurate }`,
+`CipModeAssignment { assignments, unresolved }`, `CipUnresolvedReason { Tied,
+BudgetExceeded }`, `CipModeError`. `assign_cip()`/`CipAssignment` are untouched, byte
+for byte — verified by a dedicated test
+(`cip_mode_legacy_fast_matches_assign_cip_byte_for_byte`), not just by inspection.
+
+**"Don't guess" preserved end to end.** Atoms the accurate engine explicitly marks
+`SkipReason::Tied` or `BudgetExceeded` are *never* backfilled with legacy's (less
+rigorous) answer in `Accurate` mode — they're dropped from `assignments` and surfaced
+via `CipModeAssignment::unresolved` instead. Verified against the exact 2 genuine-tie
+phosphorus rows from Milestone 4C-1 (`cip_mode_accurate_surfaces_unresolved_not_a_guess_for_tied_phosphorus`)
+and, as a converse check, that the 9 Milestone 4C-0 oracle-unstable-but-chematic-stable
+rows are *not* miscategorized as unresolved — chematic itself never ties on those, only
+the oracle used for scoring is unstable there
+(`cip_mode_accurate_does_not_hide_oracle_unstable_answers`).
+
+**Dependency layering**: `chematic-chem` now depends on `chematic-cip` as a normal
+dependency (previously `chematic-chem` was only a *dev*-dependency of `chematic-cip`,
+used by its own examples/tests/benches). This is a real inversion of the crate-layer
+diagram in `CLAUDE.md` (both crates previously sat at the same layer, directly above
+`chematic-perception`) — not structurally blocked by Cargo (dev-dependency edges are
+excluded from the normal build graph) and confirmed not to break anything by building
+both directions (`cargo build --workspace` and `cargo test -p chematic-cip` including
+its own dev-dependency on `chematic-chem`), but it is a real, deliberate exception to
+the documented layering, made because the user's spec explicitly located the adapter in
+`chematic-chem`. Internal `chematic-chem` consumers (`num_stereocenters`,
+`iupac_name_stereo`, `chematic-inchi`'s stereo layers) are **not** rewired to the new
+function — they keep calling `assign_cip()` directly, unchanged, exactly matching the
+"legacy byte-for-byte unchanged" gate.
+
+**Rust/Python/WASM surface**, all three backed by the identical
+`chematic_chem::assign_cip_with_mode` call, verified to agree (not just built to agree)
+by running the same 4 molecules through all three: `crates/chematic-chem/src/cip.rs`
+(`assign_cip_with_mode`, `CipMode`, `CipModeAssignment`, `CipUnresolvedReason`,
+`CipModeError`); `crates/chematic-py/src/mol_methods.rs` (`Mol.cip_stereo(mode="legacy"|"accurate")`,
+`Mol.cip_stereo_unresolved()`, default unchanged from every prior release, verified live
+via `.venv/bin/maturin develop` + pytest, not just `cargo check`); `crates/chematic-wasm/src/mol_descriptors.rs`
+(`cip_assignments_json` unchanged, new `cip_assignments_accurate_json`/`cip_unresolved_json`,
+verified live via `wasm-pack build --target nodejs` + a Node script, not just
+`cargo build --target wasm32-unknown-unknown`).
+
+**`rdkit_compat` — targets a function that doesn't exist yet.** The user's spec said
+"`rdkit_compat` uses Accurate," but `crates/chematic-py/python/chematic/rdkit_compat.py`
+(an existing RDKit-API-shim module, unrelated to this milestone, already used by two
+*different* concepts sharing the name — see below) has no CIP-label-returning function
+today, only `CalcNumAtomStereoCenters` (a count). There is nothing to redirect. Treated
+as a small follow-on once/if an `AssignStereochemistry`-equivalent is added there, not
+part of this milestone. Note for whoever picks that up: `rdkit_compat` is *also* a
+distinct Rust module name (`chematic-rxn/src/query.rs`, reaction-SMARTS compatibility
+checking) — pick a name that doesn't collide with either existing meaning.
+
+**Gate, all met:**
+- Raw agreement 4160/4186 (99.38%), oracle-stable 4160/4175 (99.64%) — unaffected by
+  this milestone (no scoring-path changes), reconfirmed unchanged.
+- Regressions: 0 — full workspace `cargo test --workspace --lib --quiet` and
+  `--tests --quiet` pass; the only 2 pytest failures found
+  (`test_run_smirks_transfer_preserves_E`/`Z`) were confirmed pre-existing on `main`
+  *before* this milestone's changes (stashed and re-ran to verify), unrelated to CIP
+  (a SMIRKS-transfer SMILES-respelling issue, not a stereo-assignment one).
+- 11 phosphorus oracle-unstable rows: the 9 M4C-0 rows return chematic's own answer
+  unmodified in Accurate mode (not hidden, not "unresolved"); the 2 M4C-1 rows return
+  `unresolved` (not a guess) — both directions test-covered.
+- Legacy API byte-for-byte unchanged: dedicated Rust test, plus a Python test asserting
+  `cip_stereo() == cip_stereo(mode="legacy")`.
+- Python/Rust/WASM parity: same 4 molecules run through all three surfaces live,
+  identical results (not merely "same code path" asserted by inspection).
+- Unresolved, not panic: every accurate-mode call site returns `Result`/raises
+  `ValueError` on genuine engine error, and ties/budget-outs surface as data
+  (`unresolved`/`cip_stereo_unresolved()`), never a Rust panic or a silently-guessed
+  label.
+
+**Explicitly not done this milestone**: promoting `Accurate` to any default (Rust
+`assign_cip()`, Python `cip_stereo()`'s default `mode`, or WASM's un-suffixed
+functions) — per the user's own plan, that is a separate, later decision after an
+opt-in compatibility period; `rdkit_compat.py` integration (nothing to integrate with
+yet, see above).
+
 ## Required property tests (starting Milestone 1)
 
 - Atom-renumbering invariance (same molecule, different internal atom indices → same

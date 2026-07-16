@@ -46,7 +46,10 @@ pub mod vsa;
 pub mod workflow;
 pub mod xlogp3;
 
-pub use cip::{CipAssignment, assign_cip, tetrahedral_stereo_neighbors};
+pub use cip::{
+    CipAssignment, CipMode, CipModeAssignment, CipModeError, CipUnresolvedReason, assign_cip,
+    assign_cip_with_mode, tetrahedral_stereo_neighbors,
+};
 pub use descriptors::{
     Bcut2D, CarbonTypes, InformationContent, RingBundle, aromatic_ring_count, autocorr_2d,
     balaban_j, bcut2d, calc_mol_formula, carbon_types, cns_mpo_from_parts, cns_mpo_score,
