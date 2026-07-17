@@ -4,11 +4,11 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
-| v0.4.29 | Yes | Current release — active support |
+| v0.4.30 | Yes | Current release — active support |
 | v0.4.22 | Limited | Security fixes only (limited) |
 | < v0.4.22 | No | Unsupported |
 
-**Active Support**: Latest release (v0.4.29) receives all security updates.  
+**Active Support**: Latest release (v0.4.30) receives all security updates.  
 **Limited Support**: Previous release receives critical security fixes only.  
 **End of Life**: Older versions receive no support.
 
