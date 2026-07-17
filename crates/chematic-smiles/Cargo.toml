@@ -16,7 +16,7 @@ documentation = "https://docs.rs/chematic-smiles"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.4.29" }
+chematic-core = { path = "../chematic-core", version = "0.4.30" }
 
 [dev-dependencies]
 # Test-only: re-aromatizing after an explicit kekulize+apply_kekule round
@@ -25,7 +25,7 @@ chematic-core = { path = "../chematic-core", version = "0.4.29" }
 # dev-dependencies pull in chematic-smiles the same way -- Cargo supports
 # this dev-dependency cycle since it never affects either crate's published
 # library dependency graph, only test binaries.
-chematic-perception = { path = "../chematic-perception", version = "0.4.29" }
+chematic-perception = { path = "../chematic-perception", version = "0.4.30" }
 criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]

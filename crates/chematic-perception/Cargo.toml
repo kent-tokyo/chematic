@@ -21,11 +21,11 @@ rustdoc-args = ["--cfg", "docsrs"]
 diagnostics = []
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.4.29" }
+chematic-core = { path = "../chematic-core", version = "0.4.30" }
 rustc-hash = "2"
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.29" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.4.30" }
 criterion = { version = "0.8", features = ["html_reports"] }
 serde_json = "1.0"
 
