@@ -60,18 +60,30 @@ candidate satisfy Hückel), not strengthening the existing boolean flood-fill.
 
 ## Mechanism, traced to the exact rule interaction
 
+**Corrected from this doc's first version** (which described this as a Pass-2
+`aromatic_context`-propagation bug): direct measurement via
+`trace_ring_pi_electrons`'s intrinsic (empty-context, Pass-1-only) trace, run against
+the actual pinned data in `validation/results/aromaticity_a1_0_diagnosis.jsonl`, shows
+this is a **Pass-1 over-count** — the offending ring passes 4n+2 using only its own six
+atoms' local contributions, with zero cross-ring context borrowed. The first version's
+claim that atoms `2,7` needed `AlreadyAromaticContext` was an artifact of reading the
+*full-context* trace column instead of the *intrinsic* one; both atoms independently
+qualify via `CarbonEndocyclicDouble` with no context at all, since their shared edge
+(`2-7`) is itself one of this ring's own bonds, aromatic-order, with no `Double`-only
+gate to trip. This matters concretely: a fix scoped as "correct Pass 2's propagation"
+would not touch this ring at all.
+
 On the SMARTS-A0 minimal reproducer `C1=Cc2ccccc2C2=NCCCN12` (benzo ring fused via a
 bridgehead N to a third, non-aromatic ring, with an exocyclic-to-benzo `C=C` on the
-middle ring): Pass 1 correctly marks the benzo ring (atoms `2..7`) aromatic. Pass 2
-re-evaluates the adjacent ring (atoms `0,1,2,7,8,13`) using that context:
+middle ring), the adjacent ring (atoms `0,1,2,7,8,13`), evaluated **with an empty
+context**:
 
-- atoms `2,7`: `AlreadyAromaticContext` → 1π each (borrowed from the benzo ring, per
-  `ring_pi_electrons`'s context rule)
-- atoms `0,1`: `CarbonEndocyclicDouble` → 1π each (`0=1`, in-ring for this ring)
+- atoms `0,1,2,7`: `CarbonEndocyclicDouble` → 1π each — all four independently, no
+  borrowing (verified: intrinsic and full-context traces agree exactly on these four)
 - atom `8`: `CarbonExocyclicHeteroatomDouble` → 0π (`C=N` to atom `9`, exocyclic to
-  *this* ring)
+  *this specific ring* — confirmed correct against real RDKit, see "atom-8 rule" below)
 - atom `13`: `NitrogenBridgeheadOrSubstitutedLonePair` → 2π (bridgehead N rule: all
-  three σ-bonds fill its valence, ring-degree < total-degree)
+  three σ-bonds fill its valence, ring-degree < total-degree *relative to this one ring*)
 
 Total: 1+1+1+1+0+2 = **6π → passes 4n+2 (n=1) → the whole ring gets marked aromatic**,
 even though ring C (the third ring this same bridgehead N also belongs to) has three
@@ -79,6 +91,14 @@ sp3 CH₂ carbons and cannot itself be part of any real delocalized system. The 
 N rule's 2π credit is correct for indolizine (both rings genuinely aromatic) but wrong
 here, because the rule does not check whether the atom's *other* ring is actually a
 valid aromatic partner before granting the lone-pair credit to *this* ring's count.
+
+**The atom-8 rule (`CarbonExocyclicHeteroatomDouble`) is confirmed correct, not the fix
+target** — blocking check run against real RDKit before any A1-1 code was written (see
+"A1-1a" below): tropone, 2-pyridone, and 4-pyranone all have an in-ring carbon whose
+only double bond is exocyclic to a heteroatom (a carbonyl carbon), and RDKit marks the
+*whole ring including that carbon* aromatic in all three — matching chematic's existing,
+already-passing behavior. The atom-8 rule stays as-is; the fix route is the atom-13
+(bridgehead N) side, or candidate generation, not this rule.
 
 ## A1-0: fused-component characterization (this round, landed)
 
@@ -190,43 +210,123 @@ any other production decision path.** Confirmed by the full workspace test suite
 `bash scripts/check.sh` passing unchanged, and by `trace_matches_ring_pi_electrons_on_corpus`
 proving the new trace never disagrees with the untouched production function it mirrors.
 
-## A1-1: component-level solver (designed, not implemented)
+## A1-1a: component model + exact oracle (this round, landed — no production wiring)
 
-Target shape, replacing the current Pass 1/Pass 2 boolean-flood-fill with candidate
-discovery separated from electron-count decision:
+Implements the shared per-atom contribution function and component types, plus a
+test/diagnostic-only exhaustive-candidate reference oracle. **`ring_pi_electrons`,
+`assign_aromaticity_ex`, and `apply_aromaticity_ex` are untouched** — nothing described
+here is wired into production. Types match the user's spec (renamed to match this
+crate's existing `ContributionReason`/A1-0 naming instead of introducing a second,
+parallel vocabulary):
 
 ```rust
-struct AromaticCandidateComponent {
-    atoms: Vec<AtomIdx>,
-    bonds: Vec<BondIdx>,
-    cycles: Vec<CycleId>,
+pub enum PiEligibility { OneElectron, LonePairDonor, ZeroElectron, Ineligible }
+
+pub struct ConjugatedComponent {
+    pub atoms: Vec<AtomIdx>,
+    pub bonds: Vec<BondIdx>,
+    pub source_rings: Vec<usize>,
 }
 
-struct ElectronContribution {
-    electrons: u8,
-    reason: ContributionReason,
+pub struct ContributionDecision {
+    pub eligibility: PiEligibility,
+    pub reason: ContributionReason,
 }
 
-fn evaluate_component(
+pub fn evaluate_atom_pi_contribution(
     mol: &Molecule,
-    component: &AromaticCandidateComponent,
-) -> AromaticityDecision;
+    atom_idx: AtomIdx,
+    component: &ConjugatedComponent,
+    algo: AromaticityAlgorithm,
+) -> ContributionDecision;
 ```
 
-Flow: ring-candidate extraction → fused-component construction (A1-0's
-`find_ring_families_over`, already reusable as-is) → per-atom conjugation eligibility →
-reflect exocyclic multiple bonds/charge/valence (A1-0's `trace_ring_pi_electrons` rules
-are the starting point, not a rewrite from scratch) → π-electron aggregation *at the
-component level*, not just per individual SSSR ring → confirm aromatic atom/bond sets.
-Current Pass 2 is demoted to a candidate-discovery input to this solver where possible,
-not deleted outright (Pass 1's per-ring evaluation remains valid for simple, unfused
-rings — the solver only needs to change how *fused* components are judged).
+**Single source of truth, as specified**: `trace_ring_pi_electrons` (A1-0) now
+delegates to `evaluate_atom_pi_contribution` instead of duplicating its own copy of the
+per-atom rules — the anti-drift test (`trace_matches_ring_pi_electrons_on_corpus`)
+still passes unchanged, confirming the refactor is behavior-preserving.
+`evaluate_atom_pi_contribution` is *not yet* called from `ring_pi_electrons` itself
+(that wiring, behind a new opt-in `AromaticityAlgorithm` variant, is A1-1b).
 
-Not started this round. A1-0 provides the characterization surface (component
-construction + trace + 3-bucket regression corpus with a working polarization guard) A1-1
-needs to build against and measure regressions with — in particular, the same
-`false_positive`/`false_negative`/`negative_control` buckets, expanded, become A1-1's
-primary regression gate.
+**Component construction** (`build_conjugated_components`): connected components of a
+"conjugation graph" over each ring family's atoms — nodes are eligible atoms (not
+`Ineligible`), edges are *any* bond (single, double, or aromatic) between two eligible
+atoms. Two real bugs were found and fixed while building this against the pinned
+azulene/indolizine test cases, not guessed:
+
+1. **Connectivity was too narrow.** The first version only bridged single bonds via a
+   `LonePairDonor` endpoint (matching the user's original heteroatom-lone-pair framing).
+   This left azulene's all-carbon alternating-bond perimeter as 5 disconnected 2-atom
+   pairs — the oracle returned an *empty* aromatic set instead of all 10 atoms. Fixed:
+   any bond between two eligible atoms connects, matching ordinary conjugation theory
+   (butadiene's `C=C-C=C` middle single bond, styrene's vinyl-to-phenyl bond are both
+   textbook-conjugated). Two sp2 atoms conjugate across a single bond regardless of
+   whether either one is specifically a lone-pair donor.
+2. **Degree-sensitive rules broke under a flattened multi-ring context.** The N
+   bridgehead/substituted-azole rule tests "does this atom have a bond pointing outside
+   *this ring*" (`ring_degree < total_degree`) — evaluated against a flattened
+   multi-ring family, a *genuine* bridgehead's every bond is "in-family" by construction,
+   so the test never fires and a true bridgehead N (indolizine's) came out `Ineligible`.
+   This was a bug in the new A1-1a code, not a pre-existing chematic bug — caught because
+   indolizine (a passing, correct chematic test) regressed under the naive component
+   model. Fixed via `evaluate_atom_via_home_ring`: evaluate each atom's degree-sensitive
+   rule against its own constituent ring, one at a time, not the flattened envelope.
+
+**Test/diagnostic-only exhaustive oracle** (`exhaustive_aromaticity_oracle`): candidates
+= every SSSR/augmented ring, individually, **plus** every multi-ring fused-envelope
+candidate from `build_conjugated_components`; an atom/bond is oracle-aromatic if *any*
+candidate containing it independently satisfies 4n+2, using
+`evaluate_atom_pi_contribution` with **no cross-candidate context bootstrapping at all**
+(unlike production's Pass 2). Pinned in `exhaustive_oracle_pinned_cases`
+(RDKit-atom-index-verified, not guessed).
+
+**Results, run against the corpus expanded to 55 molecules** (tropone, 2-pyridone,
+4-pyranone, indolizine, and anthracene added as new `negative_control` entries —
+`scripts/gen_aromaticity_a1_0_corpus.py`; joined against real RDKit via
+`scripts/aromaticity_a1_0_diagnosis.py`):
+
+| Case | Oracle matches RDKit? | Production (`current_engine`) matches RDKit? |
+|---|---|---|
+| tropone, 2-pyridone, 4-pyranone | ✅ | ✅ (already correct; confirms the atom-8 rule) |
+| indolizine, anthracene | ✅ | ✅ (already correct; confirms A1-1a's own bug fix didn't regress them) |
+| **azulene** | ✅ **(fixed)** | ❌ (known false negative) |
+| **purine** | ❌ (still wrong) | ❌ (known false negative) |
+| **false-positive reproducer (ring B)** | ❌ (still wrong, on purpose) | ❌ (known false positive) |
+| All 17 negative-control molecules | ✅ 17/17 | ✅ 17/17 (0 regressions from A1-1a's own code) |
+| All 33 false-positive corpus molecules | still over-count (unfixed) | still over-count |
+| All 5 false-negative corpus molecules | azulene fixed, purine + 3 order-dependent still wrong | all still wrong |
+
+Overall (informational only — this corpus is deliberately loaded with known-wrong
+cases, not representative): oracle vs RDKit 987/1184 (83.36%) vs production vs RDKit
+965/1184 (81.50%), oracle vs production 1162/1184 (98.14%) agreement.
+
+**Two honest findings the oracle could NOT resolve, deliberately not chased further
+this round** (per explicit scope discipline — solving either is A1-1b, not A1-1a):
+
+- **The false-positive family is not fixable by candidate generation alone.** Ring B's
+  *single-ring* candidate (evaluated via `ConjugatedComponent::from_ring`, independent
+  of any multi-ring component) still sums to 6π and still passes on its own — adding
+  more/better candidates doesn't suppress a bad candidate that's already generated. The
+  real fix has to constrain *when* a lone-pair donor's electrons are creditable to a
+  ring at all, which needs to know about the atom's other ring's validity — genuinely
+  more than a local per-atom, per-candidate rule can decide.
+- **Purine's fusion carbons need cross-ring information no single home ring or
+  flattened family currently supplies correctly.** Before the home-ring fix, the
+  (buggy) flattened evaluation happened to give purine all 9 atoms aromatic *by
+  accident* — the same flattening bug that broke indolizine happened to produce the
+  right answer here. After the fix, purine regresses to 6/9 on the oracle (still wrong,
+  matching production's own pre-existing gap, not a new regression — production's
+  Kekulized-input gap was already known from A1-0). This is pinned as an open finding
+  in `exhaustive_oracle_pinned_cases`, not silently accepted.
+
+**A1-1b's actual design question, sharpened by this round's evidence**: not "which
+existing rule is wrong" (the atom-8 carbonyl rule is confirmed correct; candidate
+generation is confirmed necessary-but-insufficient for the false-positive family) but
+*how a lone-pair donor's contribution to one ring should depend on whether its other
+ring membership is itself valid* — a genuinely different, harder question than local
+per-atom or per-candidate evaluation can answer. Studying RDKit's own published
+aromaticity algorithm is likely higher-yield for A1-1b's design than further reverse-
+engineering rules from cases.
 
 ## A1's gate (for the eventual production-enabling PR, not A1-0)
 
@@ -252,8 +352,18 @@ measured against a fixed target instead of a moving one:
 ## PR sequence
 
 1. PR #86 — SMARTS-A0 diagnosis (merged).
-2. **This PR — Aromaticity-A1-0**: component trace + corpus, no behavior change.
-3. A1-1 — component solver, test-only/opt-in (not started).
-4. Enable the solver into `apply_aromaticity("rdkit_like")` + full regression against
+2. PR #87 — Aromaticity-A1-0: component trace + corpus, no behavior change (merged).
+3. **This PR — Aromaticity-A1-1a**: component model (`PiEligibility`,
+   `ConjugatedComponent`, `evaluate_atom_pi_contribution`) + exhaustive reference
+   oracle, no production wiring. Fixed 2 bugs found in this round's own new code
+   (connectivity, home-ring degree evaluation); confirmed the atom-8 carbonyl rule is
+   correct (not the fix target); confirmed candidate generation alone fixes azulene but
+   not the false-positive family or purine — both left as open, pinned findings for
+   A1-1b, not solved here.
+4. A1-1b — component solver that actually resolves the false-positive/purine open
+   questions above (harder than originally scoped; likely needs to study RDKit's own
+   aromaticity algorithm design, not just iterate on local per-atom rules), test-only/
+   opt-in behind a new `AromaticityAlgorithm` variant (not started).
+5. Enable the solver into `apply_aromaticity("rdkit_like")` + full regression against
    the gate above (not started).
-5. Docs/benchmark updates reflecting the final measured numbers (not started).
+6. Docs/benchmark updates reflecting the final measured numbers (not started).
