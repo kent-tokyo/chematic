@@ -29,12 +29,18 @@
 //!   that would be a production change to `compare.rs`, out of scope for a
 //!   diagnosis-only tool. Reported as an upper bound / concentration signal, not an
 //!   exact count.
-//! - final-assignment impact: for stereocenters where Pass 1 (Rules 1a/1b/2, both with
-//!   and without `MancudeContext`) alone resolves the center, does the resolved
-//!   `CipCode` actually differ between `assign_cip_accurate_experimental_without_mancude`
-//!   and `assign_cip_accurate_experimental`? This isolates the fraction's effect from
-//!   Rule 4b/5 ever running at all (which `_without_mancude` never reaches), directly
-//!   answering classification D vs E for the Pass-1-resolved subset.
+//! - final-assignment impact, **structure-isolated**: compares
+//!   `assign_cip_accurate_experimental_without_mancude` run on the *Kekule-respelled*
+//!   molecule (no `MancudeContext` attached -- integer atomic numbers, same digraph
+//!   structure the live engine uses) against `assign_cip_accurate_experimental`
+//!   (Kekule-respelled + `MancudeContext` + Rule 4b/5). This is the real D-vs-E
+//!   classification: holding structure fixed and toggling only the fraction. A
+//!   **naive** contrast -- `_without_mancude` on the *original, un-Kekulized* molecule
+//!   vs the live engine -- is also reported, labeled clearly as naive: it bundles
+//!   Kekule-respelling structure with the fraction, and an earlier version of this
+//!   tool used *only* the naive contrast, wrongly classifying 3 centers as E when
+//!   they're D (see `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry for the
+//!   full correction). Do not conclude E from the naive numbers alone.
 //!
 //! elapsed_us is corroborating only, not a gate (see CIP-Perf-A0's own note, and this
 //! project's criterion pseudo-replication finding, issue #70).
@@ -76,6 +82,8 @@ fn main() {
 
     let mut pass1_resolved_final_label_changed: usize = 0;
     let mut pass1_resolved_final_label_same: usize = 0;
+    let mut naive_final_label_changed: usize = 0;
+    let mut naive_final_label_same: usize = 0;
     let mut changed_rows: Vec<(String, u32, CipCode, CipCode, bool)> = Vec::new();
 
     let mut worst: Option<(u64, String, u32)> = None;
@@ -90,17 +98,34 @@ fn main() {
             continue;
         }
 
-        let pass1 = assign_cip_accurate_experimental_without_mancude(&mol, budget);
+        let kekule = prepare_kekule_form(&mol).ok();
+
+        // Naive baseline (bundles Kekule-respelling structure with the fraction --
+        // reported for narrative reproducibility only, NOT the classification; see
+        // module docs).
+        let naive_pass1 = assign_cip_accurate_experimental_without_mancude(&mol, budget);
+        // Structure-isolated baseline: same Kekule-respelled molecule the live engine
+        // uses, no MancudeContext attached. This is the real "integer-collapsed
+        // control" -- structure held fixed, only the fraction toggled.
+        let structure_pass1 = match &kekule {
+            Some((kekule_mol, _)) => {
+                assign_cip_accurate_experimental_without_mancude(kekule_mol, budget)
+            }
+            None => assign_cip_accurate_experimental_without_mancude(&mol, budget),
+        };
         let final_result = assign_cip_accurate_experimental(&mol, budget);
-        let (Ok(pass1), Ok(final_result)) = (pass1, final_result) else {
+        let (Ok(naive_pass1), Ok(structure_pass1), Ok(final_result)) =
+            (naive_pass1, structure_pass1, final_result)
+        else {
             continue;
         };
-        let pass1_codes: std::collections::HashMap<AtomIdx, CipCode> =
-            pass1.assignments.iter().copied().collect();
+        let naive_pass1_codes: std::collections::HashMap<AtomIdx, CipCode> =
+            naive_pass1.assignments.iter().copied().collect();
+        let structure_pass1_codes: std::collections::HashMap<AtomIdx, CipCode> =
+            structure_pass1.assignments.iter().copied().collect();
         let final_codes: std::collections::HashMap<AtomIdx, CipCode> =
             final_result.assignments.iter().copied().collect();
 
-        let kekule = prepare_kekule_form(&mol).ok();
         for i in 0..mol.atom_count() {
             let idx = AtomIdx(i as u32);
             if mol.atom(idx).chirality == Chirality::None {
@@ -157,26 +182,40 @@ fn main() {
                     .collect();
                 proxy_ranking_parents_touched += touched_parents.len();
 
-                // Final-assignment impact, isolated to the Pass-1-resolved subset.
-                if let (Some(&p1_code), Some(&final_code)) =
-                    (pass1_codes.get(&idx), final_codes.get(&idx))
+                // Naive final-assignment impact (narrative only -- bundles structure
+                // with fraction, see module docs).
+                if let (Some(&naive_code), Some(&final_code)) =
+                    (naive_pass1_codes.get(&idx), final_codes.get(&idx))
                 {
-                    if p1_code == final_code {
+                    if naive_code == final_code {
+                        naive_final_label_same += 1;
+                    } else {
+                        naive_final_label_changed += 1;
+                    }
+                }
+
+                // Structure-isolated final-assignment impact -- the real D-vs-E
+                // classification. `structure_pass1_codes` and `final_codes` share the
+                // same Kekule-respelled digraph structure; the only thing toggled is
+                // whether a `MancudeContext` is attached.
+                if let (Some(&structure_code), Some(&final_code)) =
+                    (structure_pass1_codes.get(&idx), final_codes.get(&idx))
+                {
+                    if structure_code == final_code {
                         pass1_resolved_final_label_same += 1;
                     } else {
                         pass1_resolved_final_label_changed += 1;
-                        // Discriminating test (isolates Pass 1's own mancude effect from
-                        // Rule 4b/5, which `pass1_codes` vs `final_codes` alone conflates
-                        // -- `final_codes` includes atoms Rule 4b/5 resolved, not just
-                        // Pass-1-with-mancude): rebuild a *plain* root digraph (no
-                        // MancudeContext, on the original `mol` -- exactly what
-                        // `_without_mancude` uses internally) and compare its root-child
-                        // group partition against `manc_groups` above, by root-child
-                        // *index* (NodeIds aren't comparable across separate graphs, but
-                        // root-child expansion order is identical on both since the
-                        // structural divergence is deeper in the tree).
+                        // Corroborating structural check: same comparison at the
+                        // digraph-partition level, not just the resolved label --
+                        // rebuild a plain (no MancudeContext) root digraph on the SAME
+                        // Kekule-respelled molecule `manc_groups` used, and compare
+                        // root-child partitions by index (NodeIds aren't comparable
+                        // across separately-built graphs, but root-child expansion
+                        // order is identical on both since the structural divergence,
+                        // if any, is deeper in the tree).
                         let partitions_match = (|| {
-                            let mut plain_graph = CipDigraph::new(&mol, idx, budget).ok()?;
+                            let (kekule_mol, _) = kekule.as_ref()?;
+                            let mut plain_graph = CipDigraph::new(kekule_mol, idx, budget).ok()?;
                             let plain_root = plain_graph.root();
                             let plain_children = plain_graph.expand_children(plain_root).ok()?;
                             let mut plain_ctx = CompareContext::new();
@@ -208,7 +247,7 @@ fn main() {
                         changed_rows.push((
                             smi.to_string(),
                             idx.0,
-                            p1_code,
+                            structure_code,
                             final_code,
                             partitions_match,
                         ));
@@ -243,13 +282,22 @@ fn main() {
     );
     println!();
     println!(
-        "--- final-assignment impact, Pass-1-resolved subset only (classification D vs E) ---"
+        "--- NAIVE final-assignment impact (narrative only -- un-Kekulized baseline vs live, \
+         bundles structure+fraction, do NOT classify D/E from this) ---"
+    );
+    println!("naive_final_label_same:    {naive_final_label_same}");
+    println!(
+        "naive_final_label_changed: {naive_final_label_changed}  (these differ from the un-Kekulized \
+         baseline -- see the structure-isolated numbers below for why: Kekule-respelling \
+         structure, not the fraction, per docs/cip_accurate_rfc.md's MANCUDE-Decision-A0 entry)"
+    );
+    println!();
+    println!("--- STRUCTURE-ISOLATED final-assignment impact (real classification D vs E) ---");
+    println!(
+        "pass1_resolved_final_label_same:    {pass1_resolved_final_label_same}  (fraction was decision-involved but final R/S unchanged once structure is held fixed -> D)"
     );
     println!(
-        "pass1_resolved_final_label_same:    {pass1_resolved_final_label_same}  (fraction was decision-involved but final R/S unchanged -> D)"
-    );
-    println!(
-        "pass1_resolved_final_label_changed: {pass1_resolved_final_label_changed}  (fraction actually changed the resolved R/S -> E, needs RDKit-agreement check)"
+        "pass1_resolved_final_label_changed: {pass1_resolved_final_label_changed}  (fraction changed the resolved R/S with structure held fixed -> E)"
     );
     if let Some((c, smi, atom)) = worst {
         println!();
@@ -258,20 +306,22 @@ fn main() {
     if !changed_rows.is_empty() {
         println!();
         println!(
-            "--- rows where without_mancude != final, with the Pass-1-only discriminating test ---"
+            "--- structure-isolated rows where structure_pass1 != final (should be empty; if not, re-classify) ---"
         );
         println!(
-            "partitions_match=true  -> plain-Pass-1 and mancude-Pass-1 rank identically; the \
-             flip is Rule 4b/5's doing, not mancude's -- classification D, not E."
+            "partitions_match=true  -> plain (no MancudeContext) and mancude root-child \
+             partitions on the SAME Kekule-respelled structure agree; a label difference here \
+             would need a different explanation than the partition, investigate further."
         );
         println!(
-            "partitions_match=false -> mancude-Pass-1's OWN ranking differs from plain-Pass-1's \
-             -- classification E stands for this row."
+            "partitions_match=false -> the fraction's own root-level partition differs from \
+             the structure-only partition -- classification E, on the SAME Kekule-respelled \
+             structure (not confounded with Kekule-respelling itself)."
         );
-        for (smi, atom, p1, fin, partitions_match) in &changed_rows {
+        for (smi, atom, structure_code, fin, partitions_match) in &changed_rows {
             println!(
-                "{smi}\tatom {atom}\twithout_mancude={}\twith_mancude(final)={}\tpartitions_match={partitions_match}",
-                code_str(*p1),
+                "{smi}\tatom {atom}\tstructure_only(no_mancude)={}\twith_mancude(final)={}\tpartitions_match={partitions_match}",
+                code_str(*structure_code),
                 code_str(*fin)
             );
         }
