@@ -584,6 +584,83 @@ fallback), the reference engine's algorithm is not touched, no SMARTS/canonical-
 exceptions were added, and this round does not touch Python/WASM bindings or README
 default-accuracy numbers.
 
+## Kekule-S0 + H0: the canonical round-trip instability corpus, fully explained
+
+A1-1b-1's downstream verification found 94 molecules (of the full 5,000-molecule corpus)
+where canonical-SMILES round-trip idempotency broke under `RdkitLike` (current default),
+`apply_aromaticity_rdkit_parity_experimental` (A1-1b-1's opt-in engine), or both. The
+initial hypothesis (an implicit-H "Kekule-then-perceive" representation difference) was
+**wrong** — confirmed by a targeted check (per-atom `implicit_hcount`/`hydrogen_count`/
+bond-order comparison on one case) before scaling to the full corpus, avoiding building a
+94-molecule harness around the wrong mechanism.
+
+**The real mechanism, found instead**: `chematic_core::apply_kekule` silently dropped
+`stereo_neighbor_order` (the SMILES-text-order neighbor sequence `@`/`@@` is a *relative*
+descriptor over) on every call, because its `MoleculeBuilder` rebuild never called
+`copy_stereo_groups_from`/`copy_stereo_from`/`copy_bond_directions_from` —
+`chematic-perception`'s `build_molecule_from_model` had this exact bug fixed in an
+earlier, unrelated round; `apply_kekule` itself never received the same fix. This is a
+genuine **stereochemistry correctness bug**, not just a canonical-SMILES cosmetic issue:
+`chematic-cip`'s `assign_cip_accurate_experimental` silently *skips* (not mislabels)
+stereocenters whose `stereo_neighbor_order` is missing
+(`SkipReason::NotFourSubstituents` — a misleading name for the real cause). Fixed and
+merged as a standalone PR (**Kekule-S0**, not part of A1) since it's a `chematic-core`
+bug independent of aromaticity engine choice — every code path that explicitly kekulizes
+a chiral molecule was affected, not just A1-1b-1's. See the PR for the full fix, the
+positive-controlled test suite (every new test confirmed to fail with the fix reverted),
+and a repo-wide audit that found 3 more live instances of the same missing-`copy_*_from`
+pattern in `chematic-chem` (`enumerate_stereoisomers`, `transfer_hydrogen_aromatic`,
+`clone_mol`) — not fixed there (out of scope), flagged for a follow-up.
+
+**H0 (this section): re-classifying all 94 cases post-Kekule-S0.** Re-ran canonical
+round-trip stability for all 94 under both engines post-fix, then classified every
+still-unstable case by whether atom-level aromatic flags, `stereo_neighbor_order`, and
+individual bond orders match between the two engines' output
+(`crates/chematic-smarts/examples/aromaticity_h0_classify.rs`,
+`validation/results/aromaticity_h0_classification.jsonl`). **94/94 classified, 0
+unexplained**, into exactly two root causes:
+
+```
+fixed_by_kekule_s0:                     9   (now stable under both engines)
+bond_level_aromaticity_disagreement:   19   (still unstable under >=1 engine)
+canonicalizer_representation_sensitivity: 66  (still unstable under >=1 engine)
+```
+
+- **`fixed_by_kekule_s0` (9/94)**: genuinely resolved — these were the actual
+  `stereo_neighbor_order`-loss cases, now stable under both engines.
+- **`bond_level_aromaticity_disagreement` (19/94)**: atom-level aromatic flags and
+  `stereo_neighbor_order` are identical between `RdkitLike` and the RDKit-parity engine,
+  but at least one bond's order differs — concretely, an explicit `-` (single) bond in
+  the input SMILES connecting two atoms that are each individually aromatic (a biaryl-
+  style ring-fusion junction, e.g. `...c3nc-2c(...)...`): `RdkitLike` promotes it to
+  `BondOrder::Aromatic` in its output; the RDKit-parity engine (which agrees with real
+  RDKit on 100.0000% of atoms *and* bonds, per A1-1b-0/A1-1b-1) correctly leaves it
+  `Single`. This is not a new finding — it's a concrete instance of the already-known
+  ~1.18% bond-level gap between `RdkitLike` and RDKit (`docs/rdkit_compat.md`) — which
+  then happens to trigger the next category's pre-existing canonicalizer sensitivity.
+  Not fixed here: closing it means promoting the RDKit-parity engine to default (A1-1d),
+  not a Kekule-S0/H0-scoped change.
+- **`canonicalizer_representation_sensitivity` (66/94)**: atom flags, stereo order, and
+  *every* bond order are identical between the two engines, yet canonical round-trip
+  still breaks — a pre-existing canonical-SMILES-writer sensitivity on complex/fused-ring
+  molecules, independent of which aromaticity engine produced the input
+  (`docs/rdkit_compat.md`'s already-documented "large fused-ring-system aromaticity
+  round-trip" gap). Unrelated to stereo metadata or aromaticity assignment; out of scope
+  for both Kekule-S0 and the A1 initiative entirely.
+
+**Consequence for A1-1d's eventual default-promotion gate**: the ≥98.42% canonical
+idempotency bar the user specified is **not** met by Kekule-S0 alone (post-fix,
+experimental-engine idempotency on this corpus is 4,915/4,999 = 98.32%, default's is
+4,930/4,999 = 98.62% — both dominated by the 66-case canonicalizer bug, which Kekule-S0
+was never going to touch). Closing that gap needs the canonicalizer fix
+(`canonicalizer_representation_sensitivity`, 66 cases — a distinct project) and/or A1-1d
+itself (`bond_level_aromaticity_disagreement`, 19 cases — closes automatically once the
+RDKit-parity engine is default, since then both "engines" are the same engine). Recorded
+here as the accurate current gate status, not assumed closed.
+
+No production code touched in H0 — diagnosis only, per the same discipline as every
+prior A1-* round.
+
 ## A1's gate (for the eventual production-enabling PR, not A1-0)
 
 Per the user's spec — not evaluated in this round, recorded here so A1-1/A1-2's PRs are
