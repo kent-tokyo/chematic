@@ -6,10 +6,16 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Accurate CIP (Cahn-Ingold-Prelog) digraph foundation for chematic -- design in docs/cip_accurate_rfc.md"
+description = "Low-level accurate CIP (Cahn-Ingold-Prelog) digraph engine for chematic -- most applications should use chematic_chem::assign_cip_with_mode instead. Experimental, may have breaking 0.x changes."
 keywords = ["cheminformatics", "cip", "stereochemistry", "chemistry"]
 categories = ["science", "science::computational-chemistry::cheminformatics"]
-publish = false
+readme = "../../README.md"
+homepage.workspace = true
+documentation = "https://docs.rs/chematic-cip"
+publish = ["crates-io"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "0.4.30" }

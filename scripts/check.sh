@@ -10,6 +10,7 @@ if command -v cargo-deny &>/dev/null || cargo deny --version &>/dev/null 2>&1; t
 else
     echo "=== deny === (skipped: cargo-deny not installed)"
 fi
+echo "=== publish graph ===" && python3 scripts/check_publish_graph.py
 echo "=== version ==="
 VER=$(grep '^version = ' Cargo.toml | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 fail=0

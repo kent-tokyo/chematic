@@ -1,10 +1,19 @@
-//! `chematic-cip` — hierarchical digraph foundation for an accurate CIP
-//! (Cahn-Ingold-Prelog) stereochemistry engine.
+//! `chematic-cip` — low-level, hierarchical-digraph CIP (Cahn-Ingold-Prelog)
+//! stereochemistry engine for chematic.
 //!
-//! **Milestone 1 only** (see `docs/cip_accurate_rfc.md` at the workspace root): this
-//! crate builds a structural digraph rooted at a candidate stereocenter. It does
-//! **not** rank substituents, assign R/S, or otherwise replace
-//! `chematic_chem::assign_cip()`, which is unaffected by this crate's existence.
+//! **Most applications should use [`chematic_chem::assign_cip_with_mode`] rather
+//! than depending on this crate directly.** That's the stable, supported entry point
+//! (opt-in `CipMode::Accurate`, merged with legacy E/Z/allene handling; see
+//! `docs/cip_accurate_rfc.md`'s Milestone 5A). This crate is the low-level engine
+//! behind it, published separately so `chematic-chem` can depend on it normally.
+//! The accurate engine remains experimental and may receive breaking API revisions
+//! in a future 0.x minor release.
+//!
+//! Full milestone history in `docs/cip_accurate_rfc.md` at the workspace root: this
+//! crate now builds a provenance-carrying digraph, ranks substituents (Rules 1a/1b/2/4b/5),
+//! and assigns R/S — reaching 99.38% raw / 99.64% oracle-stable agreement against modern
+//! RDKit `rdCIPLabeler` on the project's full validation corpus. It does not replace
+//! `chematic_chem::assign_cip()`'s default (legacy) path, which is unaffected.
 //!
 //! The motivation is a real, proven limitation in `chematic-chem`'s existing engine:
 //! `cip_branch_spheres`/`compare_branches` pool every atom at a given BFS depth into
