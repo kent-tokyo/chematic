@@ -557,7 +557,7 @@ fn enumerate_direct_aromatic_forms(
     let mut result = Vec::new();
     let mut seen: HashSet<Vec<Option<u32>>> = HashSet::new();
     seen.insert(h_assignment(start));
-    let mut frontier = vec![clone_mol(start)];
+    let mut frontier = vec![start.clone()];
 
     while !frontier.is_empty() && result.len() < max {
         let current = frontier.remove(0);
@@ -566,7 +566,7 @@ fn enumerate_direct_aromatic_forms(
                 let ha = h_assignment(&next);
                 if !seen.contains(&ha) {
                     seen.insert(ha);
-                    frontier.push(clone_mol(&next));
+                    frontier.push(next.clone());
                     result.push(next);
                 }
             }
@@ -602,6 +602,13 @@ fn find_direct_aromatic_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
 ///
 /// Only handles atoms with an explicit `hydrogen_count` on the donor.
 /// Returns `None` if donor or acceptor is in `blocked_atoms`.
+///
+/// Donor/acceptor are aromatic (sp2) atoms, never tetrahedral stereocenters, so this
+/// function itself never touches `chirality`/`stereo_neighbor_order` -- but the
+/// passthrough rebuild below still needs to copy those side channels (plus
+/// `stereo_groups`/`bond_directions`) verbatim for every *other* atom, or any
+/// pre-existing stereocenter elsewhere in the molecule silently loses the reference
+/// order its `@`/`@@` is defined relative to on every tautomer step.
 fn transfer_hydrogen_aromatic(
     mol: &Molecule,
     donor: AtomIdx,
@@ -637,21 +644,10 @@ fn transfer_hydrogen_aromatic(
             .add_bond(b.atom1, b.atom2, b.order)
             .expect("transfer_hydrogen_aromatic: bond from a valid molecule must be re-addable");
     }
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
     Some(builder.build())
-}
-
-fn clone_mol(mol: &Molecule) -> Molecule {
-    let mut builder = MoleculeBuilder::new();
-    for i in 0..mol.atom_count() {
-        builder.add_atom(mol.atom(AtomIdx(i as u32)).clone());
-    }
-    for i in 0..mol.bond_count() {
-        let b = mol.bond(BondIdx(i as u32));
-        builder
-            .add_bond(b.atom1, b.atom2, b.order)
-            .expect("clone_mol: bond from a valid molecule must be re-addable");
-    }
-    builder.build()
 }
 
 use crate::hash::{FNV1A_OFFSET, FNV1A_PRIME};
@@ -1017,7 +1013,7 @@ pub fn canonical_tautomer(mol: &Molecule) -> Molecule {
 
 /// Like [`canonical_tautomer`] but with explicit configuration.
 pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -> Molecule {
-    let mut current = clone_mol(mol);
+    let mut current = mol.clone();
     let mut seen = HashSet::new();
     seen.insert(mol_fingerprint(&current));
 
@@ -1049,7 +1045,7 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
     // explored (e.g. tetrazole has 4 N atoms; a single step would miss N1↔N3).
     // The canonical SMILES tiebreaker makes selection independent of input
     // SMILES write order (the previous h_assignment tiebreaker was not).
-    let mut candidates: Vec<Molecule> = vec![clone_mol(&current)];
+    let mut candidates: Vec<Molecule> = vec![current.clone()];
     candidates.extend(enumerate_direct_aromatic_forms(
         &current,
         &config.blocked_atoms,
@@ -1078,13 +1074,13 @@ pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
 
 /// Like [`enumerate_tautomers`] but with explicit configuration.
 pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) -> Vec<Molecule> {
-    let mut result = vec![clone_mol(mol)];
+    let mut result = vec![mol.clone()];
     let mut seen = HashSet::new();
     seen.insert(mol_fingerprint(mol));
     // Separate seen-set for 1,2-shift (mol_fingerprint can't distinguish positional H isomers).
     let mut h_seen: HashSet<Vec<Option<u32>>> = HashSet::new();
     h_seen.insert(h_assignment(mol));
-    let mut frontier = vec![clone_mol(mol)];
+    let mut frontier = vec![mol.clone()];
 
     while !frontier.is_empty() && result.len() < config.max_tautomers {
         let current = frontier.remove(0);
@@ -1094,7 +1090,7 @@ pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) 
                 if !seen.contains(&fp) {
                     seen.insert(fp);
                     h_seen.insert(h_assignment(&next));
-                    frontier.push(clone_mol(&next));
+                    frontier.push(next.clone());
                     result.push(next);
                     if result.len() >= config.max_tautomers {
                         break;
@@ -1115,7 +1111,7 @@ pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) 
                 if !h_seen.contains(&ha) {
                     h_seen.insert(ha);
                     seen.insert(mol_fingerprint(&next));
-                    frontier.push(clone_mol(&next));
+                    frontier.push(next.clone());
                     result.push(next);
                 }
             }
@@ -1833,6 +1829,117 @@ mod tests {
                 );
             }
         }
+    }
+
+    // -----------------------------------------------------------------
+    // Tautomer-Rebuild-S2: transfer_hydrogen_aromatic must preserve the
+    // stereo side channels of every atom/bond it doesn't itself modify.
+    // The tests above only check `atom.chirality` (which survives via
+    // `atom.clone()` regardless of this bug -- it's `chirality`'s
+    // *reference frame*, `stereo_neighbor_order`, that was silently
+    // dropped). These specifically probe the side channels: an aromatic
+    // N-H ring (to actually fire transfer_hydrogen_aromatic, not the
+    // non-aromatic transfer_hydrogen) combined with a remote tetrahedral
+    // stereocenter, an enhanced stereo group, and a stashed bond
+    // direction.
+    // -----------------------------------------------------------------
+
+    /// Chiral secondary-alcohol carbon (atom 1, `[C@H]`) attached to a
+    /// pyrazole ring (atoms 6/7 are the two ring nitrogens) -- the N-H
+    /// tautomerism is a direct aromatic 1,2-shift, exercising
+    /// `transfer_hydrogen_aromatic` specifically (not the non-aromatic
+    /// `transfer_hydrogen`, which is a separate, not-yet-fixed instance of
+    /// this same bug class -- out of scope for this PR).
+    const AROMATIC_TAUTOMER_WITH_REMOTE_STEREOCENTER: &str = "C[C@H](O)c1cc[nH]n1";
+
+    #[test]
+    fn transfer_hydrogen_aromatic_preserves_remote_stereo_neighbor_order() {
+        let mol = parse(AROMATIC_TAUTOMER_WITH_REMOTE_STEREOCENTER).unwrap();
+        let stereocenter = AtomIdx(1);
+        let original_order = mol.stereo_neighbor_order(stereocenter).map(|s| s.to_vec());
+        assert!(
+            original_order.is_some(),
+            "test setup sanity: atom 1 must be chiral"
+        );
+
+        let (donor, acceptor) = find_direct_aromatic_matches(&mol)
+            .into_iter()
+            .next()
+            .expect("test setup sanity: pyrazole should have a direct aromatic N-H match");
+        let result = transfer_hydrogen_aromatic(&mol, donor, acceptor, &HashSet::new())
+            .expect("pyrazole N-H transfer should succeed");
+
+        assert_eq!(
+            result.atom(stereocenter).chirality,
+            mol.atom(stereocenter).chirality,
+            "remote stereocenter's chirality must be unchanged"
+        );
+        assert_eq!(
+            result
+                .stereo_neighbor_order(stereocenter)
+                .map(|s| s.to_vec()),
+            original_order,
+            "remote stereocenter's stereo_neighbor_order must survive transfer_hydrogen_aromatic \
+             verbatim -- chirality alone surviving is not enough to keep it interpretable"
+        );
+    }
+
+    #[test]
+    fn transfer_hydrogen_aromatic_preserves_stereo_groups_and_bond_directions() {
+        let mut mol = parse(AROMATIC_TAUTOMER_WITH_REMOTE_STEREOCENTER).unwrap();
+        let stereocenter = AtomIdx(1);
+        mol.add_stereo_group(chematic_core::StereoGroup::new(
+            chematic_core::StereoGroupKind::Absolute,
+            vec![stereocenter],
+        ));
+        // Stash an arbitrary bond direction on a bond uninvolved in the H
+        // transfer (the C-O bond), mimicking the kind of stashed E/Z
+        // marker `apply_aromaticity_ex` leaves behind on an exocyclic bond
+        // adjacent to a ring atom promoted to Aromatic order.
+        let (co_bond, _) = mol
+            .bond_between(AtomIdx(1), AtomIdx(2))
+            .expect("C-O bond must exist");
+        mol.set_bond_direction(co_bond, BondOrder::Up);
+
+        let (donor, acceptor) = find_direct_aromatic_matches(&mol)
+            .into_iter()
+            .next()
+            .expect("test setup sanity: pyrazole should have a direct aromatic N-H match");
+        let result = transfer_hydrogen_aromatic(&mol, donor, acceptor, &HashSet::new())
+            .expect("pyrazole N-H transfer should succeed");
+
+        assert_eq!(
+            result.stereo_groups(),
+            mol.stereo_groups(),
+            "stereo_groups must survive transfer_hydrogen_aromatic verbatim"
+        );
+        assert_eq!(
+            result.bond_direction(co_bond),
+            mol.bond_direction(co_bond),
+            "bond_directions for a bond uninvolved in the H transfer must be unchanged"
+        );
+    }
+
+    #[test]
+    fn enumerate_tautomers_count_and_canonical_form_unaffected_by_metadata_fix() {
+        // Regression pin: this fix is about metadata preservation only, not
+        // enumeration logic (mol_fingerprint/h_assignment dedup don't
+        // consult stereo_neighbor_order/stereo_groups/bond_directions at
+        // all) -- the tautomer count and canonical_tautomer's chosen form
+        // for a plain pyrazole (no remote stereocenter to confound the
+        // comparison) must be exactly what they were before this PR.
+        let mol = parse("c1cc[nH]n1").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        assert_eq!(
+            tautomers.len(),
+            2,
+            "pyrazole should enumerate to exactly 2 forms"
+        );
+        assert_eq!(
+            canonical_smiles(&canonical_tautomer(&mol)),
+            "c1[nH]ncc1",
+            "pyrazole's canonical tautomer form must be unchanged"
+        );
     }
 
     #[test]
