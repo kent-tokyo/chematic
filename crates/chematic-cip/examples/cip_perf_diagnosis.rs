@@ -12,17 +12,23 @@
 //! `rank_children`) plus the two existing corpus-facing entry points. Answers two
 //! questions, per stereocenter:
 //!
-//! 1. Resolution level -- does Rules 1a/1b/2 alone (`assign_cip_accurate_experimental_
-//!    without_mancude`, used here as a Pass-1 proxy) resolve it, or does it need the
+//! 1. Resolution level -- `_without_mancude` is used here as a proxy for whether a
+//!    center is resolved during the constitutional-rules (1a/1b/2) pass, or needs the
 //!    live engine's later Rule 4b/5 passes -- both already gated on `SkipReason::Tied`
 //!    from the prior pass (see `assign.rs`/`resolver.rs`), i.e. chematic already gates
 //!    auxiliary-descriptor computation at the center level, the same granularity
-//!    #9171 fixed in RDKit. The proxy's only assumption -- that MANCUDE fractions
-//!    don't change any ranking on this corpus -- is verified in-run below (Q3), not
-//!    cited from memory. Rule 4b and Rule 5 are **not** split apart here (both
-//!    `pub(crate)`, no Pass-1+4b-only public entry point) -- reported together as
-//!    `resolved_pass2_or_3`; a future run could split them with a small `pub(crate)`
-//!    exposure if that distinction becomes decision-relevant.
+//!    #9171 fixed in RDKit. The proxy does **not** require `fractional_decisions` to
+//!    be zero: a MANCUDE fraction may change a *local* recursive comparison somewhere
+//!    in Pass 1's tree without changing whether the center resolves or what its final
+//!    label is -- Q3 (below) verifies this in-run and classifies nonzero counts by
+//!    final-label impact, rather than treating any nonzero count as invalidating this
+//!    split. See `examples/mancude_decision_diagnosis.rs` and
+//!    `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry for the full
+//!    classification methodology and result (D=36/E=0 on this corpus). Rule 4b and
+//!    Rule 5 are **not** split apart here (both `pub(crate)`, no Pass-1+4b-only public
+//!    entry point) -- reported together as `resolved_pass2_or_3`; a future run could
+//!    split them with a small `pub(crate)` exposure if that distinction becomes
+//!    decision-relevant.
 //! 2. Comparator size -- for the Rules-1a/1b/2 ranking itself, how many digraph nodes
 //!    get materialized (and what fraction are `MultipleBondDuplicate`/`RingDuplicate`
 //!    phantom nodes, not real atoms), how many pairwise comparisons `rank_children`
@@ -31,11 +37,12 @@
 //!    its own module docs) -- this measures whether that matrix stays small in
 //!    practice or is a real cost center, split by whether the center turned out to be
 //!    Pass-1-trivial.
-//! 3. MANCUDE-inertness check -- accumulates `CompareContext::fractional_decisions`
+//! 3. Fractional-decision accounting -- accumulates `CompareContext::fractional_decisions`
 //!    (a fraction actually deciding a ranking, not just being present) across every
-//!    Q2 comparison; asserted 0 at the end if the corpus behaves as Milestone 3B-1b
-//!    found. If nonzero, Q1's proxy is unsound for this run and the split is unreliable
-//!    -- printed, not silently trusted.
+//!    Q2 comparison. A nonzero value triggers D/E classification (see
+//!    `mancude_decision_diagnosis.rs`); it does not by itself invalidate Q1's
+//!    resolution-level accounting -- printed here for corpus-scale awareness, not as
+//!    a pass/fail check on this tool's own output.
 //!
 //! elapsed_us is corroborating only, not authoritative -- single-threaded local run,
 //! read alongside the structural counts, not as a regression gate (see this project's
@@ -177,9 +184,10 @@ fn main() {
     let mut worst_pass1: Option<(usize, String, u32)> = None;
     let mut worst_needs_more: Option<(usize, String, u32)> = None;
 
-    // Q3: does a MANCUDE fraction ever actually decide a ranking on this corpus? If
-    // this stays 0, Q1's `_without_mancude` proxy is verified inert for this run, not
-    // assumed from a past milestone's finding.
+    // Q3: does a MANCUDE fraction ever actually decide a ranking on this corpus? A
+    // nonzero value triggers D/E classification; it does not by itself invalidate the
+    // Q1 resolution-level accounting above (see mancude_decision_diagnosis.rs for the
+    // structure-isolated classification that answers whether any final label changes).
     let mut fractional_decisions_total: u64 = 0;
 
     for smi in &smis {
@@ -339,7 +347,7 @@ fn main() {
         println!("worst needs_pass2_or_3 ({c} comparisons): {smi}  atom {atom}");
     }
     println!();
-    println!("=== Q3: MANCUDE-inertness check (verifies Q1's _without_mancude proxy) ===");
+    println!("=== Q3: fractional-decision accounting (does not by itself invalidate Q1) ===");
     println!(
         "fractional_decisions_total={fractional_decisions_total} -- {}",
         if fractional_decisions_total == 0 {
