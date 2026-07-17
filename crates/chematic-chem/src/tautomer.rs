@@ -821,6 +821,13 @@ fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, A
 /// For organic-subset atoms, implicit H counts adjust automatically through the
 /// valence model; for bracket atoms with an explicit `hydrogen_count`, we
 /// decrement the donor and increment the acceptor manually.
+///
+/// Donor/bridge/acceptor participate in a 1,3- or 1,5-shift, never a tetrahedral
+/// stereocenter directly -- but the passthrough rebuild below still needs to copy
+/// `stereo_neighbor_order`/`stereo_groups`/`bond_directions` verbatim for every
+/// *other* atom, same as `transfer_hydrogen_aromatic` above, or any pre-existing
+/// stereocenter elsewhere in the molecule silently loses the reference order its
+/// `@`/`@@` is defined relative to on every tautomer step.
 fn transfer_hydrogen(
     mol: &Molecule,
     donor: AtomIdx,
@@ -868,6 +875,9 @@ fn transfer_hydrogen(
         };
         builder.add_bond(b.atom1, b.atom2, order).ok()?;
     }
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
     Some(builder.build())
 }
 
@@ -1917,6 +1927,171 @@ mod tests {
             result.bond_direction(co_bond),
             mol.bond_direction(co_bond),
             "bond_directions for a bond uninvolved in the H transfer must be unchanged"
+        );
+    }
+
+    // -----------------------------------------------------------------
+    // Transfer-Hydrogen-Correctness-P0: the non-aromatic `transfer_hydrogen`
+    // (1,3-/1,5-H-shift, e.g. keto-enol) counterpart to
+    // Tautomer-Rebuild-S2's `transfer_hydrogen_aromatic` fix -- same bug
+    // shape, deliberately left out of scope there (see the comment on
+    // `AROMATIC_TAUTOMER_WITH_REMOTE_STEREOCENTER` above). A keto-enol
+    // 1,3-shift (donor O-H, bridge C, acceptor C=C) combined with a remote
+    // tetrahedral stereocenter, an enhanced stereo group, and a stashed
+    // bond direction.
+    // -----------------------------------------------------------------
+
+    /// Chiral secondary carbon (atom 1, `[C@H]`) two bonds away from an
+    /// enol group (`C(O)=C`, atoms 4/5/6) -- structurally uninvolved in the
+    /// keto-enol 1,3-shift, which exercises the non-aromatic
+    /// `transfer_hydrogen` specifically.
+    const NON_AROMATIC_TAUTOMER_WITH_REMOTE_STEREOCENTER: &str = "C[C@H](Cl)CC(O)=C";
+
+    fn keto_enol_match(mol: &Molecule) -> (AtomIdx, AtomIdx, AtomIdx) {
+        let rule = RULES
+            .iter()
+            .find(|r| r.name == "keto-enol")
+            .expect("keto-enol rule must exist");
+        find_matches(mol, rule)
+            .into_iter()
+            .next()
+            .expect("test setup sanity: molecule should have a keto-enol match")
+    }
+
+    #[test]
+    fn transfer_hydrogen_preserves_remote_stereo_neighbor_order() {
+        let mol = parse(NON_AROMATIC_TAUTOMER_WITH_REMOTE_STEREOCENTER).unwrap();
+        let stereocenter = AtomIdx(1);
+        let original_order = mol.stereo_neighbor_order(stereocenter).map(|s| s.to_vec());
+        assert!(
+            original_order.is_some(),
+            "test setup sanity: atom 1 must be chiral"
+        );
+
+        let (donor, bridge, acceptor) = keto_enol_match(&mol);
+        let result = transfer_hydrogen(
+            &mol,
+            donor,
+            bridge,
+            acceptor,
+            &HashSet::new(),
+            &HashSet::new(),
+        )
+        .expect("keto-enol transfer should succeed");
+
+        assert_eq!(
+            result.atom(stereocenter).chirality,
+            mol.atom(stereocenter).chirality,
+            "remote stereocenter's chirality must be unchanged"
+        );
+        assert_eq!(
+            result
+                .stereo_neighbor_order(stereocenter)
+                .map(|s| s.to_vec()),
+            original_order,
+            "remote stereocenter's stereo_neighbor_order must survive transfer_hydrogen \
+             verbatim -- chirality alone surviving is not enough to keep it interpretable"
+        );
+    }
+
+    #[test]
+    fn transfer_hydrogen_preserves_stereo_groups_and_bond_directions() {
+        let mut mol = parse(NON_AROMATIC_TAUTOMER_WITH_REMOTE_STEREOCENTER).unwrap();
+        let stereocenter = AtomIdx(1);
+        mol.add_stereo_group(chematic_core::StereoGroup::new(
+            chematic_core::StereoGroupKind::Absolute,
+            vec![stereocenter],
+        ));
+        // Stash an arbitrary bond direction on a bond uninvolved in the H
+        // transfer (the C-Cl bond).
+        let (c_cl_bond, _) = mol
+            .bond_between(AtomIdx(1), AtomIdx(2))
+            .expect("C-Cl bond must exist");
+        mol.set_bond_direction(c_cl_bond, BondOrder::Up);
+
+        let (donor, bridge, acceptor) = keto_enol_match(&mol);
+        let result = transfer_hydrogen(
+            &mol,
+            donor,
+            bridge,
+            acceptor,
+            &HashSet::new(),
+            &HashSet::new(),
+        )
+        .expect("keto-enol transfer should succeed");
+
+        assert_eq!(
+            result.stereo_groups(),
+            mol.stereo_groups(),
+            "stereo_groups must survive transfer_hydrogen verbatim"
+        );
+        assert_eq!(
+            result.bond_direction(c_cl_bond),
+            mol.bond_direction(c_cl_bond),
+            "bond_directions for a bond uninvolved in the H transfer must be unchanged"
+        );
+    }
+
+    #[test]
+    fn transfer_hydrogen_cip_of_uninvolved_stereocenter_survives_canonical_round_trip() {
+        // Chemical-identity check: the remote stereocenter's actual CIP
+        // label (not just the raw @/@@ character) must survive both the
+        // transfer itself and a canonicalize -> reparse round trip.
+        let mol = parse("C[C@H:9](Cl)CC(O)=C").unwrap();
+        let stereocenter = mol
+            .atoms()
+            .find(|(_, a)| a.atom_map == Some(9))
+            .map(|(idx, _)| idx)
+            .expect("atom map tag not found");
+        let before_cip = crate::assign_cip(&mol).get(stereocenter);
+        assert!(
+            before_cip.is_some(),
+            "test setup sanity: must be resolvable"
+        );
+
+        let (donor, bridge, acceptor) = keto_enol_match(&mol);
+        let result = transfer_hydrogen(
+            &mol,
+            donor,
+            bridge,
+            acceptor,
+            &HashSet::new(),
+            &HashSet::new(),
+        )
+        .expect("keto-enol transfer should succeed");
+
+        let smi = canonical_smiles(&result);
+        let reparsed = parse(&smi).expect("valid canonical SMILES");
+        let reparsed_center = reparsed
+            .atoms()
+            .find(|(_, a)| a.atom_map == Some(9))
+            .map(|(idx, _)| idx)
+            .expect("atom map tag not found after round trip");
+        let after_cip = crate::assign_cip(&reparsed).get(reparsed_center);
+
+        assert_eq!(
+            before_cip, after_cip,
+            "remote stereocenter's CIP code must survive transfer_hydrogen + a canonical round trip"
+        );
+    }
+
+    #[test]
+    fn enumerate_tautomers_keto_enol_count_and_canonical_form_unaffected_by_metadata_fix() {
+        // Regression pin: this fix is about metadata preservation only, not
+        // enumeration logic -- the tautomer count and canonical_tautomer's
+        // chosen form for a plain (no remote stereocenter) enol must be
+        // exactly what they were before this PR.
+        let mol = parse("CC(O)=C").unwrap();
+        let tautomers = enumerate_tautomers(&mol);
+        assert_eq!(
+            tautomers.len(),
+            2,
+            "propan-2-enol should enumerate to exactly 2 forms (enol + acetone)"
+        );
+        assert_eq!(
+            canonical_smiles(&canonical_tautomer(&mol)),
+            "C(C)(C)=O",
+            "the canonical tautomer form must be unchanged (prefers the keto form)"
         );
     }
 
