@@ -13,57 +13,66 @@ use chematic_core::{
 
 /// Invert the stereochemistry of a tetrahedral stereocenter.
 ///
-/// If the atom has CIP code R, it becomes S (and vice versa). Accomplishes
-/// this by inverting wedge bonds (Up ↔ Down) attached to the stereocenter,
-/// then re-running CIP assignment.
+/// If the atom has CIP code R, it becomes S (and vice versa).
 ///
-/// Atoms without stereochemistry annotation or non-tetrahedral atoms are
-/// unchanged. Returned molecule preserves all other properties.
+/// Primary path: if `idx` has `@`/`@@` chirality recorded (the common case
+/// for SMILES-parsed input), flips the `Chirality` enum directly against the
+/// unchanged `stereo_neighbor_order` reference frame. This is correct
+/// independent of atom numbering or neighbor iteration order — the
+/// three-point ordering the `@`/`@@` symbol is defined relative to never
+/// moves, only the handedness does.
+///
+/// Fallback path (kept for API compatibility, e.g. molecules built directly
+/// from 2D wedge bonds with no `chirality` set): inverts wedge/dash bonds
+/// (Up ↔ Down) attached to the stereocenter instead.
+///
+/// Atoms with neither `@`/`@@` chirality nor a wedge bond are unchanged.
+/// Returned molecule preserves all other properties, including every other
+/// atom's stereo metadata (`stereo_neighbor_order`, `stereo_groups`,
+/// `bond_directions`).
 pub fn invert_stereocenter(mol: &Molecule, idx: AtomIdx) -> Molecule {
-    // Only invert if the atom has a wedge/dash bond
-    let has_wedge = mol.neighbors(idx).any(|(_, bidx)| {
-        let bond = mol.bond(bidx);
-        matches!(bond.order, BondOrder::Up | BondOrder::Down)
-    });
+    let mut builder = MoleculeBuilder::new();
 
-    if !has_wedge {
-        // No stereochemistry annotation, return a copy unchanged
-        let mut builder = MoleculeBuilder::new();
-        let mut remap = HashMap::new();
-        for (idx, atom) in mol.atoms() {
-            let new_idx = builder.add_atom(atom.clone());
-            remap.insert(idx, new_idx);
+    if mol.atom(idx).chirality != Chirality::None {
+        for (i, atom) in mol.atoms() {
+            let mut atom = atom.clone();
+            if i == idx {
+                atom.chirality = match atom.chirality {
+                    Chirality::Clockwise => Chirality::CounterClockwise,
+                    Chirality::CounterClockwise => Chirality::Clockwise,
+                    Chirality::None => Chirality::None,
+                };
+            }
+            builder.add_atom(atom);
         }
         for (_, bond) in mol.bonds() {
-            if let (Some(&a), Some(&b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-                let _ = builder.add_bond(a, b, bond.order);
-            }
+            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
         }
-        return builder.build();
-    }
+    } else {
+        let has_wedge = mol
+            .neighbors(idx)
+            .any(|(_, bidx)| matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down));
 
-    // Invert wedge bonds
-    let mut builder = MoleculeBuilder::new();
-    let mut remap = HashMap::new();
-    for (i, atom) in mol.atoms() {
-        let new_idx = builder.add_atom(atom.clone());
-        remap.insert(i, new_idx);
-    }
-
-    for (_, bond) in mol.bonds() {
-        let new_order = if (bond.atom1 == idx || bond.atom2 == idx) && bond.order == BondOrder::Up {
-            BondOrder::Down
-        } else if (bond.atom1 == idx || bond.atom2 == idx) && bond.order == BondOrder::Down {
-            BondOrder::Up
-        } else {
-            bond.order
-        };
-
-        if let (Some(&a), Some(&b)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(a, b, new_order);
+        for (_, atom) in mol.atoms() {
+            builder.add_atom(atom.clone());
+        }
+        for (_, bond) in mol.bonds() {
+            let new_order = if has_wedge && (bond.atom1 == idx || bond.atom2 == idx) {
+                match bond.order {
+                    BondOrder::Up => BondOrder::Down,
+                    BondOrder::Down => BondOrder::Up,
+                    other => other,
+                }
+            } else {
+                bond.order
+            };
+            let _ = builder.add_bond(bond.atom1, bond.atom2, new_order);
         }
     }
 
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
     builder.build()
 }
 
@@ -234,12 +243,219 @@ mod tests {
     fn invert_stereocenter_r_to_s() {
         // [C@@H](F)(Cl)Br — R configuration (@@)
         let m = mol("[C@@H](F)(Cl)Br");
+        let before = crate::assign_cip(&m).get(AtomIdx(0));
         let inverted = invert_stereocenter(&m, AtomIdx(0));
-        // After inversion, should have @ (S) instead of @@
-        let inverted_smiles = chematic_smiles::canonical_smiles(&inverted);
+        let after = crate::assign_cip(&inverted).get(AtomIdx(0));
+        assert_eq!(
+            (before, after),
+            (
+                Some(chematic_core::CipCode::R),
+                Some(chematic_core::CipCode::S)
+            ),
+            "inversion must flip the CIP label, not just add an @ character"
+        );
+    }
+
+    // -----------------------------------------------------------------
+    // invert_stereocenter-correctness-P0: the pre-fix implementation only
+    // ever inverted 2D wedge bonds (`BondOrder::Up`/`Down`). Plain `@`/`@@`
+    // SMILES stereocenters have no wedge bond at all, so it was a silent
+    // no-op for the common case -- the has_wedge check never fired and the
+    // "no stereochemistry annotation" passthrough branch ran instead. Fixed
+    // by flipping the `Chirality` enum directly (correct regardless of atom
+    // numbering, since it's read against the unchanged
+    // stereo_neighbor_order reference frame), with wedge-bond inversion
+    // kept only as a fallback for atoms with no recorded `@`/`@@`. Also
+    // carries the same missing copy_stereo_groups_from/copy_stereo_from/
+    // copy_bond_directions_from pattern found repeatedly elsewhere this
+    // milestone (Kekule-S0, Stereo-Rebuild-S1, Tautomer-Rebuild-S2).
+    // -----------------------------------------------------------------
+
+    /// Two independent, both-specified tetrahedral stereocenters that the
+    /// Accurate CIP engine can actually resolve (each has an implicit H,
+    /// unlike an all-heavy-substituent center, which is a separate,
+    /// pre-existing Accurate-engine limitation unrelated to this fix).
+    const TWO_CENTER_SMILES: &str = "C[C@H:1](O)[C@@H:2](N)C(=O)O";
+
+    #[test]
+    fn invert_stereocenter_flips_only_target_atom_mapped_cip() {
+        let m = mol(TWO_CENTER_SMILES);
+        let target = find_by_map(&m, 1);
+        let other = find_by_map(&m, 2);
+
+        let before =
+            crate::assign_cip_with_mode(&m, crate::CipMode::Accurate).expect("accurate CIP");
+        let (before_target, before_other) = (before.get(target), before.get(other));
         assert!(
-            inverted_smiles.contains("@"),
-            "inverted should have chirality marker"
+            before_target.is_some() && before_other.is_some(),
+            "test setup sanity: both centers must be Accurate-CIP-resolvable"
+        );
+
+        let inverted = invert_stereocenter(&m, target);
+        let after =
+            crate::assign_cip_with_mode(&inverted, crate::CipMode::Accurate).expect("accurate CIP");
+
+        let expected_target = match before_target {
+            Some(chematic_core::CipCode::R) => chematic_core::CipCode::S,
+            Some(chematic_core::CipCode::S) => chematic_core::CipCode::R,
+            other => panic!("test setup sanity: expected R/S, got {other:?}"),
+        };
+        assert_eq!(
+            after.get(target),
+            Some(expected_target),
+            "target center's CIP label must flip to the exact opposite (not just differ, \
+             and not become unresolvable)"
+        );
+        assert_eq!(
+            before_other,
+            after.get(other),
+            "uninvolved center's CIP label must be unchanged"
+        );
+    }
+
+    #[test]
+    fn invert_stereocenter_double_inversion_returns_to_original() {
+        let m = mol(TWO_CENTER_SMILES);
+        let target = find_by_map(&m, 1);
+
+        let once = invert_stereocenter(&m, target);
+        let twice = invert_stereocenter(&once, target);
+
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&twice),
+            chematic_smiles::canonical_smiles(&m),
+            "inverting the same center twice must reproduce the original molecule"
+        );
+    }
+
+    #[test]
+    fn invert_stereocenter_independent_of_atom_numbering() {
+        // The same chemical center, reached via two different AtomIdx
+        // values and two different stereo_neighbor_order orderings (a
+        // canonical round trip renumbers atoms and re-derives the neighbor
+        // order from scratch) -- inverting it must produce the same
+        // molecule either way. Guards against a future rewrite drifting
+        // back to a numbering-dependent scheme (the exact failure mode
+        // this fix replaces).
+        let m1 = mol(TWO_CENTER_SMILES);
+        let m2 = mol(&chematic_smiles::canonical_smiles(&m1));
+        assert_ne!(
+            find_by_map(&m1, 1),
+            find_by_map(&m2, 1),
+            "test setup sanity: canonicalization must actually renumber this atom"
+        );
+
+        let inv1 = invert_stereocenter(&m1, find_by_map(&m1, 1));
+        let inv2 = invert_stereocenter(&m2, find_by_map(&m2, 1));
+
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&inv1),
+            chematic_smiles::canonical_smiles(&inv2),
+            "inverting the same chemical center must be independent of its AtomIdx/neighbor order"
+        );
+    }
+
+    #[test]
+    fn invert_stereocenter_matches_independent_ground_truth_single_center() {
+        // Chemical-identity check per review: don't compare @/@@ strings --
+        // verify inversion produces the SAME molecule as independently
+        // parsing the known mirror SMILES from scratch.
+        let l_ala = mol("N[C@@H](C)C(=O)O");
+        let target = l_ala
+            .atoms()
+            .find(|(_, a)| a.chirality != Chirality::None)
+            .expect("test setup sanity: has a stereocenter")
+            .0;
+        let inverted = invert_stereocenter(&l_ala, target);
+        let d_ala = mol("N[C@H](C)C(=O)O");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&inverted),
+            chematic_smiles::canonical_smiles(&d_ala),
+            "inverting L-alanine's stereocenter must match independently-parsed D-alanine"
+        );
+    }
+
+    #[test]
+    fn invert_stereocenter_matches_independent_ground_truth_two_centers() {
+        let m = mol(TWO_CENTER_SMILES);
+        let target = find_by_map(&m, 1);
+        let inverted = invert_stereocenter(&m, target);
+        let expected = mol("C[C@@H:1](O)[C@@H:2](N)C(=O)O");
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&inverted),
+            chematic_smiles::canonical_smiles(&expected),
+            "inverting only the mapped-1 center must match an independently-parsed \
+             molecule with only that center's @/@@ flipped"
+        );
+    }
+
+    #[test]
+    fn invert_stereocenter_preserves_uninvolved_stereo_metadata() {
+        let mut m = mol(TWO_CENTER_SMILES);
+        let target = find_by_map(&m, 1);
+        let other = find_by_map(&m, 2);
+
+        // Attach side-channel metadata to the atom/bond NOT being inverted,
+        // to prove the rebuild carries it through untouched.
+        m.add_stereo_group(chematic_core::StereoGroup::new(
+            chematic_core::StereoGroupKind::Absolute,
+            vec![other],
+        ));
+        let (_, other_bond) = m
+            .neighbors(other)
+            .next()
+            .expect("test setup sanity: other center has a neighbor");
+        m.set_bond_direction(other_bond, BondOrder::Up);
+
+        let other_order_before = m.stereo_neighbor_order(other).map(<[u32]>::to_vec);
+        assert!(other_order_before.is_some(), "test setup sanity");
+
+        let inverted = invert_stereocenter(&m, target);
+
+        assert_eq!(
+            inverted.stereo_groups(),
+            m.stereo_groups(),
+            "stereo_groups must survive invert_stereocenter verbatim"
+        );
+        assert_eq!(
+            inverted.bond_direction(other_bond),
+            m.bond_direction(other_bond),
+            "bond_directions must survive invert_stereocenter verbatim"
+        );
+        assert_eq!(
+            inverted.stereo_neighbor_order(other).map(<[u32]>::to_vec),
+            other_order_before,
+            "uninvolved center's stereo_neighbor_order must survive verbatim"
+        );
+    }
+
+    #[test]
+    fn invert_stereocenter_wedge_fallback_still_works() {
+        // Atoms with no `@`/`@@` chirality but an explicit 2D wedge bond
+        // (BondOrder::Up/Down) -- the pre-fix code's only working path,
+        // kept as a fallback for API compatibility.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(chematic_core::Element::C));
+        let n = b.add_atom(Atom::new(chematic_core::Element::N));
+        let o = b.add_atom(Atom::new(chematic_core::Element::O));
+        let cl = b.add_atom(Atom::new(chematic_core::Element::CL));
+        let br = b.add_atom(Atom::new(chematic_core::Element::BR));
+        let wedge_bond = b.add_bond(c, n, BondOrder::Up).unwrap();
+        b.add_bond(c, o, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        let m = b.build();
+        assert_eq!(
+            m.atom(c).chirality,
+            Chirality::None,
+            "test setup sanity: no @/@@ chirality, only a wedge bond"
+        );
+
+        let inverted = invert_stereocenter(&m, c);
+        assert_eq!(
+            inverted.bond(wedge_bond).order,
+            BondOrder::Down,
+            "wedge bond must flip Up -> Down when no @/@@ chirality is present"
         );
     }
 
