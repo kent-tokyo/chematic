@@ -42,6 +42,7 @@ impl std::error::Error for MolError {}
 /// Sentinel used in `stereo_neighbor_order` to represent the implicit H in a bracket atom.
 pub const STEREO_H_SENTINEL: u32 = u32::MAX;
 
+#[derive(Clone)]
 pub struct Molecule {
     atoms: Vec<Atom>,
     bonds: Vec<BondEntry>,

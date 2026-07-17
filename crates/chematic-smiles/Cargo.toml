@@ -19,6 +19,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 chematic-core = { path = "../chematic-core", version = "0.4.29" }
 
 [dev-dependencies]
+# Test-only: re-aromatizing after an explicit kekulize+apply_kekule round
+# trip needs perception-level Huckel logic to get back to a fairly
+# comparable (aromatic-form) canonical string. chematic-perception's own
+# dev-dependencies pull in chematic-smiles the same way -- Cargo supports
+# this dev-dependency cycle since it never affects either crate's published
+# library dependency graph, only test binaries.
+chematic-perception = { path = "../chematic-perception", version = "0.4.29" }
 criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]

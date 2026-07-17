@@ -268,8 +268,23 @@ pub fn build_kekule_result(
 ///
 /// Aromatic flags on atoms are *not* cleared (the molecule retains the aromaticity
 /// annotation; only bond orders change).
+///
+/// Preserves every stereo side-channel (`stereo_groups`, `stereo_neighbor_order`,
+/// `bond_directions`) unchanged. This matters even though `atom.chirality` itself is
+/// copied verbatim with each `Atom`: `@`/`@@` is a relative descriptor over the SMILES
+/// neighbor-encounter order recorded in `stereo_neighbor_order`, not an absolute one.
+/// Losing that order and re-deriving `@`/`@@` output from a *different* neighbor
+/// ordering downstream (e.g. canonical atom order) can serialize the *same* tetrahedral
+/// center as the wrong configuration -- silently, with no panic and no error, since
+/// `chirality` alone still round-trips as "some chirality is set". Atom/bond indices are
+/// unchanged (nothing is skipped, added, or reordered), the same precondition the
+/// `copy_*_from` methods themselves require.
 pub fn apply_kekule(mol: &Molecule, kekule: &KekuleResult) -> Molecule {
     use crate::molecule::MoleculeBuilder;
+
+    if kekule.is_empty() {
+        return mol.clone();
+    }
 
     let mut builder = MoleculeBuilder::new();
 
@@ -285,6 +300,10 @@ pub fn apply_kekule(mol: &Molecule, kekule: &KekuleResult) -> Molecule {
             .add_bond(bond.atom1, bond.atom2, order)
             .expect("duplicate bond during apply_kekule");
     }
+
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
 
     builder.build()
 }
@@ -598,7 +617,8 @@ mod tests {
     use super::*;
     use crate::atom::Atom;
     use crate::element::Element;
-    use crate::molecule::MoleculeBuilder;
+    use crate::molecule::{MoleculeBuilder, STEREO_H_SENTINEL};
+    use crate::stereo_group::StereoGroup;
 
     /// Build benzene as a fully aromatic SMILES-style molecule.
     fn benzene() -> Molecule {
@@ -1199,5 +1219,162 @@ mod tests {
             .filter(|&&o| o == BondOrder::Double)
             .count();
         assert_eq!(doubles, 3, "b1ccccn1: 3 double bonds");
+    }
+
+    // -----------------------------------------------------------------
+    // Kekule-S0: apply_kekule must preserve stereo side channels.
+    //
+    // `@`/`@@` (`Atom::chirality`) is a *relative* descriptor over the
+    // SMILES neighbor-encounter order recorded in `stereo_neighbor_order`
+    // -- copying `chirality` alone without that order is not enough to
+    // reproduce the same tetrahedral configuration downstream.
+    // -----------------------------------------------------------------
+
+    /// A chiral aromatic ring (5-membered, one sp3 substituent) with a
+    /// stereo group, a stashed bond direction, and a `stereo_neighbor_order`
+    /// entry set on the sp3 atom -- exercises all three side channels
+    /// `apply_kekule` must preserve.
+    fn chiral_aromatic_with_stereo_metadata() -> (Molecule, AtomIdx, BondIdx) {
+        let mut b = MoleculeBuilder::new();
+        let c1 = b.add_atom(Atom::aromatic(Element::C));
+        let c2 = b.add_atom(Atom::aromatic(Element::C));
+        let c3 = b.add_atom(Atom::aromatic(Element::C));
+        let c4 = b.add_atom(Atom::aromatic(Element::C));
+        let o = b.add_atom(Atom::aromatic(Element::O));
+        for i in 0..4 {
+            let ring = [c1, c2, c3, c4, o];
+            b.add_bond(ring[i], ring[i + 1], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.add_bond(o, c1, BondOrder::Aromatic).unwrap();
+
+        // sp3 chiral substituent on c1: -CH(F)(Cl), a real stereocenter.
+        let mut chiral = Atom::new(Element::C);
+        chiral.chirality = crate::atom::Chirality::CounterClockwise;
+        let ch = b.add_atom(chiral);
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let exocyclic_bond = b.add_bond(c1, ch, BondOrder::Single).unwrap();
+        b.add_bond(ch, f, BondOrder::Single).unwrap();
+        b.add_bond(ch, cl, BondOrder::Single).unwrap();
+
+        let mut mol = b.build();
+        // SMILES-text-order neighbor sequence: c1, implicit-H sentinel, F, Cl.
+        mol.set_stereo_neighbor_order(ch, vec![c1.0, STEREO_H_SENTINEL, f.0, cl.0]);
+        mol.add_stereo_group(StereoGroup::new(
+            crate::stereo_group::StereoGroupKind::Absolute,
+            vec![ch],
+        ));
+        mol.set_bond_direction(exocyclic_bond, BondOrder::Up);
+
+        (mol, ch, exocyclic_bond)
+    }
+
+    #[test]
+    fn apply_kekule_preserves_stereo_neighbor_order() {
+        let (mol, ch, _) = chiral_aromatic_with_stereo_metadata();
+        let before = mol.stereo_neighbor_order(ch).map(|s| s.to_vec());
+        assert!(before.is_some(), "test setup sanity");
+
+        let result = kekulize(&mol).expect("kekulizable");
+        assert!(
+            !result.is_empty(),
+            "test setup sanity: ring must need kekulization"
+        );
+        let kekulized = apply_kekule(&mol, &result);
+
+        assert_eq!(
+            kekulized.stereo_neighbor_order(ch).map(|s| s.to_vec()),
+            before,
+            "stereo_neighbor_order must survive apply_kekule verbatim"
+        );
+    }
+
+    #[test]
+    fn apply_kekule_preserves_stereo_groups() {
+        let (mol, _, _) = chiral_aromatic_with_stereo_metadata();
+        let before = mol.stereo_groups().to_vec();
+        assert!(!before.is_empty(), "test setup sanity");
+
+        let result = kekulize(&mol).expect("kekulizable");
+        let kekulized = apply_kekule(&mol, &result);
+
+        assert_eq!(
+            kekulized.stereo_groups(),
+            before.as_slice(),
+            "stereo_groups must survive apply_kekule verbatim"
+        );
+    }
+
+    #[test]
+    fn apply_kekule_preserves_bond_directions() {
+        let (mol, _, exocyclic_bond) = chiral_aromatic_with_stereo_metadata();
+        let before = mol.bond_direction(exocyclic_bond);
+        assert!(before.is_some(), "test setup sanity");
+
+        let result = kekulize(&mol).expect("kekulizable");
+        let kekulized = apply_kekule(&mol, &result);
+
+        assert_eq!(
+            kekulized.bond_direction(exocyclic_bond),
+            before,
+            "bond_directions must survive apply_kekule verbatim"
+        );
+    }
+
+    #[test]
+    fn apply_kekule_preserves_atom_and_bond_index_mapping() {
+        let (mol, _, _) = chiral_aromatic_with_stereo_metadata();
+        let result = kekulize(&mol).expect("kekulizable");
+        let kekulized = apply_kekule(&mol, &result);
+
+        assert_eq!(kekulized.atom_count(), mol.atom_count());
+        assert_eq!(kekulized.bond_count(), mol.bond_count());
+        for (idx, atom) in mol.atoms() {
+            let after = kekulized.atom(idx);
+            assert_eq!(atom.element, after.element, "atom {idx:?} element moved");
+            assert_eq!(
+                atom.chirality, after.chirality,
+                "atom {idx:?} chirality moved"
+            );
+        }
+        for (bidx, bond) in mol.bonds() {
+            let after = kekulized.bond(bidx);
+            assert_eq!(bond.atom1, after.atom1, "bond {bidx:?} atom1 moved");
+            assert_eq!(bond.atom2, after.atom2, "bond {bidx:?} atom2 moved");
+        }
+    }
+
+    #[test]
+    fn apply_kekule_empty_result_is_full_clone() {
+        // No aromatic bonds at all -- kekulize() returns an empty map, and
+        // apply_kekule must take the early-return clone path, which trivially
+        // preserves every side channel (it's the same molecule).
+        let mut b = MoleculeBuilder::new();
+        let mut chiral = Atom::new(Element::C);
+        chiral.chirality = crate::atom::Chirality::Clockwise;
+        let c = b.add_atom(chiral);
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let h_bond = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        b.add_bond(c, h_bond, BondOrder::Single).unwrap();
+
+        let mut mol = b.build();
+        mol.set_stereo_neighbor_order(c, vec![f.0, cl.0, br.0, h_bond.0]);
+
+        let result = kekulize(&mol).expect("no aromatic bonds -- trivially kekulizable");
+        assert!(result.is_empty(), "test setup sanity: no aromatic bonds");
+
+        let kekulized = apply_kekule(&mol, &result);
+        assert_eq!(
+            kekulized.stereo_neighbor_order(c).map(|s| s.to_vec()),
+            mol.stereo_neighbor_order(c).map(|s| s.to_vec())
+        );
+        assert_eq!(kekulized.atom_count(), mol.atom_count());
+        assert_eq!(kekulized.bond_count(), mol.bond_count());
     }
 }
