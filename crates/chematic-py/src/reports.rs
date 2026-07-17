@@ -255,13 +255,13 @@ fn doctor(py: Python<'_>) {
     println!("chematic v{ver}");
     println!("Python {py_ver}  |  {platform} {arch}");
     println!();
-    println!("Descriptor accuracy (benchmark 2026-06, v0.4.24 vs RDKit 2026.03.3):");
+    println!("Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3):");
     println!("  MW / HBA / HBD / ARC  100.0% (4,999-mol ChEMBL subset)");
     println!("  TPSA                  100.0% (4,999-mol, ±0.1 Å²)");
     println!("  LogP (Crippen)        100.0% (4,999-mol, max Δ = 1.1×10⁻¹³)");
-    println!("  Stereocenters         99.98% legacy / 98.7% new CIP (4,999-mol)");
-    println!("  ECFP4 throughput      3.6 µs/mol  (5–14× faster than RDKit)");
-    println!("  WASM bundle           504 KB gzip");
+    println!("  Stereocenters         99.96% legacy / 98.6% new CIP (4,999-mol)");
+    println!("  ECFP4 throughput      ~78 µs/mol  (2-3x faster than RDKit, diverse corpus)");
+    println!("  WASM bundle           719 KB gzip");
     println!();
     println!("Feature stability:");
     println!("  Stable      SMILES · MW/HBA/HBD/TPSA/LogP · ECFP4/MACCS · SDF/MOL · SMARTS");

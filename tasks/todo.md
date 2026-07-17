@@ -22,7 +22,7 @@ Current version: **v0.4.26** (2026-06-29)
 | `chematic-iupac` | IUPAC name generation, 25+ compound classes | 47 |
 | `chematic-mcp` | MCP server, **20 tools** (JSON-RPC 2.0 over stdio, `name_to_smiles` via PubChem) | 31 |
 | `chematic-mol` | SDF/MOL V2000/V3000, CML, CDXML, **ChemicalJSON (.cjson)** | 130 |
-| `chematic-wasm` | 160 WASM exports, npm `@kent-tokyo/chematic` (**504 KB gzip**, -38.5%) | 211 |
+| `chematic-wasm` | 160 WASM exports, npm `@kent-tokyo/chematic` (**719 KB gzip** as of v0.4.29, 2026-07-17 — up from 504 KB, see `benchmarks/2026-07-17.md`) | 211 |
 | `chematic-py` | PyO3 Python bindings (`pip install chematic`); Sprint 18–26+: 300+ API endpoints | 300+ |
 | `chematic-ewald` | PME Ewald summation, B-spline interpolation | 16 |
 
