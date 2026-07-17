@@ -202,13 +202,39 @@ pub struct CompareContext<'t> {
     /// produced a different (or tied) result. Deliberately **not** "non-Equal and either
     /// side is Rational": that naive definition fires even when an element difference
     /// alone decides it (e.g. `Rational(6/1)` vs `Integral(8)`, carbon vs oxygen), which
-    /// would misrepresent a fraction as load-bearing when it did nothing. On the frozen
-    /// corpus this is expected to be **0** -- consistent with Milestone 3B-1b's own
-    /// attribution finding (byte-identical output with/without `MancudeContext` attached)
-    /// -- and 0 is the *correct* result here, not a gap to close. A future nonzero value
-    /// is exactly Milestone 3B-2's own resumption condition #1 ("a new corpus exercises a
-    /// case where fractional MANCUDE actually changes a ranking"); see
-    /// `docs/cip_accurate_rfc.md`'s Milestone 3B closeout entry.
+    /// would misrepresent a fraction as load-bearing when it did nothing.
+    ///
+    /// At the Milestone 3B-1b closeout, the RFC asserted this would be zero on the
+    /// frozen corpus, "consistent with" a byte-identical-output finding -- but that
+    /// assertion was only ever checked against a single curated molecule, never
+    /// measured at full-corpus scale. A later full-corpus diagnostic on the same
+    /// corpus (SHA-256: `1c47371d...`) found the real value is 248, across 36
+    /// stereocenters in 21 molecules (Milestone MANCUDE-Decision-A0; see
+    /// `docs/cip_accurate_rfc.md`'s tripwire closeout entry for the full breakdown).
+    ///
+    /// This is **not** a regression, and it does **not** contradict the byte-identical
+    /// finding once fraction is properly isolated from Kekule-respelling structure (the
+    /// naive "with vs without `MancudeContext`" contrast conflates both): for all 36
+    /// affected centers, including the 3 where the naive contrast's *final* Pass-1
+    /// ranking also differs, holding structure fixed (`CipDigraph::new` on the same
+    /// Kekule-respelled molecule, with vs without the attached `MancudeContext`) shows
+    /// **identical** root-child partitions -- the fraction touches individual
+    /// sub-branch comparisons (hence nonzero `fractional_decisions`) without ever
+    /// changing the resolved label. All 36 are classification D ("fraction locally
+    /// load-bearing, final-label-inert"); **zero** are classification E ("fraction
+    /// changes the final label"). The 3 that flip vs the un-Kekulized baseline flip
+    /// because of Kekule-respelling alone, matching modern and legacy RDKit both --
+    /// frozen as regression fixtures in `tests/mancude_decision_regression.rs`.
+    ///
+    /// A nonzero value is therefore a tripwire requiring classification, not evidence
+    /// of a problem by itself:
+    /// - `fractional_decisions > 0` alone -> diagnosis required (is it D or E?).
+    /// - isolate fraction from structure before concluding either way -- a bundled
+    ///   with/without-`MancudeContext` contrast is not sufficient, as this milestone's
+    ///   own first attempt at that contrast found the hard way.
+    /// - a genuine (isolated) fractional-driven final-label change -> oracle
+    ///   classification required.
+    /// - one that *reduces* oracle agreement -> correctness blocker.
     pub fractional_decisions: u64,
 }
 
