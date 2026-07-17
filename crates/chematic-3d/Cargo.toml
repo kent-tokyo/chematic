@@ -24,4 +24,7 @@ chematic-fp         = { path = "../chematic-fp",         version = "0.4.30" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.4.30" }
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.30" }
+# Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
+# comment -- a version-pinned dev-dependency must resolve against the
+# registry at `cargo publish` time, which a forward reference can't satisfy.
+chematic-smiles = { path = "../chematic-smiles" }

@@ -25,7 +25,14 @@ chematic-core = { path = "../chematic-core", version = "0.4.30" }
 # dev-dependencies pull in chematic-smiles the same way -- Cargo supports
 # this dev-dependency cycle since it never affects either crate's published
 # library dependency graph, only test binaries.
-chematic-perception = { path = "../chematic-perception", version = "0.4.30" }
+#
+# No `version` here (path-only): a version-pinned dev-dependency still
+# needs to resolve against the registry when THIS crate is packaged (cargo
+# generates a full Cargo.lock, including dev-deps, before the publish
+# verify step) -- with both sides pinned, neither could ever publish first.
+# Path-only dev-deps are dropped from the published manifest entirely, so
+# there's nothing to resolve. See scripts/check_publish_graph.py.
+chematic-perception = { path = "../chematic-perception" }
 criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]

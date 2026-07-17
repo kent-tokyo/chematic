@@ -25,7 +25,9 @@ chematic-core = { path = "../chematic-core", version = "0.4.30" }
 rustc-hash = "2"
 
 [dev-dependencies]
-chematic-smiles = { path = "../chematic-smiles", version = "0.4.30" }
+# Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
+# comment for why a version-pinned mutual dev-dependency deadlocks `cargo publish`.
+chematic-smiles = { path = "../chematic-smiles" }
 criterion = { version = "0.8", features = ["html_reports"] }
 serde_json = "1.0"
 
