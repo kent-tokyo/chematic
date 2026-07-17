@@ -212,11 +212,16 @@ impl<'a> Parser<'a> {
         // Connect to the preceding atom if requested
         if let Some(prev) = attach_to {
             let bond = attach_bond.unwrap_or_else(|| implicit_bond(mol, prev, first_idx));
-            mol.add_bond(prev, first_idx, bond)
-                .map_err(|_| SmilesError::InvalidBracketAtom {
+            let (bond, stash) = resolve_aromatic_direction_stash(mol, prev, first_idx, bond);
+            let new_bond_idx = mol.add_bond(prev, first_idx, bond).map_err(|_| {
+                SmilesError::InvalidBracketAtom {
                     detail: "duplicate bond".to_string(),
                     pos: self.pos,
-                })?;
+                }
+            })?;
+            if let Some(dir) = stash {
+                mol.set_bond_direction(new_bond_idx, dir);
+            }
         }
 
         // Save any parent stereo record (branches interrupt the parent's tracking).
@@ -289,25 +294,17 @@ impl<'a> Parser<'a> {
                                     });
                                 }
                                 let next_idx = mol.add_atom(next_atom.clone());
-                                // `/` and `\` between two aromatic atoms specify geometry of an
-                                // adjacent double bond, not a stereo single bond. Aromatic atoms
-                                // must remain connected by Aromatic bonds so SMARTS `:a` queries
-                                // match correctly (e.g. Crippen `[c](:a)(:a)=[C,N,O]`). The
-                                // original direction is stashed on the side (`bond_directions`)
-                                // so an exocyclic E/Z double bond anchored on this ring bond
-                                // survives into the canonical writer instead of being lost.
-                                let mut stashed_direction = None;
                                 let bond = match pending_bond {
-                                    Some(dir @ (BondOrder::Up | BondOrder::Down))
-                                        if mol.atom_at(current).aromatic
-                                            && mol.atom_at(next_idx).aromatic =>
-                                    {
-                                        stashed_direction = Some(dir);
-                                        BondOrder::Aromatic
-                                    }
                                     Some(bo) => bo,
                                     None => implicit_bond(mol, current, next_idx),
                                 };
+                                // See `resolve_aromatic_direction_stash`: a `/`/`\` between two
+                                // aromatic atoms specifies geometry of an adjacent double bond,
+                                // not a stereo single bond on this edge -- the original direction
+                                // is stashed on the side (`bond_directions`) so it survives into
+                                // the canonical writer instead of being lost.
+                                let (bond, stashed_direction) =
+                                    resolve_aromatic_direction_stash(mol, current, next_idx, bond);
                                 let new_bond_idx =
                                     mol.add_bond(current, next_idx, bond).map_err(|_| {
                                         SmilesError::InvalidBracketAtom {
@@ -442,12 +439,25 @@ impl<'a> Parser<'a> {
                 (Some(b), None) | (None, Some(b)) => b,
                 (None, None) => implicit_bond(mol, open_atom, current),
             };
-            mol.add_bond(open_atom, current, bond).map_err(|_| {
+            // See `resolve_aromatic_direction_stash`: without this guard, a
+            // `/`/`\` ring-closure marker between two aromatic atoms becomes
+            // a literal Up/Down bond between them -- inconsistent (aromatic
+            // atoms must stay connected by Aromatic bonds), and downstream
+            // E/Z perception reads the stray marker as a genuine stereo
+            // descriptor that was never in the input, since the canonical
+            // writer can route a stashed direction through a ring-closure
+            // digit when that bond is chosen as the canonical back-edge
+            // (see `dfs_mark`'s own stashed-direction handling above).
+            let (bond, stash) = resolve_aromatic_direction_stash(mol, open_atom, current, bond);
+            let new_bond_idx = mol.add_bond(open_atom, current, bond).map_err(|_| {
                 SmilesError::InvalidBracketAtom {
                     detail: format!("duplicate ring bond {ring_num}"),
                     pos: self.pos,
                 }
             })?;
+            if let Some(dir) = stash {
+                mol.set_bond_direction(new_bond_idx, dir);
+            }
             // Record the close partner for final PendingRing resolution, keyed
             // by this occurrence's unique slot -- NOT the ring digit, which
             // may be reused by an unrelated ring later in the same SMILES.
@@ -795,10 +805,43 @@ fn implicit_bond(mol: &MoleculeBuilder, a: AtomIdx, b: AtomIdx) -> BondOrder {
     }
 }
 
+/// A `/`/`\` bond order resolved between two atoms that are BOTH aromatic
+/// describes the geometry of an adjacent (exocyclic) double bond, not a
+/// stereo single bond on this edge itself. Aromatic atoms must stay
+/// connected via `Aromatic` bonds (so SMARTS `:a` queries and re-perception
+/// both work); the true direction is stashed on the side (`bond_directions`)
+/// instead, so a stereo double bond anchored on this bond survives into the
+/// canonical writer rather than being lost -- or, if this guard is skipped,
+/// misapplied to this bond's own order on a later re-parse (which is
+/// syntactically indistinguishable from a genuine directional single bond,
+/// and can fabricate a stereo descriptor that was never in the input).
+///
+/// This is the single source of truth for that rule; every call site that
+/// resolves a bond order from a possibly-directional pending symbol
+/// (a plain chain bond, a branch-attachment bond, or a ring-closure bond)
+/// must route through this so the guard can't drift out of sync between
+/// them -- see Canonical-Stereo-D0.
+fn resolve_aromatic_direction_stash(
+    mol: &MoleculeBuilder,
+    a: AtomIdx,
+    b: AtomIdx,
+    order: BondOrder,
+) -> (BondOrder, Option<BondOrder>) {
+    match order {
+        dir @ (BondOrder::Up | BondOrder::Down)
+            if mol.atom_at(a).aromatic && mol.atom_at(b).aromatic =>
+        {
+            (BondOrder::Aromatic, Some(dir))
+        }
+        other => (other, None),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_core::AtomIdx;
+    use crate::canonical::canonical_smiles;
+    use chematic_core::{AtomIdx, BondIdx};
 
     #[test]
     fn test_parse_methane() {
@@ -1022,6 +1065,115 @@ mod tests {
             4,
             "all 4 ring bonds should be Aromatic"
         );
+    }
+
+    // -----------------------------------------------------------------
+    // Canonical-Stereo-D0: `resolve_aromatic_direction_stash` must be
+    // applied consistently at all three sites that can create a bond from a
+    // pending `/`/`\` marker -- the normal chain-edge path (already had the
+    // guard), the ring-closure path, and the branch-attachment path (the
+    // first bond of a `(...)` group) -- both of which silently stored the
+    // marker as the bond's own literal `Up`/`Down` order instead of
+    // stashing it. That inconsistency meant the SAME physical bond could be
+    // correctly stashed on one parse (when it happened to fall on a chain
+    // edge) and incorrectly stored literally on a later parse of chematic's
+    // own canonical output (when the SAME bond became a ring-closure or
+    // branch-attachment edge instead) -- silently changing which CIP
+    // elements were visible to `assign_ez` between the two parses, purely
+    // as an artifact of which of the three paths happened to run.
+    //
+    // These tests check the structural representation (bond order + stash)
+    // is correct and stable across a round trip for each of the three
+    // paths. They deliberately do NOT assert `assign_cip`'s E/Z output --
+    // `assign_ez`/`substituent_is_up` do not read `bond_direction` at all
+    // (a separate, pre-existing, real gap: this direction genuinely encodes
+    // legitimate exocyclic-imine E/Z per an independent RDKit check, not
+    // fabricated stereo -- see EZ-A0/EZ-S1). Pinning `[]` here as the
+    // expected CIP output would calcify that gap as intended behavior and
+    // get in the way of the follow-up that fixes it.
+    // -----------------------------------------------------------------
+
+    /// Assert `bidx` is `Aromatic` with a stashed direction, on a molecule
+    /// where both endpoints are aromatic -- the correct representation
+    /// regardless of which parser path created the bond.
+    #[track_caller]
+    fn assert_aromatic_with_stash(mol: &Molecule, bidx: BondIdx, path_label: &str) {
+        let bond = mol.bond(bidx);
+        assert!(
+            mol.atom(bond.atom1).aromatic && mol.atom(bond.atom2).aromatic,
+            "{path_label}: test setup sanity -- both endpoints must be aromatic"
+        );
+        assert_eq!(
+            bond.order,
+            BondOrder::Aromatic,
+            "{path_label}: bond order must stay Aromatic, not the literal Up/Down marker"
+        );
+        assert!(
+            mol.bond_direction(bidx).is_some(),
+            "{path_label}: the direction must be stashed on the side channel"
+        );
+    }
+
+    /// Re-parse `canonical_smiles(mol)` and assert the same structural
+    /// invariant holds again: some aromatic-aromatic bond is `Aromatic`
+    /// order with a stashed direction (not necessarily the same `BondIdx`,
+    /// since canonicalization renumbers atoms/bonds).
+    #[track_caller]
+    fn assert_round_trip_preserves_stash_representation(mol: &Molecule, path_label: &str) {
+        let c1 = canonical_smiles(mol);
+        let mol2 = parse(&c1).unwrap_or_else(|e| panic!("{path_label}: re-parse '{c1}': {e}"));
+        let has_stashed_aromatic_bond = (0..mol2.bond_count()).any(|i| {
+            let bidx = BondIdx(i as u32);
+            let bond = mol2.bond(bidx);
+            mol2.atom(bond.atom1).aromatic
+                && mol2.atom(bond.atom2).aromatic
+                && bond.order == BondOrder::Aromatic
+                && mol2.bond_direction(bidx).is_some()
+        });
+        assert!(
+            has_stashed_aromatic_bond,
+            "{path_label}: round-tripped molecule '{c1}' must still represent the direction \
+             as a stash on an Aromatic bond, not a literal Up/Down order"
+        );
+        let c2 = canonical_smiles(&mol2);
+        assert_eq!(
+            c1, c2,
+            "{path_label}: canonical_smiles must be stable across a round trip"
+        );
+    }
+
+    #[test]
+    fn direction_stash_normal_chain_edge() {
+        // The `/`/`\` sits between the ring-opening atom and the very next
+        // chain atom -- the plain tree-edge path (already had the guard
+        // before this fix; kept as a path-1 regression pin, not a new fix).
+        let mol = parse(r"N=c1\c(O)c(O)\c1=N").unwrap();
+        assert_aromatic_with_stash(&mol, BondIdx(1), "path1(chain-edge)");
+        assert_round_trip_preserves_stash_representation(&mol, "path1(chain-edge)");
+    }
+
+    #[test]
+    fn direction_stash_ring_closure_edge() {
+        // The `/` sits directly on the ring-closing bond itself (`...c/1`),
+        // routed through `close_or_open_ring` -- previously stored as a
+        // literal Up/Down order between two aromatic atoms.
+        let mol = parse(r"C/N=c1ccccc/1").unwrap();
+        assert_aromatic_with_stash(&mol, BondIdx(7), "path2(ring-closure)");
+        assert_round_trip_preserves_stash_representation(&mol, "path2(ring-closure)");
+    }
+
+    #[test]
+    fn direction_stash_branch_attachment_edge() {
+        // The `/` is the first bond inside a `(...)` branch, attaching the
+        // branch's first atom to its parent -- routed through
+        // `parse_chain`'s `attach_to` handling, not the plain chain-edge
+        // loop. Previously stored as a literal Up/Down order between two
+        // aromatic atoms (this is the real-world corpus mechanism: a
+        // canonical DFS can route what was a chain edge on the original
+        // parse through a branch attachment on the next).
+        let mol = parse(r"Cc1ccc(/c1)N").unwrap();
+        assert_aromatic_with_stash(&mol, BondIdx(4), "path3(branch-attachment)");
+        assert_round_trip_preserves_stash_representation(&mol, "path3(branch-attachment)");
     }
 
     #[test]
