@@ -9,9 +9,9 @@ This page gives a direct comparison between chematic and RDKit for teams evaluat
 | | chematic | RDKit |
 |---|---|---|
 | **Install** | `pip install chematic` | conda / cmake required |
-| **Browser / WASM** | Yes — 504 KB | No |
+| **Browser / WASM** | Yes — 719 KB | No |
 | **C++ dependency** | None (default) | Required |
-| **Batch fingerprint speed** | 3.6 µs/mol | 20–50 µs/mol |
+| **Batch fingerprint speed** | ~78 µs/mol (2–3× faster, diverse corpus) | ~160–235 µs/mol |
 | **AI agent integration** | MCP server built-in | None |
 | **Ecosystem maturity** | Growing (2024–) | Established (2006–) |
 
@@ -37,7 +37,7 @@ This page gives a direct comparison between chematic and RDKit for teams evaluat
 
 | Library | Bundle size | Build toolchain |
 |---|---|---|
-| **chematic** | **504 KB gzip** | `wasm-pack build` only |
+| **chematic** | **719 KB gzip** | `wasm-pack build` only |
 | RDKit.js | ~30 MB | Emscripten SDK + cmake |
 | Indigo WASM | ~40 MB | Emscripten SDK + cmake |
 
@@ -47,7 +47,9 @@ chematic compiles to `wasm32-unknown-unknown` natively — no Emscripten, no cma
 
 ## 2. Performance
 
-All measurements: Python 3.12, Apple M-series, chematic v0.4.22, RDKit 2026.03.3.
+All measurements: Python 3.13.6, Apple M4, chematic v0.4.29, RDKit 2026.03.3 (2026-07-17;
+see [`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md) for full methodology). Import
+time and SMILES parse throughput below were not remeasured this cycle.
 
 ### Import time (cold process)
 
@@ -81,17 +83,24 @@ python scripts/bench_smiles_parse.py --n 5000 --rdkit
 
 ### ECFP4 fingerprint generation (batch)
 
+Small repeated fixture (same 20-molecule set `scripts/benchmark_vs_rdkit.py` has always used):
+
 | N molecules | chematic (`bulk.ecfp4`) | RDKit (Python loop) | Speedup |
 |---|---|---|---|
-| 100 | 0.36 ms | 2 ms | 5× |
-| 1,000 | 3.6 ms | 20 ms | 5× |
-| 10,000 | 36 ms | ~500 ms | **~14×** |
+| 100 | 1.4 ms | 8 ms | 6.1× |
+| 1,000 | 10 ms | 83 ms | 8.0× |
+| 10,000 | 126 ms | 839 ms | **6.7×** |
 
-chematic uses Rayon for parallel batch processing. Speedup grows with batch size.
+On a large, structurally diverse 5,000-molecule ChEMBL corpus the margin is narrower:
+**~78 µs/mol** (chematic) vs ~160–235 µs/mol (RDKit), ~2–3×. chematic uses Rayon for
+parallel batch processing across all CPU cores. Neither number reproduces the
+previously-reported 3.6 µs/mol / 5–14× figures, even on the identical small-fixture
+script — see [`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md) for what was
+measured and what remains an open question.
 
 Reproduce:
 ```bash
-python scripts/bench_smiles_parse.py --n 10000 --rdkit
+python scripts/benchmark_vs_rdkit.py --rdkit
 ```
 
 ### Where RDKit is faster or better
@@ -154,11 +163,11 @@ Most common operations map directly:
 
 **Choose chematic if:**
 
-- You want chemistry in the browser (WASM, 504 KB, no server)
+- You want chemistry in the browser (WASM, 719 KB, no server)
 - You need a pure Rust stack with no C++ toolchain
 - You deploy to Lambda, Cloudflare Workers, or other constrained environments
 - You build AI agents and want native MCP tool integration
-- You need fast batch processing (ECFP4: 5–14× faster)
+- You need fast batch processing (ECFP4: 2–3× faster, Rayon-parallel)
 - You want `pip install` to just work — anywhere
 
 **Choose RDKit if:**

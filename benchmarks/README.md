@@ -6,7 +6,8 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 
 | Date | Version | Notes |
 |------|---------|-------|
-| [2026-06](2026-06.md) | v0.4.20 | Baseline: ECFP4, descriptor batch, WASM size, RDKit accuracy |
+| [2026-07-17](2026-07-17.md) | v0.4.29 | Hardware moved to Apple M4; throughput headline (5–14×) did not reproduce even on the same fixture — see file for details; descriptor accuracy holds |
+| [2026-06-25](2026-06-25.md) | v0.4.20 | Baseline: ECFP4, descriptor batch, WASM size, RDKit accuracy |
 
 ## How to reproduce
 
@@ -38,6 +39,10 @@ gzip -k pkg/chematic_wasm_bg.wasm && ls -lh pkg/chematic_wasm_bg.wasm.gz
 
 ## Hardware reference
 
-All Python benchmarks were measured on **Apple M2 (8-core, 8 GB RAM)** running macOS 14, Python 3.13, single process. Rust `cargo bench` numbers are from the same machine.
+Hardware varies by snapshot — see each dated file's header. 2026-06 was measured on Apple M2
+(8-core, 8 GB RAM) / macOS 14; 2026-07 moved to Apple M4 (10-core, 16 GB RAM) / macOS 26.
+Rust `cargo bench` numbers are from the same machine as the Python numbers in a given snapshot.
 
-Results vary by CPU and load — treat numbers as order-of-magnitude references, not SLA guarantees.
+Results vary by CPU, load, and corpus/fixture choice — treat numbers as order-of-magnitude
+references, not SLA guarantees. The 2026-07 snapshot found the headline throughput ratio is
+fixture-sensitive; read the Notes section of each file before quoting a number.

@@ -9,7 +9,7 @@
 [![docs.rs](https://docs.rs/chematic/badge.svg)](https://docs.rs/chematic)
 
 ![Pure Rust](https://img.shields.io/badge/Pure%20Rust-zero%20C%2B%2B-orange?logo=rust)
-![WASM](https://img.shields.io/badge/WASM-504%20KB-blueviolet?logo=webassembly)
+![WASM](https://img.shields.io/badge/WASM-719%20KB-blueviolet?logo=webassembly)
 ![MCP](https://img.shields.io/badge/MCP-agent%20ready-purple)
 [![ライセンス](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![デモ](https://img.shields.io/badge/demo-live-brightgreen)](https://kent-tokyo.github.io/chematic/playground/)
@@ -23,13 +23,13 @@ Pure Rust · C/C++ ゼロ · Python · WebAssembly · [ライブデモ](https://
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **導入方法** | `pip install chematic` | conda / cmake が必要 | Python バインディングなし |
-| **ブラウザ向けバンドル** | **504 KB** | 提供なし | ~30 MB（60× 大きい） |
-| **バッチ FP 速度** | **3.6 µs/mol**（5–14× 高速） | 20–50 µs/mol | — |
+| **ブラウザ向けバンドル** | **719 KB** | 提供なし | ~30 MB（~42× 大きい） |
+| **バッチ FP 速度** | **~78 µs/mol**（2–3× 高速） | ~160–235 µs/mol | — |
 | **メモリ安全性** | コンパイラが保証（Rust） | C++ | C++ |
 | **ソースビルド** | `cargo build` のみ | cmake + clang + Boost | Emscripten SDK |
 
 すべての数値は再現可能です — [ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。  
-WASM サイズ: chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
+WASM サイズ: chematic **719 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
 **機能の成熟度（早見表）：**
 
@@ -47,11 +47,11 @@ WASM サイズ: chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
 **chematic が適している場合：**
 
-- ブラウザで化学計算を動かしたい（WASM、504 KB、サーバー不要）
+- ブラウザで化学計算を動かしたい（WASM、719 KB、サーバー不要）
 - C++ ツールチェーンなしの Pure Rust スタックが必要
 - `pip install rdkit` が困難な環境（Cloudflare Workers、Lambda、組み込み）にデプロイする
 - AI エージェントを構築し、ネイティブな MCP ツール統合が必要
-- バッチ処理で高スループットが必要（ECFP4: RDKit の 5〜14 倍高速）
+- バッチ処理で高スループットが必要（ECFP4: RDKit の 2〜3 倍高速、Rayon 並列）
 - `pip install chematic` がどこでも動くシンプルさを求めている
 
 **RDKit が適している場合：**
@@ -154,8 +154,8 @@ MCP 対応エージェントから呼び出せる 15 の化学ツール：
 ### 速い
 
 Rust のゼロコスト抽象化と所有権モデルはオーバーヘッドをソースレベルで排除します。
-chematic の ECFP4 フィンガープリントバッチは **3.6 µs/mol** — 同じハードウェアで
-RDKit Python API の 5〜14× 高速。GIL なし、インタープリタオーバーヘッドなし、
+chematic の ECFP4 フィンガープリントバッチは多様な分子コーパスで **~78 µs/mol** — 同じハードウェアで
+RDKit Python API の 2〜3× 高速（全 CPU コアで Rayon 並列化）。GIL なし、インタープリタオーバーヘッドなし、
 `_sys` クレート内の FFI 呼び出しコストなし。
 
 ### 安全
@@ -176,7 +176,7 @@ C++ のヒープ破壊なし。不正な SMILES 入力によるセグメンテ�
 ### どこでも動く
 
 Pure Rust は Emscripten・`cmake`・`clang` なしで `wasm32-unknown-unknown` にネイティブでコンパイルされます。
-npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 60 分の 1。
+npm パッケージ `@kent-tokyo/chematic` は **719 KB gzip** — RDKit.js の約 42 分の 1。
 1 つのコードベースが Linux・macOS・Windows・あらゆるブラウザで動作します。
 
 ---
@@ -221,7 +221,7 @@ npm パッケージ `@kent-tokyo/chematic` は **504 KB gzip** — RDKit.js の 
 
 ## JavaScript / TypeScript（WebAssembly）
 
-**504 KB gzip — RDKit.js の 60 分の 1。** Emscripten・cmake 不要。ブラウザ・Node.js どちらでも動作。
+**719 KB gzip — RDKit.js の約 42 分の 1。** Emscripten・cmake 不要。ブラウザ・Node.js どちらでも動作。
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -266,7 +266,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-3d`          | 3D 座標生成、ETKDG KB (40 パターン、adaptive noise)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 265     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 retro-SMIRKS テンプレート (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ランク付き | 137      |
 | `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み | 96 (+16*)   |
-| `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.4.19；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211     |
+| `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.4.29（719 KB gzip）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 47      |
 | `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**20 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack | 31      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |

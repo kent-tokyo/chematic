@@ -1,6 +1,7 @@
 # Benchmark
 
-Measured environment: Python 3.12, Apple M-series, chematic v0.4.29, RDKit 2026.03.3.
+Measured environment: Python 3.13.6, Apple M4, chematic v0.4.29, RDKit 2026.03.3.
+Full methodology and raw numbers: [`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md).
 
 ---
 
@@ -8,13 +9,20 @@ Measured environment: Python 3.12, Apple M-series, chematic v0.4.29, RDKit 2026.
 
 | Metric | chematic | RDKit |
 |--------|----------|-------|
-| Import time | **~35 ms** | ~400 ms (11×) |
-| SMILES parse — 5,000 mol | **~5 ms** | ~50 ms (10×) |
-| ECFP4 batch — 10,000 mol | **36 ms** | ~500 ms (14×) |
-| Descriptor accuracy vs RDKit | **19 metrics 100%** — MW/HBA/HBD/TPSA/LogP/ARC/RotB/Spiro/Bridge/… (4,999-mol) | baseline |
+| Import time | **~35 ms** | ~400 ms (11×) — not remeasured this cycle |
+| SMILES parse — 5,000 mol | **~5 ms** | ~50 ms (10×) — not remeasured this cycle |
+| ECFP4 batch — 10,000 mol (small repeated fixture) | **126 ms** | ~839 ms (6.7×) |
+| ECFP4 batch — 5,000 mol (diverse ChEMBL corpus) | **~78 µs/mol** | ~160–235 µs/mol (2–3×) |
+| Descriptor accuracy vs RDKit | **19 metrics ≥98.6%, most 100%** — MW/HBA/HBD/TPSA/LogP/ARC/RotB/Spiro/Bridge/… (4,999-mol) | baseline |
 | Install | `pip install chematic` | conda or cmake |
 | C/C++ dependencies | **Zero** | Required |
-| WASM binary size | **504 KB** | ~30 MB |
+| WASM binary size | **719 KB** | ~30 MB |
+
+The ECFP4 speedup is fixture-dependent: a small set of simple molecules repeated to fill
+the batch shows a larger ratio than a large, structurally diverse corpus. See
+[`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md#notes) for why, and for a partial,
+evidence-backed explanation (SSSR ring-perception cost) of why both numbers are lower than
+the 2026-06 snapshot's headline (3.6 µs/mol, 5–14×) reported here previously.
 
 ---
 
@@ -80,15 +88,22 @@ python scripts/bench_smiles_parse.py --n 5000 --rdkit
 
 ## 3. Speed — ECFP4 Fingerprint Generation (batch)
 
-Rayon parallelism across all CPU cores; speedup grows with batch size.
+Rayon parallelism across all CPU cores. Fixture: 20 small drug-like SMILES cycled to
+fill each N (same fixture the historical 2026-06 numbers used) — see
+[`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md) for a large, diverse-corpus
+comparison that shows a smaller (~2–3×) margin on unique molecules.
 
 | Molecules (N) | chematic (`bulk.ecfp4`) | RDKit (Python loop) | Speedup |
 |---------------|------------------------|---------------------|---------|
-| 100 | 0.36 ms | 2 ms | 5× |
-| 1,000 | 3.6 ms | 20 ms | 5× |
-| 10,000 | 36 ms | ~500 ms | **~14×** |
+| 100 | 1.4 ms | 8 ms | 6.1× |
+| 1,000 | 10 ms | 83 ms | 8.0× |
+| 10,000 | 126 ms | 839 ms | **6.7×** |
 
-Per-molecule: **3.6 µs/mol** (chematic) vs 20–50 µs/mol (RDKit).
+Per-molecule: **~13 µs/mol** (chematic, small fixture) / **~78 µs/mol** (chematic, diverse
+5,000-mol corpus) vs ~84–235 µs/mol (RDKit, both fixtures). Measured 2026-07-17 on Apple M4;
+does not reproduce the previously-reported 3.6 µs/mol / 5–14× figures even on identical
+hardware-class and script — see `benchmarks/2026-07-17.md`'s Notes for what was ruled out
+and what remains an open question.
 
 **chematic**
 
@@ -138,18 +153,21 @@ Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). 
 | Num bridgehead atoms | **100%** | exact |
 | Num amide bonds | **100%** | exact |
 | Aromatic/aliphatic heterocycles | **100%** | exact |
-| Num stereocenters (legacy)  | **99.98%** | exact |
-| Num stereocenters (new CIP) | 98.7% | exact |
+| Num stereocenters (legacy)  | **99.96%** | exact |
+| Num stereocenters (new CIP) | 98.6% | exact |
 | [nH] SMARTS match | **100%** | precision/recall |
 
-19 of 19 metrics reach ≥98.7% on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
+19 of 19 metrics reach ≥98.6% on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
 Stereocenters are reported against two RDKit oracles:
-- Legacy `CalcNumAtomStereoCenters`: 99.98% (4998/4999). The 1 discrepancy is a polyester
-  where chematic correctly identifies 4 stereocenters while legacy misses 2 (confirmed by
-  `FindPotentialStereo`).
-- New CIP `FindPotentialStereo`: 98.7% (4932/4999). The new oracle counts cage/bridgehead
-  atoms as potential stereocenters in 67 molecules; chematic and legacy both correctly
-  exclude these false positives.
+- Legacy `CalcNumAtomStereoCenters`: 99.96% (4997/4999).
+- New CIP `FindPotentialStereo`: 98.6% (4929/4999). The new oracle counts cage/bridgehead
+  atoms as potential stereocenters in most of the residual; chematic and legacy both
+  correctly exclude these false positives.
+
+(These moved slightly, by 1–3 molecules each, from the 2026-07-13 snapshot in
+`docs/validation.md` — consistent with the `invert_stereocenter`/`transfer_hydrogen`/parser
+correctness fixes merged 2026-07-13 through 2026-07-17. See
+[`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md) for the fresh full run.)
 
 ### How to reproduce
 
@@ -168,7 +186,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 | C/C++ compiler | Not required | Required (Boost) |
 | Docker image size delta | ~4 MB | ~200 MB+ |
 | GitHub Actions | Single pip line | Separate conda setup step |
-| JavaScript / WASM | `npm install @kent-tokyo/chematic` (504 KB) | No official package |
+| JavaScript / WASM | `npm install @kent-tokyo/chematic` (719 KB) | No official package |
 | Browser deployment | Yes | No |
 
 ---
@@ -182,8 +200,8 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 | MCP server (AI agent integration) | 15 tools | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
 | IUPAC name generation | Built-in (offline) | Not available |
-| Browser / WASM deployment | Yes (504 KB) | No |
-| ECFP4 batch speed | 5–14× faster | Baseline |
+| Browser / WASM deployment | Yes (719 KB) | No |
+| ECFP4 batch speed | 2–3× faster (diverse corpus) | Baseline |
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |
 | File formats | 20+ | 100+ |
@@ -199,8 +217,14 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 
 | N | chematic (`bulk.descriptors`) | Descriptors per call |
 |---|-------------------------------|---------------------|
-| 100 | ~10 ms | 55+ (incl. pKa, ADMET) |
-| 1,000 | ~50 ms | 55+ (incl. pKa, ADMET) |
+| 100 | ~91 ms | 55+ (incl. pKa, ADMET) |
+| 1,000 | ~1.26 s | 55+ (incl. pKa, ADMET) |
+
+Measured 2026-07-17 (`scripts/benchmark_vs_rdkit.py --rdkit`); does not match the
+previously-listed ~10 ms / ~50 ms figures (~9–25× off). `descriptors_array(smiles, columns)`
+runs this same full pipeline regardless of the requested column subset — selecting fewer
+columns does not reduce the computation, only the returned dict. See
+[`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md#notes).
 
 ```python
 import chematic

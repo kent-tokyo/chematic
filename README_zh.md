@@ -9,7 +9,7 @@
 [![docs.rs](https://docs.rs/chematic/badge.svg)](https://docs.rs/chematic)
 
 ![Pure Rust](https://img.shields.io/badge/Pure%20Rust-zero%20C%2B%2B-orange?logo=rust)
-![WASM](https://img.shields.io/badge/WASM-504%20KB-blueviolet?logo=webassembly)
+![WASM](https://img.shields.io/badge/WASM-719%20KB-blueviolet?logo=webassembly)
 ![MCP](https://img.shields.io/badge/MCP-agent%20ready-purple)
 [![许可证](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![演示](https://img.shields.io/badge/demo-live-brightgreen)](https://kent-tokyo.github.io/chematic/playground/)
@@ -23,13 +23,13 @@
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **快速上手** | `pip install chematic` | 需要 conda / cmake | 无 Python 绑定 |
-| **浏览器包体积** | **504 KB** | 不支持 | ~30 MB（大 60 倍） |
-| **批量指纹速度** | **3.6 µs/mol**（快 5–14 倍） | 20–50 µs/mol | — |
+| **浏览器包体积** | **719 KB** | 不支持 | ~30 MB（大约 42 倍） |
+| **批量指纹速度** | **~78 µs/mol**（快 2–3 倍） | ~160–235 µs/mol | — |
 | **内存安全性** | 编译器保证（Rust） | C++ | C++ |
 | **源码构建** | 仅需 `cargo build` | cmake + clang + Boost | Emscripten SDK |
 
 所有数据均可复现 — 参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。  
-WASM 包体积对比：chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
+WASM 包体积对比：chematic **719 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
 **功能成熟度一览：**
 
@@ -47,11 +47,11 @@ WASM 包体积对比：chematic **504 KB** · RDKit.js ~30 MB · Indigo WASM ~40
 
 **适合使用 chematic 的场景：**
 
-- 需要在浏览器中运行化学计算（WASM，504 KB，无需服务器）
+- 需要在浏览器中运行化学计算（WASM，719 KB，无需服务器）
 - 需要纯 Rust 技术栈，不依赖 C++ 工具链
 - 部署到 `pip install rdkit` 不可行的环境（Cloudflare Workers、Lambda、嵌入式设备）
 - 构建 AI 代理并需要原生 MCP 工具集成
-- 需要批量高吞吐量处理分子（ECFP4：比 RDKit 快 5–14 倍）
+- 需要批量高吞吐量处理分子（ECFP4：比 RDKit 快 2–3 倍，Rayon 并行）
 - 希望 `pip install chematic` 在任何环境都能直接使用，无需编译器
 
 **适合使用 RDKit 的场景：**
@@ -139,8 +139,8 @@ chematic 是首个内置 **MCP（模型上下文协议）服务器**的化学信
 ### 快速
 
 Rust 的零成本抽象和所有权模型从源头消除开销。
-chematic 的 ECFP4 指纹批处理达到 **3.6 µs/mol** — 在同等硬件上比
-RDKit Python API 快 5–14×。无 GIL，无解释器开销，无 `_sys` crate 中隐藏的 FFI 调用开销。
+chematic 的 ECFP4 指纹批处理在多样化分子语料库上达到 **~78 µs/mol** — 在同等硬件上比
+RDKit Python API 快 2–3×（通过 Rayon 在所有 CPU 核心上并行）。无 GIL，无解释器开销，无 `_sys` crate 中隐藏的 FFI 调用开销。
 
 ### 安全
 
@@ -154,7 +154,7 @@ RDKit Python API 快 5–14×。无 GIL，无解释器开销，无 `_sys` crate 
 ### 随处可用
 
 纯 Rust 无需 Emscripten、`cmake`、`clang` 即可原生编译至 `wasm32-unknown-unknown`。
-npm 包 `@kent-tokyo/chematic` 为 **504 KB gzip** — 比 RDKit.js 小 60 倍。
+npm 包 `@kent-tokyo/chematic` 为 **719 KB gzip** — 比 RDKit.js 小约 42 倍。
 一套代码库在 Linux、macOS、Windows 及任意浏览器中运行。
 
 ---
@@ -189,7 +189,7 @@ npm 包 `@kent-tokyo/chematic` 为 **504 KB gzip** — 比 RDKit.js 小 60 倍�
 
 ## JavaScript / TypeScript（WebAssembly）
 
-**504 KB gzip — 比 RDKit.js 小 60 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
+**719 KB gzip — 比 RDKit.js 小约 42 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -234,7 +234,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-3d`         | 3D 坐标生成、ETKDG KB（40 种模式，自适应噪声）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 265    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 个 retro-SMIRKS 模板（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）+ SA 分数排序 | 137     |
 | `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取 | 96 (+16*)   |
-| `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.4.19；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211    |
+| `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.4.29（719 KB gzip）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 47     |
 | `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**20 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack | 31     |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
