@@ -9,9 +9,7 @@
 pub mod aromaticity;
 pub mod cip_priority;
 pub mod pharmacophore;
-#[cfg(any(test, feature = "diagnostics"))]
-#[doc(hidden)]
-pub mod rdkit_parity;
+mod rdkit_parity;
 pub mod ring_family;
 pub mod sssr;
 pub mod stereo_validation;
@@ -28,7 +26,25 @@ pub use aromaticity::{
 };
 pub use chematic_core::{ValenceError, validate_valence};
 pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitvec};
+pub use rdkit_parity::{
+    AromaticityError, apply_aromaticity_rdkit_parity_experimental,
+    assign_aromaticity_rdkit_parity_experimental,
+};
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_families_over};
+
+/// Diagnostic-only APIs, not meant for production use — reference-engine
+/// internals kept for cross-checking and corpus benchmarking. Gated behind
+/// the `diagnostics` feature. See `docs/aromaticity_a1_rfc.md`.
+///
+/// The production-facing surface of the RDKit-parity engine is
+/// [`assign_aromaticity_rdkit_parity_experimental`] and
+/// [`apply_aromaticity_rdkit_parity_experimental`], both always available
+/// (no feature flag required).
+#[cfg(feature = "diagnostics")]
+#[doc(hidden)]
+pub mod diagnostics {
+    pub use crate::rdkit_parity::rdkit_parity_aromaticity;
+}
 pub use sssr::{RingSet, find_sssr};
 pub use stereo_validation::{
     StereoCompleteness, StereoError, StereoErrorKind, stereo_completeness, validate_stereo,
