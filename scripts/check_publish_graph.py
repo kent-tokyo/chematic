@@ -62,6 +62,29 @@ def chematic_deps(manifest: dict, *sections: str) -> dict:
     return deps
 
 
+def versioned_dev_deps(manifest: dict) -> dict:
+    """{name: version} for chematic-* dev-dependencies that ALSO carry `path`
+    AND `version`. This is the exact shape that deadlocked chematic-smiles and
+    chematic-perception at 0.4.30: `cargo publish` generates a full Cargo.lock
+    (including dev-dependencies) before its verify step, so a version-pinned
+    dev-dependency must already be on the registry -- even though it's
+    stripped from the manifest seen by downstream consumers. A mutual pair of
+    these (or a forward reference to a not-yet-published crate) makes
+    publishing impossible. Path-only dev-dependencies (no `version`) are
+    exempt: Cargo drops them from the packaged manifest entirely.
+    """
+    deps = {}
+    for name, spec in manifest.get("dev-dependencies", {}).items():
+        if (
+            name.startswith("chematic")
+            and isinstance(spec, dict)
+            and "path" in spec
+            and spec.get("version") is not None
+        ):
+            deps[name] = spec["version"]
+    return deps
+
+
 def main() -> int:
     ver = workspace_version()
     crate_dirs = sorted(p for p in CRATES_DIR.iterdir() if (p / "Cargo.toml").exists())
@@ -73,9 +96,10 @@ def main() -> int:
         manifests[name] = m
 
     errors = []
-    # Normal-dependency-only graph, for cycle detection -- dev-dependencies are
-    # excluded because Cargo strips them from the published manifest and they
-    # never need to resolve against the registry.
+    # Normal-dependency-only graph, for cycle detection. dev-dependencies are
+    # excluded here because Cargo strips them from the manifest seen by
+    # DOWNSTREAM consumers -- but see versioned_dev_deps() below: a crate's
+    # OWN dev-dependencies still matter for ITS OWN `cargo publish`.
     normal_graph = {
         name: chematic_deps(m, "dependencies", "build-dependencies")
         for name, m in manifests.items()
@@ -84,6 +108,18 @@ def main() -> int:
     for name, manifest in manifests.items():
         if not is_publishable(manifest):
             continue
+        for dep_name in versioned_dev_deps(manifest):
+            errors.append(
+                f"{name}: dev-dependency on {dep_name} has both `path` and "
+                f"`version` set -- this must resolve against the registry at "
+                f"`cargo publish` time (Cargo generates a full Cargo.lock, "
+                f"including dev-deps, before verify), which will deadlock if "
+                f"{dep_name} isn't published yet (or worse, if the two crates "
+                f"have a mutual version-pinned dev-dependency on each other, "
+                f"neither can ever be published first). Drop `version`, keep "
+                f"only `path` -- Cargo drops path-only dev-deps from the "
+                f"published manifest entirely, so there's nothing to resolve."
+            )
         for dep_name, declared_ver in normal_graph[name].items():
             dep_manifest = manifests.get(dep_name)
             if dep_manifest is None:

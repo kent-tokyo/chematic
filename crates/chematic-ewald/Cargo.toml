@@ -20,4 +20,7 @@ chematic-core = { path = "../chematic-core", version = "0.4.30" }
 rustfft = "6.4"
 
 [dev-dependencies]
-chematic-3d = { path = "../chematic-3d", version = "0.4.30" }
+# Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
+# comment -- a version-pinned dev-dependency must resolve against the
+# registry at `cargo publish` time, which a forward reference can't satisfy.
+chematic-3d = { path = "../chematic-3d" }
