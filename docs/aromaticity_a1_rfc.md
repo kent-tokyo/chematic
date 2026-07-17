@@ -328,6 +328,118 @@ per-atom or per-candidate evaluation can answer. Studying RDKit's own published
 aromaticity algorithm is likely higher-yield for A1-1b's design than further reverse-
 engineering rules from cases.
 
+## A1-1b-0: RDKit-parity reference engine (this round, landed — no production wiring)
+
+A1-1a's own conclusion was that local per-atom/per-candidate rule-guessing had hit its
+ceiling — the false-positive family and purine both need cross-ring information no
+local rule supplies. Per instruction, this round stops guessing new local rules from
+cases and instead independently reproduces RDKit's actual default aromaticity algorithm
+as a reference engine, source-verified against `Code/GraphMol/Aromaticity.cpp` (fetched
+and read in full, not reverse-engineered from black-box test cases).
+
+**The exact divergence point**, confirmed by reading RDKit's real source: RDKit computes
+each atom's `ElectronDonorType` **once, globally per molecule**, before any candidate
+ring is evaluated. Whether a multiple bond "counts" toward an atom's donor type depends
+on whether that bond belongs to *any* SSSR ring in the whole molecule
+(`RingInfo::numBondRings(bond) > 0`), not whether it's inside the specific ring/component
+currently being scored. chematic's existing `ring_pi_electrons` and A1-1a's own
+`evaluate_atom_pi_contribution` are architecturally different: both evaluate per-
+candidate-ring/component. This is the precise, source-verified root cause of the
+false-positive family — a lone-pair donor's electrons get credited to one ring
+independent of whether that same atom's donor type would be disqualified by full-
+molecule context.
+
+New module `crates/chematic-perception/src/rdkit_parity.rs`, a faithful line-level port
+of RDKit's real functions:
+
+```rust
+pub enum ElectronDonorType { Vacant, OneElectron, TwoElectron, OneOrTwo, Any, None }
+
+pub fn get_atom_electron_donor_type(mol: &Molecule, atom_idx: AtomIdx, ring_bonds: &FxHashSet<BondIdx>) -> ElectronDonorType; // ported getAtomDonorTypeArom
+pub fn is_atom_candidate_for_aromaticity(mol: &Molecule, atom_idx: AtomIdx, donor_type: ElectronDonorType) -> bool; // ported isAtomCandForArom
+pub fn apply_huckel(mol: &Molecule, atoms: &[AtomIdx], donor: &FxHashMap<AtomIdx, ElectronDonorType>) -> bool; // ported applyHuckel
+
+pub fn rdkit_parity_aromaticity(mol: &Molecule) -> (FxHashSet<AtomIdx>, FxHashSet<BondIdx>);
+pub fn rdkit_parity_aromaticity_ex(mol: &Molecule, max_num_fused_rings: usize) -> (FxHashSet<AtomIdx>, FxHashSet<BondIdx>);
+```
+
+Driver flow, matching RDKit's `aromaticityHelper`: donor type per atom (global,
+full-molecule ring-membership context) → candidate ring filter (`isAtomCandForArom`) →
+fused-ring adjacency graph (rings sharing ≥1 bond, via union-find, matching
+`makeRingNeighborMap`) → for each fused group, enumerate connected ring subsets of size
+1..=6 (RDKit's own default `maxNumFusedRings` cap, via a hand-rolled `combinations(n, k)`
+matching RDKit's `nextCombination` order — this project has no `itertools` dependency) →
+union each subset's atoms, counting an atom only if it appears in exactly 1 or 2 of the
+subset's rings (RDKit's own "#2895" fix, avoids double-counting a 3-ring-shared central
+atom) → `applyHuckel` on the union → mark the subset's atoms/bonds aromatic on a pass,
+matching `applyHuckelToFused`.
+
+**Precondition, matching RDKit's own pipeline**: requires pre-kekulized input (no
+`BondOrder::Aromatic`) — RDKit's own sanitization always runs `Kekulize` before
+`setAromaticity` as genuinely separate steps, which is also why purine's two-path
+representation-dependence needed checking explicitly (see below).
+
+**Calibration battery** (`rdkit_parity.rs`'s own test module, all RDKit-atom-index-
+verified before being pinned, not guessed): 15 cases spanning
+benzene/pyrrole/furan/thiophene/tropone/2-pyridone/4-pyranone/indolizine/azulene/
+naphthalene/anthracene/indole/quinoline/purine/the false-positive reproducer —
+`calibration_battery_matches_rdkit`, 15/15 pass. `purine_representation_stable`: both
+Kekulization paths (raw aromatic parse's own implicit kekulization vs chematic's
+explicit `kekulize()`) agree with each other and with RDKit (all 9 atoms aromatic) —
+confirms this round resolves the representation-dependence A1-0 first surfaced.
+
+**Gate result on the 55-molecule diagnosis corpus** (`scripts/aromaticity_a1_1b_0_gate.py`,
+joins `rdkit_parity_aromaticity`'s per-atom output against real RDKit per
+`(smiles, atom_idx)`, same join methodology as every prior corpus gate in this doc):
+
+```
+false_positive corpus fixed:  33/33
+false_negative corpus fixed: 5/5
+negative_control maintained: 17/17
+RDKit atom-flag agreement: 100.00% (1214/1214)
+Unexplained differences: 0
+=== GATE: PASS ===
+```
+
+Full gate met — all conditions the user specified for this round (33 FP fixed / 5 FN
+fixed / 17 NC maintained / 100% atom-flag agreement / 0 unexplained diffs) are satisfied.
+
+**Full 5,000-molecule benchmark corpus** (`~/Downloads/SMILES.csv`, the same corpus used
+throughout this project's benchmarking — gitignored, user-supplied, not committed): run
+via `crates/chematic-perception/examples/rdkit_parity_full_corpus.rs`, joined via
+`scripts/aromaticity_a1_1b_0_full_corpus_gate.py` at **set level** (per-atom and
+per-bond, not a count comparison — an earlier pass compared only aromatic atom/bond
+*counts* per molecule, which is blind to same-count/different-atoms mismatches; this was
+caught before being reported and redone as a real per-atom/per-bond join):
+
+**100.0000% atom/bond agreement on all 4,999 comparable molecules** (1/5,000 excluded by
+a pre-existing chematic `kekulize()` gap — RDKit parses the excluded molecule fine;
+chematic's own `kekulize()` rejects a bridgehead N in a fused purine-like system,
+`Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C` — a separate, narrower, pre-existing limitation not
+touched by this round):
+
+```
+Comparable molecules:                4,999 / 5,000
+Atoms:                              138,635 / 138,635
+Bonds:                               150,004 / 150,004
+Unexplained aromaticity differences: 0
+```
+
+This is a dramatic improvement over the current production baseline of 99.44% atom /
+98.82% bond agreement (`docs/rdkit_compat.md`), and — because it is a source-verified
+reproduction of RDKit's real algorithm rather than an approximation built from local
+rules — appears to resolve both of A1-1a's open findings (the false-positive family and
+purine) **by construction**, not by another round of case-specific patching.
+
+**Still not wired into production.** `ring_pi_electrons`, `assign_aromaticity_ex`, and
+`apply_aromaticity_ex` are untouched by this round — `rdkit_parity_aromaticity` is a
+standalone reference engine, reachable only via its own public API and examples/tests.
+Wiring it in behind an opt-in `AromaticityAlgorithm` variant (A1-1b proper) and later
+promoting it to `apply_aromaticity("rdkit_like")`'s default (the PR-sequence step after
+that) both require a fresh explicit go-ahead, per this initiative's standing diagnosis-
+before-wiring discipline — the gate being met (and exceeded) is not itself that
+go-ahead.
+
 ## A1's gate (for the eventual production-enabling PR, not A1-0)
 
 Per the user's spec — not evaluated in this round, recorded here so A1-1/A1-2's PRs are
@@ -360,10 +472,23 @@ measured against a fixed target instead of a moving one:
    correct (not the fix target); confirmed candidate generation alone fixes azulene but
    not the false-positive family or purine — both left as open, pinned findings for
    A1-1b, not solved here.
-4. A1-1b — component solver that actually resolves the false-positive/purine open
-   questions above (harder than originally scoped; likely needs to study RDKit's own
-   aromaticity algorithm design, not just iterate on local per-atom rules), test-only/
-   opt-in behind a new `AromaticityAlgorithm` variant (not started).
-5. Enable the solver into `apply_aromaticity("rdkit_like")` + full regression against
-   the gate above (not started).
-6. Docs/benchmark updates reflecting the final measured numbers (not started).
+4. **This PR — Aromaticity-A1-1b-0**: RDKit-parity reference engine
+   (`rdkit_parity_aromaticity`), a source-verified port of RDKit's actual default
+   aromaticity algorithm (`ElectronDonorType`, candidate rings, fused-ring adjacency,
+   `applyHuckelToFused`-style subset search). Test/diagnostic-only, no production
+   wiring. Passes the full 55-molecule gate (33 FP / 5 FN / 17 NC / 100% atom-flag
+   agreement / 0 unexplained diffs) and, beyond the stated gate, reaches 100.0000%
+   set-level atom/bond agreement with real RDKit on all 4,999 comparable molecules of
+   the full 5,000-molecule benchmark corpus (1 excluded by a pre-existing, unrelated
+   `kekulize()` gap — vs the 99.44%/98.82% production baseline) — appears to resolve
+   both of A1-1a's open findings (false-positive family, purine) by construction.
+   Ports specific RDKit functions under RDKit's BSD 3-Clause license; attribution and
+   full license text recorded in `THIRD_PARTY_NOTICES.md`. The low-level port
+   (`rdkit_parity` module) is diagnostic-only, gated behind this crate's `diagnostics`
+   feature (or `#[cfg(test)]`) and not exported from the crate root.
+5. A1-1b — wire `rdkit_parity_aromaticity` behind a new opt-in `AromaticityAlgorithm`
+   variant, test-only/opt-in (not started; requires explicit go-ahead following this
+   PR's review).
+6. Enable the solver into `apply_aromaticity("rdkit_like")`'s default + full regression
+   against the gate above (not started).
+7. Docs/benchmark updates reflecting the final measured numbers (not started).

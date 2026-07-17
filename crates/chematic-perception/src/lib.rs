@@ -9,6 +9,9 @@
 pub mod aromaticity;
 pub mod cip_priority;
 pub mod pharmacophore;
+#[cfg(any(test, feature = "diagnostics"))]
+#[doc(hidden)]
+pub mod rdkit_parity;
 pub mod ring_family;
 pub mod sssr;
 pub mod stereo_validation;
