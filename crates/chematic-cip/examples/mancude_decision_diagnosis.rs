@@ -58,6 +58,13 @@ use chematic_cip::{
 };
 use chematic_core::{AtomIdx, Chirality, CipCode};
 
+/// The `SMILES.csv` this tool's own aggregate counts (and
+/// `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry, which quotes them) were
+/// measured against -- see [`corpus_sha256`]'s call site in `main` for the runtime
+/// check against whatever corpus is actually passed in.
+const EXPECTED_CORPUS_SHA256: &str =
+    "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e";
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let csv_path = args
@@ -66,6 +73,7 @@ fn main() {
         .unwrap_or_else(|| format!("{}/Downloads/SMILES.csv", env::var("HOME").unwrap()));
 
     let content = fs::read_to_string(&csv_path).expect("read SMILES.csv");
+    let actual_sha256 = corpus_sha256(&csv_path);
     let smis: Vec<&str> = content
         .lines()
         .skip(1)
@@ -259,11 +267,22 @@ fn main() {
 
     println!("=== MANCUDE-Decision-A0 ===");
     println!("corpus: {csv_path}");
-    println!(
-        "classification A (corpus drift): RULED OUT -- `shasum -a 256` on this file was \
-         independently verified (outside this tool) to match docs/cip_accurate_rfc.md's \
-         recorded M3B-1b closeout corpus_sha256=1c47371d... exactly."
-    );
+    println!("corpus_sha256: {actual_sha256}");
+    if actual_sha256 == EXPECTED_CORPUS_SHA256 {
+        println!(
+            "classification A (corpus drift): RULED OUT -- corpus_sha256 matches \
+             docs/cip_accurate_rfc.md's recorded MANCUDE-Decision-A0/M3B-1b closeout \
+             value exactly."
+        );
+    } else {
+        println!(
+            "*** WARNING: corpus_sha256 does NOT match the expected \
+             {EXPECTED_CORPUS_SHA256} -- classification A (corpus drift) is LIVE for \
+             this run. The aggregate counts below are NOT directly comparable to \
+             docs/cip_accurate_rfc.md's recorded MANCUDE-Decision-A0 closeout numbers. \
+             ***"
+        );
+    }
     println!();
     println!("--- comparison events (strict counters, same as CIP-Perf-A0's Q3) ---");
     println!("fractional_comparisons_total: {total_fractional_comparisons}");
@@ -337,4 +356,22 @@ fn code_str(c: CipCode) -> &'static str {
         CipCode::LowerR => "r",
         CipCode::LowerS => "s",
     }
+}
+
+/// SHA-256 of `path`'s contents, via the platform `shasum` binary -- `sha2` is not a
+/// workspace dependency and this is a one-shot diagnostic tool, not production code.
+fn corpus_sha256(path: &str) -> String {
+    use std::process::Command;
+    let output = Command::new("shasum")
+        .arg("-a")
+        .arg("256")
+        .arg(path)
+        .output()
+        .expect("run `shasum -a 256` (required to verify corpus identity)");
+    String::from_utf8(output.stdout)
+        .expect("utf8 shasum output")
+        .split_whitespace()
+        .next()
+        .expect("shasum hash field")
+        .to_string()
 }

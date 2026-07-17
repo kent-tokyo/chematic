@@ -102,6 +102,32 @@ fn pct<T: Ord + Copy>(values: &[T], p: usize) -> T {
     sorted[idx]
 }
 
+/// The `SMILES.csv` this tool's own aggregate counts (99.3%/0.7% resolution split,
+/// comparator-size percentiles) were measured against and quoted in
+/// `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry -- see [`corpus_sha256`]'s
+/// call site in `main` for the runtime check against whatever corpus is actually
+/// passed in.
+const EXPECTED_CORPUS_SHA256: &str =
+    "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e";
+
+/// SHA-256 of `path`'s contents, via the platform `shasum` binary -- `sha2` is not a
+/// workspace dependency and this is a one-shot diagnostic tool, not production code.
+fn corpus_sha256(path: &str) -> String {
+    use std::process::Command;
+    let output = Command::new("shasum")
+        .arg("-a")
+        .arg("256")
+        .arg(path)
+        .output()
+        .expect("run `shasum -a 256` (required to verify corpus identity)");
+    String::from_utf8(output.stdout)
+        .expect("utf8 shasum output")
+        .split_whitespace()
+        .next()
+        .expect("shasum hash field")
+        .to_string()
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let csv_path = args
@@ -110,6 +136,22 @@ fn main() {
         .unwrap_or_else(|| format!("{}/Downloads/SMILES.csv", env::var("HOME").unwrap()));
 
     let content = fs::read_to_string(&csv_path).expect("read SMILES.csv");
+    let actual_sha256 = corpus_sha256(&csv_path);
+    println!("corpus: {csv_path}");
+    println!("corpus_sha256: {actual_sha256}");
+    if actual_sha256 == EXPECTED_CORPUS_SHA256 {
+        println!(
+            "classification A (corpus drift): RULED OUT -- corpus_sha256 matches this \
+             tool's recorded MANCUDE-Decision-A0 closeout value exactly."
+        );
+    } else {
+        println!(
+            "*** WARNING: corpus_sha256 does NOT match the expected \
+             {EXPECTED_CORPUS_SHA256} -- the aggregate counts below are NOT directly \
+             comparable to docs/cip_accurate_rfc.md's recorded closeout numbers. ***"
+        );
+    }
+    println!();
     let smis: Vec<&str> = content
         .lines()
         .skip(1)
@@ -301,9 +343,16 @@ fn main() {
     println!(
         "fractional_decisions_total={fractional_decisions_total} -- {}",
         if fractional_decisions_total == 0 {
-            "0 as expected; Q1's proxy is sound for this run"
+            "0; Q1's proxy is sound for this run"
         } else {
-            "NONZERO -- Q1's pass1_resolved/resolved_pass2_or_3 split is unreliable this run, a fraction actually changed a ranking"
+            "NONZERO -- a fraction was decision-involved somewhere in Pass 1's recursive \
+             comparison. This does NOT by itself mean Q1's resolved_pass1 vs \
+             resolved_pass2_or_3 split is wrong -- 'decision-involved' and 'changes the \
+             resolved label' are different claims (see \
+             examples/mancude_decision_diagnosis.rs and \
+             docs/cip_accurate_rfc.md's MANCUDE-Decision-A0 entry for the full, \
+             structure-isolated classification: on this corpus, 0 stereocenters have \
+             their final label changed by the fraction)."
         }
     );
 }
