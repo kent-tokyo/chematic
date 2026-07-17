@@ -536,6 +536,15 @@ and two *independently computed* regression counts).
      structurally could not see. Not root-caused or fixed this round (out of this
      closeout's scope; recorded for Milestone 4 to pick up if it recurs there).
 
+     **Partial correction (Milestone MANCUDE-Decision-A0, below):** "unaffected by
+     [MANCUDE] either way" is imprecise. Root-caused later: `candidate` *does* resolve
+     these 3 to the correct `S` (unlike `baseline`), but via Kekule-respelling structure
+     (real double-bond duplicate nodes an aromatic-bond digraph never emits) introduced
+     by Milestone 3B-1b — not via anything "pre-existing." What *is* correctly
+     unaffected is the fractional atomic-number machinery specifically: holding the
+     Kekule-respelled structure fixed and toggling only the attached `MancudeContext`
+     leaves these 3 centers' resolved label unchanged. See the full breakdown below.
+
    Final results, reported as three explicit comparisons rather than one bare percentage:
    ```
    vs FastApproximate (chematic_chem::assign_cip, cip_ground_truth.py): 4031/4186 (96.30%)
@@ -1599,6 +1608,115 @@ milestone — this is the criteria list for a future decision, not a decision):
   decision, not a number this milestone can resolve on its own.
 - Opt-in in production for ≥ 1 release — not yet started; this milestone's numbers are
   the *starting* baseline for that period, not evidence the period has elapsed.
+
+## Milestone MANCUDE-Decision-A0 — tripwire closeout, diagnosis only, no crate changes
+
+Milestone 3B-1b's closeout asserted `CompareContext::fractional_decisions` "is
+expected to be **0**" on the frozen corpus, and named a future nonzero value as
+Milestone 3B-2's own resumption condition #1. That assertion was checked only against
+one curated molecule (`digraph.rs`'s
+`live_path_fires_fractional_nodes_and_comparisons_on_curated_corpus_molecule`), never
+measured at full-corpus scale — a gap surfaced while investigating CIP-Perf-A0
+(below), not this milestone's original purpose. This entry runs that measurement for
+the first time and classifies the result.
+
+**Method.** Two new diagnosis-only tools (no production code touched):
+`examples/cip_perf_diagnosis.rs` and `examples/mancude_decision_diagnosis.rs`, both
+reusing existing `pub` API only (`CipDigraph`, `CompareContext`, `rank_children`,
+`prepare_kekule_form`, the two `assign_cip_accurate_experimental*` entry points) — the
+same combination `examples/trace_report.rs` already exercised.
+
+**Reproducibility.**
+```
+corpus:            SMILES.csv (5,000 rows)
+corpus_sha256:      1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e
+                    (matches this RFC's own recorded Milestone 3B closeout value
+                    exactly — classification "corpus drift" ruled out)
+rdkit_version:      2026.03.3 (.venv/bin/python3 — matches the recorded closeout version)
+```
+
+**Raw counts.**
+```
+fractional_comparisons_total: 984,112
+fractional_decisions_total:   248
+stereocenters_with_decisions: 36
+molecules_with_decisions:     21
+```
+
+**Classification.** A naive "with vs without `MancudeContext`" contrast bundles two
+independent changes — aromatic→Kekule-respelled *structure* and integer→fractional
+*value* — and produces a wrong split (an intermediate result of this investigation
+counted 33 D / 3 E using that contrast; **corrected below** once structure and value
+were properly isolated). Isolating them: hold the Kekule-respelled structure fixed
+(`CipDigraph::new` vs `new_with_mancude`, both on the same Kekule-respelled clone) and
+compare only the root-child partition.
+- **All 36** affected stereocenters: partition **unchanged** by attaching
+  `MancudeContext` once structure is held fixed → classification **D** (fraction
+  locally load-bearing — `fractional_decisions > 0` — but final-label-inert).
+- **Zero** are classification **E** (fraction changes the final label).
+
+**The 3 stereocenters that flip vs. the un-Kekulized baseline** (already on record in
+this RFC's Milestone 3B closeout, line ~529, as `baseline=R modern=S`):
+```
+Oc1cc(C(F)(F)F)c2cc3c(cc2n1)NC[C@@H]1CCCC[C@H]31  atom 22
+Oc1cc(C(F)(F)F)c2cc3c(cc2n1)NC[C@@H]1CCC[C@H]31   atom 21
+Oc1cc(C(F)(F)F)c2cc3c(cc2n1)NC[C@H]1CCCC[C@H]31   atom 22
+```
+All three: `assign_cip_accurate_experimental_without_mancude` on the *original*
+aromatic-form molecule gives `R`; `assign_cip_accurate_experimental_without_mancude`
+on the *Kekule-respelled* clone (structure-only, no `MancudeContext` attached) already
+gives `S`; the live production path also gives `S`. Both `S` answers match RDKit
+modern (`rdCIPLabeler`) and legacy (`_CIPCode`) oracles, RDKit 2026.03.3. Fix is
+Kekule-respelling structure, confirmed fraction-independent — consistent with (not
+contradicting) Milestone 3B-1b's original "gain is Kekule-respelling, not the
+fractional values" finding, once the fraction is actually isolated from structure
+rather than assumed inert from a single-molecule spot check. Frozen as regression
+fixtures in `tests/mancude_decision_regression.rs` (production live-engine output +
+structural facts frozen; live RDKit is not a test-time dependency).
+
+**Official accuracy impact: none.** `scripts/cip_accurate_full_corpus_report.py`
+already scores the mancude-aware `assign_cip_accurate_experimental` as `candidate` —
+these 3 rows were already counted correctly in every reported accuracy number,
+including this file's own Milestone 3B closeout figures. No regression, before or
+after this diagnosis.
+
+**Not done, deliberately out of scope this round:** bisecting which commit (if any)
+first made `fractional_decisions` nonzero at these 36 centers — moot for the
+classification (D holds regardless of when it started; a historical check at the
+Milestone 3B closeout commit, `4e78c53`, found `fractional_decisions=12` and the same
+structure-vs-fraction split already present there, so this was never actually zero —
+the "0" in the original closeout was an unverified extrapolation, not a later
+regression).
+
+**Disposition:**
+- **Milestone 3B-2 is not reopened for implementation.** Its resumption condition
+  (`fractional_decisions > 0` on a real corpus) fired, was investigated, and resolved
+  to "no corrective implementation required" — the production path was already
+  correct. Recorded as closed-by-diagnosis, not as new work.
+- `CompareContext::fractional_decisions`'s doc comment corrected in `compare.rs` to
+  state the real value and the D/E classification methodology, rather than "expected
+  0."
+- **CIP-Perf-S1 is closed as unnecessary.** The motivating question (does chematic
+  compute Rule 4b/5-equivalent auxiliary descriptors for every stereocenter
+  unconditionally, RDKit PR #9171's bug) is answered no: `assign.rs`/`resolver.rs`
+  already gate both later passes on `SkipReason::Tied` from the prior pass. Measured
+  directly: of 4,188 R/S-eligible stereocenters, 4,159 (99.3%) resolve at Rules
+  1a/1b/2 alone; only 29 (0.7%) ever reach Rule 4b/5.
+- **CIP-Perf-A1** (separate issue, not started): even among the 99.3% that resolve at
+  Rules 1a/1b/2 alone, `rank_children`'s comparator size has a long tail —
+  ```
+  pass1_resolved:   n=4159  comparisons[median/p95/max]=24/954/89,250   depth[median/p95/max]=3/11/22   dup_nodes%=18.5
+  needs_pass2_or_3: n=29    comparisons[median/p95/max]=2,094/36,198/36,198  depth[median/p95/max]=21/33/33
+  ```
+  Worst `pass1_resolved` case: a fused polyphenolic macrocycle (89,250 comparisons).
+  Worst `needs_pass2_or_3` case: an adamantane-cage amide (36,198 comparisons) — the
+  same cage family Milestone 5B's 17-carbon unresolved bucket already names. Candidate
+  mechanism: `rank_children`'s per-sibling-group pairwise comparison matrix, applied at
+  every visited depth, on highly symmetric/duplicate-heavy digraphs. No implementation
+  started; see the issue for the proposed investigation order and the gate an eventual
+  optimization PR must clear (assignments and skip reasons byte-identical, this
+  milestone's D/E classification unchanged, the 3 regression fixtures above unchanged,
+  oracle agreement unchanged, budget-exceeded count does not increase).
 
 ## Required property tests (starting Milestone 1)
 
