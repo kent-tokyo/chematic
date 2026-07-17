@@ -8,8 +8,15 @@
 //!
 //! **Test/diagnostic-only. Not wired into `assign_aromaticity_ex`,
 //! `apply_aromaticity_ex`, `ring_pi_electrons`, or any other production
-//! decision path.** See `docs/aromaticity_a1_rfc.md`'s "A1-1b-0" section for
-//! the full design writeup, the calibration battery, and the corpus gate.
+//! decision path.** Only reachable behind this crate's `diagnostics` feature
+//! (or from `#[cfg(test)]`). See `docs/aromaticity_a1_rfc.md`'s "A1-1b-0"
+//! section for the full design writeup, the calibration battery, and the
+//! corpus gate.
+//!
+//! Ported from RDKit release `Release_2026_03_4`, commit
+//! `e89c9f656a694fab4105139844cba88d2e013354`. See `THIRD_PARTY_NOTICES.md`
+//! at the repo root for the required BSD 3-Clause attribution and license
+//! text.
 //!
 //! Unlike this crate's own `ring_pi_electrons`/`evaluate_atom_pi_contribution`
 //! (which evaluate an atom's contribution *per candidate ring/component*),

@@ -5,16 +5,17 @@
 //! Diagnostic only -- `rdkit_parity_aromaticity` is not wired into
 //! production. See `docs/aromaticity_a1_rfc.md`'s "A1-1b-0" section.
 //!
-//! Run:
+//! Run (requires the `diagnostics` feature):
 //! ```text
-//! cargo run -p chematic-perception --release --example aromaticity_a1_1b_0_report \
+//! cargo run -p chematic-perception --release --features diagnostics \
+//!     --example aromaticity_a1_1b_0_report \
 //!     -- validation/aromaticity_a1_0_corpus.jsonl \
 //!     > validation/results/aromaticity_a1_1b_0_trace.jsonl
 //! ```
 
 use std::fs;
 
-use chematic_perception::rdkit_parity_aromaticity;
+use chematic_perception::rdkit_parity::rdkit_parity_aromaticity;
 use serde_json::{Value, json};
 
 fn main() {

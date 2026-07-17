@@ -9,6 +9,8 @@
 pub mod aromaticity;
 pub mod cip_priority;
 pub mod pharmacophore;
+#[cfg(any(test, feature = "diagnostics"))]
+#[doc(hidden)]
 pub mod rdkit_parity;
 pub mod ring_family;
 pub mod sssr;
@@ -26,10 +28,6 @@ pub use aromaticity::{
 };
 pub use chematic_core::{ValenceError, validate_valence};
 pub use pharmacophore::{Feature, FeatureType, detect_features, features_to_bitvec};
-pub use rdkit_parity::{
-    ElectronDonorType, apply_huckel, get_atom_electron_donor_type,
-    is_atom_candidate_for_aromaticity, rdkit_parity_aromaticity, rdkit_parity_aromaticity_ex,
-};
 pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_families_over};
 pub use sssr::{RingSet, find_sssr};
 pub use stereo_validation::{

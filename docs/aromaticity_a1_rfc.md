@@ -412,13 +412,17 @@ per-bond, not a count comparison — an earlier pass compared only aromatic atom
 *counts* per molecule, which is blind to same-count/different-atoms mismatches; this was
 caught before being reported and redone as a real per-atom/per-bond join):
 
+**100.0000% atom/bond agreement on all 4,999 comparable molecules** (1/5,000 excluded by
+a pre-existing chematic `kekulize()` gap — RDKit parses the excluded molecule fine;
+chematic's own `kekulize()` rejects a bridgehead N in a fused purine-like system,
+`Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C` — a separate, narrower, pre-existing limitation not
+touched by this round):
+
 ```
-processed 4999/5000 molecules (1 pre-existing kekulize() gap, unrelated to this round
-  — RDKit parses the molecule fine; chematic's kekulize() itself rejects a bridgehead N
-  in a fused purine-like system, "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C" — a separate,
-  narrower, pre-existing limitation not touched by this round)
-atom-level set agreement: 138635/138635 (100.0000%)
-bond-level set agreement: 150004/150004 (100.0000%)
+Comparable molecules:                4,999 / 5,000
+Atoms:                              138,635 / 138,635
+Bonds:                               150,004 / 150,004
+Unexplained aromaticity differences: 0
 ```
 
 This is a dramatic improvement over the current production baseline of 99.44% atom /
@@ -473,10 +477,15 @@ measured against a fixed target instead of a moving one:
    aromaticity algorithm (`ElectronDonorType`, candidate rings, fused-ring adjacency,
    `applyHuckelToFused`-style subset search). Test/diagnostic-only, no production
    wiring. Passes the full 55-molecule gate (33 FP / 5 FN / 17 NC / 100% atom-flag
-   agreement / 0 unexplained diffs) and, beyond the stated gate, reaches 100.00%/100.00%
-   set-level atom/bond agreement with real RDKit on the full 5,000-molecule benchmark
-   corpus (vs the 99.44%/98.82% production baseline) — appears to resolve both of
-   A1-1a's open findings (false-positive family, purine) by construction.
+   agreement / 0 unexplained diffs) and, beyond the stated gate, reaches 100.0000%
+   set-level atom/bond agreement with real RDKit on all 4,999 comparable molecules of
+   the full 5,000-molecule benchmark corpus (1 excluded by a pre-existing, unrelated
+   `kekulize()` gap — vs the 99.44%/98.82% production baseline) — appears to resolve
+   both of A1-1a's open findings (false-positive family, purine) by construction.
+   Ports specific RDKit functions under RDKit's BSD 3-Clause license; attribution and
+   full license text recorded in `THIRD_PARTY_NOTICES.md`. The low-level port
+   (`rdkit_parity` module) is diagnostic-only, gated behind this crate's `diagnostics`
+   feature (or `#[cfg(test)]`) and not exported from the crate root.
 5. A1-1b — wire `rdkit_parity_aromaticity` behind a new opt-in `AromaticityAlgorithm`
    variant, test-only/opt-in (not started; requires explicit go-ahead following this
    PR's review).

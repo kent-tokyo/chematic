@@ -5,16 +5,17 @@
 //! mismatches) at the same scale as this project's existing 99.44%/98.82%
 //! baseline (`docs/rdkit_compat.md`).
 //!
-//! Diagnostic only. Run:
+//! Diagnostic only. Run (requires the `diagnostics` feature):
 //! ```text
-//! cargo run -p chematic-perception --release --example rdkit_parity_full_corpus \
+//! cargo run -p chematic-perception --release --features diagnostics \
+//!     --example rdkit_parity_full_corpus \
 //!     -- ~/Downloads/SMILES.csv \
 //!     > validation/results/rdkit_parity_full_corpus_trace.jsonl
 //! ```
 
 use std::fs;
 
-use chematic_perception::rdkit_parity_aromaticity;
+use chematic_perception::rdkit_parity::rdkit_parity_aromaticity;
 use serde_json::json;
 
 fn main() {

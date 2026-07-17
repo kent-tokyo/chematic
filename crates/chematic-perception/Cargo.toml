@@ -15,6 +15,11 @@ documentation = "https://docs.rs/chematic-perception"
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+# Diagnostic/reference-only APIs not meant for production use, e.g. the
+# RDKit-parity aromaticity reference engine (see docs/aromaticity_a1_rfc.md).
+diagnostics = []
+
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.4.29" }
 rustc-hash = "2"
@@ -27,3 +32,11 @@ serde_json = "1.0"
 [[bench]]
 name = "sssr_bench"
 harness = false
+
+[[example]]
+name = "aromaticity_a1_1b_0_report"
+required-features = ["diagnostics"]
+
+[[example]]
+name = "rdkit_parity_full_corpus"
+required-features = ["diagnostics"]
