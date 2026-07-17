@@ -6,12 +6,18 @@
 //! `aromaticityHelper`'s `includeFused` branch — the exact path
 //! `setAromaticity(mol, AROMATICITY_RDKIT, ...)` calls).
 //!
-//! **Test/diagnostic-only. Not wired into `assign_aromaticity_ex`,
-//! `apply_aromaticity_ex`, `ring_pi_electrons`, or any other production
-//! decision path.** Only reachable behind this crate's `diagnostics` feature
-//! (or from `#[cfg(test)]`). See `docs/aromaticity_a1_rfc.md`'s "A1-1b-0"
-//! section for the full design writeup, the calibration battery, and the
-//! corpus gate.
+//! **Not wired into `assign_aromaticity_ex`/`apply_aromaticity_ex`/
+//! `ring_pi_electrons` (the `Huckel`/`RdkitLike` production path is
+//! unchanged and still the default).** As of A1-1b-1 this engine backs a
+//! separate, explicitly opt-in, fallible production API:
+//! [`assign_aromaticity_rdkit_parity_experimental`] and
+//! [`apply_aromaticity_rdkit_parity_experimental`], re-exported from the
+//! crate root. Every other item in this module (the low-level donor-type/
+//! Hückel machinery) is crate-private; the only way to reach it from
+//! outside the crate is through those two functions, or, for diagnostics,
+//! `diagnostics::rdkit_parity_aromaticity` behind the `diagnostics` feature.
+//! See `docs/aromaticity_a1_rfc.md`'s "A1-1b-0"/"A1-1b-1" sections for the
+//! full design writeup, the calibration battery, and the corpus gate.
 //!
 //! Ported from RDKit release `Release_2026_03_4`, commit
 //! `e89c9f656a694fab4105139844cba88d2e013354`. See `THIRD_PARTY_NOTICES.md`
@@ -42,6 +48,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 
+use crate::aromaticity::AromaticityModel;
 use crate::sssr::find_sssr;
 
 // ---------------------------------------------------------------------------
@@ -50,8 +57,12 @@ use crate::sssr::find_sssr;
 
 /// Per-atom pi-electron donor classification, computed once per molecule
 /// (not per candidate ring). Direct port of RDKit's `ElectronDonorType`.
+///
+/// Crate-internal: not part of the public API. The only supported entry
+/// points are [`assign_aromaticity_rdkit_parity_experimental`] and
+/// [`apply_aromaticity_rdkit_parity_experimental`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ElectronDonorType {
+pub(crate) enum ElectronDonorType {
     /// No electrons to spare, but an empty p-orbital (e.g. tropylium-type carbocation).
     Vacant,
     /// Exactly 1 electron (a normal sp2 atom with one endocyclic pi bond).
@@ -60,6 +71,14 @@ pub enum ElectronDonorType {
     TwoElectron,
     /// Either 1 or 2, ambiguous until a specific candidate ring/subset is evaluated
     /// (RDKit tries every value in this range when checking Hückel's rule).
+    ///
+    /// Kept for shape-fidelity with RDKit's own `ElectronDonorType` enum
+    /// (this port's `get_atom_electron_donor_type` doesn't currently
+    /// construct this variant on any input the calibration battery or the
+    /// 5,000-molecule corpus exercises -- was previously masked by this
+    /// enum being `pub`, which suppresses rustc's dead-code analysis for
+    /// externally-constructible items). Not a behavior change to fix here.
+    #[allow(dead_code)]
     OneOrTwo,
     /// Dummy-atom wildcard (1 or 2, but at most one such atom per evaluated ring).
     Any,
@@ -216,7 +235,7 @@ fn more_electronegative(a: u8, b: u8) -> bool {
 /// Port of `getAtomDonorTypeArom` (default params: `exocyclicBondsStealElectrons = true`).
 /// `ring_bonds` = the set of bond indices that are part of *any* SSSR ring in
 /// the whole molecule (global, not scoped to one candidate ring/subset).
-pub fn get_atom_electron_donor_type(
+pub(crate) fn get_atom_electron_donor_type(
     mol: &Molecule,
     atom_idx: AtomIdx,
     ring_bonds: &FxHashSet<BondIdx>,
@@ -273,7 +292,7 @@ pub fn get_atom_electron_donor_type(
 /// Port of `isAtomCandForArom` with the DEFAULT model's parameters
 /// (`allowThirdRow=true, allowTripleBonds=true, allowHigherExceptions=true,
 /// onlyCorN=false, allowExocyclicMultipleBonds=true`).
-pub fn is_atom_candidate_for_aromaticity(
+pub(crate) fn is_atom_candidate_for_aromaticity(
     mol: &Molecule,
     atom_idx: AtomIdx,
     donor_type: ElectronDonorType,
@@ -344,7 +363,7 @@ fn min_max_atom_electrons(dtype: ElectronDonorType) -> (i32, i32) {
 /// electron count in `[sum_of_lower_bounds, sum_of_upper_bounds]` satisfies
 /// 4n+2 -- or the `rup == 2` special case for tiny rings (e.g. cyclopropenyl
 /// cation).
-pub fn apply_huckel(
+pub(crate) fn apply_huckel(
     mol: &Molecule,
     atoms: &[AtomIdx],
     donor: &FxHashMap<AtomIdx, ElectronDonorType>,
@@ -529,7 +548,7 @@ pub fn rdkit_parity_aromaticity(mol: &Molecule) -> (FxHashSet<AtomIdx>, FxHashSe
     rdkit_parity_aromaticity_ex(mol, 6)
 }
 
-pub fn rdkit_parity_aromaticity_ex(
+pub(crate) fn rdkit_parity_aromaticity_ex(
     mol: &Molecule,
     max_num_fused_rings: usize,
 ) -> (FxHashSet<AtomIdx>, FxHashSet<BondIdx>) {
@@ -601,6 +620,169 @@ pub fn rdkit_parity_aromaticity_ex(
     }
 
     (aromatic_atoms, aromatic_bonds)
+}
+
+// ---------------------------------------------------------------------------
+// Production entry points (A1-1b-1): fallible opt-in API
+// ---------------------------------------------------------------------------
+
+/// Error from the RDKit-parity experimental aromaticity API.
+///
+/// Unlike [`assign_aromaticity_ex`](crate::assign_aromaticity_ex)/
+/// [`apply_aromaticity_ex`](crate::apply_aromaticity_ex) (infallible, and
+/// unchanged by this addition), this engine requires an explicit
+/// kekulization step it does not control the success of, so its entry
+/// points return `Result` rather than silently falling back to another
+/// algorithm or panicking.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AromaticityError {
+    /// The input could not be reduced to a Kekulé form (no `BondOrder::Aromatic`
+    /// bonds), which this engine requires as a precondition -- mirrors RDKit's
+    /// own pipeline, where `Kekulize` always runs before `setAromaticity`.
+    KekulizationFailed {
+        /// Human-readable detail from the underlying `chematic_core::KekuleError`.
+        reason: String,
+    },
+    /// A post-computation sanity check failed (e.g. an aromatic bond with a
+    /// non-aromatic endpoint atom) -- should never happen for chemically
+    /// valid input; surfaced as an error rather than a panic or a silently
+    /// wrong result.
+    InternalInvariantViolation {
+        /// Human-readable detail of which invariant failed.
+        reason: String,
+    },
+}
+
+impl std::fmt::Display for AromaticityError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AromaticityError::KekulizationFailed { reason } => {
+                write!(f, "rdkit-parity aromaticity: kekulization failed: {reason}")
+            }
+            AromaticityError::InternalInvariantViolation { reason } => {
+                write!(
+                    f,
+                    "rdkit-parity aromaticity: internal invariant violation: {reason}"
+                )
+            }
+        }
+    }
+}
+
+impl std::error::Error for AromaticityError {}
+
+/// Clone `mol` with every atom's `aromatic` flag reset to `false`.
+///
+/// Bond orders (including any `BondOrder::Aromatic`) are copied unchanged --
+/// only the atom-level annotation is cleared. This engine derives
+/// aromaticity purely from element/charge/bond-order structure (never reads
+/// `atom.aromatic`), so clearing stale flags here has no effect on the
+/// computation itself; it only ensures the *output* molecule's flags come
+/// entirely from this engine's own verdict, never from whatever annotation
+/// the caller's input happened to carry in.
+fn clear_aromatic_flags(mol: &Molecule) -> Molecule {
+    use chematic_core::MoleculeBuilder;
+    let mut builder = MoleculeBuilder::new();
+    for (_, atom) in mol.atoms() {
+        let mut a = atom.clone();
+        a.aromatic = false;
+        builder.add_atom(a);
+    }
+    for (_, bond) in mol.bonds() {
+        let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+    }
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.build()
+}
+
+/// Normalize `mol` to pure Kekulé form (this engine's precondition): clear
+/// stale aromatic flags, then kekulize. Returns an explicit error instead of
+/// falling back to another algorithm or leaving a partially-rewritten
+/// molecule behind -- `mol` itself is never mutated, only read.
+fn kekulize_for_rdkit_parity(mol: &Molecule) -> Result<Molecule, AromaticityError> {
+    let cleared = clear_aromatic_flags(mol);
+    match chematic_core::kekulize(&cleared) {
+        Ok(k) => Ok(chematic_core::apply_kekule(&cleared, &k)),
+        Err(e) => Err(AromaticityError::KekulizationFailed { reason: e.detail }),
+    }
+}
+
+/// Every aromatic bond's two endpoint atoms must themselves be in the
+/// aromatic atom set -- a basic well-formedness property of any Hückel
+/// verdict. Cheap to check, catches a class of bug that would otherwise
+/// surface downstream as a confusing SMILES/valence inconsistency instead
+/// of a clear error at the source.
+fn validate_aromaticity_invariants(
+    mol: &Molecule,
+    atoms: &FxHashSet<AtomIdx>,
+    bonds: &FxHashSet<BondIdx>,
+) -> Result<(), AromaticityError> {
+    for &bidx in bonds {
+        let bond = mol.bond(bidx);
+        if !atoms.contains(&bond.atom1) || !atoms.contains(&bond.atom2) {
+            return Err(AromaticityError::InternalInvariantViolation {
+                reason: format!(
+                    "aromatic bond {bidx:?} ({:?}-{:?}) has a non-aromatic endpoint atom",
+                    bond.atom1, bond.atom2
+                ),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn assign_from_kekulized(kekulized: &Molecule) -> Result<AromaticityModel, AromaticityError> {
+    let (atoms, bonds) = rdkit_parity_aromaticity(kekulized);
+    validate_aromaticity_invariants(kekulized, &atoms, &bonds)?;
+    Ok(AromaticityModel::from_atom_bond_sets(atoms, bonds))
+}
+
+/// Assign aromaticity using the RDKit-parity reference engine
+/// (`rdkit_parity_aromaticity`, see the module doc comment).
+///
+/// Explicitly opt-in and separate from [`assign_aromaticity_ex`]/
+/// [`AromaticityAlgorithm`] -- those remain infallible and unchanged. This
+/// function is fallible because it performs its own kekulization
+/// internally (this engine requires pre-kekulized input); on failure,
+/// `mol` is never touched and no partial result is produced.
+///
+/// The returned model's atom/bond indices correspond 1:1 with `mol`'s own
+/// indices (kekulization here is index-preserving: it only clears stale
+/// aromatic flags and normalizes bond orders, never adds/removes/reorders
+/// atoms or bonds).
+///
+/// [`ring_classifications`](AromaticityModel::ring_classifications) and
+/// [`antiaromatic_rings`](AromaticityModel::antiaromatic_rings) are always
+/// empty on the returned model -- this engine (like RDKit's own) determines
+/// only the aromatic atom/bond sets, not a per-ring classification or
+/// antiaromaticity verdict.
+///
+/// [`assign_aromaticity_ex`]: crate::assign_aromaticity_ex
+/// [`AromaticityAlgorithm`]: crate::AromaticityAlgorithm
+pub fn assign_aromaticity_rdkit_parity_experimental(
+    mol: &Molecule,
+) -> Result<AromaticityModel, AromaticityError> {
+    let kekulized = kekulize_for_rdkit_parity(mol)?;
+    assign_from_kekulized(&kekulized)
+}
+
+/// Apply aromaticity using the RDKit-parity reference engine, returning a
+/// new [`Molecule`] with atom/bond flags set according to the computed
+/// model.
+///
+/// See [`assign_aromaticity_rdkit_parity_experimental`] for the fallibility
+/// contract (kekulization failure is reported, never silently substituted
+/// or partially applied) and the index-correspondence guarantee.
+pub fn apply_aromaticity_rdkit_parity_experimental(
+    mol: &Molecule,
+) -> Result<Molecule, AromaticityError> {
+    let kekulized = kekulize_for_rdkit_parity(mol)?;
+    let model = assign_from_kekulized(&kekulized)?;
+    Ok(crate::aromaticity::build_molecule_from_model(
+        &kekulized, &model,
+    ))
 }
 
 // ---------------------------------------------------------------------------
@@ -710,6 +892,113 @@ mod tests {
             a,
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
             "purine: should match RDKit (all 9 atoms aromatic)"
+        );
+    }
+
+    #[test]
+    fn production_api_assign_matches_engine_on_benzene() {
+        let mol = chematic_smiles::parse("c1ccccc1").expect("valid SMILES");
+        let model = assign_aromaticity_rdkit_parity_experimental(&mol).expect("benzene kekulizes");
+        assert_eq!(model.aromatic_atom_count(), 6);
+        for (idx, _) in mol.atoms() {
+            assert!(
+                model.is_atom_aromatic(idx),
+                "atom {idx:?} should be aromatic"
+            );
+        }
+        // This engine only determines atom/bond sets, not per-ring
+        // classification or antiaromaticity -- both must be empty.
+        assert!(model.ring_classifications().is_empty());
+        assert!(model.antiaromatic_rings().is_empty());
+    }
+
+    #[test]
+    fn production_api_apply_sets_aromatic_flags_and_bond_orders() {
+        let mol = chematic_smiles::parse("C1=CC=CC=C1").expect("valid SMILES"); // Kekule benzene
+        let applied = apply_aromaticity_rdkit_parity_experimental(&mol).expect("benzene kekulizes");
+        assert_eq!(applied.atom_count(), mol.atom_count());
+        for (_, atom) in applied.atoms() {
+            assert!(atom.aromatic, "every benzene atom should end up aromatic");
+        }
+        for (_, bond) in applied.bonds() {
+            assert_eq!(bond.order, BondOrder::Aromatic);
+        }
+    }
+
+    #[test]
+    fn production_api_reports_kekulize_failure_not_panic() {
+        // The one known-gap molecule from the full-corpus gate: RDKit itself
+        // parses this fine, but chematic's own `kekulize()` rejects a
+        // bridgehead N in this fused purine-like system. Must surface as
+        // `AromaticityError::KekulizationFailed`, not a panic and not a
+        // silent fallback to another algorithm.
+        let smi = "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C";
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+
+        match assign_aromaticity_rdkit_parity_experimental(&mol) {
+            Err(AromaticityError::KekulizationFailed { .. }) => {}
+            other => panic!("expected KekulizationFailed, got {other:?}"),
+        }
+        // `Molecule` has no `Debug` impl, so match on the error shape only
+        // (discarding the `Ok(Molecule)` payload) rather than formatting
+        // the whole `Result` on failure.
+        match apply_aromaticity_rdkit_parity_experimental(&mol).map(|_| ()) {
+            Err(AromaticityError::KekulizationFailed { .. }) => {}
+            other => panic!("expected KekulizationFailed, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn production_api_does_not_mutate_input_on_failure() {
+        // "元の分子を途中まで書き換えてから失敗する経路は作らないでください" --
+        // `mol` is only ever taken by `&Molecule` throughout the fallible
+        // path (`clear_aromatic_flags`/`kekulize`/`apply_kekule` all build
+        // new molecules rather than mutating in place), so this is enforced
+        // by the type system. Pin it as an explicit regression: the input's
+        // own atom/bond flags and counts are unchanged after a failed call.
+        let smi = "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C";
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let atom_count_before = mol.atom_count();
+        let bond_count_before = mol.bond_count();
+        let aromatic_before: Vec<bool> = mol.atoms().map(|(_, a)| a.aromatic).collect();
+
+        let result = assign_aromaticity_rdkit_parity_experimental(&mol);
+        assert!(
+            result.is_err(),
+            "this molecule is a known kekulize-gap case"
+        );
+
+        assert_eq!(mol.atom_count(), atom_count_before);
+        assert_eq!(mol.bond_count(), bond_count_before);
+        let aromatic_after: Vec<bool> = mol.atoms().map(|(_, a)| a.aromatic).collect();
+        assert_eq!(aromatic_before, aromatic_after);
+    }
+
+    #[test]
+    fn production_api_stale_aromatic_flag_is_overridden_not_leaked() {
+        // A non-aromatic atom that happens to carry a stale `aromatic=true`
+        // flag on input must not leak that flag into the output -- the
+        // engine's own verdict is the sole source of truth for the result.
+        use chematic_core::MoleculeBuilder;
+
+        let mut base = chematic_smiles::parse("CC").expect("valid SMILES"); // ethane, acyclic
+        let mut builder = MoleculeBuilder::new();
+        for (_, atom) in base.atoms() {
+            let mut a = atom.clone();
+            a.aromatic = true; // stale/bogus annotation
+            builder.add_atom(a);
+        }
+        for (_, bond) in base.bonds() {
+            let _ = builder.add_bond(bond.atom1, bond.atom2, bond.order);
+        }
+        base = builder.build();
+        assert!(base.atoms().all(|(_, a)| a.aromatic), "test setup sanity");
+
+        let applied = apply_aromaticity_rdkit_parity_experimental(&base)
+            .expect("acyclic molecule kekulizes trivially (no-op)");
+        assert!(
+            applied.atoms().all(|(_, a)| !a.aromatic),
+            "stale aromatic=true on an acyclic atom must not survive"
         );
     }
 }

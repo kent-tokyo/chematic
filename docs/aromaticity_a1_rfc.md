@@ -440,6 +440,150 @@ that) both require a fresh explicit go-ahead, per this initiative's standing dia
 before-wiring discipline — the gate being met (and exceeded) is not itself that
 go-ahead.
 
+## A1-1b-1: fallible opt-in production API (this round, landed)
+
+A1-1b-0's gate passed with room to spare (100.0000% set agreement on 4,999/5,000
+comparable molecules). This round wires that reference engine into a real, callable
+production API — but as a **separate fallible surface**, not a new
+`AromaticityAlgorithm` variant, because the existing production API
+(`assign_aromaticity_ex`/`apply_aromaticity_ex`) is infallible by contract (`Huckel` and
+`RdkitLike` never fail), and this engine's precondition — pre-kekulized input — is not
+always satisfiable (the one known `kekulize()` gap). Bending the existing infallible
+signature to accommodate one fallible variant would have been the wrong shape; adding a
+parallel `Result`-returning API keeps both contracts honest.
+
+```rust
+pub enum AromaticityError {
+    KekulizationFailed { reason: String },
+    InternalInvariantViolation { reason: String },
+}
+
+pub fn assign_aromaticity_rdkit_parity_experimental(
+    mol: &Molecule,
+) -> Result<AromaticityModel, AromaticityError>;
+
+pub fn apply_aromaticity_rdkit_parity_experimental(
+    mol: &Molecule,
+) -> Result<Molecule, AromaticityError>;
+```
+
+Both are always available (no feature flag) — only the low-level `rdkit_parity` engine
+internals remain gated. `mod rdkit_parity;` is now unconditionally compiled (it backs
+production code), but every item inside it except the two functions above is
+`pub(crate)`; the only way to reach the raw engine from outside the crate is through
+those two functions, or, for diagnostics/benchmarking, a new
+`chematic_perception::diagnostics` module (`#[doc(hidden)]`, gated behind the
+`diagnostics` feature) that re-exports just `rdkit_parity_aromaticity`.
+
+**Execution path**, matching the specified shape exactly:
+
+```
+input Molecule (&, never mutated)
+  -> private clone with every atom's `aromatic` flag reset to false
+      (this engine only ever reads BondOrder::Aromatic, never atom.aromatic,
+      so this has no effect on the *computation* -- it exists purely so the
+      *output* molecule's flags come entirely from this engine's own
+      verdict, never leftover from whatever the caller passed in)
+  -> kekulize() -- Err(KekulizationFailed { reason }) on failure, `mol` untouched
+  -> rdkit_parity_aromaticity(): donor type computed once per molecule,
+     candidate rings, fused-ring subsets, Hückel verdict (unchanged from A1-1b-0)
+  -> validate_aromaticity_invariants(): every aromatic bond's two endpoints
+     must themselves be aromatic atoms -- Err(InternalInvariantViolation) if not
+     (0/4,999 fired on the full corpus; exists as a defensive no-panic
+     guarantee, not because a violation was ever observed)
+  -> AromaticityModel::from_atom_bond_sets() (ring_classifications() and
+     antiaromatic_rings() are empty -- this engine, like RDKit's own,
+     determines only the aromatic atom/bond sets)
+  -> apply(): build_molecule_from_model() -- the SAME shared function
+     apply_aromaticity_ex() uses (extracted, not duplicated) for implicit-H
+     preservation, bond-direction stashing, and stereo-metadata copying
+```
+
+Every step takes `&Molecule` and returns a new value; nothing is mutated in place, so
+there is no path that partially rewrites the input before failing (enforced by the type
+system, and pinned by `production_api_does_not_mutate_input_on_failure`).
+
+**Verification, not re-derivation.** Since A1-1b-0 already proved the underlying engine
+against RDKit, this round's job was to prove the *wiring* is mechanical — that routing
+through the new fallible entry points doesn't perturb the already-verified verdicts:
+
+- 55-molecule diagnosis corpus, through `assign_aromaticity_rdkit_parity_experimental`
+  (raw aromatic-form input, no manual pre-kekulization) — **byte-identical** JSONL output
+  to the A1-1b-0 trace (1,214/1,214 rows).
+- Full 5,000-molecule corpus, through the same production function — **byte-identical**
+  atom/bond rows to the A1-1b-0 full-corpus trace (138,635 atom rows, 150,004 bond rows),
+  transitively inheriting the 100.0000% RDKit set-agreement result without re-joining
+  RDKit. Exactly 1 `KekulizationFailed` (the known gap), 0 `InternalInvariantViolation`,
+  0 disagreements between `assign_...`/`apply_...` on the same input.
+
+**Downstream checks — additive reading, not bit-identity-with-default.** The engine
+changes aromaticity by design on the molecules where current production already
+disagrees with RDKit (~0.56% atoms / ~1.18% bonds); demanding bit-identity between
+experimental-applied output and default-applied output would fail by construction on
+exactly the cases this engine exists to fix. Interpreted additively instead:
+
+1. **Existing default-path suites stay green.** `assign_aromaticity_ex`/
+   `apply_aromaticity_ex` are byte-unchanged (only the internals were reorganized into a
+   shared `build_molecule_from_model` helper both paths call); `cargo test --workspace
+   --lib` is 0 failures across every crate, including the existing 80,000-pair SMARTS
+   corpus, descriptor/fingerprint/CIP-MANCUDE suites — none of which touch the new
+   experimental path.
+2. **Experimental-applied molecules don't crash or corrupt.** New Rust-level check
+   (`crates/chematic-smarts/examples/aromaticity_a1_1b_1_downstream_check.rs` — lives in
+   `chematic-smarts`, not `chematic-perception`, since the reverse dependency direction
+   would be circular), full 5,000-molecule corpus, molecules produced by
+   `apply_aromaticity_rdkit_parity_experimental`:
+   - SMARTS matching (the same 16-pattern set `scripts/rdkit_compat_diff.py` uses for the
+     existing 80,000-pair corpus) completes without panicking on every evaluation:
+     **79,984/79,984** (4,999 molecules × 16 patterns). This does not re-run the
+     Python-bound 80k corpus itself against the new engine — Python/WASM exposure is
+     explicitly out of scope for this PR — it's a proportionate Rust-level substitute
+     using the same query set at the same corpus scale.
+   - Canonical SMILES round-trip idempotency: **4,912/4,999 (98.26%)** stable. This is
+     *not* a new defect: the pre-existing idempotency baseline (documented in
+     `docs/rdkit_compat.md`, "large fused-ring-system aromaticity round-trip", a
+     canonicalization-tie-break issue upstream of this PR) is already ~98.4% on the same
+     corpus under the *default* pipeline (measured same-run baseline: 69/5,000 = 98.62%
+     unstable via `apply_aromaticity_ex(.., RdkitLike)`). The two unstable sets overlap
+     62/87 (71%); tracing a sample of the 25 molecules unstable *only* under the
+     experimental path found their final aromatic atom/bond verdict is **identical** to
+     the default path's — the divergence traces instead to `build_molecule_from_model`'s
+     implicit-H "Kekule-then-perceive" freeze logic, which behaves slightly differently
+     depending on whether its `mol` argument was already Kekule-form (experimental always
+     passes its own internally-kekulized clone) or still aromatic-form (default's `mol`
+     argument, when the caller passes genuinely aromatic-written SMILES directly, as most
+     of this corpus is). Both are internally consistent with the shared function's
+     documented intent; this shifts *which* molecules hit the pre-existing
+     idempotency gap rather than introducing a new one. Not chased further — root-causing
+     the exact shift is out of scope for a mechanical-wiring PR; flagged here rather than
+     rounded off.
+3. **Representation parity: 4,999/4,999 (100%).** Aromatic-form input and explicitly
+   pre-kekulized input produce an identical aromatic atom set through the production API
+   — generalizes `purine_representation_stable` (one pinned molecule) to the full corpus.
+
+**Performance — recorded, not optimized** (this PR does not tune either engine for
+speed; `crates/chematic-perception/examples/aromaticity_a1_1b_1_perf.rs`, full
+5,000-molecule corpus, warm-up pass excluded from timing):
+
+| Engine | mean | p50 | p95 | max |
+|---|---|---|---|---|
+| `RdkitLike` (current production default) | 408.3µs | 260.2µs | 1021.5µs | 27.7ms |
+| `RdkitParityExperimental` | 424.7µs | 275.1µs | 1062.2µs | 27.3ms |
+
+~4% slower on mean/p50/p95 — essentially comparable, not the order-of-magnitude gap seen
+elsewhere in this project's opt-in-accuracy tradeoffs (e.g. CIP Accurate's ~10x). Peak
+RSS is a coarse whole-process figure (`/usr/bin/time -l` around the full benchmark run,
+both engines plus warm-up in one process): ~19MB: not cleanly separable per-engine in a
+single process, and not expected to differ meaningfully — both algorithms allocate
+`FxHashSet`/`FxHashMap` sized to one molecule's ring/atom count per call, freed
+immediately after, so peak RSS is dominated by corpus loading, not algorithm choice.
+
+**Non-goals held**: `RdkitLike` is not replaced, the default is not changed, the one
+known `kekulize()` gap is not fixed (it surfaces as `KekulizationFailed`, not a silent
+fallback), the reference engine's algorithm is not touched, no SMARTS/canonical-specific
+exceptions were added, and this round does not touch Python/WASM bindings or README
+default-accuracy numbers.
+
 ## A1's gate (for the eventual production-enabling PR, not A1-0)
 
 Per the user's spec — not evaluated in this round, recorded here so A1-1/A1-2's PRs are
@@ -465,30 +609,41 @@ measured against a fixed target instead of a moving one:
 
 1. PR #86 — SMARTS-A0 diagnosis (merged).
 2. PR #87 — Aromaticity-A1-0: component trace + corpus, no behavior change (merged).
-3. **This PR — Aromaticity-A1-1a**: component model (`PiEligibility`,
-   `ConjugatedComponent`, `evaluate_atom_pi_contribution`) + exhaustive reference
-   oracle, no production wiring. Fixed 2 bugs found in this round's own new code
-   (connectivity, home-ring degree evaluation); confirmed the atom-8 carbonyl rule is
-   correct (not the fix target); confirmed candidate generation alone fixes azulene but
-   not the false-positive family or purine — both left as open, pinned findings for
-   A1-1b, not solved here.
-4. **This PR — Aromaticity-A1-1b-0**: RDKit-parity reference engine
+3. PR #88 — Aromaticity-A1-1a: component model (`PiEligibility`, `ConjugatedComponent`,
+   `evaluate_atom_pi_contribution`) + exhaustive reference oracle, no production wiring
+   (merged). Fixed 2 bugs found in this round's own new code (connectivity, home-ring
+   degree evaluation); confirmed the atom-8 carbonyl rule is correct (not the fix
+   target); confirmed candidate generation alone fixes azulene but not the
+   false-positive family or purine — both left as open, pinned findings for A1-1b.
+4. PR #89 — Aromaticity-A1-1b-0: RDKit-parity reference engine
    (`rdkit_parity_aromaticity`), a source-verified port of RDKit's actual default
    aromaticity algorithm (`ElectronDonorType`, candidate rings, fused-ring adjacency,
-   `applyHuckelToFused`-style subset search). Test/diagnostic-only, no production
-   wiring. Passes the full 55-molecule gate (33 FP / 5 FN / 17 NC / 100% atom-flag
-   agreement / 0 unexplained diffs) and, beyond the stated gate, reaches 100.0000%
-   set-level atom/bond agreement with real RDKit on all 4,999 comparable molecules of
-   the full 5,000-molecule benchmark corpus (1 excluded by a pre-existing, unrelated
-   `kekulize()` gap — vs the 99.44%/98.82% production baseline) — appears to resolve
-   both of A1-1a's open findings (false-positive family, purine) by construction.
-   Ports specific RDKit functions under RDKit's BSD 3-Clause license; attribution and
-   full license text recorded in `THIRD_PARTY_NOTICES.md`. The low-level port
-   (`rdkit_parity` module) is diagnostic-only, gated behind this crate's `diagnostics`
-   feature (or `#[cfg(test)]`) and not exported from the crate root.
-5. A1-1b — wire `rdkit_parity_aromaticity` behind a new opt-in `AromaticityAlgorithm`
-   variant, test-only/opt-in (not started; requires explicit go-ahead following this
-   PR's review).
-6. Enable the solver into `apply_aromaticity("rdkit_like")`'s default + full regression
-   against the gate above (not started).
-7. Docs/benchmark updates reflecting the final measured numbers (not started).
+   `applyHuckelToFused`-style subset search), no production wiring (merged). Passed the
+   full 55-molecule gate (33 FP / 5 FN / 17 NC / 100% atom-flag agreement / 0
+   unexplained diffs) and, beyond the stated gate, reached 100.0000% set-level atom/bond
+   agreement with real RDKit on all 4,999 comparable molecules of the full 5,000-molecule
+   benchmark corpus (1 excluded by a pre-existing, unrelated `kekulize()` gap — vs the
+   99.44%/98.82% production baseline) — resolved both of A1-1a's open findings
+   (false-positive family, purine) by construction. Ports specific RDKit functions under
+   RDKit's BSD 3-Clause license; attribution and full license text recorded in
+   `THIRD_PARTY_NOTICES.md`.
+5. **This PR — Aromaticity-A1-1b-1**: fallible opt-in production API
+   (`assign_aromaticity_rdkit_parity_experimental`/
+   `apply_aromaticity_rdkit_parity_experimental`, `AromaticityError`), always available
+   (no feature flag); the low-level `rdkit_parity` engine internals are `pub(crate)`,
+   reachable externally only through those two functions or, for diagnostics, the new
+   `diagnostics` module (gated behind the `diagnostics` feature). Mechanical wiring only
+   — no algorithm change, no `RdkitLike` replacement, no default change. Verified
+   byte-identical to the A1-1b-0 trace on both the 55-molecule and full 5,000-molecule
+   corpora (proving the wiring layer doesn't perturb the already-verified engine);
+   downstream checks (SMARTS-doesn't-panic, canonical round-trip, representation parity)
+   read additively rather than as bit-identity-with-default, since this engine changes
+   aromaticity by design on the molecules where production already disagrees with RDKit.
+6. A1-1b-2 — Python/WASM opt-in exposure of the new production API (not started).
+7. K0 — diagnose the one remaining `kekulize()` gap
+   (`Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C`) that currently surfaces as
+   `AromaticityError::KekulizationFailed` (not started).
+8. A1-1c — downstream regression/perf evaluation at a scope beyond this PR's proportionate
+   checks, if the additive-reading interpretation above needs revisiting (not started).
+9. A1-1d — decide whether to promote the RDKit-parity engine to
+   `apply_aromaticity("rdkit_like")`'s default, informed by A1-1b-2/K0/A1-1c (not started).

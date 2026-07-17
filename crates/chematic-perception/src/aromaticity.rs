@@ -111,6 +111,25 @@ impl AromaticityModel {
     pub fn has_antiaromaticity(&self) -> bool {
         !self.antiaromatic_rings.is_empty()
     }
+
+    /// Build a model directly from an aromatic atom/bond set, with no ring
+    /// classification or antiaromaticity data.
+    ///
+    /// Used by engines (e.g. `rdkit_parity`'s experimental production API)
+    /// that determine an aromatic atom/bond set directly rather than via
+    /// this module's own per-ring Hückel passes -- `ring_classifications()`
+    /// and `antiaromatic_rings()` are empty on the result.
+    pub(crate) fn from_atom_bond_sets(
+        aromatic_atoms: FxHashSet<AtomIdx>,
+        aromatic_bonds: FxHashSet<BondIdx>,
+    ) -> Self {
+        AromaticityModel {
+            aromatic_atoms,
+            aromatic_bonds,
+            antiaromatic_rings: Vec::new(),
+            ring_classifications: Vec::new(),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -288,9 +307,21 @@ pub fn apply_aromaticity(mol: &Molecule) -> Molecule {
 ///
 /// Returns a new [`Molecule`] with aromatic flags set according to `algo`.
 pub fn apply_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Molecule {
-    use chematic_core::{BondOrder, MoleculeBuilder, implicit_hcount};
-
     let model = assign_aromaticity_ex(mol, algo);
+    build_molecule_from_model(mol, &model)
+}
+
+/// Build a new [`Molecule`] from `mol` with atom/bond aromaticity flags set
+/// according to an already-computed `model`.
+///
+/// Shared by [`apply_aromaticity_ex`] and the `rdkit_parity` experimental
+/// production API (`apply_aromaticity_rdkit_parity_experimental`) so both
+/// get the same implicit-H preservation, bond-direction stashing, and
+/// stereo-metadata copying -- this is the same "Kekule-then-perceive"
+/// normalization either caller needs, not something specific to one
+/// algorithm.
+pub(crate) fn build_molecule_from_model(mol: &Molecule, model: &AromaticityModel) -> Molecule {
+    use chematic_core::{BondOrder, MoleculeBuilder, implicit_hcount};
 
     // Implicit-H counts computed BEFORE bond orders are normalized below, for
     // organic-subset atoms without an explicit bracket H count. Needed because

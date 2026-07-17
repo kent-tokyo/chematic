@@ -15,7 +15,7 @@
 
 use std::fs;
 
-use chematic_perception::rdkit_parity::rdkit_parity_aromaticity;
+use chematic_perception::diagnostics::rdkit_parity_aromaticity;
 use serde_json::{Value, json};
 
 fn main() {
