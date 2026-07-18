@@ -203,6 +203,19 @@ pub fn mol_to_inchi_atoms(
     // is_up(alkene_end, sub) mirrors substituent_is_up in chematic-chem/cip.rs:
     //   Up bond: atom1 == alkene_end → true
     //   Down bond: atom1 == sub → true (i.e. atom1 != alkene_end)
+    //
+    // A ring bond adjacent to an exocyclic double bond (e.g. a mancude ring
+    // flanking an imine) can carry its real `/`/`\` direction in
+    // `Molecule::bond_direction`'s side channel while the bond's own `order`
+    // is Aromatic pre-kekulization, or Single/Double post-kekulization
+    // (`apply_kekule` preserves the stash verbatim on the same bond index --
+    // it only ever updates `order`, never resolves the stash into it). Read
+    // that stash first so this doesn't depend on which of the two ring
+    // bonds happened to carry the literal marker. (No CIP-priority ranking
+    // is needed here, unlike chematic-chem's own E/Z label: InChI's Stereo0D
+    // format encodes the parity relative to whichever specific substituent
+    // is fed in, so any one determinate substituent per end is sufficient
+    // -- see `inchi_api.h`'s 0D stereo notes.)
     let find_stereo_sub = |alkene_end: AtomIdx, other: AtomIdx| -> Option<(i16, bool)> {
         for (nb, _) in mol.neighbors(alkene_end) {
             if nb == other {
@@ -211,10 +224,11 @@ pub fn mol_to_inchi_atoms(
             if mol.atom(nb).element.atomic_number() == 1 {
                 continue;
             }
-            let Some((_, nb_bond)) = mol.bond_between(alkene_end, nb) else {
+            let Some((bond_idx, nb_bond)) = mol.bond_between(alkene_end, nb) else {
                 continue;
             };
-            let is_up = match nb_bond.order {
+            let effective_order = mol.bond_direction(bond_idx).unwrap_or(nb_bond.order);
+            let is_up = match effective_order {
                 BondOrder::Up => Some(nb_bond.atom1 == alkene_end),
                 BondOrder::Down => Some(nb_bond.atom1 == nb),
                 _ => None,
