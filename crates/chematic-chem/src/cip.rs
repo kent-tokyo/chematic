@@ -747,8 +747,15 @@ fn assign_tetrahedral(mol: &Molecule, idx: AtomIdx) -> Option<CipCode> {
 ///
 /// Returns `Some(true)` = up, `Some(false)` = down, `None` = no stereo bond.
 fn substituent_is_up(mol: &Molecule, alkene_end: AtomIdx, sub: AtomIdx) -> Option<bool> {
-    let (_, bond) = mol.bond_between(alkene_end, sub)?;
-    match bond.order {
+    let (bond_idx, bond) = mol.bond_between(alkene_end, sub)?;
+
+    // Aromatic ring bonds can carry an adjacent exocyclic double bond's
+    // `/` or `\` direction in Molecule's side channel while their chemical
+    // bond order remains Aromatic. Use that stashed direction first so E/Z
+    // perception does not depend on which parser path created the bond.
+    let effective_order = mol.bond_direction(bond_idx).unwrap_or(bond.order);
+
+    match effective_order {
         BondOrder::Up => {
             // `/` bond: atom1→atom2 goes "up"
             Some(bond.atom1 == alkene_end)
@@ -815,12 +822,9 @@ fn assign_allene(mol: &Molecule, central_idx: AtomIdx) -> Option<(AtomIdx, CipCo
         return None;
     }
 
-    // Highest-priority substituent with a stereo bond at each terminal.
-    let high_t1 = highest_stereo_sub(mol, t1, &subs_t1)?;
-    let high_t2 = highest_stereo_sub(mol, t2, &subs_t2)?;
-
-    let up_t1 = substituent_is_up(mol, t1, high_t1)?;
-    let up_t2 = substituent_is_up(mol, t2, high_t2)?;
+    // Highest-priority substituent at each terminal, and which side it's on.
+    let (_, up_t1) = highest_stereo_sub(mol, t1, &subs_t1)?;
+    let (_, up_t2) = highest_stereo_sub(mol, t2, &subs_t2)?;
 
     // Same side → Z (aS / M); opposite → E (aR / P).
     let code = if up_t1 == up_t2 {
@@ -862,12 +866,9 @@ fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
         return None; // terminal alkene
     }
 
-    // Highest-priority substituent with a stereo (Up/Down) bond at each end.
-    let high_sub_a1 = highest_stereo_sub(mol, a1, &subs_a1)?;
-    let high_sub_a2 = highest_stereo_sub(mol, a2, &subs_a2)?;
-
-    let up_a1 = substituent_is_up(mol, a1, high_sub_a1)?;
-    let up_a2 = substituent_is_up(mol, a2, high_sub_a2)?;
+    // Highest-priority substituent at each end, and which side it's on.
+    let (_, up_a1) = highest_stereo_sub(mol, a1, &subs_a1)?;
+    let (_, up_a2) = highest_stereo_sub(mol, a2, &subs_a2)?;
 
     // Same side → Z (zusammen); opposite → E (entgegen).
     let code = if up_a1 == up_a2 {
@@ -878,14 +879,33 @@ fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
     Some((a1, code))
 }
 
-/// From `subs` at `alkene_end`, return the highest CIP-priority substituent
-/// that has an Up/Down bond to `alkene_end`.
-fn highest_stereo_sub(mol: &Molecule, alkene_end: AtomIdx, subs: &[AtomIdx]) -> Option<AtomIdx> {
+/// From `subs` at `alkene_end` (at most 2 — an alkene carbon has only one
+/// double bond plus up to two single-bond substituents), return the highest
+/// CIP-priority substituent together with which side it's on.
+///
+/// A trigonal alkene carbon has exactly two possible sides, so when the
+/// higher-priority substituent has no `/`/`\` marker of its own but its only
+/// sibling substituent does, the higher-priority one's side is the sibling's
+/// geometric complement — not a fallback to the sibling's own raw side
+/// (which would silently compare the wrong pair of substituents and can
+/// flip the resulting E/Z label).
+fn highest_stereo_sub(
+    mol: &Molecule,
+    alkene_end: AtomIdx,
+    subs: &[AtomIdx],
+) -> Option<(AtomIdx, bool)> {
     let mut sorted: Vec<AtomIdx> = subs.to_vec();
     sorted.sort_by(|&a, &b| compare_branches(mol, alkene_end, a, b).reverse());
-    sorted
-        .into_iter()
-        .find(|&sub| substituent_is_up(mol, alkene_end, sub).is_some())
+
+    let top = *sorted.first()?;
+    if let Some(up) = substituent_is_up(mol, alkene_end, top) {
+        return Some((top, up));
+    }
+    if let [_, other] = sorted[..] {
+        let other_up = substituent_is_up(mol, alkene_end, other)?;
+        return Some((top, !other_up));
+    }
+    None
 }
 
 #[cfg(test)]
@@ -1138,6 +1158,121 @@ mod tests {
         assert!(
             assign_z.assignments.iter().any(|(_, c)| *c == CipCode::Z),
             "canonical SMILES of Z isomer must still be Z, canonical='{can_z}'"
+        );
+    }
+
+    // --- EZ-S1: aromatic ring bond stash + true-highest-priority substituent ---
+    //
+    // `substituent_is_up` previously read only `bond.order`, never
+    // `mol.bond_direction(bond_idx)` -- the side channel used when a `/`/`\`
+    // marker lands on a bond between two aromatic-flagged atoms (e.g. a ring
+    // bond flanking an exocyclic C=N). Fixing that read exposed a second,
+    // pre-existing, unrelated bug in `highest_stereo_sub`: it returned the
+    // highest-priority substituent *among those carrying an explicit
+    // marker*, not the true highest-priority substituent overall, silently
+    // using a lower-priority marked substituent's raw side instead of
+    // deriving the true-highest one's side as its geometric complement.
+    // Both are fixed together here (see cip.rs's `substituent_is_up` and
+    // `highest_stereo_sub`). Expected values below are RDKit
+    // `rdCIPLabeler`-verified, not just "some E/Z is present" checks.
+
+    #[test]
+    fn test_ez_stash_exocyclic_imine_e() {
+        // RDKit rdCIPLabeler: bond(N, ring-C) = E.
+        assert_eq!(
+            cip_at(r"C/N=c1\cccc[nH]1", 1),
+            Some(CipCode::E),
+            "exocyclic imine on an aromatic ring must read the stashed ring-bond direction"
+        );
+    }
+
+    #[test]
+    fn test_ez_stash_exocyclic_imine_inverted_z() {
+        // Same structure, ring-closure slash inverted -- RDKit: Z. A "the two
+        // just differ" check would also pass under a global sign-inversion
+        // bug, so both this and the E case above pin the specific code.
+        assert_eq!(
+            cip_at(r"C/N=c1/cccc[nH]1", 1),
+            Some(CipCode::Z),
+            "inverting the stashed ring-bond direction must flip E to Z"
+        );
+    }
+
+    #[test]
+    fn test_ez_stash_representation_path_independence() {
+        // The same molecule (N-methylenamino-pyridine-like ring), with the
+        // stash-bearing bond routed through a different parser path each
+        // time. All three must (a) actually stash on an aromatic-aromatic
+        // bond -- not fall back to a literal Up/Down order -- and (b) agree
+        // on the RDKit-confirmed E code, proving E/Z perception doesn't
+        // depend on which path created the bond.
+        let cases: &[(&str, u32, &str)] = &[
+            (r"C/N=c1\cccc[nH]1", 1, "chain-edge"),
+            (r"C/N=c1cccc[nH]\1", 1, "ring-closure"),
+            (r"[nH]1cccc(\c1=N/C)", 5, "branch-attachment"),
+        ];
+        for &(smi, atom_idx, path_label) in cases {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("{path_label}: parse '{smi}': {e}"));
+            let has_aromatic_stash = (0..mol.bond_count()).any(|i| {
+                let bidx = BondIdx(i as u32);
+                let bond = mol.bond(bidx);
+                mol.atom(bond.atom1).aromatic
+                    && mol.atom(bond.atom2).aromatic
+                    && bond.order == BondOrder::Aromatic
+                    && mol.bond_direction(bidx).is_some()
+            });
+            assert!(
+                has_aromatic_stash,
+                "{path_label}: '{smi}' must stash direction on an aromatic bond, not divert it to a literal Up/Down order"
+            );
+            let code = assign_cip(&mol).get(AtomIdx(atom_idx));
+            assert_eq!(
+                code,
+                Some(CipCode::E),
+                "{path_label}: '{smi}' must resolve to the same E as the other paths"
+            );
+        }
+    }
+
+    #[test]
+    fn test_ez_stash_canonical_round_trip() {
+        use chematic_smiles::canonical_smiles;
+
+        let mol = parse(r"C/N=c1\cccc[nH]1").unwrap();
+        let can = canonical_smiles(&mol);
+        let mol2 = parse(&can).unwrap_or_else(|e| panic!("re-parse canonical '{can}': {e}"));
+        let code = assign_cip(&mol2)
+            .assignments
+            .iter()
+            .find(|(_, c)| matches!(c, CipCode::E | CipCode::Z))
+            .map(|(_, c)| *c);
+        assert_eq!(
+            code,
+            Some(CipCode::E),
+            "canonical round trip of the stash-derived E must still be E, canonical='{can}'"
+        );
+    }
+
+    #[test]
+    fn test_highest_stereo_sub_uses_true_priority_not_marked_fallback() {
+        // Non-aromatic, no stash involved at all -- a separate, pre-existing
+        // bug independent of the stash-read fix above. At the C(F)(Cl)= end,
+        // Cl (Z=17) outranks F (Z=9) but only F carries a marker; at the
+        // C(Br)(I)= end, I (Z=53) outranks Br (Z=35) but only Br carries a
+        // marker. `highest_stereo_sub` must derive each true-highest
+        // substituent's side as the marked sibling's complement rather than
+        // using the marked (lower-priority) sibling's own raw side.
+        // RDKit rdCIPLabeler: E.
+        let mol = parse(r"Cl/C(F)=C(\Br)I").unwrap();
+        let code = assign_cip(&mol)
+            .assignments
+            .iter()
+            .find(|(_, c)| matches!(c, CipCode::E | CipCode::Z))
+            .map(|(_, c)| *c);
+        assert_eq!(
+            code,
+            Some(CipCode::E),
+            "true-highest-priority substituent (unmarked) must be used, not the marked lower-priority one"
         );
     }
 

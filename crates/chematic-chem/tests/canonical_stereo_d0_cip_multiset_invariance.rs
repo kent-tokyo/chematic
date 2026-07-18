@@ -3,7 +3,7 @@
 //! parser bond-creation paths that can carry a stashed aromatic direction
 //! (see `chematic_smiles::parser`'s `resolve_aromatic_direction_stash`).
 //!
-//! Before this fix, the ring-closure and branch-attachment paths stored a
+//! Before the D0 fix, the ring-closure and branch-attachment paths stored a
 //! `/`/`\` between two aromatic atoms as the bond's own literal `Up`/`Down`
 //! order instead of stashing it -- inconsistent with the (already-correct)
 //! plain chain-edge path. That inconsistency meant the SAME physical bond's
@@ -12,14 +12,27 @@
 //! chematic's own canonical output, purely depending on which of the three
 //! paths a given canonical DFS happened to route the bond through.
 //!
-//! This is a stability fix, not a correctness fix for E/Z detection itself:
-//! `assign_ez` still doesn't read `bond_direction` at all, so these
-//! molecules correctly show an EMPTY CIP set both before and after the
-//! round trip here -- consistently, not as "no stereo" (an independent
-//! RDKit check confirms real E/Z exists on these bonds; see EZ-A0/EZ-S1,
-//! `docs/verification_coverage.md`). These tests intentionally do NOT
-//! assert what the "right" E/Z value should be -- only that the round trip
-//! doesn't change what's visible.
+//! At the time D0 landed, `assign_ez` didn't read `bond_direction` at all,
+//! so every case here showed an EMPTY CIP set both before and after the
+//! round trip -- these tests only ever checked that the round trip didn't
+//! change what's (not) visible. EZ-S1 (`crates/chematic-chem/src/cip.rs`'s
+//! `substituent_is_up`) closed that gap, so `chain_edge_path...` and
+//! `branch_attachment_path...` below are unaffected (their molecules have
+//! no substituent, or no double bond at all, for `assign_ez` to act on --
+//! not a case this file exists to cover), while `ring_closure_path...` and
+//! `real_corpus_case...` now assert the real, RDKit-confirmed E/Z value
+//! survives the round trip, not just "still empty."
+//!
+//! `ring_closure_path_cip_multiset_stable`'s original D0-era SMILES
+//! (`C/N=c1ccccc/1`, an exocyclic imine on an *unsubstituted* benzo ring)
+//! is not RDKit-parseable and, worse, is a genuine CIP priority tie between
+//! its two ring branches (the unsubstituted ring is symmetric across the
+//! ipso/para axis) -- chematic's comparator breaks that tie in a way that
+//! is not itself stable across the atom renumbering `canonical_smiles`
+//! performs (flips E/Z), a separate, pre-existing shell-pooling-comparator
+//! limitation (see `docs/cip_accurate_rfc.md`) unrelated to EZ-S1 and out
+//! of its scope. Swapped for an asymmetric ring (`[nH]` breaks the tie)
+//! that still exercises the same ring-closure parser path.
 
 use chematic_chem::assign_cip;
 use chematic_core::Molecule;
@@ -58,7 +71,12 @@ fn chain_edge_path_cip_multiset_stable() {
 
 #[test]
 fn ring_closure_path_cip_multiset_stable() {
-    assert_cip_multiset_stable_across_round_trip(r"C/N=c1ccccc/1", "path2(ring-closure)");
+    // RDKit rdCIPLabeler confirms E for this exact SMILES; `assert_eq!` on
+    // the exact value below (not just before==after) also pins that value.
+    let smi = r"C/N=c1cccc[nH]\1";
+    let mol = chematic_smiles::parse(smi).unwrap();
+    assert_eq!(sorted_codes(&mol), vec!["E".to_string()]);
+    assert_cip_multiset_stable_across_round_trip(smi, "path2(ring-closure)");
 }
 
 #[test]
@@ -68,17 +86,19 @@ fn branch_attachment_path_cip_multiset_stable() {
 
 #[test]
 fn real_corpus_case_cip_multiset_stable_and_existing_stereocenter_unaffected() {
-    // The actual molecule that surfaced this bug: a real, unrelated
-    // tetrahedral stereocenter (`[C@H]`, CIP S) plus an aromatic mancude
-    // ring flanked by an exocyclic imine. The S center must survive
-    // unchanged; no extra element may appear or disappear alongside it.
+    // The actual molecule that surfaced this bug (see EZ-A0/EZ-S1): a real,
+    // unrelated tetrahedral stereocenter (`[C@H]`, CIP S) plus an aromatic
+    // mancude ring flanked by an exocyclic imine, RDKit-confirmed Z. Both
+    // must survive the round trip; no extra element may appear or
+    // disappear alongside them.
     let smi = "O=C(Nc1ccc(C[C@H](/N=c2/c(N3CCSCC3)c(O)c2=O)C(=O)O)cc1)c1c(Cl)cncc1Cl";
     let mol = parse(smi).unwrap();
     let before = sorted_codes(&mol);
     assert_eq!(
         before,
-        vec!["S".to_string()],
-        "test setup sanity: exactly one real stereocenter (S), no E/Z visible yet"
+        vec!["S".to_string(), "Z".to_string()],
+        "test setup sanity: the real stereocenter (S) plus the now-correctly-read \
+         exocyclic-imine E/Z (Z)"
     );
 
     let c1 = canonical_smiles(&mol);
