@@ -51,41 +51,195 @@ fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u64 {
     fnv1a(&bytes)
 }
 
+/// Which atom-invariant definition [`initial_atom_id`] (and everything built on
+/// it) uses for iteration 0 of the Morgan expansion.
+///
+/// Only the *atom invariant* is affected — hashing (FNV-1a), environment
+/// deduplication, and bit-folding are unchanged in both modes, so neither mode
+/// is bit-compatible with RDKit's own Morgan fingerprint bit positions. See
+/// [`crate::ecfp::EcfpInvariantMode::RdkitMorgan`] for what it does and does
+/// not claim.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum EcfpInvariantMode {
+    /// chematic's original invariant: atomic number, degree (counts explicit
+    /// H neighbors too), implicit H count, formal charge, ring membership,
+    /// aromaticity. Unchanged from every prior release — this is what
+    /// [`ecfp`]/[`ecfp4`]/[`ecfp6`]/[`ecfp_with_bitinfo`]/[`morgan_fp_counts`]
+    /// have always computed.
+    #[default]
+    Chematic,
+    /// RDKit's default `GetConnectivityInvariants` atom invariant, matching
+    /// RDKit's own component set: atomic number, total degree (heavy
+    /// neighbors + H, implicit or explicit — RDKit's `getTotalDegree()`),
+    /// total H count as a *separate* component, formal charge (full `i8`
+    /// range), ring membership, isotope mass delta from the element's
+    /// average (IUPAC standard) atomic weight, truncated toward zero — no
+    /// aromaticity component. Empirically verified against RDKit
+    /// 2026.03.3's `GetConnectivityInvariants` (partition agreement, not raw
+    /// hash-value agreement — the two implementations use different hash
+    /// functions by construction). This is *atom-invariant* parity only, not
+    /// a claim of RDKit fingerprint bit-compatibility — hence "RdkitMorgan",
+    /// not "RdkitCompatible": that name is reserved for a possible future
+    /// mode that also matches RDKit's hash, environment deduplication, and
+    /// folding.
+    RdkitMorgan,
+}
+
+/// RDKit's `getTotalDegree()`-equivalent: heavy-atom neighbors plus H count
+/// (implicit or explicit — RDKit's connectivity invariant uses total degree
+/// including Hs as one component, and total H count as a *separate* second
+/// component; see `rdkit_total_h_count`). Explicit H atoms are already
+/// counted once via `mol.neighbors`, so only `implicit_hcount` is added on
+/// top (verified: `[H]C([H])([H])[H]`'s carbon gets the same invariant as
+/// plain `C`'s — both total 4).
+fn rdkit_total_degree(mol: &Molecule, idx: AtomIdx) -> u16 {
+    let graph_degree = mol.neighbors(idx).count() as u16;
+    let inferred_or_bracket_h = implicit_hcount(mol, idx) as u16;
+    graph_degree + inferred_or_bracket_h
+}
+
+/// RDKit's total H count: implicit H plus any explicit H *atoms* in the
+/// graph, combined into one count regardless of how they're spelled
+/// (verified: a mixed implicit/explicit-H atom gets the same invariant as
+/// its all-implicit or all-explicit spelling of the same total H count).
+fn rdkit_total_h_count(mol: &Molecule, idx: AtomIdx) -> u8 {
+    let explicit_h = mol
+        .neighbors(idx)
+        .filter(|&(nb, _)| mol.atom(nb).element.atomic_number() == 1)
+        .count() as u8;
+    implicit_hcount(mol, idx).saturating_add(explicit_h)
+}
+
+/// Exact `deltaMass` for a given `(atomic_number, mass_number)` isotope, via
+/// binary search over [`crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE`] --
+/// a table generated directly from RDKit's own `PeriodicTable`
+/// (`scripts/gen_rdkit_isotope_delta_table.py`), covering every isotope
+/// RDKit's `GetMassForIsotope` recognizes for every element, not a
+/// hand-picked subset. `None` means `(atomic_number, mass_number)` isn't a
+/// real isotope RDKit itself recognizes either.
+fn rdkit_isotope_delta_for(atomic_number: u8, mass_number: u16) -> Option<i16> {
+    use crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE;
+    RDKIT_ISOTOPE_DELTA_TABLE
+        .binary_search_by_key(&(atomic_number, mass_number), |&(z, a, _)| (z, a))
+        .ok()
+        .map(|i| RDKIT_ISOTOPE_DELTA_TABLE[i].2)
+}
+
+/// Isotope-mass delta, matching RDKit's actual `getConnectivityInvariants`
+/// source (`ichi`/Morgan fingerprint invariant computation): the explicit
+/// isotope's exact mass minus the element's average (standard) atomic
+/// weight, truncated toward zero — **not** an integer mass-number
+/// difference from the most common isotope, which was this function's
+/// earlier (incorrect) definition and does not reproduce RDKit's actual
+/// rounding behavior (e.g. it would treat carbon-13 as different from
+/// unspecified/carbon-12, when RDKit's real mass-based truncation puts all
+/// three at delta 0: `13.00335 - 12.011 = 0.992`, which truncates to `0`,
+/// not `1`).
+///
+/// `atom.isotope == None` always gives delta 0, since `Atom::getMass()`
+/// itself returns the average atomic weight for an unspecified isotope
+/// (confirmed directly, not inferred: RDKit's `C`'s `GetMass()` is `12.011`,
+/// not the monoisotopic `12.000`) — so both sides of the subtraction are the
+/// same value. An explicit isotope RDKit itself doesn't recognize
+/// (`rdkit_isotope_delta_for` returns `None`) also has defined RDKit
+/// behavior, confirmed the same way: `Atom::getMass()` falls back to the
+/// raw mass number itself (`[500CH4]`'s `GetMass()` is exactly `500.0`, not
+/// 0 and not a nearby real isotope's mass), so the delta is
+/// `mass_number - average_atomic_weight` — using
+/// [`RDKIT_ATOMIC_WEIGHTS`](crate::rdkit_isotope_delta_table::RDKIT_ATOMIC_WEIGHTS)
+/// for `average_atomic_weight` here, **not** chematic-core's
+/// `Element::atomic_mass()` (a different, monoisotopic quantity — using it
+/// would silently reproduce the exact carbon-11-shaped bug this table was
+/// built to close, just for a different isotope).
+fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i32 {
+    use crate::rdkit_isotope_delta_table::RDKIT_ATOMIC_WEIGHTS;
+
+    let atom = mol.atom(idx);
+    match atom.isotope {
+        None => 0,
+        Some(mass_number) => {
+            match rdkit_isotope_delta_for(atom.element.atomic_number(), mass_number) {
+                Some(delta) => delta as i32,
+                None => {
+                    let average = RDKIT_ATOMIC_WEIGHTS[atom.element.atomic_number() as usize];
+                    (mass_number as f64 - average) as i32
+                }
+            }
+        }
+    }
+}
+
+/// Build the pre-chirality invariant byte sequence for `idx` under `mode`.
+///
+/// `Chematic` mode returns the exact same 6 bytes the pre-mode-aware
+/// implementation always produced (byte order, byte count, and values
+/// unchanged) — this is what makes [`ecfp`]/[`ecfp4`]/[`ecfp6`]/
+/// [`ecfp_with_bitinfo`]/[`morgan_fp_counts`] fully non-regressing.
+fn rdkit_connectivity_invariant_bytes(
+    mol: &Molecule,
+    idx: AtomIdx,
+    ring_set: &chematic_perception::RingSet,
+) -> SmallVec<[u8; 16]> {
+    let atom = mol.atom(idx);
+    let mut bytes: SmallVec<[u8; 16]> = SmallVec::new();
+    bytes.push(atom.element.atomic_number());
+    bytes.extend_from_slice(&rdkit_total_degree(mol, idx).to_le_bytes());
+    bytes.push(rdkit_total_h_count(mol, idx));
+    // Full i8 range, injective (unlike Chematic mode's `+8` clamp, which
+    // collides charges outside roughly -8..+247) — a new public
+    // "RdkitMorgan" invariant has no reason to inherit that collision.
+    bytes.push(atom.charge as u8);
+    bytes.push(ring_set.contains_atom(idx) as u8);
+    bytes.extend_from_slice(&rdkit_isotope_delta(mol, idx).to_le_bytes());
+    bytes
+}
+
+fn invariant_bytes(
+    mol: &Molecule,
+    idx: AtomIdx,
+    ring_set: &chematic_perception::RingSet,
+    mode: EcfpInvariantMode,
+) -> SmallVec<[u8; 16]> {
+    match mode {
+        EcfpInvariantMode::Chematic => {
+            let atom = mol.atom(idx);
+            let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
+            SmallVec::from_slice(&[
+                atom.element.atomic_number(),
+                mol.neighbors(idx).count().min(255) as u8,
+                implicit_hcount(mol, idx),
+                charge_adjusted,
+                ring_set.contains_atom(idx) as u8,
+                atom.aromatic as u8,
+            ])
+        }
+        EcfpInvariantMode::RdkitMorgan => rdkit_connectivity_invariant_bytes(mol, idx, ring_set),
+    }
+}
+
 /// Compute the FNV-1a atom identifier for iteration 0 of the Morgan algorithm.
 ///
-/// The six-byte invariant covers: atomic number, degree, implicit H count, formal
-/// charge (clamped to byte range), ring membership, and aromaticity.  When
-/// `use_chirality` is true an extra chirality byte is appended; this preserves
-/// bit-compatibility with the default (`use_chirality=false`) fingerprints.
+/// See [`EcfpInvariantMode`] for what `mode` covers. When `use_chirality` is
+/// true an extra chirality byte is appended; this preserves bit-compatibility
+/// with the default (`use_chirality=false`) fingerprints.
 pub(crate) fn initial_atom_id(
     mol: &Molecule,
     idx: AtomIdx,
     ring_set: &chematic_perception::RingSet,
     use_chirality: bool,
+    mode: EcfpInvariantMode,
 ) -> u64 {
-    let atom = mol.atom(idx);
-    let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
-    let base_bytes = [
-        atom.element.atomic_number(),
-        mol.neighbors(idx).count().min(255) as u8,
-        implicit_hcount(mol, idx),
-        charge_adjusted,
-        ring_set.contains_atom(idx) as u8,
-        atom.aromatic as u8,
-    ];
+    let mut bytes = invariant_bytes(mol, idx, ring_set, mode);
     if use_chirality {
         use chematic_core::Chirality;
-        let chirality_byte = match atom.chirality {
+        let chirality_byte = match mol.atom(idx).chirality {
             Chirality::None => 0u8,
             Chirality::CounterClockwise => 1u8,
             Chirality::Clockwise => 2u8,
         };
-        let mut chiral_bytes = base_bytes.to_vec();
-        chiral_bytes.push(chirality_byte);
-        fnv1a(&chiral_bytes)
-    } else {
-        fnv1a(&base_bytes)
+        bytes.push(chirality_byte);
     }
+    fnv1a(&bytes)
 }
 
 /// Configuration for ECFP computation.
@@ -156,6 +310,17 @@ pub(crate) fn bond_type_int(order: BondOrder) -> u8 {
 pub const MAX_ECFP_RADIUS: u32 = 20;
 
 pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
+    ecfp_with_invariant_mode(mol, config, EcfpInvariantMode::Chematic)
+}
+
+/// Like [`ecfp`], but with an explicit [`EcfpInvariantMode`] choice for the
+/// iteration-0 atom invariant. [`ecfp`] is exactly
+/// `ecfp_with_invariant_mode(mol, config, EcfpInvariantMode::Chematic)`.
+pub fn ecfp_with_invariant_mode(
+    mol: &Molecule,
+    config: &EcfpConfig,
+    mode: EcfpInvariantMode,
+) -> BitVec2048 {
     let n = mol.atom_count();
     let nbits = config.nbits;
     // Cap radius to prevent `r as u8` truncation at r > 255 (hash collision bug).
@@ -175,7 +340,7 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     let mut ids: Vec<u64> = Vec::with_capacity(n);
     for i in 0..n {
         let idx = AtomIdx(i as u32);
-        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality);
+        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality, mode);
         fp.set((id % nbits as u64) as usize);
         if config.use_double_fold {
             fp.set(((id >> 11) % nbits as u64) as usize);
@@ -212,6 +377,17 @@ pub fn ecfp_with_bitinfo(
     mol: &Molecule,
     config: &EcfpConfig,
 ) -> (BitVec2048, FxHashMap<usize, Vec<(u32, u32)>>) {
+    ecfp_with_bitinfo_and_mode(mol, config, EcfpInvariantMode::Chematic)
+}
+
+/// Like [`ecfp_with_bitinfo`], but with an explicit [`EcfpInvariantMode`]
+/// choice for the iteration-0 atom invariant — shares the same invariant
+/// computation as [`ecfp_with_invariant_mode`], so the two never diverge.
+pub fn ecfp_with_bitinfo_and_mode(
+    mol: &Molecule,
+    config: &EcfpConfig,
+    mode: EcfpInvariantMode,
+) -> (BitVec2048, FxHashMap<usize, Vec<(u32, u32)>>) {
     let n = mol.atom_count();
     let nbits = config.nbits;
     let config = &EcfpConfig {
@@ -231,7 +407,7 @@ pub fn ecfp_with_bitinfo(
     let mut ids: Vec<u64> = Vec::with_capacity(n);
     for i in 0..n {
         let idx = AtomIdx(i as u32);
-        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality);
+        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality, mode);
         record_bit(
             &mut fp,
             &mut info,
@@ -313,7 +489,15 @@ pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> FxHashMap<u64, u32> {
 
     // Radius-0: initial atom identifiers.
     let mut ids: Vec<u64> = (0..n)
-        .map(|i| initial_atom_id(mol, AtomIdx(i as u32), &ring_set, false))
+        .map(|i| {
+            initial_atom_id(
+                mol,
+                AtomIdx(i as u32),
+                &ring_set,
+                false,
+                EcfpInvariantMode::Chematic,
+            )
+        })
         .collect();
 
     for &id in &ids {
@@ -353,6 +537,39 @@ pub fn ecfp6(mol: &Molecule) -> BitVec2048 {
 /// Tanimoto similarity between two molecules using ECFP4.
 pub fn tanimoto_ecfp4(a: &Molecule, b: &Molecule) -> f64 {
     ecfp4(a).tanimoto(&ecfp4(b))
+}
+
+/// ECFP4 fingerprint (radius = 2, 2048 bits) using RDKit's default Morgan
+/// atom invariant instead of chematic's own. See [`EcfpInvariantMode::RdkitMorgan`].
+pub fn ecfp4_rdkit_invariants(mol: &Molecule) -> BitVec2048 {
+    ecfp_with_invariant_mode(mol, &EcfpConfig::default(), EcfpInvariantMode::RdkitMorgan)
+}
+
+/// ECFP6 fingerprint (radius = 3, 2048 bits) using RDKit's default Morgan
+/// atom invariant instead of chematic's own. See [`EcfpInvariantMode::RdkitMorgan`].
+pub fn ecfp6_rdkit_invariants(mol: &Molecule) -> BitVec2048 {
+    ecfp_with_invariant_mode(
+        mol,
+        &EcfpConfig {
+            radius: 3,
+            ..EcfpConfig::default()
+        },
+        EcfpInvariantMode::RdkitMorgan,
+    )
+}
+
+/// Raw (unfolded) iteration-0 atom invariant for every atom in `mol`, under
+/// `mode`, with `use_chirality=false`. One entry per atom, in `AtomIdx`
+/// order. Exposed for atom-invariant-partition comparison against an
+/// external oracle (e.g. RDKit's `GetConnectivityInvariants`) — the raw `u64`
+/// values themselves are not meant to be compared directly across
+/// implementations (different hash functions), only whether two atoms get
+/// the *same* value as each other (the equivalence partition).
+pub fn atom_invariants(mol: &Molecule, mode: EcfpInvariantMode) -> Vec<u64> {
+    let ring_set = find_sssr(mol);
+    (0..mol.atom_count())
+        .map(|i| initial_atom_id(mol, AtomIdx(i as u32), &ring_set, false, mode))
+        .collect()
 }
 
 #[cfg(test)]
@@ -692,6 +909,334 @@ mod tests {
             ecfp4(&implicit),
             ecfp4(&explicit_h),
             "methanol with explicit H atoms has a different heavy-atom neighbourhood"
+        );
+    }
+
+    // ── EcfpInvariantMode::RdkitMorgan edge-case fixtures ──────────────────
+    //
+    // Every equivalence/non-equivalence asserted here was independently
+    // verified against RDKit 2026.03.3's `GetConnectivityInvariants` (see
+    // scripts/ecfp_rdkit_invariant_parity.py and
+    // scripts/ecfp_rdkit_edge_fixtures.csv) -- 100% partition agreement on
+    // this fixture set (including cross-atom isotope/charge stress cases)
+    // and the full 5,000-molecule ChEMBL corpus, no residual.
+
+    fn rdkit_inv(mol: &Molecule) -> Vec<u64> {
+        atom_invariants(mol, EcfpInvariantMode::RdkitMorgan)
+    }
+
+    #[test]
+    fn rdkit_mode_ignores_explicit_h_in_degree() {
+        // Unlike Chematic mode (see `ecfp4_implicit_vs_explicit_h_in_organic_molecule`
+        // above), RDKit's total-degree component counts H the same way
+        // regardless of spelling -- verified: methane's C gets the same
+        // RDKit invariant whether all 4 H are implicit or all 4 are
+        // explicit atoms.
+        let implicit = parse("C").unwrap();
+        let explicit_h = parse("[H]C([H])([H])[H]").unwrap();
+        assert_eq!(
+            rdkit_inv(&implicit)[0],
+            rdkit_inv(&explicit_h)[1],
+            "RdkitMorgan mode must not distinguish implicit vs explicit H representation"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_ignores_aromaticity() {
+        // The whole point of this mode: benzene's aromatic ring carbon and
+        // cyclohexadiene's non-aromatic sp2 ring carbon (same degree/H/ring
+        // membership, only aromaticity differs) must be invariant-equivalent.
+        let benzene = parse("c1ccccc1").unwrap();
+        let kekule_diene = parse("C1=CC=CC=C1").unwrap();
+        assert_eq!(
+            rdkit_inv(&benzene)[0],
+            rdkit_inv(&kekule_diene)[0],
+            "RdkitMorgan mode must not distinguish aromatic from Kekule sp2 ring atoms"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_distinguishes_ring_from_acyclic() {
+        let cyclohexane = parse("C1CCCCC1").unwrap();
+        let hexane = parse("CCCCCC").unwrap();
+        assert_ne!(
+            rdkit_inv(&cyclohexane)[0],
+            rdkit_inv(&hexane)[1], // hexane's atom 1 is a chain CH2, same degree/H as the ring atom
+            "RdkitMorgan mode must still distinguish ring membership"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_distinguishes_charge() {
+        let pyridine_n = parse("c1ccncc1").unwrap();
+        let pyridinium_n = parse("c1cc[nH+]cc1").unwrap();
+        // Ring N in each case is atom index 3.
+        assert_ne!(
+            rdkit_inv(&pyridine_n)[3],
+            rdkit_inv(&pyridinium_n)[3],
+            "RdkitMorgan mode must still distinguish formal charge (and the H it brings)"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_charge_stress_full_i8_range_no_collision() {
+        // The Chematic-mode `+8` clamp would collide e.g. charge -10 and
+        // charge -11 (both clamp to the same byte). RdkitMorgan mode must
+        // not inherit that: every formal charge in a wide, deliberately
+        // out-of-clamp-range sweep must map to a distinct invariant (same
+        // degree/H/ring/isotope otherwise, only charge varies).
+        let mut invs = Vec::new();
+        for charge in [-20i8, -10, -9, -8, -1, 0, 1, 8, 9, 10, 20, 100, 127] {
+            let mut mol = parse("C").unwrap();
+            let idx = AtomIdx(0);
+            let mut atom = mol.atom(idx).clone();
+            atom.charge = charge;
+            let mut builder = chematic_core::MoleculeBuilder::new();
+            builder.add_atom(atom);
+            mol = builder.build();
+            invs.push(rdkit_inv(&mol)[0]);
+        }
+        let unique: std::collections::HashSet<_> = invs.iter().collect();
+        assert_eq!(
+            unique.len(),
+            invs.len(),
+            "every charge in the sweep must produce a distinct invariant, got {invs:?}"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_unspecified_equals_most_common() {
+        // Verified against RDKit: an atom with no isotope specified and one
+        // with its isotope explicitly set to the element's most common value
+        // are invariant-equivalent (both are the delta=0 baseline).
+        let unspecified = parse("C").unwrap();
+        let explicit_12 = parse("[12CH4]").unwrap();
+        assert_eq!(
+            rdkit_inv(&unspecified)[0],
+            rdkit_inv(&explicit_12)[0],
+            "unspecified isotope and the most-common isotope must both be delta=0"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_carbon_12_13_same_class() {
+        // Fixed: RDKit's real deltaMass truncates `13.00335 - 12.011 =
+        // 0.992` toward zero to `0`, the same as carbon-12's `12.00000 -
+        // 12.011 = -0.011 -> 0` -- verified against RDKit, not assumed.
+        // Cross-atom (not single-atom) so the partition comparison is
+        // actually exercised: a 1-heavy-atom molecule's partition is
+        // trivially "1 class" regardless of the invariant.
+        let mol = parse("[12CH3][13CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_eq!(
+            inv[0], inv[1],
+            "carbon-12 and carbon-13 must be the same invariant class, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_carbon_11_12_same_class() {
+        // The counterexample that caught the previous partial-table
+        // fallback: carbon-11 (11.0114336, not in the original hand-picked
+        // 12/13/14 table) truncated via the `mass_number as f64`
+        // approximation to `(11.0 - 12.011) as i32 = -1`, disagreeing with
+        // RDKit's real `(11.0114336 - 12.011) as i32 = 0` -- same as
+        // carbon-12. Now backed by the full generated table
+        // (RDKIT_ISOTOPE_DELTA_TABLE), not an approximation.
+        let mol = parse("[11CH3][12CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_eq!(
+            inv[0], inv[1],
+            "carbon-11 and carbon-12 must be the same invariant class, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_carbon_10_11_different_class() {
+        // `10.0168532 - 12.011 = -1.994` truncates to `-1`, different from
+        // carbon-11's `0`.
+        let mol = parse("[10CH3][11CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "carbon-10 and carbon-11 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_carbon_10_12_different_class() {
+        let mol = parse("[10CH3][12CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "carbon-10 and carbon-12 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_isotope_delta_table_is_sorted_for_binary_search() {
+        // rdkit_isotope_delta_for's binary_search_by_key requires the table
+        // to be sorted by (atomic_number, mass_number) -- a corrupted or
+        // wrongly-regenerated table would silently give wrong lookups
+        // rather than an error, so check the precondition explicitly rather
+        // than trusting the generator forever.
+        let table = crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE;
+        for w in table.windows(2) {
+            let (z0, a0, _) = w[0];
+            let (z1, a1, _) = w[1];
+            assert!(
+                (z0, a0) < (z1, a1),
+                "table must be strictly sorted by (atomic_number, mass_number): \
+                 ({z0}, {a0}) is not before ({z1}, {a1})"
+            );
+        }
+    }
+
+    #[test]
+    fn rdkit_isotope_delta_table_exhaustive_lookup_round_trip() {
+        // Every one of the table's 3,111 (atomic_number, mass_number,
+        // delta) rows -- generated directly from RDKit 2026.03.3's
+        // PeriodicTable, covering every isotope RDKit itself recognizes for
+        // every element -- must round-trip through rdkit_isotope_delta_for
+        // exactly. This is the actual "full RDKit-supported isotope delta
+        // table: mismatch = 0" gate: not a hand-picked sample, all 3,111
+        // rows, checked against chematic's own lookup path (the table's
+        // *values* are RDKit's by construction; this exhaustively verifies
+        // the Rust binary-search lookup never returns the wrong one).
+        let table = crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE;
+        let mut mismatches = 0usize;
+        for &(z, a, expected_delta) in table.iter() {
+            let got = rdkit_isotope_delta_for(z, a);
+            if got != Some(expected_delta) {
+                mismatches += 1;
+                if mismatches <= 5 {
+                    eprintln!("MISMATCH: Z={z} A={a} expected={expected_delta} got={got:?}");
+                }
+            }
+        }
+        assert_eq!(
+            mismatches,
+            0,
+            "{mismatches}/{} table entries did not round-trip through rdkit_isotope_delta_for",
+            table.len()
+        );
+    }
+
+    /// Parse a single-atom SMILES and return atom 0's raw RdkitMorgan
+    /// isotope delta directly (not just whether it matches another atom's
+    /// class) -- needed to catch a uniform off-by-N shift that a
+    /// partition-only comparison can't distinguish from "correct".
+    fn isotope_delta_for_smiles(smi: &str) -> i32 {
+        let mol = parse(smi).unwrap();
+        rdkit_isotope_delta(&mol, AtomIdx(0))
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_unrecognized_uses_average_atomic_weight_fallback() {
+        // Mass numbers 499/500 aren't real carbon isotopes RDKit's
+        // PeriodicTable recognizes (confirmed: GetMassForIsotope(6, 500) ==
+        // 0.0), so they fall back to RDKit's own defined behavior for an
+        // unrecognized explicit isotope: Atom::getMass() returns the raw
+        // mass number itself (confirmed directly via RDKit's
+        // Atom.GetMass(), not inferred -- [500CH4]'s GetMass() is exactly
+        // 500.0). deltaMass = mass_number - average_atomic_weight,
+        // truncated toward zero: `500.0 - 12.011 = 487.989 -> 487`,
+        // `499.0 - 12.011 = 486.989 -> 486`. Using chematic-core's
+        // monoisotopic Element::atomic_mass() (12.000) here instead would
+        // give 488/487 -- silently wrong by exactly 1, a uniform shift a
+        // partition-only comparison (same molecule's atoms all shifted
+        // together) would never catch.
+        assert_eq!(isotope_delta_for_smiles("[500CH4]"), 487);
+        assert_eq!(isotope_delta_for_smiles("[499CH4]"), 486);
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_recognized_raw_delta_values() {
+        // Exact raw deltas (not just partition membership) for a few
+        // in-table isotopes, cross-checked against
+        // RDKIT_ISOTOPE_DELTA_TABLE directly.
+        assert_eq!(isotope_delta_for_smiles("[12CH4]"), 0);
+        assert_eq!(isotope_delta_for_smiles("[13CH4]"), 0);
+        assert_eq!(isotope_delta_for_smiles("[14CH4]"), 1);
+        assert_eq!(isotope_delta_for_smiles("[11CH4]"), 0);
+        assert_eq!(isotope_delta_for_smiles("[10CH4]"), -1);
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_carbon_12_14_different_class() {
+        // `14.00324 - 12.011 = 1.992` truncates to `1`, different from
+        // carbon-12/13's `0`. `[12CH4]`/`[14CH4]` are each a single bracket
+        // atom (H4 is the bracket's compact hydrogen-count field, not
+        // separate graph atoms) -- two disconnected fragments = 2 atoms
+        // total, indices 0 and 1.
+        let mol = parse("[12CH4].[14CH4]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "carbon-12 and carbon-14 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_oxygen_15_16_same_class() {
+        // `15.00011 - 15.999 = -0.999` and `15.99491 - 15.999 = -0.004`
+        // both truncate to `0`.
+        let mol = parse("[15OH2].[16OH2]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_eq!(
+            inv[0], inv[1],
+            "oxygen-15 and oxygen-16 must be the same invariant class, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_oxygen_16_17_different_class() {
+        // `16.99913 - 15.999 = 1.000` truncates to `1`, different from
+        // oxygen-16's `0`.
+        let mol = parse("[16OH2].[17OH2]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "oxygen-16 and oxygen-17 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_oxygen_16_18_different_class() {
+        // `17.99916 - 15.999 = 2.000` truncates to `2`, different from both
+        // oxygen-16 (`0`) and oxygen-17 (`1`).
+        let mol = parse("[16OH2].[18OH2]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "oxygen-16 and oxygen-18 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_multi_element_stress() {
+        // A single connected molecule carrying isotope labels on three
+        // different elements at once (carbon-13, nitrogen-15, oxygen-18) --
+        // each atom's isotope delta must be independently correct, not just
+        // in isolation. `[13CH2]([15NH2])[18OH]` -- aminomethanol-shaped.
+        let mol = parse("[13CH2]([15NH2])[18OH]").unwrap();
+        let unlabeled = parse("C(N)O").unwrap();
+        let inv = rdkit_inv(&mol);
+        let inv_ref = rdkit_inv(&unlabeled);
+        // C: 13.00335-12.011=0.992->0 (same as unlabeled C, atom 0)
+        assert_eq!(
+            inv[0], inv_ref[0],
+            "carbon-13 in a multi-isotope molecule must still be delta=0"
+        );
+        // N: 15.00011-14.007=0.993->0 (same as unlabeled N, atom 1)
+        assert_eq!(
+            inv[1], inv_ref[1],
+            "nitrogen-15 in a multi-isotope molecule must still be delta=0"
+        );
+        // O: 17.99916-15.999=2.000->2 (different from unlabeled O, atom 2)
+        assert_ne!(
+            inv[2], inv_ref[2],
+            "oxygen-18 in a multi-isotope molecule must be delta=2, not delta=0"
         );
     }
 }
