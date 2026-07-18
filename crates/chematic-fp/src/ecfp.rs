@@ -68,29 +68,34 @@ pub enum EcfpInvariantMode {
     /// have always computed.
     #[default]
     Chematic,
-    /// RDKit's default `GetConnectivityInvariants` atom invariant: atomic
-    /// number, heavy-atom degree, total H count (implicit + explicit),
-    /// formal charge, ring membership, isotope delta from the element's most
-    /// common isotope — no aromaticity component. Empirically verified
-    /// against RDKit 2026.03.3's `GetConnectivityInvariants` (partition
-    /// agreement, not raw hash-value agreement — the two implementations use
-    /// different hash functions by construction). This is *atom-invariant*
-    /// parity only, not a claim of RDKit fingerprint bit-compatibility —
-    /// hence "RdkitMorgan", not "RdkitCompatible": that name is reserved for
-    /// a possible future mode that also matches RDKit's hash, environment
-    /// deduplication, and folding.
+    /// RDKit's default `GetConnectivityInvariants` atom invariant, matching
+    /// RDKit's own component set: atomic number, total degree (heavy
+    /// neighbors + H, implicit or explicit — RDKit's `getTotalDegree()`),
+    /// total H count as a *separate* component, formal charge (full `i8`
+    /// range), ring membership, isotope mass delta from the element's
+    /// average (IUPAC standard) atomic weight, truncated toward zero — no
+    /// aromaticity component. Empirically verified against RDKit
+    /// 2026.03.3's `GetConnectivityInvariants` (partition agreement, not raw
+    /// hash-value agreement — the two implementations use different hash
+    /// functions by construction). This is *atom-invariant* parity only, not
+    /// a claim of RDKit fingerprint bit-compatibility — hence "RdkitMorgan",
+    /// not "RdkitCompatible": that name is reserved for a possible future
+    /// mode that also matches RDKit's hash, environment deduplication, and
+    /// folding.
     RdkitMorgan,
 }
 
-/// RDKit's `getDegree()`-equivalent: number of heavy-atom (non-H) neighbors.
-/// Unlike chematic's own invariant, explicit H atoms in the graph do **not**
-/// count toward degree (verified: `[H]C([H])([H])[H]`'s carbon gets the same
-/// invariant as plain `C`'s).
-fn rdkit_heavy_atom_degree(mol: &Molecule, idx: AtomIdx) -> u8 {
-    mol.neighbors(idx)
-        .filter(|&(nb, _)| mol.atom(nb).element.atomic_number() != 1)
-        .count()
-        .min(255) as u8
+/// RDKit's `getTotalDegree()`-equivalent: heavy-atom neighbors plus H count
+/// (implicit or explicit — RDKit's connectivity invariant uses total degree
+/// including Hs as one component, and total H count as a *separate* second
+/// component; see `rdkit_total_h_count`). Explicit H atoms are already
+/// counted once via `mol.neighbors`, so only `implicit_hcount` is added on
+/// top (verified: `[H]C([H])([H])[H]`'s carbon gets the same invariant as
+/// plain `C`'s — both total 4).
+fn rdkit_total_degree(mol: &Molecule, idx: AtomIdx) -> u16 {
+    let graph_degree = mol.neighbors(idx).count() as u16;
+    let inferred_or_bracket_h = implicit_hcount(mol, idx) as u16;
+    graph_degree + inferred_or_bracket_h
 }
 
 /// RDKit's total H count: implicit H plus any explicit H *atoms* in the
@@ -105,23 +110,88 @@ fn rdkit_total_h_count(mol: &Molecule, idx: AtomIdx) -> u8 {
     implicit_hcount(mol, idx).saturating_add(explicit_h)
 }
 
-/// Integer mass-number delta from `element`'s most common isotope (its
-/// rounded monoisotopic mass), 0 when no isotope is specified.
-///
-/// Verified against RDKit: an atom with no isotope specified and one with
-/// its isotope explicitly set to the most-common value both get delta 0 (a
-/// bare `C` and an explicit `[12CH4]` are invariant-equivalent). RDKit's own
-/// isotope-delta computation has rounding behavior this simple integer
-/// subtraction does not exactly reproduce for every possible isotope (see
-/// the edge-case fixture tests) — real corpora essentially never carry
-/// isotope labels, so this is a deliberately simple, auditable definition
-/// rather than a byte-for-byte reproduction of RDKit's internal formula.
-fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i16 {
-    let atom = mol.atom(idx);
-    match atom.isotope {
-        Some(iso) => iso as i16 - atom.element.atomic_mass().round() as i16,
-        None => 0,
+/// RDKit's own average (IUPAC standard) atomic weight, for the elements this
+/// isotope-delta computation needs to be precise for — the common organic
+/// elements a real molecule can plausibly carry an explicit isotope label
+/// on. `None` (no isotope specified) always resolves to a delta of exactly
+/// 0 regardless of which value is used here (see `rdkit_isotope_delta`), so
+/// precision only matters for atoms that also have `rdkit_isotope_mass`
+/// coverage below — falls back to chematic-core's monoisotopic
+/// `Element::atomic_mass()` (a different, CIP-rule-4 quantity, but a
+/// reasonable placeholder for elements this crate's isotope tests never
+/// exercise).
+fn rdkit_standard_atomic_weight(element: chematic_core::Element) -> f64 {
+    match element.atomic_number() {
+        1 => 1.008,    // H
+        6 => 12.011,   // C
+        7 => 14.007,   // N
+        8 => 15.999,   // O
+        9 => 18.998,   // F
+        15 => 30.974,  // P
+        16 => 32.06,   // S
+        17 => 35.45,   // Cl
+        35 => 79.904,  // Br
+        53 => 126.904, // I
+        _ => element.atomic_mass(),
     }
+}
+
+/// Exact mass (u) of a specific isotope, for the common organic elements
+/// (see `rdkit_standard_atomic_weight`). `None` falls back to treating the
+/// isotope's mass as exactly its integer mass number in
+/// [`rdkit_isotope_delta`] — isotope masses deviate from their mass number
+/// by at most a few hundredths of a u for light/common isotopes, so this is
+/// a reasonable approximation, but (like RDKit's own real physical table)
+/// can still disagree with RDKit at truncation boundaries for elements not
+/// covered here.
+fn rdkit_isotope_mass(element: chematic_core::Element, mass_number: u16) -> Option<f64> {
+    let table: &[(u16, f64)] = match element.atomic_number() {
+        1 => &[(1, 1.00783), (2, 2.01410), (3, 3.01605)],
+        6 => &[(12, 12.00000), (13, 13.00335), (14, 14.00324)],
+        7 => &[(14, 14.00307), (15, 15.00011)],
+        8 => &[(16, 15.99491), (17, 16.99913), (18, 17.99916)],
+        9 => &[(19, 18.99840)],
+        15 => &[(31, 30.97376), (32, 31.97391), (33, 32.97173)],
+        16 => &[
+            (32, 31.97207),
+            (33, 32.97146),
+            (34, 33.96787),
+            (35, 34.96903),
+        ],
+        17 => &[(35, 34.96885), (37, 36.96590)],
+        35 => &[(79, 78.91834), (81, 80.91629)],
+        53 => &[(127, 126.90447)],
+        _ => return None,
+    };
+    table
+        .iter()
+        .find(|(n, _)| *n == mass_number)
+        .map(|(_, m)| *m)
+}
+
+/// Isotope-mass delta, matching RDKit's actual `getConnectivityInvariants`
+/// source (`ichi`/Morgan fingerprint invariant computation): the explicit
+/// isotope's exact mass minus the element's average (standard) atomic
+/// weight, truncated toward zero — **not** an integer mass-number
+/// difference from the most common isotope, which was this function's
+/// earlier (incorrect) definition and does not reproduce RDKit's actual
+/// rounding behavior (e.g. it would treat carbon-13 as different from
+/// unspecified/carbon-12, when RDKit's real mass-based truncation puts all
+/// three at delta 0: `13.00335 - 12.011 = 0.992`, which truncates to `0`,
+/// not `1`).
+///
+/// `atom.isotope == None` always gives delta 0 (both sides of the
+/// subtraction use the same average weight).
+fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i32 {
+    let atom = mol.atom(idx);
+    let average_mass = rdkit_standard_atomic_weight(atom.element);
+    let atom_mass = match atom.isotope {
+        None => average_mass,
+        Some(mass_number) => {
+            rdkit_isotope_mass(atom.element, mass_number).unwrap_or(mass_number as f64)
+        }
+    };
+    (atom_mass - average_mass) as i32
 }
 
 /// Build the pre-chirality invariant byte sequence for `idx` under `mode`.
@@ -134,16 +204,17 @@ fn rdkit_connectivity_invariant_bytes(
     mol: &Molecule,
     idx: AtomIdx,
     ring_set: &chematic_perception::RingSet,
-) -> SmallVec<[u8; 8]> {
+) -> SmallVec<[u8; 16]> {
     let atom = mol.atom(idx);
-    let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
-    let mut bytes: SmallVec<[u8; 8]> = SmallVec::from_slice(&[
-        atom.element.atomic_number(),
-        rdkit_heavy_atom_degree(mol, idx),
-        rdkit_total_h_count(mol, idx),
-        charge_adjusted,
-        ring_set.contains_atom(idx) as u8,
-    ]);
+    let mut bytes: SmallVec<[u8; 16]> = SmallVec::new();
+    bytes.push(atom.element.atomic_number());
+    bytes.extend_from_slice(&rdkit_total_degree(mol, idx).to_le_bytes());
+    bytes.push(rdkit_total_h_count(mol, idx));
+    // Full i8 range, injective (unlike Chematic mode's `+8` clamp, which
+    // collides charges outside roughly -8..+247) — a new public
+    // "RdkitMorgan" invariant has no reason to inherit that collision.
+    bytes.push(atom.charge as u8);
+    bytes.push(ring_set.contains_atom(idx) as u8);
     bytes.extend_from_slice(&rdkit_isotope_delta(mol, idx).to_le_bytes());
     bytes
 }
@@ -153,7 +224,7 @@ fn invariant_bytes(
     idx: AtomIdx,
     ring_set: &chematic_perception::RingSet,
     mode: EcfpInvariantMode,
-) -> SmallVec<[u8; 8]> {
+) -> SmallVec<[u8; 16]> {
     match mode {
         EcfpInvariantMode::Chematic => {
             let atom = mol.atom(idx);
@@ -872,9 +943,8 @@ mod tests {
     // verified against RDKit 2026.03.3's `GetConnectivityInvariants` (see
     // scripts/ecfp_rdkit_invariant_parity.py and
     // scripts/ecfp_rdkit_edge_fixtures.csv) -- 100% partition agreement on
-    // this fixture set and the full 5,000-molecule ChEMBL corpus, with one
-    // documented exception (isotope delta for non-most-common isotopes; see
-    // `rdkit_isotope_delta_known_gap_vs_rdkit` below).
+    // this fixture set (including cross-atom isotope/charge stress cases)
+    // and the full 5,000-molecule ChEMBL corpus, no residual.
 
     fn rdkit_inv(mol: &Molecule) -> Vec<u64> {
         atom_invariants(mol, EcfpInvariantMode::RdkitMorgan)
@@ -883,15 +953,16 @@ mod tests {
     #[test]
     fn rdkit_mode_ignores_explicit_h_in_degree() {
         // Unlike Chematic mode (see `ecfp4_implicit_vs_explicit_h_in_organic_molecule`
-        // above), RDKit's degree excludes H neighbors entirely, explicit or
-        // implicit -- verified: methane's C gets the same RDKit invariant
-        // whether all 4 H are implicit or all 4 are explicit atoms.
+        // above), RDKit's total-degree component counts H the same way
+        // regardless of spelling -- verified: methane's C gets the same
+        // RDKit invariant whether all 4 H are implicit or all 4 are
+        // explicit atoms.
         let implicit = parse("C").unwrap();
         let explicit_h = parse("[H]C([H])([H])[H]").unwrap();
         assert_eq!(
             rdkit_inv(&implicit)[0],
             rdkit_inv(&explicit_h)[1],
-            "RdkitMorgan mode must not count explicit H atoms toward degree"
+            "RdkitMorgan mode must not distinguish implicit vs explicit H representation"
         );
     }
 
@@ -933,6 +1004,32 @@ mod tests {
     }
 
     #[test]
+    fn rdkit_mode_charge_stress_full_i8_range_no_collision() {
+        // The Chematic-mode `+8` clamp would collide e.g. charge -10 and
+        // charge -11 (both clamp to the same byte). RdkitMorgan mode must
+        // not inherit that: every formal charge in a wide, deliberately
+        // out-of-clamp-range sweep must map to a distinct invariant (same
+        // degree/H/ring/isotope otherwise, only charge varies).
+        let mut invs = Vec::new();
+        for charge in [-20i8, -10, -9, -8, -1, 0, 1, 8, 9, 10, 20, 100, 127] {
+            let mut mol = parse("C").unwrap();
+            let idx = AtomIdx(0);
+            let mut atom = mol.atom(idx).clone();
+            atom.charge = charge;
+            let mut builder = chematic_core::MoleculeBuilder::new();
+            builder.add_atom(atom);
+            mol = builder.build();
+            invs.push(rdkit_inv(&mol)[0]);
+        }
+        let unique: std::collections::HashSet<_> = invs.iter().collect();
+        assert_eq!(
+            unique.len(),
+            invs.len(),
+            "every charge in the sweep must produce a distinct invariant, got {invs:?}"
+        );
+    }
+
+    #[test]
     fn rdkit_mode_isotope_unspecified_equals_most_common() {
         // Verified against RDKit: an atom with no isotope specified and one
         // with its isotope explicitly set to the element's most common value
@@ -947,43 +1044,96 @@ mod tests {
     }
 
     #[test]
-    fn rdkit_mode_isotope_far_from_common_differs() {
-        // A large isotope shift must change the invariant (isotope delta is
-        // load-bearing, not a no-op field).
-        let unspecified = parse("C").unwrap();
-        let carbon_14 = parse("[14CH4]").unwrap();
-        assert_ne!(
-            rdkit_inv(&unspecified)[0],
-            rdkit_inv(&carbon_14)[0],
-            "a large isotope shift must change the invariant"
+    fn rdkit_mode_isotope_carbon_12_13_same_class() {
+        // Fixed: RDKit's real deltaMass truncates `13.00335 - 12.011 =
+        // 0.992` toward zero to `0`, the same as carbon-12's `12.00000 -
+        // 12.011 = -0.011 -> 0` -- verified against RDKit, not assumed.
+        // Cross-atom (not single-atom) so the partition comparison is
+        // actually exercised: a 1-heavy-atom molecule's partition is
+        // trivially "1 class" regardless of the invariant.
+        let mol = parse("[12CH3][13CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_eq!(
+            inv[0], inv[1],
+            "carbon-12 and carbon-13 must be the same invariant class, matching RDKit"
         );
     }
 
     #[test]
-    fn rdkit_isotope_delta_known_gap_vs_rdkit() {
-        // KNOWN, CLASSIFIED gap (not silently swept under the rug): RDKit's
-        // own isotope-delta rounding treats an element's second-most-common
-        // stable isotope (e.g. carbon-13, nitrogen-15) as ALSO
-        // invariant-equivalent to "unspecified" in some cases but not others
-        // in a pattern that doesn't reduce to a simple integer
-        // mass-number-delta from the most common isotope (empirically
-        // probed: e.g. oxygen-15, below the most-common mass, matches
-        // unspecified, while oxygen-17/18, above it, don't -- and carbon-11
-        // matches while carbon-10 doesn't). chematic's simpler, documented
-        // `isotope - round(atomic_mass)` definition (see
-        // `rdkit_isotope_delta`) does not reproduce every one of these
-        // rounding cases. Real corpora essentially never carry isotope
-        // labels (0/5,000 in the ChEMBL verification corpus), so this is
-        // pinned as a known, deliberately-not-chased residual rather than
-        // reverse-engineered further -- see
-        // scripts/ecfp_rdkit_invariant_parity.py's "isotope_delta"
-        // classification tag.
-        let mol = parse("[12CH3][13CH3]").unwrap();
+    fn rdkit_mode_isotope_carbon_12_14_different_class() {
+        // `14.00324 - 12.011 = 1.992` truncates to `1`, different from
+        // carbon-12/13's `0`. `[12CH4]`/`[14CH4]` are each a single bracket
+        // atom (H4 is the bracket's compact hydrogen-count field, not
+        // separate graph atoms) -- two disconnected fragments = 2 atoms
+        // total, indices 0 and 1.
+        let mol = parse("[12CH4].[14CH4]").unwrap();
         let inv = rdkit_inv(&mol);
         assert_ne!(
             inv[0], inv[1],
-            "chematic currently treats carbon-12 and carbon-13 as different \
-             invariant classes; RDKit treats them as the same -- tracked, not fixed"
+            "carbon-12 and carbon-14 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_oxygen_15_16_same_class() {
+        // `15.00011 - 15.999 = -0.999` and `15.99491 - 15.999 = -0.004`
+        // both truncate to `0`.
+        let mol = parse("[15OH2].[16OH2]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_eq!(
+            inv[0], inv[1],
+            "oxygen-15 and oxygen-16 must be the same invariant class, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_oxygen_16_17_different_class() {
+        // `16.99913 - 15.999 = 1.000` truncates to `1`, different from
+        // oxygen-16's `0`.
+        let mol = parse("[16OH2].[17OH2]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "oxygen-16 and oxygen-17 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_oxygen_16_18_different_class() {
+        // `17.99916 - 15.999 = 2.000` truncates to `2`, different from both
+        // oxygen-16 (`0`) and oxygen-17 (`1`).
+        let mol = parse("[16OH2].[18OH2]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "oxygen-16 and oxygen-18 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_multi_element_stress() {
+        // A single connected molecule carrying isotope labels on three
+        // different elements at once (carbon-13, nitrogen-15, oxygen-18) --
+        // each atom's isotope delta must be independently correct, not just
+        // in isolation. `[13CH2]([15NH2])[18OH]` -- aminomethanol-shaped.
+        let mol = parse("[13CH2]([15NH2])[18OH]").unwrap();
+        let unlabeled = parse("C(N)O").unwrap();
+        let inv = rdkit_inv(&mol);
+        let inv_ref = rdkit_inv(&unlabeled);
+        // C: 13.00335-12.011=0.992->0 (same as unlabeled C, atom 0)
+        assert_eq!(
+            inv[0], inv_ref[0],
+            "carbon-13 in a multi-isotope molecule must still be delta=0"
+        );
+        // N: 15.00011-14.007=0.993->0 (same as unlabeled N, atom 1)
+        assert_eq!(
+            inv[1], inv_ref[1],
+            "nitrogen-15 in a multi-isotope molecule must still be delta=0"
+        );
+        // O: 17.99916-15.999=2.000->2 (different from unlabeled O, atom 2)
+        assert_ne!(
+            inv[2], inv_ref[2],
+            "oxygen-18 in a multi-isotope molecule must be delta=2, not delta=0"
         );
     }
 }

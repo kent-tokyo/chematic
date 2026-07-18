@@ -9,24 +9,28 @@ hash, so raw integer agreement is meaningless and not what's tested. What's
 tested is whether the two implementations partition a molecule's atoms into
 the SAME equivalence classes -- do the atoms RDKit considers
 invariant-identical also come out invariant-identical in chematic, and vice
-versa -- for every molecule where both RDKit and chematic parse successfully.
-Same methodology as this project's existing "invariant partition agreement"
-measurement (docs/verification_coverage.md).
+versa. Same methodology as this project's existing "invariant partition
+agreement" measurement (docs/verification_coverage.md).
+
+Every input SMILES is accounted for in exactly one bucket -- chematic parse
+failures and RDKit parse failures are counted explicitly (gated on ==0), not
+silently skipped, so a "100%" figure can't hide an incomplete comparison.
 
 Consumes the TSV from `cargo run -p chematic-fp --release --example
 rdkit_invariant_snapshot -- <SMILES.csv> <out.tsv>` (`smiles\\tatom_idx\\t
-invariant`, one row per atom).
+invariant` per atom row, or `smiles\\tPARSE_FAIL\\t<error>` for a chematic
+parse failure).
 
-Residual classification (per the acceptance gate): every molecule where the
-partitions disagree is checked against a short list of known-shape causes
-(degree semantics, explicit H, isotope delta, formal charge, ring
-membership, aromatic/Kekule) and reported bucketed; anything left over is
-"unclassified".
+Residual classification (for any partition_mismatch, which should be zero):
+checked against a short list of known-shape causes (degree semantics,
+explicit H, isotope delta, formal charge, ring membership, aromatic/Kekule)
+and reported bucketed; anything left over is "unclassified".
 
 Usage:
     .venv/bin/python scripts/ecfp_rdkit_invariant_parity.py <chematic.tsv> [SMILES.csv]
 """
 
+import os
 import sys
 from collections import defaultdict
 
@@ -47,17 +51,22 @@ def parse_smiles(smi):
 
 
 def load_chematic(path):
-    """smiles -> [invariant per atom, in atom_idx order]"""
+    """smiles -> [invariant per atom, in atom_idx order] | "PARSE_FAIL" """
     by_smi = defaultdict(dict)
+    parse_fail = set()
     with open(path) as f:
         for line in f:
-            smi, idx, inv = line.rstrip("\n").split("\t")
-            by_smi[smi][int(idx)] = int(inv)
+            parts = line.rstrip("\n").split("\t")
+            smi, tag = parts[0], parts[1]
+            if tag == "PARSE_FAIL":
+                parse_fail.add(smi)
+                continue
+            by_smi[smi][int(tag)] = int(parts[2])
     out = {}
     for smi, idx_map in by_smi.items():
         n = max(idx_map) + 1
         out[smi] = [idx_map.get(i) for i in range(n)]
-    return out
+    return out, parse_fail
 
 
 def partition(values):
@@ -72,7 +81,7 @@ def rdkit_invariants(rd):
     return list(rdMolDescriptors.GetConnectivityInvariants(rd, True))
 
 
-def classify_mismatch(smi, rd, chem_vals, rd_vals):
+def classify_mismatch(rd):
     """Best-effort single-tag classification of why the partitions differ."""
     has_explicit_h = any(a.GetSymbol() == "H" for a in rd.GetAtoms())
     has_isotope = any(a.GetIsotope() != 0 for a in rd.GetAtoms())
@@ -101,53 +110,80 @@ def main():
     chematic_path = args[0]
     csv_path = args[1] if len(args) > 1 else "~/Downloads/SMILES.csv"
 
-    chematic = load_chematic(chematic_path)
-
-    total = 0
-    rdkit_parse_fail = 0
-    matched = 0
-    mismatched = 0
-    tag_counts = defaultdict(int)
-    mismatch_examples = []
-
-    import os
+    chematic, chematic_parse_fail = load_chematic(chematic_path)
 
     with open(os.path.expanduser(csv_path)) as f:
         smis = [line.strip() for line in f if line.strip()]
 
+    counts = {
+        "input_smiles": len(smis),
+        "chematic_parse_fail": 0,
+        "rdkit_parse_fail": 0,
+        "atom_count_mismatch": 0,
+        "partition_match": 0,
+        "partition_mismatch": 0,
+    }
+    tag_counts = defaultdict(int)
+    mismatch_examples = []
+
     for smi in smis:
+        if smi in chematic_parse_fail:
+            counts["chematic_parse_fail"] += 1
+            continue
         if smi not in chematic:
-            continue  # chematic parse failure -- not this metric's concern
+            # Molecule chematic assigned zero atom invariants for (should not
+            # happen -- assign a row for every heavy atom) -- treat as a
+            # chematic-side gap, not silently dropped.
+            counts["chematic_parse_fail"] += 1
+            continue
+
         rd = parse_smiles(smi)
         if rd is None:
-            rdkit_parse_fail += 1
+            counts["rdkit_parse_fail"] += 1
             continue
+
         chem_vals = chematic[smi]
         rd_vals = rdkit_invariants(rd)
         if len(chem_vals) != len(rd_vals):
-            mismatched += 1
-            tag_counts["atom_count_mismatch"] += 1
+            counts["atom_count_mismatch"] += 1
             if len(mismatch_examples) < 10:
-                mismatch_examples.append((smi, "atom_count_mismatch"))
+                mismatch_examples.append((smi, ["atom_count_mismatch"]))
             continue
-        total += 1
+
         if partition(chem_vals) == partition(rd_vals):
-            matched += 1
+            counts["partition_match"] += 1
         else:
-            mismatched += 1
-            tags = classify_mismatch(smi, rd, chem_vals, rd_vals)
+            counts["partition_mismatch"] += 1
+            tags = classify_mismatch(rd)
             for t in tags:
                 tag_counts[t] += 1
             if len(mismatch_examples) < 20:
                 mismatch_examples.append((smi, tags))
 
-    print(f"corpus SMILES: {len(smis)}")
-    print(f"RDKit parse failures: {rdkit_parse_fail}")
-    print(f"compared (both parsed, atom counts match): {total}")
-    print(f"matched:    {matched}")
-    print(f"mismatched: {mismatched}")
-    pct = 100 * matched / total if total else 0.0
-    print(f"partition agreement: {pct:.4f}% (gate: 100%)")
+    accounted = sum(
+        counts[k]
+        for k in (
+            "chematic_parse_fail",
+            "rdkit_parse_fail",
+            "atom_count_mismatch",
+            "partition_match",
+            "partition_mismatch",
+        )
+    )
+
+    print(f"input_smiles:         {counts['input_smiles']}")
+    print(f"chematic_parse_fail:  {counts['chematic_parse_fail']} (gate: == 0)")
+    print(f"rdkit_parse_fail:     {counts['rdkit_parse_fail']} (gate: == 0)")
+    print(f"atom_count_mismatch:  {counts['atom_count_mismatch']} (gate: == 0)")
+    print(f"partition_match:      {counts['partition_match']}")
+    print(f"partition_mismatch:   {counts['partition_mismatch']} (gate: == 0)")
+    assert accounted == counts["input_smiles"], (
+        f"every input SMILES must land in exactly one bucket: "
+        f"accounted={accounted} != input_smiles={counts['input_smiles']}"
+    )
+    denom = counts["partition_match"] + counts["partition_mismatch"]
+    pct = 100 * counts["partition_match"] / denom if denom else 0.0
+    print(f"partition agreement (of comparable pairs): {pct:.4f}% (gate: 100%)")
     print()
     if tag_counts:
         print("mismatch tag breakdown (a mismatch can carry multiple tags):")

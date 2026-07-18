@@ -8,6 +8,11 @@
 //! value as each other (the equivalence partition) is a meaningful
 //! comparison.
 //!
+//! A SMILES chematic fails to parse gets a marker row instead of being
+//! silently dropped: `smiles\tPARSE_FAIL\t<error>` -- so a downstream
+//! comparator can explicitly count and gate on chematic parse completeness,
+//! not just eyeball this tool's own stderr summary.
+//!
 //! Usage:
 //! ```text
 //! cargo run -p chematic-fp --release --example rdkit_invariant_snapshot \
@@ -41,8 +46,9 @@ fn main() {
         }
         let mol = match parse(smi) {
             Ok(m) => m,
-            Err(_) => {
+            Err(e) => {
                 parse_fail += 1;
+                lines.push(format!("{smi}\tPARSE_FAIL\t{e}"));
                 continue;
             }
         };
