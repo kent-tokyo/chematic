@@ -2153,3 +2153,136 @@ fn test_get_descriptors_json_benzene_null_pka() {
         "benzene pkaBase should be null"
     );
 }
+
+// ── issue #90: mmff94_energy_breakdown_from_coords_json / pdb_coords_json ──
+// mmff94_energy_breakdown_json always regenerated a fresh rule-based
+// conformer, ignoring any geometry the caller actually had (e.g. from
+// mol_from_pdb). These cover the new coordinate-explicit contract that
+// mirrors the Python binding's `mol.mmff94_energy_breakdown(coords)`.
+
+#[test]
+fn test_pdb_coords_json_and_mol_from_pdb_share_atom_order() {
+    let pdb = set_dihedral_json("CCCC", 0, 1, 2, 3, 90.0).expect("set_dihedral_json");
+    let mol = mol_from_pdb(&pdb);
+    let coords_json = pdb_coords_json(&pdb);
+    let coords: Vec<[f64; 3]> = serde_json::from_str(&coords_json).expect("valid coords json");
+    assert_eq!(
+        coords.len(),
+        mol.atom_count(),
+        "pdb_coords_json length must match mol_from_pdb's atom count (same underlying parse)"
+    );
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_varies_with_geometry() {
+    // The exact issue #90 repro shape: torsion-scan a CCCC dihedral through
+    // set_dihedral_json -> mol_from_pdb -> pdb_coords_json -> the new energy
+    // function. Before the fix, every angle produced the SAME total because
+    // the geometry was silently regenerated instead of read from the PDB.
+    let mut totals = Vec::new();
+    let mut torsions = Vec::new();
+    for angle in [0.0, 60.0, 120.0, 180.0, 240.0, 300.0] {
+        let pdb = set_dihedral_json("CCCC", 0, 1, 2, 3, angle).expect("set_dihedral_json");
+        let mol = mol_from_pdb(&pdb);
+        let coords_json = pdb_coords_json(&pdb);
+        let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, &coords_json);
+        let v: serde_json::Value = serde_json::from_str(&energy_json).expect("valid energy json");
+        assert!(v.get("error").is_none(), "unexpected error: {energy_json}");
+        totals.push(format!("{}", v["total"]));
+        torsions.push(format!("{}", v["torsion"]));
+    }
+    let distinct_totals: std::collections::HashSet<_> = totals.iter().collect();
+    let distinct_torsions: std::collections::HashSet<_> = torsions.iter().collect();
+    assert!(
+        distinct_totals.len() >= 3,
+        "expected varying total energy across dihedral angles, got {totals:?}"
+    );
+    assert!(
+        distinct_torsions.len() >= 3,
+        "expected varying torsion term across dihedral angles, got {torsions:?}"
+    );
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_at_zero_degrees() {
+    // Pinned against `.venv`'s chematic Python binding's
+    // `mol.mmff94_energy_breakdown(coords)` on the IDENTICAL (mol, coords)
+    // pair (same PDB text, same from_pdb-style parse) -- bit-exact (0.0
+    // delta observed), not just "close". Regression-pins the oracle match,
+    // not just "energy is present".
+    let pdb = set_dihedral_json("CCCC", 0, 1, 2, 3, 0.0).expect("set_dihedral_json");
+    let mol = mol_from_pdb(&pdb);
+    let coords_json = pdb_coords_json(&pdb);
+    let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, &coords_json);
+    let v: serde_json::Value = serde_json::from_str(&energy_json).expect("valid energy json");
+
+    let expect = |key: &str, want: f64| {
+        let got = v[key].as_f64().unwrap_or_else(|| panic!("missing {key}"));
+        assert!(
+            (got - want).abs() <= 1e-9,
+            "{key}: got {got}, want {want} (python oracle)"
+        );
+    };
+    expect("bond", 0.8902727980430658);
+    expect("angle", 0.00046499350423254214);
+    expect("stretch_bend", -0.007350084252858442);
+    expect("torsion", 0.43499994978247686);
+    expect("oop", 0.0);
+    expect("vdw", 14.519561102945316);
+    expect("electrostatic", 0.0);
+    expect("total", 15.837948760022233);
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_rejects_length_mismatch() {
+    let mol = parse("CCCC"); // 4 heavy atoms
+    let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, "[[0,0,0],[1,0,0],[2,0,0]]"); // only 3
+    assert!(
+        energy_json.contains("\"error\""),
+        "expected error for coords/atom-count mismatch, got {energy_json}"
+    );
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_rejects_malformed_json() {
+    let mol = parse("CCCC");
+    for bad in [
+        "not json",
+        "{\"not\":\"an array\"}",
+        "[[0,0],[1,0,0]]",
+        "[[0,0,0,0]]",
+    ] {
+        let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, bad);
+        assert!(
+            energy_json.contains("\"error\""),
+            "expected error for malformed coords_json {bad:?}, got {energy_json}"
+        );
+    }
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_rejects_non_finite() {
+    let mol = parse("CCCC");
+    // Literal NaN/Infinity are not valid JSON tokens -- rejected at parse time.
+    let nan_json =
+        mmff94_energy_breakdown_from_coords_json(&mol, "[[NaN,0,0],[1,0,0],[2,0,0],[3,0,0]]");
+    assert!(nan_json.contains("\"error\""), "got {nan_json}");
+    // A numerically-valid-JSON but overflowing exponent parses to f64::INFINITY
+    // via serde -- this exercises the explicit post-parse is_finite() guard,
+    // not just JSON's lack of a NaN/Infinity literal syntax.
+    let overflow_json =
+        mmff94_energy_breakdown_from_coords_json(&mol, "[[1e400,0,0],[1,0,0],[2,0,0],[3,0,0]]");
+    assert!(overflow_json.contains("\"error\""), "got {overflow_json}");
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_json_unchanged_semantics() {
+    // Regression pin: the EXISTING function keeps its internally-generated-
+    // conformer contract, 4-decimal rounding, and "elec" key -- untouched by
+    // this fix (a new function was added alongside it, not a replacement).
+    let mol = parse("CCCC");
+    let json = mmff94_energy_breakdown_json(&mol);
+    assert!(json.contains("\"elec\""), "got {json}");
+    assert!(!json.contains("\"electrostatic\""), "got {json}");
+    assert!(!json.contains("\"stretch_bend\""), "got {json}");
+}
