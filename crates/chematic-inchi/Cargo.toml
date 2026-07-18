@@ -28,3 +28,7 @@ cc = { version = "1", optional = true }
 
 [lib]
 crate-type = ["rlib", "cdylib"]
+
+[[example]]
+name = "ez_stash_inchi_snapshot"
+required-features = ["native-inchi"]
