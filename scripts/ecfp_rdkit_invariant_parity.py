@@ -196,6 +196,18 @@ def main():
     for smi, tags in mismatch_examples:
         print(f"  MISMATCH [{tags}] {smi}")
 
+    failed = (
+        counts["chematic_parse_fail"] != 0
+        or counts["rdkit_parse_fail"] != 0
+        or counts["atom_count_mismatch"] != 0
+        or counts["partition_mismatch"] != 0
+        or counts["partition_match"] != counts["input_smiles"]
+    )
+    if failed:
+        print()
+        print("GATE FAILED")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

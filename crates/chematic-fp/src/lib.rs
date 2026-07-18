@@ -29,6 +29,7 @@ pub mod mhfp;
 pub mod path;
 pub mod pattern;
 pub mod pharmacophore_fp;
+mod rdkit_isotope_delta_table;
 pub mod reaction_fp;
 pub mod search;
 pub mod topo_path;

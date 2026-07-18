@@ -110,63 +110,19 @@ fn rdkit_total_h_count(mol: &Molecule, idx: AtomIdx) -> u8 {
     implicit_hcount(mol, idx).saturating_add(explicit_h)
 }
 
-/// RDKit's own average (IUPAC standard) atomic weight, for the elements this
-/// isotope-delta computation needs to be precise for — the common organic
-/// elements a real molecule can plausibly carry an explicit isotope label
-/// on. `None` (no isotope specified) always resolves to a delta of exactly
-/// 0 regardless of which value is used here (see `rdkit_isotope_delta`), so
-/// precision only matters for atoms that also have `rdkit_isotope_mass`
-/// coverage below — falls back to chematic-core's monoisotopic
-/// `Element::atomic_mass()` (a different, CIP-rule-4 quantity, but a
-/// reasonable placeholder for elements this crate's isotope tests never
-/// exercise).
-fn rdkit_standard_atomic_weight(element: chematic_core::Element) -> f64 {
-    match element.atomic_number() {
-        1 => 1.008,    // H
-        6 => 12.011,   // C
-        7 => 14.007,   // N
-        8 => 15.999,   // O
-        9 => 18.998,   // F
-        15 => 30.974,  // P
-        16 => 32.06,   // S
-        17 => 35.45,   // Cl
-        35 => 79.904,  // Br
-        53 => 126.904, // I
-        _ => element.atomic_mass(),
-    }
-}
-
-/// Exact mass (u) of a specific isotope, for the common organic elements
-/// (see `rdkit_standard_atomic_weight`). `None` falls back to treating the
-/// isotope's mass as exactly its integer mass number in
-/// [`rdkit_isotope_delta`] — isotope masses deviate from their mass number
-/// by at most a few hundredths of a u for light/common isotopes, so this is
-/// a reasonable approximation, but (like RDKit's own real physical table)
-/// can still disagree with RDKit at truncation boundaries for elements not
-/// covered here.
-fn rdkit_isotope_mass(element: chematic_core::Element, mass_number: u16) -> Option<f64> {
-    let table: &[(u16, f64)] = match element.atomic_number() {
-        1 => &[(1, 1.00783), (2, 2.01410), (3, 3.01605)],
-        6 => &[(12, 12.00000), (13, 13.00335), (14, 14.00324)],
-        7 => &[(14, 14.00307), (15, 15.00011)],
-        8 => &[(16, 15.99491), (17, 16.99913), (18, 17.99916)],
-        9 => &[(19, 18.99840)],
-        15 => &[(31, 30.97376), (32, 31.97391), (33, 32.97173)],
-        16 => &[
-            (32, 31.97207),
-            (33, 32.97146),
-            (34, 33.96787),
-            (35, 34.96903),
-        ],
-        17 => &[(35, 34.96885), (37, 36.96590)],
-        35 => &[(79, 78.91834), (81, 80.91629)],
-        53 => &[(127, 126.90447)],
-        _ => return None,
-    };
-    table
-        .iter()
-        .find(|(n, _)| *n == mass_number)
-        .map(|(_, m)| *m)
+/// Exact `deltaMass` for a given `(atomic_number, mass_number)` isotope, via
+/// binary search over [`crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE`] --
+/// a table generated directly from RDKit's own `PeriodicTable`
+/// (`scripts/gen_rdkit_isotope_delta_table.py`), covering every isotope
+/// RDKit's `GetMassForIsotope` recognizes for every element, not a
+/// hand-picked subset. `None` means `(atomic_number, mass_number)` isn't a
+/// real isotope RDKit itself recognizes either.
+fn rdkit_isotope_delta_for(atomic_number: u8, mass_number: u16) -> Option<i16> {
+    use crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE;
+    RDKIT_ISOTOPE_DELTA_TABLE
+        .binary_search_by_key(&(atomic_number, mass_number), |&(z, a, _)| (z, a))
+        .ok()
+        .map(|i| RDKIT_ISOTOPE_DELTA_TABLE[i].2)
 }
 
 /// Isotope-mass delta, matching RDKit's actual `getConnectivityInvariants`
@@ -180,18 +136,21 @@ fn rdkit_isotope_mass(element: chematic_core::Element, mass_number: u16) -> Opti
 /// three at delta 0: `13.00335 - 12.011 = 0.992`, which truncates to `0`,
 /// not `1`).
 ///
-/// `atom.isotope == None` always gives delta 0 (both sides of the
-/// subtraction use the same average weight).
+/// `atom.isotope == None` always gives delta 0. An explicit isotope RDKit
+/// itself doesn't recognize (`rdkit_isotope_delta_for` returns `None`) falls
+/// back to an approximate mass-number-vs-monoisotopic-mass delta -- there is
+/// no RDKit ground truth to match in that case either.
 fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i32 {
     let atom = mol.atom(idx);
-    let average_mass = rdkit_standard_atomic_weight(atom.element);
-    let atom_mass = match atom.isotope {
-        None => average_mass,
+    match atom.isotope {
+        None => 0,
         Some(mass_number) => {
-            rdkit_isotope_mass(atom.element, mass_number).unwrap_or(mass_number as f64)
+            match rdkit_isotope_delta_for(atom.element.atomic_number(), mass_number) {
+                Some(delta) => delta as i32,
+                None => (mass_number as f64 - atom.element.atomic_mass()) as i32,
+            }
         }
-    };
-    (atom_mass - average_mass) as i32
+    }
 }
 
 /// Build the pre-chirality invariant byte sequence for `idx` under `mode`.
@@ -1056,6 +1015,94 @@ mod tests {
         assert_eq!(
             inv[0], inv[1],
             "carbon-12 and carbon-13 must be the same invariant class, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_carbon_11_12_same_class() {
+        // The counterexample that caught the previous partial-table
+        // fallback: carbon-11 (11.0114336, not in the original hand-picked
+        // 12/13/14 table) truncated via the `mass_number as f64`
+        // approximation to `(11.0 - 12.011) as i32 = -1`, disagreeing with
+        // RDKit's real `(11.0114336 - 12.011) as i32 = 0` -- same as
+        // carbon-12. Now backed by the full generated table
+        // (RDKIT_ISOTOPE_DELTA_TABLE), not an approximation.
+        let mol = parse("[11CH3][12CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_eq!(
+            inv[0], inv[1],
+            "carbon-11 and carbon-12 must be the same invariant class, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_carbon_10_11_different_class() {
+        // `10.0168532 - 12.011 = -1.994` truncates to `-1`, different from
+        // carbon-11's `0`.
+        let mol = parse("[10CH3][11CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "carbon-10 and carbon-11 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_carbon_10_12_different_class() {
+        let mol = parse("[10CH3][12CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "carbon-10 and carbon-12 must be different invariant classes, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn rdkit_isotope_delta_table_is_sorted_for_binary_search() {
+        // rdkit_isotope_delta_for's binary_search_by_key requires the table
+        // to be sorted by (atomic_number, mass_number) -- a corrupted or
+        // wrongly-regenerated table would silently give wrong lookups
+        // rather than an error, so check the precondition explicitly rather
+        // than trusting the generator forever.
+        let table = crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE;
+        for w in table.windows(2) {
+            let (z0, a0, _) = w[0];
+            let (z1, a1, _) = w[1];
+            assert!(
+                (z0, a0) < (z1, a1),
+                "table must be strictly sorted by (atomic_number, mass_number): \
+                 ({z0}, {a0}) is not before ({z1}, {a1})"
+            );
+        }
+    }
+
+    #[test]
+    fn rdkit_isotope_delta_table_exhaustive_lookup_round_trip() {
+        // Every one of the table's 3,111 (atomic_number, mass_number,
+        // delta) rows -- generated directly from RDKit 2026.03.3's
+        // PeriodicTable, covering every isotope RDKit itself recognizes for
+        // every element -- must round-trip through rdkit_isotope_delta_for
+        // exactly. This is the actual "full RDKit-supported isotope delta
+        // table: mismatch = 0" gate: not a hand-picked sample, all 3,111
+        // rows, checked against chematic's own lookup path (the table's
+        // *values* are RDKit's by construction; this exhaustively verifies
+        // the Rust binary-search lookup never returns the wrong one).
+        let table = crate::rdkit_isotope_delta_table::RDKIT_ISOTOPE_DELTA_TABLE;
+        let mut mismatches = 0usize;
+        for &(z, a, expected_delta) in table.iter() {
+            let got = rdkit_isotope_delta_for(z, a);
+            if got != Some(expected_delta) {
+                mismatches += 1;
+                if mismatches <= 5 {
+                    eprintln!("MISMATCH: Z={z} A={a} expected={expected_delta} got={got:?}");
+                }
+            }
+        }
+        assert_eq!(
+            mismatches,
+            0,
+            "{mismatches}/{} table entries did not round-trip through rdkit_isotope_delta_for",
+            table.len()
         );
     }
 
