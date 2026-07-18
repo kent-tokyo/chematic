@@ -2,7 +2,9 @@
 //!
 //! Generated from RDKit's own `PeriodicTable`, not a hand-picked subset --
 //! covers every isotope RDKit's `GetMassForIsotope` recognizes, for every
-//! element.
+//! element, plus every element's own average atomic weight (needed as the
+//! subtrahend for isotopes RDKit itself doesn't recognize -- see
+//! rdkit_isotope_delta() in ecfp.rs).
 //!
 //! Formula: `int(GetMassForIsotope(Z, A) - GetAtomicWeight(Z))`
 //! (RDKit's `getConnectivityInvariants` deltaMass computation, truncated
@@ -3126,4 +3128,20 @@ pub(crate) const RDKIT_ISOTOPE_DELTA_TABLE: [(u8, u16, i16); 3111] = [
     (118, 293, 0),
     (118, 294, 0),
     (118, 295, 1),
+];
+
+/// `GetAtomicWeight(atomic_number)`, indexed by atomic number directly
+/// (index 0 is an unused placeholder -- valid atomic numbers start at 1).
+pub(crate) const RDKIT_ATOMIC_WEIGHTS: [f64; 119] = [
+    0.0, // index 0 unused
+    1.008, 4.003, 6.941, 9.012, 10.812, 12.011, 14.007, 15.999, 18.998, 20.18, 22.99, 24.305,
+    26.982, 28.086, 30.974, 32.067, 35.453, 39.948, 39.098, 40.078, 44.956, 47.867, 50.944, 51.996,
+    54.938, 55.845, 58.933, 58.693, 63.546, 65.39, 69.723, 72.61, 74.922, 78.96, 79.904, 83.8,
+    85.468, 87.62, 88.906, 91.224, 92.906, 95.94, 98.0, 101.07, 102.906, 106.42, 107.868, 112.412,
+    114.818, 118.711, 121.76, 127.6, 126.904, 131.29, 132.905, 137.328, 138.906, 140.116, 140.908,
+    144.24, 145.0, 150.36, 151.964, 157.25, 158.925, 162.5, 164.93, 167.26, 168.934, 173.04,
+    174.967, 178.49, 180.948, 183.84, 186.207, 190.23, 192.217, 195.078, 196.967, 200.59, 204.383,
+    207.2, 208.98, 209.0, 210.0, 222.0, 223.0, 226.0, 227.0, 232.038, 231.036, 238.029, 237.0,
+    244.0, 243.0, 247.0, 247.0, 251.0, 252.0, 257.0, 258.0, 259.0, 262.0, 267.0, 268.0, 269.0,
+    270.0, 269.0, 278.0, 281.0, 281.0, 285.0, 284.0, 289.0, 288.0, 293.0, 292.0, 294.0,
 ];

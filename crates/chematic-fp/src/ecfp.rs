@@ -136,18 +136,34 @@ fn rdkit_isotope_delta_for(atomic_number: u8, mass_number: u16) -> Option<i16> {
 /// three at delta 0: `13.00335 - 12.011 = 0.992`, which truncates to `0`,
 /// not `1`).
 ///
-/// `atom.isotope == None` always gives delta 0. An explicit isotope RDKit
-/// itself doesn't recognize (`rdkit_isotope_delta_for` returns `None`) falls
-/// back to an approximate mass-number-vs-monoisotopic-mass delta -- there is
-/// no RDKit ground truth to match in that case either.
+/// `atom.isotope == None` always gives delta 0, since `Atom::getMass()`
+/// itself returns the average atomic weight for an unspecified isotope
+/// (confirmed directly, not inferred: RDKit's `C`'s `GetMass()` is `12.011`,
+/// not the monoisotopic `12.000`) — so both sides of the subtraction are the
+/// same value. An explicit isotope RDKit itself doesn't recognize
+/// (`rdkit_isotope_delta_for` returns `None`) also has defined RDKit
+/// behavior, confirmed the same way: `Atom::getMass()` falls back to the
+/// raw mass number itself (`[500CH4]`'s `GetMass()` is exactly `500.0`, not
+/// 0 and not a nearby real isotope's mass), so the delta is
+/// `mass_number - average_atomic_weight` — using
+/// [`RDKIT_ATOMIC_WEIGHTS`](crate::rdkit_isotope_delta_table::RDKIT_ATOMIC_WEIGHTS)
+/// for `average_atomic_weight` here, **not** chematic-core's
+/// `Element::atomic_mass()` (a different, monoisotopic quantity — using it
+/// would silently reproduce the exact carbon-11-shaped bug this table was
+/// built to close, just for a different isotope).
 fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i32 {
+    use crate::rdkit_isotope_delta_table::RDKIT_ATOMIC_WEIGHTS;
+
     let atom = mol.atom(idx);
     match atom.isotope {
         None => 0,
         Some(mass_number) => {
             match rdkit_isotope_delta_for(atom.element.atomic_number(), mass_number) {
                 Some(delta) => delta as i32,
-                None => (mass_number as f64 - atom.element.atomic_mass()) as i32,
+                None => {
+                    let average = RDKIT_ATOMIC_WEIGHTS[atom.element.atomic_number() as usize];
+                    (mass_number as f64 - average) as i32
+                }
             }
         }
     }
@@ -1104,6 +1120,46 @@ mod tests {
             "{mismatches}/{} table entries did not round-trip through rdkit_isotope_delta_for",
             table.len()
         );
+    }
+
+    /// Parse a single-atom SMILES and return atom 0's raw RdkitMorgan
+    /// isotope delta directly (not just whether it matches another atom's
+    /// class) -- needed to catch a uniform off-by-N shift that a
+    /// partition-only comparison can't distinguish from "correct".
+    fn isotope_delta_for_smiles(smi: &str) -> i32 {
+        let mol = parse(smi).unwrap();
+        rdkit_isotope_delta(&mol, AtomIdx(0))
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_unrecognized_uses_average_atomic_weight_fallback() {
+        // Mass numbers 499/500 aren't real carbon isotopes RDKit's
+        // PeriodicTable recognizes (confirmed: GetMassForIsotope(6, 500) ==
+        // 0.0), so they fall back to RDKit's own defined behavior for an
+        // unrecognized explicit isotope: Atom::getMass() returns the raw
+        // mass number itself (confirmed directly via RDKit's
+        // Atom.GetMass(), not inferred -- [500CH4]'s GetMass() is exactly
+        // 500.0). deltaMass = mass_number - average_atomic_weight,
+        // truncated toward zero: `500.0 - 12.011 = 487.989 -> 487`,
+        // `499.0 - 12.011 = 486.989 -> 486`. Using chematic-core's
+        // monoisotopic Element::atomic_mass() (12.000) here instead would
+        // give 488/487 -- silently wrong by exactly 1, a uniform shift a
+        // partition-only comparison (same molecule's atoms all shifted
+        // together) would never catch.
+        assert_eq!(isotope_delta_for_smiles("[500CH4]"), 487);
+        assert_eq!(isotope_delta_for_smiles("[499CH4]"), 486);
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_recognized_raw_delta_values() {
+        // Exact raw deltas (not just partition membership) for a few
+        // in-table isotopes, cross-checked against
+        // RDKIT_ISOTOPE_DELTA_TABLE directly.
+        assert_eq!(isotope_delta_for_smiles("[12CH4]"), 0);
+        assert_eq!(isotope_delta_for_smiles("[13CH4]"), 0);
+        assert_eq!(isotope_delta_for_smiles("[14CH4]"), 1);
+        assert_eq!(isotope_delta_for_smiles("[11CH4]"), 0);
+        assert_eq!(isotope_delta_for_smiles("[10CH4]"), -1);
     }
 
     #[test]
