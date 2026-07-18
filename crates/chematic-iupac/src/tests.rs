@@ -522,3 +522,106 @@ fn test_bicyclo_naming() {
     let m2 = mol("C1CC2CCC1C2");
     assert_eq!(name(&m2).unwrap(), "bicyclo[2.2.1]heptane");
 }
+
+// ---- Issue #92: benzene substituent classifiers must not misread a
+// multi-atom substituent as a single-atom one (aspirin as "2-methylphenol",
+// etc.) -- classify_sub/classify_benzene_sub_simple used to look only at the
+// first atom bonded to the ring, ignoring whatever hung off it. -------------
+
+#[test]
+fn test_issue92_extended_substituents_rejected_not_misnamed() {
+    // 4-methylanisole: an ETHER (-O-CH3), not an alcohol -- the cleanest
+    // single-mechanism repro (before the fix: Ok("4-methylphenol"), wrongly
+    // identical to the name for true p-cresol below).
+    assert_eq!(name(&mol("COc1ccc(C)cc1")), Err(IupacError::NotSupported));
+    // aspirin: ester O and carboxyl C were each misread as a single atom.
+    // (before the fix: Ok("2-methylphenol"))
+    assert_eq!(
+        name(&mol("CC(=O)Oc1ccccc1C(=O)O")),
+        Err(IupacError::NotSupported)
+    );
+    // ibuprofen: isobutyl and 1-carboxyethyl arms were each misread as -CH3.
+    // (before the fix: Ok("1,4-dimethylbenzene"))
+    assert_eq!(
+        name(&mol("CC(C)Cc1ccc(cc1)C(C)C(=O)O")),
+        Err(IupacError::NotSupported)
+    );
+    // caffeine must remain a safe failure (regression pin, not a new case).
+    assert_eq!(
+        name(&mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C")),
+        Err(IupacError::NotSupported)
+    );
+    // True p-cresol (a real -OH, not an ether) must still name correctly --
+    // the fix must not reject legitimate hydroxy substituents.
+    assert_eq!(name(&mol("Cc1ccc(O)cc1")).unwrap(), "4-methylphenol");
+}
+
+#[test]
+fn test_issue92_trisubstituted_extended_substituents_rejected() {
+    // Same bug shape in the trisubstituted path (classify_benzene_sub_simple
+    // shared the same "peek at the first atom only" flaw, minus even the
+    // disubstituted path's double-bond check on oxygen).
+    assert_eq!(
+        name(&mol("Cc1cc(C)cc(OC)c1")), // ether O substituent
+        Err(IupacError::NotSupported)
+    );
+    assert_eq!(
+        name(&mol("Cc1cc(C)cc(CC)c1")), // ethyl substituent
+        Err(IupacError::NotSupported)
+    );
+    // A genuinely all-simple trisubstituted case must still work. NOTE: not
+    // "Cc1cc(C)cc(O)c1" -- that places the 3 substituents at the ring's
+    // alternating (1,3,5) positions, a locant-numbering tie that
+    // best_benzene_locants (helpers.rs) resolves nondeterministically
+    // (HashSet iteration order over ring_atoms varies per process; confirmed
+    // present in the pre-fix code too, e.g. "1-hydroxy-3,5-dimethylbenzene"
+    // vs "5-hydroxy-1,3-dimethylbenzene" across runs of the SAME binary --
+    // unrelated to this PR's classifier/coverage fix, see tasks/todo.md).
+    // "Cc1cc(C)c(O)cc1" (positions 1,3,4) has no such symmetry.
+    assert_eq!(
+        name(&mol("Cc1cc(C)c(O)cc1")).unwrap(),
+        "1-hydroxy-2,4-dimethylbenzene"
+    );
+}
+
+#[test]
+fn test_issue92_local_shape_negative_controls() {
+    // Each of these has a "leaf" first atom (nothing chemically obviously
+    // wrong at a glance) but fails the strict local-shape check the fix
+    // requires -- a bare "is it a leaf" check (without charge/isotope/H-count
+    // validation) would wrongly accept several of these.
+    let rejected = [
+        "CCc1ccc(C)cc1",      // extended carbon substituent (ethyl, not methyl)
+        "COc1ccc(C)cc1",      // ether oxygen (not hydroxy)
+        "[O-]c1ccc(C)cc1",    // charged oxygen (not neutral hydroxy)
+        "[NH3+]c1ccc(C)cc1",  // charged nitrogen (not neutral amino)
+        "O=Cc1ccc(C)cc1",     // double-bonded O substituent (aldehyde, not hydroxy)
+        "[13CH3]c1ccc(C)cc1", // explicit isotope (not a plain methyl)
+    ];
+    for smi in rejected {
+        assert_eq!(
+            name(&mol(smi)),
+            Err(IupacError::NotSupported),
+            "smiles: {smi}"
+        );
+    }
+}
+
+#[test]
+fn test_simple_disubstituted_benzene_table_driven_regression() {
+    // Table-driven regression pin: methyl paired with each of the 7 shapes
+    // classify_simple_benzene_substituent accepts, at the para position,
+    // must keep producing exactly its pre-fix name.
+    let cases: &[(&str, &str)] = &[
+        ("Cc1ccc(C)cc1", "1,4-dimethylbenzene"),
+        ("Cc1ccc(O)cc1", "4-methylphenol"),
+        ("Cc1ccc(N)cc1", "4-methylaniline"),
+        ("Cc1ccc(F)cc1", "1-fluoro-4-methylbenzene"),
+        ("Cc1ccc(Cl)cc1", "1-chloro-4-methylbenzene"),
+        ("Cc1ccc(Br)cc1", "1-bromo-4-methylbenzene"),
+        ("Cc1ccc(I)cc1", "1-iodo-4-methylbenzene"),
+    ];
+    for (smi, expected) in cases {
+        assert_eq!(name(&mol(smi)).unwrap(), *expected, "smiles: {smi}");
+    }
+}
