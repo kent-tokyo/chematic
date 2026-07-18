@@ -25,14 +25,20 @@
 //!
 //! `ring_closure_path_cip_multiset_stable`'s original D0-era SMILES
 //! (`C/N=c1ccccc/1`, an exocyclic imine on an *unsubstituted* benzo ring)
-//! is not RDKit-parseable and, worse, is a genuine CIP priority tie between
-//! its two ring branches (the unsubstituted ring is symmetric across the
-//! ipso/para axis) -- chematic's comparator breaks that tie in a way that
-//! is not itself stable across the atom renumbering `canonical_smiles`
-//! performs (flips E/Z), a separate, pre-existing shell-pooling-comparator
-//! limitation (see `docs/cip_accurate_rfc.md`) unrelated to EZ-S1 and out
-//! of its scope. Swapped for an asymmetric ring (`[nH]` breaks the tie)
-//! that still exercises the same ring-closure parser path.
+//! is not RDKit-parseable and, worse, turned out to be a genuine CIP
+//! priority tie between its two ring branches (the unsubstituted ring is
+//! symmetric across the ipso/para axis) -- confirmed via
+//! `compare_branches(mol, alkene_end, subs[0], subs[1]) ==
+//! Ordering::Equal` in both argument orders. That's a missing tie guard in
+//! `highest_stereo_sub` (fixed in EZ-S1 alongside the stash read -- see
+//! `crates/chematic-chem/src/cip.rs`'s
+//! `test_highest_stereo_sub_symmetric_ring_is_not_stereogenic`), not the
+//! deeper shell-pooling-comparator instability it initially looked like.
+//! Swapped here for an asymmetric ring (`[nH]` breaks the tie, and has a
+//! real RDKit-confirmed E) so this file keeps testing what it's for --
+//! round-trip stability of an actually-stereogenic bond through the
+//! ring-closure parser path -- rather than duplicating the tie-guard
+//! regression test.
 
 use chematic_chem::assign_cip;
 use chematic_core::Molecule;

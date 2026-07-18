@@ -3,7 +3,7 @@
 EZ-S1 full-corpus before/after accounting for `chematic_chem::assign_cip`
 (legacy engine) E/Z output.
 
-Two fixes landed together in `crates/chematic-chem/src/cip.rs`:
+Three fixes landed together in `crates/chematic-chem/src/cip.rs`:
 
 1. `substituent_is_up` now reads `Molecule::bond_direction` -- the side
    channel used when a SMILES `/`/`\\` marker lands on a bond between two
@@ -15,19 +15,34 @@ Two fixes landed together in `crates/chematic-chem/src/cip.rs`:
    *among those carrying an explicit marker*, not the true highest-priority
    substituent overall -- silently using a lower-priority marked
    substituent's raw side instead of deriving the true-highest one's side
-   as its geometric complement. This affects every trisubstituted alkene
-   end where the marked substituent isn't the CIP-highest one, aromatic or
-   not; fixing it flips some *already-assigned* E/Z labels.
+   as its geometric complement. Affects every trisubstituted alkene end
+   where the marked substituent isn't the CIP-highest one, aromatic or not.
+3. A missing tie guard in `highest_stereo_sub`: when the only two
+   substituents at an alkene end are a genuine CIP priority tie (e.g. the
+   two ring branches of an *unsubstituted*, symmetric ring's ipso carbon),
+   there is no stereogenic bond to report -- swapping them maps the
+   molecule onto itself. Without the guard, a stable sort silently picked
+   whichever substituent happened to come first in adjacency order, which
+   is not stable across atom renumbering (e.g. a `canonical_smiles` round
+   trip), flipping the reported side arbitrarily.
+
+This is an ORACLE-FIRST accounting: the RDKit E/Z oracle is built by
+scanning every SMILES in the corpus directly (not just the ones chematic
+happened to assign something for), so a bond chematic silently never
+assigns anything to -- not just one it assigns the wrong code to -- is
+counted (`*_missing`). Axial (allene) chirality is excluded from the
+oracle: RDKit doesn't label individual bonds of a cumulated diene the same
+way, and it isn't what this accounting claims to measure.
 
 Consumes two TSV snapshots produced by
 `cargo run -p chematic-chem --release --example ez_stash_gap_snapshot --
 <SMILES.csv> <out.tsv>` -- one row per assignment
-(`smiles\\tatom_idx\\tpartner_idx\\tcode`), `partner_idx` empty for R/S/r/s
-rows, the double-bond's other atom for E/Z rows (used to key against
-RDKit's bond-level `_CIPCode`).
+(`smiles\\tkind\\tatom_idx\\tpartner_idx\\tcode`), `kind` is `tetra`/`ez`/
+`allene`/`parse_fail`; `partner_idx` is the double bond's other atom for
+`ez`/`allene` rows (used to key against RDKit's bond-level `_CIPCode`).
 
 Usage:
-    .venv/bin/python scripts/ez_stash_gap_report.py baseline.tsv candidate.tsv [SMILES.csv]
+    .venv/bin/python scripts/ez_stash_gap_report.py baseline.tsv candidate.tsv SMILES.csv
 """
 
 import sys
@@ -37,127 +52,169 @@ from rdkit.Chem import rdCIPLabeler
 
 
 def load_snapshot(path):
+    """-> ({(smiles, kind, atom_idx): (partner_idx, code)}, {parse_fail smiles})"""
     rows = {}
+    parse_fails = set()
     with open(path) as f:
         for line in f:
             parts = line.rstrip("\n").split("\t")
-            smi, idx, partner, code = parts[0], int(parts[1]), parts[2], parts[3]
-            rows[(smi, idx)] = (partner, code)
-    return rows
+            smi, kind = parts[0], parts[1]
+            if kind == "parse_fail":
+                parse_fails.add(smi)
+                continue
+            atom_idx, partner, code = int(parts[2]), parts[3], parts[4]
+            rows[(smi, kind, atom_idx)] = (partner, code)
+    return rows, parse_fails
+
+
+def ez_index(rows):
+    """{(kind='ez' only)} -> {smiles: {frozenset(bond atoms): code}}"""
+    idx = {}
+    for (smi, kind, atom_idx), (partner, code) in rows.items():
+        if kind != "ez" or not partner:
+            continue
+        idx.setdefault(smi, {})[frozenset((atom_idx, int(partner)))] = code
+    return idx
+
+
+def diff_by_kind(baseline, candidate, kind):
+    b = {(smi, idx): code for (smi, k, idx), (_, code) in baseline.items() if k == kind}
+    c = {(smi, idx): code for (smi, k, idx), (_, code) in candidate.items() if k == kind}
+    keys = set(b) | set(c)
+    newly = [k for k in keys if k not in b and k in c]
+    lost = [k for k in keys if k in b and k not in c]
+    flipped = [k for k in keys if k in b and k in c and b[k] != c[k]]
+    return newly, lost, flipped
+
+
+def is_allene_central(atom):
+    dbl = sum(1 for b in atom.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE)
+    return dbl == 2 and atom.GetDegree() == 2
+
+
+def rdkit_ez_oracle(smi):
+    """{frozenset(bond atom idxs): code} for smi's plain (non-allene) E/Z
+    bonds, or None if RDKit can't parse/label it."""
+    rd = Chem.MolFromSmiles(smi)
+    if rd is None:
+        return None
+    try:
+        rdCIPLabeler.AssignCIPLabels(rd)
+    except Exception:
+        return None
+    out = {}
+    for b in rd.GetBonds():
+        if not b.HasProp("_CIPCode"):
+            continue
+        a1, a2 = b.GetBeginAtom(), b.GetEndAtom()
+        if is_allene_central(a1) or is_allene_central(a2):
+            continue
+        out[frozenset((a1.GetIdx(), a2.GetIdx()))] = b.GetProp("_CIPCode")
+    return out
 
 
 def main():
     args = sys.argv[1:]
-    if len(args) < 2:
+    if len(args) < 3:
         print(__doc__)
         sys.exit(1)
-    baseline_path, candidate_path = args[0], args[1]
+    baseline_path, candidate_path, csv_path = args[0], args[1], args[2]
 
-    baseline = load_snapshot(baseline_path)
-    candidate = load_snapshot(candidate_path)
-    all_keys = set(baseline) | set(candidate)
+    baseline, baseline_parse_fail = load_snapshot(baseline_path)
+    candidate, candidate_parse_fail = load_snapshot(candidate_path)
+    base_idx = ez_index(baseline)
+    cand_idx = ez_index(candidate)
 
-    newly_assigned = [k for k in all_keys if k not in baseline and k in candidate]
-    lost = [k for k in all_keys if k in baseline and k not in candidate]
-    changed = [
-        k for k in all_keys if k in baseline and k in candidate and baseline[k] != candidate[k]
-    ]
-    rs_codes = {"R", "S", "r", "s"}
-    rs_changed = [
-        k for k in changed if candidate[k][1] in rs_codes or baseline[k][1] in rs_codes
-    ]
-    ez_flipped = [
-        k for k in changed if baseline[k][1] in ("E", "Z") and candidate[k][1] in ("E", "Z")
-    ]
-    allene_flipped = [k for k in ez_flipped if "=C=" in k[0]]
-    allene_new = [k for k in newly_assigned if "=C=" in k[0] and candidate[k][1] in ("E", "Z")]
+    with open(csv_path) as f:
+        smis = [line.strip() for line in f if line.strip()]
 
-    oracle_cache = {}
+    rdkit_parse_fail = 0
+    rdkit_ez_total = 0
+    cand_correct = cand_wrong = cand_missing = 0
+    base_correct = base_wrong = base_missing = 0
+    cand_extra = 0
+    base_extra = 0
+    wrong_examples = []
+    missing_examples = []
+    extra_examples = []
 
-    def oracle_for(smi):
-        if smi not in oracle_cache:
-            rd = Chem.MolFromSmiles(smi)
-            bond_codes = {}
-            if rd is not None:
-                try:
-                    rdCIPLabeler.AssignCIPLabels(rd)
-                    for b in rd.GetBonds():
-                        if b.HasProp("_CIPCode"):
-                            bond_codes[frozenset((b.GetBeginAtomIdx(), b.GetEndAtomIdx()))] = (
-                                b.GetProp("_CIPCode")
-                            )
-                except Exception:
-                    pass
-            oracle_cache[smi] = bond_codes
-        return oracle_cache[smi]
-
-    def oracle_code_for(key, partner):
-        smi, idx = key
-        if not partner:
-            return None
-        return oracle_for(smi).get(frozenset((idx, int(partner))))
-
-    # Every E/Z row present on either side, checked against a freshly
-    # regenerated RDKit oracle -- this is the authoritative accuracy number
-    # (newly-assigned agreement is a subset of it).
-    ez_keys = [
-        k
-        for k in all_keys
-        if (k in baseline and baseline[k][1] in ("E", "Z"))
-        or (k in candidate and candidate[k][1] in ("E", "Z"))
-    ]
-    baseline_correct = candidate_correct = newly_correct = both_wrong = oracle_missing = 0
-    regressions = []
-    for k in ez_keys:
-        partner = (candidate.get(k) or baseline.get(k))[0]
-        oracle_code = oracle_code_for(k, partner)
-        if oracle_code is None:
-            oracle_missing += 1
+    for smi in smis:
+        oracle = rdkit_ez_oracle(smi)
+        if oracle is None:
+            rdkit_parse_fail += 1
             continue
-        b_ok = k in baseline and baseline[k][1] == oracle_code
-        c_ok = k in candidate and candidate[k][1] == oracle_code
-        baseline_correct += b_ok
-        candidate_correct += c_ok
-        newly_correct += c_ok and not b_ok
-        both_wrong += not b_ok and not c_ok
-        if b_ok and not c_ok:
-            regressions.append((k, baseline[k], candidate[k], oracle_code))
+        rdkit_ez_total += len(oracle)
 
-    new_agree = new_disagree = 0
-    new_disagree_examples = []
-    for k in newly_assigned:
-        partner, code = candidate[k]
-        if code not in ("E", "Z"):
-            continue
-        oracle_code = oracle_code_for(k, partner)
-        if oracle_code is None:
-            continue
-        if oracle_code == code:
-            new_agree += 1
-        else:
-            new_disagree += 1
-            new_disagree_examples.append((*k, code, oracle_code))
+        if smi not in candidate_parse_fail:
+            c_map = cand_idx.get(smi, {})
+            for key, ocode in oracle.items():
+                c_code = c_map.get(key)
+                if c_code is None:
+                    cand_missing += 1
+                    missing_examples.append((smi, sorted(key), ocode))
+                elif c_code == ocode:
+                    cand_correct += 1
+                else:
+                    cand_wrong += 1
+                    wrong_examples.append((smi, sorted(key), c_code, ocode))
+            for key in c_map:
+                if key not in oracle:
+                    cand_extra += 1
+                    extra_examples.append((smi, sorted(key), c_map[key]))
 
-    print("=== EZ-S1 full-corpus before/after ===")
-    print(f"E/Z newly assigned:        {len(newly_assigned)}")
-    print(f"E/Z lost:                  {len(lost)} (gate: must be 0)")
-    print(f"R/S changed:               {len(rs_changed)} (gate: must be 0)")
-    print(f"E<->Z flipped (existing):  {len(ez_flipped)}")
-    print(f"  of which allene-tagged (heuristic '=C=' substring): {len(allene_flipped)}")
-    print(f"allene newly assigned (heuristic): {len(allene_new)}")
+        if smi not in baseline_parse_fail:
+            b_map = base_idx.get(smi, {})
+            for key, ocode in oracle.items():
+                b_code = b_map.get(key)
+                if b_code is None:
+                    base_missing += 1
+                elif b_code == ocode:
+                    base_correct += 1
+                else:
+                    base_wrong += 1
+            for key in b_map:
+                if key not in oracle:
+                    base_extra += 1
+
+    ez_newly, ez_lost, ez_flipped = diff_by_kind(baseline, candidate, "ez")
+    allene_newly, allene_lost, allene_flipped = diff_by_kind(baseline, candidate, "allene")
+    tetra_newly, tetra_lost, tetra_flipped = diff_by_kind(baseline, candidate, "tetra")
+
+    print("=== EZ-S1 oracle-first E/Z completeness (RDKit rdCIPLabeler) ===")
+    print(f"corpus size: {len(smis)}")
+    print(f"RDKit parse failures: {rdkit_parse_fail}")
+    print(f"chematic parse failures (baseline): {len(baseline_parse_fail)}")
+    print(f"chematic parse failures (candidate): {len(candidate_parse_fail)}")
+    print(f"rdkit_ez_total: {rdkit_ez_total}")
     print()
-    print(f"newly-assigned E/Z vs RDKit: agree={new_agree} disagree={new_disagree}")
-    for ex in new_disagree_examples[:20]:
-        print("  DISAGREE", ex)
+    print(f"candidate_correct: {cand_correct} (gate: == rdkit_ez_total)")
+    print(f"candidate_wrong:   {cand_wrong} (gate: == 0)")
+    print(f"candidate_missing: {cand_missing} (gate: == 0)")
+    print(f"candidate_extra:   {cand_extra} (gate: == 0)")
     print()
-    print(
-        f"all E/Z rows vs RDKit: baseline_correct={baseline_correct} "
-        f"candidate_correct={candidate_correct} newly_correct={newly_correct} "
-        f"both_wrong={both_wrong} oracle_missing={oracle_missing}"
-    )
-    print(f"regressions (baseline correct -> candidate incorrect): {len(regressions)} (gate: must be 0)")
-    for r in regressions[:20]:
-        print("  REGRESSION", r)
+    print(f"baseline_correct: {base_correct}")
+    print(f"baseline_wrong:   {base_wrong}")
+    print(f"baseline_missing: {base_missing}")
+    print(f"baseline_extra:   {base_extra}")
+    print()
+    for ex in wrong_examples[:20]:
+        print("  WRONG", ex)
+    for ex in missing_examples[:20]:
+        print("  MISSING", ex)
+    for ex in extra_examples[:20]:
+        print("  EXTRA", ex)
+
+    print()
+    print("=== kind-separated before/after diff (all rows, not just oracle-covered) ===")
+    print(f"ez newly assigned: {len(ez_newly)}")
+    print(f"ez lost:           {len(ez_lost)} (gate: == 0)")
+    print(f"ez flipped:        {len(ez_flipped)}")
+    print(f"allene newly assigned: {len(allene_newly)} (gate: == 0)")
+    print(f"allene lost:           {len(allene_lost)} (gate: == 0)")
+    print(f"allene flipped:        {len(allene_flipped)} (gate: == 0)")
+    print(f"R/S (tetra) newly assigned: {len(tetra_newly)}")
+    print(f"R/S (tetra) lost:           {len(tetra_lost)}")
+    print(f"R/S (tetra) changed:        {len(tetra_flipped)} (gate: == 0)")
 
 
 if __name__ == "__main__":

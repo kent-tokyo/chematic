@@ -889,11 +889,26 @@ fn assign_ez(mol: &Molecule, bond_idx: BondIdx) -> Option<(AtomIdx, CipCode)> {
 /// geometric complement — not a fallback to the sibling's own raw side
 /// (which would silently compare the wrong pair of substituents and can
 /// flip the resulting E/Z label).
+///
+/// When there are exactly two substituents and they're a genuine CIP
+/// priority tie (e.g. the two ring branches of an unsubstituted, symmetric
+/// ring's ipso carbon), swapping them maps the molecule onto itself — there
+/// is no stereogenic bond here to report, not an ambiguous one to guess at.
+/// Without this check, `compare_branches`' stable sort silently picks
+/// whichever substituent happened to come first in `subs`, which depends on
+/// adjacency-list order and is not stable across atom renumbering (e.g. a
+/// `canonical_smiles` round trip), flipping the reported side arbitrarily.
 fn highest_stereo_sub(
     mol: &Molecule,
     alkene_end: AtomIdx,
     subs: &[AtomIdx],
 ) -> Option<(AtomIdx, bool)> {
+    if let [a, b] = subs[..]
+        && compare_branches(mol, alkene_end, a, b) == std::cmp::Ordering::Equal
+    {
+        return None;
+    }
+
     let mut sorted: Vec<AtomIdx> = subs.to_vec();
     sorted.sort_by(|&a, &b| compare_branches(mol, alkene_end, a, b).reverse());
 
@@ -1273,6 +1288,45 @@ mod tests {
             code,
             Some(CipCode::E),
             "true-highest-priority substituent (unmarked) must be used, not the marked lower-priority one"
+        );
+    }
+
+    #[test]
+    fn test_highest_stereo_sub_symmetric_ring_is_not_stereogenic() {
+        // An exocyclic imine on an *unsubstituted* benzo ring: the ipso
+        // carbon's two ring branches are a genuine CIP priority tie
+        // (symmetric across the ipso/para axis) -- confirmed via
+        // `compare_branches(mol, alkene_end, subs[0], subs[1]) ==
+        // Ordering::Equal` in both argument orders. Swapping the two ring
+        // neighbors maps the molecule onto itself, so there is no
+        // stereogenic bond to report at all -- not an ambiguous one to
+        // guess at. (This SMILES also isn't RDKit-parseable, consistent
+        // with there being no real stereoisomerism here.)
+        let mol = parse(r"C/N=c1ccccc/1").unwrap();
+        let code = assign_cip(&mol)
+            .assignments
+            .iter()
+            .find(|(_, c)| matches!(c, CipCode::E | CipCode::Z))
+            .map(|(_, c)| *c);
+        assert!(
+            code.is_none(),
+            "a genuine CIP priority tie must not be assigned an arbitrary E/Z: {code:?}"
+        );
+
+        // Stable across a canonical round trip -- before the tie guard, the
+        // stable sort's fallback choice depended on adjacency order, which
+        // renumbering changes, flipping E<->Z arbitrarily.
+        use chematic_smiles::canonical_smiles;
+        let can = canonical_smiles(&mol);
+        let mol2 = parse(&can).unwrap_or_else(|e| panic!("re-parse canonical '{can}': {e}"));
+        let code2 = assign_cip(&mol2)
+            .assignments
+            .iter()
+            .find(|(_, c)| matches!(c, CipCode::E | CipCode::Z))
+            .map(|(_, c)| *c);
+        assert!(
+            code2.is_none(),
+            "the tie must remain unassigned after a canonical round trip, canonical='{can}': {code2:?}"
         );
     }
 

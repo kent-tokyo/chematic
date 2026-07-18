@@ -2,11 +2,26 @@
 //! SMILES corpus, for a before/after diff of the `substituent_is_up` fix that
 //! makes `assign_ez`/`assign_allene` read `Molecule::bond_direction` (the
 //! stashed `/`/`\` side channel used when a marker lands on a bond between
-//! two aromatic-flagged atoms, e.g. a ring bond flanking an exocyclic C=N).
+//! two aromatic-flagged atoms, e.g. a ring bond flanking an exocyclic C=N),
+//! and the `highest_stereo_sub` fix (true-highest-priority substituent, not
+//! the highest-priority-among-marked one).
 //!
-//! For E/Z rows, `partner_idx` (the double bond's other atom) is also
-//! emitted so a downstream diff can key against RDKit's bond-level
-//! `_CIPCode` oracle; it's empty for R/S/r/s rows.
+//! Each row is `smiles\tkind\tatom_idx\tpartner_idx\tcode`:
+//! - `kind` is `tetra` (R/S/r/s), `ez` (a plain double bond's E/Z), `allene`
+//!   (axial chirality's E/Z), or `parse_fail` (chematic couldn't parse this
+//!   SMILES at all -- `code` carries the error message, `atom_idx`/
+//!   `partner_idx` are empty).
+//! - `ez` vs `allene` is a structural distinction, not the enum discriminant
+//!   (`CipCode::E`/`Z` is shared by both): an E/Z atom's double-bond partner
+//!   is checked for the same "allene central atom" shape `cip.rs`'s
+//!   `is_allene_central` uses (exactly 2 double bonds, exactly 2 heavy-atom
+//!   neighbors) -- if it matches, this row's atom is an allene terminal
+//!   reporting through its bond to the central atom, so `kind=allene`;
+//!   otherwise it's a plain stereogenic double bond, `kind=ez`. Reimplemented
+//!   here rather than exposed from `chematic-chem`'s public API.
+//! - `partner_idx` is the double bond's other atom, non-empty only for `ez`/
+//!   `allene` rows -- keys a downstream diff against RDKit's bond-level
+//!   `_CIPCode` oracle via `(smiles, frozenset({atom_idx, partner_idx}))`.
 //!
 //! Run once on `main` (before the fix) and once on the fix branch, diff the
 //! two TSVs:
@@ -16,7 +31,7 @@
 //! ```
 
 use chematic_chem::assign_cip;
-use chematic_core::{AtomIdx, BondOrder, CipCode};
+use chematic_core::{AtomIdx, BondOrder, CipCode, Molecule};
 use chematic_smiles::parse;
 use std::fs;
 use std::io::Write;
@@ -32,12 +47,21 @@ fn code_str(c: CipCode) -> &'static str {
     }
 }
 
-/// The other atom of the double bond at `idx`, if any (used to key E/Z rows
-/// against RDKit's bond-level oracle downstream).
-fn double_bond_partner(mol: &chematic_core::Molecule, idx: AtomIdx) -> Option<AtomIdx> {
+/// The other atom of the double bond at `idx`, if any.
+fn double_bond_partner(mol: &Molecule, idx: AtomIdx) -> Option<AtomIdx> {
     mol.neighbors(idx)
         .find(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
         .map(|(nb, _)| nb)
+}
+
+/// Mirrors `chematic_chem::cip`'s private `is_allene_central`: exactly 2
+/// double bonds and exactly 2 heavy-atom neighbors.
+fn is_allene_central(mol: &Molecule, idx: AtomIdx) -> bool {
+    let dbl_count = mol
+        .neighbors(idx)
+        .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
+        .count();
+    dbl_count == 2 && mol.neighbors(idx).count() == 2
 }
 
 fn main() {
@@ -64,20 +88,27 @@ fn main() {
         }
         let mol = match parse(smi) {
             Ok(m) => m,
-            Err(_) => {
+            Err(e) => {
                 parse_fail += 1;
+                lines.push(format!("{smi}\tparse_fail\t\t\t{e}"));
                 continue;
             }
         };
 
         for (idx, code) in &assign_cip(&mol).assignments {
-            let partner = match code {
-                CipCode::E | CipCode::Z => double_bond_partner(&mol, *idx)
-                    .map(|p| p.0.to_string())
-                    .unwrap_or_default(),
-                _ => String::new(),
+            let (kind, partner) = match code {
+                CipCode::E | CipCode::Z => match double_bond_partner(&mol, *idx) {
+                    Some(p) if is_allene_central(&mol, p) => ("allene", p.0.to_string()),
+                    Some(p) => ("ez", p.0.to_string()),
+                    None => ("ez", String::new()),
+                },
+                _ => ("tetra", String::new()),
             };
-            lines.push(format!("{smi}\t{}\t{partner}\t{}", idx.0, code_str(*code)));
+            lines.push(format!(
+                "{smi}\t{kind}\t{}\t{partner}\t{}",
+                idx.0,
+                code_str(*code)
+            ));
             rows_written += 1;
         }
     }
