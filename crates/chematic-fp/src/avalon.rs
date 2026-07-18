@@ -12,7 +12,7 @@ use chematic_core::Molecule;
 use chematic_perception::find_sssr;
 
 use crate::bitvec::BitVec2048;
-use crate::ecfp::{bond_type_int, fnv1a, initial_atom_id};
+use crate::ecfp::{EcfpInvariantMode, bond_type_int, fnv1a, initial_atom_id};
 
 /// Configuration for Avalon fingerprint computation.
 #[derive(Debug, Clone)]
@@ -63,7 +63,7 @@ pub fn avalon_fp_with_config(mol: &Molecule, config: &AvalonConfig) -> BitVec204
 
     // 1. Atom features.
     for (idx, _) in mol.atoms() {
-        let id = initial_atom_id(mol, idx, &ring_set, false);
+        let id = initial_atom_id(mol, idx, &ring_set, false, EcfpInvariantMode::Chematic);
         set_feature_bytes(TAG_ATOM, &id.to_le_bytes(), &mut fp, nbits);
     }
 

@@ -38,7 +38,9 @@ pub use avalon::{AvalonConfig, avalon_fp, avalon_fp_with_config, tanimoto_avalon
 pub use bitvec::{BitVec2048, BitVecN};
 pub use bulk::{tanimoto_matrix, tanimoto_slice, top_k_similar};
 pub use ecfp::{
-    EcfpConfig, ecfp, ecfp_with_bitinfo, ecfp4, ecfp6, morgan_fp_counts, tanimoto_ecfp4,
+    EcfpConfig, EcfpInvariantMode, atom_invariants, ecfp, ecfp_with_bitinfo,
+    ecfp_with_bitinfo_and_mode, ecfp_with_invariant_mode, ecfp4, ecfp4_rdkit_invariants, ecfp6,
+    ecfp6_rdkit_invariants, morgan_fp_counts, tanimoto_ecfp4,
 };
 pub use erg::{
     ERG_VEC_LEN, ErgAtomType, ErgBondType, ErgConfig, ErgFingerprint, cosine_erg_vec, erg,

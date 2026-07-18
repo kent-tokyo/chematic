@@ -51,41 +51,149 @@ fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u64 {
     fnv1a(&bytes)
 }
 
+/// Which atom-invariant definition [`initial_atom_id`] (and everything built on
+/// it) uses for iteration 0 of the Morgan expansion.
+///
+/// Only the *atom invariant* is affected — hashing (FNV-1a), environment
+/// deduplication, and bit-folding are unchanged in both modes, so neither mode
+/// is bit-compatible with RDKit's own Morgan fingerprint bit positions. See
+/// [`crate::ecfp::EcfpInvariantMode::RdkitMorgan`] for what it does and does
+/// not claim.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum EcfpInvariantMode {
+    /// chematic's original invariant: atomic number, degree (counts explicit
+    /// H neighbors too), implicit H count, formal charge, ring membership,
+    /// aromaticity. Unchanged from every prior release — this is what
+    /// [`ecfp`]/[`ecfp4`]/[`ecfp6`]/[`ecfp_with_bitinfo`]/[`morgan_fp_counts`]
+    /// have always computed.
+    #[default]
+    Chematic,
+    /// RDKit's default `GetConnectivityInvariants` atom invariant: atomic
+    /// number, heavy-atom degree, total H count (implicit + explicit),
+    /// formal charge, ring membership, isotope delta from the element's most
+    /// common isotope — no aromaticity component. Empirically verified
+    /// against RDKit 2026.03.3's `GetConnectivityInvariants` (partition
+    /// agreement, not raw hash-value agreement — the two implementations use
+    /// different hash functions by construction). This is *atom-invariant*
+    /// parity only, not a claim of RDKit fingerprint bit-compatibility —
+    /// hence "RdkitMorgan", not "RdkitCompatible": that name is reserved for
+    /// a possible future mode that also matches RDKit's hash, environment
+    /// deduplication, and folding.
+    RdkitMorgan,
+}
+
+/// RDKit's `getDegree()`-equivalent: number of heavy-atom (non-H) neighbors.
+/// Unlike chematic's own invariant, explicit H atoms in the graph do **not**
+/// count toward degree (verified: `[H]C([H])([H])[H]`'s carbon gets the same
+/// invariant as plain `C`'s).
+fn rdkit_heavy_atom_degree(mol: &Molecule, idx: AtomIdx) -> u8 {
+    mol.neighbors(idx)
+        .filter(|&(nb, _)| mol.atom(nb).element.atomic_number() != 1)
+        .count()
+        .min(255) as u8
+}
+
+/// RDKit's total H count: implicit H plus any explicit H *atoms* in the
+/// graph, combined into one count regardless of how they're spelled
+/// (verified: a mixed implicit/explicit-H atom gets the same invariant as
+/// its all-implicit or all-explicit spelling of the same total H count).
+fn rdkit_total_h_count(mol: &Molecule, idx: AtomIdx) -> u8 {
+    let explicit_h = mol
+        .neighbors(idx)
+        .filter(|&(nb, _)| mol.atom(nb).element.atomic_number() == 1)
+        .count() as u8;
+    implicit_hcount(mol, idx).saturating_add(explicit_h)
+}
+
+/// Integer mass-number delta from `element`'s most common isotope (its
+/// rounded monoisotopic mass), 0 when no isotope is specified.
+///
+/// Verified against RDKit: an atom with no isotope specified and one with
+/// its isotope explicitly set to the most-common value both get delta 0 (a
+/// bare `C` and an explicit `[12CH4]` are invariant-equivalent). RDKit's own
+/// isotope-delta computation has rounding behavior this simple integer
+/// subtraction does not exactly reproduce for every possible isotope (see
+/// the edge-case fixture tests) — real corpora essentially never carry
+/// isotope labels, so this is a deliberately simple, auditable definition
+/// rather than a byte-for-byte reproduction of RDKit's internal formula.
+fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i16 {
+    let atom = mol.atom(idx);
+    match atom.isotope {
+        Some(iso) => iso as i16 - atom.element.atomic_mass().round() as i16,
+        None => 0,
+    }
+}
+
+/// Build the pre-chirality invariant byte sequence for `idx` under `mode`.
+///
+/// `Chematic` mode returns the exact same 6 bytes the pre-mode-aware
+/// implementation always produced (byte order, byte count, and values
+/// unchanged) — this is what makes [`ecfp`]/[`ecfp4`]/[`ecfp6`]/
+/// [`ecfp_with_bitinfo`]/[`morgan_fp_counts`] fully non-regressing.
+fn rdkit_connectivity_invariant_bytes(
+    mol: &Molecule,
+    idx: AtomIdx,
+    ring_set: &chematic_perception::RingSet,
+) -> SmallVec<[u8; 8]> {
+    let atom = mol.atom(idx);
+    let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
+    let mut bytes: SmallVec<[u8; 8]> = SmallVec::from_slice(&[
+        atom.element.atomic_number(),
+        rdkit_heavy_atom_degree(mol, idx),
+        rdkit_total_h_count(mol, idx),
+        charge_adjusted,
+        ring_set.contains_atom(idx) as u8,
+    ]);
+    bytes.extend_from_slice(&rdkit_isotope_delta(mol, idx).to_le_bytes());
+    bytes
+}
+
+fn invariant_bytes(
+    mol: &Molecule,
+    idx: AtomIdx,
+    ring_set: &chematic_perception::RingSet,
+    mode: EcfpInvariantMode,
+) -> SmallVec<[u8; 8]> {
+    match mode {
+        EcfpInvariantMode::Chematic => {
+            let atom = mol.atom(idx);
+            let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
+            SmallVec::from_slice(&[
+                atom.element.atomic_number(),
+                mol.neighbors(idx).count().min(255) as u8,
+                implicit_hcount(mol, idx),
+                charge_adjusted,
+                ring_set.contains_atom(idx) as u8,
+                atom.aromatic as u8,
+            ])
+        }
+        EcfpInvariantMode::RdkitMorgan => rdkit_connectivity_invariant_bytes(mol, idx, ring_set),
+    }
+}
+
 /// Compute the FNV-1a atom identifier for iteration 0 of the Morgan algorithm.
 ///
-/// The six-byte invariant covers: atomic number, degree, implicit H count, formal
-/// charge (clamped to byte range), ring membership, and aromaticity.  When
-/// `use_chirality` is true an extra chirality byte is appended; this preserves
-/// bit-compatibility with the default (`use_chirality=false`) fingerprints.
+/// See [`EcfpInvariantMode`] for what `mode` covers. When `use_chirality` is
+/// true an extra chirality byte is appended; this preserves bit-compatibility
+/// with the default (`use_chirality=false`) fingerprints.
 pub(crate) fn initial_atom_id(
     mol: &Molecule,
     idx: AtomIdx,
     ring_set: &chematic_perception::RingSet,
     use_chirality: bool,
+    mode: EcfpInvariantMode,
 ) -> u64 {
-    let atom = mol.atom(idx);
-    let charge_adjusted = (atom.charge as i16 + 8).clamp(0, 255) as u8;
-    let base_bytes = [
-        atom.element.atomic_number(),
-        mol.neighbors(idx).count().min(255) as u8,
-        implicit_hcount(mol, idx),
-        charge_adjusted,
-        ring_set.contains_atom(idx) as u8,
-        atom.aromatic as u8,
-    ];
+    let mut bytes = invariant_bytes(mol, idx, ring_set, mode);
     if use_chirality {
         use chematic_core::Chirality;
-        let chirality_byte = match atom.chirality {
+        let chirality_byte = match mol.atom(idx).chirality {
             Chirality::None => 0u8,
             Chirality::CounterClockwise => 1u8,
             Chirality::Clockwise => 2u8,
         };
-        let mut chiral_bytes = base_bytes.to_vec();
-        chiral_bytes.push(chirality_byte);
-        fnv1a(&chiral_bytes)
-    } else {
-        fnv1a(&base_bytes)
+        bytes.push(chirality_byte);
     }
+    fnv1a(&bytes)
 }
 
 /// Configuration for ECFP computation.
@@ -156,6 +264,17 @@ pub(crate) fn bond_type_int(order: BondOrder) -> u8 {
 pub const MAX_ECFP_RADIUS: u32 = 20;
 
 pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
+    ecfp_with_invariant_mode(mol, config, EcfpInvariantMode::Chematic)
+}
+
+/// Like [`ecfp`], but with an explicit [`EcfpInvariantMode`] choice for the
+/// iteration-0 atom invariant. [`ecfp`] is exactly
+/// `ecfp_with_invariant_mode(mol, config, EcfpInvariantMode::Chematic)`.
+pub fn ecfp_with_invariant_mode(
+    mol: &Molecule,
+    config: &EcfpConfig,
+    mode: EcfpInvariantMode,
+) -> BitVec2048 {
     let n = mol.atom_count();
     let nbits = config.nbits;
     // Cap radius to prevent `r as u8` truncation at r > 255 (hash collision bug).
@@ -175,7 +294,7 @@ pub fn ecfp(mol: &Molecule, config: &EcfpConfig) -> BitVec2048 {
     let mut ids: Vec<u64> = Vec::with_capacity(n);
     for i in 0..n {
         let idx = AtomIdx(i as u32);
-        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality);
+        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality, mode);
         fp.set((id % nbits as u64) as usize);
         if config.use_double_fold {
             fp.set(((id >> 11) % nbits as u64) as usize);
@@ -212,6 +331,17 @@ pub fn ecfp_with_bitinfo(
     mol: &Molecule,
     config: &EcfpConfig,
 ) -> (BitVec2048, FxHashMap<usize, Vec<(u32, u32)>>) {
+    ecfp_with_bitinfo_and_mode(mol, config, EcfpInvariantMode::Chematic)
+}
+
+/// Like [`ecfp_with_bitinfo`], but with an explicit [`EcfpInvariantMode`]
+/// choice for the iteration-0 atom invariant — shares the same invariant
+/// computation as [`ecfp_with_invariant_mode`], so the two never diverge.
+pub fn ecfp_with_bitinfo_and_mode(
+    mol: &Molecule,
+    config: &EcfpConfig,
+    mode: EcfpInvariantMode,
+) -> (BitVec2048, FxHashMap<usize, Vec<(u32, u32)>>) {
     let n = mol.atom_count();
     let nbits = config.nbits;
     let config = &EcfpConfig {
@@ -231,7 +361,7 @@ pub fn ecfp_with_bitinfo(
     let mut ids: Vec<u64> = Vec::with_capacity(n);
     for i in 0..n {
         let idx = AtomIdx(i as u32);
-        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality);
+        let id = initial_atom_id(mol, idx, &ring_set, config.use_chirality, mode);
         record_bit(
             &mut fp,
             &mut info,
@@ -313,7 +443,15 @@ pub fn morgan_fp_counts(mol: &Molecule, radius: u32) -> FxHashMap<u64, u32> {
 
     // Radius-0: initial atom identifiers.
     let mut ids: Vec<u64> = (0..n)
-        .map(|i| initial_atom_id(mol, AtomIdx(i as u32), &ring_set, false))
+        .map(|i| {
+            initial_atom_id(
+                mol,
+                AtomIdx(i as u32),
+                &ring_set,
+                false,
+                EcfpInvariantMode::Chematic,
+            )
+        })
         .collect();
 
     for &id in &ids {
@@ -353,6 +491,39 @@ pub fn ecfp6(mol: &Molecule) -> BitVec2048 {
 /// Tanimoto similarity between two molecules using ECFP4.
 pub fn tanimoto_ecfp4(a: &Molecule, b: &Molecule) -> f64 {
     ecfp4(a).tanimoto(&ecfp4(b))
+}
+
+/// ECFP4 fingerprint (radius = 2, 2048 bits) using RDKit's default Morgan
+/// atom invariant instead of chematic's own. See [`EcfpInvariantMode::RdkitMorgan`].
+pub fn ecfp4_rdkit_invariants(mol: &Molecule) -> BitVec2048 {
+    ecfp_with_invariant_mode(mol, &EcfpConfig::default(), EcfpInvariantMode::RdkitMorgan)
+}
+
+/// ECFP6 fingerprint (radius = 3, 2048 bits) using RDKit's default Morgan
+/// atom invariant instead of chematic's own. See [`EcfpInvariantMode::RdkitMorgan`].
+pub fn ecfp6_rdkit_invariants(mol: &Molecule) -> BitVec2048 {
+    ecfp_with_invariant_mode(
+        mol,
+        &EcfpConfig {
+            radius: 3,
+            ..EcfpConfig::default()
+        },
+        EcfpInvariantMode::RdkitMorgan,
+    )
+}
+
+/// Raw (unfolded) iteration-0 atom invariant for every atom in `mol`, under
+/// `mode`, with `use_chirality=false`. One entry per atom, in `AtomIdx`
+/// order. Exposed for atom-invariant-partition comparison against an
+/// external oracle (e.g. RDKit's `GetConnectivityInvariants`) — the raw `u64`
+/// values themselves are not meant to be compared directly across
+/// implementations (different hash functions), only whether two atoms get
+/// the *same* value as each other (the equivalence partition).
+pub fn atom_invariants(mol: &Molecule, mode: EcfpInvariantMode) -> Vec<u64> {
+    let ring_set = find_sssr(mol);
+    (0..mol.atom_count())
+        .map(|i| initial_atom_id(mol, AtomIdx(i as u32), &ring_set, false, mode))
+        .collect()
 }
 
 #[cfg(test)]
@@ -692,6 +863,127 @@ mod tests {
             ecfp4(&implicit),
             ecfp4(&explicit_h),
             "methanol with explicit H atoms has a different heavy-atom neighbourhood"
+        );
+    }
+
+    // ── EcfpInvariantMode::RdkitMorgan edge-case fixtures ──────────────────
+    //
+    // Every equivalence/non-equivalence asserted here was independently
+    // verified against RDKit 2026.03.3's `GetConnectivityInvariants` (see
+    // scripts/ecfp_rdkit_invariant_parity.py and
+    // scripts/ecfp_rdkit_edge_fixtures.csv) -- 100% partition agreement on
+    // this fixture set and the full 5,000-molecule ChEMBL corpus, with one
+    // documented exception (isotope delta for non-most-common isotopes; see
+    // `rdkit_isotope_delta_known_gap_vs_rdkit` below).
+
+    fn rdkit_inv(mol: &Molecule) -> Vec<u64> {
+        atom_invariants(mol, EcfpInvariantMode::RdkitMorgan)
+    }
+
+    #[test]
+    fn rdkit_mode_ignores_explicit_h_in_degree() {
+        // Unlike Chematic mode (see `ecfp4_implicit_vs_explicit_h_in_organic_molecule`
+        // above), RDKit's degree excludes H neighbors entirely, explicit or
+        // implicit -- verified: methane's C gets the same RDKit invariant
+        // whether all 4 H are implicit or all 4 are explicit atoms.
+        let implicit = parse("C").unwrap();
+        let explicit_h = parse("[H]C([H])([H])[H]").unwrap();
+        assert_eq!(
+            rdkit_inv(&implicit)[0],
+            rdkit_inv(&explicit_h)[1],
+            "RdkitMorgan mode must not count explicit H atoms toward degree"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_ignores_aromaticity() {
+        // The whole point of this mode: benzene's aromatic ring carbon and
+        // cyclohexadiene's non-aromatic sp2 ring carbon (same degree/H/ring
+        // membership, only aromaticity differs) must be invariant-equivalent.
+        let benzene = parse("c1ccccc1").unwrap();
+        let kekule_diene = parse("C1=CC=CC=C1").unwrap();
+        assert_eq!(
+            rdkit_inv(&benzene)[0],
+            rdkit_inv(&kekule_diene)[0],
+            "RdkitMorgan mode must not distinguish aromatic from Kekule sp2 ring atoms"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_distinguishes_ring_from_acyclic() {
+        let cyclohexane = parse("C1CCCCC1").unwrap();
+        let hexane = parse("CCCCCC").unwrap();
+        assert_ne!(
+            rdkit_inv(&cyclohexane)[0],
+            rdkit_inv(&hexane)[1], // hexane's atom 1 is a chain CH2, same degree/H as the ring atom
+            "RdkitMorgan mode must still distinguish ring membership"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_distinguishes_charge() {
+        let pyridine_n = parse("c1ccncc1").unwrap();
+        let pyridinium_n = parse("c1cc[nH+]cc1").unwrap();
+        // Ring N in each case is atom index 3.
+        assert_ne!(
+            rdkit_inv(&pyridine_n)[3],
+            rdkit_inv(&pyridinium_n)[3],
+            "RdkitMorgan mode must still distinguish formal charge (and the H it brings)"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_unspecified_equals_most_common() {
+        // Verified against RDKit: an atom with no isotope specified and one
+        // with its isotope explicitly set to the element's most common value
+        // are invariant-equivalent (both are the delta=0 baseline).
+        let unspecified = parse("C").unwrap();
+        let explicit_12 = parse("[12CH4]").unwrap();
+        assert_eq!(
+            rdkit_inv(&unspecified)[0],
+            rdkit_inv(&explicit_12)[0],
+            "unspecified isotope and the most-common isotope must both be delta=0"
+        );
+    }
+
+    #[test]
+    fn rdkit_mode_isotope_far_from_common_differs() {
+        // A large isotope shift must change the invariant (isotope delta is
+        // load-bearing, not a no-op field).
+        let unspecified = parse("C").unwrap();
+        let carbon_14 = parse("[14CH4]").unwrap();
+        assert_ne!(
+            rdkit_inv(&unspecified)[0],
+            rdkit_inv(&carbon_14)[0],
+            "a large isotope shift must change the invariant"
+        );
+    }
+
+    #[test]
+    fn rdkit_isotope_delta_known_gap_vs_rdkit() {
+        // KNOWN, CLASSIFIED gap (not silently swept under the rug): RDKit's
+        // own isotope-delta rounding treats an element's second-most-common
+        // stable isotope (e.g. carbon-13, nitrogen-15) as ALSO
+        // invariant-equivalent to "unspecified" in some cases but not others
+        // in a pattern that doesn't reduce to a simple integer
+        // mass-number-delta from the most common isotope (empirically
+        // probed: e.g. oxygen-15, below the most-common mass, matches
+        // unspecified, while oxygen-17/18, above it, don't -- and carbon-11
+        // matches while carbon-10 doesn't). chematic's simpler, documented
+        // `isotope - round(atomic_mass)` definition (see
+        // `rdkit_isotope_delta`) does not reproduce every one of these
+        // rounding cases. Real corpora essentially never carry isotope
+        // labels (0/5,000 in the ChEMBL verification corpus), so this is
+        // pinned as a known, deliberately-not-chased residual rather than
+        // reverse-engineered further -- see
+        // scripts/ecfp_rdkit_invariant_parity.py's "isotope_delta"
+        // classification tag.
+        let mol = parse("[12CH3][13CH3]").unwrap();
+        let inv = rdkit_inv(&mol);
+        assert_ne!(
+            inv[0], inv[1],
+            "chematic currently treats carbon-12 and carbon-13 as different \
+             invariant classes; RDKit treats them as the same -- tracked, not fixed"
         );
     }
 }
