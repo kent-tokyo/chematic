@@ -116,17 +116,19 @@ chematic 是首个内置 **MCP（模型上下文协议）服务器**的化学信
 }
 ```
 
-15 个化学工具可由任意 MCP 兼容代理调用：
+20 个化学工具可由任意 MCP 兼容代理调用（完整列表见 [`chematic-mcp` README](crates/chematic-mcp/README.md)）：
 
 | 工具 | 功能 |
 |---|---|
-| `name_to_smiles` | 通过 PubChem 将化合物名（"阿司匹林"…）解析为 SMILES |
-| `calc_properties` | MW、LogP、TPSA、HBA/HBD、QED、SA Score、pKa、ADMET |
+| `name_to_smiles` | 通过 PubChem 将化合物名（"阿司匹林"…）解析为 SMILES（唯一进行网络通信的工具） |
+| `calc_properties` | MW、exact mass、Crippen LogP、TPSA、HBD、HBA、rotatable bonds、QED |
 | `smarts_match` | 子结构搜索 |
 | `pains_check` / `brenk_check` | 筛查检测干扰或活性基团 |
-| `generate_3d` | 3D 坐标生成（ETKDG + MMFF94） |
+| `generate_3d` | 基于规则的坐标放置 + DREIDING 力场最小化生成 3D 坐标 |
 | `find_mcs` | 最大公共子结构 |
-| 其余 9 个 | `ecfp4`、`tanimoto`、`canonical_smiles`、`admet_profile`、`boiled_egg`、`sa_score`、`lipinski_check`… |
+| 其余 13 个 | `ecfp4`、`tanimoto`、`canonical_smiles`、`admet_profile`、`boiled_egg`、`sa_score`、`lipinski_check`、`retrosynthesis`、`smiles_to_moljson`、`moljson_to_smiles`、`representation_router`、`molecule_context_pack`、`parse_smiles` |
+
+**Transport**：仅 stdio（通过标准输入输出的 JSON-RPC 2.0）。以本地进程方式运行，目前没有已托管的 Remote MCP 端点、身份验证或公开服务 SLA；remote 化的重构正在考虑中，尚未实现。
 
 ---
 
@@ -175,7 +177,7 @@ npm 包 `@kent-tokyo/chematic` 为 **719 KB gzip** — 比 RDKit.js 小约 42 �
 | InChI / InChIKey                             | **有** — 纯 Rust（默认）+ **IUPAC 标准**（`native-inchi`）| 需 C 库 | 需 C 库 | 需 C 库 |
 | **pKa 预测**                                 | **有（15 条 SMARTS 规则）**                  | 无                 | 无            | 无                |
 | **ADMET 简况 + BOILED-Egg**                  | **有**                                       | 部分               | 无            | 部分              |
-| **MCP 服务器（AI Agent API）**               | **有 — 20 个工具（含 Name→SMILES）**        | 无                 | 无            | 无                |
+| **MCP 服务器（AI Agent API）**               | **有 — 20 个工具（含 Name→SMILES，仅 stdio）** | 无                 | 无            | 无                |
 | IUPAC 命名生成                               | **有（25+ 化合物类）**                       | 无                 | 无            | 部分              |
 | 维护状态（2026）                             | 活跃                                         | 活跃               | 最小维护      | 活跃              |
 

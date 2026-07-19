@@ -207,17 +207,23 @@ chematic ships a native **MCP (Model Context Protocol) server** — the first ch
 }
 ```
 
-15 chemistry tools are callable from any MCP-compatible agent:
+20 chemistry tools are callable from any MCP-compatible agent (full list in the
+[`chematic-mcp` README](crates/chematic-mcp/README.md)):
 
 | Tool | What it does |
 |---|---|
-| `name_to_smiles` | Resolve "aspirin", "caffeine", … to SMILES via PubChem |
-| `calc_properties` | MW, LogP, TPSA, HBA/HBD, QED, SA Score, pKa, ADMET |
+| `name_to_smiles` | Resolve "aspirin", "caffeine", … to SMILES via PubChem (the only tool that makes a network call) |
+| `calc_properties` | MW, exact mass, Crippen LogP, TPSA, HBD, HBA, rotatable bonds, QED |
 | `smarts_match` | Substructure search |
 | `pains_check` / `brenk_check` | Flag assay interference or reactive groups |
-| `generate_3d` | 3D coordinates (ETKDG + MMFF94) |
+| `generate_3d` | 3D coordinates via rule-based placement + DREIDING force-field minimization |
 | `find_mcs` | Maximum common substructure |
-| + 9 more | `ecfp4`, `tanimoto`, `canonical_smiles`, `admet_profile`, `boiled_egg`, `sa_score`, `lipinski_check` … |
+| + 13 more | `ecfp4`, `tanimoto`, `canonical_smiles`, `admet_profile`, `boiled_egg`, `sa_score`, `lipinski_check`, `retrosynthesis`, `smiles_to_moljson`, `moljson_to_smiles`, `representation_router`, `molecule_context_pack`, `parse_smiles` |
+
+**Transport**: stdio (JSON-RPC 2.0 over stdin/stdout) only. Runs as a local
+process; there is no hosted Remote MCP endpoint, no authentication, and no
+public service SLA — a remote-ready refactor is under consideration but not
+implemented.
 
 ---
 
@@ -321,7 +327,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 | InChI / InChIKey                             | **Yes** — pure-Rust + **IUPAC-exact** via `native-inchi` | C lib required | C lib required | C lib required |
 | **pKa prediction**                           | **Yes (15 SMARTS rules)**                        | No                  | No             | No                |
 | **ADMET profile** (BBB/Caco-2/hERG/CYP3A4)  | **Yes + BOILED-Egg**                             | Partial             | No             | Partial           |
-| **MCP server (AI agent API)**                | **Yes — 15 tools incl. Name→SMILES**            | No                  | No             | No                |
+| **MCP server (AI agent API)**                | **Yes — 20 tools incl. Name→SMILES (stdio only)** | No                  | No             | No                |
 | IUPAC name generation                        | **Yes (25+ classes)**                            | No                  | No             | Partial           |
 | Name → SMILES (PubChem proxy)                | **Yes** (`name_to_smiles` MCP tool)              | No                  | No             | No                |
 | Maintenance (2026)                           | Active                                           | Active              | Minimal        | Active            |

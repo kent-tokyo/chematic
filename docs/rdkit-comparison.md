@@ -120,7 +120,7 @@ python scripts/benchmark_vs_rdkit.py --rdkit
 | Feature | chematic | RDKit |
 |---|---|---|
 | Native WASM (no Emscripten) | Yes | No |
-| MCP server (AI agent API) | 20 tools | None |
+| MCP server (AI agent API) | 20 tools (stdio only) | None |
 | pKa prediction (built-in) | 15 SMARTS rules | External tool required |
 | ADMET profile (built-in) | BBB / Caco-2 / hERG / CYP3A4 | External tool required |
 | MAP4 fingerprint | Yes (Minervini 2020) | No (external package) |

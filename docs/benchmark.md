@@ -197,7 +197,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 |---------|----------|-------|
 | pKa prediction | Built-in (15 SMARTS rules) | External tool required |
 | ADMET profile (BBB, Caco-2, hERG, CYP3A4) | Built-in | External tool required |
-| MCP server (AI agent integration) | 15 tools | Not available |
+| MCP server (AI agent integration) | 20 tools (stdio only) | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
 | IUPAC name generation | Built-in (offline) | Not available |
 | Browser / WASM deployment | Yes (719 KB) | No |
