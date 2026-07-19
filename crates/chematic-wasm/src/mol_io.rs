@@ -500,26 +500,101 @@ pub fn to_xyz(mol: &MolHandle) -> String {
     chematic_3d::write_xyz(&mol.inner, &coords, "")
 }
 
-/// Parse a PDB file and return a `MolHandle` (topology only; coordinates are discarded).
+/// Why a PDB block was rejected by [`parse_pdb_molecule_and_coords`].
+pub(crate) enum PdbInputError {
+    TooLarge,
+    TooManyAtoms,
+}
+
+impl std::fmt::Display for PdbInputError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::TooLarge => write!(
+                f,
+                "PDB input too large (max {WASM_MAX_JSON_STRING_BYTES} bytes)"
+            ),
+            Self::TooManyAtoms => write!(f, "molecule too large (max {WASM_MAX_ATOMS} atoms)"),
+        }
+    }
+}
+
+/// Whether every component of every coordinate is finite (not NaN or
+/// Infinity). Shared by `pdb_coords_json` and
+/// `mmff94_energy_breakdown_from_coords_json` -- `f64::from_str` parses the
+/// literal text "nan"/"inf"/"infinity" (case-insensitively) into their
+/// special values rather than erroring, so a PDB coordinate FIELD
+/// containing that text (not just truly malformed text, which falls back to
+/// 0.0 via `unwrap_or`) passes `parse_pdb_atoms` silently. Without this
+/// check, `pdb_coords_json` would serialize a bare `NaN`/`inf` token, which
+/// is not valid JSON syntax, into its output.
+pub(crate) fn coords_all_finite(coords: &[[f64; 3]]) -> bool {
+    coords.iter().flatten().all(|v: &f64| v.is_finite())
+}
+
+/// Parse a PDB block into topology and coordinates from a SINGLE pass over
+/// the input, shared by `mol_from_pdb` and `pdb_coords_json` -- both must
+/// read the exact same atom list in the exact same order, or a caller
+/// combining their two outputs would silently pair a topology with the
+/// wrong atom's coordinates (issue #90's regression, one level up: the
+/// original bug was mol/coords never travelling together at all).
+pub(crate) fn parse_pdb_molecule_and_coords(
+    pdb: &str,
+) -> Result<(chematic_core::Molecule, Vec<[f64; 3]>), PdbInputError> {
+    if pdb.len() > WASM_MAX_JSON_STRING_BYTES {
+        return Err(PdbInputError::TooLarge);
+    }
+    let atoms = chematic_3d::parse_pdb_atoms(pdb);
+    if atoms.len() > WASM_MAX_ATOMS {
+        return Err(PdbInputError::TooManyAtoms);
+    }
+    let (mol, coords) = chematic_3d::pdb_to_molecule(&atoms);
+    let flat: Vec<[f64; 3]> = coords.points.iter().map(|p| [p.x, p.y, p.z]).collect();
+    Ok((mol, flat))
+}
+
+/// Parse a PDB file and return a `MolHandle` (topology only; coordinates are
+/// discarded -- use [`pdb_coords_json`] to recover them in the SAME atom
+/// order, and [`mmff94_energy_breakdown_from_coords_json`] to score them
+/// without chematic regenerating a fresh conformer).
 ///
 /// Uses CONECT records for connectivity if present; otherwise infers bonds from
 /// atom distances (the same heuristic as the internal `pdb_to_molecule` function).
 #[wasm_bindgen]
 pub fn mol_from_pdb(pdb: &str) -> MolHandle {
-    if pdb.len() > WASM_MAX_JSON_STRING_BYTES {
-        return MolHandle {
+    match parse_pdb_molecule_and_coords(pdb) {
+        Ok((mol, _coords)) => MolHandle {
+            inner: std::rc::Rc::new(mol),
+        },
+        Err(_) => MolHandle {
             inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()),
-        };
+        },
     }
-    let atoms = chematic_3d::parse_pdb_atoms(pdb);
-    if atoms.len() > WASM_MAX_ATOMS {
-        return MolHandle {
-            inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()),
-        };
-    }
-    let (mol, _coords) = chematic_3d::pdb_to_molecule(&atoms);
-    MolHandle {
-        inner: std::rc::Rc::new(mol),
+}
+
+/// Extract the atomic coordinates from a PDB block, in the SAME atom order
+/// `mol_from_pdb` returns topology for (both read the identical underlying
+/// parse via `parse_pdb_molecule_and_coords`, so atom-index correspondence
+/// between the two calls is structural, not just conventional -- issue #90).
+///
+/// Returns JSON `[[x,y,z],...]` (full `f64` precision, not rounded -- for
+/// oracle comparison against the Python binding) or `{"error":"<msg>"}` --
+/// including when a coordinate field parsed to a non-finite value (see
+/// `coords_all_finite`'s doc comment), rather than emitting invalid JSON.
+#[wasm_bindgen]
+pub fn pdb_coords_json(pdb: &str) -> String {
+    match parse_pdb_molecule_and_coords(pdb) {
+        Ok((_mol, coords)) => {
+            if !coords_all_finite(&coords) {
+                return r#"{"error":"PDB contains a non-finite coordinate (NaN or Infinity)"}"#
+                    .to_string();
+            }
+            let parts: Vec<String> = coords
+                .iter()
+                .map(|c| format!("[{},{},{}]", c[0], c[1], c[2]))
+                .collect();
+            format!("[{}]", parts.join(","))
+        }
+        Err(e) => format!(r#"{{"error":"{e}"}}"#),
     }
 }
 

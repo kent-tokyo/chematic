@@ -2153,3 +2153,265 @@ fn test_get_descriptors_json_benzene_null_pka() {
         "benzene pkaBase should be null"
     );
 }
+
+// ── issue #90: mmff94_energy_breakdown_from_coords_json / pdb_coords_json ──
+// mmff94_energy_breakdown_json always regenerated a fresh rule-based
+// conformer, ignoring any geometry the caller actually had (e.g. from
+// mol_from_pdb). These cover the new coordinate-explicit contract that
+// mirrors the Python binding's `mol.mmff94_energy_breakdown(coords)`.
+
+#[test]
+fn test_pdb_coords_json_and_mol_from_pdb_share_atom_order() {
+    let pdb = set_dihedral_json("CCCC", 0, 1, 2, 3, 90.0).expect("set_dihedral_json");
+    let mol = mol_from_pdb(&pdb);
+    let coords_json = pdb_coords_json(&pdb);
+    let coords: Vec<[f64; 3]> = serde_json::from_str(&coords_json).expect("valid coords json");
+    assert_eq!(
+        coords.len(),
+        mol.atom_count(),
+        "pdb_coords_json length must match mol_from_pdb's atom count (same underlying parse)"
+    );
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_varies_with_geometry() {
+    // The exact issue #90 repro shape: torsion-scan a CCCC dihedral through
+    // set_dihedral_json -> mol_from_pdb -> pdb_coords_json -> the new energy
+    // function. Before the fix, every angle produced the SAME total because
+    // the geometry was silently regenerated instead of read from the PDB.
+    let mut totals = Vec::new();
+    let mut torsions = Vec::new();
+    for angle in [0.0, 60.0, 120.0, 180.0, 240.0, 300.0] {
+        let pdb = set_dihedral_json("CCCC", 0, 1, 2, 3, angle).expect("set_dihedral_json");
+        let mol = mol_from_pdb(&pdb);
+        let coords_json = pdb_coords_json(&pdb);
+        let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, &coords_json);
+        let v: serde_json::Value = serde_json::from_str(&energy_json).expect("valid energy json");
+        assert!(v.get("error").is_none(), "unexpected error: {energy_json}");
+        totals.push(format!("{}", v["total"]));
+        torsions.push(format!("{}", v["torsion"]));
+    }
+    let distinct_totals: std::collections::HashSet<_> = totals.iter().collect();
+    let distinct_torsions: std::collections::HashSet<_> = torsions.iter().collect();
+    assert!(
+        distinct_totals.len() >= 3,
+        "expected varying total energy across dihedral angles, got {totals:?}"
+    );
+    assert!(
+        distinct_torsions.len() >= 3,
+        "expected varying torsion term across dihedral angles, got {torsions:?}"
+    );
+}
+
+/// One row of the Python-oracle fixture table below: `mol.mmff94_energy_breakdown(coords)`
+/// from `.venv`'s chematic Python binding, for `CCCC` at `dihedral_deg`
+/// (atoms 0,1,2,3), on the IDENTICAL (mol, coords) pair this Rust test
+/// reconstructs via the same `set_dihedral_json` -> `mol_from_pdb` +
+/// `pdb_coords_json` pipeline. Field name `angle_term` (not `angle`) to
+/// avoid colliding with `dihedral_deg`, the scan parameter.
+struct EnergyOracle {
+    dihedral_deg: f64,
+    bond: f64,
+    angle_term: f64,
+    stretch_bend: f64,
+    torsion: f64,
+    oop: f64,
+    vdw: f64,
+    electrostatic: f64,
+    total: f64,
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angles() {
+    // Fixture-based, not just "energy is present" or "energy varies":
+    // test_mmff94_energy_breakdown_from_coords_json_varies_with_geometry
+    // above only checks that >=3 distinct total/torsion values appear across
+    // the 6 scanned angles -- a regression that returns a DIFFERENT but
+    // still-wrong value at 60-300 degrees (everything except the 0-degree
+    // case, which used to be the only value pinned) would pass that test.
+    // This pins all 8 energy terms at all 6 angles against the Python
+    // oracle, so any wrong value anywhere in the scan is caught.
+    let oracle = [
+        EnergyOracle {
+            dihedral_deg: 0.0,
+            bond: 0.8902727980430658,
+            angle_term: 0.00046499350423254214,
+            stretch_bend: -0.007350084252858442,
+            torsion: 0.43499994978247686,
+            oop: 0.0,
+            vdw: 14.519561102945316,
+            electrostatic: 0.0,
+            total: 15.837948760022233,
+        },
+        EnergyOracle {
+            dihedral_deg: 60.0,
+            bond: 0.8948441183316793,
+            angle_term: 0.0004158023578226278,
+            stretch_bend: -0.006857208726671617,
+            torsion: 0.5878467445463341,
+            oop: 0.0,
+            vdw: 1.9693600350541345,
+            electrostatic: 0.0,
+            total: 3.4456094915632987,
+        },
+        EnergyOracle {
+            dihedral_deg: 120.0,
+            bond: 0.8781955726317947,
+            angle_term: 0.0004982437526120773,
+            stretch_bend: -0.0076120012966454376,
+            torsion: 0.8684749102195811,
+            oop: 0.0,
+            vdw: -0.022709051177030738,
+            electrostatic: 0.0,
+            total: 1.7168476741303118,
+        },
+        EnergyOracle {
+            dihedral_deg: 180.0,
+            bond: 0.8969756143810449,
+            angle_term: 0.0005974131500818183,
+            stretch_bend: -0.008439350718638324,
+            torsion: 0.0,
+            oop: 0.0,
+            vdw: -0.0670059041190226,
+            electrostatic: 0.0,
+            total: 0.8221277726934657,
+        },
+        EnergyOracle {
+            dihedral_deg: 240.0,
+            bond: 0.9063335706281842,
+            angle_term: 0.0007291729835570543,
+            stretch_bend: -0.009325393516517342,
+            torsion: 0.8683134139870532,
+            oop: 0.0,
+            vdw: -0.02299635476312685,
+            electrostatic: 0.0,
+            total: 1.7430544093191502,
+        },
+        EnergyOracle {
+            dihedral_deg: 300.0,
+            bond: 0.9054704500796205,
+            angle_term: 0.0005632607553765077,
+            stretch_bend: -0.008219837248585977,
+            torsion: 0.5884635963691149,
+            oop: 0.0,
+            vdw: 1.9670921081294108,
+            electrostatic: 0.0,
+            total: 3.4533695780849367,
+        },
+    ];
+
+    let mut checked = 0;
+    for row in &oracle {
+        let pdb =
+            set_dihedral_json("CCCC", 0, 1, 2, 3, row.dihedral_deg).expect("set_dihedral_json");
+        let mol = mol_from_pdb(&pdb);
+        let coords_json = pdb_coords_json(&pdb);
+        let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, &coords_json);
+        let v: serde_json::Value = serde_json::from_str(&energy_json).expect("valid energy json");
+        assert!(
+            v.get("error").is_none(),
+            "angle {}: unexpected error: {energy_json}",
+            row.dihedral_deg
+        );
+
+        let mut expect = |key: &str, want: f64| {
+            let got = v[key]
+                .as_f64()
+                .unwrap_or_else(|| panic!("angle {}: missing {key}", row.dihedral_deg));
+            assert!(
+                (got - want).abs() <= 1e-9,
+                "angle {}: {key}: got {got}, want {want} (python oracle)",
+                row.dihedral_deg
+            );
+            checked += 1;
+        };
+        expect("bond", row.bond);
+        expect("angle", row.angle_term);
+        expect("stretch_bend", row.stretch_bend);
+        expect("torsion", row.torsion);
+        expect("oop", row.oop);
+        expect("vdw", row.vdw);
+        expect("electrostatic", row.electrostatic);
+        expect("total", row.total);
+    }
+    assert_eq!(
+        checked,
+        6 * 8,
+        "expected all 48 oracle values to be checked"
+    );
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_rejects_length_mismatch() {
+    let mol = parse("CCCC"); // 4 heavy atoms
+    let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, "[[0,0,0],[1,0,0],[2,0,0]]"); // only 3
+    assert!(
+        energy_json.contains("\"error\""),
+        "expected error for coords/atom-count mismatch, got {energy_json}"
+    );
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_rejects_malformed_json() {
+    let mol = parse("CCCC");
+    for bad in [
+        "not json",
+        "{\"not\":\"an array\"}",
+        "[[0,0],[1,0,0]]",
+        "[[0,0,0,0]]",
+    ] {
+        let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, bad);
+        assert!(
+            energy_json.contains("\"error\""),
+            "expected error for malformed coords_json {bad:?}, got {energy_json}"
+        );
+    }
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_rejects_non_finite() {
+    let mol = parse("CCCC");
+    // Literal NaN/Infinity are not valid JSON tokens -- rejected at parse time.
+    let nan_json =
+        mmff94_energy_breakdown_from_coords_json(&mol, "[[NaN,0,0],[1,0,0],[2,0,0],[3,0,0]]");
+    assert!(nan_json.contains("\"error\""), "got {nan_json}");
+    // A numerically-valid-JSON but overflowing exponent parses to f64::INFINITY
+    // via serde -- this exercises the explicit post-parse is_finite() guard,
+    // not just JSON's lack of a NaN/Infinity literal syntax.
+    let overflow_json =
+        mmff94_energy_breakdown_from_coords_json(&mol, "[[1e400,0,0],[1,0,0],[2,0,0],[3,0,0]]");
+    assert!(overflow_json.contains("\"error\""), "got {overflow_json}");
+}
+
+#[test]
+fn test_pdb_coords_json_rejects_non_finite_coordinate() {
+    // A PDB coordinate FIELD containing the literal text "NaN" parses
+    // successfully via f64::from_str (Rust's FromStr recognizes "nan"/
+    // "inf"/"infinity" case-insensitively as their special values, distinct
+    // from truly malformed text which falls back to 0.0) -- so this reaches
+    // parse_pdb_atoms as a real non-finite Point3, not a parse failure.
+    // Before the fix, pdb_coords_json would serialize this as a bare `NaN`
+    // token, which is not valid JSON.
+    let pdb = "ATOM      1  C   LIG A   1         NaN   0.000   0.000\nEND\n";
+    let out = pdb_coords_json(pdb);
+    assert!(
+        out.contains("\"error\""),
+        "expected explicit error for a non-finite PDB coordinate, got {out}"
+    );
+    assert!(
+        serde_json::from_str::<serde_json::Value>(&out).is_ok(),
+        "output must be valid JSON even on this error path, got {out}"
+    );
+}
+
+#[test]
+fn test_mmff94_energy_breakdown_json_unchanged_semantics() {
+    // Regression pin: the EXISTING function keeps its internally-generated-
+    // conformer contract, 4-decimal rounding, and "elec" key -- untouched by
+    // this fix (a new function was added alongside it, not a replacement).
+    let mol = parse("CCCC");
+    let json = mmff94_energy_breakdown_json(&mol);
+    assert!(json.contains("\"elec\""), "got {json}");
+    assert!(!json.contains("\"electrostatic\""), "got {json}");
+    assert!(!json.contains("\"stretch_bend\""), "got {json}");
+}

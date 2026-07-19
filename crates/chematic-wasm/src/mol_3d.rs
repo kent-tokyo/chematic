@@ -1,6 +1,9 @@
 //! 3D geometry, conformer, and force-field (MMFF94/UFF) bindings.
 
-use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, escape_json_string};
+use crate::mol_io::coords_all_finite;
+use crate::{
+    MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, WASM_MAX_JSON_STRING_BYTES, escape_json_string,
+};
 use wasm_bindgen::prelude::*;
 
 /// Optimize molecular geometry using DREIDING force field.
@@ -154,7 +157,11 @@ pub fn minimize_mmff94_lbfgs_json(mol: &MolHandle, max_iter: u32) -> String {
     }
 }
 
-/// Compute MMFF94 energy breakdown for current rule-based 3D geometry.
+/// Computes energy on an internally generated conformer.
+/// `MolHandle` stores topology only; coordinates previously read from PDB/XYZ
+/// are not used by this function.
+/// Use [`mmff94_energy_breakdown_from_coords_json`] for explicit coordinates.
+///
 /// Returns JSON: {"bond":B,"angle":A,"torsion":T,"vdw":V,"elec":E,"total":X} or {"error":"..."}.
 #[wasm_bindgen]
 pub fn mmff94_energy_breakdown_json(mol: &MolHandle) -> String {
@@ -177,6 +184,84 @@ pub fn mmff94_energy_breakdown_json(mol: &MolHandle) -> String {
             r#"{{"bond":{:.4},"angle":{:.4},"torsion":{:.4},"vdw":{:.4},"elec":{:.4},"total":{:.4}}}"#,
             bd.bond, bd.angle, bd.torsion, bd.vdw, bd.electrostatic, bd.total
         ),
+        Err(e) => format!(r#"{{"error":"{}"}}"#, e),
+    }
+}
+
+/// Compute MMFF94 energy breakdown for EXPLICIT, caller-supplied 3D
+/// coordinates -- unlike `mmff94_energy_breakdown_json`, this reads the
+/// geometry the caller actually has (e.g. from `pdb_coords_json`,
+/// `generate_3d_coords_json`, `generate_3d_etkdg_coords_json`, or an
+/// externally computed conformer) instead of silently generating a fresh
+/// rule-based one, matching the Python binding's
+/// `mol.mmff94_energy_breakdown(coords)` contract (issue #90).
+///
+/// `coords_json` -- JSON array of `[x,y,z]` arrays (Å), one per heavy atom,
+/// in the same atom order as `mol`.
+///
+/// Returns JSON `{"bond":B,"angle":A,"stretch_bend":S,"torsion":T,"oop":O,
+/// "vdw":V,"electrostatic":E,"total":X}` at full `f64` round-trip precision
+/// (not rounded -- this API exists specifically for oracle comparison
+/// against the Python binding, where 4-decimal rounding would mask
+/// sub-1e-4 discrepancies), or `{"error":"<msg>"}` on malformed JSON, a
+/// non-finite coordinate, or a coordinate-count/atom-count mismatch. Never
+/// falls back to a generated conformer.
+#[wasm_bindgen]
+pub fn mmff94_energy_breakdown_from_coords_json(mol: &MolHandle, coords_json: &str) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    if coords_json.len() > WASM_MAX_JSON_STRING_BYTES {
+        return format!(
+            r#"{{"error":"coords_json too large (max {} bytes)"}}"#,
+            WASM_MAX_JSON_STRING_BYTES
+        );
+    }
+    let coords: Vec<[f64; 3]> = match serde_json::from_str(coords_json) {
+        Ok(v) => v,
+        Err(e) => return format!(r#"{{"error":"coords parse error: {e}"}}"#),
+    };
+    if coords.len() != mol.inner.atom_count() {
+        return format!(
+            r#"{{"error":"coords length {} does not match atom count {}"}}"#,
+            coords.len(),
+            mol.inner.atom_count()
+        );
+    }
+    if !coords_all_finite(&coords) {
+        return r#"{"error":"coords contain a non-finite value (NaN or Infinity)"}"#.to_string();
+    }
+    match chematic_ff::mmff94_energy_breakdown(&mol.inner, &coords) {
+        Ok(bd) => {
+            let vals = [
+                bd.bond,
+                bd.angle,
+                bd.stretch_bend,
+                bd.torsion,
+                bd.oop,
+                bd.vdw,
+                bd.electrostatic,
+                bd.total,
+            ];
+            if vals.iter().any(|v| !v.is_finite()) {
+                return r#"{"error":"computed energy is not finite (degenerate geometry, e.g. coincident atoms)"}"#
+                    .to_string();
+            }
+            format!(
+                r#"{{"bond":{},"angle":{},"stretch_bend":{},"torsion":{},"oop":{},"vdw":{},"electrostatic":{},"total":{}}}"#,
+                bd.bond,
+                bd.angle,
+                bd.stretch_bend,
+                bd.torsion,
+                bd.oop,
+                bd.vdw,
+                bd.electrostatic,
+                bd.total
+            )
+        }
         Err(e) => format!(r#"{{"error":"{}"}}"#, e),
     }
 }
