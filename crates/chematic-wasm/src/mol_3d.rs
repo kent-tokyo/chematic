@@ -1,5 +1,6 @@
 //! 3D geometry, conformer, and force-field (MMFF94/UFF) bindings.
 
+use crate::mol_io::coords_all_finite;
 use crate::{
     MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, WASM_MAX_JSON_STRING_BYTES, escape_json_string,
 };
@@ -230,7 +231,7 @@ pub fn mmff94_energy_breakdown_from_coords_json(mol: &MolHandle, coords_json: &s
             mol.inner.atom_count()
         );
     }
-    if coords.iter().flatten().any(|v: &f64| !v.is_finite()) {
+    if !coords_all_finite(&coords) {
         return r#"{"error":"coords contain a non-finite value (NaN or Infinity)"}"#.to_string();
     }
     match chematic_ff::mmff94_energy_breakdown(&mol.inner, &coords) {

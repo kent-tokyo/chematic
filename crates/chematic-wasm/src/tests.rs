@@ -2203,34 +2203,142 @@ fn test_mmff94_energy_breakdown_from_coords_json_varies_with_geometry() {
     );
 }
 
-#[test]
-fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_at_zero_degrees() {
-    // Pinned against `.venv`'s chematic Python binding's
-    // `mol.mmff94_energy_breakdown(coords)` on the IDENTICAL (mol, coords)
-    // pair (same PDB text, same from_pdb-style parse) -- bit-exact (0.0
-    // delta observed), not just "close". Regression-pins the oracle match,
-    // not just "energy is present".
-    let pdb = set_dihedral_json("CCCC", 0, 1, 2, 3, 0.0).expect("set_dihedral_json");
-    let mol = mol_from_pdb(&pdb);
-    let coords_json = pdb_coords_json(&pdb);
-    let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, &coords_json);
-    let v: serde_json::Value = serde_json::from_str(&energy_json).expect("valid energy json");
+/// One row of the Python-oracle fixture table below: `mol.mmff94_energy_breakdown(coords)`
+/// from `.venv`'s chematic Python binding, for `CCCC` at `dihedral_deg`
+/// (atoms 0,1,2,3), on the IDENTICAL (mol, coords) pair this Rust test
+/// reconstructs via the same `set_dihedral_json` -> `mol_from_pdb` +
+/// `pdb_coords_json` pipeline. Field name `angle_term` (not `angle`) to
+/// avoid colliding with `dihedral_deg`, the scan parameter.
+struct EnergyOracle {
+    dihedral_deg: f64,
+    bond: f64,
+    angle_term: f64,
+    stretch_bend: f64,
+    torsion: f64,
+    oop: f64,
+    vdw: f64,
+    electrostatic: f64,
+    total: f64,
+}
 
-    let expect = |key: &str, want: f64| {
-        let got = v[key].as_f64().unwrap_or_else(|| panic!("missing {key}"));
+#[test]
+fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angles() {
+    // Fixture-based, not just "energy is present" or "energy varies":
+    // test_mmff94_energy_breakdown_from_coords_json_varies_with_geometry
+    // above only checks that >=3 distinct total/torsion values appear across
+    // the 6 scanned angles -- a regression that returns a DIFFERENT but
+    // still-wrong value at 60-300 degrees (everything except the 0-degree
+    // case, which used to be the only value pinned) would pass that test.
+    // This pins all 8 energy terms at all 6 angles against the Python
+    // oracle, so any wrong value anywhere in the scan is caught.
+    let oracle = [
+        EnergyOracle {
+            dihedral_deg: 0.0,
+            bond: 0.8902727980430658,
+            angle_term: 0.00046499350423254214,
+            stretch_bend: -0.007350084252858442,
+            torsion: 0.43499994978247686,
+            oop: 0.0,
+            vdw: 14.519561102945316,
+            electrostatic: 0.0,
+            total: 15.837948760022233,
+        },
+        EnergyOracle {
+            dihedral_deg: 60.0,
+            bond: 0.8948441183316793,
+            angle_term: 0.0004158023578226278,
+            stretch_bend: -0.006857208726671617,
+            torsion: 0.5878467445463341,
+            oop: 0.0,
+            vdw: 1.9693600350541345,
+            electrostatic: 0.0,
+            total: 3.4456094915632987,
+        },
+        EnergyOracle {
+            dihedral_deg: 120.0,
+            bond: 0.8781955726317947,
+            angle_term: 0.0004982437526120773,
+            stretch_bend: -0.0076120012966454376,
+            torsion: 0.8684749102195811,
+            oop: 0.0,
+            vdw: -0.022709051177030738,
+            electrostatic: 0.0,
+            total: 1.7168476741303118,
+        },
+        EnergyOracle {
+            dihedral_deg: 180.0,
+            bond: 0.8969756143810449,
+            angle_term: 0.0005974131500818183,
+            stretch_bend: -0.008439350718638324,
+            torsion: 0.0,
+            oop: 0.0,
+            vdw: -0.0670059041190226,
+            electrostatic: 0.0,
+            total: 0.8221277726934657,
+        },
+        EnergyOracle {
+            dihedral_deg: 240.0,
+            bond: 0.9063335706281842,
+            angle_term: 0.0007291729835570543,
+            stretch_bend: -0.009325393516517342,
+            torsion: 0.8683134139870532,
+            oop: 0.0,
+            vdw: -0.02299635476312685,
+            electrostatic: 0.0,
+            total: 1.7430544093191502,
+        },
+        EnergyOracle {
+            dihedral_deg: 300.0,
+            bond: 0.9054704500796205,
+            angle_term: 0.0005632607553765077,
+            stretch_bend: -0.008219837248585977,
+            torsion: 0.5884635963691149,
+            oop: 0.0,
+            vdw: 1.9670921081294108,
+            electrostatic: 0.0,
+            total: 3.4533695780849367,
+        },
+    ];
+
+    let mut checked = 0;
+    for row in &oracle {
+        let pdb =
+            set_dihedral_json("CCCC", 0, 1, 2, 3, row.dihedral_deg).expect("set_dihedral_json");
+        let mol = mol_from_pdb(&pdb);
+        let coords_json = pdb_coords_json(&pdb);
+        let energy_json = mmff94_energy_breakdown_from_coords_json(&mol, &coords_json);
+        let v: serde_json::Value = serde_json::from_str(&energy_json).expect("valid energy json");
         assert!(
-            (got - want).abs() <= 1e-9,
-            "{key}: got {got}, want {want} (python oracle)"
+            v.get("error").is_none(),
+            "angle {}: unexpected error: {energy_json}",
+            row.dihedral_deg
         );
-    };
-    expect("bond", 0.8902727980430658);
-    expect("angle", 0.00046499350423254214);
-    expect("stretch_bend", -0.007350084252858442);
-    expect("torsion", 0.43499994978247686);
-    expect("oop", 0.0);
-    expect("vdw", 14.519561102945316);
-    expect("electrostatic", 0.0);
-    expect("total", 15.837948760022233);
+
+        let mut expect = |key: &str, want: f64| {
+            let got = v[key]
+                .as_f64()
+                .unwrap_or_else(|| panic!("angle {}: missing {key}", row.dihedral_deg));
+            assert!(
+                (got - want).abs() <= 1e-9,
+                "angle {}: {key}: got {got}, want {want} (python oracle)",
+                row.dihedral_deg
+            );
+            checked += 1;
+        };
+        expect("bond", row.bond);
+        expect("angle", row.angle_term);
+        expect("stretch_bend", row.stretch_bend);
+        expect("torsion", row.torsion);
+        expect("oop", row.oop);
+        expect("vdw", row.vdw);
+        expect("electrostatic", row.electrostatic);
+        expect("total", row.total);
+    }
+    assert_eq!(
+        checked,
+        6 * 8,
+        "expected all 48 oracle values to be checked"
+    );
 }
 
 #[test]
@@ -2273,6 +2381,27 @@ fn test_mmff94_energy_breakdown_from_coords_json_rejects_non_finite() {
     let overflow_json =
         mmff94_energy_breakdown_from_coords_json(&mol, "[[1e400,0,0],[1,0,0],[2,0,0],[3,0,0]]");
     assert!(overflow_json.contains("\"error\""), "got {overflow_json}");
+}
+
+#[test]
+fn test_pdb_coords_json_rejects_non_finite_coordinate() {
+    // A PDB coordinate FIELD containing the literal text "NaN" parses
+    // successfully via f64::from_str (Rust's FromStr recognizes "nan"/
+    // "inf"/"infinity" case-insensitively as their special values, distinct
+    // from truly malformed text which falls back to 0.0) -- so this reaches
+    // parse_pdb_atoms as a real non-finite Point3, not a parse failure.
+    // Before the fix, pdb_coords_json would serialize this as a bare `NaN`
+    // token, which is not valid JSON.
+    let pdb = "ATOM      1  C   LIG A   1         NaN   0.000   0.000\nEND\n";
+    let out = pdb_coords_json(pdb);
+    assert!(
+        out.contains("\"error\""),
+        "expected explicit error for a non-finite PDB coordinate, got {out}"
+    );
+    assert!(
+        serde_json::from_str::<serde_json::Value>(&out).is_ok(),
+        "output must be valid JSON even on this error path, got {out}"
+    );
 }
 
 #[test]

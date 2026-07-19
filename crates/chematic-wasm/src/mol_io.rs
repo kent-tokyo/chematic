@@ -518,6 +518,19 @@ impl std::fmt::Display for PdbInputError {
     }
 }
 
+/// Whether every component of every coordinate is finite (not NaN or
+/// Infinity). Shared by `pdb_coords_json` and
+/// `mmff94_energy_breakdown_from_coords_json` -- `f64::from_str` parses the
+/// literal text "nan"/"inf"/"infinity" (case-insensitively) into their
+/// special values rather than erroring, so a PDB coordinate FIELD
+/// containing that text (not just truly malformed text, which falls back to
+/// 0.0 via `unwrap_or`) passes `parse_pdb_atoms` silently. Without this
+/// check, `pdb_coords_json` would serialize a bare `NaN`/`inf` token, which
+/// is not valid JSON syntax, into its output.
+pub(crate) fn coords_all_finite(coords: &[[f64; 3]]) -> bool {
+    coords.iter().flatten().all(|v: &f64| v.is_finite())
+}
+
 /// Parse a PDB block into topology and coordinates from a SINGLE pass over
 /// the input, shared by `mol_from_pdb` and `pdb_coords_json` -- both must
 /// read the exact same atom list in the exact same order, or a caller
@@ -564,11 +577,17 @@ pub fn mol_from_pdb(pdb: &str) -> MolHandle {
 /// between the two calls is structural, not just conventional -- issue #90).
 ///
 /// Returns JSON `[[x,y,z],...]` (full `f64` precision, not rounded -- for
-/// oracle comparison against the Python binding) or `{"error":"<msg>"}`.
+/// oracle comparison against the Python binding) or `{"error":"<msg>"}` --
+/// including when a coordinate field parsed to a non-finite value (see
+/// `coords_all_finite`'s doc comment), rather than emitting invalid JSON.
 #[wasm_bindgen]
 pub fn pdb_coords_json(pdb: &str) -> String {
     match parse_pdb_molecule_and_coords(pdb) {
         Ok((_mol, coords)) => {
+            if !coords_all_finite(&coords) {
+                return r#"{"error":"PDB contains a non-finite coordinate (NaN or Infinity)"}"#
+                    .to_string();
+            }
             let parts: Vec<String> = coords
                 .iter()
                 .map(|c| format!("[{},{},{}]", c[0], c[1], c[2]))
