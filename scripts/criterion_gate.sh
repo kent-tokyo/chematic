@@ -29,6 +29,15 @@
 # flips. Used for two-stage confirmation: Stage 2 re-runs a Stage-1 fail
 # candidate with reversed order, so a real regression must reproduce under
 # genuinely different execution order, not just the same measurement twice.
+#
+#   criterion_gate.sh route-check <blocks_jsonl> <expected_count> <threshold>
+#   criterion_gate.sh ratio-summary <blocks_jsonl> <expected_count>
+#   criterion_gate.sh check-threshold <threshold>
+#
+# Stage-1 routing screen -- see cmd_route_check below for why Stage 1 can't
+# use veridict's sign-test verdict directly. ratio-summary/check-threshold
+# are the shared validation+computation helpers both route-check and the
+# Stage 2 magnitude gate (in the workflow) call -- see cmd_ratio_summary.
 set -euo pipefail
 
 run_point_estimate() {
@@ -80,6 +89,106 @@ cmd_bin_path() {
     | tail -1
 }
 
+# Shared helper (issue #70 follow-up): strict validation + median-ratio
+# computation for a run-blocks jsonl file, used by both Stage 1's
+# route-check and Stage 2's magnitude gate (in the workflow). A malformed or
+# short/long block file must never silently degrade to a default decision
+# ("no-route", "pass") -- that would hide a real infrastructure problem
+# (a crashed run-blocks invocation, a truncated artifact) behind a verdict
+# that looks like ordinary negative data. Every failure mode below exits
+# non-zero with a message on stderr instead.
+cmd_ratio_summary() {
+  local jsonl="$1" expected_count="$2"
+  if [ ! -s "$jsonl" ]; then
+    echo "ratio-summary: $jsonl is missing or empty" >&2
+    return 1
+  fi
+  jq -rs --argjson expected "$expected_count" '
+    if length != $expected then
+      error("expected exactly \($expected) records, got \(length)")
+    else . end
+    | (map(.id) | unique | length) as $uniq_ids
+    | if $uniq_ids != length then
+        error("duplicate id field -- ids must be unique")
+      else . end
+    | map(
+        if (.baseline | type) != "number" or (.candidate | type) != "number" then
+          error("baseline/candidate must be numbers")
+        elif (.baseline | isinfinite or isnan) or (.candidate | isinfinite or isnan) then
+          error("baseline/candidate must be finite")
+        elif .baseline == 0 then
+          error("baseline must not be zero")
+        else . end
+      )
+    | map((.candidate | fabs) / (.baseline | fabs)) as $ratios
+    | if ($ratios | map(isinfinite or isnan or . <= 0) | any) then
+        error("computed ratio must be finite and positive")
+      else . end
+    | ($ratios | sort) as $sorted
+    | ($sorted | length) as $n
+    | if ($n % 2) == 1 then
+        $sorted[($n - 1) / 2 | floor]
+      else
+        (($sorted[($n / 2 | floor) - 1] + $sorted[$n / 2 | floor]) / 2)
+      end
+  ' "$jsonl"
+}
+
+# Threshold values below 1 would mean "route/fail even when the candidate is
+# faster or equal," which is never a sensible regression-detection bound --
+# reject those (and non-numeric/non-finite input) before they can silently
+# produce a nonsense comparison result downstream.
+cmd_check_threshold() {
+  local threshold="$1"
+  case "$threshold" in
+    ''|*[!0-9.]*)
+      echo "threshold '$threshold' is not a valid number" >&2
+      return 1
+      ;;
+  esac
+  jq -n --argjson t "$threshold" '
+    if ($t | isinfinite or isnan) then error("threshold must be finite, got \($t)")
+    elif $t < 1 then error("threshold must be >= 1, got \($t)")
+    else empty end
+  '
+}
+
+# Stage-1 routing screen (issue #70 follow-up). Stage 1 only ever ran 3
+# blocks through `veridict compare --metric sign-test`, but a sign test's
+# strongest possible signal at n=3 (a unanimous 3-0 split) has a two-sided
+# exact p-value of 2*(1/2)^3=0.25 -- it can NEVER cross a 95%-confidence fail
+# bar, so Stage 1 could never produce a fail verdict for a regression of any
+# size, making Stage 2 (the only place that sets any_fail) unreachable.
+# Verified empirically: synthetic +5%/+10% regressions both came back
+# "inconclusive" with byte-identical confidence bounds (issue #70 comment).
+#
+# Fix: Stage 1 stops asserting statistical significance and becomes a cheap
+# routing screen instead -- does this benchmark look suspicious enough to
+# spend Stage 2's 10-block budget on? Routes purely on the block-level
+# latency ratio's median crossing <threshold>.
+#
+# A "route if all 3 blocks agree on direction, even below <threshold>" leg
+# was tried first, to catch a small-but-consistent regression a magnitude
+# rule alone would miss -- and was the actual shipped behavior in an earlier
+# revision of this function. It's deliberately NOT here: an offline
+# evaluation against 28 historical no-op runs (issue #70) showed pure
+# direction-agreement is dominated by sampling noise at n=3 (21-22%
+# false-routing, vs 4% for the magnitude threshold alone) -- with 16
+# benchmarks routed independently per run, unanimity fires on noise often
+# enough to be worse than not screening at all. Magnitude-only was the
+# selected candidate; keep it that way unless a re-evaluation says otherwise.
+# Stage 1 alone never sets any_fail; only Stage 2's real sign-test AND
+# magnitude gate (with a null-control-clean check) does that -- see the
+# workflow's Stage 2 loop, not this function.
+cmd_route_check() {
+  local jsonl="$1" expected_count="$2" threshold="$3"
+  cmd_check_threshold "$threshold" || return 1
+  local median
+  median=$(cmd_ratio_summary "$jsonl" "$expected_count") || return 1
+  jq -rn --argjson m "$median" --argjson t "$threshold" \
+    'if $m >= $t then "route" else "no-route" end'
+}
+
 case "${1:-}" in
   run-blocks)
     shift
@@ -89,9 +198,24 @@ case "${1:-}" in
     shift
     cmd_bin_path "$@"
     ;;
+  route-check)
+    shift
+    cmd_route_check "$@"
+    ;;
+  ratio-summary)
+    shift
+    cmd_ratio_summary "$@"
+    ;;
+  check-threshold)
+    shift
+    cmd_check_threshold "$@"
+    ;;
   *)
     echo "usage: $0 run-blocks <bin_a> <bin_b> <bench_name> <n_blocks> <warm_up_secs> <measurement_secs> <sample_size> <order:abba|baab> <out_jsonl>" >&2
     echo "       $0 bin-path <crate_dir> <crate> <benchfile>" >&2
+    echo "       $0 route-check <blocks_jsonl> <expected_count> <threshold>" >&2
+    echo "       $0 ratio-summary <blocks_jsonl> <expected_count>" >&2
+    echo "       $0 check-threshold <threshold>" >&2
     exit 64
     ;;
 esac
