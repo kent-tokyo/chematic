@@ -212,13 +212,24 @@ jobs:
       # blocks accumulate).
       #
       # Two-stage screening keeps CI time bounded: Stage 1 is a cheap,
-      # coarse screen (3 blocks); only a Stage-1 "fail" triggers Stage 2 (10
+      # coarse screen (3 blocks); a Stage-1 route triggers Stage 2 (10
       # blocks, reversed A/B order, longer measurement) as an independent
-      # confirmation. The final gate only fails a benchmark if BOTH stages
-      # independently say fail -- reproduction-under-reversed-order is this
-      # design's multiple-testing correction (simpler than a Bonferroni/Holm
-      # family correction across 16 benchmarks, per issue #70's own
-      # suggested alternative).
+      # confirmation. The final gate only fails a benchmark if Stage 2
+      # independently confirms it -- reproduction-under-reversed-order is
+      # this design's multiple-testing correction (simpler than a
+      # Bonferroni/Holm family correction across 16 benchmarks, per issue
+      # #70's own suggested alternative).
+      #
+      # Stage 1 does NOT run a statistical test (issue #70 follow-up): a
+      # sign test over only 3 blocks can't reach 95% confidence even at a
+      # unanimous 3-0 split (two-sided exact p=0.25), so gating Stage-2
+      # entry on a Stage-1 "fail" verdict made Stage 2 unreachable for any
+      # regression, of any size -- confirmed empirically (+5%/+10%
+      # synthetic regressions both came back "inconclusive" with
+      # byte-identical confidence bounds). Stage 1 instead routes on a
+      # cheap magnitude/direction check (median block ratio over threshold,
+      # or all 3 blocks agreeing on direction) -- see cmd_route_check in
+      # criterion_gate.sh. Only Stage 2's real sign-test can set any_fail.
       #
       # A same-binary null control (main vs itself, run through the exact
       # same pipeline) runs once per stage. If IT shows a biased verdict,
@@ -271,13 +282,32 @@ jobs:
 
           mkdir -p artifacts
           any_fail=0
-          stage1_fail_count=0
+          stage1_routed_count=0
+          # Stage-1 routing threshold (issue #70 follow-up): a sign test over
+          # only 3 blocks can never reach 95% confidence even at a unanimous
+          # 3-0 split (two-sided exact p=0.25), so Stage 1 stopped being able
+          # to route ANY regression into Stage 2 -- see cmd_route_check in
+          # criterion_gate.sh. Stage 1 is now a magnitude/direction screen,
+          # not a statistical verdict; Stage 2's real sign-test (10 blocks)
+          # is still the only thing that can set any_fail.
+          #
+          # 1.04 chosen from an offline evaluation against 28 historical
+          # no-op runs (448 (run, benchmark) pairs) plus the +5%/+10%
+          # synthetic-regression fixtures (issue #70): a pure "3/3 unanimous
+          # direction" rule over-routes (21-22% no-op false-routing -- pure
+          # sampling noise at 448 trials, not a real signal). Magnitude
+          # thresholds 1.03/1.04/1.05 all caught both fixtures (medians
+          # 1.069/1.135) with zero null-control false-routing; 1.04 keeps
+          # no-op false-routing modest (4.0%, vs 6.0% at 1.03) while leaving
+          # real margin above both fixtures. A false route only costs Stage-2
+          # CI time, never any_fail -- see issue #70 for the full data.
+          STAGE1_ROUTE_THRESHOLD=1.04
 
           # Stage 1: cheap screen across every benchmark first, so the (rare)
           # same-binary null-control fail check below reflects this run's
           # actual environment during the bulk of the work, not a check done
           # in isolation before/after.
-          declare -a stage1_fail_names=()
+          declare -a stage1_routed_names=()
           for entry in "${BENCHES[@]}"; do
             IFS=':' read -r name crate benchfile <<< "$entry"
             main_bin=$(bin_path main "$crate" "$benchfile")
@@ -300,14 +330,12 @@ jobs:
 
             out="artifacts/${name}_stage1.jsonl"
             pr/scripts/criterion_gate.sh run-blocks "$main_bin" "$pr_bin" "$name" 3 0.5 1 15 abba "$out"
-            veridict compare "$out" --metric sign-test --confidence 0.95 --min-effect 0.2 \
-              --report-json "artifacts/${name}_stage1_report.json"
-            code=$?
-            echo "=== $name stage1: exit $code ==="
-            cat "artifacts/${name}_stage1_report.json"
-            if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
-              stage1_fail_count=$((stage1_fail_count + 1))
-              stage1_fail_names+=("${name}:${crate}:${benchfile}")
+            route=$(pr/scripts/criterion_gate.sh route-check "$out" "$STAGE1_ROUTE_THRESHOLD")
+            echo "=== $name stage1 routing: $route ==="
+            cat "$out"
+            if [ "$route" = "route" ]; then
+              stage1_routed_count=$((stage1_routed_count + 1))
+              stage1_routed_names+=("${name}:${crate}:${benchfile}")
             fi
           done
 
@@ -321,9 +349,9 @@ jobs:
             environment_contaminated=1
           fi
 
-          # Stage 2: confirmation only for Stage-1 fail candidates, reversed
+          # Stage 2: confirmation only for benchmarks Stage 1 routed, reversed
           # order, more blocks.
-          for entry in "${stage1_fail_names[@]}"; do
+          for entry in "${stage1_routed_names[@]}"; do
             IFS=':' read -r name crate benchfile <<< "$entry"
             main_bin=$(bin_path main "$crate" "$benchfile")
             pr_bin=$(bin_path pr "$crate" "$benchfile")
@@ -342,11 +370,11 @@ jobs:
                 any_fail=1
               fi
             else
-              echo "::notice::$name: Stage 1 flagged a possible regression but Stage 2 (reversed order) did not reproduce it -- treating as noise, not gating."
+              echo "::notice::$name: Stage 1 routed a possible regression but Stage 2 (reversed order) did not confirm it -- treating as noise, not gating."
             fi
           done
 
-          echo "stage1_fail_count=$stage1_fail_count, environment_contaminated=$environment_contaminated, any_fail=$any_fail" >> "$GITHUB_STEP_SUMMARY"
+          echo "stage1_routed_count=$stage1_routed_count, environment_contaminated=$environment_contaminated, any_fail=$any_fail" >> "$GITHUB_STEP_SUMMARY"
           set -e
           [ "$any_fail" -eq 0 ]
 

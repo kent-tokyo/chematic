@@ -43,4 +43,63 @@ echo "baab record: $record_baab"
 [ "$(echo "$record_baab" | jq '.candidate')" = "-200" ] || { echo "FAIL: baab changed candidate label"; exit 1; }
 
 rm -f "$out"
+
+# --- Stage-1 routing screen (issue #70 follow-up) ---
+# cmd_route_check replaced a sign test that could never fire at n=3 blocks
+# (see criterion_gate.sh's comment above cmd_route_check for the math). These
+# fixtures are the real block data from the +5%/+10% synthetic-regression CI
+# runs and a synthetic clean no-op, so a future accidental edit that breaks
+# routing shows up here without needing a real Criterion binary.
+extracted_route=$(mktemp)
+sed -n '/^cmd_route_check/,/^}/p' scripts/criterion_gate.sh > "$extracted_route"
+source "$extracted_route"
+rm -f "$extracted_route"
+
+fixture_plus5=$(mktemp)
+cat > "$fixture_plus5" << 'EOF'
+{"id":"1","baseline":-11723.852948081518,"candidate":-12419.292912444453}
+{"id":"2","baseline":-11710.817870733676,"candidate":-12516.890630251484}
+{"id":"3","baseline":-11776.024760778471,"candidate":-13441.09866163192}
+EOF
+[ "$(cmd_route_check "$fixture_plus5" 1.04)" = "route" ] || { echo "FAIL: +5% fixture (median +6.9%) should route"; exit 1; }
+rm -f "$fixture_plus5"
+
+fixture_plus10=$(mktemp)
+cat > "$fixture_plus10" << 'EOF'
+{"id":"1","baseline":-11073.407252668874,"candidate":-12563.450800114455}
+{"id":"2","baseline":-11155.27769228296,"candidate":-12628.101260372696}
+{"id":"3","baseline":-11110.051949478835,"candidate":-12760.029773887674}
+EOF
+[ "$(cmd_route_check "$fixture_plus10" 1.04)" = "route" ] || { echo "FAIL: +10% fixture (median +13.5%) should route"; exit 1; }
+rm -f "$fixture_plus10"
+
+fixture_noop=$(mktemp)
+cat > "$fixture_noop" << 'EOF'
+{"id":"1","baseline":-11700.0,"candidate":-11705.0}
+{"id":"2","baseline":-11710.0,"candidate":-11690.0}
+{"id":"3","baseline":-11705.0,"candidate":-11720.0}
+EOF
+[ "$(cmd_route_check "$fixture_noop" 1.04)" = "no-route" ] || { echo "FAIL: clean no-op (mixed direction, sub-percent) should not route"; exit 1; }
+rm -f "$fixture_noop"
+
+# Direction-only routing: below the magnitude threshold but unanimous across
+# all 3 blocks -- catches a small-but-consistent regression a magnitude-only
+# rule would miss.
+fixture_unanimous_small=$(mktemp)
+cat > "$fixture_unanimous_small" << 'EOF'
+{"id":"1","baseline":-11700.0,"candidate":-11712.0}
+{"id":"2","baseline":-11710.0,"candidate":-11715.0}
+{"id":"3","baseline":-11705.0,"candidate":-11708.0}
+EOF
+[ "$(cmd_route_check "$fixture_unanimous_small" 1.04)" = "route" ] || { echo "FAIL: unanimous-but-small regression should route on direction alone"; exit 1; }
+rm -f "$fixture_unanimous_small"
+
+# Note: this script only unit-tests cmd_route_check's pure logic. The
+# workflow-level invariants (Stage 1 alone never sets any_fail; any_fail=1
+# only on a confirmed Stage 2 fail with a clean null control; a contaminated
+# null control suppresses any_fail even on a Stage 2 fail) live in
+# bench-pr-gate.yml's shell, not in this script, and are verified by code
+# inspection plus real CI run data (issue #70) rather than by this harness --
+# same scope limitation the original block-pairing tests above already had.
+
 echo "OK"

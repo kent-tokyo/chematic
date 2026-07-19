@@ -29,6 +29,11 @@
 # flips. Used for two-stage confirmation: Stage 2 re-runs a Stage-1 fail
 # candidate with reversed order, so a real regression must reproduce under
 # genuinely different execution order, not just the same measurement twice.
+#
+#   criterion_gate.sh route-check <blocks_jsonl> <median_ratio_threshold>
+#
+# Stage-1 routing screen -- see cmd_route_check below for why Stage 1 can't
+# use veridict's sign-test verdict directly.
 set -euo pipefail
 
 run_point_estimate() {
@@ -80,6 +85,33 @@ cmd_bin_path() {
     | tail -1
 }
 
+# Stage-1 routing screen (issue #70 follow-up). Stage 1 only ever ran 3
+# blocks through `veridict compare --metric sign-test`, but a sign test's
+# strongest possible signal at n=3 (a unanimous 3-0 split) has a two-sided
+# exact p-value of 2*(1/2)^3=0.25 -- it can NEVER cross a 95%-confidence fail
+# bar, so Stage 1 could never produce a fail verdict for a regression of any
+# size, making Stage 2 (the only place that sets any_fail) unreachable.
+# Verified empirically: synthetic +5%/+10% regressions both came back
+# "inconclusive" with byte-identical confidence bounds (issue #70 comment).
+#
+# Fix: Stage 1 stops asserting statistical significance and becomes a cheap
+# routing screen instead -- does this benchmark look suspicious enough to
+# spend Stage 2's 10-block budget on? Two independent signals, either one
+# routes: the block-level latency ratio's median crossing <threshold>, or all
+# 3 blocks agreeing on direction (candidate slower) even if each individually
+# is small. Stage 1 alone never sets any_fail; only Stage 2's real sign-test
+# (with a null-control-clean check) does that, unchanged from before.
+cmd_route_check() {
+  local jsonl="$1" threshold="$2"
+  jq -rs --argjson threshold "$threshold" '
+    map((.candidate | fabs) / (.baseline | fabs)) as $ratios
+    | ($ratios | sort) as $sorted
+    | $sorted[($sorted | length - 1) / 2 | floor] as $median
+    | (($ratios | map(. > 1.0) | all)) as $unanimous
+    | if ($median >= $threshold) or $unanimous then "route" else "no-route" end
+  ' "$jsonl"
+}
+
 case "${1:-}" in
   run-blocks)
     shift
@@ -89,9 +121,14 @@ case "${1:-}" in
     shift
     cmd_bin_path "$@"
     ;;
+  route-check)
+    shift
+    cmd_route_check "$@"
+    ;;
   *)
     echo "usage: $0 run-blocks <bin_a> <bin_b> <bench_name> <n_blocks> <warm_up_secs> <measurement_secs> <sample_size> <order:abba|baab> <out_jsonl>" >&2
     echo "       $0 bin-path <crate_dir> <crate> <benchfile>" >&2
+    echo "       $0 route-check <blocks_jsonl> <median_ratio_threshold>" >&2
     exit 64
     ;;
 esac
