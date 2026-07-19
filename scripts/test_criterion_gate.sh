@@ -82,17 +82,24 @@ EOF
 [ "$(cmd_route_check "$fixture_noop" 1.04)" = "no-route" ] || { echo "FAIL: clean no-op (mixed direction, sub-percent) should not route"; exit 1; }
 rm -f "$fixture_noop"
 
-# Direction-only routing: below the magnitude threshold but unanimous across
-# all 3 blocks -- catches a small-but-consistent regression a magnitude-only
-# rule would miss.
-fixture_unanimous_small=$(mktemp)
-cat > "$fixture_unanimous_small" << 'EOF'
-{"id":"1","baseline":-11700.0,"candidate":-11712.0}
-{"id":"2","baseline":-11710.0,"candidate":-11715.0}
-{"id":"3","baseline":-11705.0,"candidate":-11708.0}
+# Regression test for a real incident: PR #117's own first CI run shipped a
+# route-check with an "OR all 3 blocks agree on direction" leg (the offline
+# eval had already disqualified that leg -- 21-22% no-op false-routing, see
+# the comment above cmd_route_check -- but the shipped code kept it anyway).
+# It routed `ecfp4_10mol` to Stage 2 purely on unanimous direction (median
+# 1.0149, under the 1.04 threshold) on a PR touching zero chematic-fp files,
+# and Stage 2 then confirmed a "fail" from real but spurious ~1% build-to-
+# build variance -- a genuine false positive on an unrelated benchmark. This
+# is that exact Stage-1 block data (issue #70): must NOT route under a pure
+# magnitude threshold, even though all 3 blocks agree on direction.
+fixture_ecfp4_incident=$(mktemp)
+cat > "$fixture_ecfp4_incident" << 'EOF'
+{"id":"1","baseline":-165481.56427608195,"candidate":-167948.2795937714}
+{"id":"2","baseline":-165755.31364862694,"candidate":-171745.03897197713}
+{"id":"3","baseline":-166218.16842646126,"candidate":-167825.3596853625}
 EOF
-[ "$(cmd_route_check "$fixture_unanimous_small" 1.04)" = "route" ] || { echo "FAIL: unanimous-but-small regression should route on direction alone"; exit 1; }
-rm -f "$fixture_unanimous_small"
+[ "$(cmd_route_check "$fixture_ecfp4_incident" 1.04)" = "no-route" ] || { echo "FAIL: regression -- unanimous-but-under-threshold data must not route (issue #70 ecfp4_10mol false positive)"; exit 1; }
+rm -f "$fixture_ecfp4_incident"
 
 # Note: this script only unit-tests cmd_route_check's pure logic. The
 # workflow-level invariants (Stage 1 alone never sets any_fail; any_fail=1

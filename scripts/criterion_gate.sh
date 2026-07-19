@@ -96,19 +96,28 @@ cmd_bin_path() {
 #
 # Fix: Stage 1 stops asserting statistical significance and becomes a cheap
 # routing screen instead -- does this benchmark look suspicious enough to
-# spend Stage 2's 10-block budget on? Two independent signals, either one
-# routes: the block-level latency ratio's median crossing <threshold>, or all
-# 3 blocks agreeing on direction (candidate slower) even if each individually
-# is small. Stage 1 alone never sets any_fail; only Stage 2's real sign-test
-# (with a null-control-clean check) does that, unchanged from before.
+# spend Stage 2's 10-block budget on? Routes purely on the block-level
+# latency ratio's median crossing <threshold>.
+#
+# A "route if all 3 blocks agree on direction, even below <threshold>" leg
+# was tried first, to catch a small-but-consistent regression a magnitude
+# rule alone would miss -- and was the actual shipped behavior in an earlier
+# revision of this function. It's deliberately NOT here: an offline
+# evaluation against 28 historical no-op runs (issue #70) showed pure
+# direction-agreement is dominated by sampling noise at n=3 (21-22%
+# false-routing, vs 4% for the magnitude threshold alone) -- with 16
+# benchmarks routed independently per run, unanimity fires on noise often
+# enough to be worse than not screening at all. Magnitude-only was the
+# selected candidate; keep it that way unless a re-evaluation says otherwise.
+# Stage 1 alone never sets any_fail; only Stage 2's real sign-test (with a
+# null-control-clean check) does that, unchanged from before.
 cmd_route_check() {
   local jsonl="$1" threshold="$2"
   jq -rs --argjson threshold "$threshold" '
     map((.candidate | fabs) / (.baseline | fabs)) as $ratios
     | ($ratios | sort) as $sorted
     | $sorted[($sorted | length - 1) / 2 | floor] as $median
-    | (($ratios | map(. > 1.0) | all)) as $unanimous
-    | if ($median >= $threshold) or $unanimous then "route" else "no-route" end
+    | if $median >= $threshold then "route" else "no-route" end
   ' "$jsonl"
 }
 

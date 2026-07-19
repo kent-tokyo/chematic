@@ -227,9 +227,9 @@ jobs:
       # regression, of any size -- confirmed empirically (+5%/+10%
       # synthetic regressions both came back "inconclusive" with
       # byte-identical confidence bounds). Stage 1 instead routes on a
-      # cheap magnitude/direction check (median block ratio over threshold,
-      # or all 3 blocks agreeing on direction) -- see cmd_route_check in
-      # criterion_gate.sh. Only Stage 2's real sign-test can set any_fail.
+      # cheap magnitude check (median block ratio over threshold) -- see
+      # cmd_route_check in criterion_gate.sh. Only Stage 2's real sign-test
+      # can set any_fail.
       #
       # A same-binary null control (main vs itself, run through the exact
       # same pipeline) runs once per stage. If IT shows a biased verdict,
@@ -287,16 +287,22 @@ jobs:
           # only 3 blocks can never reach 95% confidence even at a unanimous
           # 3-0 split (two-sided exact p=0.25), so Stage 1 stopped being able
           # to route ANY regression into Stage 2 -- see cmd_route_check in
-          # criterion_gate.sh. Stage 1 is now a magnitude/direction screen,
-          # not a statistical verdict; Stage 2's real sign-test (10 blocks)
-          # is still the only thing that can set any_fail.
+          # criterion_gate.sh. Stage 1 is now a pure magnitude screen (median
+          # block ratio over threshold), not a statistical verdict; Stage 2's
+          # real sign-test (10 blocks) is still the only thing that can set
+          # any_fail.
           #
           # 1.04 chosen from an offline evaluation against 28 historical
           # no-op runs (448 (run, benchmark) pairs) plus the +5%/+10%
-          # synthetic-regression fixtures (issue #70): a pure "3/3 unanimous
-          # direction" rule over-routes (21-22% no-op false-routing -- pure
-          # sampling noise at 448 trials, not a real signal). Magnitude
-          # thresholds 1.03/1.04/1.05 all caught both fixtures (medians
+          # synthetic-regression fixtures (issue #70): a "3/3 unanimous
+          # direction" leg (tried first, to catch a small-but-consistent
+          # regression) over-routes on its own (21-22% no-op false-routing --
+          # dominated by sampling noise at 448 trials, not real signal; this
+          # is what a first real CI run of this fix surfaced as a false
+          # `ecfp4_10mol` fail on a PR touching zero chematic-fp files, since
+          # the shipped rule still had that leg OR'd in -- fixed by dropping
+          # it, matching what was actually evaluated). Magnitude thresholds
+          # 1.03/1.04/1.05 alone all caught both fixtures (medians
           # 1.069/1.135) with zero null-control false-routing; 1.04 keeps
           # no-op false-routing modest (4.0%, vs 6.0% at 1.03) while leaving
           # real margin above both fixtures. A false route only costs Stage-2
