@@ -625,3 +625,28 @@ fn test_simple_disubstituted_benzene_table_driven_regression() {
         assert_eq!(name(&mol(smi)).unwrap(), *expected, "smiles: {smi}");
     }
 }
+
+#[test]
+fn test_issue92_explicit_h_substituent_matches_implicit_h_name() {
+    // The heavy-atom coverage check (rings.rs) originally compared against
+    // mol.atom_count(), which counts explicit bracket-[H] atoms as real
+    // entries -- a substituent spelled with an explicit H (e.g. "O[H]"
+    // instead of "O") has a heavy-atom count identical to its implicit
+    // spelling but a DIFFERENT atom_count(), so the coverage check wrongly
+    // rejected an otherwise-correctly-classified substituent. Both spellings
+    // of the same molecule must produce the identical name.
+    assert_eq!(
+        name(&mol("Cc1ccc(cc1)O")).unwrap(),
+        name(&mol("Cc1ccc(cc1)O[H]")).unwrap()
+    );
+    assert_eq!(name(&mol("Cc1ccc(cc1)O[H]")).unwrap(), "4-methylphenol");
+
+    assert_eq!(
+        name(&mol("Cc1ccc(cc1)N")).unwrap(),
+        name(&mol("Cc1ccc(cc1)N([H])[H]")).unwrap()
+    );
+    assert_eq!(
+        name(&mol("Cc1ccc(cc1)N([H])[H]")).unwrap(),
+        "4-methylaniline"
+    );
+}

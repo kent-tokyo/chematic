@@ -62,6 +62,20 @@ impl SimpleBenzeneSubstituent {
     }
 }
 
+/// Count of non-hydrogen atoms in `mol`. `Molecule::atom_count()` is
+/// `self.atoms.len()`, which includes explicit bracket-`[H]` atoms as real
+/// entries (e.g. `Cc1ccc(cc1)O[H]` parses to 9 atoms, not 8) -- a coverage
+/// check using `atom_count()` directly would wrongly reject a substituent
+/// that `classify_simple_benzene_substituent` correctly classified via its
+/// own explicit-H-aware `total_h` count, since the ring+substituent heavy-
+/// atom total (8) would never match `atom_count()` (9). This must be used
+/// for any "does the name account for every atom" check in this module.
+fn heavy_atom_count(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(_, a)| a.element.atomic_number() != 1)
+        .count()
+}
+
 /// Classify the substituent hanging off ring atom `attach`, accepting ONLY
 /// the exact shapes listed on [`SimpleBenzeneSubstituent`] -- methyl,
 /// hydroxy, amino, or a single halogen, each a lone neutral non-aromatic
@@ -335,8 +349,11 @@ impl<'a> Namer<'a> {
         // above, since every substituent atom is on the ring) would still be
         // guarded against by construction, but this makes the invariant
         // explicit and future-proofs against a classifier that stops
-        // requiring direct ring attachment.
-        if mol.atom_count() != ring_atoms.len() + 2 {
+        // requiring direct ring attachment. Must count heavy atoms only (see
+        // heavy_atom_count's doc comment) -- an explicit-H substituent
+        // spelling would otherwise fail this check despite being correctly
+        // classified.
+        if heavy_atom_count(mol) != ring_atoms.len() + 2 {
             return Err(IupacError::NotSupported);
         }
 
@@ -401,7 +418,8 @@ impl<'a> Namer<'a> {
         // exactly the ring atoms plus 3 classified single-heavy-atom
         // substituents -- checked up front so a downgrade below doesn't
         // waste locant/grouping work on a molecule that can never name.
-        if mol.atom_count() != ring_atoms.len() + 3 {
+        // Heavy atoms only (see heavy_atom_count's doc comment).
+        if heavy_atom_count(mol) != ring_atoms.len() + 3 {
             return Err(IupacError::NotSupported);
         }
 
