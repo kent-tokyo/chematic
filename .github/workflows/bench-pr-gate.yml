@@ -228,6 +228,22 @@ jobs:
       - name: "Run process-level Criterion gate (issue #70 redesign)"
         run: |
           set +e
+
+          # [EXPERIMENTAL, THROWAWAY -- issue #70 item 7 contamination
+          # calibration only, never merges to main] Simulate a noisy-neighbor
+          # runner by burning every core for the whole benchmarking window,
+          # then check whether the null control (main vs itself, below)
+          # correctly reports environment_contaminated=1 instead of letting a
+          # spurious per-benchmark fail leak through. Source is byte-identical
+          # to main in this PR -- any observed any_fail=1 would be a pure
+          # false positive if not caught by the contamination flag. No
+          # untrusted input is interpolated here: only nproc/jobs output.
+          for _ in $(seq 1 "$(nproc)"); do
+            (while true; do :; done) &
+          done
+          stress_pids="$(jobs -p)"
+          trap 'kill $stress_pids 2>/dev/null || true' EXIT
+
           chmod +x pr/scripts/criterion_gate.sh
 
           bin_path() { pr/scripts/criterion_gate.sh bin-path "$1" "$2" "$3"; }
