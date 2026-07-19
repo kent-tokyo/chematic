@@ -23,17 +23,10 @@
 //!
 //! ## Available tools
 //!
-//! | Tool | Description |
-//! |------|-------------|
-//! | `parse_smiles` | Parse SMILES → atoms, bonds, MW |
-//! | `calc_properties` | LogP, TPSA, MW, HBD, HBA, QED |
-//! | `ecfp4` | ECFP4 fingerprint (2048-bit hex) |
-//! | `tanimoto` | ECFP4 Tanimoto similarity |
-//! | `smarts_match` | Substructure search |
-//! | `canonical_smiles` | Canonicalize SMILES |
-//! | `find_mcs` | Maximum common substructure |
-//! | `generate_3d` | 3D coordinates (XYZ) |
-//! | `retrosynthesis` | One-step BRICS disconnection, ranked by SA Score |
+//! 20 tools total; see `crates/chematic-mcp/README.md` for the full,
+//! categorized list with descriptions (kept there, not duplicated here, so
+//! there is exactly one place to update when a tool is added or changed).
+//! `tools::list_tools()` is the actual runtime source of truth.
 
 #![forbid(unsafe_code)]
 

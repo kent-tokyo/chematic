@@ -4,8 +4,16 @@ MCP (Model Context Protocol) server for chematic — call cheminformatics tools 
 
 ## Overview
 
-`chematic-mcp` exposes 15 cheminformatics tools via JSON-RPC 2.0 over stdio,
+`chematic-mcp` exposes 20 cheminformatics tools via JSON-RPC 2.0 over stdio,
 making them directly callable by Claude and other MCP-compatible AI agents.
+
+**Transport status**: stdio only. The server runs as a local OS process reading
+newline-delimited JSON-RPC 2.0 from stdin and writing responses to stdout —
+there is no hosted Remote MCP endpoint, no authentication, and no public
+service SLA. A remote-ready refactor (transport-neutral protocol handling, so
+a Streamable HTTP adapter could be added without rewriting tool logic) is
+under consideration but not implemented; nothing here is reachable over the
+network except the one tool noted below.
 
 ```toml
 [dependencies]
@@ -32,9 +40,12 @@ responses to stdout. Add it to your Claude Desktop or Claude Code MCP config:
 }
 ```
 
-## Available tools (15)
+## Available tools (20)
 
 ### Name resolution (requires internet)
+
+This is the **only** tool of the 20 that makes a network call. The other 19
+are pure local computation — see [Network & privacy](#network--privacy) below.
 
 | Tool | Description |
 |------|-------------|
@@ -84,6 +95,21 @@ responses to stdout. Add it to your Claude Desktop or Claude Code MCP config:
 |------|-------------|
 | `generate_3d` | 3D coordinates via rule-based placement + DREIDING minimization (XYZ) |
 
+### Retrosynthesis
+
+| Tool | Description |
+|------|-------------|
+| `retrosynthesis` | One-step BRICS disconnection, all breakable bonds cut individually, ranked by max fragment SA Score |
+
+### Format conversion & LLM integration
+
+| Tool | Description |
+|------|-------------|
+| `smiles_to_moljson` | SMILES → MolJSON (explicit atom/bond JSON representation for LLM consumption) |
+| `moljson_to_smiles` | MolJSON → canonical SMILES |
+| `representation_router` | Route SMILES to the molecular text representation best suited to a given LLM task (MolJSON/CML/InChI/canonical SMILES) |
+| `molecule_context_pack` | Assemble identifiers, properties, drug-likeness, ADMET, and MolJSON into a single LLM/RAG context object (json/markdown/prompt output) |
+
 ## Example call
 
 ```json
@@ -96,8 +122,21 @@ Response:
 {"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{\"gi_absorbed\":true,\"bbb_penetrant\":false,\"logp\":1.316,\"tpsa\":63.6,\"method\":\"BOILED-Egg (Daina & Zoete 2016)\"}"}]}}
 ```
 
+## Network & privacy
+
+- **19 of 20 tools are pure local computation** — no network I/O, no external
+  service dependency, nothing leaves the process.
+- **`name_to_smiles` is the one exception.** The chemical name string you pass
+  it is sent, URL-encoded, to the public PubChem REST API
+  (`pubchem.ncbi.nlm.nih.gov`) over HTTPS with a 10-second timeout. If PubChem
+  is unreachable, slow, or returns an unexpected response, the tool call
+  fails — it does not fall back to local computation, since there is none for
+  name resolution.
+- If you're working with proprietary or privacy-sensitive compound names,
+  be aware `name_to_smiles` is the only tool where your input crosses the
+  network; the other 19 never do.
+
 ## Design
 
-- **Mostly local** — 14 of 15 tools are pure computation with no network I/O. `name_to_smiles` is the exception (PubChem REST, requires internet).
 - **No unsafe code** — `#![forbid(unsafe_code)]` enforced.
 - **WASM-incompatible** — stdio transport requires OS process; use `chematic-wasm` for browser.

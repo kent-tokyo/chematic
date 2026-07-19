@@ -131,17 +131,19 @@ chematic は **MCP（Model Context Protocol）サーバー**をネイティブ�
 }
 ```
 
-MCP 対応エージェントから呼び出せる 15 の化学ツール：
+MCP 対応エージェントから呼び出せる 20 の化学ツール（全リストは [`chematic-mcp` README](crates/chematic-mcp/README.md) 参照）：
 
 | ツール | 機能 |
 |---|---|
-| `name_to_smiles` | 化合物名（"アスピリン"、"カフェイン"…）を PubChem 経由で SMILES に変換 |
-| `calc_properties` | MW、LogP、TPSA、HBA/HBD、QED、SA Score、pKa、ADMET |
+| `name_to_smiles` | 化合物名（"アスピリン"、"カフェイン"…）を PubChem 経由で SMILES に変換(外部通信を行う唯一のツール) |
+| `calc_properties` | MW、exact mass、Crippen LogP、TPSA、HBD、HBA、rotatable bonds、QED |
 | `smarts_match` | 部分構造検索 |
 | `pains_check` / `brenk_check` | アッセイ干渉・反応性フラグ付け |
-| `generate_3d` | 3D 座標生成（ETKDG + MMFF94） |
+| `generate_3d` | rule-based配置 + DREIDING力場最小化による3D座標生成 |
 | `find_mcs` | 最大共通部分構造 |
-| その他 9 ツール | `ecfp4`、`tanimoto`、`canonical_smiles`、`admet_profile`、`boiled_egg`、`sa_score`、`lipinski_check`… |
+| その他 13 ツール | `ecfp4`、`tanimoto`、`canonical_smiles`、`admet_profile`、`boiled_egg`、`sa_score`、`lipinski_check`、`retrosynthesis`、`smiles_to_moljson`、`moljson_to_smiles`、`representation_router`、`molecule_context_pack`、`parse_smiles` |
+
+**Transport**: stdio（標準入出力経由の JSON-RPC 2.0）のみ。ローカルプロセスとして動作し、公開された Remote MCP エンドポイント・認証・公開サービス SLA は存在しない。remote 対応のリファクタは検討中だが未実装。
 
 ---
 
@@ -203,7 +205,7 @@ npm パッケージ `@kent-tokyo/chematic` は **719 KB gzip** — RDKit.js の�
 | InChI / InChIKey                            | **あり** — 純 Rust（デフォルト）+ **IUPAC 準拠**（`native-inchi`）| C ライブラリ必要 | C ライブラリ必要 | C ライブラリ必要 |
 | **pKa 予測**                                | **あり（15 SMARTS ルール）**               | なし               | なし          | なし             |
 | **ADMET プロファイル + BOILED-Egg**         | **あり**                                   | 一部               | なし          | 一部             |
-| **MCP サーバー（AI エージェント API）**     | **あり — 20 ツール（Name→SMILES 含む）**  | なし               | なし          | なし             |
+| **MCP サーバー（AI エージェント API）**     | **あり — 20 ツール（Name→SMILES 含む、stdio のみ）**  | なし               | なし          | なし             |
 | IUPAC 名生成                                | **あり（25+ 化合物クラス）**               | なし               | なし          | 一部             |
 | メンテナンス（2026）                        | アクティブ                                 | アクティブ         | 最小限        | アクティブ       |
 
