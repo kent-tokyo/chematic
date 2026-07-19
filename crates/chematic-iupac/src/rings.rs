@@ -2,9 +2,135 @@
 
 use crate::helpers::{alkane_base, alkane_suffix, best_benzene_locants, find_bridge_sizes};
 use crate::{IupacError, Namer};
-use chematic_core::{AtomIdx, BondOrder, implicit_hcount};
+use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 use chematic_perception::{RingSystemKind, find_ring_families, find_sssr};
 use std::collections::{HashSet, VecDeque};
+
+/// A benzene ring substituent this crate can name with full confidence: a
+/// single non-aromatic, uncharged, unisotoped heavy atom bonded to the ring
+/// by a single bond, with nothing bonded past it. Anything else (an ester
+/// oxygen, a carboxyl carbon, a charged or isotopic atom, a chain that
+/// extends further) must NOT be forced into one of these buckets -- doing so
+/// is exactly the issue #92 bug (aspirin's -O-C(=O)CH3 misread as -OH,
+/// ibuprofen's -CH(CH3)CH2CH(CH3)2 misread as -CH3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SimpleBenzeneSubstituent {
+    Methyl,
+    Hydroxy,
+    Amino,
+    Fluoro,
+    Chloro,
+    Bromo,
+    Iodo,
+}
+
+impl SimpleBenzeneSubstituent {
+    pub(crate) fn prefix(self) -> &'static str {
+        match self {
+            Self::Methyl => "methyl",
+            Self::Hydroxy => "hydroxy",
+            Self::Amino => "amino",
+            Self::Fluoro => "fluoro",
+            Self::Chloro => "chloro",
+            Self::Bromo => "bromo",
+            Self::Iodo => "iodo",
+        }
+    }
+
+    /// Whether this group can be the parent characteristic group (phenol /
+    /// aniline) rather than always appearing as a substituent prefix.
+    pub(crate) fn is_principal(self) -> bool {
+        self.principal_root().is_some()
+    }
+
+    pub(crate) fn principal_root(self) -> Option<&'static str> {
+        match self {
+            Self::Hydroxy => Some("phenol"),
+            Self::Amino => Some("aniline"),
+            _ => None,
+        }
+    }
+
+    /// IUPAC seniority when two principal-eligible substituents compete for
+    /// the parent name on the same ring (alcohol outranks amine). Higher wins.
+    pub(crate) fn seniority(self) -> u8 {
+        match self {
+            Self::Hydroxy => 1,
+            Self::Amino => 0,
+            _ => 0,
+        }
+    }
+}
+
+/// Classify the substituent hanging off ring atom `attach`, accepting ONLY
+/// the exact shapes listed on [`SimpleBenzeneSubstituent`] -- methyl,
+/// hydroxy, amino, or a single halogen, each a lone neutral non-aromatic
+/// heavy atom bonded to the ring by a single bond, with the correct total H
+/// count and nothing bonded past it. Any substituent that extends further,
+/// carries a charge/isotope, or attaches via a non-single bond returns
+/// `None`, so the caller can fail safely with `NotSupported` instead of
+/// emitting a plausible-but-wrong name (issue #92).
+///
+/// This is the single classifier shared by both the disubstituted and
+/// trisubstituted benzene naming paths -- there is exactly one place that
+/// decides "is this really -OH", not two independently-maintained copies.
+pub(crate) fn classify_simple_benzene_substituent(
+    mol: &Molecule,
+    attach: AtomIdx,
+    ring_atoms: &HashSet<AtomIdx>,
+) -> Option<SimpleBenzeneSubstituent> {
+    let direct_heavy: Vec<AtomIdx> = mol
+        .neighbors(attach)
+        .filter(|(nb, _)| !ring_atoms.contains(nb) && mol.atom(*nb).element.atomic_number() != 1)
+        .map(|(nb, _)| nb)
+        .collect();
+    let [first] = direct_heavy[..] else {
+        return None;
+    };
+
+    let (bond_idx, _) = mol.bond_between(attach, first)?;
+    if mol.bond(bond_idx).order != BondOrder::Single {
+        return None;
+    }
+
+    let atom = mol.atom(first);
+    if atom.aromatic || atom.charge != 0 || atom.isotope.is_some() {
+        return None;
+    }
+
+    // The substituent must not extend past `first` -- its only heavy
+    // neighbor is the ring attachment atom itself. This single check rules
+    // out ether/ester oxygens, carboxyl/carbonyl carbons, and multi-atom
+    // chains without needing a separate per-group shape check for each.
+    let heavy_neighbors_of_first: Vec<AtomIdx> = mol
+        .neighbors(first)
+        .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() != 1)
+        .map(|(nb, _)| nb)
+        .collect();
+    if heavy_neighbors_of_first != [attach] {
+        return None;
+    }
+
+    // Total H = implicit (valence-derived) + any explicit `[H]` neighbor
+    // atoms, counted without overlap: implicit_hcount already subtracts the
+    // bond order of explicit-H neighbors from the valence sum.
+    let explicit_h = mol
+        .neighbors(first)
+        .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
+        .count() as u8;
+    let total_h = implicit_hcount(mol, first) + explicit_h;
+
+    match (atom.element.atomic_number(), total_h) {
+        (6, 3) => Some(SimpleBenzeneSubstituent::Methyl),
+        (8, 1) => Some(SimpleBenzeneSubstituent::Hydroxy),
+        (7, 2) => Some(SimpleBenzeneSubstituent::Amino),
+        (9, 0) => Some(SimpleBenzeneSubstituent::Fluoro),
+        (17, 0) => Some(SimpleBenzeneSubstituent::Chloro),
+        (35, 0) => Some(SimpleBenzeneSubstituent::Bromo),
+        (53, 0) => Some(SimpleBenzeneSubstituent::Iodo),
+        _ => None,
+    }
+}
 
 impl<'a> Namer<'a> {
     // -----------------------------------------------------------------------
@@ -192,46 +318,27 @@ impl<'a> Namer<'a> {
             dist.min(ring_vec.len() - dist)
         };
 
-        // Classify each substituent group.
-        let classify_sub = |attach: AtomIdx| -> Option<(&str, bool)> {
-            // Returns (substituent_name, is_principal)
-            // is_principal: true if this substituent determines the compound root name
-            // Collect sub atoms for this attachment (unused for now, just for documentation)
-            // Simple: just look at atoms directly bonded to attach that are not in ring
-            let direct: Vec<AtomIdx> = mol
-                .neighbors(attach)
-                .filter(|(nb, _)| !ring_atoms.contains(nb))
-                .map(|(nb, _)| nb)
-                .collect();
-            if direct.is_empty() {
-                return None;
-            }
-            let first = direct[0];
-            let an = mol.atom(first).element.atomic_number();
-            match an {
-                8 if !mol
-                    .neighbors(first)
-                    .any(|(_, bi)| mol.bond(bi).order == BondOrder::Double) =>
-                {
-                    Some(("hydroxy", true)) // -OH → phenol as principal
-                }
-                7 if implicit_hcount(mol, first) > 0 => Some(("amino", true)), // -NH2 → aniline
-                6 => Some(("methyl", false)), // -CH3 → toluene substituent
-                17 => Some(("chloro", false)),
-                35 => Some(("bromo", false)),
-                9 => Some(("fluoro", false)),
-                53 => Some(("iodo", false)),
-                _ => None,
-            }
-        };
+        // Classify each substituent group. Both attachment points must
+        // resolve to a fully-accounted-for shape (see
+        // classify_simple_benzene_substituent's doc comment) -- a partial
+        // match (e.g. an ester oxygen looking vaguely hydroxy-like) must
+        // fail the whole name, not silently drop the rest of the atoms.
+        let sub_a = classify_simple_benzene_substituent(mol, attach_points[0], ring_atoms)
+            .ok_or(IupacError::NotSupported)?;
+        let sub_b = classify_simple_benzene_substituent(mol, attach_points[1], ring_atoms)
+            .ok_or(IupacError::NotSupported)?;
 
-        let sub_a = classify_sub(attach_points[0]);
-        let sub_b = classify_sub(attach_points[1]);
-
-        let (sub_a, sub_b) = match (sub_a, sub_b) {
-            (Some(a), Some(b)) => (a, b),
-            _ => return Err(IupacError::NotSupported),
-        };
+        // Full heavy-atom coverage: the molecule must consist of exactly the
+        // ring atoms plus these 2 single-heavy-atom substituents. Without
+        // this, a molecule with extra unclassified atoms elsewhere (which
+        // can't happen via the two classify_simple_benzene_substituent calls
+        // above, since every substituent atom is on the ring) would still be
+        // guarded against by construction, but this makes the invariant
+        // explicit and future-proofs against a classifier that stops
+        // requiring direct ring attachment.
+        if mol.atom_count() != ring_atoms.len() + 2 {
+            return Err(IupacError::NotSupported);
+        }
 
         // Determine locant prefix (1,2= ortho, 1,3= meta, 1,4= para for 6-ring).
         let pos2 = ring_dist + 1; // position of the second substituent from first
@@ -239,48 +346,28 @@ impl<'a> Namer<'a> {
         // Build name: principal group determines root, non-principal is prefix.
         // When both substituents are principal-eligible (e.g. -OH and -NH2), IUPAC
         // seniority (alcohol > amine) breaks the tie — not attach-point scan order.
-        let principal_seniority = |name: &str| -> u8 {
-            match name {
-                "hydroxy" => 1,
-                "amino" => 0,
-                _ => 0,
-            }
-        };
-        let (prefix_sub, root_name) = if sub_a.1 && sub_b.1 {
-            let (principal, prefix) =
-                if principal_seniority(sub_a.0) >= principal_seniority(sub_b.0) {
-                    (sub_a.0, sub_b.0)
-                } else {
-                    (sub_b.0, sub_a.0)
-                };
-            let root = match principal {
-                "hydroxy" => "phenol",
-                "amino" => "aniline",
-                _ => return Err(IupacError::NotSupported),
+        let (prefix_sub, root_name) = if sub_a.is_principal() && sub_b.is_principal() {
+            let (principal, prefix) = if sub_a.seniority() >= sub_b.seniority() {
+                (sub_a, sub_b)
+            } else {
+                (sub_b, sub_a)
             };
-            (prefix, root)
-        } else if sub_a.1 {
+            let root = principal.principal_root().ok_or(IupacError::NotSupported)?;
+            (prefix.prefix(), root)
+        } else if sub_a.is_principal() {
             // sub_a is principal (phenol/aniline): prefix comes from sub_b
-            let root = match sub_a.0 {
-                "hydroxy" => "phenol",
-                "amino" => "aniline",
-                _ => return Err(IupacError::NotSupported),
-            };
-            (sub_b.0, root)
-        } else if sub_b.1 {
-            let root = match sub_b.0 {
-                "hydroxy" => "phenol",
-                "amino" => "aniline",
-                _ => return Err(IupacError::NotSupported),
-            };
-            (sub_a.0, root)
+            let root = sub_a.principal_root().ok_or(IupacError::NotSupported)?;
+            (sub_b.prefix(), root)
+        } else if sub_b.is_principal() {
+            let root = sub_b.principal_root().ok_or(IupacError::NotSupported)?;
+            (sub_a.prefix(), root)
         } else {
             // Neither is principal — both are substituents on benzene.
             // Alphabetically first substituent gets locant 1.
-            let (s1, s2) = if sub_a.0 <= sub_b.0 {
-                (sub_a.0, sub_b.0)
+            let (s1, s2) = if sub_a.prefix() <= sub_b.prefix() {
+                (sub_a.prefix(), sub_b.prefix())
             } else {
-                (sub_b.0, sub_a.0)
+                (sub_b.prefix(), sub_a.prefix())
             };
             return if s1 == s2 {
                 Ok(format!("1,{}-di{}benzene", pos2, s1))
@@ -310,22 +397,31 @@ impl<'a> Namer<'a> {
             return Err(IupacError::NotSupported);
         }
 
+        // Full heavy-atom coverage (issue #92): the molecule must consist of
+        // exactly the ring atoms plus 3 classified single-heavy-atom
+        // substituents -- checked up front so a downgrade below doesn't
+        // waste locant/grouping work on a molecule that can never name.
+        if mol.atom_count() != ring_atoms.len() + 3 {
+            return Err(IupacError::NotSupported);
+        }
+
         let locant_map = best_benzene_locants(mol, ring_atoms, &attach_points);
 
-        // Classify each substituent.
-        let mut sub_list: Vec<(usize, String)> = Vec::new();
+        // Classify each substituent using the SAME shape-strict classifier
+        // as the disubstituted path -- no second, independently-maintained
+        // "peek at the first atom" copy.
+        let mut sub_list: Vec<(usize, &'static str)> = Vec::new();
         for &(locant, attach) in &locant_map {
-            let sub = self
-                .classify_benzene_sub_simple(attach, ring_atoms)
+            let sub = classify_simple_benzene_substituent(mol, attach, ring_atoms)
                 .ok_or(IupacError::NotSupported)?;
-            sub_list.push((locant, sub));
+            sub_list.push((locant, sub.prefix()));
         }
 
         // Sort alphabetically by substituent name, then numerically by locant.
-        sub_list.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
+        sub_list.sort_by(|a, b| a.1.cmp(b.1).then(a.0.cmp(&b.0)));
 
         // Group identical substituents for di/tri multiplier.
-        let mut groups: Vec<(String, Vec<usize>)> = Vec::new();
+        let mut groups: Vec<(&'static str, Vec<usize>)> = Vec::new();
         for (locant, name) in sub_list {
             if let Some(last) = groups.last_mut()
                 && last.0 == name
@@ -354,34 +450,6 @@ impl<'a> Namer<'a> {
         }
 
         Ok(format!("{}benzene", parts.join("-")))
-    }
-
-    /// Classify a single benzene substituent by element type (for trisubstituted naming).
-    pub(crate) fn classify_benzene_sub_simple(
-        &self,
-        attach: AtomIdx,
-        ring_atoms: &HashSet<AtomIdx>,
-    ) -> Option<String> {
-        let mol = self.mol;
-        let direct: Vec<AtomIdx> = mol
-            .neighbors(attach)
-            .filter(|(nb, _)| !ring_atoms.contains(nb))
-            .map(|(nb, _)| nb)
-            .collect();
-        if direct.is_empty() {
-            return None;
-        }
-        let first = direct[0];
-        match mol.atom(first).element.atomic_number() {
-            6 => Some("methyl".to_string()),
-            7 => Some("amino".to_string()),
-            8 => Some("hydroxy".to_string()),
-            9 => Some("fluoro".to_string()),
-            17 => Some("chloro".to_string()),
-            35 => Some("bromo".to_string()),
-            53 => Some("iodo".to_string()),
-            _ => None,
-        }
     }
 
     // -----------------------------------------------------------------------
