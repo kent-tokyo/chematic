@@ -34,12 +34,26 @@ EXPECTED_H = {"C": 3, "O": 1, "N": 2, "F": 0, "Cl": 0, "Br": 0, "I": 0}
 
 
 def load(path):
+    """smiles -> (status, name). A duplicate SMILES line would otherwise be
+    silently collapsed to whichever occurrence came last (dict-assignment
+    overwrite) -- this gate's whole premise is "every input SMILES accounted
+    for in exactly one bucket" (see main()'s own assertion), so a duplicate
+    key is a data-integrity problem in the input TSV, not something to paper
+    over by picking one arbitrarily. Fail loudly instead."""
     rows = {}
     with open(path) as f:
-        for line in f:
+        for lineno, line in enumerate(f, start=1):
             parts = line.rstrip("\n").split("\t")
             smi, status = parts[0], parts[1]
             name = parts[2] if len(parts) > 2 else ""
+            if smi in rows:
+                print(
+                    f"FATAL: duplicate SMILES at {path}:{lineno}: {smi!r} "
+                    f"already seen as {rows[smi]!r}, now {status!r}/{name!r} -- "
+                    "refusing to silently overwrite one occurrence with the other",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
             rows[smi] = (status, name)
     return rows
 
