@@ -44,16 +44,14 @@ echo "baab record: $record_baab"
 
 rm -f "$out"
 
-# --- Stage-1 routing screen (issue #70 follow-up) ---
-# cmd_route_check replaced a sign test that could never fire at n=3 blocks
-# (see criterion_gate.sh's comment above cmd_route_check for the math). These
-# fixtures are the real block data from the +5%/+10% synthetic-regression CI
-# runs and a synthetic clean no-op, so a future accidental edit that breaks
-# routing shows up here without needing a real Criterion binary.
-extracted_route=$(mktemp)
-sed -n '/^cmd_route_check/,/^}/p' scripts/criterion_gate.sh > "$extracted_route"
-source "$extracted_route"
-rm -f "$extracted_route"
+# --- Shared ratio-summary/check-threshold/route-check (issue #70 follow-up) ---
+# route-check calls check-threshold and ratio-summary by name, so extract all
+# three together.
+extracted_shared=$(mktemp)
+sed -n '/^cmd_ratio_summary/,/^}/p;/^cmd_check_threshold/,/^}/p;/^cmd_route_check/,/^}/p' \
+  scripts/criterion_gate.sh > "$extracted_shared"
+source "$extracted_shared"
+rm -f "$extracted_shared"
 
 fixture_plus5=$(mktemp)
 cat > "$fixture_plus5" << 'EOF'
@@ -61,7 +59,7 @@ cat > "$fixture_plus5" << 'EOF'
 {"id":"2","baseline":-11710.817870733676,"candidate":-12516.890630251484}
 {"id":"3","baseline":-11776.024760778471,"candidate":-13441.09866163192}
 EOF
-[ "$(cmd_route_check "$fixture_plus5" 1.04)" = "route" ] || { echo "FAIL: +5% fixture (median +6.9%) should route"; exit 1; }
+[ "$(cmd_route_check "$fixture_plus5" 3 1.04)" = "route" ] || { echo "FAIL: +5% fixture (median +6.9%) should route"; exit 1; }
 rm -f "$fixture_plus5"
 
 fixture_plus10=$(mktemp)
@@ -70,8 +68,19 @@ cat > "$fixture_plus10" << 'EOF'
 {"id":"2","baseline":-11155.27769228296,"candidate":-12628.101260372696}
 {"id":"3","baseline":-11110.051949478835,"candidate":-12760.029773887674}
 EOF
-[ "$(cmd_route_check "$fixture_plus10" 1.04)" = "route" ] || { echo "FAIL: +10% fixture (median +13.5%) should route"; exit 1; }
+[ "$(cmd_route_check "$fixture_plus10" 3 1.04)" = "route" ] || { echo "FAIL: +10% fixture (median +13.5%) should route"; exit 1; }
 rm -f "$fixture_plus10"
+
+# +6% fixture (this PR's own required minimum test): clearly above the 1.04
+# routing threshold, must route.
+fixture_plus6=$(mktemp)
+cat > "$fixture_plus6" << 'EOF'
+{"id":"1","baseline":-10000.0,"candidate":-10600.0}
+{"id":"2","baseline":-10000.0,"candidate":-10620.0}
+{"id":"3","baseline":-10000.0,"candidate":-10580.0}
+EOF
+[ "$(cmd_route_check "$fixture_plus6" 3 1.04)" = "route" ] || { echo "FAIL: +6% fixture should route"; exit 1; }
+rm -f "$fixture_plus6"
 
 fixture_noop=$(mktemp)
 cat > "$fixture_noop" << 'EOF'
@@ -79,7 +88,7 @@ cat > "$fixture_noop" << 'EOF'
 {"id":"2","baseline":-11710.0,"candidate":-11690.0}
 {"id":"3","baseline":-11705.0,"candidate":-11720.0}
 EOF
-[ "$(cmd_route_check "$fixture_noop" 1.04)" = "no-route" ] || { echo "FAIL: clean no-op (mixed direction, sub-percent) should not route"; exit 1; }
+[ "$(cmd_route_check "$fixture_noop" 3 1.04)" = "no-route" ] || { echo "FAIL: clean no-op (mixed direction, sub-percent) should not route"; exit 1; }
 rm -f "$fixture_noop"
 
 # Regression test for a real incident: PR #117's own first CI run shipped a
@@ -98,15 +107,133 @@ cat > "$fixture_ecfp4_incident" << 'EOF'
 {"id":"2","baseline":-165755.31364862694,"candidate":-171745.03897197713}
 {"id":"3","baseline":-166218.16842646126,"candidate":-167825.3596853625}
 EOF
-[ "$(cmd_route_check "$fixture_ecfp4_incident" 1.04)" = "no-route" ] || { echo "FAIL: regression -- unanimous-but-under-threshold data must not route (issue #70 ecfp4_10mol false positive)"; exit 1; }
+[ "$(cmd_route_check "$fixture_ecfp4_incident" 3 1.04)" = "no-route" ] || { echo "FAIL: regression -- unanimous-but-under-threshold data must not route (issue #70 ecfp4_10mol false positive)"; exit 1; }
 rm -f "$fixture_ecfp4_incident"
 
-# Note: this script only unit-tests cmd_route_check's pure logic. The
-# workflow-level invariants (Stage 1 alone never sets any_fail; any_fail=1
-# only on a confirmed Stage 2 fail with a clean null control; a contaminated
-# null control suppresses any_fail even on a Stage 2 fail) live in
-# bench-pr-gate.yml's shell, not in this script, and are verified by code
-# inspection plus real CI run data (issue #70) rather than by this harness --
-# same scope limitation the original block-pairing tests above already had.
+# --- Strict validation (issue #70 follow-up): malformed/insufficient input
+# must fail loudly, never silently degrade to a default "no-route" ---
+
+empty_jsonl=$(mktemp)
+: > "$empty_jsonl"
+if cmd_route_check "$empty_jsonl" 3 1.04 >/dev/null 2>&1; then
+  echo "FAIL: empty Stage-1 jsonl should error, not return a verdict"; exit 1
+fi
+rm -f "$empty_jsonl"
+
+too_few=$(mktemp)
+cat > "$too_few" << 'EOF'
+{"id":"1","baseline":-100.0,"candidate":-100.5}
+{"id":"2","baseline":-101.0,"candidate":-99.0}
+EOF
+if cmd_route_check "$too_few" 3 1.04 >/dev/null 2>&1; then
+  echo "FAIL: 2-record file (expected 3) should error, not return a verdict"; exit 1
+fi
+rm -f "$too_few"
+
+too_many=$(mktemp)
+cat > "$too_many" << 'EOF'
+{"id":"1","baseline":-100.0,"candidate":-100.5}
+{"id":"2","baseline":-101.0,"candidate":-99.0}
+{"id":"3","baseline":-99.5,"candidate":-100.2}
+{"id":"4","baseline":-99.0,"candidate":-100.0}
+EOF
+if cmd_route_check "$too_many" 3 1.04 >/dev/null 2>&1; then
+  echo "FAIL: 4-record file (expected 3) should error, not return a verdict"; exit 1
+fi
+rm -f "$too_many"
+
+zero_baseline=$(mktemp)
+cat > "$zero_baseline" << 'EOF'
+{"id":"1","baseline":0.0,"candidate":-100.5}
+{"id":"2","baseline":-101.0,"candidate":-99.0}
+{"id":"3","baseline":-99.5,"candidate":-100.2}
+EOF
+if cmd_route_check "$zero_baseline" 3 1.04 >/dev/null 2>&1; then
+  echo "FAIL: baseline=0 should error (division by zero), not return a verdict"; exit 1
+fi
+rm -f "$zero_baseline"
+
+if cmd_check_threshold "0.5" >/dev/null 2>&1; then
+  echo "FAIL: threshold below 1 should be rejected"; exit 1
+fi
+
+# --- Stage 2 magnitude gate (issue #70 follow-up): the real ecfp4_10mol fix
+# stopped Stage 1 from routing on noise, but the very next CI run confirmed a
+# DIFFERENT benchmark (parse_smiles_10mol) via a legitimate route + a
+# sign-test fail driven by real-but-spurious ~2.2% build/codegen variance
+# between separately-compiled binaries -- Stage 2's sign-test alone is
+# magnitude-blind. These fixtures pin the practical-effect gate that
+# combines the sign-test verdict with a minimum median-ratio requirement. ---
+
+# Permanent regression fixture: the exact parse_smiles_10mol Stage 2 data
+# from the real incident (issue #70). Median ~1.022, all 10 blocks candidate
+# slower (a real sign-test "fail" from veridict) -- must NOT meet the 1.04
+# practical-effect threshold, so the final gate must not fail on this data.
+fixture_stage2_incident=$(mktemp)
+cat > "$fixture_stage2_incident" << 'EOF'
+{"id":"1","baseline":-9076.104372053887,"candidate":-9201.91136904256}
+{"id":"2","baseline":-8932.942526291896,"candidate":-9219.596574885541}
+{"id":"3","baseline":-8910.356356885584,"candidate":-9143.826173380521}
+{"id":"4","baseline":-8944.482964007622,"candidate":-9235.42058864827}
+{"id":"5","baseline":-8952.404397055447,"candidate":-9106.500793595658}
+{"id":"6","baseline":-8971.499186556917,"candidate":-9324.067453203195}
+{"id":"7","baseline":-8918.297767483793,"candidate":-9081.170864737667}
+{"id":"8","baseline":-9064.68757885133,"candidate":-9099.614237070064}
+{"id":"9","baseline":-9012.72747438855,"candidate":-9246.215896065525}
+{"id":"10","baseline":-9013.023872561964,"candidate":-9108.926275796783}
+EOF
+incident_median=$(cmd_ratio_summary "$fixture_stage2_incident" 10)
+# Loose float comparison via awk -- bash has no native float arithmetic.
+awk -v m="$incident_median" 'BEGIN { if (m < 1.021 || m > 1.023) exit 1; exit 0 }' \
+  || { echo "FAIL: expected median ~1.022 for the pinned incident fixture, got $incident_median"; exit 1; }
+awk -v m="$incident_median" 'BEGIN { exit !(m >= 1.04) }' \
+  && { echo "FAIL: regression -- pinned incident median ($incident_median) must stay below STAGE2_FAIL_THRESHOLD=1.04, or the final gate will start blocking spurious ~2.2% build noise again"; exit 1; }
+rm -f "$fixture_stage2_incident"
+
+# Sibling fixture: a real ~6% Stage 2 difference (well above 1.04) DOES meet
+# the practical-effect threshold -- confirms the gate isn't just permanently
+# disabled, only insensitive to sub-threshold noise.
+fixture_stage2_real=$(mktemp)
+cat > "$fixture_stage2_real" << 'EOF'
+{"id":"1","baseline":-10000.0,"candidate":-10600.0}
+{"id":"2","baseline":-10000.0,"candidate":-10610.0}
+{"id":"3","baseline":-10000.0,"candidate":-10590.0}
+{"id":"4","baseline":-10000.0,"candidate":-10620.0}
+{"id":"5","baseline":-10000.0,"candidate":-10580.0}
+{"id":"6","baseline":-10000.0,"candidate":-10605.0}
+{"id":"7","baseline":-10000.0,"candidate":-10595.0}
+{"id":"8","baseline":-10000.0,"candidate":-10615.0}
+{"id":"9","baseline":-10000.0,"candidate":-10585.0}
+{"id":"10","baseline":-10000.0,"candidate":-10600.0}
+EOF
+real_median=$(cmd_ratio_summary "$fixture_stage2_real" 10)
+awk -v m="$real_median" 'BEGIN { exit !(m >= 1.04) }' \
+  || { echo "FAIL: expected median ~1.06 (>= 1.04 threshold) for the real-effect fixture, got $real_median"; exit 1; }
+rm -f "$fixture_stage2_real"
+
+# Stage-2 strict validation, same shape as Stage 1's: exactly 10 records
+# required, not 9 or 11.
+stage2_too_few=$(mktemp)
+for i in 1 2 3 4 5 6 7 8 9; do
+  printf '{"id":"%d","baseline":-10000.0,"candidate":-10600.0}\n' "$i" >> "$stage2_too_few"
+done
+if cmd_ratio_summary "$stage2_too_few" 10 >/dev/null 2>&1; then
+  echo "FAIL: 9-record Stage-2 file (expected 10) should error"; exit 1
+fi
+rm -f "$stage2_too_few"
+
+# Note: this script unit-tests cmd_ratio_summary/cmd_check_threshold/
+# cmd_route_check's pure logic, including the exact incident data. The
+# workflow-level combination logic in bench-pr-gate.yml --
+#   any_fail=1 requires ALL of: Stage 1 routed (median >= STAGE1_ROUTE_THRESHOLD)
+#   AND Stage 2 sign-test verdict == fail AND Stage 2 median >= STAGE2_FAIL_THRESHOLD
+#   AND environment_contaminated == 0
+#   -- a sign-test fail below STAGE2_FAIL_THRESHOLD is small-effect-inconclusive, not blocking
+#   -- a sign-test fail with environment_contaminated == 1 is environment-inconclusive, not blocking
+#   -- Stage 1 alone never sets any_fail (no code path in the Stage 1 loop touches it)
+# -- lives in bench-pr-gate.yml's shell, not in this script, and is verified
+# by code inspection plus real CI run data (issue #70) rather than by this
+# harness -- same scope limitation the original block-pairing tests above
+# already had.
 
 echo "OK"
