@@ -1,6 +1,7 @@
 use chematic_smiles::{canonical_smiles, parse};
 use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
+use std::time::Instant;
 
 const BENCH_SMILES: &[&str] = &[
     "c1ccccc1",
@@ -15,11 +16,24 @@ const BENCH_SMILES: &[&str] = &[
     "OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O", // glucose
 ];
 
+// ponytail: issue #70 gate-sensitivity calibration only -- injects a synthetic
+// +5% regression by spin-looping for 5% of THIS iteration's own measured work
+// time, so the injected overhead is a true percentage regardless of runner
+// speed or thermal drift over the run (a calibrate-once-then-fixed-offset
+// variant was tried and is vulnerable to CPU frequency drift between
+// calibration and measurement -- re-measuring every iteration self-corrects).
+// Throwaway branch, never merges to main.
 fn bench_parse(c: &mut Criterion) {
     c.bench_function("parse_smiles_10mol", |b| {
         b.iter(|| {
+            let t0 = Instant::now();
             for s in BENCH_SMILES {
                 let _ = black_box(parse(black_box(s)));
+            }
+            let target = t0.elapsed() / 20; // 5%
+            let pad_start = Instant::now();
+            while pad_start.elapsed() < target {
+                black_box(0u64);
             }
         })
     });
