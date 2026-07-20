@@ -5,11 +5,32 @@
     "sum": 5041
   },
   "dominant_mechanism": "redundant_environment_mismatch",
-  "duplicate_input_ids": 0,
+  "duplicate_input_ids": {
+    "chematic_trace": 0,
+    "rdkit_oracle": 0
+  },
   "exact_match_rates": {
-    "bit_info_map": null,
-    "folded_2048_bit": 0.0,
-    "sparse_count": 91.6667
+    "bit_info_map": {
+      "conditional_exact_match_pct": null,
+      "coverage_pct": 0.0,
+      "evaluated": 0,
+      "hits": 0,
+      "total_inputs": 5041
+    },
+    "folded_2048_bit": {
+      "conditional_exact_match_pct": 0.0,
+      "coverage_pct": 1.7457,
+      "evaluated": 88,
+      "hits": 0,
+      "total_inputs": 5041
+    },
+    "sparse_count": {
+      "conditional_exact_match_pct": 91.6667,
+      "coverage_pct": 1.9044,
+      "evaluated": 96,
+      "hits": 88,
+      "total_inputs": 5041
+    }
   },
   "first_divergence_counts": {
     "atom_count_mismatch": 0,
@@ -29,11 +50,36 @@
   "input_counts": {
     "total": 5041
   },
-  "per_radius_agreement_pct": {
-    "radius0": 100.0,
-    "radius1": 99.9207,
-    "radius2": 100.0
+  "per_radius_agreement": {
+    "radius0": {
+      "agree": 5041,
+      "conditional_agreement_pct": 100.0,
+      "coverage_pct": 100.0,
+      "evaluated": 5041,
+      "total_inputs": 5041
+    },
+    "radius1": {
+      "agree": 5037,
+      "conditional_agreement_pct": 99.9207,
+      "coverage_pct": 100.0,
+      "evaluated": 5041,
+      "total_inputs": 5041
+    },
+    "radius2": {
+      "agree": 5037,
+      "conditional_agreement_pct": 100.0,
+      "coverage_pct": 99.9207,
+      "evaluated": 5037,
+      "total_inputs": 5041
+    }
   },
   "schema_version": "1",
-  "tanimoto_correlation_vs_rdkit": 0.9479
+  "tanimoto_correlation_vs_rdkit": {
+    "gating": false,
+    "pair_count": 44850,
+    "pearson_r": 0.9479,
+    "population_molecules": 5041,
+    "sample_molecules": 300,
+    "seed": 42
+  }
 }

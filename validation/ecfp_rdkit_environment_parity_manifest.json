@@ -1,5 +1,5 @@
 {
-  "chematic_commit_sha": "6e8df578286bb9076a3262a5ee5a0ee31bef5230",
+  "chematic_trace_sha256": "d731771cfc9fb2d5def67793c20eeffd610ac61fb3aeaa0b02cf35b0345d1ad6",
   "command_line": [
     "scripts/gen_ecfp_rdkit_environment_oracle.py",
     "--corpus",
@@ -7,15 +7,21 @@
     "--fixtures",
     "scripts/ecfp_rdkit_edge_fixtures.csv",
     "scripts/ecfp_rdkit_morgan_edge_fixtures.csv",
+    "--rows-out",
+    "/private/tmp/claude-501/-Users-k-tanabe-Documents-Documents-oss-rust-chematic/ee1b0d18-6958-4b03-bc7c-750280190f13/scratchpad/rdkit_oracle_full.jsonl",
     "--manifest-out",
     "validation/ecfp_rdkit_environment_parity_manifest.json"
   ],
+  "comparator_script_sha256": "ea1cbd514f676ed4fb156fa486974ddc30a83bb72b73a0a28df8cbfb3b997fba",
   "corpus_paths": [
     "~/Downloads/SMILES.csv"
   ],
   "corpus_sha256": {
     "~/Downloads/SMILES.csv": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
   },
+  "diagnostic_source_commit_sha": "004eb5e17bcbba40788e41bf4a40b426c06cabc0",
+  "diagnostic_source_tree_dirty": false,
+  "first_divergence_tsv_sha256": "b8e6ffea807a691dc97fde60f64aa1aa1b29a2e5f2302c438d33f2219df147f0",
   "fixture_paths": [
     "scripts/ecfp_rdkit_edge_fixtures.csv",
     "scripts/ecfp_rdkit_morgan_edge_fixtures.csv"
@@ -24,7 +30,7 @@
     "scripts/ecfp_rdkit_edge_fixtures.csv": "c5f183a3e0ecf632c3cc59f86767911106151189a4c982a0435ddbfe6ac160de",
     "scripts/ecfp_rdkit_morgan_edge_fixtures.csv": "51d453e980f4b74dd41e4706714159e4ebe47e0acbe15383ef13939947df26e1"
   },
-  "generated_at_utc": "2026-07-20T02:44:27.710086+00:00",
+  "generated_at_utc": "2026-07-20T03:10:38.352924+00:00",
   "input_count": 5041,
   "morgan_options": {
     "countSimulation": false,
@@ -35,9 +41,13 @@
     "radius": 2,
     "useBondTypes": true
   },
-  "morgan_options_note": "GetMorganGenerator(radius=2, fpSize=2048, includeChirality=False, useBondTypes=True, onlyNonzeroInvariants=False, includeRedundantEnvironments=False) + GetFingerprint() confirmed bit-identical to legacy AllChem.GetMorganFingerprintAsBitVect(mol, 2, 2048) -- verified interactively against RDKit 2026.03.3, on-bit sets equal.",
+  "morgan_options_note": "GetMorganGenerator(radius=2, fpSize=2048, includeChirality=False, useBondTypes=True, onlyNonzeroInvariants=False, includeRingMembership=True, includeRedundantEnvironments=False) + GetFingerprint() confirmed bit-identical to legacy AllChem.GetMorganFingerprintAsBitVect(mol, 2, 2048) -- verified interactively against RDKit 2026.03.3, on-bit sets equal.",
+  "oracle_generator_script_sha256": "9d32eebe33952f815ccc1a5008030212baa0cb66270343b35b1989f174a780eb",
   "oracle_row_count": 5041,
   "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "rdkit_oracle_rows_sha256": "3efd3e747f774f24ddbf6305cd75d5bfc0e984e38ff932a027c49ddc22d48329",
   "rdkit_version": "2026.03.3",
-  "schema_version": "1"
+  "rows_sha256": "c2f9e3430333be1e4c7f99f97f3bf4dcb019ded3aae611772f1d87ac40ed1715",
+  "schema_version": "1",
+  "summary_sha256": "6ff0475e6adbd6f7e842a0294e3e1363dfe15e56abdb99393e39689d0d9a3513"
 }
