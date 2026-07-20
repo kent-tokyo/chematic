@@ -1,20 +1,31 @@
 {
-  "accounted_rows": 5048,
-  "bucket_counts": {
-    "bitinfo_mismatch": 0,
-    "both_parse_fail": 0,
-    "exact_match": 5048,
-    "folded_bit_mismatch": 0,
-    "parse_mismatch": 0,
-    "radius0_numeric_mismatch": 0,
-    "radius1_numeric_mismatch": 0,
-    "radius2_numeric_mismatch": 0,
-    "representative_selection_mismatch": 0,
-    "sparse_count_mismatch": 0
+  "error_rows": [
+    {
+      "aromaticity_error": "rdkit-parity aromaticity: kekulization failed: atom 16 (N) cannot be assigned a double bond",
+      "aromaticity_status": "rdkit_parity_kekulization_failed",
+      "row_id": 2150,
+      "smiles": "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C"
+    },
+    {
+      "aromaticity_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+      "aromaticity_status": "rdkit_parity_kekulization_failed",
+      "row_id": 5010,
+      "smiles": "c1cc[nH+]cc1"
+    }
+  ],
+  "exact_match_among_rdkit_parity_success": 5046,
+  "exact_match_pct_among_rdkit_parity_success": 1.0,
+  "hueckel_control_on_parity_errors": {
+    "evaluated": 2,
+    "exact_match": 2,
+    "gating": false
   },
-  "full_exact_match_rate": 1.0,
-  "gate_failures": [],
-  "gate_passed": true,
-  "radius0_exact_match_rate": 1.0,
-  "total_rows": 5048
+  "hueckel_radius1_residuals": 59,
+  "non_exact_rdkit_parity_success_row_ids": [],
+  "not_evaluable_due_to_aromaticity_error": 0,
+  "rdkit_parity_error": 2,
+  "rdkit_parity_success": 5046,
+  "resolved_by_rdkit_parity": 59,
+  "still_mismatching": 0,
+  "total_inputs": 5048
 }

@@ -142,21 +142,29 @@ fn connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_set: &RingSet) -> u
 /// `MorganBondInvGenerator::getBondInvariants`, `useBondTypes=true,
 /// useChirality=false` branch only (this diagnostic's pinned oracle config —
 /// see the module docs). Source: `FingerprintUtil.cpp`. Value is
-/// `static_cast<int32_t>(bond->getBondType())` reinterpreted as `uint32_t`:
-/// SINGLE=1, DOUBLE=2, TRIPLE=3, QUADRUPLE=4, AROMATIC=**12** — RDKit's own
-/// `Bond::BondType` enum ordinal, independently source-quoted this session
-/// for SINGLE/DOUBLE/TRIPLE/AROMATIC only; QUADRUPLE=4 follows the same
-/// well-known public enum ordering but was not itself re-quoted from source
-/// this session (flagged in the M4-A0 report, not expected to matter: no
-/// quadruple bonds are expected in the SMILES corpus). **Not** chematic's
-/// own `bond_type_int` (`ecfp.rs`), whose AROMATIC=4 collides with RDKit's
-/// own QUADRUPLE value — reusing it here would silently misclassify every
-/// aromatic bond.
+/// `static_cast<int32_t>(bond->getBondType())` reinterpreted as `uint32_t`,
+/// i.e. RDKit's own `Bond::BondType` C++ enum ordinal (`Code/GraphMol/Bond.h`,
+/// commit `8afba32e...`, verbatim: `UNSPECIFIED=0, SINGLE, DOUBLE, TRIPLE,
+/// QUADRUPLE, QUINTUPLE, HEXTUPLE, ONEANDAHALF, TWOANDAHALF, THREEANDAHALF,
+/// FOURANDAHALF, FIVEANDAHALF, AROMATIC, IONIC, HYDROGEN, THREECENTER,
+/// DATIVEONE, DATIVE, DATIVEL, DATIVER, OTHER, ZERO` — only `UNSPECIFIED`
+/// has an explicit value, the rest auto-increment): SINGLE=1, DOUBLE=2,
+/// TRIPLE=3, QUADRUPLE=4, AROMATIC=**12**, DATIVE=17, ZERO=21 — every value
+/// used below independently source-quoted this session, none guessed.
+/// **Not** chematic's own `bond_type_int` (`ecfp.rs`), whose AROMATIC=4
+/// collides with RDKit's own QUADRUPLE value — reusing it here would
+/// silently misclassify every aromatic bond.
 ///
-/// Dative/Query* `BondOrder` variants are chematic-internal/SMARTS-only bond
-/// kinds that cannot appear in a SMILES-parsed molecule (this diagnostic's
-/// entire corpus) — mapped to `u32::MAX`, a deliberately out-of-band
-/// placeholder, not a guessed real RDKit enum value.
+/// Chematic's `BondOrder::Query*` variants are SMARTS-pattern-only bond
+/// kinds with no RDKit `BondType` counterpart at all (not merely
+/// unverified — RDKit's `BondType` enum has no query concept; SMARTS bond
+/// queries are a distinct RDKit type) and cannot appear in a SMILES-parsed
+/// molecule (this diagnostic's entire corpus) — mapped to `u32::MAX`, a
+/// deliberately out-of-band placeholder. A future production API must
+/// treat these (and any other value this function can't map to a real
+/// RDKit `BondType`) as an explicit `Err`, never an implicit/guessed
+/// mapping — see `docs/`'s M4-A0 report for the exact error-type
+/// requirement.
 fn bond_invariant(order: BondOrder) -> u32 {
     match order {
         BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
@@ -164,9 +172,9 @@ fn bond_invariant(order: BondOrder) -> u32 {
         BondOrder::Triple => 3,
         BondOrder::Quadruple => 4,
         BondOrder::Aromatic => 12,
-        BondOrder::Zero
-        | BondOrder::Dative
-        | BondOrder::QueryAny
+        BondOrder::Dative => 17,
+        BondOrder::Zero => 21,
+        BondOrder::QueryAny
         | BondOrder::QuerySingleOrDouble
         | BondOrder::QuerySingleOrAromatic
         | BondOrder::QueryDoubleOrAromatic => u32::MAX,

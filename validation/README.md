@@ -125,32 +125,61 @@ Ported directly from RDKit's real C++ source, commit
 (the true resolution of tag `Release_2026_03_4`, independently verified via
 the GitHub tags API this session -- see `THIRD_PARTY_NOTICES.md` for the
 attribution and the note on two other, imprecise SHAs already in this
-project's history under the same tag label).
+project's history under the same tag label, since fixed in place).
+
+**Two aromaticity-preprocessing paths were compared, and their results are
+NOT pooled into one number** -- an earlier draft of this section did pool
+them (a Hueckel fallback silently substituted for 2 rows where the
+RDKit-parity engine failed, then counted as an RDKit-parity "match"),
+which is exactly the measurement accident
+[`apply_aromaticity_rdkit_parity_experimental`]'s own `Result` contract
+exists to prevent. Corrected: every row is tagged with an explicit
+`aromaticity_status`, and the RDKit-parity exact-match rate is computed
+ONLY over rows where that engine actually succeeded.
 
 **Results (5,048-input set = 5,000-mol corpus + PR #120's 41 fixtures + PR
-#123's 4 fixtures + `ecfp_rdkit_m4a0_hash_fixtures.csv`'s 3, production
-Hueckel aromaticity applied before hashing):**
+#123's 4 fixtures + `ecfp_rdkit_m4a0_hash_fixtures.csv`'s 3):**
 
-| Metric | Result |
-|---|---|
-| Radius-0 numeric exact match | 5,048/5,048 (100%) |
-| Full numeric exact match (radius 0-2, representative selection, sparse counts, folded bits, bitInfo) | 4,989/5,048 (98.83%) |
-| Residual (59/5,048), re-run with `apply_aromaticity_rdkit_parity_experimental` instead of production Hueckel aromaticity | 5,048/5,048 (100%), 0 new mismatches among the other 4,989, 2/5,048 fell back to Hueckel on kekulization failure |
-| PR #123's 9 unique representative-selection residuals | all 9 resolve to `exact_match` under the RDKit-exact hash alone (no aromaticity-engine swap needed) |
-| PR #123's Kekule-pyridine sparse-count-shape mismatch (`C1=CC=NC=C1`) | resolves to `exact_match`; confirms the documented root cause (FNV-1a-specific hash collision, not a suppression defect) |
-| Production API byte-identical (`ecfp_regression_snapshot`, before/after SHA-256) | confirmed, 0 change |
-| Oracle regeneration determinism (`--verify-determinism`, full 5,048 input) | byte-identical across two runs |
-| Positive controls (radius-0/1 identifier, bond invariant, 32-bit-wrapping removal, representative swap, folded-bit, dropped row, duplicate row ID) | all 8 correctly cause non-zero exit; reverted, never committed |
+| Path | Metric | Result |
+|---|---|---|
+| Production Hueckel aromaticity | Radius-0 numeric exact match | 5,048/5,048 (100%) |
+| Production Hueckel aromaticity | Full numeric exact match (radius 0-2, representative selection, sparse counts, folded bits, bitInfo) | 4,989/5,048 (98.83%) |
+| RDKit-parity aromaticity (`apply_aromaticity_rdkit_parity_experimental`, no fallback) | Preprocessing succeeded | 5,046/5,048 |
+| RDKit-parity aromaticity | Preprocessing failed (`KekulizationFailed`, both pinned as fixtures -- see below) | 2/5,048 |
+| RDKit-parity aromaticity | Full numeric exact match **among the 5,046 successful rows** | **5,046/5,046 (100%)** |
+| RDKit-parity aromaticity | Non-exact among successful rows | 0 |
+| Hueckel control on JUST the 2 error rows (non-gating -- answers "does the OLD path agree with RDKit here", not "does RDKit-parity work here") | Exact match | 2/2 |
+| PR #123's 9 unique representative-selection residuals | Resolve to `exact_match` under the RDKit-exact hash alone (no aromaticity-engine swap needed) | 9/9 |
+| PR #123's Kekule-pyridine sparse-count-shape mismatch (`C1=CC=NC=C1`) | Resolves to `exact_match`; confirms the documented root cause (FNV-1a-specific hash collision, not a suppression defect) | resolved |
+| Production API byte-identical (`ecfp_regression_snapshot`, before/after SHA-256) | confirmed | 0 change |
+| Oracle regeneration determinism (`--verify-determinism`, full 5,048 input) | byte-identical across two runs | confirmed |
+| Positive controls (radius-0/1 identifier, bond invariant, 32-bit-wrapping removal, representative swap, folded-bit, dropped row, duplicate row ID) | all correctly cause non-zero exit; reverted, never committed | 8/8 |
 
-The entire 59/5,048 (1.17%) residual under production Hueckel aromaticity
-traces to ONE mechanism: chematic's Hueckel-based aromaticity *perception*
-disagreeing with RDKit's own aromaticity model on specific fused/macrocyclic
-ring systems (e.g. `C[Si](C)(C)c1ccc(C2=Cc3ccccc3C3=NCCCN23)cc1`) -- not a
-hash defect. This project already has a dedicated RDKit-parity aromaticity
-engine (`apply_aromaticity_rdkit_parity_experimental`,
-`crates/chematic-perception/src/rdkit_parity.rs`) built for exactly this
-kind of disagreement; feeding it instead of production `apply_aromaticity`
-resolves the residual to 0 with no regressions anywhere else in the corpus.
+**Cross-referencing the 59 Hueckel-path residuals against the RDKit-parity
+path, row by row (not just comparing aggregate counts):** all 59 had
+RDKit-parity preprocessing succeed, and all 59 became `exact_match` under
+it -- `resolved_by_rdkit_parity: 59, not_evaluable_due_to_aromaticity_error:
+0, still_mismatching: 0`. Neither of the 2 RDKit-parity error rows
+overlaps with the 59 Hueckel residuals (they were already exact matches
+under Hueckel).
+
+The 59-row residual under production Hueckel aromaticity traces to ONE
+mechanism: chematic's Hueckel-based aromaticity *perception* disagreeing
+with RDKit's own aromaticity model on specific fused/macrocyclic ring
+systems (e.g. `C[Si](C)(C)c1ccc(C2=Cc3ccccc3C3=NCCCN23)cc1`) -- not a hash
+defect. `apply_aromaticity_rdkit_parity_experimental`
+(`crates/chematic-perception/src/rdkit_parity.rs`, built for exactly this
+kind of disagreement, in an earlier milestone) resolves it.
+
+**The 2 RDKit-parity preprocessing failures are pinned as permanent
+fixtures**, not just recorded in a JSON summary --
+`scripts/ecfp_rdkit_m4a0_rdkit_parity_kekulization_gap_fixtures.csv`, plus
+`chematic-perception::rdkit_parity::tests::known_kekulize_gap_protonated_pyridinium`
+(the second is new; `Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C` was already a pinned
+gap case, `production_api_does_not_mutate_input_on_failure`) -- so a future
+kekulization fix is verified against the actual engine returning `Ok`, not
+just a number changing. Neither fixture is a corpus/fixture duplicate
+(each SMILES appears exactly once across the whole 5,048-input set).
 
 A real bug in this diagnostic's own trace logic was found and fixed during
 this milestone (not a hash defect either): an early version shared one
@@ -165,26 +194,31 @@ passes and merging by `(atom, radius)` key; regression-pinned in
 
 - **Files:** `ecfp_rdkit_raw_identifier_parity_summary.json` (production
   Hueckel aromaticity run), `ecfp_rdkit_raw_identifier_parity_aromaticity_variant_summary.json`
-  (RDKit-parity aromaticity engine, full corpus), `ecfp_rdkit_raw_identifier_parity_oracle_manifest.json`
+  (RDKit-parity aromaticity engine, full corpus, honest success/error
+  denominators), `ecfp_rdkit_raw_identifier_parity_oracle_manifest.json`
 - **Reference tool:** RDKit 2026.03.3 (`rdFingerprintGenerator.GetMorganGenerator`,
   `includeRedundantEnvironments` True and False variants; same pinned option
   set as every other Morgan-parity mode in this crate)
 - **How to regenerate:** `python scripts/gen_ecfp_rdkit_environment_oracle.py`
   + `cargo run -p chematic-fp --release --features diagnostics --example
   rdkit_morgan_hash_dump` + `python scripts/ecfp_rdkit_raw_identifier_parity.py`
-  (see each script's docstring for exact invocation). Residual-mechanism
-  confirmation: `cargo run -p chematic-fp --release --features diagnostics
-  --example rdkit_morgan_hash_dump_aromaticity_variant`.
+  (see each script's docstring for exact invocation). RDKit-parity-engine
+  comparison (no Hueckel fallback): `cargo run -p chematic-fp --release
+  --features diagnostics --example rdkit_morgan_hash_dump_aromaticity_variant`
+  + `python scripts/ecfp_rdkit_raw_identifier_parity_aromaticity_variant.py`.
 
-**Scope for a future implementation PR** (not started): promote
-`rdkit_morgan_hash.rs`'s reference engine to a real, RDKit-compatible raw
-Morgan identifier API (`_rdkit_hash_experimental`-scoped, not touching
-`ecfp4()`/`ecfp4_rdkit_invariants()`), covering raw ID generation,
-representative selection, sparse-count-map, folded-bit, and bitInfo parity
--- gated on first resolving which aromaticity engine such an API should use
-(production Hueckel, with its documented ~1% fused/macrocyclic gap, or the
-RDKit-parity engine, which is currently `Result`-fallible and unproven
-outside this corpus).
+**Scope for a future implementation PR** (not started, and explicitly
+constrained by this milestone's findings): promote `rdkit_morgan_hash.rs`'s
+reference engine to a real, RDKit-compatible ECFP4 (radius=2 only -- this
+milestone never compared radius 3, so ECFP6 must not be added yet) API,
+using `apply_aromaticity_rdkit_parity_experimental` internally as a
+fallible `Result` step with **no Hueckel fallback** (matching the measured
+result above: bit-exact where preprocessing succeeds, explicit `Err`
+where it doesn't -- not a blend of the two). Any `BondOrder` this engine
+cannot map to a real RDKit `BondType` (verified this session: SINGLE=1,
+DOUBLE=2, TRIPLE=3, QUADRUPLE=4, AROMATIC=12, DATIVE=17, ZERO=21; only
+chematic's SMARTS-only `Query*` variants have no RDKit equivalent) must
+also be an explicit `Err`, never an implicit/guessed mapping.
 
 ## Summary results
 

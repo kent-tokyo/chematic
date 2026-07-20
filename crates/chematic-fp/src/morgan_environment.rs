@@ -10,6 +10,19 @@
 //! `Code/GraphMol/Fingerprints/MorganGenerator.cpp`,
 //! `MorganEnvGenerator<OutputType>::getEnvironments`, commit
 //! [`0062b670640352ab63d6256be608615e87e1af53`](https://github.com/rdkit/rdkit/blob/0062b670640352ab63d6256be608615e87e1af53/Code/GraphMol/Fingerprints/MorganGenerator.cpp).
+//! That commit is **not** an ancestor of release tag `Release_2026_03_4`
+//! (which resolves to `8afba32ec539dcb2369bc84549d802aca3f7eb39`,
+//! independently verified via the GitHub tags API during Morgan M4-A0) —
+//! diverged history, not a simple predecessor. Independently diffed during
+//! M4-A0's provenance audit: the file as a whole differs by one unrelated
+//! line in a different function (`updateAdditionalOutput`'s `bitId`
+//! parameter type), but `getEnvironments` itself — the function this module
+//! actually ports — is byte-identical between the two commits, so the
+//! algorithm above is unaffected. See [`crate::rdkit_morgan_hash`]'s module
+//! docs and `THIRD_PARTY_NOTICES.md` for the full three-citation picture
+//! (this module, `chematic-perception`'s aromaticity port, and
+//! `rdkit_morgan_hash.rs` each cite a different commit under the same
+//! `Release_2026_03_4` label).
 //!
 //! Per molecule: radius 0 is emitted unconditionally for every atom (no
 //! suppression concept at round 0). For each subsequent layer (0-indexed,
