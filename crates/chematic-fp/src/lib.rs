@@ -18,6 +18,7 @@ pub mod avalon;
 pub mod bitvec;
 pub mod bulk;
 pub mod ecfp;
+mod ecfp_diagnostics;
 pub mod erg;
 pub mod fcfp;
 pub mod hdf;
@@ -43,6 +44,15 @@ pub use ecfp::{
     ecfp_with_bitinfo_and_mode, ecfp_with_invariant_mode, ecfp4, ecfp4_rdkit_invariants, ecfp6,
     ecfp6_rdkit_invariants, morgan_fp_counts, tanimoto_ecfp4,
 };
+/// Diagnostic-only APIs, not meant for production use — a per-`(atom,
+/// radius)` trace of chematic's real Morgan expansion, for the RDKit
+/// environment-parity oracle. Gated behind the `diagnostics` feature. See
+/// `scripts/ecfp_rdkit_environment_parity.py`.
+#[cfg(feature = "diagnostics")]
+#[doc(hidden)]
+pub mod diagnostics {
+    pub use crate::ecfp_diagnostics::{MorganTraceEntry, atom_ball, morgan_trace};
+}
 pub use erg::{
     ERG_VEC_LEN, ErgAtomType, ErgBondType, ErgConfig, ErgFingerprint, cosine_erg_vec, erg,
     erg_extended, erg_vec, erg_with_config, tanimoto_erg, tanimoto_erg_vec,

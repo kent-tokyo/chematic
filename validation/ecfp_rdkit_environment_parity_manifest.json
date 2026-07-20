@@ -1,0 +1,43 @@
+{
+  "chematic_commit_sha": "6e8df578286bb9076a3262a5ee5a0ee31bef5230",
+  "command_line": [
+    "scripts/gen_ecfp_rdkit_environment_oracle.py",
+    "--corpus",
+    "~/Downloads/SMILES.csv",
+    "--fixtures",
+    "scripts/ecfp_rdkit_edge_fixtures.csv",
+    "scripts/ecfp_rdkit_morgan_edge_fixtures.csv",
+    "--manifest-out",
+    "validation/ecfp_rdkit_environment_parity_manifest.json"
+  ],
+  "corpus_paths": [
+    "~/Downloads/SMILES.csv"
+  ],
+  "corpus_sha256": {
+    "~/Downloads/SMILES.csv": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "fixture_paths": [
+    "scripts/ecfp_rdkit_edge_fixtures.csv",
+    "scripts/ecfp_rdkit_morgan_edge_fixtures.csv"
+  ],
+  "fixture_sha256": {
+    "scripts/ecfp_rdkit_edge_fixtures.csv": "c5f183a3e0ecf632c3cc59f86767911106151189a4c982a0435ddbfe6ac160de",
+    "scripts/ecfp_rdkit_morgan_edge_fixtures.csv": "51d453e980f4b74dd41e4706714159e4ebe47e0acbe15383ef13939947df26e1"
+  },
+  "generated_at_utc": "2026-07-20T02:44:27.710086+00:00",
+  "input_count": 5041,
+  "morgan_options": {
+    "countSimulation": false,
+    "fpSize": 2048,
+    "includeChirality": false,
+    "includeRingMembership": true,
+    "onlyNonzeroInvariants": false,
+    "radius": 2,
+    "useBondTypes": true
+  },
+  "morgan_options_note": "GetMorganGenerator(radius=2, fpSize=2048, includeChirality=False, useBondTypes=True, onlyNonzeroInvariants=False, includeRedundantEnvironments=False) + GetFingerprint() confirmed bit-identical to legacy AllChem.GetMorganFingerprintAsBitVect(mol, 2, 2048) -- verified interactively against RDKit 2026.03.3, on-bit sets equal.",
+  "oracle_row_count": 5041,
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "rdkit_version": "2026.03.3",
+  "schema_version": "1"
+}

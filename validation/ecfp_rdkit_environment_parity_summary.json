@@ -1,0 +1,39 @@
+{
+  "bucket_sum_check": {
+    "input_total": 5041,
+    "ok": true,
+    "sum": 5041
+  },
+  "dominant_mechanism": "redundant_environment_mismatch",
+  "duplicate_input_ids": 0,
+  "exact_match_rates": {
+    "bit_info_map": null,
+    "folded_2048_bit": 0.0,
+    "sparse_count": 91.6667
+  },
+  "first_divergence_counts": {
+    "atom_count_mismatch": 0,
+    "bit_info_mismatch": 0,
+    "chematic_parse_fail": 0,
+    "exact_match": 0,
+    "folding_mismatch": 88,
+    "initial_invariant_mismatch": 0,
+    "radius1_environment_membership_mismatch": 0,
+    "radius1_identifier_mismatch": 4,
+    "radius2_environment_membership_mismatch": 0,
+    "radius2_identifier_mismatch": 0,
+    "rdkit_parse_fail": 0,
+    "redundant_environment_mismatch": 4941,
+    "sparse_count_mismatch": 8
+  },
+  "input_counts": {
+    "total": 5041
+  },
+  "per_radius_agreement_pct": {
+    "radius0": 100.0,
+    "radius1": 99.9207,
+    "radius2": 100.0
+  },
+  "schema_version": "1",
+  "tanimoto_correlation_vs_rdkit": 0.9479
+}

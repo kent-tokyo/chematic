@@ -21,6 +21,21 @@ A random sample from ChEMBL used for large-scale agreement testing on HBA, HBD, 
 - **File:** external (not committed; requires download)
 - **Reproduce:** `python scripts/bench5k.py ~/Downloads/SMILES.csv`
 
+### Morgan/ECFP RDKit environment-parity diagnostic (5,000-mol corpus + 41 fixtures)
+
+Locates, per molecule, the first stage at which chematic's Morgan/ECFP expansion diverges
+from RDKit's (radius-0/1/2 invariants, redundant-environment suppression, sparse counts,
+2048-bit folding, bitInfo). Diagnostic only -- production `ecfp4()`/`ecfp6()`/
+`morgan_fp_counts()` are unchanged.
+
+- **Files:** `ecfp_rdkit_environment_parity_manifest.json`, `_summary.json`,
+  `_rows.jsonl` (41 edge-fixture molecules), `_first_divergence.tsv` (full 5,041-input run)
+- **Reference tool:** RDKit 2026.03.3 (`rdFingerprintGenerator.GetMorganGenerator`)
+- **How to regenerate:** `python scripts/gen_ecfp_rdkit_environment_oracle.py` +
+  `cargo run -p chematic-fp --release --features diagnostics --example
+  morgan_rdkit_environment_trace` + `python scripts/ecfp_rdkit_environment_parity.py`
+  (see each script's docstring for exact invocation)
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.
