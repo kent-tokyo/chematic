@@ -264,6 +264,46 @@ fn parse_sdf_with_coords(text: &str) -> Vec<(Mol, String, Vec<Vec<f64>>)> {
         .collect()
 }
 
+/// Parse an MRV block and return the molecule with its 2D/3D layout coordinates.
+///
+/// Returns a 3-tuple ``(mol, coords_2d, coords_3d)`` -- either list is
+/// empty if the source file didn't carry that dimensionality.
+///
+/// Use :func:`from_mrv_block` if you only need the molecule graph.
+/// Use this function to preserve the layout for round-trip via
+/// :meth:`Mol.to_mrv_block_with_coords`.
+///
+///     mol, coords_2d, coords_3d = chematic.from_mrv_block_with_coords(block)
+///     new_block = mol.to_mrv_block_with_coords(coords_2d, coords_3d)
+#[pyfunction]
+#[allow(clippy::type_complexity)]
+fn from_mrv_block_with_coords(mrv_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>, Vec<Vec<f64>>)> {
+    chematic_mol::parse_mrv(mrv_str)
+        .map(|rec| {
+            let coords_2d: Vec<Vec<f64>> = rec
+                .coordinates_2d
+                .unwrap_or_default()
+                .iter()
+                .map(|c| vec![c[0], c[1]])
+                .collect();
+            let coords_3d: Vec<Vec<f64>> = rec
+                .coordinates_3d
+                .unwrap_or_default()
+                .iter()
+                .map(|c| vec![c[0], c[1], c[2]])
+                .collect();
+            (
+                Mol {
+                    inner: Arc::new(rec.mol),
+                    props: Default::default(),
+                },
+                coords_2d,
+                coords_3d,
+            )
+        })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Parse a Chemical Markup Language (CML) string into a ``Mol`` object.
 ///
 /// Raises ``ValueError`` on parse failure.
@@ -275,6 +315,26 @@ fn from_cml(cml_str: &str) -> PyResult<Mol> {
     chematic_mol::parse_cml(cml_str)
         .map(|(mol, _coords)| Mol {
             inner: Arc::new(mol),
+            props: Default::default(),
+        })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Parse a ChemAxon Marvin (.mrv) string into a ``Mol`` object.
+///
+/// S-groups, polymers, reactions, multicenter bonds, query atoms/bonds,
+/// R-groups, enhanced stereo groups, and embedded/compressed data are
+/// deliberately unsupported and raise ``ValueError`` (see
+/// ``chematic_mol::mrv`` for the full scope boundary), same as any other
+/// parse failure.
+///
+///     with open("molecule.mrv") as f:
+///         mol = chematic.from_mrv_block(f.read())
+#[pyfunction]
+fn from_mrv_block(mrv_str: &str) -> PyResult<Mol> {
+    chematic_mol::parse_mrv(mrv_str)
+        .map(|rec| Mol {
+            inner: Arc::new(rec.mol),
             props: Default::default(),
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
@@ -866,6 +926,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_mol_block_with_diagnostics, m)?)?;
     m.add_function(wrap_pyfunction!(parse_sdf_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_cml, m)?)?;
+    m.add_function(wrap_pyfunction!(from_mrv_block, m)?)?;
+    m.add_function(wrap_pyfunction!(from_mrv_block_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_cjson, m)?)?;
     m.add_function(wrap_pyfunction!(from_moljson, m)?)?;
     m.add_function(wrap_pyfunction!(from_cdxml, m)?)?;

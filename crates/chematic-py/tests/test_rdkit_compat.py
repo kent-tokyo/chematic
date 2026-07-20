@@ -1101,4 +1101,101 @@ def test_rwmol_remove_nonexistent_bond_is_noop():
 def test_rwmol_repr():
     rw = RWMol()
     rw.AddAtom("C")
+
     assert "1" in repr(rw)
+
+
+# ---------------------------------------------------------------------------
+# MolFromMrvBlock / MolToMrvBlock
+# ---------------------------------------------------------------------------
+
+_ETHANOL_MRV = """<cml><MDocument><MChemicalStruct><molecule>
+    <atomArray>
+        <atom id="a1" elementType="C" x2="0.0" y2="0.0"/>
+        <atom id="a2" elementType="C" x2="1.0" y2="0.0"/>
+        <atom id="a3" elementType="O" x2="2.0" y2="0.0"/>
+    </atomArray>
+    <bondArray>
+        <bond atomRefs2="a1 a2" order="1"/>
+        <bond atomRefs2="a2 a3" order="1"/>
+    </bondArray>
+</molecule></MChemicalStruct></MDocument></cml>"""
+
+
+def test_mol_from_mrv_block_basic():
+    mol = Chem.MolFromMrvBlock(_ETHANOL_MRV)
+    assert mol is not None
+    assert mol.GetNumAtoms() == 3
+    assert mol.GetNumBonds() == 2
+
+
+def test_mol_from_mrv_block_malformed_returns_none():
+    assert Chem.MolFromMrvBlock("<not-mrv-at-all/>") is None
+
+
+def test_mol_from_mrv_file(tmp_path):
+    out = tmp_path / "ethanol.mrv"
+    out.write_text(_ETHANOL_MRV)
+    mol = Chem.MolFromMrvFile(str(out))
+    assert mol is not None
+    assert mol.GetNumAtoms() == 3
+
+
+def test_mol_to_mrv_block_roundtrip():
+    mol = Chem.MolFromMrvBlock(_ETHANOL_MRV)
+    block = Chem.MolToMrvBlock(mol)
+    reread = Chem.MolFromMrvBlock(block)
+    assert reread.GetNumAtoms() == mol.GetNumAtoms()
+    assert reread.GetNumBonds() == mol.GetNumBonds()
+
+
+def test_mol_to_mrv_block_kekulizes_aromatic_by_default():
+    benzene = Chem.MolFromSmiles("c1ccccc1")
+    block = Chem.MolToMrvBlock(benzene)
+    assert 'order="A"' not in block
+    assert 'order="2"' in block
+
+
+def test_mol_to_mrv_block_kekulize_false_keeps_aromatic_token():
+    benzene = Chem.MolFromSmiles("c1ccccc1")
+    block = Chem.MolToMrvBlock(benzene, kekulize=False)
+    assert 'order="A"' in block
+
+
+def test_mol_to_mrv_file(tmp_path):
+    mol = Chem.MolFromMrvBlock(_ETHANOL_MRV)
+    out = tmp_path / "out.mrv"
+    Chem.MolToMrvFile(mol, str(out))
+    reread = Chem.MolFromMrvFile(str(out))
+    assert reread.GetNumAtoms() == 3
+
+
+def test_mol_to_mrv_block_conf_id_raises_not_implemented():
+    mol = Chem.MolFromMrvBlock(_ETHANOL_MRV)
+    with pytest.raises(NotImplementedError):
+        Chem.MolToMrvBlock(mol, confId=0)
+
+
+def test_mol_to_mrv_block_pretty_print_raises_not_implemented():
+    mol = Chem.MolFromMrvBlock(_ETHANOL_MRV)
+    with pytest.raises(NotImplementedError):
+        Chem.MolToMrvBlock(mol, prettyPrint=True)
+
+
+def test_mrv_sgroup_is_unsupported_returns_none():
+    mrv = """<cml><MDocument><MChemicalStruct><molecule>
+        <atomArray><atom id="a1" elementType="C"/></atomArray>
+        <bondArray/>
+        <molecule role="SuperatomSgroup"><atomArray/></molecule>
+    </molecule></MChemicalStruct></MDocument></cml>"""
+    assert Chem.MolFromMrvBlock(mrv) is None
+
+
+def test_from_mrv_block_with_coords_roundtrip():
+    mol, coords_2d, coords_3d = chematic.from_mrv_block_with_coords(_ETHANOL_MRV)
+    assert coords_2d == [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]]
+    assert coords_3d == []
+
+    new_block = mol.to_mrv_block_with_coords(coords_2d, coords_3d)
+    mol2, coords_2d_2, _ = chematic.from_mrv_block_with_coords(new_block)
+    assert coords_2d_2 == coords_2d
