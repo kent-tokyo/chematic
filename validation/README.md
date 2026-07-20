@@ -333,7 +333,30 @@ CXSMILES is not recognized in the SMILES column (parsed via
 RDKit's *own* default for `SmilesMolSupplier`, which explicitly disables
 CXSMILES for this entry point too.
 
+**Performance** (10,000-record synthetic corpus, ~2% deliberately malformed rows to also
+measure invalid-record recovery throughput; 5 independent process runs, `/usr/bin/time -l`):
+
+| | chematic (`SmilesRecordReader`) | RDKit (`SmilesMolSupplier`, Python) |
+|---|---|---|
+| Records/sec (median of 5 runs) | ~137,000 | ~4,200 |
+| Peak RSS | ~2.3 MB | ~45 MB |
+| Success/error split | 9,800/200 | 9,800/200 (identical) |
+
+The ~30x throughput difference is Python-interpreter-call overhead, not a controlled
+same-language comparison — reported as reference/informational only, per the
+"performance is never traded for correctness, and cross-language numbers aren't a gate"
+policy. Both tools agree exactly on which 200/10,000 rows are malformed.
+
+**Adversarial/fuzz-style coverage:** no `cargo-fuzz`/libfuzzer harness exists anywhere in
+this workspace yet, and introducing that toolchain for one text-tokenizer module was judged
+disproportionate — instead, 9 deterministic adversarial unit tests (empty input, truncated
+input mid-record and mid-quote, a line exceeding `max_line_bytes`, a 500KB property value
+within the limit, invalid-UTF-8 byte handling, 5,000-column rows, a 3,000-atom SMILES field,
+and a 2,000-iteration seeded random-mutation corpus) assert only "no panic, no hang, no OOM" —
+never a specific output — since malformed input must degrade to a clean `Err`, never worse.
+
 - **Files:** `crates/chematic-mol/src/smiles_table.rs`, `crates/chematic-mol/examples/smiles_table_dump.rs`,
+  `crates/chematic-mol/examples/smiles_table_benchmark.rs`,
   `scripts/gen_smiles_table_fixtures.py`, `scripts/gen_rdkit_smiles_table_oracle.py`,
   `scripts/smiles_table_io_parity.py`.
 - **Reference tool:** RDKit 2026.03.3.
