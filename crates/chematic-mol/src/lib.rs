@@ -28,8 +28,10 @@ pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
 pub mod pdbqt;
+pub mod record;
 pub mod rxn;
 pub mod sdf;
+pub mod smiles_table;
 
 // Convenient re-exports at crate root.
 pub use error::MolParseError;
@@ -50,5 +52,10 @@ pub use mol2000::{
 pub use mol3000::{parse_mol_v3000, parse_mol_v3000_with_coords, write_mol_v3000};
 pub use moljson::{MolJsonError, parse_moljson, write_moljson};
 pub use pdbqt::{PdbqtError, autodock_atom_type, parse_pdbqt, write_pdbqt};
+pub use record::MoleculeRecord;
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
 pub use sdf::{SdfFileReader, SdfReader, SdfRecord, SdfRecordReader};
+pub use smiles_table::{
+    Delimiter, SmilesReaderOptions, SmilesRecordReader, SmilesRecordWriter, SmilesTableError,
+    SmilesWriterOptions,
+};
