@@ -686,6 +686,241 @@ impl PySmilesWriter {
 }
 
 // ---------------------------------------------------------------------------
+// TDTMolSupplier / TDTWriter — RDKit-compatible Daylight TDT I/O
+// ---------------------------------------------------------------------------
+
+/// Streaming reader for Daylight TDT (Tagged Data) files.
+///
+/// RDKit-compatible API:
+///
+///     sup = chematic.TDTMolSupplier("compounds.tdt")
+///     for mol in sup:
+///         if mol is None:
+///             continue  # malformed record
+///         print(mol.smiles, mol.GetProp("_Name"))
+///
+/// ``nameRecord`` defaults to ``"NAME"`` here, **not** RDKit's own default
+/// of ``""`` (meaning no tag populates the name) -- a source-confirmed,
+/// deliberate divergence: RDKit's own `TDTWriter` always writes a `NAME`
+/// tag by default, but its own `TDTMolSupplier` doesn't recognize it back
+/// by default either, so a bare RDKit round trip silently loses the name.
+/// See `chematic_mol::tdt`'s module doc comment for the full citation.
+///
+/// ``confId2D``/``confId3D`` (RDKit's opt-in-to-read-coordinates
+/// convention: `< 0` disables, `>= 0` enables) are accepted, but a
+/// non-negative value raises ``NotImplementedError`` -- chematic's Python
+/// ``Mol`` wrapper has no coordinate-carrying slot yet, so 2D/3D
+/// coordinates from a TDT file cannot be surfaced through this binding at
+/// present (the Rust API, `chematic_mol::tdt::TdtRecordReader`, supports
+/// them fully and is tested against a real coordinate-parsing bug found in
+/// RDKit itself). ``sanitize`` is accepted for API compatibility but is a
+/// no-op.
+#[pyclass(name = "TDTMolSupplier")]
+pub struct PyTdtMolSupplier {
+    inner: chematic_mol::TdtRecordReader<std::io::BufReader<std::fs::File>>,
+}
+
+#[pymethods]
+impl PyTdtMolSupplier {
+    #[new]
+    #[allow(non_snake_case)]
+    #[pyo3(signature = (path, nameRecord="NAME".to_string(), confId2D=-1, confId3D=-1, sanitize=true))]
+    fn new(
+        path: &str,
+        nameRecord: String,
+        confId2D: i32,
+        confId3D: i32,
+        sanitize: bool,
+    ) -> PyResult<Self> {
+        let _ = sanitize;
+        if confId2D >= 0 || confId3D >= 0 {
+            return Err(pyo3::exceptions::PyNotImplementedError::new_err(
+                "chematic's Python Mol wrapper has no coordinate-carrying slot yet; \
+                 confId2D/confId3D >= 0 (requesting coordinate data) is not supported here. \
+                 Use the Rust API (chematic_mol::tdt::TdtRecordReader with read_2d/read_3d) \
+                 for full 2D/3D coordinate support.",
+            ));
+        }
+        let file = std::fs::File::open(path)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        let options = chematic_mol::TdtReaderOptions {
+            name_tag: if nameRecord.is_empty() {
+                None
+            } else {
+                Some(nameRecord)
+            },
+            read_2d: false,
+            read_3d: false,
+            strict_parsing: false,
+            ..Default::default()
+        };
+        Ok(PyTdtMolSupplier {
+            inner: chematic_mol::TdtRecordReader::new(std::io::BufReader::new(file), options),
+        })
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<pyo3::Py<pyo3::PyAny>>> {
+        match self.inner.next() {
+            None => Ok(None),
+            Some(Ok(rec)) => {
+                let mut props: std::collections::HashMap<String, String> =
+                    rec.properties.into_iter().collect();
+                if !rec.name.is_empty() {
+                    props.insert("_Name".to_string(), rec.name);
+                }
+                let mol = Mol {
+                    inner: Arc::new(rec.mol),
+                    props,
+                };
+                Ok(Some(pyo3::Py::new(py, mol)?.into_any()))
+            }
+            Some(Err(chematic_mol::TdtError::Io(msg))) => {
+                Err(pyo3::exceptions::PyIOError::new_err(msg))
+            }
+            Some(Err(_)) => Ok(Some(py.None())), // malformed record -> None, matches RDKit
+        }
+    }
+}
+
+/// Streaming writer for Daylight TDT files.
+///
+///     with chematic.TDTWriter("output.tdt") as w:
+///         mol = chematic.from_smiles("c1ccccc1")
+///         mol.SetProp("_Name", "benzene")
+///         w.write(mol)
+///
+/// Only name + properties round-trip through this binding at present --
+/// chematic's Python ``Mol`` wrapper carries no 2D/3D coordinate data to
+/// write (see ``TDTMolSupplier``'s doc comment); ``SetWrite2D`` is accepted
+/// for API compatibility but has no visible effect until `Mol` gains a
+/// coordinate-carrying mechanism.
+#[pyclass(name = "TDTWriter")]
+pub struct PyTdtWriter {
+    writer: Option<chematic_mol::TdtRecordWriter<std::io::BufWriter<std::fs::File>>>,
+    num_mols: usize,
+}
+
+#[pymethods]
+impl PyTdtWriter {
+    #[new]
+    fn new(path: &str) -> PyResult<Self> {
+        let file = std::fs::File::create(path)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        Ok(PyTdtWriter {
+            writer: Some(chematic_mol::TdtRecordWriter::new(
+                std::io::BufWriter::new(file),
+                chematic_mol::TdtWriterOptions {
+                    write_2d: false,
+                    write_3d: false,
+                    ..Default::default()
+                },
+            )),
+            num_mols: 0,
+        })
+    }
+
+    fn write(&mut self, mol: &Mol) -> PyResult<()> {
+        let writer = self.writer.as_mut().ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err("TDTWriter is already closed")
+        })?;
+        let name = mol.props.get("_Name").cloned().unwrap_or_default();
+        let mut properties: Vec<(String, String)> = mol
+            .props
+            .iter()
+            .filter(|(k, _)| k.as_str() != "_Name")
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        properties.sort_unstable();
+        let record = chematic_mol::MoleculeRecord {
+            mol: (*mol.inner).clone(),
+            name,
+            properties,
+            coordinates_2d: None,
+            coordinates_3d: None,
+        };
+        writer
+            .write_record(&record)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        self.num_mols += 1;
+        Ok(())
+    }
+
+    /// Restrict (and order) which properties are written. Pass `None` to
+    /// reset to RDKit's own `TDTWriter` default (write all).
+    #[pyo3(name = "SetProps")]
+    fn set_props(&mut self, props: Option<Vec<String>>) -> PyResult<()> {
+        let writer = self.writer.as_mut().ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err("TDTWriter is already closed")
+        })?;
+        writer.set_properties(props);
+        Ok(())
+    }
+
+    #[pyo3(name = "SetWriteNames")]
+    fn set_write_names(&mut self, val: bool) -> PyResult<()> {
+        let writer = self.writer.as_mut().ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err("TDTWriter is already closed")
+        })?;
+        writer.set_name_tag(if val { Some("NAME".to_string()) } else { None });
+        Ok(())
+    }
+
+    /// No visible effect at present -- see the class doc comment.
+    #[pyo3(name = "SetWrite2D")]
+    fn set_write_2d(&mut self, _val: bool) {}
+
+    #[pyo3(name = "SetNumDigits")]
+    fn set_num_digits(&mut self, n: usize) -> PyResult<()> {
+        let writer = self.writer.as_mut().ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err("TDTWriter is already closed")
+        })?;
+        writer.set_precision(n);
+        Ok(())
+    }
+
+    #[pyo3(name = "NumMols")]
+    fn num_mols(&self) -> usize {
+        self.num_mols
+    }
+
+    fn flush(&mut self) -> PyResult<()> {
+        if let Some(w) = self.writer.as_mut() {
+            w.close()
+                .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    fn close(&mut self) -> PyResult<()> {
+        if let Some(w) = self.writer.as_mut() {
+            w.close()
+                .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        }
+        self.writer.take();
+        Ok(())
+    }
+
+    fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    #[allow(unused_variables)]
+    fn __exit__(
+        &mut self,
+        exc_type: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+        exc_val: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+        exc_tb: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+    ) -> PyResult<bool> {
+        self.close()?;
+        Ok(false)
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
 
@@ -698,6 +933,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SdWriter>()?;
     m.add_class::<PySmilesMolSupplier>()?;
     m.add_class::<PySmilesWriter>()?;
+    m.add_class::<PyTdtMolSupplier>()?;
+    m.add_class::<PyTdtWriter>()?;
     m.add_function(wrap_pyfunction!(iter_sdf, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_str, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_batched, m)?)?;

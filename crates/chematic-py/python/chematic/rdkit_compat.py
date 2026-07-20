@@ -41,6 +41,7 @@ __all__ = [
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
+    "TDTMolSupplier", "TDTWriter",
     "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools",
 ]
 
@@ -795,6 +796,105 @@ class SmilesWriter:
         self._writer.close()
 
     def __enter__(self) -> "SmilesWriter":
+        return self
+
+    def __exit__(self, *args) -> None:
+        self.close()
+
+
+# ---------------------------------------------------------------------------
+# TDTMolSupplier / TDTWriter — Daylight Tagged Data file I/O
+# ---------------------------------------------------------------------------
+
+class TDTMolSupplier:
+    """Read molecules from a Daylight TDT file (RDKit-compatible).
+
+    Thin wrapper over :class:`chematic.TDTMolSupplier`. ``nameRecord``
+    defaults to ``"NAME"`` here, not RDKit's own ``""`` default -- see
+    ``chematic.TDTMolSupplier``'s doc comment for why. ``confId2D``/
+    ``confId3D`` >= 0 raise ``NotImplementedError`` (chematic's Python
+    ``Mol`` wrapper has no coordinate-carrying slot yet).
+    """
+
+    def __init__(
+        self,
+        filename: str,
+        nameRecord: str = "NAME",
+        confId2D: int = -1,
+        confId3D: int = -1,
+        sanitize: bool = True,
+    ) -> None:
+        self._filename = filename
+        self._name_record = nameRecord
+        self._conf_id_2d = confId2D
+        self._conf_id_3d = confId3D
+        self._sanitize = sanitize
+
+    def __iter__(self):
+        sup = _ch.TDTMolSupplier(
+            self._filename,
+            nameRecord=self._name_record,
+            confId2D=self._conf_id_2d,
+            confId3D=self._conf_id_3d,
+            sanitize=self._sanitize,
+        )
+        for mol in sup:
+            yield Mol(mol) if mol is not None else None
+
+    def __len__(self) -> int:
+        return sum(1 for _ in self)
+
+    def __getitem__(self, i: int):
+        """Random access by record index (RDKit-compatible).
+
+        .. note:: O(i) -- iterates from the start. Avoid in tight loops.
+        """
+        if i < 0:
+            raise IndexError(i)
+        for j, mol in enumerate(self):
+            if j == i:
+                return mol
+        raise IndexError(i)
+
+
+class TDTWriter:
+    """Write molecules to a Daylight TDT file (RDKit-compatible).
+
+    Thin wrapper over :class:`chematic.TDTWriter`. Only name + properties
+    round-trip through this binding at present -- see
+    ``chematic.TDTWriter``'s doc comment.
+    """
+
+    def __init__(self, filename: str) -> None:
+        self._writer = _ch.TDTWriter(filename)
+
+    def write(self, mol: Mol) -> None:
+        self._writer.write(mol._mol)
+
+    def SetProps(self, props) -> None:
+        """Restrict (and order) which properties are written."""
+        self._writer.SetProps(list(props))
+
+    def SetWriteNames(self, val: bool) -> None:
+        self._writer.SetWriteNames(val)
+
+    def SetWrite2D(self, val: bool) -> None:
+        """No visible effect at present -- see the class doc comment."""
+        self._writer.SetWrite2D(val)
+
+    def SetNumDigits(self, n: int) -> None:
+        self._writer.SetNumDigits(n)
+
+    def NumMols(self) -> int:
+        return self._writer.NumMols()
+
+    def flush(self) -> None:
+        self._writer.flush()
+
+    def close(self) -> None:
+        self._writer.close()
+
+    def __enter__(self) -> "TDTWriter":
         return self
 
     def __exit__(self, *args) -> None:
