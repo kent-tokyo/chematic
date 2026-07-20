@@ -19,11 +19,11 @@ rustdoc-args = ["--cfg", "docsrs"]
 chematic-core        = { path = "../chematic-core",        version = "0.8.0" }
 chematic-rxn         = { path = "../chematic-rxn",         version = "0.8.0" }
 chematic-perception  = { path = "../chematic-perception",  version = "0.8.0" }
+chematic-smiles      = { path = "../chematic-smiles",      version = "0.8.0" }
 serde_json           = "1.0"
 
 [dev-dependencies]
 # Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
 # comment -- a version-pinned dev-dependency must resolve against the
 # registry at `cargo publish` time, which a forward reference can't satisfy.
-chematic-smiles = { path = "../chematic-smiles" }
 chematic-chem   = { path = "../chematic-chem" }
