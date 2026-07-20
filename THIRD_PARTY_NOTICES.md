@@ -30,6 +30,43 @@ Copyright (C) 2003-2022 Greg Landrum and other RDKit contributors
 Licensed under the BSD 3-Clause License. Full license text below, reproduced
 from RDKit's `license.txt` at the commit above.
 
+## RDKit Morgan fingerprint hashing implementation
+
+`crates/chematic-fp/src/rdkit_morgan_hash.rs` is a source-verified, line-level
+port of RDKit's Morgan fingerprint hash-combine machinery (connectivity
+invariant, bond invariant, per-round environment hash), built as a
+diagnostic-only reference engine for Milestone M4-A0 (see
+`docs/` and the PR description for the design writeup). Not wired into any
+production API.
+
+Derived from:
+
+```
+File:            Code/GraphMol/Fingerprints/MorganGenerator.cpp
+                 Code/GraphMol/Fingerprints/FingerprintUtil.cpp
+                 Code/RDGeneral/hash/hash.hpp
+Functions:       MorganEnvGenerator<OutputType>::getEnvironments,
+                 MorganAtomInvGenerator::getConnectivityInvariants,
+                 MorganBondInvGenerator::getBondInvariants,
+                 gboost::hash_combine, hash_value(std::pair), hash_range
+RDKit release:   Release_2026_03_4
+RDKit commit:    8afba32ec539dcb2369bc84549d802aca3f7eb39
+Source URL:      https://github.com/rdkit/rdkit/blob/8afba32ec539dcb2369bc84549d802aca3f7eb39/Code/GraphMol/Fingerprints/MorganGenerator.cpp
+```
+
+This commit was independently resolved via the GitHub tags API
+(`GET /repos/rdkit/rdkit/git/refs/tags/Release_2026_03_4`), not reused from
+the aromaticity port's citation above — that citation
+(`e89c9f656a694fab4105139844cba88d2e013354`) turned out to be an ancestor
+commit, not the tag's actual resolution; not corrected here, flagged for a
+future cleanup.
+
+```
+Copyright (C) 2003-2022 Greg Landrum and other RDKit contributors
+```
+
+Licensed under the BSD 3-Clause License (same text as above).
+
 ### BSD 3-Clause License
 
 ```

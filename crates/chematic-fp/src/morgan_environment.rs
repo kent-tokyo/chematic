@@ -65,22 +65,25 @@ pub(crate) enum EnvironmentEmissionMode {
 /// One bit per bond index in the molecule. Equality/hash is plain
 /// word-vector equality/hash — sufficient because every `BondSet` compared
 /// against another within one call is sized to the same molecule's
-/// `bond_count()`.
+/// `bond_count()`. `pub(crate)`: pure bitset infrastructure with no
+/// hash-specific behavior, reused as-is by [`crate::rdkit_morgan_hash`]'s
+/// independent (RDKit-exact-hash) suppression pass — only the invariant/hash
+/// computation differs between the two modules, not this plumbing.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct BondSet(Vec<u64>);
+pub(crate) struct BondSet(Vec<u64>);
 
 impl BondSet {
-    fn empty(bond_count: usize) -> Self {
+    pub(crate) fn empty(bond_count: usize) -> Self {
         BondSet(vec![0u64; bond_count.div_ceil(64)])
     }
 
-    fn set(&mut self, bond: u32) {
+    pub(crate) fn set(&mut self, bond: u32) {
         let word = bond as usize / 64;
         let bit = bond as usize % 64;
         self.0[word] |= 1u64 << bit;
     }
 
-    fn union_with(&mut self, other: &BondSet) {
+    pub(crate) fn union_with(&mut self, other: &BondSet) {
         for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
             *a |= b;
         }

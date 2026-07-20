@@ -1,0 +1,38 @@
+{
+  "command_line": [
+    "scripts/gen_ecfp_rdkit_environment_oracle.py",
+    "--corpus",
+    "/tmp/m4a0/combined_input.csv",
+    "--rows-out",
+    "/tmp/m4a0/rdkit_oracle_rows.jsonl",
+    "--manifest-out",
+    "/tmp/m4a0/rdkit_oracle_manifest.json"
+  ],
+  "corpus_paths": [
+    "/tmp/m4a0/combined_input.csv"
+  ],
+  "corpus_sha256": {
+    "/tmp/m4a0/combined_input.csv": "df949b8832d966ee74c94acde2d203284e8ffc82896b541b01a28fbf3df2c8ea"
+  },
+  "diagnostic_source_commit_sha": "f926ab416993def68513d4180b4080d315c8a187",
+  "diagnostic_source_tree_dirty": true,
+  "fixture_paths": [],
+  "fixture_sha256": {},
+  "generated_at_utc": "2026-07-20T10:10:06.811655+00:00",
+  "input_count": 5048,
+  "morgan_options": {
+    "countSimulation": false,
+    "fpSize": 2048,
+    "includeChirality": false,
+    "includeRingMembership": true,
+    "onlyNonzeroInvariants": false,
+    "radius": 2,
+    "useBondTypes": true
+  },
+  "morgan_options_note": "GetMorganGenerator(radius=2, fpSize=2048, includeChirality=False, useBondTypes=True, onlyNonzeroInvariants=False, includeRingMembership=True, includeRedundantEnvironments=False) + GetFingerprint() confirmed bit-identical to legacy AllChem.GetMorganFingerprintAsBitVect(mol, 2, 2048) -- verified interactively against RDKit 2026.03.3, on-bit sets equal.",
+  "oracle_generator_script_sha256": "9d32eebe33952f815ccc1a5008030212baa0cb66270343b35b1989f174a780eb",
+  "oracle_row_count": 5048,
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "rdkit_version": "2026.03.3",
+  "schema_version": "1"
+}

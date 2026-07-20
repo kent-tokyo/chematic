@@ -32,6 +32,7 @@ pub mod path;
 pub mod pattern;
 pub mod pharmacophore_fp;
 mod rdkit_isotope_delta_table;
+mod rdkit_morgan_hash;
 pub mod reaction_fp;
 pub mod search;
 pub mod topo_path;
@@ -58,6 +59,7 @@ pub use ecfp::{
 pub mod diagnostics {
     pub use crate::ecfp_diagnostics::{MorganTraceEntry, atom_ball, morgan_trace};
     pub use crate::morgan_environment::suppressed_environments_diagnostic;
+    pub use crate::rdkit_morgan_hash::{RdkitMorganRawTraceEntry, rdkit_morgan_raw_trace};
 }
 pub use erg::{
     ERG_VEC_LEN, ErgAtomType, ErgBondType, ErgConfig, ErgFingerprint, cosine_erg_vec, erg,
