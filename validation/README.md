@@ -330,6 +330,73 @@ this file's scope).
       --json validation/results/descriptor_census.json
   ```
 
+### IO-1: SMILES table file I/O (`.smi`/`.smiles`/`.csv`/`.tsv`/`.txt`)
+
+New streaming `SmilesRecordReader`/`SmilesRecordWriter` in
+`crates/chematic-mol/src/smiles_table.rs`, built from a source-cited audit of
+RDKit's `SmilesMolSupplier`/`SmilesWriter` (RDKit commit
+`8afba32ec539dcb2369bc84549d802aca3f7eb39`, the true resolution of tag
+`Release_2026_03_4`) rather than guessed behavior. `chematic.SmilesMolSupplier`/
+`chematic.SmilesWriter` (Python, pyo3) match RDKit's constructor signatures;
+`rdkit_compat.py`'s own wrapper classes of the same names were rewritten to
+delegate to these (previously a separate, non-streaming, whole-file pure-Python
+implementation that used no Rust parser at all).
+
+**Oracle methodology (deliberately avoids the chematic/RDKit canonical-SMILES
+divergence, which is a known, separately-tracked, unrelated issue):** never
+compares chematic-canonical vs. RDKit-canonical SMILES strings directly.
+Instead: (1) exact string equality of extracted `name`/property values
+(pure tokenization, no chemistry); (2) each tool's *own* self-consistency
+against the fixture's known ground-truth SMILES, canonicalized only within
+that same tool — proves each tokenizer extracted the right substring
+without ever comparing the two canonicalizers against each other.
+
+**Results (235 rows, 8 scenarios covering space/tab/comma delimiters,
+header/no-header, name/no-name column, extra properties, quoted CSV, blank
+lines, comments, malformed SMILES, isotopes, charges, disconnected
+fragments, stereochemistry):**
+
+| Metric | Result |
+|---|---|
+| Status parity (success vs. unparseable, per row) | 235/235 (100%) |
+| Known-malformed rows correctly rejected by both tools | 5/5 |
+| Name/property exact-match (excluding 2 documented divergences below) | 100% |
+| Chematic self-consistency vs. known ground truth | 230/230 (100%) |
+| RDKit self-consistency vs. known ground truth (non-gating) | 230/230 (100%) |
+
+**Two deliberate, documented divergences from RDKit found via this oracle
+(not bugs — see `smiles_table.rs`'s module doc comment for the full
+citation):**
+1. `name_column=None` (RDKit's `nameColumn=-1`): RDKit falls back to the
+   physical line number as `_Name`; chematic's `MoleculeRecord::name` is
+   simply empty. Judged a low-value RDKit implementation detail not worth
+   reproducing.
+2. **RDKit's `SmilesMolSupplier` has no CSV-quote-awareness at all** for its
+   comma-delimiter mode — confirmed via this oracle, not merely inferred: a
+   quoted field like `"has, a comma"` is split into extra raw columns by
+   RDKit's literal comma-splitting. Chematic implements a real RFC 4180
+   *subset* (quoted fields, doubled-quote escaping, no multi-line quoted
+   fields) — a genuine improvement, not a matched behavior.
+
+CXSMILES is not recognized in the SMILES column (parsed via
+`chematic_smiles::parse`, which has no CXSMILES support) — this matches
+RDKit's *own* default for `SmilesMolSupplier`, which explicitly disables
+CXSMILES for this entry point too.
+
+- **Files:** `crates/chematic-mol/src/smiles_table.rs`, `crates/chematic-mol/examples/smiles_table_dump.rs`,
+  `scripts/gen_smiles_table_fixtures.py`, `scripts/gen_rdkit_smiles_table_oracle.py`,
+  `scripts/smiles_table_io_parity.py`.
+- **Reference tool:** RDKit 2026.03.3.
+- **How to regenerate:** `python scripts/gen_smiles_table_fixtures.py --out-dir <dir> --corpus
+  <SMILES.csv> --manifest-out <manifest.json>` + `cargo run -p chematic-mol --release --example
+  smiles_table_dump -- <manifest.json> <dir> <out.jsonl>` + `python
+  scripts/gen_rdkit_smiles_table_oracle.py --manifest <manifest.json> --fixtures-dir <dir> --out
+  <oracle.jsonl>` + `python scripts/smiles_table_io_parity.py --chematic <out.jsonl> --rdkit-oracle
+  <oracle.jsonl> --manifest <manifest.json>`. Self-test:
+  `python scripts/smiles_table_io_parity.py --self-test`. The generated fixture files themselves
+  are not committed (regenerable byte-for-byte from the corpus + script); only the generator
+  scripts and this summary are.
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.
