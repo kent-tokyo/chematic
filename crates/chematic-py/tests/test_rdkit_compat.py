@@ -895,6 +895,37 @@ def test_smiles_supplier_bad_line_yields_none(tmp_path):
     assert mols[1] is not None
 
 
+def test_smiles_supplier_csv_delimiter_with_quoted_comma(tmp_path):
+    out = tmp_path / "mols.csv"
+    out.write_text('SMILES,Name,Note\nCC,ethane,"has, a comma"\n')
+    mols = list(Chem.SmilesMolSupplier(str(out), delimiter=","))
+    assert len(mols) == 1
+    assert mols[0].GetProp("_Name") == "ethane"
+    assert mols[0].GetProp("Note") == "has, a comma"
+
+
+def test_smiles_writer_isomeric_false_raises_not_implemented(tmp_path):
+    out = tmp_path / "x.smi"
+    with pytest.raises(NotImplementedError):
+        Chem.SmilesWriter(str(out), isomericSmiles=False)
+
+
+def test_smiles_writer_kekule_true_raises_not_implemented(tmp_path):
+    out = tmp_path / "x.smi"
+    with pytest.raises(NotImplementedError):
+        Chem.SmilesWriter(str(out), kekuleSmiles=True)
+
+
+def test_smiles_writer_no_name_header_omits_name_column(tmp_path):
+    out = tmp_path / "x.smi"
+    with Chem.SmilesWriter(str(out), nameHeader="", includeHeader=False) as w:
+        m = Chem.MolFromSmiles("CC")
+        m.SetProp("_Name", "ethane")
+        w.write(m)
+    text = out.read_text()
+    assert "ethane" not in text
+
+
 # ---------------------------------------------------------------------------
 # SDMolSupplier random access + context manager
 # ---------------------------------------------------------------------------
