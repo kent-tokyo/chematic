@@ -412,7 +412,32 @@ mid-record, 2D/3D coordinate tags, isotopes, charges, disconnected fragments, st
 | Chematic self-consistency vs. known ground truth | 204/204 (100%) |
 | RDKit self-consistency vs. known ground truth (non-gating) | 204/204 (100%) |
 
+**Performance** (10,000-record synthetic corpus, ~2% deliberately malformed, 5 independent
+process runs, `/usr/bin/time -l`):
+
+| | chematic (`TdtRecordReader`) | RDKit (`TDTMolSupplier`, Python, index-based access) |
+|---|---|---|
+| Records/sec (median of 5 runs) | ~128,000 | ~5,100 |
+| Peak RSS | ~2.4 MB | ~45 MB |
+| Success/error split | 9,800/200 | 9,800/200 (identical) |
+
+RDKit's own numbers use index-based access (`sup[idx]`), the workaround this PR's own oracle
+script needed for RDKit's malformed-tag recovery hazard — an even less apples-to-apples
+comparison than a plain iterator would be. Reported as informational cross-language reference
+only, same policy as IO-1.
+
+**Adversarial/fuzz-style coverage:** 11 deterministic adversarial unit tests (empty/truncated
+input, an oversized line, a 500KB property value, invalid-UTF-8 bytes, 5,000-property records, a
+3,000-atom SMILES field, a malformed/never-terminated coordinate list, a 2,000-iteration seeded
+random-mutation corpus) — same no-cargo-fuzz-harness-exists rationale as IO-1. **One of these
+tests caught a real bug before this PR shipped**: an oversized-line or otherwise-mid-record read
+error left the reader's position at a leftover fragment (e.g. the record's own `|` terminator,
+already consumed into a since-rejected oversized buffer) that got misinterpreted as the start of
+a phantom next record. Fixed by centralizing recovery-to-next-record-boundary at every error exit
+from record-body parsing, not just the malformed-tag case that was tested first.
+
 - **Files:** `crates/chematic-mol/src/tdt.rs`, `crates/chematic-mol/examples/tdt_dump.rs`,
+  `crates/chematic-mol/examples/tdt_benchmark.rs`,
   `scripts/gen_tdt_fixtures.py`, `scripts/gen_rdkit_tdt_oracle.py`, `scripts/tdt_io_parity.py`.
 - **Reference tool:** RDKit 2026.03.3.
 - **How to regenerate:** `python scripts/gen_tdt_fixtures.py --out-dir <dir> --corpus <SMILES.csv>
