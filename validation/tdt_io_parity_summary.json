@@ -1,0 +1,114 @@
+{
+  "chematic_self_consistency_failures": [],
+  "coordinate_mismatches": [],
+  "error_count": 1,
+  "gate_failures": [],
+  "gate_passed": true,
+  "known_divergences_non_gating": [
+    {
+      "chematic": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0
+        ],
+        [
+          2.0,
+          1.0
+        ]
+      ],
+      "dim": "coordinates_2d",
+      "key": [
+        "coordinates",
+        0
+      ],
+      "rdkit": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "chematic": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          2.0,
+          1.0,
+          0.5
+        ]
+      ],
+      "dim": "coordinates_3d",
+      "key": [
+        "coordinates",
+        0
+      ],
+      "rdkit": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "chematic": "ethane",
+      "key": [
+        "eof_mid_record",
+        0
+      ],
+      "rdkit": ""
+    },
+    {
+      "chematic": {
+        "NAME": "ethane"
+      },
+      "key": [
+        "eof_mid_record",
+        0
+      ],
+      "rdkit": {}
+    }
+  ],
+  "malformed_row_agreement": {
+    "both_error": 1,
+    "expected": 1,
+    "mismatched": []
+  },
+  "name_mismatches": [],
+  "property_mismatches": [],
+  "rdkit_self_consistency_failures_non_gating": [],
+  "status_mismatches": [],
+  "success_count": 204,
+  "total_rows": 205
+}
