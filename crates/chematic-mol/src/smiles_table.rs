@@ -552,6 +552,16 @@ impl<W: Write> SmilesRecordWriter<W> {
     pub fn into_inner(self) -> W {
         self.writer
     }
+
+    /// Replace the set (and order) of extra properties written per record.
+    pub fn set_properties(&mut self, properties: Vec<String>) {
+        self.options.properties = properties;
+    }
+
+    /// Flush the underlying writer.
+    pub fn flush(&mut self) -> std::io::Result<()> {
+        self.writer.flush()
+    }
 }
 
 // ---------------------------------------------------------------------------

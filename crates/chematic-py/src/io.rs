@@ -448,6 +448,244 @@ impl SdWriter {
 }
 
 // ---------------------------------------------------------------------------
+// SmilesMolSupplier / SmilesWriter — RDKit-compatible SMILES table I/O
+// ---------------------------------------------------------------------------
+
+/// Parse an RDKit-style delimiter string into a [`chematic_mol::Delimiter`].
+///
+/// A string consisting only of spaces/tabs (RDKit's own multi-char
+/// delimiter *class* convention, e.g. `" \t"`) maps to
+/// [`chematic_mol::Delimiter::Whitespace`] (runs collapsed) — chematic does
+/// not offer RDKit's non-collapsing `keep_empty_tokens` behavior for a
+/// multi-character class, only for the single-character
+/// [`chematic_mol::Delimiter::Tab`]/[`chematic_mol::Delimiter::Custom`] cases.
+/// Any other multi-character string is rejected explicitly rather than
+/// silently truncated to its first character.
+fn parse_delimiter(s: &str) -> PyResult<chematic_mol::Delimiter> {
+    if !s.is_empty() && s.chars().all(|c| c == ' ' || c == '\t') {
+        return Ok(chematic_mol::Delimiter::Whitespace);
+    }
+    let mut chars = s.chars();
+    match (chars.next(), chars.next()) {
+        (Some(','), None) => Ok(chematic_mol::Delimiter::Comma),
+        (Some('\t'), None) => Ok(chematic_mol::Delimiter::Tab),
+        (Some(c), None) if c.is_ascii() => Ok(chematic_mol::Delimiter::Custom(c as u8)),
+        _ => Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "unsupported delimiter {s:?}: chematic requires a single ASCII byte, or a \
+             space/tab-only string (mapped to whitespace-class splitting)"
+        ))),
+    }
+}
+
+/// Streaming reader for SMILES table files (`.smi`/`.smiles`/`.csv`/`.tsv`/`.txt`).
+///
+/// RDKit-compatible API:
+///
+///     sup = chematic.SmilesMolSupplier("compounds.smi")
+///     for mol in sup:
+///         if mol is None:
+///             continue  # malformed row
+///         print(mol.smiles, mol.GetProp("_Name"))
+///
+/// ``sanitize`` is accepted for API compatibility but is a no-op (chematic's
+/// SMILES parser already applies default aromaticity perception). Unlike
+/// RDKit's own ``SmilesMolSupplier``, this reader is forward-only streaming
+/// (no ``len()``/index access) — see ``chematic_mol::smiles_table``'s module
+/// docs for the full list of deliberate, documented divergences from RDKit.
+#[pyclass(name = "SmilesMolSupplier")]
+pub struct PySmilesMolSupplier {
+    inner: chematic_mol::SmilesRecordReader<std::io::BufReader<std::fs::File>>,
+}
+
+#[pymethods]
+impl PySmilesMolSupplier {
+    #[new]
+    #[allow(non_snake_case)]
+    #[pyo3(signature = (path, delimiter=" ".to_string(), smilesColumn=0, nameColumn=1, titleLine=true, sanitize=true))]
+    fn new(
+        path: &str,
+        delimiter: String,
+        smilesColumn: usize,
+        nameColumn: i64,
+        titleLine: bool,
+        sanitize: bool,
+    ) -> PyResult<Self> {
+        let _ = sanitize; // accepted, no-op (see doc comment)
+        let delim = parse_delimiter(&delimiter)?;
+        let file = std::fs::File::open(path)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        let options = chematic_mol::SmilesReaderOptions {
+            delimiter: delim,
+            smiles_column: smilesColumn,
+            name_column: if nameColumn < 0 {
+                None
+            } else {
+                Some(nameColumn as usize)
+            },
+            title_line: titleLine,
+            // RDKit's own SmilesMolSupplier has no strict/lax toggle at all --
+            // it unconditionally returns None for a bad row and continues.
+            // This constructor matches that behavior; chematic's stricter
+            // stop-on-error mode is only reachable via the Rust API.
+            strict_parsing: false,
+            ..Default::default()
+        };
+        Ok(PySmilesMolSupplier {
+            inner: chematic_mol::SmilesRecordReader::new(std::io::BufReader::new(file), options),
+        })
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<pyo3::Py<pyo3::PyAny>>> {
+        match self.inner.next() {
+            None => Ok(None),
+            Some(Ok(rec)) => {
+                let mut props: std::collections::HashMap<String, String> =
+                    rec.properties.into_iter().collect();
+                if !rec.name.is_empty() {
+                    props.insert("_Name".to_string(), rec.name);
+                }
+                let mol = Mol {
+                    inner: Arc::new(rec.mol),
+                    props,
+                };
+                Ok(Some(pyo3::Py::new(py, mol)?.into_any()))
+            }
+            Some(Err(chematic_mol::SmilesTableError::Io(msg))) => {
+                Err(pyo3::exceptions::PyIOError::new_err(msg))
+            }
+            Some(Err(_)) => Ok(Some(py.None())), // malformed row -> None, matches RDKit
+        }
+    }
+}
+
+/// Streaming writer for SMILES table files.
+///
+///     with chematic.SmilesWriter("output.smi") as w:
+///         mol = chematic.from_smiles("c1ccccc1")
+///         mol.SetProp("_Name", "benzene")
+///         w.write(mol)
+///
+/// ``isomericSmiles=False`` and ``kekuleSmiles=True`` raise
+/// ``NotImplementedError`` -- chematic has no non-isomeric or Kekule-form
+/// SMILES writer at present, and this binding does not silently fall back
+/// to the isomeric/aromatic form it can actually produce.
+#[pyclass(name = "SmilesWriter")]
+pub struct PySmilesWriter {
+    writer: Option<chematic_mol::SmilesRecordWriter<std::io::BufWriter<std::fs::File>>>,
+}
+
+#[pymethods]
+impl PySmilesWriter {
+    #[new]
+    #[allow(non_snake_case)]
+    #[pyo3(signature = (path, delimiter=" ".to_string(), nameHeader="Name".to_string(), includeHeader=true, isomericSmiles=true, kekuleSmiles=false))]
+    fn new(
+        path: &str,
+        delimiter: String,
+        nameHeader: String,
+        includeHeader: bool,
+        isomericSmiles: bool,
+        kekuleSmiles: bool,
+    ) -> PyResult<Self> {
+        if !isomericSmiles {
+            return Err(pyo3::exceptions::PyNotImplementedError::new_err(
+                "chematic has no non-isomeric SMILES writer mode; isomericSmiles=False is not supported",
+            ));
+        }
+        if kekuleSmiles {
+            return Err(pyo3::exceptions::PyNotImplementedError::new_err(
+                "chematic has no Kekule-form SMILES writer mode; kekuleSmiles=True is not supported",
+            ));
+        }
+        let delim = parse_delimiter(&delimiter)?;
+        let file = std::fs::File::create(path)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+        let options = chematic_mol::SmilesWriterOptions {
+            delimiter: delim,
+            name_header: nameHeader,
+            include_header: includeHeader,
+            properties: Vec::new(),
+        };
+        Ok(PySmilesWriter {
+            writer: Some(chematic_mol::SmilesRecordWriter::new(
+                std::io::BufWriter::new(file),
+                options,
+            )),
+        })
+    }
+
+    fn write(&mut self, mol: &Mol) -> PyResult<()> {
+        let writer = self.writer.as_mut().ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err("SmilesWriter is already closed")
+        })?;
+        let name = mol.props.get("_Name").cloned().unwrap_or_default();
+        let mut properties: Vec<(String, String)> = mol
+            .props
+            .iter()
+            .filter(|(k, _)| k.as_str() != "_Name")
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        properties.sort_unstable();
+        let record = chematic_mol::MoleculeRecord {
+            mol: (*mol.inner).clone(),
+            name,
+            properties,
+            coordinates_2d: None,
+            coordinates_3d: None,
+        };
+        writer
+            .write_record(&record)
+            .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))
+    }
+
+    /// Restrict (and order) which properties are written, mirroring RDKit's
+    /// ``SetProps``. Defaults to writing no extra properties beyond
+    /// SMILES + name, matching RDKit's own ``SmilesWriter`` default.
+    #[pyo3(name = "SetProps")]
+    fn set_props(&mut self, props: Vec<String>) -> PyResult<()> {
+        let writer = self.writer.as_mut().ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err("SmilesWriter is already closed")
+        })?;
+        // SmilesRecordWriter doesn't expose a setter for its own options
+        // struct post-construction; rebuild is unnecessary since `properties`
+        // is the only field this method touches -- reach it directly.
+        writer.set_properties(props);
+        Ok(())
+    }
+
+    fn flush(&mut self) -> PyResult<()> {
+        if let Some(w) = self.writer.as_mut() {
+            w.flush()
+                .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    fn close(&mut self) {
+        self.writer.take();
+    }
+
+    fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    #[allow(unused_variables)]
+    fn __exit__(
+        &mut self,
+        exc_type: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+        exc_val: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+        exc_tb: Option<&pyo3::Bound<'_, pyo3::PyAny>>,
+    ) -> bool {
+        self.close();
+        false
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
 
@@ -458,6 +696,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SdfBatchIter>()?;
     m.add_class::<SdMolSupplier>()?;
     m.add_class::<SdWriter>()?;
+    m.add_class::<PySmilesMolSupplier>()?;
+    m.add_class::<PySmilesWriter>()?;
     m.add_function(wrap_pyfunction!(iter_sdf, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_str, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_batched, m)?)?;
