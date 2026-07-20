@@ -420,6 +420,58 @@ never a specific output — since malformed input must degrade to a clean `Err`,
   are not committed (regenerable byte-for-byte from the corpus + script); only the generator
   scripts and this summary are.
 
+### IO-2: Daylight TDT file I/O (`.tdt`)
+
+New streaming `TdtRecordReader`/`TdtRecordWriter` in `crates/chematic-mol/src/tdt.rs`, reusing
+`MoleculeRecord`'s (IO-1's shared record type) `coordinates_2d`/`coordinates_3d` fields (unused
+by the SMILES-table format, exactly what TDT's `2D`/`3D` tags need). Built from a source-cited
+audit of RDKit's `TDTMolSupplier`/`TDTWriter` (same pinned commit
+`8afba32ec539dcb2369bc84549d802aca3f7eb39`).
+
+**Four deliberate, documented divergences from RDKit — three fix real bugs the audit/oracle
+found in RDKit itself, not guessed improvements:**
+1. **RDKit's own coordinate-list parser drops the last atom's position** — its comma-tokenizer
+   treats the token containing the trailing `;>` as "found the terminator" and never pushes that
+   token's own numeric value. Confirmed against a live RDKit run (both via source tracing during
+   the audit, and reproduced again by this PR's own oracle: the last atom comes back at
+   `(0,0,0)` from real RDKit). Chematic parses the full list correctly.
+2. **RDKit's `TDTWriter` hard-codes its name tag as `"NAME"` while `TDTMolSupplier`'s own
+   `nameRecord` defaults to `""`** (no tag recognized) — a bare RDKit writer+reader round trip
+   silently loses the molecule name by default, confirmed empirically. Chematic's reader/writer
+   both default `name_tag` to `Some("NAME")`, so the round trip preserves the name out of the box.
+3. **RDKit's malformed-tag recovery has an infinite-loop hazard** — the exception thrown for a
+   missing `>` isn't caught inside `TDTMolSupplier::next()`'s own position-advance bookkeeping,
+   so naively retrying re-throws on the same record forever (confirmed empirically; this PR's own
+   RDKit oracle script had to switch to explicit index-based access, `sup[idx]`, to work around
+   it and make progress). Chematic's reader always scans forward to the next record boundary
+   internally before returning `Err`, so the next `Iterator::next()` call always makes progress.
+4. **RDKit drops the final tag line when a file has no trailing newline — discovered via this
+   PR's own oracle run, not predicted by the initial source audit.** `$SMI<CC>\nNAME<ethane>`
+   with no trailing `\n` yields `_Name == ""` in real RDKit rather than `"ethane"`. Chematic's
+   `BufRead::read_line`-based reader returns a final unterminated line correctly.
+
+**Results (205 rows, 8 scenarios covering SMI/NAME/arbitrary-property records, `|` terminator,
+empty property, repeated property (last-wins), unknown tags, malformed-tag recovery, EOF
+mid-record, 2D/3D coordinate tags, isotopes, charges, disconnected fragments, stereochemistry):**
+
+| Metric | Result |
+|---|---|
+| Status parity | 205/205 (100%) |
+| Known-malformed row correctly rejected by both tools | 1/1 |
+| Name/property/coordinate exact-match (excl. the 2 scenarios with documented divergences above) | 100% |
+| Chematic self-consistency vs. known ground truth | 204/204 (100%) |
+| RDKit self-consistency vs. known ground truth (non-gating) | 204/204 (100%) |
+
+- **Files:** `crates/chematic-mol/src/tdt.rs`, `crates/chematic-mol/examples/tdt_dump.rs`,
+  `scripts/gen_tdt_fixtures.py`, `scripts/gen_rdkit_tdt_oracle.py`, `scripts/tdt_io_parity.py`.
+- **Reference tool:** RDKit 2026.03.3.
+- **How to regenerate:** `python scripts/gen_tdt_fixtures.py --out-dir <dir> --corpus <SMILES.csv>
+  --manifest-out <manifest.json>` + `cargo run -p chematic-mol --release --example tdt_dump --
+  <manifest.json> <dir> <out.jsonl>` + `python scripts/gen_rdkit_tdt_oracle.py --manifest
+  <manifest.json> --fixtures-dir <dir> --out <oracle.jsonl>` + `python scripts/tdt_io_parity.py
+  --chematic <out.jsonl> --rdkit-oracle <oracle.jsonl> --manifest <manifest.json>`. Self-test:
+  `python scripts/tdt_io_parity.py --self-test`.
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.

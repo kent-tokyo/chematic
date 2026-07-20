@@ -67,6 +67,15 @@
 //!   inconsistency this port does not reproduce). When disabled, a `2D`/`3D`
 //!   tag is stored as a generic string property holding the raw,
 //!   unparsed coordinate text — never silently discarded.
+//! - **A file with no trailing newline drops its final tag line in real
+//!   RDKit, discovered against a live oracle this session (not predicted by
+//!   the initial source audit).** A record whose last generic tag line is
+//!   also the file's last byte, with no trailing `\n`, has that tag line
+//!   silently dropped by RDKit's `TDTMolSupplier` — confirmed empirically
+//!   (`$SMI<CC>\nNAME<ethane>` with no trailing newline yields `_Name == ""`
+//!   in real RDKit, not `"ethane"`). This reader's line-reading loop
+//!   (`BufRead::read_line`) returns a final unterminated line correctly, so
+//!   chematic does not reproduce this gap.
 
 use std::io::{BufRead, Write};
 
