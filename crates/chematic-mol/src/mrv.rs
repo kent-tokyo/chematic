@@ -110,6 +110,9 @@ pub enum MrvError {
     /// A construct this port deliberately does not support was detected —
     /// see the module docs for the full list.
     UnsupportedFeature { feature: String, location: String },
+    /// [`MrvWriteOptions::kekulize`] was requested but the molecule's
+    /// aromatic system could not be kekulized.
+    KekulizationFailed { detail: String },
 }
 
 impl std::fmt::Display for MrvError {
@@ -135,6 +138,7 @@ impl std::fmt::Display for MrvError {
             Self::UnsupportedFeature { feature, location } => {
                 write!(f, "unsupported MRV feature {feature:?} at {location}")
             }
+            Self::KekulizationFailed { detail } => write!(f, "kekulization failed: {detail}"),
         }
     }
 }
@@ -739,9 +743,29 @@ pub fn parse_mrv_with_limits(
 // ---------------------------------------------------------------------------
 
 /// Options for [`write_mrv`].
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct MrvWriteOptions {
+    /// Decimal places for coordinate output (0 is treated as the default, 4).
     pub precision: usize,
+    /// Kekulize aromatic rings before writing (bond order "1"/"2" instead of
+    /// "A"), matching RDKit's `MolToMrvBlock` default. A molecule written
+    /// this way and re-read loses its aromatic flag on read-back (the
+    /// Kekulé form is a different, chemically-equivalent representation --
+    /// re-derive aromaticity via `chematic_perception::apply_aromaticity`
+    /// if the aromatic flag itself must survive a round trip).
+    pub kekulize: bool,
+    /// Emit `<bondStereo>` for wedge/dash (`BondOrder::Up`/`Down`) bonds.
+    pub include_stereo: bool,
+}
+
+impl Default for MrvWriteOptions {
+    fn default() -> Self {
+        Self {
+            precision: 4,
+            kekulize: true,
+            include_stereo: true,
+        }
+    }
 }
 
 /// Write a [`MoleculeRecord`] to an MRV document.
@@ -756,7 +780,20 @@ pub fn write_mrv(record: &MoleculeRecord, options: &MrvWriteOptions) -> Result<S
     } else {
         options.precision
     };
-    let mol = &record.mol;
+
+    let kekulized;
+    let mol = if options.kekulize {
+        let mut m = record.mol.clone();
+        chematic_perception::kekulize_inplace(&mut m).map_err(|e| {
+            MrvError::KekulizationFailed {
+                detail: e.to_string(),
+            }
+        })?;
+        kekulized = m;
+        &kekulized
+    } else {
+        &record.mol
+    };
 
     let mut atoms_xml = String::new();
     for (i, (idx, atom)) in mol.atoms().enumerate() {
@@ -796,8 +833,9 @@ pub fn write_mrv(record: &MoleculeRecord, options: &MrvWriteOptions) -> Result<S
         let a2 = format!("a{}", bond.atom2.0 + 1);
         let (order, stereo_value) = match bond.order {
             BondOrder::Single => ("1", None),
-            BondOrder::Up => ("1", Some("W")),
-            BondOrder::Down => ("1", Some("H")),
+            BondOrder::Up if options.include_stereo => ("1", Some("W")),
+            BondOrder::Down if options.include_stereo => ("1", Some("H")),
+            BondOrder::Up | BondOrder::Down => ("1", None),
             BondOrder::Double => ("2", None),
             BondOrder::Triple => ("3", None),
             BondOrder::Aromatic => ("A", None),
@@ -875,6 +913,22 @@ mod tests {
         </molecule></MChemicalStruct></MDocument></cml>"#;
         let rec = parse_mrv(mrv).unwrap();
         assert!(rec.mol.atoms().all(|(_, a)| a.aromatic));
+    }
+
+    #[test]
+    fn writer_kekulizes_benzene_by_default() {
+        let rec = MoleculeRecord::new(chematic_smiles::parse("c1ccccc1").unwrap());
+        let written = write_mrv(&rec, &MrvWriteOptions::default()).unwrap();
+        assert!(!written.contains(r#"order="A""#));
+        assert!(written.contains(r#"order="2""#));
+
+        // kekulize=false preserves the aromatic bond order token instead.
+        let opts = MrvWriteOptions {
+            kekulize: false,
+            ..MrvWriteOptions::default()
+        };
+        let written_aromatic = write_mrv(&rec, &opts).unwrap();
+        assert!(written_aromatic.contains(r#"order="A""#));
     }
 
     #[test]
