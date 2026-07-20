@@ -558,6 +558,56 @@ pub fn ecfp6_rdkit_invariants(mol: &Molecule) -> BitVec2048 {
     )
 }
 
+/// **Experimental.** ECFP4 fingerprint (radius = 2, 2048 bits) additionally
+/// applying RDKit's redundant-environment suppression on top of
+/// [`EcfpInvariantMode::RdkitMorgan`] — see
+/// [`ecfp_with_bitinfo_rdkit_environment_experimental`] for what this mode
+/// does and does not claim to match.
+pub fn ecfp4_rdkit_environment_experimental(mol: &Molecule) -> BitVec2048 {
+    ecfp_with_bitinfo_rdkit_environment_experimental(mol, &EcfpConfig::default()).0
+}
+
+/// **Experimental.** ECFP6 fingerprint (radius = 3, 2048 bits) additionally
+/// applying RDKit's redundant-environment suppression. See
+/// [`ecfp_with_bitinfo_rdkit_environment_experimental`].
+pub fn ecfp6_rdkit_environment_experimental(mol: &Molecule) -> BitVec2048 {
+    ecfp_with_bitinfo_rdkit_environment_experimental(
+        mol,
+        &EcfpConfig {
+            radius: 3,
+            ..EcfpConfig::default()
+        },
+    )
+    .0
+}
+
+/// **Experimental.** Like [`ecfp_with_bitinfo_and_mode`], but also applies
+/// RDKit's redundant-environment suppression (an atom is not re-emitted at a
+/// higher radius once its cumulative bond-environment duplicates one already
+/// emitted) on top of [`EcfpInvariantMode::RdkitMorgan`] — see
+/// `crate::morgan_environment` for the algorithm, verified directly against
+/// RDKit's own Morgan generator source.
+///
+/// **Not** bit-compatible with RDKit's fingerprint: FNV-1a still doesn't
+/// match RDKit's hash, so representative selection when multiple atoms
+/// produce an identical bond-environment in the same round (RDKit breaks
+/// this tie by hash value) is not guaranteed to match RDKit's specific pick
+/// when the tied atoms are chemically non-equivalent. Emitted-`(atom,
+/// radius)`-pair-set agreement with RDKit is high (measured against RDKit's
+/// own default Morgan generator; see `scripts/ecfp_rdkit_suppression_parity.py`),
+/// not the raw bit values.
+pub fn ecfp_with_bitinfo_rdkit_environment_experimental(
+    mol: &Molecule,
+    config: &EcfpConfig,
+) -> (BitVec2048, FxHashMap<usize, Vec<(u32, u32)>>) {
+    crate::morgan_environment::ecfp_environments(
+        mol,
+        config,
+        EcfpInvariantMode::RdkitMorgan,
+        crate::morgan_environment::EnvironmentEmissionMode::SuppressRdkitRedundant,
+    )
+}
+
 /// Raw (unfolded) iteration-0 atom invariant for every atom in `mol`, under
 /// `mode`, with `use_chirality=false`. One entry per atom, in `AtomIdx`
 /// order. Exposed for atom-invariant-partition comparison against an

@@ -36,6 +36,29 @@ from RDKit's (radius-0/1/2 invariants, redundant-environment suppression, sparse
   morgan_rdkit_environment_trace` + `python scripts/ecfp_rdkit_environment_parity.py`
   (see each script's docstring for exact invocation)
 
+### Morgan/ECFP RDKit environment-suppression parity (Phase B, same 5,041-input set)
+
+Whether chematic's RDKit-equivalent redundant-environment suppression
+(`ecfp_with_bitinfo_rdkit_environment_experimental`, additive/experimental --
+production `ecfp4()`/`ecfp6()`/`morgan_fp_counts()` unchanged) emits the same
+set of `(atom_idx, radius)` environments as RDKit's own default
+(`includeRedundantEnvironments=False`) generator. 5,032/5,041 (99.82%) exact
+match; the 9 residual mismatches are all single-pair representative-selection
+ties (chematic and RDKit pick a different, chemically-near-equivalent atom as
+the emitter for an identical bond-environment) -- expected, since tie-breaking
+depends on hash value and FNV-1a doesn't match RDKit's hash by construction
+(same "not bit-compatible, partition/set-only" scope as every other RDKit-
+parity mode in this crate). All 8 single-atom/degree-0
+`sparse_count_mismatch` fixtures from the Phase A diagnostic now resolve.
+
+- **File:** `ecfp_rdkit_suppression_parity_summary.json`
+- **Reference tool:** RDKit 2026.03.3 (same oracle rows as the Phase A
+  diagnostic above -- `default` variant's `sparse_bit_info`)
+- **How to regenerate:** `cargo run -p chematic-fp --release --example
+  morgan_suppression_dump` + `python scripts/gen_ecfp_rdkit_environment_oracle.py`
+  + `python scripts/ecfp_rdkit_suppression_parity.py` (see each script's
+  docstring for exact invocation)
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.

@@ -27,6 +27,7 @@ pub mod lsh;
 pub mod maccs;
 pub mod map4;
 pub mod mhfp;
+mod morgan_environment;
 pub mod path;
 pub mod pattern;
 pub mod pharmacophore_fp;
@@ -41,8 +42,10 @@ pub use bitvec::{BitVec2048, BitVecN};
 pub use bulk::{tanimoto_matrix, tanimoto_slice, top_k_similar};
 pub use ecfp::{
     EcfpConfig, EcfpInvariantMode, atom_invariants, ecfp, ecfp_with_bitinfo,
-    ecfp_with_bitinfo_and_mode, ecfp_with_invariant_mode, ecfp4, ecfp4_rdkit_invariants, ecfp6,
-    ecfp6_rdkit_invariants, morgan_fp_counts, tanimoto_ecfp4,
+    ecfp_with_bitinfo_and_mode, ecfp_with_bitinfo_rdkit_environment_experimental,
+    ecfp_with_invariant_mode, ecfp4, ecfp4_rdkit_environment_experimental, ecfp4_rdkit_invariants,
+    ecfp6, ecfp6_rdkit_environment_experimental, ecfp6_rdkit_invariants, morgan_fp_counts,
+    tanimoto_ecfp4,
 };
 /// Diagnostic-only APIs, not meant for production use — a per-`(atom,
 /// radius)` trace of chematic's real Morgan expansion, for the RDKit
