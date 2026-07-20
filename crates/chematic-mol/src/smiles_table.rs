@@ -39,6 +39,21 @@
 //!   know a quoted field is unterminated without reading ahead indefinitely;
 //!   rather than silently misparsing or unboundedly buffering, an
 //!   unterminated quote is a [`SmilesTableError::UnterminatedQuote`].
+//!   **RDKit's own `SmilesMolSupplier` has no CSV-quote-awareness at all**
+//!   for its comma-delimiter mode — confirmed against a live RDKit oracle
+//!   this session, not merely inferred from source: a value like
+//!   `"has, a comma"` is split into two raw columns by RDKit's literal
+//!   comma-splitting, corrupting the field. Chematic's quoting support is a
+//!   genuine, deliberate improvement here, not a matched behavior — any
+//!   `.csv` file with an embedded comma or quote will therefore disagree
+//!   between chematic and RDKit by design, in chematic's favor.
+//! - No name column (`name_column: None`, RDKit's `nameColumn=-1`): RDKit's
+//!   `SmilesMolSupplier` falls back to the running *physical line number* as
+//!   `_Name` in this case (source-confirmed and independently reproduced
+//!   against a live RDKit oracle this session, `scripts/gen_rdkit_smiles_table_oracle.py`).
+//!   [`MoleculeRecord::name`] is simply empty in this case instead —
+//!   replicating a line-number-as-name fallback was judged a low-value,
+//!   surprising RDKit implementation detail not worth reproducing.
 
 use std::collections::HashSet;
 use std::io::{BufRead, Write};
