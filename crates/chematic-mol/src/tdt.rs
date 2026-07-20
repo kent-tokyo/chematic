@@ -370,14 +370,35 @@ impl<R: BufRead> TdtRecordReader<R> {
             });
         }
 
+        // Any error from here on (malformed tag, oversized line, malformed
+        // coordinate list, IO error mid-record) must recover to the next
+        // record boundary before propagating -- otherwise a leftover
+        // fragment of THIS record (e.g. its `|` terminator, already read
+        // into a buffer that got rejected for being too long) is
+        // misinterpreted as the start of a phantom next record. Centralized
+        // here rather than at each individual error site inside
+        // `read_record_body`, so no future error path can forget it.
+        match self.read_record_body(&start_line, record_line) {
+            Ok(tags) => Ok(Some((record_line, tags))),
+            Err(e) => {
+                self.recover_to_next_record()?;
+                Err(e)
+            }
+        }
+    }
+
+    fn read_record_body(
+        &mut self,
+        start_line: &str,
+        record_line: usize,
+    ) -> Result<Vec<RawTag>, TdtError> {
         let mut tags = Vec::new();
 
-        let smi_value =
-            extract_tag_value(&start_line).ok_or_else(|| TdtError::UnterminatedTag {
-                line: record_line,
-                record_index: self.record_index,
-                tag_name: "$SMI".to_string(),
-            })?;
+        let smi_value = extract_tag_value(start_line).ok_or_else(|| TdtError::UnterminatedTag {
+            line: record_line,
+            record_index: self.record_index,
+            tag_name: "$SMI".to_string(),
+        })?;
         tags.push(RawTag::Generic {
             name: "$SMI".to_string(),
             value: smi_value,
@@ -409,7 +430,6 @@ impl<R: BufRead> TdtRecordReader<R> {
                         value,
                     }),
                     None => {
-                        self.recover_to_next_record()?;
                         return Err(TdtError::UnterminatedTag {
                             line: self.line_number,
                             record_index: self.record_index,
@@ -420,7 +440,7 @@ impl<R: BufRead> TdtRecordReader<R> {
             }
         }
 
-        Ok(Some((record_line, tags)))
+        Ok(tags)
     }
 
     /// Read a coordinate tag's value, following continuation lines until a
@@ -1065,5 +1085,193 @@ mod tests {
         }
         let text = String::from_utf8(out).unwrap();
         assert!(text.contains("Note<line1 line2>"));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Adversarial / fuzz-style tests
+// ---------------------------------------------------------------------------
+//
+// Same rationale as `crate::smiles_table::adversarial_tests`: no
+// cargo-fuzz/libfuzzer harness exists anywhere in this workspace, and
+// introducing one for this module was judged disproportionate. Deterministic
+// adversarial unit tests instead, all asserting only "no panic/hang/OOM".
+
+#[cfg(test)]
+mod adversarial_tests {
+    use super::*;
+    use std::io::{BufReader, Cursor};
+
+    fn drain(input: &[u8], options: TdtReaderOptions) -> usize {
+        TdtRecordReader::new(BufReader::new(Cursor::new(input.to_vec())), options).count()
+    }
+
+    #[test]
+    fn empty_input_no_panic() {
+        assert_eq!(drain(b"", TdtReaderOptions::default()), 0);
+    }
+
+    #[test]
+    fn truncated_input_mid_smi_tag_no_panic() {
+        assert_eq!(drain(b"$SMI<CC", TdtReaderOptions::default()), 1);
+    }
+
+    #[test]
+    fn truncated_input_at_dollar_sign_only_no_panic() {
+        assert_eq!(drain(b"$", TdtReaderOptions::default()), 1);
+    }
+
+    #[test]
+    fn huge_line_is_explicit_error_not_panic_or_oom() {
+        let mut line = b"$SMI<CC>\nNOTE<".to_vec();
+        line.extend(std::iter::repeat_n(b'a', 10_000_000));
+        line.push(b'>');
+        line.push(b'\n');
+        line.extend_from_slice(b"|\n");
+        let opts = TdtReaderOptions {
+            max_line_bytes: 1 << 20,
+            ..Default::default()
+        };
+        let reader = TdtRecordReader::new(BufReader::new(Cursor::new(line)), opts);
+        let results: Vec<_> = reader.collect();
+        assert_eq!(results.len(), 1);
+        assert!(matches!(results[0], Err(TdtError::LineTooLong { .. })));
+    }
+
+    #[test]
+    fn huge_property_value_within_limit_does_not_panic() {
+        let mut line = b"$SMI<CC>\nNOTE<".to_vec();
+        line.extend(std::iter::repeat_n(b'x', 500_000));
+        line.extend_from_slice(b">\n|\n");
+        let opts = TdtReaderOptions {
+            max_line_bytes: 1 << 21,
+            ..Default::default()
+        };
+        let results: Vec<_> =
+            TdtRecordReader::new(BufReader::new(Cursor::new(line)), opts).collect();
+        assert_eq!(results.len(), 1);
+        assert!(results[0].is_ok());
+    }
+
+    #[test]
+    fn invalid_utf8_byte_path_yields_io_error_not_panic() {
+        let input: &[u8] = b"$SMI<CC>\nNOTE<\xFF\xFE>\n|\n";
+        let results: Vec<_> = TdtRecordReader::new(
+            BufReader::new(Cursor::new(input.to_vec())),
+            TdtReaderOptions::default(),
+        )
+        .collect();
+        assert_eq!(results.len(), 1);
+        assert!(matches!(results[0], Err(TdtError::Io(_))));
+    }
+
+    #[test]
+    fn excessive_property_count_does_not_panic() {
+        let mut line = String::from("$SMI<CC>\n");
+        for i in 0..5000 {
+            line.push_str(&format!("P{i}<v{i}>\n"));
+        }
+        line.push_str("|\n");
+        let results: Vec<_> = TdtRecordReader::new(
+            BufReader::new(Cursor::new(line.into_bytes())),
+            TdtReaderOptions::default(),
+        )
+        .collect();
+        assert_eq!(results.len(), 1);
+        assert!(results[0].is_ok());
+        assert_eq!(results[0].as_ref().unwrap().properties.len(), 5000);
+    }
+
+    #[test]
+    fn very_large_molecule_smiles_does_not_panic() {
+        let smi = "C".repeat(3000);
+        let line = format!("$SMI<{smi}>\n|\n");
+        let results: Vec<_> = TdtRecordReader::new(
+            BufReader::new(Cursor::new(line.into_bytes())),
+            TdtReaderOptions::default(),
+        )
+        .collect();
+        assert_eq!(results.len(), 1);
+        assert!(results[0].is_ok());
+        assert_eq!(results[0].as_ref().unwrap().mol.atom_count(), 3000);
+    }
+
+    #[test]
+    fn malformed_coordinate_list_does_not_panic() {
+        let opts = TdtReaderOptions {
+            read_2d: true,
+            ..Default::default()
+        };
+        let input = b"$SMI<CCO>\n2D<not,numbers,here;>\n|\n";
+        let results: Vec<_> =
+            TdtRecordReader::new(BufReader::new(Cursor::new(input.to_vec())), opts).collect();
+        assert_eq!(results.len(), 1);
+        assert!(matches!(
+            results[0],
+            Err(TdtError::MalformedCoordinateList { .. })
+        ));
+    }
+
+    #[test]
+    fn coordinate_list_never_terminated_does_not_hang() {
+        let opts = TdtReaderOptions {
+            read_2d: true,
+            max_line_bytes: 1 << 16,
+            ..Default::default()
+        };
+        // No ";>" anywhere -- must not loop forever waiting for one.
+        let input = "$SMI<CC>\n2D<1.0,2.0,3.0\n".repeat(50) + "|\n";
+        let results: Vec<_> =
+            TdtRecordReader::new(BufReader::new(Cursor::new(input.into_bytes())), opts).collect();
+        // Whatever the outcome, this line finishing at all (not hanging) is the test.
+        assert!(results.len() <= 1);
+    }
+
+    /// Tiny deterministic PRNG (splitmix64), matching
+    /// `crate::smiles_table::adversarial_tests`' own approach -- no `rand`
+    /// dependency needed for a seeded, reproducible mutation corpus.
+    struct SplitMix64(u64);
+    impl SplitMix64 {
+        fn next(&mut self) -> u64 {
+            self.0 = self.0.wrapping_add(0x9E3779B97F4A7C15);
+            let mut z = self.0;
+            z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
+            z ^ (z >> 31)
+        }
+    }
+
+    #[test]
+    fn seeded_random_mutation_corpus_never_panics() {
+        let base: &[u8] = b"$SMI<CCO>\nNAME<ethanol>\n2D<0.0,0.0,1.0,0.0,2.0,1.0;>\nNOTE<x>\n|\n";
+        let mut rng = SplitMix64(0xC0FFEE1234567890);
+
+        for _ in 0..2000 {
+            let mut mutated = base.to_vec();
+            let n_mutations = 1 + (rng.next() % 5) as usize;
+            for _ in 0..n_mutations {
+                if mutated.is_empty() {
+                    break;
+                }
+                let idx = (rng.next() as usize) % mutated.len();
+                let op = rng.next() % 3;
+                match op {
+                    0 => mutated[idx] = (rng.next() % 256) as u8,
+                    1 => {
+                        mutated.insert(idx, (rng.next() % 256) as u8);
+                    }
+                    _ => {
+                        mutated.remove(idx);
+                    }
+                }
+            }
+
+            let opts = TdtReaderOptions {
+                read_2d: true,
+                max_line_bytes: 1 << 16,
+                ..Default::default()
+            };
+            let _ = drain(&mutated, opts);
+        }
     }
 }
