@@ -1,23 +1,28 @@
 //! Phase B (redundant-environment suppression) validation: dumps chematic's
-//! *emitted* `(atom_idx, radius)` pairs under
-//! `ecfp_with_bitinfo_rdkit_environment_experimental` — i.e. RDKit-invariant
-//! atom typing plus RDKit-equivalent redundant-environment suppression — for
-//! a SMILES corpus, one JSON object per molecule.
+//! *emitted* `(atom_idx, radius, raw_environment_id)` triples under
+//! RDKit-invariant atom typing plus RDKit-equivalent redundant-environment
+//! suppression, for a SMILES corpus, one JSON object per molecule.
 //!
-//! Uses only the public API (no `diagnostics` feature needed). Compared
-//! against `row["default"]["sparse_bit_info"]` (flattened) from
-//! `scripts/gen_ecfp_rdkit_environment_oracle.py`'s oracle rows by
-//! `scripts/ecfp_rdkit_suppression_parity.py` — RDKit's own default
-//! (`includeRedundantEnvironments=False`) generator's real emitted-pair set,
-//! already produced by PR #120's unmodified oracle script.
+//! Uses `chematic_fp::diagnostics::suppressed_environments_diagnostic` (the
+//! `diagnostics` feature) rather than the public
+//! `ecfp_with_bitinfo_rdkit_environment_experimental` API, since the raw
+//! (unfolded) `raw_environment_id` is needed to measure real sparse-count
+//! *multiplicity* (how many distinct environments hash to the same id) --
+//! the public API only exposes `(atom, radius)` pairs keyed by *folded* bit,
+//! which can't distinguish two different raw ids that happen to fold to the
+//! same bit. Compared by `scripts/ecfp_rdkit_suppression_parity.py` against
+//! `row["default"]["sparse_bit_info"]` (pair-set match) and
+//! `row["default"]["sparse_counts"]` (count-multiset shape match) from
+//! `scripts/gen_ecfp_rdkit_environment_oracle.py`'s oracle rows.
 //!
 //! Usage:
 //! ```text
-//! cargo run -p chematic-fp --release --example morgan_suppression_dump \
-//!     -- <SMILES.csv> <out.jsonl>
+//! cargo run -p chematic-fp --release --features diagnostics \
+//!     --example morgan_suppression_dump -- <SMILES.csv> <out.jsonl>
 //! ```
 
-use chematic_fp::{EcfpConfig, ecfp_with_bitinfo_rdkit_environment_experimental};
+use chematic_fp::EcfpConfig;
+use chematic_fp::diagnostics::suppressed_environments_diagnostic;
 use chematic_smiles::parse;
 use serde_json::json;
 use std::fs;
@@ -68,10 +73,9 @@ fn main() {
             }
         };
 
-        let (_fp, info) = ecfp_with_bitinfo_rdkit_environment_experimental(&mol, &config);
-        let mut emitted: Vec<[u32; 2]> = info
-            .values()
-            .flat_map(|envs| envs.iter().map(|&(atom, radius)| [atom, radius]))
+        let mut emitted: Vec<[u64; 3]> = suppressed_environments_diagnostic(&mol, &config)
+            .into_iter()
+            .map(|(atom, radius, raw_id)| [atom as u64, radius as u64, raw_id])
             .collect();
         emitted.sort_unstable();
 

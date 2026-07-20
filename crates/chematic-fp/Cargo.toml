@@ -41,3 +41,7 @@ harness = false
 [[example]]
 name = "morgan_rdkit_environment_trace"
 required-features = ["diagnostics"]
+
+[[example]]
+name = "morgan_suppression_dump"
+required-features = ["diagnostics"]

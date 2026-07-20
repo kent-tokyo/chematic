@@ -49,12 +49,15 @@ pub use ecfp::{
 };
 /// Diagnostic-only APIs, not meant for production use — a per-`(atom,
 /// radius)` trace of chematic's real Morgan expansion, for the RDKit
-/// environment-parity oracle. Gated behind the `diagnostics` feature. See
-/// `scripts/ecfp_rdkit_environment_parity.py`.
+/// environment-parity oracle (see `scripts/ecfp_rdkit_environment_parity.py`),
+/// and a raw-identifier suppressed-emission dump for sparse-count-shape
+/// validation (see `scripts/ecfp_rdkit_suppression_parity.py`). Gated behind
+/// the `diagnostics` feature.
 #[cfg(feature = "diagnostics")]
 #[doc(hidden)]
 pub mod diagnostics {
     pub use crate::ecfp_diagnostics::{MorganTraceEntry, atom_ball, morgan_trace};
+    pub use crate::morgan_environment::suppressed_environments_diagnostic;
 }
 pub use erg::{
     ERG_VEC_LEN, ErgAtomType, ErgBondType, ErgConfig, ErgFingerprint, cosine_erg_vec, erg,

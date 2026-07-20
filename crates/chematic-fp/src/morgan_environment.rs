@@ -5,9 +5,11 @@
 //! (`includeRedundantEnvironments=False`) instead suppresses an atom once
 //! its cumulative bond-index-set duplicates one already emitted by another
 //! atom at the same or an earlier radius. This module reproduces that
-//! algorithm, verified directly against RDKit's real source
-//! (`Code/GraphMol/Fingerprints/MorganGenerator.cpp`,
-//! `MorganEnvGenerator::getEnvironments`).
+//! algorithm, verified directly against RDKit's real source at a pinned
+//! commit (not a mutable `master` reference):
+//! `Code/GraphMol/Fingerprints/MorganGenerator.cpp`,
+//! `MorganEnvGenerator<OutputType>::getEnvironments`, commit
+//! [`0062b670640352ab63d6256be608615e87e1af53`](https://github.com/rdkit/rdkit/blob/0062b670640352ab63d6256be608615e87e1af53/Code/GraphMol/Fingerprints/MorganGenerator.cpp).
 //!
 //! Per molecule: radius 0 is emitted unconditionally for every atom (no
 //! suppression concept at round 0). For each subsequent layer (0-indexed,
@@ -17,8 +19,9 @@
 //!    `BondSet`) and a fresh invariant via [`expand_atom_id`]. Atoms of
 //!    degree 0 die immediately (before computing anything) — this happens
 //!    unconditionally, in both emission modes.
-//! 2. Atoms are grouped by `BondSet`. Under [`EnvironmentEmissionMode::EmitAll`]
-//!    every group member emits, no death from this step. Under
+//! 2. Atoms are grouped by `BondSet`. Under
+//!    [`EnvironmentEmissionMode::IncludeRdkitRedundant`] every group member
+//!    emits, no death from this step. Under
 //!    [`EnvironmentEmissionMode::SuppressRdkitRedundant`]: if the `BondSet`
 //!    was already seen in an earlier round, the *entire* group dies
 //!    (nobody emits, including what would otherwise be the winner); if not,
@@ -44,13 +47,18 @@ use crate::ecfp::{
 /// module docs for the exact algorithm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum EnvironmentEmissionMode {
-    /// Emit every atom at every radius unconditionally (chematic's original
-    /// behavior). Degree-0 atoms still stop emitting past radius 0 — that
-    /// rule is unconditional on this flag, matching RDKit.
+    /// RDKit's `includeRedundantEnvironments=true` lifecycle: every atom's
+    /// bond-environment is emitted at every radius it computes one for, with
+    /// no death from bondset collision. Degree-zero atoms still stop after
+    /// radius 0 — that rule is unconditional on this flag, matching RDKit —
+    /// so this is **not** the same as chematic's existing legacy
+    /// `ecfp()`/`ecfp4()`/`ecfp6()`/`morgan_fp_counts()` behavior, which
+    /// re-hashes and emits a degree-zero atom at every radius too.
     #[allow(dead_code)] // exercised by tests; no production caller needs it yet
-    EmitAll,
-    /// RDKit's default: once a bond-index-set has been emitted by any atom
-    /// at any radius, no atom emits that same bond-index-set again.
+    IncludeRdkitRedundant,
+    /// RDKit's default (`includeRedundantEnvironments=false`): once a
+    /// bond-index-set has been emitted by any atom at any radius, no atom
+    /// emits that same bond-index-set again.
     SuppressRdkitRedundant,
 }
 
@@ -141,7 +149,7 @@ fn ecfp_environments_emitted(
 
         for (bond_env, mut members) in groups {
             match emission_mode {
-                EnvironmentEmissionMode::EmitAll => {
+                EnvironmentEmissionMode::IncludeRdkitRedundant => {
                     for &(invariant, atom_idx) in &members {
                         emitted.push((atom_idx, layer + 1, invariant));
                     }
@@ -197,6 +205,30 @@ pub(crate) fn ecfp_environments(
         );
     }
     (fp, info)
+}
+
+/// Diagnostic-only: raw (unfolded) *suppressed* emitted environments as
+/// `(atom_idx, radius, raw_environment_id)`, always using
+/// `EcfpInvariantMode::RdkitMorgan` + `SuppressRdkitRedundant` — the real
+/// production suppression path, not a general-purpose entry point. Exists
+/// so validation tooling can measure raw-identifier *count multiplicity*
+/// (sparse-count shape) against an external oracle without going through
+/// 2048-bit folding, which can collide distinct raw ids into the same bit
+/// and muddy a count comparison. Re-exported under the `diagnostics`
+/// feature — deliberately not part of the public API (mirrors
+/// [`ecfp_environments`]'s own narrow scope; `EnvironmentEmissionMode`
+/// itself stays crate-private).
+#[allow(dead_code)] // only reachable via the `diagnostics` feature (matches ecfp_diagnostics.rs's own convention)
+pub fn suppressed_environments_diagnostic(
+    mol: &Molecule,
+    config: &EcfpConfig,
+) -> Vec<(u32, u32, u64)> {
+    ecfp_environments_emitted(
+        mol,
+        config,
+        EcfpInvariantMode::RdkitMorgan,
+        EnvironmentEmissionMode::SuppressRdkitRedundant,
+    )
 }
 
 /// Raw (unfolded) emitted environments as `(atom_idx, radius, raw_id)` —
@@ -279,12 +311,12 @@ mod tests {
             "radius 2: expected zero emissions (ethane fully discovered by radius 1), \
              got {radius2_count}"
         );
-        let all = emitted_pairs(&mol, 2, EnvironmentEmissionMode::EmitAll);
+        let all = emitted_pairs(&mol, 2, EnvironmentEmissionMode::IncludeRdkitRedundant);
         for r in [1u32, 2] {
             let count = all.iter().filter(|&&(_, radius)| radius == r).count();
             assert_eq!(
                 count, 2,
-                "EmitAll radius {r}: expected 2 emissions, got {count}"
+                "IncludeRdkitRedundant radius {r}: expected 2 emissions, got {count}"
             );
         }
     }
@@ -311,7 +343,7 @@ mod tests {
     fn degree_zero_atom_never_emits_past_radius_0_in_either_mode() {
         let mol = parse("[Cl-]").unwrap();
         for mode in [
-            EnvironmentEmissionMode::EmitAll,
+            EnvironmentEmissionMode::IncludeRdkitRedundant,
             EnvironmentEmissionMode::SuppressRdkitRedundant,
         ] {
             let pairs = emitted_pairs(&mol, 2, mode);
@@ -354,7 +386,7 @@ mod tests {
         // This white-box test computes the expected radius-3 invariant using
         // the same production `expand_atom_id` the implementation itself
         // calls, fed with every neighbor's real radius-2 invariant
-        // (collected from `EmitAll` mode, where invariant computation is
+        // (collected from `IncludeRdkitRedundant` mode, where invariant computation is
         // identical to `SuppressRdkitRedundant` — modes only differ in who
         // survives to *emit*, not in the invariant formula, so atom 0's real
         // radius-2 value is directly readable there even though it never
@@ -372,7 +404,7 @@ mod tests {
             &mol,
             &config,
             EcfpInvariantMode::RdkitMorgan,
-            EnvironmentEmissionMode::EmitAll,
+            EnvironmentEmissionMode::IncludeRdkitRedundant,
         );
         let mut ids_at_radius2 = vec![0u64; mol.atom_count()];
         for &(atom, radius, raw_id) in &all_env {
@@ -382,7 +414,7 @@ mod tests {
         }
         assert!(
             ids_at_radius2.iter().all(|&v| v != 0),
-            "every atom must have a real (nonzero) radius-2 invariant in EmitAll mode"
+            "every atom must have a real (nonzero) radius-2 invariant in IncludeRdkitRedundant mode"
         );
 
         let suppressed_env = ecfp_environments_sparse(
@@ -421,14 +453,14 @@ mod tests {
     }
 
     #[test]
-    fn suppression_never_over_emits_relative_to_emit_all() {
+    fn suppression_never_over_emits_relative_to_include_redundant() {
         // The suppressed emission set must always be a subset (by
-        // (atom,radius) pair) of the EmitAll set — suppression only ever
-        // removes emissions, never adds new ones.
+        // (atom,radius) pair) of the IncludeRdkitRedundant set — suppression
+        // only ever removes emissions, never adds new ones.
         for smi in ["CC(C)(C)C", "c1ccccc1", "CCO.c1ccccc1", "N[C@@H](C)C(=O)O"] {
             let mol = parse(smi).unwrap();
             let all: std::collections::HashSet<_> =
-                emitted_pairs(&mol, 2, EnvironmentEmissionMode::EmitAll)
+                emitted_pairs(&mol, 2, EnvironmentEmissionMode::IncludeRdkitRedundant)
                     .into_iter()
                     .collect();
             let suppressed: std::collections::HashSet<_> =
@@ -437,7 +469,7 @@ mod tests {
                     .collect();
             assert!(
                 suppressed.is_subset(&all),
-                "{smi}: suppressed set must be a subset of EmitAll set"
+                "{smi}: suppressed set must be a subset of the IncludeRdkitRedundant set"
             );
         }
     }
