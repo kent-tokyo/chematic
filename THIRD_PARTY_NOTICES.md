@@ -18,8 +18,12 @@ Derived from:
 File:            Code/GraphMol/Aromaticity.cpp
 Functions:       getAtomDonorTypeArom, countAtomElec, isAtomCandForArom,
                   applyHuckel, applyHuckelToFused
-RDKit release:   Release_2026_03_4
-RDKit commit:    e89c9f656a694fab4105139844cba88d2e013354
+RDKit commit:    e89c9f656a694fab4105139844cba88d2e013354, an ancestor of
+                 release tag Release_2026_03_4 (which resolves to
+                 8afba32ec539dcb2369bc84549d802aca3f7eb39). This file is
+                 byte-identical between the two commits (independently
+                 diffed during Morgan M4-A0's provenance audit), so the
+                 cited functions are unaffected by which commit is used.
 Source URL:      https://github.com/rdkit/rdkit/blob/e89c9f656a694fab4105139844cba88d2e013354/Code/GraphMol/Aromaticity.cpp
 ```
 
@@ -29,6 +33,61 @@ Copyright (C) 2003-2022 Greg Landrum and other RDKit contributors
 
 Licensed under the BSD 3-Clause License. Full license text below, reproduced
 from RDKit's `license.txt` at the commit above.
+
+## RDKit Morgan fingerprint hashing implementation
+
+`crates/chematic-fp/src/rdkit_morgan_hash.rs` is a source-verified, line-level
+port of RDKit's Morgan fingerprint hash-combine machinery (connectivity
+invariant, bond invariant, per-round environment hash), built as a
+diagnostic-only reference engine for Milestone M4-A0 (see
+`docs/` and the PR description for the design writeup). Not wired into any
+production API.
+
+Derived from:
+
+```
+File:            Code/GraphMol/Fingerprints/MorganGenerator.cpp
+                 Code/GraphMol/Fingerprints/FingerprintUtil.cpp
+                 Code/RDGeneral/hash/hash.hpp
+                 Code/GraphMol/Bond.h
+Functions:       MorganEnvGenerator<OutputType>::getEnvironments,
+                 MorganAtomInvGenerator::getConnectivityInvariants,
+                 MorganBondInvGenerator::getBondInvariants,
+                 gboost::hash_combine, hash_value(std::pair), hash_range,
+                 Bond::BondType enum ordinal values
+RDKit release:   Release_2026_03_4
+RDKit commit:    8afba32ec539dcb2369bc84549d802aca3f7eb39
+Source URL:      https://github.com/rdkit/rdkit/blob/8afba32ec539dcb2369bc84549d802aca3f7eb39/Code/GraphMol/Fingerprints/MorganGenerator.cpp
+```
+
+This commit was independently resolved via the GitHub tags API
+(`GET /repos/rdkit/rdkit/git/refs/tags/Release_2026_03_4`), not reused from
+the aromaticity port's citation above — that citation
+(`e89c9f656a694fab4105139844cba88d2e013354`) turned out to be an ancestor
+commit, not the tag's actual resolution (see that section's corrected
+wording above; the cited file is byte-identical between the two commits,
+so no functional correction was needed there).
+
+`crates/chematic-fp/src/morgan_environment.rs`'s own doc comment (PR #123,
+predating this audit) separately cites commit
+`0062b670640352ab63d6256be608615e87e1af53` for
+`Code/GraphMol/Fingerprints/MorganGenerator.cpp`'s
+`MorganEnvGenerator<OutputType>::getEnvironments` — independently diffed
+during this audit: that commit is **not** an ancestor of the
+`Release_2026_03_4` tag (diverged history, `ahead_by: 78, behind_by: 95`
+from the tag resolution). The file as a whole differs by one unrelated
+line (a parameter type change in a *different* function,
+`updateAdditionalOutput`'s `bitId` parameter, `uint64_t`→`size_t`); the
+specifically-cited `getEnvironments` function itself is byte-identical
+between the two commits, so `morgan_environment.rs`'s algorithm was
+unaffected — its doc comment has been updated in place with this finding
+rather than left stale.
+
+```
+Copyright (C) 2003-2022 Greg Landrum and other RDKit contributors
+```
+
+Licensed under the BSD 3-Clause License (same text as above).
 
 ### BSD 3-Clause License
 

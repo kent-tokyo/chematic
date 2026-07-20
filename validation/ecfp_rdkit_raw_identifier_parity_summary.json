@@ -1,0 +1,20 @@
+{
+  "accounted_rows": 5048,
+  "bucket_counts": {
+    "bitinfo_mismatch": 0,
+    "both_parse_fail": 0,
+    "exact_match": 4989,
+    "folded_bit_mismatch": 0,
+    "parse_mismatch": 0,
+    "radius0_numeric_mismatch": 0,
+    "radius1_numeric_mismatch": 59,
+    "radius2_numeric_mismatch": 0,
+    "representative_selection_mismatch": 0,
+    "sparse_count_mismatch": 0
+  },
+  "full_exact_match_rate": 0.9883,
+  "gate_failures": [],
+  "gate_passed": true,
+  "radius0_exact_match_rate": 1.0,
+  "total_rows": 5048
+}

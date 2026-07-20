@@ -10,6 +10,19 @@
 //! `Code/GraphMol/Fingerprints/MorganGenerator.cpp`,
 //! `MorganEnvGenerator<OutputType>::getEnvironments`, commit
 //! [`0062b670640352ab63d6256be608615e87e1af53`](https://github.com/rdkit/rdkit/blob/0062b670640352ab63d6256be608615e87e1af53/Code/GraphMol/Fingerprints/MorganGenerator.cpp).
+//! That commit is **not** an ancestor of release tag `Release_2026_03_4`
+//! (which resolves to `8afba32ec539dcb2369bc84549d802aca3f7eb39`,
+//! independently verified via the GitHub tags API during Morgan M4-A0) —
+//! diverged history, not a simple predecessor. Independently diffed during
+//! M4-A0's provenance audit: the file as a whole differs by one unrelated
+//! line in a different function (`updateAdditionalOutput`'s `bitId`
+//! parameter type), but `getEnvironments` itself — the function this module
+//! actually ports — is byte-identical between the two commits, so the
+//! algorithm above is unaffected. See [`crate::rdkit_morgan_hash`]'s module
+//! docs and `THIRD_PARTY_NOTICES.md` for the full three-citation picture
+//! (this module, `chematic-perception`'s aromaticity port, and
+//! `rdkit_morgan_hash.rs` each cite a different commit under the same
+//! `Release_2026_03_4` label).
 //!
 //! Per molecule: radius 0 is emitted unconditionally for every atom (no
 //! suppression concept at round 0). For each subsequent layer (0-indexed,
@@ -65,22 +78,25 @@ pub(crate) enum EnvironmentEmissionMode {
 /// One bit per bond index in the molecule. Equality/hash is plain
 /// word-vector equality/hash — sufficient because every `BondSet` compared
 /// against another within one call is sized to the same molecule's
-/// `bond_count()`.
+/// `bond_count()`. `pub(crate)`: pure bitset infrastructure with no
+/// hash-specific behavior, reused as-is by [`crate::rdkit_morgan_hash`]'s
+/// independent (RDKit-exact-hash) suppression pass — only the invariant/hash
+/// computation differs between the two modules, not this plumbing.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct BondSet(Vec<u64>);
+pub(crate) struct BondSet(Vec<u64>);
 
 impl BondSet {
-    fn empty(bond_count: usize) -> Self {
+    pub(crate) fn empty(bond_count: usize) -> Self {
         BondSet(vec![0u64; bond_count.div_ceil(64)])
     }
 
-    fn set(&mut self, bond: u32) {
+    pub(crate) fn set(&mut self, bond: u32) {
         let word = bond as usize / 64;
         let bit = bond as usize % 64;
         self.0[word] |= 1u64 << bit;
     }
 
-    fn union_with(&mut self, other: &BondSet) {
+    pub(crate) fn union_with(&mut self, other: &BondSet) {
         for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
             *a |= b;
         }

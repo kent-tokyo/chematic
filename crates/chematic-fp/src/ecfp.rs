@@ -92,7 +92,7 @@ pub enum EcfpInvariantMode {
 /// counted once via `mol.neighbors`, so only `implicit_hcount` is added on
 /// top (verified: `[H]C([H])([H])[H]`'s carbon gets the same invariant as
 /// plain `C`'s — both total 4).
-fn rdkit_total_degree(mol: &Molecule, idx: AtomIdx) -> u16 {
+pub(crate) fn rdkit_total_degree(mol: &Molecule, idx: AtomIdx) -> u16 {
     let graph_degree = mol.neighbors(idx).count() as u16;
     let inferred_or_bracket_h = implicit_hcount(mol, idx) as u16;
     graph_degree + inferred_or_bracket_h
@@ -102,7 +102,7 @@ fn rdkit_total_degree(mol: &Molecule, idx: AtomIdx) -> u16 {
 /// graph, combined into one count regardless of how they're spelled
 /// (verified: a mixed implicit/explicit-H atom gets the same invariant as
 /// its all-implicit or all-explicit spelling of the same total H count).
-fn rdkit_total_h_count(mol: &Molecule, idx: AtomIdx) -> u8 {
+pub(crate) fn rdkit_total_h_count(mol: &Molecule, idx: AtomIdx) -> u8 {
     let explicit_h = mol
         .neighbors(idx)
         .filter(|&(nb, _)| mol.atom(nb).element.atomic_number() == 1)
@@ -151,7 +151,7 @@ fn rdkit_isotope_delta_for(atomic_number: u8, mass_number: u16) -> Option<i16> {
 /// `Element::atomic_mass()` (a different, monoisotopic quantity — using it
 /// would silently reproduce the exact carbon-11-shaped bug this table was
 /// built to close, just for a different isotope).
-fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i32 {
+pub(crate) fn rdkit_isotope_delta(mol: &Molecule, idx: AtomIdx) -> i32 {
     use crate::rdkit_isotope_delta_table::RDKIT_ATOMIC_WEIGHTS;
 
     let atom = mol.atom(idx);

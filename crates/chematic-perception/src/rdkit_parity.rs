@@ -19,10 +19,15 @@
 //! See `docs/aromaticity_a1_rfc.md`'s "A1-1b-0"/"A1-1b-1" sections for the
 //! full design writeup, the calibration battery, and the corpus gate.
 //!
-//! Ported from RDKit release `Release_2026_03_4`, commit
-//! `e89c9f656a694fab4105139844cba88d2e013354`. See `THIRD_PARTY_NOTICES.md`
-//! at the repo root for the required BSD 3-Clause attribution and license
-//! text.
+//! Ported from RDKit commit `e89c9f656a694fab4105139844cba88d2e013354`, an
+//! ancestor of release tag `Release_2026_03_4` (which resolves to
+//! `8afba32ec539dcb2369bc84549d802aca3f7eb39`, independently verified via
+//! the GitHub tags API during Morgan M4-A0). `Code/GraphMol/Aromaticity.cpp`
+//! is byte-identical between the two commits (independently diffed during
+//! M4-A0's provenance audit — the 130 commits between them never touch this
+//! file), so the 5 functions cited above are unaffected either way. See
+//! `THIRD_PARTY_NOTICES.md` at the repo root for the required BSD 3-Clause
+//! attribution and license text.
 //!
 //! Unlike this crate's own `ring_pi_electrons`/`evaluate_atom_pi_contribution`
 //! (which evaluate an atom's contribution *per candidate ring/component*),
@@ -972,6 +977,31 @@ mod tests {
         assert_eq!(mol.bond_count(), bond_count_before);
         let aromatic_after: Vec<bool> = mol.atoms().map(|(_, a)| a.aromatic).collect();
         assert_eq!(aromatic_before, aromatic_after);
+    }
+
+    /// Second known kekulize-gap case, found during Morgan M4-A0
+    /// (`chematic-fp`'s `rdkit_morgan_hash.rs`) full-corpus validation --
+    /// pinned here (not just recorded in the M4-A0 validation JSON) so a
+    /// future kekulization fix is verified against the actual engine, and
+    /// so `rdkit_morgan_hash_dump_aromaticity_variant`'s `Err` count has a
+    /// concrete, permanent reason attached rather than an opaque number.
+    /// Together with `Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C` above, these are the
+    /// only 2 of 5,048 M4-A0 corpus+fixture inputs where this engine
+    /// returns `Err` -- both happen to still match RDKit's real Morgan
+    /// fingerprint under production Hueckel aromaticity (a non-gating
+    /// cross-check, `validation/ecfp_rdkit_raw_identifier_parity_aromaticity_variant_summary.json`'s
+    /// `hueckel_control_on_parity_errors`), which is coincidental, not a
+    /// substitute for fixing this engine's gap.
+    #[test]
+    fn known_kekulize_gap_protonated_pyridinium() {
+        let smi = "c1cc[nH+]cc1";
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let result = apply_aromaticity_rdkit_parity_experimental(&mol);
+        match result {
+            Err(AromaticityError::KekulizationFailed { .. }) => {}
+            Err(other) => panic!("expected KekulizationFailed for {smi}, got {other:?}"),
+            Ok(_) => panic!("expected a known kekulize-gap failure for {smi}, got Ok"),
+        }
     }
 
     #[test]
