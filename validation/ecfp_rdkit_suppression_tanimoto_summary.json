@@ -1,0 +1,22 @@
+{
+  "after_suppression_ecfp4_rdkit_environment_experimental": {
+    "gating": false,
+    "pair_count": 44850,
+    "pearson_r": 0.9547,
+    "population_molecules": 5045,
+    "sample_molecules": 300,
+    "seed": 42
+  },
+  "before_baseline_ecfp4_rdkit_invariants": {
+    "gating": false,
+    "pair_count": 44850,
+    "pearson_r": 0.9479,
+    "population_molecules": 5045,
+    "sample_molecules": 300,
+    "seed": 42
+  },
+  "delta": 0.0068,
+  "gating": false,
+  "reference": "RDKit default.folded_on_bits (rdFingerprintGenerator.GetMorganGenerator, includeRedundantEnvironments=False)",
+  "verdict": "improved"
+}

@@ -1,0 +1,581 @@
+{
+  "mismatches": [
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          22,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          21,
+          2
+        ]
+      ],
+      "row_id": 453,
+      "smiles": "CCSc1ccnc(CSc2nc3ccccc3n2CC2CO2)c1C"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          16,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          17,
+          2
+        ]
+      ],
+      "row_id": 1967,
+      "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@@]43C3CO3)C1CCC2=O"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          1,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          3,
+          2
+        ]
+      ],
+      "row_id": 2468,
+      "smiles": "CC(=O)NO"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          16,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          17,
+          2
+        ]
+      ],
+      "row_id": 2599,
+      "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@@]43C3CS3)C1CCC2=O"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          16,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          17,
+          2
+        ]
+      ],
+      "row_id": 2600,
+      "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@]43C3CS3)C1CCC2=O"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          16,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          17,
+          2
+        ]
+      ],
+      "row_id": 2619,
+      "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@]43C3CO3)C1CCC2=O"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          14,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          13,
+          2
+        ]
+      ],
+      "row_id": 4831,
+      "smiles": "CCSC(=O)OC/C=C(\\C)CCC1OC1(C)C"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          0,
+          1
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          1,
+          1
+        ]
+      ],
+      "row_id": 5027,
+      "smiles": "[10CH3][11CH3]"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          0,
+          1
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          1,
+          1
+        ]
+      ],
+      "row_id": 5028,
+      "smiles": "[10CH3][12CH3]"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          1,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          3,
+          2
+        ]
+      ],
+      "row_id": 5041,
+      "smiles": "CC(=O)NO"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          0,
+          1
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          1,
+          1
+        ]
+      ],
+      "row_id": 5042,
+      "smiles": "[10CH3][11CH3]"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          16,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          17,
+          2
+        ]
+      ],
+      "row_id": 5043,
+      "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@@]43C3CO3)C1CCC2=O"
+    },
+    {
+      "bucket": "both",
+      "extra_chematic_pairs": [
+        [
+          22,
+          2
+        ]
+      ],
+      "missing_chematic_pairs": [
+        [
+          21,
+          2
+        ]
+      ],
+      "row_id": 5044,
+      "smiles": "CCSc1ccnc(CSc2nc3ccccc3n2CC2CO2)c1C"
+    }
+  ],
+  "summary": {
+    "buckets": {
+      "both": 13,
+      "exact_match": 5032,
+      "over_emission": 0,
+      "parse_fail_chematic": 0,
+      "parse_fail_rdkit": 0,
+      "under_emission": 0
+    },
+    "duplicate_input_ids": {
+      "chematic": 0,
+      "rdkit_oracle": 0
+    },
+    "exact_match_pct": 99.7423,
+    "gate_failures": [],
+    "mismatch_count": 13,
+    "mismatches_sample": [
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            22,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            21,
+            2
+          ]
+        ],
+        "row_id": 453,
+        "smiles": "CCSc1ccnc(CSc2nc3ccccc3n2CC2CO2)c1C"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            16,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            17,
+            2
+          ]
+        ],
+        "row_id": 1967,
+        "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@@]43C3CO3)C1CCC2=O"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            1,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            3,
+            2
+          ]
+        ],
+        "row_id": 2468,
+        "smiles": "CC(=O)NO"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            16,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            17,
+            2
+          ]
+        ],
+        "row_id": 2599,
+        "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@@]43C3CS3)C1CCC2=O"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            16,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            17,
+            2
+          ]
+        ],
+        "row_id": 2600,
+        "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@]43C3CS3)C1CCC2=O"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            16,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            17,
+            2
+          ]
+        ],
+        "row_id": 2619,
+        "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@]43C3CO3)C1CCC2=O"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            14,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            13,
+            2
+          ]
+        ],
+        "row_id": 4831,
+        "smiles": "CCSC(=O)OC/C=C(\\C)CCC1OC1(C)C"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            1,
+            1
+          ]
+        ],
+        "row_id": 5027,
+        "smiles": "[10CH3][11CH3]"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            1,
+            1
+          ]
+        ],
+        "row_id": 5028,
+        "smiles": "[10CH3][12CH3]"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            1,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            3,
+            2
+          ]
+        ],
+        "row_id": 5041,
+        "smiles": "CC(=O)NO"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            1,
+            1
+          ]
+        ],
+        "row_id": 5042,
+        "smiles": "[10CH3][11CH3]"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            16,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            17,
+            2
+          ]
+        ],
+        "row_id": 5043,
+        "smiles": "C[C@]12CCC3C(CCC4=CC(=O)CC[C@@]43C3CO3)C1CCC2=O"
+      },
+      {
+        "bucket": "both",
+        "extra_chematic_pairs": [
+          [
+            22,
+            2
+          ]
+        ],
+        "missing_chematic_pairs": [
+          [
+            21,
+            2
+          ]
+        ],
+        "row_id": 5044,
+        "smiles": "CCSc1ccnc(CSc2nc3ccccc3n2CC2CO2)c1C"
+      }
+    ],
+    "representative_swap_fixtures": {
+      "CC(=O)NO": {
+        "bucket": "both",
+        "chematic_total_emitted_count": 11,
+        "chematic_unique_raw_identifier_count": 11,
+        "extra_pairs": [
+          [
+            1,
+            2
+          ]
+        ],
+        "is_exactly_one_pair_swap": true,
+        "missing_pairs": [
+          [
+            3,
+            2
+          ]
+        ],
+        "rdkit_total_emitted_count": 11,
+        "rdkit_unique_raw_identifier_count": 11,
+        "sparse_count_shape_match": true,
+        "swap_same_radius": true,
+        "total_emitted_count_match": true,
+        "unique_raw_identifier_count_match": true
+      },
+      "CCSc1ccnc(CSc2nc3ccccc3n2CC2CO2)c1C": {
+        "bucket": "both",
+        "chematic_total_emitted_count": 72,
+        "chematic_unique_raw_identifier_count": 52,
+        "extra_pairs": [
+          [
+            22,
+            2
+          ]
+        ],
+        "is_exactly_one_pair_swap": true,
+        "missing_pairs": [
+          [
+            21,
+            2
+          ]
+        ],
+        "rdkit_total_emitted_count": 72,
+        "rdkit_unique_raw_identifier_count": 52,
+        "sparse_count_shape_match": true,
+        "swap_same_radius": true,
+        "total_emitted_count_match": true,
+        "unique_raw_identifier_count_match": true
+      },
+      "C[C@]12CCC3C(CCC4=CC(=O)CC[C@@]43C3CO3)C1CCC2=O": {
+        "bucket": "both",
+        "chematic_total_emitted_count": 65,
+        "chematic_unique_raw_identifier_count": 43,
+        "extra_pairs": [
+          [
+            16,
+            2
+          ]
+        ],
+        "is_exactly_one_pair_swap": true,
+        "missing_pairs": [
+          [
+            17,
+            2
+          ]
+        ],
+        "rdkit_total_emitted_count": 65,
+        "rdkit_unique_raw_identifier_count": 43,
+        "sparse_count_shape_match": true,
+        "swap_same_radius": true,
+        "total_emitted_count_match": true,
+        "unique_raw_identifier_count_match": true
+      },
+      "[10CH3][11CH3]": {
+        "bucket": "both",
+        "chematic_total_emitted_count": 3,
+        "chematic_unique_raw_identifier_count": 3,
+        "extra_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "is_exactly_one_pair_swap": true,
+        "missing_pairs": [
+          [
+            1,
+            1
+          ]
+        ],
+        "rdkit_total_emitted_count": 3,
+        "rdkit_unique_raw_identifier_count": 3,
+        "sparse_count_shape_match": true,
+        "swap_same_radius": true,
+        "total_emitted_count_match": true,
+        "unique_raw_identifier_count_match": true
+      }
+    },
+    "sparse_count_mismatch_fixtures_resolved": {
+      "C": true,
+      "[12CH4]": true,
+      "[13CH4]": true,
+      "[15NH4+]": true,
+      "[15OH2].[16OH2]": true,
+      "[CH3]": true,
+      "[CH4]": true,
+      "[Cl-]": true
+    },
+    "sparse_count_shape": {
+      "evaluated": 5045,
+      "exact_match": 5044,
+      "exact_match_pct": 99.9802,
+      "mismatch": 1,
+      "total_inputs": 5045
+    },
+    "total_inputs": 5045
+  }
+}
