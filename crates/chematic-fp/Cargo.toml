@@ -15,6 +15,12 @@ documentation = "https://docs.rs/chematic-fp"
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+# Diagnostic/reference-only APIs not meant for production use, e.g. the
+# Morgan RDKit-environment-parity trace (see
+# scripts/ecfp_rdkit_environment_parity.py).
+diagnostics = []
+
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.4.30" }
 rustc-hash = "2"
@@ -26,7 +32,12 @@ chematic-smiles = { path = "../chematic-smiles", version = "0.4.30" }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }
+serde_json = "1.0"
 
 [[bench]]
 name = "ecfp_bench"
 harness = false
+
+[[example]]
+name = "morgan_rdkit_environment_trace"
+required-features = ["diagnostics"]

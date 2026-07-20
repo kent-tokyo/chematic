@@ -1,0 +1,85 @@
+{
+  "bucket_sum_check": {
+    "input_total": 5041,
+    "ok": true,
+    "sum": 5041
+  },
+  "dominant_mechanism": "redundant_environment_mismatch",
+  "duplicate_input_ids": {
+    "chematic_trace": 0,
+    "rdkit_oracle": 0
+  },
+  "exact_match_rates": {
+    "bit_info_map": {
+      "conditional_exact_match_pct": null,
+      "coverage_pct": 0.0,
+      "evaluated": 0,
+      "hits": 0,
+      "total_inputs": 5041
+    },
+    "folded_2048_bit": {
+      "conditional_exact_match_pct": 0.0,
+      "coverage_pct": 1.7457,
+      "evaluated": 88,
+      "hits": 0,
+      "total_inputs": 5041
+    },
+    "sparse_count": {
+      "conditional_exact_match_pct": 91.6667,
+      "coverage_pct": 1.9044,
+      "evaluated": 96,
+      "hits": 88,
+      "total_inputs": 5041
+    }
+  },
+  "first_divergence_counts": {
+    "atom_count_mismatch": 0,
+    "bit_info_mismatch": 0,
+    "chematic_parse_fail": 0,
+    "exact_match": 0,
+    "folding_mismatch": 88,
+    "initial_invariant_mismatch": 0,
+    "radius1_environment_membership_mismatch": 0,
+    "radius1_identifier_mismatch": 4,
+    "radius2_environment_membership_mismatch": 0,
+    "radius2_identifier_mismatch": 0,
+    "rdkit_parse_fail": 0,
+    "redundant_environment_mismatch": 4941,
+    "sparse_count_mismatch": 8
+  },
+  "input_counts": {
+    "total": 5041
+  },
+  "per_radius_agreement": {
+    "radius0": {
+      "agree": 5041,
+      "conditional_agreement_pct": 100.0,
+      "coverage_pct": 100.0,
+      "evaluated": 5041,
+      "total_inputs": 5041
+    },
+    "radius1": {
+      "agree": 5037,
+      "conditional_agreement_pct": 99.9207,
+      "coverage_pct": 100.0,
+      "evaluated": 5041,
+      "total_inputs": 5041
+    },
+    "radius2": {
+      "agree": 5037,
+      "conditional_agreement_pct": 100.0,
+      "coverage_pct": 99.9207,
+      "evaluated": 5037,
+      "total_inputs": 5041
+    }
+  },
+  "schema_version": "1",
+  "tanimoto_correlation_vs_rdkit": {
+    "gating": false,
+    "pair_count": 44850,
+    "pearson_r": 0.9479,
+    "population_molecules": 5041,
+    "sample_molecules": 300,
+    "seed": 42
+  }
+}

@@ -26,7 +26,7 @@ pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
 ///
 /// Byte layout: `[r as u8, self_id (8 bytes), (bond_type (1) ++ nb_id (8))*]`
 /// Neighbours are sorted before hashing to make the result order-independent.
-fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u64 {
+pub(crate) fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u64 {
     let idx = AtomIdx(i as u32);
     // SmallVec<6>: typical atoms have ≤4 heavy neighbors; avoids heap alloc for ~95% of calls.
     let mut neighbor_info: SmallVec<[(u8, u64); 6]> = mol
