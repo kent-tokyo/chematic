@@ -37,17 +37,25 @@
 //!   (`MorganGenerator.cpp`) — the atom-CIP chirality re-fold is likewise out
 //!   of scope (`includeChirality=false` pinned throughout this workstream)
 //!
-//! **Diagnostic reference only.** Deliberately kept structurally separate
-//! from both the FNV-1a production path (`ecfp.rs`) and the Phase B
-//! suppression path (`morgan_environment.rs`), even though it duplicates
-//! some control-flow shape (round loop, degree-0 death, bondset-keyed
-//! suppression) — reusing only genuinely hash-independent infrastructure
+//! Deliberately kept structurally separate from both the FNV-1a production
+//! path (`ecfp.rs`) and the Phase B suppression path
+//! (`morgan_environment.rs`), even though it duplicates some control-flow
+//! shape (round loop, degree-0 death, bondset-keyed suppression) — reusing
+//! only genuinely hash-independent infrastructure
 //! ([`crate::morgan_environment::BondSet`], and `ecfp.rs`'s
 //! `rdkit_total_degree`/`rdkit_total_h_count`/`rdkit_isotope_delta` value
-//! computations) so this module can be promoted to shared core cleanly once
-//! numeric exactness is proven, without having pre-emptively entangled it
-//! with either existing path. **Not wired into any production API** — no
-//! caller outside this module and its diagnostics re-export exists.
+//! computations) so this module was never pre-emptively entangled with
+//! either existing path.
+//!
+//! **Numeric exactness proven (M4-A0), now promoted to a real production
+//! API:** [`crate::rdkit_morgan_ecfp4`]'s `rdkit_morgan_ecfp4_experimental`
+//! reuses this module's [`expand_one_pass`] and [`checked_bond_invariant`]
+//! directly (`pub(crate)`) rather than re-deriving the same hash logic a
+//! second time. The `rdkit_morgan_raw_trace`/`RdkitMorganRawTraceEntry`
+//! diagnostic surface stays diagnostics-feature-gated and computes *both*
+//! RDKit lifecycles at once for comparison purposes — the production path
+//! only ever runs the single `suppress=true` ("default") lifecycle RDKit
+//! itself uses.
 //!
 //! **Caller contract:** [`rdkit_morgan_raw_trace`] expects `mol` to already
 //! have aromaticity perception applied
@@ -159,26 +167,33 @@ fn connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_set: &RingSet) -> u
 /// kinds with no RDKit `BondType` counterpart at all (not merely
 /// unverified — RDKit's `BondType` enum has no query concept; SMARTS bond
 /// queries are a distinct RDKit type) and cannot appear in a SMILES-parsed
-/// molecule (this diagnostic's entire corpus) — mapped to `u32::MAX`, a
-/// deliberately out-of-band placeholder. A future production API must
-/// treat these (and any other value this function can't map to a real
-/// RDKit `BondType`) as an explicit `Err`, never an implicit/guessed
-/// mapping — see `docs/`'s M4-A0 report for the exact error-type
-/// requirement.
-fn bond_invariant(order: BondOrder) -> u32 {
+/// molecule (this diagnostic's entire corpus) — mapped to `None`. The
+/// production `rdkit_morgan_ecfp4` path (which reuses this function) turns
+/// `None` into an explicit `RdkitMorganError::UnsupportedBondOrder`, never
+/// an implicit/guessed mapping.
+pub(crate) fn checked_bond_invariant(order: BondOrder) -> Option<u32> {
     match order {
-        BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
-        BondOrder::Double => 2,
-        BondOrder::Triple => 3,
-        BondOrder::Quadruple => 4,
-        BondOrder::Aromatic => 12,
-        BondOrder::Dative => 17,
-        BondOrder::Zero => 21,
+        BondOrder::Single | BondOrder::Up | BondOrder::Down => Some(1),
+        BondOrder::Double => Some(2),
+        BondOrder::Triple => Some(3),
+        BondOrder::Quadruple => Some(4),
+        BondOrder::Aromatic => Some(12),
+        BondOrder::Dative => Some(17),
+        BondOrder::Zero => Some(21),
         BondOrder::QueryAny
         | BondOrder::QuerySingleOrDouble
         | BondOrder::QuerySingleOrAromatic
-        | BondOrder::QueryDoubleOrAromatic => u32::MAX,
+        | BondOrder::QueryDoubleOrAromatic => None,
     }
+}
+
+/// Diagnostic-only wrapper: unsupported bond orders map to `u32::MAX`, a
+/// deliberately out-of-band placeholder, so the diagnostic can still trace
+/// every bond rather than abort — no production caller uses this; the
+/// production path uses [`checked_bond_invariant`] and surfaces an explicit
+/// `Err` instead.
+fn bond_invariant(order: BondOrder) -> u32 {
+    checked_bond_invariant(order).unwrap_or(u32::MAX)
 }
 
 /// One computed `(atom, radius)` combination from [`rdkit_morgan_raw_trace`].
@@ -223,7 +238,7 @@ pub struct RdkitMorganRawTraceEntry {
 /// (degree-0 death, cumulative per-atom `BondSet`, cross-round `seen` set,
 /// one-round invariant grace period) -- only the invariant/hash computation
 /// differs; see the module docs for why that duplication is deliberate.
-fn expand_one_pass(
+pub(crate) fn expand_one_pass(
     mol: &Molecule,
     ring_set: &RingSet,
     bond_invariants: &[u32],

@@ -38,10 +38,13 @@ from RDKit's `license.txt` at the commit above.
 
 `crates/chematic-fp/src/rdkit_morgan_hash.rs` is a source-verified, line-level
 port of RDKit's Morgan fingerprint hash-combine machinery (connectivity
-invariant, bond invariant, per-round environment hash), built as a
-diagnostic-only reference engine for Milestone M4-A0 (see
-`docs/` and the PR description for the design writeup). Not wired into any
-production API.
+invariant, bond invariant, per-round environment hash), originally built as a
+diagnostic-only reference engine for Milestone M4-A0. Its core (`expand_one_pass`,
+`checked_bond_invariant`) is now also reused by the production, fallible
+`rdkit_morgan_ecfp4_experimental` API in `crates/chematic-fp/src/rdkit_morgan_ecfp4.rs`
+(see `validation/README.md`'s Phase B section) — the diagnostic module itself
+remains diagnostics-feature-gated; only the promoted internals are linked into
+production.
 
 Derived from:
 

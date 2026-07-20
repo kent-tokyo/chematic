@@ -1,12 +1,19 @@
-//! ECFP RDKit-invariant-mode PR: non-regression snapshot, run once before
-//! this PR's `ecfp.rs` `EcfpInvariantMode` refactor and once after. Uses only
-//! stable, pre-existing public API (no `EcfpInvariantMode`/`*_rdkit_invariants`
-//! reference) so the exact same file compiles against both revisions.
+//! Non-regression snapshot for every existing `chematic-fp` Morgan/ECFP
+//! entry point -- run once before a PR touching this crate's internals and
+//! once after; the two runs must be byte-for-byte identical whenever the PR
+//! claims not to change any existing function's output. Originally written
+//! for PR #110's `EcfpInvariantMode` refactor (hence the narrow original
+//! set); extended for Phase B (`rdkit_morgan_ecfp4_experimental`, PR #124
+//! follow-up) to cover every existing public fingerprint function in
+//! `ecfp.rs`, since that PR reuses internals
+//! ([`chematic_fp`]'s own `rdkit_morgan_hash` module) that are adjacent to,
+//! but must not affect, this set.
 //!
-//! Every existing entry point (`ecfp4`, `ecfp6`, `ecfp` with chirality,
-//! `ecfp_with_bitinfo` fp + origins, `morgan_fp_counts`) must be byte-for-byte
-//! identical before/after, since none of these callers changed which
-//! invariant mode they use.
+//! Covers: `ecfp4`, `ecfp6`, `ecfp` with chirality, `ecfp_with_bitinfo` fp +
+//! origins, `morgan_fp_counts`, `ecfp4_rdkit_invariants`,
+//! `ecfp6_rdkit_invariants`, `ecfp4_rdkit_environment_experimental`,
+//! `ecfp6_rdkit_environment_experimental`,
+//! `ecfp_with_bitinfo_rdkit_environment_experimental`.
 //!
 //! Usage:
 //! ```text
@@ -14,7 +21,11 @@
 //!     -- <SMILES.csv> <out.tsv>
 //! ```
 
-use chematic_fp::{EcfpConfig, ecfp, ecfp_with_bitinfo, ecfp4, ecfp6, morgan_fp_counts};
+use chematic_fp::{
+    EcfpConfig, ecfp, ecfp_with_bitinfo, ecfp_with_bitinfo_rdkit_environment_experimental, ecfp4,
+    ecfp4_rdkit_environment_experimental, ecfp4_rdkit_invariants, ecfp6,
+    ecfp6_rdkit_environment_experimental, ecfp6_rdkit_invariants, morgan_fp_counts,
+};
 use chematic_smiles::parse;
 use std::fs;
 use std::io::Write;
@@ -60,14 +71,38 @@ fn row(smi: &str) -> Option<String> {
         .collect::<Vec<_>>()
         .join(",");
 
+    let rdkit_inv4 = ecfp4_rdkit_invariants(&mol);
+    let rdkit_inv6 = ecfp6_rdkit_invariants(&mol);
+    let rdkit_env4 = ecfp4_rdkit_environment_experimental(&mol);
+    let rdkit_env6 = ecfp6_rdkit_environment_experimental(&mol);
+    let (rdkit_env_bi_fp, rdkit_env_bi_info) =
+        ecfp_with_bitinfo_rdkit_environment_experimental(&mol, &EcfpConfig::default());
+    let mut rdkit_env_bi_origins: Vec<(usize, Vec<(u32, u32)>)> =
+        rdkit_env_bi_info.into_iter().collect();
+    rdkit_env_bi_origins.sort_by_key(|(bit, _)| *bit);
+    for (_, envs) in &mut rdkit_env_bi_origins {
+        envs.sort_unstable();
+    }
+    let rdkit_env_bi_origins_str = rdkit_env_bi_origins
+        .iter()
+        .map(|(bit, envs)| format!("{bit}:{envs:?}"))
+        .collect::<Vec<_>>()
+        .join(";");
+
     Some(format!(
-        "{smi}\t{}\t{}\t{}\t{}\t{}\t{}",
+        "{smi}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
         bits_string(&fp4),
         bits_string(&fp6),
         bits_string(&fp4_chiral),
         bits_string(&bi_fp),
         bi_origins_str,
         counts_str,
+        bits_string(&rdkit_inv4),
+        bits_string(&rdkit_inv6),
+        bits_string(&rdkit_env4),
+        bits_string(&rdkit_env6),
+        bits_string(&rdkit_env_bi_fp),
+        rdkit_env_bi_origins_str,
     ))
 }
 

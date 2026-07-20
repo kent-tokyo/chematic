@@ -32,6 +32,7 @@ pub mod path;
 pub mod pattern;
 pub mod pharmacophore_fp;
 mod rdkit_isotope_delta_table;
+mod rdkit_morgan_ecfp4;
 mod rdkit_morgan_hash;
 pub mod reaction_fp;
 pub mod search;
@@ -77,6 +78,7 @@ pub use pattern::{pattern_fp, tanimoto_pattern};
 pub use pharmacophore_fp::{
     pharmacophore_feature_counts, pharmacophore_fp_2d, tanimoto_pharmacophore_2d,
 };
+pub use rdkit_morgan_ecfp4::{RdkitMorganEcfp4, RdkitMorganError, rdkit_morgan_ecfp4_experimental};
 pub use reaction_fp::{
     ReactionFingerprint, ReactionFpConfig, reaction_fp, reaction_fp_ecfp4, reaction_fp_with_config,
     tanimoto_reaction_fp,

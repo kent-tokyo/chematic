@@ -116,7 +116,8 @@ prior Morgan-parity mode in this crate, which only claims *partition*
 agreement (which atoms are chemically equivalent) and *lifecycle* agreement
 (who wins/dies under suppression), this compares actual 32-bit hash VALUES
 against real RDKit, atom by atom and radius by radius. Not wired into any
-production API; `ecfp4()`/`ecfp6()`/`ecfp4_rdkit_invariants()`/
+production API at the time of this milestone (later promoted to production
+by the "Phase B" section below); `ecfp4()`/`ecfp6()`/`ecfp4_rdkit_invariants()`/
 `ecfp4_rdkit_environment_experimental()` are all unchanged (production
 snapshot verified byte-identical, see Results).
 
@@ -207,18 +208,77 @@ passes and merging by `(atom, radius)` key; regression-pinned in
   --features diagnostics --example rdkit_morgan_hash_dump_aromaticity_variant`
   + `python scripts/ecfp_rdkit_raw_identifier_parity_aromaticity_variant.py`.
 
-**Scope for a future implementation PR** (not started, and explicitly
-constrained by this milestone's findings): promote `rdkit_morgan_hash.rs`'s
-reference engine to a real, RDKit-compatible ECFP4 (radius=2 only -- this
-milestone never compared radius 3, so ECFP6 must not be added yet) API,
-using `apply_aromaticity_rdkit_parity_experimental` internally as a
-fallible `Result` step with **no Hueckel fallback** (matching the measured
-result above: bit-exact where preprocessing succeeds, explicit `Err`
-where it doesn't -- not a blend of the two). Any `BondOrder` this engine
-cannot map to a real RDKit `BondType` (verified this session: SINGLE=1,
-DOUBLE=2, TRIPLE=3, QUADRUPLE=4, AROMATIC=12, DATIVE=17, ZERO=21; only
-chematic's SMARTS-only `Query*` variants have no RDKit equivalent) must
-also be an explicit `Err`, never an implicit/guessed mapping.
+**Implemented as Phase B, same day (2026-07-20)** -- see the section
+immediately below for the production API and its own full corpus results.
+
+### Phase B: `rdkit_morgan_ecfp4_experimental` -- production, fallible, RDKit-bit-exact ECFP4
+
+Promotes M4-A0's reference engine (`crates/chematic-fp/src/rdkit_morgan_hash.rs`)
+to a real public API in `crates/chematic-fp/src/rdkit_morgan_ecfp4.rs`:
+`pub fn rdkit_morgan_ecfp4_experimental(mol: &Molecule) -> Result<RdkitMorganEcfp4, RdkitMorganError>`.
+Scope is intentionally narrow, matching exactly what M4-A0 verified numerically:
+
+- **radius = 2 (ECFP4) only** -- not ECFP6/radius = 3; M4-A0 never compared radius 3
+  against the oracle, so claiming bit-exactness there would be unverified.
+- Uses `apply_aromaticity_rdkit_parity_experimental` internally as a fallible `Result`
+  step -- **no Hueckel fallback anywhere in the public path.** No entry point accepts a
+  pre-aromatized `Molecule` (would let a caller bypass the engine and silently lose the
+  bit-exactness guarantee).
+- `RdkitMorganError`: `Aromaticity(AromaticityError)` (kekulization/internal-invariant
+  failure, wrapping `rdkit_parity.rs`'s own error), `UnsupportedBondOrder { bond_idx, order }`
+  (a `BondOrder` with no real RDKit `Bond::BondType` counterpart -- only chematic's
+  SMARTS-query-only variants, which cannot occur for SMILES-parsed input; confirmed via a
+  programmatically-built `Molecule` test since it can't be reached via `parse()`),
+  `InternalInvariantViolation { reason }`.
+- One shared computation, not independent per-field loops: a single pass over RDKit's
+  `includeRedundantEnvironments=false` ("default") lifecycle populates all four
+  `RdkitMorganEcfp4` fields (`fingerprint`, `sparse_counts`, `raw_bit_info`,
+  `folded_bit_info`) at once.
+
+**Results (same 5,048-input M4-A0 corpus, fresh dump + comparison against the same RDKit
+oracle rows, not re-derived from M4-A0's own numbers):**
+
+| Metric | Result |
+|---|---|
+| Preprocessing succeeded (`status: "success"`) | 5,046/5,048 |
+| Preprocessing failed (`rdkit_parity_kekulization_failed`, the same 2 pinned fixtures as M4-A0) | 2/5,048 |
+| Full exact match (default-lifecycle raw pairs, sparse counts, folded on-bits, folded bitInfo) among the 5,046 successful rows | **5,046/5,046 (100%)** |
+| Hermetic equivalence to `rdkit_morgan_raw_trace`'s already-oracle-validated `raw_identifier_default` output, same already-aromatized molecule | confirmed (unit test, 4 representative fixtures) |
+| Non-regression: `ecfp_regression_snapshot` (10 existing entry points: `ecfp4`, `ecfp6`, `ecfp` chiral, `ecfp_with_bitinfo`, `morgan_fp_counts`, `ecfp4_rdkit_invariants`, `ecfp6_rdkit_invariants`, `ecfp4_rdkit_environment_experimental`, `ecfp6_rdkit_environment_experimental`, `ecfp_with_bitinfo_rdkit_environment_experimental`), full 5,048-input corpus, SHA-256 before/after (git-worktree baseline at the pre-Phase-B commit) | byte-identical, 0 change |
+| Unsupported-bond-order path (`BondOrder::QueryAny`, programmatically built -- cannot arise from `parse()`) | explicit `Err(UnsupportedBondOrder)`, confirmed by test |
+| Positive control: a silently reintroduced Hueckel fallback would be numerically detectable (Hueckel perceives `c1cc[nH+]cc1`'s ring as fully aromatic where the real path correctly errors) | confirmed by test |
+
+**Performance vs. `ecfp4_rdkit_environment_experimental` baseline** (5 independent process
+runs each, full 5,048-corpus, median wall time, `/usr/bin/time -l` for peak RSS -- not a
+Criterion-registered benchmark, see `feedback_criterion_gate_pseudo_replication`):
+
+| | Baseline | Candidate | Ratio |
+|---|---|---|---|
+| Median wall time (5 runs) | 4.862s | 9.734s | **2.00x** |
+| Peak RSS | ~20.2 MB | ~20.4 MB | 1.01x |
+
+The ~2x ratio is fully attributable, not an unexplained regression: the baseline reads
+whatever aromatic flags are already on the input `Molecule` and never calls an aromaticity
+engine, while the candidate performs its own kekulization + RDKit-parity aromaticity
+perception on every call (a per-molecule breakdown shows preprocessing is 46-56% of the
+candidate's time on aromatic-ring-heavy molecules like benzene/aspirin/a steroid-like
+fused system, dropping to 19-20% on large acyclic alkanes with no rings to perceive).
+Per the acceptance-gate policy (stop and explain, don't silently tune), this is reported
+as measured rather than optimized against.
+
+Any `BondOrder` this engine cannot map to a real RDKit `BondType` (verified against
+`Bond.h` during M4-A0: SINGLE=1, DOUBLE=2, TRIPLE=3, QUADRUPLE=4, AROMATIC=12, DATIVE=17,
+ZERO=21; only chematic's SMARTS-only `Query*` variants have no RDKit equivalent) is an
+explicit `Err`, never an implicit/guessed mapping.
+
+- **Files:** `crates/chematic-fp/src/rdkit_morgan_ecfp4.rs`,
+  `crates/chematic-fp/examples/rdkit_morgan_ecfp4_dump.rs`,
+  `crates/chematic-fp/examples/rdkit_morgan_ecfp4_benchmark.rs`,
+  `scripts/ecfp_rdkit_morgan_ecfp4_parity.py`.
+- **How to regenerate:** `cargo run -p chematic-fp --release --example rdkit_morgan_ecfp4_dump
+  -- <SMILES.csv> <out.jsonl>` + `python scripts/ecfp_rdkit_morgan_ecfp4_parity.py --chematic
+  <out.jsonl> --rdkit-oracle <gen_ecfp_rdkit_environment_oracle.py output>`. Self-test:
+  `python scripts/ecfp_rdkit_morgan_ecfp4_parity.py --self-test`.
 
 ## Summary results
 
