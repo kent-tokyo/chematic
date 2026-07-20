@@ -627,11 +627,15 @@ def _git_commit_sha():
 
 
 def _git_tree_dirty():
-    """True if any TRACKED file differs from HEAD. See the matching helper's
-    docstring in gen_ecfp_rdkit_environment_oracle.py -- untracked files
-    (the validation/* artifacts about to be committed) are excluded on
-    purpose."""
-    diff = subprocess.check_output(["git", "diff", "--name-only", "HEAD"], cwd=_repo_root())
+    """True if any TRACKED file OUTSIDE validation/ differs from HEAD. See
+    the matching helper's docstring in gen_ecfp_rdkit_environment_oracle.py
+    -- validation/ is excluded since it's exactly what this pipeline
+    regenerates every run, and diffing it against HEAD would
+    self-referentially read as "dirty" on every regeneration."""
+    diff = subprocess.check_output(
+        ["git", "diff", "--name-only", "HEAD", "--", ".", ":(exclude)validation"],
+        cwd=_repo_root(),
+    )
     return len(diff.strip()) > 0
 
 

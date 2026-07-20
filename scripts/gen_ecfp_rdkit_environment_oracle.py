@@ -247,12 +247,17 @@ def diagnostic_source_commit_sha():
 
 
 def diagnostic_source_tree_dirty():
-    """True if any TRACKED file differs from HEAD -- ignores untracked files
-    on purpose, since the validation/* artifacts this script itself is about
-    to produce are legitimately untracked/uncommitted at generation time
-    (they get committed in a follow-up commit). What must NOT be dirty is
-    the source (Rust/Python/fixtures) that produced this run's numbers."""
-    diff = subprocess.check_output(["git", "diff", "--name-only", "HEAD"], cwd=_repo_root())
+    """True if any TRACKED file OUTSIDE validation/ differs from HEAD.
+    validation/ is excluded on purpose: it's exactly what this pipeline
+    regenerates on every run (first as untracked new files, later as
+    modifications to already-committed artifacts), so diffing it against
+    HEAD would self-referentially flag "dirty" on every single regeneration,
+    including ones where the actual SOURCE (Rust/Python/fixtures) that
+    produced these numbers is perfectly clean at diagnostic_source_commit_sha."""
+    diff = subprocess.check_output(
+        ["git", "diff", "--name-only", "HEAD", "--", ".", ":(exclude)validation"],
+        cwd=_repo_root(),
+    )
     return len(diff.strip()) > 0
 
 
