@@ -11,9 +11,12 @@ from an ordered enum (STAGES below) -- never a raw-hash-value comparison
 (chematic uses FNV-1a, RDKit its own hash; only partitions/set-membership are
 ever compared).
 
-Inputs are two JSONL files produced upstream, in the SAME line order (this is
-what avoids any SMILES-based join ambiguity -- duplicate/symmetric SMILES are
-handled correctly because rows are matched by POSITION, not by string key):
+Inputs are two JSONL files produced upstream, in the SAME line order, each row
+carrying an explicit `row_id` (0-based, assigned by the same enumeration on
+both generator sides). Rows are matched by POSITION, verified against
+`row_id` AND `smiles` (a PIPELINE ERROR, not a silent skip, if either
+disagrees) -- this is what avoids any SMILES-based join ambiguity, since
+duplicate/symmetric SMILES are still each their own row_id:
   - chematic trace: `cargo run -p chematic-fp --release --features diagnostics
     --example morgan_rdkit_environment_trace -- <combined.csv> <out.jsonl>`
   - RDKit oracle: `python scripts/gen_ecfp_rdkit_environment_oracle.py
@@ -25,7 +28,11 @@ handled correctly because rows are matched by POSITION, not by string key):
 Evaluation short-circuits at the first True stage (STAGES is a strict
 precedence order): once an earlier, more fundamental divergence fires (e.g.
 atom counts don't even match), later per-atom comparisons aren't meaningful
-and are recorded as None ("not evaluated"), not False.
+and are recorded as None ("not evaluated"), not False. Aggregate stats
+derived from these (per-radius agreement, exact-match rates) are therefore
+CONDITIONAL on reaching that stage -- each is reported with its own
+`evaluated`/`total_inputs`/`coverage_pct`, never a bare percentage that could
+be misread as an unconditional full-corpus figure.
 
 Usage:
     .venv/bin/python scripts/ecfp_rdkit_environment_parity.py \\
@@ -33,15 +40,19 @@ Usage:
         --summary-out validation/ecfp_rdkit_environment_parity_summary.json \\
         --rows-out validation/ecfp_rdkit_environment_parity_rows.jsonl \\
         --first-divergence-out validation/ecfp_rdkit_environment_parity_first_divergence.tsv \\
+        --manifest validation/ecfp_rdkit_environment_parity_manifest.json \\
         [--rows-scope {fixtures,all}]
 
     .venv/bin/python scripts/ecfp_rdkit_environment_parity.py --self-test
 """
 
 import argparse
+import hashlib
 import json
+import os
 import random
 import statistics
+import subprocess
 import sys
 from collections import defaultdict
 
@@ -233,7 +244,16 @@ def tanimoto_correlation(chem_rows, rd_rows, sample_size=300, seed=42):
     scripts/ecfp_rdkit_invariants_fingerprint_ref.py: pairwise-Tanimoto
     Pearson correlation between chematic's real folded 2048-bit set (from
     the trace) and RDKit's real folded 2048-bit set (`default.folded_on_bits`),
-    for every molecule that parsed on both sides."""
+    for every molecule that parsed on both sides.
+
+    NOT a full-corpus statistic -- deterministically sampled (same
+    seed/sample_size convention as ecfp_rdkit_invariants_fingerprint_ref.py)
+    down to `sample_size` molecules before computing all pairwise
+    similarities, since pairwise correlation is O(n^2) in molecule count.
+    Returns a structured record (population/sample/pair counts, seed) rather
+    than a bare float so this can never be mis-described as "full corpus" in
+    a downstream report.
+    """
     pairs = []
     for chem, rd in zip(chem_rows, rd_rows):
         if not chem.get("parse_ok") or not rd.get("parse_ok"):
@@ -252,9 +272,15 @@ def tanimoto_correlation(chem_rows, rd_rows, sample_size=300, seed=42):
             chem_sims.append(_tanimoto(sample[i][0], sample[j][0]))
             rd_sims.append(_tanimoto(sample[i][1], sample[j][1]))
 
-    if len(chem_sims) < 2:
-        return None
-    return round(statistics.correlation(chem_sims, rd_sims), 4)
+    pearson_r = round(statistics.correlation(chem_sims, rd_sims), 4) if len(chem_sims) >= 2 else None
+    return {
+        "pearson_r": pearson_r,
+        "population_molecules": len(pairs),
+        "sample_molecules": n,
+        "pair_count": len(chem_sims),
+        "seed": seed,
+        "gating": False,
+    }
 
 
 def load_jsonl(path):
@@ -592,6 +618,55 @@ def run_self_test():
 # --------------------------------------------------------------------------
 
 
+def _repo_root():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _git_commit_sha():
+    return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=_repo_root()).decode().strip()
+
+
+def _git_tree_dirty():
+    """True if any TRACKED file differs from HEAD. See the matching helper's
+    docstring in gen_ecfp_rdkit_environment_oracle.py -- untracked files
+    (the validation/* artifacts about to be committed) are excluded on
+    purpose."""
+    diff = subprocess.check_output(["git", "diff", "--name-only", "HEAD"], cwd=_repo_root())
+    return len(diff.strip()) > 0
+
+
+def _sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        h.update(f.read())
+    return h.hexdigest()
+
+
+def finalize_manifest(manifest_path, chem_trace_path, rdkit_oracle_path, extra_paths):
+    """Enrich the oracle generator's manifest with full provenance now that
+    every artifact this diagnostic produces actually exists on disk: the
+    comparator is the last stage, so it's the only point that can hash
+    itself, the chematic trace, the RDKit oracle rows, and its own outputs
+    all in one place. Re-stamps commit SHA / dirty flag at THIS (later,
+    truer) point rather than trusting the oracle generator's earlier one."""
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+
+    manifest["diagnostic_source_commit_sha"] = _git_commit_sha()
+    manifest["diagnostic_source_tree_dirty"] = _git_tree_dirty()
+    manifest["comparator_script_sha256"] = _sha256_file(os.path.abspath(__file__))
+    manifest["chematic_trace_sha256"] = _sha256_file(chem_trace_path)
+    manifest["rdkit_oracle_rows_sha256"] = _sha256_file(rdkit_oracle_path)
+    for key, path in extra_paths.items():
+        if path and os.path.exists(path):
+            manifest[key] = _sha256_file(path)
+
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, sort_keys=True, indent=2)
+        f.write("\n")
+    return manifest
+
+
 def main():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -601,6 +676,7 @@ def main():
     p.add_argument("--summary-out")
     p.add_argument("--rows-out")
     p.add_argument("--first-divergence-out")
+    p.add_argument("--manifest", help="oracle-generated manifest to enrich with full provenance")
     p.add_argument("--rows-scope", choices=["fixtures", "all"], default="fixtures")
     p.add_argument("--self-test", action="store_true")
     args = p.parse_args()
@@ -632,8 +708,18 @@ def main():
     exact_match_hits = {"sparse_count": 0, "folded_2048_bit": 0, "bit_info_map": 0}
     all_rows_out = []
     tsv_rows = []
+    chem_row_ids = []
+    rd_row_ids = []
 
     for idx, (chem, rd) in enumerate(zip(chem_rows, rd_rows)):
+        if chem.get("row_id") != idx or rd.get("row_id") != idx:
+            print(
+                f"PIPELINE ERROR at position {idx}: chematic row_id={chem.get('row_id')!r}, "
+                f"rdkit row_id={rd.get('row_id')!r} -- expected both == {idx} (inputs out of "
+                f"sync, or a stale trace/oracle file predating row_id support)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         if chem.get("smiles") != rd.get("smiles"):
             print(
                 f"PIPELINE ERROR at row {idx}: chematic smiles={chem.get('smiles')!r} != "
@@ -641,6 +727,8 @@ def main():
                 file=sys.stderr,
             )
             sys.exit(1)
+        chem_row_ids.append(chem["row_id"])
+        rd_row_ids.append(rd["row_id"])
 
         flags, evidence = evaluate_stages(chem, rd)
         label = classify(flags)
@@ -725,17 +813,52 @@ def main():
     def pct(hits, denom):
         return round(100 * hits / denom, 4) if denom else None
 
+    # Computed, not asserted: row_id is a strict 0..N-1 sequence by
+    # construction on both generator sides, but "computed" beats "hardcoded
+    # 0 with a comment" for an artifact whose whole point is rigor.
+    duplicate_chem_row_ids = len(chem_row_ids) - len(set(chem_row_ids))
+    duplicate_rd_row_ids = len(rd_row_ids) - len(set(rd_row_ids))
+
+    def radius_stat(agree, evaluated, total_inputs):
+        return {
+            "agree": agree,
+            "evaluated": evaluated,
+            "total_inputs": total_inputs,
+            "conditional_agreement_pct": pct(agree, evaluated),
+            "coverage_pct": pct(evaluated, total_inputs),
+        }
+
+    def exact_match_stat(hits, evaluated, total_inputs):
+        return {
+            "hits": hits,
+            "evaluated": evaluated,
+            "total_inputs": total_inputs,
+            "conditional_exact_match_pct": pct(hits, evaluated),
+            "coverage_pct": pct(evaluated, total_inputs),
+        }
+
     summary = {
         "schema_version": "1",
         "input_counts": {"total": total},
         "first_divergence_counts": {s: counts.get(s, 0) for s in STAGES + ["exact_match"]},
         "bucket_sum_check": {"sum": bucket_sum, "input_total": total, "ok": bucket_sum == total},
-        "duplicate_input_ids": 0,  # rows are matched by position, never by a dedupable key
-        "per_radius_agreement_pct": {
-            f"radius{r}": pct(per_radius_agree[r], per_radius_total[r]) for r in (0, 1, 2)
+        "duplicate_input_ids": {
+            "chematic_trace": duplicate_chem_row_ids,
+            "rdkit_oracle": duplicate_rd_row_ids,
+        },
+        # Every stat below is CONDITIONAL: it excludes molecules blocked at
+        # an earlier stage (evaluated < total_inputs whenever an earlier
+        # stage already diverged for some inputs) -- coverage_pct makes that
+        # explicit instead of letting a 100% conditional rate read as
+        # unconditional full-corpus agreement.
+        "per_radius_agreement": {
+            "radius0": radius_stat(per_radius_agree[0], per_radius_total[0], total),
+            "radius1": radius_stat(per_radius_agree[1], per_radius_total[1], total),
+            "radius2": radius_stat(per_radius_agree[2], per_radius_total[2], total),
         },
         "exact_match_rates": {
-            k: pct(exact_match_hits[k], exact_match_denoms[k]) for k in exact_match_hits
+            k: exact_match_stat(exact_match_hits[k], exact_match_denoms[k], total)
+            for k in exact_match_hits
         },
         "tanimoto_correlation_vs_rdkit": tanimoto_correlation(chem_rows, rd_rows),
         "dominant_mechanism": max(counts, key=counts.get) if counts else None,
@@ -748,8 +871,24 @@ def main():
             json.dump(summary, f, indent=2, sort_keys=True)
             f.write("\n")
 
+    if args.manifest:
+        finalize_manifest(
+            args.manifest,
+            args.chem_trace,
+            args.rdkit_oracle,
+            {
+                "summary_sha256": args.summary_out,
+                "rows_sha256": args.rows_out,
+                "first_divergence_tsv_sha256": args.first_divergence_out,
+            },
+        )
+        print(f"manifest finalized: {args.manifest}")
+
     if not summary["bucket_sum_check"]["ok"]:
         print("GATE FAILED: bucket sum != input total", file=sys.stderr)
+        sys.exit(1)
+    if duplicate_chem_row_ids or duplicate_rd_row_ids:
+        print("GATE FAILED: duplicate row_id detected", file=sys.stderr)
         sys.exit(1)
 
 

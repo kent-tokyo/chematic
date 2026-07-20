@@ -48,6 +48,12 @@ fn main() {
             continue;
         }
         input_lines += 1;
+        // 0-based position in this file's row stream -- must match the RDKit
+        // oracle's row_id exactly, since both are built from the same
+        // ordered SMILES list (see the comparator's module docstring). This
+        // is the explicit sync check the position-only design relied on
+        // implicitly before.
+        let row_id = rows;
 
         let mol = match parse(smi) {
             Ok(m) => m,
@@ -56,7 +62,7 @@ fn main() {
                 writeln!(
                     f,
                     "{}",
-                    json!({"smiles": smi, "parse_ok": false, "error": e.to_string()})
+                    json!({"row_id": row_id, "smiles": smi, "parse_ok": false, "error": e.to_string()})
                 )
                 .unwrap();
                 rows += 1;
@@ -91,6 +97,7 @@ fn main() {
             f,
             "{}",
             json!({
+                "row_id": row_id,
                 "smiles": smi,
                 "parse_ok": true,
                 "atom_count": mol.atom_count(),

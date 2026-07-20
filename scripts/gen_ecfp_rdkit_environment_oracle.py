@@ -90,6 +90,7 @@ def make_generator(include_redundant):
         includeChirality=MORGAN_OPTIONS["includeChirality"],
         useBondTypes=MORGAN_OPTIONS["useBondTypes"],
         onlyNonzeroInvariants=MORGAN_OPTIONS["onlyNonzeroInvariants"],
+        includeRingMembership=MORGAN_OPTIONS["includeRingMembership"],
         includeRedundantEnvironments=include_redundant,
     )
 
@@ -175,15 +176,16 @@ def atom_balls(mol, radius):
     return {str(a.GetIdx()): atom_ball(mol, radius, a.GetIdx()) for a in mol.GetAtoms()}
 
 
-def oracle_row(source, smi):
+def oracle_row(row_id, source, smi):
     rd = parse_smiles(smi)
     if rd is None:
-        return {"smiles": smi, "source": source, "parse_ok": False}
+        return {"row_id": row_id, "smiles": smi, "source": source, "parse_ok": False}
 
     gen_default = make_generator(include_redundant=False)
     gen_full = make_generator(include_redundant=True)
 
     return {
+        "row_id": row_id,
         "smiles": smi,
         "source": source,
         "parse_ok": True,
@@ -225,7 +227,7 @@ def sha256_file(path):
 
 
 def generate_rows(sources):
-    return [oracle_row(source, smi) for source, smi in sources]
+    return [oracle_row(i, source, smi) for i, (source, smi) in enumerate(sources)]
 
 
 def write_jsonl(rows, path):
@@ -234,14 +236,32 @@ def write_jsonl(rows, path):
             f.write(json.dumps(row, sort_keys=True) + "\n")
 
 
-def build_manifest(args, stamp, row_count, input_count):
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    commit_sha = (
-        subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo_root).decode().strip()
+def _repo_root():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def diagnostic_source_commit_sha():
+    return (
+        subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=_repo_root()).decode().strip()
     )
+
+
+def diagnostic_source_tree_dirty():
+    """True if any TRACKED file differs from HEAD -- ignores untracked files
+    on purpose, since the validation/* artifacts this script itself is about
+    to produce are legitimately untracked/uncommitted at generation time
+    (they get committed in a follow-up commit). What must NOT be dirty is
+    the source (Rust/Python/fixtures) that produced this run's numbers."""
+    diff = subprocess.check_output(["git", "diff", "--name-only", "HEAD"], cwd=_repo_root())
+    return len(diff.strip()) > 0
+
+
+def build_manifest(args, stamp, row_count, input_count):
     return {
         "schema_version": SCHEMA_VERSION,
-        "chematic_commit_sha": commit_sha,
+        "diagnostic_source_commit_sha": diagnostic_source_commit_sha(),
+        "diagnostic_source_tree_dirty": diagnostic_source_tree_dirty(),
+        "oracle_generator_script_sha256": sha256_file(os.path.abspath(__file__)),
         "rdkit_version": rdBase.rdkitVersion,
         "python_version": sys.version,
         "corpus_paths": args.corpus,
@@ -251,7 +271,7 @@ def build_manifest(args, stamp, row_count, input_count):
         "morgan_options": MORGAN_OPTIONS,
         "morgan_options_note": (
             "GetMorganGenerator(radius=2, fpSize=2048, includeChirality=False, "
-            "useBondTypes=True, onlyNonzeroInvariants=False, "
+            "useBondTypes=True, onlyNonzeroInvariants=False, includeRingMembership=True, "
             "includeRedundantEnvironments=False) + GetFingerprint() confirmed bit-identical "
             "to legacy AllChem.GetMorganFingerprintAsBitVect(mol, 2, 2048) -- verified "
             "interactively against RDKit 2026.03.3, on-bit sets equal."
