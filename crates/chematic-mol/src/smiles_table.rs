@@ -909,3 +909,178 @@ mod tests {
         assert!(text.contains("\"a, b\""));
     }
 }
+
+// ---------------------------------------------------------------------------
+// Adversarial / fuzz-style tests
+// ---------------------------------------------------------------------------
+//
+// No `cargo-fuzz`/libfuzzer harness exists anywhere in this workspace yet,
+// and introducing that toolchain (nightly + a separate fuzz crate) for one
+// module was judged disproportionate to the risk here (a line-based text
+// tokenizer over `BufRead`, not a binary/byte-oriented format). Instead:
+// deterministic adversarial unit tests for every category the acceptance
+// gate requires, plus a small seeded random-mutation corpus. All assert
+// only "no panic, no hang, no OOM, no infinite loop" -- not any particular
+// output -- since the whole point is that malformed/adversarial input must
+// degrade to a clean `Err`, never worse.
+
+#[cfg(test)]
+mod adversarial_tests {
+    use super::*;
+    use std::io::{BufReader, Cursor};
+
+    fn drain(input: &[u8], options: SmilesReaderOptions) -> usize {
+        let reader = SmilesRecordReader::new(BufReader::new(Cursor::new(input.to_vec())), options);
+        reader.count()
+    }
+
+    #[test]
+    fn empty_input_no_panic() {
+        assert_eq!(drain(b"", SmilesReaderOptions::default()), 0);
+    }
+
+    #[test]
+    fn truncated_input_no_trailing_newline_no_panic() {
+        assert_eq!(drain(b"CC ethane", SmilesReaderOptions::default()), 1);
+    }
+
+    #[test]
+    fn truncated_input_mid_quote_no_panic() {
+        let opts = SmilesReaderOptions {
+            delimiter: Delimiter::Comma,
+            ..Default::default()
+        };
+        // Unterminated quote at EOF, no newline at all.
+        assert_eq!(drain(b"CC,\"unterminated", opts), 1);
+    }
+
+    #[test]
+    fn huge_line_is_explicit_error_not_panic_or_oom() {
+        let mut line = b"CC ".to_vec();
+        line.extend(std::iter::repeat_n(b'a', 10_000_000)); // 10MB name field
+        line.push(b'\n');
+        let opts = SmilesReaderOptions {
+            max_line_bytes: 1 << 20,
+            ..Default::default()
+        };
+        let reader = SmilesRecordReader::new(BufReader::new(Cursor::new(line)), opts);
+        let results: Vec<_> = reader.collect();
+        assert_eq!(results.len(), 1);
+        assert!(matches!(
+            results[0],
+            Err(SmilesTableError::LineTooLong { .. })
+        ));
+    }
+
+    #[test]
+    fn huge_property_value_within_limit_does_not_panic() {
+        let mut line = b"CC ethane ".to_vec();
+        line.extend(std::iter::repeat_n(b'x', 500_000));
+        line.push(b'\n');
+        let opts = SmilesReaderOptions {
+            max_line_bytes: 1 << 21, // large enough to admit this line
+            ..Default::default()
+        };
+        let reader = SmilesRecordReader::new(BufReader::new(Cursor::new(line)), opts);
+        let results: Vec<_> = reader.collect();
+        assert_eq!(results.len(), 1);
+        assert!(results[0].is_ok());
+    }
+
+    #[test]
+    fn invalid_utf8_byte_path_yields_io_error_not_panic() {
+        // 0xFF is never valid UTF-8 in any position.
+        let input: &[u8] = b"CC \xFF\xFE ethane\n";
+        let reader = SmilesRecordReader::new(
+            BufReader::new(Cursor::new(input.to_vec())),
+            SmilesReaderOptions::default(),
+        );
+        let results: Vec<_> = reader.collect();
+        assert_eq!(results.len(), 1);
+        assert!(matches!(results[0], Err(SmilesTableError::Io(_))));
+    }
+
+    #[test]
+    fn excessive_column_count_does_not_panic() {
+        let mut line = String::from("CC");
+        for i in 0..5000 {
+            line.push(' ');
+            line.push_str(&format!("prop{i}"));
+        }
+        line.push('\n');
+        let results: Vec<_> = drain_results(line.as_bytes(), SmilesReaderOptions::default());
+        assert_eq!(results.len(), 1);
+        assert!(results[0].is_ok());
+        let rec = results[0].as_ref().unwrap();
+        assert_eq!(rec.properties.len(), 4999); // 5000 extra tokens minus the name column
+    }
+
+    #[test]
+    fn very_large_molecule_smiles_does_not_panic() {
+        // A long linear alkane -- exercises the SMILES parser + tokenizer on
+        // an unusually large single field, not just a large file.
+        let smi = "C".repeat(3000);
+        let line = format!("{smi} big_alkane\n");
+        let results: Vec<_> = drain_results(line.as_bytes(), SmilesReaderOptions::default());
+        assert_eq!(results.len(), 1);
+        assert!(results[0].is_ok());
+        assert_eq!(results[0].as_ref().unwrap().mol.atom_count(), 3000);
+    }
+
+    fn drain_results(
+        input: &[u8],
+        options: SmilesReaderOptions,
+    ) -> Vec<Result<MoleculeRecord, SmilesTableError>> {
+        SmilesRecordReader::new(BufReader::new(Cursor::new(input.to_vec())), options).collect()
+    }
+
+    /// Tiny deterministic PRNG (splitmix64) -- no `rand` dependency needed
+    /// for a seeded, reproducible mutation corpus.
+    struct SplitMix64(u64);
+    impl SplitMix64 {
+        fn next(&mut self) -> u64 {
+            self.0 = self.0.wrapping_add(0x9E3779B97F4A7C15);
+            let mut z = self.0;
+            z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
+            z ^ (z >> 31)
+        }
+    }
+
+    #[test]
+    fn seeded_random_mutation_corpus_never_panics() {
+        let base: &[u8] = b"SMILES,Name,Note\nCC,ethane,\"has, a comma\"\nc1ccccc1,benzene,plain\n";
+        let mut rng = SplitMix64(0xDEADBEEFCAFEF00D);
+
+        for _ in 0..2000 {
+            let mut mutated = base.to_vec();
+            let n_mutations = 1 + (rng.next() % 5) as usize;
+            for _ in 0..n_mutations {
+                if mutated.is_empty() {
+                    break;
+                }
+                let idx = (rng.next() as usize) % mutated.len();
+                let op = rng.next() % 3;
+                match op {
+                    0 => mutated[idx] = (rng.next() % 256) as u8,
+                    1 => {
+                        mutated.insert(idx, (rng.next() % 256) as u8);
+                    }
+                    _ => {
+                        mutated.remove(idx);
+                    }
+                }
+            }
+
+            let opts = SmilesReaderOptions {
+                delimiter: Delimiter::Comma,
+                title_line: true,
+                max_line_bytes: 1 << 16,
+                ..Default::default()
+            };
+            // The only contract under test: this must terminate and never
+            // panic, regardless of how corrupted the byte stream is.
+            let _ = drain(&mutated, opts);
+        }
+    }
+}
