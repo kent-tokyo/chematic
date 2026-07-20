@@ -66,17 +66,26 @@ not a mutable `master` reference.
 Pair-set mismatches: 13 of 5,045 (the same 9 residuals from the original
 5,041-input run, plus their 4 pinned duplicates), all single-pair swaps at
 the same radius -- **not** a claim that the swapped atoms are chemically
-equivalent or near-equivalent. What's actually true: two different atoms
-compute the identical cumulative bond environment, and the selected
-representative differs because RDKit and chematic currently order those
-candidates using different hash values (FNV-1a vs RDKit's own hash never
-match by construction -- same "not bit-compatible, partition/set-only" scope
-as every other RDKit-parity mode in this crate). See the pinned fixtures for
-concrete cases: `CC(=O)NO` (atoms 1 vs 3, not a symmetric pair), an
-isotope-labeled methyl pair, a steroid-like fused-ring epoxide, and a large
-polycyclic aromatic -- each verified to be *exactly* a 1-pair swap (unique
-bond-environment count, total emitted count, and sparse-count shape all
-preserved; only which atom represents one shared bond-environment differs).
+equivalent or near-equivalent, and **not** a claim that the two candidates
+provably compute the identical cumulative bond environment (that would
+require diagnosing raw bond-index-sets directly, which this validation
+doesn't do). What's actually measured, precisely: two different atoms
+produce the same *raw identifier*, and the selected representative differs
+because RDKit and chematic currently order those candidates using different
+hash values (FNV-1a vs RDKit's own hash never match by construction -- same
+"not bit-compatible, partition/set-only" scope as every other RDKit-parity
+mode in this crate). See the pinned fixtures for concrete cases: `CC(=O)NO`
+(atoms 1 vs 3, not a symmetric pair), an isotope-labeled methyl pair, a
+steroid-like fused-ring epoxide, and a large polycyclic aromatic -- each
+verified to be *exactly* a 1-pair swap with total-emitted-count,
+sparse-count shape, and unique-*raw-identifier*-count (deliberately not
+called "unique bond-environment count" -- a raw identifier can in principle
+be shared by two structurally different environments via hash collision, as
+the pyridine case below demonstrates) all preserved; only which atom
+represents one shared identifier differs. **These 4 fixtures, plus the 8
+`sparse_count_mismatch` fixtures, plus every "both"-bucket mismatch anywhere
+in the input, are hard GATES in `scripts/ecfp_rdkit_suppression_parity.py`
+(nonzero exit on any regression) -- not just reported numbers.**
 
 Sparse-count-shape mismatch: 1 of 5,045, a pair-set *exact match*
 (`C1=CC=NC=C1`, Kekulé pyridine) whose count multiplicities still differ --

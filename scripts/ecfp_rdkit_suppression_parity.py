@@ -19,6 +19,28 @@ hash VALUES throughout (same partition/set/multiset-shape-only discipline as
 every prior script in this project; FNV-1a never numerically matches RDKit's
 hash by construction).
 
+This is a real GATE, not just a report: exits non-zero if any of the
+following holds --
+  - `duplicate_input_ids` nonzero on either side (pipeline desync)
+  - any `parse_fail_chematic` / `parse_fail_rdkit` / `over_emission` /
+    `under_emission` row (chematic parsing something RDKit can't or vice
+    versa, or a one-directional pair mismatch, are never an expected shape)
+  - any "both"-bucket mismatch, ANYWHERE in the input (not just the pinned
+    fixtures), that is not *at least* a clean single-pair swap at the same
+    radius -- the known representative-selection-tie residual shape. A
+    multi-pair or cross-radius "both" mismatch would mean a real regression
+    hiding behind the same bucket label, and must fail loudly.
+  - any of the 4 pinned representative-swap fixtures NOT in one of the two
+    acceptable states: (A) an outright exact pair-set match (the hash-
+    matching milestone closing this gap in the future), or (B) the full
+    well-shaped swap (pair-swap shape AND total-emitted-count AND
+    sparse-count-shape AND unique-raw-identifier-count all preserved).
+  - any of the 8 `sparse_count_mismatch` fixtures (from the Phase A
+    diagnostic) with `sparse_count_shape_match` not True.
+Only a REGRESSION (a worse-shaped mismatch, or a previously-passing fixture
+degrading) is rejected -- a future improvement (e.g. exact match once a
+hash-matching milestone lands) is explicitly accepted, not required.
+
 Inputs:
   - chematic side: `crates/chematic-fp/examples/morgan_suppression_dump.rs`
     JSONL (requires the `diagnostics` feature), one row per molecule:
@@ -48,11 +70,11 @@ import sys
 # The 9 representative-selection-tie residuals found in the full 5,041-input
 # run are all a single-pair swap at the same radius (see mismatches in the
 # summary). These 4 are pinned as permanent fixtures -- structural sanity
-# checked on every run, not just observed once -- so a future hash-matching
-# milestone can re-run this exact set and see the mismatch collapse to zero.
-# "steroid-like" and "large/complex" per the residual's own shape, not a
-# claim that either is acyclic -- both still contain rings, chosen as the
-# largest/most topologically complex of the 9.
+# checked (and GATED, see module docstring) on every run, not just observed
+# once -- so a future hash-matching milestone can re-run this exact set and
+# see the mismatch collapse to zero. "steroid-like" and "large/complex" per
+# the residual's own shape, not a claim that either is acyclic -- both still
+# contain rings, chosen as the largest/most topologically complex of the 9.
 REPRESENTATIVE_SWAP_FIXTURES = {
     "CC(=O)NO": "small, non-ring, atom 1 vs atom 3 swap",
     "[10CH3][11CH3]": "isotope-labeled symmetric methyl pair swap",
@@ -151,27 +173,47 @@ def sparse_count_shape_match(chem_row, rd_row):
     return chem_shape == rd_shape
 
 
-def representative_swap_fixture_check(chem_row, rd_row):
-    """For a known 1-pair-swap residual molecule: verify the mismatch is
-    EXACTLY the expected shape (unique-environment-count and total-emission-
-    count both preserved, sparse-count shape preserved, exactly one pair
-    swapped at the SAME radius) -- not a different, larger, or otherwise
-    unexpected divergence hiding behind the same "both" bucket label."""
+def swap_shape_check(chem_row, rd_row):
+    """Characterizes how well a mismatch (if any) fits the known
+    "representative-selection tie" shape: a clean single-pair swap at the
+    same radius. Used both as the GLOBAL safety property every "both"-bucket
+    mismatch in the full run must satisfy (see `is_acceptable_representative_swap`)
+    and, more strictly, for the 4 pinned fixtures (see
+    `is_acceptable_fixture_state`).
+
+    NOTE on naming: `*_unique_raw_identifier_count` counts DISTINCT raw
+    hash/environment IDENTIFIERS (`len({raw_environment_id})` on chematic's
+    side, `len(sparse_bit_info)` on RDKit's), not literally-verified-distinct
+    *cumulative bond environments* -- those are two different things
+    whenever two structurally different environments happen to hash to the
+    same raw identifier (a real, observed case: Kekule pyridine's
+    `sparse_count_shape_match` mismatch traces to exactly this kind of
+    accidental cross-radius hash collision). This check does not diagnose
+    bond-index-sets directly, so it cannot claim bond-environment identity --
+    only that the raw-identifier-count, total-emission-count, and
+    count-multiset shape are each independently preserved.
+    """
     bucket, extra, missing = classify(chem_row, rd_row)
 
-    chem_unique_envs = len({rid for _a, _r, rid in chem_row["emitted"]})
-    rd_unique_envs = len(rd_row["default"]["sparse_bit_info"])
-    chem_total_emitted = len(chem_row["emitted"])
-    rd_total_emitted = sum(len(v) for v in rd_row["default"]["sparse_bit_info"].values())
+    chem_unique_rids = len({rid for _a, _r, rid in chem_row["emitted"]}) if chem_row.get("parse_ok", True) else None
+    rd_unique_rids = (
+        len(rd_row["default"]["sparse_bit_info"]) if rd_row.get("parse_ok", True) else None
+    )
+    chem_total_emitted = len(chem_row["emitted"]) if chem_row.get("parse_ok", True) else None
+    rd_total_emitted = (
+        sum(len(v) for v in rd_row["default"]["sparse_bit_info"].values())
+        if rd_row.get("parse_ok", True)
+        else None
+    )
 
     extra_radii = {r for _a, r in extra}
     missing_radii = {r for _a, r in missing}
 
     return {
         "bucket": bucket,
-        "unique_environment_count_match": chem_unique_envs == rd_unique_envs,
-        "chematic_unique_environment_count": chem_unique_envs,
-        "rdkit_unique_environment_count": rd_unique_envs,
+        "unique_raw_identifier_count_match": chem_unique_rids == rd_unique_rids,
+        "chematic_unique_raw_identifier_count": chem_unique_rids,
+        "rdkit_unique_raw_identifier_count": rd_unique_rids,
         "total_emitted_count_match": chem_total_emitted == rd_total_emitted,
         "chematic_total_emitted_count": chem_total_emitted,
         "rdkit_total_emitted_count": rd_total_emitted,
@@ -181,6 +223,31 @@ def representative_swap_fixture_check(chem_row, rd_row):
         "extra_pairs": sorted(extra),
         "missing_pairs": sorted(missing),
     }
+
+
+def is_acceptable_representative_swap(result):
+    """GLOBAL, weaker safety property every "both"-bucket mismatch in the
+    full corpus must satisfy: exactly one pair replaced by another at the
+    SAME radius -- never a larger, multi-pair, or cross-radius divergence
+    hiding behind the same bucket label."""
+    return result["bucket"] == "both" and result["is_exactly_one_pair_swap"] and result["swap_same_radius"]
+
+
+def is_acceptable_fixture_state(result):
+    """STRONGER property the 4 pinned representative-swap fixtures must
+    satisfy: either an outright exact pair-set match (acceptable -- a future
+    hash-matching milestone closing the gap), or the full well-shaped 1-1
+    swap (pair-swap shape AND total-emitted-count AND sparse-count-shape AND
+    unique-raw-identifier-count all preserved). Anything else is a
+    regression."""
+    if result["bucket"] == "exact_match":
+        return True
+    return (
+        is_acceptable_representative_swap(result)
+        and result["total_emitted_count_match"]
+        and result["sparse_count_shape_match"]
+        and result["unique_raw_identifier_count_match"]
+    )
 
 
 def run(chematic_rows, rdkit_rows):
@@ -210,6 +277,7 @@ def run(chematic_rows, rdkit_rows):
     mismatches = []
     sparse_shape_evaluated = 0
     sparse_shape_match = 0
+    gate_failures = []
 
     representative_swap_results = {}
     sparse_count_fixture_results = {}
@@ -239,6 +307,20 @@ def run(chematic_rows, rdkit_rows):
                 }
             )
 
+        if bucket in ("parse_fail_chematic", "parse_fail_rdkit", "over_emission", "under_emission"):
+            gate_failures.append(
+                f"row {idx} ({chem.get('smiles')!r}): bucket={bucket!r} is never an acceptable "
+                f"shape (one-directional or parse-failure mismatch)"
+            )
+        elif bucket == "both":
+            swap_result = swap_shape_check(chem, rd)
+            if not is_acceptable_representative_swap(swap_result):
+                gate_failures.append(
+                    f"row {idx} ({chem.get('smiles')!r}): 'both'-bucket mismatch is NOT a clean "
+                    f"single-pair same-radius swap (extra={swap_result['extra_pairs']}, "
+                    f"missing={swap_result['missing_pairs']}) -- possible regression"
+                )
+
         shape_match = sparse_count_shape_match(chem, rd)
         if shape_match is not None:
             sparse_shape_evaluated += 1
@@ -248,8 +330,23 @@ def run(chematic_rows, rdkit_rows):
         smi = chem.get("smiles")
         if smi in SPARSE_COUNT_MISMATCH_FIXTURES:
             sparse_count_fixture_results[smi] = shape_match
+            if shape_match is not True:
+                gate_failures.append(
+                    f"sparse_count_mismatch fixture {smi!r}: sparse_count_shape_match={shape_match!r}, expected True"
+                )
         if smi in REPRESENTATIVE_SWAP_FIXTURES:
-            representative_swap_results[smi] = representative_swap_fixture_check(chem, rd)
+            swap_result = swap_shape_check(chem, rd)
+            representative_swap_results[smi] = swap_result
+            if not is_acceptable_fixture_state(swap_result):
+                gate_failures.append(
+                    f"representative-swap fixture {smi!r}: not in an acceptable state "
+                    f"(bucket={swap_result['bucket']!r}, "
+                    f"is_exactly_one_pair_swap={swap_result['is_exactly_one_pair_swap']}, "
+                    f"swap_same_radius={swap_result['swap_same_radius']}, "
+                    f"total_emitted_count_match={swap_result['total_emitted_count_match']}, "
+                    f"sparse_count_shape_match={swap_result['sparse_count_shape_match']}, "
+                    f"unique_raw_identifier_count_match={swap_result['unique_raw_identifier_count_match']})"
+                )
 
     total = len(chematic_rows)
     bucket_sum = sum(buckets.values())
@@ -266,6 +363,9 @@ def run(chematic_rows, rdkit_rows):
             file=sys.stderr,
         )
         sys.exit(1)
+
+    if duplicate_input_ids["chematic"] != 0 or duplicate_input_ids["rdkit_oracle"] != 0:
+        gate_failures.append(f"duplicate_input_ids nonzero: {duplicate_input_ids}")
 
     sparse_count_shape = {
         "exact_match": sparse_shape_match,
@@ -287,8 +387,16 @@ def run(chematic_rows, rdkit_rows):
         "representative_swap_fixtures": representative_swap_results,
         "mismatch_count": len(mismatches),
         "mismatches_sample": mismatches[:50],
+        "gate_failures": gate_failures,
     }
-    return summary, mismatches
+
+    if gate_failures:
+        print(f"GATE FAILED: {len(gate_failures)} violation(s):", file=sys.stderr)
+        for f in gate_failures:
+            print(f"  {f}", file=sys.stderr)
+        return summary, mismatches, False
+
+    return summary, mismatches, True
 
 
 def _self_test_cases():
@@ -349,7 +457,8 @@ def run_self_test():
     if sparse_count_shape_match(chem_diff_shape, rd_diff_shape) is not False:
         failures.append("sparse_count_shape_match: expected False for shapes [1,1] vs [1,2]")
 
-    # representative_swap_fixture_check self-test: exactly one swap at the same radius.
+    # swap_shape_check + is_acceptable_fixture_state self-test: a clean 1-1
+    # same-radius swap with everything else preserved must be acceptable.
     chem_swap = {"emitted": [[0, 0, 111], [1, 1, 222]], "parse_ok": True}
     rd_swap = {
         "parse_ok": True,
@@ -358,22 +467,48 @@ def run_self_test():
             "sparse_counts": {"111": 1, "222": 1},
         },
     }
-    result = representative_swap_fixture_check(chem_swap, rd_swap)
-    if not (
-        result["unique_environment_count_match"]
-        and result["total_emitted_count_match"]
-        and result["sparse_count_shape_match"]
-        and result["is_exactly_one_pair_swap"]
-        and result["swap_same_radius"]
-    ):
-        failures.append(f"representative_swap_fixture_check: expected all-true for a clean 1-1 swap, got {result}")
+    good_result = swap_shape_check(chem_swap, rd_swap)
+    if not is_acceptable_fixture_state(good_result):
+        failures.append(f"is_acceptable_fixture_state: expected True for a clean 1-1 swap, got {good_result}")
+    if not is_acceptable_representative_swap(good_result):
+        failures.append(
+            f"is_acceptable_representative_swap: expected True for a clean 1-1 swap, got {good_result}"
+        )
+
+    # Positive control: a "both" mismatch that is NOT a clean 1-1 same-radius
+    # swap (two extra pairs, one at a DIFFERENT radius than the missing one)
+    # must be REJECTED by both gate predicates -- proving the gate actually
+    # catches a worse-shaped regression, not just labels every "both" bucket
+    # as acceptable.
+    chem_bad_swap = {"emitted": [[0, 0, 111], [1, 1, 222], [2, 2, 333]], "parse_ok": True}
+    rd_bad_swap = {
+        "parse_ok": True,
+        "default": {
+            "sparse_bit_info": {"111": [[0, 0]], "444": [[5, 1]]},
+            "sparse_counts": {"111": 1, "444": 1},
+        },
+    }
+    bad_result = swap_shape_check(chem_bad_swap, rd_bad_swap)
+    if is_acceptable_representative_swap(bad_result):
+        failures.append(
+            f"is_acceptable_representative_swap: expected False for a 2-extra/1-missing/"
+            f"cross-radius mismatch, got True ({bad_result})"
+        )
+    if is_acceptable_fixture_state(bad_result):
+        failures.append(
+            f"is_acceptable_fixture_state: expected False for a 2-extra/1-missing/"
+            f"cross-radius mismatch, got True ({bad_result})"
+        )
 
     if failures:
         print("SELF-TEST FAILED:", file=sys.stderr)
         for f in failures:
             print(f"  {f}", file=sys.stderr)
         sys.exit(1)
-    print(f"self-test OK: {len(_self_test_cases())} bucket labels + shape/swap checks all reachable")
+    print(
+        f"self-test OK: {len(_self_test_cases())} bucket labels + shape/swap checks + "
+        f"positive-control (bad-shape rejection) all reachable"
+    )
 
 
 def main():
@@ -394,7 +529,7 @@ def main():
 
     chematic_rows = load_jsonl(args.chematic)
     rdkit_rows = load_jsonl(args.rdkit_oracle)
-    summary, mismatches = run(chematic_rows, rdkit_rows)
+    summary, mismatches, gate_passed = run(chematic_rows, rdkit_rows)
 
     print(json.dumps(summary["buckets"], indent=2))
     print(
@@ -409,6 +544,9 @@ def main():
         with open(args.summary_out, "w") as f:
             json.dump({"summary": summary, "mismatches": mismatches}, f, indent=2, sort_keys=True)
         print(f"summary written to {args.summary_out}")
+
+    if not gate_passed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
