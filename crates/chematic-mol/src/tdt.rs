@@ -753,6 +753,24 @@ impl<W: Write> TdtRecordWriter<W> {
     pub fn into_inner(self) -> W {
         self.writer
     }
+
+    /// Replace the set (and order) of properties written per record.
+    /// `None` writes every property (RDKit's own `TDTWriter` default).
+    pub fn set_properties(&mut self, properties: Option<Vec<String>>) {
+        self.options.properties = properties;
+    }
+
+    /// Replace the tag under which the record name is written, or `None`
+    /// to omit it entirely (matches `SetWriteNames`).
+    pub fn set_name_tag(&mut self, name_tag: Option<String>) {
+        self.options.name_tag = name_tag;
+    }
+
+    /// Replace the number of significant digits used for written coordinate
+    /// values (matches `SetNumDigits`).
+    pub fn set_precision(&mut self, precision: usize) {
+        self.options.precision = precision;
+    }
 }
 
 #[cfg(test)]
