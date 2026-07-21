@@ -638,6 +638,28 @@ M  END
     }
 
     #[test]
+    fn test_charged_atom_writes_implicit_h_in_smiles() {
+        // MOL V2000 has no per-atom H-count field, so a charged atom read from
+        // this format always has `hydrogen_count: None` (the format leaves
+        // implicit H to be inferred, unlike bracket SMILES). Regression test
+        // for a bug where the SMILES writer silently dropped these inferred
+        // hydrogens on bracket atoms forced by charge/isotope/atom-map
+        // (found via MRV oracle validation, see validation/mrv_io_parity_summary.json).
+        let mol_str = "\
+charged
+  chematic
+
+  1  0  0  0  0  0  0  0  0  0  0 V2000
+    0.0000    0.0000    0.0000 N   0  3  0  0  0  0  0  0  0  0  0  0
+M  END
+";
+        let (mol, _) = parse_mol(mol_str).expect("parse should succeed");
+        assert_eq!(mol.atom(AtomIdx(0)).hydrogen_count, None);
+        assert_eq!(chematic_smiles::write(&mol), "[NH4+]");
+        assert_eq!(chematic_smiles::canonical_smiles(&mol), "[NH4+]");
+    }
+
+    #[test]
     fn test_round_trip() {
         // Parse → write → parse again; atom and bond counts must match.
         let (mol1, meta1) = parse_mol(ETHANOL_MOL).expect("first parse");

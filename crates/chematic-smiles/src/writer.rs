@@ -7,6 +7,22 @@ use std::collections::{HashMap, HashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 
+/// Write the `H`/`Hn` token for a bracket atom's hydrogen count.
+///
+/// Uses `implicit_hcount` rather than `atom.hydrogen_count` directly so that
+/// atoms forced into bracket notation by isotope/charge/atom-map (but with no
+/// explicit H count recorded) still get their inferred hydrogens written,
+/// e.g. `[NH4+]` rather than `[N+]`.
+pub(crate) fn emit_bracket_hydrogens(out: &mut String, mol: &Molecule, idx: AtomIdx) {
+    let h = chematic_core::implicit_hcount(mol, idx);
+    if h > 0 {
+        out.push('H');
+        if h > 1 {
+            out.push_str(&h.to_string());
+        }
+    }
+}
+
 /// Write a [`Molecule`] to a SMILES string.
 ///
 /// Disconnected fragments are joined with `.`.
@@ -237,14 +253,7 @@ impl<'a> SmilesWriter<'a> {
                 chematic_core::Chirality::None => {}
             }
 
-            if let Some(h) = atom.hydrogen_count
-                && h > 0
-            {
-                self.out.push('H');
-                if h > 1 {
-                    self.out.push_str(&h.to_string());
-                }
-            }
+            emit_bracket_hydrogens(&mut self.out, self.mol, idx);
 
             match atom.charge {
                 0 => {}
@@ -367,5 +376,62 @@ mod tests {
     #[test]
     fn test_roundtrip_caffeine() {
         roundtrip("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
+    }
+
+    // Bracket atoms with `hydrogen_count: None` (implicit H left uninferred by the
+    // caller, e.g. after a programmatic charge/isotope/atom-map edit) must still get
+    // their implicit hydrogens written — regression tests for the bracket-H bug found
+    // via MRV oracle validation (isotope_0/2/3, charge_0/3, atom_map_0/1/2, disconnected_3
+    // in validation/mrv_io_parity_summary.json).
+    use chematic_core::{Atom, Element, MoleculeBuilder};
+
+    #[test]
+    fn test_bracket_implicit_h_ammonium_charge_only() {
+        let mut b = MoleculeBuilder::new();
+        let mut n = Atom::new(Element::N);
+        n.charge = 1;
+        b.add_atom(n);
+        assert_eq!(write(&b.build()), "[NH4+]");
+    }
+
+    #[test]
+    fn test_bracket_implicit_h_isotope_only() {
+        let mut b = MoleculeBuilder::new();
+        let mut c = Atom::new(Element::C);
+        c.isotope = Some(13);
+        b.add_atom(c);
+        assert_eq!(write(&b.build()), "[13CH4]");
+    }
+
+    #[test]
+    fn test_bracket_implicit_h_atom_map_only() {
+        let mut b = MoleculeBuilder::new();
+        let mut c0 = Atom::new(Element::C);
+        c0.atom_map = Some(7);
+        let c0 = b.add_atom(c0);
+        let c1 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c0, c1, BondOrder::Single).unwrap();
+        assert_eq!(write(&b.build()), "[CH3:7]C");
+    }
+
+    #[test]
+    fn test_bracket_implicit_h_isotope_and_atom_map() {
+        let mut b = MoleculeBuilder::new();
+        let mut c0 = Atom::new(Element::C);
+        c0.isotope = Some(13);
+        c0.atom_map = Some(7);
+        let c0 = b.add_atom(c0);
+        let c1 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c0, c1, BondOrder::Single).unwrap();
+        assert_eq!(write(&b.build()), "[13CH3:7]C");
+    }
+
+    #[test]
+    fn test_bracket_implicit_h_hydroxide_charge_only() {
+        let mut b = MoleculeBuilder::new();
+        let mut o = Atom::new(Element::O);
+        o.charge = -1;
+        b.add_atom(o);
+        assert_eq!(write(&b.build()), "[OH-]");
     }
 }

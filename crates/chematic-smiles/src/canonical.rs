@@ -20,6 +20,8 @@ use std::collections::{HashMap, HashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
 
+use crate::writer::emit_bracket_hydrogens;
+
 /// Return the atom indices sorted into canonical (Morgan-rank) order.
 ///
 /// The returned `Vec<usize>` lists atom positions (0-based) in the order they
@@ -783,14 +785,7 @@ impl<'a> CanonicalWriter<'a> {
                 Chirality::None => {}
             }
 
-            if let Some(h) = atom.hydrogen_count
-                && h > 0
-            {
-                self.out.push('H');
-                if h > 1 {
-                    self.out.push_str(&h.to_string());
-                }
-            }
+            emit_bracket_hydrogens(&mut self.out, self.mol, idx);
 
             match atom.charge {
                 0 => {}
@@ -1736,5 +1731,60 @@ mod tests {
     fn ez_simple_bond_direction_normalized_symmetric() {
         assert!(same_canonical("F/C=C/F", r"F\C=C\F"));
         assert!(same_canonical("C(/F)=C/F", r"C(\F)=C\F"));
+    }
+
+    // Bracket atoms with `hydrogen_count: None` must still get their implicit
+    // hydrogens written by the canonical writer too — same bug/fixtures as
+    // writer::tests::test_bracket_implicit_h_*.
+    use chematic_core::{Atom, Element};
+
+    #[test]
+    fn canonical_bracket_implicit_h_ammonium_charge_only() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let mut n = Atom::new(Element::N);
+        n.charge = 1;
+        b.add_atom(n);
+        assert_eq!(canonical_smiles(&b.build()), "[NH4+]");
+    }
+
+    #[test]
+    fn canonical_bracket_implicit_h_isotope_only() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let mut c = Atom::new(Element::C);
+        c.isotope = Some(13);
+        b.add_atom(c);
+        assert_eq!(canonical_smiles(&b.build()), "[13CH4]");
+    }
+
+    #[test]
+    fn canonical_bracket_implicit_h_atom_map_only() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let mut c0 = Atom::new(Element::C);
+        c0.atom_map = Some(7);
+        let c0 = b.add_atom(c0);
+        let c1 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c0, c1, BondOrder::Single).unwrap();
+        assert_eq!(canonical_smiles(&b.build()), "C[CH3:7]");
+    }
+
+    #[test]
+    fn canonical_bracket_implicit_h_isotope_and_atom_map() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let mut c0 = Atom::new(Element::C);
+        c0.isotope = Some(13);
+        c0.atom_map = Some(7);
+        let c0 = b.add_atom(c0);
+        let c1 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c0, c1, BondOrder::Single).unwrap();
+        assert_eq!(canonical_smiles(&b.build()), "C[13CH3:7]");
+    }
+
+    #[test]
+    fn canonical_bracket_implicit_h_hydroxide_charge_only() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let mut o = Atom::new(Element::O);
+        o.charge = -1;
+        b.add_atom(o);
+        assert_eq!(canonical_smiles(&b.build()), "[OH-]");
     }
 }
