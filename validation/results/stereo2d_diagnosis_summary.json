@@ -1,0 +1,1404 @@
+{
+  "rdkit_pinned_commit": "8afba32ec539dcb2369bc84549d802aca3f7eb39",
+  "rdkit_python_version": "2026.03.3",
+  "fixture_count": 13,
+  "bucket_counts": {
+    "rs_not_computed_3heavy_implicit_h_gap": 2,
+    "rs_computed_but_writer_emits_meaningless_bond_direction_token": 1,
+    "rs_not_computed_despite_rdkit_success": 2,
+    "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file": 1,
+    "correctly_no_stereo_both_agree": 3,
+    "degenerate_coords_correctly_yields_no_stereo": 1,
+    "ez_computed_but_no_bond_direction_for_writer": 1,
+    "no_consistency_check_both_wedges_silently_tokenized": 1,
+    "silent_result_from_corrupted_fallback_positions_not_error": 1
+  },
+  "unexplained_count": 0,
+  "rows": [
+    {
+      "id": "tetrahedral_3heavy_implicit_h",
+      "mechanism": "tetrahedral_3heavy_implicit_h",
+      "description": "C(F)(Cl)(Br) + 1 implicit H, solid wedge C->Br",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(F)(Cl)/Br",
+        "naive_canonical_smiles": "C(/Br)(Cl)F",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CCW",
+            "cip_code": "R"
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "F[C@H](Cl)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap"
+    },
+    {
+      "id": "tetrahedral_4heavy_explicit_h",
+      "mechanism": "tetrahedral_4heavy",
+      "description": "C(F)(Cl)(Br)(H explicit), solid wedge C->Br, hash wedge C->H",
+      "chematic": {
+        "assign_stereo_from_2d_result": [
+          {
+            "atom": 0,
+            "cip_code": "S"
+          }
+        ],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": "S",
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 4,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "H",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(F)(Cl)(/Br)\\[H]",
+        "naive_canonical_smiles": "FC(/Br)(Cl)/[H]",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CW",
+            "cip_code": "S"
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "F[C@@H](Cl)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token"
+    },
+    {
+      "id": "solid_wedge_only",
+      "mechanism": "solid_wedge",
+      "description": "C(F)(Cl)(Br) + implicit H, solid wedge C->F, atom1=center (standard)",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(/F)(Cl)Br",
+        "naive_canonical_smiles": "C(Br)(Cl)/F",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CCW",
+            "cip_code": "R"
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "F[C@H](Cl)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "rs_not_computed_despite_rdkit_success"
+    },
+    {
+      "id": "dashed_wedge_only",
+      "mechanism": "dashed_wedge",
+      "description": "C(F)(Cl)(Br) + implicit H, hash wedge C->F, atom1=center (standard)",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(\\F)(Cl)Br",
+        "naive_canonical_smiles": "C(Br)(Cl)/F",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CW",
+            "cip_code": "S"
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "F[C@@H](Cl)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "rs_not_computed_despite_rdkit_success"
+    },
+    {
+      "id": "wedge_atom_order_reversed",
+      "mechanism": "wedge_atom_order_reversed",
+      "description": "same graph/geometry as tetrahedral_4heavy_explicit_h, but the C->Br wedge bond is written atom1=Br, atom2=C",
+      "chematic": {
+        "assign_stereo_from_2d_result": [
+          {
+            "atom": 0,
+            "cip_code": "S"
+          }
+        ],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": "S",
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 4,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "H",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(F)(Cl)(/Br)\\[H]",
+        "naive_canonical_smiles": "FC(/Br)(Cl)/[H]",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CW",
+            "cip_code": "S"
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 3,
+            "a2": 0,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "F[C@@H](Cl)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file"
+    },
+    {
+      "id": "multiple_stereocenters",
+      "mechanism": "multiple_stereocenters",
+      "description": "CH3-CHBr-CHBr-CH3, two independent 3-heavy+implicit-H stereocenters",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 4,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 5,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "CC(/Br)C(\\Br)C",
+        "naive_canonical_smiles": "CC(/Br)C(/Br)C",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 1,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CCW",
+            "cip_code": "S"
+          },
+          {
+            "idx": 2,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CW",
+            "cip_code": "S"
+          },
+          {
+            "idx": 4,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 5,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 1,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 1,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 3,
+            "a2": 4,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 3,
+            "a2": 5,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "C[C@H](Br)[C@H](C)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap"
+    },
+    {
+      "id": "no_wedge_negative_control",
+      "mechanism": "negative_control",
+      "description": "same skeleton as multiple_stereocenters but all bonds plain (stereo=0)",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 4,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 5,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "CC(Br)C(Br)C",
+        "naive_canonical_smiles": "CC(Br)C(Br)C",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 1,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 4,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 5,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 1,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 1,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 3,
+            "a2": 4,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 3,
+            "a2": 5,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "CC(Br)C(C)Br",
+        "any_chiral_tag": false,
+        "any_cip_code": false,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "correctly_no_stereo_both_agree"
+    },
+    {
+      "id": "cip_priority_tie",
+      "mechanism": "cip_priority_tie",
+      "description": "C(CH3)(CH3)(F)(Cl), wedge on C->F; the two methyls tie in CIP priority",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 4,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(C)(C)(/F)Cl",
+        "naive_canonical_smiles": "C(Cl)(C)(C)/F",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 1,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 4,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 4,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "CC(C)(F)Cl",
+        "any_chiral_tag": false,
+        "any_cip_code": false,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "correctly_no_stereo_both_agree"
+    },
+    {
+      "id": "degenerate_2d_coordinates",
+      "mechanism": "degenerate_coordinates",
+      "description": "same graph as tetrahedral_3heavy_implicit_h, all atoms at (0,0)",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(F)(Cl)/Br",
+        "naive_canonical_smiles": "C(/Br)(Cl)F",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "FC(Cl)Br",
+        "any_chiral_tag": false,
+        "any_cip_code": false,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "degenerate_coords_correctly_yields_no_stereo"
+    },
+    {
+      "id": "ez_geometry_2butene",
+      "mechanism": "ez_geometry",
+      "description": "4-carbon chain, central C=C, zigzag 2D layout encoding cis (Z) geometry",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [
+          {
+            "atom": 1,
+            "cip_code": "Z"
+          }
+        ],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "CC=CC",
+        "naive_canonical_smiles": "C(=CC)C",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 1,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "ENDUPRIGHT",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 1,
+            "a2": 2,
+            "bond_type": "DOUBLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREOCIS"
+          },
+          {
+            "a1": 2,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "ENDDOWNRIGHT",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "C/C=C\\C",
+        "any_chiral_tag": false,
+        "any_cip_code": false,
+        "any_bond_stereo": true
+      },
+      "failure_bucket": "ez_computed_but_no_bond_direction_for_writer"
+    },
+    {
+      "id": "terminal_alkene_propene",
+      "mechanism": "terminal_alkene",
+      "description": "CH2=CH-CH3, terminal =CH2 has no heavy substituent besides the double bond",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C=CC",
+        "naive_canonical_smiles": "C(=C)C",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 1,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "C",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "DOUBLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 1,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "C=CC",
+        "any_chiral_tag": false,
+        "any_cip_code": false,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "correctly_no_stereo_both_agree"
+    },
+    {
+      "id": "contradictory_wedge_annotations",
+      "mechanism": "contradictory_wedges",
+      "description": "C(F)(Cl)(Br) + implicit H, BOTH C->F and C->Cl marked solid wedge",
+      "chematic": {
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(/F)(/Cl)Br",
+        "naive_canonical_smiles": "C(Br)(/Cl)/F",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CCW",
+            "cip_code": "R"
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "F[C@H](Cl)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "no_consistency_check_both_wedges_silently_tokenized"
+    },
+    {
+      "id": "coord_atom_count_mismatch",
+      "mechanism": "coord_atom_count_mismatch",
+      "description": "assign_stereo_from_2d/apply_stereo_from_2d called with 3 coords for a 5-atom molecule (fixture #2's graph)",
+      "chematic": {
+        "assign_stereo_from_2d_result": [
+          {
+            "atom": 0,
+            "cip_code": "S"
+          }
+        ],
+        "assign_ez_from_2d_result": null,
+        "post_apply_stereo_from_2d_fields": null,
+        "naive_smiles_write": null,
+        "naive_canonical_smiles": null,
+        "chirality_reached_writer": null,
+        "note": "no panic, but NOT a safe no-op: the out-of-range neighbors (Br, H) fall back to the CENTER's own (x,y) via unwrap_or(*center_pos) in assign_rs, so their substituted position is wrong (only z from the wedge is still correct) -- yet a CIP code (S) is still returned using this corrupted geometry instead of None or an error. Whether the returned code happens to match the true answer (S, same as fixture #2's full-coords result) is coincidental to this fixture's geometry, not a property of the fallback."
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CW",
+            "cip_code": "S"
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "F[C@@H](Cl)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "silent_result_from_corrupted_fallback_positions_not_error"
+    }
+  ]
+}
