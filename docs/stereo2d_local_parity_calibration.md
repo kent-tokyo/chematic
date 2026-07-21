@@ -135,6 +135,29 @@ zero or one bond is wedged, there's nothing to check. If two or more are
 wedged, all isolated parities must agree, or `local_parity_from_wedges`
 returns `None`.
 
+### Tri-state guard on the isolated volumes (revised after a second #131 review)
+
+The first version of `wedges_agree_4`/`wedges_agree_3` compared isolated
+volumes via a bare `signed_volume(...) < 0.0` bool. That silently treats a
+near-zero (degenerate) isolated volume as "not negative" — the same bucket
+as a genuinely positive one — so a degenerate isolated wedge could
+spuriously "agree" with a real one and slip through. Fixed with
+`volume_sign(volume) -> Option<bool>`: `None` when `volume.abs() <
+VOLUME_EPS`, `Some(volume < 0.0)` otherwise. All isolated signs must be
+`Some` *and* equal; a single `None` rejects immediately, without needing to
+check the rest.
+
+Two regression fixtures pin this: one where the apex's own wedge gives a
+clear sign but a *different* wedged neighbor's isolated volume is exactly
+zero because the apex and the two non-wedged viewed points are collinear
+(constructed algebraically: for a "viewed" point's isolated volume,
+`signed_volume(viewed_i, viewed_j, viewed_k, apex)` with only `viewed_i`
+carrying z reduces to `z_i * cross2d((viewed_j - apex), (viewed_k - apex))`,
+which is exactly zero iff apex/viewed_j/viewed_k are collinear — independent
+of `z_i`'s value or sign); and one where all four substituents are placed
+collinear, making every isolated volume for any wedged pair among them
+exactly zero. Both reject.
+
 ## Degenerate-geometry rejection
 
 `local_parity_from_wedges` also returns `None` when the computed volume is

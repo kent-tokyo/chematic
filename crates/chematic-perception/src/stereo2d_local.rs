@@ -88,12 +88,28 @@ fn point_for(coords: &[(f64, f64)], mol: &Molecule, center: AtomIdx, nb: AtomIdx
     })
 }
 
+/// `Some(true)`/`Some(false)` for a clearly negative/non-negative volume;
+/// `None` when it's within [`VOLUME_EPS`] of zero, i.e. no reliable sign at
+/// all. Used by the isolated-wedge consistency checks below so a degenerate
+/// isolated volume can't be miscoded as "non-negative" and spuriously agree
+/// with a real one.
+fn volume_sign(volume: f64) -> Option<bool> {
+    if volume.abs() < VOLUME_EPS {
+        None
+    } else {
+        Some(volume < 0.0)
+    }
+}
+
 /// When two or more of `pts` (indices `0..pts.len()`) carry a nonzero wedge
-/// z, each must independently imply the same local parity -- computed by
-/// zeroing every *other* wedged point's z and checking the sign of
-/// `signed_volume(pts[1], pts[2], pts[3], pts[0])` -- before the combined
+/// z, each must independently imply the same, unambiguous local parity --
+/// computed by zeroing every *other* wedged point's z and checking the sign
+/// of `signed_volume(pts[1], pts[2], pts[3], pts[0])` -- before the combined
 /// (all-real-z-at-once) volume is trusted as a single tetrahedron. A single
-/// wedge (or none) trivially agrees with itself.
+/// wedge (or none) trivially agrees with itself. Any isolated volume that's
+/// itself degenerate (near-zero) counts as disagreement, not as a
+/// non-negative match -- otherwise a degenerate wedge could spuriously
+/// "agree" with a real one.
 ///
 /// Measured against RDKit, not assumed (see
 /// `docs/stereo2d_local_parity_calibration.md`): RDKit either explicitly
@@ -108,7 +124,7 @@ fn wedges_agree_4(pts: &[P3]) -> bool {
     if wedged.len() <= 1 {
         return true;
     }
-    let isolated_is_negative = |i: usize| -> bool {
+    let isolated_sign = |i: usize| -> Option<bool> {
         let iso: Vec<P3> = (0..4)
             .map(|j| {
                 if j == i {
@@ -118,12 +134,12 @@ fn wedges_agree_4(pts: &[P3]) -> bool {
                 }
             })
             .collect();
-        signed_volume(iso[1], iso[2], iso[3], iso[0]) < 0.0
+        volume_sign(signed_volume(iso[1], iso[2], iso[3], iso[0]))
     };
-    let first = isolated_is_negative(wedged[0]);
-    wedged[1..]
-        .iter()
-        .all(|&i| isolated_is_negative(i) == first)
+    let Some(first) = isolated_sign(wedged[0]) else {
+        return false;
+    };
+    wedged[1..].iter().all(|&i| isolated_sign(i) == Some(first))
 }
 
 /// Same consistency check as [`wedges_agree_4`], but for the 3-heavy case
@@ -133,7 +149,7 @@ fn wedges_agree_3(pts: &[P3], center_pt: P3) -> bool {
     if wedged.len() <= 1 {
         return true;
     }
-    let isolated_is_negative = |i: usize| -> bool {
+    let isolated_sign = |i: usize| -> Option<bool> {
         let iso: Vec<P3> = (0..3)
             .map(|j| {
                 if j == i {
@@ -143,12 +159,12 @@ fn wedges_agree_3(pts: &[P3], center_pt: P3) -> bool {
                 }
             })
             .collect();
-        signed_volume(iso[0], iso[1], iso[2], center_pt) < 0.0
+        volume_sign(signed_volume(iso[0], iso[1], iso[2], center_pt))
     };
-    let first = isolated_is_negative(wedged[0]);
-    wedged[1..]
-        .iter()
-        .all(|&i| isolated_is_negative(i) == first)
+    let Some(first) = isolated_sign(wedged[0]) else {
+        return false;
+    };
+    wedged[1..].iter().all(|&i| isolated_sign(i) == Some(first))
 }
 
 fn tetrahedral_4(
@@ -566,6 +582,54 @@ mod tests {
         let (chirality, order) = local_parity_from_wedges(&mol, &coords, c).unwrap();
         assert_eq!(chirality, Chirality::Clockwise);
         assert_eq!(order, vec![1, 2, 3, STEREO_H_SENTINEL]);
+    }
+
+    #[test]
+    fn dual_wedge_one_isolated_volume_degenerate_rejected() {
+        // F, Cl, I placed collinear (all on y=0) and Br off that line. Wedging
+        // F (the apex) gives a clear, non-degenerate isolated volume; wedging
+        // Br (a "viewed" point) with F/Cl/I collinear makes THAT isolated
+        // volume exactly zero (a degenerate 2-real-point simplex), even
+        // though the two real z values and the combined volume are both
+        // perfectly ordinary. Without the tri-state volume_sign guard, a
+        // near-zero isolated volume's `< 0.0` bool would read as "not
+        // negative" and could spuriously agree with a real sign -- this must
+        // reject instead.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Up).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Up).unwrap();
+        b.add_bond(c, i, BondOrder::Single).unwrap();
+        let coords = vec![(0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (0.0, 1.0), (3.0, 0.0)];
+        let mol = b.build();
+        assert!(local_parity_from_wedges(&mol, &coords, c).is_none());
+    }
+
+    #[test]
+    fn dual_wedge_both_isolated_volumes_degenerate_rejected() {
+        // All four substituents collinear: wedging either Cl or Br in
+        // isolation (holding the other three at z=0) gives an exactly-zero
+        // volume for both, not just one. The tri-state guard must reject on
+        // the very first degenerate isolated volume it finds, without ever
+        // reaching a real sign to (spuriously) agree with.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Up).unwrap();
+        b.add_bond(c, br, BondOrder::Up).unwrap();
+        b.add_bond(c, i, BondOrder::Single).unwrap();
+        let coords = vec![(0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (3.0, 0.0), (4.0, 0.0)];
+        let mol = b.build();
+        assert!(local_parity_from_wedges(&mol, &coords, c).is_none());
     }
 
     #[test]
