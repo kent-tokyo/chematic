@@ -1248,6 +1248,23 @@ mod adversarial_tests {
     }
 
     #[test]
+    fn nan_infinity_coordinate_values_do_not_panic() {
+        // f64::parse accepts literal "NaN"/"inf"/"-inf" tokens -- confirm
+        // this never panics downstream (e.g. in write_mrv's coordinate
+        // formatting) rather than silently producing a malformed float.
+        for bad in ["NaN", "inf", "-inf", "infinity"] {
+            let xml = format!(
+                r#"<cml><MDocument><MChemicalStruct><molecule><atomArray><atom id="a1" elementType="C" x2="{bad}" y2="0.0"/></atomArray></molecule></MChemicalStruct></MDocument></cml>"#
+            );
+            let rec = parse_mrv(&xml).unwrap();
+            let coords = rec.coordinates_2d.as_ref().unwrap();
+            assert!(!coords[0][0].is_finite());
+            // Must not panic when writing the non-finite value back out.
+            let _ = write_mrv(&rec, &MrvWriteOptions::default());
+        }
+    }
+
+    #[test]
     fn random_mutation_corpus_never_panics() {
         // Deterministic splitmix64, matching the seeded-mutation convention
         // used in smiles_table.rs/tdt.rs (no `rand` dependency).
