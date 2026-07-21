@@ -95,14 +95,42 @@ Four checks, kept separate:
    the *same parsed molecule* (`Chem.RenumberAtoms` with a shuffle seeded by
    `random.Random(seed)`, deliberately **not** RDKit's own `doRandom=True`,
    which draws from RDKit's unseeded global RNG and would make every run —
-   and this diagnosis's own committed JSON — non-reproducible), fed through
-   chematic; chematic's own output must be identical across all K+1
-   spellings. A failure here is always a real chematic bug (chematic-internal
-   self-consistency; RDKit is only used to generate alternate valid spellings
-   of one molecule). **This is a lower bound at the tested K=8** — passing 8
-   relabelings is evidence against instability being found in 8 samples, not
-   a proof of invariance under all possible relabelings.
-3. **Idempotence** — `canonical(canonical(s)) == canonical(s)`.
+   and this diagnosis's own committed JSON — non-reproducible), **plus
+   chematic's own canonical output fed back through chematic** (see the note
+   below), fed through chematic; chematic's own output must be identical
+   across all spellings. A failure here is always a real chematic bug
+   (chematic-internal self-consistency; RDKit is only used to generate
+   alternate valid spellings of one molecule). **This is a lower bound at
+   the tested K=8 plus one idempotence probe** — passing all of them is
+   evidence against instability being found in those samples, not a proof
+   of invariance under all possible relabelings.
+
+   **Check 2 and Check 3 are not independent — Check 2 subsumes Check 3.**
+   `canonical(s)` is itself a valid spelling of the same molecule `s`
+   encodes, so true permutation invariance (identical output for *every*
+   valid spelling) logically implies idempotence; contrapositive, **every
+   idempotence failure is automatically a permutation-invariance failure**.
+   The two checks are not measuring different things; they are two
+   different *probes* for the same underlying property, and they have
+   different blind spots: chematic's own canonical DFS traversal is one
+   very specific atom ordering that a uniform-random relabeling essentially
+   never reconstructs, so a mechanism that only manifests when fed
+   chematic's *own* canonical spelling back in (Root cause 3 below) is
+   invisible to K random relabelings alone and needs the idempotence probe
+   to surface at all. This diagnosis therefore folds `canonical(canonical(s))`
+   into Check 2's own invariance test directly (not as a separate,
+   after-the-fact cross-reference against Check 3's failure list), so
+   Check 2's reported number is the tight one on a single run. An earlier
+   draft of this diagnosis measured Check 2 with K-relabeling alone,
+   reporting 94.38%/281 failures — **that undercounted**; folding in the
+   idempotence probe raises true non-invariance to 348/5,000, corrected
+   throughout this document (data preserved in the script's
+   `detected_via_idempotence` / `detected_via_random_relabeling` per-row tags
+   so the two mechanisms below remain distinguishable in the corrected total).
+3. **Idempotence** — `canonical(canonical(s)) == canonical(s)`. Reported
+   separately per the task's requirement, and useful in its own right as
+   the specific probe that catches Root cause 3 below — but not an
+   independent finding from Check 2 (see the note above).
 4. **Semantic structure parity** — for every Check-1 mismatch, reparse
    chematic's canonical output through RDKit and compare **actual structure**
    (formula, heavy-atom multiset, aromatic atom/bond counts, SSSR ring-size
@@ -125,9 +153,35 @@ silent drops — `check4_bucket_totals_check.accounted_for` asserts
 | Check | Result | Note |
 |---|---|---|
 | 1. Exact string parity | **0.16%** (8/5,000) | Expected — different algorithms. Not a bug signal by itself; only an entry point into Check 4. |
-| 2. Permutation invariance | **94.38%** (4,719/5,000); **281 failures** | **Real chematic bugs.** Root-caused below — one dominant, self-contained mechanism (100% of the 281). |
-| 3. Idempotence | **98.44%** (4,922/5,000); 78 failures | Matches `canonical_diff.py`'s fresh 98.44% exactly. All 78 independently confirmed (RDKit structural re-comparison) to be **cosmetic non-convergence** (same molecule, oscillating spelling) — 0/78 show genuine structural drift. |
+| 2. Permutation invariance | **93.04%** (4,652/5,000); **348 real permutation-invariance bugs** | Includes the idempotence probe (see method note above) — **two distinct mechanisms**, see Root causes 1 and 3 below. All 348 are molecule-preserving (0 flip the encoded chemistry). |
+| 3. Idempotence | **98.44%** (4,922/5,000); 78 failures | Matches `canonical_diff.py`'s fresh 98.44% exactly. A **subset** of Check 2's 348 (78 = the 67 idempotence-only failures + 11 also caught by random relabeling). All 78 independently confirmed (RDKit structural re-comparison) to be molecule-preserving (same structure before/after) — 0/78 show genuine structural drift. |
 | 4. Semantic structure parity (applied to all 4,992 Check-1 mismatches) | **100% cosmetic — 0 real semantic bugs** | Verified directly: `sum(not r["semantically_identical"] for r in rows) == 0`, not inferred from bucket labels (a bug class can reach the "real diff" branch and still land in a bucket — e.g. `bridged_fused_spiro` — that also has a cosmetic-branch meaning; checked the boolean directly to avoid that trap). |
+
+**On "cosmetic" vs "real bug" language**: every one of the 348 Check-2
+failures is a **real permutation-invariance bug** by the task's own
+definition, full stop — none is dismissed as cosmetic. What legitimately
+varies is *where the eventual fix belongs* (a self-contained SMILES-writer
+change for Root cause 1, vs. the shared aromaticity-perception engine for
+Root cause 3) and whether the encoded *chemistry* is corrupted (it never is,
+across all 348) — that second property is reported as "semantically
+identical / molecule-preserving," not as "not a bug."
+
+### Check 2 breakdown: two distinct mechanisms, by detection probe
+
+| | Idempotence probe only | Random relabeling only (K=8) | Both probes | Total |
+|---|---|---|---|---|
+| Count | 67 | 270 | 11 | 348 |
+| Has an E/Z marker in some output | 1/67 | 270/270 | 11/11 | 282/348 |
+
+Root cause 1 (E/Z marker-selection instability, below) accounts for
+270 + 11 = **281** failures (all E/Z-marker-bearing, 100%). Root cause 3
+(aromaticity round-trip inconsistency, below) accounts for the 67
+idempotence-only failures (66/67 have no E/Z marker at all — a genuinely
+separate, non-stereo mechanism). The 11 "both" cases are E/Z-marker
+molecules where the marker-selection instability itself also breaks the
+idempotence fixed point (feeding chematic's own output back in re-triggers
+a different marker choice) — a compound manifestation of Root cause 1, not
+a third mechanism.
 
 ### Check 4 bucket breakdown (of the 4,992 Check-1 mismatches — all cosmetic)
 
@@ -162,7 +216,7 @@ priority order used (ring/fragment topology checked before the near-
 ubiquitous symmetry-tie catch-all, so it doesn't swallow more specific
 buckets).
 
-## Root cause 1 (Check 2, dominant, 281/5,000 = 5.6% of corpus, 54% of E/Z-bearing molecules): trisubstituted/tetrasubstituted double-bond marker-selection instability
+## Root cause 1 (Check 2, dominant, 281/348 = 80.7% of the non-invariance found, 5.6% of the corpus, 54% of E/Z-bearing molecules): trisubstituted/tetrasubstituted double-bond marker-selection instability
 
 **Mechanism, pinned to exact code.** `crates/chematic-smiles/src/canonical.rs`'s
 `normalize_ez` (~L443–470) normalizes the *flip polarity* of an E/Z system's
@@ -189,13 +243,16 @@ respectively (see `validation/canonical_residual_fixtures.jsonl`,
 outputs is identical (`STEREOZ` for the imine fixture) — **the encoded
 geometry never changes**, only the token choice.
 
-**Fully quantified, 0 unclassified**: of the 281 corpus failures, **281/281
-(100%)** have at least one stereo double bond with ≥2 heavy-atom substituents
-on one side; **0/281** show an actual E/Z value flip across the divergent
-outputs (checked via RDKit `BondStereo` on each reparsed output, not string
+**Fully quantified, 0 unclassified**: of the 281 corpus failures attributable
+to this mechanism (270 caught by random relabeling alone + 11 also caught by
+the idempotence probe — see the breakdown table above), **281/281 (100%)**
+have at least one stereo double bond with ≥2 heavy-atom substituents on one
+side; **0/281** show an actual E/Z value flip across the divergent outputs
+(checked via RDKit `BondStereo` on each reparsed output, not string
 comparison). This is a **writer canonicalization-stability bug** (violates
-the canonicalizer's "one string per molecule" contract) — **not** a
-chemistry-correctness bug.
+the canonicalizer's "one string per molecule" contract, and is squarely a
+real permutation-invariance bug per the task's definition) — it does not,
+however, corrupt the encoded chemistry.
 
 **Independent of both parallel tracks.** This mechanism lives entirely in
 the SMILES writer's own marker-selection logic; it does not touch CIP/
@@ -215,25 +272,41 @@ purely about which ring atom the canonical DFS reaches first among tied
 bridgehead candidates, already documented as a non-panicking known gap in
 `crates/chematic-smiles/tests/canonical_robustness.rs`
 (`bridged_bicyclic_canonical_gap_documentation`). Zero occurrences in the
-5,000-mol ChEMBL corpus (drug-like molecules rarely contain plain
-undecorated aliphatic bridged bicyclics), but the corpus's 232 bridged-ring
-molecules that *did* fail Check 2 all owed their failure to Root cause 1
-(had an E/Z marker) — this mechanism is real but under-sampled by this
-particular corpus, not absent. Pinned as fixture
+5,000-mol ChEMBL corpus attributable to *this specific* mechanism (drug-like
+molecules rarely contain plain undecorated aliphatic bridged bicyclics with
+no E/Z and no aromatic ring at all): of the corpus's 232 bridged-ring
+molecules, 13 fail the (corrected, unified) Check 2 — 10 own to Root cause 1
+(E/Z marker present) and the remaining 3 own to Root cause 3 below (all 3
+idempotence-only, i.e. invisible to K=8 random relabeling, on large
+fused-aromatic macrolide/ellagitannin-like structures — the exact profile
+Root cause 3 already predicts, confirmed individually, not assumed from the
+aggregate count). **0 of the 232 own to Root cause 2 specifically** — this
+mechanism is real (hand-confirmed above) but this particular corpus happens
+not to sample it; it is not merely under-sampled evidence in favor of it,
+the corpus's bridged-ring failures are fully and specifically explained by
+the *other two* mechanisms. Pinned as fixture
 `perm-inv-01-bridged-bicyclooctane`.
 
-## Root cause 3 (Check 3, 78/5,000 = 1.56%): aromaticity-perception round-trip inconsistency — already documented, reconfirmed, deferred
+## Root cause 3 (Check 2's idempotence-only failures, 67/348 = 19.3% of the non-invariance found, 78 total idempotence failures once the 11 E/Z-overlap cases are included): aromaticity-perception round-trip inconsistency — already documented, reconfirmed, deferred
 
-All 78 idempotency failures were checked (not assumed) to be cosmetic: RDKit
-re-canonicalizes `canonical(s)` and `canonical(canonical(s))` to the
-*identical* molecule in all 78/78 cases — 0 genuine structural drift. This
-matches `docs/rdkit_compat.md`'s already-documented finding ("Canonical
-idempotency on large fused polycyclics... Aromaticity-perception round-trip
-inconsistency... The molecule is preserved (InChI invariant); only the
-representation differs"). This diagnosis does not re-derive that root cause
-(out of scope — it belongs to the parallel aromaticity-diagnosis track) but
-does independently reconfirm the failure rate and the "cosmetic, not
-structural drift" property at the current commit.
+All 78 idempotence failures were checked (not assumed) to be
+molecule-preserving: RDKit re-canonicalizes `canonical(s)` and
+`canonical(canonical(s))` to the *identical* molecule in all 78/78 cases —
+0 genuine structural drift. This matches `docs/rdkit_compat.md`'s
+already-documented finding ("Canonical idempotency on large fused
+polycyclics... Aromaticity-perception round-trip inconsistency... The
+molecule is preserved (InChI invariant); only the representation differs").
+This diagnosis does not re-derive that root cause (out of scope — it
+belongs to the parallel aromaticity-diagnosis track) but does independently
+reconfirm the failure rate, the "molecule-preserving, not structural drift"
+property, and — new in this round — that it is specifically **the
+idempotence probe, not K=8 random relabeling, that surfaces it**: 66/67 of
+these failures have no E/Z marker at all, so they are not Root cause 1
+recurring under a different name; they are a genuinely distinct mechanism
+that only manifests when chematic's own canonical spelling is fed back
+through itself (see the Check 2/3 relationship note in "Method" above for
+why that is expected — chematic's own DFS traversal order is a needle in
+the haystack for uniform random relabeling to hit by chance).
 
 ## What this diagnosis does not do
 
@@ -258,8 +331,8 @@ structural drift" property at the current commit.
   two tracks — a future fix PR for them could proceed independently.
 - **No re-litigation of the aromaticity round-trip mechanism itself** — that
   belongs to the parallel aromaticity-diagnosis effort; this doc only
-  reconfirms the failure rate and its cosmetic (non-structural-drift) nature
-  at the current commit.
+  reconfirms the failure rate and its molecule-preserving (non-structural-
+  drift) nature at the current commit.
 - **No changes to any other agent's branch, PR, or files.**
 
 ## Reproduce

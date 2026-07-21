@@ -265,14 +265,37 @@ def run(corpus_path, limit, k_variants, out_jsonl=OUT_JSONL, out_summary=OUT_SUM
             idem_fail += 1
 
         # --- Check 2: permutation invariance (chematic self-consistency) ---
-        outputs = {cm}
-        perm_error = False
+        #
+        # IMPORTANT: `cm` (chematic's own canonical output) is itself a valid
+        # spelling of the SAME molecule -- so re-feeding it through chematic
+        # (`cm2`, already computed above for Check 3) is *one particular*
+        # permutation-invariance probe, not a separate phenomenon. Formally:
+        # true permutation invariance (identical output for EVERY valid
+        # spelling of M) implies idempotence (cm2 == cm), because cm is one
+        # such spelling; contrapositive, every idempotence FAILURE is a
+        # permutation-invariance failure. Folding `cm2` into `outputs` here
+        # (rather than treating Check 2 and Check 3 as independent, and
+        # separately cross-referencing their failure sets after the fact)
+        # makes Check 2's own number the tight one directly -- no separate
+        # reconciliation step needed on a re-run. K random relabelings alone
+        # under-detect this: chematic's own canonical DFS traversal is one
+        # very specific ordering that a uniform-random shuffle essentially
+        # never reconstructs, so a mechanism that only shows up when fed
+        # chematic's *own* spelling (e.g. the aromaticity round-trip
+        # inconsistency, see the RFC's Root cause 3) is invisible to random
+        # relabeling alone and needs this probe to surface at all.
+        relabel_error = False
+        relabel_outputs = {cm}
         for _ in range(k_variants):
             variant = random_relabeling(rm, rng)
             try:
-                outputs.add(chematic.from_smiles(variant).smiles)
+                relabel_outputs.add(chematic.from_smiles(variant).smiles)
             except Exception:
-                perm_error = True
+                relabel_error = True
+        outputs = set(relabel_outputs)
+        if cm2 is not None:
+            outputs.add(cm2)
+        perm_error = relabel_error or cm2 is None
         if len(outputs) == 1 and not perm_error:
             perm_invariant += 1
         else:
@@ -288,12 +311,30 @@ def run(corpus_path, limit, k_variants, out_jsonl=OUT_JSONL, out_summary=OUT_SUM
                 for o in outputs:
                     om = Chem.MolFromSmiles(o)
                     canon_forms.add(Chem.MolToSmiles(om) if om is not None else None)
+                # `detected_via_relabeling` is evaluated on `relabel_outputs`
+                # ALONE (cm + the K variants, never cm2) so it answers "would
+                # random relabeling by itself have caught this, with no
+                # idempotence probe at all" -- NOT "is there some output that
+                # differs from cm2" (which would wrongly credit relabeling
+                # for cases only cm2 actually diverges on, since cm2==cm
+                # whenever idempotence doesn't independently fail).
+                detected_via_idempotence = cm2 is not None and cm2 != cm
+                detected_via_relabeling = len(relabel_outputs) > 1 or relabel_error
                 perm_fail_examples.append({
                     "smiles": s,
                     "distinct_outputs": sorted(outputs),
                     "chematic_variant_parse_error": perm_error,
                     "outputs_semantically_identical": len(canon_forms) == 1,
                     "has_ez_marker": any("/" in o or "\\" in o for o in outputs),
+                    # Which probe(s) surfaced this failure -- see the long
+                    # comment above `outputs = {cm}` for why these are not
+                    # independent failure classes: idempotence failure is
+                    # a SPECIAL CASE of permutation non-invariance (feeding
+                    # chematic's own canonical spelling back through itself
+                    # is one particular, non-random, alternate spelling of
+                    # the same molecule), not a separate phenomenon.
+                    "detected_via_idempotence": detected_via_idempotence,
+                    "detected_via_random_relabeling": detected_via_relabeling,
                 })
 
         # --- Check 1: exact RDKit string parity ---
@@ -361,6 +402,20 @@ def run(corpus_path, limit, k_variants, out_jsonl=OUT_JSONL, out_summary=OUT_SUM
             "fail_semantically_DIFFERENT_outputs": sum(
                 1 for e in perm_fail_examples if not e["outputs_semantically_identical"]),
             "fail_examples_captured": len(perm_fail_examples),
+            # Idempotence failure is a SPECIAL CASE of permutation
+            # non-invariance (see the comment on `outputs = {cm}` above),
+            # not an independent phenomenon -- this breakdown makes that
+            # visible directly in one run instead of requiring a manual
+            # cross-reference against Check 3's separate output.
+            "fail_detected_via_idempotence_only": sum(
+                1 for e in perm_fail_examples
+                if e["detected_via_idempotence"] and not e["detected_via_random_relabeling"]),
+            "fail_detected_via_random_relabeling_only": sum(
+                1 for e in perm_fail_examples
+                if e["detected_via_random_relabeling"] and not e["detected_via_idempotence"]),
+            "fail_detected_via_both": sum(
+                1 for e in perm_fail_examples
+                if e["detected_via_idempotence"] and e["detected_via_random_relabeling"]),
         },
         "check3_idempotence": {
             "ok": idem_ok, "fail": idem_fail, "n": n_total,
