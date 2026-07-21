@@ -15,6 +15,7 @@ pub mod sssr;
 pub mod stereo_validation;
 
 pub mod stereo2d;
+pub mod stereo2d_local;
 
 pub use aromaticity::{
     AromaticityAlgorithm, AromaticityModel, AtomElectronTrace, ConjugatedComponent,
@@ -53,6 +54,7 @@ pub use stereo2d::{
     StereoAssignment2D, apply_stereo_from_2d, assign_ez_from_2d, assign_stereo_from_2d,
     cip_ez_descriptor,
 };
+pub use stereo2d_local::{apply_local_parity_from_wedges, local_parity_from_wedges};
 
 use chematic_core::{AtomIdx, Molecule};
 

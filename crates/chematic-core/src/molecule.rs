@@ -708,6 +708,11 @@ impl Molecule {
         self.atoms[idx.0 as usize].cip_code = code;
     }
 
+    /// Set the tetrahedral chirality (`@`/`@@`) of atom `idx` in-place.
+    pub fn set_chirality(&mut self, idx: AtomIdx, chirality: crate::atom::Chirality) {
+        self.atoms[idx.0 as usize].chirality = chirality;
+    }
+
     /// Return the enhanced stereo groups attached to this molecule.
     pub fn stereo_groups(&self) -> &[StereoGroup] {
         &self.stereo_groups

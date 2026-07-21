@@ -210,10 +210,10 @@ fn cross2d(vx: f64, vy: f64, ux: f64, uy: f64) -> f64 {
 
 /// 3D point (x, y, z).
 #[derive(Clone, Copy)]
-struct P3 {
-    x: f64,
-    y: f64,
-    z: f64,
+pub(crate) struct P3 {
+    pub(crate) x: f64,
+    pub(crate) y: f64,
+    pub(crate) z: f64,
 }
 
 fn assign_rs(mol: &Molecule, coords: &[(f64, f64)], center: AtomIdx) -> Option<CipCode> {
@@ -262,7 +262,7 @@ fn assign_rs(mol: &Molecule, coords: &[(f64, f64)], center: AtomIdx) -> Option<C
 /// Up (wedge toward viewer) → +1.0
 /// Down (dash away from viewer) → -1.0
 /// Anything else → 0.0
-fn wedge_z(mol: &Molecule, center: AtomIdx, neighbor: AtomIdx) -> f64 {
+pub(crate) fn wedge_z(mol: &Molecule, center: AtomIdx, neighbor: AtomIdx) -> f64 {
     // Check bond center→neighbor
     if let Some((_, bond)) = mol.bond_between(center, neighbor) {
         match bond.order {
@@ -312,7 +312,7 @@ fn rank4(mol: &Molecule, center: AtomIdx, subs: &[AtomIdx; 4]) -> Option<[u8; 4]
 // Signed volume
 // ---------------------------------------------------------------------------
 
-fn signed_volume(p1: P3, p2: P3, p3: P3, p4: P3) -> f64 {
+pub(crate) fn signed_volume(p1: P3, p2: P3, p3: P3, p4: P3) -> f64 {
     let (ax, ay, az) = (p1.x - p4.x, p1.y - p4.y, p1.z - p4.z);
     let (bx, by, bz) = (p2.x - p4.x, p2.y - p4.y, p2.z - p4.z);
     let (cx, cy, cz) = (p3.x - p4.x, p3.y - p4.y, p3.z - p4.z);
