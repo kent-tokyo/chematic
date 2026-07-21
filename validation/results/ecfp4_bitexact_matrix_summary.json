@@ -1,0 +1,149 @@
+{
+  "capability_checks_architecturally_unimplemented": {
+    "alternative_atom_invariants_fcfp_style": {
+      "rdkit_default_vs_feature_invariant_differ": true,
+      "reason": "connectivity_invariant hardcodes RDKit's default GetConnectivityInvariants component set; no FCFP-style feature-invariant path exists in rdkit_morgan_hash.rs.",
+      "status": "architecturally_unimplemented"
+    },
+    "use_bond_types_false": {
+      "rdkit_true_vs_false_differ_same_molecule": true,
+      "reason": "checked_bond_invariant only implements the useBondTypes=true branch (module docs: 'the chirality-perturbed branch is out of scope' -- likewise no useBondTypes=false branch exists).",
+      "status": "architecturally_unimplemented"
+    },
+    "use_chirality": {
+      "rdkit_default_useChirality_false_L_eq_D": true,
+      "rdkit_useChirality_true_L_eq_D": false,
+      "reason": "rdkit_morgan_hash.rs's connectivity_invariant/checked_bond_invariant have no chirality byte or branch at all -- useChirality=true cannot be requested.",
+      "status": "architecturally_unimplemented"
+    }
+  },
+  "fixture_count": 33,
+  "molecule_shape_matrix": {
+    "aromatic_vs_kekule": {
+      "mismatch_aromaticity_kekulize_hardfail": 0,
+      "mismatch_unclassified": 0,
+      "total": 8,
+      "verified_bit_exact": 8
+    },
+    "baseline": {
+      "mismatch_aromaticity_kekulize_hardfail": 0,
+      "mismatch_unclassified": 0,
+      "total": 3,
+      "verified_bit_exact": 3
+    },
+    "charged_kekulize_fail": {
+      "mismatch_aromaticity_kekulize_hardfail": 6,
+      "mismatch_unclassified": 0,
+      "total": 6,
+      "verified_bit_exact": 0
+    },
+    "charged_ok": {
+      "mismatch_aromaticity_kekulize_hardfail": 0,
+      "mismatch_unclassified": 0,
+      "total": 6,
+      "verified_bit_exact": 6
+    },
+    "disconnected": {
+      "mismatch_aromaticity_kekulize_hardfail": 0,
+      "mismatch_unclassified": 0,
+      "total": 3,
+      "verified_bit_exact": 3
+    },
+    "isotope": {
+      "mismatch_aromaticity_kekulize_hardfail": 0,
+      "mismatch_unclassified": 0,
+      "total": 4,
+      "verified_bit_exact": 4
+    },
+    "stereo_ez": {
+      "mismatch_aromaticity_kekulize_hardfail": 0,
+      "mismatch_unclassified": 0,
+      "total": 2,
+      "verified_bit_exact": 2
+    },
+    "stereo_tetrahedral": {
+      "mismatch_aromaticity_kekulize_hardfail": 0,
+      "mismatch_unclassified": 0,
+      "total": 2,
+      "verified_bit_exact": 2
+    }
+  },
+  "nbits_binary_axis_matrix": {
+    "128": {
+      "match": 27,
+      "total": 27
+    },
+    "256": {
+      "match": 27,
+      "total": 27
+    },
+    "512": {
+      "match": 27,
+      "total": 27
+    },
+    "1024": {
+      "match": 27,
+      "total": 27
+    },
+    "2048": {
+      "match": 27,
+      "total": 27
+    }
+  },
+  "nbits_count_axis_matrix": {
+    "128": {
+      "match": 27,
+      "total": 27
+    },
+    "256": {
+      "match": 27,
+      "total": 27
+    },
+    "512": {
+      "match": 27,
+      "total": 27
+    },
+    "1024": {
+      "match": 27,
+      "total": 27
+    },
+    "2048": {
+      "match": 27,
+      "total": 27
+    }
+  },
+  "production_api": "chematic_fp::rdkit_morgan_ecfp4_experimental",
+  "production_fixed_config": {
+    "atom_invariant": "default (GetConnectivityInvariants)",
+    "include_redundant_environments": false,
+    "nbits": 2048,
+    "radius": 2,
+    "use_bond_types": true,
+    "use_chirality": false
+  },
+  "radius_axis_matrix": {
+    "0": {
+      "match": 27,
+      "n_a_no_aromaticity": 6,
+      "total": 27
+    },
+    "1": {
+      "match": 27,
+      "n_a_no_aromaticity": 6,
+      "total": 27
+    },
+    "2": {
+      "match": 27,
+      "n_a_no_aromaticity": 6,
+      "total": 27
+    },
+    "3": {
+      "match": 27,
+      "n_a_no_aromaticity": 6,
+      "total": 27
+    }
+  },
+  "schema_version": "1",
+  "unclassified_count": 0,
+  "unclassified_sample": []
+}
