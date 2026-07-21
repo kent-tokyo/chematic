@@ -89,12 +89,57 @@ exactly what the direct RDKit-tag comparison above also gives. Two
 independent derivations agreeing is the actual basis for confidence here, not
 either one alone.
 
-## Contradictory-wedge and degenerate-geometry rejection
+## Multi-wedge consistency (revised after #131 review)
 
-`local_parity_from_wedges` returns `None` when more than one neighbor bond
-carries a wedge/hash from the same center (see the two-simultaneous-wedges
-finding above), or when the computed volume is within `1e-6` of zero
-(coplanar/degenerate, including the "no wedge at all" case).
+The first version of this module rejected outright whenever more than one
+neighbor bond carried a wedge/hash. That was too strict, and was itself an
+unverified assumption -- exactly the failure mode this whole document exists
+to avoid. Caught in review: PR #130's own frozen fixtures
+`tetrahedral_4neighbors_explicit_h` / `tetrahedral_4heavy_no_h` each carry
+*two* wedges (a solid wedge to one substituent, a hash to a different one),
+and RDKit accepts both cleanly. The outright multi-wedge rejection would have
+silently mis-rejected real, valid drawings.
+
+Measured (`.venv/bin/python`, rdkit==2026.03.3) on 5 dual-wedge fixtures,
+each run through both a "per-wedge-alone" computation (the *already
+calibrated* single-wedge formula above, applied once per wedged bond with
+every other wedge's z zeroed) and RDKit's own parse, with per-fixture stderr
+captured separately so warnings are unambiguous:
+
+| fixture | per-wedge-alone parities | combined (all real z at once) | RDKit |
+|---|---|---|---|
+| 4-heavy, opposite dir (Br up, I down) | CW, CW (agree) | CW | clean `CW` tag |
+| 3-heavy, same dir (F up, Cl up) | CW, CW (agree) | CW | clean `CW` tag |
+| 4-heavy, same dir (Br up, I up) | CW, CCW (disagree) | CCW | clean `CW` tag (mismatches combined!) |
+| 3-heavy, opposite dir (F up, Cl down) | CW, CCW (disagree) | CCW | **warns** "conflicting stereochemistry", `CHI_UNSPECIFIED` |
+| 4-heavy, F up + Cl up (the pre-existing `contradictory_wedges_no_assignment` test's exact geometry) | CCW, CW (disagree) | CW | clean `CW` tag (mismatches combined!) |
+
+Two things fell out of this table that weren't obvious beforehand:
+
+1. **"Same direction" vs "opposite direction" is not the discriminator.**
+   Both a same-direction and an opposite-direction pair show up on the
+   *agree* side, and both also show up on the *disagree* side, depending on
+   which two bonds and which coordinates are involved. Only the actual
+   per-wedge-alone computation predicts it — this was checked, not assumed,
+   after "same-direction-is-bad" was floated and directly falsified by the
+   very first counterexample.
+2. **Once the isolated parities disagree, the combined (all-z-at-once)
+   volume is not trustworthy** — it agreed with RDKit's own fallback tag in
+   neither disagreement case above (rows 3 and 5), and in row 4 RDKit itself
+   refuses outright. Whenever the isolated parities *agree*, the combined
+   volume's sign matched RDKit's clean, unwarned tag in every measured case.
+
+**Rule implemented in `wedges_agree_4`/`wedges_agree_3`:** for each wedged
+neighbor, recompute the parity formula with every *other* wedge zeroed; if
+zero or one bond is wedged, there's nothing to check. If two or more are
+wedged, all isolated parities must agree, or `local_parity_from_wedges`
+returns `None`.
+
+## Degenerate-geometry rejection
+
+`local_parity_from_wedges` also returns `None` when the computed volume is
+within `1e-6` of zero (coplanar/degenerate, including the "no wedge at all"
+case).
 
 ## Reproducing this measurement
 

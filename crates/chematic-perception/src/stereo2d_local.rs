@@ -54,9 +54,13 @@ const VOLUME_EPS: f64 = 1e-6;
 ///   single implicit H, isn't a tetrahedral stereocenter this function
 ///   handles);
 /// - any required neighbor's or the center's 2D coordinate is missing;
-/// - more than one neighbor bond carries a wedge/hash (contradictory
-///   notation -- a valid wedge drawing has at most one non-planar bond per
-///   stereocenter);
+/// - two or more wedge/hash bonds originate from `center` and imply
+///   *different* local parity when each is considered in isolation (all
+///   other wedges zeroed) -- a single consistent parity across every wedge
+///   is valid notation (e.g. one substituent wedged forward, another hashed
+///   back), but disagreement means the drawing itself doesn't describe one
+///   tetrahedron. Measured against RDKit, not assumed: see
+///   `docs/stereo2d_local_parity_calibration.md`;
 /// - the resulting signed volume is (near-)zero, i.e. the drawing is
 ///   coplanar/degenerate -- including the case where no bond is wedged at all.
 pub fn local_parity_from_wedges(
@@ -84,13 +88,67 @@ fn point_for(coords: &[(f64, f64)], mol: &Molecule, center: AtomIdx, nb: AtomIdx
     })
 }
 
-/// At most one wedge/hash bond may originate from `center`; more than one is
-/// contradictory notation.
-fn has_at_most_one_wedge(mol: &Molecule, center: AtomIdx, nbs: &[AtomIdx]) -> bool {
-    nbs.iter()
-        .filter(|&&nb| wedge_z(mol, center, nb) != 0.0)
-        .count()
-        <= 1
+/// When two or more of `pts` (indices `0..pts.len()`) carry a nonzero wedge
+/// z, each must independently imply the same local parity -- computed by
+/// zeroing every *other* wedged point's z and checking the sign of
+/// `signed_volume(pts[1], pts[2], pts[3], pts[0])` -- before the combined
+/// (all-real-z-at-once) volume is trusted as a single tetrahedron. A single
+/// wedge (or none) trivially agrees with itself.
+///
+/// Measured against RDKit, not assumed (see
+/// `docs/stereo2d_local_parity_calibration.md`): RDKit either explicitly
+/// refuses a tag ("conflicting stereochemistry") or silently falls back to
+/// a dual-volume heuristic whose result doesn't reliably match its own tag
+/// once two wedges disagree in isolation -- neither is safe to reproduce, so
+/// this rejects rather than guesses. Whenever the isolated parities *do*
+/// agree, the combined volume's sign matched RDKit's clean (unwarned) tag on
+/// every measured fixture.
+fn wedges_agree_4(pts: &[P3]) -> bool {
+    let wedged: Vec<usize> = (0..4).filter(|&i| pts[i].z != 0.0).collect();
+    if wedged.len() <= 1 {
+        return true;
+    }
+    let isolated_is_negative = |i: usize| -> bool {
+        let iso: Vec<P3> = (0..4)
+            .map(|j| {
+                if j == i {
+                    pts[j]
+                } else {
+                    P3 { z: 0.0, ..pts[j] }
+                }
+            })
+            .collect();
+        signed_volume(iso[1], iso[2], iso[3], iso[0]) < 0.0
+    };
+    let first = isolated_is_negative(wedged[0]);
+    wedged[1..]
+        .iter()
+        .all(|&i| isolated_is_negative(i) == first)
+}
+
+/// Same consistency check as [`wedges_agree_4`], but for the 3-heavy case
+/// where the pivot is `center_pt` (never one of `pts`) rather than `pts[0]`.
+fn wedges_agree_3(pts: &[P3], center_pt: P3) -> bool {
+    let wedged: Vec<usize> = (0..3).filter(|&i| pts[i].z != 0.0).collect();
+    if wedged.len() <= 1 {
+        return true;
+    }
+    let isolated_is_negative = |i: usize| -> bool {
+        let iso: Vec<P3> = (0..3)
+            .map(|j| {
+                if j == i {
+                    pts[j]
+                } else {
+                    P3 { z: 0.0, ..pts[j] }
+                }
+            })
+            .collect();
+        signed_volume(iso[0], iso[1], iso[2], center_pt) < 0.0
+    };
+    let first = isolated_is_negative(wedged[0]);
+    wedged[1..]
+        .iter()
+        .all(|&i| isolated_is_negative(i) == first)
 }
 
 fn tetrahedral_4(
@@ -99,13 +157,14 @@ fn tetrahedral_4(
     center: AtomIdx,
     nbs: &[AtomIdx],
 ) -> Option<(Chirality, Vec<u32>)> {
-    if !has_at_most_one_wedge(mol, center, nbs) {
-        return None;
-    }
     let pts: Vec<P3> = nbs
         .iter()
         .map(|&nb| point_for(coords, mol, center, nb))
         .collect::<Option<_>>()?;
+
+    if !wedges_agree_4(&pts) {
+        return None;
+    }
 
     // Apex = first-listed neighbor; viewed = the other three, in order.
     let vol = signed_volume(pts[1], pts[2], pts[3], pts[0]);
@@ -127,9 +186,6 @@ fn tetrahedral_3_implicit_h(
     center: AtomIdx,
     nbs: &[AtomIdx],
 ) -> Option<(Chirality, Vec<u32>)> {
-    if !has_at_most_one_wedge(mol, center, nbs) {
-        return None;
-    }
     let pts: Vec<P3> = nbs
         .iter()
         .map(|&nb| point_for(coords, mol, center, nb))
@@ -140,6 +196,10 @@ fn tetrahedral_3_implicit_h(
         y: cy,
         z: 0.0,
     };
+
+    if !wedges_agree_3(&pts, center_pt) {
+        return None;
+    }
 
     // No synthetic position for the implicit H: the triple product of the
     // three real bond vectors from `center` already carries full parity.
@@ -405,13 +465,21 @@ mod tests {
 
     #[test]
     fn contradictory_wedges_no_assignment() {
+        // NOT "two wedges are always contradictory" -- two wedges/hashes from
+        // the same center are valid notation as long as each implies the
+        // same local parity in isolation (see valid_dual_wedge_* below and
+        // wedges_agree_4's doc comment). This specific fixture (F and Cl both
+        // marked solid wedge, on quad_positions()'s first two slots) was
+        // measured to give genuinely DISAGREEING per-wedge-alone parity, so
+        // it stays a rejection case -- confirmed against RDKit directly
+        // (docs/stereo2d_local_parity_calibration.md), not assumed from the
+        // "two wedges" shape alone.
         let mut b = MoleculeBuilder::new();
         let c = b.add_atom(Atom::new(Element::C));
         let f = b.add_atom(Atom::new(Element::F));
         let cl = b.add_atom(Atom::new(Element::CL));
         let br = b.add_atom(Atom::new(Element::BR));
         let i = b.add_atom(Atom::new(Element::I));
-        // Two wedges from the same center: contradictory notation.
         b.add_bond(c, f, BondOrder::Up).unwrap();
         b.add_bond(c, cl, BondOrder::Up).unwrap();
         b.add_bond(c, br, BondOrder::Single).unwrap();
@@ -420,6 +488,84 @@ mod tests {
         let coords = vec![(0.0, 0.0), quad[0], quad[1], quad[2], quad[3]];
         let mol = b.build();
         assert!(local_parity_from_wedges(&mol, &coords, c).is_none());
+    }
+
+    #[test]
+    fn dual_wedge_disagreeing_parity_rejected() {
+        // A second, independent disagreeing-parity negative fixture (3-heavy
+        // + implicit H, opposite directions this time: F solid wedge, Cl
+        // hash). Measured against RDKit directly: it explicitly warns
+        // ("conflicting stereochemistry - bond wedging contradiction") and
+        // returns CHI_UNSPECIFIED -- RDKit's own parser agrees this is
+        // genuinely unresolvable, not just this function being conservative.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        b.add_bond(c, f, BondOrder::Up).unwrap();
+        b.add_bond(c, cl, BondOrder::Down).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        let quad = quad_positions();
+        let coords = vec![(0.0, 0.0), quad[0], quad[1], quad[2]];
+        let mol = b.build();
+        assert!(local_parity_from_wedges(&mol, &coords, c).is_none());
+    }
+
+    #[test]
+    fn valid_dual_wedge_solid_and_hash_on_different_bonds_accepted() {
+        // Ported verbatim (same shape) from PR #130's frozen RDKit-checked
+        // fixtures tetrahedral_4neighbors_explicit_h / tetrahedral_4heavy_no_h
+        // (docs/stereo2d_reader_integration_rfc.md): a solid wedge to one
+        // substituent (Br) and a hash to a DIFFERENT substituent (I) on the
+        // same center is standard, unambiguous notation, not contradictory --
+        // confirmed against RDKit directly: it accepts with a clean,
+        // unwarned CHI_TETRAHEDRAL_CW tag. An earlier version of this module
+        // rejected any center with more than one wedge/hash outright, which
+        // would have silently mis-rejected this exact, real, valid drawing.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Up).unwrap();
+        b.add_bond(c, i, BondOrder::Down).unwrap();
+        let quad = quad_positions();
+        let coords = vec![(0.0, 0.0), quad[0], quad[1], quad[2], quad[3]];
+        let mol = b.build();
+        let (chirality, order) = local_parity_from_wedges(&mol, &coords, c).unwrap();
+        assert_eq!(chirality, Chirality::Clockwise);
+        assert_eq!(order, vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn valid_dual_wedge_3heavy_same_direction_accepted() {
+        // Counter-intuitive but measured, not assumed: two wedges pointing
+        // the SAME direction (F and Cl both solid wedge) on a 3-heavy +
+        // implicit-H center is not automatically contradictory either -- for
+        // THIS geometry the two wedges' isolated parities happen to agree,
+        // and RDKit independently accepts it with a clean, unwarned
+        // CHI_TETRAHEDRAL_CW tag. Contrast with contradictory_wedges_no_assignment
+        // above, which also has two same-direction wedges but on a different
+        // (4-heavy) geometry where they disagree -- "same direction" is not
+        // itself the discriminator, per-wedge-isolated-parity agreement is.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        b.add_bond(c, f, BondOrder::Up).unwrap();
+        b.add_bond(c, cl, BondOrder::Up).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        let quad = quad_positions();
+        let coords = vec![(0.0, 0.0), quad[0], quad[1], quad[2]];
+        let mol = b.build();
+        let (chirality, order) = local_parity_from_wedges(&mol, &coords, c).unwrap();
+        assert_eq!(chirality, Chirality::Clockwise);
+        assert_eq!(order, vec![1, 2, 3, STEREO_H_SENTINEL]);
     }
 
     #[test]
