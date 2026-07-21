@@ -149,14 +149,20 @@ can't silently slip through as "not unexpected"), verifies the specific
 evidence each bucket claims (e.g. the contradictory-wedge bucket asserts two
 direction tokens actually appear, the coord-mismatch bucket asserts a
 non-empty result actually came back, the degenerate-coordinate bucket checks
-RDKit's own side agrees), and runs two self-tests of its own fail-closed
-logic before touching any real data. `sys.exit(1)` on any of these. All of
-this was verified empirically during this review round, not just written and
-trusted: duplicate-ID, missing-ID, unknown-mechanism, and weakened-evidence
-inputs were each injected by hand and confirmed to produce exit code 1
-before being reverted.
+RDKit's own side agrees), and runs four self-tests of its own fail-closed
+logic before touching any real data. `sys.exit(1)` on any of these. Beyond
+the whitelist, an `EXPECTED_BUCKET_BY_ID` map pins each fixture to its
+*exact* frozen bucket, not just "some whitelisted bucket" — needed because
+several buckets describe mutually exclusive outcomes of the *same* mechanism
+(`wedge_atom_order_reversed` can legitimately land in "agrees with RDKit",
+"disagrees with RDKit", or "chematic only" depending on runtime evidence; a
+whitelist alone can't tell a silent drift between those apart from a stable
+result). All of this was verified empirically during this review round, not
+just written and trusted: duplicate-ID, missing-ID, unknown-mechanism,
+weakened-evidence, and per-ID-baseline-drift inputs were each injected by
+hand and confirmed to produce exit code 1 before being reverted.
 
-**Result: 14/14 fixtures classified, 0 unexplained, exit code 0.**
+**Result: 14/14 fixtures classified, 0 unexplained, 0 baseline drift, exit code 0.**
 
 | # | Fixture | Mechanism | chematic result | Failure bucket |
 |---|---|---|---|---|

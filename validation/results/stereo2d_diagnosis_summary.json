@@ -15,6 +15,7 @@
     "silent_result_from_corrupted_fallback_positions_not_error": 1
   },
   "unexplained_count": 0,
+  "baseline_drift_count": 0,
   "rows": [
     {
       "id": "tetrahedral_3heavy_implicit_h",
@@ -114,7 +115,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap"
+      "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap",
+      "expected_bucket": "rs_not_computed_3heavy_implicit_h_gap"
     },
     {
       "id": "tetrahedral_4neighbors_explicit_h",
@@ -226,7 +228,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token"
+      "failure_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token",
+      "expected_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token"
     },
     {
       "id": "tetrahedral_4heavy_no_h",
@@ -351,7 +354,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token"
+      "failure_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token",
+      "expected_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token"
     },
     {
       "id": "solid_wedge_only",
@@ -451,7 +455,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "rs_not_computed_despite_rdkit_success"
+      "failure_bucket": "rs_not_computed_despite_rdkit_success",
+      "expected_bucket": "rs_not_computed_despite_rdkit_success"
     },
     {
       "id": "dashed_wedge_only",
@@ -551,7 +556,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "rs_not_computed_despite_rdkit_success"
+      "failure_bucket": "rs_not_computed_despite_rdkit_success",
+      "expected_bucket": "rs_not_computed_despite_rdkit_success"
     },
     {
       "id": "wedge_atom_order_reversed",
@@ -663,7 +669,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file"
+      "failure_bucket": "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file",
+      "expected_bucket": "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file"
     },
     {
       "id": "multiple_stereocenters",
@@ -803,7 +810,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap"
+      "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap",
+      "expected_bucket": "rs_not_computed_3heavy_implicit_h_gap"
     },
     {
       "id": "no_wedge_negative_control",
@@ -943,7 +951,8 @@
         "any_cip_code": false,
         "any_bond_stereo": false
       },
-      "failure_bucket": "correctly_no_stereo_both_agree"
+      "failure_bucket": "correctly_no_stereo_both_agree",
+      "expected_bucket": "correctly_no_stereo_both_agree"
     },
     {
       "id": "cip_priority_tie",
@@ -1063,7 +1072,8 @@
         "any_cip_code": false,
         "any_bond_stereo": false
       },
-      "failure_bucket": "correctly_no_stereo_both_agree"
+      "failure_bucket": "correctly_no_stereo_both_agree",
+      "expected_bucket": "correctly_no_stereo_both_agree"
     },
     {
       "id": "degenerate_2d_coordinates",
@@ -1163,7 +1173,8 @@
         "any_cip_code": false,
         "any_bond_stereo": false
       },
-      "failure_bucket": "degenerate_coords_correctly_yields_no_stereo"
+      "failure_bucket": "degenerate_coords_correctly_yields_no_stereo",
+      "expected_bucket": "degenerate_coords_correctly_yields_no_stereo"
     },
     {
       "id": "ez_geometry_2butene",
@@ -1268,7 +1279,8 @@
         "any_cip_code": false,
         "any_bond_stereo": true
       },
-      "failure_bucket": "ez_computed_but_no_bond_direction_for_writer"
+      "failure_bucket": "ez_computed_but_no_bond_direction_for_writer",
+      "expected_bucket": "ez_computed_but_no_bond_direction_for_writer"
     },
     {
       "id": "terminal_alkene_propene",
@@ -1348,7 +1360,8 @@
         "any_cip_code": false,
         "any_bond_stereo": false
       },
-      "failure_bucket": "correctly_no_stereo_both_agree"
+      "failure_bucket": "correctly_no_stereo_both_agree",
+      "expected_bucket": "correctly_no_stereo_both_agree"
     },
     {
       "id": "contradictory_wedge_annotations",
@@ -1448,7 +1461,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "no_consistency_check_both_wedges_silently_tokenized"
+      "failure_bucket": "no_consistency_check_both_wedges_silently_tokenized",
+      "expected_bucket": "no_consistency_check_both_wedges_silently_tokenized"
     },
     {
       "id": "coord_atom_count_mismatch",
@@ -1524,7 +1538,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "silent_result_from_corrupted_fallback_positions_not_error"
+      "failure_bucket": "silent_result_from_corrupted_fallback_positions_not_error",
+      "expected_bucket": "silent_result_from_corrupted_fallback_positions_not_error"
     }
   ]
 }

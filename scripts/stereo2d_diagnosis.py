@@ -38,25 +38,36 @@ SUMMARY_PATH = ROOT / "validation" / "results" / "stereo2d_diagnosis_summary.jso
 RDKIT_PINNED_COMMIT = "8afba32ec539dcb2369bc84549d802aca3f7eb39"
 EXPECTED_RDKIT_VERSION = "2026.03.3"
 
-# The full fixture-ID set this script knows how to classify. Adding, renaming,
-# or removing a fixture in stereo2d_fixture_dump.rs without updating this set
-# is caught below (missing/extra IDs), not silently ignored.
-EXPECTED_FIXTURE_IDS = {
-    "tetrahedral_3heavy_implicit_h",
-    "tetrahedral_4neighbors_explicit_h",
-    "tetrahedral_4heavy_no_h",
-    "solid_wedge_only",
-    "dashed_wedge_only",
-    "wedge_atom_order_reversed",
-    "multiple_stereocenters",
-    "no_wedge_negative_control",
-    "cip_priority_tie",
-    "degenerate_2d_coordinates",
-    "ez_geometry_2butene",
-    "terminal_alkene_propene",
-    "contradictory_wedge_annotations",
-    "coord_atom_count_mismatch",
+# Frozen baseline: the exact bucket each fixture ID must land in. This is
+# stricter than "some bucket in the EXPECTED_BUCKETS whitelist below" --
+# several buckets in that whitelist describe mutually exclusive outcomes for
+# the SAME mechanism (e.g. wedge_atom_order_reversed's "agrees with RDKit" vs
+# "disagrees with RDKit" vs "chematic only") precisely because classify()
+# has to be able to express all three depending on runtime evidence. Without
+# this per-ID map, a fixture whose bucket silently drifts from one whitelist
+# member to another (e.g. wedge_atom_order_reversed flipping from "agrees"
+# to "disagrees", or tetrahedral_4heavy_no_h regressing from "computed" to
+# "not computed despite RDKit success") would still report 0 unexplained.
+# Adding, renaming, or removing a fixture in stereo2d_fixture_dump.rs without
+# updating this map is caught below (missing/extra IDs), not silently ignored.
+EXPECTED_BUCKET_BY_ID = {
+    "tetrahedral_3heavy_implicit_h": "rs_not_computed_3heavy_implicit_h_gap",
+    "tetrahedral_4neighbors_explicit_h": "rs_computed_but_writer_emits_meaningless_bond_direction_token",
+    "tetrahedral_4heavy_no_h": "rs_computed_but_writer_emits_meaningless_bond_direction_token",
+    "solid_wedge_only": "rs_not_computed_despite_rdkit_success",
+    "dashed_wedge_only": "rs_not_computed_despite_rdkit_success",
+    "wedge_atom_order_reversed": "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file",
+    "multiple_stereocenters": "rs_not_computed_3heavy_implicit_h_gap",
+    "no_wedge_negative_control": "correctly_no_stereo_both_agree",
+    "cip_priority_tie": "correctly_no_stereo_both_agree",
+    "degenerate_2d_coordinates": "degenerate_coords_correctly_yields_no_stereo",
+    "ez_geometry_2butene": "ez_computed_but_no_bond_direction_for_writer",
+    "terminal_alkene_propene": "correctly_no_stereo_both_agree",
+    "contradictory_wedge_annotations": "no_consistency_check_both_wedges_silently_tokenized",
+    "coord_atom_count_mismatch": "silent_result_from_corrupted_fallback_positions_not_error",
 }
+
+EXPECTED_FIXTURE_IDS = set(EXPECTED_BUCKET_BY_ID)
 
 # Whitelist of buckets classify() may legitimately return. Anything else
 # (including "unclassified", any "unexpected_*" bucket, or "rdkit_parse_failed")
@@ -264,6 +275,28 @@ def _self_test():
     dup_ids = ["a", "b", "a"]
     assert len(set(dup_ids)) != len(dup_ids), "self-test C: duplicate-ID fixture itself has no duplicates"
 
+    # Control D: the frozen per-ID baseline must actually pin ONE bucket, not
+    # just any whitelisted one -- prove that wedge_atom_order_reversed's
+    # three mutually-exclusive possible outcomes are all in EXPECTED_BUCKETS
+    # (so the whitelist alone could not tell them apart) while
+    # EXPECTED_BUCKET_BY_ID pins exactly one of them. This is what actually
+    # catches a result silently drifting between "agrees with RDKit" and
+    # "disagrees with RDKit" across runs.
+    reversed_wedge_outcomes = {
+        "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file",
+        "wedge_atom_order_reversed_disagrees_with_rdkit_on_same_file",
+        "wedge_atom_order_reversed_chematic_only",
+    }
+    assert reversed_wedge_outcomes <= EXPECTED_BUCKETS, (
+        "self-test D: expected all three wedge_atom_order_reversed outcomes to be individually valid buckets"
+    )
+    pinned = EXPECTED_BUCKET_BY_ID["wedge_atom_order_reversed"]
+    assert pinned in reversed_wedge_outcomes, "self-test D: frozen baseline for wedge_atom_order_reversed is not one of its own possible outcomes"
+    other_outcomes = reversed_wedge_outcomes - {pinned}
+    assert other_outcomes, "self-test D: no alternative outcome to distinguish from the pinned one"
+    for other in other_outcomes:
+        assert other != pinned, "self-test D: pinned baseline must differ from the alternative outcomes it's meant to catch"
+
 
 def main():
     _self_test()
@@ -312,11 +345,15 @@ def main():
 
     rows = []
     bucket_counts = {}
+    baseline_drift = []
     for fx in fixtures:
         mol_block = fx.get("mol_block", "")
         rdkit_result = rdkit_read(mol_block) if mol_block else {"parsed": False}
         bucket = classify(fx, rdkit_result)
         bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
+        expected_bucket = EXPECTED_BUCKET_BY_ID[fx["id"]]
+        if bucket != expected_bucket:
+            baseline_drift.append((fx["id"], expected_bucket, bucket))
         rows.append(
             {
                 "id": fx["id"],
@@ -336,11 +373,19 @@ def main():
                 },
                 "rdkit": rdkit_result,
                 "failure_bucket": bucket,
+                "expected_bucket": expected_bucket,
             }
         )
 
+    # Two independent fail-closed checks: (1) is the bucket even a
+    # recognized/whitelisted outcome at all, and (2) -- stricter -- does it
+    # match the EXACT bucket this fixture was frozen at, not just some
+    # whitelisted one. (2) catches drift between mutually-exclusive
+    # whitelisted outcomes for the same fixture (e.g. wedge_atom_order_reversed
+    # silently flipping from "agrees with RDKit" to "disagrees") that (1) alone
+    # would miss.
     unexplained = [r for r in rows if r["failure_bucket"] not in EXPECTED_BUCKETS]
-    if unexplained:
+    if unexplained or baseline_drift:
         fail = True
 
     summary = {
@@ -350,6 +395,7 @@ def main():
         "fixture_count": len(rows),
         "bucket_counts": bucket_counts,
         "unexplained_count": len(unexplained),
+        "baseline_drift_count": len(baseline_drift),
         "rows": rows,
     }
 
@@ -364,10 +410,14 @@ def main():
     if unexplained:
         for r in unexplained:
             print(f"  UNEXPLAINED: {r['id']} -> {r['failure_bucket']}")
+    print(f"baseline drift vs frozen EXPECTED_BUCKET_BY_ID (must be 0): {len(baseline_drift)}")
+    if baseline_drift:
+        for fx_id, expected, actual in baseline_drift:
+            print(f"  DRIFT: {fx_id} -> expected {expected!r}, got {actual!r}")
     print(f"wrote {SUMMARY_PATH}")
 
     if fail:
-        print("FATAL: unexplained fixtures present -- see above.", file=sys.stderr)
+        print("FATAL: unexplained and/or baseline-drifted fixtures present -- see above.", file=sys.stderr)
         sys.exit(1)
 
 
