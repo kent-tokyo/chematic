@@ -101,7 +101,7 @@ transfer while looking superficially like something survived.
 
 The "obvious fix" — wire `apply_stereo_from_2d` into readers — would **not**
 close this gap by itself: that function computes the correct R/S answer
-(verified: it returns `S` for a real 4-heavy-neighbor test fixture) but writes
+(verified: it returns `S` for a real 4-neighbor test fixture) but writes
 only `Atom.cip_code`. `chematic_smiles::write`/`canonical_smiles` read only
 `Atom.chirality` (plus `stereo_neighbor_order` for the canonical writer's
 DFS-order correction) — `cip_code` has zero readers in `writer.rs`/`canonical.rs`.
@@ -119,7 +119,7 @@ still has no writer-side reader.
 
 ## 4. Frozen diagnostic fixtures
 
-13 hand-built MOL V2000 fixtures, one per required mechanism, generated
+14 hand-built MOL V2000 fixtures, one per required mechanism, generated
 programmatically (not hand-typed fixed-width text) by
 `crates/chematic-mol/examples/stereo2d_fixture_dump.rs`. This example calls
 only existing public APIs (`mol2000::parse_mol_with_coords`,
@@ -141,30 +141,56 @@ commit `8afba32ec539dcb2369bc84549d802aca3f7eb39`, matching the installed
 `rdCIPLabeler`, and classifies the (chematic, RDKit) pair into a failure
 bucket. Output: `validation/results/stereo2d_diagnosis_summary.json`.
 
-**Result: 13/13 fixtures classified, 0 unexplained.**
+The script is fail-closed by construction, not just by convention: it checks
+the fixture-ID set against an explicit expected set (extra or missing IDs
+abort the run), rejects duplicate IDs, uses a bucket *whitelist* rather than
+a `startswith("unexpected")` string check (so a new, unrecognized bucket name
+can't silently slip through as "not unexpected"), verifies the specific
+evidence each bucket claims (e.g. the contradictory-wedge bucket asserts two
+direction tokens actually appear, the coord-mismatch bucket asserts a
+non-empty result actually came back, the degenerate-coordinate bucket checks
+RDKit's own side agrees), and runs two self-tests of its own fail-closed
+logic before touching any real data. `sys.exit(1)` on any of these. All of
+this was verified empirically during this review round, not just written and
+trusted: duplicate-ID, missing-ID, unknown-mechanism, and weakened-evidence
+inputs were each injected by hand and confirmed to produce exit code 1
+before being reverted.
+
+**Result: 14/14 fixtures classified, 0 unexplained, exit code 0.**
 
 | # | Fixture | Mechanism | chematic result | Failure bucket |
 |---|---|---|---|---|
 | 1 | `tetrahedral_3heavy_implicit_h` | 3 heavy + implicit H | `assign_stereo_from_2d` → `[]` (RDKit assigns a tag) | `rs_not_computed_3heavy_implicit_h_gap` |
-| 2 | `tetrahedral_4heavy_explicit_h` | 4 heavy neighbors | `[{"cip_code":"S"}]`, but `chirality` never set; naive SMILES emits a stray `/` on the wedge bond | `rs_computed_but_writer_emits_meaningless_bond_direction_token` |
-| 3 | `solid_wedge_only` | solid wedge, 3 heavy + implicit H | `[]` | `rs_not_computed_despite_rdkit_success` |
-| 4 | `dashed_wedge_only` | hash wedge, 3 heavy + implicit H | `[]` | `rs_not_computed_despite_rdkit_success` |
-| 5 | `wedge_atom_order_reversed` | bond line atom1=substituent, atom2=center (non-standard) | `[{"cip_code":"S"}]`, matches RDKit's own reading of the *same* non-standard file | `wedge_atom_order_reversed_agrees_with_rdkit_on_same_file` |
-| 6 | `multiple_stereocenters` | 2,3-dibromobutane, 2 independent centers | `[]` for both (same 3-heavy gap as #1) | `rs_not_computed_3heavy_implicit_h_gap` |
-| 7 | `no_wedge_negative_control` | same skeleton as #6, no wedges | `[]`, RDKit also assigns nothing | `correctly_no_stereo_both_agree` |
-| 8 | `cip_priority_tie` | C(CH3)(CH3)(F)(Cl), 2 branches tie | `[]` (tie correctly detected pre-geometry) | `correctly_no_stereo_both_agree` |
-| 9 | `degenerate_2d_coordinates` | same graph as #1, all atoms at (0,0) | `[]` (CIP ranks fine, geometry degenerate → `v≈0`) | `degenerate_coords_correctly_yields_no_stereo` |
-| 10 | `ez_geometry_2butene` | defined cis 2D layout, no wedge | `assign_ez_from_2d` → `Z` correctly, but naive SMILES has zero `/`/`\` (no wedge bonds exist to tokenize) | `ez_computed_but_no_bond_direction_for_writer` |
-| 11 | `terminal_alkene_propene` | terminal `=CH2` | `[]`, RDKit also assigns nothing | `correctly_no_stereo_both_agree` |
-| 12 | `contradictory_wedge_annotations` | 2 wedges (both "up") from the same center | both silently tokenized independently as `/` — no consistency check anywhere in the pipeline | `no_consistency_check_both_wedges_silently_tokenized` |
-| 13 | `coord_atom_count_mismatch` | 3 coords passed for a 5-atom molecule (API misuse, not a file case — a truncated MOL *file* just fails to parse before perception is reached) | **no panic, but not a safe no-op either**: out-of-range neighbors silently fall back to the *center's own* (x,y) via `unwrap_or(*center_pos)` in `assign_rs`, and a CIP code (`S`) is still returned from this corrupted geometry instead of `None`/an error. That it matches the true answer here is coincidental to this fixture's geometry, not a property of the fallback | `silent_result_from_corrupted_fallback_positions_not_error` |
+| 2 | `tetrahedral_4neighbors_explicit_h` | 3 heavy + 1 *explicit* H = 4 neighbors (NOT 4 heavy atoms — see fixture #3) | `[{"cip_code":"S"}]`, but `chirality` never set; naive SMILES emits a stray `/` on the wedge bond | `rs_computed_but_writer_emits_meaningless_bond_direction_token` |
+| 3 | `tetrahedral_4heavy_no_h` | genuinely 4 heavy atoms, C(F)(Cl)(Br)(I), zero H anywhere (implicit or explicit) — added in review to stop conflating this with #2 | `[{"cip_code":"R"}]`, same shape as #2 (chirality never set, stray `/` token) | `rs_computed_but_writer_emits_meaningless_bond_direction_token` |
+| 4 | `solid_wedge_only` | solid wedge, 3 heavy + implicit H | `[]` | `rs_not_computed_despite_rdkit_success` |
+| 5 | `dashed_wedge_only` | hash wedge, 3 heavy + implicit H | `[]` | `rs_not_computed_despite_rdkit_success` |
+| 6 | `wedge_atom_order_reversed` | bond line atom1=substituent, atom2=center (non-standard) | `[{"cip_code":"S"}]`, matches RDKit's own reading of the *same* non-standard file | `wedge_atom_order_reversed_agrees_with_rdkit_on_same_file` |
+| 7 | `multiple_stereocenters` | 2,3-dibromobutane, 2 independent centers | `[]` for both (same 3-heavy gap as #1) | `rs_not_computed_3heavy_implicit_h_gap` |
+| 8 | `no_wedge_negative_control` | same skeleton as #7, no wedges | `[]`, RDKit also assigns nothing | `correctly_no_stereo_both_agree` |
+| 9 | `cip_priority_tie` | C(CH3)(CH3)(F)(Cl), 2 branches tie | `[]` (tie correctly detected pre-geometry) | `correctly_no_stereo_both_agree` |
+| 10 | `degenerate_2d_coordinates` | same graph as #1, all atoms at (0,0) | `[]` (CIP ranks fine, geometry degenerate → `v≈0`); RDKit's own side independently confirmed to also assign nothing | `degenerate_coords_correctly_yields_no_stereo` |
+| 11 | `ez_geometry_2butene` | defined cis 2D layout, no wedge | `assign_ez_from_2d` → `Z` correctly, but naive SMILES has zero `/`/`\` (no wedge bonds exist to tokenize) | `ez_computed_but_no_bond_direction_for_writer` |
+| 12 | `terminal_alkene_propene` | terminal `=CH2` | `[]`, RDKit also assigns nothing | `correctly_no_stereo_both_agree` |
+| 13 | `contradictory_wedge_annotations` | 2 wedges (both "up") from the same center | both silently tokenized independently as `/` (verified: exactly 2 direction tokens present, not just "the mechanism ran") — no consistency check anywhere in the pipeline | `no_consistency_check_both_wedges_silently_tokenized` |
+| 14 | `coord_atom_count_mismatch` | 3 coords passed for a 5-atom molecule (API misuse, not a file case — a truncated MOL *file* just fails to parse before perception is reached) | **no panic, but not a safe no-op either**: out-of-range neighbors silently fall back to the *center's own* (x,y) via `unwrap_or(*center_pos)` in `assign_rs`, and a CIP code (`S`) is still returned from this corrupted geometry instead of `None`/an error (verified: the result is checked to be genuinely non-empty, not assumed). That it matches the true answer here is coincidental to this fixture's geometry, not a property of the fallback | `silent_result_from_corrupted_fallback_positions_not_error` |
+
+Fixture #2 was originally named `tetrahedral_4heavy_explicit_h`, which was
+inaccurate — its center has 3 heavy neighbors plus 1 explicit H atom, not 4
+heavy atoms — and its result had been (incorrectly) cited elsewhere in an
+earlier draft of this document as evidence about a "genuinely 4-heavy-atom"
+center. Renamed to `tetrahedral_4neighbors_explicit_h`, and fixture #3
+(`tetrahedral_4heavy_no_h`, C(F)(Cl)(Br)(I)) added so the two shapes — "H
+present as a real atom that RDKit's `removeHs` would later strip" vs "no H
+anywhere, `removeHs` is a no-op" — are tested and reported separately rather
+than conflated under one claim.
 
 Two additional findings surfaced only by *running* the fixtures, not visible
 from reading source alone:
 
 - **Coordinate-symmetry trap in `assign_rs`.** An early, more "natural"-looking
   coordinate choice for fixture #2 (methyl/wedge substituents placed at mirror
-  positions) produced an *exactly* zero signed volume once fixture #5's
+  positions) produced an *exactly* zero signed volume once fixture #6's
   atom-order reversal flipped one wedge's z-sign — not a chematic bug, but a
   reminder that `assign_rs`'s coplanarity check is exact-algebraic, not just a
   numerical-noise guard, and trivially-symmetric fixture geometry can
@@ -369,34 +395,68 @@ regardless of field name.
 | e | Should the Rust API use an explicit conversion function? | **Yes for the Stage-2/CIP-labeling call (mirrors today's `assign_stereo_from_2d`); Stage 1 (parity/direction) should be reader-internal, called from within each format's parse function itself, not a separate opt-in call the caller must remember to make** | Directly follows from (b)/(c): if Stage 1 must run before any mutation can destroy the wedge annotation (§5a), it cannot be a function a caller invokes later at their discretion — CDXML's existing `assign_ez_from_2d` call from inside `cdxml.rs:159` (§2/§3) is already the right shape for this, just needs a Stage-1 (parity, not just E/Z-label) equivalent and needs porting to the other wedge-bearing readers (V2000, SDF, MRV once merged, KET). |
 | f | Should the original wedge survive after conversion? | **Yes** | `BondOrder::Up`/`Down` costs nothing to retain and is the only way to detect/debug a conversion disagreement later (as this diagnosis itself needed to). |
 | g | CIP code or SMILES-native chirality as source of truth? | **`chirality` (+ `stereo_neighbor_order`) for round-tripping; `cip_code` remains the human-facing label, derived, never the writer's input** | Directly matches RDKit's own architecture (§5): the writer-consumable value is the parity/direction (Stage 1), not the CIP label (Stage 2). Verified in chematic: `cip_code` has zero readers in `writer.rs`/`canonical.rs` today. |
-| h | What must be extended to include implicit-H centers in P1-S1? | `assign_rs`'s neighbor collection (`stereo2d.rs:223-226`, currently `if nbs.len() != 4 { return None }`) needs a `STEREO_H_SENTINEL`-based substitution path when `nbs.len() == 3`, mirroring the existing pattern in `chematic-cip/src/assign.rs` | `STEREO_H_SENTINEL` (`chematic-core/src/molecule.rs:43`) already exists and is used exactly this way elsewhere; this is a known, proven pattern to port, not new design. Confirmed by fixture #1/#3/#4/#6 in §4: RDKit resolves these, chematic currently returns `None` for all of them. |
-| i | Should tetrahedral and E/Z be separate PRs? | **Yes** | RDKit itself treats them as fully separate functions/data (`detectBondStereochemistry` vs `atomChiralTypeFromBondDirPseudo3D`, different Bond/Atom fields). chematic's own gap is structurally separate too: fixture #10 shows E/Z perception (`assign_ez_from_2d`) already computes the right label but has *no* bond-direction output step at all (a different missing piece than the tetrahedral case, which computes an R/S answer but writes it to the wrong-shaped field). |
-| j | No-coords / degenerate-coords / contradictory-annotation: error, warning, or unspecified? | **Warning (log) + unspecified (`None`/no assignment), matching RDKit's own "ambiguous/conflicting stereochemistry ... ignored" pattern — never a hard error** | RDKit (§5b point 5) never throws for any of these; it warns and proceeds with unassigned stereo. chematic's current behavior already matches this for degenerate coordinates and CIP ties (fixtures #8, #9) but has two real gaps to close: (1) the coord/atom-count-mismatch fallback (fixture #13) produces a *silent, possibly-wrong* answer instead of `None`+warning — this should change to return `None` for any atom whose own or neighbors' coordinates are out of range, not degrade to a corrupted position; (2) contradictory wedges (fixture #12) are currently accepted with zero detection anywhere in the pipeline — a future Stage 1 should port something like RDKit's "opposing bonds have opposite wedging" / "bond wedging contradiction" checks (`Chirality.cpp:709-712`, `745-749`). |
+| h | What must be extended to include implicit-H centers in P1-S1a? | The parity computation (today's `assign_rs`'s neighbor collection, `stereo2d.rs:223-226`, currently `if nbs.len() != 4 { return None }`) needs a `STEREO_H_SENTINEL`-based substitution path when `nbs.len() == 3`, mirroring the existing pattern in `chematic-cip/src/assign.rs`. Critically, this belongs in the **parity** step (S1a), not the labeling step (S1b) — RDKit's own 3-neighbor handling (§5a) sits entirely inside `atomChiralTypeFromBondDirPseudo3D`/`assignChiralTypesFromBondDirs`, before any CIP ranking is computed. | `STEREO_H_SENTINEL` (`chematic-core/src/molecule.rs:43`) already exists and is used exactly this way elsewhere; this is a known, proven pattern to port, not new design. Confirmed by fixtures #1/#4/#5/#7 in §4: RDKit resolves these, chematic currently returns `None` for all of them. |
+| i | Should tetrahedral and E/Z be separate PRs? | **Yes** | RDKit itself treats them as fully separate functions/data (`detectBondStereochemistry` vs `atomChiralTypeFromBondDirPseudo3D`, different Bond/Atom fields). chematic's own gap is structurally separate too: fixture #11 shows E/Z perception (`assign_ez_from_2d`) already computes the right label but has *no* bond-direction output step at all (a different missing piece than the tetrahedral case, which computes an R/S answer but writes it to the wrong-shaped field). |
+| j | No-coords / degenerate-coords / contradictory-annotation: error, warning, or unspecified? | **Warning (log) + unspecified (`None`/no assignment), matching RDKit's own "ambiguous/conflicting stereochemistry ... ignored" pattern — never a hard error** | RDKit (§5b point 5) never throws for any of these; it warns and proceeds with unassigned stereo. chematic's current behavior already matches this for degenerate coordinates and CIP ties (fixtures #9, #10) but has two real gaps to close: (1) the coord/atom-count-mismatch fallback (fixture #14) produces a *silent, possibly-wrong* answer instead of `None`+warning — this should change to return `None` for any atom whose own or neighbors' coordinates are out of range, not degrade to a corrupted position; (2) contradictory wedges (fixture #13) are currently accepted with zero detection anywhere in the pipeline — a future S1a should port something like RDKit's "opposing bonds have opposite wedging" / "bond wedging contradiction" checks (`Chirality.cpp:709-712`, `745-749`). |
 
 ## 7. Recommended final split
 
-1. **P1-S1a** — wedge + 2D coordinates → correct absolute R/S, *including* the
-   3-heavy+implicit-H case (design question h). This is a fix/extension to
-   `assign_stereo_from_2d`'s existing CIP-ranking logic, not a new algorithm.
-2. **P1-S1b** — R/S + a fixed/derived neighbor order → `Atom.chirality` +
-   `Molecule::stereo_neighbor_order`, the actual writer-consumable output.
-   Kept separate from S1a because "compute the right absolute answer" and
-   "encode it in a local, traversal-order-relative representation" are
-   different problems with different failure modes (confirmed directly by
-   RDKit keeping them as separate functions/fields, §5).
-3. **P1-S2** — 2D E/Z → SMILES `/`/`\` bond directions. Independent of S1a/S1b
-   (different data: `assign_ez_from_2d` already computes the right label;
-   what's missing is a direction-setting step analogous to RDKit's
+**This section originally had S1a/S1b in the wrong order** (R/S-first, then
+derive `chirality` from it) — backwards relative to this same document's own
+§5a/§5b RDKit audit, which shows RDKit computes the chiral *tag* (parity)
+first, with **zero** CIP involvement, and only *afterward*, as a separate
+optional stage, ranks CIP priority to produce an R/S *label*. Caught in
+review before any implementation started. The corrected order below computes
+parity before labeling, matching RDKit and matching this document's own §3
+pathway trace and §5 audit. Getting this backwards would have been a real
+implementation defect, not just a naming issue: an R/S-first design cannot
+produce `Atom.chirality` at all for a CIP-priority tie, a CIP-unresolvable
+case, a pseudoasymmetric center (a label computed in a later CIP rule than
+chematic implements today), or simply a caller who only wants the drawn
+local parity preserved losslessly without paying for CIP ranking — R/S would
+be undefined or unavailable in every one of those cases, and a
+"derive-chirality-from-R/S" step would have nothing to derive from. Parity
+never needed CIP ranking in the first place (§5b point 1: `atomChiralTypeFromBondDirPseudo3D`
+"never reads a CIP rank"), so building it first avoids the dependency
+entirely.
+
+1. **P1-S1a** — wedge + 2D coordinates + the neighbor order already available
+   at reader-parse time → `Atom.chirality` + `Molecule::stereo_neighbor_order`.
+   CIP-independent (mirrors `assignChiralTypesFromBondDirs`/
+   `atomChiralTypeFromBondDirPseudo3D`, §5a/§5b). Must include: the
+   3-neighbor+implicit-H case (design question h), a degenerate-coordinate
+   guard, and a contradictory-wedge guard (design question j) — all of these
+   are parity-stage concerns in RDKit's own model, not labeling-stage ones.
+   Runs automatically from inside each wedge-bearing reader's own parse
+   function (design questions b/c/e), immediately after the wedge bond is
+   read, before anything else can mutate it away.
+2. **P1-S1b** — local parity (from S1a) + CIP ranking → `Atom.cip_code`
+   (R/S label). Mirrors `assignAtomChiralCodes` (§5b point 2): a labeling
+   stage built **on top of** S1a's already-computed parity, consuming it,
+   never replacing or gating it. On a CIP-priority tie, `chirality` (from
+   S1a) is preserved exactly as-is and `cip_code` stays `None` — this
+   directly matches RDKit's `hasDupes` behavior (§5b point 2) and is only
+   possible because parity never depended on CIP ranking to begin with. If
+   chematic wants to keep `assign_stereo_from_2d`'s current public shape (an
+   R/S-label-producing function), it should become S1b's implementation,
+   internally consuming S1a's parity result rather than recomputing geometry
+   independently from scratch, as it does today.
+3. **P1-S2** — 2D E/Z → SMILES `/`/`\` bond directions. Independent of
+   S1a/S1b (different data: `assign_ez_from_2d` already computes the right
+   *label*; what's missing is a direction-setting step analogous to RDKit's
    `setDoubleBondNeighborDirections`, not a labeling fix).
 
-Per design questions (b)-(e): once S1a/S1b land, the readers in §2 that carry
-wedge bonds (V2000, SDF, V3000 once its bond-`CFG` reading gap is fixed, KET,
-and MRV once merged) should call the Stage-1 (S1a+S1b) step from *inside*
-their own parse function, unconditionally whenever a wedge bond is present —
-mirroring both RDKit's `finishMolProcessing` ordering and chematic's own
-existing CDXML precedent (`cdxml.rs:159`) — not expose it as a separate
-function callers must remember to invoke after the fact. CIP-label
-perception (a Stage-2 equivalent, if chematic wants an
+Per design questions (b)-(e): S1a alone is enough to make wedge-derived
+tetrahedral centers round-trip through SMILES (it produces exactly what
+`chematic_smiles::write`/`canonical_smiles` already read). S1b adds
+human-readable R/S labels on top and is not required for round-tripping.
+Once S1a exists, the readers in §2 that carry wedge bonds (V2000, SDF, V3000
+once its bond-`CFG` reading gap is fixed, KET, and MRV once merged) should
+call it from *inside* their own parse function, unconditionally whenever a
+wedge bond is present — mirroring both RDKit's `finishMolProcessing`
+ordering and chematic's own existing CDXML precedent (`cdxml.rs:159`) — not
+expose it as a separate function callers must remember to invoke after the
+fact. S1b (CIP-label perception, if chematic wants an
 `assignStereochemistry`-shaped API at all) can remain an explicit,
 caller-invoked, opt-in function, matching `assign_stereo_from_2d`'s current
 shape.

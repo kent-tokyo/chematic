@@ -1,10 +1,11 @@
 {
   "rdkit_pinned_commit": "8afba32ec539dcb2369bc84549d802aca3f7eb39",
   "rdkit_python_version": "2026.03.3",
-  "fixture_count": 13,
+  "rdkit_version_mismatch": false,
+  "fixture_count": 14,
   "bucket_counts": {
     "rs_not_computed_3heavy_implicit_h_gap": 2,
-    "rs_computed_but_writer_emits_meaningless_bond_direction_token": 1,
+    "rs_computed_but_writer_emits_meaningless_bond_direction_token": 2,
     "rs_not_computed_despite_rdkit_success": 2,
     "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file": 1,
     "correctly_no_stereo_both_agree": 3,
@@ -116,9 +117,9 @@
       "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap"
     },
     {
-      "id": "tetrahedral_4heavy_explicit_h",
-      "mechanism": "tetrahedral_4heavy",
-      "description": "C(F)(Cl)(Br)(H explicit), solid wedge C->Br, hash wedge C->H",
+      "id": "tetrahedral_4neighbors_explicit_h",
+      "mechanism": "tetrahedral_4neighbors",
+      "description": "C(F)(Cl)(Br)(H explicit) -- 3 heavy + 1 EXPLICIT H = 4 neighbors, NOT 4 heavy atoms; solid wedge C->Br, hash wedge C->H",
       "chematic": {
         "assign_stereo_from_2d_result": [
           {
@@ -221,6 +222,131 @@
           }
         ],
         "canonical_smiles": "F[C@@H](Cl)Br",
+        "any_chiral_tag": true,
+        "any_cip_code": true,
+        "any_bond_stereo": false
+      },
+      "failure_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token"
+    },
+    {
+      "id": "tetrahedral_4heavy_no_h",
+      "mechanism": "tetrahedral_4heavy_no_h",
+      "description": "C(F)(Cl)(Br)(I), zero H anywhere (implicit or explicit) -- all 4 substituents heavy; solid wedge C->Br, hash wedge C->I",
+      "chematic": {
+        "assign_stereo_from_2d_result": [
+          {
+            "atom": 0,
+            "cip_code": "R"
+          }
+        ],
+        "assign_ez_from_2d_result": [],
+        "post_apply_stereo_from_2d_fields": [
+          {
+            "atom": 0,
+            "chirality": "None",
+            "cip_code": "R",
+            "element": "C",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 1,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "F",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 2,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Cl",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 3,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "Br",
+            "stereo_neighbor_order": null
+          },
+          {
+            "atom": 4,
+            "chirality": "None",
+            "cip_code": null,
+            "element": "I",
+            "stereo_neighbor_order": null
+          }
+        ],
+        "naive_smiles_write": "C(F)(Cl)(/Br)\\I",
+        "naive_canonical_smiles": "C(/Br)(Cl)(/I)F",
+        "chirality_reached_writer": false,
+        "note": null
+      },
+      "rdkit": {
+        "parsed": true,
+        "atoms": [
+          {
+            "idx": 0,
+            "symbol": "C",
+            "chiral_tag": "CHI_TETRAHEDRAL_CW",
+            "cip_code": "R"
+          },
+          {
+            "idx": 1,
+            "symbol": "F",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 2,
+            "symbol": "Cl",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 3,
+            "symbol": "Br",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          },
+          {
+            "idx": 4,
+            "symbol": "I",
+            "chiral_tag": "CHI_UNSPECIFIED",
+            "cip_code": null
+          }
+        ],
+        "bonds": [
+          {
+            "a1": 0,
+            "a2": 1,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 2,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 3,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          },
+          {
+            "a1": 0,
+            "a2": 4,
+            "bond_type": "SINGLE",
+            "bond_dir": "NONE",
+            "stereo": "STEREONONE"
+          }
+        ],
+        "canonical_smiles": "F[C@@](Cl)(Br)I",
         "any_chiral_tag": true,
         "any_cip_code": true,
         "any_bond_stereo": false
@@ -430,7 +556,7 @@
     {
       "id": "wedge_atom_order_reversed",
       "mechanism": "wedge_atom_order_reversed",
-      "description": "same graph/geometry as tetrahedral_4heavy_explicit_h, but the C->Br wedge bond is written atom1=Br, atom2=C",
+      "description": "same graph/geometry as tetrahedral_4neighbors_explicit_h, but the C->Br wedge bond is written atom1=Br, atom2=C",
       "chematic": {
         "assign_stereo_from_2d_result": [
           {
