@@ -1,0 +1,1592 @@
+{
+  "rdkit_pinned_commit": "8afba32ec539dcb2369bc84549d802aca3f7eb39",
+  "rdkit_python_version": "2026.03.3",
+  "rdkit_version_mismatch": false,
+  "fixture_count": 40,
+  "bucket_counts": {
+    "matches_rdkit_kekule_valid_alternate": 1,
+    "both_correctly_nonaromatic": 8,
+    "matches_rdkit_exact_kekule": 20,
+    "sssr_bridge_artifact_not_reproduced_docs_stale": 1,
+    "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent": 2,
+    "kekulize_fails_atom_bond_flags_survive_coincidentally": 6,
+    "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly": 2
+  },
+  "unexplained_count": 0,
+  "baseline_drift_count": 0,
+  "rows": [
+    {
+      "id": "benzene",
+      "category": "baseline",
+      "description": "simplest aromatic positive control",
+      "smiles": "c1ccccc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 6,
+        "rdkitlike_model_aromatic_atom_count": 6
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1ccccc1"
+      },
+      "failure_bucket": "matches_rdkit_kekule_valid_alternate",
+      "expected_bucket": "matches_rdkit_kekule_valid_alternate",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_valid_alternate_detail": "confirmed valid alternate (or identical) Kekule structure by RDKit re-sanitize + canonical match",
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            0,
+            5
+          ]
+        ],
+        "kekule_valid_alternate": true,
+        "huckel_model_aromatic_atom_count": 6,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "cyclohexane",
+      "category": "negative_control",
+      "description": "fully saturated, trivial non-aromatic",
+      "smiles": "C1CCCCC1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 0,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 0,
+        "ring_count": 1,
+        "canonical_smiles": "C1CCCCC1"
+      },
+      "failure_bucket": "both_correctly_nonaromatic",
+      "expected_bucket": "both_correctly_nonaromatic",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 0,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "cyclohexadiene_1_3",
+      "category": "negative_control",
+      "description": "conjugated diene but ring not fully conjugated (2 sp3 atoms)",
+      "smiles": "C1=CCCC=C1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 0,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 0,
+        "ring_count": 1,
+        "canonical_smiles": "C1=CCCC=C1"
+      },
+      "failure_bucket": "both_correctly_nonaromatic",
+      "expected_bucket": "both_correctly_nonaromatic",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 0,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "cyclooctatetraene",
+      "category": "negative_control_antiaromatic_electron_count",
+      "description": "8-membered fully conjugated, 4n (not 4n+2) pi count",
+      "smiles": "C1=CC=CC=CC=C1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 0,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 0,
+        "ring_count": 1,
+        "canonical_smiles": "C1=CC=CC=CC=C1"
+      },
+      "failure_bucket": "both_correctly_nonaromatic",
+      "expected_bucket": "both_correctly_nonaromatic",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 0,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "pyridine",
+      "category": "heteroaromatic",
+      "description": "single pyridine-type N (1pi, no H)",
+      "smiles": "c1ccncc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 6,
+        "rdkitlike_model_aromatic_atom_count": 6
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1ccncc1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 6,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "pyrimidine",
+      "category": "heteroaromatic",
+      "description": "two pyridine-type N",
+      "smiles": "c1cncnc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 6,
+        "rdkitlike_model_aromatic_atom_count": 6
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cncnc1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 6,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "furan",
+      "category": "heteroaromatic",
+      "description": "O lone-pair donor (2pi)",
+      "smiles": "c1ccoc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1ccoc1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "thiophene",
+      "category": "heteroaromatic",
+      "description": "S lone-pair donor (2pi)",
+      "smiles": "c1ccsc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1ccsc1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "pyrrole",
+      "category": "heteroaromatic",
+      "description": "pyrrole-type N, needs 1 implicit H",
+      "smiles": "c1cc[nH]c1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cc[nH]c1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "n_methylpyrrole",
+      "category": "heteroaromatic",
+      "description": "pyrrole-type N, substituted (no H) -- regression guard for thepyrrole/pyridine Kekule-erasure bug fixed in aromaticity.rs",
+      "smiles": "Cn1cccc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "Cn1cccc1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "imidazole",
+      "category": "heteroaromatic",
+      "description": "one pyrrole-type N ([nH]) + one pyridine-type N in the SAME ring",
+      "smiles": "c1c[nH]cn1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1c[nH]cn1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "pyrazole",
+      "category": "heteroaromatic",
+      "description": "adjacent pyrrole-type N + pyridine-type N",
+      "smiles": "c1cc[nH]n1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cn[nH]c1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "oxazole",
+      "category": "heteroaromatic",
+      "description": "pyridine-type N + O lone-pair donor",
+      "smiles": "c1ocnc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cocn1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "thiazole",
+      "category": "heteroaromatic",
+      "description": "pyridine-type N + S lone-pair donor",
+      "smiles": "c1cscn1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cscn1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "isoxazole",
+      "category": "heteroaromatic",
+      "description": "pyridine-type N + O, N-O adjacency",
+      "smiles": "c1cnoc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cnoc1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "triazole_1_2_3",
+      "category": "heteroaromatic",
+      "description": "2 pyridine-type N + 1 pyrrole-type N",
+      "smiles": "c1cn[nH]n1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cn[nH]n1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "tetrazole",
+      "category": "heteroaromatic",
+      "description": "3 pyridine-type N + 1 pyrrole-type N",
+      "smiles": "c1nnn[nH]1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1nnn[nH]1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "naphthalene",
+      "category": "fused_polycyclic",
+      "description": "simplest fused bicyclic, 2 valid Kekule structures",
+      "smiles": "c1ccc2ccccc2c1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 2,
+        "augmented_ring_count": 2,
+        "count_aromatic_rings": 2,
+        "huckel_model_aromatic_atom_count": 10,
+        "rdkitlike_model_aromatic_atom_count": 10
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 2,
+        "ring_count": 2,
+        "canonical_smiles": "c1ccc2ccccc2c1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 2,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 10,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "anthracene",
+      "category": "fused_polycyclic",
+      "description": "linear tricyclic",
+      "smiles": "c1ccc2cc3ccccc3cc2c1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 3,
+        "augmented_ring_count": 3,
+        "count_aromatic_rings": 3,
+        "huckel_model_aromatic_atom_count": 14,
+        "rdkitlike_model_aromatic_atom_count": 14
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 3,
+        "ring_count": 3,
+        "canonical_smiles": "c1ccc2cc3ccccc3cc2c1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 3,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 14,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "quinoline",
+      "category": "fused_polycyclic",
+      "description": "benzo-fused pyridine",
+      "smiles": "c1ccc2ncccc2c1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 2,
+        "augmented_ring_count": 2,
+        "count_aromatic_rings": 2,
+        "huckel_model_aromatic_atom_count": 10,
+        "rdkitlike_model_aromatic_atom_count": 10
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 2,
+        "ring_count": 2,
+        "canonical_smiles": "c1ccc2ncccc2c1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 2,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 10,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "isoquinoline",
+      "category": "fused_polycyclic",
+      "description": "benzo-fused pyridine, N position 2",
+      "smiles": "c1ccc2cnccc2c1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 2,
+        "augmented_ring_count": 2,
+        "count_aromatic_rings": 2,
+        "huckel_model_aromatic_atom_count": 10,
+        "rdkitlike_model_aromatic_atom_count": 10
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 2,
+        "ring_count": 2,
+        "canonical_smiles": "c1ccc2cnccc2c1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 2,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 10,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "indole",
+      "category": "fused_polycyclic",
+      "description": "benzo-fused pyrrole",
+      "smiles": "c1ccc2[nH]ccc2c1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 2,
+        "augmented_ring_count": 2,
+        "count_aromatic_rings": 2,
+        "huckel_model_aromatic_atom_count": 9,
+        "rdkitlike_model_aromatic_atom_count": 9
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 2,
+        "ring_count": 2,
+        "canonical_smiles": "c1ccc2[nH]ccc2c1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 2,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 9,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "indolizine",
+      "category": "fused_polycyclic_bridged_sssr_artifact",
+      "description": "bridgehead-N bicyclic (5+6 fused sharing N); CLAUDE.md flags this shape as a known SSSR fundamental-cycle artifact (a 9-ring instead of 5+6)",
+      "smiles": "c1ccn2ccccc12",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 2,
+        "augmented_ring_count": 2,
+        "count_aromatic_rings": 2,
+        "huckel_model_aromatic_atom_count": 9,
+        "rdkitlike_model_aromatic_atom_count": 9
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 2,
+        "ring_count": 2,
+        "canonical_smiles": "c1ccn2cccc2c1"
+      },
+      "failure_bucket": "sssr_bridge_artifact_not_reproduced_docs_stale",
+      "expected_bucket": "sssr_bridge_artifact_not_reproduced_docs_stale",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 2,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 9,
+        "model_says_aromatic": true,
+        "artifact_reproduced": false,
+        "raw_sssr_ring_sizes": [
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "purine",
+      "category": "fused_polycyclic",
+      "description": "bicyclic, 4 N total, mixed pyrrole/pyridine-type",
+      "smiles": "c1ncc2[nH]cnc2n1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 2,
+        "augmented_ring_count": 2,
+        "count_aromatic_rings": 2,
+        "huckel_model_aromatic_atom_count": 9,
+        "rdkitlike_model_aromatic_atom_count": 9
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 2,
+        "ring_count": 2,
+        "canonical_smiles": "c1ncc2[nH]cnc2n1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 2,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 9,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "azulene",
+      "category": "fused_polycyclic",
+      "description": "non-alternant 5+7 fused PAH; canonical form has an explicit non-aromatic fusion bond between two aromatic rings",
+      "smiles": "c1ccc2cccc-2cc1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 2,
+        "augmented_ring_count": 2,
+        "count_aromatic_rings": 2,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 2,
+        "ring_count": 2,
+        "canonical_smiles": "c1ccc2cccc-2cc1"
+      },
+      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            7
+          ],
+          [
+            8,
+            7
+          ],
+          [
+            8,
+            9
+          ],
+          [
+            0,
+            9
+          ]
+        ],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 2,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "tropylium_cation",
+      "category": "charged_aromatic",
+      "description": "7-ring carbocation, 6pi/7 centers",
+      "smiles": "c1ccc[cH+]cc1",
+      "chematic": {
+        "kekulize_ok": false,
+        "kekulize_error": "kekulization failed: atom 6 (C) cannot be assigned a double bond",
+        "experimental_ok": false,
+        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 6 (C) cannot be assigned a double bond",
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1ccc[cH+]cc1"
+      },
+      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "cyclopentadienyl_anion",
+      "category": "charged_aromatic",
+      "description": "5-ring carbanion, 6pi/5 centers",
+      "smiles": "c1cc[cH-]c1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cc[cH-]c1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "imidazolium",
+      "category": "charged_aromatic",
+      "description": "protonated imidazole, both N pyrrole-type",
+      "smiles": "c1c[nH+]c[nH]1",
+      "chematic": {
+        "kekulize_ok": false,
+        "kekulize_error": "kekulization failed: atom 3 (C) cannot be assigned a double bond",
+        "experimental_ok": false,
+        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 3 (C) cannot be assigned a double bond",
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1c[nH+]c[nH]1"
+      },
+      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "pyridinium",
+      "category": "charged_aromatic",
+      "description": "protonated pyridine",
+      "smiles": "c1cc[nH+]cc1",
+      "chematic": {
+        "kekulize_ok": false,
+        "kekulize_error": "kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "experimental_ok": false,
+        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cc[nH+]cc1"
+      },
+      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "pyrylium",
+      "category": "charged_aromatic",
+      "description": "O-centered aromatic cation",
+      "smiles": "c1cc[o+]cc1",
+      "chematic": {
+        "kekulize_ok": false,
+        "kekulize_error": "kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "experimental_ok": false,
+        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cc[o+]cc1"
+      },
+      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "selenophene",
+      "category": "chalcogen_se_te",
+      "description": "Se lone-pair donor; supported only under AromaticityAlgorithm::RdkitLike, not default Huckel",
+      "smiles": "c1cc[se]c1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cc[se]c1"
+      },
+      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "tellurophene",
+      "category": "chalcogen_se_te",
+      "description": "Te lone-pair donor; same RdkitLike-only gate as selenophene",
+      "smiles": "c1cc[te]c1",
+      "chematic": {
+        "kekulize_ok": false,
+        "kekulize_error": "kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "experimental_ok": false,
+        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 5
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cc[te]c1"
+      },
+      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "phosphole",
+      "category": "phosphorus_boron",
+      "description": "P lone-pair donor, RDKit's default model treats it as aromatic; chematic's own doc comment says P-containing rings are NOT supported",
+      "smiles": "c1cc[pH]c1",
+      "chematic": {
+        "kekulize_ok": false,
+        "kekulize_error": "kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "experimental_ok": false,
+        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "c1cc[pH]c1"
+      },
+      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "borole",
+      "category": "phosphorus_boron",
+      "description": "B empty p-orbital, 4pi antiaromatic-count ring; no valid aromatic notation exists (RDKit itself keeps this Kekule) -- fed directly as Kekule",
+      "smiles": "C1=CC=CB1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 0,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 0,
+        "ring_count": 1,
+        "canonical_smiles": "B1C=CC=C1"
+      },
+      "failure_bucket": "both_correctly_nonaromatic",
+      "expected_bucket": "both_correctly_nonaromatic",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 0,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "borazine",
+      "category": "phosphorus_boron",
+      "description": "inorganic benzene analog (alternating B/N, no ring double bonds at all); RDKit's default model does NOT mark it aromatic",
+      "smiles": "B1NBNBN1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 0,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 0,
+        "ring_count": 1,
+        "canonical_smiles": "B1NBNBN1"
+      },
+      "failure_bucket": "both_correctly_nonaromatic",
+      "expected_bucket": "both_correctly_nonaromatic",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 0,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "pyridone_2",
+      "category": "exocyclic_multiple_bond",
+      "description": "aromatic per RDKit despite exocyclic ring C=O -- carbonyl C contributes 0pi, NH lone pair supplies 2pi",
+      "smiles": "O=c1cccc[nH]1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 6,
+        "rdkitlike_model_aromatic_atom_count": 6
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "O=c1cccc[nH]1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly",
+      "expected_bucket": "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 6,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "tropone",
+      "category": "exocyclic_multiple_bond",
+      "description": "7-ring, exocyclic C=O, NO heteroatom lone-pair donor -- still 6pi over the other 6 ring carbons; fed as Kekule (unambiguous structure)",
+      "smiles": "O=C1C=CC=CC=C1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 1,
+        "huckel_model_aromatic_atom_count": 7,
+        "rdkitlike_model_aromatic_atom_count": 7
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 1,
+        "ring_count": 1,
+        "canonical_smiles": "O=c1cccccc1"
+      },
+      "failure_bucket": "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly",
+      "expected_bucket": "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 1,
+        "kekule_checked": true,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 7,
+        "model_says_aromatic": true
+      }
+    },
+    {
+      "id": "benzoquinone_1_4",
+      "category": "exocyclic_multiple_bond",
+      "description": "textbook non-aromatic: two exocyclic C=O carbons each contribute 0pi, only 4pi remain from the two ring C=C bonds",
+      "smiles": "O=C1C=CC(=O)C=C1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 0,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 0,
+        "ring_count": 1,
+        "canonical_smiles": "O=C1C=CC(=O)C=C1"
+      },
+      "failure_bucket": "both_correctly_nonaromatic",
+      "expected_bucket": "both_correctly_nonaromatic",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 0,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "cyclopentadienone",
+      "category": "exocyclic_multiple_bond",
+      "description": "5-ring, exocyclic C=O, remaining 4 ring pi electrons -> antiaromatic count",
+      "smiles": "O=C1C=CC=C1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 0,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 0,
+        "ring_count": 1,
+        "canonical_smiles": "O=C1C=CC=C1"
+      },
+      "failure_bucket": "both_correctly_nonaromatic",
+      "expected_bucket": "both_correctly_nonaromatic",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 0,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    },
+    {
+      "id": "thiophene_1_oxide",
+      "category": "exocyclic_multiple_bond",
+      "description": "exocyclic S=O ties up the ring S's lone pair -- aromaticity.rs has an explicit comment about this sulfoxide/sulfone rule",
+      "smiles": "O=S1C=CC=C1",
+      "chematic": {
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
+        "raw_sssr_ring_count": 1,
+        "augmented_ring_count": 1,
+        "count_aromatic_rings": 0,
+        "huckel_model_aromatic_atom_count": 0,
+        "rdkitlike_model_aromatic_atom_count": 0
+      },
+      "rdkit": {
+        "parsed": true,
+        "aromatic_ring_count": 0,
+        "ring_count": 1,
+        "canonical_smiles": "O=S1C=CC=C1"
+      },
+      "failure_bucket": "both_correctly_nonaromatic",
+      "expected_bucket": "both_correctly_nonaromatic",
+      "evidence": {
+        "atom_mismatch_idxs": [],
+        "bond_mismatch_pairs": [],
+        "ring_count_match": true,
+        "aromatic_ring_count_match": true,
+        "rdkit_aromatic_ring_count": 0,
+        "kekule_checked": false,
+        "kekule_bond_mismatch_pairs": [],
+        "kekule_valid_alternate": null,
+        "huckel_model_aromatic_atom_count": 0,
+        "model_says_aromatic": false
+      }
+    }
+  ]
+}
