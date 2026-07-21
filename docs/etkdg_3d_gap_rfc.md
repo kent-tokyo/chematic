@@ -153,10 +153,14 @@ to `etkdg.rs`'s torsion-preference/constraint-repair stage, not `dg.rs`'s base
 placement or the minimizer alone. Minimal repros:
 
 ```python
-import chematic
-m = chematic.from_smiles("CCCCCCCCCC")               # decane — no ring, no exotic atoms
-max(chematic-bond-length-in(m.generate_3d()))          # ~1.58 Å — fine
-max(chematic-bond-length-in(m.conformer_ensemble(1, 0.0, "dreiding", 0.0)[0]))  # ~11.3 Å — torn
+import chematic, numpy as np
+m = chematic.from_smiles("CCCCCCCCCC")  # decane — no ring, no exotic atoms
+def worst_bond(coords):
+    a = np.array(coords)
+    return max(np.linalg.norm(a[i] - a[i + 1]) for i in range(len(a) - 1))
+
+worst_bond(m.generate_3d())                                   # ~1.58 Å — fine
+worst_bond(m.conformer_ensemble(1, 0.0, "dreiding", 0.0)[0])  # ~11.3 Å — torn
 ```
 
 Source inspection localizes (at least) three contributing mechanisms, found
