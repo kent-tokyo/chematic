@@ -136,12 +136,31 @@ compares the `raw_identifier_default` lifecycle only (RDKit's real
 `includeRedundantEnvironments=false` mode — the `full` lifecycle is a distinct
 diagnostic surface, not compared).
 
-| Radius | Fixtures tested (aromaticity succeeded) | Match | N/A (aromaticity failed upstream) |
-|---|---|---|---|
-| 0 | 27 | 27/27 | 6 |
-| 1 | 27 | 27/27 | 6 |
-| 2 | 27 | 27/27 | 6 |
-| 3 | 27 | 27/27 | 6 |
+| Radius | Fixtures tested (aromaticity succeeded) | Match | N/A (aromaticity failed upstream) | Fixtures with a *non-empty* radius environment |
+|---|---|---|---|---|
+| 0 | 27 | 27/27 | 6 | 27 (unconditional, every atom) |
+| 1 | 27 | 27/27 | 6 | 27 (every non-degree-0 atom) |
+| 2 | 27 | 27/27 | 6 | 17 |
+| 3 | 27 | 27/27 | 6 | 13 |
+
+**Honesty check on the "27/27" figures at radius ≥ 2**: an empty-vs-empty comparison
+(an atom fully degree-0-dead or fully suppressed by that radius on both sides) counts
+as a trivial match, not evidence of generalization — most of this corpus's small
+molecules (ethane, propane, the charged-ok ions) legitimately have nothing left to
+compute by radius 3. Counted directly from the frozen dump: **13 of 27** fixtures have
+at least one genuinely non-empty radius-3 `(atom, radius) → raw_id` pair, spanning
+benzene, both spellings each of pyridine/naphthalene/furan/thiophene, both disconnected
+fixtures, deuterated benzene, and nitrobenzene — not just one large ring system
+(naphthalene alone contributes 9 of the 33 total radius-3 pairs, but the other 12
+fixtures contribute real, independently-checked non-empty pairs too). So the radius-3
+match is real, non-vacuous evidence across a real spread of ring sizes and molecule
+shapes, not a single lucky case — but it is thinner evidence than radius 0/1 (which are
+richly non-empty for literally every fixture) or the production-locked radius 2 (17/27
+non-empty). The architectural argument (`expand_one_pass` has no radius-specific logic,
+only a loop bound) is what actually carries the "radius as a parameter" conclusion in
+Part 2 §1 — this data corroborates it without contradiction, but a future radius-4+
+rollout should widen the corpus with more polycyclic fixtures before treating radius
+generalization as fully proven past radius 3.
 
 **Classification: `verified_reachable_via_internal_math`.** Radius 0, 1, and 3 all
 match the oracle bit-for-bit on every fixture where aromaticity perception succeeded
