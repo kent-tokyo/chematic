@@ -1,0 +1,3066 @@
+{
+  "chematic_parse_errors": 0,
+  "chematic_parse_success": 206,
+  "chematic_round_trip_failed": 0,
+  "chematic_round_trip_ok": 206,
+  "known_divergence_breakdown": {
+    "phase1": {
+      "chematic_smiles_writer_bracket_h_count_bug": 9,
+      "radical_info_loss_on_write": 3,
+      "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles": 69
+    },
+    "phase2": {
+      "radical_info_loss_on_write": 3
+    }
+  },
+  "mismatching_or_failed_results": [
+    {
+      "category": "general",
+      "id": "general_2",
+      "inchikey_a": "FQKAGOPIYIPBGP-LFPGFTMUSA-N",
+      "inchikey_b": "FQKAGOPIYIPBGP-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                1
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_3",
+      "inchikey_a": "MQZAVTQSNLATIC-UUGQBOODSA-N",
+      "inchikey_b": "MQZAVTQSNLATIC-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_4",
+      "inchikey_a": "YNGNKWSEPZWGIT-QOEBWKIUSA-N",
+      "inchikey_b": "YNGNKWSEPZWGIT-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_8",
+      "inchikey_a": "KJTGODHDGKRMDH-NRFANRHFSA-N",
+      "inchikey_b": "KJTGODHDGKRMDH-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_10",
+      "inchikey_a": "DMJBQGHBXFMVMS-LMQFPGSTSA-N",
+      "inchikey_b": "DMJBQGHBXFMVMS-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_11",
+      "inchikey_a": "HIHIEFXWVUQDNZ-UYEVNYRMSA-N",
+      "inchikey_b": "HIHIEFXWVUQDNZ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_12",
+      "inchikey_a": "XGNOSTNMNVXBPR-BVXCAPMKSA-N",
+      "inchikey_b": "XGNOSTNMNVXBPR-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_13",
+      "inchikey_a": "YJGLQSZEPISCIJ-AWEZNQCLSA-N",
+      "inchikey_b": "YJGLQSZEPISCIJ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_15",
+      "inchikey_a": "FAKNQUGPVAFRCJ-JCVUCWSASA-N",
+      "inchikey_b": "FAKNQUGPVAFRCJ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_16",
+      "inchikey_a": "RBQKCFLDNBVADS-LTAMZJKXSA-N",
+      "inchikey_b": "RBQKCFLDNBVADS-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_17",
+      "inchikey_a": "MBZDFRQDGNXUKS-WUKNDPDISA-N",
+      "inchikey_b": "MBZDFRQDGNXUKS-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_20",
+      "inchikey_a": "PGZDUZAOPBWIDF-TVEFRJNDSA-N",
+      "inchikey_b": "PGZDUZAOPBWIDF-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_22",
+      "inchikey_a": "ICRFIYUMWKRNHE-LGFLZJIQSA-N",
+      "inchikey_b": "ICRFIYUMWKRNHE-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_23",
+      "inchikey_a": "AMDHKNZJPUJWMI-UUGQBOODSA-N",
+      "inchikey_b": "AMDHKNZJPUJWMI-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_25",
+      "inchikey_a": "ISNXPZCKOMESQA-WBDNRJBNSA-N",
+      "inchikey_b": "ISNXPZCKOMESQA-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_29",
+      "inchikey_a": "JBRYBMGMSNJGGN-UYEVNYRMSA-N",
+      "inchikey_b": "JBRYBMGMSNJGGN-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_34",
+      "inchikey_a": "XCTHUNKHDUMJGV-SANMLTNESA-N",
+      "inchikey_b": "XCTHUNKHDUMJGV-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_35",
+      "inchikey_a": "ZEOAOVNXZDWIFZ-ZFJNGIDDSA-N",
+      "inchikey_b": "ZEOAOVNXZDWIFZ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_37",
+      "inchikey_a": "AFNNIVJCAOZVSR-LTAMZJKXSA-N",
+      "inchikey_b": "AFNNIVJCAOZVSR-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_38",
+      "inchikey_a": "ZHYVZDZGVAKZIR-SBQBCDPHSA-N",
+      "inchikey_b": "ZHYVZDZGVAKZIR-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_40",
+      "inchikey_a": "CQYVRVJVDCTZCD-WGCWOVTKSA-N",
+      "inchikey_b": "CQYVRVJVDCTZCD-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_41",
+      "inchikey_a": "HFPMSLYRJZWXDH-JCVUCWSASA-N",
+      "inchikey_b": "HFPMSLYRJZWXDH-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_42",
+      "inchikey_a": "BPFSDEAWEWNYMO-NRFANRHFSA-N",
+      "inchikey_b": "BPFSDEAWEWNYMO-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_43",
+      "inchikey_a": "UWKQSNNFCGGAFS-XIFFEERXSA-N",
+      "inchikey_b": "UWKQSNNFCGGAFS-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_44",
+      "inchikey_a": "OUOYSXSWASMDOM-SFHVURJKSA-N",
+      "inchikey_b": "OUOYSXSWASMDOM-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_45",
+      "inchikey_a": "BWTTWZCBYFXNPJ-RGSASCSGSA-N",
+      "inchikey_b": "BWTTWZCBYFXNPJ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_46",
+      "inchikey_a": "UBWFIYNSACRSOO-OLYUUFHWSA-N",
+      "inchikey_b": "UBWFIYNSACRSOO-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_49",
+      "inchikey_a": "IPOZZYJWRXBDRK-DXQLRWHYSA-N",
+      "inchikey_b": "IPOZZYJWRXBDRK-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "R",
+                3
+              ],
+              [
+                "S",
+                12
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                15
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_51",
+      "inchikey_a": "XOQWEZVGZTXXBC-GQXGIDMBSA-N",
+      "inchikey_b": "XOQWEZVGZTXXBC-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_61",
+      "inchikey_a": "BQJCRHHNABKAKU-KBQPJGBKSA-N",
+      "inchikey_b": "BQJCRHHNABKAKU-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "R",
+                3
+              ],
+              [
+                "S",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                5
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_62",
+      "inchikey_a": "UHQBJVRSTYEWKH-TVEFRJNDSA-N",
+      "inchikey_b": "UHQBJVRSTYEWKH-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_66",
+      "inchikey_a": "YLZBEKKURGTQBQ-PVXCOBKKSA-N",
+      "inchikey_b": "YLZBEKKURGTQBQ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                3
+              ],
+              [
+                "R",
+                5
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                9
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_68",
+      "inchikey_a": "SGOIRFVFHAKUTI-ZCFIWIBFSA-N",
+      "inchikey_b": "SGOIRFVFHAKUTI-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "R",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_74",
+      "inchikey_a": "NBYNJBSRHVRROR-QOEBWKIUSA-N",
+      "inchikey_b": "NBYNJBSRHVRROR-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_76",
+      "inchikey_a": "HADZIPJVIWSMLK-KQQUZDAGSA-N",
+      "inchikey_b": "HADZIPJVIWSMLK-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                2
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_77",
+      "inchikey_a": "LCISUYPYBUURIT-SINHLIRXSA-N",
+      "inchikey_b": "LCISUYPYBUURIT-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                1
+              ],
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                7
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                12
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_82",
+      "inchikey_a": "JUDDTCQAVPIYCO-JCVUCWSASA-N",
+      "inchikey_b": "JUDDTCQAVPIYCO-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_94",
+      "inchikey_a": "CHUKKLIYPXUHTH-PKQSOZTLSA-N",
+      "inchikey_b": "CHUKKLIYPXUHTH-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                1
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                3
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_95",
+      "inchikey_a": "CHUKKLIYPXUHTH-JMRRJAMASA-N",
+      "inchikey_b": "CHUKKLIYPXUHTH-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                1
+              ],
+              [
+                "R",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                3
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_96",
+      "inchikey_a": "LCISUYPYBUURIT-JPMHJOKMSA-N",
+      "inchikey_b": "LCISUYPYBUURIT-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                1
+              ],
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                6
+              ],
+              [
+                "S",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                12
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_101",
+      "inchikey_a": "OCNIKEFATSKIBE-NSCUHMNNSA-N",
+      "inchikey_b": "OCNIKEFATSKIBE-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_109",
+      "inchikey_a": "ZXJNGNSKZPGCAW-NYTWBVBWSA-N",
+      "inchikey_b": "ZXJNGNSKZPGCAW-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                3
+              ],
+              [
+                "R",
+                5
+              ],
+              [
+                "S",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                10
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_110",
+      "inchikey_a": "ZXJNGNSKZPGCAW-WMFHNNNSSA-N",
+      "inchikey_b": "ZXJNGNSKZPGCAW-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                3
+              ],
+              [
+                "R",
+                6
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                10
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_111",
+      "inchikey_a": "CLNDGDZYSDRNSO-WZZYDVFESA-N",
+      "inchikey_b": "CLNDGDZYSDRNSO-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                3
+              ],
+              [
+                "R",
+                4
+              ],
+              [
+                "S",
+                3
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                10
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_112",
+      "inchikey_a": "DGBITFNXKQHKLI-WSJYAZAJSA-N",
+      "inchikey_b": "DGBITFNXKQHKLI-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                1
+              ],
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                6
+              ],
+              [
+                "R",
+                4
+              ],
+              [
+                "S",
+                3
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                13
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_115",
+      "inchikey_a": "WUCNITUBGKKGRG-YRNVUSSQSA-N",
+      "inchikey_b": "WUCNITUBGKKGRG-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_116",
+      "inchikey_a": "POIJHYBEYXGIET-SRJSMORCSA-N",
+      "inchikey_b": "POIJHYBEYXGIET-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                5
+              ],
+              [
+                "R",
+                4
+              ],
+              [
+                "S",
+                3
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                12
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_119",
+      "inchikey_a": "UENSAMJFQMNZDZ-UJMIHUDNSA-N",
+      "inchikey_b": "UENSAMJFQMNZDZ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                5
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_126",
+      "inchikey_a": "OWQDJHTYJXDHSA-UUGQBOODSA-N",
+      "inchikey_b": "OWQDJHTYJXDHSA-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_129",
+      "inchikey_a": "JIQWPHCYEYORRP-LGHQJEIQSA-N",
+      "inchikey_b": "JIQWPHCYEYORRP-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                1
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                2
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_132",
+      "inchikey_a": "NFTHXYFLRRPNBX-IJOFXMPTSA-N",
+      "inchikey_b": "NFTHXYFLRRPNBX-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_137",
+      "inchikey_a": "ONHZVISJAPERIM-OLYUUFHWSA-N",
+      "inchikey_b": "ONHZVISJAPERIM-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_138",
+      "inchikey_a": "ZCMJTMRUBOCGSY-XYOKQWHBSA-N",
+      "inchikey_b": "ZCMJTMRUBOCGSY-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_139",
+      "inchikey_a": "PWARPDYCBZDQLI-HNNXBMFYSA-N",
+      "inchikey_b": "PWARPDYCBZDQLI-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_141",
+      "inchikey_a": "FWWLQSGXUXHCIC-OLXQZUERSA-N",
+      "inchikey_b": "FWWLQSGXUXHCIC-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_145",
+      "inchikey_a": "QAAJJBFHCDNTNX-RGSHQBHVSA-N",
+      "inchikey_b": "QAAJJBFHCDNTNX-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                2
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                5
+              ],
+              [
+                "R",
+                6
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                12
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_147",
+      "inchikey_a": "SPEYYNVOJXTCGN-CGGOSABXSA-N",
+      "inchikey_b": "SPEYYNVOJXTCGN-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                1
+              ],
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          },
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                6
+              ],
+              [
+                "R",
+                6
+              ],
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                13
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_148",
+      "inchikey_a": "QAIZVRXELIUDMQ-KPKJPENVSA-N",
+      "inchikey_b": "QAIZVRXELIUDMQ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_152",
+      "inchikey_a": "AJXMTKLZLXSIHZ-LGFLZJIQSA-N",
+      "inchikey_b": "AJXMTKLZLXSIHZ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "?",
+                4
+              ],
+              [
+                "R",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "general",
+      "id": "general_153",
+      "inchikey_a": "IKMOZUDCUBMIRL-FNORWQNLSA-N",
+      "inchikey_b": "IKMOZUDCUBMIRL-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "isotope",
+      "id": "isotope_0",
+      "inchikey_a": "VNWKTOKETHGBQD-OUBTZVSYSA-N",
+      "inchikey_b": "OKTJSMMVPCPJKN-OUBTZVSYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                4,
+                1
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                4,
+                1
+              ]
+            ],
+            "b": [
+              [
+                0,
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "isotope",
+      "id": "isotope_2",
+      "inchikey_a": "PAYRUJLWNCNPSJ-CDYZYAPPSA-N",
+      "inchikey_b": "GTVARPBALKFJJR-CDYZYAPPSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                2,
+                1
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                5
+              ],
+              [
+                2,
+                1
+              ]
+            ],
+            "b": [
+              [
+                0,
+                2
+              ],
+              [
+                1,
+                5
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "isotope",
+      "id": "isotope_3",
+      "inchikey_a": "UHOVQNZJYSORNB-OUBTZVSYSA-N",
+      "inchikey_b": "CIUQDSCDWFSTQR-PTQBSOBMSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                1,
+                1
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                1,
+                6
+              ]
+            ],
+            "b": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                5
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "charge",
+      "id": "charge_0",
+      "inchikey_a": "QGZKDVFQNNGYKY-UHFFFAOYSA-O",
+      "inchikey_b": "DELRCXTYJVVNEW-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                4,
+                1
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                4,
+                1
+              ]
+            ],
+            "b": [
+              [
+                0,
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "charge",
+      "id": "charge_3",
+      "inchikey_a": "PAYRUJLWNCNPSJ-UHFFFAOYSA-O",
+      "inchikey_b": "GQXJFEXUTHTRQI-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                3,
+                1
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                5
+              ],
+              [
+                3,
+                1
+              ]
+            ],
+            "b": [
+              [
+                0,
+                2
+              ],
+              [
+                1,
+                5
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "radical",
+      "id": "radical_0",
+      "inchikey_a": "WCYWZMWISLQXQU-UHFFFAOYSA-N",
+      "inchikey_b": "VNWKTOKETHGBQD-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [
+              [
+                1,
+                1
+              ]
+            ],
+            "b": []
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                3,
+                1
+              ]
+            ],
+            "b": [
+              [
+                4,
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "radical_info_loss_on_write",
+        "note": "chematic_core::Atom has no radical-electron slot -- a radical atom gets an extra implicit H when RDKit re-reads chematic's write output. Documented, deliberate (mol2000.rs precedent), not a bug."
+      },
+      "phase1_match": false,
+      "phase2_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [
+              [
+                1,
+                1
+              ]
+            ],
+            "b": []
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                3,
+                1
+              ]
+            ],
+            "b": [
+              [
+                4,
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "radical_info_loss_on_write",
+        "note": "chematic_core::Atom has no radical-electron slot -- a radical atom gets an extra implicit H when RDKit re-reads chematic's write output. Documented, deliberate (mol2000.rs precedent), not a bug."
+      },
+      "phase2_match": false,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "radical",
+      "id": "radical_1",
+      "inchikey_a": "MYMOFIZGZYHOMD-UHFFFAOYSA-N",
+      "inchikey_b": "MHAJPDPJQMAIIY-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [
+              [
+                1,
+                2
+              ]
+            ],
+            "b": []
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                0,
+                2
+              ]
+            ],
+            "b": [
+              [
+                1,
+                2
+              ]
+            ]
+          }
+        },
+        "known_divergence": "radical_info_loss_on_write",
+        "note": "chematic_core::Atom has no radical-electron slot -- a radical atom gets an extra implicit H when RDKit re-reads chematic's write output. Documented, deliberate (mol2000.rs precedent), not a bug."
+      },
+      "phase1_match": false,
+      "phase2_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [
+              [
+                1,
+                2
+              ]
+            ],
+            "b": []
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                0,
+                2
+              ]
+            ],
+            "b": [
+              [
+                1,
+                2
+              ]
+            ]
+          }
+        },
+        "known_divergence": "radical_info_loss_on_write",
+        "note": "chematic_core::Atom has no radical-electron slot -- a radical atom gets an extra implicit H when RDKit re-reads chematic's write output. Documented, deliberate (mol2000.rs precedent), not a bug."
+      },
+      "phase2_match": false,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "radical",
+      "id": "radical_2",
+      "inchikey_a": "CIUQDSCDWFSTQR-UHFFFAOYSA-N",
+      "inchikey_b": "UHOVQNZJYSORNB-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [
+              [
+                1,
+                1
+              ]
+            ],
+            "b": []
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                5
+              ]
+            ],
+            "b": [
+              [
+                1,
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "radical_info_loss_on_write",
+        "note": "chematic_core::Atom has no radical-electron slot -- a radical atom gets an extra implicit H when RDKit re-reads chematic's write output. Documented, deliberate (mol2000.rs precedent), not a bug."
+      },
+      "phase1_match": false,
+      "phase2_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [
+              [
+                1,
+                1
+              ]
+            ],
+            "b": []
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                5
+              ]
+            ],
+            "b": [
+              [
+                1,
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "radical_info_loss_on_write",
+        "note": "chematic_core::Atom has no radical-electron slot -- a radical atom gets an extra implicit H when RDKit re-reads chematic's write output. Documented, deliberate (mol2000.rs precedent), not a bug."
+      },
+      "phase2_match": false,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "tetrahedral_stereo",
+      "id": "tetrahedral_stereo_0",
+      "inchikey_a": "QNAYBMKLOCPYGJ-REOHCLBHSA-N",
+      "inchikey_b": "QNAYBMKLOCPYGJ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "tetrahedral_stereo",
+      "id": "tetrahedral_stereo_1",
+      "inchikey_a": "QNAYBMKLOCPYGJ-UWTATZPHSA-N",
+      "inchikey_b": "QNAYBMKLOCPYGJ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "R",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "tetrahedral_stereo",
+      "id": "tetrahedral_stereo_2",
+      "inchikey_a": "FERWBXLFSBWTDE-IMJSIDKUSA-N",
+      "inchikey_b": "FERWBXLFSBWTDE-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "S",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                2
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "tetrahedral_stereo",
+      "id": "tetrahedral_stereo_3",
+      "inchikey_a": "UMRZSTCPUPJPOJ-KNVOCYPGSA-N",
+      "inchikey_b": "UMRZSTCPUPJPOJ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "s",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                2
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "ez_stereo",
+      "id": "ez_stereo_0",
+      "inchikey_a": "IAQRGUVFOMOMEM-ONEGZZNKSA-N",
+      "inchikey_b": "IAQRGUVFOMOMEM-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "ez_stereo",
+      "id": "ez_stereo_1",
+      "inchikey_a": "IAQRGUVFOMOMEM-ARJAWSKDSA-N",
+      "inchikey_b": "IAQRGUVFOMOMEM-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "ez_stereo",
+      "id": "ez_stereo_2",
+      "inchikey_a": "FBDWMWLJJGFWIP-ARJAWSKDSA-N",
+      "inchikey_b": "FBDWMWLJJGFWIP-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOCIS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "ez_stereo",
+      "id": "ez_stereo_3",
+      "inchikey_a": "AHUWMUAVZFJTOC-HNQUOIGGSA-N",
+      "inchikey_b": "AHUWMUAVZFJTOC-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "ez_bond_labels": {
+            "a": [
+              [
+                "STEREOTRANS",
+                1
+              ]
+            ],
+            "b": []
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "atom_map",
+      "id": "atom_map_0",
+      "inchikey_a": "OKKJLVBELUTLKV-UHFFFAOYSA-N",
+      "inchikey_b": "UGFAIRIUMAVXCW-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                1,
+                1
+              ],
+              [
+                3,
+                1
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                1,
+                1
+              ],
+              [
+                3,
+                1
+              ]
+            ],
+            "b": [
+              [
+                0,
+                2
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "atom_map",
+      "id": "atom_map_1",
+      "inchikey_a": "ZHNUHDYFZUAESO-UHFFFAOYSA-N",
+      "inchikey_b": "HKKDKUMUWRTAIA-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                2,
+                1
+              ]
+            ],
+            "b": [
+              [
+                0,
+                3
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "atom_map",
+      "id": "atom_map_2",
+      "inchikey_a": "UHOVQNZJYSORNB-UHFFFAOYSA-N",
+      "inchikey_b": "PXCDDPIOUAJVRE-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                1,
+                6
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                1,
+                6
+              ]
+            ],
+            "b": [
+              [
+                0,
+                6
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "coords_3d",
+      "id": "coords_3d_4",
+      "inchikey_a": "QNAYBMKLOCPYGJ-UWTATZPHSA-N",
+      "inchikey_b": "QNAYBMKLOCPYGJ-UHFFFAOYSA-N",
+      "phase1_breakdown": {
+        "diffs": {
+          "stereocenter_labels": {
+            "a": [
+              [
+                "R",
+                1
+              ]
+            ],
+            "b": [
+              [
+                "?",
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "tetrahedral_or_ez_stereo_lost_converting_wedge_bonds_to_smiles",
+        "note": "PRE-EXISTING gap, NOT specific to MRV: chematic has no converter from wedge/dash bond direction (BondOrder::Up/Down) + 2D coordinates into Atom.chirality (the SMILES-native @/@@ representation the writer reads) -- only chematic_perception::stereo2d::apply_stereo_from_2d exists, and it populates Atom.cip_code (a separate R/S descriptor field), not chirality. mrv.rs's own read-write-read round trip is fully correct (confirmed: phase2_match holds for these fixtures) -- only conversion to a DIFFERENT format (SMILES) loses the assignment. MOL V2000 has the identical limitation (same wedge-bond representation, same missing converter) -- flagged for a dedicated follow-up, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    },
+    {
+      "category": "disconnected",
+      "id": "disconnected_3",
+      "inchikey_a": "USFZMSVCRYTOJT-UHFFFAOYSA-N",
+      "inchikey_b": "YOSLNJYYBDUOBP-UHFFFAOYSA-M",
+      "phase1_breakdown": {
+        "diffs": {
+          "radical_electrons": {
+            "a": [],
+            "b": [
+              [
+                4,
+                1
+              ]
+            ]
+          },
+          "total_h_per_atom": {
+            "a": [
+              [
+                0,
+                3
+              ],
+              [
+                3,
+                1
+              ],
+              [
+                4,
+                1
+              ]
+            ],
+            "b": [
+              [
+                0,
+                4
+              ],
+              [
+                3,
+                1
+              ]
+            ]
+          }
+        },
+        "known_divergence": "chematic_smiles_writer_bracket_h_count_bug",
+        "note": "PRE-EXISTING chematic-smiles writer bug, NOT specific to MRV: chematic_smiles::write() omits the implicit-H count for a bracket atom forced by isotope/charge/atom-map when Atom.hydrogen_count is None (implicit/inferred, as any non-SMILES-parser format reader builds atoms) rather than Some(n) (explicit, as the SMILES parser itself always sets). Confirmed via a minimal repro with NO MRV involvement at all (Atom::new(N) + charge=1 -> writes '[N+]' instead of '[NH4+]'). This affects every non-SMILES format reader in the workspace (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV -- flagged for a dedicated follow-up fix in chematic-smiles, explicitly out of scope for the MRV PR."
+      },
+      "phase1_match": false,
+      "phase2_match": true,
+      "round_trip_ok": true,
+      "status": "success"
+    }
+  ],
+  "phase1_mismatches_known_divergence_non_gating": 81,
+  "phase1_mismatches_pure_enumeration_artifact": 0,
+  "phase1_mismatches_with_real_structural_diff": 0,
+  "phase1_read_parity_match": 125,
+  "phase1_read_parity_mismatch": 81,
+  "phase2_mismatches_known_divergence_non_gating": 3,
+  "phase2_mismatches_pure_enumeration_artifact": 0,
+  "phase2_mismatches_with_real_structural_diff": 0,
+  "phase2_write_parity_match": 203,
+  "phase2_write_parity_mismatch": 3,
+  "total_fixtures": 206
+}

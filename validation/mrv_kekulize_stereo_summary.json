@@ -1,0 +1,59 @@
+{
+  "all_ok": true,
+  "results": [
+    {
+      "id": "benzene",
+      "kind": "kekulize",
+      "ok": true,
+      "canonical_true": "c1ccccc1",
+      "canonical_false": "c1ccccc1"
+    },
+    {
+      "id": "pyridine",
+      "kind": "kekulize",
+      "ok": true,
+      "canonical_true": "c1ccncc1",
+      "canonical_false": "c1ccncc1"
+    },
+    {
+      "id": "tetrahedral_stereo_0",
+      "kind": "stereo",
+      "ez_only": false,
+      "ok": true,
+      "original_has_stereo": true,
+      "with_stereo_has_stereo": true,
+      "without_stereo_has_stereo": false,
+      "connectivity_matches": true
+    },
+    {
+      "id": "tetrahedral_stereo_1",
+      "kind": "stereo",
+      "ez_only": false,
+      "ok": true,
+      "original_has_stereo": true,
+      "with_stereo_has_stereo": true,
+      "without_stereo_has_stereo": false,
+      "connectivity_matches": true
+    },
+    {
+      "id": "ez_stereo_0",
+      "kind": "stereo",
+      "ez_only": true,
+      "ok": true,
+      "original_has_stereo": true,
+      "with_stereo_has_stereo": true,
+      "without_stereo_has_stereo": true,
+      "connectivity_matches": true
+    },
+    {
+      "id": "ez_stereo_1",
+      "kind": "stereo",
+      "ez_only": true,
+      "ok": true,
+      "original_has_stereo": true,
+      "with_stereo_has_stereo": true,
+      "without_stereo_has_stereo": true,
+      "connectivity_matches": true
+    }
+  ]
+}
