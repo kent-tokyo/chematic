@@ -1,22 +1,17 @@
 {
-  "error_count": 2,
+  "error_count": 1,
   "error_rows": [
     {
       "row_id": 2150,
       "smiles": "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C",
       "status": "rdkit_parity_kekulization_failed"
-    },
-    {
-      "row_id": 5010,
-      "smiles": "c1cc[nH+]cc1",
-      "status": "rdkit_parity_kekulization_failed"
     }
   ],
-  "exact_match_among_success": 5046,
+  "exact_match_among_success": 5047,
   "exact_match_pct_among_success": 1.0,
   "gate_failures": [],
   "gate_passed": true,
   "non_exact_success_row_ids": [],
-  "success_count": 5046,
+  "success_count": 5047,
   "total_inputs": 5048
 }

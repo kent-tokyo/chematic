@@ -32,10 +32,10 @@
       "verified_bit_exact": 3
     },
     "charged_kekulize_fail": {
-      "mismatch_aromaticity_kekulize_hardfail": 6,
+      "mismatch_aromaticity_kekulize_hardfail": 0,
       "mismatch_unclassified": 0,
       "total": 6,
-      "verified_bit_exact": 0
+      "verified_bit_exact": 6
     },
     "charged_ok": {
       "mismatch_aromaticity_kekulize_hardfail": 0,
@@ -70,46 +70,46 @@
   },
   "nbits_binary_axis_matrix": {
     "128": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     },
     "256": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     },
     "512": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     },
     "1024": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     },
     "2048": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     }
   },
   "nbits_count_axis_matrix": {
     "128": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     },
     "256": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     },
     "512": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     },
     "1024": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     },
     "2048": {
-      "match": 27,
-      "total": 27
+      "match": 33,
+      "total": 33
     }
   },
   "production_api": "chematic_fp::rdkit_morgan_ecfp4_experimental",
@@ -123,24 +123,24 @@
   },
   "radius_axis_matrix": {
     "0": {
-      "match": 27,
-      "n_a_no_aromaticity": 6,
-      "total": 27
+      "match": 33,
+      "n_a_no_aromaticity": 0,
+      "total": 33
     },
     "1": {
-      "match": 27,
-      "n_a_no_aromaticity": 6,
-      "total": 27
+      "match": 33,
+      "n_a_no_aromaticity": 0,
+      "total": 33
     },
     "2": {
-      "match": 27,
-      "n_a_no_aromaticity": 6,
-      "total": 27
+      "match": 33,
+      "n_a_no_aromaticity": 0,
+      "total": 33
     },
     "3": {
-      "match": 27,
-      "n_a_no_aromaticity": 6,
-      "total": 27
+      "match": 33,
+      "n_a_no_aromaticity": 0,
+      "total": 33
     }
   },
   "schema_version": "1",
