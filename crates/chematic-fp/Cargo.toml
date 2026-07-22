@@ -53,3 +53,7 @@ required-features = ["diagnostics"]
 [[example]]
 name = "rdkit_morgan_hash_dump_aromaticity_variant"
 required-features = ["diagnostics"]
+
+[[example]]
+name = "rdkit_ecfp4_bitexact_matrix_dump"
+required-features = ["diagnostics"]
