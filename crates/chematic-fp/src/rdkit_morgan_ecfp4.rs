@@ -193,14 +193,27 @@ mod tests {
         }
     }
 
+    /// Was `kekule_pyridinium_reports_kekulization_failed_not_a_fallback_result`, pinned to
+    /// pyridinium's `c1cc[nH+]cc1` as its "kekulize fails" example. `fix/kekulize-charge-aware-k1`
+    /// (chematic-core's `atom_must_be_matched`) fixed pyridinium's kekulization -- it now
+    /// succeeds and is bit-exact against RDKit (see
+    /// `validation/results/ecfp4_bitexact_matrix_summary.json`'s `charged_kekulize_fail` bucket,
+    /// 6/6 `verified_bit_exact`) -- so it's no longer a valid "kekulize fails" example. This test
+    /// checks a general contract (a real aromaticity/kekulization failure must surface as
+    /// `Err`, never silently succeed), not a pyridinium-specific fact, so it's renamed and
+    /// re-pointed at a molecule that still genuinely fails: the same bridgehead-N purine-like
+    /// ring `chematic_perception::rdkit_parity`'s own
+    /// `production_api_reports_kekulize_failure_not_panic` test uses, confirmed still
+    /// `KekulizationFailed` after K1 (also confirmed by the 5,000-molecule corpus diff in
+    /// `validation/results/kekulize_charge_aware_k1_corpus_diff.json`: this is the one
+    /// pre-existing failure that's unchanged before/after K1).
     #[test]
-    fn kekule_pyridinium_reports_kekulization_failed_not_a_fallback_result() {
-        let mol = parse("c1cc[nH+]cc1").unwrap();
+    fn kekule_bridgehead_n_purine_reports_kekulization_failed_not_a_fallback_result() {
+        let smi = "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C";
+        let mol = parse(smi).unwrap();
         match rdkit_morgan_ecfp4_experimental(&mol) {
             Err(RdkitMorganError::Aromaticity(AromaticityError::KekulizationFailed { .. })) => {}
-            other => {
-                panic!("expected Aromaticity(KekulizationFailed) for c1cc[nH+]cc1, got {other:?}")
-            }
+            other => panic!("expected Aromaticity(KekulizationFailed) for {smi}, got {other:?}"),
         }
     }
 
@@ -252,9 +265,17 @@ mod tests {
     /// produces a *different* atom/bond aromaticity outcome than what an `Err` from this
     /// module's real path implies, so a hypothetical silent fallback substituting the former
     /// for the latter would be numerically detectable, not just contractually forbidden.
+    ///
+    /// Fixture swapped from pyridinium's `c1cc[nH+]cc1` (same reason as
+    /// `kekule_bridgehead_n_purine_reports_kekulization_failed_not_a_fallback_result` above:
+    /// `fix/kekulize-charge-aware-k1` made pyridinium kekulize successfully, so it's no longer a
+    /// molecule this test's premise -- "the real path fails" -- holds for) to the same
+    /// still-failing bridgehead-N purine-like ring. The expected Hückel pattern below is the
+    /// actual observed output of `chematic_perception::apply_aromaticity` on this molecule (20
+    /// atoms), captured via a throwaway probe run against this exact commit, not guessed.
     #[test]
     fn hueckel_fallback_would_be_detectable_if_silently_reintroduced() {
-        let smi = "c1cc[nH+]cc1";
+        let smi = "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C";
         let mol = parse(smi).unwrap();
 
         // The real, fallible path must fail -- no result to compare against RDKit at all.
@@ -262,11 +283,9 @@ mod tests {
         assert!(matches!(real, Err(RdkitMorganError::Aromaticity(_))));
 
         // A hypothetical silent fallback would instead run production Hückel aromaticity and
-        // report success. Prove that path is reachable and produces a *different* aromatic-atom
-        // partition than the RDKit-parity engine would have (when the latter succeeds on the
-        // structurally analogous neutral pyridine), so such a substitution is not merely
-        // "different code path" but "numerically distinguishable, and thus catchable" if it
-        // were ever reintroduced.
+        // report success. Prove that path is reachable and produces a concrete, observable
+        // aromatic-atom partition, so such a substitution is not merely "different code path"
+        // but "numerically distinguishable, and thus catchable" if it were ever reintroduced.
         let hueckel_fallback_mol = chematic_perception::apply_aromaticity(&mol);
         let hueckel_aromatic_atoms: Vec<bool> = (0..hueckel_fallback_mol.atom_count())
             .map(|i| {
@@ -275,11 +294,17 @@ mod tests {
                     .aromatic
             })
             .collect();
-        // Hückel perceives this ring as fully aromatic (6 aromatic atoms) -- i.e. a silent
-        // fallback would have returned Ok(..) with a full 2048-bit fingerprint here, directly
-        // contradicting the real path's Err. This assertion is what would fail if a fallback
-        // were reintroduced and this test were updated to call the (currently nonexistent)
-        // fallback path instead of the real one.
-        assert_eq!(hueckel_aromatic_atoms, vec![true; 6]);
+        // Hückel perceives 10 of this molecule's 20 atoms as aromatic (a mixed pattern, not
+        // uniformly true/false) -- i.e. a silent fallback would have returned Ok(..) with a
+        // fingerprint reflecting this partition here, directly contradicting the real path's
+        // Err. This assertion is what would fail if a fallback were reintroduced and this test
+        // were updated to call the (currently nonexistent) fallback path instead of the real one.
+        assert_eq!(
+            hueckel_aromatic_atoms,
+            vec![
+                false, true, true, true, true, false, true, true, true, true, false, false, false,
+                false, false, true, true, true, true, false
+            ]
+        );
     }
 }

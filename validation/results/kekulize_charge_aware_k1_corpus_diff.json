@@ -1,0 +1,26 @@
+{
+  "corpus_file": "~/Downloads/SMILES.csv",
+  "total_molecules": 5000,
+  "before": {
+    "parse_fail_count": 0,
+    "kekulize_fail_count": 1
+  },
+  "after": {
+    "parse_fail_count": 0,
+    "kekulize_fail_count": 1
+  },
+  "newly_fixed_count": 0,
+  "newly_broken_count": 0,
+  "still_failing_count": 1,
+  "newly_fixed": [],
+  "newly_broken": [],
+  "still_failing": [
+    {
+      "idx": 2150,
+      "smiles": "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C",
+      "error": "kekulization failed: atom 16 (N) cannot be assigned a double bond"
+    }
+  ],
+  "description": "Before/after success-set comparison for the fix/kekulize-charge-aware-k1 change to atom_must_be_matched (crates/chematic-core/src/kekulization.rs), run over the project's standard 5,000-molecule SMILES corpus (~/Downloads/SMILES.csv, same corpus scripts/bench5k.py uses). 'before' = kekulization.rs at the pre-fix state (git stash of just that file); 'after' = the same corpus with the K1 fix applied. Generated via crates/chematic-smiles/examples/kekulize_corpus_scan.rs.",
+  "base_commit": "b07ac653f79eeed03d60303e8849bcd71c1f6ce0"
+}

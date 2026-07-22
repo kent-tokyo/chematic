@@ -2,23 +2,38 @@
   "command_line": [
     "scripts/gen_ecfp_rdkit_environment_oracle.py",
     "--corpus",
-    "/tmp/m4a0/combined_input.csv",
+    "/Users/k_tanabe/Downloads/SMILES.csv",
+    "--fixtures",
+    "scripts/ecfp_rdkit_edge_fixtures.csv",
+    "scripts/ecfp_rdkit_morgan_edge_fixtures.csv",
+    "scripts/ecfp_rdkit_suppression_representative_swap_fixtures.csv",
+    "scripts/ecfp_rdkit_m4a0_hash_fixtures.csv",
     "--rows-out",
-    "/tmp/m4a0/rdkit_oracle_rows.jsonl",
+    "/private/tmp/claude-501/-Users-k-tanabe-Documents-Documents-oss-rust-chematic/3163eec9-9646-4580-b112-9358c56880bd/scratchpad/m4a0_rerun/oracle_rows.jsonl",
     "--manifest-out",
-    "/tmp/m4a0/rdkit_oracle_manifest.json"
+    "/private/tmp/claude-501/-Users-k-tanabe-Documents-Documents-oss-rust-chematic/3163eec9-9646-4580-b112-9358c56880bd/scratchpad/m4a0_rerun/oracle_manifest.json"
   ],
   "corpus_paths": [
-    "/tmp/m4a0/combined_input.csv"
+    "/Users/k_tanabe/Downloads/SMILES.csv"
   ],
   "corpus_sha256": {
-    "/tmp/m4a0/combined_input.csv": "df949b8832d966ee74c94acde2d203284e8ffc82896b541b01a28fbf3df2c8ea"
+    "/Users/k_tanabe/Downloads/SMILES.csv": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
   },
-  "diagnostic_source_commit_sha": "f926ab416993def68513d4180b4080d315c8a187",
+  "diagnostic_source_commit_sha": "77d2589d19644c064077e1b9fcb0f27b2f5625ea",
   "diagnostic_source_tree_dirty": true,
-  "fixture_paths": [],
-  "fixture_sha256": {},
-  "generated_at_utc": "2026-07-20T10:10:06.811655+00:00",
+  "fixture_paths": [
+    "scripts/ecfp_rdkit_edge_fixtures.csv",
+    "scripts/ecfp_rdkit_morgan_edge_fixtures.csv",
+    "scripts/ecfp_rdkit_suppression_representative_swap_fixtures.csv",
+    "scripts/ecfp_rdkit_m4a0_hash_fixtures.csv"
+  ],
+  "fixture_sha256": {
+    "scripts/ecfp_rdkit_edge_fixtures.csv": "c5f183a3e0ecf632c3cc59f86767911106151189a4c982a0435ddbfe6ac160de",
+    "scripts/ecfp_rdkit_m4a0_hash_fixtures.csv": "acba18ccb153469713d5fa02152c9c8a2d8e83306d579388d889c7197a3fb5cc",
+    "scripts/ecfp_rdkit_morgan_edge_fixtures.csv": "51d453e980f4b74dd41e4706714159e4ebe47e0acbe15383ef13939947df26e1",
+    "scripts/ecfp_rdkit_suppression_representative_swap_fixtures.csv": "3e97ef2c6cab953a04eb74a7e3b3c705cc4b0281f4a6d97354d333418a28ea85"
+  },
+  "generated_at_utc": "2026-07-22T09:15:01.407354+00:00",
   "input_count": 5048,
   "morgan_options": {
     "countSimulation": false,

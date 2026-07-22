@@ -557,43 +557,80 @@ fn blossom_mark_path(
 /// Determine whether an aromatic atom *must* appear in the matching
 /// (i.e. requires a double bond for a valid Kekulé form).
 ///
-/// An atom can be unmatched if it contributes a lone pair to the aromatic system:
-/// - O (furan-type oxygen)
-/// - S (thiophene-type sulfur)
-/// - N with an H (pyrrole-type nitrogen: [nH])
-/// - Se, As aromatic analogs
+/// Charge-aware per RDKit's own kekulization (`markDbondCands`,
+/// `Code/GraphMol/Kekulize.cpp` at the pinned commit `8afba32ec539dcb2369bc84549d802aca3f7eb39`):
+/// RDKit computes a per-atom target valence `dv = defaultValence(atomicNum) + chrg`
+/// (formal charge added directly, no sign flip — `isEarlyAtom` is `false` for
+/// C/N/O/P/S/Se/Te, `Code/GraphMol/Atom.cpp`) *except* for carbon, which gets an
+/// explicit sign flip (`chrg = -chrg` when `atomicNum == 6 && chrg > 0`, their own
+/// comment: "special case for carbon - see GitHub #539"). An atom is a double-bond
+/// candidate (`dBndCands[allAtm] = 1`) iff its current bond-order sum `sbo` (ring
+/// bonds + H count, each counted as 1) is exactly `dv - 1`; i.e. it needs exactly one
+/// more bond order to reach `dv`. This flips the "donor" classification for a charged
+/// heteroatom (charge *raises* `dv`, e.g. `[nH+]`/`[o+]` become one bond order short —
+/// a candidate) but *lowers* it for a cationic carbon (a `+1` carbon's `dv` drops from
+/// 4 to 3, which its existing bonds already satisfy — not a candidate). Verified
+/// empirically against `rdkit==2026.03.3` (pinned to the same commit) for every case
+/// below; see `docs/kekulize_charge_aware_rdkit_parity.md`.
+///
+/// An atom can be unmatched (a lone-pair donor) if:
+/// - O, S, Se, Te (furan/thiophene/selenophene/tellurophene-type chalcogen) — but only
+///   while neutral or anionic; a positively-charged chalcogen (pyrylium's `[o+]`) has
+///   consumed the lone pair and needs a double bond instead, like pyridine-type N.
+/// - N or P with an H ([nH] pyrrole-type nitrogen, [pH] phosphole-type phosphorus) —
+///   but only while neutral or anionic; protonation (`[nH+]`, e.g. pyridinium) consumes
+///   the lone pair the same way, so the atom needs a double bond instead.
+/// - Any anionic aromatic atom (cyclopentadienyl-anion-type) donates its lone pair.
 /// - Any aromatic atom that already has an exocyclic double bond (e.g. the
 ///   carbonyl carbon in coumarin/warfarin `c=O` fused into an aromatic ring).
 ///   Such an atom's pi contribution comes from conjugation with the exocyclic
 ///   bond; no additional ring double bond is needed or possible.
 ///
-/// Everything else (C, N without H like pyridine) must be matched.
+/// A cationic aromatic carbon ([cH+], e.g. tropylium) is a symmetric case: an empty
+/// p-orbital electron *acceptor*, like aromatic B, but — unlike B — needs no double
+/// bond of its own (see the carbon sign-flip above).
+///
+/// Everything else (C, N/P without H like pyridine/phosphole's ring carbons, aromatic
+/// B) must be matched.
 pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
     let atom = mol.atom(idx);
     match atom.element.atomic_number() {
-        // O, S, Se always donate a lone pair → don't need a double bond.
-        8 | 16 | 34 => false,
+        // O, S, Se, Te donate a lone pair → don't need a double bond — *unless* a
+        // positive charge (pyrylium's [o+]) has consumed it, in which case the atom
+        // needs a double bond exactly like pyridine-type N (falls through to the
+        // catch-all `_ => true` below).
+        8 | 16 | 34 | 52 if atom.charge <= 0 => false,
         // Aromatic B contributes an empty p orbital (electron acceptor), not a lone pair.
         // It must appear in a double bond in the Kekulé form, just like aromatic C.
         5 => true,
-        // N with explicit H ([nH]) is a lone-pair donor.
-        7 if matches!(atom.hydrogen_count, Some(h) if h > 0) => false,
-        // Anionic aromatic N ([n-]) also donates its lone pair; the extra electron
+        // N or P with explicit H ([nH], [pH]) is a lone-pair donor — *unless* protonated
+        // (a positive charge consumes the lone pair, e.g. pyridinium's [nH+], which then
+        // needs a double bond exactly like neutral pyridine's bare N).
+        7 | 15 if atom.charge <= 0 && matches!(atom.hydrogen_count, Some(h) if h > 0) => false,
+        // Anionic aromatic N/P ([n-]) also donates its lone pair; the extra electron
         // occupies the lone-pair slot rather than a ring π bond (same as [nH]).
-        7 if atom.charge < 0 => false,
-        // Neutral N with a non-aromatic substituent (e.g. N-methyl in caffeine) is a lone-pair
-        // donor: the substituent "replaces" the H, and the N contributes its lone pair to
+        7 | 15 if atom.charge < 0 => false,
+        // Neutral N/P with a non-aromatic substituent (e.g. N-methyl in caffeine) is a lone-pair
+        // donor: the substituent "replaces" the H, and the atom contributes its lone pair to
         // aromaticity rather than a π bond (same as [nH] in pyrrole).
-        // Charged N (pyridinium [n+], N-oxide) must still be matched even with a substituent.
-        7 if atom.charge == 0
-            && mol
-                .neighbors(idx)
-                .any(|(_, bidx)| mol.bond(bidx).order != BondOrder::Aromatic) =>
+        // Charged N/P (pyridinium [n+], N-oxide) must still be matched even with a substituent.
+        7 | 15
+            if atom.charge == 0
+                && mol
+                    .neighbors(idx)
+                    .any(|(_, bidx)| mol.bond(bidx).order != BondOrder::Aromatic) =>
         {
             false
         }
-        // Bare aromatic N with only aromatic bonds (pyridine-type): must be matched.
-        7 => true,
+        // Bare aromatic N/P with only aromatic bonds (pyridine-type), or protonated
+        // ([nH+] pyridinium): must be matched.
+        7 | 15 => true,
+        // A cationic aromatic carbon ([cH+], e.g. tropylium) has an empty p orbital: an
+        // electron acceptor like aromatic B, but *without* B's obligatory double bond.
+        // RDKit's own charge-sign flip (see doc comment above) drops a +1 carbon's
+        // target valence from 4 to 3, which its existing ring bonds + H already
+        // satisfy — no double bond needed or possible.
+        6 if atom.charge > 0 => false,
         // Any anionic aromatic atom (e.g. cyclopentadienyl [cH-]) donates its lone pair.
         _ if atom.charge < 0 => false,
         // Any atom (typically C) that already has an exocyclic π bond (e.g. `c(=O)` in
@@ -1376,5 +1413,256 @@ mod tests {
         );
         assert_eq!(kekulized.atom_count(), mol.atom_count());
         assert_eq!(kekulized.bond_count(), mol.bond_count());
+    }
+
+    // -----------------------------------------------------------------
+    // K1: charge-aware `atom_must_be_matched` -- fixtures from
+    // docs/aromaticity_rdkit_parity_rfc.md section 1a, previously hard
+    // failures. Builders mirror `furan`/`pyrrole` above: an explicit-H
+    // bracket atom is built via `Atom::aromatic` + a field override, matching
+    // the SMILES bracket notation named in each doc comment.
+    // -----------------------------------------------------------------
+
+    /// Tropylium cation (`c1ccc[cH+]cc1`): 7-ring, 6 neutral aromatic CH +
+    /// 1 cationic aromatic CH+. Returns the cation's `AtomIdx` alongside the
+    /// molecule so tests can check its bonds specifically.
+    fn tropylium_cation() -> (Molecule, AtomIdx) {
+        let mut b = MoleculeBuilder::new();
+        let mut atoms: Vec<AtomIdx> = (0..4)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        let mut cation = Atom::aromatic(Element::C);
+        cation.charge = 1;
+        cation.hydrogen_count = Some(1);
+        let cation_idx = b.add_atom(cation); // ring position matches c1ccc[cH+]cc1
+        atoms.push(cation_idx);
+        atoms.extend((0..2).map(|_| b.add_atom(Atom::aromatic(Element::C))));
+        for i in 0..7 {
+            b.add_bond(atoms[i], atoms[(i + 1) % 7], BondOrder::Aromatic)
+                .unwrap();
+        }
+        (b.build(), cation_idx)
+    }
+
+    /// Imidazolium (`c1c[nH+]c[nH]1`): 5-ring, 3 aromatic C + 1 protonated
+    /// `[nH+]` + 1 neutral `[nH]`.
+    fn imidazolium() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let c0 = b.add_atom(Atom::aromatic(Element::C));
+        let c1 = b.add_atom(Atom::aromatic(Element::C));
+        let mut n_plus = Atom::aromatic(Element::N);
+        n_plus.charge = 1;
+        n_plus.hydrogen_count = Some(1);
+        let n2 = b.add_atom(n_plus);
+        let c3 = b.add_atom(Atom::aromatic(Element::C));
+        let mut n_neutral = Atom::aromatic(Element::N);
+        n_neutral.hydrogen_count = Some(1);
+        let n4 = b.add_atom(n_neutral);
+        let atoms = [c0, c1, n2, c3, n4];
+        for i in 0..5 {
+            b.add_bond(atoms[i], atoms[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.build()
+    }
+
+    /// Pyridinium (`c1cc[nH+]cc1`): 6-ring, 5 aromatic C + 1 protonated `[nH+]`.
+    fn pyridinium() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let mut atoms: Vec<AtomIdx> = (0..5)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        let mut n_plus = Atom::aromatic(Element::N);
+        n_plus.charge = 1;
+        n_plus.hydrogen_count = Some(1);
+        atoms.insert(3, b.add_atom(n_plus)); // ring position matches c1cc[nH+]cc1
+        for i in 0..6 {
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.build()
+    }
+
+    /// Pyrylium (`c1cc[o+]cc1`): 6-ring, 5 aromatic C + 1 cationic aromatic O+.
+    fn pyrylium() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let mut atoms: Vec<AtomIdx> = (0..5)
+            .map(|_| b.add_atom(Atom::aromatic(Element::C)))
+            .collect();
+        let mut o_plus = Atom::aromatic(Element::O);
+        o_plus.charge = 1;
+        atoms.insert(3, b.add_atom(o_plus)); // ring position matches c1cc[o+]cc1
+        for i in 0..6 {
+            b.add_bond(atoms[i], atoms[(i + 1) % 6], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.build()
+    }
+
+    /// Tellurophene (`c1cc[te]c1`): 5-ring, 4 aromatic C + 1 neutral aromatic Te.
+    fn tellurophene() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let te = b.add_atom(Atom::aromatic(Element::TE));
+        let c1 = b.add_atom(Atom::aromatic(Element::C));
+        let c2 = b.add_atom(Atom::aromatic(Element::C));
+        let c3 = b.add_atom(Atom::aromatic(Element::C));
+        let c4 = b.add_atom(Atom::aromatic(Element::C));
+        let ring = [te, c1, c2, c3, c4];
+        for i in 0..5 {
+            b.add_bond(ring[i], ring[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.build()
+    }
+
+    /// Phosphole (`c1cc[pH]c1`): 5-ring, 4 aromatic C + 1 neutral `[pH]`.
+    fn phosphole() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let mut p_atom = Atom::aromatic(Element::P);
+        p_atom.hydrogen_count = Some(1);
+        let p = b.add_atom(p_atom);
+        let c1 = b.add_atom(Atom::aromatic(Element::C));
+        let c2 = b.add_atom(Atom::aromatic(Element::C));
+        let c3 = b.add_atom(Atom::aromatic(Element::C));
+        let c4 = b.add_atom(Atom::aromatic(Element::C));
+        let ring = [p, c1, c2, c3, c4];
+        for i in 0..5 {
+            b.add_bond(ring[i], ring[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.build()
+    }
+
+    /// Thiophene (4 aromatic C + 1 aromatic S, ring) -- regression coverage:
+    /// neutral chalcogen donor rule must still exempt S after the K1 charge-aware fix.
+    fn thiophene() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let s = b.add_atom(Atom::aromatic(Element::S));
+        let c1 = b.add_atom(Atom::aromatic(Element::C));
+        let c2 = b.add_atom(Atom::aromatic(Element::C));
+        let c3 = b.add_atom(Atom::aromatic(Element::C));
+        let c4 = b.add_atom(Atom::aromatic(Element::C));
+        let ring = [s, c1, c2, c3, c4];
+        for i in 0..5 {
+            b.add_bond(ring[i], ring[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.build()
+    }
+
+    /// Selenophene (4 aromatic C + 1 aromatic Se, ring) -- regression coverage,
+    /// same rationale as `thiophene` above.
+    fn selenophene() -> Molecule {
+        let mut b = MoleculeBuilder::new();
+        let se = b.add_atom(Atom::aromatic(Element::SE));
+        let c1 = b.add_atom(Atom::aromatic(Element::C));
+        let c2 = b.add_atom(Atom::aromatic(Element::C));
+        let c3 = b.add_atom(Atom::aromatic(Element::C));
+        let c4 = b.add_atom(Atom::aromatic(Element::C));
+        let ring = [se, c1, c2, c3, c4];
+        for i in 0..5 {
+            b.add_bond(ring[i], ring[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.build()
+    }
+
+    #[test]
+    fn test_kekulize_tropylium_cation() {
+        let (mol, cation_idx) = tropylium_cation();
+        let result = kekulize(&mol).expect("tropylium cation kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(
+            doubles, 3,
+            "tropylium: 6 neutral C alternate into 3 double bonds"
+        );
+        // The cationic carbon must end up with only single bonds.
+        for (bidx, order) in &result {
+            let bond = mol.bond(*bidx);
+            if bond.atom1 == cation_idx || bond.atom2 == cation_idx {
+                assert_eq!(
+                    *order,
+                    BondOrder::Single,
+                    "cationic C must not get a double bond"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_kekulize_imidazolium() {
+        let mol = imidazolium();
+        let result = kekulize(&mol).expect("imidazolium kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(
+            doubles, 2,
+            "imidazolium: 2 double bonds ([nH+] matched, [nH] not)"
+        );
+    }
+
+    #[test]
+    fn test_kekulize_pyridinium() {
+        let mol = pyridinium();
+        let result = kekulize(&mol).expect("pyridinium kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(
+            doubles, 3,
+            "pyridinium: 3 double bonds, same as neutral pyridine"
+        );
+    }
+
+    #[test]
+    fn test_kekulize_pyrylium() {
+        let mol = pyrylium();
+        let result = kekulize(&mol).expect("pyrylium kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(
+            doubles, 3,
+            "pyrylium: 3 double bonds, O+ matched like pyridine's N"
+        );
+    }
+
+    #[test]
+    fn test_kekulize_tellurophene() {
+        let mol = tellurophene();
+        let result = kekulize(&mol).expect("tellurophene kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(
+            doubles, 2,
+            "tellurophene: 2 double bonds, Te donates its lone pair"
+        );
+    }
+
+    #[test]
+    fn test_kekulize_phosphole() {
+        let mol = phosphole();
+        let result = kekulize(&mol).expect("phosphole kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(
+            doubles, 2,
+            "phosphole: 2 double bonds, [pH] donates its lone pair like [nH]"
+        );
+    }
+
+    #[test]
+    fn test_kekulize_thiophene_regression() {
+        let mol = thiophene();
+        let result = kekulize(&mol).expect("thiophene kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(
+            doubles, 2,
+            "thiophene must still kekulize after the K1 charge-aware fix"
+        );
+    }
+
+    #[test]
+    fn test_kekulize_selenophene_regression() {
+        let mol = selenophene();
+        let result = kekulize(&mol).expect("selenophene kekulization failed");
+        let doubles = result.values().filter(|&&o| o == BondOrder::Double).count();
+        assert_eq!(
+            doubles, 2,
+            "selenophene must still kekulize after the K1 charge-aware fix"
+        );
     }
 }

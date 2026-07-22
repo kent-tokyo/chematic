@@ -1019,28 +1019,50 @@ mod tests {
         assert_eq!(aromatic_before, aromatic_after);
     }
 
-    /// Second known kekulize-gap case, found during Morgan M4-A0
-    /// (`chematic-fp`'s `rdkit_morgan_hash.rs`) full-corpus validation --
-    /// pinned here (not just recorded in the M4-A0 validation JSON) so a
-    /// future kekulization fix is verified against the actual engine, and
-    /// so `rdkit_morgan_hash_dump_aromaticity_variant`'s `Err` count has a
-    /// concrete, permanent reason attached rather than an opaque number.
-    /// Together with `Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C` above, these are the
-    /// only 2 of 5,048 M4-A0 corpus+fixture inputs where this engine
-    /// returns `Err` -- both happen to still match RDKit's real Morgan
-    /// fingerprint under production Hueckel aromaticity (a non-gating
-    /// cross-check, `validation/ecfp_rdkit_raw_identifier_parity_aromaticity_variant_summary.json`'s
-    /// `hueckel_control_on_parity_errors`), which is coincidental, not a
-    /// substitute for fixing this engine's gap.
+    /// Was a known kekulize-gap case (found during Morgan M4-A0, `chematic-fp`'s
+    /// `rdkit_morgan_hash.rs`, full-corpus validation): pyridinium's protonated
+    /// `[nH+]` used to make `chematic_core::kekulize()` hard-fail because
+    /// `atom_must_be_matched`'s N-with-H lone-pair-donor rule was charge-blind
+    /// (docs/aromaticity_rdkit_parity_rfc.md §1, root cause A). Fixed by
+    /// `fix/kekulize-charge-aware-k1` (see
+    /// docs/kekulize_charge_aware_rdkit_parity.md): the rule now requires
+    /// `atom.charge <= 0`, so a protonated ring N routes back to "must be
+    /// matched" -- same as neutral pyridine's bare N -- instead of being
+    /// wrongly treated like neutral pyrrole's `[nH]`. Kept as a regression
+    /// test (not deleted) so a future re-introduction of the charge-blind rule
+    /// is caught here, not just in the 40-fixture diagnosis corpus.
+    ///
+    /// NOTE for whoever picks up the companion fp-side fix: `chematic-fp`'s
+    /// `rdkit_morgan_ecfp4.rs` has two tests
+    /// (`kekule_pyridinium_reports_kekulization_failed_not_a_fallback_result`,
+    /// `hueckel_fallback_would_be_detectable_if_silently_reintroduced`) that
+    /// also used this exact SMILES as their "kekulize fails" positive control
+    /// for a *different* invariant (the fallible ECFP4 path must not silently
+    /// fall back to Hueckel) -- those are out of scope for K1 (chematic-fp is
+    /// off limits for this fix) and still fail as of this commit. They need
+    /// the same swap this test got: same invariant, a still-failing molecule
+    /// as the example (`Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C`, see
+    /// `production_api_reports_kekulize_failure_not_panic` above), not a
+    /// deletion. `validation/README.md`'s Morgan M4-A0 section and several
+    /// `validation/*.json` artifacts also cite a now-stale "2 of 5,048"
+    /// preprocessing-failure count (only the purine molecule remains).
     #[test]
-    fn known_kekulize_gap_protonated_pyridinium() {
+    fn kekulize_charge_aware_k1_fixes_protonated_pyridinium() {
         let smi = "c1cc[nH+]cc1";
         let mol = chematic_smiles::parse(smi).expect("valid SMILES");
         let result = apply_aromaticity_rdkit_parity_experimental(&mol);
         match result {
-            Err(AromaticityError::KekulizationFailed { .. }) => {}
-            Err(other) => panic!("expected KekulizationFailed for {smi}, got {other:?}"),
-            Ok(_) => panic!("expected a known kekulize-gap failure for {smi}, got Ok"),
+            Ok(applied) => {
+                for (_, atom) in applied.atoms() {
+                    assert!(
+                        atom.aromatic,
+                        "pyridinium's ring must end up fully aromatic"
+                    );
+                }
+            }
+            Err(other) => {
+                panic!("expected pyridinium to kekulize successfully post-K1, got {other:?}")
+            }
         }
     }
 

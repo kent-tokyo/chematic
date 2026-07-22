@@ -8,8 +8,7 @@
     "both_correctly_nonaromatic": 8,
     "matches_rdkit_exact_kekule": 20,
     "sssr_bridge_artifact_not_reproduced_docs_stale": 1,
-    "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent": 2,
-    "kekulize_fails_atom_bond_flags_survive_coincidentally": 6,
+    "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent": 8,
     "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly": 2
   },
   "unexplained_count": 0,
@@ -1018,10 +1017,10 @@
       "description": "7-ring carbocation, 6pi/7 centers",
       "smiles": "c1ccc[cH+]cc1",
       "chematic": {
-        "kekulize_ok": false,
-        "kekulize_error": "kekulization failed: atom 6 (C) cannot be assigned a double bond",
-        "experimental_ok": false,
-        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 6 (C) cannot be assigned a double bond",
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
@@ -1034,15 +1033,44 @@
         "ring_count": 1,
         "canonical_smiles": "c1ccc[cH+]cc1"
       },
-      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [],
+        "bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            0,
+            6
+          ]
+        ],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
-        "kekule_checked": false,
+        "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
         "huckel_model_aromatic_atom_count": 0,
@@ -1092,10 +1120,10 @@
       "description": "protonated imidazole, both N pyrrole-type",
       "smiles": "c1c[nH+]c[nH]1",
       "chematic": {
-        "kekulize_ok": false,
-        "kekulize_error": "kekulization failed: atom 3 (C) cannot be assigned a double bond",
-        "experimental_ok": false,
-        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 3 (C) cannot be assigned a double bond",
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
@@ -1108,15 +1136,36 @@
         "ring_count": 1,
         "canonical_smiles": "c1c[nH+]c[nH]1"
       },
-      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [],
+        "bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            0,
+            4
+          ]
+        ],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
-        "kekule_checked": false,
+        "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
         "huckel_model_aromatic_atom_count": 0,
@@ -1129,10 +1178,10 @@
       "description": "protonated pyridine",
       "smiles": "c1cc[nH+]cc1",
       "chematic": {
-        "kekulize_ok": false,
-        "kekulize_error": "kekulization failed: atom 4 (C) cannot be assigned a double bond",
-        "experimental_ok": false,
-        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
@@ -1145,15 +1194,40 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[nH+]cc1"
       },
-      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [],
+        "bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            0,
+            5
+          ]
+        ],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
-        "kekule_checked": false,
+        "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
         "huckel_model_aromatic_atom_count": 0,
@@ -1166,10 +1240,10 @@
       "description": "O-centered aromatic cation",
       "smiles": "c1cc[o+]cc1",
       "chematic": {
-        "kekulize_ok": false,
-        "kekulize_error": "kekulization failed: atom 4 (C) cannot be assigned a double bond",
-        "experimental_ok": false,
-        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
@@ -1182,15 +1256,40 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[o+]cc1"
       },
-      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [],
+        "bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            0,
+            5
+          ]
+        ],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
-        "kekule_checked": false,
+        "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
         "huckel_model_aromatic_atom_count": 0,
@@ -1261,10 +1360,10 @@
       "description": "Te lone-pair donor; same RdkitLike-only gate as selenophene",
       "smiles": "c1cc[te]c1",
       "chematic": {
-        "kekulize_ok": false,
-        "kekulize_error": "kekulization failed: atom 4 (C) cannot be assigned a double bond",
-        "experimental_ok": false,
-        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
@@ -1277,15 +1376,36 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[te]c1"
       },
-      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [],
+        "bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            0,
+            4
+          ]
+        ],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
-        "kekule_checked": false,
+        "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
         "huckel_model_aromatic_atom_count": 0,
@@ -1298,10 +1418,10 @@
       "description": "P lone-pair donor, RDKit's default model treats it as aromatic; chematic's own doc comment says P-containing rings are NOT supported",
       "smiles": "c1cc[pH]c1",
       "chematic": {
-        "kekulize_ok": false,
-        "kekulize_error": "kekulization failed: atom 4 (C) cannot be assigned a double bond",
-        "experimental_ok": false,
-        "experimental_error": "rdkit-parity aromaticity: kekulization failed: atom 4 (C) cannot be assigned a double bond",
+        "kekulize_ok": true,
+        "kekulize_error": null,
+        "experimental_ok": true,
+        "experimental_error": null,
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
@@ -1314,15 +1434,36 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[pH]c1"
       },
-      "failure_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-      "expected_bucket": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [],
+        "bond_mismatch_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            0,
+            4
+          ]
+        ],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
-        "kekule_checked": false,
+        "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
         "huckel_model_aromatic_atom_count": 0,

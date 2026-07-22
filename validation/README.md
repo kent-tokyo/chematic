@@ -141,15 +141,26 @@ ONLY over rows where that engine actually succeeded.
 **Results (5,048-input set = 5,000-mol corpus + PR #120's 41 fixtures + PR
 #123's 4 fixtures + `ecfp_rdkit_m4a0_hash_fixtures.csv`'s 3):**
 
+**Update (2026-07-22, `fix/kekulize-charge-aware-k1` #141 + `fix/core-te-normal-valences`
+#142, merge commit `97e1fd50a19703b0f9c8829df6bd219e85c8fd72`):** the table below is
+regenerated against current `main`, not the original 2026-07-20 numbers. Two
+chematic-core fixes changed `atom_must_be_matched`'s (`kekulization.rs`) charge-blind
+lone-pair-donor rules and added a missing `Te` valence-table entry
+(`element.rs::normal_valences`); one of the two RDKit-parity preprocessing failures below
+-- pyridinium's `c1cc[nH+]cc1` -- now succeeds and is bit-exact, dropping the error count
+from 2/5,048 to 1/5,048. Only the bridgehead-N purine-like ring remains. Verified via the
+same scripts, same 5,048-input corpus, same options -- not re-derived from the old
+numbers.
+
 | Path | Metric | Result |
 |---|---|---|
 | Production Hueckel aromaticity | Radius-0 numeric exact match | 5,048/5,048 (100%) |
 | Production Hueckel aromaticity | Full numeric exact match (radius 0-2, representative selection, sparse counts, folded bits, bitInfo) | 4,989/5,048 (98.83%) |
-| RDKit-parity aromaticity (`apply_aromaticity_rdkit_parity_experimental`, no fallback) | Preprocessing succeeded | 5,046/5,048 |
-| RDKit-parity aromaticity | Preprocessing failed (`KekulizationFailed`, both pinned as fixtures -- see below) | 2/5,048 |
-| RDKit-parity aromaticity | Full numeric exact match **among the 5,046 successful rows** | **5,046/5,046 (100%)** |
+| RDKit-parity aromaticity (`apply_aromaticity_rdkit_parity_experimental`, no fallback) | Preprocessing succeeded | 5,047/5,048 |
+| RDKit-parity aromaticity | Preprocessing failed (`KekulizationFailed`, pinned as a fixture -- see below) | 1/5,048 |
+| RDKit-parity aromaticity | Full numeric exact match **among the 5,047 successful rows** | **5,047/5,047 (100%)** |
 | RDKit-parity aromaticity | Non-exact among successful rows | 0 |
-| Hueckel control on JUST the 2 error rows (non-gating -- answers "does the OLD path agree with RDKit here", not "does RDKit-parity work here") | Exact match | 2/2 |
+| Hueckel control on JUST the 1 error row (non-gating -- answers "does the OLD path agree with RDKit here", not "does RDKit-parity work here") | Exact match | 1/1 |
 | PR #123's 9 unique representative-selection residuals | Resolve to `exact_match` under the RDKit-exact hash alone (no aromaticity-engine swap needed) | 9/9 |
 | PR #123's Kekule-pyridine sparse-count-shape mismatch (`C1=CC=NC=C1`) | Resolves to `exact_match`; confirms the documented root cause (FNV-1a-specific hash collision, not a suppression defect) | resolved |
 | Production API byte-identical (`ecfp_regression_snapshot`, before/after SHA-256) | confirmed | 0 change |
@@ -160,8 +171,8 @@ ONLY over rows where that engine actually succeeded.
 path, row by row (not just comparing aggregate counts):** all 59 had
 RDKit-parity preprocessing succeed, and all 59 became `exact_match` under
 it -- `resolved_by_rdkit_parity: 59, not_evaluable_due_to_aromaticity_error:
-0, still_mismatching: 0`. Neither of the 2 RDKit-parity error rows
-overlaps with the 59 Hueckel residuals (they were already exact matches
+0, still_mismatching: 0`. The 1 remaining RDKit-parity error row does not
+overlap with the 59 Hueckel residuals (it was already an exact match
 under Hueckel).
 
 The 59-row residual under production Hueckel aromaticity traces to ONE
@@ -172,15 +183,22 @@ defect. `apply_aromaticity_rdkit_parity_experimental`
 (`crates/chematic-perception/src/rdkit_parity.rs`, built for exactly this
 kind of disagreement, in an earlier milestone) resolves it.
 
-**The 2 RDKit-parity preprocessing failures are pinned as permanent
-fixtures**, not just recorded in a JSON summary --
-`scripts/ecfp_rdkit_m4a0_rdkit_parity_kekulization_gap_fixtures.csv`, plus
-`chematic-perception::rdkit_parity::tests::known_kekulize_gap_protonated_pyridinium`
-(the second is new; `Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C` was already a pinned
-gap case, `production_api_does_not_mutate_input_on_failure`) -- so a future
-kekulization fix is verified against the actual engine returning `Ok`, not
-just a number changing. Neither fixture is a corpus/fixture duplicate
-(each SMILES appears exactly once across the whole 5,048-input set).
+**The 1 remaining RDKit-parity preprocessing failure (the bridgehead-N
+purine-like ring) is pinned as a permanent fixture**, not just recorded in
+a JSON summary -- `scripts/ecfp_rdkit_m4a0_rdkit_parity_kekulization_gap_fixtures.csv`
+(now 1 line; pyridinium's line was removed post-K1, not duplicated -- it
+remains in the 5,048-input corpus itself, at its original position in
+`ecfp_rdkit_edge_fixtures.csv`, now correctly classified as a success/
+exact-match row rather than a gap fixture), plus
+`chematic-perception::rdkit_parity::tests::production_api_reports_kekulize_failure_not_panic`
+/ `production_api_does_not_mutate_input_on_failure` and
+`chematic-fp::rdkit_morgan_ecfp4::tests::kekule_bridgehead_n_purine_reports_kekulization_failed_not_a_fallback_result`
+/ `hueckel_fallback_would_be_detectable_if_silently_reintroduced` (both renamed
+from their pre-K1, pyridinium-specific names -- same general contract, not a
+pyridinium-specific fact) -- so a future kekulization fix is verified
+against the actual engine returning `Ok`, not just a number changing. Not a
+corpus/fixture duplicate (the purine SMILES still appears exactly once
+across the whole 5,048-input set).
 
 A real bug in this diagnostic's own trace logic was found and fixed during
 this milestone (not a hash defect either): an early version shared one
@@ -238,15 +256,19 @@ Scope is intentionally narrow, matching exactly what M4-A0 verified numerically:
 **Results (same 5,048-input M4-A0 corpus, fresh dump + comparison against the same RDKit
 oracle rows, not re-derived from M4-A0's own numbers):**
 
+**Update (2026-07-22, same `fix/kekulize-charge-aware-k1` #141 + `fix/core-te-normal-valences`
+#142 as the M4-A0 update above):** regenerated against current `main`; pyridinium moves
+from the error count into the success count, now bit-exact.
+
 | Metric | Result |
 |---|---|
-| Preprocessing succeeded (`status: "success"`) | 5,046/5,048 |
-| Preprocessing failed (`rdkit_parity_kekulization_failed`, the same 2 pinned fixtures as M4-A0) | 2/5,048 |
-| Full exact match (default-lifecycle raw pairs, sparse counts, folded on-bits, folded bitInfo) among the 5,046 successful rows | **5,046/5,046 (100%)** |
+| Preprocessing succeeded (`status: "success"`) | 5,047/5,048 |
+| Preprocessing failed (`rdkit_parity_kekulization_failed`, the same pinned fixture as M4-A0) | 1/5,048 |
+| Full exact match (default-lifecycle raw pairs, sparse counts, folded on-bits, folded bitInfo) among the 5,047 successful rows | **5,047/5,047 (100%)** |
 | Hermetic equivalence to `rdkit_morgan_raw_trace`'s already-oracle-validated `raw_identifier_default` output, same already-aromatized molecule | confirmed (unit test, 4 representative fixtures) |
 | Non-regression: `ecfp_regression_snapshot` (10 existing entry points: `ecfp4`, `ecfp6`, `ecfp` chiral, `ecfp_with_bitinfo`, `morgan_fp_counts`, `ecfp4_rdkit_invariants`, `ecfp6_rdkit_invariants`, `ecfp4_rdkit_environment_experimental`, `ecfp6_rdkit_environment_experimental`, `ecfp_with_bitinfo_rdkit_environment_experimental`), full 5,048-input corpus, SHA-256 before/after (git-worktree baseline at the pre-Phase-B commit) | byte-identical, 0 change |
 | Unsupported-bond-order path (`BondOrder::QueryAny`, programmatically built -- cannot arise from `parse()`) | explicit `Err(UnsupportedBondOrder)`, confirmed by test |
-| Positive control: a silently reintroduced Hueckel fallback would be numerically detectable (Hueckel perceives `c1cc[nH+]cc1`'s ring as fully aromatic where the real path correctly errors) | confirmed by test |
+| Positive control: a silently reintroduced Hueckel fallback would be numerically detectable (Hueckel perceives the bridgehead-N purine-like ring's real Hückel partition where the real path correctly errors -- fixture swapped from pyridinium's `c1cc[nH+]cc1` post-K1, since that molecule no longer fails) | confirmed by test |
 
 **Performance vs. `ecfp4_rdkit_environment_experimental` baseline** (5 independent process
 runs each, full 5,048-corpus, median wall time, `/usr/bin/time -l` for peak RSS -- not a
