@@ -36,6 +36,15 @@ struct EvalCtx<'a> {
     /// recursive-SMARTS `$(...)`).  Decremented on every `match_recursive` /
     /// `has_match_recursive` entry.  `u64::MAX` when no limit is configured.
     visit_budget: std::cell::Cell<u64>,
+    /// Set to `true` the moment a recursive call is abandoned because
+    /// `visit_budget` was already at zero (see the early-exit branches in
+    /// `match_recursive` / `has_match_recursive`). This is the ONLY reliable
+    /// signal that the search was cut short before it could finish exploring
+    /// the state space — a plain "did we find zero results" check cannot
+    /// distinguish a truncated search from a genuinely exhaustive one that
+    /// happened to use its very last unit of budget on its final (successful)
+    /// step. Callers must treat `true` here as "unknown", never as "no match".
+    budget_exhausted: std::cell::Cell<bool>,
     /// Lazily-computed, memoized per atom index: the size of the *smallest* SSSR
     /// ring containing that atom (`None` if the atom is in no ring). Backs `[rN]`
     /// (`AtomPrimitive::MinRingSize`) — computed at most once per `find_matches`
@@ -178,31 +187,49 @@ pub fn find_matches_with_rings(
 }
 
 /// Like [`find_matches_with_config`] but reuses a pre-computed [`RingSet`].
+///
+/// **Silent-truncation note:** if `config.max_visit_budget` is set and gets
+/// exhausted mid-search, this returns whatever partial result set it had
+/// collected so far — which may be empty even when a match actually exists.
+/// Callers that set a budget and need to tell "confirmed no match" apart from
+/// "the search was cut off" must use
+/// [`find_matches_with_rings_and_config_checked`] instead; folding the two
+/// together into a plain empty `Vec` here is the documented behaviour of this
+/// function (kept for the existing unbounded call sites), not a recommendation.
 pub fn find_matches_with_rings_and_config(
     query: &QueryMolecule,
     mol: &Molecule,
     rings: &RingSet,
     config: &MatchConfig,
 ) -> Vec<FxHashMap<usize, AtomIdx>> {
+    find_matches_with_rings_and_config_checked(query, mol, rings, config).0
+}
+
+/// Like [`find_matches_with_rings_and_config`], but also reports whether
+/// `config.max_visit_budget` was exhausted before the search finished — see
+/// [`MatchOutcome`] / [`has_match_bounded`] for the same distinction on an
+/// existence-only search.
+///
+/// When the returned `bool` is `true`, the returned `Vec` is **not**
+/// authoritative: more embeddings may exist beyond what was collected before
+/// the cutoff, and an empty `Vec` does not mean no match exists. Callers must
+/// not treat `(vec![], true)` the same as `(vec![], false)`.
+pub fn find_matches_with_rings_and_config_checked(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    rings: &RingSet,
+    config: &MatchConfig,
+) -> (Vec<FxHashMap<usize, AtomIdx>>, bool) {
     if query.atoms.is_empty() {
-        return vec![];
+        return (vec![], false);
     }
     // A query with more heavy atoms than the target can never match (RDKit PR #9201).
     if query.atoms.len() > mol.atom_count() {
-        return vec![];
+        return (vec![], false);
     }
 
-    let ctx = EvalCtx {
-        mol,
-        rings,
-        config,
-        visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
-        min_ring_size_by_atom: std::cell::RefCell::new(None),
-    };
-    let mut mapping: FxHashMap<usize, AtomIdx> = FxHashMap::default();
-    let mut results: Vec<FxHashMap<usize, AtomIdx>> = Vec::new();
-
-    match_recursive(query, &ctx, &mut mapping, &mut results, config.max_matches);
+    let (mut results, budget_exhausted) =
+        run_match_recursive(query, mol, rings, config, config.max_matches);
 
     // Deduplicate matches: keep only one mapping per unique set of target atoms.
     if config.uniquify {
@@ -214,7 +241,84 @@ pub fn find_matches_with_rings_and_config(
         });
     }
 
-    results
+    (results, budget_exhausted)
+}
+
+/// Outcome of an existence-only VF2 search bounded by
+/// `MatchConfig::max_visit_budget` — see [`has_match_bounded`].
+///
+/// The whole point of this type is that `BudgetExhausted` must never be
+/// treated as `NotFound`: a cut-off search has not ruled anything out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatchOutcome {
+    /// At least one embedding was found.
+    Found,
+    /// The search explored the whole state space (within budget) and
+    /// confirmed no embedding exists.
+    NotFound,
+    /// `max_visit_budget` was exhausted before the search could find a match
+    /// or rule one out. A match may still exist — this is a distinct,
+    /// explicit "unknown", not a negative.
+    BudgetExhausted,
+}
+
+/// Existence-only VF2 search: stops at the first embedding instead of
+/// enumerating, and returns a [`MatchOutcome`] that keeps "confirmed no
+/// match" distinguishable from "the visit budget ran out before this could
+/// be resolved".
+///
+/// Prefer this over `find_matches_with_rings_and_config(..).is_empty()`
+/// whenever a caller only needs a yes/no per query (e.g. PAINS/Brenk
+/// structural alerts: "does pattern X match at least once") *and* sets
+/// `max_visit_budget` — the plain `is_empty()` check cannot tell a budget
+/// cutoff apart from a genuine negative, silently turning a "don't know"
+/// into "no alert".
+pub fn has_match_bounded(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    rings: &RingSet,
+    config: &MatchConfig,
+) -> MatchOutcome {
+    if query.atoms.is_empty() {
+        return MatchOutcome::NotFound;
+    }
+    if query.atoms.len() > mol.atom_count() {
+        return MatchOutcome::NotFound;
+    }
+    let (results, budget_exhausted) = run_match_recursive(query, mol, rings, config, Some(1));
+    if !results.is_empty() {
+        MatchOutcome::Found
+    } else if budget_exhausted {
+        MatchOutcome::BudgetExhausted
+    } else {
+        MatchOutcome::NotFound
+    }
+}
+
+/// Shared driver behind [`find_matches_with_rings_and_config_checked`] and
+/// [`has_match_bounded`]: builds the per-call [`EvalCtx`], runs
+/// [`match_recursive`], and reports whether the visit budget was exhausted.
+fn run_match_recursive(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    rings: &RingSet,
+    config: &MatchConfig,
+    max: Option<usize>,
+) -> (Vec<FxHashMap<usize, AtomIdx>>, bool) {
+    let ctx = EvalCtx {
+        mol,
+        rings,
+        config,
+        visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
+        budget_exhausted: std::cell::Cell::new(false),
+        min_ring_size_by_atom: std::cell::RefCell::new(None),
+    };
+    let mut mapping: FxHashMap<usize, AtomIdx> = FxHashMap::default();
+    let mut results: Vec<FxHashMap<usize, AtomIdx>> = Vec::new();
+
+    match_recursive(query, &ctx, &mut mapping, &mut results, max);
+
+    (results, ctx.budget_exhausted.get())
 }
 
 // ---------------------------------------------------------------------------
@@ -241,6 +345,7 @@ fn match_recursive(
     // Decrement shared visit budget; stop if exhausted.
     let remaining = ctx.visit_budget.get();
     if remaining == 0 {
+        ctx.budget_exhausted.set(true);
         return;
     }
     ctx.visit_budget.set(remaining - 1);
@@ -497,6 +602,7 @@ fn has_match_recursive(
     // — only enabled when max_visit_budget is explicitly set).
     let remaining = ctx.visit_budget.get();
     if remaining == 0 {
+        ctx.budget_exhausted.set(true);
         return false;
     }
     ctx.visit_budget.set(remaining - 1);
@@ -777,6 +883,89 @@ mod tests {
         // With zero budget the search returns immediately — may or may not find a match.
         // Just verify it does not panic.
         let _ = m;
+    }
+
+    // ── MatchOutcome / has_match_bounded: budget-exhaustion must be a
+    // distinct, non-negative outcome, never silently folded into "no match" ──
+
+    #[test]
+    fn has_match_bounded_found_with_generous_budget() {
+        let mol = parse("CCO").unwrap();
+        let q = parse_smarts("O").unwrap();
+        let rings = find_sssr(&mol);
+        let config = MatchConfig {
+            max_visit_budget: Some(10_000),
+            ..MatchConfig::default()
+        };
+        assert_eq!(
+            has_match_bounded(&q, &mol, &rings, &config),
+            MatchOutcome::Found
+        );
+    }
+
+    #[test]
+    fn has_match_bounded_not_found_is_exhaustive_not_a_guess() {
+        let mol = parse("CC").unwrap(); // no oxygen anywhere
+        let q = parse_smarts("O").unwrap();
+        let rings = find_sssr(&mol);
+        let config = MatchConfig {
+            max_visit_budget: Some(10_000),
+            ..MatchConfig::default()
+        };
+        assert_eq!(
+            has_match_bounded(&q, &mol, &rings, &config),
+            MatchOutcome::NotFound
+        );
+    }
+
+    #[test]
+    fn has_match_bounded_zero_budget_is_indeterminate_not_not_found() {
+        // The pattern genuinely matches (CCO contains O), but a budget of 0
+        // means the search never gets to look. The result MUST be
+        // `BudgetExhausted`, never `NotFound` -- conflating the two is
+        // exactly the silent-false-negative bug this API exists to prevent.
+        let mol = parse("CCO").unwrap();
+        let q = parse_smarts("O").unwrap();
+        let rings = find_sssr(&mol);
+        let config = MatchConfig {
+            max_visit_budget: Some(0),
+            ..MatchConfig::default()
+        };
+        assert_eq!(
+            has_match_bounded(&q, &mol, &rings, &config),
+            MatchOutcome::BudgetExhausted
+        );
+    }
+
+    #[test]
+    fn find_matches_with_rings_and_config_checked_reports_exhaustion() {
+        let mol = parse("CCO").unwrap();
+        let q = parse_smarts("O").unwrap();
+        let rings = find_sssr(&mol);
+
+        // Generous budget: real match, not exhausted.
+        let generous = MatchConfig {
+            max_visit_budget: Some(10_000),
+            ..MatchConfig::default()
+        };
+        let (matches, exhausted) =
+            find_matches_with_rings_and_config_checked(&q, &mol, &rings, &generous);
+        assert!(!matches.is_empty());
+        assert!(!exhausted);
+
+        // Zero budget: a match exists but the search never ran -- must be
+        // reported as exhausted, not silently equivalent to a real negative.
+        let starved = MatchConfig {
+            max_visit_budget: Some(0),
+            ..MatchConfig::default()
+        };
+        let (matches, exhausted) =
+            find_matches_with_rings_and_config_checked(&q, &mol, &rings, &starved);
+        assert!(matches.is_empty());
+        assert!(
+            exhausted,
+            "zero budget must be reported as exhausted, not as a confirmed negative"
+        );
     }
 
     // ── RDKit PR #9201: query > target early exit ─────────────────────────────

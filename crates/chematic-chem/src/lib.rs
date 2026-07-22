@@ -78,8 +78,9 @@ pub use admet::{
     ppb_percent,
 };
 pub use alerts::{
-    brenk_matches, brenk_matches_detailed, brenk_passes, brenk_passes_and_matches, pains_matches,
-    pains_matches_detailed, pains_passes, pains_passes_and_matches,
+    brenk_matches, brenk_matches_checked, brenk_matches_detailed, brenk_passes,
+    brenk_passes_and_matches, pains_matches, pains_matches_checked, pains_matches_detailed,
+    pains_passes, pains_passes_and_matches,
 };
 pub use atropisomer::{AtropisomerType, assign_atropisomer_chirality, detect_atropisomers};
 pub use brics::{BricsConfig, brics_bonds, brics_fragments, brics_fragments_with_config};

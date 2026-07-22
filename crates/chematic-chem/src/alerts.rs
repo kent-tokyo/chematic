@@ -11,8 +11,30 @@ use chematic_core::{
 };
 use chematic_perception::find_sssr;
 use chematic_smarts::{
-    MatchConfig, QueryMolecule, find_matches_with_rings_and_config, parse_smarts,
+    MatchConfig, MatchOutcome, QueryMolecule, find_matches_with_rings_and_config_checked,
+    has_match_bounded, parse_smarts,
 };
+
+/// Hard ceiling on VF2 recursive visits per pattern per molecule.
+///
+/// Existence-only matching (`has_match_bounded`, below) stops enumerating once
+/// a match is *found*, but on a highly symmetric target (e.g. a symmetric
+/// macrocycle) VF2 can still backtrack combinatorially just to find — or rule
+/// out — that first match. This budget caps that search. Same value already
+/// used for the same reason in `standardize::SaltCatalog::is_salt` and
+/// `chematic-wasm`'s SMARTS entry points.
+///
+/// **Exhaustion is not "no match".** When the budget runs out mid-pattern,
+/// `has_match_bounded` reports [`MatchOutcome::BudgetExhausted`] — a distinct
+/// outcome from `NotFound` — and every function below folds that into the
+/// *positive* side of its return value (conservative / fail-safe: an unclear
+/// pattern is reported as if it alerted, never silently as clean). Callers
+/// that need the real three-way distinction per pattern use the `_checked`
+/// variants ([`pains_matches_checked`], [`brenk_matches_checked`]), which
+/// `drug_score`'s `f_tox` explicitly does not need to since it just wants a
+/// hit count and inherits this same fail-safe fold via `pains_matches`/
+/// `brenk_matches`.
+const ALERT_MAX_VISIT_BUDGET: u64 = 1_000_000;
 
 /// Return a copy of `mol` with all implicit H atoms materialized as explicit
 /// graph nodes.  PAINS patterns (and many RDKit SMARTS) are written for
@@ -2060,76 +2082,101 @@ fn compiled_brenk_patterns() -> &'static [(&'static str, QueryMolecule)] {
     })
 }
 
-/// Returns the names of all PAINS patterns that match `mol`.
+/// Runs `patterns` against `mol` with an existence-only, budget-bounded VF2
+/// search, returning one `(name, MatchOutcome)` per pattern — never per
+/// embedding (see `MatchOutcome::Found`'s doc: this reports *whether* a rule
+/// matched at least once, not how many times or where).
 ///
-/// An empty vec means no PAINS alerts were triggered.
+/// This is the shared core behind [`pains_matches_checked`] /
+/// [`brenk_matches_checked`] and, transitively, every coarser PAINS/Brenk
+/// function in this module.
+fn checked_matches(
+    mol: &Molecule,
+    patterns: &'static [(&'static str, QueryMolecule)],
+) -> Vec<(&'static str, MatchOutcome)> {
+    let mol_h = add_explicit_hs(mol);
+    let rings = find_sssr(&mol_h);
+    let config = MatchConfig {
+        max_visit_budget: Some(ALERT_MAX_VISIT_BUDGET),
+        ..Default::default()
+    };
+    patterns
+        .iter()
+        .map(|(name, q)| (*name, has_match_bounded(q, &mol_h, &rings, &config)))
+        .collect()
+}
+
+/// Folds a `checked_matches` result down to `Vec<name>` the same way the
+/// coarser PAINS/Brenk functions below do: both `Found` and
+/// `BudgetExhausted` count as "alert present" (fail-safe — an unresolved
+/// pattern is reported as if it matched, never silently as clean). Only
+/// `NotFound` is excluded.
+fn fold_conservative(checked: Vec<(&'static str, MatchOutcome)>) -> Vec<&'static str> {
+    checked
+        .into_iter()
+        .filter(|(_, outcome)| *outcome != MatchOutcome::NotFound)
+        .map(|(name, _)| name)
+        .collect()
+}
+
+/// Returns `(name, MatchOutcome)` for every PAINS pattern, distinguishing a
+/// confirmed match (`Found`), a confirmed non-match (`NotFound`), and a VF2
+/// visit-budget cutoff that resolved neither way (`BudgetExhausted`).
+///
+/// Use this over [`pains_matches`] when a caller must not conflate "no alert"
+/// with "couldn't tell" — [`pains_matches`] necessarily folds the two
+/// together into its plain `Vec<&str>` shape (documented there).
+pub fn pains_matches_checked(mol: &Molecule) -> Vec<(&'static str, MatchOutcome)> {
+    checked_matches(mol, compiled_pains_patterns())
+}
+
+/// Returns `(name, MatchOutcome)` for every Brenk pattern — see
+/// [`pains_matches_checked`].
+pub fn brenk_matches_checked(mol: &Molecule) -> Vec<(&'static str, MatchOutcome)> {
+    checked_matches(mol, compiled_brenk_patterns())
+}
+
+/// Returns the names of all PAINS patterns that match `mol`, or whose result
+/// could not be resolved within the VF2 visit budget (folded in as if
+/// matched — see [`pains_matches_checked`] for the real three-way outcome).
+///
+/// An empty vec means every pattern was confirmed *not* to match. It does
+/// NOT distinguish "confirmed clean" from "some pattern was unresolved" —
+/// that distinction doesn't exist in this function's shape by construction;
+/// callers that need it use [`pains_matches_checked`].
 ///
 /// The molecule is expanded to explicit H form before matching because the
 /// PAINS SMARTS patterns reference explicit hydrogen atoms (`[#1]`).
 pub fn pains_matches(mol: &Molecule) -> Vec<&'static str> {
-    let mol_h = add_explicit_hs(mol);
-    let rings = find_sssr(&mol_h);
-    // Each pattern only needs an existence check — only the name is kept,
-    // never the match maps — so stop at the first embedding per pattern.
-    let config = MatchConfig {
-        max_matches: Some(1),
-        uniquify: false,
-        ..Default::default()
-    };
-    compiled_pains_patterns()
-        .iter()
-        .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
-        .map(|(name, _)| *name)
-        .collect()
+    fold_conservative(pains_matches_checked(mol))
 }
 
-/// Returns `true` when no PAINS alerts are triggered.
+/// Returns `true` only when every PAINS pattern was confirmed *not* to match.
+/// A VF2 visit-budget cutoff on any pattern counts as "does not pass" (see
+/// [`pains_matches`]).
 pub fn pains_passes(mol: &Molecule) -> bool {
-    let mol_h = add_explicit_hs(mol);
-    let rings = find_sssr(&mol_h);
-    let config = MatchConfig {
-        max_matches: Some(1),
-        ..Default::default()
-    };
-    compiled_pains_patterns()
+    pains_matches_checked(mol)
         .iter()
-        .all(|(_, q)| find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
+        .all(|(_, outcome)| *outcome == MatchOutcome::NotFound)
 }
 
-/// Returns the names of all Brenk structural alerts that match `mol`.
+/// Returns the names of all Brenk structural alerts that match `mol`, or
+/// whose result could not be resolved within the VF2 visit budget (folded in
+/// as if matched — see [`pains_matches`] for the same policy on PAINS).
 ///
-/// An empty vec means no Brenk alerts were triggered.
+/// An empty vec means every pattern was confirmed not to match.
 ///
 /// Brenk et al. 2008 structural alerts for drug design (J. Med. Chem. 51, 5149–5171).
 /// These patterns identify problematic functional groups and structural features.
 pub fn brenk_matches(mol: &Molecule) -> Vec<&'static str> {
-    let mol_h = add_explicit_hs(mol);
-    let rings = find_sssr(&mol_h);
-    // Each pattern only needs an existence check — only the name is kept,
-    // never the match maps — so stop at the first embedding per pattern.
-    let config = MatchConfig {
-        max_matches: Some(1),
-        uniquify: false,
-        ..Default::default()
-    };
-    compiled_brenk_patterns()
-        .iter()
-        .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
-        .map(|(name, _)| *name)
-        .collect()
+    fold_conservative(brenk_matches_checked(mol))
 }
 
-/// Returns `true` when no Brenk structural alerts are triggered.
+/// Returns `true` only when every Brenk pattern was confirmed *not* to match.
 pub fn brenk_passes(mol: &Molecule) -> bool {
-    let mol_h = add_explicit_hs(mol);
-    let rings = find_sssr(&mol_h);
-    let config = MatchConfig {
-        max_matches: Some(1),
-        ..Default::default()
-    };
-    compiled_brenk_patterns()
+    brenk_matches_checked(mol)
         .iter()
-        .all(|(_, q)| find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
+        .all(|(_, outcome)| *outcome == MatchOutcome::NotFound)
 }
 
 /// Returns `(passes, alert_names)` in a single explicit-H + SSSR + pattern pass.
@@ -2137,22 +2184,11 @@ pub fn brenk_passes(mol: &Molecule) -> bool {
 /// Equivalent to calling `pains_passes(mol)` and `pains_matches(mol)` separately,
 /// but avoids duplicating the expensive explicit-H conversion and 480-pattern scan.
 pub fn pains_passes_and_matches(mol: &Molecule) -> (bool, Vec<&'static str>) {
-    let mol_h = add_explicit_hs(mol);
-    let rings = find_sssr(&mol_h);
-    // Each pattern only needs an existence check — only the name is kept,
-    // never the match maps — so stop at the first embedding per pattern.
-    let config = MatchConfig {
-        max_matches: Some(1),
-        uniquify: false,
-        ..Default::default()
-    };
-    let names: Vec<&'static str> = compiled_pains_patterns()
+    let checked = pains_matches_checked(mol);
+    let passes = checked
         .iter()
-        .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
-        .map(|(name, _)| *name)
-        .collect();
-    let passes = names.is_empty();
-    (passes, names)
+        .all(|(_, outcome)| *outcome == MatchOutcome::NotFound);
+    (passes, fold_conservative(checked))
 }
 
 /// Returns `(passes, alert_names)` in a single explicit-H + SSSR + pattern pass.
@@ -2160,22 +2196,11 @@ pub fn pains_passes_and_matches(mol: &Molecule) -> (bool, Vec<&'static str>) {
 /// Equivalent to calling `brenk_passes(mol)` and `brenk_matches(mol)` separately,
 /// but avoids duplicating the expensive explicit-H conversion and ~300-pattern scan.
 pub fn brenk_passes_and_matches(mol: &Molecule) -> (bool, Vec<&'static str>) {
-    let mol_h = add_explicit_hs(mol);
-    let rings = find_sssr(&mol_h);
-    // Each pattern only needs an existence check — only the name is kept,
-    // never the match maps — so stop at the first embedding per pattern.
-    let config = MatchConfig {
-        max_matches: Some(1),
-        uniquify: false,
-        ..Default::default()
-    };
-    let names: Vec<&'static str> = compiled_brenk_patterns()
+    let checked = brenk_matches_checked(mol);
+    let passes = checked
         .iter()
-        .filter(|(_, q)| !find_matches_with_rings_and_config(q, &mol_h, &rings, &config).is_empty())
-        .map(|(name, _)| *name)
-        .collect();
-    let passes = names.is_empty();
-    (passes, names)
+        .all(|(_, outcome)| *outcome == MatchOutcome::NotFound);
+    (passes, fold_conservative(checked))
 }
 
 // ---------------------------------------------------------------------------
@@ -2207,13 +2232,25 @@ fn matches_detailed_impl(
 ) -> Vec<(&'static str, Vec<AtomIdx>)> {
     let mol_h = add_explicit_hs(mol);
     let rings = find_sssr(&mol_h);
-    let config = MatchConfig::default();
+    // This path enumerates every embedding (needed for highlighting), so it
+    // can't be existence-only — but it still gets the same visit-budget
+    // safety net as the existence-only variants above, so a pathological
+    // symmetric target fails fast instead of hanging.
+    let config = MatchConfig {
+        max_visit_budget: Some(ALERT_MAX_VISIT_BUDGET),
+        ..Default::default()
+    };
     patterns
         .iter()
         .filter_map(|(name, q)| {
-            let ms = find_matches_with_rings_and_config(q, &mol_h, &rings, &config);
+            let (ms, budget_exhausted) =
+                find_matches_with_rings_and_config_checked(q, &mol_h, &rings, &config);
             if ms.is_empty() {
-                return None;
+                // Same fail-safe policy as the existence-only functions above:
+                // a budget cutoff is reported as present (empty highlight set,
+                // since no embedding was collected before the cutoff), never
+                // silently dropped like a confirmed non-match.
+                return budget_exhausted.then(|| (*name, Vec::new()));
             }
             Some((*name, heavy_atoms_from_matches(&ms, &mol_h)))
         })
