@@ -348,20 +348,65 @@ pub(crate) fn build_molecule_from_model(mol: &Molecule, model: &AromaticityModel
         })
         .collect();
 
+    // Bond orders first: the model's verdict when it confirms aromaticity,
+    // `bond.order` otherwise. Unlike the atom flag below, a bond's order is
+    // never left ambiguous here -- when the model doesn't confirm
+    // aromaticity, `bond.order` is either already a genuine Kekule value
+    // (Single/Double/...), or, for a caller that never Kekulized an
+    // unsupported/gap ring first, still `Aromatic` -- tracked below so the
+    // atom loop can stay consistent with it rather than silently
+    // contradicting it.
+    let bond_orders: FxHashMap<BondIdx, BondOrder> = mol
+        .bonds()
+        .map(|(bidx, bond)| {
+            let order = if model.is_bond_aromatic(bidx) {
+                BondOrder::Aromatic
+            } else {
+                bond.order
+            };
+            (bidx, order)
+        })
+        .collect();
+
+    // K2b fix: the model is now authoritative in BOTH directions -- promote
+    // AND demote -- instead of only ever promoting (see
+    // docs/aromaticity_rdkit_parity_rfc.md section 1b/6). A stale
+    // parser-set `aromatic: true` the model does not independently confirm
+    // must not survive.
+    //
+    // The one deliberate exception: an atom incident to a bond that ends up
+    // `Aromatic` in `bond_orders` above is always kept aromatic too, even if
+    // the model itself didn't confirm it. This is not a reintroduction of
+    // the promote-only bug -- it only ever fires when `bond.order` was
+    // itself still `Aromatic` going in (see the comment above) and the model
+    // gave no verdict to demote it with. There is no independently-computed
+    // Kekule value to fall back to in that case, so leaving both the atom
+    // and its bond flagged aromatic together is the "clean, well-defined
+    // fallback state" for that molecule, matching
+    // `apply_aromaticity_ex`'s own kekulize-first design (which resolves a
+    // real Kekule structure whenever possible and makes this branch
+    // unreachable). A demoted atom sitting on a bond order that still literally
+    // reads `Aromatic` would be a self-contradictory molecule, strictly
+    // worse than the pre-K2b "coincidental" preservation it would otherwise
+    // be reintroducing on the bond side alone. This can never mask a
+    // genuine demotion: for every already-Kekulized input, `bond.order` is
+    // a real Single/Double value and this fallback never triggers.
+    let mut atom_aromatic_by_bond: FxHashSet<AtomIdx> = FxHashSet::default();
+    for (bidx, bond) in mol.bonds() {
+        if bond_orders[&bidx] == BondOrder::Aromatic {
+            atom_aromatic_by_bond.insert(bond.atom1);
+            atom_aromatic_by_bond.insert(bond.atom2);
+        }
+    }
+
     let mut builder = MoleculeBuilder::new();
     for (idx, atom) in mol.atoms() {
         let mut a = atom.clone();
-        if model.is_atom_aromatic(idx) {
-            a.aromatic = true;
-        }
+        a.aromatic = model.is_atom_aromatic(idx) || atom_aromatic_by_bond.contains(&idx);
         builder.add_atom(a);
     }
     for (bidx, bond) in mol.bonds() {
-        let order = if model.is_bond_aromatic(bidx) {
-            BondOrder::Aromatic
-        } else {
-            bond.order
-        };
+        let order = bond_orders[&bidx];
         if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, order)
             && order == BondOrder::Aromatic
             && matches!(bond.order, BondOrder::Up | BondOrder::Down)
@@ -2598,6 +2643,90 @@ mod tests {
             assign_aromaticity(&p).aromatic_atom_count(),
             0,
             "phosphole: still unsupported under default Huckel (K2a does not add P support)"
+        );
+    }
+
+    // ── K2b known-gap regression pins (fix/aromaticity-flag-demotion-k2b) ───
+    //
+    // These pin the CURRENT (still-wrong vs RDKit) model output for the two
+    // dominant root causes found while diagnosing the 84-molecule/499-flag
+    // corpus regression K2b's demotion fix surfaces on the "kekulized"
+    // calling convention. Not fixed here -- see the K2b PR description's
+    // cluster analysis. Kept as regression pins (same shape as
+    // KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES above) so a future fix attempt has
+    // a minimal, isolated failing case to work against, and so any
+    // accidental future change to this area is caught here first.
+
+    #[test]
+    fn test_known_gap_fused_diazine_exocyclic_misfire_antiaromatic() {
+        // c1cnc2ccccc2n1 -- a bare, unsubstituted naphthyridine isomer (15
+        // chars, no substituents). RDKit: fully aromatic, all 10 atoms/bonds
+        // (verified live against rdkit==2026.03.3). chematic: only 6/10
+        // (the pyridine-type ring) -- the benzo ring's Pass 1 evaluation
+        // wrongly zeroes out BOTH its fusion carbons via
+        // `CarbonExocyclicHeteroatomDouble` (each fusion carbon's own
+        // Kekule double bond happens to point into the OTHER (pyridine)
+        // ring, toward a nitrogen there -- from the benzo ring's own,
+        // single-ring-only perspective, that bond looks exactly like a
+        // genuine exocyclic C=O/C=N substituent (tropone's shape), which is
+        // what that rule is actually meant to catch). Landing on EXACTLY
+        // pi=4 classifies the ring `Antiaromatic`, which Pass 2 explicitly
+        // never retries ("definitive, do not retry" -- see
+        // `assign_aromaticity_ex`'s Pass 1 loop) -- even though Pass 2's own
+        // `aromatic_context` mechanism, which already correctly bypasses
+        // this exact misfire for OTHER rings via the "AlreadyAromaticContext"
+        // shortcut, would fix it if only given the chance. Confirmed
+        // Kekule-choice-dependent, not shape-dependent: plain quinoxaline
+        // and quinazoline (`c1ccc2nccnc2c1`, `c1ccc2ncncc2c1`) do NOT
+        // reproduce this -- only ONE fusion carbon's double bond points
+        // into the other ring for those, landing on the ODD (retryable, not
+        // "definitive") pi=5 NonAromatic case instead. This molecule was
+        // constructed as a minimal repro for the dominant pattern seen in
+        // 33/84 corpus regressions (fused quinazoline/quinoxaline/purine-
+        // shaped bicyclics with an N-substituent elsewhere in the molecule);
+        // it is not itself one of the 84 (it is unsubstituted).
+        let mol = mol_kekulized("c1cnc2ccccc2n1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "KNOWN GAP: only the pyridine-type ring (6/10 atoms) is confirmed; \
+             RDKit says all 10 are aromatic. Not fixed by K2a or K2b -- see \
+             the K2b PR description's fused-diazine cluster analysis."
+        );
+    }
+
+    #[test]
+    fn test_known_gap_azulene_nonalternant_odd_odd_split() {
+        // c1ccc2cccc-2cc1 -- azulene itself (already the canonical example
+        // in this codebase and in docs/aromaticity_a1_rfc.md). RDKit: fully
+        // aromatic, all 10 atoms, 9/10 bonds (the explicit fusion bond the
+        // SMILES itself writes non-aromatic, `-2`, stays a formal single
+        // bond even in RDKit's own answer). chematic: 0/10 -- both the
+        // 5-ring and 7-ring independently get an ODD pi count (5 and 7) in
+        // Pass 1, so neither is Aromatic nor Antiaromatic (both
+        // `NonAromatic`), and Pass 2 never seeds because seeding requires
+        // an ALREADY-aromatic adjacent ring, which neither ring is able to
+        // become on its own -- azulene's real 10pi system is a genuinely
+        // non-alternant, whole-perimeter delocalized system that this
+        // per-ring Pass 1/Pass 2 model was never designed to see (already
+        // documented; re-pinned here specifically because K2b's demotion
+        // fix makes this NOW VISIBLE as a flag mismatch for the first time
+        // -- previously the stale parser flag coincidentally matched
+        // RDKit). Distinct mechanism from the fused-diazine gap above: no
+        // ring here is misclassified `Antiaromatic` by a rule misfire, both
+        // rings are correctly `NonAromatic` given their own (wrong-for-this-
+        // whole-system) local electron count. Dominant pattern for 49/84
+        // corpus regressions.
+        let mol = mol_kekulized("c1ccc2cccc-2cc1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            0,
+            "KNOWN GAP: azulene's non-alternant whole-perimeter aromaticity is not \
+             recognized by the per-ring Pass 1/Pass 2 model at all; RDKit says all \
+             10 atoms are aromatic. Not fixed by K2a or K2b -- see \
+             docs/aromaticity_a1_rfc.md and the K2b PR description."
         );
     }
 
