@@ -20,7 +20,7 @@ use std::collections::{HashMap, HashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
 
-use crate::writer::emit_bracket_hydrogens;
+use crate::writer::{emit_bracket_hydrogens, suppress_standalone_wedge};
 
 /// Return the atom indices sorted into canonical (Morgan-rank) order.
 ///
@@ -657,6 +657,7 @@ impl<'a> CanonicalWriter<'a> {
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
             for (rn, bond_order, _partner, bidx) in rings {
                 let bond_order = self.normalize_ez(bidx, bond_order);
+                let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
                 let atom_arom = self.mol.atom(atom).aromatic;
                 if !(bond_order == BondOrder::Aromatic && atom_arom)
                     && bond_order != BondOrder::Single
@@ -727,6 +728,7 @@ impl<'a> CanonicalWriter<'a> {
             // (lower-rank) children have already fully recursed by the time
             // a later sibling's direction is decided.
             let bond_order = self.normalize_ez(bidx, bond_order);
+            let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
             let is_last = i == n - 1;
             let parent_arom = self.mol.atom(atom).aromatic;
             let child_arom = self.mol.atom(child).aromatic;
@@ -1786,5 +1788,163 @@ mod tests {
         o.charge = -1;
         b.add_atom(o);
         assert_eq!(canonical_smiles(&b.build()), "[OH-]");
+    }
+
+    // ── Standalone wedge/hash bond must not emit a meaningless SMILES
+    // directional token in canonical_smiles either (same fix as
+    // `writer::tests`, applied to the canonical writer's own emission
+    // sites) ──────────────────────────────────────────────────────────────
+
+    /// Minimal repro from docs/stereo2d_reader_integration_rfc.md §3: a
+    /// wedge bond with no adjacent double bond must not become `/`/`\`.
+    #[test]
+    fn canonical_standalone_solid_wedge_not_written_as_slash() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        let wedge_bond = b.add_bond(c, br, BondOrder::Up).unwrap();
+        let mol = b.build();
+
+        let out = canonical_smiles(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone solid wedge (no adjacent double bond) must not be \
+             written as a directional token: got '{out}'"
+        );
+        assert_eq!(mol.bond(wedge_bond).order, BondOrder::Up);
+
+        let mol2 = crate::parser::parse(&out).unwrap_or_else(|e| panic!("re-parse '{out}': {e}"));
+        assert_eq!(mol2.atom_count(), mol.atom_count());
+        assert_eq!(mol2.bond_count(), mol.bond_count());
+    }
+
+    /// Same shape but with a hash wedge (`BondOrder::Down`).
+    #[test]
+    fn canonical_standalone_hash_wedge_not_written_as_backslash() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        let wedge_bond = b.add_bond(c, br, BondOrder::Down).unwrap();
+        let mol = b.build();
+
+        let out = canonical_smiles(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone hash wedge (no adjacent double bond) must not be \
+             written as a directional token: got '{out}'"
+        );
+        assert_eq!(mol.bond(wedge_bond).order, BondOrder::Down);
+
+        let mol2 = crate::parser::parse(&out).unwrap_or_else(|e| panic!("re-parse '{out}': {e}"));
+        assert_eq!(mol2.atom_count(), mol.atom_count());
+        assert_eq!(mol2.bond_count(), mol.bond_count());
+    }
+
+    /// A wedge bond landing on a ring-closure edge must be suppressed
+    /// identically in the canonical writer's ring-closure emission site.
+    #[test]
+    fn canonical_standalone_wedge_on_ring_closure_bond() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let c3 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        b.add_bond(c2, c3, BondOrder::Single).unwrap();
+        b.add_bond(c1, c3, BondOrder::Up).unwrap();
+        let mol = b.build();
+
+        let out = canonical_smiles(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone wedge on a ring-closure bond must not be written as \
+             a directional token: got '{out}'"
+        );
+        let mol2 = crate::parser::parse(&out).unwrap_or_else(|e| panic!("re-parse '{out}': {e}"));
+        assert_eq!(mol2.atom_count(), 3);
+        assert_eq!(mol2.bond_count(), 3);
+    }
+
+    /// The fix must not disturb `Atom.chirality`/`Molecule::stereo_neighbor_order`
+    /// while suppressing a standalone wedge bond's spurious token on the
+    /// same stereocenter -- mirrors `writer::tests::
+    /// test_standalone_wedge_does_not_disturb_stereocenter_chirality` for
+    /// the canonical writer's own (rank-dependent) chirality-correction path.
+    #[test]
+    fn canonical_standalone_wedge_does_not_disturb_stereocenter_chirality() {
+        let mut center = Atom::new(Element::C);
+        center.chirality = Chirality::Clockwise;
+        // Force bracket notation (h=0 still forces `[..]` without printing
+        // an `H` token) so the chirality symbol is actually emitted.
+        center.hydrogen_count = Some(0);
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let c = b.add_atom(center);
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let iodine = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        let wedge_bond = b.add_bond(c, iodine, BondOrder::Up).unwrap();
+        b.set_stereo_neighbor_order(c, vec![f.0, cl.0, br.0, iodine.0]);
+        let mol = b.build();
+
+        let out = canonical_smiles(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone wedge on a stereocenter's substituent must still be \
+             suppressed: got '{out}'"
+        );
+        assert!(
+            out.contains('@'),
+            "the stereocenter's own chirality symbol must still be emitted \
+             alongside the (now-suppressed) wedge bond: got '{out}'"
+        );
+
+        assert_eq!(mol.atom(c).chirality, Chirality::Clockwise);
+        assert_eq!(mol.bond(wedge_bond).order, BondOrder::Up);
+        assert_eq!(
+            mol.stereo_neighbor_order(c),
+            Some([f.0, cl.0, br.0, iodine.0].as_slice())
+        );
+    }
+
+    /// Regression guard: genuine E/Z directional markers must still be
+    /// emitted by canonical_smiles (already covered by `ez_e_stable` etc.
+    /// above; this pins the specific double-bond-adjacency mechanism the
+    /// standalone-wedge fix now gates on).
+    #[test]
+    fn canonical_genuine_ez_directional_bond_still_written() {
+        let mol = parse("F/C=C/F").unwrap();
+        let out = canonical_smiles(&mol);
+        assert!(
+            out.contains('/') || out.contains('\\'),
+            "genuine double-bond-adjacent directional marker must survive \
+             canonical_smiles(): got '{out}'"
+        );
+    }
+
+    /// The pre-existing "E/Z direction stashed on an aromatic bond" fixtures
+    /// (`parser::tests::direction_stash_*`) all involve a real exocyclic
+    /// double bond and must keep round-tripping unaffected by this fix --
+    /// exercised end-to-end here via `canonical_smiles` directly (those
+    /// tests live in parser.rs and already re-run on every `cargo test`).
+    #[test]
+    fn canonical_aromatic_stash_with_real_double_bond_still_emits_direction() {
+        let mol = parse(r"N=c1\c(O)c(O)\c1=N").unwrap();
+        let out = canonical_smiles(&mol);
+        assert!(
+            out.contains('/') || out.contains('\\'),
+            "genuine exocyclic-double-bond-adjacent aromatic stash must \
+             still emit a directional token: got '{out}'"
+        );
     }
 }
