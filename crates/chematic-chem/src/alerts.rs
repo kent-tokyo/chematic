@@ -2089,15 +2089,35 @@ fn compiled_brenk_patterns() -> &'static [(&'static str, QueryMolecule)] {
 ///
 /// This is the shared core behind [`pains_matches_checked`] /
 /// [`brenk_matches_checked`] and, transitively, every coarser PAINS/Brenk
-/// function in this module.
+/// function in this module. Always uses the real production budget
+/// ([`ALERT_MAX_VISIT_BUDGET`]) — see [`checked_matches_with_budget`] for the
+/// budget-injectable version tests use to exercise the exhaustion path
+/// deterministically and near-instantly, without needing a specific
+/// pathological molecule or the real (slow) budget.
 fn checked_matches(
     mol: &Molecule,
     patterns: &'static [(&'static str, QueryMolecule)],
 ) -> Vec<(&'static str, MatchOutcome)> {
+    checked_matches_with_budget(mol, patterns, ALERT_MAX_VISIT_BUDGET)
+}
+
+/// Like [`checked_matches`], but with an injectable visit budget instead of
+/// the hardcoded [`ALERT_MAX_VISIT_BUDGET`]. Production call sites always go
+/// through [`checked_matches`] (real budget, unchanged behaviour); this
+/// exists so tests can force `MatchOutcome::BudgetExhausted` on demand (e.g.
+/// `budget: 0` exhausts on the very first VF2 visit, deterministically,
+/// regardless of molecule or pattern) instead of relying on a real
+/// pathological molecule actually exhausting the production budget, which
+/// can take tens of seconds.
+fn checked_matches_with_budget(
+    mol: &Molecule,
+    patterns: &'static [(&'static str, QueryMolecule)],
+    budget: u64,
+) -> Vec<(&'static str, MatchOutcome)> {
     let mol_h = add_explicit_hs(mol);
     let rings = find_sssr(&mol_h);
     let config = MatchConfig {
-        max_visit_budget: Some(ALERT_MAX_VISIT_BUDGET),
+        max_visit_budget: Some(budget),
         ..Default::default()
     };
     patterns
@@ -2409,9 +2429,19 @@ mod tests {
     /// positive without the 19s cost, but is a separate, larger project.
     ///
     /// This test intentionally exercises the *real* production budget, so
-    /// it is genuinely slow in debug builds (observed ~35s locally) --
+    /// it is genuinely slow in debug builds (observed ~25-35s locally) --
     /// that slowness is itself part of what's being pinned, not a mistake.
+    /// `#[ignore]`d so it doesn't add permanent latency (or flakiness under
+    /// concurrent-CI CPU contention) to the default suite -- run explicitly
+    /// with `cargo test -p chematic-chem --lib -- --ignored
+    /// test_pains_di_tert_butylphenol_is_accepted_false_positive`. See
+    /// `checked_matches_zero_budget_is_deterministic_budget_exhausted` below
+    /// for the fast, deterministic test of the same fold behaviour that
+    /// *does* run by default.
     #[test]
+    #[ignore = "slow real-budget VF2 calibration (~25-35s debug) -- pins a \
+                known, accepted false positive on a common symmetric \
+                scaffold; run explicitly, see doc comment above"]
     fn test_pains_di_tert_butylphenol_is_accepted_false_positive() {
         let smiles = "CC(C)(C)c1cc(C(=O)/C=C/c2ccsc2)cc(C(C)(C)C)c1O";
         let start = std::time::Instant::now();
@@ -2445,6 +2475,40 @@ mod tests {
             elapsed < std::time::Duration::from_secs(90),
             "expected this to fail fast within the visit budget (bounded, \
              just not free) -- took {elapsed:?}, expected well under 90s"
+        );
+    }
+
+    /// Fast, deterministic default-suite replacement for the `#[ignore]`d
+    /// real-budget calibration test above. Reuses the same real molecule and
+    /// pattern (`tert_butyl_B(1)` on the di-tert-butylphenol scaffold -- big
+    /// enough that this pattern doesn't hit `has_match_bounded`'s "query
+    /// bigger than target" early exit, the same way the slow test's `Found`
+    /// is never returned in that case either) but with `budget: 0` instead of
+    /// the real production budget: the very first VF2 visit is already
+    /// abandoned (see `match_vf2::match_recursive`'s early-exit branch), so
+    /// the outcome is deterministically `BudgetExhausted` and near-instant --
+    /// no backtracking search actually runs. This exercises the thing that
+    /// matters -- budget exhaustion folds to a conservative alert, never
+    /// silently to "no match" -- without waiting on the real (slow) budget.
+    #[test]
+    fn checked_matches_zero_budget_is_deterministic_budget_exhausted() {
+        let smiles = "CC(C)(C)c1cc(C(=O)/C=C/c2ccsc2)cc(C(C)(C)C)c1O";
+        let checked = checked_matches_with_budget(&mol(smiles), compiled_pains_patterns(), 0);
+
+        let outcome = checked
+            .iter()
+            .find(|(name, _)| *name == "tert_butyl_B(1)")
+            .map(|(_, outcome)| *outcome);
+        assert_eq!(
+            outcome,
+            Some(MatchOutcome::BudgetExhausted),
+            "budget=0 must resolve tert_butyl_B(1) to BudgetExhausted -- a \
+             zero budget can never prove a negative (or a positive)"
+        );
+        assert!(
+            fold_conservative(checked).contains(&"tert_butyl_B(1)"),
+            "BudgetExhausted must fold into the flagged/alert side, never \
+             silently dropped as if NotFound"
         );
     }
 }

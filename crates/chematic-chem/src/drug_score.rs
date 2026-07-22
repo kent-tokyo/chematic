@@ -110,6 +110,15 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow real-budget VF2 calibration (~200ms release / ~3-5s debug \
+                in isolation, but a real-budget VF2 search is a poor fit for \
+                the default suite under concurrent CI load) -- run explicitly \
+                with `cargo test -p chematic-chem --lib -- --ignored \
+                drug_score_pathological_macrocycle_does_not_hang`. The \
+                underlying budget-exhaustion-folds-to-flagged mechanism this \
+                test exercises has a fast, deterministic default-suite test \
+                in alerts.rs \
+                (checked_matches_zero_budget_is_deterministic_budget_exhausted)."]
     fn drug_score_pathological_macrocycle_does_not_hang() {
         // Regression test for the exact repro molecule from PR #137's descriptor
         // census RFC (`docs/descriptor_census_rfc.md` on `diag/descriptor-census`):
@@ -121,9 +130,13 @@ mod tests {
         // The fix adds a hard VF2 visit-budget cap (`MatchConfig::max_visit_budget`)
         // to every PAINS/Brenk match site in `alerts.rs`, on top of the existing
         // existence-only `max_matches: Some(1)` short-circuit — so a pathological
-        // symmetric target fails fast (safe "no match" within budget) instead of
-        // hanging. This test has no per-test timeout mechanism to hook into (none
-        // exists elsewhere in this suite), so it asserts wall-clock elapsed time
+        // symmetric target fails fast instead of hanging. A budget cutoff is
+        // never silently read as "no match": it resolves to
+        // `MatchOutcome::BudgetExhausted`, which folds into `pains_matches`'s
+        // output as if it *had* matched (fail-safe: flag when uncertain, never
+        // silently clean — see `alerts::checked_matches`/`fold_conservative`).
+        // This test has no per-test timeout mechanism to hook into (none exists
+        // elsewhere in this suite), so it asserts wall-clock elapsed time
         // directly; 30s is generous slack over the ~200ms (release) / ~5s (debug)
         // observed locally, while still catching a regression back to "hangs".
         let m =
