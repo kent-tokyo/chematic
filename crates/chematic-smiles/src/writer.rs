@@ -23,6 +23,52 @@ pub(crate) fn emit_bracket_hydrogens(out: &mut String, mol: &Molecule, idx: Atom
     }
 }
 
+/// True when bond `bidx` shares an atom with some *other* `BondOrder::Double`
+/// bond — i.e. whether a `/`/`\` token on this bond could ever carry genuine
+/// OpenSMILES E/Z meaning. Mirrors the double-bond-adjacency test
+/// `CanonicalWriter::build_ez_groups` uses to collect real E/Z side bonds,
+/// just queried per-bond instead of built as a whole-molecule group.
+pub(crate) fn flanks_double_bond(mol: &Molecule, bidx: BondIdx) -> bool {
+    let bond = mol.bond(bidx);
+    [bond.atom1, bond.atom2].into_iter().any(|endpoint| {
+        mol.neighbors(endpoint)
+            .any(|(_, nb)| nb != bidx && mol.bond(nb).order == BondOrder::Double)
+    })
+}
+
+/// Demote a `BondOrder::Up`/`Down` bond to `Single` for writer-emission
+/// purposes when it does not flank a double bond.
+///
+/// `Up`/`Down` is overloaded in `chematic_core` for two unrelated concepts:
+/// 2D wedge/hash depiction (tetrahedral stereocenter drawing, set by
+/// MDL/CDXML/MRV/KET-style readers) and the OpenSMILES `/`/`\` E/Z
+/// directional-bond marker (only meaningful adjacent to a double bond). A
+/// wedge/hash bond with no adjacent double bond has nothing to mark; writing
+/// `/`/`\` for it is a meaningless token that any spec-compliant SMILES
+/// parser (e.g. RDKit) silently drops on re-parse. This only changes what
+/// the writer decides to print — the bond's real `order` field on the
+/// `Molecule` is never touched, so wedge/hash depiction data survives.
+///
+/// Gates on the bond's *stored* order (`mol.bond(bidx).order`), not the
+/// `order` parameter, so a SMILES-parser E/Z direction stashed on an
+/// `Aromatic`-order bond (`Molecule::bond_direction`, a separate mechanism
+/// entirely unrelated to 2D wedge readers) is never affected by this
+/// suppression — its stored order is `Aromatic`, never a literal
+/// `Up`/`Down`, so it can never match the guard below.
+pub(crate) fn suppress_standalone_wedge(
+    mol: &Molecule,
+    bidx: BondIdx,
+    order: BondOrder,
+) -> BondOrder {
+    if matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down)
+        && !flanks_double_bond(mol, bidx)
+    {
+        BondOrder::Single
+    } else {
+        order
+    }
+}
+
 /// Write a [`Molecule`] to a SMILES string.
 ///
 /// Disconnected fragments are joined with `.`.
@@ -122,7 +168,8 @@ impl<'a> SmilesWriter<'a> {
                 self.ring_bonds.insert(bidx);
                 let rn = self.next_ring;
                 self.next_ring += 1;
-                let bond_order = self.mol.bond(bidx).order;
+                let bond_order =
+                    suppress_standalone_wedge(self.mol, bidx, self.mol.bond(bidx).order);
                 // Both endpoints need to emit this ring number when serialized.
                 self.atom_ring_nums
                     .entry(neighbor)
@@ -195,7 +242,12 @@ impl<'a> SmilesWriter<'a> {
                     && !self.written[nb.0 as usize]
                     && !self.ring_bonds.contains(bidx)
             })
-            .map(|(nb, bidx)| (nb, self.mol.bond(bidx).order))
+            .map(|(nb, bidx)| {
+                (
+                    nb,
+                    suppress_standalone_wedge(self.mol, bidx, self.mol.bond(bidx).order),
+                )
+            })
             .collect();
 
         // Write children: all but the last one are branches (wrapped in parentheses).
@@ -433,5 +485,244 @@ mod tests {
         o.charge = -1;
         b.add_atom(o);
         assert_eq!(write(&b.build()), "[OH-]");
+    }
+
+    // ── Standalone wedge/hash bond must not emit a meaningless SMILES
+    // directional token (docs/stereo2d_reader_integration_rfc.md §3/§7,
+    // docs/stereo2d_local_parity_calibration.md "Scope note") ────────────────
+    //
+    // `BondOrder::Up`/`Down` is overloaded for two unrelated concepts: 2D
+    // wedge/hash depiction (set by MDL/CDXML/MRV/KET-style readers on a
+    // stereocenter's substituent bond) and the OpenSMILES `/`/`\` E/Z
+    // directional-bond marker (only meaningful adjacent to a double bond).
+    // A wedge bond with no adjacent double bond has nothing to mark; writing
+    // `/`/`\` for it is self-consistent only within chematic's own
+    // round-trip and is silently dropped by any spec-compliant SMILES
+    // parser (e.g. RDKit) on re-parse.
+
+    /// Minimal repro from the RFC's own end-to-end trace (§3): a MOL V2000
+    /// wedge bond (`BondOrder::Up`) on a tetrahedral center's substituent,
+    /// no double bond anywhere in the molecule -- the RFC's own trace shows
+    /// naive `write()` producing `"C(F)(Cl)/Br"`, a token any RDKit re-parse
+    /// silently discards.
+    #[test]
+    fn test_standalone_solid_wedge_not_written_as_slash() {
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        let wedge_bond = b.add_bond(c, br, BondOrder::Up).unwrap();
+        let mol = b.build();
+
+        let out = write(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone solid wedge (no adjacent double bond) must not be written \
+             as a directional token: got '{out}'"
+        );
+
+        // The fix only changes what gets printed -- the bond's real order in
+        // memory must be untouched (this is 2D depiction metadata, not
+        // something the writer should mutate).
+        assert_eq!(mol.bond(wedge_bond).order, BondOrder::Up);
+
+        // Round-trip: connectivity survives re-parsing the token-free output.
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse '{out}': {e}"));
+        assert_eq!(mol2.atom_count(), mol.atom_count());
+        assert_eq!(mol2.bond_count(), mol.bond_count());
+    }
+
+    /// Same shape as above but with a hash wedge (`BondOrder::Down`).
+    #[test]
+    fn test_standalone_hash_wedge_not_written_as_backslash() {
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        let wedge_bond = b.add_bond(c, br, BondOrder::Down).unwrap();
+        let mol = b.build();
+
+        let out = write(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone hash wedge (no adjacent double bond) must not be written \
+             as a directional token: got '{out}'"
+        );
+        assert_eq!(mol.bond(wedge_bond).order, BondOrder::Down);
+
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse '{out}': {e}"));
+        assert_eq!(mol2.atom_count(), mol.atom_count());
+        assert_eq!(mol2.bond_count(), mol.bond_count());
+    }
+
+    /// A genuinely 4-heavy-atom stereocenter (no implicit/explicit H at all)
+    /// with a standalone wedge -- PR #130's `tetrahedral_4heavy_no_h`
+    /// fixture shape, added there specifically so it isn't conflated with
+    /// the 3-heavy+H case above.
+    #[test]
+    fn test_standalone_wedge_four_heavy_neighbors_no_h() {
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        b.add_bond(c, i, BondOrder::Up).unwrap();
+        let mol = b.build();
+
+        let out = write(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "4-heavy-neighbor standalone wedge must not be written as a \
+             directional token: got '{out}'"
+        );
+    }
+
+    /// A wedge bond that lands on a ring-closure edge (not a plain tree
+    /// edge) must be suppressed identically -- the fix touches both
+    /// emission sites in `write_chain`/`dfs_mark`.
+    #[test]
+    fn test_standalone_wedge_on_ring_closure_bond() {
+        let mut b = MoleculeBuilder::new();
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let c3 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        b.add_bond(c2, c3, BondOrder::Single).unwrap();
+        // Whichever of these two becomes the DFS back-edge, it carries a
+        // wedge with no adjacent double bond anywhere in this molecule.
+        b.add_bond(c1, c3, BondOrder::Up).unwrap();
+        let mol = b.build();
+
+        let out = write(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone wedge on a ring-closure bond must not be written as \
+             a directional token: got '{out}'"
+        );
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse '{out}': {e}"));
+        assert_eq!(mol2.atom_count(), 3);
+        assert_eq!(mol2.bond_count(), 3);
+    }
+
+    /// The fix must not disturb `Atom.chirality`/`Molecule::stereo_neighbor_order`
+    /// (the P1-S1a-core local-parity metadata) while suppressing a wedge
+    /// bond's spurious directional token on the same stereocenter -- these
+    /// are two unrelated mechanisms (bond-token emission vs `emit_atom`'s
+    /// chirality symbol) and must keep working independently.
+    #[test]
+    fn test_standalone_wedge_does_not_disturb_stereocenter_chirality() {
+        let mut center = Atom::new(Element::C);
+        center.chirality = chematic_core::Chirality::Clockwise;
+        // Force bracket notation so the chirality symbol is actually
+        // printed (`needs_bracket` doesn't key off chirality alone).
+        center.hydrogen_count = Some(0);
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(center);
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let iodine = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        let wedge_bond = b.add_bond(c, iodine, BondOrder::Up).unwrap();
+        b.set_stereo_neighbor_order(c, vec![f.0, cl.0, br.0, iodine.0]);
+        let mol = b.build();
+
+        let out = write(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone wedge on a stereocenter's substituent must still be \
+             suppressed: got '{out}'"
+        );
+        assert!(
+            out.contains('@'),
+            "the stereocenter's own chirality symbol must still be printed \
+             alongside the (now-suppressed) wedge bond: got '{out}'"
+        );
+
+        // The fix must not have touched the stereocenter metadata itself --
+        // only what gets printed for the wedge bond's token.
+        assert_eq!(mol.atom(c).chirality, chematic_core::Chirality::Clockwise);
+        assert_eq!(mol.bond(wedge_bond).order, BondOrder::Up);
+        assert_eq!(
+            mol.stereo_neighbor_order(c),
+            Some([f.0, cl.0, br.0, iodine.0].as_slice())
+        );
+    }
+
+    /// Round-trip check with charge and isotope present, per the required
+    /// test list: connectivity/charge/isotope must survive re-parsing the
+    /// (now token-free) output of a molecule carrying a standalone wedge.
+    #[test]
+    fn test_standalone_wedge_roundtrip_preserves_charge_and_isotope() {
+        let mut b = MoleculeBuilder::new();
+        let mut c = Atom::new(Element::C);
+        c.isotope = Some(13);
+        let c = b.add_atom(c);
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let mut o = Atom::new(Element::O);
+        o.charge = -1;
+        let o = b.add_atom(o);
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        let wedge_bond = b.add_bond(c, o, BondOrder::Up).unwrap();
+        let mol = b.build();
+
+        let out = write(&mol);
+        assert!(
+            !out.contains('/') && !out.contains('\\'),
+            "standalone wedge must not be written as a directional token: got '{out}'"
+        );
+
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse '{out}': {e}"));
+        assert_eq!(mol2.atom_count(), mol.atom_count());
+        assert_eq!(mol2.bond_count(), mol.bond_count());
+        assert!(
+            (0..mol2.atom_count()).any(|i| mol2.atom(AtomIdx(i as u32)).isotope == Some(13)),
+            "isotope must survive the round trip: '{out}'"
+        );
+        assert!(
+            (0..mol2.atom_count()).any(|i| mol2.atom(AtomIdx(i as u32)).charge == -1),
+            "charge must survive the round trip: '{out}'"
+        );
+        // The original wedge bond's order in memory is still untouched.
+        assert_eq!(mol.bond(wedge_bond).order, BondOrder::Up);
+    }
+
+    /// Regression guard: a genuine E/Z directional marker (real double
+    /// bond, real geometry) must still be emitted -- this fix must not
+    /// suppress legitimate cases.
+    #[test]
+    fn test_genuine_ez_directional_bond_still_written() {
+        let mol = parse("F/C=C/F").unwrap();
+        let out = write(&mol);
+        assert!(
+            out.contains('/') || out.contains('\\'),
+            "genuine double-bond-adjacent directional marker must survive \
+             plain write(): got '{out}'"
+        );
+        let mol2 = parse(&out).unwrap_or_else(|e| panic!("re-parse '{out}': {e}"));
+        let has_directional = (0..mol2.bond_count()).any(|i| {
+            matches!(
+                mol2.bond(BondIdx(i as u32)).order,
+                BondOrder::Up | BondOrder::Down
+            )
+        });
+        assert!(
+            has_directional,
+            "re-parsed molecule lost its E/Z directional bonds: '{out}'"
+        );
     }
 }
