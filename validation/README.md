@@ -280,6 +280,34 @@ explicit `Err`, never an implicit/guessed mapping.
   <out.jsonl> --rdkit-oracle <gen_ecfp_rdkit_environment_oracle.py output>`. Self-test:
   `python scripts/ecfp_rdkit_morgan_ecfp4_parity.py --self-test`.
 
+### Descriptor census — `crates/chematic-chem/src/descriptors.rs` (5,000-mol ChEMBL corpus)
+
+Full census of all ~196 individually-named values across the 71 `pub fn` in `descriptors.rs`
+specifically (not the whole `chematic-chem` crate -- see the RFC for the sibling-file scope
+boundary). Diagnostic only, no production code changed. Root-causes 3 concrete defects
+(`num_unspecified_stereocenters` massive over-counting, `num_hydrogens` double-counting on
+bracket-H stereocenters, `molecular_weight` ignoring isotope labels) down to the exact line of
+source with minimal reproducers, plus a real VF2/PAINS performance hang on symmetric
+macrocycles (traced via `/usr/bin/sample`, attributed to `alerts.rs`/`drug_score.rs`, out of
+this file's scope).
+
+- **Files:** `scripts/descriptor_census.py`, `scripts/descriptor_census_corpus.smi` (5,000
+  freshly-downloaded ChEMBL SMILES), `crates/chematic-chem/examples/descriptor_census_unbound.rs`
+  (dumps the 5 functions with no Python/WASM/MCP binding, plus `bcut2d`/`carbon_types` which have
+  no individual Python getter), `descriptor_census.json` / `descriptor_census_unbound.jsonl`
+  (`validation/results/`).
+- **Reference tool:** RDKit 2026.03.3.
+- **Full writeup:** [`docs/descriptor_census_rfc.md`](../docs/descriptor_census_rfc.md).
+- **How to regenerate:**
+  ```bash
+  cargo run -p chematic-chem --release --example descriptor_census_unbound \
+      < scripts/descriptor_census_corpus.smi > validation/results/descriptor_census_unbound.jsonl
+  .venv/bin/python scripts/descriptor_census.py \
+      --corpus scripts/descriptor_census_corpus.smi \
+      --unbound validation/results/descriptor_census_unbound.jsonl \
+      --json validation/results/descriptor_census.json
+  ```
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.
