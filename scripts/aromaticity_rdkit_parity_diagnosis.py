@@ -80,14 +80,29 @@ EXPECTED_BUCKET_BY_ID = {
     "indolizine": "sssr_bridge_artifact_not_reproduced_docs_stale",
     "purine": "matches_rdkit_exact_kekule",
     "azulene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "tropylium_cation": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+    # kekulize/K1 fix (fix/kekulize-charge-aware-k1): these 6 fixtures used to
+    # hard-fail kekulize() outright (bucket
+    # "kekulize_fails_atom_bond_flags_survive_coincidentally") -- see
+    # docs/aromaticity_rdkit_parity_rfc.md §1 root causes A-D. `kekulize()`
+    # now succeeds and its bond-by-bond Kekule assignment is verified
+    # byte-identical to RDKit's own choice (kekule_bond_mismatch_pairs == []
+    # for all 6, checked directly against the diagnosis summary JSON, not
+    # assumed). What moves them into
+    # "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent"
+    # instead of "matches_rdkit_exact_kekule" is unrelated to the K1 fix
+    # itself: `build_molecule_from_model`'s atom-flag rebuild loop only ever
+    # *promotes* `atom.aromatic` to true, never demotes a stale pre-existing
+    # true when the Huckel model disagrees (RFC §1b) -- deliberately out of
+    # scope here, tracked separately as "K2". Same bucket/shape as
+    # selenophene/azulene above, for the same deferred reason.
+    "tropylium_cation": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
     "cyclopentadienyl_anion": "matches_rdkit_exact_kekule",
-    "imidazolium": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-    "pyridinium": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-    "pyrylium": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+    "imidazolium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+    "pyridinium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+    "pyrylium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
     "selenophene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "tellurophene": "kekulize_fails_atom_bond_flags_survive_coincidentally",
-    "phosphole": "kekulize_fails_atom_bond_flags_survive_coincidentally",
+    "tellurophene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+    "phosphole": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
     "borole": "both_correctly_nonaromatic",
     "borazine": "both_correctly_nonaromatic",
     "pyridone_2": "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly",
