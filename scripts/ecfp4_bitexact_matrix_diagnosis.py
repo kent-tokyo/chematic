@@ -252,8 +252,14 @@ def main():
                 if chem_pairs_r == rd_pairs_r:
                     radius_bucket[r]["match"] += 1
                 else:
+                    # Pre-existing latent bug, fixed here: (atom_idx, radius) tuple
+                    # dict keys aren't JSON-serializable. Never exercised before K1
+                    # since no fixture reached this branch with a mismatch. Stringify
+                    # for the diagnostic sample only -- the match/no-match decision
+                    # above (the actual comparator) is untouched.
                     unclassified.append({**row, "axis": "radius", "radius": r,
-                                          "chem": chem_pairs_r, "rdkit": rd_pairs_r})
+                                          "chem": {str(k): v for k, v in chem_pairs_r.items()},
+                                          "rdkit": {str(k): v for k, v in rd_pairs_r.items()}})
         else:
             for r in RADIUS_SWEEP:
                 radius_bucket[r]["n_a_no_aromaticity"] += 1
