@@ -1,0 +1,90 @@
+{
+  "_manifest": {
+    "_manifest": true,
+    "accurate": {
+      "correct": 4160,
+      "correct_pct": 99.38,
+      "engine": "accurate",
+      "mismatch": 26,
+      "not_considered_by_chematic": 0,
+      "oracle_stable_correct": 4160,
+      "oracle_stable_pct": 99.64,
+      "oracle_stable_total": 4175,
+      "oracle_unstable_within_mismatches": 11,
+      "total_stereocenters_oracle_assigned": 4186
+    },
+    "bucket_precedence": [
+      "pseudoasymmetric",
+      "aromaticity_kekulize_bug",
+      "phosphorus",
+      "aromaticity_other",
+      "multiple_bond_dup",
+      "rule4b_candidate",
+      "rule3_candidate",
+      "rule5_candidate",
+      "unclassified"
+    ],
+    "chematic_version": "0.4.30",
+    "generated": "2026-07-21",
+    "legacy": {
+      "correct": 4031,
+      "correct_pct": 96.3,
+      "engine": "legacy",
+      "mismatch": 155,
+      "not_considered_by_chematic": 30,
+      "oracle_stable_correct": 4031,
+      "oracle_stable_pct": 96.3,
+      "oracle_stable_total": 4186,
+      "oracle_unstable_within_mismatches": 0,
+      "total_stereocenters_oracle_assigned": 4186
+    },
+    "rdkit_version": "2026.03.3",
+    "source_smiles_csv_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "accurate": {
+    "bucket_counts": {
+      "aromaticity_kekulize_bug": 0,
+      "aromaticity_other": 0,
+      "multiple_bond_dup": 0,
+      "phosphorus": 11,
+      "pseudoasymmetric": 15,
+      "rule3_candidate": 0,
+      "rule4b_candidate": 0,
+      "rule5_candidate": 0,
+      "unclassified": 0
+    },
+    "correct": 4160,
+    "correct_pct": 99.38,
+    "engine": "accurate",
+    "mismatch": 26,
+    "not_considered_by_chematic": 0,
+    "oracle_stable_correct": 4160,
+    "oracle_stable_pct": 99.64,
+    "oracle_stable_total": 4175,
+    "oracle_unstable_within_mismatches": 11,
+    "total_stereocenters_oracle_assigned": 4186
+  },
+  "legacy": {
+    "bucket_counts": {
+      "aromaticity_kekulize_bug": 0,
+      "aromaticity_other": 95,
+      "multiple_bond_dup": 12,
+      "phosphorus": 15,
+      "pseudoasymmetric": 17,
+      "rule3_candidate": 0,
+      "rule4b_candidate": 4,
+      "rule5_candidate": 0,
+      "unclassified": 12
+    },
+    "correct": 4031,
+    "correct_pct": 96.3,
+    "engine": "legacy",
+    "mismatch": 155,
+    "not_considered_by_chematic": 30,
+    "oracle_stable_correct": 4031,
+    "oracle_stable_pct": 96.3,
+    "oracle_stable_total": 4186,
+    "oracle_unstable_within_mismatches": 0,
+    "total_stereocenters_oracle_assigned": 4186
+  }
+}
