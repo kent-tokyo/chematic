@@ -180,10 +180,10 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.4.30
+# chematic v0.5.0
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-07-17, v0.4.30 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-07-17, v0.5.0 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  100%   within ±0.1 Å²
 #   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)
@@ -407,6 +407,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development (v0.4.x Era)
 
+**v0.5.0** (2026-07-23): **CIP-independent 2D wedge parity, charge-aware kekulization (6 previously-hard-failing molecule classes), non-silent PAINS/Brenk budget matching**
+- `chematic-perception`: new `local_parity_from_wedges`/`apply_local_parity_from_wedges` — computes `Atom.chirality`/`stereo_neighbor_order` directly from wedge/hash bonds and 2D coordinates without any CIP ranking, so a CIP tie can't erase a known local parity; sign convention measured against RDKit's raw chiral tag, not derived by analogy. Not yet wired into any reader's default parse path
+- `chematic-core`: `kekulize()`'s atom-matching rules were charge-blind and missing Tellurium — tropylium, imidazolium, pyridinium, pyrylium, tellurophene, and phosphole now kekulize successfully, bond-for-bond identical to RDKit, with zero regressions; `Element::normal_valences()` gained a source-verified Tellurium entry, fixing a resulting ECFP4 aromaticity mismatch
+- `chematic-perception`: charge-aware Hückel π-electron counting — tropylium, imidazolium, pyridinium, and pyrylium now match RDKit's aromatic atom/bond flags exactly (tellurophene/phosphole and a broader authoritative-flag-demotion fix remain open, tracked separately)
+- `chematic-smiles`: fixed two writer bugs — bracket-forced atoms (isotope/charge/atom-map) were silently dropping implicit hydrogens (`[NH4+]` → `[N+]`), and standalone wedge bonds with no adjacent double bond were written as meaningless SMILES `/`/`\` tokens
+- `chematic-smarts`/`chematic-chem`: PAINS/Brenk substructure matching could hang for minutes on symmetric targets; VF2 now takes an explicit visit budget with a genuine three-way outcome (`Found`/`NotFound`/`BudgetExhausted`) that's never silently folded into a false negative — see [#139](https://github.com/kent-tokyo/chematic/issues/139) for the follow-up (symmetry-aware candidate ordering) that would let the shipped budget resolve some now-conservatively-flagged cases correctly instead of just safely
+- Full details, corpus-level before/after numbers, and known limitations in `CHANGELOG.md`
+
 **v0.4.30** (2026-07-17): **`chematic-cip` opt-in wired to every surface, SMARTS `[rN]` fix, new RDKit-parity aromaticity engine, 5 stereo-metadata bug fixes**
 - `chematic-smarts`: fixed `[rN]` (ring-size SMARTS, e.g. `[r5]`/`[r6]`) being wrongly aliased to `[kN]`'s any-ring semantics — RDKit's real `[rN]` means "this atom's *smallest* ring is exactly size N", a materially different predicate (confirmed empirically: on a fusion atom shared between a 5-ring and 6-ring, RDKit's `[k6]` matches but `[r6]` doesn't). No ring-model change — `[rN]` now has its own `MinRingSize` primitive computed from chematic's existing SSSR. SMARTS match-set agreement vs RDKit **96.9% → 99.93%** on a 5,000-molecule corpus, 0 regressions; see `docs/rdkit_compat.md`'s "SMARTS-R0"/"SMARTS-R1" entries
 - Milestone 5A: opt-in access to the accurate engine from every public surface — `chematic_chem::assign_cip_with_mode(mol, CipMode::Accurate)` (Rust), `Mol.cip_stereo(mode="accurate")` + `Mol.cip_stereo_unresolved()` (Python), `cip_assignments_accurate_json`/`cip_unresolved_json` (WASM). Every default (`assign_cip()`, `cip_stereo()`, the un-suffixed WASM functions) is unchanged — this is additive only, not a default switch; see `docs/cip_accurate_rfc.md`'s Milestone 5A entry for the merge semantics (accurate tetrahedral R/S + legacy E/Z, since the accurate engine doesn't compute bond stereo) and the "never guess" contract (ties/budget-outs surface explicitly, never silently backfilled)
@@ -549,7 +557,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.4.30)
+├── Cargo.toml                    workspace root (v0.5.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -602,7 +610,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.4.30},
+  version   = {0.5.0},
   year      = {2026},
 }
 ```
