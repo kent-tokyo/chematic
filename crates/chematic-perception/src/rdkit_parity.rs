@@ -821,6 +821,20 @@ mod tests {
             ("pyrrole", "c1cc[nH]c1", &[0, 1, 2, 3, 4]),
             ("furan", "c1ccoc1", &[0, 1, 2, 3, 4]),
             ("thiophene", "c1ccsc1", &[0, 1, 2, 3, 4]),
+            (
+                "selenophene (Se analog control, pre-Kekulized input)",
+                "C1=C[Se]C=C1",
+                &[0, 1, 2, 3, 4],
+            ),
+            (
+                "tellurophene (pre-Kekulized input; regression test for the Te \
+                 normal_valences() gap fixed in chematic-core's element.rs — Te previously \
+                 had no valence-table entry, so default_valence/count_atom_pi_electrons/\
+                 get_atom_electron_donor_type all returned None and \
+                 is_atom_candidate_for_aromaticity rejected it outright)",
+                "C1=C[Te]C=C1",
+                &[0, 1, 2, 3, 4],
+            ),
             ("tropone", "O=c1cccccc1", &[1, 2, 3, 4, 5, 6, 7]),
             ("2-pyridone", "O=c1cccc[nH]1", &[1, 2, 3, 4, 5, 6]),
             ("4-pyranone", "O=c1ccocc1", &[1, 2, 3, 4, 5, 6]),
@@ -869,6 +883,32 @@ mod tests {
             got.sort();
             assert_eq!(&got, expected, "{name} ({smi}): should match RDKit exactly");
         }
+    }
+
+    #[test]
+    fn te_default_valence_and_aromatic_bond_flags() {
+        // Direct check of the dependent-path fix: default_valence(52) must now
+        // resolve to Some(2) (was None before the chematic-core element.rs
+        // Te normal_valences() fix).
+        assert_eq!(default_valence(52), Some(2));
+
+        // The calibration battery above only checks the aromatic ATOM set for
+        // tellurophene. RDKit also reports tellurophene's ring BONDS as
+        // aromatic (bond order 1.5 on every ring bond, oracle-verified via
+        // rdkit.Chem.MolFromSmiles("C1=C[Te]C=C1")); confirm chematic's
+        // aromatic bond set matches too, not just the atom set.
+        let mol = mol_kekulized("C1=C[Te]C=C1");
+        let (atoms, bonds) = rdkit_parity_aromaticity(&mol);
+        assert_eq!(
+            atoms.len(),
+            5,
+            "all 5 tellurophene ring atoms must be aromatic"
+        );
+        assert_eq!(
+            bonds.len(),
+            5,
+            "all 5 tellurophene ring bonds must be aromatic"
+        );
     }
 
     // Purine's Aromaticity-A1-0 finding was that production's answer depends

@@ -347,4 +347,44 @@ mod tests {
             .unwrap();
         assert_eq!(o_bond_order, BondOrder::Double, "H2C=O: C-O must be Double");
     }
+
+    #[test]
+    fn test_te_c_pair_now_upgrades_to_double_dependent_path_change() {
+        // Dependent-path finding for the Te normal_valences() fix (chematic-core
+        // element.rs, atomic number 52 [2, 4, 6]): this crate's Phase 2 upgrade
+        // loop (lines ~102-118 above) treats an element with an *empty*
+        // normal_valences() as always having remaining_valence=0, so it never
+        // participates in a Single->Double upgrade regardless of geometry (the
+        // algorithm is valence-driven, not distance-driven, for order upgrades —
+        // see test_formaldehyde_double_bond's comment on the same behavior).
+        //
+        // BEFORE this fix (empirically confirmed via `git stash` on element.rs
+        // alone, then re-running this exact fixture): a bare Te-C pair connects
+        // (Phase 1, distance within covalent-radius-sum+tolerance) but the bond
+        // stays Single forever, because remaining[Te] was hard-coded to 0.
+        //
+        // AFTER this fix: Te gets valences=[2,4,6], degree=1, remaining=2-1=1>0,
+        // matching C's remaining=4-1=3>0, so Phase 2's greedy loop upgrades the
+        // bond to Double (then stops, since remaining[Te] hits 0).
+        //
+        // This is a real, reportable behavior change for 3D Te fixtures with no
+        // other bonds to Te — flagged here rather than silently accepted, per
+        // the task's explicit instruction. It only fires for isolated/low-degree
+        // Te atoms; Te atoms with degree >= 2 that already satisfy valence 2
+        // (e.g. a bent Te with two single bonds, the common case) are unaffected.
+        let atoms = vec![
+            (Element::TE, Point3::new(0.000, 0.000, 0.000)),
+            (Element::C, Point3::new(2.000, 0.000, 0.000)),
+        ];
+        let mol = determine_bonds(&atoms, 0.40).unwrap();
+        assert_eq!(mol.bond_count(), 1, "Te-C pair must connect");
+        let order = mol.bond(BondIdx(0)).order;
+        assert_eq!(
+            order,
+            BondOrder::Double,
+            "AFTER the Te valence-table fix, a bare degree-1 Te-C pair upgrades \
+             to Double (BEFORE the fix it stayed Single — Te's remaining valence \
+             was always 0)."
+        );
+    }
 }

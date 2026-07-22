@@ -321,6 +321,12 @@ impl Element {
             33 => &[3, 5],       // As
             34 => &[2, 4, 6],    // Se
             35 => &[1, 3, 5, 7], // Br
+            // Te: source-verified against RDKit atomic_data.cpp @ pinned commit
+            // 8afba32ec539dcb2369bc84549d802aca3f7eb39 ("52  Te  ...  2  4  6" in the
+            // trailing "list of allowed valences" columns) AND cross-checked against
+            // installed RDKit 2026.03.3: GetPeriodicTable().GetValenceList(52) == [2, 4, 6],
+            // GetDefaultValence(52) == 2. Matches S/Se's list by coincidence, not analogy.
+            52 => &[2, 4, 6],    // Te
             53 => &[1, 3, 5, 7], // I
             _ => &[],
         }
@@ -492,5 +498,33 @@ mod tests {
         assert_eq!(Element::C.normal_valences(), &[4]);
         assert_eq!(Element::N.normal_valences(), &[3, 5]);
         assert_eq!(Element::S.normal_valences(), &[2, 4, 6]);
+    }
+
+    #[test]
+    fn test_te_valence_source_verified() {
+        // Source-verified (not assumed from S/Se by analogy):
+        //  - RDKit atomic_data.cpp @ pinned commit 8afba32ec539dcb2369bc84549d802aca3f7eb39,
+        //    row "52  Te  5  1.38  1.378  2.1  127.6  6  130  129.9062244  2  4  6"
+        //    (trailing columns = "list of allowed valences" per the file's own header comment).
+        //  - Cross-checked against installed RDKit 2026.03.3:
+        //    GetPeriodicTable().GetValenceList(52) == [2, 4, 6], GetDefaultValence(52) == 2.
+        // It happens to equal S/Se's list, but that's a verified coincidence, not the basis
+        // for this entry.
+        assert_eq!(Element::TE.normal_valences(), &[2, 4, 6]);
+    }
+
+    #[test]
+    fn test_s_se_valences_unchanged_regression_guard() {
+        // Adding the Te arm must not disturb the pre-existing S/Se entries.
+        assert_eq!(Element::S.normal_valences(), &[2, 4, 6]);
+        assert_eq!(Element::SE.normal_valences(), &[2, 4, 6]);
+    }
+
+    #[test]
+    fn test_te_not_in_organic_subset() {
+        // Te is outside the OpenSMILES organic subset (only B,C,N,O,P,S,F,Cl,Br,I are),
+        // so it always requires bracket notation and implicit_hcount() short-circuits
+        // to 0 for it regardless of normal_valences(). This must stay true.
+        assert!(!Element::TE.is_organic_subset());
     }
 }
