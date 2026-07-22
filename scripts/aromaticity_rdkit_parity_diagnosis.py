@@ -79,30 +79,56 @@ EXPECTED_BUCKET_BY_ID = {
     "indole": "matches_rdkit_exact_kekule",
     "indolizine": "sssr_bridge_artifact_not_reproduced_docs_stale",
     "purine": "matches_rdkit_exact_kekule",
-    "azulene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    # kekulize/K1 fix (fix/kekulize-charge-aware-k1): these 6 fixtures used to
-    # hard-fail kekulize() outright (bucket
+    # K2 (fix/aromaticity-flag-demotion-k2): azulene's atom/bond flags are no
+    # longer *inconsistent* with each other (that was the K2 bug --
+    # `build_molecule_from_model` promoting but never demoting). They are
+    # now both correctly, consistently non-aromatic -- azulene's own root
+    # cause (a non-alternant fused ring needing a whole-perimeter Huckel
+    # candidate, RFC §2) is untouched and separately tracked, so it still
+    # disagrees with RDKit, just honestly now instead of by an internal
+    # contradiction. See case 2b's comment in classify().
+    "azulene": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
+    # K1 (fix/kekulize-charge-aware-k1) + K2 (fix/aromaticity-flag-demotion-k2):
+    # these 6 fixtures used to hard-fail kekulize() outright (bucket
     # "kekulize_fails_atom_bond_flags_survive_coincidentally") -- see
-    # docs/aromaticity_rdkit_parity_rfc.md §1 root causes A-D. `kekulize()`
-    # now succeeds and its bond-by-bond Kekule assignment is verified
-    # byte-identical to RDKit's own choice (kekule_bond_mismatch_pairs == []
-    # for all 6, checked directly against the diagnosis summary JSON, not
-    # assumed). What moves them into
-    # "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent"
-    # instead of "matches_rdkit_exact_kekule" is unrelated to the K1 fix
-    # itself: `build_molecule_from_model`'s atom-flag rebuild loop only ever
-    # *promotes* `atom.aromatic` to true, never demotes a stale pre-existing
-    # true when the Huckel model disagrees (RFC §1b) -- deliberately out of
-    # scope here, tracked separately as "K2". Same bucket/shape as
-    # selenophene/azulene above, for the same deferred reason.
-    "tropylium_cation": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+    # docs/aromaticity_rdkit_parity_rfc.md §1 root causes A-D. K1 fixed
+    # `kekulize()` (chematic-core/kekulization.rs's `atom_must_be_matched`),
+    # verified byte-identical to RDKit's own Kekule choice for all 6, which
+    # moved them into "kekulize_succeeds_model_disagrees_atom_bond_flags_
+    # inconsistent" (RFC §1b): `build_molecule_from_model`'s atom-flag
+    # rebuild loop only ever *promoted* `atom.aromatic`, never demoted a
+    # stale pre-existing `true` when the raw Huckel model disagreed.
+    #
+    # K2 fixed that promote-only loop (now demotes in both directions,
+    # atomically -- see the K2 PR description) AND, separately, fixed a
+    # charge-blindness bug in `ring_pi_electrons`/
+    # `evaluate_atom_pi_contribution_inner` that mirrors K1's own root
+    # causes A/B but in the Huckel pi-electron-counting layer rather than
+    # the Kekule-matching layer (a protonated ring N/O, and a cationic ring
+    # C, were being scored as if neutral). That second fix is what actually
+    # lets the raw model *itself* recognize these 4 as aromatic under the
+    # DEFAULT Huckel algorithm -- not just RdkitLike or the experimental
+    # rdkit_parity engine -- landing them in the fully-correct
+    # "matches_rdkit_exact_kekule" bucket instead of merely a consistent
+    # one. Verified: `huckel_model_aromatic_atom_count` now equals each
+    # fixture's full atom count (was 0 for all 6 pre-K2).
+    "tropylium_cation": "matches_rdkit_exact_kekule",
     "cyclopentadienyl_anion": "matches_rdkit_exact_kekule",
-    "imidazolium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "pyridinium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "pyrylium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "selenophene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "tellurophene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "phosphole": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+    "imidazolium": "matches_rdkit_exact_kekule",
+    "pyridinium": "matches_rdkit_exact_kekule",
+    "pyrylium": "matches_rdkit_exact_kekule",
+    # Se/Te are recognized as chalcogen lone-pair donors only under
+    # AromaticityAlgorithm::RdkitLike (this script measures the DEFAULT
+    # Huckel algorithm only, matching production's `apply_aromaticity()`);
+    # P has no default-Huckel support at all. Neither gap is K2's job --
+    # extending the default engine's element coverage is explicitly
+    # out-of-scope algorithm-shaped work (RFC §6, items 3/4). K2 only makes
+    # the (still-correct, per its own known scope) "no" fully consistent
+    # across atoms AND bonds instead of contradicting itself. See case 2b's
+    # comment in classify().
+    "selenophene": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
+    "tellurophene": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
+    "phosphole": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
     "borole": "both_correctly_nonaromatic",
     "borazine": "both_correctly_nonaromatic",
     "pyridone_2": "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly",
@@ -125,6 +151,10 @@ EXPECTED_BUCKETS = {
     "sssr_bridge_artifact_not_reproduced_docs_stale",
     "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
     "kekulize_fails_atom_bond_flags_survive_coincidentally",
+    # K2 (fix/aromaticity-flag-demotion-k2): the "inconsistent" bucket
+    # above's replacement outcome once `build_molecule_from_model` demotes
+    # correctly -- see case 2b's comment in classify().
+    "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
 }
 
 
@@ -377,6 +407,33 @@ def classify(fixture, rdkit_result):
     ):
         return "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent", evidence
 
+    # --- case 2b (K2, fix/aromaticity-flag-demotion-k2): kekulize() succeeds
+    # and the raw Huckel model does NOT confirm aromaticity -- same
+    # precondition as case 2 above -- but now BOTH the atom loop and the
+    # bond loop agree with each other (both demoted to non-aromatic), so
+    # EVERY atom and EVERY bond mismatches RDKit together, not just the
+    # bonds. This is what case 2's fixtures turn into once
+    # `build_molecule_from_model` is fixed to demote a stale `aromatic=true`
+    # instead of only ever promoting (see the updated RFC / K2 PR
+    # description): the "two loops disagree with EACH OTHER" defect is gone
+    # -- what's left is chematic's raw Huckel model genuinely not
+    # recognizing this ring as aromatic at all, a *different*, already-known
+    # and separately-tracked gap per fixture (Se/Te are supported only under
+    # `AromaticityAlgorithm::RdkitLike`, not the default `Huckel` this script
+    # measures; P has no default-Huckel support at all; azulene's
+    # non-alternant fused system needs a whole-perimeter Huckel candidate
+    # this per-ring Pass 1/Pass 2 model doesn't build). None of those are K2's
+    # job to fix -- K2 only had to stop the two rebuild loops from
+    # contradicting each other, which they no longer do. ---
+    if (
+        atom_mismatch
+        and len(atom_mismatch) == n
+        and bond_mismatch
+        and not model_says_aromatic
+        and fixture["kekulize_ok"]
+    ):
+        return "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit", evidence
+
     # --- case 3: atoms AND bonds both coincidentally match RDKit (both
     # True), the raw model does NOT confirm aromaticity, but this time
     # chematic's OWN kekulization failed outright -- so the "Aromatic" bond
@@ -512,6 +569,44 @@ def _self_test():
         "self-test D2: classify() ignored the model count -- landed in the known bucket even though the model agreed"
     )
     assert evidence2["model_says_aromatic"] is True, "self-test D2: evidence did not record the model-agrees case"
+
+    # Control E (K2, fix/aromaticity-flag-demotion-k2): the NEW bucket's
+    # discriminator vs the OLD (case 2) bucket is specifically that atoms
+    # ALSO mismatch now (not just bonds) -- both loops demoted together,
+    # consistently. Reusing `inconsistent_shape`'s RDKit side (all True) but
+    # flipping the fixture's OWN atom flags to also read non-aromatic (the
+    # K2-fixed shape) must land in the new bucket, not the old one, even
+    # though `huckel_model_aromatic_atom_count` is unchanged (still 0).
+    consistent_shape = dict(
+        inconsistent_shape,
+        atoms=[{"default_aromatic": False, "element": "C"}] * 5,
+    )
+    bucket3, evidence3 = classify(consistent_shape, inconsistent_rdkit)
+    assert bucket3 == "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit", (
+        f"self-test E1: expected the K2 consistent-but-wrong bucket, got {bucket3!r}"
+    )
+    assert evidence3["atom_mismatch_idxs"] == [0, 1, 2, 3, 4], (
+        "self-test E1: evidence did not record that every atom mismatches, not just bonds"
+    )
+    assert bucket3 not in (
+        "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+        "unexpected_mismatch",
+    ), "self-test E1: the new, fully-consistent-demotion shape must not fall back into the old bucket or unexpected_mismatch"
+
+    # Control E2: a PARTIAL atom mismatch (some but not all atoms disagree)
+    # combined with a bond mismatch and a non-confirming model must NOT be
+    # absorbed into the new bucket either -- that shape isn't explained by
+    # "both loops demoted consistently," it's something else, and must fall
+    # through to unexpected_mismatch instead of being silently misclassified.
+    partial_shape = dict(
+        inconsistent_shape,
+        atoms=[{"default_aromatic": False, "element": "C"}]
+        + [{"default_aromatic": True, "element": "C"}] * 4,
+    )
+    bucket4, _ = classify(partial_shape, inconsistent_rdkit)
+    assert bucket4 == "unexpected_mismatch", (
+        f"self-test E2: a partial atom mismatch must not land in the K2 bucket, got {bucket4!r}"
+    )
 
 
 def main():

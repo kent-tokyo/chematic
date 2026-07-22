@@ -6,9 +6,9 @@
   "bucket_counts": {
     "matches_rdkit_kekule_valid_alternate": 1,
     "both_correctly_nonaromatic": 8,
-    "matches_rdkit_exact_kekule": 20,
+    "matches_rdkit_exact_kekule": 24,
     "sssr_bridge_artifact_not_reproduced_docs_stale": 1,
-    "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent": 8,
+    "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit": 4,
     "matches_rdkit_exact_kekule_exocyclic_bond_excluded_correctly": 2
   },
   "unexplained_count": 0,
@@ -955,10 +955,21 @@
         "ring_count": 2,
         "canonical_smiles": "c1ccc2cccc-2cc1"
       },
-      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "failure_bucket": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
+      "expected_bucket": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
       "evidence": {
-        "atom_mismatch_idxs": [],
+        "atom_mismatch_idxs": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
         "bond_mismatch_pairs": [
           [
             0,
@@ -1024,8 +1035,8 @@
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
-        "huckel_model_aromatic_atom_count": 0,
-        "rdkitlike_model_aromatic_atom_count": 0
+        "huckel_model_aromatic_atom_count": 7,
+        "rdkitlike_model_aromatic_atom_count": 7
       },
       "rdkit": {
         "parsed": true,
@@ -1033,48 +1044,19 @@
         "ring_count": 1,
         "canonical_smiles": "c1ccc[cH+]cc1"
       },
-      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            2
-          ],
-          [
-            2,
-            3
-          ],
-          [
-            3,
-            4
-          ],
-          [
-            4,
-            5
-          ],
-          [
-            5,
-            6
-          ],
-          [
-            0,
-            6
-          ]
-        ],
+        "bond_mismatch_pairs": [],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
         "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
-        "huckel_model_aromatic_atom_count": 0,
-        "model_says_aromatic": false
+        "huckel_model_aromatic_atom_count": 7,
+        "model_says_aromatic": true
       }
     },
     {
@@ -1127,8 +1109,8 @@
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
-        "huckel_model_aromatic_atom_count": 0,
-        "rdkitlike_model_aromatic_atom_count": 0
+        "huckel_model_aromatic_atom_count": 5,
+        "rdkitlike_model_aromatic_atom_count": 5
       },
       "rdkit": {
         "parsed": true,
@@ -1136,40 +1118,19 @@
         "ring_count": 1,
         "canonical_smiles": "c1c[nH+]c[nH]1"
       },
-      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            2
-          ],
-          [
-            2,
-            3
-          ],
-          [
-            3,
-            4
-          ],
-          [
-            0,
-            4
-          ]
-        ],
+        "bond_mismatch_pairs": [],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
         "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
-        "huckel_model_aromatic_atom_count": 0,
-        "model_says_aromatic": false
+        "huckel_model_aromatic_atom_count": 5,
+        "model_says_aromatic": true
       }
     },
     {
@@ -1185,8 +1146,8 @@
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
-        "huckel_model_aromatic_atom_count": 0,
-        "rdkitlike_model_aromatic_atom_count": 0
+        "huckel_model_aromatic_atom_count": 6,
+        "rdkitlike_model_aromatic_atom_count": 6
       },
       "rdkit": {
         "parsed": true,
@@ -1194,44 +1155,19 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[nH+]cc1"
       },
-      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            2
-          ],
-          [
-            2,
-            3
-          ],
-          [
-            3,
-            4
-          ],
-          [
-            4,
-            5
-          ],
-          [
-            0,
-            5
-          ]
-        ],
+        "bond_mismatch_pairs": [],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
         "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
-        "huckel_model_aromatic_atom_count": 0,
-        "model_says_aromatic": false
+        "huckel_model_aromatic_atom_count": 6,
+        "model_says_aromatic": true
       }
     },
     {
@@ -1247,8 +1183,8 @@
         "raw_sssr_ring_count": 1,
         "augmented_ring_count": 1,
         "count_aromatic_rings": 1,
-        "huckel_model_aromatic_atom_count": 0,
-        "rdkitlike_model_aromatic_atom_count": 0
+        "huckel_model_aromatic_atom_count": 6,
+        "rdkitlike_model_aromatic_atom_count": 6
       },
       "rdkit": {
         "parsed": true,
@@ -1256,44 +1192,19 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[o+]cc1"
       },
-      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "failure_bucket": "matches_rdkit_exact_kekule",
+      "expected_bucket": "matches_rdkit_exact_kekule",
       "evidence": {
         "atom_mismatch_idxs": [],
-        "bond_mismatch_pairs": [
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            2
-          ],
-          [
-            2,
-            3
-          ],
-          [
-            3,
-            4
-          ],
-          [
-            4,
-            5
-          ],
-          [
-            0,
-            5
-          ]
-        ],
+        "bond_mismatch_pairs": [],
         "ring_count_match": true,
         "aromatic_ring_count_match": true,
         "rdkit_aromatic_ring_count": 1,
         "kekule_checked": true,
         "kekule_bond_mismatch_pairs": [],
         "kekule_valid_alternate": null,
-        "huckel_model_aromatic_atom_count": 0,
-        "model_says_aromatic": false
+        "huckel_model_aromatic_atom_count": 6,
+        "model_says_aromatic": true
       }
     },
     {
@@ -1318,10 +1229,16 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[se]c1"
       },
-      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "failure_bucket": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
+      "expected_bucket": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
       "evidence": {
-        "atom_mismatch_idxs": [],
+        "atom_mismatch_idxs": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
         "bond_mismatch_pairs": [
           [
             0,
@@ -1376,10 +1293,16 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[te]c1"
       },
-      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "failure_bucket": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
+      "expected_bucket": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
       "evidence": {
-        "atom_mismatch_idxs": [],
+        "atom_mismatch_idxs": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
         "bond_mismatch_pairs": [
           [
             0,
@@ -1434,10 +1357,16 @@
         "ring_count": 1,
         "canonical_smiles": "c1cc[pH]c1"
       },
-      "failure_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-      "expected_bucket": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+      "failure_bucket": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
+      "expected_bucket": "kekulize_succeeds_model_consistently_nonaromatic_disagrees_with_rdkit",
       "evidence": {
-        "atom_mismatch_idxs": [],
+        "atom_mismatch_idxs": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
         "bond_mismatch_pairs": [
           [
             0,

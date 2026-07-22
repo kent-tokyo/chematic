@@ -348,20 +348,66 @@ pub(crate) fn build_molecule_from_model(mol: &Molecule, model: &AromaticityModel
         })
         .collect();
 
+    // Bond orders first: the model's verdict when it confirms aromaticity,
+    // `bond.order` otherwise. Unlike the atom flag below, a bond's order is
+    // never left ambiguous here -- when the model doesn't confirm
+    // aromaticity, `bond.order` is either already a genuine Kekule value
+    // (Single/Double/...), or, for a caller that never Kekulized an
+    // unsupported/gap ring first, still `Aromatic` -- tracked below so the
+    // atom loop can stay consistent with it rather than silently
+    // contradicting it.
+    let bond_orders: FxHashMap<BondIdx, BondOrder> = mol
+        .bonds()
+        .map(|(bidx, bond)| {
+            let order = if model.is_bond_aromatic(bidx) {
+                BondOrder::Aromatic
+            } else {
+                bond.order
+            };
+            (bidx, order)
+        })
+        .collect();
+
+    // K2 fix: the model is now authoritative in BOTH directions -- promote
+    // AND demote -- instead of only ever promoting (see
+    // docs/aromaticity_rdkit_parity_rfc.md section 1b/6). A stale
+    // parser-set `aromatic: true` the model does not independently confirm
+    // must not survive.
+    //
+    // The one deliberate exception: an atom incident to a bond that ends up
+    // `Aromatic` in `bond_orders` above is always kept aromatic too, even if
+    // the model itself didn't confirm it. This is not a reintroduction of
+    // the promote-only bug -- it only ever fires when `bond.order` was
+    // itself still `Aromatic` going in (see the comment above) and the model
+    // gave no verdict to demote it with. There is no independently-computed
+    // Kekule value to fall back to in that case, so leaving both the atom
+    // and its bond flagged aromatic together is the "clean, well-defined
+    // fallback state" for that molecule, matching
+    // `apply_aromaticity_ex`'s own kekulize-first design (which resolves a
+    // real Kekule structure whenever possible and makes this branch
+    // unreachable). A demoted atom sitting on a bond order that still literally
+    // reads `Aromatic` would be a self-contradictory molecule, strictly
+    // worse than the pre-K2 "coincidental" preservation it would otherwise
+    // be reintroducing on the bond side alone. This can never mask a
+    // genuine demotion: for every K1 fixture and every already-Kekulized
+    // input, `bond.order` is a real Single/Double value and this fallback
+    // never triggers.
+    let mut atom_aromatic_by_bond: FxHashSet<AtomIdx> = FxHashSet::default();
+    for (bidx, bond) in mol.bonds() {
+        if bond_orders[&bidx] == BondOrder::Aromatic {
+            atom_aromatic_by_bond.insert(bond.atom1);
+            atom_aromatic_by_bond.insert(bond.atom2);
+        }
+    }
+
     let mut builder = MoleculeBuilder::new();
     for (idx, atom) in mol.atoms() {
         let mut a = atom.clone();
-        if model.is_atom_aromatic(idx) {
-            a.aromatic = true;
-        }
+        a.aromatic = model.is_atom_aromatic(idx) || atom_aromatic_by_bond.contains(&idx);
         builder.add_atom(a);
     }
     for (bidx, bond) in mol.bonds() {
-        let order = if model.is_bond_aromatic(bidx) {
-            BondOrder::Aromatic
-        } else {
-            bond.order
-        };
+        let order = bond_orders[&bidx];
         if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, order)
             && order == BondOrder::Aromatic
             && matches!(bond.order, BondOrder::Up | BondOrder::Down)
@@ -878,7 +924,16 @@ fn ring_pi_electrons(
         let pi = match an {
             // Carbon: must be sp2 (has a double or aromatic bond somewhere).
             6 => {
-                if !has_double_any {
+                if atom.charge > 0 {
+                    // Cationic ring carbon (tropylium's `[cH+]`): empty
+                    // p-orbital electron acceptor, 0π, regardless of
+                    // representation -- mirrors RDKit's carbon-specific
+                    // charge-sign flip (see `kekulization.rs`'s
+                    // `atom_must_be_matched` doc comment for the same rule
+                    // in the Kekule-matching layer) and this function's own
+                    // symmetric anion rule below (charge == -1 => 2π).
+                    0
+                } else if !has_double_any {
                     // No double bond: a ring carbanion still donates its lone
                     // pair (e.g. cyclopentadienyl anion), otherwise sp3.
                     if atom.charge == -1 {
@@ -909,28 +964,43 @@ fn ring_pi_electrons(
 
             // Nitrogen
             7 => {
-                if implicit_hcount(mol, atom_idx) > 0 {
-                    // Pyrrole-type N with H: lone pair → 2π.
+                if implicit_hcount(mol, atom_idx) > 0 && atom.charge <= 0 {
+                    // Pyrrole-type N with H, neutral or anionic: lone pair → 2π.
                     2
                 } else if has_explicit_double {
-                    // Pyridine-type N with explicit double bond → 1π.
+                    // Pyridine-type N with an explicit double bond → 1π. Also
+                    // catches a protonated ring N (pyridinium's `[nH+]`): the
+                    // added proton consumes the lone pair the H-count check
+                    // above would otherwise have claimed, and
+                    // `chematic_core::kekulize` (charge-aware per K1) routes
+                    // such an atom to a real Kekule double bond, exactly like
+                    // neutral pyridine's bare N -- so this branch is reached
+                    // instead of the one above once `atom.charge <= 0` fails.
                     1
-                } else if total_degree == 3 && ring_degree < total_degree {
-                    // N with no H, no explicit double bond, and all three σ-bonds
-                    // exactly filling its valence (3): a bridgehead N shared by two
-                    // fused rings (e.g. indolizine) and a substituted pyrrole-type N
-                    // (e.g. N-methylpyrrole, N-glycosylated purine/pyrimidine) have
-                    // the identical local shape — the lone pair occupies the p
-                    // orbital → 2π either way. Whether the ring this atom sits in is
+                } else if total_degree == 3 && ring_degree < total_degree && atom.charge <= 0 {
+                    // N with no H, no explicit double bond, all three σ-bonds
+                    // exactly filling its valence (3), and neutral/anionic: a
+                    // bridgehead N shared by two fused rings (e.g. indolizine)
+                    // and a substituted pyrrole-type N (e.g. N-methylpyrrole,
+                    // N-glycosylated purine/pyrimidine) have the identical
+                    // local shape — the lone pair occupies the p orbital → 2π
+                    // either way. Whether the ring this atom sits in is
                     // actually aromatic is decided by the overall 4n+2 sum below, not
                     // by inspecting the substituent: an imide N (phthalimide) still
                     // correctly comes out non-aromatic because its ring's carbonyl
                     // carbons contribute 0π each (exocyclic C=O rule above), giving
-                    // 4π total, not 4n+2.
+                    // 4π total, not 4n+2. The `charge <= 0` guard keeps a charged
+                    // N with an H (pyridinium's `[nH+]`, degree 3 = 2 ring + 1 H)
+                    // from being wrongly routed here in the aromatic-bond
+                    // (pre-Kekulization) representation, where it has no
+                    // explicit double bond to be caught by the branch above —
+                    // it falls through to the pyridine-type branch below instead.
                     2
                 } else if has_aromatic_in_ring {
                     // N in an aromatic ring (pre-kekulization input) without an
-                    // explicit double bond and not a bridgehead → pyridine-like → 1π.
+                    // explicit double bond and not a bridgehead → pyridine-like
+                    // → 1π. Also the protonated-N fallback for the aromatic-bond
+                    // representation (see the guards above).
                     1
                 } else {
                     // Cannot determine pi contribution.
@@ -938,20 +1008,33 @@ fn ring_pi_electrons(
                 }
             }
 
-            // Oxygen / sulfur: lone-pair donor, must be 2-connected in the ring.
+            // Oxygen / sulfur: lone-pair donor, must be 2-connected in the ring
+            // -- *unless* a positive charge (pyrylium's `[o+]`) has consumed
+            // the lone pair, in which case it needs pyridine-type treatment
+            // (1π via its own ring double/aromatic bond) instead, mirroring
+            // `kekulization.rs`'s charge-aware donor-exemption rule (K1).
             8 | 16 => {
-                if ring_degree != 2 {
-                    return None;
+                if atom.charge > 0 {
+                    if has_explicit_double || has_aromatic_in_ring {
+                        1
+                    } else {
+                        return None;
+                    }
+                } else {
+                    if ring_degree != 2 {
+                        return None;
+                    }
+                    // Sulfoxide/sulfone: exocyclic S=O ties up the lone pair; cannot donate 2π
+                    if an == 16
+                        && mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                            !ring_atom_set.contains(&nb)
+                                && mol.bond(bidx).order == BondOrder::Double
+                        })
+                    {
+                        return None;
+                    }
+                    2
                 }
-                // Sulfoxide/sulfone: exocyclic S=O ties up the lone pair; cannot donate 2π
-                if an == 16
-                    && mol.neighbors(atom_idx).any(|(nb, bidx)| {
-                        !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
-                    })
-                {
-                    return None;
-                }
-                2
             }
 
             // Se (34) / Te (52): chalcogen lone-pair donors (2π), analogous to S.
@@ -1003,21 +1086,35 @@ pub enum ContributionReason {
     CarbonExocyclicHeteroatomDouble,
     /// Carbanion with no double bond: 2π (lone pair).
     CarbonCarbanionLonePair,
+    /// Cationic ring carbon (e.g. tropylium's `[cH+]`): empty p-orbital
+    /// electron acceptor, 0π, regardless of representation (Kekule or
+    /// aromatic-bond) -- mirrors `CarbonCarbanionLonePair`'s anion rule at
+    /// the opposite electron-count extreme.
+    CarbonCationVacant,
     /// sp3 carbon (no double bond, not a carbanion): ineligible.
     CarbonSp3Ineligible,
-    /// Pyrrole-type N with an H: 2π.
+    /// Pyrrole-type N with an H, neutral or anionic: 2π.
     NitrogenPyrroleTypeH,
-    /// Pyridine-type N with an explicit double bond: 1π.
+    /// Pyridine-type N with an explicit double bond (bare, or protonated
+    /// N-H+ once it has a Kekule double bond): 1π.
     NitrogenPyridineTypeExplicitDouble,
-    /// Bridgehead N (or N-substituted azole N): all-sigma valence, lone pair in p orbital: 2π.
+    /// Bridgehead N (or N-substituted azole N), neutral or anionic:
+    /// all-sigma valence, lone pair in p orbital: 2π.
     NitrogenBridgeheadOrSubstitutedLonePair,
-    /// N with an in-ring aromatic bond, not a bridgehead: 1π.
+    /// N with an in-ring aromatic bond, not a bridgehead (pyridine-type
+    /// notation, or a charged N-H+ in aromatic-bond representation): 1π.
     NitrogenAromaticInRing,
     /// N matching none of the above rules: ineligible.
     NitrogenIneligible,
-    /// O/S/Se/Te lone-pair donor, ring-degree 2: 2π.
+    /// O/S/Se/Te lone-pair donor, neutral or anionic, ring-degree 2: 2π.
     ChalcogenLonePair,
-    /// O/S/Se/Te with the wrong ring degree, an exocyclic X=O, or (Se/Te) non-RdkitLike mode: ineligible.
+    /// Charged O/S (e.g. pyrylium's `[o+]`): the positive charge consumes
+    /// the lone pair, so this atom needs pyridine-type treatment (1π via
+    /// its own ring double/aromatic bond) instead of donating 2π.
+    ChalcogenCationPyridineType,
+    /// O/S/Se/Te with the wrong ring degree, an exocyclic X=O, (Se/Te)
+    /// non-RdkitLike mode, or a charged O/S with no ring double/aromatic
+    /// bond to fall back on: ineligible.
     ChalcogenIneligible,
     /// Element not supported by the model: ineligible.
     UnsupportedElement,
@@ -1046,12 +1143,13 @@ impl ContributionReason {
             AlreadyAromaticContext
             | CarbonEndocyclicDouble
             | NitrogenPyridineTypeExplicitDouble
-            | NitrogenAromaticInRing => PiEligibility::OneElectron,
+            | NitrogenAromaticInRing
+            | ChalcogenCationPyridineType => PiEligibility::OneElectron,
             CarbonCarbanionLonePair
             | NitrogenPyrroleTypeH
             | NitrogenBridgeheadOrSubstitutedLonePair
             | ChalcogenLonePair => PiEligibility::LonePairDonor,
-            CarbonExocyclicHeteroatomDouble => PiEligibility::ZeroElectron,
+            CarbonExocyclicHeteroatomDouble | CarbonCationVacant => PiEligibility::ZeroElectron,
             CarbonSp3Ineligible | NitrogenIneligible | ChalcogenIneligible | UnsupportedElement => {
                 PiEligibility::Ineligible
             }
@@ -1255,7 +1353,9 @@ fn evaluate_atom_pi_contribution_inner(
 
     match an {
         6 => {
-            if !has_double_any {
+            if atom.charge > 0 {
+                (Some(0), ContributionReason::CarbonCationVacant)
+            } else if !has_double_any {
                 if atom.charge == -1 {
                     (Some(2), ContributionReason::CarbonCarbanionLonePair)
                 } else {
@@ -1278,14 +1378,14 @@ fn evaluate_atom_pi_contribution_inner(
             }
         }
         7 => {
-            if implicit_hcount(mol, atom_idx) > 0 {
+            if implicit_hcount(mol, atom_idx) > 0 && atom.charge <= 0 {
                 (Some(2), ContributionReason::NitrogenPyrroleTypeH)
             } else if has_explicit_double {
                 (
                     Some(1),
                     ContributionReason::NitrogenPyridineTypeExplicitDouble,
                 )
-            } else if total_degree == 3 && ring_degree < total_degree {
+            } else if total_degree == 3 && ring_degree < total_degree && atom.charge <= 0 {
                 (
                     Some(2),
                     ContributionReason::NitrogenBridgeheadOrSubstitutedLonePair,
@@ -1297,14 +1397,22 @@ fn evaluate_atom_pi_contribution_inner(
             }
         }
         8 | 16 => {
-            let exocyclic_double = an == 16
-                && mol.neighbors(atom_idx).any(|(nb, bidx)| {
-                    !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
-                });
-            if ring_degree != 2 || exocyclic_double {
-                (None, ContributionReason::ChalcogenIneligible)
+            if atom.charge > 0 {
+                if has_explicit_double || has_aromatic_in_ring {
+                    (Some(1), ContributionReason::ChalcogenCationPyridineType)
+                } else {
+                    (None, ContributionReason::ChalcogenIneligible)
+                }
             } else {
-                (Some(2), ContributionReason::ChalcogenLonePair)
+                let exocyclic_double = an == 16
+                    && mol.neighbors(atom_idx).any(|(nb, bidx)| {
+                        !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
+                    });
+                if ring_degree != 2 || exocyclic_double {
+                    (None, ContributionReason::ChalcogenIneligible)
+                } else {
+                    (Some(2), ContributionReason::ChalcogenLonePair)
+                }
             }
         }
         34 | 52 => {
