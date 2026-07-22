@@ -404,6 +404,153 @@ mod tests {
         );
     }
 
+    // ---------------------------------------------------------------------------
+    // Te (tellurium) tests — element.rs now has a real normal_valences() entry
+    // for atomic number 52 ([2, 4, 6], source-verified against RDKit; see
+    // element.rs::test_te_valence_source_verified). These pin the resulting
+    // implicit_hcount()/validate_valence() behavior against RDKit's own output.
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_te_implicit_hcount_no_explicit_h_stays_zero() {
+        // Te is outside the OpenSMILES organic subset, so implicit_hcount() must
+        // still return 0 for a bare (non-bracket) Te atom, unchanged by the new
+        // valence entry (guarded by the is_organic_subset() short-circuit).
+        let mol = single_atom(Element::TE);
+        assert_eq!(implicit_hcount(&mol, AtomIdx(0)), 0);
+    }
+
+    #[test]
+    fn test_validate_valence_te_divalent_neutral() {
+        // C[Te]C (dimethyl telluride analog). RDKit: explicitValence=2,
+        // totalValence=2, sanitizes OK.
+        let mut b = MoleculeBuilder::new();
+        let te = b.add_atom(Atom::organic(Element::TE));
+        for _ in 0..2 {
+            let c = b.add_atom(Atom::organic(Element::C));
+            b.add_bond(te, c, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "divalent Te must be valid (RDKit sanitizes C[Te]C OK)"
+        );
+    }
+
+    #[test]
+    fn test_validate_valence_te_tetravalent_neutral() {
+        // Cl[Te](Cl)(Cl)Cl (TeCl4 analog). RDKit: explicitValence=4, sanitizes OK.
+        let mut b = MoleculeBuilder::new();
+        let te = b.add_atom(Atom::organic(Element::TE));
+        for _ in 0..4 {
+            let c = b.add_atom(Atom::organic(Element::C));
+            b.add_bond(te, c, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "tetravalent Te must be valid (RDKit sanitizes TeCl4-analog OK)"
+        );
+    }
+
+    #[test]
+    fn test_validate_valence_te_hexavalent_neutral() {
+        // F[Te](F)(F)(F)(F)F (TeF6 analog). RDKit: explicitValence=6, sanitizes OK.
+        let mut b = MoleculeBuilder::new();
+        let te = b.add_atom(Atom::organic(Element::TE));
+        for _ in 0..6 {
+            let c = b.add_atom(Atom::organic(Element::C));
+            b.add_bond(te, c, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "hexavalent Te must be valid (RDKit sanitizes TeF6-analog OK)"
+        );
+    }
+
+    #[test]
+    fn test_validate_valence_te_overvalent_invalid() {
+        // 8 single bonds on Te (Cl x8 analog). RDKit rejects during sanitization:
+        // "Explicit valence for atom # 1 Te, 8, is greater than permitted".
+        let mut b = MoleculeBuilder::new();
+        let te = b.add_atom(Atom::organic(Element::TE));
+        for _ in 0..8 {
+            let c = b.add_atom(Atom::organic(Element::C));
+            b.add_bond(te, c, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        let errors = validate_valence(&mol);
+        assert_eq!(
+            errors.len(),
+            1,
+            "8-bonded Te must be flagged invalid, matching RDKit's AtomValenceException"
+        );
+        assert_eq!(errors[0].actual, 8);
+        assert_eq!(errors[0].allowed, &[2, 4, 6]);
+    }
+
+    #[test]
+    fn test_validate_valence_te_cation_telluronium() {
+        // C[Te+](C)C (trimethyltelluronium). RDKit: charge=+1, degree=3,
+        // explicitValence=3 (effective valence 2+1=3), sanitizes OK.
+        let mut b = MoleculeBuilder::new();
+        let mut te_atom = Atom::organic(Element::TE);
+        te_atom.charge = 1;
+        let te = b.add_atom(te_atom);
+        for _ in 0..3 {
+            let c = b.add_atom(Atom::organic(Element::C));
+            b.add_bond(te, c, BondOrder::Single).unwrap();
+        }
+        let mol = b.build();
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "Te+ telluronium (3 bonds) must be valid, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn test_validate_valence_te_anion_telluride() {
+        // [Te-2] (isolated telluride dianion). RDKit: charge=-2, degree=0,
+        // explicitValence=0, sanitizes OK.
+        let mut b = MoleculeBuilder::new();
+        let te_atom = Atom::bracket(Element::TE, None, Default::default(), 0, -2, None);
+        b.add_atom(te_atom);
+        let mol = b.build();
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "[Te-2] must be valid, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn test_validate_valence_te_anion_hydrotelluride() {
+        // [TeH-]. RDKit: charge=-1, explicit H=1, totalValence=1, sanitizes OK.
+        let mut b = MoleculeBuilder::new();
+        let te_atom = Atom::bracket(Element::TE, None, Default::default(), 1, -1, None);
+        b.add_atom(te_atom);
+        let mol = b.build();
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "[TeH-] must be valid, matching RDKit"
+        );
+    }
+
+    #[test]
+    fn test_te_bracket_h2_implicit_and_valid() {
+        // [TeH2]. RDKit: charge=0, explicit H=2, totalValence=2, sanitizes OK.
+        // Bracket atoms return their stored H count directly from implicit_hcount().
+        let mut b = MoleculeBuilder::new();
+        let te_atom = Atom::bracket(Element::TE, None, Default::default(), 2, 0, None);
+        let te = b.add_atom(te_atom);
+        let mol = b.build();
+        assert_eq!(implicit_hcount(&mol, te), 2);
+        assert!(
+            validate_valence(&mol).is_empty(),
+            "[TeH2] must be valid, matching RDKit"
+        );
+    }
+
     #[test]
     fn test_validate_valence_transition_metal_skipped() {
         // Fe has no normal_valences → always valid regardless of bonds
