@@ -2104,11 +2104,16 @@ fn checked_matches(
 /// Like [`checked_matches`], but with an injectable visit budget instead of
 /// the hardcoded [`ALERT_MAX_VISIT_BUDGET`]. Production call sites always go
 /// through [`checked_matches`] (real budget, unchanged behaviour); this
-/// exists so tests can force `MatchOutcome::BudgetExhausted` on demand (e.g.
-/// `budget: 0` exhausts on the very first VF2 visit, deterministically,
-/// regardless of molecule or pattern) instead of relying on a real
-/// pathological molecule actually exhausting the production budget, which
-/// can take tens of seconds.
+/// exists so tests can force `MatchOutcome::BudgetExhausted` on demand
+/// instead of relying on a real pathological molecule actually exhausting
+/// the production budget, which can take tens of seconds.
+///
+/// For patterns that reach the VF2 recursion path, `budget: 0`
+/// deterministically produces `BudgetExhausted` on the first attempted
+/// visit. Structural early exits in [`has_match_bounded`] — e.g. a query
+/// pattern with more atoms than the target molecule — still return
+/// `NotFound` without ever consuming budget, regardless of what `budget` is
+/// set to.
 fn checked_matches_with_budget(
     mol: &Molecule,
     patterns: &'static [(&'static str, QueryMolecule)],
@@ -2160,10 +2165,9 @@ pub fn brenk_matches_checked(mol: &Molecule) -> Vec<(&'static str, MatchOutcome)
 /// could not be resolved within the VF2 visit budget (folded in as if
 /// matched — see [`pains_matches_checked`] for the real three-way outcome).
 ///
-/// An empty vec means every pattern was confirmed *not* to match. It does
-/// NOT distinguish "confirmed clean" from "some pattern was unresolved" —
-/// that distinction doesn't exist in this function's shape by construction;
-/// callers that need it use [`pains_matches_checked`].
+/// An empty vector means every pattern was conclusively `NotFound`. For
+/// *returned* names, this API does not distinguish a confirmed match from
+/// `BudgetExhausted` — use [`pains_matches_checked`] for that distinction.
 ///
 /// The molecule is expanded to explicit H form before matching because the
 /// PAINS SMARTS patterns reference explicit hydrogen atoms (`[#1]`).
@@ -2184,7 +2188,9 @@ pub fn pains_passes(mol: &Molecule) -> bool {
 /// whose result could not be resolved within the VF2 visit budget (folded in
 /// as if matched — see [`pains_matches`] for the same policy on PAINS).
 ///
-/// An empty vec means every pattern was confirmed not to match.
+/// An empty vector means every pattern was conclusively `NotFound`. For
+/// *returned* names, this API does not distinguish a confirmed match from
+/// `BudgetExhausted` — use [`brenk_matches_checked`] for that distinction.
 ///
 /// Brenk et al. 2008 structural alerts for drug design (J. Med. Chem. 51, 5149–5171).
 /// These patterns identify problematic functional groups and structural features.
@@ -2245,10 +2251,34 @@ fn heavy_atoms_from_matches(
 }
 
 /// Shared implementation: scan `patterns` against `mol` and return matching
-/// alert names with their heavy-atom indices.
+/// alert names with their heavy-atom indices. Always uses the real
+/// production budget ([`ALERT_MAX_VISIT_BUDGET`]) — see
+/// [`matches_detailed_impl_with_budget`] for the budget-injectable version
+/// tests use to exercise the "found some, then cut off" case deterministically
+/// and near-instantly.
+///
+/// **Budget exhaustion note:** an entry with an empty `atom_indices` vec can
+/// mean one of two things — see the public doc comments on
+/// [`pains_matches_detailed`]/[`brenk_matches_detailed`] for the caller-facing
+/// contract. In particular, when the search is cut off before enumeration
+/// completes, any embeddings collected *before* the cutoff are discarded
+/// rather than returned as a silently-incomplete highlight set.
 fn matches_detailed_impl(
     mol: &Molecule,
     patterns: &'static [(&'static str, QueryMolecule)],
+) -> Vec<(&'static str, Vec<AtomIdx>)> {
+    matches_detailed_impl_with_budget(mol, patterns, ALERT_MAX_VISIT_BUDGET)
+}
+
+/// Like [`matches_detailed_impl`], but with an injectable visit budget. Lets
+/// tests deterministically force the "some embeddings were collected, then
+/// the budget ran out mid-enumeration" case (a non-zero but insufficient
+/// budget) without needing a real pathological molecule and the real (slow)
+/// production budget.
+fn matches_detailed_impl_with_budget(
+    mol: &Molecule,
+    patterns: &'static [(&'static str, QueryMolecule)],
+    budget: u64,
 ) -> Vec<(&'static str, Vec<AtomIdx>)> {
     let mol_h = add_explicit_hs(mol);
     let rings = find_sssr(&mol_h);
@@ -2257,7 +2287,7 @@ fn matches_detailed_impl(
     // safety net as the existence-only variants above, so a pathological
     // symmetric target fails fast instead of hanging.
     let config = MatchConfig {
-        max_visit_budget: Some(ALERT_MAX_VISIT_BUDGET),
+        max_visit_budget: Some(budget),
         ..Default::default()
     };
     patterns
@@ -2265,13 +2295,21 @@ fn matches_detailed_impl(
         .filter_map(|(name, q)| {
             let (ms, budget_exhausted) =
                 find_matches_with_rings_and_config_checked(q, &mol_h, &rings, &config);
-            if ms.is_empty() {
-                // Same fail-safe policy as the existence-only functions above:
-                // a budget cutoff is reported as present (empty highlight set,
-                // since no embedding was collected before the cutoff), never
-                // silently dropped like a confirmed non-match.
-                return budget_exhausted.then(|| (*name, Vec::new()));
+
+            if budget_exhausted {
+                // Enumeration is incomplete -- whatever embeddings were
+                // collected before the cutoff are NOT the full match set, so
+                // they must never be returned as though they were exhaustive.
+                // Same fail-safe policy as the existence-only functions
+                // above: a budget cutoff is reported as present (flagged),
+                // never silently dropped like a confirmed non-match.
+                return Some((*name, Vec::new()));
             }
+
+            if ms.is_empty() {
+                return None;
+            }
+
             Some((*name, heavy_atoms_from_matches(&ms, &mol_h)))
         })
         .collect()
@@ -2279,10 +2317,19 @@ fn matches_detailed_impl(
 
 /// Like [`pains_matches`] but also returns the matched heavy-atom indices.
 ///
-/// Returns `Vec<(name, atom_indices)>` — one entry per triggered alert.
-/// The `atom_indices` identify the heavy atoms in `mol` that are part of the
+/// Returns `Vec<(name, atom_indices)>` — one entry per triggered alert. The
+/// `atom_indices` identify the heavy atoms in `mol` that are part of the
 /// problematic substructure, suitable for use with
 /// `chematic_depict::render_svg_highlighted`.
+///
+/// **An entry with an empty `atom_indices` vec means that alert rule's
+/// search was cut off by the VF2 visit budget before enumeration could
+/// complete** — not a normal match with zero atoms. Non-empty indices are
+/// only ever returned when enumeration ran to completion. Callers must not
+/// interpret an empty vec as "matched, but no atoms to highlight"; treat it
+/// the same as any other flagged-but-unresolved alert (see
+/// [`pains_matches_checked`] for the equivalent distinction on the coarser
+/// existence-only API).
 pub fn pains_matches_detailed(mol: &Molecule) -> Vec<(&'static str, Vec<AtomIdx>)> {
     matches_detailed_impl(mol, compiled_pains_patterns())
 }
@@ -2290,6 +2337,12 @@ pub fn pains_matches_detailed(mol: &Molecule) -> Vec<(&'static str, Vec<AtomIdx>
 /// Like [`brenk_matches`] but also returns the matched heavy-atom indices.
 ///
 /// Returns `Vec<(name, atom_indices)>` — one entry per triggered alert.
+///
+/// **An entry with an empty `atom_indices` vec means that alert rule's
+/// search was cut off by the VF2 visit budget before enumeration could
+/// complete** — not a normal match with zero atoms. Non-empty indices are
+/// only ever returned when enumeration ran to completion. See
+/// [`pains_matches_detailed`] for the full explanation.
 pub fn brenk_matches_detailed(mol: &Molecule) -> Vec<(&'static str, Vec<AtomIdx>)> {
     matches_detailed_impl(mol, compiled_brenk_patterns())
 }
@@ -2509,6 +2562,44 @@ mod tests {
             fold_conservative(checked).contains(&"tert_butyl_B(1)"),
             "BudgetExhausted must fold into the flagged/alert side, never \
              silently dropped as if NotFound"
+        );
+    }
+
+    /// Regression test for a real bug: `matches_detailed_impl` used to check
+    /// `ms.is_empty()` before `budget_exhausted`, so when the search found
+    /// *some* embeddings before the budget ran out, it returned those
+    /// partial embeddings as though they were the complete, exhaustive match
+    /// set -- silently misrepresenting an incomplete highlight set as a full
+    /// one.
+    ///
+    /// `budget: 3` against benzene's 6-fold-symmetric `c` query
+    /// deterministically finds 2 (of 6 possible) embeddings before
+    /// exhausting -- empirically verified: budget 0-1 -> 0 matches
+    /// (exhausted), budget 2 -> 1 (exhausted), budget 3 -> 2 (exhausted), ...,
+    /// budget 7+ -> all 6 (not exhausted). Budget 3 is exactly the "found
+    /// some, not all" case the fix targets, deterministically and
+    /// near-instantly (benzene is tiny; no real backtracking search needed).
+    #[test]
+    fn matches_detailed_never_returns_partial_highlights_on_budget_exhaustion() {
+        let benzene = mol("c1ccccc1");
+        let query = parse_smarts("c").unwrap();
+        let patterns: &'static [(&'static str, QueryMolecule)] =
+            Box::leak(vec![("test_c", query)].into_boxed_slice());
+
+        let result = matches_detailed_impl_with_budget(&benzene, patterns, 3);
+
+        assert_eq!(
+            result.len(),
+            1,
+            "the pattern must still be reported as flagged, not dropped, \
+             when its search was cut off"
+        );
+        assert_eq!(result[0].0, "test_c");
+        assert!(
+            result[0].1.is_empty(),
+            "a budget cutoff mid-enumeration must report an EMPTY highlight \
+             set, never the partial embeddings collected before the cutoff \
+             -- those are not the complete, exhaustive match"
         );
     }
 }
