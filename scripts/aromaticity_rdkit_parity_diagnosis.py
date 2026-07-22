@@ -79,27 +79,54 @@ EXPECTED_BUCKET_BY_ID = {
     "indole": "matches_rdkit_exact_kekule",
     "indolizine": "sssr_bridge_artifact_not_reproduced_docs_stale",
     "purine": "matches_rdkit_exact_kekule",
+    # azulene/selenophene/tellurophene/phosphole: untouched by K2a (charge
+    # is not their root cause -- azulene needs a non-alternant whole-
+    # perimeter Huckel candidate the Pass1/Pass2 model doesn't build;
+    # selenophene/tellurophene need Se/Te support the default Huckel engine
+    # doesn't have (RdkitLike-only); phosphole needs P support that exists
+    # nowhere in this engine). All four stay exactly where K1 left them:
+    # kekulize() succeeds, the raw Huckel model still doesn't confirm
+    # aromaticity, and `build_molecule_from_model`'s promote-only rebuild
+    # loop (K2b, a separate, not-yet-merged PR) still lets the stale
+    # parser-set `aromatic: true` survive uncontested for these four.
     "azulene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    # kekulize/K1 fix (fix/kekulize-charge-aware-k1): these 6 fixtures used to
-    # hard-fail kekulize() outright (bucket
-    # "kekulize_fails_atom_bond_flags_survive_coincidentally") -- see
-    # docs/aromaticity_rdkit_parity_rfc.md §1 root causes A-D. `kekulize()`
-    # now succeeds and its bond-by-bond Kekule assignment is verified
-    # byte-identical to RDKit's own choice (kekule_bond_mismatch_pairs == []
-    # for all 6, checked directly against the diagnosis summary JSON, not
-    # assumed). What moves them into
+    # K1 fix (fix/kekulize-charge-aware-k1, merged) unblocked kekulize() for
+    # all 6 of tropylium/imidazolium/pyridinium/pyrylium/tellurophene/
+    # phosphole -- see docs/aromaticity_rdkit_parity_rfc.md §1 root causes
+    # A-D. That alone moved all 6 into
     # "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent"
-    # instead of "matches_rdkit_exact_kekule" is unrelated to the K1 fix
-    # itself: `build_molecule_from_model`'s atom-flag rebuild loop only ever
-    # *promotes* `atom.aromatic` to true, never demotes a stale pre-existing
-    # true when the Huckel model disagrees (RFC §1b) -- deliberately out of
-    # scope here, tracked separately as "K2". Same bucket/shape as
-    # selenophene/azulene above, for the same deferred reason.
-    "tropylium_cation": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+    # (kekulize's bond-by-bond Kekule assignment verified byte-identical to
+    # RDKit's own choice for all 6), because the raw Huckel model
+    # (`ring_pi_electrons`) had its OWN separate, independent charge-blindness
+    # bug (a protonated ring N/O and a cationic ring C were scored as if
+    # neutral) that K1 never touched (K1's fix was entirely in
+    # `chematic-core/src/kekulization.rs`'s Kekule-matching layer, a
+    # different module).
+    #
+    # K2a (fix/aromaticity-charge-aware-pi-electrons-k2a) fixes THAT second,
+    # independent bug in `ring_pi_electrons`/`evaluate_atom_pi_contribution_inner`,
+    # mirroring K1's own charge-aware rules in the Huckel pi-electron-counting
+    # layer. For tropylium/imidazolium/pyridinium/pyrylium (no Se/Te/P
+    # involved), this is sufficient on its own to reach full RDKit parity --
+    # once the raw model itself confirms the ring, the EXISTING promote-only
+    # bond-rebuild loop (in `build_molecule_from_model`, untouched by K2a)
+    # correctly promotes their bonds to `Aromatic` for the first time,
+    # which is what actually fixes the atom/bond flag inconsistency for
+    # these four; their atom flags never needed demotion (they were already
+    # `true` from the aromatic-notation parse and stay `true`, now for a
+    # genuinely-confirmed reason instead of a stale one -- confirmed via
+    # `huckel_model_aromatic_atom_count` in the fixture dump, which reads
+    # the atom count for all four post-K2a, was 0 pre-K2a).
+    #
+    # tellurophene and phosphole are NOT part of K2a's fix (Se/Te/P support
+    # is a separate, source-grounded, not-yet-authorized follow-up -- see
+    # the K2a PR description) -- they stay in the same bucket as
+    # azulene/selenophene above, unchanged.
+    "tropylium_cation": "matches_rdkit_exact_kekule",
     "cyclopentadienyl_anion": "matches_rdkit_exact_kekule",
-    "imidazolium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "pyridinium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
-    "pyrylium": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
+    "imidazolium": "matches_rdkit_exact_kekule",
+    "pyridinium": "matches_rdkit_exact_kekule",
+    "pyrylium": "matches_rdkit_exact_kekule",
     "selenophene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
     "tellurophene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
     "phosphole": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",

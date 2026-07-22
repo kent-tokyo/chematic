@@ -1,0 +1,23 @@
+{
+  "description": "K2a (fix/aromaticity-charge-aware-pi-electrons-k2a) isolation check: before/after diff of apply_aromaticity's atom/bond flags across the 5000-molecule descriptor-census corpus (scripts/descriptor_census_corpus.smi, reused from PR #137), for both documented calling conventions, using crates/chematic-perception/examples/aromaticity_flag_corpus_dump.rs. 'before' = main@b184f2234df7783ba4fcbe3867ee85fa5c486bc4 (build_molecule_from_model unmodified, ring_pi_electrons unmodified); 'after' = this branch (ring_pi_electrons charge-aware fix only, build_molecule_from_model untouched).",
+  "n_molecules": 5000,
+  "raw_pathway": {
+    "atom_flag_changes": 0,
+    "bond_flag_changes": 0,
+    "molecules_newly_inconsistent": 0,
+    "note": "Zero drift, as required. build_molecule_from_model is untouched by K2a, and for never-Kekulized input its bond loop's fallback value (bond.order) is already BondOrder::Aromatic, so the loop is a structural no-op regardless of any model change -- explains why the raw pathway can never see a K2a-driven change."
+  },
+  "kekulized_pathway": {
+    "atom_flag_changes": 0,
+    "bond_flag_changes": 0,
+    "molecules_inconsistent_before": 84,
+    "molecules_inconsistent_after": 84,
+    "note": "Zero drift, zero new RDKit mismatches (nothing changed, so nothing newly mismatches). The 84 inconsistent molecules are the SAME 84 before and after K2a -- this is a pre-existing gap in build_molecule_from_model's promote-only logic (present on main already, unrelated to charge) that K2a does not address at all; it is K2b's (separate PR, still draft) subject matter. K2a's charge-aware ring_pi_electrons fix changes the raw model's verdict for some individual rings (spot-checked, e.g. a charged sulfinamide-type ring in the corpus: model_aromatic_atom_count dropped 10->5 for one molecule when evaluated on the un-Kekulized representation), but this never propagates to the final apply_aromaticity() output for ANY of the 5000 corpus molecules, confirmed empirically atom-by-atom and bond-by-bond, not inferred."
+  },
+  "40_fixture_oracle": {
+    "moved_to_matches_rdkit_exact_kekule": ["tropylium_cation", "imidazolium", "pyridinium", "pyrylium"],
+    "unchanged": ["azulene", "selenophene", "tellurophene", "phosphole", "and all other 32 fixtures"],
+    "unexplained": 0,
+    "baseline_drift": 0
+  }
+}
