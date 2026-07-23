@@ -2,6 +2,20 @@
 
 Status: **Diagnosis complete. No production behavior change.**
 
+> **Update (C1a):** Root Cause 1 (the dominant, E/Z-marker-carrier cluster
+> described below) has a safe, verified **partial** fix — branch
+> `fix/canonical-ez-carrier-normalization`, PR #148. 264/282 of the
+> `has_ez_marker` diagnosis subset now converge to one canonical string; 18
+> remain a deliberate, documented residual (two independently stereogenic
+> double bonds sharing one candidate carrier bond — see tracking issue
+> "canonical E/Z: jointly resolve shared carrier bonds across coupled stereo
+> systems"). Zero semantic corruption in either case. Root Causes 2 and 3
+> below are still untouched/deferred. See
+> `validation/results/canonical_ez_carrier_c1a_reconciliation.json` for the
+> full count reconciliation (including why this doc's/task history's "281"
+> and the committed diagnosis artifact's "282" are not a regression against
+> each other).
+
 Branch: `diag/canonical-smiles-residual` (forked from `main`@`659baca221f71f135ce0e1780e71245d8770f132`).
 
 ## Scope declaration

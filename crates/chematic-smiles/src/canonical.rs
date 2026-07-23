@@ -380,6 +380,16 @@ struct CanonicalWriter<'a> {
     /// stored here too, pinned to its own plain (non-directional) order, so
     /// a stray parse-time marker on it can't leak through.
     ez_marker: HashMap<BondIdx, BondOrder>,
+    /// Test-only instrumentation: every alkene end for which
+    /// `resolve_ez_marker_for_end` hit the shared-candidate-bond abstain
+    /// guard specifically (as opposed to "not ambiguous" or "no direction
+    /// info at all"). Lets regression tests assert the guard actually
+    /// fired for a given fixture by reading production's own record of
+    /// which branch it took, rather than re-deriving the topology
+    /// condition in the test and hoping it matches. `cfg(test)`-gated —
+    /// zero cost/size impact on release builds.
+    #[cfg(test)]
+    ez_shared_bond_abstains: Vec<AtomIdx>,
 }
 
 impl<'a> CanonicalWriter<'a> {
@@ -396,6 +406,8 @@ impl<'a> CanonicalWriter<'a> {
             ez_group: HashMap::new(),
             ez_flip: HashMap::new(),
             ez_marker: HashMap::new(),
+            #[cfg(test)]
+            ez_shared_bond_abstains: Vec::new(),
         }
     }
 
@@ -625,6 +637,8 @@ impl<'a> CanonicalWriter<'a> {
         // with an extra redundant marker. Reverted in favor of this
         // simpler, provably no-op-on-failure form.)
         if stereo_alkene_ends.contains(&carrier.0) || stereo_alkene_ends.contains(&sibling.0) {
+            #[cfg(test)]
+            self.ez_shared_bond_abstains.push(alkene_end);
             return;
         }
 
@@ -1915,6 +1929,67 @@ mod tests {
         double_bond_is_e_mol(&mol)
     }
 
+    fn raw_dir(mol: &Molecule, bidx: BondIdx) -> Option<BondOrder> {
+        let order = mol.bond(bidx).order;
+        if matches!(order, BondOrder::Up | BondOrder::Down) {
+            return Some(order);
+        }
+        mol.bond_direction(bidx)
+    }
+
+    /// Whether `end`'s substituent side of a double bond points "up",
+    /// reading whichever substituent actually carries a direction marker
+    /// via the fixed, rank-based reference (lower-`ranks` substituent) with
+    /// sibling-complement fallback -- the same reference `resolve_ez_marker_
+    /// for_end` uses to pick a canonical carrier. Shared by
+    /// `double_bond_is_e_mol` (single representative bond) and
+    /// `geometry_fingerprint` (every stereogenic bond) so there is exactly
+    /// one implementation of "which substituent to trust" for tests, not
+    /// two that could silently disagree.
+    fn up_of_reference(mol: &Molecule, ranks: &[u64], end: AtomIdx) -> Option<bool> {
+        let subs: Vec<(AtomIdx, BondIdx)> = mol
+            .neighbors(end)
+            .filter(|&(_, b)| mol.bond(b).order != BondOrder::Double)
+            .collect();
+        match subs.len() {
+            1 => {
+                let (_, bidx) = subs[0];
+                let dir = raw_dir(mol, bidx)?;
+                Some(CanonicalWriter::direction_is_up(
+                    dir,
+                    mol.bond(bidx).atom1,
+                    end,
+                ))
+            }
+            2 => {
+                let reference = *subs
+                    .iter()
+                    .min_by_key(|&&(a, _)| ranks[a.0 as usize])
+                    .expect("subs has 2 elements");
+                let sibling = if reference.0 == subs[0].0 {
+                    subs[1]
+                } else {
+                    subs[0]
+                };
+                if let Some(dir) = raw_dir(mol, reference.1) {
+                    Some(CanonicalWriter::direction_is_up(
+                        dir,
+                        mol.bond(reference.1).atom1,
+                        end,
+                    ))
+                } else {
+                    let dir = raw_dir(mol, sibling.1)?;
+                    Some(!CanonicalWriter::direction_is_up(
+                        dir,
+                        mol.bond(sibling.1).atom1,
+                        end,
+                    ))
+                }
+            }
+            _ => None,
+        }
+    }
+
     /// Like `double_bond_is_e`, but tries every double bond in the molecule
     /// (not just the first one found) and returns the first that yields a
     /// defined answer -- a molecule can have an earlier, non-stereogenic
@@ -1922,66 +1997,50 @@ mod tests {
     /// substituent at all) ahead of its actual stereo alkene in bond order.
     fn double_bond_is_e_mol(mol: &Molecule) -> Option<bool> {
         let ranks = morgan_ranks(mol);
-
-        fn raw_dir(mol: &Molecule, bidx: BondIdx) -> Option<BondOrder> {
-            let order = mol.bond(bidx).order;
-            if matches!(order, BondOrder::Up | BondOrder::Down) {
-                return Some(order);
-            }
-            mol.bond_direction(bidx)
-        }
-
-        let up_of_reference = |end: AtomIdx| -> Option<bool> {
-            let subs: Vec<(AtomIdx, BondIdx)> = mol
-                .neighbors(end)
-                .filter(|&(_, b)| mol.bond(b).order != BondOrder::Double)
-                .collect();
-            match subs.len() {
-                1 => {
-                    let (_, bidx) = subs[0];
-                    let dir = raw_dir(mol, bidx)?;
-                    Some(CanonicalWriter::direction_is_up(
-                        dir,
-                        mol.bond(bidx).atom1,
-                        end,
-                    ))
-                }
-                2 => {
-                    let reference = *subs
-                        .iter()
-                        .min_by_key(|&&(a, _)| ranks[a.0 as usize])
-                        .expect("subs has 2 elements");
-                    let sibling = if reference.0 == subs[0].0 {
-                        subs[1]
-                    } else {
-                        subs[0]
-                    };
-                    if let Some(dir) = raw_dir(mol, reference.1) {
-                        Some(CanonicalWriter::direction_is_up(
-                            dir,
-                            mol.bond(reference.1).atom1,
-                            end,
-                        ))
-                    } else {
-                        let dir = raw_dir(mol, sibling.1)?;
-                        Some(!CanonicalWriter::direction_is_up(
-                            dir,
-                            mol.bond(sibling.1).atom1,
-                            end,
-                        ))
-                    }
-                }
-                _ => None,
-            }
-        };
-
         mol.bonds()
             .filter(|(_, b)| b.order == BondOrder::Double)
             .find_map(|(_, b)| {
-                let ua = up_of_reference(b.atom1)?;
-                let ub = up_of_reference(b.atom2)?;
+                let ua = up_of_reference(mol, &ranks, b.atom1)?;
+                let ub = up_of_reference(mol, &ranks, b.atom2)?;
                 Some(ua != ub)
             })
+    }
+
+    /// A geometry fingerprint suitable for comparing two *different* parses
+    /// of the same molecule (e.g. original input vs. a canonical-output
+    /// reparse) -- one E/Z fact per stereogenic double bond (both ends have
+    /// at least one substituent), via `up_of_reference`. Ordered by each
+    /// bond's lower-ranked endpoint: `ranks` is a molecule-intrinsic, permutation-
+    /// invariant key (unlike `BondIdx`/bond-parse-order, which differs
+    /// between two independently-atom-ordered spellings of the same
+    /// molecule), so this ordering lines up positionally across the two
+    /// parses being compared as long as neither parse gained or lost a
+    /// stereogenic double bond.
+    fn geometry_fingerprint(mol: &Molecule) -> Vec<Option<bool>> {
+        let ranks = morgan_ranks(mol);
+        let mut doubles: Vec<(u64, BondIdx)> = mol
+            .bonds()
+            .filter(|(_, b)| b.order == BondOrder::Double)
+            .filter(|(_, b)| {
+                CanonicalWriter::end_has_substituent(mol, b.atom1)
+                    && CanonicalWriter::end_has_substituent(mol, b.atom2)
+            })
+            .map(|(bidx, b)| {
+                let key = ranks[b.atom1.0 as usize].min(ranks[b.atom2.0 as usize]);
+                (key, bidx)
+            })
+            .collect();
+        doubles.sort_by_key(|&(k, _)| k);
+
+        doubles
+            .into_iter()
+            .map(|(_, bidx)| {
+                let bond = mol.bond(bidx);
+                let ua = up_of_reference(mol, &ranks, bond.atom1)?;
+                let ub = up_of_reference(mol, &ranks, bond.atom2)?;
+                Some(ua != ub)
+            })
+            .collect()
     }
 
     const EZ_STABLE_CORPUS: &[&str] = &[
@@ -2434,6 +2493,104 @@ mod tests {
                  geometry to make this a meaningful check (got {ez_before:?})"
             );
         }
+    }
+
+    /// The 18 real-corpus molecules (out of the 282-molecule `has_ez_marker`
+    /// diagnosis subset, re-measured on this fix) where the shared-
+    /// candidate-bond guard in `resolve_ez_marker_for_end` fires and
+    /// canonicalization deliberately does NOT converge to one string --
+    /// persisted as a permanent regression fixture set per PR review (see
+    /// the tracking issue "canonical E/Z: jointly resolve shared carrier
+    /// bonds across coupled stereo systems" for what a real fix would need).
+    ///
+    /// Two things this asserts per fixture, deliberately NOT just "the
+    /// string is unchanged" (brittle, and not what's under test):
+    ///  1. The guard actually fired -- read from `ez_shared_bond_abstains`,
+    ///     production's own record of which branch `resolve_ez_marker_for_
+    ///     end` took, not re-derived from the topology in this test (which
+    ///     could be true for some unrelated end while production actually
+    ///     exited via "not ambiguous" or "no direction info" instead).
+    ///  2. Zero semantic corruption: `geometry_fingerprint` (marker-
+    ///     placement-invariant, cross-parse-comparable) is identical
+    ///     between the original parse and a reparse of its canonical
+    ///     output.
+    ///
+    /// This Rust test is a regression tripwire, not a semantic oracle --
+    /// `geometry_fingerprint` only checks *this crate's own* reading of E/Z
+    /// stays put; the authoritative structural proof (independent RDKit
+    /// comparison across all 4,992 measured molecules, not just these 18)
+    /// lives in the PR's own verification, not reimplemented here.
+    const EZ_SHARED_CANDIDATE_BOND_RESIDUALS: &[&str] = &[
+        r"CCCCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+        r"O=C(Nc1ccc(C[C@H](/N=c2\c(O)c(O)\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+        r"CCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+        r"O=C(Nc1ccc(C[C@H](/N=c2\c(O)c(O)\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+        r"CC(C)(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+        r"CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N",
+        r"CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N",
+        r"COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
+        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
+        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
+        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
+        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
+        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+        r"CCO/C(O)=C(\C1=NCCN1)c1nnc(N)s1",
+    ];
+
+    #[test]
+    fn ez_carrier_shared_candidate_bond_residuals_never_corrupt() {
+        for &s in EZ_SHARED_CANDIDATE_BOND_RESIDUALS {
+            let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
+            let ranks = winning_individualized_ranks(&mol);
+            let mut writer = CanonicalWriter::new(&mol, &ranks);
+            writer.resolve_ez_markers();
+            assert!(
+                !writer.ez_shared_bond_abstains.is_empty(),
+                "expected the shared-candidate-bond guard to fire for '{s}', \
+                 but resolve_ez_marker_for_end never recorded an abstain -- \
+                 this fixture may no longer belong in this residual set"
+            );
+
+            let canon = canonical_smiles(&mol);
+            let before = geometry_fingerprint(&mol);
+            let mol2 = parse(&canon).unwrap_or_else(|e| panic!("re-parse '{canon}': {e}"));
+            let after = geometry_fingerprint(&mol2);
+            assert_eq!(
+                before, after,
+                "canonicalizing '{s}' -> '{canon}' must not change E/Z \
+                 geometry, even though this shared-bond shape is a known, \
+                 deliberately-abstained residual (not resolved to one \
+                 canonical string)"
+            );
+            assert!(
+                before.iter().any(|f| f.is_some()),
+                "test setup sanity: '{s}' must have at least one defined \
+                 geometry fact to make this a meaningful check"
+            );
+        }
+    }
+
+    /// Positive control for `geometry_fingerprint`: without this, the
+    /// "before == after" check above would pass vacuously if the fingerprint
+    /// function were broken and always returned e.g. all-`None` or some
+    /// other input-insensitive constant. Flipping one real mark in one of
+    /// the residual fixtures (`/N=c1\...` -> `/N=c1/...`) must change the
+    /// fingerprint, proving the function actually reads the input.
+    #[test]
+    fn geometry_fingerprint_is_sensitive_to_a_real_flip() {
+        let original = "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O";
+        let flipped = "CCCCC/N=c1/c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O";
+        let fp_original = geometry_fingerprint(&parse(original).unwrap());
+        let fp_flipped = geometry_fingerprint(&parse(flipped).unwrap());
+        assert_ne!(
+            fp_original, fp_flipped,
+            "geometry_fingerprint must be sensitive to a real E/Z flip, or \
+             the no-corruption check above is vacuous"
+        );
     }
 
     /// Both stereo double bonds' E/Z parity in a molecule with (at least)
