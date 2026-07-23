@@ -110,6 +110,33 @@ For **aromatic ring counting**, use `chematic_perception::count_aromatic_rings(m
 
 `find_sssr(mol)` (`chematic-perception`) returns a `RingSet`; call `.rings()` to get `&[Vec<AtomIdx>]`. `augmented_ring_set(mol, sssr_rings)` is used internally by aromaticity and ring-count code to correct SSSR decomposition artefacts in fused systems.
 
+### Fingerprints: legacy vs. RDKit-bit-exact
+
+`chematic-fp` ships **two structurally separate** ECFP4 implementations, never
+interchanged silently:
+
+- `ecfp4()`/`ecfp()`/`mol.ecfp4()` (default, infallible) — chematic's own FNV-1a hash
+  over a chematic-designed byte layout. Not RDKit-bit-compatible by design (different
+  hash function, different aromatic-bond encoding); this is the long-standing default
+  and its output never changes as a side effect of the API below.
+- `rdkit_morgan_ecfp4_experimental()`/`rdkit_morgan_fingerprint()` (opt-in, fallible —
+  `Result<_, RdkitMorganError>`) — a from-scratch port of RDKit's real Morgan hashing
+  machinery (`gboost::hash_combine`, RDKit's own `BondType` ordinals), bit-exact
+  against a live RDKit oracle at radius ∈ {0,1,2,3} and fold width ∈
+  {128,256,512,1024,2048} (each independently verified, not assumed to generalize).
+  Requires RDKit-parity aromaticity preprocessing internally, which can fail on a
+  small, known class of bridgehead-heteroatom-fused rings that neither engine can
+  kekulize yet — that failure surfaces as a typed `Err`, never a silent fallback to
+  the Hückel-based default engine (the two engines are not bit-compatible, so a silent
+  substitution would look successful while returning the wrong hash). Python:
+  `Mol.rdkit_ecfp4()`/`rdkit_ecfp4_detail()`/`rdkit_ecfp_config()`/
+  `rdkit_ecfp_config_detail()` (raise `ValueError` on failure). WASM:
+  `rdkit_ecfp4_bitvec()`/`rdkit_ecfp4_detail_json()`/`rdkit_ecfp_config_bitvec()`/
+  `rdkit_ecfp_config_detail_json()` (`Result<_, JsValue>`). See
+  `docs/ecfp4_bitexact_api_rfc.md` for the full diagnosis and
+  `validation/ecfp4_rdkit_stable_api_fixtures.json` for the shared, oracle-derived
+  cross-language test corpus (Rust/Python/WASM all read the same file).
+
 ### Descriptor Pipeline
 
 `chematic-chem/src/descriptors.rs` contains all physicochemical functions as free functions taking `&Molecule`. SMARTS-based descriptors (TPSA, HBA/HBD, PAINS, pKa) compile patterns via `parse_smarts` and match with `find_matches`. The LRU cache in `chematic-smarts` gives 5–20× speedup on repeated patterns.

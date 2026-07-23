@@ -7,6 +7,16 @@ type EcfpBitInfo = (
     std::collections::HashMap<usize, Vec<(usize, usize)>>,
 );
 
+/// `(fingerprint bytes, {raw_id: count}, {raw_id: [(atom_idx, radius), ...]}, {folded_bit:
+/// [(atom_idx, radius), ...]})` for the RDKit-bit-exact Morgan/ECFP detail methods
+/// (`rdkit_ecfp4_detail`, `rdkit_ecfp_config_detail`).
+type RdkitMorganDetail = (
+    Vec<u8>,
+    std::collections::HashMap<u32, u32>,
+    std::collections::HashMap<u32, Vec<(u32, u32)>>,
+    std::collections::HashMap<usize, Vec<(u32, u32)>>,
+);
+
 mod formats;
 mod misc;
 mod mol_methods;

@@ -6,6 +6,7 @@
 
 use crate::EcfpBitInfo;
 use crate::Mol;
+use crate::RdkitMorganDetail;
 use crate::formats::{bitvec2048_to_bytes, flat_to_coords3d};
 use ndarray::Array1;
 use numpy::{IntoPyArray, PyArray1};
@@ -1304,6 +1305,87 @@ impl Mol {
             use_double_fold: false,
         };
         bitvec2048_to_bytes(&chematic_fp::ecfp(&self.inner, &config))
+    }
+
+    /// RDKit-bit-exact ECFP4 (radius=2, 2048 bits, ``useChirality=False``,
+    /// ``useBondTypes=True``, RDKit's default atom invariant) as bytes (256 bytes =
+    /// 2048 bits, LSB-first) -- bit-for-bit identical to
+    /// ``rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048).GetFingerprint(mol)``
+    /// for every input this preprocessing handles. **Not** the same bits as
+    /// :meth:`ecfp4` (that path uses chematic's own FNV-1a hash and is not RDKit-bit-
+    /// compatible by design -- the two are never silently interchanged).
+    ///
+    /// Raises ``ValueError`` if RDKit-parity aromaticity preprocessing fails (a real,
+    /// currently-unfixed structural class -- certain bridgehead-nitrogen fused
+    /// heterocycles that cannot be kekulized under either engine). Never silently
+    /// falls back to :meth:`ecfp4`'s Hückel-based engine on such input -- the two
+    /// engines are not bit-compatible, so a silent substitution would look successful
+    /// while actually returning the wrong hash. See ``docs/ecfp4_bitexact_api_rfc.md``.
+    fn rdkit_ecfp4(&self) -> PyResult<Vec<u8>> {
+        let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(bitvec2048_to_bytes(&result.fingerprint))
+    }
+
+    /// Same fingerprint as :meth:`rdkit_ecfp4`, plus the raw (unfolded) data behind it.
+    ///
+    /// Returns ``(fingerprint, sparse_counts, raw_bit_info, folded_bit_info)``:
+    ///
+    /// - ``fingerprint``: ``bytes`` (256 bytes = 2048 bits, LSB-first) -- identical to
+    ///   :meth:`rdkit_ecfp4`.
+    /// - ``sparse_counts``: ``{raw_id: count}`` -- RDKit's ``GetSparseCountFingerprint``
+    ///   shape (unfolded 32-bit identifiers).
+    /// - ``raw_bit_info``: ``{raw_id: [(atom_idx, radius), ...]}`` -- RDKit's
+    ///   ``AdditionalOutput.GetBitInfoMap()`` on the unfolded fingerprint.
+    /// - ``folded_bit_info``: ``{bit: [(atom_idx, radius), ...]}`` -- the same, folded
+    ///   to the 2048-bit fingerprint.
+    ///
+    /// Raises ``ValueError`` on the same preprocessing failures as :meth:`rdkit_ecfp4`.
+    fn rdkit_ecfp4_detail(&self) -> PyResult<RdkitMorganDetail> {
+        let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((
+            bitvec2048_to_bytes(&result.fingerprint),
+            result.sparse_counts.into_iter().collect(),
+            result.raw_bit_info.into_iter().collect(),
+            result.folded_bit_info.into_iter().collect(),
+        ))
+    }
+
+    /// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen radius/bit-width, as
+    /// bytes (``nbits / 8`` bytes, LSB-first).
+    ///
+    /// ``radius`` must be one of 0, 1, 2 (:meth:`rdkit_ecfp4`'s ECFP4), or 3.
+    /// ``nbits`` must be one of 128, 256, 512, 1024, or 2048. Each of these 20
+    /// combinations is independently re-verified against a live RDKit oracle (not
+    /// assumed to generalize from radius=2/2048 bits alone) -- see
+    /// ``validation/ecfp4_rdkit_stable_api_fixtures.json``. Any other value raises
+    /// ``ValueError`` rather than being silently coerced to the nearest supported one.
+    ///
+    /// Raises ``ValueError`` on the same preprocessing failures as :meth:`rdkit_ecfp4`
+    /// (regardless of ``radius``/``nbits`` -- the failure happens before folding).
+    #[pyo3(signature = (radius = 2, nbits = 2048))]
+    fn rdkit_ecfp_config(&self, radius: u32, nbits: usize) -> PyResult<Vec<u8>> {
+        let config = python_rdkit_morgan_config(radius, nbits)?;
+        let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(bitvecn_to_bytes(&result.fingerprint))
+    }
+
+    /// Same fingerprint as :meth:`rdkit_ecfp_config`, plus the raw (unfolded) data --
+    /// see :meth:`rdkit_ecfp4_detail` for the return shape (identical, generalized to
+    /// this method's ``radius``/``nbits``).
+    #[pyo3(signature = (radius = 2, nbits = 2048))]
+    fn rdkit_ecfp_config_detail(&self, radius: u32, nbits: usize) -> PyResult<RdkitMorganDetail> {
+        let config = python_rdkit_morgan_config(radius, nbits)?;
+        let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((
+            bitvecn_to_bytes(&result.fingerprint),
+            result.sparse_counts.into_iter().collect(),
+            result.raw_bit_info.into_iter().collect(),
+            result.folded_bit_info.into_iter().collect(),
+        ))
     }
 
     /// MACCS 166-bit keys as bytes (21 bytes, LSB-first).
@@ -4022,3 +4104,58 @@ impl Mol {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Maps the plain `radius`/`nbits` integers `rdkit_ecfp_config`/`rdkit_ecfp_config_detail`
+/// accept from Python into chematic-fp's closed `RdkitMorganConfig` enums. An
+/// unsupported value raises `ValueError` explicitly rather than being coerced to the
+/// nearest supported one -- there is no guessed conversion for an option this API
+/// doesn't (yet) support.
+fn python_rdkit_morgan_config(
+    radius: u32,
+    nbits: usize,
+) -> PyResult<chematic_fp::RdkitMorganConfig> {
+    let radius = match radius {
+        0 => chematic_fp::RdkitMorganRadius::R0,
+        1 => chematic_fp::RdkitMorganRadius::R1,
+        2 => chematic_fp::RdkitMorganRadius::R2,
+        3 => chematic_fp::RdkitMorganRadius::R3,
+        other => {
+            return Err(PyValueError::new_err(format!(
+                "unsupported radius {other} -- rdkit_ecfp_config only supports 0, 1, 2, or 3 \
+                 (each independently verified against a live RDKit oracle)"
+            )));
+        }
+    };
+    let fp_size = match nbits {
+        128 => chematic_fp::RdkitMorganFpSize::B128,
+        256 => chematic_fp::RdkitMorganFpSize::B256,
+        512 => chematic_fp::RdkitMorganFpSize::B512,
+        1024 => chematic_fp::RdkitMorganFpSize::B1024,
+        2048 => chematic_fp::RdkitMorganFpSize::B2048,
+        other => {
+            return Err(PyValueError::new_err(format!(
+                "unsupported nbits {other} -- rdkit_ecfp_config only supports 128, 256, 512, \
+                 1024, or 2048"
+            )));
+        }
+    };
+    Ok(chematic_fp::RdkitMorganConfig { radius, fp_size })
+}
+
+/// Bit-pack a variable-width `BitVecN` into `bit_width()/8` bytes, LSB-first --
+/// generalizes `formats::bitvec2048_to_bytes` to `rdkit_ecfp_config`'s caller-chosen
+/// widths (always a multiple of 8: 128/256/512/1024/2048).
+fn bitvecn_to_bytes(fp: &chematic_fp::bitvec::BitVecN) -> Vec<u8> {
+    let byte_count = fp.bit_width() / 8;
+    (0..byte_count)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
