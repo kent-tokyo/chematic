@@ -368,6 +368,18 @@ struct CanonicalWriter<'a> {
     /// every remaining bond in the group is flipped so the first directional
     /// bond of each system is always `/`, regardless of input spelling.
     ez_flip: HashMap<BondIdx, bool>,
+    /// Resolved "which bond carries the `/`/`\` marker" override, computed
+    /// once up front by [`Self::resolve_ez_markers`] and consulted by every
+    /// site that would otherwise read the bond's raw parse-time direction
+    /// (literal `Up`/`Down` order, or the aromatic-bond-direction stash).
+    /// Bonds not present here fall back to that raw reading unchanged — this
+    /// map only ever contains entries for the substituent bonds of a
+    /// tri-/tetra-substituted stereo alkene end, where the *choice* of which
+    /// substituent carries the mark is otherwise input-order-dependent (see
+    /// `resolve_ez_markers` for why). A demoted (no-longer-marked) bond is
+    /// stored here too, pinned to its own plain (non-directional) order, so
+    /// a stray parse-time marker on it can't leak through.
+    ez_marker: HashMap<BondIdx, BondOrder>,
 }
 
 impl<'a> CanonicalWriter<'a> {
@@ -383,6 +395,267 @@ impl<'a> CanonicalWriter<'a> {
             out: String::new(),
             ez_group: HashMap::new(),
             ez_flip: HashMap::new(),
+            ez_marker: HashMap::new(),
+        }
+    }
+
+    /// The raw parse-time direction of `bidx`, if any: a literal `Up`/`Down`
+    /// bond order, or (when both endpoints are aromatic) the stashed
+    /// direction of an adjacent exocyclic double bond. This is the
+    /// *unresolved* reading — [`Self::effective_order`] is what emission
+    /// code should use instead, since it additionally applies
+    /// `resolve_ez_markers`'s carrier choice on top of this.
+    fn raw_input_direction(&self, bidx: BondIdx) -> Option<BondOrder> {
+        let order = self.mol.bond(bidx).order;
+        if matches!(order, BondOrder::Up | BondOrder::Down) {
+            return Some(order);
+        }
+        self.mol.bond_direction(bidx)
+    }
+
+    /// Strip directionality from a bond order, leaving its "plain" chemical
+    /// order untouched: `Up`/`Down` becomes `Single` (the literal-marker
+    /// case), anything else (notably `Aromatic`, the stash case) is
+    /// returned as-is. Used to demote a substituent bond that must no
+    /// longer carry the `/`/`\` marker in the output.
+    fn plain_order(order: BondOrder) -> BondOrder {
+        if matches!(order, BondOrder::Up | BondOrder::Down) {
+            BondOrder::Single
+        } else {
+            order
+        }
+    }
+
+    /// The effective direction to use when emitting `bidx`: `resolve_ez_markers`'s
+    /// resolved choice if this bond participates in a tri-/tetra-substituted
+    /// stereo alkene end, otherwise the unresolved raw parse-time direction
+    /// (literal order or aromatic-bond-direction stash), otherwise the
+    /// bond's own real chemical order. Every write-time site that needs "the
+    /// order to show for this bond" (ring-closure emission and tree-edge
+    /// emission alike) must go through this, not read `bond_direction`/
+    /// `order` directly, or the two sites can disagree on which bond a
+    /// moved E/Z marker landed on.
+    fn effective_order(&self, bidx: BondIdx) -> BondOrder {
+        if let Some(&resolved) = self.ez_marker.get(&bidx) {
+            return resolved;
+        }
+        self.raw_input_direction(bidx)
+            .unwrap_or(self.mol.bond(bidx).order)
+    }
+
+    /// Return `true` if `dir` encodes "up" (`/`, read atom1→atom2) as seen
+    /// from `alkene_end`'s side of `bond` — the same atom1/atom2-relative
+    /// convention `chematic_chem::cip::substituent_is_up` uses to read a
+    /// marker back out, so a value written here round-trips identically.
+    fn direction_is_up(dir: BondOrder, bond_atom1: AtomIdx, alkene_end: AtomIdx) -> bool {
+        match dir {
+            BondOrder::Up => bond_atom1 == alkene_end,
+            BondOrder::Down => bond_atom1 != alkene_end,
+            _ => false, // never called with a non-directional `dir`
+        }
+    }
+
+    /// The inverse of `direction_is_up`: which `Up`/`Down` order to store on
+    /// `bond` so that, read from `alkene_end`'s side, it encodes `want_up`.
+    fn direction_for_up(bond_atom1: AtomIdx, alkene_end: AtomIdx, want_up: bool) -> BondOrder {
+        if (bond_atom1 == alkene_end) == want_up {
+            BondOrder::Up
+        } else {
+            BondOrder::Down
+        }
+    }
+
+    /// Resolve, for every tri-/tetra-substituted stereo alkene end, which ONE
+    /// of its ≥2 non-double-bond substituent bonds should carry the `/`/`\`
+    /// marker in the output — deterministically, from the molecule's own
+    /// (already fully individualized) canonical ranks, rather than just
+    /// inheriting whichever bond the original parse happened to mark.
+    ///
+    /// **The bug this fixes** (canonical-residual RFC, Root cause 1): SMILES
+    /// only requires ONE of an alkene carbon's ≥2 substituent bonds to carry
+    /// an explicit marker (the geometry of the other is implied — at a
+    /// trigonal alkene carbon with two substituents, they are always on
+    /// opposite sides). *Which* substituent gets marked is a free choice at
+    /// write time, but the writer previously just checked "does this
+    /// specific bond already carry a direction", inherited straight from
+    /// parse time — so two RDKit-valid respellings of the identical molecule
+    /// that mark different substituents produced two different (but
+    /// chemically identical) canonical outputs. Resolving the carrier here,
+    /// once, from topology + rank alone, makes the choice depend only on the
+    /// molecule itself, not on which substituent the input happened to mark.
+    ///
+    /// The carrier is whichever substituent atom has the numerically lowest
+    /// `self.ranks` value; `self.ranks` is the *fully discrete* (all-distinct)
+    /// winning individualized ranking used for this entire write (see
+    /// `winning_individualized_ranks`), so this pick is a total, molecule-
+    /// derived order — invariant across any input atom permutation/spelling
+    /// — with no remaining tie to break (any leftover tie implies the two
+    /// substituents are automorphic, so either choice writes the same
+    /// string). Runs before `build_ez_groups`/ring discovery/DFS write, so it
+    /// depends only on molecule topology, never on write order.
+    ///
+    /// Deliberately narrow to exactly 2 substituents (the only case a valid
+    /// sp2 alkene carbon — one double bond + up to two single bonds — can
+    /// have): 0 or 1 substituent has no ambiguity to resolve, and >2 cannot
+    /// occur for a real double bond, so it's left untouched rather than
+    /// guessed at.
+    fn resolve_ez_markers(&mut self) {
+        if self.ranks.is_empty() {
+            return;
+        }
+
+        // Precompute the full set of atoms `resolve_ez_marker_for_end` will
+        // treat as an ambiguous stereo-alkene end (topology-only, so this
+        // set doesn't depend on processing order below). Needed so two
+        // *different*, independently stereogenic double bonds that happen
+        // to share one candidate substituent bond between them (e.g. two
+        // adjacent ring stereocenters connected by the very ring-closure
+        // bond each would otherwise use as a candidate carrier) can be
+        // detected — see the guard in `resolve_ez_marker_for_end`.
+        let mut stereo_alkene_ends: HashSet<AtomIdx> = HashSet::new();
+        for bidx in 0..self.mol.bond_count() {
+            let bond = self.mol.bond(BondIdx(bidx as u32));
+            if bond.order != BondOrder::Double {
+                continue;
+            }
+            if !Self::end_has_substituent(self.mol, bond.atom1)
+                || !Self::end_has_substituent(self.mol, bond.atom2)
+            {
+                continue;
+            }
+            for end in [bond.atom1, bond.atom2] {
+                let sub_count = self
+                    .mol
+                    .neighbors(end)
+                    .filter(|&(_, b)| self.mol.bond(b).order != BondOrder::Double)
+                    .count();
+                if sub_count == 2 {
+                    stereo_alkene_ends.insert(end);
+                }
+            }
+        }
+
+        for bidx in 0..self.mol.bond_count() {
+            let bidx = BondIdx(bidx as u32);
+            let bond = self.mol.bond(bidx);
+            if bond.order != BondOrder::Double {
+                continue;
+            }
+            // A double bond only has E/Z stereo at all when BOTH ends have
+            // at least one substituent (matching `chematic_chem::cip::
+            // assign_ez`'s own `subs_a1.is_empty() || subs_a2.is_empty()`
+            // guard) — e.g. a ketone/aldehyde `C=O` never does (the O side
+            // has none). Skipping both ends together, not just the O side,
+            // matters: the carbon side of such a bond can still have 2
+            // substituents of its own (e.g. two ring bonds) that already
+            // carry a marker belonging to a wholly different, genuinely
+            // stereogenic double bond elsewhere (a ring-closure bond can be
+            // shared between two different rings' substituent lists) —
+            // resolving a "carrier" for the non-stereogenic end would move
+            // or duplicate that unrelated marker.
+            if Self::end_has_substituent(self.mol, bond.atom1)
+                && Self::end_has_substituent(self.mol, bond.atom2)
+            {
+                self.resolve_ez_marker_for_end(bond.atom1, &stereo_alkene_ends);
+                self.resolve_ez_marker_for_end(bond.atom2, &stereo_alkene_ends);
+            }
+        }
+    }
+
+    fn end_has_substituent(mol: &Molecule, end: AtomIdx) -> bool {
+        mol.neighbors(end)
+            .any(|(_, b)| mol.bond(b).order != BondOrder::Double)
+    }
+
+    /// Resolve the marker carrier for one alkene end (see
+    /// [`Self::resolve_ez_markers`]). Substituents are filtered by bond
+    /// order (`!= Double`), not by comparing against a specific double-bond
+    /// `BondIdx`, so an allene/cumulene terminus correctly excludes *every*
+    /// double bond at `alkene_end`, matching `chematic_chem::cip::assign_ez`'s
+    /// own substituent-collection convention.
+    fn resolve_ez_marker_for_end(
+        &mut self,
+        alkene_end: AtomIdx,
+        stereo_alkene_ends: &HashSet<AtomIdx>,
+    ) {
+        let subs: Vec<(AtomIdx, BondIdx)> = self
+            .mol
+            .neighbors(alkene_end)
+            .filter(|&(_, b)| self.mol.bond(b).order != BondOrder::Double)
+            .collect();
+        if subs.len() != 2 {
+            return; // no ambiguity (0/1), or not a valid alkene carbon (>2)
+        }
+
+        let carrier = *subs
+            .iter()
+            .min_by_key(|&&(a, _)| self.ranks[a.0 as usize])
+            .expect("subs has exactly 2 elements");
+        let sibling = if carrier.0 == subs[0].0 {
+            subs[1]
+        } else {
+            subs[0]
+        };
+
+        // Abstain entirely when either candidate substituent is itself
+        // another double bond's ambiguous stereo end (a rare but real
+        // shape: two adjacent stereocenters -- e.g. two ring carbons each
+        // bearing their own exocyclic stereo double bond -- sharing the
+        // very ring-closure bond each would otherwise use as a candidate
+        // carrier). Resolving one end's carrier independently of the
+        // other's can move or demote a mark the *other* system's own
+        // resolution is simultaneously relying on for the same physical
+        // bond, corrupting its geometry; there is no processing order that
+        // avoids this without one end's resolution depending on the
+        // other's *already-resolved* (not raw) value, which would make the
+        // whole computation depend on which double bond happens to be
+        // visited first — reintroducing exactly the kind of order-
+        // dependence this fix exists to remove. Leaving both ends exactly
+        // as the input spelled them is always safe (never corrupts the
+        // encoded geometry); it just leaves *this* rare shared-bond
+        // interaction outside what this fix resolves.
+        //
+        // (A less conservative variant was tried: allow the move but skip
+        // *demoting* a shared sibling, leaving it redundantly-but-
+        // consistently marked. Measured empirically against the same
+        // real-corpus shared-bond cases this guard is designed for, it
+        // produced identical convergence (264/282) — the two marks end up
+        // on different bonds depending on which substituent the *input*
+        // happened to mark, so the output still doesn't converge, just
+        // with an extra redundant marker. Reverted in favor of this
+        // simpler, provably no-op-on-failure form.)
+        if stereo_alkene_ends.contains(&carrier.0) || stereo_alkene_ends.contains(&sibling.0) {
+            return;
+        }
+
+        let carrier_dir = self.raw_input_direction(carrier.1);
+        let sibling_dir = self.raw_input_direction(sibling.1);
+
+        match (carrier_dir, sibling_dir) {
+            (Some(dir), _) => {
+                // Carrier already marked (possibly the sibling too, in
+                // malformed/redundant input) — keep it, demote any other.
+                self.ez_marker.insert(carrier.1, dir);
+                if sibling_dir.is_some() {
+                    self.ez_marker
+                        .insert(sibling.1, Self::plain_order(self.mol.bond(sibling.1).order));
+                }
+            }
+            (None, Some(sibling_dir)) => {
+                // The actual bug case: move the marker from the sibling onto
+                // the canonical carrier, preserving the encoded geometry via
+                // the trigonal-carbon sibling-complement identity (the same
+                // fact `chematic_chem::cip::highest_stereo_sub` relies on to
+                // read a marker back out from either substituent).
+                let sibling_bond = self.mol.bond(sibling.1);
+                let sibling_up = Self::direction_is_up(sibling_dir, sibling_bond.atom1, alkene_end);
+                let carrier_bond = self.mol.bond(carrier.1);
+                let chosen = Self::direction_for_up(carrier_bond.atom1, alkene_end, !sibling_up);
+                self.ez_marker.insert(carrier.1, chosen);
+                self.ez_marker
+                    .insert(sibling.1, Self::plain_order(sibling_bond.order));
+            }
+            (None, None) => {} // no direction info at this end at all
         }
     }
 
@@ -390,10 +663,6 @@ impl<'a> CanonicalWriter<'a> {
     /// into one group per connected E/Z system (order-independent — depends
     /// only on molecule topology, not on canonical ranks or write order).
     fn build_ez_groups(&mut self) {
-        fn is_directional(mol: &Molecule, bidx: BondIdx, order: BondOrder) -> bool {
-            matches!(order, BondOrder::Up | BondOrder::Down) || mol.bond_direction(bidx).is_some()
-        }
-
         fn find(group: &mut HashMap<BondIdx, BondIdx>, x: BondIdx) -> BondIdx {
             let parent = *group.get(&x).unwrap_or(&x);
             if parent == x {
@@ -425,8 +694,14 @@ impl<'a> CanonicalWriter<'a> {
                     if nb_bidx == bidx {
                         continue;
                     }
-                    let nb_order = self.mol.bond(nb_bidx).order;
-                    if is_directional(self.mol, nb_bidx, nb_order) {
+                    // `effective_order` (not the raw bond order/stash) so a
+                    // marker `resolve_ez_markers` moved onto a different
+                    // substituent is grouped by its NEW carrier bond, not
+                    // its old (now-demoted) one.
+                    if matches!(
+                        self.effective_order(nb_bidx),
+                        BondOrder::Up | BondOrder::Down
+                    ) {
                         side_bonds.push(nb_bidx);
                     }
                 }
@@ -472,6 +747,12 @@ impl<'a> CanonicalWriter<'a> {
     }
 
     fn write_all(mut self) -> String {
+        // Phase -1: pick, for every tri-/tetra-substituted stereo alkene
+        // end, which substituent bond canonically carries the `/`/`\`
+        // marker (topology + rank only — independent of write order, and of
+        // which substituent the original parse happened to mark).
+        self.resolve_ez_markers();
+
         // Phase 0: group directional bonds into connected E/Z systems
         // (topology-only, independent of canonical order).
         self.build_ez_groups();
@@ -583,10 +864,12 @@ impl<'a> CanonicalWriter<'a> {
                 let bond = self.mol.bond(bidx);
                 // A ring bond forced to Aromatic (e.g. adjacent to an
                 // exocyclic C=N) may carry its true E/Z direction stashed
-                // separately rather than in `order` itself — consult that
-                // first so the direction still reaches the writer.
-                let stashed_direction = self.mol.bond_direction(bidx);
-                let effective_order = stashed_direction.unwrap_or(bond.order);
+                // separately rather than in `order` itself; a bond flanking
+                // a tri-/tetra-substituted stereo alkene may instead carry
+                // `resolve_ez_markers`'s resolved choice. `effective_order`
+                // checks both, in that priority, before falling back to the
+                // bond's own real order.
+                let effective_order = self.effective_order(bidx);
                 // Direction seen from `neighbor` (the open atom) going toward `atom`.
                 let order_at_open = match effective_order {
                     BondOrder::Up => {
@@ -605,18 +888,13 @@ impl<'a> CanonicalWriter<'a> {
                     }
                     other => other,
                 };
-                // Suppress stereo at the close atom to avoid conflicting ring-closure
-                // chars, falling back to the bond's real order — Aromatic for a
-                // stashed direction (implicit ring bond, no char), Single for a
-                // genuine directional single bond (existing behavior).
+                // Suppress stereo at the close atom to avoid conflicting
+                // ring-closure chars, falling back to the bond's own plain
+                // (non-directional) order: `Aromatic` unchanged for a
+                // stashed/resolved direction (implicit ring bond, no char),
+                // `Single` for a genuine literal directional single bond.
                 let order_at_close = match effective_order {
-                    BondOrder::Up | BondOrder::Down => {
-                        if stashed_direction.is_some() {
-                            bond.order
-                        } else {
-                            BondOrder::Single
-                        }
-                    }
+                    BondOrder::Up | BondOrder::Down => Self::plain_order(bond.order),
                     other => other,
                 };
                 self.atom_ring_nums.entry(neighbor).or_default().push((
@@ -692,10 +970,11 @@ impl<'a> CanonicalWriter<'a> {
             })
             .map(|(nb, bidx)| {
                 let bond = self.mol.bond(bidx);
-                // See the ring-closure site above: a stashed direction takes
-                // priority over `order` itself (e.g. an aromatic ring bond
-                // that flanks an exocyclic C=N).
-                let effective_order = self.mol.bond_direction(bidx).unwrap_or(bond.order);
+                // See the ring-closure site above: `effective_order` applies
+                // `resolve_ez_markers`'s resolved carrier choice and the
+                // aromatic-bond-direction stash, both ahead of the bond's
+                // own literal order.
+                let effective_order = self.effective_order(bidx);
                 // Direction seen from `atom` going toward `nb`.
                 let order = match effective_order {
                     BondOrder::Up => {
@@ -1604,32 +1883,105 @@ mod tests {
     // canonical_diff idempotency failures are large fused-polycyclic atom-ranking
     // non-convergence, not a `/`,`\` direction bug — see docs/rdkit_compat.md.)
 
-    /// E/Z parity of the first C=C/C=N double bond: `Some(true)` = E (opposite
-    /// outward directions), `Some(false)` = Z, `None` = no specified geometry.
+    /// E/Z parity of the first stereo double bond: `Some(true)` = E (the two
+    /// *reference* substituents are on opposite sides), `Some(false)` = Z,
+    /// `None` = no specified geometry.
+    ///
+    /// At each end, the reference substituent is whichever of its (at most
+    /// two) non-double-bond neighbors has the lower `morgan_ranks` value —
+    /// a deterministic, structure-derived choice (not CIP priority, but
+    /// consistent across any re-parse of the same molecule, which is all
+    /// this self-consistency check needs) — falling back to the sibling's
+    /// marker via the trigonal-carbon complement identity when the
+    /// reference substituent's own bond isn't the one marked.
+    ///
+    /// A prior version of this helper picked "whichever substituent bond
+    /// happens to be marked, in adjacency order" instead of a fixed
+    /// structural reference. That is parse-order-dependent: at a
+    /// trisubstituted end, adjacency order is just first-encountered-in-the-
+    /// input order, not tied to which substituent is higher priority, so
+    /// comparing (say) the low-priority substituent at one end against the
+    /// high-priority one at the other can silently invert the apparent
+    /// parity. It happened to still pass before `resolve_ez_markers`
+    /// existed only because canonicalization never relocated a marker to a
+    /// *different* substituent, so both sides of the before/after
+    /// comparison picked the same (arbitrary) atom by construction. Once a
+    /// marker can legitimately move to a different, equally-valid carrier,
+    /// that construction no longer holds, and the fixed rank-based
+    /// reference is what actually verifies "the encoded geometry didn't
+    /// change" rather than "the same accidental artifact survived".
     fn double_bond_is_e(smiles: &str) -> Option<bool> {
         let mol = parse(smiles).unwrap();
-        let (a1, a2) = mol
-            .bonds()
-            .find(|(_, b)| b.order == BondOrder::Double)
-            .map(|(_, b)| (b.atom1, b.atom2))?;
-        let outward = |end: AtomIdx, other: AtomIdx| -> Option<bool> {
-            for (nb, bidx) in mol.neighbors(end) {
-                if nb == other {
-                    continue;
-                }
-                let b = mol.bond(bidx);
-                match b.order {
-                    // `Up` means "up" along atom1→atom2; flip when `end` is atom2.
-                    BondOrder::Up => return Some(b.atom1 == end),
-                    BondOrder::Down => return Some(b.atom1 != end),
-                    _ => {}
-                }
+        double_bond_is_e_mol(&mol)
+    }
+
+    /// Like `double_bond_is_e`, but tries every double bond in the molecule
+    /// (not just the first one found) and returns the first that yields a
+    /// defined answer -- a molecule can have an earlier, non-stereogenic
+    /// double bond (e.g. a ketone's `C=O`, whose oxygen side has no
+    /// substituent at all) ahead of its actual stereo alkene in bond order.
+    fn double_bond_is_e_mol(mol: &Molecule) -> Option<bool> {
+        let ranks = morgan_ranks(mol);
+
+        fn raw_dir(mol: &Molecule, bidx: BondIdx) -> Option<BondOrder> {
+            let order = mol.bond(bidx).order;
+            if matches!(order, BondOrder::Up | BondOrder::Down) {
+                return Some(order);
             }
-            None
+            mol.bond_direction(bidx)
+        }
+
+        let up_of_reference = |end: AtomIdx| -> Option<bool> {
+            let subs: Vec<(AtomIdx, BondIdx)> = mol
+                .neighbors(end)
+                .filter(|&(_, b)| mol.bond(b).order != BondOrder::Double)
+                .collect();
+            match subs.len() {
+                1 => {
+                    let (_, bidx) = subs[0];
+                    let dir = raw_dir(mol, bidx)?;
+                    Some(CanonicalWriter::direction_is_up(
+                        dir,
+                        mol.bond(bidx).atom1,
+                        end,
+                    ))
+                }
+                2 => {
+                    let reference = *subs
+                        .iter()
+                        .min_by_key(|&&(a, _)| ranks[a.0 as usize])
+                        .expect("subs has 2 elements");
+                    let sibling = if reference.0 == subs[0].0 {
+                        subs[1]
+                    } else {
+                        subs[0]
+                    };
+                    if let Some(dir) = raw_dir(mol, reference.1) {
+                        Some(CanonicalWriter::direction_is_up(
+                            dir,
+                            mol.bond(reference.1).atom1,
+                            end,
+                        ))
+                    } else {
+                        let dir = raw_dir(mol, sibling.1)?;
+                        Some(!CanonicalWriter::direction_is_up(
+                            dir,
+                            mol.bond(sibling.1).atom1,
+                            end,
+                        ))
+                    }
+                }
+                _ => None,
+            }
         };
-        let sa = outward(a1, a2)?;
-        let sb = outward(a2, a1)?;
-        Some(sa != sb)
+
+        mol.bonds()
+            .filter(|(_, b)| b.order == BondOrder::Double)
+            .find_map(|(_, b)| {
+                let ua = up_of_reference(b.atom1)?;
+                let ub = up_of_reference(b.atom2)?;
+                Some(ua != ub)
+            })
     }
 
     const EZ_STABLE_CORPUS: &[&str] = &[
@@ -1946,5 +2298,194 @@ mod tests {
             "genuine exocyclic-double-bond-adjacent aromatic stash must \
              still emit a directional token: got '{out}'"
         );
+    }
+
+    // ── E/Z marker-carrier normalization (fix/canonical-ez-carrier-
+    // normalization) ─────────────────────────────────────────────────────
+    //
+    // At a tri-/tetra-substituted stereo alkene end, SMILES only requires
+    // ONE of its ≥2 substituent bonds to carry the `/`/`\` marker -- the
+    // other's position is implied (a trigonal alkene carbon has exactly two
+    // sides). *Which* substituent gets the mark used to be whatever the
+    // parser happened to read, so two RDKit-valid respellings of the same
+    // molecule that mark different substituents produced two different
+    // canonical outputs (docs/canonical_smiles_residual_rfc.md, Root cause
+    // 1). `resolve_ez_markers` picks the marker carrier deterministically
+    // from canonical rank instead. Every case below is a real molecule from
+    // the residual corpus (`validation/results/
+    // canonical_residual_diagnosis_summary.json`'s `permutation_invariance_
+    // failures_sample`), pinned as a regression guard, not a synthetic
+    // approximation of the bug.
+
+    /// Assert `a` and `b` -- two real, already-observed-divergent canonical
+    /// outputs of the SAME molecule -- now canonicalize identically, AND
+    /// that the E/Z geometry each encodes is unchanged by that
+    /// canonicalization (checked via `double_bond_is_e`, not string
+    /// comparison, per the "zero new semantic changes" requirement).
+    #[track_caller]
+    fn assert_ez_carrier_pair_resolved(a: &str, b: &str) {
+        let want_a = double_bond_is_e(a);
+        let want_b = double_bond_is_e(b);
+        let canon_a = canonical_smiles(&parse(a).unwrap());
+        let canon_b = canonical_smiles(&parse(b).unwrap());
+        assert_eq!(
+            canon_a, canon_b,
+            "two divergent real-corpus spellings of the same molecule must \
+             now canonicalize identically: '{a}' -> '{canon_a}' vs '{b}' -> '{canon_b}'"
+        );
+        assert_eq!(
+            double_bond_is_e(&canon_a),
+            want_a,
+            "canonicalizing '{a}' -> '{canon_a}' changed its E/Z geometry"
+        );
+        assert_eq!(
+            double_bond_is_e(&canon_b),
+            want_b,
+            "canonicalizing '{b}' -> '{canon_b}' changed its E/Z geometry"
+        );
+    }
+
+    /// Simplest case: a disubstituted-vs-trisubstituted amidine carbon with
+    /// exactly two non-H substituents (methylamino / 4-iodobenzylamino), no
+    /// ring at all. The two spellings mark different substituents.
+    #[test]
+    fn ez_carrier_trisub_no_ring() {
+        assert_ez_carrier_pair_resolved("Ic1ccc(cc1)CN/C(=N/C)NC", "Ic1ccc(cc1)CNC(=N/C)/NC");
+    }
+
+    /// Tetrasubstituted alkene: both ends have two real substituents (no
+    /// implicit H on either alkene carbon), so both ends independently pick
+    /// a canonical carrier.
+    #[test]
+    fn ez_carrier_tetrasub_no_ring() {
+        assert_ez_carrier_pair_resolved(
+            "COc1ccc(/C=C(\\C)C(=O)c2cc(OC)c(OC)c(OC)c2)cc1O",
+            "COc1ccc(/C=C(C(=O)c2cc(OC)c(OC)c(OC)c2)\\C)cc1O",
+        );
+    }
+
+    /// One candidate substituent is reached via a plain tree edge, the
+    /// other via the SAME alkene end's ring-closure bond (an aliphatic
+    /// cyclopentylidene hydrazone) -- covers "E/Z bond that is also part of
+    /// a ring closure" directly, with no aromaticity involved at all.
+    #[test]
+    fn ez_carrier_ring_closure_candidate() {
+        assert_ez_carrier_pair_resolved(
+            "OC(=O)CCCCCCC/1CCCC1=N/NCCCCCC",
+            "OC(=O)CCCCCCC1CCC/C1=N\\NCCCCCC",
+        );
+    }
+
+    /// The aromatic-bond-direction stash (`resolve_aromatic_direction_stash`
+    /// in parser.rs) combined with a ring-closure candidate: a four-membered
+    /// ring carbon carries an exocyclic C=N imine, and the mark can validly
+    /// land on either its plain ring tree-edge or its ring-closure bond
+    /// (both aromatic-aromatic, so both route through the stash side
+    /// channel, not a literal `Up`/`Down` bond order). This is the exact
+    /// intersection the RFC's dominant root cause calls out: tri-substituted
+    /// + aromatic stash + ring closure, all at once.
+    ///
+    /// This same ring also has a ketone (`c(=O)`) adjacent to the imine,
+    /// sharing a ring bond with it -- a ketone's carbon has two ring-bond
+    /// "substituents" of its own even though a ketone has no E/Z stereo at
+    /// all (the oxygen side has none). `resolve_ez_markers` must recognize
+    /// the ketone end is not stereogenic (both ends of a double bond need a
+    /// substituent) and never touch that shared bond on the ketone's
+    /// account, or it can move/erase the imine's own marker -- this pin
+    /// exercises that guard too, not just the ring-closure/stash mechanism.
+    #[test]
+    fn ez_carrier_aromatic_stash_ring_closure() {
+        assert_ez_carrier_pair_resolved(
+            "c4(c(cncc4Cl)Cl)C(=O)Nc3ccc(cc3)C[C@H](/N=c/2c(=O)c(c2N1CCSCC1)O)C(=O)O",
+            "c4(c(cncc4Cl)Cl)C(=O)Nc3ccc(cc3)C[C@H](/N=c2\\c(=O)c(c2N1CCSCC1)O)C(=O)O",
+        );
+    }
+
+    /// Two DIFFERENT, independently stereogenic double bonds (two exocyclic
+    /// imines on the same four-membered ring) can end up sharing the very
+    /// ring-closure bond each would otherwise use as one of its own two
+    /// candidate carriers. Resolving one end's carrier independently of the
+    /// other's could move or demote a mark the other system relies on for
+    /// the same physical bond -- `resolve_ez_markers` must detect this and
+    /// abstain for BOTH ends rather than risk corrupting either one's
+    /// geometry. This is a real corpus molecule that a fully general
+    /// carrier choice does NOT resolve to one canonical string (a known,
+    /// documented residual -- see the module-level fix commit), but its E/Z
+    /// geometry must never change either way.
+    #[test]
+    fn ez_carrier_shared_bond_between_two_stereo_systems_never_corrupts() {
+        let a = "OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c1/c(c(c1O)O)=N/CCCCC";
+        let b = "OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c\\1c(/c(c1O)O)=N/CCCCC";
+        for s in [a, b] {
+            let mol = parse(s).unwrap();
+            let ez_before = ez_pair(&mol);
+            let canon = canonical_smiles(&mol);
+            let mol2 = parse(&canon).unwrap_or_else(|e| panic!("re-parse '{canon}': {e}"));
+            let ez_after = ez_pair(&mol2);
+            assert_eq!(
+                ez_before, ez_after,
+                "canonicalizing '{s}' -> '{canon}' must not change either \
+                 imine's E/Z geometry, even though this shared-bond shape \
+                 is not resolved to one canonical string"
+            );
+            assert!(
+                ez_before.0.is_some() && ez_before.1.is_some(),
+                "test setup sanity: both imines in '{s}' must have a defined \
+                 geometry to make this a meaningful check (got {ez_before:?})"
+            );
+        }
+    }
+
+    /// Both stereo double bonds' E/Z parity in a molecule with (at least)
+    /// two -- used by `ez_carrier_shared_bond_between_two_stereo_systems_
+    /// never_corrupts` to check geometry survives even where string
+    /// convergence isn't achieved. Returns `(first, second)` in bond-index
+    /// order (stable within one parse, which is all this same-molecule
+    /// before/after comparison needs).
+    fn ez_pair(mol: &Molecule) -> (Option<bool>, Option<bool>) {
+        fn raw_dir(mol: &Molecule, bidx: BondIdx) -> Option<BondOrder> {
+            let order = mol.bond(bidx).order;
+            if matches!(order, BondOrder::Up | BondOrder::Down) {
+                return Some(order);
+            }
+            mol.bond_direction(bidx)
+        }
+
+        let doubles: Vec<BondIdx> = (0..mol.bond_count())
+            .map(|i| BondIdx(i as u32))
+            .filter(|&b| mol.bond(b).order == BondOrder::Double)
+            .filter(|&b| {
+                let bond = mol.bond(b);
+                CanonicalWriter::end_has_substituent(mol, bond.atom1)
+                    && CanonicalWriter::end_has_substituent(mol, bond.atom2)
+            })
+            .collect();
+        assert_eq!(
+            doubles.len(),
+            2,
+            "expected exactly 2 stereogenic double bonds"
+        );
+        let ez = |bidx: BondIdx| -> Option<bool> {
+            let bond = mol.bond(bidx);
+            let outward = |end: AtomIdx, other: AtomIdx| -> Option<bool> {
+                for (nb, b) in mol.neighbors(end) {
+                    if nb == other {
+                        continue;
+                    }
+                    if let Some(dir) = raw_dir(mol, b) {
+                        return Some(CanonicalWriter::direction_is_up(
+                            dir,
+                            mol.bond(b).atom1,
+                            end,
+                        ));
+                    }
+                }
+                None
+            };
+            let ua = outward(bond.atom1, bond.atom2)?;
+            let ub = outward(bond.atom2, bond.atom1)?;
+            Some(ua != ub)
+        };
+        (ez(doubles[0]), ez(doubles[1]))
     }
 }
