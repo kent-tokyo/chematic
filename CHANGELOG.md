@@ -9,7 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet — everything below `[0.5.0]` has shipped._
+### Added — `chematic-fp` / Python / WASM
+
+- **Promoted the RDKit-bit-exact Morgan/ECFP4 path (`rdkit_morgan_ecfp4_experimental`)
+  to a documented, cross-language opt-in API** — Python (`Mol.rdkit_ecfp4()`,
+  `Mol.rdkit_ecfp4_detail()`) and WASM (`rdkit_ecfp4_bitvec()`,
+  `rdkit_ecfp4_detail_json()`) bindings, following this codebase's existing fallible-
+  experimental-API conventions (`PyValueError` in Python, `Result<_, JsValue>` in
+  WASM — same shape as `Mol.cip_stereo(mode="accurate")` and `ecfp_bitvec_custom`
+  respectively). The exact config this promotes is unchanged from the diagnosis that
+  verified it (`docs/ecfp4_bitexact_api_rfc.md`): radius=2 (ECFP4), 2048 bits,
+  `useChirality=false`, `useBondTypes=true`, RDKit's default atom invariant. Does
+  **not** change `ecfp4()`'s behavior or make the RDKit-exact path the default — the
+  two engines use different hash functions and are never silently interchanged.
+- **Generalized to a small, independently oracle-verified `(radius, fpSize)` matrix**
+  — `chematic_fp::rdkit_morgan_fingerprint`/`RdkitMorganConfig` (Rust; radius ∈
+  {0,1,2,3}, fold width ∈ {128,256,512,1024,2048} as closed enums, not raw integers —
+  an unsupported value can't be constructed, let alone silently coerced), plus
+  `Mol.rdkit_ecfp_config()`/`rdkit_ecfp_config_detail()` (Python) and
+  `rdkit_ecfp_config_bitvec()`/`rdkit_ecfp_config_detail_json()` (WASM). Each of the 20
+  cells is independently re-verified against a live RDKit oracle — not assumed to
+  generalize from the radius=2/2048-bit point alone. `rdkit_morgan_ecfp4_experimental`
+  itself is untouched (a separate, structurally isolated module reuses its internal
+  hash primitives; see `crates/chematic-fp/src/rdkit_morgan_config.rs`).
+- **Shared cross-language fixture+expectation corpus**,
+  `validation/ecfp4_rdkit_stable_api_fixtures.json` (34 fixtures: 33 success cases
+  spanning baseline/disconnected/isotope/charged/aromatic-vs-Kekulé/stereo shapes, plus
+  1 real preprocessing-failure case for explicit error-path coverage) — generated once
+  from a live RDKit oracle (`rdkit==2026.03.3`, pinned commit
+  `8afba32ec539dcb2369bc84549d802aca3f7eb39`, same pin as `rdkit_morgan_hash.rs`) via
+  `scripts/gen_ecfp4_rdkit_stable_api_fixtures.py`, and read identically by the Rust
+  (`crates/chematic-fp/tests/rdkit_morgan_stable_api_fixtures.rs`), Python
+  (`crates/chematic-py/tests/test_rdkit_ecfp4_stable_api.py`), and WASM
+  (`crates/chematic-wasm/tests/rdkit_ecfp4_stable_api.test.mjs`) test suites — one
+  source of truth, not three independently-maintained expectation lists. Verified
+  byte-identical across all three surfaces by building and running each (`cargo test`,
+  `maturin develop` + `pytest`, `wasm-pack build --target nodejs` + `node`), not just
+  "identical by construction."
+- Preprocessing failures (a small, known class of bridgehead-heteroatom-fused rings
+  neither aromaticity engine can kekulize yet) surface as an explicit, typed error on
+  every surface — never a silent fallback to the default Hückel-based `ecfp4()` engine,
+  which would look successful while returning bits from an incompatible hash. Regression-
+  tested on all three surfaces via the shared corpus's error fixture.
 
 ## [0.5.0] — 2026-07-23
 

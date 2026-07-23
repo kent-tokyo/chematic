@@ -1,6 +1,18 @@
 # RFC: ECFP4 bit-exactness parameter matrix + API rollout design
 
-**Status:** diagnosis and design only. No production code changed. Not merged.
+**Status:** diagnosis/design (below) merged as-is; the rollout it designed has since
+shipped on `feat/ecfp4-bitexact-stable-api` (see `CHANGELOG.md`'s `[Unreleased]`
+entry): Python (`Mol.rdkit_ecfp4`/`rdkit_ecfp4_detail`/`rdkit_ecfp_config`/
+`rdkit_ecfp_config_detail`) and WASM
+(`rdkit_ecfp4_bitvec`/`rdkit_ecfp4_detail_json`/`rdkit_ecfp_config_bitvec`/
+`rdkit_ecfp_config_detail_json`) bindings for the exact config diagnosed here (§2.3/
+§2.4), plus a generalized, independently-oracle-reverified `(radius, fpSize)` matrix
+(`chematic_fp::rdkit_morgan_fingerprint`/`RdkitMorganConfig`,
+`crates/chematic-fp/src/rdkit_morgan_config.rs`) and a shared cross-language fixture
+corpus (`validation/ecfp4_rdkit_stable_api_fixtures.json`, §2.6). `useChirality`/
+`useBondTypes=false`/alternative atom invariants remain `architecturally_unimplemented`
+(§1.4-1.6), unchanged and out of scope for that PR too. The measurement/design content
+below is otherwise historical and unedited.
 
 **Branch:** `diag/ecfp4-bitexact-api`, forked from `main` at
 `659baca221f71f135ce0e1780e71245d8770f132`.

@@ -601,5 +601,203 @@ pub fn tanimoto_row_json(query_smi: &str, db_smiles_json: &str) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// RDKit-bit-exact Morgan/ECFP4 (promoted stable API)
+// ---------------------------------------------------------------------------
+
+/// RDKit-bit-exact ECFP4 (radius=2, 2048 bits, `useChirality=false`, `useBondTypes=true`,
+/// RDKit's default atom invariant) as a bit-packed byte vector (256 bytes = 2048 bits).
+///
+/// Bit-for-bit identical to
+/// `rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048).GetFingerprint(mol)`
+/// for every input this preprocessing handles. **Not** the same bits as `ecfp4_bitvec`
+/// (that path uses chematic's own FNV-1a hash and is not RDKit-bit-compatible by
+/// design -- the two are never silently interchanged).
+///
+/// Returns a JS error (its string carrying `RdkitMorganError`'s `Display` text, e.g.
+/// `"rdkit-exact ecfp4: aromaticity: ..."`) if RDKit-parity aromaticity preprocessing
+/// fails, never a silent fallback to `ecfp4_bitvec`'s Hückel-based engine -- the two
+/// engines are not bit-compatible, so a silent substitution would look successful
+/// while actually returning the wrong hash. See `docs/ecfp4_bitexact_api_rfc.md`.
+#[wasm_bindgen]
+pub fn rdkit_ecfp4_bitvec(mol: &MolHandle) -> Result<Vec<u8>, JsValue> {
+    let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&mol.inner)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(bitvecn_to_bytes(&result.fingerprint.to_bitvecn()))
+}
+
+/// Same fingerprint as `rdkit_ecfp4_bitvec`, plus the raw (unfolded) data behind it, as
+/// JSON: `{"fingerprint":[u8,...],"sparseCounts":{"rawId":count,...},
+/// "rawBitInfo":{"rawId":[[atomIdx,radius],...],...},
+/// "foldedBitInfo":{"bit":[[atomIdx,radius],...],...}}`.
+///
+/// Returns a JS error on the same preprocessing failures as `rdkit_ecfp4_bitvec`.
+#[wasm_bindgen]
+pub fn rdkit_ecfp4_detail_json(mol: &MolHandle) -> Result<String, JsValue> {
+    let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&mol.inner)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(rdkit_morgan_detail_json(
+        &bitvecn_to_bytes(&result.fingerprint.to_bitvecn()),
+        &sorted_pairs(&result.sparse_counts),
+        &sorted_bit_info(&result.raw_bit_info),
+        &sorted_bit_info(&result.folded_bit_info),
+    ))
+}
+
+/// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen radius/bit-width, as a
+/// bit-packed byte vector (`nbits / 8` bytes, LSB-first).
+///
+/// `radius` must be 0, 1, 2 (`rdkit_ecfp4_bitvec`'s ECFP4), or 3. `nbits` must be one
+/// of 128, 256, 512, 1024, or 2048. Each of these 20 combinations is independently
+/// re-verified against a live RDKit oracle (not assumed to generalize from
+/// radius=2/2048 bits alone) -- see `validation/ecfp4_rdkit_stable_api_fixtures.json`.
+/// An unsupported value returns a JS error rather than being silently coerced to the
+/// nearest supported one.
+#[wasm_bindgen]
+pub fn rdkit_ecfp_config_bitvec(
+    mol: &MolHandle,
+    radius: u32,
+    nbits: usize,
+) -> Result<Vec<u8>, JsValue> {
+    let config = wasm_rdkit_morgan_config(radius, nbits)?;
+    let result = chematic_fp::rdkit_morgan_fingerprint(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(bitvecn_to_bytes(&result.fingerprint))
+}
+
+/// Same fingerprint as `rdkit_ecfp_config_bitvec`, plus the raw (unfolded) data -- see
+/// `rdkit_ecfp4_detail_json` for the JSON shape (identical, generalized to this
+/// function's `radius`/`nbits`).
+#[wasm_bindgen]
+pub fn rdkit_ecfp_config_detail_json(
+    mol: &MolHandle,
+    radius: u32,
+    nbits: usize,
+) -> Result<String, JsValue> {
+    let config = wasm_rdkit_morgan_config(radius, nbits)?;
+    let result = chematic_fp::rdkit_morgan_fingerprint(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(rdkit_morgan_detail_json(
+        &bitvecn_to_bytes(&result.fingerprint),
+        &sorted_pairs(&result.sparse_counts),
+        &sorted_bit_info(&result.raw_bit_info),
+        &sorted_bit_info(&result.folded_bit_info),
+    ))
+}
+
+/// Maps the plain `radius`/`nbits` integers the WASM API accepts into chematic-fp's
+/// closed `RdkitMorganConfig` enums. An unsupported value is an explicit JS error, not
+/// a guessed/coerced conversion.
+fn wasm_rdkit_morgan_config(
+    radius: u32,
+    nbits: usize,
+) -> Result<chematic_fp::RdkitMorganConfig, JsValue> {
+    let radius = match radius {
+        0 => chematic_fp::RdkitMorganRadius::R0,
+        1 => chematic_fp::RdkitMorganRadius::R1,
+        2 => chematic_fp::RdkitMorganRadius::R2,
+        3 => chematic_fp::RdkitMorganRadius::R3,
+        other => {
+            return Err(JsValue::from_str(&format!(
+                "unsupported radius {other} -- only 0, 1, 2, or 3 are supported"
+            )));
+        }
+    };
+    let fp_size = match nbits {
+        128 => chematic_fp::RdkitMorganFpSize::B128,
+        256 => chematic_fp::RdkitMorganFpSize::B256,
+        512 => chematic_fp::RdkitMorganFpSize::B512,
+        1024 => chematic_fp::RdkitMorganFpSize::B1024,
+        2048 => chematic_fp::RdkitMorganFpSize::B2048,
+        other => {
+            return Err(JsValue::from_str(&format!(
+                "unsupported nbits {other} -- only 128, 256, 512, 1024, or 2048 are supported"
+            )));
+        }
+    };
+    Ok(chematic_fp::RdkitMorganConfig { radius, fp_size })
+}
+
+fn bitvecn_to_bytes(fp: &chematic_fp::BitVecN) -> Vec<u8> {
+    let byte_count = fp.bit_width() / 8;
+    (0..byte_count)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
+/// Sorts a hash map's entries by key -- generic over the hasher (`S`) so this works on
+/// both `std::collections::HashMap` and chematic-fp's `rustc_hash::FxHashMap` return
+/// types without this crate needing its own `rustc-hash` dependency just to name the
+/// type.
+fn sorted_pairs<K: Ord + Copy, V: Copy, S>(
+    map: &std::collections::HashMap<K, V, S>,
+) -> Vec<(K, V)> {
+    let mut v: Vec<(K, V)> = map.iter().map(|(&k, &v)| (k, v)).collect();
+    v.sort_unstable_by_key(|(k, _)| *k);
+    v
+}
+
+/// Same idea as [`sorted_pairs`], for the `{raw_id/bit -> [(atom_idx, radius), ...]}`
+/// bit-info maps -- sorts by key, and sorts each value's `(atom_idx, radius)` pairs too
+/// (insertion order isn't part of the API contract).
+fn sorted_bit_info<K: Ord + Copy, S>(
+    map: &std::collections::HashMap<K, Vec<(u32, u32)>, S>,
+) -> Vec<(K, Vec<(u32, u32)>)> {
+    let mut v: Vec<(K, Vec<(u32, u32)>)> = map
+        .iter()
+        .map(|(&k, pairs)| {
+            let mut p = pairs.clone();
+            p.sort_unstable();
+            (k, p)
+        })
+        .collect();
+    v.sort_unstable_by_key(|(k, _)| *k);
+    v
+}
+
+fn rdkit_morgan_detail_json(
+    fingerprint_bytes: &[u8],
+    sparse_counts: &[(u32, u32)],
+    raw_bit_info: &[(u32, Vec<(u32, u32)>)],
+    folded_bit_info: &[(usize, Vec<(u32, u32)>)],
+) -> String {
+    let fp_json: Vec<String> = fingerprint_bytes.iter().map(|b| b.to_string()).collect();
+    let sparse_json: Vec<String> = sparse_counts
+        .iter()
+        .map(|(k, v)| format!("\"{k}\":{v}"))
+        .collect();
+    let raw_json: Vec<String> = raw_bit_info
+        .iter()
+        .map(|(k, v)| format!("\"{k}\":{}", bit_info_pairs_json(v)))
+        .collect();
+    let folded_json: Vec<String> = folded_bit_info
+        .iter()
+        .map(|(k, v)| format!("\"{k}\":{}", bit_info_pairs_json(v)))
+        .collect();
+
+    format!(
+        r#"{{"fingerprint":[{}],"sparseCounts":{{{}}},"rawBitInfo":{{{}}},"foldedBitInfo":{{{}}}}}"#,
+        fp_json.join(","),
+        sparse_json.join(","),
+        raw_json.join(","),
+        folded_json.join(","),
+    )
+}
+
+/// Assumes `pairs` is already sorted (both [`sorted_pairs`]/[`sorted_bit_info`] callers
+/// guarantee this).
+fn bit_info_pairs_json(pairs: &[(u32, u32)]) -> String {
+    let parts: Vec<String> = pairs.iter().map(|(a, r)| format!("[{a},{r}]")).collect();
+    format!("[{}]", parts.join(","))
+}
+
+// ---------------------------------------------------------------------------
 // MOL2 I/O
 // ---------------------------------------------------------------------------
