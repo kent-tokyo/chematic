@@ -106,10 +106,10 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.4.30
+# chematic v0.5.0
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-06, v0.4.30 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-06, v0.5.0 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  98.1%
 #   LogP (Crippen)        ~99%
@@ -277,6 +277,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発（v0.4.x）
+
+**v0.5.0**（2026-07-23）: **CIP不要の2Dウェッジ由来local parity、charge対応kekulization（従来失敗していた6分子クラス）、PAINS/Brenkのbudget付きmatching**
+- `chematic-perception`: `local_parity_from_wedges`/`apply_local_parity_from_wedges` を新規追加 — CIPランキングを一切使わず、wedge/hash結合と2D座標から直接 `Atom.chirality`/`stereo_neighbor_order` を計算。符号規約はRDKitの生のchiral tagに対して実測で決定（類推ではない）。まだどのreaderのデフォルトparseからも呼ばれない
+- `chematic-core`: `kekulize()` の原子マッチング規則がcharge非対応でTelluriumも欠落していた問題を修正 — tropylium、imidazolium、pyridinium、pyrylium、tellurophene、phospholeがRDKitとbond単位で完全一致するKekulé構造でkekulize成功するようになった。`Element::normal_valences()` にTelluriumの実証済みエントリを追加し、ECFP4の芳香族性不一致も解消
+- `chematic-perception`: charge対応Hückel π電子計算 — tropylium、imidazolium、pyridinium、pyryliumがRDKitの芳香族atom/bond flagと完全一致（tellurophene/phosphole、および芳香族flagのauthoritative降格修正は別途対応中）
+- `chematic-smiles`: writerの2件のバグを修正 — bracket強制原子（isotope/charge/atom-map）が暗黙水素を出力し忘れていた問題（`[NH4+]` → `[N+]`）、および隣接する二重結合を持たないwedge結合が意味のないSMILES `/`・`\` トークンとして出力されていた問題
+- `chematic-smarts`/`chematic-chem`: 対称性の高いターゲットでPAINS/Brenk部分構造探索が数分間ハングする可能性があった問題を修正 — VF2に明示的な探索budgetを導入し、`Found`/`NotFound`/`BudgetExhausted` の三値を返すことで、探索打ち切りを黙ってfalse negativeへ畳み込まない設計に
+- 詳細な項目別数値と既知の制限事項は `CHANGELOG.md` を参照
 
 **v0.4.29**（2026-07-10）: **Kabsch回転バグ修正 + SDF V3000/CDXML書き込み、Avalon FP、O3A**
 - `chematic-3d`: `align_coords` のKabsch回転が逆方向に計算されるバグを修正（純粋な並進以外のアライメントでRMSDが大きく水増しされていた。v0.4.28からcrates.io/PyPI/npmで公開されていた）；O3A原子対応のための `correspondence_search`
