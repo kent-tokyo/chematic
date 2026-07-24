@@ -180,10 +180,10 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.5.0
+# chematic v0.6.0
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-07-17, v0.5.0 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-07-17, v0.6.0 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  100%   within ±0.1 Å²
 #   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)
@@ -407,6 +407,12 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development (v0.4.x Era)
 
+**v0.6.0** (2026-07-25): **RDKit-bit-exact ECFP4 cross-language stable API, canonical SMILES E/Z marker consistency, opt-in authoritative aromaticity demotion**
+- `chematic-fp`/Python/WASM: promoted the RDKit-bit-exact Morgan/ECFP4 path to a documented, cross-language opt-in API (`Mol.rdkit_ecfp4()` in Python, `rdkit_ecfp4_bitvec()` in WASM), generalized to an independently oracle-verified `(radius, fpSize)` matrix (4×5 = 20 cells, closed enums so an unsupported combination can't be constructed). Rust/Python/WASM verified byte-identical by actually building and running all three, not "identical by construction." `ecfp4()`'s default behavior is unchanged
+- `chematic-smiles`: fixed canonical output placing an E/Z direction marker on a different substituent bond depending on input atom order — permutation invariance for marker placement **93.0% → 98.1%** (264/282 known-divergent molecules now converge; 18 residual cases deliberately left unresolved to avoid corrupting a shared-carrier-bond edge case, tracked as [#149](https://github.com/kent-tokyo/chematic/issues/149)). Also investigated and **ruled out** a previously-suspected bridged-bicyclic canonicalization bug — the two SMILES in question turned out to be genuinely different molecules per independent RDKit InChI verification, not a chematic defect
+- `chematic-perception`: new opt-in `apply_aromaticity_authoritative_experimental` — makes aromatic-flag promotion/demotion fully authoritative to the Hückel model's actual verdict in both directions (the default `apply_aromaticity`/`apply_aromaticity_ex` are unchanged, verified byte-identical). Fixed a ring-fusion-bond misclassification affecting fused diazines (quinazoline/quinoxaline/purine-shaped rings) as part of this work, with a beneficial side effect of also resolving 32 pre-existing false-positive regression pins
+- Full details and known limitations in `CHANGELOG.md`
+
 **v0.5.0** (2026-07-23): **CIP-independent 2D wedge parity, charge-aware kekulization (6 previously-hard-failing molecule classes), non-silent PAINS/Brenk budget matching**
 - `chematic-perception`: new `local_parity_from_wedges`/`apply_local_parity_from_wedges` — computes `Atom.chirality`/`stereo_neighbor_order` directly from wedge/hash bonds and 2D coordinates without any CIP ranking, so a CIP tie can't erase a known local parity; sign convention measured against RDKit's raw chiral tag, not derived by analogy. Not yet wired into any reader's default parse path
 - `chematic-core`: `kekulize()`'s atom-matching rules were charge-blind and missing Tellurium — tropylium, imidazolium, pyridinium, pyrylium, tellurophene, and phosphole now kekulize successfully, bond-for-bond identical to RDKit, with zero regressions; `Element::normal_valences()` gained a source-verified Tellurium entry, fixing a resulting ECFP4 aromaticity mismatch
@@ -557,7 +563,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.5.0)
+├── Cargo.toml                    workspace root (v0.6.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -610,7 +616,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.5.0},
+  version   = {0.6.0},
   year      = {2026},
 }
 ```
