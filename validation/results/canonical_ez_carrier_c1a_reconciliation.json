@@ -1,0 +1,48 @@
+{
+  "purpose": "Reconciles every E/Z-carrier-cluster count referenced across this fix's history (task brief's approximate '281', the two different committed diagnosis-artifact counts, and this PR's own fresh measurements), so a future reader does not mistake an instrument/definition change for a regression. Every row below is a DIFFERENT, explicitly-labeled instrument -- never pooled.",
+  "provenance_of_the_281_vs_282_discrepancy": {
+    "commit_676c752_original_diagnosis": {
+      "description": "First diagnosis PR. The diagnosis script itself had an undercounting bug (fixed in the next commit) -- NOT a difference in the fix or the molecule set.",
+      "total_check2_failures": 281,
+      "has_ez_marker_true": 281
+    },
+    "commit_6ffd697_diag_script_correction": {
+      "description": "diag(smiles): unify Check 2/3, correct permutation-invariance undercount -- same corpus, same base commit, corrected script. This is the count the task brief's approximate '281' should be read against; it is the one this PR's fix was actually measured against throughout.",
+      "total_check2_failures": 348,
+      "has_ez_marker_true": 282,
+      "has_ez_marker_false": 66
+    },
+    "conclusion": "281 -> 282 (has_ez_marker subset) is NOT a regression and NOT re-measurement drift on a moved main. It is a one-time, already-committed correction to the diagnosis script's own undercounting bug, made in a prior PR, before this fix branch existed. This PR's fix was measured against 282 (the corrected, current count) throughout."
+  },
+  "this_prs_own_fresh_measurement": {
+    "corpus_caveat": "The literal 5,000-molecule corpus that scripts/canonical_residual_diagnosis.py and scripts/bench5k.py normally take as an argument (~/Downloads/SMILES.csv) was not accessible from this task's sandboxed environment. All numbers in this section use a 4,992-of-5,000-molecule PROXY corpus instead: the 'smiles' field recovered from every row of the already-committed validation/results/canonical_residual_diagnosis.jsonl (itself Check-1 exact-string-parity output against RDKit, i.e. essentially the whole corpus except the 8 molecules where chematic's string already matched RDKit's byte-for-byte). This is a PROXY, not the literal 5,000-molecule corpus -- do not describe it as such elsewhere.",
+    "has_ez_marker_282_subset_instrument": {
+      "description": "Direct convergence check: re-canonicalize both of each fixture's known-divergent 'distinct_outputs' spellings and check whether they now collapse to one string.",
+      "converge": 264,
+      "still_diverge_residual": 18,
+      "note": "18 residual = the shared-candidate-bond guard's deliberate abstain (see tracking issue). All 18 confirmed zero semantic corruption."
+    },
+    "full_4992_proxy_corpus_before_vs_after": {
+      "description": "scripts/canonical_residual_diagnosis.py (seed=0, k=8), same tool, run twice: 'before' = crates/chematic-smiles/src/canonical.rs at base commit b84c28e (pre-fix), 'after' = this PR's HEAD (d763cad).",
+      "before_check2_permutation_invariance_fail": 350,
+      "before_check2_permutation_invariance_pct": 92.99,
+      "after_check2_permutation_invariance_fail": 96,
+      "after_check2_permutation_invariance_pct": 98.08,
+      "before_check3_idempotence_fail": 78,
+      "after_check3_idempotence_fail": 78,
+      "idempotence_note": "Identical before/after (78 == 78) -- this fix does not touch the pre-existing, out-of-scope aromaticity round-trip issue (RFC Root Cause 3).",
+      "set_diff_after_minus_before_regressions": [],
+      "set_diff_after_minus_before_count": 0,
+      "set_diff_before_minus_after_fixed_count": 254,
+      "residual_intersection_count": 96,
+      "residual_breakdown": {
+        "relabel_only_shared_bond_guard": 18,
+        "idempotence_only_preexisting_aromaticity": 78,
+        "both": 0
+      },
+      "semantic_corruption_before": 0,
+      "semantic_corruption_after": 0
+    }
+  },
+  "honest_headline": "264/282 (93.6%) of the has_ez_marker diagnosis subset now converge to one canonical string. NOT literally 'all 281' or 'all 282'. 18 residual cases are a documented, safety-motivated incompleteness (shared-candidate-bond guard, tracked in a follow-up issue), not a correctness regression -- zero semantic corruption measured in either the before or after run."
+}
