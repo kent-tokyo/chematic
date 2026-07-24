@@ -244,7 +244,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ---
 
-## 近期开发（v0.4.x）
+## 近期开发
 
 **v0.4.19**（2026-06-23）：**PDF/EPS 输出、ChemicalJSON、新描述符、WASM −38.5%**
 - `chematic-depict`：`depict_pdf()` / `depict_eps()` — PDF 和 EPS 输出；纯 Rust，无需外部工具

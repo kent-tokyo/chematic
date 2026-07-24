@@ -276,7 +276,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ---
 
-## 最近の開発（v0.4.x）
+## 最近の開発
 
 **v0.6.0**（2026-07-25）: **RDKit bit-exact ECFP4のクロス言語stable API化、canonical SMILESのE/Zマーカー一貫性、opt-in芳香族flag authoritative降格**
 - `chematic-fp`/Python/WASM: RDKit bit-exact Morgan/ECFP4パスをクロス言語opt-in APIとして公開（Python `Mol.rdkit_ecfp4()`、WASM `rdkit_ecfp4_bitvec()`）。radius×fpSizeの20セル全てを個別にlive RDKit oracleで再検証（closed enumで未対応値は構築不可）。Rust/Python/WASMを実際にビルド・実行してbyte-identicalを確認済み。`ecfp4()`の既定動作は無変更

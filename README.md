@@ -405,7 +405,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ---
 
-## Recent Development (v0.4.x Era)
+## Recent Development
 
 **v0.6.0** (2026-07-25): **RDKit-bit-exact ECFP4 cross-language stable API, canonical SMILES E/Z marker consistency, opt-in authoritative aromaticity demotion**
 - `chematic-fp`/Python/WASM: promoted the RDKit-bit-exact Morgan/ECFP4 path to a documented, cross-language opt-in API (`Mol.rdkit_ecfp4()` in Python, `rdkit_ecfp4_bitvec()` in WASM), generalized to an independently oracle-verified `(radius, fpSize)` matrix (4×5 = 20 cells, closed enums so an unsupported combination can't be constructed). Rust/Python/WASM verified byte-identical by actually building and running all three, not "identical by construction." `ecfp4()`'s default behavior is unchanged
