@@ -75,6 +75,23 @@ fn stability_bridged_bicyclics() {
     assert_all_stable(&cases);
 }
 
+/// Idempotence coverage for the same bridged/fused/spiro/cage molecules
+/// exercised by `bridged_fused_spiro_permutation_invariance` — reported
+/// separately (per this project's convention: permutation invariance and
+/// idempotence are two distinct probes for the same underlying property,
+/// see `docs/canonical_smiles_residual_rfc.md`'s Method section).
+#[test]
+fn stability_bridged_cage_and_heteroatom() {
+    let cases = [
+        "C1C2CC3CC(C2)CC1C3",               // adamantane
+        "C1C2CCN(CC2)C1",                   // quinuclidine (N bridgehead)
+        "C12CCC(CC1)C2",                    // norbornane
+        "C1(C)(C)[C@@]2(C)C(=O)C[C@H]1CC2", // camphor (stereocenters)
+        "C12C3C4C1C1C2C3C41",               // cubane
+    ];
+    assert_all_stable(&cases);
+}
+
 #[test]
 fn stability_spiro() {
     let cases = [
@@ -165,20 +182,72 @@ fn platform_independence_topology() {
     );
 }
 
-/// DOCUMENTED GAP: bridged bicyclics with multiple valid ring-closure orderings
-/// can produce different canonical SMILES depending on which ring atoms are traversed
-/// first. This is a known limitation of the current canonical traversal algorithm.
-/// The test documents and tracks this without panicking.
+/// Regression test for bridged/fused/spiro ring-closure ordering
+/// permutation-invariance (`docs/canonical_smiles_residual_rfc.md`'s
+/// "Update (C2)" correction).
+///
+/// **History**: this test previously (`bridged_bicyclic_canonical_gap_documentation`)
+/// asserted a "known gap" using the pair `("C1CC2CCC1CC2", "C1CCC2CC1CC2")`,
+/// labeled as "two spellings of bicyclo[2.2.2]octane". That premise was never
+/// checked against an independent structural oracle. RDKit `MolToInchi` shows
+/// they are in fact two DIFFERENT constitutional isomers of C8H14 (bridges
+/// 2-2-2 vs. 3-2-1 between the two degree-3 atoms) — `chematic` giving them
+/// different canonical strings was correct behavior, not a bug. See the RFC
+/// update for the full InChI evidence.
+///
+/// Every pair below IS independently verified (RDKit `MolToInchi`, both
+/// spellings share the same InChI — see the comment above each pair) to
+/// encode the same molecule, and both spellings were generated via RDKit
+/// `RenumberAtoms` (a real atom relabeling, not hand-guessed), matching the
+/// methodology `scripts/canonical_residual_diagnosis.py` uses for its
+/// corpus-level permutation-invariance check. All 8 converge under the
+/// current writer — hardening against a regression, since a targeted
+/// 22-molecule probe (bridged bicyclics, spiro, fused, and cage systems,
+/// with and without stereocenters/heteroatom bridgeheads) found zero real
+/// convergence failures in this mechanism.
 #[test]
-fn bridged_bicyclic_canonical_gap_documentation() {
-    let cases: &[(&str, &str, &str)] = &[("C1CC2CCC1CC2", "C1CCC2CC1CC2", "bicyclo[2.2.2]octane")];
-    for &(a, b, label) in cases {
-        match check_same_canonical(a, b) {
-            Err(e) => eprintln!("ℹ KNOWN GAP ({}): {}", label, e),
-            Ok(()) => eprintln!("ℹ RESOLVED ({}): now gives same canonical SMILES", label),
-        }
-    }
-    // Non-panicking: documents the gap for future tracking.
+fn bridged_fused_spiro_permutation_invariance() {
+    let pairs: &[(&str, &str, &str)] = &[
+        // InChI=1S/C8H14/c1-2-8-5-3-7(1)4-6-8/h7-8H,1-6H2
+        ("C1CC2CCC1CC2", "C1C2CCC(CC2)C1", "bicyclo[2.2.2]octane"),
+        // InChI=1S/C10H16/c1-7-2-9-4-8(1)5-10(3-7)6-9/h7-10H,1-6H2
+        ("C1C2CC3CC(C2)CC1C3", "C12CC3CC(CC(C1)C3)C2", "adamantane"),
+        // InChI=1S/C10H18/c1-2-6-10(7-3-1)8-4-5-9-10/h1-9H2
+        ("C1CCCC2(CCCC2)C1", "C1CCCCC12CCCC2", "spiro[4.5]decane"),
+        // InChI=1S/C10H18/c1-2-6-10-8-4-3-7-9(10)5-1/h9-10H,1-8H2/t9-,10-
+        (
+            "C1[C@H]2CCCC[C@@H]2CCC1",
+            "[C@H]12[C@@H](CCCC1)CCCC2",
+            "trans-decalin",
+        ),
+        // InChI=1S/C7H13N/c1-4-8-5-2-7(1)3-6-8/h7H,1-6H2
+        ("C1C2CCN(CC2)C1", "N12CCC(CC1)CC2", "quinuclidine"),
+        // InChI=1S/C7H12/c1-2-7-4-3-6(1)5-7/h6-7H,1-5H2
+        ("C12CCC(CC1)C2", "C1C2CCC1CC2", "norbornane"),
+        // InChI=1S/C10H16O/c1-9(2)7-4-5-10(9,3)8(11)6-7/h7H,4-6H2,1-3H3/t7-,10-/m1/s1
+        (
+            "C1(C)(C)[C@@]2(C)C(=O)C[C@H]1CC2",
+            "C1(C)(C)[C@H]2CC(=O)[C@@]1(C)CC2",
+            "camphor",
+        ),
+        // InChI=1S/C8H8/c1-2-5-3(1)7-4(1)6(2)8(5)7/h1-8H
+        ("C12C3C4C1C1C2C3C41", "C12C3C4C5C(C1C35)C24", "cubane"),
+    ];
+
+    let failures: Vec<String> = pairs
+        .iter()
+        .filter_map(|&(a, b, label)| {
+            check_same_canonical(a, b)
+                .err()
+                .map(|e| format!("{label}: {e}"))
+        })
+        .collect();
+
+    assert!(
+        failures.is_empty(),
+        "bridged/fused/spiro permutation-invariance regression:\n{}",
+        failures.join("\n")
+    );
 }
 
 // ── Test 3: Stereo parity gap (documentation, does not panic) ────────────────
