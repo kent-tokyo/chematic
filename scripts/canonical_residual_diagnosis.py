@@ -94,7 +94,7 @@ def extract_features(mol) -> MolFeatures:
     rings = tuple(sorted(len(r) for r in mol.GetRingInfo().AtomRings()))
     centers = tuple(sorted(
         lbl for _, lbl in Chem.FindMolChiralCenters(
-            mol, includeUnassigned=True, useLegacy=False)
+            mol, includeUnassigned=True, useLegacyImplementation=False)
     ))
     ez = tuple(sorted(
         str(b.GetStereo()) for b in mol.GetBonds()
