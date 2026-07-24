@@ -1,0 +1,31 @@
+{
+  "description": "Coordinator decision (option b): ship K2b authoritative-demotion mechanism (bidirectional promote+demote, including the fused-diazine ring-fusion fix) as an explicit opt-in function pair, NOT as a change to apply_aromaticity()/apply_aromaticity_ex() default behavior. Rationale: 55/84 corpus molecules (49 azulene-type + 4 compound + 2 large-polycyclic) are confirmed still wrong vs RDKit; shipping this as the new default while that gap exists would be inconsistent with this projects established pattern (apply_aromaticity_rdkit_parity_experimental itself required a separate promotion decision) and introduces real regression risk to every existing apply_aromaticity() caller.",
+  "new_public_api": {
+    "assign_aromaticity_authoritative_experimental(mol: &Molecule) -> AromaticityModel": "Huckel-only (matches assign_aromaticity default), opt-in, ring-fusion-aware (fused-diazine fix enabled).",
+    "apply_aromaticity_authoritative_experimental(mol: &Molecule) -> Molecule": "Applies the above model with full bidirectional (promote+demote) atom-flag authority."
+  },
+  "default_path_unchanged": {
+    "claim": "apply_aromaticity()/apply_aromaticity_ex() (and the assign_aromaticity()/assign_aromaticity_ex() they call) are byte-identical to main@e8f9f4a3906030c139427614d01c58e0cfa50204 (the commit immediately before this whole K2b branch started, i.e. before K2 (ada0334-shaped bidirectional demotion) and before this PRs own fused-diazine ring_pi_electrons fix).",
+    "verification": "Full 5000-molecule corpus (scripts/descriptor_census_corpus.smi), both raw and kekulized calling conventions, via crates/chematic-perception/examples/aromaticity_flag_corpus_dump.rs run on a temporary git worktree checked out at main@e8f9f4a and on this branch: 0 diff lines across all 5000 rows (byte-for-byte diff of the full JSONL dump, not just aggregate counts).",
+    "bug_caught_by_this_verification": "An initial refactor (extracting a shared finish_molecule_with_flags helper between the promote-only and authoritative atom-flag builders) introduced a real regression: it unconditionally assigned the precomputed aromatic set instead of OR-ing with the atoms original aromatic flag, silently turning the reverted promote-only builder into a second authoritative (demoting) builder. Caught by the byte-identical corpus diff (648/5000 raw-convention rows differed on first attempt), not assumed correct from code review alone. Fixed by explicitly OR-ing with atom.aromatic when computing the promote-only atom set."
+  },
+  "opt_in_path_reproduces_prior_fused_diazine_work": {
+    "verification": "New crates/chematic-perception/examples/aromaticity_authoritative_experimental_corpus_dump.rs (permanent, mirrors the default-path dump tool), run against the same corpus and joined against the same live rdkit==2026.03.3 oracle used throughout this PR: raw 0/0 mismatches, kekulized 84->55 mismatches, 29/33 fused-diazine cluster molecules fixed, 0 new -- identical to the measurements made when this fix was still wired into the default path, confirming the re-scoping itself introduced no behavioral drift in the opt-in engine."
+  },
+  "apply_aromaticity_rdkit_parity_experimental_unaffected": {
+    "claim": "This engine already relied on build_molecule_from_model (now reverted to promote-only-with-OR-original-flag) and continues to work correctly: its input is always a freshly re-Kekulized private clone with every atom aromatic flag already reset to false, so promote-only-OR-original reduces to exactly model.is_atom_aromatic(idx) for it -- a no-op distinction from full authoritative demotion. Confirmed via its own existing test suite (calibration_battery_matches_rdkit 15/15, purine_representation_stable, production_api_does_not_mutate_input_on_failure, etc.), unchanged, all still passing."
+  },
+  "tests_updated": [
+    "test_known_gap_fused_diazine_exocyclic_misfire_antiaromatic -> split into test_authoritative_experimental_fixes_fused_diazine_ring_fusion (opt-in, now passing) + test_default_engine_unaffected_by_fused_diazine_fix (default, still 6/10, unchanged from pre-K2b)",
+    "test_fused_diazine_cluster_sample_matches_rdkit -> test_authoritative_experimental_fused_diazine_cluster_sample_matches_rdkit (opt-in only)",
+    "test_bridgehead_n_false_positives_now_match_rdkit -> reverted to test_known_regressions_from_bridgehead_n_fix (default, original still-wrong assertion) + new test_authoritative_experimental_fixes_bridgehead_n_false_positives (opt-in, now-correct assertion)",
+    "KNOWN_ORDER_DEPENDENT_FALSE_NEGATIVES table and test_known_order_dependent_regressions reverted to original pre-fused-diazine-fix values (16,6,16) since the default engine no longer shows the fix-induced shift",
+    "exhaustive_oracle_pinned_cases and test_known_gap_azulene_nonalternant_odd_odd_split: unchanged -- diagnostic-only oracle and azulene mechanism were never part of the default-vs-opt-in split (azulene is unaffected by any engine choice here; the oracle was never wired to either apply_aromaticity_ex or apply_aromaticity_authoritative_experimental)"
+  ],
+  "known_limitations_of_the_new_opt_in_function_documented_not_blocking": {
+    "azulene_type_nonalternant": "49 corpus molecules, non-alternant whole-perimeter Huckel gap -- see validation/results/aromaticity_flag_demotion_k2b_azulene_cluster_finding.json (not boundable by a rule-level fix, confirmed).",
+    "fused_diazine_compound_cases": "4 molecules where the fused-diazine mechanism is fixed but a second, independent, large-polycyclic-shaped mechanism in a different ring of the same molecule still blocks agreement.",
+    "large_polycyclic_sssr_special_case": "2 molecules, not deeply decomposed, genuinely unresolved."
+  },
+  "verified_green": "cargo test --workspace --lib: 0 failures (19 crates). cargo fmt --check, cargo clippy --workspace --all-targets -D warnings: clean. bash scripts/check.sh: all green."
+}

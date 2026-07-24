@@ -34,13 +34,29 @@
 
 use std::fs;
 
-use chematic_core::AtomIdx;
+use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::{
     AromaticityAlgorithm, assign_aromaticity_ex, augmented_ring_set, exhaustive_aromaticity_oracle,
     find_ring_families_over, find_sssr, trace_ring_pi_electrons,
 };
 use rustc_hash::FxHashSet;
 use serde_json::{Value, json};
+
+/// Whole-molecule set of bonds lying on ANY ring in `rings` -- mirrors
+/// `aromaticity.rs`'s own private `ring_bond_set` (not exported), needed
+/// here so `trace_ring_pi_electrons` can distinguish a genuine exocyclic
+/// double bond from a ring-fusion bond into a different ring (K2b fix).
+fn all_ring_bonds_of(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> FxHashSet<BondIdx> {
+    let mut out = FxHashSet::default();
+    for ring in rings {
+        for i in 0..ring.len() {
+            if let Some((bidx, _)) = mol.bond_between(ring[i], ring[(i + 1) % ring.len()]) {
+                out.insert(bidx);
+            }
+        }
+    }
+    out
+}
 
 /// Same 4n+2 rule as the crate's private `classify_ring_aromaticity` --
 /// duplicated here (not exposed as a second public API) since it's a
@@ -120,6 +136,7 @@ fn main() {
         let sssr = find_sssr(&mol);
         let rings = augmented_ring_set(&mol, sssr.rings());
         let families = find_ring_families_over(&mol, &rings);
+        let all_ring_bonds = all_ring_bonds_of(&mol, &rings);
 
         for (component_id, family) in families.iter().enumerate() {
             let cycle_rank = family.ring_indices.len();
@@ -127,8 +144,10 @@ fn main() {
 
             for &ring_idx in &family.ring_indices {
                 let ring = &rings[ring_idx];
-                let intrinsic = trace_ring_pi_electrons(&mol, ring, &empty_context, algo);
-                let context = trace_ring_pi_electrons(&mol, ring, &final_context, algo);
+                let intrinsic =
+                    trace_ring_pi_electrons(&mol, ring, &empty_context, algo, &all_ring_bonds);
+                let context =
+                    trace_ring_pi_electrons(&mol, ring, &final_context, algo, &all_ring_bonds);
                 let ring_aromatic_intrinsic = is_huckel_aromatic(intrinsic.total);
                 let ring_aromatic_context = is_huckel_aromatic(context.total);
 

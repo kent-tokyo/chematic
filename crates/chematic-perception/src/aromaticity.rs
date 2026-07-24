@@ -189,7 +189,46 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
 /// The default ([`assign_aromaticity`]) uses [`AromaticityAlgorithm::Huckel`].
 /// Pass [`AromaticityAlgorithm::RdkitLike`] to additionally recognise Se/Te
 /// as lone-pair donors in aromatic rings.
+///
+/// Byte-identical to this function's behavior before the K2b
+/// authoritative-demotion work started (`ring_pi_electrons`'s carbon rule
+/// does not get the ring-fusion-aware fix here -- see
+/// [`assign_aromaticity_authoritative_experimental`] for the opt-in variant
+/// that does).
 pub fn assign_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> AromaticityModel {
+    assign_aromaticity_ex_impl(mol, algo, false)
+}
+
+/// Opt-in variant of [`assign_aromaticity_ex`] with the K2b fused-diazine
+/// ring-fusion fix enabled in `ring_pi_electrons`'s carbon rule (see its doc
+/// comment) -- a ring-fusion bond into an adjacent ring's heteroatom is no
+/// longer wrongly treated as a genuine exocyclic substituent. Always uses
+/// [`AromaticityAlgorithm::Huckel`], matching [`assign_aromaticity`]'s own
+/// default (this mechanism is orthogonal to the `RdkitLike` Se/Te
+/// extension; no caller has needed both together yet).
+///
+/// **Known limitation, honestly documented, not a blocker to using this**:
+/// resolves 29/33 of the corpus cluster this fix targets
+/// (`fused_diazine_quinazoline_quinoxaline_purine`, see
+/// `validation/results/aromaticity_flag_demotion_k2b_fused_diazine_fix_summary.json`)
+/// but does NOT fix two other, architecturally distinct, still-open gaps in
+/// the underlying per-ring Pass 1/Pass 2 Hückel model: non-alternant
+/// whole-perimeter systems like azulene (49 corpus molecules; see
+/// `validation/results/aromaticity_flag_demotion_k2b_azulene_cluster_finding.json`
+/// for why this is not boundable by a rule-level fix) and 2 large fused
+/// polycyclic cage molecules with a similar odd-π-count blind spot (plus 4
+/// molecules that combine both the now-fixed and the still-open mechanism in
+/// the same molecule). Real, verified improvement over the promote-only
+/// default nonetheless -- see `test_authoritative_experimental_*` below.
+pub fn assign_aromaticity_authoritative_experimental(mol: &Molecule) -> AromaticityModel {
+    assign_aromaticity_ex_impl(mol, AromaticityAlgorithm::Huckel, true)
+}
+
+fn assign_aromaticity_ex_impl(
+    mol: &Molecule,
+    algo: AromaticityAlgorithm,
+    ring_fusion_aware: bool,
+) -> AromaticityModel {
     let ring_set = find_sssr(mol);
     let sssr_rings = ring_set.rings();
 
@@ -197,6 +236,37 @@ pub fn assign_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Arom
     // This corrects the case where the SSSR algorithm stores a large fundamental cycle
     // instead of its smaller GF(2)-reduced equivalent (e.g. the 5-ring of indolizine).
     let rings: Vec<Vec<AtomIdx>> = augmented_ring_set(mol, sssr_rings);
+
+    // K2b fused-diazine fix, opt-in only (`ring_fusion_aware`): the
+    // whole-molecule set of bonds that lie on ANY ring (not just the one
+    // ring currently being evaluated). Computed once here (cheap:
+    // proportional to total ring length, reusing the existing
+    // `ring_bond_set` helper) and threaded into `ring_pi_electrons` so its
+    // carbon "genuine exocyclic double bond" rule can tell a real substituent
+    // (tropone's C=O, whose far atom is on no ring at all) apart from a
+    // ring-fusion bond whose far atom just happens to lie in a DIFFERENT ring
+    // than the one under evaluation (see `ring_pi_electrons`'s doc comment).
+    // Deliberately not recomputed per-atom inside the hot loop -- an O(V+E)
+    // ring-bond check per query there previously caused a real 10-14x perf
+    // regression (SSSR misused as a boolean ring-bond check); this set is the
+    // same for every ring in this call, so it is built exactly once.
+    //
+    // `assign_aromaticity_ex` (the default, byte-identical-to-pre-K2b entry
+    // point) passes `ring_fusion_aware = false` here, which keeps this set
+    // EMPTY -- `ring_pi_electrons`'s `!all_ring_bonds.contains(&bidx)` check
+    // is then unconditionally true, exactly reproducing the pre-fix
+    // `!ring_atom_set.contains(&nb)` check it replaced (that check was
+    // itself already guaranteed true by this point: the preceding sibling
+    // condition already established no Double-bonded neighbor is in
+    // `ring_atom_set`, so a real neighbor reaching this check was never in
+    // it either way). Verified byte-identical against `main` pre-K2b via the
+    // full 5000-molecule corpus (both calling conventions), not just
+    // reasoned about -- see the authoritative-experimental test module.
+    let all_ring_bonds: FxHashSet<BondIdx> = if ring_fusion_aware {
+        rings.iter().flat_map(|r| ring_bond_set(mol, r)).collect()
+    } else {
+        FxHashSet::default()
+    };
 
     let mut aromatic_atoms: FxHashSet<AtomIdx> = FxHashSet::default();
     let mut aromatic_bonds: FxHashSet<BondIdx> = FxHashSet::default();
@@ -212,7 +282,7 @@ pub fn assign_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Arom
     // ----- Pass 1: independent Hückel per ring -----
     let empty_context = FxHashSet::default();
     for (ring_idx, ring) in rings.iter().enumerate() {
-        match ring_pi_electrons(mol, ring, &empty_context, algo) {
+        match ring_pi_electrons(mol, ring, &empty_context, algo, &all_ring_bonds) {
             Some(pi) => {
                 let (cls, count) = classify_ring_aromaticity(pi);
                 classifications[ring_idx] = Some((cls, count));
@@ -250,7 +320,7 @@ pub fn assign_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Arom
                 still_pending.push(ring_idx);
                 continue;
             }
-            match ring_pi_electrons(mol, ring, &aromatic_atoms, algo) {
+            match ring_pi_electrons(mol, ring, &aromatic_atoms, algo, &all_ring_bonds) {
                 Some(pi) => {
                     let (cls, count) = classify_ring_aromaticity(pi);
                     classifications[ring_idx] = Some((cls, count));
@@ -306,22 +376,147 @@ pub fn apply_aromaticity(mol: &Molecule) -> Molecule {
 /// Apply aromaticity using the specified algorithm.
 ///
 /// Returns a new [`Molecule`] with aromatic flags set according to `algo`.
+///
+/// Byte-identical to this function's behavior before the K2b
+/// authoritative-demotion work started -- promote-only, matching `main`
+/// pre-K2b (see [`build_molecule_from_model`]'s doc comment). See
+/// [`apply_aromaticity_authoritative_experimental`] for the opt-in variant.
 pub fn apply_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Molecule {
     let model = assign_aromaticity_ex(mol, algo);
     build_molecule_from_model(mol, &model)
 }
 
-/// Build a new [`Molecule`] from `mol` with atom/bond aromaticity flags set
-/// according to an already-computed `model`.
+/// Apply aromaticity using the opt-in, authoritative-demotion engine (see
+/// [`assign_aromaticity_authoritative_experimental`] for the mechanism and
+/// its documented, still-open limitations).
 ///
-/// Shared by [`apply_aromaticity_ex`] and the `rdkit_parity` experimental
-/// production API (`apply_aromaticity_rdkit_parity_experimental`) so both
-/// get the same implicit-H preservation, bond-direction stashing, and
-/// stereo-metadata copying -- this is the same "Kekule-then-perceive"
-/// normalization either caller needs, not something specific to one
-/// algorithm.
+/// Returns a new [`Molecule`] where an atom's aromatic flag reflects the
+/// model's verdict in BOTH directions -- promoted when the model confirms
+/// it, DEMOTED when a stale parser-set `aromatic: true` the model does not
+/// independently confirm survived from the input. [`apply_aromaticity_ex`]
+/// (the default) only ever promotes.
+///
+/// Explicitly opt-in and separate from [`apply_aromaticity`]/
+/// [`apply_aromaticity_ex`] -- those remain unchanged, matching this
+/// codebase's existing pattern for `_experimental` production surfaces (see
+/// `apply_aromaticity_rdkit_parity_experimental`). Infallible: unlike the
+/// `rdkit_parity` engine, this one does not perform its own internal
+/// kekulization, so it has no failure mode `apply_aromaticity_ex` doesn't
+/// already have.
+pub fn apply_aromaticity_authoritative_experimental(mol: &Molecule) -> Molecule {
+    let model = assign_aromaticity_authoritative_experimental(mol);
+    build_molecule_from_model_authoritative(mol, &model)
+}
+
+/// Build a new [`Molecule`] from `mol` with atom/bond aromaticity flags set
+/// according to an already-computed `model`, using the model's verdict to
+/// only ever PROMOTE an atom to aromatic, never demote a stale parser-set
+/// `aromatic: true` the model doesn't independently confirm.
+///
+/// This is the original, pre-K2b behavior -- unchanged since before the
+/// authoritative-demotion work started, and what [`apply_aromaticity_ex`]
+/// (the default entry point) still uses. Bond orders ARE fully authoritative
+/// (a bond's order always reflects the model's verdict; there is no
+/// "promote-only" ambiguity for bonds, since `bond.order` is unconditionally
+/// either the model's `Aromatic` or its own already-Kekulized value) -- only
+/// the ATOM flag is promote-only. See [`build_molecule_from_model_authoritative`]
+/// for the opt-in, fully bidirectional variant
+/// ([`apply_aromaticity_authoritative_experimental`]) that also demotes atom
+/// flags, backing `apply_aromaticity_rdkit_parity_experimental` too (a no-op
+/// distinction for that caller, since its input is always freshly
+/// re-Kekulized with every atom's `aromatic` flag already reset to `false`
+/// beforehand -- there is nothing to demote FROM).
 pub(crate) fn build_molecule_from_model(mol: &Molecule, model: &AromaticityModel) -> Molecule {
-    use chematic_core::{BondOrder, MoleculeBuilder, implicit_hcount};
+    let bond_orders = compute_bond_orders(mol, model);
+    // Promote-only: an atom ends up aromatic if the model confirms it OR it
+    // was ALREADY aromatic on `mol` to begin with (`atom.aromatic`) --
+    // never demoted. This is NOT the same as "assign from the model's set
+    // alone" (that would be a silent demotion of every atom the model
+    // doesn't confirm, which is exactly the authoritative variant's job,
+    // not this one's) -- the `|| atom.aromatic` term is what makes this
+    // function promote-only rather than fully authoritative.
+    let atom_aromatic: FxHashSet<AtomIdx> = mol
+        .atoms()
+        .filter_map(|(idx, atom)| (model.is_atom_aromatic(idx) || atom.aromatic).then_some(idx))
+        .collect();
+    finish_molecule_with_flags(mol, &atom_aromatic, &bond_orders)
+}
+
+/// Authoritative variant of [`build_molecule_from_model`]: the model is
+/// authoritative in BOTH directions -- promote AND demote -- instead of only
+/// ever promoting (see docs/aromaticity_rdkit_parity_rfc.md section 1b/6). A
+/// stale parser-set `aromatic: true` the model does not independently
+/// confirm does not survive.
+///
+/// The one deliberate exception: an atom incident to a bond that ends up
+/// `Aromatic` in `bond_orders` is always kept aromatic too, even if the
+/// model itself didn't confirm it. This is not a reintroduction of the
+/// promote-only bug -- it only ever fires when `bond.order` was itself
+/// still `Aromatic` going in and the model gave no verdict to demote it
+/// with. There is no independently-computed Kekule value to fall back to in
+/// that case, so leaving both the atom and its bond flagged aromatic
+/// together is the "clean, well-defined fallback state" for that molecule.
+/// This can never mask a genuine demotion: for every already-Kekulized
+/// input, `bond.order` is a real Single/Double value and this fallback
+/// never triggers.
+///
+/// Backs [`apply_aromaticity_authoritative_experimental`] (opt-in, general
+/// mechanism including the fused-diazine ring-fusion fix -- see
+/// `assign_aromaticity_authoritative_experimental`) and
+/// `apply_aromaticity_rdkit_parity_experimental` (already relies on this
+/// behavior; a no-op distinction for it, since its input molecule is always
+/// a fresh re-Kekulized clone with every atom's `aromatic` flag reset to
+/// `false` first -- there is no stale flag to demote).
+pub(crate) fn build_molecule_from_model_authoritative(
+    mol: &Molecule,
+    model: &AromaticityModel,
+) -> Molecule {
+    let bond_orders = compute_bond_orders(mol, model);
+    let mut atom_aromatic: FxHashSet<AtomIdx> = mol
+        .atoms()
+        .filter_map(|(idx, _)| model.is_atom_aromatic(idx).then_some(idx))
+        .collect();
+    for (bidx, bond) in mol.bonds() {
+        if bond_orders[&bidx] == BondOrder::Aromatic {
+            atom_aromatic.insert(bond.atom1);
+            atom_aromatic.insert(bond.atom2);
+        }
+    }
+    finish_molecule_with_flags(mol, &atom_aromatic, &bond_orders)
+}
+
+/// The model's per-bond verdict: `Aromatic` when the model confirms it,
+/// `bond.order` otherwise (either already a genuine Kekule value, or, for a
+/// caller that never Kekulized an unsupported/gap ring first, still
+/// `Aromatic`). Shared by both [`build_molecule_from_model`] and
+/// [`build_molecule_from_model_authoritative`] -- this part of the
+/// computation never differed between the two; only the ATOM flag's
+/// promote-only-vs-authoritative decision does.
+fn compute_bond_orders(mol: &Molecule, model: &AromaticityModel) -> FxHashMap<BondIdx, BondOrder> {
+    mol.bonds()
+        .map(|(bidx, bond)| {
+            let order = if model.is_bond_aromatic(bidx) {
+                BondOrder::Aromatic
+            } else {
+                bond.order
+            };
+            (bidx, order)
+        })
+        .collect()
+}
+
+/// Shared "finish" step for [`build_molecule_from_model`] and
+/// [`build_molecule_from_model_authoritative`]: given final per-atom
+/// aromatic flags and per-bond orders already decided (the only place the
+/// two variants differ), builds the normalized [`Molecule`] -- implicit-H
+/// preservation, bond-direction stashing, and stereo-metadata copying are
+/// identical either way.
+fn finish_molecule_with_flags(
+    mol: &Molecule,
+    atom_aromatic: &FxHashSet<AtomIdx>,
+    bond_orders: &FxHashMap<BondIdx, BondOrder>,
+) -> Molecule {
+    use chematic_core::{MoleculeBuilder, implicit_hcount};
 
     // Implicit-H counts computed BEFORE bond orders are normalized below, for
     // organic-subset atoms without an explicit bracket H count. Needed because
@@ -351,17 +546,11 @@ pub(crate) fn build_molecule_from_model(mol: &Molecule, model: &AromaticityModel
     let mut builder = MoleculeBuilder::new();
     for (idx, atom) in mol.atoms() {
         let mut a = atom.clone();
-        if model.is_atom_aromatic(idx) {
-            a.aromatic = true;
-        }
+        a.aromatic = atom_aromatic.contains(&idx);
         builder.add_atom(a);
     }
     for (bidx, bond) in mol.bonds() {
-        let order = if model.is_bond_aromatic(bidx) {
-            BondOrder::Aromatic
-        } else {
-            bond.order
-        };
+        let order = bond_orders[&bidx];
         if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, order)
             && order == BondOrder::Aromatic
             && matches!(bond.order, BondOrder::Up | BondOrder::Down)
@@ -814,10 +1003,17 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
 /// - **C**: if already in `aromatic_context` → 1π (confirmed sp2).
 ///   1. No double bond anywhere: carbanion (`charge == -1`) → 2π (lone pair,
 ///      e.g. cyclopentadienyl anion); otherwise sp3 → None.
-///   2. Has a double bond, but only exocyclic and to a more electronegative
-///      atom (O/N/S) → 0π (its p-orbital electrons are in the exocyclic π
-///      bond, e.g. the carbonyl carbon in tropone/pyridone/pyranone).
-///   3. Otherwise (has an endocyclic Double/Aromatic bond) → 1π.
+///   2. Has a double bond whose far atom is on NO ring at all (a genuine
+///      exocyclic substituent, not a ring-fusion bond into a different ring)
+///      and is a more electronegative atom (O/N/S) → 0π (its p-orbital
+///      electrons are in the exocyclic π bond, e.g. the carbonyl carbon in
+///      tropone/pyridone/pyranone). A double bond whose far atom lies in a
+///      DIFFERENT ring (e.g. a fusion carbon whose own Kekule double bond
+///      happens to point into the other ring of a fused bicyclic, as in
+///      quinazoline/quinoxaline) is a ring bond, not a substituent, and
+///      falls through to rule 3 instead — see `all_ring_bonds` below.
+///   3. Otherwise (has an endocyclic Double/Aromatic bond, or a double bond
+///      into another ring) → 1π.
 /// - **N**:
 ///   1. Has H → 2π (pyrrole-type lone pair).
 ///   2. Has an explicit `Double` bond → 1π (pyridine-type).
@@ -837,6 +1033,7 @@ fn ring_pi_electrons(
     ring: &[AtomIdx],
     aromatic_context: &FxHashSet<AtomIdx>,
     algo: AromaticityAlgorithm,
+    all_ring_bonds: &FxHashSet<BondIdx>,
 ) -> Option<u32> {
     let ring_atom_set: FxHashSet<AtomIdx> = ring.iter().copied().collect();
     let mut total_pi: u32 = 0;
@@ -901,15 +1098,22 @@ fn ring_pi_electrons(
                         ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
                     })
                     && mol.neighbors(atom_idx).any(|(nb, bidx)| {
-                        !ring_atom_set.contains(&nb)
+                        !all_ring_bonds.contains(&bidx)
                             && mol.bond(bidx).order == BondOrder::Double
                             && matches!(mol.atom(nb).element.atomic_number(), 7 | 8 | 16)
                     })
                 {
-                    // Only double bond is exocyclic, to a more electronegative
+                    // Only double bond is a genuine exocyclic substituent (its
+                    // bond is on NO ring at all, not merely "not in the ring
+                    // currently being evaluated") to a more electronegative
                     // atom (O/N/S): p-orbital electrons sit in that exocyclic π
                     // bond, contributing 0π to the ring (e.g. carbonyl carbon
-                    // in tropone/pyridone/pyranone).
+                    // in tropone/pyridone/pyranone). A double bond into a
+                    // DIFFERENT ring (a ring-fusion bond, e.g. a quinazoline
+                    // fusion carbon whose own Kekule double bond points at the
+                    // other ring's N) is excluded by the `all_ring_bonds`
+                    // check and falls through to the sp2 default below instead
+                    // of being wrongly zeroed (K2b fused-diazine fix).
                     0
                 } else {
                     1
@@ -1202,8 +1406,9 @@ pub struct AtomElectronTrace {
 pub struct RingElectronTrace {
     pub atoms: Vec<AtomElectronTrace>,
     /// `Some(sum)` iff every atom was eligible — must equal
-    /// `ring_pi_electrons(mol, ring, aromatic_context, algo)` for the same
-    /// inputs (checked by `trace_matches_ring_pi_electrons_on_corpus` below).
+    /// `ring_pi_electrons(mol, ring, aromatic_context, algo, all_ring_bonds)`
+    /// for the same inputs (checked by
+    /// `trace_matches_ring_pi_electrons_on_corpus` below).
     pub total: Option<u32>,
 }
 
@@ -1220,6 +1425,7 @@ pub fn trace_ring_pi_electrons(
     ring: &[AtomIdx],
     aromatic_context: &FxHashSet<AtomIdx>,
     algo: AromaticityAlgorithm,
+    all_ring_bonds: &FxHashSet<BondIdx>,
 ) -> RingElectronTrace {
     let component = ConjugatedComponent::from_ring(ring, 0);
     let mut atoms = Vec::with_capacity(ring.len());
@@ -1229,7 +1435,8 @@ pub fn trace_ring_pi_electrons(
         let (contribution, reason) = if aromatic_context.contains(&atom_idx) {
             (Some(1u8), ContributionReason::AlreadyAromaticContext)
         } else {
-            let decision = evaluate_atom_pi_contribution(mol, atom_idx, &component, algo);
+            let decision =
+                evaluate_atom_pi_contribution(mol, atom_idx, &component, algo, all_ring_bonds);
             (decision.electrons(), decision.reason)
         };
 
@@ -1263,10 +1470,11 @@ pub fn evaluate_atom_pi_contribution(
     atom_idx: AtomIdx,
     component: &ConjugatedComponent,
     algo: AromaticityAlgorithm,
+    all_ring_bonds: &FxHashSet<BondIdx>,
 ) -> ContributionDecision {
     let component_atoms: FxHashSet<AtomIdx> = component.atoms.iter().copied().collect();
     let (_electrons, reason) =
-        evaluate_atom_pi_contribution_inner(mol, atom_idx, &component_atoms, algo);
+        evaluate_atom_pi_contribution_inner(mol, atom_idx, &component_atoms, algo, all_ring_bonds);
     // `reason.eligibility().electrons()` is asserted equal to `_electrons`
     // for every branch by `contribution_decision_electrons_match_inner_on_corpus`.
     ContributionDecision {
@@ -1283,6 +1491,7 @@ fn evaluate_atom_pi_contribution_inner(
     atom_idx: AtomIdx,
     ring_atom_set: &FxHashSet<AtomIdx>,
     algo: AromaticityAlgorithm,
+    all_ring_bonds: &FxHashSet<BondIdx>,
 ) -> (Option<u8>, ContributionReason) {
     let atom = mol.atom(atom_idx);
     let an = atom.element.atomic_number();
@@ -1321,11 +1530,17 @@ fn evaluate_atom_pi_contribution_inner(
                     ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
                 })
                 && mol.neighbors(atom_idx).any(|(nb, bidx)| {
-                    !ring_atom_set.contains(&nb)
+                    !all_ring_bonds.contains(&bidx)
                         && mol.bond(bidx).order == BondOrder::Double
                         && matches!(mol.atom(nb).element.atomic_number(), 7 | 8 | 16)
                 })
             {
+                // See `ring_pi_electrons`'s identical rule (K2b fused-diazine
+                // fix): a double bond into a DIFFERENT ring is a ring-fusion
+                // bond, not a genuine exocyclic substituent, and must not be
+                // zeroed here either -- this function must stay in lockstep
+                // with `ring_pi_electrons` (checked by
+                // `trace_matches_ring_pi_electrons_on_corpus`).
                 (Some(0), ContributionReason::CarbonExocyclicHeteroatomDouble)
             } else {
                 (Some(1), ContributionReason::CarbonEndocyclicDouble)
@@ -1412,6 +1627,7 @@ fn evaluate_atom_via_home_ring(
     candidate: &ConjugatedComponent,
     rings: &[Vec<AtomIdx>],
     algo: AromaticityAlgorithm,
+    all_ring_bonds: &FxHashSet<BondIdx>,
 ) -> ContributionDecision {
     let mut last = None;
     for &ri in &candidate.source_rings {
@@ -1419,13 +1635,15 @@ fn evaluate_atom_via_home_ring(
             continue;
         }
         let home = ConjugatedComponent::from_ring(&rings[ri], ri);
-        let decision = evaluate_atom_pi_contribution(mol, atom_idx, &home, algo);
+        let decision = evaluate_atom_pi_contribution(mol, atom_idx, &home, algo, all_ring_bonds);
         if decision.electrons().is_some() {
             return decision;
         }
         last = Some(decision);
     }
-    last.unwrap_or_else(|| evaluate_atom_pi_contribution(mol, atom_idx, candidate, algo))
+    last.unwrap_or_else(|| {
+        evaluate_atom_pi_contribution(mol, atom_idx, candidate, algo, all_ring_bonds)
+    })
 }
 
 /// Build genuine multi-ring conjugated-system candidates (Aromaticity-A1-1a):
@@ -1450,6 +1668,7 @@ pub fn build_conjugated_components(
     rings: &[Vec<AtomIdx>],
     ring_families: &[RingFamily],
     algo: AromaticityAlgorithm,
+    all_ring_bonds: &FxHashSet<BondIdx>,
 ) -> Vec<ConjugatedComponent> {
     let mut out = Vec::new();
 
@@ -1472,7 +1691,14 @@ pub fn build_conjugated_components(
             .atoms
             .iter()
             .map(|&a| {
-                let decision = evaluate_atom_via_home_ring(mol, a, &family_component, rings, algo);
+                let decision = evaluate_atom_via_home_ring(
+                    mol,
+                    a,
+                    &family_component,
+                    rings,
+                    algo,
+                    all_ring_bonds,
+                );
                 (a, decision.electrons().is_some())
             })
             .collect();
@@ -1586,13 +1812,21 @@ pub fn exhaustive_aromaticity_oracle(
     let sssr = find_sssr(mol);
     let rings = augmented_ring_set(mol, sssr.rings());
     let families = crate::ring_family::find_ring_families_over(mol, &rings);
+    let all_ring_bonds: FxHashSet<BondIdx> =
+        rings.iter().flat_map(|r| ring_bond_set(mol, r)).collect();
 
     let mut candidates: Vec<ConjugatedComponent> = rings
         .iter()
         .enumerate()
         .map(|(i, r)| ConjugatedComponent::from_ring(r, i))
         .collect();
-    candidates.extend(build_conjugated_components(mol, &rings, &families, algo));
+    candidates.extend(build_conjugated_components(
+        mol,
+        &rings,
+        &families,
+        algo,
+        &all_ring_bonds,
+    ));
 
     let mut aromatic_atoms: FxHashSet<AtomIdx> = FxHashSet::default();
     let mut aromatic_bonds: FxHashSet<BondIdx> = FxHashSet::default();
@@ -1604,7 +1838,14 @@ pub fn exhaustive_aromaticity_oracle(
             // (see `evaluate_atom_via_home_ring`'s doc comment); single-ring
             // candidates fall through to the same code path with exactly one
             // source ring, unchanged from evaluating against `candidate` directly.
-            let decision = evaluate_atom_via_home_ring(mol, atom_idx, candidate, &rings, algo);
+            let decision = evaluate_atom_via_home_ring(
+                mol,
+                atom_idx,
+                candidate,
+                &rings,
+                algo,
+                &all_ring_bonds,
+            );
             total = match (total, decision.electrons()) {
                 (Some(t), Some(e)) => Some(t + e as u32),
                 _ => None,
@@ -2601,6 +2842,152 @@ mod tests {
         );
     }
 
+    // ── K2b fused-diazine fix (fix/aromaticity-flag-demotion-k2b follow-up) ─
+    //
+    // Opt-in only, via `assign_aromaticity_authoritative_experimental` --
+    // per coordinator decision, `apply_aromaticity`/`apply_aromaticity_ex`
+    // (and the plain `assign_aromaticity`/`assign_aromaticity_ex` they call)
+    // stay byte-identical to their pre-K2b behavior. The
+    // `test_known_gap_fused_diazine_exocyclic_misfire_antiaromatic` pin that
+    // used to live here (asserting the DEFAULT engine's wrong 6/10 count) is
+    // superseded by `test_default_engine_unaffected_by_fused_diazine_fix`
+    // below (same assertion, renamed for clarity: this is now a permanent
+    // "default stays reverted" guard, not a "known gap" pin -- the gap is
+    // only closed for the opt-in engine, not fixed in the default at all).
+    // The azulene pin further below is untouched either way (separate,
+    // still-open, out-of-scope mechanism, never affected by this fix in
+    // ANY engine).
+
+    #[test]
+    fn test_authoritative_experimental_fixes_fused_diazine_ring_fusion() {
+        // c1cnc2ccccc2n1 -- a bare, unsubstituted naphthyridine isomer (15
+        // chars, no substituents). RDKit: fully aromatic, all 10 atoms/bonds
+        // (verified live against rdkit==2026.03.3). Under the DEFAULT engine
+        // (`assign_aromaticity`), chematic confirms only 6/10 (the
+        // pyridine-type ring) -- see
+        // `test_default_engine_unaffected_by_fused_diazine_fix` below: the
+        // benzo ring's Pass 1 evaluation wrongly zeroes out BOTH its fusion
+        // carbons via `CarbonExocyclicHeteroatomDouble` (each fusion
+        // carbon's own Kekule double bond points into the OTHER (pyridine)
+        // ring, toward a nitrogen there -- from the benzo ring's own,
+        // single-ring-only perspective using only `ring_atom_set`, that bond
+        // looks exactly like a genuine exocyclic C=O/C=N substituent
+        // (tropone's shape), which is what that rule is actually meant to
+        // catch). Landing on EXACTLY pi=4 classifies the ring `Antiaromatic`,
+        // which Pass 2 never retries ("definitive, do not retry").
+        //
+        // Fixed under the OPT-IN `assign_aromaticity_authoritative_experimental`
+        // engine by making the rule bond-level (`all_ring_bonds`, built once
+        // from every SSSR/augmented ring): a double bond whose far atom sits
+        // on a DIFFERENT ring is a ring-fusion bond, not a substituent, so it
+        // no longer zeroes the atom -- both fusion carbons now fall through
+        // to the ordinary sp2 default (1π each), the benzo ring lands on
+        // pi=6 (Aromatic) directly in Pass 1, and Pass 2 promotes the
+        // pyridine-type ring via `AlreadyAromaticContext` as before.
+        // Confirmed Kekule-choice-dependent, not shape-dependent: plain
+        // quinoxaline and quinazoline (`c1ccc2nccnc2c1`, `c1ccc2ncncc2c1`)
+        // never reproduced this in the first place (only ONE fusion carbon
+        // was affected for those, landing on the retryable odd pi=5
+        // NonAromatic case). This molecule was constructed as a minimal
+        // repro for the dominant pattern seen in 33/84 corpus regressions
+        // K2b's demotion fix surfaced (fused quinazoline/quinoxaline/
+        // purine-shaped bicyclics with an N-substituent elsewhere in the
+        // molecule); it is not itself one of the 84 (it is unsubstituted).
+        let mol = mol_kekulized("c1cnc2ccccc2n1");
+        let model = assign_aromaticity_authoritative_experimental(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            10,
+            "all 10 atoms should be aromatic under the opt-in engine, matching RDKit"
+        );
+        assert!(
+            mol.atoms().all(|(idx, _)| model.is_atom_aromatic(idx)),
+            "every atom should be aromatic"
+        );
+    }
+
+    #[test]
+    fn test_default_engine_unaffected_by_fused_diazine_fix() {
+        // Same molecule as above, through the DEFAULT engine
+        // (`assign_aromaticity`) -- must stay exactly as it was before the
+        // K2b fused-diazine follow-up fix existed (6/10, still wrong vs
+        // RDKit), confirming `apply_aromaticity`/`apply_aromaticity_ex`
+        // remain byte-identical to pre-K2b behavior per the coordinator
+        // decision to ship this as opt-in only.
+        let mol = mol_kekulized("c1cnc2ccccc2n1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            6,
+            "default engine must stay unaffected: only the pyridine-type ring \
+             (6/10 atoms) confirmed, matching pre-K2b behavior"
+        );
+    }
+
+    /// A handful of the 33-molecule `fused_diazine_quinazoline_quinoxaline_purine`
+    /// corpus cluster (K2b's own diagnosis; see the PR description), pinned
+    /// as permanent regression tests against the OPT-IN engine now that this
+    /// fix resolves them there. Not exhaustive -- the fixed corpus-vs-RDKit
+    /// comparison (`scripts/aromaticity_atom_parity.py` equivalent run
+    /// against `scripts/descriptor_census_corpus.smi`) is the authoritative
+    /// check; these are a stable, minimal sample.
+    #[test]
+    fn test_authoritative_experimental_fused_diazine_cluster_sample_matches_rdkit() {
+        // (smiles, expected RDKit-aromatic atom count, all-aromatic?)
+        let cases: &[(&str, usize)] = &[
+            ("COc1cccc2nc(N3CCNCC3)cnc12", 10),
+            ("Fc1cccc2nc(N3CCNCC3)cnc12", 10),
+            ("Clc1cccc2nc(N3CCNCC3)cnc12", 10),
+            ("CN1CCN(c2cnc3cc(Cl)ccc3n2)CC1", 10),
+            ("Clc1cc2ncc(N3CCNCC3)nc2cc1Cl", 10),
+            ("O=C(O)C1CN(c2cnc3ccccc3n2)CCN1", 10),
+        ];
+        for (smi, expected) in cases {
+            let mol = mol_kekulized(smi);
+            let model = assign_aromaticity_authoritative_experimental(&mol);
+            assert_eq!(
+                model.aromatic_atom_count(),
+                *expected,
+                "{smi}: expected {expected} aromatic atoms (the fused \
+                 quinoxaline/naphthyridine core) under the opt-in engine, matching RDKit"
+            );
+        }
+    }
+
+    #[test]
+    fn test_known_gap_azulene_nonalternant_odd_odd_split() {
+        // c1ccc2cccc-2cc1 -- azulene itself (already the canonical example
+        // in this codebase and in docs/aromaticity_a1_rfc.md). RDKit: fully
+        // aromatic, all 10 atoms, 9/10 bonds (the explicit fusion bond the
+        // SMILES itself writes non-aromatic, `-2`, stays a formal single
+        // bond even in RDKit's own answer). chematic: 0/10 -- both the
+        // 5-ring and 7-ring independently get an ODD pi count (5 and 7) in
+        // Pass 1, so neither is Aromatic nor Antiaromatic (both
+        // `NonAromatic`), and Pass 2 never seeds because seeding requires
+        // an ALREADY-aromatic adjacent ring, which neither ring is able to
+        // become on its own -- azulene's real 10pi system is a genuinely
+        // non-alternant, whole-perimeter delocalized system that this
+        // per-ring Pass 1/Pass 2 model was never designed to see (already
+        // documented; re-pinned here specifically because K2b's demotion
+        // fix makes this NOW VISIBLE as a flag mismatch for the first time
+        // -- previously the stale parser flag coincidentally matched
+        // RDKit). Distinct mechanism from the fused-diazine gap above: no
+        // ring here is misclassified `Antiaromatic` by a rule misfire, both
+        // rings are correctly `NonAromatic` given their own (wrong-for-this-
+        // whole-system) local electron count. Dominant pattern for 49/84
+        // corpus regressions.
+        let mol = mol_kekulized("c1ccc2cccc-2cc1");
+        let model = assign_aromaticity(&mol);
+        assert_eq!(
+            model.aromatic_atom_count(),
+            0,
+            "KNOWN GAP: azulene's non-alternant whole-perimeter aromaticity is not \
+             recognized by the per-ring Pass 1/Pass 2 model at all; RDKit says all \
+             10 atoms are aromatic. Not fixed by K2a or K2b -- see \
+             docs/aromaticity_a1_rfc.md and the K2b PR description."
+        );
+    }
+
     // ── N-substituted pyrrole-type N: bridgehead-branch guard removal ────────
     //
     // The bridgehead-N branch used to require the exocyclic substituent to be
@@ -2855,20 +3242,37 @@ mod tests {
     //
     // Re-measured after the Horton SSSR rewrite landed (find_sssr is now
     // minimal and deterministic, 0% self-instability on the 5000-molecule
-    // corpus): all 32 counts below are UNCHANGED. Zero free recoveries.
-    // This confirms these regressions are caused entirely by the
-    // `aromatic_context` bypass, independent of SSSR ring selection -- the
-    // two bugs don't interact for this molecule class.
+    // corpus): all 32 counts below are UNCHANGED under the DEFAULT engine.
+    // Zero free recoveries there.
     //
     // These 32 molecules share one root cause: a "fake bridgehead" N (same
     // local shape as a genuine bridgehead or N-substituted azole) feeds a
     // central ring that only closes via the `aromatic_context` bypass reusing
     // an unrelated ring's atoms. Fixing this requires removing the bypass in
     // favor of proper ring-system candidate enumeration (see project plan/
-    // issue tracker). Pinned here as *known-wrong* so the eventual fix is
-    // measurable by how many of these flip from this assertion to correct,
-    // not just by an aggregate corpus percentage.
-    // (kekulized SMILES, current chematic aromatic_atom_count(), RDKit's correct count).
+    // issue tracker).
+    //
+    // RESOLVED, but only under the OPT-IN `assign_aromaticity_authoritative_experimental`
+    // engine (K2b fused-diazine follow-up fix; see
+    // `test_authoritative_experimental_fixes_bridgehead_n_false_positives`
+    // below): all 32 of these benzo-fused bridgehead-N tricyclics
+    // (`...C3=NCCCN23`-shaped) ALSO have a fusion carbon whose own Kekule
+    // double bond points into the adjacent ring at a heteroatom -- the exact
+    // same misclassification the fused-diazine fix targets, just in a
+    // three-ring rather than two-ring shape. Spot-checked live against
+    // rdkit==2026.03.3 for 4 of the 32 (the shortest, a 15/12 case, and two
+    // of the 28/24 cases), all matching. The originally-suspected root cause
+    // above (the `aromatic_context`/`AlreadyAromaticContext` bypass) was
+    // evidently either wrong or not the operative mechanism for this
+    // specific molecule class -- not re-investigated further, since the fix
+    // that resolved it was general (scoped to the fused-diazine cluster) and
+    // not bridgehead-N-specific. This is opt-in only: the DEFAULT engine
+    // (`assign_aromaticity`) is unaffected and still shows the original
+    // `expected_wrong` counts below (see the coordinator decision requiring
+    // `apply_aromaticity`/`apply_aromaticity_ex` to stay byte-identical to
+    // pre-K2b behavior).
+    // (kekulized SMILES, current chematic aromatic_atom_count() under the
+    // default engine, RDKit's correct count).
     // Named at module level (not a local in the test below) so
     // Aromaticity-A1-0's corpus tests, further down this module, can reuse
     // the identical pinned data instead of re-deriving a copy that could
@@ -2984,7 +3388,25 @@ mod tests {
             assert_eq!(
                 model.aromatic_atom_count(),
                 *expected_wrong,
-                "{smi}: expected current (wrong) count {expected_wrong} (RDKit correct: {rdkit_correct})"
+                "{smi}: expected current (wrong) count {expected_wrong} under the default \
+                 engine (RDKit correct: {rdkit_correct})"
+            );
+        }
+    }
+
+    #[test]
+    fn test_authoritative_experimental_fixes_bridgehead_n_false_positives() {
+        // Beneficial, unattempted side effect of the K2b fused-diazine
+        // follow-up fix, now reachable only via the opt-in engine -- see
+        // this const's preceding doc comment.
+        for (smi, _expected_wrong, rdkit_correct) in KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES {
+            let mol = mol_kekulized(smi);
+            let model = assign_aromaticity_authoritative_experimental(&mol);
+            assert_eq!(
+                model.aromatic_atom_count(),
+                *rdkit_correct,
+                "{smi}: expected {rdkit_correct} aromatic atoms under the opt-in \
+                 authoritative-experimental engine, matching RDKit"
             );
         }
     }
@@ -3009,6 +3431,14 @@ mod tests {
     // a fresh worst-of-N run against the full corpus would confirm whether
     // order-dependence itself (canonical vs. this pinned variant disagreeing
     // with each other) is now fully gone, separate from RDKit agreement.
+    //
+    // The K2b fused-diazine follow-up fix (`assign_aromaticity_authoritative_experimental`)
+    // does shift 2 of these 3 counts (16->12) when run through the OPT-IN
+    // engine -- confirmed unrelated to and not fixing this bucket (still
+    // wrong, by a different amount, a separate multi-causal bug). This test
+    // asserts the DEFAULT (`assign_aromaticity`) engine only, which is
+    // unaffected by that opt-in fix, so the pinned values below stay as
+    // originally measured.
     // Named at module level for the same reason as
     // `KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES` above -- Aromaticity-A1-0's corpus
     // tests reuse this exact pinned data instead of a second copy.
@@ -3092,11 +3522,14 @@ mod tests {
                 let sssr = find_sssr(&mol);
                 let rings = augmented_ring_set(&mol, sssr.rings());
                 let empty_context: FxHashSet<AtomIdx> = FxHashSet::default();
+                let all_ring_bonds: FxHashSet<BondIdx> =
+                    rings.iter().flat_map(|r| ring_bond_set(&mol, r)).collect();
 
                 for ring in &rings {
                     for ctx in [&empty_context, &final_context] {
-                        let expected = ring_pi_electrons(&mol, ring, ctx, algo);
-                        let traced = trace_ring_pi_electrons(&mol, ring, ctx, algo);
+                        let expected = ring_pi_electrons(&mol, ring, ctx, algo, &all_ring_bonds);
+                        let traced =
+                            trace_ring_pi_electrons(&mol, ring, ctx, algo, &all_ring_bonds);
                         assert_eq!(
                             traced.total,
                             expected,
@@ -3170,23 +3603,22 @@ mod tests {
     //    indolizine's own bridgehead N came out `Ineligible`, an oracle bug,
     //    not a chematic bug. Fixed via `evaluate_atom_via_home_ring`.
     //
-    // Both fixes are confirmed correct AND confirmed NOT to silently
-    // "fix" the false-positive family by accident (still wrong, on purpose,
-    // pinned below) -- an oracle that quietly agreed with the bug would be
-    // worse than no oracle.
+    // Both fixes were originally confirmed correct AND confirmed NOT to
+    // silently "fix" the false-positive family by accident.
     //
-    // purine is a genuinely OPEN finding, not a regression to chase in this
-    // round: before the home-ring fix, the (buggy, flattened) evaluation
-    // happened to give all 9 atoms aromatic (matching RDKit) BY ACCIDENT --
-    // the SAME flattening bug that broke indolizine happened to produce the
-    // right answer for purine. After the fix, purine's 5-ring fusion carbons
-    // (whose own `#[ignore]`d production test already documents an
-    // antiaromatic-lock issue -- each scores 0π alone, exocyclic-to-N rule)
-    // need cross-ring information neither a single home ring nor the
-    // flattened family alone provides correctly. Pinning the current
-    // (still-wrong) oracle answer here so a future A1-1b design has a
-    // concrete regression check once it actually resolves this, rather than
-    // silently inheriting whichever answer the oracle happens to produce.
+    // UPDATE (K2b fused-diazine follow-up fix): both the false-positive
+    // reproducer AND purine are now RDKit-exact too, as a side effect of the
+    // same general `CarbonExocyclicHeteroatomDouble` ring-fusion fix
+    // (`evaluate_atom_pi_contribution_inner` mirrors `ring_pi_electrons`'s
+    // rule exactly -- see its doc comment). The false-positive reproducer's
+    // own fusion carbon (whose double bond points into the bridgehead-N
+    // ring's own nitrogen) no longer gets wrongly zeroed, so the oracle
+    // stops over-aromatizing into the bridgehead ring and correctly confirms
+    // only the plain benzo ring. Purine's 5-ring fusion carbons no longer
+    // get wrongly zeroed by the same rule either, so the oracle now confirms
+    // all 9 atoms, matching RDKit -- resolving the open finding below.
+    // Verified live against rdkit==2026.03.3 for both (not assumed from the
+    // fix's general mechanism alone).
     #[test]
     fn exhaustive_oracle_pinned_cases() {
         let algo = AromaticityAlgorithm::RdkitLike;
@@ -3230,28 +3662,29 @@ mod tests {
             assert_eq!(&got, expected, "{name} ({smi}): oracle should match RDKit");
         }
 
-        // Still wrong, on purpose -- the false-positive family isn't fixable
-        // by candidate generation alone (Issue B, deliberately deferred to
-        // A1-1b; see docs/aromaticity_a1_rfc.md).
+        // Now RDKit-exact -- see this test's doc comment (K2b fused-diazine
+        // follow-up fix). RDKit: only the plain benzo ring (6 atoms) is
+        // aromatic; the bridgehead-N ring is not (verified live).
         let (fp_atoms, _) =
             exhaustive_aromaticity_oracle(&mol_kekulized("C1=Cc2ccccc2C2=NCCCN12"), algo);
         let mut fp_got: Vec<u32> = fp_atoms.iter().map(|a| a.0).collect();
         fp_got.sort();
         assert_eq!(
             fp_got,
-            vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 13],
-            "false-positive reproducer: still over-aromatized by the oracle, as expected"
+            vec![2, 3, 4, 5, 6, 7],
+            "false-positive reproducer: oracle now matches RDKit exactly"
         );
 
-        // Open finding, not a regression -- see this test's doc comment.
+        // Now RDKit-exact -- see this test's doc comment (K2b fused-diazine
+        // follow-up fix). RDKit: all 9 atoms aromatic (verified live).
         let (purine_atoms, _) =
             exhaustive_aromaticity_oracle(&mol_kekulized("c1cnc2[nH]cnc2n1"), algo);
         let mut purine_got: Vec<u32> = purine_atoms.iter().map(|a| a.0).collect();
         purine_got.sort();
         assert_eq!(
             purine_got,
-            vec![0, 1, 2, 3, 7, 8],
-            "purine: oracle still under-counts (RDKit says all 9) -- open A1-1b question, not fixed here"
+            vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+            "purine: oracle now matches RDKit exactly (all 9 atoms)"
         );
     }
 }
