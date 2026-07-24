@@ -16,6 +16,38 @@ Status: **Diagnosis complete. No production behavior change.**
 > and the committed diagnosis artifact's "282" are not a regression against
 > each other).
 
+> **Update (C2), correction — Root Cause 2 is a verification error, not a
+> chematic bug:** re-investigation (branch
+> `fix/canonical-bridged-ring-ordering`) found that the sole reproduction
+> for Root Cause 2 — `chematic.from_smiles("C1CC2CCC1CC2")` vs.
+> `chematic.from_smiles("C1CCC2CC1CC2")`, both labeled "bicyclo[2.2.2]octane"
+> below — was never checked against an independent structural oracle, unlike
+> every corpus-derived finding in this RFC. RDKit `MolToInchi` shows the two
+> inputs are in fact **different constitutional isomers** of C8H14:
+> `C1CC2CCC1CC2` is bicyclo[2.2.2]octane (three 2-atom bridges,
+> `InChI=1S/C8H14/c1-2-8-5-3-7(1)4-6-8/h7-8H,1-6H2`), while `C1CCC2CC1CC2`
+> is a different bridged bicyclooctane with bridges of 1/2/3 atoms
+> (`InChI=1S/C8H14/c1-2-7-4-5-8(3-1)6-7/h7-8H,1-6H2` — a different `/c`
+> connectivity layer, confirmed via RDKit's own divergent canonical SMILES
+> for the two inputs, `C1CC2CCC1CC2` vs. `C1CC2CCC(C1)C2`). Chematic giving
+> the two inputs different canonical strings was **correct** — it was never
+> a permutation-invariance bug, because the two inputs never encoded the
+> same molecule. This also explains, independently, why the RFC's own
+> corpus scan (below) already reported **0/232** real bridged-ring corpus
+> failures attributable to this specific mechanism: it does not exist. A
+> targeted follow-up probe (RDKit `RenumberAtoms`-generated same-molecule
+> respellings, the same method the corpus check uses, across 22 diverse
+> bridged/bicyclic/spiro/cage/fused systems — including stereocenters and a
+> heteroatom bridgehead) found **zero** convergence failures. The previously
+> "known gap" test (`bridged_bicyclic_canonical_gap_documentation` in
+> `crates/chematic-smiles/tests/canonical_robustness.rs`) has been replaced
+> with `bridged_fused_spiro_permutation_invariance`, an assertion-based
+> regression test using 8 InChI-verified same-molecule pairs. No change to
+> `crates/chematic-smiles/src/canonical.rs` was made or needed. See PR
+> (branch `fix/canonical-bridged-ring-ordering`) for the full evidence
+> trail. Root Cause 3 below remains untouched/deferred (parallel
+> aromaticity-diagnosis track).
+
 Branch: `diag/canonical-smiles-residual` (forked from `main`@`659baca221f71f135ce0e1780e71245d8770f132`).
 
 ## Scope declaration
@@ -275,6 +307,13 @@ perception (the aromaticity track's domain) at all. See "What this diagnosis
 does not do" below for why it is still not fixed in this round.
 
 ## Root cause 2 (Check 2, hand-constructed, 0/5,000 corpus occurrences but confirmed still live): bridged-bicyclic ring-closure ordering
+
+> **CORRECTED, see "Update (C2)" at the top of this document.** Everything
+> below this note is the ORIGINAL (incorrect) diagnosis, kept verbatim for
+> the historical record. The two SMILES quoted immediately below are, per
+> RDKit `MolToInchi`, two different molecules, not two spellings of one —
+> "confirmed still live" here was never independently checked against a
+> structural oracle. There is no bridged-bicyclic ring-closure-ordering bug.
 
 Independently reconfirmed at commit `659baca`:
 `chematic.from_smiles("C1CC2CCC1CC2").smiles` → `C12CCC(CC2)CC1`, while
