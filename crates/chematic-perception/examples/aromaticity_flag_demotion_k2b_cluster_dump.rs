@@ -16,12 +16,28 @@
 
 use std::fs;
 
-use chematic_core::BondOrder;
+use chematic_core::{BondIdx, BondOrder, Molecule};
 use chematic_perception::{
     apply_aromaticity, assign_aromaticity, augmented_ring_set, find_sssr, trace_ring_pi_electrons,
 };
 use rustc_hash::FxHashSet;
 use serde_json::json;
+
+/// Whole-molecule set of bonds lying on ANY ring in `rings` -- mirrors
+/// `aromaticity.rs`'s own private `ring_bond_set` (not exported), needed
+/// here so `trace_ring_pi_electrons` can distinguish a genuine exocyclic
+/// double bond from a ring-fusion bond into a different ring (K2b fix).
+fn all_ring_bonds_of(mol: &Molecule, rings: &[Vec<chematic_core::AtomIdx>]) -> FxHashSet<BondIdx> {
+    let mut out = FxHashSet::default();
+    for ring in rings {
+        for i in 0..ring.len() {
+            if let Some((bidx, _)) = mol.bond_between(ring[i], ring[(i + 1) % ring.len()]) {
+                out.insert(bidx);
+            }
+        }
+    }
+    out
+}
 
 fn main() {
     let path = std::env::args().nth(1).expect("usage: <smiles_list.txt>");
@@ -61,10 +77,17 @@ fn main() {
 
         // Pass 1 trace (empty aromatic_context) for every augmented ring.
         let empty_ctx: FxHashSet<chematic_core::AtomIdx> = FxHashSet::default();
+        let all_ring_bonds = all_ring_bonds_of(&kek_mol, &augmented);
         let pass1_traces: Vec<_> = augmented
             .iter()
             .map(|ring| {
-                let trace = trace_ring_pi_electrons(&kek_mol, ring, &empty_ctx, Default::default());
+                let trace = trace_ring_pi_electrons(
+                    &kek_mol,
+                    ring,
+                    &empty_ctx,
+                    Default::default(),
+                    &all_ring_bonds,
+                );
                 json!({
                     "ring": ring.iter().map(|a| a.0).collect::<Vec<u32>>(),
                     "total_pi": trace.total,

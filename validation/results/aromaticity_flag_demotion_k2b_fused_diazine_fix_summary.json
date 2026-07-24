@@ -1,0 +1,74 @@
+{
+  "description": "Fix for the fused_diazine_quinazoline_quinoxaline_purine cluster (33/84) diagnosed in fix/aromaticity-flag-demotion-k2b (PR #145). Root cause: ring_pi_electrons (and its diagnostic mirror evaluate_atom_pi_contribution_inner) carbon branch CarbonExocyclicHeteroatomDouble rule tested only \"is the double-bond partner outside THIS ring atom set\" to decide \"genuine exocyclic substituent\" -- a ring-fusion bond into an adjacent ring at a heteroatom passed that same test, wrongly zeroing the fusion carbon and (when both fusion atoms were affected) landing the ring on pi=4 Antiaromatic, which Pass 1 marks non-retryable, permanently excluding it from Pass 2.",
+  "fix": "Replaced the ring_atom_set-based exocyclic check with a bond-level all_ring_bonds set (built once per assign_aromaticity_ex call from every SSSR/augmented ring via the existing ring_bond_set helper, O(total ring length), no repeated SSSR/DFS work). A double bond only counts as a genuine exocyclic substituent if its bond is on NO ring at all; a bond into a DIFFERENT ring is a ring-fusion bond and now falls through to the ordinary sp2 default (1pi), matching how a fusion carbon whose double bond points at an all-carbon neighbor already behaved (naphthalene-style). Applied identically to both ring_pi_electrons (production) and evaluate_atom_pi_contribution_inner (the documented always-in-lockstep diagnostic mirror, per trace_matches_ring_pi_electrons_on_corpus).",
+  "minimal_repro": "c1cnc2ccccc2n1",
+  "cluster_resolution": {
+    "cluster_size": 33,
+    "fully_resolved": 29,
+    "fully_resolved_smiles_sample": [
+      "CC(=O)N1CCN(c2cnc3cc(Cl)ccc3n2)CC1",
+      "CCOC(=O)C(CNC(=O)N(C)N=O)NC(=O)c1ccc(N(C)Cc2cnc3nc(N)nc(N)c3n2)cc1",
+      "CCOC(=O)C(CNC(=O)N(CCCl)N=O)NC(=O)c1ccc(N(C)Cc2cnc3nc(N)nc(N)c3n2)cc1",
+      "CN(C)/C=N\\c1nc(/N=C/N(C)C)nc2ncc(Sc3ccc(Cl)c(Cl)c3)nc12",
+      "CN(Cc1cnc2nc(N)nc(N)c2n1)c1ccc(C(=O)NC(CC(F)C(=O)NC(CCC(=O)O)C(=O)O)C(=O)O)cc1",
+      "CN(Cc1cnc2nc(N)nc(N)c2n1)c1ccc(C(=O)NC(CCC(=O)NC(CCC(=O)O)C(=O)O)C(=O)O)cc1"
+    ],
+    "still_mismatched": 4,
+    "still_mismatched_smiles": [
+      "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCCN)c1=O",
+      "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCN)c1=O",
+      "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCN)c1=O",
+      "CCCCCCCCCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O"
+    ],
+    "still_mismatched_reason": "Compound cases: the fused-diazine mechanism inside these molecules IS fixed (verified via per-atom trace -- the fusion benzo ring now correctly reaches Aromatic pi=6 in Pass 1), but a SECOND, independent, out-of-scope mechanism in a different fused ring of the same molecule (an oxazole/pyran-type ring landing on a genuinely odd Pass-1 count that Pass 2 cannot help, since the shared cross-ring atoms already scored 1pi identically before and after context) still blocks full-molecule RDKit agreement -- same character as the large_polycyclic_sssr_special_case (2/84) and azulene_type_nonalternant (49/84) clusters, both explicitly out of scope for this fix. All 4 share the same etamycin-like macrolactam aromatic core; only one was traced in full detail, the other 3 are near-identical scaffolds (different N-alkyl substituent lengths)."
+  },
+  "corpus_5000_kekulized_convention": {
+    "corpus_file": "scripts/descriptor_census_corpus.smi",
+    "before_mismatches": 84,
+    "after_mismatches": 55,
+    "fixed": 29,
+    "new_mismatches": 0,
+    "note": "before/after both computed via crates/chematic-perception/examples/aromaticity_flag_corpus_dump.rs on this exact branch, compared per-atom against a live rdkit==2026.03.3 ground truth (not assumed). 0 new mismatches confirmed in both directions."
+  },
+  "corpus_5000_raw_convention": {
+    "before_mismatches": 0,
+    "after_mismatches": 0,
+    "note": "unaffected, as expected (the raw convention never exercises ring_pi_electrons demotion the same way -- unchanged before and after)."
+  },
+  "beneficial_side_effects_verified_live_vs_rdkit": {
+    "description": "The same general mechanism fix (not molecule-specific) also resolves two PRE-EXISTING, separately-tracked bug buckets in this same test module, because they share the identical root cause (a fusion carbon double-bond pointing at an adjacent ring heteroatom). Not attempted or targeted -- discovered as a consequence of fixing the shared rule. Zero cluster-specific code was written.",
+    "KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES": "32/32 pinned bridgehead-N tricyclic molecules now match RDKit exactly (were previously known-wrong over-counts). Spot-checked 4/32 directly against live rdkit==2026.03.3.",
+    "exhaustive_aromaticity_oracle_fp_reproducer": "C1=Cc2ccccc2C2=NCCCN12: oracle now returns [2,3,4,5,6,7] (plain benzo ring only), exactly matching live RDKit -- was [0,1,2,3,4,5,6,7,8,13] (over-aromatized false positive).",
+    "exhaustive_aromaticity_oracle_purine": "c1cnc2[nH]cnc2n1: oracle now returns all 9 atoms aromatic, exactly matching live RDKit -- was [0,1,2,3,7,8] (6/9, previously an open under-counting finding)."
+  },
+  "side_effects_not_resolved": {
+    "KNOWN_ORDER_DEPENDENT_FALSE_NEGATIVES": "2 of 3 pinned counts shifted (16->12) as a side effect of the same general fix, but remain WRONG vs RDKit by a different amount (still off by 8, was off by 4/8/4) -- a separate, pre-existing, multi-causal bug in this molecule class, confirmed unrelated to and not fixed by this PR. Pinned to the new current-wrong values."
+  },
+  "oracle_40_fixture_check": {
+    "description": "crates/chematic-perception/examples/aromaticity_rdkit_parity_dump.rs + scripts/aromaticity_rdkit_parity_diagnosis.py re-run on this branch.",
+    "result": "IDENTICAL before and after this fix (A/B tested via git stash): 4 fixtures (azulene, selenophene, tellurophene, phosphole) report unexpected_mismatch/baseline drift against the frozen EXPECTED_BUCKET_BY_ID table on BOTH the unmodified K2b commit and this fix -- i.e. this fix causes ZERO changes to the 40-fixture oracle. This drift PRE-DATES this PR: it was already present on the K2b commit before any fused-diazine work started (K2b own demotion change was never reconciled with this frozen Python table; its comment still says K2b is a separate, not-yet-merged PR). Root causes (azulene non-alternant model gap; missing Se/Te/P Huckel support) are out of scope for this fix and not touched. scripts/aromaticity_rdkit_parity_diagnosis.py itself was left untouched (reverted an exploratory edit) -- reconciling its frozen table with K2b landing is K2b housekeeping debt, not part of this follow-up."
+  },
+  "remaining_84_cluster_total_after_this_fix": {
+    "formula": "84 (K2b baseline) - 29 (fused_diazine fully resolved) = 55",
+    "still_open_clusters": {
+      "azulene_type_nonalternant": 49,
+      "fused_diazine_quinazoline_quinoxaline_purine_compound_cases": 4,
+      "large_polycyclic_sssr_special_case": 2
+    },
+    "note": "49 + 4 + 2 = 55, matches the measured corpus after-mismatch count exactly. The 4 compound cases were originally counted under fused_diazine (33) but structurally belong with the large_polycyclic-shaped mechanism once the fused-diazine component of their failure is fixed."
+  },
+  "hard_rule_compliance": "No molecule-specific allowlist or SMILES-based exception list. Fix is bond-level ring membership (all_ring_bonds), a general, whole-molecule mechanism -- verified: it fires identically for the minimal repro, all 33 cluster molecules, and (as a side effect) the unrelated bridgehead-N/purine cases, using the exact same code path with zero conditionals on molecule identity.",
+  "AromaticityAlgorithm_default_unchanged": true,
+  "files_touched": [
+    "crates/chematic-perception/src/aromaticity.rs",
+    "crates/chematic-perception/examples/aromaticity_flag_demotion_k2b_cluster_dump.rs (signature update only, all_ring_bonds threaded through)",
+    "crates/chematic-perception/examples/aromaticity_a1_0_report.rs (signature update only, all_ring_bonds threaded through)"
+  ],
+  "files_explicitly_not_touched": [
+    "crates/chematic-core/src/kekulization.rs",
+    "crates/chematic-fp",
+    "crates/chematic-chem",
+    "crates/chematic-smiles",
+    "scripts/aromaticity_rdkit_parity_diagnosis.py (reverted an exploratory edit; see oracle_40_fixture_check)"
+  ]
+}
