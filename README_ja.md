@@ -106,10 +106,10 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.5.0
+# chematic v0.6.0
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-06, v0.5.0 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-06, v0.6.0 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  98.1%
 #   LogP (Crippen)        ~99%
@@ -276,7 +276,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ---
 
-## 最近の開発（v0.4.x）
+## 最近の開発
+
+**v0.6.0**（2026-07-25）: **RDKit bit-exact ECFP4のクロス言語stable API化、canonical SMILESのE/Zマーカー一貫性、opt-in芳香族flag authoritative降格**
+- `chematic-fp`/Python/WASM: RDKit bit-exact Morgan/ECFP4パスをクロス言語opt-in APIとして公開（Python `Mol.rdkit_ecfp4()`、WASM `rdkit_ecfp4_bitvec()`）。radius×fpSizeの20セル全てを個別にlive RDKit oracleで再検証（closed enumで未対応値は構築不可）。Rust/Python/WASMを実際にビルド・実行してbyte-identicalを確認済み。`ecfp4()`の既定動作は無変更
+- `chematic-smiles`: 入力のatom順序によってE/Z方向マーカーが異なる側鎖bondへ載る問題を修正 — permutation invariance **93.0% → 98.1%**（264/282件が収束、残り18件はshared-carrier-bondの破損リスクを避けるため意図的に未解決、issue [#149](https://github.com/kent-tokyo/chematic/issues/149)で追跡）。また、bridged-bicyclic canonicalizationの既存バグ疑惑を調査し**誤診断と判明**（RDKit InChIで検証した結果、問題とされた2つのSMILESは実際には異なる分子だった）
+- `chematic-perception`: 新規opt-in `apply_aromaticity_authoritative_experimental` — 芳香族flagの昇格/降格をHückelモデルの計算結果に対して双方向で忠実にする（既定の`apply_aromaticity`/`apply_aromaticity_ex`は無変更、byte-identical確認済み）。fused diazine（quinazoline/quinoxaline/purine型）のring-fusion bond誤分類も修正、既存の32件のfalse-positive regression pinも副次的に解消
+- 詳細な項目別数値と既知の制限事項は `CHANGELOG.md` を参照
 
 **v0.5.0**（2026-07-23）: **CIP不要の2Dウェッジ由来local parity、charge対応kekulization（従来失敗していた6分子クラス）、PAINS/Brenkのbudget付きmatching**
 - `chematic-perception`: `local_parity_from_wedges`/`apply_local_parity_from_wedges` を新規追加 — CIPランキングを一切使わず、wedge/hash結合と2D座標から直接 `Atom.chirality`/`stereo_neighbor_order` を計算。符号規約はRDKitの生のchiral tagに対して実測で決定（類推ではない）。まだどのreaderのデフォルトparseからも呼ばれない

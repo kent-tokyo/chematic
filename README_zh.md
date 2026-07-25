@@ -244,7 +244,77 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ---
 
-## 近期开发（v0.4.x）
+## 近期开发
+
+**v0.6.0**（2026-07-25）：**RDKit bit-exact ECFP4 跨语言稳定 API、canonical SMILES 的 E/Z 标记一致性、opt-in 芳香性标志权威降级**
+- `chematic-fp`/Python/WASM：将 RDKit bit-exact 的 Morgan/ECFP4 路径提升为文档化的跨语言 opt-in API（Python `Mol.rdkit_ecfp4()`，WASM `rdkit_ecfp4_bitvec()`），并推广为独立验证过的 `(radius, fpSize)` 矩阵（4×5=20 个组合，均为不可构造非法值的封闭枚举）。Rust/Python/WASM 三端均实际构建并运行验证 bit-exact 一致，而非仅"设计上应当一致"。`ecfp4()` 的默认行为不变
+- `chematic-smiles`：修复了 canonical 输出中 E/Z 方向标记依输入原子顺序落在不同取代基键上的问题——标记放置的置换不变性从 **93.0% 提升到 98.1%**（282 个已知发散分子中 264 个现已收敛；剩余 18 例为避免破坏共享候选键的边界情况而故意保留未解决，追踪于 [#149](https://github.com/kent-tokyo/chematic/issues/149)）。同时排查并**排除**了此前怀疑的桥环双环 canonicalization 缺陷——经独立 RDKit InChI 验证，涉及的两个 SMILES 实际上是不同的分子，并非 chematic 的缺陷
+- `chematic-perception`：新增 opt-in 的 `apply_aromaticity_authoritative_experimental`——使芳香性标志的升级/降级双向完全服从 Hückel 模型的实际计算结果（默认的 `apply_aromaticity`/`apply_aromaticity_ex` 保持不变，已验证 byte-identical）。在此过程中修复了影响并环二氮杂环（quinazoline/quinoxaline/purine 型环）的环并键误分类问题，附带解决了 32 个已有的假阳性回归 pin
+- 完整细节和已知限制见 `CHANGELOG.md`
+
+**v0.5.0**（2026-07-23）：**CIP 无关的 2D 楔形键 local parity、charge 感知 kekulization（此前 6 类分子解析失败）、PAINS/Brenk 的 budget 化非静默匹配**
+- `chematic-perception`：新增 `local_parity_from_wedges`/`apply_local_parity_from_wedges`——完全不依赖 CIP 排序，直接从楔形/虚线键与 2D 坐标计算 `Atom.chirality`/`stereo_neighbor_order`，因此 CIP 排序打平也不会抹去已知的 local parity；符号约定针对 RDKit 原始 chiral tag 实测确定，而非类推得出。尚未接入任何 reader 的默认解析路径
+- `chematic-core`：`kekulize()` 的原子匹配规则此前对电荷不敏感且缺失 Tellurium 处理——tropylium、imidazolium、pyridinium、pyrylium、tellurophene、phosphole 现均可成功 kekulize，且与 RDKit 逐键一致，零回归；`Element::normal_valences()` 新增了经源码验证的 Tellurium 条目，修复了由此导致的 ECFP4 芳香性不一致
+- `chematic-perception`：charge 感知的 Hückel π 电子计数——tropylium、imidazolium、pyridinium、pyrylium 现已与 RDKit 的芳香原子/键标志完全一致（tellurophene/phosphole 及更广泛的权威降级修复仍待解决，单独追踪）
+- `chematic-smiles`：修复两个 writer 缺陷——bracket 强制原子（isotope/charge/atom-map）此前会静默丢弃隐式氢（`[NH4+]` → `[N+]`）；无相邻双键的独立楔形键此前被错误写成无意义的 SMILES `/`、`\` 标记
+- `chematic-smarts`/`chematic-chem`：对称目标上的 PAINS/Brenk 子结构匹配此前可能挂起数分钟；VF2 现引入显式访问 budget，返回真正的三态结果（`Found`/`NotFound`/`BudgetExhausted`），探索耗尽绝不会被静默折叠为假阴性——后续的对称感知候选排序（可让现有 budget 正确解决部分保守标记案例）追踪于 [#139](https://github.com/kent-tokyo/chematic/issues/139)
+- 完整细节、语料库层面的前后对比数字及已知限制见 `CHANGELOG.md`
+
+**v0.4.30**（2026-07-17）：**`chematic-cip` opt-in 接入全部接口、SMARTS `[rN]` 修复、新 RDKit-parity 芳香性引擎、5 处立体元数据缺陷修复**
+- `chematic-smarts`：修复 `[rN]`（环大小 SMARTS，如 `[r5]`/`[r6]`）被错误地等同于 `[kN]` 的"任意环"语义——RDKit 真正的 `[rN]` 含义是"该原子所在的*最小*环恰好为 N 大小"，是完全不同的谓词（实测确认：在共享 5 元环与 6 元环的并环原子上，RDKit 的 `[k6]` 匹配但 `[r6]` 不匹配）。未改动环模型本身——`[rN]` 现拥有基于 chematic 现有 SSSR 计算的独立 `MinRingSize` 原语。SMARTS 匹配集合与 RDKit 的一致率在 5,000 分子语料库上从 **96.9% 提升到 99.93%**，零回归；详见 `docs/rdkit_compat.md` 的 "SMARTS-R0"/"SMARTS-R1" 条目
+- Milestone 5A：从所有公开接口 opt-in 访问精确引擎——`chematic_chem::assign_cip_with_mode(mol, CipMode::Accurate)`（Rust）、`Mol.cip_stereo(mode="accurate")` + `Mol.cip_stereo_unresolved()`（Python）、`cip_assignments_accurate_json`/`cip_unresolved_json`（WASM）。所有默认接口（`assign_cip()`、`cip_stereo()`、无后缀的 WASM 函数）保持不变——纯增量，非默认切换；合并语义（精确引擎的四面体 R/S + legacy 的 E/Z，因精确引擎不计算键立体）及"绝不猜测"契约（打平/超预算情况显式暴露，绝不静默回退）详见 `docs/cip_accurate_rfc.md` 的 Milestone 5A 条目
+- Milestone 4 关口达成：全语料库、按表示稳定性分层的 oracle-stable 一致率达 99.64%（原始一致率 99.38%，4160/4186）——最后剩余的 11 行磷残差经查明为 oracle 不稳定（RDKit 自身标签在化学中性的 Kekulé 重新拼写下会变化），并非 chematic 缺陷；15 行 Rule 5 笼状家族仍延后处理，不受此关口影响
+- 精确引擎（携带溯源信息、逐层递归的 digraph 比较器——Rule 1a/1b/2，外加芳香环立体中心的 RDKit 兼容 MANCUDE 分数原子序数）已通过上述 opt-in API 提供，但尚未成为 `assign_cip()` 背后的默认实现
+- 发现并修复一个真实的约 10-14 倍性能回归（SSSR 被误用于布尔型环键判断，替换为 O(V+E) 桥边 DFS）；CI Criterion 关口的引导脚本修复；一项 Criterion 关口可靠性发现（伪重复采样问题，[#70](https://github.com/kent-tokyo/chematic/issues/70)）——已落地流程级重新设计（独立进程运行观测、两阶段筛选、同一二进制空对照）。后续修复（[#117](https://github.com/kent-tokyo/chematic/pull/117)）解决了通过真实 CI 运行发现的两个更具体的缺陷：Stage 1 的 3 组符号检验在结构上永远无法失败（替换为纯幅度路由筛选，阈值来自对 28 次历史无操作运行的离线评估），Stage 2 的符号检验对较小的构建/代码生成差异同样不敏感（改为符号检验 + 实际效应阈值的组合关口）。该关口仍为非必需项；同一二进制空对照对跨二进制代码生成差异的盲区是已知、已报告但尚未修复的缺口
+- Milestone 4A：`CipCode::LowerR`/`LowerS`——Rule 5（伪不对称性），仅限 2 行已验证独立案例；发现一个三臂对称笼状家族（15 行）在此两两配对架构下被证明无法触及，延后为 Milestone 4A-2（需要对称性/自同构检测）
+- Milestone 4A-0：从零重新冻结残差为 34 行并对其 100% 机械分类（0 项未解释）——15 行 Rule 5/伪不对称性（4A-2 笼状家族）、8 行 Rule 4 候选（通过结构同一性检查正面确认，非排除法推断）、11 行磷（9 行比较器缺陷导致"错误"+2 行确实打平）
+- `chematic-perception`：新增 opt-in 的 `assign_aromaticity_rdkit_parity_experimental`/`apply_aromaticity_rdkit_parity_experimental`——对 RDKit 真实芳香性算法的源码级验证移植，在 4,999/5,000 个可比分子上实现 **100.0000% 原子/键一致率**。未接入默认路径（`RdkitLike`/`Huckel` 保持不变）；默认提升被一个与此引擎无关、已存在的 canonical-SMILES-writer 敏感性问题所阻塞
+- 修复了同一"元数据未复制"缺陷的 5 个实例（`MoleculeBuilder` 重建时未调用 `copy_stereo_groups_from`/`copy_stereo_from`/`copy_bond_directions_from`），各自静默丢弃 `stereo_neighbor_order` 或更严重：`apply_kekule`（P0）、`enumerate_stereoisomers`（可能静默翻转新分配立体中心的 CIP 编码）、`transfer_hydrogen_aromatic`/`clone_mol`（后者已删除，改用 `Molecule::clone`）、`transfer_hydrogen`、以及 `invert_stereocenter`（结果发现它对纯 `@`/`@@` SMILES 输入是功能性空操作，属于另一个更严重的缺陷）
+- `chematic-smiles`：将芳香键方向暂存逻辑统一整合到 3 条 parser 键创建路径（链边/环闭合/分支连接）共用的辅助函数中——修复了一处 canonical round-trip 表示不稳定问题（4,994/5,000 → 5,000/5,000 稳定）；未修复 `assign_ez` 对该旁路通道本身存在的既有盲区（作为后续任务追踪）
+- 实验性 CIP 引擎的全语料库准确率从 96.68% 提升到 99.38%（原始）/ 99.64%（oracle-stable），对比现代 RDKit `rdCIPLabeler`（零回归）——完整里程碑历史见 `docs/cip_accurate_rfc.md`
+- 基准测试已刷新（`benchmarks/2026-07-17.md`，Apple M4）：此前的 ECFP4 吞吐量头条数字（3.6 µs/mol，比 RDKit 快 5–14 倍）在干净重新测量下未能复现——本 README 及 `docs/` 中已更新为今日实测数字（多样化语料库上约 78 µs/mol / 2–3 倍）；描述符准确率数字复现良好
+
+**v0.4.29**（2026-07-10）：**Kabsch 旋转缺陷修复 + SDF V3000/CDXML 写入、Avalon 指纹、O3A**
+- `chematic-3d`：修复 `align_coords` 的 Kabsch 旋转计算方向错误——对任何非纯平移的对齐都会给出严重偏大的 RMSD（在此修复前已随 v0.4.28 发布到 crates.io/PyPI/npm）；新增用于 O3A 原子对应关系的 `correspondence_search`
+- `chematic-mol`：SDF V3000 写入接线；CDXML 写入
+- `chematic-fp`：Avalon 指纹
+
+**v0.4.28**（2026-07-09）：**SMARTS 性能优化、注册表重新同步**
+- `chematic-smarts`：存在性检查短路——`bulk.substructure_search` 比 RDKit 快 2.2 倍
+- v0.4.23–v0.4.27 期间未推送 git tag（crates.io 通过手动 `cargo publish` 保持最新，但 PyPI/npm/GitHub Releases 落后）——本版本重新同步三个注册表
+
+**v0.4.27**（2026-07-04）：**描述符修复、RWMol/FCFP、veridict CI 关口**
+- `chematic-chem`：修复 `kappa1-3`、`balaban_j`、`labute_asa`、`bcut2d`、`hall_kier_alpha` 描述符
+- `chematic-fp`：`useFeatures=True` 的 FCFP
+- `chematic-mol`：RWMol 原地编辑
+- CI：基于 veridict 的性能/Criterion/准确率漂移回归关口；修复集成测试 CI 覆盖缺口
+
+**v0.4.26**（2026-06-29）：**反应中的 E/Z 立体转移 + 验证 Sprint 6/7**
+- `chematic-rxn`：反应产物现在会在 `run_reactants()` 中保留来自反应物的 `/`/`\` 双键几何信息（此前在转化过程中丢失）
+- 验证：canonical SMILES 与 RDKit 的差异化验证（Sprint 6）；SMARTS/芳香性差异化测试及 I/O 兼容性（rdkit_compat Sprint 7）；将剩余的 RDKit canonical 差异根因定位到芳香性 round-trip，而非 Morgan 排序
+
+**v0.4.25**（2026-06-29）：**`chematic.rdkit_compat` 层**
+- `chematic-py`：RDKit API 兼容层（Sprint 1–5）——Morgan `bitInfo`、Fingerprint/Mol/Atom/Bond/RingInfo 兼容性、针对 RDKit 的差异化测试；流式 `SDMolSupplier`/`SDWriter`/`Mol.GetProp`
+- `chematic-perception`：`AromaticityAlgorithm::RdkitLike`——匹配 RDKit 模型的 Se/Te 硫族芳香性
+
+**v0.4.24**（2026-06-29）：**CIP Rule 5、桥头原子/可旋转键/TPSA/摩尔折射率达到 100%、HDF 指纹**
+- `chematic-chem`：CIP Rule 5 立体打破平局（立体中心一致率 99.8% → 99.98%，对比 RDKit）；桥头原子检测 98.5% → 100%；可旋转键 99.1% → 100%；TPSA 100%；摩尔折射率 97.5% → 100%（3 环 XOR 增强）——均在 5,000 分子 ChEMBL 语料库上测得
+- `chematic-py`：`bulk.descriptors_array()` 列式 numpy 输出；真正流式 SDF（`SdfFileReader`/`iter_sdf_batched`）；`screen()` 化合物筛选工作流
+- LLM/RAG：表示路由器（`to_llm_text`、`best_representation`）、分子上下文包、**超维指纹（HDF）**——无需训练的稠密分子向量
+
+**v0.4.23**（2026-06-26）：**LogP 96.5% → 99.7%**
+- `chematic-chem`：修复 `crippen_anchor_sets` 使用 `uniquify: false`，使对称三键（内部炔）能得到两种 VF2 匹配方向，而不是其中一种回退到通用的 `[#6]` 值
+
+**v0.4.22**（2026-06-26）：**CITATION.cff + `chematic.doctor()`**
+- `chematic-py`：`doctor()` 自诊断；README 新增按功能可靠性矩阵
+
+**v0.4.21**（2026-06-25）：**面向 LLM/Jupyter 的 HTML/Markdown 报告**
+- `chematic-py`：`chematic.report()` 自包含 HTML 化合物网格、`chematic.compare()`、`mol.review()` Markdown 分析
+- 文档：`benchmarks/`/`validation/` 可复现准确率历史
+
+**v0.4.20**（2026-06-25）：**ETKDG 扭转知识库 44 → 80 条规则、`mol.describe()`/`diff()`**
+- `chematic-3d`：为 6/5 元脂肪环新增椅式/信封式环构象；SMARTS 匹配的扭转规则作为高精度预检层
+- `chematic-py`：面向 LLM/MCP agent 的 `mol.describe()`/`mol.diff(other)`；`bulk.generate_3d`/`tanimoto_matrix`/`standardize`
 
 **v0.4.19**（2026-06-23）：**PDF/EPS 输出、ChemicalJSON、新描述符、WASM −38.5%**
 - `chematic-depict`：`depict_pdf()` / `depict_eps()` — PDF 和 EPS 输出；纯 Rust，无需外部工具

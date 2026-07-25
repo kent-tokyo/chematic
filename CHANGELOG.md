@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet — everything below `[0.6.0]` has shipped._
+
+## [0.6.0] — 2026-07-25
+
 ### Added — `chematic-fp` / Python / WASM
 
 - **Promoted the RDKit-bit-exact Morgan/ECFP4 path (`rdkit_morgan_ecfp4_experimental`)
@@ -51,6 +55,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every surface — never a silent fallback to the default Hückel-based `ecfp4()` engine,
   which would look successful while returning bits from an incompatible hash. Regression-
   tested on all three surfaces via the shared corpus's error fixture.
+
+### Added — `chematic-perception`
+
+- **`assign_aromaticity_authoritative_experimental(mol)` / `apply_aromaticity_authoritative_experimental(mol)`** — a new, opt-in aromatic-flag engine that makes `build_molecule_from_model`'s promotion/demotion decision authoritative in *both* directions: an atom's flag reflects the Hückel model's actual computed verdict, promoted when the model confirms it and **demoted** when a stale parser-set `aromatic: true` the model doesn't independently confirm survived from the input. The existing default (`apply_aromaticity`/`apply_aromaticity_ex`) is **unchanged** — verified byte-identical against `main` on a representative set of tricky fixtures (heteroaromatic implicit-H cases, the fused-diazine fix target, the still-open azulene gap, Kekulé input), not just by code inspection.
+- As part of building this, fixed a real misclassification in `ring_pi_electrons`'s `CarbonExocyclicHeteroatomDouble` rule: a ring-fusion bond into an *adjacent* ring's heteroatom was scored the same as a genuine exocyclic substituent (like tropone's `C=O`), wrongly zeroing that atom's π contribution and — when both fusion atoms of a bicyclic system were affected — landing the ring on exactly π=4 (`Antiaromatic`), a Pass-1 verdict marked non-retryable and so permanently excluded from Pass 2's correction mechanism. Fixed generally (bond-level ring-membership check, no molecule-specific allowlist): fixes quinazoline/quinoxaline/naphthyridine/purine-shaped fused diazines (29 of a 33-molecule cluster; the remaining 4 are compound cases blocked by a second, independent, out-of-scope mechanism) with an unattempted beneficial side effect of also resolving 32 pre-existing `KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES` regression pins and 2 open oracle findings (including the PR #86 purine reproducer).
+- **Known, honestly-documented limitations of the new opt-in engine** (not regressions — these molecules were never correctly handled before either): azulene-type non-alternant fused rings (49 molecules) are an architectural gap — each ortho-fused ring independently gets an odd Pass-1 π count and neither seeds Pass 2, since no single SSSR ring can see azulene's whole-perimeter 10π delocalized system. The already-shipped, separately opt-in `apply_aromaticity_rdkit_parity_experimental` engine does resolve this (and the fused-diazine cluster) at 99.9956% corpus-wide agreement, but promoting *that* engine to the default remains a distinct, bigger decision this change does not make.
+
+### Fixed — `chematic-smiles`
+
+- **Canonical output could place an E/Z direction marker on a different substituent bond depending on input atom order/spelling** — the same alkene, written two semantically-identical ways, could canonicalize to two different (though individually valid) strings: permutation invariance held for the underlying stereo *assignment* but not for marker *placement*. Fixed via a new resolution pass (`resolve_ez_markers`) that deterministically picks the rank-lowest substituent as the canonical carrier for every double bond with stereo on both ends, covering trisubstituted/tetrasubstituted alkenes, the aromatic bond-direction stash, and ring-closure bonds. Two known, deliberately conservative exceptions remain unresolved rather than risk corruption: a double bond with a non-stereogenic end, and two independently-stereogenic double bonds that happen to share one physical candidate bond (18 molecules total) — resolving either case's carrier without the other visible can corrupt geometry, and there is no processing order avoiding a *different* order-dependence, so this case is left exactly as input-spelled. Tracked as [#149](https://github.com/kent-tokyo/chematic/issues/149) for a future joint-resolution design. Zero semantic corruption confirmed via two independent methods on every measured molecule.
+- Permutation invariance (measured on a 4,992-molecule proxy corpus, separately from idempotence per this project's convention): **92.99% → 98.08%** (264 of 282 known-divergent molecules now converge; the 18 residual cases above are the entire gap). Idempotence unaffected (98.44%, unchanged — its own residual is a separate, pre-existing aromaticity round-trip issue).
+- Investigated and **ruled out** a previously-diagnosed "bridged-bicyclic ring-closure ordering" permutation-invariance bug (`docs/canonical_smiles_residual_rfc.md`'s "Root Cause 2") — the two SMILES claimed to be "two spellings of the same molecule" turned out, per independent RDKit `MolToInchi` verification, to be genuinely different constitutional isomers; chematic's differing canonical output for them is correct, not a bug. An additional 22-molecule probe using RDKit-`RenumberAtoms`-generated genuine same-molecule respellings (bridged/spiro/fused/cage systems, including stereocenters and a heteroatom bridgehead) found zero convergence failures. No production code changed for this finding; the RFC and test suite were corrected instead.
+
+### Fixed — `scripts`
+
+- `scripts/canonical_residual_diagnosis.py` called RDKit's `FindMolChiralCenters` with a kwarg name (`useLegacy`) the currently-pinned RDKit version no longer accepts (`useLegacyImplementation`) — a pre-existing tooling bug found while re-verifying the E/Z-marker fix above, fixed as its own small change so it doesn't need an external workaround to run.
 
 ## [0.5.0] — 2026-07-23
 
