@@ -62,9 +62,18 @@ EXPECTED_RDKIT_VERSION = "2026.03.3"
 # `stereo2d_fixture_dump.jsonl`, not assumed:
 #   - tetrahedral_4neighbors_explicit_h / tetrahedral_4heavy_no_h: chematic
 #     already computed R/S via the old CIP engine; the only thing that
-#     changed is `chirality` now ALSO reaches the writer correctly (was the
-#     literal bug this diagnosis reported -- "computed but writer emits a
-#     meaningless bond-direction token" -- now fixed).
+#     changed is `Atom.chirality` on the parsed `Molecule` now ALSO gets
+#     populated (was `None` -- the literal gap this diagnosis reported).
+#     CAUTION: `chirality_reached_writer` means exactly that -- `chirality`
+#     is set on the molecule before any writer runs -- NOT that the plain
+#     (non-canonical) `write()` text now contains `@`. Checked directly
+#     against `naive_smiles_write` in the regenerated dump: it is still
+#     `@`-free for all three rows (chematic-smiles's `write()` doesn't
+#     bracket an atom on `chirality` alone; that's pre-existing, unrelated
+#     to this PR). The recovered parity DOES surface in `canonical_smiles()`
+#     output -- verified separately by
+#     `crates/chematic-mol/tests/stereo_reader_integration.rs::mol_sourced_wedge_survives_to_canonical_smiles_without_meaningless_slash`,
+#     which is the actual "survives to SMILES" claim this PR makes.
 #   - contradictory_wedge_annotations: its two "up" wedges (tripod_atoms
 #     geometry, F and Cl) turn out to AGREE in isolation under the
 #     calibrated per-wedge consistency check (`wedges_agree_3` --
@@ -317,6 +326,25 @@ def _self_test():
     # main() runs on the real dump.
     dup_ids = ["a", "b", "a"]
     assert len(set(dup_ids)) != len(dup_ids), "self-test C: duplicate-ID fixture itself has no duplicates"
+
+    # Control E (2026-07-25): the reader-integration branch added above must
+    # actually be reachable, not just fall through to Control B's
+    # unexpected_* bucket by coincidence of shared shape. Same mechanism/
+    # single-token shape as Control B's weak_evidence_fixture, but with
+    # chirality_reached_writer=True (i.e. wedges that genuinely agree in
+    # isolation) -- must land on the new bucket, not the fail-closed default.
+    resolved_fixture = {
+        "mechanism": "contradictory_wedges",
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "chirality_reached_writer": True,
+        "naive_smiles_write": "C(/F)Cl",  # still only one token -- irrelevant once chirality resolved
+    }
+    resolved_bucket = classify(resolved_fixture, {"parsed": True, "any_chiral_tag": False, "any_bond_stereo": False})
+    assert resolved_bucket == "wedges_agree_in_isolation_chirality_now_resolved", (
+        f"self-test E: expected the reader-integration branch to fire, got {resolved_bucket!r}"
+    )
+    assert resolved_bucket in EXPECTED_BUCKETS, "self-test E: its own bucket isn't in the whitelist"
 
     # Control D: the frozen per-ID baseline must actually pin ONE bucket, not
     # just any whitelisted one -- prove that wedge_atom_order_reversed's
