@@ -390,6 +390,104 @@ fn residual_row_idempotence_only_reconciled_via_native_inchi() {
     );
 }
 
+// --- 10b. Regression: live corpus false-VerifiedDuplicate (rows 4663/4664) --
+//
+// Two real diastereomers from the project's standard 5,000-molecule corpus
+// (`~/Downloads/SMILES.csv`, rows 4663/4664) that `standard_inchi` used to
+// collapse to one byte-identical string -- confirmed via a temporary,
+// removed diagnostic that `tetrahedral_stereo_neighbors` returns `None` for
+// exactly the two ring stereocentres where the two inputs differ (their
+// `@`/`@@` tags were correctly parsed; the legacy CIP-based ranking simply
+// could not resolve a rank for those two atoms), which is exactly why the
+// generated InChI shows `?` (undefined parity) at both positions,
+// identically for both inputs. Independent RDKit 2026.03.3 cross-check
+// confirms these are genuinely different molecules (different InChI,
+// different InChIKey). `has_unresolved_specified_tetrahedral_stereo` fails
+// this closed to `VerificationUnavailable` rather than let it read as a
+// false `VerifiedDuplicate`.
+
+#[test]
+fn live_corpus_diastereomer_pair_4663_4664_fails_closed_not_verified_duplicate() {
+    let a = mol(
+        "O=C(Oc1c(O)cc(C(=O)O[C@@H]2C[C@](O)(C(=O)O)C[C@@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@H]2OC(=O)c2cc(O)c(O)c(O)c2)cc1O)c1cc(O)c(O)c(O)c1",
+    );
+    let b = mol(
+        "O=C(Oc1c(O)cc(C(=O)O[C@@H]2C[C@@](O)(C(=O)O)C[C@@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@@H]2OC(=O)c2cc(O)c(O)c(O)c2)cc1O)c1cc(O)c(O)c(O)c1",
+    );
+
+    // Under every stereo-sensitive policy: must never be VerifiedDuplicate,
+    // must be explicitly VerificationUnavailable (not Distinct -- that would
+    // silently hide the fact that native conversion couldn't resolve this
+    // molecule at all).
+    for policy in [
+        IdentityPolicy::StandardInchiString,
+        IdentityPolicy::StandardInchiKey,
+        IdentityPolicy::IsotopeIgnored,
+    ] {
+        let rel = compare_molecules(&a, &b, policy);
+        assert_ne!(
+            rel,
+            DedupRelation::VerifiedDuplicate,
+            "policy={policy:?}: must never be a false VerifiedDuplicate"
+        );
+        assert_eq!(
+            rel,
+            DedupRelation::VerificationUnavailable,
+            "policy={policy:?}: must be explicitly VerificationUnavailable, got {rel:?}"
+        );
+    }
+
+    // StereoIgnored intentionally does NOT apply this guard -- ignoring
+    // stereo is this policy's explicit contract, so these two (which are
+    // real diastereomers differing ONLY in stereo) correctly unify. This is
+    // the one policy where the guard must NOT overreach.
+    assert_eq!(
+        compare_molecules(&a, &b, IdentityPolicy::StereoIgnored),
+        DedupRelation::CanonicalSplit,
+        "StereoIgnored must still unify this pair (same non-stereo identity, \
+         different canonical key) -- the guard must not apply here"
+    );
+}
+
+#[test]
+fn live_corpus_diastereomer_pair_4663_4664_never_in_verified_group() {
+    let mols = [
+        mol(
+            "O=C(Oc1c(O)cc(C(=O)O[C@@H]2C[C@](O)(C(=O)O)C[C@@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@H]2OC(=O)c2cc(O)c(O)c(O)c2)cc1O)c1cc(O)c(O)c(O)c1",
+        ),
+        mol(
+            "O=C(Oc1c(O)cc(C(=O)O[C@@H]2C[C@@](O)(C(=O)O)C[C@@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@@H]2OC(=O)c2cc(O)c(O)c(O)c2)cc1O)c1cc(O)c(O)c(O)c1",
+        ),
+    ];
+
+    for policy in [
+        IdentityPolicy::StandardInchiString,
+        IdentityPolicy::StandardInchiKey,
+        IdentityPolicy::IsotopeIgnored,
+    ] {
+        let report = deduplicate_verified(&mols, policy);
+        assert!(
+            report.groups.is_empty(),
+            "policy={policy:?}: must not land in any VerifiedGroup: {:?}",
+            report.groups
+        );
+        assert_eq!(
+            report.verification_unavailable,
+            vec![0, 1],
+            "policy={policy:?}: both must be VerificationUnavailable"
+        );
+        assert!(report.invalid_molecules.is_empty(), "policy={policy:?}");
+    }
+
+    // StereoIgnored: the guard doesn't apply, so this pair still correctly
+    // unifies into one VerifiedGroup (+ CanonicalSplit, different canonical
+    // keys) under this policy.
+    let report = deduplicate_verified(&mols, IdentityPolicy::StereoIgnored);
+    assert_eq!(report.groups.len(), 1, "{:?}", report.groups);
+    assert_eq!(report.groups[0].members, vec![0, 1]);
+    assert!(report.verification_unavailable.is_empty());
+}
+
 // --- 11. Synthetic positive control: force CanonicalCollision ---------------
 
 #[test]

@@ -251,15 +251,54 @@ fn identity_verify(mol: &Molecule, policy: IdentityPolicy) -> Verify {
 
     let result = match policy {
         IdentityPolicy::StandardInchiString | IdentityPolicy::StandardInchiKey => {
+            // Second guard, checked on the ORIGINAL molecule: a stereocentre
+            // whose SMILES specified `@`/`@@` but which the legacy CIP-based
+            // ranking `crate::native::convert` depends on could not resolve
+            // a rank for (`tetrahedral_stereo_neighbors` returns `None`).
+            // This is the confirmed root cause of a real false
+            // `VerifiedDuplicate` found via live 5,000-molecule corpus
+            // verification -- two genuine diastereomers whose
+            // `standard_inchi` collapsed to one string, `?` (undefined
+            // parity) at both differing centres, identically for both
+            // inputs. `VerifiedGroup`'s whole contract is "verified" --
+            // this module owns that boundary even when the root cause is
+            // upstream (chematic_chem's legacy CIP engine, not this crate),
+            // so it must fail closed here rather than promote an
+            // unresolved-parity string to a duplicate claim. False
+            // positives (wrong merge) and false negatives (missed merge)
+            // are NOT symmetric for a "high-confidence dedup" claim --
+            // failing closed is the conservative direction.
+            //
+            // See `crate::native::has_unresolved_specified_tetrahedral_stereo`'s
+            // doc comment for how this was diagnosed (not assumed).
+            if crate::native::has_unresolved_specified_tetrahedral_stereo(mol) {
+                return Verify::Unavailable;
+            }
             crate::native::standard_inchi(mol)
         }
-        IdentityPolicy::StereoIgnored => crate::native::standard_inchi_no_stereo(mol),
+        IdentityPolicy::StereoIgnored => {
+            // Deliberately NOT guarded by `has_unresolved_specified_tetrahedral_stereo`:
+            // ignoring stereo entirely is this policy's explicit contract,
+            // so an unresolved stereocentre is irrelevant to what it
+            // compares -- the C library discards the `Stereo0D` array once
+            // `SNon` is set regardless of whether chematic could rank it.
+            crate::native::standard_inchi_no_stereo(mol)
+        }
         IdentityPolicy::IsotopeIgnored => {
             // Clone first: the caller's molecule must never be mutated (see
             // module docs and `isotope_ignored_never_mutates_original` test).
             let mut cleared = mol.clone();
             for i in 0..cleared.atom_count() {
                 cleared.set_isotope(AtomIdx(i as u32), None);
+            }
+            // Check the guard on the CLEARED CLONE, not the original: an
+            // isotope-induced stereocentre that disappears once isotopes
+            // are cleared should not be flagged "unresolved" under this
+            // policy -- it simply isn't a stereocentre anymore once
+            // isotopes are ignored, which is correct, expected behavior
+            // here, not a failure.
+            if crate::native::has_unresolved_specified_tetrahedral_stereo(&cleared) {
+                return Verify::Unavailable;
             }
             crate::native::standard_inchi(&cleared)
         }

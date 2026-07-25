@@ -1,0 +1,40 @@
+{
+  "purpose": "Full-corpus classification audit of every molecule newly fail-closed by has_unresolved_specified_tetrahedral_stereo (crates/chematic-inchi/src/native/convert.rs), beyond the originally disclosed 4663/4664 pair.",
+  "corpus": "~/Downloads/SMILES.csv, 5000 molecules, the project's standard reference corpus",
+  "rdkit_oracle_version": "2026.03.3 (isolated venv, independent of chematic Python bindings)",
+  "acceptance_criteria_update": {
+    "verification_unavailable": "1 -> 15",
+    "known_false_verified_groups": "1 -> 0",
+    "newly_fail_closed_molecules": 14,
+    "framing": "Detected via full-corpus structural audit, not a narrower estimate that undercounted scope."
+  },
+  "audit_scope": "All 12 molecules newly flagged verification_unavailable under StandardInchiString/StandardInchiKey/IsotopeIgnored (excludes the 1 pre-existing native-InChI kekulization failure at corpus idx=2149, which is unrelated to this guard, and separately includes the 2 already-disclosed 4663/4664 fixture molecules as a reference anchor, not part of the 12 audited).",
+  "method": "Per specified-chiral atom: chematic legacy CIP (assign_cip), chematic accurate CIP (assign_cip_with_mode, CipMode::Accurate), tetrahedral_stereo_neighbors resolution, cross-checked against an independent RDKit 2026.03.3 oracle (Chem.FindMolChiralCenters(includeUnassigned=True, useLegacyImplementation=False), rdCIPLabeler.AssignCIPLabels, Chem.MolToInchi /t layer). Renumbering stability checked both sides (8 random atom-order respellings via chematic random_smiles / RDKit RenumberAtoms).",
+  "classification_scheme": {
+    "A": "genuinely stereogenic, legacy CIP unresolved, accurate CIP resolves",
+    "B": "genuinely stereogenic, both chematic CIP modes unresolved",
+    "C": "specified tag on non-stereogenic or constitutionally equivalent center",
+    "D": "parser/local-parity/stereo-neighbor implementation defect suspected",
+    "E": "other"
+  },
+  "atom_level_tally_over_12_new_molecules": {
+    "A": 26,
+    "B": 2,
+    "C": 0,
+    "D": 0,
+    "E": 0,
+    "legacy_resolved_baseline_not_flagged": 13,
+    "note": "legacy_resolved_baseline atoms are the already-correctly-ranked stereocenters within these same 12 molecules (not part of the +14 newly fail-closed count); included in the audit rows for completeness."
+  },
+  "molecule_level_summary": {
+    "pure_case_A": 10,
+    "mixed_case_A_and_B": 2,
+    "case_C_or_worse": 0,
+    "example_case_A": "corpus idx=1567 (NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2): legacy fails on the ring-fusion atom, accurate + RDKit both resolve it to plain 'R'.",
+    "example_case_B": "corpus idx=443 and idx=590 (tricyclic-cage bridgehead atoms 29 and 18 respectively): chematic's accurate engine reports Tied, RDKit's own rdCIPLabeler leaves the same atom unlabeled ('Tet_CCW' -- defined parity, no CIP descriptor). Both independent, state-of-the-art CIP engines agree no label exists; not a chematic-specific defect."
+  },
+  "false_positive_rate": "0/12 molecules (0/28 audited atoms) -- every atom the guard flags corresponds to a real RDKit-confirmed (or RDKit-agreeing-unresolvable) stereocenter; none are constitutionally non-stereogenic.",
+  "false_negative_note": "Not separately re-derived here since deduplicate_verified already runs identity_verify unconditionally over all 5000 corpus molecules (not just these 12) -- the full corpus n_verification_unavailable=15 total already reflects every molecule the guard fires on; no additional un-flagged offender exists in this corpus by construction of that full run.",
+  "unrelated_defect_noted_not_fixed_here": "8 of the 12 molecules (196, 1567, 1609, 4047, 4178, 4412, 4509, 4745) also intersect the project's pre-existing, already-tracked canonical-SMILES relabeling-residual defect class (random-respelling round-trip instability). This is a separate, out-of-scope bug -- ring/cage-heavy stereocenters simply happen to be the same population that stresses both issues. Not modified by this PR.",
+  "conclusion": "All 12 molecules classify as A or B (mixed for 2 of them). Zero C, zero D, zero E. verification_unavailable=15 is adopted as the correct, fully-audited value -- not an estimate."
+}

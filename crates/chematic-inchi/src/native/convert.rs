@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::os::raw::c_char;
 
 use chematic_chem::tetrahedral_stereo_neighbors;
-use chematic_core::{AtomIdx, BondOrder, CipCode, Molecule, apply_kekule, kekulize};
+use chematic_core::{AtomIdx, BondOrder, Chirality, CipCode, Molecule, apply_kekule, kekulize};
 
 use super::ffi::{InchiAtom, InchiStereo0D, MAXVAL};
 
@@ -74,6 +74,45 @@ pub(crate) fn has_unrepresentable_multi_h_stereocenter(mol: &Molecule) -> bool {
             .filter(|&&nb| nb.0 == u32::MAX || mol.atom(nb).element.atomic_number() == 1)
             .count();
         h_like_count >= 2
+    })
+}
+
+/// True if `mol` contains an atom whose SMILES explicitly specified
+/// tetrahedral chirality (`@`/`@@`) but the legacy CIP-based neighbor
+/// ranking this crate's native conversion depends on
+/// (`chematic_chem::tetrahedral_stereo_neighbors`) could not resolve a rank
+/// for it -- i.e. a genuine tie/failure in that ranking, not an atom that
+/// was never claimed to be a stereocentre in the first place.
+///
+/// This is the confirmed root cause of a real false `VerifiedDuplicate`
+/// found via live corpus verification (two real diastereomers, differing
+/// at exactly the two ring atoms where this predicate fires, that
+/// `standard_inchi` collapsed to one string with `?` -- undefined parity --
+/// at both positions, identically for both inputs). Diagnosed directly
+/// (not assumed): for the affected molecule, `atom.chirality` was correctly
+/// parsed as `Clockwise`/`CounterClockwise` for all 4 specified centres, but
+/// `tetrahedral_stereo_neighbors` returned `None` for exactly the 2 that
+/// produced `?` in the output -- confirming the failure is in CIP
+/// substituent ranking, not a downstream Stereo0D-index bug (that would be
+/// [`has_unrepresentable_multi_h_stereocenter`]'s territory) nor a
+/// chirality-parsing loss.
+///
+/// Deliberately narrower than "any molecule with 2+ ring stereocentres": it
+/// targets exactly the failure mode above (specified stereo the legacy
+/// engine could not rank), not a broad heuristic that would also flag
+/// ordinary, correctly-resolved multi-stereocentre molecules.
+///
+/// Matches `CounterClockwise`/`Clockwise` explicitly rather than
+/// `!= Chirality::None` -- this predicate is specifically about
+/// *tetrahedral* stereo the legacy CIP ranking failed to resolve, so it must
+/// not silently widen its net if a future non-tetrahedral `Chirality`
+/// variant (e.g. an eventual axial/allenic chirality) is added.
+pub(crate) fn has_unresolved_specified_tetrahedral_stereo(mol: &Molecule) -> bool {
+    mol.atoms().any(|(idx, atom)| {
+        matches!(
+            atom.chirality,
+            Chirality::CounterClockwise | Chirality::Clockwise
+        ) && tetrahedral_stereo_neighbors(mol, idx).is_none()
     })
 }
 

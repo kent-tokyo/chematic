@@ -36,3 +36,7 @@ required-features = ["native-inchi"]
 [[example]]
 name = "dedup_verify"
 required-features = ["native-inchi"]
+
+[[example]]
+name = "dedup_stereo_guard_diagnosis"
+required-features = ["native-inchi"]
