@@ -29,6 +29,7 @@ pub mod pdb;
 pub mod pharmacophore_fp_3d;
 pub mod pipeline_v2;
 pub(crate) mod prng;
+pub mod rdkit_shape_descriptors;
 pub mod sasa;
 pub mod shape_descriptors;
 pub mod spectrophores;
@@ -67,6 +68,12 @@ pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use pipeline_v2::{
     PipelineV2Config, PipelineV2Failure, PipelineV2FailureCause, PipelineV2Result,
     RingTorsionApplicationPolicy, StereoPolicy, embed_pipeline_v2,
+};
+pub use rdkit_shape_descriptors::{
+    DescriptorValue, MacrocycleStatus, MacrocycleWarning, RdkitDescriptorError,
+    detect_macrocycle_status, rdkit_asphericity, rdkit_eccentricity, rdkit_inertial_shape_factor,
+    rdkit_npr1, rdkit_npr2, rdkit_pbf, rdkit_pmi1, rdkit_pmi2, rdkit_pmi3,
+    rdkit_radius_of_gyration, rdkit_spherocity_index,
 };
 pub use sasa::{
     PerElementSasa, SasaDescriptor, calc_mol_sasa, calc_mol_sasa_with_probe, sasa, sasa_descriptor,
