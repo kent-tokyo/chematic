@@ -53,6 +53,27 @@
 //! this project's validation corpus exercises that shape for Rule 5, so extending to it
 //! is deferred rather than guessed. See `docs/cip_accurate_rfc.md` for the full writeup.
 //!
+//! **Element-level guard: phosphorus stays tied.** The same code-path fix above, as a
+//! side effect, also reaches 2 cyclophosphazene phosphorus stereocenters
+//! (`docs/cip_accurate_rfc.md` Milestone 4C-1) that were previously `SkipReason::Tied`
+//! for the identical chain-length-1 Rule 4b degeneracy the carbon cage family has.
+//! Unlike the 15 carbon rows, Milestone 4C-1 found **neither** RDKit CIP engine has a
+//! representation-stable answer for that phosphorus molecule -- both flip under a
+//! chemically-neutral Kekule respelling -- so there is no oracle a resolved phosphorus
+//! label could be checked against. [`assign_one_with_rule5`] therefore never emits a
+//! resolved label for a **phosphorus** stereocenter; the element is checked once,
+//! cheaply, before any digraph work, and falls back to `Err(SkipReason::Tied)` -- exactly
+//! this function's own existing convention for every other shape it doesn't recognize
+//! (see below). This is an element-level guard, not a molecule-specific one: it excludes
+//! every phosphorus stereocenter that reaches this path, not one specific SMILES. Note
+//! this project has, as of this writing, zero verified examples of this path being
+//! correct for *any* non-carbon element -- phosphorus is simply the only non-carbon
+//! element the validation corpus happens to exercise here, so a broader "unverified for
+//! any non-carbon element" framing may be more honest than "unverified for phosphorus
+//! specifically"; that broader guard is *not* implemented here, only flagged (see the PR
+//! discussion) -- narrowing to exactly the element asked about avoids expanding scope
+//! unilaterally.
+//!
 //! # Positions come from `stereo_neighbor_order`, ranks come from the new comparator
 //!
 //! [`crate::digraph::CipDigraph`]'s root children are built by iterating
@@ -86,7 +107,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chematic_core::{AtomIdx, Chirality, CipCode, Molecule, STEREO_H_SENTINEL};
+use chematic_core::{AtomIdx, Chirality, CipCode, Element, Molecule, STEREO_H_SENTINEL};
 
 use crate::CipError;
 use crate::budget::CipBudget;
@@ -260,6 +281,19 @@ fn assign_one_with_rule5(
     budget: CipBudget,
     kekule: Option<&(Molecule, MancudeContext)>,
 ) -> Result<Option<CipCode>, SkipReason> {
+    // Element-level guard (see module docs, "Element-level guard: phosphorus stays
+    // tied"): this auxiliary-resolution path is oracle-verified only for carbon
+    // stereocenters (all 15 corpus rows it resolves are carbon). The only other element
+    // it has ever been observed to reach is phosphorus, on a cyclophosphazene molecule
+    // whose RDKit oracle is itself representation-unstable (Milestone 4C-1) -- there is
+    // no stable answer to check a resolved phosphorus label against, so never emit one.
+    // `idx`/`mol` name the same atom identity regardless of Kekule respelling (`mol` is
+    // always the original, pre-Kekule molecule here -- see `assign_one`'s own doc
+    // comment), so this check is stable across resonance respellings by construction.
+    if mol.atom(idx).element == Element::P {
+        return Err(SkipReason::Tied);
+    }
+
     let mut graph = match kekule {
         Some((kekule_mol, ctx)) => {
             CipDigraph::new_with_mancude(kekule_mol, idx, budget, ctx).map_err(map_digraph_err)?

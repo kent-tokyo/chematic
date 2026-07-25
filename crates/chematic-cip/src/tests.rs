@@ -1010,3 +1010,79 @@ fn rule5_15_row_cage_family_is_renumbering_invariant_worst_of_30() {
         cases.len()
     );
 }
+
+/// Companion determinism gate for the element-level guard in `assign_one_with_rule5`
+/// (see `assign.rs` module docs, "Element-level guard: phosphorus stays tied"): the
+/// guard is a plain `mol.atom(idx).element == Element::P` check on the *original*
+/// atom identity, so it should stay `SkipReason::Tied` under every renumbering by
+/// construction -- checked here the same way `rule5_15_row_cage_family_is_renumbering_invariant_worst_of_30`
+/// checks the carbon cage family, rather than assumed. Confirms the 2 cyclophosphazene
+/// phosphorus stereocenters from Milestone 4C-1 never flap to a resolved label on any
+/// of 30 renumbering permutations.
+#[test]
+fn rule5_phosphorus_ties_stay_tied_across_renumbering_worst_of_30() {
+    fn next(state: &mut u64) -> u64 {
+        *state ^= *state << 13;
+        *state ^= *state >> 7;
+        *state ^= *state << 17;
+        *state
+    }
+    fn shuffled(n: usize, state: &mut u64) -> Vec<usize> {
+        let mut perm: Vec<usize> = (0..n).collect();
+        for i in (1..n).rev() {
+            let j = (next(state) as usize) % (i + 1);
+            perm.swap(i, j);
+        }
+        perm
+    }
+
+    const PERMUTATIONS: usize = 30;
+    let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
+    let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+    let n = mol.atom_count();
+    let mut seed: u64 = 0x9E3779B97F4A7C15;
+    let mut checked = 0usize;
+
+    for trial in 0..PERMUTATIONS {
+        let perm = shuffled(n, &mut seed);
+        let (permuted, old_to_new) = permute_molecule(&mol, &perm);
+
+        let assignment =
+            crate::assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+                .expect("assignment succeeds");
+
+        for atom_idx in [6u32, 19u32] {
+            let new_idx = old_to_new[atom_idx as usize];
+            let resolved = assignment
+                .assignments
+                .iter()
+                .any(|(idx, _)| idx.0 == new_idx);
+            assert!(
+                !resolved,
+                "original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
+                 phosphorus must never resolve to a label"
+            );
+            let tied = assignment
+                .skipped
+                .iter()
+                .any(|(idx, reason)| idx.0 == new_idx && *reason == SkipReason::Tied);
+            assert!(
+                tied,
+                "original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
+                 expected SkipReason::Tied under every renumbering, got {:?}",
+                assignment.skipped.iter().find(|(idx, _)| idx.0 == new_idx)
+            );
+            checked += 1;
+        }
+    }
+
+    assert_eq!(
+        checked,
+        PERMUTATIONS * 2,
+        "sanity: both atoms x every permutation checked"
+    );
+    println!(
+        "phosphorus tied-stability under renumbering: {checked}/{checked} stably unresolved \
+         (2 atoms x {PERMUTATIONS} permutations)"
+    );
+}
