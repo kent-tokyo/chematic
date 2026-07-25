@@ -97,12 +97,28 @@ pub fn mol_to_inchi_atoms(
         let Some((code, sorted_nbrs)) = tetrahedral_stereo_neighbors(mol, aidx) else {
             continue;
         };
-        // A valid tetrahedral stereocentre has 4 distinct substituents, so at
-        // most one can be hydrogen (of any isotope) -- `.find()` is safe here.
-        let h_sub = sorted_nbrs
+        // Usually at most one substituent is hydrogen (bracket-H or a real
+        // graph H atom), since a tetrahedral stereocentre needs 4 CIP-distinct
+        // groups and two *ordinary* hydrogens would tie. But two isotopically
+        // distinct hydrogens (e.g. a centre bearing both `[2H]` and `[3H]`, or
+        // bracket-H plus an explicit `[2H]`) DO rank differently under CIP
+        // rule 2 (mass) and are a legitimate stereocentre -- confirmed
+        // reachable and RDKit-stereogenic (see `two_h_like_substituents_*`
+        // tests below). This mechanism only has ONE manufactured-atom slot
+        // per centre, so it cannot represent two independently-indexed H
+        // substituents; register at most one (`h_subs.len() == 1`) and leave
+        // multi-H centres unregistered so Phase 5's existing "no mapping ->
+        // ok=false -> drop the descriptor" path applies -- safe (same
+        // behaviour as any other unsupported case in this file) rather than
+        // silently emitting a corrupted Stereo0D with a duplicated index.
+        let mut h_subs = sorted_nbrs
             .iter()
-            .find(|&&nb| nb.0 == u32::MAX || mol.atom(nb).element.atomic_number() == 1);
-        if let Some(&nb) = h_sub {
+            .copied()
+            .filter(|&nb| nb.0 == u32::MAX || mol.atom(nb).element.atomic_number() == 1);
+        let first = h_subs.next();
+        let is_single = first.is_some() && h_subs.next().is_none();
+        if is_single {
+            let nb = first.unwrap();
             // Index = number of heavy atoms + number of H atoms added so far.
             let h_idx = (heavy_order.len() + stereo_h.len()) as i16;
             let source = if nb.0 == u32::MAX {
@@ -476,6 +492,55 @@ mod tests {
             atoms[0].num_iso_h,
             [0, 0, 4, 0],
             "4 explicit D atoms must tally into bucket 2 (D), not bucket 0 (ordinary)"
+        );
+    }
+
+    /// A stereocentre with TWO isotopically-distinct H-like substituents
+    /// (here D and T, which DO rank differently under CIP rule 2 and so form
+    /// a real stereocentre -- confirmed reachable and RDKit-stereogenic) has
+    /// no single manufactured-atom slot that can hold both. Must NOT emit a
+    /// Stereo0D with a duplicated neighbor index (that would be silently
+    /// wrong); must instead safely drop the descriptor while keeping the
+    /// isotope counts on the heavy atom itself fully correct.
+    #[test]
+    fn two_h_like_substituents_on_one_centre_drops_stereo_not_corrupts_it() {
+        let mol = parse("[C@](Br)(F)([2H])[3H]").unwrap();
+        let (atoms, stereo) = mol_to_inchi_atoms(&mol).unwrap();
+        assert_eq!(
+            atoms.len(),
+            3,
+            "no manufactured atom for either H: 3 heavy atoms only (C, Br, F)"
+        );
+        assert!(
+            stereo.is_empty(),
+            "ambiguous double-H-slot centre must be dropped, not emitted with a duplicated index"
+        );
+        // The D and T themselves must still be correctly isotope-tallied on
+        // the heavy carbon -- only the stereo *descriptor* is unsupported.
+        assert_eq!(
+            atoms[0].num_iso_h,
+            [0, 0, 1, 1],
+            "D and T must still tally correctly even though stereo is dropped"
+        );
+    }
+
+    /// Same guard, but for bracket-H (sentinel) + an explicit isotopic H on
+    /// the same centre -- also two H-like substituents, also must drop
+    /// cleanly rather than duplicate an index.
+    #[test]
+    fn bracket_h_plus_explicit_isotope_h_drops_stereo_not_corrupts_it() {
+        let mol = parse("[C@H](Br)([2H])F").unwrap();
+        let (atoms, stereo) = mol_to_inchi_atoms(&mol).unwrap();
+        assert_eq!(
+            atoms.len(),
+            3,
+            "no manufactured atom: 3 heavy atoms (C, Br, F)"
+        );
+        assert!(stereo.is_empty(), "must be dropped, not corrupted");
+        assert_eq!(
+            atoms[0].num_iso_h,
+            [1, 0, 1, 0],
+            "bracket-H implicit count (bucket 0 = 1) + explicit D (bucket 2 = 1)"
         );
     }
 }
