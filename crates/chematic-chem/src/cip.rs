@@ -1613,25 +1613,103 @@ mod tests {
     }
 
     #[test]
-    fn cip_mode_accurate_surfaces_unresolved_not_a_guess_for_tied_phosphorus() {
-        // Of the 11 oracle-unstable cyclophosphazene rows (docs/cip_accurate_rfc.md
-        // Milestone 4C-0/4C-1), only 2 are genuine chematic ties (SkipReason::Tied) --
-        // those must come back Unresolved in Accurate mode, never a panic. The other 9
-        // (Milestone 4C-0) DO get a stable, confident answer from chematic -- the
-        // oracle is what's unstable there, not chematic -- so they are deliberately
-        // NOT covered by this test; see `cip_mode_accurate_does_not_hide_oracle_unstable_answers`.
+    fn cip_mode_accurate_pseudoasymmetric_fix_stays_unresolved_for_phosphorus_ties() {
+        // Milestone 4A-2's `assign_one_with_rule5` fix (resolving the carbon cage
+        // family's pseudoasymmetric centers) reaches this *different*, previously-
+        // `SkipReason::Tied` molecule (docs/cip_accurate_rfc.md Milestone 4C-1) via the
+        // exact same code path: atoms 6/19 tie for the identical structural reason as
+        // the carbon cage family (a chain-length-1-degenerate Rule 4b comparison whose
+        // branches' auxiliary R/S signs genuinely differ). Left unguarded, the fix would
+        // resolve these two phosphorus atoms as a side effect -- but Milestone 4C-1
+        // independently found that *neither* RDKit CIP engine (`rdCIPLabeler` nor legacy
+        // `_CIPCode`) has a representation-stable answer for this specific molecule, both
+        // flip under a chemically-neutral Kekule respelling of the P/N ring -- so there
+        // is no reliable oracle a resolved phosphorus label could ever be checked
+        // against. `assign_one_with_rule5` therefore carries an explicit element-level
+        // guard (see `crates/chematic-cip/src/assign.rs` module docs, "Element-level
+        // guard: phosphorus stays tied"): it only ever emits a resolved label for a
+        // carbon stereocenter, so these 2 phosphorus atoms fall back to
+        // `SkipReason::Tied` -> `CipUnresolvedReason::Tied`, exactly their pre-fix
+        // behavior, never an unverified label.
         let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
         let mol = chematic_smiles::parse(smi).expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
         for atom_idx in [6u32, 19u32] {
             let idx = AtomIdx(atom_idx);
-            assert!(
-                result.get(idx).is_none(),
-                "atom={atom_idx} should not have a guessed label"
+            assert_eq!(
+                result.get(idx),
+                None,
+                "atom={atom_idx}: phosphorus stereocenter must NOT get an unverified label"
             );
             assert!(
-                result.unresolved.iter().any(|(i, _)| *i == idx),
-                "atom={atom_idx} should be in unresolved"
+                result
+                    .unresolved
+                    .iter()
+                    .any(|(i, reason)| *i == idx && *reason == CipUnresolvedReason::Tied),
+                "atom={atom_idx} must be reported unresolved (Tied): {:?}",
+                result.unresolved
+            );
+        }
+    }
+
+    #[test]
+    fn cip_mode_accurate_phosphorus_ties_stay_unresolved_kekule_stable() {
+        // Same molecule as the test above. Flip every P/N ring bond Single<->Double (a
+        // chemically neutral resonance respelling, the same test Milestone 4C-0/4C-1
+        // used to show *both* RDKit engines are representation-unstable here) and
+        // confirm chematic's own "stays unresolved" guard does NOT flap to resolved on
+        // either spelling -- the element-level guard is keyed on atom identity
+        // (`mol.atom(idx).element`), which a bond-order respelling never changes, so it
+        // must stay unresolved on both spellings by construction; checked directly here
+        // rather than just asserted.
+        use chematic_core::BondOrder;
+        use chematic_perception::find_sssr;
+
+        let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let sssr = find_sssr(&mol);
+
+        let flip = |m: &chematic_core::Molecule, a, b| -> Option<chematic_core::Molecule> {
+            let (bidx, bond) = m.bond_between(a, b)?;
+            let new_order = match bond.order {
+                BondOrder::Single => BondOrder::Double,
+                BondOrder::Double => BondOrder::Single,
+                other => other,
+            };
+            Some(m.with_bond_order(bidx, new_order))
+        };
+
+        let mut respelled = mol.clone();
+        for ring in sssr.rings() {
+            for w in ring.windows(2) {
+                if let Some(next) = flip(&respelled, w[0], w[1]) {
+                    respelled = next;
+                }
+            }
+            if let (Some(&first), Some(&last)) = (ring.first(), ring.last())
+                && let Some(next) = flip(&respelled, last, first)
+            {
+                respelled = next;
+            }
+        }
+
+        let original = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        let after = assign_cip_with_mode(&respelled, CipMode::Accurate).expect("no engine error");
+        for atom_idx in [6u32, 19u32] {
+            let idx = AtomIdx(atom_idx);
+            assert_eq!(
+                original.get(idx),
+                None,
+                "atom={atom_idx}: original spelling"
+            );
+            assert_eq!(after.get(idx), None, "atom={atom_idx}: respelled");
+            assert!(
+                original.unresolved.iter().any(|(i, _)| *i == idx),
+                "atom={atom_idx}: original spelling must stay unresolved"
+            );
+            assert!(
+                after.unresolved.iter().any(|(i, _)| *i == idx),
+                "atom={atom_idx}: respelled must stay unresolved too (not flapping)"
             );
         }
     }

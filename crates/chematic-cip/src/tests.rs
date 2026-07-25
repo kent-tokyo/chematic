@@ -513,6 +513,51 @@ fn rule5_resolves_the_two_verified_milestone_4a_target_rows() {
     }
 }
 
+/// Pseudoasymmetric r/s labels have a genuinely counter-intuitive property, verified
+/// directly against the live RDKit oracle (not assumed from textbook analogy -- this
+/// project's own standing lesson from Milestone 4B-1.5's discarded "S precedes R"
+/// overfit): under a *global* molecular mirror (every `@`/`@@` in the molecule swapped,
+/// including both this center's own tag and the two embedded reference centers that
+/// make it pseudoasymmetric), the lowercase label is **invariant**, not covariant like
+/// ordinary uppercase R/S. `rdCIPLabeler` confirms this directly on both Milestone-4A
+/// target rows (checked, not derived by hand): `orig=r, mirr=r` for both. This is not a
+/// corpus quirk -- swapping which of the two constitutionally-identical branches holds
+/// the `R`/`S` auxiliary descriptor is itself the local mirror image, and it exactly
+/// cancels the center's own tag flip. An earlier version of this test asserted the
+/// *opposite* (mirrored expectation = the flipped label) on the assumption that CIP
+/// labels always invert under mirroring; that assumption was wrong specifically for
+/// pseudoasymmetric centers and was caught by checking the live oracle before trusting
+/// it, not by argument.
+#[test]
+fn rule5_two_row_target_pseudoasymmetric_label_is_mirror_invariant() {
+    use chematic_core::CipCode;
+    let cases: &[(&str, u32)] = &[
+        ("N[C@@]1(C(=O)O)C[C@@H](C(=O)O)[C@@H](C(=O)O)C1", 1),
+        (
+            "CCCCc1cn([C@@H]2[C@@H](C)CCC[C@H]2C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+            7,
+        ),
+    ];
+    for (smiles, atom_idx) in cases {
+        let mol = chematic_smiles::parse(smiles).expect("valid SMILES");
+        let assignment =
+            crate::assign_cip_accurate_experimental(&mol, crate::CipBudget::default_budget())
+                .expect("assignment succeeds");
+        let code = assignment
+            .assignments
+            .iter()
+            .find(|(idx, _)| idx.0 == *atom_idx)
+            .map(|(_, code)| *code);
+        assert_eq!(
+            code,
+            Some(CipCode::LowerR),
+            "{smiles} atom {atom_idx} (mirrored): expected the SAME lowercase r \
+             (RDKit oracle: mirroring is invariant for pseudoasymmetric centers, not \
+             covariant), got {code:?}"
+        );
+    }
+}
+
 #[test]
 fn diagnose_m4a0_quinic_residual_constitutional_identity() {
     // M4A-0: for each quinic/gallic-ester residual molecule, check whether the two
@@ -610,4 +655,434 @@ fn diagnose_m4a0_quinic_residual_constitutional_identity() {
             sig_a == sig_b
         );
     }
+}
+
+/// Milestone 4A-2: the three-armed, locally-symmetric adamantane-cage pseudoasymmetric
+/// family (`validation/cip_residual_classification_corpus.jsonl`, `engine=accurate`,
+/// `bucket=pseudoasymmetric`, 15 rows across 5 distinct molecules -- every one of them,
+/// not a sample). Each `(smiles, atom_idx, expected)` pair's `expected` is the RDKit
+/// `rdCIPLabeler` oracle label (RDKit 2026.03.3), reproduced via
+/// `scripts/cip_pseudoasymmetric_oracle.py`. Before this milestone's fix, every one of
+/// these 15 atoms was `SkipReason::Tied` (a declined answer) -- see module docs for why
+/// (the embedded reference used for the tiebreak was itself Pass-1/Rule-4b tied, so the
+/// old molecular-descriptor `provisional` lookup could never find it).
+#[test]
+fn rule5_resolves_the_15_row_cage_family() {
+    let cases: &[(&str, u32, chematic_core::CipCode)] = &[
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            31,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            33,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            35,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            21,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            23,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            26,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            23,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            25,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            28,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            25,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            27,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            30,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            20,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            22,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            24,
+            chematic_core::CipCode::LowerS,
+        ),
+    ];
+
+    for (smi, atom_idx, expected) in cases {
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let assignment = crate::assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
+            .expect("assignment succeeds");
+        let code = assignment
+            .assignments
+            .iter()
+            .find(|(idx, _)| idx.0 == *atom_idx)
+            .map(|(_, code)| *code);
+        assert_eq!(
+            code,
+            Some(*expected),
+            "{smi} atom {atom_idx}: expected {expected:?} (RDKit oracle), got {code:?}"
+        );
+    }
+}
+
+/// Companion control for the 15-row cage family above (see module docs, "Sign
+/// convention: your corpus supplies ~1 bit" concern, and
+/// `rule5_two_row_target_pseudoasymmetric_label_is_mirror_invariant`'s doc comment for
+/// the underlying property this relies on). Every row in the corpus is oracle-labeled
+/// lowercase `s`, which alone can't rule out a same-shape overfit as the one Milestone
+/// 4B-1.5 found and discarded ("S precedes R" scored 8/8 on its own one-sided corpus
+/// and 0/8 on the mirrored set) -- **but** for pseudoasymmetric centers specifically,
+/// checked directly against the live RDKit oracle on all 15 rows (not assumed), a
+/// global molecular mirror (every `@`/`@@` swapped) leaves the lowercase label
+/// **unchanged** (`s` stays `s`), unlike ordinary R/S. This test's expectation is
+/// therefore the *same* label as the original set, not its flip -- an oracle-verified
+/// invariance check, not the mirror-antisymmetry check an uppercase R/S case would need.
+#[test]
+fn rule5_resolves_the_15_row_cage_family_mirrored() {
+    let cases: &[(&str, u32, chematic_core::CipCode)] = &[
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@@]23C[C@@H]4C[C@@H](C[C@@H](C4)C2)C3)co1",
+            31,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@@]23C[C@@H]4C[C@@H](C[C@@H](C4)C2)C3)co1",
+            33,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@@]23C[C@@H]4C[C@@H](C[C@@H](C4)C2)C3)co1",
+            35,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@@H]4C[C@H](C2)C[C@H](C3)C4)CC1",
+            21,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@@H]4C[C@H](C2)C[C@H](C3)C4)CC1",
+            23,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@@H]4C[C@H](C2)C[C@H](C3)C4)CC1",
+            26,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            23,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            25,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            28,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            25,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            27,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            30,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@@]12C[C@@H]3C[C@@H](C[C@@H](C3)C1)C2",
+            20,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@@]12C[C@@H]3C[C@@H](C[C@@H](C3)C1)C2",
+            22,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@@]12C[C@@H]3C[C@@H](C[C@@H](C3)C1)C2",
+            24,
+            chematic_core::CipCode::LowerS,
+        ),
+    ];
+
+    for (smi, atom_idx, expected) in cases {
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let assignment = crate::assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
+            .expect("assignment succeeds");
+        let code = assignment
+            .assignments
+            .iter()
+            .find(|(idx, _)| idx.0 == *atom_idx)
+            .map(|(_, code)| *code);
+        assert_eq!(
+            code,
+            Some(*expected),
+            "{smi} atom {atom_idx}: expected {expected:?} (mirrored RDKit oracle), got {code:?}"
+        );
+    }
+}
+
+/// Determinism gate for the Milestone 4A-2 fix: `rank_children`'s equivalence classes
+/// come from a `HashMap<usize, Vec<usize>>` (`groups_map` in `compare.rs`), and
+/// `assign_one_with_rule5`'s `physical_in_tied[0]`/`[1]` pick is therefore sensitive, in
+/// principle, to `mol.neighbors()`'s raw adjacency/bond-creation order -- exactly the
+/// class of order-dependence this project has been burned by before (see this repo's
+/// standing "never use atom index or HashMap iteration order as a tie-break" policy).
+/// The fix's `if is_r_a { (pos_a, pos_b) } else { (pos_b, pos_a) }` choice is a genuine
+/// chemical comparison (which branch's auxiliary sign is R), not an index tie-break, so
+/// it should be renumbering-invariant by construction -- but that is an argument, not a
+/// test, until checked here: worst-of-30 atom-renumbering permutations per molecule,
+/// covering all 5 distinct cage molecules (15 target atoms total, 450 checks), using the
+/// same `permute_molecule` helper (which also remaps `stereo_neighbor_order`, without
+/// which no permuted molecule's `@`/`@@` tags could be reinterpreted at all) the existing
+/// Rules-1a/2 renumbering tests use above.
+#[test]
+fn rule5_15_row_cage_family_is_renumbering_invariant_worst_of_30() {
+    let cases: &[(&str, u32)] = &[
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            31,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            33,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            35,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            21,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            23,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            26,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            23,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            25,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            28,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            25,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            27,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            30,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            20,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            22,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            24,
+        ),
+    ];
+
+    // Small inline xorshift PRNG -- no `rand` dev-dependency exists in this crate and
+    // adding one for a single deterministic-shuffle test isn't worth it (see the crate's
+    // own `Cargo.toml`); a fixed seed keeps this test itself reproducible.
+    fn next(state: &mut u64) -> u64 {
+        *state ^= *state << 13;
+        *state ^= *state >> 7;
+        *state ^= *state << 17;
+        *state
+    }
+    fn shuffled(n: usize, state: &mut u64) -> Vec<usize> {
+        let mut perm: Vec<usize> = (0..n).collect();
+        for i in (1..n).rev() {
+            let j = (next(state) as usize) % (i + 1);
+            perm.swap(i, j);
+        }
+        perm
+    }
+
+    const PERMUTATIONS_PER_MOLECULE: usize = 30;
+    let mut checked = 0usize;
+    let mut seed: u64 = 0x9E3779B97F4A7C15;
+
+    for (smi, atom_idx) in cases {
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let n = mol.atom_count();
+        for trial in 0..PERMUTATIONS_PER_MOLECULE {
+            let perm = shuffled(n, &mut seed);
+            let (permuted, old_to_new) = permute_molecule(&mol, &perm);
+            let new_idx = old_to_new[*atom_idx as usize];
+
+            let assignment =
+                crate::assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+                    .expect("assignment succeeds");
+            let code = assignment
+                .assignments
+                .iter()
+                .find(|(idx, _)| idx.0 == new_idx)
+                .map(|(_, code)| *code);
+            assert_eq!(
+                code,
+                Some(chematic_core::CipCode::LowerS),
+                "{smi} original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
+                 expected LowerS under every renumbering, got {code:?}"
+            );
+            checked += 1;
+        }
+    }
+
+    assert_eq!(
+        checked,
+        cases.len() * PERMUTATIONS_PER_MOLECULE,
+        "sanity: every (molecule, permutation) pair must have been checked"
+    );
+    println!(
+        "rule5 cage-family renumbering invariance: {checked}/{checked} identical \
+         ({} molecule-atoms x {PERMUTATIONS_PER_MOLECULE} permutations)",
+        cases.len()
+    );
+}
+
+/// Companion determinism gate for the element-level guard in `assign_one_with_rule5`
+/// (see `assign.rs` module docs, "Element-level guard: phosphorus stays tied"): the
+/// guard is a plain `mol.atom(idx).element == Element::P` check on the *original*
+/// atom identity, so it should stay `SkipReason::Tied` under every renumbering by
+/// construction -- checked here the same way `rule5_15_row_cage_family_is_renumbering_invariant_worst_of_30`
+/// checks the carbon cage family, rather than assumed. Confirms the 2 cyclophosphazene
+/// phosphorus stereocenters from Milestone 4C-1 never flap to a resolved label on any
+/// of 30 renumbering permutations.
+#[test]
+fn rule5_phosphorus_ties_stay_tied_across_renumbering_worst_of_30() {
+    fn next(state: &mut u64) -> u64 {
+        *state ^= *state << 13;
+        *state ^= *state >> 7;
+        *state ^= *state << 17;
+        *state
+    }
+    fn shuffled(n: usize, state: &mut u64) -> Vec<usize> {
+        let mut perm: Vec<usize> = (0..n).collect();
+        for i in (1..n).rev() {
+            let j = (next(state) as usize) % (i + 1);
+            perm.swap(i, j);
+        }
+        perm
+    }
+
+    const PERMUTATIONS: usize = 30;
+    let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
+    let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+    let n = mol.atom_count();
+    let mut seed: u64 = 0x9E3779B97F4A7C15;
+    let mut checked = 0usize;
+
+    for trial in 0..PERMUTATIONS {
+        let perm = shuffled(n, &mut seed);
+        let (permuted, old_to_new) = permute_molecule(&mol, &perm);
+
+        let assignment =
+            crate::assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+                .expect("assignment succeeds");
+
+        for atom_idx in [6u32, 19u32] {
+            let new_idx = old_to_new[atom_idx as usize];
+            let resolved = assignment
+                .assignments
+                .iter()
+                .any(|(idx, _)| idx.0 == new_idx);
+            assert!(
+                !resolved,
+                "original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
+                 phosphorus must never resolve to a label"
+            );
+            let tied = assignment
+                .skipped
+                .iter()
+                .any(|(idx, reason)| idx.0 == new_idx && *reason == SkipReason::Tied);
+            assert!(
+                tied,
+                "original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
+                 expected SkipReason::Tied under every renumbering, got {:?}",
+                assignment.skipped.iter().find(|(idx, _)| idx.0 == new_idx)
+            );
+            checked += 1;
+        }
+    }
+
+    assert_eq!(
+        checked,
+        PERMUTATIONS * 2,
+        "sanity: both atoms x every permutation checked"
+    );
+    println!(
+        "phosphorus tied-stability under renumbering: {checked}/{checked} stably unresolved \
+         (2 atoms x {PERMUTATIONS} permutations)"
+    );
 }

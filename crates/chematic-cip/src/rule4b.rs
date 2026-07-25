@@ -56,8 +56,14 @@ pub(crate) fn nearest_embedded(
 const MAX_CHAIN_DEPTH: usize = 4;
 
 /// The ordered chain of nearest-embedded-stereocenter `NodeId`s reached from `start`,
-/// one level deeper each step -- in place, no re-rooting.
-fn embedded_chain(
+/// one level deeper each step -- in place, no re-rooting. `pub(crate)` (not just used by
+/// [`break_tie_rule4b`]): `crate::assign::assign_one_with_rule5` also needs "the nearest
+/// embedded stereocenter, treating `start` itself as chain position 0" for a tied group's
+/// own physical position node -- exactly this function's own special-casing of `start`,
+/// not [`nearest_embedded`]'s (which is only correct for continuing a chain past an
+/// already-found element, never for the first one -- see its own call sites here for why
+/// that distinction matters).
+pub(crate) fn embedded_chain(
     graph: &mut CipDigraph,
     mol: &Molecule,
     start: NodeId,
