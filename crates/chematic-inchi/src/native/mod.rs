@@ -15,8 +15,19 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
 use convert::ConvertError;
+pub(crate) use convert::has_unrepresentable_multi_h_stereocenter;
 
 use ffi::{FreeStdINCHI, GetStdINCHI, GetStdINCHIKeyFromStdINCHI, InchiInput, InchiOutput};
+
+/// The IUPAC InChI C library's command-line option prefix character is fixed
+/// at the *library's own* compile time (`INCHI_OPTION_PREFX` in `mode.h`:
+/// `/` on Windows, `-` everywhere else) -- `cfg(windows)` matches it here
+/// since the vendored C library and this Rust code are always built for the
+/// same target.
+#[cfg(windows)]
+const SNON_OPTION: &CStr = c"/SNon";
+#[cfg(not(windows))]
+const SNON_OPTION: &CStr = c"-SNon";
 
 /// Error returned by [`standard_inchi`] and [`standard_inchi_key`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,6 +67,27 @@ impl std::error::Error for InchiError {}
 /// Returns an `Err` only if the C library signals an error. Warnings are accepted
 /// as success (return code 1).
 pub fn standard_inchi(mol: &Molecule) -> Result<String, InchiError> {
+    generate_standard_inchi(mol, std::ptr::null())
+}
+
+/// Generate a standard IUPAC InChI string with stereo perception suppressed
+/// at generation time, via the InChI C API's own `SNon` option ("exclude
+/// stereo" -- one of the options explicitly documented as compatible with
+/// `GetStdINCHI`'s standard-format enforcement, unlike e.g. `/SRel`). This
+/// clears the library's internal `REQ_MODE_STEREO` bit before any stereo
+/// perception runs, so the returned string has no `/b`, `/t`, `/m`, or `/s`
+/// layer at all -- **not** a full InChI string with those layers stripped
+/// out afterward by this crate.
+///
+/// `pub(crate)`: used only by [`crate::dedup::IdentityPolicy::StereoIgnored`].
+pub(crate) fn standard_inchi_no_stereo(mol: &Molecule) -> Result<String, InchiError> {
+    generate_standard_inchi(mol, SNON_OPTION.as_ptr())
+}
+
+/// Shared worker behind [`standard_inchi`] and [`standard_inchi_no_stereo`].
+/// `options` is either null (default: full stereo) or a NUL-terminated
+/// options string understood by the InChI C library's option parser.
+fn generate_standard_inchi(mol: &Molecule, options: *const c_char) -> Result<String, InchiError> {
     let (mut atoms, mut stereo) = convert::mol_to_inchi_atoms(mol).map_err(|e| match e {
         ConvertError::KekulizationFailed(msg) => InchiError::KekulizationFailed(msg),
     })?;
@@ -87,7 +119,7 @@ pub fn standard_inchi(mol: &Molecule) -> Result<String, InchiError> {
         } else {
             stereo.as_mut_ptr()
         },
-        options: std::ptr::null(),
+        options,
         num_atoms: atoms.len() as i16,
         num_stereo0d: stereo.len() as i16,
     };
@@ -153,4 +185,85 @@ pub fn standard_inchi_key(inchi_str: &str) -> Result<String, InchiError> {
             .into_owned()
     };
     Ok(key)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chematic_smiles::parse;
+
+    fn mol(s: &str) -> Molecule {
+        parse(s).unwrap_or_else(|e| panic!("parse {s:?}: {e}"))
+    }
+
+    /// `standard_inchi_no_stereo` must produce a string with no `/b`, `/t`,
+    /// `/m`, or `/s` layer at all (generation-time suppression), not the
+    /// full string with those layers cut out afterward -- there is no
+    /// string-splitting/substring-removal step anywhere in this function.
+    #[test]
+    fn no_stereo_generation_omits_all_stereo_layers() {
+        // (E)-but-2-ene: standard_inchi has a /b layer.
+        let ez = mol("C/C=C/C");
+        let full = standard_inchi(&ez).unwrap();
+        assert!(full.contains("/b"), "sanity: full InChI has /b: {full}");
+        let no_stereo = standard_inchi_no_stereo(&ez).unwrap();
+        for tag in ["/b", "/t", "/m", "/s"] {
+            assert!(
+                !no_stereo.contains(tag),
+                "SNon output must have no {tag} layer: {no_stereo}"
+            );
+        }
+
+        // L-alanine: standard_inchi has /t (+ /m/s).
+        let ala = mol("N[C@@H](C)C(=O)O");
+        let full = standard_inchi(&ala).unwrap();
+        assert!(full.contains("/t"), "sanity: full InChI has /t: {full}");
+        let no_stereo = standard_inchi_no_stereo(&ala).unwrap();
+        for tag in ["/b", "/t", "/m", "/s"] {
+            assert!(
+                !no_stereo.contains(tag),
+                "SNon output must have no {tag} layer: {no_stereo}"
+            );
+        }
+    }
+
+    /// An E/Z pair must produce byte-identical output under `SNon`
+    /// generation (both entirely lack stereo now), even though their full
+    /// `standard_inchi` output differs.
+    #[test]
+    fn no_stereo_generation_collapses_ez_pair() {
+        let e = mol("C/C=C/C");
+        let z = mol("C/C=C\\C");
+        assert_ne!(standard_inchi(&e).unwrap(), standard_inchi(&z).unwrap());
+        assert_eq!(
+            standard_inchi_no_stereo(&e).unwrap(),
+            standard_inchi_no_stereo(&z).unwrap()
+        );
+    }
+
+    /// Same, for an enantiomer pair (tetrahedral stereo).
+    #[test]
+    fn no_stereo_generation_collapses_enantiomer_pair() {
+        let l = mol("N[C@@H](C)C(=O)O");
+        let d = mol("N[C@H](C)C(=O)O");
+        assert_ne!(standard_inchi(&l).unwrap(), standard_inchi(&d).unwrap());
+        assert_eq!(
+            standard_inchi_no_stereo(&l).unwrap(),
+            standard_inchi_no_stereo(&d).unwrap()
+        );
+    }
+
+    /// Non-stereo layers (formula, connectivity, H, isotope) must be
+    /// unaffected by `SNon` -- it suppresses stereo perception only.
+    #[test]
+    fn no_stereo_generation_preserves_non_stereo_layers() {
+        let d4 = mol("[2H]C([2H])([2H])[2H]");
+        let full = standard_inchi(&d4).unwrap();
+        let no_stereo = standard_inchi_no_stereo(&d4).unwrap();
+        assert!(full.contains("/i1D4"), "sanity: {full}");
+        assert!(
+            no_stereo.contains("/i1D4"),
+            "isotope layer must survive SNon: {no_stereo}"
+        );
+    }
 }

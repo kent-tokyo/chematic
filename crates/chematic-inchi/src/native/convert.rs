@@ -43,6 +43,40 @@ fn h_isotope_bucket(isotope: Option<u16>) -> usize {
     }
 }
 
+/// True if `mol` contains a tetrahedral stereocentre with 2 or more H-like
+/// substituents (the bracket-H sentinel, or an explicit graph H/D/T atom).
+///
+/// This is exactly the shape [`mol_to_inchi_atoms`] cannot represent (see the
+/// `two_h_like_substituents_on_one_centre_drops_stereo_not_corrupts_it` /
+/// `bracket_h_plus_explicit_isotope_h_drops_stereo_not_corrupts_it` tests
+/// below): its single-manufactured-atom-per-centre mechanism registers at
+/// most one H-like substituent, so a second one silently drops the whole
+/// stereo descriptor rather than corrupting it. A non-empty
+/// [`super::standard_inchi`] string is therefore NOT sufficient evidence
+/// that a comparison based on it is trustworthy for such a centre --
+/// callers that need a verified identity comparison
+/// (`crate::dedup::IdentityPolicy`) must check this FIRST and fail closed,
+/// never trust the string just because generation "succeeded".
+///
+/// Deliberately structural, not a SMILES allowlist: any atom where
+/// [`tetrahedral_stereo_neighbors`] recognizes a genuine stereocentre (which,
+/// for two identically-untagged hydrogens, it already wouldn't -- CIP rule 2
+/// only distinguishes them when their isotopes actually differ) AND 2+ of
+/// its 4 ranked substituents are H-like is flagged, regardless of which
+/// SMILES produced it.
+pub(crate) fn has_unrepresentable_multi_h_stereocenter(mol: &Molecule) -> bool {
+    mol.atoms().any(|(aidx, _)| {
+        let Some((_, sorted_nbrs)) = tetrahedral_stereo_neighbors(mol, aidx) else {
+            return false;
+        };
+        let h_like_count = sorted_nbrs
+            .iter()
+            .filter(|&&nb| nb.0 == u32::MAX || mol.atom(nb).element.atomic_number() == 1)
+            .count();
+        h_like_count >= 2
+    })
+}
+
 /// Convert a `Molecule` into the atom + stereo lists required by the IUPAC InChI C API.
 ///
 /// Aromatic bonds are Kekulized first. Tetrahedral stereo is derived from CIP R/S codes:

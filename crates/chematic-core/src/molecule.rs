@@ -692,6 +692,12 @@ impl Molecule {
         self.atoms[idx.0 as usize].charge = charge;
     }
 
+    /// Set the isotope label of atom `idx` in-place. `None` = natural
+    /// isotope abundance (no label).
+    pub fn set_isotope(&mut self, idx: AtomIdx, isotope: Option<u16>) {
+        self.atoms[idx.0 as usize].isotope = isotope;
+    }
+
     /// Set the element of atom `idx` in-place.
     ///
     /// Chirality and hydrogen count are reset (element-specific properties).

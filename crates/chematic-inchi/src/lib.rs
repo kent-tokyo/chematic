@@ -32,7 +32,15 @@
 //! let mol2 = parse_inchi(&inchi_str).expect("parse");
 //! assert_eq!(mol2.atom_count(), 6);
 //! ```
+//!
+//! # Deduplication (`dedup` module)
+//!
+//! [`dedup`] provides a high-confidence molecule deduplication API: fast
+//! [`chematic_smiles::canonical_smiles`] candidate grouping, verified by
+//! native standard InChI (never the pure-Rust approximation above). See the
+//! [`dedup`] module docs for the full identity-policy rationale.
 
+pub mod dedup;
 pub mod key;
 pub mod layers;
 pub mod parser;
