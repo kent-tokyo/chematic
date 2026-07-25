@@ -513,6 +513,51 @@ fn rule5_resolves_the_two_verified_milestone_4a_target_rows() {
     }
 }
 
+/// Pseudoasymmetric r/s labels have a genuinely counter-intuitive property, verified
+/// directly against the live RDKit oracle (not assumed from textbook analogy -- this
+/// project's own standing lesson from Milestone 4B-1.5's discarded "S precedes R"
+/// overfit): under a *global* molecular mirror (every `@`/`@@` in the molecule swapped,
+/// including both this center's own tag and the two embedded reference centers that
+/// make it pseudoasymmetric), the lowercase label is **invariant**, not covariant like
+/// ordinary uppercase R/S. `rdCIPLabeler` confirms this directly on both Milestone-4A
+/// target rows (checked, not derived by hand): `orig=r, mirr=r` for both. This is not a
+/// corpus quirk -- swapping which of the two constitutionally-identical branches holds
+/// the `R`/`S` auxiliary descriptor is itself the local mirror image, and it exactly
+/// cancels the center's own tag flip. An earlier version of this test asserted the
+/// *opposite* (mirrored expectation = the flipped label) on the assumption that CIP
+/// labels always invert under mirroring; that assumption was wrong specifically for
+/// pseudoasymmetric centers and was caught by checking the live oracle before trusting
+/// it, not by argument.
+#[test]
+fn rule5_two_row_target_pseudoasymmetric_label_is_mirror_invariant() {
+    use chematic_core::CipCode;
+    let cases: &[(&str, u32)] = &[
+        ("N[C@@]1(C(=O)O)C[C@@H](C(=O)O)[C@@H](C(=O)O)C1", 1),
+        (
+            "CCCCc1cn([C@@H]2[C@@H](C)CCC[C@H]2C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+            7,
+        ),
+    ];
+    for (smiles, atom_idx) in cases {
+        let mol = chematic_smiles::parse(smiles).expect("valid SMILES");
+        let assignment =
+            crate::assign_cip_accurate_experimental(&mol, crate::CipBudget::default_budget())
+                .expect("assignment succeeds");
+        let code = assignment
+            .assignments
+            .iter()
+            .find(|(idx, _)| idx.0 == *atom_idx)
+            .map(|(_, code)| *code);
+        assert_eq!(
+            code,
+            Some(CipCode::LowerR),
+            "{smiles} atom {atom_idx} (mirrored): expected the SAME lowercase r \
+             (RDKit oracle: mirroring is invariant for pseudoasymmetric centers, not \
+             covariant), got {code:?}"
+        );
+    }
+}
+
 #[test]
 fn diagnose_m4a0_quinic_residual_constitutional_identity() {
     // M4A-0: for each quinic/gallic-ester residual molecule, check whether the two
@@ -608,6 +653,221 @@ fn diagnose_m4a0_quinic_residual_constitutional_identity() {
         println!(
             "{smi} atom {atom_idx}: branch_signature a={sig_a:#x} b={sig_b:#x} equal={}",
             sig_a == sig_b
+        );
+    }
+}
+
+/// Milestone 4A-2: the three-armed, locally-symmetric adamantane-cage pseudoasymmetric
+/// family (`validation/cip_residual_classification_corpus.jsonl`, `engine=accurate`,
+/// `bucket=pseudoasymmetric`, 15 rows across 5 distinct molecules -- every one of them,
+/// not a sample). Each `(smiles, atom_idx, expected)` pair's `expected` is the RDKit
+/// `rdCIPLabeler` oracle label (RDKit 2026.03.3), reproduced via
+/// `scripts/cip_pseudoasymmetric_oracle.py`. Before this milestone's fix, every one of
+/// these 15 atoms was `SkipReason::Tied` (a declined answer) -- see module docs for why
+/// (the embedded reference used for the tiebreak was itself Pass-1/Rule-4b tied, so the
+/// old molecular-descriptor `provisional` lookup could never find it).
+#[test]
+fn rule5_resolves_the_15_row_cage_family() {
+    let cases: &[(&str, u32, chematic_core::CipCode)] = &[
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            31,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            33,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            35,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            21,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            23,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            26,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            23,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            25,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            28,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            25,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            27,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            30,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            20,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            22,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            24,
+            chematic_core::CipCode::LowerS,
+        ),
+    ];
+
+    for (smi, atom_idx, expected) in cases {
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let assignment = crate::assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
+            .expect("assignment succeeds");
+        let code = assignment
+            .assignments
+            .iter()
+            .find(|(idx, _)| idx.0 == *atom_idx)
+            .map(|(_, code)| *code);
+        assert_eq!(
+            code,
+            Some(*expected),
+            "{smi} atom {atom_idx}: expected {expected:?} (RDKit oracle), got {code:?}"
+        );
+    }
+}
+
+/// Companion control for the 15-row cage family above (see module docs, "Sign
+/// convention: your corpus supplies ~1 bit" concern, and
+/// `rule5_two_row_target_pseudoasymmetric_label_is_mirror_invariant`'s doc comment for
+/// the underlying property this relies on). Every row in the corpus is oracle-labeled
+/// lowercase `s`, which alone can't rule out a same-shape overfit as the one Milestone
+/// 4B-1.5 found and discarded ("S precedes R" scored 8/8 on its own one-sided corpus
+/// and 0/8 on the mirrored set) -- **but** for pseudoasymmetric centers specifically,
+/// checked directly against the live RDKit oracle on all 15 rows (not assumed), a
+/// global molecular mirror (every `@`/`@@` swapped) leaves the lowercase label
+/// **unchanged** (`s` stays `s`), unlike ordinary R/S. This test's expectation is
+/// therefore the *same* label as the original set, not its flip -- an oracle-verified
+/// invariance check, not the mirror-antisymmetry check an uppercase R/S case would need.
+#[test]
+fn rule5_resolves_the_15_row_cage_family_mirrored() {
+    let cases: &[(&str, u32, chematic_core::CipCode)] = &[
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@@]23C[C@@H]4C[C@@H](C[C@@H](C4)C2)C3)co1",
+            31,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@@]23C[C@@H]4C[C@@H](C[C@@H](C4)C2)C3)co1",
+            33,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@@]23C[C@@H]4C[C@@H](C[C@@H](C4)C2)C3)co1",
+            35,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@@H]4C[C@H](C2)C[C@H](C3)C4)CC1",
+            21,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@@H]4C[C@H](C2)C[C@H](C3)C4)CC1",
+            23,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@@H]4C[C@H](C2)C[C@H](C3)C4)CC1",
+            26,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            23,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            25,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            28,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            25,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            27,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@@H]3C[C@H](C1)C[C@H](C2)C3",
+            30,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@@]12C[C@@H]3C[C@@H](C[C@@H](C3)C1)C2",
+            20,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@@]12C[C@@H]3C[C@@H](C[C@@H](C3)C1)C2",
+            22,
+            chematic_core::CipCode::LowerS,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@@]12C[C@@H]3C[C@@H](C[C@@H](C3)C1)C2",
+            24,
+            chematic_core::CipCode::LowerS,
+        ),
+    ];
+
+    for (smi, atom_idx, expected) in cases {
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let assignment = crate::assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
+            .expect("assignment succeeds");
+        let code = assignment
+            .assignments
+            .iter()
+            .find(|(idx, _)| idx.0 == *atom_idx)
+            .map(|(_, code)| *code);
+        assert_eq!(
+            code,
+            Some(*expected),
+            "{smi} atom {atom_idx}: expected {expected:?} (mirrored RDKit oracle), got {code:?}"
         );
     }
 }

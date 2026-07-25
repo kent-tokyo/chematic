@@ -709,6 +709,151 @@ correctness argued/verified first — a provisional-map two-pass refinement cann
 this family by construction (no seed), so this is not a parameter tweak on the current
 code, it needs a different mechanism.
 
+**Milestone 4A-2 — RESOLVED** (branch `feat/cip-pseudoasymmetric-rs`, part of the "v0.7
+Accuracy Wave"). The framing above ("needs symmetry/automorphism-aware joint resolution, a
+different architecture") turned out to be **wrong about what was needed**, discovered by
+direct instrumentation before any redesign was attempted (per the standing project
+discipline of checking a hypothesis before building for it):
+
+- **Root cause, verified not assumed.** The 15 rows all share the same connectivity
+  pattern: a 1-substituted adamantane cage (`[C]12C[CH]3C[CH](C[CH](C3)C1)C2`-shaped — 4
+  bridgeheads forming a complete graph K4 via 6 CH2 bridges, one bridgehead bearing the
+  exocyclic substituent, the other 3 the pseudoasymmetric CH centers). At the outer tied
+  atom (e.g. atom31), the two tied branches are genuinely, permanently constitutionally
+  identical under Rules 1a/1b/2 (confirmed by deep manual sphere-by-sphere tracing: the
+  branches remain tied through at least 5 spheres, the point at which the cage's own
+  vertex-transitive symmetry makes further constitutional comparison structurally
+  incapable of ever distinguishing them) — this is a real Rule-5 case, not a comparator
+  bug. `assign_one_with_rule5`'s original Milestone 4A implementation looked up each
+  branch's nearest embedded stereocenter's descriptor in `provisional`, a `HashMap`
+  populated only from Pass 1/Rule 4b's *already-resolved* atoms — but the embedded
+  reference here (e.g. atom33, as seen from atom31) is *itself* one of the three mutually
+  tied pseudoasymmetric atoms, so `provisional.get(&atom33)` was always `None`. This is
+  exactly "no seed to refine from," confirmed directly (not inferred) via a temporary
+  instrumented test calling `crate::resolver::resolve_chirality` directly on the tied
+  group's embedded references: both returned `Some(bool)`, and the two values *always
+  differed*, across all 15 rows — the raw signal Rule 5 needs was available the whole
+  time, just never looked at, because `provisional` was the wrong place to look for it.
+- **No SCC / fixed-point solver needed.** Per Hanson, Musacchio, Mayfield et al. 2018 (*J.
+  Chem. Inf. Model.* 58(9), 1755–1765, already cited in this doc's Milestone 4B-1.5
+  entry): "the descriptor for an auxiliary center does not depend upon any center between
+  it and the root... the path back to the root is always unique." Within *one* digraph
+  rooted at the true outer stereocenter, every embedded reference — however deep, however
+  many times the same underlying atom is revisited via a different ring path — is
+  strictly deeper than its parent by construction (`child_depth = parent_depth + 1`,
+  ring-closures terminate as childless `RingDuplicate` leaves). There is no cross-atom
+  cycle to resolve: `crate::resolver::resolve_chirality`, memoized by `NodeId` (path
+  identity, not atom identity) and already validated 72/72 for Rule 4b
+  (`docs/cip_accurate_rfc.md`'s Milestone 4B-2 entry, this same document), computes a
+  correct-shaped auxiliary sign for every one of the 15 rows' embedded references with
+  **zero modification** — confirmed directly, not assumed, before any production code
+  changed.
+- **The fix**: `crates/chematic-cip/src/assign.rs::assign_one_with_rule5` now locates the
+  nearest embedded reference via `crate::rule4b::embedded_chain(...).first()` (the same
+  chain-construction function Rule 4b's `break_tie_rule4b` uses, made `pub(crate)` for
+  this reuse — **not** `crate::rule4b::nearest_embedded` directly, which searches
+  *past* an already-consumed position and is only correct for chain positions ≥1, a
+  distinction documented in `nearest_embedded`'s own doc comment and initially missed,
+  caught by a real regression against the *original* 2-row Milestone 4A target before
+  being fixed) and calls `crate::resolver::resolve_chirality` on it directly, instead of
+  looking `provisional` (now removed entirely, along with the now-dead
+  `nearest_embedded_stereocenter` helper it required) up.
+- **A genuinely new, oracle-confirmed finding, not assumed from textbook analogy**:
+  pseudoasymmetric r/s labels are **invariant**, not covariant, under a full-molecule
+  mirror (every `@`/`@@` swapped, including the center's own tag and both its embedded
+  references) — verified directly against a live `rdCIPLabeler` on all 15 rows plus both
+  Milestone-4A 2-row targets (18/18 invariant). An initial mirror *negative control*
+  written for this milestone assumed labels always invert under mirroring (the correct
+  assumption for ordinary R/S) and failed against the live implementation; checking the
+  live RDKit oracle on the mirrored SMILES *before* treating that failure as a bug (per
+  this project's own standing lesson from Milestone 4B-1.5's discarded "S precedes R"
+  overfit) showed the "failure" was the test's wrong assumption, not an implementation
+  defect — chematic's own output already matched the oracle's real (invariant) behavior.
+  Both a same-molecule test (`rule5_resolves_the_15_row_cage_family`) and a mirrored
+  positive control (`rule5_resolves_the_15_row_cage_family_mirrored`, asserting the *same*
+  label, not the flipped one) are now permanent regression tests, plus the analogous pair
+  for the original 2-row target
+  (`rule5_two_row_target_pseudoasymmetric_label_is_mirror_invariant`).
+- **RDKit source audit** (pinned commit `8afba32ec539dcb2369bc84549d802aca3f7eb39`,
+  `github.com/rdkit/rdkit`), confirming the design direction against the real
+  implementation rather than memory of "how CIP usually works":
+  - `Code/GraphMol/CIPLabeler/CIPLabeler.cpp:43-47` — the rule cascade actually wired up
+    (`all_rules`) uses `Rule5New`, not the simpler `Rule5` (whose `.h`/`.cpp` are present
+    in the source tree but never included in `all_rules`, i.e. dead/superseded code as of
+    this commit — worth citing so a future reader doesn't mistake `Rule5.cpp`'s plain
+    ordinal comparator for the operative rule).
+  - `Code/GraphMol/CIPLabeler/CIPLabeler.cpp:103-166` (`labelAux`) — for each unresolved
+    center, auxiliary descriptors for every *other* configuration's foci reached in that
+    center's own digraph are computed **farthest-first** (`std::sort(..., farthest)`
+    where `farthest` compares `getDistance() >`, i.e. descending distance/depth), batched
+    by distance, each labeled via the *full* rule cascade (`all_rules`) before the center
+    itself is finally labeled — the literal bottom-up procedure the Hanson paper
+    describes and this crate's `resolve_chirality` already structurally mirrors.
+  - `Code/GraphMol/CIPLabeler/rules/Rule5New.cpp:26-68` — the real Rule 5: at a
+    non-root comparison it's a simple single-reference like/unlike test against a fixed
+    `d_ref` (matching chematic's own single-reference approach for this milestone's
+    scope); at the true digraph root it builds *four* pair lists (R-referenced and
+    S-referenced, for both branches) and returns a magnitude that distinguishes ordinary
+    (±1, R-referenced and S-referenced comparisons agree in sign) from genuinely
+    pseudoasymmetric (±2, they disagree) — the "both-references-max" procedure this RFC's
+    Milestone 4B-2 entry already flagged as deferred for Rule 4b, confirmed still
+    unimplemented here too (not needed: every observed row in this project's corpus
+    decides cleanly at a single reference, chain position 0).
+  - `Code/GraphMol/CIPLabeler/Descriptor.h:24-40` — `R`/`S`/`r`/`s` (and `M`/`P`/`m`/`p`
+    for axial) are distinct enum values, matching `chematic_core::CipCode`'s own
+    `R`/`S`/`LowerR`/`LowerS` typing decision (not collapsed).
+  - `Code/GraphMol/CIPLabeler/Node.h:87,109` (`getAux`/`setAux`) — the auxiliary
+    descriptor is a separate, mutable per-node field (`d_aux`, default `Descriptor::NONE`)
+    distinct from an atom's eventual *primary* label, confirming the
+    auxiliary-vs-molecular distinction this crate's own docs already argued for is a real
+    structural property of RDKit's implementation, not just a plausible-sounding theory.
+  - `Code/GraphMol/CIPLabeler/rules/Pairlist.h:35-46,84-93` (`PairList::ref`/`add`) — only
+    `R`/`S`/`M`/`P`/`seqCis`/`seqTrans` are recognized; a lowercase `r`/`s`/`m`/`p`
+    auxiliary descriptor is **silently excluded** from the pairing sequence entirely
+    (falls to `default: return Descriptor::NONE` / `return false`) — i.e. RDKit's own
+    Rule 4b/5 pairing mechanism does not thread nested pseudoasymmetric descriptors
+    through the pair list at all, it only ever pairs on the uppercase family. This is
+    consistent with (not contradicted by) chematic's own `resolve_chirality` returning a
+    plain `Option<bool>` (uppercase-equivalent) at every recursion level.
+- **Verification.** All 15 rows now resolve, all matching the oracle (`LowerS`);
+  0 regressions on the previously-correct 4160/4186, confirmed two independent ways
+  (`corpus_snapshot.rs` diff + `cip_accurate_full_corpus_report.py` full recompute
+  against a fresh `rdCIPLabeler`, RDKit 2026.03.3): raw agreement 4160/4186 (99.38%) →
+  4175/4186 (99.74%); **oracle-stable agreement 4160/4175 (99.64%) → 4175/4175
+  (100.00%)** — the stable-subset denominator's own residual (exactly these 15 rows) is
+  now fully closed. A **disclosed side effect**, not silently absorbed: the same fix also
+  resolves the 2 previously-`SkipReason::Tied` cyclophosphazene phosphorus rows from
+  Milestone 4C-1 (same chain-length-1-degenerate structural shape), which now return
+  `LowerR` — but neither RDKit CIP engine has a *representation-stable* answer for that
+  specific molecule (Milestone 4C-1's own finding, re-confirmed unchanged), so this new
+  label is **not** verified against any oracle. What *is* checked: chematic's own new
+  label is stable under the same Kekule-respelling test that broke both RDKit engines
+  there (`cip_mode_accurate_pseudoasymmetric_fix_is_kekule_stable_on_the_former_phosphorus_tie`)
+  — self-consistency evidence, not external correctness evidence. The existing test
+  asserting these 2 rows stay `unresolved` was updated to assert the new, disclosed
+  behavior instead of silently going stale.
+- **Performance.** The cage molecules are exactly `docs/cip_accurate_rfc.md`'s own
+  recorded worst-case `needs_pass2_or_3` bucket (already noted in the
+  MANCUDE-Decision-A0 entry above: `36,198` comparisons on the worst adamantane-cage
+  amide) — this fix does not add a new pass or new recursion, it only changes *where*
+  Rule 5's existing lookup gets its embedded reference from, so no new worst-case
+  mechanism is introduced. Full-corpus wall-clock, `corpus_snapshot --candidate`
+  (`~/Downloads/SMILES.csv`, 4,188 rows), this branch vs. `main`
+  (`65ca79b8ee352a0905f92d3f90cf7db91416a6b8`), each built in its own isolated worktree so
+  neither build disturbed the other: `main` `total_ms=470.8 median_us=34.79
+  p95_us=795.83`; this branch `total_ms=464.1 median_us=33.54 p95_us=797.25` — no material
+  change (within run-to-run noise), consistent with only ~29/4,188 stereocenters ever
+  reaching Rule 4b/Rule 5 at all (Milestone MANCUDE-Decision-A0's own CIP-Perf-A0
+  measurement, unaffected by this change). Issue #107's heavy-tail concern is unchanged:
+  this fix touches the *lookup mechanism* inside an already-reached tied-atom code path,
+  not the digraph expansion or comparator recursion that produces the heavy tail.
+- **Scope not attempted, disclosed rather than silently narrowed**: a tied pair whose two
+  branches' *nearest* embedded references resolve to the **same** auxiliary sign (both R
+  or both S) does not fall back to a deeper chain comparison the way Rule 4b's
+  `break_tie_rule4b` does (`embedded_chain`'s later chain positions) — no row in this
+  project's validation corpus exercises that shape for Rule 5, so extending to it would
+  be unverified against any oracle. Left as `SkipReason::Tied` (declined, not guessed).
+
 **Milestone 4A-0 — post-Milestone-4A residual refresh, frozen at `992d18c`.** Per the
 user's explicit instruction not to carry the pre-4A bucket estimates forward (Milestone
 4A's own +2 fix could have shifted which rows remain), the residual was re-derived from

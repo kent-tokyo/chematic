@@ -1613,25 +1613,89 @@ mod tests {
     }
 
     #[test]
-    fn cip_mode_accurate_surfaces_unresolved_not_a_guess_for_tied_phosphorus() {
-        // Of the 11 oracle-unstable cyclophosphazene rows (docs/cip_accurate_rfc.md
-        // Milestone 4C-0/4C-1), only 2 are genuine chematic ties (SkipReason::Tied) --
-        // those must come back Unresolved in Accurate mode, never a panic. The other 9
-        // (Milestone 4C-0) DO get a stable, confident answer from chematic -- the
-        // oracle is what's unstable there, not chematic -- so they are deliberately
-        // NOT covered by this test; see `cip_mode_accurate_does_not_hide_oracle_unstable_answers`.
+    fn cip_mode_accurate_pseudoasymmetric_fix_now_resolves_former_phosphorus_ties() {
+        // Milestone 4A-2 (pseudoasymmetric r/s for the three-armed cage family) has a
+        // side effect on this *different*, previously-`SkipReason::Tied` molecule
+        // (docs/cip_accurate_rfc.md Milestone 4C-1): atoms 6/19 tied for the same
+        // structural reason as the cage family (a chain-length-1-degenerate Rule 4b
+        // comparison whose branches' auxiliary R/S signs genuinely differ) -- the fixed
+        // `assign_one_with_rule5` now resolves them too, to `LowerR`/`LowerR`.
+        //
+        // IMPORTANT CAVEAT, not swept under the rug: Milestone 4C-1 independently found
+        // that *neither* RDKit CIP engine (`rdCIPLabeler` nor legacy `_CIPCode`) has a
+        // representation-stable answer for this specific molecule -- both flip under a
+        // chemically-neutral Kekule respelling of the P/N ring. There is therefore no
+        // reliable oracle to score this new label against; this test asserts chematic's
+        // own behavior (a real value, not a panic) and, separately, that chematic's own
+        // new answer *is* stable under the same respelling test that broke both RDKit
+        // engines (`cip_mode_accurate_pseudoasymmetric_fix_is_kekule_stable_on_the_former_phosphorus_tie`,
+        // below) -- the strongest available evidence this is a well-founded auxiliary
+        // computation and not an accidental artifact of one particular Kekule drawing.
+        // It is NOT evidence the label is externally correct.
         let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
         let mol = chematic_smiles::parse(smi).expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
         for atom_idx in [6u32, 19u32] {
             let idx = AtomIdx(atom_idx);
-            assert!(
-                result.get(idx).is_none(),
-                "atom={atom_idx} should not have a guessed label"
+            assert_eq!(
+                result.get(idx),
+                Some(CipCode::LowerR),
+                "atom={atom_idx}: expected the pseudoasymmetric fix to resolve this atom"
             );
             assert!(
-                result.unresolved.iter().any(|(i, _)| *i == idx),
-                "atom={atom_idx} should be in unresolved"
+                !result.unresolved.iter().any(|(i, _)| *i == idx),
+                "atom={atom_idx} should no longer be unresolved"
+            );
+        }
+    }
+
+    #[test]
+    fn cip_mode_accurate_pseudoasymmetric_fix_is_kekule_stable_on_the_former_phosphorus_tie() {
+        // Same molecule as the test above. Flip every P/N ring bond Single<->Double (a
+        // chemically neutral resonance respelling, the same test Milestone 4C-0/4C-1
+        // used to show *both* RDKit engines are representation-unstable here) and
+        // confirm chematic's new label does NOT flip -- unlike RDKit on this molecule,
+        // chematic's bottom-up auxiliary-descriptor computation is representation-
+        // independent for this specific case (checked directly, not assumed).
+        use chematic_core::BondOrder;
+        use chematic_perception::find_sssr;
+
+        let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let sssr = find_sssr(&mol);
+
+        let flip = |m: &chematic_core::Molecule, a, b| -> Option<chematic_core::Molecule> {
+            let (bidx, bond) = m.bond_between(a, b)?;
+            let new_order = match bond.order {
+                BondOrder::Single => BondOrder::Double,
+                BondOrder::Double => BondOrder::Single,
+                other => other,
+            };
+            Some(m.with_bond_order(bidx, new_order))
+        };
+
+        let mut respelled = mol.clone();
+        for ring in sssr.rings() {
+            for w in ring.windows(2) {
+                if let Some(next) = flip(&respelled, w[0], w[1]) {
+                    respelled = next;
+                }
+            }
+            if let (Some(&first), Some(&last)) = (ring.first(), ring.last())
+                && let Some(next) = flip(&respelled, last, first)
+            {
+                respelled = next;
+            }
+        }
+
+        let original = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
+        let after = assign_cip_with_mode(&respelled, CipMode::Accurate).expect("no engine error");
+        for atom_idx in [6u32, 19u32] {
+            let idx = AtomIdx(atom_idx);
+            assert_eq!(
+                original.get(idx),
+                after.get(idx),
+                "atom={atom_idx}: chematic's new label must be Kekule-respelling-stable"
             );
         }
     }
