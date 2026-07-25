@@ -232,6 +232,12 @@ fn from_mol_block_with_diagnostics<'py>(
 ///
 /// This is the batch equivalent of :func:`from_mol_block_with_coords`.
 ///
+/// Note: this function has no diagnostics-returning variant. It inherits 2D
+/// wedge/hash stereo *perception* automatically (same core as every other
+/// MOL/SDF reader), but rejected-stereo diagnostics aren't surfaced here —
+/// use :func:`iter_sdf`/:func:`iter_sdf_batched`/:func:`iter_sdf_str` and
+/// ``SdfRecord.stereo_diagnostics()`` if you need them.
+///
 ///     with open("library.sdf") as f:
 ///         records = chematic.parse_sdf_with_coords(f.read())
 ///     for mol, name, coords_2d in records:
