@@ -13,6 +13,8 @@ pub mod match_vf2;
 pub mod mcs;
 pub mod parser;
 pub mod query;
+pub mod rdkit_parity_match;
+pub mod rdkit_ring_model;
 
 pub use cache::{SmartsCache, named_pattern};
 pub use cx::{CxQueryAtomProp, CxSmarts, parse_cxsmarts};
@@ -25,6 +27,12 @@ pub use mcs::{AtomCompare, BondCompare, McsConfig, find_mcs, find_mcs_with_confi
 pub use parser::{SmartsError, parse_smarts};
 pub use query::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryAtom, QueryBond, QueryMolecule,
+};
+pub use rdkit_parity_match::{
+    RdkitParityConfig, find_matches_rdkit_parity, has_match_rdkit_parity_bounded,
+};
+pub use rdkit_ring_model::{
+    RdkitParityError, RdkitParityRingModel, RdkitRingModelBudget, build_rdkit_parity_ring_model,
 };
 
 #[cfg(test)]

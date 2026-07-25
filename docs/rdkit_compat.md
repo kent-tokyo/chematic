@@ -33,7 +33,7 @@ DataStructs.TanimotoSimilarity(fp, fp)       # 1.0
 | RingInfo | ✅ Supported | `GetRingInfo()` → `NumRings`/`AtomRings`/`BondRings`/`NumAtomRings`/`NumBondRings` (SSSR-based) |
 | Descriptors | ✅ Supported | MW/HBA/HBD **exact**, TPSA ±1.0, LogP ±0.5 vs RDKit (differential-tested) |
 | Aromaticity | ✅ Supported | aromatic atom/bond counts match RDKit on 99.44% / 98.82% of a 5k corpus; one bridgehead-N fused-ring scaffold over-aromatizes under `apply_aromaticity("rdkit_like")`, see "SMARTS-A0" below |
-| Substructure (SMARTS) | ✅ Supported | match **sets** agree **99.93%** on a 5k corpus (up from 96.9% — SMARTS-R1 fixed a `[rN]`/`[kN]` predicate-semantics bug that was 94.4% of all mismatches, see "SMARTS-R0"/"SMARTS-R1" below); residual is 100% one bridgehead-N ring-fusion aromaticity over-extension scaffold, see "SMARTS-A0" below (previously mislabeled "carbonyl" — it isn't). Match **order** may differ — compare as sets |
+| Substructure (SMARTS) | ✅ Supported | match **sets** agree **99.93%** on a 5k corpus (up from 96.9% — SMARTS-R1 fixed a `[rN]`/`[kN]` predicate-semantics bug that was 94.4% of all mismatches, see "SMARTS-R0"/"SMARTS-R1" below); residual is 100% one bridgehead-N ring-fusion aromaticity over-extension scaffold, see "SMARTS-A0" below (previously mislabeled "carbonyl" — it isn't). Match **order** may differ — compare as sets. **Opt-in** `find_matches_rdkit_parity` (`chematic_smarts::rdkit_parity_match`, default matcher unchanged) additionally fixes the `[R1]`/`[R2]` ring-count residual on bridged/cage systems — 155,650/155,651 (99.9994%) on a 155,651-cell corpus, 0 regressions, see "SMARTS-R2" below |
 | Morgan fingerprint | 🟡 Partial | `radius`, `nBits` (modulo folding), `bitInfo`, `useFeatures=True` (FCFP) — shape-/origin-consistent, **not RDKit bit-identical** (FNV-1a vs MurmurHash) |
 | DataStructs | ✅ Supported | `TanimotoSimilarity`/`DiceSimilarity`/`BulkTanimotoSimilarity`/`ConvertToNumpyArray` |
 | Canonical SMILES | 🟡 Partial | 99.62% semantic round-trip vs RDKit (5k corpus); exocyclic C=N E/Z stereo not always emitted |
@@ -211,6 +211,98 @@ contribution left at all.
 **Explicitly not done**: `[R1]`/`[R2]` on bridged/cage systems (SMARTS-R2, a genuine
 SSSR-basis-cardinality gap, not a predicate bug — kept separate per SMARTS-R0's own
 partition, above).
+
+### SMARTS-R2 — opt-in RDKit-parity `[RN]` ring-count model (2026-07-25, implemented, opt-in)
+
+Implements SMARTS-R0's deferred finding: an opt-in-only fix for the `[R1]`/`[R2]`
+ring-*count* residual, entirely inside `crates/chematic-smarts/` (`rdkit_ring_model.rs` +
+`rdkit_parity_match.rs`). **The default matcher (`find_matches`/`match_vf2.rs`) is
+untouched — zero diff** (`git diff crates/chematic-smarts/src/match_vf2.rs` is empty);
+the new mode is a deliberately-duplicated VF2 matcher (`find_matches_rdkit_parity`)
+reached only by explicitly opting in, never by the existing entry points.
+
+**Root cause, confirmed by reading RDKit source at the pinned commit
+`8afba32ec539dcb2369bc84549d802aca3f7eb39`**: `[R]`/`[RN]`/`[r]`/`[rN]`/`[k]`/`[kN]`/
+`[x]`/`[xN]`/ring-bond `@`/`!@` are all backed by one shared `RingInfo` object
+(`Code/GraphMol/QueryOps.h:283-370` — `queryIsAtomInNRings`→`numAtomRings`,
+`queryAtomMinRingSize`→`minAtomRingSize`, `queryAtomIsInRingOfSize`→`isAtomInRingOfSize`,
+`queryAtomRingBondCount`/`queryIsBondInRing`→`numBondRings`; `AtomRingQuery`,
+`QueryOps.h:752-789`, backs bare `[R]`/`[RN]`). RDKit's default sanitization does not
+populate that `RingInfo` from a minimal SSSR alone: `MolOps::symmetrizeSSSR`
+(`Code/GraphMol/FindRings.cpp:996-1093`) adds "extra" rings back in whenever a candidate
+(found among RDKit's own SSSR search's rejected duplicate D2 candidates,
+`findSSSRforDupCands`, same file line ~283) is the same size as some basis ring, shares
+≥1 bond with it, and does not drop any bond that basis ring is the *sole* provider of
+(the `bondCounts`/`replacesAllUniqueBonds` logic at `FindRings.cpp:1046-1087`). This can
+make RDKit's per-atom ring **count** larger than a minimal-basis SSSR's — the "genuine
+SSSR-basis-cardinality disagreement" SMARTS-R0 already named.
+
+**A graph-theory fact narrows the fix to exactly one primitive.** An edge lies on *some*
+basis cycle of a graph if and only if it lies on *any* cycle at all (a cycle's edge set is
+a member of the GF(2) cycle space, so if an edge appeared in zero basis cycles it could
+not appear in any combination of them either) — independent of which valid basis is
+chosen. Consequently `[R]`/`[R0]` (ring membership, boolean), `[x]`/`[xN]` (ring-bond
+count) and ring-bond `@`/`!@` are **provably invariant** to which SSSR basis backs them;
+only `[RN]` (N ≥ 1, exact ring *count*) can move. `[rN]`/`[kN]` could in principle move
+too, but both already measure ~100%/99.98% on plain SSSR alone (SMARTS-R1, above) — the
+new opt-in matcher deliberately leaves them wired to plain SSSR, unchanged.
+
+**Design.** `rdkit_ring_model.rs` builds an auxiliary, atom-indexed ring-*count* table
+from chematic's own already-computed SSSR (never modifies `find_sssr`): it enumerates
+simple cycles up to the basis's largest ring size via a depth-bounded DFS (depth-bounded
+by ring size, not by molecule size or ring count — chosen over a GF(2) basis-subset
+search specifically because a fixed subset-size cap silently misses cage topologies like
+cubane, where the 6th face is the XOR of *all 5* basis rings), then re-applies RDKit's own
+same-size/shares-a-bond/doesn't-drop-a-unique-bond acceptance rule to each candidate. This
+is a *different candidate-generation mechanism* reaching for the *same acceptance rule* —
+chematic's `find_sssr` doesn't expose RDKit's own rejected-duplicate-candidate list, so
+this module can't literally replay RDKit's search, only its filter.
+
+**Measured, full corpus (5,000-molecule `~/Downloads/SMILES.csv` + 21 hand-built
+fused/bridged/spiro/cage structures, 30 patterns, 155,651 molecule×pattern cells — see
+provenance in the PR body)**:
+
+| Metric | Value |
+|---|---|
+| Total cells compared | 155,651 |
+| Default matcher agreement with RDKit | 155,474/155,651 (99.8863%) |
+| Opt-in RDKit-parity matcher agreement with RDKit | 155,650/155,651 (99.9994%) |
+| `[RN]`-family cells only | 25,105 (176 fixed, 0 regressed, 24,929 already agreed) |
+| Regressions (opt-in mode disagrees where default agreed) | **0** |
+| Residual (both disagree with RDKit) | 1 cell — pre-existing `[k5]` bridged-bicyclic SSSR-basis mismatch, unrelated to `[RN]`, already named by SMARTS-R1 above; opt-in mode deliberately leaves `[kN]` on plain SSSR so this is unchanged, not newly introduced |
+
+Real cage examples the new model recovers (RDKit ground truth via
+`rdkit==2026.03.3` live oracle, PubChem canonical SMILES): adamantane (cycle_rank 3 →
+RDKit 4 rings), bicyclo[2.2.2]octane (cycle_rank 2 → RDKit 3 rings), cubane (cycle_rank 5
+→ RDKit 6 rings), **dodecahedrane** (cycle_rank 11 → RDKit 12 rings, all 20 atoms
+uniformly in exactly 3 faces — used as this track's adversarial highly-symmetric
+termination test; confirmed to terminate and match RDKit exactly within the default
+2,000,000-candidate budget).
+
+**Bridgehead-N (SMARTS-A0) bucket, separately measured, not conflated with the ring-count
+fix above.** This crate's matching entry points (`find_matches`/`find_matches_rdkit_parity`)
+never call any aromaticity re-perception themselves — they match whatever flags the input
+molecule already carries. On the SMARTS-A0 bare-core reproducer
+(`C1=Cc2ccccc2C2=NCCCN12`), direct parsing already carries RDKit-correct flags, so the bug
+does not fire on this pipeline (0/21 hand-corpus cells). It fires only if a caller
+explicitly re-perceives with `AromaticityAlgorithm::RdkitLike` first (e.g.
+`rdkit_compat.MolFromSmiles(sanitize=True)`) — reproduced directly in
+`rdkit_parity_match.rs`'s test suite. A third, independent engine,
+`apply_aromaticity_rdkit_parity_experimental` (this opt-in matcher's separate
+`use_rdkit_parity_aromaticity` flag, default off), does **not** reproduce the bug on this
+reproducer — checked directly, not assumed, since the two aromaticity engines are
+unrelated code paths.
+
+**No molecule-specific allowlist** anywhere in `rdkit_ring_model.rs`/`rdkit_parity_match.rs`
+— the acceptance rule and DFS bound are structural, not keyed on any SMILES/molecule
+identity.
+
+**API.** `chematic_smarts::{find_matches_rdkit_parity, has_match_rdkit_parity_bounded,
+RdkitParityConfig, RdkitParityError, RdkitRingModelBudget}`. `RdkitParityError` is a typed,
+non-silent failure: `RingModelBudgetExceeded` (the candidate search hit its cap — see
+`RdkitRingModelBudget`) or `Aromaticity` (only when `use_rdkit_parity_aromaticity=true`
+and re-perception failed). Never a silent partial match or a silent fallback to plain
+SSSR under the RDKit-parity name.
 
 ### SMARTS-A0 — bridgehead-N ring-fusion over-extension diagnosis (2026-07-16, diagnosis only)
 
