@@ -10,6 +10,7 @@
 //!   "M  END" — molecule terminator
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_perception::{StereoDiagnostic, apply_local_parity_from_wedges_with_diagnostics};
 
 use crate::error::MolParseError;
 
@@ -40,6 +41,21 @@ impl MolMetadata {
         self.comment = comment.to_owned();
         self
     }
+}
+
+/// Result of parsing a MOL/SDF record with stereo-perception diagnostics.
+///
+/// `stereo_diagnostics` is empty unless a wedge/hash bond was actually
+/// present at some center and got rejected (contradictory, missing
+/// coordinates, degenerate geometry, or an unsupported neighbor shape) --
+/// see [`chematic_perception::StereoDiagnostic`]. It is never populated for
+/// an atom with no wedge/hash bond at all.
+#[derive(Clone)]
+pub struct MolReadReport {
+    pub mol: Molecule,
+    pub metadata: MolMetadata,
+    pub coords: Vec<(f64, f64)>,
+    pub stereo_diagnostics: Vec<StereoDiagnostic>,
 }
 
 // ---------------------------------------------------------------------------
@@ -96,15 +112,22 @@ fn parse_field3(
         .map_err(|_| make_err(line_num, format!("cannot parse integer from '{field}'")))
 }
 
-/// Parse a MOL V2000 string into a `(Molecule, MolMetadata, coords)` triple.
+/// Parse a MOL V2000 string, running stereo perception and returning every
+/// rejected wedge/hash center as a structured [`StereoDiagnostic`].
 ///
-/// The parser follows the MDL/CTfile fixed-width column layout.
-/// `coords[i]` is the `(x, y)` position for atom `i` extracted from the
-/// atom block.  Z-coordinates are discarded.
-#[allow(clippy::type_complexity)]
-pub fn parse_mol_with_coords(
-    input: &str,
-) -> Result<(Molecule, MolMetadata, Vec<(f64, f64)>), MolParseError> {
+/// The parser follows the MDL/CTfile fixed-width column layout. `coords[i]`
+/// is the `(x, y)` position for atom `i` extracted from the atom block.
+/// Z-coordinates are discarded. This is the one parsing core for V2000 MOL
+/// text -- [`parse_mol_with_coords`]/[`parse_mol`] are thin wrappers that
+/// discard `stereo_diagnostics`, and [`crate::sdf`]'s readers delegate here
+/// per record.
+///
+/// Local tetrahedral parity (`Atom.chirality` + `Molecule::stereo_neighbor_order`)
+/// is perceived unconditionally whenever a wedge/hash bond is present --
+/// mirroring RDKit's own `assignChiralTypesFromBondDirs`, which runs
+/// regardless of a `sanitize`-equivalent flag. It never touches `Atom.cip_code`
+/// and never depends on CIP ranking.
+pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseError> {
     // Yields (1-based line number, line text); short-circuits on EOF.
     let mut lines = input.lines().enumerate().map(|(i, l)| (i + 1, l));
     let mut next_line = || lines.next().ok_or(MolParseError::UnexpectedEnd);
@@ -240,8 +263,17 @@ pub fn parse_mol_with_coords(
         };
 
         let order = match btype_raw {
+            // Code 4 ("either"/unspecified direction) is deliberately NOT
+            // folded into `Up`: it is a third, distinct MDL state (RDKit
+            // maps it to `Bond::BondDir::UNKNOWN`, never a definite wedge)
+            // and once stereo perception reads `BondOrder::Up` as a
+            // confident wedge, conflating the two would fabricate a
+            // stereocenter from a bond whose direction the file explicitly
+            // declares unknown. Falls through to `Single`, i.e. "no defined
+            // direction" -- a documented, accepted round-trip-lossy case
+            // (see `docs/stereo2d_reader_integration_rfc.md`).
             1 => match stereo_raw {
-                1 | 4 => BondOrder::Up,
+                1 => BondOrder::Up,
                 6 => BondOrder::Down,
                 _ => BondOrder::Single,
             },
@@ -270,7 +302,29 @@ pub fn parse_mol_with_coords(
         }
     }
 
-    Ok((builder.build(), metadata, coords))
+    let mut mol = builder.build();
+    let stereo_diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+
+    Ok(MolReadReport {
+        mol,
+        metadata,
+        coords,
+        stereo_diagnostics,
+    })
+}
+
+/// Parse a MOL V2000 string into a `(Molecule, MolMetadata, coords)` triple.
+///
+/// Thin wrapper around [`read_mol_with_diagnostics`] that discards
+/// `stereo_diagnostics` -- signature and behavior unchanged from before
+/// stereo perception was wired in, except that a wedge/hash bond now
+/// populates `Atom.chirality`/`Molecule::stereo_neighbor_order` where it
+/// previously left them unset.
+#[allow(clippy::type_complexity)]
+pub fn parse_mol_with_coords(
+    input: &str,
+) -> Result<(Molecule, MolMetadata, Vec<(f64, f64)>), MolParseError> {
+    read_mol_with_diagnostics(input).map(|r| (r.mol, r.metadata, r.coords))
 }
 
 /// Parse a MOL V2000 string into a `(Molecule, MolMetadata)` pair.
@@ -281,18 +335,11 @@ pub fn parse_mol(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> 
     parse_mol_with_coords(input).map(|(mol, meta, _coords)| (mol, meta))
 }
 
-/// Parse all molecules from an SDF string, returning 2D coordinates.
-///
-/// Each entry contains the molecule, its metadata, and a `Vec<(x, y)>` of
-/// 2D coordinates in atom-insertion order (the same order as `.atoms()`).
+/// Parse all molecules from an SDF string, running stereo perception and
+/// returning every rejected wedge/hash center per record.
 ///
 /// Stops and returns an error on the first parse failure.
-#[allow(clippy::type_complexity)]
-pub fn parse_sdf_with_coords(
-    input: &str,
-) -> Result<Vec<(Molecule, MolMetadata, Vec<(f64, f64)>)>, MolParseError> {
-    // Re-use the SDF record splitter by borrowing its block-splitting logic,
-    // but call parse_mol_with_coords on each block instead of parse_mol.
+pub fn read_sdf_with_diagnostics(input: &str) -> Result<Vec<MolReadReport>, MolParseError> {
     let mut result = Vec::new();
     let mut remaining = input;
     loop {
@@ -334,10 +381,26 @@ pub fn parse_sdf_with_coords(
             continue;
         }
 
-        let (mol, meta, coords) = parse_mol_with_coords(block)?;
-        result.push((mol, meta, coords));
+        result.push(read_mol_with_diagnostics(block)?);
     }
     Ok(result)
+}
+
+/// Parse all molecules from an SDF string, returning 2D coordinates.
+///
+/// Each entry contains the molecule, its metadata, and a `Vec<(x, y)>` of
+/// 2D coordinates in atom-insertion order (the same order as `.atoms()`).
+///
+/// Thin wrapper around [`read_sdf_with_diagnostics`] that discards
+/// `stereo_diagnostics`. Stops and returns an error on the first parse failure.
+#[allow(clippy::type_complexity)]
+pub fn parse_sdf_with_coords(
+    input: &str,
+) -> Result<Vec<(Molecule, MolMetadata, Vec<(f64, f64)>)>, MolParseError> {
+    Ok(read_sdf_with_diagnostics(input)?
+        .into_iter()
+        .map(|r| (r.mol, r.metadata, r.coords))
+        .collect())
 }
 
 // ---------------------------------------------------------------------------
@@ -405,7 +468,16 @@ pub fn write_mol_with_coords(
             BondOrder::QueryAny | BondOrder::Zero => 8,
             BondOrder::Quadruple => 4,
         };
-        out.push_str(&format!("{:>3}{:>3}{:>3}  0\n", a1, a2, btype));
+        // Stereo field: preserve a wedge/hash bond so a re-parse recovers
+        // the same local parity. This is the only channel MOL/SDF has for
+        // recovered stereo -- `Atom.chirality` itself has no direct MOL
+        // field, so what round-trips is the wedge bond it was derived from.
+        let stereo = match bond.order {
+            BondOrder::Up => 1,
+            BondOrder::Down => 6,
+            _ => 0,
+        };
+        out.push_str(&format!("{:>3}{:>3}{:>3}{:>3}\n", a1, a2, btype, stereo));
     }
 
     // Terminator
@@ -753,6 +825,28 @@ M  END
         let (mol, _) = crate::parse_mol(mol_str).unwrap();
         let bond = mol.bond(chematic_core::BondIdx(0));
         assert_eq!(bond.order, chematic_core::BondOrder::Down);
+    }
+
+    #[test]
+    fn test_parse_stereo_either_bond_code4_not_treated_as_wedge() {
+        // MDL stereo code 4 ("either"/unspecified direction) is a third,
+        // distinct state from a definite wedge (1) or hash (6) -- RDKit maps
+        // it to `Bond::BondDir::UNKNOWN`, never a confident tag. Collapsing
+        // it into `Up` (the pre-fix behavior) would fabricate a stereocenter
+        // from a bond whose direction the file explicitly declares unknown,
+        // now that stereo perception actually reads `BondOrder::Up`. This is
+        // a documented, accepted lossy case: the "either" information itself
+        // is not preserved (round-trips as a plain, unmarked single bond),
+        // but it must never masquerade as a real wedge.
+        let mol_str = "\n\n\n  2  1  0  0  0  0            999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  4  0  0  0\nM  END\n";
+        let (mol, _) = crate::parse_mol(mol_str).unwrap();
+        let bond = mol.bond(chematic_core::BondIdx(0));
+        assert_eq!(bond.order, chematic_core::BondOrder::Single);
+
+        // Round-trip: writes as stereo field 0, not a false wedge/hash.
+        let (mol, meta) = crate::parse_mol(mol_str).unwrap();
+        let written = write_mol(&mol, &meta);
+        assert!(written.contains("  1  2  1  0"), "{written}");
     }
 
     #[test]

@@ -5,9 +5,10 @@
 //! accepted but ignored.
 
 use chematic_core::Molecule;
+use chematic_perception::StereoDiagnostic;
 
 use crate::error::MolParseError;
-use crate::mol2000::{MolMetadata, parse_mol, parse_mol_with_coords};
+use crate::mol2000::{MolMetadata, parse_mol, read_mol_with_diagnostics};
 
 /// Iterator over molecules in an SDF string.
 ///
@@ -113,6 +114,10 @@ pub struct SdfRecord {
     /// SD data fields.  Keys are field names; values are field content.
     /// Multi-line values are joined with `\n`.
     pub properties: std::collections::HashMap<String, String>,
+    /// Rejected wedge/hash stereocenters from this record (see
+    /// [`chematic_perception::StereoDiagnostic`]). Empty unless a wedge/hash
+    /// bond was present at some center and got rejected.
+    pub stereo_diagnostics: Vec<StereoDiagnostic>,
 }
 
 /// Iterator over SDF records that also captures SD data fields.
@@ -175,9 +180,9 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             return self.next();
         }
 
-        // Parse molecule + 2D coordinates.
-        let (mol, meta, coords) = match parse_mol_with_coords(block) {
-            Ok(triple) => triple,
+        // Parse molecule + 2D coordinates + stereo diagnostics.
+        let report = match read_mol_with_diagnostics(block) {
+            Ok(report) => report,
             Err(e) => return Some(Err(e)),
         };
 
@@ -190,10 +195,11 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             parse_sd_fields(data_part).into_iter().collect();
 
         Some(Ok(SdfRecord {
-            mol,
-            meta,
-            coords,
+            mol: report.mol,
+            meta: report.metadata,
+            coords: report.coords,
             properties,
+            stereo_diagnostics: report.stereo_diagnostics,
         }))
     }
 }
@@ -313,8 +319,8 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
         }
 
         // Reuse the same parse path as SdfRecordReader.
-        let (mol, meta, coords) = match parse_mol_with_coords(&block) {
-            Ok(triple) => triple,
+        let report = match read_mol_with_diagnostics(&block) {
+            Ok(report) => report,
             Err(e) => return Some(Err(e)),
         };
 
@@ -326,10 +332,11 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             parse_sd_fields(data_part).into_iter().collect();
 
         Some(Ok(SdfRecord {
-            mol,
-            meta,
-            coords,
+            mol: report.mol,
+            meta: report.metadata,
+            coords: report.coords,
             properties,
+            stereo_diagnostics: report.stereo_diagnostics,
         }))
     }
 }
@@ -497,5 +504,111 @@ $$$$
             "second record should be err (malformed)"
         );
         assert!(results[2].is_ok(), "third record should be ok");
+    }
+
+    // ── stereo diagnostics: direct parse vs. SDF supplier ────────────────
+
+    /// A valid CHFClBr wedge block, generated via the crate's own writer
+    /// (not hand-typed fixed-width text) so column layout can't drift from
+    /// what the parser actually expects.
+    fn wedge_mol_block() -> String {
+        use crate::mol2000::{MolMetadata, write_mol_with_coords};
+        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Up).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        b.add_bond(c, i, BondOrder::Single).unwrap();
+        let mol = b.build();
+        let coords = vec![
+            (0.0, 0.0),
+            (-1.0, 0.4),
+            (0.9, 0.7),
+            (-0.5, -1.1),
+            (0.8, -0.6),
+        ];
+        write_mol_with_coords(&mol, &MolMetadata::default().with_name("wedge"), &coords)
+    }
+
+    /// A contradictory-wedge CHFClBr block (two disagreeing wedges) --
+    /// same shape used by `chematic_perception::stereo2d_local`'s own
+    /// `contradictory_wedges_no_assignment` fixture.
+    fn contradictory_mol_block() -> String {
+        use crate::mol2000::{MolMetadata, write_mol_with_coords};
+        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Up).unwrap();
+        b.add_bond(c, cl, BondOrder::Up).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        b.add_bond(c, i, BondOrder::Single).unwrap();
+        let mol = b.build();
+        let coords = vec![
+            (0.0, 0.0),
+            (-1.0, 0.4),
+            (0.9, 0.7),
+            (-0.5, -1.1),
+            (0.8, -0.6),
+        ];
+        write_mol_with_coords(&mol, &MolMetadata::default().with_name("bad"), &coords)
+    }
+
+    #[test]
+    fn sdf_record_reader_valid_wedge_matches_direct_parse() {
+        let block = wedge_mol_block();
+        let direct = read_mol_with_diagnostics(&block).expect("direct parse");
+        assert!(direct.stereo_diagnostics.is_empty());
+
+        let sdf = format!("{block}$$$$\n");
+        let rec = SdfRecordReader::new(&sdf)
+            .next()
+            .expect("one record")
+            .expect("parse ok");
+        assert!(rec.stereo_diagnostics.is_empty());
+        assert_eq!(
+            rec.mol.atom(chematic_core::AtomIdx(0)).chirality,
+            direct.mol.atom(chematic_core::AtomIdx(0)).chirality
+        );
+    }
+
+    #[test]
+    fn sdf_record_reader_contradictory_wedge_diagnostic_matches_direct_parse() {
+        let block = contradictory_mol_block();
+        let direct = read_mol_with_diagnostics(&block).expect("direct parse");
+        assert_eq!(direct.stereo_diagnostics.len(), 1);
+
+        let sdf = format!("{block}$$$$\n");
+        let rec = SdfRecordReader::new(&sdf)
+            .next()
+            .expect("one record")
+            .expect("parse ok");
+        assert_eq!(rec.stereo_diagnostics, direct.stereo_diagnostics);
+    }
+
+    #[test]
+    fn sdf_file_reader_diagnostics_match_direct_parse() {
+        use std::io::{BufReader, Cursor};
+
+        let block = contradictory_mol_block();
+        let direct = read_mol_with_diagnostics(&block).expect("direct parse");
+
+        let sdf = format!("{block}$$$$\n");
+        let cursor = Cursor::new(sdf.into_bytes());
+        let rec = SdfFileReader::new(BufReader::new(cursor))
+            .next()
+            .expect("one record")
+            .expect("parse ok");
+        assert_eq!(rec.stereo_diagnostics, direct.stereo_diagnostics);
     }
 }

@@ -9,7 +9,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet — everything below `[0.6.0]` has shipped._
+### Added — `chematic-mol` / `chematic-perception` / Python / WASM
+
+- **2D wedge/hash stereochemistry is now perceived automatically when reading MOL/SDF
+  files** — the missing wiring step identified by the P1-A0 diagnosis
+  (`docs/stereo2d_reader_integration_rfc.md`): `chematic_perception::apply_local_parity_from_wedges`
+  (shipped in v0.5.0, never called from a reader) is now invoked unconditionally by
+  `chematic_mol::read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics` — the new
+  parsing core for V2000/V3000 MOL text — immediately after a wedge/hash bond is read,
+  before anything else can mutate it away. `parse_mol`/`parse_mol_with_coords`/
+  `parse_mol_v3000`/`parse_mol_v3000_with_coords`, the SDF supplier
+  (`SdfRecordReader`/`SdfFileReader`), Python (`from_mol_block`, `SDMolSupplier`,
+  `iter_sdf*`), and WASM all inherit this for free by delegating to the same core.
+  CIP-independent — never touches `Atom.cip_code` or depends on CIP ranking; the
+  existing accurate-CIP engine (`assign_cip_with_mode(mol, CipMode::Accurate)`) remains
+  a separate, opt-in labeling stage on top.
+- **New structured diagnostics API** for malformed/contradictory wedge input — never a
+  silent guess. `chematic_perception::{StereoDiagnostic, StereoRejectionReason,
+  apply_local_parity_from_wedges_with_diagnostics}` (four typed reasons:
+  `ContradictoryWedges`, `MissingCoordinate`, `DegenerateGeometry`,
+  `UnsupportedCoordination`) sits alongside the original silent
+  `apply_local_parity_from_wedges`/`local_parity_from_wedges`, which keep their exact
+  prior behavior and signatures. `chematic_mol::MolReadReport` carries
+  `stereo_diagnostics` from `read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics`;
+  `SdfRecord` gets a matching `stereo_diagnostics` field. Python:
+  `from_mol_block_with_diagnostics()`/`from_mol_v3000_with_diagnostics()` and
+  `SdfRecord.stereo_diagnostics()` (stable snake_case reason strings, e.g.
+  `"contradictory_wedges"` — never free-form messages). WASM:
+  `mol_block_stereo_diagnostics_json()`/`mol_v3000_stereo_diagnostics_json()`, and
+  `sdf_to_records_json()`'s per-record objects gained a `stereo_diagnostics` array.
+  Diagnostics are emitted only when a wedge/hash bond is actually present at a
+  candidate center (degree 3 or 4) — an ordinary atom that merely touches someone
+  else's wedge bond, or has no wedge input at all, never produces one.
+- **V3000 bond `CFG` (wedge direction) is now decoded on read** — the parser
+  previously never collected bond-line `KEY=VALUE` tokens at all, so a V3000 file's own
+  wedge/hash annotation was silently dropped. `CFG=1`/`CFG=3` now map to `BondOrder::Up`/
+  `Down`; `CFG=2` ("either") is left undirected, matching V2000's own MDL-code-4 policy.
+
+### Fixed — `chematic-mol`
+
+- **V3000 writer emitted `CFG=6` for a hash bond** — that is V2000's stereo code, not a
+  valid V3000 `CFG` value (V3000 spec: 1=Up, 2=Either, 3=Down). Fixed to `CFG=3`. Found
+  and fixed together with the V3000 bond-`CFG` reader gap above, since both needed
+  fixing before V3000 wedge round-tripping could work at all.
+- **V2000 MDL stereo code 4 ("either"/unspecified direction) was collapsed into a
+  definite wedge** (`1 | 4 => BondOrder::Up`) — harmless while nothing consumed
+  `BondOrder::Up` for parity, but load-bearing now: a code-4 bond would have fabricated
+  a confident, wrong stereocenter from a file that explicitly declares direction
+  unknown. Now maps to `BondOrder::Single` (no defined direction). Round-tripping a
+  code-4 bond is therefore lossy by design (documented, not silently wrong) — the
+  round-trip-losslessness tests only assert on genuine wedge(1)/hash(6) bonds.
+- **V2000 writer never emitted a bond's wedge/hash stereo flag** (hardcoded to `0`) —
+  now emits `1`/`6` for `BondOrder::Up`/`Down`, so parsing a wedge MOL, writing it back
+  out, and re-parsing recovers the same local parity.
+
+### Known limitations
+
+- Double-bond cis/trans from 2D geometry (MDL stereo code 3, "P1-S2" in the RFC) is not
+  perceived — tetrahedral wedge/hash and E/Z are RDKit's own two structurally separate
+  pipelines; only the tetrahedral one is implemented here.
+- MRV, CDXML, CML, and KET readers are not wired into this integration (MOL V2000/V3000
+  + SDF only); the one-line insertion pattern used here is reusable for them later.
+- Aromaticity defaults, canonical-SMILES ranking, and the default (`LegacyFast`) CIP
+  engine are unchanged by this work.
+
+_Everything above this line is unreleased. Everything below `[0.6.0]` has shipped._
 
 ## [0.6.0] — 2026-07-25
 

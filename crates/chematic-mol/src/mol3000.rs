@@ -9,9 +9,10 @@
 use chematic_core::{
     Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, StereoGroup, StereoGroupKind,
 };
+use chematic_perception::apply_local_parity_from_wedges_with_diagnostics;
 
 use crate::error::MolParseError;
-use crate::mol2000::MolMetadata;
+use crate::mol2000::{MolMetadata, MolReadReport};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -126,14 +127,17 @@ fn parse_kv(tokens: &[&str], key: &str) -> Option<String> {
 /// molecule name (header line 1) through `M  END`.
 ///
 /// Returns `(Molecule, MolMetadata)` on success.
-/// Parse a MOL V3000 string into a `(Molecule, MolMetadata, Vec<(f64, f64)>)` triple.
+/// Parse a MOL V3000 string, running stereo perception and returning every
+/// rejected wedge/hash center as a structured `StereoDiagnostic`.
 ///
 /// `coords[i]` is the `(x, y)` position for atom `i` extracted from the V30 atom block.
 /// Z-coordinates are not captured (V3000 stores 3D; we retain only the 2D projection).
-#[allow(clippy::type_complexity)]
-pub fn parse_mol_v3000_with_coords(
-    input: &str,
-) -> Result<(Molecule, MolMetadata, Vec<(f64, f64)>), MolParseError> {
+/// This is the one parsing core for V3000 MOL text --
+/// [`parse_mol_v3000_with_coords`]/[`parse_mol_v3000`] are thin wrappers that
+/// discard `stereo_diagnostics`. Only bond-line `CFG` (wedge direction) is
+/// decoded; atom-line `CFG` (parity) is out of scope, matching RDKit's own
+/// primary `MolFromMolBlock` path (bond-CFG/wedge-based).
+pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseError> {
     // Collect all physical lines with 1-based numbering.
     let all_lines: Vec<(usize, &str)> =
         input.lines().enumerate().map(|(i, l)| (i + 1, l)).collect();
@@ -387,9 +391,21 @@ pub fn parse_mol_v3000_with_coords(
                     }
                 })?;
 
+                let kv_tokens = tokens.get(4..).unwrap_or(&[]);
+
                 let order = match btype_raw {
                     0 => BondOrder::Zero,
-                    1 => BondOrder::Single,
+                    // Bond CFG (wedge direction): 1=Up, 3=Down, 2=Either --
+                    // only meaningful for a single bond, mirroring V2000's
+                    // own gating. CFG=2 ("either"/unspecified) is left as
+                    // Single -- a defined wedge/hash needs a definite
+                    // direction, not "unknown" (same policy as V2000's own
+                    // code-4 handling).
+                    1 => match parse_kv(kv_tokens, "CFG").as_deref() {
+                        Some("1") => BondOrder::Up,
+                        Some("3") => BondOrder::Down,
+                        _ => BondOrder::Single,
+                    },
                     2 => BondOrder::Double,
                     3 => BondOrder::Triple,
                     4 => BondOrder::Aromatic,
@@ -452,7 +468,26 @@ pub fn parse_mol_v3000_with_coords(
     if !stereo_groups.is_empty() {
         mol.set_stereo_groups(stereo_groups);
     }
-    Ok((mol, metadata, coords))
+    let stereo_diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+
+    Ok(MolReadReport {
+        mol,
+        metadata,
+        coords,
+        stereo_diagnostics,
+    })
+}
+
+/// Parse a MOL V3000 string into a `(Molecule, MolMetadata, Vec<(f64, f64)>)` triple.
+///
+/// Thin wrapper around [`read_mol_v3000_with_diagnostics`] that discards
+/// `stereo_diagnostics` -- signature and behavior unchanged from before
+/// stereo perception was wired in.
+#[allow(clippy::type_complexity)]
+pub fn parse_mol_v3000_with_coords(
+    input: &str,
+) -> Result<(Molecule, MolMetadata, Vec<(f64, f64)>), MolParseError> {
+    read_mol_v3000_with_diagnostics(input).map(|r| (r.mol, r.metadata, r.coords))
 }
 
 /// Parse a MOL V3000 string into a `(Molecule, MolMetadata)` pair.
@@ -985,9 +1020,11 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
             BondOrder::Quadruple => 4,
         };
         let i = bidx.0 + 1;
+        // V3000 bond CFG: 1=Up, 3=Down (NOT V2000's stereo-field codes 1/6 --
+        // `CFG=6` is not a valid V3000 value).
         let stereo = match bond.order {
             BondOrder::Up => " CFG=1",
-            BondOrder::Down => " CFG=6",
+            BondOrder::Down => " CFG=3",
             _ => "",
         };
         out.push_str(&format!("M  V30 {i} {order} {a1} {a2}{stereo}\n"));

@@ -46,6 +46,57 @@ pub fn generate_3d_etkdg_minimized_pdb(mol: &MolHandle) -> String {
     chematic_3d::write_pdb(&mol.inner, &minimized)
 }
 
+/// Stable, typed reason string for a [`chematic_perception::StereoDiagnostic`]
+/// -- matches the vocabulary the Python bindings use (never a free-form message).
+fn stereo_reason_str(reason: chematic_perception::StereoRejectionReason) -> &'static str {
+    use chematic_perception::StereoRejectionReason::*;
+    match reason {
+        ContradictoryWedges => "contradictory_wedges",
+        MissingCoordinate => "missing_coordinate",
+        DegenerateGeometry => "degenerate_geometry",
+        UnsupportedCoordination => "unsupported_coordination",
+    }
+}
+
+/// Format rejected wedge/hash stereocenters as a JSON array of
+/// `{"atom_idx":N,"reason":"..."}` objects.
+fn stereo_diagnostics_json(diagnostics: &[chematic_perception::StereoDiagnostic]) -> String {
+    let parts: Vec<String> = diagnostics
+        .iter()
+        .map(|d| {
+            format!(
+                "{{\"atom_idx\":{},\"reason\":\"{}\"}}",
+                d.atom.0,
+                stereo_reason_str(d.reason)
+            )
+        })
+        .collect();
+    format!("[{}]", parts.join(","))
+}
+
+/// Rejected wedge/hash stereocenters for a MOL V2000 block, as JSON.
+///
+/// Companion to [`mol_from_sdf_block`]/[`mol_block_coords_json`] -- returns
+/// `[{"atom_idx":N,"reason":"..."}]`, empty unless a wedge/hash bond was
+/// present at some center and got rejected. See
+/// `crates/chematic-py/src/formats.rs`'s `from_mol_block_with_diagnostics`
+/// for the reason vocabulary (kept identical across bindings).
+#[wasm_bindgen]
+pub fn mol_block_stereo_diagnostics_json(mol_block: &str) -> Result<String, JsValue> {
+    let report = chematic_mol::read_mol_with_diagnostics(mol_block)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(stereo_diagnostics_json(&report.stereo_diagnostics))
+}
+
+/// Rejected wedge/hash stereocenters for a MOL V3000 block, as JSON. Same
+/// shape as [`mol_block_stereo_diagnostics_json`] but for V3000 input.
+#[wasm_bindgen]
+pub fn mol_v3000_stereo_diagnostics_json(block: &str) -> Result<String, JsValue> {
+    let report = chematic_mol::read_mol_v3000_with_diagnostics(block)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(stereo_diagnostics_json(&report.stereo_diagnostics))
+}
+
 /// Parse a MOL V3000 block and return a `MolHandle`.
 ///
 /// Returns a JS error string on parse failure.
@@ -153,11 +204,15 @@ pub fn mol_block_from_smiles(smiles: &str) -> Result<String, JsValue> {
 ///
 /// Each record has the shape:
 /// ```json
-/// {"smiles":"CC(=O)O","name":"aspirin","properties":{"MW":"180.2","Activity":"high"}}
+/// {"smiles":"CC(=O)O","name":"aspirin","properties":{"MW":"180.2","Activity":"high"},"stereo_diagnostics":[]}
 /// ```
 ///
 /// Invalid records are represented as `null`.  SD data fields are included in
-/// `properties`; multi-line values are joined with `\n`.
+/// `properties`; multi-line values are joined with `\n`. `stereo_diagnostics`
+/// is a list of `{"atom_idx":N,"reason":"..."}` objects, one per rejected
+/// wedge/hash center (see [`mol_block_stereo_diagnostics_json`] for the
+/// reason vocabulary) -- empty unless a wedge/hash bond was present at some
+/// center and got rejected.
 #[wasm_bindgen]
 pub fn sdf_to_records_json(sdf: &str) -> String {
     if sdf.len() > WASM_MAX_INPUT_BYTES {
@@ -184,10 +239,11 @@ pub fn sdf_to_records_json(sdf: &str) -> String {
                     })
                     .collect();
                 format!(
-                    "{{\"smiles\":\"{}\",\"name\":\"{}\",\"properties\":{{{}}}}}",
+                    "{{\"smiles\":\"{}\",\"name\":\"{}\",\"properties\":{{{}}},\"stereo_diagnostics\":{}}}",
                     escape_json_string(&smi),
                     name,
-                    props.join(",")
+                    props.join(","),
+                    stereo_diagnostics_json(&rec.stereo_diagnostics)
                 )
             }
             Err(_) => "null".to_string(),
