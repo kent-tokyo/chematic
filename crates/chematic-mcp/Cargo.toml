@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 description = "MCP (Model Context Protocol) server for chematic — AI-agent-ready cheminformatics tools"
 keywords = ["cheminformatics", "mcp", "ai", "chemistry", "smiles"]
-categories = ["science", "command-line-utilities"]
+categories = ["science", "science::computational-chemistry::cheminformatics", "command-line-utilities"]
 homepage.workspace = true
 
 [[bin]]
