@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 description = "Python bindings for chematic — pure-Rust cheminformatics"
 keywords = ["cheminformatics", "smiles", "rdkit", "python", "chemistry"]
-categories = ["science", "science::computational-chemistry::cheminformatics"]
+categories = ["science", "science::computational-chemistry::cheminformatics", "api-bindings"]
 publish = false
 
 [features]

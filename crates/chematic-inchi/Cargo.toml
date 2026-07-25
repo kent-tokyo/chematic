@@ -9,7 +9,7 @@ repository = "https://github.com/kent-tokyo/chematic"
 homepage = "https://kent-tokyo.github.io/chematic/"
 documentation = "https://docs.rs/chematic-inchi"
 keywords = ["inchi", "cheminformatics", "chemistry", "smiles", "molecular"]
-categories = ["science", "parser-implementations"]
+categories = ["science", "science::computational-chemistry::cheminformatics", "parser-implementations", "encoding"]
 readme = "README.md"
 
 [features]

@@ -2341,7 +2341,7 @@ function renderDescriptors(mol) {
 function updateCodeSnippets(smiles) {
   const wrap = document.getElementById('code-wrap');
   if (!wrap) return;
-  const s = smiles.replace(/"/g, '\\"');
+  const s = smiles.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   wrap._pySnippet = `import chematic\n\nmol = chematic.from_smiles("${s}")\nprint(f"MW: {mol.mw:.2f}  LogP: {mol.logp:.3f}  TPSA: {mol.tpsa:.2f}")\nprint(mol.descriptors())`;
   wrap._jsSnippet = `import init, { parse_smiles } from '@kent-tokyo/chematic';\n\nawait init();\nconst mol = parse_smiles("${s}");\nconsole.log('MW:', mol.molecular_weight().toFixed(2));\nconsole.log('LogP:', mol.logp_crippen().toFixed(3));`;
   wrap.style.display = '';
