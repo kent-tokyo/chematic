@@ -1584,6 +1584,25 @@ precisely, not just nominally. All
 11 phosphorus rows enumerated with reproduction evidence. No chematic fix was needed to
 reach this — the gate closes on stratification, not remediation.
 
+**Follow-up (Milestone 4A-2's later fix, commit `1950cfa`, and its own follow-up,
+`9dd1ef5`)**: Milestone 4A-2's real fix for the 15-row carbon cage family
+(`assign_one_with_rule5` calling `resolve_chirality` on the tied group's nearest embedded
+reference instead of a `provisional` map lookup) reaches this section's 2 rows via the
+identical code path (same chain-length-1 shape), since the map-lookup limitation that
+made them tie in the first place is exactly what that fix removed. Left unguarded, it
+would resolve these 2 phosphorus atoms to `LowerR` -- but this section's own finding
+above (neither RDKit engine has a representation-stable answer for this molecule) still
+holds unchanged, so a resolved label here has no oracle to verify it against. Commit
+`9dd1ef5` adds an element-level guard in `assign_one_with_rule5` (see its module docs,
+"Element-level guard: phosphorus stays tied"): the auxiliary-resolution path only ever
+emits a label for a carbon stereocenter, so these 2 rows fall back to `SkipReason::Tied`
+again, matching this section's original, still-correct decision. Open question, not
+resolved: this project has zero verified examples of this path being correct for *any*
+non-carbon element, not specifically zero phosphorus examples -- a broader
+"unverified for any non-carbon element" guard may be more honest than the
+phosphorus-specific one actually shipped; flagged for a maintainer decision, not
+expanded unilaterally.
+
 ## Milestone 5A — Accurate CIP wired into the public API, opt-in
 
 With Milestone 4's gate closed, the accurate engine was still reachable only from

@@ -70,8 +70,9 @@
 //! correct for *any* non-carbon element -- phosphorus is simply the only non-carbon
 //! element the validation corpus happens to exercise here, so a broader "unverified for
 //! any non-carbon element" framing may be more honest than "unverified for phosphorus
-//! specifically"; that broader guard is *not* implemented here, only flagged (see the PR
-//! discussion) -- narrowing to exactly the element asked about avoids expanding scope
+//! specifically"; that broader guard is *not* implemented here, only flagged (see
+//! `docs/cip_accurate_rfc.md`'s Milestone 4C-1 entry) -- narrowing to exactly the
+//! element asked about avoids expanding scope
 //! unilaterally.
 //!
 //! # Positions come from `stereo_neighbor_order`, ranks come from the new comparator
