@@ -871,3 +871,142 @@ fn rule5_resolves_the_15_row_cage_family_mirrored() {
         );
     }
 }
+
+/// Determinism gate for the Milestone 4A-2 fix: `rank_children`'s equivalence classes
+/// come from a `HashMap<usize, Vec<usize>>` (`groups_map` in `compare.rs`), and
+/// `assign_one_with_rule5`'s `physical_in_tied[0]`/`[1]` pick is therefore sensitive, in
+/// principle, to `mol.neighbors()`'s raw adjacency/bond-creation order -- exactly the
+/// class of order-dependence this project has been burned by before (see this repo's
+/// standing "never use atom index or HashMap iteration order as a tie-break" policy).
+/// The fix's `if is_r_a { (pos_a, pos_b) } else { (pos_b, pos_a) }` choice is a genuine
+/// chemical comparison (which branch's auxiliary sign is R), not an index tie-break, so
+/// it should be renumbering-invariant by construction -- but that is an argument, not a
+/// test, until checked here: worst-of-30 atom-renumbering permutations per molecule,
+/// covering all 5 distinct cage molecules (15 target atoms total, 450 checks), using the
+/// same `permute_molecule` helper (which also remaps `stereo_neighbor_order`, without
+/// which no permuted molecule's `@`/`@@` tags could be reinterpreted at all) the existing
+/// Rules-1a/2 renumbering tests use above.
+#[test]
+fn rule5_15_row_cage_family_is_renumbering_invariant_worst_of_30() {
+    let cases: &[(&str, u32)] = &[
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            31,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            33,
+        ),
+        (
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+            35,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            21,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            23,
+        ),
+        (
+            "COc1ccccc1N1CCN(CCCCNC(=O)C23C[C@H]4C[C@@H](C2)C[C@@H](C3)C4)CC1",
+            26,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            23,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            25,
+        ),
+        (
+            "O=C(NCCCCN1CCCC(/C=C\\c2ccccc2)C1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            28,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            25,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            27,
+        ),
+        (
+            "O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3",
+            30,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            20,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            22,
+        ),
+        (
+            "O=c1cc(COC2CCOCC2)occ1OC(=O)[C@]12C[C@H]3C[C@H](C[C@H](C3)C1)C2",
+            24,
+        ),
+    ];
+
+    // Small inline xorshift PRNG -- no `rand` dev-dependency exists in this crate and
+    // adding one for a single deterministic-shuffle test isn't worth it (see the crate's
+    // own `Cargo.toml`); a fixed seed keeps this test itself reproducible.
+    fn next(state: &mut u64) -> u64 {
+        *state ^= *state << 13;
+        *state ^= *state >> 7;
+        *state ^= *state << 17;
+        *state
+    }
+    fn shuffled(n: usize, state: &mut u64) -> Vec<usize> {
+        let mut perm: Vec<usize> = (0..n).collect();
+        for i in (1..n).rev() {
+            let j = (next(state) as usize) % (i + 1);
+            perm.swap(i, j);
+        }
+        perm
+    }
+
+    const PERMUTATIONS_PER_MOLECULE: usize = 30;
+    let mut checked = 0usize;
+    let mut seed: u64 = 0x9E3779B97F4A7C15;
+
+    for (smi, atom_idx) in cases {
+        let mol = chematic_smiles::parse(smi).expect("valid SMILES");
+        let n = mol.atom_count();
+        for trial in 0..PERMUTATIONS_PER_MOLECULE {
+            let perm = shuffled(n, &mut seed);
+            let (permuted, old_to_new) = permute_molecule(&mol, &perm);
+            let new_idx = old_to_new[*atom_idx as usize];
+
+            let assignment =
+                crate::assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+                    .expect("assignment succeeds");
+            let code = assignment
+                .assignments
+                .iter()
+                .find(|(idx, _)| idx.0 == new_idx)
+                .map(|(_, code)| *code);
+            assert_eq!(
+                code,
+                Some(chematic_core::CipCode::LowerS),
+                "{smi} original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
+                 expected LowerS under every renumbering, got {code:?}"
+            );
+            checked += 1;
+        }
+    }
+
+    assert_eq!(
+        checked,
+        cases.len() * PERMUTATIONS_PER_MOLECULE,
+        "sanity: every (molecule, permutation) pair must have been checked"
+    );
+    println!(
+        "rule5 cage-family renumbering invariance: {checked}/{checked} identical \
+         ({} molecule-atoms x {PERMUTATIONS_PER_MOLECULE} permutations)",
+        cases.len()
+    );
+}
