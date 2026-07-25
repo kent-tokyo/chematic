@@ -32,7 +32,7 @@ jobs:
       - name: Unit tests with native-inchi feature
         run: cargo test -p chematic-inchi --features native-inchi --lib --quiet
       - name: Integration tests with native-inchi feature
-        run: cargo test -p chematic-inchi --features native-inchi --test standard_inchi --quiet
+        run: cargo test -p chematic-inchi --features native-inchi --quiet
 
   clippy:
     name: Clippy
