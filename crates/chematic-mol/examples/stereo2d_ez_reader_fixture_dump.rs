@@ -45,6 +45,12 @@ fn but2ene(coords: [(f64, f64); 4]) -> Molecule {
     b.build()
 }
 
+// The first few fixtures are pushed straight-line with no intervening
+// variable declarations (unlike the later ones, each built inside its own
+// `{ ... }` block) -- clippy's vec_init_then_push doesn't fit here since
+// the full list mixes both shapes and reads more clearly as one uniform
+// push-per-fixture sequence throughout.
+#[allow(clippy::vec_init_then_push)]
 fn fixtures() -> Vec<Fixture> {
     let mut fx = Vec::new();
 
