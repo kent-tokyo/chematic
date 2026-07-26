@@ -826,6 +826,10 @@ fn accurate_stereo_supplement(mol: &Molecule) -> Result<Vec<(u64, CipCode)>, Ide
         }
         supplement.push((rank, code));
     }
+    // ponytail: `sort_by_key` on rank alone is a total, deterministic order
+    // here specifically because every rank in `supplement` is already unique
+    // by construction -- any duplicate would have returned `Err` at the
+    // `seen_ranks.insert` check above before reaching this line.
     supplement.sort_by_key(|&(r, _)| r);
     Ok(supplement)
 }
@@ -1729,6 +1733,29 @@ mod tests {
             ),
             DedupRelation::VerificationUnavailable,
             "genuine tricyclic-cage tie (case B) must still fail closed under the preflight"
+        );
+    }
+
+    /// One of the 3 "case A blocked by tied rank" molecules (corpus
+    /// idx=1609): a 3-fold-symmetric adamantane-cage substituent where all 3
+    /// legacy-unresolved centres share one `morgan_ranks` value. This directly
+    /// exercises `accurate_stereo_supplement` (not just the outcome via
+    /// `compare_molecules_with_accurate_cip_preflight`) to confirm the
+    /// *mechanism* is really the rank-collision guard firing --
+    /// `AmbiguousStereoRankCorrespondence` -- and not some other failure path
+    /// (e.g. the accurate engine tying or erroring on these atoms, which
+    /// would make the module doc comment's causal claim wrong).
+    #[cfg(feature = "native-inchi")]
+    #[test]
+    fn accurate_stereo_supplement_blocks_via_rank_collision_not_some_other_path() {
+        use chematic_smiles::parse;
+        let mol =
+            parse("O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3").unwrap();
+        assert_eq!(
+            accurate_stereo_supplement(&mol),
+            Err(IdentityDiagnostic::AmbiguousStereoRankCorrespondence),
+            "idx=1609 must be blocked specifically by the rank-collision guard, \
+             not by AccurateCipTied/AccurateCipBudgetExceeded/AccurateCipEngineError"
         );
     }
 
