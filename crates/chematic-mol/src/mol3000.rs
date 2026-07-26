@@ -7,15 +7,17 @@
 //! Reference: MDL/Dassault Systèmes CTfile Formats specification, V3000 section.
 
 use chematic_core::{
-    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, StereoGroup,
-    StereoGroupKind,
+    Atom, AtomIdx, BondIdx, BondOrder, Coords3D, Element, Molecule, MoleculeBuilder, Point3,
+    StereoGroup, StereoGroupKind,
 };
 use chematic_perception::{
     apply_ez_directions_from_2d_ex, apply_local_parity_from_wedges_with_diagnostics,
 };
 
 use crate::error::MolParseError;
-use crate::mol2000::{MolMetadata, MolReadReport};
+use crate::mol2000::{
+    CoordinateDimension, GeometryRank, MolMetadata, MolReadReport, Stereo3DDiagnostic,
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -152,7 +154,11 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
     // -- Header lines 1–3 ----------------------------------------------------
 
     let name = all_lines[0].1.to_string();
-    // Line 2 (program/date) is read but discarded.
+    // Line 2 (program/date) is mostly discarded, except for the
+    // dimensional-code field (columns 20..22, "2D"/"3D") -- same column as
+    // V2000's header (see `crate::mol2000::parse_dimension_code`); V3000
+    // keeps the identical 3-line header before its own counts line.
+    let line2_raw = all_lines[1].1;
     let comment = all_lines[2].1.to_string();
 
     let metadata = MolMetadata { name, comment };
@@ -193,6 +199,9 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
 
     // Collect (x, y) coordinates in the order atoms are added to builder.
     let mut coords: Vec<(f64, f64)> = Vec::new();
+    // Real z coordinates, parallel to `coords` -- previously discarded
+    // entirely (root cause of the 3D-coordinate-loss bug this PR fixes).
+    let mut raw_z: Vec<f64> = Vec::new();
 
     enum State {
         BeforeCtab,
@@ -301,9 +310,36 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                         line: lnum,
                     })?;
 
-                // Parse x, y coordinates (tokens[2] and tokens[3]).
+                // Parse x, y coordinates (tokens[2] and tokens[3]) --
+                // unchanged, still lenient (a malformed x/y silently
+                // defaults to 0.0, matching pre-existing behavior).
                 let x: f64 = tokens[2].parse().unwrap_or(0.0);
                 let y: f64 = tokens[3].parse().unwrap_or(0.0);
+
+                // z coordinate (tokens[4]): previously silently discarded
+                // entirely -- root cause of the 3D-coordinate-loss bug this
+                // PR fixes. Unlike x/y above, a garbled or non-finite z is a
+                // typed error rather than a silent 0.0 default: nothing
+                // downstream reads z today, so a malformed value can only be
+                // file corruption. The token always exists syntactically
+                // (the `tokens.len() < 6` check above already guarantees
+                // it), so unlike V2000's "line too short" leniency, there is
+                // no "missing field" case here to default instead of error.
+                let z: f64 = tokens[4]
+                    .parse()
+                    .map_err(|_| MolParseError::InvalidAtomLine {
+                        line: lnum,
+                        detail: format!("cannot parse z coordinate from '{}'", tokens[4]),
+                    })?;
+                if !z.is_finite() {
+                    return Err(MolParseError::InvalidAtomLine {
+                        line: lnum,
+                        detail: format!(
+                            "z coordinate is not finite (NaN/Infinite): '{}'",
+                            tokens[4]
+                        ),
+                    });
+                }
 
                 // Atom-map number (positional field 6, 0 = no mapping).
                 let aamap_raw = tokens[5].parse::<u16>().unwrap_or(0);
@@ -337,6 +373,7 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                 let builder_idx = builder.add_atom(atom);
                 atom_idx_map.push((v3k_idx, builder_idx));
                 coords.push((x, y));
+                raw_z.push(z);
             }
 
             State::AfterAtomBlock => {
@@ -489,12 +526,49 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
     let ez_diagnostics =
         apply_ez_directions_from_2d_ex(&mut mol, &coords, &explicitly_unspecified_ez);
 
+    // Same 3D bookkeeping as `mol2000.rs::read_mol_with_diagnostics` -- see
+    // that function's comments for the full rationale (kept in one place,
+    // reused via `pub(crate)` helpers, not re-derived here).
+    let coordinate_dimension = crate::mol2000::parse_dimension_code(line2_raw);
+    let points: Vec<Point3> = coords
+        .iter()
+        .zip(raw_z.iter())
+        .map(|(&(x, y), &z)| Point3::new(x, y, z))
+        .collect();
+    let geometry_rank = crate::mol2000::classify_geometry_rank(&points);
+    let conformer = match geometry_rank {
+        GeometryRank::Coplanar | GeometryRank::ThreeD => Some(Coords3D { points }),
+        GeometryRank::FlatZero | GeometryRank::Indeterminate => None,
+    };
+
+    let mut stereo3d_diagnostics = Vec::new();
+    match (coordinate_dimension, geometry_rank) {
+        (CoordinateDimension::TwoD, GeometryRank::Coplanar | GeometryRank::ThreeD) => {
+            stereo3d_diagnostics.push(Stereo3DDiagnostic::DeclaredTwoDButNonzeroZ {
+                observed: geometry_rank,
+            });
+        }
+        (CoordinateDimension::ThreeD, GeometryRank::FlatZero | GeometryRank::Coplanar) => {
+            stereo3d_diagnostics.push(Stereo3DDiagnostic::DeclaredThreeDButFlat {
+                observed: geometry_rank,
+            });
+        }
+        _ => {}
+    }
+    if let Some(ref conf) = conformer {
+        stereo3d_diagnostics.extend(crate::mol2000::wedge_vs_3d_conflicts(&mol, conf));
+    }
+
     Ok(MolReadReport {
         mol,
         metadata,
         coords,
         stereo_diagnostics,
         ez_diagnostics,
+        conformer,
+        coordinate_dimension,
+        geometry_rank,
+        stereo3d_diagnostics,
     })
 }
 
@@ -1066,6 +1140,116 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
                 .atom_indices
                 .iter()
                 .map(|ai| (ai.0 + 1).to_string()) // 0-based → 1-based
+                .collect();
+            out.push_str(&format!("M  V30 {key} ATOMS=({n} {})\n", idxs.join(" ")));
+        }
+        out.push_str("M  V30 END COLLECTION\n");
+    }
+
+    out.push_str("M  V30 END CTAB\n");
+    out.push_str("M  END\n");
+
+    out
+}
+
+/// Serialize `mol` to MOL V3000 (Extended Ctab) format using `conformer`'s
+/// real 3D coordinates, stamping the header's line-2 dimensional code as
+/// `3D` -- the V3000 counterpart of
+/// [`crate::mol2000::write_mol_with_conformer`]. As with that function, no
+/// wedge/hash `CFG` is ever emitted on a bond line here: a real 3D geometry
+/// makes a 2D wedge symbol redundant at best, and round-tripping this output
+/// back through [`read_mol_v3000_with_diagnostics`] must not manufacture a
+/// fresh [`crate::mol2000::Stereo3DDiagnostic::WedgeVs3DParityConflict`] on
+/// its own output. Enhanced stereo groups (`COLLECTION`/`STEABS`/`STEOR`/
+/// `STEAND`) are unaffected -- they label which atoms form a stereo group,
+/// not a direction, and remain meaningful for a 3D record.
+pub fn write_mol_v3000_with_conformer(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    conformer: &Coords3D,
+) -> String {
+    let natoms = mol.atom_count();
+    let nbonds = mol.bond_count();
+
+    let mut out = String::new();
+
+    out.push_str(&metadata.name);
+    out.push('\n');
+    // Same column convention as `mol2000::write_mol_with_conformer`.
+    out.push_str("  chematic          3D\n");
+    out.push_str(&metadata.comment);
+    out.push('\n');
+
+    out.push_str("  0  0  0  0  0  0  0  0  0  0999 V3000\n");
+
+    out.push_str("M  V30 BEGIN CTAB\n");
+    out.push_str(&format!("M  V30 COUNTS {natoms} {nbonds} 0 0 0\n"));
+
+    out.push_str("M  V30 BEGIN ATOM\n");
+    for (idx, atom) in mol.atoms() {
+        let p = conformer
+            .points
+            .get(idx.0 as usize)
+            .copied()
+            .unwrap_or(Point3::zero());
+        let sym = atom.element.symbol();
+        let atom_map = atom.atom_map.unwrap_or(0);
+        let i = idx.0 + 1;
+
+        let mut line = format!(
+            "M  V30 {i} {sym} {:.4} {:.4} {:.4} {atom_map}",
+            p.x, p.y, p.z
+        );
+        if atom.charge != 0 {
+            line.push_str(&format!(" CHG={}", atom.charge));
+        }
+        if let Some(iso) = atom.isotope {
+            line.push_str(&format!(" MASS={iso}"));
+        }
+        if let Some(h) = atom.hydrogen_count {
+            line.push_str(&format!(" HCOUNT={h}"));
+        }
+        out.push_str(&line);
+        out.push('\n');
+    }
+    out.push_str("M  V30 END ATOM\n");
+
+    out.push_str("M  V30 BEGIN BOND\n");
+    for (bidx, bond) in mol.bonds() {
+        let a1 = bond.atom1.0 + 1;
+        let a2 = bond.atom2.0 + 1;
+        let order = match bond.order {
+            BondOrder::Zero => 0,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
+            BondOrder::Double => 2,
+            BondOrder::Triple => 3,
+            BondOrder::Aromatic => 4,
+            BondOrder::QuerySingleOrDouble => 5,
+            BondOrder::QuerySingleOrAromatic => 6,
+            BondOrder::QueryDoubleOrAromatic => 7,
+            BondOrder::QueryAny => 8,
+            BondOrder::Quadruple => 4,
+        };
+        let i = bidx.0 + 1;
+        // No wedge/hash CFG here -- see doc comment above.
+        out.push_str(&format!("M  V30 {i} {order} {a1} {a2}\n"));
+    }
+    out.push_str("M  V30 END BOND\n");
+
+    let groups = mol.stereo_groups();
+    if !groups.is_empty() {
+        out.push_str("M  V30 BEGIN COLLECTION\n");
+        for group in groups {
+            let key = match &group.kind {
+                StereoGroupKind::Absolute => "MDLV30/STEABS".to_string(),
+                StereoGroupKind::Or(n) => format!("MDLV30/STEOR{n}"),
+                StereoGroupKind::And(n) => format!("MDLV30/STEAND{n}"),
+            };
+            let n = group.atom_indices.len();
+            let idxs: Vec<String> = group
+                .atom_indices
+                .iter()
+                .map(|ai| (ai.0 + 1).to_string())
                 .collect();
             out.push_str(&format!("M  V30 {key} ATOMS=({n} {})\n", idxs.join(" ")));
         }
