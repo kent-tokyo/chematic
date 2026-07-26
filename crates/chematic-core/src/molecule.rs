@@ -372,14 +372,22 @@ impl Molecule {
             }
             builder.add_atom(atom.clone());
         }
-        for (_, bond) in self.bonds() {
+        // Track old→new BOND index so `bond_directions` (keyed by bond index,
+        // not atom index) can be remapped the same way `stereo_neighbor_order`
+        // is remapped below — a prior version of this method dropped
+        // `bond_directions` entirely on atom removal (silent loss, not
+        // misattribution, but still a real gap the E/Z-direction side
+        // channel needs closed: see `Molecule::bond_direction`).
+        let mut bond_remap: Vec<Option<BondIdx>> = vec![None; self.bonds.len()];
+        for (old_bidx, bond) in self.bonds() {
             if bond.atom1 == idx || bond.atom2 == idx {
                 continue;
             }
             if let (Some(a1), Some(a2)) =
                 (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize])
+                && let Ok(new_bidx) = builder.add_bond(a1, a2, bond.order)
             {
-                let _ = builder.add_bond(a1, a2, bond.order);
+                bond_remap[old_bidx.0 as usize] = Some(new_bidx);
             }
         }
         // Remap stereo neighbor order: drop removed atom's entry, remap neighbor indices.
@@ -402,6 +410,11 @@ impl Molecule {
                     })
                     .collect();
                 builder.set_stereo_neighbor_order(*new_key, new_order);
+            }
+        }
+        for (old_bidx, direction) in &self.bond_directions {
+            if let Some(Some(new_bidx)) = bond_remap.get(*old_bidx as usize) {
+                builder.set_bond_direction(*new_bidx, *direction);
             }
         }
         (builder.build(), remap)
@@ -677,6 +690,27 @@ impl Molecule {
             return;
         }
         self.bonds.remove(removed);
+        // Remap `bond_directions` (keyed by bond index) for the same index
+        // shift the bond list itself just underwent: entries below `removed`
+        // are unchanged, the removed bond's own entry (if any) is dropped,
+        // and entries above `removed` shift down by 1. A prior version of
+        // this method left `bond_directions` untouched, which silently
+        // MISATTRIBUTED a direction to whichever bond happened to shift into
+        // the vacated slot -- worse than losing it, since it looks like valid
+        // data pointing at the wrong physical bond.
+        let old_bond_directions = std::mem::take(&mut self.bond_directions);
+        for (old_key, direction) in old_bond_directions {
+            let old = old_key as usize;
+            match old.cmp(&removed) {
+                std::cmp::Ordering::Less => {
+                    self.bond_directions.insert(old_key, direction);
+                }
+                std::cmp::Ordering::Equal => {} // this bond itself was removed
+                std::cmp::Ordering::Greater => {
+                    self.bond_directions.insert(old_key - 1, direction);
+                }
+            }
+        }
         // Rebuild adjacency with renumbered bond indices.
         let n = self.atoms.len();
         self.adjacency = vec![vec![]; n];
@@ -1103,6 +1137,70 @@ mod tests {
         let mol = ethane();
         let updated = mol.with_bond_order(BondIdx(0), BondOrder::Double);
         assert_eq!(updated.bond(BondIdx(0)).order, BondOrder::Double);
+    }
+
+    // --- bond_directions remap correctness (not just presence) ---
+
+    /// 4-atom chain A-B-C-D with a `bond_direction` stash on the LAST bond
+    /// (C-D, index 2). Removing the FIRST bond (A-B, index 0) shifts every
+    /// surviving bond's index down by one; the stash must follow the C-D
+    /// bond to its new index (1), not stay pinned to numeric index 2 (which
+    /// would now point at a different physical bond) and not vanish.
+    fn chain_with_direction_on_last_bond() -> (Molecule, BondIdx) {
+        let mut b = MoleculeBuilder::new();
+        let a = b.add_atom(Atom::new(Element::C));
+        let bb = b.add_atom(Atom::new(Element::C));
+        let c = b.add_atom(Atom::new(Element::C));
+        let d = b.add_atom(Atom::new(Element::C));
+        b.add_bond(a, bb, BondOrder::Single).unwrap(); // bond 0 (to be removed)
+        b.add_bond(bb, c, BondOrder::Single).unwrap(); // bond 1
+        let cd = b.add_bond(c, d, BondOrder::Single).unwrap(); // bond 2
+        b.set_bond_direction(cd, BondOrder::Up);
+        (b.build(), cd)
+    }
+
+    #[test]
+    fn test_remove_bond_remaps_bond_direction_not_misattributes() {
+        let (mut mol, _cd) = chain_with_direction_on_last_bond();
+        assert_eq!(mol.bond_count(), 3);
+        mol.remove_bond(BondIdx(0)); // remove A-B; C-D shifts from index 2 to 1
+        assert_eq!(mol.bond_count(), 2);
+        // The stash must have followed C-D to its new index...
+        assert_eq!(mol.bond_direction(BondIdx(1)), Some(BondOrder::Up));
+        // ...and must NOT have leaked onto the bond that shifted into the
+        // old numeric slot 2 (which no longer exists) or onto B-C (index 0
+        // after the shift), which never had a direction.
+        assert_eq!(mol.bond_direction(BondIdx(0)), None);
+        assert_eq!(mol.bond_opt(BondIdx(2)), None);
+    }
+
+    #[test]
+    fn test_remove_bond_drops_direction_for_the_removed_bond_itself() {
+        let (mut mol, _cd) = chain_with_direction_on_last_bond();
+        mol.remove_bond(BondIdx(2)); // remove C-D itself — its stash must go with it
+        assert_eq!(mol.bond_count(), 2);
+        assert!(mol.bond_direction(BondIdx(0)).is_none());
+        assert!(mol.bond_direction(BondIdx(1)).is_none());
+    }
+
+    #[test]
+    fn test_with_atom_removed_remaps_bond_direction() {
+        let (mol, _cd) = chain_with_direction_on_last_bond();
+        // Remove atom A (index 0), unrelated to the C-D bond carrying the
+        // stash. Bonds incident to A (A-B) disappear; B-C and C-D survive,
+        // renumbered 0 and 1 respectively — the direction must follow C-D.
+        let (updated, _atom_remap) = mol.with_atom_removed(AtomIdx(0));
+        assert_eq!(updated.bond_count(), 2);
+        // Find the surviving C-D bond by scanning for the stash directly,
+        // rather than assuming a specific bond index, so this test doesn't
+        // depend on internal re-numbering order.
+        let has_direction = (0..updated.bond_count())
+            .map(|i| BondIdx(i as u32))
+            .any(|bidx| updated.bond_direction(bidx) == Some(BondOrder::Up));
+        assert!(
+            has_direction,
+            "bond_direction on C-D must survive atom removal, remapped to its new bond index"
+        );
     }
 
     // --- mutable API ---

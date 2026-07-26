@@ -417,12 +417,13 @@ impl<'a> CanonicalWriter<'a> {
     /// *unresolved* reading — [`Self::effective_order`] is what emission
     /// code should use instead, since it additionally applies
     /// `resolve_ez_markers`'s carrier choice on top of this.
+    ///
+    /// Delegates to `crate::writer::raw_bond_direction` -- the exact same
+    /// rule the plain (non-canonical) writer uses, kept as one shared
+    /// implementation on purpose so the two writers can never silently
+    /// disagree on what a bond's stored/stashed direction means.
     fn raw_input_direction(&self, bidx: BondIdx) -> Option<BondOrder> {
-        let order = self.mol.bond(bidx).order;
-        if matches!(order, BondOrder::Up | BondOrder::Down) {
-            return Some(order);
-        }
-        self.mol.bond_direction(bidx)
+        crate::writer::raw_bond_direction(self.mol, bidx)
     }
 
     /// Strip directionality from a bond order, leaving its "plain" chemical

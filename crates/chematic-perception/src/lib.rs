@@ -15,6 +15,7 @@ pub mod sssr;
 pub mod stereo_validation;
 
 pub mod stereo2d;
+pub mod stereo2d_ez_direction;
 pub mod stereo2d_local;
 
 pub use aromaticity::{
@@ -54,6 +55,10 @@ pub use stereo_validation::{
 pub use stereo2d::{
     StereoAssignment2D, apply_stereo_from_2d, assign_ez_from_2d, assign_stereo_from_2d,
     cip_ez_descriptor,
+};
+pub use stereo2d_ez_direction::{
+    EzDirectionDiagnostic, EzDirectionRejectionReason, apply_ez_directions_from_2d,
+    apply_ez_directions_from_2d_ex, apply_ez_directions_from_2d_with_diagnostics,
 };
 pub use stereo2d_local::{
     StereoDiagnostic, StereoRejectionReason, apply_local_parity_from_wedges,

@@ -7,9 +7,12 @@
 //! Reference: MDL/Dassault Systèmes CTfile Formats specification, V3000 section.
 
 use chematic_core::{
-    Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, StereoGroup, StereoGroupKind,
+    Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder, StereoGroup,
+    StereoGroupKind,
 };
-use chematic_perception::apply_local_parity_from_wedges_with_diagnostics;
+use chematic_perception::{
+    apply_ez_directions_from_2d_ex, apply_local_parity_from_wedges_with_diagnostics,
+};
 
 use crate::error::MolParseError;
 use crate::mol2000::{MolMetadata, MolReadReport};
@@ -205,6 +208,14 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
     let mut state = State::BeforeCtab;
     let mut expected_atoms: usize = 0;
     let mut stereo_groups: Vec<StereoGroup> = Vec::new();
+    // Double bonds whose `CFG=2` marks explicitly unspecified E/Z (the same
+    // token V3000 also uses for a single bond's "either" wedge) -- confirmed
+    // against a live RDKit 2026.03.3 oracle (B0 diagnosis): RDKit's own
+    // V3000 writer emits `CFG=2` on a double-bond line for `STEREOANY`.
+    // Threaded into `apply_ez_directions_from_2d_ex` below, same as V2000's
+    // stereo-code-3 handling in `mol2000.rs`.
+    let mut explicitly_unspecified_ez: std::collections::HashSet<BondIdx> =
+        std::collections::HashSet::new();
 
     for LogicalLine { line_num, payload } in &v30_lines {
         let lnum = *line_num;
@@ -416,12 +427,16 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                     _ => BondOrder::Single,
                 };
 
-                builder
-                    .add_bond(a1, a2, order)
-                    .map_err(|e| MolParseError::InvalidBondLine {
+                let bidx = builder.add_bond(a1, a2, order).map_err(|e| {
+                    MolParseError::InvalidBondLine {
                         line: lnum,
                         detail: e.to_string(),
-                    })?;
+                    }
+                })?;
+
+                if btype_raw == 2 && parse_kv(kv_tokens, "CFG").as_deref() == Some("2") {
+                    explicitly_unspecified_ez.insert(bidx);
+                }
             }
 
             State::AfterBondBlock => {
@@ -468,13 +483,18 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
     if !stereo_groups.is_empty() {
         mol.set_stereo_groups(stereo_groups);
     }
+    // Tetrahedral parity first, then E/Z direction (side channel only) --
+    // same ordering rationale as `mol2000.rs`.
     let stereo_diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+    let ez_diagnostics =
+        apply_ez_directions_from_2d_ex(&mut mol, &coords, &explicitly_unspecified_ez);
 
     Ok(MolReadReport {
         mol,
         metadata,
         coords,
         stereo_diagnostics,
+        ez_diagnostics,
     })
 }
 

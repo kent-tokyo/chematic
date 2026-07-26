@@ -69,6 +69,62 @@ pub(crate) fn suppress_standalone_wedge(
     }
 }
 
+/// The "raw" (atom1→atom2-relative, unreoriented) directional marker for
+/// bond `bidx`, if any: a literal `Up`/`Down` bond order, or -- when the
+/// bond's real order was overwritten to something else (e.g. `Aromatic`, for
+/// a ring bond stashing an adjacent exocyclic double bond's direction, or a
+/// reader-perceived 2D E/Z direction stashed on a plain `Single` bond) --
+/// whatever [`chematic_core::Molecule::bond_direction`] holds for it.
+///
+/// Mirrors `crate::canonical::CanonicalWriter::raw_input_direction` exactly
+/// -- both the plain and canonical writers must read the same effective
+/// direction (docs/stereo2d_reader_integration_rfc.md), so this crate keeps
+/// exactly one copy of the rule rather than two that could silently drift.
+pub(crate) fn raw_bond_direction(mol: &Molecule, bidx: BondIdx) -> Option<BondOrder> {
+    let order = mol.bond(bidx).order;
+    if matches!(order, BondOrder::Up | BondOrder::Down) {
+        return Some(order);
+    }
+    mol.bond_direction(bidx)
+}
+
+/// Re-orient a raw (atom1→atom2-relative) directional marker for reading
+/// "from `from_atom` toward the bond's other endpoint".
+///
+/// OpenSMILES `/`/`\` is relative to *written text order*, not a bond's
+/// internal atom1/atom2 storage order: a bond visited in the direction
+/// opposite to how its stored marker was oriented must flip, or the printed
+/// character encodes the wrong geometry. A DFS write can visit either
+/// endpoint first regardless of which one happens to be `atom1`, so this
+/// must be applied at every emission site, not just assumed consistent.
+/// Mirrors the per-site match blocks in `crate::canonical`'s
+/// `dfs_mark`/`write_chain`.
+pub(crate) fn direction_from(
+    mol: &Molecule,
+    bidx: BondIdx,
+    dir: BondOrder,
+    from_atom: AtomIdx,
+) -> BondOrder {
+    let bond = mol.bond(bidx);
+    match dir {
+        BondOrder::Up => {
+            if bond.atom1 == from_atom {
+                BondOrder::Up
+            } else {
+                BondOrder::Down
+            }
+        }
+        BondOrder::Down => {
+            if bond.atom1 == from_atom {
+                BondOrder::Down
+            } else {
+                BondOrder::Up
+            }
+        }
+        other => other,
+    }
+}
+
 /// Write a [`Molecule`] to a SMILES string.
 ///
 /// Disconnected fragments are joined with `.`.
@@ -168,17 +224,32 @@ impl<'a> SmilesWriter<'a> {
                 self.ring_bonds.insert(bidx);
                 let rn = self.next_ring;
                 self.next_ring += 1;
-                let bond_order =
-                    suppress_standalone_wedge(self.mol, bidx, self.mol.bond(bidx).order);
+                // Resolve the effective (literal-or-stashed) direction once,
+                // then re-orient it separately for each endpoint -- the two
+                // sides of a ring closure are visited from opposite ends, so
+                // a single un-reoriented value would print the same
+                // character on both, backwards on whichever side isn't
+                // `bond.atom1`.
+                let raw = raw_bond_direction(self.mol, bidx).unwrap_or(self.mol.bond(bidx).order);
+                let order_at_open = suppress_standalone_wedge(
+                    self.mol,
+                    bidx,
+                    direction_from(self.mol, bidx, raw, neighbor),
+                );
+                let order_at_close = suppress_standalone_wedge(
+                    self.mol,
+                    bidx,
+                    direction_from(self.mol, bidx, raw, atom),
+                );
                 // Both endpoints need to emit this ring number when serialized.
                 self.atom_ring_nums
                     .entry(neighbor)
                     .or_default()
-                    .push((rn, bond_order)); // open
+                    .push((rn, order_at_open)); // open
                 self.atom_ring_nums
                     .entry(atom)
                     .or_default()
-                    .push((rn, bond_order)); // close
+                    .push((rn, order_at_close)); // close
             }
         }
 
@@ -243,10 +314,13 @@ impl<'a> SmilesWriter<'a> {
                     && !self.ring_bonds.contains(bidx)
             })
             .map(|(nb, bidx)| {
-                (
-                    nb,
-                    suppress_standalone_wedge(self.mol, bidx, self.mol.bond(bidx).order),
-                )
+                // Direction seen from `atom` going toward `nb` -- re-oriented
+                // from the bond's raw (atom1→atom2-relative) marker so a
+                // literal/stashed direction prints correctly regardless of
+                // which endpoint the DFS happens to write first.
+                let raw = raw_bond_direction(self.mol, bidx).unwrap_or(self.mol.bond(bidx).order);
+                let oriented = direction_from(self.mol, bidx, raw, atom);
+                (nb, suppress_standalone_wedge(self.mol, bidx, oriented))
             })
             .collect();
 
@@ -724,5 +798,91 @@ mod tests {
             has_directional,
             "re-parsed molecule lost its E/Z directional bonds: '{out}'"
         );
+    }
+
+    // ── plain write() must read the bond_direction side channel too
+    // (previously canonical.rs-only; see docs/stereo2d_reader_integration_rfc.md
+    // "both the non-canonical and canonical writer read the same effective
+    // direction") ─────────────────────────────────────────────────────────
+
+    /// F-C=C-F with the direction stashed via `Molecule::bond_direction`
+    /// instead of a literal `BondOrder::Up`/`Down` -- exactly the shape a
+    /// 2D-coordinate-derived E/Z direction (Track B) or the pre-existing
+    /// aromatic-bond stash produces. Before this fix, plain `write()` never
+    /// consulted the stash at all, so it silently emitted no `/`/`\` here.
+    #[test]
+    fn test_plain_write_reads_bond_direction_stash() {
+        let mut b = MoleculeBuilder::new();
+        let f1 = b.add_atom(Atom::new(Element::F));
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let f2 = b.add_atom(Atom::new(Element::F));
+        let b1 = b.add_bond(f1, c1, BondOrder::Single).unwrap();
+        b.add_bond(c1, c2, BondOrder::Double).unwrap();
+        let b2 = b.add_bond(c2, f2, BondOrder::Single).unwrap();
+        let mut mol = b.build();
+        // Stash directions instead of literal Up/Down -- mirrors how the new
+        // 2D E/Z perception stage writes (never mutating `bond.order`).
+        mol.set_bond_direction(b1, BondOrder::Up);
+        mol.set_bond_direction(b2, BondOrder::Up);
+
+        let out = write(&mol);
+        assert!(
+            out.contains('/') || out.contains('\\'),
+            "plain write() must surface a stashed bond_direction: got '{out}'"
+        );
+        // Round-trip through chematic's own parser must preserve real E/Z.
+        let mol2 = parse(&out).unwrap();
+        let has_directional = (0..mol2.bond_count()).any(|i| {
+            matches!(
+                mol2.bond(BondIdx(i as u32)).order,
+                BondOrder::Up | BondOrder::Down
+            )
+        });
+        assert!(has_directional, "stashed E/Z lost on round-trip: '{out}'");
+    }
+
+    /// A ring-closure bond is emitted from BOTH endpoints (the "open" atom
+    /// and, later, the "close" atom) but is one physical bond with one
+    /// `atom1`/`atom2` pair -- each side must independently re-derive its own
+    /// correct character rather than sharing one (necessarily backwards on
+    /// one side) value. This directly asserts the shared helper both
+    /// `dfs_mark` emission sites depend on: a bond declared `atom1 = c2`
+    /// must read as `Up` from `c2`'s side and `Down` from `c1`'s side.
+    #[test]
+    fn test_ring_closure_directional_bond_reoriented_per_endpoint() {
+        let mut b = MoleculeBuilder::new();
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let bidx = b.add_bond(c2, c1, BondOrder::Up).unwrap(); // atom1=c2, atom2=c1
+        let mol = b.build();
+
+        // Seen from c2 (== atom1): Up stays Up.
+        assert_eq!(direction_from(&mol, bidx, BondOrder::Up, c2), BondOrder::Up);
+        // Seen from c1 (!= atom1): Up flips to Down.
+        assert_eq!(
+            direction_from(&mol, bidx, BondOrder::Up, c1),
+            BondOrder::Down
+        );
+    }
+
+    /// A wedge whose direction is ALREADY suppressed (no adjacent double
+    /// bond) must stay suppressed even after being resolved through
+    /// `raw_bond_direction`/`direction_from` -- the reorientation step must
+    /// not accidentally resurrect a token `suppress_standalone_wedge` would
+    /// otherwise drop.
+    #[test]
+    fn test_standalone_wedge_still_suppressed_after_reorientation_helpers() {
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Up).unwrap();
+        let mol = b.build();
+        let out = write(&mol);
+        assert!(!out.contains('/') && !out.contains('\\'), "got '{out}'");
     }
 }

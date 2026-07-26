@@ -5,7 +5,7 @@
 //! accepted but ignored.
 
 use chematic_core::Molecule;
-use chematic_perception::StereoDiagnostic;
+use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 use crate::error::MolParseError;
 use crate::mol2000::{MolMetadata, parse_mol, read_mol_with_diagnostics};
@@ -118,6 +118,10 @@ pub struct SdfRecord {
     /// [`chematic_perception::StereoDiagnostic`]). Empty unless a wedge/hash
     /// bond was present at some center and got rejected.
     pub stereo_diagnostics: Vec<StereoDiagnostic>,
+    /// Rejected stereogenic double bonds from this record (see
+    /// [`chematic_perception::EzDirectionDiagnostic`]). Empty unless a
+    /// stereogenic double bond's direction was rejected.
+    pub ez_diagnostics: Vec<EzDirectionDiagnostic>,
 }
 
 /// Iterator over SDF records that also captures SD data fields.
@@ -200,6 +204,7 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             coords: report.coords,
             properties,
             stereo_diagnostics: report.stereo_diagnostics,
+            ez_diagnostics: report.ez_diagnostics,
         }))
     }
 }
@@ -337,6 +342,7 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             coords: report.coords,
             properties,
             stereo_diagnostics: report.stereo_diagnostics,
+            ez_diagnostics: report.ez_diagnostics,
         }))
     }
 }

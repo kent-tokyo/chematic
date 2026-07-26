@@ -24,8 +24,10 @@ Run:
     .venv/bin/python scripts/stereo2d_diagnosis.py
 """
 
+import io
 import json
 import sys
+from contextlib import redirect_stderr
 from pathlib import Path
 
 from rdkit import Chem
@@ -86,6 +88,19 @@ EXPECTED_RDKIT_VERSION = "2026.03.3"
 #     layout) is separately covered by the new reader-integration corpus's
 #     own `contradictory_wedge_v2000` fixture, which chematic still
 #     correctly rejects.
+# 2026-07-26 update: `ez_geometry_2butene` changed bucket after P1-S2
+# (E/Z direction-writing, `chematic_perception::stereo2d_ez_direction`)
+# shipped -- the exact gap this fixture exists to demonstrate
+# ("ez_computed_but_no_bond_direction_for_writer") is now closed: E/Z
+# direction reaches both `naive_smiles_write` and `naive_canonical_smiles`.
+# Regenerated `stereo2d_fixture_dump.jsonl` and verified directly (not
+# assumed): `assign_ez_from_2d_result` is unchanged (still computes Z via
+# the pre-existing CIP-based engine); only `naive_smiles_write`/
+# `naive_canonical_smiles` gained directional tokens. Mirrors PR #154's own
+# precedent exactly -- that PR regenerated this same dump file and added two
+# new buckets when ITS changes altered fixture output; this is the same
+# maintenance step for a different, later reader-integration PR (Track B /
+# P1-S2), not a one-off exception.
 EXPECTED_BUCKET_BY_ID = {
     "tetrahedral_3heavy_implicit_h": "rs_not_computed_3heavy_implicit_h_gap",
     "tetrahedral_4neighbors_explicit_h": "rs_computed_and_chirality_now_reaches_writer",
@@ -97,7 +112,7 @@ EXPECTED_BUCKET_BY_ID = {
     "no_wedge_negative_control": "correctly_no_stereo_both_agree",
     "cip_priority_tie": "correctly_no_stereo_both_agree",
     "degenerate_2d_coordinates": "degenerate_coords_correctly_yields_no_stereo",
-    "ez_geometry_2butene": "ez_computed_but_no_bond_direction_for_writer",
+    "ez_geometry_2butene": "ez_direction_now_reaches_writer",
     "terminal_alkene_propene": "correctly_no_stereo_both_agree",
     "contradictory_wedge_annotations": "wedges_agree_in_isolation_chirality_now_resolved",
     "coord_atom_count_mismatch": "silent_result_from_corrupted_fallback_positions_not_error",
@@ -122,7 +137,40 @@ EXPECTED_BUCKETS = {
     "no_consistency_check_both_wedges_silently_tokenized",
     "rs_computed_and_chirality_now_reaches_writer",
     "wedges_agree_in_isolation_chirality_now_resolved",
+    "ez_direction_now_reaches_writer",
 }
+
+
+def inchi_b_layer(mol):
+    """Return the `/b...` layer of `mol`'s standard InChI (atom-numbering-
+    independent E/Z semantics), or None if there is no b-layer at all (no
+    resolvable E/Z stereo). Same pattern as
+    `scripts/stereo2d_ez_reader_diagnosis.py`/`stereo2d_ez_corpus_diagnosis.py`
+    -- reused here rather than re-invented, per this repo's convention of one
+    InChI-semantic-comparison method, not several drifting variants."""
+    if mol is None:
+        return None
+    stderr_buf = io.StringIO()
+    with redirect_stderr(stderr_buf):
+        inchi = Chem.MolToInchi(mol)
+    if not inchi:
+        return None
+    for part in inchi.split("/"):
+        if part.startswith("b"):
+            return part
+    return None
+
+
+def rdkit_read_smiles(smiles):
+    """Parse a SMILES string with RDKit and return just enough to do the
+    InChI /b-layer semantic comparison in `classify()` -- a lighter sibling
+    of `rdkit_read()` (which parses a MOL block and extracts much more)."""
+    if not smiles:
+        return {"parsed": False, "inchi_b_layer": None}
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return {"parsed": False, "inchi_b_layer": None}
+    return {"parsed": True, "inchi_b_layer": inchi_b_layer(mol)}
 
 
 def rdkit_read(mol_block):
@@ -172,12 +220,20 @@ def rdkit_read(mol_block):
         "any_chiral_tag": any(a["chiral_tag"] != "CHI_UNSPECIFIED" for a in atoms),
         "any_cip_code": any(a["cip_code"] for a in atoms),
         "any_bond_stereo": any(b["stereo"] not in ("STEREONONE",) for b in bonds),
+        "inchi_b_layer": inchi_b_layer(mol),
     }
 
 
-def classify(fixture, rdkit_result):
+def classify(fixture, rdkit_result, rdkit_write_result=None):
     """Assign one failure bucket per fixture, based on what chematic
     computed/wrote vs what RDKit's default parse produces.
+
+    `rdkit_write_result` (optional, only used by the `ez_geometry` branch) is
+    RDKit's own re-parse of `fixture["naive_smiles_write"]` via
+    `rdkit_read_smiles()` -- passed in separately from `rdkit_result` (which
+    is RDKit's parse of the original `mol_block`) so the two can be compared
+    for E/Z semantic agreement without `classify()` needing to make its own
+    RDKit calls.
 
     Every branch that returns an EXPECTED_BUCKETS member first checks the
     concrete evidence that bucket claims to describe (not just the mechanism
@@ -264,6 +320,27 @@ def classify(fixture, rdkit_result):
     if mech == "ez_geometry":
         if chematic_ez and direction_token_count == 0:
             return "ez_computed_but_no_bond_direction_for_writer"
+        if chematic_ez and direction_token_count > 0:
+            # P1-S2 (E/Z direction-writing) shipped: verify with real
+            # semantic evidence, not just "a slash character appears
+            # somewhere" -- (a) chematic_ez already required above, (b) a
+            # token in naive_smiles_write already required above, (c) a
+            # token must ALSO appear in naive_canonical_smiles, and (d)
+            # RDKit's own re-parse of the ORIGINAL mol_block and RDKit's own
+            # re-parse of naive_smiles_write must agree on E/Z sign via the
+            # InChI /b layer (atom-numbering-independent, same method
+            # scripts/stereo2d_ez_reader_diagnosis.py already uses).
+            naive_canonical = fixture.get("naive_canonical_smiles") or ""
+            canonical_token_count = naive_canonical.count("/") + naive_canonical.count("\\")
+            orig_b = rdkit_result.get("inchi_b_layer")
+            write_b = (rdkit_write_result or {}).get("inchi_b_layer")
+            if (
+                canonical_token_count > 0
+                and orig_b is not None
+                and write_b is not None
+                and orig_b == write_b
+            ):
+                return "ez_direction_now_reaches_writer"
         return "unexpected_ez_result"
 
     if mech == "contradictory_wedges":
@@ -346,6 +423,51 @@ def _self_test():
     )
     assert resolved_bucket in EXPECTED_BUCKETS, "self-test E: its own bucket isn't in the whitelist"
 
+    # Control F (2026-07-26): the P1-S2 ez_geometry branch must actually
+    # require semantic agreement, not just "a slash appears somewhere".
+    ez_fixture_base = {
+        "mechanism": "ez_geometry",
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [{"atom": 1, "cip_code": "Z"}],
+        "chirality_reached_writer": False,
+        "naive_smiles_write": "C\\C=C/C",
+        "naive_canonical_smiles": "C(=C/C)/C",
+    }
+    # F1: both sides agree (same InChI /b layer) -> must fire the new bucket.
+    agree_bucket = classify(
+        ez_fixture_base,
+        {"parsed": True, "any_chiral_tag": False, "any_bond_stereo": True, "inchi_b_layer": "b4-3-"},
+        {"parsed": True, "inchi_b_layer": "b4-3-"},
+    )
+    assert agree_bucket == "ez_direction_now_reaches_writer", (
+        f"self-test F1: expected the P1-S2 branch to fire on agreement, got {agree_bucket!r}"
+    )
+    assert agree_bucket in EXPECTED_BUCKETS, "self-test F1: its own bucket isn't in the whitelist"
+    # F2: same tokens present, but the InChI /b layers DISAGREE (a
+    # deliberately-corrupted negative control) -- must NOT fire the new
+    # bucket despite both naive_smiles_write and naive_canonical_smiles
+    # having directional tokens; proves the branch checks real semantic
+    # agreement, not just token presence.
+    disagree_bucket = classify(
+        ez_fixture_base,
+        {"parsed": True, "any_chiral_tag": False, "any_bond_stereo": True, "inchi_b_layer": "b4-3-"},
+        {"parsed": True, "inchi_b_layer": "b4-3+"},  # deliberately flipped sign
+    )
+    assert disagree_bucket == "unexpected_ez_result", (
+        f"self-test F2 (negative control): expected disagreement to be rejected, got {disagree_bucket!r}"
+    )
+    assert disagree_bucket not in EXPECTED_BUCKETS, "self-test F2: a disagreement must not land in the whitelist"
+    # F3: no rdkit_write_result supplied at all (e.g. naive_smiles_write
+    # failed to re-parse) -- must also NOT fire the new bucket.
+    missing_bucket = classify(
+        ez_fixture_base,
+        {"parsed": True, "any_chiral_tag": False, "any_bond_stereo": True, "inchi_b_layer": "b4-3-"},
+        None,
+    )
+    assert missing_bucket == "unexpected_ez_result", (
+        f"self-test F3: expected a missing rdkit_write_result to be rejected, got {missing_bucket!r}"
+    )
+
     # Control D: the frozen per-ID baseline must actually pin ONE bucket, not
     # just any whitelisted one -- prove that wedge_atom_order_reversed's
     # three mutually-exclusive possible outcomes are all in EXPECTED_BUCKETS
@@ -420,7 +542,8 @@ def main():
     for fx in fixtures:
         mol_block = fx.get("mol_block", "")
         rdkit_result = rdkit_read(mol_block) if mol_block else {"parsed": False}
-        bucket = classify(fx, rdkit_result)
+        rdkit_write_result = rdkit_read_smiles(fx.get("naive_smiles_write", ""))
+        bucket = classify(fx, rdkit_result, rdkit_write_result)
         bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
         expected_bucket = EXPECTED_BUCKET_BY_ID[fx["id"]]
         if bucket != expected_bucket:

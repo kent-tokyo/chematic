@@ -9,8 +9,11 @@
 //!   Lines 5+natoms..5+natoms+nbonds — bond block (one line per bond)
 //!   "M  END" — molecule terminator
 
-use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
-use chematic_perception::{StereoDiagnostic, apply_local_parity_from_wedges_with_diagnostics};
+use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_perception::{
+    EzDirectionDiagnostic, StereoDiagnostic, apply_ez_directions_from_2d_ex,
+    apply_local_parity_from_wedges_with_diagnostics,
+};
 
 use crate::error::MolParseError;
 
@@ -50,12 +53,19 @@ impl MolMetadata {
 /// coordinates, degenerate geometry, or an unsupported neighbor shape) --
 /// see [`chematic_perception::StereoDiagnostic`]. It is never populated for
 /// an atom with no wedge/hash bond at all.
+///
+/// `ez_diagnostics` is the E/Z (double-bond cis/trans) counterpart: empty
+/// unless a stereogenic double bond (terminal alkenes, carbonyls, and
+/// symmetric-substituent alkenes are never stereogenic in the first place)
+/// had its direction rejected -- see
+/// [`chematic_perception::EzDirectionDiagnostic`].
 #[derive(Clone)]
 pub struct MolReadReport {
     pub mol: Molecule,
     pub metadata: MolMetadata,
     pub coords: Vec<(f64, f64)>,
     pub stereo_diagnostics: Vec<StereoDiagnostic>,
+    pub ez_diagnostics: Vec<EzDirectionDiagnostic>,
 }
 
 // ---------------------------------------------------------------------------
@@ -238,6 +248,19 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
         detail: d,
     };
 
+    // Double bonds whose stereo field is 3 ("cis or trans -- either"), MDL's
+    // crossed-bond convention for explicitly unspecified E/Z. This is a
+    // THIRD, distinct state from a resolved direction, exactly analogous to
+    // single-bond code 4 above -- confirmed against a live RDKit 2026.03.3
+    // oracle (B0 diagnosis): RDKit sets `Bond::STEREOANY` and never prints
+    // `/`/`\`, even when raw coordinates would otherwise resolve to a
+    // definite E or Z. There is no per-bond Molecule-level field for this
+    // (see `docs/stereo2d_reader_integration_rfc.md` for why one wasn't
+    // added); it is threaded directly into
+    // `apply_ez_directions_from_2d_ex` below instead.
+    let mut explicitly_unspecified_ez: std::collections::HashSet<BondIdx> =
+        std::collections::HashSet::new();
+
     for bond_i in 0..nbonds {
         let (raw_lineno, bond_line) = next_line()?;
 
@@ -287,12 +310,16 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
             _ => BondOrder::Single,
         };
 
-        builder
+        let bidx = builder
             .add_bond(a1, a2, order)
             .map_err(|e| MolParseError::InvalidBondLine {
                 line: raw_lineno,
                 detail: format!("bond {bond_i}: {e}"),
             })?;
+
+        if btype_raw == 2 && stereo_raw == 3 {
+            explicitly_unspecified_ez.insert(bidx);
+        }
     }
 
     // Skip property lines until "M  END" (or EOF if absent).
@@ -303,13 +330,21 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
     }
 
     let mut mol = builder.build();
+    // Tetrahedral parity first (raw wedge/hash still fully intact on
+    // `bond.order`), THEN E/Z direction -- the E/Z stage only ever writes to
+    // the separate `bond_direction` side channel, never to `bond.order`, so
+    // running it after can never disturb the wedge/hash the tetrahedral
+    // stage just read. See `docs/stereo2d_reader_integration_rfc.md`.
     let stereo_diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+    let ez_diagnostics =
+        apply_ez_directions_from_2d_ex(&mut mol, &coords, &explicitly_unspecified_ez);
 
     Ok(MolReadReport {
         mol,
         metadata,
         coords,
         stereo_diagnostics,
+        ez_diagnostics,
     })
 }
 
