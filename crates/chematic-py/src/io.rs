@@ -21,6 +21,7 @@ pub struct PySdfRecord {
     #[pyo3(get)]
     pub name: String,
     pub props: std::collections::HashMap<String, String>,
+    pub stereo_diagnostics: Vec<chematic_perception::StereoDiagnostic>,
 }
 
 #[pymethods]
@@ -43,6 +44,16 @@ impl PySdfRecord {
     /// Get one SD property by name, returning ``None`` if not present.
     fn get(&self, key: &str) -> Option<&str> {
         self.props.get(key).map(|s| s.as_str())
+    }
+
+    /// Rejected wedge/hash stereocenters for this record.
+    ///
+    /// A list of ``{"atom_idx": int, "reason": str}`` dicts -- see
+    /// :func:`from_mol_block_with_diagnostics` for the reason vocabulary.
+    /// Empty unless a wedge/hash bond was present at some center and got
+    /// rejected.
+    fn stereo_diagnostics<'py>(&self, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyDict>>> {
+        crate::formats::stereo_diagnostics_to_py(py, &self.stereo_diagnostics)
     }
 
     fn __repr__(&self) -> String {
@@ -93,6 +104,7 @@ fn parse_to_iter(content: &str) -> SdfIter {
             },
             name: rec.meta.name,
             props: rec.properties,
+            stereo_diagnostics: rec.stereo_diagnostics,
         })
         .collect();
     SdfIter {
@@ -196,6 +208,7 @@ impl SdfFileIter {
                         },
                         name: rec.meta.name,
                         props: rec.properties,
+                        stereo_diagnostics: rec.stereo_diagnostics,
                     }));
                 }
                 Some(Err(chematic_mol::MolParseError::Io(msg))) => {
@@ -249,6 +262,7 @@ impl SdfBatchIter {
                         },
                         name: rec.meta.name,
                         props: rec.properties,
+                        stereo_diagnostics: rec.stereo_diagnostics,
                     });
                 }
                 Some(Err(chematic_mol::MolParseError::Io(msg))) => {

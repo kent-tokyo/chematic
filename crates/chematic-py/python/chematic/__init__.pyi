@@ -2022,6 +2022,19 @@ def from_mol_v3000_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]
     """
     ...
 
+def from_mol_v3000_with_diagnostics(
+    block: str,
+) -> tuple[Mol, str, list[list[float]], list[dict[str, object]]]:
+    """Parse a MDL MOL V3000 block, returning stereo-perception diagnostics
+    alongside the molecule.
+
+    Same shape as :func:`from_mol_block_with_diagnostics` but for V3000 input.
+
+    Raises:
+        ValueError: on parse failure.
+    """
+    ...
+
 def from_mol_block(block: str) -> Mol:
     """Parse a MOL/SDF block and return a :class:`Mol`.
 
@@ -2049,6 +2062,30 @@ def from_mol_block_with_coords(block: str) -> tuple[Mol, str, list[list[float]]]
 
         mol, name, coords_2d = chematic.from_mol_block_with_coords(block)
         new_block = mol.to_mol_block_2d(coords_2d, name=name)
+    """
+    ...
+
+def from_mol_block_with_diagnostics(
+    block: str,
+) -> tuple[Mol, str, list[list[float]], list[dict[str, object]]]:
+    """Parse a MDL MOL V2000 block, returning stereo-perception diagnostics
+    alongside the molecule.
+
+    Returns a 4-tuple ``(mol, name, coords_2d, stereo_diagnostics)``.
+    ``stereo_diagnostics`` is a list of ``{"atom_idx": int, "reason": str}``
+    dicts, one per wedge/hash center that could not be resolved — ``reason``
+    is one of ``"contradictory_wedges"``, ``"missing_coordinate"``,
+    ``"degenerate_geometry"``, or ``"unsupported_coordination"``. Empty
+    unless a wedge/hash bond was present at some center and got rejected; an
+    atom with no wedge/hash bond at all never produces an entry.
+
+    Local tetrahedral parity (``Atom.chirality``) is always perceived
+    automatically — this function differs from
+    :func:`from_mol_block_with_coords` only in also surfacing *why* any
+    center was rejected.
+
+    Raises:
+        ValueError: on parse failure.
     """
     ...
 
@@ -2819,6 +2856,16 @@ class SdfRecord:
 
     def get(self, key: str) -> Optional[str]:
         """Get one SD property by name, or ``None`` if absent."""
+        ...
+
+    def stereo_diagnostics(self) -> list[dict[str, object]]:
+        """Rejected wedge/hash stereocenters for this record.
+
+        A list of ``{"atom_idx": int, "reason": str}`` dicts — see
+        :func:`from_mol_block_with_diagnostics` for the reason vocabulary.
+        Empty unless a wedge/hash bond was present at some center and got
+        rejected.
+        """
         ...
 
     def __repr__(self) -> str: ...

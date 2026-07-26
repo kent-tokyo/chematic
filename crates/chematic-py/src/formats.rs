@@ -6,6 +6,35 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+/// Stable, typed reason string for a [`chematic_perception::StereoDiagnostic`]
+/// -- never a free-form message (see `docs/stereo2d_reader_integration_rfc.md`).
+pub(crate) fn stereo_reason_str(
+    reason: chematic_perception::StereoRejectionReason,
+) -> &'static str {
+    use chematic_perception::StereoRejectionReason::*;
+    match reason {
+        ContradictoryWedges => "contradictory_wedges",
+        MissingCoordinate => "missing_coordinate",
+        DegenerateGeometry => "degenerate_geometry",
+        UnsupportedCoordination => "unsupported_coordination",
+    }
+}
+
+pub(crate) fn stereo_diagnostics_to_py<'py>(
+    py: Python<'py>,
+    diagnostics: &[chematic_perception::StereoDiagnostic],
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    diagnostics
+        .iter()
+        .map(|d| {
+            let dict = PyDict::new(py);
+            dict.set_item("atom_idx", d.atom.0)?;
+            dict.set_item("reason", stereo_reason_str(d.reason))?;
+            Ok(dict)
+        })
+        .collect()
+}
+
 pub(crate) fn bitvec2048_to_bytes(fp: &chematic_fp::bitvec::BitVec2048) -> Vec<u8> {
     (0..256usize)
         .map(|byte_idx| {
@@ -158,12 +187,56 @@ fn from_mol_block_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Parse a MDL MOL V2000 block, returning stereo-perception diagnostics
+/// alongside the molecule.
+///
+/// Returns a 4-tuple ``(mol, name, coords_2d, stereo_diagnostics)``.
+/// ``stereo_diagnostics`` is a list of ``{"atom_idx": int, "reason": str}``
+/// dicts, one per wedge/hash center that could not be resolved -- reason is
+/// one of ``"contradictory_wedges"``, ``"missing_coordinate"``,
+/// ``"degenerate_geometry"``, or ``"unsupported_coordination"``. Empty
+/// unless a wedge/hash bond was present at some center and got rejected; an
+/// atom with no wedge/hash bond at all never produces an entry.
+///
+/// Local tetrahedral parity (``Atom.chirality``) is always perceived
+/// automatically -- this function differs from
+/// :func:`from_mol_block_with_coords` only in also surfacing *why* any
+/// center was rejected.
+///
+/// Raises ``ValueError`` on parse failure.
+#[pyfunction]
+#[allow(clippy::type_complexity)]
+fn from_mol_block_with_diagnostics<'py>(
+    py: Python<'py>,
+    block: &str,
+) -> PyResult<(Mol, String, Vec<Vec<f64>>, Vec<Bound<'py, PyDict>>)> {
+    let report = chematic_mol::read_mol_with_diagnostics(block)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let py_coords: Vec<Vec<f64>> = report.coords.iter().map(|(x, y)| vec![*x, *y]).collect();
+    let diagnostics = stereo_diagnostics_to_py(py, &report.stereo_diagnostics)?;
+    Ok((
+        Mol {
+            inner: Arc::new(report.mol),
+            props: Default::default(),
+        },
+        report.metadata.name,
+        py_coords,
+        diagnostics,
+    ))
+}
+
 /// Parse a multi-record SDF string and return all molecules with their 2D layout coordinates.
 ///
 /// Returns a list of 3-tuples ``(mol, name, coords_2d)`` — one per SDF record.
 /// Invalid records are silently skipped (same behaviour as :func:`iter_sdf`).
 ///
 /// This is the batch equivalent of :func:`from_mol_block_with_coords`.
+///
+/// Note: this function has no diagnostics-returning variant. It inherits 2D
+/// wedge/hash stereo *perception* automatically (same core as every other
+/// MOL/SDF reader), but rejected-stereo diagnostics aren't surfaced here —
+/// use :func:`iter_sdf`/:func:`iter_sdf_batched`/:func:`iter_sdf_str` and
+/// ``SdfRecord.stereo_diagnostics()`` if you need them.
 ///
 ///     with open("library.sdf") as f:
 ///         records = chematic.parse_sdf_with_coords(f.read())
@@ -330,6 +403,34 @@ fn from_mol_v3000_with_coords(block: &str) -> PyResult<(Mol, String, Vec<Vec<f64
             )
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Parse a MDL MOL V3000 block, returning stereo-perception diagnostics
+/// alongside the molecule.
+///
+/// Same shape as :func:`from_mol_block_with_diagnostics` but for V3000
+/// input -- see that function for the diagnostics dict shape.
+///
+/// Raises ``ValueError`` on parse failure.
+#[pyfunction]
+#[allow(clippy::type_complexity)]
+fn from_mol_v3000_with_diagnostics<'py>(
+    py: Python<'py>,
+    block: &str,
+) -> PyResult<(Mol, String, Vec<Vec<f64>>, Vec<Bound<'py, PyDict>>)> {
+    let report = chematic_mol::read_mol_v3000_with_diagnostics(block)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let py_coords: Vec<Vec<f64>> = report.coords.iter().map(|(x, y)| vec![*x, *y]).collect();
+    let diagnostics = stereo_diagnostics_to_py(py, &report.stereo_diagnostics)?;
+    Ok((
+        Mol {
+            inner: Arc::new(report.mol),
+            props: Default::default(),
+        },
+        report.metadata.name,
+        py_coords,
+        diagnostics,
+    ))
 }
 
 /// Parse a Tripos MOL2 string into a ``Mol`` object.
@@ -779,6 +880,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_condensed, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_block, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_block_with_coords, m)?)?;
+    m.add_function(wrap_pyfunction!(from_mol_block_with_diagnostics, m)?)?;
     m.add_function(wrap_pyfunction!(parse_sdf_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_cml, m)?)?;
     m.add_function(wrap_pyfunction!(from_cjson, m)?)?;
@@ -786,6 +888,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_cdxml, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_coords, m)?)?;
+    m.add_function(wrap_pyfunction!(from_mol_v3000_with_diagnostics, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol2, m)?)?;
     m.add_function(wrap_pyfunction!(from_pdbqt, m)?)?;
     m.add_function(wrap_pyfunction!(from_gjf, m)?)?;

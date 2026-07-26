@@ -1,6 +1,38 @@
 # P1-A0: 2D-Stereo Reader Integration Boundary — Diagnosis
 
-**Status:** diagnosis only. No production code changed. Not merged.
+**Status:** implemented. The reader wiring this document recommends (§7,
+P1-S1a) shipped: `chematic_mol::read_mol_with_diagnostics`/
+`read_mol_v3000_with_diagnostics` call
+`chematic_perception::apply_local_parity_from_wedges_with_diagnostics`
+unconditionally whenever a wedge/hash bond is present, immediately after
+parsing, before anything else can mutate the bond away — exactly matching
+this document's design answers (b)/(c)/(e). `parse_mol`/
+`parse_mol_with_coords`/`parse_mol_v3000`/`parse_mol_v3000_with_coords`, the
+SDF supplier (`SdfRecordReader`/`SdfFileReader`), and the Python/WASM
+bindings all inherit this automatically, since they delegate to the same
+two functions. Malformed/contradictory wedge input never produces an
+arbitrary result: it surfaces as a typed `StereoDiagnostic`
+(`ContradictoryWedges`/`MissingCoordinate`/`DegenerateGeometry`/
+`UnsupportedCoordination`) rather than a guess, per design answer (j) —
+`local_parity_from_wedges`/`apply_local_parity_from_wedges` keep their
+original silent-`Option` shape unchanged; the diagnostics are a separate,
+additive opt-in surface. V3000 bond `CFG` (the "broken asymmetrically" gap
+in §2's table) is now decoded on read and fixed on write (was emitting
+V2000's stereo codes, an invalid V3000 `CFG` value). The one remaining gap
+this document flagged that is *not* closed: MDL code 4 / V3000 `CFG=2`
+("either"/unspecified direction) is decoded as a plain, undirected bond
+(matching this doc's own footnote in §5a that code 4 needs its own state) —
+round-tripping such a bond is lossy by design (documented, not silently
+wrong: it is never treated as a confident wedge). E/Z direction-writing
+(P1-S2) and MRV/CDXML/CML/KET wiring remain out of scope, per §7's own
+"tetrahedral and E/Z should be separate PRs" answer. Differential validation
+against a live RDKit oracle: `crates/chematic-mol/examples/
+stereo2d_reader_integration_fixture_dump.rs` +
+`scripts/stereo2d_reader_diagnosis.py` (13 fixtures covering V2000/V3000
+agreement, renumbering/reflection/rotation invariance, round-trip
+losslessness, ring/charged/isotopic stereocenters, and the new diagnostics
+API — a companion to, not a replacement for, this document's original
+14-fixture diagnosis, which remains historically accurate and unmodified).
 
 **Scope:** this document does not implement a wedge→SMILES stereo converter. It
 answers a narrower, prior question: *where should chematic call stereo

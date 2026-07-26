@@ -35,12 +35,94 @@
 //! `Atom.cip_code`. Nothing in the reader crates calls this yet -- integration
 //! is a separate, later step.
 
-use chematic_core::{AtomIdx, Chirality, Molecule, STEREO_H_SENTINEL};
+use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
 
 use crate::stereo2d::{P3, signed_volume, wedge_z};
 
 /// Tolerance below which a signed volume is treated as coplanar/degenerate.
 const VOLUME_EPS: f64 = 1e-6;
+
+/// Why a candidate stereocenter's wedge/hash drawing was rejected by
+/// [`apply_local_parity_from_wedges_with_diagnostics`] -- never emitted for an
+/// atom with no wedge/hash bond at all (see [`ParityOutcome::NotRequested`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StereoRejectionReason {
+    /// Two or more wedge/hash bonds at this center imply different local
+    /// parity when each is considered in isolation.
+    ContradictoryWedges,
+    /// The center's or a neighbor's 2D coordinate is missing from `coords`.
+    MissingCoordinate,
+    /// The resulting signed volume is within [`VOLUME_EPS`] of zero
+    /// (coplanar/degenerate drawing).
+    DegenerateGeometry,
+    /// The atom passed the degree-3-or-4 tetrahedral-candidate gate, but its
+    /// coordination cannot represent the supported tetrahedral shapes
+    /// (currently a degree-3 center without exactly one implicit hydrogen,
+    /// e.g. a charged 3-heavy-neighbor center with zero implicit H). An atom
+    /// outside that gate entirely (degree other than 3 or 4) is
+    /// [`ParityOutcome::NotRequested`] instead, even when it carries its own
+    /// wedge/hash bond -- see [`classify_local_parity`]'s doc comment.
+    UnsupportedCoordination,
+}
+
+/// One rejected wedge/hash stereocenter, as returned by
+/// [`apply_local_parity_from_wedges_with_diagnostics`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StereoDiagnostic {
+    pub atom: AtomIdx,
+    pub reason: StereoRejectionReason,
+}
+
+/// Per-atom classification underlying both the silent
+/// ([`local_parity_from_wedges`]) and diagnosed
+/// ([`apply_local_parity_from_wedges_with_diagnostics`]) entry points.
+enum ParityOutcome {
+    /// `center` has no incident `BondOrder::Up`/`Down` bond -- nothing was
+    /// drawn, so there is nothing to accept or reject.
+    NotRequested,
+    Assigned(Chirality, Vec<u32>),
+    Rejected(StereoRejectionReason),
+}
+
+/// True when `center` has at least one incident wedge/hash bond.
+fn has_wedge_or_hash(mol: &Molecule, center: AtomIdx) -> bool {
+    mol.neighbors(center)
+        .any(|(_, bidx)| matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down))
+}
+
+/// Classify `center`'s local parity. See [`ParityOutcome`] for the three
+/// possible outcomes, and [`local_parity_from_wedges`]'s doc comment for the
+/// exact conditions each one covers.
+///
+/// A wedge/hash bond has two endpoints, but only one of them is ever a
+/// plausible tetrahedral-stereocenter *candidate* -- the other is just the
+/// substituent the wedge points at (e.g. a terminal, degree-1 halogen).
+/// `NotRequested` therefore requires *both* an incident wedge/hash bond *and*
+/// a neighbor count of 3 or 4 (mirroring RDKit's own
+/// `atomChiralTypeFromBondDirPseudo3D` entry gate, `nNbrs < 3 || nNbrs > 4`) --
+/// otherwise a plain substituent atom that merely touches someone else's
+/// wedge bond would spuriously get its own `UnsupportedCoordination`
+/// diagnostic.
+fn classify_local_parity(mol: &Molecule, coords: &[(f64, f64)], center: AtomIdx) -> ParityOutcome {
+    let nbs: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
+
+    if !(3..=4).contains(&nbs.len()) || !has_wedge_or_hash(mol, center) {
+        return ParityOutcome::NotRequested;
+    }
+
+    let result = match nbs.len() {
+        4 => tetrahedral_4(mol, coords, center, &nbs),
+        3 if chematic_core::implicit_hcount(mol, center) == 1 => {
+            tetrahedral_3_implicit_h(mol, coords, center, &nbs)
+        }
+        _ => Err(StereoRejectionReason::UnsupportedCoordination),
+    };
+
+    match result {
+        Ok((chirality, order)) => ParityOutcome::Assigned(chirality, order),
+        Err(reason) => ParityOutcome::Rejected(reason),
+    }
+}
 
 /// Compute local tetrahedral parity for `center` from wedge bonds and 2D
 /// coordinates, without any CIP ranking.
@@ -68,14 +150,9 @@ pub fn local_parity_from_wedges(
     coords: &[(f64, f64)],
     center: AtomIdx,
 ) -> Option<(Chirality, Vec<u32>)> {
-    let nbs: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
-
-    match nbs.len() {
-        4 => tetrahedral_4(mol, coords, center, &nbs),
-        3 if chematic_core::implicit_hcount(mol, center) == 1 => {
-            tetrahedral_3_implicit_h(mol, coords, center, &nbs)
-        }
-        _ => None,
+    match classify_local_parity(mol, coords, center) {
+        ParityOutcome::Assigned(chirality, order) => Some((chirality, order)),
+        ParityOutcome::NotRequested | ParityOutcome::Rejected(_) => None,
     }
 }
 
@@ -172,20 +249,21 @@ fn tetrahedral_4(
     coords: &[(f64, f64)],
     center: AtomIdx,
     nbs: &[AtomIdx],
-) -> Option<(Chirality, Vec<u32>)> {
+) -> Result<(Chirality, Vec<u32>), StereoRejectionReason> {
     let pts: Vec<P3> = nbs
         .iter()
         .map(|&nb| point_for(coords, mol, center, nb))
-        .collect::<Option<_>>()?;
+        .collect::<Option<_>>()
+        .ok_or(StereoRejectionReason::MissingCoordinate)?;
 
     if !wedges_agree_4(&pts) {
-        return None;
+        return Err(StereoRejectionReason::ContradictoryWedges);
     }
 
     // Apex = first-listed neighbor; viewed = the other three, in order.
     let vol = signed_volume(pts[1], pts[2], pts[3], pts[0]);
     if vol.abs() < VOLUME_EPS {
-        return None;
+        return Err(StereoRejectionReason::DegenerateGeometry);
     }
     let chirality = if vol < 0.0 {
         Chirality::CounterClockwise
@@ -193,7 +271,7 @@ fn tetrahedral_4(
         Chirality::Clockwise
     };
     let order = nbs.iter().map(|a| a.0).collect();
-    Some((chirality, order))
+    Ok((chirality, order))
 }
 
 fn tetrahedral_3_implicit_h(
@@ -201,12 +279,16 @@ fn tetrahedral_3_implicit_h(
     coords: &[(f64, f64)],
     center: AtomIdx,
     nbs: &[AtomIdx],
-) -> Option<(Chirality, Vec<u32>)> {
+) -> Result<(Chirality, Vec<u32>), StereoRejectionReason> {
     let pts: Vec<P3> = nbs
         .iter()
         .map(|&nb| point_for(coords, mol, center, nb))
-        .collect::<Option<_>>()?;
-    let (cx, cy) = coords.get(center.0 as usize).copied()?;
+        .collect::<Option<_>>()
+        .ok_or(StereoRejectionReason::MissingCoordinate)?;
+    let (cx, cy) = coords
+        .get(center.0 as usize)
+        .copied()
+        .ok_or(StereoRejectionReason::MissingCoordinate)?;
     let center_pt = P3 {
         x: cx,
         y: cy,
@@ -214,14 +296,14 @@ fn tetrahedral_3_implicit_h(
     };
 
     if !wedges_agree_3(&pts, center_pt) {
-        return None;
+        return Err(StereoRejectionReason::ContradictoryWedges);
     }
 
     // No synthetic position for the implicit H: the triple product of the
     // three real bond vectors from `center` already carries full parity.
     let vol = signed_volume(pts[0], pts[1], pts[2], center_pt);
     if vol.abs() < VOLUME_EPS {
-        return None;
+        return Err(StereoRejectionReason::DegenerateGeometry);
     }
     let chirality = if vol < 0.0 {
         Chirality::Clockwise
@@ -230,7 +312,7 @@ fn tetrahedral_3_implicit_h(
     };
     let mut order: Vec<u32> = nbs.iter().map(|a| a.0).collect();
     order.push(STEREO_H_SENTINEL);
-    Some((chirality, order))
+    Ok((chirality, order))
 }
 
 /// Apply [`local_parity_from_wedges`] to every eligible atom in `mol`,
@@ -246,6 +328,36 @@ pub fn apply_local_parity_from_wedges(mol: &mut Molecule, coords: &[(f64, f64)])
             mol.set_stereo_neighbor_order(idx, order);
         }
     }
+}
+
+/// Same as [`apply_local_parity_from_wedges`], but also returns a
+/// [`StereoDiagnostic`] for every atom whose wedge/hash drawing was rejected
+/// (contradictory, missing coordinates, degenerate geometry, or an
+/// unsupported neighbor shape). An atom with no wedge/hash bond at all never
+/// produces a diagnostic -- there is nothing to reject when nothing was
+/// drawn. Atoms outside the degree-3-or-4 tetrahedral-candidate gate are
+/// [`ParityOutcome::NotRequested`] too, even when incident to a wedge/hash
+/// bond -- e.g. a 5-coordinate wedge-bearing center, or a plain terminal
+/// substituent that merely touches someone else's wedge.
+pub fn apply_local_parity_from_wedges_with_diagnostics(
+    mol: &mut Molecule,
+    coords: &[(f64, f64)],
+) -> Vec<StereoDiagnostic> {
+    let atom_indices: Vec<AtomIdx> = mol.atoms().map(|(idx, _)| idx).collect();
+    let mut diagnostics = Vec::new();
+    for idx in atom_indices {
+        match classify_local_parity(mol, coords, idx) {
+            ParityOutcome::Assigned(chirality, order) => {
+                mol.set_chirality(idx, chirality);
+                mol.set_stereo_neighbor_order(idx, order);
+            }
+            ParityOutcome::Rejected(reason) => {
+                diagnostics.push(StereoDiagnostic { atom: idx, reason });
+            }
+            ParityOutcome::NotRequested => {}
+        }
+    }
+    diagnostics
 }
 
 #[cfg(test)]
@@ -714,5 +826,175 @@ mod tests {
         let coords = vec![(0.0, 0.0), quad[0], quad[1], quad[2]];
         let mol = b.build();
         assert!(local_parity_from_wedges(&mol, &coords, n).is_none());
+    }
+
+    // ── apply_local_parity_from_wedges_with_diagnostics ─────────────────
+
+    #[test]
+    fn no_wedge_produces_no_diagnostic() {
+        // Same shape as degenerate_coplanar_no_assignment (no wedge/hash
+        // bonds at all) -- must be NotRequested, not Rejected: nothing was
+        // drawn, so there is nothing to reject.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Single).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        b.add_bond(c, i, BondOrder::Single).unwrap();
+        let quad = quad_positions();
+        let coords = vec![(0.0, 0.0), quad[0], quad[1], quad[2], quad[3]];
+        let mut mol = b.build();
+        let diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+        assert!(diagnostics.is_empty());
+    }
+
+    #[test]
+    fn contradictory_wedges_produce_diagnostic() {
+        // Same geometry as contradictory_wedges_no_assignment.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Up).unwrap();
+        b.add_bond(c, cl, BondOrder::Up).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        b.add_bond(c, i, BondOrder::Single).unwrap();
+        let quad = quad_positions();
+        let coords = vec![(0.0, 0.0), quad[0], quad[1], quad[2], quad[3]];
+        let mut mol = b.build();
+        let diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].atom, c);
+        assert_eq!(
+            diagnostics[0].reason,
+            StereoRejectionReason::ContradictoryWedges
+        );
+    }
+
+    #[test]
+    fn missing_coordinate_produces_diagnostic() {
+        // Same geometry as missing_coordinates_no_assignment.
+        let (mol_base, mut coords, c) = chfclbr(true);
+        coords.truncate(3);
+        let mut mol = mol_base;
+        let diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].atom, c);
+        assert_eq!(
+            diagnostics[0].reason,
+            StereoRejectionReason::MissingCoordinate
+        );
+    }
+
+    #[test]
+    fn degenerate_geometry_produces_diagnostic() {
+        // A single wedge (so wedges_agree_4 trivially holds -- this is not a
+        // ContradictoryWedges case) whose combined volume is nonetheless
+        // exactly zero: Cl/Br/I are collinear, so the "viewed" triangle
+        // signed_volume(Cl, Br, I, F) uses has zero area regardless of F's
+        // position.
+        let mut b = MoleculeBuilder::new();
+        let c = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let br = b.add_atom(Atom::new(Element::BR));
+        let i = b.add_atom(Atom::new(Element::I));
+        b.add_bond(c, f, BondOrder::Up).unwrap();
+        b.add_bond(c, cl, BondOrder::Single).unwrap();
+        b.add_bond(c, br, BondOrder::Single).unwrap();
+        b.add_bond(c, i, BondOrder::Single).unwrap();
+        let coords = vec![(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (2.0, 0.0), (3.0, 0.0)];
+        let mut mol = b.build();
+        let diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].atom, c);
+        assert_eq!(
+            diagnostics[0].reason,
+            StereoRejectionReason::DegenerateGeometry
+        );
+    }
+
+    #[test]
+    fn unsupported_coordination_with_wedge_produces_diagnostic() {
+        // Same charged-center shape as only_three_heavy_no_implicit_h_no_assignment
+        // (3 explicit neighbors, 0 implicit H), but with an actual wedge bond
+        // drawn to one substituent -- unlike that test's all-Single fixture,
+        // this one HAS wedge/hash input, so it must be Rejected(UnsupportedCoordination),
+        // not NotRequested.
+        let mut b = MoleculeBuilder::new();
+        let mut n_atom = Atom::new(Element::N);
+        n_atom.charge = 1;
+        let n = b.add_atom(n_atom);
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let c3 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(n, c1, BondOrder::Double).unwrap();
+        b.add_bond(n, c2, BondOrder::Up).unwrap();
+        b.add_bond(n, c3, BondOrder::Single).unwrap();
+        let quad = quad_positions();
+        let coords = vec![(0.0, 0.0), quad[0], quad[1], quad[2]];
+        let mut mol = b.build();
+        let diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].atom, n);
+        assert_eq!(
+            diagnostics[0].reason,
+            StereoRejectionReason::UnsupportedCoordination
+        );
+    }
+
+    #[test]
+    fn five_coordinate_wedged_center_is_not_a_tetrahedral_request() {
+        // A center with 5 explicit neighbors -- outside the degree-3-or-4
+        // tetrahedral-candidate gate -- carrying its OWN wedge bond (not just
+        // touching someone else's). Per classify_local_parity's documented
+        // gate (mirrors RDKit's `atomChiralTypeFromBondDirPseudo3D` entry
+        // check, `nNbrs < 3 || nNbrs > 4`), this must be NotRequested, not
+        // Rejected(UnsupportedCoordination): a wedge/hash bond being present
+        // is not by itself sufficient to make an atom a tetrahedral
+        // candidate. Asserting the WHOLE molecule's diagnostics are empty
+        // also confirms the wedge's terminal endpoint (a plain degree-1
+        // substituent merely touching this wedge) produces no diagnostic
+        // either.
+        let mut b = MoleculeBuilder::new();
+        let center = b.add_atom(Atom::new(Element::P));
+        let f1 = b.add_atom(Atom::new(Element::F));
+        let f2 = b.add_atom(Atom::new(Element::F));
+        let f3 = b.add_atom(Atom::new(Element::F));
+        let f4 = b.add_atom(Atom::new(Element::F));
+        let f5 = b.add_atom(Atom::new(Element::F));
+        b.add_bond(center, f1, BondOrder::Up).unwrap();
+        b.add_bond(center, f2, BondOrder::Single).unwrap();
+        b.add_bond(center, f3, BondOrder::Single).unwrap();
+        b.add_bond(center, f4, BondOrder::Single).unwrap();
+        b.add_bond(center, f5, BondOrder::Single).unwrap();
+        let coords = vec![
+            (0.0, 0.0),
+            (1.0, 0.0),
+            (0.5, 1.0),
+            (-0.5, 1.0),
+            (-1.0, 0.0),
+            (0.0, -1.0),
+        ];
+        let mut mol = b.build();
+        let diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+        assert!(diagnostics.is_empty());
+        assert_eq!(mol.atom(center).chirality, Chirality::None);
+        assert!(mol.stereo_neighbor_order(center).is_none());
+    }
+
+    #[test]
+    fn valid_stereo_produces_no_rejection_diagnostic() {
+        let (mol_base, coords, c) = chfclbr(true);
+        let mut mol = mol_base;
+        let diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+        assert!(diagnostics.is_empty());
+        assert_eq!(mol.atom(c).chirality, Chirality::CounterClockwise);
     }
 }

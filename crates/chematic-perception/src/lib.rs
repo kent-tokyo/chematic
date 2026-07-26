@@ -55,7 +55,10 @@ pub use stereo2d::{
     StereoAssignment2D, apply_stereo_from_2d, assign_ez_from_2d, assign_stereo_from_2d,
     cip_ez_descriptor,
 };
-pub use stereo2d_local::{apply_local_parity_from_wedges, local_parity_from_wedges};
+pub use stereo2d_local::{
+    StereoDiagnostic, StereoRejectionReason, apply_local_parity_from_wedges,
+    apply_local_parity_from_wedges_with_diagnostics, local_parity_from_wedges,
+};
 
 use chematic_core::{AtomIdx, Molecule};
 

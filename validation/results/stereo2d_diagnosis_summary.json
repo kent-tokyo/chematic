@@ -5,13 +5,13 @@
   "fixture_count": 14,
   "bucket_counts": {
     "rs_not_computed_3heavy_implicit_h_gap": 2,
-    "rs_computed_but_writer_emits_meaningless_bond_direction_token": 2,
+    "rs_computed_and_chirality_now_reaches_writer": 2,
     "rs_not_computed_despite_rdkit_success": 2,
     "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file": 1,
     "correctly_no_stereo_both_agree": 3,
     "degenerate_coords_correctly_yields_no_stereo": 1,
     "ez_computed_but_no_bond_direction_for_writer": 1,
-    "no_consistency_check_both_wedges_silently_tokenized": 1,
+    "wedges_agree_in_isolation_chirality_now_resolved": 1,
     "silent_result_from_corrupted_fallback_positions_not_error": 1
   },
   "unexplained_count": 0,
@@ -27,10 +27,15 @@
         "post_apply_stereo_from_2d_fields": [
           {
             "atom": 0,
-            "chirality": "None",
+            "chirality": "CounterClockwise",
             "cip_code": null,
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              1,
+              2,
+              3,
+              4294967295
+            ]
           },
           {
             "atom": 1,
@@ -54,9 +59,9 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(F)(Cl)/Br",
-        "naive_canonical_smiles": "C(/Br)(Cl)F",
-        "chirality_reached_writer": false,
+        "naive_smiles_write": "C(F)(Cl)Br",
+        "naive_canonical_smiles": "[C@H](Br)(Cl)F",
+        "chirality_reached_writer": true,
         "note": null
       },
       "rdkit": {
@@ -133,10 +138,15 @@
         "post_apply_stereo_from_2d_fields": [
           {
             "atom": 0,
-            "chirality": "None",
+            "chirality": "Clockwise",
             "cip_code": "S",
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              1,
+              2,
+              3,
+              4
+            ]
           },
           {
             "atom": 1,
@@ -167,9 +177,9 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(F)(Cl)(/Br)\\[H]",
-        "naive_canonical_smiles": "FC(/Br)(Cl)/[H]",
-        "chirality_reached_writer": false,
+        "naive_smiles_write": "C(F)(Cl)(Br)[H]",
+        "naive_canonical_smiles": "F[C@](Br)(Cl)[H]",
+        "chirality_reached_writer": true,
         "note": null
       },
       "rdkit": {
@@ -228,8 +238,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token",
-      "expected_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token"
+      "failure_bucket": "rs_computed_and_chirality_now_reaches_writer",
+      "expected_bucket": "rs_computed_and_chirality_now_reaches_writer"
     },
     {
       "id": "tetrahedral_4heavy_no_h",
@@ -246,10 +256,15 @@
         "post_apply_stereo_from_2d_fields": [
           {
             "atom": 0,
-            "chirality": "None",
+            "chirality": "Clockwise",
             "cip_code": "R",
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              1,
+              2,
+              3,
+              4
+            ]
           },
           {
             "atom": 1,
@@ -280,9 +295,9 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(F)(Cl)(/Br)\\I",
-        "naive_canonical_smiles": "C(/Br)(Cl)(/I)F",
-        "chirality_reached_writer": false,
+        "naive_smiles_write": "C(F)(Cl)(Br)I",
+        "naive_canonical_smiles": "[C@@](Br)(Cl)(I)F",
+        "chirality_reached_writer": true,
         "note": null
       },
       "rdkit": {
@@ -354,8 +369,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token",
-      "expected_bucket": "rs_computed_but_writer_emits_meaningless_bond_direction_token"
+      "failure_bucket": "rs_computed_and_chirality_now_reaches_writer",
+      "expected_bucket": "rs_computed_and_chirality_now_reaches_writer"
     },
     {
       "id": "solid_wedge_only",
@@ -367,10 +382,15 @@
         "post_apply_stereo_from_2d_fields": [
           {
             "atom": 0,
-            "chirality": "None",
+            "chirality": "CounterClockwise",
             "cip_code": null,
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              1,
+              2,
+              3,
+              4294967295
+            ]
           },
           {
             "atom": 1,
@@ -394,9 +414,9 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(/F)(Cl)Br",
-        "naive_canonical_smiles": "C(Br)(Cl)/F",
-        "chirality_reached_writer": false,
+        "naive_smiles_write": "C(F)(Cl)Br",
+        "naive_canonical_smiles": "[C@H](Br)(Cl)F",
+        "chirality_reached_writer": true,
         "note": null
       },
       "rdkit": {
@@ -468,10 +488,15 @@
         "post_apply_stereo_from_2d_fields": [
           {
             "atom": 0,
-            "chirality": "None",
+            "chirality": "Clockwise",
             "cip_code": null,
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              1,
+              2,
+              3,
+              4294967295
+            ]
           },
           {
             "atom": 1,
@@ -495,9 +520,9 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(\\F)(Cl)Br",
-        "naive_canonical_smiles": "C(Br)(Cl)/F",
-        "chirality_reached_writer": false,
+        "naive_smiles_write": "C(F)(Cl)Br",
+        "naive_canonical_smiles": "[C@@H](Br)(Cl)F",
+        "chirality_reached_writer": true,
         "note": null
       },
       "rdkit": {
@@ -608,8 +633,8 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(F)(Cl)(/Br)\\[H]",
-        "naive_canonical_smiles": "FC(/Br)(Cl)/[H]",
+        "naive_smiles_write": "C(F)(Cl)(Br)[H]",
+        "naive_canonical_smiles": "FC(Br)(Cl)[H]",
         "chirality_reached_writer": false,
         "note": null
       },
@@ -689,10 +714,15 @@
           },
           {
             "atom": 1,
-            "chirality": "None",
+            "chirality": "CounterClockwise",
             "cip_code": null,
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              0,
+              2,
+              3,
+              4294967295
+            ]
           },
           {
             "atom": 2,
@@ -703,10 +733,15 @@
           },
           {
             "atom": 3,
-            "chirality": "None",
+            "chirality": "Clockwise",
             "cip_code": null,
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              1,
+              4,
+              5,
+              4294967295
+            ]
           },
           {
             "atom": 4,
@@ -723,9 +758,9 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "CC(/Br)C(\\Br)C",
-        "naive_canonical_smiles": "CC(/Br)C(/Br)C",
-        "chirality_reached_writer": false,
+        "naive_smiles_write": "CC(Br)C(Br)C",
+        "naive_canonical_smiles": "C[C@@H](Br)[C@H](Br)C",
+        "chirality_reached_writer": true,
         "note": null
       },
       "rdkit": {
@@ -964,10 +999,15 @@
         "post_apply_stereo_from_2d_fields": [
           {
             "atom": 0,
-            "chirality": "None",
+            "chirality": "Clockwise",
             "cip_code": null,
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              1,
+              2,
+              3,
+              4
+            ]
           },
           {
             "atom": 1,
@@ -998,9 +1038,9 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(C)(C)(/F)Cl",
-        "naive_canonical_smiles": "C(Cl)(C)(C)/F",
-        "chirality_reached_writer": false,
+        "naive_smiles_write": "C(C)(C)(F)Cl",
+        "naive_canonical_smiles": "[C@@](Cl)(C)(C)F",
+        "chirality_reached_writer": true,
         "note": null
       },
       "rdkit": {
@@ -1112,8 +1152,8 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(F)(Cl)/Br",
-        "naive_canonical_smiles": "C(/Br)(Cl)F",
+        "naive_smiles_write": "C(F)(Cl)Br",
+        "naive_canonical_smiles": "C(Br)(Cl)F",
         "chirality_reached_writer": false,
         "note": null
       },
@@ -1373,10 +1413,15 @@
         "post_apply_stereo_from_2d_fields": [
           {
             "atom": 0,
-            "chirality": "None",
+            "chirality": "CounterClockwise",
             "cip_code": null,
             "element": "C",
-            "stereo_neighbor_order": null
+            "stereo_neighbor_order": [
+              1,
+              2,
+              3,
+              4294967295
+            ]
           },
           {
             "atom": 1,
@@ -1400,9 +1445,9 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "C(/F)(/Cl)Br",
-        "naive_canonical_smiles": "C(Br)(/Cl)/F",
-        "chirality_reached_writer": false,
+        "naive_smiles_write": "C(F)(Cl)Br",
+        "naive_canonical_smiles": "[C@H](Br)(Cl)F",
+        "chirality_reached_writer": true,
         "note": null
       },
       "rdkit": {
@@ -1461,8 +1506,8 @@
         "any_cip_code": true,
         "any_bond_stereo": false
       },
-      "failure_bucket": "no_consistency_check_both_wedges_silently_tokenized",
-      "expected_bucket": "no_consistency_check_both_wedges_silently_tokenized"
+      "failure_bucket": "wedges_agree_in_isolation_chirality_now_resolved",
+      "expected_bucket": "wedges_agree_in_isolation_chirality_now_resolved"
     },
     {
       "id": "coord_atom_count_mismatch",

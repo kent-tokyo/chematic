@@ -50,10 +50,46 @@ EXPECTED_RDKIT_VERSION = "2026.03.3"
 # "not computed despite RDKit success") would still report 0 unexplained.
 # Adding, renaming, or removing a fixture in stereo2d_fixture_dump.rs without
 # updating this map is caught below (missing/extra IDs), not silently ignored.
+# 2026-07-25 update: three rows below changed bucket after the P1-A0
+# reader-integration PR shipped (`chematic_mol::read_mol_with_diagnostics`
+# now calls `apply_local_parity_from_wedges_with_diagnostics` from inside
+# `parse_mol_with_coords` -- exactly the fix this diagnosis's own §7 called
+# for). This example's `main()` still calls `parse_mol_with_coords` on each
+# fixture, so `chirality_reached_writer` (computed from the SAME parsed
+# `Molecule`, before this script's own subsequent `apply_stereo_from_2d`
+# call) now flips from `False` to `True` for any fixture whose wedge(s)
+# resolve to a valid local parity. Re-verified against the regenerated
+# `stereo2d_fixture_dump.jsonl`, not assumed:
+#   - tetrahedral_4neighbors_explicit_h / tetrahedral_4heavy_no_h: chematic
+#     already computed R/S via the old CIP engine; the only thing that
+#     changed is `Atom.chirality` on the parsed `Molecule` now ALSO gets
+#     populated (was `None` -- the literal gap this diagnosis reported).
+#     CAUTION: `chirality_reached_writer` means exactly that -- `chirality`
+#     is set on the molecule before any writer runs -- NOT that the plain
+#     (non-canonical) `write()` text now contains `@`. Checked directly
+#     against `naive_smiles_write` in the regenerated dump: it is still
+#     `@`-free for all three rows (chematic-smiles's `write()` doesn't
+#     bracket an atom on `chirality` alone; that's pre-existing, unrelated
+#     to this PR). The recovered parity DOES surface in `canonical_smiles()`
+#     output -- verified separately by
+#     `crates/chematic-mol/tests/stereo_reader_integration.rs::mol_sourced_wedge_survives_to_canonical_smiles_without_meaningless_slash`,
+#     which is the actual "survives to SMILES" claim this PR makes.
+#   - contradictory_wedge_annotations: its two "up" wedges (tripod_atoms
+#     geometry, F and Cl) turn out to AGREE in isolation under the
+#     calibrated per-wedge consistency check (`wedges_agree_3` --
+#     "same direction" is not itself the discriminator, see
+#     docs/stereo2d_local_parity_calibration.md's "Multi-wedge consistency"
+#     section) -- so this specific fixture was never a genuine contradiction,
+#     and chematic now correctly resolves a definite local parity for it
+#     instead of the old "no consistency check at all" bug. A geometry that
+#     IS a genuine per-wedge disagreement (e.g. the 4-heavy quad_positions
+#     layout) is separately covered by the new reader-integration corpus's
+#     own `contradictory_wedge_v2000` fixture, which chematic still
+#     correctly rejects.
 EXPECTED_BUCKET_BY_ID = {
     "tetrahedral_3heavy_implicit_h": "rs_not_computed_3heavy_implicit_h_gap",
-    "tetrahedral_4neighbors_explicit_h": "rs_computed_but_writer_emits_meaningless_bond_direction_token",
-    "tetrahedral_4heavy_no_h": "rs_computed_but_writer_emits_meaningless_bond_direction_token",
+    "tetrahedral_4neighbors_explicit_h": "rs_computed_and_chirality_now_reaches_writer",
+    "tetrahedral_4heavy_no_h": "rs_computed_and_chirality_now_reaches_writer",
     "solid_wedge_only": "rs_not_computed_despite_rdkit_success",
     "dashed_wedge_only": "rs_not_computed_despite_rdkit_success",
     "wedge_atom_order_reversed": "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file",
@@ -63,7 +99,7 @@ EXPECTED_BUCKET_BY_ID = {
     "degenerate_2d_coordinates": "degenerate_coords_correctly_yields_no_stereo",
     "ez_geometry_2butene": "ez_computed_but_no_bond_direction_for_writer",
     "terminal_alkene_propene": "correctly_no_stereo_both_agree",
-    "contradictory_wedge_annotations": "no_consistency_check_both_wedges_silently_tokenized",
+    "contradictory_wedge_annotations": "wedges_agree_in_isolation_chirality_now_resolved",
     "coord_atom_count_mismatch": "silent_result_from_corrupted_fallback_positions_not_error",
 }
 
@@ -84,6 +120,8 @@ EXPECTED_BUCKETS = {
     "wedge_atom_order_reversed_chematic_only",
     "ez_computed_but_no_bond_direction_for_writer",
     "no_consistency_check_both_wedges_silently_tokenized",
+    "rs_computed_and_chirality_now_reaches_writer",
+    "wedges_agree_in_isolation_chirality_now_resolved",
 }
 
 
@@ -189,6 +227,11 @@ def classify(fixture, rdkit_result):
         return "unexpected_3heavy_result"
 
     if mech in ("tetrahedral_4neighbors", "tetrahedral_4heavy_no_h", "solid_wedge", "dashed_wedge"):
+        if chematic_rs and chirality_reached_writer:
+            # The reader-integration fix: chirality (from the new
+            # apply_local_parity_from_wedges_with_diagnostics wiring) now
+            # correctly reaches the writer alongside the old engine's R/S.
+            return "rs_computed_and_chirality_now_reaches_writer"
         if chematic_rs and not chirality_reached_writer:
             if direction_token_count > 0:
                 return "rs_computed_but_writer_emits_meaningless_bond_direction_token"
@@ -226,9 +269,18 @@ def classify(fixture, rdkit_result):
     if mech == "contradictory_wedges":
         # The bucket's claim is specifically "both wedges got tokenized
         # independently" -- verify two direction tokens actually appear,
-        # not just that the mechanism ran.
+        # not just that the mechanism ran. This is pre-PR#140/pre-reader-
+        # integration behavior; kept as a reachable bucket in case a future
+        # fixture reproduces it, but this specific corpus's fixture no
+        # longer lands here (see the two buckets below).
         if direction_token_count >= 2:
             return "no_consistency_check_both_wedges_silently_tokenized"
+        if chirality_reached_writer:
+            # This fixture's two "up" wedges agree in isolation under the
+            # calibrated per-wedge consistency check (wedges_agree_3) -- not
+            # a genuine contradiction, so chematic now resolves a definite
+            # local parity instead of silently doing nothing.
+            return "wedges_agree_in_isolation_chirality_now_resolved"
         return "unexpected_contradictory_wedge_result"
 
     return "unclassified"
@@ -274,6 +326,25 @@ def _self_test():
     # main() runs on the real dump.
     dup_ids = ["a", "b", "a"]
     assert len(set(dup_ids)) != len(dup_ids), "self-test C: duplicate-ID fixture itself has no duplicates"
+
+    # Control E (2026-07-25): the reader-integration branch added above must
+    # actually be reachable, not just fall through to Control B's
+    # unexpected_* bucket by coincidence of shared shape. Same mechanism/
+    # single-token shape as Control B's weak_evidence_fixture, but with
+    # chirality_reached_writer=True (i.e. wedges that genuinely agree in
+    # isolation) -- must land on the new bucket, not the fail-closed default.
+    resolved_fixture = {
+        "mechanism": "contradictory_wedges",
+        "assign_stereo_from_2d_result": [],
+        "assign_ez_from_2d_result": [],
+        "chirality_reached_writer": True,
+        "naive_smiles_write": "C(/F)Cl",  # still only one token -- irrelevant once chirality resolved
+    }
+    resolved_bucket = classify(resolved_fixture, {"parsed": True, "any_chiral_tag": False, "any_bond_stereo": False})
+    assert resolved_bucket == "wedges_agree_in_isolation_chirality_now_resolved", (
+        f"self-test E: expected the reader-integration branch to fire, got {resolved_bucket!r}"
+    )
+    assert resolved_bucket in EXPECTED_BUCKETS, "self-test E: its own bucket isn't in the whitelist"
 
     # Control D: the frozen per-ID baseline must actually pin ONE bucket, not
     # just any whitelisted one -- prove that wedge_atom_order_reversed's
