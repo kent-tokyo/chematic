@@ -66,6 +66,107 @@ def inchi_b_layer(rdkit_mol, Chem):
     return None
 
 
+def inchi_b_layer_and_auxinfo_n(rdkit_mol, Chem):
+    """Return `(b_layer, n_list)` for `rdkit_mol`'s standard InChI, where
+    `n_list[k]` (0-indexed) is the 1-based ORIGINAL (native) atom number
+    corresponding to InChI canonical atom `k+1` -- the `/N:` segment of
+    `Chem.MolToInchiAndAuxInfo`'s AuxInfo string. Both `None` if InChI
+    generation fails or the AuxInfo has no `/N:` segment.
+
+    Verified empirically (not assumed from memory) on two independent hand-
+    built fixtures before trusting this at corpus scale -- see
+    `_self_test_auxinfo_mapping()` below, which reproduces both checks.
+    """
+    if rdkit_mol is None:
+        return None, None
+    stderr_buf = io.StringIO()
+    with redirect_stderr(stderr_buf):
+        inchi, auxinfo = Chem.MolToInchiAndAuxInfo(rdkit_mol)
+    if not inchi:
+        return None, None
+    b_layer = None
+    for part in inchi.split("/"):
+        if part.startswith("b"):
+            b_layer = part
+            break
+    n_list = None
+    if auxinfo:
+        for part in auxinfo.split("/"):
+            if part.startswith("N:"):
+                n_list = [int(x) for x in part[2:].split(",")]
+                break
+    return b_layer, n_list
+
+
+def native_pair_from_inchi_key(n_list, inchi_key_pair):
+    """Reverse-map an InChI-canonical-numbered bond key (as produced by
+    `parse_b_layer`, i.e. a sorted pair of 1-based InChI atom numbers as
+    strings) to a native 0-based atom index pair, via `n_list` (see
+    `inchi_b_layer_and_auxinfo_n`). Returns `None` if `n_list` is missing or
+    either index is out of range."""
+    if n_list is None:
+        return None
+    try:
+        a, b = inchi_key_pair
+        native_a = n_list[int(a) - 1] - 1
+        native_b = n_list[int(b) - 1] - 1
+    except (IndexError, ValueError):
+        return None
+    return tuple(sorted((native_a, native_b)))
+
+
+def _self_test_auxinfo_mapping(Chem):
+    """Positive control: confirm the /N: reverse-mapping recipe actually
+    recovers a bond whose native identity we already know, on two
+    independently-shaped fixtures, before trusting it at corpus scale."""
+    # Fixture 1: but-2-ene, double bond is native 0-based atoms (1, 2).
+    but2ene = """t1
+  t
+
+  4  3  0  0  0  0  0  0  0  0999 V2000
+   -0.8660    0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.3660    0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  2  0
+  3  4  1  0
+M  END
+"""
+    mol1 = Chem.MolFromMolBlock(but2ene)
+    b1, n1 = inchi_b_layer_and_auxinfo_n(mol1, Chem)
+    entries1 = parse_b_layer(b1)
+    assert len(entries1) == 1, f"self-test auxinfo-1: expected exactly one /b entry, got {entries1}"
+    (key1,) = entries1.keys()
+    native1 = native_pair_from_inchi_key(n1, key1)
+    assert native1 == (1, 2), f"self-test auxinfo-1: expected native pair (1, 2), got {native1}"
+
+    # Fixture 2: Cl(Br)C=CHCH3 (trisubstituted), double bond is native
+    # 0-based atoms (0, 3).
+    trisub = """t2
+  t
+
+  5  4  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.8660    0.5000    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+   -0.8660   -0.5000    0.0000 Br  0  0  0  0  0  0  0  0  0  0  0  0
+    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.3660    0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  1  3  1  0
+  1  4  2  0
+  4  5  1  0
+M  END
+"""
+    mol2 = Chem.MolFromMolBlock(trisub)
+    b2, n2 = inchi_b_layer_and_auxinfo_n(mol2, Chem)
+    entries2 = parse_b_layer(b2)
+    assert len(entries2) == 1, f"self-test auxinfo-2: expected exactly one /b entry, got {entries2}"
+    (key2,) = entries2.keys()
+    native2 = native_pair_from_inchi_key(n2, key2)
+    assert native2 == (0, 3), f"self-test auxinfo-2: expected native pair (0, 3), got {native2}"
+
+
 def parse_b_layer(b):
     """Return `{sorted (a, b) canonical-InChI-atom-pair: '+'|'-'|'?'}`, or
     `{}` if there is no b-layer at all (no resolvable E/Z stereo)."""
@@ -92,6 +193,8 @@ def main():
 
     from rdkit import Chem, rdBase
     from rdkit.Chem import AllChem
+
+    _self_test_auxinfo_mapping(Chem)
 
     installed_version = rdBase.rdkitVersion
     version_mismatch = installed_version != EXPECTED_RDKIT_VERSION
@@ -129,6 +232,12 @@ def main():
     semantic_inversions = []
     false_positives = []
     cumulene_cases = 0
+    # Detail records for every RDKit-resolved-but-chematic-abstained bond,
+    # reverse-mapped to native (0-based, chematic AtomIdx-order) atom index
+    # pairs via the InChI AuxInfo /N: layer -- consumed by
+    # crates/chematic-mol/examples/stereo2d_ez_corpus_abstain_classify.rs to
+    # produce the population-346 abstain-reason reconciliation table.
+    chematic_abstained_detail = []
 
     for i, smi in enumerate(lines):
         rdkit_mol = Chem.MolFromSmiles(smi)
@@ -147,7 +256,8 @@ def main():
         stderr_buf = io.StringIO()
         with redirect_stderr(stderr_buf):
             rdkit_reparsed = Chem.MolFromMolBlock(mol_block)
-        rdkit_b = parse_b_layer(inchi_b_layer(rdkit_reparsed, Chem))
+        rdkit_b_raw, rdkit_n_list = inchi_b_layer_and_auxinfo_n(rdkit_reparsed, Chem)
+        rdkit_b = parse_b_layer(rdkit_b_raw)
         if rdkit_b:
             rdkit_resolved_molecules += 1
             resolved_ez_bonds += len(rdkit_b)
@@ -193,6 +303,16 @@ def main():
             # rv is a real sign ('+' or '-'): RDKit resolved this bond.
             if cv in (None, "?"):
                 bond_chematic_abstained += 1
+                native_pair = native_pair_from_inchi_key(rdkit_n_list, key)
+                chematic_abstained_detail.append(
+                    {
+                        "index": i,
+                        "smiles": smi,
+                        "mol_block": mol_block,
+                        "bond_key": key,
+                        "native_atom_pair": list(native_pair) if native_pair else None,
+                    }
+                )
             elif cv == rv:
                 bond_semantic_agreements += 1
             else:
@@ -226,6 +346,7 @@ def main():
         "no_stereo_both_agree_molecules": no_stereo_both_agree_molecules,
         "bond_semantic_agreements": bond_semantic_agreements,
         "bond_chematic_abstained": bond_chematic_abstained,
+        "chematic_abstained_detail": chematic_abstained_detail,
         "semantic_inversions_count": len(semantic_inversions),
         "semantic_inversions": semantic_inversions[:50],
         "false_positive_count": len(false_positives),
@@ -241,6 +362,11 @@ def main():
     print(f"no_stereo_both_agree_molecules={no_stereo_both_agree_molecules}")
     print(f"[per-bond] semantic_agreements={bond_semantic_agreements} chematic_abstained={bond_chematic_abstained}")
     print(f"[per-bond] semantic_inversions={len(semantic_inversions)} false_positives={len(false_positives)} (cumulene subset: {cumulene_cases})")
+    unmapped = sum(1 for d in chematic_abstained_detail if d["native_atom_pair"] is None)
+    print(f"chematic_abstained_detail: {len(chematic_abstained_detail)} recorded, {unmapped} failed native-index reverse-mapping (must be 0)")
+    if unmapped:
+        print("FAIL: AuxInfo /N: reverse-mapping failed for one or more abstained bonds -- investigate before trusting the reconciliation table", file=sys.stderr)
+        sys.exit(1)
 
     if semantic_inversions or false_positives:
         print("FAIL: required gates violated (semantic_inversions==0, false_positives==0)", file=sys.stderr)
