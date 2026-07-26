@@ -10,7 +10,7 @@
     "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file": 1,
     "correctly_no_stereo_both_agree": 3,
     "degenerate_coords_correctly_yields_no_stereo": 1,
-    "ez_computed_but_no_bond_direction_for_writer": 1,
+    "ez_direction_now_reaches_writer": 1,
     "wedges_agree_in_isolation_chirality_now_resolved": 1,
     "silent_result_from_corrupted_fallback_positions_not_error": 1
   },
@@ -118,7 +118,8 @@
         "canonical_smiles": "F[C@H](Cl)Br",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap",
       "expected_bucket": "rs_not_computed_3heavy_implicit_h_gap"
@@ -236,7 +237,8 @@
         "canonical_smiles": "F[C@@H](Cl)Br",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "rs_computed_and_chirality_now_reaches_writer",
       "expected_bucket": "rs_computed_and_chirality_now_reaches_writer"
@@ -367,7 +369,8 @@
         "canonical_smiles": "F[C@@](Cl)(Br)I",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "rs_computed_and_chirality_now_reaches_writer",
       "expected_bucket": "rs_computed_and_chirality_now_reaches_writer"
@@ -473,7 +476,8 @@
         "canonical_smiles": "F[C@H](Cl)Br",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "rs_not_computed_despite_rdkit_success",
       "expected_bucket": "rs_not_computed_despite_rdkit_success"
@@ -579,7 +583,8 @@
         "canonical_smiles": "F[C@@H](Cl)Br",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "rs_not_computed_despite_rdkit_success",
       "expected_bucket": "rs_not_computed_despite_rdkit_success"
@@ -692,7 +697,8 @@
         "canonical_smiles": "F[C@@H](Cl)Br",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file",
       "expected_bucket": "wedge_atom_order_reversed_agrees_with_rdkit_on_same_file"
@@ -843,7 +849,8 @@
         "canonical_smiles": "C[C@H](Br)[C@H](C)Br",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "rs_not_computed_3heavy_implicit_h_gap",
       "expected_bucket": "rs_not_computed_3heavy_implicit_h_gap"
@@ -984,7 +991,8 @@
         "canonical_smiles": "CC(Br)C(C)Br",
         "any_chiral_tag": false,
         "any_cip_code": false,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "correctly_no_stereo_both_agree",
       "expected_bucket": "correctly_no_stereo_both_agree"
@@ -1110,7 +1118,8 @@
         "canonical_smiles": "CC(C)(F)Cl",
         "any_chiral_tag": false,
         "any_cip_code": false,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "correctly_no_stereo_both_agree",
       "expected_bucket": "correctly_no_stereo_both_agree"
@@ -1211,7 +1220,8 @@
         "canonical_smiles": "FC(Cl)Br",
         "any_chiral_tag": false,
         "any_cip_code": false,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "degenerate_coords_correctly_yields_no_stereo",
       "expected_bucket": "degenerate_coords_correctly_yields_no_stereo"
@@ -1258,8 +1268,8 @@
             "stereo_neighbor_order": null
           }
         ],
-        "naive_smiles_write": "CC=CC",
-        "naive_canonical_smiles": "C(=CC)C",
+        "naive_smiles_write": "C\\C=C/C",
+        "naive_canonical_smiles": "C(=C/C)/C",
         "chirality_reached_writer": false,
         "note": null
       },
@@ -1317,10 +1327,11 @@
         "canonical_smiles": "C/C=C\\C",
         "any_chiral_tag": false,
         "any_cip_code": false,
-        "any_bond_stereo": true
+        "any_bond_stereo": true,
+        "inchi_b_layer": "b4-3-"
       },
-      "failure_bucket": "ez_computed_but_no_bond_direction_for_writer",
-      "expected_bucket": "ez_computed_but_no_bond_direction_for_writer"
+      "failure_bucket": "ez_direction_now_reaches_writer",
+      "expected_bucket": "ez_direction_now_reaches_writer"
     },
     {
       "id": "terminal_alkene_propene",
@@ -1398,7 +1409,8 @@
         "canonical_smiles": "C=CC",
         "any_chiral_tag": false,
         "any_cip_code": false,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "correctly_no_stereo_both_agree",
       "expected_bucket": "correctly_no_stereo_both_agree"
@@ -1504,7 +1516,8 @@
         "canonical_smiles": "F[C@H](Cl)Br",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "wedges_agree_in_isolation_chirality_now_resolved",
       "expected_bucket": "wedges_agree_in_isolation_chirality_now_resolved"
@@ -1581,7 +1594,8 @@
         "canonical_smiles": "F[C@@H](Cl)Br",
         "any_chiral_tag": true,
         "any_cip_code": true,
-        "any_bond_stereo": false
+        "any_bond_stereo": false,
+        "inchi_b_layer": null
       },
       "failure_bucket": "silent_result_from_corrupted_fallback_positions_not_error",
       "expected_bucket": "silent_result_from_corrupted_fallback_positions_not_error"

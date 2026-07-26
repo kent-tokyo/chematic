@@ -53,7 +53,24 @@ stereo2d_reader_integration_fixture_dump.rs` +
 agreement, renumbering/reflection/rotation invariance, round-trip
 losslessness, ring/charged/isotopic stereocenters, and the new diagnostics
 API — a companion to, not a replacement for, this document's original
-14-fixture diagnosis, which remains historically accurate and unmodified).
+14-fixture diagnosis in §4 below). **Policy note (corrected 2026-07-26):** an
+earlier version of this document implied `stereo2d_fixture_dump.jsonl` and
+its diagnosis baseline in `scripts/stereo2d_diagnosis.py` were permanently
+frozen/never-touched. That was never actually true in practice: PR #154
+itself regenerated the dump and added two new `EXPECTED_BUCKET_BY_ID`
+entries when its own reader-integration change legitimately altered fixture
+output (`957ea39`), and P1-S2 (Track B) did the same for one more fixture
+(`ez_geometry_2butene`) when E/Z direction-writing shipped. The actual,
+going-forward policy is: **when a legitimate production behavior change
+alters what a P1-A0 fixture's reader output looks like, both the dump file
+and the diagnosis script's expected-bucket whitelist are regenerated and
+updated together, in the same PR, with the new bucket backed by real
+semantic evidence** (not just "a token appeared") — exactly what both PRs
+above did. What stays fixed is this document's own historical narrative
+(§1–§6 below: why the original diagnosis was undertaken, what it found, and
+the design questions it answered) — not the raw fixture dump or the
+script's classification baseline, which are working test assets expected to
+track production behavior.
 
 **Scope:** this document does not implement a wedge→SMILES stereo converter. It
 answers a narrower, prior question: *where should chematic call stereo
