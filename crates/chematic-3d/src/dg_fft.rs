@@ -31,7 +31,7 @@ use crate::coords::{Coords3D, Point3};
 /// - Bond lengths (from ideal values ± tolerance)
 /// - Angle constraints (from ideal angles)
 /// - Van der Waals (from VDW radii sum)
-fn build_bound_matrix(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+pub(crate) fn build_bound_matrix(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
     let n = mol.atom_count();
     let mut lower = vec![vec![0.0; n]; n];
     let mut upper = vec![vec![f64::INFINITY; n]; n];
@@ -109,26 +109,42 @@ fn build_bound_matrix(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
 }
 
 /// Ideal bond length (Å) from atom pair and bond order.
-fn ideal_bond_length(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> f64 {
-    let ea = mol.atom(a).element.atomic_number();
-    let eb = mol.atom(b).element.atomic_number();
+///
+/// Generic covalent-radius-sum model (`chematic_core::Element::covalent_radius`,
+/// full periodic table) with a Pauling-style bond-order length correction, rather
+/// than a small hardcoded element-pair table. This fixes a real bug the previous
+/// 9-entry match table had: `BondOrder::Aromatic` (the order chematic's own SMILES
+/// parser actually assigns to lowercase aromatic atoms, e.g. `c1ccccc1` -- see
+/// `chematic-smiles/src/parser.rs::implicit_bond`) matched none of the table's arms
+/// and silently fell through to the `_ => 1.54` single-bond default, overestimating
+/// every aromatic bond (true aromatic C-C is ~1.39 Å, not 1.54 Å) and every other
+/// element pair not in the 9-entry list (S, P, Br, I, N-N, O-O, ...). The scale
+/// factors below (single=1.00, double=0.87, triple=0.78, aromatic=0.93) are the
+/// same values `scripts/etkdg_vs_rdkit_gap.py::_BOND_ORDER_SCALE` uses against
+/// RDKit's `GetRcovalent`, so this is a standard/public bond-order correction, not
+/// something reverse-engineered from a single molecule.
+pub(crate) fn ideal_bond_length(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> f64 {
+    let ra = mol.atom(a).element.covalent_radius() as f64;
+    let rb = mol.atom(b).element.covalent_radius() as f64;
     let order = mol
         .bond_between(a, b)
         .map(|(_, bond)| bond.order)
         .unwrap_or(chematic_core::BondOrder::Single);
+    (ra + rb) * bond_order_length_scale(order)
+}
 
-    // Simplified table (same as current DG implementation)
-    match (ea.min(eb), ea.max(eb), order) {
-        (6, 6, BondOrder::Single) => 1.54,
-        (6, 6, BondOrder::Double) => 1.34,
-        (6, 6, BondOrder::Triple) => 1.20,
-        (6, 7, BondOrder::Single) => 1.47,
-        (6, 8, BondOrder::Single) => 1.43,
-        (6, 9, _) => 1.35,
-        (1, 6, _) => 1.09,
-        (1, 7, _) => 1.01,
-        (1, 8, _) => 0.96,
-        _ => 1.54,
+/// Pauling-style bond-order length scale factor (relative to the single-bond
+/// covalent-radius sum). `Quadruple`/`Up`/`Down`/`Zero` are treated as single-bond
+/// length: `Up`/`Down` are directional *single* bonds (E/Z markers) in this
+/// codebase's `BondOrder`, not a distinct bond order; `Quadruple`/zero-order bonds
+/// have no well-established public length-correction table and default to 1.00
+/// rather than guessing.
+pub(crate) fn bond_order_length_scale(order: BondOrder) -> f64 {
+    match order {
+        BondOrder::Double => 0.87,
+        BondOrder::Triple => 0.78,
+        BondOrder::Aromatic => 0.93,
+        _ => 1.00,
     }
 }
 
@@ -153,21 +169,28 @@ fn ideal_bond_angle(mol: &Molecule, center: AtomIdx) -> f64 {
 
 /// Van der Waals distance (sum of VDW radii, Å).
 fn vdw_distance(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> f64 {
-    let r_a = vdw_radius(mol.atom(a).element.atomic_number());
-    let r_b = vdw_radius(mol.atom(b).element.atomic_number());
-    r_a + r_b
+    vdw_radius(mol, a) + vdw_radius(mol, b)
 }
 
-fn vdw_radius(atomic_num: u8) -> f64 {
-    match atomic_num {
+/// Bondi (1964) van der Waals radii (Å), public-domain standard table -- the same
+/// category of source RDKit itself draws non-bonded radii from. Elements outside this
+/// short list fall back to `covalent_radius() + 0.75`, a rough but monotonic estimate
+/// (real VdW/covalent ratios run ~1.2-1.9x across the periodic table) rather than a
+/// flat constant that would be wrong in both directions for very small/large atoms.
+fn vdw_radius(mol: &Molecule, idx: AtomIdx) -> f64 {
+    let el = mol.atom(idx).element;
+    match el.atomic_number() {
         1 => 1.20,  // H
         6 => 1.70,  // C
         7 => 1.55,  // N
         8 => 1.52,  // O
         9 => 1.47,  // F
+        15 => 1.80, // P
         16 => 1.80, // S
         17 => 1.75, // Cl
-        _ => 1.70,
+        35 => 1.85, // Br
+        53 => 1.98, // I
+        _ => el.covalent_radius() as f64 + 0.75,
     }
 }
 
@@ -301,7 +324,12 @@ pub fn generate_coords_dg(mol: &Molecule) -> Coords3D {
 /// both atoms half the violation along their connecting axis. After enough
 /// iterations every pair converges inside its bounds. Classical MDS is used
 /// only as the initial placement; this step enforces the geometry.
-fn refine_coords(coords: &mut Coords3D, lower: &[Vec<f64>], upper: &[Vec<f64>], n_iter: usize) {
+pub(crate) fn refine_coords(
+    coords: &mut Coords3D,
+    lower: &[Vec<f64>],
+    upper: &[Vec<f64>],
+    n_iter: usize,
+) {
     let n = coords.atom_count();
     for _ in 0..n_iter {
         for i in 0..n {
@@ -364,7 +392,7 @@ fn refine_coords(coords: &mut Coords3D, lower: &[Vec<f64>], upper: &[Vec<f64>], 
 /// After smoothing, upper[i][j] is finite for all atom pairs in a connected
 /// molecule, eliminating the infinity entries that would produce NaN in the
 /// Gram matrix.
-fn smooth_bounds(lower: &mut [Vec<f64>], upper: &mut [Vec<f64>]) {
+pub(crate) fn smooth_bounds(lower: &mut [Vec<f64>], upper: &mut [Vec<f64>]) {
     let n = lower.len();
     for k in 0..n {
         for i in 0..n {
@@ -400,7 +428,7 @@ fn smooth_bounds(lower: &mut [Vec<f64>], upper: &mut [Vec<f64>]) {
 /// This is equivalent to centering the inner-product matrix at the centroid
 /// of all atoms, which distributes the reference symmetrically rather than
 /// anchoring at atom 0.
-fn distance_to_gram_matrix(dist: &[Vec<f64>]) -> Vec<Vec<f64>> {
+pub(crate) fn distance_to_gram_matrix(dist: &[Vec<f64>]) -> Vec<Vec<f64>> {
     let n = dist.len();
     if n == 0 {
         return vec![];
@@ -427,7 +455,7 @@ fn distance_to_gram_matrix(dist: &[Vec<f64>]) -> Vec<Vec<f64>> {
 ///
 /// Returns (eigenvalues, eigenvectors) where eigenvectors[i][j] is the
 /// i-th component of the j-th eigenvector.
-fn jacobi_eigendecompose(mat: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>>) {
+pub(crate) fn jacobi_eigendecompose(mat: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>>) {
     let n = mat.len();
     let mut a = mat.to_vec();
     let mut v = vec![vec![0.0; n]; n];
@@ -505,7 +533,7 @@ fn jacobi_eigendecompose(mat: &[Vec<f64>]) -> (Vec<f64>, Vec<Vec<f64>>) {
 }
 
 /// Center coordinates at origin (centroid).
-fn center_coordinates(coords: &mut Coords3D) {
+pub(crate) fn center_coordinates(coords: &mut Coords3D) {
     let n = coords.atom_count();
     if n == 0 {
         return;

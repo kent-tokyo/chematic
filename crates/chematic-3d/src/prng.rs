@@ -21,6 +21,18 @@ impl Prng {
         Self(seed)
     }
 
+    /// Create a PRNG from an explicit, caller-controlled seed.
+    ///
+    /// Unlike [`Prng::new`] (process-global atomic counter, no reproducibility contract),
+    /// this is fully call-local and deterministic: the same `seed` on the same
+    /// target/thread-count always produces the same output stream (this codebase's
+    /// existing reproducibility convention -- not a cross-platform bit-exactness claim).
+    /// Added for `distance_geometry_v2`'s `EmbedParameters.random_seed`; does not change
+    /// [`Prng::new`]'s existing behavior or any of its current callers.
+    pub fn from_seed(seed: u64) -> Self {
+        Self(seed | 1) // low-bit set ensures seed is always non-zero (xorshift64 absorbs at 0)
+    }
+
     /// Return a uniform f64 in [0, 1).
     pub fn f64(&mut self) -> f64 {
         let mut x = self.0;
