@@ -218,6 +218,14 @@ fn ref_bond_length(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> Option<f64> {
     Some((ra + rb) * bond_order_scale(order))
 }
 
+// scripts/etkdg_vs_rdkit_gap.py uses TWO different thresholds for two different
+// purposes -- kept distinct here too, not collapsed into one:
+//   - BOND_LEN_TOL_FRAC (0.15): per-bond "violation" count in bond_violations()
+//     (a precision/quality signal -- how many individual bonds are off by >15%).
+//   - BOND_BLOWUP_REL_ERROR (0.5): the "is this molecule torn" status-bucket
+//     decision (checked against `max_rel_error`, not `n_violations`), used by
+//     `classify()` below. This is the number the acceptance gate is about.
+const BOND_LEN_TOL_FRAC: f64 = 0.15; // matches scripts/etkdg_vs_rdkit_gap.py
 const BOND_BLOWUP_REL_ERROR: f64 = 0.5; // matches scripts/etkdg_vs_rdkit_gap.py
 const GROSS_CLASH_DIST: f64 = 0.5; // matches scripts/etkdg_vs_rdkit_gap.py
 
@@ -228,7 +236,10 @@ struct BondCheck {
 }
 
 /// Identical check to `scripts/etkdg_vs_rdkit_gap.py::bond_violations`, reimplemented
-/// in Rust against the external RDKit-radius reference table above.
+/// in Rust against the external RDKit-radius reference table above. `n_violations`
+/// uses the script's own `BOND_LEN_TOL_FRAC` (0.15), matching its per-bond precision
+/// signal -- NOT the coarser 0.5 blow-up threshold, which is a separate decision
+/// (see `classify()`).
 fn bond_violations(mol: &Molecule, coords: &Coords3D) -> BondCheck {
     let mut n_bonds = 0;
     let mut n_violations = 0;
@@ -243,7 +254,7 @@ fn bond_violations(mol: &Molecule, coords: &Coords3D) -> BondCheck {
         if frac > max_rel_error {
             max_rel_error = frac;
         }
-        if frac > BOND_BLOWUP_REL_ERROR {
+        if frac > BOND_LEN_TOL_FRAC {
             n_violations += 1;
         }
     }
@@ -437,7 +448,7 @@ fn main() {
     };
 
     let summary = format!(
-        "{{\n  \"n_molecules\": {n_total},\n  \"new_status_counts\": {{{}}},\n  \"dg_status_counts\": {{{}}},\n  \"geometrically_valid_rate_new\": {geometrically_valid_rate:.4},\n  \"geometrically_valid_rate_dg_raw\": {dg_geometrically_valid_rate:.4},\n  \"n_both_ok\": {n_both_ok},\n  \"n_regressions_dg_ok_new_not_ok\": {n_regressions},\n  \"regression_names\": {:?},\n  \"new_bond_violation_rate\": {},\n  \"dg_bond_violation_rate\": {}\n}}",
+        "{{\n  \"n_molecules\": {n_total},\n  \"new_status_counts\": {{{}}},\n  \"dg_status_counts\": {{{}}},\n  \"geometrically_valid_rate_new\": {geometrically_valid_rate:.4},\n  \"geometrically_valid_rate_dg_raw\": {dg_geometrically_valid_rate:.4},\n  \"n_both_ok\": {n_both_ok},\n  \"n_regressions_dg_ok_new_not_ok\": {n_regressions},\n  \"regression_names\": {:?},\n  \"new_bond_violation_rate_at_15pct_tol\": {},\n  \"dg_bond_violation_rate_at_15pct_tol\": {}\n}}",
         status_counts_json(&new_status_counts),
         status_counts_json(&dg_status_counts),
         regression_names,
