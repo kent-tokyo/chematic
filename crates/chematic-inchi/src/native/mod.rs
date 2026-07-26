@@ -17,6 +17,7 @@ use std::os::raw::c_char;
 use convert::ConvertError;
 pub(crate) use convert::{
     has_unrepresentable_multi_h_stereocenter, has_unresolved_specified_tetrahedral_stereo,
+    unresolved_specified_tetrahedral_stereo_atoms,
 };
 
 use ffi::{FreeStdINCHI, GetStdINCHI, GetStdINCHIKeyFromStdINCHI, InchiInput, InchiOutput};
