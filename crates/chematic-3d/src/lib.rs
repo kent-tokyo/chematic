@@ -18,6 +18,7 @@ pub mod descriptors_3d;
 pub mod determine_bonds;
 pub mod dg;
 pub mod dg_fft;
+pub mod distance_geometry_v2;
 pub mod etkdg;
 pub mod etkdg_knowledge;
 pub mod md;
