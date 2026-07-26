@@ -41,9 +41,33 @@
 //!   sibling fallback within one alkene end (see [`resolve_end`]). A
 //!   fixed-point joint resolver is exactly the issue #149 problem this PR
 //!   does not solve.
+//!
+//! ## Aromatic (Kekulé) ring bonds are never candidates
+//!
+//! A MOL/SDF reader does not run aromaticity perception by default (per
+//! `CLAUDE.md`: "Kekulé input requires explicit `apply_aromaticity`"), so a
+//! benzene ring read from a Kekulized MOL file arrives as plain alternating
+//! `Single`/`Double` bonds with `atom.aromatic == false` throughout --
+//! structurally indistinguishable, to a naive per-bond check, from a real
+//! open-chain conjugated diene. Found empirically (not anticipated in the
+//! original fixture set): a broad-corpus run surfaced spurious
+//! `CarrierConflict` cascades and, worse, wrongly-signed directions on
+//! genuine adjacent alkenes, traced to this module attempting to assign E/Z
+//! to Kekulé ring bonds that have no cis/trans isomerism at all (a ring's
+//! geometry is fixed; RDKit's own pipeline never reaches this case because
+//! its `sanitizeMol` step re-types these bonds as `AROMATIC` *before*
+//! `detectBondStereochemistry` runs, so a literal `Double`-typed bond check
+//! naturally excludes them there). Mirrored here via a one-time,
+//! non-mutating [`crate::aromaticity::assign_aromaticity`] query (not
+//! `apply_aromaticity`, which would return a new `Molecule` and silently
+//! change the caller's aromatic flags as a side effect of adding E/Z
+//! direction -- an unrelated, invasive change this module must not make):
+//! any bond the Hückel model would classify as aromatic is excluded
+//! up front, exactly like [`EzOutcome::NotRequested`] for a terminal alkene.
 
 use std::collections::{HashMap, HashSet};
 
+use crate::aromaticity::{AromaticityModel, assign_aromaticity};
 use crate::cip_priority::compare_branches;
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 
@@ -157,13 +181,34 @@ pub fn apply_ez_directions_from_2d_ex(
         .map(|(bidx, _)| bidx)
         .collect();
 
+    // One-time, non-mutating aromaticity query (see module docs) so a
+    // Kekulized aromatic ring bond -- read with `atom.aromatic == false`
+    // since the reader never auto-perceives aromaticity -- is never treated
+    // as an E/Z candidate.
+    let aromaticity = assign_aromaticity(mol);
+
+    // Pre-pass: a branch point (2-substituent alkene end) with a
+    // substituent that is itself part of a DIFFERENT double bond poisons
+    // BOTH double bonds, not just its own -- see
+    // `poisoned_by_branch_ambiguity`'s doc comment for why rejecting only
+    // the branch point's own bond is not sufficient (OpenSMILES `/`/`\`
+    // markers are read by plain adjacency, not by which system "intended"
+    // them, so the neighboring double bond's own, otherwise-legitimate
+    // marker unavoidably leaks into the branch point's perceived stereo
+    // too).
+    let poisoned = poisoned_by_branch_ambiguity(mol, &aromaticity);
+
     // Phase 1: classify every double bond independently, from raw geometry
     // and topology alone -- never from another double bond's outcome, so
     // the result for one bond can't depend on which order this loop visits
     // bonds in.
     let mut outcomes: HashMap<BondIdx, EzOutcome> = HashMap::with_capacity(double_bonds.len());
     for &bidx in &double_bonds {
-        let outcome = classify_double_bond(mol, coords, bidx, explicitly_unspecified);
+        let outcome = if poisoned.contains(&bidx) {
+            EzOutcome::Rejected(EzDirectionRejectionReason::CarrierConflict)
+        } else {
+            classify_double_bond(mol, coords, bidx, explicitly_unspecified, &aromaticity)
+        };
         outcomes.insert(bidx, outcome);
     }
 
@@ -274,11 +319,20 @@ fn classify_double_bond(
     coords: &[(f64, f64)],
     bond_idx: BondIdx,
     explicitly_unspecified: &HashSet<BondIdx>,
+    aromaticity: &AromaticityModel,
 ) -> EzOutcome {
     let bond = mol.bond(bond_idx);
     debug_assert_eq!(bond.order, BondOrder::Double);
     let a1 = bond.atom1;
     let a2 = bond.atom2;
+
+    // A Kekulé aromatic-ring bond has no cis/trans isomerism at all (see
+    // module docs) -- checked first, ahead of every other classification,
+    // since an aromatic bond is never a candidate regardless of what its
+    // topology or geometry otherwise look like.
+    if aromaticity.is_bond_aromatic(bond_idx) {
+        return EzOutcome::NotRequested;
+    }
 
     // Cumulated pi system (allene/cumulene): an endpoint with another double
     // bond besides this one. Checked before the terminal-alkene check so a
@@ -325,8 +379,8 @@ fn classify_double_bond(
     // these directions (`chematic_chem::cip::assign_ez`) reproduces the
     // same Z/E verdict `assign_ez_from_2d` would compute directly from the
     // same coordinates.
-    let end1 = resolve_end(mol, coords, a1, &subs_a1, p1, axis);
-    let end2 = resolve_end(mol, coords, a2, &subs_a2, p1, axis);
+    let end1 = resolve_end(mol, coords, a1, &subs_a1, p1, axis, aromaticity);
+    let end2 = resolve_end(mol, coords, a2, &subs_a2, p1, axis, aromaticity);
 
     match (end1, end2) {
         (EndOutcome::NonStereogenic, _) | (_, EndOutcome::NonStereogenic) => {
@@ -368,11 +422,39 @@ fn resolve_end(
     subs: &[(AtomIdx, BondIdx)],
     axis_origin: (f64, f64),
     axis: (f64, f64),
+    aromaticity: &AromaticityModel,
 ) -> EndOutcome {
     if subs.len() == 2
         && compare_branches(mol, end, subs[0].0, subs[1].0) == std::cmp::Ordering::Equal
     {
         return EndOutcome::NonStereogenic;
+    }
+
+    // A 2-substituted end where EITHER candidate is itself an endpoint of a
+    // DIFFERENT, genuinely-classifiable (non-aromatic) double bond is a
+    // branch-point-adjacent-to-conjugation shape this module deliberately
+    // does not attempt (see `is_conjugated_to_another_double_bond`'s doc
+    // comment for the full root-cause writeup: found empirically on the
+    // broad-corpus run, not anticipated by the original design). Choosing
+    // either candidate here risks corruption downstream in
+    // `chematic_smiles::canonical`'s pre-existing `resolve_ez_markers`,
+    // which cannot tell "a marker scoped to a different double bond's axis"
+    // apart from "no marker at all" -- and reusing the conjugated
+    // candidate as a shared carrier is NOT guaranteed to agree with the
+    // neighboring system's own requirement the way a straight-chain
+    // conjugated diene's shared bond is (that guarantee relies on neither
+    // flanking atom having an extra branch; a branch point breaks it, and a
+    // real disagreeing pair confirmed this directly). Reject rather than
+    // guess, exactly like the ordinary conjugated-diene shared-carrier
+    // agreement check, just detected one step earlier (before ever writing
+    // a value) since a branch point can't be resolved without solving the
+    // Issue #149 joint-carrier problem this module is out of scope for.
+    if subs.len() == 2
+        && subs
+            .iter()
+            .any(|&(a, b)| is_conjugated_to_another_double_bond(mol, a, b, aromaticity))
+    {
+        return EndOutcome::Failed(EzDirectionRejectionReason::CarrierConflict);
     }
 
     let mut first_geometry_failure: Option<EzDirectionRejectionReason> = None;
@@ -413,9 +495,111 @@ fn resolve_end(
 
 /// True when `atom` has a `BondOrder::Double` neighbor other than `exclude`
 /// -- i.e. `atom` sits in a cumulated pi system (allene/cumulene).
+/// Find every double bond that must be rejected because a branch point (a
+/// 2-substituent alkene end) somewhere in the molecule has a substituent
+/// that is itself an endpoint of a DIFFERENT, genuinely-classifiable
+/// (non-aromatic) double bond -- BOTH the branch point's own double bond
+/// AND that other double bond are poisoned, not just the former.
+///
+/// Rejecting only the branch point's own double bond is NOT sufficient,
+/// confirmed empirically against a live RDKit oracle (not assumed): a
+/// directional marker in OpenSMILES is read by plain textual adjacency, not
+/// by which system produced it, so the OTHER double bond's own,
+/// individually-correct marker on the shared bond unavoidably becomes a
+/// (possibly wrong) reference substituent for the branch point's double
+/// bond too, once re-parsed by any standards-compliant consumer -- RDKit
+/// re-parsing chematic's own SMILES output for a real corpus molecule of
+/// this shape was directly observed inferring a definite (and wrong)
+/// stereo for the "rejected" bond purely from the neighboring bond's
+/// legitimate marker. This is exactly the Issue #149 joint-carrier problem,
+/// just discovered one step earlier than the ordinary shared-carrier
+/// agreement check in [`apply_ez_directions_from_2d_ex`] (which still
+/// handles the ordinary, non-branched conjugated-diene case correctly --
+/// this pre-pass only fires when a branch point is involved).
+fn poisoned_by_branch_ambiguity(
+    mol: &Molecule,
+    aromaticity: &AromaticityModel,
+) -> HashSet<BondIdx> {
+    let mut poisoned = HashSet::new();
+    for (bidx, bond) in mol.bonds() {
+        if bond.order != BondOrder::Double || aromaticity.is_bond_aromatic(bidx) {
+            continue;
+        }
+        for (end, other_end) in [(bond.atom1, bond.atom2), (bond.atom2, bond.atom1)] {
+            let subs = substituents(mol, end, other_end);
+            if subs.len() != 2 {
+                continue;
+            }
+            for &(sub_atom, sub_bond) in &subs {
+                let other_db = mol.neighbors(sub_atom).find(|&(_, nb_bidx)| {
+                    nb_bidx != sub_bond
+                        && mol.bond(nb_bidx).order == BondOrder::Double
+                        && !aromaticity.is_bond_aromatic(nb_bidx)
+                });
+                if let Some((_, other_db)) = other_db {
+                    poisoned.insert(bidx);
+                    poisoned.insert(other_db);
+                }
+            }
+        }
+    }
+    poisoned
+}
+
 fn has_other_double_bond(mol: &Molecule, atom: AtomIdx, exclude: BondIdx) -> bool {
     mol.neighbors(atom)
         .any(|(_, bidx)| bidx != exclude && mol.bond(bidx).order == BondOrder::Double)
+}
+
+/// True when `sub_atom` (reached from an alkene end via `sub_bond`) is
+/// itself an endpoint of a DIFFERENT, genuinely-classifiable (non-aromatic)
+/// double bond -- i.e. `sub_atom` is part of a longer conjugated system
+/// (an azine/hydrazone chain, a polyene, etc.), not a terminal/unrelated
+/// substituent.
+///
+/// Used by [`resolve_end`] to REJECT (not choose between) a 2-substituted
+/// end when either candidate has this shape -- a branch point immediately
+/// adjacent to a different double bond's own conjugated system. Found
+/// empirically on the broad-corpus run (not anticipated by the original
+/// design), via two failed attempts, both confirmed wrong by direct
+/// atom-level RDKit comparison before landing on this one:
+///
+/// 1. An earlier version of this module let the branch point's OTHER
+///    (unrelated) substituent carry its own, independently-computed
+///    direction. That value was individually correct for THIS axis, but
+///    `chematic_smiles::canonical`'s pre-existing `resolve_ez_markers`
+///    carrier-selection (which predates this module and cannot distinguish
+///    "a marker scoped to a different double bond's axis" from "no marker
+///    at all") could then silently discard it in favor of the conjugated
+///    substituent's OWN marker -- which is real, but scoped to the OTHER
+///    double bond's axis, not this one -- corrupting the result.
+/// 2. A second attempt tried reusing the conjugated substituent's bond as
+///    THIS end's own carrier too (mirroring how an ordinary conjugated
+///    diene's shared middle bond legitimately serves both flanking double
+///    bonds at once). Measured directly: this shared-bond-agreement
+///    guarantee holds for a straight chain (verified by hand for a real
+///    diene fixture) but does NOT generally hold once one of the two
+///    flanking atoms is a branch point with an extra substituent -- a real
+///    corpus molecule of exactly this shape produced two independently-
+///    computed, genuinely DISAGREEING requirements for the same bond.
+///
+/// Both failure modes are avoided by rejecting outright: this is exactly
+/// the Issue #149 joint-carrier-resolution problem this module is out of
+/// scope for, just detected one step earlier (before ever writing a value)
+/// rather than via the whole-molecule agreement check in
+/// [`apply_ez_directions_from_2d_ex`], which still catches the ordinary
+/// (non-branched) shared-carrier case correctly.
+fn is_conjugated_to_another_double_bond(
+    mol: &Molecule,
+    sub_atom: AtomIdx,
+    sub_bond: BondIdx,
+    aromaticity: &AromaticityModel,
+) -> bool {
+    mol.neighbors(sub_atom).any(|(_, bidx)| {
+        bidx != sub_bond
+            && mol.bond(bidx).order == BondOrder::Double
+            && !aromaticity.is_bond_aromatic(bidx)
+    })
 }
 
 /// Non-double-bond neighbors of `end`, excluding `other_end` (the double
