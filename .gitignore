@@ -34,3 +34,5 @@ Thumbs.db
 *.iml
 
 # demo/pkg is committed directly (static WASM bundle for GitHub Pages)
+# internal roadmap notes, not tracked
+tasks/todo.md
