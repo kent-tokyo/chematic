@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet — everything below `[0.7.0]` has shipped._
+
+## [0.7.0] — 2026-07-26
+
 ### Added — `chematic-mol` / `chematic-perception` / Python / WASM
 
 - **2D wedge/hash stereochemistry is now perceived automatically when reading MOL/SDF
@@ -126,6 +130,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MolReadReport`/`SdfRecord` in Rust and the E/Z direction itself already reaches
   SMILES output through every Python/WASM entry point; only the diagnostics-introspection
   API is deferred.
+
+### Added — `chematic-inchi`
+
+- **Verified canonical-SMILES deduplication** (`chematic_inchi::dedup`) -- fast
+  canonical-SMILES candidate bucketing (`group_candidates`) reconciled against
+  native-InChI-verified identity (`deduplicate_verified`), so a caller gets both cheap
+  approximate grouping and a high-confidence verified partition without picking one or
+  the other. `IdentityPolicy::{StandardInchiString, StandardInchiKey, StereoIgnored,
+  IsotopeIgnored}` controls what "same identity" means; `StereoIgnored`/`IsotopeIgnored`
+  clone-and-clear the relevant field on native-InChI generation-time options rather than
+  doing string-layer surgery on the resulting InChI text. `VerifiedDedupReport` reports
+  `groups`/`canonical_splits`/`canonical_collisions`/`verification_unavailable`/
+  `invalid_molecules` separately -- a `CanonicalSplit` (verified-same molecules that
+  happen to canonicalize to different SMILES strings) is never silently merged away or
+  silently missed.
+- **`has_unresolved_specified_tetrahedral_stereo` fail-closed guard**: closes a real
+  false-`VerifiedDuplicate` found via live 5,000-molecule corpus verification -- two
+  genuine diastereomers whose specified `@`/`@@` tetrahedral stereocentres the legacy
+  CIP engine (`chematic_chem::tetrahedral_stereo_neighbors`) could not rank collapsed to
+  the identical native-InChI string (`?`, undefined parity, at both differing centres).
+  Every stereo-sensitive `IdentityPolicy` now fails closed to `VerificationUnavailable`
+  rather than promote an unresolved-parity string to a duplicate claim; `StereoIgnored`
+  is deliberately not guarded (ignoring stereo is that policy's own contract). Full-corpus
+  audit after landing: `verification_unavailable` 1 -> 15 (14 newly fail-closed molecules,
+  each individually classified against an independent RDKit 2026.03.3 oracle -- 10 are
+  ordinary legacy-CIP ranking failures the accurate engine resolves, 2 are genuine
+  CIP-ranking ties even RDKit's own modern CIP labeler can't resolve, 0 unexplained), known
+  false-`VerifiedDuplicate` groups 1 -> 0. Does not switch native InChI generation to the
+  accurate CIP engine (a separate, larger proposal) -- tracked as
+  [#161](https://github.com/kent-tokyo/chematic/issues/161).
+
+### Fixed — `chematic-inchi` (native, `native-inchi` feature)
+
+- **Explicit hydrogen isotopes were never tallied and could silently drop a
+  stereocentre's `/t` layer.** `mol_to_inchi_atoms`'s isotope tally counted every
+  explicit graph H neighbor (`[2H]`, `[3H]`, ...) as ordinary H regardless of its own
+  isotope, so no `/i` layer was ever produced for them; separately, a real graph H atom
+  (as opposed to the pre-existing, unaffected bracket-H sentinel case) failed the
+  Stereo0D neighbor-index lookup and had its entire stereo descriptor silently dropped
+  via a fallthrough `continue` -- both enantiomers of e.g. `[C@](Br)(Cl)(F)[H]`
+  collapsed to the identical InChI string with no `/t` layer at all. Fixed via a
+  `StereoHSource` enum tracking each manufactured stand-in atom's provenance
+  (`Sentinel` vs. `Explicit(AtomIdx)`), isotope-bucketed tallying, and routing a real
+  graph H neighbor through the same manufactured-atom mechanism the bracket-H case
+  already used. 17/17 required fixtures byte-exact against RDKit 2026.03.3
+  (`Chem.MolToInchi`), 0 regressions (25/25 pre-existing tests byte-identical
+  pass/fail).
+- **Known limitation found while verifying the fix above**: a stereocentre with *two*
+  simultaneous, isotopically-distinct H-like substituents (e.g. D+T on one carbon, or
+  bracket-H plus an explicit D) still safely drops its `/t` layer rather than emitting
+  one (RDKit does emit one for this shape) -- the single-manufactured-atom-per-centre
+  mechanism can't yet represent a second H-like slot. Not corrupted, just absent;
+  supporting it would need a second, independently-indexed manufactured atom per
+  centre, judged out of scope for this fix. This is the exact gap
+  [PR #156](https://github.com/kent-tokyo/chematic/pull/156)'s
+  `has_unrepresentable_multi_h_stereocenter` dedup guard exists to detect and fail
+  closed on.
+- CI coverage gap: `.github/workflows/ci.yml`'s native-InChI test job was scoped to one
+  integration test binary by name (`--test standard_inchi`), which would have silently
+  skipped this fix's own new test file. Widened to run every integration test + doctest
+  in the crate.
+
+### Added — `chematic-cip`
+
+- **Pseudoasymmetric (lowercase `r`/`s`) labeling for the "three-armed cage" residual**:
+  completes Milestone 4A-2's 15-row carbon-cage family (opt-in `CipMode::Accurate`
+  only) -- 15/15 rows now resolve, all matching the RDKit oracle, without the
+  symmetry/automorphism-aware joint solver Milestone 4A-2 originally thought would be
+  needed (the fix locates each tied branch's nearest embedded stereocentre via the
+  existing, already-validated `resolve_chirality`/`embedded_chain` machinery directly,
+  instead of a `provisional`-map lookup that failed whenever the embedded reference was
+  itself still tied). Raw modern-oracle agreement: 4160/4186 (99.38%) -> 4175/4186
+  (99.74%); oracle-stable agreement: 99.64% -> 100.00%.
+- **Element-level fail-closed guard for 2 phosphorus atoms this same fix path also
+  reached** (a follow-up commit on the same PR): those 2 cyclophosphazene atoms tie for
+  the identical structural reason as the carbon-cage family, but independently-verified
+  RDKit oracle checking found *neither* `rdCIPLabeler` nor legacy `_CIPCode` has a
+  representation-stable answer for that specific molecule (both flip under a
+  chemically neutral Kekulé respelling) -- there is no reliable oracle a resolved
+  phosphorus label could ever be checked against. Shipping a resolved-but-unverifiable
+  label was the actual bug; a per-atom-identity `Element::P` guard in
+  `assign_one_with_rule5` now declines (`SkipReason::Tied`, reused, no new variant)
+  rather than guess, restoring these 2 atoms to their original, pre-fix
+  unresolved/`Tied` state. Scoped to phosphorus specifically (15/15 verified examples
+  are all carbon, 0 verified examples for any other element) rather than a broader,
+  unvalidated heuristic.
+- No default API change: `CipMode::LegacyFast`/`assign_cip()` are untouched;
+  `CipMode::Accurate` remains opt-in.
 
 _Everything above this line is unreleased. Everything below `[0.6.0]` has shipped._
 

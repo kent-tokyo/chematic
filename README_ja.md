@@ -106,10 +106,10 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.6.0
+# chematic v0.7.0
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-06, v0.6.0 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-06, v0.7.0 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  98.1%
 #   LogP (Crippen)        ~99%
@@ -255,7 +255,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）；ミュータブル API・`fragments`・`validate_valence`・`formula_with_isotopes`・`StereoGroup`/`StereoGroupKind` | 71      |
 | `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES、**CXSMILES メタデータ対応**                                                                  | 109      |
 | `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 101      |
-| `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W | 130      |
+| `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W；**2Dウェッジ/ハッシュのtetrahedral parity + E/Z二重結合方向を読み込み時に自動認識**（`read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics`、型付きopt-in診断） | 130+     |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 64      |
 | `chematic-chem`        | 190+ 記述子値（71 関数）、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 99.98% RDKit 一致率**（4,999 分子 ChEMBL ベンチマーク）；**TPSA ±0.1 Å² 98.1% / LogP ±0.01 96.5% / HBD 100%** RDKit 一致 | 662     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 185      |
@@ -263,20 +263,28 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン)；**SMARTS 内アトムマップ `:N`** (`[O;D1;H0:3]` 形式 — メタデータとして保存、マッチング条件には不使用) | 142     |
 | `chematic-3d`          | 3D 座標生成、ETKDG KB (40 パターン、adaptive noise)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 265     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 retro-SMIRKS テンプレート (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ランク付き | 137      |
-| `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み | 96 (+16*)   |
-| `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic` v0.4.30（719 KB gzip）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211     |
+| `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み；**検証付きcanonical SMILES重複排除**（`dedup`モジュール、legacy CIPで未解決の指定済みtetrahedral stereoに対してfail-closed） | 96 (+16*)   |
+| `chematic-cip`         | opt-inの高精度CIPエンジン（`assign_cip_accurate_experimental`、階層的digraph、Rules 1a/1b/2/4b/5、RDKit互換MANCUDE分数原子番号）— デフォルトの`assign_cip()`/`CipMode::LegacyFast`は変更なし | —       |
+| `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic`（公開版は`0.5.0`；crates.io/PyPIは`0.6.0`まで進んでおり、npm公開が遅れている既知のギャップ）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 47      |
 | `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**20 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack | 31      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
-cargo test --workspace --lib --quiet                                               # 2,366 ライブラリテスト、全パス
+cargo test --workspace --lib --quiet                                               # 2,746 ライブラリテスト、全パス（2026-07-26 時点）
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +16 IUPAC 標準 InChI 統合テスト
 ```
 
 ---
 
 ## 最近の開発
+
+**v0.7.0**（2026-07-26）: **MOL/SDFから2Dウェッジ/ハッシュ＋E/Z立体化学を自動認識、検証付きcanonical SMILES重複排除、CIP Rule-5リン修正、native InChI明示的水素/同位体修正**
+- `chematic-mol`/`chematic-perception`: MOL V2000/V3000/SDFリーダーが読み込み時にtetrahedralウェッジ/ハッシュparity（PR #154）とE/Z二重結合方向（PR #162）を自動認識するようになった（CIP非依存）。型付きopt-in診断（`StereoDiagnostic`/`EzDirectionDiagnostic`）は不正・曖昧な入力に対して推測しない。広域corpus検証（4,999分子、RDKit 2026.03.3比較）：E/Z — RDKit解決済み622二重結合、semantic inversion 0件、false positive 0件。構築中に見つかったV2000 MDLコード4バグ・V3000 `CFG`バグ2件・V2000 writerバグも修正。PR #162自身のcorpus突合により**新規・未修正のギャップ**を発見: `canonical_smiles()`が一部の分子で正しく`write()`されたE/Zマーカーを失うケースがある（aromaticity非対応のcarrierグルーピングが原因）— まだissue化していない
+- `chematic-inchi`: 検証付きcanonical SMILES重複排除（`dedup`モジュール）を新規実装 — 高速なcanonical SMILES候補バケット化をnative InChIによる検証済み同一性と突合。指定済み立体中心のlegacy CIPランク付けが未解決の場合は誤マージのリスクを避けてfail-closed（`VerificationUnavailable`）にする(実際の5,000分子corpus検証で見つかった本物のfalse `VerifiedDuplicate`を解消)。follow-upとして[#161](https://github.com/kent-tokyo/chematic/issues/161)（accurate CIP preflightで保守的なケースの大半を回復できる可能性）を追跡
+- `chematic-cip`: CIP Rule-5擬似不斉r/sのリン修正
+- `chematic-inchi`: native InChI（`native-inchi` feature）の明示的水素/同位体変換修正
+- 詳細は `CHANGELOG.md` の `[Unreleased]` セクションを参照
 
 **v0.6.0**（2026-07-25）: **RDKit bit-exact ECFP4のクロス言語stable API化、canonical SMILESのE/Zマーカー一貫性、opt-in芳香族flag authoritative降格**
 - `chematic-fp`/Python/WASM: RDKit bit-exact Morgan/ECFP4パスをクロス言語opt-in APIとして公開（Python `Mol.rdkit_ecfp4()`、WASM `rdkit_ecfp4_bitvec()`）。radius×fpSizeの20セル全てを個別にlive RDKit oracleで再検証（closed enumで未対応値は構築不可）。Rust/Python/WASMを実際にビルド・実行してbyte-identicalを確認済み。`ecfp4()`の既定動作は無変更

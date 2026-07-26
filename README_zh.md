@@ -223,7 +223,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）；可变 API、`fragments`、`validate_valence`、`formula_with_isotopes`；`StereoGroup`/`StereoGroupKind` | 71     |
 | `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES、**CXSMILES 元数据支持**                                      | 109     |
 | `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 101     |
-| `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写 | 130     |
+| `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写；**读取时自动识别 2D 楔形/虚线四面体 parity 与 E/Z 双键方向**（`read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics`，类型化 opt-in 诊断） | 130+     |
 | `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 64     |
 | `chematic-chem`       | 190+ 描述符值（71 个函数）、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 99.98%**（4,999 分子 ChEMBL 基准）；**TPSA ±0.1 Å² 98.1% / LogP ±0.01 96.5% / HBD 100%** | 662    |
 | `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** — Tanimoto/Dice | 185     |
@@ -231,20 +231,28 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式）；**SMARTS 原子映射 `:N`**（`[O;D1;H0:3]` — 作为元数据存储，不用于匹配） | 142    |
 | `chematic-3d`         | 3D 坐标生成、ETKDG KB（40 种模式，自适应噪声）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 265    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 个 retro-SMIRKS 模板（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）+ SA 分数排序 | 137     |
-| `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取 | 96 (+16*)   |
-| `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic` v0.4.30（719 KB gzip）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211    |
+| `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取；**带验证的 canonical SMILES 去重**（`dedup` 模块，遇到 legacy CIP 无法解析的指定四面体立体中心时安全失败） | 96 (+16*)   |
+| `chematic-cip`        | opt-in 高精度 CIP 引擎（`assign_cip_accurate_experimental`，层次化 digraph，Rules 1a/1b/2/4b/5，RDKit 兼容 MANCUDE 分数原子序数）— 默认的 `assign_cip()`/`CipMode::LegacyFast` 未变更 | —    |
+| `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic`（已发布 `0.5.0`；crates.io/PyPI 已到 `0.6.0`，npm 发布滞后，已知的打包差距）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 47     |
 | `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**20 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack | 31     |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
-cargo test --workspace --lib --quiet                                               # 2,366 个库测试，全部通过
+cargo test --workspace --lib --quiet                                               # 2,746 个库测试，全部通过（截至 2026-07-26）
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +16 IUPAC 标准 InChI 集成测试
 ```
 
 ---
 
 ## 近期开发
+
+**v0.7.0**（2026-07-26）：**MOL/SDF 自动识别 2D 楔形/虚线 + E/Z 立体化学、带验证的 canonical SMILES 去重、CIP Rule-5 磷修复、native InChI 显式氢/同位素修复**
+- `chematic-mol`/`chematic-perception`：MOL V2000/V3000/SDF 读取器现在读取时自动识别四面体楔形/虚线 parity（PR #154）与 E/Z 双键方向（PR #162），与 CIP 无关。类型化 opt-in 诊断（`StereoDiagnostic`/`EzDirectionDiagnostic`）对畸形/歧义输入从不猜测。大规模语料验证（4,999 分子，对比 RDKit 2026.03.3）：E/Z — 622 个 RDKit 可解析双键，语义反转 0 例，误报 0 例。构建过程中还修复了 V2000 MDL 代码 4 缺陷、两处 V3000 `CFG` 缺陷及一处 V2000 写入器缺陷。PR #162 自身的语料核对发现了**尚未修复的新缺口**：部分分子的 `canonical_smiles()` 会丢失已经在 `write()` 中正确编码的 E/Z 标记（因 aromaticity 无关的 carrier 分组导致）— 尚未建立 issue
+- `chematic-inchi`：新增带验证的 canonical SMILES 去重（`dedup` 模块）— 快速 canonical SMILES 候选分桶，并与 native InChI 验证后的同一性进行核对。当指定立体中心的 legacy CIP 排序无法解析时安全失败（`VerificationUnavailable`），而非冒错误合并的风险（修复了在 5,000 分子语料验证中发现的真实 false `VerifiedDuplicate`）。后续追踪为 [#161](https://github.com/kent-tokyo/chematic/issues/161)（accurate CIP preflight 有望恢复大部分保守案例）
+- `chematic-cip`：CIP Rule-5 拟不对称 r/s 磷修复
+- `chematic-inchi`：native InChI（`native-inchi` feature）显式氢/同位素转换修复
+- 详见 `CHANGELOG.md` 的 `[Unreleased]` 部分
 
 **v0.6.0**（2026-07-25）：**RDKit bit-exact ECFP4 跨语言稳定 API、canonical SMILES 的 E/Z 标记一致性、opt-in 芳香性标志权威降级**
 - `chematic-fp`/Python/WASM：将 RDKit bit-exact 的 Morgan/ECFP4 路径提升为文档化的跨语言 opt-in API（Python `Mol.rdkit_ecfp4()`，WASM `rdkit_ecfp4_bitvec()`），并推广为独立验证过的 `(radius, fpSize)` 矩阵（4×5=20 个组合，均为不可构造非法值的封闭枚举）。Rust/Python/WASM 三端均实际构建并运行验证 bit-exact 一致，而非仅"设计上应当一致"。`ecfp4()` 的默认行为不变
