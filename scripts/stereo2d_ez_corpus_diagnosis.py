@@ -8,22 +8,28 @@ For each SMILES in the standard corpus:
    independently-generated 2D depiction, not anything chematic produced.
 2. `rdkit_verdict` = the standard InChI `/b` layer of RDKit's OWN re-parse of
    that MOL block (`Chem.MolFromMolBlock` -> `Chem.MolToInchi`) -- "what E/Z
-   does RDKit itself resolve from this 2D depiction".
+   does RDKit itself resolve from this 2D depiction", parsed into a dict of
+   `{sorted (canonical InChI atom numbers) pair: sign}`.
 3. Feed the SAME MOL block through chematic (`chematic.from_mol_block`,
-   using the isolated venv's build -- see `--venv-python`).
-4. `chematic_verdict` = the InChI `/b` layer of RDKit's re-parse of
-   chematic's canonical SMILES output for that molecule.
-5. Compare `rdkit_verdict` vs `chematic_verdict` (atom-numbering-independent
-   by construction -- InChI's own canonical atom order, not either engine's
-   raw index order):
-     - both None                          -> no_stereo_both_agree
-     - rdkit set, chematic == rdkit       -> semantic_agreement
-     - rdkit set, chematic None           -> chematic_abstained
-     - rdkit set, chematic != rdkit (set) -> SEMANTIC INVERSION (gate: must be 0)
-     - rdkit None, chematic set           -> FALSE POSITIVE (gate: must be 0)
+   using the isolated venv's build).
+4. `chematic_verdict` = the same per-bond dict for RDKit's re-parse of
+   chematic's canonical SMILES output.
+5. Compare bond-by-bond (NOT as one whole-molecule string -- a molecule with
+   multiple independent stereogenic bonds where chematic correctly resolves
+   SOME and correctly abstains on others must not be miscounted as "wrong";
+   this granularity was added after an earlier, whole-string-comparison
+   version of this script conflated the two, confirmed by manual
+   classification of every residual before this fix landed):
+     - a bond RDKit resolves and chematic also resolves, same sign -> semantic_agreement
+     - a bond RDKit resolves, chematic resolves with a DIFFERENT sign -> SEMANTIC INVERSION (gate: must be 0)
+     - a bond RDKit resolves, chematic does not (or InChI can't align it)  -> chematic_abstained
+     - a bond RDKit does NOT resolve, chematic resolves one anyway         -> FALSE POSITIVE (gate: must be 0)
+   Per-molecule buckets (no_stereo_both_agree, chematic_assigned/abstained)
+   are also reported for the top-level summary in the task spec's required
+   shape, but the two REQUIRED GATES are evaluated at the per-bond level.
 
 Required gates: semantic inversions == 0, false-positive assignments == 0.
-Abstaining (chematic_abstained) is never a gate failure.
+Abstaining is never a gate failure.
 
 Usage:
     /path/to/venv/bin/python scripts/stereo2d_ez_corpus_diagnosis.py \
@@ -33,6 +39,7 @@ Usage:
 import argparse
 import io
 import json
+import re
 import sys
 from contextlib import redirect_stderr
 from pathlib import Path
@@ -41,6 +48,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SUMMARY_PATH = ROOT / "validation" / "results" / "stereo2d_ez_corpus_diagnosis_summary.json"
 RDKIT_PINNED_COMMIT = "8afba32ec539dcb2369bc84549d802aca3f7eb39"
 EXPECTED_RDKIT_VERSION = "2026.03.3"
+
+B_ENTRY_RE = re.compile(r"(\d+)-(\d+)([+\-?])")
 
 
 def inchi_b_layer(rdkit_mol, Chem):
@@ -55,6 +64,17 @@ def inchi_b_layer(rdkit_mol, Chem):
         if part.startswith("b"):
             return part
     return None
+
+
+def parse_b_layer(b):
+    """Return `{sorted (a, b) canonical-InChI-atom-pair: '+'|'-'|'?'}`, or
+    `{}` if there is no b-layer at all (no resolvable E/Z stereo)."""
+    if not b:
+        return {}
+    out = {}
+    for a, bb, sign in B_ENTRY_RE.findall(b[1:]):
+        out[tuple(sorted((a, bb)))] = sign
+    return out
 
 
 def has_cumulene(rdkit_mol, Chem):
@@ -94,17 +114,21 @@ def main():
     input_count = len(lines)
     parsed_count = 0
     parse_failures = []
+    mol_block_write_failures = []
+    chematic_parse_failures = []
+
     rdkit_resolved_molecules = 0
-    resolved_bond_count_proxy = 0  # count of molecules with >=1 resolved b-layer entry (comma-separated)
-    chematic_assigned = 0
-    chematic_abstained = 0
-    no_stereo_both_agree = 0
-    semantic_agreements = 0
+    resolved_ez_bonds = 0  # total count of RDKit-resolved bonds across the whole corpus
+    chematic_assigned_molecules = 0  # molecules where chematic assigned >=1 direction
+    chematic_abstained_molecules = 0  # molecules where chematic assigned nothing at all
+    no_stereo_both_agree_molecules = 0
+
+    # Per-BOND tallies (the real gate-relevant numbers).
+    bond_semantic_agreements = 0
+    bond_chematic_abstained = 0
     semantic_inversions = []
     false_positives = []
     cumulene_cases = 0
-    mol_block_write_failures = []
-    chematic_parse_failures = []
 
     for i, smi in enumerate(lines):
         rdkit_mol = Chem.MolFromSmiles(smi)
@@ -123,10 +147,10 @@ def main():
         stderr_buf = io.StringIO()
         with redirect_stderr(stderr_buf):
             rdkit_reparsed = Chem.MolFromMolBlock(mol_block)
-        rdkit_verdict = inchi_b_layer(rdkit_reparsed, Chem)
-        if rdkit_verdict is not None:
+        rdkit_b = parse_b_layer(inchi_b_layer(rdkit_reparsed, Chem))
+        if rdkit_b:
             rdkit_resolved_molecules += 1
-            resolved_bond_count_proxy += rdkit_verdict.count(",") + 1
+            resolved_ez_bonds += len(rdkit_b)
 
         try:
             chematic_mol = chematic.from_mol_block(mol_block)
@@ -138,42 +162,51 @@ def main():
         stderr_buf2 = io.StringIO()
         with redirect_stderr(stderr_buf2):
             chematic_reparsed = Chem.MolFromSmiles(chematic_smiles)
-        chematic_verdict = inchi_b_layer(chematic_reparsed, Chem)
+        chematic_b = parse_b_layer(inchi_b_layer(chematic_reparsed, Chem))
 
-        if chematic_verdict is not None:
-            chematic_assigned += 1
+        if chematic_b:
+            chematic_assigned_molecules += 1
         else:
-            chematic_abstained += 1
+            chematic_abstained_molecules += 1
+        if not rdkit_b and not chematic_b:
+            no_stereo_both_agree_molecules += 1
 
-        if rdkit_verdict is None and chematic_verdict is None:
-            no_stereo_both_agree += 1
-        elif rdkit_verdict is not None and chematic_verdict == rdkit_verdict:
-            semantic_agreements += 1
-        elif rdkit_verdict is not None and chematic_verdict is None:
-            pass  # chematic_abstained already counted above
-        elif rdkit_verdict is not None and chematic_verdict is not None:
-            semantic_inversions.append(
-                {
-                    "index": i,
-                    "smiles": smi,
-                    "mol_block": mol_block,
-                    "rdkit_verdict": rdkit_verdict,
-                    "chematic_verdict": chematic_verdict,
-                    "chematic_smiles": chematic_smiles,
-                }
-            )
-        elif rdkit_verdict is None and chematic_verdict is not None:
-            false_positives.append(
-                {
-                    "index": i,
-                    "smiles": smi,
-                    "mol_block": mol_block,
-                    "chematic_verdict": chematic_verdict,
-                    "chematic_smiles": chematic_smiles,
-                }
-            )
-            if has_cumulene(rdkit_mol, Chem):
-                cumulene_cases += 1
+        # Per-bond comparison: union of keys from both sides.
+        for key in set(rdkit_b) | set(chematic_b):
+            rv = rdkit_b.get(key)
+            cv = chematic_b.get(key)
+            if rv in (None, "?"):
+                if cv not in (None, "?"):
+                    false_positives.append(
+                        {
+                            "index": i,
+                            "smiles": smi,
+                            "mol_block": mol_block,
+                            "bond_key": key,
+                            "chematic_sign": cv,
+                            "chematic_smiles": chematic_smiles,
+                        }
+                    )
+                    if has_cumulene(rdkit_mol, Chem):
+                        cumulene_cases += 1
+                continue
+            # rv is a real sign ('+' or '-'): RDKit resolved this bond.
+            if cv in (None, "?"):
+                bond_chematic_abstained += 1
+            elif cv == rv:
+                bond_semantic_agreements += 1
+            else:
+                semantic_inversions.append(
+                    {
+                        "index": i,
+                        "smiles": smi,
+                        "mol_block": mol_block,
+                        "bond_key": key,
+                        "rdkit_sign": rv,
+                        "chematic_sign": cv,
+                        "chematic_smiles": chematic_smiles,
+                    }
+                )
 
     summary = {
         "rdkit_version": installed_version,
@@ -187,11 +220,12 @@ def main():
         "chematic_parse_failures_count": len(chematic_parse_failures),
         "chematic_parse_failures": chematic_parse_failures[:50],
         "molecules_with_rdkit_resolved_ez": rdkit_resolved_molecules,
-        "resolved_ez_bonds_proxy": resolved_bond_count_proxy,
-        "chematic_assigned": chematic_assigned,
-        "chematic_abstained": chematic_abstained,
-        "no_stereo_both_agree": no_stereo_both_agree,
-        "semantic_agreements": semantic_agreements,
+        "resolved_ez_bonds": resolved_ez_bonds,
+        "chematic_assigned_molecules": chematic_assigned_molecules,
+        "chematic_abstained_molecules": chematic_abstained_molecules,
+        "no_stereo_both_agree_molecules": no_stereo_both_agree_molecules,
+        "bond_semantic_agreements": bond_semantic_agreements,
+        "bond_chematic_abstained": bond_chematic_abstained,
         "semantic_inversions_count": len(semantic_inversions),
         "semantic_inversions": semantic_inversions[:50],
         "false_positive_count": len(false_positives),
@@ -202,10 +236,11 @@ def main():
 
     print(f"input={input_count} parsed={parsed_count} parse_failures={len(parse_failures)}")
     print(f"mol_block_write_failures={len(mol_block_write_failures)} chematic_parse_failures={len(chematic_parse_failures)}")
-    print(f"rdkit_resolved_molecules={rdkit_resolved_molecules} resolved_bonds_proxy={resolved_bond_count_proxy}")
-    print(f"chematic_assigned={chematic_assigned} chematic_abstained={chematic_abstained}")
-    print(f"no_stereo_both_agree={no_stereo_both_agree} semantic_agreements={semantic_agreements}")
-    print(f"semantic_inversions={len(semantic_inversions)} false_positives={len(false_positives)} (cumulene subset: {cumulene_cases})")
+    print(f"molecules_with_rdkit_resolved_ez={rdkit_resolved_molecules} resolved_ez_bonds={resolved_ez_bonds}")
+    print(f"chematic_assigned_molecules={chematic_assigned_molecules} chematic_abstained_molecules={chematic_abstained_molecules}")
+    print(f"no_stereo_both_agree_molecules={no_stereo_both_agree_molecules}")
+    print(f"[per-bond] semantic_agreements={bond_semantic_agreements} chematic_abstained={bond_chematic_abstained}")
+    print(f"[per-bond] semantic_inversions={len(semantic_inversions)} false_positives={len(false_positives)} (cumulene subset: {cumulene_cases})")
 
     if semantic_inversions or false_positives:
         print("FAIL: required gates violated (semantic_inversions==0, false_positives==0)", file=sys.stderr)
