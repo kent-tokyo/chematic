@@ -8,6 +8,12 @@ use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
+    EnergyBreakdown, MinimizerError, NumericTypeError, assign_mmff94_numeric_types,
+    assign_uff_types, minimize_mmff94_lbfgs, minimize_uff as ff_minimize_uff, mmff94_angle_energy,
+    mmff94_bond_energy, mmff94_energy_breakdown, mmff94_oop, mmff94_torsion_energy,
+    mmff94_total_energy, uff_total_energy,
+};
+use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
     mmff94_angle_params, mmff94_bond_params, mmff94_charges_3d, mmff94_vdw_params,
 };
@@ -135,14 +141,47 @@ fn minimize_gradient_descent<F>(
 where
     F: Fn(&Coords3D) -> f64,
 {
+    minimize_gradient_descent_reporting(mol, coords, config, energy_fn).coords
+}
+
+/// Result of the internal generic gradient-descent loop, with the convergence
+/// bookkeeping the pre-existing public wrappers (which only ever wanted the
+/// final `Coords3D`) historically discarded. Used by the force-field bridge
+/// below to report real iteration/convergence/residual-force numbers for the
+/// DREIDING/generic paths without duplicating the loop.
+struct GradientDescentReport {
+    coords: Coords3D,
+    iterations: usize,
+    converged: bool,
+    final_max_grad: f64,
+}
+
+fn minimize_gradient_descent_reporting<F>(
+    mol: &Molecule,
+    coords: Coords3D,
+    config: &MinimizeConfig,
+    energy_fn: F,
+) -> GradientDescentReport
+where
+    F: Fn(&Coords3D) -> f64,
+{
     if mol.atom_count() <= 1 {
-        return coords;
+        return GradientDescentReport {
+            coords,
+            iterations: 0,
+            converged: true,
+            final_max_grad: 0.0,
+        };
     }
 
     let mut c = coords;
     let delta = 1e-4;
+    let mut iterations = 0usize;
+    let mut converged = false;
+    let mut final_max_grad = 0.0f64;
 
     for _ in 0..config.max_steps {
+        iterations += 1;
         let mut grad = vec![Point3::zero(); mol.atom_count()];
         let mut max_grad = 0.0f64;
 
@@ -198,7 +237,10 @@ where
             }
         }
 
+        final_max_grad = max_grad;
+
         if max_grad < config.convergence {
+            converged = true;
             break;
         }
 
@@ -217,7 +259,12 @@ where
         }
     }
 
-    c
+    GradientDescentReport {
+        coords: c,
+        iterations,
+        converged,
+        final_max_grad,
+    }
 }
 
 /// Internal MMFF94 minimization implementation with custom config.
@@ -921,6 +968,783 @@ fn electrostatic_energy_mmff94(
 }
 
 // ---------------------------------------------------------------------------
+// Force-field bridge (Wave 1, Agent F): real chematic-ff MMFF94/UFF
+// ---------------------------------------------------------------------------
+//
+// Everything above this point (`minimize`, `minimize_dreiding`,
+// `minimize_mmff94`, `minimize_uff`, `minimize_with_config`, and their
+// crippled bond+angle(+VdW/electrostatic)-only energy functions) is
+// UNCHANGED — kept byte-for-byte for backward compatibility, per this
+// program's hard constraint that no existing public API's default behavior
+// changes in this PR.
+//
+// This section is purely additive: a new opt-in entry point,
+// `minimize_with_policy`/`minimize_with_policy_gated`, that bridges to
+// chematic-ff's COMPLETE MMFF94 implementation (bond + angle + stretch-bend +
+// torsion + out-of-plane + vdW + electrostatic, real L-BFGS minimizer) and
+// its separate UFF module, instead of re-implementing a smaller, worse
+// subset of the same physics locally. See `docs/etkdg_3d_gap_rfc.md`
+// ("mechanism 3") for the bug this fixes: `bond_energy_mmff94`/
+// `angle_energy_mmff94` above use `if let Some(params) = mmff94_bond_params(...)
+// { ... }` — when a type pair isn't covered, that internal coordinate
+// silently contributes zero energy/gradient (no restoring force) while VdW
+// repulsion still pushes atoms apart. This bridge never does that: missing
+// coverage is always a typed `Err` (`Mmff94Strict`) or an explicitly reported
+// fallback (`Mmff94WithUffFallback`), never a silent zero.
+//
+// Variant names (`Mmff94Strict`/`Mmff94WithUffFallback`/`UffOnly`/`Dreiding`/
+// `None`) and the `requested_force_field`/`actual_force_field_used`/
+// `fallback_reason`/`missing_parameter_classes` result fields below were
+// renamed/added per Coordinator's design-review refinement mid-implementation
+// (binding — see PR body); behavior is unchanged from the original brief.
+
+/// Force-field policy for [`minimize_with_policy`]/[`minimize_with_policy_gated`]
+/// — the opt-in bridge to chematic-ff's complete implementations. Does not
+/// change any existing public function's behavior or default in this crate.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ForceFieldPolicy {
+    /// Full MMFF94 (bond + angle + stretch-bend + torsion + out-of-plane +
+    /// vdW + electrostatic, `chematic_ff::minimize_mmff94_lbfgs`). Refuses
+    /// (typed `Err`) if even one bond or angle lacks MMFF94 parameters,
+    /// rather than silently contributing zero energy/gradient for that
+    /// internal coordinate. See `minimize_with_policy_gated` to also gate on
+    /// torsion/out-of-plane coverage.
+    Mmff94Strict,
+    /// Try `Mmff94Strict` first; on any typed failure (unsupported atom
+    /// element, or missing bond/angle parameters), fall back to `UffOnly`.
+    /// The fallback is always reported via
+    /// [`PolicyMinimizeResult::fallback_reason`]/
+    /// [`PolicyMinimizeResult::actual_force_field_used`]/
+    /// [`PolicyMinimizeResult::missing_parameter_classes`], never silent.
+    Mmff94WithUffFallback,
+    /// chematic-ff's real UFF module (`chematic_ff::uff`) — generic,
+    /// all-element coverage (bond lengths/angles are formula-derived from
+    /// per-type constants, not a lookup table, so there is no missing-entry
+    /// case to gate on). Always succeeds.
+    UffOnly,
+    /// Existing DREIDING path (unchanged physics) — chematic-ff has no
+    /// DREIDING minimizer, so this stays chematic-3d's own implementation,
+    /// just routed through the same reporting result type as the other
+    /// policies.
+    Dreiding,
+    /// No minimization — return the embedded geometry unchanged. Useful for
+    /// testing/composability with a raw embedder.
+    None,
+}
+
+/// Which MMFF94 internal-coordinate class a missing-parameter finding is
+/// about.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Mmff94TermKind {
+    Bond,
+    Angle,
+    Torsion,
+    Oop,
+}
+
+/// One internal coordinate that chematic-ff's MMFF94 tables have no entry
+/// for. `atoms` is the exact atom tuple (2 for bond, 3 for angle, 4 for
+/// torsion/oop) so a caller can cite *which* atoms/elements were missing —
+/// never just an aggregate count.
+#[derive(Debug, Clone)]
+pub struct Mmff94MissingTerm {
+    pub kind: Mmff94TermKind,
+    pub atoms: Vec<AtomIdx>,
+    /// Human-readable citation, e.g. `"Angle F-C-Cl (atom indices [1, 0, 2])"`.
+    pub description: String,
+}
+
+/// Full parameter-coverage measurement for one molecule under chematic-ff's
+/// MMFF94 tables. Every internal coordinate chematic-ff's own energy
+/// functions would evaluate is enumerated here (the enumeration mirrors
+/// `chematic_ff::mmff94_minimizer`'s private energy loops exactly, so the
+/// totals match what chematic-ff will actually compute over, not an
+/// idealized recount) — nothing is silently excluded from the count.
+#[derive(Debug, Clone, Default)]
+pub struct Mmff94CoverageReport {
+    pub bonds_total: usize,
+    pub bonds_missing: Vec<Mmff94MissingTerm>,
+    pub angles_total: usize,
+    pub angles_missing: Vec<Mmff94MissingTerm>,
+    pub torsions_total: usize,
+    pub torsions_missing: Vec<Mmff94MissingTerm>,
+    pub oop_total: usize,
+    pub oop_missing: Vec<Mmff94MissingTerm>,
+}
+
+impl Mmff94CoverageReport {
+    /// True iff no bond or angle is missing parameters — the exact scope of
+    /// the RFC's mechanism-3 bug (silent zero-gradient, no restoring force
+    /// while vdW repulsion still pushes atoms apart).
+    pub fn bond_angle_fully_covered(&self) -> bool {
+        self.bonds_missing.is_empty() && self.angles_missing.is_empty()
+    }
+
+    /// Gate check used by `Mmff94Strict`/`Mmff94ThenUff`. Bond/angle always
+    /// participate; torsion/out-of-plane only do when `include_torsion_oop`
+    /// is set (see `minimize_with_policy_gated`).
+    pub fn has_gate_failure(&self, include_torsion_oop: bool) -> bool {
+        !self.bond_angle_fully_covered()
+            || (include_torsion_oop
+                && (!self.torsions_missing.is_empty() || !self.oop_missing.is_empty()))
+    }
+
+    /// Total count of missing internal coordinates across all 4 classes —
+    /// always meaningful regardless of gate scope, since nothing here is
+    /// filtered by what the gate happens to check.
+    pub fn total_missing(&self) -> usize {
+        self.bonds_missing.len()
+            + self.angles_missing.len()
+            + self.torsions_missing.len()
+            + self.oop_missing.len()
+    }
+
+    /// Flattened list of every missing internal coordinate across all 4
+    /// classes — the exact "which specific element/atom-type pairs lacked
+    /// coverage" citation surfaced at the top level as
+    /// [`PolicyMinimizeResult::missing_parameter_classes`].
+    pub fn all_missing(&self) -> Vec<Mmff94MissingTerm> {
+        let mut v = Vec::with_capacity(self.total_missing());
+        v.extend(self.bonds_missing.iter().cloned());
+        v.extend(self.angles_missing.iter().cloned());
+        v.extend(self.torsions_missing.iter().cloned());
+        v.extend(self.oop_missing.iter().cloned());
+        v
+    }
+}
+
+/// Typed failure for the [`ForceFieldPolicy::Mmff94Strict`] bridge. Never
+/// silently absorbed into a zero-energy/zero-gradient term.
+///
+/// Naming note for Coordinator (Wave 2 reconciliation): this is deliberately
+/// named for this crate's own use, not coupled to Agent C's parallel
+/// `EmbedFailureCause` (distance-geometry embedding failures — a different
+/// pipeline stage). The variant `MissingParameters(Mmff94CoverageReport)`
+/// here is the natural candidate for an `EmbedFailureCause::
+/// MissingForceFieldParameters { .. }` case if/when Coordinator unifies the
+/// two vocabularies; this PR does not attempt that unification itself.
+#[derive(Debug, Clone)]
+pub enum ForceFieldBridgeError {
+    /// `chematic_ff::assign_mmff94_numeric_types` failed outright for one or
+    /// more atoms (element unsupported by the typer at all — coarser than a
+    /// missing bond/angle/torsion/oop entry for an otherwise-typed atom).
+    UnsupportedAtomType(String),
+    /// One or more internal coordinates lack MMFF94 parameters under the
+    /// active coverage gate. Boxed: `clippy::result_large_err` (the report
+    /// carries per-missing-term `Vec`s / `String`s so the inline variant is
+    /// large relative to the common `Ok` path).
+    MissingParameters(Box<Mmff94CoverageReport>),
+}
+
+impl std::fmt::Display for ForceFieldBridgeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ForceFieldBridgeError::UnsupportedAtomType(e) => {
+                write!(f, "MMFF94 atom-type assignment failed: {e}")
+            }
+            ForceFieldBridgeError::MissingParameters(r) => write!(
+                f,
+                "MMFF94 parameters missing for {} internal coordinate(s) \
+                 ({} bond, {} angle, {} torsion, {} oop)",
+                r.total_missing(),
+                r.bonds_missing.len(),
+                r.angles_missing.len(),
+                r.torsions_missing.len(),
+                r.oop_missing.len(),
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ForceFieldBridgeError {}
+
+impl From<NumericTypeError> for ForceFieldBridgeError {
+    fn from(e: NumericTypeError) -> Self {
+        ForceFieldBridgeError::UnsupportedAtomType(e.to_string())
+    }
+}
+
+impl From<MinimizerError> for ForceFieldBridgeError {
+    fn from(e: MinimizerError) -> Self {
+        // MinimizerError is itself just a NumericTypeError wrapper today;
+        // preserve the message rather than collapsing to a generic string.
+        ForceFieldBridgeError::UnsupportedAtomType(e.to_string())
+    }
+}
+
+/// Per-policy energy accounting. `Mmff94` reuses chematic-ff's own
+/// [`EnergyBreakdown`] shape verbatim — the same struct
+/// `scripts/etkdg_vs_rdkit_gap.py`'s "fair energy delta" metric already
+/// consumes via `Mol.mmff94_energy_breakdown()` — so downstream consumers
+/// never need a second energy-breakdown format.
+#[derive(Debug, Clone)]
+pub enum EnergyReport {
+    Mmff94(EnergyBreakdown),
+    Uff { total: f64 },
+    Dreiding { total: f64 },
+    None,
+}
+
+impl EnergyReport {
+    pub fn total(&self) -> f64 {
+        match self {
+            EnergyReport::Mmff94(b) => b.total,
+            EnergyReport::Uff { total } | EnergyReport::Dreiding { total } => *total,
+            EnergyReport::None => 0.0,
+        }
+    }
+}
+
+/// Full result of [`minimize_with_policy`]/[`minimize_with_policy_gated`].
+///
+/// The `requested_force_field`/`actual_force_field_used`/`fallback_reason`/
+/// `missing_parameter_classes` quartet exists specifically so that
+/// `Mmff94WithUffFallback` can never silently report "MMFF94 minimized" when
+/// it actually fell back to UFF — that would be the exact mechanism-3 bug
+/// (silent zero/substitution) reintroduced one layer up, at the
+/// policy-reporting level instead of the energy-term level.
+#[derive(Debug, Clone)]
+pub struct PolicyMinimizeResult {
+    pub coords: Coords3D,
+    /// What the caller asked for.
+    pub requested_force_field: ForceFieldPolicy,
+    /// What actually ran. Differs from `requested_force_field` only for
+    /// `Mmff94WithUffFallback` after a fallback
+    /// (`actual_force_field_used == UffOnly`).
+    pub actual_force_field_used: ForceFieldPolicy,
+    /// `Some(reason)` iff `actual_force_field_used != requested_force_field`
+    /// (i.e. a fallback occurred) — explains why. Carries the same typed
+    /// reason `Mmff94Strict` would have returned as an `Err`.
+    pub fallback_reason: Option<ForceFieldBridgeError>,
+    /// Every specific internal coordinate (bond/angle/torsion/oop, cited by
+    /// atom indices and element symbols — never just an aggregate count)
+    /// that lacked MMFF94 parameter coverage. Populated whenever MMFF94
+    /// typing/coverage was computed at all (`Mmff94Strict`, or the MMFF94
+    /// attempt inside `Mmff94WithUffFallback` regardless of outcome); empty
+    /// (not merely absent) when MMFF94 was never attempted (`UffOnly`/
+    /// `Dreiding`/`None`) or when coverage was full.
+    pub missing_parameter_classes: Vec<Mmff94MissingTerm>,
+    /// Full structured coverage report (all 4 term-class totals + missing
+    /// lists), whenever MMFF94 typing/coverage was computed — see
+    /// `missing_parameter_classes` for the flattened, always-populated view
+    /// of the same data.
+    pub coverage: Option<Mmff94CoverageReport>,
+    pub energy_before: EnergyReport,
+    pub energy_after: EnergyReport,
+    pub converged: bool,
+    pub iterations: usize,
+    /// Max |gradient component| (kcal/mol/Å) at the final geometry, computed
+    /// by this bridge's own finite-difference pass over the exact energy
+    /// function that produced `energy_after` — not read off any upstream
+    /// struct (chematic-ff's `MinimizeResult`/`UffMinimizeResult` don't carry
+    /// this field).
+    pub max_residual_force: f64,
+}
+
+fn trivial_result(coords: Coords3D, policy: ForceFieldPolicy) -> PolicyMinimizeResult {
+    PolicyMinimizeResult {
+        coords,
+        requested_force_field: policy,
+        actual_force_field_used: policy,
+        fallback_reason: None,
+        missing_parameter_classes: Vec::new(),
+        coverage: None,
+        energy_before: EnergyReport::None,
+        energy_after: EnergyReport::None,
+        converged: true,
+        iterations: 0,
+        max_residual_force: 0.0,
+    }
+}
+
+// --- Coords3D <-> Vec<[f64; 3]> bridge helpers ------------------------------
+
+fn coords_to_vec(coords: &Coords3D, n: usize) -> Vec<[f64; 3]> {
+    (0..n)
+        .map(|i| {
+            let p = coords.get(AtomIdx(i as u32));
+            [p.x, p.y, p.z]
+        })
+        .collect()
+}
+
+fn vec_to_coords(v: &[[f64; 3]]) -> Coords3D {
+    let mut c = Coords3D::new_zeroed(v.len());
+    for (i, p) in v.iter().enumerate() {
+        c.set(AtomIdx(i as u32), Point3::new(p[0], p[1], p[2]));
+    }
+    c
+}
+
+/// Central-difference max |gradient component| over an arbitrary black-box
+/// energy function. Used both to report `max_residual_force` in production
+/// and, in tests, as an independent bridge-plumbing check (see module tests
+/// — chematic-ff exposes no analytic gradient anywhere, so this is a
+/// finite-difference-vs-finite-difference cross-check across two independent
+/// code paths, not an analytic-vs-FD check; see test doc comment for why).
+fn fd_max_gradient<F: Fn(&[[f64; 3]]) -> f64>(
+    coords: &[[f64; 3]],
+    energy_fn: F,
+    delta: f64,
+) -> f64 {
+    let mut work = coords.to_vec();
+    let mut max_g = 0.0_f64;
+    for i in 0..work.len() {
+        for axis in 0..3 {
+            work[i][axis] += delta;
+            let ep = energy_fn(&work);
+            work[i][axis] -= 2.0 * delta;
+            let em = energy_fn(&work);
+            work[i][axis] += delta;
+            let g = (ep - em) / (2.0 * delta);
+            if g.abs() > max_g {
+                max_g = g.abs();
+            }
+        }
+    }
+    max_g
+}
+
+// --- MMFF94 parameter-coverage checking -------------------------------------
+//
+// chematic-ff's own bond/angle/torsion-type classification helpers
+// (`bond_type_for`, `angle_type_for`, `torsion_type_for` in
+// `mmff94_minimizer.rs`, and the out-of-plane `SP2_TYPES` whitelist in that
+// same file's `oop_energy`) are private, so this bridge duplicates the exact
+// same lists to independently reconstruct coverage without touching that
+// crate (out of this program's file-ownership table — chematic-ff is Agent
+// F's *target*, not something this PR edits). Flagged as a chematic-ff
+// follow-up in the PR body: exporting these would let this duplication go
+// away. `bridge_bond_type_matches_chematic_ff_lookup_behavior` (test, below)
+// pins this copy against observed `mmff94_bond_energy` Some/None behavior so
+// a silent divergence is caught rather than quietly making this report
+// over-confident in either direction.
+//
+// IMPORTANT FINDING (see PR body "Findings" section for the full writeup):
+// mirroring this classification exactly is what makes this bridge correct,
+// but the classification itself has a real bug, discovered while building
+// this coverage checker — chematic-ff's `bond_type_for`/`torsion_type_for`
+// compute bond_type=1 whenever EITHER atom's type is in the SP2 list, but
+// the actual bond/torsion tables only ever populate bond_type=1 rows where
+// BOTH atoms are SP2-family types (verified: zero `(1, 1, X, ...)` rows exist
+// in `mmff94_energy/bond.rs` for plain sp3-carbon type 1 with any partner).
+// This silently strands entries like `(0, 1, 3, ...)` (Cα(sp3)-C(carbonyl))
+// unreachable via chematic-ff's OWN classification, and live-reproduces as
+// chematic-ff's own `mmff94_total_energy` being exactly insensitive to a 1 Å
+// stretch of that bond (see `chematic_ff_own_energy_function_is_blind_to_this_bond_stretch`
+// test, below) — the *same* mechanism-3 pathology (silent zero-gradient, no
+// restoring force) this whole bridge exists to stop, but one layer inside
+// chematic-ff itself, not in chematic-3d. Separately, `angle_type_for`
+// (always returns 0) can never reach the 462/2245 (~21%) angle-table rows
+// with `angle_type` 1–8 (ring-size/terminal-atom variants) — measured via
+// `grep -c` over `mmff94_energy/angle.rs`, not assumed. Both are chematic-ff
+// bugs this bridge cannot fix (out of file-ownership scope) but correctly
+// detects and refuses on rather than silently trusting.
+
+/// SP2/aromatic MMFF94 numeric types used by chematic-ff's `bond_type_for`/
+/// `torsion_type_for` (`mmff94_minimizer.rs`). Copied verbatim.
+const MMFF94_SP2_BOND_TORSION_TYPES: &[u8] = &[
+    2, 3, 9, 10, 37, 38, 39, 40, 41, 56, 57, 58, 59, 63, 64, 65, 66, 67, 78, 79, 80, 81, 82,
+];
+
+/// SP2 trigonal types eligible for out-of-plane bending, from chematic-ff's
+/// `oop_energy` (`mmff94_minimizer.rs`). Copied verbatim — note chematic-ff
+/// itself keeps two separate SP2 lists; this one is a strict superset of
+/// [`MMFF94_SP2_BOND_TORSION_TYPES`].
+const MMFF94_SP2_OOP_TYPES: &[u8] = &[
+    2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76,
+    78, 79, 80, 81, 82,
+];
+
+fn mmff94_bond_type_for(ti: u8, tj: u8) -> u8 {
+    if MMFF94_SP2_BOND_TORSION_TYPES.binary_search(&ti).is_ok()
+        || MMFF94_SP2_BOND_TORSION_TYPES.binary_search(&tj).is_ok()
+    {
+        1
+    } else {
+        0
+    }
+}
+
+fn mmff94_angle_type_for(_tj: u8) -> u8 {
+    0
+}
+
+fn mmff94_torsion_type_for(tj: u8, tk: u8) -> u8 {
+    match (
+        MMFF94_SP2_BOND_TORSION_TYPES.binary_search(&tj).is_ok(),
+        MMFF94_SP2_BOND_TORSION_TYPES.binary_search(&tk).is_ok(),
+    ) {
+        (false, false) => 0,
+        (true, false) | (false, true) => 1,
+        (true, true) => 2,
+    }
+}
+
+fn missing_term(mol: &Molecule, kind: Mmff94TermKind, atoms: &[AtomIdx]) -> Mmff94MissingTerm {
+    let syms: Vec<&str> = atoms
+        .iter()
+        .map(|&a| mol.atom(a).element.symbol())
+        .collect();
+    let indices: Vec<u32> = atoms.iter().map(|a| a.0).collect();
+    Mmff94MissingTerm {
+        kind,
+        atoms: atoms.to_vec(),
+        description: format!("{kind:?} {} (atom indices {indices:?})", syms.join("-")),
+    }
+}
+
+/// Independently measure MMFF94 parameter coverage for every bond, angle,
+/// torsion, and out-of-plane center that chematic-ff's own energy functions
+/// would evaluate for `mol`. Mirrors `chematic_ff::mmff94_minimizer`'s
+/// private energy-term enumeration loops exactly (including its lack of an
+/// `i == l` guard on 3-membered-ring torsions) so the totals match what
+/// chematic-ff will actually compute over, not an idealized recount.
+fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport {
+    let mut report = Mmff94CoverageReport::default();
+
+    for (_, bond) in mol.bonds() {
+        report.bonds_total += 1;
+        let (a1, a2) = (bond.atom1, bond.atom2);
+        let (t1, t2) = (types[a1.0 as usize], types[a2.0 as usize]);
+        let bt = mmff94_bond_type_for(t1, t2);
+        if mmff94_bond_energy(bt, t1, t2).is_none() {
+            report
+                .bonds_missing
+                .push(missing_term(mol, Mmff94TermKind::Bond, &[a1, a2]));
+        }
+    }
+
+    for b_idx in 0..mol.atom_count() {
+        let b = AtomIdx(b_idx as u32);
+        let neighbors: Vec<AtomIdx> = mol.neighbors(b).map(|(nb, _)| nb).collect();
+        if neighbors.len() < 2 {
+            continue;
+        }
+        let at = mmff94_angle_type_for(types[b_idx]);
+        for i in 0..neighbors.len() {
+            for j in (i + 1)..neighbors.len() {
+                report.angles_total += 1;
+                let (a, c) = (neighbors[i], neighbors[j]);
+                let (ta, tc) = (types[a.0 as usize], types[c.0 as usize]);
+                if mmff94_angle_energy(at, ta, types[b_idx], tc).is_none() {
+                    report.angles_missing.push(missing_term(
+                        mol,
+                        Mmff94TermKind::Angle,
+                        &[a, b, c],
+                    ));
+                }
+            }
+        }
+    }
+
+    for (_, bond) in mol.bonds() {
+        let (j, k) = (bond.atom1, bond.atom2);
+        let nbrs_j: Vec<AtomIdx> = mol.neighbors(j).map(|(nb, _)| nb).collect();
+        let nbrs_k: Vec<AtomIdx> = mol.neighbors(k).map(|(nb, _)| nb).collect();
+        let tt = mmff94_torsion_type_for(types[j.0 as usize], types[k.0 as usize]);
+        for &i in &nbrs_j {
+            if i == k {
+                continue;
+            }
+            for &l in &nbrs_k {
+                if l == j {
+                    continue;
+                }
+                report.torsions_total += 1;
+                let (ti_, tj_, tk_, tl_) = (
+                    types[i.0 as usize],
+                    types[j.0 as usize],
+                    types[k.0 as usize],
+                    types[l.0 as usize],
+                );
+                if mmff94_torsion_energy(tt, ti_, tj_, tk_, tl_).is_none() {
+                    report.torsions_missing.push(missing_term(
+                        mol,
+                        Mmff94TermKind::Torsion,
+                        &[i, j, k, l],
+                    ));
+                }
+            }
+        }
+    }
+
+    for j_idx in 0..mol.atom_count() {
+        let tj = types[j_idx];
+        if MMFF94_SP2_OOP_TYPES.binary_search(&tj).is_err() {
+            continue;
+        }
+        let j = AtomIdx(j_idx as u32);
+        let neighbors: Vec<AtomIdx> = mol.neighbors(j).map(|(nb, _)| nb).collect();
+        if neighbors.len() != 3 {
+            continue;
+        }
+        report.oop_total += 1;
+        let [i, k, l] = [neighbors[0], neighbors[1], neighbors[2]];
+        if mmff94_oop(
+            tj,
+            types[i.0 as usize],
+            types[k.0 as usize],
+            types[l.0 as usize],
+        )
+        .is_none()
+        {
+            report
+                .oop_missing
+                .push(missing_term(mol, Mmff94TermKind::Oop, &[j, i, k, l]));
+        }
+    }
+
+    report
+}
+
+// --- policy dispatch ---------------------------------------------------------
+
+struct Mmff94BridgeRun {
+    coords: Coords3D,
+    coverage: Mmff94CoverageReport,
+    energy_before: EnergyBreakdown,
+    energy_after: EnergyBreakdown,
+    converged: bool,
+    iterations: usize,
+    max_residual_force: f64,
+}
+
+fn run_mmff94_bridge(
+    mol: &Molecule,
+    coords: &Coords3D,
+    max_iter: usize,
+    include_torsion_oop_in_gate: bool,
+) -> Result<Mmff94BridgeRun, ForceFieldBridgeError> {
+    let n = mol.atom_count();
+    let types = assign_mmff94_numeric_types(mol)?;
+    let coverage = compute_mmff94_coverage(mol, &types);
+    if coverage.has_gate_failure(include_torsion_oop_in_gate) {
+        return Err(ForceFieldBridgeError::MissingParameters(Box::new(coverage)));
+    }
+
+    let coord_vec = coords_to_vec(coords, n);
+    let energy_before = mmff94_energy_breakdown(mol, &coord_vec)?;
+
+    let mut work = coord_vec.clone();
+    let result = minimize_mmff94_lbfgs(mol, &mut work, max_iter)?;
+
+    let energy_after = mmff94_energy_breakdown(mol, &work)?;
+    let max_residual_force = fd_max_gradient(
+        &work,
+        |c| {
+            mmff94_total_energy(mol, c)
+                .expect("mmff94_total_energy must not fail after a successful energy_breakdown/minimize call on the same molecule/coords")
+        },
+        1e-4,
+    );
+
+    Ok(Mmff94BridgeRun {
+        coords: vec_to_coords(&work),
+        coverage,
+        energy_before,
+        energy_after,
+        converged: result.converged,
+        iterations: result.iterations,
+        max_residual_force,
+    })
+}
+
+struct UffBridgeRun {
+    coords: Coords3D,
+    energy_before: f64,
+    energy_after: f64,
+    converged: bool,
+    iterations: usize,
+    max_residual_force: f64,
+}
+
+fn run_uff_bridge(mol: &Molecule, coords: &Coords3D, max_iter: usize) -> UffBridgeRun {
+    let n = mol.atom_count();
+    let types = assign_uff_types(mol);
+    let coord_vec = coords_to_vec(coords, n);
+    let energy_before = uff_total_energy(mol, &types, &coord_vec);
+    let result = ff_minimize_uff(mol, &types, coord_vec, max_iter);
+    let energy_after = uff_total_energy(mol, &types, &result.coords);
+    let max_residual_force =
+        fd_max_gradient(&result.coords, |c| uff_total_energy(mol, &types, c), 1e-4);
+
+    UffBridgeRun {
+        coords: vec_to_coords(&result.coords),
+        energy_before,
+        energy_after,
+        converged: result.converged,
+        iterations: result.iterations,
+        max_residual_force,
+    }
+}
+
+fn finish_mmff94(
+    r: Mmff94BridgeRun,
+    requested_force_field: ForceFieldPolicy,
+    actual_force_field_used: ForceFieldPolicy,
+    fallback_reason: Option<ForceFieldBridgeError>,
+) -> PolicyMinimizeResult {
+    let missing_parameter_classes = r.coverage.all_missing();
+    PolicyMinimizeResult {
+        coords: r.coords,
+        requested_force_field,
+        actual_force_field_used,
+        fallback_reason,
+        missing_parameter_classes,
+        coverage: Some(r.coverage),
+        energy_before: EnergyReport::Mmff94(r.energy_before),
+        energy_after: EnergyReport::Mmff94(r.energy_after),
+        converged: r.converged,
+        iterations: r.iterations,
+        max_residual_force: r.max_residual_force,
+    }
+}
+
+fn finish_uff(
+    r: UffBridgeRun,
+    requested_force_field: ForceFieldPolicy,
+    actual_force_field_used: ForceFieldPolicy,
+    fallback_reason: Option<ForceFieldBridgeError>,
+    missing_parameter_classes: Vec<Mmff94MissingTerm>,
+    coverage: Option<Mmff94CoverageReport>,
+) -> PolicyMinimizeResult {
+    PolicyMinimizeResult {
+        coords: r.coords,
+        requested_force_field,
+        actual_force_field_used,
+        fallback_reason,
+        missing_parameter_classes,
+        coverage,
+        energy_before: EnergyReport::Uff {
+            total: r.energy_before,
+        },
+        energy_after: EnergyReport::Uff {
+            total: r.energy_after,
+        },
+        converged: r.converged,
+        iterations: r.iterations,
+        max_residual_force: r.max_residual_force,
+    }
+}
+
+/// Bridge chematic-3d's minimization step to chematic-ff's complete
+/// force-field implementations. Opt-in only — no existing public function's
+/// default behavior changes because of this.
+///
+/// `include_torsion_oop_in_gate`: when `true`, `Mmff94Strict` (and the MMFF94
+/// attempt inside `Mmff94WithUffFallback`) also refuses on a missing torsion
+/// or out-of-plane term, not just bond/angle. [`minimize_with_policy`] passes
+/// `false` — bond+angle is the RFC's mechanism-3 scope (the "no restoring
+/// force, vdW pushes atoms apart" failure mode); torsion/oop absence is a
+/// real, always-*reported* accuracy gap (see `coverage`/
+/// `missing_parameter_classes` on the result) but not the same
+/// structural-blowup pathology, and gating on it too was measured (see PR
+/// body / `examples/mmff94_bridge_coverage_report.rs`) to fail a large
+/// fraction of ordinary organic molecules — making `Mmff94Strict` with that
+/// wider scope impractical rather than rigorous.
+pub fn minimize_with_policy_gated(
+    mol: &Molecule,
+    coords: Coords3D,
+    policy: ForceFieldPolicy,
+    config: &MinimizeConfig,
+    include_torsion_oop_in_gate: bool,
+) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
+    if mol.atom_count() <= 1 {
+        return Ok(trivial_result(coords, policy));
+    }
+
+    match policy {
+        ForceFieldPolicy::None => Ok(trivial_result(coords, ForceFieldPolicy::None)),
+
+        ForceFieldPolicy::Dreiding => {
+            let dreiding_types = assign_dreiding_types(mol);
+            let e_before = total_energy_dreiding(mol, &coords, &dreiding_types);
+            let report = minimize_gradient_descent_reporting(mol, coords, config, |c| {
+                total_energy_dreiding(mol, c, &dreiding_types)
+            });
+            let e_after = total_energy_dreiding(mol, &report.coords, &dreiding_types);
+            Ok(PolicyMinimizeResult {
+                coords: report.coords,
+                requested_force_field: ForceFieldPolicy::Dreiding,
+                actual_force_field_used: ForceFieldPolicy::Dreiding,
+                fallback_reason: None,
+                missing_parameter_classes: Vec::new(),
+                coverage: None,
+                energy_before: EnergyReport::Dreiding { total: e_before },
+                energy_after: EnergyReport::Dreiding { total: e_after },
+                converged: report.converged,
+                iterations: report.iterations,
+                max_residual_force: report.final_max_grad,
+            })
+        }
+
+        ForceFieldPolicy::UffOnly => {
+            let r = run_uff_bridge(mol, &coords, config.max_steps);
+            Ok(finish_uff(
+                r,
+                ForceFieldPolicy::UffOnly,
+                ForceFieldPolicy::UffOnly,
+                None,
+                Vec::new(),
+                None,
+            ))
+        }
+
+        ForceFieldPolicy::Mmff94Strict => {
+            let r = run_mmff94_bridge(mol, &coords, config.max_steps, include_torsion_oop_in_gate)?;
+            Ok(finish_mmff94(
+                r,
+                ForceFieldPolicy::Mmff94Strict,
+                ForceFieldPolicy::Mmff94Strict,
+                None,
+            ))
+        }
+
+        ForceFieldPolicy::Mmff94WithUffFallback => {
+            match run_mmff94_bridge(mol, &coords, config.max_steps, include_torsion_oop_in_gate) {
+                Ok(r) => Ok(finish_mmff94(
+                    r,
+                    ForceFieldPolicy::Mmff94WithUffFallback,
+                    ForceFieldPolicy::Mmff94Strict,
+                    None,
+                )),
+                Err(reason) => {
+                    let (coverage, missing_parameter_classes) = match &reason {
+                        ForceFieldBridgeError::MissingParameters(rep) => {
+                            (Some((**rep).clone()), rep.all_missing())
+                        }
+                        ForceFieldBridgeError::UnsupportedAtomType(_) => (None, Vec::new()),
+                    };
+                    let r = run_uff_bridge(mol, &coords, config.max_steps);
+                    Ok(finish_uff(
+                        r,
+                        ForceFieldPolicy::Mmff94WithUffFallback,
+                        ForceFieldPolicy::UffOnly,
+                        Some(reason),
+                        missing_parameter_classes,
+                        coverage,
+                    ))
+                }
+            }
+        }
+    }
+}
+
+/// Convenience wrapper over [`minimize_with_policy_gated`] with
+/// `include_torsion_oop_in_gate = false` (bond+angle only — mechanism-3's
+/// exact scope). Use `minimize_with_policy_gated` directly to widen the
+/// strict gate to torsion/out-of-plane as well.
+pub fn minimize_with_policy(
+    mol: &Molecule,
+    coords: Coords3D,
+    policy: ForceFieldPolicy,
+    config: &MinimizeConfig,
+) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
+    minimize_with_policy_gated(mol, coords, policy, config, false)
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -1333,6 +2157,447 @@ mod tests {
             "total energy mismatch: got {}, expected {}",
             total_e,
             expected
+        );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Force-field bridge tests (Wave 1, Agent F)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod policy_bridge_tests {
+    use super::*;
+    use crate::dg::generate_coords;
+    use chematic_smiles::parse;
+
+    // --- Coords3D <-> Vec<[f64; 3]> bridge plumbing -------------------------
+
+    #[test]
+    fn coords_vec_round_trip_preserves_per_atom_identity() {
+        // Distinct, non-symmetric coordinates per atom so a transposition or
+        // off-by-one bug in the bridge's index handling would be caught.
+        let n = 5;
+        let mut coords = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            coords.set(
+                AtomIdx(i as u32),
+                Point3::new(i as f64, 10.0 + i as f64 * 2.0, 100.0 - i as f64 * 3.0),
+            );
+        }
+        let v = coords_to_vec(&coords, n);
+        let back = vec_to_coords(&v);
+        for i in 0..n {
+            let orig = coords.get(AtomIdx(i as u32));
+            let rt = back.get(AtomIdx(i as u32));
+            assert!(
+                (orig.x - rt.x).abs() < 1e-12
+                    && (orig.y - rt.y).abs() < 1e-12
+                    && (orig.z - rt.z).abs() < 1e-12,
+                "atom {i} round-trip mismatch: {orig:?} vs {rt:?}"
+            );
+        }
+    }
+
+    /// Per the RFC's "analytic-vs-finite-difference gradient self-check"
+    /// request: chematic-ff (verified by reading `mmff94_minimizer.rs` and
+    /// `uff.rs`) exposes NO analytic/closed-form gradient anywhere — both
+    /// `compute_gradient` and `uff_gradient` are private and finite-
+    /// difference-based internally. There is therefore no analytic gradient
+    /// to compare against; a literal analytic-vs-FD test is unsatisfiable
+    /// with the current chematic-ff surface (flagged in the PR body).
+    ///
+    /// What *is* a meaningful correctness check on the bridge itself is
+    /// whether this bridge's `Coords3D` <-> `Vec<[f64; 3]>` conversion
+    /// preserves atom correspondence into the FD gradient computation: this
+    /// test perturbs the SAME atom/axis via two independent routes — (a)
+    /// through `Coords3D::get`/`set` (mimicking how a caller holding a
+    /// `Coords3D` would use this bridge) and (b) directly on a raw
+    /// `Vec<[f64; 3]>` with no `Coords3D` involved at all — and confirms
+    /// both report the same gradient, localized on the atom that was
+    /// actually perturbed. A transposition/off-by-one bug in the bridge's
+    /// index handling would make these disagree.
+    #[test]
+    fn bridge_fd_gradient_matches_raw_chematic_ff_call() {
+        let mol = parse("CCO").expect("ethanol topology (heavy atoms only)");
+        let mut coords = generate_coords(&mol);
+        // Deliberately stretch the C-O bond (atom 2) far from equilibrium so
+        // the gradient at atom 2 is unambiguously the largest one.
+        let o = coords.get(AtomIdx(2));
+        coords.set(AtomIdx(2), Point3::new(o.x + 3.0, o.y, o.z));
+
+        // Route (a): through Coords3D -> Vec via this bridge's own helper.
+        let via_bridge = coords_to_vec(&coords, mol.atom_count());
+        let grad_a = fd_max_gradient(
+            &via_bridge,
+            |c| mmff94_total_energy(&mol, c).expect("energy"),
+            1e-4,
+        );
+
+        // Route (b): construct the equivalent raw Vec directly, no Coords3D
+        // anywhere in this path.
+        let raw: Vec<[f64; 3]> = (0..mol.atom_count())
+            .map(|i| {
+                let p = coords.get(AtomIdx(i as u32));
+                [p.x, p.y, p.z]
+            })
+            .collect();
+        let grad_b = fd_max_gradient(
+            &raw,
+            |c| mmff94_total_energy(&mol, c).expect("energy"),
+            1e-4,
+        );
+
+        assert!(
+            (grad_a - grad_b).abs() < 1e-9,
+            "bridge FD gradient ({grad_a}) disagrees with raw-Vec FD gradient ({grad_b}) \
+             on the same coordinates — possible index/transposition bug in coords_to_vec"
+        );
+        // Sanity: the artificially stretched bond should produce a large,
+        // clearly-nonzero residual force, not a spuriously-zero one (which
+        // is exactly the mechanism-3 failure mode this bridge fixes).
+        assert!(
+            grad_a > 10.0,
+            "expected a large residual force from a 3 Å-stretched C-O bond, got {grad_a}"
+        );
+    }
+
+    /// Pins this bridge's duplicated `bond_type_for` classification against
+    /// chematic-ff's actual `mmff94_bond_energy` Some/None behavior for a
+    /// handful of type pairs. If chematic-ff's private classification ever
+    /// changes and this copy silently drifts, this test catches it — a
+    /// silently-diverged copy would make the coverage report falsely
+    /// confident (missing bonds could recompute as "covered" wrongly, or
+    /// vice versa), the same failure class this whole bridge exists to fix.
+    #[test]
+    fn bridge_bond_type_matches_chematic_ff_lookup_behavior() {
+        // (type_i, type_j, expect_some)
+        let cases: &[(u8, u8, bool)] = &[
+            (1, 1, true),   // C(sp3)-C(sp3): covered
+            (1, 5, true),   // C(sp3)-H: covered
+            (1, 11, true),  // C(sp3)-F: covered
+            (1, 12, true),  // C(sp3)-Cl: covered
+            (1, 13, true),  // C(sp3)-Br: covered
+            (63, 63, true), // aromatic C-C (benzene): covered, bond_type should resolve to 1
+            // PINS A REAL chematic-ff BUG FOUND WHILE BUILDING THIS BRIDGE (not
+            // introduced by it, not fixed by it -- chematic-ff is out of this
+            // program's file-ownership table, see PR body "Findings" section):
+            // type 3 (C=O carbonyl carbon) is in chematic-ff's private SP2 list,
+            // so its own `bond_type_for` computes bond_type=1 for ANY bond
+            // touching a type-3 atom ("1 if EITHER atom is sp2"). But the
+            // bond.rs table has NO (bond_type=1, 1, 3) entry -- only
+            // (bond_type=0, 1, 3, kb=4.19, r0=1.492) -- because real MMFF94's
+            // bond-type-index rule requires BOTH atoms to have the "multiple
+            // bond" property (confirmed structurally: bond.rs has zero
+            // bond_type=1 entries involving type 1 at all). The practical
+            // effect: chematic-ff's OWN `mmff94_total_energy` computes exactly
+            // zero energy change when a Cα(sp3)-C(carbonyl) bond -- the bond in
+            // literally every amino acid and ketone/aldehyde alpha carbon -- is
+            // stretched by a full 1 Å (verified live, see PR body). This
+            // bridge's independently-computed coverage report correctly
+            // predicts this exact miss (mirrors chematic-ff's real behavior,
+            // bug included, by design -- see module docs above), so
+            // `Mmff94Strict`/`Mmff94WithUffFallback` never silently accept it.
+            (1, 3, false),
+        ];
+        for &(ti, tj, expect_some) in cases {
+            let bt = mmff94_bond_type_for(ti, tj);
+            let got = mmff94_bond_energy(bt, ti, tj).is_some();
+            assert_eq!(
+                got, expect_some,
+                "bond_type_for({ti},{tj})={bt}: mmff94_bond_energy returned {got}, expected {expect_some}"
+            );
+        }
+    }
+
+    // --- Mechanism-3 repro: [C@H](F)(Cl)Br under old vs. new MMFF94 --------
+
+    fn chfclbr_mol() -> chematic_core::Molecule {
+        parse("[C@H](F)(Cl)Br").expect("chfclbr")
+    }
+
+    fn worst_bond(mol: &chematic_core::Molecule, coords: &Coords3D) -> f64 {
+        let mut worst = 0.0_f64;
+        for (_, bond) in mol.bonds() {
+            let d = coords.get(bond.atom1).distance(&coords.get(bond.atom2));
+            if d > worst {
+                worst = d;
+            }
+        }
+        worst
+    }
+
+    #[test]
+    fn old_minimize_mmff94_reproduces_mechanism3_blowup_at_this_level() {
+        // Confirm the bug reproduces starting from THIS crate's own
+        // dg::generate_coords geometry, at the minimize.rs entry point
+        // directly (`minimize_mmff94`) — not assuming the RFC's Python-path
+        // 24.3 Å number (which goes through etkdg.rs's torsion/constraint
+        // stages too) transfers unchanged to this narrower entry point.
+        let mol = chfclbr_mol();
+        assert_eq!(mol.atom_count(), 4, "C, F, Cl, Br heavy atoms only");
+        let coords = generate_coords(&mol);
+        let before = worst_bond(&mol, &coords);
+
+        let result = minimize_mmff94(&mol, coords);
+        let after = worst_bond(&mol, &result);
+
+        // The old path's bond+angle energy silently zeroes for F-C-Cl,
+        // F-C-Br, Cl-C-Br (mmff94_bond_params has no halogen-halogen-via-C
+        // angle entries), leaving only VdW repulsion to act on the 3 C-X
+        // bonds — they should blow out well past any real covalent bond.
+        assert!(
+            after > 5.0,
+            "expected the old MMFF94 path to blow up C-X bonds on this molecule \
+             (before={before:.2} Å, after={after:.2} Å) — if this no longer reproduces, \
+             the mechanism-3 'before' baseline this PR cites is stale and must be re-measured"
+        );
+    }
+
+    #[test]
+    fn mmff94_strict_refuses_chfclbr_with_missing_angle_params() {
+        let mol = chfclbr_mol();
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let err = minimize_with_policy(&mol, coords, ForceFieldPolicy::Mmff94Strict, &config)
+            .expect_err("chfclbr's 3 halogen-C-halogen angles have no MMFF94 table entry");
+
+        match err {
+            ForceFieldBridgeError::MissingParameters(report) => {
+                assert!(
+                    report.bonds_missing.is_empty(),
+                    "all 3 C-X bonds (C-F, C-Cl, C-Br) ARE covered by chematic-ff's bond table; \
+                     unexpected bond gap: {:?}",
+                    report.bonds_missing
+                );
+                assert_eq!(
+                    report.angles_missing.len(),
+                    3,
+                    "expected all 3 halogen-C-halogen angles (F-C-Cl, F-C-Br, Cl-C-Br) missing, got: {:?}",
+                    report.angles_missing
+                );
+            }
+            other => panic!("expected MissingParameters, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn mmff94_with_uff_fallback_falls_back_and_reports_why_on_chfclbr() {
+        let mol = chfclbr_mol();
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(
+            &mol,
+            coords,
+            ForceFieldPolicy::Mmff94WithUffFallback,
+            &config,
+        )
+        .expect("Mmff94WithUffFallback must never itself fail: UFF fallback is infallible");
+
+        // The exact "no silent substitution" contract: requested != actual
+        // must be visible, and the reason must be typed, never blank.
+        assert_eq!(
+            result.requested_force_field,
+            ForceFieldPolicy::Mmff94WithUffFallback
+        );
+        assert_eq!(result.actual_force_field_used, ForceFieldPolicy::UffOnly);
+        assert!(
+            result.fallback_reason.is_some(),
+            "fallback must be reported, never silent"
+        );
+        assert!(matches!(
+            result.fallback_reason.as_ref().unwrap(),
+            ForceFieldBridgeError::MissingParameters(_)
+        ));
+        assert_eq!(
+            result.missing_parameter_classes.len(),
+            3,
+            "expected the 3 missing halogen-C-halogen angles cited at the top level, got {:?}",
+            result.missing_parameter_classes
+        );
+        let coverage = result
+            .coverage
+            .as_ref()
+            .expect("coverage from the failed MMFF94 attempt must survive into the result");
+        assert_eq!(coverage.angles_missing.len(), 3);
+
+        // The actual mechanism-3 fix: UFF has full generic coverage, so the
+        // fallback geometry must not blow up the way the old MMFF94 path did.
+        let after = worst_bond(&mol, &result.coords);
+        assert!(
+            after < 3.0,
+            "expected a sane, non-blown-up geometry from the UFF fallback, got worst bond {after:.2} Å"
+        );
+    }
+
+    // --- General policy sanity on a fully-covered molecule ------------------
+
+    #[test]
+    fn mmff94_strict_succeeds_and_lowers_energy_for_ethane() {
+        let mol = parse("CC").expect("ethane");
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::Mmff94Strict, &config)
+            .expect("ethane's single C-C bond/no-angle case is fully MMFF94-covered");
+
+        assert_eq!(result.requested_force_field, ForceFieldPolicy::Mmff94Strict);
+        assert_eq!(
+            result.actual_force_field_used,
+            ForceFieldPolicy::Mmff94Strict
+        );
+        assert!(result.fallback_reason.is_none());
+        assert!(result.missing_parameter_classes.is_empty());
+        let coverage = result.coverage.expect("coverage must be reported");
+        assert!(coverage.bond_angle_fully_covered());
+        assert!(
+            result.energy_after.total() <= result.energy_before.total() + 1e-6,
+            "energy should not increase: before={:.4}, after={:.4}",
+            result.energy_before.total(),
+            result.energy_after.total()
+        );
+        assert!(result.max_residual_force.is_finite());
+        for i in 0..result.coords.atom_count() {
+            let p = result.coords.get(AtomIdx(i as u32));
+            assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite());
+        }
+    }
+
+    #[test]
+    fn uff_only_policy_produces_finite_non_clashing_geometry() {
+        let mol = parse("c1ccccc1O").expect("phenol");
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
+            .expect("UffOnly is infallible");
+        assert_eq!(result.requested_force_field, ForceFieldPolicy::UffOnly);
+        assert_eq!(result.actual_force_field_used, ForceFieldPolicy::UffOnly);
+        assert!(result.fallback_reason.is_none());
+        assert!(matches!(result.energy_after, EnergyReport::Uff { .. }));
+
+        let n = mol.atom_count();
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let d = result
+                    .coords
+                    .get(AtomIdx(i as u32))
+                    .distance(&result.coords.get(AtomIdx(j as u32)));
+                assert!(d > 0.5, "atoms {i}/{j} clashed after UFF bridge: {d:.3}");
+            }
+        }
+    }
+
+    #[test]
+    fn dreiding_policy_matches_existing_behavior_and_reports_convergence() {
+        let mol = parse("CC(=O)O").expect("acetic acid");
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::Dreiding, &config)
+            .expect("Dreiding path never errors");
+        assert_eq!(result.requested_force_field, ForceFieldPolicy::Dreiding);
+        assert_eq!(result.actual_force_field_used, ForceFieldPolicy::Dreiding);
+        assert!(result.coverage.is_none());
+        assert!(
+            result.energy_after.total() <= result.energy_before.total() + 1e-6,
+            "Dreiding energy should not increase after minimization"
+        );
+        assert!(result.iterations > 0, "expected at least one FD step");
+    }
+
+    #[test]
+    fn none_policy_returns_geometry_unchanged() {
+        let mol = parse("CCC").expect("propane");
+        let coords = generate_coords(&mol);
+        let before: Vec<Point3> = (0..mol.atom_count())
+            .map(|i| coords.get(AtomIdx(i as u32)))
+            .collect();
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::None, &config)
+            .expect("None policy never errors");
+        assert_eq!(result.requested_force_field, ForceFieldPolicy::None);
+        assert_eq!(result.actual_force_field_used, ForceFieldPolicy::None);
+        assert_eq!(result.iterations, 0);
+        for (i, orig) in before.iter().enumerate() {
+            let after = result.coords.get(AtomIdx(i as u32));
+            assert_eq!(orig.x, after.x);
+            assert_eq!(orig.y, after.y);
+            assert_eq!(orig.z, after.z);
+        }
+    }
+
+    #[test]
+    fn single_atom_molecule_is_trivially_handled_by_every_policy() {
+        let mol = parse("O").expect("water heavy atom only");
+        let config = MinimizeConfig::default();
+        for policy in [
+            ForceFieldPolicy::Mmff94Strict,
+            ForceFieldPolicy::Mmff94WithUffFallback,
+            ForceFieldPolicy::UffOnly,
+            ForceFieldPolicy::Dreiding,
+            ForceFieldPolicy::None,
+        ] {
+            let coords = generate_coords(&mol);
+            let result = minimize_with_policy(&mol, coords, policy, &config)
+                .expect("single-atom molecules never fail any policy");
+            assert!(result.converged);
+            assert_eq!(result.iterations, 0);
+        }
+    }
+
+    // --- Coverage report sanity ---------------------------------------------
+
+    #[test]
+    fn coverage_report_totals_match_bond_and_angle_counts() {
+        let mol = parse("CCC").expect("propane"); // 2 bonds, 1 angle (middle C)
+        let types = assign_mmff94_numeric_types(&mol).expect("types");
+        let report = compute_mmff94_coverage(&mol, &types);
+        assert_eq!(report.bonds_total, 2);
+        assert_eq!(report.angles_total, 1);
+        assert!(report.bond_angle_fully_covered());
+        assert_eq!(report.total_missing(), 0);
+    }
+
+    /// Live behavioral confirmation of the `chematic-ff` bug pinned by
+    /// `bridge_bond_type_matches_chematic_ff_lookup_behavior` above: calling
+    /// `chematic_ff::mmff94_total_energy` DIRECTLY (no chematic-3d code
+    /// anywhere in this path) shows exactly zero energy change when a
+    /// Cα(sp3)-C(carbonyl) bond is stretched a full 1 Å along its own bond
+    /// axis -- i.e. chematic-ff's own "complete" MMFF94 implementation has
+    /// the identical silent-zero-gradient pathology the RFC's mechanism 3
+    /// describes for chematic-3d's old minimizer, just one level deeper. Only
+    /// atoms 0 (CH3, type 1) and 1 (carbonyl C, type 3) move here, and the
+    /// only non-bonded pair (0,2) is a 1-3 pair excluded from vdW/
+    /// electrostatic by chematic-ff's own exclusion rule, and moving atom 0
+    /// exactly along the existing bond axis leaves the C1-C2-O angle
+    /// unchanged -- isolating the bond-stretch term alone.
+    #[test]
+    fn chematic_ff_own_energy_function_is_blind_to_this_bond_stretch() {
+        let mol = parse("CC=O").expect("acetaldehyde: C(sp3)-C(carbonyl)=O");
+        let coords = generate_coords(&mol);
+        let mut v = coords_to_vec(&coords, mol.atom_count());
+
+        let d = [v[0][0] - v[1][0], v[0][1] - v[1][1], v[0][2] - v[1][2]];
+        let len = (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt();
+        let u = [d[0] / len, d[1] / len, d[2] / len];
+
+        let e0 = mmff94_total_energy(&mol, &v).expect("energy");
+        v[0][0] += u[0] * 1.0;
+        v[0][1] += u[1] * 1.0;
+        v[0][2] += u[2] * 1.0;
+        let e1 = mmff94_total_energy(&mol, &v).expect("energy");
+
+        assert!(
+            (e1 - e0).abs() < 1e-9,
+            "expected chematic-ff's own mmff94_total_energy to be blind to this 1 A bond \
+             stretch (the documented chematic-ff bug); got delta={:.9} -- if this now fails, \
+             chematic-ff's bond_type_for was fixed upstream and this bridge's coverage report \
+             (and this pinning test) should be revisited/loosened accordingly",
+            e1 - e0
         );
     }
 }
