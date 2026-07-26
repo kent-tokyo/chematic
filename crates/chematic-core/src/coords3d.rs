@@ -23,10 +23,18 @@
 //! touched by this PR (read-only reference); the two types are reconciled at
 //! Wave 1->2 integration time, not here.
 //!
-//! This module adds exactly one thing `chematic_3d::coords` doesn't have:
-//! `is_finite()` on both types, since `chematic-mol`'s readers need a way to
-//! reject NaN/Inf coordinates as a typed parse error rather than silently
-//! constructing a poisoned conformer.
+//! This module adds two things `chematic_3d::coords` doesn't have:
+//! - `is_finite()` on both types. **Not currently called by this PR's own
+//!   reader code** -- `chematic-mol`'s V2000/V3000 z-coordinate parsers
+//!   validate NaN/Inf with a direct `f64::is_finite()` check on the raw
+//!   parsed value, *before* a `Point3`/`Coords3D` is ever constructed (see
+//!   `mol2000.rs`/`mol3000.rs`), so these methods have zero non-test callers
+//!   today. Provided for future consumers (e.g. Wave 2 work that may
+//!   construct a `Coords3D` from elsewhere and want to validate it after the
+//!   fact) rather than because this PR's own code needs them.
+//! - `Default`/`PartialEq` derives on `Coords3D` (`chematic_3d::coords::Coords3D`
+//!   derives only `Debug, Clone`) -- needed for this crate's own tests and
+//!   generally harmless additions for a plain data holder.
 
 use crate::molecule::AtomIdx;
 
