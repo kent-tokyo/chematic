@@ -45,6 +45,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously never collected bond-line `KEY=VALUE` tokens at all, so a V3000 file's own
   wedge/hash annotation was silently dropped. `CFG=1`/`CFG=3` now map to `BondOrder::Up`/
   `Down`; `CFG=2` ("either") is left undirected, matching V2000's own MDL-code-4 policy.
+- **2D double-bond E/Z (cis/trans) direction is now derived automatically when reading
+  MOL/SDF files** (P1-S2, the double-bond counterpart to the wedge/hash work above) —
+  new `chematic_perception::stereo2d_ez_direction::{apply_ez_directions_from_2d,
+  apply_ez_directions_from_2d_with_diagnostics, apply_ez_directions_from_2d_ex}`, a
+  CIP-independent, all-or-nothing-per-double-bond direction-setting stage mirroring
+  RDKit's `setDoubleBondNeighborDirections`. Wired into
+  `read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics` immediately after
+  tetrahedral parity (SDF inherits via the V2000 core); MDL V2000 double-bond stereo
+  code 3 and V3000 bond `CFG=2` ("either"/unspecified) are threaded through so a file's
+  explicit "don't know" is never overridden by 2D coordinates. Writes exclusively
+  through `Molecule::bond_direction` (the same side channel already used for the
+  aromatic-bond E/Z stash, now generalized to a plain `Single`-order bond too) — never
+  mutates a bond's own `BondOrder::Up`/`Down`, so raw wedge/hash and E/Z direction
+  coexist on the same molecule without ever overwriting or reinterpreting one another.
+  New `EzDirectionDiagnostic`/`EzDirectionRejectionReason` (`MissingCoordinate`,
+  `NonFiniteCoordinate`, `DegenerateGeometry`, `ExplicitlyUnspecified`,
+  `UnsupportedTopology`, `CarrierConflict`) sits alongside the silent convenience
+  functions, matching the same silent-vs-diagnostics split as the wedge/hash API.
+  `MolReadReport`/`SdfRecord` gained an `ez_diagnostics` field. Fails closed (no
+  direction, no diagnostic -- ordinary `NotRequested`, matching a wedge-free atom's
+  treatment above) for terminal alkenes, carbonyls/heteroatom termini, and
+  topologically-equivalent substituents (confirmed against a live RDKit oracle: RDKit
+  itself sets no `BondDir`/`Stereo` and prints no `/`/`\` for a symmetric-substituent
+  alkene). Rejects with a typed reason (never guesses) for missing/non-finite/collinear
+  coordinates, zero-length double bonds, explicit "either" stereo, cumulenes/allenes,
+  Kekulized aromatic-ring bonds (excluded via a one-time, non-mutating
+  `assign_aromaticity` query -- the reader never auto-perceives aromaticity, so a
+  benzene ring reads as plain alternating `Single`/`Double` bonds structurally
+  indistinguishable from a real diene without this check), and any shared-carrier
+  conflict between two independently-stereogenic double bonds or between a double bond
+  and an existing wedge (Issue #149's joint-carrier-resolution problem is explicitly
+  out of scope -- a shared bond is only used when two independent, from-scratch
+  geometric computations happen to agree, exactly the ordinary conjugated-diene case;
+  when they disagree, or when a branch point's ambiguity could leak across two double
+  bonds via SMILES's plain-adjacency `/`/`\` semantics, both bonds fail closed together
+  rather than let bond-index or parse order guess a winner). Also fixed two
+  prerequisite gaps found while building this: the plain (non-canonical) SMILES writer
+  never consulted `Molecule::bond_direction` at all (only the canonical writer did) --
+  both writers now read the same effective direction via a shared helper, correctly
+  re-orienting a stashed marker regardless of DFS traversal direction; and
+  `Molecule::remove_bond`/`with_atom_removed` either misattributed or silently dropped
+  `bond_direction` entries during atom/bond removal (now remapped correctly, with
+  tests). Broad-corpus validation against RDKit 2026.03.3 (4,999 molecules, standard
+  InChI `/b`-layer semantic comparison, per-bond not per-molecule): 622 RDKit-resolved
+  double bonds, 276 bond-level semantic agreements, 346 abstentions, **0 semantic
+  inversions, 0 false-positive assignments**.
 
 ### Fixed — `chematic-mol`
 
@@ -65,13 +111,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known limitations
 
-- Double-bond cis/trans from 2D geometry (MDL stereo code 3, "P1-S2" in the RFC) is not
-  perceived — tetrahedral wedge/hash and E/Z are RDKit's own two structurally separate
-  pipelines; only the tetrahedral one is implemented here.
-- MRV, CDXML, CML, and KET readers are not wired into this integration (MOL V2000/V3000
-  + SDF only); the one-line insertion pattern used here is reusable for them later.
+- MRV, CDXML, CML, and KET readers are not wired into either the tetrahedral or E/Z
+  integration (MOL V2000/V3000 + SDF only); the one-line insertion pattern used here is
+  reusable for them later.
 - Aromaticity defaults, canonical-SMILES ranking, and the default (`LegacyFast`) CIP
   engine are unchanged by this work.
+- E/Z direction is not set for: a branch point (an alkene end with 2 substituents)
+  adjacent to a different double bond, or two independently-stereogenic double bonds
+  whose shared-carrier requirement disagrees -- both fail closed by design (Issue #149,
+  explicitly out of scope for this PR). The ordinary conjugated-diene case (a shared
+  bond whose two independent requirements agree) is supported.
+- Python/WASM bindings do not yet expose `ez_diagnostics` as a getter (mirroring
+  `stereo_diagnostics()`'s Python/WASM API) -- the field exists on
+  `MolReadReport`/`SdfRecord` in Rust and the E/Z direction itself already reaches
+  SMILES output through every Python/WASM entry point; only the diagnostics-introspection
+  API is deferred.
 
 _Everything above this line is unreleased. Everything below `[0.6.0]` has shipped._
 

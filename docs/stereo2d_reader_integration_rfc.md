@@ -23,9 +23,30 @@ this document flagged that is *not* closed: MDL code 4 / V3000 `CFG=2`
 ("either"/unspecified direction) is decoded as a plain, undirected bond
 (matching this doc's own footnote in §5a that code 4 needs its own state) —
 round-tripping such a bond is lossy by design (documented, not silently
-wrong: it is never treated as a confident wedge). E/Z direction-writing
-(P1-S2) and MRV/CDXML/CML/KET wiring remain out of scope, per §7's own
-"tetrahedral and E/Z should be separate PRs" answer. Differential validation
+wrong: it is never treated as a confident wedge). **P1-S2 (E/Z
+direction-writing) has since shipped too** (Track B, `feat/mol-sdf-2d-ez-directions`):
+`chematic_perception::stereo2d_ez_direction::apply_ez_directions_from_2d_ex`
+is a CIP-independent, all-or-nothing-per-double-bond direction-setting stage
+mirroring RDKit's `setDoubleBondNeighborDirections`, wired into the same two
+reader entry points immediately after tetrahedral parity, writing exclusively
+through `Molecule::bond_direction` (never touching `BondOrder::Up`/`Down` on
+a bond's own `order`, so raw wedge/hash and E/Z direction coexist without
+ever overwriting one another). Two real correctness gaps were found only at
+broad-corpus scale, not by the fixture set: Kekulized aromatic-ring bonds
+have no cis/trans isomerism at all (the reader never auto-perceives
+aromaticity, so a benzene ring reads as plain alternating `Single`/`Double`
+bonds indistinguishable from a real diene without an explicit check) and are
+now excluded via a one-time, non-mutating `assign_aromaticity` query; and a
+branch point (an alkene end with 2 substituents) adjacent to a different
+double bond can leak stereo across both bonds once written to SMILES
+(`/`/`\` is read by textual adjacency, not by which system produced it) --
+both bonds in that shape are now rejected together (`poisoned_by_branch_ambiguity`),
+which is exactly Issue #149's joint-carrier problem, found one step earlier.
+Broad-corpus validation against RDKit 2026.03.3 (4,999 molecules, InChI
+`/b`-layer comparison, per-bond not per-molecule): 622 RDKit-resolved double
+bonds, 276 bond-level semantic agreements, 346 abstentions, **0 semantic
+inversions, 0 false-positive assignments**. MRV/CDXML/CML/KET wiring remains
+out of scope. Differential validation
 against a live RDKit oracle: `crates/chematic-mol/examples/
 stereo2d_reader_integration_fixture_dump.rs` +
 `scripts/stereo2d_reader_diagnosis.py` (13 fixtures covering V2000/V3000
