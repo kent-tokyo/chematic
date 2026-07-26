@@ -113,18 +113,21 @@ fn worst_bond(mol: &Molecule, coords: &chematic_3d::Coords3D) -> f64 {
     worst
 }
 
-/// Aggregation key: element-symbol pattern only (e.g. "Bond C-C"), NOT the
-/// literal atom-index citation -- atom indices are per-molecule and would
-/// never meaningfully collide across the corpus, defeating the point of
-/// asking "which specific element/atom-type pairs lack coverage" (a question
-/// about the TABLE, not about any one molecule's atom numbering).
-fn symbol_pattern(mol: &Molecule, term: &chematic_3d::minimize::Mmff94MissingTerm) -> String {
-    let syms: Vec<&str> = term
-        .atoms
-        .iter()
-        .map(|&a| mol.atom(a).element.symbol())
-        .collect();
-    format!("{:?} {}", term.kind, syms.join("-"))
+/// Aggregation key: `Mmff94MissingTerm::description` with the trailing
+/// per-molecule "(atom indices [...])" suffix stripped -- NOT a hand-rolled
+/// re-derivation from element symbols. `description` already carries each
+/// atom's specific numeric MMFF94 type (not just its element symbol -- many
+/// distinct MMFF94 types share an element) and is built from
+/// `canonicalize_term_atoms`-ordered atoms, so physically-equivalent
+/// citations (a bond read C->N vs N->C, etc.) already collapse to the same
+/// string -- reusing it here means this aggregation can't silently drift
+/// from the bridge's own canonicalization the way a second, independent
+/// implementation could.
+fn pattern_key(term: &chematic_3d::minimize::Mmff94MissingTerm) -> String {
+    match term.description.find(" (atom indices") {
+        Some(pos) => term.description[..pos].to_string(),
+        None => term.description.clone(),
+    }
 }
 
 fn main() {
@@ -201,24 +204,16 @@ fn main() {
                 n_oop_miss = c.oop_missing.len();
                 strict_label = "MISSING".to_string();
                 for t in &c.bonds_missing {
-                    *missing_bond_patterns
-                        .entry(symbol_pattern(&mol, t))
-                        .or_insert(0) += 1;
+                    *missing_bond_patterns.entry(pattern_key(t)).or_insert(0) += 1;
                 }
                 for t in &c.angles_missing {
-                    *missing_angle_patterns
-                        .entry(symbol_pattern(&mol, t))
-                        .or_insert(0) += 1;
+                    *missing_angle_patterns.entry(pattern_key(t)).or_insert(0) += 1;
                 }
                 for t in &c.torsions_missing {
-                    *missing_torsion_patterns
-                        .entry(symbol_pattern(&mol, t))
-                        .or_insert(0) += 1;
+                    *missing_torsion_patterns.entry(pattern_key(t)).or_insert(0) += 1;
                 }
                 for t in &c.oop_missing {
-                    *missing_oop_patterns
-                        .entry(symbol_pattern(&mol, t))
-                        .or_insert(0) += 1;
+                    *missing_oop_patterns.entry(pattern_key(t)).or_insert(0) += 1;
                 }
             }
             Err(ForceFieldBridgeError::UnsupportedAtomType(e)) => {

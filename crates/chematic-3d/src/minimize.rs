@@ -1050,7 +1050,13 @@ pub enum Mmff94TermKind {
 pub struct Mmff94MissingTerm {
     pub kind: Mmff94TermKind,
     pub atoms: Vec<AtomIdx>,
-    /// Human-readable citation, e.g. `"Angle F-C-Cl (atom indices [1, 0, 2])"`.
+    /// Human-readable citation, including each atom's specific numeric
+    /// MMFF94 type (not just its element symbol — many distinct MMFF94
+    /// types share an element, e.g. sp3 vs. aromatic vs. carbonyl carbon),
+    /// e.g. `"Angle F(11)-C(1)-Cl(12) (atom indices [1, 0, 2])"`. Atom order
+    /// is canonicalized (see `canonicalize_term_atoms`) so physically
+    /// equivalent citations (e.g. a bond read C→N vs N→C) always produce the
+    /// same string, so aggregating by this string doesn't double-count.
     pub description: String,
 }
 
@@ -1208,13 +1214,23 @@ pub struct PolicyMinimizeResult {
     pub coords: Coords3D,
     /// What the caller asked for.
     pub requested_force_field: ForceFieldPolicy,
-    /// What actually ran. Differs from `requested_force_field` only for
-    /// `Mmff94WithUffFallback` after a fallback
-    /// (`actual_force_field_used == UffOnly`).
+    /// What actually ran. For `Mmff94Strict` this is always
+    /// `Mmff94Strict`; for `Mmff94WithUffFallback` this is
+    /// `Mmff94Strict` when the MMFF94 attempt succeeded (the common case —
+    /// `requested_force_field == Mmff94WithUffFallback` but
+    /// `actual_force_field_used == Mmff94Strict` here is NOT a fallback, it's
+    /// just the more informative "which physics actually ran" value) and
+    /// `UffOnly` only when it fell back. **Check `fallback_reason.is_some()`
+    /// to ask "did a fallback occur," not `actual_force_field_used !=
+    /// requested_force_field`** — the latter is true on every successful
+    /// `Mmff94WithUffFallback` call and does not mean a fallback happened.
     pub actual_force_field_used: ForceFieldPolicy,
-    /// `Some(reason)` iff `actual_force_field_used != requested_force_field`
-    /// (i.e. a fallback occurred) — explains why. Carries the same typed
-    /// reason `Mmff94Strict` would have returned as an `Err`.
+    /// `Some(reason)` iff a fallback actually occurred (only possible under
+    /// `Mmff94WithUffFallback`, when the MMFF94 attempt failed) — explains
+    /// why. Carries the same typed reason `Mmff94Strict` would have returned
+    /// as an `Err`. This, not `actual_force_field_used != requested_force_field`,
+    /// is the correct fallback-occurred check (see `actual_force_field_used`'s
+    /// doc above).
     pub fallback_reason: Option<ForceFieldBridgeError>,
     /// Every specific internal coordinate (bond/angle/torsion/oop, cited by
     /// atom indices and element symbols — never just an aggregate count)
@@ -1381,16 +1397,67 @@ fn mmff94_torsion_type_for(tj: u8, tk: u8) -> u8 {
     }
 }
 
-fn missing_term(mol: &Molecule, kind: Mmff94TermKind, atoms: &[AtomIdx]) -> Mmff94MissingTerm {
-    let syms: Vec<&str> = atoms
+/// Reorders `atoms` into a canonical form so that physically-equivalent
+/// citations (a bond read C→N vs N→C, an angle's two outer substituents in
+/// either order, a torsion read forward vs backward, an out-of-plane
+/// center's 3 interchangeable substituents in any order) produce the exact
+/// same `atoms`/`description` — otherwise aggregating "distinct missing
+/// patterns" across a corpus double-counts the same underlying gap under
+/// two different string keys purely because of atom-enumeration order
+/// (found in independent review: "Bond C-N" and "Bond N-C" were counted
+/// separately). Ordering by ascending MMFF94 numeric type matches
+/// chematic-ff's own symmetric lookups, which already sort
+/// `(type_i, type_j)` before searching (see `mmff94_bond_params`/
+/// `mmff94_bond_energy`), so this is the same canonical order chematic-ff
+/// itself uses internally, not an arbitrary new one.
+fn canonicalize_term_atoms(kind: Mmff94TermKind, atoms: &[AtomIdx], types: &[u8]) -> Vec<AtomIdx> {
+    let ty = |a: AtomIdx| types[a.0 as usize];
+    let mut v = atoms.to_vec();
+    match kind {
+        Mmff94TermKind::Bond => {
+            if ty(v[0]) > ty(v[1]) {
+                v.swap(0, 1);
+            }
+        }
+        // [outer_a, center, outer_c]: center fixed, sort the outer pair.
+        Mmff94TermKind::Angle => {
+            if ty(v[0]) > ty(v[2]) {
+                v.swap(0, 2);
+            }
+        }
+        // [i, j, k, l]: reading backward (l, k, j, i) is the same torsion.
+        Mmff94TermKind::Torsion => {
+            let fwd: Vec<u8> = v.iter().map(|&a| ty(a)).collect();
+            let rev: Vec<u8> = fwd.iter().rev().copied().collect();
+            if rev < fwd {
+                v.reverse();
+            }
+        }
+        // [center, s1, s2, s3]: center fixed, the 3 substituents are
+        // mutually interchangeable.
+        Mmff94TermKind::Oop => {
+            v[1..].sort_by_key(|&a| ty(a));
+        }
+    }
+    v
+}
+
+fn missing_term(
+    mol: &Molecule,
+    types: &[u8],
+    kind: Mmff94TermKind,
+    atoms: &[AtomIdx],
+) -> Mmff94MissingTerm {
+    let atoms = canonicalize_term_atoms(kind, atoms, types);
+    let labels: Vec<String> = atoms
         .iter()
-        .map(|&a| mol.atom(a).element.symbol())
+        .map(|&a| format!("{}({})", mol.atom(a).element.symbol(), types[a.0 as usize]))
         .collect();
     let indices: Vec<u32> = atoms.iter().map(|a| a.0).collect();
     Mmff94MissingTerm {
         kind,
-        atoms: atoms.to_vec(),
-        description: format!("{kind:?} {} (atom indices {indices:?})", syms.join("-")),
+        atoms,
+        description: format!("{kind:?} {} (atom indices {indices:?})", labels.join("-")),
     }
 }
 
@@ -1411,7 +1478,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
         if mmff94_bond_energy(bt, t1, t2).is_none() {
             report
                 .bonds_missing
-                .push(missing_term(mol, Mmff94TermKind::Bond, &[a1, a2]));
+                .push(missing_term(mol, types, Mmff94TermKind::Bond, &[a1, a2]));
         }
     }
 
@@ -1430,6 +1497,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                 if mmff94_angle_energy(at, ta, types[b_idx], tc).is_none() {
                     report.angles_missing.push(missing_term(
                         mol,
+                        types,
                         Mmff94TermKind::Angle,
                         &[a, b, c],
                     ));
@@ -1461,6 +1529,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                 if mmff94_torsion_energy(tt, ti_, tj_, tk_, tl_).is_none() {
                     report.torsions_missing.push(missing_term(
                         mol,
+                        types,
                         Mmff94TermKind::Torsion,
                         &[i, j, k, l],
                     ));
@@ -1491,7 +1560,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
         {
             report
                 .oop_missing
-                .push(missing_term(mol, Mmff94TermKind::Oop, &[j, i, k, l]));
+                .push(missing_term(mol, types, Mmff94TermKind::Oop, &[j, i, k, l]));
         }
     }
 
@@ -2462,6 +2531,60 @@ mod policy_bridge_tests {
         for i in 0..result.coords.atom_count() {
             let p = result.coords.get(AtomIdx(i as u32));
             assert!(p.x.is_finite() && p.y.is_finite() && p.z.is_finite());
+        }
+    }
+
+    /// Locks in the actually-correct `fallback_reason` invariant (a real bug
+    /// was found in the doc comment, not the code, during independent
+    /// review: `fallback_reason` is `Some` iff a fallback truly occurred —
+    /// NOT iff `actual_force_field_used != requested_force_field`, which is
+    /// true on *every* successful `Mmff94WithUffFallback` call since
+    /// `actual_force_field_used == Mmff94Strict` on success while
+    /// `requested_force_field == Mmff94WithUffFallback`). Previously only the
+    /// failing-molecule fallback path was tested; this covers the
+    /// no-fallback-needed path on molecules fully covered by MMFF94.
+    #[test]
+    fn mmff94_with_uff_fallback_reports_no_fallback_when_mmff94_fully_covers() {
+        for smiles in ["CC", "C1CCCCC1", "CCCC", "C1CC2CC3CC1CC(C2)C3"] {
+            let mol = parse(smiles).unwrap_or_else(|e| panic!("{smiles}: {e}"));
+            let coords = generate_coords(&mol);
+            let config = MinimizeConfig::default();
+
+            let result = minimize_with_policy(
+                &mol,
+                coords,
+                ForceFieldPolicy::Mmff94WithUffFallback,
+                &config,
+            )
+            .expect("infallible policy");
+
+            // requested != actual is expected and NOT itself evidence of a
+            // fallback -- actual_force_field_used reports which physics ran
+            // (Mmff94Strict, the more informative value), not "did it match
+            // what was requested."
+            assert_eq!(
+                result.requested_force_field,
+                ForceFieldPolicy::Mmff94WithUffFallback
+            );
+            assert_eq!(
+                result.actual_force_field_used,
+                ForceFieldPolicy::Mmff94Strict,
+                "{smiles}: fully MMFF94-covered, should run full MMFF94, not UFF"
+            );
+            assert!(
+                result.fallback_reason.is_none(),
+                "{smiles}: no fallback should have occurred, but fallback_reason={:?}",
+                result.fallback_reason
+            );
+            assert!(result.missing_parameter_classes.is_empty(), "{smiles}");
+            let coverage = result
+                .coverage
+                .as_ref()
+                .unwrap_or_else(|| panic!("{smiles}: coverage must be reported"));
+            assert!(
+                coverage.bond_angle_fully_covered(),
+                "{smiles}: expected full bond+angle coverage"
+            );
         }
     }
 
