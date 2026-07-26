@@ -1,0 +1,54 @@
+{
+  "_purpose": "Provenance manifest for every dataset used by the 3D Breakthrough Program (docs/3d_breakthrough_master_plan.md). No non-redistributable data (e.g. CSD-derived) is vendored into this repo; anything not hand-authored is either fetched live from a public API or expected as a user-local file outside version control.",
+  "datasets": [
+    {
+      "id": "etkdg_frozen_58",
+      "description": "Hand-curated 58-molecule diagnostic corpus spanning rigid/fused rings, flexible chains, macrocycles, sp3 stereocenters (split by heavy-neighbor-count), alkene E/Z pairs, and drug-like/steroid/stress cases.",
+      "location": "scripts/etkdg_vs_rdkit_gap.py::CORPUS (inline Python list, committed to the repo)",
+      "source": "Hand-authored by project contributors as canonical SMILES strings, not derived from any external database.",
+      "license": "N/A -- original content, MIT/Apache-2.0 dual-licensed with the rest of the repo.",
+      "sha256": "not applicable (inline source, tracked by git blob hash, not a separate data file)",
+      "preprocessing": "None -- SMILES parsed directly by chematic.from_smiles()/RDKit Chem.MolFromSmiles().",
+      "exclusions": "None.",
+      "redistribution_status": "Fully committed to the repo; safe to redistribute (original authorship)."
+    },
+    {
+      "id": "chembl_ensemble_subset_4999",
+      "description": "4,999/5,000-molecule ChEMBL-derived SMILES subset used as the broad-corpus benchmark referenced throughout this project's validation history (descriptor parity, aromaticity, CIP, and now the 3D Breakthrough Program's Tier 2 robustness sweep).",
+      "location": "~/Downloads/SMILES.csv (user-local file, OUTSIDE the repo and outside git tracking -- consistent with the task's requirement not to commit non-redistributable/bulk third-party data)",
+      "source": "ChEMBL REST API (https://www.ebi.ac.uk/chembl/api/data/molecule.json), fetched via scripts/download_chembl_smiles.py. ChEMBL is a public, EBI-hosted bioactivity database; its terms permit derived-data use of canonical SMILES strings for research/benchmarking.",
+      "license": "ChEMBL data is released under CC BY-SA 3.0 (EBI). Not CSD-derived, not proprietary.",
+      "sha256_at_baseline": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+      "row_count_at_baseline": 5000,
+      "preprocessing": "Single-fragment (no '.' in SMILES), deduplicated by exact SMILES string, canonical_smiles field from ChEMBL's own molecule_structures.",
+      "exclusions": "Salts/mixtures (multi-fragment SMILES) excluded at download time; no further filtering applied by the 3D Breakthrough Program.",
+      "redistribution_status": "NOT committed to the repo. Any script that consumes this file (e.g. scripts/bench5k.py, a future Tier-2 3D benchmark script) must accept the path as a CLI argument and must not assume the file exists in CI.",
+      "verification_note": "SHA-256 computed directly via `shasum -a 256` at the time this manifest was written (2026-07-26), not asserted from memory -- matches the value referenced in tasks/lessons.md's 2026-07-17 MANCUDE session note, confirming this is the same frozen file used throughout the project's history, not a silently-refreshed one."
+    },
+    {
+      "id": "platinum_diverse_dataset",
+      "description": "Referenced by the master plan's Tier 3 (conformer quality) benchmark as a candidate high-quality reference dataset for RMSD/coverage comparison against RDKit ETKDGv3/srETKDGv3.",
+      "location": "NOT YET ACQUIRED -- no file exists in this repo or referenced local path as of this baseline.",
+      "source": "Originally published by Genentech (Ebejer et al./the 'Platinum Diverse Dataset', built from PDB-derived experimental conformers) -- license terms must be checked before Agent H acquires it.",
+      "license": "UNVERIFIED as of this baseline. Agent H must confirm redistribution/usage terms before downloading, and must NOT commit the raw dataset to the repo if terms restrict redistribution -- follow the same user-local-file pattern as chembl_ensemble_subset_4999 above.",
+      "sha256": "N/A -- not acquired yet",
+      "action_required": "Agent H (Wave 3) must resolve license status and record actual provenance (source URL, license text, SHA-256, preprocessing, exclusions) before this dataset is used for any Tier 3 measurement, and before any 'RDKit-superior' claim is made using it."
+    },
+    {
+      "id": "rdkit_oracle",
+      "description": "Reference oracle used for every comparison in this program.",
+      "version": "2026.03.3",
+      "pinned_source_commit": "8afba32ec539dcb2369bc84549d802aca3f7eb39 (same pin used across this project's other RDKit-parity work -- aromaticity, ECFP4, stereo2d)",
+      "installed_via": ".venv/bin/python (repo-shared venv, rebuilt for this baseline: chematic 0.7.0, rdkit 2026.03.3, Python 3.13.6)",
+      "license": "BSD-3-Clause (RDKit itself); used as a read-only comparison oracle, not vendored or redistributed."
+    },
+    {
+      "id": "native_inchi",
+      "description": "Vendored IUPAC InChI C library used by chematic-inchi's native-inchi feature for the identity/InChI workstream (Agent B).",
+      "version": "1.07.5",
+      "license": "MIT (IUPAC InChI Trust)",
+      "location": "crates/chematic-inchi (build.rs vendoring instructions; source itself is NOT committed, downloaded/placed per build.rs's documented instructions)"
+    }
+  ],
+  "csd_policy_confirmation": "No file in this repo, and no dataset referenced by this manifest, is derived from the Cambridge Structural Database (CSD) or any other non-redistributable proprietary source. Agent E's torsion-knowledge work is explicitly restricted (per the master plan) to license-compatible RDKit source, public literature/SI, and independently-generated oracle comparisons -- never raw CSD torsion tables."
+}
