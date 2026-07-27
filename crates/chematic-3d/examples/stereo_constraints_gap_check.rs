@@ -711,57 +711,60 @@ fn run_fixture_controls() {
         }
     };
 
-    // Positive control: chfclbr_R declared `[C@H](F)(Cl)Br`, correct geometry.
-    // Negative control: same declared molecule, deliberately wrong (mirrored) geometry.
+    // Positive control: chfclbr_R declared `[C@H](F)(Cl)Br`, geometry independently
+    // verified to be Satisfied -- NOT captured live from `verify_stereo` (that would
+    // make this check unable to fail regardless of whether the geometry is actually
+    // correct, the same gate flaw the "worked at A, same shape at B" incident
+    // elsewhere in this program warns about). The expected value below was derived
+    // via a standalone hand computation (phantom position + signed volume, written
+    // independently of this module, i.e. not calling `verify_stereo`) and
+    // cross-checked against `verify_stereo`'s own output -- both agree. `order[0]`
+    // is the implicit-H sentinel for `[C@H](...)` (H inserted at position 0: no
+    // preceding atom in the SMILES); phantom position is derived from the 3 real
+    // neighbors, so it cannot be placed directly -- the real neighbors' *relative*
+    // arrangement is what determines the sign, and CCW/CW intuition from staring at
+    // xyz coordinates is exactly what got this wrong the first time, hence the
+    // by-hand recomputation rather than another guess.
+    // Negative control: same declared molecule, two substituents swapped -> inverts
+    // parity -> must read as Violated (this is the ARM the sign was originally,
+    // incorrectly, anchored on).
     let m = parse("[C@H](F)(Cl)Br").unwrap();
     let order = m.stereo_neighbor_order(AtomIdx(0)).unwrap().to_vec();
-    let mut correct = Coords3D::new_zeroed(m.atom_count());
-    correct.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
-    // order[0] is the implicit-H sentinel for [C@H](...): H is inserted at position
-    // 0 (no preceding atom in the SMILES). Use the same CCW-from-n0 anchor fixture as
-    // the module's own sign-convention tests, but n0 here is the phantom H.
     let real: Vec<u32> = order
         .iter()
         .copied()
         .filter(|&n| n != chematic_core::STEREO_H_SENTINEL)
         .collect();
-    // Place the 3 real neighbors (F, Cl, Br) so their vector sum points away from
-    // +z (i.e. the phantom H, which sits opposite that sum, ends up near +z), then
-    // arrange F/Cl/Br CCW when viewed from the phantom (+z) position to match `@`.
+    let mut correct = Coords3D::new_zeroed(m.atom_count());
+    correct.set(AtomIdx(0), Point3::new(0.0, 0.0, 0.0));
     correct.set(AtomIdx(real[0]), Point3::new(1.0, 0.0, -0.3));
-    correct.set(AtomIdx(real[1]), Point3::new(-0.5, 0.87, -0.3));
-    correct.set(AtomIdx(real[2]), Point3::new(-0.5, -0.87, -0.3));
+    correct.set(AtomIdx(real[1]), Point3::new(-0.5, -0.87, -0.3));
+    correct.set(AtomIdx(real[2]), Point3::new(-0.5, 0.87, -0.3));
     let mut wrong = correct.clone();
-    // Swap two real substituents -> inverts parity -> must read as Violated.
     let p0 = wrong.get(AtomIdx(real[0]));
     let p1 = wrong.get(AtomIdx(real[1]));
     wrong.set(AtomIdx(real[0]), p1);
     wrong.set(AtomIdx(real[1]), p0);
 
-    let correct_status = verify_stereo(&m, &correct).tetrahedral[0].status;
     check(
         "chfclbr_R positive control",
         &m,
         &correct,
-        Some(correct_status), // establishes what "correct" reads as (Satisfied or Violated depending on exact placement); the NEGATIVE control below is the real assertion
+        Some(StereoStatus::Satisfied),
         None,
     );
-    let expected_wrong = if correct_status == StereoStatus::Satisfied {
-        StereoStatus::Violated
-    } else {
-        StereoStatus::Satisfied
-    };
     check(
         "chfclbr_R negative control (swapped substituents)",
         &m,
         &wrong,
-        Some(expected_wrong),
+        Some(StereoStatus::Violated),
         None,
     );
 
     // Second implicit-H positive/negative pair, on a real drug-relevant amino acid
     // shape (l_alanine: N[C@@H](C)C(=O)O) rather than the halomethane fixture above,
-    // so this control isn't specific to one molecule shape.
+    // so this control isn't specific to one molecule shape. Same independent
+    // derivation + cross-check as chfclbr_R above -- hardcoded, not self-referential.
     let m_ala = parse("N[C@@H](C)C(=O)O").unwrap();
     let ala_idx = AtomIdx(1);
     let ala_order = m_ala.stereo_neighbor_order(ala_idx).unwrap().to_vec();
@@ -773,31 +776,25 @@ fn run_fixture_controls() {
     let mut ala_correct = Coords3D::new_zeroed(m_ala.atom_count());
     ala_correct.set(ala_idx, Point3::new(0.0, 0.0, 0.0));
     ala_correct.set(AtomIdx(ala_real[0]), Point3::new(1.0, 0.0, -0.3));
-    ala_correct.set(AtomIdx(ala_real[1]), Point3::new(-0.5, 0.87, -0.3));
-    ala_correct.set(AtomIdx(ala_real[2]), Point3::new(-0.5, -0.87, -0.3));
+    ala_correct.set(AtomIdx(ala_real[1]), Point3::new(-0.5, -0.87, -0.3));
+    ala_correct.set(AtomIdx(ala_real[2]), Point3::new(-0.5, 0.87, -0.3));
     let mut ala_wrong = ala_correct.clone();
     let ap0 = ala_wrong.get(AtomIdx(ala_real[0]));
     let ap1 = ala_wrong.get(AtomIdx(ala_real[1]));
     ala_wrong.set(AtomIdx(ala_real[0]), ap1);
     ala_wrong.set(AtomIdx(ala_real[1]), ap0);
-    let ala_correct_status = verify_stereo(&m_ala, &ala_correct).tetrahedral[0].status;
     check(
         "l_alanine positive control",
         &m_ala,
         &ala_correct,
-        Some(ala_correct_status),
+        Some(StereoStatus::Satisfied),
         None,
     );
-    let ala_expected_wrong = if ala_correct_status == StereoStatus::Satisfied {
-        StereoStatus::Violated
-    } else {
-        StereoStatus::Satisfied
-    };
     check(
         "l_alanine negative control (swapped substituents)",
         &m_ala,
         &ala_wrong,
-        Some(ala_expected_wrong),
+        Some(StereoStatus::Violated),
         None,
     );
 

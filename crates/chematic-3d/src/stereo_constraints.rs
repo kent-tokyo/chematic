@@ -1069,14 +1069,25 @@ mod tests {
             .find(|r| r.atom == idx)
             .unwrap()
             .status;
-        assert!(
-            matches!(status, StereoStatus::Satisfied | StereoStatus::Violated),
-            "expected an evaluable status for an implicit-H center, got {status:?}"
+        // Hardcoded, not just "evaluable": this exact geometry was independently
+        // verified (a standalone hand computation of the phantom position + signed
+        // volume, written separately from this module and cross-checked against its
+        // output) to be Violated for `N[C@@H](C)C(=O)O` -- asserting only
+        // `matches!(Satisfied | Violated)` here would pass even if the sign were
+        // silently inverted, which is exactly the gate flaw a real (and initially
+        // mislabeled) positive-control fixture elsewhere in this program's own
+        // validation harness turned out to have. See
+        // `examples/stereo_constraints_gap_check.rs`'s `l_alanine positive/negative
+        // control` fixtures for the same geometry, correctly labeled.
+        assert_eq!(
+            status,
+            StereoStatus::Violated,
+            "expected Violated for this exact geometry (independently verified), got {status:?}"
         );
 
         // Reflecting just the phantom's implied side (swap two real neighbor
-        // positions) must flip the verdict -- otherwise the phantom placement isn't
-        // actually direction-sensitive.
+        // positions) must flip the verdict to Satisfied -- otherwise the phantom
+        // placement isn't actually direction-sensitive.
         let mut coords2 = coords.clone();
         let p0 = coords2.get(AtomIdx(real[0]));
         let p1 = coords2.get(AtomIdx(real[1]));
@@ -1089,6 +1100,11 @@ mod tests {
             .find(|r| r.atom == idx)
             .unwrap()
             .status;
+        assert_eq!(
+            status2,
+            StereoStatus::Satisfied,
+            "swapping two real substituents must flip the verdict to Satisfied (independently verified), got {status2:?}"
+        );
         assert_ne!(
             status, status2,
             "swapping two real substituents must flip the verdict"
