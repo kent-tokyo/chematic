@@ -1,9 +1,10 @@
 cff-version: 1.2.0
 title: chematic
-message: "If you use this software, please cite it as below."
+message: "If you use Chematic in academic work, please cite it as below."
 type: software
 authors:
-  - name: kent-tokyo
+  - family-names: "Tanabe"
+    given-names: "Kentaro"
 repository-code: https://github.com/kent-tokyo/chematic
 url: https://kent-tokyo.github.io/chematic/
 abstract: >-
