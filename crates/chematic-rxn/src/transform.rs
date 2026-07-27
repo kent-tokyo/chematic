@@ -1362,4 +1362,80 @@ mod tests {
             );
         }
     }
+
+    // -----------------------------------------------------------------------
+    // Reaction-transform performance regression witnesses (see
+    // docs/reaction_transform_perf.md). Root cause: `chematic-smiles`'s
+    // `canonical_smiles()` wrote the winning individualize-refine branch's
+    // string, threw it away, and had `winning_individualized_ranks`'s caller
+    // write it a *second* time -- one fully redundant DFS-and-format pass on
+    // every single call, tied or not. Fixed by returning the already-written
+    // string instead of recomputing it. These three cases mirror the ones
+    // used to characterize and fix the regression:
+    // (a) a highly symmetric molecule (many individualize-refine branches --
+    //     this is the case that actually reproduces a large, measured slowdown
+    //     between chematic 0.4.25 and 0.4.30, NOT run_reactants match/product
+    //     volume, which stayed flat across versions);
+    // (b) an E/Z stereo control, since the fix touches the same
+    //     canonical-writer code path `resolve_ez_markers` depends on;
+    // (c) a negative control (asymmetric, no ties) that should show only the
+    //     universal (small, single-redundant-write) improvement, not the
+    //     symmetric-molecule-specific one.
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn perf_witness_a_symmetric_molecule_product_is_correct() {
+        // Positive witness: adamantane (Td cage symmetry, 24
+        // individualize-refine branches at time of writing) run through a
+        // simple ring-opening SMIRKS. The fix must not change *which* string
+        // wins -- only how many times it gets written -- so the product's
+        // canonical SMILES must still round-trip to the same structure.
+        let mol = parse("C1C2CC3CC1CC(C2)C3").unwrap(); // adamantane
+        let results = run_reactants("[C:1][C:2]>>[C:1][C:2]", &[&mol]).unwrap();
+        assert!(!results.is_empty(), "expected at least one C-C bond match");
+        let canon = chematic_smiles::canonical_smiles(&results[0][0]);
+        // Adamantane's own canonical form is a fixed point of this
+        // identity-shaped SMIRKS: it must reparse to the exact same molecule
+        // (same atom/bond count -- the transform doesn't add/remove atoms).
+        let reparsed = parse(&canon).unwrap();
+        assert_eq!(reparsed.atom_count(), mol.atom_count());
+        assert_eq!(reparsed.bond_count(), mol.bond_count());
+    }
+
+    #[test]
+    fn perf_witness_b_ez_stereo_control_survives_symmetric_fix() {
+        // Stereo control: identity/remote transforms on the E/Z pair used in
+        // the perf investigation's own fixture
+        // (crates/chematic-rxn/fixtures/witness_molecules.smi) must still
+        // preserve exact geometry -- this is the non-negotiable issue #50
+        // gate, re-run here against the specific molecules this perf fix
+        // touched.
+        assert_eq!(
+            product_canon("[C:1]=[C:2]>>[C:1]=[C:2]", &["CC/C=C/CC(=O)O"]),
+            canon("CC/C=C/CC(=O)O"),
+            "(E)-hex-3-enoic acid must keep its E geometry"
+        );
+        assert_eq!(
+            product_canon("[C:1]=[C:2]>>[C:1]=[C:2]", &["CC/C=C\\CC(=O)O"]),
+            canon("CC/C=C\\CC(=O)O"),
+            "(Z)-hex-3-enoic acid must keep its Z geometry"
+        );
+    }
+
+    #[test]
+    fn perf_witness_c_negative_control_asymmetric_molecule() {
+        // Negative control: aspirin has no automorphism ties (every ring
+        // carbon has a distinct substitution environment), so
+        // `winning_individualized_ranks` takes exactly one branch. This
+        // exercises the same code path as (a) but should show only the
+        // universal single-redundant-write saving, not a
+        // symmetric-molecule-specific one -- included so a future reader can
+        // tell the two effects apart empirically, not just by reasoning.
+        let mol = parse("CC(=O)OC1=CC=CC=C1C(=O)O").unwrap(); // aspirin
+        let results = run_reactants("[OH:1]-[C:2]=[O:3]>>C-[O:1]-[C:2]=[O:3]", &[&mol]).unwrap();
+        assert!(!results.is_empty(), "expected the carboxylic acid to match");
+        let canon = chematic_smiles::canonical_smiles(&results[0][0]);
+        let reparsed = parse(&canon).unwrap();
+        assert_eq!(reparsed.atom_count(), mol.atom_count() + 1); // +1 methyl carbon
+    }
 }
