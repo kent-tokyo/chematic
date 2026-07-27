@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-mcp`
+
+- **MCP 2026-07-28 tools-only stateless stdio server**, alongside unchanged
+  legacy (`2024-11-05`-style) stdio support on the same connection. A single
+  stdio connection auto-detects and pins to whichever dialect its first
+  request speaks; a request that tries to switch dialects mid-connection is
+  rejected with a typed protocol error rather than silently reinterpreted.
+  New: `server/discover`, per-request `_meta` metadata
+  (`io.modelcontextprotocol/protocolVersion`/`clientInfo`/`clientCapabilities`),
+  cacheable `tools/list` (`ttlMs`/`cacheScope`), and `structuredContent` on
+  every `tools/call` result, validated against a new `outputSchema` added to
+  all 20 tools (alongside tightened `inputSchema`s — `additionalProperties:
+  false`, length/size bounds). Tool-call failures are now split into
+  argument-shape problems (`-32602 Invalid Params`, before any chemistry
+  runs) and chemistry-domain failures (a *successful* result with
+  `isError: true` and a machine-readable `structuredContent.error.code`,
+  e.g. `INVALID_SMILES`) — legacy-era wire behavior for both is unchanged.
+  Internal refactor separates transport (stdio framing + era pinning),
+  protocol codec (JSON-RPC parsing, error vocabulary, adversarial-input
+  size/depth limits), server core (method dispatch + per-era response
+  shaping), and tool registry (protocol-agnostic chemistry) into distinct
+  modules. Remote HTTP, OAuth, the Tasks extension, and MCP Apps remain
+  out of scope for this change — see `docs/mcp/2026-07-28-implementation-rfc.md`
+  for the full design, primary-source citations (pinned to
+  `modelcontextprotocol/modelcontextprotocol` tag `2026-07-28-RC`, commit
+  `9d700ed`), and every deliberate deviation from a literal reading of that
+  tag (notably: the RC tag's own `-32003`/`-32004` error codes are
+  superseded pre-final by `-32021`/`-32022`, corroborated by the official
+  `rmcp` Rust SDK — this PR ships the superseding values, not the RC tag's).
+
 ### Fixed — `chematic-py`
 
 - **`Mol.conformer_ensemble()` returned coordinates indexed by a re-canonicalized
@@ -26,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   signature, same return shape). `crates/chematic-wasm`'s `conformer_ensemble_json`
   has the identical bug and is not fixed here (out of scope for this fix; tracked
   separately).
+
+_Nothing else yet — everything below `[0.7.0]` has shipped._
 
 ## [0.7.0] — 2026-07-26
 

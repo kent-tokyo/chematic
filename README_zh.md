@@ -130,6 +130,8 @@ chematic 是首个内置 **MCP（模型上下文协议）服务器**的化学信
 
 **Transport**：仅 stdio（通过标准输入输出的 JSON-RPC 2.0）。以本地进程方式运行，目前没有已托管的 Remote MCP 端点、身份验证或公开服务 SLA；remote 化的重构正在考虑中，尚未实现。
 
+**Protocol**：在同一个 stdio 连接上同时支持旧版（`2024-11-05` 风格的 `initialize` 握手）和 MCP `2026-07-28` 无状态方言（`server/discover`、逐请求 `_meta`、可缓存的 `tools/list`、`structuredContent`）。详见 [`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras) 与 [`docs/mcp/2026-07-28-implementation-rfc.md`](docs/mcp/2026-07-28-implementation-rfc.md)。Remote HTTP、OAuth、Tasks 扩展与 MCP Apps 仍不支持。
+
 ---
 
 ## 为什么选择纯 Rust？
