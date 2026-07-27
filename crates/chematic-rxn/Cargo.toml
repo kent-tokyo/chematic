@@ -15,8 +15,19 @@ documentation = "https://docs.rs/chematic-rxn"
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+# Internal work counters (run_reactants_calls, vf2_match_count, ...) for
+# performance diagnosis -- see src/perf_counters.rs. Off by default so the
+# hot path pays zero cost in normal builds.
+perf-instrumentation = []
+
 [dependencies]
 chematic-core   = { path = "../chematic-core",   version = "0.7.0" }
 chematic-smiles = { path = "../chematic-smiles", version = "0.7.0" }
 chematic-smarts = { path = "../chematic-smarts", version = "0.7.0" }
 rustc-hash = "2"
+
+[dev-dependencies]
+# Path-only (no `version`): mutual dev-dependency, matching the pattern in
+# chematic-smiles/Cargo.toml (avoids a cargo-publish version deadlock).
+chematic-chem = { path = "../chematic-chem" }

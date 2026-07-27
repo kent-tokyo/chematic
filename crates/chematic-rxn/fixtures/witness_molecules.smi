@@ -1,0 +1,27 @@
+# Hand-authored synthetic witness molecules for the reaction-transform
+# performance benchmark (docs/reaction_transform_perf.md). Small, named,
+# public-domain structures -- not extracted from any external corpus.
+#
+# Format: SMILES  name
+#
+# Positive witnesses (highly symmetric -- these are the molecules on which
+# chematic-smiles's individualize-refine canonicalization branches heavily;
+# see docs/reaction_transform_perf.md's ringbench numbers, 45-48x slower
+# canonical_smiles() on main than on the fixed branch):
+c1ccccc1 benzene
+C1C2CC3CC1CC(C2)C3 adamantane
+c1cc2ccc3ccc4ccc5ccc6ccc1c1c2c3c4c5c61 coronene
+CC(C)(C)OC(=O)N ez_control_free_boc_carbamate
+FC(F)(F)C(=O)O trifluoroacetic_acid_twin_substituent
+# E/Z stereo control pair (issue #50 gate: identity/remote transforms must
+# not flip or lose E/Z geometry) -- same skeleton, opposite double-bond
+# geometry, plus a remote reactive (ester) site so a template can fire
+# without touching the alkene itself.
+CC/C=C/CC(=O)O (E)-hex-3-enoic_acid
+CC/C=C\CC(=O)O (Z)-hex-3-enoic_acid
+# Negative control (asymmetric, drug-like -- no automorphism ties, so
+# canonical_smiles should show no regression at all):
+CC(=O)OC1=CC=CC=C1C(=O)O aspirin
+CC(C)CC1=CC=C(C=C1)C(C)C(=O)O ibuprofen
+COC1=CC2=C(C=C1)C(=CN2)CCN serotonin_analog
+CC(=O)NC1=CC=C(O)C=C1 paracetamol

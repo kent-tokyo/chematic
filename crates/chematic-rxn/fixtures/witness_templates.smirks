@@ -1,0 +1,17 @@
+# Hand-authored synthetic witness templates for the reaction-transform
+# performance benchmark (docs/reaction_transform_perf.md). NOT extracted from
+# any external dataset -- these are generic, textbook retrosynthetic
+# disconnections (ester <-> acid+alcohol, amide <-> acid+amine, Boc
+# deprotection, biaryl <-> two aryl halides+boronic acid fragments, ether
+# <-> alkyl halide+alcohol) written from scratch for this repository, in the
+# same SMIRKS<TAB>count format RENKIN's own template files use so the same
+# parser code path (`l.split('\t').next()`) exercises both.
+#
+# Format: SMIRKS<TAB>count (count is unused here, kept for format parity).
+[O:3]=[C:2]-[OH:1]>>C-[O:1]-[C:2]=[O:3]	1
+[C:2]-[C:1](=[O:3])-[NH:4]-[C:5]>>O-[C:1](-[C:2])=[O:3].[C:5]-[NH2:4]	1
+[C:1][C:2][C:3][C:4]>>[C:1]/[C:2]=[C:3]/[C:4]	1
+[C:2]-[NH2:1]>>C-C(-C)(-C)-O-C(=O)-[NH:1]-[C:2]	1
+[c:2][c:1]>>Br-[c:1].[c:2]-B(-O)-O	1
+[C:2]-[CH2:1]-[O:3]-[C:4]>>Br-[CH2:1]-[C:2].[OH:3]-[C:4]	1
+[C:1]=[C:2]>>[C:1]-[C:2]	1

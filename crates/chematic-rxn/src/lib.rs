@@ -13,6 +13,7 @@
 pub mod balance;
 pub mod enumerate;
 pub mod green;
+pub mod perf_counters;
 pub mod query;
 pub mod reaction;
 pub mod retro;
@@ -23,6 +24,7 @@ pub use enumerate::{
     LibraryConfig, LibraryError, enumerate_library, enumerate_library_2way, enumerate_library_3way,
 };
 pub use green::{atom_economy, e_factor, pmi_rxn, reaction_mass_efficiency};
+pub use perf_counters::PerfCounters;
 pub use query::{
     BatchQueryResults, ReactionPatternLibrary, ReactionQuery, ReactionQueryError,
     batch_query_reactions, batch_query_with_library, has_reaction_substructure_match,

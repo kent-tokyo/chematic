@@ -75,6 +75,8 @@ fn run_reactants_impl(
     reactants: &[&Molecule],
     carry_substituents: bool,
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+    crate::perf_counters::record_run_reactants_call();
+    crate::perf_counters::record_reaction_parse_call();
     let rxn = parse_reaction(smirks)?;
 
     let n_templates = rxn.reactants.len();
@@ -118,7 +120,11 @@ fn run_reactants_impl(
     let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = queries
         .iter()
         .zip(reactants.iter())
-        .map(|(q, mol)| find_matches(q, mol))
+        .map(|(q, mol)| {
+            let matches = find_matches(q, mol);
+            crate::perf_counters::record_reactant_query_match_call(matches.len());
+            matches
+        })
         .collect();
 
     // No products when any template has no match.
@@ -129,6 +135,7 @@ fn run_reactants_impl(
     let mut results: Vec<Vec<Molecule>> = Vec::new();
 
     for combo in cartesian_product(&all_match_sets) {
+        crate::perf_counters::record_match_combination();
         // global_map: atom_map_number → (reactant_mol_idx, matched_AtomIdx)
         let mut global_map: FxHashMap<u16, (usize, AtomIdx)> = FxHashMap::default();
         for (ri, match_map) in combo.iter().enumerate() {
@@ -172,18 +179,24 @@ fn run_reactants_impl(
             .products
             .iter()
             .map(|pt| {
-                build_product(
+                let product = build_product(
                     pt,
                     &global_map,
                     reactants,
                     &all_template_atoms,
                     carry_substituents,
-                )
+                );
+                crate::perf_counters::record_build_product_call(
+                    product.atom_count(),
+                    product.bond_count(),
+                );
+                product
             })
             .collect();
 
         // Skip product sets that contain any over-valenced atom.
         if products.iter().all(|p| validate_valence(p).is_empty()) {
+            crate::perf_counters::record_product_set();
             results.push(products);
         }
     }
