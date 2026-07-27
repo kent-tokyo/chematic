@@ -615,9 +615,10 @@ fn main() {
             }
         }
 
-        // --- novelty gate, arm (a): dg_fft::generate_coords_dg (unmodified,
-        // deterministic-midpoint, but on TODAY's bounds-fixed build_bound_matrix --
-        // see PR body for the historical "unfixed" baseline measured separately) ---
+        // --- novelty gate, arm "dgfft_fixed_midpoint": dg_fft::generate_coords_dg
+        // (unmodified, deterministic-midpoint, but on TODAY's bounds-fixed
+        // build_bound_matrix -- see PR body for the historical "dgfft_unfixed"
+        // baseline measured separately) ---
         let dgfft_coords = dg_fft::generate_coords_dg(&mol);
         let dgfft_status = classify(&mol, Some(&dgfft_coords), None);
         *dgfft_status_counts.entry(dgfft_status.clone()).or_insert(0) += 1;
@@ -628,8 +629,8 @@ fn main() {
         dgfft_bonds_checked += dgfft_bv.n_bonds;
         dgfft_bond_violations += dgfft_bv.n_violations;
 
-        // --- novelty gate, arm (b): dg::generate_coords (existing rule-based DFS
-        // placer this module is meant to obsolete) ---
+        // --- novelty gate, arm "dg_legacy_dfs": dg::generate_coords (existing
+        // rule-based DFS placer this module is meant to obsolete) ---
         let dg_coords = dg::generate_coords(&mol);
         let dg_status = classify(&mol, Some(&dg_coords), None);
         *dg_status_counts.entry(dg_status.clone()).or_insert(0) += 1;
@@ -761,32 +762,39 @@ fn main() {
 
     // =========================================================================
     // LAYER 3: NOVELTY GATE -- 3-arm comparison, same corpus, same tolerances
+    //
+    // Arm names are deliberately descriptive, not lettered (a)/(b)/(c) -- this is
+    // the exact same 3-arm comparison the PR body's attribution table reports, and
+    // a lettering scheme that doesn't match 1:1 between this binary's stdout and
+    // the PR body's prose is a real, easy-to-introduce mismatch (a 4th, purely
+    // historical "unfixed dg_fft" arm is reported ONLY in the PR body, measured via
+    // a one-time uncommitted local revert -- see the note printed below).
     // =========================================================================
     let dgfft_valid_rate = n_dgfft_ok as f64 / n_total as f64;
     let dg_valid_rate = n_dg_ok as f64 / n_total as f64;
     println!("\n=== LAYER 3: NOVELTY GATE (3-arm comparison, {n_total} molecules) ===");
     println!(
-        "arm (this PR)  embed_distance_geometry_v2 (seeded stochastic metrization): \
+        "this_pr_stochastic   embed_distance_geometry_v2 (seeded stochastic metrization): \
          not-torn {geometrically_valid_rate:.4} ({n_new_ok}/{n_total}), bond-violation-rate@15% {}",
         rate_str(new_bond_violations_15, new_bonds_checked_15)
     );
     println!(
-        "arm (a)        dg_fft::generate_coords_dg (deterministic-midpoint, SAME bounds-fixed \
+        "dgfft_fixed_midpoint dg_fft::generate_coords_dg (deterministic-midpoint, SAME bounds-fixed \
          build_bound_matrix as this PR): not-torn {dgfft_valid_rate:.4} ({n_dgfft_ok}/{n_total}), \
          bond-violation-rate@15% {}",
         rate_str(dgfft_bond_violations, dgfft_bonds_checked)
     );
     println!(
-        "arm (b)        dg::generate_coords (existing, separate rule-based DFS placer): \
+        "dg_legacy_dfs        dg::generate_coords (existing, separate rule-based DFS placer): \
          not-torn {dg_valid_rate:.4} ({n_dg_ok}/{n_total}), bond-violation-rate@15% {}",
         rate_str(dg_bond_violations, dg_bonds_checked)
     );
     println!(
-        "n_both_ok (this PR AND arm b both not-torn): {n_both_ok}; \
-         regressions (arm b not-torn, this PR torn, must be 0): {n_regressions} {regression_names:?}"
+        "n_both_ok (this_pr_stochastic AND dg_legacy_dfs both not-torn): {n_both_ok}; \
+         regressions (dg_legacy_dfs not-torn, this_pr_stochastic torn, must be 0): {n_regressions} {regression_names:?}"
     );
     println!(
-        "See PR body for the separately-measured historical arm: dg_fft with the PRE-this-PR \
+        "See PR body for the separately-measured historical arm, dgfft_unfixed: dg_fft with the PRE-this-PR \
          (buggy, 9-entry-table) ideal_bond_length/vdw_radius -- not reproducible from this \
          binary alone since that table no longer exists in this file."
     );
