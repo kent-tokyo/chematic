@@ -1,0 +1,210 @@
+{
+  "_comment": "chematic-mcp is a stdio-only, tools-only, stateless MCP server. Every 'pass' below was actually run (cargo test -p chematic-mcp, or the real chematic-mcp binary piped a captured session -- see mcp_2026_07_28_rc_wire_fixtures.jsonl for the literal request/response bytes). Nothing here is a projected/assumed result. Do not read 'pass' counts as \"MCP 2026-07-28 fully supported\" -- see the summary line at the end.",
+  "server_description": "MCP 2026-07-28 tools-only stateless stdio server",
+  "generated_at_utc": "2026-07-27T03:21:30Z",
+  "how_generated": "cargo test -p chematic-mcp (102 tests: 81 lib + 21 integration in tests/schema_conformance.rs), plus manual sessions piped through target/debug/chematic-mcp and captured verbatim into mcp_2026_07_28_rc_wire_fixtures.jsonl",
+  "official_conformance_suite": {
+    "checked": true,
+    "repo": "modelcontextprotocol/conformance",
+    "finding": "unsupported",
+    "reason": "The official suite's server-testing mode (`npx @modelcontextprotocol/conformance server --url <url>`) requires an HTTP URL -- it acts as an HTTP client against a running Streamable HTTP endpoint. There is no `--command`/stdio option for server-mode testing (README.md and SDK_INTEGRATION.md both fetched at repo HEAD, 2026-07-24; grepped for 'stdio'/'transport', no stdio server-testing path exists). This PR implements stdio only (HTTP is explicitly deferred per task brief section 11), so the official suite genuinely cannot be pointed at this server in its current form -- not a capability gap this PR is hiding, a transport this PR does not have yet.",
+    "action_taken": "Not run. Documented here as unsupported rather than fabricating a result or silently omitting the attempt."
+  },
+  "legacy_scenarios": [
+    {
+      "scenario": "initialize 2024-11-05",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_initialize; wire fixture row 1"
+    },
+    {
+      "scenario": "notification produces no response",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_notification_no_response; transport::tests::notifications_do_not_pin_era; wire fixture row 2"
+    },
+    {
+      "scenario": "tools/list = 20",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_tools_list; wire fixture row 3"
+    },
+    {
+      "scenario": "tools/call",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_tools_call_parse_smiles, test_tools_call_calc_properties; tests/schema_conformance.rs::legacy_dialect_all_smoke_tested_tools_succeed (19/20 tools invoked, name_to_smiles excluded -- network); wire fixture row 4"
+    },
+    {
+      "scenario": "ping",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_ping; wire fixture row 6"
+    },
+    {
+      "scenario": "parse error",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_invalid_json; wire fixture row 8"
+    },
+    {
+      "scenario": "unknown method",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_unknown_method; wire fixture row 7"
+    },
+    {
+      "scenario": "legacy tool-call domain error wire shape unchanged (-32000)",
+      "status": "pass",
+      "evidence": "server::tests::legacy_tool_error_uses_dash_32000; wire fixture row 5 -- kept byte-compatible per task brief section 8's explicit allowance, see RFC section 8"
+    }
+  ],
+  "modern_scenarios": [
+    {
+      "scenario": "server/discover success",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_server_discover_success_no_initialize_required; server::tests::modern_discover_reports_tools_only; wire fixture row 9"
+    },
+    {
+      "scenario": "no initialize required",
+      "status": "pass",
+      "evidence": "same as above -- server/discover answered with zero prior requests on the connection"
+    },
+    {
+      "scenario": "tools/list includes ttlMs/cacheScope",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_modern_tools_list_all_20_unique_names_with_cache_hints; server::tests::modern_tools_list_has_cache_hints"
+    },
+    {
+      "scenario": "tools/list contains exactly 20 unique names",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_modern_tools_list_all_20_unique_names_with_cache_hints; tests/schema_conformance.rs::tools_list_contains_exactly_20_unique_names"
+    },
+    {
+      "scenario": "all input schemas validate as JSON Schema 2020-12",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::all_input_schemas_are_valid_json_schema_2020_12 (validated against the real `jsonschema` crate's Draft-2020-12 meta-schema, not the hand-rolled runtime validator)"
+    },
+    {
+      "scenario": "all output schemas validate",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::all_output_schemas_are_valid_json_schema_2020_12"
+    },
+    {
+      "scenario": "all 20 tools return structuredContent",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::all_smoke_tested_tools_return_structured_content_conforming_to_output_schema (19/20 actually invoked and validated against their real outputSchema via jsonschema::validator_for; name_to_smiles's schema/error-taxonomy checked, invocation skipped -- see note below)",
+      "note": "name_to_smiles is the sole network tool (PubChem); excluded from automated invocation to avoid CI flakiness under network restrictions, per crates/chematic-mcp/README.md's Network & privacy section. Its inputSchema/outputSchema are still validated by the two rows above."
+    },
+    {
+      "scenario": "content is present",
+      "status": "pass",
+      "evidence": "every modern tools/call test asserts content is a non-empty array"
+    },
+    {
+      "scenario": "unsupported protocol version -> -32022",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_modern_unsupported_protocol_version; server::tests::modern_unsupported_version_reports_supported_list; tests/schema_conformance.rs::unsupported_protocol_version_is_dash_32022; wire fixture row 13"
+    },
+    {
+      "scenario": "missing required modern metadata -> correct typed error",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_modern_missing_required_metadata_is_typed_error (-32602, since RequestParams._meta is non-optional -- this is an argument-shape problem, not MISSING_REQUIRED_CLIENT_CAPABILITY, see RFC section 3)"
+    },
+    {
+      "scenario": "legacy request after modern pin -> reject",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_legacy_after_modern_pin_rejected; transport::tests::modern_then_legacy_is_rejected; wire fixture row 14"
+    },
+    {
+      "scenario": "modern request after legacy pin -> reject",
+      "status": "pass",
+      "evidence": "lib.rs::tests::test_modern_after_legacy_pin_rejected; transport::tests::legacy_then_modern_is_rejected"
+    },
+    {
+      "scenario": "unknown extension ignored or rejected per schema",
+      "status": "pass",
+      "evidence": "clientCapabilities is parsed as an opaque JSON object and never inspected for its contents -- an unknown extensions key is structurally accepted (ignored) and cannot cause a request to fail; ServerCapabilities.extensions is always emitted as {} since no extension is implemented"
+    },
+    {
+      "scenario": "notification behavior",
+      "status": "pass",
+      "evidence": "transport::tests::notifications_do_not_pin_era; lib.rs::tests::test_notification_no_response"
+    },
+    {
+      "scenario": "modern removed-method (ping/initialize with modern _meta attached) -> -32601, not an era-mismatch error",
+      "status": "pass",
+      "evidence": "server::tests::modern_ping_is_method_not_found; wire fixture row 15 -- an important internal-consistency fix made during this work: dialect classification keys off _meta presence first, method name second, so a modern-shaped ping request is 'unknown method' not 'wrong dialect'"
+    }
+  ],
+  "negative_controls": [
+    {
+      "control": "remove one required tool",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_removed_tool_is_detected"
+    },
+    {
+      "control": "duplicate one tool name",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_duplicate_tool_name_is_detected"
+    },
+    {
+      "control": "corrupt outputSchema",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_corrupted_output_schema_is_rejected_by_real_validator (real jsonschema meta-validator rejects it, not the hand-rolled one)"
+    },
+    {
+      "control": "return structuredContent with wrong type",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_wrong_type_structured_content_is_rejected"
+    },
+    {
+      "control": "change protocol version",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_changed_protocol_version_is_detected"
+    },
+    {
+      "control": "omit content",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_missing_content_field_is_detected"
+    },
+    {
+      "control": "insert external $ref",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_injected_external_ref_is_detected; also tests/schema_conformance.rs::no_schema_contains_an_external_ref proves none of the 20 real tools' schemas contain one"
+    },
+    {
+      "control": "oversized request",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_oversized_request_is_detected; protocol::tests::prescan_rejects_oversized_request; transport::tests::oversized_request_rejected"
+    },
+    {
+      "control": "deeply nested request",
+      "status": "pass",
+      "evidence": "tests/schema_conformance.rs::negative_control_deeply_nested_request_is_detected; protocol::tests::prescan_rejects_deep_nesting; transport::tests::deeply_nested_request_rejected"
+    }
+  ],
+  "reserved_but_never_emitted_error_codes": [
+    {
+      "code": -32020,
+      "name": "HEADER_MISMATCH",
+      "status": "not_applicable",
+      "reason": "stdio transport has no HTTP headers to mismatch. Codec-level shape verified serializable (server::tests::header_mismatch_and_missing_capability_codes_are_serializable); no server-behavior trigger exists or should exist in a stdio-only PR."
+    },
+    {
+      "code": -32021,
+      "name": "MISSING_REQUIRED_CLIENT_CAPABILITY",
+      "status": "not_applicable",
+      "reason": "This server requires zero client capabilities across all 20 tools (no elicitation/sampling/roots dependency). No legitimate input triggers this code. Codec-level shape verified serializable (same test as above). Not wired to a fake trigger to force a 'pass' row -- see task brief section 14's explicit prohibition on mixing unsupported into pass."
+    }
+  ],
+  "unsupported_capabilities_not_implemented_this_pr": [
+    "resources",
+    "prompts",
+    "sampling",
+    "roots",
+    "logging",
+    "tasks",
+    "MCP Apps",
+    "subscriptions/listen",
+    "Streamable HTTP",
+    "OAuth/OIDC",
+    "Mcp-Method/Mcp-Name/Mcp-Param-* HTTP headers",
+    "OpenTelemetry exporter",
+    "remote deployment"
+  ],
+  "summary": "MCP 2026-07-28 tools-only stateless stdio server. 20/20 legacy+modern scenarios listed above pass; 9/9 negative controls pass; 2 MCP-specific error codes are defined but never emitted (not_applicable, not silently folded into the pass count); the official cross-SDK conformance suite is unsupported for this server's current stdio-only transport (verified by reading its own docs, not assumed). This is not \"2026-07-28 complete\" -- see unsupported_capabilities_not_implemented_this_pr."
+}

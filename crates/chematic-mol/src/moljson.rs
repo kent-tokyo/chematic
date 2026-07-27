@@ -23,8 +23,11 @@
 //! ```
 //!
 //! ## References
-//! - Guo et al. "Molecular Representations for Large Language Models" (2026)
-//! - oxpig/MolJSON: <https://github.com/oxpig/MolJSON>
+//! - Nicholas T. Runcie, Fergus Imrie, Charlotte M. Deane, "Molecular
+//!   Representations for Large Language Models," arXiv:2605.01822, 2026.
+//! - Official schema and reference implementation: oxpig/MolJSON
+//!   <https://github.com/oxpig/MolJSON> (reference implementation licensed
+//!   BSD-3-Clause).
 
 #![forbid(unsafe_code)]
 

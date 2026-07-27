@@ -9,7 +9,10 @@
 //!   Lines 5+natoms..5+natoms+nbonds — bond block (one line per bond)
 //!   "M  END" — molecule terminator
 
-use chematic_core::{Atom, AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
+use chematic_core::{
+    Atom, AtomIdx, BondIdx, BondOrder, Chirality, Coords3D, Element, Molecule, MoleculeBuilder,
+    Point3, STEREO_H_SENTINEL,
+};
 use chematic_perception::{
     EzDirectionDiagnostic, StereoDiagnostic, apply_ez_directions_from_2d_ex,
     apply_local_parity_from_wedges_with_diagnostics,
@@ -46,6 +49,249 @@ impl MolMetadata {
     }
 }
 
+/// The MOL header's own declared dimensionality -- the literal `2D`/`3D`
+/// tag a writer stamps in columns 20..22 (0-indexed) of header line 2 (the
+/// "program/date" line, MDL Ctfile spec), e.g. RDKit's
+/// `"     RDKit          3D"`. Empirically confirmed against a live RDKit
+/// `2026.03.3` oracle for both V2000 and V3000 (identical column in both).
+///
+/// This is the file's own CLAIM, independent of what the atom block's
+/// actual `(x, y, z)` values look like -- see [`GeometryRank`] for the
+/// observed side, and [`Stereo3DDiagnostic`] for whether the two agree.
+/// `Unknown` is the common case: most real-world writers (including every
+/// hand-written fixture already in this crate's own test suite) leave line
+/// 2 blank or shorter than 22 columns.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CoordinateDimension {
+    TwoD,
+    ThreeD,
+    #[default]
+    Unknown,
+}
+
+/// What the atom block's actual `(x, y, z)` values look like, independent of
+/// what the header declares. Deliberately kept separate from
+/// [`CoordinateDimension`] (the file's claim) -- collapsing "does this file
+/// have 3D data" to one boolean would conflate "header says 3D but is
+/// mislabeled" with "header says 3D and the molecule is just, correctly,
+/// flat" (e.g. benzene from a real conformer generator).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GeometryRank {
+    /// No atoms at all -- not enough information to say anything.
+    Indeterminate,
+    /// Every atom's z is within [`Z_EPS`] of exactly 0.0 -- the trivial flat
+    /// case, indistinguishable from "no z data was ever written".
+    FlatZero,
+    /// Not all-zero-z, but every point still lies within [`COPLANAR_EPS`] of
+    /// a single best-fit plane (which need not be the z=0 plane, and need
+    /// not be axis-aligned) -- includes fewer-than-3-atom records, which
+    /// are trivially coplanar. A genuinely flat molecule (e.g. benzene)
+    /// legitimately lands here; on its own this is not evidence of a bug.
+    Coplanar,
+    /// At least one point lies measurably off the best-fit plane through
+    /// the rest -- genuinely three-dimensional.
+    ThreeD,
+}
+
+/// Coordinate magnitude below which a z value is treated as exactly zero.
+const Z_EPS: f64 = 1e-4;
+/// Maximum perpendicular deviation (Angstrom) from a best-fit plane still
+/// classified as [`GeometryRank::Coplanar`]. Chosen well above float noise
+/// and well below a real 3D ring pucker (~0.2-0.5 A for e.g. cyclohexane).
+const COPLANAR_EPS: f64 = 1e-2;
+/// Minimum cross-product norm (Angstrom^2) accepted as "not collinear" when
+/// searching for a plane-defining pair of vectors.
+const COLLINEAR_EPS: f64 = 1e-6;
+/// Minimum |signed volume| (Angstrom^3) treated as a reliable, non-degenerate
+/// tetrahedral sign in [`wedge_vs_3d_conflicts`].
+const VOLUME_EPS: f64 = 1e-6;
+
+/// Classify a point cloud's [`GeometryRank`]. See that type's docs for the
+/// four cases.
+pub(crate) fn classify_geometry_rank(points: &[Point3]) -> GeometryRank {
+    if points.is_empty() {
+        return GeometryRank::Indeterminate;
+    }
+    if points.iter().all(|p| p.z.abs() < Z_EPS) {
+        return GeometryRank::FlatZero;
+    }
+    if points.len() < 3 {
+        return GeometryRank::Coplanar;
+    }
+    // Find a non-degenerate plane-defining pair of vectors from point 0.
+    // ponytail: fixing the origin at point 0 makes this O(n) instead of
+    // O(n^3); it misses only the vanishingly rare pathological case where
+    // point 0 is collinear with every other point yet some other, unrelated
+    // triple isn't -- not worth a full O(n^3) search for real molecular
+    // input up to `MAX_ATOMS`.
+    let origin = points[0];
+    let mut normal: Option<Point3> = None;
+    'outer: for (j, pj) in points.iter().enumerate().skip(1) {
+        let v1 = pj.sub(&origin);
+        for pk in points.iter().skip(j + 1) {
+            let v2 = pk.sub(&origin);
+            let n = v1.cross(&v2);
+            if n.norm() > COLLINEAR_EPS {
+                normal = Some(n);
+                break 'outer;
+            }
+        }
+    }
+    let Some(n) = normal else {
+        // Every point is collinear with point 0 -- trivially coplanar.
+        return GeometryRank::Coplanar;
+    };
+    let n = n.normalize();
+    let max_dev = points
+        .iter()
+        .map(|p| p.sub(&origin).dot(&n).abs())
+        .fold(0.0_f64, f64::max);
+    if max_dev < COPLANAR_EPS {
+        GeometryRank::Coplanar
+    } else {
+        GeometryRank::ThreeD
+    }
+}
+
+/// Parse the dimensional-code field (columns 20..22, 0-indexed) from a MOL
+/// header's line 2. Returns [`CoordinateDimension::Unknown`] when the line
+/// is shorter than 22 columns, blank in that field, or contains anything
+/// other than the literal `2D`/`3D` tokens -- never an error (this field is
+/// legacy/optional and most writers, including this crate's own 2D writer,
+/// never populate it).
+pub(crate) fn parse_dimension_code(line2: &str) -> CoordinateDimension {
+    match line2.get(20..22).map(str::trim) {
+        Some("2D") => CoordinateDimension::TwoD,
+        Some("3D") => CoordinateDimension::ThreeD,
+        _ => CoordinateDimension::Unknown,
+    }
+}
+
+/// One 3D-geometry-related diagnostic surfaced while parsing a MOL/SDF
+/// record -- see [`MolReadReport::stereo3d_diagnostics`].
+///
+/// An empty `stereo3d_diagnostics` vec does NOT mean "3D stereo was verified
+/// correct" -- it means there was nothing to check (no wedge/hash bond was
+/// present at any center, and the header/geometry dimensionality agreed),
+/// mirroring how `stereo_diagnostics`/`ez_diagnostics` are only ever
+/// populated when something was actually declared and rejected. A record
+/// with genuine 3D coordinates and zero declared stereo is common and
+/// entirely valid -- it produces no diagnostics, which must not be read as
+/// "stereo check passed".
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Stereo3DDiagnostic {
+    /// The header declares `2D`, but the atom block's actual z values are
+    /// not all (near-)zero.
+    DeclaredTwoDButNonzeroZ { observed: GeometryRank },
+    /// The header declares `3D`, but the observed geometry is flat -- either
+    /// every z is exactly 0 ([`GeometryRank::FlatZero`]) or all points lie
+    /// on a single, possibly tilted, plane ([`GeometryRank::Coplanar`]). The
+    /// two are reported distinctly via the payload: "every z is literally
+    /// 0" is near-certainly a 2D file mislabeled 3D, while a real but
+    /// planar/degenerate 3D geometry (e.g. benzene) is not on its own a bug.
+    DeclaredThreeDButFlat { observed: GeometryRank },
+    /// A wedge/hash bond was present at `atom`, and its 2D-perceived local
+    /// parity (`Atom.chirality`, computed on this record's own `(x, y)` by
+    /// the unmodified [`apply_local_parity_from_wedges_with_diagnostics`]
+    /// pathway) disagrees with the parity read directly off the atom's real
+    /// 3D geometry (`from_3d_geometry`). Named for what is actually being
+    /// compared: for a genuinely-3D record, `(x, y)` alone is not a
+    /// meaningful 2D depiction, so this is "the wedge disagrees with the
+    /// shape", not "the declared stereo failed verification". When a wedge
+    /// and nonzero-z geometry coexist and *agree*, nothing is emitted here
+    /// -- 3D geometry is treated as the higher-fidelity signal, but it is
+    /// never written back to `Atom.chirality` (which stays exactly what the
+    /// 2D wedge pathway produced); only genuine disagreement is surfaced.
+    WedgeVs3DParityConflict {
+        atom: AtomIdx,
+        wedge_2d: Chirality,
+        from_3d_geometry: Chirality,
+    },
+}
+
+/// Signed volume of the tetrahedron `(p1-p4, p2-p4, p3-p4)` from real 3D
+/// coordinates. An independent, deliberately tiny (single determinant)
+/// re-implementation of the same triple product
+/// `chematic_perception::stereo2d_local` uses internally on a synthetic
+/// wedge-derived z -- that helper is `pub(crate)` there and its z is not a
+/// real coordinate, so it cannot be reused directly from this crate.
+fn signed_volume3(p1: Point3, p2: Point3, p3: Point3, p4: Point3) -> f64 {
+    let a = p1.sub(&p4);
+    let b = p2.sub(&p4);
+    let c = p3.sub(&p4);
+    a.x * (b.y * c.z - b.z * c.y) - a.y * (b.x * c.z - b.z * c.x) + a.z * (b.x * c.y - b.y * c.x)
+}
+
+/// Compare every wedge/hash-perceived tetrahedral parity against the same
+/// atom's real 3D geometry, using the exact sign convention
+/// `chematic_perception::stereo2d_local::local_parity_from_wedges`
+/// establishes (mirrored here from its doc comments, not re-derived): apex =
+/// first neighbor in `stereo_neighbor_order`, viewed = the rest (in order),
+/// for a 4-explicit-neighbor center; pivot = the center atom itself (no
+/// synthetic H position needed -- the triple product of the 3 real bond
+/// vectors from the center already carries full parity) for a 3-heavy +
+/// implicit-H center. Only ever consulted when a wedge/hash bond was
+/// actually present (`atom.chirality != Chirality::None`), so this never
+/// fires on the common case of a real 3D SDF record with no wedge notation
+/// at all.
+pub(crate) fn wedge_vs_3d_conflicts(
+    mol: &Molecule,
+    conformer: &Coords3D,
+) -> Vec<Stereo3DDiagnostic> {
+    let mut out = Vec::new();
+    let get = |a: u32| conformer.points.get(a as usize).copied();
+
+    for (idx, atom) in mol.atoms() {
+        if atom.chirality == Chirality::None {
+            continue;
+        }
+        let Some(order) = mol.stereo_neighbor_order(idx) else {
+            continue;
+        };
+
+        let computed = if order.len() == 4 && order[3] == STEREO_H_SENTINEL {
+            // 3 heavy neighbors + 1 implicit H: pivot = center.
+            match (get(order[0]), get(order[1]), get(order[2]), get(idx.0)) {
+                (Some(p0), Some(p1), Some(p2), Some(center)) => {
+                    let v = signed_volume3(p0, p1, p2, center);
+                    match v {
+                        v if v.abs() < VOLUME_EPS => None,
+                        v if v < 0.0 => Some(Chirality::Clockwise),
+                        _ => Some(Chirality::CounterClockwise),
+                    }
+                }
+                _ => None,
+            }
+        } else if order.len() == 4 {
+            // 4 explicit neighbors: apex = order[0], viewed = order[1..4].
+            match (get(order[0]), get(order[1]), get(order[2]), get(order[3])) {
+                (Some(p0), Some(p1), Some(p2), Some(p3)) => {
+                    let v = signed_volume3(p1, p2, p3, p0);
+                    match v {
+                        v if v.abs() < VOLUME_EPS => None,
+                        v if v < 0.0 => Some(Chirality::CounterClockwise),
+                        _ => Some(Chirality::Clockwise),
+                    }
+                }
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        if let Some(computed) = computed
+            && computed != atom.chirality
+        {
+            out.push(Stereo3DDiagnostic::WedgeVs3DParityConflict {
+                atom: idx,
+                wedge_2d: atom.chirality,
+                from_3d_geometry: computed,
+            });
+        }
+    }
+    out
+}
+
 /// Result of parsing a MOL/SDF record with stereo-perception diagnostics.
 ///
 /// `stereo_diagnostics` is empty unless a wedge/hash bond was actually
@@ -59,6 +305,15 @@ impl MolMetadata {
 /// symmetric-substituent alkenes are never stereogenic in the first place)
 /// had its direction rejected -- see
 /// [`chematic_perception::EzDirectionDiagnostic`].
+///
+/// `conformer` is `Some` exactly when the atom block's real z values are not
+/// all (near-)zero (i.e. `geometry_rank` is [`GeometryRank::Coplanar`] or
+/// [`GeometryRank::ThreeD`]) -- this is "does this file actually have a 3D
+/// conformer", independent of `coordinate_dimension` (the header's own,
+/// possibly wrong or absent, claim). `coordinate_dimension` and
+/// `geometry_rank` are always populated; `stereo3d_diagnostics` cross-checks
+/// the two and checks any wedge/hash-declared stereo against real geometry
+/// -- see [`Stereo3DDiagnostic`].
 #[derive(Clone)]
 pub struct MolReadReport {
     pub mol: Molecule,
@@ -66,6 +321,10 @@ pub struct MolReadReport {
     pub coords: Vec<(f64, f64)>,
     pub stereo_diagnostics: Vec<StereoDiagnostic>,
     pub ez_diagnostics: Vec<EzDirectionDiagnostic>,
+    pub conformer: Option<Coords3D>,
+    pub coordinate_dimension: CoordinateDimension,
+    pub geometry_rank: GeometryRank,
+    pub stereo3d_diagnostics: Vec<Stereo3DDiagnostic>,
 }
 
 // ---------------------------------------------------------------------------
@@ -145,7 +404,11 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
     // -- Header block: lines 1–3 -------------------------------------------
 
     let name = next_line()?.1.to_string();
-    next_line()?; // line 2: program/date — discarded
+    // Line 2 (program/date info) is mostly discarded, except for the
+    // dimensional-code field (columns 20..22, "2D"/"3D") -- see
+    // `parse_dimension_code`. Empirically confirmed against a live RDKit
+    // 2026.03.3 oracle: `"     RDKit          3D"`/`"...2D"`.
+    let (_, line2_raw) = next_line()?;
     let comment = next_line()?.1.to_string();
 
     let metadata = MolMetadata { name, comment };
@@ -194,6 +457,7 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
 
     let mut builder = MoleculeBuilder::new();
     let mut coords: Vec<(f64, f64)> = Vec::with_capacity(natoms);
+    let mut raw_z: Vec<f64> = Vec::with_capacity(natoms);
     let make_atom_err = |ln: usize, d: String| MolParseError::InvalidAtomLine {
         line: ln,
         detail: d,
@@ -212,6 +476,42 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
             .and_then(|s| s.trim().parse().ok())
             .unwrap_or(0.0);
         coords.push((x, y));
+
+        // Z coordinate (bytes 20-29): previously silently discarded
+        // entirely -- root cause of the 3D-coordinate-loss bug this PR
+        // fixes (nothing downstream ever read this field). Unlike x/y
+        // above, a present-but-garbled or non-finite z is a typed error
+        // rather than a silent 0.0 default: nothing today reads z, so a
+        // malformed value can only be file corruption, and silently
+        // matching x/y's leniency would manufacture a fake flat conformer
+        // out of garbage input instead of surfacing it. A genuinely
+        // *missing* z field (line too short, or blank) still defaults to
+        // 0.0, same as x/y -- most real 2D-only writers pad it with zeros,
+        // but some don't, and a short 2D line is not corruption.
+        let z: f64 = match atom_line.get(20..30) {
+            None => 0.0,
+            Some(raw) => {
+                let trimmed = raw.trim();
+                if trimmed.is_empty() {
+                    0.0
+                } else {
+                    let val: f64 = trimmed.parse().map_err(|_| {
+                        make_atom_err(
+                            raw_lineno,
+                            format!("cannot parse z coordinate from '{trimmed}'"),
+                        )
+                    })?;
+                    if !val.is_finite() {
+                        return Err(make_atom_err(
+                            raw_lineno,
+                            format!("z coordinate is not finite (NaN/Infinite): '{trimmed}'"),
+                        ));
+                    }
+                    val
+                }
+            }
+        };
+        raw_z.push(z);
 
         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
         // the spec, but writers vary; trim both ends).
@@ -339,12 +639,46 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
     let ez_diagnostics =
         apply_ez_directions_from_2d_ex(&mut mol, &coords, &explicitly_unspecified_ez);
 
+    let coordinate_dimension = parse_dimension_code(line2_raw);
+    let points: Vec<Point3> = coords
+        .iter()
+        .zip(raw_z.iter())
+        .map(|(&(x, y), &z)| Point3::new(x, y, z))
+        .collect();
+    let geometry_rank = classify_geometry_rank(&points);
+    let conformer = match geometry_rank {
+        GeometryRank::Coplanar | GeometryRank::ThreeD => Some(Coords3D { points }),
+        GeometryRank::FlatZero | GeometryRank::Indeterminate => None,
+    };
+
+    let mut stereo3d_diagnostics = Vec::new();
+    match (coordinate_dimension, geometry_rank) {
+        (CoordinateDimension::TwoD, GeometryRank::Coplanar | GeometryRank::ThreeD) => {
+            stereo3d_diagnostics.push(Stereo3DDiagnostic::DeclaredTwoDButNonzeroZ {
+                observed: geometry_rank,
+            });
+        }
+        (CoordinateDimension::ThreeD, GeometryRank::FlatZero | GeometryRank::Coplanar) => {
+            stereo3d_diagnostics.push(Stereo3DDiagnostic::DeclaredThreeDButFlat {
+                observed: geometry_rank,
+            });
+        }
+        _ => {}
+    }
+    if let Some(ref conf) = conformer {
+        stereo3d_diagnostics.extend(wedge_vs_3d_conflicts(&mol, conf));
+    }
+
     Ok(MolReadReport {
         mol,
         metadata,
         coords,
         stereo_diagnostics,
         ez_diagnostics,
+        conformer,
+        coordinate_dimension,
+        geometry_rank,
+        stereo3d_diagnostics,
     })
 }
 
@@ -521,6 +855,78 @@ pub fn write_mol_with_coords(
     out
 }
 
+/// Serialize `mol` to MOL V2000 format using `conformer`'s real 3D
+/// coordinates, stamping the header's line-2 dimensional code as `3D`.
+///
+/// This is the writer counterpart of [`read_mol_with_diagnostics`]'s new 3D
+/// support -- round-tripping this output back through the reader reproduces
+/// [`CoordinateDimension::ThreeD`] and never manufactures a fresh
+/// [`Stereo3DDiagnostic::WedgeVs3DParityConflict`] on its own output: no
+/// wedge/hash stereo field is ever emitted here (always `0`), matching the
+/// fact that a real 3D geometry makes a 2D wedge symbol redundant at best,
+/// contradictory at worst -- see [`write_mol_with_coords`] (unchanged, still
+/// the 2D writer) for the wedge-preserving counterpart. Atoms beyond
+/// `conformer.atom_count()` receive `(0.0, 0.0, 0.0)`.
+pub fn write_mol_with_conformer(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    conformer: &Coords3D,
+) -> String {
+    let mut out = String::new();
+
+    out.push_str(&metadata.name);
+    out.push('\n');
+    // Columns 0..10 "  chematic" match the 2D writer exactly; columns
+    // 10..20 are the (blank) date field; columns 20..22 carry the "3D"
+    // dimensional code -- the same column `parse_dimension_code` reads,
+    // empirically confirmed against RDKit 2026.03.3's own `MolToMolBlock`.
+    out.push_str("  chematic          3D\n");
+    out.push_str(&metadata.comment);
+    out.push('\n');
+
+    let natoms = mol.atom_count();
+    let nbonds = mol.bond_count();
+    out.push_str(&format!(
+        "{:>3}{:>3}  0  0  0  0  0  0  0  0999 V2000\n",
+        natoms, nbonds
+    ));
+
+    for (idx, atom) in mol.atoms() {
+        let sym = atom.element.symbol();
+        let charge_code = encode_charge(atom.charge);
+        let p = conformer
+            .points
+            .get(idx.0 as usize)
+            .copied()
+            .unwrap_or(Point3::zero());
+        out.push_str(&format!(
+            "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
+            p.x, p.y, p.z, sym, charge_code,
+        ));
+    }
+
+    for (_idx, bond) in mol.bonds() {
+        let a1 = bond.atom1.0 + 1;
+        let a2 = bond.atom2.0 + 1;
+        let btype = match bond.order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
+            BondOrder::Double => 2,
+            BondOrder::Triple => 3,
+            BondOrder::Aromatic => 4,
+            BondOrder::QuerySingleOrDouble => 5,
+            BondOrder::QuerySingleOrAromatic => 6,
+            BondOrder::QueryDoubleOrAromatic => 7,
+            BondOrder::QueryAny | BondOrder::Zero => 8,
+            BondOrder::Quadruple => 4,
+        };
+        // Stereo field is always 0 -- see doc comment above.
+        out.push_str(&format!("{:>3}{:>3}{:>3}{:>3}\n", a1, a2, btype, 0));
+    }
+
+    out.push_str("M  END\n");
+    out
+}
+
 // ---------------------------------------------------------------------------
 // SDF writer
 // ---------------------------------------------------------------------------
@@ -603,6 +1009,29 @@ pub fn write_sdf_record_v3000(
     props: &std::collections::HashMap<String, String>,
 ) -> String {
     let mut out = crate::mol3000::write_mol_v3000(mol, meta, coords);
+    for (k, v) in props {
+        if !k.starts_with('_') {
+            out.push_str(&format!("> <{k}>\n{v}\n\n"));
+        }
+    }
+    out.push_str("$$$$\n");
+    out
+}
+
+/// Like [`write_sdf_record`] but writes `conformer`'s real 3D coordinates
+/// (V2000, via [`write_mol_with_conformer`]) instead of a 2D `(x, y)` slice
+/// -- the 3D counterpart for a single SDF record. To write several
+/// conformers of the same molecule as separate, repeated records (readable
+/// back as one [`crate::sdf::ConformerEnsemble`] by
+/// [`crate::sdf::read_sdf_conformer_ensembles`]), call this once per
+/// conformer and concatenate the results.
+pub fn write_sdf_record_with_conformer(
+    mol: &Molecule,
+    meta: &MolMetadata,
+    conformer: &Coords3D,
+    props: &std::collections::HashMap<String, String>,
+) -> String {
+    let mut out = write_mol_with_conformer(mol, meta, conformer);
     for (k, v) in props {
         if !k.starts_with('_') {
             out.push_str(&format!("> <{k}>\n{v}\n\n"));

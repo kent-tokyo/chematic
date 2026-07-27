@@ -4,11 +4,14 @@
 //! delimiter lines.  Data-field sections between `M  END` and `$$$$` are
 //! accepted but ignored.
 
-use chematic_core::Molecule;
+use chematic_core::{Coords3D, Molecule};
 use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 use crate::error::MolParseError;
-use crate::mol2000::{MolMetadata, parse_mol, read_mol_with_diagnostics};
+use crate::mol2000::{
+    CoordinateDimension, GeometryRank, MolMetadata, Stereo3DDiagnostic, parse_mol,
+    read_mol_with_diagnostics,
+};
 
 /// Iterator over molecules in an SDF string.
 ///
@@ -122,6 +125,20 @@ pub struct SdfRecord {
     /// [`chematic_perception::EzDirectionDiagnostic`]). Empty unless a
     /// stereogenic double bond's direction was rejected.
     pub ez_diagnostics: Vec<EzDirectionDiagnostic>,
+    /// Real 3D coordinates, `Some` exactly when the record's atom block has
+    /// non-(near-)zero z values -- see [`crate::mol2000::MolReadReport::conformer`].
+    pub conformer: Option<Coords3D>,
+    /// The record's own header-declared dimensionality (line 2's "2D"/"3D"
+    /// tag). `Unknown` is the common case -- most writers never populate it.
+    pub coordinate_dimension: CoordinateDimension,
+    /// What the record's actual coordinates look like, independent of
+    /// `coordinate_dimension` -- see [`crate::mol2000::GeometryRank`].
+    pub geometry_rank: GeometryRank,
+    /// 3D-geometry-related diagnostics for this record (dimension-vs-geometry
+    /// mismatches, wedge-vs-3D-geometry parity conflicts). See
+    /// [`crate::mol2000::Stereo3DDiagnostic`] -- empty does not mean
+    /// "verified correct", it means nothing was declared to check.
+    pub stereo3d_diagnostics: Vec<Stereo3DDiagnostic>,
 }
 
 /// Iterator over SDF records that also captures SD data fields.
@@ -205,6 +222,10 @@ impl<'a> Iterator for SdfRecordReader<'a> {
             properties,
             stereo_diagnostics: report.stereo_diagnostics,
             ez_diagnostics: report.ez_diagnostics,
+            conformer: report.conformer,
+            coordinate_dimension: report.coordinate_dimension,
+            geometry_rank: report.geometry_rank,
+            stereo3d_diagnostics: report.stereo3d_diagnostics,
         }))
     }
 }
@@ -254,6 +275,105 @@ fn parse_sd_field_header(line: &str) -> Option<String> {
     let rest = rest.trim();
     let inner = rest.strip_prefix('<')?.strip_suffix('>')?;
     Some(inner.to_string())
+}
+
+// ---------------------------------------------------------------------------
+// Conformer ensembles — bundle records sharing the same molecular graph
+// ---------------------------------------------------------------------------
+
+/// One group of SDF records that share the same molecular graph (see
+/// [`same_graph_identity`]) and each carry a real 3D conformer.
+///
+/// Records with no 3D conformer (`conformer.is_none()`, i.e. flagged 2D or
+/// flat -- see [`crate::mol2000::MolReadReport::conformer`]) are not part of
+/// any ensemble: this supplier is specifically about bundling repeated 3D
+/// conformers of "the same" molecule (e.g. `EmbedMultipleConfs` +
+/// `MolToMolBlock` per conformer, written as consecutive SDF records).
+pub struct ConformerEnsemble {
+    /// The molecular graph shared by every member (the first record's
+    /// `mol`; every other member's `mol` is checked equal by
+    /// [`same_graph_identity`] and then discarded, not stored again).
+    pub mol: Molecule,
+    /// Metadata from the first record in the group.
+    pub metadata: MolMetadata,
+    /// One conformer per member record, in file order.
+    pub conformers: Vec<Coords3D>,
+}
+
+/// Deliberately simple identity check: same atom count/order, same
+/// per-index `(element, charge, isotope)`, same bond list `(atom1, atom2,
+/// order)` in index order.
+///
+/// This is order-sensitive structural equality, NOT graph isomorphism or
+/// canonical-SMILES equality -- and that is intentional, not a shortcut
+/// taken for lack of time: it is correct for the actual use case this
+/// supplier targets (the same molecule written N times with different
+/// coordinates by the same embedding tool, which never reorders atoms or
+/// bonds between calls -- confirmed against RDKit's own
+/// `EmbedMultipleConfs` + per-conformer `MolToMolBlock`, see this crate's
+/// fixture tests). A more rigorous, reordering-tolerant identity layer is a
+/// separate, parallel workstream in the 3D Breakthrough Program (Agent B);
+/// this one is intentionally not that, and the Coordinator is expected to
+/// reconcile the two later.
+fn same_graph_identity(a: &Molecule, b: &Molecule) -> bool {
+    if a.atom_count() != b.atom_count() || a.bond_count() != b.bond_count() {
+        return false;
+    }
+    for ((_, atom_a), (_, atom_b)) in a.atoms().zip(b.atoms()) {
+        if atom_a.element != atom_b.element
+            || atom_a.charge != atom_b.charge
+            || atom_a.isotope != atom_b.isotope
+        {
+            return false;
+        }
+    }
+    for ((_, bond_a), (_, bond_b)) in a.bonds().zip(b.bonds()) {
+        if bond_a.atom1 != bond_b.atom1
+            || bond_a.atom2 != bond_b.atom2
+            || bond_a.order != bond_b.order
+        {
+            return false;
+        }
+    }
+    true
+}
+
+/// Parse an SDF string and group records that share the same molecular graph
+/// (see [`same_graph_identity`]) and each carry a real 3D conformer into
+/// [`ConformerEnsemble`]s.
+///
+/// Records with no 3D conformer are silently omitted from the result (this
+/// is specifically a *3D conformer* ensemble supplier, not a general SDF
+/// grouping utility). Grouping is order-independent within the file (a
+/// record is compared against every existing group's representative, not
+/// just its immediate predecessor), matching how real multi-conformer SDF
+/// exports are usually -- but not always -- written consecutively.
+///
+/// Stops and returns an error on the first parse failure, same as
+/// [`read_sdf_with_diagnostics`].
+pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble>, MolParseError> {
+    let reports = crate::mol2000::read_sdf_with_diagnostics(input)?;
+    let mut ensembles: Vec<ConformerEnsemble> = Vec::new();
+
+    for report in reports {
+        let Some(conformer) = report.conformer else {
+            continue;
+        };
+        if let Some(existing) = ensembles
+            .iter_mut()
+            .find(|e| same_graph_identity(&e.mol, &report.mol))
+        {
+            existing.conformers.push(conformer);
+        } else {
+            ensembles.push(ConformerEnsemble {
+                mol: report.mol,
+                metadata: report.metadata,
+                conformers: vec![conformer],
+            });
+        }
+    }
+
+    Ok(ensembles)
 }
 
 // ---------------------------------------------------------------------------
@@ -343,6 +463,10 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             properties,
             stereo_diagnostics: report.stereo_diagnostics,
             ez_diagnostics: report.ez_diagnostics,
+            conformer: report.conformer,
+            coordinate_dimension: report.coordinate_dimension,
+            geometry_rank: report.geometry_rank,
+            stereo3d_diagnostics: report.stereo3d_diagnostics,
         }))
     }
 }
