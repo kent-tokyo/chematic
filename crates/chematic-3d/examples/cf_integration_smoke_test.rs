@@ -655,11 +655,18 @@ fn main() {
          legacy-dg={fallback_count_legacy}/{n_total}"
     );
 
+    let uff_blowup_named_count = uff_blowup_named.len();
     println!(
         "\n=== naphthalene-family / fused-aromatic UFF-blowup comparison (item 5) ===\n\
-         Agent F's PR body disclosed these 8 molecules as blowing up under ForceFieldPolicy::UffOnly \
-         starting from dg::generate_coords: {uff_blowup_named:?}. Below: same policy (UffOnly), \
-         both starting-geometry sources, this run:"
+         NOTE (corrected after independent verification): PR #169's own doc comment cited these \
+         same {uff_blowup_named_count} molecules as \"UffOnly\"'s full-corpus blowup count, but \
+         that figure was actually a copy of Mmff94WithUffFallback's fallback-trigger-population \
+         count -- UffOnly was never run over the full 58-molecule corpus in that PR. This smoke \
+         test is the first real full-corpus UffOnly measurement (17/58 blow up under legacy \
+         dg::generate_coords starting geometry, not 8 -- see PR #187's doc-comment fix and issue \
+         #188 for the other 9). Named here (fused/conjugated-aromatic subset only): \
+         {uff_blowup_named:?}. Below: same policy (UffOnly), both starting-geometry sources, \
+         this run:"
     );
     for row in &naphthalene_family_rows {
         println!("{row}");
