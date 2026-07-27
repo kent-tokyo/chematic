@@ -89,6 +89,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   has the identical bug and is not fixed here (out of scope for this fix; tracked
   separately).
 
+### Fixed — `chematic-smiles`
+
+- **`canonical_smiles()` wrote its winning individualize-refine branch's
+  string, then wrote it again.** `winning_individualized_ranks` (shared by
+  `canonical_smiles`/`canonical_atom_order`) already had to call
+  `CanonicalWriter::write_all()` on every candidate branch to find the
+  lexicographically smallest one; `canonical_smiles` then called
+  `write_all()` a second, fully redundant time on the already-known winning
+  ranks, on every single call, tied or not. Introduced by `be5dbb1`'s
+  (0.4.26) individualize-refine correctness fix. Reported via an external
+  consumer's `run_reactants`/`apply_retro` performance regression (45-48x
+  slower `canonical_smiles()` in isolation on highly symmetric molecules —
+  plain rings, cages, `CF3`/`tBu`-style substituents — between chematic
+  0.4.25 and 0.4.30). Fixed by returning `(ranks, winning_string)` from
+  `winning_individualized_ranks` so `canonical_smiles` reuses the string
+  instead of recomputing it. Pure refactor: output is byte-identical
+  (verified against the full test suite, including `be5dbb1`'s own
+  golden-string tests and the issue #50 E/Z regression suite). Does **not**
+  fix the larger, still-open cost on genuinely symmetric molecules, which
+  needs automorphism-orbit-aware branch pruning — explicitly deferred as
+  future work. Full bisect, methodology, and before/after numbers in
+  `docs/reaction_transform_perf.md`.
+
+### Added — `chematic-rxn`
+
+- New `perf-instrumentation` Cargo feature (off by default, zero cost when
+  disabled): process-global work counters for `run_reactants`'s hot path
+  (`run_reactants_calls`, `reaction_parse_calls`,
+  `reactant_query_match_calls`, `vf2_match_count`, `match_combination_count`,
+  `build_product_calls`, `product_sets_before_dedup`,
+  `product_molecules_built`, `atoms_copied_to_products`,
+  `bonds_copied_to_products`), added while diagnosing the regression above.
+- New `reaction_transform_perf_report` example: a corpus-weighted
+  `run_reactants` benchmark accepting external template/probe corpora via
+  `RENKIN_TEMPLATES`/`RENKIN_PROBE` env vars, falling back to small
+  hand-authored fixtures in `crates/chematic-rxn/fixtures/`.
+
 _Nothing else yet — everything below `[0.7.0]` has shipped._
 
 ## [0.7.0] — 2026-07-26

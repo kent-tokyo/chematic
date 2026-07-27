@@ -106,10 +106,10 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.7.0
+# chematic v0.7.1
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-06, v0.7.0 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-06, v0.7.1 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  98.1%
 #   LogP (Crippen)        ~99%
@@ -280,6 +280,10 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.7.1**（2026-07-27）: **`run_reactants`/`canonical_smiles()` パフォーマンス修正**
+- `chematic-smiles`: `canonical_smiles()` が毎回 `CanonicalWriter::write_all()` を無駄にもう一度呼んでいたバグを修正（individualize-refineのタイブレーク解決時に勝者は既に一度書き込まれていたが、それを捨てて再度書き直していた）。`be5dbb1`（0.4.26）の正しさ修正で生じた本物の性能回帰で、対称性の高い分子（単純な環、ケージ構造、`CF3`/`tBu`系置換基）で最も顕著（外部利用者の`run_reactants`/`apply_retro`回帰報告経由で発覚、chematic 0.4.30 vs 0.4.25で単体`canonical_smiles()`が45-48倍遅い）。純粋なリファクタリングで出力はバイト単位で同一（`be5dbb1`自身のgolden-stringテスト、issue #50のE/Z回帰スイートを含む既存テスト全てで検証済み）。あわせて`chematic-rxn`に`perf-instrumentation`機能と`reaction_transform_perf_report`ベンチマーク例を追加。詳細な二分探索と既知の残課題（真の自己同型オービット枝刈り、未着手）は`docs/reaction_transform_perf.md`参照
+- 詳細は`CHANGELOG.md`の`[Unreleased]`セクション参照
 
 **v0.7.0**（2026-07-26）: **MOL/SDFから2Dウェッジ/ハッシュ＋E/Z立体化学を自動認識、検証付きcanonical SMILES重複排除、CIP Rule-5リン修正、native InChI明示的水素/同位体修正**
 - `chematic-mol`/`chematic-perception`: MOL V2000/V3000/SDFリーダーが読み込み時にtetrahedralウェッジ/ハッシュparity（PR #154）とE/Z二重結合方向（PR #162）を自動認識するようになった（CIP非依存）。型付きopt-in診断（`StereoDiagnostic`/`EzDirectionDiagnostic`）は不正・曖昧な入力に対して推測しない。広域corpus検証（4,999分子、RDKit 2026.03.3比較）：E/Z — RDKit解決済み622二重結合、semantic inversion 0件、false positive 0件。構築中に見つかったV2000 MDLコード4バグ・V3000 `CFG`バグ2件・V2000 writerバグも修正。PR #162自身のcorpus突合により**新規・未修正のギャップ**を発見: `canonical_smiles()`が一部の分子で正しく`write()`されたE/Zマーカーを失うケースがある（aromaticity非対応のcarrierグルーピングが原因）— まだissue化していない
