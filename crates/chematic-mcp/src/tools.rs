@@ -1,4 +1,11 @@
 //! MCP tool implementations for chematic.
+//!
+//! Each `tool_*` function computes its chemistry exactly once and returns a
+//! bare JSON payload (`Value`) — never a protocol envelope. The
+//! presentation layer (`server.rs`) wraps that payload differently per
+//! protocol era (legacy `content`-only vs. modern `content` +
+//! `structuredContent`), so the underlying computation is never run twice
+//! and never duplicated between eras.
 
 #![forbid(unsafe_code)]
 
@@ -21,16 +28,99 @@ use chematic_chem::{
     pains_passes, qed, rotatable_bond_count, sa_score, tpsa,
 };
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── tool-call error taxonomy ───────────────────────────────────────────────
 
-fn get_str<'a>(args: &'a Value, key: &str) -> Result<&'a str, String> {
-    args.get(key)
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| format!("Missing required argument: {key}"))
+/// Why a `tools/call` failed, split along the line section 9 of the RC
+/// implementation draws between transport-level and domain-level failure:
+///
+/// - `InvalidArgs`: the arguments themselves are missing, wrong-typed, or
+///   otherwise violate the tool's declared `inputSchema` (including an
+///   unknown tool name). This is a request-shape problem the *server*
+///   rejects before running any chemistry.
+/// - `Domain`: the arguments were well-formed, but the requested chemistry
+///   computation failed (unparseable SMILES/SMARTS, a molecule too large or
+///   disconnected for a bounded algorithm, a failed PubChem lookup, ...).
+///   The tool call itself succeeded as an RPC; the result reports failure.
+///
+/// Legacy-era wire behavior is unaffected by this split — both variants
+/// carry the exact same message text `call_tool` returned before this
+/// refactor (see `legacy_message`), preserving the current
+/// `{"code":-32000,...}` shape byte-for-byte. Only the modern era uses the
+/// split: `InvalidArgs` becomes `-32602`, `Domain` becomes a successful
+/// `CallToolResult` with `isError: true`.
+#[derive(Debug, Clone)]
+pub enum ToolCallError {
+    InvalidArgs(String),
+    Domain {
+        code: &'static str,
+        message: String,
+        details: Value,
+    },
 }
 
-fn parse_mol(smiles: &str) -> Result<chematic_core::Molecule, String> {
-    chematic_smiles::parse(smiles).map_err(|e| format!("Invalid SMILES '{smiles}': {e}"))
+impl ToolCallError {
+    fn invalid_args(msg: impl Into<String>) -> Self {
+        ToolCallError::InvalidArgs(msg.into())
+    }
+
+    fn domain(code: &'static str, msg: impl Into<String>) -> Self {
+        ToolCallError::Domain {
+            code,
+            message: msg.into(),
+            details: json!({}),
+        }
+    }
+
+    /// The message text this tool call would have produced before the
+    /// `ToolCallError` split existed — used verbatim by the legacy
+    /// presentation layer so wire output is unchanged.
+    pub fn legacy_message(&self) -> &str {
+        match self {
+            ToolCallError::InvalidArgs(m) => m,
+            ToolCallError::Domain { message, .. } => message,
+        }
+    }
+
+    /// `true` for argument/schema-shape problems (maps to `-32602` in the
+    /// modern era); `false` for domain/chemistry failures (maps to a
+    /// successful result with `isError: true`).
+    pub fn is_invalid_args(&self) -> bool {
+        matches!(self, ToolCallError::InvalidArgs(_))
+    }
+
+    /// Machine-readable `{code, message, details}` object for
+    /// `structuredContent.error` in the modern era.
+    pub fn to_structured_error(&self) -> Value {
+        match self {
+            ToolCallError::InvalidArgs(m) => json!({
+                "code": "INVALID_ARGUMENTS",
+                "message": m,
+                "details": {}
+            }),
+            ToolCallError::Domain {
+                code,
+                message,
+                details,
+            } => json!({ "code": code, "message": message, "details": details }),
+        }
+    }
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+fn get_str<'a>(args: &'a Value, key: &str) -> Result<&'a str, ToolCallError> {
+    args.get(key)
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolCallError::invalid_args(format!("Missing required argument: {key}")))
+}
+
+/// Parse a SMILES tool argument. A parse failure is a *domain* error
+/// (`INVALID_SMILES`), not an argument-shape error — the argument was a
+/// well-formed string, it just doesn't describe a valid molecule.
+fn parse_mol_arg(smiles: &str) -> Result<chematic_core::Molecule, ToolCallError> {
+    chematic_smiles::parse(smiles).map_err(|e| {
+        ToolCallError::domain("INVALID_SMILES", format!("Invalid SMILES '{smiles}': {e}"))
+    })
 }
 
 fn round3(x: f64) -> f64 {
@@ -39,11 +129,6 @@ fn round3(x: f64) -> f64 {
 
 fn round2(x: f64) -> f64 {
     (x * 100.0).round() / 100.0
-}
-
-/// Wrap a JSON payload in the MCP content envelope.
-fn content(value: &Value) -> Value {
-    json!({ "content": [{ "type": "text", "text": value.to_string() }] })
 }
 
 /// Convert a BitVec2048 to a lowercase hex string (256 bytes = 2048 bits).
@@ -180,6 +265,11 @@ fn component_count(mol: &chematic_core::Molecule) -> usize {
 
 // ── tool list schema ──────────────────────────────────────────────────────────
 
+/// Number of tools this server exposes. A single source of truth so
+/// registry-invariant tests (`exactly 20 unique names`, negative controls
+/// for "duplicate a tool name" / "remove a tool") never hardcode `20` twice.
+pub const TOOL_COUNT: usize = 20;
+
 pub fn list_tools() -> Value {
     json!({ "tools": [
         {
@@ -187,10 +277,23 @@ pub fn list_tools() -> Value {
             "description": "Parse a SMILES string and return basic molecular information (atom count, bond count, molecular weight).",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string to parse" }
+                    "smiles": { "type": "string", "description": "SMILES string to parse", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "valid": { "type": "boolean" },
+                    "atoms": { "type": "integer", "minimum": 0 },
+                    "bonds": { "type": "integer", "minimum": 0 },
+                    "mol_weight": { "type": "number", "minimum": 0 },
+                    "smiles": { "type": "string" }
+                },
+                "required": ["valid", "atoms", "bonds", "mol_weight", "smiles"]
             }
         },
         {
@@ -198,10 +301,27 @@ pub fn list_tools() -> Value {
             "description": "Calculate molecular properties: MW, exact mass, LogP (Crippen), TPSA, HBD, HBA, rotatable bonds, heavy atom count, and QED drug-likeness.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "mw": { "type": "number", "minimum": 0 },
+                    "exact_mass": { "type": "number", "minimum": 0 },
+                    "logp": { "type": "number" },
+                    "tpsa": { "type": "number", "minimum": 0 },
+                    "hbd": { "type": "integer", "minimum": 0 },
+                    "hba": { "type": "integer", "minimum": 0 },
+                    "rotatable_bonds": { "type": "integer", "minimum": 0 },
+                    "heavy_atom_count": { "type": "integer", "minimum": 0 },
+                    "qed": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "required": ["mw", "exact_mass", "logp", "tpsa", "hbd", "hba", "rotatable_bonds", "heavy_atom_count", "qed"]
             }
         },
         {
@@ -209,10 +329,20 @@ pub fn list_tools() -> Value {
             "description": "Compute the ECFP4 (Morgan radius-2) circular fingerprint as a 2048-bit hex string, plus popcount.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "fingerprint": { "type": "string", "minLength": 512, "maxLength": 512, "description": "512-char lowercase hex string (256 bytes = 2048 bits)" },
+                    "popcount": { "type": "integer", "minimum": 0, "maximum": 2048 }
+                },
+                "required": ["fingerprint", "popcount"]
             }
         },
         {
@@ -220,11 +350,21 @@ pub fn list_tools() -> Value {
             "description": "Compute the Tanimoto (Jaccard) similarity between two molecules using ECFP4 fingerprints.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles1": { "type": "string", "description": "First molecule SMILES" },
-                    "smiles2": { "type": "string", "description": "Second molecule SMILES" }
+                    "smiles1": { "type": "string", "description": "First molecule SMILES", "minLength": 1, "maxLength": 100000 },
+                    "smiles2": { "type": "string", "description": "Second molecule SMILES", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles1", "smiles2"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "similarity": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "similarity_percent": { "type": "number", "minimum": 0, "maximum": 100 }
+                },
+                "required": ["similarity", "similarity_percent"]
             }
         },
         {
@@ -232,11 +372,25 @@ pub fn list_tools() -> Value {
             "description": "Perform SMARTS substructure search and return whether the pattern matches, match count, and atom index maps.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smarts": { "type": "string", "description": "SMARTS pattern" },
-                    "smiles": { "type": "string", "description": "Molecule SMILES to search in" }
+                    "smarts": { "type": "string", "description": "SMARTS pattern", "minLength": 1, "maxLength": 100000 },
+                    "smiles": { "type": "string", "description": "Molecule SMILES to search in", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smarts", "smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "matches": { "type": "boolean" },
+                    "match_count": { "type": "integer", "minimum": 0 },
+                    "atom_maps": {
+                        "type": "array",
+                        "items": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+                    }
+                },
+                "required": ["matches", "match_count", "atom_maps"]
             }
         },
         {
@@ -244,10 +398,19 @@ pub fn list_tools() -> Value {
             "description": "Return the canonical SMILES representation of a molecule.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "Input SMILES string" }
+                    "smiles": { "type": "string", "description": "Input SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "canonical": { "type": "string" }
+                },
+                "required": ["canonical"]
             }
         },
         {
@@ -255,16 +418,27 @@ pub fn list_tools() -> Value {
             "description": "Find the maximum common substructure (MCS) across a list of molecules. Returns the MCS as a canonical SMILES string.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                     "smiles_list": {
                         "type": "array",
-                        "items": { "type": "string" },
+                        "items": { "type": "string", "minLength": 1, "maxLength": 100000 },
                         "description": "List of SMILES strings (2–20 molecules)",
                         "minItems": 2,
                         "maxItems": 20
                     }
                 },
                 "required": ["smiles_list"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "mcs": { "type": ["string", "null"] },
+                    "atom_count": { "type": "integer", "minimum": 0 },
+                    "bond_count": { "type": "integer", "minimum": 0 }
+                },
+                "required": ["mcs", "atom_count", "bond_count"]
             }
         },
         {
@@ -272,10 +446,20 @@ pub fn list_tools() -> Value {
             "description": "Generate 3D coordinates for a molecule using rule-based placement and DREIDING force-field minimization. Returns XYZ format.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "xyz": { "type": "string" },
+                    "atom_count": { "type": "integer", "minimum": 0 }
+                },
+                "required": ["xyz", "atom_count"]
             }
         },
         {
@@ -283,10 +467,21 @@ pub fn list_tools() -> Value {
             "description": "Check whether a molecule contains Pan-Assay Interference Compounds (PAINS) structural alerts. PAINS compounds often produce false positives in high-throughput screening.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "passes": { "type": "boolean" },
+                    "alert_count": { "type": "integer", "minimum": 0 },
+                    "alerts": { "type": "array", "items": { "type": "string" } }
+                },
+                "required": ["passes", "alert_count", "alerts"]
             }
         },
         {
@@ -294,10 +489,21 @@ pub fn list_tools() -> Value {
             "description": "Check whether a molecule contains Brenk structural alerts (unwanted functional groups associated with toxicity, metabolic instability, or undesirable reactivity).",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "passes": { "type": "boolean" },
+                    "alert_count": { "type": "integer", "minimum": 0 },
+                    "alerts": { "type": "array", "items": { "type": "string" } }
+                },
+                "required": ["passes", "alert_count", "alerts"]
             }
         },
         {
@@ -305,10 +511,21 @@ pub fn list_tools() -> Value {
             "description": "Estimate synthetic accessibility (SA Score, Ertl & Schuffenhauer 2009). Returns a score from 1 (easy to synthesize) to 10 (very difficult). Drug-like molecules typically score 2–4.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "sa_score": { "type": "number", "minimum": 1, "maximum": 10 },
+                    "easy_to_synthesize": { "type": "boolean" },
+                    "note": { "type": "string" }
+                },
+                "required": ["sa_score", "easy_to_synthesize", "note"]
             }
         },
         {
@@ -316,10 +533,40 @@ pub fn list_tools() -> Value {
             "description": "Compute a full ADMET (Absorption, Distribution, Metabolism, Excretion, Toxicity) profile including BBB penetration, Caco-2 permeability, hERG risk, CYP3A4 inhibition risk, AMES mutagenicity risk, plasma protein binding, and hepatic clearance class.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "bbb_score": { "type": "number" },
+                    "bbb_passes": { "type": "boolean" },
+                    "caco2_logp": { "type": "number" },
+                    "herg_risk": { "type": "number" },
+                    "cyp3a4_risk": { "type": "number" },
+                    "pka_acid": { "type": ["number", "null"] },
+                    "pka_base": { "type": ["number", "null"] },
+                    "esol_logs": { "type": "number" },
+                    "logd_74": { "type": "number" },
+                    "mw": { "type": "number", "minimum": 0 },
+                    "logp": { "type": "number" },
+                    "tpsa": { "type": "number", "minimum": 0 },
+                    "hbd": { "type": "integer", "minimum": 0 },
+                    "hba": { "type": "integer", "minimum": 0 },
+                    "rotatable_bonds": { "type": "integer", "minimum": 0 },
+                    "ames_risk": { "type": "number" },
+                    "ppb_percent": { "type": "number" },
+                    "clearance_class": { "type": "string" }
+                },
+                "required": [
+                    "bbb_score", "bbb_passes", "caco2_logp", "herg_risk", "cyp3a4_risk",
+                    "pka_acid", "pka_base", "esol_logs", "logd_74", "mw", "logp", "tpsa",
+                    "hbd", "hba", "rotatable_bonds", "ames_risk", "ppb_percent", "clearance_class"
+                ]
             }
         },
         {
@@ -327,10 +574,32 @@ pub fn list_tools() -> Value {
             "description": "Predict passive gastrointestinal (GI) absorption and blood-brain barrier (BBB) penetration using the BOILED-Egg method (Daina & Zoete 2016). Uses LogP and TPSA thresholds to classify molecules into the egg-white (GI absorbed) and egg-yolk (BBB penetrant) zones.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "gi_absorbed": { "type": "boolean" },
+                    "bbb_penetrant": { "type": "boolean" },
+                    "logp": { "type": "number" },
+                    "tpsa": { "type": "number", "minimum": 0 },
+                    "method": { "type": "string" },
+                    "thresholds": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "gi_white": { "type": "string" },
+                            "bbb_yolk": { "type": "string" }
+                        },
+                        "required": ["gi_white", "bbb_yolk"]
+                    }
+                },
+                "required": ["gi_absorbed", "bbb_penetrant", "logp", "tpsa", "method", "thresholds"]
             }
         },
         {
@@ -338,10 +607,34 @@ pub fn list_tools() -> Value {
             "description": "Check Lipinski's Rule of Five for oral drug-likeness (MW ≤ 500, LogP ≤ 5, HBD ≤ 5, HBA ≤ 10). Returns whether the molecule passes and individual property values.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" }
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "passes": { "type": "boolean" },
+                    "mw": { "type": "number", "minimum": 0 },
+                    "logp": { "type": "number" },
+                    "hbd": { "type": "integer", "minimum": 0 },
+                    "hba": { "type": "integer", "minimum": 0 },
+                    "rules": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "mw_le_500": { "type": "boolean" },
+                            "logp_le_5": { "type": "boolean" },
+                            "hbd_le_5": { "type": "boolean" },
+                            "hba_le_10": { "type": "boolean" }
+                        },
+                        "required": ["mw_le_500", "logp_le_5", "hbd_le_5", "hba_le_10"]
+                    }
+                },
+                "required": ["passes", "mw", "logp", "hbd", "hba", "rules"]
             }
         },
         {
@@ -349,10 +642,21 @@ pub fn list_tools() -> Value {
             "description": "Convert a chemical name (IUPAC, trivial, or trade name) to an isomeric SMILES string via the PubChem REST API. Requires internet access. Examples: 'aspirin', 'caffeine', 'ibuprofen', '2-propanol'.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "name": { "type": "string", "description": "Chemical name (IUPAC, common, or trade name)" }
+                    "name": { "type": "string", "description": "Chemical name (IUPAC, common, or trade name)", "minLength": 1, "maxLength": 500 }
                 },
                 "required": ["name"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "name": { "type": "string" },
+                    "smiles": { "type": "string" },
+                    "source": { "type": "string" }
+                },
+                "required": ["name", "smiles", "source"]
             }
         },
         {
@@ -360,10 +664,35 @@ pub fn list_tools() -> Value {
             "description": "One-step retrosynthetic disconnection via BRICS (Breaking of Retrosynthetically Interesting Chemical Substructures, Dien 2008). Identifies all BRICS-breakable bonds, cuts each one individually, and returns the resulting fragment pairs ranked by their maximum SA Score (1=easy to synthesize, 10=hard). Lower max-SA means both building blocks are easier to make. Useful for identifying practical synthetic disconnections for drug-like molecules.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string of the target molecule" }
+                    "smiles": { "type": "string", "description": "SMILES string of the target molecule", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "target": { "type": "string" },
+                    "target_sa_score": { "type": "number" },
+                    "disconnections": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "fragments": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2 },
+                                "fragment_sa_scores": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+                                "max_fragment_sa": { "type": "number" }
+                            },
+                            "required": ["fragments", "fragment_sa_scores", "max_fragment_sa"]
+                        }
+                    },
+                    "total_brics_bonds": { "type": "integer", "minimum": 0 },
+                    "note": { "type": "string" }
+                },
+                "required": ["target", "target_sa_score", "disconnections", "total_brics_bonds", "note"]
             }
         },
         {
@@ -371,10 +700,15 @@ pub fn list_tools() -> Value {
             "description": "Convert a SMILES string to MolJSON — a JSON-based molecular representation designed for LLM compatibility. MolJSON makes atoms, bonds, and connectivity explicit without domain-specific parsing rules.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string to convert" }
+                    "smiles": { "type": "string", "description": "SMILES string to convert", "minLength": 1, "maxLength": 100000 }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "string",
+                "description": "MolJSON, serialized as a JSON string (the tool's own output IS a JSON document, so the MCP structuredContent value is a string containing it, not an already-parsed object)."
             }
         },
         {
@@ -382,10 +716,19 @@ pub fn list_tools() -> Value {
             "description": "Convert a MolJSON string to canonical SMILES.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "json": { "type": "string", "description": "MolJSON string to convert" }
+                    "json": { "type": "string", "description": "MolJSON string to convert", "minLength": 1, "maxLength": 1000000 }
                 },
                 "required": ["json"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "canonical_smiles": { "type": "string" }
+                },
+                "required": ["canonical_smiles"]
             }
         },
         {
@@ -393,13 +736,24 @@ pub fn list_tools() -> Value {
             "description": "Convert SMILES to the best molecular text representation for an LLM task. Based on arXiv 2026: CML/MolJSON outperform SMILES on structural reasoning; InChI is best for identification.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" },
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 },
                     "task":   { "type": "string",
                                 "enum": ["structural_reasoning","shortest_path","identification","property_prediction","generation","editing","default"],
                                 "description": "LLM task type — omit to use default (canonical_smiles)" }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "task": { "type": "string" },
+                    "format": { "type": "string", "enum": ["moljson", "inchi", "cml", "canonical_smiles"] },
+                    "representation": { "type": "string" }
+                },
+                "required": ["task", "format", "representation"]
             }
         },
         {
@@ -407,13 +761,91 @@ pub fn list_tools() -> Value {
             "description": "Assemble a rich molecular context for LLM/RAG use. Returns identifiers, physicochemical properties, drug-likeness flags, ADMET profile, structural alerts, and MolJSON representation in a single JSON object.",
             "inputSchema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
-                    "smiles": { "type": "string", "description": "SMILES string" },
+                    "smiles": { "type": "string", "description": "SMILES string", "minLength": 1, "maxLength": 100000 },
                     "format": { "type": "string",
                                 "enum": ["json", "markdown", "prompt"],
                                 "description": "Output format: json (default), markdown (for LLM prompts), prompt (compact one-liner)" }
                 },
                 "required": ["smiles"]
+            },
+            "outputSchema": {
+                "description": "Shape depends on the `format` argument: `markdown`/`prompt` return a short text summary; the default `json` format returns the full structured context object.",
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "format": { "const": "markdown" },
+                            "context": { "type": "string" }
+                        },
+                        "required": ["format", "context"]
+                    },
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "format": { "const": "prompt" },
+                            "context": { "type": "string" }
+                        },
+                        "required": ["format", "context"]
+                    },
+                    {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "identifiers": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "smiles": { "type": "string" },
+                                    "inchi": { "type": "string" },
+                                    "mw": { "type": "number" },
+                                    "exact_mass": { "type": "number" }
+                                },
+                                "required": ["smiles", "inchi", "mw", "exact_mass"]
+                            },
+                            "properties": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "logp": { "type": "number" },
+                                    "tpsa": { "type": "number" },
+                                    "hbd": { "type": "integer" },
+                                    "hba": { "type": "integer" },
+                                    "rotatable_bonds": { "type": "integer" },
+                                    "heavy_atoms": { "type": "integer" },
+                                    "qed": { "type": "number" },
+                                    "sa_score": { "type": "number" }
+                                },
+                                "required": ["logp", "tpsa", "hbd", "hba", "rotatable_bonds", "heavy_atoms", "qed", "sa_score"]
+                            },
+                            "drug_likeness": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "lipinski_passes": { "type": "boolean" },
+                                    "pains_passes": { "type": "boolean" },
+                                    "brenk_passes": { "type": "boolean" },
+                                    "pains_alerts": { "type": "array", "items": { "type": "string" } },
+                                    "brenk_alerts": { "type": "array", "items": { "type": "string" } }
+                                },
+                                "required": ["lipinski_passes", "pains_passes", "brenk_passes", "pains_alerts", "brenk_alerts"]
+                            },
+                            "representations": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "canonical_smiles": { "type": "string" },
+                                    "moljson": { "type": "string" }
+                                },
+                                "required": ["canonical_smiles", "moljson"]
+                            }
+                        },
+                        "required": ["identifiers", "properties", "drug_likeness", "representations"]
+                    }
+                ]
             }
         }
     ]})
@@ -421,7 +853,10 @@ pub fn list_tools() -> Value {
 
 // ── tool dispatch ─────────────────────────────────────────────────────────────
 
-pub fn call_tool(name: &str, args: &Value) -> Result<Value, String> {
+/// Dispatch a `tools/call` by name. Returns the bare JSON payload on
+/// success — callers (the presentation layer) decide how to wrap it per
+/// protocol era.
+pub fn call_tool(name: &str, args: &Value) -> Result<Value, ToolCallError> {
     match name {
         "parse_smiles" => tool_parse_smiles(args),
         "calc_properties" => tool_calc_properties(args),
@@ -443,28 +878,28 @@ pub fn call_tool(name: &str, args: &Value) -> Result<Value, String> {
         "moljson_to_smiles" => tool_moljson_to_smiles(args),
         "representation_router" => tool_representation_router(args),
         "molecule_context_pack" => tool_molecule_context_pack(args),
-        _ => Err(format!("Unknown tool: {name}")),
+        _ => Err(ToolCallError::invalid_args(format!("Unknown tool: {name}"))),
     }
 }
 
 // ── individual tools ──────────────────────────────────────────────────────────
 
-fn tool_parse_smiles(args: &Value) -> Result<Value, String> {
+fn tool_parse_smiles(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
-    Ok(content(&json!({
+    let mol = parse_mol_arg(smiles)?;
+    Ok(json!({
         "valid": true,
         "atoms": mol.atom_count(),
         "bonds": mol.bond_count(),
         "mol_weight": round3(molecular_weight(&mol)),
         "smiles": chematic_smiles::write(&mol)
-    })))
+    }))
 }
 
-fn tool_calc_properties(args: &Value) -> Result<Value, String> {
+fn tool_calc_properties(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
-    Ok(content(&json!({
+    let mol = parse_mol_arg(smiles)?;
+    Ok(json!({
         "mw":               round3(molecular_weight(&mol)),
         "exact_mass":       round2(exact_mass(&mol) * 100.0) / 100.0,
         "logp":             round3(logp_crippen(&mol)),
@@ -474,36 +909,38 @@ fn tool_calc_properties(args: &Value) -> Result<Value, String> {
         "rotatable_bonds":  rotatable_bond_count(&mol),
         "heavy_atom_count": heavy_atom_count(&mol),
         "qed":              round3(qed(&mol))
-    })))
+    }))
 }
 
-fn tool_ecfp4(args: &Value) -> Result<Value, String> {
+fn tool_ecfp4(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let fp = ecfp4(&mol);
-    Ok(content(&json!({
+    Ok(json!({
         "fingerprint": bitvec_to_hex(&fp),
         "popcount": fp.popcount()
-    })))
+    }))
 }
 
-fn tool_tanimoto(args: &Value) -> Result<Value, String> {
+fn tool_tanimoto(args: &Value) -> Result<Value, ToolCallError> {
     let smiles1 = get_str(args, "smiles1")?;
     let smiles2 = get_str(args, "smiles2")?;
-    let mol1 = parse_mol(smiles1)?;
-    let mol2 = parse_mol(smiles2)?;
+    let mol1 = parse_mol_arg(smiles1)?;
+    let mol2 = parse_mol_arg(smiles2)?;
     let sim = tanimoto_ecfp4(&mol1, &mol2);
-    Ok(content(&json!({
+    Ok(json!({
         "similarity": round3(sim),
         "similarity_percent": round2(sim * 100.0)
-    })))
+    }))
 }
 
-fn tool_smarts_match(args: &Value) -> Result<Value, String> {
+fn tool_smarts_match(args: &Value) -> Result<Value, ToolCallError> {
     let smarts = get_str(args, "smarts")?;
     let smiles = get_str(args, "smiles")?;
-    let query = parse_smarts(smarts).map_err(|e| format!("Invalid SMARTS '{smarts}': {e}"))?;
-    let mol = parse_mol(smiles)?;
+    let query = parse_smarts(smarts).map_err(|e| {
+        ToolCallError::domain("INVALID_SMARTS", format!("Invalid SMARTS '{smarts}': {e}"))
+    })?;
+    let mol = parse_mol_arg(smiles)?;
     let matches = find_matches(&query, &mol);
     let atom_maps: Vec<Vec<u32>> = matches
         .iter()
@@ -513,44 +950,49 @@ fn tool_smarts_match(args: &Value) -> Result<Value, String> {
             atoms.into_iter().map(|(_, a)| a).collect()
         })
         .collect();
-    Ok(content(&json!({
+    Ok(json!({
         "matches": !matches.is_empty(),
         "match_count": matches.len(),
         "atom_maps": atom_maps
-    })))
+    }))
 }
 
-fn tool_canonical_smiles(args: &Value) -> Result<Value, String> {
+fn tool_canonical_smiles(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
-    Ok(content(
-        &json!({ "canonical": chematic_smiles::canonical_smiles(&mol) }),
-    ))
+    let mol = parse_mol_arg(smiles)?;
+    Ok(json!({ "canonical": chematic_smiles::canonical_smiles(&mol) }))
 }
 
-fn tool_find_mcs(args: &Value) -> Result<Value, String> {
+fn tool_find_mcs(args: &Value) -> Result<Value, ToolCallError> {
     let smiles_list = args
         .get("smiles_list")
         .and_then(|v| v.as_array())
-        .ok_or_else(|| "Missing or invalid smiles_list argument".to_string())?;
+        .ok_or_else(|| ToolCallError::invalid_args("Missing or invalid smiles_list argument"))?;
     if smiles_list.len() < 2 {
-        return Err("find_mcs requires at least 2 molecules".to_string());
+        return Err(ToolCallError::invalid_args(
+            "find_mcs requires at least 2 molecules",
+        ));
     }
     if smiles_list.len() > 20 {
-        return Err("find_mcs accepts at most 20 molecules".to_string());
+        return Err(ToolCallError::invalid_args(
+            "find_mcs accepts at most 20 molecules",
+        ));
     }
-    let mols: Result<Vec<_>, _> = smiles_list
+    let mols: Result<Vec<_>, ToolCallError> = smiles_list
         .iter()
         .map(|v| {
             v.as_str()
-                .ok_or_else(|| "smiles_list must contain strings".to_string())
-                .and_then(parse_mol)
+                .ok_or_else(|| ToolCallError::invalid_args("smiles_list must contain strings"))
+                .and_then(parse_mol_arg)
         })
         .collect();
     let mols = mols?;
     for mol in &mols {
         if mol.atom_count() > 200 {
-            return Err("find_mcs: molecule exceeds 200-atom limit".to_string());
+            return Err(ToolCallError::domain(
+                "MOLECULE_TOO_LARGE",
+                "find_mcs: molecule exceeds 200-atom limit",
+            ));
         }
     }
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
@@ -560,69 +1002,67 @@ fn tool_find_mcs(args: &Value) -> Result<Value, String> {
     };
     let qmol = find_mcs_with_config(&mol_refs, &config);
     if qmol.atoms.is_empty() {
-        return Ok(content(
-            &json!({ "mcs": null, "atom_count": 0, "bond_count": 0 }),
-        ));
+        return Ok(json!({ "mcs": null, "atom_count": 0, "bond_count": 0 }));
     }
     let mol = qmol_to_molecule(&qmol);
-    Ok(content(&json!({
+    Ok(json!({
         "mcs": chematic_smiles::canonical_smiles(&mol),
         "atom_count": qmol.atoms.len(),
         "bond_count": qmol.bonds.len()
-    })))
+    }))
 }
 
-fn tool_generate_3d(args: &Value) -> Result<Value, String> {
+fn tool_generate_3d(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let coords = generate_and_minimize_dreiding(&mol);
     let xyz = write_xyz(&mol, &coords, smiles);
-    Ok(content(&json!({
+    Ok(json!({
         "xyz": xyz,
         "atom_count": mol.atom_count()
-    })))
+    }))
 }
 
-fn tool_pains_check(args: &Value) -> Result<Value, String> {
+fn tool_pains_check(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let passes = pains_passes(&mol);
     let alerts: Vec<&str> = pains_matches(&mol);
-    Ok(content(&json!({
+    Ok(json!({
         "passes": passes,
         "alert_count": alerts.len(),
         "alerts": alerts
-    })))
+    }))
 }
 
-fn tool_brenk_check(args: &Value) -> Result<Value, String> {
+fn tool_brenk_check(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let passes = brenk_passes(&mol);
     let alerts: Vec<&str> = brenk_matches(&mol);
-    Ok(content(&json!({
+    Ok(json!({
         "passes": passes,
         "alert_count": alerts.len(),
         "alerts": alerts
-    })))
+    }))
 }
 
-fn tool_sa_score(args: &Value) -> Result<Value, String> {
+fn tool_sa_score(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let score = sa_score(&mol);
-    Ok(content(&json!({
+    Ok(json!({
         "sa_score": round3(score),
         "easy_to_synthesize": score < 6.0,
         "note": "1 = easiest, 10 = hardest; < 6 = synthesizable, > 6 = challenging"
-    })))
+    }))
 }
 
-fn tool_admet_profile(args: &Value) -> Result<Value, String> {
+fn tool_admet_profile(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let p = admet_profile(&mol);
-    Ok(content(&json!({
+    Ok(json!({
         "bbb_score": round3(p.bbb_score),
         "bbb_passes": p.bbb_passes,
         "caco2_logp": round3(p.caco2),
@@ -641,14 +1081,14 @@ fn tool_admet_profile(args: &Value) -> Result<Value, String> {
         "ames_risk": round3(p.ames_risk),
         "ppb_percent": round2(p.ppb),
         "clearance_class": format!("{:?}", p.clearance)
-    })))
+    }))
 }
 
-fn tool_boiled_egg(args: &Value) -> Result<Value, String> {
+fn tool_boiled_egg(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let e = boiled_egg(&mol);
-    Ok(content(&json!({
+    Ok(json!({
         "gi_absorbed": e.gi_absorbed,
         "bbb_penetrant": e.bbb_penetrant,
         "logp": round3(e.logp),
@@ -658,18 +1098,18 @@ fn tool_boiled_egg(args: &Value) -> Result<Value, String> {
             "gi_white": "logP ≤ 5.88 AND TPSA ≤ 131.6 Å²",
             "bbb_yolk": "logP ∈ [-0.3, 6.1] AND TPSA ≤ 71.1 Å²"
         }
-    })))
+    }))
 }
 
-fn tool_lipinski_check(args: &Value) -> Result<Value, String> {
+fn tool_lipinski_check(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let passes = lipinski_passes(&mol);
     let mw = round2(molecular_weight(&mol));
     let logp = round3(logp_crippen(&mol));
     let hbd = hbd_count(&mol);
     let hba = hba_count(&mol);
-    Ok(content(&json!({
+    Ok(json!({
         "passes": passes,
         "mw": mw,
         "logp": logp,
@@ -681,13 +1121,15 @@ fn tool_lipinski_check(args: &Value) -> Result<Value, String> {
             "hbd_le_5": hbd <= 5,
             "hba_le_10": hba <= 10
         }
-    })))
+    }))
 }
 
-fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
+fn tool_name_to_smiles(args: &Value) -> Result<Value, ToolCallError> {
     let name = get_str(args, "name")?;
     if name.len() > 500 {
-        return Err("compound name too long (max 500 characters)".to_string());
+        return Err(ToolCallError::invalid_args(
+            "compound name too long (max 500 characters)",
+        ));
     }
     // Percent-encode the name for the URL path segment.
     // Iterate over UTF-8 bytes of each char so that multi-byte code points
@@ -719,47 +1161,65 @@ fn tool_name_to_smiles(args: &Value) -> Result<Value, String> {
         .timeout_global(Some(std::time::Duration::from_secs(10)))
         .build()
         .new_agent();
-    let mut resp = agent
-        .get(&url)
-        .call()
-        .map_err(|e| format!("PubChem request failed: {e}"))?;
+    let mut resp = agent.get(&url).call().map_err(|e| {
+        ToolCallError::domain(
+            "PUBCHEM_LOOKUP_FAILED",
+            format!("PubChem request failed: {e}"),
+        )
+    })?;
 
-    let raw = resp
-        .body_mut()
-        .read_to_string()
-        .map_err(|e| format!("PubChem response read error: {e}"))?;
-    let body: Value =
-        serde_json::from_str(&raw).map_err(|e| format!("PubChem response parse error: {e}"))?;
+    let raw = resp.body_mut().read_to_string().map_err(|e| {
+        ToolCallError::domain(
+            "PUBCHEM_LOOKUP_FAILED",
+            format!("PubChem response read error: {e}"),
+        )
+    })?;
+    let body: Value = serde_json::from_str(&raw).map_err(|e| {
+        ToolCallError::domain(
+            "PUBCHEM_LOOKUP_FAILED",
+            format!("PubChem response parse error: {e}"),
+        )
+    })?;
 
     let smiles = body
         .pointer("/PropertyTable/Properties/0/IsomericSMILES")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| format!("Name not found in PubChem: {name}"))?;
+        .ok_or_else(|| {
+            ToolCallError::domain(
+                "PUBCHEM_LOOKUP_FAILED",
+                format!("Name not found in PubChem: {name}"),
+            )
+        })?;
 
-    Ok(content(&json!({
+    Ok(json!({
         "name": name,
         "smiles": smiles,
         "source": "PubChem"
-    })))
+    }))
 }
 
-fn tool_retrosynthesis(args: &Value) -> Result<Value, String> {
+fn tool_retrosynthesis(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
 
     // Guard against DoS from very large molecules: BRICS runs find_sssr (O(V³))
     // and per-bond BFS (O(V)) for each breakable bond.
     if mol.atom_count() > 500 {
-        return Err(format!(
-            "molecule too large for retrosynthesis ({} atoms; maximum is 500)",
-            mol.atom_count()
+        return Err(ToolCallError::domain(
+            "MOLECULE_TOO_LARGE",
+            format!(
+                "molecule too large for retrosynthesis ({} atoms; maximum is 500)",
+                mol.atom_count()
+            ),
         ));
     }
 
     if component_count(&mol) > 1 {
-        return Err("retrosynthesis requires a single connected molecule; \
-             input appears to be a mixture or salt"
-            .to_string());
+        return Err(ToolCallError::domain(
+            "DISCONNECTED_MOLECULE",
+            "retrosynthesis requires a single connected molecule; \
+             input appears to be a mixture or salt",
+        ));
     }
 
     let target_sa = round3(sa_score(&mol));
@@ -767,13 +1227,13 @@ fn tool_retrosynthesis(args: &Value) -> Result<Value, String> {
     let bonds = brics_bonds(&mol);
 
     if bonds.is_empty() {
-        return Ok(content(&json!({
+        return Ok(json!({
             "target": target_canon,
             "target_sa_score": target_sa,
             "disconnections": [],
             "total_brics_bonds": 0,
             "note": "No BRICS-breakable bonds found. Molecule may already be a simple building block."
-        })));
+        }));
     }
 
     let mut disconnections: Vec<Value> = Vec::new();
@@ -811,36 +1271,35 @@ fn tool_retrosynthesis(args: &Value) -> Result<Value, String> {
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    Ok(content(&json!({
+    Ok(json!({
         "target": target_canon,
         "target_sa_score": target_sa,
         "disconnections": disconnections,
         "total_brics_bonds": bonds.len(),
         "note": "Disconnections ranked by max SA score of fragments (1=easy, 10=hard). Lower = both building blocks easier to synthesize."
-    })))
+    }))
 }
 
-fn tool_smiles_to_moljson(args: &Value) -> Result<Value, String> {
+fn tool_smiles_to_moljson(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
-    let mol = parse_mol(smiles)?;
-    Ok(content(&serde_json::Value::String(write_moljson(&mol))))
+    let mol = parse_mol_arg(smiles)?;
+    Ok(Value::String(write_moljson(&mol)))
 }
 
-fn tool_moljson_to_smiles(args: &Value) -> Result<Value, String> {
+fn tool_moljson_to_smiles(args: &Value) -> Result<Value, ToolCallError> {
     let json_str = get_str(args, "json")?;
-    let mol = parse_moljson(json_str).map_err(|e| e.to_string())?;
-    Ok(content(
-        &json!({ "canonical_smiles": chematic_smiles::canonical_smiles(&mol) }),
-    ))
+    let mol = parse_moljson(json_str)
+        .map_err(|e| ToolCallError::domain("INVALID_MOLJSON", e.to_string()))?;
+    Ok(json!({ "canonical_smiles": chematic_smiles::canonical_smiles(&mol) }))
 }
 
-fn tool_representation_router(args: &Value) -> Result<Value, String> {
+fn tool_representation_router(args: &Value) -> Result<Value, ToolCallError> {
     let smiles = get_str(args, "smiles")?;
     let task = args
         .get("task")
         .and_then(|v| v.as_str())
         .unwrap_or("default");
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let (format, repr) = match task {
         "structural_reasoning" | "shortest_path" | "graph_reasoning" => {
             ("moljson", write_moljson(&mol))
@@ -849,14 +1308,14 @@ fn tool_representation_router(args: &Value) -> Result<Value, String> {
         "editing" => ("cml", write_cml(&mol, None)),
         _ => ("canonical_smiles", chematic_smiles::canonical_smiles(&mol)),
     };
-    Ok(content(&json!({
+    Ok(json!({
         "task": task,
         "format": format,
         "representation": repr
-    })))
+    }))
 }
 
-fn tool_molecule_context_pack(args: &Value) -> Result<Value, String> {
+fn tool_molecule_context_pack(args: &Value) -> Result<Value, ToolCallError> {
     use chematic_chem::{
         brenk_matches, brenk_passes, exact_mass, hba_count, hbd_count, heavy_atom_count,
         lipinski_passes, pains_matches, pains_passes, qed, rotatable_bond_count, sa_score,
@@ -867,7 +1326,7 @@ fn tool_molecule_context_pack(args: &Value) -> Result<Value, String> {
         .get("format")
         .and_then(|v| v.as_str())
         .unwrap_or("json");
-    let mol = parse_mol(smiles)?;
+    let mol = parse_mol_arg(smiles)?;
     let mw = round2(molecular_weight(&mol));
     let logp = round2(logp_crippen(&mol));
     let tp = round2(tpsa(&mol));
@@ -914,18 +1373,18 @@ fn tool_molecule_context_pack(args: &Value) -> Result<Value, String> {
                 caco2 = admet.caco2,
                 cyp = admet.cyp3a4_risk,
             );
-            Ok(content(&json!({ "format": "markdown", "context": md })))
+            Ok(json!({ "format": "markdown", "context": md }))
         }
         "prompt" => {
             let flags = if lip { "Lipinski✓" } else { "Lipinski✗" };
             let prompt = format!(
                 "{canonical} | MW={mw} | LogP={logp} | TPSA={tp} | HBD={hbd} HBA={hba} | QED={q} | {flags}"
             );
-            Ok(content(&json!({ "format": "prompt", "context": prompt })))
+            Ok(json!({ "format": "prompt", "context": prompt }))
         }
         _ => {
             // json (default)
-            Ok(content(&json!({
+            Ok(json!({
                 "identifiers": {
                     "smiles": canonical,
                     "inchi": inchi_str,
@@ -949,7 +1408,7 @@ fn tool_molecule_context_pack(args: &Value) -> Result<Value, String> {
                     "canonical_smiles": canonical,
                     "moljson": moljson_str,
                 }
-            })))
+            }))
         }
     }
 }
@@ -971,9 +1430,7 @@ mod tests {
 
     #[test]
     fn test_parse_benzene() {
-        let result = tool_parse_smiles(&args(&[("smiles", "c1ccccc1")])).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_parse_smiles(&args(&[("smiles", "c1ccccc1")])).unwrap();
         assert_eq!(v["valid"], true);
         assert_eq!(v["atoms"], 6);
         assert_eq!(v["bonds"], 6);
@@ -981,9 +1438,7 @@ mod tests {
 
     #[test]
     fn test_calc_properties_benzene() {
-        let result = tool_calc_properties(&args(&[("smiles", "c1ccccc1")])).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_calc_properties(&args(&[("smiles", "c1ccccc1")])).unwrap();
         assert!(v["mw"].as_f64().unwrap() > 78.0);
         assert_eq!(v["hbd"], 0);
         assert_eq!(v["hba"], 0);
@@ -991,9 +1446,7 @@ mod tests {
 
     #[test]
     fn test_ecfp4_benzene() {
-        let result = tool_ecfp4(&args(&[("smiles", "c1ccccc1")])).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_ecfp4(&args(&[("smiles", "c1ccccc1")])).unwrap();
         let hex = v["fingerprint"].as_str().unwrap();
         assert_eq!(hex.len(), 512); // 256 bytes = 512 hex chars
         assert!(v["popcount"].as_u64().unwrap() > 0);
@@ -1002,9 +1455,7 @@ mod tests {
     #[test]
     fn test_tanimoto_self_similarity() {
         let a = args(&[("smiles1", "c1ccccc1"), ("smiles2", "c1ccccc1")]);
-        let result = tool_tanimoto(&a).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_tanimoto(&a).unwrap();
         let sim = v["similarity"].as_f64().unwrap();
         assert!(
             (sim - 1.0).abs() < 1e-9,
@@ -1015,9 +1466,7 @@ mod tests {
     #[test]
     fn test_tanimoto_different_molecules() {
         let a = args(&[("smiles1", "c1ccccc1"), ("smiles2", "CCO")]);
-        let result = tool_tanimoto(&a).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_tanimoto(&a).unwrap();
         let sim = v["similarity"].as_f64().unwrap();
         assert!(sim < 1.0);
     }
@@ -1025,9 +1474,7 @@ mod tests {
     #[test]
     fn test_smarts_match_hit() {
         let a = args(&[("smarts", "c1ccccc1"), ("smiles", "c1ccccc1")]);
-        let result = tool_smarts_match(&a).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_smarts_match(&a).unwrap();
         assert_eq!(v["matches"], true);
         assert!(v["match_count"].as_u64().unwrap() >= 1);
     }
@@ -1035,17 +1482,13 @@ mod tests {
     #[test]
     fn test_smarts_match_miss() {
         let a = args(&[("smarts", "N"), ("smiles", "c1ccccc1")]);
-        let result = tool_smarts_match(&a).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_smarts_match(&a).unwrap();
         assert_eq!(v["matches"], false);
     }
 
     #[test]
     fn test_canonical_smiles() {
-        let result = tool_canonical_smiles(&args(&[("smiles", "C1=CC=CC=C1")])).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_canonical_smiles(&args(&[("smiles", "C1=CC=CC=C1")])).unwrap();
         let canon = v["canonical"].as_str().unwrap();
         assert!(!canon.is_empty());
     }
@@ -1055,9 +1498,7 @@ mod tests {
         let smiles_list = json!(["c1ccccc1", "c1ccccc1O"]);
         let mut args_obj = serde_json::Map::new();
         args_obj.insert("smiles_list".to_string(), smiles_list);
-        let result = tool_find_mcs(&Value::Object(args_obj)).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_find_mcs(&Value::Object(args_obj)).unwrap();
         assert!(v["atom_count"].as_u64().unwrap() >= 6);
     }
 
@@ -1068,38 +1509,46 @@ mod tests {
         args_obj.insert("smiles_list".to_string(), smiles_list);
         let result = tool_find_mcs(&Value::Object(args_obj));
         assert!(result.is_err());
+        assert!(result.unwrap_err().is_invalid_args());
     }
 
     #[test]
     fn test_generate_3d_benzene() {
-        let result = tool_generate_3d(&args(&[("smiles", "c1ccccc1")])).unwrap();
-        let text = result["content"][0]["text"].as_str().unwrap();
-        let v: Value = serde_json::from_str(text).unwrap();
+        let v = tool_generate_3d(&args(&[("smiles", "c1ccccc1")])).unwrap();
         assert_eq!(v["atom_count"], 6);
         let xyz = v["xyz"].as_str().unwrap();
         assert!(xyz.contains('C'));
     }
 
     #[test]
-    fn test_parse_invalid_smiles() {
+    fn test_parse_invalid_smiles_is_domain_error() {
         // Unbalanced ring closure — definitely invalid
         let result = tool_parse_smiles(&args(&[("smiles", "C1CC")]));
-        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            !err.is_invalid_args(),
+            "bad SMILES is a domain error, not an argument-shape error"
+        );
+    }
+
+    #[test]
+    fn test_missing_argument_is_invalid_args() {
+        let result = tool_parse_smiles(&Value::Object(serde_json::Map::new()));
+        let err = result.unwrap_err();
+        assert!(err.is_invalid_args());
     }
 
     #[test]
     fn test_list_tools_count() {
         let tools = list_tools();
         let count = tools["tools"].as_array().unwrap().len();
-        assert_eq!(count, 20);
+        assert_eq!(count, TOOL_COUNT);
     }
 
     #[test]
     fn test_retrosynthesis_aspirin() {
         // Aspirin has 2 BRICS-breakable bonds (ester C-O, aryl C-O)
-        let result = tool_retrosynthesis(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_retrosynthesis(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
         assert!(
             v["total_brics_bonds"].as_u64().unwrap() >= 1,
             "aspirin should have ≥1 BRICS bond"
@@ -1129,42 +1578,35 @@ mod tests {
     #[test]
     fn test_retrosynthesis_benzene_no_bonds() {
         // Benzene has no BRICS-breakable bonds
-        let result = tool_retrosynthesis(&args(&[("smiles", "c1ccccc1")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_retrosynthesis(&args(&[("smiles", "c1ccccc1")])).unwrap();
         assert_eq!(v["total_brics_bonds"], 0);
         assert_eq!(v["disconnections"].as_array().unwrap().len(), 0);
     }
 
     #[test]
     fn test_retrosynthesis_disconnected_mol_error() {
-        // Mixture (salt): should return error
+        // Mixture (salt): should return a domain error, not an argument-shape error
         let result = tool_retrosynthesis(&args(&[("smiles", "CC.OO")]));
         assert!(result.is_err(), "disconnected molecule should return error");
+        assert!(!result.unwrap_err().is_invalid_args());
     }
 
     #[test]
     fn test_pains_check_clean() {
-        let result = tool_pains_check(&args(&[("smiles", "CCO")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_pains_check(&args(&[("smiles", "CCO")])).unwrap();
         assert_eq!(v["passes"], true);
         assert_eq!(v["alert_count"], 0);
     }
 
     #[test]
     fn test_brenk_check_clean() {
-        let result = tool_brenk_check(&args(&[("smiles", "CCO")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_brenk_check(&args(&[("smiles", "CCO")])).unwrap();
         assert_eq!(v["passes"], true);
     }
 
     #[test]
     fn test_sa_score_ethanol() {
-        let result = tool_sa_score(&args(&[("smiles", "CCO")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_sa_score(&args(&[("smiles", "CCO")])).unwrap();
         let score = v["sa_score"].as_f64().unwrap();
         assert!(
             (1.0..=10.0).contains(&score),
@@ -1174,35 +1616,42 @@ mod tests {
 
     #[test]
     fn test_sa_score_aspirin_easy() {
-        let result = tool_sa_score(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_sa_score(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
         assert_eq!(v["easy_to_synthesize"], true);
     }
 
     #[test]
     fn test_admet_profile_benzene() {
-        let result = tool_admet_profile(&args(&[("smiles", "c1ccccc1")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_admet_profile(&args(&[("smiles", "c1ccccc1")])).unwrap();
         assert!(v.get("bbb_passes").is_some());
         assert!(v.get("clearance_class").is_some());
     }
 
     #[test]
     fn test_boiled_egg_aspirin() {
-        let result = tool_boiled_egg(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_boiled_egg(&args(&[("smiles", "CC(=O)Oc1ccccc1C(=O)O")])).unwrap();
         assert_eq!(v["gi_absorbed"], true);
     }
 
     #[test]
     fn test_lipinski_check_ethanol() {
-        let result = tool_lipinski_check(&args(&[("smiles", "CCO")])).unwrap();
-        let v: Value =
-            serde_json::from_str(result["content"][0]["text"].as_str().unwrap()).unwrap();
+        let v = tool_lipinski_check(&args(&[("smiles", "CCO")])).unwrap();
         assert_eq!(v["passes"], true);
         assert!(v["mw"].as_f64().unwrap() < 500.0);
+    }
+
+    #[test]
+    fn test_smiles_to_moljson_is_bare_string() {
+        let v = tool_smiles_to_moljson(&args(&[("smiles", "CCO")])).unwrap();
+        assert!(
+            v.is_string(),
+            "smiles_to_moljson's payload must be a bare JSON string"
+        );
+    }
+
+    #[test]
+    fn test_unknown_tool_is_invalid_args() {
+        let result = call_tool("does_not_exist", &json!({}));
+        assert!(result.unwrap_err().is_invalid_args());
     }
 }

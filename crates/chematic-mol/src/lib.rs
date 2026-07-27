@@ -43,14 +43,20 @@ pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_g
 pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
 pub use mol2_tripos::{Mol2Error, parse_mol2, write_mol2};
 pub use mol2000::{
-    MolMetadata, MolReadReport, parse_mol, parse_mol_with_coords, parse_sdf_with_coords,
-    read_mol_with_diagnostics, read_sdf_with_diagnostics, write_mol, write_mol_with_coords,
-    write_sdf, write_sdf_record, write_sdf_record_v3000, write_sdf_with_charges,
+    CoordinateDimension, GeometryRank, MolMetadata, MolReadReport, Stereo3DDiagnostic, parse_mol,
+    parse_mol_with_coords, parse_sdf_with_coords, read_mol_with_diagnostics,
+    read_sdf_with_diagnostics, write_mol, write_mol_with_conformer, write_mol_with_coords,
+    write_sdf, write_sdf_record, write_sdf_record_v3000, write_sdf_record_with_conformer,
+    write_sdf_with_charges,
 };
 pub use mol3000::{
     parse_mol_v3000, parse_mol_v3000_with_coords, read_mol_v3000_with_diagnostics, write_mol_v3000,
+    write_mol_v3000_with_conformer,
 };
 pub use moljson::{MolJsonError, parse_moljson, write_moljson};
 pub use pdbqt::{PdbqtError, autodock_atom_type, parse_pdbqt, write_pdbqt};
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
-pub use sdf::{SdfFileReader, SdfReader, SdfRecord, SdfRecordReader};
+pub use sdf::{
+    ConformerEnsemble, SdfFileReader, SdfReader, SdfRecord, SdfRecordReader,
+    read_sdf_conformer_ensembles,
+};

@@ -16,6 +16,7 @@
 
 pub mod atom;
 pub mod bond;
+pub mod coords3d;
 pub mod element;
 pub mod kekulization;
 pub mod molecule;
@@ -25,6 +26,7 @@ pub mod valence;
 // Re-export the most commonly used types at crate root.
 pub use atom::{Atom, Chirality, CipCode};
 pub use bond::{BondEntry, BondOrder};
+pub use coords3d::{Coords3D, Point3};
 pub use element::Element;
 pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};
 pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};

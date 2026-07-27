@@ -1,0 +1,111 @@
+{
+  "_comment": "Provenance manifest for chematic-mcp's 2026-07-28-RC implementation. Every entry below was fetched live over the network during this work session (curl/gh api against github.com/modelcontextprotocol/modelcontextprotocol) -- nothing here was reconstructed from model training-data memory of older MCP versions (2024-11-05 / 2025-03-26 / 2025-06-18 / 2025-11-25).",
+  "fetched_at_utc": "2026-07-27T02:43:52Z",
+  "instructed_pin": {
+    "role": "authoritative schema source per task instructions (section 0)",
+    "repo": "modelcontextprotocol/modelcontextprotocol",
+    "tag": "2026-07-28-RC",
+    "commit_sha_short_given": "9d700ed",
+    "commit_sha_full_resolved": "9d700ed62dcf86cb77475c9b81930611a9182f46",
+    "tag_verified_via": "GET /repos/modelcontextprotocol/modelcontextprotocol/git/refs/tags/2026-07-28-RC -> object.sha == 9d700ed62dcf86cb77475c9b81930611a9182f46 (confirmed: the given short SHA IS the actual tagged RC, not an arbitrary/stale commit)",
+    "tag_published_at": "2026-05-29T12:51:22Z",
+    "commit_author_date": "2026-05-29T12:49:07Z",
+    "files_fetched": [
+      {
+        "path": "schema/draft/schema.json",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/schema/draft/schema.json",
+        "sha256": "bd19a7a9e6ee3a7394aec816cd0660a0156864e828a348129baccdb83457d234"
+      },
+      {
+        "path": "schema/draft/schema.ts",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/schema/draft/schema.ts",
+        "sha256": "0ab5accb9c479d71d34a10578321e36e3985f1852bb07dc70383bce48714a70e",
+        "note": "source of truth used for types/fields; LATEST_PROTOCOL_VERSION literally read as \"2026-07-28\" at line 37"
+      },
+      {
+        "path": "schema/draft/schema.mdx",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/schema/draft/schema.mdx",
+        "sha256": "412b8f164f4aa7afc6793e2721b746131df8a72a76d9a042f8a1425cc89db92f"
+      },
+      {
+        "path": "docs/specification/draft/basic/lifecycle.mdx",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/docs/specification/draft/basic/lifecycle.mdx",
+        "sha256": "04160f6b13ba90cb71ef6ecca4dbf56003de1be65cc631624fe9905ae0fe84de",
+        "note": "normative source for dual-era stdio negotiation (server/discover probe -> -32601 fallback to legacy initialize)"
+      },
+      {
+        "path": "docs/specification/draft/server/discover.mdx",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/docs/specification/draft/server/discover.mdx",
+        "sha256": "4c41aa6ae9426a4680234896ed3658cd1497036a2e4a9cc2ecdcbb33468a9b27"
+      },
+      {
+        "path": "docs/specification/draft/basic/transports.mdx",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/docs/specification/draft/basic/transports.mdx",
+        "sha256": "27dd863605075471c7aad76334646c7470aa6dd6b7671fdaf3d42847d2336d18",
+        "note": "stdio framing section (newline-delimited, MUST NOT embed newlines, stderr-only diagnostics) confirms current implementation's transport assumptions unchanged"
+      },
+      {
+        "path": "docs/specification/draft/deprecated.mdx",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/docs/specification/draft/deprecated.mdx",
+        "sha256": "97f086aaf95e386c59adca8fed01275086cef1301dac42be0dc492bdd6726758"
+      },
+      {
+        "path": "docs/specification/draft/changelog.mdx",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/docs/specification/draft/changelog.mdx",
+        "sha256": "60262da1e6b5d12bbc213302872358c192c40444278e6229cbfd2e3a2af91c4b",
+        "note": "confirms ping/initialize/notifications-roots-list-changed were REMOVED (not merely deprecated) in this revision -- section 4 of the task brief assumed ping survives into the modern era; it does not."
+      },
+      {
+        "path": "docs/specification/draft/server/utilities/caching.mdx",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/docs/specification/draft/server/utilities/caching.mdx",
+        "sha256": "8b1422eada2e7ba2990f77c1fddbd03eb4fe832a508823962026af70ec624fea"
+      },
+      {
+        "path": "docs/specification/draft/basic/index.mdx",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/9d700ed62dcf86cb77475c9b81930611a9182f46/docs/specification/draft/basic/index.mdx",
+        "sha256": "635e2da059c46268fa888faebf3658117c8b00a5bf079c5886f52ed979b1fef8",
+        "note": "confirms resultType is REQUIRED on every modern Result (absent = legacy-server \"complete\" per backward-compat rule); confirms JSON Schema 2020-12 is the required default dialect"
+      }
+    ],
+    "example_fixtures_fetched_dir": "schema/draft/examples/*  (24 example JSON files: DiscoverRequest, DiscoverResult, DiscoverResultResponse, ListToolsResult, CallToolResult x4, error responses x6, Tool x5, CallToolRequest, ServerCapabilities) -- used as literal wire-shape ground truth, not summarized from memory"
+  },
+  "post_rc_untagged_drift_checked_for_reconciliation": {
+    "role": "NOT the pin -- checked only because 3 independent signals (this repo's own task brief section 9, the official rmcp Rust SDK, and this file) disagreed with the RC tag's error-code values, so the disagreement needed to be resolved with evidence before writing code",
+    "repo": "modelcontextprotocol/modelcontextprotocol",
+    "ref": "main (untagged, no 2026-07-28 final tag exists yet as of this fetch)",
+    "commit_sha": "7634684382c3d14cf7e9f14073fe40a2d8ace3fa",
+    "commit_date": "2026-07-23T23:49:30Z",
+    "final_tag_exists": false,
+    "final_tag_check_command": "GET /repos/modelcontextprotocol/modelcontextprotocol/git/refs/tags/2026-07-28 -> not found; GET .../tags?per_page=10 lists 2026-07-28-RC (2026-05-29) as the newest 2026-07-28-series tag",
+    "files_fetched": [
+      {
+        "path": "schema/draft/schema.ts",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/main/schema/draft/schema.ts",
+        "sha256": "c56f0ad2395f9f7109a903a304344a61c65555cb0b2d28c1635cc32497221c87",
+        "diff_vs_rc_pin": "full diff run (356 lines); substantive (non-cosmetic) hunks: (1) MISSING_REQUIRED_CLIENT_CAPABILITY renumbered -32003 -> -32021; (2) UNSUPPORTED_PROTOCOL_VERSION renumbered -32004 -> -32022; (3) new HEADER_MISMATCH = -32020 constant + a documented MCP error-code allocation scheme (-32000..-32019 implementation-defined, -32020..-32099 reserved for the spec, allocated sequentially from -32020); (4) io.modelcontextprotocol/clientInfo softened from required to optional on RequestMetaObject; (5) new NotificationMetaObject/ResultMetaObject types, the latter adding an optional io.modelcontextprotocol/serverInfo _meta key; (6) DiscoverResult changed from `extends Result` to `extends CacheableResult` (gains ttlMs/cacheScope) and its top-level `serverInfo` field was deleted from the interface text; (7) several elicitation/subscriptions/cancellation-only changes out of this server's scope (no resources/prompts/sampling/subscriptions implemented here)"
+      }
+    ]
+  },
+  "corroborating_sdk_evidence": {
+    "role": "used only to break ties between the RC pin and the untagged main-branch drift above -- never used as a schema source in place of the primary source",
+    "crate": "rmcp (official Rust SDK, modelcontextprotocol/rust-sdk)",
+    "version_checked": "3.0.0-beta.2 (crates.io max_version; updated_at 2026-07-24T19:04:52Z) and repo HEAD 14298b72e0b25473ea79d5465fe186e22eb86397",
+    "findings": [
+      "crates/rmcp/src/model.rs defines UNSUPPORTED_PROTOCOL_VERSION = -32022, MISSING_REQUIRED_CLIENT_CAPABILITY = -32021, RESOURCE_NOT_FOUND = -32002 (legacy-only) -- agrees with main-branch drift, NOT the RC-tag pin",
+      "rmcp's DiscoverResult struct keeps `server_info: Implementation` as a top-level required field WHILE ALSO adding ttl_ms/cache_scope -- i.e. a hybrid of the RC-tag shape and the main-branch CacheableResult change, not a pure adoption of either; this server's DiscoverResult follows that same hybrid, on the reasoning that a real shipping SDK's pragmatic choice is stronger evidence than an untagged doc-comment deletion",
+      "rmcp keeps client_info as a non-Option (required) field -- agrees with the RC-tag pin over main-branch's softening to optional; this server also treats clientInfo as required",
+      "release notes for rmcp-v3.0.0-beta.1 (PR #973 server discovery/negotiation SEP-2575, #999 stateless-serving-of-2026-07-28 SEP-2567, #889/#1025 CacheableResult SEP-2549, #1038 'omit resultType for legacy protocol sessions') independently converged on the same legacy/modern split this implementation uses"
+    ]
+  },
+  "decision_error_codes_shipped": {
+    "PARSE_ERROR": -32700,
+    "INVALID_REQUEST": -32600,
+    "METHOD_NOT_FOUND": -32601,
+    "INVALID_PARAMS": -32602,
+    "INTERNAL_ERROR": -32603,
+    "HEADER_MISMATCH": -32020,
+    "MISSING_REQUIRED_CLIENT_CAPABILITY": -32021,
+    "UNSUPPORTED_PROTOCOL_VERSION": -32022,
+    "rationale": "Shipped the main-branch/rmcp values (-32020/-32021/-32022), NOT the RC tag's own -32003/-32004, because three independent sources agree (spec main HEAD, rmcp v3.0.0-beta.2, and this task's own brief section 9 naming these exact numbers) and the RC tag's numbers are demonstrably superseded before the final even ships. HEADER_MISMATCH (-32020) is defined but never emitted by this stdio-only server (no HTTP headers exist to mismatch); MISSING_REQUIRED_CLIENT_CAPABILITY (-32021) is defined but never emitted (this server requires zero client capabilities) -- both are reserved constants with dedicated negative-control/conformance rows marked not_applicable, never wired to a fake trigger."
+  }
+}

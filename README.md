@@ -225,6 +225,14 @@ process; there is no hosted Remote MCP endpoint, no authentication, and no
 public service SLA — a remote-ready refactor is under consideration but not
 implemented.
 
+**Protocol**: speaks both the legacy (`2024-11-05`-style `initialize`
+handshake) and the modern MCP `2026-07-28` stateless dialect
+(`server/discover`, per-request `_meta`, cacheable `tools/list`,
+`structuredContent`) on the same stdio connection — see the
+[`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras) and
+[`docs/mcp/2026-07-28-implementation-rfc.md`](docs/mcp/2026-07-28-implementation-rfc.md).
+Remote HTTP, OAuth, the Tasks extension, and MCP Apps remain unsupported.
+
 ---
 
 ## Why Pure Rust?

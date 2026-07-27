@@ -448,15 +448,35 @@ pub fn uff_total_energy(mol: &Molecule, types: &[(AtomIdx, UffType)], coords: &[
     }
 
     // ── van der Waals (Lennard-Jones 12-6) ────────────────────────────────
-    // Only 1-3+ pairs (skip bonded and 1-2 pairs)
+    // Only 1-4+ pairs get vdW (1-2 bonded and 1-3 angle-bonded pairs are
+    // excluded). `(i+2)..n` is an atom-*index* heuristic and only matches a
+    // graph-based 1-3 exclusion for an unbranched chain visited in bond
+    // order; build the real exclusion set from the bond graph instead
+    // (mirrors `mmff94_minimizer.rs`'s `vdw_energy`, which already does this
+    // correctly): every bonded pair, plus every pair that shares a common
+    // bonded neighbor (i.e. is an angle apex away from each other).
     let atom_indices: Vec<AtomIdx> = mol.atoms().map(|(idx, _)| idx).collect();
     let n = atom_indices.len();
+    let mut excl: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        excl.insert((i.min(j), i.max(j)));
+        for (nb_i, _) in mol.neighbors(bond.atom1) {
+            let ni = nb_i.0 as usize;
+            excl.insert((ni.min(j), ni.max(j)));
+        }
+        for (nb_j, _) in mol.neighbors(bond.atom2) {
+            let nj = nb_j.0 as usize;
+            excl.insert((i.min(nj), i.max(nj)));
+        }
+    }
     for i in 0..n {
-        for j in (i + 2)..n {
+        for j in (i + 1)..n {
             let ai = atom_indices[i];
             let aj = atom_indices[j];
-            // Skip 1-2 bonded pairs
-            if mol.bond_between(ai, aj).is_some() {
+            let (ai_u, aj_u) = (ai.0 as usize, aj.0 as usize);
+            if excl.contains(&(ai_u.min(aj_u), ai_u.max(aj_u))) {
                 continue;
             }
 
@@ -647,6 +667,129 @@ mod tests {
             result.energy < e0,
             "minimisation should reduce energy: {e0} → {}",
             result.energy
+        );
+    }
+
+    /// Propane skeleton (C0-C1-C2, heavy atoms only — implicit H fills
+    /// valence) placed so the C0-C1-C2 angle is exactly `theta_deg`, both
+    /// C-C bonds at UFF's own C_3-C_3 r0 (~1.514 Å) so the bond-stretch term
+    /// stays near zero and any energy blow-up as the angle closes is
+    /// attributable to the angle and vdW terms only — the same isolation
+    /// issue #176's own propane repro used.
+    fn propane_at_angle(theta_deg: f64) -> (Molecule, Vec<(AtomIdx, UffType)>, Vec<[f64; 3]>) {
+        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+        let mut b = MoleculeBuilder::new();
+        let c0 = b.add_atom(Atom::new(Element::C));
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c0, c1, BondOrder::Single).unwrap();
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        let mol = b.build();
+        let types = assign_uff_types(&mol);
+
+        let r = 1.514_f64; // UFF C_3-C_3 bond length
+        let half = theta_deg.to_radians() / 2.0;
+        let coords = vec![
+            [r * half.cos(), r * half.sin(), 0.0],
+            [0.0, 0.0, 0.0],
+            [r * half.cos(), -r * half.sin(), 0.0],
+        ];
+        (mol, types, coords)
+    }
+
+    #[test]
+    fn uff_vdw_excludes_1_3_pair_propane_no_runaway() {
+        // Issue #176's own measured pre-fix blow-up: 109.5°→16, 90°→110,
+        // 70°→1326, 60°→6800 kcal/mol, driven entirely by the (wrongly
+        // included) C0···C2 1-3 pair's LJ repulsion as it gets squeezed by
+        // the closing angle. After excluding true 1-3 pairs, energy should
+        // stay bounded (dominated by the smooth angle-bending term) even at
+        // very closed angles.
+        let mut energies = Vec::new();
+        for &theta in &[109.5, 90.0, 70.0, 60.0, 45.0] {
+            let (mol, types, coords) = propane_at_angle(theta);
+            let e = uff_total_energy(&mol, &types, &coords);
+            assert!(e.is_finite(), "energy at {theta}° should be finite: {e}");
+            energies.push((theta, e));
+        }
+        for &(theta, e) in &energies {
+            assert!(
+                e < 200.0,
+                "1-3 exclusion should prevent runaway vdW: at {theta}° energy={e} (issue #176 measured 6800 at 60° pre-fix)"
+            );
+        }
+    }
+
+    #[test]
+    fn uff_vdw_still_repels_genuine_1_4_pair_butane() {
+        // Positive control mirroring `mmff94_minimizer.rs`'s own
+        // `vdw_more_repulsive_at_short_range`: a *real* 1-4 pair (butane's
+        // terminal carbons) must still get full vdW repulsion — the 1-3 fix
+        // must not over-exclude non-angle pairs.
+        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+        let mut b = MoleculeBuilder::new();
+        let c0 = b.add_atom(Atom::new(Element::C));
+        let c1 = b.add_atom(Atom::new(Element::C));
+        let c2 = b.add_atom(Atom::new(Element::C));
+        let c3 = b.add_atom(Atom::new(Element::C));
+        b.add_bond(c0, c1, BondOrder::Single).unwrap();
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        b.add_bond(c2, c3, BondOrder::Single).unwrap();
+        let mol = b.build();
+        let types = assign_uff_types(&mol);
+
+        let coords_close = vec![
+            [0.0, 0.0, 0.0],
+            [1.5, 0.0, 0.0],
+            [3.0, 0.0, 0.0],
+            [0.6, 0.0, 0.0], // C3 forced very close to C0 (genuine 1-4)
+        ];
+        let coords_far = vec![
+            [0.0, 0.0, 0.0],
+            [1.5, 0.0, 0.0],
+            [3.0, 0.0, 0.0],
+            [8.0, 0.0, 0.0],
+        ];
+        let e_close = uff_total_energy(&mol, &types, &coords_close);
+        let e_far = uff_total_energy(&mol, &types, &coords_far);
+        assert!(e_close.is_finite() && e_far.is_finite());
+        assert!(
+            e_close > e_far,
+            "genuine 1-4 pair must still repel at short range: close={e_close} far={e_far}"
+        );
+    }
+
+    #[test]
+    fn uff_gradient_is_descent_direction_for_closed_angle_propane() {
+        // Gradient check following this crate's existing pattern (finite-
+        // difference gradient, no analytic gradient exists in chematic-ff —
+        // see PR #169's own finding on this): at a strained, closed-angle
+        // propane geometry, stepping a small distance along -gradient must
+        // lower the energy.
+        let (mol, types, coords) = propane_at_angle(60.0);
+        let e0 = uff_total_energy(&mol, &types, &coords);
+        let grad = uff_gradient(&mol, &types, &coords);
+        let grad_norm: f64 = grad
+            .iter()
+            .flat_map(|g| g.iter())
+            .map(|x| x * x)
+            .sum::<f64>()
+            .sqrt();
+        assert!(
+            grad_norm > 1e-8,
+            "gradient should be nonzero at strained geometry"
+        );
+
+        let step = 1e-4 / grad_norm;
+        let stepped: Vec<[f64; 3]> = coords
+            .iter()
+            .zip(&grad)
+            .map(|(c, g)| [c[0] - step * g[0], c[1] - step * g[1], c[2] - step * g[2]])
+            .collect();
+        let e1 = uff_total_energy(&mol, &types, &stepped);
+        assert!(
+            e1 < e0,
+            "step along -gradient should decrease energy: {e0} → {e1}"
         );
     }
 
