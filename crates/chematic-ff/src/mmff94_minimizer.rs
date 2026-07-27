@@ -87,7 +87,14 @@ pub struct EnergyBreakdown {
 pub fn mmff94_total_energy(mol: &Molecule, coords: &[[f64; 3]]) -> Result<f64, MinimizerError> {
     let types = assign_mmff94_numeric_types(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
-    Ok(total_energy(mol, coords, &types, &charges))
+    let ring_set = find_sssr(mol);
+    Ok(total_energy(
+        mol,
+        coords,
+        &types,
+        &charges,
+        ring_set.rings(),
+    ))
 }
 
 /// Scan a torsion dihedral angle i-j-k-l from 0° to 360° in `steps` increments,
@@ -105,6 +112,7 @@ pub fn mmff94_torsion_scan(
 ) -> Result<Vec<(f64, f64)>, MinimizerError> {
     let types = assign_mmff94_numeric_types(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+    let ring_set = find_sssr(mol);
     let n = mol.atom_count();
     let steps = steps.max(2);
 
@@ -171,7 +179,7 @@ pub fn mmff94_torsion_scan(
             }
         }
 
-        let energy = total_energy(mol, &work, &types, &charges);
+        let energy = total_energy(mol, &work, &types, &charges, ring_set.rings());
         results.push((angle_deg, energy));
     }
 
@@ -185,10 +193,12 @@ pub fn mmff94_energy_breakdown(
 ) -> Result<EnergyBreakdown, MinimizerError> {
     let types = assign_mmff94_numeric_types(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+    let ring_set = find_sssr(mol);
+    let rings = ring_set.rings();
     let b = bond_energy(mol, coords, &types);
-    let a = angle_energy(mol, coords, &types);
-    let sb = stretch_bend_energy(mol, coords, &types);
-    let t = torsion_energy(mol, coords, &types);
+    let a = angle_energy(mol, coords, &types, rings);
+    let sb = stretch_bend_energy(mol, coords, &types, rings);
+    let t = torsion_energy(mol, coords, &types, rings);
     let o = oop_energy(mol, coords, &types);
     let v = vdw_energy(mol, coords, &types);
     let e = elec_energy(mol, coords, &charges);
@@ -229,6 +239,11 @@ pub fn minimize_mmff94_full(
 
     let types = assign_mmff94_numeric_types(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+    // Ring membership is a topology fact, not a geometry one: compute SSSR
+    // once per minimization run rather than once per finite-difference probe
+    // (`compute_gradient` alone calls `total_energy` ~6n times per step).
+    let ring_set = find_sssr(mol);
+    let rings = ring_set.rings();
 
     let n = mol.atom_count();
     let initial = coords.to_vec();
@@ -241,7 +256,7 @@ pub fn minimize_mmff94_full(
 
     for _ in 0..max_iter {
         iters += 1;
-        let grad = compute_gradient(mol, coords, &types, &charges, delta);
+        let grad = compute_gradient(mol, coords, &types, &charges, rings, delta);
         let max_g = grad
             .iter()
             .flat_map(|v| v.iter())
@@ -261,7 +276,7 @@ pub fn minimize_mmff94_full(
         }
     }
 
-    let energy = total_energy(mol, coords, &types, &charges);
+    let energy = total_energy(mol, coords, &types, &charges, rings);
 
     let rmsd = {
         let sum: f64 = coords
@@ -314,6 +329,10 @@ pub fn minimize_mmff94_lbfgs(
 
     let types = assign_mmff94_numeric_types(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+    // See minimize_mmff94_full's comment: ring membership is topology-only,
+    // computed once per run rather than once per FD probe.
+    let ring_set = find_sssr(mol);
+    let rings = ring_set.rings();
 
     let n = mol.atom_count();
     let initial = coords.to_vec();
@@ -321,8 +340,8 @@ pub fn minimize_mmff94_lbfgs(
     // Circular history buffer: (s_k = Δx, y_k = Δg, ρ_k = 1/(y·s))
     let mut history: LbfgsHistory = VecDeque::new();
 
-    let mut g = compute_gradient(mol, coords, &types, &charges, DELTA);
-    let mut f0 = total_energy(mol, coords, &types, &charges);
+    let mut g = compute_gradient(mol, coords, &types, &charges, rings, DELTA);
+    let mut f0 = total_energy(mol, coords, &types, &charges, rings);
 
     let mut iters = 0usize;
     let mut converged = false;
@@ -359,7 +378,7 @@ pub fn minimize_mmff94_lbfgs(
                     ]
                 })
                 .collect();
-            let f_trial = total_energy(mol, &trial, &types, &charges);
+            let f_trial = total_energy(mol, &trial, &types, &charges, rings);
             if f_trial <= f0 + C_ARMIJO * alpha * gp {
                 break trial;
             }
@@ -382,8 +401,8 @@ pub fn minimize_mmff94_lbfgs(
         };
 
         // Compute new gradient
-        let g_new = compute_gradient(mol, &new_coords, &types, &charges, DELTA);
-        let f_new = total_energy(mol, &new_coords, &types, &charges);
+        let g_new = compute_gradient(mol, &new_coords, &types, &charges, rings, DELTA);
+        let f_new = total_energy(mol, &new_coords, &types, &charges, rings);
 
         // Compute s = x_new - x, y = g_new - g
         let s: Vec<[f64; 3]> = new_coords
@@ -496,6 +515,7 @@ fn compute_gradient(
     coords: &[[f64; 3]],
     types: &[u8],
     charges: &[f64],
+    rings: &[Vec<AtomIdx>],
     delta: f64,
 ) -> Vec<[f64; 3]> {
     let n = coords.len();
@@ -504,9 +524,9 @@ fn compute_gradient(
     for i in 0..n {
         for axis in 0..3 {
             work[i][axis] += delta;
-            let ep = total_energy(mol, &work, types, charges);
+            let ep = total_energy(mol, &work, types, charges, rings);
             work[i][axis] -= 2.0 * delta;
-            let em = total_energy(mol, &work, types, charges);
+            let em = total_energy(mol, &work, types, charges, rings);
             work[i][axis] += delta;
             grad[i][axis] = (ep - em) / (2.0 * delta);
         }
@@ -516,11 +536,17 @@ fn compute_gradient(
 
 // ─── Energy components ───────────────────────────────────────────────────────
 
-fn total_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], charges: &[f64]) -> f64 {
+fn total_energy(
+    mol: &Molecule,
+    coords: &[[f64; 3]],
+    types: &[u8],
+    charges: &[f64],
+    rings: &[Vec<AtomIdx>],
+) -> f64 {
     bond_energy(mol, coords, types)
-        + angle_energy(mol, coords, types)
-        + stretch_bend_energy(mol, coords, types)
-        + torsion_energy(mol, coords, types)
+        + angle_energy(mol, coords, types, rings)
+        + stretch_bend_energy(mol, coords, types, rings)
+        + torsion_energy(mol, coords, types, rings)
         + oop_energy(mol, coords, types)
         + vdw_energy(mol, coords, types)
         + elec_energy(mol, coords, charges)
@@ -528,12 +554,16 @@ fn total_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], charges: &[f6
 
 /// Stretch-bend coupling (Halgren MMFF.V eq. 4)
 /// E_sb = 2.51210 × (kba_ijk × Δr_ij + kba_kji × Δr_kj) × Δθ   [kcal/mol, Δθ in degrees]
-fn stretch_bend_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+fn stretch_bend_energy(
+    mol: &Molecule,
+    coords: &[[f64; 3]],
+    types: &[u8],
+    rings: &[Vec<AtomIdx>],
+) -> f64 {
     const CONV: f64 = 2.51210; // md/Å → kcal/(mol·Å·deg)
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     const KB_CONV: f64 = 143.9325;
     const CS: f64 = 2.0;
-    let rings = find_sssr(mol);
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
         let j = AtomIdx(j_idx as u32);
@@ -543,7 +573,7 @@ fn stretch_bend_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64
         }
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
-                let at = angle_type_for(mol, rings.rings(), i, j_idx, k, types);
+                let at = angle_type_for(mol, rings, i, j_idx, k, types);
                 if let Some((kba_ijk, kba_kji)) = mmff94_stbn(at, types[i], types[j_idx], types[k])
                 {
                     // Δr_ij
@@ -644,10 +674,9 @@ fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
 
 /// Angle bending: cubic-corrected harmonic (Halgren MMFF.III eq. 2)
 /// E = (0.043844 × ka / 2) × Δθ² × (1 − 0.007×Δθ)   [Δθ in degrees]
-fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<AtomIdx>]) -> f64 {
     const KA_CONV: f64 = 0.043844;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
-    let rings = find_sssr(mol);
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
         let j = AtomIdx(j_idx as u32);
@@ -657,7 +686,7 @@ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
         }
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
-                let at = angle_type_for(mol, rings.rings(), i, j_idx, k, types);
+                let at = angle_type_for(mol, rings, i, j_idx, k, types);
                 if let Some(p) = mmff94_angle_energy(at, types[i], types[j_idx], types[k]) {
                     let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
                     let theta_deg = cos_t.acos() * RAD_TO_DEG;
@@ -673,8 +702,12 @@ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
 
 /// Torsion: three-term Fourier (Halgren MMFF.IV)
 /// E = (v1/2)(1+cosφ) + (v2/2)(1-cos2φ) + (v3/2)(1+cos3φ)
-fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
-    let rings = find_sssr(mol);
+fn torsion_energy(
+    mol: &Molecule,
+    coords: &[[f64; 3]],
+    types: &[u8],
+    rings: &[Vec<AtomIdx>],
+) -> f64 {
     let mut energy = 0.0;
     for (_, bond) in mol.bonds() {
         let j = bond.atom1.0 as usize;
@@ -695,7 +728,7 @@ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 if l == j {
                     continue;
                 }
-                let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+                let tt = torsion_type_for(rings, i, j, k, l, types[j], types[k]);
                 if let Some(p) = mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l]) {
                     let phi = dihedral(coords[i], coords[j], coords[k], coords[l]);
                     energy += 0.5 * p.v1 * (1.0 + phi.cos())
@@ -868,21 +901,21 @@ fn dot3(a: [f64; 3], b: [f64; 3]) -> f64 {
 // ─── Type classification helpers ──────────────────────────────────────────────
 
 /// Atom types with "extended" multiple-bond character (sp2/aromatic/sp
-/// centers) — the MMFF94 property table's `mltb ≠ 0` set. Superset of
-/// [`oop_energy`]'s trigonal-only `SP2_TYPES` (type 4, sp/acetylenic carbon,
-/// can't have out-of-plane bending since it's not 3-substituent, but it does
-/// still need `mltb` treatment for bond/torsion classification below) — kept
-/// deliberately generous per the bond table's own evidence (every
-/// `(1, ti, tj, ...)` row in `MMFF94_BOND_ENERGY` pairs two types drawn from
-/// exactly {2,3,4,9,30,37,39,54,57,58,63,64,67,78,80,81}, all members of this
-/// list). A single bond between two of these types is the MMFF94 "single
-/// bond between multiply-bonded atoms" (sbmb) special case (e.g. biphenyl's
-/// inter-ring bond, or buta-1,3-diene's central C-C bond); a real double or
-/// triple bond is never sbmb regardless of what's on either end.
-const MLTB_TYPES: &[u8] = &[
-    2, 3, 4, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76,
-    78, 79, 80, 81, 82,
-];
+/// centers) — the MMFF94 property table's `mltb ≠ 0` set, i.e. atoms that
+/// can be the single-bond end of an MMFF94 "single bond between
+/// multiply-bonded atoms" (sbmb) pair (e.g. biphenyl's inter-ring bond, or
+/// buta-1,3-diene's central C-C bond).
+///
+/// Exactly the 16 types that appear in `MMFF94_BOND_ENERGY`'s own
+/// `(1, ti, tj, ...)` rows: {2,3,4,9,30,37,39,54,57,58,63,64,67,78,80,81}.
+/// Measured, not assumed: a broader candidate (`oop_energy`'s trigonal-only
+/// `SP2_TYPES` plus type 4) was tried first and made the 58-molecule corpus
+/// harness's bond-miss count *worse* (38 vs. 16) — e.g. amide C(=O)-N
+/// (types 3+10) and furan's aromatic C-O (types 37/38+43) both have no `(1,
+/// ...)` row for that specific pair, so classifying them bt=1 under the
+/// broader set was itself a fresh miss the tighter, evidence-derived set
+/// avoids by routing them to their real `(0, ...)` row instead.
+const MLTB_TYPES: &[u8] = &[2, 3, 4, 9, 30, 37, 39, 54, 57, 58, 63, 64, 67, 78, 80, 81];
 
 /// Real bond order between two bonded atoms, defaulting to `Single` if no
 /// bond exists between them (defensive only — every call site here passes
@@ -1072,8 +1105,9 @@ mod tests {
             [3.016, 0.0, 0.0],
             [4.524, 0.0, 0.0],
         ];
-        let e_gauche = torsion_energy(&mol, &coords_gauche, &types);
-        let e_anti = torsion_energy(&mol, &coords_anti, &types);
+        let rings = find_sssr(&mol);
+        let e_gauche = torsion_energy(&mol, &coords_gauche, &types, rings.rings());
+        let e_anti = torsion_energy(&mol, &coords_anti, &types, rings.rings());
         assert!(e_gauche.is_finite());
         assert!(e_anti.is_finite());
         assert!(
@@ -1208,9 +1242,10 @@ mod tests {
         let mol = chematic_smiles::parse("C=C").unwrap();
         let types = assign_mmff94_numeric_types(&mol).unwrap();
         let charges = mmff94_charges_numeric(&mol).unwrap_or_else(|_| vec![0.0; 2]);
+        let rings = find_sssr(&mol);
         // Stretched well past the true r0=1.333 minimum.
         let coords = vec![[0.0, 0.0, 0.0_f64], [1.6, 0.0, 0.0]];
-        let grad = compute_gradient(&mol, &coords, &types, &charges, 1e-4);
+        let grad = compute_gradient(&mol, &coords, &types, &charges, rings.rings(), 1e-4);
         // Restoring force on atom 1 should point back toward atom 0 (-x),
         // i.e. dE/dx > 0 at this atom (energy increases as x increases further).
         assert!(
@@ -1218,6 +1253,43 @@ mod tests {
             "gradient on stretched atom should point back toward equilibrium: grad_x={}",
             grad[1][0]
         );
+    }
+
+    #[test]
+    fn benzene_ring_bonds_all_resolve_and_are_typed_1_pending_atom_typer_fix() {
+        // Issue #173's own "latent third case" note: this crate's atom typer
+        // currently assigns aromatic 6-ring carbons type 63 (not the MMFF94
+        // spec's type 37), and no (0,63,63) row exists in the bond table --
+        // only (1,63,63) -- so every benzene ring bond MUST classify as
+        // bond_type=1 today, or the bond term silently zeroes for all 6
+        // bonds. `BondOrder::Aromatic` deliberately does NOT hit the
+        // double/triple early-return in `bond_type_for`, precisely so this
+        // stays true. The regression this guards against: if the atom typer
+        // is ever corrected to emit type 37 instead of 63 (the spec-correct
+        // value), the *real* MMFF94 answer for a type-37 aromatic ring bond
+        // is bond_type=0 (row (0,37,37), r0=1.374) -- whoever makes that
+        // atom-typer change must revisit this AND-of-MLTB_TYPES branch too,
+        // since type 37 is also in MLTB_TYPES and would otherwise silently
+        // keep resolving to the wrong (1,37,37) row (r0=1.436).
+        let mol = chematic_smiles::parse("c1ccccc1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        assert_eq!(mol.bonds().count(), 6);
+        for (_, bond) in mol.bonds() {
+            let ti = types[bond.atom1.0 as usize];
+            let tj = types[bond.atom2.0 as usize];
+            assert_eq!(ti, 63, "benzene carbon should currently type as 63, not 37");
+            assert_eq!(tj, 63);
+            assert_eq!(bond.order, BondOrder::Aromatic);
+            let bt = bond_type_for(ti, tj, bond.order);
+            assert_eq!(
+                bt, 1,
+                "type-63 aromatic ring bond must resolve to bond_type=1 today"
+            );
+            assert!(
+                mmff94_bond_energy(bt, ti, tj).is_some(),
+                "every benzene ring bond must resolve to a real row, not silently miss"
+            );
+        }
     }
 
     // ── FF-1: torsion_type_for ring types 4/5 (#175) ───────────────────────
@@ -1374,6 +1446,7 @@ mod tests {
         // silently contributed zero energy everywhere — no minimum at all).
         let mol = chematic_smiles::parse("C=CC=C").unwrap();
         let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let rings = find_sssr(&mol);
         let scan_energy = |theta_deg: f64| {
             let r = 1.45_f64;
             let half = theta_deg.to_radians() / 2.0;
@@ -1385,7 +1458,7 @@ mod tests {
                 [r * half.cos(), -r * half.sin(), 0.0],
                 [r * half.cos() + 1.3, -r * half.sin() - 0.9, 0.0],
             ];
-            angle_energy(&mol, &coords, &types)
+            angle_energy(&mol, &coords, &types, rings.rings())
         };
         let e_correct = scan_energy(121.55);
         let e_distorted = scan_energy(100.0);
@@ -1401,6 +1474,7 @@ mod tests {
         let mol = chematic_smiles::parse("C=CC=C").unwrap();
         let types = assign_mmff94_numeric_types(&mol).unwrap();
         let charges = mmff94_charges_numeric(&mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+        let rings = find_sssr(&mol);
         let r = 1.45_f64;
         let half = 100.0_f64.to_radians() / 2.0; // distorted away from 121.55°
         let coords = vec![
@@ -1409,7 +1483,7 @@ mod tests {
             [r * half.cos(), -r * half.sin(), 0.0],
             [r * half.cos() + 1.3, -r * half.sin() - 0.9, 0.0],
         ];
-        let grad = compute_gradient(&mol, &coords, &types, &charges, 1e-4);
+        let grad = compute_gradient(&mol, &coords, &types, &charges, rings.rings(), 1e-4);
         let grad_norm: f64 = grad
             .iter()
             .flat_map(|g| g.iter())
@@ -1695,16 +1769,38 @@ mod tests {
     }
 
     #[test]
-    fn corpus_58_parameter_coverage_baseline() {
+    fn corpus_58_parameter_coverage_does_not_regress() {
+        // Pre-fix (original bond_type_for/angle_type_for/torsion_type_for):
+        //   bond 129/585 miss, angle 292/737 miss, torsion 305/841 miss
+        // Post-fix (measured on this test, this commit):
+        //   bond  16/585 miss, angle 279/737 miss, torsion 305/841 miss
+        // Torsion is unchanged by design: mmff94_torsion_energy already had a
+        // full type-0 fallback chain pre-fix, so TT4/5's benefit is more
+        // accurate parameters for rows it reaches, not new coverage.
         let c = corpus_coverage();
         eprintln!(
             "bond: {}/{} miss, angle: {}/{} miss, torsion: {}/{} miss",
             c.bond_miss, c.bond_total, c.angle_miss, c.angle_total, c.torsion_miss, c.torsion_total
         );
-        // Coarse tripwire, not a tight oracle-verified gate (see MEMORY.md's
-        // note on avoiding over-tuned pseudo-gates): the fixes in this file
-        // should only ever *reduce* these counts, never increase them.
-        assert!(c.bond_total > 0 && c.angle_total > 0 && c.torsion_total > 0);
+        // Loose tripwires (see MEMORY.md's note on avoiding over-tuned
+        // pseudo-gates), not tight equality: a future change may legitimately
+        // shift these by a few rows (e.g. an atom-typer improvement), but
+        // must never regress back toward the pre-fix counts above.
+        assert!(
+            c.bond_miss <= 45,
+            "bond misses regressed toward pre-fix (129): {}",
+            c.bond_miss
+        );
+        assert!(
+            c.angle_miss <= 290,
+            "angle misses regressed toward pre-fix (292): {}",
+            c.angle_miss
+        );
+        assert!(
+            c.torsion_miss <= 320,
+            "torsion misses regressed: {}",
+            c.torsion_miss
+        );
     }
 
     #[test]

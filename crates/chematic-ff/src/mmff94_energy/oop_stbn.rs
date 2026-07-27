@@ -447,7 +447,17 @@ fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
 }
 
 /// Look up Stretch-Bend parameters for angle i-j-k.
-/// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) tried.
+///
+/// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) tried at
+/// the requested `angle_type`, then — if `angle_type` isn't 0 and no row
+/// exists there — the *specific* (ti,tj,tk) triple is retried at type 0
+/// before finally falling back to the fully generic `(0, 0, type_j, 0)`
+/// wildcard. `MMFF94_STBN` is overwhelmingly type-0 (246/282 rows; angle
+/// types 3, 6, 7, 8 have zero rows at all), so without this intermediate
+/// step, correctly classifying an angle as a non-zero type that this table
+/// doesn't happen to cover would silently drop straight to the least
+/// specific fallback instead of the specific-triple type-0 row a hardcoded
+/// `angle_type=0` caller would have found.
 pub fn mmff94_stbn(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> Option<(f64, f64)> {
     let search = |at: u8, ti: u8, tj: u8, tk: u8| {
         MMFF94_STBN
@@ -457,5 +467,13 @@ pub fn mmff94_stbn(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> Option
     };
     search(angle_type, type_i, type_j, type_k)
         .or_else(|| search(angle_type, type_k, type_j, type_i).map(|(a, b)| (b, a)))
+        .or_else(|| {
+            if angle_type != 0 {
+                search(0, type_i, type_j, type_k)
+                    .or_else(|| search(0, type_k, type_j, type_i).map(|(a, b)| (b, a)))
+            } else {
+                None
+            }
+        })
         .or_else(|| search(0, 0, type_j, 0))
 }
