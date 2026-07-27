@@ -608,19 +608,24 @@ fn stretch_bend_energy(
     energy
 }
 
+/// sp2 atom types eligible for out-of-plane bending (Halgren 1996), used by
+/// [`oop_energy`] below. `pub` so downstream coverage-checkers (e.g.
+/// `chematic-3d`'s MMFF94 bridge) can mirror exactly which atoms this
+/// module's own energy loop would evaluate, instead of hand-copying this
+/// list and risking drift.
+pub const OOP_SP2_TYPES: &[u8] = &[
+    2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76,
+    78, 79, 80, 81, 82,
+];
+
 /// Out-of-plane bending for trigonal sp2 centers (Halgren MMFF.VI eq. 6)
 /// E_oop = (0.043844 × koop / 2) × χ²  (χ in degrees: Wilson angle of out-of-plane distortion)
 fn oop_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     const CONV: f64 = 0.043844;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
-    // sp2 atom types that can have OOP bending
-    const SP2_TYPES: &[u8] = &[
-        2, 3, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67,
-        76, 78, 79, 80, 81, 82,
-    ];
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
-        if SP2_TYPES.binary_search(&types[j_idx]).is_err() {
+        if OOP_SP2_TYPES.binary_search(&types[j_idx]).is_err() {
             continue;
         }
         let j = AtomIdx(j_idx as u32);
@@ -915,7 +920,7 @@ fn dot3(a: [f64; 3], b: [f64; 3]) -> f64 {
 /// ...)` row for that specific pair, so classifying them bt=1 under the
 /// broader set was itself a fresh miss the tighter, evidence-derived set
 /// avoids by routing them to their real `(0, ...)` row instead.
-const MLTB_TYPES: &[u8] = &[2, 3, 4, 9, 30, 37, 39, 54, 57, 58, 63, 64, 67, 78, 80, 81];
+pub const MLTB_TYPES: &[u8] = &[2, 3, 4, 9, 30, 37, 39, 54, 57, 58, 63, 64, 67, 78, 80, 81];
 
 /// Real bond order between two bonded atoms, defaulting to `Single` if no
 /// bond exists between them (defensive only — every call site here passes
@@ -946,7 +951,7 @@ fn atoms_share_ring_of_size(rings: &[Vec<AtomIdx>], atoms: &[usize], size: usize
 /// type (e.g. sp3 CR) also always gets BT=0 — confirmed empirically: zero
 /// `(1, 1, x, ...)` rows exist in the 493-row bond table for sp3 carbon type
 /// 1 with any partner.
-fn bond_type_for(ti: u8, tj: u8, order: BondOrder) -> u8 {
+pub fn bond_type_for(ti: u8, tj: u8, order: BondOrder) -> u8 {
     if matches!(
         order,
         BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple
@@ -975,7 +980,7 @@ fn bond_type_for(ti: u8, tj: u8, order: BondOrder) -> u8 {
 /// Confirmed empirically against the angle table: `(3, 22, 22, 22)`
 /// (all-CR3R, cyclopropane) has θ0≈60°; `(4, 6, 20, 20)` (4-ring) has
 /// θ0≈93° — i.e. 3-ring/4-ring are not swapped.
-fn angle_type_for(
+pub fn angle_type_for(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
     i: usize,
@@ -1013,7 +1018,7 @@ fn angle_type_for(
 /// misclassified as a ring torsion. Otherwise falls back to the base
 /// classification by how many of the two central atoms are
 /// sp2/aromatic/sp ([`MLTB_TYPES`]).
-fn torsion_type_for(
+pub fn torsion_type_for(
     rings: &[Vec<AtomIdx>],
     i: usize,
     j: usize,
