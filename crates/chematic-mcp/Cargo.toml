@@ -26,3 +26,15 @@ chematic-3d         = { path = "../chematic-3d",         version = "0.7.0" }
 chematic-inchi      = { path = "../chematic-inchi",      version = "0.7.0" }
 chematic-mol        = { path = "../chematic-mol",        version = "0.7.0" }
 chematic-perception = { path = "../chematic-perception", version = "0.7.0" }
+
+[dev-dependencies]
+# Real JSON Schema 2020-12 validator, used only in tests to independently
+# confirm every tool's inputSchema/outputSchema in tools.rs is itself valid
+# 2020-12, and that structuredContent conforms to its outputSchema. Runtime
+# argument validation (the -32602 gate in server.rs) uses a small hand-rolled
+# validator instead (src/schema.rs) so the published crate's dependency
+# footprint doesn't grow. `default-features = false` drops the optional
+# `resolve-http`/`resolve-file` remote-$ref-fetching features -- this project
+# never resolves external `$ref`s (section 12), so there is no reason for
+# even a dev-dependency to carry that capability.
+jsonschema = { version = "0.35", default-features = false }
