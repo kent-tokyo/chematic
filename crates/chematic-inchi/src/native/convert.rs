@@ -108,12 +108,26 @@ pub(crate) fn has_unrepresentable_multi_h_stereocenter(mol: &Molecule) -> bool {
 /// not silently widen its net if a future non-tetrahedral `Chirality`
 /// variant (e.g. an eventual axial/allenic chirality) is added.
 pub(crate) fn has_unresolved_specified_tetrahedral_stereo(mol: &Molecule) -> bool {
-    mol.atoms().any(|(idx, atom)| {
-        matches!(
-            atom.chirality,
-            Chirality::CounterClockwise | Chirality::Clockwise
-        ) && tetrahedral_stereo_neighbors(mol, idx).is_none()
-    })
+    !unresolved_specified_tetrahedral_stereo_atoms(mol).is_empty()
+}
+
+/// Same predicate as [`has_unresolved_specified_tetrahedral_stereo`], but
+/// returns the actual atom indices instead of a bare bool.
+///
+/// Added for issue #161: `crate::dedup`'s accurate-CIP preflight needs to
+/// know exactly *which* centres the legacy engine failed to rank (to re-check
+/// each one individually via `CipMode::Accurate`), not just whether any
+/// exist. Ascending order (same order as [`Molecule::atoms`]).
+pub(crate) fn unresolved_specified_tetrahedral_stereo_atoms(mol: &Molecule) -> Vec<AtomIdx> {
+    mol.atoms()
+        .filter(|(idx, atom)| {
+            matches!(
+                atom.chirality,
+                Chirality::CounterClockwise | Chirality::Clockwise
+            ) && tetrahedral_stereo_neighbors(mol, *idx).is_none()
+        })
+        .map(|(idx, _)| idx)
+        .collect()
 }
 
 /// Convert a `Molecule` into the atom + stereo lists required by the IUPAC InChI C API.

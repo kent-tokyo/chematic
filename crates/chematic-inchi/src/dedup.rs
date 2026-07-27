@@ -125,7 +125,7 @@
 //! the underlying conversion behavior, and this module's own
 //! `two_h_like_substituents_*` fixtures for the guard itself.
 
-use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, apply_kekule, kekulize};
+use chematic_core::{AtomIdx, BondOrder, Chirality, CipCode, Molecule, apply_kekule, kekulize};
 use chematic_smiles::canonical_smiles;
 use std::collections::HashMap;
 
@@ -600,6 +600,481 @@ pub fn deduplicate_verified(mols: &[Molecule], policy: IdentityPolicy) -> Verifi
     }
 
     // Partition 2: canonical-SMILES groups (drives `canonical_collisions`).
+    let mut by_canonical: HashMap<&str, Vec<usize>> = HashMap::new();
+    for i in 0..n {
+        if verified_key[i].is_some() {
+            by_canonical
+                .entry(canonical_key[i].as_str())
+                .or_default()
+                .push(i);
+        }
+    }
+
+    let mut canonical_collisions: Vec<CanonicalCollision> = Vec::new();
+    for mut members in by_canonical.into_values() {
+        if members.len() < 2 {
+            continue;
+        }
+        members.sort_unstable();
+        let mut by_ident_within: HashMap<&str, Vec<usize>> = HashMap::new();
+        for &i in &members {
+            let k = verified_key[i].as_deref().expect("filtered to Some above");
+            by_ident_within.entry(k).or_default().push(i);
+        }
+        if by_ident_within.len() > 1 {
+            let mut verified_subgroups: Vec<Vec<usize>> = by_ident_within.into_values().collect();
+            verified_subgroups.sort_by_key(|g| g[0]);
+            canonical_collisions.push(CanonicalCollision {
+                canonical_key_members: members,
+                verified_subgroups,
+            });
+        }
+    }
+
+    groups.sort_by_key(|g| g.members[0]);
+    canonical_splits.sort_by_key(|s| s.members[0]);
+    canonical_collisions.sort_by_key(|c| c.canonical_key_members[0]);
+    verification_unavailable.sort_unstable();
+    invalid_molecules.sort_unstable();
+
+    VerifiedDedupReport {
+        groups,
+        canonical_splits,
+        canonical_collisions,
+        verification_unavailable,
+        invalid_molecules,
+    }
+}
+// ─── Typed identity diagnostics (shared) ───────────────────────────────────
+
+/// Typed reason a [`crate::dedup`] identity claim could not be made at full
+/// strength (or had to fall back to a weaker one). Shared by the
+/// accurate-CIP dedup preflight (issue #161, see
+/// [`compare_molecules_with_accurate_cip_preflight`]) and (in a later
+/// commit) the exact-graph-identity API -- never a free-form string, so
+/// callers can match on it instead of parsing text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IdentityDiagnostic {
+    /// The accurate CIP engine (`CipMode::Accurate`) explicitly tied on a
+    /// centre the legacy engine also could not rank -- a genuine CIP-ranking
+    /// limit shared by both chematic engines (see issue #161's "case B":
+    /// tricyclic-cage bridgeheads, corpus idx 443/590, where RDKit's own
+    /// `rdCIPLabeler` agrees no label exists either).
+    AccurateCipTied,
+    /// The accurate CIP engine exceeded its recursion/size budget for a
+    /// centre the legacy engine also could not rank.
+    AccurateCipBudgetExceeded,
+    /// The accurate CIP engine itself returned an error (not a tie/budget
+    /// outcome). Never pooled with the tie/budget classes above -- an engine
+    /// failure is a different thing from an explicit "no answer" (see
+    /// `docs/`'s standing rule against pooling a fallible path's failures
+    /// into another class's rate).
+    AccurateCipEngineError,
+    /// Two or more legacy-CIP-unresolved centres in the SAME molecule land on
+    /// the same `chematic_smiles::morgan_ranks` value -- their identity
+    /// cannot be safely attributed to a specific centre when compared
+    /// against another molecule, so the accurate-CIP recovery is not applied
+    /// and the comparison fails closed instead of risking a mispaired
+    /// centre.
+    AmbiguousStereoRankCorrespondence,
+}
+
+// ─── Accurate-CIP dedup preflight (issue #161) ─────────────────────────────
+//
+// PR #156 shipped `has_unresolved_specified_tetrahedral_stereo`: a specified
+// tetrahedral stereocentre (`@`/`@@`) that the LEGACY CIP engine
+// (`chematic_chem::assign_cip`) cannot rank a substituent order for makes
+// `identity_verify` fail closed to `VerificationUnavailable`, because
+// `crate::native::convert::mol_to_inchi_atoms` depends on that exact same
+// ranking to build the InChI Stereo0D descriptor for that atom -- when it
+// fails, native InChI silently emits either an undefined `?` parity (if
+// other centres in the molecule succeeded) or omits the whole `/t` layer (if
+// none did), and two genuine diastereomers can then collapse onto the same
+// string (the corpus 4663/4664 pair PR #156 fixed).
+//
+// PR #156's own full 5,000-molecule-corpus audit
+// (`validation/results/dedup_stereo_guard_corpus_audit.jsonl`) found this
+// guard newly fires on 14 molecules beyond that pair, classified into case A
+// (legacy ties, `CipMode::Accurate` resolves with a label an independent
+// RDKit 2026.03.3 oracle agrees with exactly -- 10 molecules / 26 atoms) and
+// case B (genuinely unresolvable by *both* chematic engines and by RDKit's
+// own modern CIP labeler -- 2 molecules / 2 atoms, tricyclic-cage
+// bridgeheads).
+//
+// This PR independently RE-RAN that classification against current HEAD
+// (not trusted on faith -- see the fixtures in
+// `tests/accurate_cip_preflight.rs` and the PR body for the full
+// re-derivation) and a **fresh** 5,000-molecule corpus
+// (`~/Downloads/SMILES.csv`, SHA-256-confirmed byte-identical to the value
+// pinned in `validation/manifests/dataset_provenance.json` -- the corpus has
+// NOT drifted since the audit ran; an earlier draft of this comment claimed
+// otherwise and was wrong, see below). Two independent, unrelated findings
+// came out of the re-run:
+//
+// (1) The audit JSONL's own `corpus_index` field is uniformly off by one
+// from the 0-based position of the molecule in the corpus file (i.e. audit
+// idx=N's molecule actually sits at 0-based line N+1) -- confirmed for
+// 11 of the 12 audited molecules by canonicalizing both the audit's
+// `input_smiles` and the corpus line at `N+1` and finding they match. This
+// is a labeling-convention mismatch in the original audit tooling, not a
+// code regression, and doesn't change which molecules are affected.
+//
+// (2) Exactly one audited row -- the one labeled `audit idx=4412` -- also
+// has a bad `input_smiles` transcription: that string does not match the
+// real corpus molecule at its implied 0-based line 4413 (nor does it
+// canonically match anything anywhere else in the 5,000-line corpus). An
+// earlier version of this preflight's test fixture trusted that row's
+// string verbatim, found it (correctly, for that string) no longer
+// triggers the guard, and wrongly concluded "this molecule is no longer
+// applicable" / "an upstream chematic-chem/chematic-cip CIP-ranking change
+// since the audit" -- both false. `chematic-chem/src/cip.rs` (home of
+// `tetrahedral_stereo_neighbors`, the legacy ranking function this guard
+// depends on) has had zero commits since well before the audit ran, so the
+// legacy ranking path is byte-identical to audit time; there was no
+// upstream change to attribute this to. The REAL molecule at 0-based corpus
+// line 4413 (a di-galloylquinic-acid family member, distinct from the
+// audit's mistranscribed string) DOES still trigger the guard today and IS
+// recovered by this preflight, exactly like the other 6 fully-recovered
+// audited molecules -- see `tests/accurate_cip_preflight.rs` for the
+// corrected fixture, sourced by corpus position rather than by trusting the
+// audit row's string.
+//
+// Net effect, recounted from scratch against the 12 originally-audited
+// molecules: 7 fully recovered (not 6), 2 genuine ties (both chematic
+// engines and RDKit's own modern CIP labeler agree no label exists), 3
+// blocked by this preflight's conservative tied-morgan-rank-correspondence
+// guard -- 7 + 2 + 3 = 12, with no "no longer applicable" category (that
+// was an artifact of the bad transcription above, not a real phenomenon).
+// Full-corpus effect: `verification_unavailable` shrinks from 15 to 6 (9
+// molecules recovered -- the 7 above plus the already-disclosed 4663/4664
+// pair, 0 molecules newly made unavailable -- the "shrink, never widen"
+// invariant this PR must preserve, confirmed empirically over the whole
+// corpus, not just the audited 12). Full denominators, the RDKit-cross-check
+// table, and dataset provenance are in the PR body.
+//
+// Importantly, resolving a centre via the accurate engine does NOT change
+// what `crate::native::standard_inchi` itself emits for that atom -- that
+// generation path still depends on the legacy ranking (issue #161
+// deliberately scopes out "switch native InChI generation to the accurate
+// engine wholesale," since that would change `standard_inchi`'s output for
+// every caller, not just `dedup`, and the accurate engine's own
+// budget/tied-result semantics would need threading through the whole
+// Stereo0D pipeline -- a separate, larger proposal). So merely "unblocking"
+// the guard and generating `standard_inchi` as normal would silently
+// reintroduce the exact 4663/4664 bug: both molecules would still collapse
+// onto the same `?`-bearing string. Instead, the accurate engine's resolved
+// codes for exactly the previously-unresolved centres are folded into the
+// COMPARISON KEY as a supplement (never into the generated InChI string
+// itself, and never into the InChIKey C library call -- see
+// `verified_identity_key_with_supplement`), keyed by
+// `chematic_smiles::morgan_ranks` (a purely constitutional, stereo-blind
+// isomorphism invariant) so the supplement is meaningfully comparable
+// between two molecules that share a skeleton but differ in stereo, without
+// needing native InChI's own canonical atom numbering.
+//
+// This is deliberately a NEW, separate set of entry points
+// (`*_with_accurate_cip_preflight`), not a parameter threaded into
+// `identity_verify`/`compare`/`compare_molecules`/`deduplicate_verified`:
+// every existing call through those stays byte-for-byte unchanged (verified
+// by `preflight_is_opt_in_existing_paths_unchanged` below), matching the
+// "opt-in, two-tier" framing issue #161 itself proposed.
+
+/// Recover legacy-CIP-unresolved specified tetrahedral centres via
+/// `CipMode::Accurate` (issue #161). Returns the accurate CIP code for every
+/// atom `crate::native::unresolved_specified_tetrahedral_stereo_atoms`
+/// flagged, keyed by that atom's `chematic_smiles::morgan_ranks` value.
+///
+/// Fails closed (`Err`) -- never partially recovers -- if the accurate
+/// engine ties, exceeds its budget, or errors on ANY flagged atom, or if two
+/// flagged atoms in this SAME molecule share a morgan-rank value (their
+/// cross-molecule correspondence would be ambiguous -- see the module-level
+/// docs above).
+#[cfg(feature = "native-inchi")]
+fn accurate_stereo_supplement(mol: &Molecule) -> Result<Vec<(u64, CipCode)>, IdentityDiagnostic> {
+    let unresolved = crate::native::unresolved_specified_tetrahedral_stereo_atoms(mol);
+    if unresolved.is_empty() {
+        return Ok(Vec::new());
+    }
+    let accurate = chematic_chem::assign_cip_with_mode(mol, chematic_chem::CipMode::Accurate)
+        .map_err(|_| IdentityDiagnostic::AccurateCipEngineError)?;
+    let ranks = chematic_smiles::morgan_ranks(mol);
+
+    let mut supplement: Vec<(u64, CipCode)> = Vec::with_capacity(unresolved.len());
+    let mut seen_ranks: std::collections::HashSet<u64> = std::collections::HashSet::new();
+    for atom in unresolved {
+        if let Some((_, reason)) = accurate.unresolved.iter().find(|(i, _)| *i == atom) {
+            return Err(match reason {
+                chematic_chem::CipUnresolvedReason::Tied => IdentityDiagnostic::AccurateCipTied,
+                chematic_chem::CipUnresolvedReason::BudgetExceeded => {
+                    IdentityDiagnostic::AccurateCipBudgetExceeded
+                }
+            });
+        }
+        let Some(code) = accurate.get(atom) else {
+            // The accurate engine never touched this atom at all -- shouldn't
+            // happen for a specified tetrahedral centre, but fail closed
+            // defensively rather than silently skip it.
+            return Err(IdentityDiagnostic::AccurateCipEngineError);
+        };
+        let rank = ranks[atom.0 as usize];
+        if !seen_ranks.insert(rank) {
+            return Err(IdentityDiagnostic::AmbiguousStereoRankCorrespondence);
+        }
+        supplement.push((rank, code));
+    }
+    // ponytail: `sort_by_key` on rank alone is a total, deterministic order
+    // here specifically because every rank in `supplement` is already unique
+    // by construction -- any duplicate would have returned `Err` at the
+    // `seen_ranks.insert` check above before reaching this line.
+    supplement.sort_by_key(|&(r, _)| r);
+    Ok(supplement)
+}
+
+/// Parallel to [`Verify`], for the accurate-CIP-preflight entry points only.
+/// `Ok` additionally carries the (possibly empty) stereo supplement
+/// recovered by [`accurate_stereo_supplement`].
+#[cfg_attr(not(feature = "native-inchi"), allow(dead_code))]
+enum PreflightVerify {
+    Ok(String, Vec<(u64, CipCode)>),
+    Invalid,
+    Unavailable,
+}
+
+/// Like [`identity_verify`], but retries a legacy-CIP-unresolved specified
+/// tetrahedral stereocentre via the accurate CIP engine before giving up
+/// (issue #161), instead of failing closed immediately.
+#[cfg(feature = "native-inchi")]
+fn identity_verify_with_accurate_preflight(
+    mol: &Molecule,
+    policy: IdentityPolicy,
+) -> PreflightVerify {
+    if crate::native::has_unrepresentable_multi_h_stereocenter(mol) {
+        return PreflightVerify::Unavailable;
+    }
+
+    let (result, supplement) = match policy {
+        IdentityPolicy::StandardInchiString | IdentityPolicy::StandardInchiKey => {
+            if crate::native::has_unresolved_specified_tetrahedral_stereo(mol) {
+                match accurate_stereo_supplement(mol) {
+                    Err(_) => return PreflightVerify::Unavailable,
+                    Ok(supplement) => (crate::native::standard_inchi(mol), supplement),
+                }
+            } else {
+                (crate::native::standard_inchi(mol), Vec::new())
+            }
+        }
+        IdentityPolicy::StereoIgnored => {
+            // Deliberately not guarded (same rationale as `identity_verify`):
+            // ignoring stereo entirely is this policy's contract.
+            (crate::native::standard_inchi_no_stereo(mol), Vec::new())
+        }
+        IdentityPolicy::IsotopeIgnored => {
+            let mut cleared = mol.clone();
+            for i in 0..cleared.atom_count() {
+                cleared.set_isotope(AtomIdx(i as u32), None);
+            }
+            if crate::native::has_unresolved_specified_tetrahedral_stereo(&cleared) {
+                match accurate_stereo_supplement(&cleared) {
+                    Err(_) => return PreflightVerify::Unavailable,
+                    Ok(supplement) => (crate::native::standard_inchi(&cleared), supplement),
+                }
+            } else {
+                (crate::native::standard_inchi(&cleared), Vec::new())
+            }
+        }
+    };
+    match result {
+        Ok(s) => PreflightVerify::Ok(s, supplement),
+        Err(crate::native::InchiError::InvalidInput(_)) => PreflightVerify::Invalid,
+        Err(_) => PreflightVerify::Unavailable,
+    }
+}
+
+#[cfg(not(feature = "native-inchi"))]
+fn identity_verify_with_accurate_preflight(
+    _mol: &Molecule,
+    _policy: IdentityPolicy,
+) -> PreflightVerify {
+    PreflightVerify::Unavailable
+}
+
+/// Reduce a raw native InChI string plus an accurate-CIP stereo supplement to
+/// the actual comparison key. Reuses [`verified_identity_key`] unchanged for
+/// the base key (so `IdentityPolicy::StandardInchiKey`'s InChIKey C-library
+/// call always receives a clean, real InChI string -- the supplement is
+/// appended only to the final *comparison* key, never fed back into any
+/// native call).
+#[cfg(feature = "native-inchi")]
+fn verified_identity_key_with_supplement(
+    inchi: &str,
+    supplement: &[(u64, CipCode)],
+    policy: IdentityPolicy,
+) -> Result<String, ()> {
+    let base = verified_identity_key(inchi, policy)?;
+    if supplement.is_empty() {
+        return Ok(base);
+    }
+    use std::fmt::Write;
+    let mut key = base;
+    // A marker that cannot appear inside a real InChI string or InChIKey
+    // (both use restricted character sets), so this can never collide with
+    // an unmodified base key from a molecule that didn't need the
+    // supplement.
+    key.push_str("|accurate_cip_stereo_supplement=");
+    for (rank, code) in supplement {
+        let _ = write!(key, "{rank}:{code:?};");
+    }
+    Ok(key)
+}
+
+#[cfg(not(feature = "native-inchi"))]
+fn verified_identity_key_with_supplement(
+    _inchi: &str,
+    _supplement: &[(u64, CipCode)],
+    _policy: IdentityPolicy,
+) -> Result<String, ()> {
+    Err(())
+}
+
+/// Compare two molecules under `policy`, retrying a legacy-CIP-unresolved
+/// specified tetrahedral stereocentre via the accurate CIP engine before
+/// giving up (issue #161). Given explicit candidate keys, like [`compare`].
+///
+/// This SHRINKS `VerificationUnavailable`'s trigger rate relative to
+/// [`compare`] (9 of the 15 molecules a fresh 5,000-molecule corpus rerun
+/// finds newly guarded by PR #156, beyond the original 4663/4664 pair,
+/// recover verified-comparison capability -- see the module docs above and
+/// the PR body for the full re-derivation) and never weakens the guard: a centre unresolved
+/// by *both* engines still fails closed exactly as before, and a resolved
+/// centre's accurate-CIP code is folded into the comparison key rather than
+/// silently trusted via a regenerated (still `?`-bearing) InChI string, so
+/// the original 4663/4664 false-`VerifiedDuplicate` stays fixed (see
+/// `accurate_preflight_never_reopens_the_4663_4664_false_duplicate` below).
+pub fn compare_with_accurate_cip_preflight(
+    key_a: &str,
+    mol_a: &Molecule,
+    key_b: &str,
+    mol_b: &Molecule,
+    policy: IdentityPolicy,
+) -> DedupRelation {
+    let (raw_a, supp_a, raw_b, supp_b) = match (
+        identity_verify_with_accurate_preflight(mol_a, policy),
+        identity_verify_with_accurate_preflight(mol_b, policy),
+    ) {
+        (PreflightVerify::Invalid, _) | (_, PreflightVerify::Invalid) => {
+            return DedupRelation::InvalidMolecule;
+        }
+        (PreflightVerify::Unavailable, _) | (_, PreflightVerify::Unavailable) => {
+            return DedupRelation::VerificationUnavailable;
+        }
+        (PreflightVerify::Ok(a, sa), PreflightVerify::Ok(b, sb)) => (a, sa, b, sb),
+    };
+
+    let (ident_a, ident_b) = match (
+        verified_identity_key_with_supplement(&raw_a, &supp_a, policy),
+        verified_identity_key_with_supplement(&raw_b, &supp_b, policy),
+    ) {
+        (Ok(a), Ok(b)) => (a, b),
+        _ => return DedupRelation::VerificationUnavailable,
+    };
+    let same_identity = ident_a == ident_b;
+    let same_key = key_a == key_b;
+
+    match (same_identity, same_key) {
+        (true, true) => DedupRelation::VerifiedDuplicate,
+        (true, false) => DedupRelation::CanonicalSplit,
+        (false, true) => DedupRelation::CanonicalCollision,
+        (false, false) => DedupRelation::Distinct,
+    }
+}
+
+/// [`compare_with_accurate_cip_preflight`], computing each molecule's own
+/// [`chematic_smiles::canonical_smiles`] as the fast candidate key -- the
+/// accurate-CIP-preflight counterpart to [`compare_molecules`].
+pub fn compare_molecules_with_accurate_cip_preflight(
+    mol_a: &Molecule,
+    mol_b: &Molecule,
+    policy: IdentityPolicy,
+) -> DedupRelation {
+    let key_a = canonical_smiles(mol_a);
+    let key_b = canonical_smiles(mol_b);
+    compare_with_accurate_cip_preflight(&key_a, mol_a, &key_b, mol_b, policy)
+}
+
+/// [`deduplicate_verified`], with the accurate-CIP preflight (issue #161)
+/// applied to every molecule instead of failing closed on the first
+/// legacy-CIP-unresolved specified tetrahedral centre. Same algorithm/
+/// complexity/output-ordering guarantees as [`deduplicate_verified`] -- see
+/// that function's docs.
+pub fn deduplicate_verified_with_accurate_cip_preflight(
+    mols: &[Molecule],
+    policy: IdentityPolicy,
+) -> VerifiedDedupReport {
+    let n = mols.len();
+    let mut canonical_key: Vec<String> = Vec::with_capacity(n);
+    let mut verified_key: Vec<Option<String>> = Vec::with_capacity(n);
+    let mut verification_unavailable: Vec<usize> = Vec::new();
+    let mut invalid_molecules: Vec<usize> = Vec::new();
+
+    for (i, m) in mols.iter().enumerate() {
+        canonical_key.push(canonical_smiles(m));
+        match identity_verify_with_accurate_preflight(m, policy) {
+            PreflightVerify::Invalid => {
+                invalid_molecules.push(i);
+                verified_key.push(None);
+            }
+            PreflightVerify::Unavailable => {
+                verification_unavailable.push(i);
+                verified_key.push(None);
+            }
+            PreflightVerify::Ok(raw, supplement) => {
+                match verified_identity_key_with_supplement(&raw, &supplement, policy) {
+                    Ok(k) => verified_key.push(Some(k)),
+                    Err(()) => {
+                        verification_unavailable.push(i);
+                        verified_key.push(None);
+                    }
+                }
+            }
+        }
+    }
+
+    let mut by_verified: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (i, k) in verified_key.iter().enumerate() {
+        if let Some(k) = k {
+            by_verified.entry(k.as_str()).or_default().push(i);
+        }
+    }
+
+    let mut groups: Vec<VerifiedGroup> = Vec::new();
+    let mut canonical_splits: Vec<CanonicalSplit> = Vec::new();
+    for members in by_verified.into_values() {
+        if members.len() < 2 {
+            continue;
+        }
+        let mut members = members;
+        members.sort_unstable();
+
+        let mut by_canon_within: HashMap<&str, Vec<usize>> = HashMap::new();
+        for &i in &members {
+            by_canon_within
+                .entry(canonical_key[i].as_str())
+                .or_default()
+                .push(i);
+        }
+        groups.push(VerifiedGroup {
+            members: members.clone(),
+        });
+        if by_canon_within.len() > 1 {
+            let mut canonical_subgroups: Vec<Vec<usize>> = by_canon_within.into_values().collect();
+            canonical_subgroups.sort_by_key(|g| g[0]);
+            canonical_splits.push(CanonicalSplit {
+                members,
+                canonical_subgroups,
+            });
+        }
+    }
+
     let mut by_canonical: HashMap<&str, Vec<usize>> = HashMap::new();
     for i in 0..n {
         if verified_key[i].is_some() {
@@ -1265,7 +1740,146 @@ mod tests {
         assert!(report.groups.is_empty());
         assert_eq!(report.verification_unavailable, vec![0, 1]);
     }
+    // ── Accurate-CIP preflight (issue #161) ────────────────────────────────
 
+    /// The original 4663/4664 diastereomer pair PR #156 fixed must NEVER
+    /// become `VerifiedDuplicate` under the accurate-CIP preflight either --
+    /// per `validation/results/dedup_stereo_guard_corpus_audit.jsonl`, the
+    /// accurate engine resolves both previously-unresolved centres (atoms 13
+    /// and 32) for both molecules, but to genuinely DIFFERENT codes (4663:
+    /// S,R; 4664: R,S) -- so the stereo supplement must differ and the pair
+    /// must resolve to something other than `VerifiedDuplicate`. This is the
+    /// single most important regression guard in this file: a design that
+    /// merely relaxed the guard (without folding the accurate codes into the
+    /// comparison key) would silently reopen this exact false merge.
+    #[cfg(feature = "native-inchi")]
+    #[test]
+    fn accurate_preflight_never_reopens_the_4663_4664_false_duplicate() {
+        use chematic_smiles::parse;
+        let a = parse(
+            "O=C(Oc1c(O)cc(C(=O)O[C@@H]2C[C@](O)(C(=O)O)C[C@@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@H]2OC(=O)c2cc(O)c(O)c(O)c2)cc1O)c1cc(O)c(O)c(O)c1",
+        )
+        .unwrap();
+        let b = parse(
+            "O=C(Oc1c(O)cc(C(=O)O[C@@H]2C[C@@](O)(C(=O)O)C[C@@H](OC(=O)c3cc(O)c(O)c(O)c3)[C@@H]2OC(=O)c2cc(O)c(O)c(O)c2)cc1O)c1cc(O)c(O)c(O)c1",
+        )
+        .unwrap();
+
+        // Reference: the plain (legacy-only) path already reports this as
+        // unavailable (PR #156's fix, unchanged).
+        assert_eq!(
+            compare_molecules(&a, &b, IdentityPolicy::StandardInchiString),
+            DedupRelation::VerificationUnavailable,
+            "sanity: PR #156's fix must still fail closed on the plain path"
+        );
+
+        let with_preflight = compare_molecules_with_accurate_cip_preflight(
+            &a,
+            &b,
+            IdentityPolicy::StandardInchiString,
+        );
+        assert_ne!(
+            with_preflight,
+            DedupRelation::VerifiedDuplicate,
+            "accurate-CIP preflight must never claim these two real diastereomers \
+             are the same molecule: {with_preflight:?}"
+        );
+    }
+
+    /// Case B from the corpus audit (tricyclic-cage bridgehead, corpus
+    /// idx=443/590): unresolved by *both* chematic CIP engines (and by
+    /// RDKit's own modern CIP labeler) -- must stay `VerificationUnavailable`
+    /// even with the preflight engaged, never silently promoted.
+    #[cfg(feature = "native-inchi")]
+    #[test]
+    fn accurate_preflight_still_fails_closed_on_genuine_ties() {
+        use chematic_smiles::parse;
+        let idx_443 = parse(
+            "CCCCCCCC/C=C/CCCCCCCC(=O)OCc1cc(=O)c(OC(=O)[C@]23C[C@H]4C[C@H](C[C@H](C4)C2)C3)co1",
+        )
+        .unwrap();
+        assert_eq!(
+            compare_molecules_with_accurate_cip_preflight(
+                &idx_443,
+                &idx_443,
+                IdentityPolicy::StandardInchiString
+            ),
+            DedupRelation::VerificationUnavailable,
+            "genuine tricyclic-cage tie (case B) must still fail closed under the preflight"
+        );
+    }
+
+    /// One of the 3 "case A blocked by tied rank" molecules (corpus
+    /// idx=1609): a 3-fold-symmetric adamantane-cage substituent where all 3
+    /// legacy-unresolved centres share one `morgan_ranks` value. This directly
+    /// exercises `accurate_stereo_supplement` (not just the outcome via
+    /// `compare_molecules_with_accurate_cip_preflight`) to confirm the
+    /// *mechanism* is really the rank-collision guard firing --
+    /// `AmbiguousStereoRankCorrespondence` -- and not some other failure path
+    /// (e.g. the accurate engine tying or erroring on these atoms, which
+    /// would make the module doc comment's causal claim wrong).
+    #[cfg(feature = "native-inchi")]
+    #[test]
+    fn accurate_stereo_supplement_blocks_via_rank_collision_not_some_other_path() {
+        use chematic_smiles::parse;
+        let mol =
+            parse("O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3").unwrap();
+        assert_eq!(
+            accurate_stereo_supplement(&mol),
+            Err(IdentityDiagnostic::AmbiguousStereoRankCorrespondence),
+            "idx=1609 must be blocked specifically by the rank-collision guard, \
+             not by AccurateCipTied/AccurateCipBudgetExceeded/AccurateCipEngineError"
+        );
+    }
+
+    /// Case A from the corpus audit (corpus idx=1567): legacy fails on the
+    /// ring-fusion atom, accurate resolves it to a plain 'R' agreeing with
+    /// RDKit -- the preflight must recover verified-comparison capability
+    /// here (comparing the molecule against itself must no longer be
+    /// `VerificationUnavailable`).
+    #[cfg(feature = "native-inchi")]
+    #[test]
+    fn accurate_preflight_recovers_case_a_self_comparison() {
+        use chematic_smiles::parse;
+        let mol = parse("NS(=O)(=O)OC[C@@]12CCCC[C@@H]1CCC2").unwrap();
+        assert_eq!(
+            compare_molecules(&mol, &mol, IdentityPolicy::StandardInchiString),
+            DedupRelation::VerificationUnavailable,
+            "sanity: plain path is unavailable for this legacy-unresolved centre"
+        );
+        assert_eq!(
+            compare_molecules_with_accurate_cip_preflight(
+                &mol,
+                &mol,
+                IdentityPolicy::StandardInchiString
+            ),
+            DedupRelation::VerifiedDuplicate,
+            "accurate-CIP preflight should recover a molecule compared against itself"
+        );
+    }
+
+    /// Every EXISTING public entry point (`compare`, `compare_molecules`,
+    /// `deduplicate_verified`) must be completely unaffected by the new
+    /// preflight machinery existing in this file -- verified here by
+    /// checking a molecule with no stereo ambiguity at all behaves
+    /// identically either way, and (above) that the guarded molecules'
+    /// PLAIN-path behavior is unchanged from PR #156.
+    #[test]
+    fn preflight_is_opt_in_existing_paths_unchanged() {
+        use chematic_smiles::parse;
+        let a = parse("CCO").unwrap();
+        let b = parse("OCC").unwrap();
+        assert_eq!(
+            compare_molecules(&a, &b, IdentityPolicy::StandardInchiString),
+            compare_molecules_with_accurate_cip_preflight(
+                &a,
+                &b,
+                IdentityPolicy::StandardInchiString
+            ),
+            "an ordinary molecule with no legacy-CIP-unresolved centre must behave \
+             identically under both entry points"
+        );
+    }
     // ── Indexed graph relation (requires matching atom-index correspondence) ──
 
     #[test]
