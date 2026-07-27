@@ -180,9 +180,12 @@ exposing process-global counters: `run_reactants_calls`,
 `split_fragments`/dedup/fragment-filtering are apply_retro-level (not part of
 `run_reactants`'s public API), so the benchmark harness below tracks its own
 equivalents (`canonical_smiles_calls`, `standardize_calls`,
-`fragments_before_filter`, `fragments_after_filter`,
+`fragments_before_filter`, `fragments_parsed_ok`,
 `errors_swallowed_by_unwrap_or_default`) rather than adding RENKIN-specific
-concepts to the library itself.
+concepts to the library itself. `fragments_parsed_ok` counts fragments that
+parsed successfully, not post-filter survivors — this harness does not
+reimplement RENKIN's own aromatic-atom-without-a-ring-closure fragment
+filter, so the name doesn't promise one.
 
 ## Corpus-weighted benchmark (Phase 1)
 
@@ -216,6 +219,16 @@ note in the file.)
 | p95 | 3.01ms | 2.77-2.90ms | ~4-8% |
 | p99 | 67.8-68.1ms | 57.3-57.6ms | ~15% |
 | max | 72.9-86.2ms | 65.3-66.2ms | ~10-24% |
+
+**The two arms were not instrumentation-symmetric**, disclosed rather than
+re-measured away: the "before" run used a `main` checkout with
+`perf_counters.rs` copied in but `transform.rs` left uninstrumented (its
+counters are permanently zero, i.e. dead code on that arm), while "after" was
+built with `--features perf-instrumentation` live, paying real
+`AtomicU64::fetch_add` overhead on every `run_reactants`/`build_product` call
+(840 `build_product` calls in this run alone). That bias is conservative —
+the fixed arm carried extra cost the baseline didn't — so **the improvement
+above is understated, not inflated**.
 
 (Ranges are two repeated runs per side, release build, `RAYON_NUM_THREADS=2`,
 same machine.) This is a real, honest, consistent improvement across the

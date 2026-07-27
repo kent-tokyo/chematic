@@ -62,14 +62,12 @@ const DEFAULT_PROBE: &str = concat!(
 
 struct CallStats {
     durations: Vec<Duration>,
-    errors_swallowed: u64,
 }
 
 impl CallStats {
     fn new() -> Self {
         Self {
             durations: Vec::new(),
-            errors_swallowed: 0,
         }
     }
 
@@ -97,6 +95,13 @@ impl CallStats {
 /// re-parse, and standardize each fragment -- the exact call sequence that
 /// (per the bisect in docs/reaction_transform_perf.md) actually carries the
 /// regression, not `run_reactants` in isolation.
+///
+/// Note: this does *not* reimplement RENKIN's own aromatic-atom-without-a-
+/// ring-closure fragment filter (their `split_fragments`'s BFS-leakage
+/// guard) -- `fragments_parsed_ok` below counts successfully-`parse()`d
+/// fragments, not post-filter survivors, and is named accordingly rather
+/// than promising a filter this harness doesn't apply.
+#[allow(clippy::too_many_arguments)]
 fn apply_retro_like(
     smirks: &str,
     mol: &chematic_core::Molecule,
@@ -104,7 +109,8 @@ fn apply_retro_like(
     canonical_smiles_calls: &mut u64,
     standardize_calls: &mut u64,
     fragments_before_filter: &mut u64,
-    fragments_after_filter: &mut u64,
+    fragments_parsed_ok: &mut u64,
+    errors_swallowed: &mut u64,
 ) -> (Duration, Vec<String>) {
     let t0 = Instant::now();
     let mut fragment_smiles = Vec::new();
@@ -121,7 +127,7 @@ fn apply_retro_like(
                             *standardize_calls += 1;
                             let std_smi = canonical_smiles(&std_mol);
                             *canonical_smiles_calls += 1;
-                            *fragments_after_filter += 1;
+                            *fragments_parsed_ok += 1;
                             fragment_smiles.push(std_smi);
                         }
                     }
@@ -130,6 +136,7 @@ fn apply_retro_like(
         }
         Err(_) => {
             // Matches RENKIN's `.unwrap_or_default()` on run_reactants' Result.
+            *errors_swallowed += 1;
         }
     }
     (t0.elapsed(), fragment_smiles)
@@ -187,7 +194,8 @@ fn main() {
     let mut canonical_smiles_calls: u64 = 0;
     let mut standardize_calls: u64 = 0;
     let mut fragments_before_filter: u64 = 0;
-    let mut fragments_after_filter: u64 = 0;
+    let mut fragments_parsed_ok: u64 = 0;
+    let mut errors_swallowed: u64 = 0;
     let mut product_molecules_seen: u64 = 0;
 
     chematic_rxn::perf_counters::reset();
@@ -214,7 +222,8 @@ fn main() {
                     &mut canonical_smiles_calls,
                     &mut standardize_calls,
                     &mut fragments_before_filter,
-                    &mut fragments_after_filter,
+                    &mut fragments_parsed_ok,
+                    &mut errors_swallowed,
                 );
                 stats.durations.push(elapsed);
                 product_molecules_seen += fragments.len() as u64;
@@ -250,11 +259,8 @@ fn main() {
     println!("canonical_smiles_calls={canonical_smiles_calls}");
     println!("standardize_calls={standardize_calls}");
     println!("fragments_before_filter={fragments_before_filter}");
-    println!("fragments_after_filter={fragments_after_filter}");
-    println!(
-        "errors_swallowed_by_unwrap_or_default={}",
-        stats.errors_swallowed
-    );
+    println!("fragments_parsed_ok={fragments_parsed_ok}");
+    println!("errors_swallowed_by_unwrap_or_default={errors_swallowed}");
     println!(
         "successful_match_rate={:.4}",
         product_molecules_seen as f64 / stats.durations.len().max(1) as f64
