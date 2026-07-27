@@ -447,6 +447,14 @@ fn main() {
     let mut n_new_blowup_introduced = 0usize;
     let mut n_new_clash_introduced = 0usize;
     let mut n_molecules_with_violations = 0usize;
+    // Reconciliation counters: track the fate of the EXACT SAME originally-violated
+    // elements arm (a) counted (23 tetrahedral + 4 E/Z), not just "declared elements
+    // in fully-repaired molecules" (a different, smaller denominator that a reviewer
+    // re-deriving the numbers would otherwise have to guess at).
+    let mut baseline_violated_tet_total = 0usize;
+    let mut baseline_violated_tet_fixed = 0usize;
+    let mut baseline_violated_ez_total = 0usize;
+    let mut baseline_violated_ez_fixed = 0usize;
 
     for (name, mol, coords) in &embedded {
         let baseline = verify_stereo(mol, coords);
@@ -454,6 +462,18 @@ fn main() {
             continue; // nothing to repair for this molecule
         }
         n_molecules_with_violations += 1;
+        let baseline_violated_tet: Vec<_> = baseline
+            .tetrahedral
+            .iter()
+            .filter(|t| t.status.is_violated())
+            .collect();
+        let baseline_violated_ez: Vec<_> = baseline
+            .double_bond
+            .iter()
+            .filter(|d| d.status.is_violated())
+            .collect();
+        baseline_violated_tet_total += baseline_violated_tet.len();
+        baseline_violated_ez_total += baseline_violated_ez.len();
 
         let pre_max_rel = max_bond_rel_error(mol, coords);
         let pre_clash = has_gross_clash(coords);
@@ -503,6 +523,35 @@ fn main() {
                         }
                     }
                 }
+                // repair_stereo's Ok contract guarantees every originally-violated
+                // element in this molecule is now Satisfied -- confirm directly
+                // rather than just trusting the contract.
+                for t in &baseline_violated_tet {
+                    let now = post
+                        .tetrahedral
+                        .iter()
+                        .find(|x| x.atom == t.atom)
+                        .map(|x| x.status);
+                    assert_eq!(
+                        now,
+                        Some(StereoStatus::Satisfied),
+                        "{name}: Ok(outcome) must fix every originally-violated tetrahedral center"
+                    );
+                    baseline_violated_tet_fixed += 1;
+                }
+                for d in &baseline_violated_ez {
+                    let now = post
+                        .double_bond
+                        .iter()
+                        .find(|x| x.bond == d.bond)
+                        .map(|x| x.status);
+                    assert_eq!(
+                        now,
+                        Some(StereoStatus::Satisfied),
+                        "{name}: Ok(outcome) must fix every originally-violated E/Z bond"
+                    );
+                    baseline_violated_ez_fixed += 1;
+                }
             }
             Err(failure) => {
                 n_repair_failed += 1;
@@ -512,8 +561,32 @@ fn main() {
                         .or_insert(0) += 1;
                     eprintln!("{name}: repair FAILED for {elem:?}: {reason:?}");
                 }
-                // Still report the partial-coords post-attempt status for
-                // transparency, but these do NOT count as "success" in tet_c/ez_c.
+                // Some elements in this molecule may still have succeeded
+                // individually even though the overall call returned Err (a
+                // DIFFERENT element failed) -- measure directly against
+                // partial_coords rather than assume, for the same reconciliation
+                // reason as the Ok branch above.
+                let partial = verify_stereo(mol, &failure.partial_coords);
+                for t in &baseline_violated_tet {
+                    let now = partial
+                        .tetrahedral
+                        .iter()
+                        .find(|x| x.atom == t.atom)
+                        .map(|x| x.status);
+                    if now == Some(StereoStatus::Satisfied) {
+                        baseline_violated_tet_fixed += 1;
+                    }
+                }
+                for d in &baseline_violated_ez {
+                    let now = partial
+                        .double_bond
+                        .iter()
+                        .find(|x| x.bond == d.bond)
+                        .map(|x| x.status);
+                    if now == Some(StereoStatus::Satisfied) {
+                        baseline_violated_ez_fixed += 1;
+                    }
+                }
             }
         }
     }
@@ -523,6 +596,20 @@ fn main() {
          (repair_stereo fully succeeded: {n_repair_ok}, failed: {n_repair_failed})"
     );
     println!("repair failure reasons: {repair_failure_reasons:?}");
+    println!(
+        "reconciliation vs arm (a): of {baseline_violated_tet_total} baseline tetrahedral \
+         violations, {baseline_violated_tet_fixed} are now Satisfied; of \
+         {baseline_violated_ez_total} baseline E/Z violations, {baseline_violated_ez_fixed} are \
+         now Satisfied (remainder = the typed failures listed above)"
+    );
+    println!(
+        "NOTE: the two tables below count every DECLARED element (not just the originally- \
+         violated ones) in the {n_repair_ok} molecules whose repair fully succeeded -- a smaller, \
+         different denominator than arm (a)'s corpus-wide 39/8 (this table's `declared` also \
+         includes elements that were already Satisfied at baseline and molecules whose repair \
+         failed are excluded entirely). See the reconciliation line above for the apples-to-apples \
+         originally-violated-element comparison against arm (a)."
+    );
     println!(
         "tetrahedral (post-repair, successful repairs only): declared={} satisfied={} violated={} \
          unevaluable={} | violation_rate(among evaluable)={}",

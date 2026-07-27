@@ -95,9 +95,9 @@ use chematic_core::{
 
 use crate::coords::{Coords3D, Point3};
 
-/// Any Gram-... no -- signed-volume magnitude below this (phantom bond length is 1.0,
-/// real bond lengths ~1-2 Å, so a genuine tetrahedral volume is order-1 or larger) is
-/// treated as a degenerate/coplanar arrangement rather than floating-point noise.
+/// Signed-volume magnitude below this (phantom bond length is 1.0, real bond lengths
+/// ~1-2 Å, so a genuine tetrahedral volume is order-1 or larger) is treated as a
+/// degenerate/coplanar arrangement rather than floating-point noise.
 /// Matches `stereo3d.rs`'s own `1e-6` convention for the identical signed-volume test.
 const VOLUME_EPS: f64 = 1e-6;
 
