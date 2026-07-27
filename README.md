@@ -180,10 +180,10 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.7.0
+# chematic v0.7.1
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-07-17, v0.7.0 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-07-17, v0.7.1 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  100%   within ±0.1 Å²
 #   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)
@@ -416,6 +416,10 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.7.1** (2026-07-27): **`run_reactants`/`canonical_smiles()` performance fix**
+- `chematic-smiles`: fixed `canonical_smiles()` calling `CanonicalWriter::write_all()` a second, fully redundant time on every call (the winner was already written once while resolving individualize-refine ties, then thrown away and rewritten) — a real regression introduced by the correctness fix in `be5dbb1` (0.4.26), most visible on highly symmetric molecules (plain rings, cages, `CF3`/`tBu`-style substituents: 45-48x slower `canonical_smiles()` in isolation on chematic 0.4.30 vs 0.4.25, reported via an external consumer's `run_reactants`/`apply_retro` regression). Pure refactor — output is byte-identical (verified against all existing tests, including `be5dbb1`'s own golden-string tests and the issue #50 E/Z regression suite). New `chematic-rxn` `perf-instrumentation` feature + `reaction_transform_perf_report` example benchmark added alongside. Full bisect and remaining known gap (genuine automorphism-orbit pruning, not attempted) in `docs/reaction_transform_perf.md`
+- Full details in `CHANGELOG.md`'s `[Unreleased]` section
+
 **v0.7.0** (2026-07-26): **2D wedge/hash + E/Z stereo now perceived automatically from MOL/SDF, verified canonical-SMILES dedup, CIP Rule-5 phosphorus fix, native InChI explicit-H/isotope fix**
 - `chematic-mol`/`chematic-perception`: MOL V2000/V3000/SDF readers now perceive both tetrahedral wedge/hash parity (PR #154) and E/Z double-bond direction (PR #162) automatically on read, CIP-independent, via `read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics` — typed opt-in diagnostics (`StereoDiagnostic`/`EzDirectionDiagnostic`) never guess on malformed/ambiguous input. Broad-corpus validation (4,999 molecules vs. RDKit 2026.03.3): E/Z — 622 RDKit-resolved double bonds, 0 semantic inversions, 0 false positives. Also fixed a V2000 MDL-code-4 bug, two V3000 `CFG` bugs, and a V2000 writer bug found while building this. PR #162's own corpus reconciliation surfaced a **new, not-yet-fixed** gap: `canonical_smiles()` can drop an already-correctly-`write()`-encoded E/Z marker for some molecules (aromaticity-unaware carrier grouping) — not yet filed as an issue
 - `chematic-inchi`: new verified canonical-SMILES dedup (`dedup` module) — fast canonical-SMILES candidate bucketing reconciled against native-InChI verified identity; fails closed (`VerificationUnavailable`) rather than risk a false merge whenever a specified stereocenter's legacy-CIP ranking is unresolved (closes a real false-`VerifiedDuplicate` found via live 5,000-molecule corpus verification). Follow-up tracked as [#161](https://github.com/kent-tokyo/chematic/issues/161) (an accurate-CIP preflight could recover most of the conservative cases)
@@ -579,7 +583,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.7.0)
+├── Cargo.toml                    workspace root (v0.7.1)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -632,7 +636,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.7.0},
+  version   = {0.7.1},
   year      = {2026},
 }
 ```
