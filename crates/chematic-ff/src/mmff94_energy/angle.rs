@@ -2253,23 +2253,36 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
 
 /// Look up angle bending parameters by MMFF94 numeric atom types.
 ///
-/// `type_j` is the central atom. Both orderings (ti,tj,tk) and (tk,tj,ti) are tried.
+/// `type_j` is the central atom. Both orderings (ti,tj,tk) and (tk,tj,ti) are
+/// tried. If `angle_type` is a ring/bond-type variant (1-8) and no row exists
+/// for this specific atom-type triple at that type, falls back to the
+/// generic `angle_type=0` row for the same triple — mirroring
+/// `mmff94_torsion_energy`'s own type-0 fallback chain. Without this, a
+/// *correct* ring/bond-type classification for a triple the (much smaller)
+/// specialized table doesn't happen to cover would silently drop the angle
+/// term entirely, which is worse than the un-classified behavior it replaces.
 pub fn mmff94_angle_energy(
     angle_type: u8,
     type_i: u8,
     type_j: u8,
     type_k: u8,
 ) -> Option<AngleEnergyParams> {
-    let search = |ti: u8, tk: u8| {
+    let search = |at: u8, ti: u8, tk: u8| {
         MMFF94_ANGLE_ENERGY
-            .binary_search_by_key(&(angle_type, ti, type_j, tk), |&(at, a, b, c, _, _)| {
-                (at, a, b, c)
-            })
+            .binary_search_by_key(&(at, ti, type_j, tk), |&(a0, a, b, c, _, _)| (a0, a, b, c))
             .ok()
             .map(|idx| {
                 let (_, _, _, _, ka, theta0) = MMFF94_ANGLE_ENERGY[idx];
                 AngleEnergyParams { ka, theta0 }
             })
     };
-    search(type_i, type_k).or_else(|| search(type_k, type_i))
+    search(angle_type, type_i, type_k)
+        .or_else(|| search(angle_type, type_k, type_i))
+        .or_else(|| {
+            if angle_type != 0 {
+                search(0, type_i, type_k).or_else(|| search(0, type_k, type_i))
+            } else {
+                None
+            }
+        })
 }

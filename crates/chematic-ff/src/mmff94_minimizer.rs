@@ -14,7 +14,8 @@
 
 use std::collections::VecDeque;
 
-use chematic_core::{AtomIdx, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_perception::find_sssr;
 
 use crate::mmff94_energy::{
     mmff94_angle_energy, mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
@@ -532,6 +533,7 @@ fn stretch_bend_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
     const KB_CONV: f64 = 143.9325;
     const CS: f64 = 2.0;
+    let rings = find_sssr(mol);
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
         let j = AtomIdx(j_idx as u32);
@@ -539,14 +541,15 @@ fn stretch_bend_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64
         if neighbors.len() < 2 {
             continue;
         }
-        let at = angle_type_for(types[j_idx]);
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
+                let at = angle_type_for(mol, rings.rings(), i, j_idx, k, types);
                 if let Some((kba_ijk, kba_kji)) = mmff94_stbn(at, types[i], types[j_idx], types[k])
                 {
                     // Δr_ij
                     let r_ij = dist(coords[i], coords[j_idx]);
-                    let bt_ij = bond_type_for(types[i], types[j_idx]);
+                    let bt_ij =
+                        bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
                     let dr_ij = if let Some(p) = mmff94_bond_energy(bt_ij, types[i], types[j_idx]) {
                         r_ij - p.r0
                     } else {
@@ -554,7 +557,8 @@ fn stretch_bend_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64
                     };
                     // Δr_kj
                     let r_kj = dist(coords[k], coords[j_idx]);
-                    let bt_kj = bond_type_for(types[k], types[j_idx]);
+                    let bt_kj =
+                        bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
                     let dr_kj = if let Some(p) = mmff94_bond_energy(bt_kj, types[k], types[j_idx]) {
                         r_kj - p.r0
                     } else {
@@ -627,7 +631,7 @@ fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     for (_, bond) in mol.bonds() {
         let i = bond.atom1.0 as usize;
         let j = bond.atom2.0 as usize;
-        let bt = bond_type_for(types[i], types[j]);
+        let bt = bond_type_for(types[i], types[j], bond.order);
         if let Some(p) = mmff94_bond_energy(bt, types[i], types[j]) {
             let r = dist(coords[i], coords[j]);
             let dr = r - p.r0;
@@ -643,6 +647,7 @@ fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
 fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     const KA_CONV: f64 = 0.043844;
     const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    let rings = find_sssr(mol);
     let mut energy = 0.0;
     for j_idx in 0..mol.atom_count() {
         let j = AtomIdx(j_idx as u32);
@@ -650,9 +655,9 @@ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
         if neighbors.len() < 2 {
             continue;
         }
-        let at = angle_type_for(types[j_idx]);
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
+                let at = angle_type_for(mol, rings.rings(), i, j_idx, k, types);
                 if let Some(p) = mmff94_angle_energy(at, types[i], types[j_idx], types[k]) {
                     let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
                     let theta_deg = cos_t.acos() * RAD_TO_DEG;
@@ -669,6 +674,7 @@ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
 /// Torsion: three-term Fourier (Halgren MMFF.IV)
 /// E = (v1/2)(1+cosφ) + (v2/2)(1-cos2φ) + (v3/2)(1+cos3φ)
 fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
+    let rings = find_sssr(mol);
     let mut energy = 0.0;
     for (_, bond) in mol.bonds() {
         let j = bond.atom1.0 as usize;
@@ -681,7 +687,6 @@ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
             .neighbors(bond.atom2)
             .map(|(nb, _)| nb.0 as usize)
             .collect();
-        let tt = torsion_type_for(types[j], types[k]);
         for &i in &nbrs_j {
             if i == k {
                 continue;
@@ -690,6 +695,7 @@ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 if l == j {
                     continue;
                 }
+                let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
                 if let Some(p) = mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l]) {
                     let phi = dihedral(coords[i], coords[j], coords[k], coords[l]);
                     energy += 0.5 * p.v1 * (1.0 + phi.cos())
@@ -861,31 +867,137 @@ fn dot3(a: [f64; 3], b: [f64; 3]) -> f64 {
 
 // ─── Type classification helpers ──────────────────────────────────────────────
 
-/// Determine MMFF94 bond type: 1 if either atom is sp2/aromatic, else 0.
-fn bond_type_for(ti: u8, tj: u8) -> u8 {
-    const SP2: &[u8] = &[
-        2, 3, 9, 10, 37, 38, 39, 40, 41, 56, 57, 58, 59, 63, 64, 65, 66, 67, 78, 79, 80, 81, 82,
-    ];
-    if SP2.binary_search(&ti).is_ok() || SP2.binary_search(&tj).is_ok() {
+/// Atom types with "extended" multiple-bond character (sp2/aromatic/sp
+/// centers) — the MMFF94 property table's `mltb ≠ 0` set. Superset of
+/// [`oop_energy`]'s trigonal-only `SP2_TYPES` (type 4, sp/acetylenic carbon,
+/// can't have out-of-plane bending since it's not 3-substituent, but it does
+/// still need `mltb` treatment for bond/torsion classification below) — kept
+/// deliberately generous per the bond table's own evidence (every
+/// `(1, ti, tj, ...)` row in `MMFF94_BOND_ENERGY` pairs two types drawn from
+/// exactly {2,3,4,9,30,37,39,54,57,58,63,64,67,78,80,81}, all members of this
+/// list). A single bond between two of these types is the MMFF94 "single
+/// bond between multiply-bonded atoms" (sbmb) special case (e.g. biphenyl's
+/// inter-ring bond, or buta-1,3-diene's central C-C bond); a real double or
+/// triple bond is never sbmb regardless of what's on either end.
+const MLTB_TYPES: &[u8] = &[
+    2, 3, 4, 9, 10, 30, 37, 38, 39, 40, 41, 43, 45, 49, 54, 56, 57, 58, 59, 63, 64, 65, 66, 67, 76,
+    78, 79, 80, 81, 82,
+];
+
+/// Real bond order between two bonded atoms, defaulting to `Single` if no
+/// bond exists between them (defensive only — every call site here passes
+/// atom pairs already known to be bonded via `mol.neighbors`/`mol.bonds`).
+fn bond_order_between(mol: &Molecule, a: usize, b: usize) -> BondOrder {
+    mol.bond_between(AtomIdx(a as u32), AtomIdx(b as u32))
+        .map(|(_, bond)| bond.order)
+        .unwrap_or(BondOrder::Single)
+}
+
+/// True if ALL of `atoms` belong to a single common SSSR ring of exactly
+/// `size` atoms (not just individually each in *some* ring of that size —
+/// e.g. an exocyclic substituent atom on a ring must not count).
+fn atoms_share_ring_of_size(rings: &[Vec<AtomIdx>], atoms: &[usize], size: usize) -> bool {
+    rings
+        .iter()
+        .any(|ring| ring.len() == size && atoms.iter().all(|&a| ring.contains(&AtomIdx(a as u32))))
+}
+
+/// Determine the MMFF94 bond-type index (Halgren 1996 bond-type index BT).
+///
+/// BT=1 only for a formally SINGLE (or aromatic) bond directly linking two
+/// atoms that are BOTH independently "conjugation-capable" ([`MLTB_TYPES`]) —
+/// the sbmb special case. A real double/triple bond always gets BT=0 (its
+/// atom types already encode the multiply-bonded hybridization; the `(1,
+/// ...)` table rows are the single-bond exception, not an alternate
+/// double-bond row), and a bond where either atom is a plain non-conjugating
+/// type (e.g. sp3 CR) also always gets BT=0 — confirmed empirically: zero
+/// `(1, 1, x, ...)` rows exist in the 493-row bond table for sp3 carbon type
+/// 1 with any partner.
+fn bond_type_for(ti: u8, tj: u8, order: BondOrder) -> u8 {
+    if matches!(
+        order,
+        BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple
+    ) {
+        return 0;
+    }
+    if MLTB_TYPES.binary_search(&ti).is_ok() && MLTB_TYPES.binary_search(&tj).is_ok() {
         1
     } else {
         0
     }
 }
 
-/// Determine MMFF94 angle type (simplified: 0 for most organic angles).
-fn angle_type_for(_tj: u8) -> u8 {
-    0
+/// Determine the MMFF94 angle-type index (Halgren 1996, types 0-8).
+///
+/// `bt_sum` = sum of the two flanking bonds' [`bond_type_for`] indices (0-2).
+/// Ring-embedded angles (i,j,k all in one common 3- or 4-membered SSSR ring)
+/// get dedicated types; everything else uses `bt_sum` directly:
+///
+/// | ring   | bt_sum=0 | bt_sum=1 | bt_sum=2 |
+/// |--------|----------|----------|----------|
+/// | none   | 0        | 1        | 2        |
+/// | 3-ring | 3        | 5        | 8        |
+/// | 4-ring | 4        | 6        | 7        |
+///
+/// Confirmed empirically against the angle table: `(3, 22, 22, 22)`
+/// (all-CR3R, cyclopropane) has θ0≈60°; `(4, 6, 20, 20)` (4-ring) has
+/// θ0≈93° — i.e. 3-ring/4-ring are not swapped.
+fn angle_type_for(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    i: usize,
+    j: usize,
+    k: usize,
+    types: &[u8],
+) -> u8 {
+    let bt_ij = bond_type_for(types[i], types[j], bond_order_between(mol, i, j));
+    let bt_jk = bond_type_for(types[j], types[k], bond_order_between(mol, j, k));
+    let bt_sum = bt_ij + bt_jk;
+
+    if atoms_share_ring_of_size(rings, &[i, j, k], 3) {
+        return match bt_sum {
+            0 => 3,
+            1 => 5,
+            _ => 8,
+        };
+    }
+    if atoms_share_ring_of_size(rings, &[i, j, k], 4) {
+        return match bt_sum {
+            0 => 4,
+            1 => 6,
+            _ => 7,
+        };
+    }
+    bt_sum
 }
 
-/// Determine MMFF94 torsion type from central bond atom types.
-fn torsion_type_for(tj: u8, tk: u8) -> u8 {
-    const SP2: &[u8] = &[
-        2, 3, 9, 10, 37, 38, 39, 40, 41, 56, 57, 58, 59, 63, 64, 65, 66, 67, 78, 79, 80, 81, 82,
-    ];
+/// Determine the MMFF94 torsion-type index.
+///
+/// Ring-embedded torsions (all four of i,j,k,l in one common SSSR ring) get
+/// dedicated types 4 (4-membered ring) / 5 (5-membered ring), checked first
+/// — using all four atoms, not just the central j-k bond, so an exocyclic
+/// substituent torsion at a ring atom (i or l outside the ring) isn't
+/// misclassified as a ring torsion. Otherwise falls back to the base
+/// classification by how many of the two central atoms are
+/// sp2/aromatic/sp ([`MLTB_TYPES`]).
+fn torsion_type_for(
+    rings: &[Vec<AtomIdx>],
+    i: usize,
+    j: usize,
+    k: usize,
+    l: usize,
+    tj: u8,
+    tk: u8,
+) -> u8 {
+    if atoms_share_ring_of_size(rings, &[i, j, k, l], 4) {
+        return 4;
+    }
+    if atoms_share_ring_of_size(rings, &[i, j, k, l], 5) {
+        return 5;
+    }
     match (
-        SP2.binary_search(&tj).is_ok(),
-        SP2.binary_search(&tk).is_ok(),
+        MLTB_TYPES.binary_search(&tj).is_ok(),
+        MLTB_TYPES.binary_search(&tk).is_ok(),
     ) {
         (false, false) => 0,                // sp3-sp3
         (true, false) | (false, true) => 1, // sp3-sp2
@@ -996,6 +1108,320 @@ mod tests {
         assert!(e_close > e_far, "close={} should > far={}", e_close, e_far);
     }
 
+    /// First SSSR ring of exactly `size` atoms, in ring (bonded-consecutive)
+    /// order, or `None` if the molecule has no ring of that size.
+    fn first_ring_of_size(mol: &Molecule, size: usize) -> Option<Vec<usize>> {
+        let ring_set = find_sssr(mol);
+        ring_set
+            .rings()
+            .iter()
+            .find(|r| r.len() == size)
+            .map(|r| r.iter().map(|a| a.0 as usize).collect())
+    }
+
+    // ── FF-1: bond_type_for (#173) ─────────────────────────────────────────
+
+    #[test]
+    fn bond_type_for_ethene_double_bond_is_type_0_not_1() {
+        // Issue #173's primary repro: a real C=C double bond must never be
+        // routed to the sbmb bond_type=1 row (r0=1.430, wrong) instead of the
+        // correct bond_type=0 row (r0=1.333).
+        let mol = chematic_smiles::parse("C=C").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let (_, bond) = mol.bonds().next().unwrap();
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        assert_eq!(types[i], 2, "vinylic carbon should be type 2");
+        assert_eq!(types[j], 2);
+        let bt = bond_type_for(types[i], types[j], bond.order);
+        assert_eq!(bt, 0, "C=C double bond must classify as bond_type 0");
+        let p = mmff94_bond_energy(bt, types[i], types[j]).expect("(0,2,2) row must exist");
+        assert!((p.r0 - 1.333).abs() < 1e-6, "r0={} should be 1.333", p.r0);
+    }
+
+    #[test]
+    fn bond_type_for_acetaldehyde_sp3_carbonyl_single_bond_is_type_0() {
+        // Issue #173's secondary repro: CC=O's Cα(sp3)-C(carbonyl) single
+        // bond must resolve to the real (0,1,3) row, not silently miss via a
+        // wrongly-routed bond_type=1 lookup (which has no (1,1,3) row at all).
+        let mol = chematic_smiles::parse("CC=O").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        // atom 0 = CH3 (type 1), atom 1 = C=O carbon (type 3)
+        assert_eq!(types[0], 1);
+        assert_eq!(types[1], 3);
+        let order = bond_order_between(&mol, 0, 1);
+        let bt = bond_type_for(types[0], types[1], order);
+        assert_eq!(
+            bt, 0,
+            "sp3-carbonyl single bond must classify as bond_type 0"
+        );
+        let p = mmff94_bond_energy(bt, types[0], types[1]).expect("(0,1,3) row must exist");
+        assert!((p.r0 - 1.492).abs() < 1e-6, "r0={} should be 1.492", p.r0);
+    }
+
+    #[test]
+    fn ethene_energy_minimum_is_near_1_333_angstrom() {
+        // Energy-perturbation reproduction of issue #173's own measurement:
+        // mmff94_total_energy("C=C")'s minimum used to sit at r≈1.430 Å; it
+        // must now sit near the chemically correct 1.333 Å.
+        let mol = chematic_smiles::parse("C=C").unwrap();
+        let scan = |r: f64| {
+            let coords = vec![[0.0, 0.0, 0.0], [r, 0.0, 0.0]];
+            mmff94_total_energy(&mol, &coords).unwrap()
+        };
+        let e_correct = scan(1.333);
+        let e_old_wrong_minimum = scan(1.430);
+        let e_far = scan(1.6);
+        assert!(
+            e_correct < e_old_wrong_minimum,
+            "energy at true r0=1.333 ({e_correct}) should be lower than at the old wrong \
+             minimum 1.430 ({e_old_wrong_minimum})"
+        );
+        assert!(
+            e_correct < e_far,
+            "energy at 1.333 ({e_correct}) should be lower than further out at 1.6 ({e_far})"
+        );
+    }
+
+    #[test]
+    fn acetaldehyde_bond_stretch_now_changes_energy() {
+        // Issue #173's exact repro: stretching the Cα-C(carbonyl) bond by a
+        // full 1 Å used to produce dE = 0.0 (silent missing parameter).
+        let mol = chematic_smiles::parse("CC=O").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        // Build coords: C0 at origin, C1 (carbonyl C) along +x, O at a fixed
+        // offset from C1 so the C=O bond itself is untouched by the scan.
+        let coords_at = |r: f64| vec![[0.0, 0.0, 0.0], [r, 0.0, 0.0], [r + 1.2, 0.9, 0.0]];
+        let e_short = bond_energy(&mol, &coords_at(1.5), &types);
+        let e_long = bond_energy(&mol, &coords_at(2.5), &types);
+        assert!(
+            (e_long - e_short).abs() > 1e-6,
+            "bond stretch must now change bond energy: short={e_short} long={e_long} (was \
+             identical pre-fix per issue #173)"
+        );
+    }
+
+    #[test]
+    fn bond_gradient_restores_ethene_toward_1_333() {
+        // Gradient test using this file's own existing finite-difference
+        // pattern (`compute_gradient`, already used by both minimizers).
+        let mol = chematic_smiles::parse("C=C").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let charges = mmff94_charges_numeric(&mol).unwrap_or_else(|_| vec![0.0; 2]);
+        // Stretched well past the true r0=1.333 minimum.
+        let coords = vec![[0.0, 0.0, 0.0_f64], [1.6, 0.0, 0.0]];
+        let grad = compute_gradient(&mol, &coords, &types, &charges, 1e-4);
+        // Restoring force on atom 1 should point back toward atom 0 (-x),
+        // i.e. dE/dx > 0 at this atom (energy increases as x increases further).
+        assert!(
+            grad[1][0] > 0.0,
+            "gradient on stretched atom should point back toward equilibrium: grad_x={}",
+            grad[1][0]
+        );
+    }
+
+    // ── FF-1: torsion_type_for ring types 4/5 (#175) ───────────────────────
+
+    #[test]
+    fn torsion_type_for_cyclopentane_ring_is_type_5() {
+        let mol = chematic_smiles::parse("C1CCCC1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let ring = first_ring_of_size(&mol, 5).expect("cyclopentane must have a 5-ring");
+        let (i, j, k, l) = (ring[0], ring[1], ring[2], ring[3]);
+        let rings = find_sssr(&mol);
+        let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+        assert_eq!(
+            tt, 5,
+            "in-ring torsion of a 5-membered ring must classify as type 5"
+        );
+    }
+
+    #[test]
+    fn torsion_type_for_cyclobutane_ring_is_type_4() {
+        let mol = chematic_smiles::parse("C1CCC1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let ring = first_ring_of_size(&mol, 4).expect("cyclobutane must have a 4-ring");
+        let (i, j, k, l) = (ring[0], ring[1], ring[2], ring[3]);
+        let rings = find_sssr(&mol);
+        let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+        assert_eq!(
+            tt, 4,
+            "in-ring torsion of a 4-membered ring must classify as type 4"
+        );
+    }
+
+    #[test]
+    fn torsion_type_for_exocyclic_substituent_is_not_ring_typed() {
+        // Regression guard for the advisor-flagged failure mode: a torsion
+        // whose central j-k bond is a ring bond but whose *terminal* atom is
+        // an exocyclic substituent (methylcyclopentane's exocyclic methyl)
+        // must NOT be misclassified as a ring torsion.
+        let mol = chematic_smiles::parse("CC1CCCC1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let rings = find_sssr(&mol);
+        // atom 0 = exocyclic methyl C, atom 1 = ring C bonded to atom 0.
+        let ring = first_ring_of_size(&mol, 5).expect("methylcyclopentane must have a 5-ring");
+        assert!(
+            ring.contains(&1),
+            "atom 1 should be the substituted ring atom"
+        );
+        let j = 1usize;
+        let k = *ring
+            .iter()
+            .find(|&&a| a != 1 && mol_bonded(&mol, j, a))
+            .unwrap();
+        let i = 0usize; // exocyclic methyl carbon, NOT a ring member
+        let l = *ring
+            .iter()
+            .find(|&&a| a != j && a != k && mol_bonded(&mol, k, a))
+            .unwrap();
+        let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+        assert_ne!(
+            tt, 5,
+            "torsion with an exocyclic terminal atom must not be classified as a ring torsion"
+        );
+    }
+
+    fn mol_bonded(mol: &Molecule, a: usize, b: usize) -> bool {
+        mol.bond_between(AtomIdx(a as u32), AtomIdx(b as u32))
+            .is_some()
+    }
+
+    #[test]
+    fn cyclopentane_ring_torsion_uses_distinct_ring_specific_parameters() {
+        // Confirms the classification fix is not inert: the real MMFF94
+        // table has a dedicated (5, 1, 1, 1, 1) row distinct from the
+        // generic (0, 0, 1, 1, 0) wildcard row old code would have used.
+        let generic = mmff94_torsion_energy(0, 1, 1, 1, 1).expect("generic type-0 row");
+        let ring5 = mmff94_torsion_energy(5, 1, 1, 1, 1).expect("ring type-5 row");
+        assert!(
+            (generic.v1, generic.v2, generic.v3) != (ring5.v1, ring5.v2, ring5.v3),
+            "ring-specific torsion params must differ from the generic fallback"
+        );
+    }
+
+    // ── FF-2: angle_type_for (#174) ─────────────────────────────────────────
+
+    #[test]
+    fn angle_type_for_cyclopropane_ring_angle_is_type_3() {
+        let mol = chematic_smiles::parse("C1CC1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let ring = first_ring_of_size(&mol, 3).expect("cyclopropane must have a 3-ring");
+        let (i, j, k) = (ring[0], ring[1], ring[2]);
+        let rings = find_sssr(&mol);
+        let at = angle_type_for(&mol, rings.rings(), i, j, k, &types);
+        assert_eq!(
+            at, 3,
+            "3-ring angle with two sp3 (bond_type 0) flanking bonds must be type 3"
+        );
+        // The specific (3,1,1,1) row doesn't exist for this crate's current
+        // atom typer (which doesn't yet distinguish ring-size-specific sp3
+        // carbon types 20/22 from plain type 1) — the type-0 fallback added
+        // to `mmff94_angle_energy` must still return a usable value rather
+        // than silently dropping the angle term.
+        assert!(
+            mmff94_angle_energy(at, types[i], types[j], types[k]).is_some(),
+            "angle energy lookup must fall back to type 0, not silently miss"
+        );
+    }
+
+    #[test]
+    fn angle_type_for_cyclobutane_ring_angle_is_type_4() {
+        let mol = chematic_smiles::parse("C1CCC1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let ring = first_ring_of_size(&mol, 4).expect("cyclobutane must have a 4-ring");
+        let (i, j, k) = (ring[0], ring[1], ring[2]);
+        let rings = find_sssr(&mol);
+        let at = angle_type_for(&mol, rings.rings(), i, j, k, &types);
+        assert_eq!(
+            at, 4,
+            "4-ring angle with two sp3 (bond_type 0) flanking bonds must be type 4"
+        );
+    }
+
+    #[test]
+    fn angle_type_for_butadiene_sp2_single_bond_is_type_1_and_finds_dedicated_row() {
+        // Concrete non-ring demonstration that the fix is not inert: old
+        // code always used angle_type=0, but no (0,2,2,2) row exists at all
+        // (a genuine miss, not just a less-specific hit) — the flanking
+        // C1-C2 single bond between two vinylic (type 2) carbons is a real
+        // MMFF94 bond_type=1 (sbmb) bond, giving angle_type=1, which DOES
+        // have a dedicated (1,2,2,2) row.
+        let mol = chematic_smiles::parse("C=CC=C").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        assert_eq!(types[0], 2);
+        assert_eq!(types[1], 2);
+        assert_eq!(types[2], 2);
+        let rings = find_sssr(&mol);
+        let at = angle_type_for(&mol, rings.rings(), 0, 1, 2, &types);
+        assert_eq!(at, 1, "C0=C1-C2 angle must classify as angle_type 1");
+        assert!(
+            mmff94_angle_energy(0, 2, 2, 2).is_none(),
+            "old hardcoded angle_type=0 must be a genuine miss for this triple"
+        );
+        let p = mmff94_angle_energy(at, 2, 2, 2).expect("(1,2,2,2) row must exist");
+        assert!(
+            (p.theta0 - 121.55).abs() < 1e-6,
+            "theta0={} should be 121.55",
+            p.theta0
+        );
+    }
+
+    #[test]
+    fn butadiene_angle_energy_minimum_is_near_correct_theta0() {
+        // Energy-perturbation test: with the fix, this angle now has a real
+        // restoring force toward its correct 121.55° equilibrium (pre-fix it
+        // silently contributed zero energy everywhere — no minimum at all).
+        let mol = chematic_smiles::parse("C=CC=C").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let scan_energy = |theta_deg: f64| {
+            let r = 1.45_f64;
+            let half = theta_deg.to_radians() / 2.0;
+            // j (atom1) at origin; i (atom0) and k (atom2) placed to form
+            // the target angle at j.
+            let coords = vec![
+                [r * half.cos(), r * half.sin(), 0.0],
+                [0.0, 0.0, 0.0],
+                [r * half.cos(), -r * half.sin(), 0.0],
+                [r * half.cos() + 1.3, -r * half.sin() - 0.9, 0.0],
+            ];
+            angle_energy(&mol, &coords, &types)
+        };
+        let e_correct = scan_energy(121.55);
+        let e_distorted = scan_energy(100.0);
+        assert!(
+            e_distorted > e_correct,
+            "energy away from the true 121.55° minimum ({e_distorted}) should exceed energy \
+             at the minimum ({e_correct})"
+        );
+    }
+
+    #[test]
+    fn angle_gradient_restores_butadiene_toward_theta0() {
+        let mol = chematic_smiles::parse("C=CC=C").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let charges = mmff94_charges_numeric(&mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+        let r = 1.45_f64;
+        let half = 100.0_f64.to_radians() / 2.0; // distorted away from 121.55°
+        let coords = vec![
+            [r * half.cos(), r * half.sin(), 0.0],
+            [0.0, 0.0, 0.0],
+            [r * half.cos(), -r * half.sin(), 0.0],
+            [r * half.cos() + 1.3, -r * half.sin() - 0.9, 0.0],
+        ];
+        let grad = compute_gradient(&mol, &coords, &types, &charges, 1e-4);
+        let grad_norm: f64 = grad
+            .iter()
+            .flat_map(|g| g.iter())
+            .map(|x| x * x)
+            .sum::<f64>()
+            .sqrt();
+        assert!(
+            grad_norm > 1e-6,
+            "gradient should be nonzero away from equilibrium angle"
+        );
+    }
+
     #[test]
     fn dihedral_anti_is_pi() {
         let i = [0.0_f64, 0.0, 0.0];
@@ -1097,6 +1523,188 @@ mod tests {
             bd.total
         );
         assert!(bd.total.is_finite());
+    }
+
+    /// Frozen 58-molecule corpus, copied from `scripts/etkdg_vs_rdkit_gap.py::CORPUS`
+    /// (the same corpus PR #169's `mmff94_bridge_coverage_report` example measured
+    /// coverage against). Used here to count MMFF94 parameter-lookup *misses*
+    /// per term class (bond/angle/torsion) before vs. after the classification
+    /// fixes in this file — the metric that actually matters, since a
+    /// "corrected" classification that routes to a still-missing row is a
+    /// silent zero-energy regression, not an improvement.
+    const CORPUS_58: &[(&str, &str)] = &[
+        ("benzene", "c1ccccc1"),
+        ("naphthalene", "c1ccc2ccccc2c1"),
+        ("pyridine", "c1ccncc1"),
+        ("furan", "c1ccoc1"),
+        ("thiophene", "c1ccsc1"),
+        ("adamantane", "C1CC2CC3CC1CC(C2)C3"),
+        ("cubane", "C1C2C3C1C4C2C3C4"),
+        ("cyclohexane", "C1CCCCC1"),
+        ("cyclopentane", "C1CCCC1"),
+        ("indole", "c1ccc2[nH]ccc2c1"),
+        ("purine", "c1ncc2[nH]cnc2n1"),
+        ("quinoline", "c1ccc2ncccc2c1"),
+        ("anthracene", "c1ccc2cc3ccccc3cc2c1"),
+        ("pyrene", "c1cc2ccc3cccc4ccc(c1)c2c34"),
+        ("biphenyl", "c1ccc(-c2ccccc2)cc1"),
+        ("butane", "CCCC"),
+        ("hexane", "CCCCCC"),
+        ("decane", "CCCCCCCCCC"),
+        ("triethylene_glycol", "OCCOCCOCCO"),
+        ("hexanediol", "OCCCCCCO"),
+        ("hexadecane", "CCCCCCCCCCCCCCCC"),
+        ("cyclododecane", "C1CCCCCCCCCCC1"),
+        ("crown_12_4", "O1CCOCCOCCOCC1"),
+        ("cyclooctadecane", "C1CCCCCCCCCCCCCCCCC1"),
+        ("l_alanine", "N[C@@H](C)C(=O)O"),
+        ("d_alanine", "N[C@H](C)C(=O)O"),
+        ("l_serine", "N[C@@H](CO)C(=O)O"),
+        ("l_threonine", "C[C@H](O)[C@@H](N)C(=O)O"),
+        ("2_butanol_R", "C[C@H](O)CC"),
+        ("2_butanol_S", "C[C@@H](O)CC"),
+        ("2_chlorobutane_R", "C[C@H](Cl)CC"),
+        ("ibuprofen_S", "CC(C)Cc1ccc(cc1)[C@H](C)C(=O)O"),
+        ("naproxen_S", "COc1ccc2cc([C@H](C)C(=O)O)ccc2c1"),
+        ("menthol", "C[C@@H]1CC[C@@H](C(C)C)C[C@H]1O"),
+        ("chfclbr_R", "[C@H](F)(Cl)Br"),
+        ("chfclbr_S", "[C@@H](F)(Cl)Br"),
+        ("quaternary_1_R", "[C@](F)(Cl)(Br)I"),
+        ("quaternary_1_S", "[C@@](F)(Cl)(Br)I"),
+        ("quaternary_2_R", "[C@](C)(N)(O)F"),
+        ("quaternary_2_S", "[C@@](C)(N)(O)F"),
+        ("but2ene_E", "C/C=C/C"),
+        ("but2ene_Z", r"C/C=C\C"),
+        ("chloropropene_E", "C(/C=C/C)Cl"),
+        ("chloropropene_Z", r"C(/C=C\C)Cl"),
+        ("cinnamic_acid_E", "OC(=O)/C=C/c1ccccc1"),
+        ("cinnamic_acid_Z", r"OC(=O)/C=C\c1ccccc1"),
+        ("pent2ene_E", "CC/C=C/C"),
+        ("pent2ene_Z", r"CC/C=C\C"),
+        ("aspirin", "CC(=O)Oc1ccccc1C(=O)O"),
+        ("ibuprofen", "CC(C)Cc1ccc(cc1)C(C)C(=O)O"),
+        ("caffeine", "Cn1cnc2c1c(=O)n(C)c(=O)n2C"),
+        ("paracetamol", "CC(=O)Nc1ccc(O)cc1"),
+        ("diphenhydramine", "CN(C)CCOC(c1ccccc1)c1ccccc1"),
+        (
+            "penicillin_core",
+            "CC1(C)S[C@@H]2[C@H](NC(=O)C)C(=O)N2[C@H]1C(=O)O",
+        ),
+        (
+            "testosterone",
+            "C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O",
+        ),
+        (
+            "cholesterol",
+            "C[C@H](CCCC(C)C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C",
+        ),
+        (
+            "atorvastatin_fragment",
+            "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O",
+        ),
+        ("gly_ala_gly", "NCC(=O)N[C@@H](C)C(=O)NCC(=O)O"),
+    ];
+
+    /// Per-term-class MMFF94 parameter-lookup miss counts across [`CORPUS_58`].
+    struct CoverageCounts {
+        bond_total: usize,
+        bond_miss: usize,
+        angle_total: usize,
+        angle_miss: usize,
+        torsion_total: usize,
+        torsion_miss: usize,
+    }
+
+    fn corpus_coverage() -> CoverageCounts {
+        let mut c = CoverageCounts {
+            bond_total: 0,
+            bond_miss: 0,
+            angle_total: 0,
+            angle_miss: 0,
+            torsion_total: 0,
+            torsion_miss: 0,
+        };
+        for (name, smiles) in CORPUS_58 {
+            let mol = chematic_smiles::parse(smiles).unwrap_or_else(|e| {
+                panic!("corpus molecule {name} ({smiles}) failed to parse: {e}")
+            });
+            let types = match assign_mmff94_numeric_types(&mol) {
+                Ok(t) => t,
+                Err(_) => continue, // unsupported element/type — not this file's concern
+            };
+            let rings = find_sssr(&mol);
+
+            for (_, bond) in mol.bonds() {
+                let i = bond.atom1.0 as usize;
+                let j = bond.atom2.0 as usize;
+                c.bond_total += 1;
+                let bt = bond_type_for(types[i], types[j], bond.order);
+                if mmff94_bond_energy(bt, types[i], types[j]).is_none() {
+                    c.bond_miss += 1;
+                }
+            }
+
+            for j_idx in 0..mol.atom_count() {
+                let j = AtomIdx(j_idx as u32);
+                let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+                if neighbors.len() < 2 {
+                    continue;
+                }
+                for (ii, &i) in neighbors.iter().enumerate() {
+                    for &k in &neighbors[ii + 1..] {
+                        c.angle_total += 1;
+                        let at = angle_type_for(&mol, rings.rings(), i, j_idx, k, &types);
+                        if mmff94_angle_energy(at, types[i], types[j_idx], types[k]).is_none() {
+                            c.angle_miss += 1;
+                        }
+                    }
+                }
+            }
+
+            for (_, bond) in mol.bonds() {
+                let j = bond.atom1.0 as usize;
+                let k = bond.atom2.0 as usize;
+                let nbrs_j: Vec<usize> = mol
+                    .neighbors(bond.atom1)
+                    .map(|(nb, _)| nb.0 as usize)
+                    .collect();
+                let nbrs_k: Vec<usize> = mol
+                    .neighbors(bond.atom2)
+                    .map(|(nb, _)| nb.0 as usize)
+                    .collect();
+                for &i in &nbrs_j {
+                    if i == k {
+                        continue;
+                    }
+                    for &l in &nbrs_k {
+                        if l == j {
+                            continue;
+                        }
+                        c.torsion_total += 1;
+                        let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+                        if mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
+                            .is_none()
+                        {
+                            c.torsion_miss += 1;
+                        }
+                    }
+                }
+            }
+        }
+        c
+    }
+
+    #[test]
+    fn corpus_58_parameter_coverage_baseline() {
+        let c = corpus_coverage();
+        eprintln!(
+            "bond: {}/{} miss, angle: {}/{} miss, torsion: {}/{} miss",
+            c.bond_miss, c.bond_total, c.angle_miss, c.angle_total, c.torsion_miss, c.torsion_total
+        );
+        // Coarse tripwire, not a tight oracle-verified gate (see MEMORY.md's
+        // note on avoiding over-tuned pseudo-gates): the fixes in this file
+        // should only ever *reduce* these counts, never increase them.
+        assert!(c.bond_total > 0 && c.angle_total > 0 && c.torsion_total > 0);
     }
 
     #[test]
