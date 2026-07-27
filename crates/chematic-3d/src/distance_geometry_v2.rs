@@ -322,6 +322,66 @@ pub fn embed_distance_geometry_v2_detail(
     Err((last_cause, stats))
 }
 
+/// How well does a **final, already-embedded** geometry satisfy the distance bounds
+/// it was built from? Diagnostic, not part of the embedding call itself or the
+/// acceptance gate: recomputes the same bound matrix `embed_distance_geometry_v2`
+/// used internally (bounds construction is deterministic given `mol`, independent of
+/// the random seed) and checks **every** atom pair -- not just bonded pairs -- against
+/// `[lower, upper]`.
+///
+/// `refine_coords`'s SHAKE-like projection is a heuristic bounds-satisfaction pass,
+/// not a guaranteed-convergent solver, so nonzero residual violation is expected;
+/// this makes it visible and measurable rather than assumed away.
+pub fn bounds_conformance(mol: &Molecule, coords: &Coords3D) -> BoundsConformance {
+    let (lower0, upper0) = build_bound_matrix(mol);
+    let mut lower = lower0;
+    let mut upper = upper0;
+    smooth_bounds(&mut lower, &mut upper);
+
+    let n = mol.atom_count();
+    let mut n_pairs = 0usize;
+    let mut n_violations = 0usize;
+    let mut max_rel_violation = 0.0_f64;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let d = coords
+                .get(AtomIdx(i as u32))
+                .distance(&coords.get(AtomIdx(j as u32)));
+            let lo = lower[i][j];
+            let hi = upper[i][j];
+            n_pairs += 1;
+            let rel = if d < lo - 1e-6 {
+                Some((lo - d) / lo.max(1e-9))
+            } else if hi.is_finite() && d > hi + 1e-6 {
+                Some((d - hi) / hi.max(1e-9))
+            } else {
+                None
+            };
+            if let Some(rel) = rel {
+                n_violations += 1;
+                if rel > max_rel_violation {
+                    max_rel_violation = rel;
+                }
+            }
+        }
+    }
+    BoundsConformance {
+        n_pairs,
+        n_violations,
+        max_rel_violation,
+    }
+}
+
+/// Result of [`bounds_conformance`]: how many of `mol`'s atom pairs (all pairs, not
+/// just bonded ones) land outside their own smoothed `[lower, upper]` bounds in a
+/// given final geometry, and the worst relative violation among them.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct BoundsConformance {
+    pub n_pairs: usize,
+    pub n_violations: usize,
+    pub max_rel_violation: f64,
+}
+
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
@@ -578,6 +638,81 @@ mod tests {
             .fold(0.0_f64, f64::max)
     }
 
+    /// KNOWN LIMITATION (documented, not fixed by this module -- see PR body):
+    /// every 3-membered ring fails closed with `BoundsConstructionFailed`. Root
+    /// cause is in `dg_fft::build_bound_matrix` (not this module's code): its
+    /// angle-constraint loop treats every pair of a center atom's neighbors as a
+    /// 1-3 (through-center) relationship and unconditionally tightens their bound
+    /// using the *generic* ideal angle (~109.5°/120°, `ideal_bond_angle` has no
+    /// notion of ring strain) -- but in a 3-membered ring, that "1-3" pair is
+    /// *also* a direct 1-2 bonded pair (the ring closes one bond away), so the
+    /// angle constraint's generic-angle-derived bound overwrites the correct,
+    /// much shorter bond-length bound with a value inconsistent with it
+    /// (concretely, for cyclopropane's ring-closing C-C pair: bond constraint
+    /// gives upper ≈ 1.59 Å, the angle constraint then tightens lower to ≈ 2.41 Å
+    /// using the generic ~109.5° angle instead of the real ~60° ring angle,
+    /// producing `lower > upper` for the same pair). This module's own
+    /// pre-smoothing sanity check (`try_embed_once`) catches exactly this and
+    /// fails closed with a typed error -- correct behavior, just a real, disclosed
+    /// gap for a common drug-discovery motif (cyclopropane/epoxide/aziridine
+    /// rings), not silently mishandled.
+    #[test]
+    fn three_membered_rings_fail_closed_not_silently() {
+        for smiles in [
+            "C1CC1",         // cyclopropane
+            "C1CO1",         // epoxide
+            "C1CN1",         // aziridine
+            "C1CS1",         // thiirane
+            "C1CC1c1ccccc1", // cyclopropylbenzene
+            "C1CC1C(=O)O",   // cyclopropanecarboxylic acid
+        ] {
+            let mol = parse(smiles).unwrap();
+            let params = EmbedParameters::default();
+            let err = embed_distance_geometry_v2(&mol, &params).unwrap_err();
+            assert_eq!(
+                err,
+                EmbedFailureCause::BoundsConstructionFailed,
+                "{smiles}: expected a typed BoundsConstructionFailed, not a silent success or a different error"
+            );
+        }
+        // Controls: 4- and 5-membered rings are unaffected (this is specific to
+        // 3-membered rings, not "any small ring").
+        for smiles in ["C1CCC1", "C1CCCC1"] {
+            let mol = parse(smiles).unwrap();
+            let params = EmbedParameters::default();
+            assert!(
+                embed_distance_geometry_v2(&mol, &params).is_ok(),
+                "{smiles}: 4/5-membered rings should still embed fine"
+            );
+        }
+    }
+
+    #[test]
+    fn cyclopropane_exact_bound_contradiction_verified() {
+        // Verifies the exact numbers cited in the doc comment above (and in the PR
+        // body's Known Limitations) rather than trusting them from memory.
+        let mol = parse("C1CC1").unwrap();
+        let (lower, upper) = crate::dg_fft::build_bound_matrix(&mol);
+        let mut found = false;
+        for (_, bond) in mol.bonds() {
+            let i = bond.atom1.0 as usize;
+            let j = bond.atom2.0 as usize;
+            if lower[i][j] > upper[i][j] {
+                println!(
+                    "cyclopropane ring-closing pair ({i},{j}): lower={:.3} upper={:.3}",
+                    lower[i][j], upper[i][j]
+                );
+                assert!((lower[i][j] - 2.414).abs() < 0.01, "lower={}", lower[i][j]);
+                assert!((upper[i][j] - 1.590).abs() < 0.01, "upper={}", upper[i][j]);
+                found = true;
+            }
+        }
+        assert!(
+            found,
+            "expected at least one bonded pair with lower > upper in cyclopropane's bound matrix"
+        );
+    }
+
     #[test]
     fn ethane_bond_length_reasonable() {
         let mol = parse("CC").unwrap();
@@ -749,6 +884,50 @@ mod tests {
             assert_eq!(stats.max_negative_eigenvalue_magnitude, 0.0);
         } else {
             assert!(stats.max_negative_eigenvalue_magnitude > 0.0);
+        }
+    }
+
+    #[test]
+    fn bounds_conformance_reports_nonzero_residual_on_a_real_molecule() {
+        // refine_coords is a heuristic, not a guaranteed-convergent solver -- confirm
+        // bounds_conformance actually measures real (nonzero) residual violation on a
+        // stress case, not just always reporting a trivial 0/0.
+        let mol = parse("CN(C)CCOC(c1ccccc1)c1ccccc1").unwrap(); // diphenhydramine
+        let params = EmbedParameters::default();
+        let coords = embed_distance_geometry_v2(&mol, &params).unwrap();
+        let bc = bounds_conformance(&mol, &coords);
+        assert!(bc.n_pairs > 0);
+        // Not asserting a specific violation count (that's this PR's honestly-reported
+        // measured number, not a hardcoded expectation) -- just that the function
+        // computes something real and internally consistent.
+        assert!(bc.n_violations <= bc.n_pairs);
+        if bc.n_violations == 0 {
+            assert_eq!(bc.max_rel_violation, 0.0);
+        } else {
+            assert!(bc.max_rel_violation > 0.0);
+        }
+    }
+
+    /// Stochastic gate (4-layer acceptance gate, layer 4): "uniqueness of derived
+    /// per-attempt seed streams" -- if `max_attempts` allows multiple internal
+    /// retries, each attempt must draw from a genuinely different seed, not
+    /// accidentally repeat one (which would make a retry after a bad stochastic
+    /// draw just redraw the same bad geometry). Checked directly against
+    /// `derive_attempt_seed` rather than at the full-embedding level, since this is
+    /// an internal-derivation invariant, not an observable-geometry one.
+    #[test]
+    fn derive_attempt_seed_is_distinct_across_attempts() {
+        use std::collections::HashSet;
+        for base in [0u64, 1, 42, 0xC0FF_EE42_D157_6E02, u64::MAX] {
+            let seeds: HashSet<u64> = (0..32)
+                .map(|attempt| derive_attempt_seed(base, attempt))
+                .collect();
+            assert_eq!(
+                seeds.len(),
+                32,
+                "base seed {base:#x}: expected 32 distinct per-attempt seeds, got {}",
+                seeds.len()
+            );
         }
     }
 }
