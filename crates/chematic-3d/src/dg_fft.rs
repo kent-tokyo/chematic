@@ -149,7 +149,14 @@ pub(crate) fn bond_order_length_scale(order: BondOrder) -> f64 {
 }
 
 /// Ideal bond angle (radians) at center atom.
-fn ideal_bond_angle(mol: &Molecule, center: AtomIdx) -> f64 {
+///
+/// `pub` (not `pub(crate)`) so the gap-check example's angle-violation check can call
+/// the *exact same* generic 109.5°/120° model `build_bound_matrix` uses internally,
+/// rather than duplicating this constant elsewhere and risking drift. That also means
+/// that check is an internal-consistency check (does the final geometry agree with
+/// the model the bounds were built from?), not an external-oracle check like the
+/// RDKit-covalent-radius bond-length reference -- see the example's own doc comment.
+pub fn ideal_bond_angle(mol: &Molecule, center: AtomIdx) -> f64 {
     let atom = mol.atom(center);
 
     // Simplified: aromatic/double → ~120°, else ~109.5°
