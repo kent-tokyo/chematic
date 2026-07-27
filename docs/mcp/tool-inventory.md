@@ -7,6 +7,16 @@ until a PR 2 registry refactor can generate this document (or replace it)
 from a single typed definition. If this file and `tools.rs` ever disagree,
 `tools.rs` is correct.
 
+**Protocol note (2026-07-28):** the 20 tools and their behavior below are
+unchanged by the 2026-07-28 protocol work — every tool now additionally
+carries an `outputSchema` (JSON Schema 2020-12) alongside its existing
+`inputSchema`, and its result is exposed as `structuredContent` in the
+modern protocol era, but the underlying chemistry, determinism,
+completeness, and network-access classifications on this page are exactly
+as they were. See `docs/mcp/2026-07-28-implementation-rfc.md` for the
+protocol-layer design and `crates/chematic-mcp/README.md` for the
+legacy/modern wire examples.
+
 ## Classification axes
 
 Adapted from the remote-readiness design discussion (not yet implemented as
