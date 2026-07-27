@@ -32,6 +32,7 @@ pub mod sasa;
 pub mod shape_descriptors;
 pub mod spectrophores;
 pub mod stereo3d;
+pub mod stereo_constraints;
 pub mod usr;
 pub mod xyz;
 
