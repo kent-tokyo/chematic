@@ -37,7 +37,7 @@ pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
     if n == 0 {
         return Vec::new();
     }
-    let ranks = winning_individualized_ranks(mol);
+    let (ranks, _) = winning_individualized_ranks(mol);
     let mut order: Vec<usize> = (0..n).collect();
     // Sort descending by rank (highest rank first, as in canonical DFS).
     order.sort_unstable_by(|&a, &b| ranks[b].cmp(&ranks[a]));
@@ -46,17 +46,30 @@ pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
 
 /// Resolve `morgan_ranks` ties via individualize-refine and return the fully
 /// discrete per-atom ranks of whichever branch produces the
-/// lexicographically smallest canonical SMILES -- shared by
-/// `canonical_smiles` and `canonical_atom_order` so both use the identical
-/// tie-break, instead of `canonical_atom_order` silently falling back to raw
-/// (tie-break-free) `morgan_ranks`.
-fn winning_individualized_ranks(mol: &Molecule) -> Vec<u64> {
+/// lexicographically smallest canonical SMILES, *and* that winning string --
+/// shared by `canonical_smiles` and `canonical_atom_order` so both use the
+/// identical tie-break, instead of `canonical_atom_order` silently falling
+/// back to raw (tie-break-free) `morgan_ranks`.
+///
+/// Returning the already-written winning string (not just its ranks) lets
+/// [`canonical_smiles`] reuse it directly instead of calling
+/// `CanonicalWriter::write_all` a second time on the same ranks -- every
+/// branch considered here is written exactly once, tied or not, so a caller
+/// that also wrote the winner again was paying for a fully redundant
+/// traversal on every single call (perf; issue found bisecting the
+/// `run_reactants`/`apply_retro` regression between chematic 0.4.25 and
+/// 0.4.30 -- see docs/reaction_transform_perf.md).
+fn winning_individualized_ranks(mol: &Molecule) -> (Vec<u64>, String) {
     let plateaued = morgan_ranks(mol);
     let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
     let branches = enumerate_discrete_ranks(mol, plateaued, &mut budget);
     branches
         .into_iter()
-        .min_by_key(|ranks| CanonicalWriter::new(mol, ranks).write_all())
+        .map(|ranks| {
+            let s = CanonicalWriter::new(mol, &ranks).write_all();
+            (ranks, s)
+        })
+        .min_by(|(_, a), (_, b)| a.cmp(b))
         .unwrap_or_default()
 }
 
@@ -117,8 +130,8 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
         return String::new();
     }
 
-    let ranks = winning_individualized_ranks(mol);
-    CanonicalWriter::new(mol, &ranks).write_all()
+    let (_, winning_string) = winning_individualized_ranks(mol);
+    winning_string
 }
 
 /// Compute Morgan (extended connectivity) ranks for all atoms.
@@ -2546,7 +2559,7 @@ mod tests {
     fn ez_carrier_shared_candidate_bond_residuals_never_corrupt() {
         for &s in EZ_SHARED_CANDIDATE_BOND_RESIDUALS {
             let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
-            let ranks = winning_individualized_ranks(&mol);
+            let (ranks, _) = winning_individualized_ranks(&mol);
             let mut writer = CanonicalWriter::new(&mol, &ranks);
             writer.resolve_ez_markers();
             assert!(
