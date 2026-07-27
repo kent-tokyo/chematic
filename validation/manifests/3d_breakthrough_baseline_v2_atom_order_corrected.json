@@ -1,0 +1,398 @@
+{
+  "_purpose": "Corrected re-measurement of validation/manifests/3d_breakthrough_baseline.json (see that file's copy at 3d_breakthrough_baseline_v1_confounded.json), run through Mol.conformer_ensemble() AFTER fixing issue #172 (atom-index desync between returned coordinates and the caller's own Mol topology) in commit 9face7e5c7 (https://github.com/kent-tokyo/chematic/pull/180). Same script (scripts/etkdg_vs_rdkit_gap.py), same 58-molecule corpus, same methodology (5 independent fresh Python process runs) as v1 -- only the underlying conformer_ensemble() implementation differs. See atom_index_bug_reconciliation below for the re-derived 21/22 artifact/genuine split.",
+  "meta": {
+    "measured_at_sha": "9face7e5c768030add8ab77c203efc1c41aae8bb",
+    "fix_pr": "https://github.com/kent-tokyo/chematic/pull/180",
+    "baseline_being_corrected": "validation/manifests/3d_breakthrough_baseline.json (frozen_at 2026-07-26, main_sha_at_freeze 9f9f45964df5bea2c157f4f5819968e86fa60c27)",
+    "workspace_version": "0.7.0",
+    "rust_version": "1.97.0 (2d8144b78 2026-07-07)",
+    "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "rdkit_version": "2026.03.3",
+    "rdkit_version_matches_v1": true,
+    "chematic_version": "0.7.0",
+    "n_independent_process_runs": 5,
+    "methodology_note": "Identical methodology to v1: 5 independent fresh Python process invocations of scripts/etkdg_vs_rdkit_gap.py (not loop iterations), built/run against an isolated venv (.venv-fix in the fix's own worktree, never the shared .venv) with the fixed conformer_ensemble(). Raw per-run summaries at validation/results/etkdg_baseline_history/run{1..5}_summary_v2_atom_order_corrected.json and run{1..5}_rows_v2_atom_order_corrected.jsonl."
+  },
+  "deterministic_metrics_frozen": {
+    "n_molecules": 58,
+    "status_counts": {
+      "ok": 36,
+      "rdkit=ok,chematic=chematic_gross_clash": 4,
+      "chematic_bond_length_blowup": 18
+    },
+    "raw_embed_returned_rate": {
+      "rdkit": 1.0,
+      "chematic": 0.931,
+      "note": "fraction where the embedder returned finite, non-clashing coordinates at all -- does NOT check geometric validity (bond lengths etc). See geometrically_valid_rate for that."
+    },
+    "geometrically_valid_rate": {
+      "chematic": 0.621,
+      "note": "fraction of the whole corpus that produced a geometry passing the >50%-of-covalent-reference bond-length check (status == 'ok'). This is the metric that should be called 'success' -- raw_embed_returned_rate alone is misleadingly high because chematic's coordinate generator never refuses to return coordinates, it just sometimes returns a torn structure."
+    },
+    "n_comparable_ok": 36,
+    "rmsd_vs_rdkit": {
+      "mean": 2.283,
+      "median": 1.897,
+      "max": 10.446,
+      "n": 36
+    },
+    "fair_mmff94_energy_delta_chematic_minus_rdkit_geometry": {
+      "mean": 56915.485,
+      "median": 15.123,
+      "n": 36,
+      "note": "positive = chematic's own conformer scores WORSE than RDKit's geometry under chematic's own full MMFF94 breakdown (same topology, same energy function -- an apples-to-apples geometry-quality signal, not an absolute energy comparison)."
+    },
+    "bond_length_violation_rate_ext_reference": {
+      "chematic": 0.006,
+      "rdkit": 0.0
+    },
+    "bond_angle_violation_rate_ext_reference": {
+      "chematic": 0.242,
+      "rdkit": 0.071
+    },
+    "chirality_all_geometry": {
+      "tetrahedral_4_heavy_neighbors_assessable": {
+        "n_declared": 7,
+        "chematic_coverage": 1.0,
+        "chematic_match_given_covered": 0.571,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "tetrahedral_implicit_h_lt4_heavy_neighbors": {
+        "n_declared": 28,
+        "chematic_coverage": 0.0,
+        "chematic_match_given_covered": null,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "alkene_ez": {
+        "n_declared": 8,
+        "chematic_coverage": 1.0,
+        "chematic_match_given_covered": 0.5,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "note": "Rolled up over EVERY declared stereocenter reached, including torn (chematic_bond_length_blowup) geometry. A signed-volume or dihedral-sign read on a torn molecule conflates 'no stereo enforcement' with 'garbage geometry' -- use chirality_clean_geometry for the unconfounded match-rate signal; this block is provided for coverage (which is a structural fact independent of geometry quality) and for transparency, not for the match-rate column."
+    },
+    "chirality_clean_geometry": {
+      "tetrahedral_4_heavy_neighbors_assessable": {
+        "n_declared": 2,
+        "chematic_coverage": 1.0,
+        "chematic_match_given_covered": 0.5,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "tetrahedral_implicit_h_lt4_heavy_neighbors": {
+        "n_declared": 12,
+        "chematic_coverage": 0.0,
+        "chematic_match_given_covered": null,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "alkene_ez": {
+        "n_declared": 6,
+        "chematic_coverage": 1.0,
+        "chematic_match_given_covered": 0.5,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "note": "Same rollup restricted to status=='ok' rows only (no bond >50% off the covalent-radius reference). Small n by construction -- Phase 0's blow-up bug (see docs/etkdg_3d_gap_rfc.md) removed most of the tetrahedral-4-heavy and alkene rows from this subset -- but this is the only match-rate signal not confounded by torn geometry."
+    },
+    "_note": "Every field below was byte-identical across all 5 independent process runs (single-conformer path, noise_sigma_deg=0.0), both at the aggregate level and the individual per-molecule row-status level -- safe to freeze, matching v1's own methodology exactly (validation/manifests/3d_breakthrough_baseline.json, meta.n_independent_process_runs=5)."
+  },
+  "runtime_metrics_non_frozen": {
+    "_note": "Wall-clock timing varies run-to-run (machine noise, same shape as issue #70) -- recorded as mean/stdev/min/max across the 5 runs, NOT a single frozen value, matching v1's own methodology.",
+    "chematic_single_conformer_embed_time_s": {
+      "mean": {
+        "mean": 0.2242,
+        "stdev": 0.0804,
+        "min": 0.1529,
+        "max": 0.3802,
+        "n_runs": 5
+      },
+      "median": {
+        "mean": 0.09,
+        "stdev": 0.0428,
+        "min": 0.0548,
+        "max": 0.1725,
+        "n_runs": 5
+      }
+    },
+    "rdkit_single_conformer_embed_time_s": {
+      "mean": {
+        "mean": 0.0234,
+        "stdev": 0.0091,
+        "min": 0.0145,
+        "max": 0.0403,
+        "n_runs": 5
+      },
+      "median": {
+        "mean": 0.0056,
+        "stdev": 0.0034,
+        "min": 0.0033,
+        "max": 0.0124,
+        "n_runs": 5
+      }
+    }
+  },
+  "ensemble_metrics_observed_not_contracted": {
+    "_note": "Same observation as v1: chematic-3d's PRNG self-seeds from a process-global atomic counter with no public seed parameter; empirically bit-identical across all 5 independent v2 process runs here too (identical=True), recorded as an OBSERVATION not a contracted guarantee, same caveat as v1.",
+    "per_molecule": {
+      "hexane": {
+        "chematic_n_kept_across_5_runs": [
+          7,
+          7,
+          7,
+          7,
+          7
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          1.923,
+          1.923,
+          1.923,
+          1.923,
+          1.923
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          9,
+          9,
+          9,
+          9,
+          9
+        ]
+      },
+      "decane": {
+        "chematic_n_kept_across_5_runs": [
+          17,
+          17,
+          17,
+          17,
+          17
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          3.121,
+          3.121,
+          3.121,
+          3.121,
+          3.121
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          19,
+          19,
+          19,
+          19,
+          19
+        ]
+      },
+      "triethylene_glycol": {
+        "chematic_n_kept_across_5_runs": [
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          3.936,
+          3.936,
+          3.936,
+          3.936,
+          3.936
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ]
+      },
+      "hexanediol": {
+        "chematic_n_kept_across_5_runs": [
+          9,
+          9,
+          9,
+          9,
+          9
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          2.588,
+          2.588,
+          2.588,
+          2.588,
+          2.588
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ]
+      },
+      "hexadecane": {
+        "chematic_n_kept_across_5_runs": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          5.591,
+          5.591,
+          5.591,
+          5.591,
+          5.591
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ]
+      },
+      "ibuprofen": {
+        "chematic_n_kept_across_5_runs": [
+          7,
+          7,
+          7,
+          7,
+          7
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          2.496,
+          2.496,
+          2.496,
+          2.496,
+          2.496
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ]
+      },
+      "diphenhydramine": {
+        "chematic_n_kept_across_5_runs": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          3.66,
+          3.66,
+          3.66,
+          3.66,
+          3.66
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          15,
+          15,
+          15,
+          15,
+          15
+        ]
+      },
+      "aspirin": {
+        "chematic_n_kept_across_5_runs": [
+          17,
+          17,
+          17,
+          17,
+          17
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          2.364,
+          2.364,
+          2.364,
+          2.364,
+          2.364
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    }
+  },
+  "atom_index_bug_reconciliation": {
+    "_purpose": "Independent re-derivation of PR #167 (Agent C, distance_geometry_v2)'s claim that the v1 baseline's 43 non-'ok' rows split into 21 pure index-mismatch artifacts + 22 genuine defects. PR #167 measured this via its own separate Rust scratch probe (own bond-length reference table, never through conformer_ensemble() at all). This reconciliation instead re-runs the SAME harness (scripts/etkdg_vs_rdkit_gap.py) that produced v1, unchanged, only through the fixed conformer_ensemble() (commit 9face7e5c7), and compares v1 vs v2 status by molecule NAME, not by count alone.",
+    "v1_non_ok_total": 43,
+    "v2_non_ok_total": 22,
+    "artifact_only_count": 21,
+    "genuine_count": 22,
+    "new_in_v2_count": 0,
+    "v2_nonok_subset_of_v1_nonok": true,
+    "result": "CONFIRMED: 21 artifact_only / 22 genuine / 0 new_in_v2 -- matches PR #167's claimed 21/22/0 exactly, independently re-derived (not assumed).",
+    "artifact_only_names": [
+      "2_chlorobutane_R",
+      "adamantane",
+      "anthracene",
+      "biphenyl",
+      "but2ene_E",
+      "but2ene_Z",
+      "cholesterol",
+      "cubane",
+      "decane",
+      "diphenhydramine",
+      "hexadecane",
+      "hexanediol",
+      "indole",
+      "menthol",
+      "naphthalene",
+      "pent2ene_E",
+      "pent2ene_Z",
+      "purine",
+      "pyrene",
+      "quinoline",
+      "thiophene"
+    ],
+    "genuine_names": [
+      "aspirin",
+      "atorvastatin_fragment",
+      "caffeine",
+      "chfclbr_R",
+      "chfclbr_S",
+      "cinnamic_acid_E",
+      "cinnamic_acid_Z",
+      "d_alanine",
+      "gly_ala_gly",
+      "ibuprofen",
+      "ibuprofen_S",
+      "l_alanine",
+      "l_serine",
+      "l_threonine",
+      "naproxen_S",
+      "paracetamol",
+      "penicillin_core",
+      "quaternary_1_R",
+      "quaternary_1_S",
+      "quaternary_2_R",
+      "quaternary_2_S",
+      "testosterone"
+    ],
+    "new_in_v2_names": [],
+    "status_mode_changes_within_genuine": {
+      "l_threonine": {
+        "v1_status": "chematic_bond_length_blowup",
+        "v2_status": "rdkit=ok,chematic=chematic_gross_clash"
+      }
+    },
+    "status_mode_changes_note": "Molecules here remain non-'ok' under both v1 and v2 (counted as 'genuine' either way), but the SPECIFIC failure classification changed -- e.g. l_threonine went from chematic_bond_length_blowup (v1) to chematic_gross_clash (v2): consistent indexing changed which check trips first, not whether the molecule is defect-free."
+  },
+  "known_dead_or_unwired_code_confirmed_present": {
+    "dg_fft.rs": "Present, ~840 lines, #![allow(dead_code)], zero callers workspace-wide (confirmed: grep -rn 'generate_coords_dg\\b' returns only its own definition/tests). This is Agent C's primary starting point per the RFC.",
+    "stereo3d.rs": "Present, 471 lines, NOT dead -- assign_stereo_from_3d is exported from lib.rs and used by this very gap script (cm.stereo_from_coords) to perceive stereo FROM a 3D geometry. This is the opposite direction from what Agent D needs (enforcing DECLARED stereo AS a constraint during embedding) -- Agent D should not assume this file already solves its problem.",
+    "chematic-ff full MMFF94/UFF": "Present and complete (bond/angle/oop_stbn/torsion/vdw + L-BFGS), confirmed NOT called by chematic-3d/src/minimize.rs, which hand-rolls a smaller bond+angle+VdW-only energy function. Agent F's primary target."
+  }
+}

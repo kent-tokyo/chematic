@@ -1,0 +1,338 @@
+{
+  "_purpose": "Frozen Wave-0 baseline for the 3D Breakthrough Program (docs/3d_breakthrough_master_plan.md). Every Wave 1+ agent's acceptance gates are measured against this file, not against docs/etkdg_3d_gap_rfc.md's original numbers directly (those numbers are reproduced byte-identically at current HEAD in the deterministic block below, confirming the RFC's diagnosis is still valid and unchanged as of v0.7.0).",
+  "meta": {
+    "frozen_at": "2026-07-26",
+    "main_sha_at_freeze": "9f9f45964df5bea2c157f4f5819968e86fa60c27",
+    "workspace_version": "0.7.0",
+    "rust_version": "1.97.0 (2d8144b78 2026-07-07)",
+    "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "rdkit_version": "2026.03.3",
+    "rdkit_pinned_source_commit": "8afba32ec539dcb2369bc84549d802aca3f7eb39",
+    "native_inchi_version": "1.07.5",
+    "chematic_python_wheel_rebuilt_for_this_baseline": true,
+    "n_independent_process_runs": 5,
+    "methodology_note": "Ran scripts/etkdg_vs_rdkit_gap.py as 5 independent fresh Python process invocations (not 5 loop iterations in one process), matching this project's own issue #70 pseudo-replication lesson: process-level independence is required before treating repeated measurements as corroborating evidence, since a single process's internal state can mask environment-level noise. Raw per-run summaries are preserved at validation/results/etkdg_baseline_history/run{1..5}_summary.json and run{1..5}_rows.jsonl. The pre-existing committed baseline (validation/results/etkdg_vs_rdkit_summary.json / _rows.jsonl, as authored by the original RFC) was copied aside to etkdg_vs_rdkit_{summary,rows}.RFC-original.{json,jsonl} before this rerun overwrote them."
+  },
+  "rfc_reproduction_check": {
+    "result": "IDENTICAL",
+    "detail": "All 5 fresh-process reruns at current HEAD (v0.7.0) reproduced the RFC's original geometrically_valid_rate (25.9%, 15/58 ok, 39/58 bond-length-blowup, 4/58 gross-clash) and every other deterministic metric byte-identically. The RFC was originally measured against an older build (chematic 0.6.0 in the venv before this baseline rebuilt it to 0.7.0); this baseline confirms the diagnosed defect is unchanged by any commit between that measurement and 9f9f459 -- it is a live, unresolved gap, not a stale claim."
+  },
+  "deterministic_metrics_frozen": {
+    "_note": "Every field below was byte-identical across all 5 independent process runs (single-conformer path, noise_sigma_deg=0.0) -- safe to freeze as a single value and diff Wave 1+ results against directly.",
+    "n_molecules": 58,
+    "status_counts": {
+      "ok": 15,
+      "chematic_bond_length_blowup": 39,
+      "rdkit=ok,chematic=chematic_gross_clash": 4
+    },
+    "raw_embed_returned_rate": {
+      "rdkit": 1.0,
+      "chematic": 0.931,
+      "note": "fraction where the embedder returned finite, non-clashing coordinates at all -- does NOT check geometric validity (bond lengths etc). See geometrically_valid_rate for that."
+    },
+    "geometrically_valid_rate": {
+      "chematic": 0.259,
+      "note": "fraction of the whole corpus that produced a geometry passing the >50%-of-covalent-reference bond-length check (status == 'ok'). This is the metric that should be called 'success' -- raw_embed_returned_rate alone is misleadingly high because chematic's coordinate generator never refuses to return coordinates, it just sometimes returns a torn structure."
+    },
+    "n_comparable_ok": 15,
+    "rmsd_vs_rdkit": {
+      "mean": 1.464,
+      "median": 1.354,
+      "max": 3.133,
+      "n": 15
+    },
+    "fair_mmff94_energy_delta_chematic_minus_rdkit_geometry": {
+      "mean": 37.581,
+      "median": 4.414,
+      "n": 15,
+      "note": "positive = chematic's own conformer scores WORSE than RDKit's geometry under chematic's own full MMFF94 breakdown (same topology, same energy function -- an apples-to-apples geometry-quality signal, not an absolute energy comparison)."
+    },
+    "bond_length_violation_rate_ext_reference": {
+      "chematic": 0.0,
+      "rdkit": 0.0
+    },
+    "bond_angle_violation_rate_ext_reference": {
+      "chematic": 0.163,
+      "rdkit": 0.031
+    },
+    "chirality_all_geometry": {
+      "tetrahedral_4_heavy_neighbors_assessable": {
+        "n_declared": 7,
+        "chematic_coverage": 1.0,
+        "chematic_match_given_covered": 0.571,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "tetrahedral_implicit_h_lt4_heavy_neighbors": {
+        "n_declared": 30,
+        "chematic_coverage": 0.0,
+        "chematic_match_given_covered": null,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "alkene_ez": {
+        "n_declared": 8,
+        "chematic_coverage": 1.0,
+        "chematic_match_given_covered": 0.5,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "note": "Rolled up over EVERY declared stereocenter reached, including torn (chematic_bond_length_blowup) geometry. A signed-volume or dihedral-sign read on a torn molecule conflates 'no stereo enforcement' with 'garbage geometry' -- use chirality_clean_geometry for the unconfounded match-rate signal; this block is provided for coverage (which is a structural fact independent of geometry quality) and for transparency, not for the match-rate column."
+    },
+    "chirality_clean_geometry": {
+      "tetrahedral_4_heavy_neighbors_assessable": {
+        "n_declared": 0,
+        "chematic_coverage": null,
+        "chematic_match_given_covered": null,
+        "rdkit_coverage": null,
+        "rdkit_match_given_covered": null
+      },
+      "tetrahedral_implicit_h_lt4_heavy_neighbors": {
+        "n_declared": 2,
+        "chematic_coverage": 0.0,
+        "chematic_match_given_covered": null,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "alkene_ez": {
+        "n_declared": 2,
+        "chematic_coverage": 1.0,
+        "chematic_match_given_covered": 0.5,
+        "rdkit_coverage": 1.0,
+        "rdkit_match_given_covered": 1.0
+      },
+      "note": "Same rollup restricted to status=='ok' rows only (no bond >50% off the covalent-radius reference). Small n by construction -- Phase 0's blow-up bug (see docs/etkdg_3d_gap_rfc.md) removed most of the tetrahedral-4-heavy and alkene rows from this subset -- but this is the only match-rate signal not confounded by torn geometry."
+    }
+  },
+  "runtime_metrics_non_frozen": {
+    "_note": "Wall-clock timing varies run-to-run (machine noise, same shape as issue #70) -- recorded as mean/stdev/min/max across the 5 runs, NOT a single frozen value. A Wave 1+ agent's runtime claim must be measured the same way (>=5 independent process runs) before comparing against this spread.",
+    "chematic_single_conformer_embed_time_s": {
+      "mean": {
+        "mean": 0.2015,
+        "stdev": 0.0836,
+        "min": 0.1193,
+        "max": 0.309,
+        "n_runs": 5
+      },
+      "median": {
+        "mean": 0.0804,
+        "stdev": 0.0378,
+        "min": 0.0387,
+        "max": 0.1186,
+        "n_runs": 5
+      }
+    },
+    "rdkit_single_conformer_embed_time_s": {
+      "mean": {
+        "mean": 0.0195,
+        "stdev": 0.0087,
+        "min": 0.0106,
+        "max": 0.0323,
+        "n_runs": 5
+      },
+      "median": {
+        "mean": 0.0047,
+        "stdev": 0.0017,
+        "min": 0.003,
+        "max": 0.0065,
+        "n_runs": 5
+      }
+    }
+  },
+  "ensemble_metrics_observed_not_contracted": {
+    "_note": "IMPORTANT for Agent C: chematic-3d's PRNG (prng.rs) self-seeds from a process-global atomic counter with NO public seed parameter today. The script's own meta.reproducibility_note (see raw run files) states ensemble diversity/duplicate-rate figures are 'not bit-reproducible run-to-run' -- but empirically, all 5 independent process runs in this baseline produced BIT-IDENTICAL chematic_n_kept and chematic_diversity values for every one of the 8 ENSEMBLE_SUBSET molecules. This is recorded as an OBSERVATION, not a guarantee: the atomic counter most likely starts from the same fixed compile-time value on every fresh process and the code path is single-threaded and call-order-deterministic today, so apparent stability is coincidental to the current single-threaded, single-process-per-run usage pattern, not a contracted property. EmbedParameters.random_seed (Wave 1, Agent C) must add an EXPLICIT, public, call-local seed -- do not treat this observed stability as removing that requirement.",
+    "per_molecule": {
+      "hexane": {
+        "chematic_n_kept_across_5_runs": [
+          7,
+          7,
+          7,
+          7,
+          7
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          1.923,
+          1.923,
+          1.923,
+          1.923,
+          1.923
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          9,
+          9,
+          9,
+          9,
+          9
+        ]
+      },
+      "decane": {
+        "chematic_n_kept_across_5_runs": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          3.027,
+          3.027,
+          3.027,
+          3.027,
+          3.027
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          19,
+          19,
+          19,
+          19,
+          19
+        ]
+      },
+      "triethylene_glycol": {
+        "chematic_n_kept_across_5_runs": [
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          3.936,
+          3.936,
+          3.936,
+          3.936,
+          3.936
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ]
+      },
+      "hexanediol": {
+        "chematic_n_kept_across_5_runs": [
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          1.91,
+          1.91,
+          1.91,
+          1.91,
+          1.91
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ]
+      },
+      "hexadecane": {
+        "chematic_n_kept_across_5_runs": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          4.393,
+          4.393,
+          4.393,
+          4.393,
+          4.393
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ]
+      },
+      "ibuprofen": {
+        "chematic_n_kept_across_5_runs": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ]
+      },
+      "diphenhydramine": {
+        "chematic_n_kept_across_5_runs": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          2.878,
+          2.878,
+          2.878,
+          2.878,
+          2.878
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          15,
+          15,
+          15,
+          15,
+          15
+        ]
+      },
+      "aspirin": {
+        "chematic_n_kept_across_5_runs": [
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "chematic_mean_pairwise_rmsd_across_5_runs": [
+          2.346,
+          2.346,
+          2.346,
+          2.346,
+          2.346
+        ],
+        "rdkit_n_kept_across_5_runs": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    }
+  },
+  "known_dead_or_unwired_code_confirmed_present": {
+    "dg_fft.rs": "Present, ~840 lines, #![allow(dead_code)], zero callers workspace-wide (confirmed: grep -rn 'generate_coords_dg\\b' returns only its own definition/tests). This is Agent C's primary starting point per the RFC.",
+    "stereo3d.rs": "Present, 471 lines, NOT dead -- assign_stereo_from_3d is exported from lib.rs and used by this very gap script (cm.stereo_from_coords) to perceive stereo FROM a 3D geometry. This is the opposite direction from what Agent D needs (enforcing DECLARED stereo AS a constraint during embedding) -- Agent D should not assume this file already solves its problem.",
+    "chematic-ff full MMFF94/UFF": "Present and complete (bond/angle/oop_stbn/torsion/vdw + L-BFGS), confirmed NOT called by chematic-3d/src/minimize.rs, which hand-rolls a smaller bond+angle+VdW-only energy function. Agent F's primary target."
+  },
+  "_confound_note": "This file is an unmodified, clearly-labeled copy of validation/manifests/3d_breakthrough_baseline.json (byte-identical below this note), preserved for direct comparison against 3d_breakthrough_baseline_v2_atom_order_corrected.json. It was measured through Mol.conformer_ensemble()'s pre-fix atom-index bug (issue #172, fixed in commit 9face7e5c7, https://github.com/kent-tokyo/chematic/pull/180): the method re-canonicalized the SMILES, generated the ensemble on the reparsed molecule, and returned coordinates indexed by that NEW atom order while every other property on the Mol (atom_table, cip_stereo(), bond_table) stayed indexed by the ORIGINAL order. This confounds bond_violations/chirality/rmsd_vs_rdkit for any molecule whose canonical SMILES reorders atoms (most molecules with a branch or ring) -- see 3d_breakthrough_baseline_v2_atom_order_corrected.json for the same corpus re-measured through the fixed, consistently-indexed path, and its atom_index_bug_reconciliation section for the exact per-molecule before/after split (21 pure index-mismatch artifacts + 22 genuine defects, re-derived independently -- not assumed -- from this re-measurement)."
+}
