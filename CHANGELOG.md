@@ -39,6 +39,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   superseded pre-final by `-32021`/`-32022`, corroborated by the official
   `rmcp` Rust SDK — this PR ships the superseding values, not the RC tag's).
 
+### Fixed — `chematic-py`
+
+- **`Mol.conformer_ensemble()` returned coordinates indexed by a re-canonicalized
+  atom order, not the caller's own `Mol` order** (issue #172, live in published
+  v0.7.0). The method internally computed `canonical_smiles(&self.inner)`, reparsed
+  that string into a fresh `Molecule`, generated the ensemble on the reparsed
+  molecule, and returned its coordinates as-is — while `atom_table`, `cip_stereo()`,
+  and every other property on the caller's `Mol` stayed indexed by the *original*
+  atom order. `canonical_smiles()` routinely reorders atoms for anything with a
+  branch or ring (e.g. decane's canonical form is `C(CCCCCCCC)C`, not
+  `CCCCCCCCCC`), so the returned coordinate array silently did not correspond
+  index-for-index to the caller's topology in the common case. Fixed by generating
+  directly on `self.inner.clone()`, matching the existing correct pattern already
+  used by `generate_3d()`/`generate_3d_etkdg()`. No public API change (same
+  signature, same return shape). `crates/chematic-wasm`'s `conformer_ensemble_json`
+  has the identical bug and is not fixed here (out of scope for this fix; tracked
+  separately).
+
 _Nothing else yet — everything below `[0.7.0]` has shipped._
 
 ## [0.7.0] — 2026-07-26

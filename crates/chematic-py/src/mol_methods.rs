@@ -2384,11 +2384,15 @@ impl Mol {
         force_field: &str,
         noise_sigma_deg: f64,
     ) -> Vec<Vec<Vec<f64>>> {
-        let smiles = chematic_smiles::canonical_smiles(&self.inner);
-        let mol = match chematic_smiles::parse(&smiles) {
-            Ok(m) => m,
-            Err(_) => return Vec::new(),
-        };
+        // Generate directly on self.inner's own atom order -- do NOT re-parse
+        // from canonical SMILES here. canonical_smiles() routinely reorders
+        // atoms (any branch or ring), and generating on that reparsed molecule
+        // while returning coordinates "as-is" desyncs them from the Mol the
+        // caller already holds (atom_table, cip_stereo(), bond_table, ...
+        // all stay indexed by self.inner's original order). Matches the
+        // existing, correct pattern in generate_3d()/generate_3d_etkdg() below.
+        // See issue #172.
+        let mol = (*self.inner).clone();
         let ff = if force_field.eq_ignore_ascii_case("mmff94") {
             chematic_3d::ConformerForceField::Mmff94
         } else {

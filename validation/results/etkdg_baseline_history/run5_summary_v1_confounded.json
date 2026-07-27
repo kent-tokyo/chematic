@@ -1,0 +1,278 @@
+{
+  "n_molecules": 58,
+  "status_counts": {
+    "ok": 15,
+    "chematic_bond_length_blowup": 39,
+    "rdkit=ok,chematic=chematic_gross_clash": 4
+  },
+  "raw_embed_returned_rate": {
+    "rdkit": 1.0,
+    "chematic": 0.931,
+    "note": "fraction where the embedder returned finite, non-clashing coordinates at all -- does NOT check geometric validity (bond lengths etc). See geometrically_valid_rate for that."
+  },
+  "geometrically_valid_rate": {
+    "chematic": 0.259,
+    "note": "fraction of the whole corpus that produced a geometry passing the >50%-of-covalent-reference bond-length check (status == 'ok'). This is the metric that should be called 'success' -- raw_embed_returned_rate alone is misleadingly high because chematic's coordinate generator never refuses to return coordinates, it just sometimes returns a torn structure."
+  },
+  "n_comparable_ok": 15,
+  "single_conformer_embed_time_s": {
+    "chematic_mean": 0.1217,
+    "chematic_median": 0.0387,
+    "rdkit_mean": 0.0106,
+    "rdkit_median": 0.0031
+  },
+  "rmsd_vs_rdkit": {
+    "mean": 1.464,
+    "median": 1.354,
+    "max": 3.133,
+    "n": 15
+  },
+  "fair_mmff94_energy_delta_chematic_minus_rdkit_geometry": {
+    "mean": 37.581,
+    "median": 4.414,
+    "n": 15,
+    "note": "positive = chematic's own conformer scores WORSE than RDKit's geometry under chematic's own full MMFF94 breakdown (same topology, same energy function -- an apples-to-apples geometry-quality signal, not an absolute energy comparison)."
+  },
+  "bond_length_violation_rate_ext_reference": {
+    "chematic": 0.0,
+    "rdkit": 0.0
+  },
+  "bond_angle_violation_rate_ext_reference": {
+    "chematic": 0.163,
+    "rdkit": 0.031
+  },
+  "chirality_all_geometry": {
+    "tetrahedral_4_heavy_neighbors_assessable": {
+      "n_declared": 7,
+      "chematic_coverage": 1.0,
+      "chematic_match_given_covered": 0.571,
+      "rdkit_coverage": 1.0,
+      "rdkit_match_given_covered": 1.0
+    },
+    "tetrahedral_implicit_h_lt4_heavy_neighbors": {
+      "n_declared": 30,
+      "chematic_coverage": 0.0,
+      "chematic_match_given_covered": null,
+      "rdkit_coverage": 1.0,
+      "rdkit_match_given_covered": 1.0
+    },
+    "alkene_ez": {
+      "n_declared": 8,
+      "chematic_coverage": 1.0,
+      "chematic_match_given_covered": 0.5,
+      "rdkit_coverage": 1.0,
+      "rdkit_match_given_covered": 1.0
+    },
+    "note": "Rolled up over EVERY declared stereocenter reached, including torn (chematic_bond_length_blowup) geometry. A signed-volume or dihedral-sign read on a torn molecule conflates 'no stereo enforcement' with 'garbage geometry' -- use chirality_clean_geometry for the unconfounded match-rate signal; this block is provided for coverage (which is a structural fact independent of geometry quality) and for transparency, not for the match-rate column."
+  },
+  "chirality_clean_geometry": {
+    "tetrahedral_4_heavy_neighbors_assessable": {
+      "n_declared": 0,
+      "chematic_coverage": null,
+      "chematic_match_given_covered": null,
+      "rdkit_coverage": null,
+      "rdkit_match_given_covered": null
+    },
+    "tetrahedral_implicit_h_lt4_heavy_neighbors": {
+      "n_declared": 2,
+      "chematic_coverage": 0.0,
+      "chematic_match_given_covered": null,
+      "rdkit_coverage": 1.0,
+      "rdkit_match_given_covered": 1.0
+    },
+    "alkene_ez": {
+      "n_declared": 2,
+      "chematic_coverage": 1.0,
+      "chematic_match_given_covered": 0.5,
+      "rdkit_coverage": 1.0,
+      "rdkit_match_given_covered": 1.0
+    },
+    "note": "Same rollup restricted to status=='ok' rows only (no bond >50% off the covalent-radius reference). Small n by construction -- Phase 0's blow-up bug (see docs/etkdg_3d_gap_rfc.md) removed most of the tetrahedral-4-heavy and alkene rows from this subset -- but this is the only match-rate signal not confounded by torn geometry."
+  },
+  "ensemble_generation": [
+    {
+      "name": "hexane",
+      "n_requested": 20,
+      "chematic_time_s": 0.316,
+      "chematic_n_kept": 7,
+      "chematic_diversity": {
+        "n_conformers": 7,
+        "mean_pairwise_rmsd": 1.923,
+        "min_pairwise_rmsd": 0.57,
+        "max_pairwise_rmsd": 3.238
+      },
+      "chematic_duplicate_rate_within_kept": 0.0,
+      "rdkit_time_s": 0.054,
+      "rdkit_n_kept": 9,
+      "rdkit_diversity": {
+        "n_conformers": 9,
+        "mean_pairwise_rmsd": 0.989,
+        "min_pairwise_rmsd": 0.629,
+        "max_pairwise_rmsd": 1.441
+      },
+      "rdkit_duplicate_rate_within_kept": 0.0
+    },
+    {
+      "name": "decane",
+      "n_requested": 20,
+      "chematic_time_s": 1.217,
+      "chematic_n_kept": 18,
+      "chematic_diversity": {
+        "n_conformers": 18,
+        "mean_pairwise_rmsd": 3.027,
+        "min_pairwise_rmsd": 0.573,
+        "max_pairwise_rmsd": 6.324
+      },
+      "chematic_duplicate_rate_within_kept": 0.0,
+      "rdkit_time_s": 0.265,
+      "rdkit_n_kept": 19,
+      "rdkit_diversity": {
+        "n_conformers": 19,
+        "mean_pairwise_rmsd": 1.415,
+        "min_pairwise_rmsd": 0.033,
+        "max_pairwise_rmsd": 2.489
+      },
+      "rdkit_duplicate_rate_within_kept": 0.006
+    },
+    {
+      "name": "triethylene_glycol",
+      "n_requested": 20,
+      "chematic_time_s": 0.999,
+      "chematic_n_kept": 16,
+      "chematic_diversity": {
+        "n_conformers": 16,
+        "mean_pairwise_rmsd": 3.936,
+        "min_pairwise_rmsd": 0.921,
+        "max_pairwise_rmsd": 6.415
+      },
+      "chematic_duplicate_rate_within_kept": 0.0,
+      "rdkit_time_s": 0.152,
+      "rdkit_n_kept": 20,
+      "rdkit_diversity": {
+        "n_conformers": 20,
+        "mean_pairwise_rmsd": 1.69,
+        "min_pairwise_rmsd": 0.586,
+        "max_pairwise_rmsd": 3.972
+      },
+      "rdkit_duplicate_rate_within_kept": 0.0
+    },
+    {
+      "name": "hexanediol",
+      "n_requested": 20,
+      "chematic_time_s": 0.639,
+      "chematic_n_kept": 5,
+      "chematic_diversity": {
+        "n_conformers": 5,
+        "mean_pairwise_rmsd": 1.91,
+        "min_pairwise_rmsd": 0.538,
+        "max_pairwise_rmsd": 3.221
+      },
+      "chematic_duplicate_rate_within_kept": 0.0,
+      "rdkit_time_s": 0.116,
+      "rdkit_n_kept": 18,
+      "rdkit_diversity": {
+        "n_conformers": 18,
+        "mean_pairwise_rmsd": 1.291,
+        "min_pairwise_rmsd": 0.618,
+        "max_pairwise_rmsd": 2.192
+      },
+      "rdkit_duplicate_rate_within_kept": 0.0
+    },
+    {
+      "name": "hexadecane",
+      "n_requested": 20,
+      "chematic_time_s": 2.961,
+      "chematic_n_kept": 20,
+      "chematic_diversity": {
+        "n_conformers": 20,
+        "mean_pairwise_rmsd": 4.393,
+        "min_pairwise_rmsd": 0.788,
+        "max_pairwise_rmsd": 9.686
+      },
+      "chematic_duplicate_rate_within_kept": 0.0,
+      "rdkit_time_s": 1.176,
+      "rdkit_n_kept": 20,
+      "rdkit_diversity": {
+        "n_conformers": 20,
+        "mean_pairwise_rmsd": 2.061,
+        "min_pairwise_rmsd": 1.148,
+        "max_pairwise_rmsd": 3.847
+      },
+      "rdkit_duplicate_rate_within_kept": 0.0
+    },
+    {
+      "name": "ibuprofen",
+      "n_requested": 20,
+      "chematic_time_s": 3.317,
+      "chematic_n_kept": 1,
+      "chematic_diversity": {
+        "n_conformers": 1,
+        "mean_pairwise_rmsd": 0.0,
+        "min_pairwise_rmsd": 0.0,
+        "max_pairwise_rmsd": 0.0
+      },
+      "chematic_duplicate_rate_within_kept": 0.0,
+      "rdkit_time_s": 0.37,
+      "rdkit_n_kept": 18,
+      "rdkit_diversity": {
+        "n_conformers": 18,
+        "mean_pairwise_rmsd": 1.728,
+        "min_pairwise_rmsd": 0.854,
+        "max_pairwise_rmsd": 2.714
+      },
+      "rdkit_duplicate_rate_within_kept": 0.0
+    },
+    {
+      "name": "diphenhydramine",
+      "n_requested": 20,
+      "chematic_time_s": 6.573,
+      "chematic_n_kept": 18,
+      "chematic_diversity": {
+        "n_conformers": 18,
+        "mean_pairwise_rmsd": 2.878,
+        "min_pairwise_rmsd": 0.62,
+        "max_pairwise_rmsd": 5.015
+      },
+      "chematic_duplicate_rate_within_kept": 0.0,
+      "rdkit_time_s": 0.678,
+      "rdkit_n_kept": 15,
+      "rdkit_diversity": {
+        "n_conformers": 15,
+        "mean_pairwise_rmsd": 2.248,
+        "min_pairwise_rmsd": 0.756,
+        "max_pairwise_rmsd": 3.795
+      },
+      "rdkit_duplicate_rate_within_kept": 0.0
+    },
+    {
+      "name": "aspirin",
+      "n_requested": 20,
+      "chematic_time_s": 3.251,
+      "chematic_n_kept": 4,
+      "chematic_diversity": {
+        "n_conformers": 4,
+        "mean_pairwise_rmsd": 2.346,
+        "min_pairwise_rmsd": 2.055,
+        "max_pairwise_rmsd": 2.636
+      },
+      "chematic_duplicate_rate_within_kept": 0.0,
+      "rdkit_time_s": 0.079,
+      "rdkit_n_kept": 2,
+      "rdkit_diversity": {
+        "n_conformers": 2,
+        "mean_pairwise_rmsd": 2.886,
+        "min_pairwise_rmsd": 2.886,
+        "max_pairwise_rmsd": 2.886
+      },
+      "rdkit_duplicate_rate_within_kept": 0.0
+    }
+  ],
+  "meta": {
+    "generated_at": "2026-07-26T11:02:29Z",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "rdkit_version": "2026.03.3",
+    "chematic_version": "0.7.0",
+    "reproducibility_note": "chematic's Prng (crates/chematic-3d/src/prng.rs) has no public seed API; it self-seeds from a process-global atomic counter, so ensemble diversity/duplicate-rate figures are not bit-reproducible run-to-run (the noise_sigma_deg=0.0 single-conformer path used for all non-ensemble metrics above IS deterministic). RDKit runs pinned with randomSeed=0xF00D."
+  }
+}
