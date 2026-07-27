@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet — everything below `[0.7.1]` has shipped._
+
+## [0.7.1] — 2026-07-27
+
 ### Added — `chematic-inchi`
 
 - **Accurate-CIP dedup preflight** (issue #161): `compare_with_accurate_cip_preflight`/
@@ -93,24 +97,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`canonical_smiles()` wrote its winning individualize-refine branch's
   string, then wrote it again.** `winning_individualized_ranks` (shared by
-  `canonical_smiles`/`canonical_atom_order`) already had to call
+  `canonical_smiles`/`canonical_atom_order`, extracted by `c219ee7` so
+  `canonical_atom_order` would share the same tie-break) already had to call
   `CanonicalWriter::write_all()` on every candidate branch to find the
   lexicographically smallest one; `canonical_smiles` then called
   `write_all()` a second, fully redundant time on the already-known winning
-  ranks, on every single call, tied or not. Introduced by `be5dbb1`'s
-  (0.4.26) individualize-refine correctness fix. Reported via an external
-  consumer's `run_reactants`/`apply_retro` performance regression (45-48x
-  slower `canonical_smiles()` in isolation on highly symmetric molecules —
-  plain rings, cages, `CF3`/`tBu`-style substituents — between chematic
-  0.4.25 and 0.4.30). Fixed by returning `(ranks, winning_string)` from
-  `winning_individualized_ranks` so `canonical_smiles` reuses the string
-  instead of recomputing it. Pure refactor: output is byte-identical
-  (verified against the full test suite, including `be5dbb1`'s own
-  golden-string tests and the issue #50 E/Z regression suite). Does **not**
-  fix the larger, still-open cost on genuinely symmetric molecules, which
-  needs automorphism-orbit-aware branch pruning — explicitly deferred as
-  future work. Full bisect, methodology, and before/after numbers in
-  `docs/reaction_transform_perf.md`.
+  ranks, on every single call, tied or not. The redundant call was introduced
+  by `c219ee7` (2026-07-12), two days *after* `be5dbb1`'s (2026-07-10)
+  individualize-refine correctness fix that this redundant work rides on top
+  of — both commits first shipped in 0.4.30, not 0.4.26 (Cargo.toml already
+  read 0.4.29 at both commits; the next release tag after either is
+  `v0.4.30`). `be5dbb1` itself remains correctly attributed as the root cause
+  of the *combinatorial* cost (the expensive-but-currently-necessary
+  branch-and-minimize enumeration) — that part is unfixed here, see below.
+  Reported via an external consumer's `run_reactants`/`apply_retro`
+  performance regression (45-48x slower `canonical_smiles()` in isolation on
+  highly symmetric molecules — plain rings, cages, `CF3`/`tBu`-style
+  substituents — between chematic 0.4.25 and 0.4.30). Fixed by returning
+  `(ranks, winning_string)` from `winning_individualized_ranks` so
+  `canonical_smiles` reuses the string instead of recomputing it. Pure
+  refactor: output is byte-identical (verified against the full test suite,
+  including `be5dbb1`'s own golden-string tests and the issue #50 E/Z
+  regression suite, plus an independent verification pass diffing
+  `canonical_smiles`/`canonical_atom_order` output over a real 5,000-molecule
+  corpus, 0 differences). Measured improvement: real and consistently
+  positive on p95/p99/max; independently re-measured with symmetric
+  instrumentation on both arms at ~13.4% total elapsed (p50 delta not
+  resolvable from run-to-run noise at this sample size — treat the total/p50
+  figures in `docs/reaction_transform_perf.md` as directional, not precise).
+  Does **not** fix the larger, still-open cost on genuinely symmetric
+  molecules, which needs automorphism-orbit-aware branch pruning —
+  explicitly deferred as future work. Full bisect, methodology, and
+  before/after numbers in `docs/reaction_transform_perf.md`.
 
 ### Added — `chematic-rxn`
 

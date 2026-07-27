@@ -131,16 +131,41 @@ even though the raw discrete rank vectors are all pairwise distinct) — the
 branching is 100% correct but, for pure automorphism orbits, 100% redundant
 work, exactly as the original commit's own docstring predicts
 ("if a cell IS an orbit, every choice yields an automorphic result... correct
-but redundant").
+but redundant"). **This combinatorial cost is `be5dbb1`'s and is *not* what
+this PR fixes** — see "Fix implemented here" below for the separate,
+narrower bug this PR does fix, and "Remaining gap" for why the combinatorial
+cost is still open.
+
+### Correction: the specific bug this PR fixes is not `be5dbb1`'s
+
+An earlier draft of this document (and this PR's original description)
+attributed the redundant-`write_all()` bug below to `be5dbb1` itself. That
+was wrong, caught by independent re-verification and confirmed here by
+re-reading the actual diffs: at `be5dbb1`, `canonical_smiles` called
+`write_all()` exactly once per branch (inside the `.map(...).min()` chain)
+— there was no `winning_individualized_ranks` helper yet and no redundant
+second call. The helper (and the redundant second `write_all()` this PR
+removes) was introduced two days later by `c219ee7 fix(smiles): make
+canonical_atom_order use the same tie-break as canonical_smiles`
+(2026-07-12), which extracted the shared branch-selection logic so
+`canonical_atom_order` could reuse it — and in doing so had `canonical_smiles`
+call `write_all()` once inside the new helper (to find the minimum) and then
+again on the winning ranks after the helper returned. Both `be5dbb1` and
+`c219ee7` show `version = "0.4.29"` in their own `Cargo.toml` and both land
+before the `19e410b` bump to `0.4.30` — so "0.4.26" (an earlier, incorrect
+label in this doc and the PR description) is wrong regardless of which of
+the two commits is cited; the correct first-shipped version for either is
+**0.4.30**.
 
 ## Fix implemented here
 
 `winning_individualized_ranks` (the internal helper both `canonical_smiles`
-and `canonical_atom_order` share) already had to write *every* branch's full
-string via `CanonicalWriter::write_all()` to find the minimum — but its
-caller, `canonical_smiles`, then called `write_all()` a **second, fully
-redundant** time on the already-known winning ranks, on every single call
-(tied or not). The fix (`crates/chematic-smiles/src/canonical.rs`) changes
+and `canonical_atom_order` share, introduced by `c219ee7`) already had to
+write *every* branch's full string via `CanonicalWriter::write_all()` to find
+the minimum — but its caller, `canonical_smiles`, then called `write_all()` a
+**second, fully redundant** time on the already-known winning ranks, on every
+single call (tied or not) — the bug `c219ee7` introduced, described above.
+The fix (`crates/chematic-smiles/src/canonical.rs`) changes
 `winning_individualized_ranks` to return `(ranks, winning_string)` instead of
 just `ranks`, so `canonical_smiles` reuses the already-computed string
 instead of re-deriving it.
@@ -226,21 +251,31 @@ re-measured away: the "before" run used a `main` checkout with
 counters are permanently zero, i.e. dead code on that arm), while "after" was
 built with `--features perf-instrumentation` live, paying real
 `AtomicU64::fetch_add` overhead on every `run_reactants`/`build_product` call
-(840 `build_product` calls in this run alone). That bias is conservative —
-the fixed arm carried extra cost the baseline didn't — so **the improvement
-above is understated, not inflated**.
+(840 `build_product` calls in this run alone). This PR's original claim was
+that this bias is conservative (the fixed arm carried extra cost the
+baseline didn't, so "the improvement above is understated, not inflated") —
+**independent re-verification found the opposite**: re-running both arms
+with symmetric instrumentation (the same counters present, feature-gated
+off, on *both* sides) measured a *smaller* total-elapsed improvement
+(~13.4%, vs. the 15-22% above) and found the p50 delta (~1.9% in the
+symmetric re-run) not resolvable from run-to-run noise at this sample size
+(n=4/side). p95/p99/max held up close to the numbers above. **Treat the
+total-elapsed and p50 rows in the table above as directional (a real,
+positive effect exists) rather than precise** — the tail metrics (p95/p99/
+max) are the more reliable numbers from this measurement.
 
 (Ranges are two repeated runs per side, release build, `RAYON_NUM_THREADS=2`,
-same machine.) This is a real, honest, consistent improvement across the
-mean *and* the tail (p95/p99/max) — but a modest one, not a restoration of
-RENKIN's full ~9x. **This is expected and disclosed, not a shortfall being
-hidden**: the witness corpus mixes symmetric (large-regression) and
-asymmetric (small/no-regression) molecules, and this fix only removes the
-universal single-redundant-write cost, not the underlying branch-enumeration
-cost that dominates the symmetric cases. RENKIN's own full 30-target
-integration re-measurement (out of scope here per the task's explicit
-instruction) is the right place to see the aggregate, corpus-realistic
-effect at RENKIN's actual scale and template/molecule mix.
+same machine.) This is a real, consistent improvement on the tail (p95/p99/
+max) and a smaller, less precisely-pinned one on the mean/p50 — but a modest
+one either way, not a restoration of RENKIN's full ~9x. **This is expected
+and disclosed, not a shortfall being hidden**: the witness corpus mixes
+symmetric (large-regression) and asymmetric (small/no-regression) molecules,
+and this fix only removes the universal single-redundant-write cost, not the
+underlying branch-enumeration cost that dominates the symmetric cases.
+RENKIN's own full 30-target integration re-measurement (out of scope here
+per the task's explicit instruction) is the right place to see the
+aggregate, corpus-realistic effect at RENKIN's actual scale and
+template/molecule mix.
 
 ## Remaining gap (explicitly not fixed here)
 
