@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-inchi`
+
+- **Accurate-CIP dedup preflight** (issue #161): `compare_with_accurate_cip_preflight`/
+  `compare_molecules_with_accurate_cip_preflight`/
+  `deduplicate_verified_with_accurate_cip_preflight` retry a legacy-CIP-unresolved
+  specified tetrahedral stereocentre via `CipMode::Accurate` and, if it resolves,
+  use that to recover verified-comparison capability — without ever letting the
+  accurate engine's answer leak into the generated InChI string itself (which
+  would silently reopen the 4663/4664 false-duplicate bug fixed previously).
+  Additive only: `compare`/`compare_molecules`/`deduplicate_verified`/
+  `identity_verify` are byte-for-byte unchanged. On the project's 5,000-molecule
+  reference corpus: `verification_unavailable` 15 → 6 (9 recovered, 0 newly
+  unavailable). Fails closed (`IdentityDiagnostic`) if the accurate engine
+  ties/budgets-out/errors on any flagged atom, or if two flagged atoms in the
+  same molecule share a `morgan_ranks` value (ambiguous correspondence — costs
+  real recall on 3/12 audited molecules, a known, quantified, unfixed
+  limitation).
+- **Indexed graph relation API**: `compare_indexed_graph_relation`, with mode
+  controlled by two independent, orthogonal axes —
+  `GraphStrictness::{RawGraphExact, ChemicalGraphExact}` (literal bond-order/
+  aromatic-flag equality vs. Kekulize-first chemical equality) and
+  `AtomMapPolicy::{Include, Ignore}` (whether reaction atom-mapping numbers are
+  part of molecule identity) — combinable freely via `IndexedGraphRelationMode`
+  rather than a flat preset enum. Requires matching atom-index correspondence
+  between the two molecules (e.g. conformer/ensemble grouping, MOL/SDF
+  round-trip checks) — not a general graph-isomorphism search; named
+  accordingly rather than as "exact graph identity" to avoid overclaiming.
+  `ChemicalGraphExact` does not yet recognize two independently-Kekulized
+  structures representing different valid resonance forms of the same
+  aromatic system as equivalent (degrades to an honest mismatch or
+  inconclusive result, never a false match).
+
 ### Added — `chematic-mcp`
 
 - **MCP 2026-07-28 tools-only stateless stdio server**, alongside unchanged

@@ -265,15 +265,15 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン)；**SMARTS 内アトムマップ `:N`** (`[O;D1;H0:3]` 形式 — メタデータとして保存、マッチング条件には不使用) | 142     |
 | `chematic-3d`          | 3D 座標生成、ETKDG KB (40 パターン、adaptive noise)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 265     |
 | `chematic-rxn`         | 反応 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 retro-SMIRKS テンプレート (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ランク付き | 137      |
-| `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み；**検証付きcanonical SMILES重複排除**（`dedup`モジュール、legacy CIPで未解決の指定済みtetrahedral stereoに対してfail-closed） | 96 (+16*)   |
+| `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み；**検証付きcanonical SMILES重複排除**（`dedup`モジュール、legacy CIPで未解決の指定済みtetrahedral stereoに対してfail-closed）；**accurate-CIP dedup preflight**（issue #161、legacy CIPで未解決のstereocentreに対して検証capabilityを回復）；**indexed graph relation API**（`compare_indexed_graph_relation`、直交する`GraphStrictness`/`AtomMapPolicy`軸） | 108 (+16*)   |
 | `chematic-cip`         | opt-inの高精度CIPエンジン（`assign_cip_accurate_experimental`、階層的digraph、Rules 1a/1b/2/4b/5、RDKit互換MANCUDE分数原子番号）— デフォルトの`assign_cip()`/`CipMode::LegacyFast`は変更なし | —       |
 | `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic`（`0.7.0`公開済み、crates.io/PyPIと同期）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211     |
 | `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 47      |
-| `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**20 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack | 31      |
+| `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**20 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack；dual-eraプロトコル（レガシー`2024-11-05` + モダン`2026-07-28`ステートレス方言）、全20ツールに`structuredContent`/`outputSchema` | 82      |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
-cargo test --workspace --lib --quiet                                               # 2,746 ライブラリテスト、全パス（2026-07-26 時点）
+cargo test --workspace --lib --quiet                                               # 2,812 ライブラリテスト、全パス（2026-07-27 時点）
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +16 IUPAC 標準 InChI 統合テスト
 ```
 

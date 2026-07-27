@@ -233,15 +233,15 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式）；**SMARTS 原子映射 `:N`**（`[O;D1;H0:3]` — 作为元数据存储，不用于匹配） | 142    |
 | `chematic-3d`         | 3D 坐标生成、ETKDG KB（40 种模式，自适应噪声）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 265    |
 | `chematic-rxn`        | 反应 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 个 retro-SMIRKS 模板（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）+ SA 分数排序 | 137     |
-| `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取；**带验证的 canonical SMILES 去重**（`dedup` 模块，遇到 legacy CIP 无法解析的指定四面体立体中心时安全失败） | 96 (+16*)   |
+| `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取；**带验证的 canonical SMILES 去重**（`dedup` 模块，遇到 legacy CIP 无法解析的指定四面体立体中心时安全失败）；**accurate-CIP 去重预检**（issue #161，为 legacy CIP 无法解析的立体中心恢复已验证比较能力）；**indexed graph relation API**（`compare_indexed_graph_relation`，正交的 `GraphStrictness`/`AtomMapPolicy` 轴） | 108 (+16*)   |
 | `chematic-cip`        | opt-in 高精度 CIP 引擎（`assign_cip_accurate_experimental`，层次化 digraph，Rules 1a/1b/2/4b/5，RDKit 兼容 MANCUDE 分数原子序数）— 默认的 `assign_cip()`/`CipMode::LegacyFast` 未变更 | —    |
 | `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic`（已发布 `0.7.0`，与 crates.io/PyPI 同步）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 47     |
-| `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**20 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack | 31     |
+| `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**20 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack；dual-era 协议（旧版 `2024-11-05` + 现代 `2026-07-28` 无状态方言）、全部 20 个工具均支持 `structuredContent`/`outputSchema` | 82     |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
-cargo test --workspace --lib --quiet                                               # 2,746 个库测试，全部通过（截至 2026-07-26）
+cargo test --workspace --lib --quiet                                               # 2,812 个库测试，全部通过（截至 2026-07-27）
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +16 IUPAC 标准 InChI 集成测试
 ```
 

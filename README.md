@@ -398,17 +398,17 @@ See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for al
 | `chematic-smarts`     | SMARTS, VF2, MCS with chirality matching; **SmartsCache** (LRU compilation cache, 5–20×); **named_pattern()** library (20 functional group patterns); **atom map `:N` in SMARTS** (`[O;D1;H0:3]` — stored as metadata, not a match criterion); **`[kN]` ring-size primitive**; **VF2 early-exit** when query > target atom count; **`find_matches_with_rings`** — share SSSR across multi-pattern batches | 142   |
 | `chematic-3d`         | 3D coordinate generation, distance geometry constraints, ETKDG KB (40 torsion patterns, adaptive noise), force-field minimization, shape descriptors, ConformerEnsemble with RMSD pruning, PDB/XYZ; **GETAWAY HATS-matrix** (full 19-dim implementation); **`whim_getaway_combined()`** now 29-dim | 265    |
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering**; **E/Z double-bond stereo filtering** in `run_reactants` (`ez_stereo_outward`, `smirks_ez_stereo_ok`) | 137    |
-| `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader; **verified canonical-SMILES dedup** (`dedup::{group_candidates, deduplicate_verified}`, fail-closed on legacy-CIP-unresolved specified tetrahedral stereo) | 96 (+16*)    |
+| `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader; **verified canonical-SMILES dedup** (`dedup::{group_candidates, deduplicate_verified}`, fail-closed on legacy-CIP-unresolved specified tetrahedral stereo); **accurate-CIP dedup preflight** (issue #161) recovering verified-comparison capability on legacy-CIP-unresolved stereocentres; **indexed graph relation API** (`compare_indexed_graph_relation`, orthogonal `GraphStrictness`/`AtomMapPolicy` axes) | 108 (+16*)    |
 | `chematic-cip`        | Opt-in accurate CIP engine (`assign_cip_accurate_experimental`, hierarchical digraph, Rules 1a/1b/2/4b/5, RDKit-compatible MANCUDE fractional atomic numbers) — the default `assign_cip()`/`CipMode::LegacyFast` is unchanged | —     |
 | `chematic-wasm`       | **130+ WASM exports** — npm: `@kent-tokyo/chematic` (published `0.7.0`, in sync with crates.io/PyPI); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json` | 211   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 47    |
-| `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **20 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, **molecule_context_pack** | 31    |
+| `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **20 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, **molecule_context_pack**; dual-era protocol (legacy `2024-11-05` + modern `2026-07-28` stateless dialect), `structuredContent`/`outputSchema` on all 20 tools | 82    |
 | `chematic-py`         | PyO3 Python bindings (`pip install chematic`); 300+ API endpoints: `from_smiles()`, `Mol.descriptors()`, `Mol.minimize_dreiding()`, `from_cxsmiles()`, `from_rxn_file()`/`to_rxn_file()`, `parse_sdf_with_coords()`, `Mol.ring_families()`, `tanimoto_matrix()`, `iter_sdf()`, `SimilarityIndex`; **`mol.to_pdf()`/`mol.to_eps()`** (depict); **`from_cjson()`/`mol.to_cjson()`** (ChemicalJSON); **`mol.schultz_mti`, `mol.gutman_mti`, `mol.vabc`, `mol.gravitational_index`**; **`bulk.substructure_match(smarts, mols)`** (parallel VF2 on pre-parsed Mol objects); **`mol.describe()`** (LLM/MCP-ready natural-language summary); **`mol.diff(other)`** (element + descriptor diff); Sprint 18–27 coverage | 300+  |
 | `chematic-ewald`      | PME Ewald summation, B-spline interpolation (cubic, phase-corrected)                                     | 16    |
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace --lib --quiet                                          # 2,746 tests, all passing (2026-07-26)
+cargo test --workspace --lib --quiet                                          # 2,812 tests, all passing (2026-07-27)
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +16 IUPAC-exact InChI tests
 ```
 
@@ -616,7 +616,7 @@ chematic/
 
 ```bash
 cargo build --workspace                                                   # build all crates
-cargo test --workspace --lib --quiet                                      # 2,746 lib tests
+cargo test --workspace --lib --quiet                                      # 2,812 lib tests
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +16 InChI tests
 cargo clippy --workspace -- -D warnings                                   # lints (zero warnings)
 ```
