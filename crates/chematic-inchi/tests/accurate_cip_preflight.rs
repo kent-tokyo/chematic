@@ -12,12 +12,24 @@
 //! re-parse the mutable `~/Downloads/SMILES.csv` at test time -- no
 //! JSON-parsing dev-dependency is available to this crate under its
 //! file-ownership scope for this PR, so these SMILES are pinned literals,
-//! same approach as `examples/dedup_stereo_guard_diagnosis.rs`) found the
-//! classification has partially drifted since the audit ran, for two
-//! independent, unrelated reasons documented at each constant below. See the
-//! PR body for the full re-derivation, the independent live RDKit 2026.03.3
-//! cross-check (own isolated venv), and the fresh, current 5,000-molecule
-//! corpus rerun this file's groupings are consistent with.
+//! same approach as `examples/dedup_stereo_guard_diagnosis.rs`) confirmed the
+//! classification, with one correction: the audit JSONL's own `corpus_index`
+//! is uniformly off by one from the molecule's 0-based position in the
+//! corpus file (audit idx=N sits at 0-based line N+1 -- confirmed for 11/12
+//! rows by canonicalizing both the audit's `input_smiles` and the corpus
+//! line at `N+1` and finding they match), and the row labeled `idx=4412`
+//! additionally has a bad `input_smiles` transcription that matches no
+//! molecule anywhere in the current, SHA-256-pinned 5,000-molecule corpus
+//! (`validation/manifests/dataset_provenance.json`). The corpus file itself
+//! has **not** drifted since the audit -- an earlier draft of this file
+//! claimed otherwise and was wrong. The real molecule at 0-based corpus line
+//! 4413 (sourced by position, not by trusting that audit row's string) DOES
+//! still trigger the guard and IS recovered by this preflight, same as the
+//! other 6 originally-recovered molecules -- see `CASE_A_FULLY_RECOVERED`
+//! below, now 7 entries, not 6. See the PR body for the full re-derivation,
+//! the independent live RDKit 2026.03.3 cross-check (own isolated venv), and
+//! the fresh, current 5,000-molecule corpus rerun this file's groupings are
+//! consistent with.
 //!
 //! Requires the `native-inchi` feature.
 
@@ -32,14 +44,18 @@ fn mol(smiles: &str) -> chematic_core::Molecule {
     parse(smiles).unwrap_or_else(|e| panic!("parse {smiles:?}: {e}"))
 }
 
-/// 6 of the audit's original 10 "case A" molecules: legacy CIP fails to
-/// rank at least one specified tetrahedral centre, `CipMode::Accurate`
+/// 7 of the audit's original 10 "case A" molecules (corrected from a
+/// previous, mistaken count of 6 -- see the module doc comment): legacy CIP
+/// fails to rank at least one specified tetrahedral centre, `CipMode::Accurate`
 /// resolves every such centre, and the accurate-CIP preflight fully
 /// recovers verified-comparison capability. Each recovered atom's code was
 /// independently re-checked against a live RDKit 2026.03.3 oracle
 /// (`rdCIPLabeler` + `FindMolChiralCenters(includeUnassigned=True,
 /// useLegacyImplementation=False)`, own isolated venv) -- 15/15 atoms agree
-/// exactly (see the PR body for the full table).
+/// exactly for the first 6 entries (see the PR body for the full table);
+/// the 7th entry below (corpus line 4413) is the corrected fixture for what
+/// the audit intended as `idx=4412` (see the module doc comment for why its
+/// original `input_smiles` was wrong and how the replacement was sourced).
 const CASE_A_FULLY_RECOVERED: &[(usize, &str)] = &[
     (
         196,
@@ -49,6 +65,19 @@ const CASE_A_FULLY_RECOVERED: &[(usize, &str)] = &[
     (
         4047,
         "O=C(Oc1c(O)cc(C(=O)O[C@H]2[C@H](OC(=O)c3cc(O)c(O)c(O)c3)C[C@](O)(C(=O)O)C[C@H]2OC(=O)c2cc(O)c(O)c(O)c2)cc1O)c1cc(O)c(O)c(O)c1",
+    ),
+    (
+        // Corrected fixture for the audit's mistranscribed "idx=4412" row.
+        // Sourced directly from 0-based corpus line 4413 of
+        // `~/Downloads/SMILES.csv` (SHA-256
+        // 1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e,
+        // matching `validation/manifests/dataset_provenance.json`'s
+        // `sha256_at_baseline`) -- NOT the audit JSONL's own `input_smiles`
+        // for that row, which does not canonically match this or any other
+        // molecule in the corpus. A di-galloylquinic-acid family member,
+        // same family as the 4047/4413/4509 entries here.
+        4412,
+        "O=C(O[C@H]1[C@H](O)C[C@](OC(=O)c2cc(O)c(O)c(O)c2)(C(=O)O)C[C@H]1O)c1cc(O)c(O)c(O)c1",
     ),
     (
         4413,
@@ -109,23 +138,15 @@ const CASE_A_BLOCKED_BY_TIED_RANK: &[(usize, &str)] = &[
     ),
 ];
 
-/// The audit's original idx=4412 molecule: at the time of the audit, legacy
-/// CIP failed to rank one of its centres; at this PR's HEAD, legacy CIP now
-/// resolves all of its specified centres (an upstream `chematic-chem`/
-/// `chematic-cip` change since the audit ran -- `has_unresolved_specified_
-/// tetrahedral_stereo` no longer fires on it at all). Kept here, tested
-/// separately, purely so this file's molecule list is traceable 1:1 against
-/// the audit's original 12 -- not part of the "recovered by this preflight"
-/// count, since the plain (legacy-only) path already succeeds for it.
-const NO_LONGER_APPLICABLE: &str = "O=C(O[C@H]1[C@H](O)C[C@](OC(=O)c2cc(O)c(O)c(O)c2)(C(=O)O)C[C@@H](OC(=O)c2cc(O)c(O)c(O)c2)[C@H]1OC(=O)c1cc(O)c(O)c(O)c1)c1cc(O)c(O)c(O)c1";
-
-/// For every audited molecule where the guard still fires at all (case A
-/// fully-recovered, case A blocked-by-tied-rank, and case B alike), the
-/// PLAIN (legacy-only) path is unchanged from PR #156's shipped behavior:
+/// For every audited molecule (case A fully-recovered, case A
+/// blocked-by-tied-rank, and case B alike -- all 12, with no "no longer
+/// applicable" exception; see the module doc comment for why an earlier
+/// version of this file wrongly carved one molecule out here), the PLAIN
+/// (legacy-only) path is unchanged from PR #156's shipped behavior:
 /// comparing the molecule against itself is `VerificationUnavailable`. This
 /// is the "before" half of issue #161's before/after claim.
 #[test]
-fn plain_path_unchanged_unavailable_for_every_still_applicable_audited_molecule() {
+fn plain_path_unchanged_unavailable_for_every_audited_molecule() {
     for &(idx, smiles) in CASE_A_FULLY_RECOVERED
         .iter()
         .chain(CASE_B_GENUINE_TIE)
@@ -138,22 +159,6 @@ fn plain_path_unchanged_unavailable_for_every_still_applicable_audited_molecule(
             "idx={idx}: plain path must still fail closed (PR #156 unchanged)"
         );
     }
-}
-
-/// `idx=4412` (see `NO_LONGER_APPLICABLE`'s doc comment): the plain path
-/// ALREADY succeeds on it at this PR's HEAD, unrelated to this PR's
-/// changes. Documented here as an explicit, tested observation rather than
-/// silently dropped from the fixture list.
-#[test]
-fn idx_4412_no_longer_triggers_the_guard_at_all_upstream_drift() {
-    let m = mol(NO_LONGER_APPLICABLE);
-    assert_eq!(
-        compare_molecules(&m, &m, IdentityPolicy::StandardInchiString),
-        DedupRelation::VerifiedDuplicate,
-        "if this starts failing, chematic-chem/chematic-cip's CIP ranking regressed \
-         back to the audit-time behavior -- update this fixture's category, don't just \
-         change the assertion"
-    );
 }
 
 /// Case A (fully recovered): the accurate-CIP preflight recovers

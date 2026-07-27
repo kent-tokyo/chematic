@@ -707,24 +707,53 @@ pub enum IdentityDiagnostic {
 // This PR independently RE-RAN that classification against current HEAD
 // (not trusted on faith -- see the fixtures in
 // `tests/accurate_cip_preflight.rs` and the PR body for the full
-// re-derivation) and a **fresh** 5,000-molecule corpus, and found it has
-// partially drifted for two unrelated reasons: (1) one of the original 12
-// molecules (audit idx=4412) no longer triggers the guard at all -- an
-// upstream `chematic-chem`/`chematic-cip` CIP-ranking change since the audit
-// ran, unrelated to this PR; (2) three of the original 10 "case A" molecules
-// share a THIRD failure mode the original audit did not anticipate: a
-// 3-fold-symmetric substituent (an adamantane-cage-like scaffold) whose
-// legacy-unresolved centres all land on the same `morgan_ranks` value, which
-// `accurate_stereo_supplement`'s cross-molecule correspondence deliberately
-// refuses to pair (see that function's own doc comment) -- these 3
-// molecules' individual centres ARE correctly resolved by the accurate
-// engine (RDKit-confirmed, 9/9 atoms), but stay `VerificationUnavailable`
-// under this preflight rather than risk a mispaired guess. Net effect on a
-// fresh corpus rerun: `verification_unavailable` shrinks from 15 to 6 (9
-// molecules recovered, 0 molecules newly made unavailable -- the "shrink,
-// never widen" invariant this PR must preserve, confirmed empirically over
-// the whole corpus, not just the audited 12). Full denominators, the
-// RDKit-cross-check table, and dataset provenance are in the PR body.
+// re-derivation) and a **fresh** 5,000-molecule corpus
+// (`~/Downloads/SMILES.csv`, SHA-256-confirmed byte-identical to the value
+// pinned in `validation/manifests/dataset_provenance.json` -- the corpus has
+// NOT drifted since the audit ran; an earlier draft of this comment claimed
+// otherwise and was wrong, see below). Two independent, unrelated findings
+// came out of the re-run:
+//
+// (1) The audit JSONL's own `corpus_index` field is uniformly off by one
+// from the 0-based position of the molecule in the corpus file (i.e. audit
+// idx=N's molecule actually sits at 0-based line N+1) -- confirmed for
+// 11 of the 12 audited molecules by canonicalizing both the audit's
+// `input_smiles` and the corpus line at `N+1` and finding they match. This
+// is a labeling-convention mismatch in the original audit tooling, not a
+// code regression, and doesn't change which molecules are affected.
+//
+// (2) Exactly one audited row -- the one labeled `audit idx=4412` -- also
+// has a bad `input_smiles` transcription: that string does not match the
+// real corpus molecule at its implied 0-based line 4413 (nor does it
+// canonically match anything anywhere else in the 5,000-line corpus). An
+// earlier version of this preflight's test fixture trusted that row's
+// string verbatim, found it (correctly, for that string) no longer
+// triggers the guard, and wrongly concluded "this molecule is no longer
+// applicable" / "an upstream chematic-chem/chematic-cip CIP-ranking change
+// since the audit" -- both false. `chematic-chem/src/cip.rs` (home of
+// `tetrahedral_stereo_neighbors`, the legacy ranking function this guard
+// depends on) has had zero commits since well before the audit ran, so the
+// legacy ranking path is byte-identical to audit time; there was no
+// upstream change to attribute this to. The REAL molecule at 0-based corpus
+// line 4413 (a di-galloylquinic-acid family member, distinct from the
+// audit's mistranscribed string) DOES still trigger the guard today and IS
+// recovered by this preflight, exactly like the other 6 fully-recovered
+// audited molecules -- see `tests/accurate_cip_preflight.rs` for the
+// corrected fixture, sourced by corpus position rather than by trusting the
+// audit row's string.
+//
+// Net effect, recounted from scratch against the 12 originally-audited
+// molecules: 7 fully recovered (not 6), 2 genuine ties (both chematic
+// engines and RDKit's own modern CIP labeler agree no label exists), 3
+// blocked by this preflight's conservative tied-morgan-rank-correspondence
+// guard -- 7 + 2 + 3 = 12, with no "no longer applicable" category (that
+// was an artifact of the bad transcription above, not a real phenomenon).
+// Full-corpus effect: `verification_unavailable` shrinks from 15 to 6 (9
+// molecules recovered -- the 7 above plus the already-disclosed 4663/4664
+// pair, 0 molecules newly made unavailable -- the "shrink, never widen"
+// invariant this PR must preserve, confirmed empirically over the whole
+// corpus, not just the audited 12). Full denominators, the RDKit-cross-check
+// table, and dataset provenance are in the PR body.
 //
 // Importantly, resolving a centre via the accurate engine does NOT change
 // what `crate::native::standard_inchi` itself emits for that atom -- that
