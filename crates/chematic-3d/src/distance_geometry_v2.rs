@@ -753,12 +753,19 @@ mod tests {
     #[test]
     fn different_seed_gives_different_output() {
         let mol = parse("CCCCCCCCCC").unwrap(); // decane
+        // Seeds 0/1 specifically -- under the old buggy `Prng::from_seed`
+        // (`Self(seed | 1)`), 0 and 1 both mapped to the identical internal
+        // state, so this exact pair is what would have caught that
+        // regression. Seeds 1/2 (the original choice here) aren't an
+        // aliased pair even under the old bug, so they couldn't have
+        // detected it -- confirmed by independent verification during
+        // review.
         let params_a = EmbedParameters {
-            random_seed: 1,
+            random_seed: 0,
             ..EmbedParameters::default()
         };
         let params_b = EmbedParameters {
-            random_seed: 2,
+            random_seed: 1,
             ..EmbedParameters::default()
         };
         let c1 = embed_distance_geometry_v2(&mol, &params_a).unwrap();
