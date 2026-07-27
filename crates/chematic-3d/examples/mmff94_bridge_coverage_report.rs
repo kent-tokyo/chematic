@@ -14,7 +14,7 @@
 //! - old path: `minimize_mmff94` (existing, crippled, silently-zeroing energy
 //!   function) worst-bond-length after minimization, starting from
 //!   `dg::generate_coords`.
-//! - new path: `ForceFieldPolicy::Mmff94Strict` coverage (bond/angle/
+//! - new path: `ForceFieldPolicy::Mmff94BondAngleStrict` coverage (bond/angle/
 //!   torsion/oop missing counts, cited by atom element pairs) and, via
 //!   `Mmff94WithUffFallback`, the fixed worst-bond-length.
 //!
@@ -23,6 +23,7 @@
 use chematic_3d::dg::generate_coords;
 use chematic_3d::minimize::{
     ForceFieldBridgeError, ForceFieldPolicy, MinimizeConfig, minimize_mmff94, minimize_with_policy,
+    minimize_with_policy_gated,
 };
 use chematic_core::Molecule;
 use chematic_smiles::parse;
@@ -137,11 +138,27 @@ fn main() {
     let mut n_parsed = 0usize;
     let mut n_strict_ok = 0usize;
     let mut n_strict_missing = 0usize;
+    // Same gate, widened to also require torsion+oop coverage -- measures
+    // whether `Mmff94BondAngleStrict`'s current bond+angle-only scope is still the
+    // right call post-chematic-ff-#183, or whether torsion/oop coverage is
+    // now good enough that widening the gate (or renaming this policy to be
+    // honest about a narrower scope) should be reconsidered. Separate
+    // denominator from `n_strict_ok`/`n_strict_missing` -- never pooled.
+    let mut n_strict_gated_ok = 0usize;
+    let mut n_strict_gated_missing = 0usize;
     let mut n_old_blowup = 0usize; // old minimize_mmff94 worst bond > 3 A
-    let mut n_fixed_via_fallback = 0usize; // was blown up, now <= 3 A
-    let mut n_still_blown_up = 0usize; // was blown up, still > 3 A after fallback
-    let mut n_new_regression = 0usize; // was fine (<=3 A), fallback made it > 3 A
-    let mut n_new_regression_unreported = 0usize; // ...and (bug check) reported converged=true
+    let mut n_fixed_via_fallback = 0usize; // was blown up, now <= 3 A (Ok, sound)
+    let mut n_still_blown_up = 0usize; // was blown up, still > 3 A after fallback (Ok>3A or typed Err)
+    let mut n_new_regression = 0usize; // was fine (<=3 A), fallback made it > 3 A (Ok>3A or typed Err)
+    let mut n_new_regression_typed_err = 0usize; // ...of which now a typed Err(MinimizationFailed)
+    // Bug check: an Ok result must NEVER have a blown-up (>3 A) worst bond --
+    // that would mean check_minimization_soundness has a gap and a blown-up
+    // geometry is silently escaping as "success". MUST be 0.
+    let mut n_ok_but_blown_up_bug = 0usize;
+    // Disclosure, not a bug check: Ok results that are sound (no soundness-gate
+    // trigger) but simply didn't converge within the default iteration budget
+    // -- expected to be nonzero (see check_minimization_soundness's doc).
+    let mut n_fallback_ok_not_converged = 0usize;
 
     // pattern -> occurrence count across the whole corpus.
     let mut missing_bond_patterns: std::collections::BTreeMap<String, usize> = Default::default();
@@ -179,7 +196,7 @@ fn main() {
         let strict = minimize_with_policy(
             &mol,
             coords.clone(),
-            ForceFieldPolicy::Mmff94Strict,
+            ForceFieldPolicy::Mmff94BondAngleStrict,
             &config,
         );
         let (n_bond_miss, n_angle_miss, n_tors_miss, n_oop_miss, strict_label);
@@ -189,7 +206,7 @@ fn main() {
                 let c = r
                     .coverage
                     .as_ref()
-                    .expect("Mmff94Strict always reports coverage");
+                    .expect("Mmff94BondAngleStrict always reports coverage");
                 n_bond_miss = c.bonds_missing.len();
                 n_angle_miss = c.angles_missing.len();
                 n_tors_miss = c.torsions_missing.len();
@@ -224,31 +241,94 @@ fn main() {
                 n_oop_miss = 0;
                 strict_label = format!("UNSUPPORTED({e})");
             }
+            Err(ForceFieldBridgeError::MinimizationFailed(d)) => {
+                // The strict MMFF94 attempt itself produced an unsound
+                // geometry despite full bond+angle coverage -- distinct from
+                // "missing parameters", still counted in the same
+                // denominator since it's still "did not return Ok".
+                n_strict_missing += 1;
+                n_bond_miss = 0;
+                n_angle_miss = 0;
+                n_tors_miss = 0;
+                n_oop_miss = 0;
+                strict_label = format!("UNSOUND({:?})", d.reason);
+            }
         }
 
-        // New: fallback path (always succeeds), for the "did we fix the blowup" number.
-        let fallback = minimize_with_policy(
+        // Same gate widened to torsion+oop too -- feeds the Mmff94BondAngleStrict
+        // naming/scope decision (see PR body). Separate denominator, not
+        // pooled with the bond+angle-only n_strict_ok/n_strict_missing above.
+        match minimize_with_policy_gated(
+            &mol,
+            coords.clone(),
+            ForceFieldPolicy::Mmff94BondAngleStrict,
+            &config,
+            true,
+        ) {
+            Ok(_) => n_strict_gated_ok += 1,
+            Err(_) => n_strict_gated_missing += 1,
+        }
+
+        // New: fallback path -- NOT infallible (see ForceFieldPolicy::Mmff94WithUffFallback's
+        // doc): the UFF fallback itself can be unsound, in which case this
+        // is now a typed Err(MinimizationFailed) instead of the
+        // Ok(converged=false) it used to be. new_worst/new_conv/new_resid
+        // are pulled from whichever side (Ok or the typed Err's detail)
+        // actually ran, so a fixed-but-still-blown molecule still reports
+        // its real geometry, not a blank.
+        let fallback_result = minimize_with_policy(
             &mol,
             coords,
             ForceFieldPolicy::Mmff94WithUffFallback,
             &config,
-        )
-        .expect("Mmff94WithUffFallback is infallible");
-        let new_worst = worst_bond(&mol, &fallback.coords);
+        );
+        let (new_worst, new_conv, new_resid, fallback_label);
+        match &fallback_result {
+            Ok(r) => {
+                new_worst = worst_bond(&mol, &r.coords);
+                new_conv = r.converged;
+                new_resid = r.max_residual_force;
+                fallback_label = "OK".to_string();
+                if new_worst > 3.0 {
+                    // Must never happen: check_minimization_soundness should
+                    // have caught this and returned Err instead.
+                    n_ok_but_blown_up_bug += 1;
+                }
+                if !new_conv {
+                    n_fallback_ok_not_converged += 1;
+                }
+            }
+            Err(ForceFieldBridgeError::MinimizationFailed(d)) => {
+                new_worst = d.worst_bond_length;
+                new_conv = d.converged;
+                new_resid = d.max_residual_force;
+                fallback_label = format!("TYPED_FAIL({:?})", d.reason);
+            }
+            Err(other) => {
+                // Structurally shouldn't happen (Mmff94WithUffFallback's
+                // only own failure mode is MinimizationFailed), but don't
+                // let an unanticipated variant silently vanish from the
+                // blow-up counting below.
+                new_worst = f64::INFINITY;
+                new_conv = false;
+                new_resid = f64::INFINITY;
+                fallback_label = format!("UNEXPECTED_ERR({other})");
+            }
+        }
         if old_worst > 3.0 && new_worst <= 3.0 {
             n_fixed_via_fallback += 1;
         } else if old_worst > 3.0 && new_worst > 3.0 {
             n_still_blown_up += 1;
         } else if old_worst <= 3.0 && new_worst > 3.0 {
             n_new_regression += 1;
-            if fallback.converged {
-                n_new_regression_unreported += 1;
+            if fallback_result.is_err() {
+                n_new_regression_typed_err += 1;
             }
         }
 
         println!(
-            "{name:<24} {n_bond_miss:>4} {n_angle_miss:>4} {n_tors_miss:>4} {n_oop_miss:>4}  {old_worst:>10.2} {new_worst:>10.2} {:>6} {:>12.2}  {strict_label}",
-            fallback.converged, fallback.max_residual_force
+            "{name:<24} {n_bond_miss:>4} {n_angle_miss:>4} {n_tors_miss:>4} {n_oop_miss:>4}  {old_worst:>10.2} {new_worst:>10.2} {:>6} {:>12.2}  {strict_label} | fallback={fallback_label}",
+            new_conv, new_resid
         );
     }
 
@@ -256,15 +336,31 @@ fn main() {
     println!("=== summary ===");
     println!("total corpus molecules:                       {n_total}");
     println!("parsed:                                        {n_parsed}");
-    println!("Mmff94Strict fully covered (OK):               {n_strict_ok}");
-    println!("Mmff94Strict missing params:                    {n_strict_missing}");
+    println!("Mmff94BondAngleStrict (bond+angle gate) fully covered (OK):   {n_strict_ok}");
+    println!("Mmff94BondAngleStrict (bond+angle gate) missing params:        {n_strict_missing}");
+    println!(
+        "Mmff94BondAngleStrict widened (+torsion+oop gate) fully covered (OK): {n_strict_gated_ok}"
+    );
+    println!(
+        "Mmff94BondAngleStrict widened (+torsion+oop gate) missing params:      {n_strict_gated_missing}"
+    );
     println!("old minimize_mmff94 worst>3A (blown up):        {n_old_blowup}");
     println!("  ...of which FIXED by Mmff94WithUffFallback:  {n_fixed_via_fallback}");
-    println!("  ...of which STILL blown up (same or worse):  {n_still_blown_up}");
-    println!("NEW regressions (old<=3A, fallback made it >3A):    {n_new_regression}");
+    println!("  ...of which STILL blown up (Ok>3A or typed Err):  {n_still_blown_up}");
     println!(
-        "  ...of which silently reported converged=true:     {n_new_regression_unreported} \
-         (MUST be 0 -- would mean this bridge hides a bad result)"
+        "NEW regressions (old<=3A, fallback made it >3A -- Ok>3A or typed Err):    {n_new_regression}"
+    );
+    println!(
+        "  ...of which now surfaced as a typed Err(MinimizationFailed):  {n_new_regression_typed_err} \
+         (should equal {n_new_regression} -- an Ok>3A here would mean check_minimization_soundness \
+         has a gap)"
+    );
+    println!(
+        "Ok result with worst bond >3A (soundness-gate bug check, MUST be 0): {n_ok_but_blown_up_bug}"
+    );
+    println!(
+        "Ok fallback results with converged=false (sound geometry, just didn't fully converge \
+         within the default iteration budget -- expected, not a bug): {n_fallback_ok_not_converged}"
     );
     println!();
     println!(
