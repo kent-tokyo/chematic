@@ -1041,23 +1041,48 @@ pub enum ForceFieldPolicy {
     /// [`PolicyMinimizeResult::missing_parameter_classes`], never silent.
     ///
     /// NOT infallible: if the `UffOnly` fallback attempt is itself unsound
-    /// (measured post-chematic-ff-#183: 8/58 corpus molecules, all
-    /// fused/conjugated polycyclic aromatics — see PR body), this returns
-    /// `Err(MinimizationFailed)` too. This policy's contract is "never
-    /// silently report success on an unsound geometry," not "always
+    /// (measured post-chematic-ff-#183, restricted to the molecules that
+    /// actually *reach* this fallback path — i.e. the ones that first fail
+    /// `Mmff94BondAngleStrict`: 8 fused/conjugated polycyclic aromatics
+    /// (naphthalene, quinoline, pyrene, ibuprofen, ibuprofen_S, naproxen_S,
+    /// diphenhydramine, atorvastatin_fragment) plus caffeine remaining
+    /// blown up even before the soundness gate — see PR #169 body), this
+    /// returns `Err(MinimizationFailed)` too. This policy's contract is
+    /// "never silently report success on an unsound geometry," not "always
     /// succeeds" — those are different guarantees, and only the first one
-    /// is made here.
+    /// is made here. This 9-molecule figure is scoped to the fallback
+    /// *trigger population* specifically, not `UffOnly`'s behavior across
+    /// the full corpus — see the correction on [`ForceFieldPolicy::UffOnly`]
+    /// below, which a prior version of this doc comment incorrectly copied
+    /// verbatim onto both variants.
     Mmff94WithUffFallback,
     /// chematic-ff's real UFF module (`chematic_ff::uff`) — generic,
     /// all-element coverage (bond lengths/angles are formula-derived from
     /// per-type constants, not a lookup table, so there is no missing-entry
     /// case to gate on). NOT infallible: can return
     /// `Err(MinimizationFailed)` if the resulting geometry is unsound (see
-    /// `check_minimization_soundness`) — measured post-chematic-ff-#183 on
-    /// 8/58 corpus molecules, all fused/conjugated polycyclic aromatics
-    /// (naphthalene, quinoline, pyrene, ibuprofen, naproxen,
-    /// diphenhydramine, atorvastatin_fragment) plus caffeine remaining
-    /// blown up even before the soundness gate (see PR body Findings).
+    /// `check_minimization_soundness`).
+    ///
+    /// **Correction (found during the Wave-1 C+F integration smoke test,
+    /// PR #186, independently re-verified):** an earlier version of this
+    /// doc comment claimed "8/58 corpus molecules, all fused/conjugated
+    /// polycyclic aromatics" for `UffOnly` specifically. That figure was
+    /// actually the [`ForceFieldPolicy::Mmff94WithUffFallback`] fallback
+    /// *trigger population* (9 molecules, not 8, once caffeine is counted;
+    /// see that variant's doc above), copied here without re-deriving it —
+    /// `UffOnly` was never actually run over the full 58-molecule corpus in
+    /// PR #169 itself. The real, first-ever full-corpus measurement (from
+    /// PR #186, using legacy `dg::generate_coords` starting geometry, the
+    /// same convention this PR's own gate-check example uses) is **17/58**
+    /// blow up under `UffOnly`: the same 9 fused/conjugated aromatics above,
+    /// plus 8 more with no ring fusion at all (hexane, decane,
+    /// triethylene_glycol, hexanediol, hexadecane, penicillin_core,
+    /// testosterone, cholesterol) that are structurally invisible to any
+    /// `Mmff94WithUffFallback`-based measurement, since all 8 pass
+    /// `Mmff94BondAngleStrict` cleanly and so never invoke UFF under that
+    /// policy at all. Tracked as a `chematic-ff` UFF-minimizer robustness
+    /// gap; see issue #185 (currently scoped only to the narrower
+    /// naphthalene-vs-anthracene puzzle, not this full 17-molecule class).
     UffOnly,
     /// Existing DREIDING path (unchanged physics) — chematic-ff has no
     /// DREIDING minimizer, so this stays chematic-3d's own implementation,
