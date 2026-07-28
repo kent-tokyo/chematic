@@ -441,10 +441,13 @@ fn main() {
     // ARM (b): VERIFIER-ONLY CORRECTNESS -- positive/negative controls.
     //
     // An independent cross-check against assign_stereo_from_3d + assign_cip was
-    // attempted here and removed -- see this file's module doc comment ("Discovered
-    // (not fixed): a pre-existing assign_stereo_from_3d/assign_cip inconsistency")
-    // for why that oracle pair disagrees with itself on a geometry independently
-    // confirmed correct two other ways, making it unusable as a control.
+    // tried here during development. The disagreement it initially found was
+    // itself an artifact of this module's now-fixed sign bug (see this file's
+    // module doc comment, "Sign convention correction"): re-checked against
+    // RDKit-confirmed-correct coordinates, the two functions agree in every case
+    // tried. That retraction is why this arm still uses only the self-contained
+    // fixtures below rather than that cross-check -- not because the oracle pair
+    // is unusable, but because it was never re-added here after being cleared.
     // =========================================================================
     println!("\n=== ARM (b): VERIFIER-ONLY CORRECTNESS (controls) ===");
     run_fixture_controls();
@@ -464,7 +467,7 @@ fn main() {
     let mut n_new_clash_introduced = 0usize;
     let mut n_molecules_with_violations = 0usize;
     // Reconciliation counters: track the fate of the EXACT SAME originally-violated
-    // elements arm (a) counted (23 tetrahedral + 4 E/Z), not just "declared elements
+    // elements arm (a) counted (16 tetrahedral + 4 E/Z), not just "declared elements
     // in fully-repaired molecules" (a different, smaller denominator that a reviewer
     // re-deriving the numbers would otherwise have to guess at).
     let mut baseline_violated_tet_total = 0usize;
