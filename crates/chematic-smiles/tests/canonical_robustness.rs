@@ -326,14 +326,34 @@ fn large_fused_pah_stable() {
     );
 }
 
-/// Coronene canonical SMILES is not yet idempotent for the 7-ring PAH system.
-/// Morgan rank ties in highly symmetric graphs can produce oscillating ring-closure
-/// numbering. Tracked as a known limitation (analogous to RDKit issue #8775).
+/// Coronene canonical SMILES was not idempotent for this 7-ring fused PAH
+/// system prior to `fix/canonical-automorphism-pruning`: Morgan rank ties in
+/// this highly symmetric graph could produce oscillating ring-closure
+/// numbering (tracked as a known limitation, analogous to RDKit issue
+/// #8775). Fixed as a verified side effect of that PR's automorphism-
+/// orbit-pruned canonical search -- confirmed (not just "the test happens
+/// to pass now") against the unbounded exhaustive individualize-refine
+/// oracle in both directions (original parse and re-parse-of-canonical) and
+/// across 32 relabelings of the same molecule, see
+/// `crates/chematic-smiles/src/canonical_search.rs`'s
+/// `unbounded_matches_exhaustive_oracle_on_symmetric_molecules` test. No
+/// longer `#[ignore]`d.
+///
+/// **Fixture correction**: the SMILES string this test originally used
+/// (`c1ccc2ccc3ccc4ccc5ccc6ccccc6c5c4c3c2c1`) parses to **26** atoms, not
+/// the 24 a real coronene (C24H12, 7 fused hexagons) has -- the same class
+/// of mislabeled-fixture problem this project was warned about for its
+/// "cubane" fixture elsewhere in this repo. Replaced with a coronene
+/// skeleton independently verified geometrically (7-hexagon flower
+/// construction, Kekule-matched, then aromatized: 24 atoms, 30 bonds, 7
+/// aromatic rings -- see `crates/chematic-smiles/examples/
+/// canonical_orbit_perf.rs`'s `coronene_smiles()`). The bug this test
+/// guards was real and reproduced on both the old (26-atom) and the
+/// corrected (24-atom) molecule.
 #[test]
-#[ignore = "known: coronene (7-ring PAH) canonical SMILES oscillates — needs Morgan rank tie-breaking fix"]
 fn coronene_canonical_known_bug() {
     assert!(
-        check_canonical_stable("c1ccc2ccc3ccc4ccc5ccc6ccccc6c5c4c3c2c1").is_ok(),
+        check_canonical_stable("c2c3c4c1c6c(ccc7ccc5ccc(c4c5c67)cc3)ccc1c2").is_ok(),
         "coronene should be idempotent"
     );
 }
