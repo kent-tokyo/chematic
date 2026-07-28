@@ -46,9 +46,9 @@ use std::time::Instant;
 
 use chematic_3d::distance_geometry_v2::{EmbedParameters, embed_distance_geometry_v2_detail};
 use chematic_3d::etkdg_knowledge::{
-    TorsionKnowledgeConfig, TorsionKnowledgeDiagnosticKind, TorsionOptimizationConfig,
-    build_torsion_knowledge, evaluate_torsion_energy, macrocycle_14_bound_adjustments,
-    optimize_torsions,
+    RingMembershipIndex, TorsionKnowledgeConfig, TorsionKnowledgeDiagnosticKind,
+    TorsionOptimizationConfig, build_torsion_knowledge, evaluate_torsion_energy,
+    macrocycle_14_bound_adjustments, optimize_torsions,
 };
 use chematic_core::{AtomIdx, Molecule, MoleculeBuilder};
 use chematic_smiles::parse;
@@ -200,8 +200,17 @@ const SMALL_RING_SET: &[(&str, &str)] = &[
 ];
 
 /// Macrocycle stress set beyond CORPUS's own macrocycle entries.
+///
+/// `lactam_macrocycle` uses a branched alpha carbon so it lands on a real,
+/// RDKit-cited SMARTS pattern (`macrocycle:lactam_amide_h1_c1`,
+/// `torsionPreferences_macrocycles.in:13`). `macrocyclic_amide` is
+/// deliberately kept as the plain unbranched secondary-macrolactam form --
+/// it demonstrates a genuine gap in RDKit's own experimental table (the
+/// NX3H1+CX4H2 combination is absent there; see `rules_macrocycle.rs`'s
+/// module doc and `docs/3d_torsion_knowledge_audit.md`), reported as a known
+/// gap rather than papered over with an invented SMARTS.
 const MACROCYCLE_SET: &[(&str, &str)] = &[
-    ("lactam_macrocycle", "O=C1CCCCCCCCCCN1"),
+    ("lactam_macrocycle", "O=C1CCCCCCCCCC(C)N1"),
     ("macrocyclic_amide", "O=C1NCCCCCCCCCCC1"),
 ];
 
@@ -251,6 +260,8 @@ fn main() {
     reproducibility_and_invariance_report();
     println!();
     disabled_flags_no_op_report();
+    println!();
+    rdkit_oracle_dump();
 }
 
 // ---------------------------------------------------------------------------
@@ -355,7 +366,23 @@ struct ArmMetrics {
     n_optimized: usize,
     n_optimizer_nonconvergent: usize,
     n_bond_length_violation: usize,
+    /// Genuine ring-closure check: bond-length-violation count restricted
+    /// to bonds where BOTH atoms are ring members (per `RingMembershipIndex`),
+    /// i.e. "did any ring in this molecule tear open". Distinct from
+    /// `n_14_band_mismatch` below (that one is Arm-D-only, about the
+    /// *proposed* macrocycle 1-4 bounds, not about whether a ring broke).
     n_ring_closure_violation: usize,
+    /// Arm D only: count of proposed macrocycle 1-4 pairs whose distance in
+    /// the embedded geometry falls outside `macrocycle_14_bound_adjustments`'s
+    /// own proposed `[new_lower, new_upper]` band. This is a self-consistency
+    /// check of the *proposal* against a real embedded geometry it was never
+    /// applied to (see module docs) -- NOT a ring-closure/geometry-integrity
+    /// failure, and must not be conflated with `n_ring_closure_violation`
+    /// above (an earlier version of this harness did exactly that conflation
+    /// under the `ring_closure_violations` name; fixed after independent
+    /// review flagged it as reading like a gate failure in the printed
+    /// table).
+    n_14_band_mismatch: usize,
     n_gross_clash: usize,
     runtimes_us: Vec<u128>,
 }
@@ -375,6 +402,7 @@ impl ArmMetrics {
             n_optimizer_nonconvergent: 0,
             n_bond_length_violation: 0,
             n_ring_closure_violation: 0,
+            n_14_band_mismatch: 0,
             n_gross_clash: 0,
             runtimes_us: Vec::new(),
         }
@@ -392,7 +420,7 @@ impl ArmMetrics {
 
     fn print(&self, label: &str) {
         println!(
-            "  Arm {label}: n_molecules={} n_embed_failed={} n_matched={} n_unmatched={} n_ambiguous_rule_conflicts={} n_fused_bridged_notices={} energy_before_sum={:.3} energy_after_sum={:.3} n_optimized={} n_nonconvergent={} bond_len_violations={} ring_closure_violations={} gross_clashes={} runtime_p50={}us runtime_p95={}us",
+            "  Arm {label}: n_molecules={} n_embed_failed={} n_matched={} n_unmatched={} n_ambiguous_rule_conflicts={} n_fused_bridged_notices={} energy_before_sum={:.3} energy_after_sum={:.3} n_optimized={} n_nonconvergent={} bond_len_violations={} ring_closure_violations={} n_14_band_mismatch={} gross_clashes={} runtime_p50={}us runtime_p95={}us",
             self.n_molecules,
             self.n_embed_failed,
             self.n_matched_torsions,
@@ -405,6 +433,7 @@ impl ArmMetrics {
             self.n_optimizer_nonconvergent,
             self.n_bond_length_violation,
             self.n_ring_closure_violation,
+            self.n_14_band_mismatch,
             self.n_gross_clash,
             self.percentile(0.50),
             self.percentile(0.95),
@@ -468,7 +497,7 @@ fn run_arm(
                     .get(adj.atom_pair.0)
                     .distance(&coords.get(adj.atom_pair.1));
                 if d < adj.new_lower - 1e-3 || d > adj.new_upper + 1e-3 {
-                    metrics.n_ring_closure_violation += 1;
+                    metrics.n_14_band_mismatch += 1;
                 }
             }
         }
@@ -494,11 +523,21 @@ fn run_arm(
         // bond-length blowup and gross clash, same coarse thresholds the
         // sibling Wave 1 gap-check example uses (2x covalent-radius-derived
         // ideal length is "torn"; well under VdW sum is a gross clash).
+        // `n_ring_closure_violation` is the SAME "torn" threshold, restricted
+        // to bonds where both endpoints are ring members -- i.e. whether any
+        // ring in the molecule actually broke open, the specific guarantee
+        // `optimize_torsions` structurally targets (see energy.rs module
+        // docs). A ring-closure bond that tears is also, trivially, a
+        // bond-length violation, so this count is always <= the general one.
+        let rings = RingMembershipIndex::build(&mol);
         for (_, bond) in mol.bonds() {
             let d = coords.get(bond.atom1).distance(&coords.get(bond.atom2));
             let ideal = approx_ideal_bond_length(&mol, bond.atom1, bond.atom2);
             if d > ideal * 2.0 {
                 metrics.n_bond_length_violation += 1;
+                if !rings.ring_sizes_for(bond.atom1, bond.atom2).is_empty() {
+                    metrics.n_ring_closure_violation += 1;
+                }
             }
         }
         let n = coords.atom_count();
@@ -552,6 +591,13 @@ fn coordinate_layer_report() {
     run_arm(&fixtures, &arm_b, false).print("B (standard)");
     run_arm(&fixtures, &arm_c, false).print("C (standard+small-ring)");
     run_arm(&fixtures, &arm_d, true).print("D (standard+small-ring+macrocycle+1-4 bounds)");
+    println!(
+        "  note: energy_after in C/D is NOT weak optimization -- ring and macrocycle\n\
+         \x20       potentials are scored by evaluate_torsion_energy in every arm but are\n\
+         \x20       NEVER mechanically rotated by optimize_torsions (only bridge-bond\n\
+         \x20       potentials are, by design -- see energy.rs module docs), so their\n\
+         \x20       contribution to energy_after is identical to energy_before."
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -699,4 +745,97 @@ fn disabled_flags_no_op_report() {
         "  disabled_flags_true_no_op: {}",
         if all_ok { "PASS" } else { "FAIL" }
     );
+}
+
+// ---------------------------------------------------------------------------
+// RDKit oracle differential, chematic side (spec section 12).
+//
+// What this covers vs. what it cannot:
+// - Ring classification (small-ring/macrocycle/fused-bridged boundary) IS
+//   directly comparable: RDKit's public `GetRingInfo().BondRingSizes()` and
+//   this crate's `RingMembershipIndex::ring_sizes_for` both expose, per bond,
+//   the size of every SSSR ring containing it -- a like-for-like structure.
+//   Atom-index correspondence between chematic-smiles's parse and RDKit's
+//   `Chem.MolFromSmiles` is verified (not assumed) by the paired Python
+//   script, which independently prints RDKit's own per-atom element
+//   sequence for the SAME fixture list for direct comparison against the
+//   `atoms` array this function writes.
+// - Torsion minima / distribution IS comparable, but only empirically (via
+//   RDKit's ETKDG conformer ensemble with `useExpTorsionAnglePrefs`, etc.,
+//   which is a live behavioral oracle), never structurally (RDKit's own
+//   matched-SMARTS-rule-id per bond is internal C++ state with no public
+//   Python accessor at all, in any version).
+// - "Matched rule family" and "1-4 pair selection" per spec section 12 are
+//   NOT achievable via RDKit's public API in any form found: the
+//   `ExperimentalTorsions`/`BoundsMatrixBuilder` machinery that performs
+//   this matching is not exposed to Python, and no C++ build was attempted
+//   in this PR (out of scope for a knowledge-layer-only PR that does not
+//   touch the build system). This is disclosed as a known, real limitation
+//   of what section 12 asks for -- not silently narrowed without saying so.
+//
+// This function writes ONLY the chematic-side half of the comparison (a
+// plain hand-formatted JSON file, no new serde dependency needed for this
+// small, fixed shape) to `validation/etkdg_torsion_knowledge_v2_chematic_side.json`.
+// The paired oracle script is
+// `scripts/etkdg_torsion_knowledge_v2_oracle_diff.py` (run against an
+// ISOLATED venv per this program's standing rule, never the shared one),
+// which reads this file, computes RDKit's own answers independently, and
+// writes the comparison.
+// ---------------------------------------------------------------------------
+
+fn oracle_fixture_list() -> Vec<(&'static str, &'static str)> {
+    let mut v = Vec::new();
+    for &(name, smiles, tag) in CORPUS {
+        if matches!(tag, "rigid_ring" | "fused_aromatic" | "macrocycle") {
+            v.push((name, smiles));
+        }
+    }
+    v.extend_from_slice(SMALL_RING_SET);
+    v.extend_from_slice(RING_TOPOLOGY_SET);
+    v
+}
+
+fn rdkit_oracle_dump() {
+    println!("--- RDKit oracle differential, chematic side (spec section 12) ---");
+    let fixtures = oracle_fixture_list();
+    let mut json = String::from("{\n  \"molecules\": [\n");
+    for (i, &(name, smiles)) in fixtures.iter().enumerate() {
+        let Ok(mol) = parse(smiles) else { continue };
+        let rings = RingMembershipIndex::build(&mol);
+        let atoms: Vec<String> = (0..mol.atom_count())
+            .map(|idx| format!("\"{}\"", mol.atom(AtomIdx(idx as u32)).element.symbol()))
+            .collect();
+        let mut bond_entries = Vec::new();
+        for (_, bond) in mol.bonds() {
+            let sizes = rings.ring_sizes_for(bond.atom1, bond.atom2);
+            let sizes_str: Vec<String> = sizes.iter().map(|s| s.to_string()).collect();
+            bond_entries.push(format!(
+                "{{\"a\":{},\"b\":{},\"ring_sizes\":[{}]}}",
+                bond.atom1.0,
+                bond.atom2.0,
+                sizes_str.join(",")
+            ));
+        }
+        json.push_str(&format!(
+            "    {{\"name\": \"{name}\", \"smiles\": \"{smiles}\", \"atoms\": [{}], \"bonds\": [{}]}}{}\n",
+            atoms.join(","),
+            bond_entries.join(","),
+            if i + 1 < fixtures.len() { "," } else { "" }
+        ));
+    }
+    json.push_str("  ]\n}\n");
+
+    // Written relative to the workspace root (this binary is expected to be
+    // run via `cargo run --release -p chematic-3d --example
+    // torsion_knowledge_v2_gap_check` from the repo root per this program's
+    // section 16 verification commands, which is `cargo`'s cwd regardless of
+    // `-p`). Falls back to printing inline if that path is not writable
+    // (e.g. a different invocation cwd) rather than silently losing the data.
+    let out_path = "validation/etkdg_torsion_knowledge_v2_chematic_side.json";
+    match std::fs::write(out_path, &json) {
+        Ok(()) => println!("  wrote {} fixtures to {out_path}", fixtures.len()),
+        Err(e) => println!(
+            "  WARNING: could not write oracle dump to {out_path} ({e}); printing inline instead:\n{json}"
+        ),
+    }
 }

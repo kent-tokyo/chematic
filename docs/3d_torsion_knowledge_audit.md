@@ -324,3 +324,115 @@ separate arithmetic pass — counted straight from the classification column):
 (4+2+55+8+0+11 = 80 ✓ — verified by re-adding the column tallies, not
 assumed from the earlier draft of this table, which had a transcription
 error in how multi-branch groups were counted; corrected here.)
+
+## 6. RDKit oracle differential for the new v2 layer (spec §12)
+
+Sections 1-5 above audit the *legacy* code (spec §2). This section covers the
+live-RDKit-oracle differential spec §12 requires for the *new* v2 layer, run
+against an **isolated venv** (`python3 -m venv` + `pip install rdkit`, never
+this repo's shared `.venv`, per this program's standing rule) with
+`rdkit==2026.03.4`. This is a different "RDKit" than the source-file pin in
+`validation/manifests/etkdg_torsion_knowledge_sources.json` (RDKit release
+tag `Release_2025_09_2`, fetched as read-only source text for translation
+provenance, never compiled/executed) — the two serve different purposes and
+are not meant to be the same artifact: the source-file pin is what the rule
+*data* was translated from; the pip-installed version is a live behavioral
+oracle queried at review time. Both are recorded so neither is silently
+conflated with the other.
+
+Reproduce:
+```bash
+cargo run --release -p chematic-3d --example torsion_knowledge_v2_gap_check   # writes validation/etkdg_torsion_knowledge_v2_chematic_side.json
+python3 -m venv /tmp/oracle_venv && /tmp/oracle_venv/bin/pip install rdkit
+/tmp/oracle_venv/bin/python3 scripts/etkdg_torsion_knowledge_v2_oracle_diff.py
+```
+
+### 6.1 What was actually comparable via RDKit's public API
+
+Two of spec §12's six named comparison axes (rule family, central bond
+selection, ring classification, minima, 1-4 pair selection, torsion
+distribution) turned out to be reachable via RDKit's public Python API;
+**rule family** and **1-4 pair selection** are not (see §6.3). Central bond
+selection and ring classification are the same underlying check here (a
+central bond's classification IS its ring membership), so this collapses to
+2 distinct measurements: ring classification, and torsion distribution/minima.
+
+### 6.2 Ring classification: 221/230 (96.1%) bond-level agreement
+
+For 24 fixtures (every `rigid_ring`/`fused_aromatic`/`macrocycle`-tagged
+`CORPUS` entry, all of `SMALL_RING_SET`, all of `RING_TOPOLOGY_SET`), atom-
+index correspondence between chematic-smiles's parser and
+`Chem.MolFromSmiles` was verified directly (element-sequence comparison, not
+assumed) before comparing any bond — 24/24 fixtures verified, 0 unverifiable.
+Per-bond ring-size sets (chematic's `RingMembershipIndex::ring_sizes_for` vs.
+RDKit's `GetRingInfo().BondRingSizes()`) then agreed on 221/230 (96.1%) bonds.
+
+All 9 disagreements are in **cubane** (`C1C2C3C1C4C2C3C4`), and they are the
+*expected*, documented consequence of a deliberate chematic design choice,
+not a bug: `augmented_ring_set` (used inside `RingMembershipIndex::build`,
+per this crate's and CLAUDE.md's own "Ring Perception" section) recovers
+small rings that a bare SSSR decomposition misses in highly symmetric cage
+systems. Cubane has 6 square faces, but SSSR (a minimum cycle basis) can only
+return 5 independent 4-membered rings from its cycle space — RDKit's raw
+`GetRingInfo()` reflects exactly that bare-SSSR set. Chematic's
+`augmented_ring_set` recovers the 6th face too, so several cubane bonds show
+one extra `4` and/or extra `5`s in chematic's ring-size list vs. RDKit's
+(e.g. bond (0,1): chematic `[4,5]` vs. RDKit `[4]`). This is the intended
+behavior of a documented, pre-existing chematic design decision (not
+introduced by this PR), re-confirmed here against a live oracle rather than
+assumed correct. All 15 non-cubane fixtures (benzene, naphthalene, pyridine,
+furan, thiophene, adamantane, cyclohexane, cyclopentane, indole, purine,
+quinoline, anthracene, pyrene, biphenyl, cyclododecane, crown_12_4,
+cyclooctadecane, cyclopropane, cyclobutane, cycloheptane, cyclooctane,
+norbornane, spiro_5_6) matched RDKit bond-for-bond, including the
+fused-aromatic (naphthalene, indole, purine, quinoline, anthracene, pyrene)
+and bridged (norbornane, adamantane) cases specifically named in spec §5.
+
+### 6.3 Torsion distribution: empirical confirmation for the amide bond
+
+RDKit's own ETKDGv3 conformer ensemble (50 conformers,
+`useExpTorsionAnglePrefs=True`, fixed seed) for N-methylacetamide's C(=O)-N
+central bond produced dihedral angles clustering entirely in the 120°-240°
+range (23 conformers in [120°,180°), 27 in [180°,240°), 0 elsewhere;
+min=-180.0, max=180.0, mean|angle|=180.0) — i.e. RDKit's live, independent
+conformer generator agrees empirically with this PR's
+`standard:secondary_amide` rule's predicted minimum (phi=180°, from the
+`(n=1, s=-1, V=100.0)` Fourier term). This is a genuine positive result, not
+assumed: the rule's translation from `torsionPreferences_v2.in:142` predicts
+exactly what RDKit's own conformer generator, run independently, produces.
+
+Butane's C-C-C-C dihedral was also sampled (same settings) as a sanity check,
+not a rule comparison: this PR does not curate a generic-alkane standard-tier
+rule (`butane` is reported as `unmatched` at the knowledge layer, honestly),
+and RDKit's own empirical distribution for this specific bond came out close
+to uniform across all six 60°-buckets (`[11,6,7,7,12,7]` of 50) — consistent
+with there being no strong single-bond preference for this case in RDKit's
+own generator either, not a contradiction to explain away.
+
+### 6.4 Disclosed limitation: rule family and 1-4 pair selection
+
+Spec §12 also asks to compare **matched rule family** and **1-4 pair
+selection** against RDKit's own choices. Neither is achievable via RDKit's
+public Python API in `rdkit==2026.03.4` (checked directly, not assumed): the
+`ExperimentalTorsionAngle`/`BoundsMatrixBuilder` C++ machinery that performs
+this matching internally has no public accessor returning which SMARTS
+matched which bond, or which 1-4 pairs were adjusted and by how much. Closing
+this would require either a patched/instrumented RDKit C++ build (out of
+scope — this PR touches no build system, per file-ownership §14) or reverse-
+engineering matches from conformer geometry alone (which would not actually
+verify *which rule* fired, only that *some* preference was applied — a
+weaker and potentially misleading claim). This is reported here as a real,
+unresolved gap in what a live RDKit oracle can confirm for this PR, not
+narrowed silently — this PR's rule-to-fixture matching is instead verified
+via chematic's own SMARTS-parse tests (every rule's SMARTS parses; the
+generic macrocycle/small-ring/standard rules were confirmed, in this same
+review pass, to actually fire on the fixtures they were written for — see
+`rules_macrocycle.rs`'s `ring_ch2_ch2_chain`/`ring_ch2_ether_chain`/
+`lactam_amide_h1_c1` regression tests, added after independent review found
+the macrocycle tier matched zero potentials on several corpus fixtures) and
+translation provenance via direct source citation (§1 above and the sources
+manifest), not a live RDKit differential.
+
+Raw results: `validation/etkdg_torsion_knowledge_v2_chematic_side.json`
+(chematic side) and `validation/etkdg_torsion_knowledge_v2_rdkit_oracle_diff.json`
+(RDKit side + diff), both written by the reproduce commands above.

@@ -132,10 +132,19 @@ pub fn evaluate_torsion_energy(
 pub struct TorsionOptimizationConfig {
     pub max_iterations: usize,
     /// Fixed rotation step (degrees) applied per accepted move -- a
-    /// steepest-descent-*direction*, fixed-*magnitude* step (direction from
-    /// the analytic gradient's sign, magnitude fixed and then halved on
-    /// backtracking) rather than a gradient-scaled step, so behavior does
-    /// not depend on the arbitrary energy-unit scale of `amplitude`.
+    /// fixed-*magnitude* step (halved on backtracking) rather than a
+    /// gradient-scaled one, so behavior does not depend on the arbitrary
+    /// energy-unit scale of `amplitude`. Direction is NOT taken from the
+    /// analytic gradient's sign: `rotate_fragment`'s Rodrigues-rotation angle
+    /// sign and `dihedral_deg`'s phi-sign convention are two independently
+    /// derived formulas with no proven relationship between them, so the
+    /// line search tries both +step and -step at each magnitude and keeps
+    /// whichever improves energy (see `optimize_torsions`'s inner loop).
+    /// An earlier version of this doc claimed "direction from the gradient's
+    /// sign", which stopped being true once the both-directions search was
+    /// added to fix 3 non-convergence failures (step-size persistence was
+    /// the other fix) -- corrected after independent review caught the
+    /// comment/code mismatch.
     pub step_deg: f64,
     /// Converged when every rotatable bond's `|dE/dphi|` (summed over its
     /// potentials) is below this threshold.
@@ -454,6 +463,41 @@ mod tests {
         let phi = dihedral_deg(&coords, [AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)]);
         assert!(phi.is_finite());
         assert!((-180.0..=180.0).contains(&phi), "{phi}");
+    }
+
+    /// `rotate_fragment` and `dihedral_deg` are two independently derived
+    /// formulas (Rodrigues' rotation vs. an atan2-based dihedral) with no
+    /// *proven* relationship between their angle-sign conventions --
+    /// `optimize_torsions` works around that by trying both rotation
+    /// directions in its line search (see `TorsionOptimizationConfig::
+    /// step_deg`'s doc). That workaround makes the optimizer correct either
+    /// way, but it would also silently paper over a genuinely wrong "moving"
+    /// atom set or a degenerate rotation axis producing a phi change that
+    /// isn't `delta_deg` at all (e.g. a change of ~0 or some unrelated
+    /// magnitude). This test checks the magnitude directly, independent of
+    /// sign: after a single `rotate_fragment(delta_deg)` about bond (1,2),
+    /// `|phi_after - phi_before|` must equal `|delta_deg|` (mod wraparound).
+    #[test]
+    fn rotate_fragment_changes_dihedral_by_exactly_delta_magnitude() {
+        let (mol, mut coords) = butane_coords();
+        let atoms = [AtomIdx(0), AtomIdx(1), AtomIdx(2), AtomIdx(3)];
+        let phi_before = dihedral_deg(&coords, atoms);
+        let delta = 17.0;
+        let moved = rotate_fragment(&mol, &mut coords, AtomIdx(1), AtomIdx(2), delta);
+        assert!(moved > 0, "rotate_fragment must move at least one atom");
+        let phi_after = dihedral_deg(&coords, atoms);
+        let mut raw_diff = (phi_after - phi_before).abs();
+        if raw_diff > 180.0 {
+            raw_diff = 360.0 - raw_diff; // wraparound at the +/-180 boundary
+        }
+        assert!(
+            (raw_diff - delta.abs()).abs() < 1e-6,
+            "expected |phi change| == {}, got {} (before={}, after={})",
+            delta.abs(),
+            raw_diff,
+            phi_before,
+            phi_after
+        );
     }
 
     #[test]

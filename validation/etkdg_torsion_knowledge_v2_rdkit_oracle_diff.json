@@ -1,0 +1,422 @@
+{
+  "rdkit_version": "2026.03.4",
+  "ring_classification": {
+    "total_bonds": 230,
+    "matching_bonds": 221,
+    "atom_order_mismatches": [],
+    "per_fixture": [
+      {
+        "name": "benzene",
+        "smiles": "c1ccccc1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "naphthalene",
+        "smiles": "c1ccc2ccccc2c1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "pyridine",
+        "smiles": "c1ccncc1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "furan",
+        "smiles": "c1ccoc1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "thiophene",
+        "smiles": "c1ccsc1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "adamantane",
+        "smiles": "C1CC2CC3CC1CC(C2)C3",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "cubane",
+        "smiles": "C1C2C3C1C4C2C3C4",
+        "atom_order_verified": true,
+        "bond_diffs": [
+          {
+            "bond": [
+              0,
+              1
+            ],
+            "chematic_ring_sizes": [
+              4,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              4
+            ]
+          },
+          {
+            "bond": [
+              2,
+              3
+            ],
+            "chematic_ring_sizes": [
+              4,
+              5,
+              5,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              4,
+              5,
+              5
+            ]
+          },
+          {
+            "bond": [
+              0,
+              3
+            ],
+            "chematic_ring_sizes": [
+              4,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              4
+            ]
+          },
+          {
+            "bond": [
+              3,
+              4
+            ],
+            "chematic_ring_sizes": [
+              5,
+              5,
+              5,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              5,
+              5
+            ]
+          },
+          {
+            "bond": [
+              4,
+              5
+            ],
+            "chematic_ring_sizes": [
+              4,
+              5,
+              5,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              4,
+              5,
+              5
+            ]
+          },
+          {
+            "bond": [
+              1,
+              5
+            ],
+            "chematic_ring_sizes": [
+              4,
+              5,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              4,
+              5
+            ]
+          },
+          {
+            "bond": [
+              2,
+              6
+            ],
+            "chematic_ring_sizes": [
+              4,
+              5,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              4,
+              5
+            ]
+          },
+          {
+            "bond": [
+              6,
+              7
+            ],
+            "chematic_ring_sizes": [
+              4,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              4
+            ]
+          },
+          {
+            "bond": [
+              4,
+              7
+            ],
+            "chematic_ring_sizes": [
+              4,
+              5
+            ],
+            "rdkit_ring_sizes": [
+              4
+            ]
+          }
+        ]
+      },
+      {
+        "name": "cyclohexane",
+        "smiles": "C1CCCCC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "cyclopentane",
+        "smiles": "C1CCCC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "indole",
+        "smiles": "c1ccc2[nH]ccc2c1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "purine",
+        "smiles": "c1ncc2[nH]cnc2n1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "quinoline",
+        "smiles": "c1ccc2ncccc2c1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "anthracene",
+        "smiles": "c1ccc2cc3ccccc3cc2c1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "pyrene",
+        "smiles": "c1cc2ccc3cccc4ccc(c1)c2c34",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "biphenyl",
+        "smiles": "c1ccc(-c2ccccc2)cc1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "cyclododecane",
+        "smiles": "C1CCCCCCCCCCC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "crown_12_4",
+        "smiles": "O1CCOCCOCCOCC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "cyclooctadecane",
+        "smiles": "C1CCCCCCCCCCCCCCCCC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "cyclopropane",
+        "smiles": "C1CC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "cyclobutane",
+        "smiles": "C1CCC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "cycloheptane",
+        "smiles": "C1CCCCCC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "cyclooctane",
+        "smiles": "C1CCCCCCC1",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "norbornane",
+        "smiles": "C1CC2CCC1C2",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      },
+      {
+        "name": "spiro_5_6",
+        "smiles": "C1CCC2(CC1)CCCC2",
+        "atom_order_verified": true,
+        "bond_diffs": []
+      }
+    ]
+  },
+  "torsion_distribution": [
+    {
+      "name": "n_methylacetamide_amide_bond",
+      "smiles": "CC(=O)NC",
+      "chematic_prediction": "two-well (0 deg / 180 deg): rule standard:secondary_amide, term (n=1, s=-1, V=100.0) -> minimum at phi=180 deg",
+      "n_conformers": 50,
+      "angles_deg": [
+        179.99978790921062,
+        179.99999579893858,
+        179.99935850018355,
+        -179.9985160408271,
+        -179.99782236867924,
+        179.99913565985344,
+        179.99870745274467,
+        179.99937070881825,
+        -179.99999529884835,
+        -179.99985949046442,
+        179.99965224953817,
+        -179.9954014794899,
+        -179.99998044098243,
+        -179.99972199625125,
+        179.99782380646178,
+        -179.99991398544958,
+        179.9995217910586,
+        -179.99950413736414,
+        -179.99937563757373,
+        179.99429327675665,
+        179.99860173144447,
+        179.99998631423742,
+        -179.99917480925214,
+        -179.99694665420094,
+        -179.99984264816962,
+        179.99966119046888,
+        179.99993608383053,
+        -179.99952456606678,
+        -179.9999314406447,
+        -179.99679496148454,
+        -179.99998312329564,
+        -179.99983683787963,
+        -179.99982333233066,
+        179.99994675851326,
+        179.99953122501222,
+        -179.99947247228576,
+        179.99510129862347,
+        -179.9999717030309,
+        -179.99981812309449,
+        -179.99958930692577,
+        -179.99879902296576,
+        179.99833448306566,
+        179.9987073646478,
+        179.99989657295606,
+        -179.99970042945668,
+        179.99986531516373,
+        -179.99995895291082,
+        179.99835720598745,
+        179.99988638065267,
+        -179.99985125586122
+      ],
+      "bucket_histogram_60deg": [
+        0,
+        0,
+        23,
+        27,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "butane_cc_bond",
+      "smiles": "CCCC",
+      "chematic_prediction": "no standard-tier rule matches a plain alkane C-C-C-C bond in this PR's curated subset (reported as unmatched, not a gauche/anti claim) -- this case is included to show what RDKit's OWN unprefixed distribution looks like for the same bond, as a sanity check, not a rule comparison.",
+      "n_conformers": 50,
+      "angles_deg": [
+        -60.019175078607134,
+        -60.00540051993195,
+        -60.00385440589192,
+        179.99695657247491,
+        60.00367138553796,
+        -60.001928454970674,
+        59.997907018990944,
+        -59.99611576834073,
+        59.9881434741023,
+        59.99705502654285,
+        60.00167505547029,
+        -179.99456227190723,
+        -59.96643308818583,
+        -179.99862031177872,
+        59.997356855644625,
+        -60.00504935024982,
+        -60.001017103641715,
+        179.98824972168987,
+        -60.027714648252655,
+        179.99049143587527,
+        -179.99237057139533,
+        59.99565573811092,
+        -60.00158710463697,
+        -60.01125504313388,
+        -59.99973556885446,
+        -179.98176949084598,
+        -59.998069487858544,
+        179.99523191239882,
+        60.004324912319866,
+        59.992079576442784,
+        60.03314242469394,
+        59.998804540250546,
+        -179.99789179840855,
+        59.99678912817621,
+        179.99989803664235,
+        179.99721559663098,
+        59.9961204440164,
+        60.00920159049727,
+        -60.0033640335741,
+        -179.9999231616211,
+        -59.99910305635939,
+        -59.98971419328727,
+        59.98676597475479,
+        -60.0034504218814,
+        60.002210776417904,
+        59.99969404797407,
+        -59.99432833799271,
+        -179.98224721775713,
+        179.9946023895021,
+        -60.01121006248082
+      ],
+      "bucket_histogram_60deg": [
+        11,
+        6,
+        7,
+        7,
+        12,
+        7
+      ]
+    }
+  ],
+  "known_unmeasured": "matched-rule-family and macrocycle-1-4-pair-selection vs. RDKit's own internal choices: no public API access found"
+}

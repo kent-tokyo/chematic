@@ -5,7 +5,19 @@
     "tag": "Release_2025_09_2",
     "resolved_commit": "0d5e508fbd84129e5732ee3f64115daf5db68d14",
     "resolved_via": "GET https://api.github.com/repos/rdkit/rdkit/git/refs/tags/Release_2025_09_2",
-    "note": "Same RDKit release the sibling gap-check example (distance_geometry_v2_gap_check.rs) already cites as its oracle (RDKit 2025.09.2), kept consistent across the 3D Breakthrough Program's Wave 1/2 fixtures rather than picking a different pin."
+    "note": "Same RDKit release the sibling gap-check example (distance_geometry_v2_gap_check.rs) already cites as its oracle (RDKit 2025.09.2), kept consistent across the 3D Breakthrough Program's Wave 1/2 fixtures rather than picking a different pin. This is a SOURCE-FILE pin (read-only .in/.cpp text, never compiled/executed) used for translation provenance -- see `live_oracle_for_wave2_gap_fixes` below for the separate, later, LIVE-BEHAVIORAL RDKit oracle used for spec section 12's differential, which is a different RDKit artifact entirely and intentionally not forced to the same version."
+  },
+  "live_oracle_for_wave2_gap_fixes": {
+    "purpose": "spec section 12's live RDKit oracle differential (ring classification + empirical torsion distribution), run during a post-independent-review fix pass on this same PR, distinct from the source-file pin above.",
+    "environment": "Isolated venv created via `python3 -m venv`, RDKit installed via `pip install rdkit` from PyPI -- never this repo's shared `.venv`, per this program's standing rule.",
+    "rdkit_pypi_version": "2026.03.4",
+    "note": "Deliberately NOT pinned to Release_2025_09_2 -- pip's rdkit package tracks its own PyPI release cadence, independent of the GitHub source tag used for translation provenance. Using whatever the isolated venv resolves to (rather than trying to force a matching build) is consistent with section 12's own framing (\"compare... not exact coordinates\"): the comparison targets are ring-perception/torsion-distribution BEHAVIOR, which is far more stable across RDKit minor versions than exact numeric coefficients would be.",
+    "results_files": [
+      "validation/etkdg_torsion_knowledge_v2_chematic_side.json",
+      "validation/etkdg_torsion_knowledge_v2_rdkit_oracle_diff.json"
+    ],
+    "script": "scripts/etkdg_torsion_knowledge_v2_oracle_diff.py",
+    "summary": "See docs/3d_torsion_knowledge_audit.md section 6 for the full writeup: 221/230 (96.1%) ring-bond classification agreement across 24 fixtures (all 9 disagreements in cubane, explained as an expected, pre-existing chematic design difference -- augmented_ring_set recovering a 6th cage face SSSR misses -- not a bug); RDKit's own ETKDG conformer ensemble empirically confirms this PR's secondary-amide rule's predicted 180-degree minimum; matched-rule-family and 1-4-pair-selection comparisons are disclosed as NOT achievable via RDKit's public Python API in any version checked."
   },
   "primary_literature": [
     {
