@@ -62,8 +62,14 @@ pub static MACROCYCLE_TORSION_RULES: &[MacrocycleTorsionRule] = &[
         terms: &[(1, -1, 78.2)],
         source_line: "torsionPreferences_macrocycles.in:16",
     },
-    // Acetal-like O-C-O-C chain within a macrocycle ring (e.g. crown-ether-
-    // adjacent contexts).
+    // Acetal/ketal O-C-O-C chain within a macrocycle ring: the central
+    // carbon bonded to TWO different ring oxygens. NOT a crown-ether match
+    // (an earlier comment here said "e.g. crown-ether-adjacent contexts" --
+    // wrong, corrected during the same review round that fixed
+    // `ring_ch2_ether_chain` below: a plain crown ether's -O-CH2-CH2-O-
+    // repeat unit has exactly one O neighbor per ring carbon, never two, so
+    // this pattern never matches it; `ring_ch2_ether_chain` is the rule that
+    // actually covers crown ethers).
     MacrocycleTorsionRule {
         rule_id: "macrocycle:ring_o_c_o_chain",
         smarts: "[O:1][CX4:2][O:3][CX4:4]",

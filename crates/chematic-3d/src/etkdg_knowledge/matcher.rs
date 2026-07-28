@@ -36,6 +36,27 @@
 //! occupy disjoint Fourier periodicities; and reported as a typed
 //! [`TorsionKnowledgeDiagnostic`] (never silently resolved) if they disagree
 //! on the same periodicity.
+//!
+//! **This is a second, independent divergence from RDKit's real behavior**
+//! beyond the cross-tier ordering above, found during a review round that
+//! corrected two `rules_macrocycle.rs` entries for citing a source line
+//! RDKit's cascade never actually reaches for a given bond (see that file's
+//! module doc): RDKit resolves multiple *same-family* pattern matches on one
+//! bond via first-match-in-file-order too (the same `doneBonds` bitset
+//! semantics as the cross-tier case), never by composing or dedicating a
+//! typed conflict to two entries that both matched. This crate's dedup/
+//! compose/conflict resolution above has no RDKit equivalent within a
+//! family. On the current corpus this never actually diverges in practice
+//! (confirmed, not assumed: `n_ambiguous_rule_conflicts` is 1 across all 72
+//! knowledge-layer fixtures, and that one conflict is `gly_ala_gly`'s
+//! central peptide bond -- acyclic, i.e. tier 4, not tier 3 -- so zero
+//! macrocycle-tier bonds in this corpus currently have more than one
+//! same-tier candidate to resolve). With a larger rule table two
+//! same-family macrocycle patterns *could* both match one bond (e.g. a
+//! hypothetical aza-macrocycle where `ring_generic_cx4_chain` and
+//! `ring_amine_chain` both apply), and this crate's composition of the two
+//! would not correspond to any single RDKit assignment. Recorded here as a
+//! disclosed design divergence, not discovered-and-hidden.
 
 use std::collections::HashMap;
 
