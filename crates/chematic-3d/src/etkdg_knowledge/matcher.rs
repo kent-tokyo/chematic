@@ -585,19 +585,33 @@ enum ResolvedTier {
 ///   even in this case. Fixing `canonical_atoms` perfectly would not close
 ///   this: the non-invariance lives in the embedding, not the tie-break.
 /// - `cubane` (3.84%): the observed substitution is, under the same
-///   constrained check, **NOT** a genuine automorphism -- `canon_rank`'s
-///   rank tie here is a false positive. Weisfeiler-Leman-style color
-///   refinement (what `canon_rank` implements) is provably incomplete for
-///   some graphs; `canon_rank` is already at its fixpoint, so no cheaper
-///   refinement closes this. This is a live, unresolved instance of the
-///   exact same tie-break bug fixed above for menthol/testosterone/
-///   cholesterol/penicillin_core -- disclosed rather than mislabeled as
-///   understood/harmless. A real fix would need an actual bounded
-///   graph-isomorphism check (individualization-refinement, nauty-style)
-///   rooted at each candidate outer atom -- out of scope for this pass, and
-///   one that would still leave the adamantane/biphenyl/norbornane part of
-///   this residual open regardless, since that part is an embedding-geometry
-///   property, not a tie-break defect.
+///   constrained check, **NOT** a genuine automorphism, even though atoms 2
+///   and 5 genuinely tie in `canon_rank` -- and that tie is *correct*, not a
+///   refinement artefact: `canon_rank`'s stable partition matches cubane's
+///   real automorphism-orbit partition exactly (verified both by enumerating
+///   `Aut(G)` directly and by confirming `canon_rank`'s own cell structure
+///   equals it), so this is not a Weisfeiler-Leman-incompleteness case. The
+///   actual problem is that `canonical_atoms` compares the wrong invariant:
+///   it keys on each outer atom's *global* orbit membership, but the
+///   relevant equivalence here is membership in the same orbit **under the
+///   stabilizer of the central bond** -- automorphisms that fix `{a1, a2}`
+///   setwise, not automorphisms in general. Cubane's only non-trivial
+///   automorphism sends atom 2 to atom 5, but it *also* sends the central
+///   bond's own endpoints `{0, 1}` to `{6, 7}`; no automorphism maps 2 to 5
+///   while leaving the central bond fixed, so 2 and 5 are equivalent
+///   globally but inequivalent in the one sense that actually matters here.
+///   No per-atom rank, however precisely it computes global orbits, can ever
+///   distinguish this: the ambiguity lives in the *quadruple as a whole*, not
+///   in either outer atom considered alone. This is a live, unresolved
+///   instance of the exact same tie-break bug fixed above for menthol/
+///   testosterone/cholesterol/penicillin_core -- disclosed rather than
+///   mislabeled as understood/harmless. A real fix would canonicalize the
+///   quadruple jointly (individualize on the central bond's own two atoms
+///   first, then refine/compare the two outer atoms only within that
+///   individualized frame) -- out of scope for this pass, and one that would
+///   still leave the adamantane/biphenyl/norbornane part of this residual
+///   open regardless, since that part is an embedding-geometry property, not
+///   a tie-break defect.
 ///
 /// Percentages above are single-reversal measurements (a lower bound, not a
 /// worst case -- see the gap-check example's own comment for why a

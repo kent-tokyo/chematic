@@ -751,22 +751,34 @@ fn reproducibility_and_invariance_report() {
     //   geometrically symmetric, so measured energy can still (and does)
     //   differ by a real, non-negligible amount even in this "good" case.
     // - `cubane`: the observed substitution is, under the same constrained
-    //   check, NOT a genuine automorphism at all -- `canon_rank`'s rank tie
-    //   is a false positive (Weisfeiler-Leman-style color refinement is
-    //   provably incomplete; canon_rank is already at its fixpoint, so no
-    //   cheaper topological refinement can fix this). This is a live,
-    //   unresolved instance of the exact same `canonical_atoms` tie-break
-    //   bug independent review found and this PR fixed elsewhere (menthol/
-    //   testosterone/cholesterol) -- just one this pass's fix does not
-    //   reach, disclosed rather than mislabeled as understood/harmless.
+    //   check, NOT a genuine automorphism at all -- even though the two
+    //   outer atoms genuinely tie in `canon_rank`, and that tie is correct,
+    //   not a color-refinement artefact (`canon_rank`'s stable partition was
+    //   independently confirmed to equal cubane's real automorphism-orbit
+    //   partition exactly -- this is not a Weisfeiler-Leman-incompleteness
+    //   case). The real problem: `canonical_atoms` compares *global*
+    //   orbit membership, but the equivalence that actually matters here is
+    //   membership in one orbit under the *stabilizer of the central bond*.
+    //   Cubane's only non-trivial automorphism swaps the two outer atoms but
+    //   also moves the central bond's own endpoints elsewhere, so no
+    //   automorphism realizes the swap while fixing the central bond -- the
+    //   two atoms are equivalent globally but not in the one sense that
+    //   determines whether either quadruple is a legitimate substitute for
+    //   the other. This is a live, unresolved instance of the exact same
+    //   `canonical_atoms` tie-break bug independent review found and this PR
+    //   fixed elsewhere (menthol/testosterone/cholesterol) -- just one this
+    //   pass's fix does not reach, disclosed rather than mislabeled as
+    //   understood/harmless.
     //
-    // A real topological fix for cubane's case would require an actual
-    // bounded graph-isomorphism check (individualization-refinement,
-    // nauty-style) rooted at each candidate outer atom -- a materially
-    // bigger undertaking than this bug-fix pass, and one that would STILL
-    // not close the adamantane/biphenyl half of this residual (that half is
-    // an embedding-geometry property, not a matcher-logic one). Disclosed
-    // here as a real, unresolved, non-trivial limitation instead.
+    // A real fix for cubane's case would canonicalize the quadruple jointly
+    // -- individualize on the central bond's own two atoms first, then
+    // refine/compare the outer atoms only within that individualized frame
+    // -- rather than ranking each outer atom's global orbit independently.
+    // That is a materially bigger undertaking than this bug-fix pass, and
+    // one that would STILL not close the adamantane/biphenyl half of this
+    // residual (that half is an embedding-geometry property, not a
+    // matcher-logic one). Disclosed here as a real, unresolved, non-trivial
+    // limitation instead.
     //
     // Magnitudes below are measured via ONE relabeling (full reversal) --
     // they are lower bounds, not worst cases: independent review, testing 9

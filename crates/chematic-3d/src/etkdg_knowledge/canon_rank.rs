@@ -187,13 +187,24 @@ mod tests {
     ///   atoms truly are chemically interchangeable, and no purely-
     ///   topological rule can order-break them.
     /// - `cubane`: the SAME constrained check finds this is **NOT** a
-    ///   genuine automorphism -- `canon_rank`'s rank tie here is a false
-    ///   positive. Weisfeiler-Leman-style color refinement (what
-    ///   `morgan_ranks` implements) is provably incomplete for some graphs;
-    ///   this rank tie is exactly such a case, not a real symmetry. This
-    ///   fixture's residual is a live, unresolved instance of the same
-    ///   tie-break bug fixed elsewhere in this pass (menthol/testosterone/
-    ///   cholesterol/penicillin_core), disclosed rather than mislabeled.
+    ///   genuine automorphism, even though atoms 2 and 5 really do tie in
+    ///   `morgan_ranks` -- and that tie is *correct*, not a refinement
+    ///   artefact: `morgan_ranks`'s stable partition matches cubane's real
+    ///   automorphism-orbit partition exactly (independently verified by
+    ///   enumerating `Aut(G)` directly). Atoms 2 and 5 genuinely are in one
+    ///   global orbit. The problem is that global-orbit membership is the
+    ///   wrong equivalence for this use: `canonical_atoms` (in `matcher.rs`)
+    ///   needs equivalence under the *stabilizer of the central bond*, and
+    ///   cubane's only non-trivial automorphism maps atom 2 to atom 5 while
+    ///   also moving the central bond's own endpoints elsewhere -- so no
+    ///   automorphism fixes the central bond and sends 2 to 5 at once. No
+    ///   per-atom rank can distinguish this, however precisely it computes
+    ///   global orbits; the ambiguity is a property of the quadruple as a
+    ///   whole. This fixture's residual is a live, unresolved instance of the
+    ///   same tie-break bug fixed elsewhere in this pass (menthol/
+    ///   testosterone/cholesterol/penicillin_core), disclosed rather than
+    ///   mislabeled. See `matcher.rs`'s `canonical_atoms` doc comment for the
+    ///   full mechanism.
     ///
     /// The rank-tie assertions below remain correct and useful regardless:
     /// they are a true, falsifiable fact about `morgan_ranks`'s own output
@@ -242,12 +253,15 @@ mod tests {
         assert_eq!(r[1], r[3], "norbornane bridgehead pair must tie: {r:?}");
 
         // cubane: atom 1's two non-atom-0 neighbors (atoms 2 and 5) tie in
-        // rank, but this is a FALSE positive, NOT a genuine automorphism --
-        // confirmed via the constrained check in the doc comment above. This
-        // is the one case in this test where "ranks tie" does not mean
-        // "chemically interchangeable" -- kept as a standing regression
-        // check that `morgan_ranks` still produces this specific (known
-        // incomplete) tie, not evidence it's harmless.
+        // rank, and the two atoms genuinely ARE chemically interchangeable
+        // (a real global automorphism swaps them) -- but that is the wrong
+        // equivalence for `canonical_atoms` to use here: the constrained
+        // check in the doc comment above confirms no automorphism realizes
+        // that swap while also fixing the central bond, which is the
+        // relation that actually matters for picking one quadruple. Kept as
+        // a standing regression check that `morgan_ranks` still produces
+        // this specific (correct, but not bond-stabilizer-aware) tie, not
+        // evidence the resulting quadruple choice is harmless.
         let cubane = parse("C1C2C3C1C4C2C3C4").unwrap();
         let r = morgan_ranks(&cubane);
         assert_eq!(r[2], r[5], "cubane symmetric-neighbor pair must tie: {r:?}");
