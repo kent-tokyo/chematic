@@ -33,9 +33,17 @@
 //!   implementation never rotates about a double bond in the first place
 //!   (`classify_bond` excludes double/triple bonds from torsion matching
 //!   entirely, so no [`TorsionPotential`] this crate produces ever has a
-//!   double bond as its central bond). This is verified empirically in
-//!   this module's tests (signed chiral volume before/after), not merely
-//!   asserted.
+//!   double bond as its central bond). This is verified empirically in this
+//!   module's tests (`rotation_about_bridge_bond_preserves_chirality_sign`:
+//!   signed chiral volume before/after, on a real, non-degenerate 4-distinct-
+//!   atom quadruple, with an explicit non-zero-movement assertion so the
+//!   test cannot silently degrade into comparing unmoved coordinates) --
+//!   not merely asserted. An earlier version of this test used a
+//!   duplicate-atom-index quadruple (the exact defect this crate's own audit
+//!   flags in the *legacy* test suite) that made the rotation a geometric
+//!   no-op, so the assertion passed without checking anything; fixed after
+//!   a later independent review pass caught it, see that test's own comment
+//!   for the full account.
 
 use chematic_core::{AtomIdx, Molecule};
 use std::collections::{HashMap, HashSet};
@@ -635,15 +643,33 @@ mod tests {
 
     #[test]
     fn rotation_about_bridge_bond_preserves_chirality_sign() {
-        // 2-butanol: a stereocenter (C1) with a rotatable C-C bond further
-        // down the chain. Rotating that distal bond must never flip the
-        // stereocenter's own signed (chiral) volume.
-        let mol = parse("C[C@H](O)CC").unwrap();
+        // 2-pentanol: a stereocenter (C1) with a rotatable, genuinely
+        // 4-heavy-atom C3-C4 bond further down the chain (atom 4 has its own
+        // further neighbor, atom 5 -- NOT a duplicate-atom-index placeholder;
+        // see the fix note below). Rotating that distal bond must never flip
+        // the stereocenter's own signed (chiral) volume.
+        //
+        // An earlier version of this test used 2-butanol with atoms
+        // `[1,3,4,4]` (atom 4 duplicated, since 2-butanol's terminal ethyl
+        // carbon has no 4th atom beyond it) -- exactly the "duplicate atom
+        // index" defect this crate's own audit (`docs/3d_torsion_knowledge_
+        // audit.md` §4) flags in the *legacy* test suite, found here in this
+        // PR's own new tests by a later independent review pass. With a
+        // duplicate index, `dihedral_deg` degenerates (`atan2(0,0) == 0`),
+        // the rotating fragment never actually moves (confirmed: distance
+        // moved was exactly 0.0), and the "chirality preserved" assertion
+        // was trivially true on unmoved coordinates -- not verified
+        // empirically, despite this module's own doc comment (top of file)
+        // claiming it was. Fixed by using a molecule where the rotated bond
+        // has a real, distinct 4th atom, and by asserting the fragment
+        // actually moved (a non-zero-movement guard), so this test cannot
+        // silently degrade into a no-op again.
+        let mol = parse("C[C@H](O)CCC").unwrap();
         let params = EmbedParameters::default();
         let coords = embed_distance_geometry_v2(&mol, &params).unwrap();
 
-        // Stereocenter is atom 1 (the @ nitrogen/carbon per SMILES order);
-        // its neighbors are atoms 0 (CH3), 2 (O), 3 (CH2 of the ethyl arm).
+        // Stereocenter is atom 1 (the @ carbon per SMILES order); its
+        // neighbors are atoms 0 (CH3), 2 (O), 3 (CH2 of the propyl arm).
         let center = AtomIdx(1);
         let neighbors: Vec<AtomIdx> = mol.neighbors(center).map(|(n, _)| n).collect();
         assert!(
@@ -659,24 +685,40 @@ mod tests {
         };
         let before_sign = signed_volume(&coords).signum();
 
-        // Rotate the distal C3-C4 (ethyl) bond, far from the stereocenter.
+        // Rotate the distal C3-C4 bond, far from the stereocenter. Atom 5
+        // (beyond atom 4) is the real, distinct 4th atom -- the rotated
+        // fragment is {atom4, atom5}, a genuine 2-atom rigid-body rotation.
+        assert!(
+            mol.bond_between(AtomIdx(3), AtomIdx(4)).is_some(),
+            "2-pentanol must have a real C3-C4 bond"
+        );
+        assert_ne!(
+            AtomIdx(4),
+            AtomIdx(5),
+            "sanity: the outer atoms must be genuinely distinct, not a placeholder duplicate"
+        );
         let pot = TorsionPotential {
-            atoms: [AtomIdx(1), AtomIdx(3), AtomIdx(4), AtomIdx(4)],
+            atoms: [AtomIdx(1), AtomIdx(3), AtomIdx(4), AtomIdx(5)],
             central_bond: (AtomIdx(3), AtomIdx(4)),
             source: TorsionKnowledgeSource::StandardExperimental,
             rule_id: "test:distal_bond".to_string(),
             terms: vec![FourierTorsionTerm::from_rdkit(1, 1, 5.0)],
             ring_size: None,
         };
-        // Guard: this test only means what it claims if the bond is
-        // actually a real, distinct-atom rotatable bond in this molecule.
-        if mol.bond_between(AtomIdx(3), AtomIdx(4)).is_none() {
-            return;
-        }
         let config = TorsionOptimizationConfig::default();
-        let Ok((new_coords, _report)) = optimize_torsions(&mol, &coords, &[pot], &config) else {
+        let Ok((new_coords, report)) = optimize_torsions(&mol, &coords, &[pot], &config) else {
             return; // non-convergence on this particular geometry is not what this test checks
         };
+
+        // The whole point of using a real (non-degenerate) quadruple: the
+        // rotation must have actually moved something, or this test is
+        // exactly as vacuous as the duplicate-index version it replaces.
+        let moved = coords.get(AtomIdx(5)).distance(&new_coords.get(AtomIdx(5)));
+        assert!(
+            moved > 1e-6,
+            "rotation must actually move the distal atom, not silently no-op: moved={moved}, report={report:?}"
+        );
+
         let after_sign = signed_volume(&new_coords).signum();
         assert_eq!(
             before_sign, after_sign,

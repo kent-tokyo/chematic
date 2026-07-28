@@ -61,7 +61,7 @@
 use std::collections::HashMap;
 
 use chematic_core::{AtomIdx, Molecule};
-use chematic_smarts::{QueryMolecule, find_matches};
+use chematic_smarts::{MatchConfig, QueryMolecule, find_matches_with_config};
 
 use super::classify::{
     BondClassification, RingMembershipIndex, candidate_central_bonds, classify_bond,
@@ -126,6 +126,31 @@ fn effective_ring_size(bc: &BondClassification) -> Option<usize> {
     }
 }
 
+/// `true` iff `atom` itself belongs to some ring whose size falls in
+/// `sizes`. Used to enforce, in Rust, the ring-membership constraint RDKit's
+/// real small-ring/macrocycle SMARTS puts on *every* atom position
+/// (`[!#1;r{a-b}:1]...[!#1;r{a-b}:4]`, all four positions carry the `r{a-b}`
+/// primitive) -- this crate's own translated SMARTS only carries the
+/// connectivity/element predicate (see `rules_smallring.rs`'s module doc for
+/// why: chematic-smarts's `[rN]` has no range syntax), and until this check
+/// was added, only the CENTRAL bond's ring size was verified, leaving the
+/// two outer positions unconstrained. Found by independent review's real
+/// RDKit differential (spec §12): 34 central-bond-agreement bonds picked a
+/// different outer atom than `rdDistGeom.GetExperimentalTorsions`, all
+/// traced to this one missing constraint (an out-of-ring substituent, e.g.
+/// menthol's isopropyl group, satisfying `[!#1]` when RDKit's real rule
+/// requires the ring-continuation neighbor specifically).
+fn atom_in_ring_size_range(
+    ring_index: &RingMembershipIndex,
+    atom: AtomIdx,
+    sizes: &std::ops::RangeInclusive<usize>,
+) -> bool {
+    ring_index
+        .rings()
+        .iter()
+        .any(|ring| sizes.contains(&ring.len()) && ring.contains(&atom))
+}
+
 /// Build the full torsion-knowledge report for `mol` under `config`. Pure
 /// function: reads `mol`, never mutates it; never touches coordinates.
 ///
@@ -152,6 +177,29 @@ pub fn build_torsion_knowledge(
 
     let ring_index = RingMembershipIndex::build(mol);
     let central_bonds = candidate_central_bonds(mol);
+
+    // `uniquify: false`, used by every SMARTS match below (tiers 2/3/4):
+    // `find_matches`'s own default (`uniquify: true`, matching RDKit's
+    // `uniquify=True`) collapses multiple VF2 embeddings of the SAME
+    // physical central bond down to just one whenever the query pattern has
+    // an internal automorphism -- e.g. `rules_standard.rs`'s
+    // `standard:biphenyl_unsubstituted` pattern
+    // `[cH1:1][c:2]([cH1])[c:3]([cH1:4])[cH1]`, where atom `:2`'s two `cH1`
+    // neighbors are chemically identical and interchangeable. The single
+    // survivor is chosen by whichever embedding the VF2 search happens to
+    // reach first -- an artifact of the search's internal traversal order,
+    // which depends on the target molecule's own atom numbering. This was a
+    // real bug found by independent review (up to 46% torsion-energy
+    // differences between two relabelings of the SAME physical molecule):
+    // `resolve_same_tier`'s dedup path always had a single, arbitrarily-
+    // chosen candidate to work with, so its own canonical, rank-based
+    // tie-break (`canonical_atoms`) never got a chance to run. `uniquify:
+    // false` returns every such embedding as its own `Candidate`, so
+    // `resolve_same_tier` sees them all and can pick deterministically.
+    let match_config = MatchConfig {
+        uniquify: false,
+        ..MatchConfig::default()
+    };
 
     let mut classifications: HashMap<BondKey, BondClassification> = HashMap::new();
     let mut rotatable_bonds: Vec<(AtomIdx, AtomIdx)> = Vec::new();
@@ -195,7 +243,7 @@ pub fn build_torsion_knowledge(
                 ));
                 continue;
             };
-            for m in find_matches(&query, mol) {
+            for m in find_matches_with_config(&query, mol, &match_config) {
                 let Some(atoms) = atoms_by_map4(&query, &m) else {
                     continue;
                 };
@@ -211,6 +259,17 @@ pub fn build_torsion_knowledge(
                     continue;
                 };
                 if !rule.applicable_ring_sizes.contains(&size) {
+                    continue;
+                }
+                // RDKit's real small-ring SMARTS puts `r{a-b}` on ALL 4
+                // positions, not just the central bond -- see
+                // `atom_in_ring_size_range`'s doc comment. Without this, an
+                // out-of-ring substituent (e.g. menthol's isopropyl group)
+                // could satisfy the outer `[!#1]` predicate, which RDKit's
+                // real rule never allows.
+                if !atom_in_ring_size_range(&ring_index, atoms[0], &rule.applicable_ring_sizes)
+                    || !atom_in_ring_size_range(&ring_index, atoms[3], &rule.applicable_ring_sizes)
+                {
                     continue;
                 }
                 tier2.entry(key).or_default().push(Candidate {
@@ -236,7 +295,7 @@ pub fn build_torsion_knowledge(
                 ));
                 continue;
             };
-            for m in find_matches(&query, mol) {
+            for m in find_matches_with_config(&query, mol, &match_config) {
                 let Some(atoms) = atoms_by_map4(&query, &m) else {
                     continue;
                 };
@@ -277,7 +336,7 @@ pub fn build_torsion_knowledge(
                 ));
                 continue;
             };
-            for m in find_matches(&query, mol) {
+            for m in find_matches_with_config(&query, mol, &match_config) {
                 let Some(atoms) = atoms_by_map4(&query, &m) else {
                     continue;
                 };
@@ -383,6 +442,11 @@ pub fn build_torsion_knowledge(
         }
     }
 
+    // Whole-molecule topological invariant, computed once and reused for
+    // every bond's canonical-quadruple tie-break (see `canonical_atoms`) --
+    // deliberately NOT recomputed per bond, since it depends only on `mol`.
+    let ranks = super::canon_rank::morgan_ranks(mol);
+
     // Resolve, per bond, the first tier (in priority order) with any
     // candidate, applying same-tier dedup/compose/conflict resolution.
     for &(a, b) in &rotatable_bonds {
@@ -397,7 +461,7 @@ pub fn build_torsion_knowledge(
             if candidates.is_empty() {
                 continue;
             }
-            match resolve_same_tier(candidates) {
+            match resolve_same_tier(candidates, &ranks) {
                 ResolvedTier::Single {
                     rule_ids,
                     atoms,
@@ -469,6 +533,37 @@ enum ResolvedTier {
     },
 }
 
+/// Pick, among candidates that all resolve to the same rule set/terms for
+/// one bond, the outer-atom quadruple to actually report -- deterministically,
+/// via [`super::canon_rank::morgan_ranks`] rather than "whichever candidate
+/// came first in `find_matches`'s iteration order" (which is a function of
+/// raw `AtomIdx` numbering, not of molecular structure, and was a real bug:
+/// independent review found up to 46% torsion-energy differences on
+/// symmetric/cage molecules -- adamantane, norbornane, spiro_5_6, cubane,
+/// testosterone, cholesterol, penicillin_core -- purely from atom
+/// relabeling, because a generic ring rule can match the same central bond
+/// via more than one distinguishable neighbor for the outer atom).
+///
+/// Morgan ranks are a topological invariant (neighbor-hash refinement to a
+/// fixpoint): two outer-atom choices that are structurally distinguishable
+/// get distinct ranks regardless of how the molecule happens to be numbered,
+/// so sorting by rank fixes the common case (a generic rule coincidentally
+/// matching two chemically different neighbors). Atoms in a genuine
+/// non-trivial automorphism orbit (true graph symmetry, e.g. two of
+/// adamantane's three bridgehead ring-neighbors) keep equal ranks by
+/// definition -- for those, any member of the orbit is a chemically
+/// equivalent choice, so the residual `AtomIdx`-order tie-break for that
+/// last case is a real graph-symmetry limit (not eliminable by any
+/// numbering-independent rule), not an unresolved instance of this bug.
+fn canonical_atoms(candidates: &[Candidate], ranks: &[u64]) -> [AtomIdx; 4] {
+    let rank_of = |a: AtomIdx| ranks.get(a.0 as usize).copied().unwrap_or(u64::MAX);
+    candidates
+        .iter()
+        .map(|c| c.atoms)
+        .min_by_key(|atoms| (rank_of(atoms[0]), rank_of(atoms[3]), atoms[0].0, atoms[3].0))
+        .expect("candidates is never empty here")
+}
+
 /// Dedup/compose/conflict resolution among multiple same-tier candidates
 /// for one bond (spec §4). Two candidates are:
 /// - equivalent if their term lists are identical (same periodicity, phase,
@@ -478,7 +573,12 @@ enum ResolvedTier {
 /// - conflicting if they share a periodicity with a different phase or
 ///   amplitude -- reported as [`ResolvedTier::Conflict`], never silently
 ///   resolved by picking one side.
-fn resolve_same_tier(candidates: &[Candidate]) -> ResolvedTier {
+///
+/// `ranks` is `super::canon_rank::morgan_ranks(mol)`, passed in (not
+/// recomputed here) since it's the same, whole-molecule invariant for every
+/// bond -- see [`canonical_atoms`] for why the reported quadruple is chosen
+/// via rank rather than candidate-array order.
+fn resolve_same_tier(candidates: &[Candidate], ranks: &[u64]) -> ResolvedTier {
     if candidates.len() == 1 {
         return ResolvedTier::Single {
             rule_ids: vec![candidates[0].rule_id.clone()],
@@ -529,7 +629,7 @@ fn resolve_same_tier(candidates: &[Candidate]) -> ResolvedTier {
 
     ResolvedTier::Single {
         rule_ids,
-        atoms: candidates[0].atoms,
+        atoms: canonical_atoms(candidates, ranks),
         terms: merged_terms,
         source,
         ring_size,
@@ -610,6 +710,15 @@ mod tests {
         }
     }
 
+    /// Dummy ranks for tests that don't exercise `canonical_atoms` (every
+    /// `fake_candidate` uses the same fixed atom indices, so the specific
+    /// values here never affect which candidate's atoms get reported --
+    /// only `resolve_same_tier_canonical_pick_is_order_independent` below
+    /// varies `.atoms` across candidates and needs real ranks).
+    fn dummy_ranks() -> Vec<u64> {
+        vec![0, 1, 2, 3]
+    }
+
     /// Negative control (spec §13, "swapping rule application order changes
     /// the result" must FAIL to occur): two candidates with genuinely
     /// different (conflicting) terms must resolve to `Conflict` regardless
@@ -619,14 +728,21 @@ mod tests {
         let cand_a = fake_candidate("rule:a", vec![FourierTorsionTerm::from_rdkit(2, 1, 10.0)]);
         let cand_b = fake_candidate("rule:b", vec![FourierTorsionTerm::from_rdkit(2, -1, 10.0)]);
 
-        let forward = resolve_same_tier(&[
-            fake_candidate("rule:a", cand_a.terms.clone()),
-            fake_candidate("rule:b", cand_b.terms.clone()),
-        ]);
-        let backward = resolve_same_tier(&[
-            fake_candidate("rule:b", cand_b.terms.clone()),
-            fake_candidate("rule:a", cand_a.terms.clone()),
-        ]);
+        let ranks = dummy_ranks();
+        let forward = resolve_same_tier(
+            &[
+                fake_candidate("rule:a", cand_a.terms.clone()),
+                fake_candidate("rule:b", cand_b.terms.clone()),
+            ],
+            &ranks,
+        );
+        let backward = resolve_same_tier(
+            &[
+                fake_candidate("rule:b", cand_b.terms.clone()),
+                fake_candidate("rule:a", cand_a.terms.clone()),
+            ],
+            &ranks,
+        );
 
         assert!(
             matches!(forward, ResolvedTier::Conflict { .. }),
@@ -648,7 +764,7 @@ mod tests {
             fake_candidate("rule:x", vec![FourierTorsionTerm::from_rdkit(1, 1, 50.0)]),
             fake_candidate("rule:y", vec![FourierTorsionTerm::from_rdkit(1, -1, 50.0)]),
         ];
-        match resolve_same_tier(&candidates) {
+        match resolve_same_tier(&candidates, &dummy_ranks()) {
             ResolvedTier::Conflict { rule_ids } => {
                 assert_eq!(rule_ids.len(), 2);
             }
@@ -668,7 +784,7 @@ mod tests {
             fake_candidate("rule:x", terms.clone()),
             fake_candidate("rule:y", terms),
         ];
-        match resolve_same_tier(&candidates) {
+        match resolve_same_tier(&candidates, &dummy_ranks()) {
             ResolvedTier::Single {
                 rule_ids, terms, ..
             } => {
@@ -687,10 +803,84 @@ mod tests {
             fake_candidate("rule:x", vec![FourierTorsionTerm::from_rdkit(1, 1, 5.0)]),
             fake_candidate("rule:y", vec![FourierTorsionTerm::from_rdkit(3, -1, 2.0)]),
         ];
-        match resolve_same_tier(&candidates) {
+        match resolve_same_tier(&candidates, &dummy_ranks()) {
             ResolvedTier::Single { terms, .. } => assert_eq!(terms.len(), 2),
             ResolvedTier::Conflict { .. } => {
                 panic!("disjoint periodicities must compose, not conflict")
+            }
+        }
+    }
+
+    /// Regression test for a real bug found by independent review: two
+    /// candidates matching the SAME rule/terms on the SAME central bond, but
+    /// via two structurally-distinguishable outer-atom choices (atom 5 vs
+    /// atom 6 as the "A" position), must resolve to the SAME quadruple
+    /// regardless of which candidate happens to come first in the input
+    /// slice -- previously this returned `candidates[0].atoms` unconditionally,
+    /// making the reported quadruple (and therefore the computed torsion
+    /// energy) depend on find_matches's iteration order, which depends on
+    /// raw atom numbering. Ranks here give atom 5 a strictly lower rank than
+    /// atom 6, simulating "atom 5 is structurally distinguishable and
+    /// canonically preferred" -- both orderings must pick it.
+    #[test]
+    fn resolve_same_tier_canonical_pick_is_order_independent() {
+        let terms = vec![FourierTorsionTerm::from_rdkit(3, 1, 4.0)];
+        let cand_via_5 = Candidate {
+            rule_id: "rule:generic".to_string(),
+            atoms: [AtomIdx(5), AtomIdx(1), AtomIdx(2), AtomIdx(3)],
+            terms: terms.clone(),
+            source: TorsionKnowledgeSource::MacrocycleAdaptation,
+            ring_size: Some(12),
+        };
+        let cand_via_6 = Candidate {
+            rule_id: "rule:generic".to_string(),
+            atoms: [AtomIdx(6), AtomIdx(1), AtomIdx(2), AtomIdx(3)],
+            terms: terms.clone(),
+            source: TorsionKnowledgeSource::MacrocycleAdaptation,
+            ring_size: Some(12),
+        };
+        // rank[5] < rank[6]: atom 5 is canonically preferred.
+        let ranks: Vec<u64> = vec![0, 0, 0, 0, 0, 10, 20];
+
+        let forward = resolve_same_tier(
+            &[
+                Candidate {
+                    atoms: cand_via_5.atoms,
+                    ..fake_candidate("rule:generic", terms.clone())
+                },
+                Candidate {
+                    atoms: cand_via_6.atoms,
+                    ..fake_candidate("rule:generic", terms.clone())
+                },
+            ],
+            &ranks,
+        );
+        let backward = resolve_same_tier(
+            &[
+                Candidate {
+                    atoms: cand_via_6.atoms,
+                    ..fake_candidate("rule:generic", terms.clone())
+                },
+                Candidate {
+                    atoms: cand_via_5.atoms,
+                    ..fake_candidate("rule:generic", terms.clone())
+                },
+            ],
+            &ranks,
+        );
+
+        for (label, resolved) in [("forward", forward), ("backward", backward)] {
+            match resolved {
+                ResolvedTier::Single { atoms, .. } => {
+                    assert_eq!(
+                        atoms[0],
+                        AtomIdx(5),
+                        "{label}: must canonically pick the lower-rank atom regardless of input order"
+                    );
+                }
+                ResolvedTier::Conflict { .. } => {
+                    panic!("{label}: identical terms must dedupe, not conflict")
+                }
             }
         }
     }
@@ -718,6 +908,46 @@ mod tests {
                 .iter()
                 .map(|p| &p.rule_id)
                 .collect::<Vec<_>>()
+        );
+    }
+
+    /// Regression test for a real translation gap found by independent
+    /// review's RDKit differential (spec §12): `smallring:generic_cc_6_8`'s
+    /// outer positions were unconstrained, so a ring bond flanked by an
+    /// out-of-ring substituent (menthol's isopropyl group at the ring
+    /// carbon adjacent to its central C-C bond) could get that substituent
+    /// picked as the outer atom instead of the ring-continuation neighbor
+    /// RDKit's real `r{5-8}`-on-all-4-positions SMARTS requires. Confirmed
+    /// via a live RDKit oracle (`rdDistGeom.GetExperimentalTorsions`) this
+    /// bond's real outer atom is the ring neighbor, not the substituent --
+    /// fixed via `atom_in_ring_size_range` gating tier 2's outer atoms too.
+    #[test]
+    fn small_ring_tier_never_picks_an_out_of_ring_substituent_as_the_outer_atom() {
+        // menthol: C0(methyl) C1(ring,@@H) C2 C3 C4(ring,@@H) C5(isopropyl
+        // CH) C6(methyl) C7(methyl) C8 C9(ring,@H) O10. Ring = {1,2,3,4,8,9}.
+        // Central bond (3,4): atom4's neighbors besides atom3 are atom8
+        // (ring) and atom5 (isopropyl, NOT ring).
+        let mol = parse("C[C@@H]1CC[C@@H](C(C)C)C[C@H]1O").unwrap();
+        let config = TorsionKnowledgeConfig {
+            use_small_ring_torsions: true,
+            ..TorsionKnowledgeConfig::default()
+        };
+        let report = build_torsion_knowledge(&mol, &config);
+        let central = (AtomIdx(3), AtomIdx(4));
+        let pot = report
+            .potentials
+            .iter()
+            .find(|p| p.central_bond == central || p.central_bond == (central.1, central.0))
+            .expect("bond (3,4) must have a small-ring potential");
+        assert!(
+            !pot.atoms.contains(&AtomIdx(5)),
+            "isopropyl carbon (atom 5, not in the ring) must never be picked as the outer atom: {:?}",
+            pot.atoms
+        );
+        assert!(
+            pot.atoms.contains(&AtomIdx(8)),
+            "the real ring-continuation neighbor (atom 8) must be picked instead: {:?}",
+            pot.atoms
         );
     }
 

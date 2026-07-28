@@ -262,6 +262,8 @@ fn main() {
     disabled_flags_no_op_report();
     println!();
     rdkit_oracle_dump();
+    println!();
+    rdkit_torsion_family_dump();
 }
 
 // ---------------------------------------------------------------------------
@@ -502,15 +504,32 @@ fn run_arm(
             }
         }
 
+        // `final_coords` is what the safety gate below actually measures --
+        // starts as a copy of the raw embedded geometry, replaced with the
+        // optimizer's own output whenever optimization actually ran and
+        // succeeded. An earlier version of this harness measured the safety
+        // gate against `coords` (the pre-optimization geometry) even though
+        // it also ran `optimize_torsions`, discarding the returned
+        // coordinates (`_new_coords`) -- meaning the gate was structurally
+        // incapable of ever detecting a real torsion-rotation-induced clash
+        // or bond-length problem, the canonical failure mode a rigid
+        // substituent rotation can cause. It was "passing" on this corpus by
+        // luck (0 clashes measured either way, only a handful of molecules
+        // move at all), not because it was checking the thing it claimed to.
+        // Fixed after independent review flagged that the gate wasn't
+        // measuring what it said it measured.
+        let mut final_coords = coords.clone();
+
         if !report.potentials.is_empty() {
             let before = evaluate_torsion_energy(&mol, &coords, &report.potentials).unwrap();
             metrics.energy_before_sum += before.total_energy;
 
             let opt_config = TorsionOptimizationConfig::default();
             match optimize_torsions(&mol, &coords, &report.potentials, &opt_config) {
-                Ok((_new_coords, opt_report)) => {
+                Ok((new_coords, opt_report)) => {
                     metrics.n_optimized += 1;
                     metrics.energy_after_sum += opt_report.energy_after;
+                    final_coords = new_coords;
                 }
                 Err(_) => {
                     metrics.n_optimizer_nonconvergent += 1;
@@ -523,6 +542,9 @@ fn run_arm(
         // bond-length blowup and gross clash, same coarse thresholds the
         // sibling Wave 1 gap-check example uses (2x covalent-radius-derived
         // ideal length is "torn"; well under VdW sum is a gross clash).
+        // Measured against `final_coords` (post-optimization when
+        // optimization ran, the raw embedding otherwise) -- see the note
+        // above for why this must NOT be the raw pre-optimization `coords`.
         // `n_ring_closure_violation` is the SAME "torn" threshold, restricted
         // to bonds where both endpoints are ring members -- i.e. whether any
         // ring in the molecule actually broke open, the specific guarantee
@@ -531,7 +553,9 @@ fn run_arm(
         // bond-length violation, so this count is always <= the general one.
         let rings = RingMembershipIndex::build(&mol);
         for (_, bond) in mol.bonds() {
-            let d = coords.get(bond.atom1).distance(&coords.get(bond.atom2));
+            let d = final_coords
+                .get(bond.atom1)
+                .distance(&final_coords.get(bond.atom2));
             let ideal = approx_ideal_bond_length(&mol, bond.atom1, bond.atom2);
             if d > ideal * 2.0 {
                 metrics.n_bond_length_violation += 1;
@@ -540,7 +564,7 @@ fn run_arm(
                 }
             }
         }
-        let n = coords.atom_count();
+        let n = final_coords.atom_count();
         'clash: for i in 0..n {
             for j in (i + 1)..n {
                 if mol
@@ -549,9 +573,9 @@ fn run_arm(
                 {
                     continue;
                 }
-                let d = coords
+                let d = final_coords
                     .get(AtomIdx(i as u32))
-                    .distance(&coords.get(AtomIdx(j as u32)));
+                    .distance(&final_coords.get(AtomIdx(j as u32)));
                 if d < 0.5 {
                     metrics.n_gross_clash += 1;
                     break 'clash;
@@ -604,7 +628,11 @@ fn coordinate_layer_report() {
 // Reproducibility / invariance / mirror-image checks.
 // ---------------------------------------------------------------------------
 
-fn reversed_atom_order(mol: &Molecule) -> Molecule {
+/// Returns the relabeled molecule AND the old-index -> new-`AtomIdx`
+/// permutation used to build it, so a caller can carry coordinates across
+/// the same relabeling (see `atom_order_energy_invariance` below) instead of
+/// only being able to compare rule-id sets.
+fn reversed_atom_order(mol: &Molecule) -> (Molecule, Vec<AtomIdx>) {
     let n = mol.atom_count();
     let mut builder = MoleculeBuilder::new();
     let mut new_idx = vec![AtomIdx(0); n];
@@ -617,7 +645,7 @@ fn reversed_atom_order(mol: &Molecule) -> Molecule {
         let b = new_idx[bond.atom2.0 as usize];
         let _ = builder.add_bond(a, b, bond.order);
     }
-    builder.build()
+    (builder.build(), new_idx)
 }
 
 fn reproducibility_and_invariance_report() {
@@ -642,13 +670,22 @@ fn reproducibility_and_invariance_report() {
         if reproducible { "PASS" } else { "FAIL" }
     );
 
-    // Atom-order invariance: reversing atom insertion order must not change
-    // the MULTISET of matched rule_ids (order-independent by construction --
-    // rule matching is a property of the graph, not the index labeling).
-    let mut order_invariant = true;
+    // Atom-order invariance, RULE-SELECTION level only: reversing atom
+    // insertion order must not change the MULTISET of matched rule_ids
+    // (which *rules* fire is a property of the graph, not the index
+    // labeling). This does NOT prove the full pipeline is order-invariant --
+    // it is structurally blind to *which specific outer-atom quadruple* got
+    // chosen when multiple same-tier candidates match one bond, since
+    // `matched_rule_ids` only records rule identity, not the atoms a rule
+    // bound to. See `atom_order_energy_invariance` below for the check that
+    // actually covers that (a real bug independent review found here: up to
+    // 46% torsion-energy differences on symmetric/cage molecules from atom
+    // relabeling alone, which this rule-id check could not and did not
+    // catch, despite reporting PASS).
+    let mut rule_selection_order_invariant = true;
     for &(name, smiles, _) in CORPUS {
         let Ok(mol) = parse(smiles) else { continue };
-        let reversed = reversed_atom_order(&mol);
+        let (reversed, _) = reversed_atom_order(&mol);
         let r1 = build_torsion_knowledge(&mol, &config);
         let r2 = build_torsion_knowledge(&reversed, &config);
         let mut ids1 = r1.matched_rule_ids.clone();
@@ -656,13 +693,87 @@ fn reproducibility_and_invariance_report() {
         ids1.sort();
         ids2.sort();
         if ids1 != ids2 {
-            println!("  ATOM-ORDER FAILURE: {name}: {ids1:?} vs {ids2:?}");
-            order_invariant = false;
+            println!("  ATOM-ORDER RULE-SELECTION FAILURE: {name}: {ids1:?} vs {ids2:?}");
+            rule_selection_order_invariant = false;
         }
     }
     println!(
-        "  atom_order_invariance: {}",
-        if order_invariant { "PASS" } else { "FAIL" }
+        "  atom_order_rule_selection_invariance: {}",
+        if rule_selection_order_invariant {
+            "PASS"
+        } else {
+            "FAIL"
+        }
+    );
+
+    // Atom-order invariance, GEOMETRY/ENERGY level: the check that actually
+    // matters (spec §11's real intent). Embeds ONE geometry for the
+    // original molecule, then builds the relabeled molecule's coordinates
+    // by PERMUTING that same geometry via `reversed_atom_order`'s own
+    // index map (never re-embedding) -- this isolates "does this crate's
+    // own matching/scoring logic depend on atom numbering" from the
+    // embedder's own, unrelated order-dependence (a separate, already-known
+    // concern belonging to `distance_geometry_v2.rs`, out of this PR's
+    // file-ownership scope). Same physical geometry, relabeled atoms, so
+    // total torsion energy must match to floating-point precision --
+    // EXCEPT on the small, named set of fixtures where the outer atom a
+    // rule binds to is a genuine graph automorphism (chemically
+    // interchangeable substituents: biphenyl's ortho-H pairs, adamantane/
+    // cubane's cage symmetry, penicillin_core's gem-dimethyl -- each
+    // verified, not assumed, by `canon_rank`'s
+    // `known_true_symmetry_ties_behind_the_residual_atom_order_cases` test).
+    // No purely-topological rule can make that specific choice
+    // relabeling-invariant, since nothing about the graph distinguishes the
+    // tied atoms -- this is reported as a separately-counted, named,
+    // understood residual, not folded into the same PASS/FAIL as a real bug.
+    const KNOWN_TRUE_SYMMETRY_RESIDUAL: &[&str] =
+        &["biphenyl", "adamantane", "cubane", "penicillin_core"];
+    let mut energy_order_invariant = true;
+    let mut known_residual_hit: Vec<&str> = Vec::new();
+    let embed_params = EmbedParameters::default();
+    for &(name, smiles, _) in CORPUS {
+        let Ok(mol) = parse(smiles) else { continue };
+        let Ok((coords, _)) = embed_distance_geometry_v2_detail(&mol, &embed_params) else {
+            continue; // embed failure is this fixture's own known limitation, not this check's concern
+        };
+        let (reversed, new_idx) = reversed_atom_order(&mol);
+        let mut reversed_coords = chematic_3d::coords::Coords3D::new_zeroed(reversed.atom_count());
+        for (i, &new_atom) in new_idx.iter().enumerate().take(mol.atom_count()) {
+            reversed_coords.set(new_atom, coords.get(AtomIdx(i as u32)));
+        }
+
+        let r1 = build_torsion_knowledge(&mol, &config);
+        let r2 = build_torsion_knowledge(&reversed, &config);
+        let (Ok(e1), Ok(e2)) = (
+            evaluate_torsion_energy(&mol, &coords, &r1.potentials),
+            evaluate_torsion_energy(&reversed, &reversed_coords, &r2.potentials),
+        ) else {
+            continue;
+        };
+        if (e1.total_energy - e2.total_energy).abs() > 1e-6 {
+            if KNOWN_TRUE_SYMMETRY_RESIDUAL.contains(&name) {
+                known_residual_hit.push(name);
+                println!(
+                    "  atom-order energy difference (KNOWN true-symmetry residual): {name}: {:.6} vs {:.6}",
+                    e1.total_energy, e2.total_energy
+                );
+            } else {
+                println!(
+                    "  ATOM-ORDER ENERGY FAILURE (unexplained): {name}: {:.6} vs {:.6} (relabeled)",
+                    e1.total_energy, e2.total_energy
+                );
+                energy_order_invariant = false;
+            }
+        }
+    }
+    println!(
+        "  atom_order_energy_invariance: {} ({} known true-symmetry residual: {known_residual_hit:?})",
+        if energy_order_invariant {
+            "PASS"
+        } else {
+            "FAIL -- unexplained difference found, see above"
+        },
+        known_residual_hit.len()
     );
 
     // Mirror-image behavior: a molecule and its SMILES-level enantiomer
@@ -765,13 +876,17 @@ fn disabled_flags_no_op_report() {
 //   which is a live behavioral oracle), never structurally (RDKit's own
 //   matched-SMARTS-rule-id per bond is internal C++ state with no public
 //   Python accessor at all, in any version).
-// - "Matched rule family" and "1-4 pair selection" per spec section 12 are
-//   NOT achievable via RDKit's public API in any form found: the
-//   `ExperimentalTorsions`/`BoundsMatrixBuilder` machinery that performs
-//   this matching is not exposed to Python, and no C++ build was attempted
-//   in this PR (out of scope for a knowledge-layer-only PR that does not
-//   touch the build system). This is disclosed as a known, real limitation
-//   of what section 12 asks for -- not silently narrowed without saying so.
+// - "Matched rule family" and "1-4 pair selection" per spec section 12 ARE
+//   achievable, corrected after independent review found the public
+//   `rdkit.Chem.rdDistGeom.GetExperimentalTorsions(mol, ...)` /
+//   `GetMoleculeBoundsMatrix(mol, ..., useMacrocycle14config=...)` accessors
+//   (an earlier draft of this comment claimed otherwise -- that claim was
+//   never actually verified against the real API, only assumed from reading
+//   the C++ source layout, which is exactly the kind of unverified claim
+//   this program's own standing practice exists to catch). `rdkit_torsion_
+//   family_dump` below emits the chematic side of that differential too; see
+//   `docs/3d_torsion_knowledge_audit.md` section 6 for the real, re-derived
+//   numbers.
 //
 // This function writes ONLY the chematic-side half of the comparison (a
 // plain hand-formatted JSON file, no new serde dependency needed for this
@@ -782,6 +897,17 @@ fn disabled_flags_no_op_report() {
 // which reads this file, computes RDKit's own answers independently, and
 // writes the comparison.
 // ---------------------------------------------------------------------------
+
+/// Minimal JSON string escaping for the hand-formatted dumps below -- no
+/// serde dependency needed for this small, fixed shape (see the module doc
+/// above), but SMILES strings containing `\` (any E/Z stereo bond, e.g.
+/// `C/C=C\C`) or `"` must still be escaped or the written file isn't valid
+/// JSON. Found and fixed after `rdkit_torsion_family_dump`'s wider (72-
+/// fixture, includes the E/Z stereo set) coverage exposed a latent escaping
+/// bug `rdkit_oracle_dump`'s narrower fixture list had never triggered.
+fn json_escape(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
+}
 
 fn oracle_fixture_list() -> Vec<(&'static str, &'static str)> {
     let mut v = Vec::new();
@@ -816,6 +942,8 @@ fn rdkit_oracle_dump() {
                 sizes_str.join(",")
             ));
         }
+        let name = json_escape(name);
+        let smiles = json_escape(smiles);
         json.push_str(&format!(
             "    {{\"name\": \"{name}\", \"smiles\": \"{smiles}\", \"atoms\": [{}], \"bonds\": [{}]}}{}\n",
             atoms.join(","),
@@ -834,6 +962,78 @@ fn rdkit_oracle_dump() {
     let out_path = "validation/etkdg_torsion_knowledge_v2_chematic_side.json";
     match std::fs::write(out_path, &json) {
         Ok(()) => println!("  wrote {} fixtures to {out_path}", fixtures.len()),
+        Err(e) => println!(
+            "  WARNING: could not write oracle dump to {out_path} ({e}); printing inline instead:\n{json}"
+        ),
+    }
+}
+
+/// Chematic side of the rule-family / central-bond-selection differential
+/// (spec section 12), corrected to actually run after independent review
+/// found `rdDistGeom.GetExperimentalTorsions` is real, public API (see the
+/// module doc above). Uses `full_config()` -- the same standard+small-ring+
+/// macrocycle configuration the reproducibility/invariance checks use --
+/// across all 72 knowledge-layer fixtures (cheap: no coordinates needed for
+/// rule matching itself).
+fn rdkit_torsion_family_dump() {
+    println!("--- RDKit rule-family/1-4-pair differential, chematic side (spec section 12) ---");
+    let fixtures = all_knowledge_fixtures();
+    let config = full_config();
+    let mut json = String::from("{\n  \"molecules\": [\n");
+    let mut n_written = 0usize;
+    for &(name, smiles) in &fixtures {
+        let Ok(mol) = parse(smiles) else { continue };
+        let report = build_torsion_knowledge(&mol, &config);
+        let atoms: Vec<String> = (0..mol.atom_count())
+            .map(|idx| format!("\"{}\"", mol.atom(AtomIdx(idx as u32)).element.symbol()))
+            .collect();
+        let mut bond_entries = Vec::new();
+        for pot in &report.potentials {
+            bond_entries.push(format!(
+                "{{\"a\":{},\"b\":{},\"rule_id\":\"{}\",\"source\":\"{:?}\",\"atoms\":[{},{},{},{}]}}",
+                pot.central_bond.0.0,
+                pot.central_bond.1.0,
+                json_escape(&pot.rule_id),
+                pot.source,
+                pot.atoms[0].0,
+                pot.atoms[1].0,
+                pot.atoms[2].0,
+                pot.atoms[3].0
+            ));
+        }
+        // Macrocycle 1-4 pairs, for the same molecule (proposed-only, per
+        // this crate's own convention -- see bounds14.rs).
+        let mut pair_entries = Vec::new();
+        if let Ok(adjustments) = macrocycle_14_bound_adjustments(&mol, &config) {
+            for adj in &adjustments {
+                pair_entries.push(format!(
+                    "{{\"a\":{},\"b\":{},\"pinned\":{}}}",
+                    adj.atom_pair.0.0,
+                    adj.atom_pair.1.0,
+                    (adj.new_upper - adj.new_lower) < 0.5
+                ));
+            }
+        }
+        let name = json_escape(name);
+        let smiles = json_escape(smiles);
+        json.push_str(&format!(
+            "    {{\"name\": \"{name}\", \"smiles\": \"{smiles}\", \"atoms\": [{}], \"torsion_bonds\": [{}], \"macrocycle_14_pairs\": [{}]}},\n",
+            atoms.join(","),
+            bond_entries.join(","),
+            pair_entries.join(",")
+        ));
+        n_written += 1;
+    }
+    // Remove trailing comma before closing the array.
+    if json.ends_with(",\n") {
+        json.truncate(json.len() - 2);
+        json.push('\n');
+    }
+    json.push_str("  ]\n}\n");
+
+    let out_path = "validation/etkdg_torsion_knowledge_v2_chematic_torsions.json";
+    match std::fs::write(out_path, &json) {
+        Ok(()) => println!("  wrote {n_written} fixtures to {out_path}"),
         Err(e) => println!(
             "  WARNING: could not write oracle dump to {out_path} ({e}); printing inline instead:\n{json}"
         ),

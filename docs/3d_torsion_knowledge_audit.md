@@ -349,13 +349,17 @@ python3 -m venv /tmp/oracle_venv && /tmp/oracle_venv/bin/pip install rdkit
 
 ### 6.1 What was actually comparable via RDKit's public API
 
-Two of spec §12's six named comparison axes (rule family, central bond
+All six of spec §12's named comparison axes (rule family, central bond
 selection, ring classification, minima, 1-4 pair selection, torsion
-distribution) turned out to be reachable via RDKit's public Python API;
-**rule family** and **1-4 pair selection** are not (see §6.4). Central bond
-selection and ring classification are the same underlying check here (a
-central bond's classification IS its ring membership), so this collapses to
-2 distinct measurements: ring classification, and torsion distribution/minima.
+distribution) are reachable via RDKit's public Python API. An earlier draft
+of this section claimed rule family and 1-4 pair selection were not
+reachable — that claim was false (see §6.4's correction: `rdDistGeom.
+GetExperimentalTorsions`/`GetMoleculeBoundsMatrix` expose exactly this),
+found by independent review and fixed by actually fetching
+`DistGeomHelpers/Wrap/rdDistGeom.cpp` and running the differential rather
+than re-asserting the earlier claim. §6.2 covers ring classification, §6.3
+torsion distribution/minima, §6.4 rule family + central bond selection +
+1-4 pair selection.
 
 ### 6.2 Ring classification: 221/230 (96.1%) bond-level agreement
 
@@ -431,32 +435,104 @@ to uniform across all six 60°-buckets (`[11,6,7,7,12,7]` of 50) — consistent
 with there being no strong single-bond preference for this case in RDKit's
 own generator either, not a contradiction to explain away.
 
-### 6.4 Disclosed limitation: rule family and 1-4 pair selection
+### 6.4 Rule family / central bond selection / 1-4 pairs: corrected, now measured for real
 
-Spec §12 also asks to compare **matched rule family** and **1-4 pair
-selection** against RDKit's own choices. Neither is achievable via RDKit's
-public Python API in `rdkit==2026.03.4` (checked directly, not assumed): the
-`ExperimentalTorsionAngle`/`BoundsMatrixBuilder` C++ machinery that performs
-this matching internally has no public accessor returning which SMARTS
-matched which bond, or which 1-4 pairs were adjusted and by how much. Closing
-this would require either a patched/instrumented RDKit C++ build (out of
-scope — this PR touches no build system, per file-ownership §14) or reverse-
-engineering matches from conformer geometry alone (which would not actually
-verify *which rule* fired, only that *some* preference was applied — a
-weaker and potentially misleading claim). This is reported here as a real,
-unresolved gap in what a live RDKit oracle can confirm for this PR, not
-narrowed silently — this PR's rule-to-fixture matching is instead verified
-via chematic's own SMARTS-parse tests (every rule's SMARTS parses; the
-generic macrocycle/small-ring/standard rules were confirmed, in this same
-review pass, to actually fire on the fixtures they were written for — see
-`rules_macrocycle.rs`'s regression tests, added after independent review
-found the macrocycle tier matched zero potentials on several corpus
-fixtures) and translation provenance via direct source citation (§1 above
-and the sources manifest), not a live RDKit differential.
+An earlier draft of this section said matched rule family and 1-4 pair
+selection were "not achievable via RDKit's public Python API in any version
+checked." **That claim was false, and was never actually checked against the
+real API** — only against `DistGeomHelpers/{Embedder,BoundsMatrixBuilder,
+EmbedderUtils}.{h,cpp}`, never `DistGeomHelpers/Wrap/rdDistGeom.cpp`, where
+the Python accessors actually live. Independent review found this; the claim
+is corrected here after fetching and reading that file directly (added to
+the sources manifest) and actually running the differential, not just
+asserting it now works.
 
-Raw results: `validation/etkdg_torsion_knowledge_v2_chematic_side.json`
-(chematic side) and `validation/etkdg_torsion_knowledge_v2_rdkit_oracle_diff.json`
-(RDKit side + diff), both written by the reproduce commands above.
+`rdkit.Chem.rdDistGeom.GetExperimentalTorsions(mol, useExpTorsionAnglePrefs,
+useSmallRingTorsions, useMacrocycleTorsions, useBasicKnowledge, ETversion)`
+returns, per bond RDKit assigns a torsion to: the matched SMARTS text, its
+Fourier coefficients, and the **exact atom quadruple** RDKit bound. This is
+directly comparable to this PR's own `TorsionPotential.rule_id`/`.atoms` —
+run via `rdkit_torsion_family_dump()` (chematic side,
+`validation/etkdg_torsion_knowledge_v2_chematic_torsions.json`) and
+`compare_rule_family_and_central_bond()` (RDKit side, in
+`scripts/etkdg_torsion_knowledge_v2_oracle_diff.py`), across all 72
+knowledge-layer fixtures with `full_config()` (standard + small-ring +
+macrocycle, matching RDKit's `useBasicKnowledge=True` default via chematic's
+own tier 5 sharing tier 4's flag).
+
+**Central bond selection**: chematic assigns a torsion to 194 bonds, RDKit to
+274, across the 72 fixtures; **160 bonds get a torsion from both engines**.
+(RDKit's larger count is expected, not a gap: `useBasicKnowledge=True`'s
+generic single-term fallback and RDKit's much larger literature-derived
+table both cover more bond types than this PR's curated subset attempts to
+translate — see the rule-count breakdown in §2 above and the PR body.)
+
+**Rule family (via exact quadruple match)**: of the 160 shared bonds,
+**142 (88.8%) chose the identical atom quadruple** — a strong, exact,
+non-fuzzy signal that both engines identified the same real substructure
+(no subjective SMARTS-text-to-SMARTS-text classifier needed). This number is
+itself the product of two real bugs this exact differential caught and this
+PR fixed in the same pass (not a number taken at face value from a first
+run):
+
+- **Before either fix: 126/160 (78.8%).** All mismatches not explained by the
+  bug below were the atom-order/`uniquify` bug (see the PR body's
+  "Independent review fix passes" — `find_matches`'s default `uniquify: true`
+  silently drops automorphic VF2 embeddings, so a query with an internal
+  symmetry like `standard:biphenyl_unsubstituted`'s `[cH1:1][c:2]([cH1])...`
+  only ever returned whichever embedding the search order happened to reach
+  first).
+- **After the uniquify fix, still 126/160 for a different reason**: a newly
+  found translation gap in `rules_smallring.rs` — RDKit's real small-ring
+  SMARTS carries `r{a-b}` on **all 4** atom positions
+  (`[!#1;r{5-8}:1]@[CX4;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]`), while
+  this PR's translated rules only enforced the ring-size range on the
+  central bond (documented as a deliberate SMARTS-syntax-limitation
+  adaptation in `rules_smallring.rs`'s own module doc, but that doc never
+  claimed the OUTER atoms were unconstrained by RDKit too — they aren't).
+  Concretely: menthol's central ring bond next to its isopropyl substituent
+  could pick the isopropyl carbon (satisfies `[!#1]`) as the outer atom
+  instead of the real ring-continuation neighbor RDKit's `r{5-8}` position
+  requires. Fixed via a new `atom_in_ring_size_range` check in `matcher.rs`'s
+  tier-2 collection loop (both outer atoms must themselves be ring members
+  in a same-size-range ring), verified with a dedicated regression test
+  (`small_ring_tier_never_picks_an_out_of_ring_substituent_as_the_outer_atom`).
+  **After this fix: 142/160 (88.8%).**
+
+The remaining 18/160 (11.2%) mismatches all concentrate in **fused-ring
+junction bonds** (steroid ring fusions in testosterone/cholesterol,
+penicillin_core's beta-lactam/thiazolidine fusion, aspirin's aryl ester
+bond) — RDKit's real rule at a fusion point additionally requires the outer
+atom sit in the *same specific ring instance* as the central bond, not
+merely *some* ring of a compatible size, which `atom_in_ring_size_range`
+does not check (it checks ring-size membership, not ring-instance
+identity). This is a real, disclosed, still-open translation-coarseness gap
+at fused-ring boundaries — not chased further in this pass; recorded as a
+known gap in the PR body rather than silently left unmentioned now that the
+tooling to detect it exists.
+
+**Macrocycle 1-4 pairs**: `rdDistGeom.GetMoleculeBoundsMatrix(mol,
+set15bounds, scaleVDW, doTriangleSmoothing, useMacrocycle14config)` takes
+the macrocycle-1-4 flag directly; diffing the bounds matrix with/without it
+(same molecule, everything else fixed) finds exactly which pairs RDKit's own
+logic touches. Result: **0 pairs changed for cyclododecane, crown_12_4, and
+cyclooctadecane** (pure-hydrocarbon/crown-ether macrocycles); **15 pairs
+changed for `lactam_macrocycle`, 12 for `macrocyclic_amide`** (both
+macrolactams), with **2 pairs in common with chematic's own proposed set**
+each time. This reveals a genuine, disclosed **scope difference**, not a
+correctness bug: chematic's `macrocycle_14_bound_adjustments` proposes an
+adjustment for *every* macrocycle 1-4 pair (pinning amide/ester ones,
+relaxing the rest to a wide band — see `bounds14.rs`), while RDKit's
+`useMacrocycle14config` flag apparently only changes the bounds-matrix
+entries for the amide-pinned subset; non-amide macrocycle 1-4 bounds
+evidently already come out the same with the flag on or off (0 pairs changed
+for the plain-hydrocarbon fixtures with no amide/ester bond at all confirms
+this: there is nothing for the flag to touch there either way).
+
+Raw results: `validation/etkdg_torsion_knowledge_v2_chematic_side.json`,
+`validation/etkdg_torsion_knowledge_v2_chematic_torsions.json` (chematic
+side) and `validation/etkdg_torsion_knowledge_v2_rdkit_oracle_diff.json`
+(RDKit side + diff), all written/read by the reproduce commands above.
 
 ### 6.5 Second-round correction: two of the new generic rules cited a shadowed line
 

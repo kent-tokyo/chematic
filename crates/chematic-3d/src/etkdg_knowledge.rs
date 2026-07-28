@@ -34,6 +34,7 @@
 //! implementations, reconciled only through this file's re-exports.
 
 mod bounds14;
+mod canon_rank;
 mod classify;
 mod energy;
 mod matcher;

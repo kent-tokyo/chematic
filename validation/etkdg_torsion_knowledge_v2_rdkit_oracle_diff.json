@@ -418,5 +418,1282 @@
       ]
     }
   ],
-  "known_unmeasured": "matched-rule-family and macrocycle-1-4-pair-selection vs. RDKit's own internal choices: no public API access found"
+  "rule_family_and_central_bond": {
+    "total_chematic_bonds": 194,
+    "total_rdkit_bonds": 274,
+    "shared_bonds": 160,
+    "quadruple_matches": 142,
+    "quadruple_mismatches": [
+      {
+        "name": "aspirin",
+        "bond": [
+          3,
+          4
+        ],
+        "chematic_rule": "standard:aryl_ester+standard:aryl_ester",
+        "chematic_atoms": [
+          1,
+          3,
+          4,
+          9
+        ],
+        "rdkit_smarts": "[$(C=O):1][O:2]!@;-[c:3]~[*:4]",
+        "rdkit_atoms": [
+          1,
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "name": "penicillin_core",
+        "bond": [
+          3,
+          4
+        ],
+        "chematic_rule": "smallring:ring_cs_5_8",
+        "chematic_atoms": [
+          12,
+          4,
+          3,
+          1
+        ],
+        "rdkit_smarts": "[!#1;r{-4}:1]@[A;r{-4}:2]@;-[!#1;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          5,
+          4,
+          3,
+          1
+        ]
+      },
+      {
+        "name": "testosterone",
+        "bond": [
+          8,
+          9
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          14,
+          8,
+          9,
+          10
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "name": "testosterone",
+        "bond": [
+          1,
+          18
+        ],
+        "chematic_rule": "smallring:generic_cc_5+smallring:generic_cc_5",
+        "chematic_atoms": [
+          15,
+          1,
+          18,
+          17
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          2,
+          1,
+          18,
+          17
+        ]
+      },
+      {
+        "name": "testosterone",
+        "bond": [
+          1,
+          15
+        ],
+        "chematic_rule": "smallring:generic_cc_5+smallring:generic_cc_5",
+        "chematic_atoms": [
+          16,
+          15,
+          1,
+          18
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          2,
+          1,
+          15,
+          5
+        ]
+      },
+      {
+        "name": "testosterone",
+        "bond": [
+          4,
+          5
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          15,
+          5,
+          4,
+          3
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      {
+        "name": "testosterone",
+        "bond": [
+          5,
+          6
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          15,
+          5,
+          6,
+          7
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          4,
+          5,
+          6,
+          7
+        ]
+      },
+      {
+        "name": "testosterone",
+        "bond": [
+          4,
+          14
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          8,
+          14,
+          4,
+          5
+        ],
+        "rdkit_smarts": "[!#1;r{5-6}:1]@;=,:[C^2;r{5-6}:2]@;-[C;r{5-6}:3]@[!#1;r{5-6}:4]",
+        "rdkit_atoms": [
+          13,
+          14,
+          4,
+          3
+        ]
+      },
+      {
+        "name": "testosterone",
+        "bond": [
+          7,
+          8
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          14,
+          8,
+          7,
+          6
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          9,
+          8,
+          7,
+          6
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          12,
+          13
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          14,
+          13,
+          12,
+          23
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          11,
+          12,
+          13,
+          14
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          23,
+          24
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          21,
+          23,
+          24,
+          25
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          12,
+          23,
+          24,
+          25
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          10,
+          11
+        ],
+        "chematic_rule": "smallring:generic_cc_5+smallring:generic_cc_5",
+        "chematic_atoms": [
+          26,
+          11,
+          10,
+          9
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          12,
+          11,
+          10,
+          9
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          15,
+          16
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          17,
+          16,
+          15,
+          21
+        ],
+        "rdkit_smarts": "[!#1;r{5-6}:1]@;=,:[C^2;r{5-6}:2]@;-[C;r{5-6}:3]@[!#1;r{5-6}:4]",
+        "rdkit_atoms": [
+          14,
+          15,
+          16,
+          17
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          21,
+          23
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          20,
+          21,
+          23,
+          12
+        ],
+        "rdkit_smarts": "[!#1]1@[x3;C^2,c,r3;r{5-6}:1]@[CX4;r{5-6}:2]@;-[CX4;r{5-6}:3]@[x3;r{5-6}:4]@[!#1]1",
+        "rdkit_atoms": [
+          15,
+          21,
+          23,
+          12
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          20,
+          21
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          23,
+          21,
+          20,
+          19
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          15,
+          21,
+          20,
+          19
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          12,
+          23
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          21,
+          23,
+          12,
+          13
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          11,
+          12,
+          23,
+          21
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          11,
+          12
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          26,
+          11,
+          12,
+          13
+        ],
+        "rdkit_smarts": "[!#1]1@[x3;r{5-6}:1]@[CX4;r{5-6}:2]@;-[CX4;r{5-6}:3]@[x3;r{5-6}:4]@[!#1]1",
+        "rdkit_atoms": [
+          23,
+          12,
+          11,
+          26
+        ]
+      },
+      {
+        "name": "cholesterol",
+        "bond": [
+          25,
+          26
+        ],
+        "chematic_rule": "smallring:generic_cc_6_8+smallring:generic_cc_6_8",
+        "chematic_atoms": [
+          11,
+          26,
+          25,
+          24
+        ],
+        "rdkit_smarts": "[!#1;r{5-8}:1]@[CX4;x3;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]",
+        "rdkit_atoms": [
+          8,
+          26,
+          25,
+          24
+        ]
+      }
+    ],
+    "atom_order_mismatches": [],
+    "per_fixture": [
+      {
+        "name": "benzene",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "naphthalene",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "pyridine",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "furan",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "thiophene",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "adamantane",
+        "chematic_bond_count": 13,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "cubane",
+        "chematic_bond_count": 11,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "cyclohexane",
+        "chematic_bond_count": 6,
+        "rdkit_bond_count": 6,
+        "shared_bond_count": 6
+      },
+      {
+        "name": "cyclopentane",
+        "chematic_bond_count": 5,
+        "rdkit_bond_count": 5,
+        "shared_bond_count": 5
+      },
+      {
+        "name": "indole",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "purine",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "quinoline",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "anthracene",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "pyrene",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "biphenyl",
+        "chematic_bond_count": 1,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 1
+      },
+      {
+        "name": "butane",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "hexane",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 3,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "decane",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 7,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "triethylene_glycol",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 7,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "hexanediol",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 5,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "hexadecane",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 13,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "cyclododecane",
+        "chematic_bond_count": 12,
+        "rdkit_bond_count": 12,
+        "shared_bond_count": 12
+      },
+      {
+        "name": "crown_12_4",
+        "chematic_bond_count": 12,
+        "rdkit_bond_count": 12,
+        "shared_bond_count": 12
+      },
+      {
+        "name": "cyclooctadecane",
+        "chematic_bond_count": 18,
+        "rdkit_bond_count": 18,
+        "shared_bond_count": 18
+      },
+      {
+        "name": "l_alanine",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "d_alanine",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "l_serine",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "l_threonine",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "2_butanol_R",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "2_butanol_S",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "2_chlorobutane_R",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "ibuprofen_S",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 3,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "naproxen_S",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "menthol",
+        "chematic_bond_count": 6,
+        "rdkit_bond_count": 7,
+        "shared_bond_count": 6
+      },
+      {
+        "name": "chfclbr_R",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "chfclbr_S",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "quaternary_1_R",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "quaternary_1_S",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "quaternary_2_R",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "quaternary_2_S",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "but2ene_E",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "but2ene_Z",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "chloropropene_E",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "chloropropene_Z",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "cinnamic_acid_E",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 3,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "cinnamic_acid_Z",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 3,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "pent2ene_E",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "pent2ene_Z",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "aspirin",
+        "chematic_bond_count": 1,
+        "rdkit_bond_count": 3,
+        "shared_bond_count": 1
+      },
+      {
+        "name": "ibuprofen",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 3,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "caffeine",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "paracetamol",
+        "chematic_bond_count": 1,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 1
+      },
+      {
+        "name": "diphenhydramine",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 6,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "penicillin_core",
+        "chematic_bond_count": 7,
+        "rdkit_bond_count": 7,
+        "shared_bond_count": 5
+      },
+      {
+        "name": "testosterone",
+        "chematic_bond_count": 19,
+        "rdkit_bond_count": 20,
+        "shared_bond_count": 19
+      },
+      {
+        "name": "cholesterol",
+        "chematic_bond_count": 19,
+        "rdkit_bond_count": 25,
+        "shared_bond_count": 19
+      },
+      {
+        "name": "atorvastatin_fragment",
+        "chematic_bond_count": 1,
+        "rdkit_bond_count": 13,
+        "shared_bond_count": 1
+      },
+      {
+        "name": "gly_ala_gly",
+        "chematic_bond_count": 2,
+        "rdkit_bond_count": 7,
+        "shared_bond_count": 2
+      },
+      {
+        "name": "pentane",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 2,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "dichloroethane_1_2",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "dimethyl_disulfide",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "cyclopropane",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "cyclobutane",
+        "chematic_bond_count": 4,
+        "rdkit_bond_count": 4,
+        "shared_bond_count": 4
+      },
+      {
+        "name": "cycloheptane",
+        "chematic_bond_count": 7,
+        "rdkit_bond_count": 7,
+        "shared_bond_count": 7
+      },
+      {
+        "name": "cyclooctane",
+        "chematic_bond_count": 8,
+        "rdkit_bond_count": 8,
+        "shared_bond_count": 8
+      },
+      {
+        "name": "lactam_macrocycle",
+        "chematic_bond_count": 10,
+        "rdkit_bond_count": 12,
+        "shared_bond_count": 10
+      },
+      {
+        "name": "macrocyclic_amide",
+        "chematic_bond_count": 11,
+        "rdkit_bond_count": 13,
+        "shared_bond_count": 11
+      },
+      {
+        "name": "norbornane",
+        "chematic_bond_count": 8,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "spiro_5_6",
+        "chematic_bond_count": 11,
+        "rdkit_bond_count": 11,
+        "shared_bond_count": 11
+      },
+      {
+        "name": "acetamide",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 0,
+        "shared_bond_count": 0
+      },
+      {
+        "name": "n_methylacetamide",
+        "chematic_bond_count": 1,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 1
+      },
+      {
+        "name": "biphenyl_22prime",
+        "chematic_bond_count": 0,
+        "rdkit_bond_count": 1,
+        "shared_bond_count": 0
+      }
+    ]
+  },
+  "macrocycle_14_pairs": [
+    {
+      "name": "cyclododecane",
+      "chematic_pairs": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          9
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          10
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          11
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          8,
+          11
+        ]
+      ],
+      "rdkit_changed_pairs": [],
+      "overlap": []
+    },
+    {
+      "name": "crown_12_4",
+      "chematic_pairs": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          9
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          10
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          11
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          8,
+          11
+        ]
+      ],
+      "rdkit_changed_pairs": [],
+      "overlap": []
+    },
+    {
+      "name": "cyclooctadecane",
+      "chematic_pairs": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          15
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          16
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          17
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          9,
+          12
+        ],
+        [
+          10,
+          13
+        ],
+        [
+          11,
+          14
+        ],
+        [
+          12,
+          15
+        ],
+        [
+          13,
+          16
+        ],
+        [
+          14,
+          17
+        ]
+      ],
+      "rdkit_changed_pairs": [],
+      "overlap": []
+    },
+    {
+      "name": "lactam_macrocycle",
+      "chematic_pairs": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          11
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          12
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          11
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          3,
+          13
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          9,
+          12
+        ],
+        [
+          9,
+          13
+        ]
+      ],
+      "rdkit_changed_pairs": [
+        [
+          0,
+          7
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          0,
+          9
+        ],
+        [
+          0,
+          10
+        ],
+        [
+          0,
+          11
+        ],
+        [
+          0,
+          12
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          2,
+          11
+        ],
+        [
+          2,
+          12
+        ],
+        [
+          3,
+          9
+        ],
+        [
+          3,
+          11
+        ],
+        [
+          4,
+          10
+        ],
+        [
+          4,
+          12
+        ],
+        [
+          5,
+          11
+        ]
+      ],
+      "overlap": [
+        [
+          0,
+          11
+        ],
+        [
+          2,
+          11
+        ]
+      ]
+    },
+    {
+      "name": "macrocyclic_amide",
+      "chematic_pairs": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          12
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          11
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          12
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          3,
+          13
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          8,
+          11
+        ],
+        [
+          9,
+          12
+        ],
+        [
+          10,
+          13
+        ]
+      ],
+      "rdkit_changed_pairs": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          3,
+          10
+        ],
+        [
+          3,
+          12
+        ],
+        [
+          3,
+          13
+        ],
+        [
+          4,
+          11
+        ],
+        [
+          4,
+          13
+        ],
+        [
+          5,
+          12
+        ],
+        [
+          6,
+          13
+        ]
+      ],
+      "overlap": [
+        [
+          0,
+          3
+        ],
+        [
+          3,
+          13
+        ]
+      ]
+    }
+  ]
 }
