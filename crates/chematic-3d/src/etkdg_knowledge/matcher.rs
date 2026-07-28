@@ -578,6 +578,20 @@ fn canonical_atoms(candidates: &[Candidate], ranks: &[u64]) -> [AtomIdx; 4] {
 /// recomputed here) since it's the same, whole-molecule invariant for every
 /// bond -- see [`canonical_atoms`] for why the reported quadruple is chosen
 /// via rank rather than candidate-array order.
+///
+/// Every returned `rule_ids` list (`Single` and `Conflict` alike) goes
+/// through [`deduped_rule_ids`] rather than a bare `.map(|c| c.rule_id...)
+/// .collect()`: with `uniquify: false` (load-bearing, see
+/// `build_torsion_knowledge`), one rule can appear as N distinct automorphic
+/// `Candidate`s for the same bond, and both branches report *which rules*
+/// matched, not how many embeddings each one produced.
+fn deduped_rule_ids(candidates: &[Candidate]) -> Vec<String> {
+    let mut ids: Vec<String> = candidates.iter().map(|c| c.rule_id.clone()).collect();
+    ids.sort();
+    ids.dedup();
+    ids
+}
+
 fn resolve_same_tier(candidates: &[Candidate], ranks: &[u64]) -> ResolvedTier {
     if candidates.len() == 1 {
         return ResolvedTier::Single {
@@ -591,12 +605,10 @@ fn resolve_same_tier(candidates: &[Candidate], ranks: &[u64]) -> ResolvedTier {
 
     // Merge one at a time, checking for conflicts against the accumulated set.
     let mut merged_terms: Vec<FourierTorsionTerm> = Vec::new();
-    let mut rule_ids: Vec<String> = Vec::new();
     let source = candidates[0].source;
     let mut ring_size = candidates[0].ring_size;
 
     for cand in candidates {
-        rule_ids.push(cand.rule_id.clone());
         for &term in &cand.terms {
             if let Some(existing) = merged_terms
                 .iter()
@@ -606,7 +618,7 @@ fn resolve_same_tier(candidates: &[Candidate], ranks: &[u64]) -> ResolvedTier {
                     && (existing.amplitude - term.amplitude).abs() < 1e-9;
                 if !same {
                     return ResolvedTier::Conflict {
-                        rule_ids: candidates.iter().map(|c| c.rule_id.clone()).collect(),
+                        rule_ids: deduped_rule_ids(candidates),
                     };
                 }
                 // Equivalent term already present -- skip (dedup).
@@ -619,7 +631,7 @@ fn resolve_same_tier(candidates: &[Candidate], ranks: &[u64]) -> ResolvedTier {
             // implementation (each tier is homogeneous by construction),
             // but guard defensively rather than silently picking one.
             return ResolvedTier::Conflict {
-                rule_ids: candidates.iter().map(|c| c.rule_id.clone()).collect(),
+                rule_ids: deduped_rule_ids(candidates),
             };
         }
         if cand.ring_size != ring_size {
@@ -627,17 +639,8 @@ fn resolve_same_tier(candidates: &[Candidate], ranks: &[u64]) -> ResolvedTier {
         }
     }
 
-    // With `uniquify: false` (load-bearing, see `build_torsion_knowledge`),
-    // one rule can appear as N distinct automorphic `Candidate`s for the same
-    // bond (N embeddings of the same SMARTS). `rule_ids` must report which
-    // *rules* matched, not how many embeddings each one produced, so dedup
-    // after the merge loop above (which still needs every candidate's terms
-    // considered for conflict detection).
-    rule_ids.sort();
-    rule_ids.dedup();
-
     ResolvedTier::Single {
-        rule_ids,
+        rule_ids: deduped_rule_ids(candidates),
         atoms: canonical_atoms(candidates, ranks),
         terms: merged_terms,
         source,
