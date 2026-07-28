@@ -1,0 +1,148 @@
+{
+  "_readme": "Sources actually pulled from for the Wave 2 / Agent E torsion-knowledge PR (feat/3d-torsion-knowledge-v2). Every RDKit file below was fetched read-only via `curl -sL https://raw.githubusercontent.com/rdkit/rdkit/<pinned_commit>/<path>` and hashed with `shasum -a 256` -- never rendered/paraphrased from a webpage. No RDKit code was compiled, linked, or executed; only its plain-text C++/.in data files were read as a reference oracle for translation and provenance labeling.",
+  "fetch_timestamp_utc": "2026-07-28T10:21:33Z",
+  "rdkit_oracle": {
+    "tag": "Release_2025_09_2",
+    "resolved_commit": "0d5e508fbd84129e5732ee3f64115daf5db68d14",
+    "resolved_via": "GET https://api.github.com/repos/rdkit/rdkit/git/refs/tags/Release_2025_09_2",
+    "note": "Same RDKit release the sibling gap-check example (distance_geometry_v2_gap_check.rs) already cites as its oracle (RDKit 2025.09.2), kept consistent across the 3D Breakthrough Program's Wave 1/2 fixtures rather than picking a different pin."
+  },
+  "primary_literature": [
+    {
+      "citation": "Riniker, S.; Landrum, G. A. \"Better Informed Distance Geometry: Using What We Know To Improve Conformation Generation.\" J. Chem. Inf. Model. 2015, 55 (12), 2562-2574.",
+      "doi": "10.1021/acs.jcim.5b00654",
+      "pubmed": "26575315",
+      "access_method": "Not fetched as full text (paywalled, no venv/network access to the publisher in this environment). Cross-verified indirectly: RDKit's own shipped `torsionPreferencesV1`/`torsionPreferencesV2` data tables (fetched below) are literally the artifact this paper describes -- their in-source header comments cite the same paper lineage (\"J. Med. Chem. 56, 1026-2028 (2013)\" for v1, \"J. Chem. Inf. Model. 56, 1 (2016)\" for v2 -- the v2 citation in RDKit's own comment differs slightly in year/volume from the DOI above; recorded verbatim as RDKit states it, not corrected against the paper, since the paper itself was not directly read). This is a real, disclosed limitation: the paper's methodology is understood second-hand through its operational implementation, not first-hand from the text. See `docs/3d_torsion_knowledge_audit.md` for how this affects the independent-vs-adapted classification of each rule."
+    },
+    {
+      "citation": "Wang, S.; Witek, J.; Landrum, G. A.; Riniker, S. \"Improving Conformer Generation for Small Rings and Macrocycles Based on Distance Geometry and Experimental Torsional-Angle Preferences.\" J. Chem. Inf. Model. 2020, 60 (4), 2044-2058.",
+      "doi": "10.1021/acs.jcim.0c00025",
+      "access_method": "Not fetched as full text (paywalled). Cross-verified indirectly: `torsionPreferences_smallrings.in` and `torsionPreferences_macrocycles.in` (fetched below) both carry an in-source header comment citing this exact DOI verbatim -- confirmed by direct read of the fetched bytes, not assumed.",
+      "algorithmic_facts_recovered_from_source_not_paper": [
+        "MIN_MACROCYCLE_SIZE = 9 (small ring vs macrocycle boundary) -- from TorsionPreferences.cpp line 35.",
+        "compute14DistCis/compute14DistTrans law-of-cosines-style geometric construction for macrocycle 1-4 bound relaxation -- from Geometry/Utils.h.",
+        "Macrocycle 1-4 relaxation logic: for a B-C bond fully inside one macrocycle ring, both the cis (compute14DistCis) and trans (compute14DistTrans) 1-4 distances are accepted as a WIDE band (min/max of both) UNLESS the B-C-A angle sequence matches an amide/ester pattern (_checkMacrocycleAllInSameRingAmideEster14 / _checkMacrocycleTwoInSameRingAmideEster14), in which case the amide/ester bond is still pinned to a single (cis) configuration with a tight +/-GEN_DIST_TOL band -- from BoundsMatrixBuilder.cpp lines ~1232-1440."
+      ]
+    }
+  ],
+  "rdkit_source_files": [
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/TorsionPreferences.h",
+      "sha256": "b9b07bb84133b7cb29b994a7dd5bf6d74a0f32f0fee09e82d11fd1ad7ba41b49",
+      "lines": 66,
+      "used_for": "Confirms the 4 real RDKit flag names this PR's TorsionKnowledgeConfig mirrors: useExpTorsions, useSmallRingTorsions, useMacrocycleTorsions, useBasicKnowledge (getExperimentalTorsions signature)."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/TorsionPreferences.cpp",
+      "sha256": "cc1c71b13ff4d8e6df357f046863a0128462357a3acb5ba34dd90e0e18944b0e",
+      "lines": 379,
+      "used_for": "MIN_MACROCYCLE_SIZE=9 constant; fused/bridged-ring bond exclusion logic (excludedBonds bitset, numBondRings(bid2)>3 check) translated into this PR's BondClassification::FusedOrBridged reasoning; useBasicKnowledge flat-ring (4-6-membered, all-sp2 atoms) 2-fold torsion rule, translated into rules_basic.rs's flat_ring_rule."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/TorsionAngleM6.cpp",
+      "sha256": "40970efc6427488a3178cb84ec1a728d47863622c42581ddca76da56a063fba0",
+      "lines": 138,
+      "used_for": "calcTorsionEnergyM6: confirms the Fourier energy form E = sum_{n=1..6} V_n*(1+s_n*cos(n*phi)) and its analytic dE/dphi, translated into FourierTorsionTerm::energy/d_energy_d_phi_deg. Independent re-derivation in Rust (not transliterated line-for-line: RDKit expands cos(n*phi) via Chebyshev recurrences in cos(phi) for a Cartesian-gradient force field; this PR's optimizer works directly in torsion-angle space, so `f64::cos`/`f64::sin` of n*phi are used directly -- see PR body for why this is a deliberate simplification, not an oversight)."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/TorsionAngleM6.h",
+      "sha256": "b6b95595339125bd4efdc1ebdb8c4b20866717649114834c6f4bae8aaad78a75",
+      "lines": 70,
+      "used_for": "Signature reference only, no data taken."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/TorsionAngleContribs.cpp",
+      "sha256": "49b0df1347c026555f5fb1c3cb75f23193a0b6378e9862608fd204382955c353",
+      "lines": 153,
+      "used_for": "Confirms how CrystalFFDetails terms are registered as ForceField contribs; not otherwise reused (this PR does not build a Cartesian ForceFieldContrib; see optimize_torsions doc comment)."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/TorsionAngleContribs.h",
+      "sha256": "c949912ace05d4d964e2264ee8a473220ef03b714afba5ce19dba9f640768b53",
+      "lines": 114,
+      "used_for": "Signature reference only."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/torsionPreferences_v1.in",
+      "sha256": "8af25175470dbfc82714dcf54115cccd741ef65463096703a67799c4340d98be",
+      "lines": 592,
+      "used_for": "Standard experimental torsion data table (\"J. Med. Chem. 56, 1026-2028 (2013)\" per RDKit's own header comment). NOT reproduced wholesale -- a curated subset (see rules_standard.rs's SOURCE_LINE comments, each citing an exact 1-based line number in this fetched file) was translated verbatim (SMARTS text + V/sign coefficients unchanged) into StandardExperimental rules. Rules not selected are NOT implemented, NOT counted, and NOT claimed as covered."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/torsionPreferences_v2.in",
+      "sha256": "c1c1ff3d93b9629d1e71502daa02257c9968ca4788478d4970f81e457a37d8e5",
+      "lines": 378,
+      "used_for": "Standard experimental torsion data table, version 2 (\"J. Chem. Inf. Model. 56, 1 (2016)\" per RDKit's own header comment -- this is RDKit's default ETversion=2, matching what this PR's rules_standard.rs draws its curated subset from). Same non-wholesale-reproduction caveat as v1 above."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/torsionPreferences_smallrings.in",
+      "sha256": "28124c740e9aba1ec835fa9cef8f095258f0b94f5829dda2b995e99bbd1b5efb",
+      "lines": 116,
+      "used_for": "Small-ring experimental torsion data table, header cites doi:10.1021/acs.jcim.0c00025 verbatim. Uses RDKit-only SMARTS extensions chematic-smarts does not implement (`r{5-8}` ring-size RANGE syntax; chematic's own `rN` primitive is single-digit-exact only, see crates/chematic-smarts/src/parser.rs's own doc comment). Rules were therefore ADAPTED, not transliterated: the connectivity/hybridization part of each chosen SMARTS was kept, the `r{a-b}` ring-size qualifier was replaced with an explicit Rust-side ring-size-bucket check against this PR's own classify.rs ring classification. V/sign coefficients for the chosen subset were kept as fetched, byte-for-byte, from this file."
+    },
+    {
+      "path": "Code/GraphMol/ForceFieldHelpers/CrystalFF/torsionPreferences_macrocycles.in",
+      "sha256": "67db0ab19a995a748b04d07959bb78e59fbbcce8bfa8cdd3804247d4f4e9134c",
+      "lines": 379,
+      "used_for": "Macrocycle experimental torsion data table, header cites doi:10.1021/acs.jcim.0c00025 verbatim. Same `r{9-}` range-syntax adaptation caveat as smallrings.in above (ring-size >=9 check moved to Rust)."
+    },
+    {
+      "path": "Code/GraphMol/DistGeomHelpers/Embedder.h",
+      "sha256": "5f7d0c8a0692c8f5515f05f85f7a4dc5409def989253c355c9db4d0ebdd68794",
+      "lines": 470,
+      "used_for": "Confirms the exact flag name useMacrocycle14config (maps 1:1 to this PR's/EmbedParameters' use_macrocycle_14_bounds) and its documented semantics (\"If 1-4 distances bound heuristics for macrocycles is used\"). Also surfaces forceTransAmides (default true, no chematic equivalent exists yet) -- recorded as a known gap in docs/3d_torsion_knowledge_audit.md, not silently absorbed into this PR's scope."
+    },
+    {
+      "path": "Code/GraphMol/DistGeomHelpers/Embedder.cpp",
+      "sha256": "83d3aab44dba980c8cc87aa08f583f14c99fe97c67ad4c94e966bce67d757ba0",
+      "lines": 1696,
+      "used_for": "Read for context on how useMacrocycle14config feeds into the real embedder call graph (confirms it flows into BoundsMatrixBuilder's set14Bounds, not a separate code path). No data/coefficients taken."
+    },
+    {
+      "path": "Code/GraphMol/DistGeomHelpers/BoundsMatrixBuilder.h",
+      "sha256": "f72d2a0b70c0a3f868a425dfc5bb7cda12c4db639302423a6fa2457341c59391",
+      "lines": 77,
+      "used_for": "Signature reference only."
+    },
+    {
+      "path": "Code/GraphMol/DistGeomHelpers/BoundsMatrixBuilder.cpp",
+      "sha256": "462a9d236a50084a268e5df466b592bddd6c4625b162453b8bad4662c750c274",
+      "lines": 2087,
+      "used_for": "Real macrocycle 1-4 bounds algorithm, translated into bounds14.rs: minMacrocycleRingSize=9 (line 36); _checkMacrocycleTwoInSameRingAmideEster14/_checkMacrocycleAllInSameRingAmideEster14 amide/ester detection (lines ~887-1243, used verbatim as the amide/ester-vs-generic branch condition, re-expressed against chematic_core::Molecule instead of RDKit's ROMol); _setMacrocycleTwoInSameRing14Bounds/_setMacrocycleAllInSameRing14Bounds 'assume anything is possible' cis-or-trans wide-band relaxation for non-amide macrocycle 1-4 pairs (lines ~1245-1440); set14Bounds's useMacrocycle14config gating (lines ~1519-1610)."
+    },
+    {
+      "path": "Code/GraphMol/DistGeomHelpers/EmbedderUtils.cpp",
+      "sha256": "238128de40612834257ae664743efe684b3212876e53bb3e733d49d5e814516c",
+      "lines": 78,
+      "used_for": "Read for context (ETKDGv3 default construction), not otherwise reused."
+    },
+    {
+      "path": "Code/Geometry/Utils.h",
+      "sha256": "6add2fecc55a0556858ef9ac2d2b4ef4868ee84d9c156f93a3b80927045003d5",
+      "lines": 97,
+      "used_for": "compute13Dist/compute14DistCis/compute14DistTrans -- exact law-of-cosines-in-a-rotated-plane geometric formulas, translated near-verbatim (same algorithm, same variable roles, re-typed for chematic_core) into bounds14.rs's dist13/dist14_cis/dist14_trans. Copyright (C) 2004-2006 Rational Discovery LLC, BSD-3-Clause (see attribution note below)."
+    }
+  ],
+  "license_note": {
+    "rdkit_license": "BSD-3-Clause (per RDKit's own file headers: 'The contents are covered by the terms of the BSD license which is included in the file license.txt, found at the root of the RDKit source tree.')",
+    "attribution_applied": "Every Rust source file in crates/chematic-3d/src/etkdg_knowledge/ that translates or adapts RDKit data/algorithms carries a doc comment citing: (a) the RDKit file path and commit this manifest pins, (b) the original RDKit copyright line as it appears in the fetched file header, (c) whether the specific rule/function is a verbatim data translation, an algorithm re-derivation, or an adaptation with a stated difference. This satisfies BSD-3-Clause's attribution/copyright-notice-preservation requirement without redistributing RDKit source files themselves (only specific numeric coefficients and short SMARTS strings -- data, not copyrightable expression of substantial code -- plus short, attributed paraphrases of the geometric formulas)."
+  },
+  "independent_vs_adapted_summary": {
+    "independent_implementations_derived_from_papers_or_public_spec": [
+      "TorsionKnowledgeConfig/TorsionPotential/FourierTorsionTerm/TorsionKnowledgeReport data model (crates/chematic-3d/src/etkdg_knowledge/types.rs) -- shape only, no RDKit source copied.",
+      "BondClassification / classify_bond (classify.rs) -- ring-size-bucket + fused/bridged/amide/aromatic/terminal tagging logic is this PR's own design, informed by (not copied from) TorsionPreferences.cpp's excludedBonds logic.",
+      "Priority-tier matcher (matcher.rs) -- the exact 6-tier ordering (specific validated SMARTS > small-ring > macrocycle > standard > basic-knowledge > legacy) is a chematic-specific decision by the project owner's spec, NOT RDKit's own iteration order (RDKit's own getExperimentalTorsions loop is simple first-match-not-yet-done over the concatenated v2+smallrings+macrocycles string, giving STANDARD priority over small-ring/macrocycle in real RDKit -- this PR's ordering deliberately differs; see docs/3d_torsion_knowledge_audit.md and the PR body's judgment-call section).",
+      "optimize_torsions' torsion-space (not Cartesian force-field) rigid-fragment rotation optimizer -- this PR's own design, not a port of RDKit's ForceField machinery (which operates in Cartesian space via TorsionAngleContribM6::getGrad)."
+    ],
+    "adapted_or_translated_from_rdkit": [
+      "A curated subset of rules_standard.rs's StandardExperimental SMARTS + Fourier coefficients (verbatim data from torsionPreferences_v2.in, cited by exact line number per rule).",
+      "A curated, ring-size-range-adapted subset of rules_smallring.rs's SmallRingExperimental rules (SMARTS connectivity kept, `r{a-b}` range replaced by a Rust-side check; V/sign coefficients kept verbatim).",
+      "A curated, ring-size-range-adapted subset of rules_macrocycle.rs's MacrocycleAdaptation rules (same adaptation pattern as small-ring, `r{9-}` -> Rust-side check).",
+      "rules_basic.rs's flat 4-6-membered all-sp2-ring rule -- translated from TorsionPreferences.cpp's useBasicKnowledge block.",
+      "bounds14.rs's macrocycle_14_bound_adjustments -- dist13/dist14_cis/dist14_trans geometric formulas translated from Geometry/Utils.h; amide/ester-vs-generic branch and the cis-or-trans wide-band relaxation translated from BoundsMatrixBuilder.cpp's macrocycle-specific functions."
+    ],
+    "kept_as_is_legacy_reclassified_only": [
+      "classify_atom_type, get_torsion_preference, build_smarts_torsion_map, default_torsion_preference, score_torsion (etkdg_knowledge.rs) -- behavior UNCHANGED. Only the module-level doc comment's false 'from CSD' claim is corrected, and the audit doc reclassifies each rule's real provenance (see docs/3d_torsion_knowledge_audit.md). No regression fixtures needed because output is byte-identical (no legacy function was made to internally delegate to the new v2 implementation)."
+    ]
+  }
+}
