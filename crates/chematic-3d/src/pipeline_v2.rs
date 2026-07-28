@@ -1482,28 +1482,29 @@ mod tests {
         );
     }
 
+    /// Negative control (spec §17): proves the check in
+    /// `ring_torsion_diagnostic_only_succeeds_with_scored_only_evidence` actually
+    /// discriminates REAL pipeline output, not just vacuously passes. Runs the same
+    /// real `embed_pipeline_v2` call and asserts the WRONG thing (every macrocycle
+    /// potential IS applied) -- this must panic, proving a regression that started
+    /// reporting scored-only potentials as applied would be caught, not silently
+    /// accepted.
     #[test]
+    #[should_panic(expected = "must never be reported as applied_to_geometry")]
     fn negative_control_reporting_scored_only_as_applied_would_be_caught() {
-        // If a caller (hypothetically) reported every potential as
-        // applied_to_geometry=true regardless of bridge status, this assertion --
-        // exercised for real above in `ring_torsion_diagnostic_only_succeeds_with_scored_only_evidence`
-        // -- would fail to catch it. Prove the check itself can fail: manufacture the
-        // WRONG evidence by hand and confirm an assertion built the same way as the
-        // real test rejects it.
-        let wrong_evidence = PotentialApplicationEvidence {
-            rule_id: "fake".to_string(),
-            central_bond: (AtomIdx(0), AtomIdx(1)),
-            source: TorsionKnowledgeSource::MacrocycleAdaptation,
-            applied_to_geometry: true, // WRONG for a macrocycle potential
-        };
-        let check_would_pass = wrong_evidence.applied_to_geometry
-            && wrong_evidence.source == TorsionKnowledgeSource::MacrocycleAdaptation;
-        assert!(
-            check_would_pass,
-            "sanity: the manufactured wrong evidence must trip a real assertion"
-        );
-        // The actual production code path never produces this: confirmed by
-        // `ring_torsion_diagnostic_only_succeeds_with_scored_only_evidence` above.
+        let mol = parse("C1CCCCCCCCCCC1").unwrap(); // cyclododecane
+        let mut config = config_none();
+        config.embed.use_macrocycle_torsions = true;
+        config.ring_torsion_policy = RingTorsionApplicationPolicy::DiagnosticOnly;
+        let result = embed_pipeline_v2(&mol, &config).expect("DiagnosticOnly must succeed");
+        for p in &result.ring_torsion_evidence.potentials {
+            if p.source == TorsionKnowledgeSource::MacrocycleAdaptation {
+                assert!(
+                    p.applied_to_geometry, // deliberately WRONG -- must panic
+                    "a macrocycle potential must never be reported as applied_to_geometry"
+                );
+            }
+        }
     }
 
     #[test]
@@ -1549,41 +1550,86 @@ mod tests {
         );
     }
 
+    /// Negative control (spec §17), using a REAL molecule found by the integration
+    /// gate harness (`examples/pipeline_v2_integration_gate.rs`) to exercise exactly
+    /// this failure mode on the frozen 58-molecule corpus: under
+    /// `RepairAndVerify` + `ForceFieldPolicy::Dreiding`, gly-ala-gly's stereo repair
+    /// succeeds (stage 8) but DREIDING minimization (stage 10, no stereo awareness
+    /// at all) measurably walks the geometry back across a declared stereo boundary
+    /// -- stage 11 must catch this as `FinalStereoViolation`, never report success.
     #[test]
     fn negative_control_final_stereo_violation_as_success_would_be_caught() {
-        // Manufacture a StereoVerification with a real violation and confirm the
-        // exact predicate the pipeline gates on (`n_violations() > 0`) reports it --
-        // proving the check can distinguish, not just always pass.
-        use crate::stereo_constraints::{StereoStatus, TetrahedralReport};
-        let fake = StereoVerification {
-            tetrahedral: vec![TetrahedralReport {
-                atom: AtomIdx(0),
-                status: StereoStatus::Violated,
-            }],
-            double_bond: vec![],
-        };
+        let mol = parse("NCC(=O)N[C@@H](C)C(=O)NCC(=O)O").unwrap(); // gly_ala_gly
+        let mut config = PipelineV2Config::minimal(ForceFieldPolicy::Dreiding);
+        config.stereo_policy = StereoPolicy::RepairAndVerify;
+        let err = embed_pipeline_v2(&mol, &config)
+            .expect_err("gly_ala_gly under RepairAndVerify+Dreiding must NOT report success");
         assert!(
-            fake.n_violations() > 0,
-            "a manufactured Violated element must be detected by n_violations()"
+            matches!(err.cause, PipelineV2FailureCause::FinalStereoViolation),
+            "expected FinalStereoViolation, got {:?}",
+            err.cause
         );
-        assert!(!fake.is_fully_satisfied());
+        // Stage 8's repair must have genuinely succeeded first (this is specifically
+        // the "fixed, then broken again by the force field" scenario spec §8 warns
+        // about, not merely "repair never worked").
+        let stereo_after_repair = err
+            .stereo_after_repair
+            .expect("stage 9 evidence must be attached");
+        assert!(
+            stereo_after_repair.is_fully_satisfied(),
+            "repair (stage 8) must have succeeded before Dreiding (stage 10) broke it again"
+        );
+        let final_stereo = err
+            .final_stereo
+            .expect("stage 11 evidence must be attached");
+        assert!(final_stereo.n_violations() > 0);
     }
 
+    /// Negative control (spec §17): a genuinely degenerate (coplanar) 3D arrangement
+    /// for a real declared stereocenter must read `Unevaluable`, and
+    /// `StereoVerification`'s own accessor methods (reused, not reimplemented, by
+    /// `pipeline_v2.rs`'s stage-11 gate) must never fold that into `n_satisfied()`.
     #[test]
     fn negative_control_unevaluable_counted_as_satisfied_would_be_caught() {
-        use crate::stereo_constraints::{StereoRejectionReason, StereoStatus, TetrahedralReport};
-        let fake = StereoVerification {
-            tetrahedral: vec![TetrahedralReport {
-                atom: AtomIdx(0),
-                status: StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry),
-            }],
-            double_bond: vec![],
-        };
-        // Unevaluable must NOT count as satisfied, and must not count as violated
-        // either -- it's its own bucket.
-        assert_eq!(fake.n_satisfied(), 0);
-        assert_eq!(fake.n_violations(), 0);
-        assert_eq!(fake.n_unevaluable(), 1);
+        let m = parse("N[C@@H](C)C(=O)O").unwrap(); // L-alanine, implicit-H stereocenter
+        let idx = AtomIdx(1);
+        // All 4 real neighbors placed in the same z=0 plane -> the phantom-H
+        // direction (opposite the sum of the other three unit bond vectors) is
+        // ill-defined / the signed volume is ~0: a genuinely degenerate geometry,
+        // not a hand-picked StereoStatus value.
+        let mut coords = Coords3D::new_zeroed(m.atom_count());
+        coords.set(AtomIdx(0), crate::coords::Point3::new(-1.0, -1.3, 0.0));
+        coords.set(idx, crate::coords::Point3::new(-0.3, -0.2, 0.0));
+        coords.set(AtomIdx(2), crate::coords::Point3::new(-1.0, 1.0, 0.0));
+        coords.set(AtomIdx(3), crate::coords::Point3::new(1.2, -0.2, 0.0));
+        coords.set(AtomIdx(4), crate::coords::Point3::new(1.7, -1.0, 0.0));
+        coords.set(AtomIdx(5), crate::coords::Point3::new(1.9, 0.7, 0.0));
+
+        let report = verify_stereo(&m, &coords);
+        let status = report
+            .tetrahedral
+            .iter()
+            .find(|r| r.atom == idx)
+            .unwrap()
+            .status;
+        assert!(
+            matches!(
+                status,
+                crate::stereo_constraints::StereoStatus::Unevaluable(_)
+            ),
+            "expected a genuinely degenerate (coplanar) geometry to read Unevaluable, got {status:?}"
+        );
+        assert_eq!(
+            report.n_satisfied(),
+            0,
+            "Unevaluable must never count as Satisfied"
+        );
+        assert_eq!(
+            report.n_violations(),
+            0,
+            "Unevaluable must never count as Violated"
+        );
+        assert_eq!(report.n_unevaluable(), 1);
     }
 
     #[test]
