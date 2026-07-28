@@ -470,34 +470,74 @@ translate — see the rule-count breakdown in §2 above and the PR body.)
 **Rule family (via exact quadruple match)**: of the 160 shared bonds,
 **142 (88.8%) chose the identical atom quadruple** — a strong, exact,
 non-fuzzy signal that both engines identified the same real substructure
-(no subjective SMARTS-text-to-SMARTS-text classifier needed). This number is
-itself the product of two real bugs this exact differential caught and this
-PR fixed in the same pass (not a number taken at face value from a first
-run):
+(no subjective SMARTS-text-to-SMARTS-text classifier needed).
 
-- **Before either fix: 126/160 (78.8%).** All mismatches not explained by the
-  bug below were the atom-order/`uniquify` bug (see the PR body's
-  "Independent review fix passes" — `find_matches`'s default `uniquify: true`
-  silently drops automorphic VF2 embeddings, so a query with an internal
-  symmetry like `standard:biphenyl_unsubstituted`'s `[cH1:1][c:2]([cH1])...`
-  only ever returned whichever embedding the search order happened to reach
-  first).
-- **After the uniquify fix, still 126/160 for a different reason**: a newly
-  found translation gap in `rules_smallring.rs` — RDKit's real small-ring
-  SMARTS carries `r{a-b}` on **all 4** atom positions
-  (`[!#1;r{5-8}:1]@[CX4;r{5-8}:2]@;-[CX4;r{5-8}:3]@[!#1;r{5-8}:4]`), while
-  this PR's translated rules only enforced the ring-size range on the
-  central bond (documented as a deliberate SMARTS-syntax-limitation
-  adaptation in `rules_smallring.rs`'s own module doc, but that doc never
-  claimed the OUTER atoms were unconstrained by RDKit too — they aren't).
-  Concretely: menthol's central ring bond next to its isopropyl substituent
-  could pick the isopropyl carbon (satisfies `[!#1]`) as the outer atom
-  instead of the real ring-continuation neighbor RDKit's `r{5-8}` position
-  requires. Fixed via a new `atom_in_ring_size_range` check in `matcher.rs`'s
-  tier-2 collection loop (both outer atoms must themselves be ring members
-  in a same-size-range ring), verified with a dedicated regression test
-  (`small_ring_tier_never_picks_an_out_of_ring_substituent_as_the_outer_atom`).
-  **After this fix: 142/160 (88.8%).**
+**This 88.8% figure was originally, incorrectly, presented as "78.8% → 88.8%,
+a +10-point improvement from this pass's own fixes."** Round 2 of formal
+independent verification found that comparison was wrong: "78.8%" was
+measured against a **self-created intermediate state from partway through
+this same fix pass** (ring-gate + `uniquify: false` applied, `canonical_atoms`
+NOT yet applied), not the real pre-this-pass baseline. The tell the verifier
+used, and this doc now confirms directly by re-running the differential at
+each real historical state (not just re-asserting the correction): the
+claimed "78.8%" state reports 160 shared bonds, but chematic only assigned
+191 torsions (not 194) before the ring-gate fix, so shared must have been
+157, not 160 — the two numbers describe different states and cannot both be
+"before."
+
+The real, re-derived sequence (each state reproduced directly — checked out
+the real pre-pass `matcher.rs`, or toggled one fix at a time on top of
+current `matcher.rs`, and re-ran the full differential fresh each time, not
+inferred):
+
+| state | chematic bonds | shared w/ RDKit | identical quadruple |
+|---|---:|---:|---:|
+| **true pre-this-pass baseline** (`uniquify: true`, no ring-gate, no `canonical_atoms`) | 191 | 157 | 140 (89.2%) |
+| + ring-gate + `uniquify: false`, **`canonical_atoms` NOT yet applied** (the actual intermediate this pass passed through) | 194 | 160 | 152 (95.0%) |
+| + `canonical_atoms` (final, this PR's head) | 194 | 160 | **142 (88.8%)** |
+
+**The honest comparison is 89.2% → 88.8% — flat, marginally negative, not a
+double-digit improvement.** Two real, disclosed things happened, not one:
+
+- The ring-gate fix (`atom_in_ring_size_range`) genuinely improved central-
+  bond agreement and fixed a real translation gap (see below) — this is
+  where the +10-point number that got reported actually came from, just
+  measured against the wrong "before."
+- **`canonical_atoms` (the atom-order-determinism fix for the separate
+  atom-order-energy bug, see judgment calls) has a real, previously
+  undisclosed RDKit-agreement cost: 152 → 142 (95.0% → 88.8%), i.e. 10 bonds
+  that matched RDKit's exact quadruple under the naive
+  `candidates[0].atoms` pick stop matching once the pick is forced to be
+  numbering-invariant instead.** This is because `canonical_atoms` optimizes
+  for a different property (determinism across atom relabeling) than
+  incidental agreement with whichever quadruple `find_matches`'s iteration
+  order or RDKit's own tie-break happens to prefer — the two are not the
+  same objective, and there is no reason determinism-optimal and
+  RDKit-agreement-optimal should coincide on every tied bond. This is a
+  disclosed judgment call, not a defect: determinism across atom orderings
+  (this PR is not attempting RDKit bit-compatibility, see the fingerprint
+  precedent in the root `CLAUDE.md`) is worth trading 6 points of exact-
+  quadruple agreement for, but the trade should be stated, not omitted.
+
+Both corrections (the true baseline and the `canonical_atoms` cost) were
+independently re-derived for this fix, not copied from the verifier's own
+numbers: `git show <pre-pass-commit>:crates/chematic-3d/src/etkdg_knowledge/
+matcher.rs` swapped in temporarily, full differential re-run, restored;
+`canonical_atoms`'s call site temporarily short-circuited to
+`candidates[0].atoms` (ring-gate and `uniquify: false` left untouched), full
+differential re-run, restored. Both reproduced the verifier's own numbers
+exactly (191/157/140 and 194/160/152 respectively).
+
+Separately from the corrected percentage, two real bugs this differential
+caught (and this PR fixed) remain real and are described accurately above
+the correction: `find_matches`'s default `uniquify: true` silently dropping
+automorphic VF2 embeddings, and `rules_smallring.rs`'s outer atoms not being
+constrained to ring membership the way RDKit's real `r{a-b}`-on-all-4-
+positions SMARTS are. Fixed via `uniquify: false` and a new
+`atom_in_ring_size_range` check in `matcher.rs`'s tier-2 collection loop
+respectively, each verified with a dedicated regression test
+(`small_ring_tier_never_picks_an_out_of_ring_substituent_as_the_outer_atom`
+for the latter).
 
 The remaining 18/160 (11.2%) mismatches all concentrate in **fused-ring
 junction bonds** (steroid ring fusions in testosterone/cholesterol,

@@ -41,6 +41,16 @@
 //! ```text
 //! cargo run --release -p chematic-3d --example torsion_knowledge_v2_gap_check
 //! ```
+//!
+//! # Not CI-enforced
+//!
+//! `scripts/check.sh` (this repo's pre-commit/CI gate) never runs `cargo run
+//! --example ...` for any example, this one included -- so every check in
+//! this harness (the 4-arm gate, the reproducibility/invariance checks
+//! including the stale-allowlist self-check below) is advisory-only,
+//! inspected by hand per fix pass, not mechanically gated. A regression here
+//! would not fail CI; it would only show up if someone re-runs this binary
+//! and reads the output.
 
 use std::time::Instant;
 
@@ -723,16 +733,56 @@ fn reproducibility_and_invariance_report() {
     // embedder's own, unrelated order-dependence (a separate, already-known
     // concern belonging to `distance_geometry_v2.rs`, out of this PR's
     // file-ownership scope). Same physical geometry, relabeled atoms, so
-    // total torsion energy must match to floating-point precision --
-    // EXCEPT on the small, named set of fixtures where the outer atom a
-    // rule binds to is a genuine graph automorphism (chemically
-    // interchangeable substituents: biphenyl's ortho-H pairs, adamantane/
-    // cubane's cage symmetry -- each verified, not assumed, by `canon_rank`'s
-    // `known_true_symmetry_ties_behind_the_residual_atom_order_cases` test).
-    // No purely-topological rule can make that specific choice
-    // relabeling-invariant, since nothing about the graph distinguishes the
-    // tied atoms -- this is reported as a separately-counted, named,
-    // understood residual, not folded into the same PASS/FAIL as a real bug.
+    // total torsion energy must match to floating-point precision -- EXCEPT
+    // on a small, named set of fixtures with a **disclosed, NOT fully
+    // resolved** atom-order-energy residual (see `matcher.rs`'s
+    // `canonical_atoms` doc for the full root-cause writeup). This is
+    // intentionally NOT framed as "harmless true symmetry" -- an
+    // independent, RDKit-automorphism-enumeration-based review (round 2 of
+    // formal verification) found that framing was only half right:
+    //
+    // - `adamantane`/`biphenyl`: the specific outer-atom substitution IS a
+    //   genuine automorphism (independently confirmed via
+    //   `mol.GetSubstructMatches(mol, uniquify=False)`, constrained to hold
+    //   the central bond AND the other outer atom fixed -- the condition
+    //   that actually matters, not just "does some unconstrained
+    //   automorphism map atom X to atom Y"). But a real graph automorphism
+    //   does NOT imply the specific embedded 3D conformer is itself
+    //   geometrically symmetric, so measured energy can still (and does)
+    //   differ by a real, non-negligible amount even in this "good" case.
+    // - `cubane`: the observed substitution is, under the same constrained
+    //   check, NOT a genuine automorphism at all -- `canon_rank`'s rank tie
+    //   is a false positive (Weisfeiler-Leman-style color refinement is
+    //   provably incomplete; canon_rank is already at its fixpoint, so no
+    //   cheaper topological refinement can fix this). This is a live,
+    //   unresolved instance of the exact same `canonical_atoms` tie-break
+    //   bug independent review found and this PR fixed elsewhere (menthol/
+    //   testosterone/cholesterol) -- just one this pass's fix does not
+    //   reach, disclosed rather than mislabeled as understood/harmless.
+    //
+    // A real topological fix for cubane's case would require an actual
+    // bounded graph-isomorphism check (individualization-refinement,
+    // nauty-style) rooted at each candidate outer atom -- a materially
+    // bigger undertaking than this bug-fix pass, and one that would STILL
+    // not close the adamantane/biphenyl half of this residual (that half is
+    // an embedding-geometry property, not a matcher-logic one). Disclosed
+    // here as a real, unresolved, non-trivial limitation instead.
+    //
+    // Magnitudes below are measured via ONE relabeling (full reversal) --
+    // they are lower bounds, not worst cases: independent review, testing 9
+    // different relabelings per fixture, found larger swings on the same
+    // fixtures (adamantane 6.7%, biphenyl 12.3%, cubane 3.8%, all larger
+    // than or comparable to what a single reversal below finds). Extending
+    // this harness to try many relabelings and hunt for the true worst case
+    // is deliberately NOT done here (see PR body's judgment calls) -- it
+    // would not change the disposition of any fixture below, only the
+    // precision of an already-disclosed, already-real number.
+    //
+    // `norbornane`/`spiro_5_6` (from `RING_TOPOLOGY_SET`, not `CORPUS`) are
+    // included in the loop below for the first time in this pass -- round 1
+    // had already named norbornane's ~0.44% residual but this check never
+    // actually covered it (a real gap in the harness's own coverage, not
+    // just the doc).
     //
     // penicillin_core is deliberately NOT on this list: it used to hit this
     // residual before `atom_in_ring_size_range` started constraining the
@@ -742,11 +792,25 @@ fn reproducibility_and_invariance_report() {
     // first place, so this fixture no longer fires the residual in practice.
     // This allowlist must stay self-cleaning (an entry that never fires is
     // a stale claim, not a passing check) -- see the assertion below.
-    const KNOWN_TRUE_SYMMETRY_RESIDUAL: &[&str] = &["biphenyl", "adamantane", "cubane"];
+    //
+    // ponytail: this check is magnitude-blind by design (it only asserts an
+    // allowlisted fixture still fires SOME difference, not that the
+    // difference stayed within its originally-measured size) -- a residual
+    // silently growing from, say, 4% to 46% would still print as "known"
+    // here. A real fix needs a per-fixture ceiling + growth margin, which is
+    // more machinery than a harness `scripts/check.sh` doesn't even run
+    // deserves; add it if this residual ever becomes load-bearing rather
+    // than disclosed-and-parked.
+    const DISCLOSED_ATOM_ORDER_ENERGY_RESIDUAL: &[&str] =
+        &["biphenyl", "adamantane", "cubane", "norbornane"];
     let mut energy_order_invariant = true;
     let mut known_residual_hit: Vec<&str> = Vec::new();
     let embed_params = EmbedParameters::default();
-    for &(name, smiles, _) in CORPUS {
+    let energy_invariance_fixtures = CORPUS
+        .iter()
+        .map(|&(name, smiles, _)| (name, smiles))
+        .chain(RING_TOPOLOGY_SET.iter().copied());
+    for (name, smiles) in energy_invariance_fixtures {
         let Ok(mol) = parse(smiles) else { continue };
         let Ok((coords, _)) = embed_distance_geometry_v2_detail(&mol, &embed_params) else {
             continue; // embed failure is this fixture's own known limitation, not this check's concern
@@ -766,15 +830,17 @@ fn reproducibility_and_invariance_report() {
             continue;
         };
         if (e1.total_energy - e2.total_energy).abs() > 1e-6 {
-            if KNOWN_TRUE_SYMMETRY_RESIDUAL.contains(&name) {
+            let pct = 100.0 * (e1.total_energy - e2.total_energy).abs()
+                / e1.total_energy.abs().max(e2.total_energy.abs());
+            if DISCLOSED_ATOM_ORDER_ENERGY_RESIDUAL.contains(&name) {
                 known_residual_hit.push(name);
                 println!(
-                    "  atom-order energy difference (KNOWN true-symmetry residual): {name}: {:.6} vs {:.6}",
+                    "  atom-order energy difference (DISCLOSED residual, not harmless -- see comment above): {name}: {:.6} vs {:.6} ({pct:.2}%, single-reversal lower bound)",
                     e1.total_energy, e2.total_energy
                 );
             } else {
                 println!(
-                    "  ATOM-ORDER ENERGY FAILURE (unexplained): {name}: {:.6} vs {:.6} (relabeled)",
+                    "  ATOM-ORDER ENERGY FAILURE (unexplained): {name}: {:.6} vs {:.6} ({pct:.2}%, relabeled)",
                     e1.total_energy, e2.total_energy
                 );
                 energy_order_invariant = false;
@@ -787,19 +853,19 @@ fn reproducibility_and_invariance_report() {
     // failing (the exact allowlist-rot failure mode this PR's own round-4
     // fix pass found and fixed three separate times already). Flag it with
     // the same PASS/FAIL weight as a real energy mismatch above.
-    let stale_residual_entries: Vec<&str> = KNOWN_TRUE_SYMMETRY_RESIDUAL
+    let stale_residual_entries: Vec<&str> = DISCLOSED_ATOM_ORDER_ENERGY_RESIDUAL
         .iter()
         .filter(|name| !known_residual_hit.contains(name))
         .copied()
         .collect();
     if !stale_residual_entries.is_empty() {
         println!(
-            "  STALE KNOWN_TRUE_SYMMETRY_RESIDUAL entries (never fired, remove them): {stale_residual_entries:?}"
+            "  STALE DISCLOSED_ATOM_ORDER_ENERGY_RESIDUAL entries (never fired, remove them): {stale_residual_entries:?}"
         );
         energy_order_invariant = false;
     }
     println!(
-        "  atom_order_energy_invariance: {} ({} known true-symmetry residual: {known_residual_hit:?})",
+        "  atom_order_energy_invariance: {} ({} disclosed residual: {known_residual_hit:?})",
         if energy_order_invariant {
             "PASS"
         } else {

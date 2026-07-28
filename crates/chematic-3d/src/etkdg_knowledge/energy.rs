@@ -692,10 +692,14 @@ mod tests {
             mol.bond_between(AtomIdx(3), AtomIdx(4)).is_some(),
             "2-pentanol must have a real C3-C4 bond"
         );
-        assert_ne!(
-            AtomIdx(4),
-            AtomIdx(5),
-            "sanity: the outer atoms must be genuinely distinct, not a placeholder duplicate"
+        // The real "not a duplicate-index placeholder" sanity check: atom 5
+        // must actually exist and be bonded to atom 4 (i.e. genuinely be the
+        // further neighbor down the chain) -- `assert_ne!(AtomIdx(4),
+        // AtomIdx(5))` (an earlier version of this fix) compares two
+        // hardcoded literals and can never fail, so it checked nothing.
+        assert!(
+            mol.bond_between(AtomIdx(4), AtomIdx(5)).is_some(),
+            "2-pentanol's atom 5 must be a real, distinct neighbor of atom 4, not a placeholder"
         );
         let pot = TorsionPotential {
             atoms: [AtomIdx(1), AtomIdx(3), AtomIdx(4), AtomIdx(5)],
@@ -705,10 +709,18 @@ mod tests {
             terms: vec![FourierTorsionTerm::from_rdkit(1, 1, 5.0)],
             ring_size: None,
         };
+        // `EmbedParameters::default()` is seeded (fixed `random_seed`), so
+        // this embedding is deterministic -- convergence here is a real,
+        // reproducible fact about this fixture, not a coin flip. Panicking
+        // loudly on failure (rather than an earlier version's `else {
+        // return; }`) matters specifically because a silent skip here is
+        // the exact "test quietly does nothing" pattern this test was
+        // rewritten to eliminate in the first place (see the fix note
+        // above) -- an `else { return; }` guarding the one assertion this
+        // test exists for would reintroduce it one line later.
         let config = TorsionOptimizationConfig::default();
-        let Ok((new_coords, report)) = optimize_torsions(&mol, &coords, &[pot], &config) else {
-            return; // non-convergence on this particular geometry is not what this test checks
-        };
+        let (new_coords, report) = optimize_torsions(&mol, &coords, &[pot], &config)
+            .expect("optimize_torsions must converge on this fixed, seeded embedding");
 
         // The whole point of using a real (non-degenerate) quadruple: the
         // rotation must have actually moved something, or this test is

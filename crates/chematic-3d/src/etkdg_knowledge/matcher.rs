@@ -542,19 +542,66 @@ enum ResolvedTier {
 /// symmetric/cage molecules -- adamantane, norbornane, spiro_5_6, cubane,
 /// testosterone, cholesterol, penicillin_core -- purely from atom
 /// relabeling, because a generic ring rule can match the same central bond
-/// via more than one distinguishable neighbor for the outer atom).
+/// via more than one distinguishable neighbor for the outer atom). Of that
+/// originally-named list: `testosterone`/`cholesterol`/`penicillin_core`
+/// are now fully fixed (genuinely invariant, confirmed by the gap-check
+/// harness); `spiro_5_6` is ALSO now fully invariant (measured, not just
+/// assumed alongside the others); `adamantane`/`norbornane` still show a
+/// real, disclosed residual (see below); `cubane` still shows a real,
+/// disclosed, DIFFERENT-natured residual (also see below) -- so this
+/// original list should not be read as "all still affected" or "all fixed,"
+/// it's a mix, itemized precisely in the paragraphs that follow.
 ///
 /// Morgan ranks are a topological invariant (neighbor-hash refinement to a
 /// fixpoint): two outer-atom choices that are structurally distinguishable
 /// get distinct ranks regardless of how the molecule happens to be numbered,
 /// so sorting by rank fixes the common case (a generic rule coincidentally
-/// matching two chemically different neighbors). Atoms in a genuine
-/// non-trivial automorphism orbit (true graph symmetry, e.g. two of
-/// adamantane's three bridgehead ring-neighbors) keep equal ranks by
-/// definition -- for those, any member of the orbit is a chemically
-/// equivalent choice, so the residual `AtomIdx`-order tie-break for that
-/// last case is a real graph-symmetry limit (not eliminable by any
-/// numbering-independent rule), not an unresolved instance of this bug.
+/// matching two chemically different neighbors) -- confirmed genuinely fixed
+/// on `menthol`/`testosterone`/`cholesterol`/`penicillin_core`/`spiro_5_6`
+/// (fully invariant now, not just improved).
+///
+/// **A real, disclosed residual remains on `adamantane`/`biphenyl`/
+/// `norbornane`/`cubane`** (see the gap-check example's
+/// `atom_order_energy_invariance` for live measurements) -- and a first
+/// draft of this doc mischaracterized it as uniformly "genuine automorphism,
+/// therefore harmless," which independent verification (round 2 of formal
+/// review) found was only half right, via a specific, correct discriminator:
+/// does an automorphism exist that maps the substituted outer atom to the
+/// other AND fixes both the central bond and the other outer atom in place
+/// (not just "does any unconstrained automorphism map atom X to atom Y" --
+/// checked with the unconstrained question first, which gave a false
+/// positive for cubane; the constrained question is the one that actually
+/// matters here). Verified directly via
+/// `mol.GetSubstructMatches(mol, uniquify=False)` against each fixture's
+/// real, observed candidate substitution:
+///
+/// - `adamantane` (4.06%), `biphenyl` (2.98%), `norbornane` (0.44%): the
+///   substitution IS a genuine constrained automorphism -- these atoms truly
+///   are in one non-trivial orbit, and no numbering-independent topological
+///   rule can order-break them. But a real graph automorphism does NOT imply
+///   the specific *embedded* 3D conformer is itself geometrically symmetric
+///   (`embed_distance_geometry_v2` has no reason to produce a symmetric
+///   embedding), so measured torsion energy still differs by a real amount
+///   even in this case. Fixing `canonical_atoms` perfectly would not close
+///   this: the non-invariance lives in the embedding, not the tie-break.
+/// - `cubane` (3.84%): the observed substitution is, under the same
+///   constrained check, **NOT** a genuine automorphism -- `canon_rank`'s
+///   rank tie here is a false positive. Weisfeiler-Leman-style color
+///   refinement (what `canon_rank` implements) is provably incomplete for
+///   some graphs; `canon_rank` is already at its fixpoint, so no cheaper
+///   refinement closes this. This is a live, unresolved instance of the
+///   exact same tie-break bug fixed above for menthol/testosterone/
+///   cholesterol/penicillin_core -- disclosed rather than mislabeled as
+///   understood/harmless. A real fix would need an actual bounded
+///   graph-isomorphism check (individualization-refinement, nauty-style)
+///   rooted at each candidate outer atom -- out of scope for this pass, and
+///   one that would still leave the adamantane/biphenyl/norbornane part of
+///   this residual open regardless, since that part is an embedding-geometry
+///   property, not a tie-break defect.
+///
+/// Percentages above are single-reversal measurements (a lower bound, not a
+/// worst case -- see the gap-check example's own comment for why a
+/// multi-relabeling search was deliberately not built for this pass).
 fn canonical_atoms(candidates: &[Candidate], ranks: &[u64]) -> [AtomIdx; 4] {
     let rank_of = |a: AtomIdx| ranks.get(a.0 as usize).copied().unwrap_or(u64::MAX);
     candidates

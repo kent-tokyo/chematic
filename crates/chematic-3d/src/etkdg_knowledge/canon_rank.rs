@@ -165,23 +165,45 @@ mod tests {
         assert_eq!(fwd_ranks, bwd_ranks);
     }
 
-    /// Regression evidence for the residual 3/72 corpus fixtures the
+    /// Regression evidence for the residual atom-order-energy cases the
     /// gap-check example's `atom_order_energy_invariance` still reports as a
-    /// named (not unexplained) FAIL after the `uniquify: false` +
-    /// `canonical_atoms` fix (see `matcher.rs`'s doc comment): biphenyl,
-    /// adamantane, and cubane. In each, the specific outer atoms the torsion
-    /// match picks tie in Morgan rank -- i.e. they are GENUINELY, chemically
-    /// interchangeable substituents (a true graph automorphism, not two
-    /// different atoms an insufficiently-refined invariant merely failed to
-    /// distinguish). No purely-topological rule can pick one over the other
-    /// in a way that survives adversarial relabeling, since by definition
-    /// nothing about the graph distinguishes them -- confirmed here directly
-    /// rather than assumed, so this is falsifiable if a future change to
-    /// `morgan_ranks` accidentally starts distinguishing (or stops
-    /// distinguishing) the wrong atoms.
+    /// disclosed (not unexplained) FAIL after the `uniquify: false` +
+    /// `canonical_atoms` fix (see `matcher.rs`'s doc comment for the full
+    /// writeup): biphenyl, adamantane, norbornane, and cubane. In each, the
+    /// specific outer atoms the torsion match picks tie in Morgan rank --
+    /// but **rank-tying is necessary, not sufficient, for the substitution
+    /// to be a genuine graph automorphism**, and this test only checks the
+    /// necessary half. An earlier draft of this doc claimed all 4 (then 3)
+    /// cases were confirmed true automorphisms; independent review found
+    /// that was wrong for cubane specifically, via a stricter, constrained
+    /// check this test does NOT perform (see below) -- corrected here rather
+    /// than left standing.
     ///
-    /// penicillin_core's gem-dimethyl pair (asserted below too) ties in rank
-    /// for the same true-automorphism reason, but is NOT one of the 3 named
+    /// - `biphenyl`, `adamantane`, `norbornane`: independently confirmed (via
+    ///   `mol.GetSubstructMatches(mol, uniquify=False)`, constrained to hold
+    ///   the central bond AND the other outer atom fixed -- the condition
+    ///   that actually matters, not just "does *some* automorphism map atom
+    ///   X to atom Y" unconstrained) to be genuine automorphisms: these
+    ///   atoms truly are chemically interchangeable, and no purely-
+    ///   topological rule can order-break them.
+    /// - `cubane`: the SAME constrained check finds this is **NOT** a
+    ///   genuine automorphism -- `canon_rank`'s rank tie here is a false
+    ///   positive. Weisfeiler-Leman-style color refinement (what
+    ///   `morgan_ranks` implements) is provably incomplete for some graphs;
+    ///   this rank tie is exactly such a case, not a real symmetry. This
+    ///   fixture's residual is a live, unresolved instance of the same
+    ///   tie-break bug fixed elsewhere in this pass (menthol/testosterone/
+    ///   cholesterol/penicillin_core), disclosed rather than mislabeled.
+    ///
+    /// The rank-tie assertions below remain correct and useful regardless:
+    /// they are a true, falsifiable fact about `morgan_ranks`'s own output
+    /// (falsifiable if a future change accidentally starts or stops
+    /// distinguishing these atoms), just not, on their own, proof of a real
+    /// automorphism -- that stronger claim needs the constrained check
+    /// above, done once via an external oracle, not re-derived by this test.
+    ///
+    /// penicillin_core's gem-dimethyl pair (asserted below too, also a
+    /// genuine automorphism) ties in rank but is NOT one of the 4 named
     /// residuals: `atom_in_ring_size_range` (round-4 fix, `matcher.rs`)
     /// constrains a ring-torsion rule's outer atoms to ring members, and the
     /// gem-dimethyl carbons aren't in any ring, so neither ever gets picked
@@ -190,16 +212,18 @@ mod tests {
     /// regression check on `morgan_ranks` itself, independent of whether the
     /// matcher currently reaches this tie.
     #[test]
-    fn known_true_symmetry_ties_behind_the_residual_atom_order_cases() {
+    fn known_rank_ties_behind_the_residual_atom_order_cases() {
         // biphenyl: the two ortho carbons flanking each ipso carbon (a
         // genuine local mirror symmetry) tie -- atoms 2 and 10 both flank
-        // atom 3 (excluding the central atom 4).
+        // atom 3 (excluding the central atom 4). Confirmed a genuine
+        // constrained automorphism (see doc comment above).
         let biphenyl = parse("c1ccc(-c2ccccc2)cc1").unwrap();
         let r = morgan_ranks(&biphenyl);
         assert_eq!(r[2], r[10], "biphenyl ortho pair must tie: {r:?}");
 
         // adamantane: atom 8's two non-atom-10 neighbors (atoms 7 and 9,
-        // both bridgehead-adjacent methylenes) tie.
+        // both bridgehead-adjacent methylenes) tie. Confirmed a genuine
+        // constrained automorphism (see doc comment above).
         let adamantane = parse("C1CC2CC3CC1CC(C2)C3").unwrap();
         let r = morgan_ranks(&adamantane);
         assert_eq!(
@@ -207,8 +231,23 @@ mod tests {
             "adamantane bridge-neighbor pair must tie: {r:?}"
         );
 
-        // cubane: atom 1's two non-atom-0 neighbors (atoms 2 and 5, related
-        // by the cube's own symmetry) tie.
+        // norbornane: the two real candidate substitutions independent
+        // review's methodology traces (atoms 0/4 and atoms 1/3) both tie.
+        // Confirmed a genuine constrained automorphism (see doc comment
+        // above) -- this fixture's small residual is an embedding-geometry
+        // artifact, not a tie-break defect.
+        let norbornane = parse("C1CC2CCC1C2").unwrap();
+        let r = morgan_ranks(&norbornane);
+        assert_eq!(r[0], r[4], "norbornane bridgehead pair must tie: {r:?}");
+        assert_eq!(r[1], r[3], "norbornane bridgehead pair must tie: {r:?}");
+
+        // cubane: atom 1's two non-atom-0 neighbors (atoms 2 and 5) tie in
+        // rank, but this is a FALSE positive, NOT a genuine automorphism --
+        // confirmed via the constrained check in the doc comment above. This
+        // is the one case in this test where "ranks tie" does not mean
+        // "chemically interchangeable" -- kept as a standing regression
+        // check that `morgan_ranks` still produces this specific (known
+        // incomplete) tie, not evidence it's harmless.
         let cubane = parse("C1C2C3C1C4C2C3C4").unwrap();
         let r = morgan_ranks(&cubane);
         assert_eq!(r[2], r[5], "cubane symmetric-neighbor pair must tie: {r:?}");
@@ -216,7 +255,8 @@ mod tests {
         // penicillin_core: the gem-dimethyl group's two methyl carbons
         // (atoms 0 and 2, both bonded only to the same quaternary ring
         // carbon 1) tie -- the one non-trivial tie in an otherwise fully
-        // discrete-ranked molecule.
+        // discrete-ranked molecule. Confirmed a genuine automorphism, but
+        // never reached by the matcher (see doc comment above).
         let penicillin = parse("CC1(C)S[C@@H]2[C@H](NC(=O)C)C(=O)N2[C@H]1C(=O)O").unwrap();
         let r = morgan_ranks(&penicillin);
         assert_eq!(r[0], r[2], "penicillin gem-dimethyl pair must tie: {r:?}");
