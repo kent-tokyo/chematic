@@ -260,10 +260,22 @@ pub struct StageTimings {
     pub total_ms: u64,
 }
 
-/// Whether one [`crate::etkdg_knowledge::TorsionPotential`] was mechanically applied
-/// to geometry by stage 6's `optimize_torsions` call, or only ever scored. The ONE
-/// source of truth for this is [`is_bridge_bond`] on the potential's `central_bond` —
+/// Whether one [`crate::etkdg_knowledge::TorsionPotential`] was **eligible for**
+/// mechanical rotation by stage 6's `optimize_torsions` call (its central bond is a
+/// genuine acyclic bridge bond), vs. structurally scored-only (a ring/macrocycle
+/// bond `optimize_torsions` can never rotate at all). The ONE source of truth for
+/// this classification is [`is_bridge_bond`] on the potential's `central_bond` —
 /// never a proxy (see the module docs' "most important semantics" section).
+///
+/// Caveat found by independent verification round 1, disclosed rather than silently
+/// left implicit: `true` here means "was a candidate `optimize_torsions` could act
+/// on," not "definitely moved" — a bridge-bond potential whose initial gradient is
+/// already below `TorsionOptimizationConfig::convergence_grad_deg` is skipped
+/// without ever rotating (see `energy.rs`'s inner loop), and `optimize_torsions`
+/// does not report per-bond movement back up. This never affects the correctness
+/// property this field exists to guarantee (a ring/macrocycle bond is *never*
+/// mechanically rotated, full stop); it only means "applied_to_geometry = true"
+/// should be read as "geometrically applicable," not "definitely moved this call."
 #[derive(Debug, Clone, PartialEq)]
 pub struct PotentialApplicationEvidence {
     pub rule_id: String,
@@ -445,6 +457,55 @@ impl PipelineV2Failure {
     }
 }
 
+/// Progressive diagnostic accumulator threaded through [`embed_pipeline_v2`]:
+/// updated after every stage completes, so that **every** failure exit --
+/// including a mid-stage timeout via `check_timeout!`, which has no local
+/// stage-specific failure-construction block of its own -- carries the exact same
+/// partial evidence an explicit `Err` return at that point would have. Fixes a real
+/// gap independent verification round 1 found: `check_timeout!` previously built a
+/// bare, all-`None` [`PipelineV2Failure`] regardless of how much had already been
+/// computed, silently violating this module's own "carries as much partial
+/// diagnostic information as possible" claim.
+#[derive(Default)]
+struct Evidence {
+    last_known_coords: Option<Coords3D>,
+    embed_stats: Option<EmbedStats>,
+    bound_adjustment_report: Option<Vec<PairBoundAdjustment>>,
+    torsion_knowledge_report: Option<TorsionKnowledgeReport>,
+    ring_torsion_evidence: Option<RingTorsionEvidence>,
+    torsion_optimization_report: Option<TorsionOptimizationReport>,
+    stereo_before: Option<StereoVerification>,
+    stereo_repair: Option<StereoRepairSummary>,
+    stereo_after_repair: Option<StereoVerification>,
+    force_field: Option<PolicyMinimizeResult>,
+    final_stereo: Option<StereoVerification>,
+    final_validation: Option<FinalGeometryValidation>,
+}
+
+impl Evidence {
+    fn fail(
+        &self,
+        cause: PipelineV2FailureCause,
+        stage: PipelineStage,
+        timings: StageTimings,
+    ) -> PipelineV2Failure {
+        let mut failure = PipelineV2Failure::new(cause, stage, timings);
+        failure.last_known_coords = self.last_known_coords.clone();
+        failure.embed_stats = self.embed_stats.clone();
+        failure.bound_adjustment_report = self.bound_adjustment_report.clone();
+        failure.torsion_knowledge_report = self.torsion_knowledge_report.clone();
+        failure.ring_torsion_evidence = self.ring_torsion_evidence.clone();
+        failure.torsion_optimization_report = self.torsion_optimization_report.clone();
+        failure.stereo_before = self.stereo_before.clone();
+        failure.stereo_repair = self.stereo_repair.clone();
+        failure.stereo_after_repair = self.stereo_after_repair.clone();
+        failure.force_field = self.force_field.clone();
+        failure.final_stereo = self.final_stereo.clone();
+        failure.final_validation = self.final_validation.clone();
+        failure
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
@@ -471,6 +532,11 @@ pub fn embed_pipeline_v2(
 ) -> Result<PipelineV2Result, PipelineV2Failure> {
     let overall_start = Instant::now();
     let mut timings = StageTimings::default();
+    // Progressive diagnostic accumulator (see `Evidence`'s own doc comment): updated
+    // right after every value becomes available, so `check_timeout!` -- which has no
+    // stage-specific context of its own -- carries exactly the same partial evidence
+    // an explicit `Err` return at that point would.
+    let mut evidence = Evidence::default();
 
     macro_rules! check_timeout {
         ($stage:expr) => {
@@ -478,11 +544,7 @@ pub fn embed_pipeline_v2(
                 && overall_start.elapsed().as_millis() as u64 > budget
             {
                 timings.total_ms = overall_start.elapsed().as_millis() as u64;
-                return Err(PipelineV2Failure::new(
-                    PipelineV2FailureCause::Timeout,
-                    $stage,
-                    timings,
-                ));
+                return Err(evidence.fail(PipelineV2FailureCause::Timeout, $stage, timings));
             }
         };
     }
@@ -497,7 +559,7 @@ pub fn embed_pipeline_v2(
         // verifies anything, and letting both run would be confusing, not
         // defense-in-depth.
         timings.total_ms = overall_start.elapsed().as_millis() as u64;
-        return Err(PipelineV2Failure::new(
+        return Err(evidence.fail(
             PipelineV2FailureCause::InvalidConfiguration,
             PipelineStage::ValidateConfig,
             timings,
@@ -517,6 +579,7 @@ pub fn embed_pipeline_v2(
     let t0 = Instant::now();
     let torsion_knowledge_report = build_torsion_knowledge(mol, &torsion_config);
     timings.torsion_knowledge_ms = t0.elapsed().as_millis() as u64;
+    evidence.torsion_knowledge_report = Some(torsion_knowledge_report.clone());
     check_timeout!(PipelineStage::TorsionKnowledge);
 
     // -----------------------------------------------------------------
@@ -529,19 +592,18 @@ pub fn embed_pipeline_v2(
             Err(e) => {
                 timings.bound_adjustment_ms = t0.elapsed().as_millis() as u64;
                 timings.total_ms = overall_start.elapsed().as_millis() as u64;
-                let mut failure = PipelineV2Failure::new(
+                return Err(evidence.fail(
                     PipelineV2FailureCause::TorsionKnowledge(e),
                     PipelineStage::MacrocycleBoundAdjustment,
                     timings,
-                );
-                failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-                return Err(failure);
+                ));
             }
         }
     } else {
         None
     };
     timings.bound_adjustment_ms = t0.elapsed().as_millis() as u64;
+    evidence.bound_adjustment_report = bound_adjustment_report.clone();
     check_timeout!(PipelineStage::MacrocycleBoundAdjustment);
 
     // -----------------------------------------------------------------
@@ -570,31 +632,27 @@ pub fn embed_pipeline_v2(
             Err((EmbedWithAdjustmentsFailure::InvalidAdjustment, stats)) => {
                 timings.distance_geometry_ms = t0.elapsed().as_millis() as u64;
                 timings.total_ms = overall_start.elapsed().as_millis() as u64;
-                let mut failure = PipelineV2Failure::new(
+                evidence.embed_stats = Some(stats);
+                return Err(evidence.fail(
                     PipelineV2FailureCause::BoundAdjustmentFailed,
                     PipelineStage::MacrocycleBoundAdjustment,
                     timings,
-                );
-                failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-                failure.bound_adjustment_report = bound_adjustment_report;
-                failure.embed_stats = Some(stats);
-                return Err(failure);
+                ));
             }
             Err((EmbedWithAdjustmentsFailure::Embed(cause), stats)) => {
                 timings.distance_geometry_ms = t0.elapsed().as_millis() as u64;
                 timings.total_ms = overall_start.elapsed().as_millis() as u64;
-                let mut failure = PipelineV2Failure::new(
+                evidence.embed_stats = Some(stats);
+                return Err(evidence.fail(
                     PipelineV2FailureCause::DistanceGeometry(cause),
                     PipelineStage::DistanceGeometry,
                     timings,
-                );
-                failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-                failure.bound_adjustment_report = bound_adjustment_report;
-                failure.embed_stats = Some(stats);
-                return Err(failure);
+                ));
             }
         };
     timings.distance_geometry_ms = t0.elapsed().as_millis() as u64;
+    evidence.embed_stats = Some(embed_stats.clone());
+    evidence.last_known_coords = Some(coords.clone());
     check_timeout!(PipelineStage::DistanceGeometry);
 
     // -----------------------------------------------------------------
@@ -604,16 +662,11 @@ pub fn embed_pipeline_v2(
     if let Err(e) = evaluate_torsion_energy(mol, &coords, &torsion_knowledge_report.potentials) {
         timings.torsion_energy_eval_ms = t0.elapsed().as_millis() as u64;
         timings.total_ms = overall_start.elapsed().as_millis() as u64;
-        let mut failure = PipelineV2Failure::new(
+        return Err(evidence.fail(
             PipelineV2FailureCause::TorsionKnowledge(e),
             PipelineStage::TorsionEnergyEvaluation,
             timings,
-        );
-        failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-        failure.bound_adjustment_report = bound_adjustment_report;
-        failure.embed_stats = Some(embed_stats);
-        failure.last_known_coords = Some(coords);
-        return Err(failure);
+        ));
     }
     timings.torsion_energy_eval_ms = t0.elapsed().as_millis() as u64;
     check_timeout!(PipelineStage::TorsionEnergyEvaluation);
@@ -639,32 +692,35 @@ pub fn embed_pipeline_v2(
             .collect(),
         diagnostic_only: config.ring_torsion_policy == RingTorsionApplicationPolicy::DiagnosticOnly,
     };
+    evidence.ring_torsion_evidence = Some(ring_torsion_evidence.clone());
 
+    // Same two-part predicate as the evidence above (`bond_between(..).is_some() &&
+    // is_bridge_bond(..)`), not just `!is_bridge_bond(..)` alone: independent
+    // verification round 1 flagged that the two were only equivalent because every
+    // `central_bond` happens to come from `candidate_central_bonds` (real bonds
+    // only) -- matching the predicate exactly here removes that latent, currently-
+    // unreachable divergence risk rather than relying on an invariant holding
+    // elsewhere.
     let ring_application_requested =
         config.embed.use_small_ring_torsions || config.embed.use_macrocycle_torsions;
     let has_unsupported_ring_potential = torsion_knowledge_report.potentials.iter().any(|p| {
+        let (b, c) = p.central_bond;
         matches!(
             p.source,
             TorsionKnowledgeSource::SmallRingExperimental
                 | TorsionKnowledgeSource::MacrocycleAdaptation
-        ) && !is_bridge_bond(mol, p.central_bond.0, p.central_bond.1)
+        ) && !(mol.bond_between(b, c).is_some() && is_bridge_bond(mol, b, c))
     });
     if ring_application_requested
         && has_unsupported_ring_potential
         && config.ring_torsion_policy == RingTorsionApplicationPolicy::FailClosed
     {
         timings.total_ms = overall_start.elapsed().as_millis() as u64;
-        let mut failure = PipelineV2Failure::new(
+        return Err(evidence.fail(
             PipelineV2FailureCause::RingTorsionApplicationUnsupported,
             PipelineStage::TorsionOptimization,
             timings,
-        );
-        failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-        failure.bound_adjustment_report = bound_adjustment_report;
-        failure.embed_stats = Some(embed_stats);
-        failure.ring_torsion_evidence = Some(ring_torsion_evidence);
-        failure.last_known_coords = Some(coords);
-        return Err(failure);
+        ));
     }
 
     let t0 = Instant::now();
@@ -681,21 +737,17 @@ pub fn embed_pipeline_v2(
             Err(e) => {
                 timings.torsion_optimization_ms = t0.elapsed().as_millis() as u64;
                 timings.total_ms = overall_start.elapsed().as_millis() as u64;
-                let mut failure = PipelineV2Failure::new(
+                return Err(evidence.fail(
                     PipelineV2FailureCause::TorsionKnowledge(e),
                     PipelineStage::TorsionOptimization,
                     timings,
-                );
-                failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-                failure.bound_adjustment_report = bound_adjustment_report;
-                failure.embed_stats = Some(embed_stats);
-                failure.ring_torsion_evidence = Some(ring_torsion_evidence);
-                failure.last_known_coords = Some(coords);
-                return Err(failure);
+                ));
             }
         }
     };
     timings.torsion_optimization_ms = t0.elapsed().as_millis() as u64;
+    evidence.torsion_optimization_report = torsion_optimization_report.clone();
+    evidence.last_known_coords = Some(coords.clone());
     check_timeout!(PipelineStage::TorsionOptimization);
 
     // -----------------------------------------------------------------
@@ -705,6 +757,7 @@ pub fn embed_pipeline_v2(
     let t0 = Instant::now();
     let stereo_before = verify_stereo(mol, &coords);
     timings.stereo_verify_before_ms = t0.elapsed().as_millis() as u64;
+    evidence.stereo_before = Some(stereo_before.clone());
     check_timeout!(PipelineStage::StereoVerifyBefore);
 
     // -----------------------------------------------------------------
@@ -723,29 +776,24 @@ pub fn embed_pipeline_v2(
             Err(report) => {
                 timings.stereo_repair_ms = t0.elapsed().as_millis() as u64;
                 timings.total_ms = overall_start.elapsed().as_millis() as u64;
-                let mut failure = PipelineV2Failure::new(
-                    PipelineV2FailureCause::StereoRepairFailed,
-                    PipelineStage::StereoRepair,
-                    timings,
-                );
-                failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-                failure.bound_adjustment_report = bound_adjustment_report;
-                failure.embed_stats = Some(embed_stats);
-                failure.ring_torsion_evidence = Some(ring_torsion_evidence);
-                failure.torsion_optimization_report = torsion_optimization_report;
-                failure.stereo_before = Some(stereo_before);
-                failure.last_known_coords = Some(report.partial_coords);
-                failure.stereo_repair = Some(StereoRepairSummary {
+                evidence.last_known_coords = Some(report.partial_coords);
+                evidence.stereo_repair = Some(StereoRepairSummary {
                     repaired: report.repaired,
                     failures: report.failures,
                 });
-                return Err(failure);
+                return Err(evidence.fail(
+                    PipelineV2FailureCause::StereoRepairFailed,
+                    PipelineStage::StereoRepair,
+                    timings,
+                ));
             }
         }
     } else {
         (coords, None)
     };
     timings.stereo_repair_ms = t0.elapsed().as_millis() as u64;
+    evidence.stereo_repair = stereo_repair.clone();
+    evidence.last_known_coords = Some(coords.clone());
     check_timeout!(PipelineStage::StereoRepair);
 
     // -----------------------------------------------------------------
@@ -760,6 +808,7 @@ pub fn embed_pipeline_v2(
         stereo_before.clone()
     };
     timings.stereo_verify_after_repair_ms = t0.elapsed().as_millis() as u64;
+    evidence.stereo_after_repair = Some(stereo_after_repair.clone());
     check_timeout!(PipelineStage::StereoVerifyAfterRepair);
 
     // -----------------------------------------------------------------
@@ -781,23 +830,16 @@ pub fn embed_pipeline_v2(
         Err(e) => {
             timings.force_field_ms = t0.elapsed().as_millis() as u64;
             timings.total_ms = overall_start.elapsed().as_millis() as u64;
-            let mut failure = PipelineV2Failure::new(
+            return Err(evidence.fail(
                 PipelineV2FailureCause::ForceField(e),
                 PipelineStage::ForceFieldMinimization,
                 timings,
-            );
-            failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-            failure.bound_adjustment_report = bound_adjustment_report;
-            failure.embed_stats = Some(embed_stats);
-            failure.ring_torsion_evidence = Some(ring_torsion_evidence);
-            failure.torsion_optimization_report = torsion_optimization_report;
-            failure.stereo_before = Some(stereo_before);
-            failure.stereo_repair = stereo_repair;
-            failure.stereo_after_repair = Some(stereo_after_repair);
-            return Err(failure);
+            ));
         }
     };
     timings.force_field_ms = t0.elapsed().as_millis() as u64;
+    evidence.force_field = Some(force_field.clone());
+    evidence.last_known_coords = Some(force_field.coords.clone());
     check_timeout!(PipelineStage::ForceFieldMinimization);
 
     // -----------------------------------------------------------------
@@ -808,47 +850,24 @@ pub fn embed_pipeline_v2(
     let t0 = Instant::now();
     let final_stereo = verify_stereo(mol, &force_field.coords);
     timings.final_stereo_verify_ms = t0.elapsed().as_millis() as u64;
+    evidence.final_stereo = Some(final_stereo.clone());
 
     if config.stereo_policy != StereoPolicy::Ignore {
         if final_stereo.n_violations() > 0 {
             timings.total_ms = overall_start.elapsed().as_millis() as u64;
-            let mut failure = PipelineV2Failure::new(
+            return Err(evidence.fail(
                 PipelineV2FailureCause::FinalStereoViolation,
                 PipelineStage::FinalStereoVerify,
                 timings,
-            );
-            failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-            failure.bound_adjustment_report = bound_adjustment_report;
-            failure.embed_stats = Some(embed_stats);
-            failure.ring_torsion_evidence = Some(ring_torsion_evidence);
-            failure.torsion_optimization_report = torsion_optimization_report;
-            failure.stereo_before = Some(stereo_before);
-            failure.stereo_repair = stereo_repair;
-            failure.stereo_after_repair = Some(stereo_after_repair);
-            failure.last_known_coords = Some(force_field.coords.clone());
-            failure.final_stereo = Some(final_stereo);
-            failure.force_field = Some(force_field);
-            return Err(failure);
+            ));
         }
         if config.fail_on_unevaluable_stereo && final_stereo.n_unevaluable() > 0 {
             timings.total_ms = overall_start.elapsed().as_millis() as u64;
-            let mut failure = PipelineV2Failure::new(
+            return Err(evidence.fail(
                 PipelineV2FailureCause::StereoUnevaluableUnderStrictPolicy,
                 PipelineStage::FinalStereoVerify,
                 timings,
-            );
-            failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-            failure.bound_adjustment_report = bound_adjustment_report;
-            failure.embed_stats = Some(embed_stats);
-            failure.ring_torsion_evidence = Some(ring_torsion_evidence);
-            failure.torsion_optimization_report = torsion_optimization_report;
-            failure.stereo_before = Some(stereo_before);
-            failure.stereo_repair = stereo_repair;
-            failure.stereo_after_repair = Some(stereo_after_repair);
-            failure.last_known_coords = Some(force_field.coords.clone());
-            failure.final_stereo = Some(final_stereo);
-            failure.force_field = Some(force_field);
-            return Err(failure);
+            ));
         }
     }
     check_timeout!(PipelineStage::FinalStereoVerify);
@@ -870,23 +889,11 @@ pub fn embed_pipeline_v2(
             // rather than silently reporting a stale/zero energy.
             timings.final_validation_ms = t0.elapsed().as_millis() as u64;
             timings.total_ms = overall_start.elapsed().as_millis() as u64;
-            let mut failure = PipelineV2Failure::new(
+            return Err(evidence.fail(
                 PipelineV2FailureCause::FinalGeometryInvalid,
                 PipelineStage::FinalGeometryValidationStage,
                 timings,
-            );
-            failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-            failure.bound_adjustment_report = bound_adjustment_report;
-            failure.embed_stats = Some(embed_stats);
-            failure.ring_torsion_evidence = Some(ring_torsion_evidence);
-            failure.torsion_optimization_report = torsion_optimization_report;
-            failure.stereo_before = Some(stereo_before);
-            failure.stereo_repair = stereo_repair;
-            failure.stereo_after_repair = Some(stereo_after_repair);
-            failure.last_known_coords = Some(force_field.coords.clone());
-            failure.final_stereo = Some(final_stereo);
-            failure.force_field = Some(force_field);
-            return Err(failure);
+            ));
         }
     };
 
@@ -903,27 +910,15 @@ pub fn embed_pipeline_v2(
         ring_closure_delta,
     );
     timings.final_validation_ms = t0.elapsed().as_millis() as u64;
+    evidence.final_validation = Some(final_validation.clone());
 
     if !final_validation.sound {
         timings.total_ms = overall_start.elapsed().as_millis() as u64;
-        let mut failure = PipelineV2Failure::new(
+        return Err(evidence.fail(
             PipelineV2FailureCause::FinalGeometryInvalid,
             PipelineStage::FinalGeometryValidationStage,
             timings,
-        );
-        failure.torsion_knowledge_report = Some(torsion_knowledge_report);
-        failure.bound_adjustment_report = bound_adjustment_report;
-        failure.embed_stats = Some(embed_stats);
-        failure.ring_torsion_evidence = Some(ring_torsion_evidence);
-        failure.torsion_optimization_report = torsion_optimization_report;
-        failure.stereo_before = Some(stereo_before);
-        failure.stereo_repair = stereo_repair;
-        failure.stereo_after_repair = Some(stereo_after_repair);
-        failure.last_known_coords = Some(force_field.coords.clone());
-        failure.final_stereo = Some(final_stereo);
-        failure.final_validation = Some(final_validation);
-        failure.force_field = Some(force_field);
-        return Err(failure);
+        ));
     }
 
     timings.total_ms = overall_start.elapsed().as_millis() as u64;
@@ -1387,6 +1382,33 @@ mod tests {
         config.total_timeout_ms = Some(0);
         let err = embed_pipeline_v2(&mol, &config).unwrap_err();
         assert!(matches!(err.cause, PipelineV2FailureCause::Timeout));
+    }
+
+    /// Regression test for a real bug independent verification round 1 found:
+    /// `check_timeout!` used to construct a bare, all-`None` `PipelineV2Failure`
+    /// regardless of how much had already been computed by that point -- silently
+    /// contradicting this module's own "carries as much partial diagnostic
+    /// information as possible" claim. `total_timeout_ms: Some(0)` is guaranteed to
+    /// trip at SOME `check_timeout!` call site, and every such site is textually
+    /// after stage 2 (torsion knowledge) completes -- not asserting on exactly
+    /// which stage trips (that depends on sub-millisecond timing and is not
+    /// deterministic across machines), only that the evidence stage 2 always
+    /// produces by that point is never silently dropped.
+    #[test]
+    fn timeout_failure_still_carries_evidence_computed_before_it_tripped() {
+        let mol = parse("CC(=O)Nc1ccc(O)cc1").unwrap(); // paracetamol
+        let mut config = config_none();
+        config.total_timeout_ms = Some(0);
+        let err = embed_pipeline_v2(&mol, &config).unwrap_err();
+        assert!(matches!(err.cause, PipelineV2FailureCause::Timeout));
+        assert!(
+            err.torsion_knowledge_report.is_some(),
+            "a timeout must always carry at least the torsion-knowledge report \
+             (every check_timeout! call site is after stage 2 completes) -- this \
+             is exactly the evidence-dropping bug that was found and fixed, stage \
+             reached: {:?}",
+            err.stage
+        );
     }
 
     #[test]
