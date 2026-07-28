@@ -352,7 +352,7 @@ python3 -m venv /tmp/oracle_venv && /tmp/oracle_venv/bin/pip install rdkit
 Two of spec §12's six named comparison axes (rule family, central bond
 selection, ring classification, minima, 1-4 pair selection, torsion
 distribution) turned out to be reachable via RDKit's public Python API;
-**rule family** and **1-4 pair selection** are not (see §6.3). Central bond
+**rule family** and **1-4 pair selection** are not (see §6.4). Central bond
 selection and ring classification are the same underlying check here (a
 central bond's classification IS its ring membership), so this collapses to
 2 distinct measurements: ring classification, and torsion distribution/minima.
@@ -367,26 +367,48 @@ assumed) before comparing any bond — 24/24 fixtures verified, 0 unverifiable.
 Per-bond ring-size sets (chematic's `RingMembershipIndex::ring_sizes_for` vs.
 RDKit's `GetRingInfo().BondRingSizes()`) then agreed on 221/230 (96.1%) bonds.
 
-All 9 disagreements are in **cubane** (`C1C2C3C1C4C2C3C4`), and they are the
-*expected*, documented consequence of a deliberate chematic design choice,
-not a bug: `augmented_ring_set` (used inside `RingMembershipIndex::build`,
-per this crate's and CLAUDE.md's own "Ring Perception" section) recovers
-small rings that a bare SSSR decomposition misses in highly symmetric cage
-systems. Cubane has 6 square faces, but SSSR (a minimum cycle basis) can only
-return 5 independent 4-membered rings from its cycle space — RDKit's raw
-`GetRingInfo()` reflects exactly that bare-SSSR set. Chematic's
-`augmented_ring_set` recovers the 6th face too, so several cubane bonds show
-one extra `4` and/or extra `5`s in chematic's ring-size list vs. RDKit's
-(e.g. bond (0,1): chematic `[4,5]` vs. RDKit `[4]`). This is the intended
-behavior of a documented, pre-existing chematic design decision (not
-introduced by this PR), re-confirmed here against a live oracle rather than
-assumed correct. All 15 non-cubane fixtures (benzene, naphthalene, pyridine,
-furan, thiophene, adamantane, cyclohexane, cyclopentane, indole, purine,
-quinoline, anthracene, pyrene, biphenyl, cyclododecane, crown_12_4,
-cyclooctadecane, cyclopropane, cyclobutane, cycloheptane, cyclooctane,
-norbornane, spiro_5_6) matched RDKit bond-for-bond, including the
-fused-aromatic (naphthalene, indole, purine, quinoline, anthracene, pyrene)
-and bridged (norbornane, adamantane) cases specifically named in spec §5.
+All 9 disagreements are in **cubane** (`C1C2C3C1C4C2C3C4`), and the underlying
+mechanism (`augmented_ring_set` recovering rings a bare SSSR minimum cycle
+basis misses) is real and correctly identified, but an earlier draft of this
+section misdescribed it in terms of a proper cube and was corrected after
+independent review checked the fixture's own actual atom/bond count rather
+than assuming it matches real cubane's graph. The corpus's `cubane` SMILES
+parses to **8 atoms and 11 bonds** (confirmed directly from
+`validation/etkdg_torsion_knowledge_v2_chematic_side.json`'s own bond list),
+not the 8 atoms/12 bonds a proper cube graph (every vertex degree 3) would
+have — atoms 0 and 7 each have only 2 skeletal bonds in this fixture, degree
+2 not 3. This is a **pre-existing defect in the frozen 58-molecule corpus's
+"cubane" entry** (inherited byte-identical from Wave 1's
+`distance_geometry_v2_gap_check.rs` per this program's standing convention;
+not introduced or fixable here — flagged for whoever owns
+`scripts/etkdg_vs_rdkit_gap.py`/the sibling gap-check example), not a defect
+in this PR's ring-classification logic.
+
+With 8 atoms and 11 bonds, cycle rank (bonds − atoms + 1) = 4. RDKit's SSSR
+returns exactly 4 independent rings, as expected for a minimum cycle basis on
+a graph of that rank — this is NOT "SSSR failing to find a 5th/6th face",
+it is SSSR correctly returning a basis of the size the graph's actual cycle
+rank dictates. Chematic's `augmented_ring_set` then recovers **one further,
+non-independent** small ring beyond that minimum basis — and this one really
+does exist in the graph: tracing edges (0,1)(1,2)(2,3)(3,0)(3,4)(4,5)(5,1)
+(5,6)(6,2)(6,7)(7,4) shows a genuine 5-membered cycle 1-2-3-4-5-1 (verified
+directly from the bond list, not asserted). So chematic's extra ring-size
+entries (e.g. bond (0,1): chematic `[4,5]` vs. RDKit `[4]`) reflect a real,
+additional small ring present in this specific (topologically atypical)
+graph, recovered by design — the mechanism this section originally described
+is correct, the "6 square faces of a cube" framing was not, since this
+fixture is not a proper cube graph. The **`adamantane`** fixture has the same
+kind of pre-existing corpus-labeling caveat (11 atoms in
+`C1CC2CC3CC1CC(C2)C3`, not real adamantane's 10) but produced zero
+ring-classification disagreements against RDKit regardless.
+
+All 15 non-cubane fixtures (benzene, naphthalene, pyridine, furan, thiophene,
+adamantane, cyclohexane, cyclopentane, indole, purine, quinoline, anthracene,
+pyrene, biphenyl, cyclododecane, crown_12_4, cyclooctadecane, cyclopropane,
+cyclobutane, cycloheptane, cyclooctane, norbornane, spiro_5_6) matched RDKit
+bond-for-bond, including the fused-aromatic (naphthalene, indole, purine,
+quinoline, anthracene, pyrene) and bridged (norbornane, adamantane) cases
+specifically named in spec §5.
 
 ### 6.3 Torsion distribution: empirical confirmation for the amide bond
 
@@ -427,12 +449,70 @@ narrowed silently — this PR's rule-to-fixture matching is instead verified
 via chematic's own SMARTS-parse tests (every rule's SMARTS parses; the
 generic macrocycle/small-ring/standard rules were confirmed, in this same
 review pass, to actually fire on the fixtures they were written for — see
-`rules_macrocycle.rs`'s `ring_ch2_ch2_chain`/`ring_ch2_ether_chain`/
-`lactam_amide_h1_c1` regression tests, added after independent review found
-the macrocycle tier matched zero potentials on several corpus fixtures) and
-translation provenance via direct source citation (§1 above and the sources
-manifest), not a live RDKit differential.
+`rules_macrocycle.rs`'s regression tests, added after independent review
+found the macrocycle tier matched zero potentials on several corpus
+fixtures) and translation provenance via direct source citation (§1 above
+and the sources manifest), not a live RDKit differential.
 
 Raw results: `validation/etkdg_torsion_knowledge_v2_chematic_side.json`
 (chematic side) and `validation/etkdg_torsion_knowledge_v2_rdkit_oracle_diff.json`
 (RDKit side + diff), both written by the reproduce commands above.
+
+### 6.5 Second-round correction: two of the new generic rules cited a shadowed line
+
+A second independent review pass on the two generic macrocycle rules added
+in §6.4's fix (`ring_ch2_ch2_chain` and `ring_ch2_ether_chain` as they
+existed at that point) found that citing "which RDKit line matches this
+SMARTS pattern" is not the same claim as "which RDKit line actually governs
+this bond in RDKit's real behavior" — because RDKit's matching loop is
+first-match-wins (`TorsionPreferences.cpp`'s `doneBonds` bitset: a bond is
+scored by whichever pattern matches it FIRST in file order; every later
+pattern is skipped for that bond once one has matched — confirmed by
+directly reading the matching loop, not assumed from the `.in` file's
+comments alone).
+
+Both original picks turned out to be shadowed by an earlier, broader pattern
+in the same file that also matches the same fixture:
+
+- The alkane-chain rule cited line 245 (`[CX4H2;r{9-}][CX4H2;r{9-}]`,
+  requires H2 on both atoms, term `(3,+1,4.0)`). Line 244, immediately
+  before it, is a strict superset (`[CX4&r][CX4&r]`, no H-count
+  restriction, term `(3,+1,2.0)`) and therefore always wins for
+  cyclododecane's backbone bonds. Checked lines 11-243 for any earlier
+  pattern that could match first on a plain saturated hydrocarbon (no
+  O/N/S/aromatic anywhere in the fixture): none exists. Renamed
+  `macrocycle:ring_ch2_ch2_chain` → `macrocycle:ring_generic_cx4_chain`,
+  re-cited to line 244, coefficient corrected 4.0 → 2.0.
+- The ether-chain rule cited line 65 (`[C][CX4H2][OX2][!#1]`, atom4 = any
+  non-H, term `(1,+1,2.0)`, single well). Line 60, earlier in the file,
+  requires atom4 be aliphatic carbon *specifically* (`[C]`, a strict subset
+  of `[!#1]`) with term `(3,+1,4.0)` (three wells) — and crown ether's
+  `-O-CH2-CH2-O-` repeat unit genuinely has a plain aliphatic carbon on
+  that position, so line 60 wins. Checked lines 11-59: line 27 (an
+  O-C-O-C acetal pattern) requires the central carbon bonded to two
+  *different* ring oxygens, which this repeat unit does not have (each
+  carbon has exactly one O neighbor); lines 29-55 all require an aromatic
+  atom; lines 56-59 require H-counts/atom-types this fixture's plain CH2
+  doesn't have. `macrocycle:ring_ch2_ether_chain` kept its name, re-cited
+  to line 60, coefficients corrected from a single 1-fold term to a 3-fold
+  term (2.0 → 4.0, periodicity 1 → 3).
+
+An attempted empirical cross-check (RDKit's own ETKDG conformer ensemble for
+the crown-ether C-O bond, `useMacrocycleTorsions=True`) came back
+inconclusive — a 60-bucket histogram of `[3,10,16,20,4,7]` out of 60
+conformers is not a clean signature of either a single well or a symmetric
+three-well distribution, most likely because the whole-molecule bounds
+matrix couples this bond to its ring neighbors' own torsion terms, which a
+single-bond histogram cannot isolate. The source-code control-flow argument
+above is a structural fact about the cascade (not a statistical inference),
+so it was treated as decisive over the noisier empirical proxy; both are
+recorded here rather than only the one that "worked", per this program's
+practice of reporting a negative/inconclusive check rather than omitting it.
+
+Separately (not a citation error, an added rule): `macrocycle:lactam_n_calpha`
+was added citing line 113 — the N-Calpha bond adjacent to the C(=O)-N bond
+that has no real coverage for the NX3H1+CX4H2 combination (§ above). This
+sharpens that gap claim: the unbranched `macrocyclic_amide` fixture's
+C(=O)-N bond genuinely matches nothing, but its immediately adjacent N-CH2
+bond does. The known-gaps claim in the PR body was corrected accordingly to
+name the specific bond, not the whole fixture.

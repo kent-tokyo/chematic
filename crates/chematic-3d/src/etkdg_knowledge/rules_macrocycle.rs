@@ -98,29 +98,71 @@ pub static MACROCYCLE_TORSION_RULES: &[MacrocycleTorsionRule] = &[
         ],
         source_line: "torsionPreferences_macrocycles.in:176",
     },
-    // Generic all-aliphatic CH2-CH2 macrocycle backbone bond -- RDKit's own
-    // most-generic (lowest-specificity, near-end-of-cascade) entry for a
-    // plain macrocycle chain bond with no functional-group context (e.g.
-    // cyclododecane, cyclooctadecane). Without this rule, a pure-hydrocarbon
-    // macrocycle never matches any macrocycle-tier rule at all -- caught by
-    // independent review, not self-discovered.
+    // Generic all-aliphatic CX4-CX4 macrocycle backbone bond -- the pattern
+    // that actually governs a plain-hydrocarbon macrocycle bond (e.g.
+    // cyclododecane, cyclooctadecane) in RDKit's REAL first-match-wins
+    // cascade (`TorsionPreferences.cpp`'s `doneBonds` bitset: a bond is
+    // scored by whichever pattern matches it FIRST in file order, every
+    // later pattern is then skipped for that bond -- confirmed by reading
+    // `TorsionPreferences.cpp`'s matching loop, not assumed). An earlier
+    // draft of this rule cited line 245 (`[CX4H2;r{9-}][CX4H2;r{9-}]`,
+    // narrower: requires H2 on both atoms) with term (3,+1,4.0) -- but line
+    // 244, which precedes it and is a strict SUPERSET pattern
+    // (`[CX4&r][CX4&r]`, no H-count restriction), always matches first for
+    // any macrocycle C-C bond including cyclododecane's, making line 245
+    // unreachable for this fixture in RDKit's real behavior. Checked lines
+    // 11-243 of the source file for any other all-carbon (no O/N/S/aromatic)
+    // pattern that could match a plain saturated hydrocarbon macrocycle
+    // first: none exists (every earlier line requires a heteroatom, an
+    // aromatic ring, or a small-ring-specific context absent from a plain
+    // cycloalkane) -- corrected after independent review flagged that the
+    // originally-cited line may be shadowed, not merely that a rule was
+    // missing.
     MacrocycleTorsionRule {
-        rule_id: "macrocycle:ring_ch2_ch2_chain",
-        smarts: "[!#1:1][CX4H2:2][CX4H2:3][!#1:4]",
+        rule_id: "macrocycle:ring_generic_cx4_chain",
+        smarts: "[!#1:1][CX4:2][CX4:3][!#1:4]",
         applicable_ring_sizes: MACROCYCLE_MIN..=usize::MAX,
-        terms: &[(3, 1, 4.0)],
-        source_line: "torsionPreferences_macrocycles.in:245",
+        terms: &[(3, 1, 2.0)],
+        source_line: "torsionPreferences_macrocycles.in:244",
     },
     // Generic aliphatic ether-chain bond within a macrocycle (e.g. crown
     // ethers): a ring CH2 flanked by an aliphatic carbon on one side and a
-    // ring ether oxygen on the other. Same "otherwise unmatched" gap as
-    // above, for O-containing macrocycles.
+    // ring ether oxygen on the other, with the far neighbor also aliphatic
+    // carbon. Same shadowing correction as above: an earlier draft cited
+    // line 65 (`[C][CX4H2][OX2][!#1]`, atom4 = any non-H) with term
+    // (1,+1,2.0) -- but line 60, which precedes it and requires atom4 be
+    // aliphatic carbon SPECIFICALLY (`[C]`, a strict subset of `[!#1]`),
+    // always matches first when atom4 genuinely is carbon (true for crown
+    // ether's -O-CH2-CH2-O- repeat unit), with term (3,+1,4.0) instead.
+    // Checked lines 11-59 for any earlier pattern matching a plain
+    // non-acetal, non-aromatic ether C-O bond: line 27 (an O-C-O-C acetal
+    // pattern) requires the central carbon bonded to TWO different ring
+    // oxygens, which crown ether's plain -O-CH2-CH2-O- chain does not have
+    // (each ring carbon has exactly one O neighbor); lines 29-55 all require
+    // an aromatic atom; lines 56-59 require H-counts/atom-types crown
+    // ether's plain CH2 doesn't have. None match; line 60 is the real first
+    // match.
     MacrocycleTorsionRule {
         rule_id: "macrocycle:ring_ch2_ether_chain",
-        smarts: "[C:1][CX4H2:2][OX2:3][!#1:4]",
+        smarts: "[C:1][CX4H2:2][OX2:3][C:4]",
         applicable_ring_sizes: MACROCYCLE_MIN..=usize::MAX,
-        terms: &[(1, 1, 2.0)],
-        source_line: "torsionPreferences_macrocycles.in:65",
+        terms: &[(3, 1, 4.0)],
+        source_line: "torsionPreferences_macrocycles.in:60",
+    },
+    // Macrolactam N-C(alpha) bond (distinct from the C(=O)-N bond the
+    // lactam_amide_* rules above cover): for the SAME NX3H1+CX4H2
+    // combination that is genuinely absent from the C(=O)-N side of RDKit's
+    // table (see the lactam_amide_* rules' doc comment above), the adjacent
+    // N-Calpha bond DOES have real coverage. Added during independent review
+    // to sharpen the "known gap" claim by contrast: the C(=O)-N bond of a
+    // plain unbranched secondary macrolactam has no real rule; its
+    // immediately adjacent N-CH2 bond does.
+    MacrocycleTorsionRule {
+        rule_id: "macrocycle:lactam_n_calpha",
+        smarts: "[$(C=O):1][NX3H1:2][CX4H2:3][!#1:4]",
+        applicable_ring_sizes: MACROCYCLE_MIN..=usize::MAX,
+        terms: &[(3, 1, 2.0)],
+        source_line: "torsionPreferences_macrocycles.in:113",
     },
 ];
 
@@ -198,25 +240,25 @@ mod tests {
 
     /// Regression test for a real gap found by independent review: a plain
     /// all-hydrocarbon macrocycle (e.g. cyclododecane) matched ZERO
-    /// macrocycle-tier rules before `ring_ch2_ch2_chain` was added, silently
-    /// making `use_macrocycle_torsions` a no-op for the corpus's own
+    /// macrocycle-tier rules before `ring_generic_cx4_chain` was added,
+    /// silently making `use_macrocycle_torsions` a no-op for the corpus's own
     /// `cyclododecane`/`cyclooctadecane` fixtures. Verified here directly via
     /// SMARTS matching (ring-size gating happens in `matcher.rs`, not here,
     /// so this only checks that the connectivity pattern itself matches).
     #[test]
-    fn ring_ch2_ch2_chain_matches_a_plain_macrocycle() {
+    fn ring_generic_cx4_chain_matches_a_plain_macrocycle() {
         use chematic_smarts::find_matches;
         use chematic_smiles::parse;
 
         let mol = parse("C1CCCCCCCCCCC1").unwrap(); // cyclododecane
         let rule = MACROCYCLE_TORSION_RULES
             .iter()
-            .find(|r| r.rule_id == "macrocycle:ring_ch2_ch2_chain")
+            .find(|r| r.rule_id == "macrocycle:ring_generic_cx4_chain")
             .unwrap();
         let query = parse_rule(rule).unwrap();
         assert!(
             !find_matches(&query, &mol).is_empty(),
-            "ring_ch2_ch2_chain must match a plain CH2-CH2 macrocycle bond"
+            "ring_generic_cx4_chain must match a plain CX4-CX4 macrocycle bond"
         );
     }
 
@@ -255,6 +297,28 @@ mod tests {
         assert!(
             !find_matches(&query, &mol).is_empty(),
             "lactam_amide_h1_c1 must match a branched-alpha secondary macrolactam"
+        );
+    }
+
+    /// `lactam_n_calpha` covers the N-Calpha bond of a plain unbranched
+    /// secondary macrolactam even though no `lactam_amide_*` rule covers its
+    /// adjacent C(=O)-N bond (the genuine RDKit-table gap documented above)
+    /// -- sharpens that gap claim by contrast: this specific fixture is NOT
+    /// entirely unmatched, just unmatched on one specific bond.
+    #[test]
+    fn lactam_n_calpha_matches_the_unbranched_macrolactam_fixture() {
+        use chematic_smarts::find_matches;
+        use chematic_smiles::parse;
+
+        let mol = parse("O=C1NCCCCCCCCCCC1").unwrap(); // macrocyclic_amide fixture
+        let rule = MACROCYCLE_TORSION_RULES
+            .iter()
+            .find(|r| r.rule_id == "macrocycle:lactam_n_calpha")
+            .unwrap();
+        let query = parse_rule(rule).unwrap();
+        assert!(
+            !find_matches(&query, &mol).is_empty(),
+            "lactam_n_calpha must match the N-Calpha bond of an unbranched secondary macrolactam"
         );
     }
 }
