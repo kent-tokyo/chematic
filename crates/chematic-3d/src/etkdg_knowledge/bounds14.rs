@@ -1,12 +1,19 @@
 //! Macrocycle 1-4 bound adjustments (Wave 2 spec §6).
 //!
-//! A **pure API** Coordinator can call when constructing bounds later --
-//! this PR does **not** apply these adjustments to any real bounds matrix
-//! (`dg_fft::build_bound_matrix` / `distance_geometry_v2.rs`, neither of
-//! which this PR edits). Evaluated only via this module's own tests and the
-//! `torsion_knowledge_v2_gap_check` example's Arm D (which applies the
-//! adjustments to a **copy** of the harness's own working bounds to simulate
-//! what a future integration would do, never to the production embedder).
+//! A **pure API** — this module (PR #191, "Wave 2") does not itself apply these
+//! adjustments to any real bounds matrix; it was evaluated only via this module's
+//! own tests and the `torsion_knowledge_v2_gap_check` example's Arm D (which applied
+//! the adjustments to a **copy** of the harness's own working bounds to simulate a
+//! future integration, never the production embedder).
+//!
+//! **Update (Wave 2 → Wave 3 Coordinator integration, `pipeline_v2.rs`):** this
+//! function's output IS now wired into the real embedder in production, via a
+//! minimal `pub(crate)` hook added to `distance_geometry_v2.rs`
+//! (`embed_distance_geometry_v2_with_adjustments`) that `pipeline_v2::embed_pipeline_v2`
+//! calls at stage 4, after converting each [`PairBoundAdjustment`] into that hook's
+//! own `DistanceBoundAdjustment` type. This module itself is unchanged by that
+//! integration (still a pure, standalone API) — only the paragraph above, which
+//! predates the integration, needed correcting so it doesn't read as still true.
 //!
 //! Translated/adapted from RDKit's real macrocycle-1-4 algorithm:
 //! - `Code/Geometry/Utils.h`'s `compute14DistCis`/`compute14DistTrans`

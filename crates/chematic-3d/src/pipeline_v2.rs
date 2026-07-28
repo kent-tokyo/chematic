@@ -212,6 +212,17 @@ pub struct PipelineV2Config {
     pub force_field_max_iterations: usize,
     pub gate_mmff94_torsion_oop: bool,
     pub ring_torsion_policy: RingTorsionApplicationPolicy,
+    /// Wall-clock budget (milliseconds) for the whole call. `None` = no limit.
+    /// Checked coarsely: once immediately after every one of the 12 stages
+    /// completes (including the last, stage 12 -- independent verification round 2
+    /// found this was missing after stage 12 specifically; it is now checked
+    /// there too, after that stage's own semantic gate), never pre-emptively
+    /// *during* a stage. A single expensive stage (e.g. a large `max_attempts` in
+    /// `EmbedParameters`, or `optimize_torsions` on a very large molecule) can
+    /// therefore overshoot the budget before the next check point — this is the
+    /// same "checked between attempts, not pre-emptively inside one attempt"
+    /// convention `EmbedParameters::timeout_ms` already documents for the raw
+    /// embedder, applied one level up.
     pub total_timeout_ms: Option<u64>,
 }
 
@@ -920,6 +931,15 @@ pub fn embed_pipeline_v2(
             timings,
         ));
     }
+    // Independent verification round 2 found this was missing: every other stage
+    // gets a `check_timeout!` immediately after it, but stage 12 (the last one)
+    // didn't -- meaning `total_timeout_ms` was silently unenforced on whatever time
+    // stage 12's own O(n^2) clash-count / bond-violation-rate work took, so a
+    // caller's requested budget could be exceeded without ever seeing a `Timeout`
+    // failure. Checked here, after the stage's own semantic gate (matching stage
+    // 11's own ordering: the stage's real outcome is decided first, the timeout
+    // budget is enforced after).
+    check_timeout!(PipelineStage::FinalGeometryValidationStage);
 
     timings.total_ms = overall_start.elapsed().as_millis() as u64;
     Ok(PipelineV2Result {
