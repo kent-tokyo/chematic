@@ -27,6 +27,9 @@
 //! - WASM-compatible (no filesystem I/O, no threads).
 
 pub mod canonical;
+mod canonical_automorphism;
+mod canonical_partition;
+pub mod canonical_search;
 pub mod cx;
 pub mod error;
 pub mod parser;
@@ -37,6 +40,10 @@ pub mod writer;
 pub use canonical::are_atoms_equivalent;
 pub use canonical::{
     canonical_atom_order, canonical_smiles, equivalent_atom_classes, morgan_ranks,
+};
+pub use canonical_search::{
+    CanonicalSearchStats, CanonicalizationError, CanonicalizationLimits,
+    canonical_smiles_with_limits, reset_search_stats, search_stats_snapshot,
 };
 pub use cx::{CxAtomProp, CxSmiles, parse_cxsmiles, write_cxsmiles};
 pub use error::SmilesError;

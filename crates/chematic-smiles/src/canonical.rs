@@ -59,7 +59,35 @@ pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
 /// traversal on every single call (perf; issue found bisecting the
 /// `run_reactants`/`apply_retro` regression between chematic 0.4.25 and
 /// 0.4.30 -- see docs/reaction_transform_perf.md).
+///
+/// As of this PR, the actual search is `canonical_search::
+/// winning_individualized_ranks_with_limits` (automorphism-orbit-pruned,
+/// streaming, called here with `CanonicalizationLimits::unbounded()`),
+/// which is provably equivalent to (a strict subset of the same candidate
+/// (ranks, string) pairs considered by) the legacy exhaustive enumeration
+/// below -- see `docs/canonical_automorphism_pruning.md`. The legacy
+/// exhaustive path (`legacy_winning_individualized_ranks`) is kept as a
+/// last-resort fallback for the astronomically-rare case of an internal bug
+/// in the new engine (`CanonicalizationError::InvalidInternalMapping`): it
+/// degrades to "slow but correct" rather than panicking or returning wrong
+/// output. `CanonicalizationError::SearchBudgetExceeded` cannot occur here
+/// since `unbounded()` never checks either budget.
 fn winning_individualized_ranks(mol: &Molecule) -> (Vec<u64>, String) {
+    match crate::canonical_search::winning_individualized_ranks_with_limits(
+        mol,
+        &crate::canonical_search::CanonicalizationLimits::unbounded(),
+    ) {
+        Ok(result) => result,
+        Err(_) => legacy_winning_individualized_ranks(mol),
+    }
+}
+
+/// The original (pre-orbit-pruning) individualize-refine search: exhaustive,
+/// capped at `MAX_INDIVIDUALIZE_BRANCHES`. Kept as (a) the fallback of last
+/// resort for `winning_individualized_ranks` and (b) test-only exhaustive
+/// oracle support (`canonical_smiles_exhaustive_oracle`, `usize::MAX`
+/// budget). No longer the default hot path.
+fn legacy_winning_individualized_ranks(mol: &Molecule) -> (Vec<u64>, String) {
     let plateaued = morgan_ranks(mol);
     let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
     let branches = enumerate_discrete_ranks(mol, plateaued, &mut budget);
@@ -70,6 +98,59 @@ fn winning_individualized_ranks(mol: &Molecule) -> (Vec<u64>, String) {
             (ranks, s)
         })
         .min_by(|(_, a), (_, b)| a.cmp(b))
+        .unwrap_or_default()
+}
+
+/// Benchmark-only: the pre-orbit-pruning exhaustive search (same code as
+/// [`legacy_winning_individualized_ranks`], capped at
+/// `MAX_INDIVIDUALIZE_BRANCHES` exactly like before this PR), exposed so
+/// `examples/canonical_orbit_perf.rs` can measure a genuine before/after
+/// comparison against the exact prior algorithm from within the same crate
+/// version, instead of requiring a separate git-worktree checkout. Not part
+/// of the stable public API (`#[doc(hidden)]`); never call this from
+/// production code -- use [`canonical_smiles`].
+#[doc(hidden)]
+pub fn legacy_canonical_smiles_for_benchmark(mol: &Molecule) -> String {
+    if mol.atom_count() == 0 {
+        return String::new();
+    }
+    legacy_winning_individualized_ranks(mol).1
+}
+
+/// Benchmark-only: the number of individualize-refine branches (leaves) the
+/// pre-orbit-pruning exhaustive search would explore for `mol`, capped at
+/// `MAX_INDIVIDUALIZE_BRANCHES` exactly like before this PR. Paired with
+/// [`legacy_canonical_smiles_for_benchmark`] so `examples/
+/// canonical_orbit_perf.rs` can report a precise leaf-count reduction
+/// (old branch count vs the new engine's `leaves_written` instrumentation
+/// counter), not just wall-clock timing. `#[doc(hidden)]`, benchmark-only.
+#[doc(hidden)]
+pub fn legacy_branch_count_for_benchmark(mol: &Molecule) -> usize {
+    if mol.atom_count() == 0 {
+        return 0;
+    }
+    let plateaued = morgan_ranks(mol);
+    let mut budget = MAX_INDIVIDUALIZE_BRANCHES;
+    enumerate_discrete_ranks(mol, plateaued, &mut budget).len()
+}
+
+/// Test-only, unbounded, orbit-pruning-free exhaustive individualize-refine
+/// oracle (section 12): the legacy enumeration with an effectively
+/// unlimited budget, used to cross-check the orbit-pruned engine's output.
+/// Never called "the" canonicalization implementation -- this is a
+/// deliberately slow ground truth for tests only.
+#[cfg(test)]
+pub(crate) fn canonical_smiles_exhaustive_oracle(mol: &Molecule) -> String {
+    if mol.atom_count() == 0 {
+        return String::new();
+    }
+    let plateaued = morgan_ranks(mol);
+    let mut budget = usize::MAX;
+    let branches = enumerate_discrete_ranks(mol, plateaued, &mut budget);
+    branches
+        .into_iter()
+        .map(|ranks| CanonicalWriter::new(mol, &ranks).write_all())
+        .min()
         .unwrap_or_default()
 }
 
@@ -160,7 +241,7 @@ pub fn morgan_ranks(mol: &Molecule) -> Vec<u64> {
 /// classes stops increasing. Used both for the plain (tie-preserving) ranks
 /// in [`morgan_ranks`] and, with a perturbed starting coloring, as the
 /// "refine" half of individualize-refine in `enumerate_discrete_ranks`.
-fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
+pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
     let n = ranks.len();
     let max_iter = n + 2;
     for _ in 0..max_iter {
@@ -225,12 +306,29 @@ fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
 /// real fix is the orbit-aware pruning mentioned above.
 const MAX_INDIVIDUALIZE_BRANCHES: usize = 10_000;
 
+/// Group atom indices by their current (gap-free ordinal) rank value.
+/// `by_rank[r]` lists, in ascending atom-index order, every atom whose rank
+/// equals `r`. Shared by the legacy exhaustive `enumerate_discrete_ranks`
+/// and the orbit-pruned `canonical_search::search_canonical`, so both agree
+/// on cell membership and (within a cell) traversal order.
+pub(crate) fn group_by_rank(ranks: &[u64]) -> Vec<Vec<usize>> {
+    let mut by_rank: Vec<Vec<usize>> = Vec::new();
+    for (i, &r) in ranks.iter().enumerate() {
+        let r = r as usize;
+        if by_rank.len() <= r {
+            by_rank.resize(r + 1, Vec::new());
+        }
+        by_rank[r].push(i);
+    }
+    by_rank
+}
+
 /// Individualize atom `atom_idx` within its current rank class: insert a new
 /// rank strictly between its class and the next-higher class, so a
 /// subsequent refinement pass can propagate the distinction through the rest
 /// of the graph. `ranks` must be gap-free ordinals (as produced by
 /// `refine_ranks`/`normalize_ranks`).
-fn individualize(ranks: &[u64], atom_idx: usize) -> Vec<u64> {
+pub(crate) fn individualize(ranks: &[u64], atom_idx: usize) -> Vec<u64> {
     let v = ranks[atom_idx];
     ranks
         .iter()
@@ -264,14 +362,7 @@ fn individualize(ranks: &[u64], atom_idx: usize) -> Vec<u64> {
 /// non-singleton class to branch on next) is itself order-independent:
 /// always the lowest-ranked non-singleton cell.
 fn enumerate_discrete_ranks(mol: &Molecule, ranks: Vec<u64>, budget: &mut usize) -> Vec<Vec<u64>> {
-    let mut by_rank: Vec<Vec<usize>> = Vec::new();
-    for (i, &r) in ranks.iter().enumerate() {
-        let r = r as usize;
-        if by_rank.len() <= r {
-            by_rank.resize(r + 1, Vec::new());
-        }
-        by_rank[r].push(i);
-    }
+    let by_rank = group_by_rank(&ranks);
 
     // `by_rank` is indexed by ordinal rank value, so the first multi-member
     // entry found is the lowest-ranked non-singleton cell.
@@ -364,7 +455,7 @@ fn normalize_ranks(ranks: &[u64]) -> Vec<u64> {
     result
 }
 
-struct CanonicalWriter<'a> {
+pub(crate) struct CanonicalWriter<'a> {
     mol: &'a Molecule,
     ranks: &'a [u64],
     written: Vec<bool>,
@@ -406,7 +497,7 @@ struct CanonicalWriter<'a> {
 }
 
 impl<'a> CanonicalWriter<'a> {
-    fn new(mol: &'a Molecule, ranks: &'a [u64]) -> Self {
+    pub(crate) fn new(mol: &'a Molecule, ranks: &'a [u64]) -> Self {
         let n = mol.atom_count();
         Self {
             mol,
@@ -774,7 +865,7 @@ impl<'a> CanonicalWriter<'a> {
         }
     }
 
-    fn write_all(mut self) -> String {
+    pub(crate) fn write_all(mut self) -> String {
         // Phase -1: pick, for every tri-/tetra-substituted stereo alkene
         // end, which substituent bond canonically carries the `/`/`\`
         // marker (topology + rank only — independent of write order, and of
@@ -1229,6 +1320,65 @@ fn permutation_is_odd(original: &[u32], canonical: &[u32]) -> bool {
 mod tests {
     use super::*;
     use crate::parser::parse;
+
+    /// Positive control (section 3/19): directly verify -- by calling the
+    /// legacy exhaustive enumeration itself, not by trusting a doc comment
+    /// -- that budget exhaustion in the *old* design silently returns a
+    /// partial/wrong result rather than failing closed. With `budget = 0`,
+    /// `enumerate_discrete_ranks`'s very first non-singleton cell hits the
+    /// `*budget == 0 { break; }` guard on its first loop iteration and
+    /// returns an empty `Vec`; the caller's `.min_by(..).unwrap_or_default()`
+    /// then silently produces `("", vec![])` -- an EMPTY canonical SMILES,
+    /// not an error. This is exactly the anti-pattern the new
+    /// `canonical_smiles_with_limits`/`CanonicalizationError::
+    /// SearchBudgetExceeded` API (in `canonical_search.rs`) exists to
+    /// retire for callers who opt into a bounded search.
+    #[test]
+    fn old_design_zero_budget_silently_returns_empty_string_not_an_error() {
+        let mol = parse("c1ccccc1").unwrap(); // benzene: 1 non-singleton cell of all 6 atoms
+        let plateaued = morgan_ranks(&mol);
+        let mut budget = 0usize;
+        let branches = enumerate_discrete_ranks(&mol, plateaued, &mut budget);
+        assert!(
+            branches.is_empty(),
+            "zero budget should yield zero explored branches from the old design"
+        );
+
+        // Reproduce exactly what `legacy_winning_individualized_ranks` (and,
+        // before this PR, `winning_individualized_ranks`) does with that
+        // empty branch list.
+        let (ranks, s) = branches
+            .into_iter()
+            .map(|r: Vec<u64>| {
+                let s = CanonicalWriter::new(&mol, &r).write_all();
+                (r, s)
+            })
+            .min_by(|(_, a), (_, b)| a.cmp(b))
+            .unwrap_or_default();
+        assert_eq!(
+            s, "",
+            "old design: zero budget silently yields an EMPTY canonical string"
+        );
+        assert!(ranks.is_empty());
+
+        // Confirm the NEW engine does NOT reproduce this failure mode: the
+        // same molecule under an equivalently tiny bounded search fails
+        // closed (a typed error), never an empty string.
+        let bounded = crate::canonical_search::canonical_smiles_with_limits(
+            &mol,
+            &crate::canonical_search::CanonicalizationLimits {
+                max_search_nodes: Some(0),
+                max_automorphism_tests: None,
+            },
+        );
+        assert!(
+            matches!(
+                bounded,
+                Err(crate::canonical_search::CanonicalizationError::SearchBudgetExceeded { .. })
+            ),
+            "new engine must fail closed, got {bounded:?}"
+        );
+    }
 
     /// Build a copy of `mol` with atoms reordered by `perm` (perm[new_idx] = old_idx).
     /// Bonds are remapped to the new indices; stereo/direction metadata is
