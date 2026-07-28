@@ -1,4 +1,64 @@
-//! ETKDG Torsion Knowledge Base — experimental torsion angle preferences from CSD.
+//! ETKDG Torsion Knowledge Base.
+//!
+//! # Two generations of code in this file
+//!
+//! **Legacy (below, unchanged by the Wave 2 PR that added the `v2` module
+//! family):** `classify_atom_type`, `get_torsion_preference`,
+//! `build_smarts_torsion_map`, `default_torsion_preference`, `score_torsion`,
+//! and their supporting types (`AtomType`, `TorsionPreference`,
+//! `SmartsTorsionRule`). This is a hand-authored, single-angle +
+//! linear-penalty heuristic layer. **Its previous doc comment claimed these
+//! were "experimental torsion angle preferences from CSD" (Cambridge
+//! Structural Database) -- that claim was unverified and, on the evidence
+//! gathered, false: there is no CSD query, statistical fit, or citation
+//! anywhere in this module or its history.** See
+//! `docs/3d_torsion_knowledge_audit.md` for the full audit (every rule
+//! individually reclassified as `verified_from_primary_source` /
+//! `supported_by_rdkit_oracle` / `reasonable_heuristic_only` /
+//! `incorrect_or_overgeneralized` / `ambiguous`; zero `dead_or_unreachable`).
+//! Kept behaviorally **unchanged** (same public API, same outputs) -- only
+//! this doc comment was corrected to stop mislabeling it.
+//!
+//! **v2 (submodules below, new in `feat/3d-torsion-knowledge-v2`, 3D
+//! Breakthrough Program Wave 2 / Agent E):** a separate, periodic/multi-modal
+//! torsion-potential layer with explicit rule provenance, a 6-tier priority
+//! system, ring/bond classification, macrocycle 1-4 bounds, and a
+//! torsion-space energy/optimization API. See each submodule's own doc
+//! comment, `docs/3d_torsion_knowledge_audit.md`, and
+//! `validation/manifests/etkdg_torsion_knowledge_sources.json` for the full
+//! design and sourcing. **Not wired into `distance_geometry_v2.rs` or
+//! `etkdg.rs`** -- this PR is a self-contained knowledge/potential/
+//! verification layer only; Coordinator performs that integration in a
+//! later, separate PR. The new code never uses the legacy heuristic's
+//! output as evidence that it is correct (spec §8) -- they are independent
+//! implementations, reconciled only through this file's re-exports.
+
+mod bounds14;
+mod canon_rank;
+mod classify;
+mod energy;
+mod matcher;
+mod rules_basic;
+mod rules_macrocycle;
+mod rules_smallring;
+mod rules_standard;
+mod types;
+
+pub use bounds14::{PairBoundAdjustment, macrocycle_14_bound_adjustments};
+pub use classify::{
+    BondClassification, MACROCYCLE_MIN, RingMembership, RingMembershipIndex, SMALL_RING_MAX,
+    SMALL_RING_MIN, candidate_central_bonds, classify_bond,
+};
+pub use energy::{
+    TorsionEnergyReport, TorsionOptimizationConfig, TorsionOptimizationReport,
+    evaluate_torsion_energy, optimize_torsions,
+};
+pub use matcher::build_torsion_knowledge;
+pub use types::{
+    FourierTorsionTerm, TorsionKnowledgeConfig, TorsionKnowledgeDiagnostic,
+    TorsionKnowledgeDiagnosticKind, TorsionKnowledgeError, TorsionKnowledgeReport,
+    TorsionKnowledgeSource, TorsionPotential,
+};
 
 use chematic_core::{AtomIdx, Molecule};
 use chematic_smarts::{find_matches, parse_smarts};
