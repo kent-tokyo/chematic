@@ -165,19 +165,30 @@ mod tests {
         assert_eq!(fwd_ranks, bwd_ranks);
     }
 
-    /// Regression evidence for the residual 4/72 corpus fixtures the
-    /// gap-check example's `atom_order_energy_invariance` still reports as
-    /// FAIL after the `uniquify: false` + `canonical_atoms` fix (see
-    /// `matcher.rs`'s doc comment): in every one of these 4, the specific
-    /// outer atoms the torsion match picks tie in Morgan rank -- i.e. they
-    /// are GENUINELY, chemically interchangeable substituents (a true graph
-    /// automorphism, not two different atoms an insufficiently-refined
-    /// invariant merely failed to distinguish). No purely-topological rule
-    /// can pick one over the other in a way that survives adversarial
-    /// relabeling, since by definition nothing about the graph distinguishes
-    /// them -- confirmed here directly rather than assumed, so this is
-    /// falsifiable if a future change to `morgan_ranks` accidentally starts
-    /// distinguishing (or stops distinguishing) the wrong atoms.
+    /// Regression evidence for the residual 3/72 corpus fixtures the
+    /// gap-check example's `atom_order_energy_invariance` still reports as a
+    /// named (not unexplained) FAIL after the `uniquify: false` +
+    /// `canonical_atoms` fix (see `matcher.rs`'s doc comment): biphenyl,
+    /// adamantane, and cubane. In each, the specific outer atoms the torsion
+    /// match picks tie in Morgan rank -- i.e. they are GENUINELY, chemically
+    /// interchangeable substituents (a true graph automorphism, not two
+    /// different atoms an insufficiently-refined invariant merely failed to
+    /// distinguish). No purely-topological rule can pick one over the other
+    /// in a way that survives adversarial relabeling, since by definition
+    /// nothing about the graph distinguishes them -- confirmed here directly
+    /// rather than assumed, so this is falsifiable if a future change to
+    /// `morgan_ranks` accidentally starts distinguishing (or stops
+    /// distinguishing) the wrong atoms.
+    ///
+    /// penicillin_core's gem-dimethyl pair (asserted below too) ties in rank
+    /// for the same true-automorphism reason, but is NOT one of the 3 named
+    /// residuals: `atom_in_ring_size_range` (round-4 fix, `matcher.rs`)
+    /// constrains a ring-torsion rule's outer atoms to ring members, and the
+    /// gem-dimethyl carbons aren't in any ring, so neither ever gets picked
+    /// as the outer atom in the first place -- the tie exists in the graph
+    /// but the matcher never has to break it. Kept here as a standing
+    /// regression check on `morgan_ranks` itself, independent of whether the
+    /// matcher currently reaches this tie.
     #[test]
     fn known_true_symmetry_ties_behind_the_residual_atom_order_cases() {
         // biphenyl: the two ortho carbons flanking each ipso carbon (a

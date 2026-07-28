@@ -493,6 +493,14 @@ fn run_arm(
         // Arm D only. This never mutates any production bounds matrix; it
         // is purely a harness-side measurement of the proposal's own
         // internal consistency against this specific embedded geometry.
+        //
+        // Deliberately measured against `coords` (the raw embedding), NOT
+        // `final_coords` below: this is an embedding-time bounds-matrix
+        // question ("would the proposed 1-4 band have been satisfied by
+        // distance geometry itself"), not a post-rotation safety question --
+        // torsion optimization runs after embedding and does not go back
+        // through the bounds matrix, so `final_coords` is the wrong
+        // reference point here. Do not "fix" this to use `final_coords`.
         if apply_14_bounds && let Ok(adjustments) = macrocycle_14_bound_adjustments(&mol, config) {
             for adj in &adjustments {
                 let d = coords
@@ -719,15 +727,22 @@ fn reproducibility_and_invariance_report() {
     // EXCEPT on the small, named set of fixtures where the outer atom a
     // rule binds to is a genuine graph automorphism (chemically
     // interchangeable substituents: biphenyl's ortho-H pairs, adamantane/
-    // cubane's cage symmetry, penicillin_core's gem-dimethyl -- each
-    // verified, not assumed, by `canon_rank`'s
+    // cubane's cage symmetry -- each verified, not assumed, by `canon_rank`'s
     // `known_true_symmetry_ties_behind_the_residual_atom_order_cases` test).
     // No purely-topological rule can make that specific choice
     // relabeling-invariant, since nothing about the graph distinguishes the
     // tied atoms -- this is reported as a separately-counted, named,
     // understood residual, not folded into the same PASS/FAIL as a real bug.
-    const KNOWN_TRUE_SYMMETRY_RESIDUAL: &[&str] =
-        &["biphenyl", "adamantane", "cubane", "penicillin_core"];
+    //
+    // penicillin_core is deliberately NOT on this list: it used to hit this
+    // residual before `atom_in_ring_size_range` started constraining the
+    // outer atoms to the ring (round-4 fix) -- the gem-dimethyl tie is real
+    // (canon_rank's test still asserts it), but the ring-membership gate now
+    // stops that tie from ever reaching a rule's outer-atom slot in the
+    // first place, so this fixture no longer fires the residual in practice.
+    // This allowlist must stay self-cleaning (an entry that never fires is
+    // a stale claim, not a passing check) -- see the assertion below.
+    const KNOWN_TRUE_SYMMETRY_RESIDUAL: &[&str] = &["biphenyl", "adamantane", "cubane"];
     let mut energy_order_invariant = true;
     let mut known_residual_hit: Vec<&str> = Vec::new();
     let embed_params = EmbedParameters::default();
@@ -766,12 +781,29 @@ fn reproducibility_and_invariance_report() {
             }
         }
     }
+    // Self-cleaning check: an allowlist entry that never actually hits the
+    // residual is a stale claim, not a passing check -- it would silently
+    // reclassify any FUTURE regression on that fixture as "known" instead of
+    // failing (the exact allowlist-rot failure mode this PR's own round-4
+    // fix pass found and fixed three separate times already). Flag it with
+    // the same PASS/FAIL weight as a real energy mismatch above.
+    let stale_residual_entries: Vec<&str> = KNOWN_TRUE_SYMMETRY_RESIDUAL
+        .iter()
+        .filter(|name| !known_residual_hit.contains(name))
+        .copied()
+        .collect();
+    if !stale_residual_entries.is_empty() {
+        println!(
+            "  STALE KNOWN_TRUE_SYMMETRY_RESIDUAL entries (never fired, remove them): {stale_residual_entries:?}"
+        );
+        energy_order_invariant = false;
+    }
     println!(
         "  atom_order_energy_invariance: {} ({} known true-symmetry residual: {known_residual_hit:?})",
         if energy_order_invariant {
             "PASS"
         } else {
-            "FAIL -- unexplained difference found, see above"
+            "FAIL -- unexplained difference or stale allowlist entry found, see above"
         },
         known_residual_hit.len()
     );

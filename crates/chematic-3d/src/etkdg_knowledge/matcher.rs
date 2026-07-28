@@ -627,6 +627,15 @@ fn resolve_same_tier(candidates: &[Candidate], ranks: &[u64]) -> ResolvedTier {
         }
     }
 
+    // With `uniquify: false` (load-bearing, see `build_torsion_knowledge`),
+    // one rule can appear as N distinct automorphic `Candidate`s for the same
+    // bond (N embeddings of the same SMARTS). `rule_ids` must report which
+    // *rules* matched, not how many embeddings each one produced, so dedup
+    // after the merge loop above (which still needs every candidate's terms
+    // considered for conflict detection).
+    rule_ids.sort();
+    rule_ids.dedup();
+
     ResolvedTier::Single {
         rule_ids,
         atoms: canonical_atoms(candidates, ranks),
@@ -790,6 +799,35 @@ mod tests {
             } => {
                 assert_eq!(rule_ids.len(), 2);
                 assert_eq!(terms.len(), 1);
+            }
+            ResolvedTier::Conflict { .. } => panic!("identical terms must dedupe, not conflict"),
+        }
+    }
+
+    /// Regression test for a real bug found by independent review: with
+    /// `uniquify: false` (load-bearing, see `build_torsion_knowledge`'s doc
+    /// comment), one SMARTS rule can produce several automorphic
+    /// `Candidate`s for the same bond -- all sharing the SAME `rule_id`, not
+    /// distinct rules. `rule_ids` must report which *rules* matched (one),
+    /// not how many embeddings each rule produced (three) -- otherwise
+    /// `TorsionPotential.rule_id`/`TorsionKnowledgeReport.matched_rule_ids`
+    /// misreport a single matching rule as several, exactly what shipped in
+    /// the committed `chematic_torsions.json` fixture before this fix.
+    #[test]
+    fn resolve_same_tier_dedupes_repeated_rule_ids_from_automorphic_candidates() {
+        let terms = vec![FourierTorsionTerm::from_rdkit(2, 1, 5.0)];
+        let candidates = vec![
+            fake_candidate("rule:x", terms.clone()),
+            fake_candidate("rule:x", terms.clone()),
+            fake_candidate("rule:x", terms),
+        ];
+        match resolve_same_tier(&candidates, &dummy_ranks()) {
+            ResolvedTier::Single { rule_ids, .. } => {
+                assert_eq!(
+                    rule_ids,
+                    vec!["rule:x".to_string()],
+                    "3 automorphic candidates for the same rule must report ONE rule id, not 3"
+                );
             }
             ResolvedTier::Conflict { .. } => panic!("identical terms must dedupe, not conflict"),
         }

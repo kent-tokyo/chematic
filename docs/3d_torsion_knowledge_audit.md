@@ -537,8 +537,10 @@ side) and `validation/etkdg_torsion_knowledge_v2_rdkit_oracle_diff.json`
 ### 6.5 Second-round correction: two of the new generic rules cited a shadowed line
 
 A second independent review pass on the two generic macrocycle rules added
-in §6.4's fix (`ring_ch2_ch2_chain` and `ring_ch2_ether_chain` as they
-existed at that point) found that citing "which RDKit line matches this
+earlier in this PR's gap-fix work (`ring_ch2_ch2_chain` and
+`ring_ch2_ether_chain` as they existed at that point — §6.4 has since been
+rewritten around the rule-family differential described above and no longer
+covers this addition) found that citing "which RDKit line matches this
 SMARTS pattern" is not the same claim as "which RDKit line actually governs
 this bond in RDKit's real behavior" — because RDKit's matching loop is
 first-match-wins (`TorsionPreferences.cpp`'s `doneBonds` bitset: a bond is
