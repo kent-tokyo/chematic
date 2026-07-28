@@ -49,6 +49,9 @@ pub use classify::{
     BondClassification, MACROCYCLE_MIN, RingMembership, RingMembershipIndex, SMALL_RING_MAX,
     SMALL_RING_MIN, candidate_central_bonds, classify_bond,
 };
+// `pub(crate)`, not `pub`: Wave 2/3 Coordinator integration seam only (see
+// `energy::is_bridge_bond`'s own doc comment) -- not part of this module's public API.
+pub(crate) use energy::is_bridge_bond;
 pub use energy::{
     TorsionEnergyReport, TorsionOptimizationConfig, TorsionOptimizationReport,
     evaluate_torsion_energy, optimize_torsions,
