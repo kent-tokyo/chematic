@@ -686,17 +686,27 @@ class SDWriter:
 # ---------------------------------------------------------------------------
 
 class SmilesMolSupplier:
-    """Read molecules from a SMILES file, one record per line (RDKit-compatible).
+    """Read molecules from a SMILES table file (RDKit-compatible).
 
-    Each line is split on *delimiter*; ``smilesColumn`` is parsed as the SMILES
-    and ``nameColumn`` (when present) is stored as the ``_Name`` property.
-    Yields ``Mol | None`` (``None`` on a parse failure), like RDKit.
+    Thin wrapper over :class:`chematic.SmilesMolSupplier`, the Rust-backed
+    streaming reader in ``chematic-mol::smiles_table`` (a source-cited port
+    of RDKit's own ``SmilesMolSupplier`` semantics) -- this class does not
+    implement any parsing itself, unlike an earlier version of this wrapper
+    which loaded the whole file into memory in pure Python.
+
+    Yields ``Mol | None`` (``None`` on a malformed row), like RDKit.
+
+    .. note::
+       ``__len__``/``__getitem__`` perform an O(n) re-scan from the start
+       each time (the underlying reader is forward-only streaming, matching
+       ``chematic-mol``'s own documented divergence from RDKit's seek-based
+       ``SmilesMolSupplier``). Avoid in hot loops.
     """
 
     def __init__(
         self,
         filename: str,
-        delimiter: str = " \t",
+        delimiter: str = " ",
         smilesColumn: int = 0,
         nameColumn: int = 1,
         titleLine: bool = True,
@@ -709,45 +719,26 @@ class SmilesMolSupplier:
         self._title_line = titleLine
         self._sanitize = sanitize
 
-    def _split(self, line: str) -> list:
-        # RDKit treats `delimiter` as a set of separator characters.
-        if len(self._delimiter) == 1:
-            return line.split(self._delimiter)
-        import re
-        return re.split("[" + re.escape(self._delimiter) + "]+", line.strip())
-
-    def _header_and_records(self):
-        with open(self._filename) as f:
-            lines = [ln.rstrip("\n") for ln in f if ln.strip()]
-        header = None
-        if self._title_line and lines:
-            header = self._split(lines[0])
-            lines = lines[1:]
-        return header, lines
-
     def __iter__(self):
-        header, records = self._header_and_records()
-        for line in records:
-            fields = self._split(line)
-            if len(fields) <= self._smiles_col:
-                yield None
-                continue
-            mol = MolFromSmiles(fields[self._smiles_col], sanitize=self._sanitize)
-            if mol is not None:
-                if self._name_col is not None and len(fields) > self._name_col:
-                    mol.SetProp("_Name", fields[self._name_col])
-                # Extra columns become properties, named by the title line when present.
-                for col, value in enumerate(fields):
-                    if col == self._smiles_col or col == self._name_col:
-                        continue
-                    key = header[col] if header and col < len(header) else f"col_{col}"
-                    mol.SetProp(key, value)
-            yield mol
+        sup = _ch.SmilesMolSupplier(
+            self._filename,
+            delimiter=self._delimiter,
+            smilesColumn=self._smiles_col,
+            nameColumn=self._name_col,
+            titleLine=self._title_line,
+            sanitize=self._sanitize,
+        )
+        for mol in sup:
+            yield Mol(mol) if mol is not None else None
 
     def __len__(self) -> int:
-        return len(self._header_and_records()[1])
+        return sum(1 for _ in self)
 
     def __getitem__(self, i: int):
+        """Random access by record index (RDKit-compatible).
+
+        .. note:: O(i) -- iterates from the start. Avoid in tight loops.
+        """
         if i < 0:
             raise IndexError(i)
         for j, mol in enumerate(self):
@@ -761,10 +752,15 @@ class SmilesMolSupplier:
 # ---------------------------------------------------------------------------
 
 class SmilesWriter:
-    """Write molecules as a delimited SMILES file with optional property columns.
+    """Write molecules as a delimited SMILES table file (RDKit-compatible).
 
-    Columns: ``SMILES`` + name + any properties set via ``SetProps``.
-    Supports the context-manager protocol.
+    Thin wrapper over :class:`chematic.SmilesWriter`. Columns: SMILES + name
+    + any properties set via ``SetProps``. Supports the context-manager
+    protocol.
+
+    ``isomericSmiles=False`` and ``kekuleSmiles=True`` raise
+    ``NotImplementedError`` -- chematic has no non-isomeric or Kekule-form
+    SMILES writer at present.
     """
 
     def __init__(
@@ -773,42 +769,30 @@ class SmilesWriter:
         delimiter: str = " ",
         nameHeader: str = "Name",
         includeHeader: bool = True,
+        isomericSmiles: bool = True,
         kekuleSmiles: bool = False,
     ) -> None:
-        self._fh = open(filename, "w")
-        self._delimiter = delimiter
-        self._name_header = nameHeader
-        self._include_header = includeHeader
-        self._props = None
-        self._wrote_header = False
-
-    def SetProps(self, props) -> None:
-        """Restrict which properties are written as extra columns."""
-        self._props = list(props)
-
-    def _header(self, mol: Mol) -> list:
-        cols = ["SMILES", self._name_header]
-        if self._props is not None:
-            cols += self._props
-        return cols
+        self._writer = _ch.SmilesWriter(
+            filename,
+            delimiter=delimiter,
+            nameHeader=nameHeader,
+            includeHeader=includeHeader,
+            isomericSmiles=isomericSmiles,
+            kekuleSmiles=kekuleSmiles,
+        )
 
     def write(self, mol: Mol) -> None:
-        if self._include_header and not self._wrote_header:
-            self._fh.write(self._delimiter.join(self._header(mol)) + "\n")
-            self._wrote_header = True
-        name = mol.GetProp("_Name") if mol.HasProp("_Name") else ""
-        row = [mol._mol.smiles, name]
-        if self._props is not None:
-            for key in self._props:
-                row.append(mol.GetProp(key) if mol.HasProp(key) else "")
-        self._fh.write(self._delimiter.join(row) + "\n")
+        self._writer.write(mol._mol)
+
+    def SetProps(self, props) -> None:
+        """Restrict (and order) which properties are written as extra columns."""
+        self._writer.SetProps(list(props))
 
     def flush(self) -> None:
-        self._fh.flush()
+        self._writer.flush()
 
     def close(self) -> None:
-        if not self._fh.closed:
-            self._fh.close()
+        self._writer.close()
 
     def __enter__(self) -> "SmilesWriter":
         return self

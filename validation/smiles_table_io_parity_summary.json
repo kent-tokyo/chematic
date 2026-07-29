@@ -1,0 +1,257 @@
+{
+  "chematic_self_consistency_failures": [],
+  "error_count": 5,
+  "gate_failures": [],
+  "gate_passed": true,
+  "known_name_divergences_non_gating": [
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        0
+      ],
+      "rdkit": "0"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        1
+      ],
+      "rdkit": "1"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        2
+      ],
+      "rdkit": "2"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        3
+      ],
+      "rdkit": "3"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        4
+      ],
+      "rdkit": "4"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        5
+      ],
+      "rdkit": "5"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        6
+      ],
+      "rdkit": "6"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        7
+      ],
+      "rdkit": "7"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        8
+      ],
+      "rdkit": "8"
+    },
+    {
+      "chematic": "",
+      "key": [
+        "no_name_column",
+        9
+      ],
+      "rdkit": "9"
+    }
+  ],
+  "known_property_divergences_non_gating": [
+    {
+      "chematic": {
+        "Note": "has, a comma"
+      },
+      "key": [
+        "csv_quoted",
+        1
+      ],
+      "rdkit": {
+        "Column_3": "a comma\"",
+        "Note": "\"has"
+      }
+    },
+    {
+      "chematic": {
+        "Note": "has \"quotes\" inside"
+      },
+      "key": [
+        "csv_quoted",
+        2
+      ],
+      "rdkit": {
+        "Note": "\"has \"\"quotes\"\" inside\""
+      }
+    },
+    {
+      "chematic": {
+        "Note": "has, both \"kinds\" of, trouble"
+      },
+      "key": [
+        "csv_quoted",
+        3
+      ],
+      "rdkit": {
+        "Column_3": "both \"\"kinds\"\" of",
+        "Column_4": "trouble\"",
+        "Note": "\"has"
+      }
+    },
+    {
+      "chematic": {
+        "Note": "trailing comma,"
+      },
+      "key": [
+        "csv_quoted",
+        4
+      ],
+      "rdkit": {
+        "Column_3": "\"",
+        "Note": "\"trailing comma"
+      }
+    },
+    {
+      "chematic": {
+        "Note": "has, a comma"
+      },
+      "key": [
+        "csv_quoted",
+        6
+      ],
+      "rdkit": {
+        "Column_3": "a comma\"",
+        "Note": "\"has"
+      }
+    },
+    {
+      "chematic": {
+        "Note": "has \"quotes\" inside"
+      },
+      "key": [
+        "csv_quoted",
+        7
+      ],
+      "rdkit": {
+        "Note": "\"has \"\"quotes\"\" inside\""
+      }
+    },
+    {
+      "chematic": {
+        "Note": "has, both \"kinds\" of, trouble"
+      },
+      "key": [
+        "csv_quoted",
+        8
+      ],
+      "rdkit": {
+        "Column_3": "both \"\"kinds\"\" of",
+        "Column_4": "trouble\"",
+        "Note": "\"has"
+      }
+    },
+    {
+      "chematic": {
+        "Note": "trailing comma,"
+      },
+      "key": [
+        "csv_quoted",
+        9
+      ],
+      "rdkit": {
+        "Column_3": "\"",
+        "Note": "\"trailing comma"
+      }
+    },
+    {
+      "chematic": {
+        "Note": "has, a comma"
+      },
+      "key": [
+        "csv_quoted",
+        11
+      ],
+      "rdkit": {
+        "Column_3": "a comma\"",
+        "Note": "\"has"
+      }
+    },
+    {
+      "chematic": {
+        "Note": "has \"quotes\" inside"
+      },
+      "key": [
+        "csv_quoted",
+        12
+      ],
+      "rdkit": {
+        "Note": "\"has \"\"quotes\"\" inside\""
+      }
+    },
+    {
+      "chematic": {
+        "Note": "has, both \"kinds\" of, trouble"
+      },
+      "key": [
+        "csv_quoted",
+        13
+      ],
+      "rdkit": {
+        "Column_3": "both \"\"kinds\"\" of",
+        "Column_4": "trouble\"",
+        "Note": "\"has"
+      }
+    },
+    {
+      "chematic": {
+        "Note": "trailing comma,"
+      },
+      "key": [
+        "csv_quoted",
+        14
+      ],
+      "rdkit": {
+        "Column_3": "\"",
+        "Note": "\"trailing comma"
+      }
+    }
+  ],
+  "malformed_row_agreement": {
+    "both_error": 5,
+    "expected": 5,
+    "mismatched": []
+  },
+  "name_mismatches": [],
+  "property_mismatches": [],
+  "rdkit_self_consistency_failures_non_gating": [],
+  "status_mismatches": [],
+  "success_count": 230,
+  "total_rows": 235
+}
