@@ -1035,9 +1035,12 @@ fn mmp_pairs_json_ethylbenzene_propylbenzene() {
         "should have core key: {result}"
     );
     assert!(
-        // Canonical form updated for the individualize-refine ranking rewrite
-        // (Round 10) -- same molecule as the prior oracle strings (RDKit-confirmed).
-        result.contains("c1c(cccc1)[*]"),
+        // Canonical form updated (issue #205/#206): the explicit/implicit-
+        // H-count Morgan-rank unification fix changed which atom the
+        // canonical DFS starts from for this ring -- same core molecule,
+        // same wildcard attachment point, mirrors chematic-chem::mmp's
+        // equivalent test.
+        result.contains("c1cc([*])ccc1"),
         "core should be benzene: {result}"
     );
     assert!(

@@ -357,36 +357,48 @@ fn residual_row_relabeling_only_reconciled_via_native_inchi() {
 
 #[test]
 fn residual_row_idempotence_only_reconciled_via_native_inchi() {
-    // One of the 78 idempotence-only residual cases at this branch's base
+    // One of the 78 idempotence-only residual cases at the ORIGINAL base
     // commit (validation/results/canonical_residual_diagnosis_summary.json,
     // `detected_via_idempotence` && !`detected_via_random_relabeling`) --
-    // Root Cause 3 in the RFC (aromaticity-perception round-trip
-    // inconsistency), a different mechanism from the E/Z-carrier case above.
+    // catalogued as Root Cause 3 in the RFC (aromaticity-perception
+    // round-trip inconsistency), a different mechanism from the E/Z-carrier
+    // case above.
     //
-    // Derived directly from the original SMILES by chaining
-    // canonical_smiles twice (canonical(s) then canonical(canonical(s))),
-    // rather than copying the diagnosis script's recorded output strings --
-    // this way the "two different keys" property is reproduced fresh in
-    // Rust, not assumed to carry over unchanged from the Python-side JSON.
+    // Resolved as a side effect of the explicit/implicit-H-count Morgan-rank
+    // unification fix (chematic#205/#206): `canonical_smiles` is now
+    // idempotent for THIS specific fixture (confirmed below), so it no
+    // longer exercises the CanonicalSplit-reconciled-via-InChI path this
+    // test originally targeted -- `compare_molecules` now reports
+    // `VerifiedDuplicate` directly, since the fast canonical-key grouping
+    // itself no longer splits this molecule. This is a genuine improvement,
+    // not a loss of InChI-reconciliation coverage in general: other Root
+    // Cause fixtures in this file (e.g. the E/Z-carrier case above) are
+    // unrelated mechanisms and still exercise `CanonicalSplit`.
+    //
+    // Not re-verified against the full 5,000-molecule differential corpus
+    // (`scripts/canonical_residual_diagnosis.py` requires RDKit and the
+    // original `~/Downloads/SMILES.csv`, unavailable in this environment) --
+    // a maintainer should re-run that script post-merge to find a fresh
+    // still-residual "Root Cause 3" example if dedicated coverage for that
+    // exact mechanism is wanted going forward.
     let original = mol("O=C(NCCc1c2n(c3ccccc13)CCc1ccccc1-2)C1CCC1");
     let out1 = chematic_smiles::canonical_smiles(&original);
     let a = mol(&out1); // canonical_smiles(&a) == out1's own re-canonicalization
     let out2 = chematic_smiles::canonical_smiles(&a);
-    assert_ne!(
+    assert_eq!(
         out1, out2,
-        "this fixture is only meaningful if the idempotence residual still \
-         reproduces at this commit (canonical(canonical(s)) must differ from \
-         canonical(s))"
+        "canonical_smiles must now be idempotent for this fixture -- if this \
+         fails, the explicit/implicit-H-count unification fix regressed"
     );
 
-    // `original`'s own candidate key is out1; `a`'s own candidate key is
-    // out2 -- different keys, same molecule (just two different points along
-    // the same canonicalizer's non-fixed-point chain).
+    // Same molecule, now the same candidate key too -- the fast grouping
+    // correctly identifies these as duplicates on its own; native InChI
+    // agreement is still checked and expected to confirm it.
     assert_eq!(
         compare_molecules(&original, &a, IdentityPolicy::StandardInchiString),
-        DedupRelation::CanonicalSplit,
-        "same-molecule respelling (aromaticity round-trip residual) must be \
-         reconciled via native InChI, not reported as Distinct"
+        DedupRelation::VerifiedDuplicate,
+        "same-molecule respelling must be a verified duplicate now that its \
+         canonical keys agree directly"
     );
 }
 
