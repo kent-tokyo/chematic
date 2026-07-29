@@ -1037,16 +1037,68 @@ mod tests {
 
     #[test]
     fn product_preserves_explicit_h_from_template() {
-        // [NH2:1] in product template specifies 2H explicitly — must be kept.
-        use chematic_smiles::canonical_smiles;
+        // [NH2:1] in product template specifies 2H explicitly — the built
+        // atom's `hydrogen_count` must be `Some(2)`, not silently dropped or
+        // recomputed.
+        //
+        // Checks the data-level field directly rather than the canonical
+        // SMILES string's bracket notation (issue #205): after
+        // `initial_invariant`/`emit_atom`'s explicit/implicit-H-count
+        // unification fix, `canonical_smiles` correctly stops forcing
+        // brackets for an atom whose explicit H count merely repeats what
+        // organic-subset valence inference would already give -- this atom
+        // (N bonded to one carbon) infers to 2 implicit H anyway, so its
+        // canonical form is now the fully standard, bracket-free "CN"
+        // (methylamine), not "C[NH2]". The template's explicit
+        // specification is still honored -- it is what the "2" came from --
+        // just no longer forced into visible bracket notation once it's
+        // redundant with inference.
         let mol = parse("NC").unwrap();
         let results = run_reactants("[N:1]>>[NH2:1]", &[&mol]).unwrap();
         assert!(!results.is_empty(), "should match amine N");
-        let smi = canonical_smiles(&results[0][0]);
-        // With explicit H2, the N must be in brackets.
-        assert!(
-            smi.contains("[NH2]"),
-            "explicit [NH2:1] in product must keep [NH2], got: {smi}"
+        let product = &results[0][0];
+        let n_atom = product
+            .atoms()
+            .find(|(_, a)| a.element == chematic_core::Element::N)
+            .map(|(_, a)| a)
+            .expect("product must contain the templated N atom");
+        assert_eq!(
+            n_atom.hydrogen_count,
+            Some(2),
+            "explicit [NH2:1] in product must set hydrogen_count = Some(2)"
+        );
+    }
+
+    #[test]
+    fn reaction_derived_matches_direct_parse_chlorobenzene() {
+        // The exact fixture from kent-tokyo/renkin PR #65: a reaction-
+        // derived molecule (built via `run_reactants`, whose product-
+        // template atom comes from bracket notation `[Cl]` in the SMIRKS)
+        // must canonicalize identically to a directly-parsed organic-subset
+        // "Clc1ccccc1" of the same compound (issue #205).
+        use chematic_smiles::canonical_smiles;
+        let fwd = "[c:1][Br]>>[c:1][Cl]";
+        let known = parse("Brc1ccccc1").unwrap();
+        let results = run_reactants(fwd, &[&known]).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].len(), 1);
+        let reaction_derived = &results[0][0];
+        let direct = parse("Clc1ccccc1").unwrap();
+
+        // Structural sanity first: same atom count and element multiset,
+        // so canonical-string equality below is a real invariance proof,
+        // not an assumption that the two are the same molecule.
+        assert_eq!(reaction_derived.atom_count(), direct.atom_count());
+        let mut els_a: Vec<_> = reaction_derived.atoms().map(|(_, a)| a.element).collect();
+        let mut els_b: Vec<_> = direct.atoms().map(|(_, a)| a.element).collect();
+        els_a.sort();
+        els_b.sort();
+        assert_eq!(els_a, els_b, "same element multiset required");
+
+        assert_eq!(
+            canonical_smiles(reaction_derived),
+            canonical_smiles(&direct),
+            "reaction-derived and directly-parsed chlorobenzene must canonicalize identically"
         );
     }
 
