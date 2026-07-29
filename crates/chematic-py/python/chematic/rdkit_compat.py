@@ -40,6 +40,7 @@ __all__ = [
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts",
+    "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
     "TDTMolSupplier", "TDTWriter",
     "Descriptors", "rdMolDescriptors", "DataStructs", "pyAvalonTools",
@@ -551,6 +552,79 @@ def MolToMolBlock(
 ) -> str:
     """Return a MOL block string for *mol*."""
     return mol._mol.to_mol_block()
+
+
+def MolFromMrvBlock(
+    block: str,
+    sanitize: bool = True,
+    removeHs: bool = True,
+) -> Mol | None:
+    """Parse a ChemAxon Marvin (MRV) block string.
+
+    S-groups, polymers, reactions, multicenter bonds, query atoms/bonds,
+    R-groups, enhanced stereo groups, and embedded/compressed data are
+    deliberately unsupported and yield ``None``, same as any other parse
+    failure -- see the ``chematic_mol::mrv`` Rust module docs for the
+    full scope boundary.
+    """
+    try:
+        return Mol(_ch.from_mrv_block(block))
+    except Exception:
+        return None
+
+
+def MolFromMrvFile(
+    filename: str,
+    sanitize: bool = True,
+    removeHs: bool = True,
+) -> Mol | None:
+    """Read the first molecule from an MRV file."""
+    try:
+        text = open(filename).read()
+        return MolFromMrvBlock(text, sanitize=sanitize, removeHs=removeHs)
+    except Exception:
+        return None
+
+
+def MolToMrvBlock(
+    mol: Mol,
+    includeStereo: bool = True,
+    confId: int = -1,
+    kekulize: bool = True,
+    prettyPrint: bool = False,
+) -> str:
+    """Return an MRV block string for *mol*.
+
+    ``confId`` must be ``-1`` -- chematic's ``Mol`` has no multi-conformer
+    slot to select from (raises ``NotImplementedError`` otherwise, never
+    silently ignored). ``prettyPrint`` is not implemented (output is
+    always single-line; raises ``NotImplementedError`` if ``True``).
+    """
+    if confId != -1:
+        raise NotImplementedError("MolToMrvBlock: confId is not supported")
+    if prettyPrint:
+        raise NotImplementedError("MolToMrvBlock: prettyPrint is not supported")
+    return mol._mol.to_mrv_block(kekulize=kekulize, include_stereo=includeStereo)
+
+
+def MolToMrvFile(
+    mol: Mol,
+    filename: str,
+    includeStereo: bool = True,
+    confId: int = -1,
+    kekulize: bool = True,
+    prettyPrint: bool = False,
+) -> None:
+    """Write *mol* to an MRV file."""
+    block = MolToMrvBlock(
+        mol,
+        includeStereo=includeStereo,
+        confId=confId,
+        kekulize=kekulize,
+        prettyPrint=prettyPrint,
+    )
+    with open(filename, "w") as f:
+        f.write(block)
 
 
 def MolFromSmarts(pattern: str) -> _SmartsQuery:

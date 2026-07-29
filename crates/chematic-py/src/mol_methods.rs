@@ -264,6 +264,61 @@ impl Mol {
         chematic_mol::write_cml(&self.inner, coords_2d.as_deref())
     }
 
+    /// Serialize this molecule to ChemAxon Marvin (MRV) XML.
+    ///
+    /// ``kekulize=True`` (RDKit's own default) writes alternating
+    /// single/double bonds for aromatic rings instead of an aromatic bond
+    /// order token; re-reading that output back does not restore the
+    /// aromatic flag (a different, chemically-equivalent representation --
+    /// re-perceive aromaticity if the flag itself must survive a round
+    /// trip). Only single/double/triple/aromatic bonds are supported;
+    /// any other bond order raises ``ValueError``.
+    ///
+    /// Equivalent to RDKit ``Chem.MolToMrvBlock(mol)``.
+    ///
+    ///     mrv = mol.to_mrv_block()
+    #[pyo3(signature = (kekulize = true, include_stereo = true))]
+    fn to_mrv_block(&self, kekulize: bool, include_stereo: bool) -> PyResult<String> {
+        let record = chematic_mol::MoleculeRecord::new((*self.inner).clone());
+        let options = chematic_mol::MrvWriteOptions {
+            precision: 4,
+            kekulize,
+            include_stereo,
+        };
+        chematic_mol::write_mrv(&record, &options).map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Serialize this molecule to MRV XML, preserving 2D/3D layout coordinates.
+    ///
+    /// Pass an empty list for either ``coords_2d``/``coords_3d`` to omit
+    /// that dimensionality. Use with :func:`from_mrv_block_with_coords` for
+    /// a coordinate-preserving round trip.
+    ///
+    ///     mol, coords_2d, coords_3d = chematic.from_mrv_block_with_coords(block)
+    ///     new_block = mol.to_mrv_block_with_coords(coords_2d, coords_3d)
+    #[pyo3(signature = (coords_2d, coords_3d, kekulize = true, include_stereo = true))]
+    fn to_mrv_block_with_coords(
+        &self,
+        coords_2d: Vec<[f64; 2]>,
+        coords_3d: Vec<[f64; 3]>,
+        kekulize: bool,
+        include_stereo: bool,
+    ) -> PyResult<String> {
+        let mut record = chematic_mol::MoleculeRecord::new((*self.inner).clone());
+        if !coords_2d.is_empty() {
+            record.coordinates_2d = Some(coords_2d);
+        }
+        if !coords_3d.is_empty() {
+            record.coordinates_3d = Some(coords_3d);
+        }
+        let options = chematic_mol::MrvWriteOptions {
+            precision: 4,
+            kekulize,
+            include_stereo,
+        };
+        chematic_mol::write_mrv(&record, &options).map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
     /// Serialize this molecule to ChemDraw XML (CDXML).
     ///
     /// ``coords``: optional list of ``[x, y]`` pairs — one per heavy atom,

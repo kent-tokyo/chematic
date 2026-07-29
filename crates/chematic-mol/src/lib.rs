@@ -27,6 +27,7 @@ pub mod mol2000;
 pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
+pub mod mrv;
 pub mod pdbqt;
 pub mod record;
 pub mod rxn;
@@ -57,6 +58,9 @@ pub use mol3000::{
     write_mol_v3000_with_conformer,
 };
 pub use moljson::{MolJsonError, parse_moljson, write_moljson};
+pub use mrv::{
+    MrvError, MrvParseLimits, MrvWriteOptions, parse_mrv, parse_mrv_with_limits, write_mrv,
+};
 pub use pdbqt::{PdbqtError, autodock_atom_type, parse_pdbqt, write_pdbqt};
 pub use record::MoleculeRecord;
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};

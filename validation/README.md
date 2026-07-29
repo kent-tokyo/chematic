@@ -497,6 +497,133 @@ from record-body parsing, not just the malformed-tag case that was tested first.
   --chematic <out.jsonl> --rdkit-oracle <oracle.jsonl> --manifest <manifest.json>`. Self-test:
   `python scripts/tdt_io_parity.py --self-test`.
 
+### IO-3: ChemAxon Marvin file I/O (`.mrv`)
+
+New `parse_mrv`/`write_mrv` in `crates/chematic-mol/src/mrv.rs`, reusing `MoleculeRecord` (IO-1's
+shared record type). A purpose-built, dependency-free, nesting-aware XML tokenizer is used
+instead of `cml.rs`'s line-by-line flat scanner (too weak for MRV's nested elements and child
+text content, e.g. `<bondStereo>W</bondStereo>`) and instead of adding an external XML crate
+dependency (whose default DTD/entity posture would need independent verification against this
+module's own mandated security limits anyway). Built from a source-cited audit of RDKit's
+`MolFromMrvBlock`/`MolToMrvBlock` (same pinned commit `8afba32ec539dcb2369bc84549d802aca3f7eb39`).
+
+**Scope, deliberately bounded, not an incomplete draft:** `molecule`/`atomArray`/`bondArray`, atom
+IDs, element/charge/isotope/atom-map, bond order (single/double/triple/aromatic), 2D/3D
+coordinates, wedge/dash stereo. S-groups, polymers, reactions, multicenter bonds, query
+atoms/bonds, R-groups, enhanced stereo groups, and embedded/compressed data are explicitly out of
+scope and return `MrvError::UnsupportedFeature` rather than a silent partial parse — RDKit itself
+*does* support several of these; chematic's port does not, by explicit scope decision.
+
+**Security (chematic-only — RDKit's own MRV parser passes no `xml_parser_flags` to Boost's
+`read_xml` at all, confirmed via this session's source audit, so "RDKit does it" cannot justify
+skipping any of this):** `<!DOCTYPE`/`<!ENTITY` rejected outright (verified against a
+billion-laughs-style entity chain and an XXE local-file-reference payload, both rejected before
+any chemistry is interpreted), input byte-size limit, element-nesting-depth limit,
+attribute-value-length limit, duplicate atom-ID detection (a real robustness improvement over
+RDKit, which has none), missing bond-endpoint detection.
+
+**Oracle methodology — corrected mid-session after an initial, flawed design.** The first attempt
+compared chematic's own canonical SMILES against chematic's own canonical SMILES of the fixture's
+known ground-truth SMILES (both canonicalized by chematic itself) and showed 149/206 "mismatches."
+Investigating one case showed the two strings differed only in which ring-closure digit was
+assigned to which ring — a canonicalizer-enumeration artifact, not a structural bug — but
+building the *actual* fix (never compare two different canonicalizers' output strings directly;
+re-canonicalize both sides through the *same* tool, RDKit) revealed that most of the original
+149 were **not** ring-closure artifacts at all, but a real, separate, non-MRV-specific finding
+(below). The corrected, final methodology, per fixture:
+
+- **A** = RDKit reads the original `.mrv` fixture directly (`Chem.MolFromMrvBlock`).
+- chematic reads the same fixture and emits isomeric SMILES; RDKit re-parses it → **B**.
+- chematic's own MRV write of the parsed record is read by RDKit → **B′** (chematic-write →
+  RDKit-read leg).
+- `Chem.MolToSmiles(A)` vs `Chem.MolToSmiles(B)` / `Chem.MolToSmiles(B′)` — both sides
+  canonicalized by RDKit — is the gate. A 0-atom RDKit "success" is never counted as a match
+  (RDKit's own MRV parser can return an empty, error-free `RWMol` for some malformed input).
+  InChIKey is logged as an auxiliary cross-check only, never the deciding signal.
+- On mismatch: atom/bond count, element/charge/isotope multisets, bond-order histogram, aromatic
+  atom count, fragment count, and — critically — the actual assigned stereocenter/E-Z **labels**
+  (not just a raw stereocenter *count*, which can't distinguish "assigned R" from "unassigned")
+  are compared independently to classify the cause.
+
+**Results (206 RDKit-generated fixtures — 160 drawn from the M4-A0 corpus + hand-picked coverage
+for acyclic/aromatic/fused-ring/isotope/charge/radical/tetrahedral-stereo/E-Z-stereo/atom-map/2D-
+and-3D-coordinates/disconnected-fragments):**
+
+| Metric | Result |
+|---|---|
+| Parse success | 206/206 (100%) |
+| chematic read→write→read round trip (chematic-only, no RDKit) | 206/206 (100%) |
+| Phase 1 (RDKit-read vs. RDKit-reread-of-chematic's-SMILES) exact match | 125/206 |
+| Phase 1 unexplained (real structural diff) | **0** |
+| Phase 2 (chematic-write → RDKit-read) exact match | 203/206 |
+| Phase 2 unexplained (real structural diff) | **0** |
+
+Every mismatch is accounted for — zero unexplained residuals. All 81 phase-1 and 3 phase-2
+mismatches fall into one of three documented, non-gating buckets:
+
+1. **69 cases (phase 1 only): tetrahedral/E-Z stereo is lost when converting a wedge-bond-encoded
+   MRV molecule to SMILES.** chematic has a reader for wedge/dash bond direction + 2D coordinates
+   → CIP R/S label (`chematic_perception::stereo2d::apply_stereo_from_2d`), but no converter from
+   that representation into `Atom.chirality` (the field `chematic_smiles::write` actually reads).
+   **MRV's own read→write→read round trip is fully correct and unaffected** (phase 2 matches for
+   all of these) — only conversion to a *different* format (SMILES) loses the assignment. MOL
+   V2000 has the identical limitation (same wedge-bond representation, same missing converter).
+   Pre-existing, cross-cutting, **not specific to MRV** — flagged for a dedicated follow-up.
+2. **9 cases: a pre-existing `chematic-smiles` writer bug, discovered incidentally via this
+   oracle work.** `chematic_smiles::write()` omits the implicit-H count for a bracket atom forced
+   by isotope/charge/atom-map when `Atom.hydrogen_count` is `None` (implicit/inferred — how every
+   non-SMILES-parser format reader in the workspace builds atoms) rather than `Some(n)` (explicit,
+   as the SMILES parser itself always sets). Confirmed via a minimal repro with **no MRV
+   involvement at all**: `Atom::new(N)` + `charge=1` writes `[N+]` instead of `[NH4+]`. Affects
+   every non-SMILES format reader (MOL/SDF/CML/CDXML/MOL2/PDBQT/etc.), not just MRV. **MRV's own
+   write path is unaffected** (confirmed: 0 of these 9 recur in the phase-2, MRV-native write
+   comparison — `write_mrv` writes the isotope/charge/atom-map attributes directly, never routing
+   through the buggy SMILES-writer bracket logic). Flagged for a dedicated follow-up fix in
+   `chematic-smiles`, out of scope for this PR.
+3. **3 cases (both phases): radical-electron information loss on write.** `chematic_core::Atom`
+   has no radical-electron slot — a radical atom (e.g. methyl radical, dioxygen biradical) gets an
+   extra implicit H when RDKit re-reads chematic's write output. Documented, deliberate — the same
+   convention as `mol2000.rs`'s pre-existing "doublet radical — treated as neutral."
+
+**Dedicated kekulize/stereo option checks** (independent of the 206-fixture pool, since the main
+pool always uses the default `kekulize=false, include_stereo=true`): `kekulize=True` writes
+alternating single/double bonds (no `order="A"` token) and RDKit reads it back to the same
+canonical structure as `kekulize=False`'s `order="A"` form (2/2 pass). `include_stereo=False`
+correctly drops a tetrahedral wedge/dash assignment on RDKit re-read while preserving connectivity
+(2/2 pass); `include_stereo` has **no effect on E/Z double-bond stereo** by design — E/Z is
+geometry-derived from the 2D coordinates chematic always writes, so RDKit perceives it regardless
+of the option (2/2 pass, correctly not expecting a drop).
+
+**Adversarial/fuzz-style coverage:** 32 unit/adversarial tests total, including: empty input,
+deeply-nested elements (depth limit), oversized attribute, oversized input, a billion-laughs-style
+entity chain, an XXE local-file-reference payload, truncated input, non-ASCII multi-byte content
+adjacent to byte-index slicing, excessive atom count (20,000 atoms), NaN/Infinity coordinate
+values, and a 500-iteration seeded random-mutation corpus — none panic, hang, or OOM. Duplicate
+atom IDs, unknown atom references, and unknown element symbols are covered by dedicated
+non-adversarial unit tests. "Excessive property count" has no distinct MRV analogue (no arbitrary
+key/value property list the way SDF/TDT have); it folds into the existing attribute-count/nesting
+limits. "Huge line" has no distinct MRV analogue either (the parser is a whole-string
+recursive-descent tokenizer, not line-based); the analogous protection is the overall
+input-size/attribute-length limits, already covered.
+
+**Performance** (206-document fixture pool, informational only): ~18,000 documents/sec. MRV is
+one document per molecule (unlike SMILES-table/TDT's one-file-many-records shape), so this
+reports parse throughput over a directory of individual `.mrv` files rather than a single
+10k-record file.
+
+- **Files:** `crates/chematic-mol/src/mrv.rs`, `crates/chematic-mol/examples/mrv_dump.rs`,
+  `crates/chematic-mol/examples/mrv_kekulize_stereo_dump.rs`,
+  `crates/chematic-mol/examples/mrv_benchmark.rs`, `scripts/gen_rdkit_mrv_oracle.py`,
+  `scripts/mrv_io_parity.py`, `scripts/mrv_kekulize_stereo_check.py`.
+- **Reference tool:** RDKit 2026.03.3, pinned commit `8afba32ec539dcb2369bc84549d802aca3f7eb39`.
+- **How to regenerate:** `python scripts/gen_rdkit_mrv_oracle.py --corpus <SMILES.csv> --out-dir
+  <fixtures_dir> --manifest-out <manifest.json>` + `cargo run -p chematic-mol --release --example
+  mrv_dump -- <manifest.json> <fixtures_dir> <out.jsonl> <written_dir>` + `python
+  scripts/mrv_io_parity.py --chematic <out.jsonl> --manifest <manifest.json> --fixtures-dir
+  <fixtures_dir> --written-dir <written_dir> --summary-out <out.json>`. Self-tests:
+  `python scripts/mrv_io_parity.py --self-test` and `python
+  scripts/mrv_kekulize_stereo_check.py --self-test`.
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.
