@@ -17,7 +17,7 @@ _Nothing yet — everything below `[0.8.0]` has shipped._
 
 - **Opt-in, fail-closed v2 embedding pipeline**, `chematic_3d::pipeline_v2::embed_pipeline_v2`
   (`PipelineV2Config` / `PipelineV2Result` / `PipelineV2Failure`). Integrates four
-  independently-shipped Wave 1/2 modules into one pipeline without changing any
+  independently-merged and independently-verified Wave 1/2 modules into one pipeline without changing any
   existing default behavior (Rust/Python/WASM/MCP untouched — this is a new,
   additive, explicitly-invoked entry point only):
   - stochastic distance geometry (raw embedding)
@@ -116,17 +116,21 @@ _Nothing yet — everything below `[0.8.0]` has shipped._
 
 ### Notes
 
-- The 3D pipeline and canonical-SMILES search change above are additive/opt-in
-  or internal-only respectively: `canonical_smiles`'s public signature,
-  aromaticity perception, the default (`LegacyFast`) CIP engine, and every
-  existing Rust/Python/WASM/MCP public entry point are unaffected except by
-  pure additions.
+- Public signatures and existing 3D defaults are unchanged: `chematic_3d`'s
+  pre-existing public API, aromaticity perception, and the default
+  (`LegacyFast`) CIP engine are unaffected except by pure additions.
+  `canonical_smiles` and SMILES parsing, however, intentionally change output
+  for the documented Dative-direction (issue #194) and canonicalization
+  correctness bugs fixed in this release — this is a deliberate correctness
+  fix, not a claim of universal output invariance.
 - Each change went through the project's standing independent-verification
-  process before merge. Multiple rounds across both PRs found and fixed real
-  issues (sign conventions, dropped diagnostic evidence, missing timeout
-  enforcement, measurement-conflation bugs, a false negative in automorphism
-  matching, corpus gaps, benchmark-harness biases); PR #192's final
-  verification round completed without new findings. See PR #192 and PR #193
+  process before merge. Multiple rounds across all three PRs (#192, #193,
+  #196) found and fixed real issues (sign conventions, dropped diagnostic
+  evidence, missing timeout enforcement, measurement-conflation bugs, a false
+  negative in automorphism matching, corpus gaps, benchmark-harness biases,
+  two independent root causes behind the Dative-bond bug); PR #192's final
+  verification round completed without new findings. See PR #192, PR #193,
+  and PR #196
   for the full per-round record.
 
 ## [0.7.1] — 2026-07-27
