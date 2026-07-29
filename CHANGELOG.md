@@ -9,7 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet — everything below `[0.8.0]` has shipped._
+_Nothing yet — everything below `[0.8.1]` has shipped._
+
+## [0.8.1] — 2026-07-30
+
+### Fixed — `chematic-smiles` / `chematic-core`
+
+- **`canonical_smiles()` no longer treats a genuinely-redundant explicit
+  hydrogen count as distinguishing.** Two representations of the same
+  molecule that differ only in whether an atom's H count was written with
+  bracket notation (`[Cl]`) or organic-subset notation (`Cl`) — when the
+  explicit value merely repeats what valence inference would give anyway —
+  now canonicalize to the identical string. Previously they could diverge:
+  `initial_invariant`'s Morgan-rank seed and `CanonicalWriter::emit_atom`'s
+  bracket-necessity check both read the raw `Atom.hydrogen_count` field
+  directly instead of going through the crate's own `implicit_hcount()`
+  unification helper. Fixed by routing both decisions through
+  `implicit_hcount`/the new `valence_inferred_hcount` (#205, #206).
+  - **Isotope, formal charge, real stereochemistry, and any genuinely
+    disambiguating explicit H count (e.g. `[CH2]` where organic-subset
+    inference would give a different count) are unaffected and remain
+    fully distinguishing** — only the specific redundant-explicit-H case is
+    unified.
+  - **Some canonical SMILES output strings for existing inputs will change**
+    as a direct, intended consequence (e.g. a monosubstituted-benzene ring's
+    canonical traversal start point can shift). This is a correctness fix,
+    not a new feature — see Migration notes below for what downstream
+    consumers should check.
+  - Found via [kent-tokyo/renkin PR #65](https://github.com/kent-tokyo/renkin/pull/65):
+    a `run_reactants` product built from a bracket-notation SMIRKS template
+    diverged from a directly user-typed SMILES of the identical compound,
+    breaking candidate-identity merging downstream.
+  - New permanent regression coverage: `chematic-smiles::canonical::explicit_implicit_h_invariance`
+    (isolated bracket/organic pairs, randomized atom-relabeling insertion
+    order, disconnected structures, Kekulized rings, isotope/charge/stereo
+    non-regression, canonicalize→parse→canonicalize idempotence) and
+    `chematic-rxn::transform::reaction_derived_matches_direct_parse_chlorobenzene`.
+
+### Migration notes
+
+- If your code stores or compares hardcoded canonical SMILES strings
+  (golden-file tests, cached dedup keys, precomputed candidate IDs, etc.),
+  a small number of them may now differ from what this version produces.
+  This release itself needed to update 11 such pre-existing internal
+  fixtures after tracing each individually to confirm it was a stale
+  string for the identical molecule, never a behavioral regression — the
+  same audit is recommended for downstream golden strings before
+  upgrading in a context that depends on exact string stability across
+  versions.
+- `are_identical`/`compare_molecules` (`chematic-chem`/`chematic-inchi`)
+  benefit directly: pairs that previously required InChI reconciliation to
+  resolve a spurious canonical-key split may now be recognized as
+  duplicates by the fast canonical-key grouping alone.
 
 ## [0.8.0] — 2026-07-29
 
