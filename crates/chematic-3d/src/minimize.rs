@@ -3129,4 +3129,165 @@ mod policy_bridge_tests {
             e1 - e0
         );
     }
+
+    // -----------------------------------------------------------------------
+    // Issues #185 / #188 diagnosis: is `UffOnly` + `dg::generate_coords`'s
+    // blow-up a bad-starting-geometry bug, a fundamentally broken minimizer,
+    // or something else? See `docs/uff_robustness_diagnosis_185_188.md` for
+    // the full write-up and measured numbers this pins.
+    //
+    // Measured finding (not assumed): `generate_coords` produces starting
+    // geometries with enormous UFF energies (naphthalene ~1.3e5, hexane
+    // ~1.5e7, anthracene ~2.7e10 kcal/mol -- dominated by unrelieved vdW
+    // overlap, not bond stretch) for essentially every molecule, not just
+    // the ones that end up blowing up. `minimize_uff`'s plain fixed-step
+    // steepest descent (no conjugate-gradient/quasi-Newton acceleration)
+    // *does* eventually relieve this and reach a sound, low-energy geometry
+    // for every molecule checked here -- given enough iterations. Whether a
+    // molecule's specific clash-relief trajectory happens to land inside
+    // `MinimizeConfig::default().max_steps` (200) is not predicted by worst
+    // starting bond length or starting energy: anthracene starts from a
+    // ~5-order-of-magnitude worse energy than naphthalene yet fully
+    // converges within budget, while naphthalene (needs ~4,500 steps) and
+    // hexane (needs >20,000, still not fully converged at 100,000) do not.
+    // This is a shared iteration-budget-vs-starting-energy mechanism across
+    // both issues, not two independent root causes -- and not a `dg.rs`
+    // ring-placement defect specific to fused aromatics (naphthalene's raw
+    // worst bond, 2.26 Å, is *better* than anthracene's, 3.73 Å).
+    //
+    // Not fixed here: per this program's phasing, this PR is diagnostic and
+    // regression-fixture only. No step-clamping, no default `max_steps`
+    // change, no chematic-ff API change.
+
+    /// #188 flexible-chain case, not previously covered by a dedicated test:
+    /// pins today's `UffOnly` + `generate_coords` failure for hexane, the
+    /// same shape as naphthalene's existing
+    /// `mmff94_with_uff_fallback_reports_typed_failure_when_fallback_itself_is_unsound`
+    /// pin above, so both #185's and #188's molecule classes have an
+    /// explicit, typed-failure regression fixture in this bridge (not just
+    /// chematic-ff's own isolated repro).
+    #[test]
+    fn uff_only_reports_typed_failure_for_hexane_from_generate_coords() {
+        let mol = parse("CCCCCC").expect("hexane");
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let err = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
+            .expect_err(
+                "hexane's UFF minimization from generate_coords is measured to blow its worst \
+                 bond length past 3 Å at the default 200-step budget -- this must surface as a \
+                 typed failure, never a silent Ok(converged=false)",
+            );
+        match err {
+            ForceFieldBridgeError::MinimizationFailed(detail) => {
+                assert_eq!(detail.policy, ForceFieldPolicy::UffOnly);
+                assert!(
+                    matches!(
+                        detail.reason,
+                        MinimizationFailureReason::CatastrophicBondBlowup
+                    ),
+                    "expected a bond-length-driven failure, got {detail:?}"
+                );
+                assert!(
+                    detail.worst_bond_length > MAX_SANE_BOND_LENGTH,
+                    "expected worst_bond_length > {MAX_SANE_BOND_LENGTH}, got {detail:?}"
+                );
+            }
+            other => panic!("expected MinimizationFailed, got {other:?}"),
+        }
+    }
+
+    /// Starting-geometry-source axis: the same `UffOnly` policy, same
+    /// default budget, starting from `distance_geometry_v2`'s embedder
+    /// output instead of `generate_coords`, succeeds for both of the
+    /// molecules pinned as failures above -- this is the other half of the
+    /// comparison the diagnosis doc's table is built from.
+    #[test]
+    fn uff_only_succeeds_from_embed_distance_geometry_v2_for_naphthalene_and_hexane() {
+        use crate::distance_geometry_v2::{EmbedParameters, embed_distance_geometry_v2};
+
+        for smiles in ["c1ccc2ccccc2c1", "CCCCCC"] {
+            let mol = parse(smiles).expect("parse");
+            let params = EmbedParameters {
+                random_seed: 42,
+                max_attempts: 5,
+                timeout_ms: Some(10_000),
+                ..EmbedParameters::default()
+            };
+            let coords = embed_distance_geometry_v2(&mol, &params)
+                .unwrap_or_else(|e| panic!("embedding {smiles} failed: {e:?}"));
+            let config = MinimizeConfig::default();
+
+            let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "expected {smiles} seeded from embed_distance_geometry_v2 to pass the \
+                         UffOnly soundness gate at the default budget, got {e:?}"
+                    )
+                });
+            assert!(
+                worst_bond_length_vec(&mol, &coords_to_vec(&result.coords, mol.atom_count()))
+                    <= MAX_SANE_BOND_LENGTH,
+                "{smiles}: expected a sound final geometry"
+            );
+        }
+    }
+
+    /// Proves the "under-budgeted, not fundamentally broken" finding for the
+    /// #185-class molecule: same starting geometry as the failing pin above,
+    /// but with `max_steps` raised from 200 to 5,000, naphthalene's UFF
+    /// minimization actually converges (`converged: true`) to a sound
+    /// geometry. `#[ignore]`d -- not part of `bash scripts/check.sh`'s
+    /// default run -- because 5,000 fixed-step iterations with a
+    /// finite-difference gradient is slow relative to this crate's other
+    /// tests; run explicitly with `cargo test -- --ignored` to reproduce.
+    #[test]
+    #[ignore = "slow (5,000 fixed-step iterations); run with `cargo test -- --ignored` to reproduce the convergence finding"]
+    fn uff_direct_naphthalene_converges_given_a_large_enough_iteration_budget() {
+        let mol = parse("c1ccc2ccccc2c1").expect("naphthalene");
+        let coords = generate_coords(&mol);
+        let raw = coords_to_vec(&coords, mol.atom_count());
+        let types = assign_uff_types(&mol);
+
+        let result = ff_minimize_uff(&mol, &types, raw, 5_000);
+        let worst = worst_bond_length_vec(&mol, &result.coords);
+
+        assert!(
+            result.converged,
+            "expected naphthalene's UFF minimization to reach the rms-gradient convergence \
+             criterion within 5,000 steps (measured: converges at ~4,539); got \
+             converged={} iterations={} energy={} worst_bond={worst}",
+            result.converged, result.iterations, result.energy
+        );
+        assert!(
+            worst <= MAX_SANE_BOND_LENGTH,
+            "expected a sound final geometry once converged, got worst_bond_length={worst}"
+        );
+    }
+
+    /// Same proof for the #188-class molecule: hexane needs an even larger
+    /// budget (measured: worst bond still 45.7 Å at 5,000 steps, 23.8 Å at
+    /// 20,000, but a sound 2.04 Å at 100,000) -- confirming this is the same
+    /// slow-convergence mechanism as naphthalene, just far more severe, not
+    /// a qualitatively different trap. `#[ignore]`d for the same reason as
+    /// above (100,000 iterations is meaningfully slower still).
+    #[test]
+    #[ignore = "slow (100,000 fixed-step iterations); run with `cargo test -- --ignored` to reproduce the convergence finding"]
+    fn uff_direct_hexane_reaches_sound_geometry_given_a_large_enough_iteration_budget() {
+        let mol = parse("CCCCCC").expect("hexane");
+        let coords = generate_coords(&mol);
+        let raw = coords_to_vec(&coords, mol.atom_count());
+        let types = assign_uff_types(&mol);
+
+        let result = ff_minimize_uff(&mol, &types, raw, 100_000);
+        let worst = worst_bond_length_vec(&mol, &result.coords);
+
+        assert!(
+            worst <= MAX_SANE_BOND_LENGTH,
+            "expected hexane's worst bond length to have recovered to a sound value by 100,000 \
+             steps (measured: 2.04 Å); got {worst} -- note this is not expected to report \
+             converged=true (rms gradient tolerance is tighter than what 100,000 steps reaches \
+             here), only a sound bond length",
+        );
+    }
 }
