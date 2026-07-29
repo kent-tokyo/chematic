@@ -154,6 +154,37 @@ pub(crate) fn canonical_smiles_exhaustive_oracle(mol: &Molecule) -> String {
         .unwrap_or_default()
 }
 
+/// Same ground truth as [`canonical_smiles_exhaustive_oracle`], but also
+/// returns the winning rank vector -- found necessary during independent
+/// Round-1 correctness review (PR #193): the existing oracle checks only
+/// ever compared the winning canonical *string*, never the *rank vector*
+/// `canonical_search::winning_individualized_ranks_with_limits` also
+/// returns and the public `canonical_atom_order` API consumes. Two branches
+/// within one automorphism orbit can legitimately share a minimal string
+/// via different rank vectors, so string equality alone does not prove
+/// rank-vector equality. Compare the orbit-pruned engine's rank vector
+/// against *this* (the unbounded exhaustive oracle's), not against
+/// `legacy_winning_individualized_ranks`'s -- the legacy engine's own
+/// winning leaf can legitimately differ too (same reason, independently
+/// flagged by Round 2), so oracle-vs-oracle is the correct ground truth.
+#[cfg(test)]
+pub(crate) fn canonical_smiles_exhaustive_oracle_with_ranks(mol: &Molecule) -> (Vec<u64>, String) {
+    if mol.atom_count() == 0 {
+        return (Vec::new(), String::new());
+    }
+    let plateaued = morgan_ranks(mol);
+    let mut budget = usize::MAX;
+    let branches = enumerate_discrete_ranks(mol, plateaued, &mut budget);
+    branches
+        .into_iter()
+        .map(|ranks| {
+            let s = CanonicalWriter::new(mol, &ranks).write_all();
+            (ranks, s)
+        })
+        .min_by(|(_, a), (_, b)| a.cmp(b))
+        .unwrap_or_default()
+}
+
 /// Return `true` if atoms `a` and `b` are topologically equivalent (symmetric).
 ///
 /// Two atoms are considered equivalent when they have the same Morgan rank —

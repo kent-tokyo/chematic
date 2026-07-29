@@ -320,8 +320,43 @@ fn search_canonical(
 /// Union-Find; only merges pairs an actual verified automorphism test
 /// proved equivalent (`has_colored_automorphism_mapping`). A false negative
 /// (failing to merge a genuinely-automorphic pair) only costs performance;
-/// a false positive is structurally impossible here since every union is
-/// gated on a real, independently-reverified bijection.
+/// a false positive is structurally impossible here **given `ranks` (and
+/// therefore `coloring`, seeded from it in `initial_partition`) correctly
+/// reflects every individualization already committed in an ancestor call**
+/// -- every union really is gated on a real, independently-reverified
+/// bijection over `graph`'s own color/edge data, which never merges two
+/// atoms that differ in any writer-visible attribute.
+///
+/// That parenthetical is not free, though (independent Round-2 false-prune
+/// audit, PR #193): `ranks` comes from `crate::canonical::individualize` +
+/// `refine_ranks`. `individualize` itself is exact integer arithmetic --
+/// the atom it distinguishes provably gets a rank no other atom in the
+/// vector holds, zero collision risk. But `refine_ranks` immediately
+/// re-hashes from that point (`fnv_hash_sequence`, pre-existing, unchanged
+/// by this PR) and `normalize_ranks` groups by raw hash-value *equality* --
+/// so a genuine 64-bit FNV-1a collision there could in principle re-merge
+/// an already-individualized atom back in with a formerly-tied sibling,
+/// and `coloring` would inherit that error (nothing downstream re-derives
+/// "was this atom individualized" independently of `ranks` -- `VertexColor`
+/// deliberately does not encode search-time individualization history, only
+/// intrinsic atom attributes). This dependency is not new: `refine_ranks`
+/// rank-equality is *already* the sole basis for the crate's pre-existing
+/// `equivalent_atom_classes`/`are_atoms_equivalent` public APIs, with
+/// identical collision exposure, unrelated to orbit pruning. What this PR
+/// changes is the *consequence* of a hypothetical collision: in the legacy
+/// exhaustive engine it would cause redundant-but-still-correct
+/// over-exploration (every member of a wrongly-merged cell still gets
+/// individualized and compared); here it could instead cause a genuinely
+/// distinct branch to be silently skipped. Not observed on any fixture, the
+/// n<=5 exhaustive suite, hundreds of randomized fuzz trials, or the
+/// 5,000-molecule corpus; would require a correlated 64-bit hash collision
+/// reconstructing an entire real symmetry's cell structure to manifest.
+/// Judged not worth threading a parallel, hash-free individualization-state
+/// vector through the hot path to close (a bigger change than this PR's
+/// scope, defending against a risk already implicitly accepted crate-wide)
+/// -- documented here and in `docs/canonical_automorphism_pruning.md`
+/// instead of silently left as an unqualified "structurally impossible"
+/// claim.
 fn exact_orbit_representatives(
     graph: &CanonicalColoredGraph,
     coloring: &Partition,
@@ -450,11 +485,18 @@ mod tests {
             // Atom-mapped reaction fragment (SMIRKS-style atom maps),
             // exercising the atom-map-is-writer-visible policy.
             "[CH3:1][C:2]([CH3:3])([CH3:4])[CH3:5]",
-            // Repeated disconnected fragment (independent components,
-            // no cross-component automorphism should ever be proposed
-            // between DIFFERENT physical copies for pruning -- each is
-            // still correctly recognized as its own separate 3-fold CF3
-            // orbit within itself).
+            // Repeated disconnected fragment (independent, structurally
+            // identical components). Correction (independent Round-2
+            // false-prune audit, PR #193): cross-component automorphism
+            // pruning between different physical copies of the same
+            // fragment DOES fire here, correctly and safely (measured:
+            // leaves_written=1, orbit_unions=14 with
+            // --features canonical-search-instrumentation) -- an earlier
+            // version of this comment claimed the opposite, which was
+            // factually backwards. The oracle check below still holds
+            // regardless of which orbits get merged, since it only
+            // constrains the final string, not the search's internal
+            // merge decisions.
             "FC(F)(F)C.FC(F)(F)C.FC(F)(F)C",
         ] {
             let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e:?}"));
@@ -462,6 +504,59 @@ mod tests {
                 canonical_smiles_with_limits(&mol, &CanonicalizationLimits::unbounded()).unwrap();
             let oracle = canonical_smiles_exhaustive_oracle(&mol);
             assert_eq!(got, oracle, "mismatch for {smi}");
+        }
+    }
+
+    /// Independent Round-1 correctness audit (PR #193) found a real
+    /// verification gap: every oracle cross-check above only ever compares
+    /// the winning canonical *string*, never the *rank vector*
+    /// `winning_individualized_ranks_with_limits` also returns and the
+    /// public `canonical_atom_order` API consumes. Two branches within one
+    /// automorphism orbit can legitimately share a minimal string via
+    /// different rank vectors, so string equality does not imply
+    /// rank-vector equality. Compares against the unbounded exhaustive
+    /// oracle's rank vector (`canonical_smiles_exhaustive_oracle_with_ranks`)
+    /// -- not the legacy engine's single winning leaf, which can also
+    /// legitimately differ for the same reason (Round 2 flagged this too).
+    #[test]
+    fn rank_vector_matches_exhaustive_oracle_not_just_string() {
+        for smi in [
+            "c1ccccc1",
+            "C1CCCCC1",
+            "CC(C)(C)C",
+            "FC(F)(F)C",
+            "C12CC3CC(CC(C3)C1)C2",
+            "F/C=C/C(F)(F)F",
+            "F/C=C\\C(F)(F)F",
+            "CC(C)(C)[13CH3]",
+            "[NH4+]",
+            "C[N+](C)(C)C",
+            "CC(C)(C)[CH3]",
+            "CC(C)(C)[C@H](N)O",
+            "[CH3:1][C:2]([CH3:3])([CH3:4])[CH3:5]",
+            "FC(F)(F)C.FC(F)(F)C.FC(F)(F)C",
+            // Independent fixtures added by the Round-1 audit, not
+            // previously exercised by this test suite.
+            "C1CCC2(CCCC2)C1",                      // spiro[4.4]nonane
+            "c1ncncn1",                             // 1,3,5-triazine
+            "Nc1nc(N)nc(N)n1",                      // melamine
+            "Cc1c(C)c(C)c(C)c(C)c1C",               // hexamethylbenzene
+            "C1CN2CCC1CC2",                         // quinuclidine
+            "C1CC2(CC1)OCCO2",                      // 1,4-dioxaspiro[4.5]decane
+            "C12C3C4C1C5C4C3C25", // cubane (this repo's existing fixture spelling)
+            "CC(C)(C)c1cc(C(C)(C)C)cc(C(C)(C)C)c1", // 1,3,5-tri-tert-butylbenzene
+            "C1CN2CCN1CC2",       // DABCO
+        ] {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("{smi}: {e:?}"));
+            let (got_ranks, got_string) = winning_individualized_ranks_with_limits(
+                &mol,
+                &CanonicalizationLimits::unbounded(),
+            )
+            .unwrap();
+            let (oracle_ranks, oracle_string) =
+                crate::canonical::canonical_smiles_exhaustive_oracle_with_ranks(&mol);
+            assert_eq!(got_string, oracle_string, "string mismatch for {smi}");
+            assert_eq!(got_ranks, oracle_ranks, "rank-vector mismatch for {smi}");
         }
     }
 

@@ -273,8 +273,39 @@ well-scoped future refinement if a real molecule is found where it matters.
    to`.
 5. A false negative (missing a real orbit) only costs performance --
    `exact_orbit_representatives` still explores that branch. A false
-   positive is prevented structurally: every union is gated on an
-   independently re-verified bijection, never rank/hash equality alone.
+   positive is prevented **given step 1's `ranks` correctly reflects every
+   individualization already committed** -- every union is gated on an
+   independently re-verified bijection over `VertexColor`/`EdgeColor`, never
+   rank/hash equality alone.
+
+   That qualification is not vacuous (independent Round-2 false-prune
+   audit, PR #193): `ranks` is produced by the pre-existing, unchanged
+   `individualize` + `refine_ranks`. `individualize` itself is exact integer
+   arithmetic (zero collision risk), but `refine_ranks`'s subsequent
+   `fnv_hash_sequence`/`normalize_ranks` groups by raw 64-bit hash-value
+   *equality* -- so a genuine hash collision there could in principle
+   re-merge an already-individualized atom with a formerly-tied sibling,
+   and step 1's `VertexColor` alone cannot catch that (it deliberately
+   carries no search-time individualization history, only intrinsic atom
+   attributes). This exposure is not new: `refine_ranks` rank-equality is
+   *already* the sole basis for this crate's pre-existing
+   `equivalent_atom_classes`/`are_atoms_equivalent` public APIs, with
+   identical collision risk, unrelated to orbit pruning. What this PR
+   changes is the *consequence*: the legacy exhaustive engine would turn a
+   hypothetical collision into redundant-but-still-correct
+   over-exploration (every member of a wrongly-merged cell still gets
+   individualized); this PR's pruned engine could instead silently skip a
+   genuinely distinct branch. Not observed on any fixture, the `n<=5`
+   exhaustive suite, hundreds of randomized fuzz trials, or the
+   5,000-molecule corpus; would require a correlated 64-bit FNV-1a collision
+   reconstructing an entire real symmetry's cell structure to manifest.
+   Closing it fully would mean threading a parallel, hash-free
+   individualization-state vector through the search's hot path --
+   judged out of this PR's scope (a bigger change, defending against a risk
+   already implicitly accepted crate-wide), so disclosed here instead of
+   left as an unqualified "structurally impossible" claim. See
+   `canonical_search::exact_orbit_representatives`'s doc comment for the
+   same account in the code itself.
 
 ## Old vs. new budget semantics
 

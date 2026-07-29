@@ -20,15 +20,28 @@
 //!   `CANONICAL_ORBIT_PERF_CORPUS=/path/to/file.smi`. Never required to be
 //!   present in this repository -- point it at, e.g., `~/Downloads/SMILES.csv`
 //!   (the project's 5,000-molecule benchmark corpus, see `scripts/bench5k.py`)
-//!   or any other externally supplied file. Correctness differential (old
-//!   string == new string) is a hard gate across every tier.
+//!   or any other externally supplied file.
+//!
+//! Correctness differential (old string == new string) is a hard gate on
+//! Tiers A and B unconditionally. On Tier C it additionally requires
+//! `CANONICAL_ORBIT_PERF_RUN_LEGACY=1` (see below) -- **without it, the old
+//! engine never runs on the corpus and the differential is SKIPPED, not
+//! passed**; the report and exit status say so explicitly rather than
+//! silently asserting 0 mismatches against zero comparisons (a real gap an
+//! independent Round-3 performance-claim audit found in this file, PR #193).
 //!
 //! Run:
 //! ```text
 //! cargo run --release -p chematic-smiles --example canonical_orbit_perf
 //! cargo run --release -p chematic-smiles --features canonical-search-instrumentation \
 //!     --example canonical_orbit_perf
+//! # Timing/leaf-count only on Tier C, correctness differential SKIPPED there:
 //! CANONICAL_ORBIT_PERF_CORPUS=~/Downloads/SMILES.csv \
+//!     cargo run --release -p chematic-smiles --example canonical_orbit_perf
+//! # Full old-vs-new correctness differential on Tier C too (slower: runs the
+//! # exhaustive legacy engine on every corpus molecule):
+//! CANONICAL_ORBIT_PERF_CORPUS=~/Downloads/SMILES.csv \
+//! CANONICAL_ORBIT_PERF_RUN_LEGACY=1 \
 //!     cargo run --release -p chematic-smiles --example canonical_orbit_perf
 //! ```
 
@@ -360,6 +373,12 @@ struct TierReport {
     parse_failures: usize,
     empty_outputs: usize,
     n: usize,
+    /// Whether the old-vs-new correctness differential actually ran for this
+    /// tier (`run_legacy` as passed to `run_tier`). When `false`,
+    /// `mismatches` is trivially empty because it was never populated --
+    /// callers must not read `mismatches.is_empty()` as "0 verified
+    /// mismatches" in that case. See the module doc comment.
+    differential_ran: bool,
     /// Cumulative orbit-search instrumentation across every fixture in this
     /// tier (all-zero when `canonical-search-instrumentation` is disabled --
     /// see `canonical_search::stats`).
@@ -392,7 +411,7 @@ fn run_tier(name: &'static str, fixtures: &[(String, String)], run_legacy: bool)
     let mut search = CanonicalSearchStats::default();
     let mut old_branch_count = 0usize;
 
-    for (label, smi) in fixtures {
+    for (i, (label, smi)) in fixtures.iter().enumerate() {
         let mol = match parse(smi) {
             Ok(m) => m,
             Err(_) => {
@@ -401,42 +420,95 @@ fn run_tier(name: &'static str, fixtures: &[(String, String)], run_legacy: bool)
             }
         };
 
-        reset_search_stats();
-        let t0 = Instant::now();
-        let new_out = canonical_smiles(&mol);
-        new_stats.durations.push(t0.elapsed());
-        let per_fixture = search_stats_snapshot();
-        search = add_stats(&search, &per_fixture);
+        // Alternate which engine's timer starts first, by fixture index.
+        // An independent Round-3 performance-claim audit found (via a
+        // throwaway microbench, since deleted) that whichever arm runs
+        // first in this loop measures ~10-15% slower regardless of which
+        // engine it is -- a harness artifact, not a real per-call effect.
+        // Always timing new-then-old (the previous behavior) biased every
+        // per-call comparison in the same direction; alternating cancels it
+        // out in aggregate instead of just disclosing it.
+        let new_first = i % 2 == 0;
 
-        if env::var("CANONICAL_ORBIT_PERF_VERBOSE").is_ok() {
-            let old_leaves = if run_legacy {
-                legacy_branch_count_for_benchmark(&mol)
+        let (new_out, old_out_opt);
+        if new_first {
+            reset_search_stats();
+            let t0 = Instant::now();
+            let out = canonical_smiles(&mol);
+            new_stats.durations.push(t0.elapsed());
+            let per_fixture = search_stats_snapshot();
+            search = add_stats(&search, &per_fixture);
+            new_out = out;
+
+            old_out_opt = if run_legacy {
+                let t1 = Instant::now();
+                let out = legacy_canonical_smiles_for_benchmark(&mol);
+                old_stats.durations.push(t1.elapsed());
+                old_branch_count += legacy_branch_count_for_benchmark(&mol);
+                Some(out)
             } else {
-                0
+                None
             };
-            println!(
-                "    [{label}] old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
-                 children_pruned={}",
-                per_fixture.leaves_written,
-                per_fixture.nodes_visited,
-                per_fixture.orbit_tests,
-                per_fixture.children_pruned
-            );
+
+            if env::var("CANONICAL_ORBIT_PERF_VERBOSE").is_ok() {
+                let old_leaves = if run_legacy {
+                    legacy_branch_count_for_benchmark(&mol)
+                } else {
+                    0
+                };
+                println!(
+                    "    [{label}] old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
+                     children_pruned={}",
+                    per_fixture.leaves_written,
+                    per_fixture.nodes_visited,
+                    per_fixture.orbit_tests,
+                    per_fixture.children_pruned
+                );
+            }
+        } else {
+            old_out_opt = if run_legacy {
+                let t1 = Instant::now();
+                let out = legacy_canonical_smiles_for_benchmark(&mol);
+                old_stats.durations.push(t1.elapsed());
+                old_branch_count += legacy_branch_count_for_benchmark(&mol);
+                Some(out)
+            } else {
+                None
+            };
+
+            reset_search_stats();
+            let t0 = Instant::now();
+            let out = canonical_smiles(&mol);
+            new_stats.durations.push(t0.elapsed());
+            let per_fixture = search_stats_snapshot();
+            search = add_stats(&search, &per_fixture);
+            new_out = out;
+
+            if env::var("CANONICAL_ORBIT_PERF_VERBOSE").is_ok() {
+                let old_leaves = if run_legacy {
+                    legacy_branch_count_for_benchmark(&mol)
+                } else {
+                    0
+                };
+                println!(
+                    "    [{label}] old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
+                     children_pruned={}",
+                    per_fixture.leaves_written,
+                    per_fixture.nodes_visited,
+                    per_fixture.orbit_tests,
+                    per_fixture.children_pruned
+                );
+            }
         }
 
         if new_out.is_empty() {
             empty_outputs += 1;
         }
 
-        if run_legacy {
-            let t1 = Instant::now();
-            let old_out = legacy_canonical_smiles_for_benchmark(&mol);
-            old_stats.durations.push(t1.elapsed());
-            old_branch_count += legacy_branch_count_for_benchmark(&mol);
-
-            if old_out != new_out {
-                mismatches.push(format!("{label} ({smi}): old='{old_out}' new='{new_out}'"));
-            }
+        if let Some(old_out) = old_out_opt
+            && old_out != new_out
+        {
+            mismatches.push(format!("{label} ({smi}): old='{old_out}' new='{new_out}'"));
         }
     }
 
@@ -450,6 +522,7 @@ fn run_tier(name: &'static str, fixtures: &[(String, String)], run_legacy: bool)
         parse_failures,
         empty_outputs,
         n: fixtures.len(),
+        differential_ran: run_legacy,
     }
 }
 
@@ -457,12 +530,19 @@ fn print_report(r: &TierReport) {
     println!("\n=== {} ({} fixtures) ===", r.name, r.n);
     println!("  parse failures: {}", r.parse_failures);
     println!("  empty outputs:  {}", r.empty_outputs);
-    println!(
-        "  correctness mismatches (old vs new): {}",
-        r.mismatches.len()
-    );
-    for m in &r.mismatches {
-        println!("    MISMATCH: {m}");
+    if r.differential_ran {
+        println!(
+            "  correctness mismatches (old vs new): {}",
+            r.mismatches.len()
+        );
+        for m in &r.mismatches {
+            println!("    MISMATCH: {m}");
+        }
+    } else {
+        println!(
+            "  correctness differential: SKIPPED (old engine not run for this tier -- \
+             set CANONICAL_ORBIT_PERF_RUN_LEGACY=1 to actually check old-vs-new agreement)"
+        );
     }
     if !r.old_stats.durations.is_empty() {
         println!(
@@ -535,6 +615,11 @@ fn main() {
     let report_b = run_tier("Tier B: low symmetry (negative control)", &tier_b, true);
     print_report(&report_b);
 
+    // `None` = no corpus configured; `Some(true)` = Tier C's differential
+    // actually ran; `Some(false)` = corpus loaded but the differential was
+    // skipped (see below) -- drives the final summary line's wording.
+    let mut tier_c_differential_ran: Option<bool> = None;
+
     if let Some(corpus) = tier_c_external_corpus() {
         println!(
             "\nTier C external corpus: {} molecules loaded",
@@ -546,14 +631,23 @@ fn main() {
         // CANONICAL_ORBIT_PERF_RUN_LEGACY=1 to force the full old-vs-new
         // differential anyway.
         let run_legacy = env::var("CANONICAL_ORBIT_PERF_RUN_LEGACY").is_ok();
+        tier_c_differential_ran = Some(run_legacy);
         let report_c = run_tier("Tier C: external corpus", &corpus, run_legacy);
         print_report(&report_c);
-        assert_eq!(
-            report_c.mismatches.len(),
-            0,
-            "external corpus produced {} old-vs-new canonical string differences",
-            report_c.mismatches.len()
-        );
+        if run_legacy {
+            assert_eq!(
+                report_c.mismatches.len(),
+                0,
+                "external corpus produced {} old-vs-new canonical string differences",
+                report_c.mismatches.len()
+            );
+        } else {
+            println!(
+                "\nTier C correctness differential: SKIPPED (CANONICAL_ORBIT_PERF_RUN_LEGACY not \
+                 set) -- this run is leaf-count/timing-only, NOT a verified 0-mismatch claim. \
+                 Re-run with CANONICAL_ORBIT_PERF_RUN_LEGACY=1 to actually check."
+            );
+        }
         assert_eq!(
             report_c.empty_outputs, 0,
             "external corpus produced empty canonical output(s)"
@@ -583,5 +677,11 @@ fn main() {
         "Tier B produced empty canonical output(s)"
     );
 
-    println!("\nAll correctness gates passed.");
+    match tier_c_differential_ran {
+        Some(false) => println!(
+            "\nAll correctness gates passed for Tier A/B. Tier C's differential was SKIPPED \
+             (see above) -- not a verified 0-mismatch claim for Tier C."
+        ),
+        _ => println!("\nAll correctness gates passed."),
+    }
 }

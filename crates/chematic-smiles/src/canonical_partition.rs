@@ -22,6 +22,19 @@
 //!    `HashMap`/`sort`/`dedup` already resolve collisions via real `Eq`/`Ord`
 //!    comparison -- this is standard hash-table behavior, not the forbidden
 //!    "hash collision as proof of equivalence" pattern.
+//!
+//!    This is true of `exact_refine`'s *own* iterations. Its *starting
+//!    point* (`initial_partition`'s `ranks` component) is a different story:
+//!    `ranks` comes from `crate::canonical`'s pre-existing, unchanged
+//!    `individualize`/`refine_ranks`, and the latter's `normalize_ranks`
+//!    step does group by raw FNV-1a hash-value equality. See
+//!    `canonical_search::exact_orbit_representatives`'s doc comment for the
+//!    full account of what that means for this module's callers (in short:
+//!    a hypothetical hash collision there is a pre-existing, crate-wide,
+//!    practically-unreachable risk already relied on by
+//!    `equivalent_atom_classes`/`are_atoms_equivalent`, not one this PR
+//!    introduces -- but this PR does change its potential consequence from
+//!    "redundant exploration" to "a silently skipped branch").
 
 use std::collections::HashSet;
 
