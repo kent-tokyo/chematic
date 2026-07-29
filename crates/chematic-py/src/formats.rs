@@ -244,41 +244,24 @@ fn from_mol_block_with_diagnostics<'py>(
 ///         new_block = mol.to_mol_block_2d(coords_2d, name=name)
 #[pyfunction]
 fn parse_sdf_with_coords(text: &str) -> Vec<(Mol, String, Vec<Vec<f64>>)> {
-    // Split SDF by $$$$ delimiter and parse each block with parse_mol_with_coords.
-    // This avoids the Rust parse_sdf_with_coords leading-blank-line stripping issue.
-    let mut results = Vec::new();
-    let mut remaining = text;
-    loop {
-        let (block, rest) = match remaining.find("$$$$") {
-            Some(pos) => {
-                let after = &remaining[pos + 4..];
-                let after = after
-                    .strip_prefix("\r\n")
-                    .or_else(|| after.strip_prefix('\n'))
-                    .unwrap_or(after);
-                (&remaining[..pos], after)
-            }
-            None => (remaining, ""),
-        };
-        if !block.trim().is_empty() {
-            if let Ok((mol, meta, coords)) = chematic_mol::parse_mol_with_coords(block) {
-                let py_coords: Vec<Vec<f64>> = coords.iter().map(|(x, y)| vec![*x, *y]).collect();
-                results.push((
-                    Mol {
-                        inner: Arc::new(mol),
-                        props: Default::default(),
-                    },
-                    meta.name,
-                    py_coords,
-                ));
-            }
-        }
-        if remaining.find("$$$$").is_none() || rest.is_empty() {
-            break;
-        }
-        remaining = rest;
-    }
-    results
+    // Delegates to SdfRecordReader (line-anchored $$$$ scanning, and no
+    // longer eats a legitimately blank MOL name line -- issue #171) instead
+    // of a hand-rolled splitter, so this stays in sync with the one fixed
+    // core implementation rather than drifting from it.
+    chematic_mol::SdfRecordReader::new(text)
+        .filter_map(|r| r.ok())
+        .map(|rec| {
+            let py_coords: Vec<Vec<f64>> = rec.coords.iter().map(|(x, y)| vec![*x, *y]).collect();
+            (
+                Mol {
+                    inner: Arc::new(rec.mol),
+                    props: Default::default(),
+                },
+                rec.meta.name,
+                py_coords,
+            )
+        })
+        .collect()
 }
 
 /// Parse a Chemical Markup Language (CML) string into a ``Mol`` object.

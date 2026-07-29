@@ -107,3 +107,48 @@ def test_iter_sdf_from_file(tmp_path):
     records = list(chematic.iter_sdf(str(sdf_path)))
     assert len(records) == 2
     assert all(isinstance(r.mol, chematic.Mol) for r in records)
+
+
+# ── parse_sdf_with_coords: issue #171 (blank MOL name line) ─────────────────
+
+MOL_A = """mol_a
+  chematic
+
+  2  1  0  0  0  0  0  0  0  0  0 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+M  END
+"""
+
+# Live RDKit 2026.03.3 Chem.MolToMolBlock() output for an unnamed molecule
+# (AllChem.Compute2DCoords(Chem.MolFromSmiles("CC"))) -- blank name line.
+RDKIT_BLANK_NAME_MOL = (
+    "\n     RDKit          2D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n"
+    "   -0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+    "    0.7500   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+    "  1  2  1  0\nM  END\n"
+)
+
+MALFORMED_RECORD = "broken\n  prog\n\n  NOTNUM  0  0 V2000\nM  END\n"
+
+
+def test_parse_sdf_with_coords_blank_name_middle_record():
+    sdf = f"{MOL_A}$$$$\n{RDKIT_BLANK_NAME_MOL}$$$$\n{MOL_A}$$$$\n"
+    records = chematic.parse_sdf_with_coords(sdf)
+    assert len(records) == 3
+    _, name0, _ = records[0]
+    _, name1, coords1 = records[1]
+    _, name2, _ = records[2]
+    assert name0 == "mol_a"
+    assert name1 == ""
+    assert len(coords1) == 2
+    assert name2 == "mol_a"
+
+
+def test_parse_sdf_with_coords_skips_malformed_records():
+    # Malformed records are silently skipped, matching iter_sdf's behaviour --
+    # not a regression introduced by delegating to SdfRecordReader.
+    sdf = f"{MOL_A}$$$$\n{MALFORMED_RECORD}$$$$\n{MOL_A}$$$$\n"
+    records = chematic.parse_sdf_with_coords(sdf)
+    assert len(records) == 2
