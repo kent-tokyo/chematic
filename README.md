@@ -180,10 +180,10 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.7.1
+# chematic v0.8.0
 # Python 3.12.x  |  darwin arm64
 #
-# Descriptor accuracy (benchmark 2026-07-17, v0.7.1 vs RDKit 2026.03.3):
+# Descriptor accuracy (benchmark 2026-07-17, v0.8.0 vs RDKit 2026.03.3):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
 #   TPSA                  100%   within ±0.1 Å²
 #   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)
@@ -416,6 +416,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.8.0** (2026-07-29): **Opt-in fail-closed 3D embedding pipeline, canonical-SMILES automorphism-orbit pruning**
+- `chematic-3d`: new opt-in `pipeline_v2::embed_pipeline_v2` integrates stochastic distance geometry, macrocycle 1-4 distance-bound adjustments, validated ETKDG-style torsion knowledge, chiral-volume/E-Z stereo verification and repair, and typed force-field minimization into one 12-stage pipeline, with a fail-closed stereo re-check *after* force-field minimization (measured: UFF/DREIDING can reintroduce a stereo violation repair had just fixed). `RingTorsionApplicationPolicy::FailClosed` (default) rejects mechanically applying ring/macrocycle torsion potentials the current optimizer can only score, not apply — `DiagnosticOnly` is an explicit, non-default opt-in. Existing default behavior (Rust/Python/WASM/MCP) is unchanged
+- `chematic-smiles`: fixed the `canonical_smiles()` performance regression reported by RENKIN — canonicalization search now prunes branches via exact, independently-verified colored-graph automorphism checks, never rank/hash equality alone. Measured: 4.99-5.44x geomean speedup on high-symmetry molecules (search-leaf count 6625 → 13), 1.25-1.27x on a 5,000-molecule external corpus with 0 correctness mismatches, no regression on low-symmetry inputs. `canonical_smiles(&Molecule) -> String` is unchanged; new fallible `canonical_smiles_with_limits` added alongside it
+- Full details, benchmark numbers, and known limitations in `CHANGELOG.md`
+
 **v0.7.1** (2026-07-27): **`run_reactants`/`canonical_smiles()` performance fix**
 - `chematic-smiles`: fixed `canonical_smiles()` calling `CanonicalWriter::write_all()` a second, fully redundant time on every call (the winner was already written once while resolving individualize-refine ties, then thrown away and rewritten) — a real regression introduced by the correctness fix in `be5dbb1` (0.4.26), most visible on highly symmetric molecules (plain rings, cages, `CF3`/`tBu`-style substituents: 45-48x slower `canonical_smiles()` in isolation on chematic 0.4.30 vs 0.4.25, reported via an external consumer's `run_reactants`/`apply_retro` regression). Pure refactor — output is byte-identical (verified against all existing tests, including `be5dbb1`'s own golden-string tests and the issue #50 E/Z regression suite). New `chematic-rxn` `perf-instrumentation` feature + `reaction_transform_perf_report` example benchmark added alongside. Full bisect and remaining known gap (genuine automorphism-orbit pruning, not attempted) in `docs/reaction_transform_perf.md`
 - Full details in `CHANGELOG.md`'s `[Unreleased]` section
@@ -583,7 +588,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.7.1)
+├── Cargo.toml                    workspace root (v0.8.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -636,7 +641,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.7.1},
+  version   = {0.8.0},
   year      = {2026},
 }
 ```

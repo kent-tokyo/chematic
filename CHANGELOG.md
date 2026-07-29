@@ -9,7 +9,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet — everything below `[0.7.1]` has shipped._
+_Nothing yet — everything below `[0.8.0]` has shipped._
+
+## [0.8.0] — 2026-07-29
+
+### Added — `chematic-3d`
+
+- **Opt-in, fail-closed v2 embedding pipeline**, `chematic_3d::pipeline_v2::embed_pipeline_v2`
+  (`PipelineV2Config` / `PipelineV2Result` / `PipelineV2Failure`). Integrates four
+  independently-shipped Wave 1/2 modules into one pipeline without changing any
+  existing default behavior (Rust/Python/WASM/MCP untouched — this is a new,
+  additive, explicitly-invoked entry point only):
+  - stochastic distance geometry (raw embedding)
+  - macrocycle 1–4 distance-bound adjustments
+  - validated ETKDG-style torsion knowledge (acyclic + small-ring + macrocycle
+    rules) with energy-based optimization of applicable acyclic torsions
+  - chiral-volume / E-Z stereo constraint verification and repair
+  - typed force-field policy minimization (MMFF94 strict / widened / with-UFF-
+    fallback, or DREIDING)
+  - a final, fail-closed stereo re-verification **after** force-field
+    minimization — minimization can reintroduce a stereo violation that repair
+    had just fixed (measured on `chematic-ff`'s UFF/DREIDING paths, not a
+    hypothetical: 5/50 and 4/52 molecules respectively in earlier gap-check
+    corpora), and this stage catches that as a typed `FinalStereoViolation`
+    rather than reporting success.
+  - 12 ordered stages total, each with explicit per-stage typed failure causes
+    and timing (`elapsed_ms_by_stage`), so a failure is always attributable to
+    one stage, never a generic error.
+- **`RingTorsionApplicationPolicy::{FailClosed, DiagnosticOnly}`**: the current
+  torsion optimizer can only *score* ring/macrocycle torsion potentials, not
+  mechanically apply them to geometry. `FailClosed` (the default) rejects a
+  request to apply ring torsions with a typed
+  `RingTorsionApplicationUnsupported` failure rather than silently downgrading
+  to scored-only; `DiagnosticOnly` is an explicit, non-default opt-in that
+  returns scored-only evidence with `applied_to_geometry: false` /
+  `diagnostic_only: true` markers. Measured on a 63-molecule corpus (10 arms,
+  fixed seed): 15 typed `RingTorsionApplicationUnsupported` failures under
+  `FailClosed` vs. 13 scored-only successes under `DiagnosticOnly` on the
+  *same* ring/macrocycle-bearing molecules (2 confounded by an unrelated,
+  already-known ring-fused-stereocenter repair limitation, not a ring-torsion
+  bug) — confirming the two policies genuinely discriminate on real molecules,
+  not just in unit tests.
+- Known, disclosed limitations: 3-membered rings still fail closed at the
+  distance-geometry stage; steroid-like fused-ring stereocenters (e.g.
+  testosterone, cholesterol) can fail stereo repair; UFF/DREIDING minimization
+  can reintroduce stereo violations post-repair (always caught, never silently
+  passed); the spec's full validation-corpus requirement is only partially
+  met — a dedicated Agent-D stereo corpus, Agent-E torsion corpus,
+  force-field-failure corpus, and a tuning-vs-holdout partition were not
+  separately assembled (the same 63-molecule corpus serves all measurements
+  above); rule-order invariance and full atom-relabeling-permutation
+  equivalence are covered only narrowly (unit tests on 1–2 molecules each),
+  not swept across the whole corpus. No claim of "surpasses RDKit" or "full
+  ETKDGv3 parity" is made anywhere.
+
+### Fixed — `chematic-smiles`
+
+- **Canonical SMILES performance regression, root-caused and fixed** (reported
+  by RENKIN). The individualize-refine canonicalization search now prunes
+  search branches using exact, independently-verified colored-graph
+  automorphism checks (`has_colored_automorphism_mapping`, full bijection,
+  vertex/edge-color-preserving) — never on 1-WL/Morgan rank or hash equality
+  alone, since a single refinement cell can contain multiple distinct
+  automorphism orbits. `canonical_smiles(&Molecule) -> String`'s signature and
+  output are unchanged; a new fallible, bounded API,
+  `canonical_smiles_with_limits`, is added alongside it.
+  - Measured (3-tier corpus: 13 high-symmetry fixtures, 6 low-symmetry
+    negative control, 5,000-molecule external corpus): high-symmetry
+    geometric-mean speedup 4.99–5.44x (search-leaf count 6625 → 13, a 99.8%
+    reduction); low-symmetry speedup 1.33–1.57x with **no regression**;
+    external-corpus speedup 1.25–1.27x with **0 correctness mismatches, 0
+    parse failures, 0 empty outputs** across all 5,000 molecules.
+  - The exact-automorphism pruning depends on the pre-existing, unchanged
+    `refine_ranks` hash (FNV-1a) for its initial partition seed — a
+    theoretical collision there is an already-accepted, crate-wide risk
+    (shared by `equivalent_atom_classes`/`are_atoms_equivalent`), not a new
+    one; this PR changes its consequence from "redundant exploration" (old
+    engine) to "a silently skipped branch" in principle, not observed on any
+    fixture, exhaustive small-graph suite, randomized fuzz trial, or the
+    5,000-molecule corpus. Disclosed rather than left as an absolute
+    "structurally impossible" claim.
+
+### Notes
+
+- Both features above are additive/opt-in: `canonical_smiles`, aromaticity
+  perception, the default (`LegacyFast`) CIP engine, and every existing
+  Rust/Python/WASM/MCP public entry point are behaviorally unchanged by this
+  release.
+- Each change went through the project's standing 3-independent-verification-
+  round process before merge; every round across both PRs found and fixed a
+  real issue (sign conventions, dropped diagnostic evidence, missing timeout
+  enforcement, measurement-conflation bugs, a false-negative in automorphism
+  matching, corpus gaps, benchmark-harness biases). See PR #192 and PR #193
+  for the full per-round record.
 
 ## [0.7.1] — 2026-07-27
 
