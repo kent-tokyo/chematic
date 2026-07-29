@@ -26,6 +26,14 @@ use crate::node::NodeId;
 #[derive(Debug, Clone)]
 pub struct DecisionStep {
     pub depth: u32,
+    /// The two compared nodes' own `NodeId`s -- not needed by any display/reporting
+    /// logic (which reads `left_kind`/`right_kind` instead), but required by
+    /// diagnostics that need real node identity, e.g. detecting whether the same
+    /// `NodeId` pair (or, via [`crate::digraph::CipDigraph::branch_signature`], the
+    /// same *isomorphic* subtree pair) gets re-compared redundantly across a single
+    /// resolution. See issue #107 (CIP-Perf-A1).
+    pub left_node: NodeId,
+    pub right_node: NodeId,
     pub left_kind: String,
     pub right_kind: String,
     pub outcome: BranchComparison,

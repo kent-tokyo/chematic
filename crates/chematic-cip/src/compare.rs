@@ -558,6 +558,8 @@ pub fn compare_ligands(
     if let Some(trace) = ctx.trace.as_deref_mut() {
         trace.decisions.push(DecisionStep {
             depth,
+            left_node: left,
+            right_node: right,
             left_kind: kind_label(left_kind),
             right_kind: kind_label(right_kind),
             outcome,
