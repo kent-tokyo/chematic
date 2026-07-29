@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.8.0
+# chematic v0.8.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -417,6 +417,10 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.8.1** (2026-07-30): **`canonical_smiles()` explicit/implicit hydrogen-count correctness fix**
+- `chematic-smiles`/`chematic-core`: two representations of the same molecule that differ only in whether an atom's H count came from bracket notation (`[Cl]`) or organic-subset notation (`Cl`) — when the explicit value merely repeats what valence inference gives anyway — now canonicalize identically; `initial_invariant`'s Morgan-rank seed and the canonical writer's bracket-necessity check previously read the raw `hydrogen_count` field directly instead of the crate's own `implicit_hcount()` unifier. Isotope, charge, real stereochemistry, and any genuinely disambiguating explicit H count remain fully distinguishing — only the redundant case is unified. Found via [kent-tokyo/renkin PR #65](https://github.com/kent-tokyo/renkin/pull/65) (a `run_reactants` product from a bracket-notation SMIRKS template diverging from a directly user-typed SMILES of the identical compound). Some canonical SMILES output strings for existing inputs will change as a direct, intended consequence — see `CHANGELOG.md`'s `[0.8.1]` Migration notes if you depend on exact string stability across versions
+- Full details in `CHANGELOG.md`'s `[0.8.1]` section
+
 **v0.8.0** (2026-07-29): **Opt-in fail-closed 3D embedding pipeline, canonical-SMILES automorphism-orbit pruning**
 - `chematic-3d`: new opt-in `pipeline_v2::embed_pipeline_v2` integrates stochastic distance geometry, macrocycle 1-4 distance-bound adjustments, validated ETKDG-style torsion knowledge, chiral-volume/E-Z stereo verification and repair, and typed force-field minimization into one 12-stage pipeline, with a fail-closed stereo re-check *after* force-field minimization (measured: UFF/DREIDING can reintroduce a stereo violation repair had just fixed). `RingTorsionApplicationPolicy::FailClosed` (default) rejects mechanically applying ring/macrocycle torsion potentials the current optimizer can only score, not apply — `DiagnosticOnly` is an explicit, non-default opt-in. Existing default behavior (Rust/Python/WASM/MCP) is unchanged
 - `chematic-smiles`: fixed the `canonical_smiles()` performance regression reported by RENKIN — canonicalization search now prunes branches via exact, independently-verified colored-graph automorphism checks, never rank/hash equality alone. Measured (audited, conservative figures): approximately 5x geomean speedup on high-symmetry molecules (search-leaf count 6625 → 13), approximately 1.1–1.2x geomean speedup on low-symmetry negative controls with no regression, approximately 1.09–1.10x per-molecule geomean speedup on a 5,000-molecule external corpus (approximately 5x total-elapsed improvement there, tail-dominated by a few high-symmetry molecules, not representative of typical per-molecule cost), 0 correctness mismatches. `canonical_smiles(&Molecule) -> String`'s public signature is unchanged; new fallible `canonical_smiles_with_limits` added alongside it. Also fixes a Dative-bond round-trip bug (issue #194): the writer was silently truncating `->` to a plain single bond, and — a deeper, separate root cause — the parser could not distinguish `->` from `<-` at all, silently collapsing both to the same donor/acceptor assignment; both are now correctly direction-aware
@@ -589,7 +593,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.8.0)
+├── Cargo.toml                    workspace root (v0.8.1)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -642,7 +646,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.8.0},
+  version   = {0.8.1},
   year      = {2026},
 }
 ```
