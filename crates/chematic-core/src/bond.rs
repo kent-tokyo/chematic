@@ -109,7 +109,9 @@ impl core::fmt::Display for BondOrder {
 
 /// A single bond edge in the molecular graph.
 ///
-/// The graph is undirected; `atom1`/`atom2` ordering is not guaranteed.
+/// The graph is undirected; for most bond orders, `atom1`/`atom2` ordering has
+/// no chemical meaning. For `BondOrder::Dative`, the ordering *is* meaningful:
+/// `atom1` is the donor and `atom2` is the acceptor (see its own doc comment).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BondEntry {
     pub atom1: crate::molecule::AtomIdx,
