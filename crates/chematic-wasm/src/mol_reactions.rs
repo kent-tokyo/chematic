@@ -883,6 +883,96 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
     Ok(format!("[{}]", results.join(",")))
 }
 
+/// Single-step retrosynthetic disconnection (issue #91).
+///
+/// Thin wrapper around [`chematic_rxn::retro::retro_disconnect`] -- applies
+/// the same built-in 60-template SMIRKS library and returns identical
+/// disconnections (same templates, same precursor sets, same ordering:
+/// fewest precursors first) as the Rust and Python (`Mol.retro_disconnect()`)
+/// APIs. This function changes nothing about the underlying algorithm; it
+/// only serializes the result to JSON.
+///
+/// `max_results` -- cap on returned disconnections (0 = unlimited).
+///
+/// `reaction_class` -- filter to a single reaction class, or `""` for all
+/// classes. Valid values: `"AmideBond"`, `"Ester"`, `"Ether"`, `"CNBond"`,
+/// `"CCBond"`, `"CSBond"`, `"Other"`. An unrecognized non-empty value is a
+/// JS error (not silently ignored).
+///
+/// JSON schema: array of
+/// `{"template":str,"reaction_class":str,"precursors":[str,...],"sa_scores":[number,...],"max_sa_score":number}`
+/// -- same field names as the Python binding's dict output. Returns `[]`
+/// when no template matches the molecule (e.g. it has no disconnectable
+/// bond the template library recognizes) -- a valid, non-error result,
+/// distinct from the `reaction_class` validation error above.
+#[wasm_bindgen]
+pub fn retro_disconnect_json(
+    mol: &MolHandle,
+    max_results: u32,
+    reaction_class: &str,
+) -> Result<String, JsValue> {
+    use chematic_rxn::retro::{DEFAULT_TEMPLATES, RetroClass, RetroTemplate, retro_disconnect};
+
+    enforce_wasm_molecule_size(&mol.inner)?;
+
+    let filter_class: Option<RetroClass> = match reaction_class {
+        "" => None,
+        "AmideBond" => Some(RetroClass::AmideBond),
+        "Ester" => Some(RetroClass::Ester),
+        "Ether" => Some(RetroClass::Ether),
+        "CNBond" => Some(RetroClass::CNBond),
+        "CCBond" => Some(RetroClass::CCBond),
+        "CSBond" => Some(RetroClass::CSBond),
+        "Other" => Some(RetroClass::Other),
+        other => {
+            return Err(JsValue::from_str(&format!(
+                "unknown reaction_class '{other}'; valid: AmideBond, Ester, Ether, CNBond, CCBond, CSBond, Other"
+            )));
+        }
+    };
+
+    let owned: Vec<RetroTemplate> = DEFAULT_TEMPLATES
+        .iter()
+        .filter(|t| filter_class.map(|c| c == t.reaction_class).unwrap_or(true))
+        .map(|t| RetroTemplate {
+            name: t.name,
+            smirks: t.smirks,
+            reaction_class: t.reaction_class,
+        })
+        .collect();
+
+    let results = retro_disconnect(&mol.inner, &owned, max_results as usize);
+
+    let parts: Vec<String> = results
+        .iter()
+        .map(|r| {
+            let sa_scores: Vec<f64> = r.precursors.iter().map(chematic_chem::sa_score).collect();
+            let max_sa = sa_scores
+                .iter()
+                .cloned()
+                .fold(f64::NEG_INFINITY, f64::max);
+            let max_sa = if max_sa.is_finite() { max_sa } else { 0.0 };
+            let precursors_json: Vec<String> = r
+                .precursor_smiles
+                .iter()
+                .map(|s| format!("\"{}\"", escape_json_string(s)))
+                .collect();
+            let sa_scores_json: Vec<String> =
+                sa_scores.iter().map(|v| format!("{v}")).collect();
+            format!(
+                r#"{{"template":"{}","reaction_class":"{}","precursors":[{}],"sa_scores":[{}],"max_sa_score":{}}}"#,
+                escape_json_string(&r.template_name),
+                r.reaction_class.as_str(),
+                precursors_json.join(","),
+                sa_scores_json.join(","),
+                max_sa,
+            )
+        })
+        .collect();
+
+    Ok(format!("[{}]", parts.join(",")))
+}
+
 // ---------------------------------------------------------------------------
 // Reaction center analysis
 // ---------------------------------------------------------------------------

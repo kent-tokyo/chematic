@@ -1270,6 +1270,95 @@ fn brics_fragments_json_benzene_self() {
     );
 }
 
+// ── issue #91: retro_disconnect_json ──────────────────────────────────────
+
+#[test]
+fn retro_disconnect_json_matches_rust_api_acetanilide() {
+    // Same molecule as chematic_rxn::retro's own doc example.
+    let smiles = "CC(=O)Nc1ccccc1";
+    let mol = parse(smiles);
+
+    let json = retro_disconnect_json(&mol, 20, "").expect("should succeed");
+    let parsed: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
+    let arr = parsed.as_array().expect("top-level array");
+    assert!(!arr.is_empty(), "acetanilide should have >=1 disconnection");
+
+    // Rust-vs-WASM parity: same molecule, same template library, same
+    // ordering, same precursor SMILES -- the WASM wrapper must not change
+    // the underlying algorithm's result in any way.
+    let rust_mol = chematic_smiles::parse(smiles).expect("parse");
+    let rust_results = chematic_rxn::retro::retro_disconnect(
+        &rust_mol,
+        chematic_rxn::retro::DEFAULT_TEMPLATES,
+        20,
+    );
+    assert_eq!(arr.len(), rust_results.len(), "result count mismatch");
+    for (json_item, rust_item) in arr.iter().zip(rust_results.iter()) {
+        assert_eq!(json_item["template"], rust_item.template_name);
+        assert_eq!(
+            json_item["reaction_class"],
+            rust_item.reaction_class.as_str()
+        );
+        let json_precursors: Vec<String> = json_item["precursors"]
+            .as_array()
+            .expect("precursors array")
+            .iter()
+            .map(|v| v.as_str().unwrap().to_string())
+            .collect();
+        assert_eq!(&json_precursors, &rust_item.precursor_smiles);
+    }
+}
+
+#[test]
+fn retro_disconnect_json_no_match_returns_empty_array_not_error() {
+    // Methane has no disconnectable bond in the template library -- this is
+    // a valid empty result, not an error.
+    let mol = parse("C");
+    let json = retro_disconnect_json(&mol, 20, "").expect("empty result is not an error");
+    assert_eq!(json, "[]");
+}
+
+// Unknown-reaction_class error path is tested via
+// crates/chematic-wasm/tests/retro_disconnect.test.mjs, not natively here:
+// JsValue::from_str aborts the process outside a real WASM runtime (see the
+// same note on parse_reaction/parse_smarts error-path tests above), and this
+// validation is WASM-layer-only (no underlying non-wasm function to redirect
+// to, unlike those cases).
+
+#[test]
+fn retro_disconnect_json_reaction_class_filter_narrows_results() {
+    let mol = parse("CC(=O)Nc1ccccc1"); // acetanilide: amide bond
+    let all = retro_disconnect_json(&mol, 0, "").expect("all classes");
+    let filtered = retro_disconnect_json(&mol, 0, "AmideBond").expect("AmideBond filter");
+    let filtered_out = retro_disconnect_json(&mol, 0, "Ether").expect("Ether filter");
+
+    let all_arr: serde_json::Value = serde_json::from_str(&all).unwrap();
+    let filtered_arr: serde_json::Value = serde_json::from_str(&filtered).unwrap();
+    let filtered_out_arr: serde_json::Value = serde_json::from_str(&filtered_out).unwrap();
+
+    assert!(!filtered_arr.as_array().unwrap().is_empty());
+    for item in filtered_arr.as_array().unwrap() {
+        assert_eq!(item["reaction_class"], "AmideBond");
+    }
+    assert!(
+        filtered_arr.as_array().unwrap().len() <= all_arr.as_array().unwrap().len(),
+        "filtered result must not exceed unfiltered result"
+    );
+    assert_eq!(
+        filtered_out_arr.as_array().unwrap().len(),
+        0,
+        "acetanilide has no Ether-class disconnection"
+    );
+}
+
+#[test]
+fn retro_disconnect_json_max_results_caps_output() {
+    let mol = parse("CC(=O)Nc1ccccc1");
+    let json = retro_disconnect_json(&mol, 1, "").expect("should succeed");
+    let arr: serde_json::Value = serde_json::from_str(&json).unwrap();
+    assert!(arr.as_array().unwrap().len() <= 1);
+}
+
 #[test]
 fn atom_pair_bitvec_length_256() {
     let mol = parse("c1ccccc1");
