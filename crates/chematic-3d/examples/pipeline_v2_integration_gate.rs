@@ -1,10 +1,20 @@
 //! Integration gate harness for the opt-in v2 embedding pipeline (`pipeline_v2.rs`),
 //! 3D Breakthrough Program Wave 2 → Wave 3 Coordinator Integration 1.
 //!
-//! Compares 10 arms (A-J, spec §13) on the same seed and the same frozen 58-molecule
+//! Compares 10 arms (A-J, spec §13) on the same seed over the frozen 58-molecule
 //! corpus (hand-copied verbatim from `scripts/etkdg_vs_rdkit_gap.py::CORPUS`, same
 //! transcription already used by every sibling example in this directory -- see
-//! `examples/cf_integration_smoke_test.rs`):
+//! `examples/cf_integration_smoke_test.rs`) plus 5 molecules added specifically to
+//! close a gap found during independent verification round 4: spec §14 explicitly
+//! names cyclobutane/cyclooctane/cyclononane, a 2,2'-disubstituted biphenyl, and a
+//! macrocyclic amide as required stress cases, none of which the frozen 58 contains.
+//! Two of these are load-bearing for this PR's own mechanism, not just checklist
+//! completeness: cyclooctane (8-ring, `SMALL_RING_MAX`) and cyclononane (9-ring,
+//! `MACROCYCLE_MIN`) are the two sides of the small-ring/macrocycle classification
+//! boundary that round 2's verification only exercised ad hoc; and no macrocycle in
+//! the frozen 58 is amide-like, so `bounds14.rs`'s `macrocycle_14:amide_ester_pinned`
+//! branch (pin-to-cis) was previously never exercised by any arm -- only its
+//! `relaxed_band` sibling was:
 //!
 //! A: raw DG (bypasses the pipeline entirely -- Agent C's own module)
 //! B: raw DG + macrocycle 1-4 bounds
@@ -25,7 +35,9 @@ use std::panic::{self, AssertUnwindSafe};
 use chematic_3d::align::align_coords;
 use chematic_3d::coords::Coords3D;
 use chematic_3d::distance_geometry_v2::{self, EmbedParameters};
-use chematic_3d::etkdg_knowledge::{TorsionKnowledgeSource, TorsionOptimizationConfig};
+use chematic_3d::etkdg_knowledge::{
+    TorsionKnowledgeDiagnosticKind, TorsionKnowledgeSource, TorsionOptimizationConfig,
+};
 use chematic_3d::minimize::ForceFieldPolicy;
 use chematic_3d::pipeline_v2::{
     PipelineV2Config, PipelineV2Result, RingTorsionApplicationPolicy, StereoPolicy,
@@ -36,9 +48,10 @@ use chematic_smiles::parse;
 
 const DEFAULT_SEED: u64 = 0xC0FF_EE42_D157_6E02;
 
-/// Frozen 58-molecule corpus -- identical transcription to
+/// Frozen 58-molecule corpus (identical transcription to
 /// `examples/cf_integration_smoke_test.rs`, deliberately kept byte-for-byte the same
-/// so results are directly comparable across both examples.
+/// so results are directly comparable across both examples) plus 5 spec-§14-required
+/// stress cases added in independent verification round 4 (see module doc above).
 const CORPUS: &[(&str, &str, &str)] = &[
     ("benzene", "c1ccccc1", "rigid_ring"),
     ("naphthalene", "c1ccc2ccccc2c1", "fused_aromatic"),
@@ -150,6 +163,19 @@ const CORPUS: &[(&str, &str, &str)] = &[
         "druglike_stress",
     ),
     ("gly_ala_gly", "NCC(=O)N[C@@H](C)C(=O)NCC(=O)O", "druglike"),
+    // --- spec §14 required stress cases added in verification round 4 (see module
+    // doc above) -- not part of the original frozen 58, appended rather than
+    // interleaved so the first 58 rows stay byte-identical to
+    // `cf_integration_smoke_test.rs`'s own corpus.
+    ("cyclobutane", "C1CCC1", "rigid_ring"),
+    ("cyclooctane", "C1CCCCCCC1", "small_ring_boundary"),
+    ("cyclononane", "C1CCCCCCCC1", "macrocycle_boundary"),
+    (
+        "dimethylbiphenyl_2_2",
+        "Cc1ccccc1-c1ccccc1C",
+        "hindered_biaryl",
+    ),
+    ("macrolactam_12", "O=C1CCCCCCCCCCN1", "macrocycle_amide"),
 ];
 
 // ---------------------------------------------------------------------------
@@ -168,7 +194,20 @@ struct ArmOutcome {
     n_applied: usize,
     n_scored_only: usize,
     diagnostic_only: bool,
-    n_ambiguous: usize,
+    /// `TorsionKnowledgeDiagnosticKind::AmbiguousSameTierConflict` count only --
+    /// a genuine same-tier rule conflict (spec's "never arbitrarily pick one side
+    /// of a genuine ambiguity"). Kept separate from `n_fused_bridged_notices`
+    /// below: `ambiguous_matches` (matcher.rs) pushes BOTH kinds into the same
+    /// `Vec`, and PR #191 itself already warned that reporting that vector's raw
+    /// length overstates genuine conflicts (adamantane alone has 13 fused/bridged
+    /// notices and zero real conflicts). Conflating them here would repeat that
+    /// exact measurement error one PR later.
+    n_ambiguous_rule_conflicts: usize,
+    /// `TorsionKnowledgeDiagnosticKind::FusedOrBridgedRingBoundary` count -- a
+    /// ring-topology notice ("this bond touches more than one ring/size bucket"),
+    /// not a rule conflict. Pushed for essentially every fused/bridged/spiro bond,
+    /// so it dominates `ambiguous_matches.len()` on ring-heavy molecules.
+    n_fused_bridged_notices: usize,
     stereo_declared: usize,
     stereo_satisfied: usize,
     stereo_violated: usize,
@@ -210,7 +249,8 @@ impl ArmOutcome {
             n_applied: 0,
             n_scored_only: 0,
             diagnostic_only: false,
-            n_ambiguous: 0,
+            n_ambiguous_rule_conflicts: 0,
+            n_fused_bridged_notices: 0,
             stereo_declared: 0,
             stereo_satisfied: 0,
             stereo_violated: 0,
@@ -251,7 +291,18 @@ impl ArmOutcome {
             n_applied: r.ring_torsion_evidence.n_applied(),
             n_scored_only: r.ring_torsion_evidence.n_scored_only(),
             diagnostic_only: r.ring_torsion_evidence.diagnostic_only,
-            n_ambiguous: r.torsion_knowledge_report.ambiguous_matches.len(),
+            n_ambiguous_rule_conflicts: r
+                .torsion_knowledge_report
+                .ambiguous_matches
+                .iter()
+                .filter(|d| d.kind == TorsionKnowledgeDiagnosticKind::AmbiguousSameTierConflict)
+                .count(),
+            n_fused_bridged_notices: r
+                .torsion_knowledge_report
+                .ambiguous_matches
+                .iter()
+                .filter(|d| d.kind == TorsionKnowledgeDiagnosticKind::FusedOrBridgedRingBoundary)
+                .count(),
             stereo_declared: r.final_stereo.n_declared(),
             stereo_satisfied: r.final_stereo.n_satisfied(),
             stereo_violated: r.final_stereo.n_violations(),
@@ -575,7 +626,10 @@ fn main() {
     }
 
     let n_total = CORPUS.len();
-    assert_eq!(n_total, 58, "corpus size drifted from the frozen 58");
+    assert_eq!(
+        n_total, 63,
+        "corpus size drifted from the frozen 58 + 5 spec-§14 stress cases"
+    );
 
     // =========================================================================
     // Per-arm summary metrics (spec §15) -- denominators kept explicit and
@@ -666,11 +720,13 @@ fn main() {
             mean(|o| o.ff_energy_after)
         );
         println!(
-            "  potentials matched/applied/scored-only (sum): {}/{}/{}  ambiguous rules (sum): {}",
+            "  potentials matched/applied/scored-only (sum): {}/{}/{}  \
+             genuine rule conflicts (sum): {}  fused/bridged ring notices (sum): {}",
             sum_usize(|o| o.n_matched),
             sum_usize(|o| o.n_applied),
             sum_usize(|o| o.n_scored_only),
-            sum_usize(|o| o.n_ambiguous)
+            sum_usize(|o| o.n_ambiguous_rule_conflicts),
+            sum_usize(|o| o.n_fused_bridged_notices)
         );
         println!(
             "  stereo declared/satisfied/repaired/unevaluable/violated (sum): {n_declared}/{n_satisfied}/{n_repaired}/{n_unevaluable}/{n_violated}"
@@ -864,7 +920,7 @@ fn main() {
          measured metrics. Arm I/J section confirms the core applied-vs-scored-only claim \
          discriminates on real molecules, not just in unit tests. Known gap this harness does \
          NOT attempt: full atom-order-permutation equivalence and rule-order invariance across \
-         the whole 58-molecule corpus (covered narrowly by `pipeline_v2.rs`'s own unit tests, \
+         the whole 63-molecule corpus (covered narrowly by `pipeline_v2.rs`'s own unit tests, \
          not exhaustively here) -- flagged, not silently assumed passing."
     );
 }

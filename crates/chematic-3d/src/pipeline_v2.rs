@@ -1244,6 +1244,35 @@ mod tests {
     }
 
     #[test]
+    fn macrocycle_14_amide_pinned_branch_is_reachable_through_the_real_pipeline() {
+        // `bounds14.rs`'s `macrocycle_14:amide_ester_pinned` rule (pin-to-cis for an
+        // amide/ester bond inside a macrocycle) is a DIFFERENT branch from the
+        // `macrocycle_14:relaxed_band` rule the test above exercises -- every
+        // macrocycle in the frozen 58/63 corpus (cyclododecane, crown_12_4,
+        // cyclooctadecane) is all-carbon or all-ether, so no arm in
+        // `pipeline_v2_integration_gate.rs` ever hit this branch through the real
+        // embedder before this test (found during verification round 4). A
+        // 12-membered ring lactam is `bounds14.rs`'s own test fixture for this rule.
+        let mol = parse("O=C1CCCCCCCCCCN1").unwrap(); // 12-membered ring lactam
+        let mut config = config_none();
+        config.embed.use_macrocycle_14_bounds = true;
+
+        let result = embed_pipeline_v2(&mol, &config).expect("must embed successfully");
+        let adjustments = result
+            .bound_adjustment_report
+            .as_ref()
+            .expect("Some(..) when the flag is set");
+        assert!(
+            adjustments
+                .iter()
+                .any(|a| a.rule_id == "macrocycle_14:amide_ester_pinned"),
+            "the amide-pinned branch must fire through the real pipeline, not just \
+             bounds14.rs's own standalone unit test: {adjustments:?}"
+        );
+        assert!(result.embed_stats.adjustments_applied > 0);
+    }
+
+    #[test]
     fn invalid_adjustment_pair_is_typed_bound_adjustment_failed() {
         // Direct test of the internal hook's own validation (index out of range).
         let mol = parse("CC").unwrap();
