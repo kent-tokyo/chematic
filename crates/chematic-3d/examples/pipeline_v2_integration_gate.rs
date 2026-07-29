@@ -458,6 +458,7 @@ fn fake_result_for_raw_dg(mol: &Molecule, coords: Coords3D) -> PipelineV2Result 
             converged: true,
             iterations: 0,
             max_residual_force: 0.0,
+            starting_geometry: None,
         },
         final_stereo: stereo,
         final_validation: FinalGeometryValidation {

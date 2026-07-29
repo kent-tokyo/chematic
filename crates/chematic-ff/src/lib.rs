@@ -43,4 +43,8 @@ pub use mmff94_params::{
     mmff94_torsion_params, mmff94_vdw_params,
 };
 pub use params::{dreiding_angle, dreiding_bond_len, dreiding_torsion_barrier, dreiding_vdw};
-pub use uff::{UffMinimizeResult, UffType, assign_uff_types, minimize_uff, uff_total_energy};
+pub use uff::{
+    UffEnergyBreakdown, UffMinimizeResult, UffTraceStep, UffType, assign_uff_types, minimize_uff,
+    minimize_uff_with_trace, uff_energy_breakdown, uff_gradient, uff_total_energy,
+    uff_worst_bond_length,
+};
