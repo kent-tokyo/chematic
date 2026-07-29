@@ -88,7 +88,14 @@ impl BondOrder {
         }
     }
 
-    /// The SMILES character that represents this bond order.
+    /// The **first** SMILES character of this bond order's token.
+    ///
+    /// Footgun: [`Self::smiles_token`] is not always one character.
+    /// `Dative`'s token is `"->"`, so this returns a bare `'-'` for it —
+    /// a plain single bond, which is both wrong and silently plausible.
+    /// Use `smiles_token()` when emitting SMILES text (issue #194); a
+    /// dative bond additionally needs its arrow oriented against the write
+    /// order, see `chematic_smiles::writer::bond_token_from`.
     pub fn smiles_char(self) -> char {
         self.smiles_token().as_bytes()[0] as char
     }

@@ -128,7 +128,7 @@ impl<'a> Parser<'a> {
 
     fn parse_smiles(&mut self) -> Result<Molecule, SmilesError> {
         let mut mol = MoleculeBuilder::new();
-        let mut open_rings: HashMap<u8, (AtomIdx, Option<BondOrder>, u32)> = HashMap::new();
+        let mut open_rings: HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)> = HashMap::new();
 
         // Parse the first fragment
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
@@ -191,8 +191,8 @@ impl<'a> Parser<'a> {
         &mut self,
         mol: &mut MoleculeBuilder,
         attach_to: Option<AtomIdx>,
-        attach_bond: Option<BondOrder>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>, u32)>,
+        attach_bond: Option<ParsedBond>,
+        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
     ) -> Result<Option<AtomIdx>, SmilesError> {
         // Parse the first atom of this chain
         let first_atom = match self.try_parse_atom()? {
@@ -211,14 +211,18 @@ impl<'a> Parser<'a> {
 
         // Connect to the preceding atom if requested
         if let Some(prev) = attach_to {
-            let bond = attach_bond.unwrap_or_else(|| implicit_bond(mol, prev, first_idx));
-            let (bond, stash) = resolve_aromatic_direction_stash(mol, prev, first_idx, bond);
-            let new_bond_idx = mol.add_bond(prev, first_idx, bond).map_err(|_| {
-                SmilesError::InvalidBracketAtom {
-                    detail: "duplicate bond".to_string(),
-                    pos: self.pos,
-                }
-            })?;
+            let bond = attach_bond
+                .unwrap_or_else(|| ParsedBond::plain(implicit_bond(mol, prev, first_idx)));
+            // `<-` stores the bond donor→acceptor, i.e. with the endpoints
+            // swapped relative to reading order.
+            let (a1, a2) = bond.endpoints(prev, first_idx);
+            let (bond, stash) = resolve_aromatic_direction_stash(mol, a1, a2, bond.order);
+            let new_bond_idx =
+                mol.add_bond(a1, a2, bond)
+                    .map_err(|_| SmilesError::InvalidBracketAtom {
+                        detail: "duplicate bond".to_string(),
+                        pos: self.pos,
+                    })?;
             if let Some(dir) = stash {
                 mol.set_bond_direction(new_bond_idx, dir);
             }
@@ -296,22 +300,27 @@ impl<'a> Parser<'a> {
                                 let next_idx = mol.add_atom(next_atom.clone());
                                 let bond = match pending_bond {
                                     Some(bo) => bo,
-                                    None => implicit_bond(mol, current, next_idx),
+                                    None => {
+                                        ParsedBond::plain(implicit_bond(mol, current, next_idx))
+                                    }
                                 };
+                                // `<-` stores the bond donor→acceptor, i.e.
+                                // with the endpoints swapped relative to
+                                // reading order.
+                                let (a1, a2) = bond.endpoints(current, next_idx);
                                 // See `resolve_aromatic_direction_stash`: a `/`/`\` between two
                                 // aromatic atoms specifies geometry of an adjacent double bond,
                                 // not a stereo single bond on this edge -- the original direction
                                 // is stashed on the side (`bond_directions`) so it survives into
                                 // the canonical writer instead of being lost.
                                 let (bond, stashed_direction) =
-                                    resolve_aromatic_direction_stash(mol, current, next_idx, bond);
-                                let new_bond_idx =
-                                    mol.add_bond(current, next_idx, bond).map_err(|_| {
-                                        SmilesError::InvalidBracketAtom {
-                                            detail: "duplicate bond".to_string(),
-                                            pos: self.pos,
-                                        }
-                                    })?;
+                                    resolve_aromatic_direction_stash(mol, a1, a2, bond.order);
+                                let new_bond_idx = mol.add_bond(a1, a2, bond).map_err(|_| {
+                                    SmilesError::InvalidBracketAtom {
+                                        detail: "duplicate bond".to_string(),
+                                        pos: self.pos,
+                                    }
+                                })?;
                                 if let Some(dir) = stashed_direction {
                                     mol.set_bond_direction(new_bond_idx, dir);
                                 }
@@ -380,8 +389,8 @@ impl<'a> Parser<'a> {
         &mut self,
         mol: &mut MoleculeBuilder,
         attach_to: AtomIdx,
-        explicit_bond: Option<BondOrder>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>, u32)>,
+        explicit_bond: Option<ParsedBond>,
+        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
     ) -> Result<Option<AtomIdx>, SmilesError> {
         if self.depth >= MAX_BRANCH_DEPTH {
             return Err(SmilesError::NestingTooDeep { pos: self.pos });
@@ -413,8 +422,8 @@ impl<'a> Parser<'a> {
         mol: &mut MoleculeBuilder,
         current: AtomIdx,
         ring_num: u8,
-        ring_bond: Option<BondOrder>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<BondOrder>, u32)>,
+        ring_bond: Option<ParsedBond>,
+        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
     ) -> Result<StereoEntry, SmilesError> {
         if let Some((open_atom, open_bond, slot)) = open_rings.remove(&ring_num) {
             // A directional marker (`/`, `\`) is read "toward" the ring digit
@@ -437,8 +446,11 @@ impl<'a> Parser<'a> {
                     });
                 }
                 (Some(b), None) | (None, Some(b)) => b,
-                (None, None) => implicit_bond(mol, open_atom, current),
+                (None, None) => ParsedBond::plain(implicit_bond(mol, open_atom, current)),
             };
+            // `<-` stores the bond donor→acceptor, i.e. with the endpoints
+            // swapped relative to the open→close reading order above.
+            let (a1, a2) = bond.endpoints(open_atom, current);
             // See `resolve_aromatic_direction_stash`: without this guard, a
             // `/`/`\` ring-closure marker between two aromatic atoms becomes
             // a literal Up/Down bond between them -- inconsistent (aromatic
@@ -448,13 +460,13 @@ impl<'a> Parser<'a> {
             // writer can route a stashed direction through a ring-closure
             // digit when that bond is chosen as the canonical back-edge
             // (see `dfs_mark`'s own stashed-direction handling above).
-            let (bond, stash) = resolve_aromatic_direction_stash(mol, open_atom, current, bond);
-            let new_bond_idx = mol.add_bond(open_atom, current, bond).map_err(|_| {
-                SmilesError::InvalidBracketAtom {
-                    detail: format!("duplicate ring bond {ring_num}"),
-                    pos: self.pos,
-                }
-            })?;
+            let (bond, stash) = resolve_aromatic_direction_stash(mol, a1, a2, bond.order);
+            let new_bond_idx =
+                mol.add_bond(a1, a2, bond)
+                    .map_err(|_| SmilesError::InvalidBracketAtom {
+                        detail: format!("duplicate ring bond {ring_num}"),
+                        pos: self.pos,
+                    })?;
             if let Some(dir) = stash {
                 mol.set_bond_direction(new_bond_idx, dir);
             }
@@ -495,8 +507,8 @@ impl<'a> Parser<'a> {
     /// optional `prefix_bond` that was already consumed before this call.
     fn parse_ring_num(
         &mut self,
-        prefix_bond: Option<BondOrder>,
-    ) -> Result<(u8, Option<BondOrder>), SmilesError> {
+        prefix_bond: Option<ParsedBond>,
+    ) -> Result<(u8, Option<ParsedBond>), SmilesError> {
         let ring_num = if self.peek() == Some(b'%') {
             self.advance(); // consume '%'
             let tens = self
@@ -519,17 +531,21 @@ impl<'a> Parser<'a> {
         Ok((ring_num, prefix_bond))
     }
 
-    /// Consume a bond character and return the corresponding order, or `None`.
-    fn try_parse_bond(&mut self) -> Option<BondOrder> {
+    /// Consume a bond token and return it, or `None`.
+    fn try_parse_bond(&mut self) -> Option<ParsedBond> {
         if self.peek() == Some(b'-') && self.peek_at(1) == Some(b'>') {
             self.advance();
             self.advance();
-            return Some(BondOrder::Dative);
+            return Some(ParsedBond::plain(BondOrder::Dative));
         }
         if self.peek() == Some(b'<') && self.peek_at(1) == Some(b'-') {
             self.advance();
             self.advance();
-            return Some(BondOrder::Dative);
+            // `A<-B`: B is the donor, so the bond must be stored B→A.
+            return Some(ParsedBond {
+                order: BondOrder::Dative,
+                reversed: true,
+            });
         }
         let order = match self.peek()? {
             b'-' => BondOrder::Single,
@@ -543,7 +559,7 @@ impl<'a> Parser<'a> {
             _ => return None,
         };
         self.advance();
-        Some(order)
+        Some(ParsedBond::plain(order))
     }
 
     fn try_parse_atom(&mut self) -> Result<Option<Atom>, SmilesError> {
@@ -786,12 +802,52 @@ impl<'a> Parser<'a> {
 /// ring-closure bond symbol captured at the closing occurrence (read
 /// close->open) into the open->close sense used for storage and for
 /// agreement-checking against the opening occurrence's symbol.
-fn flip_direction(order: Option<BondOrder>) -> Option<BondOrder> {
-    order.map(|o| match o {
-        BondOrder::Up => BondOrder::Down,
-        BondOrder::Down => BondOrder::Up,
-        other => other,
+fn flip_direction(bond: Option<ParsedBond>) -> Option<ParsedBond> {
+    bond.map(|b| match b.order {
+        BondOrder::Up => ParsedBond::plain(BondOrder::Down),
+        BondOrder::Down => ParsedBond::plain(BondOrder::Up),
+        // A dative arrow is directional in exactly the same way, but its
+        // direction lives in `reversed` rather than in the order itself.
+        BondOrder::Dative => ParsedBond {
+            order: BondOrder::Dative,
+            reversed: !b.reversed,
+        },
+        _ => b,
     })
+}
+
+/// A bond token as written in the input, before it is attached to atoms.
+///
+/// `reversed` is `true` only for a `<-` dative arrow. `BondOrder` has a
+/// single `Dative` variant whose stored `atom1 → atom2` order *is* the
+/// donor → acceptor direction, so the arrow that points backwards relative
+/// to the reading order cannot be encoded in the order itself — it has to
+/// swap the two atoms when the bond is added. Without this, `A<-B` and
+/// `A->B` produce byte-identical molecules and every `<-` in the input is
+/// silently read as its own mirror image.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ParsedBond {
+    order: BondOrder,
+    reversed: bool,
+}
+
+impl ParsedBond {
+    fn plain(order: BondOrder) -> Self {
+        Self {
+            order,
+            reversed: false,
+        }
+    }
+
+    /// `(from, to)` in reading order, returned as the `(atom1, atom2)` pair
+    /// the bond should actually be stored with.
+    fn endpoints(self, from: AtomIdx, to: AtomIdx) -> (AtomIdx, AtomIdx) {
+        if self.reversed {
+            (to, from)
+        } else {
+            (from, to)
+        }
+    }
 }
 
 /// Determine the implicit bond between two adjacent atoms already in the builder.
