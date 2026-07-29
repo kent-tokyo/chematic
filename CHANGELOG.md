@@ -71,15 +71,39 @@ _Nothing yet — everything below `[0.8.0]` has shipped._
   automorphism checks (`has_colored_automorphism_mapping`, full bijection,
   vertex/edge-color-preserving) — never on 1-WL/Morgan rank or hash equality
   alone, since a single refinement cell can contain multiple distinct
-  automorphism orbits. `canonical_smiles(&Molecule) -> String`'s signature and
-  output are unchanged; a new fallible, bounded API,
-  `canonical_smiles_with_limits`, is added alongside it.
-  - Measured (3-tier corpus: 13 high-symmetry fixtures, 6 low-symmetry
-    negative control, 5,000-molecule external corpus): high-symmetry
-    geometric-mean speedup 4.99–5.44x (search-leaf count 6625 → 13, a 99.8%
-    reduction); low-symmetry speedup 1.33–1.57x with **no regression**;
-    external-corpus speedup 1.25–1.27x with **0 correctness mismatches, 0
-    parse failures, 0 empty outputs** across all 5,000 molecules.
+  automorphism orbits. The existing `canonical_smiles(&Molecule) -> String`
+  public signature is unchanged. Outputs were byte-identical to the
+  pre-change engine on the audited 5,000-molecule corpus; the internal
+  canonical search algorithm itself changed, and a known canonicalization
+  correctness issue (coronene idempotence) was fixed as part of this work —
+  this is not a claim that behavior is invariant across all possible inputs,
+  only that it was verified byte-identical on the audited corpus. A new
+  fallible, bounded API, `canonical_smiles_with_limits`, is added alongside
+  the unchanged default.
+  - **Also fixes issue #194**: `canonical_smiles()` was silently truncating a
+    `Dative` bond's 2-character `->` token to a plain single-bond `-` (via
+    `BondOrder::smiles_char()` only reading the token's first byte), and,
+    separately, the SMILES parser itself could not distinguish `->` from
+    `<-` at ingestion (both collapsed to the same `BondOrder::Dative` with
+    identical `atom1`/`atom2` assignment, silently losing the donor/acceptor
+    direction the input SMILES actually specified). Both are fixed together
+    — see PR #196 for the full root-cause writeup, including the
+    direction-aware write logic needed so a canonical DFS that reaches the
+    acceptor atom before the donor atom still emits the semantically correct
+    arrow direction, not just an un-truncated but wrongly-oriented one.
+  - Measured (PR #193's own audited figures, 3-tier corpus: 13 high-symmetry
+    fixtures, 6 low-symmetry negative control, 5,000-molecule external
+    corpus; conservative, independently-verified numbers used deliberately
+    rather than same-session remeasurements, per this project's own
+    documented distrust of single/few-shot wall-clock benchmarking):
+    approximately **5x** geometric-mean speedup on high-symmetry fixtures
+    (search-leaf count 6625 → 13); approximately **1.1–1.2x** geometric-mean
+    speedup on low-symmetry negative controls with **no measured
+    regression**; approximately **1.09–1.10x** per-molecule geometric-mean
+    speedup on the 5,000-molecule external corpus, approximately **5x**
+    total-elapsed improvement there (tail-dominated by a small number of
+    high-symmetry molecules, not representative of typical per-molecule
+    cost), and **0 canonical-output mismatches** across all 5,000 molecules.
   - The exact-automorphism pruning depends on the pre-existing, unchanged
     `refine_ranks` hash (FNV-1a) for its initial partition seed — a
     theoretical collision there is an already-accepted, crate-wide risk
@@ -92,15 +116,17 @@ _Nothing yet — everything below `[0.8.0]` has shipped._
 
 ### Notes
 
-- Both features above are additive/opt-in: `canonical_smiles`, aromaticity
-  perception, the default (`LegacyFast`) CIP engine, and every existing
-  Rust/Python/WASM/MCP public entry point are behaviorally unchanged by this
-  release.
-- Each change went through the project's standing 3-independent-verification-
-  round process before merge; every round across both PRs found and fixed a
-  real issue (sign conventions, dropped diagnostic evidence, missing timeout
-  enforcement, measurement-conflation bugs, a false-negative in automorphism
-  matching, corpus gaps, benchmark-harness biases). See PR #192 and PR #193
+- The 3D pipeline and canonical-SMILES search change above are additive/opt-in
+  or internal-only respectively: `canonical_smiles`'s public signature,
+  aromaticity perception, the default (`LegacyFast`) CIP engine, and every
+  existing Rust/Python/WASM/MCP public entry point are unaffected except by
+  pure additions.
+- Each change went through the project's standing independent-verification
+  process before merge. Multiple rounds across both PRs found and fixed real
+  issues (sign conventions, dropped diagnostic evidence, missing timeout
+  enforcement, measurement-conflation bugs, a false negative in automorphism
+  matching, corpus gaps, benchmark-harness biases); PR #192's final
+  verification round completed without new findings. See PR #192 and PR #193
   for the full per-round record.
 
 ## [0.7.1] — 2026-07-27

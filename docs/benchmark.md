@@ -1,6 +1,7 @@
 # Benchmark
 
-Measured environment: Python 3.13.6, Apple M4, chematic v0.8.0, RDKit 2026.03.3.
+Measured environment: Python 3.13.6, Apple M4, chematic v0.4.29, RDKit 2026.03.3
+(descriptor calculation paths unchanged through v0.8.0, not re-measured since).
 Full methodology and raw numbers: [`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md).
 
 ---

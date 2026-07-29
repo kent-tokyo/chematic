@@ -68,10 +68,20 @@ def main() -> None:
     print(f"Bumping {old} → {new}")
 
     # (file, list of patterns that contain the version to replace)
+    #
+    # NOTE: deliberately does NOT include a "v{old} vs RDKit" / benchmark-citation
+    # pattern for any file. Those strings are historical measurement records tied
+    # to a specific past version and date (e.g. "benchmark 2026-07-17, v0.4.29 vs
+    # RDKit ..."), not "current version" indicators -- blindly advancing them on
+    # every release silently mislabels a fixed historical measurement as if it
+    # were freshly re-run against the new version. This was a real, multi-release
+    # bug (drifted v0.4.29 -> ... -> v0.7.1 in README.md/docs/benchmark.md/
+    # docs/validation.md before being caught and reverted ahead of v0.8.0). If a
+    # benchmark is genuinely re-measured, update its citation by hand as part of
+    # that refresh, not via this script.
     targets: list[tuple[Path, list[re.Pattern]]] = [
         (ROOT / "README.md", [
             re.compile(r"chematic v" + re.escape(old)),
-            re.compile(r"v" + re.escape(old) + r" vs RDKit"),
             # Repository Structure tree comment: "workspace root (vX.Y.Z)"
             re.compile(r"workspace root \(v" + re.escape(old) + r"\)"),
             # BibTeX citation block: "version   = {X.Y.Z},"
@@ -79,16 +89,8 @@ def main() -> None:
         ]),
         (ROOT / "README_ja.md", [
             re.compile(r"chematic v" + re.escape(old)),
-            re.compile(r"v" + re.escape(old) + r" vs RDKit"),
         ]),
         (ROOT / "README_zh.md", [
-            re.compile(r"chematic v" + re.escape(old)),
-            re.compile(r"v" + re.escape(old) + r" vs RDKit"),
-        ]),
-        (ROOT / "docs" / "validation.md", [
-            re.compile(r"chematic v" + re.escape(old)),
-        ]),
-        (ROOT / "docs" / "benchmark.md", [
             re.compile(r"chematic v" + re.escape(old)),
         ]),
         (ROOT / "CITATION.cff", [
