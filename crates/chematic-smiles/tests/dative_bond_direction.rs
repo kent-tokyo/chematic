@@ -261,3 +261,74 @@ fn dative_ring_closure_round_trips_through_both_writers() {
         }
     }
 }
+
+/// The crate's central invariant (see the `lib.rs` doctest): re-parsing a
+/// canonical SMILES and writing it again reproduces the same string.
+/// Nothing else covers it for dative bonds — the ChEMBL corpus fixtures
+/// contain none — and the ring spelling (`N->1CC[Fe]<-1`, arrows on both
+/// ring digits) is one nothing had round-tripped before this change.
+#[test]
+fn canonical_smiles_is_stable_for_dative_molecules() {
+    for smiles in [
+        "N->[Fe]",
+        "[Fe]<-N",
+        "N->1CC[Fe]<-1",
+        "N<-1CC[Fe]->1",
+        "N1CC[Fe]<-1",
+        "[Fe](Cl)(Cl)<-N",
+    ] {
+        let canon = canonical_smiles(&parse(smiles).unwrap());
+        assert_eq!(
+            canonical_smiles(&parse(&canon).unwrap()),
+            canon,
+            "canonical SMILES of {smiles} is not stable"
+        );
+        assert!(
+            canon.contains("->") || canon.contains("<-"),
+            "dative bond lost canonicalizing {smiles}: {canon}"
+        );
+    }
+}
+
+/// Guard against misreading the test above: a molecule built through
+/// `MoleculeBuilder` (rather than parsed) can shift once on its first
+/// canonicalization, because the builder and the parser do not populate
+/// every atom field identically. That is pre-existing and has nothing to do
+/// with dative bonds — the same ring with an ordinary single bond in place
+/// of the dative one shifts in exactly the same way — so it must not be
+/// "fixed" by reshaping the dative writer.
+#[test]
+fn builder_first_shift_is_not_dative_specific() {
+    let ring = |closing: BondOrder| {
+        let mut b = MoleculeBuilder::new();
+        let n = b.add_atom(atom(Element::N));
+        let c1 = b.add_atom(atom(Element::C));
+        let c2 = b.add_atom(atom(Element::C));
+        let fe = b.add_atom(atom(Element::FE));
+        b.add_bond(n, c1, BondOrder::Single).unwrap();
+        b.add_bond(c1, c2, BondOrder::Single).unwrap();
+        b.add_bond(c2, fe, BondOrder::Single).unwrap();
+        b.add_bond(n, fe, closing).unwrap();
+        let mol = b.build();
+        let first = canonical_smiles(&mol);
+        let second = canonical_smiles(&parse(&first).unwrap());
+        (first, second)
+    };
+
+    let (single_first, single_second) = ring(BondOrder::Single);
+    let (dative_first, dative_second) = ring(BondOrder::Dative);
+    assert_ne!(
+        single_first, single_second,
+        "control: the shift is expected without any dative bond"
+    );
+    assert_ne!(dative_first, dative_second, "same shift, same cause");
+    // And in both cases it settles after one parse.
+    assert_eq!(
+        canonical_smiles(&parse(&single_second).unwrap()),
+        single_second
+    );
+    assert_eq!(
+        canonical_smiles(&parse(&dative_second).unwrap()),
+        dative_second
+    );
+}
