@@ -233,6 +233,14 @@ pub struct EmbedStats {
     /// Whether the attempt that produced the returned result used the
     /// `use_random_coords` initial-placement path instead of bounds-sampled MDS.
     pub used_random_coords: bool,
+    /// How many caller-supplied [`DistanceBoundAdjustment`]s were actually written
+    /// into the bound matrix before smoothing, on the attempt that produced the
+    /// returned result. `0` for every call through the public
+    /// [`embed_distance_geometry_v2`]/[`embed_distance_geometry_v2_detail`] API
+    /// (which always passes an empty adjustment slice) — only Wave 2/3
+    /// Coordinator integration (`pipeline_v2.rs`'s
+    /// `embed_distance_geometry_v2_with_adjustments`) ever sets this above 0.
+    pub adjustments_applied: usize,
 }
 
 fn record_failure(stats: &mut EmbedStats, params: &EmbedParameters, cause: EmbedFailureCause) {
@@ -263,26 +271,130 @@ pub fn embed_distance_geometry_v2(
 /// Same as [`embed_distance_geometry_v2`] but always returns [`EmbedStats`] alongside
 /// the result — on success **and** on exhaustion of `max_attempts` — so
 /// `track_failures` data and eigenvalue diagnostics are never lost on the failure path.
+///
+/// A thin wrapper over [`embed_distance_geometry_v2_with_adjustments`] with an empty
+/// adjustment slice — this is what guarantees (structurally, not by convention) that
+/// the public raw API's output with zero adjustments is byte-identical to before Wave
+/// 2/3 Coordinator integration added that internal hook: there is exactly one control
+/// flow, not two kept in sync by hand.
 pub fn embed_distance_geometry_v2_detail(
     mol: &Molecule,
     params: &EmbedParameters,
 ) -> Result<(Coords3D, EmbedStats), (EmbedFailureCause, EmbedStats)> {
+    match embed_distance_geometry_v2_with_adjustments(mol, params, &[]) {
+        Ok(v) => Ok(v),
+        Err((EmbedWithAdjustmentsFailure::Embed(cause), stats)) => Err((cause, stats)),
+        Err((EmbedWithAdjustmentsFailure::InvalidAdjustment, _stats)) => {
+            unreachable!(
+                "no adjustments were passed by this wrapper, so InvalidAdjustment cannot occur"
+            )
+        }
+    }
+}
+
+/// One proposed override of a single atom pair's `[lower, upper]` distance bound,
+/// applied to the bound matrix immediately after [`build_bound_matrix`] and before
+/// [`smooth_bounds`] runs (never the reverse — see
+/// [`embed_distance_geometry_v2_with_adjustments`]'s doc). `pub(crate)`: this is a
+/// Wave 2/3 Coordinator integration seam (`pipeline_v2.rs`, carrying Agent E's
+/// `etkdg_knowledge::PairBoundAdjustment` — e.g. macrocycle 1-4 relaxation — into
+/// Agent C's embedder), not part of this module's own public API.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct DistanceBoundAdjustment {
+    pub atom1: AtomIdx,
+    pub atom2: AtomIdx,
+    pub lower: f64,
+    pub upper: f64,
+}
+
+/// Failure mode for [`embed_distance_geometry_v2_with_adjustments`]: either a
+/// malformed adjustment (checked once, up front, independent of any embedding
+/// attempt/seed) or an ordinary embedding failure (same causes as the public API).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EmbedWithAdjustmentsFailure {
+    /// An adjustment named an out-of-range or identical atom pair, or had a
+    /// non-finite (`NaN`/`Inf`) bound, or `lower > upper`. Caught before any bound
+    /// matrix is even touched, so a bad adjustment can never masquerade as
+    /// [`EmbedFailureCause::BoundsConstructionFailed`] (that variant means the
+    /// pre-existing bounds machinery itself produced an inconsistent bond bound,
+    /// a structurally different problem from a caller-supplied override being bad).
+    InvalidAdjustment,
+    /// Same causes [`embed_distance_geometry_v2_detail`] can return.
+    Embed(EmbedFailureCause),
+}
+
+/// Same as [`embed_distance_geometry_v2_detail`], but lets a caller (Wave 2/3
+/// Coordinator's `pipeline_v2.rs`) inject pre-smoothing bound overrides — e.g. Agent
+/// E's `macrocycle_14_bound_adjustments()` output — into the bound matrix this
+/// module builds internally, without duplicating any of `dg_fft`'s bounds/smoothing/
+/// Gram/eigendecomposition machinery.
+///
+/// Every adjustment is validated **once, up front, independent of any embedding
+/// attempt** (index range, `atom1 != atom2`, both bounds finite, `lower <= upper`) —
+/// a bad adjustment fails closed with [`EmbedWithAdjustmentsFailure::InvalidAdjustment`]
+/// before any bound matrix is built, never partially applied.
+///
+/// Adjustments are written into the bound matrix immediately after
+/// [`build_bound_matrix`] runs and *before* [`smooth_bounds`] runs, every attempt (the
+/// matrix is rebuilt fresh per attempt, so the override must be re-applied each time
+/// too). Critically, the smoothing-invariant check
+/// ([`smoothing_preserves_invariants`]) compares smoothed bounds against the
+/// **post-adjustment** matrix as its baseline, not the pre-adjustment one: the
+/// invariant is a claim about what *smoothing* is allowed to do (only ever tighten),
+/// and a caller-requested adjustment (e.g. a macrocycle 1-4 band widening a naive
+/// single-trans-configuration pin) is a deliberate, disclosed relaxation that happens
+/// *before* smoothing sees the matrix at all -- comparing against the pre-adjustment
+/// matrix would make every such widening a spurious `BoundsSmoothingFailed`.
+///
+/// With `adjustments = &[]`, this is byte-identical to
+/// [`embed_distance_geometry_v2_detail`]'s pre-existing behavior (in fact, that
+/// function now delegates here) — the empty-adjustment case never touches the bound
+/// matrix at all, so there is no drift to keep in sync.
+pub(crate) fn embed_distance_geometry_v2_with_adjustments(
+    mol: &Molecule,
+    params: &EmbedParameters,
+    adjustments: &[DistanceBoundAdjustment],
+) -> Result<(Coords3D, EmbedStats), (EmbedWithAdjustmentsFailure, EmbedStats)> {
     let mut stats = EmbedStats::default();
 
+    let n = mol.atom_count();
+    for adj in adjustments {
+        let i = adj.atom1.0 as usize;
+        let j = adj.atom2.0 as usize;
+        let well_formed = i < n
+            && j < n
+            && i != j
+            && adj.lower.is_finite()
+            && adj.upper.is_finite()
+            && adj.lower >= 0.0
+            && adj.lower <= adj.upper;
+        if !well_formed {
+            return Err((EmbedWithAdjustmentsFailure::InvalidAdjustment, stats));
+        }
+    }
+
     if mol_has_wildcard_atom(mol) {
-        return Err((EmbedFailureCause::InvalidTopology, stats));
+        return Err((
+            EmbedWithAdjustmentsFailure::Embed(EmbedFailureCause::InvalidTopology),
+            stats,
+        ));
     }
     if params.enforce_chirality && mol_has_declared_stereo(mol) {
         // Fail closed: Phase 3 (chiral-volume / improper-torsion stereo constraints)
         // is not implemented in this module. Returning Ok() here would silently
         // report success while never having checked the declared stereo -- exactly
         // what the no-silent-fallback rule forbids.
-        return Err((EmbedFailureCause::StereoConstraintFailed, stats));
+        return Err((
+            EmbedWithAdjustmentsFailure::Embed(EmbedFailureCause::StereoConstraintFailed),
+            stats,
+        ));
     }
 
-    let n = mol.atom_count();
     if n > DG_MAX_ATOMS {
-        return Err((EmbedFailureCause::AtomLimitExceeded, stats));
+        return Err((
+            EmbedWithAdjustmentsFailure::Embed(EmbedFailureCause::AtomLimitExceeded),
+            stats,
+        ));
     }
     if n == 0 {
         return Ok((Coords3D::new_zeroed(0), stats));
@@ -310,7 +422,7 @@ pub fn embed_distance_geometry_v2_detail(
         }
 
         let attempt_seed = derive_attempt_seed(params.random_seed, attempt);
-        match try_embed_once(mol, params, attempt_seed, &mut stats) {
+        match try_embed_once(mol, params, attempt_seed, &mut stats, adjustments) {
             Ok(coords) => return Ok((coords, stats)),
             Err(cause) => {
                 last_cause = cause;
@@ -319,7 +431,7 @@ pub fn embed_distance_geometry_v2_detail(
         }
     }
 
-    Err((last_cause, stats))
+    Err((EmbedWithAdjustmentsFailure::Embed(last_cause), stats))
 }
 
 /// How well does a **final, already-embedded** geometry satisfy the distance bounds
@@ -413,14 +525,37 @@ fn try_embed_once(
     params: &EmbedParameters,
     seed: u64,
     stats: &mut EmbedStats,
+    adjustments: &[DistanceBoundAdjustment],
 ) -> Result<Coords3D, EmbedFailureCause> {
     let n = mol.atom_count();
 
-    let (lower0, upper0) = build_bound_matrix(mol);
+    let (mut lower0, mut upper0) = build_bound_matrix(mol);
+
+    // Caller-supplied overrides (e.g. Agent E's macrocycle 1-4 relaxation), already
+    // validated as well-formed by `embed_distance_geometry_v2_with_adjustments`
+    // before any attempt started -- write them into THIS attempt's freshly-built
+    // matrix now, before the bonded-pair sanity check and smoothing below, so both
+    // see the adjusted values as the baseline. Empty for every public-API call
+    // ([`embed_distance_geometry_v2_detail`] always passes `&[]`), so this loop is a
+    // no-op there.
+    for adj in adjustments {
+        let i = adj.atom1.0 as usize;
+        let j = adj.atom2.0 as usize;
+        lower0[i][j] = adj.lower;
+        lower0[j][i] = adj.lower;
+        upper0[i][j] = adj.upper;
+        upper0[j][i] = adj.upper;
+    }
+    if !adjustments.is_empty() {
+        stats.adjustments_applied = adjustments.len();
+    }
 
     // A genuinely bonded pair with lower > upper before smoothing is a bounds-
     // construction bug, not a smoothing artifact -- catch it before smoothing muddies
-    // the picture.
+    // the picture. Runs against the (possibly adjusted) `lower0`/`upper0` above, but
+    // in practice adjustments only ever target genuine 1-4 (non-bonded) pairs (see
+    // `bounds14.rs`'s own genuine-1-4 guard), so this never fires because of an
+    // adjustment.
     for (_, bond) in mol.bonds() {
         let i = bond.atom1.0 as usize;
         let j = bond.atom2.0 as usize;

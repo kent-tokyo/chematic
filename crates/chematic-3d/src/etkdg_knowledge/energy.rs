@@ -248,7 +248,18 @@ fn component_excluding_edge(
 /// `true` if bond `(a, b)` is a bridge (removing it disconnects `a` from
 /// `b`) -- i.e. it is not part of any ring. Only bridge bonds are ever
 /// mechanically rotated by [`optimize_torsions`].
-fn is_bridge_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
+///
+/// `pub(crate)`: this is the ONE definition of "is this central bond
+/// mechanically rotatable" in the crate. Wave 2/3 Coordinator integration
+/// (`pipeline_v2.rs`) reuses it directly (via `crate::etkdg_knowledge::is_bridge_bond`,
+/// re-exported `pub(crate)` from the parent module) to decide, per
+/// [`TorsionPotential`], whether it was actually applied to geometry vs. scored-only
+/// -- rather than a second, independently-derived predicate (e.g. `ring_size.is_some()`,
+/// which is wrong: `rules_basic::flat_ring` potentials carry `ring_size: None` despite
+/// targeting a ring bond -- or re-deriving `classify_bond(..).ring == NotInRing`,
+/// which is a genuine second definition of the same fact that could silently drift
+/// from this one). One predicate, no drift.
+pub(crate) fn is_bridge_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
     !component_excluding_edge(mol, a, a, b).contains(&b)
 }
 

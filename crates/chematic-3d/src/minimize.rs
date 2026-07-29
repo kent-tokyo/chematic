@@ -1468,7 +1468,14 @@ fn fd_max_gradient<F: Fn(&[[f64; 3]]) -> f64>(
 /// the tests in this file) rather than inventing a new number. No
 /// light-atom-only organic bond covered by MMFF94/UFF (including C-I, S-S)
 /// gets remotely close to 3 Å, so this has ample margin on the "sound" side.
-const MAX_SANE_BOND_LENGTH: f64 = 3.0;
+///
+/// `pub(crate)`: Wave 2/3 Coordinator integration (`pipeline_v2.rs`'s own,
+/// independent final-geometry soundness check, per that program's spec §11) reuses
+/// this exact constant rather than hand-copying `3.0` a second time -- particularly
+/// important because `ForceFieldPolicy::None` skips `check_minimization_soundness`
+/// entirely (see `minimize_with_policy_gated`'s `None` arm), so the pipeline-level
+/// check is the *only* gate against a blown-up bond length in that case.
+pub(crate) const MAX_SANE_BOND_LENGTH: f64 = 3.0;
 
 /// Residual-force ceiling (kcal/mol/Å) above which a geometry is treated as
 /// unsound even if no single bond individually crossed

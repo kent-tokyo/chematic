@@ -27,6 +27,7 @@ pub mod mol_transforms;
 pub mod o3a;
 pub mod pdb;
 pub mod pharmacophore_fp_3d;
+pub mod pipeline_v2;
 pub(crate) mod prng;
 pub mod sasa;
 pub mod shape_descriptors;
@@ -63,6 +64,10 @@ pub use mol_transforms::{
 pub use o3a::{O3AError, O3AResult, o3a_align};
 pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
 pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
+pub use pipeline_v2::{
+    PipelineV2Config, PipelineV2Failure, PipelineV2FailureCause, PipelineV2Result,
+    RingTorsionApplicationPolicy, StereoPolicy, embed_pipeline_v2,
+};
 pub use sasa::{
     PerElementSasa, SasaDescriptor, calc_mol_sasa, calc_mol_sasa_with_probe, sasa, sasa_descriptor,
     sasa_descriptor_from_dg, sasa_from_dg, sasa_per_atom, sasa_per_atom_from_dg, sasa_per_element,
