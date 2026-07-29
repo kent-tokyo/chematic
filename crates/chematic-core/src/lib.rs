@@ -33,4 +33,6 @@ pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO
 pub use stereo_group::{StereoGroup, StereoGroupKind};
 #[allow(deprecated)]
 pub use valence::total_hcount;
-pub use valence::{ValenceError, bond_order_sum, implicit_hcount, validate_valence};
+pub use valence::{
+    ValenceError, bond_order_sum, implicit_hcount, valence_inferred_hcount, validate_valence,
+};

@@ -35,6 +35,28 @@ pub fn implicit_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
         return h;
     }
 
+    valence_inferred_hcount(mol, idx)
+}
+
+/// Compute the hydrogen count that organic-subset (unbracketed) valence
+/// inference would give for atom `idx`, **ignoring** any stored explicit
+/// `hydrogen_count` -- unlike [`implicit_hcount`], which returns the stored
+/// value directly for bracket atoms.
+///
+/// Used to decide whether a bracket atom's explicit H count is genuinely
+/// disambiguating information (differs from what organic-subset spelling
+/// would infer) or merely repeats it, in which case the atom can be
+/// canonically re-spelled without brackets for that reason -- see
+/// `chematic-smiles`'s `emit_atom`/`initial_invariant`, which both need
+/// "would this atom's H count survive being unbracketed" independent of
+/// whatever notation the atom happened to be parsed from.
+pub fn valence_inferred_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
+    let atom = mol.atom(idx);
+
+    if atom.wildcard {
+        return 0;
+    }
+
     // Only the organic subset gets implicit H.
     if !atom.element.is_organic_subset() {
         return 0;

@@ -337,7 +337,16 @@ mod tests {
         // molecule either way. Guards against a future rewrite drifting
         // back to a numbering-dependent scheme (the exact failure mode
         // this fix replaces).
-        let m1 = mol(TWO_CENTER_SMILES);
+        //
+        // Uses a longer-chain variant of `TWO_CENTER_SMILES` rather than the
+        // shared constant: after the explicit/implicit-H-count Morgan-rank
+        // unification fix (issue #205), `TWO_CENTER_SMILES` itself no
+        // longer gets renumbered on canonicalization (its map-1 atom already
+        // had the correct, now-unified rank), which would make this
+        // precondition assert -- and the test meaningless -- rather than
+        // testing anything about `invert_stereocenter`. This variant still
+        // renumbers, confirmed empirically, so the precondition holds again.
+        let m1 = mol("CC[C@H:1](O)[C@@H:2](N)CC(=O)O");
         let m2 = mol(&chematic_smiles::canonical_smiles(&m1));
         assert_ne!(
             find_by_map(&m1, 1),

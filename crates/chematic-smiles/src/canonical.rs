@@ -18,7 +18,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, implicit_hcount,
+    valence_inferred_hcount,
+};
 
 use crate::writer::{bond_token_from, emit_bracket_hydrogens, suppress_standalone_wedge};
 
@@ -427,7 +430,17 @@ fn initial_invariant(mol: &Molecule, idx: AtomIdx) -> u64 {
     let charge = (atom.charge as i64 + 128) as u64;
     let iso = atom.isotope.unwrap_or(0) as u64;
     let arom = atom.aromatic as u64;
-    let h_flag = atom.hydrogen_count.map(|h| h as u64 + 1).unwrap_or(0);
+    // The *effective* H count (explicit bracket value if present, else the
+    // valence-inferred implicit count -- the same unification
+    // `emit_bracket_hydrogens` already applies when writing) must seed the
+    // invariant, not raw `atom.hydrogen_count`. An explicit bracket atom
+    // whose stored H count merely repeats what valence inference would have
+    // produced anyway (e.g. `[Cl]` vs organic-subset `Cl`, both H=0) is the
+    // same chemical species and must get the same invariant; using
+    // `hydrogen_count.is_some()` as part of the seed instead let bracket
+    // "spelling" alone change Morgan ranks and therefore `canonical_smiles`'s
+    // output for two representations of one molecule (see issue #205).
+    let h_flag = implicit_hcount(mol, idx) as u64;
 
     (an << 56) | (degree << 48) | (charge << 40) | (iso << 24) | (h_flag << 16) | (arom << 8)
 }
@@ -1205,9 +1218,23 @@ impl<'a> CanonicalWriter<'a> {
             return;
         }
 
+        // An explicit `hydrogen_count` only forces bracket notation here if it
+        // carries genuine disambiguating information -- i.e. differs from
+        // what organic-subset valence inference would produce anyway if the
+        // atom were unbracketed. An atom whose stored H count merely repeats
+        // that inferred value (e.g. `[Cl]` vs organic-subset `Cl`, both H=0)
+        // is the same chemical species and must canonicalize to the same
+        // (unbracketed) spelling regardless of which notation it was parsed
+        // from -- unlike `writer.rs`'s plain (non-canonical) `emit_atom`,
+        // which intentionally preserves original notation and is unaffected
+        // by this distinction.
+        let h_is_disambiguating = atom
+            .hydrogen_count
+            .is_some_and(|h| h != valence_inferred_hcount(self.mol, idx));
+
         let needs_bracket = atom.isotope.is_some()
             || atom.charge != 0
-            || atom.hydrogen_count.is_some()
+            || h_is_disambiguating
             || !atom.element.is_organic_subset()
             || atom.atom_map.is_some()
             || chirality != Chirality::None;
@@ -2853,5 +2880,291 @@ mod tests {
             Some(ua != ub)
         };
         (ez(doubles[0]), ez(doubles[1]))
+    }
+}
+
+// ── Explicit-vs-implicit hydrogen-count canonicalization invariance ────────
+//
+// Regression suite for issue #205 (kent-tokyo/renkin PR #65 finding): an
+// atom's `hydrogen_count` field is `Some(n)` when it was written with
+// bracket notation and `None` when written organic-subset, but these can
+// represent the *same* chemical state (n happens to equal what valence
+// inference would give anyway). Before this fix, `initial_invariant`
+// treated `None` and `Some(n)` as different Morgan-rank seeds, and
+// `emit_atom` treated any `Some(_)` as forcing bracket notation regardless
+// of whether it was redundant -- so two representations of one molecule
+// (e.g. a bracket `[Cl]` substituent vs. organic-subset `Cl`) could
+// canonicalize to different strings. Fixed by routing both decisions
+// through `implicit_hcount`/`valence_inferred_hcount` instead of the raw
+// field. These tests prove the invariant mechanically (structural/data
+// comparisons), not by assuming two SMILES "look like" the same molecule.
+#[cfg(test)]
+mod explicit_implicit_h_invariance {
+    use super::*;
+    use crate::parser::parse;
+    use chematic_core::{Atom, Element, MoleculeBuilder};
+
+    fn atom_multiset(mol: &Molecule) -> Vec<(u8, i8, Option<u16>, bool, u8)> {
+        // (atomic_number, charge, isotope, aromatic, effective_h_count) --
+        // effective (not raw) H count, since that's the structural fact that
+        // must be invariant; two representations legitimately differ in
+        // whether hydrogen_count is None or Some(same value).
+        let mut v: Vec<_> = mol
+            .atoms()
+            .map(|(idx, a)| {
+                (
+                    a.element.atomic_number(),
+                    a.charge,
+                    a.isotope,
+                    a.aromatic,
+                    chematic_core::implicit_hcount(mol, idx),
+                )
+            })
+            .collect();
+        v.sort();
+        v
+    }
+
+    fn bond_multiset(mol: &Molecule) -> Vec<(u8, u8, u8)> {
+        // (min_atomic_number, max_atomic_number, bond_order) at each edge,
+        // order-independent identification of the bond multiset.
+        let mut v: Vec<_> = mol
+            .bonds()
+            .map(|(_, b)| {
+                let e1 = mol.atom(b.atom1).element.atomic_number();
+                let e2 = mol.atom(b.atom2).element.atomic_number();
+                (e1.min(e2), e1.max(e2), bond_order_value(b.order) as u8)
+            })
+            .collect();
+        v.sort();
+        v
+    }
+
+    /// Asserts `a` and `b` are the same chemical graph (same atom multiset,
+    /// same bond multiset) *before* checking canonical string equality --
+    /// this is what makes the string-equality assertions below a proof of
+    /// canonicalization invariance rather than an assumption that two
+    /// differently-written SMILES denote the same molecule.
+    fn assert_same_graph_then_same_canonical(a: &Molecule, b: &Molecule, label: &str) {
+        assert_eq!(
+            a.atom_count(),
+            b.atom_count(),
+            "{label}: atom count must match for this to be a meaningful test"
+        );
+        assert_eq!(
+            atom_multiset(a),
+            atom_multiset(b),
+            "{label}: atom multisets (element/charge/isotope/aromatic/effective-H) differ -- \
+             these are not actually the same molecule, so canonical equality would prove nothing"
+        );
+        assert_eq!(
+            bond_multiset(a),
+            bond_multiset(b),
+            "{label}: bond multisets differ -- not the same graph"
+        );
+        assert_eq!(
+            canonical_smiles(a),
+            canonical_smiles(b),
+            "{label}: same graph must canonicalize identically"
+        );
+    }
+
+    /// Isolated version of the kent-tokyo/renkin PR #65 fixture with zero
+    /// reaction machinery involved -- pure SMILES parsing, bracket vs
+    /// organic notation. `chematic-rxn`'s own test suite
+    /// (`transform.rs::reaction_derived_matches_direct_parse_chlorobenzene`)
+    /// covers the actual `run_reactants`-derived case, since chematic-smiles
+    /// cannot depend on chematic-rxn.
+    #[test]
+    fn bracket_vs_organic_notation_isolated_no_reaction() {
+        let cases = [
+            ("[Cl]c1ccccc1", "Clc1ccccc1"), // aromatic, symmetric ring
+            ("[Cl]CCC", "ClCCC"),           // aliphatic, asymmetric
+            ("[OH]CC", "OCC"),              // hydroxyl group
+            ("C[NH2]", "CN"),               // amine
+            ("[CH3]C", "CC"),               // methyl written explicit
+        ];
+        for (bracket, organic) in cases {
+            let a = parse(bracket).unwrap();
+            let b = parse(organic).unwrap();
+            assert_same_graph_then_same_canonical(&a, &b, &format!("{bracket} vs {organic}"));
+        }
+    }
+
+    /// Randomized atom relabeling: build the same graph via `MoleculeBuilder`
+    /// with atoms inserted in several different orders (including a
+    /// deterministic pseudo-random shuffle), holding chemistry fixed. Proves
+    /// insertion order alone -- independent of bracket/organic notation --
+    /// cannot change `canonical_smiles`'s output.
+    #[test]
+    fn randomized_atom_relabeling_does_not_change_canonical_form() {
+        // A 5-membered ring with a substituent breaking full symmetry:
+        // cyclopentane with one CH2 replaced conceptually by using a
+        // pendant Cl so every construction order is exercised meaningfully.
+        fn ring_with_substituent(insertion_order: &[usize]) -> Molecule {
+            // Logical atoms: 0..5 ring carbons, 5 = Cl substituent on ring atom 0.
+            let atoms: Vec<Atom> = (0..5)
+                .map(|_| Atom {
+                    element: Element::C,
+                    isotope: None,
+                    charge: 0,
+                    hydrogen_count: None,
+                    aromatic: false,
+                    chirality: Chirality::None,
+                    wildcard: false,
+                    atom_map: None,
+                    cip_code: None,
+                })
+                .chain(std::iter::once(Atom {
+                    element: Element::CL,
+                    isotope: None,
+                    charge: 0,
+                    hydrogen_count: None,
+                    aromatic: false,
+                    chirality: Chirality::None,
+                    wildcard: false,
+                    atom_map: None,
+                    cip_code: None,
+                }))
+                .collect();
+            // Logical bonds: ring 0-1-2-3-4-0, plus 0-5 (Cl).
+            let bonds = [
+                (0usize, 1usize, BondOrder::Single),
+                (1, 2, BondOrder::Single),
+                (2, 3, BondOrder::Single),
+                (3, 4, BondOrder::Single),
+                (4, 0, BondOrder::Single),
+                (0, 5, BondOrder::Single),
+            ];
+
+            let mut logical_to_new = [0u32; 6];
+            let mut b = MoleculeBuilder::new();
+            for (new_idx, &logical_idx) in insertion_order.iter().enumerate() {
+                logical_to_new[logical_idx] = new_idx as u32;
+                b.add_atom(atoms[logical_idx].clone());
+            }
+            for (l1, l2, order) in bonds {
+                let a1 = AtomIdx(logical_to_new[l1]);
+                let a2 = AtomIdx(logical_to_new[l2]);
+                let _ = b.add_bond(a1, a2, order);
+            }
+            b.build()
+        }
+
+        let orders: Vec<Vec<usize>> = vec![
+            vec![0, 1, 2, 3, 4, 5],
+            vec![5, 4, 3, 2, 1, 0],
+            vec![2, 0, 4, 1, 5, 3],
+            vec![5, 0, 1, 2, 3, 4],
+            vec![3, 1, 5, 0, 4, 2],
+        ];
+        let reference = canonical_smiles(&ring_with_substituent(&orders[0]));
+        for order in &orders[1..] {
+            let mol = ring_with_substituent(order);
+            assert_eq!(
+                canonical_smiles(&mol),
+                reference,
+                "insertion order {order:?} must not change canonical_smiles"
+            );
+        }
+    }
+
+    /// Disconnected structures: a salt/mixture where one fragment uses
+    /// bracket notation and the other uses organic-subset notation for
+    /// what is, on the relevant atom, the same effective H count.
+    #[test]
+    fn disconnected_structures_bracket_organic_mix() {
+        let a = parse("[Cl]CC.[Na+]").unwrap();
+        let b = parse("ClCC.[Na+]").unwrap();
+        assert_same_graph_then_same_canonical(&a, &b, "disconnected salt, bracket vs organic Cl");
+    }
+
+    /// A Kekulized ring (explicit alternating single/double bonds, no
+    /// aromaticity perception applied), combined with a bracket/organic
+    /// notation difference on its substituent, must still canonicalize
+    /// identically. Kept separate from the aromatic-flagged case in
+    /// `bracket_vs_organic_notation_isolated_no_reaction` -- raw `parse()`
+    /// does not itself perceive aromaticity from Kekulized input (that is a
+    /// separate, opt-in `chematic-perception` step), so an aromatic-flagged
+    /// molecule and a Kekulized one are genuinely different `Atom.aromatic`
+    /// states, not merely different spellings of the same data; comparing
+    /// them here would test aromaticity perception, not this fix.
+    #[test]
+    fn kekulized_ring_bracket_vs_organic_substituent() {
+        let bracket = parse("[Cl]C1=CC=CC=C1").unwrap();
+        let organic = parse("ClC1=CC=CC=C1").unwrap();
+        assert_same_graph_then_same_canonical(
+            &bracket,
+            &organic,
+            "Kekulized ring, bracket vs organic Cl substituent",
+        );
+    }
+
+    /// Isotope and charge must NOT be unified away -- only redundant
+    /// explicit H-count information is. An explicit isotope or nonzero
+    /// charge is always genuinely distinguishing (there is no "implicit
+    /// isotope"/"implicit charge" to fall back to), so these must still
+    /// force bracket notation and distinct canonical forms from their
+    /// natural-abundance/neutral counterparts.
+    #[test]
+    fn isotope_and_charge_remain_distinguishing_not_unified() {
+        let normal = parse("CCl").unwrap();
+        let isotopic = parse("C[37Cl]").unwrap();
+        assert_ne!(
+            canonical_smiles(&normal),
+            canonical_smiles(&isotopic),
+            "an explicit isotope must remain distinguishing"
+        );
+
+        let neutral = parse("CC(=O)[O-]").unwrap();
+        let anion_str = canonical_smiles(&neutral);
+        assert!(
+            anion_str.contains('-'),
+            "explicit negative charge must remain visible: {anion_str}"
+        );
+    }
+
+    /// A real stereocenter (explicit chirality) is unaffected by the
+    /// explicit/implicit-H unification: canonicalizing a chiral molecule
+    /// from two different atom orderings must still agree, and the
+    /// canonical form must still be stable under repeated canonicalization
+    /// (idempotence).
+    #[test]
+    fn stereocenter_canonicalization_idempotent_and_order_independent() {
+        let a = parse("N[C@@H](C)C(=O)O").unwrap(); // L-alanine
+        let b = parse("OC(=O)[C@H](C)N").unwrap(); // same molecule, other end first
+        assert_same_graph_then_same_canonical(&a, &b, "L-alanine, two parse orders");
+
+        let canon = canonical_smiles(&a);
+        let reparsed = parse(&canon).unwrap();
+        assert_eq!(
+            canonical_smiles(&reparsed),
+            canon,
+            "canonical_smiles must be idempotent: canonicalize(parse(canonicalize(x))) == canonicalize(x)"
+        );
+    }
+
+    /// General idempotence check across the bracket/organic pairs above:
+    /// canonicalizing an already-canonical string must reproduce it
+    /// byte-for-byte, regardless of which side of a bracket/organic pair it
+    /// started from.
+    #[test]
+    fn canonicalization_is_idempotent_for_all_bracket_organic_pairs() {
+        for (bracket, organic) in [
+            ("[Cl]c1ccccc1", "Clc1ccccc1"),
+            ("[Cl]CCC", "ClCCC"),
+            ("[OH]CC", "OCC"),
+        ] {
+            for smi in [bracket, organic] {
+                let mol = parse(smi).unwrap();
+                let canon = canonical_smiles(&mol);
+                let reparsed = parse(&canon).unwrap();
+                assert_eq!(
+                    canonical_smiles(&reparsed),
+                    canon,
+                    "not idempotent starting from {smi}: {canon}"
+                );
+            }
+        }
     }
 }

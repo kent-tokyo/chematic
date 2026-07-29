@@ -217,6 +217,21 @@ fn dative_direction_round_trips_through_both_writers() {
 
 /// Same round trip for a dative bond that is a ring-closure back-edge
 /// rather than a tree edge, in both stored directions.
+///
+/// This molecule has two paths between N and Fe (the 3-single-bond chain,
+/// and the direct dative bond), so which one the DFS picks as the ring-
+/// closure "back edge" vs. a tree edge is incidental to canonical atom
+/// ordering, not a fixed property of the graph. `write` (plain, non-
+/// canonical, insertion-order-driven) always routes the dative bond through
+/// the ring closure for this builder-constructed molecule, so it keeps the
+/// stricter ring-closure-digit assertion. `canonical_smiles` legitimately
+/// changed which edge becomes the ring closure once `initial_invariant`'s
+/// explicit/implicit-H unification fix (issue #205) corrected this
+/// molecule's Morgan ranks -- the dative bond is now a tree edge, written
+/// inline right after Fe, rather than at the ring digit. Only the invariant
+/// that actually matters -- donor/acceptor direction survives the round
+/// trip, and the dative token itself is never dropped -- is asserted for
+/// `canonical_smiles`, not the incidental tree-edge-vs-ring-closure choice.
 #[test]
 fn dative_ring_closure_round_trips_through_both_writers() {
     for donor_is_n in [true, false] {
@@ -243,20 +258,25 @@ fn dative_ring_closure_round_trips_through_both_writers() {
             "builder precondition"
         );
 
-        for out in [write(&mol), canonical_smiles(&mol)] {
-            // Both writers really do route this bond through a ring-closure
-            // digit rather than a tree edge, and both ends of it print: the
-            // donor end `->`, the acceptor end `<-`, each immediately before
-            // its ring number.
-            assert!(
-                out.contains("->1") && out.contains("<-1"),
-                "ring-closure dative token truncated or not on the ring digit: {out}"
-            );
+        let plain = write(&mol);
+        assert!(
+            plain.contains("->1") && plain.contains("<-1"),
+            "plain writer must still route this dative bond through the ring-closure \
+             digit (insertion-order-driven, unaffected by canonical ranking): {plain}"
+        );
+
+        let canon = canonical_smiles(&mol);
+        assert!(
+            canon.contains("->") || canon.contains("<-"),
+            "dative bond token lost entirely canonicalizing {canon}"
+        );
+
+        for out in [plain, canon] {
             let reparsed = parse(&out).unwrap_or_else(|e| panic!("re-parse of {out}: {e}"));
             assert_eq!(
                 dative_donor_acceptor(&reparsed),
                 expected,
-                "donor/acceptor lost writing ring closure {out}"
+                "donor/acceptor lost writing {out}"
             );
         }
     }
@@ -291,14 +311,26 @@ fn canonical_smiles_is_stable_for_dative_molecules() {
 }
 
 /// Guard against misreading the test above: a molecule built through
-/// `MoleculeBuilder` (rather than parsed) can shift once on its first
-/// canonicalization, because the builder and the parser do not populate
-/// every atom field identically. That is pre-existing and has nothing to do
-/// with dative bonds — the same ring with an ordinary single bond in place
-/// of the dative one shifts in exactly the same way — so it must not be
-/// "fixed" by reshaping the dative writer.
+/// `MoleculeBuilder` (rather than parsed) used to be able to shift once on
+/// its first canonicalization, because the builder and the parser did not
+/// populate every atom field identically -- specifically, `hydrogen_count`
+/// (`None` from a builder-constructed atom vs. an explicit `Some(_)` after a
+/// bracket atom like `[Fe]` is written and re-parsed). That was pre-existing
+/// and had nothing to do with dative bonds -- the same ring with an ordinary
+/// single bond in place of the dative one shifted in exactly the same way --
+/// so it must never be "fixed" by reshaping the dative writer specifically.
+///
+/// Fixed at the root (issue #205): `initial_invariant`'s Morgan-rank seed
+/// and `emit_atom`'s bracket-necessity check now both go through
+/// `implicit_hcount`/`valence_inferred_hcount` instead of raw
+/// `atom.hydrogen_count`, so an explicit H count that merely repeats what
+/// valence inference would already give (e.g. bracket `[Fe]` with H=0,
+/// implicit-organic-subset atoms aside since Fe isn't organic-subset) no
+/// longer changes ranking or bracket emission. Builder- and parser-
+/// constructed molecules of the same graph now canonicalize identically on
+/// the very first call -- this test now asserts convergence, not the shift.
 #[test]
-fn builder_first_shift_is_not_dative_specific() {
+fn builder_first_canonicalization_matches_parser_no_shift() {
     let ring = |closing: BondOrder| {
         let mut b = MoleculeBuilder::new();
         let n = b.add_atom(atom(Element::N));
@@ -317,12 +349,13 @@ fn builder_first_shift_is_not_dative_specific() {
 
     let (single_first, single_second) = ring(BondOrder::Single);
     let (dative_first, dative_second) = ring(BondOrder::Dative);
-    assert_ne!(
+    assert_eq!(
         single_first, single_second,
-        "control: the shift is expected without any dative bond"
+        "builder- and parser-constructed molecules must canonicalize identically \
+         (no more first-call shift) -- not dative-specific, same fix for both"
     );
-    assert_ne!(dative_first, dative_second, "same shift, same cause");
-    // And in both cases it settles after one parse.
+    assert_eq!(dative_first, dative_second, "same invariant, same cause");
+    // Stable under repeated round-trips too.
     assert_eq!(
         canonical_smiles(&parse(&single_second).unwrap()),
         single_second

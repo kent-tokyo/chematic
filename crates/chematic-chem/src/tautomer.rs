@@ -2088,9 +2088,16 @@ mod tests {
             2,
             "propan-2-enol should enumerate to exactly 2 forms (enol + acetone)"
         );
+        // Golden string updated (issue #205): `initial_invariant`'s
+        // explicit/implicit-H-count unification changed Morgan ranks for
+        // some atoms, so `canonical_smiles`'s neighbor-branch-ordering
+        // shifted -- this is still the identical keto tautomer (acetone),
+        // just a different valid serialization of the same graph; the
+        // enumeration count above (2) is the actual regression pin for
+        // "logic unaffected" and did not change.
         assert_eq!(
             canonical_smiles(&canonical_tautomer(&mol)),
-            "C(C)(C)=O",
+            "C(C)(=O)C",
             "the canonical tautomer form must be unchanged (prefers the keto form)"
         );
     }
@@ -2110,9 +2117,12 @@ mod tests {
             2,
             "pyrazole should enumerate to exactly 2 forms"
         );
+        // Golden string updated (issue #205), same reason as the acetone
+        // test above: same tautomer (pyrazole's NH form), different valid
+        // canonical serialization; the count (2) is the unaffected pin.
         assert_eq!(
             canonical_smiles(&canonical_tautomer(&mol)),
-            "c1[nH]ncc1",
+            "c1c[nH]nc1",
             "pyrazole's canonical tautomer form must be unchanged"
         );
     }
