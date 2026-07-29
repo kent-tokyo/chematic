@@ -1,0 +1,799 @@
+{
+  "rdkit_version": "2026.03.3",
+  "rdkit_pinned_source_commit": "8afba32ec539dcb2369bc84549d802aca3f7eb39",
+  "n_rows_in_dump": 5021,
+  "n_molecules_compared": 5021,
+  "n_alignment_checked": 5021,
+  "n_alignment_failures": 0,
+  "alignment_failures": [],
+  "total_cells": 155651,
+  "bucket_counts": {
+    "agree_all": 155474,
+    "parity_fixes_default": 176,
+    "both_disagree_same_as_default": 1
+  },
+  "ring_count_pattern_bucket_counts": {
+    "agree_all": 24929,
+    "parity_fixes_default": 176
+  },
+  "mismatch_examples": {
+    "parity_worsens_agreement": [],
+    "agree_all": [],
+    "chematic_parse_error": [],
+    "parity_regresses": [],
+    "rdkit_smarts_parse_error": [],
+    "both_disagree_same_as_default": [
+      {
+        "id": "corpus_4657",
+        "smiles": "NC1(C(=O)O)CC2CC1C2C(=O)O",
+        "pattern": "[k5]",
+        "default": [
+          [
+            1
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ],
+          [
+            8
+          ]
+        ],
+        "parity": [
+          [
+            1
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ],
+          [
+            8
+          ]
+        ],
+        "rdkit": [
+          [
+            1
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ],
+          [
+            8
+          ],
+          [
+            9
+          ]
+        ]
+      }
+    ],
+    "chematic_parity_error": [],
+    "parity_fixes_default": [
+      {
+        "id": "bicyclo222octane",
+        "smiles": "C1CC2CCC1CC2",
+        "pattern": "[R1]",
+        "default": [
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ],
+        "parity": [],
+        "rdkit": []
+      },
+      {
+        "id": "bicyclo222octane",
+        "smiles": "C1CC2CCC1CC2",
+        "pattern": "[R2]",
+        "default": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            5
+          ]
+        ],
+        "parity": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ],
+        "rdkit": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ]
+      },
+      {
+        "id": "bicyclo222octane",
+        "smiles": "C1CC2CCC1CC2",
+        "pattern": "[R3]",
+        "default": [],
+        "parity": [
+          [
+            2
+          ],
+          [
+            5
+          ]
+        ],
+        "rdkit": [
+          [
+            2
+          ],
+          [
+            5
+          ]
+        ]
+      },
+      {
+        "id": "adamantane",
+        "smiles": "C1C2CC3CC1CC(C2)C3",
+        "pattern": "[R1]",
+        "default": [
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            9
+          ]
+        ],
+        "parity": [],
+        "rdkit": []
+      },
+      {
+        "id": "adamantane",
+        "smiles": "C1C2CC3CC1CC(C2)C3",
+        "pattern": "[R2]",
+        "default": [
+          [
+            0
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            5
+          ],
+          [
+            7
+          ],
+          [
+            8
+          ]
+        ],
+        "parity": [
+          [
+            0
+          ],
+          [
+            2
+          ],
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            8
+          ],
+          [
+            9
+          ]
+        ],
+        "rdkit": [
+          [
+            0
+          ],
+          [
+            2
+          ],
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            8
+          ],
+          [
+            9
+          ]
+        ]
+      },
+      {
+        "id": "adamantane",
+        "smiles": "C1C2CC3CC1CC(C2)C3",
+        "pattern": "[R3]",
+        "default": [
+          [
+            1
+          ]
+        ],
+        "parity": [
+          [
+            1
+          ],
+          [
+            3
+          ],
+          [
+            5
+          ],
+          [
+            7
+          ]
+        ],
+        "rdkit": [
+          [
+            1
+          ],
+          [
+            3
+          ],
+          [
+            5
+          ],
+          [
+            7
+          ]
+        ]
+      },
+      {
+        "id": "cubane",
+        "smiles": "C12C3C4C1C5C4C3C25",
+        "pattern": "[R2]",
+        "default": [
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ],
+        "parity": [],
+        "rdkit": []
+      },
+      {
+        "id": "cubane",
+        "smiles": "C12C3C4C1C5C4C3C25",
+        "pattern": "[R3]",
+        "default": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ]
+        ],
+        "parity": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ],
+        "rdkit": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ]
+      },
+      {
+        "id": "prismane",
+        "smiles": "C12C3C4C1C1C2C3C41",
+        "pattern": "[R2]",
+        "default": [
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ],
+        "parity": [],
+        "rdkit": []
+      },
+      {
+        "id": "prismane",
+        "smiles": "C12C3C4C1C1C2C3C41",
+        "pattern": "[R3]",
+        "default": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ]
+        ],
+        "parity": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ],
+        "rdkit": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ]
+      },
+      {
+        "id": "dodecahedrane",
+        "smiles": "C12C3C4C5C1C6C7C2C8C3C9C4C1C5C6C2C7C8C9C12",
+        "pattern": "[R2]",
+        "default": [
+          [
+            15
+          ],
+          [
+            16
+          ],
+          [
+            17
+          ],
+          [
+            18
+          ],
+          [
+            19
+          ]
+        ],
+        "parity": [],
+        "rdkit": []
+      },
+      {
+        "id": "dodecahedrane",
+        "smiles": "C12C3C4C5C1C6C7C2C8C3C9C4C1C5C6C2C7C8C9C12",
+        "pattern": "[R3]",
+        "default": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ],
+          [
+            8
+          ],
+          [
+            9
+          ],
+          [
+            10
+          ],
+          [
+            11
+          ],
+          [
+            12
+          ],
+          [
+            13
+          ],
+          [
+            14
+          ]
+        ],
+        "parity": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ],
+          [
+            8
+          ],
+          [
+            9
+          ],
+          [
+            10
+          ],
+          [
+            11
+          ],
+          [
+            12
+          ],
+          [
+            13
+          ],
+          [
+            14
+          ],
+          [
+            15
+          ],
+          [
+            16
+          ],
+          [
+            17
+          ],
+          [
+            18
+          ],
+          [
+            19
+          ]
+        ],
+        "rdkit": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ],
+          [
+            8
+          ],
+          [
+            9
+          ],
+          [
+            10
+          ],
+          [
+            11
+          ],
+          [
+            12
+          ],
+          [
+            13
+          ],
+          [
+            14
+          ],
+          [
+            15
+          ],
+          [
+            16
+          ],
+          [
+            17
+          ],
+          [
+            18
+          ],
+          [
+            19
+          ]
+        ]
+      },
+      {
+        "id": "quinuclidine",
+        "smiles": "C1CN2CCC1CC2",
+        "pattern": "[R1]",
+        "default": [
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ],
+        "parity": [],
+        "rdkit": []
+      },
+      {
+        "id": "quinuclidine",
+        "smiles": "C1CN2CCC1CC2",
+        "pattern": "[R2]",
+        "default": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            5
+          ]
+        ],
+        "parity": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ],
+        "rdkit": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            6
+          ],
+          [
+            7
+          ]
+        ]
+      },
+      {
+        "id": "quinuclidine",
+        "smiles": "C1CN2CCC1CC2",
+        "pattern": "[R3]",
+        "default": [],
+        "parity": [
+          [
+            2
+          ],
+          [
+            5
+          ]
+        ],
+        "rdkit": [
+          [
+            2
+          ],
+          [
+            5
+          ]
+        ]
+      }
+    ]
+  }
+}
