@@ -927,6 +927,83 @@ def test_smiles_writer_no_name_header_omits_name_column(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# TDTWriter + TDTMolSupplier
+# ---------------------------------------------------------------------------
+
+def test_tdt_writer_supplier_roundtrip(tmp_path):
+    out = tmp_path / "mols.tdt"
+    with Chem.TDTWriter(str(out)) as w:
+        w.SetProps(["activity"])
+        for smi, name, act in [("CCO", "ethanol", "1.2"), ("c1ccccc1", "benzene", "3.4")]:
+            m = Chem.MolFromSmiles(smi)
+            m.SetProp("_Name", name)
+            m.SetProp("activity", act)
+            w.write(m)
+
+    sup = Chem.TDTMolSupplier(str(out))
+    mols = list(sup)
+    assert len(mols) == 2
+    assert mols[0].GetProp("_Name") == "ethanol"
+    assert mols[0].GetProp("activity") == "1.2"
+    assert mols[1].GetProp("_Name") == "benzene"
+
+
+def test_tdt_default_roundtrip_preserves_name_unlike_real_rdkit(tmp_path):
+    # chematic's own deliberate divergence: RDKit's own default
+    # TDTWriter+TDTMolSupplier round trip silently loses the name (writer
+    # hard-codes "NAME", reader's own nameRecord defaults to ""). Chematic's
+    # defaults are reconciled so this round-trips correctly out of the box.
+    out = tmp_path / "x.tdt"
+    with Chem.TDTWriter(str(out)) as w:
+        m = Chem.MolFromSmiles("CC")
+        m.SetProp("_Name", "ethane")
+        w.write(m)
+    mol = next(iter(Chem.TDTMolSupplier(str(out))))
+    assert mol.GetProp("_Name") == "ethane"
+
+
+def test_tdt_supplier_random_access(tmp_path):
+    out = tmp_path / "mols.tdt"
+    with Chem.TDTWriter(str(out)) as w:
+        for smi, name in [("CCO", "a"), ("CCC", "b"), ("CCCC", "c")]:
+            m = Chem.MolFromSmiles(smi)
+            m.SetProp("_Name", name)
+            w.write(m)
+    sup = Chem.TDTMolSupplier(str(out))
+    assert sup[2].GetProp("_Name") == "c"
+    with pytest.raises(IndexError):
+        _ = sup[99]
+
+
+def test_tdt_supplier_bad_record_yields_none(tmp_path):
+    out = tmp_path / "bad.tdt"
+    out.write_text("NAME<no_smiles_here>\n|\n$SMI<CCO>\nNAME<ethanol>\n|\n")
+    mols = list(Chem.TDTMolSupplier(str(out)))
+    assert mols[0] is None
+    assert mols[1] is not None
+
+
+def test_tdt_writer_num_mols(tmp_path):
+    out = tmp_path / "x.tdt"
+    w = Chem.TDTWriter(str(out))
+    w.write(Chem.MolFromSmiles("CC"))
+    w.write(Chem.MolFromSmiles("CCC"))
+    assert w.NumMols() == 2
+    w.close()
+
+
+def test_tdt_supplier_coordinate_request_raises_not_implemented(tmp_path):
+    out = tmp_path / "x.tdt"
+    with Chem.TDTWriter(str(out)) as w:
+        w.write(Chem.MolFromSmiles("CC"))
+    # The rdkit_compat wrapper is lazy (matches SmilesMolSupplier's own
+    # established pattern): construction of the underlying Rust supplier,
+    # and thus the NotImplementedError, happens on iteration.
+    with pytest.raises(NotImplementedError):
+        list(Chem.TDTMolSupplier(str(out), confId3D=0))
+
+
+# ---------------------------------------------------------------------------
 # SDMolSupplier random access + context manager
 # ---------------------------------------------------------------------------
 
