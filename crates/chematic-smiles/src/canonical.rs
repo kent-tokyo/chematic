@@ -20,7 +20,7 @@ use std::collections::{HashMap, HashSet};
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
 
-use crate::writer::{emit_bracket_hydrogens, suppress_standalone_wedge};
+use crate::writer::{bond_token_from, emit_bracket_hydrogens, suppress_standalone_wedge};
 
 /// Return the atom indices sorted into canonical (Morgan-rank) order.
 ///
@@ -1065,16 +1065,21 @@ impl<'a> CanonicalWriter<'a> {
         in_stack[atom.0 as usize] = false;
     }
 
+    /// `incoming_bond` is the already-oriented token for the edge leading to
+    /// `atom` (`None` for the root or an implicit bond), not a `BondOrder`:
+    /// a dative arrow's direction depends on which endpoint is written
+    /// first, and `BondOrder::smiles_char` would truncate `"->"` to `'-'`
+    /// anyway (issue #194). See `crate::writer::bond_token_from`.
     fn write_chain(
         &mut self,
         atom: AtomIdx,
         from_atom: Option<AtomIdx>,
-        incoming_bond: Option<BondOrder>,
+        incoming_bond: Option<&'static str>,
     ) {
         self.written[atom.0 as usize] = true;
 
-        if let Some(bond) = incoming_bond {
-            self.out.push(bond.smiles_char());
+        if let Some(token) = incoming_bond {
+            self.out.push_str(token);
         }
 
         // Compute parity-corrected chirality before ring data is consumed.
@@ -1090,7 +1095,12 @@ impl<'a> CanonicalWriter<'a> {
                 if !(bond_order == BondOrder::Aromatic && atom_arom)
                     && bond_order != BondOrder::Single
                 {
-                    self.out.push(bond_order.smiles_char());
+                    // Oriented from the atom being written right now, so a
+                    // dative ring closure prints `->` at its donor end and
+                    // `<-` at its acceptor end (the same bond read from
+                    // opposite directions).
+                    self.out
+                        .push_str(bond_token_from(self.mol, bidx, bond_order, atom));
                 }
                 // SMILES ring-closure numbers are limited to 1–99.
                 // Molecules needing ≥ 100 simultaneous open ring closures are
@@ -1166,7 +1176,11 @@ impl<'a> CanonicalWriter<'a> {
                 BondOrder::Aromatic => parent_arom && child_arom,
                 _ => false,
             };
-            let written_bond = if implicit { None } else { Some(bond_order) };
+            let written_bond = if implicit {
+                None
+            } else {
+                Some(bond_token_from(self.mol, bidx, bond_order, atom))
+            };
 
             if !is_last {
                 self.out.push('(');

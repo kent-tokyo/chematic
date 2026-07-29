@@ -125,6 +125,36 @@ pub(crate) fn direction_from(
     }
 }
 
+/// The SMILES token to print for bond `bidx` when the DFS is writing it
+/// *starting from* `from_atom`.
+///
+/// `Dative` is the only bond order whose token is longer than one character
+/// (`"->"`), and the only one whose *text* encodes an asymmetric fact about
+/// its two endpoints: `BondOrder::Dative` stores donor→acceptor as
+/// `atom1`→`atom2`, while `->`/`<-` are read left-to-right in written order.
+/// A DFS can reach either endpoint first, so writing `"->"` unconditionally
+/// would assert "the atom I just wrote is the donor" — false, and actively
+/// misleading, whenever the traversal arrived at `atom2` first. Every other
+/// order's token is direction-free, so this is exactly
+/// [`BondOrder::smiles_token`] for them.
+///
+/// This is the dative analogue of [`direction_from`], which does the same
+/// job for `/`/`\`. It has to live here rather than in `direction_from`
+/// because there is only one `Dative` variant — the flip has no `BondOrder`
+/// to be expressed as, only a different token string.
+pub(crate) fn bond_token_from(
+    mol: &Molecule,
+    bidx: BondIdx,
+    order: BondOrder,
+    from_atom: AtomIdx,
+) -> &'static str {
+    if order == BondOrder::Dative && mol.bond(bidx).atom1 != from_atom {
+        "<-"
+    } else {
+        order.smiles_token()
+    }
+}
+
 /// Write a [`Molecule`] to a SMILES string.
 ///
 /// Disconnected fragments are joined with `.`.
@@ -142,7 +172,9 @@ struct SmilesWriter<'a> {
     ring_bonds: HashSet<BondIdx>,
     /// ring number(s) each atom must write when serialized.
     /// Both the "open" ancestor and "close" descendant of a ring store the same number.
-    atom_ring_nums: HashMap<AtomIdx, Vec<(u16, BondOrder)>>,
+    /// `BondIdx` is kept alongside the order so the emission site can ask
+    /// [`bond_token_from`] for a direction-correct token (dative arrows).
+    atom_ring_nums: HashMap<AtomIdx, Vec<(u16, BondOrder, BondIdx)>>,
     /// Whether each atom has been serialized in phase 2.
     written: Vec<bool>,
     next_ring: u16,
@@ -245,11 +277,11 @@ impl<'a> SmilesWriter<'a> {
                 self.atom_ring_nums
                     .entry(neighbor)
                     .or_default()
-                    .push((rn, order_at_open)); // open
+                    .push((rn, order_at_open, bidx)); // open
                 self.atom_ring_nums
                     .entry(atom)
                     .or_default()
-                    .push((rn, order_at_close)); // close
+                    .push((rn, order_at_close, bidx)); // close
             }
         }
 
@@ -257,18 +289,21 @@ impl<'a> SmilesWriter<'a> {
     }
 
     /// Write `atom` and then recurse into its unvisited tree-edge neighbors.
-    /// `incoming_bond`: the bond type on the edge leading to this atom (None for the root).
+    /// `incoming_bond`: the already-oriented token for the edge leading to
+    /// this atom (None for the root, or when the bond is implicit). It is a
+    /// token rather than a `BondOrder` because a dative arrow's direction
+    /// depends on which endpoint is written first — see [`bond_token_from`].
     fn write_chain(
         &mut self,
         atom: AtomIdx,
         from_atom: Option<AtomIdx>,
-        incoming_bond: Option<BondOrder>,
+        incoming_bond: Option<&'static str>,
     ) {
         self.written[atom.0 as usize] = true;
 
         // Write the incoming bond (if explicit / non-default).
-        if let Some(bond) = incoming_bond {
-            self.out.push_str(bond.smiles_token());
+        if let Some(token) = incoming_bond {
+            self.out.push_str(token);
         }
 
         // Write the atom symbol.
@@ -276,7 +311,7 @@ impl<'a> SmilesWriter<'a> {
 
         // Write ring-closure digits for this atom (both open and close digits).
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
-            for (rn, bond_order) in rings {
+            for (rn, bond_order, bidx) in rings {
                 // Write bond type unless it is implicit.
                 let atom_aromatic = self.mol.atom(atom).aromatic;
                 // For ring closures we can't know the other atom's aromaticity here,
@@ -284,7 +319,13 @@ impl<'a> SmilesWriter<'a> {
                 if !(bond_order == BondOrder::Aromatic && atom_aromatic)
                     && bond_order != BondOrder::Single
                 {
-                    self.out.push_str(bond_order.smiles_token());
+                    // Oriented from the atom being written right now: the two
+                    // ends of a dative ring closure print opposite arrows
+                    // (`->` at the donor, `<-` at the acceptor), which is the
+                    // same bond read from opposite directions -- exactly how
+                    // `/`/`\` ring-closure markers already behave here.
+                    self.out
+                        .push_str(bond_token_from(self.mol, bidx, bond_order, atom));
                 }
                 // Ring number: single digit for 1-9, `%NN` form for 10-99, `%NNN` for 100+.
                 if rn >= 100 {
@@ -305,7 +346,7 @@ impl<'a> SmilesWriter<'a> {
         }
 
         // Collect tree-edge children (unvisited, non-ring-closure bonds).
-        let children: Vec<(AtomIdx, BondOrder)> = self
+        let children: Vec<(AtomIdx, BondIdx, BondOrder)> = self
             .mol
             .neighbors(atom)
             .filter(|(nb, bidx)| {
@@ -320,13 +361,17 @@ impl<'a> SmilesWriter<'a> {
                 // which endpoint the DFS happens to write first.
                 let raw = raw_bond_direction(self.mol, bidx).unwrap_or(self.mol.bond(bidx).order);
                 let oriented = direction_from(self.mol, bidx, raw, atom);
-                (nb, suppress_standalone_wedge(self.mol, bidx, oriented))
+                (
+                    nb,
+                    bidx,
+                    suppress_standalone_wedge(self.mol, bidx, oriented),
+                )
             })
             .collect();
 
         // Write children: all but the last one are branches (wrapped in parentheses).
         let n = children.len();
-        for (i, (child, bond_order)) in children.into_iter().enumerate() {
+        for (i, (child, bidx, bond_order)) in children.into_iter().enumerate() {
             let is_last = i == n - 1;
 
             // Determine whether the bond should be written explicitly.
@@ -337,7 +382,11 @@ impl<'a> SmilesWriter<'a> {
                 BondOrder::Aromatic => parent_arom && child_arom,  // aromatic is implicit
                 _ => false,
             };
-            let written_bond = if implicit { None } else { Some(bond_order) };
+            let written_bond = if implicit {
+                None
+            } else {
+                Some(bond_token_from(self.mol, bidx, bond_order, atom))
+            };
 
             if !is_last {
                 self.out.push('(');
