@@ -1257,17 +1257,23 @@ pub struct MinimizationFailureDetail {
     /// vanishing from a blow-up count instead of being counted as a typed
     /// failure.
     pub worst_bond_length: f64,
-    /// `true` iff this failure is from `run_uff_bridge`'s own retry attempt
-    /// (the caller's coordinates already failed once with
+    /// This `MinimizationFailureDetail` always describes the ORIGINAL attempt's
+    /// failure (the caller's own coordinates) — never the retry's. This flag only
+    /// records whether a retry was even attempted before that original failure was
+    /// returned: `true` means the original attempt failed with
     /// `CatastrophicBondBlowup`/`NonFiniteCoordinates`, `embed_distance_geometry_v2`
-    /// was tried as a rescue, and that retry ALSO failed, or embedding itself
-    /// errored) — lets a caller distinguish "no rescue was even attempted"
-    /// from "the rescue was attempted and did not help either." Always
-    /// `false` for policies other than `UffOnly`/the UFF-fallback path of
-    /// `Mmff94WithUffFallback`, and for `ExcessiveResidualForce` failures
-    /// (issues #185/#188 measured this rescue helping catastrophic bond
-    /// blowup specifically, not residual-force-only unsoundness — see
-    /// [`run_uff_bridge`]'s doc for why the rescue is scoped this narrowly).
+    /// was tried as a rescue, and that rescue was **not accepted** (its own result
+    /// was unsound, stereo-violating, or embedding itself errored) — so the
+    /// original failure is what's being returned, annotated to show a rescue was
+    /// tried and didn't help. `false` means either no rescue was attempted at all
+    /// (wrong policy, or an `ExcessiveResidualForce`-only failure — issues #185/#188
+    /// measured this rescue helping catastrophic bond blowup specifically, not
+    /// residual-force-only unsoundness, see [`run_uff_bridge`]'s doc for why the
+    /// rescue is scoped this narrowly) or a rescue *was* attempted and accepted, in
+    /// which case this function returns `Ok`, not this error type, and this field is
+    /// moot. Lets a caller distinguish "no rescue was even attempted" from "the
+    /// rescue was attempted and did not help either" — never "the retry's own
+    /// failure reason," which this field does not carry.
     pub distance_geometry_v2_retry_attempted: bool,
 }
 
@@ -1940,7 +1946,7 @@ fn run_uff_bridge(
                     | MinimizationFailureReason::NonFiniteCoordinates
             ) =>
         {
-            rescue_with_distance_geometry_v2(mol, &types, max_iter, energy_before, detail)
+            rescue_with_distance_geometry_v2(mol, &types, max_iter, detail)
         }
         Err(other) => Err(other),
     }
@@ -1982,7 +1988,6 @@ fn rescue_with_distance_geometry_v2(
     mol: &Molecule,
     types: &[(AtomIdx, UffType)],
     max_iter: usize,
-    energy_before: f64,
     original_failure: Box<MinimizationFailureDetail>,
 ) -> Result<UffBridgeRun, ForceFieldBridgeError> {
     use crate::distance_geometry_v2::{EmbedParameters, embed_distance_geometry_v2};
@@ -1991,6 +1996,14 @@ fn rescue_with_distance_geometry_v2(
     let n = mol.atom_count();
     if let Ok(v2_coords) = embed_distance_geometry_v2(mol, &EmbedParameters::default()) {
         let retry_coord_vec = coords_to_vec(&v2_coords, n);
+        // `energy_before`/`energy_after` on a successful rescue must both describe
+        // the SAME trajectory (the DG v2 geometry, before and after minimizing it) --
+        // never the caller's original (now-abandoned) starting geometry paired with
+        // the retry's outcome. The caller's original energy is already captured
+        // separately, in `original_failure` (the typed error this function falls
+        // back to if the rescue doesn't pan out) -- it has no place in a successful
+        // `UffBridgeRun`, which reports on the geometry that actually produced it.
+        let retry_energy_before = uff_total_energy(mol, types, &retry_coord_vec);
         let retry = ff_minimize_uff(mol, types, retry_coord_vec, max_iter);
         let retry_energy_after = uff_total_energy(mol, types, &retry.coords);
         let retry_max_residual_force =
@@ -2012,7 +2025,7 @@ fn rescue_with_distance_geometry_v2(
         if retry_sound && retry_preserves_stereo {
             return Ok(UffBridgeRun {
                 coords: retry_coords_typed,
-                energy_before,
+                energy_before: retry_energy_before,
                 energy_after: retry_energy_after,
                 converged: retry.converged,
                 iterations: retry.iterations,
@@ -3393,6 +3406,110 @@ mod policy_bridge_tests {
             Some(UffStartingGeometry::AsProvided),
             "no rescue should have been attempted -- the first attempt was already sound"
         );
+    }
+
+    /// `energy_before`, on the (no-rescue) `AsProvided` path, must be the caller's
+    /// own starting geometry's energy -- computed here independently (a fresh
+    /// `uff_total_energy` call on the exact same `generate_coords` output) and
+    /// compared for exact equality, not just "looks plausible."
+    #[test]
+    fn uff_only_as_provided_energy_before_is_the_caller_geometry_energy() {
+        let mol = parse("c1ccccc1O").expect("phenol");
+        let coords = generate_coords(&mol);
+        let n = mol.atom_count();
+        let types = assign_uff_types(&mol);
+        let expected_energy_before = uff_total_energy(&mol, &types, &coords_to_vec(&coords, n));
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
+            .expect("phenol's generate_coords geometry is sound under UffOnly");
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::AsProvided)
+        );
+        match result.energy_before {
+            EnergyReport::Uff { total } => assert_eq!(
+                total, expected_energy_before,
+                "AsProvided energy_before must equal the caller-provided geometry's own energy"
+            ),
+            other => panic!("expected EnergyReport::Uff, got {other:?}"),
+        }
+    }
+
+    /// The energy-semantics regression this test exists to catch: on a successful
+    /// rescue, `energy_before`/`energy_after` must both describe the SAME
+    /// trajectory (the `embed_distance_geometry_v2` geometry, before and after
+    /// minimizing it) -- never the caller's abandoned original geometry paired
+    /// with the retry's outcome. Hexane's `generate_coords` energy (~1.5e7
+    /// kcal/mol, per `docs/uff_robustness_diagnosis_185_188.md`) and its
+    /// `embed_distance_geometry_v2` energy (~3.78 kcal/mol) differ by roughly 6
+    /// orders of magnitude -- exactly the fixture needed to make a
+    /// caller-geometry/retry-outcome mismatch impossible to miss. A buggy
+    /// implementation that reused the caller's `energy_before` would report
+    /// something around 1.5e7 here; this asserts the ACTUAL value instead,
+    /// independently recomputed from `embed_distance_geometry_v2`'s own
+    /// deterministic output (`EmbedParameters::default()`'s `random_seed` is a
+    /// fixed constant, so this reproduces the exact geometry the rescue itself
+    /// used).
+    #[test]
+    fn uff_only_rescue_energy_before_reflects_dg_v2_geometry_not_caller() {
+        use crate::distance_geometry_v2::{EmbedParameters, embed_distance_geometry_v2};
+
+        let mol = parse("CCCCCC").expect("hexane");
+        let n = mol.atom_count();
+        let types = assign_uff_types(&mol);
+
+        let caller_coords = generate_coords(&mol);
+        let caller_energy = uff_total_energy(&mol, &types, &coords_to_vec(&caller_coords, n));
+        assert!(
+            caller_energy > 1.0e6,
+            "expected hexane's generate_coords energy to be the measured ~1.5e7-scale \
+             catastrophic-clash value, got {caller_energy}"
+        );
+
+        let v2_coords = embed_distance_geometry_v2(&mol, &EmbedParameters::default())
+            .expect("hexane must embed via distance_geometry_v2");
+        let expected_v2_energy_before =
+            uff_total_energy(&mol, &types, &coords_to_vec(&v2_coords, n));
+        assert!(
+            expected_v2_energy_before < 1000.0,
+            "expected embed_distance_geometry_v2's hexane energy to be the measured \
+             ~3.78-scale sound value, got {expected_v2_energy_before}"
+        );
+
+        let config = MinimizeConfig::default();
+        let result = minimize_with_policy(&mol, caller_coords, ForceFieldPolicy::UffOnly, &config)
+            .expect(
+                "hexane's generate_coords start is catastrophically clashed, but the \
+                     embed_distance_geometry_v2 rescue must succeed",
+            );
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2),
+            "expected the rescue to have fired"
+        );
+
+        match (result.energy_before, result.energy_after) {
+            (EnergyReport::Uff { total: before }, EnergyReport::Uff { total: after }) => {
+                assert_eq!(
+                    before, expected_v2_energy_before,
+                    "rescue energy_before must be the DG v2 geometry's OWN starting energy \
+                     (~{expected_v2_energy_before}), not the caller's abandoned geometry's \
+                     energy (~{caller_energy}) -- got {before}"
+                );
+                assert_ne!(
+                    before, caller_energy,
+                    "rescue energy_before must never equal the caller's original geometry's \
+                     energy -- these are two different trajectories"
+                );
+                assert!(
+                    after <= before,
+                    "energy_after ({after}) must not exceed energy_before ({before}) -- both \
+                     values describe one single minimization trajectory"
+                );
+            }
+            other => panic!("expected (EnergyReport::Uff, EnergyReport::Uff), got {other:?}"),
+        }
     }
 
     /// The stereo-safety gate itself, isolated: cholesterol's `UffOnly`
