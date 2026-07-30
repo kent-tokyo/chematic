@@ -25,10 +25,18 @@ def test_is_valid_smiles():
 
 
 def test_repr_and_str(ethanol):
-    assert "CCO" in repr(ethanol) or "OCC" in repr(ethanol)
+    # repr() just embeds mol.smiles (Mol('<smiles>')), whose exact spelling
+    # is not a stable contract (issue #200 -- canonical-SMILES spelling can
+    # change with unrelated internal changes, e.g. automorphism-orbit
+    # pruning). Assert structural round-trip instead of one hardcoded
+    # substring: repr()'s embedded SMILES must re-parse to an equivalent
+    # molecule (same canonical form).
+    reparsed = chematic.from_smiles(repr(ethanol).removeprefix("Mol('").removesuffix("')"))
+    assert reparsed.smiles == ethanol.smiles
     smiles_str = str(ethanol)
     assert isinstance(smiles_str, str)
     assert len(smiles_str) > 0
+    assert smiles_str == ethanol.smiles
 
 
 # ---------------------------------------------------------------------------

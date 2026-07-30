@@ -5,6 +5,18 @@ echo "=== fmt ===" && cargo fmt --all -- --check
 echo "=== clippy ===" && cargo clippy --workspace --all-targets -- -D warnings
 echo "=== test ===" && cargo test --workspace --lib --quiet
 echo "=== test (integration) ===" && cargo test --workspace --tests --quiet
+# chematic-py's pytest suite only runs here if the venv already has an
+# editable `chematic` build installed (`.venv/bin/maturin develop --release
+# -m crates/chematic-py/Cargo.toml`) AND pytest (pyproject.toml declares no
+# test deps, so it's not guaranteed present) -- the maturin build is slow
+# (full release compile), so it isn't triggered automatically by this fast
+# local pre-commit gate. CI runs it unconditionally in its own job
+# (.github/workflows/ci.yml).
+if .venv/bin/python3 -c "import chematic, pytest" &>/dev/null; then
+    echo "=== test (chematic-py pytest) ===" && .venv/bin/python3 -m pytest crates/chematic-py/tests/ -q
+else
+    echo "=== test (chematic-py pytest) === (skipped: .venv/bin/python3 lacks chematic and/or pytest -- run .venv/bin/pip install pytest && .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml first to include it locally)"
+fi
 if command -v cargo-deny &>/dev/null || cargo deny --version &>/dev/null 2>&1; then
     echo "=== deny ===" && cargo deny --all-features check
 else

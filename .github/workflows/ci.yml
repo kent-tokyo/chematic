@@ -34,6 +34,41 @@ jobs:
       - name: Integration tests with native-inchi feature
         run: cargo test -p chematic-inchi --features native-inchi --quiet
 
+  test-python:
+    name: Test (Python bindings)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Cache cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-test-python-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-test-python-
+      # chematic-py's pytest suite (550+ tests) previously had zero CI coverage:
+      # bench-pr-gate.yml builds via maturin but never runs pytest, and
+      # scripts/check.sh (the local pre-commit gate) only runs pytest when a
+      # dev has already built the extension into their own .venv, since a
+      # full maturin --release build is too slow for a fast local gate (see
+      # scripts/check.sh). This job is the actual regression backstop.
+      - name: Build & install chematic (maturin develop --release)
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install maturin pytest numpy --quiet
+          .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
+      - name: Run pytest (chematic-py)
+        run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
