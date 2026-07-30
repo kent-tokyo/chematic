@@ -4,6 +4,27 @@ Companion to `docs/rank_children_heavy_tail_diagnosis_107.md` (diagnostic pass,
 PR #208): implements the optimization that diagnosis identified as most
 promising, with the richer cache key that diagnosis's own caveat called for.
 
+## Rebased onto latest main (post-#208/#211 merge)
+
+Rebased cleanly (no conflicts) onto `main` after both PR #211 (UFF rescue
+fix) and PR #208 (this issue's own diagnosis pass) merged. `compare.rs`'s
+overlap with PR #208's `DecisionStep` NodeId-field addition was checked
+semantically, not just for a textual merge conflict: the memoization's cache
+check/insert and PR #208's trace-recording both live in the same
+`compare_ligands` function, and the cache path was written to still push
+exactly one `DecisionStep` per logical call regardless of hit/miss — so
+nothing needed to be deduplicated or reconciled; both changes compose as
+originally designed. Re-verified fresh, not carried over from the pre-rebase
+commit: `cargo build -p chematic-cip --lib` clean, `cargo test -p
+chematic-cip --lib` 63/63 (61 pre-existing + 2 new), the 12 specific
+integration tests this change is gated on (`rule4b_production_parity` 9 +
+`uncharacterized_diagnosis` 1 + `mancude_decision_regression` 1 +
+`mancude_corpus_classification` 1) 12/12, `cargo test -p chematic-chem --lib
+-- cip` 45/45, `bash scripts/check.sh` full pass, and a fresh byte-identical
+diff (1,286/1,286 stereo-bearing molecules, assignments + skip reasons,
+0 differences) against the rebased, pre-memoization `main`. See the
+Performance section below for the post-rebase timing re-measurement.
+
 ## Recap of the diagnosis
 
 PR #208 measured that 95.4% of all `compare_ligands` comparisons corpus-wide
@@ -120,7 +141,25 @@ upper bound*, not a timing claim. The numbers below are wall-clock,
 independently measured on the same hardware, same corpus, same code except
 for this one patch.
 
-### Corpus-wide (1,286 stereo-bearing molecules)
+**Two measurement passes exist**, taken in two different sessions on the same
+machine, and they disagree substantially on absolute magnitude (though not on
+correctness — both passes' assignments are byte-identical). The first pass
+(directly below, kept for continuity) was taken before this branch was
+rebased onto `main` post-PR #208/#211 merge; the second (further below) is
+the **authoritative, current** measurement, taken fresh after that rebase, in
+one back-to-back before/after run so both sides share identical system load.
+**Do not average or reconcile the two — treat the post-rebase numbers as
+current, the pre-rebase numbers as historical reference only.** The
+before-side absolute times differ by roughly 2–3x between the two passes
+(the after/memoized side is far more stable, since it's dominated by
+per-call overhead rather than redundant recursive work) — almost certainly
+system-load variance between sessions on a machine that was running many
+concurrent builds across other worktrees, not a code change, since the two
+passes measure the identical pre-memoization commit for their "before" side.
+
+### Pre-rebase measurement (historical reference only)
+
+#### Corpus-wide (1,286 stereo-bearing molecules)
 
 | | Before | After | Ratio |
 |---|---|---|---|
@@ -130,36 +169,79 @@ for this one patch.
 | p99 | 31.4959ms | 1.0989ms | 28.6x |
 | max | 370.0361ms | 16.7311ms | 22.1x |
 
+#### Today's actual worst-case molecule in the corpus (pre-rebase pass)
+
+- Before: **370.04ms**. After: **3.73ms**. **99.2x**.
+- Assignments identical both times: `[(9,R),(18,R),(20,R),(30,R),(47,R),(48,R),(51,R),(60,R),(62,S),(72,R),(81,R)]`, `skipped=[]`.
+
+### Post-rebase measurement (current, authoritative — re-run fresh on `main` post-#208/#211-merge)
+
+#### Corpus-wide (5,000-molecule corpus total; percentiles over the 1,286 stereo-bearing molecules)
+
+| | Before | After | Ratio |
+|---|---|---|---|
+| Total wall-clock (median of 3 runs) | 1,050.47ms | 286.43ms | 3.7x |
+| p50 | 0.0737ms | 0.0702ms | ~1.0x (no regression) |
+| p95 | 1.7411ms | 0.4376ms | 4.0x |
+| p99 | 15.4362ms | 0.9327ms | 16.5x |
+| max (see below — this is two different molecules, before vs. after) | 134.31ms | 16.33ms | not a single ratio, see below |
+
 p50 barely moves — most stereocenters were already cheap (PR #208's own
 99.3%-trivially-resolved finding) and pay a small, constant cache-lookup
 overhead for no benefit. The win is concentrated exactly where the diagnosis
 said the cost was: the tail.
 
-### Today's actual worst-case molecule in the corpus
+**The corpus's worst-case molecule is not the same molecule before vs. after
+memoization** — a fixture that benefits enormously from caching can drop out
+of the "worst" slot entirely, letting a fixture that benefits *less*
+(because it has a lower cache-hit rate) take its place:
 
-(Not the same molecule PR #208 originally named as worst-case — that
-molecule's own cost has since dropped independently, from unrelated
-intervening commits, from ~89,250 comparisons to 77; today's actual worst
-case is a different, larger polyphenolic tannin-like molecule with 11
-stereocenters.)
+- The **pre-memoization worst case** (134.31ms) is the same 11-stereocenter
+  polyphenolic tannin from the pre-rebase pass above (`Oc1cc(O)c2c(c1)O[C@H]
+  (c1ccc(O)c(O)c1)[C@H](O)[C@H]2c1c(O)cc(O)c2c1O[C@@]1(c3ccc(O)c(O)c3)Oc3cc(O)
+  c4c(c3[C@@H]2[C@H]1O)O[C@H](c1ccc(O)c(O)c1)[C@H](O)[C@H]4c1c(O)cc(O)c2c1O
+  [C@H](c1ccc(O)c(O)c1)[C@H](O)C2`). After memoization it drops to **3.63ms**
+  (**~37.0x**) — identical assignments. This molecule has a high internal
+  cache-hit rate, so memoization helps it the most.
+- The **post-memoization worst case** is a different molecule, an
+  adamantane-amide/piperazine fixture (`O=C(NCCCCN1CCN(c2cccc3ccccc23)CC1)
+  C12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3`) — 123.96ms before, **16.33ms** after
+  (**~7.6x**), identical `[(25,LowerS),(27,LowerS),(30,LowerS)]` assignments.
+  This molecule's cache hit rate (54.68%, measured directly on its
+  root-level `rank_children` call — 701 hits / 581 misses / 1282 total) is
+  lower than the tannin's, so it benefits less and becomes the new tail.
 
-```
-Oc1cc(O)c2c(c1)O[C@H](c1ccc(O)c(O)c1)[C@H](O)[C@H]2c1c(O)cc(O)c2c1O[C@@]1(c3ccc(O)c(O)c3)Oc3cc(O)c4c(c3[C@@H]2[C@H]1O)O[C@H](c1ccc(O)c(O)c1)[C@H](O)[C@H]4c1c(O)cc(O)c2c1O[C@H](c1ccc(O)c(O)c1)[C@H](O)C2
-```
+Neither number alone is "the" worst-case speedup — both are reported so
+neither is cherry-picked.
 
-- Before: **370.04ms**. After: **3.73ms**. **99.2x**.
-- Assignments identical both times: `[(9,R),(18,R),(20,R),(30,R),(47,R),(48,R),(51,R),(60,R),(62,S),(72,R),(81,R)]`, `skipped=[]`.
+#### The originally-named issue #107 worst-case fixture — NOT this work's achievement
 
-### Cache construction cost, reported separately
+Issue #107 originally named a tannin/ellagitannin-like fixture with a
+reported ~89,250 comparisons. That same fixture, measured today with **zero
+caching at all** (i.e. even a hypothetical build with every cache lookup
+forced to miss), needs only **77 total `compare_ligands` calls** (9 of which
+this memoization serves from cache; the other 68 are misses that a
+from-scratch computation would need regardless of caching). Since the
+"total distinct calls needed" figure (77) is a property of the comparator's
+own algorithmic structure — not affected by whether a cache exists — the
+~89,250 → 77 reduction happened via **unrelated intervening commits** to the
+comparator itself, before this memoization work started. This memoization
+PR's actual contribution on this specific fixture is small: 9 saved calls
+out of 77 (11.69% hit rate), not the full historical reduction.
 
-Per-stereocenter cache sizes (final entry count = `cache_misses`) for this
-molecule's 11 centers range from 12 to 141 entries; hit rates from 0% (small,
-non-repetitive branches) to ~23%. The `penicillin_core`-family fixture from
-PR #208's own diagnosis (still a genuinely large single-stereocenter
-resolution) shows 581 cache entries and 54.68% hit rate, completing in
-~1.2ms. Cache construction itself (the `HashMap` inserts on a miss) is not
-separately measurable from useful computation — a miss's cost is dominated
-by the recursive comparison it performs, not the O(1) insert after it.
+#### Cache construction cost and memory bound
+
+Per-stereocenter cache sizes (final entry count = `cache_misses`) range from
+12 to 581 entries across the fixtures measured directly. `PairwiseCacheKey`
+is 48 bytes (`std::mem::size_of`, measured); paired with its 1-byte
+`BranchComparison` value the in-memory `(key, value)` pair is 56 bytes
+before hashmap bucket overhead. At the largest observed single-resolution
+cache size in this corpus (581 entries), that's on the order of **35–60 KB**
+peak, freed immediately when that stereocenter's `CompareContext` drops —
+never global, never persisted across stereocenters or molecules. Cache
+construction itself (the `HashMap` insert on a miss) is not separately
+measurable from useful computation — a miss's cost is dominated by the
+recursive comparison it performs, not the O(1) insert after it.
 
 ## Tests
 
