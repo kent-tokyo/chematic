@@ -178,13 +178,17 @@ def test_get_dihedral_butane():
 
 
 def test_set_dihedral_round_trip():
-    """Setting dihedral to 180° should give back 180°."""
+    """Setting dihedral to 180° should give back 180° (or, equivalently,
+    -180° -- the same physical angle, and which sign atan2 returns for this
+    exact boundary value is a platform-dependent floating-point tie-break,
+    confirmed to differ between macOS/arm64 (180.0) and Linux/x86_64 CI
+    (-180.0) for this same molecule/seed)."""
     butane = chematic.from_smiles("CCCC")
     coords = butane.generate_3d()
     new_coords = butane.set_dihedral(coords, 0, 1, 2, 3, 180.0)
     d = butane.get_dihedral(new_coords, 0, 1, 2, 3)
     assert d is not None
-    assert abs(d - 180.0) < 1.0
+    assert abs(abs(d) - 180.0) < 1.0
 
 
 def test_generate_3d_etkdg_atom_count():
