@@ -113,6 +113,7 @@ use std::collections::HashMap;
 use chematic_core::Molecule;
 
 use crate::CipError;
+use crate::budget::CipBudget;
 use crate::digraph::CipDigraph;
 use crate::node::{CipNode, CipNodeKind, NodeId};
 use crate::rational::{AtomicNumberKey, cmp_atomic_number_key};
@@ -178,6 +179,77 @@ impl core::fmt::Display for CipCompareError {
 
 impl std::error::Error for CipCompareError {}
 
+/// Which comparator/rule this crate's own `compare_ligands` runs -- currently the
+/// only variant that exists, since this crate implements Rules 1a/1b/2 only (see
+/// module docs for why Rule 3+ is out of scope). Included in [`PairwiseCacheKey`] as
+/// a forward-compatible discriminator: if a future Rule 3/4/5 pass is added and ever
+/// shares this same cache/context type, its own comparisons must never collide with a
+/// Rule-1a/2 result cached under the same `(left, right)` NodeId pair.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum RuleMode {
+    Rule1a2,
+}
+
+/// Cache key for issue #107's `compare_ligands` pairwise-comparison memoization,
+/// scoped to exactly one [`CompareContext`]'s lifetime (i.e. one stereocenter
+/// resolution -- `rank_children`/`compare_ligands` never share a `CompareContext`
+/// across two different resolutions, so this cache is never global). Per that
+/// issue's own "first implementation candidate" spec, includes:
+///
+/// - `left`/`right`: the literal compared [`NodeId`]s, normalized to a canonical
+///   order (`left.0 <= right.0`) so `(a, b)` and `(b, a)` share one entry -- the
+///   stored [`BranchComparison`] is always relative to *this* canonical order; a
+///   query in the opposite order inverts the looked-up value before returning it
+///   (`Self::canonical` / the inversion in [`compare_ligands`] itself). This is the
+///   "outcome-direction normalization" the issue's spec calls for.
+/// - `rule_mode`: see [`RuleMode`].
+/// - `mancude_identity`/`budget`: see [`CipDigraph::mancude_identity`]/
+///   [`CipDigraph::budget`] -- both are in fact constant for one `CompareContext`'s
+///   whole lifetime (one digraph, one resolution), so within a single cache instance
+///   these fields never actually vary; they exist so this key type is still correct
+///   by construction if a future change ever widens the cache's scope, rather than
+///   relying on "the cache happens to only ever see one digraph" as an unenforced
+///   invariant.
+///
+/// Ring-closure/duplicate-node context (a `RingDuplicate`'s `closure_atom`, a
+/// `MultipleBondDuplicate`'s `duplicated_atom`/`bond_order`) does **not** need its own
+/// key field: a [`NodeId`] already uniquely identifies one exact, immutable digraph
+/// node for the digraph's whole lifetime, so keying on the literal `NodeId` (not a
+/// content-based structural signature -- issue #107's own diagnosis found that
+/// distinction load-bearing, see `docs/rank_children_heavy_tail_diagnosis_107.md`)
+/// already captures it: two different nodes that happen to *look* alike (same
+/// represented element, different closure/duplication provenance) get different
+/// `NodeId`s and therefore different, independently-cached entries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct PairwiseCacheKey {
+    left: NodeId,
+    right: NodeId,
+    rule_mode: RuleMode,
+    mancude_identity: Option<usize>,
+    budget: CipBudget,
+}
+
+impl PairwiseCacheKey {
+    /// Builds the canonical (order-normalized) key for `(a, b)`, plus whether `(a, b)`
+    /// itself was already in canonical order (`false` means the caller's `a`/`b` are
+    /// swapped relative to the key -- the cached/stored value must be inverted before
+    /// being returned to a caller who asked in that order).
+    fn canonical(graph: &CipDigraph, a: NodeId, b: NodeId) -> (Self, bool) {
+        let already_canonical = a.0 <= b.0;
+        let (left, right) = if already_canonical { (a, b) } else { (b, a) };
+        (
+            Self {
+                left,
+                right,
+                rule_mode: RuleMode::Rule1a2,
+                mancude_identity: graph.mancude_identity(),
+                budget: graph.budget(),
+            },
+            already_canonical,
+        )
+    }
+}
+
 /// Mutable state threaded through a comparison: a recursion-call budget (separate from
 /// the digraph's own node budget), an optional trace sink, and the innermost
 /// `rank_children` call currently in progress (see [`DecisionStep::ranking_parent`]).
@@ -236,6 +308,23 @@ pub struct CompareContext<'t> {
     ///   classification required.
     /// - one that *reduces* oracle agreement -> correctness blocker.
     pub fractional_decisions: u64,
+    /// Issue #107's pairwise-comparison memoization cache -- see
+    /// [`PairwiseCacheKey`]'s doc for the key design. Bounded by construction: every
+    /// entry is only ever inserted as the direct result of one real
+    /// `compare_ligands` call, and the number of such calls in one resolution is
+    /// itself already bounded by `max_recursive_calls` (default 1,000,000) -- this
+    /// cache can therefore never hold more entries than that ceiling, and a fresh,
+    /// empty cache is created (and dropped) with every fresh `CompareContext`, i.e.
+    /// once per stereocenter resolution, never shared or reused across resolutions
+    /// or molecules. Measured in practice (5,000-molecule corpus, `docs/
+    /// cip_perf_memoization_107.md`) to hold a few hundred entries per resolution
+    /// even on the corpus's own worst-case fixtures -- nowhere near that ceiling.
+    cache: HashMap<PairwiseCacheKey, BranchComparison>,
+    /// Diagnostic only (never read to decide a comparison): how many
+    /// `compare_ligands` calls were satisfied from `cache` instead of recomputed.
+    pub cache_hits: u64,
+    /// Diagnostic only: how many calls computed and inserted a fresh cache entry.
+    pub cache_misses: u64,
 }
 
 impl Default for CompareContext<'_> {
@@ -253,6 +342,9 @@ impl<'t> CompareContext<'t> {
             ranking_parent: None,
             fractional_comparisons: 0,
             fractional_decisions: 0,
+            cache: HashMap::new(),
+            cache_hits: 0,
+            cache_misses: 0,
         }
     }
 
@@ -262,6 +354,9 @@ impl<'t> CompareContext<'t> {
             max_recursive_calls: 1_000_000,
             trace: Some(trace),
             ranking_parent: None,
+            cache: HashMap::new(),
+            cache_hits: 0,
+            cache_misses: 0,
             fractional_comparisons: 0,
             fractional_decisions: 0,
         }
@@ -535,23 +630,51 @@ pub fn compare_ligands(
     let right_kind = graph.node(right).kind;
     let depth = graph.node(left).depth;
 
-    let (outcome, rule) = match compare_by_level(
-        graph,
-        left,
-        right,
-        ctx,
-        rule1a2_slot_key,
-        cmp_key_instrumented,
-    )? {
-        LevelOutcome::Decided(c, lk, rk) => {
-            let rule = if ctx.trace.is_some() {
-                format!("1a/2 ({lk:?} vs {rk:?})")
-            } else {
-                String::new()
-            };
-            (c, rule)
-        }
-        LevelOutcome::FullyTied => (BranchComparison::Equal, "leaf".to_string()),
+    // Issue #107: same-(left,right) pairwise memoization, scoped to this
+    // `CompareContext` alone (see `PairwiseCacheKey`'s doc for the key design and
+    // why it's safe). Checked/populated here, immediately around the actual
+    // recursive comparison -- the trace still records one `DecisionStep` per
+    // logical `compare_ligands` call regardless of hit/miss, so anything reading
+    // the trace (this crate's own diagnostics, e.g. `examples/
+    // rank_children_heavy_tail_diagnosis.rs`) sees a complete, faithful log of
+    // every comparison a caller actually asked for, not just the ones that did
+    // fresh recursive work.
+    let (cache_key, already_canonical) = PairwiseCacheKey::canonical(graph, left, right);
+    let (outcome, rule) = if let Some(&cached) = ctx.cache.get(&cache_key) {
+        ctx.cache_hits += 1;
+        let outcome = if already_canonical {
+            cached
+        } else {
+            invert(cached)
+        };
+        (outcome, "1a/2 (cached)".to_string())
+    } else {
+        let (outcome, rule) = match compare_by_level(
+            graph,
+            left,
+            right,
+            ctx,
+            rule1a2_slot_key,
+            cmp_key_instrumented,
+        )? {
+            LevelOutcome::Decided(c, lk, rk) => {
+                let rule = if ctx.trace.is_some() {
+                    format!("1a/2 ({lk:?} vs {rk:?})")
+                } else {
+                    String::new()
+                };
+                (c, rule)
+            }
+            LevelOutcome::FullyTied => (BranchComparison::Equal, "leaf".to_string()),
+        };
+        ctx.cache_misses += 1;
+        let canonical_outcome = if already_canonical {
+            outcome
+        } else {
+            invert(outcome)
+        };
+        ctx.cache.insert(cache_key, canonical_outcome);
+        (outcome, rule)
     };
 
     let ranking_parent = ctx.ranking_parent;

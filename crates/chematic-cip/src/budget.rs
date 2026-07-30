@@ -9,7 +9,7 @@
 //! honest "I don't know" instead of ever silently truncating or guessing a structure.
 
 /// Limits on digraph expansion.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CipBudget {
     pub max_nodes: usize,
     pub max_depth: usize,

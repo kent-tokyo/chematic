@@ -102,6 +102,25 @@ impl<'m> CipDigraph<'m> {
         Self::new_impl(mol, root_atom, budget, None, None)
     }
 
+    /// Stable identity for the attached [`MancudeContext`], if any -- the raw pointer
+    /// address of the reference this digraph was constructed with. Used only as a
+    /// same-resolution memoization cache-key discriminator (issue #107's
+    /// `compare_ligands`/`rank_children` pairwise cache in `crate::compare`); never
+    /// compared across different digraphs or persisted beyond one resolution's
+    /// lifetime, so pointer identity (not content equality) is exactly the right
+    /// notion -- two digraphs attaching *equal-content* but distinct `MancudeContext`
+    /// values must never be treated as interchangeable by a cache, and pointer
+    /// identity guarantees that.
+    pub(crate) fn mancude_identity(&self) -> Option<usize> {
+        self.mancude.map(|m| m as *const MancudeContext as usize)
+    }
+
+    /// This digraph's own construction-time budget -- part of the same cache-key
+    /// discriminator as [`Self::mancude_identity`] (see that method's doc).
+    pub(crate) fn budget(&self) -> CipBudget {
+        self.budget
+    }
+
     /// Like [`Self::new`], but `artificial_ancestor` is treated as already visited from
     /// the start -- a neighbor of any node in this digraph equal to `artificial_ancestor`
     /// becomes a [`CipNodeKind::RingDuplicate`] leaf immediately, instead of a real,
