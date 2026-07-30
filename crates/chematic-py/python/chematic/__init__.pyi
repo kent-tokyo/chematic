@@ -1038,6 +1038,30 @@ class Mol:
         """
         ...
 
+    def embed_pipeline_v2(self, config: "PipelineV2Config") -> dict[str, object]:
+        """Run the opt-in v2 embedding pipeline.
+
+        Torsion-knowledge-aware distance geometry + stereo verification/repair
+        + policy-gated force field, applied directly to this ``Mol``'s own
+        atom order (never canonicalizes/reparses first -- coordinates and
+        every atom/bond index in the result correspond 1:1 to this ``Mol``'s
+        existing atom/bond tables).
+
+        Returns a dict with keys: ``coords``, ``embed_stats``,
+        ``bound_adjustment_report``, ``torsion_knowledge_report``,
+        ``ring_torsion_evidence``, ``torsion_optimization_report``,
+        ``stereo_before``, ``stereo_repair``, ``stereo_after_repair``,
+        ``force_field``, ``final_stereo``, ``final_validation``,
+        ``elapsed_ms_by_stage``.
+
+        Raises:
+            PipelineV2Error: on pipeline failure. ``error.diagnostics`` carries
+                the same per-stage partial evidence as a Rust
+                ``PipelineV2Failure`` -- ``diagnostics["last_known_coords"]``
+                is diagnostic only, never a usable result.
+        """
+        ...
+
     def mmff94_torsion_scan(
         self,
         coords: list[list[float]],
@@ -2772,6 +2796,102 @@ def find_mcs(mols: list[Mol]) -> Optional[Mol]:
             print(mcs.smiles)
     """
     ...
+
+# ---------------------------------------------------------------------------
+# PipelineV2Config / PipelineV2Error (Mol.embed_pipeline_v2)
+# ---------------------------------------------------------------------------
+
+class PipelineV2Config:
+    """Configuration for :meth:`Mol.embed_pipeline_v2`.
+
+    Every field is required -- there is no hidden default, matching the Rust
+    ``PipelineV2Config``'s own deliberate lack of a ``Default`` impl (force
+    field / stereo / ring-torsion policy are judgment calls). Use
+    :meth:`safe` for a convenience constructor that still requires those
+    three policies explicitly.
+
+    ``stereo_policy``: one of ``"ignore"``, ``"verify_only"``,
+    ``"repair_and_verify"``.
+
+    ``ring_torsion_policy``: one of ``"fail_closed"``, ``"diagnostic_only"``.
+
+    ``force_field_policy``: one of ``"mmff94_bond_angle_strict"``,
+    ``"mmff94_with_uff_fallback"``, ``"uff_only"``, ``"dreiding"``, ``"none"``.
+    """
+
+    def __init__(
+        self,
+        embed_seed: int,
+        max_attempts: int,
+        embed_timeout_ms: Optional[int],
+        use_exp_torsions: bool,
+        use_small_ring_torsions: bool,
+        use_macrocycle_torsions: bool,
+        use_macrocycle_14_bounds: bool,
+        include_legacy_torsion_heuristic: bool,
+        stereo_policy: str,
+        fail_on_unevaluable_stereo: bool,
+        force_field_policy: str,
+        force_field_max_iterations: int,
+        gate_mmff94_torsion_oop: bool,
+        ring_torsion_policy: str,
+        total_timeout_ms: Optional[int],
+    ) -> None: ...
+    @staticmethod
+    def safe(
+        force_field: str,
+        stereo_policy: str,
+        ring_torsion_policy: str,
+        fail_on_unevaluable_stereo: bool = False,
+        embed_seed: int = ...,
+        max_attempts: int = 8,
+        embed_timeout_ms: Optional[int] = None,
+        use_exp_torsions: bool = False,
+        use_small_ring_torsions: bool = False,
+        use_macrocycle_torsions: bool = False,
+        use_macrocycle_14_bounds: bool = False,
+        include_legacy_torsion_heuristic: bool = False,
+        force_field_max_iterations: int = 200,
+        gate_mmff94_torsion_oop: bool = False,
+        total_timeout_ms: Optional[int] = None,
+    ) -> "PipelineV2Config":
+        """Convenience constructor.
+
+        ``force_field``, ``stereo_policy``, and ``ring_torsion_policy`` are
+        still required, explicit arguments -- never hidden defaults --
+        everything else takes a conservative default (every torsion-knowledge
+        flag off, ``fail_on_unevaluable_stereo=False``, no timeouts).
+        """
+        ...
+
+    embed_seed: int
+    max_attempts: int
+    embed_timeout_ms: Optional[int]
+    use_exp_torsions: bool
+    use_small_ring_torsions: bool
+    use_macrocycle_torsions: bool
+    use_macrocycle_14_bounds: bool
+    include_legacy_torsion_heuristic: bool
+    stereo_policy: str
+    fail_on_unevaluable_stereo: bool
+    force_field_policy: str
+    force_field_max_iterations: int
+    gate_mmff94_torsion_oop: bool
+    ring_torsion_policy: str
+    total_timeout_ms: Optional[int]
+
+    def __repr__(self) -> str: ...
+
+class PipelineV2Error(ValueError):
+    """A failed :meth:`Mol.embed_pipeline_v2` call.
+
+    ``.diagnostics`` carries the same per-stage partial evidence a Rust
+    caller sees on ``PipelineV2Failure`` --
+    ``diagnostics["last_known_coords"]`` is diagnostic only, never a usable
+    result (see ``diagnostics["coords_are_diagnostic_only"]``).
+    """
+
+    diagnostics: dict[str, object]
 
 # ---------------------------------------------------------------------------
 # SimilarityIndex (MHFP LSH)
