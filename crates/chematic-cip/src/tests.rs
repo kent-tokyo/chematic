@@ -348,6 +348,80 @@ fn test_compare_ligands_reflexivity() {
     );
 }
 
+/// Issue #107's pairwise memoization: a repeated `compare_ligands(a, b)` call within
+/// the same `CompareContext` must be a cache hit, and that hit's value must be
+/// byte-identical to what an independent, uncached (fresh-context) computation of the
+/// exact same comparison produces -- proving the cache never returns a stale or
+/// incorrect answer, not just that it returns *something* fast.
+#[test]
+fn test_pairwise_cache_hit_matches_fresh_computation() {
+    let mol = parse("COc1ccc2c3c1OC1C(O)C(CO)(CCCCc4ccccc4)CC4C(C2)N(C)CCC341").unwrap();
+    let mut g = CipDigraph::new(&mol, AtomIdx(0), CipBudget::default_budget()).unwrap();
+    let children = g.expand_children(g.root()).unwrap();
+    assert!(children.len() >= 2, "need at least 2 children to compare");
+    let (a, b) = (children[0], children[1]);
+
+    let mut ctx = CompareContext::new();
+    let first = compare_ligands(&mut g, a, b, &mut ctx).unwrap();
+    assert!(
+        ctx.cache_misses >= 1,
+        "first-ever call must populate at least one cache entry"
+    );
+    let hits_before = ctx.cache_hits;
+    let second = compare_ligands(&mut g, a, b, &mut ctx).unwrap();
+    assert_eq!(
+        ctx.cache_hits,
+        hits_before + 1,
+        "identical repeated (a, b) call must be a cache hit"
+    );
+    assert_eq!(
+        first, second,
+        "a cache hit must match the original computation"
+    );
+
+    // Independent, uncached computation (fresh graph + fresh context) of the exact
+    // same comparison must agree.
+    let mut g2 = CipDigraph::new(&mol, AtomIdx(0), CipBudget::default_budget()).unwrap();
+    let children2 = g2.expand_children(g2.root()).unwrap();
+    let mut ctx2 = CompareContext::new();
+    let independent = compare_ligands(&mut g2, children2[0], children2[1], &mut ctx2).unwrap();
+    assert_eq!(
+        first, independent,
+        "cached and uncached computations of the same comparison must agree"
+    );
+}
+
+/// The cache's "outcome-direction normalization": `compare_ligands(a, b)` and
+/// `compare_ligands(b, a)` within the SAME context must share one cache entry (the
+/// second call is a hit, not a miss) and the second call's returned value must be the
+/// correctly-inverted opposite of the first, never the raw (un-inverted) cached value.
+#[test]
+fn test_pairwise_cache_respects_direction() {
+    let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+    let mut g = CipDigraph::new(&mol, AtomIdx(0), CipBudget::default_budget()).unwrap();
+    let children = g.expand_children(g.root()).unwrap();
+    let (a, b) = (children[0], children[1]);
+
+    let mut ctx = CompareContext::new();
+    let ab = compare_ligands(&mut g, a, b, &mut ctx).unwrap();
+    let hits_before = ctx.cache_hits;
+    let ba = compare_ligands(&mut g, b, a, &mut ctx).unwrap();
+    assert_eq!(
+        ctx.cache_hits,
+        hits_before + 1,
+        "(b, a) must reuse (a, b)'s cache entry, not miss and recompute"
+    );
+    let expected_ba = match ab {
+        BranchComparison::Higher => BranchComparison::Lower,
+        BranchComparison::Lower => BranchComparison::Higher,
+        other => other,
+    };
+    assert_eq!(
+        ba, expected_ba,
+        "a cached hit in the reversed direction must invert the stored outcome"
+    );
+}
+
 #[test]
 fn test_compare_ligands_determinism() {
     let mol = parse("COc1ccc2c3c1OC1C(O)C(CO)(CCCCc4ccccc4)CC4C(C2)N(C)CCC341").unwrap();
