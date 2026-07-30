@@ -52,10 +52,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   harmonic engine, distinct from both `chematic_ff::uff::minimize_uff` (real UFF) and this
   crate's own typed DREIDING engine (`minimize_dreiding`, which assigns real
   `DREIDINGType`s and is what `generate_and_minimize_dreiding` actually calls). A new
-  regression test (`generate_and_minimize_uff_runs_neither_dreiding_nor_real_uff`)
+  regression test (`generate_and_minimize_uff_delegates_to_generic_minimize`)
   initially asserted the issue's own framing — that the function's output matches
   `generate_and_minimize_dreiding` — and that assertion **failed**, which is what
-  surfaced this refinement; the test now pins the correct three-way contract instead.
+  surfaced this refinement. The test's only load-bearing, permanently-pinned
+  assertion is that the deprecated function's output is numerically identical to
+  calling `minimize::minimize()` directly; its additional evidence that the output
+  also currently differs from typed DREIDING and real UFF on one test molecule is
+  logged as diagnostic, not asserted — different force fields could in principle
+  coincide on a shared local minimum for some molecule, which would make "always
+  differs" a fragile, unrelated regression gate.
   - Zero in-workspace callers found (`chematic-py`, `chematic-wasm`, `chematic-mcp`, and
     every other crate/test/doc call `generate_and_minimize_dreiding` for DREIDING behavior
     already), so the function is kept (not deleted or behavior-changed) purely as a
