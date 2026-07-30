@@ -112,14 +112,18 @@ def _product_ez(smirks, smis):
 
 
 def test_run_smirks_transfer_preserves_E():
+    # canonical_smiles() picks a different, equally valid spelling than this
+    # test was originally written against (issue #200) -- assert against the
+    # current canonical form of the input, not one hardcoded string, plus the
+    # CIP label the test actually cares about.
     smi, labels = _product_ez("[C:1]=[C:2]>>[C:1]=[C:2]", ["C/C=C/C"])
-    assert smi == "C/C=C/C"
+    assert smi == chematic.from_smiles("C/C=C/C").smiles
     assert "E" in labels
 
 
 def test_run_smirks_transfer_preserves_Z():
     smi, labels = _product_ez("[C:1]=[C:2]>>[C:1]=[C:2]", ["C/C=C\\C"])
-    assert smi == "C/C=C\\C"
+    assert smi == chematic.from_smiles("C/C=C\\C").smiles
     assert "Z" in labels
 
 
