@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
-    EnergyBreakdown, MinimizerError, NumericTypeError, OOP_SP2_TYPES, angle_type_for,
+    EnergyBreakdown, MinimizerError, NumericTypeError, OOP_SP2_TYPES, UffType, angle_type_for,
     assign_mmff94_numeric_types, assign_uff_types, bond_type_for, minimize_mmff94_lbfgs,
     minimize_uff as ff_minimize_uff, mmff94_angle_energy, mmff94_bond_energy,
     mmff94_energy_breakdown, mmff94_oop, mmff94_torsion_energy, mmff94_total_energy,
@@ -1257,6 +1257,41 @@ pub struct MinimizationFailureDetail {
     /// vanishing from a blow-up count instead of being counted as a typed
     /// failure.
     pub worst_bond_length: f64,
+    /// This `MinimizationFailureDetail` always describes the ORIGINAL attempt's
+    /// failure (the caller's own coordinates) — never the retry's. This flag only
+    /// records whether a retry was even attempted before that original failure was
+    /// returned: `true` means the original attempt failed with
+    /// `CatastrophicBondBlowup`/`NonFiniteCoordinates`, `embed_distance_geometry_v2`
+    /// was tried as a rescue, and that rescue was **not accepted** (its own result
+    /// was unsound, stereo-violating, or embedding itself errored) — so the
+    /// original failure is what's being returned, annotated to show a rescue was
+    /// tried and didn't help. `false` means either no rescue was attempted at all
+    /// (wrong policy, or an `ExcessiveResidualForce`-only failure — issues #185/#188
+    /// measured this rescue helping catastrophic bond blowup specifically, not
+    /// residual-force-only unsoundness, see [`run_uff_bridge`]'s doc for why the
+    /// rescue is scoped this narrowly) or a rescue *was* attempted and accepted, in
+    /// which case this function returns `Ok`, not this error type, and this field is
+    /// moot. Lets a caller distinguish "no rescue was even attempted" from "the
+    /// rescue was attempted and did not help either" — never "the retry's own
+    /// failure reason," which this field does not carry.
+    pub distance_geometry_v2_retry_attempted: bool,
+}
+
+/// Which starting geometry actually seeded a successful UFF minimization —
+/// see [`run_uff_bridge`]'s doc for the full rationale. Exists so a caller
+/// can tell "my exact input coordinates were used" apart from "the input was
+/// detected as catastrophically unsound after minimizing it, and
+/// `embed_distance_geometry_v2` was used to re-seed instead" — never a
+/// silent substitution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UffStartingGeometry {
+    /// The coordinates the caller passed in were used to seed minimization
+    /// and that attempt was already sound — no re-embedding was attempted.
+    AsProvided,
+    /// The caller-provided coordinates produced a catastrophically unsound
+    /// result; `embed_distance_geometry_v2` was used to re-seed instead, and
+    /// that retry was sound.
+    ReplacedWithDistanceGeometryV2,
 }
 
 impl std::fmt::Display for ForceFieldBridgeError {
@@ -1384,6 +1419,12 @@ pub struct PolicyMinimizeResult {
     /// struct (chematic-ff's `MinimizeResult`/`UffMinimizeResult` don't carry
     /// this field).
     pub max_residual_force: f64,
+    /// `Some(_)` whenever UFF actually ran (`UffOnly`, or the UFF-fallback
+    /// path of `Mmff94WithUffFallback`) — see [`UffStartingGeometry`] for
+    /// what the two variants mean and why raw starting energy alone can't
+    /// predict which one occurs. `None` for `Dreiding`/`None`, and for
+    /// `Mmff94BondAngleStrict`'s own (non-UFF) success path.
+    pub starting_geometry: Option<UffStartingGeometry>,
 }
 
 fn trivial_result(coords: Coords3D, policy: ForceFieldPolicy) -> PolicyMinimizeResult {
@@ -1399,6 +1440,7 @@ fn trivial_result(coords: Coords3D, policy: ForceFieldPolicy) -> PolicyMinimizeR
         converged: true,
         iterations: 0,
         max_residual_force: 0.0,
+        starting_geometry: None,
     }
 }
 
@@ -1541,6 +1583,7 @@ fn check_minimization_soundness(
     converged: bool,
     iterations: usize,
     max_residual_force: f64,
+    distance_geometry_v2_retry_attempted: bool,
 ) -> Result<(), ForceFieldBridgeError> {
     let worst_bond_length = worst_bond_length_vec(mol, coords);
     let reason = if coords.iter().any(|p| p.iter().any(|x| !x.is_finite())) {
@@ -1562,6 +1605,7 @@ fn check_minimization_soundness(
                 iterations,
                 max_residual_force,
                 worst_bond_length,
+                distance_geometry_v2_retry_attempted,
             },
         ))),
     }
@@ -1825,6 +1869,7 @@ fn run_mmff94_bridge(
         result.converged,
         result.iterations,
         max_residual_force,
+        false,
     )?;
 
     Ok(Mmff94BridgeRun {
@@ -1845,8 +1890,23 @@ struct UffBridgeRun {
     converged: bool,
     iterations: usize,
     max_residual_force: f64,
+    starting_geometry: UffStartingGeometry,
 }
 
+/// Issues #185/#188 (UFF minimizer catastrophic bond-length blowup on some
+/// starting geometries, sound convergence on others, at the shared default
+/// 200-iteration budget): tries the caller-provided `coords` first, exactly
+/// as before. Only if that specific attempt fails soundness with
+/// `CatastrophicBondBlowup`/`NonFiniteCoordinates` does this retry once from
+/// `embed_distance_geometry_v2`'s geometry instead (see
+/// [`rescue_with_distance_geometry_v2`] for why this is a post-hoc retry on
+/// the actual outcome, not a pre-minimization heuristic guess) — every other
+/// caller (including every molecule that already passes today) sees zero
+/// behavior change, and this never silently substitutes: which geometry
+/// actually produced the returned result is always visible on
+/// [`UffBridgeRun::starting_geometry`]/[`PolicyMinimizeResult::starting_geometry`],
+/// and a failed rescue attempt is disclosed on
+/// [`MinimizationFailureDetail::distance_geometry_v2_retry_attempted`].
 fn run_uff_bridge(
     mol: &Molecule,
     coords: &Coords3D,
@@ -1861,23 +1921,123 @@ fn run_uff_bridge(
     let max_residual_force =
         fd_max_gradient(&result.coords, |c| uff_total_energy(mol, &types, c), 1e-4);
 
-    check_minimization_soundness(
+    match check_minimization_soundness(
         mol,
         &result.coords,
         ForceFieldPolicy::UffOnly,
         result.converged,
         result.iterations,
         max_residual_force,
-    )?;
+        false,
+    ) {
+        Ok(()) => Ok(UffBridgeRun {
+            coords: vec_to_coords(&result.coords),
+            energy_before,
+            energy_after,
+            converged: result.converged,
+            iterations: result.iterations,
+            max_residual_force,
+            starting_geometry: UffStartingGeometry::AsProvided,
+        }),
+        Err(ForceFieldBridgeError::MinimizationFailed(detail))
+            if matches!(
+                detail.reason,
+                MinimizationFailureReason::CatastrophicBondBlowup
+                    | MinimizationFailureReason::NonFiniteCoordinates
+            ) =>
+        {
+            rescue_with_distance_geometry_v2(mol, &types, max_iter, detail)
+        }
+        Err(other) => Err(other),
+    }
+}
 
-    Ok(UffBridgeRun {
-        coords: vec_to_coords(&result.coords),
-        energy_before,
-        energy_after,
-        converged: result.converged,
-        iterations: result.iterations,
-        max_residual_force,
-    })
+/// The rescue itself: `original_failure` is `coords`' own (already-computed)
+/// failure. Raw starting energy alone cannot decide in advance whether a
+/// given start needs this — measured (`docs/uff_robustness_diagnosis_185_188.md`):
+/// anthracene's raw `generate_coords` energy is ~5 orders of magnitude worse
+/// than naphthalene's, yet anthracene never needs this path — so the
+/// decision is made from the ACTUAL post-minimization outcome, never a
+/// pre-minimization heuristic guess.
+///
+/// A retry is only accepted as a real rescue if it is BOTH geometrically
+/// sound AND preserves every declared stereocenter/E-Z bond
+/// ([`crate::stereo_constraints::verify_stereo`]) — measured directly, not
+/// assumed: `embed_distance_geometry_v2`'s default parameters do not enforce
+/// declared chirality (`EmbedParameters::enforce_chirality` defaults to
+/// `false`, and setting it `true` would instead make embedding itself refuse
+/// any molecule with declared stereo outright, per that module's own "fail-
+/// closed" doc — not a fix), and measured to actually flip stereocenters on
+/// real corpus molecules (testosterone, cholesterol: 2-3 of their declared
+/// centers remain violated after an otherwise-sound rescue). A rescue that
+/// fixed a bond-length blowup while silently destroying declared
+/// stereochemistry would be a worse outcome than the honest failure it
+/// replaced, so this bridge does not accept one — the original failure is
+/// returned instead, same as if the rescue had never been geometrically
+/// sound. Only the rescue's own (new) behavior is held to this bar; the
+/// unrelated, pre-existing fact that this bridge's *first*-attempt path
+/// never verifies stereo either is a known, separate, out-of-scope gap
+/// (already disclosed in `examples/cf_integration_smoke_test.rs`'s closing
+/// note), not one this fix introduces or is scoped to close.
+///
+/// If `embed_distance_geometry_v2` itself fails, or the retry is unsound or
+/// stereo-violating, the ORIGINAL failure is returned unchanged except for
+/// `distance_geometry_v2_retry_attempted` flipping to `true` — the rescue
+/// never masks a real failure with a different, potentially-misleading one.
+fn rescue_with_distance_geometry_v2(
+    mol: &Molecule,
+    types: &[(AtomIdx, UffType)],
+    max_iter: usize,
+    original_failure: Box<MinimizationFailureDetail>,
+) -> Result<UffBridgeRun, ForceFieldBridgeError> {
+    use crate::distance_geometry_v2::{EmbedParameters, embed_distance_geometry_v2};
+    use crate::stereo_constraints::verify_stereo;
+
+    let n = mol.atom_count();
+    if let Ok(v2_coords) = embed_distance_geometry_v2(mol, &EmbedParameters::default()) {
+        let retry_coord_vec = coords_to_vec(&v2_coords, n);
+        // `energy_before`/`energy_after` on a successful rescue must both describe
+        // the SAME trajectory (the DG v2 geometry, before and after minimizing it) --
+        // never the caller's original (now-abandoned) starting geometry paired with
+        // the retry's outcome. The caller's original energy is already captured
+        // separately, in `original_failure` (the typed error this function falls
+        // back to if the rescue doesn't pan out) -- it has no place in a successful
+        // `UffBridgeRun`, which reports on the geometry that actually produced it.
+        let retry_energy_before = uff_total_energy(mol, types, &retry_coord_vec);
+        let retry = ff_minimize_uff(mol, types, retry_coord_vec, max_iter);
+        let retry_energy_after = uff_total_energy(mol, types, &retry.coords);
+        let retry_max_residual_force =
+            fd_max_gradient(&retry.coords, |c| uff_total_energy(mol, types, c), 1e-4);
+        let retry_coords_typed = vec_to_coords(&retry.coords);
+
+        let retry_sound = check_minimization_soundness(
+            mol,
+            &retry.coords,
+            ForceFieldPolicy::UffOnly,
+            retry.converged,
+            retry.iterations,
+            retry_max_residual_force,
+            false,
+        )
+        .is_ok();
+        let retry_preserves_stereo = verify_stereo(mol, &retry_coords_typed).is_fully_satisfied();
+
+        if retry_sound && retry_preserves_stereo {
+            return Ok(UffBridgeRun {
+                coords: retry_coords_typed,
+                energy_before: retry_energy_before,
+                energy_after: retry_energy_after,
+                converged: retry.converged,
+                iterations: retry.iterations,
+                max_residual_force: retry_max_residual_force,
+                starting_geometry: UffStartingGeometry::ReplacedWithDistanceGeometryV2,
+            });
+        }
+    }
+
+    let mut detail = original_failure;
+    detail.distance_geometry_v2_retry_attempted = true;
+    Err(ForceFieldBridgeError::MinimizationFailed(detail))
 }
 
 fn finish_mmff94(
@@ -1899,6 +2059,7 @@ fn finish_mmff94(
         converged: r.converged,
         iterations: r.iterations,
         max_residual_force: r.max_residual_force,
+        starting_geometry: None,
     }
 }
 
@@ -1926,6 +2087,7 @@ fn finish_uff(
         converged: r.converged,
         iterations: r.iterations,
         max_residual_force: r.max_residual_force,
+        starting_geometry: Some(r.starting_geometry),
     }
 }
 
@@ -1978,6 +2140,7 @@ pub fn minimize_with_policy_gated(
                 report.converged,
                 report.iterations,
                 report.final_max_grad,
+                false,
             )?;
             Ok(PolicyMinimizeResult {
                 coords: report.coords,
@@ -1986,6 +2149,7 @@ pub fn minimize_with_policy_gated(
                 fallback_reason: None,
                 missing_parameter_classes: Vec::new(),
                 coverage: None,
+                starting_geometry: None,
                 energy_before: EnergyReport::Dreiding { total: e_before },
                 energy_after: EnergyReport::Dreiding { total: e_after },
                 converged: report.converged,
@@ -2798,45 +2962,61 @@ mod policy_bridge_tests {
         );
     }
 
-    /// The typed-failure conversion's own regression: naphthalene lacks
-    /// enough MMFF94 angle/torsion coverage to pass `Mmff94BondAngleStrict`,
-    /// so `Mmff94WithUffFallback` falls back to `UffOnly` — and that UFF
-    /// fallback is itself measured (58-molecule corpus, post-chematic-ff-
-    /// #183) to blow the worst bond length out past 3 Å (naphthalene:
-    /// 1.43 Å -> 4.74 Å here). Before this bridge's soundness gate existed,
-    /// this came back `Ok(PolicyMinimizeResult { converged: false, .. })` —
-    /// a result a careless caller checking only `.is_ok()` would mistake for
-    /// success. Pins that this is now a typed `Err(MinimizationFailed)`
-    /// instead. See `chematic_ff_own_uff_minimizer_blows_up_naphthalene_independent_of_this_bridge`
-    /// below for the isolated chematic-ff-only confirmation that this is not
-    /// an artifact of this bridge's own coordinate handling.
+    /// Issues #185/#188's fix, exercised through `Mmff94WithUffFallback`:
+    /// naphthalene lacks enough MMFF94 angle/torsion coverage to pass
+    /// `Mmff94BondAngleStrict`, so this falls back to `UffOnly` — and that
+    /// UFF fallback, from `generate_coords`'s geometry, is measured (58-
+    /// molecule corpus, post-chematic-ff-#183) to blow the worst bond length
+    /// out past 3 Å (naphthalene: 1.43 Å -> 4.74 Å) at the default 200-step
+    /// budget. Before `run_uff_bridge`'s rescue existed, this surfaced as a
+    /// typed `Err(MinimizationFailed)` (a real fix over the pre-soundness-gate
+    /// behavior of returning `Ok(PolicyMinimizeResult { converged: false, .. })`,
+    /// which a careless caller checking only `.is_ok()` would mistake for
+    /// success) — but the underlying cause was `generate_coords` producing a
+    /// severely clashed start, not an unrecoverable molecule: retrying once
+    /// from `embed_distance_geometry_v2`'s geometry succeeds. This test now
+    /// pins the fixed behavior: `Ok`, with `starting_geometry` disclosing
+    /// that the rescue fired (never silently). See
+    /// `chematic_ff_own_uff_minimizer_blows_up_naphthalene_independent_of_this_bridge`
+    /// below — chematic-ff's own `minimize_uff`, called with zero bridge code
+    /// in the path, still blows up on this exact `generate_coords` geometry;
+    /// this test's rescue lives entirely in `run_uff_bridge`, not in
+    /// chematic-ff, so that fixture remains correct and unchanged.
     #[test]
     fn mmff94_with_uff_fallback_reports_typed_failure_when_fallback_itself_is_unsound() {
         let mol = parse("c1ccc2ccccc2c1").expect("naphthalene");
         let coords = generate_coords(&mol);
         let config = MinimizeConfig::default();
 
-        let err = minimize_with_policy(
+        let result = minimize_with_policy(
             &mol,
             coords,
             ForceFieldPolicy::Mmff94WithUffFallback,
             &config,
         )
-        .expect_err(
-            "naphthalene's UFF fallback is measured (58-molecule corpus, post-#183) to blow its \
-             worst bond length past 3 Å -- this must surface as a typed failure, never a silent \
-             Ok(converged=false)",
+        .unwrap_or_else(|e| {
+            panic!(
+                "naphthalene's UFF fallback from generate_coords is catastrophically clashed, \
+                 but embed_distance_geometry_v2 rescues it -- expected Ok after the #185/#188 \
+                 fix, got {e:?}"
+            )
+        });
+        assert_eq!(result.actual_force_field_used, ForceFieldPolicy::UffOnly);
+        assert!(
+            result.fallback_reason.is_some(),
+            "MMFF94 coverage is genuinely incomplete for naphthalene -- a fallback to UFF must \
+             still be recorded as having occurred"
         );
-        match err {
-            ForceFieldBridgeError::MinimizationFailed(detail) => {
-                assert_eq!(detail.policy, ForceFieldPolicy::UffOnly);
-                assert!(
-                    detail.worst_bond_length > MAX_SANE_BOND_LENGTH,
-                    "expected a bond-length-driven failure, got {detail:?}"
-                );
-            }
-            other => panic!("expected MinimizationFailed, got {other:?}"),
-        }
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2),
+            "expected the rescue to have fired and to be disclosed, not silent"
+        );
+        let worst = worst_bond_length_vec(&mol, &coords_to_vec(&result.coords, mol.atom_count()));
+        assert!(
+            worst <= MAX_SANE_BOND_LENGTH,
+            "expected a sound rescued geometry, got worst bond {worst:.2} Å"
+        );
     }
 
     /// Isolated confirmation for the item-4 finding: this calls
@@ -3155,42 +3335,212 @@ mod policy_bridge_tests {
     // ring-placement defect specific to fused aromatics (naphthalene's raw
     // worst bond, 2.26 Å, is *better* than anthracene's, 3.73 Å).
     //
-    // Not fixed here: per this program's phasing, this PR is diagnostic and
-    // regression-fixture only. No step-clamping, no default `max_steps`
-    // change, no chematic-ff API change.
+    // Not fixed by the diagnostic pass itself: per that phase's scope, it was
+    // regression-fixture only. Fixed by a follow-up PR (`run_uff_bridge`'s
+    // rescue -- see `UffStartingGeometry`): raw starting energy alone cannot
+    // predict which starts need help (see above), so rather than raising the
+    // shared default budget (measured too costly/still-insufficient for the
+    // worst cases -- see `docs/uff_robustness_diagnosis_185_188.md`'s
+    // companion ablation) or touching `minimize_uff`'s algorithm at all, a
+    // catastrophic bond blowup/non-finite result at the existing budget is
+    // now retried once from `embed_distance_geometry_v2`'s geometry, with
+    // the choice always disclosed, never silent. Still not touched:
+    // `minimize_uff`'s own algorithm/default `max_steps`, and chematic-ff's
+    // public API beyond the additive diagnostic instrumentation from #107's
+    // work (`uff_energy_breakdown`/`minimize_uff_with_trace`/etc., unrelated
+    // to this fix).
 
-    /// #188 flexible-chain case, not previously covered by a dedicated test:
-    /// pins today's `UffOnly` + `generate_coords` failure for hexane, the
-    /// same shape as naphthalene's existing
+    /// #188 flexible-chain case: hexane's `UffOnly` + `generate_coords`
+    /// minimization is measured to blow its worst bond length past 3 Å at
+    /// the default 200-step budget (same shape as naphthalene's
     /// `mmff94_with_uff_fallback_reports_typed_failure_when_fallback_itself_is_unsound`
-    /// pin above, so both #185's and #188's molecule classes have an
-    /// explicit, typed-failure regression fixture in this bridge (not just
-    /// chematic-ff's own isolated repro).
+    /// above) -- but, per the #185/#188 fix, `run_uff_bridge` retries once
+    /// from `embed_distance_geometry_v2`'s geometry on exactly this failure
+    /// class, and that retry succeeds. Pins the now-fixed behavior: `Ok`,
+    /// with `starting_geometry` disclosing that the rescue fired.
     #[test]
-    fn uff_only_reports_typed_failure_for_hexane_from_generate_coords() {
+    fn uff_only_succeeds_for_hexane_from_generate_coords_via_distance_geometry_v2_rescue() {
         let mol = parse("CCCCCC").expect("hexane");
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
+            .unwrap_or_else(|e| {
+                panic!(
+                    "hexane's UFF minimization from generate_coords is catastrophically clashed, \
+                     but embed_distance_geometry_v2 rescues it -- expected Ok after the \
+                     #185/#188 fix, got {e:?}"
+                )
+            });
+        assert_eq!(result.requested_force_field, ForceFieldPolicy::UffOnly);
+        assert_eq!(result.actual_force_field_used, ForceFieldPolicy::UffOnly);
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2),
+            "expected the rescue to have fired and to be disclosed, not silent"
+        );
+        let worst = worst_bond_length_vec(&mol, &coords_to_vec(&result.coords, mol.atom_count()));
+        assert!(
+            worst <= MAX_SANE_BOND_LENGTH,
+            "expected a sound rescued geometry, got worst bond {worst:.2} Å"
+        );
+    }
+
+    /// Negative control for the rescue itself: a molecule whose
+    /// `generate_coords` start already passes `UffOnly`'s soundness gate
+    /// (phenol, pinned separately below as
+    /// `uff_only_policy_produces_finite_non_clashing_geometry`) must report
+    /// `starting_geometry == AsProvided` -- the rescue must never fire, and
+    /// must never be reported as having fired, when the first attempt was
+    /// already sound.
+    #[test]
+    fn uff_only_reports_as_provided_when_no_rescue_was_needed() {
+        let mol = parse("c1ccccc1O").expect("phenol");
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
+            .expect("phenol's generate_coords geometry is sound under UffOnly without a rescue");
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::AsProvided),
+            "no rescue should have been attempted -- the first attempt was already sound"
+        );
+    }
+
+    /// `energy_before`, on the (no-rescue) `AsProvided` path, must be the caller's
+    /// own starting geometry's energy -- computed here independently (a fresh
+    /// `uff_total_energy` call on the exact same `generate_coords` output) and
+    /// compared for exact equality, not just "looks plausible."
+    #[test]
+    fn uff_only_as_provided_energy_before_is_the_caller_geometry_energy() {
+        let mol = parse("c1ccccc1O").expect("phenol");
+        let coords = generate_coords(&mol);
+        let n = mol.atom_count();
+        let types = assign_uff_types(&mol);
+        let expected_energy_before = uff_total_energy(&mol, &types, &coords_to_vec(&coords, n));
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
+            .expect("phenol's generate_coords geometry is sound under UffOnly");
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::AsProvided)
+        );
+        match result.energy_before {
+            EnergyReport::Uff { total } => assert_eq!(
+                total, expected_energy_before,
+                "AsProvided energy_before must equal the caller-provided geometry's own energy"
+            ),
+            other => panic!("expected EnergyReport::Uff, got {other:?}"),
+        }
+    }
+
+    /// The energy-semantics regression this test exists to catch: on a successful
+    /// rescue, `energy_before`/`energy_after` must both describe the SAME
+    /// trajectory (the `embed_distance_geometry_v2` geometry, before and after
+    /// minimizing it) -- never the caller's abandoned original geometry paired
+    /// with the retry's outcome. Hexane's `generate_coords` energy (~1.5e7
+    /// kcal/mol, per `docs/uff_robustness_diagnosis_185_188.md`) and its
+    /// `embed_distance_geometry_v2` energy (~3.78 kcal/mol) differ by roughly 6
+    /// orders of magnitude -- exactly the fixture needed to make a
+    /// caller-geometry/retry-outcome mismatch impossible to miss. A buggy
+    /// implementation that reused the caller's `energy_before` would report
+    /// something around 1.5e7 here; this asserts the ACTUAL value instead,
+    /// independently recomputed from `embed_distance_geometry_v2`'s own
+    /// deterministic output (`EmbedParameters::default()`'s `random_seed` is a
+    /// fixed constant, so this reproduces the exact geometry the rescue itself
+    /// used).
+    #[test]
+    fn uff_only_rescue_energy_before_reflects_dg_v2_geometry_not_caller() {
+        use crate::distance_geometry_v2::{EmbedParameters, embed_distance_geometry_v2};
+
+        let mol = parse("CCCCCC").expect("hexane");
+        let n = mol.atom_count();
+        let types = assign_uff_types(&mol);
+
+        let caller_coords = generate_coords(&mol);
+        let caller_energy = uff_total_energy(&mol, &types, &coords_to_vec(&caller_coords, n));
+        assert!(
+            caller_energy > 1.0e6,
+            "expected hexane's generate_coords energy to be the measured ~1.5e7-scale \
+             catastrophic-clash value, got {caller_energy}"
+        );
+
+        let v2_coords = embed_distance_geometry_v2(&mol, &EmbedParameters::default())
+            .expect("hexane must embed via distance_geometry_v2");
+        let expected_v2_energy_before =
+            uff_total_energy(&mol, &types, &coords_to_vec(&v2_coords, n));
+        assert!(
+            expected_v2_energy_before < 1000.0,
+            "expected embed_distance_geometry_v2's hexane energy to be the measured \
+             ~3.78-scale sound value, got {expected_v2_energy_before}"
+        );
+
+        let config = MinimizeConfig::default();
+        let result = minimize_with_policy(&mol, caller_coords, ForceFieldPolicy::UffOnly, &config)
+            .expect(
+                "hexane's generate_coords start is catastrophically clashed, but the \
+                     embed_distance_geometry_v2 rescue must succeed",
+            );
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2),
+            "expected the rescue to have fired"
+        );
+
+        match (result.energy_before, result.energy_after) {
+            (EnergyReport::Uff { total: before }, EnergyReport::Uff { total: after }) => {
+                assert_eq!(
+                    before, expected_v2_energy_before,
+                    "rescue energy_before must be the DG v2 geometry's OWN starting energy \
+                     (~{expected_v2_energy_before}), not the caller's abandoned geometry's \
+                     energy (~{caller_energy}) -- got {before}"
+                );
+                assert_ne!(
+                    before, caller_energy,
+                    "rescue energy_before must never equal the caller's original geometry's \
+                     energy -- these are two different trajectories"
+                );
+                assert!(
+                    after <= before,
+                    "energy_after ({after}) must not exceed energy_before ({before}) -- both \
+                     values describe one single minimization trajectory"
+                );
+            }
+            other => panic!("expected (EnergyReport::Uff, EnergyReport::Uff), got {other:?}"),
+        }
+    }
+
+    /// The stereo-safety gate itself, isolated: cholesterol's `UffOnly`
+    /// minimization from `generate_coords` fails soundness (catastrophic
+    /// bond blowup), triggering the rescue -- but measured directly
+    /// (`verify_stereo`), the rescued geometry still violates 3 of
+    /// cholesterol's 8 declared stereocenters. The rescue must therefore be
+    /// REFUSED, and the ORIGINAL (bond-blowup) failure returned, annotated to
+    /// show a rescue was attempted -- never a silent `Ok` that quietly ships
+    /// wrong stereochemistry. See issue #210 (filed alongside this fix) for
+    /// the tracked follow-up.
+    #[test]
+    fn uff_only_refuses_a_rescue_that_would_violate_declared_stereochemistry() {
+        let mol =
+            parse("C[C@H](CCCC(C)C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C")
+                .expect("cholesterol");
         let coords = generate_coords(&mol);
         let config = MinimizeConfig::default();
 
         let err = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
             .expect_err(
-                "hexane's UFF minimization from generate_coords is measured to blow its worst \
-                 bond length past 3 Å at the default 200-step budget -- this must surface as a \
-                 typed failure, never a silent Ok(converged=false)",
+                "cholesterol's generate_coords start is catastrophically clashed, and its \
+                 embed_distance_geometry_v2 rescue is measured to violate declared \
+                 stereochemistry -- the rescue must be refused, not silently accepted",
             );
         match err {
             ForceFieldBridgeError::MinimizationFailed(detail) => {
-                assert_eq!(detail.policy, ForceFieldPolicy::UffOnly);
                 assert!(
-                    matches!(
-                        detail.reason,
-                        MinimizationFailureReason::CatastrophicBondBlowup
-                    ),
-                    "expected a bond-length-driven failure, got {detail:?}"
-                );
-                assert!(
-                    detail.worst_bond_length > MAX_SANE_BOND_LENGTH,
-                    "expected worst_bond_length > {MAX_SANE_BOND_LENGTH}, got {detail:?}"
+                    detail.distance_geometry_v2_retry_attempted,
+                    "expected the rescue to have been attempted (and refused for stereo \
+                     reasons), not skipped entirely: {detail:?}"
                 );
             }
             other => panic!("expected MinimizationFailed, got {other:?}"),
