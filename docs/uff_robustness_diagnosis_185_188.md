@@ -199,6 +199,17 @@ patching it here (no step-clamping/symptom-masking, per task instruction).
   doc comment does not, and its name claims a force field it never runs.
   Filed as its own issue (not fixed here — a public function rename/behavior
   change needs its own authorization).
+  - **Resolved in issue #204's fix PR.** `#[deprecated]`, with an honest doc
+    comment. The fix investigation also refined the framing above: the
+    "DREIDING-default" phrasing here undersells it — `minimize_with_config`'s
+    dispatch only special-cases `ForceField::MMFF94`, so `ForceField::UFF`
+    and `ForceField::DREIDING` are indistinguishable on that path and both
+    fall through to the same generic, untyped, element-pair harmonic engine.
+    That engine is a **third** implementation, distinct from both real UFF
+    and this crate's own typed DREIDING engine (`minimize_dreiding`, which
+    `generate_and_minimize_dreiding` actually calls) — confirmed by a test
+    that initially asserted DREIDING-equivalence and failed. See
+    `CHANGELOG.md`'s `[Unreleased]` entry for the corrected description.
 - **Issue #185's reported "~481.27 Å" worst-bond number could not be
   reproduced.** Naphthalene's worst bond length from `generate_coords` at
   the default 200-step `UffOnly` budget, measured independently twice — once

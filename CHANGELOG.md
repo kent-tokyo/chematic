@@ -39,6 +39,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Rust-only; no algorithm change. Scope: Python binding only — no WASM
     binding, no RDKit benchmark (tracked as separate follow-up work).
 
+### Deprecated — `chematic-3d`
+
+- **`generate_and_minimize_uff()` never ran chematic-ff's UFF, despite its name and doc
+  comment.** `#[deprecated]`, with an honest doc comment disclosing what it actually runs
+  and where to go for real behavior. Investigation (issue #204) found the defect deeper
+  than the issue's own text described: `minimize_uff(mol, coords)` resolves to this
+  crate's own `minimize::minimize()`, whose dispatch (`minimize_with_config`) only
+  special-cases `ForceField::MMFF94` — the `UFF` and `ForceField::DREIDING` (the
+  default) variants are indistinguishable and both fall through to the same catch-all,
+  `minimize_generic_with_config`. That is a **third**, untyped, element-pair-parameterized
+  harmonic engine, distinct from both `chematic_ff::uff::minimize_uff` (real UFF) and this
+  crate's own typed DREIDING engine (`minimize_dreiding`, which assigns real
+  `DREIDINGType`s and is what `generate_and_minimize_dreiding` actually calls). A new
+  regression test (`generate_and_minimize_uff_delegates_to_generic_minimize`)
+  initially asserted the issue's own framing — that the function's output matches
+  `generate_and_minimize_dreiding` — and that assertion **failed**, which is what
+  surfaced this refinement. The test's only load-bearing, permanently-pinned
+  assertion is that the deprecated function's output is numerically identical to
+  calling `minimize::minimize()` directly; its additional evidence that the output
+  also currently differs from typed DREIDING and real UFF on one test molecule is
+  logged as diagnostic, not asserted — different force fields could in principle
+  coincide on a shared local minimum for some molecule, which would make "always
+  differs" a fragile, unrelated regression gate.
+  - Zero in-workspace callers found (`chematic-py`, `chematic-wasm`, `chematic-mcp`, and
+    every other crate/test/doc call `generate_and_minimize_dreiding` for DREIDING behavior
+    already), so the function is kept (not deleted or behavior-changed) purely as a
+    just-in-case compatibility shim for any external, out-of-tree caller of this
+    published crate.
+  - Use `generate_and_minimize_dreiding` for the same (typed DREIDING) behavior under an
+    honest name, or `minimize::minimize_with_policy_gated(..., ForceFieldPolicy::UffOnly, ...)`
+    / `chematic_ff::uff::{assign_uff_types, minimize_uff}` for real UFF physics.
+
 _Nothing else yet — everything below `[0.8.1]` has shipped._
 
 ## [0.8.1] — 2026-07-30

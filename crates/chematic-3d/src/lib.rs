@@ -158,7 +158,40 @@ pub fn generate_and_minimize_constrained(mol: &chematic_core::Molecule) -> Coord
     minimize_dreiding(mol, projected)
 }
 
-/// Generate 3D coordinates and minimize using UFF force field.
+#[deprecated(
+    note = "misnamed: this runs neither chematic-ff's real UFF nor this crate's own typed \
+            DREIDING engine (`generate_and_minimize_dreiding`) — it runs chematic-3d's own \
+            internal generic, element-pair-parameterized harmonic force field \
+            (`minimize::minimize()`; `minimize_with_config`'s dispatch only special-cases \
+            MMFF94, so `ForceField::UFF`/`ForceField::DREIDING` are indistinguishable and \
+            both fall through to this same generic engine). Use \
+            `generate_and_minimize_dreiding` for typed DREIDING physics, or \
+            `minimize::minimize_with_policy_gated(..., minimize::ForceFieldPolicy::UffOnly, ...)` \
+            / `chematic_ff::uff::{assign_uff_types, minimize_uff}` for real UFF physics. \
+            See issue #204."
+)]
+/// Generate 3D coordinates and minimize geometry in one step.
+///
+/// **Despite the name, this does not run chematic-ff's UFF — and it is *not* equivalent to
+/// [`generate_and_minimize_dreiding`] either.** `minimize_uff` here resolves to this crate's
+/// own [`crate::minimize::minimize_uff`], which is honestly documented as an alias for
+/// [`crate::minimize::minimize`] (`MinimizeConfig::default()`). That generic `minimize()`
+/// dispatches on `config.force_field`, but its match arm only special-cases MMFF94 — both
+/// the `UFF` and `DREIDING` enum variants fall through to the same catch-all,
+/// `minimize_generic_with_config`, which uses chematic-3d's own internal, untyped,
+/// element-pair bond/angle/VDW table (informally "UFF-derived", see `minimize.rs`'s
+/// "UFF-derived element parameters" section) — a third, distinct engine from both
+/// `chematic_ff::uff::minimize_uff` (real UFF) and [`crate::minimize::minimize_dreiding`]
+/// (which assigns real per-atom DREIDING types via `assign_dreiding_types` and is what
+/// [`generate_and_minimize_dreiding`] actually calls). This function is kept only so
+/// existing external callers (outside this workspace) don't break; do not add new calls
+/// to it.
+///
+/// - For typed DREIDING physics, call [`generate_and_minimize_dreiding`] directly.
+/// - For real UFF physics, use
+///   [`crate::minimize::minimize_with_policy_gated`] with
+///   [`crate::minimize::ForceFieldPolicy::UffOnly`], or call
+///   `chematic_ff::uff::{assign_uff_types, minimize_uff}` directly.
 pub fn generate_and_minimize_uff(mol: &chematic_core::Molecule) -> Coords3D {
     let coords = generate_coords(mol);
     minimize_uff(mol, coords)
@@ -774,6 +807,90 @@ mod tests {
             ensemble.conformer_count() >= 2,
             "flexible molecule with Gaussian noise should produce diverse conformers, got {}",
             ensemble.conformer_count()
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Regression test for issue #204
+    // -----------------------------------------------------------------------
+
+    /// `generate_and_minimize_uff`'s name has always claimed UFF, but it has never
+    /// invoked `chematic_ff::uff::minimize_uff`. It also turns out NOT to be equivalent
+    /// to [`generate_and_minimize_dreiding`] either (an initial version of this test
+    /// asserted that and failed): `minimize::minimize()`'s dispatch only special-cases
+    /// `ForceField::MMFF94`, so both `UFF` and `DREIDING` variants fall through to the
+    /// same generic, untyped, element-pair harmonic engine — a third implementation,
+    /// distinct from both real UFF and the typed DREIDING engine
+    /// (`minimize::minimize_dreiding`, assigning real `DREIDINGType`s) that
+    /// `generate_and_minimize_dreiding` actually runs.
+    ///
+    /// The only load-bearing, permanently-pinned contract is (1): the deprecated
+    /// function's output is numerically identical (within floating-point tolerance) to
+    /// calling `minimize::minimize()` directly, confirming exactly what it delegates
+    /// to. (2)/(3) below (divergence from typed DREIDING / real UFF on this one
+    /// molecule) are logged as diagnostic evidence, not asserted — different force
+    /// fields can in principle converge to the same local minimum for a particular
+    /// molecule by coincidence, so "always differs" would be a fragile regression gate
+    /// unrelated to this function's actual contract.
+    #[test]
+    #[allow(deprecated)]
+    fn generate_and_minimize_uff_delegates_to_generic_minimize() {
+        use crate::minimize::{
+            ForceFieldPolicy, MinimizeConfig, minimize, minimize_with_policy_gated,
+        };
+        use crate::{generate_and_minimize_dreiding, generate_and_minimize_uff};
+
+        let mol = parse("c1ccccc1").expect("benzene SMILES");
+
+        let deprecated_result = generate_and_minimize_uff(&mol);
+
+        // (1) LOAD-BEARING: it is exactly `minimize::minimize()` on freshly-generated
+        // coords — no more, no less. This is the true, honest description of its
+        // current behavior, and the only property this test hard-gates.
+        let generic_result = minimize(&mol, generate_coords(&mol));
+        for i in 0..mol.atom_count() as u32 {
+            let a = deprecated_result.get(AtomIdx(i));
+            let b = generic_result.get(AtomIdx(i));
+            assert!(
+                a.distance(&b) < 1e-12,
+                "generate_and_minimize_uff must be numerically identical (within \
+                 floating-point tolerance) to minimize::minimize() — that is literally \
+                 what it delegates to; atom {i} diverged"
+            );
+        }
+
+        // (2)/(3) DIAGNOSTIC ONLY — evidence that today, on this one molecule, all
+        // three engines happen to be distinct; not a permanent API contract, so never
+        // asserted. See the doc comment above for why.
+        let dreiding_result = generate_and_minimize_dreiding(&mol);
+        let differs_from_dreiding = (0..mol.atom_count() as u32).any(|i| {
+            deprecated_result
+                .get(AtomIdx(i))
+                .distance(&dreiding_result.get(AtomIdx(i)))
+                > 1e-6
+        });
+        println!(
+            "[diagnostic] generate_and_minimize_uff differs from typed DREIDING on \
+             benzene: {differs_from_dreiding}"
+        );
+
+        let real_uff = minimize_with_policy_gated(
+            &mol,
+            generate_coords(&mol),
+            ForceFieldPolicy::UffOnly,
+            &MinimizeConfig::default(),
+            false,
+        )
+        .expect("real UFF minimization of benzene should succeed");
+        let differs_from_real_uff = (0..mol.atom_count() as u32).any(|i| {
+            deprecated_result
+                .get(AtomIdx(i))
+                .distance(&real_uff.coords.get(AtomIdx(i)))
+                > 1e-6
+        });
+        println!(
+            "[diagnostic] generate_and_minimize_uff differs from real UFF on benzene: \
+             {differs_from_real_uff}"
         );
     }
 }
