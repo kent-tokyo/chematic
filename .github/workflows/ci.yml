@@ -97,9 +97,12 @@ jobs:
       - name: Build WASM (--target nodejs)
         working-directory: crates/chematic-wasm
         run: wasm-pack build --target nodejs --out-dir pkg-node --release
-      - name: Node integration tests
+      - name: Node integration tests (nodejs target)
         run: |
           for f in crates/chematic-wasm/tests/*.test.mjs; do
+            case "$f" in
+              *_web_target.test.mjs) continue ;; # needs pkg-web, built below
+            esac
             echo "::group::$f"
             node "$f"
             echo "::endgroup::"
