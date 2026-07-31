@@ -30,6 +30,9 @@ npm install @kent-tokyo/chematic
 - SVG grid layout for multiple molecules
 - Reaction SMILES/SMIRKS parsing and transform
 - Add/remove explicit hydrogens
+- `embed_pipeline_v2_json`: torsion-knowledge-aware 3D embedding + stereo
+  verification/repair + policy-gated force field, mirroring the Python
+  `Mol.embed_pipeline_v2()` binding ([known blocker](#3d-embedding-pipeline-v2-blocked-see-issue-219))
 
 ## Usage
 
@@ -95,6 +98,38 @@ const peoeVsa  = JSON.parse(peoe_vsa_json(mol));
 const ifg = JSON.parse(identify_functional_groups(mol));
 console.log(ifg); // [{"atoms":[1,2,3],"types":"OC=O"}, ...]
 ```
+
+### 3D embedding (`embed_pipeline_v2_json`) — blocked, see issue #219
+
+```js
+const response = JSON.parse(embed_pipeline_v2_json(mol, JSON.stringify({
+  embedSeed: 7,
+  maxAttempts: 8,
+  embedTimeoutMs: null,
+  useExpTorsions: false,
+  useSmallRingTorsions: false,
+  useMacrocycleTorsions: false,
+  useMacrocycle14Bounds: false,
+  includeLegacyTorsionHeuristic: false,
+  stereoPolicy: "ignore",
+  failOnUnevaluableStereo: false,
+  forceFieldPolicy: "none",
+  forceFieldMaxIterations: 200,
+  gateMmff94TorsionOop: false,
+  ringTorsionPolicy: "fail_closed",
+  totalTimeoutMs: null,
+})));
+// response.ok, response.result / response.error — same shape as
+// Mol.embed_pipeline_v2() in the Python binding.
+```
+
+**Not functional yet.** The underlying `chematic-3d` pipeline calls
+`std::time::Instant::now()` unconditionally for timing/timeout bookkeeping,
+which panics under real `wasm32-unknown-unknown` (no host time source) on
+every call. Verified working natively (Rust tests, Rust/Python parity
+fixtures) but not yet callable from Node or a browser. Tracked in
+[issue #219](https://github.com/kent-tokyo/chematic/issues/219); fix is
+scoped to `chematic-3d`, not this crate.
 
 ## Version History
 

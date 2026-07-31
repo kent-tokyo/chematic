@@ -39,6 +39,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Rust-only; no algorithm change. Scope: Python binding only — no WASM
     binding, no RDKit benchmark (tracked as separate follow-up work).
 
+### Added — `chematic-wasm`
+
+- **`embed_pipeline_v2_json(mol, configJson)`**: WASM mirror of
+  `Mol.embed_pipeline_v2()` above, same 15-field config (camelCase JSON,
+  `deny_unknown_fields`, no silent defaults) and same per-stage evidence,
+  returned as a tagged-union JSON envelope
+  (`{"schemaVersion":1,"ok":true,"result":{...}}` /
+  `{"schemaVersion":1,"ok":false,"error":{...}}`). Applies directly to the
+  caller's own `MolHandle` — no canonicalize/reparse. Fail-closed on
+  oversized input/atom count, malformed JSON, unknown fields, unknown enum
+  values, and out-of-range integers, all surfaced through the same envelope
+  rather than a thrown exception.
+  - **Known blocker (issue #219): non-functional under real WASM today.**
+    `chematic_3d::pipeline_v2`/`distance_geometry_v2` call
+    `std::time::Instant::now()` unconditionally for timing/timeout
+    bookkeeping, which panics on `wasm32-unknown-unknown` (no host time
+    source) on every single call, regardless of config. Verified
+    natively (`cargo test -p chematic-wasm --lib`, 242/242 passing,
+    including Rust/Python/WASM parity fixtures via the raw JSON path) and
+    via the compiled export list, but not yet functional end-to-end in
+    Node or a browser. Fix is scoped to `chematic-3d` (out of scope here)
+    and tracked separately in #219.
+
 ### Deprecated — `chematic-3d`
 
 - **`generate_and_minimize_uff()` never ran chematic-ff's UFF, despite its name and doc
