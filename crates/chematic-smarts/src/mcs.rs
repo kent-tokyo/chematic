@@ -7,11 +7,11 @@
 //! bound on reachable size is no better than the current best.
 
 use std::collections::HashMap;
-use std::time::Instant;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_perception::{RingSet, find_sssr};
 
+use crate::clock::Instant;
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 
 // ---------------------------------------------------------------------------
