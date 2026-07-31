@@ -11,6 +11,7 @@
 #![allow(clippy::needless_range_loop)]
 
 pub mod align;
+pub(crate) mod clock;
 pub mod conformer;
 pub mod constraints;
 pub mod coords;

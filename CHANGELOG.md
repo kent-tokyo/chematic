@@ -71,6 +71,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     honest name, or `minimize::minimize_with_policy_gated(..., ForceFieldPolicy::UffOnly, ...)`
     / `chematic_ff::uff::{assign_uff_types, minimize_uff}` for real UFF physics.
 
+### Fixed — `chematic-3d`
+
+- **`embed_pipeline_v2`/`distance_geometry_v2` panicked unconditionally under real
+  `wasm32-unknown-unknown`.** `std::time::Instant::now()` has no host time source on
+  that target and traps with `"time not implemented on this platform"` — hit at all
+  13 call sites used for timeout enforcement and per-stage timing (12 in
+  `pipeline_v2.rs`, 1 in `distance_geometry_v2.rs`). This was latent (no previously
+  shipped WASM export reached these modules) until PR #220's not-yet-merged
+  `embed_pipeline_v2_json` binding exercised it end-to-end and filed it as issue #219.
+  Fixed via a small crate-internal `clock` module: `web_time::Instant` (backed by
+  `Performance.now()`) on `wasm32-unknown-unknown`, `std::time::Instant` everywhere
+  else (via `web-time`'s own re-export) — a pure clock-source swap, no change to
+  timeout contracts, stage-timing field names/units, or any chemistry/geometry/torsion/
+  force-field logic. Verified end-to-end (both `wasm-pack --target nodejs` and
+  `--target web` artifacts, real success + typed-timeout paths, no partial-coords-as-
+  success) via a local, unpushed integration of PR #220's head, since #220 itself
+  isn't merged yet. A related but distinct conditional trap in `chematic-smarts`'s MCS
+  timeout path (already reachable from the shipped `mcs_smiles_json_with_ring_config`
+  export) was found during the call-site audit and filed separately as issue #221
+  rather than folded into this fix (different crate, different root cause).
+
 _Nothing else yet — everything below `[0.8.1]` has shipped._
 
 ## [0.8.1] — 2026-07-30

@@ -115,10 +115,9 @@
 //!   standing convention that heuristic-projection residuals are visible, not assumed
 //!   away (`distance_geometry_v2::bounds_conformance`'s own doc comment).
 
-use std::time::Instant;
-
 use chematic_core::{AtomIdx, Molecule};
 
+use crate::clock::Instant;
 use crate::coords::Coords3D;
 use crate::dg_fft::ideal_bond_length;
 use crate::distance_geometry_v2::{

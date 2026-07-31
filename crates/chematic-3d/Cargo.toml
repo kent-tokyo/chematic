@@ -23,6 +23,12 @@ chematic-chem       = { path = "../chematic-chem",       version = "0.8.1" }
 chematic-fp         = { path = "../chematic-fp",         version = "0.8.1" }
 chematic-smarts     = { path = "../chematic-smarts",     version = "0.8.1" }
 
+# std::time::Instant panics on wasm32-unknown-unknown (issue #219); web-time
+# is a drop-in Instant replacement backed by Performance.now() there, and
+# re-exports std::time::Instant everywhere else -- see src/clock.rs.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+web-time = "1"
+
 [dev-dependencies]
 # Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
 # comment -- a version-pinned dev-dependency must resolve against the
