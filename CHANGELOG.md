@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet — everything below `[0.9.0]` has shipped._
+
+## [0.9.0] — 2026-08-01
+
 ### Added — `chematic-py`
 
 - **`Mol.embed_pipeline_v2(config)`**: Python binding for the Rust-only
@@ -134,6 +138,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `chematic-3d`'s module directly, the dependency direction runs the other way).
   No algorithm change; `test_timeout_does_not_panic` (native, `timeout_ms: Some(1)`)
   continues to pass unchanged.
+
+### Migration notes
+
+- **`generate_and_minimize_uff()` is `#[deprecated]` but not removed and not
+  behavior-changed** — it still resolves to the same generic, untyped
+  element-pair-parameterized minimizer it always has. Nothing breaks; the
+  deprecation warning is a nudge toward `generate_and_minimize_dreiding()`
+  (same behavior, honest name) or `chematic_ff::uff::{assign_uff_types,
+  minimize_uff}` (real UFF), not a behavior change to migrate away from.
+- **`Mol.embed_pipeline_v2()` (Python) and `embed_pipeline_v2_json()` (WASM)
+  are new, additive, opt-in APIs.** No existing default 3D API
+  (`generate_coords`, `etkdg`, `generate_and_minimize_dreiding`, the existing
+  WASM 3D exports, etc.) changed behavior in this release. Pipeline v2 is not
+  a default and does not need to be adopted.
+- **Partial coordinates on pipeline v2 failure are diagnostic-only, never a
+  usable result.** `PipelineV2Error.diagnostics["last_known_coords"]`
+  (Python) / `error.lastKnownCoords` (WASM) are explicitly flagged
+  (`coords_are_diagnostic_only` / `coordsAreDiagnosticOnly: true`) and must
+  not be treated as a successful embedding.
+  - Same JSON envelope: check `ok`/ the exception type before touching
+    `result`, never assume a `coords` field is present on failure.
+- **The `chematic-3d`/`chematic-smarts` clock-portability fixes (#219, #221)
+  change only the *source* of monotonic timestamps** (`web_time::Instant` on
+  `wasm32-unknown-unknown`, `std::time::Instant` — identical to before —
+  everywhere else). No timeout threshold, stage-timing field name/unit, or
+  chemistry/geometry/torsion/force-field calculation changed. Native builds
+  are unaffected structurally, not just by measurement (`web-time`
+  re-exports `std::time::Instant` verbatim off-wasm).
+- **No change to CIP, E/Z, ECFP4, or the RDKit benchmark** in this release —
+  those remain exactly as measured in `[0.8.1]` and earlier.
+- The `canonical_smiles()` explicit/implicit-hydrogen migration note from
+  `[0.8.1]` below still applies as written; it is not superseded by anything
+  in this release.
 
 _Nothing else yet — everything below `[0.8.1]` has shipped._
 
