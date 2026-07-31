@@ -113,10 +113,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   force-field logic. Verified end-to-end (both `wasm-pack --target nodejs` and
   `--target web` artifacts, real success + typed-timeout paths, no partial-coords-as-
   success) via a local, unpushed integration of PR #220's head, since #220 itself
-  isn't merged yet. A related but distinct conditional trap in `chematic-smarts`'s MCS
-  timeout path (already reachable from the shipped `mcs_smiles_json_with_ring_config`
-  export) was found during the call-site audit and filed separately as issue #221
-  rather than folded into this fix (different crate, different root cause).
+  wasn't merged yet at the time. A related but distinct conditional trap in
+  `chematic-smarts`'s MCS timeout path was found during the call-site audit and
+  filed separately as issue #221 rather than folded into this fix (different
+  crate, different root cause) — see below.
+
+### Fixed — `chematic-smarts`
+
+- **`find_mcs_with_config`'s timeout path traps under real `wasm32-unknown-unknown`**
+  (issue #221, same underlying mechanism as #219 above, independently fixed here
+  since `chematic-3d` depends on `chematic-smarts`, not the other way around).
+  4 conditional `Instant::now()` calls in `mcs.rs`'s deadline check — only
+  reached when `McsConfig::timeout_ms` is `Some`. Correction to #219's own
+  changelog entry above: at the time that entry was written, no WASM export
+  actually plumbed a `timeout_ms` through to JS (`mcs_smiles_json_with_ring_config`
+  always used `McsConfig::default()`, i.e. `timeout_ms: None`) — so this trap was
+  latent, not already reachable in production, same as #219 was before PR #220's
+  binding shipped. Fixed via the identical `crate::clock` pattern (own module,
+  own `web-time` target-specific dependency — `chematic-smarts` can't reuse
+  `chematic-3d`'s module directly, the dependency direction runs the other way).
+  No algorithm change; `test_timeout_does_not_panic` (native, `timeout_ms: Some(1)`)
+  continues to pass unchanged.
 
 _Nothing else yet — everything below `[0.8.1]` has shipped._
 

@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 
 pub mod cache;
+pub(crate) mod clock;
 pub mod cx;
 pub mod match_vf2;
 pub mod mcs;
