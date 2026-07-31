@@ -41,7 +41,8 @@
 //! are all separately merged.
 
 use std::collections::HashMap;
-use std::time::Instant;
+
+use crate::clock::Instant;
 
 use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule};
 
