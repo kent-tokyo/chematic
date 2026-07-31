@@ -6,20 +6,13 @@
 // raw_rust_api_matches_python_reference_fixtures read -- generated once via
 // scripts/gen_pipeline_v2_wasm_parity_fixtures.py against the Python binding.
 //
-// KNOWN BLOCKER (github.com/kent-tokyo/chematic/issues/219): any call that
-// reaches chematic_3d::pipeline_v2::embed_pipeline_v2 traps under real
-// wasm32-unknown-unknown, because that function (and distance_geometry_v2)
-// call std::time::Instant::now() unconditionally, which panics with "time
-// not implemented on this platform" outside a native target. This is a
-// pre-existing gap in chematic-3d, not in this binding. Sections below that
-// would otherwise exercise the real pipeline instead assert that the call
-// traps (documenting today's reality); they should be converted back to real
-// assertions once #219 is fixed. Sections that are rejected at the WASM
-// input-validation boundary (before any Instant::now() call) are unaffected
-// and assert real behavior today.
+// Previously blocked by issue #219 (std::time::Instant::now() panicking under
+// real wasm32-unknown-unknown); fixed in #222 via chematic-3d's crate::clock
+// abstraction. Every case below now exercises the real pipeline end to end.
 //
-// Not wired into any CI workflow (this repo has no WASM-test CI job). Run
-// manually after building the Node target:
+// Not wired into the general CI job (this is a targeted job, see
+// .github/workflows/ci.yml's `test-wasm` job). Run manually after building
+// the Node target:
 //
 //   wasm-pack build crates/chematic-wasm --target nodejs --out-dir pkg-node --release
 //   node crates/chematic-wasm/tests/pipeline_v2.test.mjs
@@ -53,46 +46,39 @@ const SAFE_CONFIG = {
   totalTimeoutMs: null,
 };
 
-// Any call whose config passes WASM-level validation reaches the real
-// pipeline and traps per issue #219. Assert exactly that, rather than
-// crashing the whole test run on an uncaught WebAssembly.RuntimeError.
-function assertTrapsPendingIssue219(fn, label) {
-  assert.throws(fn, /unreachable/, `${label}: expected issue #219 trap`);
-}
-
 // ---------------------------------------------------------------------------
-// Basic envelope shape (success) -- BLOCKED by issue #219
+// Basic envelope shape (success)
 // ---------------------------------------------------------------------------
 
 {
   const mol = parse_smiles("CCCCCCCCCC"); // decane
-  assertTrapsPendingIssue219(
-    () => embed_pipeline_v2_json(mol, JSON.stringify(SAFE_CONFIG)),
-    "success envelope shape",
-  );
-  console.log("success envelope shape: traps per issue #219 (as expected today)");
+  const response = JSON.parse(embed_pipeline_v2_json(mol, JSON.stringify(SAFE_CONFIG)));
+  assert.equal(response.ok, true, "success envelope shape");
+  assert.equal(response.schemaVersion, 1);
+  assert.equal(response.result.coords.length, 10);
+  for (const [x, y, z] of response.result.coords) {
+    assert.ok(Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z));
+  }
+  console.log("success envelope shape: ok (decane, 10 finite coords)");
 }
 
 // ---------------------------------------------------------------------------
-// Failure envelope shape (ring-torsion fail-closed) -- BLOCKED by issue #219
-// (the real embedding stage runs, and traps, before ever reaching the
-// ring-torsion-specific fail-closed branch)
+// Failure envelope shape (ring-torsion fail-closed)
 // ---------------------------------------------------------------------------
 
 {
   const mol = parse_smiles("C1CCCCC1CCCCCCCCCCCC"); // cyclohexane + acyclic tail
   const config = { ...SAFE_CONFIG, useSmallRingTorsions: true, forceFieldPolicy: "dreiding" };
-  assertTrapsPendingIssue219(
-    () => embed_pipeline_v2_json(mol, JSON.stringify(config)),
-    "failure envelope shape",
-  );
-  console.log("failure envelope shape: traps per issue #219 (as expected today)");
+  const response = JSON.parse(embed_pipeline_v2_json(mol, JSON.stringify(config)));
+  assert.equal(response.ok, false, "failure envelope shape");
+  assert.equal(response.error.stage, "torsion_optimization");
+  assert.equal(response.error.cause.kind, "ring_torsion_application_unsupported");
+  console.log("failure envelope shape: ok (ring-torsion fail-closed typed failure)");
 }
 
 // ---------------------------------------------------------------------------
 // Malformed / incomplete config JSON -- rejected at the WASM input-validation
-// boundary, before any Instant::now() call -- unaffected by issue #219, still
-// real assertions: never throws, never silently defaults.
+// boundary: never throws, never silently defaults.
 // ---------------------------------------------------------------------------
 
 {
@@ -132,29 +118,41 @@ function assertTrapsPendingIssue219(fn, label) {
 }
 
 // ---------------------------------------------------------------------------
-// null timeout / a present numeric timeout both pass WASM-level validation
-// (i.e. are not rejected as invalid config) -- BLOCKED by issue #219 past
-// that point, since both then reach the real pipeline and trap.
+// null timeout / a present numeric timeout both succeed for real.
 // ---------------------------------------------------------------------------
 
 {
   const mol = parse_smiles("CC");
-  assertTrapsPendingIssue219(
-    () => embed_pipeline_v2_json(mol, JSON.stringify(SAFE_CONFIG)),
-    "null timeout accepted past validation",
+  const r1 = JSON.parse(embed_pipeline_v2_json(mol, JSON.stringify(SAFE_CONFIG)));
+  assert.equal(r1.ok, true, "null timeout succeeds");
+
+  const r2 = JSON.parse(
+    embed_pipeline_v2_json(mol, JSON.stringify({ ...SAFE_CONFIG, totalTimeoutMs: 60000 })),
   );
-  assertTrapsPendingIssue219(
-    () => embed_pipeline_v2_json(mol, JSON.stringify({ ...SAFE_CONFIG, totalTimeoutMs: 60000 })),
-    "present timeout accepted past validation",
-  );
-  console.log(
-    "nullable timeout fields (null and present): accepted past validation, then trap per issue #219",
-  );
+  assert.equal(r2.ok, true, "present (large) timeout succeeds");
+
+  console.log("nullable timeout fields (null and present): both succeed for real");
 }
 
 // ---------------------------------------------------------------------------
-// Safety limits: oversized config JSON -- rejected before any Instant::now()
-// call -- unaffected by issue #219, still a real assertion.
+// An actual (near-zero) timeout fails closed with a typed Timeout cause --
+// never a trap, never partial coords reported as success.
+// ---------------------------------------------------------------------------
+
+{
+  const mol = parse_smiles("CC(=O)Oc1ccccc1C(=O)O"); // aspirin
+  const response = JSON.parse(
+    embed_pipeline_v2_json(mol, JSON.stringify({ ...SAFE_CONFIG, totalTimeoutMs: 0 })),
+  );
+  assert.equal(response.ok, false, "zero timeout must fail closed");
+  assert.equal(response.error.cause.kind, "timeout");
+  assert.equal("result" in response, false, "no partial coords reported as success on timeout");
+  console.log("actual timeout (totalTimeoutMs: 0): ok (typed timeout failure, no partial success)");
+}
+
+// ---------------------------------------------------------------------------
+// Safety limits: oversized config JSON and atom-count limit -- both rejected
+// before the pipeline runs.
 // ---------------------------------------------------------------------------
 
 {
@@ -167,28 +165,49 @@ function assertTrapsPendingIssue219(fn, label) {
   console.log("oversized config JSON: fail-closed, ok");
 }
 
+{
+  // embed_pipeline_v2_json's own `mol.inner.atom_count() > WASM_MAX_ATOMS`
+  // check (-> typed `atom_limit_exceeded`) is unreachable from JS today:
+  // every MolHandle-producing entry point in this crate (parse_smiles,
+  // mol_from_*, etc.) already enforces the same WASM_MAX_ATOMS limit at
+  // construction time, so no oversized MolHandle can ever reach this
+  // function. That branch is verified directly at the Rust unit-test layer
+  // instead (pipeline_v2.rs's `atom_limit_exceeded` test, built via an
+  // internal-only oversized-mol constructor bypassing parse_smiles). What's
+  // testable from JS is that the size limit is enforced somewhere on the
+  // path -- confirmed here via parse_smiles itself.
+  assert.throws(
+    () => parse_smiles("C".repeat(10_001)), // WASM_MAX_ATOMS + 1
+    /[Ee]xceeds maximum atom count|too large/,
+    "oversized molecule must be rejected before any MolHandle exists",
+  );
+  console.log("atom-count limit: enforced at MolHandle construction (parse_smiles), ok");
+}
+
 // ---------------------------------------------------------------------------
-// Finite/count/order checks across 4 fixtures -- BLOCKED by issue #219
-// (each of these is a full real run)
+// Finite/count/order checks across 4 fixtures
 // ---------------------------------------------------------------------------
 
 {
   const fixtures = ["CCCCCCCCCC", "c1ccc2ccccc2c1", "CC(=O)Oc1ccccc1C(=O)O", "CCC(C)C"];
   for (const smiles of fixtures) {
     const mol = parse_smiles(smiles);
-    assertTrapsPendingIssue219(
-      () => embed_pipeline_v2_json(mol, JSON.stringify(SAFE_CONFIG)),
-      `finite/count/order: ${smiles}`,
-    );
+    const response = JSON.parse(embed_pipeline_v2_json(mol, JSON.stringify(SAFE_CONFIG)));
+    assert.equal(response.ok, true, smiles);
+    assert.equal(response.result.coords.length, mol.atom_count(), smiles);
+    for (const [x, y, z] of response.result.coords) {
+      assert.ok(Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z), smiles);
+    }
   }
-  console.log("finite/count/order checks across 4 fixtures: trap per issue #219 (as expected today)");
+  console.log("finite/count/order checks across 4 fixtures: ok");
 }
 
 // ---------------------------------------------------------------------------
-// Cross-binding parity vs. the frozen Python-derived reference fixtures --
-// BLOCKED by issue #219 for the actual pipeline run; atom-count parsing
-// itself (mol.atom_count() vs. fixture.atomCount) does not touch the
-// pipeline and is still checked for real.
+// Cross-binding parity vs. the frozen Python-derived reference fixtures.
+// Covers decane/naphthalene/aspirin/branched success, declared tetrahedral
+// stereo, E/Z, ring-torsion fail-closed typed failure, and force-field
+// fallback -- structural fields only (atom count, coords length, stereo
+// counts, force-field actual/fallback, final soundness); timing excluded.
 // ---------------------------------------------------------------------------
 
 {
@@ -198,15 +217,52 @@ function assertTrapsPendingIssue219(fn, label) {
   for (const fixture of fixtures) {
     const mol = parse_smiles(fixture.smiles);
     assert.equal(mol.atom_count(), fixture.atomCount, `${fixture.name}: atom count`);
-    assertTrapsPendingIssue219(
-      () => embed_pipeline_v2_json(mol, JSON.stringify(fixture.config)),
-      `parity fixture: ${fixture.name}`,
-    );
+
+    const response = JSON.parse(embed_pipeline_v2_json(mol, JSON.stringify(fixture.config)));
+    assert.equal(response.ok, fixture.ok, `${fixture.name}: ok`);
+
+    if (fixture.ok) {
+      const { result } = response;
+      assert.equal(result.coords.length, fixture.coordsLength, `${fixture.name}: coords length`);
+      assert.equal(
+        result.stereoBefore.nDeclared,
+        fixture.stereoBeforeDeclared,
+        `${fixture.name}: stereoBefore.nDeclared`,
+      );
+      assert.equal(
+        result.finalStereo.nDeclared,
+        fixture.stereoAfterDeclared,
+        `${fixture.name}: finalStereo.nDeclared`,
+      );
+      assert.equal(
+        result.finalStereo.nViolations,
+        fixture.stereoAfterViolations,
+        `${fixture.name}: finalStereo.nViolations`,
+      );
+      assert.equal(
+        result.forceField.requestedForceField,
+        fixture.forceFieldRequested,
+        `${fixture.name}: forceField.requestedForceField`,
+      );
+      assert.equal(
+        result.forceField.actualForceFieldUsed,
+        fixture.forceFieldActual,
+        `${fixture.name}: forceField.actualForceFieldUsed`,
+      );
+      assert.equal(
+        result.forceField.fallbackReason !== null,
+        fixture.hasFallback,
+        `${fixture.name}: forceField fallback presence`,
+      );
+      assert.equal(result.finalValidation.sound, fixture.sound, `${fixture.name}: finalValidation.sound`);
+    } else {
+      assert.equal(response.error.stage, fixture.stage, `${fixture.name}: error.stage`);
+      assert.equal(response.error.cause.kind, fixture.causeKind, `${fixture.name}: error.cause.kind`);
+    }
   }
   console.log(
-    `cross-binding parity vs. Python reference (${fixtures.length} fixtures): atom counts ok, ` +
-      "pipeline run traps per issue #219 (as expected today)",
+    `cross-binding parity vs. Python reference (${fixtures.length} fixtures): all structural fields match`,
   );
 }
 
-console.log("pipeline_v2.test.mjs: all assertions passed (see issue #219 for the pending blocker)");
+console.log("pipeline_v2.test.mjs: all assertions passed");

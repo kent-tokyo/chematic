@@ -51,16 +51,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   oversized input/atom count, malformed JSON, unknown fields, unknown enum
   values, and out-of-range integers, all surfaced through the same envelope
   rather than a thrown exception.
-  - **Known blocker (issue #219): non-functional under real WASM today.**
-    `chematic_3d::pipeline_v2`/`distance_geometry_v2` call
-    `std::time::Instant::now()` unconditionally for timing/timeout
-    bookkeeping, which panics on `wasm32-unknown-unknown` (no host time
-    source) on every single call, regardless of config. Verified
-    natively (`cargo test -p chematic-wasm --lib`, 242/242 passing,
-    including Rust/Python/WASM parity fixtures via the raw JSON path) and
-    via the compiled export list, but not yet functional end-to-end in
-    Node or a browser. Fix is scoped to `chematic-3d` (out of scope here)
-    and tracked separately in #219.
+  - Rust-only pipeline, opt-in like the Python binding — not a default 3D
+    API, no behavior change to `generate_coords`/`etkdg`/existing WASM 3D
+    exports.
+  - Verified end-to-end under real WASM, both `wasm-pack --target nodejs`
+    and `--target web` (the latter is what `publish-npm.yml`/`pages.yml`
+    actually ship): success, typed-failure, and typed-timeout paths all
+    return real results — not just natively tested. Depended on #219's
+    `chematic-3d` clock fix; `std::time::Instant::now()` panicked
+    unconditionally on `wasm32-unknown-unknown` before that fix, which this
+    binding's first real-runtime run is what originally surfaced.
+  - New CI job (`test-wasm` in `ci.yml`) builds both wasm-pack targets and
+    runs the Node integration tests on every push/PR — chematic-wasm had no
+    WASM-runtime CI coverage at all before this.
 
 ### Deprecated — `chematic-3d`
 

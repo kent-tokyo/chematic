@@ -69,6 +69,47 @@ jobs:
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
 
+  test-wasm:
+    name: Test (WASM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Cache cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-wasm-
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.13.1 --locked
+      # chematic-wasm's Node integration tests (crates/chematic-wasm/tests/*.mjs)
+      # previously had zero CI coverage: nothing built the wasm32 target or ran
+      # them, so a real wasm32-unknown-unknown regression -- like issue #219's
+      # Instant::now() panicking under real WASM, which no native `cargo test`
+      # run could ever catch -- could ship silently. This job is that backstop.
+      - name: Build WASM (--target nodejs)
+        working-directory: crates/chematic-wasm
+        run: wasm-pack build --target nodejs --out-dir pkg-node --release
+      - name: Node integration tests
+        run: |
+          for f in crates/chematic-wasm/tests/*.test.mjs; do
+            echo "::group::$f"
+            node "$f"
+            echo "::endgroup::"
+          done
+      - name: Build WASM (--target web)
+        working-directory: crates/chematic-wasm
+        run: wasm-pack build --target web --out-dir pkg-web --release
+      - name: Web-target runtime smoke (via Node initSync)
+        run: node crates/chematic-wasm/tests/pipeline_v2_web_target.test.mjs
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
