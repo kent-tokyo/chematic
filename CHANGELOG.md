@@ -39,6 +39,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Rust-only; no algorithm change. Scope: Python binding only — no WASM
     binding, no RDKit benchmark (tracked as separate follow-up work).
 
+### Added — `chematic-wasm`
+
+- **`embed_pipeline_v2_json(mol, configJson)`**: WASM mirror of
+  `Mol.embed_pipeline_v2()` above, same 15-field config (camelCase JSON,
+  `deny_unknown_fields`, no silent defaults) and same per-stage evidence,
+  returned as a tagged-union JSON envelope
+  (`{"schemaVersion":1,"ok":true,"result":{...}}` /
+  `{"schemaVersion":1,"ok":false,"error":{...}}`). Applies directly to the
+  caller's own `MolHandle` — no canonicalize/reparse. Fail-closed on
+  oversized input/atom count, malformed JSON, unknown fields, unknown enum
+  values, and out-of-range integers, all surfaced through the same envelope
+  rather than a thrown exception.
+  - Rust-only pipeline, opt-in like the Python binding — not a default 3D
+    API, no behavior change to `generate_coords`/`etkdg`/existing WASM 3D
+    exports.
+  - Verified end-to-end under real WASM, both `wasm-pack --target nodejs`
+    and `--target web` (the latter is what `publish-npm.yml`/`pages.yml`
+    actually ship): success, typed-failure, and typed-timeout paths all
+    return real results — not just natively tested. Depended on #219's
+    `chematic-3d` clock fix; `std::time::Instant::now()` panicked
+    unconditionally on `wasm32-unknown-unknown` before that fix, which this
+    binding's first real-runtime run is what originally surfaced.
+  - New CI job (`test-wasm` in `ci.yml`) builds both wasm-pack targets and
+    runs the Node integration tests on every push/PR — chematic-wasm had no
+    WASM-runtime CI coverage at all before this.
+
 ### Deprecated — `chematic-3d`
 
 - **`generate_and_minimize_uff()` never ran chematic-ff's UFF, despite its name and doc

@@ -30,6 +30,10 @@ npm install @kent-tokyo/chematic
 - SVG grid layout for multiple molecules
 - Reaction SMILES/SMIRKS parsing and transform
 - Add/remove explicit hydrogens
+- `embed_pipeline_v2_json`: torsion-knowledge-aware 3D embedding + stereo
+  verification/repair + policy-gated force field, mirroring the Python
+  `Mol.embed_pipeline_v2()` binding — opt-in, not a default 3D API
+  ([usage](#3d-embedding-embed_pipeline_v2_json))
 
 ## Usage
 
@@ -95,6 +99,43 @@ const peoeVsa  = JSON.parse(peoe_vsa_json(mol));
 const ifg = JSON.parse(identify_functional_groups(mol));
 console.log(ifg); // [{"atoms":[1,2,3],"types":"OC=O"}, ...]
 ```
+
+### 3D embedding (`embed_pipeline_v2_json`)
+
+Opt-in — does not change behavior of any existing 3D API (`generate_coords`,
+`generate_and_minimize_*`, etc.), which remain the defaults.
+
+```js
+const response = JSON.parse(embed_pipeline_v2_json(mol, JSON.stringify({
+  embedSeed: 7,
+  maxAttempts: 8,
+  embedTimeoutMs: null,
+  useExpTorsions: false,
+  useSmallRingTorsions: false,
+  useMacrocycleTorsions: false,
+  useMacrocycle14Bounds: false,
+  includeLegacyTorsionHeuristic: false,
+  stereoPolicy: "ignore",
+  failOnUnevaluableStereo: false,
+  forceFieldPolicy: "none",
+  forceFieldMaxIterations: 200,
+  gateMmff94TorsionOop: false,
+  ringTorsionPolicy: "fail_closed",
+  totalTimeoutMs: null,
+})));
+// response.ok, response.result / response.error — same shape as
+// Mol.embed_pipeline_v2() in the Python binding.
+```
+
+Verified working end-to-end under real WASM (both `wasm-pack --target nodejs`
+and `--target web`, the latter being what this package's npm build actually
+uses) — success, typed-failure, and typed-timeout paths all return real
+results. `embedTimeoutMs`/`totalTimeoutMs` use a monotonic clock that's
+portable across native and `wasm32-unknown-unknown`
+([`web-time`](https://crates.io/crates/web-time), backed by
+`Performance.now()` in the browser); this does not claim identical wall-clock
+precision across every JS engine, only that the value is finite, non-negative,
+and enforced correctly on all of them.
 
 ## Version History
 
