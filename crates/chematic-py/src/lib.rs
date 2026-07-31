@@ -20,6 +20,7 @@ type RdkitMorganDetail = (
 mod formats;
 mod misc;
 mod mol_methods;
+mod pipeline_v2;
 mod reactions;
 mod reports;
 mod rwmol;
@@ -67,6 +68,11 @@ impl Mol {
 fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Mol>()?;
     m.add_class::<rwmol::RWMol>()?;
+    m.add_class::<pipeline_v2::PyPipelineV2Config>()?;
+    m.add(
+        "PipelineV2Error",
+        m.py().get_type::<pipeline_v2::PipelineV2Error>(),
+    )?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
 
     // bulk submodule

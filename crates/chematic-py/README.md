@@ -74,6 +74,22 @@ hits = chematic.bulk.substructure_match("[OH]", mols)  # → [0, 1, 2]
 import pandas as pd
 smiles = ["CCO", "c1ccccc1", "CC(=O)O"]
 df = pd.DataFrame([chematic.from_smiles(s).descriptors() for s in smiles])
+
+# Opt-in v2 embedding pipeline: torsion-knowledge-aware distance geometry +
+# stereo verification/repair + policy-gated force field, with full per-stage
+# evidence (never just final coordinates)
+config = chematic.PipelineV2Config.safe(
+    force_field="mmff94_with_uff_fallback",
+    stereo_policy="repair_and_verify",
+    ring_torsion_policy="fail_closed",
+)
+try:
+    result = mol.embed_pipeline_v2(config)
+    coords = result["coords"]                       # same atom order as mol
+    print(result["force_field"]["actual_force_field_used"])  # fallback if MMFF94 lacked params
+    print(result["final_validation"]["sound"])
+except chematic.PipelineV2Error as e:
+    print(e.diagnostics["stage"], e.diagnostics["cause"])   # structured, not just a message
 ```
 
 ## Features
@@ -88,6 +104,7 @@ df = pd.DataFrame([chematic.from_smiles(s).descriptors() for s in smiles])
 - **SMARTS substructure search** — `chematic.smarts_match()` and `bulk.substructure_match(smarts, mols)` (pre-parsed Mol list, returns indices)
 - **SVG / PDF / EPS depiction**: `mol.to_svg()`, `mol.to_pdf()`, `mol.to_eps()`
 - **ChemicalJSON**: `mol.to_cjson(coords=[])`, `chematic.from_cjson(s)` — Avogadro 2 / MolSSI compatible
+- **Opt-in v2 embedding pipeline**: `mol.embed_pipeline_v2(config)` — torsion-knowledge-aware distance geometry, stereo verify/repair, and policy-gated force field (`PipelineV2Config`), returning full per-stage evidence (embed stats, torsion knowledge/optimization reports, stereo before/after, force-field actual policy and fallback, final geometry validation, stage timings) instead of just coordinates; raises `chematic.PipelineV2Error` with structured `.diagnostics` on failure
 
 ## RDKit compatibility
 

@@ -2582,6 +2582,37 @@ impl Mol {
         Ok(d)
     }
 
+    /// Run the opt-in v2 embedding pipeline (torsion-knowledge-aware distance
+    /// geometry + stereo verification/repair + policy-gated force field).
+    ///
+    /// Applied directly to this ``Mol``'s own atom order -- never
+    /// canonicalizes/reparses first (see issue #172; the fix in
+    /// :meth:`conformer_ensemble` is the precedent this follows), so the
+    /// returned ``coords`` and every atom/bond index in the result dict
+    /// correspond 1:1 to this ``Mol``'s existing atom/bond tables.
+    ///
+    /// ``config``: a :class:`PipelineV2Config`.
+    ///
+    /// Returns a dict with keys: ``coords``, ``embed_stats``,
+    /// ``bound_adjustment_report``, ``torsion_knowledge_report``,
+    /// ``ring_torsion_evidence``, ``torsion_optimization_report``,
+    /// ``stereo_before``, ``stereo_repair``, ``stereo_after_repair``,
+    /// ``force_field``, ``final_stereo``, ``final_validation``,
+    /// ``elapsed_ms_by_stage``.
+    ///
+    /// Raises :class:`PipelineV2Error` (a ``ValueError`` subclass) on
+    /// failure. ``error.diagnostics`` carries the same per-stage partial
+    /// evidence a Rust caller sees on ``PipelineV2Failure`` --
+    /// ``diagnostics['last_known_coords']`` is diagnostic only, never a
+    /// usable result (see ``diagnostics['coords_are_diagnostic_only']``).
+    fn embed_pipeline_v2<'py>(
+        &self,
+        py: Python<'py>,
+        config: &crate::pipeline_v2::PyPipelineV2Config,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        crate::pipeline_v2::run_embed_pipeline_v2(py, &self.inner, config)
+    }
+
     /// Scan a torsion dihedral (atoms i–j–k–l) over 360° in ``steps`` increments.
     ///
     /// Returns a list of ``(angle_deg, energy_kcal)`` pairs. The molecule is not modified.

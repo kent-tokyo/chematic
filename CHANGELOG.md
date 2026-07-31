@@ -9,7 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet — everything below `[0.8.1]` has shipped._
+### Added — `chematic-py`
+
+- **`Mol.embed_pipeline_v2(config)`**: Python binding for the Rust-only
+  `chematic_3d::pipeline_v2::embed_pipeline_v2` (torsion-knowledge-aware
+  distance geometry + stereo verification/repair + policy-gated force
+  field). New `PipelineV2Config` class mirrors the Rust config's
+  deliberate lack of a `Default` — every field is required at the
+  low-level constructor; `PipelineV2Config.safe(force_field=..., stereo_policy=...,
+  ring_torsion_policy=...)` is a convenience constructor that still keeps
+  those three policy choices explicit, never hidden defaults.
+  - Returns a dict with full per-stage evidence — `coords`, `embed_stats`,
+    `bound_adjustment_report`, `torsion_knowledge_report`,
+    `ring_torsion_evidence`, `torsion_optimization_report`,
+    `stereo_before`/`stereo_repair`/`stereo_after_repair`, `force_field`
+    (actual policy used + fallback reason, never silently substituted),
+    `final_stereo`, `final_validation`, `elapsed_ms_by_stage` — never just
+    final coordinates.
+  - New `PipelineV2Error` exception (a `ValueError` subclass) on pipeline
+    failure, carrying a structured `.diagnostics` dict with the same
+    per-stage partial evidence a Rust caller sees on `PipelineV2Failure`.
+    `diagnostics["last_known_coords"]` is explicitly flagged
+    (`coords_are_diagnostic_only: True`) so it can never be mistaken for a
+    usable result.
+  - Applies directly to the caller's own `Mol` atom order — never
+    canonicalizes/reparses first (the issue #172 `conformer_ensemble()`
+    mistake), verified with dedicated atom-order-permutation regression
+    tests.
+  - Rust-only; no algorithm change. Scope: Python binding only — no WASM
+    binding, no RDKit benchmark (tracked as separate follow-up work).
+
+_Nothing else yet — everything below `[0.8.1]` has shipped._
 
 ## [0.8.1] — 2026-07-30
 
