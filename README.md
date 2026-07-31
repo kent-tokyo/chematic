@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.8.1
+# chematic v0.9.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -409,13 +409,20 @@ See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for al
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace --lib --quiet                                          # 2,812 tests, all passing (2026-07-27)
+cargo test --workspace --lib --quiet                                          # 3,207 tests, all passing (2026-08-01)
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +16 IUPAC-exact InChI tests
 ```
 
 ---
 
 ## Recent Development
+
+**v0.9.0** (2026-08-01): **Opt-in 3D embedding pipeline v2 in Python + WASM, WASM-portable monotonic clock**
+- `chematic-py`: `Mol.embed_pipeline_v2(config)` — Python binding for the Rust-only `pipeline_v2::embed_pipeline_v2` (torsion-knowledge-aware distance geometry + stereo verification/repair + policy-gated force field), returning full per-stage evidence (never just final coordinates) and a typed `PipelineV2Error` with structured, diagnostic-only partial evidence on failure. Applies directly to the caller's own atom order — no canonicalize/reparse. Additive; no existing default 3D API changed
+- `chematic-wasm`: `embed_pipeline_v2_json(mol, configJson)` — WASM mirror of the above, same config/evidence shape as a tagged-union JSON envelope. New CI job builds both `wasm-pack` targets (`nodejs`/`web`) and runs the Node integration suite on every push/PR — this repo had zero WASM-runtime CI coverage before this
+- `chematic-3d`/`chematic-smarts`: fixed `std::time::Instant::now()` panicking unconditionally under real `wasm32-unknown-unknown` (issues #219, #221) — the pipeline v2 binding's own first real-runtime run is what surfaced this pre-existing gap. Fixed via a small crate-internal `clock` module (`web_time::Instant` on wasm32, `std::time::Instant` elsewhere) in each affected crate; no chemistry/geometry/torsion/force-field or timeout-contract change
+- `chematic-3d`: `generate_and_minimize_uff()` deprecated (issue #204) — it never ran chematic-ff's real UFF despite its name; kept, not removed, not behavior-changed
+- Full details in `CHANGELOG.md`'s `[0.9.0]` section
 
 **v0.8.1** (2026-07-30): **`canonical_smiles()` explicit/implicit hydrogen-count correctness fix**
 - `chematic-smiles`/`chematic-core`: two representations of the same molecule that differ only in whether an atom's H count came from bracket notation (`[Cl]`) or organic-subset notation (`Cl`) — when the explicit value merely repeats what valence inference gives anyway — now canonicalize identically; `initial_invariant`'s Morgan-rank seed and the canonical writer's bracket-necessity check previously read the raw `hydrogen_count` field directly instead of the crate's own `implicit_hcount()` unifier. Isotope, charge, real stereochemistry, and any genuinely disambiguating explicit H count remain fully distinguishing — only the redundant case is unified. Found via [kent-tokyo/renkin PR #65](https://github.com/kent-tokyo/renkin/pull/65) (a `run_reactants` product from a bracket-notation SMIRKS template diverging from a directly user-typed SMILES of the identical compound). Some canonical SMILES output strings for existing inputs will change as a direct, intended consequence — see `CHANGELOG.md`'s `[0.8.1]` Migration notes if you depend on exact string stability across versions
@@ -593,7 +600,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.8.1)
+├── Cargo.toml                    workspace root (v0.9.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -646,7 +653,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.8.1},
+  version   = {0.9.0},
   year      = {2026},
 }
 ```
