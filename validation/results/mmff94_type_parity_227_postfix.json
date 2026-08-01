@@ -1,0 +1,155 @@
+{
+  "total_comparable_atoms": 6693,
+  "exact_id_match": 6146,
+  "exact_id_match_pct": 91.83,
+  "real_mismatch": 547,
+  "real_mismatch_pct": 8.17,
+  "cross_element_mismatch": 0,
+  "unclassified": 0,
+  "chematic_typing_failure_molecules": [
+    "force_field_unsupported_probe"
+  ],
+  "rdkit_unavailable_molecules": [],
+  "mismatch_groups": [
+    {
+      "element": "C",
+      "chematic_symbol": "CB",
+      "rdkit_symbol": "C=O",
+      "count": 135,
+      "example": "caffeine#6"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NR",
+      "rdkit_symbol": "NC=C",
+      "count": 113,
+      "example": "chembl_tier_b_0009#23"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NPD+",
+      "rdkit_symbol": "NC=O",
+      "count": 64,
+      "example": "caffeine#8"
+    },
+    {
+      "element": "C",
+      "chematic_symbol": "CB",
+      "rdkit_symbol": "C=C",
+      "count": 48,
+      "example": "chembl_tier_b_0009#15"
+    },
+    {
+      "element": "C",
+      "chematic_symbol": "CR",
+      "rdkit_symbol": "CR4R",
+      "count": 44,
+      "example": "cubane#0"
+    },
+    {
+      "element": "O",
+      "chematic_symbol": "O=C",
+      "rdkit_symbol": "O2CM",
+      "count": 35,
+      "example": "chembl_tier_b_0008#2"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NPYD",
+      "rdkit_symbol": "N=C",
+      "count": 32,
+      "example": "chembl_tier_b_0000#5"
+    },
+    {
+      "element": "C",
+      "chematic_symbol": "CR",
+      "rdkit_symbol": "CR3R",
+      "count": 31,
+      "example": "chembl_tier_b_0020#13"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NPD+",
+      "rdkit_symbol": "NC=C",
+      "count": 16,
+      "example": "chembl_tier_b_0120#24"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NPD+",
+      "rdkit_symbol": "N+=C",
+      "count": 8,
+      "example": "chembl_tier_b_0009#13"
+    },
+    {
+      "element": "C",
+      "chematic_symbol": "C=C",
+      "rdkit_symbol": "C=O",
+      "count": 7,
+      "example": "chembl_tier_b_0048#11"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "N=C",
+      "rdkit_symbol": "NSP",
+      "count": 2,
+      "example": "chembl_tier_b_0001#22"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NR",
+      "rdkit_symbol": "NSO2",
+      "count": 2,
+      "example": "chembl_tier_b_0022#10"
+    },
+    {
+      "element": "C",
+      "chematic_symbol": "C=O",
+      "rdkit_symbol": "CSP",
+      "count": 2,
+      "example": "chembl_tier_b_0071#18"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NR",
+      "rdkit_symbol": "NC=O",
+      "count": 2,
+      "example": "chembl_tier_b_0072#18"
+    },
+    {
+      "element": "O",
+      "chematic_symbol": "OM",
+      "rdkit_symbol": "O2CM",
+      "count": 2,
+      "example": "chembl_tier_b_0159#13"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NR+",
+      "rdkit_symbol": "=N=",
+      "count": 1,
+      "example": "chembl_tier_b_0080#19"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "N=C",
+      "rdkit_symbol": "NAZT",
+      "count": 1,
+      "example": "chembl_tier_b_0080#20"
+    },
+    {
+      "element": "N",
+      "chematic_symbol": "NR+",
+      "rdkit_symbol": "NO2",
+      "count": 1,
+      "example": "chembl_tier_b_0159#11"
+    },
+    {
+      "element": "S",
+      "chematic_symbol": "S",
+      "rdkit_symbol": "S=O",
+      "count": 1,
+      "example": "chembl_tier_b_0161#14"
+    }
+  ]
+}

@@ -15,6 +15,7 @@ pub mod mmff94_bci;
 pub mod mmff94_energy;
 pub mod mmff94_minimizer;
 pub mod mmff94_numeric;
+pub mod mmff94_numeric_type_registry;
 pub mod mmff94_params;
 pub mod params;
 pub mod uff;
@@ -36,6 +37,7 @@ pub use mmff94_minimizer::{
 pub use mmff94_numeric::{
     NumericTypeError, assign_mmff94_numeric_types, mmff94_charges_numeric, pbci_for,
 };
+pub use mmff94_numeric_type_registry::{Mmff94NumericTypeInfo, mmff94_numeric_type_info};
 pub use mmff94_params::{
     AngleParams, BondDipoleParams, BondParams, ChargeParams, ElectrostaticScalingParams,
     MMFF94MoleculeProperties, TorsionParams, VdWParams, mmff94_angle_params, mmff94_bond_dipole,

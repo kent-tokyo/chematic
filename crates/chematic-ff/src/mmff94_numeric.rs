@@ -20,8 +20,7 @@
 
 #![allow(clippy::approx_constant)]
 
-use chematic_core::{AtomIdx, BondOrder, Element, Molecule};
-use chematic_perception::ring_sizes_for_atom;
+use chematic_core::{AtomIdx, BondOrder, Element, Molecule, implicit_hcount};
 
 // ── Error type ──────────────────────────────────────────────────────────────
 
@@ -696,14 +695,15 @@ fn bond_type_for(order: BondOrder) -> u8 {
 pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTypeError> {
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
+    let rings = chematic_perception::find_sssr(mol).rings().to_vec();
 
     for (i, ty) in types.iter_mut().enumerate().take(n) {
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
         let t = match atom.element {
-            Element::C => assign_c_type(mol, idx)?,
-            Element::N => assign_n_type(mol, idx)?,
-            Element::O => assign_o_type(mol, idx)?,
+            Element::C => assign_c_type(mol, &rings, idx)?,
+            Element::N => assign_n_type(mol, &rings, idx)?,
+            Element::O => assign_o_type(mol, &rings, idx)?,
             Element::S => assign_s_type(mol, idx)?,
             Element::P => assign_p_type(mol, idx)?,
             Element::SI => 19,
@@ -721,7 +721,47 @@ pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTyp
         };
         *ty = t;
     }
+
+    // Construction-time semantic-compatibility invariant (issue #227,
+    // Phase 1B-0): a numeric type assigned to an atom must represent the
+    // same element the registry says it does. This can only fire if a
+    // `assign_*_type` function above has a bug (assigns a type belonging to
+    // the wrong element's registry entry) -- it is a defense-in-depth
+    // backstop, not the primary correctness mechanism, but it converts any
+    // such bug from a silent wrong-parameter collision (issue #227's
+    // `furan` finding: a real-but-semantically-wrong table row silently
+    // accepted because the lookup only ever checked `Some`/`None`) into a
+    // typed, fail-closed `Err` here instead.
+    for (i, &assigned) in types.iter().enumerate().take(n) {
+        let idx = AtomIdx(i as u32);
+        let actual_element = mol.atom(idx).element;
+        match chematic_ff_numeric_type_registry_lookup(assigned) {
+            Some(info) if info.element == actual_element => {}
+            Some(info) => {
+                return Err(NumericTypeError(format!(
+                    "internal error: atom {i} ({actual_element:?}) was assigned MMFF94 \
+                     numeric type {assigned} ({}), whose registry element is {:?} -- \
+                     semantic-compatibility invariant violated",
+                    info.symbol, info.element
+                )));
+            }
+            None => {
+                return Err(NumericTypeError(format!(
+                    "internal error: atom {i} ({actual_element:?}) was assigned MMFF94 \
+                     numeric type {assigned}, which does not exist in the numeric type \
+                     registry"
+                )));
+            }
+        }
+    }
+
     Ok(types)
+}
+
+fn chematic_ff_numeric_type_registry_lookup(
+    id: u8,
+) -> Option<&'static crate::mmff94_numeric_type_registry::Mmff94NumericTypeInfo> {
+    crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(id)
 }
 
 // ── Helper: bond iteration ───────────────────────────────────────────────────
@@ -758,33 +798,173 @@ fn count_bond_order(mol: &Molecule, idx: AtomIdx, order: BondOrder) -> usize {
         .count()
 }
 
-fn neighbor_elements(mol: &Molecule, idx: AtomIdx) -> Vec<Element> {
-    bonds_of(mol, idx)
-        .iter()
-        .map(|b| mol.atom(b.neighbor).element)
-        .collect()
-}
-
 fn is_bonded_to(mol: &Molecule, idx: AtomIdx, elem: Element, order: BondOrder) -> bool {
     bonds_of(mol, idx)
         .iter()
         .any(|b| mol.atom(b.neighbor).element == elem && b.order == order)
 }
 
-/// True if atom `idx` is bonded by any bond type to atom of `elem`.
-fn is_neighbor(mol: &Molecule, idx: AtomIdx, elem: Element) -> bool {
-    neighbor_elements(mol, idx).contains(&elem)
+// ── Aromatic ring helpers ────────────────────────────────────────────────────
+//
+// Faithful port of RDKit's `RingMembershipSize`/`isAtomNOxide`
+// (`Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp`, tag
+// `Release_2026_03_3`, commit `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f` --
+// see `scripts/mmff94_provenance/PROVENANCE.md`), not a re-derivation. An
+// "aromatic ring of size N" requires every consecutive bond in the ring to
+// literally be `BondOrder::Aromatic` (chematic's SMILES parser already
+// represents aromatic-SMILES ring bonds this way, matching RDKit's
+// `Bond::AROMATIC` requirement in `isRingAromatic`), not just that the
+// endpoint atoms carry `aromatic = true`.
+
+fn ring_is_fully_aromatic(mol: &Molecule, ring: &[AtomIdx]) -> bool {
+    let n = ring.len();
+    (0..n).all(|i| {
+        let a = ring[i];
+        let b = ring[(i + 1) % n];
+        matches!(
+            mol.bond_between(a, b).map(|(_, e)| e.order),
+            Some(BondOrder::Aromatic)
+        )
+    })
+}
+
+fn atom_in_aromatic_ring_of_size(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    atom: AtomIdx,
+    size: usize,
+) -> bool {
+    rings
+        .iter()
+        .any(|r| r.len() == size && r.contains(&atom) && ring_is_fully_aromatic(mol, r))
+}
+
+fn atoms_share_aromatic_ring_of_size(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    a: AtomIdx,
+    b: AtomIdx,
+    size: usize,
+) -> bool {
+    rings.iter().any(|r| {
+        r.len() == size && r.contains(&a) && r.contains(&b) && ring_is_fully_aromatic(mol, r)
+    })
+}
+
+/// RDKit's `getTotalDegree()`: heavy-atom bond count plus implicit/explicit
+/// hydrogens.
+fn total_degree(mol: &Molecule, idx: AtomIdx) -> usize {
+    bonds_of(mol, idx).len() + implicit_hcount(mol, idx) as usize
+}
+
+/// RDKit's `isAtomNOxide`: a >=3-connected nitrogen with a terminal
+/// (degree-1) oxygen neighbor.
+fn is_atom_n_oxide(mol: &Molecule, idx: AtomIdx) -> bool {
+    if mol.atom(idx).element != Element::N || total_degree(mol, idx) < 3 {
+        return false;
+    }
+    bonds_of(mol, idx)
+        .iter()
+        .any(|b| mol.atom(b.neighbor).element == Element::O && total_degree(mol, b.neighbor) == 1)
+}
+
+/// The alpha/beta heteroatom classification RDKit's `setMMFFHeavyAtomType`
+/// computes once per aromatic 5-ring C/N atom and reuses across several
+/// branches. `alpha`/`beta` neighbors are ring-adjacent O/S/(non-N-oxide,
+/// 3-connected) N in the *same* 5-membered aromatic ring as `atom`.
+struct AlphaBetaHeteroatoms {
+    alpha: Vec<AtomIdx>,
+    beta: Vec<AtomIdx>,
+    is_alpha_os: bool,
+    is_beta_os: bool,
+    alpha_or_beta_in_same_ring: bool,
+}
+
+fn is_alpha_beta_heteroatom_candidate(mol: &Molecule, idx: AtomIdx) -> bool {
+    let atom = mol.atom(idx);
+    matches!(atom.element, Element::O | Element::S)
+        || (atom.element == Element::N && total_degree(mol, idx) == 3 && !is_atom_n_oxide(mol, idx))
+}
+
+fn find_alpha_beta_heteroatoms(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    atom: AtomIdx,
+) -> AlphaBetaHeteroatoms {
+    let mut alpha = Vec::new();
+    let mut beta = Vec::new();
+
+    if matches!(mol.atom(atom).element, Element::C | Element::N) {
+        for nb in bonds_of(mol, atom) {
+            let nbr = nb.neighbor;
+            if !atom_in_aromatic_ring_of_size(mol, rings, nbr, 5) {
+                continue;
+            }
+            if atoms_share_aromatic_ring_of_size(mol, rings, atom, nbr, 5)
+                && is_alpha_beta_heteroatom_candidate(mol, nbr)
+            {
+                alpha.push(nbr);
+            }
+            for nb2 in bonds_of(mol, nbr) {
+                let nbr2 = nb2.neighbor;
+                if nbr2 == atom {
+                    continue;
+                }
+                if !atom_in_aromatic_ring_of_size(mol, rings, nbr2, 5) {
+                    continue;
+                }
+                if atoms_share_aromatic_ring_of_size(mol, rings, atom, nbr2, 5)
+                    && is_alpha_beta_heteroatom_candidate(mol, nbr2)
+                {
+                    beta.push(nbr2);
+                }
+            }
+        }
+    }
+
+    let is_alpha_os = alpha
+        .iter()
+        .any(|&a| matches!(mol.atom(a).element, Element::O | Element::S));
+    let is_beta_os = beta
+        .iter()
+        .any(|&b| matches!(mol.atom(b).element, Element::O | Element::S));
+    let alpha_or_beta_in_same_ring = !alpha.is_empty()
+        && !beta.is_empty()
+        && alpha.iter().any(|&a| {
+            beta.iter()
+                .any(|&b| atoms_share_aromatic_ring_of_size(mol, rings, a, b, 5))
+        });
+
+    AlphaBetaHeteroatoms {
+        alpha,
+        beta,
+        is_alpha_os,
+        is_beta_os,
+        alpha_or_beta_in_same_ring,
+    }
 }
 
 // ── C type assignment ────────────────────────────────────────────────────────
 
-fn assign_c_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+fn assign_c_type(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    idx: AtomIdx,
+) -> Result<u8, NumericTypeError> {
     let atom = mol.atom(idx);
 
-    // Aromatic: detect 5-ring vs 6-ring
-    if atom.aromatic {
-        return Ok(aromatic_c_type(mol, idx));
+    // Aromatic: detect 5-ring vs 6-ring (RDKit AtomTyper.cpp, aromatic block)
+    if atom.aromatic
+        && let Some(t) = aromatic_c_type(mol, rings, idx)
+    {
+        return Ok(t);
     }
+    // Aromatic-flagged but not in a fully-aromatic-bonded 5- or 6-ring (e.g.
+    // a Kekule-only representation slipping through, or an aromatic ring
+    // size MMFF94 doesn't special-case) -- fall through to the aliphatic
+    // rules below rather than silently mis-assign a wrong-element type,
+    // matching RDKit's own fallthrough when its aromatic switch doesn't set
+    // atomType.
 
     let double_bonds = count_bond_order(mol, idx, BondOrder::Double);
     let triple_bonds = count_bond_order(mol, idx, BondOrder::Triple);
@@ -810,49 +990,85 @@ fn assign_c_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     Ok(1) // CR alkyl carbon
 }
 
-fn aromatic_c_type(mol: &Molecule, idx: AtomIdx) -> u8 {
-    // 6-membered aromatic ring → type 63 (CB, benzene-type)
-    let ring_sizes = ring_sizes_for_atom(mol, idx.0 as usize);
-    let in_6 = ring_sizes.contains(&6);
-    let in_5 = ring_sizes.contains(&5);
+/// Faithful port of RDKit's aromatic-carbon cases (`AtomTyper.cpp`
+/// `setMMFFHeavyAtomType`, `case 6:` under both the 5-ring and 6-ring
+/// aromatic switches). Returns `None` if the atom is flagged aromatic but
+/// isn't actually in a fully-aromatic-bonded 5- or 6-membered ring.
+///
+/// Not ported: CIM+ (type 80, aromatic C between two imidazolium N's) --
+/// rare in the corpus this targets and not yet needed to close the
+/// dominant gap; falls through to C5/C5A/C5B below instead of being
+/// misclassified as a different element (still element-correct, just not
+/// maximally specific).
+fn aromatic_c_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> Option<u8> {
+    if atom_in_aromatic_ring_of_size(mol, rings, idx, 5) {
+        let het = find_alpha_beta_heteroatoms(mol, rings, idx);
 
-    if in_6 && !in_5 {
-        return 63; // CB: benzene/pyridine ring carbon
-    }
-
-    // 5-membered ring: alpha (37) vs beta (38) vs generic (39)
-    if in_5 {
-        // C5A: aromatic C in 5-ring alpha to a heteroatom (N/O/S)
-        let has_hetero_neighbor = neighbor_elements(mol, idx)
-            .into_iter()
-            .any(|e| matches!(e, Element::N | Element::O | Element::S));
-        if has_hetero_neighbor {
-            return 37; // C5A
+        // General C5: no alpha/beta heteroatoms but ring not all benzene-like,
+        // or alpha+beta present but in different rings / neither is O/S.
+        if het.alpha.len() == het.beta.len() {
+            let surrounded_by_benzene_c = bonds_of(mol, idx).iter().all(|nb| {
+                mol.atom(nb.neighbor).element == Element::C
+                    && atom_in_aromatic_ring_of_size(mol, rings, nb.neighbor, 6)
+            });
+            let surrounded_by_arom = bonds_of(mol, idx).iter().all(|nb| {
+                !atoms_share_aromatic_ring_of_size(mol, rings, idx, nb.neighbor, 5)
+                    || mol.atom(nb.neighbor).aromatic
+            });
+            if (het.alpha.is_empty()
+                && het.beta.is_empty()
+                && !surrounded_by_benzene_c
+                && surrounded_by_arom)
+                || (!het.alpha.is_empty()
+                    && !het.beta.is_empty()
+                    && (!het.alpha_or_beta_in_same_ring || (!het.is_alpha_os && !het.is_beta_os)))
+            {
+                return Some(78); // C5: general 5-ring aromatic C
+            }
         }
-        return 38; // C5B
+        if !het.alpha.is_empty() && (het.beta.is_empty() || het.is_alpha_os) {
+            return Some(63); // C5A: alpha to N/O/S
+        }
+        if !het.beta.is_empty() && (het.alpha.is_empty() || het.is_beta_os) {
+            return Some(64); // C5B: beta to N/O/S
+        }
     }
 
-    // Fused ring (in both 5 and 6): use 63 for bridging positions
-    64 // C_6ring (variant bridging position)
+    if atom_in_aromatic_ring_of_size(mol, rings, idx, 6) {
+        return Some(37); // CB: benzene/pyridine-ring carbon
+    }
+
+    None
 }
 
 // ── N type assignment ────────────────────────────────────────────────────────
 
-fn assign_n_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+fn assign_n_type(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    idx: AtomIdx,
+) -> Result<u8, NumericTypeError> {
     let atom = mol.atom(idx);
 
     // Aromatic nitrogen
-    if atom.aromatic {
-        return Ok(aromatic_n_type(mol, idx));
+    if atom.aromatic
+        && let Some(t) = aromatic_n_type(mol, rings, idx)
+    {
+        return Ok(t);
     }
 
     let double_bonds = count_bond_order(mol, idx, BondOrder::Double);
     let triple_bonds = count_bond_order(mol, idx, BondOrder::Triple);
     let nbrs = bonds_of(mol, idx);
 
-    // Formal charge: quaternary ammonium / protonated N
+    // Formal charge: quaternary ammonium / protonated N.
+    // Registry-verified: type 34 is NR+ (N+, QUATERNARY N); type 32 is
+    // O2CM (O, CARBOXYLATE ANION), an oxygen-only type -- the previous
+    // `32` here was exactly the silent element-collision the numeric
+    // type registry's construction-time invariant now catches instead
+    // of allowing through as a false "success".
     if atom.charge > 0 {
-        return Ok(32); // NR+
+        return Ok(34); // NR+
     }
 
     // Nitrile / isocyanide (N≡C)
@@ -892,35 +1108,81 @@ fn assign_n_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     Ok(8) // NR plain amine
 }
 
-fn aromatic_n_type(mol: &Molecule, idx: AtomIdx) -> u8 {
-    let ring_sizes = ring_sizes_for_atom(mol, idx.0 as usize);
-    let in_5 = ring_sizes.contains(&5);
-
-    // Check if atom has an explicit H or implicit H (pyrrole-type)
-    let has_h = is_neighbor(mol, idx, Element::H);
-
-    if in_5 {
-        if has_h {
-            return 40; // N5A: pyrrole-type NH (5-ring)
+/// Faithful port of RDKit's aromatic-nitrogen cases (`AtomTyper.cpp`
+/// `setMMFFHeavyAtomType`, `case 7:` under both the 5-ring and 6-ring
+/// aromatic switches). Returns `None` if the atom is flagged aromatic but
+/// isn't actually in a fully-aromatic-bonded 5- or 6-membered ring.
+///
+/// Not ported: the 5-ring N-oxide alpha/beta/other sub-distinction (N5AX
+/// vs N5BX vs N5OX) -- RDKit itself collapses all three to numeric type 82,
+/// so this does too, faithfully, not as a simplification of RDKit's own
+/// behavior.
+fn aromatic_n_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> Option<u8> {
+    if atom_in_aromatic_ring_of_size(mol, rings, idx, 5) {
+        if is_atom_n_oxide(mol, idx) {
+            return Some(82); // N5AX/N5BX/N5OX, collapsed like RDKit's own code
         }
-        return 58; // N5+: imidazole-type N= (5-ring)
+        let het = find_alpha_beta_heteroatoms(mol, rings, idx);
+        if het.alpha.is_empty() && het.beta.is_empty() {
+            if total_degree(mol, idx) == 3 {
+                return Some(39); // NPYL: pyrrole-type N with pi lone pair
+            }
+            return Some(76); // N5M: anionic 5-ring aromatic N
+        }
+        if total_degree(mol, idx) == 3 && het.alpha.len() != het.beta.len() {
+            return Some(81); // NIM+/N5A+/N5B+/N5+: positively charged 5-ring N
+        }
+        if !het.alpha.is_empty() && (het.beta.is_empty() || het.is_alpha_os) {
+            return Some(65); // N5A: alpha to N/O/S
+        }
+        if !het.beta.is_empty() && (het.alpha.is_empty() || het.is_beta_os) {
+            return Some(66); // N5B: beta to N/O/S
+        }
+        if !het.alpha.is_empty() && !het.beta.is_empty() {
+            return Some(79); // N5: general 5-ring aromatic N
+        }
     }
 
-    // 6-ring aromatic N (pyridine-type)
-    67 // N6A pyridine N
+    if atom_in_aromatic_ring_of_size(mol, rings, idx, 6) {
+        if is_atom_n_oxide(mol, idx) {
+            return Some(69); // NPOX: pyridinium N-oxide
+        }
+        if total_degree(mol, idx) == 3 {
+            return Some(58); // NPD+: protonated pyridinium N
+        }
+        return Some(38); // NPYD: neutral pyridine-type N
+    }
+
+    None
 }
 
 // ── O type assignment ────────────────────────────────────────────────────────
 
-fn assign_o_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
+fn assign_o_type(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    idx: AtomIdx,
+) -> Result<u8, NumericTypeError> {
+    // Aromatic 5-ring oxygen (furan-type) -- RDKit's aromatic switch has no
+    // 6-ring case for oxygen (no common neutral 6-ring aromatic O in the
+    // chemistry this typer covers), so only the 5-ring case is ported.
+    if mol.atom(idx).aromatic && atom_in_aromatic_ring_of_size(mol, rings, idx, 5) {
+        return Ok(59); // OFUR
+    }
+
     // Double bond to C or N → carbonyl/similar oxygen (type 7)
     if count_bond_order(mol, idx, BondOrder::Double) > 0 {
         return Ok(7); // O=C
     }
 
-    // Anionic O (formal charge -1): carboxylate/phenoxide
+    // Anionic O (formal charge -1): carboxylate/phenoxide.
+    // Registry-verified: type 35 is OM (OXIDE OXYGEN ON SP3 C); type 34
+    // is NR+, a nitrogen-only type -- the previous `34` here was the
+    // same class of silent element collision fixed in `assign_n_type`
+    // above (that function's protonated-N branch had the mirror-image
+    // bug: it returned 32, O2CM's id, instead of 34).
     if mol.atom(idx).charge < 0 {
-        return Ok(34); // O- anionic oxygen
+        return Ok(35); // OM
     }
 
     // Single-bond O (ether, alcohol, ester, amide O)
@@ -1143,27 +1405,159 @@ mod tests {
     }
 
     #[test]
-    fn benzene_aromatic_c_is_type_63() {
+    fn benzene_aromatic_c_is_type_37() {
+        // Issue #227 Phase 1B-0: was asserting the old wrong value (63,
+        // which the real Halgren/RDKit numbering assigns to a 5-ring alpha
+        // carbon, not benzene). Verified against a live RDKit oracle
+        // (`AllChem.MMFFGetMoleculeProperties` on benzene, this PR's audit).
         let m = mol("c1ccccc1");
         let types = assign_mmff94_numeric_types(&m).unwrap();
         for i in 0..m.atom_count() {
             let a = m.atom(AtomIdx(i as u32));
             if a.element == Element::C {
-                assert_eq!(types[i], 63, "benzene C should be type 63 (CB)");
+                assert_eq!(types[i], 37, "benzene C should be type 37 (CB)");
             }
         }
     }
 
     #[test]
-    fn pyridine_n_is_type_67() {
+    fn pyridine_n_is_type_38() {
+        // Issue #227 Phase 1B-0: was asserting the old wrong value (67,
+        // which is not a valid MMFF94 numeric type in the real Halgren/
+        // RDKit numbering at all -- chematic invented it). Verified against
+        // a live RDKit oracle.
         let m = mol("c1ccncc1");
         let types = assign_mmff94_numeric_types(&m).unwrap();
         for i in 0..m.atom_count() {
             let a = m.atom(AtomIdx(i as u32));
             if a.element == Element::N {
-                assert_eq!(types[i], 67, "pyridine N should be type 67 (N6A)");
+                assert_eq!(types[i], 38, "pyridine N should be type 38 (NPYD)");
             }
         }
+    }
+
+    #[test]
+    fn pyridinium_n_is_type_58() {
+        let m = mol("c1cc[nH+]cc1");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        for i in 0..m.atom_count() {
+            let a = m.atom(AtomIdx(i as u32));
+            if a.element == Element::N {
+                assert_eq!(
+                    types[i], 58,
+                    "protonated pyridine N should be type 58 (NPD+)"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn pyrrole_n_is_type_39() {
+        let m = mol("c1cc[nH]c1");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        for i in 0..m.atom_count() {
+            let a = m.atom(AtomIdx(i as u32));
+            if a.element == Element::N {
+                assert_eq!(types[i], 39, "pyrrole N should be type 39 (NPYL)");
+            }
+        }
+    }
+
+    #[test]
+    fn protonated_amine_n_is_type_34_not_the_o2cm_oxygen_row() {
+        // Regression for the mirror-image bug to the furan C-C/N-row
+        // collision: `assign_n_type`'s formal-charge branch used to
+        // return `32` (O2CM, an OXYGEN type) for a positively-charged
+        // nitrogen. The construction-time semantic-compatibility
+        // invariant now makes that class of bug impossible to ship
+        // silently -- it must resolve to type 34 (NR+), the registry's
+        // only nitrogen entry among {32, 34, 35}.
+        let m = mol("C[NH3+]");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        for i in 0..m.atom_count() {
+            let a = m.atom(AtomIdx(i as u32));
+            if a.element == Element::N {
+                assert_eq!(types[i], 34, "protonated amine N should be type 34 (NR+)");
+            }
+        }
+    }
+
+    #[test]
+    fn carboxylate_anionic_o_is_type_35_not_the_nr_plus_nitrogen_row() {
+        // Mirror-image bug found alongside the one above: `assign_o_type`'s
+        // anionic-oxygen branch used to return `34` (NR+, a NITROGEN
+        // type) for a negatively-charged oxygen. Must resolve to type 35
+        // (OM), the registry's only oxygen entry among {32, 34, 35}.
+        let m = mol("CC(=O)[O-]");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let mut saw_anionic_o = false;
+        for i in 0..m.atom_count() {
+            let a = m.atom(AtomIdx(i as u32));
+            if a.element == Element::O && a.charge < 0 {
+                assert_eq!(types[i], 35, "anionic O should be type 35 (OM)");
+                saw_anionic_o = true;
+            }
+        }
+        assert!(saw_anionic_o, "test fixture must contain an anionic oxygen");
+    }
+
+    #[test]
+    fn furan_ring_carbons_are_type_63_and_64() {
+        let m = mol("c1ccoc1");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let mut c_types: Vec<u8> = m
+            .bonds()
+            .flat_map(|(_, b)| [b.atom1, b.atom2])
+            .filter(|&a| m.atom(a).element == Element::C)
+            .map(|a| types[a.0 as usize])
+            .collect();
+        c_types.sort_unstable();
+        c_types.dedup();
+        assert_eq!(
+            c_types,
+            vec![63, 64],
+            "furan ring carbons should be C5A (alpha, 63) and C5B (beta, 64)"
+        );
+    }
+
+    #[test]
+    fn thiophene_ring_carbons_are_type_63_and_64() {
+        let m = mol("c1ccsc1");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let mut c_types: Vec<u8> = m
+            .bonds()
+            .flat_map(|(_, b)| [b.atom1, b.atom2])
+            .filter(|&a| m.atom(a).element == Element::C)
+            .map(|a| types[a.0 as usize])
+            .collect();
+        c_types.sort_unstable();
+        c_types.dedup();
+        assert_eq!(c_types, vec![63, 64]);
+    }
+
+    #[test]
+    fn indole_has_both_5ring_and_6ring_aromatic_carbon_types() {
+        // Fused bicyclic (5-ring pyrrole-like + 6-ring benzo) -- exercises
+        // atom_in_aromatic_ring_of_size across a shared ring-fusion bond,
+        // not just a single isolated ring.
+        let m = mol("c1ccc2[nH]ccc2c1");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let mut c_types: Vec<u8> = m
+            .bonds()
+            .flat_map(|(_, b)| [b.atom1, b.atom2])
+            .filter(|&a| m.atom(a).element == Element::C)
+            .map(|a| types[a.0 as usize])
+            .collect();
+        c_types.sort_unstable();
+        c_types.dedup();
+        assert!(
+            c_types.contains(&37),
+            "indole must have some 6-ring (CB) carbons: {c_types:?}"
+        );
+        assert!(
+            c_types.iter().any(|t| [63, 64, 78].contains(t)),
+            "indole must have some 5-ring aromatic carbons: {c_types:?}"
+        );
     }
 
     #[test]
@@ -1328,22 +1722,18 @@ mod tests {
     }
 
     #[test]
-    fn furan_o_is_type_43() {
-        // Furan aromatic O should be type 43 (O5)
-        // Note: current assign_o_type returns 6 for aromatic O (neutral single bond)
-        // This test documents the expected behavior (may need update when furan aromatic O
-        // detection is refined)
+    fn furan_o_is_type_59() {
+        // Issue #227 Phase 1B-0: this test used to hedge between 43 and the
+        // old (wrong) fallback value 6, because aromatic-O detection wasn't
+        // implemented at all. Now implemented (RDKit's real type for
+        // aromatic 5-ring O is 59, OFUR -- 43 was never correct; that's
+        // NSO2, sulfonamide nitrogen, an unrelated type). Verified against
+        // a live RDKit oracle.
         let m = mol("o1cccc1"); // furan
-        let types_result = assign_mmff94_numeric_types(&m);
-        // Furan might fail to parse if aromatic O valence isn't handled;
-        // if it succeeds, verify the oxygen type
-        if let Ok(types) = types_result {
-            for i in 0..m.atom_count() {
-                if m.atom(AtomIdx(i as u32)).element == Element::O {
-                    // type 43 (aromatic O in 5-ring) or 6 (fallback)
-                    let t = types[i];
-                    assert!(matches!(t, 43 | 6), "furan O type = {t}");
-                }
+        let types = assign_mmff94_numeric_types(&m).expect("furan must type successfully");
+        for i in 0..m.atom_count() {
+            if m.atom(AtomIdx(i as u32)).element == Element::O {
+                assert_eq!(types[i], 59, "furan O should be type 59 (OFUR)");
             }
         }
     }
