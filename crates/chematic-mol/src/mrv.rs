@@ -47,6 +47,7 @@
 use std::collections::HashMap;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
+use chematic_perception::{apply_ez_directions_from_2d, apply_local_parity_from_wedges};
 
 use crate::cml::parse_xml_attrs;
 use crate::record::MoleculeRecord;
@@ -727,7 +728,23 @@ pub fn parse_mrv_with_limits(
             })?;
     }
 
-    let mol = builder.build();
+    let mut mol = builder.build();
+    if has_2d {
+        // Tetrahedral parity first (raw wedge/hash still fully intact on
+        // `bond.order`), THEN E/Z direction -- same ordering rationale as
+        // mol2000.rs (the E/Z stage only ever writes to the separate
+        // `bond_direction` side channel, never to `bond.order`, so running
+        // it after can never disturb the wedge/hash the tetrahedral stage
+        // just read). MRV's `bondStereo` cis/trans dictRef values ("C"/"T")
+        // are parsed but explicitly discarded (`parse_bond_stereo` above,
+        // matching RDKit), so there is no MRV-specific "explicitly
+        // unspecified E/Z" set to thread through here, unlike MDL V2000's
+        // stereo code 3 -- every candidate double bond is judged on 2D
+        // geometry alone.
+        let coord_pairs: Vec<(f64, f64)> = coords_2d.iter().map(|&[x, y]| (x, y)).collect();
+        apply_local_parity_from_wedges(&mut mol, &coord_pairs);
+        apply_ez_directions_from_2d(&mut mol, &coord_pairs);
+    }
     let mut record = MoleculeRecord::new(mol);
     if has_2d {
         record.coordinates_2d = Some(coords_2d);
@@ -863,6 +880,7 @@ pub fn write_mrv(record: &MoleculeRecord, options: &MrvWriteOptions) -> Result<S
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chematic_core::BondIdx;
 
     const ETHANOL: &str = r#"<cml><MDocument><MChemicalStruct><molecule molID="m1">
         <atomArray>
@@ -952,6 +970,80 @@ mod tests {
         let reparsed = parse_mrv(&written).unwrap();
         let reparsed_orders: Vec<BondOrder> = reparsed.mol.bonds().map(|(_, b)| b.order).collect();
         assert_eq!(reparsed_orders, orders);
+    }
+
+    /// Issue #202: `parse_mrv` must convert a 2D wedge + coordinates into
+    /// `Atom.chirality`, the same wiring `mol2000.rs`/`cdxml.rs` already
+    /// have via `chematic_perception`. Coordinates and expected result
+    /// (`Chirality::CounterClockwise`) reused verbatim from
+    /// `chematic_perception::stereo2d_local`'s own RDKit-calibrated
+    /// `chfclbr`/`quad_positions` fixture (C-F wedge, F/Cl/Br/I at
+    /// `(-1.0,0.4)/(0.9,0.7)/(-0.5,-1.1)/(0.8,-0.6)`) -- independently
+    /// re-confirmed here against a live RDKit oracle
+    /// (`Chem.MolFromMrvBlock` on this exact MRV text, `rdkit==2026.03.3`):
+    /// `CHI_TETRAHEDRAL_CCW`, CIP `S`, canonical SMILES `F[C@](Cl)(Br)I`.
+    #[test]
+    fn wedge_2d_perceives_tetrahedral_chirality() {
+        let mrv = r#"<cml><MDocument><MChemicalStruct><molecule>
+            <atomArray>
+                <atom id="a1" elementType="C" x2="0.0" y2="0.0"/>
+                <atom id="a2" elementType="F" x2="-1.0" y2="0.4"/>
+                <atom id="a3" elementType="Cl" x2="0.9" y2="0.7"/>
+                <atom id="a4" elementType="Br" x2="-0.5" y2="-1.1"/>
+                <atom id="a5" elementType="I" x2="0.8" y2="-0.6"/>
+            </atomArray>
+            <bondArray>
+                <bond id="b1" atomRefs2="a1 a2" order="1"><bondStereo>W</bondStereo></bond>
+                <bond id="b2" atomRefs2="a1 a3" order="1"/>
+                <bond id="b3" atomRefs2="a1 a4" order="1"/>
+                <bond id="b4" atomRefs2="a1 a5" order="1"/>
+            </bondArray>
+        </molecule></MChemicalStruct></MDocument></cml>"#;
+        let rec = parse_mrv(mrv).unwrap();
+        let (center, _) = rec.mol.atoms().next().unwrap();
+        assert_eq!(
+            rec.mol.atom(center).chirality,
+            chematic_core::Chirality::CounterClockwise
+        );
+    }
+
+    /// Issue #202: `parse_mrv` must convert a 2D double-bond geometry into
+    /// the `bond_direction` side channel, mirroring `mol2000.rs`/`cdxml.rs`.
+    /// Coordinates reused verbatim from
+    /// `chematic_perception::stereo2d_ez_direction`'s own
+    /// `z_but2ene_assigns_and_matches_legacy_cip_engine` fixture (cis-2-butene) --
+    /// independently re-confirmed here against a live RDKit oracle
+    /// (`Chem.MolFromMrvBlock` + `DetectBondStereochemistry` on this exact
+    /// MRV text): `STEREOZ`, canonical SMILES `C/C=C\C`.
+    #[test]
+    fn two_d_coords_perceive_ez_direction() {
+        let mrv = r#"<cml><MDocument><MChemicalStruct><molecule>
+            <atomArray>
+                <atom id="a1" elementType="C" x2="-0.866" y2="0.5"/>
+                <atom id="a2" elementType="C" x2="0.0" y2="0.0"/>
+                <atom id="a3" elementType="C" x2="1.5" y2="0.0"/>
+                <atom id="a4" elementType="C" x2="2.366" y2="0.5"/>
+            </atomArray>
+            <bondArray>
+                <bond id="b1" atomRefs2="a1 a2" order="1"/>
+                <bond id="b2" atomRefs2="a2 a3" order="2"/>
+                <bond id="b3" atomRefs2="a3 a4" order="1"/>
+            </bondArray>
+        </molecule></MChemicalStruct></MDocument></cml>"#;
+        let rec = parse_mrv(mrv).unwrap();
+        let sub_bonds: Vec<BondIdx> = rec
+            .mol
+            .bonds()
+            .filter(|(_, b)| b.order == BondOrder::Single)
+            .map(|(bidx, _)| bidx)
+            .collect();
+        assert_eq!(sub_bonds.len(), 2, "two single (substituent) bonds");
+        for &bidx in &sub_bonds {
+            assert!(
+                rec.mol.bond_direction(bidx).is_some(),
+                "substituent bond {bidx:?} must carry a perceived E/Z direction"
+            );
+        }
     }
 
     #[test]
