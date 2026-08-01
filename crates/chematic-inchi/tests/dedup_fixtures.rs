@@ -329,29 +329,39 @@ fn disconnected_salt_fragment_order_is_verified_duplicate() {
 #[test]
 fn residual_row_relabeling_only_reconciled_via_native_inchi() {
     // One of the 18 random-relabeling-only residual cases at this branch's
-    // base commit (see validation/results/canonical_residual_diagnosis_summary.json,
+    // ORIGINAL base commit (see validation/results/canonical_residual_diagnosis_summary.json,
     // `permutation_invariance_failures_sample`, `detected_via_random_relabeling`
-    // && !`detected_via_idempotence`). Both strings are chematic's own
-    // canonical output for two RDKit-relabeled spellings of one input
-    // molecule; native InChI confirms they encode the same molecule
-    // (verified directly below via the InChI equality, not assumed from the
-    // RFC's classification).
+    // && !`detected_via_idempotence`).
+    //
+    // Resolved as a side effect of chematic-smiles issue #149's joint
+    // component solver (`resolve_component_jointly` in canonical.rs): this
+    // is one of the 10/18 pinned fixtures the joint solver fully resolves
+    // (canonical output now invariant under this relabeling; confirmed
+    // below). It no longer exercises the CanonicalSplit-reconciled-via-InChI
+    // path this test originally targeted -- `compare_molecules` now reports
+    // `VerifiedDuplicate` directly, since the fast canonical-key grouping
+    // itself no longer splits this molecule. Same pattern as
+    // `residual_row_idempotence_only_reconciled_via_native_inchi` above: a
+    // genuine improvement in the fast path, not a loss of InChI-
+    // reconciliation coverage in general (8 of the 18 issue #149 fixtures
+    // are still a documented residual and would still exercise
+    // `CanonicalSplit` if used here).
     let a = mol("OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c1/c(c(c1O)O)=N/CCCCC");
     let b = mol(r"OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c\1c(/c(c1O)O)=N/CCCCC");
 
     let key_a = chematic_smiles::canonical_smiles(&a);
     let key_b = chematic_smiles::canonical_smiles(&b);
-    assert_ne!(
+    assert_eq!(
         key_a, key_b,
-        "this fixture is only meaningful if the residual actually reproduces \
-         (canonical SMILES must differ for this to be a CanonicalSplit case)"
+        "canonical_smiles must now converge for this fixture -- if this \
+         fails, the issue #149 joint-component-solver fix regressed"
     );
 
     assert_eq!(
         compare_molecules(&a, &b, IdentityPolicy::StandardInchiString),
-        DedupRelation::CanonicalSplit,
-        "same-molecule respelling must be reconciled (not silently merged, \
-         not reported as Distinct) via native InChI"
+        DedupRelation::VerifiedDuplicate,
+        "same-molecule respelling must be a verified duplicate now that its \
+         canonical keys agree directly"
     );
 }
 
@@ -763,14 +773,28 @@ fn isotope_ignored_never_mutates_original_molecule() {
 #[test]
 fn deduplicate_verified_unifies_residual_row_pair_into_one_group() {
     // Required fixture: two of this project's own canonical-SMILES residual
-    // rows -- same molecule, different canonical string (see section 10
-    // above; re-verified at this branch's post-rebase HEAD, same 96/5,000
-    // split as before the rebase). A different canonical-SMILES key must
-    // not stop `deduplicate_verified` from unifying them into ONE
-    // `VerifiedGroup`, reconciled across the whole collection (not just
-    // detectable via a manual pairwise `compare` call).
-    let a = mol("OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c1/c(c(c1O)O)=N/CCCCC");
-    let b = mol(r"OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c\1c(/c(c1O)O)=N/CCCCC");
+    // rows -- same molecule, different canonical string. A different
+    // canonical-SMILES key must not stop `deduplicate_verified` from
+    // unifying them into ONE `VerifiedGroup`, reconciled across the whole
+    // collection (not just detectable via a manual pairwise `compare` call).
+    //
+    // Originally used one of the 18 issue #149 shared-carrier-bond
+    // fixtures; that specific pair is now resolved by the joint component
+    // solver (`resolve_component_jointly`, chematic-smiles/src/canonical.rs)
+    // -- see `residual_row_relabeling_only_reconciled_via_native_inchi`
+    // above, which documents that resolution directly. Replaced with a pair
+    // from one of the 8 issue #149 fixtures still a documented residual
+    // (ring-constrained double bond in the coupled component; see the doc
+    // comment on `EZ_SHARED_CANDIDATE_BOND_RESIDUALS` in canonical.rs) --
+    // both strings are chematic's own canonical output for two
+    // RDKit-`RenumberAtoms`-relabeled spellings of
+    // `CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N`
+    // (`validation/results/canonical_residual_diagnosis_summary.json`,
+    // `permutation_invariance_failures_sample`), confirmed
+    // `outputs_semantically_identical: true` there (RDKit re-parse agrees
+    // they're the same molecule) and re-confirmed below via native InChI.
+    let a = mol("C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(/C)C(/CC1)=N/N=C(N)N");
+    let b = mol("C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(C)C(/CC1)=N/N=C(N)N");
     let key_a = chematic_smiles::canonical_smiles(&a);
     let key_b = chematic_smiles::canonical_smiles(&b);
     assert_ne!(
