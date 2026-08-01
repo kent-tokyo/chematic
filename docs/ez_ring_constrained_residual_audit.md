@@ -177,15 +177,28 @@ would remove the end from `compute_stereo_alkene_ends` candidacy.
 "Excluded-and-marked" is an explicit **upper bound** on output change, not a
 measurement of it — determining whether output would actually change
 requires implementing the rule, which this diagnosis-only PR does not do.
+The **confirmed** column counts only rows where chematic's own atom
+correspondence check succeeded (`marker_placed` is `true`); the **incl.
+unknown** column additionally credits the 6 rows (all endocyclic, all
+excluded by every rule below) where correspondence failed and marker status
+is genuinely unknown — reported as a range, not a single number, so an
+unmeasured row is never silently folded into "not marked."
 
-| Rule | Ends excluded | % of ends | Excluded & currently marked (upper bound) | Excluded & coupled | Distinct molecules affected | Distinct molecules affected & marked |
-|---|---|---|---|---|---|---|
-| (a1) end atom in ring size < 7 | 901 | 65.0% | 62 | 52 | 660 | 62 |
-| (a1) end atom in ring size < 8 | 959 | 69.1% | 62 | 52 | 709 | 62 |
-| (a2) **double bond endocyclic** in ring size < 7 | 783 | 56.5% | 10 | 6 | 580 | 10 |
-| (a2) **double bond endocyclic** in ring size < 8 | 837 | 60.3% | 10 | 6 | 625 | 10 |
-| (b) RDKit: bond absent from `FindPotentialStereo` | 933 | 67.3% | 10 | 6 | 672 | 10 |
-| (c) (b) restricted to endocyclic bonds | 837 | 60.3% | 10 | 6 | 625 | 10 |
+| Rule | Ends excluded | % of ends | Excluded & marked, confirmed (upper bound) | Excluded & marked, incl. unknown (true upper bound) | Excluded & coupled | Distinct molecules affected | Distinct molecules affected & marked |
+|---|---|---|---|---|---|---|---|
+| (a1) end atom in ring size < 7 | 901 | 65.0% | 62 | 68 | 52 | 660 | 62 |
+| (a1) end atom in ring size < 8 | 959 | 69.1% | 62 | 68 | 52 | 709 | 62 |
+| (a2) **double bond endocyclic** in ring size < 7 | 783 | 56.5% | 10 | 16 | 6 | 580 | 10 |
+| (a2) **double bond endocyclic** in ring size < 8 | 837 | 60.3% | 10 | 16 | 6 | 625 | 10 |
+| (b) RDKit: bond absent from `FindPotentialStereo` | 933 | 67.3% | 10 | 16 | 6 | 672 | 10 |
+| (c) (b) restricted to endocyclic bonds | 837 | 60.3% | 10 | 16 | 6 | 625 | 10 |
+
+All 6 marker-status-unknown rows are endocyclic 6-ring ends (the
+gem-dimethyl-tetrahydroquinoline automorphism-tie family from the
+correspondence-verification section above), so all 6 fall inside the
+excluded set for every rule in this table — the "confirmed" and "incl.
+unknown" columns for rules (a2)/(b)/(c) differ by exactly these 6 rows
+(10 → 16), not a coincidence.
 
 Key findings from this table, each verified directly (not inferred from
 matching totals alone):
@@ -211,7 +224,20 @@ matching totals alone):
   concrete threshold (not merely "5- or 6-membered" as originally
   hypothesized in the doc comment — a 7-membered endocyclic ring is
   empirically indistinguishable from a 5-/6-membered one on this corpus,
-  all excluded by RDKit the same way).
+  all excluded by RDKit the same way). **The corpus data has a real gap
+  that this agreement does not close**, checked explicitly: endocyclic
+  ring sizes observed in the corpus are `{4, 5, 6, 7, 16, 21, 24, 29}` —
+  nothing between 8 and 15. The 897 endocyclic ends split as 837 in rings
+  ≤7 (all RDKit-excluded) and 60 in rings ≥16 (all RDKit-*included*, 0
+  exceptions), so the corpus independently confirms the *direction* on
+  both sides of the threshold (small rings excluded, large macrocycles
+  not) but does not, by itself, pin the exact cutover point anywhere
+  between 8 and 15 — that specific boundary rests on the hand-constructed
+  cyclooctene control above (ring size 8, RDKit includes it), not on
+  corpus-observed data at size 8. "Ring size < 8" is the recommendation
+  because it is the smallest threshold consistent with both the
+  cyclooctene control and every corpus row; a value up to 15 would fit the
+  corpus equally well and cannot be ruled out by this audit.
 - **Rule (b) is genuinely broader than rule (c) — they do NOT coincide**:
   933 vs. 837, a difference of 96 ends (6.9% of the corpus). Spot-checked
   directly: every one of the 96 b-only exclusions is an *exocyclic* double
@@ -220,17 +246,34 @@ matching totals alone):
   of ring topology). Rule (c) correctly excludes these from its own count
   (they are not endocyclic), confirming (c) is a strictly narrower, more
   surgical measurement than (b), not a coincidental duplicate.
-- **Only 6 of the corpus's 62 coupled ends (3 of 31 coupling components)**
-  are excluded under the recommended rule (a2/c at threshold 8). The
-  remaining 28 components' coupling arises from some other mechanism
-  entirely (most likely the "both ends genuinely stereogenic" shape seen in
-  5 of the pinned fixtures) — the ring-endocyclic mechanism explains all 8
-  pinned residual fixtures individually, but only a **minority (~10%)** of
-  this particular corpus's general coupled-end population. The 18 pinned
-  fixtures and the corpus's own 31 coupling components are disjoint sample
-  sets (none of the 18 fixture SMILES appear verbatim in the 5,000-molecule
-  corpus) — this "minority" finding describes the corpus's own population,
-  not a claim about the pinned fixtures.
+- **Only 6 of the corpus's 62 coupled ends (3 of 31 coupling components,
+  verified by grouping on `(smiles, component_atom_idx_set)` rather than
+  dividing the end-count in half)** are excluded under the recommended rule
+  (a2/c at threshold 8). Unlike the pinned fixtures — where the coupled pair
+  always has exactly ONE endocyclic end and one genuinely free end — these
+  3 corpus components are a structurally different shape: fused,
+  many-ring cage-like molecules (`COCCOCCOCCN1CC23C4=C5C6=C7...`, a
+  crown-ether-substituted polycyclic aromatic hydrocarbon family) where
+  **both** ends of the coupled pair are endocyclic in a 6-ring, contributing
+  2 excluded ends per component. The remaining 28 components' coupling
+  arises from some other mechanism entirely (plausibly, but not confirmed
+  here, the "both ends genuinely stereogenic" shape seen in 5 of the pinned
+  fixtures) — the ring-endocyclic mechanism explains all 8 pinned residual
+  fixtures individually, but only a **minority (~10%)** of this particular
+  corpus's general coupled-end population.
+
+  The 18 pinned fixtures and the corpus's own coupling components are
+  **not** fully disjoint sample sets, checked via an exact-string set
+  intersection over all 18 (not a partial grep): **5 of the 18 fixture
+  SMILES appear verbatim in the 5,000-molecule corpus** — specifically all
+  5 of the "both-ends-genuinely-stereogenic" `EZ_SHARED_CARRIER_FULLY_
+  RESOLVED` hydrazone-imine fixtures (`hypothesis_holds = False` in the
+  classification above), each contributing 1 of the corpus's 31 coupling
+  components. None of the 13 fixtures relevant to the endocyclic hypothesis
+  (5 resolved-with-the-shape + all 8 residual) are present in the corpus —
+  so the "minority (~10%)" finding is a genuine, independent measurement of
+  the corpus's own population, not inflated or deflated by fixture overlap
+  with the endocyclic mechanism specifically.
 
 ## Recommended production predicate (NOT implemented — specification only)
 
@@ -262,8 +305,11 @@ fixtures, cross-checked against an independent RDKit oracle at the level of
 the specific bond involved (not just aggregate counts). The recommended
 predicate (ring size < 8, endocyclic) has row-level 100% agreement with
 RDKit's own independent stereo-possibility judgment across the full
-5,000-molecule corpus (0/1,387 mismatches) — this is unusually clean
-empirical support for a concrete implementation.
+5,000-molecule corpus (0/1,387 mismatches) — unusually clean empirical
+support, though (per the corpus-data-gap note above) the corpus itself only
+pins the threshold's *direction* on both sides (≤7 excluded, ≥16 included),
+not the exact cutover between 8 and 15; the specific value 8 additionally
+relies on the hand-built cyclooctene control.
 
 This is **not an unconditional GO** for three reasons, none of which
 contradicts the hypothesis but all of which bound its scope honestly:

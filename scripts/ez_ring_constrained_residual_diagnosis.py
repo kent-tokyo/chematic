@@ -321,10 +321,16 @@ def blast_radius_table(rows):
             if verdict:
                 excluded_rows.append(row)
 
-        excluded_marked = [
-            r for r in excluded_rows
-            if r.get("marker_placed") is True
-        ]
+        # `marker_placed` is `None` (not `False`) for the small number of
+        # rows where chematic's own atom-correspondence check failed (see
+        # the Rust example's module doc comment) -- an excluded row with
+        # unknown marker status must NOT be silently counted as "not
+        # marked" (that would systematically UNDER-count the upper bound).
+        # Tracked as its own bucket so the true upper bound is reported as
+        # a range (confirmed-marked .. confirmed-marked + unknown), never a
+        # single possibly-too-low number.
+        excluded_marked = [r for r in excluded_rows if r.get("marker_placed") is True]
+        excluded_marker_unknown = [r for r in excluded_rows if r.get("marker_placed") is None]
         excluded_coupled = [r for r in excluded_rows if r["coupled"]]
         molecules_excluded = {r["smiles"] for r in excluded_rows}
         molecules_excluded_and_marked = {r["smiles"] for r in excluded_marked}
@@ -337,6 +343,10 @@ def blast_radius_table(rows):
                 100 * len(excluded_rows) / (total_ends - unmeasurable), 2
             ) if (total_ends - unmeasurable) else None,
             "excluded_and_currently_marked_UPPER_BOUND_on_output_change": len(excluded_marked),
+            "excluded_with_marker_status_unknown": len(excluded_marker_unknown),
+            "excluded_and_marked_true_upper_bound_including_unknowns": (
+                len(excluded_marked) + len(excluded_marker_unknown)
+            ),
             "excluded_and_coupled": len(excluded_coupled),
             "distinct_molecules_with_excluded_end": len(molecules_excluded),
             "distinct_molecules_with_excluded_and_marked_end": len(molecules_excluded_and_marked),
@@ -561,6 +571,20 @@ def self_test():
     assert table["b_rdkit_not_potential_stereo"]["unmeasurable_ends"] == 1
     assert table["b_rdkit_not_potential_stereo"]["ends_excluded"] == 1  # row_base only
     print("blast_radius_table accounting: OK")
+
+    # excluded-but-marker-status-unknown rows (chematic-side correspondence
+    # failure, e.g. an automorphism-tie branch mismatch) must NOT be folded
+    # into "not marked" -- caught a real undercount in this exact spot
+    # during independent review before the PR was opened.
+    marker_unknown_row = with_(marker_placed=None)  # still excluded by rule a2 (endocyclic 6-ring)
+    rows2 = [row_base, marker_unknown_row]  # both endocyclic-6-ring, row_base marked=False
+    table2 = blast_radius_table(rows2)
+    a2 = table2["a_bond_endocyclic_lt8"]
+    assert a2["ends_excluded"] == 2
+    assert a2["excluded_and_currently_marked_UPPER_BOUND_on_output_change"] == 0
+    assert a2["excluded_with_marker_status_unknown"] == 1
+    assert a2["excluded_and_marked_true_upper_bound_including_unknowns"] == 1
+    print("blast_radius_table marker-unknown accounting: OK (not folded into 'not marked')")
 
     # crosscheck_row correspondence-failure paths, using a live RDKit mol
     from rdkit import Chem

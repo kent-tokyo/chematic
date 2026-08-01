@@ -885,6 +885,8 @@
       "ends_excluded": 901,
       "ends_excluded_pct_of_measurable": 64.96,
       "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 62,
+      "excluded_with_marker_status_unknown": 6,
+      "excluded_and_marked_true_upper_bound_including_unknowns": 68,
       "excluded_and_coupled": 52,
       "distinct_molecules_with_excluded_end": 660,
       "distinct_molecules_with_excluded_and_marked_end": 62
@@ -895,6 +897,8 @@
       "ends_excluded": 959,
       "ends_excluded_pct_of_measurable": 69.14,
       "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 62,
+      "excluded_with_marker_status_unknown": 6,
+      "excluded_and_marked_true_upper_bound_including_unknowns": 68,
       "excluded_and_coupled": 52,
       "distinct_molecules_with_excluded_end": 709,
       "distinct_molecules_with_excluded_and_marked_end": 62
@@ -905,6 +909,8 @@
       "ends_excluded": 783,
       "ends_excluded_pct_of_measurable": 56.45,
       "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 10,
+      "excluded_with_marker_status_unknown": 6,
+      "excluded_and_marked_true_upper_bound_including_unknowns": 16,
       "excluded_and_coupled": 6,
       "distinct_molecules_with_excluded_end": 580,
       "distinct_molecules_with_excluded_and_marked_end": 10
@@ -915,6 +921,8 @@
       "ends_excluded": 837,
       "ends_excluded_pct_of_measurable": 60.35,
       "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 10,
+      "excluded_with_marker_status_unknown": 6,
+      "excluded_and_marked_true_upper_bound_including_unknowns": 16,
       "excluded_and_coupled": 6,
       "distinct_molecules_with_excluded_end": 625,
       "distinct_molecules_with_excluded_and_marked_end": 10
@@ -925,6 +933,8 @@
       "ends_excluded": 933,
       "ends_excluded_pct_of_measurable": 67.27,
       "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 10,
+      "excluded_with_marker_status_unknown": 6,
+      "excluded_and_marked_true_upper_bound_including_unknowns": 16,
       "excluded_and_coupled": 6,
       "distinct_molecules_with_excluded_end": 672,
       "distinct_molecules_with_excluded_and_marked_end": 10
@@ -935,6 +945,8 @@
       "ends_excluded": 837,
       "ends_excluded_pct_of_measurable": 60.35,
       "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 10,
+      "excluded_with_marker_status_unknown": 6,
+      "excluded_and_marked_true_upper_bound_including_unknowns": 16,
       "excluded_and_coupled": 6,
       "distinct_molecules_with_excluded_end": 625,
       "distinct_molecules_with_excluded_and_marked_end": 10
