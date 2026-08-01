@@ -13,15 +13,15 @@
       "pct_match": 0.08
     },
     "check2_permutation_invariance": {
-      "invariant": 4909,
-      "fail": 91,
+      "invariant": 4919,
+      "fail": 81,
       "n": 5000,
-      "pct_invariant": 98.18,
-      "fail_semantically_identical_outputs": 91,
+      "pct_invariant": 98.38,
+      "fail_semantically_identical_outputs": 81,
       "fail_semantically_DIFFERENT_outputs": 0,
-      "fail_examples_captured": 91,
+      "fail_examples_captured": 81,
       "fail_detected_via_idempotence_only": 73,
-      "fail_detected_via_random_relabeling_only": 18,
+      "fail_detected_via_random_relabeling_only": 8,
       "fail_detected_via_both": 0
     },
     "check3_idempotence": {
@@ -316,66 +316,6 @@
     ]
   },
   "permutation_invariance_failures_sample": [
-    {
-      "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-      "distinct_outputs": [
-        "c3ncc(c(c3Cl)C(Nc1ccc(C[C@H](/N=c2/c(c(c2O)O)=N/CCCCC)C(=O)O)cc1)=O)Cl",
-        "c3ncc(c(c3Cl)C(Nc1ccc(C[C@H](/N=c\\2c(/c(c2O)O)=N/CCCCC)C(=O)O)cc1)=O)Cl"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
-    {
-      "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
-      "distinct_outputs": [
-        "N(=c/4c(/c(O)c4O)=N/Cc3ccccc3)/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(O)=O",
-        "N(=c4/c(c(O)c4O)=N/Cc3ccccc3)\\[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(O)=O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
-    {
-      "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-      "distinct_outputs": [
-        "c/1(=N\\CCC)c(c(c1=N/[C@@H](Cc2ccc(NC(=O)c3c(Cl)cncc3Cl)cc2)C(=O)O)O)O",
-        "c1(=N/CCC)/c(c(/c1=N\\[C@@H](Cc2ccc(NC(=O)c3c(Cl)cncc3Cl)cc2)C(=O)O)O)O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
-    {
-      "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
-      "distinct_outputs": [
-        "C(=O)([C@@H](/N=c4/c(c(c4O)O)=N/c3ccccc3)Cc2ccc(cc2)NC(c1c(Cl)cncc1Cl)=O)O",
-        "C(=O)([C@@H](/N=c\\4c(/c(c4O)O)=N/c3ccccc3)Cc2ccc(cc2)NC(c1c(Cl)cncc1Cl)=O)O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
-    {
-      "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-      "distinct_outputs": [
-        "CC(C)(/N=c/1c(c(c1=N/[C@@H](Cc3ccc(cc3)NC(c2c(Cl)cncc2Cl)=O)C(=O)O)O)O)C",
-        "CC(C)(/N=c1\\c(c(/c1=N\\[C@@H](Cc3ccc(cc3)NC(c2c(Cl)cncc2Cl)=O)C(=O)O)O)O)C"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
     {
       "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCCN)c1=O",
       "distinct_outputs": [
@@ -1015,7 +955,7 @@
     {
       "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
       "distinct_outputs": [
-        "C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(C)/C(CC1)=N/N=C(N)N",
+        "C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(/C)C(/CC1)=N/N=C(N)N",
         "C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(C)C(/CC1)=N/N=C(N)N"
       ],
       "chematic_variant_parse_error": false,
@@ -1027,7 +967,7 @@
     {
       "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
       "distinct_outputs": [
-        "C(N)(N)=N/N=C/[C@H]2[C@]1(C)C(CC2)=C(C)/C(CC1)=N/N=C(N)N",
+        "C(N)(N)=N/N=C/[C@H]2[C@]1(C)C(CC2)=C(/C)C(/CC1)=N/N=C(N)N",
         "C(N)(N)=N/N=C/[C@H]2[C@]1(C)C(CC2)=C(C)C(/CC1)=N/N=C(N)N"
       ],
       "chematic_variant_parse_error": false,
@@ -1039,7 +979,7 @@
     {
       "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
       "distinct_outputs": [
-        "NC(=N/N=C2/C(=C1[C@](C)(CC2)[C@@H](/C=C/C(OC)=O)CC1)C)N",
+        "NC(=N/N=C\\2C(=C1[C@](C)(CC2)[C@@H](/C=C/C(OC)=O)CC1)/C)N",
         "NC(=N/N=C\\2C(=C1[C@](C)(CC2)[C@@H](/C=C/C(OC)=O)CC1)C)N"
       ],
       "chematic_variant_parse_error": false,
@@ -1061,22 +1001,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
-      "distinct_outputs": [
-        "CCOC(=O)C=2C(/C(=C(/OCC)O)C(=NC=2C)C)c1cc(I)ccc1",
-        "CCOC(=O)C=2C(C(=C(/OCC)O)/C(=NC=2C)C)c1cc(I)ccc1"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
-    {
       "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
       "distinct_outputs": [
-        "CCO/C(=C/2C(=NC(C)=C(C2c1ccc(I)cc1)C(OCC)=O)C)O",
-        "CCO/C(=C2\\C(=NC(C)=C(C2c1ccc(I)cc1)C(OCC)=O)C)O"
+        "CCO/C(=C/2C(=NC(C)=C(C2c1ccc(I)cc1)C(OCC)=O)/C)O",
+        "CCO/C(=C/2C(=NC(C)=C(C2c1ccc(I)cc1)C(OCC)=O)C)O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1109,33 +1037,9 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
-      "distinct_outputs": [
-        "CC=2/C(=C(\\OCC)O)C(C(=C(C)N=2)C(=O)OC)c1ccccc1C(F)(F)F",
-        "CC=2C(=C(/OCC)O)\\C(C(=C(C)N=2)C(=O)OC)c1ccccc1C(F)(F)F"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
-    {
-      "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
-      "distinct_outputs": [
-        "OC(/OCC)=C/1C(c2ccccc2OC)C(C(OCC)=O)=C(N=C1C)C",
-        "OC(/OCC)=C1\\C(c2ccccc2OC)C(C(OCC)=O)=C(N=C1C)C"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
-    {
       "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
       "distinct_outputs": [
-        "O(C)C(=O)C2=C(N=C(C)/C(C2c1ccccc1[N+](=O)[O-])=C(/O)OCC)C",
+        "O(C)C(=O)C2=C(N=C(/C)C(/C2c1ccccc1[N+](=O)[O-])=C(/O)OCC)C",
         "O(C)C(=O)C2=C(N=C(C)C(/C2c1ccccc1[N+](=O)[O-])=C(/O)OCC)C"
       ],
       "chematic_variant_parse_error": false,
@@ -1167,18 +1071,6 @@
       "has_ez_marker": false,
       "detected_via_idempotence": true,
       "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
-      "distinct_outputs": [
-        "c1cc([N+]([O-])=O)ccc1C/2C(C(=O)OC)=C(C)N=C(C2=C(\\O)OCC)C",
-        "c1cc([N+]([O-])=O)ccc1C2C(C(=O)OC)=C(C)N=C(/C2=C(/O)OCC)C"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
     },
     {
       "smiles": "CC(=O)NCCn1nc2c3c(c(NCCN4CCOC4=O)ccc31)Sc1ccccc1-2",
@@ -1255,8 +1147,8 @@
     {
       "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
       "distinct_outputs": [
-        "CCOC(=O)C=2C(/C(=C(/OCC)O)C(=NC=2C)C)c1cc(C)ccc1",
-        "CCOC(=O)C=2C(C(=C(/OCC)O)/C(=NC=2C)C)c1cc(C)ccc1"
+        "CCOC(=O)C=2C(/C(=C(/OCC)O)C(=NC=2C)/C)c1cc(C)ccc1",
+        "CCOC(=O)C=2C(/C(=C(/OCC)O)C(=NC=2C)C)c1cc(C)ccc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1327,20 +1219,8 @@
     {
       "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
       "distinct_outputs": [
-        "CCOC(C2=C(N=C(/C(C2c1cccc(c1)OC)=C(\\OCC)O)C)C)=O",
+        "CCOC(C2=C(N=C(C(/C2c1cccc(c1)OC)=C(\\OCC)O)/C)C)=O",
         "CCOC(C2=C(N=C(C(/C2c1cccc(c1)OC)=C(\\OCC)O)C)C)=O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": false,
-      "detected_via_random_relabeling": true
-    },
-    {
-      "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
-      "distinct_outputs": [
-        "CC=1/C(=C(/O)OCC)C(c2cccc(C(F)(F)F)c2)C(C(=O)OC)=C(N=1)C",
-        "CC=1C(=C(/O)OCC)/C(c2cccc(C(F)(F)F)c2)C(C(=O)OC)=C(N=1)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1351,7 +1231,7 @@
     {
       "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
       "distinct_outputs": [
-        "C=2(NCCN=2)/C(c1sc(N)nn1)=C(\\OCC)O",
+        "C=2(/NCCN=2)C(/c1sc(N)nn1)=C(\\OCC)O",
         "C=2(NCCN=2)C(/c1sc(N)nn1)=C(\\OCC)O"
       ],
       "chematic_variant_parse_error": false,

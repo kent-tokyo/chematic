@@ -36,6 +36,112 @@ Status: **Diagnosis complete. No production behavior change.**
 > per the issue's own spec remains the right next step; nothing here changes
 > that scope.
 
+> **Update (Wave 2B, issue #149 — partial fix, 10/18 resolved, 8/18 named
+> residual, `Refs #149` not `Fixes #149`):** replaced the single-end
+> shared-bond abstain guard with a joint component solver
+> (`resolve_component_jointly` in `crates/chematic-smiles/src/canonical.rs`).
+> Model: nodes = ambiguous stereo-alkene ends, edges = a direct bond between
+> two such ends (the only way one physical bond can be a marker-carrier
+> candidate for two double bonds at once). Every node has ≤2 candidate
+> bonds, so every coupling component is a simple path or cycle — measured
+> across both the 18 fixtures and a fresh 5,000-molecule corpus scan, max
+> observed component size is 2 (`MAX_JOINT_COMPONENT_SIZE = 16` caps the
+> enumeration with an 8x margin; components exceeding it abstain wholesale,
+> never partially applied). For each component, the solver enumerates all
+> `2^k` candidate-bond assignments, keeps only those where every shared bond
+> gets one consistent literal value from every end voting on it, and picks
+> the one deviating least from each end's own canonical-rank preference
+> (ties broken by an intrinsic ascending-rank ordering, never `AtomIdx`/
+> `BondIdx`/traversal order); a genuine tie between two rank-equal
+> (automorphic) ends triggers a whole-component abstain, same as before.
+>
+> **Two real bugs found and fixed during this work, both caught only by the
+> full 5,000-molecule corpus re-run, not by the targeted unit tests:**
+> 1. `coupling_components`'s BFS iterated a `HashSet` directly — a
+>    process-random traversal order that, for genuinely rank-tied
+>    (automorphic) ends, could survive into which one a stable sort placed
+>    first. Fixed by sorting traversal order on raw `AtomIdx` before BFS
+>    (deterministic-but-arbitrary is sufficient — canonical rank still wins
+>    for every non-automorphic pair; genuine ties are separately detected
+>    and abstained, see above).
+> 2. The first version of `end_votes` read `raw_input_direction` per
+>    candidate *inside* the enumeration — so which combinations were
+>    "valid" (non-conflicting) depended on which of an end's two bonds the
+>    *current input spelling* happened to mark. This made the solver's own
+>    output non-idempotent (`canonical(canonical(x)) != canonical(x)`) for 3
+>    of the 18 fixtures, caught only by re-running the corpus script against
+>    the rebuilt Python bindings. Fixed by hoisting a single per-end fact,
+>    `reference_up` (a fixed rank-based reference substituent, raw direction
+>    if it has one else its sibling's inverted — mirrors the pre-existing
+>    test-only `up_of_reference` oracle's own logic), computed once before
+>    enumeration; all vote values are now derived from that one invariant
+>    fact instead of from whichever bond happens to carry a mark in the text
+>    being parsed.
+>
+> **Also disclosed explicitly, since it's the kind of change a reviewer
+> should be suspicious of by default**: the test oracle `ez_pair` was
+> rewritten mid-implementation, on a failing test, to use rank-based
+> `up_of_reference` instead of its original "read whichever substituent
+> happens to carry a direction" logic — the old logic is not
+> marker-placement-invariant by construction (moving a mark to the
+> rank-preferred sibling necessarily flips which literal bond a naive read
+> sees, even though the real geometry is unchanged), so it reported false
+> flips once the solver started legitimately relocating markers.
+> `geometry_fingerprint_is_sensitive_to_a_real_flip` is the existing
+> non-vacuity control proving the *replacement* oracle actually reads the
+> input rather than passing trivially.
+>
+> **Measured results (RDKit-oracle-verified, not just canonical-string
+> equality; `scripts/canonical_residual_diagnosis.py --k 8 --seed 0` on the
+> same 5,000-molecule corpus)**:
+> - Full-corpus Check-2 permutation-invariance failures: **91 → 81**
+>   (random-relabeling-only 18 → 8; idempotence-only 73 → 73, unchanged, 0
+>   both-probes both before and after — the Root Cause 3 track is untouched,
+>   confirmed rather than assumed). 0 semantically-different outputs in
+>   either run.
+> - Churn: diffing chematic's canonical output for all 5,000 molecules
+>   against pre-Wave-2B `main` (commit `4dbb34c`, the #228 merge SHA) shows
+>   exactly **6 changed**, all 6 within the 18 pinned fixtures — no output
+>   changed for any molecule outside the known coupled set.
+> - All 18 fixtures: `Chem.MolToSmiles(Chem.MolFromSmiles(input))` ==
+>   `Chem.MolToSmiles(Chem.MolFromSmiles(chematic_new_output))` — **18/18
+>   RDKit-semantically identical, 0 corruption, 0 lost/flipped stereo**.
+> - **10 of the 18 are fully resolved**: canonical output is invariant under
+>   arbitrary relabeling (not just the one relabeling the Rust regression
+>   test checks).
+> - **8 of the 18 remain a residual** (list indices 6, 7, 8, 10, 13, 15, 16,
+>   18 in `EZ_SHARED_CANDIDATE_BOND_RESIDUALS`): still cosmetic-only (RDKit
+>   confirms semantic identity across the divergent spellings), but not yet
+>   canonical-string-invariant under every relabeling. Root cause, confirmed
+>   for all 8 via RDKit ring perception: the coupled component in each
+>   includes an end that is part of an *endocyclic* double bond in a 5- or
+>   6-membered ring — real geometry there is fixed by the ring, not a free
+>   choice, but `compute_stereo_alkene_ends` has no ring-size gate, so
+>   `reference_up` can read as defined or `None` depending on which of that
+>   ring bond's two candidates the current spelling happens to mark.
+>   **Deliberately not fixed here**: excluding small-ring endocyclic bonds
+>   from `compute_stereo_alkene_ends` would change which ends are ambiguous
+>   molecule-wide, well beyond these 18, with no measurement yet of that
+>   blast radius — left as named follow-up work, not silently absorbed into
+>   this PR's scope.
+>
+> Regression gate: `cargo test -p chematic-smiles --lib` 188/188 passed
+> (including the rewritten 18-fixture convergence test and the pre-existing
+> shared-bond-never-corrupts test); `bash scripts/check.sh` all green
+> (fmt/clippy `-D warnings`/tests/deny/publish-graph/version-consistency).
+> No public API change. Scope held to `resolve_ez_markers`/
+> `resolve_ez_marker_for_end` (the latter now removed, folded into the
+> unified joint-solver code path) and its own tests — aromaticity
+> perception, K2b, bridged-ring canonicalization, E/Z assignment semantics,
+> `BondStereo`, the parser, CIP, Accurate CIP, 3D, and ECFP were not touched.
+>
+> **Recommendation**: merge-ready in isolation (0 corruption, net
+> improvement, fully backward-compatible with the pre-existing abstain
+> behavior for the 8 residual cases), but issue #149 should stay open — 8/18
+> genuine coupled-bond cases still don't fully converge, and the ring-bond
+> mechanism behind them needs its own scoped fix with its own blast-radius
+> measurement before `compute_stereo_alkene_ends` itself changes.
+
 > **Update (C1a):** Root Cause 1 (the dominant, E/Z-marker-carrier cluster
 > described below) has a safe, verified **partial** fix — branch
 > `fix/canonical-ez-carrier-normalization`, PR #148. 264/282 of the

@@ -626,6 +626,36 @@ impl<'a> CanonicalWriter<'a> {
         }
     }
 
+    /// Maximum coupled-component size [`Self::resolve_component_jointly`]
+    /// will attempt to jointly resolve via bounded enumeration
+    /// (`2^size` candidate assignments). Measured, not guessed, and fully
+    /// reproducible from a corpus committed to this repo (no external
+    /// download required):
+    ///
+    /// ```text
+    /// cargo run -p chematic-smiles --release --example ez_shared_carrier_component_audit -- \
+    ///     scripts/descriptor_census_corpus.smi
+    /// ```
+    ///
+    /// Expected output (re-run to confirm, not assumed): 18/18 pinned
+    /// fixtures each produce exactly one size-2 component; the 5,000-line
+    /// committed corpus produces 31 coupling components total, still every
+    /// one of them size exactly 2, 0 cycles. (An independent run against
+    /// the larger, non-committed ChEMBL corpus used for this crate's own
+    /// full-corpus residual measurements — see
+    /// `docs/canonical_smiles_residual_rfc.md` — found the same: every
+    /// component observed has been size exactly 2.) Every node has at most
+    /// 2 candidate substituent bonds, so every component is a simple path
+    /// or cycle, never a general graph. This cap gives an 8x margin over
+    /// the measured maximum. Worst case is bounded at `2^16` = 65,536
+    /// candidate-assignment evaluations, each O(size) with small constants
+    /// (no independent wall-clock measurement is claimed here — every
+    /// corpus scanned so far never exceeds 4 evaluations, i.e. component
+    /// size 2, so the `2^16` bound is a safety margin, not an observed
+    /// cost). A component that exceeds the cap abstains as a whole --
+    /// never partially applied.
+    const MAX_JOINT_COMPONENT_SIZE: usize = 16;
+
     /// Resolve, for every tri-/tetra-substituted stereo alkene end, which ONE
     /// of its ≥2 non-double-bond substituent bonds should carry the `/`/`\`
     /// marker in the output — deterministically, from the molecule's own
@@ -645,81 +675,28 @@ impl<'a> CanonicalWriter<'a> {
     /// once, from topology + rank alone, makes the choice depend only on the
     /// molecule itself, not on which substituent the input happened to mark.
     ///
-    /// The carrier is whichever substituent atom has the numerically lowest
-    /// `self.ranks` value; `self.ranks` is the *fully discrete* (all-distinct)
-    /// winning individualized ranking used for this entire write (see
-    /// `winning_individualized_ranks`), so this pick is a total, molecule-
-    /// derived order — invariant across any input atom permutation/spelling
-    /// — with no remaining tie to break (any leftover tie implies the two
-    /// substituents are automorphic, so either choice writes the same
-    /// string). Runs before `build_ez_groups`/ring discovery/DFS write, so it
-    /// depends only on molecule topology, never on write order.
+    /// Two independently stereogenic double bonds can additionally share one
+    /// physical candidate substituent bond between them (issue #149 —
+    /// typically a ring-closure bond connecting two adjacent stereocenters
+    /// each bearing their own exocyclic stereo double bond). Resolving one
+    /// end's carrier in isolation from such a coupled partner risks moving
+    /// or demoting a mark the *other* system's own resolution simultaneously
+    /// relies on for the same physical bond. [`Self::coupling_components`]
+    /// partitions every ambiguous end into maximal connected clusters joined
+    /// by exactly this kind of shared-bond edge; [`Self::resolve_component_
+    /// jointly`] solves each cluster as one unit (a lone, uncoupled end is
+    /// simply a cluster of size 1, resolved by the same code path at
+    /// negligible extra cost — see that method's own doc comment).
     ///
-    /// Deliberately narrow to exactly 2 substituents (the only case a valid
-    /// sp2 alkene carbon — one double bond + up to two single bonds — can
-    /// have): 0 or 1 substituent has no ambiguity to resolve, and >2 cannot
-    /// occur for a real double bond, so it's left untouched rather than
-    /// guessed at.
+    /// Runs before `build_ez_groups`/ring discovery/DFS write, so it depends
+    /// only on molecule topology, never on write order.
     fn resolve_ez_markers(&mut self) {
         if self.ranks.is_empty() {
             return;
         }
-
-        // Precompute the full set of atoms `resolve_ez_marker_for_end` will
-        // treat as an ambiguous stereo-alkene end (topology-only, so this
-        // set doesn't depend on processing order below). Needed so two
-        // *different*, independently stereogenic double bonds that happen
-        // to share one candidate substituent bond between them (e.g. two
-        // adjacent ring stereocenters connected by the very ring-closure
-        // bond each would otherwise use as a candidate carrier) can be
-        // detected — see the guard in `resolve_ez_marker_for_end`.
-        let mut stereo_alkene_ends: HashSet<AtomIdx> = HashSet::new();
-        for bidx in 0..self.mol.bond_count() {
-            let bond = self.mol.bond(BondIdx(bidx as u32));
-            if bond.order != BondOrder::Double {
-                continue;
-            }
-            if !Self::end_has_substituent(self.mol, bond.atom1)
-                || !Self::end_has_substituent(self.mol, bond.atom2)
-            {
-                continue;
-            }
-            for end in [bond.atom1, bond.atom2] {
-                let sub_count = self
-                    .mol
-                    .neighbors(end)
-                    .filter(|&(_, b)| self.mol.bond(b).order != BondOrder::Double)
-                    .count();
-                if sub_count == 2 {
-                    stereo_alkene_ends.insert(end);
-                }
-            }
-        }
-
-        for bidx in 0..self.mol.bond_count() {
-            let bidx = BondIdx(bidx as u32);
-            let bond = self.mol.bond(bidx);
-            if bond.order != BondOrder::Double {
-                continue;
-            }
-            // A double bond only has E/Z stereo at all when BOTH ends have
-            // at least one substituent (matching `chematic_chem::cip::
-            // assign_ez`'s own `subs_a1.is_empty() || subs_a2.is_empty()`
-            // guard) — e.g. a ketone/aldehyde `C=O` never does (the O side
-            // has none). Skipping both ends together, not just the O side,
-            // matters: the carbon side of such a bond can still have 2
-            // substituents of its own (e.g. two ring bonds) that already
-            // carry a marker belonging to a wholly different, genuinely
-            // stereogenic double bond elsewhere (a ring-closure bond can be
-            // shared between two different rings' substituent lists) —
-            // resolving a "carrier" for the non-stereogenic end would move
-            // or duplicate that unrelated marker.
-            if Self::end_has_substituent(self.mol, bond.atom1)
-                && Self::end_has_substituent(self.mol, bond.atom2)
-            {
-                self.resolve_ez_marker_for_end(bond.atom1, &stereo_alkene_ends);
-                self.resolve_ez_marker_for_end(bond.atom2, &stereo_alkene_ends);
-            }
+        let stereo_alkene_ends = Self::compute_stereo_alkene_ends(self.mol);
+        for component in Self::coupling_components(self.mol, &stereo_alkene_ends) {
+            self.resolve_component_jointly(&component);
         }
     }
 
@@ -728,98 +705,359 @@ impl<'a> CanonicalWriter<'a> {
             .any(|(_, b)| mol.bond(b).order != BondOrder::Double)
     }
 
-    /// Resolve the marker carrier for one alkene end (see
-    /// [`Self::resolve_ez_markers`]). Substituents are filtered by bond
-    /// order (`!= Double`), not by comparing against a specific double-bond
-    /// `BondIdx`, so an allene/cumulene terminus correctly excludes *every*
-    /// double bond at `alkene_end`, matching `chematic_chem::cip::assign_ez`'s
-    /// own substituent-collection convention.
-    fn resolve_ez_marker_for_end(
-        &mut self,
-        alkene_end: AtomIdx,
-        stereo_alkene_ends: &HashSet<AtomIdx>,
-    ) {
-        let subs: Vec<(AtomIdx, BondIdx)> = self
-            .mol
-            .neighbors(alkene_end)
-            .filter(|&(_, b)| self.mol.bond(b).order != BondOrder::Double)
-            .collect();
-        if subs.len() != 2 {
-            return; // no ambiguity (0/1), or not a valid alkene carbon (>2)
+    /// Non-double-bond neighbors of `end` — an alkene carbon's up-to-two
+    /// sigma substituents. Filtered by bond order, not by comparing against
+    /// a specific double-bond `BondIdx`, so an allene/cumulene terminus
+    /// correctly excludes *every* double bond at `end`, matching
+    /// `chematic_chem::cip::assign_ez`'s own substituent-collection
+    /// convention.
+    fn substituents(mol: &Molecule, end: AtomIdx) -> Vec<(AtomIdx, BondIdx)> {
+        mol.neighbors(end)
+            .filter(|&(_, b)| mol.bond(b).order != BondOrder::Double)
+            .collect()
+    }
+
+    /// Every atom that is a stereogenic double bond's terminus with exactly
+    /// 2 candidate substituents — the ambiguity precondition a marker-carrier
+    /// choice exists for at all (0 or 1 substituent has nothing to choose
+    /// between; a real double bond's end never has more than 2). A double
+    /// bond only counts when BOTH ends have at least one substituent
+    /// (matching `chematic_chem::cip::assign_ez`'s own
+    /// `subs_a1.is_empty() || subs_a2.is_empty()` guard — e.g. a
+    /// ketone/aldehyde `C=O` never does, the O side has none), so the carbon
+    /// side of such a bond is never treated as ambiguous purely because it
+    /// happens to have 2 ring-bond substituents of its own.
+    fn compute_stereo_alkene_ends(mol: &Molecule) -> HashSet<AtomIdx> {
+        let mut ends = HashSet::new();
+        for (_, bond) in mol.bonds() {
+            if bond.order != BondOrder::Double {
+                continue;
+            }
+            if !Self::end_has_substituent(mol, bond.atom1)
+                || !Self::end_has_substituent(mol, bond.atom2)
+            {
+                continue;
+            }
+            for end in [bond.atom1, bond.atom2] {
+                if Self::substituents(mol, end).len() == 2 {
+                    ends.insert(end);
+                }
+            }
+        }
+        ends
+    }
+
+    /// Partition every stereo-alkene-end atom into maximal connected
+    /// components of the shared-candidate-bond coupling graph: nodes are the
+    /// ends themselves, edges connect two ends directly bonded via one of
+    /// their own (≤2) candidate substituent bonds — the only way one
+    /// physical bond can be a marker-carrier candidate for two different
+    /// double bonds' own resolution at once (a candidate bond is by
+    /// definition incident to its owning end, so it can only ever be
+    /// "shared" with the atom on its *other* side). Since every node has ≤2
+    /// candidate bonds, every component is a simple path or cycle, never a
+    /// general graph (measured directly — see [`Self::MAX_JOINT_COMPONENT_
+    /// SIZE`]'s doc comment). A molecule with no coupling at all yields one
+    /// singleton component per ambiguous end (the overwhelming common
+    /// case). Component *membership* is a pure function of molecule
+    /// topology; the order components (and atoms within them) are returned
+    /// in has no effect on the result — [`Self::resolve_component_jointly`]
+    /// re-sorts by canonical rank internally before making any decision.
+    ///
+    /// Traversal order (which node BFS starts from, and the order its
+    /// neighbors are pushed) is made deterministic by sorting on raw
+    /// `AtomIdx` — not because that order is canonical (it isn't), but
+    /// because `ends` is a `HashSet` and iterating it directly would leak
+    /// process-random hash-seed order into `component`'s element order.
+    /// [`Self::resolve_component_jointly`]'s own rank-based sort washes
+    /// that out for every rank-*distinct* member regardless, but ties in
+    /// `self.ranks` are only possible for genuinely automorphic ends, and
+    /// leaving *that* residual order-dependence to an unseeded HashSet
+    /// would be process-random input to an otherwise-deterministic
+    /// decision — so it is removed here at the source instead.
+    fn coupling_components(mol: &Molecule, ends: &HashSet<AtomIdx>) -> Vec<Vec<AtomIdx>> {
+        let mut starts: Vec<AtomIdx> = ends.iter().copied().collect();
+        starts.sort_by_key(|a| a.0);
+        let mut visited: HashSet<AtomIdx> = HashSet::new();
+        let mut components = Vec::new();
+        for start in starts {
+            if visited.contains(&start) {
+                continue;
+            }
+            let mut queue = vec![start];
+            let mut component = Vec::new();
+            visited.insert(start);
+            while let Some(cur) = queue.pop() {
+                component.push(cur);
+                let mut nbs: Vec<AtomIdx> = Self::substituents(mol, cur)
+                    .into_iter()
+                    .filter(|(nb, _)| ends.contains(nb))
+                    .map(|(nb, _)| nb)
+                    .collect();
+                nbs.sort_by_key(|a| a.0);
+                for nb in nbs {
+                    if visited.insert(nb) {
+                        queue.push(nb);
+                    }
+                }
+            }
+            components.push(component);
+        }
+        components
+    }
+
+    /// Jointly resolve one coupling component (see
+    /// [`Self::coupling_components`]) — a cluster of ambiguous alkene ends,
+    /// possibly of size 1 (no coupling at all, the common case: this method
+    /// is the *only* code path that assigns marker carriers, unified rather
+    /// than kept as a separate fast path, since a singleton component can
+    /// never conflict with anything and this method's enumeration collapses
+    /// to exactly the old single-end algorithm's own choice at negligible
+    /// extra cost — 2 evaluations instead of a direct pick).
+    ///
+    /// Enumerates every combination of "which of its 2 candidate bonds does
+    /// end `i` use as its own marker carrier" (bounded by
+    /// [`Self::MAX_JOINT_COMPONENT_SIZE`]), keeps only combinations where
+    /// every physical bond in the component receives a single, mutually
+    /// consistent literal value from every end that votes on it (see
+    /// [`Self::evaluate_choice`]), and — among those — picks the one
+    /// deviating from each end's own canonical-rank-preferred choice the
+    /// *fewest* times (primary key: total deviation count, ascending), with
+    /// a **molecule-intrinsic** tie-break among equal-count combinations:
+    /// ends sorted by ascending `self.ranks` (never `AtomIdx`/`BondIdx`/
+    /// traversal order), comparing each combination's per-end "did I
+    /// deviate" bit vector in that order, lexicographically smallest wins
+    /// (deviations are pushed onto the higher-ranked end first).
+    ///
+    /// That two-part key is a bijection of `choice` (distinct combinations
+    /// always produce distinct keys), so it alone can never report a tie —
+    /// a real one still exists when two *different* minimal-count
+    /// combinations differ only by which of two `self.ranks`-equal (hence
+    /// provably automorphic) ends carries a given deviation: no signal this
+    /// molecule offers distinguishes them, so [`Self::coupling_components`]'s
+    /// deterministic-but-arbitrary traversal order must not be allowed to
+    /// pick a "winner" by accident. Detected explicitly below rather than
+    /// left to fall out of the key comparison. If no consistent combination
+    /// exists at all, or a genuine tie is detected, the whole component is
+    /// left exactly as the input spelled it: always safe, never guessed.
+    fn resolve_component_jointly(&mut self, component: &[AtomIdx]) {
+        let mut ordered: Vec<AtomIdx> = component.to_vec();
+        ordered.sort_by_key(|&a| self.ranks[a.0 as usize]);
+        let k = ordered.len();
+
+        if k > Self::MAX_JOINT_COMPONENT_SIZE {
+            #[cfg(test)]
+            self.ez_shared_bond_abstains.extend_from_slice(&ordered);
+            return; // too large to jointly resolve -- leave untouched, never partially applied
         }
 
-        let carrier = *subs
+        let subs: Vec<[(AtomIdx, BondIdx); 2]> = ordered
             .iter()
-            .min_by_key(|&&(a, _)| self.ranks[a.0 as usize])
-            .expect("subs has exactly 2 elements");
-        let sibling = if carrier.0 == subs[0].0 {
-            subs[1]
-        } else {
-            subs[0]
-        };
+            .map(|&end| {
+                let s = Self::substituents(self.mol, end);
+                debug_assert_eq!(s.len(), 2, "component member must be a 2-substituent end");
+                [s[0], s[1]]
+            })
+            .collect();
 
-        // Abstain entirely when either candidate substituent is itself
-        // another double bond's ambiguous stereo end (a rare but real
-        // shape: two adjacent stereocenters -- e.g. two ring carbons each
-        // bearing their own exocyclic stereo double bond -- sharing the
-        // very ring-closure bond each would otherwise use as a candidate
-        // carrier). Resolving one end's carrier independently of the
-        // other's can move or demote a mark the *other* system's own
-        // resolution is simultaneously relying on for the same physical
-        // bond, corrupting its geometry; there is no processing order that
-        // avoids this without one end's resolution depending on the
-        // other's *already-resolved* (not raw) value, which would make the
-        // whole computation depend on which double bond happens to be
-        // visited first — reintroducing exactly the kind of order-
-        // dependence this fix exists to remove. Leaving both ends exactly
-        // as the input spelled them is always safe (never corrupts the
-        // encoded geometry); it just leaves *this* rare shared-bond
-        // interaction outside what this fix resolves.
-        //
-        // (A less conservative variant was tried: allow the move but skip
-        // *demoting* a shared sibling, leaving it redundantly-but-
-        // consistently marked. Measured empirically against the same
-        // real-corpus shared-bond cases this guard is designed for, it
-        // produced identical convergence (264/282) — the two marks end up
-        // on different bonds depending on which substituent the *input*
-        // happened to mark, so the output still doesn't converge, just
-        // with an extra redundant marker. Reverted in favor of this
-        // simpler, provably no-op-on-failure form.)
-        if stereo_alkene_ends.contains(&carrier.0) || stereo_alkene_ends.contains(&sibling.0) {
+        // Each end's own rank-preferred candidate index. A tie (both
+        // candidates equal rank) can only mean the two substituents are
+        // automorphic (per `self.ranks`'s own fully-discrete-for-genuinely-
+        // distinct-atoms invariant, established at `winning_individualized_
+        // ranks`) — either index then writes the same canonical string.
+        let pref: Vec<usize> = subs
+            .iter()
+            .map(|s| {
+                if self.ranks[s[1].0.0 as usize] < self.ranks[s[0].0.0 as usize] {
+                    1
+                } else {
+                    0
+                }
+            })
+            .collect();
+
+        // Each end's own geometry fact — computed ONCE per end, via a FIXED
+        // rank-based reference substituent (never "whichever candidate
+        // happens to carry a raw mark in the CURRENT input text") — see
+        // [`Self::reference_up`]. This is what makes the whole enumeration
+        // below idempotent: two different valid spellings of the same real
+        // molecule always mark *some* substituent at each end, but not
+        // necessarily the same one, and an earlier version of this method
+        // read `raw_input_direction` per-candidate inside the enumeration
+        // itself, so the set of non-conflicting combinations (and hence the
+        // winner) could differ between "the original input" and "this
+        // method's own previous output re-parsed" — an idempotence bug, not
+        // just a permutation-invariance one. `reference_up` fixes this by
+        // reading the SAME fact regardless of which of the two candidates
+        // the input happened to mark.
+        let ref_up: Vec<Option<bool>> = ordered
+            .iter()
+            .zip(subs.iter())
+            .zip(pref.iter())
+            .map(|((&end, s), &p)| self.reference_up(end, s, p))
+            .collect();
+
+        // Every valid (non-conflicting) global assignment, as its deviation
+        // bit vector (relative to `pref`) paired with the bond-value plan
+        // it produces.
+        let mut valid: Vec<(Vec<u8>, HashMap<BondIdx, BondOrder>)> = Vec::new();
+        for mask in 0u32..(1u32 << k) {
+            let choice: Vec<usize> = (0..k).map(|i| ((mask >> i) & 1) as usize).collect();
+            if let Some(plan) = self.evaluate_choice(&ordered, &subs, &pref, &ref_up, &choice) {
+                let bits: Vec<u8> = (0..k).map(|i| u8::from(choice[i] != pref[i])).collect();
+                valid.push((bits, plan));
+            }
+        }
+
+        let Some(min_count) = valid
+            .iter()
+            .map(|(bits, _)| bits.iter().map(|&b| u32::from(b)).sum::<u32>())
+            .min()
+        else {
             #[cfg(test)]
-            self.ez_shared_bond_abstains.push(alkene_end);
+            self.ez_shared_bond_abstains.extend_from_slice(&ordered);
+            return; // no consistent assignment exists at all
+        };
+        let mut winners: Vec<&(Vec<u8>, HashMap<BondIdx, BondOrder>)> = valid
+            .iter()
+            .filter(|(bits, _)| bits.iter().map(|&b| u32::from(b)).sum::<u32>() == min_count)
+            .collect();
+        winners.sort_by(|a, b| a.0.cmp(&b.0));
+        let (winner_bits, winner_plan) = winners[0];
+
+        // Genuine tie: swapping the deviation between two ends this
+        // molecule's own canonical rank cannot tell apart (rank-equal, so
+        // provably automorphic) also reaches an equally-minimal, equally
+        // valid assignment. No available intrinsic signal picks a real
+        // winner between them, so abstain rather than let traversal-order
+        // arbitrarily decide.
+        let is_tie = (0..k).any(|i| {
+            (i + 1..k).any(|j| {
+                self.ranks[ordered[i].0 as usize] == self.ranks[ordered[j].0 as usize]
+                    && winner_bits[i] != winner_bits[j]
+                    && winners.iter().any(|(bits, _)| {
+                        bits[i] == winner_bits[j]
+                            && bits[j] == winner_bits[i]
+                            && (0..k).all(|p| p == i || p == j || bits[p] == winner_bits[p])
+                    })
+            })
+        });
+
+        if is_tie {
+            #[cfg(test)]
+            self.ez_shared_bond_abstains.extend_from_slice(&ordered);
             return;
         }
 
-        let carrier_dir = self.raw_input_direction(carrier.1);
-        let sibling_dir = self.raw_input_direction(sibling.1);
+        for (bidx, order) in winner_plan.clone() {
+            self.ez_marker.insert(bidx, order);
+        }
+    }
 
-        match (carrier_dir, sibling_dir) {
-            (Some(dir), _) => {
-                // Carrier already marked (possibly the sibling too, in
-                // malformed/redundant input) — keep it, demote any other.
-                self.ez_marker.insert(carrier.1, dir);
-                if sibling_dir.is_some() {
-                    self.ez_marker
-                        .insert(sibling.1, Self::plain_order(self.mol.bond(sibling.1).order));
+    /// One end's own geometry fact: whether its rank-preferred ("reference")
+    /// candidate substituent (`subs[pref_idx]`) reads as "up", read via a
+    /// FIXED reference — the reference bond's own raw direction if it has
+    /// one, else its sibling's raw direction inverted (the trigonal-carbon
+    /// sibling-complement identity: the two substituents of a stereogenic
+    /// alkene end always sit on opposite sides of the double-bond axis).
+    /// Returns `None` only when *neither* candidate carries any raw
+    /// direction at all (no geometry info at this end).
+    ///
+    /// This is deliberately never "whichever candidate happens to carry a
+    /// raw mark" — always the SAME (rank-based) candidate — so its result
+    /// depends only on molecule topology and encoded geometry, never on
+    /// which of the two candidates the CURRENT input text happened to mark.
+    /// Mirrors the test-only `up_of_reference` oracle's own logic
+    /// (kept as two copies, not shared, because that one intentionally
+    /// stays test-only scaffolding — see its doc comment).
+    fn reference_up(
+        &self,
+        alkene_end: AtomIdx,
+        subs: &[(AtomIdx, BondIdx); 2],
+        pref_idx: usize,
+    ) -> Option<bool> {
+        let reference = subs[pref_idx];
+        let sibling = subs[1 - pref_idx];
+        if let Some(dir) = self.raw_input_direction(reference.1) {
+            Some(Self::direction_is_up(
+                dir,
+                self.mol.bond(reference.1).atom1,
+                alkene_end,
+            ))
+        } else {
+            let dir = self.raw_input_direction(sibling.1)?;
+            Some(!Self::direction_is_up(
+                dir,
+                self.mol.bond(sibling.1).atom1,
+                alkene_end,
+            ))
+        }
+    }
+
+    /// One candidate global assignment for a coupled component:
+    /// `choice[i]` selects which of `subs[i]`'s two candidate bonds end
+    /// `ordered[i]` uses as its own marker carrier. Returns the combined
+    /// bond-value plan if every physical bond this component touches
+    /// receives a single, consistent literal value from every end that
+    /// votes on it (via [`Self::end_votes`]); `None` if any bond gets two
+    /// disagreeing votes — the corruption [`Self::resolve_component_
+    /// jointly`] exists to prevent.
+    fn evaluate_choice(
+        &self,
+        ordered: &[AtomIdx],
+        subs: &[[(AtomIdx, BondIdx); 2]],
+        pref: &[usize],
+        ref_up: &[Option<bool>],
+        choice: &[usize],
+    ) -> Option<HashMap<BondIdx, BondOrder>> {
+        let mut votes: HashMap<BondIdx, BondOrder> = HashMap::new();
+        for (i, &end) in ordered.iter().enumerate() {
+            for (bidx, value) in self.end_votes(end, &subs[i], pref[i], ref_up[i], choice[i]) {
+                match votes.get(&bidx) {
+                    None => {
+                        votes.insert(bidx, value);
+                    }
+                    Some(&existing) if existing == value => {}
+                    Some(_) => return None,
                 }
             }
-            (None, Some(sibling_dir)) => {
-                // The actual bug case: move the marker from the sibling onto
-                // the canonical carrier, preserving the encoded geometry via
-                // the trigonal-carbon sibling-complement identity (the same
-                // fact `chematic_chem::cip::highest_stereo_sub` relies on to
-                // read a marker back out from either substituent).
-                let sibling_bond = self.mol.bond(sibling.1);
-                let sibling_up = Self::direction_is_up(sibling_dir, sibling_bond.atom1, alkene_end);
-                let carrier_bond = self.mol.bond(carrier.1);
-                let chosen = Self::direction_for_up(carrier_bond.atom1, alkene_end, !sibling_up);
-                self.ez_marker.insert(carrier.1, chosen);
-                self.ez_marker
-                    .insert(sibling.1, Self::plain_order(sibling_bond.order));
-            }
-            (None, None) => {} // no direction info at this end at all
         }
+        Some(votes)
+    }
+
+    /// One end's own votes on its two candidate bonds, given its
+    /// precomputed [`Self::reference_up`] fact — generalizes the original
+    /// single-end carrier/sibling branching to an arbitrary (not
+    /// necessarily rank-preferred) `chosen` index, so a lone (uncoupled)
+    /// end and a jointly-resolved coupled end share exactly the same
+    /// per-end semantics. Always votes on *both* of the end's candidate
+    /// bonds (the non-chosen one demoted to its plain order) — not
+    /// conditionally, so the vote set depends only on `ref_up` (itself
+    /// input-mark-placement-invariant), never on whether the non-chosen
+    /// bond happened to carry a raw mark in this particular spelling.
+    fn end_votes(
+        &self,
+        alkene_end: AtomIdx,
+        subs: &[(AtomIdx, BondIdx); 2],
+        pref_idx: usize,
+        ref_up: Option<bool>,
+        chosen_idx: usize,
+    ) -> Vec<(BondIdx, BondOrder)> {
+        let Some(ref_up) = ref_up else {
+            return Vec::new(); // no direction info at this end at all
+        };
+        let chosen = subs[chosen_idx];
+        let other = subs[1 - chosen_idx];
+        let chosen_up = if chosen_idx == pref_idx {
+            ref_up
+        } else {
+            !ref_up
+        };
+        let picked = Self::direction_for_up(self.mol.bond(chosen.1).atom1, alkene_end, chosen_up);
+        vec![
+            (chosen.1, picked),
+            (other.1, Self::plain_order(self.mol.bond(other.1).order)),
+        ]
     }
 
     /// Union all directional single bonds flanking each stereo double bond
@@ -1359,10 +1597,14 @@ impl<'a> CanonicalWriter<'a> {
 /// Return `true` if the permutation mapping `original` order to `canonical` order
 /// has odd parity (i.e. requires an odd number of transpositions).
 ///
-/// Both slices must contain the same multiset of `u32` values.
-fn permutation_is_odd(original: &[u32], canonical: &[u32]) -> bool {
+/// Both slices must contain the same multiset of values (no duplicates —
+/// a repeated value would collide in the by-value index below). Generic
+/// over `T` so the same one implementation backs both `corrected_chirality`
+/// (raw `u32` `AtomIdx` values, always unique per atom) and the test-only
+/// rank-based tetrahedral fingerprint (`u64` canonical ranks).
+fn permutation_is_odd<T: Eq + std::hash::Hash + Copy>(original: &[T], canonical: &[T]) -> bool {
     let n = original.len();
-    let mut pos: HashMap<u32, usize> = HashMap::with_capacity(n);
+    let mut pos: HashMap<T, usize> = HashMap::with_capacity(n);
     for (i, &v) in original.iter().enumerate() {
         pos.insert(v, i);
     }
@@ -1471,6 +1713,64 @@ mod tests {
             let _ = builder.add_bond(a, b, bond.order);
         }
         builder.build()
+    }
+
+    /// Like [`permute_molecule`], but preserves bond order (including
+    /// literal `Up`/`Down` E/Z markers) and the `bond_direction` stash,
+    /// remapped onto the new atom labeling -- needed to test canonical
+    /// *convergence* across genuinely different atom-labelings of the same
+    /// molecule (unlike `permute_molecule`, which deliberately drops this
+    /// metadata since it only tests skeleton rank-partition invariance).
+    /// Bonds are added in the same relative order as `mol.bonds()` yields
+    /// them, so each new bond's index equals its original one -- the
+    /// `bond_direction` stash (keyed by `BondIdx`) can therefore be
+    /// reapplied directly after `build()`.
+    fn relabel_molecule_preserving_ez(mol: &Molecule, perm: &[usize]) -> Molecule {
+        let mut old_to_new = vec![0u32; perm.len()];
+        for (new_idx, &old_idx) in perm.iter().enumerate() {
+            old_to_new[old_idx] = new_idx as u32;
+        }
+        let mut builder = chematic_core::MoleculeBuilder::new();
+        for &old_idx in perm {
+            builder.add_atom(mol.atom(AtomIdx(old_idx as u32)).clone());
+        }
+        let mut direction_stash = Vec::new();
+        for (bidx, bond) in mol.bonds() {
+            let a = AtomIdx(old_to_new[bond.atom1.0 as usize]);
+            let b = AtomIdx(old_to_new[bond.atom2.0 as usize]);
+            let new_bidx = builder
+                .add_bond(a, b, bond.order)
+                .expect("relabeling a valid molecule's own bonds cannot fail");
+            if let Some(dir) = mol.bond_direction(bidx) {
+                direction_stash.push((new_bidx, dir));
+            }
+        }
+        // Tetrahedral chirality (`Atom.chirality`) is meaningless without
+        // its accompanying `stereo_neighbor_order` (the original neighbor
+        // listing @/@@ is interpreted against) -- remapped here the same
+        // way `Molecule::remove_atom` remaps it on atom removal (see that
+        // method's own doc comment), just with no removed atom to drop.
+        for &old_idx in perm {
+            let old_atom = AtomIdx(old_idx as u32);
+            if let Some(order) = mol.stereo_neighbor_order(old_atom) {
+                let new_order: Vec<u32> = order
+                    .iter()
+                    .map(|&v| {
+                        if v == chematic_core::STEREO_H_SENTINEL {
+                            v
+                        } else {
+                            old_to_new[v as usize]
+                        }
+                    })
+                    .collect();
+                builder.set_stereo_neighbor_order(AtomIdx(old_to_new[old_idx]), new_order);
+            }
+        }
+        let mut relabeled = builder.build();
+        for (bidx, dir) in direction_stash {
+            relabeled.set_bond_direction(bidx, dir);
+        }
+        relabeled
     }
 
     /// Relabel a rank vector into "first-seen order" group ids, so partitions
@@ -2731,83 +3031,721 @@ mod tests {
         }
     }
 
-    /// The 18 real-corpus molecules (out of the 282-molecule `has_ez_marker`
-    /// diagnosis subset, re-measured on this fix) where the shared-
-    /// candidate-bond guard in `resolve_ez_marker_for_end` fires and
-    /// canonicalization deliberately does NOT converge to one string --
-    /// persisted as a permanent regression fixture set per PR review (see
-    /// the tracking issue "canonical E/Z: jointly resolve shared carrier
-    /// bonds across coupled stereo systems" for what a real fix would need).
+    /// A deterministic (seeded, reproducible -- never true randomness)
+    /// Fisher-Yates permutation of `0..n`, for exercising many atom
+    /// relabelings without external randomness.
     ///
-    /// Two things this asserts per fixture, deliberately NOT just "the
-    /// string is unchanged" (brittle, and not what's under test):
-    ///  1. The guard actually fired -- read from `ez_shared_bond_abstains`,
-    ///     production's own record of which branch `resolve_ez_marker_for_
-    ///     end` took, not re-derived from the topology in this test (which
-    ///     could be true for some unrelated end while production actually
-    ///     exited via "not ambiguous" or "no direction info" instead).
-    ///  2. Zero semantic corruption: `geometry_fingerprint` (marker-
-    ///     placement-invariant, cross-parse-comparable) is identical
-    ///     between the original parse and a reparse of its canonical
-    ///     output.
+    /// Deliberately NOT built on `chematic_smiles::random_smiles`: probing
+    /// it during this investigation found that `random_smiles(&mol, 2)` on
+    /// `CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N` (one of the
+    /// [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] fixtures) produces a
+    /// canonical key differing at a SECOND, unrelated ring stereocenter's
+    /// `@`/`@@` tag from the original -- independently confirmed via RDKit
+    /// (`Chem.MolToSmiles`/`compare_molecules(..., StandardInchiString)` ->
+    /// `Distinct`, a genuinely different diastereomer, not just a
+    /// respelling). Whether that is a real `random_smiles` bug or a
+    /// legitimate edge case was NOT investigated further here -- it is
+    /// out of scope for this PR -- but using it as this gate's relabeling
+    /// source would risk silently conflating that separate, unconfirmed
+    /// question with the E/Z-carrier claim this test exists to check.
+    fn deterministic_permutation(n: usize, seed: u64) -> Vec<usize> {
+        let mut state = seed ^ 0x9E37_79B9_7F4A_7C15;
+        let mut next_u32 = move || {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            (state >> 33) as u32
+        };
+        let mut perm: Vec<usize> = (0..n).collect();
+        for i in (1..n).rev() {
+            let j = (next_u32() as usize) % (i + 1);
+            perm.swap(i, j);
+        }
+        perm
+    }
+
+    /// Every alternate encoding of `mol` reachable by moving ONE raw
+    /// `/`/`\` mark from its current candidate bond to the SIBLING
+    /// candidate at the same stereo-alkene end, via the same sibling-
+    /// complement identity `end_votes` itself relies on -- i.e. a
+    /// different, but geometrically identical, valid SMILES-level
+    /// spelling of the exact same real molecule.
     ///
-    /// This Rust test is a regression tripwire, not a semantic oracle --
-    /// `geometry_fingerprint` only checks *this crate's own* reading of E/Z
-    /// stays put; the authoritative structural proof (independent RDKit
-    /// comparison across all 4,992 measured molecules, not just these 18)
-    /// lives in the PR's own verification, not reimplemented here.
-    const EZ_SHARED_CANDIDATE_BOND_RESIDUALS: &[&str] = &[
+    /// This is a DIFFERENT degree of freedom than atom-index relabeling
+    /// (`relabel_molecule_preserving_ez`/`deterministic_permutation`),
+    /// which always preserves which physical bond carries the mark.
+    /// Measured directly: pure index relabeling alone (even 16+ deterministic
+    /// permutations) never reproduces the divergence the corpus diagnosis
+    /// found for [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] fixtures,
+    /// because that divergence is specifically about the solver's decision
+    /// changing based on WHICH candidate bond happens to carry the input's
+    /// raw mark -- this helper is what actually exercises that axis.
+    ///
+    /// Restricted to the plain (non-aromatic-stash) case: both candidates'
+    /// real chemical order must be `Single` (one currently `Up`/`Down`, the
+    /// other genuinely unmarked) -- sufficient for every fixture in this
+    /// file (none of the 18 issue #149 fixtures route an E/Z-relevant
+    /// candidate through the aromatic-bond-direction stash), not a claim
+    /// this covers every possible molecule.
+    ///
+    /// Self-validating: a candidate bond can be shared between TWO
+    /// different ends (the exact coupling this whole module resolves), so
+    /// moving its mark away for ONE end's sake, considered in isolation,
+    /// can silently strip the OTHER end's only source of geometry --
+    /// measured directly on one of the
+    /// [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] fixtures (the
+    /// enol-ether double bond's own mark vanishing as a side effect of
+    /// relocating the SEPARATE, merely-bond-adjacent coupled imine's own
+    /// mark). Every candidate alternate is checked against
+    /// `geometry_fingerprint` before being returned -- only alternates that
+    /// provably encode the exact same real-world geometry as `mol` are
+    /// ever handed to a caller, so this helper can never itself be the
+    /// source of a "lost stereo" false positive in the tests that use it.
+    fn alternate_ez_markings(mol: &Molecule) -> Vec<Molecule> {
+        let baseline_geo = geometry_fingerprint(mol);
+        let ends = CanonicalWriter::compute_stereo_alkene_ends(mol);
+        let mut alternates = Vec::new();
+        for &end in &ends {
+            let subs = CanonicalWriter::substituents(mol, end);
+            if subs.len() != 2 {
+                continue;
+            }
+            for i in 0..2 {
+                let chosen = subs[i];
+                let other = subs[1 - i];
+                let chosen_order = mol.bond(chosen.1).order;
+                let other_order = mol.bond(other.1).order;
+                let chosen_dir = match chosen_order {
+                    BondOrder::Up | BondOrder::Down => chosen_order,
+                    _ => continue,
+                };
+                if other_order != BondOrder::Single {
+                    continue; // other already marked, or non-plain -- not this helper's case
+                }
+
+                let up =
+                    CanonicalWriter::direction_is_up(chosen_dir, mol.bond(chosen.1).atom1, end);
+                let new_other_dir =
+                    CanonicalWriter::direction_for_up(mol.bond(other.1).atom1, end, !up);
+
+                let alt = mol
+                    .with_bond_order(chosen.1, BondOrder::Single)
+                    .with_bond_order(other.1, new_other_dir);
+                if geometry_fingerprint(&alt) != baseline_geo {
+                    continue; // this end's own move stripped a coupled partner's geometry -- discard
+                }
+                alternates.push(alt);
+            }
+        }
+        alternates
+    }
+
+    /// The full set of relabelings + alternate spellings this file's
+    /// permutation-invariance gates check: the original, its reversed-
+    /// atom-order relabeling, 16 deterministic Fisher-Yates relabelings
+    /// (all preserving which bond carries each mark), PLUS every
+    /// mark-relocated alternate from [`alternate_ez_markings`] (which
+    /// instead moves a mark to its sibling candidate, atom labeling
+    /// unchanged) -- the two axes together are what the corpus-measured
+    /// residual divergence actually needs to be reproduced locally.
+    fn ez_carrier_test_variants(mol: &Molecule) -> Vec<Molecule> {
+        let n = mol.atom_count();
+        let mut variants: Vec<Molecule> = vec![
+            relabel_molecule_preserving_ez(mol, &(0..n).collect::<Vec<_>>()),
+            relabel_molecule_preserving_ez(mol, &(0..n).rev().collect::<Vec<_>>()),
+        ];
+        for seed in 0..16u64 {
+            variants.push(relabel_molecule_preserving_ez(
+                mol,
+                &deterministic_permutation(n, seed),
+            ));
+        }
+        variants.extend(alternate_ez_markings(mol));
+        variants
+    }
+
+    /// A permutation-invariant tetrahedral-stereo fact per stereocenter,
+    /// ordered by the CENTER atom's own ascending canonical rank so it
+    /// lines up positionally across two different atom-labelings of the
+    /// same molecule -- the tetrahedral counterpart to
+    /// `geometry_fingerprint` (E/Z). Reuses [`permutation_is_odd`], the
+    /// same primitive `corrected_chirality` uses to compute the write-time
+    /// parity correction, but against a FIXED rank-sorted reference order
+    /// instead of "whichever order the writer happened to traverse in," so
+    /// relabeling can never change the reported polarity. Implicit H
+    /// (`STEREO_H_SENTINEL`) gets a fixed extreme rank purely as an
+    /// internally-consistent tie-break -- this does not need to match real
+    /// CIP H-priority, only be the same choice on both sides of a
+    /// comparison. `None` for a stereocenter whose 4 neighbor ranks are
+    /// not fully discriminated (would make the by-value permutation lookup
+    /// ambiguous) -- rare (only possible for locally-automorphic
+    /// substituents) and never silently miscompared.
+    fn tetrahedral_fingerprint(mol: &Molecule) -> Vec<Option<bool>> {
+        let ranks = morgan_ranks(mol);
+        let mut centers: Vec<(u64, AtomIdx)> = mol
+            .atoms()
+            .filter(|(_, a)| a.chirality != Chirality::None)
+            .map(|(idx, _)| (ranks[idx.0 as usize], idx))
+            .collect();
+        centers.sort_by_key(|&(r, _)| r);
+
+        centers
+            .into_iter()
+            .map(|(_, idx)| {
+                let stored = mol.atom(idx).chirality;
+                let original = mol.stereo_neighbor_order(idx)?;
+                let rank_of = |v: u32| -> u64 {
+                    if v == STEREO_H_SENTINEL {
+                        u64::MAX
+                    } else {
+                        ranks[v as usize]
+                    }
+                };
+                let original_ranks: Vec<u64> = original.iter().map(|&v| rank_of(v)).collect();
+                let mut sorted_ranks = original_ranks.clone();
+                sorted_ranks.sort_unstable();
+                let mut deduped = sorted_ranks.clone();
+                deduped.dedup();
+                if deduped.len() != sorted_ranks.len() {
+                    return None; // neighbor ranks not fully discriminated
+                }
+                let is_odd = permutation_is_odd(&original_ranks, &sorted_ranks);
+                Some(match (stored, is_odd) {
+                    (Chirality::Clockwise, false) => true,
+                    (Chirality::Clockwise, true) => false,
+                    (Chirality::CounterClockwise, false) => false,
+                    (Chirality::CounterClockwise, true) => true,
+                    (Chirality::None, _) => unreachable!("filtered out above"),
+                })
+            })
+            .collect()
+    }
+
+    /// For every shared-candidate coupling component in `mol` recorded as
+    /// abstained (production's own `ez_shared_bond_abstains`), NONE of its
+    /// ends' candidate bonds carry a resolved marker -- proving "abstain"
+    /// really means untouched, never a partially-applied plan left behind
+    /// by an early-return path that ran after some `ez_marker` inserts
+    /// already happened.
+    ///
+    /// Deliberately NOT asserting the stronger "0 or all of an end's own
+    /// 2 candidates are marked" for every end unconditionally: that is
+    /// FALSE in a real, legitimate case measured directly on one of the
+    /// [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] fixtures -- an end
+    /// with zero raw geometry of its own (`reference_up` returns `None`,
+    /// so `end_votes` contributes nothing) can still be a bystander whose
+    /// shared bond gets marked purely by its *coupled partner's* own vote.
+    /// That end's OTHER (private) candidate correctly stays unmarked. This
+    /// is not corruption -- it is what `geometry_fingerprint`/
+    /// `tetrahedral_fingerprint` (checked separately) confirm produces the
+    /// right molecule either way -- so it must not be flagged here as if
+    /// it were a bug.
+    fn assert_no_partial_marker_application(mol: &Molecule) {
+        let ends = CanonicalWriter::compute_stereo_alkene_ends(mol);
+        let components = CanonicalWriter::coupling_components(mol, &ends);
+        let (ranks, _) = winning_individualized_ranks(mol);
+        let mut writer = CanonicalWriter::new(mol, &ranks);
+        writer.resolve_ez_markers();
+
+        for component in &components {
+            let component_abstained = component
+                .iter()
+                .any(|end| writer.ez_shared_bond_abstains.contains(end));
+            if !component_abstained {
+                continue;
+            }
+            for &end in component {
+                let subs = CanonicalWriter::substituents(mol, end);
+                let marked = subs
+                    .iter()
+                    .filter(|(_, b)| writer.ez_marker.contains_key(b))
+                    .count();
+                assert_eq!(
+                    marked, 0,
+                    "end {end:?} belongs to a component recorded as \
+                     abstained, but still has a marked candidate bond"
+                );
+            }
+        }
+    }
+
+    /// 10 of the 18 real-corpus molecules from the 282-molecule
+    /// `has_ez_marker` diagnosis subset (issue #149) where two
+    /// independently stereogenic double bonds share one physical candidate
+    /// carrier bond -- the subset the joint component solver
+    /// (`resolve_component_jointly`) resolves **fully**: canonical output
+    /// is invariant under every relabeling tested below, not just one.
+    /// See [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] for the other
+    /// 8, which are a genuine, still-open residual -- do not merge the two
+    /// lists back together or treat this one as "all 18."
+    const EZ_SHARED_CARRIER_FULLY_RESOLVED: &[&str] = &[
         r"CCCCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
         r"O=C(Nc1ccc(C[C@H](/N=c2\c(O)c(O)\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
         r"CCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
         r"O=C(Nc1ccc(C[C@H](/N=c2\c(O)c(O)\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
         r"CC(C)(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+    ];
+
+    /// The other 8 of the 18 (see [`EZ_SHARED_CARRIER_FULLY_RESOLVED`]):
+    /// the joint solver no longer *abstains* for these (unlike the
+    /// pre-fix behavior, which abstained for all 18 unconditionally), but
+    /// canonical output still is **not** fully permutation-invariant --
+    /// some relabelings converge, at least one measured relabeling does
+    /// not (measured against a fresh 5,000-molecule corpus diagnosis:
+    /// `scripts/canonical_residual_diagnosis.py`, "random-relabeling-only"
+    /// failures 18 -> 8, this exact set). Confirmed cosmetic only (RDKit
+    /// re-parse of every divergent spelling is structurally/
+    /// stereochemically identical), root-caused to a shared mechanism: the
+    /// coupled component in each of these 8 includes an end that is part
+    /// of an *endocyclic* double bond in a 5- or 6-membered ring, whose
+    /// real-world geometry is fixed by the ring itself, not a free
+    /// stereochemical choice -- `compute_stereo_alkene_ends` has no
+    /// ring-size gate, so this end is still treated as ambiguous, and
+    /// [`CanonicalWriter::reference_up`] can read as defined or `None`
+    /// depending on which of the ring bond's two candidates the current
+    /// spelling happens to mark.
+    ///
+    /// Deliberately NOT fixed here: excluding small-ring endocyclic bonds
+    /// from `compute_stereo_alkene_ends` would change marker placement for
+    /// molecules well outside these 8, with no measurement of that blast
+    /// radius yet -- tracked as follow-up work (Wave 2C audit), not
+    /// silently absorbed into this change. Do NOT read the tests below as
+    /// "resolved," "fixed," or "converged" for this set -- they exist to
+    /// pin the opposite (still-residual) while proving zero semantic harm.
+    const EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS: &[&str] = &[
         r"CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N",
         r"CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N",
         r"COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
-        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
         r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
-        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
-        r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
         r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
-        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
         r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
         r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
-        r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
         r"CCO/C(O)=C(\C1=NCCN1)c1nnc(N)s1",
     ];
 
+    /// Proves the 10 [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures are
+    /// genuinely, fully permutation-invariant -- not just under the one
+    /// relabeling a weaker test might check. Per fixture: the original
+    /// parse, its reversed-atom-order relabeling, and 16 deterministic
+    /// (seeded) Fisher-Yates relabelings (see [`deterministic_permutation`]
+    /// for why `random_smiles` is not used) -- 18 spellings total -- must
+    /// all canonicalize to exactly ONE string. That string must be
+    /// idempotent (`canonical(canonical(x)) == canonical(x)`), must
+    /// re-parse without error, and a reparse of it must preserve both the
+    /// E/Z ([`geometry_fingerprint`]) and tetrahedral
+    /// ([`tetrahedral_fingerprint`]) stereo facts read from the original
+    /// parse. Also asserts the joint solver never abstains for these 10
+    /// (production's own `ez_shared_bond_abstains` record, not re-derived
+    /// topology) and never applies a partial marker plan.
     #[test]
-    fn ez_carrier_shared_candidate_bond_residuals_never_corrupt() {
-        for &s in EZ_SHARED_CANDIDATE_BOND_RESIDUALS {
+    fn ez_shared_carrier_fully_resolved_are_permutation_invariant() {
+        for &s in EZ_SHARED_CARRIER_FULLY_RESOLVED {
             let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
+
             let (ranks, _) = winning_individualized_ranks(&mol);
             let mut writer = CanonicalWriter::new(&mol, &ranks);
             writer.resolve_ez_markers();
             assert!(
-                !writer.ez_shared_bond_abstains.is_empty(),
-                "expected the shared-candidate-bond guard to fire for '{s}', \
-                 but resolve_ez_marker_for_end never recorded an abstain -- \
-                 this fixture may no longer belong in this residual set"
+                writer.ez_shared_bond_abstains.is_empty(),
+                "'{s}': expected the joint component solver to resolve \
+                 without abstaining -- this fixture may need re-diagnosis"
+            );
+            assert_no_partial_marker_application(&mol);
+
+            let variants = ez_carrier_test_variants(&mol);
+            assert!(
+                variants.len() >= 18,
+                "sanity: at least 16 deterministic + 2 fixed relabelings"
             );
 
-            let canon = canonical_smiles(&mol);
-            let before = geometry_fingerprint(&mol);
-            let mol2 = parse(&canon).unwrap_or_else(|e| panic!("re-parse '{canon}': {e}"));
-            let after = geometry_fingerprint(&mol2);
+            let canonical_outputs: Vec<String> = variants.iter().map(canonical_smiles).collect();
+            let unique: HashSet<&String> = canonical_outputs.iter().collect();
             assert_eq!(
-                before, after,
-                "canonicalizing '{s}' -> '{canon}' must not change E/Z \
-                 geometry, even though this shared-bond shape is a known, \
-                 deliberately-abstained residual (not resolved to one \
-                 canonical string)"
+                unique.len(),
+                1,
+                "'{s}': expected ONE canonical output across {} relabelings/\
+                 markings (fully resolved), got {} distinct: {:?}",
+                variants.len(),
+                unique.len(),
+                unique
+            );
+            let canon = canonical_outputs[0].clone();
+
+            // Idempotence.
+            let reparsed_once =
+                parse(&canon).unwrap_or_else(|e| panic!("'{s}': reparse of '{canon}': {e}"));
+            let canon_twice = canonical_smiles(&reparsed_once);
+            assert_eq!(
+                canon, canon_twice,
+                "'{s}': canonical(canonical(x)) must equal canonical(x)"
+            );
+
+            // Zero corruption: E/Z and tetrahedral facts survive the
+            // canonicalize -> reparse round trip.
+            let before_geo = geometry_fingerprint(&mol);
+            let after_geo = geometry_fingerprint(&reparsed_once);
+            assert_eq!(
+                before_geo, after_geo,
+                "'{s}': E/Z geometry must be preserved by canonicalization"
+            );
+            let before_tet = tetrahedral_fingerprint(&mol);
+            let after_tet = tetrahedral_fingerprint(&reparsed_once);
+            assert_eq!(
+                before_tet, after_tet,
+                "'{s}': tetrahedral stereo must be preserved by canonicalization"
             );
             assert!(
-                before.iter().any(|f| f.is_some()),
+                before_geo.iter().any(|f| f.is_some()),
                 "test setup sanity: '{s}' must have at least one defined \
-                 geometry fact to make this a meaningful check"
+                 E/Z geometry fact"
             );
         }
+    }
+
+    /// Pins that the 8 [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] are
+    /// genuinely STILL a residual: among the SAME relabeling/marking set
+    /// [`ez_shared_carrier_fully_resolved_are_permutation_invariant`]
+    /// checks ([`ez_carrier_test_variants`]: original, reversed, 16
+    /// deterministic Fisher-Yates relabelings, and every mark-relocated
+    /// alternate from [`alternate_ez_markings`]), at least 2 distinct
+    /// canonical outputs must appear for every one of these 8.
+    /// Deliberately NOT just "reversed differs from original", and
+    /// deliberately NOT atom-index relabeling alone: measured directly,
+    /// plain index relabeling (even 16 deterministic permutations, not just
+    /// the reversed one) never reproduces the divergence for at least one
+    /// of these 8 -- the actual degree of freedom the corpus diagnosis
+    /// caught is WHICH candidate bond carries the mark, only reachable via
+    /// [`alternate_ez_markings`]. This is the mirror image of
+    /// [`ez_shared_carrier_fully_resolved_are_permutation_invariant`] -- if
+    /// any of these 8 starts producing exactly one output across the full
+    /// variant set, that is a genuine improvement, but it must be moved to
+    /// [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] and re-verified with the full
+    /// permutation gate, never left silently passing this assertion with a
+    /// weakened claim.
+    #[test]
+    fn ring_constrained_residuals_are_not_claimed_resolved() {
+        for &s in EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS {
+            let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
+            let variants = ez_carrier_test_variants(&mol);
+            let unique: HashSet<String> = variants.iter().map(canonical_smiles).collect();
+            assert!(
+                unique.len() >= 2,
+                "'{s}': expected this fixture to STILL be a residual (>=2 \
+                 distinct canonical outputs across {} relabelings/markings), \
+                 got {} distinct -- if this now converges, the ring-constrained \
+                 mechanism may have been independently resolved; move this \
+                 fixture to EZ_SHARED_CARRIER_FULLY_RESOLVED and re-verify \
+                 with the full permutation-invariance gate rather than \
+                 leaving this assertion silently weakened",
+                variants.len(),
+                unique.len()
+            );
+        }
+    }
+
+    /// Proves the 8 [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] never
+    /// corrupt or lose stereochemistry despite not fully converging. Per
+    /// fixture: collects every distinct canonical output across the full
+    /// [`ez_carrier_test_variants`] set (relabelings AND mark-relocated
+    /// alternates), then for EVERY distinct output (not just one) checks:
+    ///  - it re-parses without error,
+    ///  - its own `geometry_fingerprint`/`tetrahedral_fingerprint` (E/Z and
+    ///    tetrahedral stereo) exactly match the ORIGINAL parse's -- zero
+    ///    lost, zero flipped, for either kind of stereo, across every
+    ///    spelling this fixture produces,
+    ///  - it is individually idempotent
+    ///    (`canonical(spelling) == spelling`) -- each distinct output is
+    ///    its own stable fixed point even though different relabelings
+    ///    land on different fixed points,
+    ///  - the joint solver never applies a partial marker plan for it
+    ///    (`assert_no_partial_marker_application`).
+    #[test]
+    fn ring_constrained_residuals_remain_semantically_safe() {
+        for &s in EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS {
+            let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
+            assert_no_partial_marker_application(&mol);
+
+            let before_geo = geometry_fingerprint(&mol);
+            let before_tet = tetrahedral_fingerprint(&mol);
+            assert!(
+                before_geo.iter().any(|f| f.is_some()),
+                "test setup sanity: '{s}' must have at least one defined \
+                 E/Z geometry fact"
+            );
+
+            let variants = ez_carrier_test_variants(&mol);
+
+            let mut distinct_outputs: HashSet<String> = HashSet::new();
+            for variant in &variants {
+                let canon = canonical_smiles(variant);
+                if !distinct_outputs.insert(canon.clone()) {
+                    continue; // already checked this exact spelling
+                }
+
+                let reparsed =
+                    parse(&canon).unwrap_or_else(|e| panic!("'{s}': reparse of '{canon}': {e}"));
+
+                let after_geo = geometry_fingerprint(&reparsed);
+                assert_eq!(
+                    before_geo, after_geo,
+                    "'{s}': spelling '{canon}' must preserve E/Z geometry \
+                     (0 lost, 0 flipped) even though this fixture doesn't \
+                     fully converge"
+                );
+                let after_tet = tetrahedral_fingerprint(&reparsed);
+                assert_eq!(
+                    before_tet, after_tet,
+                    "'{s}': spelling '{canon}' must preserve tetrahedral \
+                     stereo (0 lost, 0 flipped) even though this fixture \
+                     doesn't fully converge"
+                );
+
+                // Per-spelling idempotence: THIS spelling, once produced,
+                // is its own stable fixed point.
+                let canon_twice = canonical_smiles(&reparsed);
+                assert_eq!(
+                    canon, canon_twice,
+                    "'{s}': spelling '{canon}' must be idempotent on its own"
+                );
+            }
+            assert!(
+                !distinct_outputs.is_empty(),
+                "test setup sanity: '{s}' produced no canonical outputs at all"
+            );
+        }
+    }
+
+    /// Direct empirical check of the invariant [`Self::resolve_component_
+    /// jointly`]'s tie-abstain path relies on: `winning_individualized_
+    /// ranks` is a strict total order over EVERY atom, with no ties, even
+    /// for a genuinely symmetric molecule (swapping the two coupled ends
+    /// is an actual graph automorphism here, not just a superficial
+    /// resemblance) -- built via `MoleculeBuilder` directly: methyl-
+    /// hydrazone-hydrazone-methyl, `P_A-A(=N_A-N_A2)-B(=N_B-N_B2)-P_B` with
+    /// `A`/`B` directly bonded (the shared/coupled candidate) and each end
+    /// independently wedge-marked so there is real E/Z content at stake.
+    /// The extra terminal `N_A2`/`N_B2` atoms are required, not decorative
+    /// -- `compute_stereo_alkene_ends` only counts a double bond as
+    /// stereogenic when BOTH ends have >=1 substituent (matching
+    /// `chematic_chem::cip::assign_ez`'s own guard), and a bare `C=N` imine
+    /// nitrogen has none. If this ever starts reporting equal ranks for
+    /// the two automorphic ends, the tie-abstain path documented on
+    /// `resolve_component_jointly` becomes reachable in practice, not just
+    /// defensively coded -- this test exists to catch that change, not to
+    /// assert it can never happen.
+    #[test]
+    fn individualized_ranks_never_tie_even_for_symmetric_molecules() {
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+        let mut b = MoleculeBuilder::new();
+        let pa = b.add_atom(Atom::new(Element::C)); // P_A methyl
+        let a = b.add_atom(Atom::new(Element::C)); // A (coupled alkene end)
+        let na = b.add_atom(Atom::new(Element::N)); // N_A
+        let na2 = b.add_atom(Atom::new(Element::N)); // N_A's own substituent
+        let bb = b.add_atom(Atom::new(Element::C)); // B (coupled alkene end)
+        let nb = b.add_atom(Atom::new(Element::N)); // N_B
+        let nb2 = b.add_atom(Atom::new(Element::N)); // N_B's own substituent
+        let pb = b.add_atom(Atom::new(Element::C)); // P_B methyl
+        b.add_bond(pa, a, BondOrder::Up).unwrap();
+        b.add_bond(a, na, BondOrder::Double).unwrap();
+        b.add_bond(na, na2, BondOrder::Single).unwrap();
+        b.add_bond(a, bb, BondOrder::Single).unwrap(); // shared/coupled candidate
+        b.add_bond(bb, nb, BondOrder::Double).unwrap();
+        b.add_bond(nb, nb2, BondOrder::Single).unwrap();
+        b.add_bond(bb, pb, BondOrder::Up).unwrap();
+        let mol = b.build();
+
+        let (ranks, _) = winning_individualized_ranks(&mol);
+        assert_ne!(
+            ranks[a.0 as usize], ranks[bb.0 as usize],
+            "individualized ranks are documented as a strict total order \
+             even for automorphic atoms -- if this now ties, the \
+             tie-abstain path this test's sibling exercises via a forced \
+             rank array has become reachable through real input too"
+        );
+
+        // Sanity: confirm the two ends really are coupled (share the A-B
+        // bond as a mutual candidate) and the solver resolves them (no
+        // rank tie means no abstain), rather than this being a vacuous
+        // check on a topology that never reaches the tie-break logic.
+        let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
+        let components = CanonicalWriter::coupling_components(&mol, &ends);
+        assert!(
+            components.iter().any(|c| c.len() == 2),
+            "test setup sanity: A and B must form a genuine size-2 coupling \
+             component"
+        );
+        let mut writer = CanonicalWriter::new(&mol, &ranks);
+        writer.resolve_ez_markers();
+        assert!(
+            writer.ez_shared_bond_abstains.is_empty(),
+            "test setup sanity: with distinct ranks, the solver should \
+             resolve rather than abstain"
+        );
+    }
+
+    /// White-box probe of the tie-abstain path, and a genuine (not assumed)
+    /// finding about why it cannot be exercised through a size-2 component
+    /// -- the ONLY size ever observed in real molecules (measured, see
+    /// [`Self::MAX_JOINT_COMPONENT_SIZE`]'s doc comment).
+    ///
+    /// Built the SAME symmetric molecule as
+    /// [`individualized_ranks_never_tie_even_for_symmetric_molecules`],
+    /// then FORCED a rank tie between the two coupled ends via a
+    /// hand-crafted `ranks` array (bypassing `winning_individualized_ranks`
+    /// entirely, since that function never produces one on its own) --
+    /// tried under two different mark configurations (`P_A`/`P_B` both
+    /// `Up`, and `Up`/`Down`). In BOTH cases the solver still resolved
+    /// uniquely, never abstaining, even with the forced tie. Traced why:
+    /// for a size-2 component, a "mixed" combination (one end's chosen
+    /// candidate is the shared bond, the other's is its own private one)
+    /// ALWAYS conflicts by construction -- the end treating the shared
+    /// bond as "chosen" votes a real direction on it, while the end
+    /// treating it as "other" always votes to demote it to plain
+    /// (`Self::plain_order`), and a direction can never equal "plain". So
+    /// only two combinations are ever valid at size 2: BOTH ends use the
+    /// shared bond, or BOTH use their own private one -- never a case
+    /// where the two ends' deviation bits differ, which is the specific
+    /// precondition `is_tie` checks for (`winner_bits[i] != winner_bits[j]`).
+    /// A rank tie between the two ends is therefore insufficient on its
+    /// own to create genuine ambiguity at size 2, REGARDLESS of which
+    /// marks are present -- there is no "swap which one deviates" case to
+    /// be ambiguous about, only "both agree" (resolved) or "both would
+    /// conflict, so both fall back" (also resolved, uniquely).
+    ///
+    /// This does NOT prove `is_tie` can never fire -- a genuinely
+    /// unreachable-in-practice size-3+ component (never observed in any
+    /// corpus scanned) could still expose a real swap ambiguity between
+    /// two of its rank-tied members while a third breaks the symmetry
+    /// differently; that combination was not constructed here (todo,
+    /// tracked as a documented gap rather than silently assumed safe).
+    /// What IS established: the defensive `is_tie` check is unreachable
+    /// for the only topology this crate's own corpus scans have ever
+    /// produced, for two independent, now-verified reasons (ranks don't
+    /// tie; and even a forced tie can't create a swap-style ambiguity at
+    /// size 2) -- not merely "happens not to trigger today".
+    #[test]
+    fn size_two_component_forced_rank_tie_still_resolves_uniquely() {
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+        fn build(pb_order: BondOrder) -> (Molecule, AtomIdx, AtomIdx) {
+            let mut b = MoleculeBuilder::new();
+            let pa = b.add_atom(Atom::new(Element::C));
+            let a = b.add_atom(Atom::new(Element::C));
+            let na = b.add_atom(Atom::new(Element::N));
+            let na2 = b.add_atom(Atom::new(Element::N));
+            let bb = b.add_atom(Atom::new(Element::C));
+            let nb = b.add_atom(Atom::new(Element::N));
+            let nb2 = b.add_atom(Atom::new(Element::N));
+            let pb = b.add_atom(Atom::new(Element::C));
+            b.add_bond(pa, a, BondOrder::Up).unwrap();
+            b.add_bond(a, na, BondOrder::Double).unwrap();
+            b.add_bond(na, na2, BondOrder::Single).unwrap();
+            b.add_bond(a, bb, BondOrder::Single).unwrap();
+            b.add_bond(bb, nb, BondOrder::Double).unwrap();
+            b.add_bond(nb, nb2, BondOrder::Single).unwrap();
+            b.add_bond(bb, pb, pb_order).unwrap();
+            (b.build(), a, bb)
+        }
+
+        for pb_order in [BondOrder::Up, BondOrder::Down] {
+            let (mol, a, bb) = build(pb_order);
+            let (mut ranks, _) = winning_individualized_ranks(&mol);
+            // Force a tie between the two coupled ends, preserving every
+            // other atom's real rank -- the minimal, targeted way to
+            // inject the one precondition `is_tie` checks for.
+            ranks[a.0 as usize] = ranks[bb.0 as usize];
+
+            let mut writer = CanonicalWriter::new(&mol, &ranks);
+            writer.resolve_ez_markers();
+            assert!(
+                writer.ez_shared_bond_abstains.is_empty(),
+                "pb_order={pb_order:?}: a forced rank tie at size 2 should \
+                 still resolve uniquely (see this test's own doc comment \
+                 for why no swap-style ambiguity is possible here) -- an \
+                 abstain here would mean the structural argument above no \
+                 longer holds and needs re-examining, not just re-asserting"
+            );
+            assert_no_partial_marker_application(&mol);
+        }
+    }
+
+    /// [`Self::coupling_components`] deliberately sorts its `HashSet`
+    /// iteration on raw `AtomIdx` purely to avoid process-random traversal
+    /// order (see that method's own doc comment) -- never as a canonical
+    /// tie-break. This proves that choice is sufficient: rebuilding the
+    /// SAME set of stereo-alkene ends via several different insertion
+    /// orders always yields the SAME partition into components (compared
+    /// as sets of atoms, never as the returned `Vec`'s order), across
+    /// every fixture in both [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] and
+    /// [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] -- i.e. component
+    /// MEMBERSHIP is a pure function of molecule structure, never of
+    /// `HashSet` build/iteration order.
+    #[test]
+    fn coupling_components_membership_is_insertion_order_independent() {
+        fn normalized_components(
+            mol: &Molecule,
+            ends: &HashSet<AtomIdx>,
+        ) -> Vec<std::collections::BTreeSet<u32>> {
+            let mut components: Vec<std::collections::BTreeSet<u32>> =
+                CanonicalWriter::coupling_components(mol, ends)
+                    .into_iter()
+                    .map(|c| c.into_iter().map(|a| a.0).collect())
+                    .collect();
+            components.sort();
+            components
+        }
+
+        let all_fixtures = EZ_SHARED_CARRIER_FULLY_RESOLVED
+            .iter()
+            .chain(EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS.iter());
+        for &s in all_fixtures {
+            let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
+            let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
+            let baseline = normalized_components(&mol, &ends);
+
+            let mut as_vec: Vec<AtomIdx> = ends.iter().copied().collect();
+            as_vec.sort_by_key(|a| a.0);
+            let mut orders: Vec<Vec<AtomIdx>> = vec![as_vec.clone()];
+            let mut reversed = as_vec.clone();
+            reversed.reverse();
+            orders.push(reversed);
+            for seed in 0..8u64 {
+                let perm = deterministic_permutation(as_vec.len(), seed);
+                orders.push(perm.into_iter().map(|i| as_vec[i]).collect());
+            }
+
+            for order in orders {
+                let rebuilt: HashSet<AtomIdx> = order.into_iter().collect();
+                let variant = normalized_components(&mol, &rebuilt);
+                assert_eq!(
+                    baseline, variant,
+                    "'{s}': coupling_components membership must not depend \
+                     on HashSet insertion order"
+                );
+            }
+        }
+    }
+
+    /// Positive control for [`tetrahedral_fingerprint`]: without this, the
+    /// preservation checks above would pass vacuously if the fingerprint
+    /// function were broken and always returned e.g. all-`None` or some
+    /// other input-insensitive constant. Flipping one real `[C@H]` ->
+    /// `[C@@H]` tag in one of the fully-resolved fixtures must change the
+    /// fingerprint, proving the function actually reads the input.
+    #[test]
+    fn tetrahedral_fingerprint_is_sensitive_to_a_real_flip() {
+        let original = "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O";
+        let flipped = "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O";
+        let fp_original = tetrahedral_fingerprint(&parse(original).unwrap());
+        let fp_flipped = tetrahedral_fingerprint(&parse(flipped).unwrap());
+        assert_ne!(
+            fp_original, fp_flipped,
+            "flipping a real [C@H]->[C@@H] tag must change the fingerprint"
+        );
     }
 
     /// Positive control for `geometry_fingerprint`: without this, the
@@ -2835,24 +3773,31 @@ mod tests {
     /// convergence isn't achieved. Returns `(first, second)` in bond-index
     /// order (stable within one parse, which is all this same-molecule
     /// before/after comparison needs).
+    /// Reads each double bond's geometry via [`up_of_reference`] (the same
+    /// rank-based, marker-*placement*-invariant oracle [`geometry_fingerprint`]
+    /// uses), not "whichever substituent happens to carry a raw direction" --
+    /// the whole point of the joint carrier solver is that the marker may
+    /// legitimately move to a different (canonically preferred) substituent
+    /// without changing the encoded geometry, so a naive "read whichever one
+    /// has a direction" oracle would report a false flip whenever the
+    /// carrier moves. `doubles` is ordered by an intrinsic (rank-based) key,
+    /// not raw `BondIdx`, so pairing between a before/after (re-parsed, thus
+    /// differently-indexed) molecule stays meaningful.
     fn ez_pair(mol: &Molecule) -> (Option<bool>, Option<bool>) {
-        fn raw_dir(mol: &Molecule, bidx: BondIdx) -> Option<BondOrder> {
-            let order = mol.bond(bidx).order;
-            if matches!(order, BondOrder::Up | BondOrder::Down) {
-                return Some(order);
-            }
-            mol.bond_direction(bidx)
-        }
-
-        let doubles: Vec<BondIdx> = (0..mol.bond_count())
-            .map(|i| BondIdx(i as u32))
-            .filter(|&b| mol.bond(b).order == BondOrder::Double)
-            .filter(|&b| {
-                let bond = mol.bond(b);
-                CanonicalWriter::end_has_substituent(mol, bond.atom1)
-                    && CanonicalWriter::end_has_substituent(mol, bond.atom2)
+        let ranks = morgan_ranks(mol);
+        let mut doubles: Vec<(u64, BondIdx)> = mol
+            .bonds()
+            .filter(|(_, b)| b.order == BondOrder::Double)
+            .filter(|(_, b)| {
+                CanonicalWriter::end_has_substituent(mol, b.atom1)
+                    && CanonicalWriter::end_has_substituent(mol, b.atom2)
+            })
+            .map(|(bidx, b)| {
+                let key = ranks[b.atom1.0 as usize].min(ranks[b.atom2.0 as usize]);
+                (key, bidx)
             })
             .collect();
+        doubles.sort_by_key(|&(k, _)| k);
         assert_eq!(
             doubles.len(),
             2,
@@ -2860,26 +3805,11 @@ mod tests {
         );
         let ez = |bidx: BondIdx| -> Option<bool> {
             let bond = mol.bond(bidx);
-            let outward = |end: AtomIdx, other: AtomIdx| -> Option<bool> {
-                for (nb, b) in mol.neighbors(end) {
-                    if nb == other {
-                        continue;
-                    }
-                    if let Some(dir) = raw_dir(mol, b) {
-                        return Some(CanonicalWriter::direction_is_up(
-                            dir,
-                            mol.bond(b).atom1,
-                            end,
-                        ));
-                    }
-                }
-                None
-            };
-            let ua = outward(bond.atom1, bond.atom2)?;
-            let ub = outward(bond.atom2, bond.atom1)?;
+            let ua = up_of_reference(mol, &ranks, bond.atom1)?;
+            let ub = up_of_reference(mol, &ranks, bond.atom2)?;
             Some(ua != ub)
         };
-        (ez(doubles[0]), ez(doubles[1]))
+        (ez(doubles[0].1), ez(doubles[1].1))
     }
 }
 
