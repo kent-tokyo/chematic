@@ -1,0 +1,31 @@
+{
+  "classification_totals": {
+    "atom_typing_wrong": 20559,
+    "other_classified_stbn_never_gated": 116,
+    "parameter_table_genuinely_absent": 20,
+    "other_classified_stbn_never_gated_plus_routing": 65,
+    "other_classified_torsion_type_classification_bug": 119
+  },
+  "classification_by_term_kind": {
+    "Angle": {
+      "atom_typing_wrong": 5762,
+      "parameter_table_genuinely_absent": 20
+    },
+    "StretchBend": {
+      "atom_typing_wrong": 6719,
+      "other_classified_stbn_never_gated": 116,
+      "other_classified_stbn_never_gated_plus_routing": 65
+    },
+    "Torsion": {
+      "atom_typing_wrong": 7203,
+      "other_classified_torsion_type_classification_bug": 119
+    },
+    "Bond": {
+      "atom_typing_wrong": 808
+    },
+    "Oop": {
+      "atom_typing_wrong": 67
+    }
+  },
+  "total_missing_terms_classified": 20879
+}

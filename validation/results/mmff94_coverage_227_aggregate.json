@@ -1,0 +1,112 @@
+{
+  "issue": "https://github.com/kent-tokyo/chematic/issues/227",
+  "baseline_sha_at_program_start": "382a5f33791646b758e1f9d4fd4859b91211d9de",
+  "audit_branch": "audit/mmff94-coverage-227",
+  "corpus": {
+    "source": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json (same Wave 1 / PR #226 corpus, not a new corpus)",
+    "tier_a_sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b",
+    "tier_b_sha256": "b3cde3fedcc68391ba3d3cbae228acd3057cadea6e6fc17499592b23bdc7550a",
+    "total_molecules": 265
+  },
+  "environment": {
+    "rustc": "1.97.0 (2d8144b78 2026-07-07)",
+    "cargo": "1.97.0 (c980f4866 2026-06-30)",
+    "rdkit": "2026.03.3"
+  },
+  "strict_gate_faithful_remeasurement": {
+    "tool": "cargo run --release -p chematic-3d --example mmff94_strict_gate_remeasure_227",
+    "methodology": "calls production minimize::minimize_with_policy(Mmff94BondAngleStrict) directly, same as PR #226/issue #227's original methodology",
+    "total": 265,
+    "ok_success": 44,
+    "err_missing_parameters": 221,
+    "err_unsupported_atom_type": 0,
+    "err_minimization_failed": 0,
+    "note": "historical issue #227 reported 38 success / 216 missing_parameters / 11 typed_failure on an earlier main; today's main (382a5f3) has moved since (PR #226/#229/#231 etc merged) -- this is a fresh remeasurement, not a reused historical number"
+  },
+  "term_level_coverage_simplified_gate": {
+    "tool": "cargo run --release -p chematic-3d --example mmff94_term_coverage_audit",
+    "note": "independent bond+angle Some/None recheck (not calling minimize_with_policy) -- 221/265 would-fail, consistent with the faithful remeasurement above",
+    "bonds_missing": 808,
+    "angles_missing": 5782,
+    "torsions_missing": 7322,
+    "oop_missing": 67,
+    "stretch_bend_missing": 6900,
+    "vdw_types_missing": 0,
+    "charge_failures": 0
+  },
+  "root_cause_classification": {
+    "classification_totals": {
+      "atom_typing_wrong": 20559,
+      "other_classified_stbn_never_gated": 116,
+      "parameter_table_genuinely_absent": 20,
+      "other_classified_stbn_never_gated_plus_routing": 65,
+      "other_classified_torsion_type_classification_bug": 119
+    },
+    "classification_by_term_kind": {
+      "Angle": {
+        "atom_typing_wrong": 5762,
+        "parameter_table_genuinely_absent": 20
+      },
+      "StretchBend": {
+        "atom_typing_wrong": 6719,
+        "other_classified_stbn_never_gated": 116,
+        "other_classified_stbn_never_gated_plus_routing": 65
+      },
+      "Torsion": {
+        "atom_typing_wrong": 7203,
+        "other_classified_torsion_type_classification_bug": 119
+      },
+      "Bond": {
+        "atom_typing_wrong": 808
+      },
+      "Oop": {
+        "atom_typing_wrong": 67
+      }
+    },
+    "total_missing_terms_classified": 20879
+  },
+  "atom_typing_mismatch_vs_rdkit_oracle": {
+    "tool_chematic": "cargo run --release -p chematic-3d --example mmff94_numeric_type_dump",
+    "tool_rdkit_oracle": ".venv/bin/python scripts/mmff94_rdkit_type_oracle.py",
+    "total_heavy_atoms_compared": 6698,
+    "mismatched_numeric_type": 3177,
+    "mismatch_rate_pct": 47.4,
+    "molecules_with_any_mismatch": 225,
+    "molecules_compared": 265,
+    "dominant_single_mismatch": {
+      "element": "C",
+      "aromatic": true,
+      "chematic_type": 63,
+      "rdkit_type": 37,
+      "count": 2292,
+      "meaning": "chematic assigns 6-ring aromatic carbon (e.g. benzene) numeric type 63; real Halgren/RDKit numbering is 37. chematic's own comment for 63 claims '5-ring alpha' -- internally inconsistent with assigning it to benzene's 6-ring carbons."
+    }
+  },
+  "naive_fix_simulation_negative_result": {
+    "tool": "cargo run --release -p chematic-3d --example mmff94_typing_fix_simulation",
+    "description": "context-blind 3-constant swap (63<->37, 38->64), carbon only, no ring-context awareness",
+    "molecules_flipped_fail_to_pass": 17,
+    "pct_of_before_failures": 7.7,
+    "regressions_pass_to_fail": 1,
+    "regressed_molecule": "furan",
+    "conclusion": "does NOT meet the >=80% same-session-fix bar, and demonstrates real regression risk -- the real fix needs coordinated C+N+O+S ring-context-aware re-derivation, not a blind swap"
+  },
+  "furan_semantically_wrong_but_present_evidence": {
+    "chematic_types": [
+      38,
+      38,
+      37,
+      6,
+      37
+    ],
+    "rdkit_types": [
+      64,
+      64,
+      63,
+      59,
+      63
+    ],
+    "example_bond": "bond 0-1 (C-C, both chematic type 38) resolves via bond_type=0 to Some(BondEnergyParams { kb: 5.002, r0: 1.246 }) -- r0=1.246 A is a carbonyl/N-involved bond length in the real table (type 38 = pyridine-type N in the real numbering), not a plausible furan aromatic C-C bond length (~1.36-1.44 A) -- furan 'passes' the coverage gate today by silently hitting a semantically wrong-but-present row"
+  },
+  "decision": "AUDIT-ONLY. Root cause (atom typing wrong for aromatic C/N/O/S numeric MMFF94 types) is singular and explains 98.5% of all missing terms by volume, but does NOT meet the Phase 1B same-session-fix bar: naive single-element correction only resolves 7.7% of molecule-level gate failures and causes 1 regression, proving the real fix requires comprehensive C+N+O+S re-derivation with its own RDKit energy-parity correctness gate -- out of scope for this session."
+}
