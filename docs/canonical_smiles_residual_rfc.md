@@ -2,6 +2,40 @@
 
 Status: **Diagnosis complete. No production behavior change.**
 
+> **Update (Wave 2A remeasurement, main@1bc1b63):** re-ran
+> `scripts/canonical_residual_diagnosis.py` unmodified (no script changes) on
+> the same 5,000-mol corpus, a week and several dozen merged PRs after the
+> commit this RFC was originally written against. Fresh Check-2
+> permutation-invariance failures: **91/5,000** (down from the pre-PR-#148
+> baseline of 348 documented below — expected, since PR #148 landed in
+> between; not re-litigated here). Breakdown:
+> - **18 detected via random relabeling** (Root Cause 1's own mechanism,
+>   below) — cross-checked byte-for-byte against
+>   `EZ_SHARED_CANDIDATE_BOND_RESIDUALS` in
+>   `crates/chematic-smiles/src/canonical.rs`: **exact match, 18/18, 0 new,
+>   0 resolved.** Issue #149's residual is stable, not drifting in either
+>   direction. `ez_carrier_shared_candidate_bond_residuals_never_corrupt`
+>   still passes on current `main`.
+> - **73 detected via idempotence only** (Root Cause 3, aromaticity
+>   round-trip — a separate, deferred track this remeasurement does not
+>   touch): up from the 67 reported below, and now 16/73 carry an E/Z
+>   marker (vs 1/67 previously) — a compositional shift flagged here for
+>   whoever owns the aromaticity track, not investigated further (out of
+>   scope for an E/Z-carrier-focused remeasurement).
+> - **0 detected via both probes** (down from 11) — consistent with Root
+>   Cause 1 having no failures left beyond the pinned 18.
+> - **91/91 semantically identical** (RDKit structural re-comparison) — 0
+>   corruption, unchanged from the original finding.
+>
+> No production code changed for this remeasurement — only
+> `validation/results/canonical_residual_diagnosis.jsonl` and
+> `..._summary.json` were regenerated (same reproduce command as below).
+> **Conclusion for a future Wave 2B (issue #149) fix**: the target is
+> unchanged and exactly scoped — the same 18 SMILES, still abstaining for
+> the same reason, still 0% corrupted. A joint/simultaneous carrier resolver
+> per the issue's own spec remains the right next step; nothing here changes
+> that scope.
+
 > **Update (C1a):** Root Cause 1 (the dominant, E/Z-marker-carrier cluster
 > described below) has a safe, verified **partial** fix — branch
 > `fix/canonical-ez-carrier-normalization`, PR #148. 264/282 of the

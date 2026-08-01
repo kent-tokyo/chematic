@@ -7,44 +7,44 @@
     "k_variants_per_molecule": 8,
     "permutation_seed": 0,
     "check1_exact_string_parity": {
-      "match": 8,
-      "mismatch": 4992,
+      "match": 4,
+      "mismatch": 4996,
       "n": 5000,
-      "pct_match": 0.16
+      "pct_match": 0.08
     },
     "check2_permutation_invariance": {
-      "invariant": 4904,
-      "fail": 96,
+      "invariant": 4909,
+      "fail": 91,
       "n": 5000,
-      "pct_invariant": 98.08,
-      "fail_semantically_identical_outputs": 96,
+      "pct_invariant": 98.18,
+      "fail_semantically_identical_outputs": 91,
       "fail_semantically_DIFFERENT_outputs": 0,
-      "fail_examples_captured": 96,
-      "fail_detected_via_idempotence_only": 78,
+      "fail_examples_captured": 91,
+      "fail_detected_via_idempotence_only": 73,
       "fail_detected_via_random_relabeling_only": 18,
       "fail_detected_via_both": 0
     },
     "check3_idempotence": {
-      "ok": 4922,
-      "fail": 78,
+      "ok": 4927,
+      "fail": 73,
       "n": 5000,
-      "pct_ok": 98.44
+      "pct_ok": 98.54
     },
     "check4_bucket_breakdown_of_check1_mismatches": {
       "aromaticity_kekulization": 0,
       "tetrahedral_parity": 0,
-      "ez_direction": 8,
-      "ring_closure_ordering": 4641,
+      "ez_direction": 10,
+      "ring_closure_ordering": 4646,
       "bridged_fused_spiro": 276,
       "disconnected_fragment_ordering": 0,
       "isotope_charge_atommap": 0,
-      "symmetry_tie_breaking": 36,
+      "symmetry_tie_breaking": 35,
       "writer_token_bug": 0,
-      "unclassified": 31
+      "unclassified": 29
     },
     "check4_bucket_totals_check": {
-      "sum_of_buckets": 4992,
-      "check1_mismatch_count": 4992,
+      "sum_of_buckets": 4996,
+      "check1_mismatch_count": 4996,
       "accounted_for": true
     }
   },
@@ -54,146 +54,156 @@
     "ez_direction": [
       {
         "smiles": "C1=C(/C=C/c2ccccc2)N2CCCN=C2c2ccccc21",
-        "chematic": "C(=C/c4ccccc4)C=2/N1CCCN=C1c3c(cccc3)C=2",
+        "chematic": "c4c3c(ccc4)C1=NCCCN1/C(=C3)C=C/c2ccccc2",
         "detail": "bond E/Z multiset differs: ('STEREOTRANS',) vs ()"
       },
       {
-        "smiles": "CC[C@H]1OC(=O)CC(O)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)C[C@H](N(C)C)[C@H]2O)[C@@H](CCN(C)CCCN(C)C(=O)[C@H](C)N)C[C@@H](C)C(=O)/C=C/C(C)=C/[C@@H]1C",
-        "chematic": "C(C)[C@H]2OC(=O)CC(O)[C@@H]([C@H]([C@H](C[C@@H](C)C(=O)/C=CC(/C)=C/[C@@H]2C)CCN(CCCN(C)C(=O)[C@@H](N)C)C)O[C@H]1[C@@H]([C@H](C[C@@H](C)O1)N(C)C)O)C",
-        "detail": "bond E/Z multiset differs: ('STEREOTRANS', 'STEREOTRANS') vs ('STEREOTRANS',)"
-      },
-      {
         "smiles": "CC[C@H]1OC(=O)CC(O)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)C[C@H](N(C)C)[C@H]2O)[C@@H](CCN(CCCN(C)C)C(=O)[C@H](C)N)C[C@@H](C)C(=O)/C=C/C(C)=C/[C@@H]1C",
-        "chematic": "C=2C(=C/[C@H](C)[C@H](OC(CC(O)[C@H](C)[C@H]([C@H](C[C@@H](C)C(=O)/C=2)CCN(C(=O)[C@@H](N)C)CCCN(C)C)O[C@H]1[C@H](O)[C@H](C[C@@H](C)O1)N(C)C)=O)CC)/C",
+        "chematic": "N(CCCN(CC[C@@H]2[C@@H]([C@@H](C)C(O)CC(=O)O[C@H](CC)[C@@H](C)/C=C(\\C)C=C/C([C@@H](C2)C)=O)O[C@H]1[C@H](O)[C@H](C[C@H](O1)C)N(C)C)C([C@@H](N)C)=O)(C)C",
         "detail": "bond E/Z multiset differs: ('STEREOTRANS', 'STEREOTRANS') vs ('STEREOTRANS',)"
       },
       {
-        "smiles": "CC(/C=C/C(=O)NO)=C\\C(C)C(=O)c1ccc(N(C)C)cc1",
-        "chematic": "C(c1ccc(cc1)N(C)C)(C(/C=C(\\C)C=C/C(=O)NO)C)=O",
-        "detail": "bond E/Z multiset differs: ('STEREOTRANS', 'STEREOTRANS') vs ('STEREOTRANS',)"
+        "smiles": "C/N=C(\\S)N/N=C/C(C)=N/N=C(/N)S",
+        "chematic": "SC(=N/N=C(\\C)C=N/NC(/S)=N/C)\\N",
+        "detail": "bond E/Z multiset differs: ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS', 'STEREOTRANS') vs ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS')"
       },
       {
         "smiles": "C/N=C(\\S)N/N=C(C)/C=N/N=C(/N)S",
-        "chematic": "NC(=N/N=CC(=N/NC(/S)=N/C)/C)/S",
+        "chematic": "SC(=N/N=CC(=N/N/C(S)=N/C)/C)\\N",
+        "detail": "bond E/Z multiset differs: ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS', 'STEREOTRANS') vs ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS')"
+      },
+      {
+        "smiles": "CC(/C=N/N=C(/N)S)=N\\N=C(\\N)S",
+        "chematic": "SC(/N)=N\\N=C(/C)C=N/N=C(\\S)N",
+        "detail": "bond E/Z multiset differs: ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS', 'STEREOTRANS') vs ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS')"
+      },
+      {
+        "smiles": "CC(/C=N/N=C(\\S)N(C)C)=N\\N=C(/S)N(C)C",
+        "chematic": "C(/S)(=N/N=CC(/C)=N/N=C(\\S)N(C)C)N(C)C",
+        "detail": "bond E/Z multiset differs: ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS', 'STEREOTRANS') vs ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS')"
+      },
+      {
+        "smiles": "C/N=C(\\S)N/N=C(C)/C=N/N=C(\\S)N(C)C",
+        "chematic": "C(/C)(=N/NC(/S)=N/C)C=N/N=C(/N(C)C)S",
         "detail": "bond E/Z multiset differs: ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS', 'STEREOTRANS') vs ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS')"
       },
       {
         "smiles": "CC(/C=N/N=C(\\S)N(C)C)=N\\N=C(\\N)S",
-        "chematic": "SC(=N/N=C(\\C)C=N/N=C(/N(C)C)S)\\N",
+        "chematic": "N(C)(C)C(/S)=N/N=CC(/C)=N/N=C(\\S)N",
         "detail": "bond E/Z multiset differs: ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS', 'STEREOTRANS') vs ('STEREOCIS', 'STEREOCIS', 'STEREOTRANS')"
       },
       {
-        "smiles": "CS(=O)(=O)NC(=O)CCC/C=C\\CC1=C(/C=C/[C@@H](O)COc2ccccc2)CCC1=O",
-        "chematic": "C(CCC(=O)NS(=O)(=O)C)/C=C\\CC=2C(=O)CC/C=2C=C/[C@@H](O)COc1ccccc1",
-        "detail": "bond E/Z multiset differs: ('STEREOCIS', 'STEREOTRANS') vs ('STEREOCIS',)"
+        "smiles": "COc1cc2c(cc1OC)C(=O)N1C=C(/C=C/C(=O)N(C)C)C[C@H]1C=N2",
+        "chematic": "c3c2c(cc(c3OC)OC)N=C[C@@H]1C/C(=CN1C2=O)C=C/C(=O)N(C)C",
+        "detail": "bond E/Z multiset differs: ('STEREOTRANS',) vs ()"
       },
       {
         "smiles": "COC(=O)/C=C/C1=CN2C(=O)c3cc(OC)c(OC)cc3N=C[C@@H]2C1",
-        "chematic": "C=2[C@@H]1C/C(=CN1C(c3c(cc(c(c3)OC)OC)N=2)=O)C=C/C(=O)OC",
+        "chematic": "C(=CC/2=CN1C(c3cc(c(cc3N=C[C@@H]1C2)OC)OC)=O)/C(=O)OC",
         "detail": "bond E/Z multiset differs: ('STEREOTRANS',) vs ()"
       }
     ],
     "ring_closure_ordering": [
       {
         "smiles": "COc1ccc(Sc2ccc(Cc3c[nH]cn3)cc2)cc1",
-        "chematic": "c1(Cc2ccc(Sc3ccc(cc3)OC)cc2)c[nH]cn1",
+        "chematic": "c3(ccc(cc3)Sc2ccc(cc2)Cc1nc[nH]c1)OC",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "Nc1nc(N)c2ncn(C3CC(O)C(O)C(CO)O3)c2n1",
-        "chematic": "c2(N)nc1n(C3CC(O)C(O)C(CO)O3)cnc1c(N)n2",
+        "chematic": "Nc3nc(N)nc2n(cnc23)C1OC(C(C(C1)O)O)CO",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "O=C(Nc1ccc(C[C@H](/N=c2/c(N3CCSCC3)c(O)c2=O)C(=O)O)cc1)c1c(Cl)cncc1Cl",
-        "chematic": "c4(c(cncc4Cl)Cl)C(=O)Nc3ccc(cc3)C[C@H](/N=c/2c(=O)c(c2N1CCSCC1)O)C(=O)O",
+        "chematic": "[C@H](C(O)=O)(/N=c/3c(c(O)c3N4CCSCC4)=O)Cc2ccc(cc2)NC(c1c(Cl)cncc1Cl)=O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "COc1ccc(Sc2ccc(-c3ncc[nH]3)cc2)cc1",
-        "chematic": "COc3ccc(cc3)Sc2ccc(cc2)-c1ncc[nH]1",
+        "chematic": "c3(ccc(cc3)Sc1ccc(-c2ncc[nH]2)cc1)OC",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "COP(=O)(Nc1ccc(Nc2c3ccccc3nc3cc(N)ccc23)cc1)OC",
-        "chematic": "Nc4ccc1c(c4)nc3ccccc3c1Nc2ccc(cc2)NP(OC)(=O)OC",
+        "chematic": "c4c2c(cc(N)c4)nc1c(c2Nc3ccc(NP(=O)(OC)OC)cc3)cccc1",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "COP(=O)(Nc1ccc(Nc2c3ccccc3nc3cc(C)ccc23)cc1)OC",
-        "chematic": "O(P(OC)(=O)Nc4ccc(cc4)Nc1c3c(cccc3)nc2cc(ccc12)C)C",
+        "chematic": "c1c2c(c(Nc4ccc(NP(=O)(OC)OC)cc4)c3c(cccc3)n2)ccc1C",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "COC(=O)C[C@@H](c1ccc(OC)nc1)N(C)C(=O)CCCCc1nc2c(cc1C)CCCN2",
-        "chematic": "n1c(OC)ccc([C@@H](N(C)C(CCCCc2c(C)cc3c(NCCC3)n2)=O)CC(OC)=O)c1",
+        "chematic": "c1([C@@H](N(C(=O)CCCCc2c(cc3c(NCCC3)n2)C)C)CC(OC)=O)ccc(nc1)OC",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CCc1ccc(OP(=O)(NC(C)C(=O)OC)OCC2OC(n3cc(C)c(=O)[nH]c3=O)CC2N=[N+]=[N-])cc1",
-        "chematic": "CCc3ccc(cc3)OP(OCC1OC(n2cc(C)c(=O)[nH]c2=O)CC1N=[N+]=[N-])(NC(C(OC)=O)C)=O",
+        "chematic": "O1C(n3c(=O)[nH]c(=O)c(c3)C)CC(N=[N+]=[N-])C1COP(NC(C)C(OC)=O)(=O)Oc2ccc(CC)cc2",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CN(C)c1c(N[C@@H](Cc2ccc(NC(=O)c3c(Cl)cncc3Cl)cc2)C(=O)O)c(=O)c1=O",
-        "chematic": "C([C@H](Nc3c(=O)c(=O)c3N(C)C)C(=O)O)c1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1",
+        "chematic": "N([C@H](C(O)=O)Cc3ccc(cc3)NC(c2c(Cl)cncc2Cl)=O)c1c(c(=O)c1N(C)C)=O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "O=C(O)CCc1c(Cc2ccccc2)ccc2c1CCC(NS(=O)(=O)c1ccc(Cl)cc1)C2",
-        "chematic": "c4cc(ccc4Cl)S(=O)(=O)NC1CCc2c(ccc(Cc3ccccc3)c2CCC(=O)O)C1",
+        "chematic": "O=S(c4ccc(Cl)cc4)(NC2CCc1c(c(Cc3ccccc3)ccc1C2)CCC(=O)O)=O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       }
     ],
     "bridged_fused_spiro": [
       {
         "smiles": "COc1ccc2c3c1OC1[C@H](O)[C@](CO)(CCCCCc4ccccc4)CC4C(C2)N(C)CCC341",
-        "chematic": "C12C[C@@](CCCCCc6ccccc6)([C@H](C5Oc4c(ccc3CC1N(C)CCC25c34)OC)O)CO",
+        "chematic": "C([C@@]3([C@H](C6Oc2c4c(CC5C(C46CCN5C)C3)ccc2OC)O)CCCCCc1ccccc1)O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "Oc1ccc2c3c1OC1[C@H]4OC[C@@]4(CCCCc4ccccc4)CC4C(C2)N(CC2CCC2)CCC341",
-        "chematic": "[C@@H]24C8C57CCN(C(Cc6ccc(O)c(O8)c67)C5C[C@@]2(CO4)CCCCc3ccccc3)CC1CCC1",
+        "chematic": "c8c(cccc8)CCCC[C@]47CO[C@@H]7C5C23c6c(ccc(c6O5)O)CC(C3C4)N(CC2)CC1CCC1",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "C=C[C@]1(CO)CC2C3Cc4ccc(OC)c5c4C2(CCN3C)C(O5)[C@@H]1O",
-        "chematic": "C1[C@@](C=C)([C@@H](O)C3C25C1C(Cc4ccc(OC)c(c45)O3)N(C)CC2)CO",
+        "chematic": "C24C[C@@](CO)(C=C)[C@H](C3Oc1c(OC)ccc5c1C23CCN(C)C4C5)O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "COc1ccc2c3c1OC1[C@H](O)[C@](CO)(CCCc4ccccc4)CC4C(C2)N(C)CCC341",
-        "chematic": "C245c1c6ccc(c1OC2[C@H](O)[C@@](CO)(CC4C(C6)N(C)CC5)CCCc3ccccc3)OC",
+        "chematic": "C24C[C@]([C@H](C3C25c6c(c(ccc6CC4N(C)CC5)OC)O3)O)(CCCc1ccccc1)CO",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CN1CCC23c4c5ccc(O)c4OC2[C@H]2OC[C@@]2(CCCCc2ccccc2)CC3C1C5",
-        "chematic": "C(CCC[C@]27[C@@H](C6C34C(C7)C(Cc5c4c(O6)c(O)cc5)N(CC3)C)OC2)c1ccccc1",
+        "chematic": "[C@@H]56C4C13C(C[C@]5(CCCCc7ccccc7)CO6)C(Cc2ccc(c(O4)c23)O)N(CC1)C",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "COc1ccc2c3c1OC1[C@H]4OC[C@@]4(CCCCCc4ccccc4)CC4C(C2)N(C)CCC341",
-        "chematic": "c7cc(ccc7)CCCCC[C@@]12CC4C3Cc6ccc(OC)c5OC(C4(c56)CCN3C)[C@H]2OC1",
+        "chematic": "C1CC24c5c6CC(C2C[C@]3(CCCCCc7ccccc7)CO[C@@H]3C4Oc5c(OC)cc6)N1C",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "COc1ccc2c3c1OC1[C@H]4OC[C@@]4(CCc4ccccc4)CC4C(C2)N(C)CCC341",
-        "chematic": "[C@@H]56C2C13C(C[C@]5(CCc7ccccc7)CO6)C(Cc4ccc(c(c34)O2)OC)N(CC1)C",
+        "chematic": "C4c7c2c(c(cc7)OC)OC3[C@H]6OC[C@]6(CC5C23CCN(C45)C)CCc1ccccc1",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "COc1ccc2c3c1OC1[C@H](O)[C@](CO)(CCCc4ccccc4)CC4C(C2)N(CC2CCC2)CCC341",
-        "chematic": "c1ccccc1CCC[C@]7([C@@H](O)C6Oc2c3c(CC5C(C7)C36CCN5CC4CCC4)ccc2OC)CO",
+        "chematic": "COc1c2c3c(CC6C4C[C@@](CCCc7ccccc7)([C@H](C(C34CCN6CC5CCC5)O2)O)CO)cc1",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CN1CCC23c4c5ccc(O)c4OC2[C@H](O)[C@](CO)(CCCCCc2ccccc2)CC3C1C5",
-        "chematic": "C1c2ccc(c3OC5[C@H](O)[C@@](CCCCCc6ccccc6)(CO)CC4C1N(CCC45c23)C)O",
+        "chematic": "CN3CCC26C4[C@@H]([C@](CC2C3Cc5ccc(c(c56)O4)O)(CO)CCCCCc1ccccc1)O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CN1CCC23c4c5ccc(O)c4OC2[C@H](O)[C@](CO)(CCCCCCc2ccccc2)CC3C1C5",
-        "chematic": "[C@]1(CCCCCCc6ccccc6)(CO)[C@@H](O)C5C24C(C(Cc3ccc(c(O5)c34)O)N(C)CC2)C1",
+        "chematic": "c3cc(O)c6c4C25C(O6)[C@@H]([C@@](CO)(CC5C(Cc34)N(C)CC2)CCCCCCc1ccccc1)O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       }
     ],
@@ -202,52 +212,52 @@
     "symmetry_tie_breaking": [
       {
         "smiles": "CN(C)CC(O)CO",
-        "chematic": "C(N(C)C)C(O)CO",
+        "chematic": "N(C)(C)CC(O)CO",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "NOCC(O)CON",
-        "chematic": "O(CC(CON)O)N",
+        "chematic": "C(O)(CON)CON",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CN(C)CC(O)CON",
-        "chematic": "C(N(C)C)C(O)CON",
+        "chematic": "N(C)(C)CC(CON)O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CCCN(CCC)CC(O)CO",
-        "chematic": "C(CC)N(CCC)CC(CO)O",
+        "chematic": "C(CN(CCC)CC(CO)O)C",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CC(C)NCC(O)CON",
-        "chematic": "N(C(C)C)CC(O)CON",
+        "chematic": "O(N)CC(O)CNC(C)C",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CC(N)(CCCN)OP(O)O",
-        "chematic": "C(OP(O)O)(N)(C)CCCN",
+        "chematic": "C(C(OP(O)O)(N)C)CCN",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "NCCCC(N)OP(O)O",
-        "chematic": "C(N)CCC(OP(O)O)N",
+        "chematic": "C(CC(N)OP(O)O)CN",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CS(=O)(=O)CCNC(=O)N(CCCl)N=O",
-        "chematic": "N(=O)N(C(=O)NCCS(C)(=O)=O)CCCl",
+        "chematic": "N(=O)N(C(=O)NCCS(=O)(=O)C)CCCl",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CS(=O)(=O)CCN(N=O)C(=O)NCCCl",
-        "chematic": "N(C(=O)N(N=O)CCS(C)(=O)=O)CCCl",
+        "chematic": "S(=O)(C)(=O)CCN(N=O)C(=O)NCCCl",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CS(=O)(=O)OC(CN)CON",
-        "chematic": "S(=O)(C)(=O)OC(CON)CN",
+        "chematic": "S(OC(CN)CON)(=O)(=O)C",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       }
     ],
@@ -255,52 +265,52 @@
     "unclassified": [
       {
         "smiles": "CNCC(O)CO",
-        "chematic": "CNCC(CO)O",
+        "chematic": "OCC(O)CNC",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "NCC(F)CON",
-        "chematic": "C(ON)C(F)CN",
+        "chematic": "C(C(CON)F)N",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "NC[C@@H](O)CON",
-        "chematic": "NC[C@H](CON)O",
+        "chematic": "[C@H](CON)(CN)O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "NCCCON",
-        "chematic": "C(CCN)ON",
+        "chematic": "C(ON)CCN",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "NCC(F)CNN",
-        "chematic": "C(C(F)CNN)N",
+        "chematic": "C(NN)C(F)CN",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "NCC(Cl)CON",
-        "chematic": "C(CN)(CON)Cl",
+        "chematic": "ClC(CN)CON",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "NCC(O)CON",
-        "chematic": "NOCC(O)CN",
+        "chematic": "C(CON)(CN)O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CSCCC(S)C(=O)O",
-        "chematic": "O=C(O)C(CCSC)S",
+        "chematic": "OC(=O)C(S)CCSC",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "C#CCNCC(O)CON",
-        "chematic": "N(CC#C)CC(CON)O",
+        "chematic": "C(CON)(CNCC#C)O",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       },
       {
         "smiles": "CNCC(O)CON",
-        "chematic": "CNCC(CON)O",
+        "chematic": "C(CON)(O)CNC",
         "detail": "structurally identical molecule; different valid canonicalization spelling"
       }
     ]
@@ -309,8 +319,8 @@
     {
       "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
       "distinct_outputs": [
-        "OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c1/c(c(c1O)O)=N/CCCCC",
-        "OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c\\1c(/c(c1O)O)=N/CCCCC"
+        "c3ncc(c(c3Cl)C(Nc1ccc(C[C@H](/N=c2/c(c(c2O)O)=N/CCCCC)C(=O)O)cc1)=O)Cl",
+        "c3ncc(c(c3Cl)C(Nc1ccc(C[C@H](/N=c\\2c(/c(c2O)O)=N/CCCCC)C(=O)O)cc1)=O)Cl"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -321,8 +331,8 @@
     {
       "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
       "distinct_outputs": [
-        "c4c(Cl)c(c(cn4)Cl)C(Nc3ccc(cc3)C[C@@H](C(O)=O)/N=c1/c(=N/Cc2ccccc2)c(O)c1O)=O",
-        "c4c(Cl)c(c(cn4)Cl)C(Nc3ccc(cc3)C[C@@H](C(O)=O)/N=c\\1c(=N/Cc2ccccc2)/c(O)c1O)=O"
+        "N(=c/4c(/c(O)c4O)=N/Cc3ccccc3)/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(O)=O",
+        "N(=c4/c(c(O)c4O)=N/Cc3ccccc3)\\[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(O)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -333,8 +343,8 @@
     {
       "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
       "distinct_outputs": [
-        "C(O)(=O)[C@H](Cc2ccc(NC(=O)c3c(cncc3Cl)Cl)cc2)/N=c/1c(c(O)c1=N/CCC)O",
-        "C(O)(=O)[C@H](Cc2ccc(NC(=O)c3c(cncc3Cl)Cl)cc2)/N=c1\\c(c(O)/c1=N\\CCC)O"
+        "c/1(=N\\CCC)c(c(c1=N/[C@@H](Cc2ccc(NC(=O)c3c(Cl)cncc3Cl)cc2)C(=O)O)O)O",
+        "c1(=N/CCC)/c(c(/c1=N\\[C@@H](Cc2ccc(NC(=O)c3c(Cl)cncc3Cl)cc2)C(=O)O)O)O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -345,8 +355,8 @@
     {
       "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
       "distinct_outputs": [
-        "c4(c(c(cnc4)Cl)C(Nc3ccc(cc3)C[C@@H](C(O)=O)/N=c1/c(=N/c2ccccc2)c(O)c1O)=O)Cl",
-        "c4(c(c(cnc4)Cl)C(Nc3ccc(cc3)C[C@@H](C(O)=O)/N=c\\1c(=N/c2ccccc2)/c(O)c1O)=O)Cl"
+        "C(=O)([C@@H](/N=c4/c(c(c4O)O)=N/c3ccccc3)Cc2ccc(cc2)NC(c1c(Cl)cncc1Cl)=O)O",
+        "C(=O)([C@@H](/N=c\\4c(/c(c4O)O)=N/c3ccccc3)Cc2ccc(cc2)NC(c1c(Cl)cncc1Cl)=O)O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -357,8 +367,8 @@
     {
       "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
       "distinct_outputs": [
-        "CC(/N=c/1c(c(c1=N/[C@@H](Cc2ccc(NC(=O)c3c(Cl)cncc3Cl)cc2)C(=O)O)O)O)(C)C",
-        "CC(/N=c1\\c(c(/c1=N\\[C@@H](Cc2ccc(NC(=O)c3c(Cl)cncc3Cl)cc2)C(=O)O)O)O)(C)C"
+        "CC(C)(/N=c/1c(c(c1=N/[C@@H](Cc3ccc(cc3)NC(c2c(Cl)cncc2Cl)=O)C(=O)O)O)O)C",
+        "CC(C)(/N=c1\\c(c(/c1=N\\[C@@H](Cc3ccc(cc3)NC(c2c(Cl)cncc2Cl)=O)C(=O)O)O)O)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -367,10 +377,10 @@
       "detected_via_random_relabeling": true
     },
     {
-      "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCN)c1=O",
+      "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCCN)c1=O",
       "distinct_outputs": [
-        "C[C@@H]2[C@H](NC(=O)c4ccc(C)c3oc5c(C)c(=O)c(NCCCN)c(C(N[C@@H]7[C@H](C)OC(=O)[C@@H](C(C)C)N(C(=O)CN(C(=O)[C@@H]6CCCN6C(=O)[C@H](C(C)C)NC7=O)C)C)=O)c5nc34)C(=O)N[C@@H](C(=O)N1[C@@H](C(=O)N(C)CC(=O)N([C@H](C(O2)=O)C(C)C)C)CCC1)C(C)C",
-        "N(CCCN)c6c(=O)c(C)c3oc7c(ccc(c7nc3c6C(=O)N[C@H]5C(=O)N[C@@H](C(C)C)C(N4[C@H](C(N(C)CC(=O)N([C@H](C(C)C)C(O[C@H]5C)=O)C)=O)CCC4)=O)C(=O)N[C@@H]1C(=O)N[C@@H](C(=O)N2[C@H](CCC2)C(N(C)CC(N([C@H](C(O[C@@H]1C)=O)C(C)C)C)=O)=O)C(C)C)C"
+        "CN7CC(=O)N(C)[C@@H](C(C)C)C(O[C@@H]([C@@H](C(N[C@@H](C(=O)N6CCC[C@@H]6C7=O)C(C)C)=O)NC(=O)c1ccc(c2oc3c(C)c(c(c(C(=O)N[C@@H]5[C@H](C)OC(=O)[C@H](N(C(CN(C)C(=O)[C@H]4N(C(=O)[C@H](C(C)C)NC5=O)CCC4)=O)C)C(C)C)c3nc12)NCCCCCN)=O)C)C)=O",
+        "NCCCCCNc3c(=O)c(c2oc1c(ccc(C(N[C@H]7[C@H](OC([C@H](C(C)C)N(C)C(=O)CN(C)C(=O)[C@H]6CCCN6C([C@H](NC7=O)C(C)C)=O)=O)C)=O)c1nc2c3C(N[C@H]5C(N[C@H](C(=O)N4CCC[C@H]4C(N(C)CC(N(C)[C@H](C(C)C)C(=O)O[C@H]5C)=O)=O)C(C)C)=O)=O)C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -379,10 +389,22 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "O=C(NCCc1c2n(c3ccccc13)CCc1ccccc1-2)C1CCC1",
+      "smiles": "CC(=O)NCCc1c2n(c3ccccc13)CCc1ccccc1-2",
       "distinct_outputs": [
-        "c12ccccc1c4n(c3c(c4CCNC(=O)C5CCC5)cccc3)CC2",
-        "c3cccc4c(CCNC(C5CCC5)=O)c1n(c34)CCc2ccccc12"
+        "C(=O)(NCCc1c4n(CCc3ccccc34)c2ccccc12)C",
+        "c12c(c3c4c(cccc4)CCn3c1cccc2)CCNC(=O)C"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCN)c1=O",
+      "distinct_outputs": [
+        "C(=O)(c4c(c(c(c3oc7c(c(ccc7C)C(=O)N[C@H]5[C@@H](C)OC(=O)[C@@H](N(C(CN(C(=O)[C@@H]6N(CCC6)C(=O)[C@H](NC5=O)C(C)C)C)=O)C)C(C)C)nc34)C)=O)NCCCN)N[C@@H]2[C@@H](OC(=O)[C@H](N(C)C(=O)CN(C)C([C@H]1N(C(=O)[C@@H](NC2=O)C(C)C)CCC1)=O)C(C)C)C",
+        "N17[C@H](C(=O)N(CC(N([C@@H](C(=O)O[C@@H](C)[C@H](C(=O)N[C@@H](C(C)C)C7=O)NC(c4c3nc2c(C(=O)N[C@@H]6C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(N(CC(N(C)[C@H](C(=O)O[C@@H]6C)C(C)C)=O)C)=O)ccc(C)c2oc3c(c(c4NCCCN)=O)C)=O)C(C)C)C)=O)C)CCC1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -393,8 +415,8 @@
     {
       "smiles": "CCCCCCCCCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
       "distinct_outputs": [
-        "C1CCN2C(=O)[C@@H](C(C)C)NC(=O)[C@@H](NC(=O)c3ccc(c5c3nc4c(C(=O)N[C@@H]6[C@@H](OC([C@@H](C(C)C)N(C)C(=O)CN(C([C@H]7N(CCC7)C(=O)[C@@H](NC6=O)C(C)C)=O)C)=O)C)c(c(c(C)c4o5)=O)NCCCCCCCCCCC)C)[C@@H](C)OC(=O)[C@@H](N(C)C(CN(C)C([C@@H]12)=O)=O)C(C)C",
-        "c7cc(c5c(c7C)oc6c(c(=O)c(NCCCCCCCCCCC)c(c6n5)C(=O)N[C@@H]4[C@H](C)OC(=O)[C@@H](C(C)C)N(C(=O)CN(C(=O)[C@@H]3CCCN3C(=O)[C@@H](NC4=O)C(C)C)C)C)C)C(N[C@H]1[C@@H](C)OC([C@H](C(C)C)N(C)C(=O)CN(C([C@H]2CCCN2C(=O)[C@H](NC1=O)C(C)C)=O)C)=O)=O"
+        "O=C2[C@@H](NC(=O)c5ccc(c6oc7c(c(c(c(c7nc56)C(N[C@H]4C(N[C@@H](C(C)C)C(N3[C@H](C(=O)N(C)CC(N(C)[C@H](C(C)C)C(=O)O[C@H]4C)=O)CCC3)=O)=O)=O)NCCCCCCCCCCC)=O)C)C)[C@H](OC([C@@H](N(C)C(CN(C)C(=O)[C@@H]1N(C(=O)[C@H](N2)C(C)C)CCC1)=O)C(C)C)=O)C",
+        "[C@@H]67C(N(CC(=O)N(C)[C@H](C(=O)O[C@H](C)[C@@H](C(=O)N[C@@H](C(=O)N6CCC7)C(C)C)NC(c3ccc(c2oc1c(c(=O)c(NCCCCCCCCCCC)c(C(=O)N[C@H]4C(N[C@H](C(=O)N5CCC[C@H]5C(=O)N(CC(=O)N(C)[C@H](C(C)C)C(O[C@H]4C)=O)C)C(C)C)=O)c1nc23)C)C)=O)C(C)C)C)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -403,10 +425,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCOc1ccc2c(c1)c(CCNC(C)=O)c1n2Cc2ccccc2-1",
+      "smiles": "CCCC(=O)NCCc1c2n(c3ccccc13)CCc1ccccc1-2",
       "distinct_outputs": [
-        "O(CC)c4ccc1c(c4)c(c3n1Cc2ccccc23)CCNC(C)=O",
-        "c1c2c(c(c3c4c(cccc4)Cn23)CCNC(C)=O)cc(c1)OCC"
+        "C(NC(=O)CCC)Cc1c4n(CCc3ccccc34)c2ccccc12",
+        "C(c3c1c(n4CCc2c(c34)cccc2)cccc1)CNC(=O)CCC"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -417,8 +439,8 @@
     {
       "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)cc1=O",
       "distinct_outputs": [
-        "C(=O)(N[C@H]7[C@H](OC([C@H](C(C)C)N(C)C(CN(C(=O)[C@@H]6N(C(=O)[C@H](NC7=O)C(C)C)CCC6)C)=O)=O)C)c1cc(c(c4c1nc5c(c(N)c(c(c5o4)C)O)C(N[C@H]2C(N[C@@H](C(C)C)C(N3CCC[C@H]3C(N(CC(N(C)[C@H](C(C)C)C(O[C@H]2C)=O)=O)C)=O)=O)=O)=O)C)=O",
-        "C2(=O)O[C@@H](C)[C@@H](NC(c7c6nc5c(cc(=O)c(C)c5oc6c(c(O)c7N)C)C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N3[C@@H](C(N(CC(=O)N([C@H](C(O[C@@H]4C)=O)C(C)C)C)C)=O)CCC3)=O)C(=O)N[C@@H](C(C)C)C(=O)N1[C@H](C(=O)N(CC(=O)N([C@@H]2C(C)C)C)C)CCC1"
+        "O=C1N([C@H](C(=O)O[C@H](C)[C@H](NC(c7c6nc5c(c(c(O)c(C)c5oc6c(C)c(=O)c7)N)C(N[C@H]3C(=O)N[C@@H](C(C)C)C(N4[C@@H](CCC4)C(N(C)CC(=O)N(C)[C@H](C(C)C)C(O[C@H]3C)=O)=O)=O)=O)=O)C(=O)N[C@H](C(C)C)C(=O)N2[C@H](CCC2)C(=O)N(C1)C)C(C)C)C",
+        "c17c(oc4c(n7)c(C(N[C@@H]6[C@H](C)OC([C@H](N(C)C(CN(C(=O)[C@H]5N(C([C@H](C(C)C)NC6=O)=O)CCC5)C)=O)C(C)C)=O)=O)c(N)c(O)c4C)c(C)c(=O)cc1C(=O)N[C@H]2[C@@H](C)OC([C@H](C(C)C)N(C(=O)CN(C(=O)[C@@H]3N(CCC3)C(=O)[C@@H](C(C)C)NC2=O)C)C)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -429,8 +451,8 @@
     {
       "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCCCCCCCN)c1=O",
       "distinct_outputs": [
-        "C1CN2[C@@H](C(=O)N(C)CC(N(C)[C@H](C(=O)O[C@H](C)[C@H](NC(c3c4nc5c(C(=O)N[C@H]7C(N[C@@H](C(C)C)C(=O)N6CCC[C@H]6C(=O)N(CC(N([C@@H](C(O[C@H]7C)=O)C(C)C)C)=O)C)=O)c(NCCCCCCCCCCN)c(c(c5oc4c(C)cc3)C)=O)=O)C(=O)N[C@H](C(C)C)C2=O)C(C)C)=O)C1",
-        "C7(=O)N(C)[C@@H](C(=O)O[C@H]([C@H](C(=O)N[C@H](C(=O)N6CCC[C@H]6C(N(C)C7)=O)C(C)C)NC(c2c(NCCCCCCCCCCN)c(=O)c(C)c1oc3c(c(C(=O)N[C@H]4[C@H](OC([C@@H](N(C(CN(C)C([C@H]5CCCN5C(=O)[C@H](NC4=O)C(C)C)=O)=O)C)C(C)C)=O)C)ccc3C)nc12)=O)C)C(C)C"
+        "C2(=O)CN(C)C([C@@H]1CCCN1C([C@@H](NC(=O)[C@H](NC(=O)c4c(c(c(C)c3oc5c(c(C(=O)N[C@H]6[C@@H](C)OC(=O)[C@H](C(C)C)N(C(=O)CN(C)C(=O)[C@H]7CCCN7C(=O)[C@@H](C(C)C)NC6=O)C)ccc5C)nc34)=O)NCCCCCCCCCCN)[C@@H](OC(=O)[C@H](N2C)C(C)C)C)C(C)C)=O)=O",
+        "CC([C@@H]7C(=O)O[C@@H](C)[C@H](C(=O)N[C@H](C(=O)N6CCC[C@H]6C(=O)N(CC(=O)N7C)C)C(C)C)NC(=O)c4c(NCCCCCCCCCCN)c(=O)c(c5oc1c(nc45)c(C(N[C@H]3[C@@H](C)OC([C@@H](N(C)C(=O)CN(C)C([C@H]2CCCN2C(=O)[C@@H](C(C)C)NC3=O)=O)C(C)C)=O)=O)ccc1C)C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -441,8 +463,8 @@
     {
       "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCCCCCN)c1=O",
       "distinct_outputs": [
-        "O=C1O[C@H]([C@@H](NC(c5c(c(=O)c(C)c4oc3c(ccc(C(N[C@@H]6C(N[C@H](C(C)C)C(N7CCC[C@@H]7C(=O)N(CC(N(C)[C@@H](C(C)C)C(=O)O[C@@H]6C)=O)C)=O)=O)=O)c3nc45)C)NCCCCCCCCN)=O)C(=O)N[C@@H](C(C)C)C(N2CCC[C@H]2C(=O)N(C)CC(=O)N([C@@H]1C(C)C)C)=O)C",
-        "o1c5c(c(C(=O)N[C@H]6C(=O)N[C@@H](C(C)C)C(=O)N7CCC[C@H]7C(=O)N(CC(=O)N([C@@H](C(=O)O[C@H]6C)C(C)C)C)C)c(NCCCCCCCCN)c(c5C)=O)nc2c1c(C)ccc2C(=O)N[C@H]4[C@@H](C)OC(=O)[C@H](C(C)C)N(C)C(CN(C(=O)[C@H]3CCCN3C(=O)[C@H](NC4=O)C(C)C)C)=O"
+        "C1(N(CC(N([C@H](C(C)C)C(=O)O[C@@H](C)[C@@H](NC(=O)c6c5nc7c(ccc(C)c7oc5c(C)c(=O)c6NCCCCCCCCN)C(=O)N[C@H]3[C@@H](C)OC([C@H](C(C)C)N(C)C(CN(C)C(=O)[C@@H]4N(CCC4)C(=O)[C@H](NC3=O)C(C)C)=O)=O)C(N[C@@H](C(C)C)C(=O)N2[C@H]1CCC2)=O)C)=O)C)=O",
+        "[C@@H]2(C(C)C)N(C(=O)CN(C(=O)[C@@H]1N(C([C@H](NC(=O)[C@@H](NC(c4c3nc7c(c(C)c(c(c7C(N[C@@H]6[C@@H](OC(=O)[C@H](N(C)C(CN(C)C(=O)[C@@H]5CCCN5C(=O)[C@H](C(C)C)NC6=O)=O)C(C)C)C)=O)NCCCCCCCCN)=O)oc3c(C)cc4)=O)[C@@H](C)OC2=O)C(C)C)=O)CCC1)C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -451,10 +473,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "O=C(NCCc1c2n(c3ccccc13)CCCc1ccccc1-2)C1CCC1",
+      "smiles": "CCC(=O)NCCc1c2n(c3ccccc13)CCc1ccccc1-2",
       "distinct_outputs": [
-        "C(=O)(NCCc4c3c2ccccc2CCCn3c5ccccc45)C1CCC1",
-        "C(CNC(C5CCC5)=O)c2c4n(CCCc3c4cccc3)c1ccccc12"
+        "C(C(=O)NCCc3c1c(n4CCc2c(c34)cccc2)cccc1)C",
+        "C(CNC(CC)=O)c1c4n(CCc3ccccc34)c2ccccc12"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -463,10 +485,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
+      "smiles": "CCCCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
       "distinct_outputs": [
-        "C(CNc3c(c4nc5c(C(=O)N[C@@H]7C(=O)N[C@@H](C(N6[C@@H](C(N(C)CC(N(C)[C@@H](C(C)C)C(=O)O[C@@H]7C)=O)=O)CCC6)=O)C(C)C)ccc(c5oc4c(c3=O)C)C)C(=O)N[C@@H]2[C@@H](OC(=O)[C@H](N(C(CN(C)C(=O)[C@H]1N(C([C@H](C(C)C)NC2=O)=O)CCC1)=O)C)C(C)C)C)CCC",
-        "O=C7N[C@@H](C(C)C)C(N1[C@H](C(=O)N(C)CC(N(C)[C@@H](C(O[C@@H](C)[C@H]7NC(=O)c4c5nc6c(ccc(c6oc5c(C)c(c4NCCCCC)=O)C)C(=O)N[C@H]3[C@@H](C)OC(=O)[C@@H](N(C)C(CN(C(=O)[C@H]2CCCN2C(=O)[C@H](NC3=O)C(C)C)C)=O)C(C)C)=O)C(C)C)=O)CCC1)=O"
+        "Cc3ccc(c4nc5c(C(=O)N[C@@H]6[C@@H](OC([C@@H](C(C)C)N(C(=O)CN(C([C@H]7N(CCC7)C([C@H](C(C)C)NC6=O)=O)=O)C)C)=O)C)c(c(c(C)c5oc34)=O)NCCCCCC)C(N[C@@H]2C(=O)N[C@@H](C(N1[C@@H](C(=O)N(C)CC(=O)N([C@@H](C(C)C)C(=O)O[C@@H]2C)C)CCC1)=O)C(C)C)=O",
+        "c5(C(=O)N[C@@H]7C(N[C@H](C(C)C)C(=O)N6[C@@H](C(=O)N(CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]7C)C)CCC6)=O)c3c(c(C)cc5)oc4c(c(=O)c(NCCCCCC)c(c4n3)C(=O)N[C@@H]1[C@@H](OC(=O)[C@H](N(C(=O)CN(C)C([C@@H]2CCCN2C(=O)[C@@H](NC1=O)C(C)C)=O)C)C(C)C)C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -475,10 +497,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCCCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
+      "smiles": "CCOc1ccc2c(c1)c(CCNC(=O)C1CC1)c1n2CCCc2ccccc2-1",
       "distinct_outputs": [
-        "N(C(=O)c6c7nc3c(oc7c(C)c(c6N)=O)c(C)c(OCCCCCC)cc3C(N[C@H]4[C@H](OC(=O)[C@@H](N(C(CN(C)C([C@H]5CCCN5C([C@@H](C(C)C)NC4=O)=O)=O)=O)C)C(C)C)C)=O)[C@H]2C(=O)N[C@H](C(=O)N1[C@H](C(=O)N(C)CC(=O)N([C@H](C(C)C)C(O[C@H]2C)=O)C)CCC1)C(C)C",
-        "O=C7[C@@H](C(C)C)N(C)C(CN(C)C([C@H]1N(C(=O)[C@H](C(C)C)NC(=O)[C@@H]([C@@H](O7)C)NC(=O)c3c2nc4c(C(N[C@H]5[C@H](OC(=O)[C@@H](N(C)C(=O)CN(C)C(=O)[C@H]6CCCN6C([C@H](NC5=O)C(C)C)=O)C(C)C)C)=O)cc(c(c4oc2c(c(c3N)=O)C)C)OCCCCCC)CCC1)=O)=O"
+        "C1CC1C(=O)NCCc4c2n(c5ccc(OCC)cc45)CCCc3ccccc23",
+        "C1CC1C(NCCc3c2c(n4c3c5c(cccc5)CCC4)ccc(c2)OCC)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -487,10 +509,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
+      "smiles": "Cc1c2oc3c(C)c(OCc4ccc(Cl)cc4)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
       "distinct_outputs": [
-        "C6(=O)[C@H]7N(CCC7)C([C@H](C(C)C)NC(=O)[C@@H]([C@@H](OC([C@H](N(C)C(CN6C)=O)C(C)C)=O)C)NC(c1c2c(oc5c(c(cc(c5C)OCCC)C(N[C@H]4[C@@H](C)OC([C@@H](N(C(=O)CN(C)C([C@@H]3N(C([C@H](NC4=O)C(C)C)=O)CCC3)=O)C)C(C)C)=O)=O)n2)c(c(=O)c1N)C)=O)=O",
-        "CC([C@@H]7N(C(CN(C(=O)[C@@H]1N(C(=O)[C@H](NC([C@H]([C@H](OC7=O)C)NC(=O)c2c5c(oc6c(C)c(c(N)c(c6n5)C(=O)N[C@H]4C(N[C@H](C(=O)N3CCC[C@H]3C(N(C)CC(=O)N([C@@H](C(O[C@H]4C)=O)C(C)C)C)=O)C(C)C)=O)=O)c(c(OCCC)c2)C)=O)C(C)C)CCC1)C)=O)C)C"
+        "N1(C)C([C@@H]8N(CCC8)C([C@H](NC(=O)[C@@H](NC(=O)c7cc(c(C)c6c7nc5c(c(N)c(c(c5o6)C)=O)C(=O)N[C@@H]4[C@H](C)OC(=O)[C@H](N(C)C(CN(C)C(=O)[C@H]3N(C([C@@H](NC4=O)C(C)C)=O)CCC3)=O)C(C)C)OCc2ccc(cc2)Cl)[C@@H](C)OC(=O)[C@H](C(C)C)N(C(=O)C1)C)C(C)C)=O)=O",
+        "O=C(N[C@@H]7[C@@H](OC(=O)[C@H](N(C)C(=O)CN(C)C(=O)[C@H]8N(CCC8)C(=O)[C@H](C(C)C)NC7=O)C(C)C)C)c3c2nc1c(C(=O)N[C@@H]6C(=O)N[C@@H](C(=O)N5[C@@H](C(N(CC(N(C)[C@@H](C(C)C)C(O[C@@H]6C)=O)=O)C)=O)CCC5)C(C)C)cc(OCc4ccc(Cl)cc4)c(c1oc2c(C)c(c3N)=O)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -499,22 +521,22 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
+      "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c/c1=N/Cc1ccc[nH]1",
       "distinct_outputs": [
-        "C(C)(C)[C@@H]7C(=O)N1CCC[C@@H]1C(N(C)CC(=O)N(C)[C@H](C(O[C@H](C)[C@@H](C(N7)=O)NC(c2c5c(oc6c(C)c(=O)c(c(c6n5)C(N[C@@H]3[C@H](C)OC(=O)[C@H](N(C)C(=O)CN(C(=O)[C@@H]4CCCN4C([C@@H](NC3=O)C(C)C)=O)C)C(C)C)=O)N)c(C)c(OCCCC)c2)=O)=O)C(C)C)=O",
-        "c2(C)c1oc7c(c(cc(OCCCC)c7C)C(N[C@H]5[C@@H](C)OC([C@H](C(C)C)N(C)C(=O)CN(C(=O)[C@H]6CCCN6C([C@@H](C(C)C)NC5=O)=O)C)=O)=O)nc1c(C(=O)N[C@@H]4[C@H](C)OC([C@@H](C(C)C)N(C)C(=O)CN(C([C@@H]3CCCN3C([C@@H](NC4=O)C(C)C)=O)=O)C)=O)c(c2=O)N"
+        "Nc3c(c5c(oc6c(c(/cc(C(N[C@H]8[C@H](OC([C@@H](N(C(=O)CN(C(=O)[C@H]7CCCN7C([C@@H](C(C)C)NC8=O)=O)C)C)C(C)C)=O)C)=O)c6n5)=N\\Cc4[nH]ccc4)C)c(C)c3O)C(=O)N[C@@H]2[C@H](C)OC([C@H](N(C)C(CN(C([C@@H]1CCCN1C(=O)[C@@H](NC2=O)C(C)C)=O)C)=O)C(C)C)=O",
+        "c4(C)c1oc7c(c(cc(=N/Cc8ccc[nH]8)/c7C)C(=O)N[C@H]6[C@@H](C)OC([C@@H](N(C)C(CN(C)C(=O)[C@H]5CCCN5C([C@@H](C(C)C)NC6=O)=O)=O)C(C)C)=O)nc1c(c(N)c4O)C(N[C@@H]3[C@@H](OC([C@@H](C(C)C)N(C(=O)CN(C([C@H]2N(C([C@@H](NC3=O)C(C)C)=O)CCC2)=O)C)C)=O)C)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
-      "has_ez_marker": false,
+      "has_ez_marker": true,
       "detected_via_idempotence": true,
       "detected_via_random_relabeling": false
     },
     {
       "smiles": "CCCCCCCCC/N=c1/cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(O)c(C)c3oc-2c1C",
       "distinct_outputs": [
-        "CC([C@@H]1C(O[C@H]([C@@H](NC(c4c(N)c(O)c(c3oc5c(c(/cc(C(=O)N[C@H]7[C@@H](C)OC([C@H](C(C)C)N(C)C(=O)CN(C(=O)[C@H]6CCCN6C([C@@H](C(C)C)NC7=O)=O)C)=O)c5nc34)=N\\CCCCCCCCC)C)C)=O)C(N[C@@H](C(C)C)C(=O)N2CCC[C@H]2C(=O)N(C)CC(=O)N1C)=O)C)=O)C",
-        "N6(C)C(=O)CN(C)C(=O)[C@@H]7N(CCC7)C(=O)[C@H](NC(=O)[C@H]([C@H](OC(=O)[C@@H]6C(C)C)C)NC(=O)c4c5nc1c(oc5c(c(=N/CCCCCCCCC)\\c4)C)c(c(O)c(c1C(=O)N[C@@H]2[C@H](C)OC([C@@H](C(C)C)N(C(=O)CN(C)C(=O)[C@@H]3CCCN3C(=O)[C@H](C(C)C)NC2=O)C)=O)N)C)C(C)C"
+        "C6(=O)N(CC(=O)N([C@@H](C(C)C)C(=O)O[C@H](C)[C@@H](C(N[C@H](C(C)C)C(N7CCC[C@H]67)=O)=O)NC(c4cc(/c(c3oc5c(C)c(O)c(c(c5nc34)C(=O)N[C@@H]2[C@@H](OC(=O)[C@H](N(C(CN(C([C@H]1N(C([C@@H](NC2=O)C(C)C)=O)CCC1)=O)C)=O)C)C(C)C)C)N)C)=N/CCCCCCCCC)=O)C)C",
+        "c17c(oc4c(n7)c(C(=O)N[C@@H]5[C@H](C)OC(=O)[C@H](N(C(=O)CN(C([C@@H]6CCCN6C(=O)[C@@H](NC5=O)C(C)C)=O)C)C)C(C)C)c(N)c(O)c4C)c(c(=N/CCCCCCCCC)\\cc1C(=O)N[C@H]3[C@@H](C)OC(=O)[C@@H](N(C)C(=O)CN(C([C@@H]2N(C([C@H](NC3=O)C(C)C)=O)CCC2)=O)C)C(C)C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -525,8 +547,8 @@
     {
       "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c/c1=N/Cc1ccc(Cl)c(Cl)c1",
       "distinct_outputs": [
-        "C(C)(C)[C@H]8N(C(CN(C([C@H]1N(C(=O)[C@H](C(C)C)NC([C@@H]([C@H](C)OC8=O)NC(c7c5c(c(c(O)c7N)C)oc4c(C)c(=N/Cc6cc(Cl)c(cc6)Cl)\\cc(c4n5)C(N[C@H]2[C@H](OC(=O)[C@@H](N(C(=O)CN(C)C(=O)[C@@H]3N(CCC3)C(=O)[C@H](NC2=O)C(C)C)C)C(C)C)C)=O)=O)=O)CCC1)=O)C)=O)C",
-        "c4(C(=O)N[C@@H]8C(N[C@@H](C(N7[C@@H](C(=O)N(CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]8C)C)CCC7)=O)C(C)C)=O)c/c(=N/Cc6cc(Cl)c(Cl)cc6)c(c5oc3c(nc45)c(c(c(c3C)O)N)C(=O)N[C@@H]2[C@@H](OC([C@H](N(C(CN(C([C@H]1N(C(=O)[C@@H](NC2=O)C(C)C)CCC1)=O)C)=O)C)C(C)C)=O)C)C"
+        "O=C7[C@H](C(C)C)N(C(CN(C)C([C@@H]8N(CCC8)C([C@H](NC(=O)[C@H]([C@H](O7)C)NC(=O)c4c/c(c(C)c5oc6c(C)c(c(c(c6nc45)C(N[C@@H]2[C@@H](OC([C@H](N(C)C(=O)CN(C)C(=O)[C@H]3N(CCC3)C(=O)[C@@H](NC2=O)C(C)C)C(C)C)=O)C)=O)N)O)=N/Cc1ccc(c(c1)Cl)Cl)C(C)C)=O)=O)=O)C",
+        "n4c6c(c(C)c(O)c(c6C(N[C@H]7C(=O)N[C@@H](C(C)C)C(N8[C@@H](CCC8)C(=O)N(CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]7C)C)=O)=O)N)oc5c(C)c(/cc(c45)C(=O)N[C@H]2[C@@H](C)OC(=O)[C@H](C(C)C)N(C)C(=O)CN(C([C@@H]3N(CCC3)C([C@H](NC2=O)C(C)C)=O)=O)C)=N\\Cc1cc(Cl)c(Cl)cc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -535,10 +557,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCCC(=O)NCCc1c2n(c3ccc(OCC)cc13)Cc1ccccc1-2",
+      "smiles": "Cc1c2oc3c(C)c(OCc4ccc([N+](=O)[O-])cc4)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
       "distinct_outputs": [
-        "O(CC)c4ccc1c(c4)c(c3n1Cc2ccccc23)CCNC(CCC)=O",
-        "c1c2c(c(CCNC(CCC)=O)c3c4c(cccc4)Cn23)cc(c1)OCC"
+        "CN1C([C@@H]8N(CCC8)C(=O)[C@H](NC(=O)[C@@H](NC(c7c4c(c(c(c7)OCc6ccc(cc6)[N+](=O)[O-])C)oc5c(C)c(c(c(c5n4)C(=O)N[C@H]2C(N[C@H](C(N3[C@@H](CCC3)C(=O)N(C)CC(=O)N(C)[C@@H](C(O[C@H]2C)=O)C(C)C)=O)C(C)C)=O)N)=O)=O)[C@@H](C)OC([C@H](C(C)C)N(C)C(=O)C1)=O)C(C)C)=O",
+        "Cc7c8oc2c(nc8c(c(c7=O)N)C(N[C@H]5C(=O)N[C@@H](C(C)C)C(N6CCC[C@H]6C(=O)N(CC(N(C)[C@@H](C(=O)O[C@H]5C)C(C)C)=O)C)=O)=O)c(C(=O)N[C@@H]3C(=O)N[C@@H](C(=O)N4[C@H](CCC4)C(N(CC(=O)N(C)[C@@H](C(C)C)C(O[C@@H]3C)=O)C)=O)C(C)C)cc(c2C)OCc1ccc([N+]([O-])=O)cc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -547,22 +569,22 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCOc1ccc2c(c1)c(CCNC(=O)CC)c1n2Cc2ccccc2-1",
+      "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c/c1=N/Cc1ccccc1",
       "distinct_outputs": [
-        "O(CC)c4ccc1c(c4)c(c3n1Cc2ccccc23)CCNC(=O)CC",
-        "c1c2c(c(CCNC(=O)CC)c3c4c(cccc4)Cn23)cc(c1)OCC"
+        "C2N(C)C(=O)[C@@H]1CCCN1C([C@H](C(C)C)NC(=O)[C@H](NC(=O)c4c5nc3c(C(N[C@H]8[C@@H](C)OC([C@@H](N(C)C(CN(C)C([C@@H]7N(C(=O)[C@H](NC8=O)C(C)C)CCC7)=O)=O)C(C)C)=O)=O)c/c(=N/Cc6ccccc6)c(c3oc5c(C)c(c4N)O)C)[C@@H](OC([C@@H](C(C)C)N(C)C2=O)=O)C)=O",
+        "o1c6c(c(C(N[C@@H]8[C@H](C)OC(=O)[C@H](N(C)C(=O)CN(C)C(=O)[C@H]7N(C(=O)[C@@H](NC8=O)C(C)C)CCC7)C(C)C)=O)c(c(c6C)O)N)nc3c1c(/c(cc3C(N[C@@H]4C(N[C@H](C(C)C)C(N5CCC[C@@H]5C(N(C)CC(=O)N(C)[C@H](C(O[C@@H]4C)=O)C(C)C)=O)=O)=O)=O)=N\\Cc2ccccc2)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
-      "has_ez_marker": false,
+      "has_ez_marker": true,
       "detected_via_idempotence": true,
       "detected_via_random_relabeling": false
     },
     {
       "smiles": "CCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
       "distinct_outputs": [
-        "C(CCC)Nc3c(C(=O)N[C@H]6C(N[C@H](C(=O)N7CCC[C@H]7C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]6C)C(C)C)=O)c4nc5c(ccc(c5oc4c(c3=O)C)C)C(=O)N[C@H]2[C@@H](C)OC(=O)[C@H](C(C)C)N(C(=O)CN(C)C(=O)[C@H]1CCCN1C(=O)[C@H](NC2=O)C(C)C)C",
-        "C2(N1[C@H](C(=O)N(CC(=O)N(C)[C@@H](C(O[C@@H](C)[C@@H](NC(=O)c3c5c(oc4c(C)ccc(C(=O)N[C@@H]7C(=O)N[C@@H](C(N6[C@@H](C(N(CC(=O)N(C)[C@H](C(=O)O[C@@H]7C)C(C)C)C)=O)CCC6)=O)C(C)C)c4n5)c(C)c(=O)c3NCCCC)C(=O)N[C@H]2C(C)C)=O)C(C)C)C)CCC1)=O"
+        "C1CN2[C@@H](C(=O)N(CC(N(C)[C@H](C(=O)O[C@@H]([C@H](NC(=O)c3c7c(oc6c(c(c(c(c6n7)C(N[C@@H]4[C@H](C)OC([C@H](N(C)C(=O)CN(C)C(=O)[C@H]5N(CCC5)C([C@@H](NC4=O)C(C)C)=O)C(C)C)=O)=O)NCCCC)=O)C)c(C)cc3)C(N[C@@H](C2=O)C(C)C)=O)C)C(C)C)=O)C)C1",
+        "C6CCN7C([C@@H](NC(=O)[C@@H]([C@@H](OC(=O)[C@@H](C(C)C)N(C(=O)CN(C([C@H]67)=O)C)C)C)NC(=O)c4c5nc1c(oc5c(C)c(c4NCCCC)=O)c(C)ccc1C(=O)N[C@H]2[C@@H](C)OC([C@H](C(C)C)N(C(CN(C([C@H]3CCCN3C(=O)[C@@H](C(C)C)NC2=O)=O)C)=O)C)=O)C(C)C)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -573,8 +595,8 @@
     {
       "smiles": "CCCCCCCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
       "distinct_outputs": [
-        "C[C@@H]2[C@H](NC(=O)c5ccc(c6oc7c(C)c(=O)c(c(c7nc56)C(N[C@H]4C(=O)N[C@H](C(=O)N3[C@H](C(=O)N(CC(=O)N(C)[C@@H](C(O[C@H]4C)=O)C(C)C)C)CCC3)C(C)C)=O)NCCCCCCCCC)C)C(N[C@H](C(C)C)C(N1[C@@H](C(=O)N(CC(N(C)[C@H](C(O2)=O)C(C)C)=O)C)CCC1)=O)=O",
-        "C[C@@H]6OC(=O)[C@H](N(C)C(=O)CN(C)C([C@H]7N(CCC7)C(=O)[C@@H](NC(=O)[C@@H]6NC(=O)c4c5nc3c(ccc(c3oc5c(C)c(c4NCCCCCCCCC)=O)C)C(=O)N[C@H]2[C@@H](C)OC(=O)[C@@H](N(C(=O)CN(C([C@H]1CCCN1C([C@H](NC2=O)C(C)C)=O)=O)C)C)C(C)C)C(C)C)=O)C(C)C"
+        "Cc1c4c(nc5c(C(N[C@H]7[C@H](OC(=O)[C@H](C(C)C)N(C)C(=O)CN(C)C(=O)[C@@H]6N(C([C@@H](C(C)C)NC7=O)=O)CCC6)C)=O)ccc(c5o4)C)c(C(=O)N[C@H]3C(=O)N[C@H](C(=O)N2CCC[C@H]2C(N(CC(N(C)[C@@H](C(=O)O[C@H]3C)C(C)C)=O)C)=O)C(C)C)c(c1=O)NCCCCCCCCC",
+        "c5c(c4nc3c(C(N[C@H]7C(=O)N[C@@H](C(C)C)C(N6CCC[C@H]6C(N(C)CC(=O)N([C@@H](C(=O)O[C@H]7C)C(C)C)C)=O)=O)=O)c(NCCCCCCCCC)c(=O)c(c3oc4c(C)c5)C)C(=O)N[C@H]2[C@@H](C)OC(=O)[C@@H](N(C(=O)CN(C)C([C@@H]1N(C([C@H](NC2=O)C(C)C)=O)CCC1)=O)C)C(C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -583,46 +605,22 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "COc1ccc2c(c1)c(CCNC(C)=O)c1n2Cc2ccccc2-1",
+      "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c/c1=N/Cc1ccco1",
       "distinct_outputs": [
-        "COc1cc2c(c4n(Cc3ccccc34)c2cc1)CCNC(C)=O",
-        "c12ccc(OC)cc1c(c3c4c(cccc4)Cn23)CCNC(C)=O"
+        "O=C(N[C@H]7C(=O)N[C@@H](C(C)C)C(=O)N8[C@@H](CCC8)C(=O)N(CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]7C)C)c1c5c(oc6c(C)c(/cc(c6n5)C(N[C@@H]3C(=O)N[C@@H](C(N4[C@H](CCC4)C(=O)N(CC(=O)N([C@H](C(=O)O[C@@H]3C)C(C)C)C)C)=O)C(C)C)=O)=N\\Cc2occc2)c(c(c1N)O)C",
+        "c2(C)c(/cc(C(=O)N[C@H]8[C@@H](C)OC([C@H](C(C)C)N(C)C(CN(C(=O)[C@@H]7N(C(=O)[C@H](NC8=O)C(C)C)CCC7)C)=O)=O)c3nc4c(C(N[C@@H]5[C@@H](OC(=O)[C@@H](C(C)C)N(C)C(CN(C(=O)[C@@H]6CCCN6C([C@@H](NC5=O)C(C)C)=O)C)=O)C)=O)c(N)c(O)c(C)c4oc23)=N\\Cc1occc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "CCC(=O)NCCc1c2n(c3ccc(OC)cc13)Cc1ccccc1-2",
-      "distinct_outputs": [
-        "COc1cc2c(c4n(Cc3ccccc34)c2cc1)CCNC(=O)CC",
-        "c12ccc(OC)cc1c(CCNC(=O)CC)c3c4c(cccc4)Cn23"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "O=C(NCCc1c2n(c3ccccc13)Cc1ccccc1-2)C1CC1",
-      "distinct_outputs": [
-        "c12c(Cn4c2c(CCNC(=O)C5CC5)c3ccccc34)cccc1",
-        "c1cc3c(n4c(c5ccccc5C4)c3CCNC(=O)C2CC2)cc1"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
+      "has_ez_marker": true,
       "detected_via_idempotence": true,
       "detected_via_random_relabeling": false
     },
     {
       "smiles": "CCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
       "distinct_outputs": [
-        "CC([C@@H]2NC([C@H](NC(=O)c6c(c(=O)c(C)c7oc5c(ccc(c5nc67)C(=O)N[C@@H]4C(N[C@@H](C(N3[C@@H](C(=O)N(CC(=O)N(C)[C@@H](C(C)C)C(O[C@@H]4C)=O)C)CCC3)=O)C(C)C)=O)C)NCCC)[C@@H](OC(=O)[C@H](N(C)C(CN(C(=O)[C@@H]1CCCN1C2=O)C)=O)C(C)C)C)=O)C",
-        "c1(C(=O)N[C@@H]6C(=O)N[C@@H](C(N7CCC[C@@H]7C(N(CC(N(C)[C@@H](C(C)C)C(=O)O[C@@H]6C)=O)C)=O)=O)C(C)C)ccc(C)c3c1nc2c(C(N[C@H]4C(N[C@H](C(=O)N5[C@@H](CCC5)C(=O)N(C)CC(N([C@H](C(C)C)C(=O)O[C@H]4C)C)=O)C(C)C)=O)=O)c(NCCC)c(=O)c(c2o3)C"
+        "O=C(N[C@H]6C(N[C@@H](C(C)C)C(N7CCC[C@H]7C(=O)N(CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]6C)C)=O)=O)c1c(c(=O)c(c5c1nc4c(o5)c(C)ccc4C(N[C@H]3[C@@H](C)OC(=O)[C@H](C(C)C)N(C)C(=O)CN(C(=O)[C@H]2CCCN2C([C@@H](C(C)C)NC3=O)=O)C)=O)C)NCCC",
+        "c4(c(=O)c(c(C(N[C@H]7C(N[C@@H](C(C)C)C(=O)N6CCC[C@H]6C(=O)N(CC(N(C)[C@H](C(C)C)C(=O)O[C@H]7C)=O)C)=O)=O)c5nc1c(oc45)c(C)ccc1C(=O)N[C@H]2[C@@H](C)OC([C@@H](N(C)C(=O)CN(C(=O)[C@@H]3N(CCC3)C(=O)[C@H](NC2=O)C(C)C)C)C(C)C)=O)NCCC)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -631,10 +629,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+      "smiles": "COc1ccc2c(c1)c(CCNC(=O)C1CCC1)c1n2CCc2ccccc2-1",
       "distinct_outputs": [
-        "O2C([C@H](N(C)C(=O)CN(C)C([C@@H]1CCCN1C([C@@H](NC(=O)[C@H](NC(c9c%10nc6c(oc%10c(c(c9N)=O)C)c(c(cc6C(=O)N[C@@H]7C(=O)N[C@@H](C(N8CCC[C@@H]8C(N(CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]7C)C)=O)=O)C(C)C)OC(=O)C34CC5CC(CC(C5)C4)C3)C)=O)[C@@H]2C)C(C)C)=O)=O)C(C)C)=O",
-        "O=C2N1[C@H](C(N(C)CC(N([C@@H](C(O[C@@H](C)[C@@H](NC(=O)c4c5nc3c(C(=O)N[C@@H]%10C(=O)N[C@H](C(C)C)C(=O)N9CCC[C@@H]9C(N(C)CC(=O)N(C)[C@H](C(O[C@@H]%10C)=O)C(C)C)=O)cc(OC(=O)C78CC6CC(C8)CC(C7)C6)c(c3oc5c(c(=O)c4N)C)C)C(=O)N[C@H]2C(C)C)=O)C(C)C)C)=O)=O)CCC1"
+        "C1CCC1C(=O)NCCc4c5c(ccc(c5)OC)n3c4c2ccccc2CC3",
+        "C5CC(C5)C(NCCc1c3n(CCc4ccccc34)c2c1cc(cc2)OC)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -643,10 +641,22 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "COc1ccc2c(c1)c(CCNC(=O)C1CCC1)c1n2CCCc2ccccc2-1",
+      "smiles": "CCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
       "distinct_outputs": [
-        "c13ccccc1CCCn4c5ccc(cc5c(c34)CCNC(=O)C2CCC2)OC",
-        "c5(OC)ccc4n1c(c(c4c5)CCNC(C3CCC3)=O)c2c(cccc2)CCC1"
+        "C[C@@H]7OC(=O)[C@H](N(C)C(CN(C(=O)[C@@H]1CCCN1C(=O)[C@H](C(C)C)NC(=O)[C@@H]7NC(=O)c6c(N)c(c(C)c5oc4c(c(cc(c4nc56)C(=O)N[C@H]2[C@H](OC([C@H](C(C)C)N(C)C(CN(C)C([C@H]3CCCN3C(=O)[C@H](NC2=O)C(C)C)=O)=O)=O)C)OCC)C)=O)C)=O)C(C)C",
+        "O=C(N[C@H]6C(=O)N[C@H](C(=O)N7CCC[C@H]7C(N(CC(=O)N([C@H](C(C)C)C(=O)O[C@H]6C)C)C)=O)C(C)C)c3c(N)c(c(c4oc5c(c(OCC)cc(c5nc34)C(=O)N[C@H]2[C@@H](C)OC(=O)[C@@H](N(C)C(CN(C(=O)[C@@H]1N(C(=O)[C@H](NC2=O)C(C)C)CCC1)C)=O)C(C)C)C)C)=O"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CCCC(=O)NCCc1c2n(c3ccc(OC)cc13)CCc1ccccc1-2",
+      "distinct_outputs": [
+        "C(NC(=O)CCC)Cc4c1n(c3c4cc(cc3)OC)CCc2ccccc12",
+        "c3c2n4CCc1c(c4c(CCNC(=O)CCC)c2cc(c3)OC)cccc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -657,8 +667,20 @@
     {
       "smiles": "COc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
       "distinct_outputs": [
-        "O6[C@@H]([C@@H](C(=O)N[C@H](C(C)C)C(N7[C@H](CCC7)C(N(CC(N(C)[C@@H](C(C)C)C6=O)=O)C)=O)=O)NC(=O)c5c1c(c(c(OC)c5)C)oc4c(c(c(N)c(=O)c4C)C(=O)N[C@@H]3[C@@H](OC(=O)[C@H](N(C)C(=O)CN(C([C@H]2N(C([C@@H](NC3=O)C(C)C)=O)CCC2)=O)C)C(C)C)C)n1)C",
-        "O=C1O[C@H]([C@@H](NC(=O)c6c(c(c(c7oc5c(c(cc(c5nc67)C(N[C@@H]4C(=O)N[C@@H](C(=O)N3[C@@H](C(=O)N(CC(N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)=O)C)CCC3)C(C)C)=O)OC)C)C)=O)N)C(N[C@@H](C(C)C)C(=O)N2[C@@H](CCC2)C(N(C)CC(N([C@@H]1C(C)C)C)=O)=O)=O)C"
+        "C([C@H]7N(C(=O)CN(C)C([C@@H]1CCCN1C([C@@H](NC([C@@H]([C@@H](OC7=O)C)NC(=O)c6c5nc4c(oc5c(C)c(c6N)=O)c(c(cc4C(N[C@@H]2C(N[C@@H](C(N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(=O)O[C@@H]2C)C(C)C)=O)C(C)C)=O)=O)OC)C)=O)C(C)C)=O)=O)C)(C)C",
+        "CC([C@H]1C(O[C@@H]([C@H](NC(c3c7c(oc6c(n7)c(c(c(=O)c6C)N)C(N[C@H]4C(=O)N[C@H](C(N5[C@@H](CCC5)C(=O)N(CC(=O)N(C)[C@@H](C(=O)O[C@H]4C)C(C)C)C)=O)C(C)C)=O)c(c(c3)OC)C)=O)C(N[C@@H](C(N2CCC[C@@H]2C(N(CC(N1C)=O)C)=O)=O)C(C)C)=O)C)=O)C"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "Cc1c2oc3c(C)c(OC(=O)c4ccc5ccccc5c4)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+      "distinct_outputs": [
+        "C(C)(C)[C@@H]1N(C)C(=O)CN(C)C([C@H]9CCCN9C(=O)[C@H](NC(=O)[C@@H](NC(c8cc(c(c7oc4c(nc78)c(C(N[C@@H]5[C@H](C)OC(=O)[C@@H](C(C)C)N(C)C(=O)CN(C)C([C@@H]6CCCN6C(=O)[C@@H](NC5=O)C(C)C)=O)=O)c(N)c(c4C)=O)C)OC(=O)c3cc2c(cc3)cccc2)=O)[C@@H](C)OC1=O)C(C)C)=O",
+        "[C@@H]2(C(=O)O[C@H](C)[C@H](NC(=O)c5cc(c(C)c7c5nc6c(C(=O)N[C@@H]8[C@H](C)OC(=O)[C@@H](C(C)C)N(C(=O)CN(C)C([C@H]9N(CCC9)C([C@@H](NC8=O)C(C)C)=O)=O)C)c(N)c(c(C)c6o7)=O)OC(=O)c3ccc4ccccc4c3)C(=O)N[C@@H](C(N1CCC[C@@H]1C(N(C)CC(=O)N2C)=O)=O)C(C)C)C(C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -669,8 +691,8 @@
     {
       "smiles": "Cc1c2oc3c(C)c(OC(=O)c4ccccc4)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
       "distinct_outputs": [
-        "C1(=O)O[C@H]([C@@H](NC(=O)c6c(c(c(C)c5oc4c(C)c(cc(C(=O)N[C@H]8[C@H](OC([C@H](C(C)C)N(C(CN(C(=O)[C@H]7CCCN7C(=O)[C@@H](C(C)C)NC8=O)C)=O)C)=O)C)c4nc56)OC(c3ccccc3)=O)=O)N)C(N[C@@H](C(C)C)C(N2CCC[C@H]2C(N(C)CC(=O)N([C@@H]1C(C)C)C)=O)=O)=O)C",
-        "O=C(c8ccccc8)Oc6cc(c7nc5c(oc7c6C)c(C)c(c(N)c5C(N[C@H]4C(=O)N[C@H](C(N3CCC[C@H]3C(N(C)CC(N(C)[C@@H](C(=O)O[C@H]4C)C(C)C)=O)=O)=O)C(C)C)=O)=O)C(=O)N[C@@H]1C(=O)N[C@H](C(C)C)C(N2CCC[C@@H]2C(N(C)CC(=O)N([C@H](C(O[C@@H]1C)=O)C(C)C)C)=O)=O"
+        "C(C)(C)[C@H]8C(=O)N1CCC[C@H]1C(N(CC(N([C@@H](C(=O)O[C@@H](C)[C@H](C(=O)N8)NC(=O)c6c(N)c(=O)c(C)c7oc4c(nc67)c(cc(OC(c5ccccc5)=O)c4C)C(=O)N[C@@H]3C(=O)N[C@@H](C(=O)N2CCC[C@@H]2C(=O)N(CC(N([C@H](C(=O)O[C@@H]3C)C(C)C)C)=O)C)C(C)C)C(C)C)C)=O)C)=O",
+        "c1ccccc1C(=O)Oc4c(c6c(nc5c(C(=O)N[C@@H]7[C@@H](OC(=O)[C@@H](C(C)C)N(C(=O)CN(C)C(=O)[C@H]8N(CCC8)C(=O)[C@@H](NC7=O)C(C)C)C)C)c(c(=O)c(c5o6)C)N)c(c4)C(=O)N[C@H]2[C@H](OC(=O)[C@@H](N(C)C(CN(C)C([C@H]3CCCN3C([C@H](NC2=O)C(C)C)=O)=O)=O)C(C)C)C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -679,10 +701,22 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCCC(=O)NCCc1c2n(c3ccc(OC)cc13)Cc1ccccc1-2",
+      "smiles": "Cc1c2oc3c(C)c(OCc4ccc(Cl)c(Cl)c4)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
       "distinct_outputs": [
-        "COc1cc2c(c4n(Cc3ccccc34)c2cc1)CCNC(CCC)=O",
-        "c12ccc(OC)cc1c(CCNC(CCC)=O)c3c4c(cccc4)Cn23"
+        "C1CC[C@@H]2N1C(=O)[C@@H](NC(=O)[C@H](NC(=O)c8c7nc6c(cc(c(C)c6oc7c(C)c(c8N)=O)OCc5ccc(c(Cl)c5)Cl)C(N[C@H]3[C@H](OC(=O)[C@H](C(C)C)N(C)C(=O)CN(C)C([C@@H]4N(CCC4)C(=O)[C@H](NC3=O)C(C)C)=O)C)=O)[C@H](C)OC(=O)[C@H](N(C)C(=O)CN(C2=O)C)C(C)C)C(C)C",
+        "CC([C@H]1N(C)C(CN(C)C(=O)[C@@H]8CCCN8C(=O)[C@H](C(C)C)NC([C@H](NC(c4c5nc3c(C(=O)N[C@@H]7C(=O)N[C@@H](C(=O)N6[C@@H](C(=O)N(C)CC(=O)N([C@@H](C(C)C)C(=O)O[C@@H]7C)C)CCC6)C(C)C)cc(c(c3oc5c(c(=O)c4N)C)C)OCc2ccc(c(c2)Cl)Cl)=O)[C@H](C)OC1=O)=O)=O)C"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "Cc1cccc(O)c1-c1cccc2c1-c1cccc3c1[C@@H](C2)N(C)CC3",
+      "distinct_outputs": [
+        "CN2CCc1cccc5c1[C@H]2Cc4cccc(c45)-c3c(cccc3O)C",
+        "c1c(O)c(-c2cccc3c2c4cccc5CCN(C)[C@@H](c45)C3)c(cc1)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -693,8 +727,8 @@
     {
       "smiles": "CCCC/N=C(\\S)N/N=C/c1cc2c(c(O)c1C(=O)O)-c1c(O)c3c(c(OC)c1CC2)C(=O)c1c(cc(O)c(C)c1O)C3=O",
       "distinct_outputs": [
-        "C(=N/N/C(=N/CCCC)S)\\c5cc3c(c(c5C(=O)O)O)c2c(O)c1C(=O)c4c(c(c(C)c(c4)O)O)C(c1c(OC)c2CC3)=O",
-        "CCCC/N=C(/N/N=C/c1c(C(O)=O)c(O)c2c(CCc3c(c4c(C(=O)c5c(c(c(C)c(c5)O)O)C4=O)c(c23)O)OC)c1)S"
+        "c1(C(=O)O)c(c4c(CCc3c(OC)c2C(c5c(cc(O)c(c5O)C)C(=O)c2c(c34)O)=O)cc1/C=N/NC(/S)=N/CCCC)O",
+        "c1c3c(c2c(c4C(c5cc(O)c(c(c5C(c4c(c2CC3)OC)=O)O)C)=O)O)c(O)c(C(O)=O)c1/C=N/NC(/S)=N/CCCC"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -705,8 +739,8 @@
     {
       "smiles": "CCCCCC/N=C(\\S)N/N=C/c1cc2c(c(O)c1C(=O)O)-c1c(O)c3c(c(OC)c1CC2)C(=O)c1c(cc(O)c(C)c1O)C3=O",
       "distinct_outputs": [
-        "C(=N/N/C(S)=N/CCCCCC)\\c5cc3c(c(c5C(=O)O)O)c2c(O)c1C(=O)c4c(c(c(C)c(c4)O)O)C(c1c(OC)c2CC3)=O",
-        "N(/CCCCCC)=C(\\N/N=C/c1c(C(O)=O)c(O)c2c(CCc3c(c4c(C(=O)c5c(c(c(C)c(c5)O)O)C4=O)c(c23)O)OC)c1)S"
+        "c1(C(=O)O)c(c4c(CCc3c(OC)c2C(c5c(cc(O)c(c5O)C)C(=O)c2c(c34)O)=O)cc1/C=N/NC(=N/CCCCCC)/S)O",
+        "c1c3c(c2c(c4C(c5cc(O)c(c(c5C(c4c(c2CC3)OC)=O)O)C)=O)O)c(O)c(C(O)=O)c1/C=N/NC(=N/CCCCCC)/S"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -715,10 +749,70 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(\\S)NCC(C)C)c(C(=O)O)c1O)CC2",
+      "smiles": "CCC(CC)/N=C(\\S)N/N=C/c1cc2c(c(O)c1C(=O)O)-c1c(O)c3c(c(OC)c1CC2)C(=O)c1c(cc(O)c(C)c1O)C3=O",
       "distinct_outputs": [
-        "N(=C/c5c(C(=O)O)c(c4c(c5)CCc3c(OC)c2c(c(c34)O)C(=O)c1cc(O)c(C)c(c1C2=O)O)O)\\N=C(/S)NCC(C)C",
-        "Oc1c5c(C(c4c(C5=O)c(c2c(c4O)c3c(c(c(/C=N/N=C(\\S)NCC(C)C)cc3CC2)C(=O)O)O)OC)=O)cc(O)c1C"
+        "c1(O)c4c(CCc5c4c(O)c(C(O)=O)c(c5)/C=N/N/C(=N/C(CC)CC)S)c(c2c1C(c3cc(c(C)c(c3C2=O)O)O)=O)OC",
+        "c4(O)cc3C(c5c(c1c(c(c5C(c3c(O)c4C)=O)OC)CCc2c1c(O)c(C(O)=O)c(/C=N/N/C(=N/C(CC)CC)S)c2)O)=O"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": true,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CN1CCc2cccc3c2[C@H]1Cc1cccc(-c2c(O)cccc2O)c1-3",
+      "distinct_outputs": [
+        "c1ccc5c2[C@@H](Cc4c5c(ccc4)-c3c(cccc3O)O)N(CCc12)C",
+        "c5(c(cccc5O)O)-c2cccc3C[C@H]4N(C)CCc1c4c(c23)ccc1"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(\\S)N(C)C3CCCCC3)c(C(=O)O)c1O)CC2",
+      "distinct_outputs": [
+        "C2(=O)c1c(c(c(cc1C(=O)c3c(O)c4c(CCc6c4c(c(C(=O)O)c(c6)/C=N/N=C(/N(C)C5CCCCC5)S)O)c(OC)c23)O)C)O",
+        "N(C6CCCCC6)(C)C(=N/N=C/c5c(c(O)c1c(c5)CCc2c(c4c(C(c3cc(O)c(C)c(O)c3C4=O)=O)c(c12)O)OC)C(=O)O)/S"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": true,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(\\S)NC3CCC(C)CC3)c(C(=O)O)c1O)CC2",
+      "distinct_outputs": [
+        "O=C5c1c(C(c6cc(c(c(c56)O)C)O)=O)c(c4c(CCc3cc(c(c(O)c34)C(=O)O)/C=N/N=C(/NC2CCC(C)CC2)S)c1OC)O",
+        "Oc2c4c5c(O)c(C(=O)O)c(/C=N/N=C(\\S)NC6CCC(C)CC6)cc5CCc4c(OC)c1C(c3c(O)c(c(cc3C(c12)=O)O)C)=O"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": true,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(\\S)Nc3ccc(C)cc3)c(C(=O)O)c1O)CC2",
+      "distinct_outputs": [
+        "O=C4c6c(c(O)c(c(c6)O)C)C(c5c(c1c(c(c45)O)c2c(cc(/C=N/N=C(/Nc3ccc(cc3)C)S)c(C(=O)O)c2O)CC1)OC)=O",
+        "c1c(c(C)c(c2C(=O)c6c(c(c4c(c6OC)CCc3cc(/C=N/N=C(\\S)Nc5ccc(cc5)C)c(c(c34)O)C(O)=O)O)C(=O)c12)O)O"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": true,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(\\S)Nc3ccc(Cl)cc3)c(C(=O)O)c1O)CC2",
+      "distinct_outputs": [
+        "c24c(c(OC)c6c(C(c5c(C6=O)c(c(c(c5)O)C)O)=O)c4O)CCc3cc(c(C(O)=O)c(c23)O)/C=N/N=C(\\S)Nc1ccc(cc1)Cl",
+        "c4(O)c5c6c(c2c(c(c6CCc5cc(c4C(=O)O)/C=N/N=C(\\S)Nc3ccc(cc3)Cl)OC)C(c1c(c(C)c(O)cc1C2=O)O)=O)O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -729,8 +823,8 @@
     {
       "smiles": "CC(C)COP(=O)(CCCCC1(C(=O)NCC(F)(F)F)c2ccccc2-c2ccccc21)OCC(C)C",
       "distinct_outputs": [
-        "FC(CNC(C1(CCCCP(OCC(C)C)(=O)OCC(C)C)c3c(cccc3)c2c1cccc2)=O)(F)F",
-        "c3c2c(ccc3)C(CCCCP(=O)(OCC(C)C)OCC(C)C)(C(=O)NCC(F)(F)F)c1ccccc12"
+        "C(C(F)(F)F)NC(=O)C3(CCCCP(=O)(OCC(C)C)OCC(C)C)c1ccccc1c2ccccc23",
+        "c1cccc2c1C(c3ccccc23)(CCCCP(OCC(C)C)(=O)OCC(C)C)C(NCC(F)(F)F)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -739,10 +833,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCCCOP(=O)(CCCCCC1(C(=O)NCC(F)(F)F)c2ccccc2-c2ccccc21)OCCCC",
+      "smiles": "CCCCOP(=O)(CCCCCCC1(C(=O)NCC(F)(F)F)c2ccccc2-c2ccccc21)OCCCC",
       "distinct_outputs": [
-        "P(=O)(OCCCC)(CCCCCC3(c1c(c2c3cccc2)cccc1)C(NCC(F)(F)F)=O)OCCCC",
-        "c1cc2c(C(C(=O)NCC(F)(F)F)(c3ccccc23)CCCCCP(=O)(OCCCC)OCCCC)cc1"
+        "C(OP(=O)(CCCCCCC1(c3c(cccc3)c2ccccc12)C(=O)NCC(F)(F)F)OCCCC)CCC",
+        "c1c2c(C(CCCCCCP(=O)(OCCCC)OCCCC)(C(=O)NCC(F)(F)F)c3ccccc23)ccc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -751,58 +845,34 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CC(C)OP(=O)(CCCCC1(C(=O)NCC(F)(F)F)c2ccccc2-c2ccccc21)OC(C)C",
+      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(\\S)NC(C)C)c(C(=O)O)c1O)CC2",
       "distinct_outputs": [
-        "c1c3c(C(CCCCP(=O)(OC(C)C)OC(C)C)(c2ccccc23)C(NCC(F)(F)F)=O)ccc1",
-        "c1cccc3c1C(c2ccccc23)(C(=O)NCC(F)(F)F)CCCCP(=O)(OC(C)C)OC(C)C"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(\\S)Oc3ccccc3)c(C(=O)O)c1O)CC2",
-      "distinct_outputs": [
-        "O=C(O)c1c(O)c6c(CCc5c(OC)c4C(c3c(O)c(C)c(cc3C(c4c(c56)O)=O)O)=O)cc1/C=N/N=C(/Oc2ccccc2)S",
-        "Oc2c(c(cc1C(c3c(O)c6c(CCc4c6c(O)c(C(O)=O)c(/C=N/N=C(\\S)Oc5ccccc5)c4)c(c3C(c12)=O)OC)=O)O)C"
+        "C4(=O)c1c(C(=O)c5c(OC)c3c(c(c45)O)c2c(O)c(c(cc2CC3)/C=N/N=C(\\S)NC(C)C)C(=O)O)c(O)c(c(c1)O)C",
+        "c4c(O)c(C)c(c5C(=O)c3c(C(c45)=O)c(c1c(c3OC)CCc2cc(/C=N/N=C(/NC(C)C)S)c(C(=O)O)c(c12)O)O)O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
       "has_ez_marker": true,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "O=C(NCC(F)(F)F)C1(CCCCP(=O)(OCc2cccnc2)OCc2cccnc2)c2ccccc2-c2ccccc21",
+      "distinct_outputs": [
+        "C(CCCP(OCc5cnccc5)(=O)OCc4cnccc4)C1(c3c(cccc3)c2c1cccc2)C(NCC(F)(F)F)=O",
+        "c5cc1c(cc5)C(CCCCP(=O)(OCc4cccnc4)OCc3cccnc3)(c2c1cccc2)C(=O)NCC(F)(F)F"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
       "detected_via_idempotence": true,
       "detected_via_random_relabeling": false
     },
     {
       "smiles": "CCCCC/N=C(\\S)N/N=C/c1cc2c(c(O)c1C(=O)O)-c1c(O)c3c(c(OC)c1CC2)C(=O)c1c(cc(O)c(C)c1O)C3=O",
       "distinct_outputs": [
-        "C(=N/N/C(=N/CCCCC)S)\\c5cc3c(c(c5C(=O)O)O)c2c(O)c1C(=O)c4c(c(c(C)c(c4)O)O)C(c1c(OC)c2CC3)=O",
-        "C(CCCC)/N=C(/N/N=C/c1c(C(O)=O)c(O)c2c(CCc3c(c4c(C(=O)c5c(c(c(C)c(c5)O)O)C4=O)c(c23)O)OC)c1)S"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(\\S)NC3CCCCCCC3)c(C(=O)O)c1O)CC2",
-      "distinct_outputs": [
-        "C6C(CCCCCC6)NC(=N/N=C/c5c(C(O)=O)c(c2c(c5)CCc3c(OC)c1C(c4c(cc(O)c(c4O)C)C(=O)c1c(O)c23)=O)O)/S",
-        "c15cc(/C=N/N=C(/NC6CCCCCCC6)S)c(C(O)=O)c(c1c4c(CC5)c(OC)c3c(c4O)C(c2c(C3=O)c(O)c(c(O)c2)C)=O)O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/N=C(/N)S)c(C(=O)O)c1O)CC2",
-      "distinct_outputs": [
-        "N(=C(/S)N)/N=C/c3c(c(c4c2c(O)c1C(=O)c5c(c(c(C)c(c5)O)O)C(c1c(OC)c2CCc4c3)=O)O)C(=O)O",
-        "N(=C(/S)N)/N=C/c5c(C(O)=O)c(O)c1c(c5)CCc2c(c3c(C(=O)c4c(c(c(C)c(c4)O)O)C3=O)c(c12)O)OC"
+        "c1(C(=O)O)c(c4c(CCc3c(OC)c2C(c5c(cc(O)c(c5O)C)C(=O)c2c(c34)O)=O)cc1/C=N/NC(/S)=N/CCCCC)O",
+        "c1c3c(c2c(c4C(c5cc(O)c(c(c5C(c4c(c2CC3)OC)=O)O)C)=O)O)c(O)c(C(O)=O)c1/C=N/NC(/S)=N/CCCCC"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -813,8 +883,8 @@
     {
       "smiles": "CCCCCCCCC/N=C(\\S)N/N=C/c1cc2c(c(O)c1C(=O)O)-c1c(O)c3c(c(OC)c1CC2)C(=O)c1c(cc(O)c(C)c1O)C3=O",
       "distinct_outputs": [
-        "C(=N/N/C(S)=N/CCCCCCCCC)\\c5cc3c(c(c5C(=O)O)O)c2c(O)c1C(=O)c4c(c(c(C)c(c4)O)O)C(c1c(OC)c2CC3)=O",
-        "N(/CCCCCCCCC)=C(\\N/N=C/c1c(C(O)=O)c(O)c2c(CCc3c(c4c(C(=O)c5c(c(c(C)c(c5)O)O)C4=O)c(c23)O)OC)c1)S"
+        "c1(C(=O)O)c(c4c(CCc3c(OC)c2C(c5c(cc(O)c(c5O)C)C(=O)c2c(c34)O)=O)cc1/C=N/NC(=N/CCCCCCCCC)/S)O",
+        "c1c3c(c2c(c4C(c5cc(O)c(c(c5C(c4c(c2CC3)OC)=O)O)C)=O)O)c(O)c(C(O)=O)c1/C=N/NC(=N/CCCCCCCCC)/S"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -825,8 +895,8 @@
     {
       "smiles": "CCCCCCC/N=C(\\S)N/N=C/c1cc2c(c(O)c1C(=O)O)-c1c(O)c3c(c(OC)c1CC2)C(=O)c1c(cc(O)c(C)c1O)C3=O",
       "distinct_outputs": [
-        "C(=N/N/C(S)=N/CCCCCCC)\\c5cc3c(c(c5C(=O)O)O)c2c(O)c1C(=O)c4c(c(c(C)c(c4)O)O)C(c1c(OC)c2CC3)=O",
-        "N(/CCCCCCC)=C(\\N/N=C/c1c(C(O)=O)c(O)c2c(CCc3c(c4c(C(=O)c5c(c(c(C)c(c5)O)O)C4=O)c(c23)O)OC)c1)S"
+        "c1(C(=O)O)c(c4c(CCc3c(OC)c2C(c5c(cc(O)c(c5O)C)C(=O)c2c(c34)O)=O)cc1/C=N/NC(=N/CCCCCCC)/S)O",
+        "c1c3c(c2c(c4C(c5cc(O)c(c(c5C(c4c(c2CC3)OC)=O)O)C)=O)O)c(O)c(C(O)=O)c1/C=N/NC(=N/CCCCCCC)/S"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -835,10 +905,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCO[C@@]1(CC)c2cccc3c2-c2c1ccc1c2[C@@H](C3)N(C)CC1",
+      "smiles": "COc1ccc2c3nc[nH]c(N4CCN(CCc5ccc(F)c(F)c5)CC4)c-3nc2c1[N+](=O)[O-]",
       "distinct_outputs": [
-        "c12c4cccc1[C@@](OCC)(CC)c5c2c3c(cc5)CCN([C@@H]3C4)C",
-        "c14c2[C@H]3Cc5cccc(c45)[C@](c1ccc2CCN3C)(CC)OCC"
+        "N1(c4c3nc5c([N+]([O-])=O)c(OC)ccc5c3nc[nH]4)CCN(CCc2cc(c(F)cc2)F)CC1",
+        "c1cc(c([N+]([O-])=O)c5c1c4nc[nH]c(c4n5)N2CCN(CCc3ccc(F)c(c3)F)CC2)OC"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -847,10 +917,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "O=C(Nc1ccncc1)c1cccc2nc3c(N4CCN(CCc5ccc(F)c(F)c5)CC4)[nH]cnc-3c12",
+      "smiles": "CC(=O)N[C@@H]1c2cccc3c2-c2c1ccc1c2[C@@H](C3)N(C)CC1",
       "distinct_outputs": [
-        "c1(C(=O)Nc6ccncc6)c4c(nc5c([nH]cnc45)N3CCN(CC3)CCc2cc(F)c(cc2)F)ccc1",
-        "c6cc(ccn6)NC(=O)c5c4c(ccc5)nc3c([nH]cnc34)N1CCN(CCc2ccc(F)c(F)c2)CC1"
+        "c12ccc3[C@H](NC(=O)C)c5cccc4C[C@H](c2c3c45)N(CC1)C",
+        "c15c4c(C[C@@H]2c3c(ccc([C@@H]5NC(=O)C)c34)CCN2C)ccc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -859,22 +929,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "COc1c2c(c(O)c3c1C(=O)c1c(cc(O)c(C)c1O)C3=O)-c1c(cc(/C=N/NC(=O)NC3CCCCC3)c(C(=O)O)c1O)CC2",
+      "smiles": "CC(=O)N[C@H]1c2cccc3c2-c2c1ccc1c2[C@@H](C3)N(C)CC1",
       "distinct_outputs": [
-        "c2c1C(=O)c6c(c(c5c(c6O)c4c(O)c(C(O)=O)c(cc4CC5)/C=N/NC(=O)NC3CCCCC3)OC)C(c1c(c(c2O)C)O)=O",
-        "c6(O)c(C)c(O)c4c(c6)C(=O)c5c(c3c(c(c5C4=O)OC)CCc2c3c(c(c(c2)/C=N/NC(NC1CCCCC1)=O)C(O)=O)O)O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": true,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "CCO[C@]1(CC)c2cccc3c2-c2c1ccc1c2[C@@H](C3)N(C)CC1",
-      "distinct_outputs": [
-        "c12c4cccc1[C@](OCC)(CC)c5c2c3c(cc5)CCN([C@@H]3C4)C",
-        "c14c2[C@H]3Cc5cccc(c45)[C@@](c1ccc2CCN3C)(CC)OCC"
+        "c12ccc3[C@@H](NC(=O)C)c5cccc4C[C@H](c2c3c45)N(CC1)C",
+        "c15c4c(C[C@@H]2c3c(ccc([C@H]5NC(=O)C)c34)CCN2C)ccc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -883,10 +941,70 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "CCC(=O)N[C@H]1CCc2cc(OC)c(OC)c(OC)c2-c2ccc(=O)c(OC)cc21",
+      "smiles": "CN1CCc2ccc3c4c2[C@H]1Cc1cccc(c1-4)C3=O",
       "distinct_outputs": [
-        "O(c1c(cc2c(c3c(cc(OC)c(=O)cc3)[C@H](CC2)NC(=O)CC)c1OC)OC)C",
-        "c1(=O)ccc2c([C@H](CCc3cc(OC)c(OC)c(c23)OC)NC(=O)CC)cc1OC"
+        "N1(CCc3c5[C@H]1Cc2c4c(C(c(c45)cc3)=O)ccc2)C",
+        "c1cc5c2[C@H](N(CC5)C)Cc4c3c(ccc4)C(c1c23)=O"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CCN(CC)CCn1nc2c3c(c(CN)ccc31)Sc1ccccc1-2",
+      "distinct_outputs": [
+        "CCN(CC)CCn3nc4c1ccccc1Sc2c4c3ccc2CN",
+        "n2c3c1c(Sc4c3cccc4)c(ccc1n2CCN(CC)CC)CN"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CCN(CC)CCn1nc2c3c(c(CN)ccc31)Sc1ccc(OC)cc1-2",
+      "distinct_outputs": [
+        "c2c(ccc3Sc4c(CN)ccc1c4c(c23)nn1CCN(CC)CC)OC",
+        "c4(OC)cc1c(cc4)Sc3c(CN)ccc2n(CCN(CC)CC)nc1c23"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CCN(CC)CCn1nc2c3c(c(CNC=O)ccc31)Sc1ccc(OC)cc1-2",
+      "distinct_outputs": [
+        "C(N(CC)CC)Cn4nc1c3c4ccc(CNC=O)c3Sc2c1cc(OC)cc2",
+        "CCN(CC)CCn3nc2c1cc(ccc1Sc4c2c3ccc4CNC=O)OC"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CCN(CC)CCn1nc2c3c(c(CNC=O)ccc31)Sc1ccccc1-2",
+      "distinct_outputs": [
+        "C(N(CC)CC)Cn3nc1c4c(c(CNC=O)ccc34)Sc2c1cccc2",
+        "c1cc4c(Sc3c(ccc2n(CCN(CC)CC)nc4c23)CNC=O)cc1"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CCOCC(=O)N[C@H]1CCc2cc(OC)c(OC)c(OC)c2-c2ccc(OC)c(=O)cc21",
+      "distinct_outputs": [
+        "C(OCC)C(=O)N[C@@H]2c1cc(=O)c(ccc1c3c(cc(c(c3OC)OC)OC)CC2)OC",
+        "c1c(c(ccc2c1[C@H](CCc3c2c(OC)c(c(c3)OC)OC)NC(=O)COCC)OC)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -897,8 +1015,8 @@
     {
       "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
       "distinct_outputs": [
-        "NC(=N/N=C/[C@@H]1[C@@]2(C)CC/C(C(C)=C2CC1)=N\\N=C(N)N)N",
-        "NC(=N/N=C/[C@@H]1[C@@]2(C)CCC(/C(C)=C2CC1)=N\\N=C(N)N)N"
+        "C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(C)/C(CC1)=N/N=C(N)N",
+        "C(N)(N)=N/N=C/[C@@H]2[C@]1(C)C(CC2)=C(C)C(/CC1)=N/N=C(N)N"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -909,32 +1027,20 @@
     {
       "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
       "distinct_outputs": [
-        "NC(=N/N=C/[C@H]1[C@@]2(C)CC/C(C(C)=C2CC1)=N\\N=C(N)N)N",
-        "NC(=N/N=C/[C@H]1[C@@]2(C)CCC(/C(C)=C2CC1)=N\\N=C(N)N)N"
+        "C(N)(N)=N/N=C/[C@H]2[C@]1(C)C(CC2)=C(C)/C(CC1)=N/N=C(N)N",
+        "C(N)(N)=N/N=C/[C@H]2[C@]1(C)C(CC2)=C(C)C(/CC1)=N/N=C(N)N"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
       "has_ez_marker": true,
       "detected_via_idempotence": false,
       "detected_via_random_relabeling": true
-    },
-    {
-      "smiles": "Fc1ccc(CCN2CCN(c3[nH]cnc4c5c(Cl)cccc5nc3-4)CC2)cc1F",
-      "distinct_outputs": [
-        "C5N(CCN(C5)CCc4cc(F)c(cc4)F)c3[nH]cnc2c1c(nc23)cccc1Cl",
-        "c1c(Cl)c2c(nc3c(N5CCN(CC5)CCc4ccc(F)c(c4)F)[nH]cnc23)cc1"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
     },
     {
       "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
       "distinct_outputs": [
-        "N(=C(N)N)/N=C/2CC[C@@]1(C)C(=C2C)CC[C@@H]1/C=C/C(OC)=O",
-        "N(=C(N)N)/N=C2\\CC[C@@]1(C)C(=C2C)CC[C@@H]1/C=C/C(OC)=O"
+        "NC(=N/N=C2/C(=C1[C@](C)(CC2)[C@@H](/C=C/C(OC)=O)CC1)C)N",
+        "NC(=N/N=C\\2C(=C1[C@](C)(CC2)[C@@H](/C=C/C(OC)=O)CC1)C)N"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -943,46 +1049,10 @@
       "detected_via_random_relabeling": true
     },
     {
-      "smiles": "O=C(c1ccc(Nc2ccnc3cc(C(F)(F)F)ccc23)cc1)N1CCN(c2[nH]cnc3ncnc2-3)CC1",
+      "smiles": "COc1cc2c(c(OC)c1OC)-c1ccc(OC)c(=O)cc1[C@@H](NC(=O)COC(C)=O)CC2",
       "distinct_outputs": [
-        "FC(F)(c1ccc6c(nccc6Nc5ccc(cc5)C(N4CCN(CC4)c2c3ncnc3nc[nH]2)=O)c1)F",
-        "c1c6c(c(ccn6)Nc2ccc(C(=O)N5CCN(CC5)c4c3ncnc3nc[nH]4)cc2)ccc1C(F)(F)F"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "COc1cc2c(c(OC)c1Oc1nnnn1-c1ccccc1)-c1ccc(OC)c(=O)cc1[C@@H](NC(C)=O)CC2",
-      "distinct_outputs": [
-        "c1c(=O)c(OC)ccc2c1[C@H](CCc3c2c(OC)c(Oc4nnnn4-c5ccccc5)c(c3)OC)NC(C)=O",
-        "c3c(OC)c(c(c5c3CC[C@H](NC(=O)C)c4c5ccc(OC)c(c4)=O)OC)Oc2n(nnn2)-c1ccccc1"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "O=c1c(CO)coc2c1COc1ccccc1-2",
-      "distinct_outputs": [
-        "c12c(COc3c2cccc3)c(c(CO)co1)=O",
-        "c3c(CO)c(c2c(o3)c1ccccc1OC2)=O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "COc1c(O)c(O)cc2c1-c1ccc(OC)c(=O)cc1[C@@H](NC(C)=O)CC2",
-      "distinct_outputs": [
-        "COc2c1c3ccc(c(=O)cc3[C@H](CCc1cc(c2O)O)NC(=O)C)OC",
-        "O(c3c2c(cc(c3O)O)CC[C@@H](c1c2ccc(c(c1)=O)OC)NC(=O)C)C"
+        "C(=O)(C)OCC(=O)N[C@@H]2c1cc(=O)c(ccc1c3c(cc(c(c3OC)OC)OC)CC2)OC",
+        "c1c(c(ccc2c1[C@@H](NC(COC(=O)C)=O)CCc3c2c(OC)c(c(c3)OC)OC)OC)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -993,8 +1063,8 @@
     {
       "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
       "distinct_outputs": [
-        "c2ccc(cc2I)C/1C(=C(C)N=C(C1=C(\\O)OCC)C)C(OCC)=O",
-        "c2ccc(cc2I)C1C(=C(C)N=C(/C1=C(/O)OCC)C)C(OCC)=O"
+        "CCOC(=O)C=2C(/C(=C(/OCC)O)C(=NC=2C)C)c1cc(I)ccc1",
+        "CCOC(=O)C=2C(C(=C(/OCC)O)/C(=NC=2C)C)c1cc(I)ccc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1005,8 +1075,8 @@
     {
       "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
       "distinct_outputs": [
-        "c1cc(ccc1C2/C(C(C)=NC(=C2C(OCC)=O)C)=C(/OCC)O)I",
-        "c1cc(ccc1C2C(/C(C)=NC(=C2C(OCC)=O)C)=C(/OCC)O)I"
+        "CCO/C(=C/2C(=NC(C)=C(C2c1ccc(I)cc1)C(OCC)=O)C)O",
+        "CCO/C(=C2\\C(=NC(C)=C(C2c1ccc(I)cc1)C(OCC)=O)C)O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1015,10 +1085,10 @@
       "detected_via_random_relabeling": true
     },
     {
-      "smiles": "Nc1ccc2c3c(nn2CCNCCO)-c2cc(O)ccc2Sc13",
+      "smiles": "CCN(CC)CCn1nc2c3c(c(NCCNCCO)ccc31)Sc1ccc(OC)cc1-2",
       "distinct_outputs": [
-        "OCCNCCn4nc2c1c(Sc3c2c4ccc3N)ccc(O)c1",
-        "OCCNCCn4nc2c3c(c(N)ccc34)Sc1c2cc(cc1)O"
+        "N(c2c3c1c(c4c(ccc(OC)c4)S3)nn(c1cc2)CCN(CC)CC)CCNCCO",
+        "c12n(nc3c1c(Sc4ccc(OC)cc34)c(NCCNCCO)cc2)CCN(CC)CC"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1027,10 +1097,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "Nc1ccc2c3c(nn2CCNCCO)-c2ccccc2Sc13",
+      "smiles": "CN(C)CCn1nc2c3c(c(N)ccc31)Sc1ccccc1-2",
       "distinct_outputs": [
-        "c12n(CCNCCO)nc4c1c(Sc3c4cccc3)c(cc2)N",
-        "c13c4n(CCNCCO)nc1c2c(Sc3c(cc4)N)cccc2"
+        "Nc3ccc4n(CCN(C)C)nc2c4c3Sc1ccccc12",
+        "c14c(cccc4)Sc3c2c1nn(c2ccc3N)CCN(C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1041,8 +1111,8 @@
     {
       "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
       "distinct_outputs": [
-        "OC(/OCC)=C1/C(=NC(C)=C(C1c2c(C(F)(F)F)cccc2)C(OC)=O)C",
-        "OC(/OCC)=C\\1C(=NC(C)=C(C1c2c(C(F)(F)F)cccc2)C(OC)=O)C"
+        "CC=2/C(=C(\\OCC)O)C(C(=C(C)N=2)C(=O)OC)c1ccccc1C(F)(F)F",
+        "CC=2C(=C(/OCC)O)\\C(C(=C(C)N=2)C(=O)OC)c1ccccc1C(F)(F)F"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1053,44 +1123,20 @@
     {
       "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
       "distinct_outputs": [
-        "C(=C/2C(=NC(=C(C(OCC)=O)C2c1ccccc1OC)C)C)(/O)OCC",
-        "C(=C2/C(=NC(=C(C(OCC)=O)C2c1ccccc1OC)C)C)(\\O)OCC"
+        "OC(/OCC)=C/1C(c2ccccc2OC)C(C(OCC)=O)=C(N=C1C)C",
+        "OC(/OCC)=C1\\C(c2ccccc2OC)C(C(OCC)=O)=C(N=C1C)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
       "has_ez_marker": true,
       "detected_via_idempotence": false,
       "detected_via_random_relabeling": true
-    },
-    {
-      "smiles": "NCCn1nc2c3c(c(NCCNCCO)ccc31)Sc1ccccc1-2",
-      "distinct_outputs": [
-        "N(CCO)CCNc2ccc1n(nc3c1c2Sc4c3cccc4)CCN",
-        "N(CCO)CCNc4ccc1c2c4Sc3c(cccc3)c2nn1CCN"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "CCN(CC)CCn1nc2c3c(c(N)ccc31)Sc1ccc(OC)cc1-2",
-      "distinct_outputs": [
-        "c12cc(OC)ccc1Sc3c(N)ccc4n(nc2c34)CCN(CC)CC",
-        "c13c4ccc(N)c1Sc2ccc(cc2c3nn4CCN(CC)CC)OC"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
     },
     {
       "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
       "distinct_outputs": [
-        "O=C(C2=C(N=C(/C(C2c1c(cccc1)[N+](=O)[O-])=C(/O)OCC)C)C)OC",
-        "O=C(C2=C(N=C(C(/C2c1c(cccc1)[N+](=O)[O-])=C(/O)OCC)C)C)OC"
+        "O(C)C(=O)C2=C(N=C(C)/C(C2c1ccccc1[N+](=O)[O-])=C(/O)OCC)C",
+        "O(C)C(=O)C2=C(N=C(C)C(/C2c1ccccc1[N+](=O)[O-])=C(/O)OCC)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1099,34 +1145,22 @@
       "detected_via_random_relabeling": true
     },
     {
-      "smiles": "CCN(CC)CCn1nc2c3c(c(N)ccc31)Sc1cccc(OC)c1-2",
-      "distinct_outputs": [
-        "C(CN(CC)CC)n2nc4c1c(Sc3c4c(OC)ccc3)c(N)ccc12",
-        "n3c1c4c(cccc4OC)Sc2c(N)ccc(n3CCN(CC)CC)c12"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "O=C1OCC2OC(O)C(O)C(O)C2OC(=O)c2cc(O)c(O)c(O)c2-c2c(O)c(O)c3oc(=O)c4c(c(O)c(O)c5oc(=O)c2c3c54)-c2c1cc(O)c(O)c2O",
-      "distinct_outputs": [
-        "Oc1c(O)c(O)cc8c1c3c(c(c4oc(c5c(-c6c(C(OCC7C(OC8=O)C(C(O)C(O7)O)O)=O)cc(O)c(O)c6O)c(c(c2c5c4c3c(o2)=O)O)O)=O)O)O",
-        "c12c8c3c5c(c(O)c8oc(c1c(-c4c(C(OCC7C(C(O)C(O)C(O7)O)OC(c6cc(O)c(c(O)c56)O)=O)=O)cc(c(c4O)O)O)c(O)c(c2oc3=O)O)=O)O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
       "smiles": "Cc1c[nH]c(NCC(C)CN(C)C)c2c3c(ccc4cc(O)ccc43)nc1-2",
       "distinct_outputs": [
-        "c1c4c(c3c(cc4)nc2c3c(NCC(C)CN(C)C)[nH]cc2C)ccc1O",
-        "c1cc4cc(O)ccc4c2c3c([nH]cc(c3nc12)C)NCC(C)CN(C)C"
+        "Oc3ccc4c2c1c([nH]cc(C)c1nc2ccc4c3)NCC(C)CN(C)C",
+        "c2(C)c1nc3ccc4cc(ccc4c3c1c([nH]c2)NCC(C)CN(C)C)O"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CCN(CC)CCn1nc2c3c(c(N)ccc31)Sc1cccc(O)c1-2",
+      "distinct_outputs": [
+        "C(Cn2nc4c1c(Sc3c(ccc2c34)N)cccc1O)N(CC)CC",
+        "c4(O)c3c(ccc4)Sc1c(ccc2c1c3nn2CCN(CC)CC)N"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1137,8 +1171,8 @@
     {
       "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
       "distinct_outputs": [
-        "[N+](=O)(c1ccc(C/2C(=C(C)N=C(C)C2=C(\\O)OCC)C(OC)=O)cc1)[O-]",
-        "[N+](=O)(c1ccc(C2C(=C(C)N=C(C)/C2=C(/O)OCC)C(OC)=O)cc1)[O-]"
+        "c1cc([N+]([O-])=O)ccc1C/2C(C(=O)OC)=C(C)N=C(C2=C(\\O)OCC)C",
+        "c1cc([N+]([O-])=O)ccc1C2C(C(=O)OC)=C(C)N=C(/C2=C(/O)OCC)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1149,8 +1183,8 @@
     {
       "smiles": "CC(=O)NCCn1nc2c3c(c(NCCN4CCOC4=O)ccc31)Sc1ccccc1-2",
       "distinct_outputs": [
-        "n1(CCNC(C)=O)nc3c5c(cccc5)Sc2c(NCCN4C(=O)OCC4)ccc1c23",
-        "n5c2c4c(n5CCNC(C)=O)ccc(c4Sc3c2cccc3)NCCN1C(=O)OCC1"
+        "c2(NCCN5CCOC5=O)ccc1n(CCNC(=O)C)nc4c1c2Sc3c4cccc3",
+        "c5cc1c(cc5)c3nn(c2ccc(NCCN4CCOC4=O)c(c23)S1)CCNC(=O)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1161,8 +1195,8 @@
     {
       "smiles": "O=C1OCCN1CCNc1ccc2c3c(nn2CCNCCO)-c2ccccc2Sc13",
       "distinct_outputs": [
-        "C1(=O)N(CCNc2ccc3n(CCNCCO)nc4c5c(cccc5)Sc2c34)CCO1",
-        "n5c2c4c(n5CCNCCO)ccc(c4Sc3c2cccc3)NCCN1C(=O)OCC1"
+        "OCCNCCn1c2ccc(NCCN5CCOC5=O)c3Sc4c(cccc4)c(c23)n1",
+        "OCCNCCn5nc4c2c5ccc(c2Sc3c4cccc3)NCCN1CCOC1=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1171,10 +1205,34 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "O=C1OCC2OC(=O)c3cc(O)c(O)c(O)c3-c3c(O)c(O)c(O)c4c3C(=O)OC(C2OC(=O)c2cc(O)c(O)c(O)c2-c2c1cc(O)c(O)c2O)C1OC(=O)c2c-4c(O)c(O)c(O)c2[C@H]1O",
+      "smiles": "CCN(CC)CCCNc1[nH]cc(C)c2nc3c(ccc4cc(OC)ccc43)c1-2",
       "distinct_outputs": [
-        "C28C(COC(c9c(c(O)c(O)c(c9)O)-c7c(C(O8)=O)cc(c(O)c7O)O)=O)OC(=O)c1cc(O)c(c(c1-c6c(c(O)c(O)c3c6C(OC2C5OC(=O)c4c([C@H]5O)c(c(c(O)c34)O)O)=O)O)O)O",
-        "c13cc(c(O)c(O)c1-c2c(O)c(O)c(cc2C(OCC4OC(=O)c9c(c(O)c(O)c(c9)O)-c7c6C(OC(C8OC(=O)c5c([C@H]8O)c(c(c(c5c6c(O)c(c7O)O)O)O)O)C4OC3=O)=O)=O)O)O"
+        "C(CCN(CC)CC)Nc4c3c2c(nc3c(C)c[nH]4)c1c(cc2)cc(OC)cc1",
+        "c1(c[nH]c(NCCCN(CC)CC)c3c1nc4c2c(ccc34)cc(cc2)OC)C"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "CCN(CC)CCn1nc2c3c(c(NCCN4CCOC4=O)ccc31)Sc1ccccc1-2",
+      "distinct_outputs": [
+        "C1COC(N1CCNc4ccc5c3c(nn5CCN(CC)CC)c2ccccc2Sc34)=O",
+        "c13nn(c4ccc(NCCN5CCOC5=O)c(c34)Sc2c1cccc2)CCN(CC)CC"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "O=C1OCC2OC(=O)c3cc(O)c(O)c(O)c3-c3c(O)c(O)c(O)c4c3C(=O)OC(C2OC(=O)c2cc(O)c(O)c(O)c2-c2c1cc(O)c(O)c2O)C1OC(=O)c2c-4c(O)c(O)c(O)c2[C@@H]1c1c(O)cc(O)c2c1O[C@H](c1ccc(O)c(O)c1)[C@@H](O)C2",
+      "distinct_outputs": [
+        "C13OC(c%12cc(O)c(O)c(c%12-c%11c(cc(c(O)c%11O)O)C(OCC1OC(=O)c2c(-c%10c(O)c(c(O)c4c%10C(OC3C9OC(c5c([C@@H]9c6c(O)cc(O)c7C[C@H](O)[C@@H](c8cc(c(O)cc8)O)Oc67)c(c(O)c(c45)O)O)=O)=O)O)c(c(c(c2)O)O)O)=O)O)=O",
+        "c%10(O)c(c%12c(C[C@H](O)[C@H](O%12)c%11cc(c(O)cc%11)O)c(c%10)O)[C@H]5c7c(c(c(c6c9c4c(c(O)c(c9O)O)-c8c(cc(O)c(O)c8O)C(=O)OC3COC(=O)c1cc(c(O)c(c1-c2c(O)c(O)c(O)cc2C(OC3C(C5OC(c67)=O)OC4=O)=O)O)O)O)O)O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1185,32 +1243,8 @@
     {
       "smiles": "CCN(CC)CCn1nc2c3c(c(NCCNCCO)ccc31)Sc1c(OC)ccc(OC)c1-2",
       "distinct_outputs": [
-        "c12c(ccc(OC)c1Sc4c3c(ccc4NCCNCCO)n(CCN(CC)CC)nc23)OC",
-        "c1c(c2c(Sc4c3c2nn(c3ccc4NCCNCCO)CCN(CC)CC)c(c1)OC)OC"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "O=c1nc2n3c4c(cccc4nc-2c(=O)[nH]1)CCC3CO",
-      "distinct_outputs": [
-        "C4Cc3c2n(C4CO)c1c(nc2ccc3)c(=O)[nH]c(n1)=O",
-        "c2([nH]c(c3nc4c1c(ccc4)CCC(CO)n1c3n2)=O)=O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "CCN(CC)CCn1nc2c3c(c(NC(=O)CNC(=O)OC(C)(C)C)ccc31)Sc1cccc(OC)c1-2",
-      "distinct_outputs": [
-        "COc3cccc2Sc4c1c(ccc4NC(=O)CNC(OC(C)(C)C)=O)n(CCN(CC)CC)nc1c23",
-        "c23c1c(Sc4cccc(c34)OC)c(ccc1n(CCN(CC)CC)n2)NC(CNC(=O)OC(C)(C)C)=O"
+        "OCCNCCNc2ccc1c3c(c4c(ccc(OC)c4Sc23)OC)nn1CCN(CC)CC",
+        "c12c4nn(c1ccc(c2Sc3c(ccc(c34)OC)OC)NCCNCCO)CCN(CC)CC"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1221,8 +1255,8 @@
     {
       "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
       "distinct_outputs": [
-        "c2c(cccc2C)C1/C(C(C)=NC(=C1C(OCC)=O)C)=C(\\O)OCC",
-        "c2c(cccc2C)C1C(/C(C)=NC(=C1C(OCC)=O)C)=C(\\O)OCC"
+        "CCOC(=O)C=2C(/C(=C(/OCC)O)C(=NC=2C)C)c1cc(C)ccc1",
+        "CCOC(=O)C=2C(C(=C(/OCC)O)/C(=NC=2C)C)c1cc(C)ccc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1231,34 +1265,10 @@
       "detected_via_random_relabeling": true
     },
     {
-      "smiles": "CN(C)CCn1nc2c3c(c(NCCN)ccc31)Sc1ccccc1-2",
-      "distinct_outputs": [
-        "c23c1c(Sc4ccccc34)c(NCCN)ccc1n(n2)CCN(C)C",
-        "c4c3c(ccc4)Sc2c(NCCN)ccc1n(nc3c12)CCN(C)C"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "CCN(CC)CCn1nc2c3c(c(NCCN)ccc31)Sc1cc(O)ccc1-2",
-      "distinct_outputs": [
-        "C(Nc2ccc1n(CCN(CC)CC)nc4c1c2Sc3cc(ccc34)O)CN",
-        "c3(ccc2c1nn(CCN(CC)CC)c4c1c(c(cc4)NCCN)Sc2c3)O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
       "smiles": "Cn1c(=O)nc2n(-c3ccccc3)c3ccccc3nc-2c1=O",
       "distinct_outputs": [
-        "c13nc(n(C)c(c1nc2c(n3-c4ccccc4)cccc2)=O)=O",
-        "n1(-c4ccccc4)c3c(cccc3)nc2c(=O)n(c(nc12)=O)C"
+        "c1ccc(-n4c2nc(n(C)c(c2nc3c4cccc3)=O)=O)cc1",
+        "c2cccc3nc4c(n(c(=O)nc4n(c23)-c1ccccc1)C)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1269,32 +1279,8 @@
     {
       "smiles": "CCOC(=O)Cn1c(=O)nc2n(-c3cc(Cl)cc(Cl)c3)c3ccccc3nc-2c1=O",
       "distinct_outputs": [
-        "CCOC(Cn1c(nc2n(-c4cc(cc(Cl)c4)Cl)c3ccccc3nc2c1=O)=O)=O",
-        "c1c(Cl)cc(Cl)cc1-n2c4c(cccc4)nc3c2nc(=O)n(CC(OCC)=O)c3=O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "COc1cc2c(cc1C)-c1ccccc1CC2",
-      "distinct_outputs": [
-        "c12CCc3cc(c(cc3c1cccc2)C)OC",
-        "c12cc(c(OC)cc1CCc3ccccc23)C"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "C=Cc1c(C)c(OC)cc2c1-c1ccc(OC)c(C)c1CC2",
-      "distinct_outputs": [
-        "c12c(c(c(OC)cc1CCc3c(c(OC)ccc23)C)C)C=C",
-        "c23CCc1c(c2ccc(c3C)OC)c(C=C)c(c(c1)OC)C"
+        "n1(-c4cc(Cl)cc(c4)Cl)c3ccccc3nc2c(n(CC(OCC)=O)c(nc12)=O)=O",
+        "n3(c2nc(n(c(c2nc4ccccc34)=O)CC(=O)OCC)=O)-c1cc(cc(c1)Cl)Cl"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1305,20 +1291,8 @@
     {
       "smiles": "Cc1c(-c2ccc(-c3ccccc3F)cc2)[nH]c2ncnc-2c1C(=O)O",
       "distinct_outputs": [
-        "c4(c(F)cccc4)-c3ccc(cc3)-c1[nH]c2ncnc2c(c1C)C(O)=O",
-        "c4(ccc(cc4)-c3ccccc3F)-c2[nH]c1c(c(c2C)C(=O)O)ncn1"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "CCOC(=O)Cn1c(=O)nc2n(-c3cc(C(F)(F)F)cc(C(F)(F)F)c3)c3ccccc3nc-2c1=O",
-      "distinct_outputs": [
-        "O=C(Cn1c(nc3c(nc4c(cccc4)n3-c2cc(cc(c2)C(F)(F)F)C(F)(F)F)c1=O)=O)OCC",
-        "c14ccccc1n(c3nc(=O)n(c(=O)c3n4)CC(=O)OCC)-c2cc(cc(c2)C(F)(F)F)C(F)(F)F"
+        "c34[nH]c(c(c(c3ncn4)C(=O)O)C)-c1ccc(-c2c(cccc2)F)cc1",
+        "c4(ccc(cc4)-c2c(c(c3ncnc3[nH]2)C(O)=O)C)-c1ccccc1F"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1329,44 +1303,8 @@
     {
       "smiles": "Cn1c(=O)nc2n(-c3cccc4cc5ccccc5cc34)c3ccccc3nc-2c1=O",
       "distinct_outputs": [
-        "O=c6nc2c(c(=O)n6C)nc1c(n2-c3cccc4cc5ccccc5cc34)cccc1",
-        "c12n(-c5c4cc6ccccc6cc4ccc5)c3ccccc3nc1c(n(C)c(=O)n2)=O"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "CC(=O)NCCn1nc2c3c(c(N)ccc31)Sc1ccccc1-2",
-      "distinct_outputs": [
-        "c12n(CCNC(C)=O)nc4c1c(Sc3c4cccc3)c(cc2)N",
-        "n4(CCNC(C)=O)c3c2c(n4)c1c(Sc2c(cc3)N)cccc1"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "O=C(O)Cn1c(=O)nc2n(-c3ccc(Cl)cc3)c3ccccc3nc-2c1=O",
-      "distinct_outputs": [
-        "c3c2nc1c(=O)n(CC(O)=O)c(=O)nc1n(-c4ccc(Cl)cc4)c2ccc3",
-        "c4c(ccc(c4)-n1c3c(cccc3)nc2c(n(CC(O)=O)c(=O)nc12)=O)Cl"
-      ],
-      "chematic_variant_parse_error": false,
-      "outputs_semantically_identical": true,
-      "has_ez_marker": false,
-      "detected_via_idempotence": true,
-      "detected_via_random_relabeling": false
-    },
-    {
-      "smiles": "O=C(O)Cn1c(=O)nc2n(-c3cccc(C(F)(F)F)c3)c3ccccc3nc-2c1=O",
-      "distinct_outputs": [
-        "c14c(n(c3c(n4)c(=O)n(c(=O)n3)CC(O)=O)-c2cccc(c2)C(F)(F)F)cccc1",
-        "c3(=O)nc2n(-c4cc(ccc4)C(F)(F)F)c1c(nc2c(=O)n3CC(O)=O)cccc1"
+        "c5cccc6n(c4c(nc56)c(=O)n(C)c(=O)n4)-c2c3cc1c(cc3ccc2)cccc1",
+        "n4(c6nc(n(C)c(c6nc5ccccc45)=O)=O)-c3cccc2c3cc1c(c2)cccc1"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1377,8 +1315,8 @@
     {
       "smiles": "Cn1c(=O)nc2n(-c3cc(C(F)(F)F)cc(C(F)(F)F)c3)c3ccccc3nc-2c1=O",
       "distinct_outputs": [
-        "Cn1c(=O)c2nc4c(cccc4)n(-c3cc(cc(C(F)(F)F)c3)C(F)(F)F)c2nc1=O",
-        "c4c(cc(C(F)(F)F)cc4C(F)(F)F)-n1c3c(c(n(c(=O)n3)C)=O)nc2ccccc12"
+        "C(c4cc(C(F)(F)F)cc(c4)-n1c3c(c(=O)n(c(=O)n3)C)nc2ccccc12)(F)(F)F",
+        "c1c(C(F)(F)F)cc(C(F)(F)F)cc1-n4c2c(nc3c(=O)n(c(=O)nc34)C)cccc2"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1389,8 +1327,8 @@
     {
       "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
       "distinct_outputs": [
-        "c1c(cc(C/2C(=C(C)N=C(C2=C(\\O)OCC)C)C(OCC)=O)cc1)OC",
-        "c1c(cc(C2C(=C(C)N=C(/C2=C(/O)OCC)C)C(OCC)=O)cc1)OC"
+        "CCOC(C2=C(N=C(/C(C2c1cccc(c1)OC)=C(\\OCC)O)C)C)=O",
+        "CCOC(C2=C(N=C(C(/C2c1cccc(c1)OC)=C(\\OCC)O)C)C)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1401,8 +1339,8 @@
     {
       "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
       "distinct_outputs": [
-        "OC(=C/1C(C)=NC(C)=C(C1c2cccc(c2)C(F)(F)F)C(=O)OC)\\OCC",
-        "OC(=C1/C(C)=NC(C)=C(C1c2cccc(c2)C(F)(F)F)C(=O)OC)/OCC"
+        "CC=1/C(=C(/O)OCC)C(c2cccc(C(F)(F)F)c2)C(C(=O)OC)=C(N=1)C",
+        "CC=1C(=C(/O)OCC)/C(c2cccc(C(F)(F)F)c2)C(C(=O)OC)=C(N=1)C"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1413,8 +1351,8 @@
     {
       "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
       "distinct_outputs": [
-        "c1(/C(C2=NCCN2)=C(/OCC)O)nnc(N)s1",
-        "c1(C(/C2=NCCN2)=C(/OCC)O)nnc(N)s1"
+        "C=2(NCCN=2)/C(c1sc(N)nn1)=C(\\OCC)O",
+        "C=2(NCCN=2)C(/c1sc(N)nn1)=C(\\OCC)O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1423,10 +1361,10 @@
       "detected_via_random_relabeling": true
     },
     {
-      "smiles": "O=c1nc2n(-c3cc(C(F)(F)F)cc(C(F)(F)F)c3)c3ccccc3nc-2c(=O)[nH]1",
+      "smiles": "CCOC(=O)Cn1c(=O)nc2n(-c3cccc(C(F)(F)F)c3)c3ccccc3nc-2c1=O",
       "distinct_outputs": [
-        "C(F)(F)(F)c4cc(cc(c4)-n2c3c(cccc3)nc1c(=O)[nH]c(=O)nc12)C(F)(F)F",
-        "c2(=O)[nH]c(=O)nc3n(c4c(cccc4)nc23)-c1cc(C(F)(F)F)cc(c1)C(F)(F)F"
+        "O=c3n(CC(OCC)=O)c(=O)nc2n(-c4cc(ccc4)C(F)(F)F)c1ccccc1nc23",
+        "n2c(=O)n(c(c3nc4c(cccc4)n(c23)-c1cc(C(F)(F)F)ccc1)=O)CC(=O)OCC"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1435,10 +1373,10 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "Cn1c(=O)nc2n(-c3ccc(Cl)cc3)c3cc(N=[N+]=[N-])ccc3nc-2c1=O",
+      "smiles": "Cn1c(=O)nc2n(-c3ccncc3)c3ccccc3nc-2c1=O",
       "distinct_outputs": [
-        "c2(nc3n(c4cc(N=[N+]=[N-])ccc4nc3c(n2C)=O)-c1ccc(cc1)Cl)=O",
-        "n3c1c(n(c4cc(N=[N+]=[N-])ccc34)-c2ccc(Cl)cc2)nc(=O)n(C)c1=O"
+        "c4cc3nc1c(n(c3cc4)-c2ccncc2)nc(=O)n(c1=O)C",
+        "n2(C)c(c1nc4ccccc4n(-c3ccncc3)c1nc2=O)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
@@ -1447,10 +1385,22 @@
       "detected_via_random_relabeling": false
     },
     {
-      "smiles": "O=c1nc2n(-c3cc(Cl)cc(Cl)c3)c3ccccc3nc-2c(=O)[nH]1",
+      "smiles": "CCN(CC)CCn1nc2c3c(c(NCCN)ccc31)Sc1cc(OC)ccc1-2",
       "distinct_outputs": [
-        "c3ccc2nc1c(=O)[nH]c(nc1n(-c4cc(cc(c4)Cl)Cl)c2c3)=O",
-        "c4c(cc(cc4Cl)Cl)-n2c1c(nc3c2nc(=O)[nH]c3=O)cccc1"
+        "CCN(CCn1nc3c4c(cc(cc4)OC)Sc2c(NCCN)ccc1c23)CC",
+        "c23c1c(Sc4c3ccc(OC)c4)c(ccc1n(CCN(CC)CC)n2)NCCN"
+      ],
+      "chematic_variant_parse_error": false,
+      "outputs_semantically_identical": true,
+      "has_ez_marker": false,
+      "detected_via_idempotence": true,
+      "detected_via_random_relabeling": false
+    },
+    {
+      "smiles": "Cn1c(=O)nc2n(-c3ccc(Cl)cc3)c3cc(F)ccc3nc-2c1=O",
+      "distinct_outputs": [
+        "O=c3nc2n(c4cc(ccc4nc2c(n3C)=O)F)-c1ccc(cc1)Cl",
+        "c4cc(ccc4Cl)-n2c3c(ccc(c3)F)nc1c(n(C)c(=O)nc12)=O"
       ],
       "chematic_variant_parse_error": false,
       "outputs_semantically_identical": true,
