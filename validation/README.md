@@ -17,18 +17,37 @@ Atom mapping verified for 265/265 molecules (heavy-atom element-sequence match, 
 assumed). No pipeline v2/force-field algorithm code was changed to produce these numbers;
 historical numbers from earlier legacy-`etkdg`-only diagnoses are not reused as current.
 
+Follow-up round: both engines' already-saved heavy-atom coordinates are additionally scored
+by one common, independent scorer (`pipeline_v2_vs_rdkit_common_scorer.rs`) -- not chematic's
+own internal `final_validation.sound`, which only ever existed for chematic's side. The same
+scorer applies chematic's own `verify_stereo` judge to RDKit's geometry too, so stereo
+preservation is compared with an identical judge rather than assumed from config flags.
+Explicit per-arm denominators (`total`/`success`/`independently_sound`/`usable_coverage`)
+replace the original "100% sound" framing, which implicitly meant "100% of successes," not
+"100% of the corpus." Process-level (separate-process, 5-run) wall-clock timing supplements
+the original in-process p50/p95/p99. A cyclopentane crash found in the original round was
+scoped via ablation (`useSmallRingTorsions`/`enforceChirality`/5 seeds/3 stages) rather than
+reported as a general RDKit failure.
+
 - **Files:** `validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json` (corpus
   manifests, with source/license/selection-rule/hash provenance), `validation/results/
   pipeline_v2_vs_rdkit_{chematic,rdkit}_rows.jsonl` (1591 + 1060 per-row results,
-  nothing silently dropped), `pipeline_v2_vs_rdkit_aggregate.json`, `*_config_snapshot.log`
+  nothing silently dropped), `pipeline_v2_vs_rdkit_common_scored_rows.jsonl` (2367 rows,
+  independent geometry + stereo judgment for both engines), `pipeline_v2_vs_rdkit_aggregate.json`,
+  `pipeline_v2_vs_rdkit_process_level_perf.json`, `pipeline_v2_vs_rdkit_cyclopentane_ablation.jsonl`,
+  `*_config_snapshot.log`
 - **Reference tool:** RDKit 2026.03.3 (`AllChem.ETKDGv3`)
 - **How to regenerate:** `python scripts/gen_pipeline_v2_vs_rdkit_tier_a_manifest.py` +
   `python scripts/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py` + `cargo run --release -p
   chematic-3d --example pipeline_v2_vs_rdkit_dump` + `python scripts/
-  pipeline_v2_vs_rdkit_oracle.py` + `python scripts/gen_pipeline_v2_vs_rdkit_report.py`
-  (see each script's docstring for exact invocation)
+  pipeline_v2_vs_rdkit_oracle.py` + `cargo run --release -p chematic-3d --example
+  pipeline_v2_vs_rdkit_common_scorer` + `bash scripts/pipeline_v2_vs_rdkit_process_level_perf.sh`
+  + `python scripts/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py` + `python
+  scripts/gen_pipeline_v2_vs_rdkit_report.py` (see each script's docstring for exact invocation)
 - **Full report:** `docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` (per-class/per-metric
-  conclusions -- no single overall win/loss claim)
+  conclusions, auto-generated from the aggregate JSON -- no single overall win/loss claim)
+- **Known issue filed from this benchmark:** MMFF94 parameter coverage gap
+  ([#227](https://github.com/kent-tokyo/chematic/issues/227), separate from #185/#188)
 
 ### 175-mol drug-like corpus
 

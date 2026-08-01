@@ -1,6 +1,6 @@
 # pipeline v2 vs RDKit ETKDGv3 — Wave 1 independent 3D benchmark
 
-Measurement-only. No pipeline v2 or force-field algorithm code was changed to produce these numbers. Historical numbers (e.g. a previously-cited 25.9% geometrically-valid rate) are NOT reused here -- everything below was regenerated fresh against this repo's current `main` in this session.
+Measurement-only. No pipeline v2 or force-field algorithm code was changed to produce these numbers. Historical numbers are NOT reused -- everything below was regenerated fresh against this repo's current `main` in this session. All tables below are auto-generated from `validation/results/pipeline_v2_vs_rdkit_aggregate.json` by this script; the aggregate JSON is the source of truth if anything here looks stale.
 
 ## Corpus
 
@@ -10,64 +10,91 @@ Measurement-only. No pipeline v2 or force-field algorithm code was changed to pr
 
 ## Atom mapping
 
-- Checked (both engines produced a heavy-atom element sequence): 265
-- Verified matching (per-index element-symbol equality): 265
-- Unavailable/mismatched: 0
+- Checked: 265, verified matching: 265, unavailable/mismatched: 0
 
-## Coverage — chematic (6 arms)
+## Coverage and usable geometry (explicit denominators)
 
-| Arm | n | success | typed_failure | unsupported_chemistry | timeout | internal_error |
-|---|---|---|---|---|---|---|
-| chematic_pipeline_v2_no_ff | 265 | 254 | 11 | 0 | 0 | 0 |
-| chematic_pipeline_v2_dreiding | 265 | 254 | 11 | 0 | 0 | 0 |
-| chematic_pipeline_v2_uff_only | 265 | 250 | 15 | 0 | 0 | 0 |
-| chematic_pipeline_v2_mmff94_strict | 265 | 38 | 11 | 216 | 0 | 0 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback | 265 | 250 | 15 | 0 | 0 | 0 |
-| chematic_legacy_etkdg | 265 | 265 | 0 | 0 | 0 | 0 |
+`usable_coverage` = independently-sound successes / total inputs for that arm -- the fraction of the *whole corpus* that arm turns into a geometry this benchmark's own independent scorer (not the pipeline's internal judgment) certifies sound. `sound_given_success` = independently-sound / successes only (the old, incomplete framing -- kept for context, never presented alone).
 
-## Coverage — RDKit ETKDGv3 (4 arms)
+| Engine | Arm | total | success | indep. sound | sound_given_success | usable_coverage | typed_failure | unsupported | timeout | internal_error |
+|---|---|---|---|---|---|---|---|---|---|---|
+| chematic | chematic_pipeline_v2_no_ff | 265 | 254 | 254 | 100.0% | 95.8% | 11 | 0 | 0 | 0 |
+| chematic | chematic_pipeline_v2_dreiding | 265 | 254 | 254 | 100.0% | 95.8% | 11 | 0 | 0 | 0 |
+| chematic | chematic_pipeline_v2_uff_only | 265 | 250 | 250 | 100.0% | 94.3% | 15 | 0 | 0 | 0 |
+| chematic | chematic_pipeline_v2_mmff94_strict | 265 | 38 | 38 | 100.0% | 14.3% | 11 | 216 | 0 | 0 |
+| chematic | chematic_pipeline_v2_mmff94_with_uff_fallback | 265 | 250 | 250 | 100.0% | 94.3% | 15 | 0 | 0 | 0 |
+| chematic | chematic_legacy_etkdg | 265 | 265 | 251 | 94.7% | 94.7% | 0 | 0 | 0 | 0 |
+| rdkit | rdkit_etkdgv3_raw | 265 | 264 | 264 | 100.0% | 99.6% | 0 | 0 | 0 | 1 |
+| rdkit | rdkit_etkdgv3_uff | 265 | 264 | 264 | 100.0% | 99.6% | 0 | 0 | 0 | 1 |
+| rdkit | rdkit_etkdgv3_mmff94 | 265 | 264 | 264 | 100.0% | 99.6% | 0 | 0 | 0 | 1 |
+| rdkit | rdkit_etkdgv3_best_of_n | 265 | 264 | 264 | 100.0% | 99.6% | 0 | 0 | 0 | 1 |
 
-| Arm | n | success | oracle_failure | unsupported_chemistry | internal_error |
-|---|---|---|---|---|---|
-| rdkit_etkdgv3_raw | 265 | 264 | 0 | 0 | 1 |
-| rdkit_etkdgv3_uff | 265 | 264 | 0 | 0 | 1 |
-| rdkit_etkdgv3_mmff94 | 265 | 264 | 0 | 0 | 1 |
-| rdkit_etkdgv3_best_of_n | 265 | 264 | 0 | 0 | 1 |
+**mmff94_strict, spelled out per the fix request:** 38/38 successful outputs are independently sound, but only 38/265 of the *total corpus* ends up as a usable geometry under this arm -- the rest is the 216-molecule MMFF94 parameter coverage gap (issue #227), not a geometry-quality problem.
 
-## Geometry validity (chematic)
+## Common heavy-atom geometry quality (same independent scorer, both engines)
 
-Independent per-engine measurement -- not a cross-engine RMSD (no reference geometry available, see below).
+Applied identically to chematic's and RDKit's already-saved heavy-atom coordinates (`crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs`) -- ideal bond length from `Element::covalent_radius()`, never chematic-3d's own `pub(crate)` thresholds. RDKit's coordinates are heavy-atom-only by construction (the oracle script never exports its `AddHs`-added hydrogens).
 
-| Arm | n success | all finite | sound | mean bond-viol >15% | mean bond-viol >50% | mean clashes | molecules w/ clash |
+| Engine | Arm | n scored | all finite | mean bond>15% | mean bond>50% | molecules w/ clash | molecules w/ coincident atoms | independently sound |
+|---|---|---|---|---|---|---|---|---|
+| chematic | chematic_pipeline_v2_no_ff | 254 | 100.0% | 2.8% | 0.0% | 3 | 0 | 100.0% |
+| chematic | chematic_pipeline_v2_dreiding | 254 | 100.0% | 3.0% | 0.0% | 0 | 0 | 100.0% |
+| chematic | chematic_pipeline_v2_uff_only | 250 | 100.0% | 0.5% | 0.0% | 0 | 0 | 100.0% |
+| chematic | chematic_pipeline_v2_mmff94_strict | 38 | 100.0% | 0.7% | 0.0% | 0 | 0 | 100.0% |
+| chematic | chematic_pipeline_v2_mmff94_with_uff_fallback | 250 | 100.0% | 0.6% | 0.0% | 0 | 0 | 100.0% |
+| chematic | chematic_legacy_etkdg | 265 | 100.0% | 49.8% | 15.5% | 229 | 14 | 94.7% |
+| rdkit | rdkit_etkdgv3_raw | 264 | 100.0% | 0.6% | 0.0% | 0 | 0 | 100.0% |
+| rdkit | rdkit_etkdgv3_uff | 264 | 100.0% | 0.0% | 0.0% | 0 | 0 | 100.0% |
+| rdkit | rdkit_etkdgv3_mmff94 | 264 | 100.0% | 0.9% | 0.0% | 0 | 0 | 100.0% |
+| rdkit | rdkit_etkdgv3_best_of_n | 264 | 100.0% | 0.0% | 0.0% | 0 | 0 | 100.0% |
+
+Note (correction vs. the original Wave 1 report): the legacy `etkdg` arm was previously reported as 100% sound. This common scorer additionally checks for exactly-coincident atom pairs (distance < 1e-3 Å), which the original ad-hoc legacy scorer did not -- 14/265 legacy outputs have ≥1 coincident atom pair and are NOT independently sound under this stricter, shared check. All 5 pipeline_v2 arms remain 100% independently sound (matching their own internal `final_validation.sound`).
+
+## Stereo preservation (same judge -- chematic's own `verify_stereo` -- applied to both engines)
+
+**Methodology, read before the numbers**: chematic's arms below were benchmarked with `StereoPolicy::Ignore` (deliberate Wave 1 choice, to keep coverage/geometry metrics free of stereo-driven failures). `Ignore` never repairs a violated stereocenter -- so these numbers reflect raw distance-geometry-embedding output, NOT chematic's best achievable stereo correctness (`StereoPolicy::RepairAndVerify`, not exercised this round). RDKit's numbers use `enforceChirality=True` for real -- verified here with the identical judge, not assumed.
+
+| Engine | Arm | molecules w/ declared stereo | declared | satisfied | violated | unevaluable | satisfaction rate |
 |---|---|---|---|---|---|---|---|
-| chematic_pipeline_v2_no_ff | 254 | 100.0% | 100.0% | 12.6% | 0.0% | 0.03 | 3 |
-| chematic_pipeline_v2_dreiding | 254 | 100.0% | 100.0% | 0.9% | 0.0% | 0.00 | 0 |
-| chematic_pipeline_v2_uff_only | 250 | 100.0% | 100.0% | 0.0% | 0.0% | 0.00 | 0 |
-| chematic_pipeline_v2_mmff94_strict | 38 | 100.0% | 100.0% | 0.0% | 0.0% | 0.00 | 0 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback | 250 | 100.0% | 100.0% | 0.0% | 0.0% | 0.00 | 0 |
-| chematic_legacy_etkdg | 265 | 100.0% | 100.0% | 49.8% | 15.5% | 26.93 | 236 |
+| chematic | chematic_pipeline_v2_no_ff | 83 | 146 | 82 | 64 | 0 | 56.2% |
+| chematic | chematic_pipeline_v2_dreiding | 83 | 146 | 89 | 57 | 0 | 61.0% |
+| chematic | chematic_pipeline_v2_uff_only | 80 | 140 | 88 | 52 | 0 | 62.9% |
+| chematic | chematic_pipeline_v2_mmff94_strict | 19 | 36 | 17 | 19 | 0 | 47.2% |
+| chematic | chematic_pipeline_v2_mmff94_with_uff_fallback | 80 | 140 | 88 | 52 | 0 | 62.9% |
+| chematic | chematic_legacy_etkdg | 90 | 170 | 81 | 86 | 3 | 47.6% |
+| rdkit | rdkit_etkdgv3_raw | 90 | 170 | 170 | 0 | 0 | 100.0% |
+| rdkit | rdkit_etkdgv3_uff | 90 | 170 | 170 | 0 | 0 | 100.0% |
+| rdkit | rdkit_etkdgv3_mmff94 | 90 | 170 | 170 | 0 | 0 | 100.0% |
+| rdkit | rdkit_etkdgv3_best_of_n | 90 | 170 | 170 | 0 | 0 | 100.0% |
 
-## Stereo (chematic, molecules with declared stereo only)
+`violated` encompasses both tetrahedral inversion and E/Z flipping (both fail the declared-direction check `verify_stereo` performs) -- the shared judge does not currently distinguish these as separate sub-categories, so this report doesn't either, rather than fabricate a split it can't measure.
 
-| Arm | n w/ declared stereo | mean declared | mean satisfied | mean violations | mean unevaluable | total repaired | total repair failed |
-|---|---|---|---|---|---|---|---|
-| chematic_pipeline_v2_no_ff | 83 | 1.76 | 0.99 | 0.77 | 0.00 | 0 | 0 |
-| chematic_pipeline_v2_dreiding | 83 | 1.76 | 1.07 | 0.69 | 0.00 | 0 | 0 |
-| chematic_pipeline_v2_uff_only | 80 | 1.75 | 1.10 | 0.65 | 0.00 | 0 | 0 |
-| chematic_pipeline_v2_mmff94_strict | 19 | 1.89 | 0.89 | 1.00 | 0.00 | 0 | 0 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback | 80 | 1.75 | 1.10 | 0.65 | 0.00 | 0 | 0 |
-| chematic_legacy_etkdg | 0 | n/a | n/a | n/a | n/a | n/a | n/a |
+## Workflow comparison vs. common heavy-atom output comparison
 
-## Force-field coverage (chematic MMFF94 arms)
+**Workflow comparison** (each library's own recommended, practical usage: RDKit with `AddHs`, chematic's implicit-H pipeline as-is): this is what the Performance section's wall-clock numbers below measure. Not an algorithm-only, hydrogen-representation-controlled comparison.
 
-- chematic_pipeline_v2_mmff94_with_uff_fallback: n=250, fallback_rate=84.8%, converged_rate=14.0%
-- chematic_pipeline_v2_mmff94_strict: n=38, fallback_rate=0.0%, converged_rate=65.8%
+**Common heavy-atom output comparison**: the geometry-quality and stereo tables above restrict to heavy atoms only on both sides, via the identical scorer/judge, so differing internal hydrogen treatment cannot bias the output-quality numbers.
+
+An RDKit `AddHs=false` auxiliary arm was NOT added this round (would meaningfully grow the arm matrix) -- performance numbers below should be read as workflow-level, not algorithm-only apples-to-apples.
 
 ## Performance
 
-_In-process wall-clock timing per (molecule, arm) call within a single long-running process -- NOT separate-process-isolated. p50/p95/p99/max reported per arm; process-level variance (repeated whole-process runs) was NOT measured this round._
+### Process-level (primary comparison — separate OS process per run, sequential, 5 runs each)
 
-### chematic
+_Whole-corpus (265 molecules), separate-process wall-clock per run, sequential (never concurrent with another run or a build). Includes process startup (Rust binary startup / Python+RDKit import) -- not steady-state-only._
+
+| Engine | runs | median total (s) | min (s) | max (s) | stdev (s) | coeff. of variation |
+|---|---|---|---|---|---|---|
+| chematic | 5 | 312.8 | 303.7 | 615.3 | 136.15 | 0.366 |
+| rdkit | 5 | 142.9 | 124.5 | 188.9 | 29.39 | 0.192 |
+
+Whole-corpus median: chematic is ~2.2x slower than RDKit -- **substantially smaller** than the ~11x seen on the force-field-heavy arms alone (see in-process table below). This whole-corpus figure blends all 6 chematic arms (including the very fast `no_ff`/`legacy` arms) with all 4 RDKit arms; it is not in conflict with the per-arm figure, it answers a different question ("run the whole benchmark once" vs. "run this one force-field arm"). chematic's first run (615.3s) is a likely system-contention outlier relative to the other 4 (~304-320s, tight cluster) -- reported as-measured, not excluded, but flagged rather than silently averaged in as if typical; machine load average was already elevated (~6 on a 10-core machine) before this measurement began, from other concurrent activity on the same machine.
+
+### In-process per-(molecule, arm) timing (secondary)
+
+_In-process wall-clock per (molecule, arm) call within a single long-running process -- NOT process-isolated. Secondary metric; see performance_process_level for the primary comparison._
+
+#### chematic
 
 | Arm | n | p50 (ms) | p95 (ms) | p99 (ms) | max (ms) |
 |---|---|---|---|---|---|
@@ -78,7 +105,7 @@ _In-process wall-clock timing per (molecule, arm) call within a single long-runn
 | chematic_pipeline_v2_mmff94_with_uff_fallback | 265 | 591.0 | 3283.4 | 4548.7 | 7146 |
 | chematic_legacy_etkdg | 265 | 2.0 | 9.0 | 14.0 | 17 |
 
-### RDKit
+#### RDKit
 
 | Arm | n | p50 (ms) | p95 (ms) | p99 (ms) | max (ms) |
 |---|---|---|---|---|---|
@@ -87,71 +114,37 @@ _In-process wall-clock timing per (molecule, arm) call within a single long-runn
 | rdkit_etkdgv3_mmff94 | 265 | 54.0 | 323.4 | 559.1 | 1024 |
 | rdkit_etkdgv3_best_of_n | 265 | 489.0 | 2730.0 | 5059.8 | 7327 |
 
+## Cyclopentane RDKit crash — scoped ablation
+
+**Classification: `nondefault_small_ring_torsion_only`**
+
+12/60 trials crashed. Crashing configs (`useSmallRingTorsions`, `enforceChirality`): ['(True, False)', '(True, True)']. Crashing seeds: [4, 20260801]. Crashes under RDKit's own default config (`useSmallRingTorsions=False`): 0.
+
+In plain terms: this crash requires the non-default `useSmallRingTorsions=True`, occurs during `EmbedMolecule` itself (before any force-field stage runs), and only reproduces for a subset of tested seeds -- **not** a general "RDKit crashes on cyclopentane" finding, and not reproducible under RDKit's own ETKDGv3 defaults in this ablation. Minimal repro: `scripts/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py`.
+
+## Force-field coverage (chematic MMFF94 arms)
+
+- chematic_pipeline_v2_mmff94_with_uff_fallback: n=250, fallback_rate=84.8%, converged_rate=14.0%
+- chematic_pipeline_v2_mmff94_strict: n=38, fallback_rate=0.0%, converged_rate=65.8%
+
 ## Ring-torsion FailClosed probe
 
-1 row(s) -- demonstrates `RingTorsionApplicationPolicy::FailClosed`'s documented behavior on the dedicated `known_fail_closed_case` fixture. Not folded into the 6 main arms' coverage numbers (those use `DiagnosticOnly`, see the dump executable's own comment for why).
+1 row(s) -- demonstrates `RingTorsionApplicationPolicy::FailClosed`'s documented behavior. Not folded into the 6 main arms' coverage numbers (those use `DiagnosticOnly`).
 
 ## Reference geometry subset
 
-Status: **insufficient_evidence**. No experimentally-determined reference conformers were available for this benchmark round. RMSD-vs-reference, best-of-N RMSD, torsion fingerprint deviation, and duplicate-conformer-rate metrics are NOT computed here -- reported as insufficient evidence, not fabricated against a synthetic or absent reference.
+Status: **insufficient_evidence**. No experimentally-determined reference conformers were available for this benchmark round. RMSD-vs-reference, best-of-N RMSD, torsion fingerprint deviation, and duplicate-conformer-rate metrics are NOT computed here -- reported as insufficient evidence, not fabricated.
+
+## Known issues filed from this benchmark
+
+- MMFF94 coverage gap (216/265 unsupported, incl. plain benzene): https://github.com/kent-tokyo/chematic/issues/227
 
 ## Data integrity
 
-- Unclassified rows: 0 (must be 0; see aggregate JSON if not)
+- Unclassified rows: 0 (hard-gated at 0 by the report generator)
 - chematic rows sha256: `585889615aae9002...`
 - RDKit rows sha256: `ba24a7c64df1c350...`
-
-## Notable findings (not folded into the tables above)
-
-- **RDKit itself crashes on plain cyclopentane under this benchmark's config.** All
-  4 RDKit arms show exactly 1 `internal_error` — the same molecule
-  (`cyclopentane`, Tier A) on every arm: `RuntimeError: Invariant Violation —
-  bad direction in linearSearch` (`Code/Numerics/Optimizer/BFGSOpt.h:224`),
-  RDKit 2026.03.3. Independently reproduced directly (not just observed in
-  the dump) with `useSmallRingTorsions=True` + the seed this benchmark uses.
-  Not a chematic finding to claim credit for — reported because a failure is
-  a failure regardless of which engine it belongs to, and because it
-  explains 100% of RDKit's `internal_error` bucket across all 4 arms.
-- **`Mmff94BondAngleStrict` has severe real-world parameter coverage gaps.**
-  216/265 (81.5%) of the corpus lands in `unsupported_chemistry` under that
-  arm — including plain benzene (missing aromatic-ring angle/torsion MMFF94
-  parameters). `Mmff94WithUffFallback` recovers nearly all of that
-  (250/265 success) — but 84.8% of its successes are actually silent-to-the-
-  caller UFF fallbacks (`force_field_fallback: true`), not real MMFF94 runs.
-- **Force-field convergence (200-iteration cap) is a real bottleneck.**
-  `Mmff94WithUffFallback`'s reported `force_field_converged` rate is only
-  14.0% across its 250 successes — most of that arm's runs are the UFF
-  fallback path, and most of those don't converge within 200 iterations
-  (soundness/finiteness is still fine — `sound: true` in the geometry table
-  — but the minimizer isn't reaching its own convergence criterion).
-  Consistent with this repo's existing open issues #185/#188 (UFF minimizer
-  blow-up/non-monotonic behavior) — not new evidence against those issues,
-  but independent corroboration from a different measurement path.
-- **The legacy `etkdg` entry point "succeeds" on 100% of the corpus but
-  produces geometrically poor structures most of the time.** 236/265 (89.1%)
-  of its outputs have at least one non-bonded clash (mean 26.93 clashes per
-  molecule), and 15.5% of its bonds deviate from ideal length by >50% on
-  average — the legacy path is infallible (always returns *a* geometry) but
-  that is not the same as returning a *good* one. Contrast: every pipeline
-  v2 arm shows 0% mean bond-violation >50% and near-zero clash rates.
-- **Chematic's force-field arms are meaningfully slower than RDKit's
-  equivalents on wall-clock time**, in this in-process, non-isolated
-  measurement: `uff_only` p50 523ms vs. RDKit `etkdgv3_uff` p50 48ms (~11x);
-  `mmff94_with_uff_fallback` p50 591ms vs. RDKit `etkdgv3_mmff94` p50 54ms
-  (~11x). Notably, RDKit's `best_of_n` (10 full embed+UFF-optimize cycles)
-  has a p50 of 489ms — comparable to chematic doing a *single* uff_only
-  embed. This is a real, substantial performance gap, not a rounding
-  difference.
-- **`no_ff`/`dreiding` arms (95.8% success) and force-field arms
-  (94.3%/94.3%) show non-trivial, non-force-field-related typed-failure
-  rates too** (11-15 molecules) — not investigated further in this
-  measurement-only round; see the aggregate JSON's `coverage_by_class` for
-  the exact failing molecules/categories.
-- **Atom mapping held for 100% of the corpus** (265/265) — every molecule's
-  heavy-atom element sequence matched exactly between chematic's parse and
-  RDKit's post-`AddHs` heavy atoms, confirming the "same SMILES string, same
-  atom order in both engines" assumption this benchmark's cross-referencing
-  depends on, rather than assuming it.
+- All integrity gates (row-count, unclassified, atom-mapping, missing/mismatched coords, non-finite coords, common-scorer coverage, denominator self-consistency) passed at generation time -- see `run_integrity_gates` in this script.
 
 ## Conclusions
 
@@ -159,15 +152,15 @@ Classified per class/metric — no single overall win/loss score.
 
 | Metric | Classification | Basis |
 |---|---|---|
-| Coverage — `no_ff`/`dreiding`/`uff_only`/`mmff94_with_uff_fallback` vs. RDKit's 4 arms | **Roughly comparable** | chematic 94.3-95.8% success vs. RDKit 99.6% (264/265) — RDKit slightly ahead, within a plausible margin given differing failure taxonomies (chematic's failures are typed pipeline stages; RDKit's are embed/FF exceptions) |
-| Coverage — `mmff94_strict` | **RDKit-favor** (chematic gap) | 14.3% success — real, measured MMFF94 bond/angle parameter coverage gap, not a benchmark artifact (confirmed via `MissingParameters` cause on plain benzene) |
-| Geometry validity — force-field-refined arms (`dreiding`/`uff_only`/`mmff94_with_uff_fallback`) | **Roughly comparable / chematic strength on soundness** | 100% all-finite, 100% sound, ≤0.9% mean bond-violation>15%, 0% mean bond-violation>50%, near-zero clashes — no reference geometry exists to compare absolute accuracy against RDKit's own output, but chematic's internal soundness gate is consistently met |
-| Geometry validity — legacy `etkdg` | **Chematic gap (known, not new)** | 89.1% of outputs have ≥1 clash; this is the *documented, already-diagnosed* legacy path (`docs/etkdg_3d_gap_rfc.md`), not pipeline v2 — the gap this whole 3D Breakthrough Program exists to close |
-| Stereo preservation (declared-stereo subset) | **Roughly comparable, evidence-limited** | ~55-63% mean satisfaction rate across arms with `StereoPolicy::Ignore` (non-gating); no RDKit-side stereo-preservation metric was computed this round for direct comparison — flagged as a gap for a follow-up round, not fabricated here |
-| Force-field convergence rate | **RDKit-favor** | chematic's 200-iteration-capped MMFF94-with-fallback shows only 14.0% converged; not directly compared to RDKit's own convergence rate this round (not measured on the RDKit side) — reported as a chematic-side finding, corroborating existing issues #185/#188 |
-| Performance — force-field arms | **RDKit-favor, substantial** | ~11x slower wall-clock p50 on `uff_only`/`mmff94_with_uff_fallback` vs. RDKit's equivalents; RDKit's 10-conformer best-of-N is about as fast as chematic's single attempt |
-| Performance — `no_ff`/legacy | **Roughly comparable** | chematic `no_ff` p50 9ms, legacy p50 2ms vs. RDKit raw p50 25ms — chematic faster here, but `no_ff`/legacy skip force-field work RDKit's `raw` arm doesn't |
-| Reference-geometry accuracy (RMSD vs. experimental conformers) | **Insufficient evidence** | no reference conformers available this round — not fabricated |
-| Torsion fingerprint deviation / conformer diversity / duplicate-conformer rate | **Insufficient evidence** | not computed this round (requires the reference-geometry subset above, or a dedicated ensemble-diversity study) |
-| Overall "does chematic beat RDKit" | **Not claimed** | per this program's explicit rule — findings are class/metric-specific, several favor RDKit clearly (MMFF94 coverage, force-field convergence, raw speed), one is a known pre-existing gap (legacy path), several are genuinely comparable |
+| Coverage — no_ff/dreiding/uff_only/mmff94_with_uff_fallback vs. RDKit | Roughly comparable | chematic 94.3%-95.8% success vs. RDKit 99.6% |
+| Coverage — mmff94_strict | RDKit-favor (chematic gap, issue #227 filed) | 14.3% success, 216/265 unsupported |
+| Common heavy-atom geometry — pipeline_v2 force-field arms | Chematic strength on soundness | 100% independently-sound across dreiding/uff_only/mmff94 arms, matching pipeline-internal judgment |
+| Common heavy-atom geometry — legacy etkdg | Known gap, refined this round | 14/265 legacy outputs have coincident atoms under the stricter common scorer (not caught by the original Wave 1 ad-hoc check); the already-documented clash-rate gap stands |
+| Stereo preservation (same judge) | RDKit-favor, methodology caveat applies | RDKit 100.0% satisfaction vs. chematic 62.9% under `StereoPolicy::Ignore` (no repair attempted this round -- not chematic's best achievable number) |
+| Force-field convergence rate | RDKit-favor | chematic mmff94_with_uff_fallback 14.0% converged within 200 iterations; corroborates open issues #185/#188 |
+| Performance (process-level, whole corpus) | RDKit-favor | median 312.8s (chematic) vs. 142.9s (RDKit) for the full 265-molecule x arms run |
+| Known crashes | RDKit has a narrowly-scoped one; chematic none found this round | cyclopentane crash classified `nondefault_small_ring_torsion_only` -- non-default config, seed-dependent, not RDKit's own default behavior |
+| Unsupported chemistry | RDKit-favor | chematic mmff94_strict 216/265 unsupported (issue #227); RDKit's 4 arms show 0 unsupported_chemistry rows |
+| Reference-geometry accuracy / torsion fingerprint / conformer diversity | Insufficient evidence | not measured this round, not fabricated |
+| Overall "does chematic beat RDKit" | Not claimed | per this program's explicit rule -- findings are class/metric-specific |
 

@@ -1,0 +1,61 @@
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 20260801, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 20260801, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 20260801, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 1, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 1, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 1, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 2, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 2, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 2, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 3, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 3, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 3, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 4, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 4, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": true, "seed": 4, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 20260801, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 20260801, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 20260801, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 1, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 1, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 1, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 2, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 2, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 2, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 3, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 3, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 3, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 4, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 4, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": true, "enforce_chirality": false, "seed": 4, "stage": "embed", "ok": false, "error": "RuntimeError: Invariant Violation\n\tbad direction in linearSearch\n\tViolation occurred on line 224 in file Code/Numerics/Optimizer/BFGSOpt.h\n\tFailed Expression: status >= 0\n\tRDKIT: 2026.03.3\n\tBOOST: 1_85\n"}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 20260801, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 20260801, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 20260801, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 1, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 1, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 1, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 2, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 2, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 2, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 3, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 3, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 3, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 4, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 4, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": true, "seed": 4, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 20260801, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 20260801, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 20260801, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 1, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 1, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 1, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 2, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 2, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 2, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 3, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 3, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 3, "stage": "mmff94", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 4, "stage": "raw", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 4, "stage": "uff", "ok": true}
+{"use_small_ring_torsions": false, "enforce_chirality": false, "seed": 4, "stage": "mmff94", "ok": true}
+{"_summary": {"classification": "nondefault_small_ring_torsion_only", "n_total_trials": 60, "n_crashes": 12, "crash_configs": ["(True, False)", "(True, True)"], "crash_seeds": [4, 20260801], "default_config_crashes": 0}}
